@@ -1,0 +1,78 @@
+name: Extract uploaded ZIP on request
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  extract:
+    if: github.event.issue.title == 'RUN ZIP EXTRACTION'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out extraction branch
+        uses: actions/checkout@v4
+        with:
+          ref: extract-microgifter-main-74
+          fetch-depth: 0
+
+      - name: Validate and extract archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path, PurePosixPath
+          import shutil
+          import stat
+          import zipfile
+
+          archive = Path('microgifter-main (74).zip')
+          destination = Path('microgifter-main-74-extracted')
+          max_files = 20000
+          max_uncompressed = 750 * 1024 * 1024
+
+          if not archive.is_file():
+              raise SystemExit(f'Missing archive: {archive}')
+
+          if destination.exists():
+              shutil.rmtree(destination)
+          destination.mkdir(parents=True)
+
+          with zipfile.ZipFile(archive) as zf:
+              entries = zf.infolist()
+              if len(entries) > max_files:
+                  raise SystemExit(f'Archive contains too many entries: {len(entries)}')
+
+              total = sum(item.file_size for item in entries)
+              if total > max_uncompressed:
+                  raise SystemExit(f'Archive expands beyond safety limit: {total} bytes')
+
+              for item in entries:
+                  path = PurePosixPath(item.filename)
+                  if path.is_absolute() or '..' in path.parts:
+                      raise SystemExit(f'Unsafe archive path: {item.filename}')
+                  mode = item.external_attr >> 16
+                  if stat.S_ISLNK(mode):
+                      raise SystemExit(f'Symlinks are not allowed: {item.filename}')
+
+              zf.extractall(destination)
+
+          print(f'Extracted {len(entries)} entries ({total} bytes) into {destination}')
+          PY
+
+      - name: Commit extracted files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add microgifter-main-74-extracted
+          if git diff --cached --quiet; then
+            echo "No extracted changes to commit."
+            exit 0
+          fi
+          git commit -m "Extract microgifter-main (74).zip [skip ci]"
+          git push origin HEAD:extract-microgifter-main-74
