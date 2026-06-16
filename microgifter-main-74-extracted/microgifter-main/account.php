@@ -1,0 +1,95 @@
+<?php
+require_once __DIR__ . '/includes/app.php';
+$accountView = defined('MG_ACCOUNT_VIEW') ? MG_ACCOUNT_VIEW : 'profile';
+$page_title = match ($accountView) {
+  'admin' => 'Admin Dashboard | Microgifter',
+  'profile_moderation' => 'Profile Moderation | Microgifter',
+  'profile' => 'Profile Editor | Microgifter',
+  default => 'Account | Microgifter',
+};
+$page_section = 'account';
+$header_mode = 'account';
+$page_styles = [];
+$page_scripts = [];
+if ($accountView === 'profile') {
+  $page_styles[] = '/assets/css/profile-editor.css';
+  $page_styles[] = '/assets/css/profile-moderation-owner.css';
+  $page_scripts[] = '/assets/js/profile-editor.js';
+  $page_scripts[] = '/assets/js/account-public-profile-link.js';
+  $page_scripts[] = '/assets/js/profile-moderation-owner.js';
+} elseif ($accountView === 'profile_moderation') {
+  $page_styles[] = '/assets/css/profile-moderation.css';
+  $page_scripts[] = '/assets/js/profile-moderation.js';
+} else {
+  $page_scripts[] = '/assets/js/account.js';
+}
+if ($accountView === 'admin') {
+  $page_styles[] = '/assets/css/admin-dashboard.css';
+  $page_scripts[] = '/assets/js/admin-dashboard.js';
+}
+$user = mg_current_user();
+$roles = is_array($user['roles'] ?? null) ? $user['roles'] : [];
+$permissions = is_array($user['permissions'] ?? null) ? $user['permissions'] : [];
+$isSuperAdmin = in_array('super_admin', $roles, true);
+$canViewAdminSessions = in_array('admin.sessions.view', $permissions, true) || $isSuperAdmin;
+$canRevokeAdminSessions = in_array('admin.sessions.revoke', $permissions, true) || $isSuperAdmin;
+$canViewSecurityLogs = in_array('security.logs.view', $permissions, true) || in_array('admin.security_logs.view', $permissions, true) || $isSuperAdmin;
+$canViewProfileModeration = in_array('admin.profiles.moderation.view', $permissions, true) || in_array('admin.profiles.moderation.manage', $permissions, true) || $isSuperAdmin;
+$canManageProfileModeration = in_array('admin.profiles.moderation.manage', $permissions, true) || $isSuperAdmin;
+$adminPermissionSet = [
+  'admin.users.view', 'admin.users.manage', 'admin.audit.view', 'admin.health.view',
+  'admin.profiles.moderation.view', 'admin.profiles.moderation.manage',
+  'security.logs.view', 'admin.security_logs.view', 'admin.sessions.view',
+  'operational.alerts.view', 'demand.dashboard.view', 'intelligence.dashboard.view',
+  'merchant.payments.view', 'subscriptions.admin', 'microgift.operations.view', 'tips.reverse',
+];
+$hasAdminAccess = $isSuperAdmin || count(array_intersect($adminPermissionSet, $permissions)) > 0;
+$accountNav = [
+  'profile' => ['label' => 'Profile', 'href' => '/account.php', 'detail' => 'Public identity'],
+  'models' => ['label' => 'Models', 'href' => '/account-models.php', 'detail' => 'User model access'],
+  'security' => ['label' => 'Security', 'href' => '/account-security.php', 'detail' => 'Sessions'],
+  'access' => ['label' => 'Access', 'href' => '/account-access.php', 'detail' => 'Roles and permissions'],
+];
+if ($hasAdminAccess) $accountNav['admin'] = ['label' => 'Admin', 'href' => '/account-admin.php', 'detail' => 'Platform controls'];
+if ($canViewProfileModeration) $accountNav['profile_moderation'] = ['label' => 'Moderation', 'href' => '/account-profile-moderation.php', 'detail' => 'Profile review queue'];
+$knownViews = ['profile', 'models', 'security', 'access', 'admin', 'profile_moderation'];
+if (!in_array($accountView, $knownViews, true)) $accountView = 'profile';
+require __DIR__ . '/includes/header.php';
+?>
+<section class="mg-app-shell mg-account-app">
+  <aside class="mg-app-sidebar mg-account-left">
+    <div class="mg-app-sidebar-brand">
+      <a class="mg-brand" href="/index.php" aria-label="Microgifter home"><span class="mg-brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" focusable="false"><path d="M13 2 4 14h7l-1 8 10-13h-7l1-7Z" fill="currentColor"/></svg></span><span>Microgifter</span></a>
+    </div>
+    <?php if ($user): ?>
+      <nav class="mg-app-side-nav mg-account-nav" aria-label="Account pages"><?php foreach ($accountNav as $key => $item): ?><a class="<?= $accountView === $key ? 'is-active' : '' ?>" href="<?= mg_e($item['href']) ?>"><strong><?= mg_e($item['label']) ?></strong><span><?= mg_e($item['detail']) ?></span></a><?php endforeach; ?></nav>
+    <?php else: ?>
+      <div class="mg-app-sidebar-card"><h2>Account access</h2><p>Sign in or create an account to manage your Microgifter workspace.</p></div>
+      <nav class="mg-app-side-nav mg-account-nav" aria-label="Guest account actions"><a href="/signin.php"><strong>Sign in</strong><span>Continue to your account</span></a><a href="/signup.php"><strong>Create account</strong><span>Start a new workspace</span></a></nav>
+    <?php endif; ?>
+  </aside>
+
+  <main class="mg-app-workspace mg-account-main">
+    <?php if (!$user): ?>
+      <section class="mg-account-guest mg-app-panel"><div class="mg-app-panel-head"><div><h2>Account access</h2><p>Sign in to continue to your profile, models, security, and settings.</p></div></div><div class="mg-app-panel-body"><div class="mg-action-row"><a class="mg-btn mg-btn-primary" href="/signin.php">Sign in</a><a class="mg-btn mg-btn-ghost" href="/signup.php">Create account</a></div></div></section>
+    <?php elseif ($accountView === 'profile'): ?>
+      <?php require __DIR__ . '/includes/account/profile-moderation-owner.php'; ?>
+      <?php require __DIR__ . '/includes/account/profile-editor.php'; ?>
+    <?php elseif ($accountView === 'models'): ?>
+      <section class="mg-app-panel mg-account-pane is-active" data-account-pane="models"><div class="mg-app-panel-head"><div><h2>Identity onboarding</h2><p>Request the models you want to operate as. Approval-gated models keep the platform clean before commerce is added.</p></div></div><div class="mg-app-panel-body"><div class="mg-model-list" data-user-model-list><p class="mg-muted">Loading models…</p></div></div></section>
+    <?php elseif ($accountView === 'security'): ?>
+      <section class="mg-app-panel mg-account-pane is-active" data-account-pane="security"><div class="mg-app-panel-head"><div><h2>Security &amp; sessions</h2><p>Review active sessions and revoke access if a device is lost, shared, or suspicious.</p></div></div><div class="mg-app-panel-body"><div class="mg-action-row"><button class="mg-btn mg-btn-ghost" type="button" data-session-revoke="all_except_current">Sign out other devices</button><button class="mg-btn mg-btn-soft" type="button" data-session-revoke="current">Sign out this device</button><button class="mg-btn mg-btn-soft" type="button" data-session-revoke="all">Sign out everywhere</button></div><div class="mg-session-list" data-account-sessions><p class="mg-muted">Loading sessions…</p></div></div></section>
+    <?php elseif ($accountView === 'access'): ?>
+      <section class="mg-app-panel mg-account-pane is-active" data-account-pane="access"><div class="mg-app-panel-head"><div><h2>Access profile</h2><p>Your current session is hydrated from the Stage 1 auth and permission layer.</p></div></div><div class="mg-app-panel-body"><div class="mg-account-section"><h3>Roles</h3><?php if ($roles): ?><div class="mg-chip-list"><?php foreach ($roles as $role): ?><span class="mg-chip"><?= mg_e($role) ?></span><?php endforeach; ?></div><?php else: ?><p class="mg-muted">No roles are attached to this session yet.</p><?php endif; ?></div><div class="mg-account-section"><h3>Permissions</h3><?php if ($permissions): ?><div class="mg-permission-list"><?php foreach ($permissions as $permission): ?><span><?= mg_e($permission) ?></span><?php endforeach; ?></div><?php else: ?><p class="mg-muted">No explicit permissions are attached to this session yet.</p><?php endif; ?></div></div></section>
+    <?php elseif ($accountView === 'profile_moderation' && $canViewProfileModeration): ?>
+      <?php require __DIR__ . '/includes/account/profile-moderation.php'; ?>
+    <?php elseif ($accountView === 'profile_moderation'): ?>
+      <section class="mg-app-panel mg-account-pane is-active"><div class="mg-app-panel-head"><div><h2>Moderation access is not active.</h2><p>This account does not have profile moderation permission.</p></div></div><div class="mg-app-panel-body"><a class="mg-btn mg-btn-ghost" href="/account.php">Back to account</a></div></section>
+    <?php elseif ($hasAdminAccess): ?>
+      <?php require __DIR__ . '/includes/account/admin-dashboard.php'; ?>
+    <?php else: ?>
+      <section class="mg-app-panel mg-account-pane is-active"><div class="mg-app-panel-head"><div><h2>Admin access is not active.</h2><p>This account does not have an administrative permission.</p></div></div><div class="mg-app-panel-body"><a class="mg-btn mg-btn-ghost" href="/account.php">Back to account</a></div></section>
+    <?php endif; ?>
+  </main>
+</section>
+<?php require __DIR__ . '/includes/footer.php'; ?>

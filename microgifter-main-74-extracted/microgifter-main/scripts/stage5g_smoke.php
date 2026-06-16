@@ -1,0 +1,2 @@
+<?php
+declare(strict_types=1);if(PHP_SAPI!=='cli'){http_response_code(404);exit('Not found.');}$required=['api/merchant/claims-dashboard.php','api/merchant/claim-detail.php','api/merchant/claim-exception.php','api/merchant/claim-code-action.php','includes/merchant-claims-view.php','includes/merchant-claim-detail-view.php','assets/js/merchant-claims.js','assets/css/merchant-claims.css'];foreach($required as $file){if(!is_file(dirname(__DIR__).'/'.$file)){fwrite(STDERR,"Missing {$file}\n");exit(1);}}echo "Stage 5G claim operations files present.\n";

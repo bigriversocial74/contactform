@@ -1,0 +1,208 @@
+name: Storefront Product Management Validation
+
+on:
+  push:
+    branches: [production-storefront-product-management-ui-foundation]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'merchant-storefront.php'
+      - 'merchant-storefront-preview.php'
+      - 'merchant-products.php'
+      - 'merchant-product.php'
+      - 'merchant-media.php'
+      - 'includes/merchant-storefront-view.php'
+      - 'includes/merchant-storefront-preview-view.php'
+      - 'includes/merchant-products-view.php'
+      - 'includes/merchant-product-detail-view.php'
+      - 'api/merchant/_storefront.php'
+      - 'api/merchant/storefront.php'
+      - 'api/merchant/storefront-preview.php'
+      - 'api/merchant/products.php'
+      - 'api/merchant/product.php'
+      - 'api/merchant/assets.php'
+      - 'api/catalog/builder-draft.php'
+      - 'api/catalog/upload.php'
+      - 'assets/js/merchant-storefront.js'
+      - 'assets/js/merchant-products.js'
+      - 'assets/css/merchant-storefront.css'
+      - 'assets/css/merchant-products.css'
+      - 'scripts/validate_storefront_product_management_behavior.php'
+      - 'tests/phpunit/ProductionStorefrontProductManagementUiFoundationTest.php'
+      - 'tests/browser/storefront-product-management-foundation.spec.js'
+      - 'docs/production/storefront-product-management-ui-foundation.md'
+      - 'composer.json'
+      - '.github/workflows/storefront-product-management-validation.yml'
+
+permissions:
+  contents: read
+  statuses: write
+
+concurrency:
+  group: storefront-product-management-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: microgifter_test
+          MYSQL_USER: microgifter_test
+          MYSQL_PASSWORD: microgifter_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+    env:
+      MG_TEST_BASE_URL: http://127.0.0.1:8080
+      MG_TEST_SKIP_AUTHENTICATED: '1'
+      MG_RUN_STOREFRONT_PRODUCT_BEHAVIOR: '1'
+      MG_APP_ENV: testing
+      MG_DEBUG: '0'
+      MG_BASE_URL: http://127.0.0.1:8080
+      MG_SESSION_NAME: mg_storefront_product_test_session
+      MG_DB_HOST: 127.0.0.1
+      MG_DB_NAME: microgifter_test
+      MG_DB_USER: microgifter_test
+      MG_DB_PASS: microgifter_test
+      MG_DB_CHARSET: utf8mb4
+      MG_PAYMENT_PROVIDER: sandbox
+      MG_PAYMENT_MODE: test
+      MG_PAYMENT_WEBHOOK_SECRET: validation-payment-secret
+      MG_PAYMENT_SANDBOX_SECRET: validation-sandbox-secret
+      MG_CLAIM_CODE_PEPPER: validation-claim-code-pepper
+      MG_MEDIA_SIGNING_SECRET: validation-media-secret
+      MG_DISTRIBUTION_HASH_SECRET: validation-distribution-secret
+      MG_DISTRIBUTION_WEBHOOK_SECRET: validation-distribution-webhook-secret
+      MG_MERCHANT_INVITE_SECRET: validation-merchant-secret
+      MG_REPORT_EMAIL_SECRET: validation-report-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: curl,fileinfo,json,mbstring,pdo,pdo_mysql
+          coverage: none
+          tools: composer
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: npm install --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Validate changed syntax
+        run: |
+          php -l api/merchant/_storefront.php
+          php -l api/merchant/storefront.php
+          php -l api/merchant/storefront-preview.php
+          php -l api/merchant/products.php
+          php -l api/merchant/product.php
+          php -l api/merchant/assets.php
+          php -l api/catalog/builder-draft.php
+          php -l api/catalog/upload.php
+          php -l includes/merchant-storefront-view.php
+          php -l includes/merchant-storefront-preview-view.php
+          php -l includes/merchant-products-view.php
+          php -l includes/merchant-product-detail-view.php
+          php -l scripts/validate_storefront_product_management_behavior.php
+          php -l tests/phpunit/ProductionStorefrontProductManagementUiFoundationTest.php
+          node --check assets/js/merchant-storefront.js
+          node --check assets/js/merchant-products.js
+          node --check tests/browser/storefront-product-management-foundation.spec.js
+      - name: Configure MySQL schema prerequisites
+        run: mysql -h 127.0.0.1 -uroot -proot -e "SET GLOBAL log_bin_trust_function_creators = 1;"
+      - name: Apply complete ordered schema
+        run: |
+          mkdir -p build
+          php scripts/build_full_upgrade_sql.php build/microgifter_full_upgrade.sql
+          set +e
+          mysql -h 127.0.0.1 -umicrogifter_test -pmicrogifter_test microgifter_test < build/microgifter_full_upgrade.sql > build/schema.log 2>&1
+          status=$?
+          cat build/schema.log
+          exit "$status"
+      - name: Validate storefront and product behavior
+        run: |
+          set +e
+          composer test-storefront-product-management-behavior > build/storefront-product-behavior.log 2>&1
+          status=$?
+          cat build/storefront-product-behavior.log
+          exit "$status"
+      - name: Validate storefront and product contracts
+        run: |
+          set +e
+          vendor/bin/phpunit --configuration phpunit.xml.dist --filter ProductionStorefrontProductManagementUiFoundationTest > build/storefront-product-contracts.log 2>&1
+          status=$?
+          cat build/storefront-product-contracts.log
+          exit "$status"
+      - name: Validate frontend contracts
+        run: |
+          set +e
+          composer test-frontend-contracts > build/frontend-contracts.log 2>&1
+          status=$?
+          cat build/frontend-contracts.log
+          exit "$status"
+      - name: Start PHP test server
+        run: |
+          php -S 127.0.0.1:8080 -t . > /tmp/microgifter-storefront-product-server.log 2>&1 &
+          echo $! > /tmp/microgifter-storefront-product-server.pid
+          for attempt in {1..20}; do
+            curl --fail --silent --show-error http://127.0.0.1:8080/api/health.php >/tmp/microgifter-storefront-product-health.json && exit 0
+            sleep 1
+          done
+          cat /tmp/microgifter-storefront-product-server.log
+          exit 1
+      - name: Validate repository PHPUnit suite
+        run: |
+          set +e
+          composer test > build/repository-phpunit.log 2>&1
+          status=$?
+          cat build/repository-phpunit.log
+          exit "$status"
+      - name: Validate focused browser behavior
+        run: npx playwright test tests/browser/storefront-product-management-foundation.spec.js
+      - name: Validate browser regression suite
+        run: npm run test:browser
+      - name: Show PHP server log on failure
+        if: failure()
+        run: cat /tmp/microgifter-storefront-product-server.log || true
+      - name: Stop PHP test server
+        if: always()
+        run: if [ -f /tmp/microgifter-storefront-product-server.pid ]; then kill "$(cat /tmp/microgifter-storefront-product-server.pid)" || true; fi
+      - name: Upload storefront product diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: storefront-product-management-diagnostics
+          path: |
+            build/schema.log
+            build/storefront-product-behavior.log
+            build/storefront-product-contracts.log
+            build/frontend-contracts.log
+            build/repository-phpunit.log
+            playwright-report
+            test-results
+          retention-days: 7
+          if-no-files-found: warn
+      - name: Publish branch validation status
+        if: ${{ always() && github.event_name == 'push' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const success = '${{ job.status }}' === 'success';
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? 'success' : 'failure',
+              context: 'storefront-product-management-branch-validation',
+              target_url: `${process.env.GITHUB_SERVER_URL}/${context.repo.owner}/${context.repo.repo}/actions/runs/${process.env.GITHUB_RUN_ID}`,
+              description: success ? 'Storefront and product management validation passed.' : 'Storefront and product management validation failed.'
+            });

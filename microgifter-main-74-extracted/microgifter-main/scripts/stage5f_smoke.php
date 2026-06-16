@@ -1,0 +1,2 @@
+<?php
+declare(strict_types=1);if(PHP_SAPI!=='cli'){http_response_code(404);exit('Not found.');}$required=['api/merchant/intelligence-dashboard.php','api/merchant/reports.php','includes/merchant-intelligence-view.php','assets/js/merchant-intelligence.js','assets/css/merchant-intelligence.css'];foreach($required as $file){if(!is_file(dirname(__DIR__).'/'.$file)){fwrite(STDERR,"Missing {$file}\n");exit(1);}}echo "Stage 5F merchant intelligence files present.\n";

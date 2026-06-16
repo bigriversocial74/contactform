@@ -1,0 +1,53 @@
+{
+  "name": "microgifter/platform",
+  "description": "Microgifter PHP platform foundation.",
+  "type": "project",
+  "license": "proprietary",
+  "require": {
+    "php": ">=8.1",
+    "ext-json": "*",
+    "ext-pdo": "*",
+    "ext-curl": "*",
+    "ext-mbstring": "*"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^10.5"
+  },
+  "scripts": {
+    "test": "phpunit --configuration phpunit.xml.dist",
+    "test-security": "phpunit --configuration phpunit.xml.dist --filter SecurityFoundationTest",
+    "test-frontend-contracts": "php scripts/validate_frontend_contracts.php",
+    "test-money-behavior": "php scripts/validate_money_behavior.php",
+    "test-microgift-behavior": "php scripts/validate_microgift_behavior.php",
+    "test-tip-behavior": "php scripts/validate_tip_behavior.php",
+    "test-tip-payment-behavior": "php scripts/validate_tip_payment_behavior.php",
+    "test-tip-recovery-behavior": "php scripts/validate_tip_recovery_behavior.php",
+    "test-subscription-recovery-behavior": "php scripts/validate_subscription_recovery_behavior.php",
+    "test-public-profile-behavior": "php scripts/validate_public_profile_behavior.php",
+    "test-admin-dashboard-behavior": "php scripts/validate_admin_dashboard_behavior.php",
+    "test-profile-editor-behavior": "php scripts/validate_profile_editor_behavior.php",
+    "test-profile-moderation-behavior": "php scripts/validate_profile_moderation_behavior.php",
+    "test-storefront-product-management-behavior": "php scripts/validate_storefront_product_management_behavior.php",
+    "test-profile-discovery-behavior": "php scripts/validate_profile_discovery_behavior.php",
+    "test-engagement-mutations-behavior": "php scripts/validate_engagement_mutations_behavior.php",
+    "test-social-feed-publishing-behavior": "php scripts/validate_social_feed_publishing_behavior.php",
+    "test-prepaid-demand-behavior": "php scripts/validate_prepaid_demand_behavior.php",
+    "test-agent-strategy-control-behavior": "php scripts/validate_agent_strategy_control_behavior.php",
+    "test-agent-approval-center-behavior": "php scripts/validate_agent_approval_center_behavior.php",
+    "test-demand-orchestration-behavior": "php scripts/validate_demand_orchestration_behavior.php",
+    "test-demand-orchestration-operations": "php scripts/validate_demand_orchestration_operations_behavior.php",
+    "test-demand-orchestration-recovery": "php scripts/validate_demand_orchestration_recovery_behavior.php",
+    "test-checkout-fulfillment": "php scripts/validate_checkout_capture_behavior.php",
+    "preflight": "bash scripts/preflight.sh",
+    "validate-branch": "bash scripts/preflight.sh",
+    "validate-foundation": [
+      "@test-security",
+      "@test-frontend-contracts",
+      "@test"
+    ],
+    "migrate": "php scripts/run_migrations.php"
+  },
+  "config": {
+    "sort-packages": true
+  }
+}

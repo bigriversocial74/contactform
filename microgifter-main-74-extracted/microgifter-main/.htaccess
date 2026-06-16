@@ -1,0 +1,49 @@
+# Microgifter root Apache protection
+# Keep this file when deploying on Apache/cPanel-style hosting.
+
+Options -Indexes
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Load the PHP landing page when the domain root is requested.
+  RewriteRule ^$ index.php [L]
+
+  # Clean public profile route aliases.
+  RewriteRule ^p/([A-Za-z0-9-]+)/?$ profile.php?slug=$1 [L,QSA]
+  RewriteRule ^@([A-Za-z0-9-]+)/?$ profile.php?slug=$1 [L,QSA]
+
+  # URL-friendly public profile route: microgifter.com/username
+  # Reserved system paths and real files/directories are excluded.
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_URI} !^/(api|assets|docs|database|tests|includes|scripts)(/|$) [NC]
+  RewriteCond %{REQUEST_URI} !^/(index|account|agent|build|builder|signin|signup|logout|profile)(\.php)?/?$ [NC]
+  RewriteRule ^([A-Za-z0-9-]+)/?$ profile.php?slug=$1 [L,QSA]
+
+  # Prototype HTML files are no longer active runtime pages.
+  # Return 410 Gone so old static URLs are treated as non-existent.
+  RewriteRule ^index\.html$ - [G,L]
+  RewriteRule ^agent\.html$ - [G,L]
+  RewriteRule ^build\.html$ - [G,L]
+  RewriteRule ^builder\.html$ - [G,L]
+  RewriteRule ^signin\.html$ - [G,L]
+  RewriteRule ^signup\.html$ - [G,L]
+
+  # Block direct web access to source-of-truth docs, SQL, tests, scripts, and internal includes.
+  RewriteRule ^docs/ - [F,L]
+  RewriteRule ^database/ - [F,L]
+  RewriteRule ^tests/ - [F,L]
+  RewriteRule ^includes/ - [F,L]
+  RewriteRule ^scripts/ - [F,L]
+
+  # Block common local environment files if accidentally uploaded.
+  RewriteRule (^|/)\.env$ - [F,L]
+  RewriteRule (^|/)\.env\..*$ - [F,L]
+</IfModule>
+
+<FilesMatch "(^\.env|composer\.(json|lock)|package(-lock)?\.json|.*\.sql)$">
+  Require all denied
+</FilesMatch>

@@ -1,0 +1,1 @@
+02B complete. Added includes/user_models.php and updated api/bootstrap.php so user models are loaded, customer model is assigned with the customer role, and current user payloads include models.

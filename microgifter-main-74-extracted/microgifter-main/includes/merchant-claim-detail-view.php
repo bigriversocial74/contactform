@@ -1,0 +1,2 @@
+<?php declare(strict_types=1);$identifier=trim((string)($_GET['id']??'')); ?>
+<section class="mg-merchant-heading"><div><span class="mg-eyebrow">Claim record</span><h1 data-claim-detail-title>Loading claim</h1><p data-claim-detail-subtitle><?= mg_e($identifier) ?></p></div><a class="mg-btn mg-btn-soft" href="/merchant-claims.php">Back to claims</a></section><div class="mg-claim-detail" data-claim-detail data-claim-id="<?= mg_e($identifier) ?>"></div>

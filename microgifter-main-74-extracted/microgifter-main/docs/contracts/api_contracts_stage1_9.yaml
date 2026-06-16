@@ -1,0 +1,113 @@
+version: 2
+scope: stages_1_9
+standard_rules:
+  writes:
+    require_authentication: true
+    require_csrf: true
+    require_idempotency_for_financial_or_ownership_effects: true
+    generic_security_errors: true
+  reads:
+    require_object_scope: true
+    never_return: [raw_credentials, credential_hashes, payment_secrets, storage_keys]
+  responses:
+    format: mg_ok_or_mg_fail
+
+enforcement_scope:
+  - /api/microgifts/
+  - /api/account/microgifts.php
+  - /api/merchant/microgifts.php
+  - /api/admin/microgift-
+  - /api/library/download.php
+
+contracts:
+  GET|POST /api/microgifts/templates.php:
+    domain: microgifts
+    auth: required
+    permission_on_write: microgift.templates.manage
+    csrf_on_write: true
+    source_of_truth: [microgift_templates]
+    emits_on_write: [microgift.template_created]
+  POST /api/microgifts/versions.php:
+    domain: microgifts
+    permission: microgift.templates.manage
+    csrf: true
+    source_of_truth: [microgift_template_versions]
+    emits: [microgift.template_version_published]
+  POST /api/microgifts/issue.php:
+    domain: microgifts
+    permission: microgift.instances.issue
+    csrf: true
+    idempotency: required
+    source_of_truth: [commerce_order_items, microgift_templates, microgift_template_versions, pppm_items]
+    emits: [microgift.instance_issued]
+  GET /api/microgifts/instances.php:
+    domain: microgifts
+    auth: required
+    object_scope: owner_or_recipient_or_issuer
+    source_of_truth: [microgift_instances]
+  POST /api/microgifts/claim.php:
+    domain: microgifts
+    auth: required
+    csrf: true
+    idempotency: required
+    source_of_truth: [microgift_instances, microgift_credentials, pppm_items, entitlements]
+    required_services: [mg_pppm_transfer_owner_canonical]
+    emits: [microgift.claim_completed, pppm.owner_transferred]
+  POST /api/microgifts/redeem.php:
+    domain: microgifts
+    auth: required
+    csrf: true
+    idempotency: required
+    source_of_truth: [microgift_instances, pppm_items]
+    required_services: [mg_pppm_redeem]
+    emits: [microgift.redemption_completed, pppm.redeemed]
+  POST /api/microgifts/payment-policy.php:
+    domain: microgifts
+    permission: microgift.lifecycle.manage
+    csrf: true
+    idempotency: required
+    source_of_truth: [commerce_order_items, microgift_instances, microgift_lifecycle_actions]
+  GET /api/account/microgifts.php:
+    domain: account
+    auth: required
+    object_scope: owner_or_recipient_or_issuer
+    source_of_truth: [microgift_instances, pppm_items, entitlements]
+  GET /api/merchant/microgifts.php:
+    domain: merchant_operations
+    permission: microgift.operations.view
+    object_scope: template_owner_user_id
+    source_of_truth: [microgift_templates, microgift_instances, microgift_claims, microgift_redemptions]
+  GET|POST /api/admin/microgift-reviews.php:
+    domain: admin_operations
+    permission: microgift.reviews.manage
+    csrf_on_write: true
+    source_of_truth: [microgift_review_items]
+  GET /api/admin/microgift-inspect.php:
+    domain: admin_operations
+    permission: microgift.reviews.manage
+    source_of_truth: [microgift_instances, microgift_events, microgift_claims, microgift_redemptions, microgift_lifecycle_actions]
+  POST /api/admin/microgift-lifecycle.php:
+    domain: admin_operations
+    permission: microgift.lifecycle.manage
+    csrf: true
+    idempotency: required
+    source_of_truth: [microgift_lifecycle_actions, microgift_instances]
+  POST /api/admin/microgift-replace.php:
+    domain: admin_operations
+    permission: microgift.lifecycle.manage
+    csrf: true
+    idempotency: required
+    source_of_truth: [microgift_instances, microgift_credentials, microgift_lifecycle_actions]
+  GET /api/library/download.php:
+    domain: library_access
+    auth: required
+    object_scope: active_entitlement_owner
+    source_of_truth: [entitlements, pppm_items, catalog_assets]
+    never_return: [storage_key]
+
+validation_policy:
+  - Contract changes should be additive unless a stage closeout explicitly approves a breaking change.
+  - Every endpoint in enforcement_scope must be represented in contracts.
+  - Every write endpoint must contain an authentication or permission gate and CSRF validation.
+  - Any endpoint that moves ownership must use a canonical ownership service, not direct table mutation.
+  - Any endpoint that redeems PPPM value must use a canonical PPPM redemption service.

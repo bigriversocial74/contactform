@@ -1,0 +1,85 @@
+:root{--mg-app-header:58px;--mg-app-sidebar:280px;--mg-app-utility:340px;--mg-app-bg:#f3f7fc;--mg-app-sidebar-bg:#fbfdff;--mg-app-surface:#fff;--mg-app-border:#d8e4f4;--mg-app-muted:#60728f;--mg-app-text:#071225;--mg-app-blue:#2563eb;--mg-app-radius:18px;--mg-app-shadow:0 1px 2px rgba(15,23,42,.04)}
+.mg-app-page{background:var(--mg-app-bg)}
+.mg-app-page .mg-site-footer{display:none}
+.mg-app-page .mg-unified-header{position:fixed!important;top:0!important;left:var(--mg-app-sidebar)!important;width:calc(100% - var(--mg-app-sidebar))!important;z-index:300!important}
+.mg-app-page .mg-main{min-height:100svh;background:var(--mg-app-bg)}
+.mg-app-shell{min-height:100svh;padding-left:var(--mg-app-sidebar);padding-top:var(--mg-app-header);display:grid;grid-template-columns:minmax(0,1fr);background:var(--mg-app-bg)}
+.mg-app-shell.has-utility{grid-template-columns:minmax(0,1fr) var(--mg-app-utility)}
+.mg-app-sidebar{position:fixed;inset:0 auto 0 0;width:var(--mg-app-sidebar);height:100svh;padding:16px;border-right:1px solid var(--mg-app-border);background:var(--mg-app-sidebar-bg);overflow:auto;z-index:320}
+.mg-app-sidebar-brand{height:42px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.mg-app-sidebar-brand .mg-brand{font-size:24px;letter-spacing:-.05em}
+.mg-app-sidebar-brand .mg-brand-mark{width:36px;height:36px}
+.mg-app-sidebar-brand-badge{min-height:28px;padding:0 10px;border:1px solid #bfd2f4;border-radius:999px;background:#eef5ff;color:#1455d9;display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;white-space:nowrap}
+.mg-app-sidebar-brand-badge::before{content:"";width:6px;height:6px;border-radius:50%;background:#2563eb}
+.crm-add-user-button{width:34px;height:34px;border:1px solid #bfd2f4;border-radius:10px;background:#eef5ff;color:#1455d9;display:grid;place-items:center;font-size:22px;font-weight:400;line-height:1;box-shadow:var(--mg-app-shadow)}
+.crm-add-user-button:hover,.crm-add-user-button.is-active{background:#2563eb;border-color:#2563eb;color:#fff}
+.mg-app-workspace{min-width:0;padding:14px;overflow:auto}
+.mg-app-utility{position:sticky;top:var(--mg-app-header);height:calc(100svh - var(--mg-app-header));border-left:1px solid var(--mg-app-border);background:var(--mg-app-sidebar-bg);overflow:auto}
+.mg-app-panel{border:1px solid var(--mg-app-border);border-radius:var(--mg-app-radius);background:var(--mg-app-surface);box-shadow:var(--mg-app-shadow);overflow:hidden}
+.mg-app-panel-head{padding:16px;border-bottom:1px solid var(--mg-app-border);display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.mg-app-panel-head h1,.mg-app-panel-head h2{margin:0;color:var(--mg-app-text);font-size:18px;letter-spacing:-.035em}
+.mg-app-panel-head p{margin:5px 0 0;color:var(--mg-app-muted);font-size:12px;line-height:1.5}
+.mg-app-panel-body{padding:16px}
+.mg-app-sidebar-card{padding:14px;border:1px solid var(--mg-app-border);border-radius:16px;background:#fff;box-shadow:var(--mg-app-shadow)}
+.mg-app-sidebar-card h2{margin:0;font-size:17px;letter-spacing:-.03em}
+.mg-app-sidebar-card p{margin:5px 0 0;color:var(--mg-app-muted);font-size:12px;line-height:1.5}
+.mg-app-side-section{margin-top:14px;padding-top:14px;border-top:1px solid var(--mg-app-border)}
+.mg-app-side-section>h3{margin:0 0 8px;color:var(--mg-app-muted);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.mg-app-side-nav{display:grid;gap:7px}
+.mg-app-side-nav a,.mg-app-side-nav button{min-height:48px;padding:9px 11px;border:1px solid var(--mg-app-border);border-radius:13px;background:#fff;color:#122039;display:grid;align-content:center;gap:2px;text-align:left;box-shadow:var(--mg-app-shadow)}
+.mg-app-side-nav strong{font-size:12px}.mg-app-side-nav span{font-size:11px;color:var(--mg-app-muted)}
+.mg-app-side-nav .is-active{background:#eff6ff;border-color:#b9d1fb;color:#1d4ed8;box-shadow:inset 3px 0 0 #2563eb}
+.mg-app-tabs{height:58px;display:flex;align-items:flex-end;gap:4px;overflow-x:auto;scrollbar-width:none}
+.mg-app-tab{min-height:48px;min-width:96px;padding:0 14px;border:1px solid var(--mg-app-border);border-bottom-color:transparent;border-radius:8px 8px 0 0;background:#f2f6fb;color:#1e2f49;font-size:13px;font-weight:750;display:flex;align-items:center;justify-content:center;white-space:nowrap}
+.mg-app-tab.is-active{background:#fff;color:var(--mg-app-blue);border-bottom-color:#fff}
+.mg-app-search{position:relative;min-width:0;flex:1}
+.mg-app-search input{width:100%;height:40px;border:1px solid var(--mg-app-border);border-radius:999px;background:#fff;padding:0 15px;font-size:13px;outline:none}
+.mg-app-search input:focus{border-color:#93b4eb;box-shadow:0 0 0 3px rgba(37,99,235,.08)}
+.mg-app-composer{position:sticky;bottom:0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px 14px;border-top:1px solid var(--mg-app-border);background:#f8fbff}
+.mg-app-composer input{height:44px;border:1px solid var(--mg-app-border);border-radius:999px;padding:0 16px;outline:none;background:#fff}
+.mg-header-mobile-brand{display:none!important}
+.mg-mobile-menu-toggle{display:none;width:40px;height:40px;padding:0;border:1px solid var(--mg-app-border);border-radius:11px;background:#fff;color:#172236;align-items:center;justify-content:center;flex-direction:column;gap:4px;box-shadow:0 8px 20px rgba(15,23,42,.05)}
+.mg-mobile-menu-toggle span{width:17px;height:2px;border-radius:99px;background:currentColor;transition:.18s ease}
+.mg-mobile-sidebar-backdrop{display:none;position:fixed;inset:58px 0 0;background:rgba(7,18,37,.38);backdrop-filter:blur(2px);z-index:309}
+body.mg-mobile-sidebar-open{overflow:hidden}
+@media(max-width:1180px){
+  .mg-app-shell.has-utility{grid-template-columns:minmax(0,1fr)}
+  .mg-app-utility{position:relative;top:auto;height:auto;grid-column:auto;border-left:0;border-top:1px solid var(--mg-app-border)}
+}
+@media(max-width:980px){
+  .mg-app-page .mg-unified-header{left:0!important;width:100%!important;height:58px!important;min-height:58px!important;padding:0 10px!important;overflow:visible!important}
+  .mg-app-page .mg-header-left{gap:8px!important;min-width:0!important}
+  .mg-mobile-menu-toggle{display:flex}
+  .mg-mobile-sidebar-backdrop{display:block;opacity:0;visibility:hidden;pointer-events:none;transition:.2s ease}
+  body.mg-mobile-sidebar-open .mg-mobile-sidebar-backdrop{opacity:1;visibility:visible;pointer-events:auto}
+  .mg-app-shell,.mg-app-shell.has-utility{padding-left:0;grid-template-columns:1fr}
+  .mg-app-sidebar{display:block;top:58px;bottom:0;height:auto;width:min(310px,86vw);padding:14px;transform:translateX(-105%);transition:transform .22s ease;box-shadow:20px 0 55px rgba(15,23,42,.18);z-index:321}
+  .mg-app-sidebar.is-mobile-open{transform:translateX(0)}
+  .mg-app-sidebar-brand{display:none}
+  .mg-header-mobile-brand{display:inline-flex!important;font-size:20px!important;gap:8px!important;white-space:nowrap}
+  .mg-header-mobile-brand .mg-brand-mark{width:34px!important;height:34px!important;border-radius:10px!important}
+  .mg-header-mobile-brand .mg-brand-mark svg{width:18px!important;height:18px!important}
+  .mg-app-workspace{padding:10px;overflow:visible}
+  .mg-app-composer{grid-template-columns:minmax(0,1fr) auto}
+  .mg-app-tabs{width:100%}
+}
+@media(max-width:640px){
+  :root{--mg-app-header:106px}
+  .mg-section-account,.mg-section-sales{--mg-app-header:58px}
+  .mg-app-workspace{padding:8px}
+  .mg-app-panel-head{padding:14px}
+  .mg-app-panel-body{padding:14px}
+  .mg-app-tab{min-width:92px}
+  .mg-app-page .mg-header-actions{margin-left:auto!important;gap:5px!important}
+  .mg-app-page .mg-header-create{display:none!important}
+  .mg-app-page .mg-header-icon{width:36px!important;height:36px!important;border-radius:10px!important}
+  .mg-app-page .mg-header-icon svg{width:16px!important;height:16px!important}
+  .mg-app-page .mg-header-badge{right:-3px!important;top:-5px!important;min-width:17px!important;height:17px!important;font-size:8px!important}
+  .mg-app-page .mg-account-trigger{height:38px!important;min-width:40px!important;padding:0 6px!important;border-radius:10px!important}
+  .mg-app-page .mg-avatar{width:27px!important;height:27px!important}
+  .mg-app-page .mg-account-copy,.mg-app-page .mg-account-caret{display:none!important}
+  .mg-app-page .mg-account-actions{position:fixed!important;top:64px!important;right:10px!important;left:auto!important;width:min(286px,calc(100vw - 20px))!important}
+  .mg-app-composer{padding:10px;gap:8px}
+  .mg-app-composer input{height:42px;min-width:0}
+  .mg-app-composer .mg-btn{min-width:68px;height:42px;padding:0 14px}
+}

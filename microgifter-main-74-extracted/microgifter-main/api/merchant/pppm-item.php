@@ -1,0 +1,27 @@
+<?php
+declare(strict_types=1);
+require_once __DIR__ . '/_merchant.php';
+mg_require_method('GET');
+$user=mg_require_permission('merchant.pppm.view');
+$id=trim((string)($_GET['id']??''));
+if($id==='')mg_fail('PPPM item not found.',404);
+$pdo=mg_db();
+$stmt=$pdo->prepare("SELECT i.*,r.public_id request_id,r.source_reference request_reference,r.source_line_reference request_line_reference,r.title request_title,r.description request_description,r.funding_type request_funding_type,r.metadata_json request_metadata,s.public_id source_public_id,s.source_type,s.provider,s.name source_name FROM pppm_items i INNER JOIN pppm_issuance_requests r ON r.id=i.issuance_request_id INNER JOIN pppm_sources s ON s.id=i.source_id WHERE i.public_id=? AND i.merchant_user_id=? LIMIT 1");
+$stmt->execute([$id,(int)$user['id']]);
+$item=$stmt->fetch();
+if(!$item)mg_fail('PPPM item not found.',404);
+$events=$pdo->prepare('SELECT event_type,from_status,to_status,actor_user_id,metadata_json,created_at FROM pppm_item_events WHERE pppm_item_id=? ORDER BY created_at DESC,id DESC');
+$events->execute([(int)$item['id']]);
+$assignments=$pdo->prepare('SELECT public_id,assignment_type,from_user_id,to_user_id,to_external_id,to_name,status,accepted_at,rejected_at,cancelled_at,created_at FROM pppm_assignments WHERE pppm_item_id=? ORDER BY created_at DESC,id DESC');
+$assignments->execute([(int)$item['id']]);
+$schedules=$pdo->prepare('SELECT public_id,channel,destination,scheduled_for,timezone,status,processed_at,cancelled_at,created_at FROM pppm_delivery_schedules WHERE pppm_item_id=? ORDER BY created_at DESC,id DESC');
+$schedules->execute([(int)$item['id']]);
+$deliveries=$pdo->prepare('SELECT d.public_id,d.channel,d.destination,d.status,d.provider,d.provider_reference,d.failure_code,d.failure_message,d.queued_at,d.sent_at,d.delivered_at,d.failed_at,d.created_at,COUNT(a.id) attempt_count,MAX(a.attempt_number) last_attempt FROM pppm_deliveries d LEFT JOIN pppm_delivery_attempts a ON a.delivery_id=d.id WHERE d.pppm_item_id=? GROUP BY d.id ORDER BY d.created_at DESC');
+$deliveries->execute([(int)$item['id']]);
+$notes=$pdo->prepare('SELECT public_id,note_type,body,author_user_id,created_at FROM merchant_pppm_notes WHERE pppm_item_id=? AND merchant_user_id=? ORDER BY created_at DESC,id DESC');
+$notes->execute([(int)$item['id'],(int)$user['id']]);
+$cases=$pdo->prepare('SELECT public_id,case_type,status,priority,summary,assigned_user_id,resolved_at,closed_at,created_at,updated_at FROM merchant_pppm_cases WHERE pppm_item_id=? AND merchant_user_id=? ORDER BY created_at DESC,id DESC');
+$cases->execute([(int)$item['id'],(int)$user['id']]);
+$claimStmt=$pdo->prepare('SELECT gc.public_id,gc.status,gc.failed_attempts,gc.verified_at,gc.redeemed_at,gc.expires_at FROM pppm_legacy_gift_map m INNER JOIN gift_claims gc ON gc.gift_id=m.gift_id WHERE m.pppm_item_id=? LIMIT 1');
+$claimStmt->execute([(int)$item['id']]);
+mg_ok(['item'=>$item,'events'=>$events->fetchAll(),'assignments'=>$assignments->fetchAll(),'schedules'=>$schedules->fetchAll(),'deliveries'=>$deliveries->fetchAll(),'claim'=>$claimStmt->fetch()?:null,'cases'=>$cases->fetchAll(),'notes'=>$notes->fetchAll()]);

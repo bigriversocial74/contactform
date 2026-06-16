@@ -1,0 +1,23 @@
+<?php
+declare(strict_types=1);
+require_once __DIR__.'/_publish.php';
+
+function mg_catalog_asset_access_install(PDO $pdo): void
+{
+    $pdo->exec("CREATE TABLE IF NOT EXISTS catalog_asset_access_policies (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,product_version_asset_id BIGINT UNSIGNED NOT NULL,access_level ENUM('public','entitled','private') NOT NULL DEFAULT 'private',created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,PRIMARY KEY(id),UNIQUE KEY uq_catalog_asset_access_policy(product_version_asset_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS catalog_asset_access_grants (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,user_id BIGINT UNSIGNED NOT NULL,product_id BIGINT UNSIGNED NOT NULL,asset_id BIGINT UNSIGNED NOT NULL,source VARCHAR(80) NOT NULL DEFAULT 'entitlement',created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY(id),UNIQUE KEY uq_catalog_asset_grant(user_id,product_id,asset_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS catalog_asset_access_events (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,public_id CHAR(36) NOT NULL,user_id BIGINT UNSIGNED NULL,product_id BIGINT UNSIGNED NOT NULL,asset_id BIGINT UNSIGNED NOT NULL,decision ENUM('allowed','denied') NOT NULL,reason VARCHAR(160) NOT NULL,created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY(id),UNIQUE KEY uq_catalog_asset_access_events_public_id(public_id),KEY idx_catalog_asset_access_events_product(product_id,asset_id,created_at)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    $pdo->exec("INSERT INTO permissions (slug,name,description,created_at) VALUES ('catalog.assets.access','Access catalog assets','Authorize protected catalog asset access.',NOW()) ON DUPLICATE KEY UPDATE name=VALUES(name)");
+}
+function mg_catalog_asset_access_ensure(PDO $pdo): void{if(!$pdo->inTransaction()){mg_catalog_publish_install($pdo);mg_catalog_asset_access_install($pdo);}}
+function mg_catalog_set_asset_policy(PDO $pdo,int $versionAssetId,string $level): void{mg_catalog_asset_access_ensure($pdo);if(!in_array($level,['public','entitled','private'],true))throw new MgCatalogPublishException('Unsupported asset policy.',422);$pdo->prepare('INSERT INTO catalog_asset_access_policies (product_version_asset_id,access_level,created_at,updated_at) VALUES (?,?,NOW(),NOW()) ON DUPLICATE KEY UPDATE access_level=VALUES(access_level),updated_at=NOW()')->execute([$versionAssetId,$level]);}
+function mg_catalog_grant_asset_policy(PDO $pdo,int $userId,int $productId,int $assetId,string $source='entitlement'): void{mg_catalog_asset_access_ensure($pdo);$pdo->prepare('INSERT IGNORE INTO catalog_asset_access_grants (user_id,product_id,asset_id,source,created_at) VALUES (?,?,?,?,NOW())')->execute([$userId,$productId,$assetId,$source]);}
+function mg_catalog_can_view_asset(PDO $pdo,?int $viewerId,string $productPublicId,string $assetPublicId): array
+{
+    mg_catalog_asset_access_ensure($pdo);
+    $sql="SELECT p.id product_id,p.status product_status,ms.state moderation_state,a.id asset_id,a.status asset_status,ap.access_level FROM catalog_products p INNER JOIN catalog_product_versions v ON v.id=p.current_version_id INNER JOIN catalog_product_version_assets pva ON pva.product_version_id=v.id INNER JOIN catalog_assets a ON a.id=pva.asset_id LEFT JOIN catalog_moderation_states ms ON ms.product_id=p.id LEFT JOIN catalog_asset_access_policies ap ON ap.product_version_asset_id=pva.id WHERE p.public_id=? AND a.public_id=? LIMIT 1";
+    $stmt=$pdo->prepare($sql);$stmt->execute([$productPublicId,$assetPublicId]);$row=$stmt->fetch(PDO::FETCH_ASSOC);$allowed=false;$reason='not_found';
+    if($row){$level=(string)($row['access_level']??'private');$reason='not_published';if($row['product_status']==='published'&&$row['moderation_state']==='approved'&&$row['asset_status']==='ready'){$reason='private';if($level==='public'){$allowed=true;$reason='public';}elseif($viewerId&&$level==='entitled'&&(int)mg_catalog_pub_scalar($pdo,'SELECT COUNT(*) FROM catalog_asset_access_grants WHERE user_id=? AND product_id=? AND asset_id=?',[$viewerId,(int)$row['product_id'],(int)$row['asset_id']])>0){$allowed=true;$reason='entitled';}}}
+    if($row)$pdo->prepare('INSERT INTO catalog_asset_access_events (public_id,user_id,product_id,asset_id,decision,reason,created_at) VALUES (?,?,?,?,?,?,NOW())')->execute([mg_public_uuid(),$viewerId,(int)$row['product_id'],(int)$row['asset_id'],$allowed?'allowed':'denied',$reason]);
+    return ['allowed'=>$allowed,'reason'=>$reason];
+}
