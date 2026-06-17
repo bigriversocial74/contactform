@@ -1,0 +1,21 @@
+<?php
+declare(strict_types=1);
+require_once __DIR__ . '/_merchant.php';
+mg_require_method('POST');
+$user=mg_require_permission('merchant.pppm.case.manage');
+$input=mg_input();
+mg_require_csrf_for_write($input);
+$itemId=trim((string)($input['item_id']??''));
+$body=trim((string)($input['body']??''));
+$type=trim((string)($input['note_type']??'internal'));
+if($body===''||mb_strlen($body)>5000)mg_fail('Invalid note.',422);
+if(!in_array($type,['internal','customer_contact','merchant_action','system_followup'],true))mg_fail('Invalid note type.',422);
+$pdo=mg_db();
+$stmt=$pdo->prepare('SELECT id FROM pppm_items WHERE public_id=? AND merchant_user_id=? LIMIT 1');
+$stmt->execute([$itemId,(int)$user['id']]);
+$itemDbId=$stmt->fetchColumn();
+if(!$itemDbId)mg_fail('PPPM item not found.',404);
+$public=mg_merchant_uuid();
+$pdo->prepare('INSERT INTO merchant_pppm_notes (public_id,merchant_user_id,pppm_item_id,author_user_id,note_type,body,created_at) VALUES (?,?,?,?,?,?,NOW())')->execute([$public,(int)$user['id'],(int)$itemDbId,(int)$user['id'],$type,$body]);
+mg_audit('merchant.pppm_note_created','pppm_item',['item_id'=>$itemId,'note_id'=>$public],(int)$user['id']);
+mg_ok(['note_id'=>$public],'Operational note saved.',201);

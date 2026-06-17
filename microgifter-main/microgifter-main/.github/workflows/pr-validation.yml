@@ -1,0 +1,277 @@
+name: PR Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+      - 'screenshots/**'
+      - 'design/**'
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+      - 'screenshots/**'
+      - 'design/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validation-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: curl,fileinfo,json,mbstring,pdo
+          coverage: none
+          tools: composer
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer/files
+          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Run changed-files preflight
+        run: composer preflight -- origin/main
+
+  validate:
+    needs: preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      MG_TEST_BASE_URL: http://127.0.0.1:8080
+      MG_TEST_SKIP_AUTHENTICATED: '1'
+      MG_APP_ENV: testing
+      MG_DEBUG: '0'
+      MG_BASE_URL: http://127.0.0.1:8080
+      MG_DB_HOST: 127.0.0.1
+      MG_DB_NAME: microgifter_test
+      MG_DB_USER: microgifter_test
+      MG_DB_PASS: microgifter_test
+      MG_DB_CHARSET: utf8mb4
+      MG_SESSION_NAME: mg_test_session
+      MG_CLAIM_CODE_PEPPER: validation-claim-code-pepper
+      MG_MEDIA_SIGNING_SECRET: validation-media-secret
+      MG_DISTRIBUTION_HASH_SECRET: validation-distribution-secret
+      MG_DISTRIBUTION_WEBHOOK_SECRET: validation-distribution-webhook-secret
+      MG_MERCHANT_INVITE_SECRET: validation-merchant-secret
+      MG_REPORT_EMAIL_SECRET: validation-report-secret
+      MG_PAYMENT_PROVIDER: sandbox
+      MG_PAYMENT_MODE: test
+      MG_PAYMENT_WEBHOOK_SECRET: validation-payment-secret
+      MG_PAYMENT_SANDBOX_SECRET: validation-sandbox-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: curl,fileinfo,json,mbstring,pdo,pdo_mysql
+          coverage: none
+          tools: composer
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer/files
+          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+      - run: composer validate --strict
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Validate stable frontend contracts
+        run: composer test-frontend-contracts
+      - run: find . -type f -name '*.php' -not -path './vendor/*' -print0 | xargs -0 -n1 php -l
+      - name: Build complete ordered upgrade SQL
+        run: |
+          php scripts/build_full_upgrade_sql.php build/microgifter_full_upgrade.sql
+          test -s build/microgifter_full_upgrade.sql
+          test -s build/microgifter_full_upgrade.manifest.json
+          test "$(wc -c < build/microgifter_full_upgrade.sql)" -gt 10000
+          grep -q -- '-- BEGIN stage_1_identity.sql' build/microgifter_full_upgrade.sql
+          grep -q -- '-- BEGIN stage_10f_architecture_deployment_action_center.sql' build/microgifter_full_upgrade.sql
+          grep -q -- '-- BEGIN stage_11g_action_center_durable_messaging.sql' build/microgifter_full_upgrade.sql
+          grep -q -- '-- BEGIN stage_11h_backend_hardening.sql' build/microgifter_full_upgrade.sql
+          grep -q -- '-- BEGIN stage_12a_tip_financial_integrity.sql' build/microgifter_full_upgrade.sql
+          grep -q -- '-- BEGIN stage_18_production_hardening_launch_readiness.sql' build/microgifter_full_upgrade.sql
+          test "$(grep -n -- '-- BEGIN stage_1_identity.sql' build/microgifter_full_upgrade.sql | cut -d: -f1)" -lt "$(grep -n -- '-- BEGIN stage_1_foundation_closure.sql' build/microgifter_full_upgrade.sql | cut -d: -f1)"
+          test "$(grep -n -- '-- BEGIN stage_3_pppm_core.sql' build/microgifter_full_upgrade.sql | cut -d: -f1)" -lt "$(grep -n -- '-- BEGIN stage_3_pppm_activity_layer.sql' build/microgifter_full_upgrade.sql | cut -d: -f1)"
+          test "$(grep -n -- '-- BEGIN stage_10f_architecture_deployment_action_center.sql' build/microgifter_full_upgrade.sql | cut -d: -f1)" -lt "$(grep -n -- '-- BEGIN stage_11g_action_center_durable_messaging.sql' build/microgifter_full_upgrade.sql | cut -d: -f1)"
+          test "$(grep -n -- '-- BEGIN stage_11g_action_center_durable_messaging.sql' build/microgifter_full_upgrade.sql | cut -d: -f1)" -lt "$(grep -n -- '-- BEGIN stage_11h_backend_hardening.sql' build/microgifter_full_upgrade.sql | cut -d: -f1)"
+          test "$(grep -n -- '-- BEGIN stage_11h_backend_hardening.sql' build/microgifter_full_upgrade.sql | cut -d: -f1)" -lt "$(grep -n -- '-- BEGIN stage_12_universal_tips.sql' build/microgifter_full_upgrade.sql | cut -d: -f1)"
+          test "$(grep -n -- '-- BEGIN stage_12_universal_tips.sql' build/microgifter_full_upgrade.sql | cut -d: -f1)" -lt "$(grep -n -- '-- BEGIN stage_12a_tip_financial_integrity.sql' build/microgifter_full_upgrade.sql | cut -d: -f1)"
+          test "$(grep -n -- '-- BEGIN stage_12a_tip_financial_integrity.sql' build/microgifter_full_upgrade.sql | cut -d: -f1)" -lt "$(grep -n -- '-- BEGIN stage_13_subscriptions_monetization.sql' build/microgifter_full_upgrade.sql | cut -d: -f1)"
+          ! grep -Eiq 'DROP[[:space:]]+(DATABASE|TABLE)|TRUNCATE[[:space:]]+TABLE|DELETE[[:space:]]+FROM[[:space:]]+`?(users|roles|permissions|role_permissions|user_roles|user_sessions)`?' build/microgifter_full_upgrade.sql
+      - name: Upload complete upgrade SQL artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: microgifter-full-upgrade-sql
+          path: |
+            build/microgifter_full_upgrade.sql
+            build/microgifter_full_upgrade.manifest.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Configure runner MySQL
+        run: |
+          sudo systemctl start mysql.service
+          run_mysql_root() {
+            if mysql -uroot -proot "$@" 2>/tmp/mysql-root.err; then return 0; fi
+            if sudo mysql -uroot -proot "$@" 2>/tmp/mysql-root.err; then return 0; fi
+            if mysql -uroot "$@" 2>/tmp/mysql-root.err; then return 0; fi
+            if sudo mysql "$@" 2>/tmp/mysql-root.err; then return 0; fi
+            cat /tmp/mysql-root.err || true
+            return 1
+          }
+          run_mysql_root -e "SELECT 1"
+          run_mysql_root <<'SQL'
+          CREATE DATABASE IF NOT EXISTS microgifter_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+          CREATE USER IF NOT EXISTS 'microgifter_test'@'localhost' IDENTIFIED BY 'microgifter_test';
+          CREATE USER IF NOT EXISTS 'microgifter_test'@'127.0.0.1' IDENTIFIED BY 'microgifter_test';
+          CREATE USER IF NOT EXISTS 'microgifter_test'@'%' IDENTIFIED BY 'microgifter_test';
+          GRANT ALL PRIVILEGES ON microgifter_test.* TO 'microgifter_test'@'localhost';
+          GRANT ALL PRIVILEGES ON microgifter_test.* TO 'microgifter_test'@'127.0.0.1';
+          GRANT ALL PRIVILEGES ON microgifter_test.* TO 'microgifter_test'@'%';
+          SET GLOBAL log_bin_trust_function_creators = 1;
+          FLUSH PRIVILEGES;
+          SQL
+      - name: Wait for MySQL
+        run: |
+          for attempt in {1..30}; do mysqladmin ping -h 127.0.0.1 -umicrogifter_test -pmicrogifter_test --silent && exit 0; sleep 1; done
+          exit 1
+      - name: Apply and validate Stage 1-10 foundation
+        run: |
+          composer migrate
+          php scripts/run_stage3_delivery.php
+          php scripts/run_stage4_product_assets.php
+          php scripts/run_stage4b_builder.php
+          php scripts/run_stage4c_feed_stream.php
+          php scripts/stage4d.php
+          php scripts/aggregate_stage4d_engagement.php "$(date -u +%F)"
+          php scripts/stage4e.php
+          php scripts/aggregate_stage4e_distribution.php "$(date -u +%F)"
+          php scripts/stage4f.php
+          php scripts/aggregate_stage4f_demand.php "$(date -u +%F)" 30
+          php scripts/build_stage4f_snapshots.php "$(date -u +%F)" 30
+          php scripts/process_stage4f_exports.php
+          php scripts/stage5a.php
+          php scripts/stage5c.php
+          php scripts/stage5c_smoke.php
+          php scripts/stage5d.php
+          php scripts/stage5d_smoke.php
+          php scripts/stage5e.php
+          php scripts/stage5e_smoke.php
+          php scripts/stage5f.php
+          php scripts/stage5f_smoke.php
+          php scripts/stage5g.php
+          php scripts/stage5g_smoke.php
+          php scripts/stage5h.php
+          php scripts/stage5h_smoke.php
+          php scripts/stage5i.php
+          php scripts/stage5i_smoke.php
+          php scripts/stage5j.php
+          php scripts/stage5j_smoke.php
+          php scripts/stage7b.php
+          php scripts/stage7b_smoke.php
+          php scripts/stage8b.php
+          php scripts/stage8b_smoke.php
+          php scripts/stage9b.php
+          php scripts/stage9b_smoke.php
+          php scripts/stage9d.php
+          php scripts/stage9d_smoke.php
+          php scripts/reconcile_stage9d_legacy_gifts.php
+          php scripts/aggregate_stage9d_microgifts.php "$(date -u +%F)" 30
+          php scripts/stage9e3_preflight.php
+          php scripts/stage9e3_upgrade_manifest.php
+          php scripts/stage9e3_smoke.php
+          php scripts/stage10f_apply.php
+          php scripts/validate_stage10f_upgrade.php
+          php scripts/stage10f_runtime_smoke.php
+      - name: Apply and validate Stage 11G
+        run: |
+          php scripts/stage11g.php
+          php scripts/stage11g_smoke.php
+      - name: Apply and validate Stage 11H
+        run: |
+          php scripts/stage11h.php
+          php scripts/stage11h_smoke.php
+      - name: Apply and validate Stage 12
+        run: |
+          php scripts/stage12.php
+          php scripts/stage12_smoke.php
+      - name: Apply and validate Stage 12A
+        run: |
+          php scripts/stage12a.php
+          php scripts/stage12a_smoke.php
+      - name: Validate wallet-funded tip behavior
+        run: composer test-tip-behavior
+      - name: Validate Stripe-funded tip payment behavior
+        run: composer test-tip-payment-behavior
+      - name: Apply and validate Stage 13
+        run: |
+          php scripts/stage13.php
+          php scripts/stage13_smoke.php
+      - name: Apply and validate Stage 14
+        run: |
+          php scripts/stage14.php
+          php scripts/stage14_smoke.php
+      - name: Apply and validate Stage 15
+        run: |
+          php scripts/stage15.php
+          php scripts/stage15_smoke.php
+      - name: Apply and validate Stage 16
+        run: |
+          php scripts/stage16.php
+          php scripts/stage16_smoke.php
+      - name: Apply and validate Stage 17
+        run: |
+          php scripts/stage17.php
+          php scripts/stage17_smoke.php
+      - name: Apply and validate Stage 18
+        run: |
+          php scripts/stage18.php
+          php scripts/stage18_smoke.php
+      - name: Validate Microgift lifecycle behavior
+        run: composer test-microgift-behavior
+      - name: Validate launch readiness
+        run: php scripts/validate_launch_readiness.php
+      - name: Start PHP test server
+        run: |
+          php -S 127.0.0.1:8080 -t . > /tmp/microgifter-php-server.log 2>&1 &
+          echo $! > /tmp/microgifter-php-server.pid
+          for attempt in {1..20}; do
+            curl --fail --silent --show-error http://127.0.0.1:8080/api/health.php >/tmp/microgifter-health.json && exit 0
+            sleep 1
+          done
+          cat /tmp/microgifter-php-server.log
+          exit 1
+      - run: composer test-security
+      - name: Run aggregate PHPUnit suite
+        run: |
+          mkdir -p build
+          set +e
+          composer test > build/phpunit.log 2>&1
+          status=$?
+          cat build/phpunit.log
+          exit "$status"
+      - name: Upload PHPUnit diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phpunit-diagnostics
+          path: build/phpunit.log
+          retention-days: 7
+          if-no-files-found: warn
+      - name: Show PHP server log on failure
+        if: failure()
+        run: cat /tmp/microgifter-php-server.log || true
+      - name: Stop PHP test server
+        if: always()
+        run: if [ -f /tmp/microgifter-php-server.pid ]; then kill "$(cat /tmp/microgifter-php-server.pid)" || true; fi

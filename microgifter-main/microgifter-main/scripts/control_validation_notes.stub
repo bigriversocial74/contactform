@@ -1,0 +1,1 @@
+Runtime coverage to add in follow-up: permission boundary, note allowance, account state change, resource state change, exact replay, conflict replay, audit append, forced rollback, and fixture cleanup.

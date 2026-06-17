@@ -1,0 +1,298 @@
+CREATE TABLE IF NOT EXISTS commerce_orders (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  buyer_user_id BIGINT UNSIGNED NOT NULL,
+  merchant_user_id BIGINT UNSIGNED NOT NULL,
+  currency CHAR(3) NOT NULL DEFAULT 'USD',
+  subtotal_cents BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  discount_cents BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  tax_cents BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  platform_fee_cents BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  total_cents BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  payment_status ENUM('unpaid','requires_action','authorized','paid','partially_refunded','refunded','disputed','failed','cancelled') NOT NULL DEFAULT 'unpaid',
+  fulfillment_status ENUM('pending','issuing','issued','partial','failed','cancelled') NOT NULL DEFAULT 'pending',
+  source_type VARCHAR(40) NOT NULL DEFAULT 'checkout',
+  source_reference VARCHAR(190) NULL,
+  idempotency_key VARCHAR(190) NOT NULL,
+  metadata_json JSON NULL,
+  paid_at DATETIME NULL,
+  cancelled_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_commerce_orders_public_id (public_id),
+  UNIQUE KEY uq_commerce_orders_idempotency (buyer_user_id,idempotency_key),
+  KEY idx_commerce_orders_merchant (merchant_user_id,payment_status,created_at),
+  CONSTRAINT fk_commerce_orders_buyer FOREIGN KEY (buyer_user_id) REFERENCES users(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_commerce_orders_merchant FOREIGN KEY (merchant_user_id) REFERENCES users(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS commerce_order_items (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  order_id BIGINT UNSIGNED NOT NULL,
+  product_id BIGINT UNSIGNED NOT NULL,
+  product_version_id BIGINT UNSIGNED NOT NULL,
+  title_snapshot VARCHAR(240) NOT NULL,
+  quantity INT UNSIGNED NOT NULL DEFAULT 1,
+  unit_amount_cents BIGINT UNSIGNED NOT NULL,
+  discount_cents BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  tax_cents BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  line_total_cents BIGINT UNSIGNED NOT NULL,
+  currency CHAR(3) NOT NULL,
+  pppm_issuance_request_id BIGINT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_commerce_order_items_public_id (public_id),
+  KEY idx_commerce_order_items_order (order_id,id),
+  CONSTRAINT fk_commerce_order_items_order FOREIGN KEY (order_id) REFERENCES commerce_orders(id) ON DELETE CASCADE,
+  CONSTRAINT fk_commerce_order_items_product FOREIGN KEY (product_id) REFERENCES catalog_products(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_commerce_order_items_version FOREIGN KEY (product_version_id) REFERENCES catalog_product_versions(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_commerce_order_items_issuance FOREIGN KEY (pppm_issuance_request_id) REFERENCES pppm_issuance_requests(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS payment_provider_accounts (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  merchant_user_id BIGINT UNSIGNED NOT NULL,
+  provider_key VARCHAR(80) NOT NULL,
+  provider_account_reference VARCHAR(190) NULL,
+  mode ENUM('test','live') NOT NULL DEFAULT 'test',
+  status ENUM('pending','active','restricted','disabled') NOT NULL DEFAULT 'pending',
+  charges_enabled TINYINT(1) NOT NULL DEFAULT 0,
+  payouts_enabled TINYINT(1) NOT NULL DEFAULT 0,
+  capabilities_json JSON NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_payment_provider_accounts_public_id (public_id),
+  UNIQUE KEY uq_payment_provider_accounts_merchant_provider (merchant_user_id,provider_key,mode),
+  CONSTRAINT fk_payment_provider_accounts_merchant FOREIGN KEY (merchant_user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS checkout_sessions (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  order_id BIGINT UNSIGNED NOT NULL,
+  provider_key VARCHAR(80) NOT NULL,
+  provider_session_reference VARCHAR(190) NULL,
+  status ENUM('created','open','completed','expired','cancelled','failed') NOT NULL DEFAULT 'created',
+  success_url VARCHAR(500) NULL,
+  cancel_url VARCHAR(500) NULL,
+  expires_at DATETIME NULL,
+  completed_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_checkout_sessions_public_id (public_id),
+  KEY idx_checkout_sessions_order (order_id,status),
+  CONSTRAINT fk_checkout_sessions_order FOREIGN KEY (order_id) REFERENCES commerce_orders(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS payment_intents (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  order_id BIGINT UNSIGNED NOT NULL,
+  provider_key VARCHAR(80) NOT NULL,
+  provider_intent_reference VARCHAR(190) NULL,
+  amount_cents BIGINT UNSIGNED NOT NULL,
+  currency CHAR(3) NOT NULL,
+  status ENUM('created','requires_payment_method','requires_action','processing','authorized','succeeded','failed','cancelled') NOT NULL DEFAULT 'created',
+  capture_method ENUM('automatic','manual') NOT NULL DEFAULT 'automatic',
+  idempotency_key VARCHAR(190) NOT NULL,
+  failure_code VARCHAR(100) NULL,
+  failure_message VARCHAR(500) NULL,
+  authorized_at DATETIME NULL,
+  captured_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_payment_intents_public_id (public_id),
+  UNIQUE KEY uq_payment_intents_idempotency (provider_key,idempotency_key),
+  KEY idx_payment_intents_order (order_id,status),
+  CONSTRAINT fk_payment_intents_order FOREIGN KEY (order_id) REFERENCES commerce_orders(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS payment_transactions (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  payment_intent_id BIGINT UNSIGNED NOT NULL,
+  transaction_type ENUM('authorization','capture','sale','refund','chargeback','adjustment') NOT NULL,
+  provider_reference VARCHAR(190) NULL,
+  amount_cents BIGINT NOT NULL,
+  currency CHAR(3) NOT NULL,
+  status ENUM('pending','succeeded','failed','reversed') NOT NULL DEFAULT 'pending',
+  occurred_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  metadata_json JSON NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_payment_transactions_public_id (public_id),
+  KEY idx_payment_transactions_intent (payment_intent_id,occurred_at),
+  CONSTRAINT fk_payment_transactions_intent FOREIGN KEY (payment_intent_id) REFERENCES payment_intents(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS payment_refunds (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  order_id BIGINT UNSIGNED NOT NULL,
+  payment_intent_id BIGINT UNSIGNED NOT NULL,
+  merchant_user_id BIGINT UNSIGNED NOT NULL,
+  provider_refund_reference VARCHAR(190) NULL,
+  amount_cents BIGINT UNSIGNED NOT NULL,
+  currency CHAR(3) NOT NULL,
+  reason ENUM('requested_by_customer','duplicate','fraudulent','product_unavailable','merchant_error','other') NOT NULL DEFAULT 'requested_by_customer',
+  status ENUM('pending','processing','succeeded','failed','cancelled') NOT NULL DEFAULT 'pending',
+  idempotency_key VARCHAR(190) NOT NULL,
+  requested_by_user_id BIGINT UNSIGNED NOT NULL,
+  failure_message VARCHAR(500) NULL,
+  processed_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_payment_refunds_public_id (public_id),
+  UNIQUE KEY uq_payment_refunds_idempotency (merchant_user_id,idempotency_key),
+  CONSTRAINT fk_payment_refunds_order FOREIGN KEY (order_id) REFERENCES commerce_orders(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_payment_refunds_intent FOREIGN KEY (payment_intent_id) REFERENCES payment_intents(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_payment_refunds_merchant FOREIGN KEY (merchant_user_id) REFERENCES users(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_payment_refunds_requester FOREIGN KEY (requested_by_user_id) REFERENCES users(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS payment_disputes (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  order_id BIGINT UNSIGNED NOT NULL,
+  payment_intent_id BIGINT UNSIGNED NOT NULL,
+  merchant_user_id BIGINT UNSIGNED NOT NULL,
+  provider_dispute_reference VARCHAR(190) NULL,
+  amount_cents BIGINT UNSIGNED NOT NULL,
+  currency CHAR(3) NOT NULL,
+  reason VARCHAR(100) NULL,
+  status ENUM('warning_needs_response','needs_response','under_review','won','lost','closed') NOT NULL DEFAULT 'needs_response',
+  response_due_at DATETIME NULL,
+  resolved_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_payment_disputes_public_id (public_id),
+  KEY idx_payment_disputes_merchant (merchant_user_id,status,response_due_at),
+  CONSTRAINT fk_payment_disputes_order FOREIGN KEY (order_id) REFERENCES commerce_orders(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_payment_disputes_intent FOREIGN KEY (payment_intent_id) REFERENCES payment_intents(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_payment_disputes_merchant FOREIGN KEY (merchant_user_id) REFERENCES users(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS merchant_payouts (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  merchant_user_id BIGINT UNSIGNED NOT NULL,
+  provider_key VARCHAR(80) NOT NULL,
+  provider_payout_reference VARCHAR(190) NULL,
+  currency CHAR(3) NOT NULL,
+  gross_cents BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  fee_cents BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  adjustment_cents BIGINT NOT NULL DEFAULT 0,
+  net_cents BIGINT NOT NULL DEFAULT 0,
+  status ENUM('pending','in_transit','paid','failed','cancelled','reversed') NOT NULL DEFAULT 'pending',
+  arrival_date DATE NULL,
+  paid_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_merchant_payouts_public_id (public_id),
+  KEY idx_merchant_payouts_merchant (merchant_user_id,status,created_at),
+  CONSTRAINT fk_merchant_payouts_merchant FOREIGN KEY (merchant_user_id) REFERENCES users(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS financial_ledger_entries (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  merchant_user_id BIGINT UNSIGNED NULL,
+  order_id BIGINT UNSIGNED NULL,
+  payout_id BIGINT UNSIGNED NULL,
+  refund_id BIGINT UNSIGNED NULL,
+  account_code VARCHAR(80) NOT NULL,
+  entry_type ENUM('debit','credit') NOT NULL,
+  amount_cents BIGINT UNSIGNED NOT NULL,
+  currency CHAR(3) NOT NULL,
+  effective_at DATETIME NOT NULL,
+  description VARCHAR(240) NULL,
+  metadata_json JSON NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_financial_ledger_entries_public_id (public_id),
+  KEY idx_financial_ledger_entries_merchant (merchant_user_id,effective_at,id),
+  KEY idx_financial_ledger_entries_order (order_id,id),
+  CONSTRAINT fk_financial_ledger_entries_merchant FOREIGN KEY (merchant_user_id) REFERENCES users(id) ON DELETE SET NULL,
+  CONSTRAINT fk_financial_ledger_entries_order FOREIGN KEY (order_id) REFERENCES commerce_orders(id) ON DELETE SET NULL,
+  CONSTRAINT fk_financial_ledger_entries_payout FOREIGN KEY (payout_id) REFERENCES merchant_payouts(id) ON DELETE SET NULL,
+  CONSTRAINT fk_financial_ledger_entries_refund FOREIGN KEY (refund_id) REFERENCES payment_refunds(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS payment_webhook_events (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  provider_key VARCHAR(80) NOT NULL,
+  provider_event_id VARCHAR(190) NOT NULL,
+  event_type VARCHAR(120) NOT NULL,
+  signature_valid TINYINT(1) NOT NULL DEFAULT 0,
+  status ENUM('received','processing','processed','ignored','failed') NOT NULL DEFAULT 'received',
+  payload_hash CHAR(64) NOT NULL,
+  payload_json JSON NULL,
+  failure_message VARCHAR(500) NULL,
+  received_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  processed_at DATETIME NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_payment_webhook_events_public_id (public_id),
+  UNIQUE KEY uq_payment_webhook_events_provider_event (provider_key,provider_event_id),
+  KEY idx_payment_webhook_events_queue (status,received_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS financial_reconciliation_runs (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  merchant_user_id BIGINT UNSIGNED NULL,
+  provider_key VARCHAR(80) NOT NULL,
+  period_start DATETIME NOT NULL,
+  period_end DATETIME NOT NULL,
+  status ENUM('queued','processing','completed','completed_with_exceptions','failed') NOT NULL DEFAULT 'queued',
+  expected_cents BIGINT NOT NULL DEFAULT 0,
+  provider_cents BIGINT NOT NULL DEFAULT 0,
+  difference_cents BIGINT NOT NULL DEFAULT 0,
+  exception_count INT UNSIGNED NOT NULL DEFAULT 0,
+  created_by_user_id BIGINT UNSIGNED NOT NULL,
+  started_at DATETIME NULL,
+  completed_at DATETIME NULL,
+  failure_message VARCHAR(500) NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_financial_reconciliation_runs_public_id (public_id),
+  KEY idx_financial_reconciliation_runs_merchant (merchant_user_id,status,period_end),
+  CONSTRAINT fk_financial_reconciliation_runs_merchant FOREIGN KEY (merchant_user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_financial_reconciliation_runs_user FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS financial_reconciliation_items (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  reconciliation_run_id BIGINT UNSIGNED NOT NULL,
+  reference_type VARCHAR(80) NOT NULL,
+  reference_public_id CHAR(36) NULL,
+  expected_cents BIGINT NOT NULL DEFAULT 0,
+  provider_cents BIGINT NOT NULL DEFAULT 0,
+  difference_cents BIGINT NOT NULL DEFAULT 0,
+  status ENUM('matched','missing_internal','missing_provider','amount_mismatch','duplicate','ignored') NOT NULL DEFAULT 'matched',
+  notes VARCHAR(500) NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_financial_reconciliation_items_run (reconciliation_run_id,status,id),
+  CONSTRAINT fk_financial_reconciliation_items_run FOREIGN KEY (reconciliation_run_id) REFERENCES financial_reconciliation_runs(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO permissions (slug,name,description,created_at) VALUES
+('commerce.checkout.create','Create checkout sessions','Create provider-neutral checkout sessions and commerce orders.',NOW()),
+('merchant.payments.view','View merchant financial operations','View orders, payments, refunds, payouts, disputes, ledger, and reconciliation.',NOW()),
+('merchant.refunds.manage','Manage merchant refunds','Create and review merchant-scoped refunds.',NOW()),
+('merchant.payouts.view','View merchant payouts','View merchant payout history and settlement details.',NOW()),
+('merchant.reconciliation.manage','Manage financial reconciliation','Create and review financial reconciliation runs.',NOW());
+
+INSERT IGNORE INTO role_permissions (role_id,permission_id,created_at)
+SELECT r.id,p.id,NOW() FROM roles r JOIN permissions p ON p.slug IN ('commerce.checkout.create','merchant.payments.view','merchant.refunds.manage','merchant.payouts.view','merchant.reconciliation.manage')
+WHERE r.slug IN ('member','merchant','admin','super_admin');

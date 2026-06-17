@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit bootstrap="tests/phpunit/bootstrap.php" colors="true" cacheDirectory=".phpunit.cache">
+  <testsuites>
+    <testsuite name="Microgifter Stage 1 Security">
+      <directory>tests/phpunit</directory>
+    </testsuite>
+  </testsuites>
+  <php>
+    <env name="MG_TEST_BASE_URL" value="http://localhost:8000"/>
+  </php>
+</phpunit>

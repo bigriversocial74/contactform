@@ -1,0 +1,1 @@
+Stage 13 validation is performed through the repository's consolidated preflight, ordered migration, clean-install, security, PHPUnit, and browser workflows.

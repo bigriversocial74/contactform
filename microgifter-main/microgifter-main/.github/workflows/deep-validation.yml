@@ -1,0 +1,94 @@
+name: Deep Validation
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 8 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deep-validation
+  cancel-in-progress: false
+
+jobs:
+  deep-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: microgifter_test
+          MYSQL_USER: microgifter_test
+          MYSQL_PASSWORD: microgifter_test
+          MYSQL_ROOT_PASSWORD: root_test_password
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot_test_password"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    env:
+      MG_APP_ENV: testing
+      MG_DEBUG: '0'
+      MG_BASE_URL: http://127.0.0.1:8080
+      MG_DB_HOST: 127.0.0.1
+      MG_DB_NAME: microgifter_test
+      MG_DB_USER: microgifter_test
+      MG_DB_PASS: microgifter_test
+      MG_DB_CHARSET: utf8mb4
+      MG_SESSION_NAME: mg_test_session
+      MG_MEDIA_SIGNING_SECRET: deep-media-secret
+      MG_DISTRIBUTION_HASH_SECRET: deep-distribution-secret
+      MG_DISTRIBUTION_WEBHOOK_SECRET: deep-distribution-webhook-secret
+      MG_MERCHANT_INVITE_SECRET: deep-merchant-secret
+      MG_REPORT_EMAIL_SECRET: deep-report-secret
+      MG_PAYMENT_PROVIDER: sandbox
+      MG_PAYMENT_MODE: test
+      MG_PAYMENT_WEBHOOK_SECRET: deep-payment-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: curl,fileinfo,json,mbstring,pdo,pdo_mysql
+          coverage: none
+          tools: composer
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer/files
+          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: composer audit --no-interaction
+      - run: find . -type f -name '*.php' -not -path './vendor/*' -print0 | xargs -0 -n1 php -l
+      - name: Wait for MySQL
+        run: |
+          for attempt in {1..30}; do mysqladmin ping -h 127.0.0.1 -umicrogifter_test -pmicrogifter_test --silent && exit 0; sleep 1; done
+          exit 1
+      - name: Full clean install
+        run: |
+          composer migrate
+          php scripts/run_stage3_delivery.php
+          php scripts/run_stage4_product_assets.php
+          php scripts/run_stage4b_builder.php
+          php scripts/run_stage4c_feed_stream.php
+          php scripts/stage4d.php
+          php scripts/stage4e.php
+          php scripts/stage4f.php
+          php scripts/stage5a.php
+          php scripts/stage5c.php
+          php scripts/stage5d.php
+          php scripts/stage5e.php
+          php scripts/stage5f.php
+          php scripts/stage5g.php
+          php scripts/stage5h.php
+          php scripts/stage5i.php
+          php scripts/stage5j.php
+          php scripts/stage5j_smoke.php
+      - name: Repeat schema checks
+        run: |
+          php scripts/stage5j.php
+          php scripts/stage5j_smoke.php
+      - run: vendor/bin/phpunit --configuration phpunit.xml.dist

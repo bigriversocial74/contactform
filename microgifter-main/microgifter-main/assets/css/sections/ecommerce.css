@@ -1,0 +1,89 @@
+/*
+  Microgifter Ecommerce Section Styles
+  Scope: product pages, store pages, carts, checkout, voucher purchase flows.
+  Depends on: assets/css/microgifter.css
+*/
+
+.mg-commerce-shell {
+  display: grid;
+  gap: 24px;
+  padding: 24px 0;
+}
+
+.mg-store-hero {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr) auto;
+  gap: 20px;
+  align-items: center;
+  padding: 24px;
+  border-radius: var(--mg-radius-lg);
+  background: #fff;
+  border: 1px solid var(--mg-border);
+  box-shadow: var(--mg-shadow-soft);
+}
+
+.mg-store-avatar {
+  width: 112px;
+  height: 112px;
+  border-radius: 28px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--mg-primary), #16a34a);
+  color: #fff;
+  font-size: 34px;
+  font-weight: 900;
+}
+
+.mg-product-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.mg-product-card {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  background: #fff;
+  border: 1px solid var(--mg-border);
+  border-radius: var(--mg-radius-lg);
+  box-shadow: var(--mg-shadow-soft);
+}
+
+.mg-product-media {
+  aspect-ratio: 4 / 3;
+  border-radius: 18px;
+  background: linear-gradient(145deg, #eef4ff, #fff);
+  border: 1px solid var(--mg-border);
+}
+
+.mg-price-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.mg-checkout-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 22px;
+  align-items: start;
+}
+
+.mg-order-summary {
+  position: sticky;
+  top: calc(var(--mg-header-height) + 18px);
+}
+
+@media (max-width: 980px) {
+  .mg-product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mg-checkout-layout { grid-template-columns: 1fr; }
+  .mg-order-summary { position: static; }
+}
+
+@media (max-width: 680px) {
+  .mg-store-hero { grid-template-columns: 1fr; }
+  .mg-store-avatar { width: 88px; height: 88px; }
+  .mg-product-grid { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,40 @@
+<?php
+declare(strict_types=1);
+require_once __DIR__ . '/_merchant.php';
+mg_require_method('POST');
+$user=mg_require_permission('merchant.distribution.assignments.manage');
+$input=mg_input();
+mg_require_csrf_for_write($input);
+$programId=trim((string)($input['program_id']??''));
+$templateId=trim((string)($input['template_id']??''));
+$name=trim((string)($input['name']??'Assignment batch'));
+$recipientIds=is_array($input['recipient_ids']??null)?array_values(array_unique(array_filter(array_map('strval',$input['recipient_ids'])))):[];
+$quantity=max(1,min(100,(int)($input['quantity']??1)));
+$method=trim((string)($input['allocation_method']??'batch'));
+if($programId===''||$templateId===''||!$recipientIds||count($recipientIds)>500||mb_strlen($name)>180||!in_array($method,['direct','random','weighted_random','ranked','batch','api'],true))mg_fail('Invalid assignment batch.',422);
+$pdo=mg_db();
+$pdo->beginTransaction();
+try{
+ $programStmt=$pdo->prepare("SELECT * FROM distribution_programs WHERE public_id=? AND merchant_user_id=? AND status IN ('scheduled','active','paused') LIMIT 1 FOR UPDATE");
+ $programStmt->execute([$programId,(int)$user['id']]);
+ $program=$programStmt->fetch();
+ if(!$program)mg_fail('Distribution program is unavailable.',404);
+ $productStmt=$pdo->prepare("SELECT dpp.id,cpt.public_id template_id,cpv.unit_value_cents FROM distribution_program_products dpp INNER JOIN catalog_pppm_templates cpt ON cpt.id=dpp.pppm_template_id INNER JOIN catalog_product_versions cpv ON cpv.id=cpt.product_version_id WHERE dpp.program_id=? AND cpt.public_id=? AND dpp.status='active' LIMIT 1 FOR UPDATE");
+ $productStmt->execute([(int)$program['id'],$templateId]);
+ $product=$productStmt->fetch();
+ if(!$product)mg_fail('Program product not found.',404);
+ $placeholders=implode(',',array_fill(0,count($recipientIds),'?'));
+ $recipientStmt=$pdo->prepare("SELECT * FROM distribution_recipients WHERE program_id=? AND public_id IN ({$placeholders}) AND eligibility_status IN ('eligible','selected') FOR UPDATE");
+ $recipientStmt->execute(array_merge([(int)$program['id']],$recipientIds));
+ $recipients=$recipientStmt->fetchAll();
+ if(count($recipients)!==count($recipientIds))mg_fail('One or more recipients are not eligible.',409);
+ $batchId=mg_merchant_uuid();
+ $pdo->prepare("INSERT INTO distribution_assignment_batches (public_id,merchant_user_id,program_id,name,allocation_method,status,requested_count,created_by_user_id,started_at,created_at,updated_at) VALUES (?,?,?,?,?,'processing',?,?,NOW(),NOW(),NOW())")->execute([$batchId,(int)$user['id'],(int)$program['id'],$name,$method,count($recipients),(int)$user['id']]);
+ $batchDbId=(int)$pdo->lastInsertId();
+ $insertItem=$pdo->prepare("INSERT INTO distribution_assignment_batch_items (batch_id,recipient_id,program_product_id,quantity,status,created_at,updated_at) VALUES (?,?,?,?,'pending',NOW(),NOW())");
+ foreach($recipients as $recipient)$insertItem->execute([$batchDbId,(int)$recipient['id'],(int)$product['id'],$quantity]);
+ $pdo->prepare("UPDATE distribution_assignment_batches SET status='queued',updated_at=NOW() WHERE id=?")->execute([$batchDbId]);
+ $pdo->commit();
+ mg_audit('distribution.assignment_batch_created','distribution_program',['program_id'=>$programId,'batch_id'=>$batchId,'recipient_count'=>count($recipients)],(int)$user['id']);
+ mg_ok(['batch_id'=>$batchId,'status'=>'queued','recipient_count'=>count($recipients),'quantity_each'=>$quantity],'Assignment batch queued.',201);
+}catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();mg_security_log('error','distribution.batch_failed','Assignment batch failed.',['exception_type'=>get_class($e)],(int)$user['id']);mg_fail('Unable to create assignment batch.',500);}

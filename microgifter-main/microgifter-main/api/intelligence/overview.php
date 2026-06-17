@@ -1,0 +1,22 @@
+<?php
+declare(strict_types=1);
+require_once __DIR__ . '/_intelligence.php';
+mg_require_method('GET');
+$user=mg_require_permission('intelligence.dashboard.view');
+$from=mg_intelligence_date((string)($_GET['from']??''),date('Y-m-d',strtotime('-30 days')));
+$to=mg_intelligence_date((string)($_GET['to']??''),date('Y-m-d'));
+$pdo=mg_db();
+$summary=$pdo->prepare('SELECT COALESCE(SUM(items_issued),0) items_issued,COALESCE(SUM(issued_value_cents),0) issued_value_cents,COALESCE(SUM(impressions),0) impressions,COALESCE(SUM(opens),0) opens,COALESCE(SUM(claims),0) claims,COALESCE(SUM(redemptions),0) redemptions,COALESCE(SUM(unique_recipients),0) unique_recipients,COALESCE(SUM(unique_viewers),0) unique_viewers FROM demand_fact_daily WHERE merchant_user_id=? AND metric_date BETWEEN ? AND ?');
+$summary->execute([(int)$user['id'],$from,$to]);$totals=$summary->fetch()?:[];
+$totals['open_rate']=mg_intelligence_safe_div((float)$totals['opens'],(float)$totals['impressions']);
+$totals['claim_rate']=mg_intelligence_safe_div((float)$totals['claims'],(float)$totals['items_issued']);
+$totals['redemption_rate']=mg_intelligence_safe_div((float)$totals['redemptions'],(float)$totals['claims']);
+$series=$pdo->prepare('SELECT metric_date,SUM(items_issued) items_issued,SUM(issued_value_cents) issued_value_cents,SUM(opens) opens,SUM(claims) claims,SUM(redemptions) redemptions FROM demand_fact_daily WHERE merchant_user_id=? AND metric_date BETWEEN ? AND ? GROUP BY metric_date ORDER BY metric_date');
+$series->execute([(int)$user['id'],$from,$to]);
+$products=$pdo->prepare('SELECT cp.public_id product_id,cp.slug,cpv.title,SUM(dfd.items_issued) items_issued,SUM(dfd.issued_value_cents) issued_value_cents,SUM(dfd.claims) claims,SUM(dfd.redemptions) redemptions,SUM(dfd.opens) opens FROM demand_fact_daily dfd INNER JOIN catalog_products cp ON cp.id=dfd.product_id INNER JOIN catalog_product_versions cpv ON cpv.id=cp.current_version_id WHERE dfd.merchant_user_id=? AND dfd.metric_date BETWEEN ? AND ? GROUP BY cp.id,cp.public_id,cp.slug,cpv.title ORDER BY issued_value_cents DESC LIMIT 20');
+$products->execute([(int)$user['id'],$from,$to]);
+$forecast=$pdo->prepare("SELECT dfr.public_id run_id,dfm.target_metric,dfr.as_of_date,dfr.horizon_days,dfr.metrics_json,dfp.forecast_date,dfp.predicted_value,dfp.lower_bound,dfp.upper_bound FROM demand_forecast_runs dfr INNER JOIN demand_forecast_models dfm ON dfm.id=dfr.model_id INNER JOIN demand_forecast_points dfp ON dfp.forecast_run_id=dfr.id WHERE dfr.merchant_user_id=? AND dfr.status='completed' AND dfr.id=(SELECT MAX(r2.id) FROM demand_forecast_runs r2 WHERE r2.merchant_user_id=dfr.merchant_user_id AND r2.model_id=dfr.model_id AND r2.status='completed') ORDER BY dfm.target_metric,dfp.forecast_date");
+$forecast->execute([(int)$user['id']]);
+$alerts=$pdo->prepare("SELECT dae.public_id,dar.name,dar.metric_key,dae.observed_value,dae.baseline_value,dae.status,dae.triggered_at FROM demand_alert_events dae INNER JOIN demand_alert_rules dar ON dar.id=dae.rule_id WHERE dae.merchant_user_id=? AND dae.status IN ('open','acknowledged') ORDER BY dae.triggered_at DESC LIMIT 20");$alerts->execute([(int)$user['id']]);
+$snapshot=$pdo->prepare('SELECT demand_score,engagement_score,fulfillment_score,redemption_score,growth_rate,forecast_value_cents,insights_json,snapshot_date FROM merchant_intelligence_snapshots WHERE merchant_user_id=? ORDER BY snapshot_date DESC,id DESC LIMIT 1');$snapshot->execute([(int)$user['id']]);$intelligence=$snapshot->fetch()?:null;if($intelligence&&$intelligence['insights_json'])$intelligence['insights']=json_decode((string)$intelligence['insights_json'],true)?:[];
+mg_ok(['range'=>['from'=>$from,'to'=>$to],'totals'=>$totals,'series'=>$series->fetchAll(),'products'=>$products->fetchAll(),'forecast'=>$forecast->fetchAll(),'alerts'=>$alerts->fetchAll(),'intelligence'=>$intelligence]);

@@ -1,0 +1,146 @@
+name: Paid Checkout Fulfillment Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'api/commerce/**'
+      - 'api/payments/**'
+      - 'api/finance/**'
+      - 'api/pppm/**'
+      - 'api/entitlements/**'
+      - 'api/microgifts/**'
+      - 'scripts/apply_lifecycle_schema.sh'
+      - 'scripts/stage5j.php'
+      - 'scripts/validate_checkout_capture_behavior.php'
+      - 'scripts/validate_payment_reversal_microgifts.php'
+      - 'scripts/validate_refund_reconciliation_behavior.php'
+      - 'tests/integration/CheckoutBehaviorFixture.php'
+      - 'tests/integration/DisputeLostPartialScenario.php'
+      - 'tests/phpunit/PostCheckoutMicrogiftIssuanceContractTest.php'
+      - 'tests/phpunit/ProductionCheckoutCaptureBehaviorTest.php'
+      - 'tests/phpunit/ProductionPaymentReversalMicrogiftBehaviorTest.php'
+      - 'tests/phpunit/ProductionRefundReconciliationBehaviorTest.php'
+      - 'tests/phpunit/PaymentReversalMicrogiftContractTest.php'
+      - 'tests/phpunit/Stage5JFoundationReconciliationTest.php'
+      - 'composer.json'
+      - '.github/workflows/paid-checkout-fulfillment-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'api/commerce/**'
+      - 'api/payments/**'
+      - 'api/finance/**'
+      - 'api/pppm/**'
+      - 'api/entitlements/**'
+      - 'api/microgifts/**'
+      - 'scripts/apply_lifecycle_schema.sh'
+      - 'scripts/stage5j.php'
+      - 'scripts/validate_checkout_capture_behavior.php'
+      - 'scripts/validate_payment_reversal_microgifts.php'
+      - 'scripts/validate_refund_reconciliation_behavior.php'
+      - 'tests/integration/CheckoutBehaviorFixture.php'
+      - 'tests/integration/DisputeLostPartialScenario.php'
+      - 'tests/phpunit/PostCheckoutMicrogiftIssuanceContractTest.php'
+      - 'tests/phpunit/ProductionCheckoutCaptureBehaviorTest.php'
+      - 'tests/phpunit/ProductionPaymentReversalMicrogiftBehaviorTest.php'
+      - 'tests/phpunit/ProductionRefundReconciliationBehaviorTest.php'
+      - 'tests/phpunit/PaymentReversalMicrogiftContractTest.php'
+      - 'tests/phpunit/Stage5JFoundationReconciliationTest.php'
+      - 'composer.json'
+      - '.github/workflows/paid-checkout-fulfillment-validation.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: paid-checkout-fulfillment-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fulfillment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      MG_APP_ENV: testing
+      MG_DEBUG: '0'
+      MG_BASE_URL: http://127.0.0.1:8080
+      MG_DB_HOST: 127.0.0.1
+      MG_DB_NAME: microgifter_checkout_test
+      MG_DB_USER: microgifter_test
+      MG_DB_PASS: microgifter_test
+      MG_DB_CHARSET: utf8mb4
+      MG_SESSION_NAME: mg_checkout_session
+      MG_CLAIM_CODE_PEPPER: checkout-claim-code-pepper
+      MG_MEDIA_SIGNING_SECRET: checkout-media-secret
+      MG_DISTRIBUTION_HASH_SECRET: checkout-distribution-secret
+      MG_DISTRIBUTION_WEBHOOK_SECRET: checkout-distribution-webhook-secret
+      MG_MERCHANT_INVITE_SECRET: checkout-merchant-secret
+      MG_REPORT_EMAIL_SECRET: checkout-report-secret
+      MG_PAYMENT_PROVIDER: sandbox
+      MG_PAYMENT_MODE: test
+      MG_PAYMENT_WEBHOOK_SECRET: checkout-payment-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: curl,fileinfo,json,mbstring,pdo,pdo_mysql
+          coverage: none
+          tools: composer
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Configure checkout database
+        run: |
+          sudo systemctl start mysql.service
+          run_mysql_root() {
+            if mysql -uroot -proot "$@" 2>/tmp/mysql-root.err; then return 0; fi
+            if sudo mysql -uroot -proot "$@" 2>/tmp/mysql-root.err; then return 0; fi
+            if mysql -uroot "$@" 2>/tmp/mysql-root.err; then return 0; fi
+            if sudo mysql "$@" 2>/tmp/mysql-root.err; then return 0; fi
+            cat /tmp/mysql-root.err || true
+            return 1
+          }
+          run_mysql_root <<'SQL'
+          CREATE DATABASE IF NOT EXISTS microgifter_checkout_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+          CREATE USER IF NOT EXISTS 'microgifter_test'@'localhost' IDENTIFIED BY 'microgifter_test';
+          CREATE USER IF NOT EXISTS 'microgifter_test'@'127.0.0.1' IDENTIFIED BY 'microgifter_test';
+          CREATE USER IF NOT EXISTS 'microgifter_test'@'%' IDENTIFIED BY 'microgifter_test';
+          GRANT ALL PRIVILEGES ON microgifter_checkout_test.* TO 'microgifter_test'@'localhost';
+          GRANT ALL PRIVILEGES ON microgifter_checkout_test.* TO 'microgifter_test'@'127.0.0.1';
+          GRANT ALL PRIVILEGES ON microgifter_checkout_test.* TO 'microgifter_test'@'%';
+          SET GLOBAL log_bin_trust_function_creators = 1;
+          FLUSH PRIVILEGES;
+          SQL
+      - name: Apply validated schema stages
+        run: bash scripts/apply_lifecycle_schema.sh
+      - name: Run paid checkout fulfillment behavior
+        id: fulfillment
+        shell: bash
+        run: |
+          mkdir -p build
+          set +e
+          composer test-checkout-fulfillment > build/paid-checkout-fulfillment.log 2>&1
+          status=$?
+          cat build/paid-checkout-fulfillment.log
+          echo "exit_code=${status}" >> "$GITHUB_OUTPUT"
+          exit "$status"
+      - name: Run checkout and payment-reversal compatibility contracts
+        id: compatibility
+        shell: bash
+        run: |
+          set +e
+          vendor/bin/phpunit --configuration phpunit.xml.dist --filter 'PostCheckoutMicrogiftIssuanceContractTest|ProductionCheckoutCaptureBehaviorTest|Stage5JFoundationReconciliationTest|ProductionCommerceBehaviorTest|ProductionDisputeBehaviorTest|ProductionRefundBehaviorTest|ProductionRefundReconciliationBehaviorTest|PaymentReversalMicrogiftContractTest|ProductionPaymentReversalMicrogiftBehaviorTest' > build/paid-checkout-compatibility.log 2>&1
+          status=$?
+          cat build/paid-checkout-compatibility.log
+          echo "exit_code=${status}" >> "$GITHUB_OUTPUT"
+          exit "$status"
+      - name: Upload paid checkout validation logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: paid-checkout-validation-logs
+          path: |
+            build/paid-checkout-fulfillment.log
+            build/paid-checkout-compatibility.log
+          if-no-files-found: warn
+          retention-days: 14

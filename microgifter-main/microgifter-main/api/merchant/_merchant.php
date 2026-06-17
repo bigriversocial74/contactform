@@ -1,0 +1,70 @@
+<?php
+declare(strict_types=1);
+
+require_once dirname(__DIR__) . '/intelligence/_intelligence.php';
+
+function mg_merchant_uuid(): string
+{
+    return mg_intelligence_uuid();
+}
+
+function mg_merchant_email_hash(string $email): string
+{
+    $email = strtolower(trim($email));
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) mg_fail('Invalid team email address.', 422);
+    $secret = trim((string) getenv('MG_MERCHANT_INVITE_SECRET')) ?: trim((string) getenv('MG_DISTRIBUTION_HASH_SECRET'));
+    if ($secret === '') mg_fail('Merchant invitation hashing is not configured.', 503);
+    return hash_hmac('sha256', $email, $secret);
+}
+
+function mg_merchant_workspace(PDO $pdo, int $userId, bool $forUpdate = false): array
+{
+    $sql = 'SELECT * FROM merchant_workspaces WHERE merchant_user_id = ? LIMIT 1' . ($forUpdate ? ' FOR UPDATE' : '');
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$userId]);
+    $workspace = $stmt->fetch();
+    if (!$workspace) mg_fail('Merchant workspace has not been created.', 404);
+    return $workspace;
+}
+
+function mg_merchant_ensure_workspace(PDO $pdo, array $user): array
+{
+    $stmt = $pdo->prepare('SELECT * FROM merchant_workspaces WHERE merchant_user_id = ? LIMIT 1');
+    $stmt->execute([(int) $user['id']]);
+    $workspace = $stmt->fetch();
+    if ($workspace) return $workspace;
+
+    $displayName = trim((string) ($user['display_name'] ?? $user['full_name'] ?? 'Merchant workspace')) ?: 'Merchant workspace';
+    $publicId = mg_merchant_uuid();
+    $pdo->beginTransaction();
+    try {
+        $pdo->prepare('INSERT INTO merchant_workspaces (public_id,merchant_user_id,display_name,status,eligibility_status,onboarding_percent,created_at,updated_at) VALUES (?, ?, ?, \'draft\', \'not_started\', 0, NOW(), NOW())')
+            ->execute([$publicId, (int) $user['id'], $displayName]);
+        $workspaceId = (int) $pdo->lastInsertId();
+        $steps = [
+            ['business_profile', 1], ['eligibility', 2], ['first_location', 3], ['claim_configuration', 4],
+            ['first_product', 5], ['storefront', 6], ['payment_readiness', 7], ['test_pppm', 8],
+            ['test_claim', 9], ['analytics_verification', 10], ['beta_readiness', 11],
+        ];
+        $insert = $pdo->prepare('INSERT INTO merchant_onboarding_steps (workspace_id,step_key,step_order,status,created_at,updated_at) VALUES (?, ?, ?, ?, NOW(), NOW())');
+        foreach ($steps as $index => $step) $insert->execute([$workspaceId, $step[0], $step[1], $index === 0 ? 'available' : 'locked']);
+        $pdo->prepare('INSERT INTO merchant_payment_readiness (workspace_id,created_at,updated_at) VALUES (?,NOW(),NOW())')->execute([$workspaceId]);
+        $pdo->prepare('INSERT INTO merchant_team_members (public_id,workspace_id,user_id,display_name,role_key,status,invited_by_user_id,invited_at,accepted_at,created_at,updated_at) VALUES (?,?,?,?,\'owner\',\'active\',?,NOW(),NOW(),NOW(),NOW())')
+            ->execute([mg_merchant_uuid(), $workspaceId, (int) $user['id'], $displayName, (int) $user['id']]);
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        mg_fail('Unable to initialize merchant workspace.', 500);
+    }
+    return mg_merchant_workspace($pdo, (int) $user['id']);
+}
+
+function mg_merchant_recalculate_onboarding(PDO $pdo, int $workspaceId): int
+{
+    $stmt = $pdo->prepare('SELECT COUNT(*) total_steps,SUM(status = \'completed\') completed_steps FROM merchant_onboarding_steps WHERE workspace_id = ?');
+    $stmt->execute([$workspaceId]);
+    $counts = $stmt->fetch() ?: ['total_steps' => 0, 'completed_steps' => 0];
+    $percent = (int) round(100 * ((int) $counts['completed_steps']) / max(1, (int) $counts['total_steps']));
+    $pdo->prepare('UPDATE merchant_workspaces SET onboarding_percent=?,updated_at=NOW() WHERE id=?')->execute([$percent, $workspaceId]);
+    return $percent;
+}
