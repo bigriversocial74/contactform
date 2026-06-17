@@ -1,0 +1,59 @@
+name: Extract microgifter-main (74).zip
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/extract-microgifter-74.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract archive safely
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive='microgifter-main (74).zip'
+          output='/tmp/microgifter-extracted'
+
+          test -f "$archive"
+          rm -rf "$output"
+          mkdir -p "$output"
+          unzip -q "$archive" -d "$output"
+
+          mapfile -t entries < <(find "$output" -mindepth 1 -maxdepth 1 -printf '%f\n')
+          source_dir="$output"
+          if [ "${#entries[@]}" -eq 1 ] && [ -d "$output/${entries[0]}" ]; then
+            source_dir="$output/${entries[0]}"
+          fi
+
+          rsync -a --exclude='.git/' --exclude='microgifter-main (74).zip' "$source_dir/" ./
+
+      - name: Commit extracted files to a separate branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='extracted-microgifter-74'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout -B "$branch"
+          git add -A
+
+          if git diff --cached --quiet; then
+            echo 'No extracted changes found.'
+            exit 0
+          fi
+
+          git commit -m 'Extract microgifter-main (74).zip'
+          git push --force-with-lease origin "$branch"
