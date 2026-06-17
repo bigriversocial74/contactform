@@ -42,7 +42,13 @@ jobs:
             SOURCE_DIR="${entries[0]}"
           fi
 
-          rsync -a "$SOURCE_DIR"/ ./
+          # Move the project to the repository root, but do not import
+          # workflow files because the GitHub Actions token cannot modify them.
+          rsync -a \
+            --exclude='.git/' \
+            --exclude='.github/workflows/' \
+            "$SOURCE_DIR"/ ./
+
           rm -rf microgifter-main
 
       - name: Commit and push moved files
