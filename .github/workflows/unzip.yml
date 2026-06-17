@@ -1,4 +1,4 @@
-name: Unzip project
+name: Move extracted project to root
 
 on:
   workflow_dispatch:
@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  unzip:
+  move-to-root:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,23 +24,38 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - name: Extract ZIP
+      - name: Move extracted files to repository root
         run: |
-          rm -rf microgifter-main
-          mkdir -p microgifter-main
-          unzip -o "microgifter-main (74).zip" -d microgifter-main
+          set -e
 
-      - name: Commit and push extracted files
+          SOURCE_DIR="microgifter-main"
+
+          if [ ! -d "$SOURCE_DIR" ]; then
+            echo "The extracted folder does not exist."
+            exit 1
+          fi
+
+          # Handle archives that contain one additional wrapper folder.
+          shopt -s dotglob nullglob
+          entries=("$SOURCE_DIR"/*)
+          if [ ${#entries[@]} -eq 1 ] && [ -d "${entries[0]}" ]; then
+            SOURCE_DIR="${entries[0]}"
+          fi
+
+          rsync -a "$SOURCE_DIR"/ ./
+          rm -rf microgifter-main
+
+      - name: Commit and push moved files
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add microgifter-main
+          git add -A
 
           if git diff --cached --quiet; then
-            echo "No new files to commit."
+            echo "No files needed to be moved."
             exit 0
           fi
 
-          git commit -m "Extract Microgifter project files"
+          git commit -m "Move Microgifter project files to repository root"
           git pull --rebase origin main
           git push origin HEAD:main
