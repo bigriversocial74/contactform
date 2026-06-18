@@ -33,7 +33,7 @@ final class PppmSentResendTimelineContractTest extends TestCase
     {
         $send=$this->source('api/account/action-center-send.php');
         $projection=$this->source('api/microgifts/_action_center_projection.php');
-        self::assertStringContainsString("$pdo,$instance,'sent'",str_replace(["\n","\r"," "],'',$send));
+        self::assertStringContainsString("\$pdo,\$instance,'sent'",str_replace(["\n","\r"," "],'',$send));
         self::assertStringContainsString("'sent_at'=>\$deliveryEvent['occurred_at']",$send);
         self::assertStringContainsString("\$context['sent_at']??\$projectionAt",$projection);
         self::assertStringContainsString('sent_at=COALESCE(sent_at,?)',$projection);
@@ -55,7 +55,7 @@ final class PppmSentResendTimelineContractTest extends TestCase
         ] as $needle){
             self::assertStringContainsString($needle,$resend);
         }
-        self::assertStringContainsString("$pdo,$instance,'resent'",$compact);
+        self::assertStringContainsString("\$pdo,\$instance,'resent'",$compact);
         self::assertStringNotContainsString('mg_pppm_transfer_owner_canonical',$resend);
         self::assertStringNotContainsString('UPDATE pppm_items',$resend);
         self::assertStringNotContainsString('UPDATE microgift_instances',$resend);
