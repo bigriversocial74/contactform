@@ -17,7 +17,7 @@ if(!isset($types[$kind][$mime]))mg_fail('That media format is not supported.',42
 $publicId=mg_public_uuid();$dir='uploads/feed/'.gmdate('Y/m').'/user-'.(int)$user['id'];$root=dirname(__DIR__,2);$absoluteDir=$root.'/'.$dir;
 if(!is_dir($absoluteDir)&&!mkdir($absoluteDir,0755,true)&&!is_dir($absoluteDir))mg_fail('Media storage is unavailable.',503);
 $key=$dir.'/'.str_replace('-','',$publicId).'.'.$types[$kind][$mime];$path=$root.'/'.$key;
-if(!rename($tmp,$path))mg_fail('Unable to store the uploaded media.',500);
+if(!move_uploaded_file($tmp,$path))mg_fail('Unable to store the uploaded media.',500);
 @chmod($path,0644);$checksum=hash_file('sha256',$path)?:null;$original=mb_substr(basename((string)($file['name']??'media')),0,255);
 $width=null;$height=null;if($kind==='image'){$d=@getimagesize($path);if(is_array($d)){$width=(int)($d[0]??0)?:null;$height=(int)($d[1]??0)?:null;}}
 $pdo=mg_db();try{$pdo->beginTransaction();$pdo->prepare("INSERT INTO catalog_assets (public_id,owner_user_id,asset_type,storage_provider,storage_key,original_filename,mime_type,byte_size,checksum_sha256,width_px,height_px,duration_ms,status,metadata_json,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,NULL,'ready',?,NOW(),NOW())")->execute([$publicId,(int)$user['id'],$kind,'local',$key,$original,$mime,$size,$checksum,$width,$height,json_encode(['source'=>'social_feed'],JSON_UNESCAPED_SLASHES)]);$pdo->commit();}catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();@unlink($path);mg_fail('Unable to register the uploaded media.',500);}
