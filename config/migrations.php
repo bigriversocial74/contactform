@@ -78,6 +78,7 @@ return [
         'stage_18f_pppm_publish_distribution.sql',
         'stage_18g_pppm_resend_timeline.sql',
         'stage_18h_feed_media_assets.sql',
+        'stage_18i_recipient_notifications.sql',
     ],
 
     // Historical production databases may contain consolidated markers instead

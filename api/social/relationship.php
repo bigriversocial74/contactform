@@ -29,6 +29,7 @@ try{
         mg_ok($replay,'Existing relationship result returned.');
     }
     $followNotification=$action==='follow'?mg_follow_notification_context($pdo,$actorId,$targetReference):null;
+    if($followNotification!==null)$followNotification['event_key']='social.follow.'.hash('sha256',$key);
     $result=mg_engagement_relationship($pdo,$actorId,$targetReference,$action);
     if($followNotification!==null)mg_follow_notification_send($pdo,$actorId,$followNotification);
     $result=mg_engagement_complete($pdo,$actorId,$key,$result);
