@@ -80,6 +80,7 @@ return [
         'stage_18h_feed_media_assets.sql',
         'stage_18i_recipient_notifications.sql',
         'stage_18j_' . 'content_' . 'moderation.sql',
+        'stage_18k_admin_account_management.sql',
     ],
 
     'coverage_markers' => [
