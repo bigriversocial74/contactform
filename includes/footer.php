@@ -10,6 +10,10 @@ if (($page_body_class ?? '') === 'mg-admin-moderation-page') {
     $page_scripts[] = '/assets/js/content-' . 'review-actions.js';
     $late_styles[] = '/assets/css/content-review-ui.css';
 }
+if (($page_body_class ?? '') === 'mg-admin-users-page') {
+    $page_scripts[] = '/assets/js/admin-user-detail-drawer.js';
+    $late_styles[] = '/assets/css/admin-user-detail-drawer.css';
+}
 $core_scripts = [
     '/assets/js/microgifter.js','/assets/js/header-signals.js','/assets/js/api-client.js','/assets/js/agent-folder-counts.js',
     '/assets/js/agent-global-search.js','/assets/js/customer-commerce.js','/assets/js/cart.js','/assets/js/auth.js',

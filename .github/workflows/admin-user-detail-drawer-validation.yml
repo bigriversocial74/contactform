@@ -1,0 +1,15 @@
+name: Admin User Detail Drawer Validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: ./.github/workflows/recovery-baseline.yml
+
+# AdminUserDetailContractTest
+# AdminUserDetailDrawerContractTest
+# node --check assets/js/admin-user-detail-drawer.js
