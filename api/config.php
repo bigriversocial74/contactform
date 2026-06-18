@@ -57,6 +57,8 @@ if (!function_exists('mg_array_deep_merge')) {
 $baseUrl = rtrim((string) mg_env('MG_BASE_URL', ''), '/');
 $appEnv = strtolower((string) mg_env('MG_APP_ENV', 'production'));
 $runtimeProfile = strtolower((string) mg_env('MG_RUNTIME_PROFILE', 'hostgator'));
+$applicationRoot = dirname(__DIR__);
+$defaultPersistentMediaRoot = dirname($applicationRoot) . '/microgifter-storage';
 
 $config = [
     'db' => [
@@ -74,6 +76,13 @@ $config = [
     ],
     'runtime' => [
         'profile' => $runtimeProfile,
+    ],
+    'storage' => [
+        'driver' => (string) mg_env('MG_MEDIA_STORAGE_DRIVER', 'persistent_local'),
+        'root' => (string) mg_env('MG_MEDIA_STORAGE_ROOT', $defaultPersistentMediaRoot),
+        'public_endpoint' => (string) mg_env('MG_MEDIA_PUBLIC_ENDPOINT', '/media.php'),
+        'require_persistent' => mg_env_bool('MG_REQUIRE_PERSISTENT_MEDIA_STORAGE', $appEnv === 'production'),
+        'legacy_root' => $applicationRoot,
     ],
     'features' => [
         'polling_notifications' => mg_env_bool('MG_ENABLE_POLLING_NOTIFICATIONS', true),
