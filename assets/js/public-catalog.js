@@ -108,18 +108,39 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function bindGreetingCard(card) {
     if (!card) return;
+    var coverPanel = card.querySelector('[data-greeting-card-cover]');
     var openButton = card.querySelector('[data-greeting-card-open]');
     var closeButton = card.querySelector('[data-greeting-card-close]');
     var inside = card.querySelector('[data-greeting-card-inside]');
+
+    function setFocusable(container, enabled) {
+      if (!container) return;
+      if ('inert' in container) container.inert = !enabled;
+      container.querySelectorAll('a,button,input,select,textarea,[tabindex]').forEach(function (node) {
+        if (enabled) {
+          if (node.dataset.previousTabindex !== undefined) {
+            if (node.dataset.previousTabindex === '') node.removeAttribute('tabindex');
+            else node.setAttribute('tabindex', node.dataset.previousTabindex);
+            delete node.dataset.previousTabindex;
+          }
+        } else if (node.dataset.previousTabindex === undefined) {
+          node.dataset.previousTabindex = node.getAttribute('tabindex') || '';
+          node.setAttribute('tabindex', '-1');
+        }
+      });
+    }
 
     function setOpen(open) {
       card.classList.toggle('is-open', open);
       if (openButton) openButton.setAttribute('aria-expanded', open ? 'true' : 'false');
       if (inside) inside.setAttribute('aria-hidden', open ? 'false' : 'true');
+      setFocusable(coverPanel, !open);
+      setFocusable(inside, open);
       if (open && inside) window.setTimeout(function () { inside.focus(); }, 240);
       if (!open && openButton) window.setTimeout(function () { openButton.focus(); }, 120);
     }
 
+    setFocusable(inside, false);
     if (openButton) openButton.addEventListener('click', function () { setOpen(true); });
     if (closeButton) closeButton.addEventListener('click', function () { setOpen(false); });
   }
