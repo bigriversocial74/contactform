@@ -25,12 +25,12 @@ if (!$thread) {
 
 if ($method === 'GET') {
     $messagesStmt = mg_db()->prepare(
-        'SELECT m.public_id, m.body, m.created_at, m.sender_user_id,
+        "SELECT m.public_id, m.body, m.created_at, m.sender_user_id,
                 u.display_name AS sender_name, u.full_name AS sender_full_name
          FROM messages m
          INNER JOIN users u ON u.id = m.sender_user_id
-         WHERE m.thread_id = ?
-         ORDER BY m.created_at ASC, m.id ASC'
+         WHERE m.thread_id = ? AND m.moderation_status NOT IN ('hidden','removed')
+         ORDER BY m.created_at ASC, m.id ASC"
     );
     $messagesStmt->execute([(int) $thread['id']]);
     $messages = array_map(static fn(array $row): array => [
