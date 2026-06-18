@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/bootstrap.php';
 require_once dirname(__DIR__, 2) . '/includes/migrations.php';
+require_once __DIR__ . '/_system_health_metrics.php';
 
 function mg_admin_system_health_require_user(): array
 {
@@ -80,9 +81,8 @@ function mg_admin_system_health_migrations(PDO $pdo): array
         $latest = $pdo->query(
             'SELECT migration_key,applied_at FROM schema_migrations ORDER BY applied_at DESC,id DESC LIMIT 1'
         )->fetch(PDO::FETCH_ASSOC) ?: [];
-        $tone = $status['ready'] ? 'healthy' : 'critical';
         return mg_admin_system_health_service(
-            $tone,
+            $status['ready'] ? 'healthy' : 'critical',
             $status['ready'] ? 'The canonical migration manifest is satisfied.' : 'Database migrations require attention.',
             [
                 'ready' => (bool)$status['ready'],
@@ -170,12 +170,26 @@ function mg_admin_system_health_overall(array $services): string
 
 function mg_admin_system_health_read(PDO $pdo): array
 {
+    $mediaMetrics = mg_admin_system_health_media_metrics($pdo);
+    $notificationMetrics = mg_admin_system_health_notification_metrics($pdo);
     $services = [
         'storage' => mg_admin_system_health_storage(),
         'notifications' => mg_admin_system_health_notifications($pdo),
         'migrations' => mg_admin_system_health_migrations($pdo),
         'runtime' => mg_admin_system_health_runtime($pdo),
     ];
+
+    if ($services['storage']['status'] === 'healthy' && $mediaMetrics['available'] && $mediaMetrics['missing_files'] > 0) {
+        $services['storage']['status'] = 'warning';
+        $services['storage']['summary'] = 'Persistent storage is available, but one or more checked media files are missing.';
+    }
+    if ($services['notifications']['status'] === 'healthy' && $notificationMetrics['available']) {
+        if ($notificationMetrics['failed'] > 0 || $notificationMetrics['overdue'] > 0) {
+            $services['notifications']['status'] = 'warning';
+            $services['notifications']['summary'] = 'Notification delivery is available, but queued work requires attention.';
+        }
+    }
+
     $overall = mg_admin_system_health_overall($services);
     return [
         'status' => $overall,
@@ -185,6 +199,11 @@ function mg_admin_system_health_read(PDO $pdo): array
             default => 'One or more systems require attention.',
         },
         'services' => $services,
+        'metrics' => [
+            'media' => $mediaMetrics,
+            'notifications' => $notificationMetrics,
+        ],
+        'warnings' => mg_admin_system_health_recent_warnings($pdo),
         'actions' => [
             'verify_storage' => false,
             'retry_notifications' => false,
