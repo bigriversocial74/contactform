@@ -29,6 +29,8 @@ function mg_follow_notification_send(PDO $pdo, int $actorId, array $context): vo
     $follow->execute([$actorId, $recipientId]);
     $eventVersion = trim((string)($follow->fetchColumn() ?: ''));
     if ($eventVersion === '') return;
+    $eventKey = trim((string)($context['event_key'] ?? ''));
+    if ($eventKey === '') $eventKey = 'social.follow.' . $actorId . '.' . $recipientId . '.' . strtolower($eventVersion);
 
     $name = mg_notification_user_label($pdo, $actorId);
     $profile = $pdo->prepare("SELECT slug FROM public_profiles WHERE user_id=? AND status='active' LIMIT 1");
@@ -45,7 +47,7 @@ function mg_follow_notification_send(PDO $pdo, int $actorId, array $context): vo
         $url,
         [
             'actor_user_id'=>$actorId,
-            'event_key'=>'social.follow.' . $actorId . '.' . $recipientId . '.' . strtolower($eventVersion),
+            'event_key'=>$eventKey,
             'relationship'=>'follow',
         ]
     );
