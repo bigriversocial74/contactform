@@ -48,6 +48,10 @@ jobs:
       MG_ENABLE_REDIS: "false"
       MG_ENABLE_WEBSOCKETS: "false"
       MG_ENABLE_SSE: "false"
+      MG_MEDIA_STORAGE_DRIVER: persistent_local
+      MG_MEDIA_STORAGE_ROOT: /tmp/microgifter-storage
+      MG_MEDIA_PUBLIC_ENDPOINT: /api/public/media.php
+      MG_REQUIRE_PERSISTENT_MEDIA_STORAGE: "true"
 
     steps:
       - name: Check out repository
@@ -72,6 +76,9 @@ jobs:
         run: |
           set -o pipefail
           php scripts/run_migrations.php 2>&1 | tee /tmp/microgifter-migrations.log
+
+      - name: Initialize persistent media storage
+        run: php scripts/check_media_storage.php --initialize --json
 
       - name: Start application server
         run: |

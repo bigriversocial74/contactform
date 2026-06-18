@@ -18,6 +18,14 @@ return [
     'runtime' => [
         'profile' => 'hostgator',
     ],
+    'storage' => [
+        // Use an absolute path outside public_html / the extracted release folder.
+        // On cPanel this is commonly /home/YOUR-CPANEL-USER/microgifter-storage.
+        'driver' => 'persistent_local',
+        'root' => '/home/YOUR-CPANEL-USER/microgifter-storage',
+        'public_endpoint' => '/api/public/media.php',
+        'require_persistent' => true,
+    ],
     'features' => [
         'polling_notifications' => true,
         'db_outbox' => true,

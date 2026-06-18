@@ -20,6 +20,7 @@ function mg_public_uuid(): string{$bytes=random_bytes(16);$bytes[6]=chr((ord($by
 }
 
 require_once __DIR__.'/runtime.php';
+require_once __DIR__.'/storage.php';
 require_once __DIR__.'/mail.php';
 
 if(!function_exists('mg_e')){

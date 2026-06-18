@@ -3,12 +3,22 @@ declare(strict_types=1);
 
 function mg_social_media_asset_url(array $asset): ?string
 {
+    $publicId=strtolower(trim((string)($asset['public_id']??$asset['asset_public_id']??'')));
     $provider=strtolower(trim((string)($asset['storage_provider']??'')));
     $key=trim((string)($asset['storage_key']??''));
-    if($key===''||str_contains($key,'..')||str_contains($key,"\\"))return null;
-    if($provider==='local')return '/'.ltrim($key,'/');
+    if($publicId!==''&&preg_match('/^[a-f0-9-]{36}$/',$publicId)===1&&in_array($provider,['persistent_local','private_local','local'],true)){
+        return mg_storage_asset_public_url($publicId);
+    }
     if(preg_match('#^https://#i',$key)===1&&filter_var($key,FILTER_VALIDATE_URL))return $key;
     return null;
+}
+
+function mg_social_media_legacy_url(array $asset): ?string
+{
+    $provider=strtolower(trim((string)($asset['storage_provider']??'')));
+    $key=trim((string)($asset['storage_key']??''));
+    if($provider!=='local'||$key===''||str_contains($key,'..')||str_contains($key,"\\"))return null;
+    return '/'.ltrim($key,'/');
 }
 
 function mg_social_media_source_is_feed(array $asset): bool
@@ -95,7 +105,10 @@ function mg_social_media_prepare(PDO $pdo,int $userId,mixed $raw): array
         if($authoritativeUrl===null)throw new RuntimeException('Uploaded media storage is unavailable.');
         $assetType=(string)$asset['asset_type'];
         if(!in_array($assetType,['image','audio','video'],true))throw new RuntimeException('Uploaded media type is not supported for feed posts.');
-        if((string)$item['url']!==$authoritativeUrl)throw new RuntimeException('Uploaded media reference does not match its stored asset.');
+        $acceptedUrls=[$authoritativeUrl];
+        $legacyUrl=mg_social_media_legacy_url($asset);
+        if($legacyUrl!==null)$acceptedUrls[]=$legacyUrl;
+        if(!in_array((string)$item['url'],$acceptedUrls,true))throw new RuntimeException('Uploaded media reference does not match its stored asset.');
         $item['url']=$authoritativeUrl;
         $item['type']=$assetType;
         $bindings[$assetPublic]=['id'=>(int)$asset['id'],'public_id'=>$assetPublic,'type'=>$assetType];
@@ -176,27 +189,37 @@ function mg_social_media_enrich_owner_posts(PDO $pdo,int $userId,array $collecti
         );
         $stmt->execute(array_merge([$userId],$values));
         foreach($stmt->fetchAll(PDO::FETCH_ASSOC) as $row){
-            $url=mg_social_media_asset_url($row);
-            if($url!==null)$byPostUrl[(string)$row['post_public_id']][$url]=(string)$row['asset_public_id'];
+            $canonical=mg_social_media_asset_url($row);
+            if($canonical===null)continue;
+            $record=['asset_id'=>(string)$row['asset_public_id'],'url'=>$canonical];
+            $byPostUrl[(string)$row['post_public_id']][$canonical]=$record;
+            $legacy=mg_social_media_legacy_url($row);
+            if($legacy!==null)$byPostUrl[(string)$row['post_public_id']][$legacy]=$record;
         }
     }
     if($storageKeys!==[]){
         $values=array_values($storageKeys);
         $stmt=$pdo->prepare(
-            'SELECT public_id,storage_key FROM catalog_assets
+            'SELECT public_id,storage_provider,storage_key FROM catalog_assets
              WHERE owner_user_id=? AND storage_provider=\'local\' AND status=\'ready\'
                AND storage_key IN ('.implode(',',array_fill(0,count($values),'?')).')'
         );
         $stmt->execute(array_merge([$userId],$values));
-        foreach($stmt->fetchAll(PDO::FETCH_ASSOC) as $row)$byStorageKey[(string)$row['storage_key']]=(string)$row['public_id'];
+        foreach($stmt->fetchAll(PDO::FETCH_ASSOC) as $row){
+            $canonical=mg_social_media_asset_url($row);
+            if($canonical!==null)$byStorageKey[(string)$row['storage_key']]=['asset_id'=>(string)$row['public_id'],'url'=>$canonical];
+        }
     }
     foreach($items as &$post){
         $postId=(string)($post['id']??'');
         foreach($post['media'] as &$media){
             $url=(string)($media['url']??'');
-            $assetPublic=$byPostUrl[$postId][$url]??null;
-            if($assetPublic===null&&str_starts_with($url,'/uploads/feed/'))$assetPublic=$byStorageKey[ltrim($url,'/')]??null;
-            if($assetPublic!==null)$media['asset_id']=$assetPublic;
+            $record=$byPostUrl[$postId][$url]??null;
+            if($record===null&&str_starts_with($url,'/uploads/feed/'))$record=$byStorageKey[ltrim($url,'/')]??null;
+            if(is_array($record)){
+                $media['asset_id']=$record['asset_id'];
+                $media['url']=$record['url'];
+            }
         }
         unset($media);
     }
