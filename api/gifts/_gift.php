@@ -104,18 +104,31 @@ function mg_gift_event(PDO $pdo, int $giftId, ?int $actorUserId, string $eventTy
     $stmt = $pdo->prepare('INSERT INTO gift_events (gift_id, actor_user_id, event_type, metadata_json, created_at) VALUES (?, ?, ?, ?, NOW())');
     $stmt->execute([$giftId,$actorUserId,$eventType,$metadata ? json_encode($metadata, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) : null]);
     if ($eventType !== 'sent') return;
+
     $giftStmt = $pdo->prepare('SELECT public_id,recipient_user_id,sender_user_id,title FROM gifts WHERE id=? LIMIT 1');
     $giftStmt->execute([$giftId]);
     $gift = $giftStmt->fetch(PDO::FETCH_ASSOC);
     $recipientId = (int)($gift['recipient_user_id'] ?? 0);
     if (!$gift || $recipientId < 1 || $recipientId === (int)$actorUserId) return;
-    $duplicate = $pdo->prepare("SELECT 1 FROM notifications WHERE user_id=? AND type='gift' AND gift_id=? LIMIT 1");
-    $duplicate->execute([$recipientId,$giftId]);
-    if ($duplicate->fetchColumn()) return;
+
     $senderId = (int)($gift['sender_user_id'] ?? $actorUserId ?? 0);
     $sender = $senderId > 0 ? mg_notification_user_label($pdo,$senderId) : 'A Microgifter member';
     $giftTitle = trim((string)($gift['title'] ?? '')) ?: 'a gift';
-    mg_create_notification($pdo,$recipientId,'gift','You received a gift',$sender.' sent you '.$giftTitle.'.','/inbox.php?item='.rawurlencode((string)$gift['public_id']),['gift_id'=>$giftId]);
+    $giftPublicId = (string)$gift['public_id'];
+    mg_create_notification(
+        $pdo,
+        $recipientId,
+        'gift',
+        'You received a gift',
+        $sender . ' sent you ' . $giftTitle . '.',
+        '/inbox.php?item=' . rawurlencode($giftPublicId),
+        [
+            'actor_user_id'=>$senderId > 0 ? $senderId : null,
+            'event_key'=>'gift.sent.' . strtolower($giftPublicId),
+            'gift_id'=>$giftId,
+            'gift_public_id'=>$giftPublicId,
+        ]
+    );
 }
 
 function mg_message_validate_body(mixed $value): string
