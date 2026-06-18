@@ -80,7 +80,7 @@ $config = [
     'storage' => [
         'driver' => (string) mg_env('MG_MEDIA_STORAGE_DRIVER', 'persistent_local'),
         'root' => (string) mg_env('MG_MEDIA_STORAGE_ROOT', $defaultPersistentMediaRoot),
-        'public_endpoint' => (string) mg_env('MG_MEDIA_PUBLIC_ENDPOINT', '/media.php'),
+        'public_endpoint' => (string) mg_env('MG_MEDIA_PUBLIC_ENDPOINT', '/api/public/media.php'),
         'require_persistent' => mg_env_bool('MG_REQUIRE_PERSISTENT_MEDIA_STORAGE', $appEnv === 'production'),
         'legacy_root' => $applicationRoot,
     ],
