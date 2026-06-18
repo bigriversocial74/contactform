@@ -1,0 +1,158 @@
+version: 2
+scope: stages_1_9
+privacy_rules:
+  - raw credentials, credential hashes, access tokens, payment secrets, storage keys, and private recipient contact data must never appear in event payloads.
+  - domain events must carry stable public IDs where available and avoid mutable display-only fields unless explicitly marked as snapshots.
+  - audit events record who performed an action; analytics events record non-sensitive source facts.
+
+categories:
+  domain:
+    description: Business lifecycle events used by backend workflows and future integrations.
+  audit:
+    description: Administrative and security-sensitive user action records.
+  entity_lifecycle:
+    description: Append-only per-entity transition records such as PPPM, entitlement, and Microgift event tables.
+  analytics_source:
+    description: Aggregated or source-fact events for engagement, distribution, demand, and Future Demand systems.
+
+enforcement_scope:
+  literal_domain_emitters:
+    - api/pppm/_pppm.php
+    - api/pppm/_ownership.php
+    - api/microgifts/_engine.php
+    - api/microgifts/_lifecycle.php
+    - api/microgifts/issue.php
+    - api/microgifts/claim.php
+    - api/microgifts/redeem.php
+  rule:
+    - literal mg_event names in scoped files must be registered below.
+    - dynamic global event names are prohibited in scoped files.
+    - entity lifecycle events may use dedicated append-only event-table services.
+
+canonical_events:
+  pppm.owner_transferred:
+    category: domain
+    owning_domain: pppm
+    producer: mg_pppm_transfer_owner_canonical
+    required_ids: [pppm_item_id, from_user_id, to_user_id]
+    idempotency_source: source_type + source_reference + target_owner
+    privacy: internal_business
+    downstream: [entitlements, microgifts, future_demand_source]
+  pppm.redeemed:
+    category: domain
+    owning_domain: pppm
+    producer: mg_pppm_redeem
+    required_ids: [pppm_item_id]
+    idempotency_source: source_type + source_reference
+    privacy: internal_business
+    downstream: [microgifts, future_demand_source]
+  entitlement.granted:
+    category: domain
+    owning_domain: entitlements
+    producer: mg_entitlement_grant_for_pppm_item
+    required_ids: [entitlement_id, pppm_item_id, asset_id]
+    idempotency_source: entitlement idempotency key
+    privacy: internal_business
+    downstream: [library_access]
+  entitlement.revoked:
+    category: domain
+    owning_domain: entitlements
+    producer: entitlement lifecycle policy services
+    required_ids: [entitlement_id]
+    idempotency_source: policy action key
+    privacy: internal_business
+    downstream: [library_access, reviews]
+  microgift.template_created:
+    category: domain
+    owning_domain: microgifts
+    producer: mg_microgift_create_template
+    required_ids: [template_id, owner_type]
+    idempotency_source: template public_id
+    privacy: internal_business
+    downstream: [merchant_ops]
+  microgift.template_version_published:
+    category: domain
+    owning_domain: microgifts
+    producer: mg_microgift_publish_version
+    required_ids: [template_id, version_id]
+    idempotency_source: version public_id
+    privacy: internal_business
+    downstream: [merchant_ops]
+  microgift.instance_issued:
+    category: domain
+    owning_domain: microgifts
+    producer: mg_microgift_issue
+    required_ids: [instance_id, template_version_id]
+    idempotency_source: microgift instance idempotency_key
+    privacy: internal_business
+    downstream: [customer_library, merchant_ops, future_demand_source]
+  microgift.claim_completed:
+    category: domain
+    owning_domain: microgifts
+    producer: mg_microgift_claim
+    required_ids: [instance_id, claim_id, new_owner_user_id]
+    idempotency_source: microgift claim idempotency_key
+    privacy: internal_business
+    downstream: [pppm, entitlements, customer_library, future_demand_source]
+  microgift.redemption_completed:
+    category: domain
+    owning_domain: microgifts
+    producer: mg_microgift_redeem
+    required_ids: [instance_id, redemption_id, merchant_user_id]
+    idempotency_source: microgift redemption idempotency_key
+    privacy: internal_business
+    downstream: [pppm, merchant_ops, future_demand_source]
+  microgift.instance_expired:
+    category: entity_lifecycle
+    owning_domain: microgifts
+    producer: mg_microgift_expire_if_needed
+    required_ids: [instance_id]
+    idempotency_source: instance status transition
+    privacy: internal_business
+    downstream: [merchant_ops, future_demand_source]
+  microgift.instance_cancelled:
+    category: entity_lifecycle
+    owning_domain: microgifts
+    producer: mg_microgift_apply_lifecycle
+    required_ids: [instance_id, action_id]
+    idempotency_source: lifecycle idempotency_key
+    privacy: internal_business
+    downstream: [merchant_ops, reviews]
+  microgift.instance_revoked:
+    category: entity_lifecycle
+    owning_domain: microgifts
+    producer: mg_microgift_apply_lifecycle
+    required_ids: [instance_id, action_id]
+    idempotency_source: lifecycle idempotency_key
+    privacy: internal_business
+    downstream: [merchant_ops, reviews]
+  microgift.instance_replaced:
+    category: entity_lifecycle
+    owning_domain: microgifts
+    producer: admin replacement flow
+    required_ids: [instance_id, replacement_instance_id]
+    idempotency_source: lifecycle idempotency_key
+    privacy: internal_business
+    downstream: [customer_library, merchant_ops]
+  microgift.credential_failed:
+    category: entity_lifecycle
+    owning_domain: microgifts
+    producer: mg_microgift_verify_credential
+    required_ids: [instance_id, credential_id]
+    idempotency_source: credential attempt sequence
+    privacy: restricted_security
+    downstream: [security_monitoring]
+  microgift.credential_rotated:
+    category: entity_lifecycle
+    owning_domain: microgifts
+    producer: mg_microgift_rotate_credential
+    required_ids: [instance_id, credential_id]
+    idempotency_source: replacement credential public id
+    privacy: restricted_security
+    downstream: [security_monitoring]
+
+validation_policy:
+  - New emitted event names in enforcement_scope must be added to this registry before merge.
+  - Events emitted from credential workflows must never contain raw credential values or credential hashes.
+  - Every canonical event must declare category, owning_domain, producer, required_ids, idempotency_source, privacy, and downstream.
+  - Future Demand may consume events and aggregates, but score calculation is deferred beyond Stage 9.

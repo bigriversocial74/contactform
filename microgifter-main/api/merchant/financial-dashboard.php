@@ -1,0 +1,12 @@
+<?php
+declare(strict_types=1);
+require_once __DIR__ . '/_merchant.php';
+mg_require_method('GET');$user=mg_require_permission('merchant.payments.view');$pdo=mg_db();
+$summary=$pdo->prepare("SELECT COUNT(*) orders,COALESCE(SUM(total_cents),0) gross_cents,COALESCE(SUM(payment_status='paid'),0) paid_orders,COALESCE(SUM(payment_status IN ('refunded','partially_refunded')),0) refunded_orders,COALESCE(SUM(payment_status='disputed'),0) disputed_orders FROM commerce_orders WHERE merchant_user_id=?");$summary->execute([(int)$user['id']]);
+$orders=$pdo->prepare("SELECT o.public_id,o.currency,o.total_cents,o.payment_status,o.fulfillment_status,o.paid_at,o.created_at,COUNT(coi.id) item_count,COALESCE(SUM(pr.amount_cents),0) refunded_cents FROM commerce_orders o LEFT JOIN commerce_order_items coi ON coi.order_id=o.id LEFT JOIN payment_refunds pr ON pr.order_id=o.id AND pr.status='succeeded' WHERE o.merchant_user_id=? GROUP BY o.id ORDER BY o.created_at DESC LIMIT 200");$orders->execute([(int)$user['id']]);
+$refunds=$pdo->prepare('SELECT public_id,amount_cents,currency,reason,status,processed_at,created_at FROM payment_refunds WHERE merchant_user_id=? ORDER BY created_at DESC LIMIT 100');$refunds->execute([(int)$user['id']]);
+$payouts=$pdo->prepare('SELECT public_id,provider_key,currency,gross_cents,fee_cents,adjustment_cents,net_cents,status,arrival_date,paid_at,created_at FROM merchant_payouts WHERE merchant_user_id=? ORDER BY created_at DESC LIMIT 100');$payouts->execute([(int)$user['id']]);
+$disputes=$pdo->prepare('SELECT public_id,amount_cents,currency,reason,status,response_due_at,created_at FROM payment_disputes WHERE merchant_user_id=? ORDER BY created_at DESC LIMIT 100');$disputes->execute([(int)$user['id']]);
+$ledger=$pdo->prepare("SELECT account_code,entry_type,SUM(amount_cents) amount_cents,currency FROM financial_ledger_entries WHERE merchant_user_id=? GROUP BY account_code,entry_type,currency ORDER BY account_code");$ledger->execute([(int)$user['id']]);
+$reconciliation=$pdo->prepare('SELECT public_id,provider_key,period_start,period_end,status,expected_cents,provider_cents,difference_cents,exception_count,created_at FROM financial_reconciliation_runs WHERE merchant_user_id=? ORDER BY created_at DESC LIMIT 50');$reconciliation->execute([(int)$user['id']]);
+mg_ok(['summary'=>$summary->fetch()?:[],'orders'=>$orders->fetchAll(),'refunds'=>$refunds->fetchAll(),'payouts'=>$payouts->fetchAll(),'disputes'=>$disputes->fetchAll(),'ledger'=>$ledger->fetchAll(),'reconciliation'=>$reconciliation->fetchAll()]);

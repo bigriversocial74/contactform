@@ -1,0 +1,27 @@
+<?php
+declare(strict_types=1);
+require_once __DIR__ . '/_merchant.php';
+mg_require_method('GET');
+$user=mg_require_permission('merchant.distribution.view');
+$programId=trim((string)($_GET['id']??''));
+if($programId==='')mg_fail('Distribution program not found.',404);
+$pdo=mg_db();
+$stmt=$pdo->prepare('SELECT * FROM distribution_programs WHERE public_id=? AND merchant_user_id=? LIMIT 1');
+$stmt->execute([$programId,(int)$user['id']]);
+$program=$stmt->fetch();
+if(!$program)mg_fail('Distribution program not found.',404);
+$products=$pdo->prepare("SELECT dpp.id,cpt.public_id template_id,cp.public_id product_id,cpv.title,cpv.unit_value_cents,cpv.currency,dpp.weight,dpp.quantity_limit,dpp.quantity_issued,dpp.status FROM distribution_program_products dpp INNER JOIN catalog_pppm_templates cpt ON cpt.id=dpp.pppm_template_id INNER JOIN catalog_product_versions cpv ON cpv.id=cpt.product_version_id INNER JOIN catalog_products cp ON cp.id=cpv.product_id WHERE dpp.program_id=? ORDER BY dpp.id");
+$products->execute([(int)$program['id']]);
+$recipients=$pdo->prepare("SELECT public_id,user_id,external_recipient_id,display_name,eligibility_status,eligibility_reason,entries_count,created_at,updated_at FROM distribution_recipients WHERE program_id=? ORDER BY updated_at DESC,id DESC LIMIT 500");
+$recipients->execute([(int)$program['id']]);
+$allocations=$pdo->prepare("SELECT da.public_id,dr.public_id recipient_id,dr.display_name,dpp.id program_product_id,cpt.public_id template_id,da.quantity,da.unit_value_cents,da.status,da.allocation_method,da.reserved_at,da.issued_at,COUNT(dij.id) job_count,SUM(dij.status='issued') issued_jobs,SUM(dij.status IN ('failed','dead_letter')) failed_jobs FROM distribution_allocations da INNER JOIN distribution_recipients dr ON dr.id=da.recipient_id INNER JOIN distribution_program_products dpp ON dpp.id=da.program_product_id INNER JOIN catalog_pppm_templates cpt ON cpt.id=dpp.pppm_template_id LEFT JOIN distribution_issuance_jobs dij ON dij.allocation_id=da.id WHERE da.program_id=? GROUP BY da.id,dr.id,dpp.id,cpt.id ORDER BY da.created_at DESC LIMIT 250");
+$allocations->execute([(int)$program['id']]);
+$sources=$pdo->prepare('SELECT public_id,source_type,provider_key,display_name,status,last_event_at,created_at,updated_at FROM distribution_source_connections WHERE program_id=? AND merchant_user_id=? ORDER BY updated_at DESC');
+$sources->execute([(int)$program['id'],(int)$user['id']]);
+$batches=$pdo->prepare('SELECT public_id,name,allocation_method,status,requested_count,allocated_count,failed_count,started_at,completed_at,created_at,updated_at FROM distribution_assignment_batches WHERE program_id=? AND merchant_user_id=? ORDER BY created_at DESC');
+$batches->execute([(int)$program['id'],(int)$user['id']]);
+$decisions=$pdo->prepare('SELECT ded.public_id,dr.public_id recipient_id,dr.display_name,ded.from_status,ded.to_status,ded.reason,ded.created_at FROM distribution_eligibility_decisions ded INNER JOIN distribution_recipients dr ON dr.id=ded.recipient_id WHERE ded.program_id=? AND ded.merchant_user_id=? ORDER BY ded.created_at DESC,ded.id DESC LIMIT 100');
+$decisions->execute([(int)$program['id'],(int)$user['id']]);
+$program['rules']=$program['rules_json']?json_decode((string)$program['rules_json'],true):[];
+$program['metadata']=$program['metadata_json']?json_decode((string)$program['metadata_json'],true):[];
+mg_ok(['program'=>$program,'products'=>$products->fetchAll(),'recipients'=>$recipients->fetchAll(),'allocations'=>$allocations->fetchAll(),'sources'=>$sources->fetchAll(),'batches'=>$batches->fetchAll(),'eligibility_decisions'=>$decisions->fetchAll()]);

@@ -1,0 +1,84 @@
+/* Auth page layout
+   Signup, signin, forgot password, and reset password are form pages. */
+.mg-auth-page .mg-main{
+  min-height:calc(100svh - 64px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:clamp(38px,6vw,76px) clamp(18px,4vw,48px);
+  background:linear-gradient(180deg,#fff 0%,#f8fafc 100%);
+}
+.mg-auth-page .mg-auth-shell{
+  width:min(1120px,100%);
+  margin:0 auto;
+  padding:0;
+  display:grid;
+  grid-template-columns:minmax(280px,.85fr) minmax(320px,480px);
+  gap:clamp(24px,5vw,64px);
+  align-items:center;
+}
+.mg-auth-page .mg-auth-aside{
+  position:static;
+  display:grid;
+  gap:18px;
+  max-width:560px;
+}
+.mg-auth-page .mg-auth-aside .mg-badge{
+  width:max-content;
+}
+.mg-auth-page .mg-auth-aside h1{
+  margin:0;
+  font-size:clamp(44px,6vw,76px);
+  line-height:.92;
+  letter-spacing:-.075em;
+}
+.mg-auth-page .mg-auth-aside p{
+  max-width:420px;
+  margin:0;
+  color:var(--mg-muted);
+  font-size:clamp(16px,1.8vw,19px);
+}
+.mg-auth-page .mg-auth-card{
+  width:100%;
+  padding:clamp(24px,4vw,38px);
+  border:1px solid var(--mg-border);
+  border-radius:30px;
+  background:#fff;
+  box-shadow:0 24px 70px rgba(15,23,42,.10);
+  display:grid;
+  gap:16px;
+  filter:none!important;
+  transform:none!important;
+  opacity:1!important;
+}
+.mg-auth-page .mg-auth-card h2{
+  margin:0 0 2px;
+  font-size:clamp(28px,3vw,38px);
+  line-height:1;
+  letter-spacing:-.05em;
+}
+.mg-auth-page .mg-auth-card label{
+  display:grid;
+  gap:8px;
+  font-weight:850;
+  color:var(--mg-text);
+}
+.mg-auth-page .mg-auth-card input{
+  min-height:48px;
+}
+.mg-auth-page .mg-auth-card .mg-btn{
+  width:max-content;
+  min-width:160px;
+}
+@media(max-width:860px){
+  .mg-auth-page .mg-main{
+    align-items:flex-start;
+    padding-top:34px;
+  }
+  .mg-auth-page .mg-auth-shell{
+    grid-template-columns:1fr;
+  }
+  .mg-auth-page .mg-auth-card .mg-btn{
+    width:100%;
+  }
+}

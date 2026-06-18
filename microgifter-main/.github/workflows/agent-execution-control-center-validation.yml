@@ -1,0 +1,153 @@
+name: Agent Execution Control Center Validation
+
+on:
+  push:
+    branches: [production-agent-execution-control-center-foundation]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'agent.php'
+      - 'includes/agent-workspace.php'
+      - 'api/agents/**'
+      - 'assets/js/agent-strategies.js'
+      - 'assets/css/agent-strategies.css'
+      - 'scripts/validate_agent_strategy_control_behavior.php'
+      - 'tests/phpunit/ProductionAgentStrategyControlCenterSection1Test.php'
+      - 'tests/browser/agent-strategy-control-center-section-1.spec.js'
+      - 'tests/browser/fixtures/authenticate-agent.php'
+      - 'composer.json'
+      - '.github/workflows/agent-execution-control-center-validation.yml'
+
+permissions:
+  contents: read
+  statuses: write
+
+concurrency:
+  group: agent-control-center-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  section-1-strategies:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: microgifter_test
+          MYSQL_USER: microgifter_test
+          MYSQL_PASSWORD: microgifter_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+    env:
+      MG_TEST_BASE_URL: http://127.0.0.1:8080
+      MG_TEST_SKIP_AUTHENTICATED: '1'
+      MG_RUN_AGENT_STRATEGY_CONTROL_BEHAVIOR: '1'
+      MG_APP_ENV: testing
+      MG_DEBUG: '0'
+      MG_BASE_URL: http://127.0.0.1:8080
+      MG_SESSION_NAME: mg_agent_control_test_session
+      MG_DB_HOST: 127.0.0.1
+      MG_DB_NAME: microgifter_test
+      MG_DB_USER: microgifter_test
+      MG_DB_PASS: microgifter_test
+      MG_DB_CHARSET: utf8mb4
+      MG_PAYMENT_PROVIDER: sandbox
+      MG_PAYMENT_MODE: test
+      MG_PAYMENT_WEBHOOK_SECRET: validation-payment-secret
+      MG_PAYMENT_SANDBOX_SECRET: validation-sandbox-secret
+      MG_CLAIM_CODE_PEPPER: validation-claim-code-pepper
+      MG_MEDIA_SIGNING_SECRET: validation-media-secret
+      MG_DISTRIBUTION_HASH_SECRET: validation-distribution-secret
+      MG_DISTRIBUTION_WEBHOOK_SECRET: validation-distribution-webhook-secret
+      MG_MERCHANT_INVITE_SECRET: validation-merchant-secret
+      MG_REPORT_EMAIL_SECRET: validation-report-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: curl,fileinfo,json,mbstring,pdo,pdo_mysql
+          coverage: none
+          tools: composer
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: npm install --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Validate Section 1 syntax
+        run: |
+          php -l agent.php
+          php -l includes/agent-workspace.php
+          php -l api/agents/_execution.php
+          php -l api/agents/strategies.php
+          php -l scripts/validate_agent_strategy_control_behavior.php
+          php -l tests/phpunit/ProductionAgentStrategyControlCenterSection1Test.php
+          php -l tests/browser/fixtures/authenticate-agent.php
+          node --check assets/js/agent-strategies.js
+          node --check tests/browser/agent-strategy-control-center-section-1.spec.js
+      - name: Configure MySQL
+        run: mysql -h 127.0.0.1 -uroot -proot -e "SET GLOBAL log_bin_trust_function_creators = 1;"
+      - name: Apply complete ordered schema
+        run: |
+          mkdir -p build
+          php scripts/build_full_upgrade_sql.php build/microgifter_full_upgrade.sql
+          mysql -h 127.0.0.1 -umicrogifter_test -pmicrogifter_test microgifter_test < build/microgifter_full_upgrade.sql
+      - name: Validate strategy lifecycle behavior
+        run: composer test-agent-strategy-control-behavior
+      - name: Validate Section 1 authority contracts
+        run: vendor/bin/phpunit --configuration phpunit.xml.dist --filter ProductionAgentStrategyControlCenterSection1Test
+      - name: Validate frontend contracts
+        run: composer test-frontend-contracts
+      - name: Start PHP server
+        run: |
+          php -S 127.0.0.1:8080 -t . > /tmp/microgifter-agent-control-server.log 2>&1 &
+          echo $! > /tmp/microgifter-agent-control-server.pid
+          for attempt in {1..20}; do
+            curl --fail --silent --show-error http://127.0.0.1:8080/api/health.php >/tmp/microgifter-agent-control-health.json && exit 0
+            sleep 1
+          done
+          cat /tmp/microgifter-agent-control-server.log
+          exit 1
+      - name: Validate Section 1 browser behavior
+        run: npx playwright test tests/browser/agent-strategy-control-center-section-1.spec.js
+      - name: Validate repository PHPUnit regression
+        run: composer test
+      - name: Stop PHP server
+        if: always()
+        run: if [ -f /tmp/microgifter-agent-control-server.pid ]; then kill "$(cat /tmp/microgifter-agent-control-server.pid)" || true; fi
+      - name: Show server log on failure
+        if: failure()
+        run: cat /tmp/microgifter-agent-control-server.log || true
+      - name: Upload Section 1 diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-control-center-section-1-diagnostics
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7
+          if-no-files-found: warn
+      - name: Publish branch validation status
+        if: ${{ always() && github.event_name == 'push' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const success = '${{ job.status }}' === 'success';
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? 'success' : 'failure',
+              context: 'agent-control-center-section-1',
+              target_url: `${process.env.GITHUB_SERVER_URL}/${context.repo.owner}/${context.repo.repo}/actions/runs/${process.env.GITHUB_RUN_ID}`,
+              description: success ? 'Agent strategy checkpoint passed.' : 'Agent strategy checkpoint failed.'
+            });

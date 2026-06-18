@@ -1,0 +1,107 @@
+name: Demand Orchestration Operations Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'api/admin/operations-orchestration.php'
+      - 'api/admin/operations-orchestrations.php'
+      - 'api/admin/operations-readiness.php'
+      - 'api/operations/_operations.php'
+      - 'database/stage_18b_demand_orchestration_operations.sql'
+      - 'scripts/build_full_upgrade_sql.php'
+      - 'scripts/stage18.php'
+      - 'scripts/stage18_smoke.php'
+      - 'scripts/validate_launch_readiness.php'
+      - 'scripts/validate_demand_orchestration_operations_behavior.php'
+      - 'tests/phpunit/ProductionDemandOrchestrationOperationsTest.php'
+      - 'composer.json'
+      - '.github/workflows/demand-orchestration-operations-validation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      MG_APP_ENV: testing
+      MG_DEBUG: '0'
+      MG_DB_HOST: 127.0.0.1
+      MG_DB_NAME: microgifter_test
+      MG_DB_USER: microgifter_test
+      MG_DB_PASS: microgifter_test
+      MG_DB_CHARSET: utf8mb4
+      MG_PAYMENT_PROVIDER: sandbox
+      MG_PAYMENT_MODE: test
+      MG_PAYMENT_WEBHOOK_SECRET: validation-payment-secret
+      MG_PAYMENT_SANDBOX_SECRET: validation-sandbox-secret
+      MG_CLAIM_CODE_PEPPER: validation-claim-code-pepper
+      MG_MEDIA_SIGNING_SECRET: validation-media-secret
+      MG_DISTRIBUTION_HASH_SECRET: validation-distribution-secret
+      MG_DISTRIBUTION_WEBHOOK_SECRET: validation-distribution-webhook-secret
+      MG_MERCHANT_INVITE_SECRET: validation-merchant-secret
+      MG_REPORT_EMAIL_SECRET: validation-report-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: curl,fileinfo,json,mbstring,pdo,pdo_mysql
+          coverage: none
+          tools: composer
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: php -l api/operations/_operations.php && php -l api/admin/operations-orchestration.php && php -l api/admin/operations-orchestrations.php && php -l api/admin/operations-readiness.php && php -l scripts/validate_launch_readiness.php && php -l scripts/validate_demand_orchestration_operations_behavior.php && php -l tests/phpunit/ProductionDemandOrchestrationOperationsTest.php
+      - name: Configure MySQL
+        run: |
+          sudo systemctl start mysql.service
+          run_mysql_root() {
+            if mysql -uroot -proot "$@" 2>/tmp/mysql-root.err; then return 0; fi
+            if sudo mysql -uroot -proot "$@" 2>/tmp/mysql-root.err; then return 0; fi
+            if mysql -uroot "$@" 2>/tmp/mysql-root.err; then return 0; fi
+            if sudo mysql "$@" 2>/tmp/mysql-root.err; then return 0; fi
+            cat /tmp/mysql-root.err || true
+            return 1
+          }
+          run_mysql_root <<'SQL'
+          CREATE DATABASE IF NOT EXISTS microgifter_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+          CREATE USER IF NOT EXISTS 'microgifter_test'@'localhost' IDENTIFIED BY 'microgifter_test';
+          CREATE USER IF NOT EXISTS 'microgifter_test'@'127.0.0.1' IDENTIFIED BY 'microgifter_test';
+          CREATE USER IF NOT EXISTS 'microgifter_test'@'%' IDENTIFIED BY 'microgifter_test';
+          GRANT ALL PRIVILEGES ON microgifter_test.* TO 'microgifter_test'@'localhost';
+          GRANT ALL PRIVILEGES ON microgifter_test.* TO 'microgifter_test'@'127.0.0.1';
+          GRANT ALL PRIVILEGES ON microgifter_test.* TO 'microgifter_test'@'%';
+          SET GLOBAL log_bin_trust_function_creators = 1;
+          FLUSH PRIVILEGES;
+          SQL
+      - name: Apply complete ordered schema
+        run: |
+          mkdir -p build
+          php scripts/build_full_upgrade_sql.php build/microgifter_full_upgrade.sql
+          mysql -h 127.0.0.1 -umicrogifter_test -pmicrogifter_test microgifter_test < build/microgifter_full_upgrade.sql
+      - name: Validate Stage 17B and Stage 18B schema
+        run: |
+          php scripts/stage17_smoke.php
+          php scripts/stage18_smoke.php
+      - name: Validate clean launch readiness
+        run: php scripts/validate_launch_readiness.php
+      - name: Validate existing demand orchestration behavior
+        run: composer test-demand-orchestration-behavior
+      - name: Validate orchestration operations behavior
+        run: |
+          set +e
+          composer test-demand-orchestration-operations > build/demand-orchestration-operations.log 2>&1
+          status=$?
+          cat build/demand-orchestration-operations.log
+          exit "$status"
+      - name: Upload orchestration operations diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: demand-orchestration-operations-diagnostics
+          path: build/demand-orchestration-operations.log
+          retention-days: 7
+          if-no-files-found: warn
+      - name: Validate orchestration operations contracts
+        run: vendor/bin/phpunit --configuration phpunit.xml.dist --filter ProductionDemandOrchestrationOperationsTest
