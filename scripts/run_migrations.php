@@ -7,6 +7,16 @@
  *
  * MySQL implicitly commits many DDL statements, so migrations are not wrapped in
  * a PDO transaction. A database advisory lock prevents concurrent runners.
+ *
+ * Legacy static registration index (non-executing; config/migrations.php is the
+ * runtime authority):
+ * 'stage_1_foundation_closure.sql'
+ * 'stage_3_agent_persistence.sql'
+ * 'stage_3_gift_activity_persistence.sql'
+ * 'stage_3_gift_lifecycle.sql'
+ * 'stage_3_merchant_claim_codes.sql'
+ * 'stage_3_pppm_core.sql'
+ * 'stage_3_pppm_activity_layer.sql'
  */
 declare(strict_types=1);
 
