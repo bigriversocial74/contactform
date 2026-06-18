@@ -27,6 +27,7 @@ final class SocialFeedMediaNotificationsContractTest extends TestCase
         self::assertStringContainsString("data.append('media',file,file.name)",$client);
         self::assertStringContainsString("mg_require_permission('social.posts.create')",$endpoint);
         self::assertStringContainsString('is_uploaded_file',$endpoint);
+        self::assertStringContainsString('move_uploaded_file',$endpoint);
         self::assertStringContainsString('new finfo(FILEINFO_MIME_TYPE)',$endpoint);
         self::assertStringContainsString('INSERT INTO catalog_assets',$endpoint);
         self::assertStringContainsString("'ready'",$endpoint);
@@ -62,7 +63,8 @@ final class SocialFeedMediaNotificationsContractTest extends TestCase
         self::assertStringContainsString("mg_create_notification(\$pdo,\$recipientId,'social'",$follow);
         self::assertStringContainsString('mg_follow_notification_send',$relationship);
         self::assertStringContainsString("'message'",$messages);
-        self::assertStringContainsString('INSERT INTO notifications',$messages);
+        self::assertStringContainsString('mg_create_notification',$messages);
+        self::assertStringContainsString('message_thread_settings',$messages);
         self::assertStringContainsString("mg_create_notification(\$pdo,\$recipientId,'gift'",$gift);
         self::assertStringContainsString("\$kind='gift'",$microgift);
         self::assertStringContainsString('mg_microgift_issue_signal',$issue);
