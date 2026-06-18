@@ -1,0 +1,52 @@
+.mg-admin-moderation-page .mg-main{background:#f3f6fb}
+.mg-admin-moderation-shell{width:min(1440px,calc(100% - 30px));margin:0 auto;padding:32px 0 60px}
+.mg-admin-moderation-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:20px}
+.mg-admin-moderation-hero h1{margin:.35rem 0 .45rem;color:#0f172a;font-size:clamp(2rem,4vw,3.1rem);letter-spacing:-.045em}
+.mg-admin-moderation-hero p{max-width:800px;margin:0;color:#64748b;line-height:1.6}
+.mg-admin-moderation-back{display:inline-flex;margin-bottom:1rem;color:#475569;font-size:.76rem;font-weight:850;text-decoration:none}
+.mg-admin-moderation-back:hover{color:#1d4ed8}
+.mg-admin-moderation-hero-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:flex-end}
+.mg-admin-moderation-hero-actions>span{color:#64748b;font-size:.72rem}
+.mg-admin-moderation-hero-actions strong{color:#0f172a}
+.mg-admin-moderation-summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.mg-admin-moderation-summary article,.mg-admin-moderation-filters,.mg-admin-moderation-queue,.mg-admin-moderation-review,.mg-admin-moderation-actions,.mg-admin-moderation-access{border:1px solid #dbe3ef;border-radius:17px;background:#fff;box-shadow:0 12px 32px rgba(15,23,42,.05)}
+.mg-admin-moderation-summary article{padding:14px}
+.mg-admin-moderation-summary span,.mg-admin-moderation-summary small{display:block;color:#64748b;font-size:.65rem}
+.mg-admin-moderation-summary strong{display:block;margin:.35rem 0;color:#0f172a;font-size:1.35rem;letter-spacing:-.035em}
+.mg-admin-moderation-filters{display:grid;grid-template-columns:minmax(240px,1.5fr) repeat(4,minmax(130px,.72fr)) auto;gap:10px;align-items:end;margin-bottom:14px;padding:14px}
+.mg-admin-moderation-filters label,.mg-admin-moderation-action-form label{display:grid;gap:.35rem;color:#64748b;font-size:.68rem;font-weight:800}
+.mg-admin-moderation-filters input,.mg-admin-moderation-filters select,.mg-admin-moderation-action-form select,.mg-admin-moderation-action-form textarea{width:100%;border:1px solid #d5deea;border-radius:10px;background:#fff;color:#0f172a;font:inherit}
+.mg-admin-moderation-filters input,.mg-admin-moderation-filters select,.mg-admin-moderation-action-form select{height:40px;padding:0 .7rem}
+.mg-admin-moderation-action-form textarea{padding:.7rem;resize:vertical;line-height:1.45}
+.mg-admin-moderation-workspace{display:grid;grid-template-columns:minmax(280px,.82fr) minmax(480px,1.55fr) minmax(270px,.72fr);gap:14px;align-items:start}
+.mg-admin-moderation-queue,.mg-admin-moderation-review,.mg-admin-moderation-actions{min-height:640px;overflow:hidden}
+.mg-admin-moderation-queue>header,.mg-admin-moderation-actions>header{padding:15px 16px;border-bottom:1px solid #e7edf5}
+.mg-admin-moderation-queue h2,.mg-admin-moderation-actions h2{margin:0;color:#0f172a;font-size:.95rem}
+.mg-admin-moderation-queue header p,.mg-admin-moderation-actions header p{margin:.28rem 0 0;color:#64748b;font-size:.68rem}
+.mg-admin-moderation-list{display:grid;gap:0;max-height:570px;overflow:auto}
+.mg-admin-moderation-loading,.mg-admin-moderation-empty{display:grid;place-items:center;align-content:center;min-height:430px;padding:28px;text-align:center}
+.mg-admin-moderation-loading strong,.mg-admin-moderation-empty h2{margin:0;color:#0f172a}
+.mg-admin-moderation-loading span,.mg-admin-moderation-empty p{max-width:520px;margin:.45rem 0 0;color:#64748b;line-height:1.55}
+.mg-admin-moderation-empty>span{padding:.3rem .55rem;border-radius:999px;background:#eef2ff;color:#4338ca;font-size:.64rem;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
+.mg-admin-moderation-queue>footer{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-top:1px solid #e7edf5;color:#64748b;font-size:.68rem}
+.mg-admin-moderation-detail{padding:17px}
+.mg-admin-moderation-detail-head{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding-bottom:15px;border-bottom:1px solid #e7edf5}
+.mg-admin-moderation-detail-head h2{margin:.45rem 0 .35rem;color:#0f172a;font-size:1.25rem}
+.mg-admin-moderation-detail-head p{margin:0;color:#64748b;font-size:.76rem;line-height:1.5}
+.mg-admin-moderation-detail-head dl{display:grid;gap:.4rem;min-width:180px;margin:0}
+.mg-admin-moderation-detail-head dl div{display:flex;justify-content:space-between;gap:12px}
+.mg-admin-moderation-detail-head dt{color:#64748b;font-size:.65rem}
+.mg-admin-moderation-detail-head dd{margin:0;color:#0f172a;font-size:.67rem;font-weight:850;text-align:right}
+.mg-admin-moderation-subject,.mg-admin-moderation-account,.mg-admin-moderation-history{margin-top:14px;padding:15px;border:1px solid #e4eaf2;border-radius:14px;background:#f8fafc}
+.mg-admin-moderation-actions{padding-bottom:14px}
+.mg-admin-moderation-action-empty,.mg-admin-moderation-readonly{margin:14px;padding:14px;border:1px dashed #dbe3ef;border-radius:13px;color:#64748b;font-size:.72rem;line-height:1.5}
+.mg-admin-moderation-readonly strong{display:block;margin-bottom:.35rem;color:#0f172a}
+.mg-admin-moderation-action-form{display:grid;gap:12px;padding:14px}
+.mg-admin-moderation-action-status{min-height:20px;color:#64748b;font-size:.68rem}
+.mg-admin-moderation-access{padding:24px}
+.mg-admin-moderation-access h2{margin:0 0 .5rem;color:#0f172a}
+.mg-admin-moderation-access p{margin:0 0 1rem;color:#64748b}
+.mg-hidden{display:none!important}
+@media(max-width:1180px){.mg-admin-moderation-summary{grid-template-columns:repeat(3,minmax(0,1fr))}.mg-admin-moderation-filters{grid-template-columns:repeat(3,minmax(0,1fr))}.mg-admin-moderation-filters .is-search{grid-column:span 2}.mg-admin-moderation-workspace{grid-template-columns:minmax(280px,.8fr) minmax(440px,1.2fr)}.mg-admin-moderation-actions{grid-column:1/-1;min-height:0}}
+@media(max-width:820px){.mg-admin-moderation-shell{width:min(100% - 20px,1440px);padding-top:22px}.mg-admin-moderation-hero{align-items:flex-start;flex-direction:column}.mg-admin-moderation-hero-actions{justify-content:flex-start}.mg-admin-moderation-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.mg-admin-moderation-filters,.mg-admin-moderation-workspace{grid-template-columns:1fr}.mg-admin-moderation-filters .is-search{grid-column:auto}.mg-admin-moderation-queue,.mg-admin-moderation-review{min-height:0}.mg-admin-moderation-list{max-height:430px}.mg-admin-moderation-detail-head{flex-direction:column}.mg-admin-moderation-detail-head dl{width:100%}}
+@media(max-width:480px){.mg-admin-moderation-summary{grid-template-columns:1fr}}
