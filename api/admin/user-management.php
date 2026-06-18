@@ -25,6 +25,11 @@ mg_rate_limit('admin.user_management.target', 'user:' . $targetUserId, 120, 3600
 $pdo = mg_db();
 $pdo->beginTransaction();
 try {
+    $protectedTarget = mg_admin_management_require_target($pdo, $targetUserId, true);
+    if ((bool)$protectedTarget['is_super_admin']) {
+        throw new MgAdminUserManagementException('Owner accounts require the manual owner workflow.', 403);
+    }
+
     $result = match ($action) {
         'suspend_user', 'reactivate_user' => mg_admin_management_account_action($pdo, $actor, $targetUserId, $action, $reason),
         'assign_role', 'remove_role' => mg_admin_management_role_action(
