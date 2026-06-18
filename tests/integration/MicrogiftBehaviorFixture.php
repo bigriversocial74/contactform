@@ -71,9 +71,9 @@ function mg_it_location(PDO $pdo,int $merchantId,string $runId): array
     $locationPublic=mg_public_uuid();
     if(in_array('workspace_id',$columns,true)){
         $locationId=mg_it_insert($pdo,'merchant_locations',[
-            'public_id'=>$locationPublic,'workspace_id'=>$workspaceId,'name'=>'Behavior Location',
-            'location_code'=>'LOC-'.$runId,'country_code'=>'US','timezone'=>'UTC','status'=>'active',
-            'is_primary'=>1,'created_at'=>$now,'updated_at'=>$now,
+            'public_id'=>$locationPublic,'workspace_id'=>$workspaceId,'merchant_user_id'=>$merchantId,
+            'name'=>'Behavior Location','location_code'=>'LOC-'.$runId,'country_code'=>'US',
+            'timezone'=>'UTC','status'=>'active','is_primary'=>1,'created_at'=>$now,'updated_at'=>$now,
         ]);
     }else{
         $locationId=mg_it_insert($pdo,'merchant_locations',[
