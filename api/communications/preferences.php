@@ -4,7 +4,7 @@ require_once dirname(__DIR__) . '/bootstrap.php';
 $method=strtoupper($_SERVER['REQUEST_METHOD']??'GET');
 $user=mg_require_permission($method==='GET'?'notification.view':'notification.preferences.manage');
 $pdo=mg_db();
-$types=['gift','message','claim','delivery','distribution','campaign','merchant','security','system'];
+$types=['gift','message','social','claim','delivery','distribution','campaign','merchant','security','system'];
 if($method==='GET'){
  $stmt=$pdo->prepare('SELECT notification_type,in_app_enabled,email_enabled,sms_enabled,push_enabled,digest_mode,quiet_hours_start,quiet_hours_end,timezone FROM notification_preferences WHERE user_id=? ORDER BY notification_type');
  $stmt->execute([(int)$user['id']]);$saved=[];foreach($stmt->fetchAll() as $row)$saved[$row['notification_type']]=$row;

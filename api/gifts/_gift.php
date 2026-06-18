@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/bootstrap.php';
+require_once dirname(__DIR__) . '/communications/_communications.php';
 
 if (!function_exists('mg_public_uuid')) {
     function mg_public_uuid(): string
@@ -22,9 +23,7 @@ function mg_gift_public_id(): string
 function mg_gift_request_id(array $input = []): string
 {
     $id = trim((string) ($input['id'] ?? $_GET['id'] ?? ''));
-    if ($id === '' || strlen($id) > 32 || !preg_match('/^GFT-[A-Z0-9-]+$/', $id)) {
-        mg_fail('Invalid gift identifier.', 422);
-    }
+    if ($id === '' || strlen($id) > 32 || !preg_match('/^GFT-[A-Z0-9-]+$/', $id)) mg_fail('Invalid gift identifier.', 422);
     return $id;
 }
 
@@ -36,13 +35,9 @@ function mg_gift_format_money(int $cents, string $currency = 'USD'): string
 
 function mg_gift_format_time(?string $value): string
 {
-    if (!$value) {
-        return 'Just now';
-    }
+    if (!$value) return 'Just now';
     $timestamp = strtotime($value);
-    if (!$timestamp) {
-        return $value;
-    }
+    if (!$timestamp) return $value;
     return gmdate('M j, Y g:i A', $timestamp) . ' UTC';
 }
 
@@ -69,9 +64,7 @@ function mg_gift_find_accessible(int $userId, string $publicId): ?array
 function mg_gift_require_accessible(int $userId, string $publicId): array
 {
     $gift = mg_gift_find_accessible($userId, $publicId);
-    if (!$gift) {
-        mg_fail('Gift not found.', 404);
-    }
+    if (!$gift) mg_fail('Gift not found.', 404);
     return $gift;
 }
 
@@ -83,30 +76,16 @@ function mg_gift_row_to_public(array $row, int $viewerUserId): array
     $metadata = [];
     if (!empty($row['metadata_json'])) {
         $decoded = json_decode((string) $row['metadata_json'], true);
-        if (is_array($decoded)) {
-            $metadata = $decoded;
-        }
+        if (is_array($decoded)) $metadata = $decoded;
     }
-
     return [
-        'id' => (string) $row['public_id'],
-        'title' => (string) $row['title'],
-        'description' => (string) ($row['description'] ?? ''),
-        'sent_from' => $senderName !== '' ? $senderName : 'Microgifter user',
-        'recipient' => $recipientName !== '' ? $recipientName : 'Recipient',
-        'timestamp' => $activityTime,
-        'time_label' => mg_gift_format_time($activityTime),
-        'gift_type' => (string) $row['gift_type'],
-        'value_cents' => (int) $row['value_cents'],
-        'currency' => (string) $row['currency'],
-        'value' => mg_gift_format_money((int) $row['value_cents'], (string) $row['currency']),
-        'status' => (string) $row['status'],
-        'direction' => (int) $row['sender_user_id'] === $viewerUserId ? 'sent' : 'received',
-        'avatar' => (string) ($metadata['avatar_url'] ?? '/assets/images/default-avatar.svg'),
-        'card' => is_array($metadata['card'] ?? null) ? $metadata['card'] : [],
-        'metadata' => $metadata,
-        'created_at' => $row['created_at'] ?? null,
-        'updated_at' => $row['updated_at'] ?? null,
+        'id'=>(string)$row['public_id'],'title'=>(string)$row['title'],'description'=>(string)($row['description'] ?? ''),
+        'sent_from'=>$senderName !== '' ? $senderName : 'Microgifter user','recipient'=>$recipientName !== '' ? $recipientName : 'Recipient',
+        'timestamp'=>$activityTime,'time_label'=>mg_gift_format_time($activityTime),'gift_type'=>(string)$row['gift_type'],
+        'value_cents'=>(int)$row['value_cents'],'currency'=>(string)$row['currency'],'value'=>mg_gift_format_money((int)$row['value_cents'], (string)$row['currency']),
+        'status'=>(string)$row['status'],'direction'=>(int)$row['sender_user_id'] === $viewerUserId ? 'sent' : 'received',
+        'avatar'=>(string)($metadata['avatar_url'] ?? '/assets/images/default-avatar.svg'),'card'=>is_array($metadata['card'] ?? null) ? $metadata['card'] : [],
+        'metadata'=>$metadata,'created_at'=>$row['created_at'] ?? null,'updated_at'=>$row['updated_at'] ?? null,
     ];
 }
 
@@ -122,23 +101,26 @@ function mg_gift_box_where(string $box): array
 
 function mg_gift_event(PDO $pdo, int $giftId, ?int $actorUserId, string $eventType, array $metadata = []): void
 {
-    $stmt = $pdo->prepare(
-        'INSERT INTO gift_events (gift_id, actor_user_id, event_type, metadata_json, created_at)
-         VALUES (?, ?, ?, ?, NOW())'
-    );
-    $stmt->execute([
-        $giftId,
-        $actorUserId,
-        $eventType,
-        $metadata ? json_encode($metadata, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) : null,
-    ]);
+    $stmt = $pdo->prepare('INSERT INTO gift_events (gift_id, actor_user_id, event_type, metadata_json, created_at) VALUES (?, ?, ?, ?, NOW())');
+    $stmt->execute([$giftId,$actorUserId,$eventType,$metadata ? json_encode($metadata, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) : null]);
+    if ($eventType !== 'sent') return;
+    $giftStmt = $pdo->prepare('SELECT public_id,recipient_user_id,sender_user_id,title FROM gifts WHERE id=? LIMIT 1');
+    $giftStmt->execute([$giftId]);
+    $gift = $giftStmt->fetch(PDO::FETCH_ASSOC);
+    $recipientId = (int)($gift['recipient_user_id'] ?? 0);
+    if (!$gift || $recipientId < 1 || $recipientId === (int)$actorUserId) return;
+    $duplicate = $pdo->prepare("SELECT 1 FROM notifications WHERE user_id=? AND type='gift' AND gift_id=? LIMIT 1");
+    $duplicate->execute([$recipientId,$giftId]);
+    if ($duplicate->fetchColumn()) return;
+    $senderId = (int)($gift['sender_user_id'] ?? $actorUserId ?? 0);
+    $sender = $senderId > 0 ? mg_notification_user_label($pdo,$senderId) : 'A Microgifter member';
+    $giftTitle = trim((string)($gift['title'] ?? '')) ?: 'a gift';
+    mg_create_notification($pdo,$recipientId,'gift','You received a gift',$sender.' sent you '.$giftTitle.'.','/inbox.php?item='.rawurlencode((string)$gift['public_id']),['gift_id'=>$giftId]);
 }
 
 function mg_message_validate_body(mixed $value): string
 {
     $body = trim((string) $value);
-    if ($body === '' || mb_strlen($body) > 4000) {
-        mg_fail('Message must be between 1 and 4000 characters.', 422, ['body' => 'Enter a valid message.']);
-    }
+    if ($body === '' || mb_strlen($body) > 4000) mg_fail('Message must be between 1 and 4000 characters.', 422, ['body' => 'Enter a valid message.']);
     return $body;
 }

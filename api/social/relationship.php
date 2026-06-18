@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_engagement.php';
+require_once __DIR__ . '/_follow_notification.php';
 
 mg_require_method('POST');
 $user=mg_require_permission('social.engage');
@@ -27,7 +28,9 @@ try{
         $pdo->commit();
         mg_ok($replay,'Existing relationship result returned.');
     }
+    $followNotification=$action==='follow'?mg_follow_notification_context($pdo,$actorId,$targetReference):null;
     $result=mg_engagement_relationship($pdo,$actorId,$targetReference,$action);
+    if($followNotification!==null)mg_follow_notification_send($pdo,$actorId,$followNotification);
     $result=mg_engagement_complete($pdo,$actorId,$key,$result);
     $pdo->commit();
 
