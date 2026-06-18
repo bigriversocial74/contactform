@@ -87,6 +87,6 @@ final class ProductPppmGoldenPathAuditContractTest extends TestCase
         self::assertStringContainsString('UNIQUE KEY uq_catalog_products_merchant_slug (merchant_user_id, slug)',$schema);
         self::assertStringContainsString("\$_GET['p']",$page);
         self::assertStringContainsString('WHERE cp.slug = ?',$api);
-        self::assertStringContainsString('Product URL slugs are ambiguous across merchants',$audit);
+        self::assertStringContainsString('Product URLs are ambiguous across merchants',$audit);
     }
 }
