@@ -72,14 +72,18 @@ if((int)($usage['asset_count']??0)>=40||((int)($usage['total_bytes']??0)+$size)>
 }
 
 $publicId=mg_public_uuid();
-$directory='uploads/feed/'.gmdate('Y/m').'/user-'.$userId;
-$root=dirname(__DIR__,2);
-$absoluteDirectory=$root.'/'.$directory;
-if(!is_dir($absoluteDirectory)&&!mkdir($absoluteDirectory,0755,true)&&!is_dir($absoluteDirectory))mg_fail('Media storage is unavailable.',503);
-$storageKey=$directory.'/'.str_replace('-','',$publicId).'.'.$types[$kind][$mime];
-$absolutePath=$root.'/'.$storageKey;
-if(!move_uploaded_file($tmp,$absolutePath))mg_fail('Unable to store the uploaded media.',500);
-@chmod($absolutePath,0644);
+$storageKey=mg_storage_feed_key($userId,$publicId,$types[$kind][$mime]);
+try{
+    $absolutePath=mg_storage_store_uploaded_file($tmp,$storageKey);
+}catch(InvalidArgumentException $error){
+    mg_fail($error->getMessage(),422);
+}catch(RuntimeException $error){
+    mg_security_log('error','social.media_storage_unavailable','Persistent feed media storage is unavailable.',[
+        'exception_class'=>$error::class,
+        'message'=>$error->getMessage(),
+    ],$userId);
+    mg_fail('Persistent media storage is unavailable. The upload was not saved.',503);
+}
 
 $checksum=hash_file('sha256',$absolutePath)?:null;
 $original=preg_replace('/[\x00-\x1F\x7F]+/u','',basename((string)($file['name']??'media')))??'media';
@@ -87,6 +91,7 @@ $original=mb_substr($original!==''?$original:'media',0,255);
 $metadata=json_encode([
     'source'=>'social_feed',
     'feed_state'=>'unattached',
+    'storage_class'=>'persistent',
     'uploaded_at'=>gmdate('c'),
 ],JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR);
 
@@ -97,11 +102,11 @@ try{
          (public_id,owner_user_id,asset_type,storage_provider,storage_key,original_filename,mime_type,
           byte_size,checksum_sha256,width_px,height_px,duration_ms,status,metadata_json,created_at,updated_at)
          VALUES (?,?,?,?,?,?,?,?,?,?,?,NULL,'ready',?,NOW(),NOW())"
-    )->execute([$publicId,$userId,$kind,'local',$storageKey,$original,$mime,$size,$checksum,$width,$height,$metadata]);
+    )->execute([$publicId,$userId,$kind,'persistent_local',$storageKey,$original,$mime,$size,$checksum,$width,$height,$metadata]);
     $pdo->commit();
 }catch(Throwable $error){
     if($pdo->inTransaction())$pdo->rollBack();
-    @unlink($absolutePath);
+    mg_storage_delete_asset_file('persistent_local',$storageKey);
     mg_security_log('error','social.media_upload_failed','Feed media registration failed.',[
         'exception_class'=>$error::class,
         'media_type'=>$kind,
@@ -113,11 +118,12 @@ mg_audit('social.media_uploaded','catalog_asset',[
     'asset_id'=>$publicId,
     'asset_type'=>$kind,
     'byte_size'=>$size,
+    'storage_provider'=>'persistent_local',
 ],$userId);
 mg_ok([
     'asset_id'=>$publicId,
     'type'=>$kind,
-    'url'=>'/'.$storageKey,
+    'url'=>mg_storage_asset_public_url($publicId),
     'original_filename'=>$original,
     'mime_type'=>$mime,
     'byte_size'=>$size,
