@@ -1,0 +1,18 @@
+name: Prepaid Demand Intelligence Validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: ./.github/workflows/recovery-baseline.yml
+
+# MG_RUN_PREPAID_DEMAND_BEHAVIOR
+# composer test-prepaid-demand-behavior
+# ProductionPrepaidDemandIntelligenceFoundationTest
+# prepaid-demand-intelligence-foundation.spec.js
+# composer test
+# npm run test:browser
