@@ -23,6 +23,7 @@ composer test-frontend-contracts
 composer test-money-behavior
 composer test-microgift-behavior
 composer test-pppm-resend-behavior
+composer audit-product-pppm-golden-path
 composer test-tip-behavior
 composer test-tip-payment-behavior
 composer test-tip-recovery-behavior

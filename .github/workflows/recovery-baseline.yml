@@ -101,6 +101,14 @@ jobs:
             build/microgifter_full_upgrade.sql
             build/microgifter_full_upgrade.manifest.json
 
+      - name: Upload product PPPM audit artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: product-pppm-golden-path-audit
+          path: build/product_pppm_golden_path_audit.json
+          if-no-files-found: error
+
       - name: Upload diagnostic logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
