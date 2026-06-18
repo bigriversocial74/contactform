@@ -29,7 +29,7 @@ function mg_social_media_prepare(PDO $pdo,int $userId,mixed $raw): array
     }
     if(!is_array($raw))return ['media'=>[],'bindings'=>[]];
     $items=array_is_list($raw)?$raw:[$raw];
-    $prepared=[];$assetIds=[];
+    $prepared=[];$assetIds=[];$legacyKeys=[];
     foreach($items as $item){
         if(count($prepared)>=MG_SOCIAL_POST_MEDIA_MAX)break;
         if(is_string($item))$item=['url'=>$item];
@@ -41,6 +41,7 @@ function mg_social_media_prepare(PDO $pdo,int $userId,mixed $raw): array
         $assetPublic=strtolower(trim((string)($item['asset_id']??'')));
         if($assetPublic!==''&&preg_match('/^[a-f0-9-]{36}$/',$assetPublic)!==1)throw new InvalidArgumentException('Invalid uploaded media reference.');
         if($assetPublic!=='')$assetIds[$assetPublic]=$assetPublic;
+        elseif(str_starts_with($url,'/uploads/feed/'))$legacyKeys[ltrim($url,'/')]=ltrim($url,'/');
         $prepared[]=[
             'url'=>$url,
             'type'=>$type,
@@ -50,26 +51,40 @@ function mg_social_media_prepare(PDO $pdo,int $userId,mixed $raw): array
         ];
     }
 
-    $assets=[];
+    $assets=[];$assetsByKey=[];
     if($assetIds!==[]){
         $values=array_values($assetIds);
         $stmt=$pdo->prepare(
             'SELECT id,public_id,owner_user_id,asset_type,storage_provider,storage_key,status,metadata_json
-             FROM catalog_assets
-             WHERE public_id IN ('.implode(',',array_fill(0,count($values),'?')).')
-             FOR UPDATE'
+             FROM catalog_assets WHERE public_id IN ('.implode(',',array_fill(0,count($values),'?')).') FOR UPDATE'
         );
         $stmt->execute($values);
         foreach($stmt->fetchAll(PDO::FETCH_ASSOC) as $asset)$assets[(string)$asset['public_id']]=$asset;
+    }
+    if($legacyKeys!==[]){
+        $values=array_values($legacyKeys);
+        $stmt=$pdo->prepare(
+            'SELECT id,public_id,owner_user_id,asset_type,storage_provider,storage_key,status,metadata_json
+             FROM catalog_assets
+             WHERE owner_user_id=? AND storage_provider=\'local\' AND storage_key IN ('.implode(',',array_fill(0,count($values),'?')).')
+             FOR UPDATE'
+        );
+        $stmt->execute(array_merge([$userId],$values));
+        foreach($stmt->fetchAll(PDO::FETCH_ASSOC) as $asset){
+            $assets[(string)$asset['public_id']]=$asset;
+            $assetsByKey[(string)$asset['storage_key']]=$asset;
+        }
     }
 
     $seen=[];$bindings=[];
     foreach($prepared as &$item){
         $assetPublic=(string)($item['asset_id']??'');
-        if($assetPublic===''){
-            if(str_starts_with((string)$item['url'],'/uploads/feed/'))throw new RuntimeException('Uploaded media is no longer available. Please upload it again.');
-            continue;
+        if($assetPublic===''&&str_starts_with((string)$item['url'],'/uploads/feed/')){
+            $legacy=$assetsByKey[ltrim((string)$item['url'],'/')]??null;
+            if($legacy)$assetPublic=(string)$legacy['public_id'];
+            $item['asset_id']=$assetPublic!==''?$assetPublic:null;
         }
+        if($assetPublic==='')continue;
         if(isset($seen[$assetPublic]))throw new InvalidArgumentException('The same uploaded media cannot be attached twice.');
         $seen[$assetPublic]=true;
         $asset=$assets[$assetPublic]??null;
@@ -83,13 +98,14 @@ function mg_social_media_prepare(PDO $pdo,int $userId,mixed $raw): array
         if((string)$item['url']!==$authoritativeUrl)throw new RuntimeException('Uploaded media reference does not match its stored asset.');
         $item['url']=$authoritativeUrl;
         $item['type']=$assetType;
-        $bindings[$assetPublic]=[
-            'id'=>(int)$asset['id'],
-            'public_id'=>$assetPublic,
-            'type'=>$assetType,
-        ];
+        $bindings[$assetPublic]=['id'=>(int)$asset['id'],'public_id'=>$assetPublic,'type'=>$assetType];
     }
     unset($item);
+    foreach($prepared as $item){
+        if(str_starts_with((string)$item['url'],'/uploads/feed/')&&empty($item['asset_id'])){
+            throw new RuntimeException('Uploaded media is no longer available. Please upload it again.');
+        }
+    }
     return ['media'=>$prepared,'bindings'=>$bindings];
 }
 
@@ -112,27 +128,79 @@ function mg_social_media_sync(PDO $pdo,int $postId,string $postPublicId,int $use
         if($assetPublic===''||!isset($bindings[$assetPublic]))continue;
         $type=(string)$bindings[$assetPublic]['type'];
         $role=$index===0?'primary':($type==='audio'?'audio':($type==='video'?'video':'gallery'));
-        $insert->execute([
-            $postId,(int)$bindings[$assetPublic]['id'],$role,$index,
-            $item['alt']??null,$item['caption']??null,
-        ]);
+        $insert->execute([$postId,(int)$bindings[$assetPublic]['id'],$role,$index,$item['alt']??null,$item['caption']??null]);
     }
 
     if($newIds!==[]){
-        $params=array_merge([$postPublicId],$newIds);
+        $params=array_merge([$postPublicId,$userId],$newIds);
         $pdo->prepare(
             "UPDATE catalog_assets
              SET metadata_json=JSON_SET(COALESCE(metadata_json,JSON_OBJECT()),
                  '$.source','social_feed','$.feed_state','attached','$.feed_post_id',?),updated_at=NOW()
-             WHERE owner_user_id={$userId} AND id IN (".implode(',',array_fill(0,count($newIds),'?')).')'
+             WHERE owner_user_id=? AND id IN (".implode(',',array_fill(0,count($newIds),'?')).')'
         )->execute($params);
     }
     if($removed!==[]){
+        $params=array_merge([$userId],$removed);
         $pdo->prepare(
             "UPDATE catalog_assets
              SET metadata_json=JSON_REMOVE(JSON_SET(COALESCE(metadata_json,JSON_OBJECT()),
                  '$.source','social_feed','$.feed_state','detached'),'$.feed_post_id'),updated_at=NOW()
-             WHERE owner_user_id={$userId} AND id IN (".implode(',',array_fill(0,count($removed),'?')).')'
-        )->execute($removed);
+             WHERE owner_user_id=? AND id IN (".implode(',',array_fill(0,count($removed),'?')).')'
+        )->execute($params);
     }
+}
+
+function mg_social_media_enrich_owner_posts(PDO $pdo,int $userId,array $collection): array
+{
+    $items=is_array($collection['items']??null)?$collection['items']:[];
+    if($items===[])return $collection;
+    $postIds=[];$storageKeys=[];
+    foreach($items as $post){
+        $postId=strtolower(trim((string)($post['id']??'')));
+        if($postId!=='')$postIds[$postId]=$postId;
+        foreach(($post['media']??[]) as $media){
+            $url=(string)($media['url']??'');
+            if(str_starts_with($url,'/uploads/feed/'))$storageKeys[ltrim($url,'/')]=ltrim($url,'/');
+        }
+    }
+    $byPostUrl=[];$byStorageKey=[];
+    if($postIds!==[]){
+        $values=array_values($postIds);
+        $stmt=$pdo->prepare(
+            'SELECT fp.public_id post_public_id,a.public_id asset_public_id,a.storage_provider,a.storage_key
+             FROM feed_posts fp
+             INNER JOIN feed_post_assets fpa ON fpa.feed_post_id=fp.id
+             INNER JOIN catalog_assets a ON a.id=fpa.asset_id
+             WHERE fp.created_by_user_id=? AND fp.public_id IN ('.implode(',',array_fill(0,count($values),'?')).')'
+        );
+        $stmt->execute(array_merge([$userId],$values));
+        foreach($stmt->fetchAll(PDO::FETCH_ASSOC) as $row){
+            $url=mg_social_media_asset_url($row);
+            if($url!==null)$byPostUrl[(string)$row['post_public_id']][$url]=(string)$row['asset_public_id'];
+        }
+    }
+    if($storageKeys!==[]){
+        $values=array_values($storageKeys);
+        $stmt=$pdo->prepare(
+            'SELECT public_id,storage_key FROM catalog_assets
+             WHERE owner_user_id=? AND storage_provider=\'local\' AND status=\'ready\'
+               AND storage_key IN ('.implode(',',array_fill(0,count($values),'?')).')'
+        );
+        $stmt->execute(array_merge([$userId],$values));
+        foreach($stmt->fetchAll(PDO::FETCH_ASSOC) as $row)$byStorageKey[(string)$row['storage_key']]=(string)$row['public_id'];
+    }
+    foreach($items as &$post){
+        $postId=(string)($post['id']??'');
+        foreach($post['media'] as &$media){
+            $url=(string)($media['url']??'');
+            $assetPublic=$byPostUrl[$postId][$url]??null;
+            if($assetPublic===null&&str_starts_with($url,'/uploads/feed/'))$assetPublic=$byStorageKey[ltrim($url,'/')]??null;
+            if($assetPublic!==null)$media['asset_id']=$assetPublic;
+        }
+        unset($media);
+    }
+    unset($post);
+    $collection['items']=$items;
+    return $collection;
 }
