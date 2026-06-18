@@ -1,10 +1,11 @@
 <?php
 declare(strict_types=1);
+
 use PHPUnit\Framework\TestCase;
 
 final class BuilderAddToCartIntegrationContractTest extends TestCase
 {
-    public function testBuilderPublishReturnsPublishedVersionIdForCart(): void
+    public function testBuilderPublishReturnsPublicDistributionDestinations(): void
     {
         $source=file_get_contents(dirname(__DIR__,2).'/api/catalog/builder-draft.php');
         self::assertIsString($source);
@@ -14,13 +15,16 @@ final class BuilderAddToCartIntegrationContractTest extends TestCase
             "VALUES (?,?,?,'published'",
             "'version_id'=>\$versionId",
             "'version_number'=>\$versionNumber",
+            "'product_url'=>\$distribution['product_url']",
+            "'store_url'=>\$distribution['store_url']",
+            "'feed_url'=>\$distribution['feed_url']",
             "'status'=>'published'",
         ] as $needle){
             self::assertStringContainsString($needle,$source);
         }
     }
 
-    public function testBuilderPageLoadsCartAwareScripts(): void
+    public function testBuilderPageLoadsDistributionControls(): void
     {
         $source=file_get_contents(dirname(__DIR__,2).'/build.php');
         self::assertIsString($source);
@@ -30,40 +34,40 @@ final class BuilderAddToCartIntegrationContractTest extends TestCase
             'data-builder-app',
             'data-product-id',
             'data-builder-toast',
+            'data-publish-product-link',
+            'data-publish-store-link',
+            'data-publish-feed-link',
         ] as $needle){
             self::assertStringContainsString($needle,$source);
         }
     }
 
-    public function testBuilderJavascriptAddsPublishedVersionToServerCart(): void
+    public function testBuilderJavascriptNeverAddsMerchantProductToOwnCart(): void
     {
         $source=file_get_contents(dirname(__DIR__,2).'/assets/js/builder-stage4b.js');
         self::assertIsString($source);
 
         foreach([
-            'var publishedVersionId = \'\';',
-            'publishedVersionId = data.version_id || \'\';',
-            'function addPublishedProductAction(versionId)',
-            'button.dataset.builderCartAdd = versionId',
-            'button.dataset.productVersionId = versionId',
-            'button.textContent = \'Add published product to cart\'',
-            'function addPublishedProductToCart(versionId)',
-            'window.Microgifter.cart.addProductVersion(versionId, 1)',
-            "document.dispatchEvent(new CustomEvent('mg:cart:add'",
-            'root.addEventListener(\'click\', function (event) {',
-            'event.target.closest(\'[data-builder-cart-add]\')',
+            "product: root.querySelector('[data-publish-product-link]')",
+            "store: root.querySelector('[data-publish-store-link]')",
+            "feed: root.querySelector('[data-publish-feed-link]')",
+            'function showPublishDestinations(data)',
+            'showPublishDestinations(data);',
+            "setStatus('Published to store, feed, and locations')",
         ] as $needle){
             self::assertStringContainsString($needle,$source);
         }
+        self::assertStringNotContainsString('Add published product to cart',$source);
+        self::assertStringNotContainsString('addPublishedProductToCart',$source);
+        self::assertStringNotContainsString('data-builder-cart-add',$source);
     }
 
-    public function testCartJavascriptStillAcceptsProductVersionEvents(): void
+    public function testCustomerFacingCartStillAcceptsProductVersionEvents(): void
     {
         $source=file_get_contents(dirname(__DIR__,2).'/assets/js/cart.js');
         self::assertIsString($source);
-
         foreach([
-            'document.addEventListener(\'mg:cart:add\'',
+            "document.addEventListener('mg:cart:add'",
             'detail.product_version_id||detail.productVersionId',
             'C().addProductVersion(id,detail.quantity||1).then(refresh)',
             'window.Microgifter.cart={refresh:refresh,open:openDrawer,close:closeDrawer,addProductVersion:function(id,itemQuantity){return C().addProductVersion(id,itemQuantity).then(refresh);}}',
