@@ -26,7 +26,8 @@ final class MerchantLocationsPageContractTest extends TestCase
         $source=file_get_contents(dirname(__DIR__,2).'/includes/merchant-locations-view.php');
         self::assertIsString($source);
         foreach([
-            'Claim locations','Location title','name="name"','Location address','name="address_line1"',
+            'Claim locations','Location title','name="name"','Location address',
+            'name="address_line1" required maxlength="190"',
             'name="address_line2"','Location phone','name="phone"','Location claim code','name="claim_code"',
             'Codes are stored securely and cannot be displayed again.','data-location-code-help','data-location-save',
             'A merchant can only claim gift vouchers from its own product catalog.','data-location-list','data-location-form',
@@ -46,6 +47,8 @@ final class MerchantLocationsPageContractTest extends TestCase
             "require_once __DIR__ . '/_claims.php';",
             'workspace_id=? AND merchant_user_id=?',
             '$claimCode=strtoupper(trim((string)($input[\'claim_code\']??\'\')))',
+            '$address1=trim((string)($input[\'address_line1\']??\'\'))',
+            "mg_fail('Location address is required and must be 190 characters or fewer.',422)",
             'mg_claim_code_pepper()',
             "hash_hmac('sha256',\$claimCode,\$pepper)",
             'INSERT INTO merchant_claim_codes',
