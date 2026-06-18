@@ -9,6 +9,7 @@ if (PHP_SAPI !== 'cli') {
 require_once dirname(__DIR__) . '/api/catalog/_publish_distribution.php';
 require_once dirname(__DIR__) . '/api/profiles/_product_discovery.php';
 require_once dirname(__DIR__) . '/api/payments/_fulfillment.php';
+require_once dirname(__DIR__) . '/api/microgifts/_atomic_merchant_redemption.php';
 require_once dirname(__DIR__) . '/tests/integration/MicrogiftBehaviorFixture.php';
 
 function mg_ppd_assert(bool $condition, string $message): void
