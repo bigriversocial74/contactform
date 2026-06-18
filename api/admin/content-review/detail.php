@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/_subjects.php';
+require_once __DIR__ . '/_evidence.php';
 
 mg_require_method('GET');
 $user = mg_content_review_require(false);
@@ -11,9 +11,9 @@ try {
     $pdo = mg_db();
     $row = mg_content_review_report($pdo, $publicId, false);
     $report = mg_content_review_report_public($row);
-    $subject = mg_content_review_subject($pdo, $row);
-    $account = mg_content_review_account($pdo, (int)($row['subject_user_id'] ?? 0));
-    $history = mg_content_review_history($pdo, (int)$row['id']);
+    $subject = mg_review_evidence($pdo, $row);
+    $account = mg_review_account_context($pdo, (int)($row['subject_user_id'] ?? 0));
+    $history = mg_review_history($pdo, (int)$row['id']);
 
     header('Cache-Control: private, no-store, max-age=0');
     mg_ok([
