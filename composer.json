@@ -20,6 +20,7 @@
     "test-money-behavior": "php scripts/validate_money_behavior.php",
     "test-microgift-behavior": "php scripts/validate_microgift_behavior.php",
     "test-pppm-resend-behavior": "php scripts/validate_pppm_resend_behavior.php",
+    "audit-product-pppm-golden-path": "php scripts/audit_product_pppm_golden_path.php",
     "test-tip-behavior": "php scripts/validate_tip_behavior.php",
     "test-tip-payment-behavior": "php scripts/validate_tip_payment_behavior.php",
     "test-tip-recovery-behavior": "php scripts/validate_tip_recovery_behavior.php",
