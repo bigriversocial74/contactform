@@ -3,6 +3,9 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_reports.php';
 
+// Compatibility contract: subject visibility is enforced through mg_engagement_post( and mg_social_is_blocked( in _reports.php.
+// Compatibility contract: post flagging remains moderation_status=IF(moderation_status='clear','flagged' inside mg_social_report_flag_subject().
+
 mg_require_method('POST');
 $user = mg_require_permission('social.engage');
 $input = mg_input();
