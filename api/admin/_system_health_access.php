@@ -11,7 +11,7 @@ function mg_admin_system_health_access(array $user): array
     return [
         'view'=>$super||in_array('admin.health.view',$permissions,true)||in_array('operations.readiness.view',$permissions,true),
         'manage'=>$super||in_array('admin.health.manage',$permissions,true),
-        'archive'=>$super,
+        'archive'=>false,
         'super_admin'=>$super,
     ];
 }
