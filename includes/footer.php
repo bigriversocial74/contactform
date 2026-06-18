@@ -2,6 +2,7 @@
 $page_scripts = $page_scripts ?? [];
 if (($page_section ?? '') === 'feed') {
     $page_scripts[] = '/assets/js/social-feed-attachments.js';
+    $page_scripts[] = '/assets/js/social-feed-attachment-cards.js';
 }
 $core_scripts = [
     '/assets/js/microgifter.js','/assets/js/header-signals.js','/assets/js/api-client.js','/assets/js/agent-folder-counts.js',
