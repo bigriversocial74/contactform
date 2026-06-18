@@ -1,8 +1,8 @@
 # Product → PPPM Golden Path Audit
 
-Status: **Audit in progress**  
+Status: **Executable audit passing; final JSON artifact pending**  
 Branch: `audit/product-pppm-golden-path`  
-Scope: Simple Product, Greeting Card, checkout, per-unit PPPM issuance, Inbox, Sent, Resend, merchant-location claim, messaging, tipping, timestamps, and reconciliation.
+Scope: Simple Product, Greeting Card, checkout, per-unit PPPM issuance, Inbox, Sent, Resend, merchant-location claim, messaging, tipping, timestamps, product routing, and reconciliation.
 
 ## Intended golden path
 
@@ -40,9 +40,9 @@ It runs inside a database transaction and rolls back all fixtures. It creates:
 - buyer Inbox projections;
 - transfer, second-transfer, closed-transfer, merchant-claim, location-policy, messaging, and timestamp probes.
 
-The audit is intentionally non-gating while findings are being reviewed. Execution errors fail CI; detected contract findings are emitted as structured JSON.
+The audit is intentionally non-gating while findings are reviewed. Execution errors fail CI; detected contract findings are emitted as structured JSON and uploaded as `product-pppm-golden-path-audit`.
 
-## Confirmed code-review findings
+## Confirmed findings
 
 ### Critical — Canonical transfer lacks actor authorization
 
@@ -97,6 +97,22 @@ Required correction:
 - validate the merchant location ID against the published product-version/location association;
 - reject missing, inactive, foreign, and unlisted locations.
 
+### Critical — Product URL slugs are ambiguous across merchants
+
+The catalog database guarantees only `(merchant_user_id, slug)` uniqueness. The public page accepts only `product.php?p=slug`, and the public product API queries only `WHERE cp.slug = ? ... LIMIT 1`.
+
+Two merchants can therefore publish the same slug, while the public URL has no merchant identifier to disambiguate them. The result may resolve the wrong merchant's product and purchase version.
+
+Required correction:
+
+Choose one authoritative route contract:
+
+```text
+/product.php?m=merchant-slug&p=product-slug
+```
+
+or a globally unique public product slug/ID. The API, storefront links, feed links, discovery results, and canonical URLs must all use the same contract.
+
 ### High — Current recipient is not updated after subsequent transfers
 
 PPPM owner transfer uses:
@@ -110,7 +126,7 @@ The first recipient remains stored after a later recipient becomes owner.
 Required correction:
 
 - preserve original purchaser and issuer separately;
-- set `current_owner_user_id` and `current_recipient_user_id` on every transfer;
+- set current owner and current recipient on every transfer;
 - keep prior recipients only in immutable transfer history.
 
 ### High — PPPM state does not advance during send/delivery
@@ -164,12 +180,13 @@ Decision required:
 
 Messaging authority currently checks participant membership but not lifecycle state. If messaging is intended to become available only after claim, the backend must enforce that policy.
 
-## Areas expected to pass
+## Verified strengths
 
-The existing architecture appears to support these contracts, subject to the executable audit:
+The executable audit and existing recovery suite support these contracts:
 
 - one PPPM issuance request per invoice line;
 - one PPPM item per line quantity using `unit_sequence`;
+- two lines with quantities `2` and `3` create five independent units;
 - one Microgift instance per PPPM item;
 - idempotent checkout capture and fulfillment replay;
 - buyer Inbox projection per unit;
@@ -183,8 +200,9 @@ The existing architecture appears to support these contracts, subject to the exe
 1. Canonical transfer authorization, lifecycle guards, recipient updates, and immutable issuer.
 2. Direct merchant-location claim from received/delivered ownership.
 3. Canonical product-location policy enforcement.
-4. Unified PPPM/Microgift/projection lifecycle transaction.
-5. Post-claim message participant policy.
-6. Merchant Sent-versus-sales projection decision.
-7. Permanent PPPM ID length/collision retry hardening.
-8. Full reconciliation validator promoted from non-gating audit to release gate.
+4. Globally unambiguous product routing.
+5. Unified PPPM/Microgift/projection lifecycle transaction.
+6. Post-claim message participant policy.
+7. Merchant Sent-versus-sales projection decision.
+8. Permanent PPPM ID length/collision retry hardening.
+9. Promote the reconciliation audit from non-gating evidence to a release gate.
