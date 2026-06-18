@@ -31,11 +31,13 @@ final class BackendHardeningContractTest extends TestCase
         $source = file_get_contents(dirname(__DIR__, 2) . '/api/merchant/locations.php');
         self::assertIsString($source);
 
-        self::assertStringContainsString('mg_merchant_locations_has_claim_code', $source);
+        self::assertStringContainsString("require_once __DIR__ . '/_claims.php';", $source);
+        self::assertStringContainsString('INSERT INTO merchant_claim_codes', $source);
         self::assertStringContainsString("'schema_ready'=>true", $source);
         self::assertStringContainsString('workspace_id=? AND merchant_user_id=?', $source);
         self::assertStringNotContainsString('ALTER TABLE', $source);
         self::assertStringNotContainsString('mg_merchant_locations_ensure_claim_code', $source);
+        self::assertStringNotContainsString('mg_merchant_locations_has_claim_code', $source);
     }
 
     public function testStage11hMigrationIsRegisteredOrderedAndExecuted(): void
