@@ -29,6 +29,7 @@
     "test-profile-moderation-behavior": "php scripts/validate_profile_moderation_behavior.php",
     "test-storefront-product-management-behavior": "php scripts/validate_storefront_product_management_behavior.php",
     "test-profile-discovery-behavior": "php scripts/validate_profile_discovery_behavior.php",
+    "test-pppm-publish-distribution": "php scripts/validate_pppm_publish_distribution.php",
     "test-engagement-mutations-behavior": "php scripts/validate_engagement_mutations_behavior.php",
     "test-social-feed-publishing-behavior": "php scripts/validate_social_feed_publishing_behavior.php",
     "test-prepaid-demand-behavior": "php scripts/validate_prepaid_demand_behavior.php",
