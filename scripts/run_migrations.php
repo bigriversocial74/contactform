@@ -15,13 +15,29 @@ if (PHP_SAPI !== 'cli') {
     exit('Not found.');
 }
 
-require_once dirname(__DIR__) . '/api/db.php';
 require_once dirname(__DIR__) . '/includes/migrations.php';
+
+$config = require dirname(__DIR__) . '/api/config.php';
+$db = $config['db'];
+$migrationUser = getenv('MG_MIGRATION_DB_USER');
+$migrationPass = getenv('MG_MIGRATION_DB_PASS');
+if (is_string($migrationUser) && $migrationUser !== '') {
+    $db['user'] = $migrationUser;
+}
+if (is_string($migrationPass)) {
+    $db['pass'] = $migrationPass;
+}
+
+$dsn = sprintf('mysql:host=%s;dbname=%s;charset=%s', $db['host'], $db['name'], $db['charset']);
+$pdo = new PDO($dsn, $db['user'], $db['pass'], [
+    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    PDO::ATTR_EMULATE_PREPARES => false,
+]);
 
 $manifest = mg_migration_manifest();
 $databaseDir = mg_migration_database_dir();
 $files = array_values($manifest['ordered_files']);
-$pdo = mg_db();
 $lockName = 'microgifter_schema_migrations';
 $exitCode = 0;
 
