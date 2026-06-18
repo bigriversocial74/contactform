@@ -127,7 +127,15 @@ document.addEventListener('DOMContentLoaded', function () {
     root.querySelectorAll('[data-health-action]').forEach(function (button) {
       var enabled = Boolean(actions && actions[button.dataset.healthAction]);
       button.disabled = !enabled;
+      button.dataset.healthActionEnabled = enabled ? 'true' : 'false';
     });
+    var actionPanel = root.querySelector('[data-system-health-actions]');
+    var note = actionPanel ? actionPanel.querySelector('p') : null;
+    if (note) {
+      note.textContent = actions && Object.values(actions).some(Boolean)
+        ? 'Recovery actions are limited, audited, and available only to super administrators.'
+        : 'Recovery actions require a super administrator session.';
+    }
   }
 
   function render(data) {
@@ -159,6 +167,45 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+  function actionConfirmation(action) {
+    return {
+      verify_storage: 'Run a protected write, read, and delete verification on persistent storage?',
+      retry_notifications: 'Requeue up to 100 eligible failed notification deliveries?',
+      clean_uploads: 'Archive and remove up to 100 unattached uploads older than 24 hours?'
+    }[action] || 'Run this recovery action?';
+  }
+
+  function actionResult(action, result) {
+    if (action === 'verify_storage') return 'Persistent storage passed its write and read verification.';
+    if (action === 'retry_notifications') return Number(result.retried || 0).toLocaleString() + ' notification deliveries queued for retry.';
+    if (action === 'clean_uploads') return Number(result.archived || 0).toLocaleString() + ' abandoned uploads archived; ' + Number(result.files_deleted || 0).toLocaleString() + ' files removed.';
+    return 'Recovery action completed.';
+  }
+
+  async function runAction(button) {
+    var action = button.dataset.healthAction;
+    if (button.dataset.healthActionEnabled !== 'true') return;
+    if (!window.confirm(actionConfirmation(action))) return;
+    var original = button.textContent;
+    button.disabled = true;
+    button.textContent = 'Running…';
+    try {
+      var response = await MG.post('/api/admin/system-health-action.php', { action: action });
+      var data = response.data || response;
+      if (MG.toast) MG.toast(actionResult(action, data.result || {}), 'success');
+      await load();
+    } catch (error) {
+      if (MG.toast) MG.toast(error.message || 'Unable to complete the recovery action.', 'error');
+    } finally {
+      button.textContent = original;
+      if (button.dataset.healthActionEnabled === 'true') button.disabled = false;
+    }
+  }
+
   if (refreshButton) refreshButton.addEventListener('click', load);
+  root.addEventListener('click', function (event) {
+    var button = event.target.closest('[data-health-action]');
+    if (button) runAction(button);
+  });
   load();
 });
