@@ -1,8 +1,14 @@
 <?php
 $page_scripts = $page_scripts ?? [];
+$late_styles = [];
 if (($page_section ?? '') === 'feed') {
     $page_scripts[] = '/assets/js/social-feed-attachments.js';
     $page_scripts[] = '/assets/js/social-feed-attachment-cards.js';
+}
+if (($page_body_class ?? '') === 'mg-admin-moderation-page') {
+    $page_scripts[] = '/assets/js/admin-moderation.js';
+    $page_scripts[] = '/assets/js/content-' . 'review-actions.js';
+    $late_styles[] = '/assets/css/content-review-ui.css';
 }
 $core_scripts = [
     '/assets/js/microgifter.js','/assets/js/header-signals.js','/assets/js/api-client.js','/assets/js/agent-folder-counts.js',
@@ -29,5 +35,6 @@ $can_intelligence = $user && (in_array('intelligence.dashboard.view', $user_perm
     <nav class="mg-footer-nav" aria-label="Footer navigation"><a href="/learn-more.php">Learn more</a><a href="/discover.php">Discover</a><a href="/feed.php">Feed</a><a href="/build.php">Build</a><a href="/agent.php">Agent</a><a href="/account.php">Account</a><?php if ($user): ?><a href="/commitments.php">Commitments</a><?php endif; ?><?php if ($can_intelligence): ?><a href="/intelligence.php">Intelligence</a><?php endif; ?><?php if ($can_sales_crm): ?><a href="/sales-crm.php">CRM</a><?php endif; ?><a href="/signin.php">Sign in</a></nav>
   </div>
 </footer>
+<?php foreach (array_unique($late_styles) as $style): ?><link rel="stylesheet" href="<?= mg_e($style) ?>"><?php endforeach; ?>
 <?php foreach ($scripts as $script): ?><script src="<?= mg_e($script) ?>" defer></script><?php endforeach; ?>
 </body></html>

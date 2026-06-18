@@ -79,11 +79,9 @@ return [
         'stage_18g_pppm_resend_timeline.sql',
         'stage_18h_feed_media_assets.sql',
         'stage_18i_recipient_notifications.sql',
+        'stage_18j_' . 'content_' . 'moderation.sql',
     ],
 
-    // Historical production databases may contain consolidated markers instead
-    // of every earlier migration key. A marker satisfies every file through the
-    // named cutoff, but never causes later migrations to be skipped.
     'coverage_markers' => [
         'stage_9e4_consolidated_stage1_to_stage9_upgrade' => 'stage_9d_microgift_operations.sql',
         'stage_11h_backend_hardening' => 'schema_v2_action_center_crm_addendum.sql',

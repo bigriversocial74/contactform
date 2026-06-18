@@ -2,6 +2,9 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__).'/bootstrap.php';
+require_once __DIR__.'/_account_restrictions.php';
+
+// Compatibility contract: mg_storage_store_uploaded_file performs the final move_uploaded_file operation.
 
 mg_require_method('POST');
 $user=mg_require_permission('social.posts.create');
@@ -9,6 +12,13 @@ $userId=(int)$user['id'];
 $input=mg_input();
 mg_require_csrf_for_write($input);
 mg_rate_limit('social.media.upload','user:'.$userId,30,60);
+$pdo=mg_db();
+
+try{
+    mg_require_user_not_restricted($pdo,$userId,'uploading');
+}catch(RuntimeException $error){
+    mg_fail($error->getMessage(),409);
+}
 
 $file=$_FILES['media']??null;
 $kind=strtolower(trim((string)($input['media_type']??'')));
@@ -56,7 +66,6 @@ if($kind==='image'){
     }
 }
 
-$pdo=mg_db();
 $quota=$pdo->prepare(
     "SELECT COUNT(*) asset_count,COALESCE(SUM(a.byte_size),0) total_bytes
      FROM catalog_assets a
@@ -74,7 +83,6 @@ if((int)($usage['asset_count']??0)>=40||((int)($usage['total_bytes']??0)+$size)>
 $publicId=mg_public_uuid();
 $storageKey=mg_storage_feed_key($userId,$publicId,$types[$kind][$mime]);
 try{
-    // The storage adapter performs the final move_uploaded_file into the protected persistent volume.
     $absolutePath=mg_storage_store_uploaded_file($tmp,$storageKey);
 }catch(InvalidArgumentException $error){
     mg_fail($error->getMessage(),422);
