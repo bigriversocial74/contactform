@@ -8,6 +8,7 @@ declare(strict_types=1);
       <p>Permission-aware platform, commerce, security, and operational visibility from the canonical backend services.</p>
     </div>
     <div class="mg-admin-toolbar">
+      <?php if (mg_has_permission('admin.health.view')): ?><a class="mg-btn mg-btn-soft" href="/admin/system-health.php">System health</a><?php endif; ?>
       <label>Window
         <select data-admin-window aria-label="Admin dashboard reporting window">
           <option value="7">7 days</option>
