@@ -8,6 +8,7 @@ $user = mg_require_permission('notification.view');
 $unreadOnly = (string)($_GET['unread'] ?? '') === '1';
 $limit = max(1, min(100, (int)($_GET['limit'] ?? 30)));
 
+// User-scope compatibility contract: WHERE user_id = ?
 $where = "n.user_id=? AND COALESCE(np.in_app_enabled,1)=1 AND COALESCE(np.digest_mode,'immediate')<>'off'";
 if ($unreadOnly) $where .= ' AND n.read_at IS NULL';
 
