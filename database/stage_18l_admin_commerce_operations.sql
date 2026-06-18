@@ -46,12 +46,12 @@ CREATE TABLE IF NOT EXISTS commerce_operation_case_events (
   CONSTRAINT fk_commerce_operation_case_events_actor FOREIGN KEY (actor_user_id) REFERENCES users(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT IGNORE INTO permissions (slug,name,description,created_at) VALUES
-  ('admin.commerce.view','View commerce operations','Inspect cross-domain orders, payments, refunds, disputes, subscriptions, tips, Microgifts, ledger context, and review cases.',NOW()),
-  ('admin.commerce.manage','Manage commerce operations','Open, assign, note, resolve, and dismiss commerce operation cases.',NOW());
+INSERT IGNORE INTO permissions (slug,name) VALUES
+  ('admin.commerce.view','View commerce operations'),
+  ('admin.commerce.manage','Manage commerce operations');
 
-INSERT IGNORE INTO role_permissions (role_id,permission_id,created_at)
-SELECT r.id,p.id,NOW()
+INSERT IGNORE INTO role_permissions (role_id,permission_id)
+SELECT r.id,p.id
 FROM roles r
 JOIN permissions p ON p.slug IN ('admin.commerce.view','admin.commerce.manage')
 WHERE r.slug IN ('admin','super_admin');
