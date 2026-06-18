@@ -1,0 +1,2 @@
+<?php
+declare(strict_types=1);require_once dirname(__DIR__).'/communications/_communications.php';function mg_microgift_issue_signal(PDO $pdo,array $row,int $actor): void{$to=(int)($row['recipient_user_id']??0);if($to<1||$to===$actor)return;$url='/inbox.php?item='.rawurlencode((string)$row['public_id']);$body=mg_notification_user_label($pdo,$actor).' added an item to your inbox.';$kind='gift';mg_create_notification($pdo,$to,$kind,'New inbox item',$body,$url);}
