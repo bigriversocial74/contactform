@@ -5,8 +5,8 @@ declare(strict_types=1);
  * Persistent media storage helpers.
  *
  * The persistent_local driver stores user media outside the application release
- * directory. Files are delivered through media.php so the storage directory can
- * remain outside the public web root and feed visibility can be enforced.
+ * directory. Files are delivered through /api/public/media.php so the storage
+ * directory remains outside the public web root and access rules stay enforceable.
  */
 
 function mg_storage_app_root(): string
@@ -36,7 +36,7 @@ function mg_storage_config(): array
     return [
         'driver'=>$driver,
         'root'=>trim((string)mg_config_value('storage','root','')),
-        'public_endpoint'=>trim((string)mg_config_value('storage','public_endpoint','/media.php')),
+        'public_endpoint'=>trim((string)mg_config_value('storage','public_endpoint','/api/public/media.php')),
         'require_persistent'=>(bool)mg_config_value('storage','require_persistent',true),
         'legacy_root'=>trim((string)mg_config_value('storage','legacy_root',mg_storage_app_root())),
     ];
@@ -193,10 +193,22 @@ function mg_storage_legacy_path(string $key): string
     return $path;
 }
 
+function mg_storage_private_legacy_path(string $key): string
+{
+    $key=mg_storage_normalize_key($key);
+    $root=realpath(mg_storage_app_root().'/storage/private');
+    if($root===false)throw new RuntimeException('Private legacy media root is unavailable.');
+    $path=$root.DIRECTORY_SEPARATOR.str_replace('/',DIRECTORY_SEPARATOR,$key);
+    $parent=realpath(dirname($path));
+    if($parent===false||!mg_storage_path_is_within($parent,$root))throw new RuntimeException('Private legacy media path is invalid.');
+    return $path;
+}
+
 function mg_storage_resolve_asset_path(string $provider,string $key): string
 {
     return match(strtolower(trim($provider))){
         'persistent_local'=>mg_storage_absolute_path($key,false),
+        'private_local'=>mg_storage_private_legacy_path($key),
         'local'=>mg_storage_legacy_path($key),
         default=>throw new RuntimeException('Unsupported media storage provider.'),
     };
@@ -213,6 +225,6 @@ function mg_storage_asset_public_url(string $publicId): string
 {
     if(preg_match('/^[a-f0-9-]{36}$/i',$publicId)!==1)throw new InvalidArgumentException('Invalid media asset identifier.');
     $endpoint=(string)mg_storage_config()['public_endpoint'];
-    if($endpoint===''||$endpoint[0]!=='/'||str_starts_with($endpoint,'//'))$endpoint='/media.php';
+    if($endpoint===''||$endpoint[0]!=='/'||str_starts_with($endpoint,'//'))$endpoint='/api/public/media.php';
     return $endpoint.(str_contains($endpoint,'?')?'&':'?').'asset='.rawurlencode(strtolower($publicId));
 }
