@@ -52,7 +52,7 @@ $tables = [
     'merchant_locations',
     'tips',
     'subscriptions',
-    'posts',
+    'feed_posts',
     'operational_incidents',
     'deployment_releases',
     'release_gate_results',
