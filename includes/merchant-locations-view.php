@@ -34,10 +34,10 @@ declare(strict_types=1);
       <form class="mg-merchant-form" data-location-form>
         <input type="hidden" name="location_id">
         <div class="mg-grid-2">
-          <label>Location title<input name="name" required placeholder="Downtown Phoenix"></label>
-          <label>Location claim code<input name="claim_code" required autocomplete="off" placeholder="PHX-001"></label>
+          <label>Location title<input name="name" required maxlength="180" placeholder="Downtown Phoenix"></label>
+          <label>Location claim code<input name="claim_code" required maxlength="64" pattern="[A-Za-z0-9_-]{4,64}" autocomplete="new-password" placeholder="PHX-001"><small data-location-code-help>Required for a new location. Codes are stored securely and cannot be displayed again.</small></label>
         </div>
-        <label>Location address<input name="address_line1" placeholder="123 Main St"></label>
+        <label>Location address<input name="address_line1" required maxlength="190" placeholder="123 Main St"></label>
         <div class="mg-grid-2">
           <label>Address line 2<input name="address_line2" placeholder="Suite, floor, unit"></label>
           <label>Location phone<input name="phone" inputmode="tel" placeholder="(555) 555-5555"></label>
@@ -56,8 +56,8 @@ declare(strict_types=1);
         </div>
         <label class="mg-check"><input name="is_primary" type="checkbox" value="1"> Primary location</label>
         <p class="mg-muted">A merchant can only claim gift vouchers from its own product catalog. The claim code ties the redemption attempt to this merchant location.</p>
-        <div class="mg-form-status" data-location-status></div>
-        <div class="mg-action-row"><button class="mg-btn mg-btn-primary" type="submit">Save location</button><button class="mg-btn mg-btn-soft" type="button" data-location-reset>Clear</button></div>
+        <div class="mg-form-status" data-location-status aria-live="polite"></div>
+        <div class="mg-action-row"><button class="mg-btn mg-btn-primary" type="submit" data-location-save>Save location</button><button class="mg-btn mg-btn-soft" type="button" data-location-reset>Clear</button></div>
       </form>
     </div>
   </section>
