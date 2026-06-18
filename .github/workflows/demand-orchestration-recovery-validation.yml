@@ -1,0 +1,15 @@
+name: Demand Orchestration Recovery Validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: ./.github/workflows/recovery-baseline.yml
+
+# composer test-demand-orchestration-recovery
+# php scripts/stage18c_smoke.php
+# php scripts/validate_launch_readiness.php
