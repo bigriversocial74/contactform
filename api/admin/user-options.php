@@ -5,6 +5,7 @@ require_once __DIR__ . '/_user_management_context.php';
 
 mg_require_method('GET');
 $actor = mg_admin_users_require_user();
+mg_rate_limit('admin.user_options.read', 'user:' . (int)$actor['id'], 240, 60);
 
 try {
     $targetUserId = mg_admin_user_detail_id($_GET['user_id'] ?? null);
