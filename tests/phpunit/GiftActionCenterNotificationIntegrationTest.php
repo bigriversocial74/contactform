@@ -40,7 +40,7 @@ final class GiftActionCenterNotificationIntegrationTest extends TestCase
         self::assertStringContainsString("action_item_id:'demo-sent-001'",$script);
         self::assertStringContainsString("action_item_id:'demo-claimed-001'",$script);
         self::assertStringContainsString('Super Admin demo content cannot execute real transactional actions.',$script);
-        self::assertStringContainsString('No real payment, ownership transfer, claim, message, tip, notification, ledger entry, payout, or webhook was created.',$script);
+        self::assertStringContainsString('No real payment, ownership transfer, send, resend, claim, message, tip, notification, ledger entry, payout, or webhook was created.',$script);
     }
 
     public function testLoadDrawerRendersContentBeforeProtectedVoucher(): void
