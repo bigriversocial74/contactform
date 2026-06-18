@@ -124,9 +124,13 @@ try {
             (int)$recipient['user_id'],
             'message',
             $notificationTitle,
-            $senderName.': '.mb_substr($body,0,500),
-            '/messages.php?thread='.rawurlencode((string)$thread['public_id']),
+            $senderName . ': ' . mb_substr($body, 0, 500),
+            '/messages.php?thread=' . rawurlencode((string)$thread['public_id']),
             [
+                'actor_user_id'=>(int)$user['id'],
+                'event_key'=>'message.thread.' . strtolower((string)$thread['public_id']),
+                'aggregate'=>true,
+                'message_id'=>$messagePublicId,
                 'gift_id'=>!empty($thread['gift_id'])?(int)$thread['gift_id']:null,
                 'pppm_item_id'=>!empty($thread['pppm_item_id'])?(int)$thread['pppm_item_id']:null,
                 'thread_id'=>(int)$thread['id'],
@@ -141,7 +145,7 @@ try {
              (pppm_item_id, actor_user_id, event_type, from_status, to_status, metadata_json, created_at)
              VALUES (?, ?, ?, ?, ?, ?, NOW())'
         )->execute([
-            (int) $pppm['id'],(int) $user['id'],'message',(string) $pppm['status'],(string) $pppm['status'],
+            (int) $pppm['id'],(int)$user['id'],'message',(string)$pppm['status'],(string)$pppm['status'],
             json_encode(['thread_id' => $thread['public_id']], JSON_UNESCAPED_SLASHES),
         ]);
     }
