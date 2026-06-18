@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_publishing.php';
+require_once __DIR__ . '/_media_assets.php';
 
 $user = mg_require_permission('social.posts.create');
 $actorId = (int)$user['id'];
@@ -19,6 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 isset($_GET['cursor']) ? (string)$_GET['cursor'] : null,
                 (int)($_GET['limit'] ?? MG_SOCIAL_OWNER_DEFAULT_LIMIT)
             );
+            $posts = mg_social_media_enrich_owner_posts($pdo, $actorId, $posts);
             $profile = mg_publishing_author_profile($pdo, $actorId, false);
             header('Cache-Control: private, no-store, max-age=0');
             mg_ok([
@@ -74,7 +76,27 @@ try {
         mg_ok($replay, 'Existing post mutation returned.');
     }
 
+    $preparedMedia = null;
+    if (in_array($action, ['create','update','publish'], true)) {
+        $preparedMedia = mg_social_media_prepare($pdo, $actorId, $input['media'] ?? []);
+        $input['media'] = $preparedMedia['media'];
+    }
+
     $post = mg_publishing_mutate($pdo, $actorId, $action, $input);
+    if ($preparedMedia !== null) {
+        $postRow = mg_publishing_post_owned($pdo, $actorId, (string)$post['id'], true);
+        mg_social_media_sync(
+            $pdo,
+            (int)$postRow['id'],
+            (string)$postRow['public_id'],
+            $actorId,
+            $preparedMedia['media'],
+            $preparedMedia['bindings']
+        );
+        $enriched = mg_social_media_enrich_owner_posts($pdo, $actorId, ['items'=>[$post]]);
+        $post = $enriched['items'][0] ?? $post;
+    }
+
     $result = mg_engagement_complete($pdo, $actorId, $key, ['action'=>$action,'post'=>$post]);
     $pdo->commit();
 
