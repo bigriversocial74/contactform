@@ -32,6 +32,7 @@ composer test-profile-editor-behavior
 composer test-profile-moderation-behavior
 composer test-storefront-product-management-behavior
 composer test-profile-discovery-behavior
+composer test-pppm-publish-distribution
 composer test-engagement-mutations-behavior
 composer test-social-feed-publishing-behavior
 composer test-prepaid-demand-behavior
