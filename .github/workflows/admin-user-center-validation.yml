@@ -1,0 +1,16 @@
+name: Admin User Center Validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: ./.github/workflows/recovery-baseline.yml
+
+# AdminUserCenterContractTest
+# AdminUserCenterUiContractTest
+# php -l admin/users.php
+# node --check assets/js/admin-users.js
