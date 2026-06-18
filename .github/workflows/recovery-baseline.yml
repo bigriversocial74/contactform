@@ -96,7 +96,10 @@ jobs:
           exit 1
 
       - name: Run complete recovery baseline
-        run: composer recovery-baseline
+        shell: bash
+        run: |
+          set -o pipefail
+          composer recovery-baseline 2>&1 | tee /tmp/recovery-baseline.log
 
       - name: Upload diagnostic logs on failure
         if: failure()
@@ -106,4 +109,5 @@ jobs:
           path: |
             /tmp/microgifter-migrations.log
             /tmp/microgifter-server.log
+            /tmp/recovery-baseline.log
           if-no-files-found: ignore
