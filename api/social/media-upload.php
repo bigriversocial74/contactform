@@ -74,6 +74,7 @@ if((int)($usage['asset_count']??0)>=40||((int)($usage['total_bytes']??0)+$size)>
 $publicId=mg_public_uuid();
 $storageKey=mg_storage_feed_key($userId,$publicId,$types[$kind][$mime]);
 try{
+    // The storage adapter performs the final move_uploaded_file into the protected persistent volume.
     $absolutePath=mg_storage_store_uploaded_file($tmp,$storageKey);
 }catch(InvalidArgumentException $error){
     mg_fail($error->getMessage(),422);
