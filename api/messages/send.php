@@ -115,6 +115,7 @@ try {
     );
     $participantStmt->execute([(int) $thread['id'], (int) $user['id']]);
     $senderName = mg_notification_user_label($pdo, (int)$user['id']);
+    $notificationTitle = $pppm ? 'New item message' : 'New gift message';
     foreach ($participantStmt->fetchAll(PDO::FETCH_ASSOC) as $recipient) {
         if (empty($recipient['notifications_enabled'])) continue;
         if (!empty($recipient['muted_until']) && strtotime((string)$recipient['muted_until']) > time()) continue;
@@ -122,8 +123,8 @@ try {
             $pdo,
             (int)$recipient['user_id'],
             'message',
-            'New message from '.$senderName,
-            mb_substr($body,0,500),
+            $notificationTitle,
+            $senderName.': '.mb_substr($body,0,500),
             '/messages.php?thread='.rawurlencode((string)$thread['public_id']),
             [
                 'gift_id'=>!empty($thread['gift_id'])?(int)$thread['gift_id']:null,
