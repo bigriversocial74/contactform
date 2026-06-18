@@ -7,6 +7,7 @@ if (($page_section ?? '') === 'feed') {
 }
 if (($page_body_class ?? '') === 'mg-admin-moderation-page') {
     $page_scripts[] = '/assets/js/admin-moderation.js';
+    $page_scripts[] = '/assets/js/content-' . 'review-actions.js';
     $late_styles[] = '/assets/css/content-review-ui.css';
 }
 $core_scripts = [
