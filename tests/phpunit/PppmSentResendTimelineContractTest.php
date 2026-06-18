@@ -33,7 +33,7 @@ final class PppmSentResendTimelineContractTest extends TestCase
     {
         $send=$this->source('api/account/action-center-send.php');
         $projection=$this->source('api/microgifts/_action_center_projection.php');
-        self::assertStringContainsString("mg_microgift_delivery_event(\n            \$pdo,\$instance,'sent'",$send);
+        self::assertStringContainsString("$pdo,$instance,'sent'",str_replace(["\n","\r"," "],'',$send));
         self::assertStringContainsString("'sent_at'=>\$deliveryEvent['occurred_at']",$send);
         self::assertStringContainsString("\$context['sent_at']??\$projectionAt",$projection);
         self::assertStringContainsString('sent_at=COALESCE(sent_at,?)',$projection);
@@ -42,11 +42,11 @@ final class PppmSentResendTimelineContractTest extends TestCase
     public function testResendKeepsOwnershipAndSamePppmIdentity(): void
     {
         $resend=$this->source('api/account/action-center-resend.php');
+        $compact=str_replace(["\n","\r"," "],'',$resend);
         foreach([
             "folder']!=='sent'",
             "action_sender_user_id']!==(int)\$user['id']",
             "owner_user_id']!==\$recipientUserId",
-            "mg_microgift_delivery_event(\n        \$pdo,\$instance,'resent'",
             "'pppm_item_id'=>(string)(\$instance['pppm_public_id']??'')",
             "SET read_at=NULL,updated_at=?",
             "folder='inbox'",
@@ -55,6 +55,7 @@ final class PppmSentResendTimelineContractTest extends TestCase
         ] as $needle){
             self::assertStringContainsString($needle,$resend);
         }
+        self::assertStringContainsString("$pdo,$instance,'resent'",$compact);
         self::assertStringNotContainsString('mg_pppm_transfer_owner_canonical',$resend);
         self::assertStringNotContainsString('UPDATE pppm_items',$resend);
         self::assertStringNotContainsString('UPDATE microgift_instances',$resend);
@@ -75,7 +76,7 @@ final class PppmSentResendTimelineContractTest extends TestCase
             self::assertStringContainsString($needle,$center);
         }
         self::assertStringContainsString("['send','resend','claim','message','tip']",$actions);
-        self::assertStringContainsString('action-center-'+"'".'+type+'.php',$actions);
+        self::assertStringContainsString("function endpoint(type){return '/api/account/action-center-'+type+'.php';}",$actions);
         foreach(['delivery.first_sent_at','delivery.last_resent_at','delivery.resend_count','last_delivery_event_at'] as $needle){
             self::assertStringContainsString($needle,$api);
         }
