@@ -1,15 +1,23 @@
--- Stage 18K Admin Account Management
-
+-- Stage 18K: Admin account management permissions
 START TRANSACTION;
 
-INSERT INTO permissions (slug, name, description, created_at) VALUES
-('admin.user_models.manage', 'Manage user models', 'Allow an administrator to manage user-model assignments.', NOW())
-ON DUPLICATE KEY UPDATE name = VALUES(name), description = VALUES(description);
+INSERT IGNORE INTO permissions (slug, name) VALUES
+  ('admin.users.manage', 'Manage user account status'),
+  ('admin.roles.manage', 'Manage user roles'),
+  ('admin.user_models.manage', 'Manage user model assignments'),
+  ('admin.sessions.view', 'View user sessions'),
+  ('admin.sessions.revoke', 'Revoke user sessions');
 
-INSERT IGNORE INTO role_permissions (role_id, permission_id, created_at)
-SELECT r.id, p.id, NOW()
+INSERT IGNORE INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id
 FROM roles r
-INNER JOIN permissions p ON p.slug = 'admin.user_models.manage'
-WHERE r.slug IN ('admin','super_admin');
+JOIN permissions p ON p.slug IN (
+  'admin.users.manage',
+  'admin.roles.manage',
+  'admin.user_models.manage',
+  'admin.sessions.view',
+  'admin.sessions.revoke'
+)
+WHERE r.slug IN ('admin', 'super_admin');
 
 COMMIT;

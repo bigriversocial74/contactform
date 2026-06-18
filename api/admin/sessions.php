@@ -2,91 +2,64 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/bootstrap.php';
-require_once __DIR__ . '/_user_management_common.php';
 
 $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
 if (!in_array($method, ['GET', 'DELETE'], true)) {
     mg_fail('Method not allowed.', 405);
 }
 
-$actor = mg_require_permission($method === 'GET' ? 'admin.sessions.view' : 'admin.sessions.revoke');
-$actorId = (int)$actor['id'];
+$user = mg_require_permission($method === 'GET' ? 'admin.sessions.view' : 'admin.sessions.revoke');
 $pdo = mg_db();
-mg_rate_limit('admin.sessions.' . strtolower($method), 'user:' . $actorId, $method === 'GET' ? 180 : 30, 300);
 
 if ($method === 'GET') {
-    try {
-        $targetUserId = mg_admin_user_detail_id($_GET['user_id'] ?? null);
-        $limit = max(1, min((int)($_GET['limit'] ?? 25), 50));
-    } catch (InvalidArgumentException $error) {
-        mg_fail($error->getMessage(), 422);
+    $limit = min(max((int) ($_GET['limit'] ?? 50), 1), 100);
+    $targetUserId = isset($_GET['user_id']) ? (int) $_GET['user_id'] : 0;
+
+    if ($targetUserId > 0) {
+        $stmt = $pdo->prepare(
+            'SELECT s.id, s.user_id, u.email, u.display_name, s.ip_address, s.user_agent,
+                    s.last_seen_at, s.expires_at, s.revoked_at, s.created_at
+             FROM user_sessions s
+             INNER JOIN users u ON u.id = s.user_id
+             WHERE s.user_id = ?
+             ORDER BY s.last_seen_at DESC
+             LIMIT ' . $limit
+        );
+        $stmt->execute([$targetUserId]);
+    } else {
+        $stmt = $pdo->query(
+            'SELECT s.id, s.user_id, u.email, u.display_name, s.ip_address, s.user_agent,
+                    s.last_seen_at, s.expires_at, s.revoked_at, s.created_at
+             FROM user_sessions s
+             INNER JOIN users u ON u.id = s.user_id
+             ORDER BY s.last_seen_at DESC
+             LIMIT ' . $limit
+        );
     }
 
-    $stmt = $pdo->prepare(
-        'SELECT s.id,s.user_id,s.ip_address,s.user_agent,s.last_seen_at,s.expires_at,s.revoked_at,s.created_at,
-                (s.session_hash=?) AS is_current
-         FROM user_sessions s
-         WHERE s.user_id=?
-         ORDER BY s.last_seen_at DESC,s.id DESC
-         LIMIT ' . $limit
-    );
-    $stmt->execute([mg_current_session_hash(), $targetUserId]);
-    mg_ok(['sessions' => $stmt->fetchAll(PDO::FETCH_ASSOC)], 'Sessions loaded.');
+    mg_ok(['sessions' => $stmt->fetchAll()], 'Sessions loaded.');
 }
 
 $input = mg_input();
 mg_require_csrf_for_write($input);
 
-try {
-    $sessionId = mg_admin_user_detail_id($input['session_id'] ?? null);
-    $reason = mg_admin_management_reason($input['reason'] ?? '');
-} catch (InvalidArgumentException $error) {
-    mg_fail($error->getMessage(), 422);
-}
+$sessionId = isset($input['session_id']) ? (int) $input['session_id'] : 0;
+$targetUserId = isset($input['user_id']) ? (int) $input['user_id'] : 0;
 
-$pdo->beginTransaction();
-try {
-    $stmt = $pdo->prepare(
-        'SELECT s.id,s.user_id,s.session_hash,
-                EXISTS(SELECT 1 FROM user_roles ur INNER JOIN roles r ON r.id=ur.role_id WHERE ur.user_id=s.user_id AND r.slug="super_admin") AS target_super_admin
-         FROM user_sessions s WHERE s.id=? LIMIT 1 FOR UPDATE'
-    );
+if ($sessionId > 0) {
+    $stmt = $pdo->prepare('UPDATE user_sessions SET revoked_at = NOW() WHERE id = ? AND revoked_at IS NULL');
     $stmt->execute([$sessionId]);
-    $session = $stmt->fetch(PDO::FETCH_ASSOC);
-    if (!$session) {
-        throw new MgAdminUserManagementException('Session not found.', 404);
-    }
-    if (hash_equals((string)$session['session_hash'], mg_current_session_hash())) {
-        throw new MgAdminUserManagementException('The current administrative session cannot be revoked here.');
-    }
-    if ((bool)$session['target_super_admin']) {
-        throw new MgAdminUserManagementException('Owner sessions require the manual owner workflow.', 403);
-    }
-
-    $revoke = $pdo->prepare('UPDATE user_sessions SET revoked_at=NOW() WHERE id=? AND revoked_at IS NULL');
-    $revoke->execute([$sessionId]);
-    if ($revoke->rowCount() === 0) {
-        throw new MgAdminUserManagementException('The session is already inactive.');
-    }
-    $pdo->commit();
-
-    mg_audit('admin_session_revoked', 'user_session', [
-        'session_id' => $sessionId,
-        'target_user_id' => (int)$session['user_id'],
-        'reason' => $reason,
-    ], $actorId);
-    mg_event('admin.session.revoked', [
-        'session_id' => $sessionId,
-        'target_user_id' => (int)$session['user_id'],
-    ], $actorId);
-    mg_ok(['revoked' => 1, 'session_id' => $sessionId], 'Session revoked.');
-} catch (MgAdminUserManagementException $error) {
-    if ($pdo->inTransaction()) $pdo->rollBack();
-    mg_fail($error->getMessage(), $error->httpStatus);
-} catch (Throwable $error) {
-    if ($pdo->inTransaction()) $pdo->rollBack();
-    mg_security_log('error', 'admin.session.revoke_failed', 'Administrative session revocation failed.', [
-        'exception_class' => $error::class,
-    ], $actorId);
-    mg_fail('Unable to revoke the session.', 500);
+    mg_audit('admin_session_revoked', 'user_session', ['session_id' => $sessionId], (int) $user['id']);
+    mg_event('admin.session.revoked', ['session_id' => $sessionId, 'admin_user_id' => (int) $user['id']], (int) $user['id']);
+    mg_ok(['revoked' => $stmt->rowCount()], 'Session revoked.');
 }
+
+if ($targetUserId > 0) {
+    $stmt = $pdo->prepare('UPDATE user_sessions SET revoked_at = NOW() WHERE user_id = ? AND revoked_at IS NULL');
+    $stmt->execute([$targetUserId]);
+    mg_audit('admin_user_sessions_revoked', 'user_session', ['target_user_id' => $targetUserId], (int) $user['id']);
+    mg_event('admin.user_sessions.revoked', ['target_user_id' => $targetUserId, 'admin_user_id' => (int) $user['id']], (int) $user['id']);
+    mg_ok(['revoked' => $stmt->rowCount()], 'User sessions revoked.');
+}
+
+mg_fail('Provide session_id or user_id.', 422);

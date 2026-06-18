@@ -1,0 +1,26 @@
+.mg-admin-user-management-section{border-color:#c7d2fe;background:linear-gradient(180deg,#fff,#f8faff)}
+.mg-admin-management-reason{display:grid;gap:7px;margin-bottom:10px;color:#334155;font-size:.68rem;font-weight:850}
+.mg-admin-management-reason textarea{width:100%;resize:vertical;min-height:76px;padding:10px 11px;border:1px solid #cbd5e1;border-radius:11px;background:#fff;color:#0f172a;font:inherit;font-weight:600;line-height:1.45}
+.mg-admin-management-reason textarea:focus,.mg-admin-management-controls select:focus{border-color:#2563eb;outline:3px solid rgba(37,99,235,.12)}
+.mg-admin-management-notice{min-height:0;margin-bottom:10px;padding:0;border-radius:10px;font-size:.67rem;font-weight:750;line-height:1.45}
+.mg-admin-management-notice:not(:empty){padding:9px 10px;background:#eef2ff;color:#3730a3}
+.mg-admin-management-notice[data-type="success"]{background:#dcfce7;color:#166534}
+.mg-admin-management-notice[data-type="error"]{background:#fee2e2;color:#991b1b}
+.mg-admin-management-stack{display:grid;gap:12px}
+.mg-admin-management-block{display:grid;gap:9px;padding-top:11px;border-top:1px solid #e5eaf1}
+.mg-admin-management-block>h4,.mg-admin-management-block-head h4{margin:0;color:#0f172a;font-size:.75rem}
+.mg-admin-management-block>p,.mg-admin-management-block-head p{margin:.25rem 0 0;color:#64748b;font-size:.64rem;line-height:1.45}
+.mg-admin-management-block-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.mg-admin-management-items{display:grid;gap:7px}
+.mg-admin-management-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px;border:1px solid #e5eaf1;border-radius:11px;background:#fff}
+.mg-admin-management-copy{display:grid;gap:3px;min-width:0}
+.mg-admin-management-copy strong{color:#0f172a;font-size:.69rem;overflow-wrap:anywhere}
+.mg-admin-management-copy span{color:#64748b;font-size:.61rem;line-height:1.4;overflow-wrap:anywhere}
+.mg-admin-management-controls{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap;flex:0 0 auto}
+.mg-admin-management-controls select{min-height:34px;max-width:150px;padding:0 9px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;color:#0f172a;font-size:.63rem;font-weight:750}
+.mg-admin-management-controls .mg-btn,.mg-admin-management-block-head .mg-btn{min-height:34px;padding:.5rem .7rem;font-size:.61rem}
+.mg-btn-danger{border:1px solid #fecaca;background:#fff1f2;color:#be123c}
+.mg-btn-danger:hover{background:#ffe4e6}
+.mg-admin-management-protected{padding:.26rem .46rem;border-radius:999px;background:#f1f5f9;color:#64748b;font-size:.56rem;font-weight:850;text-transform:uppercase}
+.mg-admin-management-empty{padding:12px;border:1px dashed #cbd5e1;border-radius:11px;color:#64748b;font-size:.66rem;line-height:1.5;text-align:center}
+@media(max-width:560px){.mg-admin-management-row,.mg-admin-management-block-head{align-items:flex-start;flex-direction:column}.mg-admin-management-controls{width:100%;justify-content:flex-start}.mg-admin-management-controls select{max-width:none;flex:1}.mg-admin-management-controls .mg-btn{flex:0 0 auto}}

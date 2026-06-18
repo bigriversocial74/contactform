@@ -38,9 +38,10 @@ function mg_admin_user_detail_roles(PDO $pdo, int $userId): array
 function mg_admin_user_detail_models(PDO $pdo, int $userId): array
 {
     $stmt = $pdo->prepare(
-        'SELECT um.code, um.name, um.requires_approval,
-                uma.status, uma.requested_at, uma.enabled_at,
-                uma.approved_at, uma.disabled_at
+        'SELECT um.code, um.name, um.requires_approval, um.is_system, um.is_assignable,
+                uma.status, uma.reason, uma.requested_at, uma.enabled_at,
+                uma.approved_at, uma.disabled_at, uma.rejected_at,
+                uma.suspended_at, uma.revoked_at
          FROM user_model_assignments uma
          INNER JOIN user_models um ON um.id = uma.user_model_id
          WHERE uma.user_id = ?
@@ -52,11 +53,17 @@ function mg_admin_user_detail_models(PDO $pdo, int $userId): array
         'code' => (string)$model['code'],
         'name' => (string)$model['name'],
         'requires_approval' => (bool)$model['requires_approval'],
+        'is_system' => (bool)$model['is_system'],
+        'is_assignable' => (bool)$model['is_assignable'],
         'status' => (string)$model['status'],
+        'reason' => $model['reason'] !== null ? (string)$model['reason'] : null,
         'requested_at' => $model['requested_at'] !== null ? (string)$model['requested_at'] : null,
         'enabled_at' => $model['enabled_at'] !== null ? (string)$model['enabled_at'] : null,
         'approved_at' => $model['approved_at'] !== null ? (string)$model['approved_at'] : null,
         'disabled_at' => $model['disabled_at'] !== null ? (string)$model['disabled_at'] : null,
+        'rejected_at' => $model['rejected_at'] !== null ? (string)$model['rejected_at'] : null,
+        'suspended_at' => $model['suspended_at'] !== null ? (string)$model['suspended_at'] : null,
+        'revoked_at' => $model['revoked_at'] !== null ? (string)$model['revoked_at'] : null,
     ], $stmt->fetchAll(PDO::FETCH_ASSOC));
 }
 

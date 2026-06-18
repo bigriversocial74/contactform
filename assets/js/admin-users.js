@@ -286,6 +286,7 @@
   refreshButton?.addEventListener('click', () => load());
   retryButton?.addEventListener('click', () => load());
   moreButton?.addEventListener('click', () => load({ append: true }));
+  document.addEventListener('mg:admin-users-refresh', () => load());
 
   fillFromUrl();
   load();
