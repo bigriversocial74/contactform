@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/_action_center.php';
 require_once dirname(__DIR__) . '/microgifts/_lifecycle.php';
 require_once dirname(__DIR__) . '/microgifts/_action_center_projection.php';
+require_once dirname(__DIR__) . '/microgifts/_delivery.php';
 require_once dirname(__DIR__) . '/pppm/_ownership.php';
 
 function mg_action_center_users_have_public_id(PDO $pdo): bool
@@ -14,6 +15,21 @@ function mg_action_center_users_have_public_id(PDO $pdo): bool
     $stmt->execute();
     $hasColumn=(bool)$stmt->fetch();
     return $hasColumn;
+}
+
+function mg_action_center_resolve_recipient(PDO $pdo,string $reference): int
+{
+    if(ctype_digit($reference)){
+        $stmt=$pdo->prepare("SELECT id FROM users WHERE id=? AND status='active' LIMIT 1");
+        $stmt->execute([(int)$reference]);
+    }elseif(mg_action_center_users_have_public_id($pdo)){
+        $stmt=$pdo->prepare("SELECT id FROM users WHERE (public_id=? OR email=?) AND status='active' LIMIT 1");
+        $stmt->execute([$reference,$reference]);
+    }else{
+        $stmt=$pdo->prepare("SELECT id FROM users WHERE email=? AND status='active' LIMIT 1");
+        $stmt->execute([$reference]);
+    }
+    return (int)($stmt->fetchColumn()?:0);
 }
 
 mg_require_method('POST');
@@ -42,29 +58,41 @@ try{
     $stmt->execute([$actionItemId,(int)$user['id']]);
     $instance=$stmt->fetch(PDO::FETCH_ASSOC);
     if(!$instance)throw new RuntimeException('Action Center item not found.');
+
+    $recipientUserId=mg_action_center_resolve_recipient($pdo,$recipientReference);
+    if($recipientUserId<1)throw new RuntimeException('Recipient not found.');
+
+    if((string)$instance['folder']==='sent'){
+        $eventStmt=$pdo->prepare("SELECT * FROM microgift_delivery_events WHERE idempotency_key=? AND event_type='sent' LIMIT 1 FOR UPDATE");
+        $eventStmt->execute([$idempotencyKey]);
+        $event=$eventStmt->fetch(PDO::FETCH_ASSOC);
+        $same=$event
+            &&(int)$event['instance_id']===(int)$instance['instance_id']
+            &&(int)$event['sender_user_id']===(int)$user['id']
+            &&(int)$event['recipient_user_id']===$recipientUserId;
+        if(!$same)throw new RuntimeException('This Action Center item has already been sent. Use Resend to deliver it again.');
+        $summary=mg_microgift_delivery_summary($pdo,(int)$instance['instance_id']);
+        $pdo->commit();
+        mg_ok([
+            'instance_id'=>$instance['public_id'],'recipient_user_id'=>$recipientUserId,
+            'status'=>(string)$instance['status'],'duplicate'=>true,'delivery_event'=>[
+                'event_id'=>(string)$event['public_id'],'event_type'=>'sent','occurred_at'=>(string)$event['occurred_at'],'duplicate'=>true,
+            ],'delivery_summary'=>$summary,
+        ],'Existing send result returned.');
+    }
+
     if((string)$instance['folder']!=='inbox')throw new RuntimeException('This Action Center item cannot be sent.');
     if((int)$instance['owner_user_id']!==(int)$user['id'])throw new RuntimeException('You do not own this Microgift.');
-    if(!in_array((string)$instance['status'],['issued','delivered','claim_pending'],true)){
+    if(!in_array((string)$instance['status'],['issued','delivered'],true)){
         throw new RuntimeException('Microgift is not in a sendable lifecycle state.');
     }
 
-    if(ctype_digit($recipientReference)){
-        $recipientStmt=$pdo->prepare("SELECT id FROM users WHERE id=? AND status='active' LIMIT 1");
-        $recipientStmt->execute([(int)$recipientReference]);
-    }elseif(mg_action_center_users_have_public_id($pdo)){
-        $recipientStmt=$pdo->prepare("SELECT id FROM users WHERE (public_id=? OR email=?) AND status='active' LIMIT 1");
-        $recipientStmt->execute([$recipientReference,$recipientReference]);
-    }else{
-        $recipientStmt=$pdo->prepare("SELECT id FROM users WHERE email=? AND status='active' LIMIT 1");
-        $recipientStmt->execute([$recipientReference]);
-    }
-    $recipientUserId=(int)($recipientStmt->fetchColumn()?:0);
-    if($recipientUserId<1)throw new RuntimeException('Recipient not found.');
-
     $duplicate=false;
     $transfer=null;
+    $deliveryEvent=null;
     if($recipientUserId===(int)$user['id']){
         $duplicate=true;
+        $projection=mg_action_center_sent($pdo,(int)$instance['id'],(int)$user['id'],$recipientUserId);
     }else{
         $pppmPublicId=trim((string)($instance['pppm_public_id']??''));
         if($pppmPublicId==='')throw new RuntimeException('Microgift ownership authority is unavailable.');
@@ -83,20 +111,31 @@ try{
             WHERE id=?")
             ->execute([(int)$user['id'],$recipientUserId,$recipientUserId,(int)$instance['id']]);
         $instance=mg_microgift_load_instance($pdo,(string)$instance['public_id']);
+        $deliveryEvent=mg_microgift_delivery_event(
+            $pdo,$instance,'sent',(int)$user['id'],$recipientUserId,$idempotencyKey,$actionItemId,
+            ['pppm_item_id'=>$pppmPublicId,'transfer_id'=>$transfer['transfer_id']??null]
+        );
+        $duplicate=$duplicate||(bool)$deliveryEvent['duplicate'];
+        $projection=mg_action_center_sent(
+            $pdo,(int)$instance['id'],(int)$user['id'],$recipientUserId,
+            ['sent_at'=>$deliveryEvent['occurred_at'],'received_at'=>$deliveryEvent['occurred_at'],'occurred_at'=>$deliveryEvent['occurred_at']]
+        );
     }
 
-    $projection=mg_action_center_sent($pdo,(int)$instance['id'],(int)$user['id'],$recipientUserId);
+    $summary=mg_microgift_delivery_summary($pdo,(int)$instance['id']);
     $pdo->commit();
 
     mg_audit('action_center.microgift_sent','microgift_instance',[
-        'instance_id'=>$instance['public_id'],'action_item_id'=>$actionItemId,'recipient_user_id'=>$recipientUserId,'duplicate'=>$duplicate,
+        'instance_id'=>$instance['public_id'],'action_item_id'=>$actionItemId,'recipient_user_id'=>$recipientUserId,
+        'sent_at'=>$deliveryEvent['occurred_at']??null,'delivery_event_id'=>$deliveryEvent['event_id']??null,'duplicate'=>$duplicate,
     ],(int)$user['id']);
     mg_event('microgift.sent',[
-        'instance_id'=>$instance['public_id'],'recipient_user_id'=>$recipientUserId,'idempotency_key'=>$idempotencyKey,'duplicate'=>$duplicate,
+        'instance_id'=>$instance['public_id'],'recipient_user_id'=>$recipientUserId,'idempotency_key'=>$idempotencyKey,
+        'sent_at'=>$deliveryEvent['occurred_at']??null,'duplicate'=>$duplicate,
     ],(int)$user['id']);
     mg_ok([
         'instance_id'=>$instance['public_id'],'recipient_user_id'=>$recipientUserId,'status'=>(string)$instance['status'],
-        'duplicate'=>$duplicate,'transfer'=>$transfer,'action_center'=>$projection,
+        'duplicate'=>$duplicate,'transfer'=>$transfer,'delivery_event'=>$deliveryEvent,'delivery_summary'=>$summary,'action_center'=>$projection,
     ],$duplicate?'Existing send result returned.':'Microgift sent.',$duplicate?200:201);
 }catch(InvalidArgumentException $error){
     if($pdo->inTransaction())$pdo->rollBack();

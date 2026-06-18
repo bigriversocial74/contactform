@@ -76,6 +76,7 @@ return [
         'stage_18d_profile_moderation.sql',
         'stage_18e_engagement_mutations.sql',
         'stage_18f_pppm_publish_distribution.sql',
+        'stage_18g_pppm_resend_timeline.sql',
     ],
 
     // Historical production databases may contain consolidated markers instead

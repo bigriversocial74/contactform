@@ -22,6 +22,7 @@ composer test-security
 composer test-frontend-contracts
 composer test-money-behavior
 composer test-microgift-behavior
+composer test-pppm-resend-behavior
 composer test-tip-behavior
 composer test-tip-payment-behavior
 composer test-tip-recovery-behavior

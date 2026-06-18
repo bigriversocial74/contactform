@@ -47,12 +47,13 @@ final class MicrogiftLifecycleValidationContractTest extends TestCase
         }
     }
 
-    public function testActionCenterSendRejectsPostClaimLifecycleStates(): void
+    public function testActionCenterSendAllowsOnlyUnclaimedDeliveredInventory(): void
     {
         $source=file_get_contents(dirname(__DIR__,2).'/api/account/action-center-send.php');
         self::assertIsString($source);
 
-        self::assertStringContainsString("['issued','delivered','claim_pending']",$source);
+        self::assertStringContainsString("['issued','delivered']",$source);
+        self::assertStringNotContainsString("['issued','delivered','claim_pending']",$source);
         self::assertStringNotContainsString("['issued','delivered','claim_pending','claimed','redeemable']",$source);
     }
 

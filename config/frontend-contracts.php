@@ -58,7 +58,9 @@ return [
                 'mg-pppm-post-stack',
                 'mg-pppm-post',
                 'Protected voucher',
-                'No real payment, ownership transfer, claim, message, tip, notification, ledger entry, payout, or webhook was created.',
+                'No real payment, ownership transfer, send, resend, claim, message, tip, notification, ledger entry, payout, or webhook was created.',
+                'data-gift-action="resend"',
+                'This creates a new resend timestamp',
             ],
             'ordered_tokens' => [
                 ['mg-pppm-post-stack','Protected voucher'],

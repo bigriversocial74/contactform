@@ -69,25 +69,20 @@ final class ActionCenterRedeemLocationSelectorContractTest extends TestCase
         self::assertStringNotContainsString('mg_microgift_claim',$source);
     }
 
-    public function testActionCenterActionsAddsRedeemModalWithoutChangingClaimSubmit(): void
+    public function testActionCenterActionsKeepRedeemPayloadSeparateFromSendAndResend(): void
     {
         $source=file_get_contents(dirname(__DIR__,2).'/assets/js/gift-action-center-actions.js');
         self::assertIsString($source);
 
         foreach([
-            'data-gift-action="redeem"',
-            'Merchant location redemption',
-            'data-action-form="redeem"',
-            'data-redeem-location',
-            '/api/account/action-center-redeem-locations.php?action_item_id=',
-            'request.location_id=data.location_id',
-            'Microgifter.post(endpoint(\'redeem\'),payload(\'redeem\',item,data))',
-            "['send','claim','redeem','message','tip']",
-            'The location claim code is resolved server-side and is not exposed in the browser.',
+            "else if(type==='redeem'){request.location_id=data.location_id;}",
+            "form.dataset.actionForm==='redeem'",
+            "['send','resend','claim','message','tip']",
+            "function endpoint(type){return '/api/account/action-center-'+type+'.php';}",
         ] as $needle){
             self::assertStringContainsString($needle,$source);
         }
 
-        self::assertStringContainsString('request.code=data.claim_code',$source,'Existing recipient claim payload remains free-standing and unchanged.');
+        self::assertStringContainsString('request.code=data.claim_code',$source,'Existing merchant claim-code payload remains free-standing and unchanged.');
     }
 }

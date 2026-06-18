@@ -58,16 +58,16 @@ final class GiftActionCenterConsolidatedLayoutTest extends TestCase
         self::assertStringContainsString('data-gift-nav-unread="<?= $tab[0] ?>"',$header);
     }
 
-    public function testFolderSpecificRowActionsAndMetadataAreRenderedByJavascript(): void
+    public function testFolderSpecificRowActionsAndTimestampMetadataAreRenderedByJavascript(): void
     {
         $script=file_get_contents(dirname(__DIR__,2).'/assets/js/gift-action-center.js');
         self::assertIsString($script);
         self::assertMatchesRegularExpression('/function\s+rowActions\s*\([^)]*\)/',$script);
-        foreach(['send','claim','load','message','tip'] as $action){
+        foreach(['send','resend','claim','load','message','tip'] as $action){
             self::assertStringContainsString('data-gift-action="'.$action.'"',$script);
         }
         self::assertMatchesRegularExpression('/function\s+metadata\s*\(item\)/',$script);
-        foreach(['From: ','Sent: ','Redeemed: ','Type: ','Value: ','Status: '] as $label){
+        foreach(['From: ','Sent: ','Last resent: ','Claimed: ','Type: ','Value: ','Status: '] as $label){
             self::assertStringContainsString($label,$script);
         }
     }

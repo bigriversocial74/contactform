@@ -56,6 +56,7 @@ $tables = [
     'microgift_template_versions',
     'microgift_instances',
     'microgift_inbox_items',
+    'microgift_delivery_events',
     'microgift_redemptions',
     'merchant_locations',
     'merchant_storefront_revisions',

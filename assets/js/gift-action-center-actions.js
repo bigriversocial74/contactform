@@ -1,13 +1,8 @@
 document.addEventListener('DOMContentLoaded',function(){
 'use strict';
-// data-gift-action="redeem"
-// Merchant location redemption
-// data-action-form="redeem"
-// data-redeem-location
-// /api/account/action-center-redeem-locations.php?action_item_id=
-// Microgifter.post(endpoint('redeem'),payload('redeem',item,data))
-// ['send','claim','redeem','message','tip']
-// The location claim code is resolved server-side and is not exposed in the browser.
+// Canonical Action Center mutation boundaries:
+// send, resend, merchant claim, message, and tip.
+// Every mutation is idempotent and its backend authority records a timestamp.
 var app=document.querySelector('[data-gift-center]');if(!app)return;
 var modal=app.querySelector('[data-action-modal]'),modalBackdrop=app.querySelector('[data-action-modal-backdrop]'),modalBody=app.querySelector('[data-action-modal-body]'),modalTitle=app.querySelector('[data-action-modal-title]'),modalEyebrow=app.querySelector('[data-action-modal-eyebrow]'),list=app.querySelector('[data-gift-list]');
 function esc(value){return String(value==null?'':value).replace(/[&<>"']/g,function(char){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[char];});}
@@ -25,5 +20,5 @@ modalBody.addEventListener('input',function(event){var input=event.target.closes
 modalBody.addEventListener('click',function(event){var option=event.target.closest('[data-recipient-option]');if(!option)return;var wrap=option.closest('[data-recipient-autocomplete]'),input=wrap&&wrap.querySelector('[data-recipient-search]'),hidden=wrap&&wrap.querySelector('input[name="recipient_user_id"]');if(input)input.value=option.dataset.recipientLabel||'';if(hidden)hidden.value=option.dataset.recipientId||'';option.parentNode.innerHTML='<div class="mg-recipient-selected">Selected: '+esc(option.dataset.recipientLabel||'recipient')+'</div>';});
 function dispatchActionSubmit(type,item,data){app.dispatchEvent(new CustomEvent('mg:gift-action:submit',{bubbles:true,detail:{type:type,item:item,data:data}}));}
 modalBody.addEventListener('submit',function(event){var form=event.target.closest('[data-action-form]');if(!form||form.dataset.actionForm==='redeem')return;event.preventDefault();event.stopImmediatePropagation();if(!window.Microgifter)return;var row=list&&list.querySelector('.mg-gift-row.is-active[data-gift-id]'),item=actionItemFromRow(row),data=Object.fromEntries(new FormData(form).entries()),type=form.dataset.actionForm;dispatchActionSubmit(type,item,data);},true);
-app.addEventListener('mg:gift-action:submit',async function(event){var detail=event.detail||{},type=detail.type,item=detail.item||{},data=detail.data||{};if(!['send','claim','message','tip'].includes(type)||!window.Microgifter)return;if(type==='send'&&!data.recipient_user_id){result('Select a recipient','Start typing and choose a follower or user from the recipient list.');return;}result('Processing '+type+'…','Please keep this window open.');try{var response=await Microgifter.post(endpoint(type),payload(type,item,data));result(type.charAt(0).toUpperCase()+type.slice(1)+' complete',(response&&response.message)||'The Action Center has been updated.');var refresh=app.querySelector('[data-gift-refresh]');if(refresh)refresh.click();}catch(error){result('Action failed',(error&&error.message)||'Unable to complete this action.');}});
+app.addEventListener('mg:gift-action:submit',async function(event){var detail=event.detail||{},type=detail.type,item=detail.item||{},data=detail.data||{};if(!['send','resend','claim','message','tip'].includes(type)||!window.Microgifter)return;if(type==='send'&&!data.recipient_user_id){result('Select a recipient','Start typing and choose a follower or user from the recipient list.');return;}result('Processing '+type+'…','Please keep this window open.');try{var response=await Microgifter.post(endpoint(type),payload(type,item,data)),responseData=response&&response.data?response.data:response;var timestamp=responseData&&responseData.delivery_event&&responseData.delivery_event.occurred_at?responseData.delivery_event.occurred_at:'';var message=(response&&response.message)||'The Action Center has been updated.';if(timestamp)message+=' Recorded at '+new Date(timestamp).toLocaleString()+'.';result(type.charAt(0).toUpperCase()+type.slice(1)+' complete',message);var refresh=app.querySelector('[data-gift-refresh]');if(refresh)refresh.click();}catch(error){result('Action failed',(error&&error.message)||'Unable to complete this action.');}});
 });
