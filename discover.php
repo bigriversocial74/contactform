@@ -2,7 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/includes/app.php';
 
-$page_title = 'Discover profiles | Microgifter';
+$page_title = 'Discover local vouchers and profiles | Microgifter';
 $page_section = 'discover';
 $header_mode = 'public';
 $page_styles = ['/assets/css/profile-discovery.css'];
@@ -31,12 +31,12 @@ require __DIR__ . '/includes/header.php';
 <main class="mg-discovery-shell" data-profile-discovery>
   <section class="mg-discovery-hero">
     <div class="mg-container">
-      <span class="mg-kicker">Profile discovery</span>
-      <h1>Find people, creators, merchants, and local gifting profiles.</h1>
-      <p>Search public profile information, locations, profile types, and published storefront categories.</p>
+      <span class="mg-kicker">Local discovery</span>
+      <h1>Find local vouchers, merchants, creators, and gifting profiles.</h1>
+      <p>Search published voucher products by title, category, merchant, city, region, or active merchant location.</p>
       <form class="mg-discovery-search" data-discovery-form role="search">
-        <label class="mg-discovery-query">Search profiles
-          <input type="search" name="q" maxlength="100" autocomplete="off" placeholder="Name, profile, headline, or location">
+        <label class="mg-discovery-query">Search
+          <input type="search" name="q" maxlength="100" autocomplete="off" placeholder="Voucher, merchant, profile, or location">
         </label>
         <label>Profile type
           <select name="type">
@@ -48,10 +48,10 @@ require __DIR__ . '/includes/header.php';
           </select>
         </label>
         <label>Location
-          <input type="search" name="location" maxlength="100" placeholder="City or region">
+          <input type="search" name="location" maxlength="100" placeholder="City, region, ZIP, or store">
         </label>
         <label>Category
-          <input type="search" name="category" maxlength="60" placeholder="Product category">
+          <input type="search" name="category" maxlength="60" placeholder="Voucher category">
         </label>
         <button class="mg-btn mg-btn-primary" type="submit">Search</button>
         <button class="mg-btn mg-btn-ghost" type="reset" data-discovery-reset>Reset</button>
@@ -71,26 +71,30 @@ require __DIR__ . '/includes/header.php';
     <section class="mg-discovery-state mg-hidden" data-discovery-error role="alert">
       <div class="mg-panel mg-discovery-message">
         <h2>Search is temporarily unavailable.</h2>
-        <p data-discovery-error-message>We could not load profile discovery.</p>
+        <p data-discovery-error-message>We could not load discovery.</p>
         <button class="mg-btn mg-btn-primary" type="button" data-discovery-retry>Try again</button>
       </div>
     </section>
 
     <section class="mg-discovery-state mg-hidden" data-discovery-empty>
       <div class="mg-panel mg-discovery-message">
-        <h2>No profiles are available yet.</h2>
-        <p>Published profiles will appear here when they become discoverable.</p>
+        <h2>No public vouchers or profiles are available yet.</h2>
+        <p>Published merchant products and profiles will appear here when they become discoverable.</p>
       </div>
     </section>
 
     <section class="mg-discovery-state mg-hidden" data-discovery-no-results>
       <div class="mg-panel mg-discovery-message">
-        <h2>No matching profiles.</h2>
-        <p>Try a broader search term, location, category, or profile type.</p>
+        <h2>No matching results.</h2>
+        <p>Try a broader voucher, merchant, location, category, or profile search.</p>
       </div>
     </section>
 
     <div class="mg-hidden" data-discovery-content>
+      <section class="mg-discovery-section mg-hidden" data-product-results-section>
+        <div class="mg-discovery-heading"><div><span class="mg-kicker">Available nearby</span><h2>Local vouchers</h2></div><p>Published products available at active merchant locations.</p></div>
+        <div class="mg-discovery-card-grid" data-product-results-grid></div>
+      </section>
       <section class="mg-discovery-section mg-hidden" data-featured-section>
         <div class="mg-discovery-heading"><div><span class="mg-kicker">Curated</span><h2>Featured profiles</h2></div><p>Deterministic selections based on public storefront, product, audience, and activity signals.</p></div>
         <div class="mg-discovery-card-grid" data-featured-grid></div>
