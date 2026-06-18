@@ -31,7 +31,7 @@ function mg_admin_dashboard_access(array $user): array
         'sessions'=>$has('admin.sessions.view'),
         'alerts'=>$has('operational.alerts.view')||$has('admin.health.view'),
         'demand'=>$has('demand.dashboard.view')||$has('intelligence.dashboard.view')||$has('admin.health.view'),
-        'commerce'=>$has('merchant.payments.view')||$has('subscriptions.admin')||$has('microgift.operations.view')||$has('tips.reverse'),
+        'commerce'=>$has('admin.commerce.view')||$has('admin.commerce.manage')||$has('merchant.payments.view')||$has('subscriptions.admin')||$has('microgift.operations.view')||$has('tips.reverse'),
         'super_admin'=>$super,
     ];
     $access['dashboard']=$super||in_array(true,$access,true);
@@ -55,6 +55,7 @@ function mg_admin_dashboard_shortcuts(array $access): array
         $items[]=['label'=>'Users','description'=>'Inspect platform identities.','href'=>'/admin/users.php'];
         $items[]=['label'=>'Pending models','description'=>'Review requested user models.','href'=>'/api/admin/user-models/pending.php'];
     }
+    if($access['commerce'])$items[]=['label'=>'Commerce operations','description'=>'Inspect cross-domain payments, lifecycle activity, and review cases.','href'=>'/commerce-operations.php'];
     if($access['moderation'])$items[]=['label'=>'Profile moderation','description'=>'Review profile cases, restrictions, and appeals.','href'=>'/account-profile-moderation.php'];
     if($access['audit'])$items[]=['label'=>'Audit logs','description'=>'Inspect administrative activity.','href'=>'/api/admin/audit-logs.php'];
     if($access['security'])$items[]=['label'=>'Security logs','description'=>'Review security events.','href'=>'/api/admin/security-logs.php'];

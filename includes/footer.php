@@ -16,6 +16,11 @@ if (($page_body_class ?? '') === 'mg-admin-users-page') {
     $late_styles[] = '/assets/css/admin-user-detail-drawer.css';
     $late_styles[] = '/assets/css/admin-user-management.css';
 }
+if (($page_body_class ?? '') === 'mg-admin-commerce-page') {
+    $page_scripts[] = '/assets/js/admin-commerce-inspector.js';
+    $page_scripts[] = '/assets/js/admin-commerce-workflow.js';
+    $late_styles[] = '/assets/css/admin-commerce-drawer.css';
+}
 $core_scripts = [
     '/assets/js/microgifter.js','/assets/js/header-signals.js','/assets/js/api-client.js','/assets/js/agent-folder-counts.js',
     '/assets/js/agent-global-search.js','/assets/js/customer-commerce.js','/assets/js/cart.js','/assets/js/auth.js',
