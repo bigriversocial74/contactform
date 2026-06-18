@@ -45,7 +45,7 @@ return [
         'stage_3_commerce_microgift_fulfillment.sql',
         'stage_5j_foundation_reconciliation.sql',
         'stage_7b_money_engine.sql',
-        'stage_8a_entitlements_library.sql',
+        'stage_8b_entitlements_library.sql',
         'stage_8c_entitlement_lifecycle.sql',
         'stage_9b_microgift_engine.sql',
         'stage_9c_microgift_lifecycle.sql',
