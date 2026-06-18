@@ -49,13 +49,17 @@ final class Stage5BProductManagementTest extends TestCase
         self::assertStringContainsString('owner_user_id=?',$api);
     }
 
-    public function testPublishedVersionImmutabilityRemainsInBuilder(): void
+    public function testPublishedVersionImmutabilityUsesSharedDistributionService(): void
     {
-        $builder=file_get_contents(dirname(__DIR__,2).'/api/catalog/builder-draft.php');
+        $root=dirname(__DIR__,2);
+        $builder=file_get_contents($root.'/api/catalog/builder-draft.php');
+        $distribution=file_get_contents($root.'/api/catalog/_publish_distribution.php');
         self::assertIsString($builder);
+        self::assertIsString($distribution);
         self::assertStringContainsString("SET version_status='retired'",$builder);
         self::assertStringContainsString("VALUES (?,?,?,'published'",$builder);
-        self::assertStringContainsString('catalog_pppm_templates',$builder);
+        self::assertStringContainsString('mg_catalog_publish_distribution(',$builder);
+        self::assertStringContainsString('catalog_pppm_templates',$distribution);
         self::assertStringContainsString("current_version_id=?,status='published'",$builder);
         self::assertStringContainsString("'version_id'=>\$versionId",$builder);
     }

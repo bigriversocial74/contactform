@@ -89,21 +89,50 @@ function mg_payment_issue_order_pppm(PDO $pdo, int $orderDbId, ?int $actorUserId
 
 function mg_payment_microgift_template_version_for_line(PDO $pdo, array $order, array $line): string
 {
-    $existing=$pdo->prepare("SELECT v.public_id FROM microgift_template_versions v INNER JOIN microgift_templates t ON t.id=v.template_id WHERE v.product_version_id=? AND v.status='published' AND t.owner_user_id=? AND t.status='active' ORDER BY v.id DESC LIMIT 1 FOR UPDATE");
-    $existing->execute([(int)$line['product_version_id'],(int)$order['merchant_user_id']]);
-    $public=(string)($existing->fetchColumn()?:'');
-    if($public!=='')return $public;
+    // The canonical published PPPM voucher definition is created when the merchant publishes the product.
+    $canonical=$pdo->prepare(
+        "SELECT mv.public_id
+         FROM catalog_pppm_templates cpt
+         INNER JOIN microgift_template_versions mv ON mv.id=cpt.microgift_template_version_id
+         INNER JOIN microgift_templates mt ON mt.id=mv.template_id
+         WHERE cpt.product_version_id=? AND cpt.status='active'
+           AND mv.status='published' AND mt.status='active' AND mt.owner_user_id=?
+         LIMIT 1 FOR UPDATE"
+    );
+    $canonical->execute([(int)$line['product_version_id'],(int)$order['merchant_user_id']]);
+    $canonicalPublic=(string)($canonical->fetchColumn()?:'');
+    if($canonicalPublic!=='')return $canonicalPublic;
 
-    $productVersion=$pdo->prepare('SELECT cpv.*,cp.public_id product_public_id,cp.slug product_slug FROM catalog_product_versions cpv INNER JOIN catalog_products cp ON cp.id=cpv.product_id WHERE cpv.id=? LIMIT 1 FOR UPDATE');
+    // Legacy compatibility: recover a pre-existing Microgift definition and backfill the PPPM link.
+    $existing=$pdo->prepare("SELECT v.id,v.public_id FROM microgift_template_versions v INNER JOIN microgift_templates t ON t.id=v.template_id WHERE v.product_version_id=? AND v.status='published' AND t.owner_user_id=? AND t.status='active' ORDER BY v.id DESC LIMIT 1 FOR UPDATE");
+    $existing->execute([(int)$line['product_version_id'],(int)$order['merchant_user_id']]);
+    $existingRow=$existing->fetch(PDO::FETCH_ASSOC);
+    if($existingRow){
+        $pdo->prepare('UPDATE catalog_pppm_templates SET microgift_template_version_id=?,updated_at=NOW() WHERE product_version_id=?')
+            ->execute([(int)$existingRow['id'],(int)$line['product_version_id']]);
+        return (string)$existingRow['public_id'];
+    }
+
+    $productVersion=$pdo->prepare('SELECT cpv.*,cp.public_id product_public_id,cp.slug product_slug,cp.product_type FROM catalog_product_versions cpv INNER JOIN catalog_products cp ON cp.id=cpv.product_id WHERE cpv.id=? LIMIT 1 FOR UPDATE');
     $productVersion->execute([(int)$line['product_version_id']]);
     $version=$productVersion->fetch(PDO::FETCH_ASSOC);
     if(!$version)throw new RuntimeException('Catalog product version not found for Microgift issuance.');
+
+    $locationStmt=$pdo->prepare(
+        "SELECT ml.public_id
+         FROM catalog_product_version_locations cpvl
+         INNER JOIN merchant_locations ml ON ml.id=cpvl.merchant_location_id
+         WHERE cpvl.product_version_id=? AND cpvl.availability_status='available' AND ml.status='active'
+         ORDER BY cpvl.is_primary DESC,cpvl.id"
+    );
+    $locationStmt->execute([(int)$line['product_version_id']]);
+    $locationIds=array_map('strval',$locationStmt->fetchAll(PDO::FETCH_COLUMN));
 
     $template=mg_microgift_create_template($pdo,(int)$order['merchant_user_id'],[
         'owner_type'=>'merchant',
         'name'=>(string)$line['title_snapshot'],
         'gift_type'=>'product',
-        'visibility'=>'unlisted',
+        'visibility'=>'public',
         'default_currency'=>(string)$line['currency'],
         'slug'=>(string)($version['product_slug']??('commerce-'.$line['public_id'])),
         'description'=>'Commerce checkout Microgift template.',
@@ -118,12 +147,30 @@ function mg_payment_microgift_template_version_for_line(PDO $pdo, array $order, 
         'recipient_policy'=>'purchaser',
         'claim_policy'=>['mode'=>'purchaser_owned'],
         'redemption_policy'=>['mode'=>'merchant_location'],
-        'location_policy'=>['mode'=>'unrestricted'],
+        'location_policy'=>$locationIds === [] ? ['mode'=>'unrestricted'] : ['mode'=>'selected_locations','location_ids'=>$locationIds],
         'expiration_policy'=>$version['expiration_policy_json']?json_decode((string)$version['expiration_policy_json'],true):[],
         'terms_snapshot'=>$version['terms_json']?json_decode((string)$version['terms_json'],true):[],
-        'future_demand_metadata'=>['source'=>'commerce_checkout','catalog_product_id'=>(string)($version['product_public_id']??'')],
+        'future_demand_metadata'=>['source'=>'commerce_checkout_legacy_recovery','catalog_product_id'=>(string)($version['product_public_id']??'')],
     ]);
     $published=mg_microgift_publish_version($pdo,(int)$order['merchant_user_id'],(string)$created['version_id']);
+    $microgiftVersionStmt=$pdo->prepare('SELECT id FROM microgift_template_versions WHERE public_id=? LIMIT 1');
+    $microgiftVersionStmt->execute([(string)$published['version_id']]);
+    $microgiftVersionId=(int)$microgiftVersionStmt->fetchColumn();
+
+    $itemType=in_array((string)$version['product_type'],['gift','prize','reward','voucher','entitlement','reservation','credit'],true)
+        ? (string)$version['product_type'] : 'other';
+    $defaults=json_encode([
+        'title'=>(string)$line['title_snapshot'],'description'=>$version['description']??null,
+        'value_cents'=>(int)$line['unit_amount_cents'],'currency'=>(string)$line['currency'],
+        'location_ids'=>$locationIds,'recovered_at_checkout'=>true,
+    ],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR);
+    $pdo->prepare(
+        "INSERT INTO catalog_pppm_templates
+         (public_id,product_version_id,microgift_template_version_id,item_type,default_funding_type,issuance_defaults_json,status,created_at,updated_at)
+         VALUES (?,?,?,?, 'customer_purchase',?,'active',NOW(),NOW())
+         ON DUPLICATE KEY UPDATE microgift_template_version_id=VALUES(microgift_template_version_id),
+           item_type=VALUES(item_type),default_funding_type='customer_purchase',issuance_defaults_json=VALUES(issuance_defaults_json),status='active',updated_at=NOW()"
+    )->execute([mg_microgift_uuid(),(int)$line['product_version_id'],$microgiftVersionId,$itemType,$defaults]);
     return (string)$published['version_id'];
 }
 

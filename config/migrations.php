@@ -75,6 +75,7 @@ return [
         'stage_18c2_demand_orchestration_retention.sql',
         'stage_18d_profile_moderation.sql',
         'stage_18e_engagement_mutations.sql',
+        'stage_18f_pppm_publish_distribution.sql',
     ],
 
     // Historical production databases may contain consolidated markers instead

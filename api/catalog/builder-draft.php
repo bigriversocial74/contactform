@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/_catalog.php';
+require_once __DIR__ . '/_publish_distribution.php';
 
 $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
 $user = mg_require_permission('catalog.products.manage');
@@ -36,9 +36,21 @@ function mg_builder_asset_map(mixed $value): array
     return $clean;
 }
 
+function mg_builder_context(PDO $pdo, int $userId): array
+{
+    return [
+        'locations'=>mg_catalog_merchant_locations($pdo,$userId),
+        'publish_requires'=>[
+            'public_profile'=>true,
+            'active_merchant_location'=>true,
+        ],
+    ];
+}
+
 if ($method === 'GET') {
+    $context = mg_builder_context($pdo,(int)$user['id']);
     $productId = trim((string)($_GET['id'] ?? ''));
-    if ($productId === '') mg_ok(['draft'=>null]);
+    if ($productId === '') mg_ok(['draft'=>null] + $context);
     $stmt = $pdo->prepare(
         'SELECT p.public_id AS product_id,p.product_type,p.slug,p.status,
                 d.public_id AS draft_id,d.builder_type,d.payload_json,d.asset_map_json,
@@ -61,7 +73,7 @@ if ($method === 'GET') {
         'assets'=>$row['asset_map_json'] ? (json_decode((string)$row['asset_map_json'],true) ?: []) : [],
         'lock_version'=>(int)$row['lock_version'],
         'updated_at'=>$row['updated_at'],
-    ]]);
+    ]] + $context);
 }
 
 if ($method !== 'POST') mg_fail('Method not allowed.',405);
@@ -73,16 +85,10 @@ $payload = mg_builder_payload($input['payload'] ?? []);
 $assetMap = mg_builder_asset_map($input['assets'] ?? []);
 $productId = trim((string)($input['product_id'] ?? ''));
 $lockVersion = max(0,(int)($input['lock_version'] ?? 0));
-$title = trim((string)($payload['title'] ?? 'Untitled product'));
-if ($title === '' || mb_strlen($title) > 160) mg_fail('Invalid product title.',422);
+$title = trim((string)($payload['title'] ?? ''));
+if ($title === '' || mb_strlen($title) > 160) mg_fail('Enter a product title before saving or publishing.',422);
 $slug = mg_catalog_slug((string)($payload['slug'] ?? $title));
-$productTypeMap = [
-    'simple_product'=>'other',
-    'greeting_card'=>'gift',
-    'multimedia_greeting_card'=>'gift',
-    'simple_collab'=>'reward',
-];
-$productType = $productTypeMap[$builderType];
+$productType = mg_catalog_product_type_from_payload($builderType,$payload);
 
 try {
     $pdo->beginTransaction();
@@ -102,7 +108,7 @@ try {
         if ($productStatus === 'archived') mg_fail('Archived products cannot be edited.',409);
         $productDbId = (int)$product['id'];
         if ($productStatus === 'draft') {
-            $pdo->prepare("UPDATE catalog_products SET product_type=?,slug=?,updated_at=NOW() WHERE id=?")
+            $pdo->prepare('UPDATE catalog_products SET product_type=?,slug=?,updated_at=NOW() WHERE id=?')
                 ->execute([$productType,$slug,$productDbId]);
         } else {
             $pdo->prepare('UPDATE catalog_products SET updated_at=NOW() WHERE id=?')->execute([$productDbId]);
@@ -152,13 +158,21 @@ try {
 
     if ($action !== 'publish') mg_fail('Invalid builder action.',422);
     mg_require_permission('catalog.products.publish');
+    if (($payload['visibility'] ?? 'published') !== 'published') {
+        mg_fail('Public publishing distributes the voucher to your store, feed, and selected merchant locations. Save the draft instead if it is not ready.',422);
+    }
+    if (!empty($payload['demo'])) {
+        mg_fail('Demo vouchers cannot be published as live merchant products.',422);
+    }
 
     $nextVersionStmt = $pdo->prepare('SELECT COALESCE(MAX(version_number),0)+1 FROM catalog_product_versions WHERE product_id=?');
     $nextVersionStmt->execute([$productDbId]);
     $versionNumber = (int)$nextVersionStmt->fetchColumn();
     $versionId = mg_catalog_uuid();
     $valueCents = max(0,(int)($payload['value_cents'] ?? 0));
+    if ($valueCents < 1) mg_fail('Enter a voucher value before publishing.',422);
     $currency = strtoupper(substr((string)($payload['currency'] ?? 'USD'),0,3));
+    if (!preg_match('/^[A-Z]{3}$/',$currency)) mg_fail('Invalid currency.',422);
     $description = trim((string)($payload['description'] ?? $payload['message'] ?? '')) ?: null;
     $terms = mg_catalog_json($payload['terms'] ?? null);
     $expiration = mg_catalog_json($payload['expiration_policy'] ?? null);
@@ -166,6 +180,7 @@ try {
         'builder_type'=>$builderType,
         'claim_code_label'=>$payload['claim_code_label'] ?? null,
         'media_roles'=>array_keys($assetMap),
+        'distribution'=>'store_feed_locations',
     ]);
     $metadata = mg_catalog_json($payload);
     $checksum = mg_catalog_version_checksum(['builder_type'=>$builderType,'payload'=>$payload,'assets'=>$assetMap]);
@@ -182,9 +197,6 @@ try {
     ]);
     $versionDbId = (int)$pdo->lastInsertId();
 
-    $pdo->prepare("UPDATE catalog_product_versions SET version_status='retired' WHERE product_id=? AND id<>? AND version_status='published'")
-        ->execute([$productDbId,$versionDbId]);
-
     $assetLookup = $pdo->prepare("SELECT id FROM catalog_assets WHERE public_id=? AND owner_user_id=? AND status='ready' LIMIT 1");
     $assetInsert = $pdo->prepare(
         'INSERT INTO catalog_product_version_assets (product_version_id,asset_id,role,sort_order,created_at) VALUES (?,?,?,?,NOW())'
@@ -197,38 +209,54 @@ try {
         $assetInsert->execute([$versionDbId,(int)$assetDbId,$role,$sort++]);
     }
 
-    $templateId = mg_catalog_uuid();
-    $itemType = $builderType === 'simple_collab' ? 'reward' : ($builderType === 'simple_product' ? 'other' : 'gift');
-    $pdo->prepare(
-        "INSERT INTO catalog_pppm_templates
-         (public_id,product_version_id,item_type,default_funding_type,issuance_defaults_json,status,created_at,updated_at)
-         VALUES (?,?,?,'other',?,'active',NOW(),NOW())"
-    )->execute([
-        $templateId,$versionDbId,$itemType,
-        json_encode([
-            'title'=>$title,'description'=>$description,'value_cents'=>$valueCents,
-            'currency'=>$currency,'builder_type'=>$builderType,
-        ],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE),
-    ]);
-
+    $pdo->prepare("UPDATE catalog_product_versions SET version_status='retired' WHERE product_id=? AND id<>? AND version_status='published'")
+        ->execute([$productDbId,$versionDbId]);
     $pdo->prepare("UPDATE catalog_products SET product_type=?,slug=?,current_version_id=?,status='published',published_at=NOW(),archived_at=NULL,updated_at=NOW() WHERE id=?")
         ->execute([$productType,$slug,$versionDbId,$productDbId]);
 
+    $productRow = [
+        'id'=>$productDbId,'public_id'=>$productId,'product_type'=>$productType,'slug'=>$slug,
+    ];
+    $versionRow = [
+        'id'=>$versionDbId,'public_id'=>$versionId,'title'=>$title,'description'=>$description,
+        'unit_value_cents'=>$valueCents,'currency'=>$currency,
+        'expiration_policy_json'=>$expiration,'terms_json'=>$terms,
+    ];
+    $distribution = mg_catalog_publish_distribution(
+        $pdo,(int)$user['id'],$productRow,$versionRow,$builderType,$payload
+    );
+
     $pdo->commit();
     mg_audit('catalog.builder_published','catalog_product',[
-        'product_id'=>$productId,'version_id'=>$versionId,'template_id'=>$templateId,
+        'product_id'=>$productId,
+        'version_id'=>$versionId,
+        'pppm_template_id'=>$distribution['definition']['pppm_template_id'],
+        'microgift_template_version_id'=>$distribution['definition']['microgift_template_version_id'],
+        'storefront_id'=>$distribution['storefront']['storefront_id'],
+        'feed_post_id'=>$distribution['feed']['post_id'],
+        'location_count'=>$distribution['locations']['count'],
     ],(int)$user['id']);
     mg_ok([
         'product_id'=>$productId,
         'draft_id'=>$draftId,
         'version_id'=>$versionId,
         'version_number'=>$versionNumber,
-        'pppm_template_id'=>$templateId,
+        'pppm_template_id'=>$distribution['definition']['pppm_template_id'],
+        'microgift_template_id'=>$distribution['definition']['microgift_template_id'],
+        'microgift_template_version_id'=>$distribution['definition']['microgift_template_version_id'],
+        'storefront_id'=>$distribution['storefront']['storefront_id'],
+        'feed_post_id'=>$distribution['feed']['post_id'],
+        'locations'=>$distribution['locations']['locations'],
+        'product_url'=>$distribution['product_url'],
+        'store_url'=>$distribution['store_url'],
+        'feed_url'=>$distribution['feed_url'],
+        'discovery_url'=>$distribution['discovery_url'],
         'lock_version'=>$nextLock,
         'status'=>'published',
-    ],'Product published.');
+    ],'Product published to your store, feed, and merchant locations.');
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) $pdo->rollBack();
+    if ($e instanceof InvalidArgumentException) mg_fail($e->getMessage(),422);
     if ($e instanceof RuntimeException) throw $e;
     mg_security_log('error','catalog.builder_action_failed','Builder action failed.',[
         'action'=>$action,'exception_type'=>get_class($e),

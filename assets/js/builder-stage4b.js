@@ -8,19 +8,26 @@ document.addEventListener('DOMContentLoaded', function () {
   var csrfToken = csrf ? csrf.content : '';
   var authenticated = document.body.dataset.authenticated === 'true';
   var productId = root.dataset.productId || new URLSearchParams(window.location.search).get('id') || '';
-  var publishedVersionId = '';
   var lockVersion = 0;
   var saveTimer = null;
   var isSaving = false;
   var pendingSave = false;
   var assets = { cover: '', inside_cover: '', audio: '', video: '' };
   var assetUrls = { cover: '', inside_cover: '', audio: '', video: '' };
+  var pendingLocationIds = [];
 
   var statusNode = root.querySelector('[data-builder-status]');
   var toastNode = root.querySelector('[data-builder-toast]');
   var card = root.querySelector('[data-builder-card]');
   var saveButton = root.querySelector('[data-save-draft]');
   var publishButton = root.querySelector('[data-publish-product]');
+  var locationSelect = root.querySelector('[data-location-select]');
+  var allLocations = root.querySelector('#allLocations');
+  var destinationLinks = {
+    product: root.querySelector('[data-publish-product-link]'),
+    store: root.querySelector('[data-publish-store-link]'),
+    feed: root.querySelector('[data-publish-feed-link]')
+  };
 
   function field(id) {
     return root.querySelector('#' + id);
@@ -34,12 +41,6 @@ document.addEventListener('DOMContentLoaded', function () {
   function setValue(id, nextValue) {
     var node = field(id);
     if (node && nextValue !== undefined && nextValue !== null) node.value = nextValue;
-  }
-
-  function escapeHtml(input) {
-    return String(input == null ? '' : input).replace(/[&<>'"]/g, function (character) {
-      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[character];
-    });
   }
 
   function setStatus(message, state) {
@@ -56,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function () {
     window.clearTimeout(toastNode._timer);
     toastNode._timer = window.setTimeout(function () {
       toastNode.classList.remove('is-visible');
-    }, 2600);
+    }, 3200);
   }
 
   async function api(url, options) {
@@ -78,26 +79,33 @@ document.addEventListener('DOMContentLoaded', function () {
     return Number.isFinite(number) ? Math.max(0, Math.round(number * 100)) : 0;
   }
 
+  function selectedLocationIds() {
+    if (!locationSelect) return [];
+    return Array.from(locationSelect.selectedOptions || []).map(function (option) { return option.value; }).filter(Boolean);
+  }
+
   function gatherPayload() {
     return {
-      title: value('productTitle'),
-      merchant_name: value('merchantName'),
+      title: value('productTitle').trim(),
+      merchant_name: value('merchantName').trim(),
       product_category: value('productCategory'),
       value_cents: parseMoneyToCents(value('price')),
       currency: value('currency') || 'USD',
-      offer: value('discount'),
-      location: value('location'),
-      headline: value('headline'),
-      message: value('message'),
-      recipient_note: value('recipient'),
-      collaboration_prompt: value('collaborationPrompt'),
-      audio_label: value('audioLabel'),
-      video_label: value('videoLabel'),
-      claim_code_label: value('claimCode'),
-      slug: value('slug'),
-      visibility: value('visibility'),
-      terms: { note: value('terms') },
-      expiration_policy: { label: value('expiration') }
+      offer: value('discount').trim(),
+      location_ids: selectedLocationIds(),
+      all_locations: Boolean(allLocations && allLocations.checked),
+      headline: value('headline').trim(),
+      message: value('message').trim(),
+      recipient_note: value('recipient').trim(),
+      collaboration_prompt: value('collaborationPrompt').trim(),
+      audio_label: value('audioLabel').trim(),
+      video_label: value('videoLabel').trim(),
+      claim_code_label: value('claimCode').trim(),
+      slug: value('slug').trim(),
+      visibility: 'published',
+      demo: false,
+      terms: { note: value('terms').trim() },
+      expiration_policy: { label: value('expiration').trim() }
     };
   }
 
@@ -106,10 +114,11 @@ document.addEventListener('DOMContentLoaded', function () {
     setValue('productTitle', payload.title);
     setValue('merchantName', payload.merchant_name);
     setValue('productCategory', payload.product_category);
-    if (payload.value_cents !== undefined) setValue('price', (Number(payload.value_cents) / 100).toFixed(2));
+    if (payload.value_cents !== undefined && payload.value_cents !== null) {
+      setValue('price', Number(payload.value_cents) > 0 ? (Number(payload.value_cents) / 100).toFixed(2) : '');
+    }
     setValue('currency', payload.currency);
     setValue('discount', payload.offer);
-    setValue('location', payload.location);
     setValue('headline', payload.headline);
     setValue('message', payload.message);
     setValue('recipient', payload.recipient_note);
@@ -118,9 +127,32 @@ document.addEventListener('DOMContentLoaded', function () {
     setValue('videoLabel', payload.video_label);
     setValue('claimCode', payload.claim_code_label);
     setValue('slug', payload.slug);
-    setValue('visibility', payload.visibility);
     setValue('terms', payload.terms && payload.terms.note);
     setValue('expiration', payload.expiration_policy && payload.expiration_policy.label);
+    pendingLocationIds = Array.isArray(payload.location_ids) ? payload.location_ids.map(String) : [];
+    if (allLocations) allLocations.checked = Boolean(payload.all_locations);
+  }
+
+  function renderLocations(locations) {
+    if (!locationSelect) return;
+    while (locationSelect.firstChild) locationSelect.removeChild(locationSelect.firstChild);
+    (locations || []).forEach(function (location) {
+      var option = document.createElement('option');
+      option.value = String(location.public_id || '');
+      var place = [location.city, location.region].filter(Boolean).join(', ');
+      option.textContent = location.name + (place ? ' · ' + place : '') + (location.is_primary ? ' · Primary' : '');
+      option.selected = pendingLocationIds.length > 0
+        ? pendingLocationIds.includes(option.value)
+        : Boolean(location.is_primary);
+      locationSelect.appendChild(option);
+    });
+    if (!locationSelect.options.length) {
+      var empty = document.createElement('option');
+      empty.disabled = true;
+      empty.textContent = 'Add an active merchant location before publishing';
+      locationSelect.appendChild(empty);
+    }
+    locationSelect.disabled = Boolean(allLocations && allLocations.checked);
   }
 
   function renderPreview() {
@@ -129,12 +161,12 @@ document.addEventListener('DOMContentLoaded', function () {
       template.classList.toggle('is-active', template.dataset.previewTemplate === type);
     });
 
-    root.querySelectorAll('[data-preview-title]').forEach(function (node) { node.textContent = value('productTitle') || 'Untitled product'; });
-    root.querySelectorAll('[data-preview-headline]').forEach(function (node) { node.textContent = value('headline') || 'A gift made for this moment.'; });
+    root.querySelectorAll('[data-preview-title]').forEach(function (node) { node.textContent = value('productTitle') || 'Coffee for two'; });
+    root.querySelectorAll('[data-preview-headline]').forEach(function (node) { node.textContent = value('headline') || 'A small gift, already waiting for you.'; });
     root.querySelectorAll('[data-preview-message]').forEach(function (node) { node.textContent = value('message') || 'Add a message for the recipient.'; });
-    root.querySelectorAll('[data-preview-merchant]').forEach(function (node) { node.textContent = value('merchantName') || 'Merchant'; });
+    root.querySelectorAll('[data-preview-merchant]').forEach(function (node) { node.textContent = value('merchantName') || 'Your business'; });
     root.querySelectorAll('[data-preview-value]').forEach(function (node) {
-      var amount = value('price') || '0.00';
+      var amount = value('price') || '25.00';
       node.textContent = (value('currency') === 'USD' ? '$' : value('currency') + ' ') + amount.replace(/^\$/, '');
     });
     root.querySelectorAll('[data-preview-collab]').forEach(function (node) { node.textContent = value('collaborationPrompt') || 'Invite people to contribute.'; });
@@ -166,12 +198,28 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  function hidePublishDestinations() {
+    Object.keys(destinationLinks).forEach(function (key) {
+      if (destinationLinks[key]) destinationLinks[key].hidden = true;
+    });
+  }
+
+  function showPublishDestinations(data) {
+    var urls = { product: data.product_url, store: data.store_url, feed: data.feed_url };
+    Object.keys(destinationLinks).forEach(function (key) {
+      var link = destinationLinks[key];
+      if (!link) return;
+      link.hidden = !urls[key];
+      if (urls[key]) link.href = urls[key];
+    });
+  }
+
   function markDirty() {
-    publishedVersionId = '';
+    hidePublishDestinations();
     setStatus('Unsaved changes');
     renderPreview();
     window.clearTimeout(saveTimer);
-    if (authenticated) {
+    if (authenticated && value('productTitle').trim()) {
       saveTimer = window.setTimeout(function () { saveDraft(true); }, 1200);
     }
   }
@@ -229,11 +277,15 @@ document.addEventListener('DOMContentLoaded', function () {
   async function saveDraft(quiet) {
     if (!authenticated) {
       if (!quiet) toast('Sign in to save this product draft.');
-      return;
+      return false;
+    }
+    if (!value('productTitle').trim()) {
+      if (!quiet) toast('Enter a product title before saving.');
+      return false;
     }
     if (isSaving) {
       pendingSave = true;
-      return;
+      return false;
     }
     isSaving = true;
     setStatus('Saving…', 'is-saving');
@@ -262,9 +314,11 @@ document.addEventListener('DOMContentLoaded', function () {
       window.history.replaceState({}, '', url.toString());
       setStatus('All changes saved');
       if (!quiet) toast('Product draft saved.');
+      return true;
     } catch (error) {
       setStatus('Save failed', 'is-error');
       if (!quiet) toast(error.message);
+      return false;
     } finally {
       isSaving = false;
       if (saveButton) saveButton.disabled = false;
@@ -275,32 +329,11 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  function addPublishedProductAction(versionId) {
-    if (!versionId || root.querySelector('[data-builder-cart-add]')) return;
-    var host = root.querySelector('.mg-builder-canvas-header .mg-builder-preview-toolbar');
-    if (!host) return;
-    var button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'mg-builder-cart-add';
-    button.dataset.builderCartAdd = versionId;
-    button.dataset.productVersionId = versionId;
-    button.dataset.cartQuantity = '1';
-    button.textContent = 'Add published product to cart';
-    host.appendChild(button);
-  }
-
-  async function addPublishedProductToCart(versionId) {
-    if (!versionId) {
-      toast('Publish this product before adding it to the cart.');
-      return;
-    }
-    if (window.Microgifter && window.Microgifter.cart && typeof window.Microgifter.cart.addProductVersion === 'function') {
-      await window.Microgifter.cart.addProductVersion(versionId, 1);
-      toast('Published product added to cart.');
-      return;
-    }
-    document.dispatchEvent(new CustomEvent('mg:cart:add', { detail: { product_version_id: versionId, quantity: 1 } }));
-    toast('Published product sent to cart.');
+  function validatePublish() {
+    if (!value('productTitle').trim()) return 'Enter a product title before publishing.';
+    if (parseMoneyToCents(value('price')) < 1) return 'Enter a voucher value before publishing.';
+    if (!(allLocations && allLocations.checked) && selectedLocationIds().length < 1) return 'Choose at least one active merchant location.';
+    return '';
   }
 
   async function publishProduct() {
@@ -308,8 +341,16 @@ document.addEventListener('DOMContentLoaded', function () {
       toast('Sign in to publish this product.');
       return;
     }
-    if (!productId) await saveDraft(true);
-    if (!productId) return;
+    var validationError = validatePublish();
+    if (validationError) {
+      toast(validationError);
+      setStatus('Publish needs attention', 'is-error');
+      return;
+    }
+    if (!productId) {
+      var saved = await saveDraft(true);
+      if (!saved || !productId) return;
+    }
     if (publishButton) publishButton.disabled = true;
     setStatus('Publishing…', 'is-saving');
 
@@ -329,10 +370,9 @@ document.addEventListener('DOMContentLoaded', function () {
         })
       });
       lockVersion = Number(data.lock_version || lockVersion);
-      publishedVersionId = data.version_id || '';
-      if (publishedVersionId) addPublishedProductAction(publishedVersionId);
-      setStatus('Published');
-      toast(publishedVersionId ? 'Product published. Add it to cart from the preview toolbar.' : 'Product published and PPPM template created.');
+      showPublishDestinations(data);
+      setStatus('Published to store, feed, and locations');
+      toast('Voucher published. Use the links above to view its public distribution.');
     } catch (error) {
       setStatus('Publish failed', 'is-error');
       toast(error.message);
@@ -342,35 +382,36 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   async function loadDraft() {
-    if (!authenticated || !productId) {
+    if (!authenticated) {
       renderPreview();
       return;
     }
     setStatus('Loading…', 'is-saving');
     try {
-      var data = await api('/api/catalog/builder-draft.php?id=' + encodeURIComponent(productId), {
-        credentials: 'same-origin'
-      });
+      var endpoint = '/api/catalog/builder-draft.php' + (productId ? '?id=' + encodeURIComponent(productId) : '');
+      var data = await api(endpoint, { credentials: 'same-origin' });
       var draft = data.draft;
-      if (!draft) return;
-      fillPayload(draft.payload || {});
-      lockVersion = Number(draft.lock_version || 0);
-      assets = Object.assign(assets, draft.assets || {});
-      Object.keys(draft.assets || {}).forEach(function (role) {
-        assetUrls[role] = '/api/catalog/asset-file.php?id=' + encodeURIComponent(draft.assets[role]);
-        var preview = root.querySelector('[data-media-preview="' + role + '"]');
-        var media = preview && preview.querySelector('img, audio, video');
-        var meta = preview && preview.querySelector('[data-media-meta]');
-        if (preview) preview.classList.add('is-visible');
-        if (media) {
-          media.src = assetUrls[role];
-          media.hidden = false;
-        }
-        if (meta) meta.textContent = 'Saved media';
-      });
-      var option = root.querySelector('input[name="builder_type"][value="' + draft.builder_type + '"]');
-      if (option) option.checked = true;
-      setStatus('Draft loaded');
+      if (draft) {
+        fillPayload(draft.payload || {});
+        lockVersion = Number(draft.lock_version || 0);
+        assets = Object.assign(assets, draft.assets || {});
+        Object.keys(draft.assets || {}).forEach(function (role) {
+          assetUrls[role] = '/api/catalog/asset-file.php?id=' + encodeURIComponent(draft.assets[role]);
+          var preview = root.querySelector('[data-media-preview="' + role + '"]');
+          var media = preview && preview.querySelector('img, audio, video');
+          var meta = preview && preview.querySelector('[data-media-meta]');
+          if (preview) preview.classList.add('is-visible');
+          if (media) {
+            media.src = assetUrls[role];
+            media.hidden = false;
+          }
+          if (meta) meta.textContent = 'Saved media';
+        });
+        var option = root.querySelector('input[name="builder_type"][value="' + draft.builder_type + '"]');
+        if (option) option.checked = true;
+      }
+      renderLocations(data.locations || []);
+      setStatus(draft ? 'Draft loaded' : 'New draft');
       renderPreview();
     } catch (error) {
       setStatus('Load failed', 'is-error');
@@ -403,20 +444,14 @@ document.addEventListener('DOMContentLoaded', function () {
     input.addEventListener('change', function () { uploadMedia(input); });
   });
 
-  root.addEventListener('click', function (event) {
-    var button = event.target.closest('[data-builder-cart-add]');
-    if (!button) return;
-    event.preventDefault();
-    button.disabled = true;
-    addPublishedProductToCart(button.dataset.productVersionId || button.dataset.builderCartAdd || publishedVersionId).catch(function (error) {
-      toast(error.message || 'Unable to add product to cart.');
-    }).finally(function () {
-      button.disabled = false;
+  if (allLocations) {
+    allLocations.addEventListener('change', function () {
+      if (locationSelect) locationSelect.disabled = allLocations.checked;
     });
-  });
-
+  }
   if (saveButton) saveButton.addEventListener('click', function () { saveDraft(false); });
   if (publishButton) publishButton.addEventListener('click', publishProduct);
 
+  hidePublishDestinations();
   loadDraft();
 });

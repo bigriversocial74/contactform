@@ -33,16 +33,21 @@ final class Stage4BBuilderPersistenceTest extends TestCase
         self::assertStringContainsString('header_mode', $page);
     }
 
-    public function testDraftApiUsesOwnershipChecksAndOptimisticConcurrency(): void
+    public function testDraftApiUsesOwnershipConcurrencyAndSharedPublishService(): void
     {
-        $source = file_get_contents(dirname(__DIR__, 2) . '/api/catalog/builder-draft.php');
+        $root = dirname(__DIR__, 2);
+        $source = file_get_contents($root . '/api/catalog/builder-draft.php');
+        $distribution = file_get_contents($root . '/api/catalog/_publish_distribution.php');
         self::assertIsString($source);
+        self::assertIsString($distribution);
         self::assertStringContainsString("mg_require_permission('catalog.products.manage')", $source);
         self::assertStringContainsString('mg_catalog_product_for_update', $source);
         self::assertStringContainsString('lock_version', $source);
         self::assertStringContainsString('This draft changed in another session.', $source);
-        self::assertStringContainsString('INSERT INTO catalog_pppm_templates', $source);
+        self::assertStringContainsString('mg_catalog_publish_distribution(', $source);
+        self::assertStringContainsString('INSERT INTO catalog_pppm_templates', $distribution);
         self::assertStringNotContainsString('INSERT INTO pppm_items', $source);
+        self::assertStringNotContainsString('INSERT INTO pppm_items', $distribution);
     }
 
     public function testMediaUploadValidatesMimeSizeAndPrivateStorage(): void
