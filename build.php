@@ -16,6 +16,20 @@ require __DIR__ . '/includes/header.php';
   <?php require __DIR__ . '/includes/product-builder-sidebar.php'; ?>
 
   <section class="mg-builder-canvas" aria-label="Live product preview">
+    <div class="mg-builder-canvas-header">
+      <div>
+        <span class="mg-builder-section-title">PPPM voucher builder</span>
+        <h1>Create a local digital voucher</h1>
+        <p><span class="mg-builder-status" data-builder-status>New draft</span></p>
+      </div>
+      <div class="mg-builder-preview-toolbar" aria-label="Builder actions">
+        <button class="mg-btn mg-btn-ghost" type="button" data-save-draft>Save draft</button>
+        <a class="mg-btn mg-btn-soft" href="#" data-publish-product-link hidden>View product</a>
+        <a class="mg-btn mg-btn-soft" href="#" data-publish-store-link hidden>View store</a>
+        <a class="mg-btn mg-btn-soft" href="#" data-publish-feed-link hidden>View feed post</a>
+      </div>
+    </div>
+
     <div class="mg-builder-preview-stage">
       <div class="mg-builder-preview-frame">
         <div class="mg-builder-preview-frame-bar">
