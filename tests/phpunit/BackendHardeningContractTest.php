@@ -32,7 +32,8 @@ final class BackendHardeningContractTest extends TestCase
         self::assertIsString($source);
 
         self::assertStringContainsString('mg_merchant_locations_has_claim_code', $source);
-        self::assertStringContainsString("'schema_ready'=>\$hasClaimCode", $source);
+        self::assertStringContainsString("'schema_ready'=>true", $source);
+        self::assertStringContainsString('workspace_id=? AND merchant_user_id=?', $source);
         self::assertStringNotContainsString('ALTER TABLE', $source);
         self::assertStringNotContainsString('mg_merchant_locations_ensure_claim_code', $source);
     }
