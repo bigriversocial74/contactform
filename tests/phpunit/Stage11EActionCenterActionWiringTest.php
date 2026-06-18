@@ -19,16 +19,29 @@ final class Stage11EActionCenterActionWiringTest extends TestCase
         return $content;
     }
 
-    public function testSendUsesCanonicalOwnershipAndProjectionAuthorities(): void
+    public function testSendUsesCanonicalOwnershipProjectionAndTimestampAuthorities(): void
     {
         $source = $this->read('api/account/action-center-send.php');
         self::assertStringContainsString('mg_pppm_transfer_owner_canonical(', $source);
+        self::assertStringContainsString('mg_microgift_delivery_event(', $source);
         self::assertStringContainsString('mg_action_center_sent(', $source);
         self::assertStringContainsString('mg_require_csrf_for_write(', $source);
-        self::assertStringContainsString("['issued','delivered','claim_pending']", $source);
-        self::assertStringNotContainsString("['issued','delivered','claim_pending','claimed','redeemable']", $source);
+        self::assertStringContainsString("['issued','delivered']", $source);
+        self::assertStringNotContainsString("['issued','delivered','claim_pending']", $source);
+        self::assertStringContainsString("'sent_at'=>\$deliveryEvent['occurred_at']", $source);
         self::assertStringContainsString('recipientUserId', $source);
         self::assertStringNotContainsString('INSERT INTO pppm_items', $source);
+    }
+
+    public function testResendUsesSameOwnerAndImmutableDeliveryEvent(): void
+    {
+        $source = $this->read('api/account/action-center-resend.php');
+        self::assertStringContainsString("folder']!=='sent'", $source);
+        self::assertStringContainsString("owner_user_id']!==\$recipientUserId", $source);
+        self::assertStringContainsString("\$pdo,\$instance,'resent'", preg_replace('/\s+/', '', $source));
+        self::assertStringContainsString("'resent_at'=>\$deliveryEvent['occurred_at']", $source);
+        self::assertStringNotContainsString('mg_pppm_transfer_owner_canonical(', $source);
+        self::assertStringNotContainsString('UPDATE pppm_items', $source);
     }
 
     public function testClaimUsesCanonicalClaimReplayAndLifecycleProjection(): void
@@ -54,11 +67,11 @@ final class Stage11EActionCenterActionWiringTest extends TestCase
         self::assertStringNotContainsString('mg_action_center_project_lifecycle(', $source);
     }
 
-    public function testFrontendPostsToStage11EEndpoints(): void
+    public function testFrontendPostsToTimestampedActionCenterEndpoints(): void
     {
         $source = $this->read('assets/js/gift-action-center-actions.js');
         self::assertStringContainsString("'/api/account/action-center-'", $source);
-        foreach (['send', 'claim', 'message'] as $action) {
+        foreach (['send', 'resend', 'claim', 'message'] as $action) {
             self::assertStringContainsString("'{$action}'", $source);
         }
         self::assertStringContainsString('Microgifter.post(', $source);
