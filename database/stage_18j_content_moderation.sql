@@ -26,7 +26,7 @@ ALTER TABLE social_reports
   ADD CONSTRAINT fk_social_reports_assignee FOREIGN KEY (assigned_user_id) REFERENCES users(id) ON DELETE SET NULL;
 
 ALTER TABLE catalog_assets
-  ADD COLUMN moderation_status ENUM('clear','flagged','quarantined','removed') NOT NULL DEFAULT 'clear' AFTER status,
+  MODIFY COLUMN moderation_status ENUM('unreviewed','approved','quarantined','blocked','takedown','clear','flagged','removed') NOT NULL DEFAULT 'unreviewed',
   ADD KEY idx_catalog_assets_moderation (moderation_status,updated_at,id);
 
 DROP TRIGGER IF EXISTS trg_catalog_assets_review_state;
@@ -34,8 +34,8 @@ CREATE TRIGGER trg_catalog_assets_review_state
 BEFORE UPDATE ON catalog_assets
 FOR EACH ROW
 SET NEW.status = CASE
-  WHEN NEW.moderation_status='quarantined' THEN 'quarantined'
-  WHEN OLD.moderation_status='quarantined' AND NEW.moderation_status='clear' THEN 'ready'
+  WHEN NEW.moderation_status IN ('quarantined','blocked','takedown','removed') THEN 'quarantined'
+  WHEN OLD.moderation_status IN ('quarantined','blocked','takedown','removed') AND NEW.moderation_status IN ('approved','unreviewed','clear') THEN 'ready'
   ELSE NEW.status
 END;
 
