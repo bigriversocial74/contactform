@@ -158,11 +158,21 @@ mg_require_csrf_for_write($input);
 $locationId=strtolower(trim((string)($input['location_id']??'')));
 $name=trim((string)($input['name']??''));
 $claimCode=strtoupper(trim((string)($input['claim_code']??'')));
+$address1=trim((string)($input['address_line1']??''));
+$address2=trim((string)($input['address_line2']??''))?:null;
+$city=trim((string)($input['city']??''))?:null;
+$region=trim((string)($input['region']??''))?:null;
+$postalCode=trim((string)($input['postal_code']??''))?:null;
+$phone=trim((string)($input['phone']??''))?:null;
 $timezone=trim((string)($input['timezone']??$workspace['timezone']));
 $status=trim((string)($input['status']??'active'));
 $primary=!empty($input['is_primary'])?1:0;
 $countryCode=strtoupper(trim((string)($input['country_code']??'US')));
 $isCreate=$locationId==='';
+
+if($address1===''||mb_strlen($address1)>190){
+    mg_fail('Location address is required and must be 190 characters or fewer.',422);
+}
 
 if(
     (!$isCreate&&(strlen($locationId)!==36||!preg_match('/^[a-f0-9-]{36}$/',$locationId)))
@@ -177,12 +187,6 @@ if(
     mg_fail('Invalid location.',422);
 }
 
-$address1=trim((string)($input['address_line1']??''))?:null;
-$address2=trim((string)($input['address_line2']??''))?:null;
-$city=trim((string)($input['city']??''))?:null;
-$region=trim((string)($input['region']??''))?:null;
-$postalCode=trim((string)($input['postal_code']??''))?:null;
-$phone=trim((string)($input['phone']??''))?:null;
 $pepper=$claimCode!==''?mg_claim_code_pepper():'';
 
 $pdo->beginTransaction();
