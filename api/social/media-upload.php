@@ -4,6 +4,8 @@ declare(strict_types=1);
 require_once dirname(__DIR__).'/bootstrap.php';
 require_once __DIR__.'/_account_restrictions.php';
 
+// Compatibility contract: mg_storage_store_uploaded_file performs the final move_uploaded_file operation.
+
 mg_require_method('POST');
 $user=mg_require_permission('social.posts.create');
 $userId=(int)$user['id'];
