@@ -1,7 +1,17 @@
 -- Stage 18F PPPM Product Publishing and Distribution
 
 ALTER TABLE merchant_locations
-  ADD COLUMN is_primary TINYINT(1) NOT NULL DEFAULT 0 AFTER status;
+  ADD COLUMN workspace_id BIGINT UNSIGNED NULL AFTER public_id,
+  ADD COLUMN location_code VARCHAR(80) NULL AFTER name,
+  ADD COLUMN timezone VARCHAR(80) NOT NULL DEFAULT 'UTC' AFTER country_code,
+  ADD COLUMN phone VARCHAR(40) NULL AFTER timezone,
+  ADD COLUMN is_primary TINYINT(1) NOT NULL DEFAULT 0 AFTER status,
+  MODIFY merchant_user_id BIGINT UNSIGNED NULL,
+  MODIFY name VARCHAR(180) NOT NULL,
+  ADD UNIQUE KEY uq_merchant_locations_code (workspace_id,location_code),
+  ADD KEY idx_merchant_locations_status (workspace_id,status,is_primary),
+  ADD CONSTRAINT fk_merchant_locations_workspace
+    FOREIGN KEY (workspace_id) REFERENCES merchant_workspaces(id) ON DELETE CASCADE;
 
 ALTER TABLE catalog_pppm_templates
   ADD COLUMN microgift_template_version_id BIGINT UNSIGNED NULL AFTER product_version_id,
