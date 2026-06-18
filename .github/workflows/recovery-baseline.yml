@@ -75,7 +75,10 @@ jobs:
         run: php scripts/validate_migration_manifest.php
 
       - name: Build clean database
-        run: php scripts/run_migrations.php
+        shell: bash
+        run: |
+          set -o pipefail
+          php scripts/run_migrations.php 2>&1 | tee /tmp/microgifter-migrations.log
 
       - name: Start application server
         run: |
@@ -93,10 +96,12 @@ jobs:
       - name: Run complete recovery baseline
         run: composer recovery-baseline
 
-      - name: Upload server log on failure
+      - name: Upload diagnostic logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: microgifter-server-log
-          path: /tmp/microgifter-server.log
+          name: recovery-baseline-logs
+          path: |
+            /tmp/microgifter-migrations.log
+            /tmp/microgifter-server.log
           if-no-files-found: ignore
