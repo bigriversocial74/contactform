@@ -1,0 +1,20 @@
+name: Profile Editor Validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: ./.github/workflows/recovery-baseline.yml
+
+# MG_RUN_PROFILE_EDITOR_BEHAVIOR
+# composer test-profile-editor-behavior
+# ProductionProfileEditingUiFoundationTest
+# profile-editor-foundation.spec.js
+# build_full_upgrade_sql.php
+# composer test-frontend-contracts
+# composer test
+# npm run test:browser
