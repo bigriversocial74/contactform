@@ -27,7 +27,7 @@ final class SocialFeedAttachmentPickerContractTest extends TestCase
             'Choose Microgift',
             'Choose plan',
             '/api/social/attachment-options.php?type=',
-            'data.attachmentChoose',
+            'dataset.attachmentChoose',
             'Choose an active member plan for subscriber-only posts.',
             "['subscribers','premium']",
         ] as $needle){
