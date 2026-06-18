@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require_once dirname(__DIR__) . '/profiles/_discovery.php';
+require_once dirname(__DIR__) . '/profiles/_product_discovery.php';
 
 mg_require_method('GET');
 $pdo = mg_db();
@@ -13,6 +13,7 @@ mg_rate_limit('profile.discovery.read', $identifier, $viewerId !== null ? 240 : 
 
 try {
     $data = mg_profile_discovery_read($pdo, $_GET, $viewerId);
+    $data['products'] = mg_product_discovery_search($pdo, $_GET, $viewerId);
 } catch (InvalidArgumentException $error) {
     mg_security_log('warning', 'profile.discovery.invalid_request', 'Invalid profile discovery request.', [
         'reason' => $error->getMessage(),
@@ -24,13 +25,14 @@ try {
         'exception_class' => $error::class,
         'authenticated' => $viewerId !== null,
     ], $viewerId);
-    mg_fail('Unable to search profiles.', 500);
+    mg_fail('Unable to search profiles and local vouchers.', 500);
 }
 
 mg_event('profile.discovery.read', [
     'authenticated' => $viewerId !== null,
     'query_present' => trim((string)($_GET['q'] ?? '')) !== '',
-    'result_count' => count($data['results']['items'] ?? []),
+    'profile_result_count' => count($data['results']['items'] ?? []),
+    'product_result_count' => count($data['products']['items'] ?? []),
 ], $viewerId);
 
 if ($viewerId === null) {
