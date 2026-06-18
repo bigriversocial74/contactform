@@ -64,8 +64,19 @@ function mg_feed_published_attachment_cards(PDO $pdo, array $posts, ?int $viewer
     $microgifts = mg_feed_attachment_rows_by_id($pdo,
         "SELECT i.id,i.public_id,i.title_snapshot title,i.description_snapshot description,i.status,
                 i.face_value_cents,i.currency,i.source_type,i.owner_user_id,i.issuer_user_id,
-                i.recipient_user_id,i.issued_at,i.expires_at
-         FROM microgift_instances i WHERE i.id IN (:ids)",
+                i.recipient_user_id,i.issued_at,i.expires_at,
+                a.storage_provider preview_provider,a.storage_key preview_key
+         FROM microgift_instances i
+         LEFT JOIN catalog_product_version_assets pva ON pva.id=(
+             SELECT pva2.id FROM catalog_product_version_assets pva2
+             INNER JOIN catalog_assets a2 ON a2.id=pva2.asset_id
+             WHERE pva2.product_version_id=i.product_version_id
+               AND a2.status='ready' AND a2.asset_type='image'
+             ORDER BY FIELD(pva2.role,'cover','thumbnail','gallery','inside_cover','carousel','other'),pva2.sort_order,pva2.id
+             LIMIT 1
+         )
+         LEFT JOIN catalog_assets a ON a.id=pva.asset_id
+         WHERE i.id IN (:ids)",
         array_values($microgiftIds)
     );
 
@@ -131,7 +142,8 @@ function mg_feed_published_attachment_cards(PDO $pdo, array $posts, ?int $viewer
                 'kind'=>'microgift','eyebrow'=>'Microgift','title'=>(string)($gift['title'] ?: 'Attached Microgift'),
                 'description'=>mg_feed_attachment_text($gift['description'] ?? null),
                 'value_cents'=>(int)($gift['face_value_cents'] ?? 0),'currency'=>(string)($gift['currency'] ?? 'USD'),
-                'status'=>$giftStatus,'image_url'=>null,'access'=>$access,'action'=>$action,
+                'status'=>$giftStatus,'image_url'=>mg_feed_attachment_asset_url($gift['preview_provider'] ?? null,$gift['preview_key'] ?? null),
+                'access'=>$access,'action'=>$action,
             ];
         }
 
