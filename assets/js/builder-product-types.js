@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded',function(){
     multimedia_greeting_card:'Multimedia greeting card',
     simple_collab:'Simple collaboration'
   };
+  var activeType='';
 
   function selectedType(){
     var input=root.querySelector('input[name="builder_type"]:checked');
@@ -22,6 +23,7 @@ document.addEventListener('DOMContentLoaded',function(){
 
   function updateTypeControls(){
     var type=selectedType();
+    activeType=type;
     root.querySelectorAll('[data-builder-types]').forEach(function(node){
       var visible=supports(node,type);
       node.hidden=!visible;
@@ -64,5 +66,11 @@ document.addEventListener('DOMContentLoaded',function(){
     },true);
   }
 
+  function syncLoadedDraft(deadline){
+    if(selectedType()!==activeType)updateTypeControls();
+    if(Date.now()<deadline)window.requestAnimationFrame(function(){syncLoadedDraft(deadline);});
+  }
+
   updateTypeControls();
+  syncLoadedDraft(Date.now()+5000);
 });
