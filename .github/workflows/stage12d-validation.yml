@@ -1,0 +1,15 @@
+name: Stage 12D Tip Recovery Validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: ./.github/workflows/recovery-baseline.yml
+
+# php scripts/stage12d.php
+# php scripts/stage12d_smoke.php
+# composer test-tip-recovery-behavior
