@@ -9,7 +9,7 @@ if(!root||!list||!MG.get)return;
 
 var pending=new Set();
 var loading=new Set();
-var completed=new Set();
+var cache=new Map();
 var timer=null;
 
 function ensureStyles(){
@@ -119,37 +119,43 @@ function cardNode(card){
     return article;
 }
 
+function findPost(postId){
+    return list.querySelector('.mg-feed-card[data-post-id="'+postId+'"]');
+}
+
 function render(postId,cards){
-    var card=list.querySelector('.mg-feed-card[data-post-id="'+CSS.escape(postId)+'"]');
-    if(!card)return;
-    var row=card.querySelector('.mg-feed-attachments-row');
+    var post=findPost(postId);
+    if(!post)return;
+    var row=post.querySelector('.mg-feed-attachments-row');
     if(!Array.isArray(cards)||!cards.length){
         if(row)row.remove();
-        completed.add(postId);
         return;
     }
     if(!row){
         row=element('section','mg-feed-attachments-row');
-        var stats=card.querySelector('.mg-feed-stats');
-        card.insertBefore(row,stats||null);
+        var stats=post.querySelector('.mg-feed-stats');
+        post.insertBefore(row,stats||null);
     }
     row.className='mg-feed-attachments-row mg-feed-linked-grid';
     row.setAttribute('aria-label','Attached Microgifter items');
     row.replaceChildren();
     cards.forEach(function(item){row.appendChild(cardNode(item));});
-    completed.add(postId);
 }
 
 async function flush(){
     timer=null;
-    var ids=Array.from(pending).filter(function(id){return !loading.has(id)&&!completed.has(id);}).slice(0,36);
+    var ids=Array.from(pending).filter(function(id){return !loading.has(id)&&!cache.has(id);}).slice(0,36);
     ids.forEach(function(id){pending.delete(id);loading.add(id);});
     if(!ids.length)return;
     try{
         var response=await MG.get('/api/public/feed-attachments.php?post_ids='+encodeURIComponent(ids.join(',')));
         var data=response&&response.data?response.data:response;
         var cards=data&&data.cards?data.cards:{};
-        ids.forEach(function(id){render(id,Array.isArray(cards[id])?cards[id]:[]);});
+        ids.forEach(function(id){
+            var items=Array.isArray(cards[id])?cards[id]:[];
+            cache.set(id,items);
+            render(id,items);
+        });
     }catch(error){
         ids.forEach(function(id){pending.add(id);});
     }finally{
@@ -164,13 +170,14 @@ function schedule(){
 }
 
 function scan(scope){
-    var cards=[];
-    if(scope&&scope.matches&&scope.matches('.mg-feed-card[data-post-id]'))cards.push(scope);
-    if(scope&&scope.querySelectorAll)cards=cards.concat(Array.from(scope.querySelectorAll('.mg-feed-card[data-post-id]')));
-    cards.forEach(function(card){
-        var id=String(card.dataset.postId||'');
-        if(!id||completed.has(id)||loading.has(id))return;
-        pending.add(id);
+    var posts=[];
+    if(scope&&scope.matches&&scope.matches('.mg-feed-card[data-post-id]'))posts.push(scope);
+    if(scope&&scope.querySelectorAll)posts=posts.concat(Array.from(scope.querySelectorAll('.mg-feed-card[data-post-id]')));
+    posts.forEach(function(post){
+        var id=String(post.dataset.postId||'');
+        if(!id)return;
+        if(cache.has(id)){render(id,cache.get(id));return;}
+        if(!loading.has(id))pending.add(id);
     });
     if(pending.size)schedule();
 }
