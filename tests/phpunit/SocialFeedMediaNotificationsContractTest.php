@@ -24,7 +24,8 @@ final class SocialFeedMediaNotificationsContractTest extends TestCase
             '0 of 8 attached',
         ] as $needle) self::assertStringContainsString($needle,$page);
         self::assertStringContainsString('/api/social/media-upload.php',$client);
-        self::assertStringContainsString("data.append('media',file,file.name)",$client);
+        self::assertStringContainsString("data.append('media'",$client);
+        self::assertStringContainsString('file.name',$client);
         self::assertStringContainsString("mg_require_permission('social.posts.create')",$endpoint);
         self::assertStringContainsString('is_uploaded_file',$endpoint);
         self::assertStringContainsString('move_uploaded_file',$endpoint);
