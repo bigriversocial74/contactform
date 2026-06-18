@@ -59,8 +59,8 @@ try {
     if (hash_equals((string)$session['session_hash'], mg_current_session_hash())) {
         throw new MgAdminUserManagementException('The current administrative session cannot be revoked here.');
     }
-    if ((bool)$session['target_super_admin'] && !mg_admin_management_actor_is_super($actor)) {
-        throw new MgAdminUserManagementException('Only a super administrator can manage that session.', 403);
+    if ((bool)$session['target_super_admin']) {
+        throw new MgAdminUserManagementException('Owner sessions require the manual owner workflow.', 403);
     }
 
     $revoke = $pdo->prepare('UPDATE user_sessions SET revoked_at=NOW() WHERE id=? AND revoked_at IS NULL');
