@@ -6,7 +6,6 @@ ALTER TABLE merchant_locations
   ADD COLUMN timezone VARCHAR(80) NOT NULL DEFAULT 'UTC' AFTER country_code,
   ADD COLUMN phone VARCHAR(40) NULL AFTER timezone,
   ADD COLUMN is_primary TINYINT(1) NOT NULL DEFAULT 0 AFTER status,
-  MODIFY merchant_user_id BIGINT UNSIGNED NULL,
   MODIFY name VARCHAR(180) NOT NULL,
   ADD UNIQUE KEY uq_merchant_locations_code (workspace_id,location_code),
   ADD KEY idx_merchant_locations_status (workspace_id,status,is_primary),
