@@ -11,6 +11,15 @@ window.Microgifter = window.Microgifter || {};
 
   var mediaField = form.elements.media_urls;
   var postTypeField = form.elements.post_type;
+  var mapField = form.elements.media_asset_map;
+  if (!mapField) {
+    mapField = document.createElement('input');
+    mapField.type = 'hidden';
+    mapField.name = 'media_asset_map';
+    mapField.value = '{}';
+    form.appendChild(mapField);
+  }
+
   var list = uploader.querySelector('[data-feed-upload-list]');
   var status = uploader.querySelector('[data-feed-upload-status]');
   var count = uploader.querySelector('[data-feed-upload-count]');
@@ -27,6 +36,29 @@ window.Microgifter = window.Microgifter || {};
       if (url && unique.indexOf(url) === -1 && unique.length < maxMedia) unique.push(url);
     });
     return unique;
+  }
+
+  function assetMap() {
+    try {
+      var parsed = JSON.parse(String(mapField.value || '{}'));
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+    } catch (error) {
+      return {};
+    }
+  }
+
+  function setAssetMap(value) {
+    mapField.value = JSON.stringify(value || {});
+  }
+
+  function pruneAssetMap(values) {
+    var current = assetMap();
+    var next = {};
+    values.forEach(function (url) {
+      if (current[url]) next[url] = current[url];
+    });
+    setAssetMap(next);
+    return next;
   }
 
   function mediaType(url) {
@@ -57,6 +89,7 @@ window.Microgifter = window.Microgifter || {};
   function setMediaUrls(values, message) {
     var next = values.slice(0, maxMedia);
     mediaField.value = next.join('\n');
+    pruneAssetMap(next);
     syncPostType(next);
     mediaField.dispatchEvent(new Event('change', { bubbles: true }));
     render();
@@ -109,6 +142,7 @@ window.Microgifter = window.Microgifter || {};
 
   function render() {
     var values = mediaUrls();
+    var assets = pruneAssetMap(values);
     list.replaceChildren();
 
     values.forEach(function (url, index) {
@@ -124,7 +158,6 @@ window.Microgifter = window.Microgifter || {};
       handle.className = 'mg-feed-upload-handle';
       handle.setAttribute('aria-hidden', 'true');
       handle.textContent = '⋮⋮';
-
       item.appendChild(handle);
       item.appendChild(preview(url, type));
 
@@ -133,16 +166,13 @@ window.Microgifter = window.Microgifter || {};
       var title = document.createElement('strong');
       title.textContent = mediaName(url);
       var meta = document.createElement('span');
-      meta.textContent = (index === 0 ? 'Lead media · ' : '') + type;
+      meta.textContent = (index === 0 ? 'Lead media · ' : '') + type + (assets[url] ? ' · saved upload' : ' · external media');
       copy.append(title, meta);
       item.appendChild(copy);
 
       var controls = document.createElement('div');
       controls.className = 'mg-feed-upload-controls';
-      controls.append(
-        moveButton(url, -1, index === 0),
-        moveButton(url, 1, index === values.length - 1)
-      );
+      controls.append(moveButton(url, -1, index === 0), moveButton(url, 1, index === values.length - 1));
       var remove = document.createElement('button');
       remove.type = 'button';
       remove.className = 'mg-feed-upload-remove';
@@ -186,7 +216,7 @@ window.Microgifter = window.Microgifter || {};
     data.append('media_type', type);
     var response = await MG.api('/api/social/media-upload.php', { method: 'POST', body: data });
     var result = response && response.data ? response.data : response;
-    if (!result || !result.url) throw new Error('Uploaded media URL was not returned.');
+    if (!result || !result.url || !result.asset_id) throw new Error('Uploaded media details were not returned.');
     return result;
   }
 
@@ -211,6 +241,9 @@ window.Microgifter = window.Microgifter || {};
     for (var index = 0; index < files.length; index += 1) {
       try {
         var result = await upload(files[index], type);
+        var assets = assetMap();
+        assets[result.url] = result.asset_id;
+        setAssetMap(assets);
         current.push(result.url);
         setMediaUrls(current);
       } catch (error) {
@@ -221,7 +254,52 @@ window.Microgifter = window.Microgifter || {};
       }
     }
 
-    setStatus(failures.length ? failures.join(' ') : 'Media uploaded. Drag attachments to reorder them.', failures.length ? 'error' : 'success');
+    setStatus(failures.length ? failures.join(' ') : 'Media uploaded and ready to save with this post.', failures.length ? 'error' : 'success');
+  }
+
+  async function hydrateEditor(postId) {
+    if (!postId) return;
+    pending += 1;
+    setBusy();
+    setStatus('Restoring saved media…');
+    try {
+      var response = await MG.get('/api/social/post-media.php?post_id=' + encodeURIComponent(postId));
+      var data = response && response.data ? response.data : response;
+      var post = data && data.post ? data.post : null;
+      if (!post || String(form.elements.post_id.value || '') !== String(postId)) return;
+      var assets = {};
+      (post.media || []).forEach(function (item) {
+        if (item && item.url && item.asset_id) assets[item.url] = item.asset_id;
+      });
+      setAssetMap(assets);
+      render();
+      setStatus(Object.keys(assets).length ? 'Saved uploads restored.' : 'Post media ready.', 'success');
+    } catch (error) {
+      setStatus(error.message || 'Unable to restore saved upload details.', 'error');
+    } finally {
+      pending = Math.max(0, pending - 1);
+      setBusy();
+    }
+  }
+
+  if (!MG.__feedMediaAssetPayloadPatched && typeof MG.post === 'function') {
+    MG.__feedMediaAssetPayloadPatched = true;
+    var originalPost = MG.post.bind(MG);
+    MG.post = function (path, body) {
+      var args = Array.prototype.slice.call(arguments);
+      if (path === '/api/social/posts.php' && body && Array.isArray(body.media)) {
+        var assets = assetMap();
+        var nextBody = Object.assign({}, body);
+        nextBody.media = body.media.map(function (item) {
+          var next = Object.assign({}, item);
+          var assetId = next.asset_id || assets[String(next.url || '')];
+          if (assetId) next.asset_id = assetId;
+          return next;
+        });
+        args[1] = nextBody;
+      }
+      return originalPost.apply(MG, args);
+    };
   }
 
   uploader.addEventListener('change', function (event) {
@@ -232,7 +310,7 @@ window.Microgifter = window.Microgifter || {};
   uploader.addEventListener('click', function (event) {
     var remove = event.target.closest('[data-feed-upload-remove]');
     if (remove && !pending) {
-      setMediaUrls(mediaUrls().filter(function (url) { return url !== remove.dataset.feedUploadRemove; }), 'Attachment removed.');
+      setMediaUrls(mediaUrls().filter(function (url) { return url !== remove.dataset.feedUploadRemove; }), 'Attachment removed. It will be detached when the post is saved.');
       return;
     }
     var mover = event.target.closest('[data-feed-upload-move]');
@@ -273,11 +351,20 @@ window.Microgifter = window.Microgifter || {};
     });
   });
 
-  mediaField.addEventListener('input', render);
+  mediaField.addEventListener('input', function () { pruneAssetMap(mediaUrls()); render(); });
   mediaField.addEventListener('change', render);
-  form.addEventListener('reset', function () { window.setTimeout(render, 0); });
+  form.addEventListener('reset', function () {
+    window.setTimeout(function () { setAssetMap({}); render(); }, 0);
+  });
   root.addEventListener('click', function (event) {
-    if (event.target.closest('[data-composer-toggle],[data-post-action="owner_edit"],[data-composer-close],[data-post-cancel-edit]')) {
+    var edit = event.target.closest('[data-post-action="owner_edit"]');
+    if (edit) {
+      var card = edit.closest('[data-post-id]');
+      var postId = card ? card.dataset.postId : '';
+      window.setTimeout(function () { hydrateEditor(postId); }, 0);
+      return;
+    }
+    if (event.target.closest('[data-composer-toggle],[data-composer-close],[data-post-cancel-edit]')) {
       window.setTimeout(render, 0);
     }
   });
