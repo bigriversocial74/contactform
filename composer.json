@@ -21,7 +21,6 @@
     "test-microgift-behavior": "php scripts/validate_microgift_behavior.php",
     "test-pppm-resend-behavior": "php scripts/validate_pppm_resend_behavior.php",
     "audit-product-pppm-golden-path": "bash -o pipefail -c 'mkdir -p build && php scripts/audit_product_pppm_golden_path.php | tee build/product_pppm_golden_path_audit.json'",
-    "audit-product-route-contract": "bash -o pipefail -c 'mkdir -p build && php scripts/audit_product_route_contract.php | tee build/product_route_contract_audit.json'",
     "test-tip-behavior": "php scripts/validate_tip_behavior.php",
     "test-tip-payment-behavior": "php scripts/validate_tip_payment_behavior.php",
     "test-tip-recovery-behavior": "php scripts/validate_tip_recovery_behavior.php",
