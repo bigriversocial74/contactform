@@ -70,7 +70,7 @@ final class AdminSystemHealthContractTest extends TestCase
         self::assertStringContainsString('window.confirm',$client);
         self::assertStringContainsString('data-health-action',$client);
         self::assertStringContainsString('missing_files',$client);
-        self::assertStringContainsString('failed notifications',$client);
+        self::assertStringContainsString('Failed notifications',$client);
         self::assertStringContainsString('.mg-system-health-warning',$style);
         self::assertStringContainsString('.mg-system-health-metrics',$style);
     }
