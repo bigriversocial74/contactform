@@ -1,0 +1,29 @@
+.mg-notification-card{grid-template-columns:46px minmax(0,1fr) auto;align-items:center;padding:14px 16px;box-shadow:0 8px 24px rgba(15,23,42,.04)}
+.mg-notification-card.is-unread{background:#f8fbff;border-left:4px solid #2563eb}
+.mg-notification-actor{display:grid;place-items:center;width:42px;height:42px;overflow:hidden;border-radius:999px;background:linear-gradient(145deg,#dbeafe,#e0e7ff);color:#1d4ed8;font-size:.9rem;font-weight:900}
+.mg-notification-actor img{width:100%;height:100%;object-fit:cover}
+.mg-notification-copy{min-width:0}
+.mg-notification-heading{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap}
+.mg-notification-heading h3{margin:0;font-size:.9rem;color:#0f172a}
+.mg-notification-count{padding:.22rem .42rem;border-radius:999px;background:#dbeafe;color:#1d4ed8;font-size:.64rem;font-weight:850}
+.mg-notification-copy>p{margin:.35rem 0 0;color:#64748b;font-size:.78rem;line-height:1.45}
+.mg-notification-meta{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;margin-top:.5rem;color:#8491a4;font-size:.66rem}
+.mg-notification-meta span+span:before,.mg-notification-meta span+time:before{content:'·';margin-right:.45rem}
+.mg-notification-actions{align-items:center}
+.mg-notification-actions .mg-btn{min-height:34px;padding:.45rem .65rem;font-size:.7rem}
+
+.mg-preference-copy{min-width:0}
+.mg-preference-copy strong{display:block;color:#0f172a;font-size:.78rem;text-transform:none}
+.mg-preference-copy small{display:block;margin-top:.25rem;color:#64748b;font-size:.68rem;line-height:1.4}
+.mg-preference-schedule{grid-column:1/-1;padding:.55rem .7rem;border:1px solid #e2e8f0;border-radius:11px;background:#f8fafc}
+.mg-preference-schedule>summary{cursor:pointer;color:#475569;font-size:.7rem;font-weight:850}
+.mg-preference-schedule-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.7rem;margin-top:.7rem}
+.mg-preference-schedule-grid label{display:grid!important;justify-content:stretch!important;gap:.3rem;color:#64748b;font-size:.68rem}
+.mg-preference-schedule-grid input{width:100%;height:38px;border:1px solid #d4deeb;border-radius:9px;background:#fff;padding:0 .65rem}
+
+@media(max-width:760px){
+  .mg-notification-card{grid-template-columns:38px minmax(0,1fr)}
+  .mg-notification-actor{width:36px;height:36px}
+  .mg-notification-actions{grid-column:2;justify-content:flex-start}
+  .mg-preference-schedule-grid{grid-template-columns:1fr}
+}
