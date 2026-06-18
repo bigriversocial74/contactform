@@ -16,16 +16,24 @@ foreach(array_slice($argv,1) as $argument){
 }
 
 $pdo=mg_db();
-$root=dirname(__DIR__);
-$referenced=[];
+$referencedKeys=[];
+$referencedAssets=[];
 $postStmt=$pdo->query("SELECT media_json FROM feed_posts WHERE media_json IS NOT NULL AND media_json<>'[]'");
 while($row=$postStmt->fetch(PDO::FETCH_ASSOC)){
     $media=json_decode((string)$row['media_json'],true);
     if(!is_array($media))continue;
     foreach($media as $item){
         if(!is_array($item))continue;
+        $assetId=strtolower(trim((string)($item['asset_id']??'')));
+        if(preg_match('/^[a-f0-9-]{36}$/',$assetId)===1)$referencedAssets[$assetId]=true;
         $url=(string)($item['url']??'');
-        if(str_starts_with($url,'/uploads/feed/'))$referenced[ltrim($url,'/')]=true;
+        if(str_starts_with($url,'/uploads/feed/'))$referencedKeys[ltrim($url,'/')]=true;
+        $query=parse_url($url,PHP_URL_QUERY);
+        if(is_string($query)){
+            parse_str($query,$params);
+            $urlAsset=strtolower(trim((string)($params['asset']??'')));
+            if(preg_match('/^[a-f0-9-]{36}$/',$urlAsset)===1)$referencedAssets[$urlAsset]=true;
+        }
     }
 }
 
@@ -50,15 +58,18 @@ $update=$pdo->prepare(
 );
 
 foreach($candidates as $asset){
+    $provider=(string)$asset['storage_provider'];
     $key=(string)$asset['storage_key'];
-    if(isset($referenced[$key])){$skipped++;continue;}
-    if((string)$asset['storage_provider']!=='local'||preg_match('#^uploads/feed/[A-Za-z0-9/_-]+\.[A-Za-z0-9]+$#',$key)!==1){
-        $skipped++;
-        continue;
-    }
-    $path=$root.'/'.$key;
+    $publicId=(string)$asset['public_id'];
+    if(isset($referencedAssets[$publicId])||isset($referencedKeys[$key])){$skipped++;continue;}
+    $validKey=($provider==='persistent_local'&&preg_match('#^feed/[A-Za-z0-9/_-]+\.[A-Za-z0-9]+$#',$key)===1)
+        ||($provider==='local'&&preg_match('#^uploads/feed/[A-Za-z0-9/_-]+\.[A-Za-z0-9]+$#',$key)===1);
+    if(!$validKey){$skipped++;continue;}
+    $exists=false;
+    try{$exists=is_file(mg_storage_resolve_asset_path($provider,$key));}
+    catch(Throwable $error){$skipped++;continue;}
     if($dryRun){
-        echo "Would archive {$asset['public_id']} {$key}\n";
+        echo "Would archive {$publicId} {$provider}:{$key}\n";
         $cleaned++;
         $bytes+=(int)($asset['byte_size']??0);
         continue;
@@ -70,15 +81,12 @@ foreach($candidates as $asset){
         $pdo->commit();
     }catch(Throwable $error){
         if($pdo->inTransaction())$pdo->rollBack();
-        fwrite(STDERR,"Unable to archive {$asset['public_id']}: {$error->getMessage()}\n");
+        fwrite(STDERR,"Unable to archive {$publicId}: {$error->getMessage()}\n");
         $skipped++;
         continue;
     }
-    if(is_file($path)){
-        if(!@unlink($path))fwrite(STDERR,"Unable to remove {$key}\n");
-    }else{
-        $missing++;
-    }
+    if($exists&&!mg_storage_delete_asset_file($provider,$key))fwrite(STDERR,"Unable to remove {$provider}:{$key}\n");
+    elseif(!$exists)$missing++;
     $cleaned++;
     $bytes+=(int)($asset['byte_size']??0);
 }
