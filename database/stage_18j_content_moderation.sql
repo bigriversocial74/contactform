@@ -29,6 +29,16 @@ ALTER TABLE catalog_assets
   ADD COLUMN moderation_status ENUM('clear','flagged','quarantined','removed') NOT NULL DEFAULT 'clear' AFTER status,
   ADD KEY idx_catalog_assets_moderation (moderation_status,updated_at,id);
 
+DROP TRIGGER IF EXISTS trg_catalog_assets_review_state;
+CREATE TRIGGER trg_catalog_assets_review_state
+BEFORE UPDATE ON catalog_assets
+FOR EACH ROW
+SET NEW.status = CASE
+  WHEN NEW.moderation_status='quarantined' THEN 'quarantined'
+  WHEN OLD.moderation_status='quarantined' AND NEW.moderation_status='clear' THEN 'ready'
+  ELSE NEW.status
+END;
+
 ALTER TABLE messages
   ADD COLUMN moderation_status ENUM('clear','flagged','hidden','removed') NOT NULL DEFAULT 'clear' AFTER body,
   ADD COLUMN updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER created_at,
