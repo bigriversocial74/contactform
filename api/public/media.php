@@ -148,7 +148,11 @@ header('X-Content-Type-Options: nosniff');
 header('X-Robots-Tag: noindex, nofollow');
 header('Vary: Cookie, Authorization');
 header('Content-Disposition: inline; filename="'.$filename.'"; filename*=UTF-8\'\''.rawurlencode((string)($asset['original_filename']??$filename)));
-header('Cache-Control: '.($publiclyCacheable&&$viewerId===null?'public, max-age=300, stale-while-revalidate=60':'private, max-age=120'));
+if($publiclyCacheable&&$viewerId===null){
+    header('Cache-Control: public, max-age=300, stale-while-revalidate=60');
+}else{
+    header('Cache-Control: private, max-age=120');
+}
 if($status===206)header('Content-Range: bytes '.$start.'-'.$end.'/'.$size);
 if($method==='HEAD'||$length===0)exit;
 
