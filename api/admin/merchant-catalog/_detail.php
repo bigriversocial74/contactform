@@ -2,7 +2,8 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_common.php';
-require_once __DIR__ . '/_detail_merchant.php';
+require_once __DIR__ . '/_detail_workspace.php';
+require_once __DIR__ . '/_detail_store.php';
 require_once __DIR__ . '/_detail_catalog.php';
 
 function mg_admin_mc_fact(string $label,mixed $value,string $kind='text'): array{return ['label'=>$label,'value'=>$value,'kind'=>$kind];}
