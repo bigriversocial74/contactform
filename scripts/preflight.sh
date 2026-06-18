@@ -22,6 +22,7 @@ composer validate --strict
 php_files=()
 frontend_changed=false
 action_center_changed=false
+migration_changed=false
 declare -A test_map=()
 
 add_test() {
@@ -62,6 +63,12 @@ for file in "${changed_files[@]}"; do
       action_center_changed=true
       ;;
   esac
+
+  case "$file" in
+    database/*.sql|config/migrations.php|includes/migrations.php|scripts/run_migrations.php|scripts/build_full_upgrade_sql.php|scripts/validate_migration_manifest.php)
+      migration_changed=true
+      ;;
+  esac
 done
 
 if [ "${#php_files[@]}" -gt 0 ]; then
@@ -69,6 +76,14 @@ if [ "${#php_files[@]}" -gt 0 ]; then
   for file in "${php_files[@]}"; do
     php -l "$file"
   done
+fi
+
+if [ "$migration_changed" = true ]; then
+  echo "Validating canonical migration manifest..."
+  php scripts/validate_migration_manifest.php
+  temp_upgrade="$(mktemp -t microgifter-upgrade-XXXXXX.sql)"
+  php scripts/build_full_upgrade_sql.php "$temp_upgrade"
+  rm -f "$temp_upgrade" "${temp_upgrade%.sql}.manifest.json"
 fi
 
 if [ "$frontend_changed" = true ]; then

@@ -1,0 +1,16 @@
+name: Demand Signal Orchestration Validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: ./.github/workflows/recovery-baseline.yml
+
+# composer test-demand-orchestration-behavior
+# php scripts/stage15.php
+# php scripts/stage16.php
+# php scripts/stage17.php

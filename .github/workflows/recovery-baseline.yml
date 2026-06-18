@@ -1,0 +1,113 @@
+name: Recovery Baseline
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: microgifter
+          MYSQL_USER: microgifter
+          MYSQL_PASSWORD: microgifter
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -uroot -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+
+    env:
+      MG_APP_ENV: test
+      MG_DEBUG: "true"
+      MG_BASE_URL: http://127.0.0.1:8000
+      MG_RUNTIME_PROFILE: local
+      MG_DB_HOST: 127.0.0.1
+      MG_DB_NAME: microgifter
+      MG_DB_USER: microgifter
+      MG_DB_PASS: microgifter
+      MG_MIGRATION_DB_USER: root
+      MG_MIGRATION_DB_PASS: root
+      MG_DB_CHARSET: utf8mb4
+      MG_CLAIM_CODE_PEPPER: ci-recovery-baseline-pepper
+      MG_TEST_BASE_URL: http://127.0.0.1:8000
+      MG_ENABLE_POLLING_NOTIFICATIONS: "true"
+      MG_ENABLE_DB_OUTBOX: "true"
+      MG_ENABLE_QUEUE_WORKER: "false"
+      MG_ENABLE_REDIS: "false"
+      MG_ENABLE_WEBSOCKETS: "false"
+      MG_ENABLE_SSE: "false"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: curl, mbstring, pdo_mysql
+          coverage: none
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Validate migration manifest
+        run: php scripts/validate_migration_manifest.php
+
+      - name: Build clean database
+        shell: bash
+        run: |
+          set -o pipefail
+          php scripts/run_migrations.php 2>&1 | tee /tmp/microgifter-migrations.log
+
+      - name: Start application server
+        run: |
+          php -S 127.0.0.1:8000 -t . >/tmp/microgifter-server.log 2>&1 &
+          echo $! >/tmp/microgifter-server.pid
+          for attempt in {1..30}; do
+            if curl --silent --fail http://127.0.0.1:8000/api/health.php >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/microgifter-server.log
+          exit 1
+
+      - name: Run complete recovery baseline
+        shell: bash
+        run: |
+          set -o pipefail
+          composer recovery-baseline 2>&1 | tee /tmp/recovery-baseline.log
+
+      - name: Upload full upgrade artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: microgifter-full-upgrade-sql
+          path: |
+            build/microgifter_full_upgrade.sql
+            build/microgifter_full_upgrade.manifest.json
+
+      - name: Upload diagnostic logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: recovery-baseline-logs
+          path: |
+            /tmp/microgifter-migrations.log
+            /tmp/microgifter-server.log
+            /tmp/recovery-baseline.log
+          if-no-files-found: ignore

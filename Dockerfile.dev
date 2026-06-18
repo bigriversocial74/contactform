@@ -1,0 +1,19 @@
+FROM php:8.3-cli
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        default-mysql-client \
+        git \
+        libcurl4-openssl-dev \
+        libonig-dev \
+        unzip \
+    && docker-php-ext-install curl mbstring pdo_mysql \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
+
+WORKDIR /app
+
+EXPOSE 8000
+
+CMD ["bash", "scripts/dev-start.sh"]

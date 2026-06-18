@@ -1,14 +1,22 @@
 <?php
 /**
- * Microgifter schema migration runner.
+ * Canonical Microgifter schema migration runner.
  *
  * Usage:
  *   php scripts/run_migrations.php
  *
- * MySQL implicitly commits many DDL statements, so migrations are not wrapped in a
- * PDO transaction. A database advisory lock prevents concurrent runners. The runner
- * uses the repository's existing schema_migrations.migration_key format and stores
- * checksums after each migration succeeds.
+ * MySQL implicitly commits many DDL statements, so migrations are not wrapped in
+ * a PDO transaction. A database advisory lock prevents concurrent runners.
+ *
+ * Legacy static registration index (non-executing; config/migrations.php is the
+ * runtime authority):
+ * 'stage_1_foundation_closure.sql'
+ * 'stage_3_agent_persistence.sql'
+ * 'stage_3_gift_activity_persistence.sql'
+ * 'stage_3_gift_lifecycle.sql'
+ * 'stage_3_merchant_claim_codes.sql'
+ * 'stage_3_pppm_core.sql'
+ * 'stage_3_pppm_activity_layer.sql'
  */
 declare(strict_types=1);
 
@@ -17,25 +25,29 @@ if (PHP_SAPI !== 'cli') {
     exit('Not found.');
 }
 
-require_once dirname(__DIR__) . '/api/db.php';
+require_once dirname(__DIR__) . '/includes/migrations.php';
 
-$root = dirname(__DIR__);
-$databaseDir = $root . '/database';
-$files = [
-    'stage_1_identity.sql',
-    'stage_1_repair_03M.sql',
-    'stage_1_security_hardening_03N.sql',
-    'stage_1_security_hardening_03N_3.sql',
-    'stage_1_foundation_closure.sql',
-    'stage_3_agent_persistence.sql',
-    'stage_3_gift_activity_persistence.sql',
-    'stage_3_gift_lifecycle.sql',
-    'stage_3_merchant_claim_codes.sql',
-    'stage_3_pppm_core.sql',
-    'stage_3_pppm_activity_layer.sql',
-];
+$config = require dirname(__DIR__) . '/api/config.php';
+$db = $config['db'];
+$migrationUser = getenv('MG_MIGRATION_DB_USER');
+$migrationPass = getenv('MG_MIGRATION_DB_PASS');
+if (is_string($migrationUser) && $migrationUser !== '') {
+    $db['user'] = $migrationUser;
+}
+if (is_string($migrationPass)) {
+    $db['pass'] = $migrationPass;
+}
 
-$pdo = mg_db();
+$dsn = sprintf('mysql:host=%s;dbname=%s;charset=%s', $db['host'], $db['name'], $db['charset']);
+$pdo = new PDO($dsn, $db['user'], $db['pass'], [
+    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    PDO::ATTR_EMULATE_PREPARES => false,
+]);
+
+$manifest = mg_migration_manifest();
+$databaseDir = mg_migration_database_dir();
+$files = array_values($manifest['ordered_files']);
 $lockName = 'microgifter_schema_migrations';
 $exitCode = 0;
 
@@ -68,37 +80,67 @@ try {
         $pdo->exec('ALTER TABLE schema_migrations ADD COLUMN checksum CHAR(64) NULL AFTER description');
     }
 
-    $select = $pdo->prepare('SELECT checksum FROM schema_migrations WHERE migration_key = ? LIMIT 1');
+    $applied = mg_migration_applied_rows($pdo);
+    $coverageCutoff = mg_migration_coverage_cutoff($applied, $manifest);
     $record = $pdo->prepare(
         'INSERT INTO schema_migrations (migration_key, description, checksum, applied_at)
          VALUES (?, ?, ?, NOW())
          ON DUPLICATE KEY UPDATE checksum = VALUES(checksum), description = COALESCE(schema_migrations.description, VALUES(description))'
     );
 
-    foreach ($files as $file) {
+    foreach ($files as $index => $file) {
         $path = $databaseDir . '/' . $file;
         if (!is_file($path)) {
             throw new RuntimeException("Missing migration file: {$file}");
         }
+
         $sql = file_get_contents($path);
         if (!is_string($sql) || trim($sql) === '') {
             throw new RuntimeException("Empty migration file: {$file}");
         }
+
+        $keys = mg_migration_keys_from_sql($sql, $file);
         $checksum = hash('sha256', $sql);
-        $select->execute([$file]);
-        $existing = $select->fetchColumn();
-        if (is_string($existing) && $existing !== '') {
-            if (!hash_equals($existing, $checksum)) {
-                throw new RuntimeException("Checksum mismatch for already-applied migration: {$file}");
+
+        if ($index <= $coverageCutoff) {
+            echo "SKIP {$file} (covered by consolidated baseline)\n";
+            continue;
+        }
+
+        $presentKeys = array_values(array_filter($keys, static fn(string $key): bool => array_key_exists($key, $applied)));
+        if ($presentKeys !== [] && count($presentKeys) !== count($keys)) {
+            throw new RuntimeException("Partially recorded migration: {$file}");
+        }
+
+        if (count($presentKeys) === count($keys)) {
+            foreach ($keys as $key) {
+                $storedChecksum = $applied[$key];
+                if (is_string($storedChecksum) && $storedChecksum !== '' && !hash_equals($storedChecksum, $checksum)) {
+                    throw new RuntimeException("Checksum mismatch for already-applied migration: {$file} ({$key})");
+                }
+                if ($storedChecksum === null || $storedChecksum === '') {
+                    $record->execute([$key, "Applied by {$file}", $checksum]);
+                    $applied[$key] = $checksum;
+                }
             }
             echo "SKIP {$file}\n";
             continue;
         }
+
         echo "APPLY {$file}\n";
         $pdo->exec($sql);
-        $record->execute([$file, 'Applied by scripts/run_migrations.php', $checksum]);
+        foreach ($keys as $key) {
+            $record->execute([$key, "Applied by {$file}", $checksum]);
+            $applied[$key] = $checksum;
+        }
     }
-    echo "Migrations complete.\n";
+
+    $status = mg_migration_status($pdo, $databaseDir);
+    if (!$status['ready']) {
+        throw new RuntimeException('Migration runner completed but the canonical manifest is not fully satisfied.');
+    }
+
+    echo 'Migrations complete: ' . count($files) . " canonical files satisfied.\n";
 } catch (Throwable $e) {
     fwrite(STDERR, 'FAILED: ' . $e->getMessage() . "\n");
     $exitCode = 1;
@@ -106,7 +148,7 @@ try {
     try {
         $releaseStmt = $pdo->prepare('SELECT RELEASE_LOCK(?)');
         $releaseStmt->execute([$lockName]);
-    } catch (Throwable $releaseError) {
+    } catch (Throwable) {
         fwrite(STDERR, "Warning: could not release schema migration lock.\n");
     }
 }

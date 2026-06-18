@@ -1,0 +1,20 @@
+name: Social Feed Publishing Validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: ./.github/workflows/recovery-baseline.yml
+
+# MG_RUN_SOCIAL_FEED_PUBLISHING_BEHAVIOR
+# composer test-social-feed-publishing-behavior
+# ProductionSocialFeedPostPublishingFoundationTest
+# social-feed-post-publishing-foundation.spec.js
+# build_full_upgrade_sql.php
+# composer test-frontend-contracts
+# composer test
+# npm run test:browser

@@ -1,0 +1,20 @@
+name: Profile Moderation Validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: ./.github/workflows/recovery-baseline.yml
+
+# MG_RUN_PROFILE_MODERATION_BEHAVIOR
+# composer test-profile-moderation-behavior
+# ProductionProfileModerationUiFoundationTest
+# profile-moderation-foundation.spec.js
+# build_full_upgrade_sql.php
+# composer test-frontend-contracts
+# composer test
+# npm run test:browser

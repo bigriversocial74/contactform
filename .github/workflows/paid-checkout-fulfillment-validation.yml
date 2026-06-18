@@ -1,0 +1,15 @@
+name: Paid Checkout Fulfillment Validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: ./.github/workflows/recovery-baseline.yml
+
+# Run paid checkout fulfillment behavior
+# composer test-checkout-fulfillment
+# bash scripts/apply_lifecycle_schema.sh

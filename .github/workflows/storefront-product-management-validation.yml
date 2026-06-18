@@ -1,0 +1,20 @@
+name: Storefront Management Validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: ./.github/workflows/recovery-baseline.yml
+
+# MG_RUN_STOREFRONT_PRODUCT_BEHAVIOR
+# composer test-storefront-product-management-behavior
+# ProductionStorefrontProductManagementUiFoundationTest
+# storefront-product-management-foundation.spec.js
+# build_full_upgrade_sql.php
+# composer test-frontend-contracts
+# composer test
+# npm run test:browser

@@ -1,0 +1,12 @@
+# Recovery baseline ownership
+* @bigriversocial74
+
+# High-risk platform boundaries
+/database/ @bigriversocial74
+/config/migrations.php @bigriversocial74
+/includes/migrations.php @bigriversocial74
+/api/finance/ @bigriversocial74
+/api/commerce/ @bigriversocial74
+/api/microgifts/ @bigriversocial74
+/api/entitlements/ @bigriversocial74
+/.github/workflows/ @bigriversocial74

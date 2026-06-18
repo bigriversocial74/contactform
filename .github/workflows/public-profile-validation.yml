@@ -1,0 +1,25 @@
+name: Public Profile Validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: ./.github/workflows/recovery-baseline.yml
+
+# MG_RUN_PUBLIC_PROFILE_BEHAVIOR
+# api/public/profile.php
+# composer test-public-profile-behavior
+# ProductionPublicProfileBehaviorTest
+# build_full_upgrade_sql.php
+# composer test-tip-behavior
+# validate_subscription_behavior.php
+# stage14_smoke.php
+# stage5c_smoke.php
+# composer test-frontend-contracts
+# composer test
+# repository-phpunit.log
+# frontend-contracts.log

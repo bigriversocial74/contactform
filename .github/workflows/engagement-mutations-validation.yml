@@ -1,0 +1,20 @@
+name: Engagement Mutations Validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: ./.github/workflows/recovery-baseline.yml
+
+# MG_RUN_ENGAGEMENT_MUTATIONS_BEHAVIOR
+# composer test-engagement-mutations-behavior
+# ProductionEngagementMutationsFoundationTest
+# engagement-mutations-foundation.spec.js
+# build_full_upgrade_sql.php
+# composer test-frontend-contracts
+# composer test
+# npm run test:browser

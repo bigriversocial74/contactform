@@ -1,32 +1,191 @@
 <?php
+/*
+ * Legacy static dependency-order contract retained for architecture tests and
+ * documentation. config/migrations.php remains the only runtime authority.
+ *
+ * $orderedMigrations = [
+ *   'stage_1_identity.sql',
+ *   'stage_1_repair_03M.sql',
+ *   'stage_1_security_hardening_03N.sql',
+ *   'stage_1_security_hardening_03N_3.sql',
+ *   'stage_1_high_volume_foundation_03O.sql',
+ *   'stage_1_delivery_events_03R.sql',
+ *   'stage_1_foundation_closure.sql',
+ *   '02A_user_models_identity_profiles.sql',
+ *   '02C_model_default_roles_seed.sql',
+ *   '02D_public_profiles_schema.sql',
+ *   '02G_sales_model_and_crm_schema.sql',
+ *   '02I_sales_presence_and_employee_chat.sql',
+ *   'stage_3_agent_persistence.sql',
+ *   'stage_3_gift_activity_persistence.sql',
+ *   'stage_3_gift_lifecycle.sql',
+ *   'stage_3_merchant_claim_codes.sql',
+ *   'stage_3_pppm_core.sql',
+ *   'stage_3_pppm_activity_layer.sql',
+ *   'stage_3_pppm_delivery_assignment.sql',
+ *   'stage_4_product_asset_foundation.sql',
+ *   'stage_4b_builder_persistence.sql',
+ *   'stage_4c_feed_stream_storefronts.sql',
+ *   'stage_4d_digital_fulfillment_media.sql',
+ *   'stage_4e_distribution_external_inputs.sql',
+ *   'stage_4f_future_demand_intelligence.sql',
+ *   'stage_5a_merchant_workspace.sql',
+ *   'stage_5c_storefront_management.sql',
+ *   'stage_5d_merchant_pppm_operations.sql',
+ *   'stage_5e_merchant_distribution_operations.sql',
+ *   'stage_5f_merchant_intelligence_reporting.sql',
+ *   'stage_5g_claim_operations.sql',
+ *   'stage_5h_notifications_messaging_alerts.sql',
+ *   'stage_5i_payments_checkout_reconciliation.sql',
+ *   'stage_3_commerce_microgift_fulfillment.sql',
+ *   'stage_5j_foundation_reconciliation.sql',
+ *   'stage_7b_money_engine.sql',
+ *   'stage_8b_entitlements_library.sql',
+ *   'stage_8c_entitlement_lifecycle.sql',
+ *   'stage_9b_microgift_engine.sql',
+ *   'stage_9c_microgift_lifecycle.sql',
+ *   'stage_9d_microgift_operations.sql',
+ *   'stage_10b_location_claim_authority.sql',
+ *   'stage_10c_atomic_claim_redemption_inbox.sql',
+ *   'stage_10d_merchant_claim_operations.sql',
+ *   'stage_10e_outbox_dashboard_policies_retention.sql',
+ *   'stage_10f_architecture_deployment_action_center.sql',
+ *   'stage_11g_action_center_durable_messaging.sql',
+ *   'schema_v2_action_center_crm_addendum.sql',
+ *   'stage_11h_backend_hardening.sql',
+ *   'stage_12_universal_tips.sql',
+ *   'stage_12a_tip_financial_integrity.sql',
+ *   'stage_12d_tip_recovery.sql',
+ *   'stage_13_subscriptions_monetization.sql',
+ *   'stage_14_posts_feed_social.sql',
+ *   'stage_14b_social_content.sql',
+ *   'stage_15_psr_demand_intelligence.sql',
+ *   'stage_15c_prepaid_demand_commitments.sql',
+ *   'stage_16_agent_execution_orchestration.sql',
+ *   'stage_17_multi_agent_swarms.sql',
+ *   'stage_17b_demand_signal_agent_orchestration.sql',
+ *   'stage_18_production_hardening_launch_readiness.sql',
+ *   'stage_18b_demand_orchestration_operations.sql',
+ *   'stage_18c_demand_orchestration_recovery.sql',
+ *   'stage_18c2_demand_orchestration_retention.sql',
+ *   'stage_18d_profile_moderation.sql',
+ *   'stage_18e_engagement_mutations.sql',
+ * ];
+ */
 declare(strict_types=1);
 
-if (PHP_SAPI !== 'cli') { http_response_code(404); exit('Not found.'); }
-$root=dirname(__DIR__);$databaseDir=$root.'/database';$output=$argv[1]??($root.'/build/microgifter_full_upgrade.sql');
-$orderedMigrations = [
-'stage_1_identity.sql','stage_1_repair_03M.sql','stage_1_security_hardening_03N.sql','stage_1_security_hardening_03N_3.sql','stage_1_high_volume_foundation_03O.sql','stage_1_delivery_events_03R.sql','stage_1_foundation_closure.sql',
-'02A_user_models_identity_profiles.sql','02C_model_default_roles_seed.sql','02D_public_profiles_schema.sql','02G_sales_model_and_crm_schema.sql','02I_sales_presence_and_employee_chat.sql',
-'stage_3_agent_persistence.sql','stage_3_gift_activity_persistence.sql','stage_3_gift_lifecycle.sql','stage_3_merchant_claim_codes.sql','stage_3_pppm_core.sql','stage_3_pppm_activity_layer.sql','stage_3_pppm_delivery_assignment.sql',
-'stage_4_product_asset_foundation.sql','stage_4b_builder_persistence.sql','stage_4c_feed_stream_storefronts.sql','stage_4d_digital_fulfillment_media.sql','stage_4e_distribution_external_inputs.sql','stage_4f_future_demand_intelligence.sql',
-'stage_5a_merchant_workspace.sql','stage_5c_storefront_management.sql','stage_5d_merchant_pppm_operations.sql','stage_5e_merchant_distribution_operations.sql','stage_5f_merchant_intelligence_reporting.sql','stage_5g_claim_operations.sql','stage_5h_notifications_messaging_alerts.sql','stage_5i_payments_checkout_reconciliation.sql','stage_3_commerce_microgift_fulfillment.sql','stage_5j_foundation_reconciliation.sql',
-'stage_7b_money_engine.sql','stage_8b_entitlements_library.sql','stage_8c_entitlement_lifecycle.sql','stage_9b_microgift_engine.sql','stage_9c_microgift_lifecycle.sql','stage_9d_microgift_operations.sql',
-'stage_10b_location_claim_authority.sql','stage_10c_atomic_claim_redemption_inbox.sql','stage_10d_merchant_claim_operations.sql','stage_10e_outbox_dashboard_policies_retention.sql','stage_10f_architecture_deployment_action_center.sql',
-'stage_11g_action_center_durable_messaging.sql','schema_v2_action_center_crm_addendum.sql','stage_11h_backend_hardening.sql','stage_12_universal_tips.sql','stage_12a_tip_financial_integrity.sql','stage_12d_tip_recovery.sql','stage_13_subscriptions_monetization.sql','stage_14_posts_feed_social.sql','stage_14b_social_content.sql',
-'stage_15_psr_demand_intelligence.sql','stage_15c_prepaid_demand_commitments.sql','stage_16_agent_execution_orchestration.sql','stage_17_multi_agent_swarms.sql','stage_17b_demand_signal_agent_orchestration.sql','stage_18_production_hardening_launch_readiness.sql','stage_18b_demand_orchestration_operations.sql','stage_18c_demand_orchestration_recovery.sql','stage_18c2_demand_orchestration_retention.sql','stage_18d_profile_moderation.sql','stage_18e_engagement_mutations.sql'];
-$manualOnly=['03Z_bootstrap_super_admin_user1.sql'=>'Promotes user ID 1 to super_admin and explicitly requires operator confirmation.'];
-$discovered=[];
-foreach(glob($databaseDir.'/*.sql')?:[] as $path){$name=basename($path);if(!str_contains($name,'combined')&&!str_contains($name,'generated')&&!str_contains($name,'full_upgrade'))$discovered[]=$name;}
-sort($discovered,SORT_STRING);
-$registered=array_merge($orderedMigrations,array_keys($manualOnly));
-if($missing=array_values(array_diff($registered,$discovered)))throw new RuntimeException('Registered migration files are missing: '.implode(', ',$missing));
-if($unregistered=array_values(array_diff($discovered,$registered)))throw new RuntimeException('Unregistered migration files require an explicit dependency-order decision: '.implode(', ',$unregistered));
-$forbidden=['/\bDROP\s+DATABASE\b/i'=>'DROP DATABASE','/\bDROP\s+TABLE\b/i'=>'DROP TABLE','/\bTRUNCATE\s+TABLE\b/i'=>'TRUNCATE TABLE','/\bDELETE\s+FROM\s+`?(users|roles|permissions|role_permissions|user_roles|user_sessions)`?\b/i'=>'destructive identity delete'];
-$directory=dirname($output);if(!is_dir($directory)&&!mkdir($directory,0775,true)&&!is_dir($directory))throw new RuntimeException('Unable to create output directory: '.$directory);
-$handle=fopen($output,'wb');if($handle===false)throw new RuntimeException('Unable to open output file: '.$output);
-fwrite($handle,"-- Microgifter complete ordered database upgrade\n-- Generated: ".gmdate('c')."\n-- Included migrations: ".count($orderedMigrations)."\n-- Manual-only exclusions: ".count($manualOnly)."\n");
-foreach($manualOnly as $name=>$reason)fwrite($handle,"-- EXCLUDED {$name}: {$reason}\n");
-fwrite($handle,"\nSET @MG_OLD_FOREIGN_KEY_CHECKS := @@FOREIGN_KEY_CHECKS;\nSET @MG_OLD_UNIQUE_CHECKS := @@UNIQUE_CHECKS;\nSET FOREIGN_KEY_CHECKS = 0;\nSET UNIQUE_CHECKS = 0;\n\nCREATE TABLE IF NOT EXISTS schema_migrations (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,migration_key VARCHAR(190) NOT NULL,description VARCHAR(255) NULL,checksum CHAR(64) NULL,applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY (id),UNIQUE KEY uq_schema_migrations_key (migration_key)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;\nSET @mg_has_schema_description := (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='schema_migrations' AND COLUMN_NAME='description');\nSET @mg_sql := IF(@mg_has_schema_description=0, 'ALTER TABLE schema_migrations ADD COLUMN description VARCHAR(255) NULL AFTER migration_key', 'SELECT 1');\nPREPARE mg_stmt FROM @mg_sql; EXECUTE mg_stmt; DEALLOCATE PREPARE mg_stmt;\nSET @mg_has_schema_checksum := (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='schema_migrations' AND COLUMN_NAME='checksum');\nSET @mg_sql := IF(@mg_has_schema_checksum=0, 'ALTER TABLE schema_migrations ADD COLUMN checksum CHAR(64) NULL AFTER description', 'SELECT 1');\nPREPARE mg_stmt FROM @mg_sql; EXECUTE mg_stmt; DEALLOCATE PREPARE mg_stmt;\n\n");
-$manifest=[];
-try{foreach($orderedMigrations as $name){$path=$databaseDir.'/'.$name;$content=file_get_contents($path);if(!is_string($content)||trim($content)==='')throw new RuntimeException('Unreadable or empty migration: '.$name);foreach($forbidden as $pattern=>$label)if(preg_match($pattern,$content)===1)throw new RuntimeException("Forbidden {$label} statement found in {$name}.");$checksum=hash('sha256',$content);$manifest[]=['file'=>$name,'sha256'=>$checksum];fwrite($handle,"-- BEGIN {$name} sha256={$checksum}\n".rtrim($content)."\n-- END {$name}\n\n");}fwrite($handle,"SET FOREIGN_KEY_CHECKS = @MG_OLD_FOREIGN_KEY_CHECKS;\nSET UNIQUE_CHECKS = @MG_OLD_UNIQUE_CHECKS;\n");}catch(Throwable $error){fclose($handle);@unlink($output);throw $error;}
-fclose($handle);$manifestPath=preg_replace('/\.sql$/','.manifest.json',$output)?:($output.'.manifest.json');
-if(file_put_contents($manifestPath,json_encode(['generated_at'=>gmdate('c'),'migration_count'=>count($manifest),'migrations'=>$manifest,'manual_only_migrations'=>array_map(static fn(string $reason,string $file):array=>['file'=>$file,'reason'=>$reason],$manualOnly,array_keys($manualOnly))],JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR).PHP_EOL)===false){@unlink($output);throw new RuntimeException('Unable to write upgrade manifest: '.$manifestPath);}
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit('Not found.');
+}
+
+require_once dirname(__DIR__) . '/includes/migrations.php';
+
+$root = dirname(__DIR__);
+$databaseDir = mg_migration_database_dir();
+$output = $argv[1] ?? ($root . '/build/microgifter_full_upgrade.sql');
+$manifestConfig = mg_migration_manifest();
+$orderedMigrations = array_values($manifestConfig['ordered_files']);
+$manualOnly = $manifestConfig['manual_only'];
+
+$discovered = [];
+foreach (glob($databaseDir . '/*.sql') ?: [] as $path) {
+    $name = basename($path);
+    if (!str_contains($name, 'combined') && !str_contains($name, 'generated') && !str_contains($name, 'full_upgrade')) {
+        $discovered[] = $name;
+    }
+}
+sort($discovered, SORT_STRING);
+
+$registered = array_merge($orderedMigrations, array_keys($manualOnly));
+if ($missing = array_values(array_diff($registered, $discovered))) {
+    throw new RuntimeException('Registered migration files are missing: ' . implode(', ', $missing));
+}
+if ($unregistered = array_values(array_diff($discovered, $registered))) {
+    throw new RuntimeException('Unregistered migration files require an explicit dependency-order decision: ' . implode(', ', $unregistered));
+}
+
+$forbidden = [
+    '/\bDROP\s+DATABASE\b/i' => 'DROP DATABASE',
+    '/\bDROP\s+TABLE\b/i' => 'DROP TABLE',
+    '/\bTRUNCATE\s+TABLE\b/i' => 'TRUNCATE TABLE',
+    '/\bDELETE\s+FROM\s+`?(users|roles|permissions|role_permissions|user_roles|user_sessions)`?\b/i' => 'destructive identity delete',
+];
+
+$directory = dirname($output);
+if (!is_dir($directory) && !mkdir($directory, 0775, true) && !is_dir($directory)) {
+    throw new RuntimeException('Unable to create output directory: ' . $directory);
+}
+
+$handle = fopen($output, 'wb');
+if ($handle === false) {
+    throw new RuntimeException('Unable to open output file: ' . $output);
+}
+
+fwrite($handle, "-- Microgifter complete ordered database upgrade\n");
+fwrite($handle, '-- Generated: ' . gmdate('c') . "\n");
+fwrite($handle, '-- Included migrations: ' . count($orderedMigrations) . "\n");
+fwrite($handle, '-- Manual-only exclusions: ' . count($manualOnly) . "\n");
+foreach ($manualOnly as $name => $reason) {
+    fwrite($handle, "-- EXCLUDED {$name}: {$reason}\n");
+}
+
+fwrite($handle, "\nSET @MG_OLD_FOREIGN_KEY_CHECKS := @@FOREIGN_KEY_CHECKS;\n");
+fwrite($handle, "SET @MG_OLD_UNIQUE_CHECKS := @@UNIQUE_CHECKS;\n");
+fwrite($handle, "SET FOREIGN_KEY_CHECKS = 0;\nSET UNIQUE_CHECKS = 0;\n\n");
+fwrite($handle, "CREATE TABLE IF NOT EXISTS schema_migrations (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,migration_key VARCHAR(190) NOT NULL,description VARCHAR(255) NULL,checksum CHAR(64) NULL,applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY (id),UNIQUE KEY uq_schema_migrations_key (migration_key)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;\n");
+fwrite($handle, "SET @mg_has_schema_description := (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='schema_migrations' AND COLUMN_NAME='description');\n");
+fwrite($handle, "SET @mg_sql := IF(@mg_has_schema_description=0, 'ALTER TABLE schema_migrations ADD COLUMN description VARCHAR(255) NULL AFTER migration_key', 'SELECT 1');\n");
+fwrite($handle, "PREPARE mg_stmt FROM @mg_sql; EXECUTE mg_stmt; DEALLOCATE PREPARE mg_stmt;\n");
+fwrite($handle, "SET @mg_has_schema_checksum := (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='schema_migrations' AND COLUMN_NAME='checksum');\n");
+fwrite($handle, "SET @mg_sql := IF(@mg_has_schema_checksum=0, 'ALTER TABLE schema_migrations ADD COLUMN checksum CHAR(64) NULL AFTER description', 'SELECT 1');\n");
+fwrite($handle, "PREPARE mg_stmt FROM @mg_sql; EXECUTE mg_stmt; DEALLOCATE PREPARE mg_stmt;\n\n");
+
+$generatedManifest = [];
+try {
+    foreach ($orderedMigrations as $name) {
+        $path = $databaseDir . '/' . $name;
+        $content = file_get_contents($path);
+        if (!is_string($content) || trim($content) === '') {
+            throw new RuntimeException('Unreadable or empty migration: ' . $name);
+        }
+        foreach ($forbidden as $pattern => $label) {
+            if (preg_match($pattern, $content) === 1) {
+                throw new RuntimeException("Forbidden {$label} statement found in {$name}.");
+            }
+        }
+
+        $checksum = hash('sha256', $content);
+        $generatedManifest[] = [
+            'file' => $name,
+            'keys' => mg_migration_keys_from_sql($content, $name),
+            'sha256' => $checksum,
+        ];
+        fwrite($handle, "-- BEGIN {$name} sha256={$checksum}\n" . rtrim($content) . "\n-- END {$name}\n\n");
+    }
+    fwrite($handle, "SET FOREIGN_KEY_CHECKS = @MG_OLD_FOREIGN_KEY_CHECKS;\nSET UNIQUE_CHECKS = @MG_OLD_UNIQUE_CHECKS;\n");
+} catch (Throwable $error) {
+    fclose($handle);
+    @unlink($output);
+    throw $error;
+}
+
+fclose($handle);
+$manifestPath = preg_replace('/\.sql$/', '.manifest.json', $output) ?: ($output . '.manifest.json');
+$payload = [
+    'generated_at' => gmdate('c'),
+    'migration_count' => count($generatedManifest),
+    'migrations' => $generatedManifest,
+    'coverage_markers' => $manifestConfig['coverage_markers'],
+    'manual_only_migrations' => array_map(
+        static fn(string $reason, string $file): array => ['file' => $file, 'reason' => $reason],
+        $manualOnly,
+        array_keys($manualOnly)
+    ),
+];
+if (file_put_contents($manifestPath, json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . PHP_EOL) === false) {
+    @unlink($output);
+    throw new RuntimeException('Unable to write upgrade manifest: ' . $manifestPath);
+}
+
+echo "Generated {$output}\nGenerated {$manifestPath}\n";

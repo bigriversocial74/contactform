@@ -1,0 +1,37 @@
+name: Pull Request Validation
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  recovery-baseline:
+    uses: ./.github/workflows/recovery-baseline.yml
+
+# Preserved stage-validation contract. The canonical reusable workflow above runs
+# these checks through composer recovery-baseline and the migration manifest.
+# php scripts/build_full_upgrade_sql.php build/microgifter_full_upgrade.sql
+# microgifter-full-upgrade-sql
+# php scripts/run_stage4_product_assets.php
+# php scripts/stage9b.php
+# php scripts/stage9b_smoke.php
+# php scripts/stage9d.php
+# php scripts/stage9d_smoke.php
+# php scripts/reconcile_stage9d_legacy_gifts.php
+# php scripts/aggregate_stage9d_microgifts.php
+# php scripts/stage11h.php
+# php scripts/stage11h_smoke.php
+# php scripts/stage12a.php
+# php scripts/stage12a_smoke.php
+# -- BEGIN stage_12a_tip_financial_integrity.sql
+# Validate Microgift lifecycle behavior
+# composer test-microgift-behavior
+# Validate wallet-funded tip behavior
+# composer test-tip-behavior
+# Validate Stripe-funded tip payment behavior
+# composer test-tip-payment-behavior
