@@ -5,6 +5,7 @@ require_once __DIR__ . '/_action_center.php';
 require_once dirname(__DIR__) . '/microgifts/_engine.php';
 require_once dirname(__DIR__) . '/microgifts/_delivery.php';
 require_once dirname(__DIR__) . '/microgifts/_action_center_projection.php';
+require_once dirname(__DIR__) . '/communications/_communications.php';
 
 mg_require_method('POST');
 $user=mg_require_api_user();
@@ -60,6 +61,7 @@ try{
         ]
     );
 
+    $notificationId=null;
     if(empty($deliveryEvent['duplicate'])){
         $projection=mg_action_center_sent(
             $pdo,(int)$instance['id'],(int)$user['id'],$recipientUserId,
@@ -75,11 +77,30 @@ try{
              SET read_at=NULL,updated_at=?
              WHERE instance_id=? AND user_id=? AND folder='inbox' AND archived_at IS NULL"
         )->execute([$deliveryEvent['occurred_at'],(int)$instance['id'],$recipientUserId]);
+
+        $pdo->prepare(
+            'INSERT INTO notifications
+             (public_id,user_id,type,title,body,action_url,gift_id,pppm_item_id,thread_id,created_at)
+             VALUES (?,?,\'microgift_resent\',?,?,?,NULL,?,NULL,?)'
+        )->execute([
+            (string)$deliveryEvent['event_id'],
+            $recipientUserId,
+            'A Microgift was resent to you',
+            mb_substr((string)($instance['title_snapshot']??'Open your Microgift again.'),0,500),
+            '/inbox.php',
+            !empty($instance['pppm_item_id'])?(int)$instance['pppm_item_id']:null,
+            (string)$deliveryEvent['occurred_at'],
+        ]);
+        $notificationId=(int)$pdo->lastInsertId();
+        mg_queue_notification_deliveries($pdo,$notificationId,$recipientUserId,'microgift_resent');
     }else{
         $projection=[
             'sent_item_id'=>$actionItemId,
             'recipient_inbox_item_id'=>null,
         ];
+        $notificationStmt=$pdo->prepare('SELECT id FROM notifications WHERE public_id=? LIMIT 1');
+        $notificationStmt->execute([(string)$deliveryEvent['event_id']]);
+        $notificationId=(int)($notificationStmt->fetchColumn()?:0)?:null;
     }
 
     $summary=mg_microgift_delivery_summary($pdo,(int)$instance['id']);
@@ -92,6 +113,7 @@ try{
         'recipient_user_id'=>$recipientUserId,
         'resent_at'=>$deliveryEvent['occurred_at'],
         'delivery_event_id'=>$deliveryEvent['event_id'],
+        'notification_id'=>$notificationId,
         'duplicate'=>(bool)$deliveryEvent['duplicate'],
     ],(int)$user['id']);
     mg_event('microgift.resent',[
@@ -99,6 +121,7 @@ try{
         'recipient_user_id'=>$recipientUserId,
         'idempotency_key'=>$idempotencyKey,
         'resent_at'=>$deliveryEvent['occurred_at'],
+        'notification_id'=>$notificationId,
         'duplicate'=>(bool)$deliveryEvent['duplicate'],
     ],(int)$user['id']);
 
@@ -110,6 +133,7 @@ try{
         'duplicate'=>(bool)$deliveryEvent['duplicate'],
         'delivery_event'=>$deliveryEvent,
         'delivery_summary'=>$summary,
+        'notification_id'=>$notificationId,
         'action_center'=>$projection,
     ],!empty($deliveryEvent['duplicate'])?'Existing resend result returned.':'Gift resent to the current recipient.',!empty($deliveryEvent['duplicate'])?200:201);
 }catch(InvalidArgumentException $error){
