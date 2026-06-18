@@ -54,6 +54,8 @@ function mg_action_center_select_sql(): string
 {
     return "SELECT ac.id action_item_internal_id,ac.public_id action_item_id,ac.folder,ac.state,ac.can_tip,ac.read_at,
                    ac.first_received_at,ac.sent_at,ac.claimed_at,ac.redeemed_at,ac.updated_at,
+                   delivery.first_sent_at delivery_first_sent_at,delivery.last_resent_at,
+                   COALESCE(delivery.resend_count,0) resend_count,delivery.last_delivery_event_at,
                    i.public_id instance_id,i.status instance_status,i.face_value_cents,i.currency,i.expires_at,i.metadata_json instance_metadata_json,
                    t.public_id template_id,t.name template_name,
                    CAST(sender.id AS CHAR) sender_id,COALESCE(sender.display_name,sender.full_name) sender_name,
@@ -66,7 +68,16 @@ function mg_action_center_select_sql(): string
             LEFT JOIN users sender ON sender.id=ac.sender_user_id
             LEFT JOIN users recipient ON recipient.id=ac.recipient_user_id
             LEFT JOIN microgift_redemptions r ON r.id=ac.redemption_id
-            LEFT JOIN merchant_locations l ON l.id=ac.location_id";
+            LEFT JOIN merchant_locations l ON l.id=ac.location_id
+            LEFT JOIN (
+                SELECT instance_id,
+                       MIN(CASE WHEN event_type='sent' THEN occurred_at END) first_sent_at,
+                       MAX(CASE WHEN event_type='resent' THEN occurred_at END) last_resent_at,
+                       SUM(CASE WHEN event_type='resent' THEN 1 ELSE 0 END) resend_count,
+                       MAX(occurred_at) last_delivery_event_at
+                FROM microgift_delivery_events
+                GROUP BY instance_id
+            ) delivery ON delivery.instance_id=i.id";
 }
 
 function mg_action_center_public_item(array $row): array
@@ -76,7 +87,9 @@ function mg_action_center_public_item(array $row): array
     if($rawMetadata!==''){
         try{$decoded=json_decode($rawMetadata,true,512,JSON_THROW_ON_ERROR);if(is_array($decoded))$metadata=$decoded;}catch(Throwable){}
     }
-    unset($row['action_item_internal_id'],$row['instance_metadata_json']);
+    if(!empty($row['delivery_first_sent_at']))$row['sent_at']=$row['delivery_first_sent_at'];
+    $row['resend_count']=(int)($row['resend_count']??0);
+    unset($row['action_item_internal_id'],$row['instance_metadata_json'],$row['delivery_first_sent_at']);
     $row['sandbox_mode']=(string)($metadata['sandbox_mode']??'');
     $row['demo_scenario']=(string)($metadata['demo_scenario']??'');
     $row['is_demo_preview']=false;
