@@ -28,9 +28,9 @@ final class AdminUserCenterContractTest extends TestCase
         self::assertIsString($helper);
         self::assertStringContainsString("['active', 'disabled', 'pending']", $helper);
         self::assertStringContainsString("['verified', 'unverified']", $helper);
-        self::assertStringContainsString("rf.slug=?", $helper);
-        self::assertStringContainsString("u.id<?", $helper);
-        self::assertStringContainsString("ORDER BY u.id DESC LIMIT", $helper);
+        self::assertStringContainsString('rf.slug=?', $helper);
+        self::assertStringContainsString('u.id<?', $helper);
+        self::assertStringContainsString('ORDER BY u.id DESC LIMIT', $helper);
         self::assertStringContainsString("'next_cursor'", $helper);
         self::assertStringContainsString("'has_more'", $helper);
     }
@@ -43,7 +43,7 @@ final class AdminUserCenterContractTest extends TestCase
         self::assertIsString($helper);
         self::assertStringContainsString('LEFT JOIN public_profiles', $helper);
         self::assertStringContainsString('LEFT JOIN user_roles', $helper);
-        self::assertStringContainsString("'roles' => $roles", $helper);
+        self::assertStringContainsString("'roles' => \$roles", $helper);
         self::assertStringContainsString("'profile' =>", $helper);
         self::assertStringNotContainsString('password_hash', $helper);
         self::assertStringNotContainsString('token_hash', $helper);
