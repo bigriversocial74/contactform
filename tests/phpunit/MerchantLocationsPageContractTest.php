@@ -28,13 +28,14 @@ final class MerchantLocationsPageContractTest extends TestCase
         foreach([
             'Claim locations','Location title','name="name"','Location address','name="address_line1"',
             'name="address_line2"','Location phone','name="phone"','Location claim code','name="claim_code"',
+            'Codes are stored securely and cannot be displayed again.','data-location-code-help','data-location-save',
             'A merchant can only claim gift vouchers from its own product catalog.','data-location-list','data-location-form',
         ] as $needle){
             self::assertStringContainsString($needle,$source);
         }
     }
 
-    public function testMerchantLocationsApiUsesWorkspaceAndMerchantAuthority(): void
+    public function testMerchantLocationsApiPersistsCanonicalHashedClaimCodes(): void
     {
         $source=file_get_contents(dirname(__DIR__,2).'/api/merchant/locations.php');
         $migration=file_get_contents(dirname(__DIR__,2).'/database/stage_18f_pppm_publish_distribution.sql');
@@ -42,19 +43,26 @@ final class MerchantLocationsPageContractTest extends TestCase
         self::assertIsString($migration);
 
         foreach([
-            'mg_merchant_locations_has_claim_code($pdo)',
+            "require_once __DIR__ . '/_claims.php';",
             'workspace_id=? AND merchant_user_id=?',
             '$claimCode=strtoupper(trim((string)($input[\'claim_code\']??\'\')))',
-            '$claimCode===\'\'',
+            'mg_claim_code_pepper()',
+            "hash_hmac('sha256',\$claimCode,\$pepper)",
+            'INSERT INTO merchant_claim_codes',
+            'INSERT INTO merchant_claim_code_events',
             'Location claim code already exists.',
-            '(public_id,workspace_id,merchant_user_id,name,location_code,claim_code',
-            'WHERE public_id=? AND workspace_id=? AND merchant_user_id=?',
-            "'claim_code'=>\$claimCode",
+            'claim_code_last4',
+            'has_active_claim_code',
+            'mg_merchant_unique_location_code',
+            'WHERE id=? AND public_id=? AND workspace_id=? AND merchant_user_id=?',
             "'schema_ready'=>true",
         ] as $needle){
             self::assertStringContainsString($needle,$source);
         }
 
+        self::assertStringNotContainsString('mg_merchant_locations_has_claim_code',$source);
+        self::assertStringNotContainsString('merchant_locations SET name=?,location_code=?,claim_code=?',$source);
+        self::assertStringNotContainsString('(public_id,workspace_id,merchant_user_id,name,location_code,claim_code',$source);
         self::assertStringNotContainsString('ALTER TABLE',$source);
         self::assertStringContainsString('ADD COLUMN workspace_id BIGINT UNSIGNED NULL',$migration);
         self::assertStringContainsString('ADD COLUMN is_primary TINYINT(1) NOT NULL DEFAULT 0',$migration);
@@ -82,15 +90,20 @@ final class MerchantLocationsPageContractTest extends TestCase
         self::assertStringNotContainsString('/account.php#locations',$source);
     }
 
-    public function testMerchantWorkspaceJavascriptRendersAndSubmitsClaimCodes(): void
+    public function testMerchantWorkspaceJavascriptRendersAndSubmitsProtectedClaimCodes(): void
     {
         $source=file_get_contents(dirname(__DIR__,2).'/assets/js/merchant-workspace.js');
         self::assertIsString($source);
         foreach([
-            'Claim code: ','x.claim_code','form.elements.claim_code',
-            'Microgifter.post(\'/api/merchant/locations.php\'','Microgifter.get(\'/api/merchant/locations.php\')',
+            'Claim code: ','x.claim_code_last4','form.elements.claim_code',
+            'Leave blank to keep it, or enter a new code to rotate it.',
+            "Microgifter.post('/api/merchant/locations.php'",
+            "Microgifter.get('/api/merchant/locations.php')",
+            "setStatus(status,'Saving location…')",
+            'Microgifter.setBusy',
         ] as $needle){
             self::assertStringContainsString($needle,$source);
         }
+        self::assertStringNotContainsString('x.claim_code||\'not set\'',$source);
     }
 }
