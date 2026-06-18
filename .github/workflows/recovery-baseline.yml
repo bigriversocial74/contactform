@@ -46,6 +46,8 @@ jobs:
       MG_DB_NAME: microgifter
       MG_DB_USER: microgifter
       MG_DB_PASS: microgifter
+      MG_MIGRATION_DB_USER: root
+      MG_MIGRATION_DB_PASS: root
       MG_DB_CHARSET: utf8mb4
       MG_CLAIM_CODE_PEPPER: ci-recovery-baseline-pepper
       MG_TEST_BASE_URL: http://127.0.0.1:8000
