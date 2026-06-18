@@ -20,4 +20,4 @@ try {
 }
 
 header('Cache-Control: private, no-store, max-age=0');
-mg_ok($data, 'System health loaded.', $data['status'] === 'critical' ? 200 : 200);
+mg_ok($data, 'System health loaded.');
