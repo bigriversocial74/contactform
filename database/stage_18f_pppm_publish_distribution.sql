@@ -1,5 +1,8 @@
 -- Stage 18F PPPM Product Publishing and Distribution
 
+ALTER TABLE merchant_locations
+  ADD COLUMN is_primary TINYINT(1) NOT NULL DEFAULT 0 AFTER status;
+
 ALTER TABLE catalog_pppm_templates
   ADD COLUMN microgift_template_version_id BIGINT UNSIGNED NULL AFTER product_version_id,
   ADD KEY idx_catalog_pppm_microgift_version (microgift_template_version_id),
