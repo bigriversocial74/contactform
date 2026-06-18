@@ -4,6 +4,9 @@ if (($page_section ?? '') === 'feed') {
     $page_scripts[] = '/assets/js/social-feed-attachments.js';
     $page_scripts[] = '/assets/js/social-feed-attachment-cards.js';
 }
+if (($page_body_class ?? '') === 'mg-admin-moderation-page') {
+    $page_scripts[] = '/assets/js/admin-moderation.js';
+}
 $core_scripts = [
     '/assets/js/microgifter.js','/assets/js/header-signals.js','/assets/js/api-client.js','/assets/js/agent-folder-counts.js',
     '/assets/js/agent-global-search.js','/assets/js/customer-commerce.js','/assets/js/cart.js','/assets/js/auth.js',
