@@ -2,9 +2,9 @@
 /**
  * Public shallow health check.
  *
- * This endpoint verifies that the application runtime and database dependency are
- * available, but its public response intentionally exposes only a generic service
- * status. Detailed dependency failures are written to the server error log.
+ * This endpoint verifies that the application runtime, database, and persistent
+ * media volume are available. The response exposes only generic service status;
+ * detailed failures are written to the server error log.
  */
 declare(strict_types=1);
 
@@ -48,6 +48,13 @@ function mg_health_log(Throwable|string $error, array $context = []): void
         'message' => $message,
         'context' => $safeContext,
     ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+}
+
+function mg_health_path_is_within(string $path, string $parent): bool
+{
+    $path = rtrim(str_replace('\\', '/', $path), '/') . '/';
+    $parent = rtrim(str_replace('\\', '/', $parent), '/') . '/';
+    return str_starts_with($path, $parent);
 }
 
 if (strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') {
@@ -99,6 +106,27 @@ try {
         PDO::ATTR_EMULATE_PREPARES => false,
     ]);
     $pdo->query('SELECT 1');
+
+    $storage = is_array($config['storage'] ?? null) ? $config['storage'] : [];
+    $configuredRoot = trim((string)($storage['root'] ?? ''));
+    $storageRoot = $configuredRoot !== '' ? realpath($configuredRoot) : false;
+    $appRoot = realpath(dirname(__DIR__));
+    $requiresPersistent = !empty($storage['require_persistent']);
+    if ($storageRoot === false || !is_dir($storageRoot) || !is_readable($storageRoot) || !is_writable($storageRoot)) {
+        mg_health_log('Persistent media storage is unavailable.', [
+            'configured' => $configuredRoot !== '',
+            'directory_exists' => $storageRoot !== false,
+        ]);
+        mg_health_fail('Persistent media storage is unavailable.');
+    }
+    if ($requiresPersistent && $appRoot !== false && mg_health_path_is_within($storageRoot, $appRoot)) {
+        mg_health_log('Persistent media storage is inside the application release directory.');
+        mg_health_fail('Persistent media storage is misconfigured.');
+    }
+    if (!is_file(rtrim($storageRoot, DIRECTORY_SEPARATOR) . '/.microgifter-storage')) {
+        mg_health_log('Persistent media storage has not been initialized.');
+        mg_health_fail('Persistent media storage is unavailable.');
+    }
 
     mg_health_json([
         'ok' => true,
