@@ -76,9 +76,9 @@ CREATE TABLE IF NOT EXISTS user_moderation_restrictions (
   CONSTRAINT fk_user_moderation_restrictions_lifter FOREIGN KEY (lifted_by_user_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT IGNORE INTO permissions (slug,name,description,created_at) VALUES
-('admin.moderation.view','View moderation center','Review content reports and moderation history.',NOW()),
-('admin.moderation.manage','Manage moderation center','Apply content and account moderation actions.',NOW());
+INSERT IGNORE INTO permissions (slug,name,created_at) VALUES
+('admin.moderation.view','View moderation center',NOW()),
+('admin.moderation.manage','Manage moderation center',NOW());
 
 INSERT IGNORE INTO role_permissions (role_id,permission_id,created_at)
 SELECT r.id,p.id,NOW()
