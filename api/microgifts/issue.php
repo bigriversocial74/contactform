@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/_engine.php';
 require_once __DIR__ . '/_action_center_projection.php';
+require_once __DIR__ . '/_issue_signal.php';
 mg_require_method('POST');
 $user=mg_require_permission('microgift.instances.issue');
 $input=mg_input();
@@ -14,6 +15,7 @@ try{
     $stmt->execute([(string)$result['instance_id']]);
     $instance=$stmt->fetch(PDO::FETCH_ASSOC);
     if(!$instance)throw new RuntimeException('Issued Microgift instance could not be projected.');
+    if(empty($result['duplicate']))mg_microgift_issue_signal($pdo,$instance,(int)$user['id']);
     $result['action_center']=mg_action_center_project_lifecycle($pdo,$instance);
     $pdo->commit();
     mg_audit('microgift.instance_issued','microgift_instance',['instance_id'=>$result['instance_id'],'status'=>$result['status'],'duplicate'=>$result['duplicate']],(int)$user['id']);
