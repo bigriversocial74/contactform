@@ -8,6 +8,10 @@ mg_require_method('GET');
 $user = mg_require_permission('operations.readiness.view');
 $pdo = mg_db();
 $checks = [];
+$orchestrationMigrationContracts = [
+    'stage_17b_demand_signal_agent_orchestration',
+    'stage_18b_demand_orchestration_operations',
+];
 $add = static function (string $key, string $status, string $summary, array $details = []) use (&$checks, $pdo): void {
     $checks[] = ['key' => $key, 'status' => $status, 'summary' => $summary, 'details' => $details];
     mg_operations_record_check($pdo, $key, $status, $summary, $details);
@@ -33,6 +37,7 @@ try {
             'applied_key_count' => $migrationStatus['applied_key_count'],
             'missing' => $migrationStatus['missing'],
             'checksum_mismatches' => $migrationStatus['checksum_mismatches'],
+            'orchestration_contracts' => $orchestrationMigrationContracts,
         ]
     );
 } catch (Throwable $e) {
