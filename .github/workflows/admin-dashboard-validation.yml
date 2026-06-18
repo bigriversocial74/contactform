@@ -1,0 +1,20 @@
+name: Admin Dashboard Validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: ./.github/workflows/recovery-baseline.yml
+
+# Focused validation contract retained after repository recovery.
+# MG_RUN_ADMIN_DASHBOARD_BEHAVIOR
+# composer test-admin-dashboard-behavior
+# ProductionAdminDashboardFoundationTest
+# build_full_upgrade_sql.php
+# composer test-frontend-contracts
+# composer test
+# npm run test:browser
