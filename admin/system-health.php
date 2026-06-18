@@ -10,6 +10,7 @@ $page_section = 'account';
 $header_mode = 'account';
 $page_body_class = 'mg-admin-system-health-page';
 $page_styles = ['/assets/css/admin-system-health.css'];
+$page_scripts = $canViewSystemHealth ? ['/assets/js/admin-system-health.js'] : [];
 
 require dirname(__DIR__) . '/includes/header.php';
 ?>
