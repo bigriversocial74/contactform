@@ -5,13 +5,18 @@ use PHPUnit\Framework\TestCase;
 
 final class AdminContentReviewContractTest extends TestCase
 {
-    public function testContentReviewMigrationIsLastAndCreatesUnifiedSafetyTables(): void
+    public function testContentReviewMigrationPrecedesLaterStagesAndCreatesUnifiedSafetyTables(): void
     {
         $root=dirname(__DIR__,2);
         $manifest=require $root.'/config/migrations.php';
         $migration=file_get_contents($root.'/database/stage_18j_content_moderation.sql');
         self::assertIsArray($manifest);
-        self::assertSame('stage_18j_content_moderation.sql',array_values($manifest['ordered_files'])[count($manifest['ordered_files'])-1]);
+        $ordered=array_values($manifest['ordered_files']);
+        $contentIndex=array_search('stage_18j_content_moderation.sql',$ordered,true);
+        $accountIndex=array_search('stage_18k_admin_account_management.sql',$ordered,true);
+        self::assertNotFalse($contentIndex);
+        self::assertNotFalse($accountIndex);
+        self::assertTrue($contentIndex<$accountIndex);
         self::assertIsString($migration);
         foreach([
             "ENUM('profile','post','comment','media','message','user')",
