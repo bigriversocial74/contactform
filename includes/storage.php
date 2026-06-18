@@ -29,6 +29,23 @@ function mg_storage_path_is_within(string $path,string $parent): bool
     return str_starts_with($path,$parent);
 }
 
+function mg_storage_public_roots(): array
+{
+    $roots=[mg_storage_app_root()=>mg_storage_app_root()];
+    $documentRoot=trim((string)($_SERVER['DOCUMENT_ROOT']??''));
+    if($documentRoot!==''&&mg_storage_is_absolute_path($documentRoot)){
+        $resolved=realpath($documentRoot);
+        if($resolved!==false)$roots[$resolved]=$resolved;
+    }
+    $normalized=str_replace('\\','/',mg_storage_app_root());
+    if(preg_match('#^(.*)/(public_html|www|htdocs)(?:/|$)#',$normalized,$match)===1){
+        $webRoot=rtrim((string)$match[1],'/').'/'.$match[2];
+        $resolved=realpath($webRoot);
+        if($resolved!==false)$roots[$resolved]=$resolved;
+    }
+    return array_values($roots);
+}
+
 function mg_storage_config(): array
 {
     $driver=strtolower(trim((string)mg_config_value('storage','driver','persistent_local')));
@@ -70,8 +87,12 @@ function mg_storage_root(bool $create=true): string
         throw new RuntimeException('Persistent media storage directory is unavailable.');
     }
     $resolved=rtrim($resolved,DIRECTORY_SEPARATOR);
-    if($config['require_persistent']&&mg_storage_path_is_within($resolved,mg_storage_app_root())){
-        throw new RuntimeException('Persistent media storage must be outside the application release directory.');
+    if($config['require_persistent']){
+        foreach(mg_storage_public_roots() as $publicRoot){
+            if(mg_storage_path_is_within($resolved,$publicRoot)){
+                throw new RuntimeException('Persistent media storage must be outside application and public web directories.');
+            }
+        }
     }
     if(!is_readable($resolved)||!is_writable($resolved)){
         throw new RuntimeException('Persistent media storage must be readable and writable by PHP.');
@@ -117,7 +138,11 @@ function mg_storage_assert_ready(bool $initialize=false,bool $writeProbe=false):
     return [
         'driver'=>$config['driver'],
         'root'=>$root,
-        'persistent'=>!mg_storage_path_is_within($root,mg_storage_app_root()),
+        'persistent'=>array_reduce(
+            mg_storage_public_roots(),
+            static fn(bool $outside,string $publicRoot): bool=>$outside&&!mg_storage_path_is_within($root,$publicRoot),
+            true
+        ),
         'initialized'=>true,
         'writable'=>is_writable($root),
         'free_bytes'=>@disk_free_space($root)?:null,
