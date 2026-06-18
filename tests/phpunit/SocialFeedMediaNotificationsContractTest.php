@@ -29,7 +29,7 @@ final class SocialFeedMediaNotificationsContractTest extends TestCase
         self::assertStringContainsString('is_uploaded_file',$endpoint);
         self::assertStringContainsString('new finfo(FILEINFO_MIME_TYPE)',$endpoint);
         self::assertStringContainsString('INSERT INTO catalog_assets',$endpoint);
-        self::assertStringContainsString("'status'",str_replace("'ready'","'status'",$endpoint));
+        self::assertStringContainsString("'ready'",$endpoint);
     }
 
     public function testNotificationPreferencesIncludeSocialActivityAndFilterInAppResults(): void
