@@ -1,6 +1,17 @@
 <?php
 declare(strict_types=1);
 
+function mg_admin_system_health_readonly_storage_path(string $root, string $storageKey): string
+{
+    $key = mg_storage_normalize_key($storageKey);
+    $path = rtrim($root, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $key);
+    $parent = realpath(dirname($path));
+    if ($parent === false || !mg_storage_path_is_within($parent, $root)) {
+        throw new RuntimeException('Persistent media parent directory is unavailable.');
+    }
+    return $path;
+}
+
 function mg_admin_system_health_media_metrics(PDO $pdo): array
 {
     $empty = [
@@ -17,6 +28,7 @@ function mg_admin_system_health_media_metrics(PDO $pdo): array
     if (!mg_admin_system_health_table_exists($pdo, 'catalog_assets')) return $empty;
 
     try {
+        $storageRoot = mg_storage_root(false);
         $aggregate = $pdo->query(
             "SELECT COUNT(*) media_files,COALESCE(SUM(byte_size),0) storage_used_bytes
              FROM catalog_assets
@@ -47,14 +59,13 @@ function mg_admin_system_health_media_metrics(PDO $pdo): array
         $missing = 0;
         foreach ($rows as $storageKey) {
             try {
-                $path = mg_storage_resolve_asset_path('persistent_local', (string)$storageKey);
+                $path = mg_admin_system_health_readonly_storage_path($storageRoot, (string)$storageKey);
                 if (!is_file($path) || !is_readable($path)) $missing++;
             } catch (Throwable) {
                 $missing++;
             }
         }
 
-        $storageRoot = mg_storage_root(false);
         $free = @disk_free_space($storageRoot);
         $total = @disk_total_space($storageRoot);
         return [
