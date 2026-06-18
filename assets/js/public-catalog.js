@@ -20,19 +20,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function money(cents, currency) {
     var amount = Number(cents || 0) / 100;
-    return (currency === 'USD' ? '$' : String(currency || 'USD') + ' ') + amount.toFixed(2);
+    try {
+      return new Intl.NumberFormat(undefined, { style: 'currency', currency: currency || 'USD' }).format(amount);
+    } catch (error) {
+      return (currency === 'USD' ? '$' : String(currency || 'USD') + ' ') + amount.toFixed(2);
+    }
   }
 
-  function firstMedia(product) {
-    var elements = Array.isArray(product.elements) ? product.elements : [];
-    var video = elements.find(function (element) { return element.element_type === 'video' && element.url; });
-    var image = elements.find(function (element) { return ['image','carousel'].includes(element.element_type) && element.url; });
+  function assetByRole(product, role) {
+    var map = product.media_by_role || {};
+    if (map[role] && map[role].url) return map[role];
     var assets = Array.isArray(product.assets) ? product.assets : [];
-    var cover = assets.find(function (asset) { return asset.role === 'cover' && asset.url; });
-    if (video) return '<video controls playsinline preload="metadata" src="' + escapeHtml(video.url) + '"></video>';
-    if (image) return '<img src="' + escapeHtml(image.url) + '" alt="' + escapeHtml(product.title) + '">';
-    if (cover) return '<img src="' + escapeHtml(cover.url) + '" alt="' + escapeHtml(product.title) + '">';
-    return '<div style="font-size:74px">🎁</div>';
+    return assets.find(function (asset) { return asset.role === role && asset.url; }) || null;
+  }
+
+  function imageMarkup(asset, alt, className) {
+    if (!asset || !asset.url) return '';
+    return '<img class="' + escapeHtml(className || '') + '" src="' + escapeHtml(asset.url) + '" alt="' + escapeHtml(alt || '') + '">';
   }
 
   function addToCartButton(versionId, label) {
@@ -40,24 +44,94 @@ document.addEventListener('DOMContentLoaded', function () {
     return '<button class="is-primary" type="button" data-cart-add data-product-version-id="' + escapeHtml(versionId) + '" data-cart-quantity="1">' + escapeHtml(label || 'Add to cart') + '</button>';
   }
 
+  function storefrontLink(product) {
+    return product.storefront_url ? '<a href="' + escapeHtml(product.storefront_url) + '">View storefront</a>' : '';
+  }
+
+  function detailCards(product) {
+    var terms = product.terms && (product.terms.note || product.terms.description) || 'Published product terms are preserved with this version.';
+    var expiration = product.expiration_policy && (product.expiration_policy.label || product.expiration_policy.type) || 'See product terms.';
+    return '<div class="mg-product-details">' +
+      '<div class="mg-product-detail"><strong>Product format</strong>' + escapeHtml(String(product.builder_type || 'simple_product').replace(/_/g, ' ')) + '</div>' +
+      '<div class="mg-product-detail"><strong>Expiration</strong>' + escapeHtml(expiration) + '</div>' +
+      '<div class="mg-product-detail"><strong>Terms</strong>' + escapeHtml(terms) + '</div></div>';
+  }
+
+  function renderSimpleProduct(product) {
+    var metadata = product.metadata || {};
+    var cover = assetByRole(product, 'cover');
+    var headline = metadata.headline || product.headline || '';
+    var description = metadata.message || product.description || product.caption || '';
+    var merchant = metadata.merchant_name || product.merchant_name || 'Local merchant';
+    var offer = metadata.offer || product.offer && product.offer.offer || '';
+    productRoot.innerHTML = '<article class="mg-product-hero mg-simple-product">' +
+      '<div class="mg-product-copy"><div class="mg-product-eyebrow">' + escapeHtml(product.product_type) + ' · ' + escapeHtml(merchant) + '</div>' +
+      '<h1>' + escapeHtml(product.title) + '</h1>' +
+      (headline ? '<p class="mg-product-headline">' + escapeHtml(headline) + '</p>' : '') +
+      (description ? '<p>' + escapeHtml(description) + '</p>' : '') +
+      (offer ? '<div class="mg-product-offer">' + escapeHtml(offer) + '</div>' : '') +
+      '<div class="mg-product-price">' + escapeHtml(money(product.unit_value_cents, product.currency)) + '</div>' +
+      '<div class="mg-product-actions">' + addToCartButton(product.version_id, 'Purchase voucher') + storefrontLink(product) + '</div></div>' +
+      '<div class="mg-product-media">' + (cover ? imageMarkup(cover, product.title, 'mg-simple-product-cover') : '<div class="mg-product-placeholder" aria-hidden="true">🎁</div>') + '</div></article>' +
+      detailCards(product);
+  }
+
+  function renderGreetingCard(product) {
+    var metadata = product.metadata || {};
+    var cover = assetByRole(product, 'cover');
+    var inside = assetByRole(product, 'inside_cover');
+    var headline = metadata.headline || product.headline || product.title;
+    var message = metadata.message || product.description || '';
+    var recipient = metadata.recipient_note || '';
+    var merchant = metadata.merchant_name || product.merchant_name || 'Local merchant';
+    var insideId = 'greeting-card-inside-' + String(product.version_id || 'product').replace(/[^a-z0-9_-]/gi, '');
+
+    productRoot.innerHTML = '<article class="mg-greeting-product" data-greeting-card>' +
+      '<header class="mg-greeting-header"><div><div class="mg-product-eyebrow">Digital greeting card · ' + escapeHtml(merchant) + '</div><h1>' + escapeHtml(product.title) + '</h1></div>' +
+      '<div class="mg-greeting-value">' + escapeHtml(money(product.unit_value_cents, product.currency)) + '</div></header>' +
+      '<div class="mg-greeting-stage">' +
+      '<section class="mg-greeting-cover" data-greeting-card-cover>' +
+      (cover ? imageMarkup(cover, '', 'mg-greeting-cover-image') : '<div class="mg-greeting-cover-fallback" aria-hidden="true">🎁</div>') +
+      '<div class="mg-greeting-cover-overlay"><span>For someone special</span><h2>' + escapeHtml(headline) + '</h2>' +
+      (recipient ? '<p>' + escapeHtml(recipient) + '</p>' : '') +
+      '<button type="button" class="mg-greeting-open" data-greeting-card-open aria-expanded="false" aria-controls="' + escapeHtml(insideId) + '">Open gift</button></div></section>' +
+      '<section class="mg-greeting-inside" id="' + escapeHtml(insideId) + '" data-greeting-card-inside aria-hidden="true" tabindex="-1">' +
+      '<div class="mg-greeting-inside-art">' + (inside ? imageMarkup(inside, '', 'mg-greeting-inside-image') : '<div class="mg-greeting-inside-fallback" aria-hidden="true">✦</div>') + '</div>' +
+      '<div class="mg-greeting-inside-copy"><div class="mg-product-eyebrow">A gift from ' + escapeHtml(merchant) + '</div><h2>' + escapeHtml(headline) + '</h2>' +
+      '<p class="mg-greeting-message">' + escapeHtml(message) + '</p>' +
+      '<div class="mg-product-price">' + escapeHtml(money(product.unit_value_cents, product.currency)) + '</div>' +
+      '<div class="mg-product-actions">' + addToCartButton(product.version_id, 'Purchase this gift') + storefrontLink(product) + '<button type="button" data-greeting-card-close>Close card</button></div></div></section>' +
+      '</div></article>' + detailCards(product);
+
+    bindGreetingCard(productRoot.querySelector('[data-greeting-card]'));
+  }
+
+  function bindGreetingCard(card) {
+    if (!card) return;
+    var openButton = card.querySelector('[data-greeting-card-open]');
+    var closeButton = card.querySelector('[data-greeting-card-close]');
+    var inside = card.querySelector('[data-greeting-card-inside]');
+
+    function setOpen(open) {
+      card.classList.toggle('is-open', open);
+      if (openButton) openButton.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (inside) inside.setAttribute('aria-hidden', open ? 'false' : 'true');
+      if (open && inside) window.setTimeout(function () { inside.focus(); }, 240);
+      if (!open && openButton) window.setTimeout(function () { openButton.focus(); }, 120);
+    }
+
+    if (openButton) openButton.addEventListener('click', function () { setOpen(true); });
+    if (closeButton) closeButton.addEventListener('click', function () { setOpen(false); });
+  }
+
   async function renderProduct() {
     var slug = productRoot.dataset.productSlug;
     if (!slug) throw new Error('Product not found.');
     var data = await getJson('/api/public/product.php?slug=' + encodeURIComponent(slug));
     var product = data.product;
-    var terms = product.terms && (product.terms.note || product.terms.description) || 'Published product terms are preserved with this version.';
-    var expiration = product.expiration_policy && (product.expiration_policy.label || product.expiration_policy.type) || 'See product terms.';
-    productRoot.innerHTML = '<article class="mg-product-hero"><div class="mg-product-copy">' +
-      '<div class="mg-product-eyebrow">' + escapeHtml(product.product_type) + '</div>' +
-      '<h1>' + escapeHtml(product.headline || product.title) + '</h1>' +
-      '<p>' + escapeHtml(product.caption || product.description || '') + '</p>' +
-      '<div class="mg-product-price">' + escapeHtml(money(product.unit_value_cents, product.currency)) + '</div>' +
-      '<div class="mg-product-actions">' + addToCartButton(product.version_id, 'Add to cart') + '<a href="/build.php">Create a gift</a>' +
-      (product.storefront_url ? '<a href="' + escapeHtml(product.storefront_url) + '">View storefront</a>' : '') + '</div></div>' +
-      '<div class="mg-product-media">' + firstMedia(product) + '</div></article>' +
-      '<div class="mg-product-details"><div class="mg-product-detail"><strong>Published version</strong>' + escapeHtml(product.version_id) + '</div>' +
-      '<div class="mg-product-detail"><strong>Expiration</strong>' + escapeHtml(expiration) + '</div>' +
-      '<div class="mg-product-detail"><strong>Terms</strong>' + escapeHtml(terms) + '</div></div>';
+    var builderType = product.builder_type || 'simple_product';
+    if (builderType === 'greeting_card') renderGreetingCard(product);
+    else renderSimpleProduct(product);
     document.title = product.title + ' | Microgifter';
   }
 
