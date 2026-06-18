@@ -1,0 +1,16 @@
+name: Subscription Recovery Validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: ./.github/workflows/recovery-baseline.yml
+
+# composer test-subscription-recovery-behavior
+# php scripts/stage12d.php
+# php scripts/stage13.php
+# php scripts/stage14.php
