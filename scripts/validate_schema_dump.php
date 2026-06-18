@@ -55,7 +55,7 @@ foreach (array_values($manifest['ordered_files']) as $index => $file) {
 $requiredTables = [
     'users', 'commerce_orders', 'pppm_items', 'entitlements',
     'microgift_instances', 'microgift_inbox_items', 'microgift_redemptions',
-    'merchant_locations', 'tips', 'subscriptions', 'posts',
+    'merchant_locations', 'tips', 'subscriptions', 'feed_posts',
     'demand_signal_orchestrations', 'operational_incidents',
     'profile_moderation_cases', 'social_mutation_requests',
 ];
