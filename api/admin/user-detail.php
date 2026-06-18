@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/_user_detail.php';
+require_once __DIR__ . '/_user_management.php';
 
 mg_require_method('GET');
 $admin = mg_admin_users_require_user();
@@ -10,7 +10,7 @@ mg_rate_limit('admin.user_detail.read', 'user:' . $actorId, 240, 60);
 
 try {
     $targetUserId = mg_admin_user_detail_id($_GET['user_id'] ?? null);
-    $detail = mg_admin_user_detail_read(mg_db(), $targetUserId);
+    $detail = mg_admin_account_context(mg_db(), $admin, $targetUserId);
     if ($detail === null) {
         mg_fail('User not found.', 404);
     }
