@@ -14,10 +14,6 @@
     return item;
   }
 
-  function clear(target) {
-    if (target) target.replaceChildren();
-  }
-
   function label(value) {
     return String(value || '—').replace(/[_-]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
   }
@@ -135,6 +131,7 @@
   }
 
   function refreshDrawer(userId) {
+    state.userId = null;
     const close = document.querySelector('.mg-admin-user-drawer [data-user-drawer-close]');
     if (close) close.click();
     window.setTimeout(() => {
