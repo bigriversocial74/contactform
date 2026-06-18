@@ -10,7 +10,7 @@ function mg_admin_management_context(PDO $pdo, array $actor, int $userId): array
     $self = (int)$actor['id'] === $userId;
     $targetSuper = (bool)$target['is_super_admin'];
     $actorSuper = mg_admin_management_actor_is_super($actor);
-    $protected = $self || ($targetSuper && !$actorSuper);
+    $protected = $self || $targetSuper;
 
     return [
         'capabilities' => [
@@ -18,7 +18,7 @@ function mg_admin_management_context(PDO $pdo, array $actor, int $userId): array
             'roles' => !$protected && mg_admin_management_actor_has($actor, 'admin.roles.manage'),
             'models' => !$protected && mg_admin_management_actor_has($actor, 'admin.user_models.manage'),
             'sessions_view' => mg_admin_management_actor_has($actor, 'admin.sessions.view'),
-            'sessions_revoke' => !$self && (!$targetSuper || $actorSuper) && mg_admin_management_actor_has($actor, 'admin.sessions.revoke'),
+            'sessions_revoke' => !$protected && mg_admin_management_actor_has($actor, 'admin.sessions.revoke'),
             'actor_super_admin' => $actorSuper,
             'target_super_admin' => $targetSuper,
             'self' => $self,
