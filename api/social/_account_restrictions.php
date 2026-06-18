@@ -7,11 +7,12 @@ function mg_user_restriction(PDO $pdo, int $userId, string $type): ?array
     $stmt = $pdo->prepare(
         "SELECT public_id,restriction_type,reason,starts_at,ends_at
          FROM user_moderation_restrictions
-         WHERE user_id=? AND status='active' AND restriction_type IN (?, 'all')
+         WHERE user_id=? AND status='active'
+           AND (restriction_type=? OR restriction_type='all' OR (?='uploading' AND restriction_type='posting'))
            AND starts_at<=NOW() AND (ends_at IS NULL OR ends_at>NOW())
          ORDER BY restriction_type='all' DESC,created_at DESC LIMIT 1"
     );
-    $stmt->execute([$userId,$type]);
+    $stmt->execute([$userId,$type,$type]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     return is_array($row) ? $row : null;
 }
