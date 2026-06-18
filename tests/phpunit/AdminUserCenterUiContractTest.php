@@ -10,13 +10,16 @@ final class AdminUserCenterUiContractTest extends TestCase
         $root = dirname(__DIR__, 2);
         $page = file_get_contents($root . '/admin/users.php');
         $dashboard = file_get_contents($root . '/includes/account/admin-dashboard.php');
+        $shortcuts = file_get_contents($root . '/api/admin/_dashboard.php');
 
         self::assertIsString($page);
         self::assertIsString($dashboard);
+        self::assertIsString($shortcuts);
         self::assertStringContainsString("mg_has_permission('admin.users.view')", $page);
         self::assertStringContainsString('/assets/css/admin-users.css', $page);
         self::assertStringContainsString('/assets/js/admin-users.js', $page);
         self::assertStringContainsString('/admin/users.php', $dashboard);
+        self::assertStringContainsString("'href'=>'/admin/users.php'", $shortcuts);
         self::assertStringContainsString('data-admin-users', $page);
     }
 
