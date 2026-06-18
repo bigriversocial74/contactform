@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/gifts/_gift.php';
 require_once dirname(__DIR__) . '/pppm/_activity.php';
 require_once dirname(__DIR__) . '/communications/_communications.php';
+require_once dirname(__DIR__) . '/social/_account_restrictions.php';
 
 mg_require_method('POST');
 $user = mg_require_permission('gift.message.send');
@@ -16,6 +17,12 @@ $threadId = trim((string) ($input['thread_id'] ?? ''));
 $pdo = mg_db();
 $gift = null;
 $pppm = null;
+
+try {
+    mg_require_user_not_restricted($pdo, (int)$user['id'], 'messaging');
+} catch (RuntimeException $error) {
+    mg_fail($error->getMessage(), 409);
+}
 
 try {
     $pdo->beginTransaction();
