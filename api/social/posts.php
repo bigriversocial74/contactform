@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_publishing.php';
 require_once __DIR__ . '/_media_assets.php';
+require_once __DIR__ . '/_account_restrictions.php';
 
 $user = mg_require_permission('social.posts.create');
 $actorId = (int)$user['id'];
@@ -54,6 +55,9 @@ $action = strtolower(trim((string)($input['action'] ?? 'create')));
 mg_rate_limit('social.posts.write', 'user:' . $actorId, $action === 'create' ? 40 : 100, 60);
 
 try {
+    if (in_array($action, ['create','update','publish'], true)) {
+        mg_require_user_not_restricted($pdo, $actorId, 'posting');
+    }
     $key = mg_engagement_key($input);
     $fingerprint = mg_engagement_fingerprint('publishing.' . $action, [
         'post_id' => trim((string)($input['post_id'] ?? '')),
