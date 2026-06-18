@@ -87,7 +87,7 @@
     heading.append(
       element('span', 'mg-eyebrow', 'Account detail'),
       element('h2', '', 'User details'),
-      element('p', '', 'Read-only identity, role, model, and profile context.')
+      element('p', '', 'Identity, roles, models, profile, and account operations.')
     );
     heading.querySelector('h2').id = 'mg-admin-user-drawer-title';
 
@@ -101,7 +101,7 @@
     const loading = element('div', 'mg-admin-user-drawer-state');
     loading.append(
       element('strong', '', 'Loading user details'),
-      element('span', '', 'Preparing identity, role, model, and profile context.')
+      element('span', '', 'Preparing identity, role, model, profile, and permission context.')
     );
 
     const error = element('div', 'mg-admin-user-drawer-state mg-hidden');
@@ -114,7 +114,7 @@
     const content = element('div', 'mg-admin-user-detail-content mg-hidden');
     const identity = section('Identity', 'Core account and verification state.');
     identity.body.className = 'mg-admin-user-detail-grid';
-    const readonly = element('span', 'mg-admin-users-readonly', 'Read only');
+    const readonly = element('span', 'mg-admin-users-readonly', 'Protected');
     identity.header.appendChild(readonly);
 
     const roles = section('Roles', 'Current platform role assignments.');
@@ -205,6 +205,9 @@
       model.enabled_at ? `Enabled ${formatDate(model.enabled_at)}` : '',
       model.approved_at ? `Approved ${formatDate(model.approved_at)}` : '',
       model.disabled_at ? `Disabled ${formatDate(model.disabled_at)}` : '',
+      model.suspended_at ? `Suspended ${formatDate(model.suspended_at)}` : '',
+      model.revoked_at ? `Revoked ${formatDate(model.revoked_at)}` : '',
+      model.rejected_at ? `Rejected ${formatDate(model.rejected_at)}` : '',
     ].filter(Boolean);
     return dates.length ? dates.join(' · ') : 'No lifecycle timestamp is recorded.';
   }
@@ -224,7 +227,8 @@
         badge(model.status, String(model.status || '').toLowerCase())
       );
       const approval = model.requires_approval ? 'Approval required.' : 'No approval required.';
-      item.append(head, element('p', '', `${approval} ${modelLifecycle(model)}`));
+      const reason = model.reason ? ` Reason: ${model.reason}` : '';
+      item.append(head, element('p', '', `${approval} ${modelLifecycle(model)}${reason}`));
       ui.models.appendChild(item);
     });
   }
@@ -287,8 +291,13 @@
       if (!response.ok || !payload?.ok || !payload?.data?.user) {
         throw new Error(payload?.message || 'Unable to load user details.');
       }
-      renderUser(payload.data.user);
+      const user = payload.data.user;
+      renderUser(user);
+      ui.layer.dataset.userId = String(user.id || '');
       setDrawerState('content');
+      document.dispatchEvent(new CustomEvent('mg:admin-user-detail-loaded', {
+        detail: { user, drawer: ui.drawer, layer: ui.layer },
+      }));
     } catch (failure) {
       if (failure.name === 'AbortError') return;
       setDrawerState('error', failure.message || 'Unable to load user details.');
@@ -307,8 +316,10 @@
     state.controller?.abort();
     state.controller = null;
     state.activeUserId = null;
+    delete ui.layer.dataset.userId;
     show(ui.layer, false);
     document.body.classList.remove('mg-admin-user-drawer-open');
+    document.dispatchEvent(new CustomEvent('mg:admin-user-detail-closed'));
     if (state.previousFocus instanceof HTMLElement) state.previousFocus.focus();
     state.previousFocus = null;
   }
@@ -354,6 +365,10 @@
   ui.retry.addEventListener('click', () => {
     if (state.activeUserId) loadUser(state.activeUserId);
   });
+  document.addEventListener('mg:admin-user-detail-refresh', (event) => {
+    const requestedId = event.detail?.userId ? String(event.detail.userId) : state.activeUserId;
+    if (requestedId && !ui.layer.classList.contains('mg-hidden')) loadUser(requestedId);
+  });
 
   document.addEventListener('keydown', (event) => {
     if (ui.layer.classList.contains('mg-hidden')) return;
@@ -364,7 +379,7 @@
     }
     if (event.key !== 'Tab') return;
 
-    const focusable = Array.from(ui.drawer.querySelectorAll('a[href],button:not([disabled]),[tabindex]:not([tabindex="-1"])'))
+    const focusable = Array.from(ui.drawer.querySelectorAll('a[href],button:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'))
       .filter((node) => !node.classList.contains('mg-hidden'));
     if (!focusable.length) {
       event.preventDefault();
