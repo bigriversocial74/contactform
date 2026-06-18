@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_engine.php';
+require_once dirname(__DIR__) . '/pppm/_pppm.php';
 
 function mg_microgift_delivery_event(PDO $pdo,array $instance,string $eventType,int $senderUserId,int $recipientUserId,string $idempotencyKey,?string $actionItemPublicId=null,array $metadata=[]): array
 {
