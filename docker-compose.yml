@@ -1,0 +1,71 @@
+services:
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: microgifter
+      MYSQL_USER: microgifter
+      MYSQL_PASSWORD: microgifter
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3307:3306"
+    volumes:
+      - microgifter_db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      MG_APP_ENV: local
+      MG_DEBUG: "true"
+      MG_BASE_URL: http://localhost:8000
+      MG_RUNTIME_PROFILE: local
+      MG_DB_HOST: db
+      MG_DB_NAME: microgifter
+      MG_DB_USER: microgifter
+      MG_DB_PASS: microgifter
+      MG_DB_CHARSET: utf8mb4
+      MG_CLAIM_CODE_PEPPER: local-development-only-pepper
+      MG_TEST_BASE_URL: http://127.0.0.1:8000
+      MG_ENABLE_POLLING_NOTIFICATIONS: "true"
+      MG_ENABLE_DB_OUTBOX: "true"
+      MG_ENABLE_QUEUE_WORKER: "false"
+      MG_ENABLE_REDIS: "false"
+      MG_ENABLE_WEBSOCKETS: "false"
+      MG_ENABLE_SSE: "false"
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - composer_cache:/tmp/composer-cache
+    environment:
+      COMPOSER_CACHE_DIR: /tmp/composer-cache
+      MG_APP_ENV: local
+      MG_DEBUG: "true"
+      MG_BASE_URL: http://localhost:8000
+      MG_RUNTIME_PROFILE: local
+      MG_DB_HOST: db
+      MG_DB_NAME: microgifter
+      MG_DB_USER: microgifter
+      MG_DB_PASS: microgifter
+      MG_DB_CHARSET: utf8mb4
+      MG_CLAIM_CODE_PEPPER: local-development-only-pepper
+      MG_TEST_BASE_URL: http://127.0.0.1:8000
+      MG_ENABLE_POLLING_NOTIFICATIONS: "true"
+      MG_ENABLE_DB_OUTBOX: "true"
+      MG_ENABLE_QUEUE_WORKER: "false"
+      MG_ENABLE_REDIS: "false"
+      MG_ENABLE_WEBSOCKETS: "false"
+      MG_ENABLE_SSE: "false"
+
+volumes:
+  microgifter_db:
+  composer_cache:
