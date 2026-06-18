@@ -9,6 +9,7 @@ if(!root||!list||!MG.get)return;
 
 var pending=new Set();
 var loading=new Set();
+var failed=new Set();
 var cache=new Map();
 var timer=null;
 
@@ -144,7 +145,7 @@ function render(postId,cards){
 
 async function flush(){
     timer=null;
-    var ids=Array.from(pending).filter(function(id){return !loading.has(id)&&!cache.has(id);}).slice(0,36);
+    var ids=Array.from(pending).filter(function(id){return !loading.has(id)&&!failed.has(id)&&!cache.has(id);}).slice(0,36);
     ids.forEach(function(id){pending.delete(id);loading.add(id);});
     if(!ids.length)return;
     try{
@@ -157,7 +158,7 @@ async function flush(){
             render(id,items);
         });
     }catch(error){
-        ids.forEach(function(id){pending.add(id);});
+        ids.forEach(function(id){failed.add(id);});
     }finally{
         ids.forEach(function(id){loading.delete(id);});
         if(pending.size)schedule();
@@ -177,7 +178,7 @@ function scan(scope){
         var id=String(post.dataset.postId||'');
         if(!id)return;
         if(cache.has(id)){render(id,cache.get(id));return;}
-        if(!loading.has(id))pending.add(id);
+        if(!loading.has(id)&&!failed.has(id))pending.add(id);
     });
     if(pending.size)schedule();
 }
