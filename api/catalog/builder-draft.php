@@ -2,17 +2,11 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_publish_distribution.php';
+require_once __DIR__ . '/_builder_product_types.php';
 
 $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
 $user = mg_require_permission('catalog.products.manage');
 $pdo = mg_db();
-
-function mg_builder_type(string $value): string
-{
-    $allowed = ['simple_product','greeting_card','multimedia_greeting_card','simple_collab'];
-    if (!in_array($value,$allowed,true)) mg_fail('Invalid builder type.',422);
-    return $value;
-}
 
 function mg_builder_payload(mixed $value): array
 {
@@ -80,7 +74,11 @@ if ($method !== 'POST') mg_fail('Method not allowed.',405);
 $input = mg_input();
 mg_require_csrf_for_write($input);
 $action = trim((string)($input['action'] ?? 'save'));
-$builderType = mg_builder_type(trim((string)($input['builder_type'] ?? 'simple_product')));
+try {
+    $builderType = mg_builder_type(trim((string)($input['builder_type'] ?? 'simple_product')));
+} catch (InvalidArgumentException $error) {
+    mg_fail($error->getMessage(),422);
+}
 $payload = mg_builder_payload($input['payload'] ?? []);
 $assetMap = mg_builder_asset_map($input['assets'] ?? []);
 $productId = trim((string)($input['product_id'] ?? ''));
@@ -164,6 +162,7 @@ try {
     if (!empty($payload['demo'])) {
         mg_fail('Demo vouchers cannot be published as live merchant products.',422);
     }
+    mg_builder_validate_publish_type($builderType,$payload,$assetMap);
 
     $nextVersionStmt = $pdo->prepare('SELECT COALESCE(MAX(version_number),0)+1 FROM catalog_product_versions WHERE product_id=?');
     $nextVersionStmt->execute([$productDbId]);

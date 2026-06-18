@@ -7,7 +7,7 @@ $page_title = 'Build a Product | Microgifter';
 $page_section = 'builder';
 $header_mode = 'builder';
 $page_styles = ['/assets/css/builder-stage4b.css','/assets/css/builder-shell-fixes.css'];
-$page_scripts = ['/assets/js/builder-stage4b.js','/assets/js/product-builder-shell.js'];
+$page_scripts = ['/assets/js/builder-stage4b.js','/assets/js/builder-product-types.js','/assets/js/product-builder-shell.js'];
 $product_id = trim((string) ($_GET['id'] ?? ''));
 
 require __DIR__ . '/includes/header.php';

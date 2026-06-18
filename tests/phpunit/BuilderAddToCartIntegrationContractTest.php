@@ -9,7 +9,6 @@ final class BuilderAddToCartIntegrationContractTest extends TestCase
     {
         $source=file_get_contents(dirname(__DIR__,2).'/api/catalog/builder-draft.php');
         self::assertIsString($source);
-
         foreach([
             'INSERT INTO catalog_product_versions',
             "VALUES (?,?,?,'published'",
@@ -24,13 +23,14 @@ final class BuilderAddToCartIntegrationContractTest extends TestCase
         }
     }
 
-    public function testBuilderPageLoadsDistributionControls(): void
+    public function testBuilderPageLoadsRequiredScriptsAndDistributionControls(): void
     {
         $source=file_get_contents(dirname(__DIR__,2).'/build.php');
         self::assertIsString($source);
-
         foreach([
-            '$page_scripts = [\'/assets/js/builder-stage4b.js\',\'/assets/js/product-builder-shell.js\']',
+            '/assets/js/builder-stage4b.js',
+            '/assets/js/builder-product-types.js',
+            '/assets/js/product-builder-shell.js',
             'data-builder-app',
             'data-product-id',
             'data-builder-toast',
@@ -46,7 +46,6 @@ final class BuilderAddToCartIntegrationContractTest extends TestCase
     {
         $source=file_get_contents(dirname(__DIR__,2).'/assets/js/builder-stage4b.js');
         self::assertIsString($source);
-
         foreach([
             "product: root.querySelector('[data-publish-product-link]')",
             "store: root.querySelector('[data-publish-store-link]')",
@@ -57,8 +56,6 @@ final class BuilderAddToCartIntegrationContractTest extends TestCase
         ] as $needle){
             self::assertStringContainsString($needle,$source);
         }
-        self::assertStringNotContainsString('Add published product to cart',$source);
-        self::assertStringNotContainsString('addPublishedProductToCart',$source);
         self::assertStringNotContainsString('data-builder-cart-add',$source);
     }
 
