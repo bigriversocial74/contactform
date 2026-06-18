@@ -1,0 +1,20 @@
+name: Admin Account Management Validation
+
+on:
+  pull_request:
+    paths:
+      - 'api/admin/**'
+      - 'assets/js/admin-user-*.js'
+      - 'assets/css/admin-user-*.css'
+      - 'database/stage_18k_admin_account_management.sql'
+      - 'config/migrations.php'
+      - 'tests/phpunit/AdminAccountManagement*Test.php'
+      - '.github/workflows/admin-account-management-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: ./.github/workflows/recovery-baseline.yml
