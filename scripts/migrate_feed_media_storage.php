@@ -22,7 +22,7 @@ foreach(array_slice($argv,1) as $argument){
 }
 
 try{
-    $storage=mg_storage_assert_ready(false,true);
+    mg_storage_assert_ready(false,true);
 }catch(Throwable $error){
     fwrite(STDERR,"Persistent media storage is not ready: {$error->getMessage()}\n");
     fwrite(STDERR,"Run: php scripts/check_media_storage.php --initialize\n");
@@ -60,9 +60,15 @@ $assetUpdate=$pdo->prepare(
     "UPDATE catalog_assets
      SET storage_provider='persistent_local',storage_key=?,
          metadata_json=JSON_SET(COALESCE(metadata_json,JSON_OBJECT()),
-           '$.source','social_feed','$.storage_class','persistent','$.storage_migrated_at',?),
+           '$.source','social_feed','$.storage_class','persistent','$.storage_migrated_at',?,
+           '$.legacy_storage_provider','local','$.legacy_storage_key',?),
          updated_at=NOW()
      WHERE id=? AND storage_provider='local'"
+);
+$markLegacyDeleted=$pdo->prepare(
+    "UPDATE catalog_assets
+     SET metadata_json=JSON_SET(COALESCE(metadata_json,JSON_OBJECT()),'$.legacy_source_deleted_at',?),updated_at=NOW()
+     WHERE id=?"
 );
 
 $migrated=0;$failed=0;$missing=0;$postsUpdated=0;$bytes=0;$sourcesDeleted=0;
@@ -139,13 +145,15 @@ foreach($assets as $asset){
                 $postsUpdated++;
             }
         }
-        $assetUpdate->execute([$newKey,gmdate('c'),(int)$asset['id']]);
+        $assetUpdate->execute([$newKey,gmdate('c'),$oldKey,(int)$asset['id']]);
         if($assetUpdate->rowCount()!==1)throw new RuntimeException('Asset storage metadata was not updated.');
         $pdo->commit();
 
         if($deleteSource&&is_file($source)){
-            if(@unlink($source))$sourcesDeleted++;
-            else fwrite(STDERR,"Migrated {$publicId}, but could not remove legacy source {$oldKey}\n");
+            if(@unlink($source)){
+                $sourcesDeleted++;
+                $markLegacyDeleted->execute([gmdate('c'),(int)$asset['id']]);
+            }else fwrite(STDERR,"Migrated {$publicId}, but could not remove legacy source {$oldKey}\n");
         }
         echo "Migrated {$publicId}: {$oldKey} -> {$newKey}\n";
         $migrated++;
@@ -154,6 +162,33 @@ foreach($assets as $asset){
         if($pdo->inTransaction())$pdo->rollBack();
         fwrite(STDERR,"Failed {$publicId}: {$error->getMessage()}\n");
         $failed++;
+    }
+}
+
+if($deleteSource&&!$dryRun){
+    $cleanupWhere="a.storage_provider='persistent_local' AND a.status='ready'
+        AND JSON_UNQUOTE(JSON_EXTRACT(a.metadata_json,'$.source'))='social_feed'
+        AND JSON_UNQUOTE(JSON_EXTRACT(a.metadata_json,'$.legacy_storage_provider'))='local'
+        AND JSON_UNQUOTE(JSON_EXTRACT(a.metadata_json,'$.legacy_storage_key')) IS NOT NULL
+        AND JSON_EXTRACT(a.metadata_json,'$.legacy_source_deleted_at') IS NULL";
+    $cleanupParams=[];
+    if($onlyAsset!==''){$cleanupWhere.=' AND a.public_id=?';$cleanupParams[]=$onlyAsset;}
+    $cleanup=$pdo->prepare(
+        "SELECT a.id,a.public_id,JSON_UNQUOTE(JSON_EXTRACT(a.metadata_json,'$.legacy_storage_key')) legacy_key
+         FROM catalog_assets a WHERE {$cleanupWhere} ORDER BY a.id LIMIT {$limit}"
+    );
+    $cleanup->execute($cleanupParams);
+    foreach($cleanup->fetchAll(PDO::FETCH_ASSOC) as $asset){
+        $oldKey=(string)$asset['legacy_key'];
+        try{$source=mg_storage_resolve_asset_path('local',$oldKey);}
+        catch(Throwable $error){$failed++;continue;}
+        if(is_file($source)&&!@unlink($source)){
+            fwrite(STDERR,"Unable to remove legacy source for {$asset['public_id']}: {$oldKey}\n");
+            $failed++;
+            continue;
+        }
+        $markLegacyDeleted->execute([gmdate('c'),(int)$asset['id']]);
+        $sourcesDeleted++;
     }
 }
 
