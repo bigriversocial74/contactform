@@ -1,8 +1,33 @@
 # Product → PPPM Golden Path Audit
 
-Status: **Executable audit passing; final JSON artifact pending**  
+Status: **Completed**  
 Branch: `audit/product-pppm-golden-path`  
 Scope: Simple Product, Greeting Card, checkout, per-unit PPPM issuance, Inbox, Sent, Resend, merchant-location claim, messaging, tipping, timestamps, product routing, and reconciliation.
+
+## Results
+
+The clean-database executable audit completed successfully and rolled back all fixtures.
+
+```text
+17 executable checks
+5 passed
+12 confirmed behavior findings
+  5 critical
+  5 high
+  2 medium
+  0 low
+```
+
+A separate product-routing contract review identified one additional critical finding. The complete audit inventory is therefore:
+
+```text
+13 findings total
+  6 critical
+  5 high
+  2 medium
+```
+
+The CI artifact is named `product-pppm-golden-path-audit` and contains `product_pppm_golden_path_audit.json`.
 
 ## Intended golden path
 
@@ -22,31 +47,23 @@ Merchant publishes product
 
 There is no recipient acceptance step between Inbox delivery and merchant claim.
 
-## Executable audit coverage
+## Verified strengths
 
-The audit command is:
+The audit proved:
 
-```bash
-composer audit-product-pppm-golden-path
-```
-
-It runs inside a database transaction and rolls back all fixtures. It creates:
-
-- one Simple Product line with quantity `2`;
-- one Greeting Card line with quantity `3`;
-- one paid order with five purchased units;
-- five PPPM IDs;
-- five Microgift instances;
-- buyer Inbox projections;
-- transfer, second-transfer, closed-transfer, merchant-claim, location-policy, messaging, and timestamp probes.
-
-The audit is intentionally non-gating while findings are reviewed. Execution errors fail CI; detected contract findings are emitted as structured JSON and uploaded as `product-pppm-golden-path-audit`.
+- two invoice lines with quantities `2` and `3` issue exactly five PPPM items;
+- each invoice line has a complete, unique `unit_sequence` set;
+- each purchased unit has one permanent PPPM ID and one Microgift instance;
+- all five purchased units appear independently in the buyer Inbox;
+- every purchased unit records both PPPM and Microgift issuance timestamps;
+- the full clean migration, application startup, behavior validators, and PHPUnit suite remain green;
+- existing resend validation continues to prove no duplicate PPPM ID, Microgift instance, ownership transfer, or timestamp event.
 
 ## Confirmed findings
 
 ### Critical — Canonical transfer lacks actor authorization
 
-`mg_pppm_transfer_owner_canonical()` accepts an actor ID but does not require that actor to be the current owner or another authorized transfer authority. Any caller that reaches the helper can request an ownership change.
+`mg_pppm_transfer_owner_canonical()` accepts an actor ID but does not require that actor to be the current owner or another authorized transfer authority. The audit successfully transferred a buyer-owned unit when invoked by an unrelated user.
 
 Required correction:
 
@@ -57,16 +74,17 @@ Required correction:
 
 ### Critical — Closed PPPM items remain transferable
 
-The canonical transfer helper does not reject redeemed, cancelled, revoked, expired, or replaced units.
+The audit successfully changed ownership of a PPPM item after setting it to `redeemed`.
 
 Required correction:
 
 - enforce the transferable state set inside the canonical helper;
+- reject redeemed, cancelled, revoked, expired, and replaced units;
 - do not rely on every endpoint to duplicate lifecycle guards.
 
 ### Critical — Merchant claim still requires an extra recipient claim
 
-Purchased gifts are issued with recipient policy `purchaser`, which creates no recipient claim credential. The merchant-location redemption path currently accepts only `claimed` or `redeemable` Microgift states. A purchased or delivered gift therefore cannot move directly from recipient Inbox to merchant claim.
+Purchased gifts are issued with recipient policy `purchaser`, which creates no recipient claim credential. The merchant-location redemption path accepts only `claimed` or `redeemable` Microgift states. The audit's direct merchant claim failed from `issued` with `Microgift is not in an eligible state.`
 
 This conflicts with the intended flow:
 
@@ -81,6 +99,15 @@ Required correction:
 - use the merchant location claim code as the claim authority;
 - record one atomic claimed transaction and timestamp.
 
+### Critical — Purchased gifts have no bridge into the existing claim prerequisite
+
+The audit confirmed zero active recipient claim credentials for a purchased gift while the merchant path still requires a prior claimed/redeemable state.
+
+Required correction:
+
+- eliminate the obsolete recipient claim stage for this product flow rather than generating another customer credential;
+- make ownership plus merchant-location authority the complete claim contract.
+
 ### Critical — Published location policy and claim validator use different schemas
 
 Product publication writes:
@@ -89,7 +116,7 @@ Product publication writes:
 {"mode":"selected_locations","location_ids":["..."]}
 ```
 
-The lifecycle validator reads `allow_list` and `allowed_locations`. Under the current logic, an unlisted non-empty location can pass a `selected_locations` policy.
+The lifecycle validator reads `allow_list` and `allowed_locations`. The audit confirmed an unlisted non-empty location is treated as allowed under `selected_locations`.
 
 Required correction:
 
@@ -115,13 +142,11 @@ or a globally unique public product slug/ID. The API, storefront links, feed lin
 
 ### High — Current recipient is not updated after subsequent transfers
 
-PPPM owner transfer uses:
+The audit sent one PPPM unit to Recipient A and then Recipient B. The owner became Recipient B while `recipient_user_id` remained Recipient A because transfer uses:
 
 ```sql
 recipient_user_id = COALESCE(recipient_user_id, ?)
 ```
-
-The first recipient remains stored after a later recipient becomes owner.
 
 Required correction:
 
@@ -131,7 +156,7 @@ Required correction:
 
 ### High — PPPM state does not advance during send/delivery
 
-Ownership changes while the PPPM unit remains `available`. The permanent PPPM record therefore does not represent the Sent/Delivered lifecycle that the Action Center displays.
+After two transfers, the audited PPPM unit remained `available`. The permanent PPPM record therefore does not represent the Sent/Delivered lifecycle shown by the Action Center.
 
 Required correction:
 
@@ -148,9 +173,9 @@ Required correction:
 - store each sender in immutable transfer events;
 - distinguish original merchant, purchaser, current sender, and current owner.
 
-### High — PPPM and Microgift can disagree about issuer
+### High — PPPM and Microgift disagree about issuer
 
-Paid-order PPPM issuance records the buyer/actor as issuer while the Microgift definition is merchant-owned and the Microgift instance is issued by the merchant.
+All five audited units had different PPPM and Microgift issuer authorities. Paid-order PPPM issuance records the buyer/actor as issuer while the merchant-owned Microgift is issued by the merchant.
 
 Required correction:
 
@@ -159,7 +184,7 @@ Required correction:
 
 ### High — Post-claim message authority does not explicitly resolve the merchant
 
-Message participants are derived from mutable `issuer_user_id`, `owner_user_id`, and `recipient_user_id`. The selling merchant and redemption location are not resolved as explicit post-claim participants.
+Message participants are derived only from mutable `issuer_user_id`, `owner_user_id`, and `recipient_user_id`. The selling merchant and redemption location are not resolved as explicit post-claim participants.
 
 Required correction:
 
@@ -169,31 +194,21 @@ Required correction:
 
 ### Medium — Customer purchase creates merchant Sent-tab projections
 
-Checkout currently projects merchant-owned issuance as Sent history immediately after sale. This may mix commerce sales with user-initiated gifting.
+The audit found five merchant Sent rows immediately after the customer purchased five units. This mixes commerce sales with user-initiated gifting.
 
 Decision required:
 
-- merchant sale history may belong in merchant orders/PPPM operations;
+- merchant sale history should normally live in merchant orders/PPPM operations;
 - Sent should represent explicit user transfer activity unless the product definition says otherwise.
 
 ### Medium — Messaging is available before merchant claim
 
-Messaging authority currently checks participant membership but not lifecycle state. If messaging is intended to become available only after claim, the backend must enforce that policy.
+The audit successfully sent a Microgift message before merchant claim. Messaging authority checks participant membership but not lifecycle state.
 
-## Verified strengths
+Required correction if messaging is intended to begin after claim:
 
-The executable audit and existing recovery suite support these contracts:
-
-- one PPPM issuance request per invoice line;
-- one PPPM item per line quantity using `unit_sequence`;
-- two lines with quantities `2` and `3` create five independent units;
-- one Microgift instance per PPPM item;
-- idempotent checkout capture and fulfillment replay;
-- buyer Inbox projection per unit;
-- immutable send and resend delivery-event timestamps;
-- resend without creating a new PPPM ID or changing ownership;
-- tipping gated to a completed merchant redemption;
-- message and tip records with creation timestamps.
+- enforce the lifecycle gate in the backend;
+- keep message timestamps and PPPM linkage unchanged.
 
 ## Recommended repair order
 
@@ -205,4 +220,4 @@ The executable audit and existing recovery suite support these contracts:
 6. Post-claim message participant policy.
 7. Merchant Sent-versus-sales projection decision.
 8. Permanent PPPM ID length/collision retry hardening.
-9. Promote the reconciliation audit from non-gating evidence to a release gate.
+9. Promote the reconciliation audit from non-gating evidence to a release gate after repairs.
