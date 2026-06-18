@@ -37,7 +37,7 @@ declare(strict_types=1);
           <label>Location title<input name="name" required maxlength="180" placeholder="Downtown Phoenix"></label>
           <label>Location claim code<input name="claim_code" required maxlength="64" pattern="[A-Za-z0-9_-]{4,64}" autocomplete="new-password" placeholder="PHX-001"><small data-location-code-help>Required for a new location. Codes are stored securely and cannot be displayed again.</small></label>
         </div>
-        <label>Location address<input name="address_line1" placeholder="123 Main St"></label>
+        <label>Location address<input name="address_line1" required maxlength="190" placeholder="123 Main St"></label>
         <div class="mg-grid-2">
           <label>Address line 2<input name="address_line2" placeholder="Suite, floor, unit"></label>
           <label>Location phone<input name="phone" inputmode="tel" placeholder="(555) 555-5555"></label>
