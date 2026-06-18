@@ -56,14 +56,14 @@ final class SimpleGreetingProductTypeContractTest extends TestCase
     public function testPublicProductApiReturnsNormalizedBuilderTypeAndMediaRoles(): void
     {
         $source=$this->source('api/public/product.php');
-        self::assertStringContainsString("$product['builder_type']",$source);
-        self::assertStringContainsString("$product['media_by_role']",$source);
+        self::assertStringContainsString("\$product['builder_type']",$source);
+        self::assertStringContainsString("\$product['media_by_role']",$source);
     }
 
     public function testBuilderShowsOnlyRelevantFieldsForSelectedType(): void
     {
         $sidebar=$this->source('includes/product-builder-sidebar.php');
-        $client=$this->source('assets/js/builder-stage4b.js');
+        $client=$this->source('assets/js/builder-product-types.js');
         self::assertStringContainsString('data-builder-types="greeting_card multimedia_greeting_card"',$sidebar);
         self::assertStringContainsString('data-builder-types="multimedia_greeting_card"',$sidebar);
         self::assertStringContainsString('function updateTypeControls()', $client);
