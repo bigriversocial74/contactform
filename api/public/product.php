@@ -64,6 +64,19 @@ foreach (['expiration_policy_json' => 'expiration_policy','terms_json' => 'terms
     $product[$key] = $product[$column] ? (json_decode((string) $product[$column], true) ?: []) : [];
     unset($product[$column]);
 }
+
+$builderType=(string)($product['fulfillment']['builder_type']??$product['presentation']['builder_type']??'simple_product');
+if(!in_array($builderType,['simple_product','greeting_card','multimedia_greeting_card','simple_collab'],true)){
+    $builderType='simple_product';
+}
+$mediaByRole=[];
+foreach($assets as $asset){
+    $role=(string)($asset['role']??'');
+    if($role!==''&&!isset($mediaByRole[$role]))$mediaByRole[$role]=$asset;
+}
+
+$product['builder_type']=$builderType;
+$product['media_by_role']=$mediaByRole;
 $product['storefront_url'] = $product['storefront_slug'] ? '/store.php?s=' . rawurlencode((string) $product['storefront_slug']) : null;
 $product['assets'] = $assets;
 $product['elements'] = $elements;
