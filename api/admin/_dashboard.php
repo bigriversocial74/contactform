@@ -59,7 +59,7 @@ function mg_admin_dashboard_shortcuts(array $access): array
     if($access['audit'])$items[]=['label'=>'Audit logs','description'=>'Inspect administrative activity.','href'=>'/api/admin/audit-logs.php'];
     if($access['security'])$items[]=['label'=>'Security logs','description'=>'Review security events.','href'=>'/api/admin/security-logs.php'];
     if($access['sessions'])$items[]=['label'=>'Sessions','description'=>'Inspect active sessions.','href'=>'/api/admin/sessions.php'];
-    if($access['health'])$items[]=['label'=>'Health','description'=>'Run the detailed service health check.','href'=>'/api/admin/health.php'];
+    if($access['health'])$items[]=['label'=>'System health','description'=>'Inspect storage, notifications, migrations, and recovery tools.','href'=>'/admin/system-health.php'];
     return $items;
 }
 
