@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/gifts/_gift.php';
 require_once dirname(__DIR__) . '/pppm/_activity.php';
+require_once dirname(__DIR__) . '/communications/_communications.php';
 
 mg_require_method('POST');
 $user = mg_require_permission('gift.message.send');
@@ -20,9 +21,7 @@ try {
     $pdo->beginTransaction();
 
     if ($threadId !== '') {
-        if (strlen($threadId) !== 36 || !preg_match('/^[a-f0-9-]{36}$/i', $threadId)) {
-            mg_fail('Invalid thread identifier.', 422);
-        }
+        if (strlen($threadId) !== 36 || !preg_match('/^[a-f0-9-]{36}$/i', $threadId)) mg_fail('Invalid thread identifier.', 422);
         $threadStmt = $pdo->prepare(
             'SELECT mt.id, mt.public_id, mt.gift_id, mt.pppm_item_id
              FROM message_threads mt
@@ -31,9 +30,7 @@ try {
         );
         $threadStmt->execute([strtolower($threadId), (int) $user['id']]);
         $thread = $threadStmt->fetch();
-        if (!$thread) {
-            mg_fail('Thread not found.', 404);
-        }
+        if (!$thread) mg_fail('Thread not found.', 404);
         if (!empty($thread['gift_id'])) {
             $giftStmt = $pdo->prepare('SELECT * FROM gifts WHERE id = ? LIMIT 1');
             $giftStmt->execute([(int) $thread['gift_id']]);
@@ -45,13 +42,9 @@ try {
             $pppm = $pppmStmt->fetch() ?: null;
         }
     } elseif ($itemSource === 'pppm') {
-        if ($itemId === '' || strlen($itemId) > 32 || !preg_match('/^(GFT|PPPM)-[A-Z0-9-]+$/', $itemId)) {
-            mg_fail('Invalid PPPM item identifier.', 422);
-        }
+        if ($itemId === '' || strlen($itemId) > 32 || !preg_match('/^(GFT|PPPM)-[A-Z0-9-]+$/', $itemId)) mg_fail('Invalid PPPM item identifier.', 422);
         $pppm = mg_pppm_activity_find((int) $user['id'], $itemId);
-        if (!$pppm) {
-            mg_fail('PPPM item not found.', 404);
-        }
+        if (!$pppm) mg_fail('PPPM item not found.', 404);
 
         $threadLookup = $pdo->prepare(
             'SELECT mt.id, mt.public_id, mt.gift_id, mt.pppm_item_id
@@ -66,29 +59,17 @@ try {
         if (!$thread) {
             $threadPublicId = mg_public_uuid();
             $subject = mb_substr((string) $pppm['title_snapshot'], 0, 160);
-            $insertThread = $pdo->prepare(
+            $pdo->prepare(
                 'INSERT INTO message_threads
                  (public_id, gift_id, pppm_item_id, created_by_user_id, subject, created_at, updated_at)
                  VALUES (?, NULL, ?, ?, ?, NOW(), NOW())'
-            );
-            $insertThread->execute([$threadPublicId, (int) $pppm['id'], (int) $user['id'], $subject]);
+            )->execute([$threadPublicId, (int) $pppm['id'], (int) $user['id'], $subject]);
             $threadDbId = (int) $pdo->lastInsertId();
-
-            $participant = $pdo->prepare(
-                'INSERT IGNORE INTO message_thread_participants (thread_id, user_id, joined_at)
-                 VALUES (?, ?, NOW())'
-            );
+            $participant = $pdo->prepare('INSERT IGNORE INTO message_thread_participants (thread_id, user_id, joined_at) VALUES (?, ?, NOW())');
             foreach (['issuer_user_id', 'owner_user_id', 'recipient_user_id'] as $participantField) {
-                if (!empty($pppm[$participantField])) {
-                    $participant->execute([$threadDbId, (int) $pppm[$participantField]]);
-                }
+                if (!empty($pppm[$participantField])) $participant->execute([$threadDbId, (int) $pppm[$participantField]]);
             }
-            $thread = [
-                'id' => $threadDbId,
-                'public_id' => $threadPublicId,
-                'gift_id' => null,
-                'pppm_item_id' => (int) $pppm['id'],
-            ];
+            $thread = ['id'=>$threadDbId,'public_id'=>$threadPublicId,'gift_id'=>null,'pppm_item_id'=>(int)$pppm['id']];
         }
     } else {
         $giftPublicId = mg_gift_request_id(['id' => $itemId]);
@@ -106,79 +87,60 @@ try {
         if (!$thread) {
             $threadPublicId = mg_public_uuid();
             $subject = mb_substr((string) $gift['title'], 0, 160);
-            $insertThread = $pdo->prepare(
+            $pdo->prepare(
                 'INSERT INTO message_threads
                  (public_id, gift_id, pppm_item_id, created_by_user_id, subject, created_at, updated_at)
                  VALUES (?, ?, NULL, ?, ?, NOW(), NOW())'
-            );
-            $insertThread->execute([$threadPublicId, (int) $gift['id'], (int) $user['id'], $subject]);
+            )->execute([$threadPublicId, (int) $gift['id'], (int) $user['id'], $subject]);
             $threadDbId = (int) $pdo->lastInsertId();
-
-            $participant = $pdo->prepare(
-                'INSERT IGNORE INTO message_thread_participants (thread_id, user_id, joined_at)
-                 VALUES (?, ?, NOW())'
-            );
+            $participant = $pdo->prepare('INSERT IGNORE INTO message_thread_participants (thread_id, user_id, joined_at) VALUES (?, ?, NOW())');
             $participant->execute([$threadDbId, (int) $gift['sender_user_id']]);
-            if (!empty($gift['recipient_user_id'])) {
-                $participant->execute([$threadDbId, (int) $gift['recipient_user_id']]);
-            }
-            $thread = [
-                'id' => $threadDbId,
-                'public_id' => $threadPublicId,
-                'gift_id' => (int) $gift['id'],
-                'pppm_item_id' => null,
-            ];
+            if (!empty($gift['recipient_user_id'])) $participant->execute([$threadDbId, (int) $gift['recipient_user_id']]);
+            $thread = ['id'=>$threadDbId,'public_id'=>$threadPublicId,'gift_id'=>(int)$gift['id'],'pppm_item_id'=>null];
         }
     }
 
     $messagePublicId = mg_public_uuid();
-    $messageStmt = $pdo->prepare(
-        'INSERT INTO messages (public_id, thread_id, sender_user_id, body, created_at)
-         VALUES (?, ?, ?, ?, NOW())'
-    );
-    $messageStmt->execute([$messagePublicId, (int) $thread['id'], (int) $user['id'], $body]);
-
+    $pdo->prepare('INSERT INTO messages (public_id, thread_id, sender_user_id, body, created_at) VALUES (?, ?, ?, ?, NOW())')
+        ->execute([$messagePublicId, (int) $thread['id'], (int) $user['id'], $body]);
     $pdo->prepare('UPDATE message_threads SET updated_at = NOW() WHERE id = ?')->execute([(int) $thread['id']]);
     $pdo->prepare('UPDATE message_thread_participants SET last_read_at = NOW() WHERE thread_id = ? AND user_id = ?')
         ->execute([(int) $thread['id'], (int) $user['id']]);
 
-    $participantStmt = $pdo->prepare('SELECT user_id FROM message_thread_participants WHERE thread_id = ? AND user_id <> ?');
-    $participantStmt->execute([(int) $thread['id'], (int) $user['id']]);
-    $recipientIds = array_map('intval', array_column($participantStmt->fetchAll(), 'user_id'));
-
-    $notificationStmt = $pdo->prepare(
-        'INSERT INTO notifications
-         (public_id, user_id, type, title, body, action_url, gift_id, pppm_item_id, thread_id, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
+    $participantStmt = $pdo->prepare(
+        'SELECT mtp.user_id,COALESCE(mts.notifications_enabled,1) notifications_enabled,mts.muted_until
+         FROM message_thread_participants mtp
+         LEFT JOIN message_thread_settings mts ON mts.thread_id=mtp.thread_id AND mts.user_id=mtp.user_id
+         WHERE mtp.thread_id=? AND mtp.user_id<>?'
     );
-    foreach ($recipientIds as $recipientId) {
-        $notificationStmt->execute([
-            mg_public_uuid(),
-            $recipientId,
+    $participantStmt->execute([(int) $thread['id'], (int) $user['id']]);
+    $senderName = mg_notification_user_label($pdo, (int)$user['id']);
+    foreach ($participantStmt->fetchAll(PDO::FETCH_ASSOC) as $recipient) {
+        if (empty($recipient['notifications_enabled'])) continue;
+        if (!empty($recipient['muted_until']) && strtotime((string)$recipient['muted_until']) > time()) continue;
+        mg_create_notification(
+            $pdo,
+            (int)$recipient['user_id'],
             'message',
-            $pppm ? 'New item message' : 'New gift message',
-            mb_substr($body, 0, 500),
-            '/inbox.php?thread=' . rawurlencode((string) $thread['public_id']),
-            !empty($thread['gift_id']) ? (int) $thread['gift_id'] : null,
-            !empty($thread['pppm_item_id']) ? (int) $thread['pppm_item_id'] : null,
-            (int) $thread['id'],
-        ]);
+            'New message from '.$senderName,
+            mb_substr($body,0,500),
+            '/messages.php?thread='.rawurlencode((string)$thread['public_id']),
+            [
+                'gift_id'=>!empty($thread['gift_id'])?(int)$thread['gift_id']:null,
+                'pppm_item_id'=>!empty($thread['pppm_item_id'])?(int)$thread['pppm_item_id']:null,
+                'thread_id'=>(int)$thread['id'],
+            ]
+        );
     }
 
-    if (is_array($gift) && !empty($gift['id'])) {
-        mg_gift_event($pdo, (int) $gift['id'], (int) $user['id'], 'message', ['thread_id' => $thread['public_id']]);
-    }
+    if (is_array($gift) && !empty($gift['id'])) mg_gift_event($pdo, (int) $gift['id'], (int) $user['id'], 'message', ['thread_id' => $thread['public_id']]);
     if (is_array($pppm) && !empty($pppm['id'])) {
         $pdo->prepare(
             'INSERT INTO pppm_item_events
              (pppm_item_id, actor_user_id, event_type, from_status, to_status, metadata_json, created_at)
              VALUES (?, ?, ?, ?, ?, ?, NOW())'
         )->execute([
-            (int) $pppm['id'],
-            (int) $user['id'],
-            'message',
-            (string) $pppm['status'],
-            (string) $pppm['status'],
+            (int) $pppm['id'],(int) $user['id'],'message',(string) $pppm['status'],(string) $pppm['status'],
             json_encode(['thread_id' => $thread['public_id']], JSON_UNESCAPED_SLASHES),
         ]);
     }
@@ -186,16 +148,9 @@ try {
     $pdo->commit();
     mg_audit('message.sent', 'message_thread', ['thread_id' => $thread['public_id']], (int) $user['id']);
     mg_event('message.sent', ['thread_id' => $thread['public_id']], (int) $user['id']);
-    mg_ok([
-        'thread_id' => (string) $thread['public_id'],
-        'message_id' => $messagePublicId,
-    ], 'Message sent.', 201);
+    mg_ok(['thread_id'=>(string)$thread['public_id'],'message_id'=>$messagePublicId], 'Message sent.', 201);
 } catch (Throwable $e) {
-    if ($pdo->inTransaction()) {
-        $pdo->rollBack();
-    }
-    mg_security_log('error', 'message.send_failed', 'Message send failed.', [
-        'exception_type' => get_class($e),
-    ], (int) $user['id']);
+    if ($pdo->inTransaction()) $pdo->rollBack();
+    mg_security_log('error', 'message.send_failed', 'Message send failed.', ['exception_type' => get_class($e)], (int) $user['id']);
     mg_fail('Unable to send message right now.', 500);
 }
