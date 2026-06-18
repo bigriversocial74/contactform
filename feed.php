@@ -6,7 +6,7 @@ $page_title = 'Feed | Microgifter';
 $page_section = 'feed';
 $header_mode = 'public';
 $page_styles = ['/assets/css/social-feed.css'];
-$page_scripts = ['/assets/js/social-feed.js'];
+$page_scripts = ['/assets/js/social-feed.js','/assets/js/social-feed-upload.js'];
 $page_manifest = [
     'id' => 'feed',
     'title' => $page_title,
@@ -96,8 +96,44 @@ require __DIR__ . '/includes/header.php';
               </select>
             </label>
           </div>
+
+          <section class="mg-feed-media-uploader" data-feed-media-uploader aria-labelledby="mg-feed-media-title">
+            <div class="mg-feed-media-uploader-head">
+              <div>
+                <span class="mg-kicker">Media uploads</span>
+                <h3 id="mg-feed-media-title">Add images, video, or audio</h3>
+              </div>
+              <span data-feed-upload-count>0 of 8 attached</span>
+            </div>
+            <div class="mg-feed-upload-grid">
+              <label class="mg-feed-upload-card">
+                <span class="mg-feed-upload-kind">Images</span>
+                <strong>Upload images</strong>
+                <small>JPG, PNG, GIF, WebP, or AVIF. Up to 12 MB each.</small>
+                <span class="mg-btn mg-btn-soft">Choose images</span>
+                <input type="file" accept="image/jpeg,image/png,image/gif,image/webp,image/avif" multiple data-feed-upload-input="image">
+              </label>
+              <label class="mg-feed-upload-card">
+                <span class="mg-feed-upload-kind">Video</span>
+                <strong>Upload video</strong>
+                <small>MP4, WebM, or MOV. Up to 200 MB each.</small>
+                <span class="mg-btn mg-btn-soft">Choose video</span>
+                <input type="file" accept="video/mp4,video/webm,video/quicktime" multiple data-feed-upload-input="video">
+              </label>
+              <label class="mg-feed-upload-card">
+                <span class="mg-feed-upload-kind">Audio</span>
+                <strong>Upload audio</strong>
+                <small>MP3, WAV, OGG, or M4A. Up to 50 MB each.</small>
+                <span class="mg-btn mg-btn-soft">Choose audio</span>
+                <input type="file" accept="audio/mpeg,audio/wav,audio/x-wav,audio/ogg,audio/mp4,audio/x-m4a" multiple data-feed-upload-input="audio">
+              </label>
+            </div>
+            <div class="mg-feed-upload-status" data-feed-upload-status role="status" aria-live="polite"></div>
+            <div class="mg-feed-upload-list" data-feed-upload-list aria-label="Attached media"></div>
+          </section>
+
           <details class="mg-feed-attachments">
-            <summary>Attachments and access</summary>
+            <summary>Products, gifts, access, and external links</summary>
             <div class="mg-feed-form-grid">
               <label>Product public ID
                 <input type="text" name="product_id" maxlength="80" placeholder="Optional product UUID">
@@ -112,8 +148,8 @@ require __DIR__ . '/includes/header.php';
                 <input type="url" name="link_url" maxlength="500" placeholder="https://example.com">
               </label>
             </div>
-            <label>Media URLs
-              <textarea name="media_urls" rows="4" placeholder="One image, audio, video, or link URL per line. Maximum 8."></textarea>
+            <label>External media URLs
+              <textarea name="media_urls" rows="4" placeholder="Optional: one image, audio, video, or link URL per line. Uploaded media appears here automatically. Maximum 8 total."></textarea>
             </label>
           </details>
           <div class="mg-feed-composer-actions">
