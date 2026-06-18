@@ -52,6 +52,8 @@ final class PppmSentResendTimelineContractTest extends TestCase
             "folder='inbox'",
             "action_center.microgift_resent",
             "'resent_at'=>\$deliveryEvent['occurred_at']",
+            "'microgift_resent'",
+            "mg_queue_notification_deliveries(\$pdo,\$notificationId,\$recipientUserId,'microgift_resent')",
         ] as $needle){
             self::assertStringContainsString($needle,$resend);
         }
