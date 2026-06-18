@@ -52,7 +52,7 @@ function mg_admin_dashboard_shortcuts(array $access): array
 {
     $items=[];
     if($access['users']){
-        $items[]=['label'=>'Users','description'=>'Inspect platform identities.','href'=>'/api/admin/users.php'];
+        $items[]=['label'=>'Users','description'=>'Inspect platform identities.','href'=>'/admin/users.php'];
         $items[]=['label'=>'Pending models','description'=>'Review requested user models.','href'=>'/api/admin/user-models/pending.php'];
     }
     if($access['moderation'])$items[]=['label'=>'Profile moderation','description'=>'Review profile cases, restrictions, and appeals.','href'=>'/account-profile-moderation.php'];
