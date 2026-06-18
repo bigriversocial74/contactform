@@ -1,5 +1,10 @@
 <?php
 declare(strict_types=1);
+$canCommerce = mg_has_permission('admin.commerce.view')
+    || mg_has_permission('merchant.payments.view')
+    || mg_has_permission('subscriptions.admin')
+    || mg_has_permission('microgift.operations.view')
+    || mg_has_permission('tips.reverse');
 ?>
 <section class="mg-app-panel mg-account-pane is-active mg-admin-dashboard" data-account-pane="admin" data-admin-dashboard>
   <div class="mg-app-panel-head mg-section-head">
@@ -9,6 +14,7 @@ declare(strict_types=1);
     </div>
     <div class="mg-admin-toolbar">
       <?php if (mg_has_permission('admin.users.view')): ?><a class="mg-btn mg-btn-soft" href="/admin/users.php">Users</a><?php endif; ?>
+      <?php if ($canCommerce): ?><a class="mg-btn mg-btn-soft" href="/commerce-operations.php">Commerce</a><?php endif; ?>
       <?php if (mg_has_permission('social.moderate') || mg_has_permission('admin.profiles.moderation.view') || mg_has_permission('admin.profiles.moderation.manage')): ?><a class="mg-btn mg-btn-soft" href="/admin/moderation.php">Moderation</a><?php endif; ?>
       <?php if (mg_has_permission('admin.health.view')): ?><a class="mg-btn mg-btn-soft" href="/admin/system-health.php">System health</a><?php endif; ?>
       <label>Window
