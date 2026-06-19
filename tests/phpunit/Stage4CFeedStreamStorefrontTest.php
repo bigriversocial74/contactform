@@ -58,13 +58,18 @@ final class Stage4CFeedStreamStorefrontTest extends TestCase
     public function testProductAndStorefrontPagesUsePublishedVersions(): void
     {
         $product = file_get_contents(dirname(__DIR__, 2) . '/api/public/product.php');
-        $store = file_get_contents(dirname(__DIR__, 2) . '/api/storefront/profile.php');
+        $route = file_get_contents(dirname(__DIR__, 2) . '/api/storefront/profile.php');
+        $store = file_get_contents(dirname(__DIR__, 2) . '/api/storefront/_profile_legacy.php');
+        $normalizer = file_get_contents(dirname(__DIR__, 2) . '/api/storefront/profile-v1.php');
         self::assertIsString($product);
+        self::assertIsString($route);
         self::assertIsString($store);
+        self::assertIsString($normalizer);
         self::assertStringContainsString("cp.status = 'published'", $product);
         self::assertStringContainsString("cpv.version_status = 'published'", $product);
+        self::assertStringContainsString("require __DIR__ . '/profile-v1.php';", $route);
         self::assertStringContainsString("ms.status = 'published'", $store);
-        self::assertStringContainsString('/api/public/media.php?asset=', $store);
+        self::assertStringContainsString('/api/public/media.php?asset=', $normalizer);
     }
 
     public function testEngagementIsSeparateFromLifecycleWithMilestoneSummaries(): void
