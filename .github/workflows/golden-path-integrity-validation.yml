@@ -1,6 +1,9 @@
 name: Golden Path Integrity Validation
 
 on:
+  push:
+    branches:
+      - 'hardening/golden-path-reliability'
   pull_request:
     paths:
       - 'api/account/action-center-claim.php'
