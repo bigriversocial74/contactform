@@ -2,6 +2,8 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_action_center.php';
+require_once dirname(__DIR__) . '/microgifts/_lifecycle.php';
+require_once dirname(__DIR__) . '/microgifts/_idempotency.php';
 require_once dirname(__DIR__) . '/microgifts/_golden_path_integrity.php';
 require_once dirname(__DIR__) . '/microgifts/_action_center_projection.php';
 
@@ -28,7 +30,14 @@ try{
     if((int)($instance['recipient_user_id']??0)>0&&(int)$instance['recipient_user_id']!==(int)$user['id'])throw new RuntimeException('You are not the recipient of this Microgift.');
 
     $input['instance_id']=(string)$instance['public_id'];
-    $result=mg_microgift_integrity_claim($pdo,(int)$user['id'],$input);
+    $existing=mg_microgift_assert_claim_replay($pdo,$idempotencyKey,(string)$instance['public_id'],(int)$user['id']);
+    if($existing){
+        $result=['claim_id'=>$existing['public_id'],'instance_id'=>(string)$instance['public_id'],'status'=>$existing['status'],'duplicate'=>true];
+    }elseif(trim((string)($input['code']??''))===''){
+        $result=mg_microgift_integrity_claim($pdo,(int)$user['id'],$input);
+    }else{
+        $result=mg_microgift_claim($pdo,(int)$user['id'],$input);
+    }
     $instance=mg_microgift_load_instance($pdo,(string)$result['instance_id']);
     $result['action_center']=mg_action_center_project_lifecycle($pdo,$instance);
     $pdo->commit();
