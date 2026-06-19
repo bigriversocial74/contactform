@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_engine.php';
+require_once __DIR__ . '/_idempotency.php';
 require_once dirname(__DIR__) . '/pppm/_pppm.php';
 require_once dirname(__DIR__) . '/pppm/_ownership.php';
 require_once dirname(__DIR__) . '/entitlements/_lifecycle.php';
@@ -106,16 +107,6 @@ function mg_microgift_canonical_merchant(PDO $pdo,array $instance): int
     return (int)($stmt->fetchColumn()?:0);
 }
 
-function mg_microgift_assert_redemption_row_replay(array $existing,string $instancePublicId,int $userId,int $merchantId,string $source,?string $location): void
-{
-    $same=(string)$existing['instance_public_id']===$instancePublicId
-        && (int)$existing['claimant_user_id']===$userId
-        && (int)$existing['merchant_user_id']===$merchantId
-        && hash_equals((string)$existing['source_reference'],$source)
-        && hash_equals((string)($existing['location_reference']??''),(string)($location??''));
-    if(!$same)throw new RuntimeException('Redemption idempotency key is already bound to a different request.');
-}
-
 function mg_microgift_redeem(PDO $pdo,int $userId,array $input,?callable $failureHook=null): array
 {
     $instancePublicId=trim((string)($input['instance_id']??''));$key=trim((string)($input['idempotency_key']??''));$source=trim((string)($input['source_reference']??''));
@@ -124,7 +115,7 @@ function mg_microgift_redeem(PDO $pdo,int $userId,array $input,?callable $failur
     $existing=$pdo->prepare('SELECT r.*,mi.public_id instance_public_id FROM microgift_redemptions r INNER JOIN microgift_instances mi ON mi.id=r.instance_id WHERE r.idempotency_key=? LIMIT 1 FOR UPDATE');
     $existing->execute([$key]);
     if($row=$existing->fetch(PDO::FETCH_ASSOC)){
-        mg_microgift_assert_redemption_row_replay($row,$instancePublicId,$userId,$merchantId,$source,$location?:null);
+        mg_microgift_assert_redemption_replay($row,$instancePublicId,$userId,$merchantId,$source,$location?:null);
         return ['redemption_id'=>$row['public_id'],'instance_id'=>$instancePublicId,'status'=>$row['status'],'amount_cents'=>(int)$row['amount_cents'],'currency'=>$row['currency'],'financial_policy'=>'merchant_wallet_precredited_at_payment','duplicate'=>true];
     }
     $instance=mg_microgift_expire_if_needed($pdo,mg_microgift_load_instance($pdo,$instancePublicId),$userId);
