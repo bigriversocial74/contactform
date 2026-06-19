@@ -12,8 +12,8 @@ final class AuthenticatedSurfaceSecurityTest extends TestCase
         $auth=file_get_contents($root.'/includes/auth.php');
         self::assertIsString($header);
         self::assertIsString($auth);
-        self::assertStringContainsString("in_array(\$header_mode, ['agent', 'account', 'crm', 'builder'], true)",$header);
-        self::assertStringContainsString('$user = $is_app_page ? mg_require_auth() : mg_current_user();',$header);
+        self::assertMatchesRegularExpression('/\$is_app_page\s*=\s*in_array\(\s*\$header_mode,\s*\[[^\]]*\'agent\'[^\]]*\'account\'[^\]]*\'crm\'[^\]]*\'builder\'[^\]]*\],\s*true\s*\);/s',$header);
+        self::assertMatchesRegularExpression('/\$user\s*=\s*\$is_app_page\s*\?\s*mg_require_auth\(\)\s*:\s*mg_current_user\(\)\s*;/s',$header);
         self::assertStringContainsString("header('Cache-Control: no-store, private')",$header);
         self::assertStringContainsString('function mg_safe_return_path',$auth);
         self::assertStringContainsString("header('Location: ' . \$location, true, 302)",$auth);
