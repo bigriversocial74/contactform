@@ -30,7 +30,7 @@ final class V1ProductPurchasePathTest extends TestCase
         $identity = $this->source('api/catalog/_public_identity.php');
         $endpoint = $this->source('api/public/product.php');
 
-        self::assertStringContainsString("$product_lookup = $product_id !== '' ? $product_id : $product_slug;", $page);
+        self::assertStringContainsString("\$product_lookup = \$product_id !== '' ? \$product_id : \$product_slug;", $page);
         self::assertStringContainsString('data-product-slug="<?= mg_e($product_lookup) ?>"', $page);
         self::assertStringContainsString('function mg_catalog_public_product_by_id', $identity);
         self::assertStringContainsString("preg_match('/^[0-9a-f]{8}-", $identity);
@@ -54,8 +54,8 @@ final class V1ProductPurchasePathTest extends TestCase
 
         self::assertStringContainsString("require __DIR__ . '/profile-v1.php';", $route);
         self::assertStringContainsString("status='ready'", $wrapper);
-        self::assertStringContainsString("$product['product_url']", $wrapper);
-        self::assertStringContainsString("unset($product['cover_asset_id'])", $wrapper);
+        self::assertStringContainsString("\$product['product_url']", $wrapper);
+        self::assertStringContainsString("unset(\$product['cover_asset_id'])", $wrapper);
     }
 
     public function testCartAuthorityIsThePublishedImmutableVersion(): void
