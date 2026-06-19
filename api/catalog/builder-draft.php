@@ -16,6 +16,16 @@ function mg_builder_payload(mixed $value): array
     return $value;
 }
 
+function mg_builder_visibility(mixed $value): string
+{
+    $visibility = strtolower(trim((string)$value));
+    if ($visibility === '') $visibility = 'public';
+    if (!in_array($visibility,['public','unlisted','private'],true)) {
+        mg_fail('Choose a valid product visibility.',422);
+    }
+    return $visibility;
+}
+
 function mg_builder_asset_map(mixed $value): array
 {
     if ($value === null || $value === '') return [];
@@ -37,6 +47,8 @@ function mg_builder_context(PDO $pdo, int $userId): array
         'publish_requires'=>[
             'public_profile'=>true,
             'active_merchant_location'=>true,
+            'visibility'=>'public',
+            'minimum_value_cents'=>1,
         ],
     ];
 }
@@ -80,6 +92,7 @@ try {
     mg_fail($error->getMessage(),422);
 }
 $payload = mg_builder_payload($input['payload'] ?? []);
+$payload['visibility'] = mg_builder_visibility($payload['visibility'] ?? 'public');
 $assetMap = mg_builder_asset_map($input['assets'] ?? []);
 $productId = trim((string)($input['product_id'] ?? ''));
 $lockVersion = max(0,(int)($input['lock_version'] ?? 0));
@@ -144,20 +157,22 @@ try {
             'product_id'=>$productId,
             'draft_id'=>$draftId,
             'live_status_preserved'=>$productStatus === 'published',
+            'visibility'=>$payload['visibility'],
         ],(int)$user['id']);
         mg_ok([
             'product_id'=>$productId,
             'draft_id'=>$draftId,
             'lock_version'=>$nextLock,
             'status'=>$productStatus,
+            'visibility'=>$payload['visibility'],
             'has_draft_changes'=>true,
         ],'Product draft saved.');
     }
 
     if ($action !== 'publish') mg_fail('Invalid builder action.',422);
     mg_require_permission('catalog.products.publish');
-    if (($payload['visibility'] ?? 'published') !== 'published') {
-        mg_fail('Public publishing distributes the voucher to your store, feed, and selected merchant locations. Save the draft instead if it is not ready.',422);
+    if ($payload['visibility'] !== 'public') {
+        mg_fail('Set visibility to Public before publishing to your store, feed, and merchant locations.',422);
     }
     if (!empty($payload['demo'])) {
         mg_fail('Demo vouchers cannot be published as live merchant products.',422);
@@ -234,6 +249,7 @@ try {
         'storefront_id'=>$distribution['storefront']['storefront_id'],
         'feed_post_id'=>$distribution['feed']['post_id'],
         'location_count'=>$distribution['locations']['count'],
+        'visibility'=>$payload['visibility'],
     ],(int)$user['id']);
     mg_ok([
         'product_id'=>$productId,
@@ -252,6 +268,7 @@ try {
         'discovery_url'=>$distribution['discovery_url'],
         'lock_version'=>$nextLock,
         'status'=>'published',
+        'visibility'=>$payload['visibility'],
     ],'Product published to your store, feed, and merchant locations.');
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) $pdo->rollBack();
