@@ -134,14 +134,18 @@ foreach ($targets as $path) {
     }
 }
 
+$summary = [
+    'scanned' => count($rows),
+    'authenticated_ok' => count(array_filter($rows, static fn(array $row): bool => $row['status'] === 'ok')),
+    'delegated' => count(array_filter($rows, static fn(array $row): bool => $row['status'] === 'delegated')),
+    'broken' => count($failures),
+];
+
 if (in_array('--json', $argv, true)) {
     echo json_encode([
         'pages' => $rows,
         'failures' => $failures,
-        'summary' => [
-            'scanned' => count($rows),
-            'broken' => count($failures),
-        ],
+        'summary' => $summary,
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . PHP_EOL;
 } else {
     echo "Authenticated page layout audit\n";
@@ -152,7 +156,7 @@ if (in_array('--json', $argv, true)) {
         }
         printf("%-7s %-36s %s\n", strtoupper($row['status']), $row['page'], $row['reason']);
     }
-    echo "\nScanned: " . count($rows) . " | Broken: " . count($failures) . "\n";
+    echo "\nScanned: {$summary['scanned']} | Authenticated OK: {$summary['authenticated_ok']} | Broken: {$summary['broken']}\n";
 }
 
 exit($failures === [] ? 0 : 1);
