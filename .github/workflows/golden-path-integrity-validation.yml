@@ -1,0 +1,28 @@
+name: Golden Path Integrity Validation
+
+on:
+  pull_request:
+    paths:
+      - 'api/account/action-center-claim.php'
+      - 'api/account/action-center-redeem.php'
+      - 'api/microgifts/_golden_path_integrity.php'
+      - 'api/admin/_golden_path_health.php'
+      - 'api/admin/lifecycle-*.php'
+      - 'admin/lifecycle-health.php'
+      - 'assets/js/admin-lifecycle-health.js'
+      - 'assets/css/admin-lifecycle-health.css'
+      - 'scripts/validate_lifecycle_completion.php'
+      - 'tests/integration/GoldenPath*.php'
+      - 'tests/phpunit/*Integrity*Test.php'
+      - 'tests/phpunit/LifecycleHealthContractTest.php'
+      - 'composer.json'
+      - 'scripts/recovery_baseline.sh'
+      - '.github/workflows/golden-path-integrity-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: ./.github/workflows/recovery-baseline.yml
