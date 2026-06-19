@@ -21,26 +21,21 @@ final class PageFoundationTest extends TestCase
         self::assertStringContainsString('/footer.php', $end);
     }
 
-    public function testUniversalHeaderUsesSharedPublicTemplateAndNamedControlContracts(): void
+    public function testUniversalHeaderUsesInlinePublicLayoutAndSharedAppVariant(): void
     {
         $root = dirname(__DIR__, 2);
         $header = file_get_contents($root . '/includes/header.php');
-        $public = file_get_contents($root . '/includes/header-components/public-header.php');
         $app = file_get_contents($root . '/includes/header-components/app-header.php');
-        $controls = file_get_contents($root . '/includes/header-components/controls.php');
-        foreach ([$header,$public,$app,$controls] as $source) {
+        foreach ([$header,$app] as $source) {
             self::assertIsString($source);
         }
-        self::assertStringContainsString('public-header.php', $header);
         self::assertStringContainsString('app-header.php', $header);
-        self::assertStringContainsString('data-public-header', $public);
-        self::assertStringContainsString('data-mg-auth-menu', $public);
-        self::assertStringNotContainsString('$public_header_links', $public);
-        self::assertStringNotContainsString('data-agent-presentation-control', $public);
-        self::assertStringNotContainsString('mg-header-page-control', $public);
+        self::assertStringContainsString('data-mg-site-header', $header);
+        self::assertStringContainsString('data-mg-site-account', $header);
+        self::assertStringContainsString('data-mg-site-header-drawer', $header);
+        self::assertStringNotContainsString('public-header.php', $header);
+        self::assertStringNotContainsString('data-agent-presentation-control', $header);
         self::assertStringContainsString('logged-in.php', $app);
-        self::assertStringContainsString('data-agent-presentation-control', $controls);
-        self::assertStringContainsString('mg-header-page-control', $controls);
         self::assertFileDoesNotExist($root . '/includes/header-v2.php');
     }
 
