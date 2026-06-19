@@ -41,6 +41,7 @@
     "test-demand-orchestration-operations": "php scripts/validate_demand_orchestration_operations_behavior.php",
     "test-demand-orchestration-recovery": "php scripts/validate_demand_orchestration_recovery_behavior.php",
     "test-checkout-fulfillment": "php scripts/validate_checkout_capture_behavior.php",
+    "test-lifecycle-completion": "php scripts/validate_lifecycle_completion.php",
     "preflight": "bash scripts/preflight.sh",
     "validate-branch": "bash scripts/preflight.sh",
     "recovery-baseline": "bash scripts/recovery_baseline.sh",
