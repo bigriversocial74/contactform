@@ -77,16 +77,19 @@ final class ProductPppmGoldenPathAuditContractTest extends TestCase
         self::assertStringContainsString('if-no-files-found: error',$workflow);
     }
 
-    public function testProductRouteCollisionIsDocumentedFromCurrentContract(): void
+    public function testPublicProductIdentityFailsClosedForLegacySlugCollisions(): void
     {
         $schema=$this->source('database/stage_4_product_asset_foundation.sql');
         $page=$this->source('product.php');
         $api=$this->source('api/public/product.php');
-        $audit=$this->source('docs/audits/PRODUCT_PPPM_GOLDEN_PATH_AUDIT.md');
+        $identity=$this->source('api/catalog/_public_identity.php');
 
         self::assertStringContainsString('UNIQUE KEY uq_catalog_products_merchant_slug (merchant_user_id, slug)',$schema);
+        self::assertStringContainsString("\$_GET['id']",$page);
         self::assertStringContainsString("\$_GET['p']",$page);
-        self::assertStringContainsString('WHERE cp.slug = ?',$api);
-        self::assertStringContainsString('Product URLs are ambiguous across merchants',$audit);
+        self::assertStringContainsString('mg_catalog_resolve_public_product_identity',$api);
+        self::assertStringContainsString('WHERE cp.public_id = ?',$api);
+        self::assertStringContainsString('ORDER BY id ASC LIMIT 2',$identity);
+        self::assertStringContainsString("'Product link is ambiguous.'",$identity);
     }
 }
