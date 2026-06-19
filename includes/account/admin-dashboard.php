@@ -7,6 +7,11 @@ $canCommerce = mg_has_permission('admin.commerce.view')
     || mg_has_permission('tips.reverse');
 $canMerchantCatalog = mg_has_permission('admin.merchants.view')
     || mg_has_permission('admin.catalog.view');
+$canOpsQueue = mg_has_role('super_admin')
+    || mg_has_permission('ops.alerts.assign')
+    || mg_has_permission('ops.alerts.resolve');
+$canAiSettings = mg_has_role('super_admin')
+    || mg_has_permission('admin.settings.manage');
 ?>
 <section class="mg-app-panel mg-account-pane is-active mg-admin-dashboard" data-account-pane="admin" data-admin-dashboard>
   <div class="mg-app-panel-head mg-section-head">
@@ -19,7 +24,9 @@ $canMerchantCatalog = mg_has_permission('admin.merchants.view')
       <?php if ($canMerchantCatalog): ?><a class="mg-btn mg-btn-soft" href="/merchant-catalog-operations.php">Merchants &amp; catalog</a><?php endif; ?>
       <?php if ($canCommerce): ?><a class="mg-btn mg-btn-soft" href="/commerce-operations.php">Commerce</a><?php endif; ?>
       <?php if (mg_has_permission('social.moderate') || mg_has_permission('admin.profiles.moderation.view') || mg_has_permission('admin.profiles.moderation.manage')): ?><a class="mg-btn mg-btn-soft" href="/admin/moderation.php">Moderation</a><?php endif; ?>
-      <?php if (mg_has_permission('admin.health.view')): ?><a class="mg-btn mg-btn-soft" href="/admin/system-health.php">System health</a><?php endif; ?>
+      <?php if (mg_has_permission('admin.health.view')): ?><a class="mg-btn mg-btn-soft" href="/admin/system-health.php">System health</a><a class="mg-btn mg-btn-soft" href="/admin/lifecycle-health.php">Lifecycle health</a><?php endif; ?>
+      <?php if ($canOpsQueue): ?><a class="mg-btn mg-btn-soft" href="/admin/ops-queue.php">Ops queue</a><?php endif; ?>
+      <?php if ($canAiSettings): ?><a class="mg-btn mg-btn-soft" href="/admin-ai.php">AI settings</a><?php endif; ?>
       <label>Window
         <select data-admin-window aria-label="Admin dashboard reporting window">
           <option value="7">7 days</option>
