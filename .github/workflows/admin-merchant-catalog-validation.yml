@@ -1,0 +1,26 @@
+name: Admin Merchant Catalog Validation
+
+on:
+  pull_request:
+    paths:
+      - 'api/admin/merchant-catalog/**'
+      - 'api/catalog/_operations_lifecycle.php'
+      - 'assets/js/admin-mc-*.js'
+      - 'assets/js/admin-merchant-catalog.js'
+      - 'assets/css/admin-merchant-catalog*.css'
+      - 'merchant-catalog-operations.php'
+      - 'includes/account/admin-dashboard.php'
+      - 'includes/footer.php'
+      - 'includes/footer-mc-snippet.php'
+      - 'database/stage_18m_admin_merchant_catalog_operations.sql'
+      - 'config/migrations.php'
+      - 'tests/phpunit/AdminMerchantCatalog*Test.php'
+      - '.github/workflows/admin-merchant-catalog-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: ./.github/workflows/recovery-baseline.yml
