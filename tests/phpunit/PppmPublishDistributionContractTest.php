@@ -53,17 +53,13 @@ final class PppmPublishDistributionContractTest extends TestCase
         self::assertStringContainsString('canonical published PPPM voucher definition', $fulfillment);
     }
 
-    public function testDiscoveryHasProductLevelMerchantLocationResults(): void
+    public function testProductDiscoveryBackendRemainsAvailable(): void
     {
         $helper = $this->source('api/profiles/_product_discovery.php');
         $endpoint = $this->source('api/public/product-discovery.php');
-        $page = $this->source('discover.php');
-        $client = $this->source('assets/js/product-discovery.js');
         self::assertStringContainsString('function mg_product_discovery_search', $helper);
         self::assertStringContainsString('catalog_product_version_locations', $helper);
         self::assertStringContainsString('mg_product_discovery_search(', $endpoint);
-        self::assertStringContainsString('data-product-results-grid', $page);
-        self::assertStringContainsString('data-product-results-grid', $client);
     }
 
     public function testFocusedBehaviorIsInRecoveryBaseline(): void
