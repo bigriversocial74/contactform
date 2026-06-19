@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', function () {
       video_label: value('videoLabel').trim(),
       claim_code_label: value('claimCode').trim(),
       slug: value('slug').trim(),
-      visibility: 'published',
+      visibility: 'public',
       demo: false,
       terms: { note: value('terms').trim() },
       expiration_policy: { label: value('expiration').trim() }

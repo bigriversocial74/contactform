@@ -49,8 +49,11 @@ final class Stage5CStorefrontManagementTest extends TestCase
 
     public function testPublicStorefrontUsesOnlyPublishedRevision(): void
     {
-        $api=file_get_contents(dirname(__DIR__,2).'/api/storefront/profile.php');
+        $route=file_get_contents(dirname(__DIR__,2).'/api/storefront/profile.php');
+        $api=file_get_contents(dirname(__DIR__,2).'/api/storefront/_profile_legacy.php');
+        self::assertIsString($route);
         self::assertIsString($api);
+        self::assertStringContainsString("require __DIR__ . '/profile-v1.php';",$route);
         self::assertStringContainsString('published_revision_id',$api);
         self::assertStringContainsString("revision_status='published'",$api);
         self::assertStringContainsString("rp.visibility='visible'",$api);

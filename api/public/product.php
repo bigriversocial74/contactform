@@ -2,12 +2,17 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/feed/_feed.php';
+require_once dirname(__DIR__) . '/catalog/_public_identity.php';
 
 mg_require_method('GET');
-$slug = trim((string) ($_GET['slug'] ?? ''));
-if ($slug === '') mg_fail('Product not found.', 404);
+$pdo = mg_db();
+$productIdentity = mg_catalog_resolve_public_product_identity(
+    $pdo,
+    $_GET['id'] ?? null,
+    $_GET['slug'] ?? null
+);
 
-$stmt = mg_db()->prepare(
+$stmt = $pdo->prepare(
     "SELECT cp.public_id, cp.slug, cp.product_type, cp.published_at,
             cpv.public_id AS version_id, cpv.title, cpv.description, cpv.unit_value_cents,
             cpv.currency, cpv.expiration_policy_json, cpv.terms_json, cpv.fulfillment_json,
@@ -21,14 +26,14 @@ $stmt = mg_db()->prepare(
        AND fp.status IN ('published','promoted') AND fp.visibility IN ('public','unlisted')
      LEFT JOIN feed_post_versions fpv ON fpv.id = fp.current_version_id
      LEFT JOIN merchant_storefronts ms ON ms.merchant_user_id = cp.merchant_user_id AND ms.status = 'published'
-     WHERE cp.slug = ? AND cp.status = 'published' AND cpv.version_status = 'published'
+     WHERE cp.public_id = ? AND cp.status = 'published' AND cpv.version_status = 'published'
      ORDER BY fp.promoted_at DESC, fp.updated_at DESC LIMIT 1"
 );
-$stmt->execute([$slug]);
+$stmt->execute([(string)$productIdentity['public_id']]);
 $product = $stmt->fetch();
 if (!$product) mg_fail('Product not found.', 404);
 
-$assetsStmt = mg_db()->prepare(
+$assetsStmt = $pdo->prepare(
     'SELECT cpva.role, cpva.sort_order, ca.public_id AS asset_id, ca.asset_type, ca.mime_type
      FROM catalog_product_version_assets cpva
      INNER JOIN catalog_assets ca ON ca.id = cpva.asset_id AND ca.status = \'ready\'
@@ -43,7 +48,7 @@ $assets = array_map(static function (array $asset): array {
 
 $elements = [];
 if (!empty($product['post_version_id'])) {
-    $elementsStmt = mg_db()->prepare(
+    $elementsStmt = $pdo->prepare(
         'SELECT fpe.public_id, fpe.element_type, fpe.sort_order, fpe.content_json,
                 ca.public_id AS asset_id, ca.asset_type, ca.mime_type
          FROM feed_post_elements fpe
@@ -65,18 +70,19 @@ foreach (['expiration_policy_json' => 'expiration_policy','terms_json' => 'terms
     unset($product[$column]);
 }
 
-$builderType=(string)($product['fulfillment']['builder_type']??$product['presentation']['builder_type']??'simple_product');
-if(!in_array($builderType,['simple_product','greeting_card','multimedia_greeting_card','simple_collab'],true)){
-    $builderType='simple_product';
+$builderType = (string)($product['fulfillment']['builder_type'] ?? $product['presentation']['builder_type'] ?? 'simple_product');
+if (!in_array($builderType, ['simple_product','greeting_card','multimedia_greeting_card','simple_collab'], true)) {
+    $builderType = 'simple_product';
 }
-$mediaByRole=[];
-foreach($assets as $asset){
-    $role=(string)($asset['role']??'');
-    if($role!==''&&!isset($mediaByRole[$role]))$mediaByRole[$role]=$asset;
+$mediaByRole = [];
+foreach ($assets as $asset) {
+    $role = (string)($asset['role'] ?? '');
+    if ($role !== '' && !isset($mediaByRole[$role])) $mediaByRole[$role] = $asset;
 }
 
-$product['builder_type']=$builderType;
-$product['media_by_role']=$mediaByRole;
+$product['builder_type'] = $builderType;
+$product['media_by_role'] = $mediaByRole;
+$product['public_url'] = mg_catalog_public_product_url((string)$product['public_id'], (string)$product['slug']);
 $product['storefront_url'] = $product['storefront_slug'] ? '/store.php?s=' . rawurlencode((string) $product['storefront_slug']) : null;
 $product['assets'] = $assets;
 $product['elements'] = $elements;

@@ -52,7 +52,7 @@ $productIdEscaped = htmlspecialchars($productId, ENT_QUOTES | ENT_SUBSTITUTE, 'U
                   <option value="simple_collab">Simple collaboration</option>
                 </select>
               </label>
-              <label>Product category<input name="product_category" maxlength="120" placeholder="Food & beverage"></label>
+              <label>Product category<input name="product_category" maxlength="120" placeholder="Food &amp; beverage"></label>
             </div>
             <div class="mg-grid-2">
               <label>Merchant display name<input name="merchant_name" maxlength="160"></label>
@@ -61,12 +61,19 @@ $productIdEscaped = htmlspecialchars($productId, ENT_QUOTES | ENT_SUBSTITUTE, 'U
             <label>Headline<input name="headline" maxlength="240"><small data-product-counter="headline">0/240</small></label>
             <label>Recipient message<textarea name="message" rows="4" maxlength="5000"></textarea><small data-product-counter="message">0/5000</small></label>
             <div class="mg-grid-2">
-              <label>Price<input name="price" type="number" min="0" max="1000000" step="0.01" inputmode="decimal"></label>
+              <label>Price<input name="price" type="number" min="0.01" max="1000000" step="0.01" inputmode="decimal" required><small>Published products require a value of at least $0.01.</small></label>
               <label>Currency<select name="currency"><option>USD</option><option>CAD</option><option>EUR</option><option>GBP</option></select></label>
             </div>
             <div class="mg-grid-2">
               <label>Offer or discount<input name="offer" maxlength="160"></label>
-              <label>Visibility<select name="visibility"><option value="public">Public</option><option value="unlisted">Unlisted</option><option value="private">Private</option></select></label>
+              <label>Visibility
+                <select name="visibility">
+                  <option value="public">Public</option>
+                  <option value="unlisted">Unlisted draft</option>
+                  <option value="private">Private draft</option>
+                </select>
+                <small>Only Public products can be published to the store, feed, and merchant locations.</small>
+              </label>
             </div>
 
             <div class="mg-product-editor-section-title"><div><h3>Delivery and card details</h3><p>These values are stored in the builder draft and copied into the next immutable version.</p></div></div>

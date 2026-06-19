@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_publish_distribution.php';
 require_once __DIR__ . '/_builder_product_types.php';
+require_once __DIR__ . '/_public_identity.php';
 
 $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
 $user = mg_require_permission('catalog.products.manage');
@@ -14,6 +15,16 @@ function mg_builder_payload(mixed $value): array
     $json = json_encode($value,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);
     if (!is_string($json) || strlen($json) > 524288) mg_fail('Builder payload is too large.',422);
     return $value;
+}
+
+function mg_builder_visibility(mixed $value): string
+{
+    $visibility = strtolower(trim((string)$value));
+    if ($visibility === '') $visibility = 'public';
+    if (!in_array($visibility,['public','unlisted','private'],true)) {
+        mg_fail('Choose a valid product visibility.',422);
+    }
+    return $visibility;
 }
 
 function mg_builder_asset_map(mixed $value): array
@@ -37,6 +48,8 @@ function mg_builder_context(PDO $pdo, int $userId): array
         'publish_requires'=>[
             'public_profile'=>true,
             'active_merchant_location'=>true,
+            'visibility'=>'public',
+            'minimum_value_cents'=>1,
         ],
     ];
 }
@@ -80,6 +93,7 @@ try {
     mg_fail($error->getMessage(),422);
 }
 $payload = mg_builder_payload($input['payload'] ?? []);
+$payload['visibility'] = mg_builder_visibility($payload['visibility'] ?? 'public');
 $assetMap = mg_builder_asset_map($input['assets'] ?? []);
 $productId = trim((string)($input['product_id'] ?? ''));
 $lockVersion = max(0,(int)($input['lock_version'] ?? 0));
@@ -93,6 +107,7 @@ try {
     $productStatus = 'draft';
 
     if ($productId === '') {
+        mg_catalog_require_merchant_slug($pdo,(int)$user['id'],$slug);
         $productId = mg_catalog_uuid();
         $pdo->prepare(
             "INSERT INTO catalog_products
@@ -105,6 +120,7 @@ try {
         $productStatus = (string)$product['status'];
         if ($productStatus === 'archived') mg_fail('Archived products cannot be edited.',409);
         $productDbId = (int)$product['id'];
+        mg_catalog_require_merchant_slug($pdo,(int)$user['id'],$slug,$productDbId);
         if ($productStatus === 'draft') {
             $pdo->prepare('UPDATE catalog_products SET product_type=?,slug=?,updated_at=NOW() WHERE id=?')
                 ->execute([$productType,$slug,$productDbId]);
@@ -144,21 +160,24 @@ try {
             'product_id'=>$productId,
             'draft_id'=>$draftId,
             'live_status_preserved'=>$productStatus === 'published',
+            'visibility'=>$payload['visibility'],
         ],(int)$user['id']);
         mg_ok([
             'product_id'=>$productId,
             'draft_id'=>$draftId,
             'lock_version'=>$nextLock,
             'status'=>$productStatus,
+            'visibility'=>$payload['visibility'],
             'has_draft_changes'=>true,
         ],'Product draft saved.');
     }
 
     if ($action !== 'publish') mg_fail('Invalid builder action.',422);
     mg_require_permission('catalog.products.publish');
-    if (($payload['visibility'] ?? 'published') !== 'published') {
-        mg_fail('Public publishing distributes the voucher to your store, feed, and selected merchant locations. Save the draft instead if it is not ready.',422);
+    if ($payload['visibility'] !== 'public') {
+        mg_fail('Set visibility to Public before publishing to your store, feed, and merchant locations.',422);
     }
+    mg_catalog_require_global_published_slug($pdo,$slug,$productDbId);
     if (!empty($payload['demo'])) {
         mg_fail('Demo vouchers cannot be published as live merchant products.',422);
     }
@@ -234,6 +253,7 @@ try {
         'storefront_id'=>$distribution['storefront']['storefront_id'],
         'feed_post_id'=>$distribution['feed']['post_id'],
         'location_count'=>$distribution['locations']['count'],
+        'visibility'=>$payload['visibility'],
     ],(int)$user['id']);
     mg_ok([
         'product_id'=>$productId,
@@ -246,12 +266,13 @@ try {
         'storefront_id'=>$distribution['storefront']['storefront_id'],
         'feed_post_id'=>$distribution['feed']['post_id'],
         'locations'=>$distribution['locations']['locations'],
-        'product_url'=>$distribution['product_url'],
+        'product_url'=>mg_catalog_public_product_url($productId,$slug),
         'store_url'=>$distribution['store_url'],
         'feed_url'=>$distribution['feed_url'],
         'discovery_url'=>$distribution['discovery_url'],
         'lock_version'=>$nextLock,
         'status'=>'published',
+        'visibility'=>$payload['visibility'],
     ],'Product published to your store, feed, and merchant locations.');
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) $pdo->rollBack();

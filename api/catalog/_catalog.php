@@ -23,6 +23,11 @@ function mg_catalog_slug(string $value): string
     return $slug;
 }
 
+function mg_catalog_public_product_url(string $productPublicId, string $slug): string
+{
+    return '/product.php?id=' . rawurlencode($productPublicId) . '&p=' . rawurlencode($slug);
+}
+
 function mg_catalog_json(mixed $value): ?string
 {
     if ($value === null || $value === '' || $value === []) {

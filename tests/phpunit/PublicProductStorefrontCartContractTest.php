@@ -14,7 +14,9 @@ final class PublicProductStorefrontCartContractTest extends TestCase
             '$page_styles = [\'/assets/css/public-catalog.css\']',
             '$page_scripts = [\'/assets/js/public-catalog.js\']',
             'data-public-product',
+            'data-product-id',
             'data-product-slug',
+            '$product_lookup = $product_id !== \'\' ? $product_id : $product_slug',
         ] as $needle){
             self::assertStringContainsString($needle,$source);
         }
@@ -26,8 +28,10 @@ final class PublicProductStorefrontCartContractTest extends TestCase
         self::assertIsString($source);
 
         foreach([
+            'mg_catalog_resolve_public_product_identity',
             'cpv.public_id AS version_id',
-            "WHERE cp.slug = ? AND cp.status = 'published' AND cpv.version_status = 'published'",
+            "WHERE cp.public_id = ? AND cp.status = 'published' AND cpv.version_status = 'published'",
+            '$product[\'public_url\'] = mg_catalog_public_product_url',
             '$product[\'assets\'] = $assets',
             '$product[\'elements\'] = $elements',
             'mg_ok([\'product\' => $product])',
@@ -38,16 +42,28 @@ final class PublicProductStorefrontCartContractTest extends TestCase
 
     public function testStorefrontApiReturnsPublishedVersionIds(): void
     {
-        $source=file_get_contents(dirname(__DIR__,2).'/api/storefront/profile.php');
-        self::assertIsString($source);
+        $route=file_get_contents(dirname(__DIR__,2).'/api/storefront/profile.php');
+        $wrapper=file_get_contents(dirname(__DIR__,2).'/api/storefront/profile-v1.php');
+        $query=file_get_contents(dirname(__DIR__,2).'/api/storefront/_profile_legacy.php');
+        self::assertIsString($route);
+        self::assertIsString($wrapper);
+        self::assertIsString($query);
 
+        self::assertStringContainsString("require __DIR__ . '/profile-v1.php';",$route);
         foreach([
             'cpv.public_id version_id',
             "cpv.version_status='published'",
-            '$p[\'product_url\']=\'/product.php?p=\'.rawurlencode((string)$p[\'slug\'])',
             'mg_ok([\'storefront\'=>$profile,\'products\'=>$products])',
         ] as $needle){
-            self::assertStringContainsString($needle,$source);
+            self::assertStringContainsString($needle,$query);
+        }
+        foreach([
+            "'/product.php?id='",
+            "'&p='",
+            '$product[\'product_url\']',
+            "unset(\$product['cover_asset_id'])",
+        ] as $needle){
+            self::assertStringContainsString($needle,$wrapper);
         }
     }
 
