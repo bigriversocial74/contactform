@@ -16,9 +16,12 @@ function mg_page_definition(string $pageId): array
 
     $definitions = [
         'learn-more' => [
-            'assets'=>['universal-header','agent-presentation','learn-more-questionnaire'],
-            'header_controls'=>[$presentation,$home],
-            'public_header'=>['presentation'=>true,'links'=>[['label'=>'Home','href'=>'/index.php']]],
+            'assets'=>['universal-header','learn-more-questionnaire'],
+            'header_controls'=>[],
+            'public_header'=>[
+                'presentation'=>false,
+                'links'=>[['label'=>'Book A Demo','href'=>'/learn-more.php']],
+            ],
         ],
         'signin' => [
             'assets'=>$authAssets,
