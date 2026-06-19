@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_action_center.php';
-require_once dirname(__DIR__) . '/microgifts/_lifecycle.php';
+require_once dirname(__DIR__) . '/microgifts/_golden_path_integrity.php';
 require_once dirname(__DIR__) . '/microgifts/_action_center_projection.php';
 
 mg_require_method('POST');
@@ -36,7 +36,7 @@ try{
     if(!in_array((string)$instance['status'],['claimed','redeemable'],true))throw new RuntimeException('Microgift is not redeemable.');
     if((int)$instance['merchant_user_id']<1)throw new RuntimeException('Redeemable merchant catalog was not found.');
 
-    $result=mg_microgift_redeem($pdo,(int)$user['id'],[
+    $result=mg_microgift_integrity_redeem($pdo,(int)$user['id'],[
         'instance_id'=>(string)$instance['public_id'],
         'idempotency_key'=>$idempotencyKey,
         'source_reference'=>$actionItemId,
