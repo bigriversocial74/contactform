@@ -32,6 +32,14 @@ jobs:
           php-version: '8.3'
           coverage: none
 
+      - name: Syntax-check layout files
+        run: |
+          php -l scripts/audit_app_layout.php
+          php -l includes/admin-sidebar.php
+          for file in account/orders.php admin-ai.php admin/*.php checkout.php checkout-success.php commerce-operations.php gift-stream.php merchant-catalog-operations.php notifications.php; do
+            php -l "$file"
+          done
+
       - name: Build authenticated page layout inventory
         id: audit
         shell: bash
