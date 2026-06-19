@@ -1,16 +1,19 @@
 <?php
 declare(strict_types=1);
+
 use PHPUnit\Framework\TestCase;
 
 final class SharedHeaderTemplateTest extends TestCase
 {
-    public function testCanonicalHeaderComposesPublicAndAppVariants(): void
+    public function testCanonicalHeaderRendersCurrentPublicDesignAndAppVariant(): void
     {
         $header=file_get_contents(dirname(__DIR__,2).'/includes/header.php');
         self::assertIsString($header);
-        self::assertStringContainsString('public-header.php',$header);
         self::assertStringContainsString('app-header.php',$header);
         self::assertStringContainsString('data-page-id',$header);
+        self::assertStringContainsString('data-mg-site-header',$header);
+        self::assertStringContainsString('mg-site-header__search',$header);
+        self::assertStringContainsString('data-mg-site-header-drawer',$header);
         self::assertStringNotContainsString('header-v2.php',$header);
     }
 
@@ -37,20 +40,23 @@ final class SharedHeaderTemplateTest extends TestCase
         }
     }
 
-    public function testHomeRendersTheUniversalPublicHeaderComponent(): void
+    public function testHomeKeepsCurrentHeroAndSharedHeaderInclude(): void
     {
         $page=file_get_contents(dirname(__DIR__,2).'/index.php');
         self::assertIsString($page);
-        self::assertStringContainsString('/includes/header-components/public-header.php',$page);
+        self::assertStringContainsString("require __DIR__ . '/includes/header.php'",$page);
         self::assertStringContainsString("'id' => 'home'",$page);
+        self::assertStringContainsString('Sell, Purchase, Send &amp; Claim Local Gifts.',$page);
         self::assertStringNotContainsString('$newActions',$page);
     }
 
-    public function testLearnMoreDoesNotRenderASecondFloatingHeader(): void
+    public function testLearnMoreKeepsCurrentSequentialDesign(): void
     {
         $page=file_get_contents(dirname(__DIR__,2).'/learn-more.php');
         self::assertIsString($page);
         self::assertStringNotContainsString('lm-top-control',$page);
-        self::assertStringContainsString('data-lm-replay',$page);
+        self::assertStringNotContainsString('data-lm-replay',$page);
+        self::assertStringContainsString('const scrollToStage',$page);
+        self::assertStringContainsString('class="mg-home-footer"',$page);
     }
 }
