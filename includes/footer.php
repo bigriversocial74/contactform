@@ -1,6 +1,9 @@
 <?php
 $page_scripts = $page_scripts ?? [];
 $late_styles = [];
+if (($page_body_class ?? '') === 'mg-admin-merchant-catalog-page') {
+    require __DIR__ . '/footer-mc-snippet.php';
+}
 if (($page_section ?? '') === 'feed') {
     $page_scripts[] = '/assets/js/social-feed-attachments.js';
     $page_scripts[] = '/assets/js/social-feed-attachment-cards.js';
