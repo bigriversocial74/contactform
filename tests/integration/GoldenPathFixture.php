@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__,2).'/api/microgifts/_location_claim_authority.php';
 require_once __DIR__.'/CheckoutBehaviorFixture.php';
 
 function mg_golden_scalar(PDO $pdo,string $sql,array $params=[]): mixed
