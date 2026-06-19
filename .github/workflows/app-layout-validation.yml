@@ -1,0 +1,36 @@
+name: App Layout Validation
+
+on:
+  push:
+    branches:
+      - 'fix/admin-app-shell-consistency'
+  pull_request:
+    paths:
+      - '*.php'
+      - 'admin/*.php'
+      - 'account/*.php'
+      - 'includes/**/*.php'
+      - 'assets/css/admin-shell.css'
+      - 'scripts/audit_app_layout.php'
+      - '.github/workflows/app-layout-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Audit authenticated page layouts
+        run: php scripts/audit_app_layout.php
