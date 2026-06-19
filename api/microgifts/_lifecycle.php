@@ -1,6 +1,10 @@
 <?php
 declare(strict_types=1);
 
+if(!defined('MG_MICROGIFT_REDEMPTION_REPLAY_CONFLICT')){
+    define('MG_MICROGIFT_REDEMPTION_REPLAY_CONFLICT','Redemption idempotency key is already bound to a different request.');
+}
+
 require_once __DIR__ . '/_engine.php';
 require_once __DIR__ . '/_idempotency.php';
 require_once dirname(__DIR__) . '/pppm/_pppm.php';
