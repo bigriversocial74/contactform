@@ -32,5 +32,27 @@ jobs:
           php-version: '8.3'
           coverage: none
 
-      - name: Audit authenticated page layouts
-        run: php scripts/audit_app_layout.php
+      - name: Build authenticated page layout inventory
+        id: audit
+        shell: bash
+        run: |
+          mkdir -p build
+          set +e
+          php scripts/audit_app_layout.php --json > build/app-layout-audit.json
+          status=$?
+          cat build/app-layout-audit.json
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Upload app layout inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-layout-audit
+          path: build/app-layout-audit.json
+          if-no-files-found: error
+
+      - name: Enforce authenticated page layouts
+        if: steps.audit.outputs.exit_code != '0'
+        run: |
+          echo "Authenticated page layout audit found broken entry pages."
+          exit 1
