@@ -12,7 +12,7 @@ final class PublicIndexRuntimeSmokeTest extends TestCase
         $html=(string)($body['raw']??'');
         self::assertStringContainsString('/assets/js/auth-state.js',$html);
         self::assertStringContainsString('/assets/js/cart.js',$html);
-        self::assertStringContainsString('Turn future demand into present-day revenue',$html);
+        self::assertStringContainsString('Sell, Purchase, Send &amp; Claim Local Gifts.',$html);
     }
 
     public function testAgenticOnboardingFragmentServesSemanticMarkup(): void
