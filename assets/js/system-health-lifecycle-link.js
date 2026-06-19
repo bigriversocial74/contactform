@@ -1,0 +1,1 @@
+document.addEventListener('DOMContentLoaded',function(){var box=document.querySelector('.mg-system-health-hero-actions');if(!box)return;var a=document.createElement('a');a.className='mg-btn mg-btn-soft';a.href='/admin/lifecycle-health.php';a.textContent='Lifecycle health';box.prepend(a);});
