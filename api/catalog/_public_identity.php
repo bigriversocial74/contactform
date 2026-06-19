@@ -40,6 +40,19 @@ function mg_catalog_require_global_published_slug(
     }
 }
 
+function mg_catalog_public_product_by_id(PDO $pdo, string $publicId): array
+{
+    $stmt = $pdo->prepare(
+        "SELECT id,public_id,slug FROM catalog_products
+         WHERE public_id=? AND status='published'
+         LIMIT 1"
+    );
+    $stmt->execute([$publicId]);
+    $product = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$product) mg_fail('Product not found.', 404);
+    return $product;
+}
+
 function mg_catalog_resolve_public_product_identity(
     PDO $pdo,
     ?string $publicId,
@@ -49,14 +62,7 @@ function mg_catalog_resolve_public_product_identity(
     $slug = trim((string)$slug);
 
     if ($publicId !== '') {
-        $stmt = $pdo->prepare(
-            "SELECT id,public_id,slug FROM catalog_products
-             WHERE public_id=? AND status='published'
-             LIMIT 1"
-        );
-        $stmt->execute([$publicId]);
-        $product = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$product) mg_fail('Product not found.', 404);
+        $product = mg_catalog_public_product_by_id($pdo,$publicId);
         if ($slug !== '' && !hash_equals((string)$product['slug'], $slug)) {
             mg_fail('Product link is invalid.', 404);
         }
@@ -64,6 +70,10 @@ function mg_catalog_resolve_public_product_identity(
     }
 
     if ($slug === '') mg_fail('Product not found.', 404);
+    if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i',$slug)) {
+        return mg_catalog_public_product_by_id($pdo,$slug);
+    }
+
     $stmt = $pdo->prepare(
         "SELECT id,public_id,slug FROM catalog_products
          WHERE slug=? AND status='published'
