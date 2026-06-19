@@ -14,7 +14,7 @@ final class BuilderAddToCartIntegrationContractTest extends TestCase
             "VALUES (?,?,?,'published'",
             "'version_id'=>\$versionId",
             "'version_number'=>\$versionNumber",
-            "'product_url'=>\$distribution['product_url']",
+            "'product_url'=>mg_catalog_public_product_url(\$productId,\$slug)",
             "'store_url'=>\$distribution['store_url']",
             "'feed_url'=>\$distribution['feed_url']",
             "'status'=>'published'",
