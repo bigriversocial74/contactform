@@ -13,7 +13,8 @@ final class IntegritySmokeTest extends TestCase
         self::assertIsString($first);
         self::assertIsString($second);
         self::assertStringContainsString('mg_microgift_integrity_claim',$first);
-        self::assertStringContainsString('mg_microgift_integrity_redeem',$second);
+        self::assertStringContainsString('mg_microgift_integrity_location_allowed',$second);
+        self::assertStringContainsString('mg_microgift_redeem',$second);
         self::assertStringContainsString('mg_require_csrf_for_write',$first.$second);
     }
 }
