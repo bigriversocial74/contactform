@@ -31,11 +31,20 @@ function mg_microgift_integrity_claim(PDO $pdo,int $claimantUserId,array $input)
     $purchaserOwned=($mode==='purchaser_owned'||(string)$instance['recipient_policy']==='purchaser')
         &&(int)($instance['owner_user_id']??0)===$claimantUserId;
     $credential=null;
+    $internalCredential=false;
     if($code!==''){
         $verified=mg_microgift_verify_credential($pdo,$instancePublicId,$code,'claim',$claimantUserId);
         $instance=$verified['instance'];
         $credential=$verified['credential'];
-    }elseif(!$purchaserOwned){
+    }elseif($purchaserOwned){
+        $generated=mg_microgift_create_credential($pdo,(int)$instance['id'],'claim',$claimantUserId,$instance['expires_at']);
+        $credentialStmt=$pdo->prepare('SELECT * FROM microgift_credentials WHERE public_id=? LIMIT 1 FOR UPDATE');
+        $credentialStmt->execute([(string)$generated['credential_id']]);
+        $credential=$credentialStmt->fetch(PDO::FETCH_ASSOC);
+        if(!$credential)throw new RuntimeException('Unable to create the purchaser claim record.');
+        $pdo->prepare("UPDATE microgift_credentials SET status='verified',verified_at=NOW(),updated_at=NOW() WHERE id=?")->execute([(int)$credential['id']]);
+        $internalCredential=true;
+    }else{
         throw new InvalidArgumentException('A claim credential is required.');
     }
 
@@ -52,11 +61,11 @@ function mg_microgift_integrity_claim(PDO $pdo,int $claimantUserId,array $input)
     }
 
     $pdo->prepare("INSERT INTO microgift_claims (public_id,instance_id,credential_id,claimant_user_id,status,idempotency_key,source_reference,previous_owner_user_id,pppm_item_id,entitlement_transfer_id,verified_at,completed_at,metadata_json,created_at) VALUES (?,?,?,?,'completed',?,?,?,?,?,NOW(),NOW(),?,NOW())")
-        ->execute([$claimPublic,(int)$instance['id'],$credential?(int)$credential['id']:null,$claimantUserId,$key,$instancePublicId,$previous?:null,$instance['pppm_item_id'],$transfer['transfer_id']??null,mg_microgift_json(['recipient_policy'=>$instance['recipient_policy'],'claim_mode'=>$purchaserOwned?'purchaser_owned':'credential','credentialless'=>$credential===null])]);
+        ->execute([$claimPublic,(int)$instance['id'],(int)$credential['id'],$claimantUserId,$key,$instancePublicId,$previous?:null,$instance['pppm_item_id'],$transfer['transfer_id']??null,mg_microgift_json(['recipient_policy'=>$instance['recipient_policy'],'claim_mode'=>$purchaserOwned?'purchaser_owned':'credential','internal_credential'=>$internalCredential])]);
     $pdo->prepare("UPDATE microgift_instances SET owner_user_id=?,recipient_user_id=COALESCE(recipient_user_id,?),status='redeemable',claimed_at=NOW(),updated_at=NOW() WHERE id=?")
         ->execute([$claimantUserId,$claimantUserId,(int)$instance['id']]);
-    if($credential)$pdo->prepare("UPDATE microgift_credentials SET status='consumed',consumed_at=NOW(),updated_at=NOW() WHERE id=?")->execute([(int)$credential['id']]);
-    mg_microgift_event($pdo,'microgift.claim_completed',(int)$instance['id'],(int)$instance['template_id'],$claimantUserId,'microgift_claim',$claimPublic,['previous_owner_user_id'=>$previous,'new_owner_user_id'=>$claimantUserId,'pppm_transfer'=>$transfer,'claim_mode'=>$purchaserOwned?'purchaser_owned':'credential']);
+    $pdo->prepare("UPDATE microgift_credentials SET status='consumed',consumed_at=NOW(),updated_at=NOW() WHERE id=?")->execute([(int)$credential['id']]);
+    mg_microgift_event($pdo,'microgift.claim_completed',(int)$instance['id'],(int)$instance['template_id'],$claimantUserId,'microgift_claim',$claimPublic,['previous_owner_user_id'=>$previous,'new_owner_user_id'=>$claimantUserId,'pppm_transfer'=>$transfer,'claim_mode'=>$purchaserOwned?'purchaser_owned':'credential','internal_credential'=>$internalCredential]);
     return ['claim_id'=>$claimPublic,'instance_id'=>$instancePublicId,'status'=>'completed','pppm_transfer'=>$transfer,'claim_mode'=>$purchaserOwned?'purchaser_owned':'credential','duplicate'=>false];
 }
 
