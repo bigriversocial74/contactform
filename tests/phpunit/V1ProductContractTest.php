@@ -33,15 +33,18 @@ final class V1ProductContractTest extends TestCase
     public function testProductVisibilityUsesOneSharedVocabulary(): void
     {
         $editor = $this->source('includes/merchant-product-detail-view.php');
-        $client = $this->source('assets/js/merchant-products.js');
+        $manager = $this->source('assets/js/merchant-products.js');
+        $builder = $this->source('assets/js/builder-stage4b.js');
         $endpoint = $this->source('api/catalog/builder-draft.php');
 
         foreach (['public', 'unlisted', 'private'] as $visibility) {
             self::assertStringContainsString('value="' . $visibility . '"', $editor);
-            self::assertStringContainsString("'" . $visibility . "'", $client);
+            self::assertStringContainsString("'" . $visibility . "'", $manager);
             self::assertStringContainsString("'" . $visibility . "'", $endpoint);
         }
 
+        self::assertStringContainsString("visibility: 'public'", $builder);
+        self::assertStringNotContainsString("visibility: 'published'", $builder);
         self::assertStringContainsString('function mg_builder_visibility', $endpoint);
         self::assertStringContainsString("\$payload['visibility'] = mg_builder_visibility", $endpoint);
         self::assertStringContainsString("\$payload['visibility'] !== 'public'", $endpoint);
@@ -50,10 +53,12 @@ final class V1ProductContractTest extends TestCase
 
     public function testPublishingIsAnActionAndNotAVisibilityValue(): void
     {
-        $client = $this->source('assets/js/merchant-products.js');
+        $manager = $this->source('assets/js/merchant-products.js');
+        $builder = $this->source('assets/js/builder-stage4b.js');
         $endpoint = $this->source('api/catalog/builder-draft.php');
 
-        self::assertStringContainsString("action: action", $client);
+        self::assertStringContainsString('action: action', $manager);
+        self::assertStringContainsString("action: 'publish'", $builder);
         self::assertStringContainsString("if (\$action !== 'publish')", $endpoint);
         self::assertStringContainsString("mg_require_permission('catalog.products.publish')", $endpoint);
         self::assertStringContainsString("status'=>'published'", $endpoint);
@@ -62,9 +67,11 @@ final class V1ProductContractTest extends TestCase
     public function testPublishedProductsRequirePositiveValue(): void
     {
         $editor = $this->source('includes/merchant-product-detail-view.php');
+        $builder = $this->source('assets/js/builder-stage4b.js');
         $endpoint = $this->source('api/catalog/builder-draft.php');
 
         self::assertStringContainsString('name="price" type="number" min="0.01"', $editor);
+        self::assertStringContainsString("parseMoneyToCents(value('price')) < 1", $builder);
         self::assertStringContainsString("'minimum_value_cents'=>1", $endpoint);
         self::assertStringContainsString('if ($valueCents < 1)', $endpoint);
     }
