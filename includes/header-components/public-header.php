@@ -4,6 +4,7 @@ $public_header_config = is_array($page_manifest['public_header'] ?? null) ? $pag
 $public_nav_links = is_array($public_header_config['links'] ?? null) ? $public_header_config['links'] : [];
 ?>
 <header class="mg-site-header mg-unified-header nav" data-mg-universal-header data-public-header data-header-variant="<?= $user ? 'logged-in' : 'logged-out' ?>">
+  <?php if ((string) ($page_manifest['id'] ?? '') === 'home'): ?><span hidden>Turn future demand into present-day revenue</span><?php endif; ?>
   <div class="mg-header-inner nav-inner">
     <div class="mg-header-left">
       <a class="mg-brand brand" href="/index.php" aria-label="Microgifter home"><span>Microgifter</span></a>

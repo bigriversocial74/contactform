@@ -12,40 +12,60 @@ if (
 $csrfToken = mg_csrf_token();
 $cspNonce = bin2hex(random_bytes(16));
 header_remove('Content-Security-Policy');
-header("Content-Security-Policy: default-src 'none'; style-src 'nonce-{$cspNonce}'; script-src 'nonce-{$cspNonce}'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
-?><!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Microgifter Ops Queue</title>
+$legacyStandaloneCspPolicy = "Content-Security-Policy: default-src 'none'; style-src 'nonce-{$cspNonce}'; script-src 'nonce-{$cspNonce}'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
+header("Content-Security-Policy: default-src 'self'; style-src 'self' 'nonce-{$cspNonce}'; script-src 'self' 'nonce-{$cspNonce}'; connect-src 'self'; img-src 'self' data: https:; font-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
+
+$page_title = 'Operations Queue | Microgifter';
+$page_section = 'account';
+$header_mode = 'account';
+$page_body_class = 'mg-admin-ops-queue-page';
+$page_styles = ['/assets/css/admin-shell.css'];
+$adminActive = 'ops-queue';
+
+require dirname(__DIR__) . '/includes/header.php';
+?>
 <style nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>">
-body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f8fafc;color:#0f172a;margin:0}.wrap{max-width:1180px;margin:0 auto;padding:28px}.panel{background:#fff;border:1px solid #e2e8f0;border-radius:18px;box-shadow:0 18px 50px rgba(15,23,42,.08);padding:20px}h1{margin:0 0 8px;font-size:30px}.muted{color:#64748b}.bar{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}.bar input,.bar select,.bar button,.card button{border:1px solid #cbd5e1;border-radius:12px;padding:10px 12px;background:#fff}.bar button,.card button{background:#2563eb;color:#fff;border-color:#2563eb;cursor:pointer}.grid{display:grid;grid-template-columns:360px 1fr;gap:18px}.list{display:grid;gap:10px}.card{border:1px solid #e2e8f0;border-radius:14px;padding:14px;background:#fff}.card.active{outline:2px solid #2563eb}.pill{display:inline-flex;border-radius:999px;padding:3px 9px;background:#e2e8f0;font-size:12px;margin-right:5px}.critical{background:#fee2e2;color:#991b1b}.warning{background:#fef3c7;color:#92400e}.info{background:#dbeafe;color:#1d4ed8}.events{font-family:ui-monospace,Consolas,monospace;font-size:12px;white-space:pre-wrap;background:#0f172a;color:#e2e8f0;border-radius:14px;padding:14px;overflow:auto;max-height:320px}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}@media(max-width:850px){.grid{grid-template-columns:1fr}.wrap{padding:16px}}
+.mg-ops-queue-card strong{display:inline-block;margin-bottom:4px}.mg-ops-queue-card small{color:#64748b}.mg-ops-queue-card .mg-muted{margin-left:4px}
 </style>
-</head>
-<body>
-<main class="wrap">
-<section class="panel">
-<h1>Ops Queue</h1>
-<p class="muted">Review provider, delivery, payout, and operational alerts using your authenticated ops session.</p>
-<div class="bar">
-<select id="status"><option value="open">open</option><option value="assigned">assigned</option><option value="resolved">resolved</option><option value="">all statuses</option></select>
-<select id="severity"><option value="">all severities</option><option value="critical">critical</option><option value="warning">warning</option><option value="info">info</option></select>
-<input id="source" placeholder="source_type">
-<button id="refresh">Refresh</button>
-</div>
-<div class="grid"><div><h2>Alerts</h2><div id="alerts" class="list"></div></div><div><h2>Detail</h2><div id="detail" class="card muted">Select an alert.</div></div></div>
+<section class="mg-app-shell mg-admin-app">
+  <?php require dirname(__DIR__) . '/includes/admin-sidebar.php'; ?>
+  <div class="mg-app-workspace mg-admin-workspace">
+    <section class="mg-ops-queue-shell" data-ops-queue>
+      <header class="mg-ops-queue-head">
+        <div>
+          <a class="mg-system-health-back" href="/account-admin.php">← Admin dashboard</a>
+          <span class="mg-eyebrow">Operational alerts</span>
+          <h1>Operations queue</h1>
+          <p>Review provider, delivery, payout, and operational alerts using your authenticated ops session.</p>
+        </div>
+      </header>
+
+      <section class="mg-ops-queue-panel">
+        <div class="mg-ops-queue-bar">
+          <select id="status" aria-label="Alert status"><option value="open">Open</option><option value="assigned">Assigned</option><option value="resolved">Resolved</option><option value="">All statuses</option></select>
+          <select id="severity" aria-label="Alert severity"><option value="">All severities</option><option value="critical">Critical</option><option value="warning">Warning</option><option value="info">Info</option></select>
+          <input id="source" placeholder="Source type" aria-label="Source type">
+          <button class="mg-btn mg-btn-soft" id="refresh" type="button">Refresh</button>
+        </div>
+        <div class="mg-ops-queue-grid">
+          <section><h2>Alerts</h2><div id="alerts" class="mg-ops-queue-list"><p class="mg-muted">Loading alerts…</p></div></section>
+          <section><h2>Detail</h2><div id="detail" class="mg-ops-queue-detail mg-muted">Select an alert.</div></section>
+        </div>
+      </section>
+    </section>
+  </div>
 </section>
-</main>
 <script nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>">
+document.addEventListener('DOMContentLoaded',function(){
 const api='/api/ops/queue.php';let selected=null;const csrfToken=<?php echo json_encode($csrfToken, JSON_UNESCAPED_SLASHES); ?>;
 function qs(o){return new URLSearchParams(Object.entries(o).filter(([,v])=>v!==''&&v!=null)).toString()}
 async function call(action,data={}){const res=await fetch(api,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':csrfToken},body:JSON.stringify({action,csrf_token:csrfToken,...data})});const out=await res.json();if(!out.ok)throw new Error(out.error||out.message||'Ops request failed');return out.data}
-function badge(v){return '<span class="pill '+String(v).replace(/[^a-z]/g,'')+'">'+v+'</span>'}
-function renderList(items){const box=document.getElementById('alerts');box.innerHTML=items.map(a=>`<button class="card ${selected===a.alert_id?'active':''}" data-id="${a.alert_id}"><strong>${a.title}</strong><br>${badge(a.status)}${badge(a.severity)}<span class="muted">${a.source_type}</span><br><small>${a.alert_key}</small></button>`).join('')||'<div class="muted">No alerts found.</div>';box.querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>loadDetail(b.dataset.id));}
+function safe(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function badge(v){return '<span class="mg-ops-pill is-'+String(v).replace(/[^a-z]/g,'')+'">'+safe(v)+'</span>'}
+function renderList(items){const box=document.getElementById('alerts');box.innerHTML=items.map(a=>`<button class="mg-ops-queue-card ${selected===a.alert_id?'is-active':''}" data-id="${safe(a.alert_id)}"><strong>${safe(a.title)}</strong><br>${badge(a.status)}${badge(a.severity)}<span class="mg-muted">${safe(a.source_type)}</span><br><small>${safe(a.alert_key)}</small></button>`).join('')||'<div class="mg-muted">No alerts found.</div>';box.querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>loadDetail(b.dataset.id));}
 async function loadList(){const data=await call('list',{status:document.getElementById('status').value,severity:document.getElementById('severity').value,source_type:document.getElementById('source').value.trim(),limit:50});renderList(data.items||[])}
-async function loadDetail(id){selected=id;const data=await call('detail',{alert_id:id});const a=data.alert;document.getElementById('detail').innerHTML=`<strong>${a.title}</strong><p>${a.body}</p><p>${badge(a.status)}${badge(a.severity)}${badge(a.source_type)}</p><p><small>${a.alert_key}</small></p><div class="actions"><input id="assignee" placeholder="assign user id"><button id="assign">Assign</button><input id="reason" placeholder="resolution reason"><button id="resolve">Resolve</button></div><h3>Events</h3><div class="events">${JSON.stringify(data.events||[],null,2)}</div>`;document.getElementById('assign').onclick=async()=>{await call('assign',{alert_id:id,assigned_to_user_id:document.getElementById('assignee').value,request_key:'ui:assign:'+id+':'+document.getElementById('assignee').value});await loadDetail(id);await loadList()};document.getElementById('resolve').onclick=async()=>{await call('resolve',{alert_id:id,resolution_reason:document.getElementById('reason').value,request_key:'ui:resolve:'+id+':'+document.getElementById('reason').value});await loadDetail(id);await loadList()};selected=id;await loadList()}
-document.getElementById('refresh').onclick=()=>loadList().catch(e=>alert(e.message));
+async function loadDetail(id){selected=id;const data=await call('detail',{alert_id:id});const a=data.alert;document.getElementById('detail').innerHTML=`<strong>${safe(a.title)}</strong><p>${safe(a.body)}</p><p>${badge(a.status)}${badge(a.severity)}${badge(a.source_type)}</p><p><small>${safe(a.alert_key)}</small></p><div class="mg-ops-actions"><input id="assignee" placeholder="assign user id"><button class="mg-btn mg-btn-soft" id="assign">Assign</button><input id="reason" placeholder="resolution reason"><button class="mg-btn mg-btn-primary" id="resolve">Resolve</button></div><h3>Events</h3><div class="mg-ops-events">${safe(JSON.stringify(data.events||[],null,2))}</div>`;document.getElementById('assign').onclick=async()=>{await call('assign',{alert_id:id,assigned_to_user_id:document.getElementById('assignee').value,request_key:'ui:assign:'+id+':'+document.getElementById('assignee').value});await loadDetail(id);await loadList()};document.getElementById('resolve').onclick=async()=>{await call('resolve',{alert_id:id,resolution_reason:document.getElementById('reason').value,request_key:'ui:resolve:'+id+':'+document.getElementById('reason').value});await loadDetail(id);await loadList()};selected=id;await loadList()}
+document.getElementById('refresh').onclick=()=>loadList().catch(e=>alert(e.message));document.getElementById('status').onchange=()=>loadList().catch(e=>alert(e.message));document.getElementById('severity').onchange=()=>loadList().catch(e=>alert(e.message));document.getElementById('source').oninput=()=>{clearTimeout(window.mgOpsQueueTimer);window.mgOpsQueueTimer=setTimeout(()=>loadList().catch(e=>alert(e.message)),300)};loadList().catch(e=>alert(e.message));
+});
 </script>
-</body>
-</html>
+<?php require dirname(__DIR__) . '/includes/footer.php'; ?>

@@ -9,115 +9,121 @@ $page_title = 'User Center | Microgifter';
 $page_section = 'account';
 $header_mode = 'account';
 $page_body_class = 'mg-admin-users-page';
-$page_styles = ['/assets/css/admin-users.css'];
+$page_styles = ['/assets/css/admin-shell.css','/assets/css/admin-users.css'];
 $page_scripts = $canViewUsers ? ['/assets/js/admin-users.js'] : [];
+$adminActive = 'users';
 
 require dirname(__DIR__) . '/includes/header.php';
 ?>
-<section class="mg-admin-users-shell" data-admin-users>
-  <header class="mg-admin-users-hero">
-    <div>
-      <a class="mg-admin-users-back" href="/account-admin.php">← Admin dashboard</a>
-      <span class="mg-eyebrow">Identity operations</span>
-      <h1>User center</h1>
-      <p>Search platform identities and review account, role, verification, and public-profile status from one protected workspace.</p>
-    </div>
-    <?php if ($canViewUsers): ?>
-      <div class="mg-admin-users-hero-actions">
-        <span>Last updated <strong data-users-updated>—</strong></span>
-        <button class="mg-btn mg-btn-ghost" type="button" data-users-refresh disabled>Refresh</button>
-      </div>
-    <?php endif; ?>
-  </header>
-
-  <?php if (!$canViewUsers): ?>
-    <section class="mg-admin-users-access mg-app-panel">
-      <h2>User directory access is not active.</h2>
-      <p>This page requires the <code>admin.users.view</code> permission or a super-administrator role.</p>
-      <a class="mg-btn mg-btn-soft" href="/account-admin.php">Back to admin</a>
-    </section>
-  <?php else: ?>
-    <form class="mg-admin-users-filters" data-users-filters role="search">
-      <label class="is-search">Search
-        <input type="search" name="q" maxlength="160" autocomplete="off" placeholder="Email, name, profile, or slug">
-      </label>
-      <label>Account status
-        <select name="status">
-          <option value="">All statuses</option>
-          <option value="active">Active</option>
-          <option value="pending">Pending</option>
-          <option value="disabled">Disabled</option>
-        </select>
-      </label>
-      <label>Role
-        <select name="role">
-          <option value="">All roles</option>
-          <option value="customer">Customer</option>
-          <option value="merchant">Merchant</option>
-          <option value="admin">Admin</option>
-          <option value="super_admin">Super admin</option>
-        </select>
-      </label>
-      <label>Email verification
-        <select name="verification">
-          <option value="">Any verification</option>
-          <option value="verified">Verified</option>
-          <option value="unverified">Unverified</option>
-        </select>
-      </label>
-      <div class="mg-admin-users-filter-actions">
-        <button class="mg-btn mg-btn-primary" type="submit">Apply filters</button>
-        <button class="mg-btn mg-btn-ghost" type="reset" data-users-reset>Reset</button>
-      </div>
-    </form>
-
-    <section class="mg-admin-users-panel">
-      <header class="mg-admin-users-panel-head">
+<section class="mg-app-shell mg-admin-app">
+  <?php require dirname(__DIR__) . '/includes/admin-sidebar.php'; ?>
+  <div class="mg-app-workspace mg-admin-workspace">
+    <section class="mg-admin-users-shell" data-admin-users>
+      <header class="mg-admin-users-hero">
         <div>
-          <h2>Platform identities</h2>
-          <p data-users-summary>Loading user directory…</p>
+          <a class="mg-admin-users-back" href="/account-admin.php">← Admin dashboard</a>
+          <span class="mg-eyebrow">Identity operations</span>
+          <h1>User center</h1>
+          <p>Search platform identities and review account, role, verification, and public-profile status from one protected workspace.</p>
         </div>
-        <span class="mg-admin-users-readonly">Read only</span>
+        <?php if ($canViewUsers): ?>
+          <div class="mg-admin-users-hero-actions">
+            <span>Last updated <strong data-users-updated>—</strong></span>
+            <button class="mg-btn mg-btn-ghost" type="button" data-users-refresh disabled>Refresh</button>
+          </div>
+        <?php endif; ?>
       </header>
 
-      <div class="mg-admin-users-status" data-users-status role="status" aria-live="polite"></div>
+      <?php if (!$canViewUsers): ?>
+        <section class="mg-admin-users-access mg-app-panel">
+          <h2>User directory access is not active.</h2>
+          <p>This page requires the <code>admin.users.view</code> permission or a super-administrator role.</p>
+          <a class="mg-btn mg-btn-soft" href="/account-admin.php">Back to admin</a>
+        </section>
+      <?php else: ?>
+        <form class="mg-admin-users-filters" data-users-filters role="search">
+          <label class="is-search">Search
+            <input type="search" name="q" maxlength="160" autocomplete="off" placeholder="Email, name, profile, or slug">
+          </label>
+          <label>Account status
+            <select name="status">
+              <option value="">All statuses</option>
+              <option value="active">Active</option>
+              <option value="pending">Pending</option>
+              <option value="disabled">Disabled</option>
+            </select>
+          </label>
+          <label>Role
+            <select name="role">
+              <option value="">All roles</option>
+              <option value="customer">Customer</option>
+              <option value="merchant">Merchant</option>
+              <option value="admin">Admin</option>
+              <option value="super_admin">Super admin</option>
+            </select>
+          </label>
+          <label>Email verification
+            <select name="verification">
+              <option value="">Any verification</option>
+              <option value="verified">Verified</option>
+              <option value="unverified">Unverified</option>
+            </select>
+          </label>
+          <div class="mg-admin-users-filter-actions">
+            <button class="mg-btn mg-btn-primary" type="submit">Apply filters</button>
+            <button class="mg-btn mg-btn-ghost" type="reset" data-users-reset>Reset</button>
+          </div>
+        </form>
 
-      <div class="mg-admin-users-state" data-users-loading aria-busy="true">
-        <strong>Loading users</strong>
-        <span>Preparing the protected identity directory.</span>
-      </div>
+        <section class="mg-admin-users-panel">
+          <header class="mg-admin-users-panel-head">
+            <div>
+              <h2>Platform identities</h2>
+              <p data-users-summary>Loading user directory…</p>
+            </div>
+            <span class="mg-admin-users-readonly">Read only</span>
+          </header>
 
-      <div class="mg-admin-users-state mg-hidden" data-users-error role="alert">
-        <strong>Unable to load users</strong>
-        <span data-users-error-message>The directory could not be loaded.</span>
-        <button class="mg-btn mg-btn-soft" type="button" data-users-retry>Try again</button>
-      </div>
+          <div class="mg-admin-users-status" data-users-status role="status" aria-live="polite"></div>
 
-      <div class="mg-admin-users-state mg-hidden" data-users-empty>
-        <strong>No matching accounts</strong>
-        <span>Try a broader name, email, role, status, or verification filter.</span>
-      </div>
+          <div class="mg-admin-users-state" data-users-loading aria-busy="true">
+            <strong>Loading users</strong>
+            <span>Preparing the protected identity directory.</span>
+          </div>
 
-      <div class="mg-admin-users-table-wrap mg-hidden" data-users-content>
-        <table class="mg-admin-users-table">
-          <thead>
-            <tr>
-              <th scope="col">Identity</th>
-              <th scope="col">Account</th>
-              <th scope="col">Roles</th>
-              <th scope="col">Public profile</th>
-              <th scope="col">Joined</th>
-            </tr>
-          </thead>
-          <tbody data-users-list></tbody>
-        </table>
-      </div>
+          <div class="mg-admin-users-state mg-hidden" data-users-error role="alert">
+            <strong>Unable to load users</strong>
+            <span data-users-error-message>The directory could not be loaded.</span>
+            <button class="mg-btn mg-btn-soft" type="button" data-users-retry>Try again</button>
+          </div>
 
-      <footer class="mg-admin-users-pagination mg-hidden" data-users-pagination>
-        <span data-users-page-label></span>
-        <button class="mg-btn mg-btn-soft" type="button" data-users-more>Load more users</button>
-      </footer>
+          <div class="mg-admin-users-state mg-hidden" data-users-empty>
+            <strong>No matching accounts</strong>
+            <span>Try a broader name, email, role, status, or verification filter.</span>
+          </div>
+
+          <div class="mg-admin-users-table-wrap mg-hidden" data-users-content>
+            <table class="mg-admin-users-table">
+              <thead>
+                <tr>
+                  <th scope="col">Identity</th>
+                  <th scope="col">Account</th>
+                  <th scope="col">Roles</th>
+                  <th scope="col">Public profile</th>
+                  <th scope="col">Joined</th>
+                </tr>
+              </thead>
+              <tbody data-users-list></tbody>
+            </table>
+          </div>
+
+          <footer class="mg-admin-users-pagination mg-hidden" data-users-pagination>
+            <span data-users-page-label></span>
+            <button class="mg-btn mg-btn-soft" type="button" data-users-more>Load more users</button>
+          </footer>
+        </section>
+      <?php endif; ?>
     </section>
-  <?php endif; ?>
+  </div>
 </section>
 <?php require dirname(__DIR__) . '/includes/footer.php'; ?>

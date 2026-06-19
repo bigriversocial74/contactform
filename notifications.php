@@ -4,22 +4,30 @@ require_once __DIR__ . '/includes/app.php';
 $page_title = 'Notifications | Microgifter';
 $page_section = 'account';
 $header_mode = 'account';
-$page_styles = ['/assets/css/communications.css','/assets/css/recipient-notifications.css'];
-$page_scripts = ['/assets/js/notifications-page.js'];
+$page_styles = ['/assets/css/account-commerce.css','/assets/css/account-commerce-fixes.css','/assets/css/communications.css','/assets/css/recipient-notifications.css'];
+$page_scripts = ['/assets/js/notifications-page.js','/assets/js/account-sidebar.js'];
+$accountView = 'notifications';
 require __DIR__ . '/includes/header.php';
 ?>
-<section class="mg-communications-workspace" data-notifications-page>
-  <header class="mg-communications-header">
-    <div><span class="mg-eyebrow">Account activity</span><h1>Notifications</h1><p>Follow, message, gift, claim, delivery, and account updates that involve you.</p></div>
-    <a class="mg-btn mg-btn-soft" href="/notification-preferences.php">Notification preferences</a>
-  </header>
-  <section class="mg-app-panel">
-    <div class="mg-communications-toolbar">
-      <input type="search" data-notification-search placeholder="Search notifications">
-      <select data-notification-category><option value="all">All activity</option><option value="activity">Gifts and social</option><option value="message">Messages</option><option value="operational">Operational</option></select>
-      <button class="mg-btn mg-btn-soft" type="button" data-mark-all-read>Mark all read</button>
-    </div>
-    <div class="mg-notification-list" data-notification-list></div>
-  </section>
+<section class="mg-account-page">
+  <div class="mg-account-layout">
+    <?php require __DIR__ . '/includes/account-sidebar.php'; ?>
+    <main class="mg-account-shell">
+      <section class="mg-communications-workspace" data-notifications-page>
+        <header class="mg-communications-header">
+          <div><span class="mg-eyebrow">Account activity</span><h1>Notifications</h1><p>Follow, message, gift, claim, delivery, and account updates that involve you.</p></div>
+          <a class="mg-btn mg-btn-soft" href="/notification-preferences.php">Notification preferences</a>
+        </header>
+        <section class="mg-app-panel">
+          <div class="mg-communications-toolbar">
+            <input type="search" data-notification-search placeholder="Search notifications">
+            <select data-notification-category><option value="all">All activity</option><option value="activity">Gifts and social</option><option value="message">Messages</option><option value="operational">Operational</option></select>
+            <button class="mg-btn mg-btn-soft" type="button" data-mark-all-read>Mark all read</button>
+          </div>
+          <div class="mg-notification-list" data-notification-list></div>
+        </section>
+      </section>
+    </main>
+  </div>
 </section>
 <?php require __DIR__ . '/includes/footer.php'; ?>

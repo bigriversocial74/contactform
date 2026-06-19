@@ -1,0 +1,71 @@
+.mg-admin-app{background:#f3f6fb}
+.mg-admin-workspace{min-height:calc(100svh - var(--mg-app-header));padding:0;overflow:visible;background:#f3f6fb}
+.mg-admin-workspace>.mg-admin-users-shell,
+.mg-admin-workspace>.mg-admin-moderation-shell,
+.mg-admin-workspace>.mg-system-health-shell,
+.mg-admin-workspace>.mg-lifecycle-health-shell,
+.mg-admin-workspace>.mg-commerce-shell,
+.mg-admin-workspace>.mg-mc-shell,
+.mg-admin-workspace>.mg-ai-admin-page,
+.mg-admin-workspace>.mg-ops-queue-shell{width:min(1440px,calc(100% - 32px));margin:0 auto}
+.mg-admin-side{display:flex;flex-direction:column;gap:14px}
+.mg-admin-side-brand{margin-bottom:0}
+.mg-admin-side-badge{display:inline-flex;align-items:center;justify-content:center;min-height:26px;padding:0 9px;border:1px solid #bfd2f4;border-radius:999px;background:#eef5ff;color:#1455d9;font-size:9px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}
+.mg-admin-side-intro{padding:13px;border:1px solid var(--mg-app-border);border-radius:14px;background:#fff;box-shadow:var(--mg-app-shadow)}
+.mg-admin-side-intro span{display:block;color:#2563eb;font-size:9px;font-weight:950;letter-spacing:.1em;text-transform:uppercase}
+.mg-admin-side-intro strong{display:block;margin-top:4px;color:#071225;font-size:15px;letter-spacing:-.025em}
+.mg-admin-side-intro p{margin:5px 0 0;color:var(--mg-app-muted);font-size:10px;line-height:1.45}
+.mg-admin-side-nav{gap:6px}
+.mg-admin-side-nav a{min-height:46px}
+.mg-admin-side-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:auto;padding-top:14px;border-top:1px solid var(--mg-app-border)}
+.mg-admin-side-actions .mg-btn{min-height:38px;padding:0 10px;font-size:11px}
+.mg-admin-workspace .mg-ai-admin-page{padding:34px 0 60px}
+.mg-ai-admin-page .mg-ai-admin-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:18px}
+.mg-ai-admin-page .mg-ai-admin-head h1{margin:5px 0;font-size:clamp(2rem,4vw,3.1rem);letter-spacing:-.05em}
+.mg-ai-admin-page .mg-ai-admin-head p{max-width:780px;margin:0;color:#64748b}
+.mg-ai-admin-page .mg-ai-admin-head>div>span{color:#2563eb;font-size:10px;font-weight:900;letter-spacing:.1em;text-transform:uppercase}
+.mg-ai-security-notice,.mg-ai-admin-instructions{padding:18px;border:1px solid #dbe3ef;border-radius:18px;background:#fff;box-shadow:0 12px 32px rgba(15,23,42,.05)}
+.mg-ai-security-notice p,.mg-ai-admin-instructions p{margin:6px 0 0;color:#64748b}
+.mg-ai-provider-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin:16px 0}
+.mg-ai-provider-card{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:16px;border:1px solid #dbe3ef;border-radius:16px;background:#fff}
+.mg-ai-provider-card span{color:#64748b;font-size:10px;font-weight:850}
+.mg-ai-provider-card h2{margin:4px 0;font-size:18px}
+.mg-ai-provider-card code{font-size:10px;color:#475569}
+.mg-ai-provider-status{padding:5px 8px;border-radius:999px;background:#fef3c7!important;color:#92400e!important;white-space:nowrap}
+.mg-ai-provider-status.is-ready{background:#dcfce7!important;color:#166534!important}
+.mg-admin-workspace .mg-ops-queue-shell{padding:34px 0 60px}
+.mg-ops-queue-panel{padding:20px;border:1px solid #dbe3ef;border-radius:18px;background:#fff;box-shadow:0 18px 50px rgba(15,23,42,.08)}
+.mg-ops-queue-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:18px}
+.mg-ops-queue-head h1{margin:4px 0;font-size:clamp(2rem,4vw,3rem);letter-spacing:-.045em}
+.mg-ops-queue-head p{margin:0;color:#64748b}
+.mg-ops-queue-bar{display:grid;grid-template-columns:180px 180px minmax(180px,1fr) auto;gap:10px;margin-bottom:18px}
+.mg-ops-queue-grid{display:grid;grid-template-columns:minmax(280px,360px) minmax(0,1fr);gap:18px}
+.mg-ops-queue-list{display:grid;gap:10px}
+.mg-ops-queue-card{width:100%;padding:14px;border:1px solid #e2e8f0;border-radius:14px;background:#fff;color:#0f172a;text-align:left}
+.mg-ops-queue-card.is-active{outline:2px solid #2563eb}
+.mg-ops-pill{display:inline-flex;margin:6px 5px 0 0;padding:3px 8px;border-radius:999px;background:#e2e8f0;font-size:10px;font-weight:850}
+.mg-ops-pill.is-critical{background:#fee2e2;color:#991b1b}
+.mg-ops-pill.is-warning{background:#fef3c7;color:#92400e}
+.mg-ops-pill.is-info{background:#dbeafe;color:#1d4ed8}
+.mg-ops-queue-detail{min-height:260px;padding:16px;border:1px solid #e2e8f0;border-radius:14px;background:#fff}
+.mg-ops-events{max-height:320px;overflow:auto;padding:14px;border-radius:14px;background:#0f172a;color:#e2e8f0;font:12px/1.5 ui-monospace,Consolas,monospace;white-space:pre-wrap}
+.mg-ops-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.mg-ops-actions input{flex:1 1 180px}
+@media(max-width:980px){
+  .mg-admin-workspace>.mg-admin-users-shell,
+  .mg-admin-workspace>.mg-admin-moderation-shell,
+  .mg-admin-workspace>.mg-system-health-shell,
+  .mg-admin-workspace>.mg-lifecycle-health-shell,
+  .mg-admin-workspace>.mg-commerce-shell,
+  .mg-admin-workspace>.mg-mc-shell,
+  .mg-admin-workspace>.mg-ai-admin-page,
+  .mg-admin-workspace>.mg-ops-queue-shell{width:min(100% - 20px,1440px)}
+  .mg-ops-queue-grid{grid-template-columns:1fr}
+  .mg-ops-queue-bar{grid-template-columns:1fr 1fr}
+}
+@media(max-width:640px){
+  .mg-admin-side-actions{grid-template-columns:1fr}
+  .mg-ai-admin-page .mg-ai-admin-head,.mg-ops-queue-head{display:block}
+  .mg-ai-admin-page .mg-ai-admin-head .mg-btn{margin-top:14px}
+  .mg-ops-queue-bar{grid-template-columns:1fr}
+}

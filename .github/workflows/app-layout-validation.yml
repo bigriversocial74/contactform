@@ -1,0 +1,66 @@
+name: App Layout Validation
+
+on:
+  push:
+    branches:
+      - 'fix/admin-app-shell-consistency'
+  pull_request:
+    paths:
+      - '*.php'
+      - 'admin/*.php'
+      - 'account/*.php'
+      - 'includes/**/*.php'
+      - 'assets/css/admin-shell.css'
+      - 'scripts/audit_app_layout.php'
+      - '.github/workflows/app-layout-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Syntax-check layout files
+        run: |
+          php -l scripts/audit_app_layout.php
+          php -l includes/admin-sidebar.php
+          for file in account/orders.php admin-ai.php admin/*.php checkout.php checkout-success.php commerce-operations.php gift-stream.php merchant-catalog-operations.php notifications.php; do
+            php -l "$file"
+          done
+
+      - name: Build authenticated page layout inventory
+        id: audit
+        shell: bash
+        run: |
+          mkdir -p build
+          set +e
+          php scripts/audit_app_layout.php --json > build/app-layout-audit.json
+          status=$?
+          cat build/app-layout-audit.json
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Upload app layout inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-layout-audit
+          path: build/app-layout-audit.json
+          if-no-files-found: error
+
+      - name: Enforce authenticated page layouts
+        if: steps.audit.outputs.exit_code != '0'
+        run: |
+          echo "Authenticated page layout audit found broken entry pages."
+          exit 1
