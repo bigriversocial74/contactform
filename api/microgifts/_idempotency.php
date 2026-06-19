@@ -1,6 +1,10 @@
 <?php
 declare(strict_types=1);
 
+if(!defined('MG_MICROGIFT_REDEMPTION_REPLAY_CONFLICT')){
+    define('MG_MICROGIFT_REDEMPTION_REPLAY_CONFLICT','Redemption idempotency key is already bound to a different request.');
+}
+
 function mg_microgift_assert_claim_replay(PDO $pdo,string $key,string $instancePublicId,int $claimantUserId): ?array
 {
     $stmt=$pdo->prepare('SELECT c.public_id,c.status,c.claimant_user_id,c.source_reference,i.public_id instance_public_id FROM microgift_claims c INNER JOIN microgift_instances i ON i.id=c.instance_id WHERE c.idempotency_key=? LIMIT 1');
@@ -33,7 +37,7 @@ function mg_microgift_assert_redemption_replay(PDO|array $subject,mixed ...$args
         && hash_equals((string)$existing['instance_public_id'],(string)$instancePublicId)
         && hash_equals((string)($existing['location_reference']??''),(string)($location??''))
         && hash_equals((string)$existing['source_reference'],(string)$source);
-    if(!$same) throw new RuntimeException('Microgift redemption idempotency key is already bound to a different request.');
+    if(!$same) throw new RuntimeException(MG_MICROGIFT_REDEMPTION_REPLAY_CONFLICT);
     return $existing;
 }
 
