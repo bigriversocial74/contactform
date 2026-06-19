@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_publish_distribution.php';
 require_once __DIR__ . '/_builder_product_types.php';
+require_once __DIR__ . '/_public_identity.php';
 
 $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
 $user = mg_require_permission('catalog.products.manage');
@@ -106,6 +107,7 @@ try {
     $productStatus = 'draft';
 
     if ($productId === '') {
+        mg_catalog_require_merchant_slug($pdo,(int)$user['id'],$slug);
         $productId = mg_catalog_uuid();
         $pdo->prepare(
             "INSERT INTO catalog_products
@@ -118,6 +120,7 @@ try {
         $productStatus = (string)$product['status'];
         if ($productStatus === 'archived') mg_fail('Archived products cannot be edited.',409);
         $productDbId = (int)$product['id'];
+        mg_catalog_require_merchant_slug($pdo,(int)$user['id'],$slug,$productDbId);
         if ($productStatus === 'draft') {
             $pdo->prepare('UPDATE catalog_products SET product_type=?,slug=?,updated_at=NOW() WHERE id=?')
                 ->execute([$productType,$slug,$productDbId]);
@@ -174,6 +177,7 @@ try {
     if ($payload['visibility'] !== 'public') {
         mg_fail('Set visibility to Public before publishing to your store, feed, and merchant locations.',422);
     }
+    mg_catalog_require_global_published_slug($pdo,$slug,$productDbId);
     if (!empty($payload['demo'])) {
         mg_fail('Demo vouchers cannot be published as live merchant products.',422);
     }
@@ -262,7 +266,7 @@ try {
         'storefront_id'=>$distribution['storefront']['storefront_id'],
         'feed_post_id'=>$distribution['feed']['post_id'],
         'locations'=>$distribution['locations']['locations'],
-        'product_url'=>$distribution['product_url'],
+        'product_url'=>mg_catalog_public_product_url($productId,$slug),
         'store_url'=>$distribution['store_url'],
         'feed_url'=>$distribution['feed_url'],
         'discovery_url'=>$distribution['discovery_url'],
