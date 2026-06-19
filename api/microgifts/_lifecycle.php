@@ -1,7 +1,12 @@
 <?php
 declare(strict_types=1);
 
+if(!defined('MG_MICROGIFT_REDEMPTION_REPLAY_CONFLICT')){
+    define('MG_MICROGIFT_REDEMPTION_REPLAY_CONFLICT','Redemption idempotency key is already bound to a different request.');
+}
+
 require_once __DIR__ . '/_engine.php';
+require_once __DIR__ . '/_idempotency.php';
 require_once dirname(__DIR__) . '/pppm/_pppm.php';
 require_once dirname(__DIR__) . '/pppm/_ownership.php';
 require_once dirname(__DIR__) . '/entitlements/_lifecycle.php';
@@ -104,16 +109,6 @@ function mg_microgift_canonical_merchant(PDO $pdo,array $instance): int
         WHERE mi.id=? LIMIT 1 FOR UPDATE");
     $stmt->execute([(int)$instance['id']]);
     return (int)($stmt->fetchColumn()?:0);
-}
-
-function mg_microgift_assert_redemption_replay(array $existing,string $instancePublicId,int $userId,int $merchantId,string $source,?string $location): void
-{
-    $same=(string)$existing['instance_public_id']===$instancePublicId
-        && (int)$existing['claimant_user_id']===$userId
-        && (int)$existing['merchant_user_id']===$merchantId
-        && hash_equals((string)$existing['source_reference'],$source)
-        && hash_equals((string)($existing['location_reference']??''),(string)($location??''));
-    if(!$same)throw new RuntimeException('Redemption idempotency key is already bound to a different request.');
 }
 
 function mg_microgift_redeem(PDO $pdo,int $userId,array $input,?callable $failureHook=null): array
