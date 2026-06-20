@@ -92,6 +92,14 @@ jobs:
       - name: Install current development dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
 
+      - name: Validate release tooling contracts
+        run: |
+          composer validate --strict
+          bash -n scripts/build_release_artifact.sh
+          bash -n scripts/validate_database_backup_restore.sh
+          bash -n scripts/validate_release_rollback.sh
+          php -l scripts/build_release_evidence.php
+
       - name: Wait for MySQL
         run: |
           for attempt in {1..30}; do
@@ -166,6 +174,18 @@ jobs:
             --current "${CURRENT_ARTIFACT}" \
             --rollback "${ROLLBACK_ARTIFACT}" \
             --output build/release-evidence/rollback-validation.json
+
+      - name: Assemble release evidence bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          ARTIFACT_MANIFEST="$(find build/releases/current-a -maxdepth 1 -type f -name '*.manifest.json' -print -quit)"
+          php scripts/build_release_evidence.php \
+            --artifact-manifest="${ARTIFACT_MANIFEST}" \
+            --backup-report=build/release-evidence/backup-restore-validation.json \
+            --rollback-report=build/release-evidence/rollback-validation.json \
+            --reproducible-report=build/release-evidence/reproducible-artifact-validation.json \
+            --output=build/release-evidence/v1-release-evidence.json
 
       - name: Upload candidate release package
         uses: actions/upload-artifact@v4
