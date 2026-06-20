@@ -98,6 +98,8 @@ jobs:
           bash -n scripts/build_release_artifact.sh
           bash -n scripts/validate_database_backup_restore.sh
           bash -n scripts/validate_release_rollback.sh
+          bash -n scripts/ci/mysql
+          bash -n scripts/ci/mysqldump
           php -l scripts/build_release_evidence.php
           php -l scripts/validate_database_migration_status.php
 
@@ -120,8 +122,13 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p build/release-evidence
-          bash scripts/validate_database_backup_restore.sh --output-dir build/release-evidence 2>&1 \
-            | tee build/release-evidence/backup-restore-validation.log
+          MYSQL_CONTAINER="$(docker ps --filter 'ancestor=mysql:8.0' --format '{{.ID}}' | head -n1)"
+          test -n "${MYSQL_CONTAINER}"
+          chmod +x scripts/ci/mysql scripts/ci/mysqldump
+          PATH="${GITHUB_WORKSPACE}/scripts/ci:${PATH}" \
+          MG_MYSQL_DOCKER_CONTAINER="${MYSQL_CONTAINER}" \
+            bash scripts/validate_database_backup_restore.sh --output-dir build/release-evidence 2>&1 \
+              | tee build/release-evidence/backup-restore-validation.log
 
       - name: Resolve release and rollback refs
         id: refs
