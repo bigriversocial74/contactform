@@ -10,8 +10,17 @@ function mg_payment_mode(): string
     return strtolower((string)(getenv('MG_PAYMENT_MODE') ?: 'test')) === 'live' ? 'live' : 'test';
 }
 
+function mg_payment_sodium_available(): bool
+{
+    return function_exists('sodium_crypto_secretbox')
+        && function_exists('sodium_crypto_secretbox_open')
+        && defined('SODIUM_CRYPTO_SECRETBOX_KEYBYTES')
+        && defined('SODIUM_CRYPTO_SECRETBOX_NONCEBYTES');
+}
+
 function mg_payment_credential_master_key(): ?string
 {
+    if(!mg_payment_sodium_available())return null;
     $raw=trim((string)(getenv('MG_PAYMENT_CREDENTIAL_KEY') ?: ''));
     if($raw==='')return null;
     $decoded=base64_decode($raw,true);
@@ -22,6 +31,7 @@ function mg_payment_credential_master_key(): ?string
 
 function mg_payment_encrypt_secret(string $plaintext): string
 {
+    if(!mg_payment_sodium_available())throw new MgPaymentCredentialException('The PHP Sodium extension is required before database payment credentials can be saved.');
     $key=mg_payment_credential_master_key();
     if($key===null)throw new MgPaymentCredentialException('MG_PAYMENT_CREDENTIAL_KEY must be a 32-byte key or base64-encoded 32-byte key before database credentials can be saved.');
     $nonce=random_bytes(SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
@@ -32,6 +42,7 @@ function mg_payment_decrypt_secret(?string $encoded): string
 {
     $encoded=trim((string)$encoded);
     if($encoded==='')return '';
+    if(!mg_payment_sodium_available())throw new MgPaymentCredentialException('Encrypted payment credentials are present but the PHP Sodium extension is unavailable.');
     $key=mg_payment_credential_master_key();
     if($key===null)throw new MgPaymentCredentialException('Encrypted payment credentials are present but MG_PAYMENT_CREDENTIAL_KEY is unavailable.');
     $raw=base64_decode($encoded,true);
@@ -77,7 +88,8 @@ function mg_payment_platform_config(PDO $pdo,?string $provider=null,?string $mod
     $feeEnv=trim((string)(getenv('MG_PLATFORM_FEE_BPS')?:''));
     $fixedEnv=trim((string)(getenv('MG_PLATFORM_FIXED_FEE_CENTS')?:''));
 
-    $secretDb='';$webhookDb='';
+    $secretDb='';
+    $webhookDb='';
     if($row){
         $secretDb=mg_payment_decrypt_secret($row['secret_key_ciphertext']??null);
         $webhookDb=mg_payment_decrypt_secret($row['webhook_secret_ciphertext']??null);
@@ -119,12 +131,16 @@ function mg_payment_save_platform_config(PDO $pdo,array $input,int $actorUserId)
     $enabled=!empty($input['enabled'])?1:0;
 
     $row=mg_payment_platform_credential_row($pdo,$provider,$mode,true);
+    if($row){
+        if($publishable==='')$publishable=(string)($row['publishable_key']??'');
+        if($clientId==='')$clientId=(string)($row['connect_client_id']??'');
+    }
     $secretCipher=$secret!==''?mg_payment_encrypt_secret($secret):(string)($row['secret_key_ciphertext']??'');
     $webhookCipher=$webhook!==''?mg_payment_encrypt_secret($webhook):(string)($row['webhook_secret_ciphertext']??'');
 
     if($row){
         $pdo->prepare('UPDATE payment_platform_credentials SET publishable_key=?,secret_key_ciphertext=?,webhook_secret_ciphertext=?,connect_client_id=?,platform_fee_bps=?,fixed_fee_cents=?,enabled=?,updated_by_user_id=?,updated_at=NOW() WHERE id=?')
-            ->execute([$publishable,$secretCipher?:null,$webhookCipher?:null,$clientId?:null,$feeBps,$fixedFee,$enabled,$actorUserId,(int)$row['id']]);
+            ->execute([$publishable?:null,$secretCipher?:null,$webhookCipher?:null,$clientId?:null,$feeBps,$fixedFee,$enabled,$actorUserId,(int)$row['id']]);
         $publicId=(string)$row['public_id'];
     }else{
         $publicId=mg_public_uuid();
