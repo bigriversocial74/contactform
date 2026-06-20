@@ -78,20 +78,19 @@ document.addEventListener('DOMContentLoaded',function(){
       '.mg-unified-header [data-app-create]',
       '.mg-unified-header [data-product-header-create]',
       '.mg-unified-header .mg-header-product-create',
-      '.mg-unified-header .mg-header-actions > a[href="/build.php"]',
-      '.mg-unified-header .mg-header-actions > button[aria-label*="create" i]',
-      '.mg-unified-header .mg-header-actions > button[aria-label*="add" i]'
+      '.mg-unified-header .mg-header-actions a[href="/build.php"]',
+      '.mg-unified-header .mg-header-actions button[aria-label*="create" i]',
+      '.mg-unified-header .mg-header-actions button[aria-label*="add" i]'
     ];
 
     explicitSelectors.forEach(function(selector){
       document.querySelectorAll(selector).forEach(bindTrigger);
     });
 
-    // The long-standing global square create control is a direct action in the
-    // shared header. Bind that control without creating or restyling a second one.
-    document.querySelectorAll('.mg-unified-header .mg-header-actions > button,.mg-unified-header .mg-header-actions > a').forEach(function(node){
-      if(!triggers.length)bindTrigger(node);
-    });
+    // The long-standing global square create control lives in the shared
+    // header actions. Bind the existing desktop/mobile control in place;
+    // never create, move, clone, or restyle another button.
+    document.querySelectorAll('.mg-unified-header .mg-header-actions button,.mg-unified-header .mg-header-actions a').forEach(bindTrigger);
   }
 
   modal.querySelectorAll('[data-create-menu-close]').forEach(function(node){
