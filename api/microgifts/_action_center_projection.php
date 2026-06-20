@@ -57,6 +57,36 @@ function mg_action_center_recipient_folder(array $instance): string
     return $hasBeenClaimed||in_array($status,['claimed','redeemable','redeemed'],true)?'claimed':'inbox';
 }
 
+function mg_action_center_refresh_existing_lifecycle(PDO $pdo,array $instance,array $context=[]): int
+{
+    mg_action_center_require_transaction($pdo);
+    $state=mg_action_center_state($instance);
+    $recipientFolder=mg_action_center_recipient_folder($instance);
+    $redemptionId=isset($context['redemption_id'])?(int)$context['redemption_id']:null;
+    $merchantUserId=isset($context['merchant_user_id'])?(int)$context['merchant_user_id']:null;
+    $locationId=isset($context['location_id'])?(int)$context['location_id']:null;
+    $canTip=(int)($context['can_tip']??($state==='redeemed'?1:0));
+    $projectionAt=(string)($context['occurred_at']??date('Y-m-d H:i:s'));
+    $stmt=$pdo->prepare(
+        "UPDATE microgift_inbox_items
+         SET folder=CASE WHEN folder='sent' THEN 'sent' ELSE ? END,
+             state=?,
+             redemption_id=COALESCE(?,redemption_id),
+             merchant_user_id=COALESCE(?,merchant_user_id),
+             location_id=COALESCE(?,location_id),
+             can_tip=CASE WHEN folder='sent' THEN 0 ELSE ? END,
+             claimed_at=COALESCE(?,claimed_at),
+             redeemed_at=COALESCE(?,redeemed_at),
+             updated_at=?
+         WHERE instance_id=?"
+    );
+    $stmt->execute([
+        $recipientFolder,$state,$redemptionId,$merchantUserId,$locationId,$canTip,
+        $instance['claimed_at']??null,$instance['redeemed_at']??null,$projectionAt,(int)$instance['id'],
+    ]);
+    return $stmt->rowCount();
+}
+
 function mg_action_center_receive(PDO $pdo,int $instanceId,int $userId,?int $senderUserId=null,array $context=[]): string
 {
     mg_action_center_require_transaction($pdo);
@@ -93,6 +123,7 @@ function mg_action_center_sent(PDO $pdo,int $instanceId,int $senderUserId,int $r
 function mg_action_center_project_lifecycle(PDO $pdo,array $instance,array $context=[]): array
 {
     mg_action_center_require_transaction($pdo);
+    mg_action_center_refresh_existing_lifecycle($pdo,$instance,$context);
     $state=mg_action_center_state($instance);
     $senderUserId=(int)($context['sender_user_id']??$instance['issuer_user_id']??0);
     $recipientUserId=(int)($context['recipient_user_id']??$instance['recipient_user_id']??$instance['owner_user_id']??0);
