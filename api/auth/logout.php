@@ -17,8 +17,6 @@ if ($userId) {
     mg_event('user.logged_out', ['email' => $user['email'] ?? null], $userId);
 }
 
-$_SESSION['mg_user'] = null;
-unset($_SESSION['mg_user']);
-session_regenerate_id(true);
+mg_destroy_session();
 
 mg_ok(['redirect' => '/index.php'], 'Signed out.');
