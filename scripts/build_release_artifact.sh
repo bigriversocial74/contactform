@@ -116,7 +116,7 @@ composer install \
   --optimize-autoloader
 
 MIGRATION_SHA="$(sha256sum "${STAGE_DIR}/config/migrations.php" | awk '{print $1}')"
-FILE_COUNT="$(find "${STAGE_DIR}" -type f | wc -l | tr -d ' ')"
+FILE_COUNT="$(( $(find "${STAGE_DIR}" -type f | wc -l | tr -d ' ') + 1 ))"
 
 php -r '
 $payload = [
@@ -190,7 +190,7 @@ if grep -Eq '(^|/)(\.env|config\.local\.php)$|^\./(\.github|build|docs|microgift
   exit 1
 fi
 
-sha256sum --check "${CHECKSUM_PATH}" >/dev/null
+(cd "${OUTPUT_DIR}" && sha256sum --check "$(basename "${CHECKSUM_PATH}")") >/dev/null
 
 echo "Release artifact created: ${ARTIFACT_PATH}"
 echo "Checksum: ${CHECKSUM_PATH}"
