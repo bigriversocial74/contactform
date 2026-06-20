@@ -23,8 +23,8 @@ final class ActionCenterReadinessTest extends TestCase
     {
         $script=file_get_contents(dirname(__DIR__,2).'/assets/js/gift-action-center.js');
         self::assertIsString($script);
-        self::assertStringContainsString('loadFolder(folder,force)',$script);
-        self::assertStringContainsString('d.counts||state.counts',$script);
+        self::assertMatchesRegularExpression('/function\s+loadFolder\s*\(folder,\s*force\)/',$script);
+        self::assertStringContainsString('setCounts(data.counts || state.counts)',$script);
         self::assertStringContainsString('/api/account/action-center.php?folder=',$script);
     }
 
@@ -32,8 +32,8 @@ final class ActionCenterReadinessTest extends TestCase
     {
         $script=file_get_contents(dirname(__DIR__,2).'/assets/js/gift-action-center.js');
         self::assertIsString($script);
-        self::assertStringContainsString("claim_code:'123456'",$script);
-        self::assertStringContainsString('is_demo:true',$script);
-        self::assertStringNotContainsString("claim_code:item.claim_code||'123456'",$script);
+        self::assertMatchesRegularExpression("/claim_code:\s*'123456'/",$script);
+        self::assertMatchesRegularExpression('/is_demo:\s*true/',$script);
+        self::assertStringNotContainsString("claim_code: item.claim_code || '123456'",$script);
     }
 }

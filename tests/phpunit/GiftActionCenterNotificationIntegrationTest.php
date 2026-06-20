@@ -26,21 +26,21 @@ final class GiftActionCenterNotificationIntegrationTest extends TestCase
         self::assertIsString($script);
         self::assertStringContainsString("mg_has_role('super_admin')",$workspace);
         self::assertStringContainsString('data-demo-enabled',$workspace);
-        self::assertStringContainsString("var demoEnabled=app.dataset.demoEnabled==='true'",$script);
-        self::assertStringContainsString('if(demoEnabled&&!state.folders[folder].length)',$script);
-        self::assertStringNotContainsString("if(folder==='inbox'&&!state.folders.inbox.length)",$script);
+        self::assertStringContainsString("var demoEnabled = app.dataset.demoEnabled === 'true'",$script);
+        self::assertStringContainsString('if (demoEnabled && !state.folders[folder].length)',$script);
+        self::assertStringNotContainsString("if (folder === 'inbox' && !state.folders.inbox.length)",$script);
     }
 
     public function testSuperAdminDemoDatasetCoversAllFoldersAndCannotMutate(): void
     {
-        $root=dirname(__DIR__,2);
-        $script=file_get_contents($root.'/assets/js/gift-action-center.js');
+        $script=file_get_contents(dirname(__DIR__,2).'/assets/js/gift-action-center.js');
         self::assertIsString($script);
-        self::assertStringContainsString("action_item_id:'demo-coffee-001'",$script);
-        self::assertStringContainsString("action_item_id:'demo-sent-001'",$script);
-        self::assertStringContainsString("action_item_id:'demo-claimed-001'",$script);
+        self::assertStringContainsString("action_item_id: 'demo-coffee-001'",$script);
+        self::assertStringContainsString("action_item_id: 'demo-sent-001'",$script);
+        self::assertStringContainsString("action_item_id: 'demo-claimed-001'",$script);
         self::assertStringContainsString('Super Admin demo content cannot execute real transactional actions.',$script);
-        self::assertStringContainsString('No real payment, ownership transfer, send, resend, claim, message, tip, notification, ledger entry, payout, or webhook was created.',$script);
+        self::assertStringContainsString('No real payment, ownership transfer, regift, Follow Up, claim, message, tip, notification, ledger entry, payout, or webhook was created.',$script);
+        self::assertStringNotContainsString('data-gift-action="resend"',$script);
     }
 
     public function testLoadDrawerRendersContentBeforeProtectedVoucher(): void

@@ -17,8 +17,8 @@ function mg_pppm_transfer_owner_canonical(PDO $pdo, string $pppmPublicId, int $n
     $existing = $pdo->prepare('SELECT * FROM entitlement_transfers WHERE idempotency_key=? LIMIT 1');
     $existing->execute([$entitlementKey]);
     if ($existingRow = $existing->fetch()) {
-        if ($oldOwner !== $newOwnerUserId) {
-            $pdo->prepare('UPDATE pppm_items SET owner_user_id=?,recipient_user_id=COALESCE(recipient_user_id,?),version_no=version_no+1,updated_at=NOW() WHERE id=?')
+        if ($oldOwner !== $newOwnerUserId || (int)($item['recipient_user_id'] ?? 0) !== $newOwnerUserId) {
+            $pdo->prepare('UPDATE pppm_items SET owner_user_id=?,recipient_user_id=?,version_no=version_no+1,updated_at=NOW() WHERE id=?')
                 ->execute([$newOwnerUserId, $newOwnerUserId, (int)$item['id']]);
             $updated = mg_pppm_refresh($pdo, (int)$item['id']);
             mg_pppm_record_event($pdo, $updated, 'owner_transferred', null, (string)$updated['status'], $actorUserId, null, array_merge($metadata, [
@@ -34,8 +34,8 @@ function mg_pppm_transfer_owner_canonical(PDO $pdo, string $pppmPublicId, int $n
 
     $entitlements = mg_entitlements_sync_pppm_owner($pdo, $pppmPublicId, $newOwnerUserId, $sourceType, $sourceReference, $actorUserId);
 
-    if ($oldOwner !== $newOwnerUserId) {
-        $pdo->prepare('UPDATE pppm_items SET owner_user_id=?,recipient_user_id=COALESCE(recipient_user_id,?),version_no=version_no+1,updated_at=NOW() WHERE id=?')
+    if ($oldOwner !== $newOwnerUserId || (int)($item['recipient_user_id'] ?? 0) !== $newOwnerUserId) {
+        $pdo->prepare('UPDATE pppm_items SET owner_user_id=?,recipient_user_id=?,version_no=version_no+1,updated_at=NOW() WHERE id=?')
             ->execute([$newOwnerUserId, $newOwnerUserId, (int)$item['id']]);
         $updated = mg_pppm_refresh($pdo, (int)$item['id']);
         mg_pppm_record_event($pdo, $updated, 'owner_transferred', null, (string)$updated['status'], $actorUserId, null, array_merge($metadata, [
