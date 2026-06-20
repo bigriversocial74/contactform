@@ -63,7 +63,7 @@ final class StageERedemptionContractTest extends TestCase
         $source=$this->source('api/account/action-center-redeem.php');
         self::assertStringContainsString('Customer-side redemption has been retired.',$source);
         self::assertStringContainsString("'/api/merchant/microgift-claim.php'",$source);
-        self::assertStringContainsString(',410,',$source);
+        self::assertStringContainsString('410,',$source);
         self::assertStringNotContainsString('mg_microgift_redeem(',$source);
     }
 }
