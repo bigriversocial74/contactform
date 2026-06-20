@@ -17,9 +17,9 @@ if($actionItemId===''||$message===''||$idempotencyKey==='')mg_fail('Action Cente
 $pdo=mg_db();
 try{
     $pdo->beginTransaction();
-    $stmt=$pdo->prepare("SELECT ac.sender_user_id,ac.recipient_user_id,
+    $stmt=$pdo->prepare("SELECT ac.folder,ac.sender_user_id action_sender_user_id,ac.recipient_user_id action_recipient_user_id,
             i.id,i.public_id,i.title_snapshot,i.issuer_user_id,i.owner_user_id,i.recipient_user_id instance_recipient_user_id,
-            i.legacy_gift_id,i.pppm_item_id
+            i.legacy_gift_id,i.pppm_item_id,i.status,i.claimed_at,i.redeemed_at
         FROM microgift_inbox_items ac
         INNER JOIN microgift_instances i ON i.id=ac.instance_id
         WHERE ac.public_id=? AND ac.user_id=? AND ac.archived_at IS NULL
@@ -37,18 +37,44 @@ try{
         'recipient_user_id'=>$item['instance_recipient_user_id']!==null?(int)$item['instance_recipient_user_id']:null,
         'legacy_gift_id'=>$item['legacy_gift_id']!==null?(int)$item['legacy_gift_id']:null,
         'pppm_item_id'=>$item['pppm_item_id']!==null?(int)$item['pppm_item_id']:null,
+        'status'=>(string)$item['status'],
+        'claimed_at'=>$item['claimed_at'],
+        'redeemed_at'=>$item['redeemed_at'],
     ];
 
-    $participants=mg_message_microgift_participants($instance);
-    $recipientUserId=(int)($input['recipient_user_id']??0);
-    if($recipientUserId<1){
-        foreach($participants as $participant){
-            if($participant!==(int)$user['id']){$recipientUserId=$participant;break;}
+    $folder=(string)$item['folder'];
+    $actionSenderUserId=(int)($item['action_sender_user_id']??0);
+    $actionRecipientUserId=(int)($item['action_recipient_user_id']??0);
+    if($folder==='sent'){
+        if($actionSenderUserId!==(int)$user['id'])throw new RuntimeException('You are not the sender of this transfer.');
+        if($actionRecipientUserId<1||(int)$instance['owner_user_id']!==$actionRecipientUserId){
+            throw new RuntimeException('This recipient no longer owns the Microgift.');
         }
+        $recipientUserId=$actionRecipientUserId;
+    }else{
+        if((int)$instance['owner_user_id']!==(int)$user['id'])throw new RuntimeException('You do not own this Microgift conversation.');
+        $recipientUserId=$actionSenderUserId;
+    }
+    if($recipientUserId<1||$recipientUserId===(int)$user['id'])throw new RuntimeException('Message recipient is unavailable.');
+
+    $requestedRecipientUserId=(int)($input['recipient_user_id']??0);
+    if($requestedRecipientUserId>0&&$requestedRecipientUserId!==$recipientUserId){
+        throw new RuntimeException('Message recipient does not match this transfer.');
     }
 
+    $conversationKey=mg_message_conversation_key($pdo,$instance,(int)$user['id'],$recipientUserId);
     $result=mg_message_send_microgift(
-        $pdo,$instance,(int)$user['id'],$recipientUserId,$message,$idempotencyKey,$actionItemId
+        $pdo,
+        $instance,
+        (int)$user['id'],
+        $recipientUserId,
+        $message,
+        $idempotencyKey,
+        $actionItemId,
+        [(int)$user['id'],$recipientUserId],
+        $conversationKey,
+        'message',
+        true
     );
     $pdo->commit();
 
@@ -57,6 +83,8 @@ try{
         'message_id'=>$result['message_id'],
         'instance_id'=>$instance['public_id'],
         'recipient_user_id'=>$result['recipient_user_id'],
+        'conversation_key'=>$result['conversation_key'],
+        'notification_id'=>$result['notification_id'],
         'duplicate'=>$result['duplicate'],
     ],(int)$user['id']);
     mg_ok([
@@ -64,6 +92,8 @@ try{
         'message_id'=>$result['message_id'],
         'instance_id'=>$instance['public_id'],
         'recipient_user_id'=>$result['recipient_user_id'],
+        'conversation_key'=>$result['conversation_key'],
+        'notification_id'=>$result['notification_id'],
         'status'=>'accepted',
         'duplicate'=>$result['duplicate'],
     ],$result['duplicate']?'Existing message result returned.':'Message accepted.',$result['duplicate']?200:202);
