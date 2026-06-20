@@ -20,16 +20,19 @@ final class V1ReleaseHardeningContractTest extends TestCase
             'pull_request:',
             'push:',
             'branches: [main]',
-            'npm run test:browser',
+            'npm run test:browser:v1',
             'tests/browser/**',
             'php-version: \'8.3\'',
         ] as $needle){
             self::assertStringContainsString($needle,$workflow);
         }
+        $package=json_decode($this->source('package.json'),true,512,JSON_THROW_ON_ERROR);
+        self::assertSame('playwright test tests/browser/v1-release-golden-path.spec.js',$package['scripts']['test:browser:v1']??null);
         $smoke=$this->source('tests/browser/v1-release-golden-path.spec.js');
         self::assertStringContainsString('V1 release browser golden path',$smoke);
         self::assertStringContainsString('/api/payments/order-checkout-session.php',$smoke);
         self::assertStringContainsString('https://checkout.stripe.test/c/pay/release-smoke',$smoke);
+        self::assertStringContainsString('[data-cart-page] [data-cart-summary]',$smoke);
     }
 
     public function testLaunchReadinessUsesCanonicalManifestAndStripeSellingMerchantReadiness(): void
