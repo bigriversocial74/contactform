@@ -40,6 +40,7 @@ final class V1ReleasePackagingContractTest extends TestCase
             '--routines',
             '--triggers',
             '--events',
+            '--binary-mode=1',
             'RESTORE_DB',
             'backup_restore_canary_',
             'schema_migrations',
@@ -48,11 +49,23 @@ final class V1ReleasePackagingContractTest extends TestCase
             '--keep-backup',
             'canonical_migration_manifest_verified',
             'restored_database_migration_status_verified',
+            'database-restore-error-context.sql',
             'Database backup and restore validation failed during:',
         ] as $needle) {
             self::assertStringContainsString($needle, $script);
         }
         self::assertStringContainsString('Restore validation database must differ from the source database.', $script);
+    }
+
+    public function testModerationTriggerUsesPortableSingleExpression(): void
+    {
+        $manifest = $this->source('config/migrations.php');
+        $migration = $this->source('database/stage_v1_release_trigger_portability.sql');
+        self::assertStringContainsString("'stage_v1_release_trigger_portability.sql'", $manifest);
+        self::assertStringContainsString('DROP TRIGGER IF EXISTS trg_catalog_assets_review_state', $migration);
+        self::assertStringContainsString('SET NEW.status = IF(', $migration);
+        self::assertStringNotContainsString('END; */', $migration);
+        self::assertStringContainsString("'stage_v1_release_trigger_portability'", $migration);
     }
 
     public function testRestoredDatabaseValidatorUsesCanonicalDatabaseStatus(): void
