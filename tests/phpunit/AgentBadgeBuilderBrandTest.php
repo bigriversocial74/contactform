@@ -12,7 +12,7 @@ final class AgentBadgeBuilderBrandTest extends TestCase
         $script=file_get_contents($root.'/assets/js/agent-folder-counts.js');
         self::assertIsString($header);
         self::assertIsString($script);
-        self::assertMatchesRegularExpression('/defaultGiftCount\s*=\s*\$tab\[0\]\s*===\s*[^?]+\?\s*1\s*:\s*0/',$header);
+        self::assertStringContainsString("['inbox' => 3, 'sent' => 2, 'claimed' => 2]",$header);
         self::assertStringNotContainsString('data-gift-nav-unread="<?= $tab[0] ?>" hidden',$header);
         self::assertStringContainsString('apply({inbox:1,sent:0,claimed:0})',$script);
         self::assertStringContainsString('/api/account/action-center.php?folder=inbox&limit=1',$script);
