@@ -17,7 +17,7 @@ declare(strict_types=1);
             <?php endforeach; ?>
           </div>
           <div class="mg-header-agent-search"><input type="search" placeholder="Search agents, products, gifts, claims…" aria-label="Search agent workspace" data-agent-global-search></div>
-          <a class="mg-header-product-create" href="/build.php" data-product-header-create aria-label="Add product">+</a>
+          <button class="mg-header-product-create" type="button" data-create-menu-trigger aria-haspopup="dialog" aria-controls="mg-create-menu" aria-expanded="false" aria-label="Create something new">+</button>
         </div>
       <?php elseif ($header_mode === 'account'): ?>
         <div class="mg-header-agent-tools mg-header-account-tools"><div class="mg-header-agent-search"><input type="search" placeholder="Search account, activity, messages, settings…" aria-label="Search account workspace"></div></div>
@@ -33,3 +33,22 @@ declare(strict_types=1);
   </div>
   <?php require dirname(__DIR__) . '/header-templates/logged-in.php'; ?>
 </header>
+
+<?php if ($header_mode === 'agent'): ?>
+<div class="mg-create-menu" id="mg-create-menu" data-create-menu hidden aria-hidden="true">
+  <button class="mg-create-menu-backdrop" type="button" data-create-menu-close aria-label="Close create menu"></button>
+  <section class="mg-create-menu-dialog" role="dialog" aria-modal="true" aria-labelledby="mg-create-menu-title" tabindex="-1">
+    <header class="mg-create-menu-head">
+      <div><span>Create</span><h2 id="mg-create-menu-title">What do you want to add?</h2><p>Choose a workspace to start creating.</p></div>
+      <button class="mg-create-menu-close" type="button" data-create-menu-close aria-label="Close create menu">×</button>
+    </header>
+    <div class="mg-create-menu-grid">
+      <a href="/build.php" data-create-menu-option="microgift"><span class="mg-create-menu-icon" aria-hidden="true">M</span><strong>Microgift</strong><small>Create a prepaid local gift or offer.</small></a>
+      <a href="/feed.php" data-create-menu-option="post"><span class="mg-create-menu-icon" aria-hidden="true">P</span><strong>Post</strong><small>Publish an update to your public feed.</small></a>
+      <a href="/account-subscriptions.php" data-create-menu-option="subscription"><span class="mg-create-menu-icon" aria-hidden="true">S</span><strong>Subscription</strong><small>Create or manage a recurring membership.</small></a>
+      <a href="/merchant-storefront.php" data-create-menu-option="storefront"><span class="mg-create-menu-icon" aria-hidden="true">F</span><strong>Storefront</strong><small>Configure your public merchant storefront.</small></a>
+      <a href="/agent.php" data-create-menu-option="agent"><span class="mg-create-menu-icon" aria-hidden="true">A</span><strong>Agent</strong><small>Create or open an automated gifting agent.</small></a>
+    </div>
+  </section>
+</div>
+<?php endif; ?>
