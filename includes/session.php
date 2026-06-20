@@ -104,7 +104,7 @@ if (!function_exists('mg_session_name')) {
     {
         $config = mg_session_config($config);
         $name = trim((string) ($config['security']['session_name'] ?? 'mg_session'));
-        if (preg_match('/^[A-Za-z0-9_-]{1,128}$/', $name) !== 1) {
+        if (preg_match('/^[A-Za-z][A-Za-z0-9_-]{0,127}$/', $name) !== 1) {
             throw new RuntimeException('MG_SESSION_NAME contains unsupported characters.');
         }
         return $name;
@@ -157,7 +157,8 @@ if (!function_exists('mg_destroy_session')) {
         }
 
         $_SESSION = [];
-        if ((bool) ini_get('session.use_cookies') && !headers_sent()) {
+        $usesCookies = filter_var((string) ini_get('session.use_cookies'), FILTER_VALIDATE_BOOLEAN);
+        if ($usesCookies && !headers_sent()) {
             $params = session_get_cookie_params();
             setcookie(session_name(), '', [
                 'expires' => time() - 42000,
