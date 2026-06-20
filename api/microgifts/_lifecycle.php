@@ -90,13 +90,18 @@ function mg_microgift_location_allowed(array $instance,?string $location): bool
 {
     $policy=json_decode((string)($instance['location_policy_json']??'{}'),true);
     if(!is_array($policy)||$policy===[]) return true;
-    $mode=(string)($policy['mode']??'unrestricted');
+    $mode=strtolower(trim((string)($policy['mode']??'unrestricted')));
     if($mode==='unrestricted') return true;
-    $allowed=array_map('strval',(array)($policy['allowed_locations']??[]));
+    $allowed=array_values(array_unique(array_map('strval',array_merge(
+        (array)($policy['allowed_locations']??[]),
+        (array)($policy['location_ids']??[])
+    ))));
     $excluded=array_map('strval',(array)($policy['excluded_locations']??[]));
     if($location===null||$location==='') return false;
     if(in_array($location,$excluded,true)) return false;
-    return $mode!=='allow_list'||in_array($location,$allowed,true);
+    if(in_array($mode,['allow_list','selected_locations'],true)) return $allowed!==[]&&in_array($location,$allowed,true);
+    if(in_array($mode,['exclude_list','all_except'],true)) return true;
+    return false;
 }
 
 function mg_microgift_canonical_merchant(PDO $pdo,array $instance): int
