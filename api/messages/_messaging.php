@@ -35,10 +35,15 @@ function mg_message_conversation_key(PDO $pdo,array $instance,int $senderUserId,
     }
     $stmt=$pdo->prepare(
         "SELECT public_id FROM microgift_delivery_events
-         WHERE instance_id=? AND event_type='sent' AND sender_user_id=? AND recipient_user_id=?
+         WHERE instance_id=? AND event_type='sent'
+           AND ((sender_user_id=? AND recipient_user_id=?) OR (sender_user_id=? AND recipient_user_id=?))
          ORDER BY id DESC LIMIT 1"
     );
-    $stmt->execute([(int)$instance['id'],$senderUserId,$recipientUserId]);
+    $stmt->execute([
+        (int)$instance['id'],
+        $senderUserId,$recipientUserId,
+        $recipientUserId,$senderUserId,
+    ]);
     $deliveryPublicId=trim((string)($stmt->fetchColumn()?:''));
     if($deliveryPublicId!=='')return 'delivery:'.$deliveryPublicId;
 
