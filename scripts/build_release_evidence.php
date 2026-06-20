@@ -54,6 +54,16 @@ try {
             throw new RuntimeException("Cannot assemble release evidence because {$gate} did not pass.");
         }
     }
+    foreach ([
+        'backup_canary' => $backup['canary_verified'] ?? false,
+        'canonical_migration_manifest' => $backup['canonical_migration_manifest_verified'] ?? false,
+        'restored_database_migration_status' => $backup['restored_database_migration_status_verified'] ?? false,
+        'rollback_php_syntax' => $rollback['rollback']['php_syntax_verified'] ?? false,
+    ] as $gate => $passed) {
+        if ($passed !== true) {
+            throw new RuntimeException("Cannot assemble release evidence because {$gate} was not verified.");
+        }
+    }
 
     $commitSha = strtolower(trim((string) ($artifact['git_commit_sha'] ?? '')));
     if (preg_match('/^[a-f0-9]{40}$/', $commitSha) !== 1) {
@@ -80,16 +90,19 @@ try {
             ],
             'database_backup_restore_dry_run' => [
                 'status' => 'passed',
-                'canary_verified' => (bool) ($backup['canary_verified'] ?? false),
-                'canonical_migration_manifest_verified' => (bool) ($backup['canonical_migration_manifest_verified'] ?? false),
+                'canary_verified' => true,
+                'canonical_migration_manifest_verified' => true,
+                'restored_database_migration_status_verified' => true,
                 'source_table_count' => (int) ($backup['source_table_count'] ?? 0),
                 'restore_table_count' => (int) ($backup['restore_table_count'] ?? 0),
+                'source_migration_count' => (int) ($backup['source_migration_count'] ?? 0),
+                'restore_migration_count' => (int) ($backup['restore_migration_count'] ?? 0),
             ],
             'rollback_artifact_pair' => [
                 'status' => 'passed',
                 'rollback_git_commit_sha' => (string) ($rollback['rollback']['git_commit_sha'] ?? ''),
                 'rollback_artifact_sha256' => (string) ($rollback['rollback']['artifact_sha256'] ?? ''),
-                'php_syntax_verified' => (bool) ($rollback['rollback']['php_syntax_verified'] ?? false),
+                'php_syntax_verified' => true,
             ],
         ],
         'live_environment_gates' => [
