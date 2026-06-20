@@ -30,7 +30,9 @@ function mg_action_center_projection_upsert(PDO $pdo,array $instance,int $userId
     $canTip=(int)($context['can_tip']??($state==='redeemed'?1:0));
     $projectionAt=(string)($context['occurred_at']??$instance['issued_at']??date('Y-m-d H:i:s'));
     $firstReceivedAt=(string)($context['received_at']??$projectionAt);
-    $sentAt=$folder==='sent'?(string)($context['sent_at']??$projectionAt):null;
+    $sentAt=$folder==='sent'&&array_key_exists('sent_at',$context)
+        ? (string)$context['sent_at']
+        : null;
     $claimedAt=$instance['claimed_at']??null;
     $redeemedAt=$instance['redeemed_at']??null;
 
@@ -39,7 +41,7 @@ function mg_action_center_projection_upsert(PDO $pdo,array $instance,int $userId
     $row=$stmt->fetch(PDO::FETCH_ASSOC);
 
     if($row){
-        $pdo->prepare('UPDATE microgift_inbox_items SET folder=?,state=?,sender_user_id=?,recipient_user_id=?,redemption_id=COALESCE(?,redemption_id),merchant_user_id=COALESCE(?,merchant_user_id),location_id=COALESCE(?,location_id),can_tip=?,first_received_at=COALESCE(first_received_at,?),sent_at=COALESCE(sent_at,?),claimed_at=COALESCE(?,claimed_at),redeemed_at=COALESCE(?,redeemed_at),updated_at=? WHERE id=?')->execute([$folder,$state,$senderUserId?:null,$recipientUserId?:null,$redemptionId,$merchantUserId,$locationId,$canTip,$firstReceivedAt,$sentAt,$claimedAt,$redeemedAt,$projectionAt,(int)$row['id']]);
+        $pdo->prepare('UPDATE microgift_inbox_items SET folder=?,state=?,sender_user_id=?,recipient_user_id=?,redemption_id=COALESCE(?,redemption_id),merchant_user_id=COALESCE(?,merchant_user_id),location_id=COALESCE(?,location_id),can_tip=?,first_received_at=COALESCE(first_received_at,?),sent_at=COALESCE(?,sent_at),claimed_at=COALESCE(?,claimed_at),redeemed_at=COALESCE(?,redeemed_at),updated_at=? WHERE id=?')->execute([$folder,$state,$senderUserId?:null,$recipientUserId?:null,$redemptionId,$merchantUserId,$locationId,$canTip,$firstReceivedAt,$sentAt,$claimedAt,$redeemedAt,$projectionAt,(int)$row['id']]);
         return (string)$row['public_id'];
     }
 
