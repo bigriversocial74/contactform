@@ -2,7 +2,7 @@
 declare(strict_types=1);
 require_once dirname(__DIR__).'/payments/_connect.php';
 mg_require_method('POST');
-$user=mg_require_permission('merchant.payments.manage');
+$user=mg_require_permission('merchant.payments.view');
 $input=mg_input();
 mg_require_csrf_for_write($input);
 $action=trim((string)($input['action']??'onboard'));
