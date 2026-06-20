@@ -41,7 +41,8 @@ final class ProductionStageDRegiftBehaviorTest extends TestCase
         $ownership=file_get_contents($root.'/api/pppm/_ownership.php');
         $followUp=file_get_contents($root.'/api/account/action-center-follow-up.php');
         $messaging=file_get_contents($root.'/api/messages/_messaging.php');
-        foreach([$send,$ownership,$followUp,$messaging] as $source)self::assertIsString($source);
+        $projection=file_get_contents($root.'/api/microgifts/_action_center_projection.php');
+        foreach([$send,$ownership,$followUp,$messaging,$projection] as $source)self::assertIsString($source);
 
         self::assertStringContainsString("'action_center_regift'",$send);
         self::assertStringContainsString("SET owner_user_id=?,recipient_user_id=?,status='delivered'",$send);
@@ -50,6 +51,9 @@ final class ProductionStageDRegiftBehaviorTest extends TestCase
         self::assertStringContainsString('Only the most recent sender can follow up.',$followUp);
         self::assertStringContainsString("'action_center_follow_up'",$messaging);
         self::assertStringContainsString("'microgift.follow_up_sent'",$messaging);
+        self::assertStringContainsString('function mg_action_center_refresh_existing_lifecycle',$projection);
+        self::assertStringContainsString("folder=CASE WHEN folder='sent' THEN 'sent' ELSE ? END",$projection);
+        self::assertStringContainsString('mg_action_center_refresh_existing_lifecycle($pdo,$instance,$context)',$projection);
     }
 
     public function testTransferConversationMigrationIsRegisteredAndPrivacyScoped(): void
