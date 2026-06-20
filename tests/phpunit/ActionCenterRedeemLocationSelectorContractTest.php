@@ -69,7 +69,7 @@ final class ActionCenterRedeemLocationSelectorContractTest extends TestCase
         self::assertStringNotContainsString('mg_microgift_claim',$source);
     }
 
-    public function testActionCenterActionsKeepRedeemPayloadSeparateFromSendAndResend(): void
+    public function testActionCenterActionsKeepRedeemPayloadSeparateFromRegiftAndFollowUp(): void
     {
         $source=file_get_contents(dirname(__DIR__,2).'/assets/js/gift-action-center-actions.js');
         self::assertIsString($source);
@@ -77,12 +77,13 @@ final class ActionCenterRedeemLocationSelectorContractTest extends TestCase
         foreach([
             "else if(type==='redeem'){request.location_id=data.location_id;}",
             "form.dataset.actionForm==='redeem'",
-            "['send','resend','claim','message','tip']",
+            "['send','follow-up','claim','message','tip']",
             "function endpoint(type){return '/api/account/action-center-'+type+'.php';}",
         ] as $needle){
             self::assertStringContainsString($needle,$source);
         }
 
+        self::assertStringNotContainsString("'resend'",$source);
         self::assertStringContainsString('request.code=data.claim_code',$source,'Existing merchant claim-code payload remains free-standing and unchanged.');
     }
 }

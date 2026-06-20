@@ -67,17 +67,43 @@ function mg_message_microgift_thread(PDO $pdo,array $instance,int $actorUserId,a
     mg_message_require_microgift_participant($instance,$actorUserId,$participants);
     if(count($participants)<2)throw new RuntimeException('A Microgift conversation requires two participants.');
 
-    $conversationKey=mg_message_validate_conversation_key(
-        $conversationKey??('legacy:'.(string)$instance['public_id'])
-    );
-    $stmt=$pdo->prepare(
-        'SELECT id,public_id,microgift_instance_id,conversation_key
-         FROM message_threads
-         WHERE microgift_instance_id=? AND conversation_key=?
-         LIMIT 1 FOR UPDATE'
-    );
-    $stmt->execute([(int)$instance['id'],$conversationKey]);
-    $thread=$stmt->fetch(PDO::FETCH_ASSOC);
+    $instanceId=(int)$instance['id'];
+    $thread=false;
+    if($conversationKey!==null){
+        $conversationKey=mg_message_validate_conversation_key($conversationKey);
+        $stmt=$pdo->prepare(
+            'SELECT id,public_id,microgift_instance_id,conversation_key
+             FROM message_threads
+             WHERE microgift_instance_id=? AND conversation_key=?
+             LIMIT 1 FOR UPDATE'
+        );
+        $stmt->execute([$instanceId,$conversationKey]);
+        $thread=$stmt->fetch(PDO::FETCH_ASSOC);
+    }else{
+        $conversationKey=mg_message_validate_conversation_key('legacy:'.(string)$instance['public_id']);
+        $pppmItemId=!empty($instance['pppm_item_id'])?(int)$instance['pppm_item_id']:null;
+        $legacyGiftId=!empty($instance['legacy_gift_id'])?(int)$instance['legacy_gift_id']:null;
+        $stmt=$pdo->prepare(
+            "SELECT id,public_id,microgift_instance_id,conversation_key
+             FROM message_threads
+             WHERE (microgift_instance_id=? AND conversation_key LIKE 'legacy:%')
+                OR (microgift_instance_id IS NULL AND pppm_item_id=?)
+                OR (microgift_instance_id IS NULL AND gift_id=?)
+             ORDER BY id ASC LIMIT 1 FOR UPDATE"
+        );
+        $stmt->execute([$instanceId,$pppmItemId,$legacyGiftId]);
+        $thread=$stmt->fetch(PDO::FETCH_ASSOC);
+        if($thread){
+            if(empty($thread['microgift_instance_id'])){
+                $pdo->prepare('UPDATE message_threads SET microgift_instance_id=?,conversation_key=?,updated_at=NOW() WHERE id=?')
+                    ->execute([$instanceId,$conversationKey,(int)$thread['id']]);
+                $thread['microgift_instance_id']=$instanceId;
+                $thread['conversation_key']=$conversationKey;
+            }else{
+                $conversationKey=(string)$thread['conversation_key'];
+            }
+        }
+    }
 
     if(!$thread){
         $publicId=mg_public_uuid();
@@ -89,7 +115,7 @@ function mg_message_microgift_thread(PDO $pdo,array $instance,int $actorUserId,a
             $publicId,
             !empty($instance['legacy_gift_id'])?(int)$instance['legacy_gift_id']:null,
             !empty($instance['pppm_item_id'])?(int)$instance['pppm_item_id']:null,
-            (int)$instance['id'],
+            $instanceId,
             $conversationKey,
             $actorUserId,
             mb_substr((string)($instance['title_snapshot']??'Microgift conversation'),0,160),
@@ -97,7 +123,7 @@ function mg_message_microgift_thread(PDO $pdo,array $instance,int $actorUserId,a
         $thread=[
             'id'=>(int)$pdo->lastInsertId(),
             'public_id'=>$publicId,
-            'microgift_instance_id'=>(int)$instance['id'],
+            'microgift_instance_id'=>$instanceId,
             'conversation_key'=>$conversationKey,
         ];
     }
@@ -131,8 +157,13 @@ function mg_message_send_microgift(
     if(!in_array($senderUserId,$participants,true))throw new RuntimeException('You cannot message participants for this Microgift.');
     if($recipientUserId<1||$recipientUserId===$senderUserId||!in_array($recipientUserId,$participants,true))throw new RuntimeException('Message recipient is not authorized for this Microgift.');
 
-    $conversationKey??=mg_message_conversation_key($pdo,$instance,$senderUserId,$recipientUserId);
-    $thread=mg_message_microgift_thread($pdo,$instance,$senderUserId,$participants,$conversationKey);
+    if($conversationKey===null&&$authorizedParticipants===[]&&$messageType==='message'){
+        $thread=mg_message_microgift_thread($pdo,$instance,$senderUserId,$participants,null);
+        $conversationKey=(string)$thread['conversation_key'];
+    }else{
+        $conversationKey??=mg_message_conversation_key($pdo,$instance,$senderUserId,$recipientUserId);
+        $thread=mg_message_microgift_thread($pdo,$instance,$senderUserId,$participants,$conversationKey);
+    }
     $existing=$pdo->prepare('SELECT public_id,thread_id,recipient_user_id,body,source_reference,source_type FROM messages WHERE sender_user_id=? AND idempotency_key=? LIMIT 1 FOR UPDATE');
     $existing->execute([$senderUserId,$idempotencyKey]);
     $row=$existing->fetch(PDO::FETCH_ASSOC);

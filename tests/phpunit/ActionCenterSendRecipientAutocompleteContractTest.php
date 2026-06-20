@@ -15,31 +15,34 @@ final class ActionCenterSendRecipientAutocompleteContractTest extends TestCase
             'mg_ac_table_exists(PDO $pdo,string $table)',
             "mg_ac_table_exists(\$pdo,'user_followers')",
             "mg_ac_table_exists(\$pdo,'followers')",
-            "INNER JOIN users u ON u.id=f.follower_user_id",
-            "FROM users",
+            'INNER JOIN users u ON u.id=f.follower_user_id',
+            'FROM users',
             "status='active'",
             "'recipient_user_id'=>(string)\$row['recipient_user_id']",
             "'display_name'=>(string)(\$row['display_name']??'Recipient')",
+            "'email_hint'=>mg_ac_email_hint",
             "'recipients'=>array_map",
         ] as $needle){
             self::assertStringContainsString($needle,$source);
         }
+        self::assertStringNotContainsString("'email'=>(string)",$source);
     }
 
-    public function testSendEndpointAcceptsCanonicalRecipientUserId(): void
+    public function testSendEndpointAcceptsCanonicalPublicRecipientIdentity(): void
     {
         $source=file_get_contents(dirname(__DIR__,2).'/api/account/action-center-send.php');
         self::assertIsString($source);
 
         foreach([
             '$recipientReference=trim((string)($input[\'recipient_user_id\']??$input[\'recipient\']??\'\'))',
-            'SELECT id FROM users WHERE id=? AND status=\'active\' LIMIT 1',
             'SELECT id FROM users WHERE (public_id=? OR email=?) AND status=\'active\' LIMIT 1',
+            'SELECT id FROM users WHERE email=? AND status=\'active\' LIMIT 1',
             'mg_pppm_transfer_owner_canonical',
-            'mg_action_center_sent($pdo,(int)$instance[\'id\'],(int)$user[\'id\'],$recipientUserId)',
+            'mg_action_center_sent(',
         ] as $needle){
             self::assertStringContainsString($needle,$source);
         }
+        self::assertStringNotContainsString('ctype_digit($reference)',$source);
     }
 
     public function testActionCenterActionsEnhancesSendModalWithTypeahead(): void
