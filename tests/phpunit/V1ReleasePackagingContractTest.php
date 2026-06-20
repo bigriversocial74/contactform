@@ -44,12 +44,23 @@ final class V1ReleasePackagingContractTest extends TestCase
             'backup_restore_canary_',
             'schema_migrations',
             'validate_migration_manifest.php',
+            'validate_database_migration_status.php',
             '--keep-backup',
             'canonical_migration_manifest_verified',
+            'restored_database_migration_status_verified',
+            'Database backup and restore validation failed during:',
         ] as $needle) {
             self::assertStringContainsString($needle, $script);
         }
         self::assertStringContainsString('Restore validation database must differ from the source database.', $script);
+    }
+
+    public function testRestoredDatabaseValidatorUsesCanonicalDatabaseStatus(): void
+    {
+        $validator = $this->source('scripts/validate_database_migration_status.php');
+        self::assertStringContainsString('mg_migration_status($pdo)', $validator);
+        self::assertStringContainsString("if (!\$status['ready'])", $validator);
+        self::assertStringContainsString('Database migration status is not ready.', $validator);
     }
 
     public function testRollbackValidationRequiresChecksummedDistinctArtifacts(): void
@@ -75,6 +86,8 @@ final class V1ReleasePackagingContractTest extends TestCase
             'fetch-depth: 0',
             'composer validate --strict',
             'validate_database_backup_restore.sh',
+            'validate_database_migration_status.php',
+            'backup-restore-validation.log',
             'Build candidate artifact twice',
             'Build rollback artifact from base commit',
             'validate_release_rollback.sh',
@@ -91,6 +104,7 @@ final class V1ReleasePackagingContractTest extends TestCase
     {
         $builder = $this->source('scripts/build_release_evidence.php');
         foreach ([
+            "'restored_database_migration_status_verified'",
             "'candidate_uploaded_to_staging'",
             "'stripe_test_provider_boundary'",
             "'hosted_checkout_and_signed_webhook'",
