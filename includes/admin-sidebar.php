@@ -27,7 +27,9 @@ $canModeration = $isSuperAdmin || count(array_intersect([
     'admin.profiles.moderation.manage',
 ], $adminPermissions)) > 0;
 $canHealth = $isSuperAdmin || in_array('admin.health.view', $adminPermissions, true);
-$canAi = $isSuperAdmin || in_array('admin.settings.manage', $adminPermissions, true);
+$canSettings = $isSuperAdmin || in_array('admin.settings.manage', $adminPermissions, true);
+$canAi = $canSettings;
+$canPayments = $canSettings;
 $canOpsQueue = $isSuperAdmin || count(array_intersect([
     'ops.alerts.assign',
     'ops.alerts.resolve',
@@ -57,6 +59,12 @@ $adminNav = [
         'detail' => 'Orders and lifecycle',
         'href' => '/commerce-operations.php',
         'visible' => $canCommerce,
+    ],
+    'payments' => [
+        'label' => 'Stripe payments',
+        'detail' => 'Credentials and readiness',
+        'href' => '/admin-payments.php',
+        'visible' => $canPayments,
     ],
     'moderation' => [
         'label' => 'Moderation center',

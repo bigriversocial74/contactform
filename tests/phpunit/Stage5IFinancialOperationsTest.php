@@ -38,12 +38,16 @@ final class Stage5IFinancialOperationsTest extends TestCase
 
     public function testWebhookRequiresSignatureAndCanProcessPaidOrders(): void
     {
-        $source = file_get_contents(dirname(__DIR__,2).'/api/payments/webhook.php');
-        self::assertIsString($source);
-        self::assertStringContainsString('mg_payment_verify_signature', $source);
-        self::assertStringContainsString('provider_event_id', $source);
-        self::assertStringContainsString('payload_hash', $source);
-        self::assertStringContainsString('mg_finance_record_paid_order', $source);
+        $endpoint = file_get_contents(dirname(__DIR__,2).'/api/payments/webhook.php');
+        $service = file_get_contents(dirname(__DIR__,2).'/api/payments/_webhook.php');
+        self::assertIsString($endpoint);
+        self::assertIsString($service);
+        self::assertStringContainsString('mg_payment_verify_signature', $endpoint);
+        self::assertStringContainsString('HTTP_STRIPE_SIGNATURE', $endpoint);
+        self::assertStringContainsString('mg_payment_process_webhook_event', $endpoint);
+        self::assertStringContainsString('provider_event_id', $service);
+        self::assertStringContainsString('payload_hash', $service);
+        self::assertStringContainsString('mg_finance_record_paid_order', $service);
     }
 
     public function testRefundsAreMerchantScopedAndIdempotent(): void
@@ -79,8 +83,8 @@ final class Stage5IFinancialOperationsTest extends TestCase
 
     public function testMerchantPaymentPageUsesSharedShell(): void
     {
-        $page = file_get_contents(dirname(__DIR__,2).'/merchant-payments.php');
+        $page=file_get_contents(dirname(__DIR__,2).'/merchant-payments.php');
         self::assertIsString($page);
-        self::assertStringContainsString('includes/merchant-workspace.php', $page);
+        self::assertStringContainsString('includes/merchant-workspace.php',$page);
     }
 }
