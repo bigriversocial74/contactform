@@ -13,8 +13,8 @@ final class MgCheckoutWorkflowException extends RuntimeException
 
 function mg_checkout_order_items_have_merchant(PDO $pdo): bool
 {
-    static $hasColumn = null;
-    if ($hasColumn !== null) return $hasColumn;
+    static $hasColumn=null;
+    if($hasColumn!==null)return $hasColumn;
     $stmt=$pdo->prepare("SHOW COLUMNS FROM commerce_order_items LIKE 'merchant_user_id'");
     $stmt->execute();
     $hasColumn=(bool)$stmt->fetch();
@@ -39,7 +39,8 @@ function mg_checkout_assert_order_replay(array $order,string $draftPublicId): vo
 
 function mg_checkout_create_order(PDO $pdo,int $buyerUserId,string $draftPublicId,string $idempotencyKey): array
 {
-    $draftPublicId=trim($draftPublicId);$idempotencyKey=trim($idempotencyKey);
+    $draftPublicId=trim($draftPublicId);
+    $idempotencyKey=trim($idempotencyKey);
     if($draftPublicId===''||$idempotencyKey===''||mb_strlen($idempotencyKey)>190)throw new MgCheckoutWorkflowException('Checkout draft and idempotency key are required.',422);
 
     $existing=$pdo->prepare('SELECT * FROM commerce_orders WHERE buyer_user_id=? AND idempotency_key=? LIMIT 1 FOR UPDATE');
@@ -50,7 +51,8 @@ function mg_checkout_create_order(PDO $pdo,int $buyerUserId,string $draftPublicI
     }
 
     $draftStmt=$pdo->prepare('SELECT * FROM checkout_drafts WHERE public_id=? AND buyer_user_id=? LIMIT 1 FOR UPDATE');
-    $draftStmt->execute([$draftPublicId,$buyerUserId]);$draft=$draftStmt->fetch(PDO::FETCH_ASSOC);
+    $draftStmt->execute([$draftPublicId,$buyerUserId]);
+    $draft=$draftStmt->fetch(PDO::FETCH_ASSOC);
     if(!$draft)throw new MgCheckoutWorkflowException('Checkout draft not found.',404);
     if((string)$draft['status']!=='open')throw new MgCheckoutWorkflowException('Checkout draft is not open.',409);
     if(strtotime((string)$draft['expires_at'])<time()){
@@ -77,15 +79,25 @@ function mg_checkout_create_order(PDO $pdo,int $buyerUserId,string $draftPublicI
         }
     }
 
-    $pdo->prepare('INSERT INTO order_fee_snapshots (public_id,order_id,rule_version,calculated_fee_cents,inputs_json,created_at) VALUES (?,?,?,0,?,NOW())')
-        ->execute([mg_public_uuid(),$orderId,'stage5j-zero-fee-v1',mg_commerce_json(['subtotal_cents'=>(int)$draft['subtotal_cents'],'currency'=>$draft['currency']])]);
+    $feeInputs=[
+        'subtotal_cents'=>(int)$draft['subtotal_cents'],
+        'platform_fee_cents'=>(int)$draft['platform_fee_cents'],
+        'currency'=>$draft['currency'],
+        'fee_included_in_total'=>true,
+    ];
+    $pdo->prepare('INSERT INTO order_fee_snapshots (public_id,order_id,rule_version,calculated_fee_cents,inputs_json,created_at) VALUES (?,?,?,?,?,NOW())')
+        ->execute([mg_public_uuid(),$orderId,'v1f-platform-share-v1',(int)$draft['platform_fee_cents'],mg_commerce_json($feeInputs)]);
     mg_order_history($pdo,$orderId,'order',null,'pending','user',$buyerUserId,'checkout_draft_converted',['checkout_draft_id'=>$draftPublicId]);
     mg_order_history($pdo,$orderId,'payment',null,'unpaid','system',$buyerUserId,'order_created');
     mg_order_history($pdo,$orderId,'fulfillment',null,'pending','system',$buyerUserId,'order_created');
-    mg_order_event($pdo,$orderId,'order.created',$buyerUserId,['checkout_draft_id'=>$draftPublicId]);
+    mg_order_event($pdo,$orderId,'order.created',$buyerUserId,['checkout_draft_id'=>$draftPublicId,'platform_fee_cents'=>(int)$draft['platform_fee_cents']]);
 
-    $buyerStmt=$pdo->prepare('SELECT id,email,full_name,display_name FROM users WHERE id=?');$buyerStmt->execute([$buyerUserId]);$buyer=$buyerStmt->fetch(PDO::FETCH_ASSOC)?:[];
-    $merchantStmt=$pdo->prepare('SELECT id,email,full_name,display_name FROM users WHERE id=?');$merchantStmt->execute([(int)$draft['merchant_user_id']]);$merchant=$merchantStmt->fetch(PDO::FETCH_ASSOC)?:[];
+    $buyerStmt=$pdo->prepare('SELECT id,email,full_name,display_name FROM users WHERE id=?');
+    $buyerStmt->execute([$buyerUserId]);
+    $buyer=$buyerStmt->fetch(PDO::FETCH_ASSOC)?:[];
+    $merchantStmt=$pdo->prepare('SELECT id,email,full_name,display_name FROM users WHERE id=?');
+    $merchantStmt->execute([(int)$draft['merchant_user_id']]);
+    $merchant=$merchantStmt->fetch(PDO::FETCH_ASSOC)?:[];
     $receiptNumber='MG-'.gmdate('Ymd').'-'.strtoupper(substr(str_replace('-','',$orderPublicId),0,12));
     $pdo->prepare("INSERT INTO receipts (public_id,order_id,receipt_number,status,currency,subtotal_cents,discount_cents,tax_cents,platform_fee_cents,total_cents,buyer_snapshot_json,merchant_snapshot_json,items_snapshot_json,created_at,updated_at) VALUES (?,?,?,'pending',?,?,?,?,?,?,?,?,?,NOW(),NOW())")
         ->execute([mg_public_uuid(),$orderId,$receiptNumber,$draft['currency'],(int)$draft['subtotal_cents'],(int)$draft['discount_cents'],(int)$draft['tax_cents'],(int)$draft['platform_fee_cents'],(int)$draft['total_cents'],mg_commerce_json($buyer),mg_commerce_json($merchant),mg_commerce_json($items)]);
