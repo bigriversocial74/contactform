@@ -60,6 +60,33 @@ final class V1ReleaseHardeningContractTest extends TestCase
         self::assertStringContainsString("exit(\$blocking===[]?0:1)",$gate);
         self::assertStringContainsString("'purchased_gift_claim_bridge'",$gate);
         self::assertStringContainsString("'direct_merchant_claim'",$gate);
+        self::assertStringContainsString("'post_claim_message_recipient'",$gate);
+        self::assertStringContainsString("'original_issuer_preservation'",$gate);
+    }
+
+    public function testCanonicalPppmTransferEnforcesOwnerTerminalStateAndDeliveryLifecycle(): void
+    {
+        $ownership=$this->source('api/pppm/_ownership.php');
+        foreach([
+            'Only the current PPPM owner can transfer this item.',
+            "['redeemed','expired','cancelled','refunded','voided']",
+            'PPPM item cannot be transferred from its current state.',
+            "status=?,sent_at=COALESCE(sent_at,NOW()),delivered_at=COALESCE(delivered_at,NOW())",
+            "\$sourceType==='microgift_claim'",
+            "\$metadata['microgift_instance_id']",
+        ] as $needle){
+            self::assertStringContainsString($needle,$ownership);
+        }
+        self::assertStringNotContainsString('duplicate_entitlement_transfer',$ownership);
+    }
+
+    public function testCanonicalLocationPolicySupportsPublishedSelectedLocationsAndFailsClosed(): void
+    {
+        $lifecycle=$this->source('api/microgifts/_lifecycle.php');
+        self::assertStringContainsString("\$policy['location_ids']",$lifecycle);
+        self::assertStringContainsString("['allow_list','selected_locations']",$lifecycle);
+        self::assertStringContainsString("['exclude_list','all_except']",$lifecycle);
+        self::assertStringContainsString('return false;',$lifecycle);
     }
 
     public function testRealStripeTestBoundaryIsAvailableWithoutTheStub(): void
