@@ -9,7 +9,6 @@ final class ActionCenterRedeemLocationSelectorContractTest extends TestCase
     {
         $source=file_get_contents(dirname(__DIR__,2).'/api/account/action-center-claim.php');
         self::assertIsString($source);
-
         self::assertStringContainsString('mg_microgift_claim($pdo,(int)$user[\'id\'],$input)',$source);
         self::assertStringContainsString('Microgift claim processed.',$source);
         self::assertStringNotContainsString('mg_microgift_redeem',$source);
@@ -20,14 +19,13 @@ final class ActionCenterRedeemLocationSelectorContractTest extends TestCase
     {
         $source=file_get_contents(dirname(__DIR__,2).'/api/account/action-center-redeem.php');
         self::assertIsString($source);
-
         foreach([
             "mg_require_method('POST')",
             'mg_require_api_user()',
             'mg_require_csrf_for_write($input)',
             'Customer-side redemption has been retired.',
             "['canonical_endpoint'=>'/api/merchant/microgift-claim.php']",
-            ',410,',
+            '410,',
         ] as $needle){
             self::assertStringContainsString($needle,$source);
         }
@@ -39,7 +37,6 @@ final class ActionCenterRedeemLocationSelectorContractTest extends TestCase
     {
         $source=file_get_contents(dirname(__DIR__,2).'/api/merchant/microgift-claim-lookup.php');
         self::assertIsString($source);
-
         foreach([
             "mg_require_method('GET')",
             "mg_require_permission('merchant.claims.view')",
@@ -59,7 +56,6 @@ final class ActionCenterRedeemLocationSelectorContractTest extends TestCase
     {
         $source=file_get_contents(dirname(__DIR__,2).'/api/merchant/microgift-claim.php');
         self::assertIsString($source);
-
         foreach([
             "mg_require_method('POST')",
             "mg_require_permission('merchant.location_claim.execute')",
@@ -81,7 +77,6 @@ final class ActionCenterRedeemLocationSelectorContractTest extends TestCase
     {
         $source=file_get_contents(dirname(__DIR__,2).'/assets/js/merchant-claims.js');
         self::assertIsString($source);
-
         foreach([
             '/api/merchant/microgift-claim-lookup.php?instance_id=',
             "Microgifter.post('/api/merchant/microgift-claim.php', payload)",
