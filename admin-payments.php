@@ -18,10 +18,10 @@ require __DIR__.'/includes/header.php';
         <div><span class="mg-eyebrow">Platform payment authority</span><h1>Stripe settings &amp; readiness</h1><p>Review test and live configuration, set the Microgifter platform share, and verify webhook and Connect readiness.</p></div>
         <span class="mg-status-badge" data-payment-readiness>Loading readiness</span>
       </header>
-      <section class="mg-payment-security-notice"><strong>Server-managed credentials</strong><p>Stripe secret and webhook values stay in the hosting environment or the encrypted server credential store. This page reports their status but never renders their values.</p></section>
+      <section class="mg-payment-security-notice"><strong>Protected credentials</strong><p>Server environment values take priority. Database credentials are encrypted with <code>MG_PAYMENT_CREDENTIAL_KEY</code>, and stored secret values are never returned to the browser.</p></section>
       <div class="mg-payment-admin-grid">
         <section class="mg-app-panel">
-          <div class="mg-app-panel-head"><div><h2>Payment policy</h2><p>Configure the public key and platform share for the selected mode.</p></div></div>
+          <div class="mg-app-panel-head"><div><h2>Stripe configuration</h2><p>Configure credentials and the platform-share policy for the selected mode.</p></div></div>
           <div class="mg-app-panel-body">
             <form class="mg-merchant-form" data-payment-settings-form>
               <div class="mg-grid-2">
@@ -29,13 +29,14 @@ require __DIR__.'/includes/header.php';
                 <label class="mg-check-row"><input type="checkbox" name="enabled" value="1"> Enable Stripe</label>
               </div>
               <label>Publishable key<input name="publishable_key" autocomplete="off" placeholder="pk_test_… or pk_live_…"></label>
+              <?php require __DIR__.'/includes/admin-payment-credential-fields.php'; ?>
               <label>Connect client ID <span>(optional)</span><input name="connect_client_id" autocomplete="off" placeholder="ca_…"></label>
               <div class="mg-grid-2">
                 <label>Platform share, basis points<input name="platform_fee_bps" type="number" min="0" max="10000" value="1500" required><small>1500 = 15%, retained from the payment rather than added to the gift price.</small></label>
                 <label>Fixed platform fee, cents<input name="fixed_fee_cents" type="number" min="0" value="0" required></label>
               </div>
               <div class="mg-form-status" data-payment-settings-status></div>
-              <button class="mg-btn mg-btn-primary" type="submit">Save payment policy</button>
+              <button class="mg-btn mg-btn-primary" type="submit">Save Stripe configuration</button>
             </form>
           </div>
         </section>
