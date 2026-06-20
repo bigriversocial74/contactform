@@ -183,7 +183,7 @@ function mg_message_send_microgift(
         );
     }
 
-    $eventType=$messageType==='follow_up'?'microgift.follow_up_sent':'microgift.message_sent';
+    $eventType=$messageType==='follow_up'?'microgift.follow_up_sent':'message.sent';
     $pdo->prepare('INSERT INTO microgift_events (public_id,instance_id,event_type,actor_user_id,source_type,source_reference,payload_json,created_at) VALUES (?,?,?,?,?,?,?,NOW())')
         ->execute([
             mg_public_uuid(),
