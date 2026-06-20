@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+: "${MG_MYSQL_DOCKER_CONTAINER:?MG_MYSQL_DOCKER_CONTAINER is required.}"
+exec docker exec -i \
+  -e MYSQL_PWD="${MYSQL_PWD:-}" \
+  "${MG_MYSQL_DOCKER_CONTAINER}" \
+  mysqldump "$@"
