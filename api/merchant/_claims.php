@@ -24,10 +24,56 @@ function mg_claim_lookup(PDO $pdo, int $merchantUserId, string $identifier): arr
     return $row;
 }
 
+function mg_claim_code_pepper_file(array $config): string
+{
+    $root=trim((string)($config['storage']['root']??''));
+    if($root==='')return '';
+    return rtrim($root,"/\\").DIRECTORY_SEPARATOR.'.secrets'.DIRECTORY_SEPARATOR.'claim-code-pepper';
+}
+
+function mg_claim_code_read_pepper(string $path): string
+{
+    if($path===''||!is_file($path)||is_link($path))return '';
+    $value=file_get_contents($path);
+    if(!is_string($value))return '';
+    $value=trim($value);
+    return preg_match('/^[a-f0-9]{64}$/i',$value)===1?strtolower($value):'';
+}
+
+function mg_claim_code_create_pepper(string $path): string
+{
+    if($path==='')return '';
+    $directory=dirname($path);
+    if(!is_dir($directory)&&!mkdir($directory,0770,true)&&!is_dir($directory))return '';
+    if(is_link($directory))return '';
+
+    $value=bin2hex(random_bytes(32));
+    $handle=@fopen($path,'x');
+    if($handle===false)return mg_claim_code_read_pepper($path);
+
+    $written=fwrite($handle,$value.PHP_EOL);
+    fflush($handle);
+    fclose($handle);
+    @chmod($path,0600);
+    if($written===false||$written<strlen($value)){
+        @unlink($path);
+        return '';
+    }
+    return $value;
+}
+
 function mg_claim_code_pepper(): string
 {
     $config=require dirname(__DIR__).'/config.php';
-    $pepper=(string)($config['security']['claim_code_pepper']??'');
-    if($pepper==='')mg_fail('Merchant claim-code management is not configured.',503);
-    return $pepper;
+    $configured=trim((string)($config['security']['claim_code_pepper']??''));
+    if($configured!=='')return $configured;
+
+    $path=mg_claim_code_pepper_file($config);
+    $persisted=mg_claim_code_read_pepper($path);
+    if($persisted!=='')return $persisted;
+
+    $created=mg_claim_code_create_pepper($path);
+    if($created!=='')return $created;
+
+    mg_fail('Merchant claim-code security could not be initialized. Check the persistent storage directory permissions or configure MG_CLAIM_CODE_PEPPER.',503);
 }
