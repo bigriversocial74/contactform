@@ -10,7 +10,7 @@ SET @mg_has_conversation_key := (
 );
 SET @mg_sql := IF(
   @mg_has_conversation_key=0,
-  "ALTER TABLE message_threads ADD COLUMN conversation_key VARCHAR(190) NULL DEFAULT 'legacy' AFTER microgift_instance_id",
+  'ALTER TABLE message_threads ADD COLUMN conversation_key VARCHAR(190) NULL DEFAULT ''legacy'' AFTER microgift_instance_id',
   'SELECT 1'
 );
 PREPARE mg_stmt FROM @mg_sql;
@@ -68,21 +68,8 @@ PREPARE mg_stmt FROM @mg_sql;
 EXECUTE mg_stmt;
 DEALLOCATE PREPARE mg_stmt;
 
-SET @mg_conversation_nullable := (
-  SELECT IS_NULLABLE FROM information_schema.COLUMNS
-  WHERE TABLE_SCHEMA=DATABASE()
-    AND TABLE_NAME='message_threads'
-    AND COLUMN_NAME='conversation_key'
-  LIMIT 1
-);
-SET @mg_sql := IF(
-  @mg_conversation_nullable='YES',
-  "ALTER TABLE message_threads MODIFY COLUMN conversation_key VARCHAR(190) NOT NULL DEFAULT 'legacy'",
-  'ALTER TABLE message_threads ALTER COLUMN conversation_key SET DEFAULT \'legacy\''
-);
-PREPARE mg_stmt FROM @mg_sql;
-EXECUTE mg_stmt;
-DEALLOCATE PREPARE mg_stmt;
+ALTER TABLE message_threads
+  MODIFY COLUMN conversation_key VARCHAR(190) NOT NULL DEFAULT 'legacy';
 
 INSERT INTO schema_migrations (migration_key,description,checksum,applied_at)
 VALUES ('stage_v1d_transfer_conversations','Transfer-scoped Microgift conversations isolate regift participants and follow-up history.',NULL,NOW())
