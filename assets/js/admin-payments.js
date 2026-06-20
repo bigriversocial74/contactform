@@ -12,6 +12,11 @@ document.addEventListener('DOMContentLoaded',function(){
 
   function esc(value){return String(value==null?'':value).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];});}
 
+  function clearSecrets(){
+    if(form.elements.secret_key)form.elements.secret_key.value='';
+    if(form.elements.webhook_secret)form.elements.webhook_secret.value='';
+  }
+
   function fill(data){
     var provider=data.provider||{};
     form.elements.enabled.checked=!!provider.enabled;
@@ -19,6 +24,7 @@ document.addEventListener('DOMContentLoaded',function(){
     form.elements.connect_client_id.value=provider.connect_client_id||'';
     form.elements.platform_fee_bps.value=Number(provider.platform_fee_bps||1500);
     form.elements.fixed_fee_cents.value=Number(provider.fixed_fee_cents||0);
+    clearSecrets();
     badge.textContent=data.ready?'Ready for '+provider.mode:'Not ready for '+provider.mode;
     badge.classList.toggle('is-ready',!!data.ready);
     badge.classList.toggle('is-missing',!data.ready);
