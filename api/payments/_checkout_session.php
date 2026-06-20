@@ -15,6 +15,18 @@ final class MgCheckoutSessionException extends RuntimeException
 function mg_payment_expire_checkout_sessions(PDO $pdo,int $orderId): void
 {
     $pdo->prepare(
+        "UPDATE payment_intents pi
+         INNER JOIN checkout_sessions cs ON cs.payment_intent_id=pi.id
+         SET pi.status='cancelled',
+             pi.failure_code='checkout_session_expired',
+             pi.failure_message='The linked checkout session expired before payment.',
+             pi.updated_at=NOW()
+         WHERE cs.order_id=?
+           AND cs.status IN ('created','open')
+           AND cs.expires_at IS NOT NULL AND cs.expires_at<=NOW()
+           AND pi.status IN ('created','requires_payment_method','requires_action')"
+    )->execute([$orderId]);
+    $pdo->prepare(
         "UPDATE checkout_sessions
          SET status='expired',updated_at=NOW()
          WHERE order_id=? AND status IN ('created','open')
