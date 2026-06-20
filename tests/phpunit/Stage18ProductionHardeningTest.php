@@ -58,19 +58,18 @@ final class Stage18ProductionHardeningTest extends TestCase
         self::assertStringContainsString('DELETE FROM `{$table}`', $source);
     }
 
-    public function testReadinessUsesAppliedMigrationsAndStage18OperationalTables(): void
+    public function testReadinessUsesCanonicalManifestOperationsAndStripeAuthorities(): void
     {
         $source = $this->read('scripts/validate_launch_readiness.php');
-        foreach (['stage_12_universal_tips','stage_13_subscriptions_monetization','stage_14_posts_feed_social','stage_15_psr_demand_intelligence','stage_16_agent_execution_orchestration','stage_17_multi_agent_swarms','stage_18_production_hardening_launch_readiness'] as $migration) {
-            self::assertStringContainsString("'{$migration}'", $source);
-        }
-        foreach (['operational_incidents','deployment_releases','release_gate_results','retention_policies','operational_check_results'] as $table) {
+        self::assertStringContainsString("require_once dirname(__DIR__) . '/includes/migrations.php'", $source);
+        self::assertStringContainsString("require_once dirname(__DIR__) . '/api/payments/_readiness.php'", $source);
+        self::assertStringContainsString('mg_migration_status($pdo)', $source);
+        foreach (['operational_incidents','deployment_releases','release_gate_results','retention_policies','operational_check_results','payment_platform_credentials','payment_provider_accounts','payment_webhook_events'] as $table) {
             self::assertStringContainsString("'{$table}'", $source);
         }
-        self::assertStringContainsString('stage_migrations', $source);
-        self::assertStringContainsString('operations_tables', $source);
-        self::assertStringContainsString('critical_incidents', $source);
-        self::assertStringContainsString('payment_webhooks', $source);
+        foreach (['stage_migrations','operations_tables','stripe_platform','stripe_selling_merchants','critical_incidents','payment_webhooks'] as $check) {
+            self::assertStringContainsString("'{$check}'", $source);
+        }
     }
 
     public function testAdminEndpointsRequireOperationsPermissionsAndCsrf(): void
