@@ -64,8 +64,9 @@ final class V1ReleasePackagingContractTest extends TestCase
         self::assertStringContainsString("'stage_v1_release_trigger_portability.sql'", $manifest);
         self::assertStringContainsString('DROP TRIGGER IF EXISTS trg_catalog_assets_review_state', $migration);
         self::assertStringContainsString('SET NEW.status = IF(', $migration);
+        self::assertStringNotContainsString('INSERT INTO schema_migrations', $migration);
         self::assertStringNotContainsString('END; */', $migration);
-        self::assertStringContainsString("'stage_v1_release_trigger_portability'", $migration);
+        self::assertStringEndsWith(')', rtrim($migration));
     }
 
     public function testRestoredDatabaseValidatorUsesCanonicalDatabaseStatus(): void
