@@ -37,8 +37,8 @@ function mg_pppm_transfer_owner_canonical(PDO $pdo, string $pppmPublicId, int $n
         throw new RuntimeException('PPPM item cannot be transferred from its current state.');
     }
 
-    $serviceAuthorized=!empty($metadata['service_authorized'])
-        &&in_array($sourceType,['microgift_claim'],true);
+    $serviceAuthorized=$sourceType==='microgift_claim'
+        &&trim((string)($metadata['microgift_instance_id']??''))!=='';
     if($oldOwner<1){
         if(!$serviceAuthorized)throw new RuntimeException('PPPM item does not have a transferable owner.');
     }elseif($actorUserId!==$oldOwner&&!$serviceAuthorized){
