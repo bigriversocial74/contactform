@@ -9,12 +9,23 @@ function mg_payment_readiness(PDO $pdo,string $provider='stripe',?string $mode=n
     $status=mg_payment_config_public_status($pdo,$provider,$mode);
     $config=mg_payment_platform_config($pdo,$provider,$mode);
     $appUrl=rtrim(trim((string)(getenv('MG_APP_URL')?:'')),'/');
+    $runtimeProvider=mg_payment_provider_key();
     $prefix=$mode==='live'?'live':'test';
     $checks=[
+        'runtime_provider'=>[
+            'ok'=>$runtimeProvider===$provider,
+            'label'=>'Runtime provider',
+            'detail'=>$runtimeProvider===$provider?'MG_PAYMENT_PROVIDER selects Stripe.':'Set MG_PAYMENT_PROVIDER=stripe before enabling customer payments.',
+        ],
         'provider_enabled'=>[
             'ok'=>(bool)$status['enabled'],
             'label'=>'Provider enabled',
             'detail'=>$status['enabled']?'Enabled for '.$mode.' mode.':'Enable Stripe for '.$mode.' mode.',
+        ],
+        'runtime_mode'=>[
+            'ok'=>mg_payment_mode()===$mode,
+            'label'=>'Runtime mode',
+            'detail'=>mg_payment_mode()===$mode?'MG_PAYMENT_MODE selects '.$mode.'.':'Set MG_PAYMENT_MODE='.$mode.' before using this configuration.',
         ],
         'publishable_key'=>[
             'ok'=>str_starts_with((string)$config['publishable_key'],'pk_'.$prefix.'_'),
