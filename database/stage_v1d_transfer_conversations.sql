@@ -10,7 +10,7 @@ SET @mg_has_conversation_key := (
 );
 SET @mg_sql := IF(
   @mg_has_conversation_key=0,
-  'ALTER TABLE message_threads ADD COLUMN conversation_key VARCHAR(190) NULL AFTER microgift_instance_id',
+  "ALTER TABLE message_threads ADD COLUMN conversation_key VARCHAR(190) NULL DEFAULT 'legacy' AFTER microgift_instance_id",
   'SELECT 1'
 );
 PREPARE mg_stmt FROM @mg_sql;
@@ -19,7 +19,7 @@ DEALLOCATE PREPARE mg_stmt;
 
 UPDATE message_threads
 SET conversation_key=CONCAT('legacy:',public_id)
-WHERE conversation_key IS NULL OR conversation_key='';
+WHERE conversation_key IS NULL OR conversation_key='' OR conversation_key='legacy';
 
 -- Add a non-unique supporting index before dropping the old unique index so the
 -- existing foreign key on microgift_instance_id always remains indexed.
@@ -77,8 +77,8 @@ SET @mg_conversation_nullable := (
 );
 SET @mg_sql := IF(
   @mg_conversation_nullable='YES',
-  'ALTER TABLE message_threads MODIFY COLUMN conversation_key VARCHAR(190) NOT NULL',
-  'SELECT 1'
+  "ALTER TABLE message_threads MODIFY COLUMN conversation_key VARCHAR(190) NOT NULL DEFAULT 'legacy'",
+  'ALTER TABLE message_threads ALTER COLUMN conversation_key SET DEFAULT \'legacy\''
 );
 PREPARE mg_stmt FROM @mg_sql;
 EXECUTE mg_stmt;
