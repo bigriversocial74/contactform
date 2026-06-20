@@ -97,6 +97,7 @@ $can_admin_dashboard = $user && (
 <meta name="csrf-token" content="<?= mg_e(mg_csrf_token()) ?>">
 <title><?= mg_e($page_title) ?></title>
 <link rel="stylesheet" href="/assets/css/microgifter.css">
+<link rel="stylesheet" href="/assets/css/public-program-pages.css">
 <?php if ($is_app_page): ?>
 <link rel="stylesheet" href="/assets/css/app-shell.css">
 <link rel="stylesheet" href="/assets/css/create-menu.css">
