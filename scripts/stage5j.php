@@ -6,6 +6,7 @@ require_once dirname(__DIR__).'/api/db.php';
 
 $root=dirname(__DIR__);
 $paths=[
+    $root.'/database/stage_v1c_checkout_session_intent_authority.sql',
     $root.'/database/stage_3_commerce_microgift_fulfillment.sql',
     $root.'/database/stage_5j_foundation_reconciliation.sql',
 ];
@@ -19,7 +20,7 @@ try{
         }
         $pdo->exec($sql);
     }
-    echo "Stage 5J foundation and commerce Microgift fulfillment schema applied.\n";
+    echo "Stage 5J checkout authority, fulfillment, and foundation schema applied.\n";
 }catch(Throwable $e){
     fwrite(STDERR,'FAILED: '.$e->getMessage()."\n");
     exit(1);
