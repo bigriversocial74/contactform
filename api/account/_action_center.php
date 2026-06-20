@@ -56,7 +56,9 @@ function mg_action_center_select_sql(): string
                    ac.first_received_at,ac.sent_at,ac.claimed_at,ac.redeemed_at,ac.updated_at,
                    delivery.first_sent_at delivery_first_sent_at,delivery.last_resent_at,
                    COALESCE(delivery.resend_count,0) resend_count,delivery.last_delivery_event_at,
+                   follow_up.last_follow_up_at,COALESCE(follow_up.follow_up_count,0) follow_up_count,
                    i.public_id instance_id,i.status instance_status,i.face_value_cents,i.currency,i.expires_at,i.metadata_json instance_metadata_json,
+                   CAST(i.owner_user_id AS CHAR) owner_user_id,
                    t.public_id template_id,t.name template_name,
                    CAST(sender.id AS CHAR) sender_id,COALESCE(sender.display_name,sender.full_name) sender_name,
                    CAST(recipient.id AS CHAR) recipient_id,COALESCE(recipient.display_name,recipient.full_name) recipient_name,
@@ -77,7 +79,16 @@ function mg_action_center_select_sql(): string
                        MAX(occurred_at) last_delivery_event_at
                 FROM microgift_delivery_events
                 GROUP BY instance_id
-            ) delivery ON delivery.instance_id=i.id";
+            ) delivery ON delivery.instance_id=i.id
+            LEFT JOIN (
+                SELECT mt.microgift_instance_id,m.sender_user_id,
+                       MAX(m.created_at) last_follow_up_at,
+                       COUNT(*) follow_up_count
+                FROM messages m
+                INNER JOIN message_threads mt ON mt.id=m.thread_id
+                WHERE m.source_type='action_center_follow_up'
+                GROUP BY mt.microgift_instance_id,m.sender_user_id
+            ) follow_up ON follow_up.microgift_instance_id=i.id AND follow_up.sender_user_id=ac.user_id";
 }
 
 function mg_action_center_public_item(array $row): array
@@ -89,6 +100,13 @@ function mg_action_center_public_item(array $row): array
     }
     if(!empty($row['delivery_first_sent_at']))$row['sent_at']=$row['delivery_first_sent_at'];
     $row['resend_count']=(int)($row['resend_count']??0);
+    $row['follow_up_count']=(int)($row['follow_up_count']??0);
+    $row['can_follow_up']=(string)($row['folder']??'')==='sent'
+        && (string)($row['recipient_id']??'')!==''
+        && (string)($row['recipient_id']??'')===(string)($row['owner_user_id']??'')
+        && in_array((string)($row['instance_status']??''),['issued','delivered'],true)
+        && empty($row['claimed_at'])
+        && empty($row['redeemed_at']);
     unset($row['action_item_internal_id'],$row['instance_metadata_json'],$row['delivery_first_sent_at']);
     $row['sandbox_mode']=(string)($metadata['sandbox_mode']??'');
     $row['demo_scenario']=(string)($metadata['demo_scenario']??'');
