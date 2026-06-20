@@ -57,6 +57,7 @@ return [
         'stage_10e_outbox_dashboard_policies_retention.sql',
         'stage_10f_architecture_deployment_action_center.sql',
         'stage_11g_action_center_durable_messaging.sql',
+        'stage_v1d_transfer_conversations.sql',
         'schema_v2_action_center_crm_addendum.sql',
         'stage_11h_backend_hardening.sql',
         'stage_12_universal_tips.sql',
