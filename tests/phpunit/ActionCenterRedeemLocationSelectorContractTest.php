@@ -43,8 +43,8 @@ final class ActionCenterRedeemLocationSelectorContractTest extends TestCase
             'mg_location_claim_actor_authorized(',
             'canonical_merchant_user_id',
             'mg_microgift_location_allowed($instance,$locationId)',
-            "'redeemable'=>$paid&&$available&&$notExpired&&$locationAllowed",
-            "'redemption'=>$redemptionStmt->fetch(PDO::FETCH_ASSOC)?:null",
+            "'redeemable'=>\$paid&&\$available&&\$notExpired&&\$locationAllowed",
+            "'redemption'=>\$redemptionStmt->fetch(PDO::FETCH_ASSOC)?:null",
         ] as $needle){
             self::assertStringContainsString($needle,$source);
         }
@@ -61,7 +61,7 @@ final class ActionCenterRedeemLocationSelectorContractTest extends TestCase
             "mg_require_permission('merchant.location_claim.execute')",
             'mg_require_csrf_for_write($input)',
             "SELECT merchant_user_id,name,status FROM merchant_locations WHERE public_id=? LIMIT 1",
-            "unset($input['claimant_user_id'])",
+            'unset($input[\'claimant_user_id\'])',
             'mg_claim_execute_operation(',
             "'customer_notification_id'=>",
             "'merchant_notification_id'=>",
