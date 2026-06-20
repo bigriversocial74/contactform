@@ -66,8 +66,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     state.agents.forEach(function (agent) {
+      var isRunning = agent.runtime_status === 'running';
       var row = document.createElement('div');
-      row.className = 'mg-saved-agent-row' + (agent.runtime_status === 'running' ? ' is-running' : '');
+      row.className = 'mg-saved-agent-row' + (isRunning ? ' is-running' : '');
       row.dataset.savedAgentDynamic = agent.id;
 
       var open = document.createElement('button');
@@ -76,7 +77,8 @@ document.addEventListener('DOMContentLoaded', function () {
       open.dataset.loadAgent = agent.id;
       open.innerHTML = '<strong></strong><span>Saved agent workspace</span><div class="mg-agent-runtime-meta"><span class="mg-agent-runtime-status"></span><time></time></div>';
       open.querySelector('strong').textContent = agent.name;
-      open.querySelector('.mg-agent-runtime-status').textContent = agent.runtime_status === 'running' ? 'Running' : 'Paused';
+      open.querySelector('.mg-agent-runtime-status').textContent = isRunning ? 'Running' : 'Paused';
+      open.querySelector('.mg-agent-runtime-status').classList.toggle('is-running', isRunning);
       open.querySelector('time').textContent = formatTime(agent.updated_at);
       open.querySelector('time').dateTime = agent.updated_at || '';
 
@@ -87,10 +89,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
       var toggle = document.createElement('button');
       toggle.type = 'button';
-      toggle.className = 'mg-agent-runtime-toggle ' + (agent.runtime_status === 'running' ? 'is-pause' : 'is-start');
+      toggle.className = 'mg-agent-runtime-toggle ' + (isRunning ? 'is-pause' : 'is-start');
       toggle.dataset.agentRuntimeToggle = agent.id;
-      toggle.dataset.nextStatus = agent.runtime_status === 'running' ? 'paused' : 'running';
-      toggle.textContent = agent.runtime_status === 'running' ? 'Pause agent' : 'Start agent';
+      toggle.dataset.nextStatus = isRunning ? 'paused' : 'running';
+      toggle.setAttribute('aria-label', (isRunning ? 'Pause ' : 'Start ') + agent.name);
+      toggle.textContent = isRunning ? 'Pause agent' : 'Start agent';
 
       row.appendChild(open);
       row.appendChild(actions);
@@ -105,9 +108,15 @@ document.addEventListener('DOMContentLoaded', function () {
     var active = activeAgent();
     if (active) {
       storeAgentDraft(active);
-      setCanvasStatus(active.runtime_status === 'running' ? 'Saved · Running' : 'Saved · Paused');
+      var isRunning = active.runtime_status === 'running';
+      setCanvasStatus(isRunning ? 'Saved · Running' : 'Saved · Paused');
       var saveButton = document.querySelector('[data-save-agent]');
-      if (saveButton) saveButton.textContent = active.runtime_status === 'running' ? 'Pause agent' : 'Start agent';
+      if (saveButton) {
+        saveButton.disabled = false;
+        saveButton.textContent = isRunning ? 'Pause agent' : 'Start agent';
+        saveButton.classList.toggle('is-running', isRunning);
+        saveButton.setAttribute('aria-label', isRunning ? 'Pause this saved agent' : 'Start this saved agent');
+      }
     }
     document.dispatchEvent(new CustomEvent('mg:agents:rendered', { detail: { agents: state.agents, active: active } }));
   }
@@ -121,12 +130,43 @@ document.addEventListener('DOMContentLoaded', function () {
       state.agents.forEach(storeAgentDraft);
       state.loading = false;
       render();
+      return state.agents;
     } catch (error) {
       state.loading = false;
       renderSavedAgents();
       setCanvasStatus(error.message || 'Unable to load agents');
+      throw error;
     }
   }
+
+  function applyAgentUpdate(agent) {
+    if (!agent || !agent.id) return null;
+    var index = state.agents.findIndex(function (item) { return item.id === agent.id; });
+    if (index === -1) state.agents.unshift(agent);
+    else state.agents[index] = Object.assign({}, state.agents[index], agent);
+    storeAgentDraft(agent);
+    render();
+    return state.agents.find(function (item) { return item.id === agent.id; }) || null;
+  }
+
+  function setRuntimeStatus(id, status) {
+    var agent = state.agents.find(function (item) { return item.id === id; });
+    if (!agent || !['running', 'paused'].includes(status)) return null;
+    var previous = Object.assign({}, agent);
+    agent.runtime_status = status;
+    agent.updated_at = new Date().toISOString();
+    render();
+    return previous;
+  }
+
+  window.Microgifter = window.Microgifter || {};
+  window.Microgifter.agents = {
+    refresh: loadAgents,
+    getActive: activeAgent,
+    getAll: function () { return state.agents.slice(); },
+    applyUpdate: applyAgentUpdate,
+    setRuntimeStatus: setRuntimeStatus
+  };
 
   async function saveCurrentAgent() {
     var id = currentAgentId();
@@ -140,10 +180,9 @@ document.addEventListener('DOMContentLoaded', function () {
         category: draft.category,
         config: draft.values || {}
       });
-      Object.assign(existing, updated.data.agent);
-      render();
+      applyAgentUpdate(updated.data.agent);
       setCanvasStatus('Saved to account');
-      return existing;
+      return updated.data.agent;
     }
 
     var created = await Microgifter.post('/api/agents/index.php', {
