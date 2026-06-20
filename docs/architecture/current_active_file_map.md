@@ -1,115 +1,106 @@
 # Current Active File Map
 
-This file records the active Stage 1 runtime files after the PHP-only cleanup.
+This file records the active Microgifter runtime and release-validation sources after the completed Stage 1–18 foundation and focused V1 Stages A–F.
 
 ## Source of truth
 
 GitHub repository:
 
 ```text
-stonefellow74-debug/microgifter
+bigriversocial74/contactform
 ```
 
-HostGator/cPanel is the current staging/private build runtime.
+The repository root is the only active runtime source. Root PHP pages, `api/`, `includes/`, `assets/`, `database/`, `scripts/`, `tests/`, and `.github/workflows/` are canonical.
 
-## Active public PHP pages
+The nested `microgifter-main/` directory is an archived recovery copy. It must not be deployed, imported, used as a workflow source, or treated as current implementation evidence.
+
+## Focused V1 public and customer pages
 
 ```text
 index.php
+discover.php
+product.php
+store.php
+cart.php
+checkout.php
+checkout-success.php
+inbox.php
+sent.php
+claimed.php
+```
+
+## Focused V1 merchant and administrative pages
+
+```text
 build.php
-agent.php
-signup.php
-signin.php
-account.php
+merchant.php
+merchant-products.php
+merchant-product.php
+merchant-storefront.php
+merchant-locations.php
+merchant-claims.php
+merchant-payments.php
+admin-payments.php
+admin/operations.php
 ```
 
-## Active API endpoints for Stage 1
+## Canonical V1 authorities
 
 ```text
-api/health.php
-api/auth/register.php
-api/auth/login.php
-api/auth/logout.php
-api/me/profile.php
-api/me/sessions.php
-api/admin/security-logs.php
+api/catalog/builder-draft.php
+api/public/product.php
+api/storefront/profile.php
+api/commerce/cart-items.php
+api/commerce/checkout-draft.php
+api/commerce/orders.php
+api/payments/order-checkout-session.php
+api/payments/webhook.php
+api/pppm/_ownership.php
+api/microgifts/_action_center_projection.php
+api/microgifts/_atomic_merchant_redemption.php
+api/account/action-center-send.php
+api/account/action-center-follow-up.php
+api/merchant/microgift-claim.php
+api/messages/_messaging.php
 ```
 
-## Active shared includes
+## Database source of truth
+
+The ordered migration source of truth is:
 
 ```text
-includes/app.php
-includes/header.php
-includes/footer.php
-includes/runtime.php
-includes/ids.php
-includes/authorization.php
-includes/delivery.php
+config/migrations.php
 ```
 
-## Active global assets
+Clean installs, upgrades, readiness checks, and CI must consume that manifest. Focused V1 additions include:
 
 ```text
-assets/css/microgifter.css
-assets/js/microgifter.js
-assets/js/api-client.js
-assets/js/auth.js
-assets/js/auth-state.js
-assets/js/onboarding.js
+database/stage_v1c_checkout_session_intent_authority.sql
+database/stage_v1d_transfer_conversations.sql
+database/stage_v1f_stripe_payments.sql
 ```
 
-## Section CSS files
+Do not import individual migrations after applying a generated full-upgrade artifact unless the canonical runner reports them as pending.
+
+## Active validation sources
 
 ```text
-assets/css/sections/agent.css
-assets/css/sections/builder.css
-assets/css/sections/social.css
-assets/css/sections/ecommerce.css
-assets/css/sections/pppm.css
+.github/workflows/pr-validation.yml
+.github/workflows/recovery-baseline.yml
+.github/workflows/browser-validation.yml
+.github/workflows/stripe-test-integration.yml
+scripts/recovery_baseline.sh
+scripts/validate_product_pppm_golden_path_gate.php
+scripts/validate_launch_readiness.php
+scripts/validate_stage_f_stripe_behavior.php
+scripts/validate_stripe_test_provider.php
 ```
 
-## Local-only config
-
-This file should exist on HostGator but should not be committed with real credentials:
-
-```text
-api/config.local.php
-```
-
-The safe template is:
-
-```text
-api/config.local.example.php
-```
-
-## Deleted/non-runtime prototype files
-
-These files must not be active runtime files:
-
-```text
-index.html
-build.html
-builder.html
-agent.html
-signin.html
-signup.html
-```
-
-Old HTML URLs should return `410 Gone`.
-
-## Current database install file
-
-For a fresh database install, use:
-
-```text
-database/compiled/microgifter_stage_1_current_compiled.sql
-```
-
-Do not import individual migrations after importing the compiled SQL into a fresh database.
+Pull-request validation covers clean MySQL installation, migrations, PHP syntax, security, behavior validators, the complete PHPUnit suite, and active-root Playwright browser smoke. Real Stripe test-provider validation runs manually with protected repository secrets and produces release evidence.
 
 ## Current runtime profile
 
-HostGator staging mode:
+HostGator staging remains compatible with:
 
 ```text
 MG_RUNTIME_PROFILE=hostgator
@@ -121,10 +112,20 @@ MG_ENABLE_WEBSOCKETS=false
 MG_ENABLE_SSE=false
 ```
 
+Stripe staging additionally requires the test-mode publishable key, secret key, webhook signing secret, HTTPS application URL, and a ready Express connected account for every merchant with a published product.
+
 ## Next implementation stage
 
-Recommended next stage:
+Current package:
 
 ```text
-04A_microgifter_product_and_gift_schema_design
+V1 Release Hardening
 ```
+
+Completion requires:
+
+1. Active-root browser validation green on the pull request and merge commit.
+2. Critical and high product-to-PPPM golden-path findings blocked in CI.
+3. Canonical migration, Stripe platform, webhook, and selling-merchant readiness enforced by release checks.
+4. Real Stripe test-provider evidence recorded from the protected manual workflow.
+5. Staging deployment, backup evidence, rollback evidence, and end-to-end checkout, issuance, transfer, and redemption verification.
