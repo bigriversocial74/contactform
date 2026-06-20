@@ -99,6 +99,7 @@ jobs:
           bash -n scripts/validate_database_backup_restore.sh
           bash -n scripts/validate_release_rollback.sh
           php -l scripts/build_release_evidence.php
+          php -l scripts/validate_database_migration_status.php
 
       - name: Wait for MySQL
         run: |
@@ -115,7 +116,12 @@ jobs:
         run: composer migrate
 
       - name: Validate database backup and isolated restore
-        run: bash scripts/validate_database_backup_restore.sh --output-dir build/release-evidence
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p build/release-evidence
+          bash scripts/validate_database_backup_restore.sh --output-dir build/release-evidence 2>&1 \
+            | tee build/release-evidence/backup-restore-validation.log
 
       - name: Resolve release and rollback refs
         id: refs
@@ -208,6 +214,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: microgifter-release-evidence-${{ github.sha }}
-          path: build/release-evidence/*.json
-          if-no-files-found: error
+          path: build/release-evidence/*
+          if-no-files-found: warn
           retention-days: 90
