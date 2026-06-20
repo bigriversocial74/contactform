@@ -3,6 +3,41 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_payments.php';
 
+function mg_payment_selling_merchant_readiness(PDO $pdo,string $provider='stripe',?string $mode=null): array
+{
+    $mode=$mode??mg_payment_mode();
+    $stmt=$pdo->prepare(
+        "SELECT cp.merchant_user_id,
+                MAX(CASE WHEN ppa.id IS NOT NULL
+                          AND ppa.status='active'
+                          AND ppa.charges_enabled=1
+                          AND ppa.payouts_enabled=1
+                         THEN 1 ELSE 0 END) AS ready
+         FROM catalog_products cp
+         LEFT JOIN payment_provider_accounts ppa
+           ON ppa.merchant_user_id=cp.merchant_user_id
+          AND ppa.provider_key=?
+          AND ppa.mode=?
+         WHERE cp.status='published'
+         GROUP BY cp.merchant_user_id
+         ORDER BY cp.merchant_user_id"
+    );
+    $stmt->execute([$provider,$mode]);
+    $rows=$stmt->fetchAll(PDO::FETCH_ASSOC);
+    $blocked=[];
+    $ready=0;
+    foreach($rows as $row){
+        if((int)($row['ready']??0)===1)$ready++;
+        else $blocked[]=(int)$row['merchant_user_id'];
+    }
+    return [
+        'total'=>count($rows),
+        'ready'=>$ready,
+        'blocked'=>count($blocked),
+        'blocked_merchant_user_ids'=>$blocked,
+    ];
+}
+
 function mg_payment_readiness(PDO $pdo,string $provider='stripe',?string $mode=null): array
 {
     $mode=$mode??mg_payment_mode();
@@ -66,15 +101,18 @@ function mg_payment_readiness(PDO $pdo,string $provider='stripe',?string $mode=n
     $accounts=$pdo->prepare("SELECT COUNT(*) total,SUM(status='active' AND charges_enabled=1 AND payouts_enabled=1) ready FROM payment_provider_accounts WHERE provider_key=? AND mode=?");
     $accounts->execute([$provider,$mode]);
     $accountCounts=$accounts->fetch(PDO::FETCH_ASSOC)?:['total'=>0,'ready'=>0];
-    $allReady=!in_array(false,array_map(static fn(array $check): bool=>(bool)$check['ok'],$checks),true);
+    $platformReady=!in_array(false,array_map(static fn(array $check): bool=>(bool)$check['ok'],$checks),true);
+    $sellingMerchants=mg_payment_selling_merchant_readiness($pdo,$provider,$mode);
     return [
         'provider'=>$status,
         'checks'=>$checks,
-        'ready'=>$allReady,
+        'ready'=>$platformReady,
+        'launch_ready'=>$platformReady&&(int)$sellingMerchants['blocked']===0,
         'connected_accounts'=>[
             'total'=>(int)($accountCounts['total']??0),
             'ready'=>(int)($accountCounts['ready']??0),
         ],
+        'selling_merchants'=>$sellingMerchants,
         'webhook_url'=>$appUrl!==''?$appUrl.'/api/payments/webhook.php?provider=stripe':'/api/payments/webhook.php?provider=stripe',
     ];
 }

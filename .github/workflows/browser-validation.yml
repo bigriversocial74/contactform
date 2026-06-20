@@ -1,0 +1,160 @@
+name: Browser Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '**/*.php'
+      - 'assets/**'
+      - 'includes/**'
+      - 'api/**'
+      - 'tests/browser/**'
+      - 'package.json'
+      - 'playwright.config.js'
+      - '.github/workflows/browser-validation.yml'
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: browser-validation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browser-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: microgifter
+          MYSQL_USER: microgifter
+          MYSQL_PASSWORD: microgifter
+          MYSQL_ROOT_PASSWORD: root
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    env:
+      MG_TEST_BASE_URL: http://127.0.0.1:8080
+      MG_TEST_SKIP_AUTHENTICATED: '1'
+      MG_APP_ENV: testing
+      MG_DEBUG: '0'
+      MG_APP_URL: http://127.0.0.1:8080
+      MG_BASE_URL: http://127.0.0.1:8080
+      MG_RUNTIME_PROFILE: local
+      MG_DB_HOST: 127.0.0.1
+      MG_DB_NAME: microgifter
+      MG_DB_USER: microgifter
+      MG_DB_PASS: microgifter
+      MG_MIGRATION_DB_USER: root
+      MG_MIGRATION_DB_PASS: root
+      MG_DB_CHARSET: utf8mb4
+      MG_SESSION_NAME: mg_browser_session
+      MG_CLAIM_CODE_PEPPER: browser-claim-code-pepper
+      MG_MEDIA_SIGNING_SECRET: browser-media-secret
+      MG_DISTRIBUTION_HASH_SECRET: browser-distribution-secret
+      MG_DISTRIBUTION_WEBHOOK_SECRET: browser-distribution-webhook-secret
+      MG_MERCHANT_INVITE_SECRET: browser-merchant-secret
+      MG_REPORT_EMAIL_SECRET: browser-report-secret
+      MG_PAYMENT_PROVIDER: stripe
+      MG_PAYMENT_MODE: test
+      MG_STRIPE_TEST_STUB: '1'
+      MG_STRIPE_STUB_ACCOUNT_ACTIVE: '1'
+      MG_STRIPE_PUBLISHABLE_KEY_TEST: pk_test_browser
+      MG_STRIPE_SECRET_KEY_TEST: sk_test_browser
+      MG_STRIPE_WEBHOOK_SECRET_TEST: whsec_browser
+      MG_PLATFORM_FEE_BPS: '1500'
+      MG_PLATFORM_FIXED_FEE_CENTS: '0'
+      MG_ENABLE_POLLING_NOTIFICATIONS: 'true'
+      MG_ENABLE_DB_OUTBOX: 'true'
+      MG_ENABLE_QUEUE_WORKER: 'false'
+      MG_ENABLE_REDIS: 'false'
+      MG_ENABLE_WEBSOCKETS: 'false'
+      MG_ENABLE_SSE: 'false'
+      MG_MEDIA_STORAGE_DRIVER: persistent_local
+      MG_MEDIA_STORAGE_ROOT: /tmp/microgifter-browser-storage
+      MG_MEDIA_PUBLIC_ENDPOINT: /api/public/media.php
+      MG_REQUIRE_PERSISTENT_MEDIA_STORAGE: 'true'
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: curl,fileinfo,json,mbstring,pdo,pdo_mysql,sodium
+          coverage: none
+          tools: composer:v2
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Install browser dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Wait for MySQL
+        run: |
+          for attempt in {1..30}; do
+            mysqladmin ping -h 127.0.0.1 -umicrogifter -pmicrogifter --silent && exit 0
+            sleep 1
+          done
+          exit 1
+
+      - name: Allow trusted trigger creation in CI MySQL
+        run: mysql -h 127.0.0.1 -uroot -proot -e "SET GLOBAL log_bin_trust_function_creators = 1;"
+
+      - name: Apply canonical migrations
+        run: composer migrate
+
+      - name: Initialize persistent media storage
+        run: php scripts/check_media_storage.php --initialize --json
+
+      - name: Start PHP test server
+        run: |
+          php -S 127.0.0.1:8080 -t . > /tmp/microgifter-browser-server.log 2>&1 &
+          echo $! > /tmp/microgifter-browser-server.pid
+          for attempt in {1..30}; do
+            if curl --fail --silent --show-error http://127.0.0.1:8080/api/health.php >/tmp/microgifter-browser-health.json; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/microgifter-browser-server.log
+          exit 1
+
+      - name: Run V1 browser smoke suite
+        run: npm run test:browser:v1
+
+      - name: Upload browser artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore
+
+      - name: Show PHP server log on failure
+        if: failure()
+        run: cat /tmp/microgifter-browser-server.log || true
+
+      - name: Stop PHP test server
+        if: always()
+        run: if [ -f /tmp/microgifter-browser-server.pid ]; then kill "$(cat /tmp/microgifter-browser-server.pid)" || true; fi

@@ -1,0 +1,226 @@
+name: Release Package Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '**/*.php'
+      - 'api/**'
+      - 'assets/**'
+      - 'config/**'
+      - 'database/**'
+      - 'includes/**'
+      - 'scripts/**'
+      - 'composer.json'
+      - 'composer.lock'
+      - '.github/workflows/release-package-validation.yml'
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-package-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package-and-recovery-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: microgifter
+          MYSQL_USER: microgifter
+          MYSQL_PASSWORD: microgifter
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    env:
+      MG_APP_ENV: testing
+      MG_DEBUG: '0'
+      MG_APP_URL: http://127.0.0.1:8080
+      MG_BASE_URL: http://127.0.0.1:8080
+      MG_RUNTIME_PROFILE: local
+      MG_DB_HOST: 127.0.0.1
+      MG_DB_PORT: '3306'
+      MG_DB_NAME: microgifter
+      MG_DB_USER: microgifter
+      MG_DB_PASS: microgifter
+      MG_MIGRATION_DB_USER: root
+      MG_MIGRATION_DB_PASS: root
+      MG_DB_CHARSET: utf8mb4
+      MG_CLAIM_CODE_PEPPER: release-package-validation-pepper
+      MG_PAYMENT_PROVIDER: stripe
+      MG_PAYMENT_MODE: test
+      MG_STRIPE_TEST_STUB: '1'
+      MG_STRIPE_STUB_ACCOUNT_ACTIVE: '1'
+      MG_STRIPE_PUBLISHABLE_KEY_TEST: pk_test_release_package
+      MG_STRIPE_SECRET_KEY_TEST: sk_test_release_package
+      MG_STRIPE_WEBHOOK_SECRET_TEST: whsec_release_package
+      MG_PLATFORM_FEE_BPS: '1500'
+      MG_PLATFORM_FIXED_FEE_CENTS: '0'
+      MG_MEDIA_STORAGE_DRIVER: persistent_local
+      MG_MEDIA_STORAGE_ROOT: /tmp/microgifter-release-package-storage
+      MG_MEDIA_PUBLIC_ENDPOINT: /api/public/media.php
+      MG_REQUIRE_PERSISTENT_MEDIA_STORAGE: 'true'
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      PUSH_BEFORE_SHA: ${{ github.event.before }}
+    steps:
+      - name: Check out full repository history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: curl,fileinfo,json,mbstring,pdo,pdo_mysql,sodium
+          coverage: none
+          tools: composer:v2
+
+      - name: Install current development dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Validate release tooling contracts
+        run: |
+          composer validate --strict
+          bash -n scripts/build_release_artifact.sh
+          bash -n scripts/validate_database_backup_restore.sh
+          bash -n scripts/validate_release_rollback.sh
+          bash -n scripts/ci/mysql
+          bash -n scripts/ci/mysqldump
+          php -l scripts/build_release_evidence.php
+          php -l scripts/validate_database_migration_status.php
+
+      - name: Wait for MySQL
+        run: |
+          for attempt in {1..30}; do
+            mysqladmin ping -h 127.0.0.1 -umicrogifter -pmicrogifter --silent && exit 0
+            sleep 1
+          done
+          exit 1
+
+      - name: Allow trusted trigger creation in CI MySQL
+        run: mysql -h 127.0.0.1 -uroot -proot -e "SET GLOBAL log_bin_trust_function_creators = 1;"
+
+      - name: Apply canonical migrations
+        run: composer migrate
+
+      - name: Validate database backup and isolated restore
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p build/release-evidence
+          MYSQL_CONTAINER="$(docker ps --filter 'ancestor=mysql:8.0' --format '{{.ID}}' | head -n1)"
+          test -n "${MYSQL_CONTAINER}"
+          chmod +x scripts/ci/mysql scripts/ci/mysqldump
+          PATH="${GITHUB_WORKSPACE}/scripts/ci:${PATH}" \
+          MG_MYSQL_DOCKER_CONTAINER="${MYSQL_CONTAINER}" \
+            bash scripts/validate_database_backup_restore.sh --output-dir build/release-evidence 2>&1 \
+              | tee build/release-evidence/backup-restore-validation.log
+
+      - name: Resolve release and rollback refs
+        id: refs
+        shell: bash
+        run: |
+          set -euo pipefail
+          SHORT_SHA="${GITHUB_SHA:0:12}"
+          if [[ "${GITHUB_EVENT_NAME}" == "pull_request" && -n "${PR_NUMBER}" ]]; then
+            RELEASE_VERSION="pr-${PR_NUMBER}-${SHORT_SHA}"
+            ROLLBACK_REF="${PR_BASE_SHA}"
+          else
+            RELEASE_VERSION="build-${GITHUB_RUN_NUMBER}-${SHORT_SHA}"
+            ROLLBACK_REF="${PUSH_BEFORE_SHA}"
+          fi
+          if [[ -z "${ROLLBACK_REF}" || "${ROLLBACK_REF}" =~ ^0+$ ]]; then
+            ROLLBACK_REF="$(git rev-parse HEAD^)"
+          fi
+          git cat-file -e "${ROLLBACK_REF}^{commit}"
+          echo "release_version=${RELEASE_VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "rollback_ref=${ROLLBACK_REF}" >> "${GITHUB_OUTPUT}"
+
+      - name: Build candidate artifact twice
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash scripts/build_release_artifact.sh \
+            --ref "${GITHUB_SHA}" \
+            --version "${{ steps.refs.outputs.release_version }}" \
+            --output-dir build/releases/current-a
+          bash scripts/build_release_artifact.sh \
+            --ref "${GITHUB_SHA}" \
+            --version "${{ steps.refs.outputs.release_version }}" \
+            --output-dir build/releases/current-b
+          CURRENT_A="$(find build/releases/current-a -maxdepth 1 -type f -name '*.tar.gz' -print -quit)"
+          CURRENT_B="$(find build/releases/current-b -maxdepth 1 -type f -name '*.tar.gz' -print -quit)"
+          test -n "${CURRENT_A}" -a -n "${CURRENT_B}"
+          test "$(sha256sum "${CURRENT_A}" | awk '{print $1}')" = "$(sha256sum "${CURRENT_B}" | awk '{print $1}')"
+          printf '{\n  "status": "passed",\n  "artifact_sha256": "%s",\n  "builds_compared": 2\n}\n' \
+            "$(sha256sum "${CURRENT_A}" | awk '{print $1}')" \
+            > build/release-evidence/reproducible-artifact-validation.json
+
+      - name: Build rollback artifact from base commit
+        run: |
+          bash scripts/build_release_artifact.sh \
+            --ref "${{ steps.refs.outputs.rollback_ref }}" \
+            --version "rollback-${{ steps.refs.outputs.rollback_ref }}" \
+            --output-dir build/releases/rollback
+
+      - name: Validate candidate and rollback artifact pair
+        shell: bash
+        run: |
+          set -euo pipefail
+          CURRENT_ARTIFACT="$(find build/releases/current-a -maxdepth 1 -type f -name '*.tar.gz' -print -quit)"
+          ROLLBACK_ARTIFACT="$(find build/releases/rollback -maxdepth 1 -type f -name '*.tar.gz' -print -quit)"
+          bash scripts/validate_release_rollback.sh \
+            --current "${CURRENT_ARTIFACT}" \
+            --rollback "${ROLLBACK_ARTIFACT}" \
+            --output build/release-evidence/rollback-validation.json
+
+      - name: Assemble release evidence bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          ARTIFACT_MANIFEST="$(find build/releases/current-a -maxdepth 1 -type f -name '*.manifest.json' -print -quit)"
+          php scripts/build_release_evidence.php \
+            --artifact-manifest="${ARTIFACT_MANIFEST}" \
+            --backup-report=build/release-evidence/backup-restore-validation.json \
+            --rollback-report=build/release-evidence/rollback-validation.json \
+            --reproducible-report=build/release-evidence/reproducible-artifact-validation.json \
+            --output=build/release-evidence/v1-release-evidence.json
+
+      - name: Upload candidate release package
+        uses: actions/upload-artifact@v4
+        with:
+          name: microgifter-candidate-release-${{ github.sha }}
+          path: build/releases/current-a/*
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload rollback package
+        uses: actions/upload-artifact@v4
+        with:
+          name: microgifter-rollback-release-${{ steps.refs.outputs.rollback_ref }}
+          path: build/releases/rollback/*
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload release evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: microgifter-release-evidence-${{ github.sha }}
+          path: build/release-evidence/*
+          if-no-files-found: warn
+          retention-days: 90

@@ -2,7 +2,8 @@
   "name": "microgifter-browser-tests",
   "private": true,
   "scripts": {
-    "test:browser": "playwright test"
+    "test:browser": "playwright test",
+    "test:browser:v1": "playwright test tests/browser/v1-release-golden-path.spec.js"
   },
   "devDependencies": {
     "@playwright/test": "1.52.0"

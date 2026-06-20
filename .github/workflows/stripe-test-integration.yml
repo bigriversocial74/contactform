@@ -1,0 +1,94 @@
+name: Stripe Test Integration
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stripe-provider-boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: microgifter
+          MYSQL_USER: microgifter
+          MYSQL_PASSWORD: microgifter
+          MYSQL_ROOT_PASSWORD: root
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    env:
+      MG_APP_ENV: testing
+      MG_APP_URL: https://example.com
+      MG_PAYMENT_PROVIDER: stripe
+      MG_PAYMENT_MODE: test
+      MG_STRIPE_TEST_STUB: '0'
+      MG_STRIPE_PUBLISHABLE_KEY_TEST: ${{ secrets.STRIPE_TEST_PUBLISHABLE_KEY }}
+      MG_STRIPE_SECRET_KEY_TEST: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
+      MG_STRIPE_WEBHOOK_SECRET_TEST: ${{ secrets.STRIPE_TEST_WEBHOOK_SECRET }}
+      MG_STRIPE_TEST_CONNECTED_ACCOUNT_ID: ${{ secrets.STRIPE_TEST_CONNECTED_ACCOUNT_ID }}
+      MG_PLATFORM_FEE_BPS: '1500'
+      MG_PLATFORM_FIXED_FEE_CENTS: '0'
+      MG_DB_HOST: 127.0.0.1
+      MG_DB_NAME: microgifter
+      MG_DB_USER: microgifter
+      MG_DB_PASS: microgifter
+      MG_MIGRATION_DB_USER: root
+      MG_MIGRATION_DB_PASS: root
+      MG_DB_CHARSET: utf8mb4
+      MG_CLAIM_CODE_PEPPER: stripe-provider-validation-pepper
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: curl,mbstring,pdo_mysql,sodium
+          coverage: none
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Require Stripe test secrets
+        shell: bash
+        run: |
+          test -n "$MG_STRIPE_PUBLISHABLE_KEY_TEST"
+          test -n "$MG_STRIPE_SECRET_KEY_TEST"
+          test -n "$MG_STRIPE_WEBHOOK_SECRET_TEST"
+          test -n "$MG_STRIPE_TEST_CONNECTED_ACCOUNT_ID"
+
+      - name: Wait for MySQL
+        run: |
+          for attempt in {1..30}; do
+            mysqladmin ping -h 127.0.0.1 -umicrogifter -pmicrogifter --silent && exit 0
+            sleep 1
+          done
+          exit 1
+
+      - name: Apply canonical migrations
+        run: composer migrate
+
+      - name: Validate real Stripe test provider boundary
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p build
+          php scripts/validate_stripe_test_provider.php 2>&1 | tee build/stripe_test_provider_validation.json
+
+      - name: Upload provider validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stripe-test-provider-validation
+          path: build/stripe_test_provider_validation.json
+          if-no-files-found: error

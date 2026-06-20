@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/operations/_operations.php';
 require_once dirname(__DIR__, 2) . '/includes/migrations.php';
+require_once dirname(__DIR__) . '/payments/_readiness.php';
 
 mg_require_method('GET');
 $user = mg_require_permission('operations.readiness.view');
@@ -44,6 +45,49 @@ try {
     $add('stage_migrations', 'fail', 'Migration readiness could not be evaluated.', ['message' => $e->getMessage()]);
 }
 
+$appEnvironment = strtolower(trim((string) mg_env('MG_APP_ENV', '')));
+$productionEnvironment = in_array($appEnvironment, ['production', 'prod'], true);
+$paymentProvider = mg_payment_provider_key();
+$paymentMode = mg_payment_mode();
+if ($paymentProvider === 'stripe') {
+    try {
+        $paymentReadiness = mg_payment_readiness($pdo, 'stripe', $paymentMode);
+        $add(
+            'stripe_platform',
+            $paymentReadiness['ready'] ? 'pass' : 'fail',
+            $paymentReadiness['ready']
+                ? 'Stripe platform configuration is ready for ' . $paymentMode . ' mode.'
+                : 'Stripe platform configuration is incomplete.',
+            [
+                'mode' => $paymentMode,
+                'checks' => $paymentReadiness['checks'],
+                'connected_accounts' => $paymentReadiness['connected_accounts'],
+                'webhook_url' => $paymentReadiness['webhook_url'],
+            ]
+        );
+        $sellingMerchants = $paymentReadiness['selling_merchants'];
+        $add(
+            'stripe_selling_merchants',
+            (int) $sellingMerchants['blocked'] === 0 ? 'pass' : 'fail',
+            (int) $sellingMerchants['blocked'] === 0
+                ? 'Every merchant with a published product is Stripe-ready.'
+                : 'Published-product merchants are blocked by incomplete Stripe Connect onboarding.',
+            $sellingMerchants
+        );
+    } catch (Throwable $e) {
+        $add('stripe_platform', 'fail', 'Stripe readiness could not be evaluated.', ['message' => $e->getMessage(), 'mode' => $paymentMode]);
+    }
+} else {
+    $add(
+        'payment_provider',
+        $productionEnvironment ? 'fail' : 'warn',
+        $productionEnvironment
+            ? 'Production requires MG_PAYMENT_PROVIDER=stripe.'
+            : 'The current environment is not using Stripe.',
+        ['provider' => $paymentProvider, 'mode' => $paymentMode, 'environment' => $appEnvironment]
+    );
+}
+
 $tables = [
     'users',
     'commerce_orders',
@@ -65,6 +109,9 @@ $tables = [
     'subscriptions',
     'feed_posts',
     'feed_post_versions',
+    'payment_platform_credentials',
+    'payment_provider_accounts',
+    'payment_webhook_events',
     'operational_incidents',
     'deployment_releases',
     'release_gate_results',
@@ -90,7 +137,7 @@ foreach ($tables as $table) {
 $add(
     'operations_tables',
     $missingTables === [] ? 'pass' : 'fail',
-    $missingTables === [] ? 'Canonical platform and hardening tables are present.' : 'Required platform tables are missing.',
+    $missingTables === [] ? 'Canonical platform, payment, and hardening tables are present.' : 'Required platform tables are missing.',
     ['missing' => $missingTables]
 );
 
