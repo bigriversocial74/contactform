@@ -35,7 +35,7 @@ final class AgentHeaderTabBehaviorTest extends TestCase
         self::assertStringContainsString('.mg-agent-tab-add{display:none!important}',$css);
         self::assertStringNotContainsString('create_menu_button',$header);
         self::assertStringNotContainsString("createElement('button')",$createMenu);
-        self::assertStringContainsString('.mg-unified-header .mg-header-actions > button',$createMenu);
+        self::assertStringContainsString('.mg-unified-header .mg-header-actions button',$createMenu);
     }
 
     public function testDeleteControlLivesInsideActiveSavedAgentTab(): void
