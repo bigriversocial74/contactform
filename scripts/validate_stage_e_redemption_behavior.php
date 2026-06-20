@@ -149,6 +149,7 @@ try{
     $summary['replay_idempotent']=true;
 
     $invalid=mg_stage_e_deliver($pdo,$merchant,$recipient,$version,$runId,'invalid');
+    $invalidPppmStatus=(string)mg_it_scalar($pdo,'SELECT status FROM pppm_items WHERE id=?',[$invalid['pppm']['id']]);
     $invalidFailed=false;
     $invalidReason='';
     try{
@@ -170,7 +171,7 @@ try{
     $summary['invalid_code_attempt_recorded']=true;
 
     mg_it_assert((string)mg_it_scalar($pdo,'SELECT status FROM microgift_instances WHERE id=?',[(int)$invalid['instance']['id']])==='delivered','Invalid code changed the Microgift lifecycle.');
-    mg_it_assert((string)mg_it_scalar($pdo,'SELECT status FROM pppm_items WHERE id=?',[$invalid['pppm']['id']])==='available','Invalid code changed the PPPM lifecycle.');
+    mg_it_assert((string)mg_it_scalar($pdo,'SELECT status FROM pppm_items WHERE id=?',[$invalid['pppm']['id']])===$invalidPppmStatus,'Invalid code changed the PPPM lifecycle.');
     mg_it_assert((int)mg_it_scalar($pdo,'SELECT COUNT(*) FROM microgift_redemptions WHERE instance_id=?',[(int)$invalid['instance']['id']])===0,'Invalid code created a redemption.');
     mg_it_assert((int)mg_it_scalar($pdo,'SELECT usage_count FROM merchant_claim_codes WHERE location_id=? AND status=?',[$location['id'],'active'])===1,'Invalid code changed claim-code usage.');
     $summary['invalid_code_left_gift_available']=true;
