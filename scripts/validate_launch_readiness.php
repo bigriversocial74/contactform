@@ -10,6 +10,10 @@ require_once dirname(__DIR__) . '/api/payments/_readiness.php';
 
 $pdo=mg_db();
 $checks=[];
+$orchestrationMigrationContracts=[
+    'stage_17b_demand_signal_agent_orchestration',
+    'stage_18b_demand_orchestration_operations',
+];
 $record=function(string $key,string $status,string $summary,array $details=[])use(&$checks,$pdo):void{
     if(!in_array($status,['pass','warn','fail'],true))throw new InvalidArgumentException('Invalid readiness status.');
     $checks[]=['key'=>$key,'status'=>$status,'summary'=>$summary,'details'=>$details];
@@ -31,10 +35,11 @@ try{
             'applied_key_count'=>$migrationStatus['applied_key_count'],
             'missing'=>$migrationStatus['missing'],
             'checksum_mismatches'=>$migrationStatus['checksum_mismatches'],
+            'orchestration_contracts'=>$orchestrationMigrationContracts,
         ]
     );
 }catch(Throwable $e){
-    $record('stage_migrations','fail','Canonical migration readiness could not be evaluated.',['message'=>$e->getMessage()]);
+    $record('stage_migrations','fail','Canonical migration readiness could not be evaluated.',['message'=>$e->getMessage(),'orchestration_contracts'=>$orchestrationMigrationContracts]);
 }
 
 $appEnvironment=strtolower(trim((string)mg_env('MG_APP_ENV','')));
