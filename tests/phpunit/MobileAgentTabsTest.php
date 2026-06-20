@@ -18,7 +18,7 @@ final class MobileAgentTabsTest extends TestCase
         self::assertStringNotContainsString('data-product-header-create',$header);
         self::assertStringNotContainsString('mg-header-product-create',$header);
         self::assertStringContainsString('data-create-menu-option="microgift"',$header);
-        self::assertStringContainsString('.mg-unified-header .mg-header-actions > button',$script);
+        self::assertStringContainsString('.mg-unified-header .mg-header-actions button',$script);
         self::assertStringContainsString("trigger.dataset.createMenuTrigger=''",$script);
     }
 
