@@ -2,12 +2,40 @@
 declare(strict_types=1);
 $public_header_config = is_array($page_manifest['public_header'] ?? null) ? $page_manifest['public_header'] : [];
 $public_nav_links = is_array($public_header_config['links'] ?? null) ? $public_header_config['links'] : [];
+$public_page_id = (string) ($page_manifest['id'] ?? '');
+$public_demo_href = '/learn-more.php';
+
+$filtered_links = [];
+foreach ($public_nav_links as $public_header_link) {
+    $label = trim((string) ($public_header_link['label'] ?? ''));
+    if (strcasecmp($label, 'Book A Demo') === 0) {
+        $public_demo_href = (string) ($public_header_link['href'] ?? $public_demo_href);
+        continue;
+    }
+    $filtered_links[] = $public_header_link;
+}
+$public_nav_links = $filtered_links;
+
+if (!$user && in_array($public_page_id, ['home','index'], true)) {
+    $public_nav_links = [
+        ['label'=>'Corporate Gifting','href'=>'/corporate-gifting.php'],
+        ['label'=>'Retail Subscriptions','href'=>'/retail.php'],
+        ['label'=>'Locations','href'=>'/locations.php'],
+    ];
+}
+$show_home_search = !$user && in_array($public_page_id, ['home','index'], true);
+$show_demo_button = !$user;
 ?>
 <header class="mg-site-header mg-unified-header nav" data-mg-universal-header data-public-header data-header-variant="<?= $user ? 'logged-in' : 'logged-out' ?>">
-  <?php if ((string) ($page_manifest['id'] ?? '') === 'home'): ?><span hidden>Turn future demand into present-day revenue</span><?php endif; ?>
+  <?php if ($public_page_id === 'home'): ?><span hidden>Turn future demand into present-day revenue</span><?php endif; ?>
   <div class="mg-header-inner nav-inner">
     <div class="mg-header-left">
       <a class="mg-brand brand" href="/index.php" aria-label="Microgifter home"><span>Microgifter</span></a>
+      <?php if ($show_home_search): ?>
+        <form class="mg-public-search" action="/discover.php" method="get" role="search">
+          <input type="search" name="q" placeholder="Search Microgifter" aria-label="Search Microgifter" autocomplete="off">
+        </form>
+      <?php endif; ?>
       <?php if (!$user && $public_nav_links): ?>
         <nav class="mg-site-nav mg-public-nav" aria-label="Primary navigation">
           <?php foreach ($public_nav_links as $public_header_link): ?>
@@ -18,6 +46,7 @@ $public_nav_links = is_array($public_header_config['links'] ?? null) ? $public_h
     </div>
 
     <div class="mg-header-actions" data-header-template="<?= $user ? 'logged-in-public' : 'logged-out-public' ?>">
+      <?php if ($show_demo_button): ?><a class="mg-public-demo" href="<?= mg_e($public_demo_href) ?>">Book A Demo</a><?php endif; ?>
       <div class="mg-account-menu" data-mg-auth-menu>
         <button class="mg-account-trigger" type="button" data-mg-auth-trigger aria-expanded="false">
           <span class="mg-avatar"><?= mg_e($user ? $display_initial : 'A') ?></span>
