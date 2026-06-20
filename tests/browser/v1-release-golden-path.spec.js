@@ -144,7 +144,7 @@ test.describe('V1 release browser golden path', () => {
 
     await page.goto('/cart.php');
     await expect(page.locator('[data-cart-items]')).toContainText('Release Smoke Coffee Gift');
-    await expect(page.locator('[data-cart-summary]')).toContainText('$25.00');
+    await expect(page.locator('[data-cart-page] [data-cart-summary]')).toContainText('$25.00');
 
     await page.locator('[data-cart-checkout]').click();
     await expect(page).toHaveURL('https://checkout.stripe.test/c/pay/release-smoke');
