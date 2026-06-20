@@ -43,6 +43,7 @@ return [
         'stage_5h_notifications_messaging_alerts.sql',
         'stage_5i_payments_checkout_reconciliation.sql',
         'stage_v1c_checkout_session_intent_authority.sql',
+        'stage_v1f_stripe_payments.sql',
         'stage_3_commerce_microgift_fulfillment.sql',
         'stage_5j_foundation_reconciliation.sql',
         'stage_7b_money_engine.sql',
