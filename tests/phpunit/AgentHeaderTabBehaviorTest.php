@@ -15,19 +15,27 @@ final class AgentHeaderTabBehaviorTest extends TestCase
         self::assertStringContainsString("['claimed','Claimed','/claimed.php']",$header);
         self::assertStringNotContainsString('data-agent-tab-add',$header);
         self::assertStringNotContainsString('data-agent-header-create',$header);
-        self::assertStringContainsString('data-product-header-create',$header);
+        self::assertStringNotContainsString('data-product-header-create',$header);
+        self::assertStringNotContainsString('mg-header-product-create',$header);
+        self::assertStringContainsString('data-create-menu-option="microgift"',$header);
     }
 
-    public function testAddAgentTabControlIsRemoved(): void
+    public function testAddAgentTabAndDuplicateCreateControlsAreRemoved(): void
     {
-        $script=file_get_contents(dirname(__DIR__,2).'/assets/js/agent-tabs.js');
-        $css=file_get_contents(dirname(__DIR__,2).'/assets/css/agent-workspace-layout.css');
+        $root=dirname(__DIR__,2);
+        $script=file_get_contents($root.'/assets/js/agent-tabs.js');
+        $header=file_get_contents($root.'/includes/header-components/app-header.php');
+        $createMenu=file_get_contents($root.'/assets/js/create-menu.js');
+        $css=file_get_contents($root.'/assets/css/agent-workspace-layout.css');
         self::assertIsString($script);
+        self::assertIsString($header);
+        self::assertIsString($createMenu);
         self::assertIsString($css);
         self::assertStringNotContainsString('data-agent-tab-add',$script);
         self::assertStringContainsString('.mg-agent-tab-add{display:none!important}',$css);
-        self::assertStringContainsString('.mg-header-product-create',$css);
-        self::assertStringNotContainsString('.mg-header-agent-create',$css);
+        self::assertStringNotContainsString('create_menu_button',$header);
+        self::assertStringNotContainsString("createElement('button')",$createMenu);
+        self::assertStringContainsString('.mg-unified-header .mg-header-actions > button',$createMenu);
     }
 
     public function testDeleteControlLivesInsideActiveSavedAgentTab(): void
