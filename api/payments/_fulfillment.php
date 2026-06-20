@@ -44,15 +44,18 @@ function mg_payment_issue_order_pppm(PDO $pdo, int $orderDbId, ?int $actorUserId
     $orderStmt->execute([$orderDbId]);
     $order = $orderStmt->fetch();
     if (!$order || (string)$order['payment_status'] !== 'paid') return ['issued_count'=>0,'skipped'=>true];
+
+    $issuerUserId=(int)$order['merchant_user_id'];
+    $eventActorUserId=$actorUserId ?: (int)$order['buyer_user_id'];
     $lineStmt = $pdo->prepare('SELECT * FROM commerce_order_items WHERE order_id=? AND pppm_issuance_request_id IS NULL ORDER BY id FOR UPDATE');
     $lineStmt->execute([$orderDbId]);
     $lines = $lineStmt->fetchAll();
     if (!$lines) {
         $pdo->prepare("UPDATE commerce_orders SET fulfillment_status=IF(fulfillment_status='pending','issued',fulfillment_status),updated_at=NOW() WHERE id=?")->execute([$orderDbId]);
-        $entitlements = mg_entitlement_grant_for_order($pdo,$orderDbId,$actorUserId ?: (int)$order['buyer_user_id']);
+        $entitlements = mg_entitlement_grant_for_order($pdo,$orderDbId,$eventActorUserId);
         return ['issued_count'=>0,'skipped'=>true,'entitlements'=>$entitlements];
     }
-    $source = mg_payment_pppm_source($pdo, (int)$order['merchant_user_id']);
+    $source = mg_payment_pppm_source($pdo, $issuerUserId);
     $eventStmt = $pdo->prepare("INSERT INTO pppm_source_events (public_id,source_id,external_event_id,event_type,payload_json,payload_hash,processing_status,received_at,created_at,updated_at) VALUES (?,?,?,?,?,?,'validated',NOW(),NOW(),NOW())");
     $requestStmt = $pdo->prepare("INSERT INTO pppm_issuance_requests (public_id,source_id,source_event_id,issuer_user_id,merchant_user_id,source_reference,source_line_reference,item_type,funding_type,quantity,unit_value_cents,currency,recipient_user_id,recipient_external_id,recipient_name,title,description,terms_snapshot_json,metadata_json,status,issued_count,requested_at,created_at,updated_at) VALUES (?,?,?,?,?,?,?,'gift','customer_purchase',?,?,?,?,NULL,NULL,?,?,NULL,?,'issuing',0,NOW(),NOW(),NOW())");
     $itemStmt = $pdo->prepare("INSERT INTO pppm_items (public_id,issuance_request_id,source_id,unit_sequence,item_type,funding_type,issuer_user_id,merchant_user_id,owner_user_id,recipient_user_id,recipient_external_id,source_reference,source_line_reference,title_snapshot,description_snapshot,value_cents_snapshot,currency_snapshot,terms_snapshot_json,metadata_snapshot_json,status,version_no,issued_at,assigned_at,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,NULL,NULL,?,?,?,?,?,?,NULL,?,'available',1,NOW(),NULL,NOW(),NOW())");
@@ -65,13 +68,13 @@ function mg_payment_issue_order_pppm(PDO $pdo, int $orderDbId, ?int $actorUserId
         $sourceEventId = (int)$pdo->lastInsertId();
         $requestPublicId = mg_pppm_uuid();
         $metadataJson = json_encode(['commerce_order_id'=>(string)$order['public_id'],'commerce_order_item_id'=>(string)$line['public_id']], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-        $requestStmt->execute([$requestPublicId,(int)$source['id'],$sourceEventId,$actorUserId ?: (int)$order['buyer_user_id'],(int)$order['merchant_user_id'],(string)$order['public_id'],(string)$line['public_id'],(int)$line['quantity'],(int)$line['unit_amount_cents'],(string)$line['currency'],(int)$order['buyer_user_id'],(string)$line['title_snapshot'],'Purchased through commerce checkout.',$metadataJson]);
+        $requestStmt->execute([$requestPublicId,(int)$source['id'],$sourceEventId,$issuerUserId,$issuerUserId,(string)$order['public_id'],(string)$line['public_id'],(int)$line['quantity'],(int)$line['unit_amount_cents'],(string)$line['currency'],(int)$order['buyer_user_id'],(string)$line['title_snapshot'],'Purchased through commerce checkout.',$metadataJson]);
         $requestDbId = (int)$pdo->lastInsertId();
         for ($sequence=1; $sequence <= (int)$line['quantity']; $sequence++) {
-            $itemStmt->execute([mg_pppm_item_id(),$requestDbId,(int)$source['id'],$sequence,'gift','customer_purchase',$actorUserId ?: (int)$order['buyer_user_id'],(int)$order['merchant_user_id'],(int)$order['buyer_user_id'],(string)$order['public_id'],(string)$line['public_id'],(string)$line['title_snapshot'],'Purchased through commerce checkout.',(int)$line['unit_amount_cents'],(string)$line['currency'],$metadataJson]);
+            $itemStmt->execute([mg_pppm_item_id(),$requestDbId,(int)$source['id'],$sequence,'gift','customer_purchase',$issuerUserId,$issuerUserId,(int)$order['buyer_user_id'],(string)$order['public_id'],(string)$line['public_id'],(string)$line['title_snapshot'],'Purchased through commerce checkout.',(int)$line['unit_amount_cents'],(string)$line['currency'],$metadataJson]);
             $item = $pdo->query('SELECT * FROM pppm_items WHERE id='.(int)$pdo->lastInsertId())->fetch();
-            mg_pppm_record_event($pdo, $item, 'issued_from_paid_order', null, 'available', $actorUserId ?: (int)$order['buyer_user_id'], $sourceEventId, ['commerce_order_id'=>(string)$order['public_id'],'commerce_order_item_id'=>(string)$line['public_id'],'issuance_request_id'=>$requestPublicId,'unit_sequence'=>$sequence]);
-            $entitlementResult = mg_entitlement_grant_for_pppm_item($pdo,$item,$actorUserId ?: (int)$order['buyer_user_id']);
+            mg_pppm_record_event($pdo, $item, 'issued_from_paid_order', null, 'available', $eventActorUserId, $sourceEventId, ['commerce_order_id'=>(string)$order['public_id'],'commerce_order_item_id'=>(string)$line['public_id'],'issuance_request_id'=>$requestPublicId,'unit_sequence'=>$sequence]);
+            $entitlementResult = mg_entitlement_grant_for_pppm_item($pdo,$item,$eventActorUserId);
             $entitlementTotals['created'] += (int)($entitlementResult['created'] ?? 0);
             $entitlementTotals['existing'] += (int)($entitlementResult['existing'] ?? 0);
             $issuedTotal++;
@@ -184,6 +187,7 @@ function mg_payment_issue_order_microgifts(PDO $pdo, int $orderDbId, ?int $actor
     $order=$orderStmt->fetch(PDO::FETCH_ASSOC);
     if(!$order || (string)$order['payment_status']!=='paid')return ['issued_count'=>0,'skipped'=>true];
 
+    $eventActorUserId=$actorUserId ?: (int)$order['buyer_user_id'];
     $pdo->prepare('UPDATE commerce_order_items SET merchant_user_id=? WHERE order_id=? AND merchant_user_id IS NULL')->execute([(int)$order['merchant_user_id'],$orderDbId]);
     $lineStmt=$pdo->prepare('SELECT * FROM commerce_order_items WHERE order_id=? ORDER BY id FOR UPDATE');
     $lineStmt->execute([$orderDbId]);
@@ -225,11 +229,17 @@ function mg_payment_issue_order_microgifts(PDO $pdo, int $orderDbId, ?int $actor
                 $instance['pppm_item_id']=$pppmItemId;
                 $linked++;
             }
-            $projected[]=mg_action_center_project_lifecycle($pdo,$instance);
+            $projected[]=mg_action_center_receive(
+                $pdo,
+                (int)$instance['id'],
+                (int)$order['buyer_user_id'],
+                (int)$order['merchant_user_id'],
+                ['occurred_at'=>$instance['issued_at']??date('Y-m-d H:i:s')]
+            );
         }
     }
     if($issued>0){
-        mg_order_event($pdo,$orderDbId,'microgift.issued_from_paid_order',$actorUserId ?: (int)$order['buyer_user_id'],['issued_count'=>$issued,'duplicate_count'=>$duplicates,'linked_count'=>$linked]);
+        mg_order_event($pdo,$orderDbId,'microgift.issued_from_paid_order',$eventActorUserId,['issued_count'=>$issued,'duplicate_count'=>$duplicates,'linked_count'=>$linked]);
     }
     return ['issued_count'=>$issued,'duplicate_count'=>$duplicates,'linked_count'=>$linked,'projected'=>$projected];
 }

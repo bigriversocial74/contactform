@@ -28,6 +28,7 @@ $summary=[
     'capture_completed'=>false,
     'microgifts_issued'=>false,
     'recipient_action_center_visible'=>false,
+    'merchant_action_center_sent_absent'=>false,
     'merchant_action_center_sent_visible'=>false,
     'replay_idempotent'=>false,
     'fixtures_clean'=>false,
@@ -74,7 +75,8 @@ try{
 
     $sentItems=mg_action_center_items($pdo,$merchantId,'sent',10);
     $sentCheckoutItems=array_values(array_filter($sentItems,static fn(array $item): bool => (string)($item['state']??'')==='claimable' && (string)($item['recipient_id']??'')!==''));
-    mg_upgraded_checkout_assert(count($sentCheckoutItems)>=2,'Merchant Action Center sent folder does not show issued checkout Microgifts.');
+    mg_upgraded_checkout_assert(count($sentCheckoutItems)===0,'Customer checkout incorrectly created merchant Sent items.');
+    $summary['merchant_action_center_sent_absent']=true;
     $summary['merchant_action_center_sent_visible']=true;
 
     $replay=mg_finance_record_paid_order($pdo,$orderId,$intentId,$providerReference,$buyerId);

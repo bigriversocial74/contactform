@@ -26,11 +26,12 @@ final class PaymentReversalMicrogiftContractTest extends TestCase
             'full_refund','dispute_opened','dispute_won','dispute_lost_full',
             'microgift_recovery','payment_dispute_suspended','payment_dispute_restored',
             "UPDATE microgift_credentials SET status='revoked'",
-            'mg_action_center_project_lifecycle(',
+            'mg_microgift_payment_refresh_action_center(',
             'Microgift payment reconciliation requires the owning payment transaction.',
         ] as $needle){
             self::assertStringContainsString($needle,$source);
         }
+        self::assertStringNotContainsString('mg_action_center_project_lifecycle(',$source);
     }
 
     public function testCleanDatabaseValidatorCoversCriticalReversalOutcomes(): void

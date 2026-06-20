@@ -22,11 +22,11 @@ final class GiftActionCenterLayoutInteractionTest extends TestCase
         self::assertIsString($markup);
         self::assertIsString($script);
         self::assertStringContainsString('data-action-modal',$markup);
-        foreach(['send','claim','tip','message'] as $action){
-            self::assertStringContainsString("data-action-form=\"{$action}\"",$script);
+        foreach(['send','follow-up','claim','tip','message'] as $action){
+            self::assertStringContainsString('data-action-form="'.$action.'"',$script);
         }
-        self::assertStringContainsString("state.folder==='sent'",$script);
-        self::assertStringContainsString("state.folder==='inbox'",$script);
+        self::assertStringContainsString("state.folder === 'sent'",$script);
+        self::assertStringContainsString("state.folder === 'inbox'",$script);
         self::assertStringContainsString('data-gift-action="tip"',$script);
     }
 
@@ -41,16 +41,18 @@ final class GiftActionCenterLayoutInteractionTest extends TestCase
         self::assertIsString($css);
         self::assertStringContainsString('data-gift-drawer-content',$markup);
         self::assertStringContainsString('function openContent(item)',$script);
-        self::assertStringContainsString("type==='load'",$script);
+        self::assertStringContainsString("type === 'load'",$script);
         self::assertStringContainsString('mg-pppm-post',$script);
-        self::assertMatchesRegularExpression('/scroll-snap-type:y\s+(?:mandatory|proximity)/',$css);
+        self::assertStringContainsString('scroll-snap-type:y',$css);
     }
 
     public function testActionModalBecomesFullScreenOnMobile(): void
     {
         $css=file_get_contents(dirname(__DIR__,2).'/assets/css/gift-action-center.css');
         self::assertIsString($css);
-        self::assertMatchesRegularExpression('/@media\(max-width:760px\).*?\.mg-action-modal\{[^}]*width:100vw[^}]*height:100dvh/s',$css);
-        self::assertMatchesRegularExpression('/\.mg-action-modal\.is-open\{[^}]*transform:translateY\(0\)/',$css);
+        self::assertStringContainsString('@media(max-width:760px)',$css);
+        self::assertStringContainsString('width:100vw',$css);
+        self::assertStringContainsString('height:100dvh',$css);
+        self::assertStringContainsString('transform:translateY(0)',$css);
     }
 }

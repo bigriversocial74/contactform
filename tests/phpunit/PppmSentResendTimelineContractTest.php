@@ -12,7 +12,7 @@ final class PppmSentResendTimelineContractTest extends TestCase
         return $source;
     }
 
-    public function testDeliveryTimelineIsImmutableTimestampedAndIdempotent(): void
+    public function testHistoricalDeliveryTimelineRemainsImmutableAndIdempotent(): void
     {
         $sql=$this->source('database/stage_18g_pppm_resend_timeline.sql');
         foreach([
@@ -29,57 +29,58 @@ final class PppmSentResendTimelineContractTest extends TestCase
         self::assertStringContainsString("'stage_18g_pppm_resend_timeline.sql'",$this->source('config/migrations.php'));
     }
 
-    public function testInitialSendRecordsActualSendTime(): void
+    public function testRegiftRecordsTheActualTransferTimeWithoutChangingIssuer(): void
     {
         $send=$this->source('api/account/action-center-send.php');
         $projection=$this->source('api/microgifts/_action_center_projection.php');
-        self::assertStringContainsString("\$pdo,\$instance,'sent'",str_replace(["\n","\r"," "],'',$send));
+        self::assertStringContainsString("\$pdo,\n        \$instance,\n        'sent'",$send);
         self::assertStringContainsString("'sent_at'=>\$deliveryEvent['occurred_at']",$send);
-        self::assertStringContainsString("\$context['sent_at']??\$projectionAt",$projection);
-        self::assertStringContainsString('sent_at=COALESCE(sent_at,?)',$projection);
+        self::assertStringContainsString("sent_at=COALESCE(?,sent_at)",$projection);
+        self::assertStringContainsString("SET owner_user_id=?,recipient_user_id=?,status='delivered'",$send);
+        self::assertStringNotContainsString('SET issuer_user_id=?',$send);
     }
 
-    public function testResendKeepsOwnershipAndSamePppmIdentity(): void
+    public function testFollowUpReplacesResendWithoutChangingOwnershipOrDeliveryHistory(): void
     {
-        $resend=$this->source('api/account/action-center-resend.php');
-        $compact=str_replace(["\n","\r"," "],'',$resend);
+        $followUp=$this->source('api/account/action-center-follow-up.php');
+        $retired=$this->source('api/account/action-center-resend.php');
         foreach([
             "folder']!=='sent'",
             "action_sender_user_id']!==(int)\$user['id']",
             "owner_user_id']!==\$recipientUserId",
-            "'pppm_item_id'=>(string)(\$instance['pppm_public_id']??'')",
-            "SET read_at=NULL,updated_at=?",
-            "folder='inbox'",
-            "action_center.microgift_resent",
-            "'resent_at'=>\$deliveryEvent['occurred_at']",
-            "'microgift_resent'",
-            "mg_queue_notification_deliveries(\$pdo,\$notificationId,\$recipientUserId,'microgift_resent')",
+            'mg_message_conversation_key(',
+            'mg_message_send_microgift(',
+            "'follow_up'",
+            'Only the most recent sender can follow up.',
         ] as $needle){
-            self::assertStringContainsString($needle,$resend);
+            self::assertStringContainsString($needle,$followUp);
         }
-        self::assertStringContainsString("\$pdo,\$instance,'resent'",$compact);
-        self::assertStringNotContainsString('mg_pppm_transfer_owner_canonical',$resend);
-        self::assertStringNotContainsString('UPDATE pppm_items',$resend);
-        self::assertStringNotContainsString('UPDATE microgift_instances',$resend);
+        self::assertStringNotContainsString('mg_pppm_transfer_owner_canonical',$followUp);
+        self::assertStringNotContainsString('UPDATE pppm_items',$followUp);
+        self::assertStringNotContainsString('UPDATE microgift_instances',$followUp);
+        self::assertStringNotContainsString('mg_microgift_delivery_event(',$followUp);
+        self::assertStringContainsString('Resend has been retired. Use Follow Up',$retired);
+        self::assertStringContainsString(',410)',$retired);
     }
 
-    public function testSentTabShowsResendAndItsTimestamps(): void
+    public function testSentTabShowsFollowUpAvailabilityAndMessageTimestamps(): void
     {
         $center=$this->source('assets/js/gift-action-center.js');
         $actions=$this->source('assets/js/gift-action-center-actions.js');
         $api=$this->source('api/account/_action_center.php');
         foreach([
-            'data-gift-action="resend"',
-            'Last resent:',
-            'Resends:',
-            'data-action-form="resend"',
-            'This creates a new resend timestamp',
+            'data-gift-action="follow-up"',
+            'Last Follow Up:',
+            'Follow Ups:',
+            'data-action-form="follow-up"',
+            'Only the most recent sender can follow up',
         ] as $needle){
             self::assertStringContainsString($needle,$center);
         }
-        self::assertStringContainsString("['send','resend','claim','message','tip']",$actions);
+        self::assertStringContainsString("['send','follow-up','claim','message','tip']",$actions);
         self::assertStringContainsString("function endpoint(type){return '/api/account/action-center-'+type+'.php';}",$actions);
-        foreach(['delivery.first_sent_at','delivery.last_resent_at','delivery.resend_count','last_delivery_event_at'] as $needle){
+        self::assertStringNotContainsString("'resend'",$actions);
+        foreach(['follow_up.last_follow_up_at','follow_up.follow_up_count','can_follow_up'] as $needle){
             self::assertStringContainsString($needle,$api);
         }
     }
@@ -91,7 +92,8 @@ final class PppmSentResendTimelineContractTest extends TestCase
         $tip=$this->source('api/tips/_tips.php');
         self::assertStringContainsString('verified_at DATETIME NOT NULL',$claim);
         self::assertStringContainsString('redeemed_at DATETIME NOT NULL',$claim);
-        self::assertStringContainsString("source_reference,created_at) VALUES (?,?,?,?,?,?,'action_center',?,NOW())",$message);
+        self::assertStringContainsString('INSERT INTO messages',$message);
+        self::assertStringContainsString("'microgift.follow_up_sent'",$message);
         self::assertStringContainsString('tip_events',$tip);
         self::assertStringContainsString('created_at) VALUES (?,?,?,?,?,?,?,?,NOW())',$tip);
     }

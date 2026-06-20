@@ -97,6 +97,28 @@ function mg_microgift_payment_resolve_review(PDO $pdo,array $order,string $detai
     return $stmt->rowCount();
 }
 
+function mg_microgift_payment_refresh_action_center(PDO $pdo,array $instance): int
+{
+    mg_action_center_require_transaction($pdo);
+    $state=mg_action_center_state($instance);
+    $recipientFolder=mg_action_center_recipient_folder($instance);
+    $stmt=$pdo->prepare("UPDATE microgift_inbox_items
+        SET folder=CASE WHEN folder='sent' THEN 'sent' ELSE ? END,
+            state=?,
+            claimed_at=COALESCE(?,claimed_at),
+            redeemed_at=COALESCE(?,redeemed_at),
+            updated_at=NOW()
+        WHERE instance_id=?");
+    $stmt->execute([
+        $recipientFolder,
+        $state,
+        $instance['claimed_at']??null,
+        $instance['redeemed_at']??null,
+        (int)$instance['id'],
+    ]);
+    return $stmt->rowCount();
+}
+
 function mg_microgift_payment_reconcile_order(PDO $pdo,array $order,string $operation,string $sourceReference,?int $actorUserId=null,array $context=[]): array
 {
     if(!$pdo->inTransaction())throw new LogicException('Microgift payment reconciliation requires the owning payment transaction.');
@@ -158,7 +180,7 @@ function mg_microgift_payment_reconcile_order(PDO $pdo,array $order,string $oper
             }
             $instance['status']=$restoreStatus;$instance['revoked_at']=null;
             mg_microgift_event($pdo,'microgift.payment_dispute_restored',(int)$instance['id'],(int)$instance['template_id'],$actorUserId,$sourceType,$sourceReference,['restored_status'=>$restoreStatus]);
-            mg_action_center_project_lifecycle($pdo,$instance);$result['restored']++;
+            mg_microgift_payment_refresh_action_center($pdo,$instance);$result['restored']++;
             continue;
         }
 
@@ -189,7 +211,7 @@ function mg_microgift_payment_reconcile_order(PDO $pdo,array $order,string $oper
         }
         $instance['status']='revoked';
         mg_microgift_event($pdo,$temporary?'microgift.payment_dispute_suspended':'microgift.payment_reversal_revoked',(int)$instance['id'],(int)$instance['template_id'],$actorUserId,$sourceType,$sourceReference,['operation'=>$operation,'temporary'=>$temporary]);
-        mg_action_center_project_lifecycle($pdo,$instance);
+        mg_microgift_payment_refresh_action_center($pdo,$instance);
         if($temporary)$result['suspended']++;else$result['revoked']++;
     }
     return $result;

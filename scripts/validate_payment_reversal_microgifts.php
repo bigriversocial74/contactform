@@ -48,7 +48,7 @@ try{
     $summary['full_refund_revoked']=true;
     mg_reversal_assert((int)mg_reversal_scalar($pdo,"SELECT COUNT(*) FROM microgift_credentials c INNER JOIN microgift_instances mi ON mi.id=c.instance_id INNER JOIN commerce_order_items oi ON oi.public_id=mi.source_reference WHERE oi.order_id=? AND c.status='revoked'",[$refundOrder['order_id']])===2,'Full refund did not revoke active claim credentials.');
     $summary['refund_credentials_revoked']=true;
-    mg_reversal_assert(mg_reversal_action_state_count($pdo,$refundOrder['order_id'],'revoked')===4,'Full refund did not reconcile buyer and merchant Action Center rows.');
+    mg_reversal_assert(mg_reversal_action_state_count($pdo,$refundOrder['order_id'],'revoked')===2,'Full refund did not reconcile buyer Action Center rows.');
     $summary['refund_action_center_reconciled']=true;
     $refundReplay=mg_finance_refund_order($pdo,$merchantId,$merchantId,['order_id'=>$refundOrder['order_public'],'amount_cents'=>2500,'reason'=>'requested_by_customer','idempotency_key'=>'reversal:refund:'.$runId]);
     mg_reversal_assert($refundReplay['duplicate']===true,'Full refund replay was not idempotent.');
@@ -74,7 +74,7 @@ try{
     mg_reversal_assert(($won['microgift_reconciliation']['restored']??0)===2,'Won dispute did not restore both Microgifts.');
     mg_reversal_assert(mg_reversal_order_status_count($pdo,$wonOrder['order_id'],'issued')===2,'Won dispute did not restore Microgift states.');
     mg_reversal_assert(mg_reversal_order_pppm_status_count($pdo,$wonOrder['order_id'],'available')===2,'Won dispute did not restore PPPM states.');
-    mg_reversal_assert(mg_reversal_action_state_count($pdo,$wonOrder['order_id'],'claimable')===4,'Won dispute did not restore Action Center states.');
+    mg_reversal_assert(mg_reversal_action_state_count($pdo,$wonOrder['order_id'],'claimable')===2,'Won dispute did not restore buyer Action Center states.');
     mg_reversal_assert((int)mg_reversal_scalar($pdo,"SELECT COUNT(*) FROM microgift_credentials c INNER JOIN microgift_instances mi ON mi.id=c.instance_id INNER JOIN commerce_order_items oi ON oi.public_id=mi.source_reference WHERE oi.order_id=? AND c.status='active'",[$wonOrder['order_id']])===2,'Won dispute did not preserve claim credentials.');
     $summary['dispute_won_restored']=true;
 
@@ -107,7 +107,7 @@ try{
     mg_reversal_assert((string)mg_reversal_scalar($pdo,'SELECT payment_status FROM commerce_orders WHERE id=?',[$rollbackOrder['order_id']])==='paid','Forced failure changed order state.');
     mg_reversal_assert(mg_reversal_order_status_count($pdo,$rollbackOrder['order_id'],'issued')===2,'Forced failure left Microgift state.');
     mg_reversal_assert(mg_reversal_order_pppm_status_count($pdo,$rollbackOrder['order_id'],'available')===2,'Forced failure left PPPM state.');
-    mg_reversal_assert(mg_reversal_action_state_count($pdo,$rollbackOrder['order_id'],'claimable')===4,'Forced failure left Action Center state.');
+    mg_reversal_assert(mg_reversal_action_state_count($pdo,$rollbackOrder['order_id'],'claimable')===2,'Forced failure left buyer Action Center state.');
     mg_reversal_assert((int)mg_reversal_scalar($pdo,"SELECT COUNT(*) FROM microgift_credentials c INNER JOIN microgift_instances mi ON mi.id=c.instance_id INNER JOIN commerce_order_items oi ON oi.public_id=mi.source_reference WHERE oi.order_id=? AND c.status='active'",[$rollbackOrder['order_id']])===2,'Forced failure left credential state.');
     $summary['rollback_safe']=true;
 

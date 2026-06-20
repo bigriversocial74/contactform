@@ -63,11 +63,12 @@ final class GiftActionCenterConsolidatedLayoutTest extends TestCase
         $script=file_get_contents(dirname(__DIR__,2).'/assets/js/gift-action-center.js');
         self::assertIsString($script);
         self::assertMatchesRegularExpression('/function\s+rowActions\s*\([^)]*\)/',$script);
-        foreach(['send','resend','claim','load','message','tip'] as $action){
+        foreach(['send','follow-up','claim','load','message','tip'] as $action){
             self::assertStringContainsString('data-gift-action="'.$action.'"',$script);
         }
+        self::assertStringNotContainsString('data-gift-action="resend"',$script);
         self::assertMatchesRegularExpression('/function\s+metadata\s*\(item\)/',$script);
-        foreach(['From: ','Sent: ','Last resent: ','Claimed: ','Type: ','Value: ','Status: '] as $label){
+        foreach(['From: ','Sent: ','Last Follow Up: ','Claimed: ','Type: ','Value: ','Status: '] as $label){
             self::assertStringContainsString($label,$script);
         }
     }

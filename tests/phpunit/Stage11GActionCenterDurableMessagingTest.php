@@ -19,43 +19,54 @@ final class Stage11GActionCenterDurableMessagingTest extends TestCase
         return $source;
     }
 
-    public function testMigrationAddsDurableThreadAndMessageContracts(): void
+    public function testMigrationsAddDurableTransferScopedThreadAndMessageContracts(): void
     {
-        $sql=$this->read('database/stage_11g_action_center_durable_messaging.sql');
+        $base=$this->read('database/stage_11g_action_center_durable_messaging.sql');
         foreach(['microgift_instance_id','recipient_user_id','idempotency_key','source_type','source_reference'] as $column){
-            self::assertStringContainsString($column,$sql);
+            self::assertStringContainsString($column,$base);
         }
-        self::assertStringContainsString('uq_message_threads_microgift_instance',$sql);
-        self::assertStringContainsString('uq_messages_sender_idempotency',$sql);
+        self::assertStringContainsString('uq_messages_sender_idempotency',$base);
+
+        $transfer=$this->read('database/stage_v1d_transfer_conversations.sql');
+        self::assertStringContainsString('conversation_key',$transfer);
+        self::assertStringContainsString('DROP INDEX uq_message_threads_microgift_instance',$transfer);
+        self::assertStringContainsString('idx_message_threads_microgift_instance',$transfer);
+        self::assertStringContainsString('uq_message_threads_microgift_conversation',$transfer);
+        self::assertStringContainsString("'stage_v1d_transfer_conversations.sql'",$this->read('config/migrations.php'));
     }
 
-    public function testServicePersistsCanonicalMessagesAndDeliveryJobs(): void
+    public function testServicePersistsTransferScopedMessagesNotificationsAndEvents(): void
     {
         $source=$this->read('api/messages/_messaging.php');
         self::assertStringContainsString('INSERT INTO message_threads',$source);
+        self::assertStringContainsString('conversation_key',$source);
         self::assertStringContainsString('message_thread_participants',$source);
         self::assertStringContainsString('INSERT INTO messages',$source);
-        self::assertStringContainsString('INSERT INTO notifications',$source);
-        self::assertStringContainsString('mg_queue_notification_deliveries(',$source);
+        self::assertStringContainsString('mg_create_notification(',$source);
         self::assertStringContainsString('INSERT INTO microgift_events',$source);
+        self::assertStringContainsString("'microgift.follow_up_sent'",$source);
         self::assertStringNotContainsString('INSERT INTO events',$source);
     }
 
-    public function testServiceEnforcesParticipantsAndDurableIdempotency(): void
+    public function testServiceEnforcesExplicitTransferParticipantsAndDurableIdempotency(): void
     {
         $source=$this->read('api/messages/_messaging.php');
         foreach(['issuer_user_id','owner_user_id','recipient_user_id'] as $field){
             self::assertStringContainsString("'{$field}'",$source);
         }
+        self::assertStringContainsString('$explicitParticipants=[]',$source);
+        self::assertStringContainsString('WHERE instance_id=? AND event_type=\'sent\'',$source);
+        self::assertStringContainsString('sender_user_id=? AND recipient_user_id=?',$source);
         self::assertStringContainsString('WHERE sender_user_id=? AND idempotency_key=?',$source);
         self::assertStringContainsString('Idempotency key is already bound to a different message request.',$source);
         self::assertStringContainsString('Message recipient is not authorized for this Microgift.',$source);
     }
 
-    public function testActionCenterEndpointUsesMessagingServiceWithoutLifecycleMutation(): void
+    public function testActionCenterEndpointUsesCurrentTransferWithoutLifecycleMutation(): void
     {
         $source=$this->read('api/account/action-center-message.php');
         self::assertStringContainsString('messages/_messaging.php',$source);
+        self::assertStringContainsString('mg_message_conversation_key(',$source);
         self::assertStringContainsString('mg_message_send_microgift(',$source);
         self::assertStringContainsString("'thread_id'=>",$source);
         self::assertStringContainsString("'message_id'=>",$source);

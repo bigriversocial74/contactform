@@ -35,8 +35,8 @@ final class CheckoutSuccessOrderConfirmationContractTest extends TestCase
             'if(!$order)mg_fail(\'Order not found.\',404)',
             '$orderPayload=mg_order_payload($pdo,$order)',
             'FROM receipts WHERE order_id=? LIMIT 1',
-            'SELECT event_type,actor_user_id,metadata_json,created_at FROM order_events WHERE order_id=? ORDER BY id DESC LIMIT 12',
-            'SELECT domain,old_status,new_status,reason,created_at FROM order_status_history WHERE order_id=? ORDER BY id DESC LIMIT 12',
+            'SELECT event_type,actor_user_id,payload_json AS metadata_json,created_at FROM order_audit_events WHERE order_id=? ORDER BY id DESC LIMIT 12',
+            'SELECT status_domain AS domain,from_status AS old_status,to_status AS new_status,reason_code AS reason,created_at FROM order_status_history WHERE order_id=? ORDER BY id DESC LIMIT 12',
             '\'action_center\'=>\'/inbox.php\'',
             'mg_ok([',
         ] as $needle){
@@ -56,7 +56,7 @@ final class CheckoutSuccessOrderConfirmationContractTest extends TestCase
             'Fulfillment ',
             'mg-order-confirmation-grid',
             'mg-order-followup',
-            'Open Action Center',
+            'Open Inbox',
             'Status history',
             "document.title='Order '",
         ] as $needle){
