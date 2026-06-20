@@ -105,16 +105,20 @@ final class CrossStageIntegrityRegressionTest extends TestCase
 
     public function testWebhookRejectsUnsignedPreseedAndStaleFailureRegression(): void
     {
-        $webhook = $this->read('api/payments/webhook.php');
-        $signatureCheck = strpos($webhook, 'if(!$valid)');
-        $insert = strpos($webhook, 'INSERT INTO payment_webhook_events');
+        $endpoint = $this->read('api/payments/webhook.php');
+        $service = $this->read('api/payments/_webhook.php');
+        $signatureCheck = strpos($endpoint, 'if(!$valid)');
+        $serviceCall = strpos($endpoint, 'mg_payment_process_webhook_event(');
         self::assertIsInt($signatureCheck);
-        self::assertIsInt($insert);
-        self::assertLessThan($insert, $signatureCheck);
-        self::assertStringContainsString('payment.webhook_idempotency_conflict', $webhook);
-        self::assertStringContainsString('payment.webhook_stale_failure', $webhook);
-        self::assertStringContainsString("payment_status<>'paid'", $webhook);
-        self::assertStringContainsString("status<>'succeeded'", $webhook);
+        self::assertIsInt($serviceCall);
+        self::assertLessThan($serviceCall, $signatureCheck);
+        self::assertStringNotContainsString('INSERT INTO payment_webhook_events', $endpoint);
+        self::assertStringContainsString('INSERT INTO payment_webhook_events', $service);
+        self::assertStringContainsString('payload_hash', $service);
+        self::assertStringContainsString('payment.webhook_idempotency_conflict', $service);
+        self::assertStringContainsString('payment.webhook_stale_failure', $service);
+        self::assertStringContainsString("payment_status<>'paid'", $service);
+        self::assertStringContainsString("status<>'succeeded'", $service);
     }
 
     public function testCiBuildsTheAuthoritativeFullUpgradeArtifact(): void
