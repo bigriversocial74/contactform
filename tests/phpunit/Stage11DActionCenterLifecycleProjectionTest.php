@@ -74,13 +74,17 @@ final class Stage11DActionCenterLifecycleProjectionTest extends TestCase
         }
     }
 
-    public function testMerchantClaimProjectsTheCompletedRedemption(): void
+    public function testMerchantClaimDelegatesCompletedProjectionToAtomicAuthority(): void
     {
-        $source=$this->read('api/merchant/microgift-claim.php');
-        self::assertStringContainsString('_action_center_projection.php',$source);
-        self::assertStringContainsString('mg_action_center_project_lifecycle(',$source);
-        self::assertStringContainsString('SELECT id,merchant_user_id,location_id FROM microgift_redemptions',$source);
-        self::assertStringContainsString("'can_tip'=>1",$source);
+        $endpoint=$this->read('api/merchant/microgift-claim.php');
+        $atomic=$this->read('api/microgifts/_atomic_merchant_redemption.php');
+
+        self::assertStringContainsString('mg_claim_execute_operation(',$endpoint);
+        self::assertStringNotContainsString('mg_action_center_project_lifecycle(',$endpoint);
+        self::assertStringContainsString('_action_center_projection.php',$atomic);
+        self::assertStringContainsString('mg_action_center_refresh_existing_lifecycle(',$atomic);
+        self::assertStringContainsString('mg_microgift_upsert_inbox_redeemed(',$atomic);
+        self::assertStringContainsString("'can_tip'=>1",$atomic);
     }
 
     public function testProjectionCarriesLifecycleAndRedemptionMetadata(): void
