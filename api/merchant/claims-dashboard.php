@@ -1,13 +1,100 @@
 <?php
 declare(strict_types=1);
+
 require_once __DIR__ . '/_claims.php';
+
 mg_require_method('GET');
-$user=mg_require_permission('merchant.claims.view');$pdo=mg_db();$workspace=mg_claim_workspace($pdo,$user);
-$status=trim((string)($_GET['status']??'all'));$location=trim((string)($_GET['location']??'all'));$q=trim((string)($_GET['q']??''));
-$sql="SELECT gc.public_id claim_id,g.public_id gift_id,pi.public_id pppm_id,g.title,g.value_cents,g.currency,g.status gift_status,gc.status claim_status,gc.failed_attempts,gc.locked_at,gc.verified_at,gc.redeemed_at,gc.expires_at,ml.public_id location_id,ml.name location_name,mcc.label code_label,mcc.code_last4,COUNT(DISTINCT gce.id) exception_count FROM gift_claims gc INNER JOIN gifts g ON g.id=gc.gift_id INNER JOIN gift_merchant_eligibility e ON e.gift_id=g.id AND e.merchant_user_id=? LEFT JOIN merchant_locations ml ON ml.id=gc.location_id LEFT JOIN merchant_claim_codes mcc ON mcc.id=gc.merchant_claim_code_id LEFT JOIN pppm_legacy_gift_map lgm ON lgm.gift_id=g.id LEFT JOIN pppm_items pi ON pi.id=lgm.pppm_item_id LEFT JOIN merchant_claim_exceptions gce ON gce.claim_id=gc.id AND gce.status NOT IN ('resolved','closed') WHERE 1=1";$params=[(int)$user['id']];
-if($status!=='all'){$sql.=' AND gc.status=?';$params[]=$status;}if($location!=='all'){$sql.=' AND ml.public_id=?';$params[]=$location;}if($q!==''){$like='%'.$q.'%';$sql.=' AND (g.public_id LIKE ? OR pi.public_id LIKE ? OR gc.public_id LIKE ? OR g.title LIKE ?)';array_push($params,$like,$like,$like,$like);}$sql.=' GROUP BY gc.id,g.id,pi.id,ml.id,mcc.id ORDER BY gc.updated_at DESC,gc.id DESC LIMIT 500';$stmt=$pdo->prepare($sql);$stmt->execute($params);
-$counts=$pdo->prepare("SELECT COUNT(DISTINCT gc.id) total,SUM(gc.status='pending') pending,SUM(gc.status='verified') verified,SUM(gc.status='redeemed') redeemed,SUM(gc.status='locked') locked,SUM(gc.status='expired') expired FROM gift_claims gc INNER JOIN gifts g ON g.id=gc.gift_id INNER JOIN gift_merchant_eligibility e ON e.gift_id=g.id WHERE e.merchant_user_id=?");$counts->execute([(int)$user['id']]);
-$locations=$pdo->prepare("SELECT ml.public_id,ml.name,ml.status,COUNT(DISTINCT mcc.id) code_count,SUM(mcc.status='active') active_codes FROM merchant_locations ml LEFT JOIN merchant_claim_codes mcc ON mcc.location_id=ml.id AND mcc.merchant_user_id=? WHERE ml.workspace_id=? GROUP BY ml.id ORDER BY ml.is_primary DESC,ml.name");$locations->execute([(int)$user['id'],(int)$workspace['id']]);
-$codes=$pdo->prepare("SELECT mcc.public_id,mcc.label,mcc.code_last4,mcc.status,mcc.valid_from,mcc.valid_until,mcc.usage_limit,mcc.usage_count,ml.public_id location_id,ml.name location_name FROM merchant_claim_codes mcc INNER JOIN merchant_locations ml ON ml.id=mcc.location_id WHERE mcc.merchant_user_id=? AND ml.workspace_id=? ORDER BY ml.name,mcc.label");$codes->execute([(int)$user['id'],(int)$workspace['id']]);
-$exceptions=$pdo->prepare("SELECT mce.public_id,mce.exception_type,mce.status,mce.priority,mce.summary,mce.created_at,g.public_id gift_id,pi.public_id pppm_id FROM merchant_claim_exceptions mce INNER JOIN gift_claims gc ON gc.id=mce.claim_id INNER JOIN gifts g ON g.id=gc.gift_id LEFT JOIN pppm_items pi ON pi.id=mce.pppm_item_id WHERE mce.merchant_user_id=? AND mce.status NOT IN ('resolved','closed') ORDER BY FIELD(mce.priority,'urgent','high','normal','low'),mce.updated_at DESC LIMIT 50");$exceptions->execute([(int)$user['id']]);
-mg_ok(['counts'=>$counts->fetch()?:[],'claims'=>$stmt->fetchAll(),'locations'=>$locations->fetchAll(),'claim_codes'=>$codes->fetchAll(),'exceptions'=>$exceptions->fetchAll()]);
+$user=mg_require_permission('merchant.claims.view');
+$pdo=mg_db();
+$workspace=mg_claim_workspace($pdo,$user);
+$merchantId=(int)$user['id'];
+$resultFilter=trim((string)($_GET['result']??$_GET['status']??'all'));
+$locationFilter=trim((string)($_GET['location']??'all'));
+$q=mb_substr(trim((string)($_GET['q']??'')),0,120);
+
+$countStmt=$pdo->prepare("SELECT COUNT(*) total,
+        SUM(result='approved') approved,
+        SUM(result<>'approved') failed,
+        SUM(result='rate_limited') rate_limited,
+        SUM(result='invalid_claim_code') invalid_code
+    FROM microgift_claim_attempts WHERE merchant_user_id=?");
+$countStmt->execute([$merchantId]);
+$counts=$countStmt->fetch(PDO::FETCH_ASSOC)?:[];
+$redeemedStmt=$pdo->prepare("SELECT COUNT(*) FROM microgift_redemptions WHERE merchant_user_id=? AND status='completed'");
+$redeemedStmt->execute([$merchantId]);
+$counts['redeemed']=(int)$redeemedStmt->fetchColumn();
+
+$where=['a.merchant_user_id=?'];
+$params=[$merchantId];
+if($resultFilter!==''&&$resultFilter!=='all'){
+    if($resultFilter==='failed')$where[]="a.result<>'approved'";
+    else{$where[]='a.result=?';$params[]=$resultFilter;}
+}
+if($locationFilter!==''&&$locationFilter!=='all'){
+    $where[]='l.public_id=?';
+    $params[]=$locationFilter;
+}
+if($q!==''){
+    $needle='%'.$q.'%';
+    $where[]='(a.public_id LIKE ? OR i.public_id LIKE ? OR p.public_id LIKE ? OR t.name LIKE ? OR r.public_id LIKE ?)';
+    array_push($params,$needle,$needle,$needle,$needle,$needle);
+}
+
+$sql="SELECT a.public_id attempt_id,a.result,a.reason_code,a.correlation_id,a.attempted_at,
+        i.public_id instance_id,i.status instance_status,i.face_value_cents,i.currency,i.title_snapshot,
+        p.public_id pppm_id,l.public_id location_id,l.name location_name,
+        r.public_id redemption_id,r.status redemption_status,r.redeemed_at,
+        r.amount_cents redemption_amount_cents,r.currency redemption_currency,
+        a.actor_user_id
+    FROM microgift_claim_attempts a
+    LEFT JOIN microgift_instances i ON i.id=a.instance_id
+    LEFT JOIN microgift_templates t ON t.id=i.template_id
+    LEFT JOIN pppm_items p ON p.id=i.pppm_item_id
+    LEFT JOIN merchant_locations l ON l.id=a.location_id
+    LEFT JOIN microgift_redemptions r ON r.claim_attempt_id=a.id
+    WHERE ".implode(' AND ',$where)."
+    ORDER BY a.attempted_at DESC,a.id DESC LIMIT 500";
+$stmt=$pdo->prepare($sql);
+$stmt->execute($params);
+$attempts=$stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$locations=$pdo->prepare("SELECT ml.public_id,ml.name,ml.status,ml.is_primary,
+        COUNT(DISTINCT mcc.id) code_count,
+        SUM(mcc.status='active') active_codes
+    FROM merchant_locations ml
+    LEFT JOIN merchant_claim_codes mcc ON mcc.location_id=ml.id AND mcc.merchant_user_id=?
+    WHERE ml.workspace_id=? AND ml.merchant_user_id=?
+    GROUP BY ml.id ORDER BY ml.is_primary DESC,ml.name");
+$locations->execute([$merchantId,(int)$workspace['id'],$merchantId]);
+
+$codes=$pdo->prepare("SELECT mcc.public_id,mcc.label,mcc.code_last4,mcc.status,mcc.valid_from,mcc.valid_until,
+        mcc.usage_limit,mcc.usage_count,ml.public_id location_id,ml.name location_name
+    FROM merchant_claim_codes mcc
+    INNER JOIN merchant_locations ml ON ml.id=mcc.location_id
+    WHERE mcc.merchant_user_id=? AND ml.workspace_id=?
+    ORDER BY ml.name,mcc.label,mcc.id");
+$codes->execute([$merchantId,(int)$workspace['id']]);
+
+$exceptions=$pdo->prepare("SELECT e.public_id,e.trigger_type exception_type,e.status,e.severity priority,e.summary,
+        e.created_at,i.public_id instance_id,l.public_id location_id,l.name location_name
+    FROM microgift_claim_escalations e
+    LEFT JOIN microgift_instances i ON i.id=e.instance_id
+    LEFT JOIN merchant_locations l ON l.id=e.location_id
+    WHERE e.merchant_user_id=? AND e.status NOT IN ('resolved','closed')
+    ORDER BY FIELD(e.severity,'critical','high','medium','low'),e.updated_at DESC LIMIT 50");
+$exceptions->execute([$merchantId]);
+
+mg_ok([
+    'counts'=>[
+        'total'=>(int)($counts['total']??0),
+        'approved'=>(int)($counts['approved']??0),
+        'failed'=>(int)($counts['failed']??0),
+        'redeemed'=>(int)($counts['redeemed']??0),
+        'rate_limited'=>(int)($counts['rate_limited']??0),
+        'invalid_code'=>(int)($counts['invalid_code']??0),
+    ],
+    'attempts'=>$attempts,
+    'locations'=>$locations->fetchAll(PDO::FETCH_ASSOC),
+    'claim_codes'=>$codes->fetchAll(PDO::FETCH_ASSOC),
+    'exceptions'=>$exceptions->fetchAll(PDO::FETCH_ASSOC),
+]);
