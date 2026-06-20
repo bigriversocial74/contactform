@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded',function(){
   var status=panel.querySelector('[data-connect-status]');
   var onboard=panel.querySelector('[data-connect-onboard]');
   var sync=panel.querySelector('[data-connect-sync]');
+  var providerBadge=document.querySelector('[data-financial-provider]');
 
   function esc(value){return String(value==null?'':value).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];});}
 
@@ -13,6 +14,11 @@ document.addEventListener('DOMContentLoaded',function(){
     var account=data.account||{};
     var platform=data.platform||{};
     panel.classList.toggle('is-ready',!!account.ready);
+    if(providerBadge){
+      providerBadge.textContent='Stripe / '+esc(platform.mode||account.mode||'test')+(account.ready?' / ready':' / setup required');
+      providerBadge.classList.toggle('is-ready',!!account.ready);
+      providerBadge.classList.toggle('is-missing',!account.ready);
+    }
     facts.innerHTML=[
       ['Mode',platform.mode||account.mode||'test'],
       ['Account',account.account_id||'Not created'],
@@ -33,8 +39,11 @@ document.addEventListener('DOMContentLoaded',function(){
   async function load(doSync){
     status.textContent=doSync?'Refreshing Stripe account…':'Loading Stripe account…';
     if(doSync){
-      var response=await Microgifter.post('/api/merchant/payment-connect.php',{action:'sync'});
-      return {account:(response.data||response).account,platform:(await Microgifter.get('/api/merchant/payment-account.php')).data.platform};
+      var syncResponse=await Microgifter.post('/api/merchant/payment-connect.php',{action:'sync'});
+      var account=(syncResponse.data||syncResponse).account||{};
+      var statusResponse=await Microgifter.get('/api/merchant/payment-account.php');
+      var statusData=statusResponse.data||statusResponse;
+      return {account:account,platform:statusData.platform||{}};
     }
     var response=await Microgifter.get('/api/merchant/payment-account.php');
     return response.data||response;
