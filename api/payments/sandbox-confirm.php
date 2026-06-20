@@ -61,10 +61,16 @@ try{
         mg_fail('Checkout session is not open.',409);
     }
     if(!empty($row['expires_at'])&&strtotime((string)$row['expires_at'])<=time()){
+        $pdo->prepare(
+            "UPDATE payment_intents
+             SET status='cancelled',failure_code='checkout_session_expired',
+                 failure_message='The linked checkout session expired before payment.',updated_at=NOW()
+             WHERE id=? AND status IN ('created','requires_payment_method','requires_action')"
+        )->execute([(int)$row['intent_db_id']]);
         $pdo->prepare("UPDATE checkout_sessions SET status='expired',updated_at=NOW() WHERE id=?")
             ->execute([(int)$row['session_db_id']]);
         $pdo->commit();
-        mg_fail('Checkout session has expired. Return to your cart and start checkout again.',409);
+        mg_fail('Checkout session has expired. Create a new payment session for this unpaid order.',409);
     }
     if(in_array((string)$row['intent_status'],['failed','cancelled','succeeded'],true)){
         $pdo->rollBack();
