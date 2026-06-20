@@ -27,23 +27,30 @@ final class ProductionLiveUiHotfixTest extends TestCase
         self::assertStringContainsString('Microgifter.agents.applyUpdate(response.data.agent)', $controls);
     }
 
-    public function testHeaderPlusButtonUsesSharedCreateDialogAssets(): void
+    public function testCreateDialogUsesTheExistingGlobalHeaderControl(): void
     {
         $header = file_get_contents($this->root . '/includes/header-components/app-header.php');
         $layout = file_get_contents($this->root . '/includes/header.php');
         $footer = file_get_contents($this->root . '/includes/footer.php');
+        $script = file_get_contents($this->root . '/assets/js/create-menu.js');
+        $css = file_get_contents($this->root . '/assets/css/create-menu.css');
 
         self::assertIsString($header);
         self::assertIsString($layout);
         self::assertIsString($footer);
-        self::assertStringContainsString('data-create-menu-trigger', $header);
-        self::assertStringContainsString('data-product-header-create', $header);
+        self::assertIsString($script);
+        self::assertIsString($css);
         self::assertStringContainsString('role="dialog"', $header);
         self::assertStringContainsString('/assets/css/create-menu.css', $layout);
         self::assertStringContainsString('/assets/js/create-menu.js', $footer);
-        self::assertStringNotContainsString('<script>', $header);
-        self::assertStringNotContainsString('<style>', $header);
-        self::assertStringNotContainsString('<a class="mg-header-product-create" href="/build.php"', $header);
+        self::assertStringNotContainsString('mg-header-product-create', $header);
+        self::assertStringNotContainsString('data-product-header-create', $header);
+        self::assertStringNotContainsString('data-create-menu-trigger', $header);
+        self::assertStringNotContainsString('.mg-header-product-create', $css);
+        self::assertStringContainsString('.mg-unified-header .mg-header-actions > button', $script);
+        self::assertStringContainsString("trigger.dataset.createMenuTrigger=''", $script);
+        self::assertStringContainsString('new MutationObserver(discoverOriginalTrigger)', $script);
+        self::assertStringNotContainsString("createElement('button')", $script);
     }
 
     public function testCreateDialogContainsEveryRequestedDestination(): void
