@@ -27,18 +27,26 @@ if(!is_array($report)||!is_array($report['checks']??null)){
     exit(1);
 }
 
-$directMerchantClaimPassed=false;
+$checksByKey=[];
 foreach($report['checks'] as $check){
-    if(($check['key']??null)==='direct_merchant_claim'&&($check['status']??null)==='pass'){
-        $directMerchantClaimPassed=true;
-        break;
-    }
+    $key=(string)($check['key']??'');
+    if($key!=='')$checksByKey[$key]=$check;
 }
+$passed=static function(string $key)use($checksByKey): bool{
+    return ($checksByKey[$key]['status']??null)==='pass';
+};
+$finding=static function(string $key)use($checksByKey): bool{
+    return ($checksByKey[$key]['status']??null)==='finding';
+};
 
 $superseded=[];
-if($directMerchantClaimPassed){
+if($passed('direct_merchant_claim')){
     $superseded[]='purchased_gift_claim_bridge';
 }
+if($passed('original_issuer_preservation')&&$finding('message_timing_policy')){
+    $superseded[]='post_claim_message_recipient';
+}
+
 $blocking=[];
 foreach($report['checks'] as $check){
     $key=(string)($check['key']??'');
