@@ -1,0 +1,2 @@
+-- Stage F migration compatibility marker.
+-- The canonical migration is database/stage_v1f_stripe_payments.sql.
