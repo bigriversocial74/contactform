@@ -17,7 +17,7 @@ declare(strict_types=1);
             <?php endforeach; ?>
           </div>
           <div class="mg-header-agent-search"><input type="search" placeholder="Search agents, products, gifts, claims…" aria-label="Search agent workspace" data-agent-global-search></div>
-          <button class="mg-header-product-create" type="button" data-create-menu-trigger aria-haspopup="dialog" aria-controls="mg-create-menu" aria-expanded="false" aria-label="Create something new">+</button>
+          <button class="mg-header-product-create" type="button" data-product-header-create data-create-menu-trigger aria-haspopup="dialog" aria-controls="mg-create-menu" aria-expanded="false" aria-label="Create something new">+</button>
         </div>
       <?php elseif ($header_mode === 'account'): ?>
         <div class="mg-header-agent-tools mg-header-account-tools"><div class="mg-header-agent-search"><input type="search" placeholder="Search account, activity, messages, settings…" aria-label="Search account workspace"></div></div>
