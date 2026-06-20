@@ -107,7 +107,14 @@ function mg_payment_process_webhook_event(PDO $pdo,string $provider,array $event
         $same=(int)$existing['signature_valid']===1
             &&hash_equals((string)$existing['payload_hash'],$payloadHash)
             &&hash_equals((string)$existing['event_type'],$type);
-        if(!$same)throw new MgPaymentWebhookException('Webhook event conflicts with an existing provider event.',409);
+        if(!$same){
+            mg_security_log('critical','payment.webhook_idempotency_conflict','Provider event ID was replayed with a different signed payload.',[
+                'provider'=>$provider,
+                'provider_event_id'=>$eventId,
+                'event_type'=>$type,
+            ]);
+            throw new MgPaymentWebhookException('Webhook event conflicts with an existing provider event.',409);
+        }
         if(in_array((string)$existing['status'],['processed','ignored'],true)){
             return ['duplicate'=>true,'status'=>(string)$existing['status'],'processed'=>(string)$existing['status']==='processed'];
         }
@@ -141,13 +148,18 @@ function mg_payment_process_webhook_event(PDO $pdo,string $provider,array $event
                 $pdo->prepare("UPDATE checkout_sessions SET provider_session_reference=?,status='completed',completed_at=COALESCE(completed_at,NOW()),updated_at=NOW() WHERE id=?")
                     ->execute([$ids['provider_session_reference'],(int)$row['session_db_id']]);
             }
-            $capture=mg_finance_record_paid_order($pdo,(int)$row['order_db_id'],(int)$row['intent_db_id'],$providerReference,null);
+            mg_finance_record_paid_order($pdo,(int)$row['order_db_id'],(int)$row['intent_db_id'],$providerReference,null);
             $processed=true;
         }
     }elseif(in_array($type,$failureTypes,true)){
         $row=mg_payment_webhook_find_order($pdo,$provider,$ids);
         if($row){
             if((string)$row['payment_status']==='paid'||(string)$row['intent_status']==='succeeded'){
+                mg_security_log('warning','payment.webhook_stale_failure','Ignored payment failure received after successful capture.',[
+                    'provider'=>$provider,
+                    'provider_event_id'=>$eventId,
+                    'order_id'=>(string)$row['order_id'],
+                ]);
                 $processed=true;
             }else{
                 $pdo->prepare("UPDATE payment_intents SET status='failed',failure_code=?,failure_message=?,updated_at=NOW() WHERE id=? AND status<>'succeeded'")
