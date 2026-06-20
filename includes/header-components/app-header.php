@@ -1,11 +1,9 @@
 <?php
 declare(strict_types=1);
-$show_create_menu = in_array($header_mode, ['agent','account','crm'], true);
-$create_menu_button = static function (): void {
-    ?>
-    <button class="mg-header-product-create" type="button" data-product-header-create data-create-menu-trigger aria-haspopup="dialog" aria-controls="mg-create-menu" aria-expanded="false" aria-label="Create something new">+</button>
-    <?php
-};
+
+// The create modal is available throughout the authenticated application.
+// Its trigger is the existing global header control, bound by create-menu.js.
+$show_create_menu = true;
 ?>
 <header class="mg-site-header mg-unified-header" data-mg-universal-header data-header-variant="logged-in">
   <div class="mg-header-left">
@@ -16,7 +14,6 @@ $create_menu_button = static function (): void {
         <div class="mg-header-crm-tools">
           <input data-crm-search placeholder="Search leads, email, business, ZIP..." aria-label="Search CRM leads">
           <select data-crm-status-filter aria-label="Filter CRM leads by status"><option value="all">All statuses</option><option value="new">New</option><option value="assigned">Assigned</option><option value="contacted">Contacted</option><option value="qualified">Qualified</option><option value="nurture">Nurture</option><option value="converted">Converted</option><option value="closed_lost">Closed lost</option><option value="spam">Spam</option></select>
-          <?php $create_menu_button(); ?>
         </div>
       <?php elseif ($header_mode === 'agent'): ?>
         <div class="mg-header-agent-tools">
@@ -27,12 +24,10 @@ $create_menu_button = static function (): void {
             <?php endforeach; ?>
           </div>
           <div class="mg-header-agent-search"><input type="search" placeholder="Search agents, products, gifts, claims…" aria-label="Search agent workspace" data-agent-global-search></div>
-          <?php $create_menu_button(); ?>
         </div>
       <?php elseif ($header_mode === 'account'): ?>
         <div class="mg-header-agent-tools mg-header-account-tools">
           <div class="mg-header-agent-search"><input type="search" placeholder="Search account, activity, messages, settings…" aria-label="Search account workspace"></div>
-          <?php $create_menu_button(); ?>
         </div>
       <?php elseif ($header_mode === 'builder'): ?>
         <div class="mg-builder-header-toggle" aria-label="Preview size">
