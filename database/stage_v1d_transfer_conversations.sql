@@ -21,21 +21,8 @@ UPDATE message_threads
 SET conversation_key=CONCAT('legacy:',public_id)
 WHERE conversation_key IS NULL OR conversation_key='';
 
-SET @mg_has_old_unique := (
-  SELECT COUNT(*) FROM information_schema.STATISTICS
-  WHERE TABLE_SCHEMA=DATABASE()
-    AND TABLE_NAME='message_threads'
-    AND INDEX_NAME='uq_message_threads_microgift_instance'
-);
-SET @mg_sql := IF(
-  @mg_has_old_unique>0,
-  'ALTER TABLE message_threads DROP INDEX uq_message_threads_microgift_instance',
-  'SELECT 1'
-);
-PREPARE mg_stmt FROM @mg_sql;
-EXECUTE mg_stmt;
-DEALLOCATE PREPARE mg_stmt;
-
+-- Add a non-unique supporting index before dropping the old unique index so the
+-- existing foreign key on microgift_instance_id always remains indexed.
 SET @mg_has_instance_index := (
   SELECT COUNT(*) FROM information_schema.STATISTICS
   WHERE TABLE_SCHEMA=DATABASE()
@@ -45,6 +32,21 @@ SET @mg_has_instance_index := (
 SET @mg_sql := IF(
   @mg_has_instance_index=0,
   'ALTER TABLE message_threads ADD KEY idx_message_threads_microgift_instance (microgift_instance_id)',
+  'SELECT 1'
+);
+PREPARE mg_stmt FROM @mg_sql;
+EXECUTE mg_stmt;
+DEALLOCATE PREPARE mg_stmt;
+
+SET @mg_has_old_unique := (
+  SELECT COUNT(*) FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='message_threads'
+    AND INDEX_NAME='uq_message_threads_microgift_instance'
+);
+SET @mg_sql := IF(
+  @mg_has_old_unique>0,
+  'ALTER TABLE message_threads DROP INDEX uq_message_threads_microgift_instance',
   'SELECT 1'
 );
 PREPARE mg_stmt FROM @mg_sql;
