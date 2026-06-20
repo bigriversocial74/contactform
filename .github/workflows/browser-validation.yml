@@ -138,8 +138,8 @@ jobs:
           cat /tmp/microgifter-browser-server.log
           exit 1
 
-      - name: Run browser smoke suite
-        run: npm run test:browser
+      - name: Run V1 browser smoke suite
+        run: npm run test:browser:v1
 
       - name: Upload browser artifacts
         if: failure()
