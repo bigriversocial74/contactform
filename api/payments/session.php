@@ -10,8 +10,10 @@ if($id==='')mg_fail('Checkout session is required.',422);
 
 $pdo=mg_db();
 $stmt=$pdo->prepare(
-    "SELECT cs.public_id session_id,cs.status session_status,cs.provider_key,cs.expires_at,
+    "SELECT cs.public_id session_id,cs.status session_status,cs.provider_key,
+            cs.provider_session_reference,cs.provider_checkout_url,cs.expires_at,
             pi.public_id payment_intent_id,pi.status payment_intent_status,
+            pi.application_fee_cents,pi.destination_account_reference,
             o.public_id order_id,o.currency,o.subtotal_cents,o.tax_cents,o.discount_cents,
             o.platform_fee_cents,o.total_cents,o.payment_status,o.fulfillment_status,
             o.merchant_user_id,mw.display_name merchant_name
@@ -32,10 +34,18 @@ if($expired&&in_array((string)$session['session_status'],['created','open'],true
 }
 $session['can_confirm']=(
     $session['provider_key']==='sandbox'
-    && in_array((string)$session['session_status'],['created','open'],true)
-    && (string)$session['payment_status']==='unpaid'
-    && !in_array((string)$session['payment_intent_status'],['failed','cancelled','succeeded'],true)
+    &&in_array((string)$session['session_status'],['created','open'],true)
+    &&(string)$session['payment_status']==='unpaid'
+    &&!in_array((string)$session['payment_intent_status'],['failed','cancelled','succeeded'],true)
 );
+$session['checkout_url']=trim((string)($session['provider_checkout_url']??''));
+$session['can_continue_provider']=(
+    $session['provider_key']!=='sandbox'
+    &&$session['checkout_url']!==''
+    &&in_array((string)$session['session_status'],['created','open'],true)
+    &&(string)$session['payment_status']==='unpaid'
+);
+unset($session['provider_checkout_url'],$session['destination_account_reference']);
 
 $items=$pdo->prepare(
     'SELECT title_snapshot,quantity,unit_amount_cents,line_total_cents,currency
