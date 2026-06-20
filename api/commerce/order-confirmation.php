@@ -16,9 +16,9 @@ $receiptStmt=$pdo->prepare('SELECT public_id receipt_id,receipt_number,status,cu
 $receiptStmt->execute([(int)$order['id']]);
 $receipt=$receiptStmt->fetch(PDO::FETCH_ASSOC)?:null;
 if($receipt)$receipt['items_snapshot_json']=json_decode((string)$receipt['items_snapshot_json'],true)?:[];
-$events=$pdo->prepare('SELECT event_type,actor_user_id,metadata_json,created_at FROM order_events WHERE order_id=? ORDER BY id DESC LIMIT 12');
+$events=$pdo->prepare('SELECT event_type,actor_user_id,payload_json AS metadata_json,created_at FROM order_audit_events WHERE order_id=? ORDER BY id DESC LIMIT 12');
 $events->execute([(int)$order['id']]);
-$history=$pdo->prepare('SELECT domain,old_status,new_status,reason,created_at FROM order_status_history WHERE order_id=? ORDER BY id DESC LIMIT 12');
+$history=$pdo->prepare('SELECT status_domain AS domain,from_status AS old_status,to_status AS new_status,reason_code AS reason,created_at FROM order_status_history WHERE order_id=? ORDER BY id DESC LIMIT 12');
 $history->execute([(int)$order['id']]);
 mg_ok([
     'order'=>$orderPayload,
