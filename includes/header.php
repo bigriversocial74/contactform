@@ -97,6 +97,7 @@ $can_admin_dashboard = $user && (
 <meta name="csrf-token" content="<?= mg_e(mg_csrf_token()) ?>">
 <title><?= mg_e($page_title) ?></title>
 <link rel="stylesheet" href="/assets/css/microgifter.css">
+<link rel="stylesheet" href="/assets/css/index-minimal-header.css">
 <?php if ($is_app_page): ?><link rel="stylesheet" href="/assets/css/app-shell.css"><?php endif; ?>
 <?php if ($section_css): ?><link rel="stylesheet" href="<?= mg_e($section_css) ?>"><?php endif; ?>
 <?php foreach ($page_styles as $style): ?><link rel="stylesheet" href="<?= mg_e($style) ?>"><?php endforeach; ?>

@@ -36,8 +36,12 @@ document.addEventListener('DOMContentLoaded', function () {
       var submit = editor.querySelector('button[type="submit"]');
       submit.disabled = true;
       try {
-        await Microgifter.patch('/api/agents/item.php', { id: id, name: value });
-        await Microgifter.agents.refresh();
+        var response = await Microgifter.patch('/api/agents/item.php', { id: id, name: value });
+        if (response.data && response.data.agent && Microgifter.agents) {
+          Microgifter.agents.applyUpdate(response.data.agent);
+        } else {
+          await Microgifter.agents.refresh();
+        }
         close();
         setCanvasStatus('Agent name saved');
       } catch (error) {
@@ -47,6 +51,29 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     editor.querySelector('[data-agent-name-cancel]').addEventListener('click', close);
+  }
+
+  async function changeRuntimeStatus(id, nextStatus) {
+    if (!window.Microgifter.agents) return;
+
+    var previous = Microgifter.agents.setRuntimeStatus(id, nextStatus);
+    setCanvasStatus(nextStatus === 'running' ? 'Starting agent…' : 'Pausing agent…');
+
+    try {
+      var response = await Microgifter.post('/api/agents/status.php', {
+        id: id,
+        status: nextStatus
+      });
+      if (response.data && response.data.agent) {
+        Microgifter.agents.applyUpdate(response.data.agent);
+      } else {
+        await Microgifter.agents.refresh();
+      }
+      setCanvasStatus(nextStatus === 'running' ? 'Saved · Running' : 'Saved · Paused');
+    } catch (error) {
+      if (previous) Microgifter.agents.applyUpdate(previous);
+      setCanvasStatus(error.message || 'Unable to update agent status');
+    }
   }
 
   list.addEventListener('click', async function (event) {
@@ -63,17 +90,9 @@ document.addEventListener('DOMContentLoaded', function () {
     if (toggle) {
       event.preventDefault();
       event.stopPropagation();
-      toggle.disabled = true;
-      try {
-        await Microgifter.post('/api/agents/status.php', {
-          id: toggle.dataset.agentRuntimeToggle,
-          status: toggle.dataset.nextStatus || 'running'
-        });
-        await Microgifter.agents.refresh();
-      } catch (error) {
-        toggle.disabled = false;
-        setCanvasStatus(error.message || 'Unable to update agent status');
-      }
+      var id = toggle.dataset.agentRuntimeToggle;
+      var nextStatus = toggle.dataset.nextStatus || 'running';
+      await changeRuntimeStatus(id, nextStatus);
     }
   });
 
@@ -84,14 +103,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!active) return;
 
     event.preventDefault();
-    save.disabled = true;
-    try {
-      var next = active.runtime_status === 'running' ? 'paused' : 'running';
-      await Microgifter.post('/api/agents/status.php', { id: active.id, status: next });
-      await Microgifter.agents.refresh();
-    } catch (error) {
-      save.disabled = false;
-      setCanvasStatus(error.message || 'Unable to update agent status');
-    }
+    var next = active.runtime_status === 'running' ? 'paused' : 'running';
+    await changeRuntimeStatus(active.id, next);
   });
 });
