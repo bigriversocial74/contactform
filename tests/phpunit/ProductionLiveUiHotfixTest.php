@@ -47,7 +47,7 @@ final class ProductionLiveUiHotfixTest extends TestCase
         self::assertStringNotContainsString('data-product-header-create', $header);
         self::assertStringNotContainsString('data-create-menu-trigger', $header);
         self::assertStringNotContainsString('.mg-header-product-create', $css);
-        self::assertStringContainsString('.mg-unified-header .mg-header-actions > button', $script);
+        self::assertStringContainsString('.mg-unified-header .mg-header-actions button', $script);
         self::assertStringContainsString("trigger.dataset.createMenuTrigger=''", $script);
         self::assertStringContainsString('new MutationObserver(discoverOriginalTrigger)', $script);
         self::assertStringNotContainsString("createElement('button')", $script);
