@@ -41,7 +41,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-for command in mysql mysqldump gzip gunzip php sha256sum; do
+for command in mysql mysqldump gzip gunzip php sha256sum sed grep; do
   command -v "${command}" >/dev/null 2>&1 || {
     echo "Required command is unavailable: ${command}" >&2
     exit 1
@@ -80,6 +80,9 @@ BACKUP_PATH="${OUTPUT_DIR}/${SOURCE_DB}-${RUN_ID}.sql.gz"
 CHECKSUM_PATH="${BACKUP_PATH}.sha256"
 REPORT_PATH="${OUTPUT_DIR}/backup-restore-validation.json"
 MIGRATION_STATUS_PATH="${OUTPUT_DIR}/restored-database-migration-status.json"
+RESTORE_SQL_PATH="${OUTPUT_DIR}/database-restore-input.sql"
+RESTORE_ERROR_PATH="${OUTPUT_DIR}/database-restore-error.log"
+RESTORE_CONTEXT_PATH="${OUTPUT_DIR}/database-restore-error-context.sql"
 CANARY_KEY="backup_restore_canary_${RUN_ID//[^A-Za-z0-9]/_}"
 CANARY_ID=""
 RESTORE_CREATED=0
@@ -105,6 +108,9 @@ cleanup() {
   fi
   if [[ "${KEEP_BACKUP}" -ne 1 ]]; then
     rm -f "${BACKUP_PATH}" "${CHECKSUM_PATH}"
+  fi
+  if [[ "${CURRENT_STAGE}" == "write_passed_evidence" ]]; then
+    rm -f "${RESTORE_SQL_PATH}" "${RESTORE_ERROR_PATH}" "${RESTORE_CONTEXT_PATH}"
   fi
 }
 
@@ -182,7 +188,20 @@ RESTORE_CREATED=1
 
 CURRENT_STAGE="restore_backup"
 echo "[backup-restore] ${CURRENT_STAGE}"
-gunzip -c "${BACKUP_PATH}" | mysql_admin "${RESTORE_DB}"
+gunzip -c "${BACKUP_PATH}" > "${RESTORE_SQL_PATH}"
+if ! mysql_admin --binary-mode=1 "${RESTORE_DB}" < "${RESTORE_SQL_PATH}" 2> "${RESTORE_ERROR_PATH}"; then
+  cat "${RESTORE_ERROR_PATH}" >&2
+  ERROR_LINE="$(sed -nE 's/.* at line ([0-9]+):.*/\1/p' "${RESTORE_ERROR_PATH}" | head -n1)"
+  if [[ "${ERROR_LINE}" =~ ^[0-9]+$ ]]; then
+    START_LINE=$(( ERROR_LINE > 20 ? ERROR_LINE - 20 : 1 ))
+    END_LINE=$(( ERROR_LINE + 20 ))
+    sed -n "${START_LINE},${END_LINE}p" "${RESTORE_SQL_PATH}" > "${RESTORE_CONTEXT_PATH}"
+    echo "--- SQL restore context (${START_LINE}-${END_LINE}) ---" >&2
+    nl -ba "${RESTORE_SQL_PATH}" | sed -n "${START_LINE},${END_LINE}p" >&2
+    echo "--- end SQL restore context ---" >&2
+  fi
+  false
+fi
 
 CURRENT_STAGE="verify_restored_counts_and_canary"
 echo "[backup-restore] ${CURRENT_STAGE}"
