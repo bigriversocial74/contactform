@@ -1,6 +1,6 @@
 -- V1 Stage C: checkout session to payment intent authority
--- Every checkout session must resolve one specific payment intent. Legacy rows are
--- backfilled to the newest compatible intent for the same order and provider.
+-- Every checkout session resolves one specific payment intent. Legacy rows are
+-- backfilled to the nearest compatible intent for the same order and provider.
 
 SET @mg_has_checkout_session_intent := (
   SELECT COUNT(*) FROM information_schema.COLUMNS
@@ -55,7 +55,7 @@ SET @mg_has_checkout_session_intent_fk := (
 );
 SET @mg_sql := IF(
   @mg_has_checkout_session_intent_fk = 0,
-  'ALTER TABLE checkout_sessions ADD CONSTRAINT fk_checkout_sessions_payment_intent FOREIGN KEY (payment_intent_id) REFERENCES payment_intents(id) ON DELETE RESTRICT',
+  'ALTER TABLE checkout_sessions ADD CONSTRAINT fk_checkout_sessions_payment_intent FOREIGN KEY (payment_intent_id) REFERENCES payment_intents(id) ON DELETE CASCADE',
   'SELECT 1'
 );
 PREPARE mg_stmt FROM @mg_sql;
