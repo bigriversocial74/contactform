@@ -5,7 +5,7 @@ use PHPUnit\Framework\TestCase;
 
 final class MobileAgentTabsTest extends TestCase
 {
-    public function testClaimedTabExistsAndAgentAddFeatureIsRemovedFromHeader(): void
+    public function testClaimedTabExistsAndHeaderCreateMenuReplacesDirectProductLink(): void
     {
         $source=file_get_contents(dirname(__DIR__,2).'/includes/header-components/app-header.php');
         self::assertIsString($source);
@@ -13,8 +13,10 @@ final class MobileAgentTabsTest extends TestCase
         self::assertStringNotContainsString('data-agent-tab-add',$source);
         self::assertStringNotContainsString('data-agent-header-create',$source);
         self::assertStringContainsString('data-product-header-create',$source);
-        self::assertStringContainsString('href="/build.php"',$source);
-        self::assertStringContainsString('aria-label="Add product"',$source);
+        self::assertStringContainsString('data-create-menu-trigger',$source);
+        self::assertStringContainsString('aria-label="Create something new"',$source);
+        self::assertStringContainsString('data-create-menu-option="microgift"',$source);
+        self::assertStringNotContainsString('<a class="mg-header-product-create" href="/build.php"',$source);
     }
 
     public function testProductCreateButtonStaysInMobileTabRowWithoutDesktopDuplicate(): void
