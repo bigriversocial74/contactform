@@ -35,7 +35,7 @@ final class StageERedemptionContractTest extends TestCase
     public function testMerchantEndpointDoesNotTrustAClaimantPayload(): void
     {
         $source=$this->source('api/merchant/microgift-claim.php');
-        self::assertStringContainsString("unset($input['claimant_user_id'])",$source);
+        self::assertStringContainsString('unset($input[\'claimant_user_id\'])',$source);
         self::assertStringContainsString('mg_claim_execute_operation(',$source);
         self::assertStringContainsString('Microgift redeemed and both parties confirmed.',$source);
         self::assertStringNotContainsString('mg_action_center_project_lifecycle(',$source);
