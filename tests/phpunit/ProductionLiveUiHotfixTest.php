@@ -33,8 +33,9 @@ final class ProductionLiveUiHotfixTest extends TestCase
 
         self::assertIsString($header);
         self::assertStringContainsString('data-create-menu-trigger', $header);
+        self::assertStringContainsString('data-product-header-create', $header);
         self::assertStringContainsString('role="dialog"', $header);
-        self::assertStringNotContainsString('data-product-header-create', $header);
+        self::assertStringNotContainsString('<a class="mg-header-product-create" href="/build.php"', $header);
     }
 
     public function testCreateDialogContainsEveryRequestedDestination(): void
