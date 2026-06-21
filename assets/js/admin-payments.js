@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', function () {
     try {
       var response = await Microgifter.post('/api/admin/payment-settings.php', payload);
       fill(response.data || response);
-      msg(response.message || 'Payment settings saved.', 'success');
+      msg(response.message || 'Stripe payment settings saved.', 'success');
     } catch (error) {
       msg(error.message || 'Unable to save payment settings.', 'error');
     }
