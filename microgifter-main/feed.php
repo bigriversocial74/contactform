@@ -45,6 +45,12 @@ require __DIR__ . '/includes/header.php';
       require __DIR__ . '/includes/social-feed-composer.php';
       ?>
 
+      <div class="mg-hidden">
+        <span data-feed-kicker>Public discovery</span>
+        <span data-feed-title>Discover posts</span>
+        <span data-feed-description>Public and unlisted posts from active profiles.</span>
+      </div>
+
       <label class="mg-feed-owner-filter mg-hidden" data-owner-filter-wrap>Post status
         <select data-owner-filter>
           <option value="">All posts</option>
