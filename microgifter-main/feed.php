@@ -5,8 +5,8 @@ require_once __DIR__ . '/includes/app.php';
 $page_title = 'Feed | Microgifter';
 $page_section = 'feed';
 $header_mode = 'public';
-$page_styles = ['/assets/css/social-feed.css'];
-$page_scripts = ['/assets/js/social-feed.js'];
+$page_styles = ['/assets/css/social-feed.css','/assets/css/social-feed-upload.css'];
+$page_scripts = ['/assets/js/social-feed.js','/assets/js/social-feed-upload.js'];
 $page_manifest = [
     'id' => 'feed',
     'title' => $page_title,
@@ -57,73 +57,11 @@ require __DIR__ . '/includes/header.php';
     </aside>
 
     <div class="mg-feed-main">
-      <section class="mg-feed-composer mg-hidden" data-post-composer aria-labelledby="mg-feed-composer-title">
-        <div class="mg-feed-section-heading">
-          <div>
-            <span class="mg-kicker">Post composer</span>
-            <h2 id="mg-feed-composer-title" data-composer-title>Create a post</h2>
-          </div>
-          <button class="mg-btn mg-btn-ghost" type="button" data-composer-close>Close</button>
-        </div>
-        <form data-post-form>
-          <input type="hidden" name="post_id">
-          <label>Headline
-            <input type="text" name="headline" maxlength="240" placeholder="What is happening?">
-          </label>
-          <label>Post body
-            <textarea name="body" rows="6" maxlength="10000" placeholder="Share an update, story, offer, or local gifting idea."></textarea>
-          </label>
-          <div class="mg-feed-form-grid">
-            <label>Visibility
-              <select name="visibility">
-                <option value="public">Public</option>
-                <option value="unlisted">Unlisted</option>
-                <option value="followers">Followers</option>
-                <option value="subscribers">Subscribers</option>
-                <option value="premium">Premium members</option>
-                <option value="private">Private draft</option>
-              </select>
-            </label>
-            <label>Post type
-              <select name="post_type">
-                <option value="simple">Text update</option>
-                <option value="image">Image</option>
-                <option value="audio">Audio</option>
-                <option value="video">Video</option>
-                <option value="greeting_card">Greeting card</option>
-                <option value="multimedia_card">Multimedia card</option>
-                <option value="collab">Collaboration</option>
-              </select>
-            </label>
-          </div>
-          <details class="mg-feed-attachments">
-            <summary>Attachments and access</summary>
-            <div class="mg-feed-form-grid">
-              <label>Product public ID
-                <input type="text" name="product_id" maxlength="80" placeholder="Optional product UUID">
-              </label>
-              <label>Microgift public ID
-                <input type="text" name="microgift_id" maxlength="80" placeholder="Optional Microgift UUID">
-              </label>
-              <label>Subscription plan public ID
-                <input type="text" name="subscription_plan_id" maxlength="80" placeholder="Required for subscriber visibility">
-              </label>
-              <label>Link URL
-                <input type="url" name="link_url" maxlength="500" placeholder="https://example.com">
-              </label>
-            </div>
-            <label>Media URLs
-              <textarea name="media_urls" rows="4" placeholder="One image, audio, video, or link URL per line. Maximum 8."></textarea>
-            </label>
-          </details>
-          <div class="mg-feed-composer-actions">
-            <button class="mg-btn mg-btn-soft" type="button" data-post-save-draft>Save draft</button>
-            <button class="mg-btn mg-btn-primary" type="submit" data-post-publish>Publish</button>
-            <button class="mg-btn mg-btn-ghost mg-hidden" type="button" data-post-cancel-edit>Cancel edit</button>
-          </div>
-          <div class="mg-feed-action-status" data-composer-status role="status" aria-live="polite"></div>
-        </form>
-      </section>
+      <?php
+      $post_composer_id_suffix = 'feed';
+      $post_composer_hidden = true;
+      require __DIR__ . '/includes/social-feed-composer.php';
+      ?>
 
       <section class="mg-feed-toolbar" aria-labelledby="mg-feed-view-title">
         <div>
