@@ -126,7 +126,7 @@ final class ProductionLiveUiHotfixTest extends TestCase
             self::assertIsString($source);
         }
 
-        self::assertStringContainsString('$header_mode = \'account\';', $page);
+        self::assertStringContainsString('$header_mode = \'public\';', $page);
         self::assertStringContainsString('data-newsfeed', $page);
         self::assertStringContainsString('/assets/js/newsfeed.js', $page);
         self::assertStringContainsString('/assets/css/newsfeed.css', $page);
