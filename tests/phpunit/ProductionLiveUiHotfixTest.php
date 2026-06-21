@@ -76,26 +76,69 @@ final class ProductionLiveUiHotfixTest extends TestCase
         }
     }
 
-    public function testAccountMenusUseInboxFeedProfileAndMerchantLinks(): void
+    public function testAccountMenusUseInboxFeedProfileStorefrontAndMerchantLinks(): void
     {
+        $layout = file_get_contents($this->root . '/includes/header.php');
+        $mirrorLayout = file_get_contents($this->root . '/microgifter-main/includes/header.php');
         $appMenu = file_get_contents($this->root . '/includes/header-templates/logged-in.php');
         $publicMenu = file_get_contents($this->root . '/includes/header-components/public-header.php');
         $mirrorAppMenu = file_get_contents($this->root . '/microgifter-main/includes/header-templates/logged-in.php');
         $mirrorPublicMenu = file_get_contents($this->root . '/microgifter-main/includes/header-components/public-header.php');
 
+        foreach ([$layout, $mirrorLayout] as $source) {
+            self::assertIsString($source);
+            self::assertStringContainsString('$account_profile_url', $source);
+            self::assertStringContainsString('$account_storefront_url', $source);
+            self::assertStringContainsString('SELECT slug,status,visibility FROM public_profiles WHERE user_id=? LIMIT 1', $source);
+            self::assertStringContainsString('SELECT slug,status FROM merchant_storefronts WHERE merchant_user_id=? LIMIT 1', $source);
+            self::assertStringContainsString("'/profile.php?slug='", $source);
+            self::assertStringContainsString("'/store.php?s='", $source);
+        }
+
         foreach ([$appMenu, $publicMenu, $mirrorAppMenu, $mirrorPublicMenu] as $source) {
             self::assertIsString($source);
             self::assertStringContainsString('href="/inbox.php"', $source);
             self::assertStringContainsString('IN/OUT Box', $source);
-            self::assertStringContainsString('href="/feed.php"', $source);
+            self::assertStringContainsString('href="/newfeed.php"', $source);
             self::assertStringContainsString('My Feed', $source);
             self::assertStringContainsString('href="/account.php"', $source);
             self::assertStringContainsString('Profile Settings', $source);
+            self::assertStringContainsString('My Profile', $source);
+            self::assertStringContainsString('My Storefront', $source);
             self::assertStringContainsString('href="/merchant.php"', $source);
             self::assertStringContainsString('Merchant Dashboard', $source);
             self::assertStringNotContainsString('Account dashboard', $source);
             self::assertStringNotContainsString('Open live agent', $source);
         }
+    }
+
+    public function testFollowingOnlyNewsfeedPageAndEndpointAreWired(): void
+    {
+        $page = file_get_contents($this->root . '/newfeed.php');
+        $mirrorPage = file_get_contents($this->root . '/microgifter-main/newfeed.php');
+        $endpoint = file_get_contents($this->root . '/api/public/newsfeed.php');
+        $mirrorEndpoint = file_get_contents($this->root . '/microgifter-main/api/public/newsfeed.php');
+        $script = file_get_contents($this->root . '/assets/js/newsfeed.js');
+        $mirrorScript = file_get_contents($this->root . '/microgifter-main/assets/js/newsfeed.js');
+        $css = file_get_contents($this->root . '/assets/css/newsfeed.css');
+
+        foreach ([$page, $mirrorPage, $endpoint, $mirrorEndpoint, $script, $mirrorScript, $css] as $source) {
+            self::assertIsString($source);
+        }
+
+        self::assertStringContainsString('$header_mode = \'account\';', $page);
+        self::assertStringContainsString('data-newsfeed', $page);
+        self::assertStringContainsString('/assets/js/newsfeed.js', $page);
+        self::assertStringContainsString('/assets/css/newsfeed.css', $page);
+        self::assertStringContainsString('Latest from people you follow', $page);
+        self::assertStringContainsString("require_once dirname(__DIR__) . '/social/_publishing.php';", $endpoint);
+        self::assertStringContainsString("mg_fail('Sign in to view your feed.', 401);", $endpoint);
+        self::assertStringContainsString("sf.follower_user_id=? AND sf.followed_user_id=fp.created_by_user_id AND sf.status='active'", $endpoint);
+        self::assertStringContainsString('fp.created_by_user_id<>?', $endpoint);
+        self::assertStringContainsString("'mode'=>'newsfeed'", $endpoint);
+        self::assertStringContainsString('/api/public/newsfeed.php?limit=18', $script);
+        self::assertStringContainsString('data-newsfeed-action="reaction"', $script);
+        self::assertStringContainsString('.mg-newsfeed-page .mg-feed-tabs a', $css);
     }
 
     public function testCreatePostOptionOpensComposerModalWithoutNavigating(): void
