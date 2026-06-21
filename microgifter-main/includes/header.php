@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/app.php';
 require_once __DIR__ . '/page.php';
+require_once dirname(__DIR__) . '/api/db.php';
 
 $inferred_page_id = basename((string) ($_SERVER['SCRIPT_NAME'] ?? 'public.php'), '.php');
 $manifest_overrides = is_array($page_manifest ?? null) ? $page_manifest : [];
