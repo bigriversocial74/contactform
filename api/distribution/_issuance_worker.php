@@ -89,16 +89,12 @@ function mg_distribution_worker_process_job(PDO $pdo, string $jobId, string $wor
     $pdo->beginTransaction();
     try {
         $job = mg_distribution_worker_load_job($pdo, $jobId);
-        if ((string)$job['status'] === 'issued' && !empty($job['pppm_item_id'])) {
-            $pdo->commit();
-            return ['job_id'=>$jobId,'status'=>'issued','duplicate'=>true];
-        }
+        if ((string)$job['status'] === 'issued' && !empty($job['pppm_item_id'])) { $pdo->commit(); return ['job_id'=>$jobId,'status'=>'issued','duplicate'=>true]; }
         if (!in_array((string)$job['status'], ['queued','failed'], true)) throw new RuntimeException('Issuance job is not available.');
         if (!empty($job['next_attempt_at']) && strtotime((string)$job['next_attempt_at']) > time()) throw new RuntimeException('Issuance job is not ready.');
         if ((int)$job['attempts'] >= (int)$job['max_attempts']) throw new RuntimeException('Issuance job has exhausted retries.');
         if (empty($job['recipient_user_id'])) throw new RuntimeException('Recipient is not linked to a Microgifter user.');
-        $pdo->prepare("UPDATE distribution_issuance_jobs SET status='processing',attempts=attempts+1,locked_at=NOW(),locked_by=?,updated_at=NOW() WHERE id=?")
-            ->execute([$workerId,(int)$job['id']]);
+        $pdo->prepare("UPDATE distribution_issuance_jobs SET status='processing',attempts=attempts+1,locked_at=NOW(),locked_by=?,updated_at=NOW() WHERE id=?")->execute([$workerId,(int)$job['id']]);
         $source = mg_distribution_worker_source($pdo, (int)$job['merchant_user_id']);
         $sourceEventId = mg_distribution_worker_source_event($pdo, $source, $job);
         $request = mg_distribution_worker_request($pdo, $source, $sourceEventId, $job);
@@ -116,16 +112,11 @@ function mg_distribution_worker_process_job(PDO $pdo, string $jobId, string $wor
         $pdo->prepare("INSERT INTO pppm_deliveries (public_id,pppm_item_id,channel,destination,status,provider,queued_at,sent_at,delivered_at,created_at,updated_at) VALUES (?,?,'api',?,'delivered','microgifter_inbox',NOW(),NOW(),NOW(),NOW(),NOW())")
             ->execute([$deliveryId,$pppmItemDbId,'user:' . (int)$job['recipient_user_id']]);
         $deliveryDbId = (int)$pdo->lastInsertId();
-        $pdo->prepare("INSERT INTO pppm_delivery_attempts (public_id,delivery_id,schedule_id,attempt_number,provider,status,attempted_at,completed_at,created_at,updated_at) VALUES (?,?,NULL,1,'microgifter_inbox','delivered',NOW(),NOW(),NOW(),NOW())")
-            ->execute([mg_pppm_uuid(),$deliveryDbId]);
-        $pdo->prepare("UPDATE distribution_issuance_jobs SET status='issued',pppm_item_id=?,failure_message=NULL,locked_at=NULL,locked_by=NULL,updated_at=NOW() WHERE id=?")
-            ->execute([$pppmItemDbId,(int)$job['id']]);
-        $pdo->prepare("UPDATE distribution_programs SET reserved_cents=GREATEST(0,reserved_cents-?),issued_cents=issued_cents+?,issued_items=issued_items+1,updated_at=NOW() WHERE id=?")
-            ->execute([(int)$job['unit_value_cents'],(int)$job['unit_value_cents'],(int)$job['program_id']]);
-        $pdo->prepare("UPDATE distribution_program_products SET quantity_issued=quantity_issued+1,status=IF(quantity_limit IS NOT NULL AND quantity_issued+1>=quantity_limit,'exhausted',status) WHERE id=?")
-            ->execute([(int)$job['program_product_id']]);
-        $pdo->prepare("UPDATE pppm_issuance_requests SET issued_count=issued_count+1,updated_at=NOW() WHERE id=?")
-            ->execute([(int)$request['id']]);
+        $pdo->prepare("INSERT INTO pppm_delivery_attempts (public_id,delivery_id,schedule_id,attempt_number,provider,status,attempted_at,completed_at,created_at,updated_at) VALUES (?,?,NULL,1,'microgifter_inbox','delivered',NOW(),NOW(),NOW(),NOW())")->execute([mg_pppm_uuid(),$deliveryDbId]);
+        $pdo->prepare("UPDATE distribution_issuance_jobs SET status='issued',pppm_item_id=?,failure_message=NULL,locked_at=NULL,locked_by=NULL,updated_at=NOW() WHERE id=?")->execute([$pppmItemDbId,(int)$job['id']]);
+        $pdo->prepare("UPDATE distribution_programs SET reserved_cents=GREATEST(0,reserved_cents-?),issued_cents=issued_cents+?,issued_items=issued_items+1,updated_at=NOW() WHERE id=?")->execute([(int)$job['unit_value_cents'],(int)$job['unit_value_cents'],(int)$job['program_id']]);
+        $pdo->prepare("UPDATE distribution_program_products SET quantity_issued=quantity_issued+1,status=IF(quantity_limit IS NOT NULL AND quantity_issued+1>=quantity_limit,'exhausted',status) WHERE id=?")->execute([(int)$job['program_product_id']]);
+        $pdo->prepare("UPDATE pppm_issuance_requests SET issued_count=issued_count+1,updated_at=NOW() WHERE id=?")->execute([(int)$request['id']]);
         $remaining = $pdo->prepare("SELECT COUNT(*) FROM distribution_issuance_jobs WHERE allocation_id=? AND status<>'issued'");
         $remaining->execute([(int)$job['allocation_id']]);
         if ((int)$remaining->fetchColumn() === 0) {
@@ -138,7 +129,7 @@ function mg_distribution_worker_process_job(PDO $pdo, string $jobId, string $wor
             $pdo->prepare("UPDATE distribution_recipients SET eligibility_status='allocated',updated_at=NOW() WHERE id=? AND eligibility_status<>'fulfilled'")->execute([(int)$job['recipient_id']]);
         }
         $pdo->prepare("UPDATE pppm_source_events SET processing_status='processed',processed_at=NOW(),updated_at=NOW() WHERE id=?")->execute([$sourceEventId]);
-        $pdo->prepare("INSERT INTO distribution_daily_metrics (metric_date,merchant_user_id,program_id,source_type,items_issued,issued_value_cents,updated_at) VALUES (CURRENT_DATE(),?,?,?,?,NOW()) ON DUPLICATE KEY UPDATE items_issued=items_issued+VALUES(items_issued),issued_value_cents=issued_value_cents+VALUES(issued_value_cents),updated_at=NOW()")
+        $pdo->prepare("INSERT INTO distribution_daily_metrics (metric_date,merchant_user_id,program_id,source_type,items_issued,issued_value_cents,updated_at) VALUES (CURRENT_DATE(),?,?,?,?,?,NOW()) ON DUPLICATE KEY UPDATE items_issued=items_issued+VALUES(items_issued),issued_value_cents=issued_value_cents+VALUES(issued_value_cents),updated_at=NOW()")
             ->execute([(int)$job['merchant_user_id'],(int)$job['program_id'],(string)($job['distribution_source_type'] ?: 'api'),1,(int)$job['unit_value_cents']]);
         $pdo->commit();
         return ['job_id'=>$jobId,'status'=>'issued','pppm_item_id'=>$itemPublicId,'delivery_id'=>$deliveryId,'assignment_id'=>$assignmentId];
