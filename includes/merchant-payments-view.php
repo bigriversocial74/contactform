@@ -16,7 +16,7 @@
     <div class="mg-form-status" data-payment-methods-status></div>
   </div>
   <form class="mg-connect-actions" data-payment-methods-form>
-    <label class="mg-check-row"><input type="checkbox" name="cash_enabled" value="1" data-cash-payment-toggle> Enable cash payments for testing</label>
+    <label class="mg-toggle-switch"><input type="checkbox" name="cash_enabled" value="1" data-cash-payment-toggle><span class="mg-toggle-control" aria-hidden="true"></span><span class="mg-toggle-copy"><strong>Cash payments</strong><small>Enable manual cash collection for testing.</small></span></label>
     <button class="mg-btn mg-btn-primary" type="submit">Save cash option</button>
   </form>
 </section>

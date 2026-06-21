@@ -27,7 +27,7 @@ $show_home_search = !$user && in_array($public_page_id, ['home','index'], true);
 $show_public_search = $show_home_search || (bool)($public_header_config['search'] ?? false) || (bool)$user;
 $show_demo_button = !$user;
 ?>
-<header class="mg-site-header mg-unified-header nav" data-mg-universal-header data-public-header data-header-variant="<?= $user ? 'logged-in' : 'logged-out' ?>">
+<header class="mg-site-header mg-unified-header" data-mg-universal-header data-public-header data-header-variant="<?= $user ? 'logged-in' : 'logged-out' ?>">
   <?php if ($public_page_id === 'home'): ?><span hidden>Turn future demand into present-day revenue</span><?php endif; ?>
   <div class="mg-header-inner nav-inner">
     <div class="mg-header-left">
@@ -91,6 +91,7 @@ $show_demo_button = !$user;
           <?php endif; ?>
         </div>
       </div>
+      <button class="mg-cart-header-button" type="button" data-cart-trigger aria-label="Open shopping cart" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.1 9.2a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 1.9-1.4L21 7H7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10" cy="19" r="1.5" fill="currentColor"/><circle cx="18" cy="19" r="1.5" fill="currentColor"/></svg><span class="mg-cart-header-badge" data-cart-badge hidden>0</span></button>
     </div>
   </div>
 </header>

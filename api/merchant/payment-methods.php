@@ -2,7 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/_merchant.php';
 
-$user = mg_require_permission('merchant.payments.view');
+$user = mg_require_api_user();
 $pdo = mg_db();
 $workspace = mg_merchant_ensure_workspace($pdo, $user);
 
