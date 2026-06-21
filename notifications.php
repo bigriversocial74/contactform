@@ -9,10 +9,10 @@ $page_scripts = ['/assets/js/notifications-page.js','/assets/js/account-sidebar.
 $accountView = 'notifications';
 require __DIR__ . '/includes/header.php';
 ?>
-<section class="mg-account-page">
+<section class="mg-account-page mg-account-notifications-page">
   <div class="mg-account-layout">
     <?php require __DIR__ . '/includes/account-sidebar.php'; ?>
-    <main class="mg-account-shell">
+    <section class="mg-account-shell">
       <section class="mg-communications-workspace" data-notifications-page>
         <header class="mg-communications-header">
           <div><span class="mg-eyebrow">Account activity</span><h1>Notifications</h1><p>Follow, message, gift, claim, delivery, and account updates that involve you.</p></div>
@@ -27,7 +27,7 @@ require __DIR__ . '/includes/header.php';
           <div class="mg-notification-list" data-notification-list></div>
         </section>
       </section>
-    </main>
+    </section>
   </div>
 </section>
 <?php require __DIR__ . '/includes/footer.php'; ?>
