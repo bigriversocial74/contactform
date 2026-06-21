@@ -63,15 +63,20 @@ final class SocialFeedMediaNotificationsContractTest extends TestCase
         $relationship=file_get_contents($root.'/api/social/relationship.php');
         $messages=file_get_contents($root.'/api/messages/send.php');
         $gift=file_get_contents($root.'/api/gifts/_gift.php');
-        self::assertIsString($follow);
-        self::assertIsString($relationship);
-        self::assertIsString($messages);
-        self::assertIsString($gift);
-        self::assertStringContainsString('mg_social_queue_follow_notification',$relationship);
-        self::assertStringContainsString('social.follow',$follow);
+        $microgift=file_get_contents($root.'/api/microgifts/_issue_signal.php');
+        $issue=file_get_contents($root.'/api/microgifts/issue.php');
+        foreach([$follow,$relationship,$messages,$gift,$microgift,$issue] as $source) self::assertIsString($source);
         self::assertStringContainsString('mg_create_notification',$follow);
-        self::assertStringContainsString('mg_create_notification',$messages.$gift);
-        self::assertStringContainsString('microgift_message',$messages);
-        self::assertStringContainsString('microgift_received',$gift);
+        self::assertStringContainsString('social.follow.',$follow);
+        self::assertStringContainsString('mg_follow_notification_send',$relationship);
+        self::assertStringContainsString("'message'",$messages);
+        self::assertStringContainsString('message.thread.',$messages);
+        self::assertStringContainsString("'aggregate'=>true",$messages);
+        self::assertStringContainsString('message_thread_settings',$messages);
+        self::assertStringContainsString('mg_create_notification',$gift);
+        self::assertStringContainsString('gift.sent.',$gift);
+        self::assertStringContainsString('mg_create_notification',$microgift);
+        self::assertStringContainsString('microgift.issued.',$microgift);
+        self::assertStringContainsString('mg_microgift_issue_signal',$issue);
     }
 }
