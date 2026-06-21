@@ -33,7 +33,7 @@ $show_demo_button = !$user;
     <div class="mg-header-left">
       <a class="mg-brand brand" href="/index.php" aria-label="Microgifter home"><span>Microgifter</span></a>
       <?php if ($show_public_search): ?>
-        <form class="mg-public-search mg-public-header-search" action="/discover.php" method="get" role="search">
+        <form class="mg-public-search" action="/discover.php" method="get" role="search">
           <input type="search" name="q" placeholder="Search Microgifter" aria-label="Search Microgifter" autocomplete="off">
         </form>
       <?php endif; ?>
