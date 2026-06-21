@@ -16,7 +16,17 @@ foreach ($public_nav_links as $public_header_link) {
 }
 $public_nav_links = $filtered_links;
 
-$public_standard_header_pages = ['home','index','corporate-gifting','retail-subscriptions','locations'];
+$public_standard_header_pages = [
+    'home',
+    'index',
+    'corporate-gifting',
+    'retail-subscriptions',
+    'locations',
+    'signin',
+    'signup',
+    'learn-more',
+    'discover',
+];
 $uses_standard_public_header = !$user && in_array($public_page_id, $public_standard_header_pages, true);
 
 if ($uses_standard_public_header) {
