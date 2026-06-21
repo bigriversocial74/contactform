@@ -5,7 +5,7 @@ require_once __DIR__ . '/includes/app.php';
 $page_title = 'My Feed | Microgifter';
 $page_section = 'feed';
 $header_mode = 'account';
-$page_styles = ['/assets/css/social-feed.css'];
+$page_styles = ['/assets/css/social-feed.css','/assets/css/newsfeed.css'];
 $page_scripts = ['/assets/js/newsfeed.js'];
 $page_manifest = [
     'id' => 'newfeed',
