@@ -44,6 +44,10 @@ $page_onboarding = is_array($page_manifest['onboarding'] ?? null)
 $agent_tab = $agent_tab ?? '';
 $section_css = $section_css ?? null;
 $is_app_page = in_array($header_mode, ['agent', 'account', 'crm', 'builder'], true);
+$public_header_fix_style = '/assets/css/public-header-footer-fixes.css';
+if (!$is_app_page && !in_array($public_header_fix_style, $page_styles, true)) {
+    $page_styles[] = $public_header_fix_style;
+}
 $user = $is_app_page ? mg_require_auth() : mg_current_user();
 
 if ($user && in_array((string) $page_manifest['id'], ['home', 'index'], true)) {
