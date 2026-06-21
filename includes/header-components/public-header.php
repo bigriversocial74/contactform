@@ -16,18 +16,7 @@ foreach ($public_nav_links as $public_header_link) {
 }
 $public_nav_links = $filtered_links;
 
-$public_standard_header_pages = [
-    'home',
-    'index',
-    'corporate-gifting',
-    'retail-subscriptions',
-    'locations',
-    'signin',
-    'signup',
-    'learn-more',
-    'discover',
-];
-$uses_standard_public_header = !$user && in_array($public_page_id, $public_standard_header_pages, true);
+$uses_standard_public_header = !$user;
 
 if ($uses_standard_public_header) {
     $public_nav_links = [
@@ -65,6 +54,8 @@ $show_demo_button = !$user;
         <a class="mg-header-create" href="/build.php" data-header-create aria-label="Create">+</a>
         <div class="mg-header-signal" data-header-signal="notifications"><button class="mg-header-icon" type="button" data-header-signal-trigger aria-expanded="false" aria-label="System notifications"><svg viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0-6 6v3.6L4.7 15a1 1 0 0 0 .88 1.5h12.84A1 1 0 0 0 19.3 15L18 12.6V9a6 6 0 0 0-6-6Z" fill="currentColor"/></svg><span class="mg-header-badge" data-notification-badge hidden>0</span></button></div>
         <div class="mg-header-signal" data-header-signal="messages"><button class="mg-header-icon" type="button" data-header-signal-trigger aria-expanded="false" aria-label="Messages"><svg viewBox="0 0 24 24"><path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-5 3v-3a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" fill="currentColor"/></svg><span class="mg-header-badge" data-message-badge hidden>0</span></button></div>
+      <?php else: ?>
+        <button class="mg-public-menu-toggle" type="button" data-public-menu-trigger aria-label="Open navigation menu" aria-controls="mg-public-mobile-menu" aria-expanded="false"><span></span><span></span><span></span></button>
       <?php endif; ?>
       <div class="mg-account-menu" data-mg-auth-menu>
         <button class="mg-account-trigger" type="button" data-mg-auth-trigger aria-expanded="false">
@@ -108,6 +99,78 @@ $show_demo_button = !$user;
     </div>
   </div>
 </header>
+<?php if (!$user): ?>
+<div class="mg-public-mobile-menu" id="mg-public-mobile-menu" data-public-mobile-menu hidden aria-hidden="true">
+  <button class="mg-public-mobile-backdrop" type="button" data-public-menu-close aria-label="Close navigation menu"></button>
+  <aside class="mg-public-mobile-panel" role="dialog" aria-modal="true" aria-labelledby="mg-public-mobile-title" tabindex="-1">
+    <div class="mg-public-mobile-head">
+      <a class="mg-public-mobile-logo" href="/index.php" id="mg-public-mobile-title">Microgifter</a>
+      <button class="mg-public-mobile-close" type="button" data-public-menu-close aria-label="Close navigation menu">×</button>
+    </div>
+    <form class="mg-public-mobile-search" action="/discover.php" method="get" role="search">
+      <input type="search" name="q" placeholder="Search Microgifter" aria-label="Search Microgifter" autocomplete="off">
+    </form>
+    <nav class="mg-public-mobile-nav" aria-label="Mobile navigation">
+      <?php foreach ($public_nav_links as $public_header_link): ?>
+        <a href="<?= mg_e((string) ($public_header_link['href'] ?? '#')) ?>"><?= mg_e((string) ($public_header_link['label'] ?? 'Learn More')) ?></a>
+      <?php endforeach; ?>
+      <a href="/discover.php">Discover</a>
+      <a href="<?= mg_e($public_demo_href) ?>">Book A Demo</a>
+    </nav>
+    <div class="mg-public-mobile-auth">
+      <a href="/signin.php">Sign In</a>
+      <a href="/signup.php">Create Account</a>
+    </div>
+  </aside>
+</div>
+<script>
+(() => {
+  if (window.__mgPublicMobileMenuBound) return;
+  window.__mgPublicMobileMenuBound = true;
+  const getMenu = () => document.querySelector('[data-public-mobile-menu]');
+  const getTriggers = () => Array.from(document.querySelectorAll('[data-public-menu-trigger]'));
+  const setOpen = (open) => {
+    const menu = getMenu();
+    if (!menu) return;
+    getTriggers().forEach((trigger) => trigger.setAttribute('aria-expanded', open ? 'true' : 'false'));
+    document.body.classList.toggle('mg-public-mobile-menu-open', open);
+    if (open) {
+      menu.hidden = false;
+      menu.setAttribute('aria-hidden', 'false');
+      requestAnimationFrame(() => {
+        menu.classList.add('is-open');
+        const panel = menu.querySelector('.mg-public-mobile-panel');
+        if (panel) panel.focus({ preventScroll:true });
+      });
+      return;
+    }
+    menu.classList.remove('is-open');
+    menu.setAttribute('aria-hidden', 'true');
+    window.setTimeout(() => {
+      if (!menu.classList.contains('is-open')) menu.hidden = true;
+    }, 220);
+  };
+  document.addEventListener('click', (event) => {
+    if (event.target.closest('[data-public-menu-trigger]')) {
+      event.preventDefault();
+      const menu = getMenu();
+      setOpen(!(menu && menu.classList.contains('is-open')));
+      return;
+    }
+    if (event.target.closest('[data-public-menu-close]')) {
+      event.preventDefault();
+      setOpen(false);
+      return;
+    }
+    const link = event.target.closest('.mg-public-mobile-menu a');
+    if (link) setOpen(false);
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') setOpen(false);
+  });
+})();
+</script>
+<?php endif; ?>
 <?php if ($user): ?>
 <div class="mg-create-menu" id="mg-create-menu" data-create-menu hidden aria-hidden="true">
   <button class="mg-create-menu-backdrop" type="button" data-create-menu-close aria-label="Close create menu"></button>
