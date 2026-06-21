@@ -7,8 +7,12 @@ final class SocialFeedComposerCleanupContractTest extends TestCase
 {
     public function testComposerKeepsPrimaryPostingFlowSimple(): void
     {
-        $page=file_get_contents(dirname(__DIR__,2).'/feed.php');
+        $root=dirname(__DIR__,2);
+        $page=file_get_contents($root.'/feed.php');
+        $composer=file_get_contents($root.'/includes/social-feed-composer.php');
         self::assertIsString($page);
+        self::assertIsString($composer);
+        self::assertStringContainsString("require __DIR__ . '/includes/social-feed-composer.php'", $page);
         foreach([
             'Write the update first, then add media or optional Microgifter links.',
             'What do you want to share?',
@@ -18,13 +22,13 @@ final class SocialFeedComposerCleanupContractTest extends TestCase
             '<summary>Technical Microgifter linking</summary>',
             '<summary>External media URLs</summary>',
         ] as $needle){
-            self::assertStringContainsString($needle,$page);
+            self::assertStringContainsString($needle,$composer);
         }
 
-        $advancedPosition=strpos($page,'<summary><span>Advanced options</span>');
+        $advancedPosition=strpos($composer,'<summary><span>Advanced options</span>');
         self::assertNotFalse($advancedPosition);
         foreach(['Product public ID','Microgift public ID','Subscription plan public ID','External media URLs'] as $technicalField){
-            $fieldPosition=strpos($page,$technicalField);
+            $fieldPosition=strpos($composer,$technicalField);
             self::assertNotFalse($fieldPosition);
             self::assertGreaterThan($advancedPosition,$fieldPosition);
         }
