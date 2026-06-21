@@ -8,7 +8,7 @@ $public_demo_href = '/learn-more.php';
 $filtered_links = [];
 foreach ($public_nav_links as $public_header_link) {
     $label = trim((string) ($public_header_link['label'] ?? ''));
-    if (strcasecmp($label, 'Book A Demo') === 0) {
+    if (strcasecmp($label, 'Book A Demo') === 0 || strcasecmp($label, 'Book Demo') === 0) {
         $public_demo_href = (string) ($public_header_link['href'] ?? $public_demo_href);
         continue;
     }
@@ -16,14 +16,17 @@ foreach ($public_nav_links as $public_header_link) {
 }
 $public_nav_links = $filtered_links;
 
-if (!$user && in_array($public_page_id, ['home','index'], true)) {
+$public_standard_header_pages = ['home','index','corporate-gifting','retail-subscriptions','locations'];
+$uses_standard_public_header = !$user && in_array($public_page_id, $public_standard_header_pages, true);
+
+if ($uses_standard_public_header) {
     $public_nav_links = [
         ['label'=>'Corporate Gifting','href'=>'/corporate.php'],
         ['label'=>'Retail Subscriptions','href'=>'/retail.php'],
         ['label'=>'Locations','href'=>'/locations.php'],
     ];
 }
-$show_home_search = !$user && in_array($public_page_id, ['home','index'], true);
+$show_home_search = $uses_standard_public_header;
 $show_public_search = $show_home_search || (bool)($public_header_config['search'] ?? false) || (bool)$user;
 $show_demo_button = !$user;
 ?>
