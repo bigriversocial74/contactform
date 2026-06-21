@@ -1,4 +1,232 @@
-document.addEventListener('DOMContentLoaded',function(){'use strict';if(!window.Microgifter)return;function esc(v){return String(v==null?'':v).replace(/[&<>'"]/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'})[c]})}function money(c,cur){return new Intl.NumberFormat(undefined,{style:'currency',currency:cur||'USD'}).format(Number(c||0)/100)}function pct(a,b){return b?Math.min(100,Math.round(Number(a||0)*100/Number(b))):0}
-async function dashboard(){var list=document.querySelector('[data-program-list]');if(!list)return;var search=document.querySelector('[data-program-search]'),status=document.querySelector('[data-program-status]'),form=document.querySelector('[data-program-form]'),data=null;async function load(){var r=await Microgifter.get('/api/merchant/distribution-dashboard.php'),d=r.data||r;data=d;var s=d.summary||{};document.querySelector('[data-distribution-kpis]').innerHTML=[['Programs',s.program_count],['Active',s.active_programs],['Issued items',s.issued_items],['Budget',money(s.budget_cents,'USD')],['Reserved',money(s.reserved_cents,'USD')],['Issued value',money(s.issued_cents,'USD')]].map(function(x){return '<div class="mg-merchant-kpi"><span>'+x[0]+'</span><strong>'+esc(x[1]||0)+'</strong></div>'}).join('');render();document.querySelector('[data-distribution-sources]').innerHTML='<h3>Sources</h3>'+((d.sources||[]).map(function(x){return '<div class="mg-health-row"><span><strong>'+esc(x.source_type)+'</strong><br><small>'+Number(x.active_connections||0)+' active of '+Number(x.connections||0)+'</small></span><small>'+esc(x.last_event_at||'No events')+'</small></div>'}).join('')||'<p>No source connections.</p>');document.querySelector('[data-distribution-queue]').innerHTML='<h3>Issuance queue</h3>'+((d.queue||[]).map(function(x){return '<div class="mg-health-row"><strong>'+esc(x.status)+'</strong><span>'+Number(x.jobs||0).toLocaleString()+'</span></div>'}).join('')||'<p>No queued issuance jobs.</p>')}function render(){var q=(search.value||'').toLowerCase(),st=status.value;var rows=(data.programs||[]).filter(function(p){return(st==='all'||p.status===st)&&((p.name||'').toLowerCase().includes(q)||(p.program_type||'').toLowerCase().includes(q))});list.innerHTML=rows.map(function(p){var progress=p.max_items?pct(p.issued_items,p.max_items):0;return '<article class="mg-program-row"><div><h3>'+esc(p.name)+'</h3><p>'+esc(p.public_id)+' · '+esc(p.program_type)+'</p><div class="mg-program-meta"><span>'+Number(p.recipient_count||0)+' recipients</span><span>'+Number(p.eligible_count||0)+' eligible</span><span>'+Number(p.allocation_count||0)+' allocations</span><span>'+Number(p.source_count||0)+' sources</span></div><div class="mg-program-progress"><span style="width:'+progress+'%"></span></div></div><div><span class="mg-program-state '+(p.status==='active'?'is-active':p.status==='paused'?'is-paused':'')+'">'+esc(p.status)+'</span></div><div><strong>'+money(p.issued_cents,'USD')+'</strong><p>'+Number(p.issued_items||0)+' items issued</p></div><div class="mg-program-actions"><a href="/merchant-distribution-program.php?id='+encodeURIComponent(p.public_id)+'">Open</a></div></article>'}).join('')||'<div class="mg-empty-state">No programs match the filters.</div>'}search.addEventListener('input',render);status.addEventListener('change',render);document.querySelector('[data-program-new]').onclick=function(){form.reset();form.elements.program_id.value='';form.elements.status.value='draft'};form.addEventListener('submit',async function(e){e.preventDefault();var msg=document.querySelector('[data-program-status-message]'),raw=Object.fromEntries(new FormData(form).entries());raw.budget_cents=raw.budget_cents===''?null:Number(raw.budget_cents);raw.max_items=raw.max_items===''?null:Number(raw.max_items);raw.per_recipient_limit=raw.per_recipient_limit===''?null:Number(raw.per_recipient_limit);raw.starts_at=raw.starts_at?raw.starts_at.replace('T',' '):null;raw.ends_at=raw.ends_at?raw.ends_at.replace('T',' '):null;try{msg.textContent='Saving…';var response=await Microgifter.post('/api/distribution/programs.php',raw);msg.textContent=response.message||'Saved';await load()}catch(err){msg.textContent=err.message}});await load()}
-async function detail(){var root=document.querySelector('[data-program-detail]');if(!root)return;var id=root.dataset.programId,state=null;async function load(){var r=await Microgifter.get('/api/merchant/distribution-program.php?id='+encodeURIComponent(id)),d=r.data||r,p=d.program||{};state=d;document.querySelector('[data-distribution-program-title]').textContent=p.name||'Distribution program';document.querySelector('[data-distribution-program-subtitle]').textContent=p.public_id+' · '+p.program_type+' · '+p.status;var facts=[['Status',p.status],['Type',p.program_type],['Budget',money(p.budget_cents,'USD')],['Reserved',money(p.reserved_cents,'USD')],['Issued value',money(p.issued_cents,'USD')],['Issued items',p.issued_items],['Maximum items',p.max_items||'Unlimited'],['Recipient limit',p.per_recipient_limit||'Unlimited'],['Starts',p.starts_at||'—'],['Ends',p.ends_at||'—'],['Recipients',(d.recipients||[]).length],['Allocations',(d.allocations||[]).length]];document.querySelector('[data-program-facts]').innerHTML=facts.map(function(f){return '<div><span>'+f[0]+'</span><strong>'+esc(f[1])+'</strong></div>'}).join('');document.querySelector('[data-program-products]').innerHTML=(d.products||[]).map(function(x){return '<div class="mg-product-row"><span><strong>'+esc(x.title)+'</strong><br><small>'+esc(x.template_id)+' · '+money(x.unit_value_cents,x.currency)+'</small></span><span>'+Number(x.quantity_issued||0)+(x.quantity_limit?'/'+Number(x.quantity_limit):'')+' issued</span></div>'}).join('')||'<div class="mg-empty-state">No PPPM templates attached.</div>';document.querySelector('[data-batch-template]').innerHTML=(d.products||[]).filter(function(x){return x.status==='active'}).map(function(x){return '<option value="'+esc(x.template_id)+'">'+esc(x.title)+'</option>'}).join('');document.querySelector('[data-recipient-list]').innerHTML=(d.recipients||[]).map(function(x){return '<label class="mg-recipient-row"><input type="checkbox" data-recipient-id="'+esc(x.public_id)+'"><span><h3>'+esc(x.display_name||x.external_recipient_id||x.public_id)+'</h3><p>'+esc(x.public_id)+' · '+Number(x.entries_count||1)+' entries</p></span><span class="mg-recipient-state">'+esc(x.eligibility_status)+'</span></label>'}).join('')||'<div class="mg-empty-state">No recipients.</div>';document.querySelector('[data-allocation-list]').innerHTML=(d.allocations||[]).map(function(x){return '<div class="mg-allocation-row"><span><strong>'+esc(x.display_name||x.recipient_id)+'</strong><br><small>'+esc(x.allocation_method)+' · '+Number(x.quantity)+' item(s)</small></span><span>'+esc(x.status)+' · '+Number(x.issued_jobs||0)+'/'+Number(x.job_count||0)+' issued</span></div>'}).join('')||'<div class="mg-empty-state">No allocations.</div>';document.querySelector('[data-batch-list]').innerHTML=(d.batches||[]).map(function(x){return '<div class="mg-batch-row"><span><strong>'+esc(x.name)+'</strong><br><small>'+esc(x.allocation_method)+' · '+esc(x.created_at)+'</small></span><span>'+esc(x.status)+' · '+Number(x.allocated_count||0)+'/'+Number(x.requested_count||0)+'</span></div>'}).join('')||'<div class="mg-empty-state">No assignment batches.</div>';document.querySelector('[data-source-list]').innerHTML=(d.sources||[]).map(function(x){return '<div class="mg-source-row"><span><strong>'+esc(x.display_name)+'</strong><br><small>'+esc(x.source_type)+' · '+esc(x.provider_key)+'</small></span><span>'+esc(x.status)+' · '+esc(x.last_event_at||'No events')+'</span></div>'}).join('')||'<div class="mg-empty-state">No connected sources.</div>'}function selected(){return Array.from(document.querySelectorAll('[data-recipient-id]:checked')).map(function(x){return x.dataset.recipientId})}document.querySelector('[data-eligibility-apply]').onclick=async function(){var ids=selected();if(!ids.length)return;var payload={program_id:id,recipient_ids:ids,status:document.querySelector('[data-eligibility-status]').value,reason:document.querySelector('[data-eligibility-reason]').value};await Microgifter.post('/api/merchant/distribution-eligibility.php',payload);await load()};document.querySelector('[data-batch-form]').onsubmit=async function(e){e.preventDefault();var ids=selected(),msg=document.querySelector('[data-batch-status]');if(!ids.length){msg.textContent='Select at least one eligible recipient.';return}var payload=Object.fromEntries(new FormData(e.currentTarget).entries());payload.program_id=id;payload.recipient_ids=ids;payload.quantity=Number(payload.quantity||1);try{msg.textContent='Queueing…';var response=await Microgifter.post('/api/merchant/distribution-batch.php',payload);msg.textContent=response.message||'Queued';await load()}catch(err){msg.textContent=err.message}};await load()}
-dashboard().catch(console.error);detail().catch(console.error)});
+document.addEventListener('DOMContentLoaded',function(){
+'use strict';
+if(!window.Microgifter)return;
+
+function esc(v){
+    return String(v==null?'':v).replace(/[&<>'"]/g,function(c){
+        return({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'})[c];
+    });
+}
+
+function money(c,cur){
+    return new Intl.NumberFormat(undefined,{style:'currency',currency:cur||'USD'}).format(Number(c||0)/100);
+}
+
+function pct(a,b){
+    return b?Math.min(100,Math.round(Number(a||0)*100/Number(b))):0;
+}
+
+function setStatus(node,message,type){
+    if(window.Microgifter&&typeof Microgifter.setStatus==='function'){
+        Microgifter.setStatus(node,message,type);
+        return;
+    }
+    if(node)node.textContent=message||'';
+}
+
+async function dashboard(){
+    var list=document.querySelector('[data-program-list]');
+    if(!list)return;
+
+    var search=document.querySelector('[data-program-search]');
+    var status=document.querySelector('[data-program-status]');
+    var form=document.querySelector('[data-program-form]');
+    var picker=document.querySelector('[data-program-product-picker]');
+    var data=null;
+    var availableProducts=[];
+
+    function selectedTemplateIds(){
+        return Array.from(document.querySelectorAll('[data-program-template]:checked')).map(function(x){return x.value;});
+    }
+
+    function renderProductPicker(selectedProducts){
+        if(!picker)return;
+        var selected=new Set((selectedProducts||[]).filter(function(x){return x.status!=='inactive';}).map(function(x){return x.template_id;}));
+        if(!availableProducts.length){
+            picker.innerHTML='<div class="mg-program-product-empty"><strong>No published products available.</strong><br>Publish at least one product before creating a distribution program.</div>';
+            return;
+        }
+        picker.innerHTML=availableProducts.map(function(p){
+            var checked=selected.has(p.template_id)?' checked':'';
+            return '<label class="mg-program-product-option">'
+                +'<input type="checkbox" value="'+esc(p.template_id)+'" data-program-template'+checked+'>'
+                +'<span><strong>'+esc(p.title||'Untitled product')+'</strong>'
+                +'<span>'+esc(p.product_type||'product')+' · '+esc(p.template_id)+' · '+money(p.unit_value_cents,p.currency)+'</span>'
+                +'<em>'+esc(p.product_status||'published')+'</em></span>'
+                +'</label>';
+        }).join('');
+    }
+
+    async function loadProducts(programId){
+        var url='/api/distribution/program-products.php';
+        if(programId)url+='?program_id='+encodeURIComponent(programId);
+        var r=await Microgifter.get(url);
+        var d=r.data||r;
+        availableProducts=d.available_products||[];
+        renderProductPicker(d.products||[]);
+    }
+
+    async function load(){
+        var r=await Microgifter.get('/api/merchant/distribution-dashboard.php');
+        var d=r.data||r;
+        data=d;
+        var s=d.summary||{};
+        document.querySelector('[data-distribution-kpis]').innerHTML=[
+            ['Programs',s.program_count],
+            ['Active',s.active_programs],
+            ['Issued items',s.issued_items],
+            ['Budget',money(s.budget_cents,'USD')],
+            ['Reserved',money(s.reserved_cents,'USD')],
+            ['Issued value',money(s.issued_cents,'USD')]
+        ].map(function(x){
+            return '<div class="mg-merchant-kpi"><span>'+x[0]+'</span><strong>'+esc(x[1]||0)+'</strong></div>';
+        }).join('');
+        render();
+        document.querySelector('[data-distribution-sources]').innerHTML='<h3>Sources</h3>'+((d.sources||[]).map(function(x){
+            return '<div class="mg-health-row"><span><strong>'+esc(x.source_type)+'</strong><br><small>'+Number(x.active_connections||0)+' active of '+Number(x.connections||0)+'</small></span><small>'+esc(x.last_event_at||'No events')+'</small></div>';
+        }).join('')||'<p>No source connections.</p>');
+        document.querySelector('[data-distribution-queue]').innerHTML='<h3>Issuance queue</h3>'+((d.queue||[]).map(function(x){
+            return '<div class="mg-health-row"><strong>'+esc(x.status)+'</strong><span>'+Number(x.jobs||0).toLocaleString()+'</span></div>';
+        }).join('')||'<p>No queued issuance jobs.</p>');
+    }
+
+    function render(){
+        var q=(search.value||'').toLowerCase();
+        var st=status.value;
+        var rows=(data.programs||[]).filter(function(p){
+            return(st==='all'||p.status===st)&&((p.name||'').toLowerCase().includes(q)||(p.program_type||'').toLowerCase().includes(q));
+        });
+        list.innerHTML=rows.map(function(p){
+            var progress=p.max_items?pct(p.issued_items,p.max_items):0;
+            return '<article class="mg-program-row"><div><h3>'+esc(p.name)+'</h3><p>'+esc(p.public_id)+' · '+esc(p.program_type)+'</p><div class="mg-program-meta"><span>'+Number(p.recipient_count||0)+' recipients</span><span>'+Number(p.eligible_count||0)+' eligible</span><span>'+Number(p.allocation_count||0)+' allocations</span><span>'+Number(p.source_count||0)+' sources</span></div><div class="mg-program-progress"><span style="width:'+progress+'%"></span></div></div><div><span class="mg-program-state '+(p.status==='active'?'is-active':p.status==='paused'?'is-paused':'')+'">'+esc(p.status)+'</span></div><div><strong>'+money(p.issued_cents,'USD')+'</strong><p>'+Number(p.issued_items||0)+' items issued</p></div><div class="mg-program-actions"><a href="/merchant-distribution-program.php?id='+encodeURIComponent(p.public_id)+'">Open</a></div></article>';
+        }).join('')||'<div class="mg-empty-state">No programs match the filters.</div>';
+    }
+
+    search.addEventListener('input',render);
+    status.addEventListener('change',render);
+
+    document.querySelector('[data-program-new]').onclick=function(){
+        form.reset();
+        form.elements.program_id.value='';
+        form.elements.status.value='draft';
+        setStatus(document.querySelector('[data-program-status-message]'),'');
+        renderProductPicker([]);
+    };
+
+    form.addEventListener('submit',async function(e){
+        e.preventDefault();
+        var msg=document.querySelector('[data-program-status-message]');
+        var selected=selectedTemplateIds();
+        if(!selected.length){
+            setStatus(msg,'Select at least one published product for this distribution program.','error');
+            return;
+        }
+        var raw=Object.fromEntries(new FormData(form).entries());
+        raw.budget_cents=raw.budget_cents===''?null:Number(raw.budget_cents);
+        raw.max_items=raw.max_items===''?null:Number(raw.max_items);
+        raw.per_recipient_limit=raw.per_recipient_limit===''?null:Number(raw.per_recipient_limit);
+        raw.starts_at=raw.starts_at?raw.starts_at.replace('T',' '):null;
+        raw.ends_at=raw.ends_at?raw.ends_at.replace('T',' '):null;
+        try{
+            setStatus(msg,'Saving program…');
+            var response=await Microgifter.post('/api/distribution/programs.php',raw);
+            var saved=response.data||response;
+            var programId=saved.program_id||raw.program_id;
+            if(!programId)throw new Error('Program saved but no program ID was returned.');
+            form.elements.program_id.value=programId;
+            setStatus(msg,'Attaching products…');
+            await Microgifter.post('/api/distribution/program-products.php',{action:'sync',program_id:programId,template_ids:selected});
+            setStatus(msg,(response.message||'Distribution program saved.')+' Products attached.','success');
+            await load();
+            await loadProducts(programId);
+        }catch(err){
+            setStatus(msg,err.message||'Unable to save distribution program.','error');
+        }
+    });
+
+    await loadProducts();
+    await load();
+}
+
+async function detail(){
+    var root=document.querySelector('[data-program-detail]');
+    if(!root)return;
+    var id=root.dataset.programId,state=null;
+
+    async function load(){
+        var r=await Microgifter.get('/api/merchant/distribution-program.php?id='+encodeURIComponent(id));
+        var d=r.data||r,p=d.program||{};
+        state=d;
+        document.querySelector('[data-distribution-program-title]').textContent=p.name||'Distribution program';
+        document.querySelector('[data-distribution-program-subtitle]').textContent=p.public_id+' · '+p.program_type+' · '+p.status;
+        var facts=[
+            ['Status',p.status],
+            ['Type',p.program_type],
+            ['Budget',money(p.budget_cents,'USD')],
+            ['Reserved',money(p.reserved_cents,'USD')],
+            ['Issued value',money(p.issued_cents,'USD')],
+            ['Issued items',p.issued_items],
+            ['Maximum items',p.max_items||'Unlimited'],
+            ['Recipient limit',p.per_recipient_limit||'Unlimited'],
+            ['Starts',p.starts_at||'—'],
+            ['Ends',p.ends_at||'—'],
+            ['Recipients',(d.recipients||[]).length],
+            ['Allocations',(d.allocations||[]).length]
+        ];
+        document.querySelector('[data-program-facts]').innerHTML=facts.map(function(f){return '<div><span>'+f[0]+'</span><strong>'+esc(f[1])+'</strong></div>';}).join('');
+        document.querySelector('[data-program-products]').innerHTML=(d.products||[]).map(function(x){
+            return '<div class="mg-product-row"><span><strong>'+esc(x.title)+'</strong><br><small>'+esc(x.template_id)+' · '+money(x.unit_value_cents,x.currency)+'</small></span><span>'+Number(x.quantity_issued||0)+(x.quantity_limit?'/'+Number(x.quantity_limit):'')+' issued</span></div>';
+        }).join('')||'<div class="mg-empty-state">No PPPM templates attached.</div>';
+        document.querySelector('[data-batch-template]').innerHTML=(d.products||[]).filter(function(x){return x.status==='active';}).map(function(x){
+            return '<option value="'+esc(x.template_id)+'">'+esc(x.title)+'</option>';
+        }).join('');
+        document.querySelector('[data-recipient-list]').innerHTML=(d.recipients||[]).map(function(x){
+            return '<label class="mg-recipient-row"><input type="checkbox" data-recipient-id="'+esc(x.public_id)+'"><span><h3>'+esc(x.display_name||x.external_recipient_id||x.public_id)+'</h3><p>'+esc(x.public_id)+' · '+Number(x.entries_count||1)+' entries</p></span><span class="mg-recipient-state">'+esc(x.eligibility_status)+'</span></label>';
+        }).join('')||'<div class="mg-empty-state">No recipients.</div>';
+        document.querySelector('[data-allocation-list]').innerHTML=(d.allocations||[]).map(function(x){
+            return '<div class="mg-allocation-row"><span><strong>'+esc(x.display_name||x.recipient_id)+'</strong><br><small>'+esc(x.allocation_method)+' · '+Number(x.quantity)+' item(s)</small></span><span>'+esc(x.status)+' · '+Number(x.issued_jobs||0)+'/'+Number(x.job_count||0)+' issued</span></div>';
+        }).join('')||'<div class="mg-empty-state">No allocations.</div>';
+        document.querySelector('[data-batch-list]').innerHTML=(d.batches||[]).map(function(x){
+            return '<div class="mg-batch-row"><span><strong>'+esc(x.name)+'</strong><br><small>'+esc(x.allocation_method)+' · '+esc(x.created_at)+'</small></span><span>'+esc(x.status)+' · '+Number(x.allocated_count||0)+'/'+Number(x.requested_count||0)+'</span></div>';
+        }).join('')||'<div class="mg-empty-state">No assignment batches.</div>';
+        document.querySelector('[data-source-list]').innerHTML=(d.sources||[]).map(function(x){
+            return '<div class="mg-source-row"><span><strong>'+esc(x.display_name)+'</strong><br><small>'+esc(x.source_type)+' · '+esc(x.provider_key)+'</small></span><span>'+esc(x.status)+' · '+esc(x.last_event_at||'No events')+'</span></div>';
+        }).join('')||'<div class="mg-empty-state">No connected sources.</div>';
+    }
+
+    function selected(){
+        return Array.from(document.querySelectorAll('[data-recipient-id]:checked')).map(function(x){return x.dataset.recipientId;});
+    }
+
+    document.querySelector('[data-eligibility-apply]').onclick=async function(){
+        var ids=selected();
+        if(!ids.length)return;
+        var payload={program_id:id,recipient_ids:ids,status:document.querySelector('[data-eligibility-status]').value,reason:document.querySelector('[data-eligibility-reason]').value};
+        await Microgifter.post('/api/merchant/distribution-eligibility.php',payload);
+        await load();
+    };
+
+    document.querySelector('[data-batch-form]').onsubmit=async function(e){
+        e.preventDefault();
+        var ids=selected(),msg=document.querySelector('[data-batch-status]');
+        if(!ids.length){msg.textContent='Select at least one eligible recipient.';return;}
+        var payload=Object.fromEntries(new FormData(e.currentTarget).entries());
+        payload.program_id=id;
+        payload.recipient_ids=ids;
+        payload.quantity=Number(payload.quantity||1);
+        try{
+            msg.textContent='Queueing…';
+            var response=await Microgifter.post('/api/merchant/distribution-batch.php',payload);
+            msg.textContent=response.message||'Queued';
+            await load();
+        }catch(err){
+            msg.textContent=err.message;
+        }
+    };
+
+    await load();
+}
+
+dashboard().catch(console.error);
+detail().catch(console.error);
+});
