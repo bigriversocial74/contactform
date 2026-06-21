@@ -27,7 +27,7 @@ $show_home_search = !$user && in_array($public_page_id, ['home','index'], true);
 $show_public_search = $show_home_search || (bool)($public_header_config['search'] ?? false) || (bool)$user;
 $show_demo_button = !$user;
 ?>
-<header class="mg-site-header mg-unified-header nav" data-mg-universal-header data-public-header data-header-variant="<?= $user ? 'logged-in' : 'logged-out' ?>">
+<header class="mg-site-header mg-unified-header" data-mg-universal-header data-public-header data-header-variant="<?= $user ? 'logged-in' : 'logged-out' ?>">
   <?php if ($public_page_id === 'home'): ?><span hidden>Turn future demand into present-day revenue</span><?php endif; ?>
   <div class="mg-header-inner nav-inner">
     <div class="mg-header-left">
