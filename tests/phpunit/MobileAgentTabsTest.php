@@ -5,7 +5,7 @@ use PHPUnit\Framework\TestCase;
 
 final class MobileAgentTabsTest extends TestCase
 {
-    public function testClaimedTabExistsAndCreateModalUsesGlobalHeaderControl(): void
+    public function testClaimedTabExistsAndCreateModalUsesExistingHeaderPlusControl(): void
     {
         $root=dirname(__DIR__,2);
         $header=file_get_contents($root.'/includes/header-components/app-header.php');
@@ -18,21 +18,25 @@ final class MobileAgentTabsTest extends TestCase
         self::assertStringNotContainsString('data-product-header-create',$header);
         self::assertStringNotContainsString('mg-header-product-create',$header);
         self::assertStringContainsString('data-create-menu-option="microgift"',$header);
-        self::assertStringContainsString('.mg-unified-header .mg-header-actions button',$script);
-        self::assertStringContainsString("trigger.dataset.createMenuTrigger=''",$script);
+        self::assertStringContainsString('looksLikePlusControl',$script);
+        self::assertStringContainsString("href==='/build.php'",$script);
+        self::assertStringContainsString("document.addEventListener('click'",$script);
     }
 
     public function testNoSecondCreateButtonIsInjectedIntoMobileAgentTabs(): void
     {
         $root=dirname(__DIR__,2);
         $header=file_get_contents($root.'/includes/header-components/app-header.php');
+        $mirror=file_get_contents($root.'/microgifter-main/includes/header-components/app-header.php');
         $script=file_get_contents($root.'/assets/js/create-menu.js');
         self::assertIsString($header);
+        self::assertIsString($mirror);
         self::assertIsString($script);
         self::assertStringNotContainsString('create_menu_button',$header);
         self::assertStringNotContainsString('data-agent-header-create',$header);
         self::assertStringNotContainsString('data-product-header-create',$header);
+        self::assertStringNotContainsString('mg-header-product-create',$mirror);
         self::assertStringNotContainsString("createElement('button')",$script);
-        self::assertStringContainsString('new MutationObserver(discoverOriginalTrigger)',$script);
+        self::assertStringContainsString('new MutationObserver(discoverOriginalTriggers)',$script);
     }
 }
