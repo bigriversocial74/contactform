@@ -8,6 +8,7 @@ $merchantNav = [
  'storefront'=>['Storefront','Public merchant page','/merchant-storefront.php'],
  'pppm'=>['Orders & PPPM','Items and lifecycle','/merchant-pppm.php'],
  'distribution'=>['Distribution','Programs and inputs','/merchant-distribution.php'],
+ 'developer_api'=>['Developer API','Apps and access','/merchant-distribution.php?developer_api=1'],
  'claims'=>['Claims','Verification and redemption','/merchant-claims.php'],
  'media'=>['Media','Assets and processing','/merchant-media.php'],
  'intelligence'=>['Intelligence','Forecasts and analytics','/merchant-intelligence.php'],
