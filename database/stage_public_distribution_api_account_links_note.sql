@@ -1,1 +1,30 @@
--- Account link schema is tracked in stage_public_distribution_api_foundation.sql.
+-- Public Distribution API account linking request table.
+
+CREATE TABLE IF NOT EXISTS developer_app_link_requests (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  app_id BIGINT UNSIGNED NOT NULL,
+  merchant_user_id BIGINT UNSIGNED NOT NULL,
+  link_code_hash CHAR(64) NOT NULL,
+  external_user_id VARCHAR(255) NOT NULL,
+  external_user_hash CHAR(64) NOT NULL,
+  return_url VARCHAR(700) NOT NULL,
+  state VARCHAR(255) NULL,
+  status ENUM('pending','approved','cancelled','expired') NOT NULL DEFAULT 'pending',
+  requested_scopes_json JSON NULL,
+  metadata_json JSON NULL,
+  expires_at DATETIME NOT NULL,
+  approved_user_id BIGINT UNSIGNED NULL,
+  linked_account_public_id CHAR(36) NULL,
+  completed_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_developer_app_link_requests_public_id (public_id),
+  UNIQUE KEY uq_developer_app_link_requests_code (link_code_hash),
+  KEY idx_developer_app_link_requests_app_status (app_id,status,expires_at),
+  KEY idx_developer_app_link_requests_external (app_id,external_user_hash,status),
+  CONSTRAINT fk_developer_app_link_requests_app FOREIGN KEY (app_id) REFERENCES merchant_developer_apps(id) ON DELETE CASCADE,
+  CONSTRAINT fk_developer_app_link_requests_merchant FOREIGN KEY (merchant_user_id) REFERENCES users(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_developer_app_link_requests_user FOREIGN KEY (approved_user_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
