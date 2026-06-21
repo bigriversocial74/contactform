@@ -87,6 +87,7 @@ final class ProductionLiveUiHotfixTest extends TestCase
 
         foreach ([$layout, $mirrorLayout] as $source) {
             self::assertIsString($source);
+            self::assertStringContainsString("require_once dirname(__DIR__) . '/api/db.php';", $source);
             self::assertStringContainsString('$account_profile_url', $source);
             self::assertStringContainsString('$account_storefront_url', $source);
             self::assertStringContainsString('SELECT slug,status,visibility FROM public_profiles WHERE user_id=? LIMIT 1', $source);
@@ -130,7 +131,10 @@ final class ProductionLiveUiHotfixTest extends TestCase
         self::assertStringContainsString('data-newsfeed', $page);
         self::assertStringContainsString('/assets/js/newsfeed.js', $page);
         self::assertStringContainsString('/assets/css/newsfeed.css', $page);
-        self::assertStringContainsString('Latest from people you follow', $page);
+        self::assertStringContainsString('class="mg-feed-tabs"', $page);
+        self::assertStringNotContainsString('mg-feed-hero', $page);
+        self::assertStringNotContainsString('Latest from people you follow', $page);
+        self::assertStringNotContainsString('Only following', $page);
         self::assertStringContainsString("require_once dirname(__DIR__) . '/social/_publishing.php';", $endpoint);
         self::assertStringContainsString("mg_fail('Sign in to view your feed.', 401);", $endpoint);
         self::assertStringContainsString("sf.follower_user_id=? AND sf.followed_user_id=fp.created_by_user_id AND sf.status='active'", $endpoint);
@@ -139,6 +143,23 @@ final class ProductionLiveUiHotfixTest extends TestCase
         self::assertStringContainsString('/api/public/newsfeed.php?limit=18', $script);
         self::assertStringContainsString('data-newsfeed-action="reaction"', $script);
         self::assertStringContainsString('.mg-newsfeed-page .mg-feed-tabs a', $css);
+    }
+
+    public function testCommunityFeedShowsOnlyTabsAndFeedSurfaces(): void
+    {
+        $page = file_get_contents($this->root . '/feed.php');
+        $mirrorPage = file_get_contents($this->root . '/microgifter-main/feed.php');
+
+        foreach ([$page, $mirrorPage] as $source) {
+            self::assertIsString($source);
+            self::assertStringContainsString('data-feed-tab="discover"', $source);
+            self::assertStringContainsString('data-feed-tab="following"', $source);
+            self::assertStringContainsString('data-feed-tab="mine"', $source);
+            self::assertStringContainsString('data-feed-list', $source);
+            self::assertStringNotContainsString('mg-feed-hero', $source);
+            self::assertStringNotContainsString('Publish updates and follow meaningful local gifting.', $source);
+            self::assertStringNotContainsString('Visibility matters', $source);
+        }
     }
 
     public function testCreatePostOptionOpensComposerModalWithoutNavigating(): void

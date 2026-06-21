@@ -29,20 +29,6 @@ $page_manifest = [
 require __DIR__ . '/includes/header.php';
 ?>
 <section class="mg-feed-shell" data-social-feed>
-  <header class="mg-feed-hero">
-    <div class="mg-container mg-feed-hero-grid">
-      <div>
-        <span class="mg-kicker">Microgifter community</span>
-        <h1>Publish updates and follow meaningful local gifting.</h1>
-        <p>Share products, Microgifts, member-only updates, and the stories behind local gifting experiences.</p>
-      </div>
-      <div class="mg-feed-hero-actions">
-        <button class="mg-btn mg-btn-primary" type="button" data-composer-toggle>Create a post</button>
-        <a class="mg-btn mg-btn-ghost" href="/discover.php">Discover profiles</a>
-      </div>
-    </div>
-  </header>
-
   <div class="mg-container mg-feed-layout">
     <aside class="mg-feed-sidebar">
       <nav class="mg-feed-tabs" aria-label="Feed views">
@@ -50,10 +36,6 @@ require __DIR__ . '/includes/header.php';
         <button type="button" data-feed-tab="following">Following</button>
         <button type="button" data-feed-tab="mine">My posts</button>
       </nav>
-      <div class="mg-feed-sidebar-note">
-        <strong>Visibility matters</strong>
-        <p>Public posts can appear in discovery. Followers and subscriber posts are delivered only to eligible viewers.</p>
-      </div>
     </aside>
 
     <div class="mg-feed-main">
@@ -63,22 +45,21 @@ require __DIR__ . '/includes/header.php';
       require __DIR__ . '/includes/social-feed-composer.php';
       ?>
 
-      <section class="mg-feed-toolbar" aria-labelledby="mg-feed-view-title">
-        <div>
-          <span class="mg-kicker" data-feed-kicker>Public discovery</span>
-          <h2 id="mg-feed-view-title" data-feed-title>Discover posts</h2>
-          <p data-feed-description>Public and unlisted posts from active profiles.</p>
-        </div>
-        <label class="mg-feed-owner-filter mg-hidden" data-owner-filter-wrap>Post status
-          <select data-owner-filter>
-            <option value="">All posts</option>
-            <option value="draft">Drafts</option>
-            <option value="published">Published</option>
-            <option value="archived">Archived</option>
-            <option value="retired">Deleted</option>
-          </select>
-        </label>
-      </section>
+      <div class="mg-hidden">
+        <span data-feed-kicker>Public discovery</span>
+        <span data-feed-title>Discover posts</span>
+        <span data-feed-description>Public and unlisted posts from active profiles.</span>
+      </div>
+
+      <label class="mg-feed-owner-filter mg-hidden" data-owner-filter-wrap>Post status
+        <select data-owner-filter>
+          <option value="">All posts</option>
+          <option value="draft">Drafts</option>
+          <option value="published">Published</option>
+          <option value="archived">Archived</option>
+          <option value="retired">Deleted</option>
+        </select>
+      </label>
 
       <div class="mg-feed-status" data-feed-status role="status" aria-live="polite"></div>
       <section class="mg-feed-loading" data-feed-loading aria-busy="true">

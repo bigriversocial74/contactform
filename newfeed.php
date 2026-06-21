@@ -28,42 +28,16 @@ $page_manifest = [
 require __DIR__ . '/includes/header.php';
 ?>
 <section class="mg-feed-shell" data-newsfeed>
-  <header class="mg-feed-hero">
-    <div class="mg-container mg-feed-hero-grid">
-      <div>
-        <span class="mg-kicker">Following feed</span>
-        <h1>My Feed</h1>
-        <p>Latest posts from profiles you follow. No public discovery filler, no owner posts unless you follow that profile.</p>
-      </div>
-      <div class="mg-feed-hero-actions">
-        <a class="mg-btn mg-btn-primary" href="/discover.php">Find profiles to follow</a>
-        <a class="mg-btn mg-btn-ghost" href="/feed.php">Open community feed</a>
-      </div>
-    </div>
-  </header>
-
   <div class="mg-container mg-feed-layout">
     <aside class="mg-feed-sidebar">
       <nav class="mg-feed-tabs" aria-label="Feed views">
-        <a class="is-active" href="/newfeed.php">Following</a>
         <a href="/feed.php">Discover</a>
+        <a class="is-active" href="/newfeed.php">Following</a>
         <a href="/feed.php#my-posts">My posts</a>
       </nav>
-      <div class="mg-feed-sidebar-note">
-        <strong>Only following</strong>
-        <p>This feed is limited to posts from users you actively follow.</p>
-      </div>
     </aside>
 
     <div class="mg-feed-main">
-      <section class="mg-feed-toolbar" aria-labelledby="mg-newsfeed-view-title">
-        <div>
-          <span class="mg-kicker">Your network</span>
-          <h2 id="mg-newsfeed-view-title">Latest from people you follow</h2>
-          <p>Posts are ordered newest first and respect mute, block, visibility, follower, and subscriber access rules.</p>
-        </div>
-      </section>
-
       <div class="mg-feed-status" data-newsfeed-status role="status" aria-live="polite"></div>
       <section class="mg-feed-loading" data-newsfeed-loading aria-busy="true">
         <?php for ($i=0; $i<3; $i++): ?><article class="mg-feed-card is-skeleton" aria-hidden="true"></article><?php endfor; ?>
