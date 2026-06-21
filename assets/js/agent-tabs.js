@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', function () {
     state.agents.forEach(function (agent) {
       var isRunning = agent.runtime_status === 'running';
       var row = document.createElement('div');
-      row.className = 'mg-saved-agent-row' + (isRunning ? ' is-running' : '');
+      row.className = 'mg-saved-agent-row' + (isRunning ? ' is-running' : '') + (currentAgentId() === agent.id ? ' is-active' : '');
       row.dataset.savedAgentDynamic = agent.id;
 
       var open = document.createElement('button');
@@ -84,8 +84,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
       var actions = document.createElement('div');
       actions.className = 'mg-saved-agent-actions';
-      actions.innerHTML = '<button type="button" class="mg-agent-inline-action" data-edit-agent-name>Edit</button><button type="button" class="mg-saved-agent-menu" data-saved-agent-menu aria-expanded="false">•••</button><div class="mg-saved-agent-popover" data-saved-agent-popover hidden><button type="button" data-archive-agent>Archive agent</button><button type="button" class="is-danger" data-delete-agent>Delete agent</button></div>';
+      actions.innerHTML = '<button type="button" class="mg-agent-inline-action" data-edit-agent-name>Edit</button><button type="button" class="mg-saved-agent-menu" data-saved-agent-menu aria-expanded="false">•••</button><div class="mg-saved-agent-popover" data-saved-agent-popover hidden><button type="button" data-load-agent>Load agent</button><button type="button" data-archive-agent>Archive agent</button><button type="button" class="is-danger" data-delete-agent>Delete agent</button></div>';
       actions.querySelector('[data-saved-agent-menu]').setAttribute('aria-label', 'Manage ' + agent.name);
+      actions.querySelector('[data-load-agent]').dataset.loadAgent = agent.id;
 
       var toggle = document.createElement('button');
       toggle.type = 'button';
@@ -222,6 +223,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var load = event.target.closest('[data-load-agent]');
     if (load) {
+      event.preventDefault();
+      event.stopPropagation();
       window.location.href = '/agent.php?agent=' + encodeURIComponent(load.dataset.loadAgent);
       return;
     }
@@ -229,7 +232,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var menu = event.target.closest('[data-saved-agent-menu]');
     if (menu) {
       event.preventDefault();
-      event.stopPropagation();
+      event.stopImmediatePropagation();
       var popover = menu.parentElement.querySelector('[data-saved-agent-popover]');
       var open = popover.hidden;
       closeMenus();
@@ -241,9 +244,11 @@ document.addEventListener('DOMContentLoaded', function () {
     var archive = event.target.closest('[data-archive-agent]');
     if (archive) {
       event.preventDefault();
+      event.stopPropagation();
       var archiveRow = archive.closest('[data-saved-agent-dynamic], .mg-saved-agent-row');
       var archiveId = archiveRow && archiveRow.dataset.savedAgentDynamic;
       if (!archiveId) return;
+      if (!window.confirm('Archive this agent? You can keep purchase and invoice history attached while removing it from the active list.')) return;
       await Microgifter.post('/api/agents/archive.php', { id: archiveId });
       state.agents = state.agents.filter(function (agent) { return agent.id !== archiveId; });
       if (currentAgentId() === archiveId) window.location.href = '/agent.php';
@@ -254,6 +259,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var remove = event.target.closest('[data-delete-agent]');
     if (remove) {
       event.preventDefault();
+      event.stopPropagation();
       var deleteRow = remove.closest('.mg-saved-agent-row');
       var deleteId = deleteRow && deleteRow.dataset.savedAgentDynamic;
       if (deleteId) await deleteAgent(deleteId);
@@ -269,6 +275,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  document.addEventListener('click', function () { closeMenus(); });
+  document.addEventListener('click', function (event) {
+    if (event.target.closest('[data-saved-agent-menu], [data-saved-agent-popover]')) return;
+    closeMenus();
+  });
   loadAgents();
 });
