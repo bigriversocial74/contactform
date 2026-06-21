@@ -39,7 +39,7 @@ if ($method === 'PATCH' || $method === 'POST') {
 }
 
 if ($method === 'DELETE') {
-    $user = mg_require_api_user();
+    $user = mg_require_permission('agent.delete');
     mg_require_csrf_for_write($input);
     $pdo = mg_db();
     try {
