@@ -5,7 +5,7 @@ require_once __DIR__ . '/includes/app.php';
 $page_title = 'Feed | Microgifter';
 $page_section = 'feed';
 $header_mode = 'public';
-$page_styles = ['/assets/css/social-feed.css','/assets/css/social-feed-upload.css'];
+$page_styles = ['/assets/css/public-app-header.css','/assets/css/social-feed.css','/assets/css/social-feed-upload.css'];
 $page_scripts = ['/assets/js/social-feed.js','/assets/js/social-feed-upload.js'];
 $page_manifest = [
     'id' => 'feed',
@@ -17,12 +17,9 @@ $page_manifest = [
     'body_class' => 'mg-social-feed-page',
     'public_header' => [
         'presentation' => false,
-        'links' => [
-            ['label' => 'Home', 'href' => '/index.php'],
-            ['label' => 'Discover', 'href' => '/discover.php'],
-            ['label' => 'Feed', 'href' => '/feed.php'],
-            ['label' => 'Learn More', 'href' => '/learn-more.php'],
-        ],
+        'search' => true,
+        'auth_aware' => true,
+        'links' => [],
     ],
     'onboarding' => ['enabled' => false, 'page' => 'feed', 'sections' => []],
 ];
