@@ -76,6 +76,63 @@ final class ProductionLiveUiHotfixTest extends TestCase
         }
     }
 
+    public function testAccountMenusUseInboxFeedAndProfileSettings(): void
+    {
+        $appMenu = file_get_contents($this->root . '/includes/header-templates/logged-in.php');
+        $publicMenu = file_get_contents($this->root . '/includes/header-components/public-header.php');
+        $mirrorAppMenu = file_get_contents($this->root . '/microgifter-main/includes/header-templates/logged-in.php');
+        $mirrorPublicMenu = file_get_contents($this->root . '/microgifter-main/includes/header-components/public-header.php');
+
+        foreach ([$appMenu, $publicMenu, $mirrorAppMenu, $mirrorPublicMenu] as $source) {
+            self::assertIsString($source);
+            self::assertStringContainsString('href="/inbox.php"', $source);
+            self::assertStringContainsString('IN/OUT Box', $source);
+            self::assertStringContainsString('href="/feed.php"', $source);
+            self::assertStringContainsString('My Feed', $source);
+            self::assertStringContainsString('href="/account.php"', $source);
+            self::assertStringContainsString('Profile Settings', $source);
+            self::assertStringNotContainsString('Account dashboard', $source);
+            self::assertStringNotContainsString('Open live agent', $source);
+        }
+    }
+
+    public function testCreatePostOptionOpensComposerModalWithoutNavigating(): void
+    {
+        $header = file_get_contents($this->root . '/includes/header-components/app-header.php');
+        $mirrorHeader = file_get_contents($this->root . '/microgifter-main/includes/header-components/app-header.php');
+        $layout = file_get_contents($this->root . '/includes/header.php');
+        $mirrorLayout = file_get_contents($this->root . '/microgifter-main/includes/header.php');
+        $footer = file_get_contents($this->root . '/includes/footer.php');
+        $mirrorFooter = file_get_contents($this->root . '/microgifter-main/includes/footer.php');
+        $modal = file_get_contents($this->root . '/includes/header-components/post-composer-modal.php');
+        $composer = file_get_contents($this->root . '/includes/social-feed-composer.php');
+        $feed = file_get_contents($this->root . '/feed.php');
+        $script = file_get_contents($this->root . '/assets/js/global-post-composer.js');
+        $css = file_get_contents($this->root . '/assets/css/post-composer-modal.css');
+
+        foreach ([$header,$mirrorHeader,$layout,$mirrorLayout,$footer,$mirrorFooter,$modal,$composer,$feed,$script,$css] as $source) {
+            self::assertIsString($source);
+        }
+
+        self::assertStringContainsString('data-create-menu-option="post" aria-controls="mg-post-composer-modal"', $header);
+        self::assertStringContainsString('data-create-menu-option="post" aria-controls="mg-post-composer-modal"', $mirrorHeader);
+        self::assertStringContainsString("require __DIR__ . '/post-composer-modal.php'", $header);
+        self::assertStringContainsString('data-global-post-composer', $modal);
+        self::assertStringContainsString('id="mg-post-composer-modal"', $modal);
+        self::assertStringContainsString('data-post-composer', $composer);
+        self::assertStringContainsString('data-post-form', $composer);
+        self::assertStringContainsString('data-feed-media-uploader', $composer);
+        self::assertStringContainsString("require __DIR__ . '/includes/social-feed-composer.php'", $feed);
+        self::assertStringContainsString('/assets/css/post-composer-modal.css', $layout);
+        self::assertStringContainsString('/assets/css/post-composer-modal.css', $mirrorLayout);
+        self::assertStringContainsString('/assets/js/global-post-composer.js', $footer);
+        self::assertStringContainsString('/assets/js/global-post-composer.js', $mirrorFooter);
+        self::assertStringContainsString('[data-create-menu-option="post"]', $script);
+        self::assertStringContainsString('event.preventDefault()', $script);
+        self::assertStringContainsString("MG.post('/api/social/posts.php'", $script);
+        self::assertStringContainsString('.mg-post-composer-modal', $css);
+    }
+
     public function testCreateDialogSupportsCloseEscapeAndFocusManagement(): void
     {
         $header = file_get_contents($this->root . '/includes/header-components/app-header.php');
