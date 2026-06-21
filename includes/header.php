@@ -101,6 +101,9 @@ $can_admin_dashboard = $user && (
 <?php if ($is_app_page): ?>
 <link rel="stylesheet" href="/assets/css/app-shell.css">
 <link rel="stylesheet" href="/assets/css/create-menu.css">
+<link rel="stylesheet" href="/assets/css/social-feed.css">
+<link rel="stylesheet" href="/assets/css/social-feed-upload.css">
+<link rel="stylesheet" href="/assets/css/post-composer-modal.css">
 <?php endif; ?>
 <?php if ($section_css): ?><link rel="stylesheet" href="<?= mg_e($section_css) ?>"><?php endif; ?>
 <?php foreach ($page_styles as $style): ?><link rel="stylesheet" href="<?= mg_e($style) ?>"><?php endforeach; ?>
