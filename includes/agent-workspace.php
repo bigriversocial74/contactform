@@ -25,6 +25,7 @@ $displayName = $user ? mg_user_display_name() : 'Guest Builder';
             <p data-agent-toolbar-description hidden></p>
           </div>
           <div class="mg-agent-toolbar-actions" aria-label="Agent workspace actions">
+            <label class="mg-agent-model-picker" data-agent-model-picker hidden>AI model<select data-agent-ai-model-select><option value="">Loading models…</option></select><small data-agent-ai-model-status></small></label>
             <button class="mg-btn mg-btn-ghost" type="button" data-change-category hidden>Change gifting path</button>
             <button class="mg-btn mg-btn-soft" type="button" data-save-agent>Save agent</button>
           </div>
@@ -102,40 +103,16 @@ $displayName = $user ? mg_user_display_name() : 'Guest Builder';
     </section>
 
     <section class="mg-approval-shell" data-agent-control-panel="approvals" hidden>
-      <header class="mg-approval-hero">
-        <div>
-          <span class="mg-agent-toolbar-eyebrow">Stage 16 approval center</span>
-          <h1>Review the complete plan before any action executes.</h1>
-          <p>Every approval remains individual. The plan shows why it exists, the strategy version, risk, target, expected effect, expiration, and all sibling actions.</p>
-        </div>
-        <div class="mg-approval-hero-note"><strong>No bulk approval</strong><span>Each action must be reviewed and decided separately.</span></div>
-      </header>
-
+      <header class="mg-approval-hero"><div><span class="mg-agent-toolbar-eyebrow">Stage 16 approval center</span><h1>Review the complete plan before any action executes.</h1><p>Every approval remains individual. The plan shows why it exists, the strategy version, risk, target, expected effect, expiration, and all sibling actions.</p></div><div class="mg-approval-hero-note"><strong>No bulk approval</strong><span>Each action must be reviewed and decided separately.</span></div></header>
       <section class="mg-approval-summary" data-approval-summary aria-label="Approval totals"></section>
-
-      <div class="mg-approval-toolbar">
-        <label>Status<select data-approval-status><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option><option value="expired">Expired</option><option value="canceled">Cancelled</option><option value="all">All approvals</option></select></label>
-        <button class="mg-btn mg-btn-ghost" type="button" data-approval-refresh>Refresh</button>
-      </div>
-
+      <div class="mg-approval-toolbar"><label>Status<select data-approval-status><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option><option value="expired">Expired</option><option value="canceled">Cancelled</option><option value="all">All approvals</option></select></label><button class="mg-btn mg-btn-ghost" type="button" data-approval-refresh>Refresh</button></div>
       <div class="mg-approval-status" data-approval-status-text role="status" aria-live="polite"></div>
       <section class="mg-approval-message" data-approval-loading><strong>Loading approval requests…</strong></section>
       <section class="mg-approval-message" data-approval-empty hidden><strong>No approvals in this view.</strong><span>New reviewable agent plans will appear here.</span></section>
       <section class="mg-approval-message is-error" data-approval-error hidden><strong>Unable to load approvals.</strong><span data-approval-error-message>Please try again.</span><button type="button" class="mg-btn mg-btn-primary" data-approval-retry>Try again</button></section>
       <section class="mg-approval-list" data-approval-list hidden aria-label="Agent approval requests"></section>
       <div class="mg-approval-pagination" data-approval-pagination hidden><button type="button" class="mg-btn mg-btn-soft" data-approval-more>Load more</button></div>
-
-      <section class="mg-plan-review" data-plan-review hidden aria-labelledby="mg-plan-review-title">
-        <header>
-          <div><span data-plan-review-eyebrow>Workflow plan</span><h2 id="mg-plan-review-title" data-plan-review-title>Review plan</h2></div>
-          <button type="button" data-plan-review-close aria-label="Close plan review">×</button>
-        </header>
-        <div class="mg-plan-review-body">
-          <section class="mg-plan-context" data-plan-context></section>
-          <section class="mg-plan-actions" data-plan-actions></section>
-          <div class="mg-plan-review-status" data-plan-review-status role="status" aria-live="polite"></div>
-        </div>
-      </section>
+      <section class="mg-plan-review" data-plan-review hidden aria-labelledby="mg-plan-review-title"><header><div><span data-plan-review-eyebrow>Workflow plan</span><h2 id="mg-plan-review-title" data-plan-review-title>Review plan</h2></div><button type="button" data-plan-review-close aria-label="Close plan review">×</button></header><div class="mg-plan-review-body"><section class="mg-plan-context" data-plan-context></section><section class="mg-plan-actions" data-plan-actions></section><div class="mg-plan-review-status" data-plan-review-status role="status" aria-live="polite"></div></div></section>
     </section>
   </div>
 </section>
