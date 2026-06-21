@@ -1,0 +1,20 @@
+document.addEventListener('DOMContentLoaded', function () {
+  'use strict';
+  var picker = document.querySelector('[data-agent-model-picker]');
+  var select = document.querySelector('[data-agent-ai-model-select]');
+  var status = document.querySelector('[data-agent-ai-model-status]');
+  if (!picker || !select || !window.Microgifter) return;
+  function agentId() { return new URLSearchParams(window.location.search).get('agent') || ''; }
+  function setStatus(text, error) { if (status) { status.textContent = text || ''; status.classList.toggle('is-error', !!error); } }
+  function label(model) { return model.provider_name + ' · ' + model.display_name; }
+  function render(models, current) {
+    select.innerHTML = '';
+    if (!models.length) { select.innerHTML = '<option value="">No configured models</option>'; picker.hidden = false; setStatus('Enable a provider in Admin > AI providers.'); return; }
+    models.forEach(function (model) { var option = document.createElement('option'); option.value = model.id; option.textContent = label(model); if (current && current.model_id === model.id) option.selected = true; select.appendChild(option); });
+    picker.hidden = false;
+    setStatus(agentId() ? 'Saved agents use this model.' : 'Save the agent before model selection is stored.');
+  }
+  async function load() { try { var path = '/api/agents/model-options.php'; var id = agentId(); if (id) path += '?agent=' + encodeURIComponent(id); var response = await Microgifter.get(path); var data = response.data || response; render(data.models || [], data.agent_setting || null); } catch (error) { picker.hidden = false; select.innerHTML = '<option value="">Unable to load models</option>'; setStatus(error.message || 'Unable to load models.', true); } }
+  select.addEventListener('change', async function () { var id = agentId(); if (!id || !select.value) { setStatus('Save the agent before model selection is stored.'); return; } setStatus('Saving model…'); try { var response = await Microgifter.post('/api/agents/model-options.php', { agent_id: id, model_id: select.value }); var setting = response.data && response.data.agent_setting; setStatus(setting ? 'Using ' + setting.provider_name + ' · ' + setting.model_name : 'Model saved.'); } catch (error) { setStatus(error.message || 'Unable to save model.', true); } });
+  load();
+});
