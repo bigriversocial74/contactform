@@ -5,7 +5,7 @@ require_once __DIR__ . '/includes/app.php';
 $page_title = 'Storefront | Microgifter';
 $page_section = 'catalog-public';
 $header_mode = 'public';
-$page_styles = ['/assets/css/public-catalog.css'];
+$page_styles = ['/assets/css/public-app-header.css','/assets/css/public-catalog.css'];
 $page_scripts = ['/assets/js/public-catalog.js'];
 $page_manifest = [
     'id' => 'store',
