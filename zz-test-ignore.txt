@@ -1,1 +1,1 @@
-test
+Temporary connector test file. Safe to delete.
