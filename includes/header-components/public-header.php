@@ -18,7 +18,7 @@ $public_nav_links = $filtered_links;
 
 if (!$user && in_array($public_page_id, ['home','index'], true)) {
     $public_nav_links = [
-        ['label'=>'Corporate Gifting','href'=>'/corporate-gifting.php'],
+        ['label'=>'Corporate Gifting','href'=>'/corporate.php'],
         ['label'=>'Retail Subscriptions','href'=>'/retail.php'],
         ['label'=>'Locations','href'=>'/locations.php'],
     ];
