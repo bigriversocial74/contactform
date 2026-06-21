@@ -26,7 +26,7 @@ require __DIR__.'/includes/header.php';
             <form class="mg-merchant-form" data-payment-settings-form>
               <div class="mg-grid-2">
                 <label>Mode<select name="mode" data-payment-mode><option value="test">Test</option><option value="live">Live</option></select></label>
-                <label class="mg-check-row"><input type="checkbox" name="enabled" value="1"> Enable Stripe</label>
+                <label class="mg-toggle-switch mg-stripe-toggle"><input type="checkbox" name="enabled" value="1"><span class="mg-toggle-control" aria-hidden="true"></span><span class="mg-toggle-copy"><strong>Enable Stripe</strong><small>Allow this mode to process Stripe payments when readiness passes.</small></span></label>
               </div>
               <label>Publishable key<input name="publishable_key" autocomplete="off" placeholder="pk_test_… or pk_live_…"></label>
               <?php require __DIR__.'/includes/admin-payment-credential-fields.php'; ?>
