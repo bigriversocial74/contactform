@@ -14,13 +14,27 @@ document.addEventListener('DOMContentLoaded',function(){
     });
   }
 
+  function cleanText(node){
+    return String((node&&node.textContent)||'').replace(/\s+/g,' ').trim();
+  }
+
+  function looksLikePlusControl(node){
+    var text=cleanText(node);
+    var aria=String(node.getAttribute('aria-label')||'').toLowerCase();
+    var href=String(node.getAttribute('href')||'');
+    return text==='+'||text==='＋'||text==='✚'||text==='⊕'||text==='⊞'||href==='/build.php'||aria.includes('create')||aria.includes('add');
+  }
+
   function isCreateCandidate(node){
     if(!node||!node.matches('button,a'))return false;
     if(node.closest('[data-create-menu]'))return false;
-    if(node.matches('[data-cart-trigger],[data-mobile-sidebar-toggle],[data-device],[data-header-signal-trigger],[data-mg-auth-trigger],[data-create-menu-close]'))return false;
-    if(node.matches('.mg-cart-header-button,.mg-account-trigger'))return false;
+    if(node.matches('[data-cart-trigger],[data-mobile-sidebar-toggle],[data-device],[data-header-signal-trigger],[data-mg-auth-trigger],[data-create-menu-close],[data-auth-logout]'))return false;
+    if(node.matches('.mg-cart-header-button,.mg-account-trigger,.mg-account-action'))return false;
     if(node.closest('[data-header-signal],[data-mg-auth-menu]'))return false;
-    return !!node.closest('.mg-unified-header');
+    if(!node.closest('.mg-unified-header'))return false;
+    if(node.matches('[data-global-create],[data-header-create],[data-quick-create],[data-app-create],[data-product-header-create],[data-create-menu-trigger]'))return true;
+    if(node.matches('.mg-header-page-control,.mg-header-product-create'))return looksLikePlusControl(node);
+    return looksLikePlusControl(node);
   }
 
   function setExpanded(value){
@@ -50,8 +64,9 @@ document.addEventListener('DOMContentLoaded',function(){
     if(restoreFocus!==false&&lastFocused&&typeof lastFocused.focus==='function')lastFocused.focus();
   }
 
-  function bindTrigger(trigger){
-    if(!isCreateCandidate(trigger)||trigger.dataset.createMenuBound==='true')return false;
+  function prepareTrigger(trigger){
+    if(!isCreateCandidate(trigger))return false;
+    if(trigger.dataset.createMenuBound==='true')return true;
 
     trigger.dataset.createMenuBound='true';
     trigger.dataset.createMenuTrigger='';
@@ -59,38 +74,18 @@ document.addEventListener('DOMContentLoaded',function(){
     trigger.setAttribute('aria-controls','mg-create-menu');
     trigger.setAttribute('aria-expanded','false');
     if(!trigger.getAttribute('aria-label'))trigger.setAttribute('aria-label','Open create menu');
-
-    trigger.addEventListener('click',function(event){
-      event.preventDefault();
-      event.stopPropagation();
-      if(modal.hidden)openMenu(trigger);else closeMenu(true);
-    });
-
     triggers.push(trigger);
     return true;
   }
 
-  function discoverOriginalTrigger(){
-    var explicitSelectors=[
-      '.mg-unified-header [data-global-create]',
-      '.mg-unified-header [data-header-create]',
-      '.mg-unified-header [data-quick-create]',
-      '.mg-unified-header [data-app-create]',
-      '.mg-unified-header [data-product-header-create]',
-      '.mg-unified-header .mg-header-product-create',
-      '.mg-unified-header .mg-header-actions a[href="/build.php"]',
-      '.mg-unified-header .mg-header-actions button[aria-label*="create" i]',
-      '.mg-unified-header .mg-header-actions button[aria-label*="add" i]'
-    ];
+  function closestTrigger(target){
+    var node=target&&target.closest&&target.closest('button,a');
+    if(!node)return null;
+    return prepareTrigger(node)?node:null;
+  }
 
-    explicitSelectors.forEach(function(selector){
-      document.querySelectorAll(selector).forEach(bindTrigger);
-    });
-
-    // The long-standing global square create control lives in the shared
-    // header actions. Bind the existing desktop/mobile control in place;
-    // never create, move, clone, or restyle another button.
-    document.querySelectorAll('.mg-unified-header .mg-header-actions button,.mg-unified-header .mg-header-actions a').forEach(bindTrigger);
+  function discoverOriginalTriggers(){
+    document.querySelectorAll('.mg-unified-header button,.mg-unified-header a').forEach(prepareTrigger);
   }
 
   modal.querySelectorAll('[data-create-menu-close]').forEach(function(node){
@@ -99,6 +94,14 @@ document.addEventListener('DOMContentLoaded',function(){
   modal.querySelectorAll('[data-create-menu-option]').forEach(function(node){
     node.addEventListener('click',function(){closeMenu(false);});
   });
+
+  document.addEventListener('click',function(event){
+    var trigger=closestTrigger(event.target);
+    if(!trigger)return;
+    event.preventDefault();
+    event.stopPropagation();
+    if(modal.hidden)openMenu(trigger);else closeMenu(true);
+  },true);
 
   document.addEventListener('keydown',function(event){
     if(modal.hidden)return;
@@ -115,10 +118,6 @@ document.addEventListener('DOMContentLoaded',function(){
     else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
   });
 
-  discoverOriginalTrigger();
-
-  var header=document.querySelector('.mg-unified-header');
-  if(header){
-    new MutationObserver(discoverOriginalTrigger).observe(header,{childList:true,subtree:true});
-  }
+  discoverOriginalTriggers();
+  new MutationObserver(discoverOriginalTriggers).observe(document.documentElement,{childList:true,subtree:true});
 });

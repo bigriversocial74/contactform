@@ -1,7 +1,31 @@
 <?php
 $page_scripts = $page_scripts ?? [];
+$late_styles = [];
+if (($page_body_class ?? '') === 'mg-admin-merchant-catalog-page') {
+    require __DIR__ . '/footer-mc-snippet.php';
+}
+if (($page_section ?? '') === 'feed') {
+    $page_scripts[] = '/assets/js/social-feed-attachments.js';
+    $page_scripts[] = '/assets/js/social-feed-attachment-cards.js';
+}
+if (($page_body_class ?? '') === 'mg-admin-moderation-page') {
+    $page_scripts[] = '/assets/js/admin-moderation.js';
+    $page_scripts[] = '/assets/js/content-' . 'review-actions.js';
+    $late_styles[] = '/assets/css/content-review-ui.css';
+}
+if (($page_body_class ?? '') === 'mg-admin-users-page') {
+    $page_scripts[] = '/assets/js/admin-user-detail-drawer.js';
+    $page_scripts[] = '/assets/js/admin-user-management.js';
+    $late_styles[] = '/assets/css/admin-user-detail-drawer.css';
+    $late_styles[] = '/assets/css/admin-user-management.css';
+}
+if (($page_body_class ?? '') === 'mg-admin-commerce-page') {
+    $page_scripts[] = '/assets/js/admin-commerce-inspector.js';
+    $page_scripts[] = '/assets/js/admin-commerce-workflow.js';
+    $late_styles[] = '/assets/css/admin-commerce-drawer.css';
+}
 $core_scripts = [
-    '/assets/js/microgifter.js','/assets/js/header-signals.js','/assets/js/api-client.js','/assets/js/agent-folder-counts.js',
+    '/assets/js/microgifter.js','/assets/js/header-signals.js','/assets/js/create-menu.js','/assets/js/builder-publish-errors.js','/assets/js/api-client.js','/assets/js/agent-folder-counts.js',
     '/assets/js/agent-global-search.js','/assets/js/customer-commerce.js','/assets/js/cart.js','/assets/js/auth.js',
     '/assets/js/auth-state.js','/assets/js/onboarding.js','/assets/js/agent-tabs.js','/assets/js/agent-controls.js',
     '/assets/js/agent-toolbar-state.js','/assets/js/agent-sidebar.js','/assets/js/agent-items.js','/assets/js/media-delivery.js',
@@ -25,5 +49,6 @@ $can_intelligence = $user && (in_array('intelligence.dashboard.view', $user_perm
     <nav class="mg-footer-nav" aria-label="Footer navigation"><a href="/learn-more.php">Learn more</a><a href="/discover.php">Discover</a><a href="/feed.php">Feed</a><a href="/build.php">Build</a><a href="/agent.php">Agent</a><a href="/account.php">Account</a><?php if ($user): ?><a href="/commitments.php">Commitments</a><?php endif; ?><?php if ($can_intelligence): ?><a href="/intelligence.php">Intelligence</a><?php endif; ?><?php if ($can_sales_crm): ?><a href="/sales-crm.php">CRM</a><?php endif; ?><a href="/signin.php">Sign in</a></nav>
   </div>
 </footer>
+<?php foreach (array_unique($late_styles) as $style): ?><link rel="stylesheet" href="<?= mg_e($style) ?>"><?php endforeach; ?>
 <?php foreach ($scripts as $script): ?><script src="<?= mg_e($script) ?>" defer></script><?php endforeach; ?>
 </body></html>

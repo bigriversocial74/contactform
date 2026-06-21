@@ -25,17 +25,21 @@ final class AgentHeaderTabBehaviorTest extends TestCase
         $root=dirname(__DIR__,2);
         $script=file_get_contents($root.'/assets/js/agent-tabs.js');
         $header=file_get_contents($root.'/includes/header-components/app-header.php');
+        $mirror=file_get_contents($root.'/microgifter-main/includes/header-components/app-header.php');
         $createMenu=file_get_contents($root.'/assets/js/create-menu.js');
         $css=file_get_contents($root.'/assets/css/agent-workspace-layout.css');
         self::assertIsString($script);
         self::assertIsString($header);
+        self::assertIsString($mirror);
         self::assertIsString($createMenu);
         self::assertIsString($css);
         self::assertStringNotContainsString('data-agent-tab-add',$script);
         self::assertStringContainsString('.mg-agent-tab-add{display:none!important}',$css);
         self::assertStringNotContainsString('create_menu_button',$header);
+        self::assertStringNotContainsString('mg-header-product-create',$mirror);
         self::assertStringNotContainsString("createElement('button')",$createMenu);
-        self::assertStringContainsString('.mg-unified-header .mg-header-actions button',$createMenu);
+        self::assertStringContainsString('looksLikePlusControl',$createMenu);
+        self::assertStringContainsString("href==='/build.php'",$createMenu);
     }
 
     public function testDeleteControlLivesInsideActiveSavedAgentTab(): void

@@ -27,29 +27,35 @@ final class ProductionLiveUiHotfixTest extends TestCase
         self::assertStringContainsString('Microgifter.agents.applyUpdate(response.data.agent)', $controls);
     }
 
-    public function testCreateDialogUsesTheExistingGlobalHeaderControl(): void
+    public function testCreateDialogBindsToExistingHeaderPlusWithoutAddingButtons(): void
     {
         $header = file_get_contents($this->root . '/includes/header-components/app-header.php');
+        $mirrorHeader = file_get_contents($this->root . '/microgifter-main/includes/header-components/app-header.php');
         $layout = file_get_contents($this->root . '/includes/header.php');
+        $mirrorLayout = file_get_contents($this->root . '/microgifter-main/includes/header.php');
         $footer = file_get_contents($this->root . '/includes/footer.php');
+        $mirrorFooter = file_get_contents($this->root . '/microgifter-main/includes/footer.php');
         $script = file_get_contents($this->root . '/assets/js/create-menu.js');
         $css = file_get_contents($this->root . '/assets/css/create-menu.css');
 
-        self::assertIsString($header);
-        self::assertIsString($layout);
-        self::assertIsString($footer);
-        self::assertIsString($script);
-        self::assertIsString($css);
+        foreach ([$header,$mirrorHeader,$layout,$mirrorLayout,$footer,$mirrorFooter,$script,$css] as $source) {
+            self::assertIsString($source);
+        }
         self::assertStringContainsString('role="dialog"', $header);
+        self::assertStringContainsString('role="dialog"', $mirrorHeader);
         self::assertStringContainsString('/assets/css/create-menu.css', $layout);
+        self::assertStringContainsString('/assets/css/create-menu.css', $mirrorLayout);
         self::assertStringContainsString('/assets/js/create-menu.js', $footer);
+        self::assertStringContainsString('/assets/js/create-menu.js', $mirrorFooter);
         self::assertStringNotContainsString('mg-header-product-create', $header);
+        self::assertStringNotContainsString('mg-header-product-create', $mirrorHeader);
         self::assertStringNotContainsString('data-product-header-create', $header);
-        self::assertStringNotContainsString('data-create-menu-trigger', $header);
+        self::assertStringNotContainsString('data-product-header-create', $mirrorHeader);
         self::assertStringNotContainsString('.mg-header-product-create', $css);
-        self::assertStringContainsString('.mg-unified-header .mg-header-actions button', $script);
-        self::assertStringContainsString("trigger.dataset.createMenuTrigger=''", $script);
-        self::assertStringContainsString('new MutationObserver(discoverOriginalTrigger)', $script);
+        self::assertStringContainsString('looksLikePlusControl', $script);
+        self::assertStringContainsString("href==='/build.php'", $script);
+        self::assertStringContainsString("document.addEventListener('click'", $script);
+        self::assertStringContainsString('new MutationObserver(discoverOriginalTriggers)', $script);
         self::assertStringNotContainsString("createElement('button')", $script);
     }
 
@@ -83,19 +89,23 @@ final class ProductionLiveUiHotfixTest extends TestCase
         self::assertStringContainsString('lastFocused.focus()', $script);
     }
 
-    public function testLoggedOutHomeHeaderRestoresSearchNavigationAndDemo(): void
+    public function testLoggedOutHomeHeaderRestoresSearchNavigationDemoAndCorporateRoute(): void
     {
         $layout = file_get_contents($this->root . '/includes/header.php');
         $header = file_get_contents($this->root . '/includes/header-components/public-header.php');
+        $mirrorHeader = file_get_contents($this->root . '/microgifter-main/includes/header-components/public-header.php');
         $css = file_get_contents($this->root . '/assets/css/public-header-footer-fixes.css');
 
         self::assertIsString($layout);
         self::assertIsString($header);
+        self::assertIsString($mirrorHeader);
         self::assertIsString($css);
         self::assertStringNotContainsString('/assets/css/index-minimal-header.css', $layout);
         self::assertStringContainsString('class="mg-public-search"', $header);
         self::assertStringContainsString('Search Microgifter', $header);
-        self::assertStringContainsString('/corporate-gifting.php', $header);
+        self::assertStringContainsString('/corporate.php', $header);
+        self::assertStringContainsString('/corporate.php', $mirrorHeader);
+        self::assertStringNotContainsString('/corporate-gifting.php', $header);
         self::assertStringContainsString('/retail.php', $header);
         self::assertStringContainsString('/locations.php', $header);
         self::assertStringContainsString('class="mg-public-demo"', $header);
