@@ -28,6 +28,7 @@ require __DIR__.'/includes/header.php';
                 <label>Mode<select name="mode" data-payment-mode><option value="test">Test</option><option value="live">Live</option></select></label>
                 <label class="mg-toggle-switch mg-stripe-toggle"><input type="checkbox" name="enabled" value="1"><span class="mg-toggle-control" aria-hidden="true"></span><span class="mg-toggle-copy"><strong>Enable Stripe</strong><small>Allow this mode to process Stripe payments when readiness passes.</small></span></label>
               </div>
+              <section class="mg-payment-method-card"><div><span class="mg-eyebrow">Testing option</span><h3>Pay with cash</h3><p>Enable manual local testing.</p></div><label class="mg-toggle-switch mg-cash-toggle"><input type="checkbox" name="cash_enabled" value="1" data-admin-cash-toggle><span class="mg-toggle-control" aria-hidden="true"></span><span class="mg-toggle-copy"><strong>Cash payments</strong><small>Manual collection for testing.</small></span></label></section>
               <label>Publishable key<input name="publishable_key" autocomplete="off" placeholder="pk_test_… or pk_live_…"></label>
               <?php require __DIR__.'/includes/admin-payment-credential-fields.php'; ?>
               <label>Connect client ID <span>(optional)</span><input name="connect_client_id" autocomplete="off" placeholder="ca_…"></label>
