@@ -76,7 +76,7 @@ final class ProductionLiveUiHotfixTest extends TestCase
         }
     }
 
-    public function testAccountMenusUseInboxFeedAndProfileSettings(): void
+    public function testAccountMenusUseInboxFeedProfileAndMerchantLinks(): void
     {
         $appMenu = file_get_contents($this->root . '/includes/header-templates/logged-in.php');
         $publicMenu = file_get_contents($this->root . '/includes/header-components/public-header.php');
@@ -91,6 +91,8 @@ final class ProductionLiveUiHotfixTest extends TestCase
             self::assertStringContainsString('My Feed', $source);
             self::assertStringContainsString('href="/account.php"', $source);
             self::assertStringContainsString('Profile Settings', $source);
+            self::assertStringContainsString('href="/merchant.php"', $source);
+            self::assertStringContainsString('Merchant Dashboard', $source);
             self::assertStringNotContainsString('Account dashboard', $source);
             self::assertStringNotContainsString('Open live agent', $source);
         }
