@@ -41,6 +41,8 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     });
 
-    activate('merchant');
+    var requested = new URLSearchParams(window.location.search).get('side');
+    var initial = requested === 'agents' ? 'agents' : 'merchant';
+    activate(initial);
   });
 });
