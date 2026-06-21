@@ -5,11 +5,11 @@ $page_title = 'Notification Preferences | Microgifter';
 $page_section = 'account';
 $header_mode = 'account';
 $accountView = 'preferences';
-$page_styles = ['/assets/css/account-commerce.css','/assets/css/communications.css','/assets/css/notification-preferences.css','/assets/css/recipient-notifications.css'];
+$page_styles = ['/assets/css/account-commerce.css','/assets/css/account-commerce-fixes.css','/assets/css/communications.css','/assets/css/notification-preferences.css','/assets/css/recipient-notifications.css'];
 $page_scripts = ['/assets/js/account-sidebar.js','/assets/js/notification-preferences.js'];
 require __DIR__ . '/includes/header.php';
 ?>
-<main class="mg-account-page" data-notification-preferences>
+<section class="mg-account-page mg-account-notifications-page" data-notification-preferences>
   <div class="mg-account-layout">
     <?php require __DIR__ . '/includes/account-sidebar.php'; ?>
     <section class="mg-account-shell mg-preferences-page">
@@ -23,5 +23,5 @@ require __DIR__ . '/includes/header.php';
       </section>
     </section>
   </div>
-</main>
+</section>
 <?php require __DIR__ . '/includes/footer.php'; ?>
