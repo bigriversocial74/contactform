@@ -4,7 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/_agent.php';
 
 mg_require_method('POST');
-$user = mg_require_api_user();
+$user = mg_require_permission('agent.archive');
 $input = mg_input();
 mg_require_csrf_for_write($input);
 $id = mg_agent_request_id($input);
