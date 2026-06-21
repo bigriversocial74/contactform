@@ -8,6 +8,19 @@
   <span class="mg-status-badge" data-financial-provider>Loading provider</span>
 </section>
 
+<section class="mg-connect-panel" data-payment-methods-panel>
+  <div>
+    <span class="mg-eyebrow">Test payment methods</span>
+    <h2>Pay with cash</h2>
+    <p>Allow this merchant to use a cash payment option during local testing. Cash payments are marked for manual collection and do not create Stripe charges.</p>
+    <div class="mg-form-status" data-payment-methods-status></div>
+  </div>
+  <form class="mg-connect-actions" data-payment-methods-form>
+    <label class="mg-check-row"><input type="checkbox" name="cash_enabled" value="1" data-cash-payment-toggle> Enable cash payments for testing</label>
+    <button class="mg-btn mg-btn-primary" type="submit">Save cash option</button>
+  </form>
+</section>
+
 <section class="mg-connect-panel" data-connect-panel>
   <div>
     <span class="mg-eyebrow">Stripe Connect</span>

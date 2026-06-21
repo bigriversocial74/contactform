@@ -24,8 +24,12 @@ mg_require_method('POST');
 $input=mg_input();
 mg_require_csrf_for_write($input);
 try{
-    $pdo->beginTransaction();
     $mode=(string)($input['mode']??'test')==='live'?'live':'test';
+    $hasNewSecret=trim((string)($input['secret_key']??''))!==''||trim((string)($input['webhook_secret']??''))!=='';
+    if($hasNewSecret&&mg_payment_credential_master_key()===null){
+        mg_fail('Payment credential encryption is not configured on the server. Public Stripe settings can be saved by leaving secret fields blank.',422);
+    }
+    $pdo->beginTransaction();
     $existing=mg_payment_platform_credential_row($pdo,'stripe',$mode,true);
     if(trim((string)($input['publishable_key']??''))===''&&$existing){
         $input['publishable_key']=(string)($existing['publishable_key']??'');
@@ -51,5 +55,5 @@ try{
     mg_fail($error->getMessage(),422);
 }catch(Throwable $error){
     if($pdo->inTransaction())$pdo->rollBack();
-    mg_fail('Unable to save payment settings.',500);
+    mg_fail('Unable to save payment settings: '.$error->getMessage(),500);
 }

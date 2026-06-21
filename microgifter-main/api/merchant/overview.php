@@ -28,7 +28,11 @@ function mg_merchant_overview_rows(PDO $pdo, string $sql, array $params): array
 }
 $locations = mg_merchant_overview_row($pdo,"SELECT COUNT(*) total,SUM(status='active') active_count,SUM(is_primary=1) primary_count FROM merchant_locations WHERE workspace_id=?",[(int)$workspace['id']],['total'=>0,'active_count'=>0,'primary_count'=>0]);
 $team = mg_merchant_overview_row($pdo,"SELECT COUNT(*) total,SUM(status='active') active_count,SUM(status='invited') invited_count FROM merchant_team_members WHERE workspace_id=?",[(int)$workspace['id']],['total'=>0,'active_count'=>0,'invited_count'=>0]);
-$payments = mg_merchant_overview_row($pdo,'SELECT mode,provider_key,account_connected,identity_verified,charges_enabled,payouts_enabled,tax_setup_complete,test_payment_complete,live_approved FROM merchant_payment_readiness WHERE workspace_id=? LIMIT 1',[(int)$workspace['id']],['mode'=>'test','provider_key'=>null,'account_connected'=>0,'identity_verified'=>0,'charges_enabled'=>0,'payouts_enabled'=>0,'tax_setup_complete'=>0,'test_payment_complete'=>0,'live_approved'=>0]);
+$payments = mg_merchant_overview_row($pdo,'SELECT mode,provider_key,account_connected,identity_verified,charges_enabled,payouts_enabled,tax_setup_complete,test_payment_complete,live_approved,state_json FROM merchant_payment_readiness WHERE workspace_id=? LIMIT 1',[(int)$workspace['id']],['mode'=>'test','provider_key'=>null,'account_connected'=>0,'identity_verified'=>0,'charges_enabled'=>0,'payouts_enabled'=>0,'tax_setup_complete'=>0,'test_payment_complete'=>0,'live_approved'=>0,'state_json'=>null]);
+$paymentState = json_decode((string)($payments['state_json'] ?? ''), true);
+if(!is_array($paymentState))$paymentState=[];
+$payments['cash_payments_enabled']=!empty($paymentState['payment_methods']['cash']['enabled']);
+unset($payments['state_json']);
 $productCounts = mg_merchant_overview_row($pdo,"SELECT COUNT(*) total,SUM(status='published') published_count,SUM(status='draft') draft_count,SUM(status='archived') archived_count FROM catalog_products WHERE merchant_user_id=?",[(int)$user['id']],['total'=>0,'published_count'=>0,'draft_count'=>0,'archived_count'=>0]);
 if((int)($productCounts['published_count']??0)>0){
  try{
