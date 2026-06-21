@@ -79,11 +79,21 @@ final class StageFStripeContractTest extends TestCase
     {
         $admin=$this->source('admin-payments.php');
         $adminApi=$this->source('api/admin/payment-settings.php');
+        $adminJs=$this->source('assets/js/admin-payments.js');
         $merchant=$this->source('includes/merchant-payments-view.php');
+        $cashApi=$this->source('api/merchant/payment-methods.php');
+        $merchantJs=$this->source('assets/js/merchant-payments.js');
         $connect=$this->source('assets/js/merchant-connect.js');
         self::assertStringContainsString('Stripe settings &amp; readiness',$admin);
         self::assertStringContainsString("mg_require_permission('admin.settings.manage')",$adminApi);
+        self::assertStringContainsString('Payment credential encryption is not configured',$adminApi);
+        self::assertStringContainsString('Stripe payment settings saved',$adminJs);
         self::assertStringContainsString('Stripe Connect',$merchant);
+        self::assertStringContainsString('Pay with cash',$merchant);
+        self::assertStringContainsString('data-cash-payment-toggle',$merchant);
+        self::assertStringContainsString('payment_methods',$cashApi);
+        self::assertStringContainsString("'mode' => 'test'",$cashApi);
+        self::assertStringContainsString('/api/merchant/payment-methods.php',$merchantJs);
         self::assertStringContainsString('/api/merchant/payment-connect.php',$connect);
         self::assertStringContainsString('/api/merchant/payment-account.php',$connect);
         self::assertStringContainsString('/admin-payments.php',$this->source('includes/admin-sidebar.php'));
