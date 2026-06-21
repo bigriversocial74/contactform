@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     var requested = new URLSearchParams(window.location.search).get('side');
-    var initial = requested === 'merchant' ? 'merchant' : 'agents';
+    var initial = requested === 'agents' ? 'agents' : 'merchant';
     activate(initial);
   });
 });
