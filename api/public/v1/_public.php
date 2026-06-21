@@ -22,7 +22,7 @@ function mg_public_context(?string $requiredScope = null): array
     if ($value === '' || strlen($value) < 24) mg_fail('Missing public API credential.', 401);
     $digest = hash('sha256', $value);
     $pdo = mg_db();
-    $stmt = $pdo->prepare("SELECT mak.*,mda.public_id AS app_public_id,mda.name AS app_name,mda.status AS app_status,mda.environment AS app_environment,mda.default_program_id,mda.distribution_source_connection_id,dsc.public_id AS source_public_id,dsc.status AS source_status FROM merchant_api_keys mak INNER JOIN merchant_developer_apps mda ON mda.id=mak.app_id LEFT JOIN distribution_source_connections dsc ON dsc.id=mda.distribution_source_connection_id WHERE mak.key_hash=? AND mak.status='active' LIMIT 1");
+    $stmt = $pdo->prepare("SELECT mak.*,mda.public_id AS app_public_id,mda.name AS app_name,mda.status AS app_status,mda.environment AS app_environment,mda.allowed_origins_json,mda.webhook_url,mda.default_program_id,mda.distribution_source_connection_id,dsc.public_id AS source_public_id,dsc.status AS source_status FROM merchant_api_keys mak INNER JOIN merchant_developer_apps mda ON mda.id=mak.app_id LEFT JOIN distribution_source_connections dsc ON dsc.id=mda.distribution_source_connection_id WHERE mak.key_hash=? AND mak.status='active' LIMIT 1");
     $stmt->execute([$digest]);
     $row = $stmt->fetch();
     if (!$row || (string) $row['app_status'] !== 'active') mg_fail('Invalid public API credential.', 401);
