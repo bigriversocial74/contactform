@@ -162,10 +162,10 @@ document.addEventListener('DOMContentLoaded', function () {
     var data = await getJson('/api/storefront/profile.php?slug=' + encodeURIComponent(slug));
     var store = data.storefront;
     var products = Array.isArray(data.products) ? data.products : [];
-    storeRoot.innerHTML = '<section class="mg-store-hero"><div class="mg-store-cover">' +
-      (store.cover_url ? '<img src="' + escapeHtml(store.cover_url) + '" alt="">' : '') + '</div>' +
+    storeRoot.innerHTML = '<section class="mg-store-hero">' +
+      '<div class="mg-store-cover">' + (store.cover_url ? '<img src="' + escapeHtml(store.cover_url) + '" alt="">' : '') + '</div>' +
       '<div class="mg-store-profile">' + (store.logo_url ? '<img class="mg-store-logo" src="' + escapeHtml(store.logo_url) + '" alt="' + escapeHtml(store.display_name) + '">' : '<div class="mg-store-logo"></div>') +
-      '<div><div class="mg-product-eyebrow">Merchant storefront</div><h1>' + escapeHtml(store.display_name) + '</h1><p>' + escapeHtml(store.headline || store.description || '') + '</p></div></div></section>' +
+      '<div><h1>' + escapeHtml(store.display_name) + '</h1><p>' + escapeHtml(store.headline || store.description || '') + '</p></div></div></section>' +
       (products.length ? '<div class="mg-store-products">' + products.map(function (product) {
         return '<article class="mg-store-card"><a href="' + escapeHtml(product.product_url) + '"><div class="mg-store-card-media">' +
           (product.cover_url ? '<img src="' + escapeHtml(product.cover_url) + '" alt="' + escapeHtml(product.title) + '">' : '') +
