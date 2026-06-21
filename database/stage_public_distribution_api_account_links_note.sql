@@ -1,0 +1,1 @@
+-- Account link schema is tracked in stage_public_distribution_api_foundation.sql.
