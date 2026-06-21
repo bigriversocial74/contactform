@@ -69,6 +69,21 @@ function mg_distribution_worker_mark_failed(PDO $pdo, array $job, string $messag
     return ['job_id'=>(string)$job['public_id'],'status'=>$dead?'dead_letter':'failed','next_attempt_at'=>$next,'message'=>$message];
 }
 
+function mg_distribution_worker_record_failure(PDO $pdo, string $jobId, string $message): array
+{
+    if ($pdo->inTransaction()) $pdo->rollBack();
+    $pdo->beginTransaction();
+    try {
+        $job = mg_distribution_worker_load_job($pdo, $jobId);
+        $result = mg_distribution_worker_mark_failed($pdo, $job, $message);
+        $pdo->commit();
+        return $result;
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        return ['job_id'=>$jobId,'status'=>'failed','message'=>$message];
+    }
+}
+
 function mg_distribution_worker_process_job(PDO $pdo, string $jobId, string $workerId = 'distribution-worker'): array
 {
     $pdo->beginTransaction();
@@ -82,13 +97,11 @@ function mg_distribution_worker_process_job(PDO $pdo, string $jobId, string $wor
         if (!empty($job['next_attempt_at']) && strtotime((string)$job['next_attempt_at']) > time()) throw new RuntimeException('Issuance job is not ready.');
         if ((int)$job['attempts'] >= (int)$job['max_attempts']) throw new RuntimeException('Issuance job has exhausted retries.');
         if (empty($job['recipient_user_id'])) throw new RuntimeException('Recipient is not linked to a Microgifter user.');
-
         $pdo->prepare("UPDATE distribution_issuance_jobs SET status='processing',attempts=attempts+1,locked_at=NOW(),locked_by=?,updated_at=NOW() WHERE id=?")
             ->execute([$workerId,(int)$job['id']]);
         $source = mg_distribution_worker_source($pdo, (int)$job['merchant_user_id']);
         $sourceEventId = mg_distribution_worker_source_event($pdo, $source, $job);
         $request = mg_distribution_worker_request($pdo, $source, $sourceEventId, $job);
-
         $itemPublicId = mg_pppm_item_id();
         $metadata = ['distribution_job_id'=>$job['public_id'],'distribution_allocation_id'=>$job['allocation_public_id'],'distribution_program_id'=>$job['program_public_id'],'template_id'=>$job['template_public_id'],'inbox_delivery'=>true];
         $pdo->prepare("INSERT INTO pppm_items (public_id,issuance_request_id,source_id,unit_sequence,item_type,funding_type,issuer_user_id,merchant_user_id,owner_user_id,recipient_user_id,recipient_external_id,source_reference,source_line_reference,title_snapshot,description_snapshot,value_cents_snapshot,currency_snapshot,terms_snapshot_json,metadata_snapshot_json,status,version_no,issued_at,assigned_at,delivered_at,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'delivered',1,NOW(),NOW(),NOW(),NOW(),NOW())")
@@ -96,7 +109,6 @@ function mg_distribution_worker_process_job(PDO $pdo, string $jobId, string $wor
         $pppmItemDbId = (int)$pdo->lastInsertId();
         $item = $pdo->query('SELECT * FROM pppm_items WHERE id=' . $pppmItemDbId)->fetch();
         mg_pppm_record_event($pdo, $item, 'distribution_inbox_delivered', null, 'delivered', (int)$job['merchant_user_id'], $sourceEventId, $metadata);
-
         $assignmentId = mg_pppm_uuid();
         $pdo->prepare("INSERT INTO pppm_assignments (public_id,pppm_item_id,assignment_type,from_user_id,to_user_id,to_external_id,to_name,status,created_by_user_id,accepted_by_user_id,accepted_at,created_at,updated_at) VALUES (?,?, 'api', ?, ?, ?, NULL, 'accepted', ?, ?, NOW(), NOW(), NOW())")
             ->execute([$assignmentId,$pppmItemDbId,(int)$job['merchant_user_id'],(int)$job['recipient_user_id'],$job['external_recipient_id'] ?? null,(int)$job['merchant_user_id'],(int)$job['recipient_user_id']]);
@@ -106,7 +118,6 @@ function mg_distribution_worker_process_job(PDO $pdo, string $jobId, string $wor
         $deliveryDbId = (int)$pdo->lastInsertId();
         $pdo->prepare("INSERT INTO pppm_delivery_attempts (public_id,delivery_id,schedule_id,attempt_number,provider,status,attempted_at,completed_at,created_at,updated_at) VALUES (?,?,NULL,1,'microgifter_inbox','delivered',NOW(),NOW(),NOW(),NOW())")
             ->execute([mg_pppm_uuid(),$deliveryDbId]);
-
         $pdo->prepare("UPDATE distribution_issuance_jobs SET status='issued',pppm_item_id=?,failure_message=NULL,locked_at=NULL,locked_by=NULL,updated_at=NOW() WHERE id=?")
             ->execute([$pppmItemDbId,(int)$job['id']]);
         $pdo->prepare("UPDATE distribution_programs SET reserved_cents=GREATEST(0,reserved_cents-?),issued_cents=issued_cents+?,issued_items=issued_items+1,updated_at=NOW() WHERE id=?")
@@ -115,7 +126,6 @@ function mg_distribution_worker_process_job(PDO $pdo, string $jobId, string $wor
             ->execute([(int)$job['program_product_id']]);
         $pdo->prepare("UPDATE pppm_issuance_requests SET issued_count=issued_count+1,updated_at=NOW() WHERE id=?")
             ->execute([(int)$request['id']]);
-
         $remaining = $pdo->prepare("SELECT COUNT(*) FROM distribution_issuance_jobs WHERE allocation_id=? AND status<>'issued'");
         $remaining->execute([(int)$job['allocation_id']]);
         if ((int)$remaining->fetchColumn() === 0) {
@@ -133,17 +143,7 @@ function mg_distribution_worker_process_job(PDO $pdo, string $jobId, string $wor
         $pdo->commit();
         return ['job_id'=>$jobId,'status'=>'issued','pppm_item_id'=>$itemPublicId,'delivery_id'=>$deliveryId,'assignment_id'=>$assignmentId];
     } catch (Throwable $e) {
-        if ($pdo->inTransaction()) {
-            try {
-                $job = $job ?? mg_distribution_worker_load_job($pdo, $jobId);
-                $result = mg_distribution_worker_mark_failed($pdo, $job, $e->getMessage());
-                $pdo->commit();
-                return $result;
-            } catch (Throwable $inner) {
-                $pdo->rollBack();
-            }
-        }
-        return ['job_id'=>$jobId,'status'=>'failed','message'=>$e->getMessage()];
+        return mg_distribution_worker_record_failure($pdo, $jobId, $e->getMessage());
     }
 }
 
