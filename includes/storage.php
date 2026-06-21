@@ -19,7 +19,7 @@ function mg_storage_is_absolute_path(string $path): bool
 {
     if($path==='')return false;
     if($path[0]==='/'||$path[0]==='\\')return true;
-    return preg_match('/^[A-Za-z]:[\\\\\/]/',$path)===1;
+    return preg_match('/^[A-Za-z]:[\\\/]/',$path)===1;
 }
 
 function mg_storage_path_is_within(string $path,string $parent): bool
@@ -181,7 +181,10 @@ function mg_storage_store_uploaded_file(string $temporaryPath,string $key): stri
     if($temporaryPath===''||!is_uploaded_file($temporaryPath)){
         throw new InvalidArgumentException('Invalid uploaded file.');
     }
-    mg_storage_assert_ready(false,false);
+    // User-facing uploads should initialize the persistent storage sentinel on
+    // first use so a writable production storage root does not reject media just
+    // because the readiness command has not been run manually yet.
+    mg_storage_assert_ready(true,false);
     $path=mg_storage_absolute_path($key,true);
     if(file_exists($path))throw new RuntimeException('Persistent media destination already exists.');
     if(!move_uploaded_file($temporaryPath,$path)){
@@ -194,7 +197,7 @@ function mg_storage_store_uploaded_file(string $temporaryPath,string $key): stri
 function mg_storage_copy_file(string $sourcePath,string $key): string
 {
     if(!is_file($sourcePath)||!is_readable($sourcePath))throw new RuntimeException('Source media file is unavailable.');
-    mg_storage_assert_ready(false,false);
+    mg_storage_assert_ready(true,false);
     $destination=mg_storage_absolute_path($key,true);
     if(is_file($destination))return $destination;
     $temporary=$destination.'.tmp-'.bin2hex(random_bytes(6));
