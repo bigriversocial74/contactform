@@ -4,7 +4,7 @@ require_once __DIR__ . '/includes/app.php';
 
 $page_title = 'My Feed | Microgifter';
 $page_section = 'feed';
-$header_mode = 'account';
+$header_mode = 'public';
 $page_styles = ['/assets/css/social-feed.css','/assets/css/newsfeed.css'];
 $page_scripts = ['/assets/js/newsfeed.js'];
 $page_manifest = [
@@ -15,6 +15,14 @@ $page_manifest = [
     'styles' => $page_styles,
     'scripts' => $page_scripts,
     'body_class' => 'mg-social-feed-page mg-newsfeed-page',
+    'public_header' => [
+        'presentation' => false,
+        'links' => [
+            ['label' => 'Discover', 'href' => '/discover.php'],
+            ['label' => 'Feed', 'href' => '/feed.php'],
+            ['label' => 'Learn More', 'href' => '/learn-more.php'],
+        ],
+    ],
     'onboarding' => ['enabled' => false, 'page' => 'newfeed', 'sections' => []],
 ];
 require __DIR__ . '/includes/header.php';
