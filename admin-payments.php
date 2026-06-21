@@ -19,6 +19,13 @@ require __DIR__.'/includes/header.php';
         <span class="mg-status-badge" data-payment-readiness>Loading readiness</span>
       </header>
       <section class="mg-payment-security-notice"><strong>Protected credentials</strong><p>Server environment values take priority. Database credentials are encrypted with <code>MG_PAYMENT_CREDENTIAL_KEY</code>, and stored secret values are never returned to the browser.</p></section>
+      <section class="mg-payment-cash-panel">
+        <div><span class="mg-eyebrow">Test payment methods</span><h2>Pay with cash</h2><p>Enable a manual cash option for testing checkout flows without creating a Stripe charge.</p><div class="mg-form-status" data-admin-cash-payment-status></div></div>
+        <form data-admin-cash-payment-form>
+          <label class="mg-toggle-switch"><input type="checkbox" name="cash_enabled" value="1" data-admin-cash-payment-toggle><span class="mg-toggle-control" aria-hidden="true"></span><span class="mg-toggle-copy"><strong>Cash payments</strong><small>Available only as a test/manual payment method.</small></span></label>
+          <button class="mg-btn mg-btn-soft" type="submit">Save cash option</button>
+        </form>
+      </section>
       <div class="mg-payment-admin-grid">
         <section class="mg-app-panel">
           <div class="mg-app-panel-head"><div><h2>Stripe configuration</h2><p>Configure credentials and the platform-share policy for the selected mode.</p></div></div>
