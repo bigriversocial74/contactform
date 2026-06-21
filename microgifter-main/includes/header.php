@@ -62,6 +62,40 @@ $display_initial = strtoupper(substr($display_name !== '' ? $display_name : 'A',
 $user_permissions = is_array($user['permissions'] ?? null) ? $user['permissions'] : [];
 $user_roles = is_array($user['roles'] ?? null) ? $user['roles'] : [];
 
+$account_profile_url = null;
+$account_storefront_url = null;
+if ($user) {
+    try {
+        $accountUserId = (int) ($user['id'] ?? 0);
+        if ($accountUserId > 0) {
+            $pdo = mg_db();
+            $profileStmt = $pdo->prepare("SELECT slug,status,visibility FROM public_profiles WHERE user_id=? LIMIT 1");
+            $profileStmt->execute([$accountUserId]);
+            $profile = $profileStmt->fetch(PDO::FETCH_ASSOC);
+            $profileSlug = trim((string) ($profile['slug'] ?? ''));
+            $profileStatus = (string) ($profile['status'] ?? '');
+            $profileVisibility = (string) ($profile['visibility'] ?? '');
+            if ($profileSlug !== '' && $profileStatus !== 'hidden' && $profileStatus !== 'suspended') {
+                $account_profile_url = '/profile.php?slug=' . rawurlencode($profileSlug);
+                if ($profileStatus !== 'active' || !in_array($profileVisibility, ['public', 'unlisted'], true)) {
+                    $account_profile_url .= '&preview=1';
+                }
+            }
+
+            $storeStmt = $pdo->prepare("SELECT slug,status FROM merchant_storefronts WHERE merchant_user_id=? LIMIT 1");
+            $storeStmt->execute([$accountUserId]);
+            $storefront = $storeStmt->fetch(PDO::FETCH_ASSOC);
+            $storeSlug = trim((string) ($storefront['slug'] ?? ''));
+            if ($storeSlug !== '' && (string) ($storefront['status'] ?? '') === 'published') {
+                $account_storefront_url = '/store.php?s=' . rawurlencode($storeSlug);
+            }
+        }
+    } catch (Throwable) {
+        $account_profile_url = null;
+        $account_storefront_url = null;
+    }
+}
+
 $can_sales_crm = $user && (
     in_array('sales.leads.view_own', $user_permissions, true)
     || in_array('sales.leads.view_all', $user_permissions, true)
@@ -101,6 +135,9 @@ $can_admin_dashboard = $user && (
 <?php if ($is_app_page): ?>
 <link rel="stylesheet" href="/assets/css/app-shell.css">
 <link rel="stylesheet" href="/assets/css/create-menu.css">
+<link rel="stylesheet" href="/assets/css/social-feed.css">
+<link rel="stylesheet" href="/assets/css/social-feed-upload.css">
+<link rel="stylesheet" href="/assets/css/post-composer-modal.css">
 <?php endif; ?>
 <?php if ($section_css): ?><link rel="stylesheet" href="<?= mg_e($section_css) ?>"><?php endif; ?>
 <?php foreach ($page_styles as $style): ?><link rel="stylesheet" href="<?= mg_e($style) ?>"><?php endforeach; ?>

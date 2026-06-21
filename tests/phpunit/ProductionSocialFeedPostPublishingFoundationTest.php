@@ -103,12 +103,15 @@ final class ProductionSocialFeedPostPublishingFoundationTest extends TestCase
     public function testFeedPageProvidesComposerViewsStatesAndOwnerManagement(): void
     {
         $page = $this->read('feed.php');
+        $composer = $this->read('includes/social-feed-composer.php');
+        $source = $page . "\n" . $composer;
+        self::assertStringContainsString("require __DIR__ . '/includes/social-feed-composer.php'", $page);
         foreach ([
             '/assets/css/social-feed.css','/assets/js/social-feed.js','data-social-feed','data-feed-tab="discover"',
             'data-feed-tab="following"','data-feed-tab="mine"','data-post-composer','data-post-form',
             'data-post-save-draft','data-post-publish','data-owner-filter','data-feed-loading',
             'data-feed-empty','data-feed-error','data-feed-retry','data-feed-pagination',
-        ] as $needle) self::assertStringContainsString($needle, $page);
+        ] as $needle) self::assertStringContainsString($needle, $source);
     }
 
     public function testClientWiresCompleteEngagementAndAvoidsHtmlStringInjection(): void
