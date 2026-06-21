@@ -3,7 +3,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/includes/app.php';
 $page_title = 'Cart | Microgifter';
 $page_section = 'cart';
-$header_mode = 'account';
+$header_mode = mg_current_user() ? 'account' : 'public';
 $page_styles = ['/assets/css/checkout.css','/assets/css/account-commerce.css','/assets/css/cart-layout-fixes.css'];
 $page_scripts = [];
 $accountView = 'cart';
