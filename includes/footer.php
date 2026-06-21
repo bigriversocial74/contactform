@@ -24,6 +24,9 @@ if (($page_body_class ?? '') === 'mg-admin-commerce-page') {
     $page_scripts[] = '/assets/js/admin-commerce-workflow.js';
     $late_styles[] = '/assets/css/admin-commerce-drawer.css';
 }
+if (in_array((string) ($page_manifest['id'] ?? ''), ['home', 'index'], true)) {
+    $page_scripts[] = '/assets/js/home-sticky-usa-map.js';
+}
 $core_scripts = [
     '/assets/js/microgifter.js','/assets/js/header-signals.js','/assets/js/create-menu.js','/assets/js/builder-publish-errors.js','/assets/js/api-client.js','/assets/js/global-post-composer.js','/assets/js/agent-folder-counts.js',
     '/assets/js/agent-global-search.js','/assets/js/customer-commerce.js','/assets/js/cart.js','/assets/js/auth.js',
