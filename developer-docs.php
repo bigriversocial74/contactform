@@ -15,7 +15,7 @@ require __DIR__ . '/includes/header.php';
 </section>
 <section style="width:min(1180px,92%);margin:0 auto;padding:54px 0 82px;display:grid;gap:22px">
 <article style="background:#fff;border:1px solid #dce7f4;border-radius:20px;padding:26px"><h2>Overview</h2><p>The Public Distribution API turns external reward events into Microgifter issuance work. A merchant creates a Distribution Program, attaches one or more published products, creates a developer app, and gives the external system scoped access to submit reward events.</p></article>
-<article style="background:#fff;border:1px solid #dce7f4;border-radius:20px;padding:26px"><h2>Quickstart</h2><ol><li>Create or open a Distribution Program.</li><li>Attach the products the program can issue.</li><li>Create a developer app in the merchant workspace.</li><li>Create a test access credential.</li><li>Start an account link for the app user.</li><li>Send the user to the returned link URL.</li><li>Use the returned linked_account_id when issuing rewards.</li></ol></article>
+<article style="background:#fff;border:1px solid #dce7f4;border-radius:20px;padding:26px"><h2>Quickstart</h2><ol><li>Create or open a Distribution Program.</li><li>Attach the products the program can issue.</li><li>Create a developer app in the merchant workspace.</li><li>Create a test access credential.</li><li>Start an account link for the app user.</li><li>Send the user to the returned link URL.</li><li>Use the returned linked_account_id when issuing rewards.</li><li>Configure a webhook URL to receive lifecycle callbacks.</li></ol></article>
 <article style="background:#fff;border:1px solid #dce7f4;border-radius:20px;padding:26px"><h2>Authentication</h2><p>Public requests use bearer authentication. Keep live credentials server-side. Browser and mobile clients should call your backend, and your backend should call Microgifter.</p><pre style="overflow:auto;background:#071225;color:#eaf2ff;border-radius:14px;padding:16px">Authorization: Bearer mg_test_your_access_value
 Content-Type: application/json
 X-Idempotency-Key: achievement-1001</pre></article>
@@ -33,7 +33,11 @@ X-Idempotency-Key: achievement-1001</pre></article>
   "recipient": {"linked_account_id": "linked-account-id"},
   "reward": {"template_id": "program-product-template-id", "quantity": 1}
 }</pre></article>
-<article style="background:#fff;border:1px solid #dce7f4;border-radius:20px;padding:26px"><h2>Webhooks and status</h2><p>Apps can check reward status and receive lifecycle callbacks for accepted, queued, issued, delivered, claimed, redeemed, failed, linked, and unlinked events.</p><pre style="overflow:auto;background:#071225;color:#eaf2ff;border-radius:14px;padding:16px">GET /api/public/v1/rewards/status.php?id=reward-id</pre></article>
+<article style="background:#fff;border:1px solid #dce7f4;border-radius:20px;padding:26px"><h2>Status</h2><p>Reward status returns lifecycle counters plus per-job item references after issuance.</p><pre style="overflow:auto;background:#071225;color:#eaf2ff;border-radius:14px;padding:16px">GET /api/public/v1/rewards/status.php?id=reward-id</pre></article>
+<article style="background:#fff;border:1px solid #dce7f4;border-radius:20px;padding:26px"><h2>Webhooks</h2><p>Configure a webhook URL on the developer app to receive lifecycle callbacks. Microgifter sends JSON events with delivery metadata and a signature header.</p><pre style="overflow:auto;background:#071225;color:#eaf2ff;border-radius:14px;padding:16px">X-Microgifter-Event: reward.delivered
+X-Microgifter-Delivery: delivery-id
+X-Microgifter-Timestamp: 1760000000
+X-Microgifter-Signature: sha256=...</pre><p>Initial events include <code>account_link.approved</code>, <code>account_link.cancelled</code>, <code>account_link.expired</code>, <code>reward.queued</code>, <code>reward.issued</code>, <code>reward.delivered</code>, <code>reward.failed</code>, and <code>webhook.test</code>.</p></article>
 </section>
 </main>
 <?php require __DIR__ . '/includes/footer.php';
