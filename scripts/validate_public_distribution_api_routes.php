@@ -15,6 +15,7 @@ $required = [
     'api/distribution/issuance-worker.php',
     'api/distribution/_developer_webhooks.php',
     'api/distribution/webhook-worker.php',
+    'api/merchant/developer-webhooks.php',
     'api/merchant/developer-webhook-test.php',
     'api/merchant/developer-api-launch-qa.php',
     'api/merchant/developer-api-go-live.php',
@@ -39,6 +40,7 @@ $required = [
     'docs/public-api-webhook-verification-examples.md',
     'docs/public-api-sandbox-live-guide.md',
     'assets/js/merchant-developer-api-analytics.js',
+    'assets/js/merchant-developer-webhooks.js',
     'account-link.php',
     'developer-docs.php',
 ];
