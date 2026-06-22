@@ -7,6 +7,7 @@ Stage API-15 packages the Public Distribution API for an outside developer and a
 - Developer setup sequence from sandbox to live.
 - Copy/paste API examples.
 - A standalone test app that validates the docs.
+- A fuller Local Quest Rewards demo ecosystem.
 - Webhook signature verification.
 - Error code reference.
 - Launch checklist for merchants.
@@ -50,6 +51,12 @@ The docs are not finished until `examples/microgifter-api-test-app/` can be conf
 8. Receive and verify at least one webhook delivery.
 9. Patch the docs for every unclear field, response, status, or error exposed by the test app.
 
+## Full demo ecosystem
+
+`examples/local-quest-rewards/` is the first fuller app ecosystem. It adds guest identity, local quest state, quest-to-reward mapping, a local permission check, reward issue, reward status, webhook logging, and event history.
+
+Use this app to drive the Microgift permission-system pass.
+
 ## Required public endpoints
 
 - `GET /api/public/v1/programs/index.php`
@@ -78,4 +85,6 @@ The docs are not finished until `examples/microgifter-api-test-app/` can be conf
 - `docs/public-api-webhook-verification-examples.md`
 - `docs/public-api-sandbox-live-guide.md`
 - `docs/public-api-app-ideas.md`
+- `docs/microgift-permission-system-plan.md`
 - `examples/microgifter-api-test-app/README.md`
+- `examples/local-quest-rewards/README.md`
