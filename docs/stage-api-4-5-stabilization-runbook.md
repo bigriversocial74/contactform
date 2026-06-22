@@ -46,7 +46,7 @@ Run the existing migrations in this order for the public API path:
 7. Developer receives `linked_account_id` on return URL.
 8. Developer calls reward issue with `linked_account_id`.
 9. Worker runs and creates a delivered PPPM item.
-10. Developer calls reward status and sees reward lifecycle counts.
+10. Developer calls reward status and sees reward lifecycle counts plus each job's `pppm_item_id` after issuance.
 11. Recipient sees the item in the Microgifter INBOX.
 
 ## Cleanup decisions
@@ -54,4 +54,4 @@ Run the existing migrations in this order for the public API path:
 - The nested `account-links/start.php` route is retained as an alias so external developers can use REST-style docs paths without hitting a placeholder.
 - `account-link-start.php` remains the flat canonical implementation because the connector originally blocked the nested write path during Stage API-3.
 - The route validator checks required files exist but does not make network calls or require live credentials.
-- A future status enrichment should expose per-job PPPM item IDs once the connector allows the status endpoint patch.
+- Reward status now returns a `jobs` array with per-job status plus `pppm_item_id` and `pppm_item_status` when the worker has issued the item.
