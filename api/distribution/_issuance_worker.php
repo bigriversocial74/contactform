@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . '/_distribution.php';
+require_once __DIR__ . '/_developer_webhooks.php';
 require_once dirname(__DIR__) . '/pppm/_pppm.php';
 
 function mg_distribution_worker_source(PDO $pdo, int $merchantUserId): array
@@ -19,7 +20,7 @@ function mg_distribution_worker_source(PDO $pdo, int $merchantUserId): array
 
 function mg_distribution_worker_load_job(PDO $pdo, string $jobId): array
 {
-    $stmt = $pdo->prepare("SELECT dij.*,da.public_id AS allocation_public_id,da.program_id,da.source_event_id,da.recipient_id,da.program_product_id,da.quantity,da.unit_value_cents,da.status AS allocation_status,dp.public_id AS program_public_id,dp.merchant_user_id,dr.user_id AS recipient_user_id,dr.external_recipient_id,cpt.public_id AS template_public_id,cpt.item_type,cpt.default_funding_type,cpt.issuance_defaults_json,cpv.title,cpv.description,cpv.currency,cpv.terms_json,cpv.metadata_json,dse.public_id AS source_event_public_id,dse.source_type AS distribution_source_type FROM distribution_issuance_jobs dij INNER JOIN distribution_allocations da ON da.id=dij.allocation_id INNER JOIN distribution_programs dp ON dp.id=da.program_id INNER JOIN distribution_recipients dr ON dr.id=da.recipient_id INNER JOIN distribution_program_products dpp ON dpp.id=da.program_product_id INNER JOIN catalog_pppm_templates cpt ON cpt.id=dpp.pppm_template_id INNER JOIN catalog_product_versions cpv ON cpv.id=cpt.product_version_id LEFT JOIN distribution_source_events dse ON dse.id=da.source_event_id WHERE dij.public_id=? LIMIT 1 FOR UPDATE");
+    $stmt = $pdo->prepare("SELECT dij.*,da.public_id AS allocation_public_id,da.program_id,da.source_event_id,da.recipient_id,da.program_product_id,da.quantity,da.unit_value_cents,da.status AS allocation_status,dp.public_id AS program_public_id,dp.merchant_user_id,dr.user_id AS recipient_user_id,dr.external_recipient_id,cpt.public_id AS template_public_id,cpt.item_type,cpt.default_funding_type,cpt.issuance_defaults_json,cpv.title,cpv.description,cpv.currency,cpv.terms_json,cpv.metadata_json,dse.public_id AS source_event_public_id,dse.source_type AS distribution_source_type,mda.id AS developer_app_id,mda.public_id AS developer_app_public_id FROM distribution_issuance_jobs dij INNER JOIN distribution_allocations da ON da.id=dij.allocation_id INNER JOIN distribution_programs dp ON dp.id=da.program_id INNER JOIN distribution_recipients dr ON dr.id=da.recipient_id INNER JOIN distribution_program_products dpp ON dpp.id=da.program_product_id INNER JOIN catalog_pppm_templates cpt ON cpt.id=dpp.pppm_template_id INNER JOIN catalog_product_versions cpv ON cpv.id=cpt.product_version_id LEFT JOIN distribution_source_events dse ON dse.id=da.source_event_id LEFT JOIN merchant_developer_apps mda ON mda.distribution_source_connection_id=dse.connection_id AND mda.merchant_user_id=dp.merchant_user_id WHERE dij.public_id=? LIMIT 1 FOR UPDATE");
     $stmt->execute([$jobId]);
     $job = $stmt->fetch();
     if (!$job) throw new RuntimeException('Issuance job not found.');
@@ -66,6 +67,9 @@ function mg_distribution_worker_mark_failed(PDO $pdo, array $job, string $messag
         $pdo->prepare("UPDATE distribution_allocations SET status='failed',failure_message=?,updated_at=NOW() WHERE id=? AND status<>'issued'")
             ->execute([substr($message,0,500),(int)$job['allocation_id']]);
     }
+    if (!empty($job['developer_app_id'])) {
+        mg_dev_webhook_event($pdo,(int)$job['developer_app_id'],(int)$job['merchant_user_id'],'reward.failed',['reward_id'=>(string)$job['allocation_public_id'],'job_id'=>(string)$job['public_id'],'status'=>$dead?'dead_letter':'failed','failure_message'=>substr($message,0,500)],!empty($job['source_event_id'])?(int)$job['source_event_id']:null,'reward',(string)$job['allocation_public_id']);
+    }
     return ['job_id'=>(string)$job['public_id'],'status'=>$dead?'dead_letter':'failed','next_attempt_at'=>$next,'message'=>$message];
 }
 
@@ -106,11 +110,9 @@ function mg_distribution_worker_process_job(PDO $pdo, string $jobId, string $wor
         $item = $pdo->query('SELECT * FROM pppm_items WHERE id=' . $pppmItemDbId)->fetch();
         mg_pppm_record_event($pdo, $item, 'distribution_inbox_delivered', null, 'delivered', (int)$job['merchant_user_id'], $sourceEventId, $metadata);
         $assignmentId = mg_pppm_uuid();
-        $pdo->prepare("INSERT INTO pppm_assignments (public_id,pppm_item_id,assignment_type,from_user_id,to_user_id,to_external_id,to_name,status,created_by_user_id,accepted_by_user_id,accepted_at,created_at,updated_at) VALUES (?,?, 'api', ?, ?, ?, NULL, 'accepted', ?, ?, NOW(), NOW(), NOW())")
-            ->execute([$assignmentId,$pppmItemDbId,(int)$job['merchant_user_id'],(int)$job['recipient_user_id'],$job['external_recipient_id'] ?? null,(int)$job['merchant_user_id'],(int)$job['recipient_user_id']]);
+        $pdo->prepare("INSERT INTO pppm_assignments (public_id,pppm_item_id,assignment_type,from_user_id,to_user_id,to_external_id,to_name,status,created_by_user_id,accepted_by_user_id,accepted_at,created_at,updated_at) VALUES (?,?, 'api', ?, ?, ?, NULL, 'accepted', ?, ?, NOW(), NOW(), NOW())")->execute([$assignmentId,$pppmItemDbId,(int)$job['merchant_user_id'],(int)$job['recipient_user_id'],$job['external_recipient_id'] ?? null,(int)$job['merchant_user_id'],(int)$job['recipient_user_id']]);
         $deliveryId = mg_pppm_uuid();
-        $pdo->prepare("INSERT INTO pppm_deliveries (public_id,pppm_item_id,channel,destination,status,provider,queued_at,sent_at,delivered_at,created_at,updated_at) VALUES (?,?,'api',?,'delivered','microgifter_inbox',NOW(),NOW(),NOW(),NOW(),NOW())")
-            ->execute([$deliveryId,$pppmItemDbId,'user:' . (int)$job['recipient_user_id']]);
+        $pdo->prepare("INSERT INTO pppm_deliveries (public_id,pppm_item_id,channel,destination,status,provider,queued_at,sent_at,delivered_at,created_at,updated_at) VALUES (?,?,'api',?,'delivered','microgifter_inbox',NOW(),NOW(),NOW(),NOW(),NOW())")->execute([$deliveryId,$pppmItemDbId,'user:' . (int)$job['recipient_user_id']]);
         $deliveryDbId = (int)$pdo->lastInsertId();
         $pdo->prepare("INSERT INTO pppm_delivery_attempts (public_id,delivery_id,schedule_id,attempt_number,provider,status,attempted_at,completed_at,created_at,updated_at) VALUES (?,?,NULL,1,'microgifter_inbox','delivered',NOW(),NOW(),NOW(),NOW())")->execute([mg_pppm_uuid(),$deliveryDbId]);
         $pdo->prepare("UPDATE distribution_issuance_jobs SET status='issued',pppm_item_id=?,failure_message=NULL,locked_at=NULL,locked_by=NULL,updated_at=NOW() WHERE id=?")->execute([$pppmItemDbId,(int)$job['id']]);
@@ -129,8 +131,12 @@ function mg_distribution_worker_process_job(PDO $pdo, string $jobId, string $wor
             $pdo->prepare("UPDATE distribution_recipients SET eligibility_status='allocated',updated_at=NOW() WHERE id=? AND eligibility_status<>'fulfilled'")->execute([(int)$job['recipient_id']]);
         }
         $pdo->prepare("UPDATE pppm_source_events SET processing_status='processed',processed_at=NOW(),updated_at=NOW() WHERE id=?")->execute([$sourceEventId]);
-        $pdo->prepare("INSERT INTO distribution_daily_metrics (metric_date,merchant_user_id,program_id,source_type,items_issued,issued_value_cents,updated_at) VALUES (CURRENT_DATE(),?,?,?,?,?,NOW()) ON DUPLICATE KEY UPDATE items_issued=items_issued+VALUES(items_issued),issued_value_cents=issued_value_cents+VALUES(issued_value_cents),updated_at=NOW()")
-            ->execute([(int)$job['merchant_user_id'],(int)$job['program_id'],(string)($job['distribution_source_type'] ?: 'api'),1,(int)$job['unit_value_cents']]);
+        $pdo->prepare("INSERT INTO distribution_daily_metrics (metric_date,merchant_user_id,program_id,source_type,items_issued,issued_value_cents,updated_at) VALUES (CURRENT_DATE(),?,?,?,?,?,NOW()) ON DUPLICATE KEY UPDATE items_issued=items_issued+VALUES(items_issued),issued_value_cents=issued_value_cents+VALUES(issued_value_cents),updated_at=NOW()")->execute([(int)$job['merchant_user_id'],(int)$job['program_id'],(string)($job['distribution_source_type'] ?: 'api'),1,(int)$job['unit_value_cents']]);
+        if (!empty($job['developer_app_id'])) {
+            $payload = ['reward_id'=>(string)$job['allocation_public_id'],'job_id'=>$jobId,'pppm_item_id'=>$itemPublicId,'delivery_id'=>$deliveryId,'program_id'=>(string)$job['program_public_id'],'template_id'=>(string)$job['template_public_id']];
+            mg_dev_webhook_event($pdo,(int)$job['developer_app_id'],(int)$job['merchant_user_id'],'reward.issued',$payload,!empty($job['source_event_id'])?(int)$job['source_event_id']:null,'reward',(string)$job['allocation_public_id']);
+            mg_dev_webhook_event($pdo,(int)$job['developer_app_id'],(int)$job['merchant_user_id'],'reward.delivered',$payload,!empty($job['source_event_id'])?(int)$job['source_event_id']:null,'reward',(string)$job['allocation_public_id']);
+        }
         $pdo->commit();
         return ['job_id'=>$jobId,'status'=>'issued','pppm_item_id'=>$itemPublicId,'delivery_id'=>$deliveryId,'assignment_id'=>$assignmentId];
     } catch (Throwable $e) {
