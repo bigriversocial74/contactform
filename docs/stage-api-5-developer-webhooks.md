@@ -33,6 +33,7 @@ Payload:
 
 ## Initial lifecycle events
 
+- `account_link.started`
 - `account_link.approved`
 - `account_link.cancelled`
 - `account_link.expired`
