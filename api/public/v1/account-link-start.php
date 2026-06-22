@@ -60,6 +60,21 @@ $pdo->prepare("UPDATE developer_app_link_requests SET status='expired',updated_a
 $pdo->prepare("INSERT INTO developer_app_link_requests (public_id,app_id,merchant_user_id,link_code_hash,external_user_id,external_user_hash,return_url,state,status,metadata_json,expires_at,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?, 'pending', ?, ?, NOW(), NOW())")
     ->execute([$requestId,(int)$context['app_id'],(int)$context['merchant_user_id'],hash('sha256',$code),$externalUserId,$externalHash,$returnUrl,$state,mg_distribution_json($metadata),$expiresAt]);
 
+$webhookEventId = mg_distribution_uuid();
+$webhookPayload = [
+    'id' => $webhookEventId,
+    'type' => 'account_link.started',
+    'created_at' => gmdate('c'),
+    'app_id' => (string)$context['app_public_id'],
+    'data' => [
+        'link_request_id' => $requestId,
+        'external_user_id' => $externalUserId,
+        'expires_at' => $expiresAt,
+    ],
+];
+$pdo->prepare("INSERT INTO developer_webhook_events (public_id,app_id,merchant_user_id,source_event_id,event_type,aggregate_type,aggregate_public_id,payload_json,status,created_at,updated_at) VALUES (?,?,?,NULL,'account_link.started','account_link',?,?,?,NOW(),NOW())")
+    ->execute([$webhookEventId,(int)$context['app_id'],(int)$context['merchant_user_id'],$requestId,mg_distribution_json($webhookPayload),!empty($app['webhook_url']) ? 'queued' : 'skipped']);
+
 $linkUrl = mg_account_link_base_url() . '/account-link.php?code=' . rawurlencode($code);
 mg_public_log($pdo, $context, 201, 'link_started');
 mg_ok(['link_request_id'=>$requestId,'link_url'=>$linkUrl,'expires_at'=>$expiresAt,'external_user_id'=>$externalUserId], 'Account link started.', 201);
