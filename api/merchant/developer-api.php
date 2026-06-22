@@ -54,6 +54,45 @@
      return $app;
  }
 
+ function mg_developer_api_fetch_analytics(PDO $pdo, int $merchantUserId): array
+ {
+     $requestTotals = $pdo->prepare("SELECT COUNT(*) total_requests, SUM(created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)) requests_24h, SUM(status_code >= 400) error_requests, SUM(status_code >= 400 AND created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)) errors_24h, SUM(status_code=429) rate_limited_requests, SUM(status_code=429 AND created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)) rate_limited_24h FROM distribution_api_request_logs WHERE merchant_user_id=?");
+     $requestTotals->execute([$merchantUserId]);
+     $totals = $requestTotals->fetch() ?: [];
+
+     $daily = $pdo->prepare("SELECT DATE(created_at) AS day, COUNT(*) requests, SUM(status_code >= 400) errors, SUM(status_code=429) rate_limited FROM distribution_api_request_logs WHERE merchant_user_id=? AND created_at >= DATE_SUB(CURDATE(), INTERVAL 13 DAY) GROUP BY DATE(created_at) ORDER BY day ASC");
+     $daily->execute([$merchantUserId]);
+
+     $status = $pdo->prepare("SELECT CASE WHEN status_code BETWEEN 200 AND 299 THEN '2xx' WHEN status_code BETWEEN 300 AND 399 THEN '3xx' WHEN status_code BETWEEN 400 AND 499 THEN '4xx' WHEN status_code >= 500 THEN '5xx' ELSE 'unknown' END AS status_family, response_status, COUNT(*) requests FROM distribution_api_request_logs WHERE merchant_user_id=? AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) GROUP BY status_family,response_status ORDER BY requests DESC,status_family ASC LIMIT 20");
+     $status->execute([$merchantUserId]);
+
+     $apps = $pdo->prepare("SELECT mda.public_id,mda.name,mda.environment,mda.status, COUNT(darl.id) requests_7d, SUM(darl.status_code >= 400) errors_7d, SUM(darl.status_code=429) rate_limited_7d, MAX(darl.created_at) last_request_at FROM merchant_developer_apps mda LEFT JOIN distribution_api_request_logs darl ON darl.app_id=mda.id AND darl.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) WHERE mda.merchant_user_id=? GROUP BY mda.id ORDER BY requests_7d DESC,mda.updated_at DESC LIMIT 25");
+     $apps->execute([$merchantUserId]);
+
+     $keys = $pdo->prepare("SELECT mak.public_id,mak.name,mak.environment,mak.key_prefix,mak.status,mda.name AS app_name, COUNT(darl.id) requests_7d, SUM(darl.status_code >= 400) errors_7d, SUM(darl.status_code=429) rate_limited_7d, MAX(darl.created_at) last_request_at FROM merchant_api_keys mak INNER JOIN merchant_developer_apps mda ON mda.id=mak.app_id LEFT JOIN distribution_api_request_logs darl ON darl.api_key_id=mak.id AND darl.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) WHERE mak.merchant_user_id=? GROUP BY mak.id,mda.id ORDER BY requests_7d DESC,mak.created_at DESC LIMIT 25");
+     $keys->execute([$merchantUserId]);
+
+     $quota = $pdo->prepare("SELECT paqb.bucket_scope,paqb.bucket_key,paqb.limit_value,paqb.used_count,paqb.window_start,paqb.window_end,mak.key_prefix,mda.name AS app_name FROM public_api_quota_buckets paqb INNER JOIN merchant_api_keys mak ON mak.id=paqb.api_key_id INNER JOIN merchant_developer_apps mda ON mda.id=paqb.app_id WHERE paqb.merchant_user_id=? AND paqb.window_end > NOW() ORDER BY FIELD(paqb.bucket_scope,'minute','day','month'),paqb.used_count DESC LIMIT 30");
+     $quota->execute([$merchantUserId]);
+
+     $webhooks = $pdo->prepare("SELECT event_type,status,COUNT(*) events,MAX(created_at) last_event_at FROM developer_webhook_events WHERE merchant_user_id=? AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) GROUP BY event_type,status ORDER BY events DESC,event_type ASC LIMIT 25");
+     $webhooks->execute([$merchantUserId]);
+
+     $sandbox = $pdo->prepare("SELECT COUNT(*) sandbox_rewards, SUM(created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)) sandbox_rewards_24h, MAX(created_at) last_sandbox_reward_at FROM public_api_sandbox_rewards WHERE merchant_user_id=?");
+     $sandbox->execute([$merchantUserId]);
+
+     return [
+         'totals' => $totals,
+         'daily' => $daily->fetchAll(),
+         'status_breakdown' => $status->fetchAll(),
+         'apps' => $apps->fetchAll(),
+         'keys' => $keys->fetchAll(),
+         'quota_buckets' => $quota->fetchAll(),
+         'webhooks' => $webhooks->fetchAll(),
+         'sandbox' => $sandbox->fetch() ?: [],
+     ];
+ }
+
  $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
  $user = mg_require_permission($method === 'GET' ? 'merchant.developer_api.view' : 'merchant.developer_api.manage');
  $pdo = mg_db();
@@ -71,7 +110,7 @@
      $summary->execute([(int) $user['id']]);
      $keySummary = $pdo->prepare("SELECT COUNT(*) key_count,SUM(status='active') active_keys FROM merchant_api_keys WHERE merchant_user_id=?");
      $keySummary->execute([(int) $user['id']]);
-     mg_ok(['summary' => array_merge($summary->fetch() ?: [], $keySummary->fetch() ?: []),'programs' => $programs->fetchAll(),'apps' => $apps->fetchAll(),'keys' => $keys->fetchAll(),'logs' => $logs->fetchAll(),'scopes' => ['distribution:programs.read','distribution:rewards.issue','distribution:rewards.status','distribution:webhooks.manage']]);
+     mg_ok(['summary' => array_merge($summary->fetch() ?: [], $keySummary->fetch() ?: []),'programs' => $programs->fetchAll(),'apps' => $apps->fetchAll(),'keys' => $keys->fetchAll(),'logs' => $logs->fetchAll(),'analytics' => mg_developer_api_fetch_analytics($pdo, (int)$user['id']),'scopes' => ['distribution:programs.read','distribution:rewards.issue','distribution:rewards.status','distribution:webhooks.manage']]);
  }
 
  if ($method !== 'POST') mg_fail('Method not allowed.', 405);
