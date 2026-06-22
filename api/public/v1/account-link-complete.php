@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . '/_public.php';
+require_once dirname(__DIR__, 2) . '/distribution/_developer_webhooks.php';
 
 function mg_account_link_redirect(string $url, array $params): void
 {
@@ -28,6 +29,7 @@ try {
     if ((string)$request['status'] !== 'pending') mg_fail('Account link request has already been completed.', 409);
     if (!empty($request['expires_at']) && strtotime((string)$request['expires_at']) < time()) {
         $pdo->prepare("UPDATE developer_app_link_requests SET status='expired',updated_at=NOW() WHERE id=?")->execute([(int)$request['id']]);
+        mg_dev_webhook_event($pdo,(int)$request['app_id'],(int)$request['merchant_user_id'],'account_link.expired',['link_request_id'=>(string)$request['public_id'],'external_user_id'=>(string)$request['external_user_id']],null,'account_link',(string)$request['public_id']);
         $pdo->commit();
         mg_account_link_redirect((string)$request['return_url'], ['status'=>'expired','external_user_id'=>(string)$request['external_user_id'],'state'=>(string)($request['state'] ?? '')]);
     }
@@ -35,6 +37,7 @@ try {
 
     if ($action === 'cancel') {
         $pdo->prepare("UPDATE developer_app_link_requests SET status='cancelled',completed_at=NOW(),updated_at=NOW() WHERE id=?")->execute([(int)$request['id']]);
+        mg_dev_webhook_event($pdo,(int)$request['app_id'],(int)$request['merchant_user_id'],'account_link.cancelled',['link_request_id'=>(string)$request['public_id'],'external_user_id'=>(string)$request['external_user_id']],null,'account_link',(string)$request['public_id']);
         $pdo->commit();
         mg_account_link_redirect((string)$request['return_url'], ['status'=>'cancelled','external_user_id'=>(string)$request['external_user_id'],'state'=>(string)($request['state'] ?? '')]);
     }
@@ -48,6 +51,7 @@ try {
     $linkedPublicId = (string)($fetchLink->fetchColumn() ?: $linkedId);
     $pdo->prepare("UPDATE developer_app_link_requests SET status='approved',approved_user_id=?,linked_account_public_id=?,completed_at=NOW(),updated_at=NOW() WHERE id=?")
         ->execute([(int)$user['id'],$linkedPublicId,(int)$request['id']]);
+    mg_dev_webhook_event($pdo,(int)$request['app_id'],(int)$request['merchant_user_id'],'account_link.approved',['link_request_id'=>(string)$request['public_id'],'linked_account_id'=>$linkedPublicId,'external_user_id'=>(string)$request['external_user_id']],null,'account_link',$linkedPublicId);
     $pdo->commit();
     mg_audit('developer_app_user_linked', 'developer_app_user_link', ['app_id'=>(string)$request['app_public_id'],'linked_account_id'=>$linkedPublicId], (int)$user['id']);
     mg_account_link_redirect((string)$request['return_url'], ['status'=>'linked','linked_account_id'=>$linkedPublicId,'external_user_id'=>(string)$request['external_user_id'],'state'=>(string)($request['state'] ?? '')]);
