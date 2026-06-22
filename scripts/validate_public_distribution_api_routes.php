@@ -18,8 +18,10 @@ $required = [
     'scripts/run_distribution_issuance_worker.php',
     'scripts/run_distribution_webhook_worker.php',
     'database/stage_public_distribution_api_webhooks.sql',
+    'database/stage_public_distribution_api_quotas.sql',
     'docs/stage-api-5-developer-webhooks.md',
     'docs/stage-api-6-public-docs-examples.md',
+    'docs/stage-api-7-rate-limits-quotas.md',
     'account-link.php',
     'developer-docs.php',
 ];
