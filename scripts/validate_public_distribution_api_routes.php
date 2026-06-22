@@ -27,6 +27,7 @@ $required = [
     'docs/stage-api-8-sandbox-flow.md',
     'docs/stage-api-9-dashboard-analytics.md',
     'docs/stage-api-10-developer-onboarding.md',
+    'docs/stage-api-12-webhook-hardening.md',
     'assets/js/merchant-developer-api-analytics.js',
     'account-link.php',
     'developer-docs.php',
