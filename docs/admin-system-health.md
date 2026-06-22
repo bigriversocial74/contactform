@@ -9,7 +9,7 @@ The dashboard reports:
 - Persistent media readiness, initialization, write access, and whether storage is outside the web root.
 - Persistent media file count, recorded bytes, free disk capacity, unattached uploads, and a bounded missing-file scan.
 - Notification delivery totals for queued, overdue, processing, sent, delivered, failed, retrying, and suppressed jobs.
-- Canonical database migration status and the most recently applied migration.
+- Canonical database migration status, missing migration file names, recovery command guidance, and the most recently applied migration.
 - Database, runtime environment, runtime profile, and PHP version.
 - Recent warning, error, and critical security events plus open operational alerts.
 
@@ -22,9 +22,10 @@ Recovery actions require a `super_admin` role. Every request is CSRF-protected, 
 - **Verify storage** performs a temporary write, read, checksum comparison, and delete probe.
 - **Retry failed notifications** requeues at most 100 failed jobs with fewer than five attempts.
 - **Clean abandoned uploads** archives and removes at most 100 persistent feed uploads that are older than 24 hours, unattached, and not referenced by post media JSON.
+- **Prepare migration recovery** returns a read-only migration plan with the missing migration files and the canonical runner command: `php scripts/run_migrations.php`. It does not execute DDL from the browser.
 
 The action endpoint is `/api/admin/system-health-action.php`.
 
 ## Safety limits
 
-The dashboard checks at most 500 recent persistent files per page load. The UI clearly identifies when that scan is limited. Recovery actions operate on at most 100 records per request, and destructive cleanup confirms the action in the browser before sending it.
+The dashboard checks at most 500 recent persistent files per page load. The UI clearly identifies when that scan is limited. Recovery actions operate on at most 100 records per request, and destructive cleanup confirms the action in the browser before sending it. Migration recovery is read-only and only prepares the operator command.
