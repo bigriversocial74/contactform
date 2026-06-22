@@ -37,7 +37,10 @@ $files = [
     'api/merchant/developer-api-launch-qa.php',
     'api/merchant/developer-api-go-live.php',
     'developer-docs.php',
+    'database/developer_api_single_install.sql',
+    'docs/developer-api-sql-install.md',
     'docs/stage-api-15-launch-package.md',
+    'docs/stage-api-16-launch-validation.md',
     'docs/public-api-launch-checklist.md',
     'docs/public-api-error-reference.md',
     'docs/public-api-webhook-verification-examples.md',
@@ -92,6 +95,17 @@ mg_check_contains($checks, 'public developer docs launch path', $developerDocs, 
     'Query-string credentials are not supported.',
     'Webhook verification examples',
     'Full error reference',
+]);
+
+$sqlPackage = mg_read_required($root, 'database/developer_api_single_install.sql');
+mg_check_contains($checks, 'single developer api sql package', $sqlPackage, [
+    'merchant_developer_apps',
+    'merchant_api_keys',
+    'developer_app_link_requests',
+    'developer_webhook_events',
+    'public_api_quota_buckets',
+    'public_api_sandbox_rewards',
+    'stage_public_distribution_api_foundation',
 ]);
 
 $errorReference = mg_read_required($root, 'docs/public-api-error-reference.md');

@@ -24,7 +24,12 @@ $registered = array_merge($ordered, $manualOnly);
 $discovered = [];
 foreach (glob($databaseDir . '/*.sql') ?: [] as $path) {
     $name = basename($path);
-    if (str_contains($name, 'combined') || str_contains($name, 'generated') || str_contains($name, 'full_upgrade')) {
+    if (
+        str_contains($name, 'combined') ||
+        str_contains($name, 'generated') ||
+        str_contains($name, 'full_upgrade') ||
+        str_contains($name, 'single_install')
+    ) {
         continue;
     }
     $discovered[] = $name;
