@@ -25,6 +25,8 @@ $required = [
     'docs/stage-api-6-public-docs-examples.md',
     'docs/stage-api-7-rate-limits-quotas.md',
     'docs/stage-api-8-sandbox-flow.md',
+    'docs/stage-api-9-dashboard-analytics.md',
+    'assets/js/merchant-developer-api-analytics.js',
     'account-link.php',
     'developer-docs.php',
 ];
