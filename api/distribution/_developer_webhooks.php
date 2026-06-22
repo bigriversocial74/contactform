@@ -17,13 +17,7 @@ function mg_dev_webhook_event(PDO $pdo, ?int $appId, int $merchantUserId, string
     $app = $appStmt->fetch();
     if (!$app || (string)$app['status'] !== 'active') return null;
     $eventId = mg_distribution_uuid();
-    $payload = [
-        'id' => $eventId,
-        'type' => $eventType,
-        'created_at' => gmdate('c'),
-        'app_id' => (string)$app['public_id'],
-        'data' => $data,
-    ];
+    $payload = ['id'=>$eventId,'type'=>$eventType,'created_at'=>gmdate('c'),'app_id'=>(string)$app['public_id'],'data'=>$data];
     $status = trim((string)($app['webhook_url'] ?? '')) === '' ? 'skipped' : 'queued';
     $pdo->prepare("INSERT INTO developer_webhook_events (public_id,app_id,merchant_user_id,source_event_id,event_type,aggregate_type,aggregate_public_id,payload_json,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,NOW(),NOW())")
         ->execute([$eventId,$appId,$merchantUserId,$sourceEventId,$eventType,$aggregateType,$aggregatePublicId,mg_dev_webhook_json($payload),$status]);
@@ -33,6 +27,26 @@ function mg_dev_webhook_event(PDO $pdo, ?int $appId, int $merchantUserId, string
 function mg_dev_webhook_signature(string $payload, string $timestamp, string $secret): string
 {
     return 'sha256=' . hash_hmac('sha256', $timestamp . '.' . $payload, $secret);
+}
+
+function mg_dev_webhook_literal_private_host(string $host): bool
+{
+    $host = trim($host, '[]');
+    if (strcasecmp($host, 'localhost') === 0) return true;
+    if (!filter_var($host, FILTER_VALIDATE_IP)) return false;
+    return !filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
+}
+
+function mg_dev_webhook_url_allowed(string $url, string $environment): bool
+{
+    $parts = parse_url($url);
+    if (!is_array($parts) || empty($parts['scheme']) || empty($parts['host'])) return false;
+    $scheme = strtolower((string)$parts['scheme']);
+    $environment = strtolower($environment) === 'live' ? 'live' : 'test';
+    if (!in_array($scheme, ['https','http'], true)) return false;
+    if ($environment === 'live' && $scheme !== 'https') return false;
+    if ($environment === 'live' && mg_dev_webhook_literal_private_host((string)$parts['host'])) return false;
+    return true;
 }
 
 function mg_dev_webhook_post(string $url, string $payload, array $headers): array
@@ -57,7 +71,7 @@ function mg_dev_webhook_deliver_one(PDO $pdo, string $eventPublicId, string $wor
 {
     $pdo->beginTransaction();
     try {
-        $stmt = $pdo->prepare("SELECT dwe.*,mda.public_id AS app_public_id,mda.webhook_url,mda.webhook_secret_hash,mda.status AS app_status FROM developer_webhook_events dwe INNER JOIN merchant_developer_apps mda ON mda.id=dwe.app_id WHERE dwe.public_id=? LIMIT 1 FOR UPDATE");
+        $stmt = $pdo->prepare("SELECT dwe.*,mda.public_id AS app_public_id,mda.webhook_url,mda.webhook_secret_hash,mda.environment AS app_environment,mda.status AS app_status FROM developer_webhook_events dwe INNER JOIN merchant_developer_apps mda ON mda.id=dwe.app_id WHERE dwe.public_id=? LIMIT 1 FOR UPDATE");
         $stmt->execute([$eventPublicId]);
         $event = $stmt->fetch();
         if (!$event) throw new RuntimeException('Webhook event not found.');
@@ -65,33 +79,33 @@ function mg_dev_webhook_deliver_one(PDO $pdo, string $eventPublicId, string $wor
         if (!in_array((string)$event['status'], ['queued','failed'], true)) throw new RuntimeException('Webhook event is not deliverable.');
         if (!empty($event['next_attempt_at']) && strtotime((string)$event['next_attempt_at']) > time()) throw new RuntimeException('Webhook event is not ready.');
         if ((int)$event['attempts'] >= (int)$event['max_attempts']) throw new RuntimeException('Webhook event has exhausted retries.');
-        if ((string)$event['app_status'] !== 'active' || trim((string)$event['webhook_url']) === '') {
+        $webhookUrl = trim((string)$event['webhook_url']);
+        if ((string)$event['app_status'] !== 'active' || $webhookUrl === '') {
             $pdo->prepare("UPDATE developer_webhook_events SET status='skipped',failure_message='Webhook URL is not configured.',updated_at=NOW() WHERE id=?")->execute([(int)$event['id']]);
             $pdo->commit();
             return ['event_id'=>$eventPublicId,'status'=>'skipped'];
         }
+        if (!mg_dev_webhook_url_allowed($webhookUrl, (string)$event['app_environment'])) {
+            $pdo->prepare("UPDATE developer_webhook_events SET status='dead_letter',failure_message='Webhook URL is blocked by environment policy.',updated_at=NOW() WHERE id=?")->execute([(int)$event['id']]);
+            $pdo->commit();
+            return ['event_id'=>$eventPublicId,'status'=>'dead_letter','policy_error'=>true];
+        }
         $attemptNumber = (int)$event['attempts'] + 1;
         $payload = (string)$event['payload_json'];
         $timestamp = (string)time();
-        $secret = (string)($event['webhook_secret_hash'] ?: hash('sha256', (string)$event['app_public_id']));
+        $secret = trim((string)($event['webhook_secret_hash'] ?? ''));
+        if ($secret === '') $secret = hash('sha256', (string)$event['app_public_id']);
         $signature = mg_dev_webhook_signature($payload, $timestamp, $secret);
         $deliveryId = mg_distribution_uuid();
-        $headers = [
-            'Content-Type: application/json',
-            'User-Agent: Microgifter-Webhooks/1.0',
-            'X-Microgifter-Event: ' . (string)$event['event_type'],
-            'X-Microgifter-Delivery: ' . $deliveryId,
-            'X-Microgifter-Timestamp: ' . $timestamp,
-            'X-Microgifter-Signature: ' . $signature,
-        ];
+        $headers = ['Content-Type: application/json','User-Agent: Microgifter-Webhooks/1.0','X-Microgifter-Event: ' . (string)$event['event_type'],'X-Microgifter-Delivery: ' . $deliveryId,'X-Microgifter-Timestamp: ' . $timestamp,'X-Microgifter-Signature: ' . $signature,'X-Microgifter-Signature-Version: v1'];
         $pdo->prepare("UPDATE developer_webhook_events SET status='processing',attempts=?,last_attempt_at=NOW(),updated_at=NOW() WHERE id=?")->execute([$attemptNumber,(int)$event['id']]);
         $attemptId = mg_distribution_uuid();
         $pdo->prepare("INSERT INTO developer_webhook_attempts (public_id,webhook_event_id,app_id,endpoint_hash,attempt_number,status,request_checksum,started_at,created_at) VALUES (?,?,?,?,?,'processing',?,NOW(),NOW())")
-            ->execute([$attemptId,(int)$event['id'],(int)$event['app_id'],hash('sha256',(string)$event['webhook_url']),$attemptNumber,hash('sha256',$payload)]);
+            ->execute([$attemptId,(int)$event['id'],(int)$event['app_id'],hash('sha256',$webhookUrl),$attemptNumber,hash('sha256',$payload)]);
         $attemptDbId = (int)$pdo->lastInsertId();
         $pdo->commit();
 
-        $response = mg_dev_webhook_post((string)$event['webhook_url'], $payload, $headers);
+        $response = mg_dev_webhook_post($webhookUrl, $payload, $headers);
         $ok = $response['status'] >= 200 && $response['status'] < 300;
 
         $pdo->beginTransaction();
