@@ -7,10 +7,20 @@ function pct(used,limit){used=Number(used||0);limit=Number(limit||0);return limi
 function row(left,right){return '<div class="mg-health-row"><span>'+left+'</span><span>'+right+'</span></div>';}
 function kpi(label,value){return '<div class="mg-merchant-kpi"><span>'+esc(label)+'</span><strong>'+esc(value)+'</strong></div>';}
 function renderRows(node,items,fn,empty){if(!node)return;node.innerHTML=(items&&items.length?items.map(fn).join(''):'<div class="mg-empty-state">'+esc(empty||'No data yet.')+'</div>');}
+function renderOnboarding(data){
+  var setup=data.onboarding||{},node=document.querySelector('[data-dev-api-onboarding]'),badge=document.querySelector('[data-dev-api-readiness]');
+  if(!node)return;
+  var steps=setup.steps||[],completed=Number(setup.completed||0),total=Number(setup.total||steps.length||0),progress=total?Math.round(completed*100/total):0;
+  if(badge){badge.textContent=setup.ready_for_live?'Live ready':(setup.ready_for_test?'Test ready':'Setup needed');}
+  node.innerHTML='<div class="mg-program-progress" style="margin-bottom:14px"><span style="width:'+progress+'%"></span></div>'+
+    steps.map(function(s){var done=!!s.done,href=s.action_href||'#',label=s.action_label||'Open';return '<div class="mg-health-row"><span><strong>'+(done?'✓ ':'○ ')+esc(s.label)+'</strong><br><small>'+esc(s.detail)+'</small></span><a href="'+esc(href)+'">'+esc(label)+'</a></div>';}).join('')+
+    '<p style="margin-top:12px;color:#64748b;font-size:13px">'+completed+' of '+total+' setup steps complete.</p>';
+}
 async function loadDeveloperAnalytics(){
   try{
     var response=await Microgifter.get('/api/merchant/developer-api.php');
     var data=response.data||response;
+    renderOnboarding(data);
     var analytics=data.analytics||{};
     var totals=analytics.totals||{};
     var sandbox=analytics.sandbox||{};
