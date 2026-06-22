@@ -1,35 +1,44 @@
 # Public Distribution API app ideas
 
-These are small demo apps that can be built after the basic docs validation app works.
+These are demo apps that prove the Public Distribution API can power third-party reward experiences.
 
-## 1. Local Quest Rewards
+## 1. Local Quest Rewards — built first
 
-A simple challenge app where users complete an action and receive a merchant-approved Microgift.
+Local Quest Rewards is implemented at:
+
+```text
+examples/local-quest-rewards/
+```
+
+It is a small local experience app where a user completes a quest and receives a merchant-approved Microgift.
 
 ### Example flow
 
-1. User completes a local challenge.
-2. App records an external event such as `quest.completed`.
-3. Backend checks that the user has a linked Microgifter account.
-4. Backend issues a reward using the Distribution API.
-5. User receives the Microgift in their Microgifter INBOX.
+1. User opens the app as a guest/demo user.
+2. App assigns a stable `external_user_id`.
+3. App creates a sandbox linked account.
+4. User completes a local challenge.
+5. App checks its local reward rule.
+6. App issues a reward through the Public Distribution API.
+7. App checks status and records webhook delivery.
 
-### Why it proves the API
+### Implemented feature set
 
-This app demonstrates external event-to-reward distribution with strong partner appeal for venues, events, local guides, and community campaigns.
-
-### Minimum feature set
-
-- Challenge list.
-- Challenge completion form.
+- Guest/demo user identity.
 - Sandbox linked-account creation.
+- Quest list.
+- Quest completion.
+- Quest-to-reward mapping.
+- Local permission checks.
 - Reward issue button.
 - Reward status display.
-- Webhook event log.
+- Webhook verification endpoint.
+- Local JSON state.
+- Event log.
 
 ## 2. Loyalty Trigger Demo
 
-A fake coffee shop, pizza shop, bar, or restaurant loyalty app that issues a Microgift after a visit, spend, referral, or win-back trigger.
+A fake coffee shop, pizza shop, bar, or restaurant loyalty app that issues a Microgift after a visit, spend, referral, or win-back milestone.
 
 ### Example flow
 
@@ -38,10 +47,6 @@ A fake coffee shop, pizza shop, bar, or restaurant loyalty app that issues a Mic
 3. Backend sends one reward with an idempotency key based on the milestone.
 4. Microgifter returns the reward status.
 5. App shows the customer that the reward has been delivered.
-
-### Why it proves the API
-
-This connects Microgifter to a familiar merchant category and shows how local businesses can turn loyalty actions into prepaid demand.
 
 ### Minimum feature set
 
@@ -63,10 +68,6 @@ A creator community demo where fans receive local rewards after joining a campai
 3. Backend issues a Microgift tied to the creator campaign.
 4. Fan receives a local reward and the creator gets a simple campaign result log.
 
-### Why it proves the API
-
-This matches Microgifter's potential for artists, bands, local communities, and small branded networks.
-
 ### Minimum feature set
 
 - Campaign landing page.
@@ -75,6 +76,6 @@ This matches Microgifter's potential for artists, bands, local communities, and 
 - Campaign webhook log.
 - Simple reward-delivered confirmation.
 
-## Recommended next build
+## Next recommendation
 
-Build `Local Quest Rewards` first. It is visual, easy to demo, and shows the clearest connection between a third-party app action and a local Microgift reward.
+Use Local Quest Rewards to drive the Microgifter permission-system pass. The app now separates local app permission from Microgifter final authorization.
