@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'microgifter-main (74).zip'
+      - '.github/workflows/extract-microgifter-74.yml'
   workflow_dispatch:
 
 permissions:
@@ -25,7 +28,10 @@ jobs:
           archive='microgifter-main (74).zip'
           output='/tmp/microgifter-extracted'
 
-          test -f "$archive"
+          if [ ! -f "$archive" ]; then
+            echo "Archive $archive is not present; nothing to extract."
+            exit 0
+          fi
           rm -rf "$output"
           mkdir -p "$output"
           unzip -q "$archive" -d "$output"
