@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/_public.php';
+require_once dirname(__DIR__, 2) . '/distribution/_developer_webhooks.php';
 
 mg_require_method('POST');
 $context = mg_public_context('distribution:rewards.issue');
@@ -89,6 +90,7 @@ try {
     for ($i=1; $i <= $quantity; $i++) {
         $jobStmt->execute([mg_distribution_uuid(),$allocationDbId,$i,mg_distribution_json(['template_id'=>$templateId,'title'=>$product['title'],'recipient_user_id'=>(int)$link['microgifter_user_id'],'linked_account_id'=>$linkedAccountId])]);
     }
+    mg_dev_webhook_event($pdo,(int)$context['app_id'],(int)$context['merchant_user_id'],'reward.queued',['reward_id'=>$rewardId,'event_id'=>$eventId,'program_id'=>$programPublicId,'template_id'=>$templateId,'quantity'=>$quantity,'external_event_id'=>$externalEventId],$eventDbId,'reward',$rewardId);
     $pdo->prepare('UPDATE distribution_programs SET reserved_cents=reserved_cents+?,updated_at=NOW() WHERE id=?')->execute([$unitValue*$quantity,(int)$program['id']]);
     $pdo->prepare("UPDATE distribution_source_events SET status='queued',processed_at=NOW(),updated_at=NOW() WHERE id=?")->execute([$eventDbId]);
     $pdo->commit();
