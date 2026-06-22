@@ -12,9 +12,25 @@ function renderOnboarding(data){
   if(!node)return;
   var steps=setup.steps||[],completed=Number(setup.completed||0),total=Number(setup.total||steps.length||0),progress=total?Math.round(completed*100/total):0;
   if(badge){badge.textContent=setup.ready_for_live?'Live ready':(setup.ready_for_test?'Test ready':'Setup needed');}
-  node.innerHTML='<div class="mg-program-progress" style="margin-bottom:14px"><span style="width:'+progress+'%"></span></div>'+
-    steps.map(function(s){var done=!!s.done,href=s.action_href||'#',label=s.action_label||'Open';return '<div class="mg-health-row"><span><strong>'+(done?'✓ ':'○ ')+esc(s.label)+'</strong><br><small>'+esc(s.detail)+'</small></span><a href="'+esc(href)+'">'+esc(label)+'</a></div>';}).join('')+
-    '<p style="margin-top:12px;color:#64748b;font-size:13px">'+completed+' of '+total+' setup steps complete.</p>';
+  node.innerHTML='<div class="mg-program-progress" style="margin-bottom:14px"><span style="width:'+progress+'%"></span></div>'+steps.map(function(s){var done=!!s.done,href=s.action_href||'#',label=s.action_label||'Open';return '<div class="mg-health-row"><span><strong>'+(done?'✓ ':'○ ')+esc(s.label)+'</strong><br><small>'+esc(s.detail)+'</small></span><a href="'+esc(href)+'">'+esc(label)+'</a></div>';}).join('')+'<p style="margin-top:12px;color:#64748b;font-size:13px">'+completed+' of '+total+' setup steps complete.</p>';
+}
+function stateIcon(state){return state==='ok'?'✓':(state==='warn'?'!':'×');}
+function renderLaunchQA(data){
+  var node=document.querySelector('[data-dev-api-launch-qa]'),badge=document.querySelector('[data-dev-api-launch-status]');
+  if(!node)return;
+  var summary=data.summary||{},apps=data.apps||[];
+  if(badge){badge.textContent=summary.ready_for_launch?'Launch ready':'Needs QA';}
+  var head='<div class="mg-merchant-kpis" style="margin-bottom:14px">'+[kpi('Ready apps',n(summary.ready_apps)),kpi('Blocked apps',n(summary.blocked_apps)),kpi('Live apps',n(summary.live_apps)),kpi('Warnings',n(summary.warning_apps))].join('')+'</div>';
+  if(!apps.length){node.innerHTML=head+'<div class="mg-empty-state">No developer apps yet.</div>';return;}
+  node.innerHTML=head+apps.map(function(app){
+    var checks=app.checks||[];
+    return '<div class="mg-health-row" style="align-items:flex-start"><span><strong>'+esc(app.name)+'</strong><br><small>'+esc(app.environment)+' · '+esc(app.status)+' · '+n(app.blockers)+' blockers · '+n(app.warnings)+' warnings</small><div style="margin-top:10px">'+checks.map(function(c){return '<div><small><strong>'+stateIcon(c.state)+' '+esc(c.label)+':</strong> '+esc(c.message)+'</small></div>';}).join('')+'</div></span><span>'+esc(app.ready?'Ready':'Review')+'</span></div>';
+  }).join('');
+}
+async function loadLaunchQA(){
+  var node=document.querySelector('[data-dev-api-launch-qa]');
+  if(!node)return;
+  try{var response=await Microgifter.get('/api/merchant/developer-api-launch-qa.php');renderLaunchQA(response.data||response);}catch(err){node.innerHTML='<div class="mg-empty-state">Unable to load live launch QA.</div>';}
 }
 async function loadDeveloperAnalytics(){
   try{
@@ -34,4 +50,5 @@ async function loadDeveloperAnalytics(){
   }catch(err){var node=document.querySelector('[data-dev-api-analytics-kpis]');if(node)node.innerHTML='<div class="mg-empty-state">Unable to load developer API analytics.</div>';}
 }
 loadDeveloperAnalytics();
+loadLaunchQA();
 });
