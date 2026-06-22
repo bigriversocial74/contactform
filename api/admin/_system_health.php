@@ -67,13 +67,18 @@ function mg_admin_system_health_migrations(PDO $pdo): array
 {
     try {
         if (!mg_admin_system_health_table_exists($pdo, 'schema_migrations')) {
+            $manifest = mg_migration_manifest();
+            $missing = array_values($manifest['ordered_files']);
             return mg_admin_system_health_service('critical', 'The migration ledger is missing.', [
                 'ready' => false,
-                'manifest_files' => count(mg_migration_manifest()['ordered_files']),
-                'missing_count' => count(mg_migration_manifest()['ordered_files']),
+                'manifest_files' => count($missing),
+                'missing_count' => count($missing),
+                'missing_files' => implode(', ', array_slice($missing, 0, 8)),
+                'missing_files_more' => max(0, count($missing) - 8),
                 'checksum_mismatch_count' => 0,
                 'latest_key' => null,
                 'latest_applied_at' => null,
+                'recovery_command' => 'php scripts/run_migrations.php',
             ]);
         }
 
@@ -81,17 +86,21 @@ function mg_admin_system_health_migrations(PDO $pdo): array
         $latest = $pdo->query(
             'SELECT migration_key,applied_at FROM schema_migrations ORDER BY applied_at DESC,id DESC LIMIT 1'
         )->fetch(PDO::FETCH_ASSOC) ?: [];
+        $missing = array_values($status['missing']);
         return mg_admin_system_health_service(
             $status['ready'] ? 'healthy' : 'critical',
-            $status['ready'] ? 'The canonical migration manifest is satisfied.' : 'Database migrations require attention.',
+            $status['ready'] ? 'The canonical migration manifest is satisfied.' : 'Database migrations require attention. Run the canonical migration runner.',
             [
                 'ready' => (bool)$status['ready'],
                 'manifest_files' => (int)$status['ordered_count'],
                 'applied_keys' => (int)$status['applied_key_count'],
-                'missing_count' => count($status['missing']),
+                'missing_count' => count($missing),
+                'missing_files' => $missing === [] ? null : implode(', ', array_slice($missing, 0, 8)),
+                'missing_files_more' => max(0, count($missing) - 8),
                 'checksum_mismatch_count' => count($status['checksum_mismatches']),
                 'latest_key' => isset($latest['migration_key']) ? (string)$latest['migration_key'] : null,
                 'latest_applied_at' => $latest['applied_at'] ?? null,
+                'recovery_command' => $status['ready'] ? null : 'php scripts/run_migrations.php',
             ]
         );
     } catch (Throwable $error) {
@@ -103,6 +112,7 @@ function mg_admin_system_health_migrations(PDO $pdo): array
             'checksum_mismatch_count' => 0,
             'latest_key' => null,
             'latest_applied_at' => null,
+            'recovery_command' => 'php scripts/run_migrations.php',
         ]);
     }
 }
@@ -208,6 +218,7 @@ function mg_admin_system_health_read(PDO $pdo): array
             'verify_storage' => false,
             'retry_notifications' => false,
             'clean_uploads' => false,
+            'migration_plan' => false,
         ],
         'generated_at' => gmdate('c'),
         'request_id' => mg_request_id(),

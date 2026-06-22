@@ -14,6 +14,7 @@ try {
         'verify_storage' => $canManage,
         'retry_notifications' => $canManage,
         'clean_uploads' => $canManage,
+        'migration_plan' => $canManage && (($data['services']['migrations']['status'] ?? '') !== 'healthy'),
     ];
 } catch (Throwable $error) {
     mg_security_log(

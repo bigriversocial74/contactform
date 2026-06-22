@@ -12,7 +12,7 @@ mg_require_csrf_for_write($input);
 mg_rate_limit('admin.system_health.action', 'user:' . (int)$user['id'], 12, 300);
 
 $action = strtolower(trim((string)($input['action'] ?? '')));
-if (!in_array($action, ['verify_storage', 'retry_notifications', 'clean_uploads'], true)) {
+if (!in_array($action, ['verify_storage', 'retry_notifications', 'clean_uploads', 'migration_plan'], true)) {
     mg_fail('Invalid system health action.', 422);
 }
 
@@ -22,6 +22,7 @@ try {
         'verify_storage' => mg_admin_system_health_verify_storage(),
         'retry_notifications' => mg_admin_system_health_retry_notifications($pdo, 100),
         'clean_uploads' => mg_admin_system_health_cleanup_uploads($pdo, 24, 100),
+        'migration_plan' => mg_admin_system_health_migration_plan($pdo),
     };
 
     mg_audit(
@@ -50,5 +51,6 @@ $message = match ($action) {
     'verify_storage' => 'Persistent storage verified.',
     'retry_notifications' => 'Eligible notification deliveries were queued for retry.',
     'clean_uploads' => 'Abandoned uploads cleanup completed.',
+    'migration_plan' => 'Migration recovery plan prepared.',
 };
 mg_ok(['action' => $action, 'result' => $result], $message);

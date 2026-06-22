@@ -20,6 +20,31 @@ function mg_admin_system_health_require_manager(array $user): void
     mg_fail('Permission denied.', 403);
 }
 
+function mg_admin_system_health_migration_plan(PDO $pdo): array
+{
+    if (!mg_admin_system_health_table_exists($pdo, 'schema_migrations')) {
+        $manifest = mg_migration_manifest();
+        return [
+            'ready' => false,
+            'missing_count' => count($manifest['ordered_files']),
+            'missing_files' => array_slice(array_values($manifest['ordered_files']), 0, 20),
+            'command' => 'php scripts/run_migrations.php',
+            'note' => 'Run the canonical migration runner from the application root with migration database credentials.',
+        ];
+    }
+    $status = mg_migration_status($pdo);
+    return [
+        'ready' => (bool)$status['ready'],
+        'missing_count' => count($status['missing']),
+        'missing_files' => array_slice(array_values($status['missing']), 0, 20),
+        'checksum_mismatch_count' => count($status['checksum_mismatches']),
+        'checksum_mismatches' => array_slice($status['checksum_mismatches'], 0, 20),
+        'coverage_cutoff' => (int)$status['coverage_cutoff'],
+        'command' => 'php scripts/run_migrations.php',
+        'note' => 'This action is read-only. It prepares the exact recovery command; it does not execute DDL from the browser.',
+    ];
+}
+
 function mg_admin_system_health_verify_storage(): array
 {
     $status = mg_storage_assert_ready(false, true);
