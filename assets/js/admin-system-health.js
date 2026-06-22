@@ -171,7 +171,8 @@ document.addEventListener('DOMContentLoaded', function () {
     return {
       verify_storage: 'Run a protected write, read, and delete verification on persistent storage?',
       retry_notifications: 'Requeue up to 100 eligible failed notification deliveries?',
-      clean_uploads: 'Archive and remove up to 100 unattached uploads older than 24 hours?'
+      clean_uploads: 'Archive and remove up to 100 unattached uploads older than 24 hours?',
+      migration_plan: 'Prepare a read-only migration recovery plan? This does not run database migrations.'
     }[action] || 'Run this recovery action?';
   }
 
@@ -179,6 +180,11 @@ document.addEventListener('DOMContentLoaded', function () {
     if (action === 'verify_storage') return 'Persistent storage passed its write and read verification.';
     if (action === 'retry_notifications') return Number(result.retried || 0).toLocaleString() + ' notification deliveries queued for retry.';
     if (action === 'clean_uploads') return Number(result.archived || 0).toLocaleString() + ' abandoned uploads archived; ' + Number(result.files_deleted || 0).toLocaleString() + ' files removed.';
+    if (action === 'migration_plan') {
+      var missing = Number(result.missing_count || 0).toLocaleString();
+      var command = result.command || 'php scripts/run_migrations.php';
+      return missing + ' missing migration file(s). Run: ' + command;
+    }
     return 'Recovery action completed.';
   }
 
