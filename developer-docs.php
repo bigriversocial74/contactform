@@ -37,7 +37,7 @@ X-Idempotency-Key: achievement-1001</pre></article>
 <article style="background:#fff;border:1px solid #dce7f4;border-radius:20px;padding:26px"><h2>Webhooks</h2><p>Configure a webhook URL on the developer app to receive lifecycle callbacks. Microgifter sends JSON events with delivery metadata and a signature header.</p><pre style="overflow:auto;background:#071225;color:#eaf2ff;border-radius:14px;padding:16px">X-Microgifter-Event: reward.delivered
 X-Microgifter-Delivery: delivery-id
 X-Microgifter-Timestamp: 1760000000
-X-Microgifter-Signature: sha256=...</pre><p>Initial events include <code>account_link.approved</code>, <code>account_link.cancelled</code>, <code>account_link.expired</code>, <code>reward.queued</code>, <code>reward.issued</code>, <code>reward.delivered</code>, <code>reward.failed</code>, and <code>webhook.test</code>.</p></article>
+X-Microgifter-Signature: sha256=...</pre><p>Initial events include <code>account_link.started</code>, <code>account_link.approved</code>, <code>account_link.cancelled</code>, <code>account_link.expired</code>, <code>reward.queued</code>, <code>reward.issued</code>, <code>reward.delivered</code>, <code>reward.failed</code>, and <code>webhook.test</code>.</p></article>
 </section>
 </main>
 <?php require __DIR__ . '/includes/footer.php';
