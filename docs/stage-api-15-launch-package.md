@@ -4,12 +4,14 @@ Stage API-15 packages the Public Distribution API for an outside developer and a
 
 ## What this package covers
 
-- Developer setup sequence from sandbox to live
-- Copy/paste API examples
-- Webhook signature verification
-- Error code reference
-- Launch checklist for merchants
-- Sandbox-to-live migration guide
+- Developer setup sequence from sandbox to live.
+- Copy/paste API examples.
+- A standalone test app that validates the docs.
+- Webhook signature verification.
+- Error code reference.
+- Launch checklist for merchants.
+- Sandbox-to-live migration guide.
+- Demo app ideas for partner-facing proof.
 
 ## Merchant launch sequence
 
@@ -34,10 +36,25 @@ Stage API-15 packages the Public Distribution API for an outside developer and a
 6. Poll status or consume webhook callbacks.
 7. Verify webhook signatures before trusting payload data.
 
+## Test app validation sequence
+
+The docs are not finished until `examples/microgifter-api-test-app/` can be configured and used by following the public documentation only.
+
+1. Copy `config.example.php` to `config.php`.
+2. Add a test credential, program ID, template ID, and webhook signing value.
+3. Run the PHP test app locally.
+4. List programs.
+5. Create a sandbox linked account.
+6. Issue a sandbox reward.
+7. Check reward status.
+8. Receive and verify at least one webhook delivery.
+9. Patch the docs for every unclear field, response, status, or error exposed by the test app.
+
 ## Required public endpoints
 
 - `GET /api/public/v1/programs/index.php`
-- `POST /api/public/v1/account-link-start.php`
+- `POST /api/public/v1/account-links/start.php`
+- `POST /api/public/v1/account-link-start.php` compatibility route
 - `POST /api/public/v1/sandbox/linked-account.php`
 - `POST /api/public/v1/rewards/issue.php`
 - `GET /api/public/v1/rewards/status.php?id=<reward_id>`
@@ -53,7 +70,12 @@ Stage API-15 packages the Public Distribution API for an outside developer and a
 
 ## Related docs
 
+- `developer-docs.php`
+- `docs/stage-api-6-public-docs-examples.md`
+- `docs/public-api-test-app-build-plan.md`
 - `docs/public-api-launch-checklist.md`
 - `docs/public-api-error-reference.md`
 - `docs/public-api-webhook-verification-examples.md`
-- `docs/public-api-sandbox-to-live-guide.md`
+- `docs/public-api-sandbox-live-guide.md`
+- `docs/public-api-app-ideas.md`
+- `examples/microgifter-api-test-app/README.md`
