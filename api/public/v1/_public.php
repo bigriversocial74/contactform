@@ -126,10 +126,28 @@ function mg_public_context(?string $requiredScope = null): array
     $scopes = $row['scopes_json'] ? json_decode((string) $row['scopes_json'], true) : [];
     if (!is_array($scopes)) $scopes = [];
     if ($requiredScope !== null && !in_array($requiredScope, $scopes, true)) mg_fail('Public API credential scope is insufficient.', 403);
-    $context = ['pdo'=>$pdo,'key'=>$row,'merchant_user_id'=>(int)$row['merchant_user_id'],'app_id'=>(int)$row['app_id'],'app_public_id'=>(string)$row['app_public_id'],'source_connection_id'=>$row['distribution_source_connection_id'] !== null ? (int)$row['distribution_source_connection_id'] : null,'default_program_id'=>$row['default_program_id'] !== null ? (int)$row['default_program_id'] : null,'scopes'=>$scopes];
+    $appEnvironment = (string)($row['app_environment'] ?? 'test');
+    $keyEnvironment = (string)($row['environment'] ?? $appEnvironment);
+    $sandboxMode = $appEnvironment !== 'live' || $keyEnvironment !== 'live';
+    $context = ['pdo'=>$pdo,'key'=>$row,'merchant_user_id'=>(int)$row['merchant_user_id'],'app_id'=>(int)$row['app_id'],'app_public_id'=>(string)$row['app_public_id'],'app_environment'=>$appEnvironment,'key_environment'=>$keyEnvironment,'sandbox_mode'=>$sandboxMode,'source_connection_id'=>$row['distribution_source_connection_id'] !== null ? (int)$row['distribution_source_connection_id'] : null,'default_program_id'=>$row['default_program_id'] !== null ? (int)$row['default_program_id'] : null,'scopes'=>$scopes];
     $context['quota'] = mg_public_enforce_quotas($pdo, $context);
+    if (!headers_sent()) header('X-Microgifter-Environment: ' . ($sandboxMode ? 'test' : 'live'));
     $pdo->prepare('UPDATE merchant_api_keys SET last_used_at=NOW(),updated_at=NOW() WHERE id=?')->execute([(int) $row['id']]);
     return $context;
+}
+
+function mg_public_sandbox_only(array $context): void
+{
+    if (empty($context['sandbox_mode'])) {
+        mg_public_log($context['pdo'], $context, 403, 'live_mode_forbidden', 'Sandbox endpoint called with a live credential.');
+        mg_fail('Sandbox endpoints require a test-mode developer app or test credential.', 403);
+    }
+}
+
+function mg_public_sandbox_linked_account_id(array $context, string $externalUserId): string
+{
+    $seed = (string)$context['app_public_id'] . '|' . $externalUserId;
+    return 'sandbox_linked_' . substr(hash('sha256', $seed), 0, 24);
 }
 
 function mg_public_log(PDO $pdo, array $context, int $statusCode, string $responseStatus, ?string $errorMessage = null): void
