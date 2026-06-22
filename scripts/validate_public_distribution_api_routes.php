@@ -19,6 +19,7 @@ $required = [
     'api/merchant/developer-webhook-test.php',
     'api/merchant/developer-api-launch-qa.php',
     'api/merchant/developer-api-go-live.php',
+    'includes/merchant-developer-api-view.php',
     'scripts/run_distribution_issuance_worker.php',
     'scripts/run_distribution_webhook_worker.php',
     'database/stage_public_distribution_api_webhooks.sql',
@@ -53,5 +54,19 @@ foreach ($required as $path) {
     $rows[] = ['path' => $path, 'exists' => $exists];
 }
 
-echo json_encode(['ok' => $ok, 'files' => $rows], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
+$merchantFacingFiles = [
+    'includes/merchant-view.php',
+    'includes/merchant-developer-api-view.php',
+    'api/merchant/developer-api.php',
+];
+$legacyMdLinks = [];
+foreach ($merchantFacingFiles as $path) {
+    $content = is_file($root . '/' . $path) ? (string)file_get_contents($root . '/' . $path) : '';
+    if (preg_match_all('#/docs/[^\s"\']+\.md#', $content, $matches)) {
+        $legacyMdLinks[$path] = array_values(array_unique($matches[0]));
+    }
+}
+if ($legacyMdLinks !== []) $ok = false;
+
+echo json_encode(['ok' => $ok, 'files' => $rows, 'merchant_facing_md_links' => $legacyMdLinks], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
 exit($ok ? 0 : 1);
