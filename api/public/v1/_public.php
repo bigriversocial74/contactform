@@ -16,6 +16,102 @@ function mg_public_auth_value(): string
     return $fallback;
 }
 
+function mg_public_quota_limit(string $envName, int $default): int
+{
+    $value = getenv($envName);
+    if (is_string($value) && ctype_digit($value) && (int)$value > 0) return (int)$value;
+    return $default;
+}
+
+function mg_public_quota_windows(): array
+{
+    $now = time();
+    $minuteStart = strtotime(gmdate('Y-m-d H:i:00', $now));
+    $dayStart = strtotime(gmdate('Y-m-d 00:00:00', $now));
+    $monthStart = strtotime(gmdate('Y-m-01 00:00:00', $now));
+    return [
+        [
+            'scope' => 'minute',
+            'key' => gmdate('YmdHi', $now),
+            'limit' => mg_public_quota_limit('MG_PUBLIC_API_RATE_PER_MINUTE', 60),
+            'start' => gmdate('Y-m-d H:i:s', $minuteStart),
+            'end' => gmdate('Y-m-d H:i:s', $minuteStart + 60),
+            'reset' => $minuteStart + 60,
+        ],
+        [
+            'scope' => 'day',
+            'key' => gmdate('Ymd', $now),
+            'limit' => mg_public_quota_limit('MG_PUBLIC_API_DAILY_QUOTA', 5000),
+            'start' => gmdate('Y-m-d H:i:s', $dayStart),
+            'end' => gmdate('Y-m-d H:i:s', $dayStart + 86400),
+            'reset' => $dayStart + 86400,
+        ],
+        [
+            'scope' => 'month',
+            'key' => gmdate('Ym', $now),
+            'limit' => mg_public_quota_limit('MG_PUBLIC_API_MONTHLY_QUOTA', 100000),
+            'start' => gmdate('Y-m-d H:i:s', $monthStart),
+            'end' => gmdate('Y-m-d H:i:s', strtotime('+1 month', $monthStart)),
+            'reset' => strtotime('+1 month', $monthStart),
+        ],
+    ];
+}
+
+function mg_public_quota_headers(array $quota): void
+{
+    if (headers_sent()) return;
+    header('X-RateLimit-Limit: ' . (string)$quota['limit']);
+    header('X-RateLimit-Remaining: ' . (string)max(0, (int)$quota['remaining']));
+    header('X-RateLimit-Reset: ' . (string)$quota['reset']);
+}
+
+function mg_public_enforce_quotas(PDO $pdo, array $context): array
+{
+    $windows = mg_public_quota_windows();
+    $minuteState = null;
+    try {
+        $pdo->beginTransaction();
+        foreach ($windows as $window) {
+            $pdo->prepare("INSERT IGNORE INTO public_api_quota_buckets (public_id,merchant_user_id,app_id,api_key_id,bucket_scope,bucket_key,limit_value,used_count,window_start,window_end,created_at,updated_at) VALUES (?,?,?,?,?,?,?,0,?,?,NOW(),NOW())")
+                ->execute([
+                    mg_distribution_uuid(),
+                    (int)$context['merchant_user_id'],
+                    (int)$context['app_id'],
+                    (int)$context['key']['id'],
+                    $window['scope'],
+                    $window['key'],
+                    (int)$window['limit'],
+                    $window['start'],
+                    $window['end'],
+                ]);
+            $stmt = $pdo->prepare("SELECT id,used_count FROM public_api_quota_buckets WHERE api_key_id=? AND bucket_scope=? AND bucket_key=? FOR UPDATE");
+            $stmt->execute([(int)$context['key']['id'], $window['scope'], $window['key']]);
+            $bucket = $stmt->fetch();
+            if (!$bucket) throw new RuntimeException('Quota bucket missing.');
+            $used = (int)$bucket['used_count'];
+            if ($used >= (int)$window['limit']) {
+                $pdo->rollBack();
+                $state = $window + ['remaining' => 0, 'used' => $used];
+                mg_public_quota_headers($state);
+                if (!headers_sent()) header('Retry-After: ' . (string)max(1, (int)$window['reset'] - time()));
+                mg_public_log($pdo, $context, 429, 'rate_limited', 'Public API request quota exceeded.');
+                mg_fail('Public API request quota exceeded.', 429);
+            }
+            $pdo->prepare('UPDATE public_api_quota_buckets SET used_count=used_count+1,limit_value=?,updated_at=NOW() WHERE id=?')
+                ->execute([(int)$window['limit'], (int)$bucket['id']]);
+            $state = $window + ['used' => $used + 1, 'remaining' => (int)$window['limit'] - ($used + 1)];
+            if ($window['scope'] === 'minute') $minuteState = $state;
+        }
+        $pdo->commit();
+        if (is_array($minuteState)) mg_public_quota_headers($minuteState);
+        return ['minute' => $minuteState];
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        mg_public_log($pdo, $context, 500, 'quota_error', $e->getMessage());
+        mg_fail('Public API quota check failed.', 500);
+    }
+}
+
 function mg_public_context(?string $requiredScope = null): array
 {
     $value = mg_public_auth_value();
@@ -30,8 +126,10 @@ function mg_public_context(?string $requiredScope = null): array
     $scopes = $row['scopes_json'] ? json_decode((string) $row['scopes_json'], true) : [];
     if (!is_array($scopes)) $scopes = [];
     if ($requiredScope !== null && !in_array($requiredScope, $scopes, true)) mg_fail('Public API credential scope is insufficient.', 403);
+    $context = ['pdo'=>$pdo,'key'=>$row,'merchant_user_id'=>(int)$row['merchant_user_id'],'app_id'=>(int)$row['app_id'],'app_public_id'=>(string)$row['app_public_id'],'source_connection_id'=>$row['distribution_source_connection_id'] !== null ? (int)$row['distribution_source_connection_id'] : null,'default_program_id'=>$row['default_program_id'] !== null ? (int)$row['default_program_id'] : null,'scopes'=>$scopes];
+    $context['quota'] = mg_public_enforce_quotas($pdo, $context);
     $pdo->prepare('UPDATE merchant_api_keys SET last_used_at=NOW(),updated_at=NOW() WHERE id=?')->execute([(int) $row['id']]);
-    return ['pdo'=>$pdo,'key'=>$row,'merchant_user_id'=>(int)$row['merchant_user_id'],'app_id'=>(int)$row['app_id'],'app_public_id'=>(string)$row['app_public_id'],'source_connection_id'=>$row['distribution_source_connection_id'] !== null ? (int)$row['distribution_source_connection_id'] : null,'default_program_id'=>$row['default_program_id'] !== null ? (int)$row['default_program_id'] : null,'scopes'=>$scopes];
+    return $context;
 }
 
 function mg_public_log(PDO $pdo, array $context, int $statusCode, string $responseStatus, ?string $errorMessage = null): void

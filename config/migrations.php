@@ -36,6 +36,7 @@ return [
         'stage_public_distribution_api_foundation.sql',
         'stage_public_distribution_api_account_links_note.sql',
         'stage_public_distribution_api_webhooks.sql',
+        'stage_public_distribution_api_quotas.sql',
         'stage_4f_future_demand_intelligence.sql',
         'stage_5a_merchant_workspace.sql',
         'stage_5c_storefront_management.sql',
