@@ -82,6 +82,7 @@ require dirname(__DIR__) . '/includes/header.php';
               <button class="mg-btn mg-btn-soft" type="button" data-health-action="verify_storage" disabled>Verify storage</button>
               <button class="mg-btn mg-btn-soft" type="button" data-health-action="retry_notifications" disabled>Retry failed notifications</button>
               <button class="mg-btn mg-btn-soft" type="button" data-health-action="clean_uploads" disabled>Clean abandoned uploads</button>
+              <button class="mg-btn mg-btn-soft" type="button" data-health-action="migration_plan" disabled>Prepare migration recovery</button>
               <p>Actions remain disabled until the secure health API confirms access and readiness.</p>
             </div>
           </section>
