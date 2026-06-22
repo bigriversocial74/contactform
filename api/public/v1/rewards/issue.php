@@ -26,6 +26,47 @@ if (mb_strlen($externalEventId) > 180 || !preg_match('/^[a-z0-9_.:-]{2,100}$/', 
     mg_fail('Invalid reward event.', 422);
 }
 
+if (!empty($context['sandbox_mode'])) {
+    $payload = [
+        'program_id' => $programPublicId,
+        'external_event_id' => $externalEventId,
+        'event_type' => $eventType,
+        'recipient' => $recipientInput,
+        'reward' => $rewardInput,
+        'metadata' => is_array($input['metadata'] ?? null) ? $input['metadata'] : [],
+        'sandbox' => true,
+    ];
+    $payloadJson = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    if (!is_string($payloadJson) || strlen($payloadJson) > 1048576) mg_fail('Reward payload is too large.', 422);
+    $allocationIdempotency = hash('sha256', (string)$context['app_public_id'] . '|sandbox|' . $externalEventId . '|' . $templateId);
+
+    $pdo->beginTransaction();
+    try {
+        $existingStmt = $pdo->prepare('SELECT public_id,status FROM public_api_sandbox_rewards WHERE app_id=? AND idempotency_key=? LIMIT 1');
+        $existingStmt->execute([(int)$context['app_id'], $allocationIdempotency]);
+        $existing = $existingStmt->fetch();
+        if ($existing) {
+            $pdo->commit();
+            mg_public_log($pdo, $context, 200, 'sandbox_duplicate');
+            mg_ok(['sandbox' => true, 'reward_id' => $existing['public_id'], 'status' => $existing['status'], 'duplicate' => true], 'Sandbox reward request already exists.');
+        }
+
+        $rewardId = 'sandbox_reward_' . substr(hash('sha256', $allocationIdempotency), 0, 24);
+        $pdo->prepare("INSERT INTO public_api_sandbox_rewards (public_id,merchant_user_id,app_id,api_key_id,program_public_id,template_public_id,linked_account_public_id,external_event_id,event_type,quantity,idempotency_key,status,payload_json,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,'sandbox_delivered',?,NOW(),NOW())")
+            ->execute([$rewardId,(int)$context['merchant_user_id'],(int)$context['app_id'],(int)$context['key']['id'],$programPublicId,$templateId,$linkedAccountId,$externalEventId,$eventType,$quantity,$allocationIdempotency,$payloadJson]);
+        $sandboxItemId = 'sandbox_item_' . substr(hash('sha256', $rewardId . '|item'), 0, 24);
+        mg_dev_webhook_event($pdo,(int)$context['app_id'],(int)$context['merchant_user_id'],'reward.queued',['sandbox'=>true,'reward_id'=>$rewardId,'program_id'=>$programPublicId,'template_id'=>$templateId,'quantity'=>$quantity,'external_event_id'=>$externalEventId],null,'reward',$rewardId);
+        mg_dev_webhook_event($pdo,(int)$context['app_id'],(int)$context['merchant_user_id'],'reward.delivered',['sandbox'=>true,'reward_id'=>$rewardId,'job_id'=>'sandbox_job_'.substr(hash('sha256',$rewardId.'|job'),0,24),'pppm_item_id'=>$sandboxItemId,'delivery_id'=>'sandbox_delivery_'.substr(hash('sha256',$rewardId.'|delivery'),0,24),'program_id'=>$programPublicId,'template_id'=>$templateId],null,'reward',$rewardId);
+        $pdo->commit();
+        mg_public_log($pdo, $context, 201, 'sandbox_delivered');
+        mg_ok(['sandbox'=>true,'reward_id'=>$rewardId,'status'=>'sandbox_delivered','event_id'=>'sandbox_event_'.substr(hash('sha256',$rewardId.'|event'),0,24),'program_id'=>$programPublicId,'template_id'=>$templateId,'quantity'=>$quantity,'pppm_item_id'=>$sandboxItemId], 'Sandbox reward delivered.', 201);
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        mg_public_log($pdo, $context, 500, 'sandbox_failed', 'Sandbox reward issue failed.');
+        mg_fail('Unable to issue sandbox reward.', 500);
+    }
+}
+
 $pdo->beginTransaction();
 try {
     $programStmt = $pdo->prepare("SELECT * FROM distribution_programs WHERE public_id=? AND merchant_user_id=? LIMIT 1 FOR UPDATE");
