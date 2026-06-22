@@ -7,6 +7,8 @@ function pct(used,limit){used=Number(used||0);limit=Number(limit||0);return limi
 function row(left,right){return '<div class="mg-health-row"><span>'+left+'</span><span>'+right+'</span></div>';}
 function kpi(label,value){return '<div class="mg-merchant-kpi"><span>'+esc(label)+'</span><strong>'+esc(value)+'</strong></div>';}
 function renderRows(node,items,fn,empty){if(!node)return;node.innerHTML=(items&&items.length?items.map(fn).join(''):'<div class="mg-empty-state">'+esc(empty||'No data yet.')+'</div>');}
+function goStatus(message,type){var node=document.querySelector('[data-dev-api-launch-status]');if(!node)return;node.textContent=message||'';node.dataset.statusType=type||'';}
+function showReveal(data,message){var node=document.querySelector('[data-dev-credential-secret]');if(!node)return;var parts=[];if(data.credential)parts.push('<div class="mg-empty-state"><strong>'+esc(message||'Copy once')+'</strong><p><code>'+esc(data.credential)+'</code></p></div>');if(data.webhook_secret)parts.push('<div class="mg-empty-state"><strong>Copy webhook signing value now</strong><p><code>'+esc(data.webhook_secret)+'</code></p><p>Hint: '+esc(data.webhook_secret_hint||'')+'</p></div>');node.innerHTML=parts.join('');}
 function renderOnboarding(data){
   var setup=data.onboarding||{},node=document.querySelector('[data-dev-api-onboarding]'),badge=document.querySelector('[data-dev-api-readiness]');
   if(!node)return;
@@ -15,6 +17,8 @@ function renderOnboarding(data){
   node.innerHTML='<div class="mg-program-progress" style="margin-bottom:14px"><span style="width:'+progress+'%"></span></div>'+steps.map(function(s){var done=!!s.done,href=s.action_href||'#',label=s.action_label||'Open';return '<div class="mg-health-row"><span><strong>'+(done?'✓ ':'○ ')+esc(s.label)+'</strong><br><small>'+esc(s.detail)+'</small></span><a href="'+esc(href)+'">'+esc(label)+'</a></div>';}).join('')+'<p style="margin-top:12px;color:#64748b;font-size:13px">'+completed+' of '+total+' setup steps complete.</p>';
 }
 function stateIcon(state){return state==='ok'?'✓':(state==='warn'?'!':'×');}
+function appActions(app){var out=[];if(app.environment==='test')out.push('<button type="button" class="mg-btn mg-btn-soft" data-go-live-action="clone_to_live" data-app-id="'+esc(app.app_id)+'">Create live app</button>');if(app.environment==='live'&&app.status!=='active')out.push('<button type="button" class="mg-btn mg-btn-primary" data-go-live-action="promote_live" data-app-id="'+esc(app.app_id)+'">Promote live</button>');if(app.environment==='live')out.push('<button type="button" class="mg-btn mg-btn-soft" data-go-live-action="create_live_credential" data-app-id="'+esc(app.app_id)+'">Create live credential</button>');return out.length?'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">'+out.join('')+'</div>':'';}
+function wireGoLiveActions(){document.querySelectorAll('[data-go-live-action]').forEach(function(btn){btn.onclick=async function(){var action=btn.dataset.goLiveAction,appId=btn.dataset.appId,payload={action:action,app_id:appId};if(action==='create_live_credential')payload.name='Live credential';try{btn.disabled=true;goStatus('Working…');var response=await Microgifter.post('/api/merchant/developer-api-go-live.php',payload),data=response.data||response;showReveal(data,response.message);goStatus(response.message||'Go-live action completed.','success');await loadDeveloperAnalytics();await loadLaunchQA();}catch(err){goStatus(err.message||'Unable to complete go-live action.','error');}finally{btn.disabled=false;}};});}
 function renderLaunchQA(data){
   var node=document.querySelector('[data-dev-api-launch-qa]'),badge=document.querySelector('[data-dev-api-launch-status]');
   if(!node)return;
@@ -24,8 +28,9 @@ function renderLaunchQA(data){
   if(!apps.length){node.innerHTML=head+'<div class="mg-empty-state">No developer apps yet.</div>';return;}
   node.innerHTML=head+apps.map(function(app){
     var checks=app.checks||[];
-    return '<div class="mg-health-row" style="align-items:flex-start"><span><strong>'+esc(app.name)+'</strong><br><small>'+esc(app.environment)+' · '+esc(app.status)+' · '+n(app.blockers)+' blockers · '+n(app.warnings)+' warnings</small><div style="margin-top:10px">'+checks.map(function(c){return '<div><small><strong>'+stateIcon(c.state)+' '+esc(c.label)+':</strong> '+esc(c.message)+'</small></div>';}).join('')+'</div></span><span>'+esc(app.ready?'Ready':'Review')+'</span></div>';
+    return '<div class="mg-health-row" style="align-items:flex-start"><span><strong>'+esc(app.name)+'</strong><br><small>'+esc(app.environment)+' · '+esc(app.status)+' · '+n(app.blockers)+' blockers · '+n(app.warnings)+' warnings</small><div style="margin-top:10px">'+checks.map(function(c){return '<div><small><strong>'+stateIcon(c.state)+' '+esc(c.label)+':</strong> '+esc(c.message)+'</small></div>';}).join('')+'</div>'+appActions(app)+'</span><span>'+esc(app.ready?'Ready':'Review')+'</span></div>';
   }).join('');
+  wireGoLiveActions();
 }
 async function loadLaunchQA(){
   var node=document.querySelector('[data-dev-api-launch-qa]');
