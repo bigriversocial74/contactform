@@ -8,6 +8,7 @@ function pct(used,limit){used=Number(used||0);limit=Number(limit||0);return limi
 function row(left,right){return '<div class="mg-health-row"><span>'+left+'</span><span>'+right+'</span></div>';}
 function kpi(label,value){return '<div class="mg-merchant-kpi"><span>'+esc(label)+'</span><strong>'+esc(value)+'</strong></div>';}
 function renderRows(node,items,fn,empty){if(!node)return;node.innerHTML=(items&&items.length?items.map(fn).join(''):'<div class="mg-empty-state">'+esc(empty||'No data yet.')+'</div>');}
+function normalizeDocLinks(){var map={'/docs/stage-api-8-sandbox-flow.md':'/developer-docs.php#quickstart','/docs/stage-api-5-developer-webhooks.md':'#developer-webhooks','/docs/stage-api-12-webhook-secrets-hardening.md':'#developer-webhooks'};document.querySelectorAll('a[href$=".md"]').forEach(function(a){var href=a.getAttribute('href')||'';if(map[href])a.setAttribute('href',map[href]);});}
 function setStatus(node,message,type){if(window.Microgifter&&typeof Microgifter.setStatus==='function'){Microgifter.setStatus(node,message,type);return;}if(node)node.textContent=message||'';}
 function goStatus(message,type){var node=document.querySelector('[data-dev-api-launch-status]');if(!node)return;node.textContent=message||'';node.dataset.statusType=type||'';}
 function showReveal(data,message){var node=document.querySelector('[data-dev-credential-secret]');if(!node)return;var parts=[];if(data.credential)parts.push('<div class="mg-empty-state"><strong>'+esc(message||'Copy once')+'</strong><p><code>'+esc(data.credential)+'</code></p></div>');if(data.webhook_secret)parts.push('<div class="mg-empty-state"><strong>Copy webhook signing value now</strong><p><code>'+esc(data.webhook_secret)+'</code></p><p>Hint: '+esc(data.webhook_secret_hint||'')+'</p></div>');node.innerHTML=parts.join('');}
@@ -45,7 +46,7 @@ async function loadDeveloperAnalytics(){
   try{
     var response=await Microgifter.get('/api/merchant/developer-api.php');
     var data=response.data||response;devData=data;
-    renderOnboarding(data);renderDeveloperApps(data);renderKeysAndLogs(data);wireDeveloperForms();
+    renderOnboarding(data);renderDeveloperApps(data);renderKeysAndLogs(data);wireDeveloperForms();normalizeDocLinks();
     var analytics=data.analytics||{},totals=analytics.totals||{},sandbox=analytics.sandbox||{},kpis=document.querySelector('[data-dev-api-analytics-kpis]');
     if(kpis){kpis.innerHTML=[kpi('Total requests',n(totals.total_requests)),kpi('Requests 24h',n(totals.requests_24h)),kpi('Errors 24h',n(totals.errors_24h)),kpi('Rate limits 24h',n(totals.rate_limited_24h)),kpi('Sandbox rewards',n(sandbox.sandbox_rewards)),kpi('Sandbox 24h',n(sandbox.sandbox_rewards_24h))].join('');}
     renderRows(document.querySelector('[data-dev-api-daily]'),analytics.daily,function(x){return row('<strong>'+esc(x.day)+'</strong><br><small>'+n(x.errors)+' errors · '+n(x.rate_limited)+' limited</small>','<strong>'+n(x.requests)+'</strong>');},'No request history yet.');
@@ -55,6 +56,7 @@ async function loadDeveloperAnalytics(){
     renderRows(document.querySelector('[data-dev-api-webhook-analytics]'),analytics.webhooks,function(x){return row('<strong>'+esc(x.event_type)+'</strong><br><small>'+esc(x.status)+' · '+esc(x.last_event_at||'No recent events')+'</small>','<strong>'+n(x.events)+'</strong>');},'No webhook events in the last seven days.');
   }catch(err){var node=document.querySelector('[data-dev-api-analytics-kpis]');if(node)node.innerHTML='<div class="mg-empty-state">Unable to load developer API analytics.</div>';}
 }
+normalizeDocLinks();
 loadDeveloperAnalytics();
 loadLaunchQA();
 });
