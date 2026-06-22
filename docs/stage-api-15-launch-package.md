@@ -8,7 +8,7 @@ Stage API-15 packages the Public Distribution API for an outside developer and a
 - Copy/paste API examples.
 - A standalone test app that validates the docs.
 - A fuller Local Quest Rewards demo ecosystem.
-- Webhook signature verification.
+- Webhook configuration, test delivery, and signature verification.
 - Error code reference.
 - Launch checklist for merchants.
 - Sandbox-to-live migration guide.
@@ -20,12 +20,13 @@ Stage API-15 packages the Public Distribution API for an outside developer and a
 2. Create a test developer app.
 3. Create a test API credential and store it server-side.
 4. Use sandbox linked-account and reward issue endpoints.
-5. Configure a webhook URL and rotate the signing value.
-6. Confirm webhook verification in the developer backend.
-7. Use Live launch QA to clear blockers.
-8. Clone the test app into a draft live app.
-9. Promote the live app.
-10. Create a live credential and store it server-side.
+5. Configure a webhook URL from the Developer API workspace.
+6. Rotate and copy the webhook signing value into the developer backend.
+7. Send a `webhook.test` delivery and confirm the receiver verifies it.
+8. Use Live launch QA to clear blockers.
+9. Clone the test app into a draft live app.
+10. Promote the live app.
+11. Create a live credential and store it server-side.
 
 ## Developer integration sequence
 
@@ -71,13 +72,16 @@ Use this app to drive the Microgift permission-system pass.
 - `GET /api/merchant/developer-api.php`
 - `POST /api/merchant/developer-api.php`
 - `POST /api/merchant/developer-api-credentials.php`
+- `GET /api/merchant/developer-webhooks.php`
+- `POST /api/merchant/developer-webhooks.php`
+- `POST /api/merchant/developer-webhook-test.php` compatibility/test endpoint
 - `GET /api/merchant/developer-api-launch-qa.php`
 - `POST /api/merchant/developer-api-go-live.php`
-- `POST /api/merchant/developer-webhook-test.php`
 
 ## Related docs
 
 - `developer-docs.php`
+- `docs/stage-api-5-developer-webhooks.md`
 - `docs/stage-api-6-public-docs-examples.md`
 - `docs/public-api-test-app-build-plan.md`
 - `docs/public-api-launch-checklist.md`
