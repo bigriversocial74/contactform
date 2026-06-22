@@ -20,24 +20,36 @@ if (!in_array($status, ['active','open','reviewing','resolved','dismissed','all'
     mg_fail('Invalid review queue filter.', 422);
 }
 
-$where = [];
-$params = [];
-if ($status === 'active') $where[] = "r.status IN ('open','reviewing')";
-elseif ($status !== 'all') { $where[] = 'r.status=?'; $params[] = $status; }
-if ($type !== 'all') { $where[] = 'r.subject_type=?'; $params[] = $type; }
-if ($severity !== 'all') { $where[] = 'r.severity=?'; $params[] = $severity; }
-if ($assignee === 'me') { $where[] = 'r.assigned_user_id=?'; $params[] = (int)$user['id']; }
-elseif ($assignee === 'unassigned') $where[] = 'r.assigned_user_id IS NULL';
-if ($search !== '') {
-    $where[] = '(r.public_id LIKE ? OR r.subject_reference LIKE ? OR r.reason_code LIKE ? OR subject.display_name LIKE ? OR subject.email LIKE ? OR reporter.display_name LIKE ? OR reporter.email LIKE ?)';
-    $like = '%' . $search . '%';
-    for ($i = 0; $i < 7; $i++) $params[] = $like;
-}
-$whereSql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
-$joinSql = ' FROM social_reports r LEFT JOIN users reporter ON reporter.id=r.reporter_user_id LEFT JOIN users subject ON subject.id=r.subject_user_id LEFT JOIN users assignee ON assignee.id=r.assigned_user_id ';
-
 try {
     $pdo = mg_db();
+    if (!mg_content_review_table_exists($pdo, 'social_reports')) {
+        header('Cache-Control: private, no-store, max-age=0');
+        mg_ok([
+            'reports'=>[],
+            'summary'=>['open'=>0,'reviewing'=>0,'urgent'=>0,'unassigned'=>0,'appealed'=>0],
+            'pagination'=>['page'=>1,'pages'=>1,'limit'=>$limit,'total'=>0],
+            'access'=>$user['content_review_access'],
+            'generated_at'=>gmdate('c'),
+            'setup_required'=>true,
+        ], 'Review queue loaded.');
+    }
+
+    $where = [];
+    $params = [];
+    if ($status === 'active') $where[] = "r.status IN ('open','reviewing')";
+    elseif ($status !== 'all') { $where[] = 'r.status=?'; $params[] = $status; }
+    if ($type !== 'all') { $where[] = 'r.subject_type=?'; $params[] = $type; }
+    if ($severity !== 'all') { $where[] = 'r.severity=?'; $params[] = $severity; }
+    if ($assignee === 'me') { $where[] = 'r.assigned_user_id=?'; $params[] = (int)$user['id']; }
+    elseif ($assignee === 'unassigned') $where[] = 'r.assigned_user_id IS NULL';
+    if ($search !== '') {
+        $where[] = '(r.public_id LIKE ? OR r.subject_reference LIKE ? OR r.reason_code LIKE ? OR subject.display_name LIKE ? OR subject.email LIKE ? OR reporter.display_name LIKE ? OR reporter.email LIKE ?)';
+        $like = '%' . $search . '%';
+        for ($i = 0; $i < 7; $i++) $params[] = $like;
+    }
+    $whereSql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
+    $joinSql = ' FROM social_reports r LEFT JOIN users reporter ON reporter.id=r.reporter_user_id LEFT JOIN users subject ON subject.id=r.subject_user_id LEFT JOIN users assignee ON assignee.id=r.assigned_user_id ';
+
     $count = $pdo->prepare('SELECT COUNT(*)' . $joinSql . $whereSql);
     $count->execute($params);
     $total = (int)$count->fetchColumn();
