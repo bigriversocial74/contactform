@@ -7,6 +7,8 @@ This guide gives developers copy/paste examples for the Microgifter Public Distr
 ```bash
 export MG_BASE_URL="https://microgifter.com"
 export MG_API_KEY="mg_test_replace_with_server_side_key"
+export MG_PROGRAM_ID="dist_prog_7e3c2f"
+export MG_TEMPLATE_ID="tmpl_pizza_25"
 ```
 
 API credentials are server-side secrets. Do not embed them in browser JavaScript or mobile clients.
@@ -46,14 +48,43 @@ Example response:
 }
 ```
 
-## 2. Start account linking
+## 2. Create a sandbox linked account
+
+Required scope: `distribution:rewards.issue`
+
+Sandbox linked accounts let a developer prove the full reward flow without sending a user through production consent.
+
+```bash
+curl -s "$MG_BASE_URL/api/public/v1/sandbox/linked-account.php" \
+  -X POST \
+  -H "Authorization: Bearer $MG_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"external_user_id":"player-9001"}'
+```
+
+Example response:
+
+```json
+{
+  "ok": true,
+  "message": "Sandbox linked account prepared.",
+  "sandbox": true,
+  "linked_account_id": "sandbox_linked_4c0601a75f1d9d6d4c85a3e9",
+  "external_user_id": "player-9001",
+  "status": "active"
+}
+```
+
+Use `linked_account_id` when issuing a sandbox reward.
+
+## 3. Start production account linking
 
 Required scope: `distribution:rewards.issue`
 
 The app starts a link request with its own stable external user ID. Microgifter returns a link URL that the user opens to approve the connection.
 
 ```bash
-curl -s "$MG_BASE_URL/api/public/v1/account-link-start.php" \
+curl -s "$MG_BASE_URL/api/public/v1/account-links/start.php" \
   -X POST \
   -H "Authorization: Bearer $MG_API_KEY" \
   -H "Content-Type: application/json" \
@@ -67,6 +98,8 @@ curl -s "$MG_BASE_URL/api/public/v1/account-link-start.php" \
     }
   }'
 ```
+
+Compatibility route: `/api/public/v1/account-link-start.php`.
 
 Example response:
 
@@ -87,9 +120,9 @@ After approval, Microgifter redirects to the supplied return URL:
 https://example.app/rewards/connected?status=linked&linked_account_id=linked_abc123&external_user_id=player-9001&state=checkout-session-42
 ```
 
-Store `linked_account_id` on your backend and use it when issuing rewards.
+Store `linked_account_id` on your backend and use it when issuing production rewards.
 
-## 3. Issue a reward
+## 4. Issue a reward
 
 Required scope: `distribution:rewards.issue`
 
@@ -118,7 +151,24 @@ curl -s "$MG_BASE_URL/api/public/v1/rewards/issue.php" \
   }'
 ```
 
-Example response:
+Example sandbox response:
+
+```json
+{
+  "ok": true,
+  "message": "Sandbox reward delivered.",
+  "sandbox": true,
+  "reward_id": "sandbox_reward_38ca2f",
+  "status": "sandbox_delivered",
+  "event_id": "sandbox_event_596b01",
+  "program_id": "dist_prog_7e3c2f",
+  "template_id": "tmpl_pizza_25",
+  "quantity": 1,
+  "pppm_item_id": "sandbox_item_91f8d2"
+}
+```
+
+Example production response:
 
 ```json
 {
@@ -133,7 +183,7 @@ Example response:
 }
 ```
 
-## 4. Read reward status
+## 5. Read reward status
 
 Required scope: `distribution:rewards.status`
 
@@ -171,7 +221,7 @@ Example response after issuance:
 }
 ```
 
-## 5. Webhook receiver example
+## 6. Webhook receiver example
 
 Webhook requests include delivery headers:
 
@@ -180,6 +230,13 @@ X-Microgifter-Event: reward.delivered
 X-Microgifter-Delivery: 329dbf4c-5bb8-4d24-9676-313934d72a19
 X-Microgifter-Timestamp: 1782092400
 X-Microgifter-Signature: sha256=...
+X-Microgifter-Signature-Version: v1
+```
+
+Signature base string:
+
+```text
+<timestamp>.<raw request body>
 ```
 
 Example payload:
@@ -206,20 +263,16 @@ PHP receiver sketch:
 ```php
 <?php
 $payload = file_get_contents('php://input') ?: '';
-$event = $_SERVER['HTTP_X_MICROGIFTER_EVENT'] ?? '';
-$delivery = $_SERVER['HTTP_X_MICROGIFTER_DELIVERY'] ?? '';
 $timestamp = $_SERVER['HTTP_X_MICROGIFTER_TIMESTAMP'] ?? '';
 $signature = $_SERVER['HTTP_X_MICROGIFTER_SIGNATURE'] ?? '';
-
-// TODO: verify signature with the merchant app webhook secret when secret rotation/display is finalized.
-$data = json_decode($payload, true);
-if (!is_array($data) || $event === '' || $delivery === '') {
-    http_response_code(400);
-    echo 'invalid webhook';
-    exit;
+$secret = getenv('MG_WEBHOOK_SECRET') ?: '';
+$expected = 'sha256=' . hash_hmac('sha256', $timestamp . '.' . $payload, $secret);
+if ($timestamp === '' || $signature === '' || abs(time() - (int)$timestamp) > 300 || !hash_equals($expected, $signature)) {
+    http_response_code(401);
+    exit('invalid signature');
 }
 
-// Idempotency: store $delivery or $data['id'] and ignore duplicates.
+// Idempotency: store X-Microgifter-Delivery or payload id and ignore duplicates.
 http_response_code(204);
 ```
 
@@ -241,10 +294,12 @@ http_response_code(204);
 
 | Status | Meaning |
 | --- | --- |
+| `400` | Malformed request body or unsupported request shape. |
 | `401` | Missing, invalid, expired, or revoked API credential. |
-| `403` | Credential lacks the required scope, or return URL origin is not allowed. |
+| `403` | Credential lacks the required scope, return URL origin is not allowed, or environment is wrong. |
 | `404` | Program, product template, linked account, or reward was not found. |
 | `409` | Program inactive, capacity exceeded, product limit reached, or recipient limit reached. |
 | `422` | Request payload is missing or invalid. |
+| `429` | Quota exceeded. Retry only after `Retry-After`. |
 
 Use `X-Idempotency-Key` when issuing rewards. A duplicate request returns the existing reward allocation instead of creating another reward.
