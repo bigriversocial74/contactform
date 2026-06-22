@@ -1,14 +1,22 @@
 # Stage API-16 — Public API launch validation
 
-Stage API-16 adds a repeatable static validation command for the Public Distribution API launch package.
+Stage API-16 adds repeatable validation for the Public Distribution API launch package and packages the Developer/Public API database layer into one operator-run SQL file.
 
-## Command
+## Validation command
 
 ```bash
 php scripts/validate_public_api_launch_package.php
 ```
 
-## What it checks
+## Database install file
+
+```text
+database/developer_api_single_install.sql
+```
+
+This is the single SQL file to run when the Developer/Public API database tables need to be installed manually.
+
+## What the validator checks
 
 The validator confirms that the launch package still includes:
 
@@ -43,4 +51,4 @@ A non-zero exit code means one or more launch package requirements are missing.
 
 ## Runtime impact
 
-No database changes. No public route behavior changes. This stage adds validation coverage for the launch-ready API surface built in Stages API-12 through API-15.
+The validation command does not change runtime behavior. The SQL package is operator-run only and is not executed by browser traffic.
