@@ -99,6 +99,7 @@ return [
     'coverage_markers' => [
         'stage_9e4_consolidated_stage1_to_stage9_upgrade' => 'stage_9d_microgift_operations.sql',
         'stage_11h_backend_hardening' => 'schema_v2_action_center_crm_addendum.sql',
+        'stage_v1_release_trigger_portability' => 'stage_v1_release_trigger_portability.sql',
     ],
 
     'manual_only' => [
