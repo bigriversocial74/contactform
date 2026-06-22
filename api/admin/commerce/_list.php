@@ -20,6 +20,27 @@ function mg_admin_commerce_filters(array $input): array
     ];
 }
 
+function mg_admin_commerce_table_exists(PDO $pdo, string $table): bool
+{
+    if (preg_match('/^[a-z0-9_]{1,64}$/', $table) !== 1) return false;
+    $stmt = $pdo->prepare('SELECT 1 FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name=? LIMIT 1');
+    $stmt->execute([$table]);
+    return (bool)$stmt->fetchColumn();
+}
+
+function mg_admin_commerce_schema_ready(PDO $pdo): bool
+{
+    foreach (['users','commerce_orders','payment_refunds','payment_disputes','subscriptions','subscription_plans','tips','microgift_instances','commerce_operation_cases'] as $table) {
+        if (!mg_admin_commerce_table_exists($pdo, $table)) return false;
+    }
+    return true;
+}
+
+function mg_admin_commerce_empty(array $filters): array
+{
+    return ['items'=>[],'page'=>$filters['page'],'limit'=>$filters['limit'],'has_more'=>false,'next_page'=>null,'filters'=>$filters,'summary'=>['orders_total'=>0,'orders_attention'=>0,'refunds_attention'=>0,'disputes_open'=>0,'subscriptions_attention'=>0,'tips_posted'=>0,'microgifts_active'=>0,'claim_failures_24h'=>0,'open_cases'=>0,'paid_volume_30d_cents'=>0,'refund_volume_30d_cents'=>0,'tip_volume_30d_cents'=>0,'currency'=>'USD','generated_at'=>gmdate('c'),'setup_required'=>true]];
+}
+
 function mg_admin_commerce_subqueries(string $domain): array
 {
     $queries=[
@@ -70,7 +91,9 @@ SQL,
 
 function mg_admin_commerce_list(PDO $pdo,array $input): array
 {
-    $f=mg_admin_commerce_filters($input);$union=implode("\nUNION ALL\n",mg_admin_commerce_subqueries($f['domain']));
+    $f=mg_admin_commerce_filters($input);
+    if (!mg_admin_commerce_schema_ready($pdo)) return mg_admin_commerce_empty($f);
+    $union=implode("\nUNION ALL\n",mg_admin_commerce_subqueries($f['domain']));
     $sql='SELECT activity.*,CASE WHEN activity.entity_type="case" THEN 0 ELSE (SELECT COUNT(*) FROM commerce_operation_cases cc WHERE cc.subject_type=activity.entity_type AND cc.subject_reference=activity.public_id AND cc.status IN ("open","reviewing")) END case_count FROM ('.$union.') activity WHERE 1=1';$params=[];
     if($f['q']!==''){$needle='%'.str_replace(['!','%','_'],['!!','!%','!_'],$f['q']).'%';$sql.=' AND LOWER(CONCAT_WS(" ",activity.public_id,activity.title,activity.subtitle,activity.merchant_display_name,activity.merchant_email,activity.customer_display_name,activity.customer_email)) LIKE ? ESCAPE "!"';$params[]=$needle;}
     if($f['status']==='attention')$sql.=' AND activity.attention=1';elseif($f['status']!==''){$sql.=' AND (LOWER(activity.status)=? OR LOWER(COALESCE(activity.secondary_status,""))=?)';$params[]=$f['status'];$params[]=$f['status'];}
@@ -91,6 +114,7 @@ function mg_admin_commerce_list(PDO $pdo,array $input): array
 
 function mg_admin_commerce_summary(PDO $pdo): array
 {
+    if (!mg_admin_commerce_schema_ready($pdo)) return mg_admin_commerce_empty(['page'=>1,'limit'=>MG_ADMIN_COMMERCE_DEFAULT_LIMIT])['summary'];
     $r=mg_admin_commerce_one($pdo,<<<'SQL'
 SELECT
 (SELECT COUNT(*) FROM commerce_orders) orders_total,
