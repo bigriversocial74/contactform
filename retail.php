@@ -812,7 +812,7 @@ require __DIR__ . '/includes/header.php';
 </style>
 
 <main class="rs-page">
-  <section class="rs-section rs-hero">
+  <section class="rs-section rs-hero mg-retail-hero">
     <div class="rs-container">
       <div class="rs-hero-grid">
         <div class="rs-hero-copy">
@@ -862,7 +862,7 @@ require __DIR__ . '/includes/header.php';
           <div class="rs-feed-float rs-feed-float-mid-left">
             <span class="rs-phone-tag">Tickets</span>
             <h3>Early access event tickets</h3>
-            <p>Release tickets early for tastings, pop-ups, collaborations, and launch nights.</p>
+            <p>Give subscribers first access to tastings, classes, launch nights, pop-ups, and private experiences.</p>
             <div class="rs-feed-mini">
               <span>26 claimed</span>
               <span>Launch Friday</span>
@@ -930,7 +930,7 @@ require __DIR__ . '/includes/header.php';
   <section class="rs-section rs-benefits">
     <div class="rs-container">
       <div class="rs-heading">
-        <span class="rs-badge">Why it works</span>
+        <span class="rs-badge">How it works</span>
         <h2>Turn loyal customers into recurring monthly revenue.</h2>
         <p>
           Merchants set a monthly subscription price, publish subscriber-only content,
@@ -973,7 +973,7 @@ require __DIR__ . '/includes/header.php';
   <section class="rs-section rs-use-cases">
     <div class="rs-container">
       <div class="rs-heading">
-        <span class="rs-badge">What merchants can post</span>
+        <span class="rs-badge">What retailers can sell</span>
         <h2>Give subscribers something new every month.</h2>
         <p>
           Keep the subscription valuable with a steady stream of private benefits
@@ -1012,7 +1012,7 @@ require __DIR__ . '/includes/header.php';
   <section class="rs-section rs-cta">
     <div class="rs-container">
       <div class="rs-cta-card">
-        <span class="rs-badge">Recurring revenue for local merchants</span>
+        <span class="rs-badge">Local revenue infrastructure</span>
         <h2>Sell a $9.99 monthly relationship, not just a one-time deal.</h2>
         <p>
           Create a paid merchant subscription, post private offers in minutes,
