@@ -12,8 +12,7 @@ function mg_public_auth_value(): string
 {
     $header = mg_public_request_header('Authorization');
     if (stripos($header, 'Bearer ') === 0) return trim(substr($header, 7));
-    $fallback = trim((string) ($_GET['access_token'] ?? ''));
-    return $fallback;
+    return '';
 }
 
 function mg_public_quota_limit(string $envName, int $default): int
@@ -30,30 +29,9 @@ function mg_public_quota_windows(): array
     $dayStart = strtotime(gmdate('Y-m-d 00:00:00', $now));
     $monthStart = strtotime(gmdate('Y-m-01 00:00:00', $now));
     return [
-        [
-            'scope' => 'minute',
-            'key' => gmdate('YmdHi', $now),
-            'limit' => mg_public_quota_limit('MG_PUBLIC_API_RATE_PER_MINUTE', 60),
-            'start' => gmdate('Y-m-d H:i:s', $minuteStart),
-            'end' => gmdate('Y-m-d H:i:s', $minuteStart + 60),
-            'reset' => $minuteStart + 60,
-        ],
-        [
-            'scope' => 'day',
-            'key' => gmdate('Ymd', $now),
-            'limit' => mg_public_quota_limit('MG_PUBLIC_API_DAILY_QUOTA', 5000),
-            'start' => gmdate('Y-m-d H:i:s', $dayStart),
-            'end' => gmdate('Y-m-d H:i:s', $dayStart + 86400),
-            'reset' => $dayStart + 86400,
-        ],
-        [
-            'scope' => 'month',
-            'key' => gmdate('Ym', $now),
-            'limit' => mg_public_quota_limit('MG_PUBLIC_API_MONTHLY_QUOTA', 100000),
-            'start' => gmdate('Y-m-d H:i:s', $monthStart),
-            'end' => gmdate('Y-m-d H:i:s', strtotime('+1 month', $monthStart)),
-            'reset' => strtotime('+1 month', $monthStart),
-        ],
+        ['scope'=>'minute','key'=>gmdate('YmdHi',$now),'limit'=>mg_public_quota_limit('MG_PUBLIC_API_RATE_PER_MINUTE',60),'start'=>gmdate('Y-m-d H:i:s',$minuteStart),'end'=>gmdate('Y-m-d H:i:s',$minuteStart+60),'reset'=>$minuteStart+60],
+        ['scope'=>'day','key'=>gmdate('Ymd',$now),'limit'=>mg_public_quota_limit('MG_PUBLIC_API_DAILY_QUOTA',5000),'start'=>gmdate('Y-m-d H:i:s',$dayStart),'end'=>gmdate('Y-m-d H:i:s',$dayStart+86400),'reset'=>$dayStart+86400],
+        ['scope'=>'month','key'=>gmdate('Ym',$now),'limit'=>mg_public_quota_limit('MG_PUBLIC_API_MONTHLY_QUOTA',100000),'start'=>gmdate('Y-m-d H:i:s',$monthStart),'end'=>gmdate('Y-m-d H:i:s',strtotime('+1 month',$monthStart)),'reset'=>strtotime('+1 month',$monthStart)],
     ];
 }
 
@@ -73,17 +51,7 @@ function mg_public_enforce_quotas(PDO $pdo, array $context): array
         $pdo->beginTransaction();
         foreach ($windows as $window) {
             $pdo->prepare("INSERT IGNORE INTO public_api_quota_buckets (public_id,merchant_user_id,app_id,api_key_id,bucket_scope,bucket_key,limit_value,used_count,window_start,window_end,created_at,updated_at) VALUES (?,?,?,?,?,?,?,0,?,?,NOW(),NOW())")
-                ->execute([
-                    mg_distribution_uuid(),
-                    (int)$context['merchant_user_id'],
-                    (int)$context['app_id'],
-                    (int)$context['key']['id'],
-                    $window['scope'],
-                    $window['key'],
-                    (int)$window['limit'],
-                    $window['start'],
-                    $window['end'],
-                ]);
+                ->execute([mg_distribution_uuid(),(int)$context['merchant_user_id'],(int)$context['app_id'],(int)$context['key']['id'],$window['scope'],$window['key'],(int)$window['limit'],$window['start'],$window['end']]);
             $stmt = $pdo->prepare("SELECT id,used_count FROM public_api_quota_buckets WHERE api_key_id=? AND bucket_scope=? AND bucket_key=? FOR UPDATE");
             $stmt->execute([(int)$context['key']['id'], $window['scope'], $window['key']]);
             $bucket = $stmt->fetch();
@@ -97,8 +65,7 @@ function mg_public_enforce_quotas(PDO $pdo, array $context): array
                 mg_public_log($pdo, $context, 429, 'rate_limited', 'Public API request quota exceeded.');
                 mg_fail('Public API request quota exceeded.', 429);
             }
-            $pdo->prepare('UPDATE public_api_quota_buckets SET used_count=used_count+1,limit_value=?,updated_at=NOW() WHERE id=?')
-                ->execute([(int)$window['limit'], (int)$bucket['id']]);
+            $pdo->prepare('UPDATE public_api_quota_buckets SET used_count=used_count+1,limit_value=?,updated_at=NOW() WHERE id=?')->execute([(int)$window['limit'], (int)$bucket['id']]);
             $state = $window + ['used' => $used + 1, 'remaining' => (int)$window['limit'] - ($used + 1)];
             if ($window['scope'] === 'minute') $minuteState = $state;
         }
@@ -115,7 +82,10 @@ function mg_public_enforce_quotas(PDO $pdo, array $context): array
 function mg_public_context(?string $requiredScope = null): array
 {
     $value = mg_public_auth_value();
-    if ($value === '' || strlen($value) < 24) mg_fail('Missing public API credential.', 401);
+    if ($value === '' || strlen($value) < 24) {
+        if (!headers_sent()) header('WWW-Authenticate: Bearer realm="Microgifter Public API"');
+        mg_fail('Missing public API bearer credential.', 401);
+    }
     $digest = hash('sha256', $value);
     $pdo = mg_db();
     $stmt = $pdo->prepare("SELECT mak.*,mda.public_id AS app_public_id,mda.name AS app_name,mda.status AS app_status,mda.environment AS app_environment,mda.allowed_origins_json,mda.webhook_url,mda.default_program_id,mda.distribution_source_connection_id,dsc.public_id AS source_public_id,dsc.status AS source_status FROM merchant_api_keys mak INNER JOIN merchant_developer_apps mda ON mda.id=mak.app_id LEFT JOIN distribution_source_connections dsc ON dsc.id=mda.distribution_source_connection_id WHERE mak.key_hash=? AND mak.status='active' LIMIT 1");
@@ -155,23 +125,7 @@ function mg_public_log(PDO $pdo, array $context, int $statusCode, string $respon
     try {
         $payload = file_get_contents('php://input') ?: '';
         $pdo->prepare("INSERT INTO distribution_api_request_logs (public_id,merchant_user_id,app_id,api_key_id,source_connection_id,request_id,method,endpoint,status_code,response_status,idempotency_key,request_checksum,ip_hash,user_agent_hash,error_message,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())")
-            ->execute([
-                mg_distribution_uuid(),
-                $context['merchant_user_id'] ?? null,
-                $context['app_id'] ?? null,
-                isset($context['key']['id']) ? (int)$context['key']['id'] : null,
-                $context['source_connection_id'] ?? null,
-                mg_public_request_header('X-Request-ID') ?: null,
-                strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET')),
-                substr((string)($_SERVER['REQUEST_URI'] ?? ''), 0, 255),
-                $statusCode,
-                $responseStatus,
-                mg_public_request_header('X-Idempotency-Key') ?: null,
-                $payload !== '' ? hash('sha256', $payload) : null,
-                !empty($_SERVER['REMOTE_ADDR']) ? hash('sha256', (string)$_SERVER['REMOTE_ADDR']) : null,
-                !empty($_SERVER['HTTP_USER_AGENT']) ? hash('sha256', (string)$_SERVER['HTTP_USER_AGENT']) : null,
-                $errorMessage,
-            ]);
+            ->execute([mg_distribution_uuid(),$context['merchant_user_id'] ?? null,$context['app_id'] ?? null,isset($context['key']['id']) ? (int)$context['key']['id'] : null,$context['source_connection_id'] ?? null,mg_public_request_header('X-Request-ID') ?: null,strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET')),substr((string)($_SERVER['REQUEST_URI'] ?? ''), 0, 255),$statusCode,$responseStatus,mg_public_request_header('X-Idempotency-Key') ?: null,$payload !== '' ? hash('sha256', $payload) : null,!empty($_SERVER['REMOTE_ADDR']) ? hash('sha256', (string)$_SERVER['REMOTE_ADDR']) : null,!empty($_SERVER['HTTP_USER_AGENT']) ? hash('sha256', (string)$_SERVER['HTTP_USER_AGENT']) : null,$errorMessage]);
     } catch (Throwable $e) {
         // Logging must never block API execution.
     }
