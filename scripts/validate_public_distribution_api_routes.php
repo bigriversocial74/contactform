@@ -12,7 +12,13 @@ $required = [
     'api/public/v1/rewards/status.php',
     'api/distribution/_issuance_worker.php',
     'api/distribution/issuance-worker.php',
+    'api/distribution/_developer_webhooks.php',
+    'api/distribution/webhook-worker.php',
+    'api/merchant/developer-webhook-test.php',
     'scripts/run_distribution_issuance_worker.php',
+    'scripts/run_distribution_webhook_worker.php',
+    'database/stage_public_distribution_api_webhooks.sql',
+    'docs/stage-api-5-developer-webhooks.md',
     'account-link.php',
     'developer-docs.php',
 ];
