@@ -59,38 +59,49 @@
      $requestTotals = $pdo->prepare("SELECT COUNT(*) total_requests, SUM(created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)) requests_24h, SUM(status_code >= 400) error_requests, SUM(status_code >= 400 AND created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)) errors_24h, SUM(status_code=429) rate_limited_requests, SUM(status_code=429 AND created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)) rate_limited_24h FROM distribution_api_request_logs WHERE merchant_user_id=?");
      $requestTotals->execute([$merchantUserId]);
      $totals = $requestTotals->fetch() ?: [];
-
      $daily = $pdo->prepare("SELECT DATE(created_at) AS day, COUNT(*) requests, SUM(status_code >= 400) errors, SUM(status_code=429) rate_limited FROM distribution_api_request_logs WHERE merchant_user_id=? AND created_at >= DATE_SUB(CURDATE(), INTERVAL 13 DAY) GROUP BY DATE(created_at) ORDER BY day ASC");
      $daily->execute([$merchantUserId]);
-
      $status = $pdo->prepare("SELECT CASE WHEN status_code BETWEEN 200 AND 299 THEN '2xx' WHEN status_code BETWEEN 300 AND 399 THEN '3xx' WHEN status_code BETWEEN 400 AND 499 THEN '4xx' WHEN status_code >= 500 THEN '5xx' ELSE 'unknown' END AS status_family, response_status, COUNT(*) requests FROM distribution_api_request_logs WHERE merchant_user_id=? AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) GROUP BY status_family,response_status ORDER BY requests DESC,status_family ASC LIMIT 20");
      $status->execute([$merchantUserId]);
-
      $apps = $pdo->prepare("SELECT mda.public_id,mda.name,mda.environment,mda.status, COUNT(darl.id) requests_7d, SUM(darl.status_code >= 400) errors_7d, SUM(darl.status_code=429) rate_limited_7d, MAX(darl.created_at) last_request_at FROM merchant_developer_apps mda LEFT JOIN distribution_api_request_logs darl ON darl.app_id=mda.id AND darl.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) WHERE mda.merchant_user_id=? GROUP BY mda.id ORDER BY requests_7d DESC,mda.updated_at DESC LIMIT 25");
      $apps->execute([$merchantUserId]);
-
      $keys = $pdo->prepare("SELECT mak.public_id,mak.name,mak.environment,mak.key_prefix,mak.status,mda.name AS app_name, COUNT(darl.id) requests_7d, SUM(darl.status_code >= 400) errors_7d, SUM(darl.status_code=429) rate_limited_7d, MAX(darl.created_at) last_request_at FROM merchant_api_keys mak INNER JOIN merchant_developer_apps mda ON mda.id=mak.app_id LEFT JOIN distribution_api_request_logs darl ON darl.api_key_id=mak.id AND darl.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) WHERE mak.merchant_user_id=? GROUP BY mak.id,mda.id ORDER BY requests_7d DESC,mak.created_at DESC LIMIT 25");
      $keys->execute([$merchantUserId]);
-
      $quota = $pdo->prepare("SELECT paqb.bucket_scope,paqb.bucket_key,paqb.limit_value,paqb.used_count,paqb.window_start,paqb.window_end,mak.key_prefix,mda.name AS app_name FROM public_api_quota_buckets paqb INNER JOIN merchant_api_keys mak ON mak.id=paqb.api_key_id INNER JOIN merchant_developer_apps mda ON mda.id=paqb.app_id WHERE paqb.merchant_user_id=? AND paqb.window_end > NOW() ORDER BY FIELD(paqb.bucket_scope,'minute','day','month'),paqb.used_count DESC LIMIT 30");
      $quota->execute([$merchantUserId]);
-
      $webhooks = $pdo->prepare("SELECT event_type,status,COUNT(*) events,MAX(created_at) last_event_at FROM developer_webhook_events WHERE merchant_user_id=? AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) GROUP BY event_type,status ORDER BY events DESC,event_type ASC LIMIT 25");
      $webhooks->execute([$merchantUserId]);
-
      $sandbox = $pdo->prepare("SELECT COUNT(*) sandbox_rewards, SUM(created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)) sandbox_rewards_24h, MAX(created_at) last_sandbox_reward_at FROM public_api_sandbox_rewards WHERE merchant_user_id=?");
      $sandbox->execute([$merchantUserId]);
+     return ['totals'=>$totals,'daily'=>$daily->fetchAll(),'status_breakdown'=>$status->fetchAll(),'apps'=>$apps->fetchAll(),'keys'=>$keys->fetchAll(),'quota_buckets'=>$quota->fetchAll(),'webhooks'=>$webhooks->fetchAll(),'sandbox'=>$sandbox->fetch() ?: []];
+ }
 
-     return [
-         'totals' => $totals,
-         'daily' => $daily->fetchAll(),
-         'status_breakdown' => $status->fetchAll(),
-         'apps' => $apps->fetchAll(),
-         'keys' => $keys->fetchAll(),
-         'quota_buckets' => $quota->fetchAll(),
-         'webhooks' => $webhooks->fetchAll(),
-         'sandbox' => $sandbox->fetch() ?: [],
+ function mg_developer_api_setup_payload(array $summary, array $apps, array $keys, array $programs): array
+ {
+     $hasProgram = count($programs) > 0;
+     $hasApp = (int)($summary['app_count'] ?? 0) > 0;
+     $activeApps = (int)($summary['active_apps'] ?? 0);
+     $hasActiveApp = $activeApps > 0;
+     $hasCredential = (int)($summary['key_count'] ?? 0) > 0;
+     $hasActiveCredential = (int)($summary['active_keys'] ?? 0) > 0;
+     $hasDefaultProgram = false;
+     $hasWebhook = false;
+     foreach ($apps as $app) {
+         if (!empty($app['default_program_id'])) $hasDefaultProgram = true;
+         if (!empty($app['webhook_url'])) $hasWebhook = true;
+     }
+     $steps = [
+         ['key'=>'program','label'=>'Create a Distribution Program','done'=>$hasProgram,'detail'=>'Create at least one active program and attach products before live reward issuance.','action_label'=>'Open Distribution','action_href'=>'/merchant-distribution.php'],
+         ['key'=>'app','label'=>'Create a developer app','done'=>$hasApp,'detail'=>'Create a test-mode app for integration work, then promote to live when ready.','action_label'=>'Use App Editor','action_href'=>'#developer-app-editor'],
+         ['key'=>'default_program','label'=>'Attach a default program','done'=>$hasDefaultProgram,'detail'=>'Connect the app to a default Distribution Program so examples and credentials have a clear reward source.','action_label'=>'Choose program','action_href'=>'#developer-app-editor'],
+         ['key'=>'credential','label'=>'Create an API credential','done'=>$hasActiveCredential,'detail'=>'Generate a server-side credential and copy it once into your backend secret store.','action_label'=>'Create credential','action_href'=>'#developer-credentials'],
+         ['key'=>'sandbox','label'=>'Run sandbox linked-account and reward issue tests','done'=>false,'detail'=>'Use the sandbox linked-account endpoint and test reward issue flow before using live credentials.','action_label'=>'Read sandbox docs','action_href'=>'/docs/stage-api-8-sandbox-flow.md'],
+         ['key'=>'webhook','label'=>'Configure webhook delivery','done'=>$hasWebhook,'detail'=>'Add a webhook URL so reward and account-link lifecycle callbacks are visible to the integration.','action_label'=>'Webhook docs','action_href'=>'/docs/stage-api-5-developer-webhooks.md'],
+         ['key'=>'public_docs','label'=>'Send developers to public docs','done'=>true,'detail'=>'Share the public docs and copy/paste examples after the app, credential, and sandbox test are ready.','action_label'=>'Public docs','action_href'=>'/developer-docs.php'],
      ];
+     $completed = 0;
+     foreach ($steps as $step) if (!empty($step['done'])) $completed++;
+     return ['completed'=>$completed,'total'=>count($steps),'ready_for_test'=>$hasApp && $hasActiveCredential,'ready_for_live'=>$hasProgram && $hasActiveApp && $hasActiveCredential && $hasDefaultProgram && $hasWebhook,'steps'=>$steps];
  }
 
  $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
@@ -100,17 +111,22 @@
  if ($method === 'GET') {
      $programs = $pdo->prepare('SELECT public_id,name,program_type,status FROM distribution_programs WHERE merchant_user_id=? ORDER BY updated_at DESC,id DESC');
      $programs->execute([(int) $user['id']]);
+     $programRows = $programs->fetchAll();
      $apps = $pdo->prepare("SELECT mda.public_id,mda.name,mda.environment,mda.status,mda.allowed_origins_json,mda.webhook_url,mda.scopes_json,mda.created_at,mda.updated_at,dp.public_id AS default_program_id,dp.name AS default_program_name,dsc.public_id AS source_id,dsc.provider_key,dsc.status AS source_status,COUNT(mak.id) AS key_count,SUM(mak.status='active') AS active_key_count,MAX(mak.last_used_at) AS last_used_at FROM merchant_developer_apps mda LEFT JOIN distribution_programs dp ON dp.id=mda.default_program_id LEFT JOIN distribution_source_connections dsc ON dsc.id=mda.distribution_source_connection_id LEFT JOIN merchant_api_keys mak ON mak.app_id=mda.id WHERE mda.merchant_user_id=? GROUP BY mda.id,dp.id,dsc.id ORDER BY mda.updated_at DESC,mda.id DESC");
      $apps->execute([(int) $user['id']]);
+     $appRows = $apps->fetchAll();
      $keys = $pdo->prepare("SELECT mak.public_id,mda.public_id AS app_public_id,mda.name AS app_name,mak.name,mak.environment,mak.key_prefix,mak.scopes_json,mak.status,mak.expires_at,mak.last_used_at,mak.created_at,mak.revoked_at FROM merchant_api_keys mak INNER JOIN merchant_developer_apps mda ON mda.id=mak.app_id WHERE mak.merchant_user_id=? ORDER BY mak.created_at DESC,mak.id DESC");
      $keys->execute([(int) $user['id']]);
+     $keyRows = $keys->fetchAll();
      $logs = $pdo->prepare("SELECT darl.public_id,darl.method,darl.endpoint,darl.status_code,darl.response_status,darl.idempotency_key,darl.error_message,darl.created_at,mda.name AS app_name,mak.key_prefix FROM distribution_api_request_logs darl LEFT JOIN merchant_developer_apps mda ON mda.id=darl.app_id LEFT JOIN merchant_api_keys mak ON mak.id=darl.api_key_id WHERE darl.merchant_user_id=? ORDER BY darl.created_at DESC,darl.id DESC LIMIT 50");
      $logs->execute([(int) $user['id']]);
      $summary = $pdo->prepare("SELECT COUNT(*) app_count,SUM(status='active') active_apps FROM merchant_developer_apps WHERE merchant_user_id=?");
      $summary->execute([(int) $user['id']]);
+     $summaryRows = $summary->fetch() ?: [];
      $keySummary = $pdo->prepare("SELECT COUNT(*) key_count,SUM(status='active') active_keys FROM merchant_api_keys WHERE merchant_user_id=?");
      $keySummary->execute([(int) $user['id']]);
-     mg_ok(['summary' => array_merge($summary->fetch() ?: [], $keySummary->fetch() ?: []),'programs' => $programs->fetchAll(),'apps' => $apps->fetchAll(),'keys' => $keys->fetchAll(),'logs' => $logs->fetchAll(),'analytics' => mg_developer_api_fetch_analytics($pdo, (int)$user['id']),'scopes' => ['distribution:programs.read','distribution:rewards.issue','distribution:rewards.status','distribution:webhooks.manage']]);
+     $summaryData = array_merge($summaryRows, $keySummary->fetch() ?: []);
+     mg_ok(['summary'=>$summaryData,'programs'=>$programRows,'apps'=>$appRows,'keys'=>$keyRows,'logs'=>$logs->fetchAll(),'analytics'=>mg_developer_api_fetch_analytics($pdo, (int)$user['id']),'onboarding'=>mg_developer_api_setup_payload($summaryData,$appRows,$keyRows,$programRows),'scopes'=>['distribution:programs.read','distribution:rewards.issue','distribution:rewards.status','distribution:webhooks.manage']]);
  }
 
  if ($method !== 'POST') mg_fail('Method not allowed.', 405);
