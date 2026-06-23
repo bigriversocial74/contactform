@@ -39,6 +39,24 @@ lqr_sql_record_webhook_delivery()
 
 `examples/local-quest-rewards/signed-quest-enforcement.php` now uses SQL replay storage first and the translated app-state replay helper as fallback.
 
+## Admin replay log
+
+The signed QR replay log lives at:
+
+```text
+examples/local-quest-rewards/admin-signed-replay-log.php
+```
+
+It shows the latest accepted signed QR payload replay records, including:
+
+```text
+first_seen_at
+quest_key
+code_type
+nonce
+replay_key
+```
+
 ## Remaining work
 
 1. Wire callback delivery dedupe into `webhook.php`.
