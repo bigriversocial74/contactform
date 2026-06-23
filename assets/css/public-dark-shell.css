@@ -188,6 +188,16 @@ body[data-authenticated="true"] .mg-site-header.mg-market-universal-header .mg-h
   text-overflow:ellipsis;
   white-space:nowrap;
 }
+
+/* Profile pages keep their investment-market header because that header is part of the visual layout. */
+body[data-authenticated="false"].mg-investment-profile-page .mg-main>.mg-invest-sticky-header,
+body[data-authenticated="false"].mg-investment-profile-page .mg-page>.mg-invest-sticky-header{
+  display:block!important;
+}
+body[data-authenticated="false"].mg-investment-profile-page .mg-unified-header.mg-market-universal-header{
+  display:none!important;
+}
+
 @media(max-width:760px){
   body[data-authenticated="true"] .mg-site-header.mg-market-universal-header .mg-header-market{display:none!important}
   body[data-authenticated="true"] .mg-site-header.mg-market-universal-header{max-height:60px!important}
