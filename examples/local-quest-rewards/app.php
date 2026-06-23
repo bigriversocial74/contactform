@@ -11,6 +11,8 @@ function lqr_config(): array
     return is_array($config) ? $config : [];
 }
 
+require_once __DIR__ . '/storage-sql.php';
+
 function lqr_quests(): array
 {
     $quests = require __DIR__ . '/quests.php';
@@ -31,11 +33,13 @@ function lqr_state_path(): string
 
 function lqr_default_state(): array
 {
-    return ['users'=>[], 'users_by_email'=>[], 'link_states'=>[], 'events'=>[], 'last_response'=>null, 'updated_at'=>gmdate('c')];
+    return ['users'=>[], 'users_by_email'=>[], 'link_states'=>[], 'events'=>[], 'admin_users'=>[], 'admin_password_resets'=>[], 'last_response'=>null, 'updated_at'=>gmdate('c')];
 }
 
 function lqr_load_state(): array
 {
+    $config = lqr_config();
+    if (lqr_storage_uses_sql($config)) return lqr_sql_load_state($config);
     $path = lqr_state_path();
     if (!is_file($path)) return lqr_default_state();
     $state = json_decode((string)file_get_contents($path), true);
@@ -44,7 +48,12 @@ function lqr_load_state(): array
 
 function lqr_save_state(array $state): void
 {
+    $config = lqr_config();
     $state['updated_at'] = gmdate('c');
+    if (lqr_storage_uses_sql($config)) {
+        lqr_sql_save_state($config, $state);
+        return;
+    }
     file_put_contents(lqr_state_path(), json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), LOCK_EX);
 }
 
@@ -343,6 +352,7 @@ function lqr_action_check_status(array &$state, array $config, array &$user, str
 
 function lqr_reward_item_id(array $reward): string
 {
+    if (!empty($reward['item_id'])) return (string)$reward['item_id'];
     if (!empty($reward['response']['pppm_item_id'])) return (string)$reward['response']['pppm_item_id'];
     $status = is_array($reward['status_response'] ?? null) ? $reward['status_response'] : [];
     $jobs = is_array($status['jobs'] ?? null) ? $status['jobs'] : [];
