@@ -1,6 +1,6 @@
 # Local Quest Rewards
 
-Local Quest Rewards is a working demo app for the Microgifter Public Distribution API.
+Local Quest Rewards is a starter-app foundation for the Microgifter Public Distribution API.
 
 It behaves like a third-party local experience app:
 
@@ -21,7 +21,7 @@ Sandbox linking is only a developer shortcut. It is not the primary user flow.
 
 One Microgifter merchant can approve products/templates for a Distribution Program. Multiple third-party Quest-style apps can be allowed to distribute those approved rewards.
 
-Microgifter remains the system of record for reward ownership, item status, claim state, redemption, webhooks, and audit history. The Quest app owns app login, quest progress, QR/geolocation task context, local action completion, wallet UX, admin controls, and SQL runtime storage for the third-party experience.
+Microgifter remains the system of record for reward ownership, item status, claim state, redemption, webhooks, and audit history. The starter app owns app login, quest progress, QR/geolocation task context, local action completion, wallet UX, admin controls, and SQL runtime storage for the third-party experience.
 
 ## Files
 
@@ -29,6 +29,7 @@ Microgifter remains the system of record for reward ownership, item status, clai
 examples/local-quest-rewards/
   README.md
   app.php
+  security.php
   storage-sql.php
   admin-auth.php
   admin-credentials.php
@@ -49,11 +50,15 @@ examples/local-quest-rewards/
   assets/portal.js
   database/local_quest_rewards.sql
   database/local_quest_admin_auth.sql
-  scripts/migrate-json-to-sql.php
-  data/README.md
 ```
 
-## Run locally with JSON storage
+## Runtime requirement
+
+The starter foundation is now SQL-only. It requires MySQL or MariaDB through PDO.
+
+There is no `data/state.json` runtime, no JSON demo mode, and no JSON-to-SQL migration path in the starter foundation. SQL `JSON` columns are still used where they make sense for metadata, API responses, webhook payloads, QR/geolocation context, and audit context.
+
+## Run locally with SQL storage
 
 Copy config:
 
@@ -61,7 +66,14 @@ Copy config:
 cp examples/local-quest-rewards/config.example.php examples/local-quest-rewards/config.php
 ```
 
-Edit `config.php` with a test key, program ID, template ID, app public URL, webhook secret, and admin values.
+Create the database and run schema:
+
+```bash
+mysql local_quest_rewards < examples/local-quest-rewards/database/local_quest_rewards.sql
+mysql local_quest_rewards < examples/local-quest-rewards/database/local_quest_admin_auth.sql
+```
+
+Edit `config.php` with the database DSN/user/secret, Microgifter test key, program ID, template ID, app public URL, webhook secret, security signing secret, and admin bootstrap values.
 
 Start PHP:
 
@@ -86,16 +98,13 @@ http://127.0.0.1:8090/admin-credentials.php
 
 ## SQL runtime storage
 
-The Quest app now supports runtime SQL mode through:
+The Quest app runtime is handled through:
 
 ```text
 storage-sql.php
 ```
 
-`app.php` still exposes the same `lqr_load_state()` and `lqr_save_state()` functions, but they switch automatically:
-
-- `storage.driver = json` writes to `data/state.json`
-- `storage.driver = mysql` reads/writes the Quest SQL tables
+`app.php` exposes `lqr_load_state()` and `lqr_save_state()` for the current app layer, but both are SQL-backed. They read/write the Quest SQL tables through PDO.
 
 The schema files are:
 
@@ -105,20 +114,6 @@ database/local_quest_admin_auth.sql
 ```
 
 They define tables for admin users, participant users, link states, quests, completions, rewards, reward claims, admin password recovery tokens, admin audit events, event logs, and app state.
-
-## Migrating JSON demo data to SQL
-
-1. Create the database.
-2. Run `database/local_quest_rewards.sql`.
-3. Run `database/local_quest_admin_auth.sql`.
-4. Set `storage.driver` to `mysql` in `config.php` and configure DSN/user/password.
-5. Run:
-
-```bash
-php examples/local-quest-rewards/scripts/migrate-json-to-sql.php
-```
-
-The migration reads `data/state.json`, writes the SQL tables through `lqr_sql_save_state()`, and verifies counts by loading the SQL state back.
 
 ## Admin backend
 
@@ -131,6 +126,12 @@ The migration reads `data/state.json`, writes the SQL tables through `lqr_sql_sa
 `admin-credentials.php` manages admin users, admin sign-in, admin password changes, account status, and one-time recovery links.
 
 The admin backend manages the third-party app layer only. It does not replace Microgifter merchant controls, Distribution Program approval, reward ownership, redemption truth, or Microgifter audit history.
+
+## Security layer
+
+`security.php` boots hardened sessions, applies idle timeout behavior, injects CSRF tokens into POST forms, blocks expired/missing CSRF tokens, and provides signed QR/code helpers with replay-key foundations.
+
+Manual QR/code input still exists for usability. Protected production quests should move to signed-code-only verification.
 
 ## QR scanning and geolocation
 
@@ -183,4 +184,4 @@ Microgifter still makes the final authorization decision: credential scope, app 
 
 ## Purpose
 
-This app is the ecosystem proof. If this app needs hidden knowledge to work, the Public Distribution API docs or Microgifter permission system needs another pass.
+This app is the ecosystem proof and starter foundation. If this app needs hidden knowledge to work, the Public Distribution API docs, installer, or Microgifter permission system needs another pass.
