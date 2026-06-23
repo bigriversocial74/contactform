@@ -7,3 +7,4 @@ declare(strict_types=1);
 <section class="mg-app-panel"><div class="mg-app-panel-head"><div><h2>Campaign contacts</h2><p>Select a campaign from the activity list and review contacts, reward progress, and follow-up actions.</p></div></div><div class="mg-app-panel-body"><div class="mg-form-status" data-stage12-contact-status>Select a campaign to load contacts.</div><div class="mg-product-list" data-stage12-contact-list></div></div></section>
 <script src="/assets/js/stage12-campaigns.js" defer></script>
 <script src="/assets/js/stage12-campaign-contacts.js" defer></script>
+<script src="/assets/js/stage12-campaign-tools.js" defer></script>
