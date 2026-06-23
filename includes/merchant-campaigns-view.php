@@ -8,3 +8,4 @@ declare(strict_types=1);
 <script src="/assets/js/stage12-campaigns.js" defer></script>
 <script src="/assets/js/stage12-campaign-contacts.js" defer></script>
 <script src="/assets/js/stage12-campaign-tools.js" defer></script>
+<script src="/assets/js/stage12-campaign-insights.js" defer></script>
