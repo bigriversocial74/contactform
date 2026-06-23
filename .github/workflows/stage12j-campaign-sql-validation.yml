@@ -1,0 +1,31 @@
+name: Stage 12J Campaign SQL Validation
+
+on:
+  pull_request:
+    paths:
+      - 'database/stage_12j_campaign_feature_sql_hardening.sql'
+      - 'scripts/validate_stage12j_campaign_sql_hardening.php'
+      - '.github/workflows/stage12j-campaign-sql-validation.yml'
+  push:
+    branches:
+      - 'stage12j-*'
+    paths:
+      - 'database/stage_12j_campaign_feature_sql_hardening.sql'
+      - 'scripts/validate_stage12j_campaign_sql_hardening.php'
+      - '.github/workflows/stage12j-campaign-sql-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+      - run: php -l scripts/validate_stage12j_campaign_sql_hardening.php
+      - run: php scripts/validate_stage12j_campaign_sql_hardening.php
