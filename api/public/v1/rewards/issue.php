@@ -10,7 +10,7 @@ $input = mg_input();
 
 $programPublicId = trim((string) ($input['program_id'] ?? ''));
 $externalEventId = trim((string) ($input['external_event_id'] ?? ''));
-$eventType = strtolower(trim((string) ($input['event_type'] ?? 'reward.issue'));
+$eventType = strtolower(trim((string) ($input['event_type'] ?? 'reward.issue')));
 $recipientInput = is_array($input['recipient'] ?? null) ? $input['recipient'] : [];
 $rewardInput = is_array($input['reward'] ?? null) ? $input['reward'] : [];
 $linkedAccountId = trim((string) ($recipientInput['linked_account_id'] ?? ''));
