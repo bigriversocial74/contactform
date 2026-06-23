@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+
 $public_header_config = is_array($page_manifest['public_header'] ?? null) ? $page_manifest['public_header'] : [];
 $public_nav_links = is_array($public_header_config['links'] ?? null) ? $public_header_config['links'] : [];
 $public_page_id = (string) ($page_manifest['id'] ?? '');
@@ -20,14 +21,17 @@ $uses_standard_public_header = !$user;
 
 if ($uses_standard_public_header) {
     $public_nav_links = [
-        ['label'=>'Corporate Gifting','href'=>'/corporate.php'],
-        ['label'=>'Retail Subscriptions','href'=>'/retail.php'],
-        ['label'=>'Locations','href'=>'/locations.php'],
+        ['label' => 'Platform', 'href' => '/#platform'],
+        ['label' => 'API', 'href' => '/#growth'],
+        ['label' => 'Merchants', 'href' => '/#merchants'],
+        ['label' => 'Docs', 'href' => '/developer-docs.php'],
     ];
 }
-$show_home_search = $uses_standard_public_header;
-$show_public_search = $show_home_search || (bool)($public_header_config['search'] ?? false) || (bool)$user;
-$show_demo_button = !$user;
+
+$show_home_search = false;
+$show_public_search = (bool) ($public_header_config['search'] ?? false) || (bool) $user;
+$show_demo_button = false;
+$show_create_button = !$user;
 ?>
 <header class="mg-site-header mg-unified-header" data-mg-universal-header data-public-header data-header-variant="<?= $user ? 'logged-in' : 'logged-out' ?>">
   <?php if ($public_page_id === 'home'): ?><span hidden>Turn future demand into present-day revenue</span><?php endif; ?>
@@ -50,6 +54,7 @@ $show_demo_button = !$user;
 
     <div class="mg-header-actions" data-header-template="<?= $user ? 'logged-in-public' : 'logged-out-public' ?>">
       <?php if ($show_demo_button): ?><a class="mg-public-demo" href="<?= mg_e($public_demo_href) ?>">Book A Demo</a><?php endif; ?>
+      <?php if ($show_create_button): ?><a class="mg-public-create" href="/signup.php">Create Account</a><?php endif; ?>
       <?php if ($user): ?>
         <a class="mg-header-create" href="/build.php" data-header-create aria-label="Create">+</a>
         <div class="mg-header-signal" data-header-signal="notifications"><button class="mg-header-icon" type="button" data-header-signal-trigger aria-expanded="false" aria-label="System notifications"><svg viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0-6 6v3.6L4.7 15a1 1 0 0 0 .88 1.5h12.84A1 1 0 0 0 19.3 15L18 12.6V9a6 6 0 0 0-6-6Z" fill="currentColor"/></svg><span class="mg-header-badge" data-notification-badge hidden>0</span></button></div>
@@ -57,27 +62,15 @@ $show_demo_button = !$user;
       <?php else: ?>
         <button class="mg-public-menu-toggle" type="button" data-public-menu-trigger aria-label="Open navigation menu" aria-controls="mg-public-mobile-menu" aria-expanded="false"><span></span><span></span><span></span></button>
       <?php endif; ?>
-      <div class="mg-account-menu" data-mg-auth-menu>
-        <button class="mg-account-trigger" type="button" data-mg-auth-trigger aria-expanded="false">
-          <span class="mg-avatar"><?= mg_e($user ? $display_initial : 'A') ?></span>
-          <span class="mg-account-copy">
-            <span class="mg-account-name"><?= mg_e($user ? $display_name : 'Account') ?></span>
-            <span class="mg-account-role"><?= mg_e($user ? (string) ($user_roles[0] ?? 'member') : 'Guest') ?></span>
-          </span>
-          <span class="mg-account-caret">⌄</span>
-        </button>
-
-        <div class="mg-account-actions">
-          <div class="mg-account-menu-head">
-            <span class="mg-account-status-light"></span>
-            <span class="mg-account-head-copy">
-              <span class="mg-account-head-name"><?= mg_e($user ? $display_name : 'Account') ?></span>
-              <span class="mg-account-head-email"><?= mg_e($user ? $display_email : 'Guest') ?></span>
-            </span>
-            <span class="mg-account-session-label">SESSION</span>
-          </div>
-
-          <?php if ($user): ?>
+      <?php if ($user): ?>
+        <div class="mg-account-menu" data-mg-auth-menu>
+          <button class="mg-account-trigger" type="button" data-mg-auth-trigger aria-expanded="false">
+            <span class="mg-avatar"><?= mg_e($display_initial) ?></span>
+            <span class="mg-account-copy"><span class="mg-account-name"><?= mg_e($display_name) ?></span><span class="mg-account-role"><?= mg_e((string) ($user_roles[0] ?? 'member')) ?></span></span>
+            <span class="mg-account-caret">⌄</span>
+          </button>
+          <div class="mg-account-actions">
+            <div class="mg-account-menu-head"><span class="mg-account-status-light"></span><span class="mg-account-head-copy"><span class="mg-account-head-name"><?= mg_e($display_name) ?></span><span class="mg-account-head-email"><?= mg_e($display_email) ?></span></span><span class="mg-account-session-label">SESSION</span></div>
             <?php $menuIndex = 1; ?>
             <a class="mg-account-action" href="/inbox.php"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>IN/OUT Box</span></a>
             <a class="mg-account-action" href="/feed.php"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>My Feed</span></a>
@@ -89,12 +82,9 @@ $show_demo_button = !$user;
             <?php if ($can_sales_crm): ?><a class="mg-account-action" href="/sales-crm.php"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>CRM dashboard</span></a><?php endif; ?>
             <?php if ($can_admin_dashboard): ?><a class="mg-account-action" href="/account-admin.php"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Admin dashboard</span></a><?php endif; ?>
             <button class="mg-account-action mg-account-logout" type="button" data-auth-logout><span class="mg-account-index">00</span><span>Sign out</span></button>
-          <?php else: ?>
-            <a class="mg-account-action" href="/signin.php"><span class="mg-account-index">01</span><span>Sign in</span></a>
-            <a class="mg-account-action" href="/signup.php"><span class="mg-account-index">02</span><span>Create account</span></a>
-          <?php endif; ?>
+          </div>
         </div>
-      </div>
+      <?php endif; ?>
       <button class="mg-cart-header-button" type="button" data-cart-trigger aria-label="Open shopping cart" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.1 9.2a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 1.9-1.4L21 7H7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10" cy="19" r="1.5" fill="currentColor"/><circle cx="18" cy="19" r="1.5" fill="currentColor"/></svg><span class="mg-cart-header-badge" data-cart-badge hidden>0</span></button>
     </div>
   </div>
@@ -103,24 +93,15 @@ $show_demo_button = !$user;
 <div class="mg-public-mobile-menu" id="mg-public-mobile-menu" data-public-mobile-menu hidden aria-hidden="true">
   <button class="mg-public-mobile-backdrop" type="button" data-public-menu-close aria-label="Close navigation menu"></button>
   <aside class="mg-public-mobile-panel" role="dialog" aria-modal="true" aria-labelledby="mg-public-mobile-title" tabindex="-1">
-    <div class="mg-public-mobile-head">
-      <a class="mg-public-mobile-logo" href="/index.php" id="mg-public-mobile-title">Microgifter</a>
-      <button class="mg-public-mobile-close" type="button" data-public-menu-close aria-label="Close navigation menu">×</button>
-    </div>
-    <form class="mg-public-mobile-search" action="/discover.php" method="get" role="search">
-      <input type="search" name="q" placeholder="Search Microgifter" aria-label="Search Microgifter" autocomplete="off">
-    </form>
-    <nav class="mg-public-mobile-nav" aria-label="Mobile navigation">
-      <?php foreach ($public_nav_links as $public_header_link): ?>
-        <a href="<?= mg_e((string) ($public_header_link['href'] ?? '#')) ?>"><?= mg_e((string) ($public_header_link['label'] ?? 'Learn More')) ?></a>
-      <?php endforeach; ?>
-      <a href="/discover.php">Discover</a>
-      <a href="<?= mg_e($public_demo_href) ?>">Book A Demo</a>
-    </nav>
-    <div class="mg-public-mobile-auth">
-      <a href="/signin.php">Sign In</a>
-      <a href="/signup.php">Create Account</a>
-    </div>
+    <div class="mg-public-mobile-head"><a class="mg-public-mobile-logo" href="/index.php" id="mg-public-mobile-title">Microgifter</a><button class="mg-public-mobile-close" type="button" data-public-menu-close aria-label="Close navigation menu">×</button></div>
+    <?php if ($public_nav_links): ?>
+      <nav class="mg-public-mobile-nav" aria-label="Mobile navigation">
+        <?php foreach ($public_nav_links as $public_header_link): ?>
+          <a href="<?= mg_e((string) ($public_header_link['href'] ?? '#')) ?>"><?= mg_e((string) ($public_header_link['label'] ?? 'Learn More')) ?></a>
+        <?php endforeach; ?>
+      </nav>
+    <?php endif; ?>
+    <div class="mg-public-mobile-auth"><a href="/signin.php">Sign In</a><a href="/signup.php">Create Account</a></div>
   </aside>
 </div>
 <script>
@@ -146,28 +127,15 @@ $show_demo_button = !$user;
     }
     menu.classList.remove('is-open');
     menu.setAttribute('aria-hidden', 'true');
-    window.setTimeout(() => {
-      if (!menu.classList.contains('is-open')) menu.hidden = true;
-    }, 220);
+    window.setTimeout(() => { if (!menu.classList.contains('is-open')) menu.hidden = true; }, 220);
   };
   document.addEventListener('click', (event) => {
-    if (event.target.closest('[data-public-menu-trigger]')) {
-      event.preventDefault();
-      const menu = getMenu();
-      setOpen(!(menu && menu.classList.contains('is-open')));
-      return;
-    }
-    if (event.target.closest('[data-public-menu-close]')) {
-      event.preventDefault();
-      setOpen(false);
-      return;
-    }
+    if (event.target.closest('[data-public-menu-trigger]')) { event.preventDefault(); const menu = getMenu(); setOpen(!(menu && menu.classList.contains('is-open'))); return; }
+    if (event.target.closest('[data-public-menu-close]')) { event.preventDefault(); setOpen(false); return; }
     const link = event.target.closest('.mg-public-mobile-menu a');
     if (link) setOpen(false);
   });
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') setOpen(false);
-  });
+  document.addEventListener('keydown', (event) => { if (event.key === 'Escape') setOpen(false); });
 })();
 </script>
 <?php endif; ?>
@@ -175,10 +143,7 @@ $show_demo_button = !$user;
 <div class="mg-create-menu" id="mg-create-menu" data-create-menu hidden aria-hidden="true">
   <button class="mg-create-menu-backdrop" type="button" data-create-menu-close aria-label="Close create menu"></button>
   <section class="mg-create-menu-dialog" role="dialog" aria-modal="true" aria-labelledby="mg-create-menu-title" tabindex="-1">
-    <header class="mg-create-menu-head">
-      <div><span>Create</span><h2 id="mg-create-menu-title">What do you want to add?</h2><p>Choose a workspace to start creating.</p></div>
-      <button class="mg-create-menu-close" type="button" data-create-menu-close aria-label="Close create menu">×</button>
-    </header>
+    <header class="mg-create-menu-head"><div><span>Create</span><h2 id="mg-create-menu-title">What do you want to add?</h2><p>Choose a workspace to start creating.</p></div><button class="mg-create-menu-close" type="button" data-create-menu-close aria-label="Close create menu">×</button></header>
     <div class="mg-create-menu-grid">
       <a href="/build.php" data-create-menu-option="microgift"><span class="mg-create-menu-icon" aria-hidden="true">M</span><strong>Microgift</strong><small>Create a prepaid local gift or offer.</small></a>
       <a href="/feed.php" data-create-menu-option="post" aria-controls="mg-post-composer-modal"><span class="mg-create-menu-icon" aria-hidden="true">P</span><strong>Post</strong><small>Publish an update to your public feed.</small></a>
