@@ -89,6 +89,7 @@ return [
         'stage_18i_recipient_notifications.sql',
         'stage_12_campaigns_reward_templates.sql',
         'stage_12b_campaign_events_agent_context.sql',
+        'stage_12j_campaign_feature_sql_hardening.sql',
         'stage_18j_' . 'content_' . 'moderation.sql',
         'stage_18k_admin_account_management.sql',
         'stage_18l_admin_commerce_operations.sql',
@@ -107,5 +108,6 @@ return [
     'manual_only' => [
         '03Z_bootstrap_super_admin_user1.sql' => 'Promotes user ID 1 to super_admin and requires explicit operator confirmation.',
         'microgifter_complete_production_update_v1c_v1release.sql' => 'Operator-imported production bundle that consolidates the V1C, V1D, V1F, and V1 release hardening migrations.',
+        'stage_12_campaign_features_full_import.sql' => 'Operator-imported one-file Stage 12 campaign feature schema for environments that need a single phpMyAdmin import.',
     ],
 ];
