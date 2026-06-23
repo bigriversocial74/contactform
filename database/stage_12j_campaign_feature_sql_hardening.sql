@@ -10,7 +10,13 @@
 -- This ordered migration is intentionally PDO-safe for scripts/run_migrations.php.
 
 ALTER TABLE campaign_events
+  DROP FOREIGN KEY fk_campaign_events_campaign;
+
+ALTER TABLE campaign_events
   MODIFY campaign_id BIGINT UNSIGNED NULL;
+
+ALTER TABLE campaign_events
+  ADD CONSTRAINT fk_campaign_events_campaign FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE SET NULL;
 
 ALTER TABLE campaign_events
   ADD KEY idx_campaign_events_merchant_type_created (merchant_user_id,event_type,created_at),
