@@ -1,6 +1,6 @@
 # Third-party reward wallet and claim contract
 
-Microgifter should allow approved third-party apps to show, claim, and report reward activity while Microgifter remains the system of record.
+Microgifter allows approved third-party apps to show, claim, and report reward activity while Microgifter remains the system of record.
 
 ## Product model
 
@@ -30,21 +30,18 @@ The Quest app should feel complete:
 
 ## Current API coverage
 
-Already present:
+Implemented:
 
 - `POST /api/public/v1/rewards/issue.php`
 - `GET /api/public/v1/rewards/status.php?id=<reward_id>`
-
-The status endpoint can return issued item IDs and item status after issuance jobs complete.
-
-Missing public app-facing endpoints:
-
 - `GET /api/public/v1/rewards/list.php?linked_account_id=<linked_account_id>`
 - `POST /api/public/v1/rewards/claim.php`
 
+The status and list endpoints can return issued item IDs and item status after issuance jobs complete.
+
 ## Reward list endpoint
 
-A third-party app can maintain its own wallet from issue/status responses, but a platform list endpoint would make this cleaner.
+A third-party app can maintain its own wallet from issue/status responses, and the platform list endpoint lets it sync rewards by linked account.
 
 ```text
 GET /api/public/v1/rewards/list.php?linked_account_id=<linked_account_id>
@@ -63,8 +60,12 @@ Expected response shape:
       "external_event_id": "quest-123",
       "event_type": "quest.completed",
       "status": "issued",
-      "item_id": "item_...",
-      "item_status": "delivered",
+      "items": [
+        {
+          "item_id": "item_...",
+          "item_status": "delivered"
+        }
+      ],
       "title": "$5 Coffee Microgift",
       "issued_at": "2026-06-23T00:00:00Z"
     }
@@ -74,7 +75,7 @@ Expected response shape:
 
 ## Claim/report endpoint
 
-A third-party app should be able to report that a user viewed, claimed, opened, or started redemption for a reward.
+A third-party app can report that a user viewed, claimed, opened, or started redemption for a reward.
 
 ```text
 POST /api/public/v1/rewards/claim.php
@@ -105,19 +106,28 @@ Expected response shape:
   "reward_id": "reward_...",
   "item_id": "item_...",
   "claim_status": "claimed_in_app",
+  "item_status": "claim_pending",
   "microgifter_event_id": "evt_..."
 }
 ```
 
 ## Claim actions
 
-Suggested stable actions:
+Supported stable actions:
 
 - `viewed_in_app`
 - `claimed_in_app`
 - `redeem_started`
 - `redeem_handoff`
 - `claim_cancelled`
+
+## Claim behavior
+
+- `viewed_in_app` may move a delivered item to `viewed`.
+- `claimed_in_app`, `redeem_started`, and `redeem_handoff` may move delivered/viewed items to `claim_pending`.
+- Every claim action writes a PPPM item event with third-party app metadata.
+- Every claim action queues a developer webhook event such as `reward.claimed_in_app`.
+- Merchant redemption truth remains separate and is still handled by Microgifter merchant redemption flows.
 
 ## Microgifter responsibilities
 
@@ -129,4 +139,4 @@ The Quest app is responsible for app login, quest progress, local action complet
 
 ## Demo state
 
-`examples/local-quest-rewards/wallet.php` now displays rewards issued through the Quest app and lets users mark a reward as claimed inside the Quest app. The claim action records local state and marks reporting as `pending_microgifter_claim_api` until the public claim/report endpoint is implemented.
+`examples/local-quest-rewards/wallet.php` displays rewards issued through the Quest app and lets users claim a reward inside the Quest app. `examples/local-quest-rewards/wallet-actions.php` now reports the claim to `POST /api/public/v1/rewards/claim.php` and stores the Microgifter response in local app state.
