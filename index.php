@@ -40,7 +40,7 @@ require __DIR__ . '/includes/landing/index-v3/part12.php';
 (function(){
   function setText(selector,value){var el=document.querySelector(selector);if(el){el.textContent=value;}}
   setText('.mg-hero-copy .mg-eyebrow','Local commerce support layer');
-  setText('#mgHeroTitle','Pre-invest and support your local community.');
+  setText('#mgHeroTitle','The easiest way to pre-purchase products and invest in your local community.');
   setText('.mg-hero-copy .mg-lede','Microgifter turns future visits into wallet-ready rewards customers can buy, gift, save, redeem, or share with others.');
   var note=document.querySelector('.mg-future-demand-note');
   if(note){note.innerHTML='<strong>Community-first, technology underneath:</strong> help merchants create upfront revenue, measurable demand, and a reason for people to keep coming back.';}
