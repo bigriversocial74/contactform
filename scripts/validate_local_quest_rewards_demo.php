@@ -22,6 +22,7 @@ $required = [
     'examples/local-quest-rewards/admin-quest-controls.php',
     'examples/local-quest-rewards/admin-auth.php',
     'examples/local-quest-rewards/admin-credentials.php',
+    'examples/local-quest-rewards/admin-roles.php',
     'examples/local-quest-rewards/quest-controls.php',
     'examples/local-quest-rewards/assets/portal.css',
     'examples/local-quest-rewards/assets/portal.js',
@@ -32,6 +33,7 @@ $required = [
     'examples/local-quest-rewards/database/local_quest_admin_auth.sql',
     'docs/microgift-permission-system-plan.md',
     'docs/public-api-third-party-wallet-claim.md',
+    'docs/local-quest-admin-roles.md',
     'docs/local-quest-app-assessment.md',
     'docs/local-quest-admin-auth.md',
     'docs/local-quest-installer-hardening.md',
@@ -62,6 +64,7 @@ $install = is_file($root . '/examples/local-quest-rewards/install.php') ? (strin
 $installLock = is_file($root . '/examples/local-quest-rewards/install-lock.php') ? (string)file_get_contents($root . '/examples/local-quest-rewards/install-lock.php') : '';
 $gitignore = is_file($root . '/examples/local-quest-rewards/.gitignore') ? (string)file_get_contents($root . '/examples/local-quest-rewards/.gitignore') : '';
 $reviewJs = is_file($root . '/examples/local-quest-rewards/assets/form-review.js') ? (string)file_get_contents($root . '/examples/local-quest-rewards/assets/form-review.js') : '';
+$adminRoles = is_file($root . '/examples/local-quest-rewards/admin-roles.php') ? (string)file_get_contents($root . '/examples/local-quest-rewards/admin-roles.php') : '';
 $readme = is_file($root . '/examples/local-quest-rewards/README.md') ? (string)file_get_contents($root . '/examples/local-quest-rewards/README.md') : '';
 $security = is_file($root . '/examples/local-quest-rewards/security.php') ? (string)file_get_contents($root . '/examples/local-quest-rewards/security.php') : '';
 $storage = is_file($root . '/examples/local-quest-rewards/storage-sql.php') ? (string)file_get_contents($root . '/examples/local-quest-rewards/storage-sql.php') : '';
@@ -78,6 +81,7 @@ $js = is_file($root . '/examples/local-quest-rewards/assets/portal.js') ? (strin
 $sql = is_file($root . '/examples/local-quest-rewards/database/local_quest_rewards.sql') ? (string)file_get_contents($root . '/examples/local-quest-rewards/database/local_quest_rewards.sql') : '';
 $adminAuthSql = is_file($root . '/examples/local-quest-rewards/database/local_quest_admin_auth.sql') ? (string)file_get_contents($root . '/examples/local-quest-rewards/database/local_quest_admin_auth.sql') : '';
 $assessment = is_file($root . '/docs/local-quest-app-assessment.md') ? (string)file_get_contents($root . '/docs/local-quest-app-assessment.md') : '';
+$adminRolesDoc = is_file($root . '/docs/local-quest-admin-roles.md') ? (string)file_get_contents($root . '/docs/local-quest-admin-roles.md') : '';
 $adminAuthDoc = is_file($root . '/docs/local-quest-admin-auth.md') ? (string)file_get_contents($root . '/docs/local-quest-admin-auth.md') : '';
 $installerDoc = is_file($root . '/docs/local-quest-installer-hardening.md') ? (string)file_get_contents($root . '/docs/local-quest-installer-hardening.md') : '';
 $securityDoc = is_file($root . '/docs/local-quest-security-hardening.md') ? (string)file_get_contents($root . '/docs/local-quest-security-hardening.md') : '';
@@ -91,6 +95,7 @@ $hasQrGeo = str_contains($js, 'BarcodeDetector') && str_contains($js, 'navigator
 $hasSql = str_contains($sql, 'CREATE TABLE IF NOT EXISTS lqr_admin_users') && str_contains($sql, 'CREATE TABLE IF NOT EXISTS lqr_reward_claims') && str_contains($sql, 'max_total_rewards');
 $hasQuestControls = str_contains($questControls, 'lqr_quest_availability') && str_contains($questControlPage, 'max_total_rewards') && str_contains($index, 'lqr_visible_quests');
 $hasAdminAuth = str_contains($adminAuth, 'lqr_admin_create_user') && str_contains($adminAuth, 'lqr_admin_create_reset_token') && str_contains($adminCredentials, 'create_recovery') && str_contains($adminAuthSql, 'lqr_admin_password_resets');
+$hasAdminRoles = str_contains($adminRoles, 'lqr_admin_role_map') && str_contains($adminRoles, 'lqr_admin_require_role') && str_contains($adminRoles, 'sponsor_viewer') && str_contains($adminRolesDoc, 'Local Quest admin roles');
 $hasSqlRuntime = str_contains($app, "require_once __DIR__ . '/storage-sql.php'") && str_contains($app, 'lqr_sql_load_state(lqr_config())') && str_contains($app, 'lqr_sql_save_state(lqr_config(), $state)') && str_contains($storage, 'lqr_sql_load_state') && str_contains($storage, 'lqr_sql_save_state');
 $noJsonRuntime = !str_contains($app, 'state.json') && !str_contains($app, 'lqr_state_path') && !str_contains($app, 'file_put_contents(lqr_state_path') && !str_contains($readme, 'data/state.json') && !str_contains($readme, 'migrate-json-to-sql');
 $hasSecurity = str_contains($app, "require_once __DIR__ . '/security.php'") && str_contains($app, 'lqr_require_csrf') && str_contains($security, 'lqr_auto_csrf_output') && str_contains($security, 'lqr_signed_payload') && str_contains($security, 'lqr_mark_replay');
@@ -101,7 +106,7 @@ $hasInstallerDoc = str_contains($installerDoc, 'Local Quest installer hardening'
 $hasAssessment = str_contains($assessment, 'Overall: 7.5 / 10') && str_contains($assessment, 'SQL-only runtime stage completed');
 $hasAdminAuthDoc = str_contains($adminAuthDoc, 'Local Quest admin access hardening') && str_contains($adminAuthDoc, 'one-time recovery tokens');
 $hasSecurityDoc = str_contains($securityDoc, 'Local Quest security hardening') && str_contains($securityDoc, 'automatic hidden CSRF token injection');
-$ok = $ok && $requiresLogin && $usesRealLink && $hasWallet && $claimReportsToApi && $hasAdmin && $hasStyledPortal && $hasQrGeo && $hasSql && $hasQuestControls && $hasAdminAuth && $hasSqlRuntime && $noJsonRuntime && $hasSecurity && $hasInstaller && $hasInstallerLock && $hasInstallReview && $hasInstallerDoc && $hasAssessment && $hasAdminAuthDoc && $hasSecurityDoc;
+$ok = $ok && $requiresLogin && $usesRealLink && $hasWallet && $claimReportsToApi && $hasAdmin && $hasStyledPortal && $hasQrGeo && $hasSql && $hasQuestControls && $hasAdminAuth && $hasAdminRoles && $hasSqlRuntime && $noJsonRuntime && $hasSecurity && $hasInstaller && $hasInstallerLock && $hasInstallReview && $hasInstallerDoc && $hasAssessment && $hasAdminAuthDoc && $hasSecurityDoc;
 
-echo json_encode(['ok' => $ok, 'files' => $rows, 'requires_login' => $requiresLogin, 'uses_real_account_linking' => $usesRealLink, 'has_wallet_claim_flow' => $hasWallet, 'claim_reports_to_microgifter_api' => $claimReportsToApi, 'has_admin_backend' => $hasAdmin, 'has_styled_portal' => $hasStyledPortal, 'has_qr_and_geolocation' => $hasQrGeo, 'has_sql_schema' => $hasSql, 'has_quest_controls' => $hasQuestControls, 'has_admin_auth' => $hasAdminAuth, 'has_sql_runtime' => $hasSqlRuntime, 'no_json_runtime' => $noJsonRuntime, 'has_security' => $hasSecurity, 'has_installer' => $hasInstaller, 'has_installer_lock' => $hasInstallerLock, 'has_install_review' => $hasInstallReview, 'has_installer_doc' => $hasInstallerDoc, 'has_assessment' => $hasAssessment, 'has_admin_auth_doc' => $hasAdminAuthDoc, 'has_security_doc' => $hasSecurityDoc], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
+echo json_encode(['ok' => $ok, 'files' => $rows, 'requires_login' => $requiresLogin, 'uses_real_account_linking' => $usesRealLink, 'has_wallet_claim_flow' => $hasWallet, 'claim_reports_to_microgifter_api' => $claimReportsToApi, 'has_admin_backend' => $hasAdmin, 'has_styled_portal' => $hasStyledPortal, 'has_qr_and_geolocation' => $hasQrGeo, 'has_sql_schema' => $hasSql, 'has_quest_controls' => $hasQuestControls, 'has_admin_auth' => $hasAdminAuth, 'has_admin_roles' => $hasAdminRoles, 'has_sql_runtime' => $hasSqlRuntime, 'no_json_runtime' => $noJsonRuntime, 'has_security' => $hasSecurity, 'has_installer' => $hasInstaller, 'has_installer_lock' => $hasInstallerLock, 'has_install_review' => $hasInstallReview, 'has_installer_doc' => $hasInstallerDoc, 'has_assessment' => $hasAssessment, 'has_admin_auth_doc' => $hasAdminAuthDoc, 'has_security_doc' => $hasSecurityDoc], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
 exit($ok ? 0 : 1);
