@@ -1,0 +1,43 @@
+name: Stage 12I Browser Path Validation
+
+on:
+  pull_request:
+    paths:
+      - 'images/reward_saved_limited_coffee_for_two.png'
+      - 'tests/browser/stage12-discovery-wallet-path.spec.js'
+      - 'tests/browser/fixtures/stage12i-discovery-wallet-fixture.json'
+      - 'scripts/validate_stage12i_seed_browser_paths.php'
+      - 'package.json'
+      - '.github/workflows/stage12i-browser-path-validation.yml'
+  push:
+    branches:
+      - 'stage12i-*'
+    paths:
+      - 'images/reward_saved_limited_coffee_for_two.png'
+      - 'tests/browser/stage12-discovery-wallet-path.spec.js'
+      - 'tests/browser/fixtures/stage12i-discovery-wallet-fixture.json'
+      - 'scripts/validate_stage12i_seed_browser_paths.php'
+      - 'package.json'
+      - '.github/workflows/stage12i-browser-path-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: php -l scripts/validate_stage12i_seed_browser_paths.php
+      - run: php scripts/validate_stage12i_seed_browser_paths.php
+      - run: npm install --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser:stage12
