@@ -31,62 +31,14 @@ try {
     lqr_save_state($state);
 }
 $wallet = lqr_wallet_rewards($user, $quests);
+$claimed = 0;
+foreach ($wallet as $r) if (($r['claim_status'] ?? '') === 'claimed_in_quest_app') $claimed++;
 ?>
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Reward Wallet | Local Quest Rewards</title>
-<style>
-:root{--bg:#071225;--panel:#0d1b2f;--card:#10243d;--line:#24415f;--text:#f5f9ff;--muted:#9db3cc;--blue:#5aa7ff;--green:#4ade80;--amber:#fbbf24;--red:#fb7185}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 18% 0,rgba(90,167,255,.23),transparent 32%),var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.wrap{width:min(1180px,94%);margin:0 auto;padding:36px 0 70px}.hero,.grid{display:grid;gap:18px}.hero{grid-template-columns:minmax(0,1.2fr) 320px;align-items:stretch}.panel,.card{background:rgba(13,27,47,.92);border:1px solid rgba(148,180,213,.22);border-radius:24px;box-shadow:0 24px 70px rgba(0,0,0,.28);padding:24px}.eyebrow{display:inline-flex;border:1px solid rgba(90,167,255,.45);border-radius:999px;padding:8px 12px;color:#b9dcff;background:rgba(90,167,255,.12);font-size:12px;font-weight:950;text-transform:uppercase;letter-spacing:.08em}h1{margin:18px 0 0;font-size:clamp(42px,7vw,76px);line-height:.92;letter-spacing:-.08em}h2{margin:0 0 12px;font-size:25px;letter-spacing:-.04em}h3{margin:0 0 8px}p{color:var(--muted);line-height:1.6}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.btn,button{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:0 14px;border:0;border-radius:13px;background:var(--blue);color:#06111f;font-weight:950;text-decoration:none;cursor:pointer}.dark{background:#172b47;color:var(--text);border:1px solid var(--line)}.green{background:var(--green);color:#062113}.amber{background:var(--amber);color:#241700}.notice{margin-top:12px;padding:12px 14px;border-radius:16px;border:1px solid rgba(90,167,255,.32);background:rgba(90,167,255,.11);color:#cfe7ff}.error{border-color:rgba(251,113,133,.45);background:rgba(251,113,133,.12);color:#ffd7df}.wallet{display:grid;gap:14px;margin-top:18px}.reward{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(280px,.9fr);gap:14px;align-items:stretch}.meta{display:grid;gap:8px}.row{display:flex;justify-content:space-between;gap:16px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08)}.row span{color:var(--muted)}.row strong{text-align:right;word-break:break-word}.tag{display:inline-flex;min-height:26px;align-items:center;border-radius:999px;padding:0 10px;background:rgba(255,255,255,.08);color:#cfe0f4;font-size:12px;font-weight:850}.tag.claimed{background:rgba(74,222,128,.15);color:#c7ffd9}.tag.pending{background:rgba(251,191,36,.15);color:#ffe6a6}.empty{padding:22px;border-radius:18px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.08)}pre{overflow:auto;margin:0;padding:16px;border-radius:16px;background:#050b14;color:#d9ecff;font-size:12px;line-height:1.55;white-space:pre-wrap}@media(max-width:900px){.hero,.reward{grid-template-columns:1fr}h1{font-size:44px}}
-</style>
-</head>
-<body>
-<div class="wrap">
-  <section class="hero">
-    <div class="panel">
-      <span class="eyebrow">Quest wallet</span>
-      <h1>Your rewards</h1>
-      <p>Participants should see issued Microgift rewards inside the Quest app. Claim actions report back to Microgifter so ownership, claim, and redemption stay centralized.</p>
-      <div class="actions"><a class="btn dark" href="index.php">Back to quests</a><a class="btn dark" href="webhook-events.log">Webhook log</a></div>
-      <?php if ($message): ?><div class="notice"><?= lqr_h($message) ?></div><?php endif; ?>
-      <?php if ($error): ?><div class="notice error"><?= lqr_h($error) ?></div><?php endif; ?>
-    </div>
-    <aside class="panel">
-      <h2>Connected identity</h2>
-      <div class="row"><span>Local user</span><strong><?= lqr_h((string)$user['email']) ?></strong></div>
-      <div class="row"><span>External user</span><strong><?= lqr_h((string)$user['external_user_id']) ?></strong></div>
-      <div class="row"><span>Linked account</span><strong><?= lqr_h((string)($user['linked_account_id'] ?: 'Not connected')) ?></strong></div>
-    </aside>
-  </section>
-  <section class="wallet">
-    <?php if (!$wallet): ?>
-      <div class="empty"><h2>No rewards yet</h2><p>Complete a quest and issue a reward first. Then return here to refresh status and claim it in the Quest app.</p></div>
-    <?php endif; ?>
-    <?php foreach ($wallet as $reward): ?>
-      <?php $claimed = $reward['claim_status'] === 'claimed_in_quest_app'; ?>
-      <article class="card reward">
-        <div>
-          <span class="tag <?= $claimed ? 'claimed' : 'pending' ?>"><?= lqr_h($claimed ? 'Claimed in Quest' : 'Available') ?></span>
-          <h2><?= lqr_h($reward['reward_label']) ?></h2>
-          <p><?= lqr_h($reward['quest_title']) ?></p>
-          <div class="actions">
-            <form method="post"><input type="hidden" name="quest_id" value="<?= lqr_h($reward['quest_id']) ?>"><button class="dark" name="action" value="refresh_status">Refresh from Microgifter</button></form>
-            <form method="post"><input type="hidden" name="quest_id" value="<?= lqr_h($reward['quest_id']) ?>"><button class="green" name="action" value="claim_reward" <?= $claimed ? 'disabled' : '' ?>>Claim in Quest app</button></form>
-          </div>
-        </div>
-        <div class="meta">
-          <div class="row"><span>Reward ID</span><strong><?= lqr_h($reward['reward_id']) ?></strong></div>
-          <div class="row"><span>Microgifter status</span><strong><?= lqr_h($reward['status']) ?></strong></div>
-          <div class="row"><span>PPPM item</span><strong><?= lqr_h($reward['item_id'] ?: 'Refresh status after issuance') ?></strong></div>
-          <div class="row"><span>Claim report</span><strong><?= lqr_h($reward['claim_report_status']) ?></strong></div>
-          <div class="row"><span>Issued</span><strong><?= lqr_h($reward['issued_at']) ?></strong></div>
-        </div>
-      </article>
-    <?php endforeach; ?>
-  </section>
-  <?php if ($result !== null): ?><section class="card" style="margin-top:18px"><h2>Last API response</h2><pre><?= lqr_h(json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) ?></pre></section><?php endif; ?>
-</div>
-</body>
-</html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Reward Wallet | Local Quest Rewards</title><link rel="stylesheet" href="assets/portal.css"></head><body class="lq-portal">
+<div class="lq-shell"><header class="lq-topbar"><div class="lq-brand"><span class="lq-logo">LQ</span><span>Local Quest</span></div><div class="lq-top-actions"><a class="lq-icon-btn" href="wallet.php">◉<span class="lq-badge"><?= number_format(count($wallet)) ?></span></a><a class="lq-upgrade" href="index.php">Quest Board</a><span class="lq-user-pill"><span class="lq-avatar"><?= lqr_h(strtoupper(substr((string)$user['display_name'],0,1))) ?></span><?= lqr_h((string)$user['display_name']) ?></span></div></header>
+<aside class="lq-sidebar"><a class="lq-side-link" href="index.php"><span class="lq-side-icon">⌂</span><span class="lq-side-label">Quest board</span></a><a class="lq-side-link active" href="wallet.php"><span class="lq-side-icon">◉</span><span class="lq-side-label">Wallet</span></a><a class="lq-side-link" href="cover.php"><span class="lq-side-icon">◇</span><span class="lq-side-label">Cover</span></a><a class="lq-side-link" href="admin.php"><span class="lq-side-icon">⚙</span><span class="lq-side-label">Admin</span></a><span class="lq-side-spacer"></span><a class="lq-side-link" href="webhook-events.log"><span class="lq-side-icon">◷</span><span class="lq-side-label">Webhook log</span></a></aside>
+<main class="lq-main"><section class="lq-page-head"><span class="lq-eyebrow">User Wallet</span><h1>Your rewards</h1><p>See issued Microgift rewards, refresh status from Microgifter, scan claim/prize QR codes, capture geolocation, and report claims back to the platform.</p></section>
+<?php if ($message): ?><div class="lq-notice"><?= lqr_h($message) ?></div><?php endif; ?><?php if ($error): ?><div class="lq-notice error"><?= lqr_h($error) ?></div><?php endif; ?>
+<div class="lq-kpis"><div class="lq-kpi"><span>Total rewards</span><strong><?= number_format(count($wallet)) ?></strong></div><div class="lq-kpi"><span>Claimed</span><strong><?= number_format($claimed) ?></strong></div><div class="lq-kpi"><span>Linked</span><strong><?= trim((string)$user['linked_account_id'])!==''?'1':'0' ?></strong></div><div class="lq-kpi"><span>Mode</span><strong><?= lqr_h((string)($config['mode'] ?? 'test')) ?></strong></div></div>
+<div class="lq-layout"><section class="lq-card"><div class="lq-card-head"><div><h2>Reward wallet</h2><p>Claiming a reward sends QR/geolocation context in the Microgifter claim report metadata.</p></div><span class="lq-pill pink">Wallet</span></div><div class="lq-stack"><?php if(!$wallet): ?><div class="lq-item"><div><h3>No rewards yet</h3><div class="lq-meta">Complete a quest and issue a reward first. Then return here to refresh status and claim it.</div></div><a class="lq-btn primary" href="index.php">Start questing</a></div><?php endif; ?><?php foreach($wallet as $reward): ?><?php $isClaimed=$reward['claim_status']==='claimed_in_quest_app'; ?><article class="lq-item"><div><h3><?= lqr_h($reward['reward_label']) ?></h3><div class="lq-meta"><?= lqr_h($reward['quest_title']) ?><br>Reward <code><?= lqr_h($reward['reward_id']) ?></code><br>Microgifter: <?= lqr_h($reward['status']) ?> · Claim report: <?= lqr_h($reward['claim_report_status']) ?><br>PPPM item: <code><?= lqr_h($reward['item_id'] ?: 'refresh status after issuance') ?></code></div><div style="margin-top:10px"><span class="lq-pill <?= $isClaimed?'green':'amber' ?>"><?= lqr_h($isClaimed?'Claimed in Quest':'Available') ?></span></div></div><form method="post" data-lq-geo-box data-lq-qr-box style="min-width:300px"><input type="hidden" name="quest_id" value="<?= lqr_h($reward['quest_id']) ?>"><input type="hidden" name="geo_lat"><input type="hidden" name="geo_lng"><input type="hidden" name="geo_accuracy"><input type="hidden" name="geo_captured_at"><input type="hidden" name="qr_payload"><input class="lq-input" data-lq-qr-manual placeholder="Prize QR / merchant code"><div class="lq-actions"><button class="lq-btn soft" data-lq-start-qr>Scan QR</button><button class="lq-btn soft" data-lq-capture-geo>Geo</button></div><video class="lq-qr-video" playsinline></video><div class="lq-qr-result" data-lq-qr-result></div><div class="lq-qr-result" data-lq-geo-result></div><div class="lq-actions"><button class="lq-btn dark" name="action" value="refresh_status">Refresh</button><button class="lq-btn green" name="action" value="claim_reward" <?= $isClaimed ? 'disabled' : '' ?>>Claim</button></div></form></article><?php endforeach; ?></div></section><aside class="lq-side-panel"><section class="lq-panel"><h2>Connected identity</h2><div class="lq-row"><span>Local user</span><strong><?= lqr_h((string)$user['email']) ?></strong></div><div class="lq-row"><span>External user</span><strong><?= lqr_h((string)$user['external_user_id']) ?></strong></div><div class="lq-row"><span>Linked account</span><strong><?= lqr_h((string)($user['linked_account_id'] ?: 'Not connected')) ?></strong></div></section><section class="lq-panel"><h2>Quick actions</h2><a class="lq-link-row" href="index.php">Quest board <span>→</span></a><a class="lq-link-row" href="webhook-events.log">Webhook log <span>→</span></a><a class="lq-link-row" href="admin.php?section=claims">Admin claims <span>→</span></a></section></aside></div>
+<?php if($result!==null): ?><section class="lq-card" style="margin-top:22px"><h2>Last API response</h2><pre><?= lqr_h(json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) ?></pre></section><?php endif; ?></main></div><script src="assets/portal.js"></script></body></html>
