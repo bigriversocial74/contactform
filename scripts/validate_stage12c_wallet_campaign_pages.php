@@ -10,8 +10,10 @@ $required = [
   'api/public/campaigns/detail.php',
   'campaign.php',
   'wallet.php',
+  'merchant-wallet-redemptions.php',
   'assets/js/public-campaign.js',
   'assets/js/stage12-wallet.js',
+  'assets/js/stage12-redemptions.js',
   'assets/js/stage12-campaign-contacts.js',
   'assets/js/stage12-campaign-tools.js',
 ];
@@ -26,8 +28,10 @@ $tools = $get('api/merchant/campaign-public-tools.php');
 $detail = $get('api/public/campaigns/detail.php');
 $page = $get('campaign.php');
 $walletPage = $get('wallet.php');
+$merchantCompletePage = $get('merchant-wallet-redemptions.php');
 $publicJs = $get('assets/js/public-campaign.js');
 $walletJs = $get('assets/js/stage12-wallet.js');
+$completeJs = $get('assets/js/stage12-redemptions.js');
 $contactJs = $get('assets/js/stage12-campaign-contacts.js');
 $toolJs = $get('assets/js/stage12-campaign-tools.js');
 $checks = [
@@ -38,6 +42,8 @@ $checks = [
   'claim_ownership' => str_contains($claim, 'contact_email') && str_contains($claim, 'source_id'),
   'redeem_requires_merchant' => str_contains($redeem, 'merchant.campaigns.manage') && str_contains($redeem, 'mg_require_csrf_for_write'),
   'redeem_updates_status' => str_contains($redeem, "status = \'redeemed\'") && str_contains($redeem, 'wallet_item.redeemed'),
+  'merchant_complete_page' => str_contains($merchantCompletePage, 'data-stage12-redemptions') && str_contains($merchantCompletePage, '/assets/js/stage12-redemptions.js'),
+  'merchant_complete_js' => str_contains($completeJs, '/api/merchant/wallet-redeem.php'),
   'contacts_endpoint' => str_contains($contacts, 'campaign_contacts') && str_contains($contacts, 'wallet_count'),
   'contacts_js' => str_contains($contactJs, '/api/merchant/campaign-contacts.php') && str_contains($contactJs, '/api/merchant/campaign-winner.php'),
   'public_tools_endpoint' => str_contains($tools, 'public_url') && str_contains($tools, 'qr_url'),
