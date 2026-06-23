@@ -1,0 +1,18 @@
+document.addEventListener('DOMContentLoaded',function(){
+'use strict';
+if(!window.Microgifter)return;
+var form=document.querySelector('[data-stage12-campaign-builder]');
+var list=document.querySelector('[data-stage12-campaign-list]');
+if(!form||!list)return;
+var status=form.querySelector('[data-stage12-campaign-status]');
+var select=form.querySelector('[data-stage12-campaign-template-select]');
+function esc(v){return String(v==null?'':v).replace(/[&<>'"]/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'})[c];});}
+function title(v){return String(v||'').replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});}
+function setStatus(message,type){if(window.Microgifter&&typeof Microgifter.setStatus==='function'){Microgifter.setStatus(status,message,type);return;}if(status)status.textContent=message||'';}
+function fill(c){Object.keys(c).forEach(function(k){var el=form.elements[k];if(!el)return;if(el.type==='checkbox')el.checked=!!c[k];else el.value=c[k]==null?'':c[k];});if(form.elements.campaign_id)form.elements.campaign_id.value=c.id||'';if(form.elements.reward_template_id&&c.reward_template_id)form.elements.reward_template_id.value=c.reward_template_id;setStatus('Editing '+(c.title||'campaign')+'.');}
+async function loadTemplates(){try{var r=await Microgifter.get('/api/merchant/reward-templates.php?status=active');var items=(r.data||r).templates||[];if(select)select.innerHTML='<option value="">No template attached yet</option>'+items.map(function(t){return'<option value="'+esc(t.id)+'">'+esc(t.title)+'</option>';}).join('');}catch(e){}}
+async function loadList(){var r=await Microgifter.get('/api/merchant/campaign-activity.php');var items=(r.data||r).campaigns||[];list.innerHTML=items.map(function(c){return'<button type="button" class="mg-product-card" data-campaign-id="'+esc(c.id)+'"><span><strong>'+esc(c.title)+'</strong><span>'+esc(title(c.campaign_type))+' · '+esc(c.reward_template_title||'No template')+'</span><small>'+Number(c.contacts_count||0)+' contacts · '+Number(c.wallet_issued_count||0)+' issued · '+Number(c.wallet_redeemed_count||0)+' redeemed</small></span><span class="mg-card-meta"><em>'+esc(c.status)+'</em></span></button>';}).join('')||'<div class="mg-empty-state"><p>No campaigns yet. Save the first campaign above.</p></div>';list.querySelectorAll('[data-campaign-id]').forEach(function(btn){btn.addEventListener('click',async function(){var cr=await Microgifter.get('/api/merchant/campaigns.php');var all=(cr.data||cr).campaigns||[];var item=all.find(function(c){return c.id===btn.getAttribute('data-campaign-id');});if(item)fill(item);});});}
+form.addEventListener('submit',async function(event){event.preventDefault();var data=Object.fromEntries(new FormData(form).entries());data.agent_discoverable=form.elements.agent_discoverable&&form.elements.agent_discoverable.checked?1:0;try{setStatus('Saving campaign…');var response=await Microgifter.post('/api/merchant/campaigns.php',data);setStatus(response.message||'Campaign saved.','success');form.reset();if(form.elements.campaign_id)form.elements.campaign_id.value='';if(form.elements.per_user_limit)form.elements.per_user_limit.value='1';await loadList();}catch(error){setStatus(error.message||'Unable to save campaign.','error');}});
+var newButton=document.querySelector('[data-stage12-campaign-new]');if(newButton)newButton.addEventListener('click',function(){form.reset();if(form.elements.campaign_id)form.elements.campaign_id.value='';if(form.elements.per_user_limit)form.elements.per_user_limit.value='1';setStatus('Ready to save a campaign.');});
+loadTemplates().then(loadList).catch(function(error){setStatus(error.message||'Unable to load campaigns.','error');});
+});
