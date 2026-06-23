@@ -9,9 +9,8 @@ function lqr_quest_requires_signed_code(array $quest): bool
     return !empty($controls['requires_signed_code']);
 }
 
-function lqr_signed_code_replay_key(array $verified): string
+function lqr_signed_code_replay_key(array $payload): string
 {
-    $payload = is_array($verified['payload'] ?? null) ? $verified['payload'] : [];
     $nonce = (string)($payload['nonce'] ?? '');
     $questId = (string)($payload['quest_id'] ?? '');
     $iat = (string)($payload['iat'] ?? '');
@@ -29,17 +28,16 @@ function lqr_enforce_signed_quest_code(array $config, array &$state, string $que
     if ($rawPayload === '') throw new RuntimeException('This quest requires a signed QR code. Scan the official venue QR code to complete it.');
 
     $expectedType = (string)($controls['signed_code_type'] ?? 'quest_checkin');
-    $verified = lqr_verify_signed_payload($config, $rawPayload, $expectedType);
-    $payload = is_array($verified['payload'] ?? null) ? $verified['payload'] : [];
+    $payload = lqr_verify_signed_payload($config, $rawPayload, $expectedType);
 
     if ((string)($payload['quest_id'] ?? '') !== $questId) throw new RuntimeException('Signed QR code does not match this quest.');
 
-    $replayKey = lqr_signed_code_replay_key($verified);
-    if (lqr_sql_replay_seen($config, $replayKey) || lqr_replay_seen($state, $replayKey)) throw new RuntimeException('Signed QR code has already been used.');
+    $replayKey = lqr_signed_code_replay_key($payload);
+    if (lqr_sql_replay_seen($config, $replayKey) || lqr_replay_seen($state, $payload)) throw new RuntimeException('Signed QR code has already been used.');
 
     lqr_sql_mark_replay($config, $replayKey, $payload);
-    lqr_mark_replay($state, $replayKey);
-    lqr_add_event($state, 'quest.signed_code_verified', 'Signed quest QR verified.', ['quest_id'=>$questId, 'type'=>$expectedType, 'replay_key'=>$replayKey]);
+    lqr_mark_replay($state, $payload);
+    lqr_add_event($state, 'quest.signed_code_verified', 'Signed quest QR verified.', ['quest_id' => $questId, 'type' => $expectedType, 'replay_key' => $replayKey]);
 
     return ['required' => true, 'verified' => true, 'payload' => $payload, 'replay_key' => $replayKey, 'message' => 'Signed QR code verified.'];
 }
