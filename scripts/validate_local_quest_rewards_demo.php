@@ -34,6 +34,7 @@ $required = [
     'docs/public-api-third-party-wallet-claim.md',
     'docs/local-quest-app-assessment.md',
     'docs/local-quest-admin-auth.md',
+    'docs/local-quest-installer-hardening.md',
     'docs/local-quest-security-hardening.md',
 ];
 
@@ -78,6 +79,7 @@ $sql = is_file($root . '/examples/local-quest-rewards/database/local_quest_rewar
 $adminAuthSql = is_file($root . '/examples/local-quest-rewards/database/local_quest_admin_auth.sql') ? (string)file_get_contents($root . '/examples/local-quest-rewards/database/local_quest_admin_auth.sql') : '';
 $assessment = is_file($root . '/docs/local-quest-app-assessment.md') ? (string)file_get_contents($root . '/docs/local-quest-app-assessment.md') : '';
 $adminAuthDoc = is_file($root . '/docs/local-quest-admin-auth.md') ? (string)file_get_contents($root . '/docs/local-quest-admin-auth.md') : '';
+$installerDoc = is_file($root . '/docs/local-quest-installer-hardening.md') ? (string)file_get_contents($root . '/docs/local-quest-installer-hardening.md') : '';
 $securityDoc = is_file($root . '/docs/local-quest-security-hardening.md') ? (string)file_get_contents($root . '/docs/local-quest-security-hardening.md') : '';
 $requiresLogin = str_contains($index, 'header(\'Location: cover.php\')') || str_contains($index, 'header("Location: cover.php")');
 $usesRealLink = str_contains($index, 'start_account_link');
@@ -95,10 +97,11 @@ $hasSecurity = str_contains($app, "require_once __DIR__ . '/security.php'") && s
 $hasInstaller = str_contains($install, 'Local Quest Installer') && str_contains($install, 'lqi_pdo') && str_contains($install, 'lqi_write_config') && str_contains($install, 'lqi_seed_owner');
 $hasInstallerLock = str_contains($installLock, 'lqi_guard_installer') && str_contains($installLock, '.installed.lock') && str_contains($installLock, '.install-unlock') && str_contains($gitignore, '.installed.lock') && str_contains($gitignore, 'config.php');
 $hasInstallReview = str_contains($reviewJs, 'Review setup before install') && str_contains($reviewJs, 'Confirm and install') && str_contains($reviewJs, 'protected value');
+$hasInstallerDoc = str_contains($installerDoc, 'Local Quest installer hardening') && str_contains($installerDoc, '.installed.lock') && str_contains($installerDoc, '.install-unlock');
 $hasAssessment = str_contains($assessment, 'Overall: 7.5 / 10') && str_contains($assessment, 'SQL-only runtime stage completed');
 $hasAdminAuthDoc = str_contains($adminAuthDoc, 'Local Quest admin access hardening') && str_contains($adminAuthDoc, 'one-time recovery tokens');
 $hasSecurityDoc = str_contains($securityDoc, 'Local Quest security hardening') && str_contains($securityDoc, 'automatic hidden CSRF token injection');
-$ok = $ok && $requiresLogin && $usesRealLink && $hasWallet && $claimReportsToApi && $hasAdmin && $hasStyledPortal && $hasQrGeo && $hasSql && $hasQuestControls && $hasAdminAuth && $hasSqlRuntime && $noJsonRuntime && $hasSecurity && $hasInstaller && $hasInstallerLock && $hasInstallReview && $hasAssessment && $hasAdminAuthDoc && $hasSecurityDoc;
+$ok = $ok && $requiresLogin && $usesRealLink && $hasWallet && $claimReportsToApi && $hasAdmin && $hasStyledPortal && $hasQrGeo && $hasSql && $hasQuestControls && $hasAdminAuth && $hasSqlRuntime && $noJsonRuntime && $hasSecurity && $hasInstaller && $hasInstallerLock && $hasInstallReview && $hasInstallerDoc && $hasAssessment && $hasAdminAuthDoc && $hasSecurityDoc;
 
-echo json_encode(['ok' => $ok, 'files' => $rows, 'requires_login' => $requiresLogin, 'uses_real_account_linking' => $usesRealLink, 'has_wallet_claim_flow' => $hasWallet, 'claim_reports_to_microgifter_api' => $claimReportsToApi, 'has_admin_backend' => $hasAdmin, 'has_styled_portal' => $hasStyledPortal, 'has_qr_and_geolocation' => $hasQrGeo, 'has_sql_schema' => $hasSql, 'has_quest_controls' => $hasQuestControls, 'has_admin_auth' => $hasAdminAuth, 'has_sql_runtime' => $hasSqlRuntime, 'no_json_runtime' => $noJsonRuntime, 'has_security' => $hasSecurity, 'has_installer' => $hasInstaller, 'has_installer_lock' => $hasInstallerLock, 'has_install_review' => $hasInstallReview, 'has_assessment' => $hasAssessment, 'has_admin_auth_doc' => $hasAdminAuthDoc, 'has_security_doc' => $hasSecurityDoc], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
+echo json_encode(['ok' => $ok, 'files' => $rows, 'requires_login' => $requiresLogin, 'uses_real_account_linking' => $usesRealLink, 'has_wallet_claim_flow' => $hasWallet, 'claim_reports_to_microgifter_api' => $claimReportsToApi, 'has_admin_backend' => $hasAdmin, 'has_styled_portal' => $hasStyledPortal, 'has_qr_and_geolocation' => $hasQrGeo, 'has_sql_schema' => $hasSql, 'has_quest_controls' => $hasQuestControls, 'has_admin_auth' => $hasAdminAuth, 'has_sql_runtime' => $hasSqlRuntime, 'no_json_runtime' => $noJsonRuntime, 'has_security' => $hasSecurity, 'has_installer' => $hasInstaller, 'has_installer_lock' => $hasInstallerLock, 'has_install_review' => $hasInstallReview, 'has_installer_doc' => $hasInstallerDoc, 'has_assessment' => $hasAssessment, 'has_admin_auth_doc' => $hasAdminAuthDoc, 'has_security_doc' => $hasSecurityDoc], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
 exit($ok ? 0 : 1);
