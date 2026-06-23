@@ -14,6 +14,7 @@ $required = [
     'includes/header-components/app-header.php',
     'api/merchant/reward-templates.php',
     'api/merchant/campaigns.php',
+    'api/public/campaigns/signup.php',
 ];
 
 $ok = true;
@@ -33,6 +34,7 @@ $campaignView = is_file($root . '/includes/merchant-campaigns-view.php') ? (stri
 $templateView = is_file($root . '/includes/merchant-reward-templates-view.php') ? (string)file_get_contents($root . '/includes/merchant-reward-templates-view.php') : '';
 $templateApi = is_file($root . '/api/merchant/reward-templates.php') ? (string)file_get_contents($root . '/api/merchant/reward-templates.php') : '';
 $campaignApi = is_file($root . '/api/merchant/campaigns.php') ? (string)file_get_contents($root . '/api/merchant/campaigns.php') : '';
+$signupApi = is_file($root . '/api/public/campaigns/signup.php') ? (string)file_get_contents($root . '/api/public/campaigns/signup.php') : '';
 
 $hasTables = true;
 foreach (['reward_templates','campaigns','campaign_contacts','wallet_items','campaign_events'] as $table) {
@@ -50,8 +52,10 @@ $hasTemplateApi = str_contains($templateApi, 'merchant.reward_templates.view') &
 $hasTemplateApiOutput = str_contains($templateApi, "'templates'") && str_contains($templateApi, "'template'") && str_contains($templateApi, "'schema_ready'");
 $hasCampaignApi = str_contains($campaignApi, 'merchant.campaigns.view') && str_contains($campaignApi, 'merchant.campaigns.manage') && str_contains($campaignApi, 'INSERT INTO campaigns') && str_contains($campaignApi, 'UPDATE campaigns') && str_contains($campaignApi, 'mg_require_csrf_for_write');
 $hasCampaignApiOutput = str_contains($campaignApi, "'campaigns'") && str_contains($campaignApi, "'campaign'") && str_contains($campaignApi, "'schema_ready'");
+$hasSignupApi = str_contains($signupApi, 'campaign_contacts') && str_contains($signupApi, 'wallet_items') && str_contains($signupApi, 'campaign_events') && str_contains($signupApi, 'wallet_item.issued') && str_contains($signupApi, 'form.submitted');
+$hasSignupLimits = str_contains($signupApi, 'quantity_limit') && str_contains($signupApi, 'issued_count') && str_contains($signupApi, 'Reward template limit has been reached');
 
-$ok = $ok && $hasTables && $hasAgentFields && $hasSourceTracking && $hasManifest && $hasCreateMenu && $hasNav && $hasViewRoutes && $hasCampaignShell && $hasTemplateShell && $hasTemplateApi && $hasTemplateApiOutput && $hasCampaignApi && $hasCampaignApiOutput;
+$ok = $ok && $hasTables && $hasAgentFields && $hasSourceTracking && $hasManifest && $hasCreateMenu && $hasNav && $hasViewRoutes && $hasCampaignShell && $hasTemplateShell && $hasTemplateApi && $hasTemplateApiOutput && $hasCampaignApi && $hasCampaignApiOutput && $hasSignupApi && $hasSignupLimits;
 
 echo json_encode([
     'ok' => $ok,
@@ -69,6 +73,8 @@ echo json_encode([
     'has_template_api_output' => $hasTemplateApiOutput,
     'has_campaign_api' => $hasCampaignApi,
     'has_campaign_api_output' => $hasCampaignApiOutput,
+    'has_signup_api' => $hasSignupApi,
+    'has_signup_limits' => $hasSignupLimits,
 ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
 
 exit($ok ? 0 : 1);
