@@ -60,14 +60,14 @@ $can_intelligence = $user && (in_array('intelligence.dashboard.view', $user_perm
         <a href="/discover.php">Explore</a>
         <a href="/developer-docs.php">Developer Docs</a>
         <a href="/learn-more.php">Book A Demo</a>
-        <a href="/locations.php">Locations</a>
+        <a href="/campaign.php">Campaigns</a>
       </div>
       <div class="mg-footer-column">
-        <h2>Commerce</h2>
-        <a href="/corporate.php">Corporate Gifting</a>
-        <a href="/retail.php">Retail Subscriptions</a>
-        <a href="/merchant.php">Merchant Dashboard</a>
-        <a href="/campaign.php">Campaigns</a>
+        <h2>Developers</h2>
+        <a href="/developer-docs.php#overview">Overview</a>
+        <a href="/developer-docs.php#quickstart">Quickstart</a>
+        <a href="/developer-docs.php#authentication">Authentication</a>
+        <a href="/developer-docs.php#webhooks">Webhooks</a>
       </div>
       <div class="mg-footer-column">
         <h2>Account</h2>
@@ -97,7 +97,7 @@ $can_intelligence = $user && (in_array('intelligence.dashboard.view', $user_perm
       <p>&copy; <?= date('Y') ?> Microgifter. All rights reserved.</p>
       <div class="mg-footer-bottom-links" aria-label="Footer utility links">
         <a href="/index.php">Home</a>
-        <a href="/learn-more.php">Learn More</a>
+        <a href="/developer-docs.php">Docs</a>
         <a href="/signin.php">Sign In</a>
       </div>
     </div>
