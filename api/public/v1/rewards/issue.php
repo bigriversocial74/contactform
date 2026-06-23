@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/_public.php';
-require_once dirname(__DIR__, 2) . '/distribution/_developer_webhooks.php';
+require_once dirname(__DIR__, 3) . '/distribution/_developer_webhooks.php';
 
 mg_require_method('POST');
 $context = mg_public_context('distribution:rewards.issue');
@@ -10,7 +10,7 @@ $input = mg_input();
 
 $programPublicId = trim((string) ($input['program_id'] ?? ''));
 $externalEventId = trim((string) ($input['external_event_id'] ?? ''));
-$eventType = strtolower(trim((string) ($input['event_type'] ?? 'reward.issue')));
+$eventType = strtolower(trim((string) ($input['event_type'] ?? 'reward.issue'));
 $recipientInput = is_array($input['recipient'] ?? null) ? $input['recipient'] : [];
 $rewardInput = is_array($input['reward'] ?? null) ? $input['reward'] : [];
 $linkedAccountId = trim((string) ($recipientInput['linked_account_id'] ?? ''));
