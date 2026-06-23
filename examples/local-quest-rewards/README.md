@@ -1,8 +1,8 @@
 # Local Quest Rewards
 
-Local Quest Rewards is a full working demo app for the Microgifter Public Distribution API.
+Local Quest Rewards is a working demo app for the Microgifter Public Distribution API.
 
-It behaves like a real third-party local experience app:
+It behaves like a third-party local experience app:
 
 1. A participant lands on a cover page.
 2. The participant creates or signs into a Local Quest account.
@@ -21,7 +21,7 @@ Sandbox linking is only a developer shortcut. It is not the primary user flow.
 
 One Microgifter merchant can approve products/templates for a Distribution Program. Multiple third-party Quest-style apps can be allowed to distribute those approved rewards.
 
-Microgifter remains the system of record for reward ownership, item status, claim state, redemption, webhooks, and audit history. The Quest app owns app login, quest progress, local action completion, and wallet UX.
+Microgifter remains the system of record for reward ownership, item status, claim state, redemption, webhooks, and audit history. The Quest app owns app login, quest progress, local action completion, wallet UX, and the admin controls for the third-party experience.
 
 ## Microgifter account creation
 
@@ -30,7 +30,7 @@ Microgifter has its own account creation endpoint and page:
 - `signup.php`
 - `api/auth/register.php`
 
-That belongs to Microgifter identity, not the third-party Public Distribution API. A third-party app should not silently create Microgifter accounts unless Microgifter later exposes an explicit consented provisioning endpoint. The current real integration path is account-link consent: the user signs into or creates a Microgifter account on Microgifter, approves the connection, then returns to the app.
+That belongs to Microgifter identity, not the third-party Public Distribution API. The current real integration path is account-link consent: the user signs into or creates a Microgifter account on Microgifter, approves the connection, then returns to the app.
 
 ## Files
 
@@ -45,8 +45,10 @@ examples/local-quest-rewards/
   link-callback.php
   wallet.php
   wallet-actions.php
+  admin.php
   quests.php
   webhook.php
+  database/local_quest_rewards.sql
   data/README.md
 ```
 
@@ -58,7 +60,7 @@ Copy config:
 cp examples/local-quest-rewards/config.example.php examples/local-quest-rewards/config.php
 ```
 
-Edit `config.php` with a test key, program ID, template ID, app public URL, and webhook secret.
+Edit `config.php` with a test key, program ID, template ID, app public URL, webhook secret, and admin values.
 
 Start PHP:
 
@@ -66,11 +68,45 @@ Start PHP:
 php -S 127.0.0.1:8090 -t examples/local-quest-rewards
 ```
 
-Open:
+Open the participant app:
 
 ```text
 http://127.0.0.1:8090/cover.php
 ```
+
+Open the admin backend:
+
+```text
+http://127.0.0.1:8090/admin.php
+```
+
+## Admin backend
+
+`admin.php` is the Quest app control center. It includes:
+
+- admin login/logout
+- dashboard KPIs
+- quest catalog and quest editor
+- user account list
+- Microgifter link reset for users
+- wallet/reward records
+- claim status management
+- integration event log
+- storage/settings view
+
+The admin backend manages the third-party app layer only. It does not replace Microgifter merchant controls, Distribution Program approval, reward ownership, redemption truth, or Microgifter audit history.
+
+## SQL schema
+
+The Quest app has its own schema file:
+
+```text
+database/local_quest_rewards.sql
+```
+
+It defines tables for admin users, participant users, link states, quests, completions, rewards, reward claims, admin audit events, event logs, and app state.
+
+Current runtime default is still `json` storage for zero-config demo use. The SQL schema is ready for the real app storage pass.
 
 ## Real app flow
 
@@ -91,40 +127,23 @@ http://127.0.0.1:8090/cover.php
 
 ## Reward mapping
 
-Reward rules live in `quests.php`. Each quest maps to:
-
-- `event_type`
-- `program_id` or default program fallback
-- `template_id` or default template fallback
-- `reward_label`
-- local permission rules
+Reward rules live in `quests.php`. The admin backend can publish changes to that file. Each quest maps to event type, program ID, template ID, reward label, and local permission rules.
 
 ## Wallet and claim flow
 
 `wallet.php` displays issued rewards from the Local Quest user state. It pulls item IDs from reward issue/status responses when available.
 
-The app-side claim button now calls:
+The app-side claim button calls:
 
 ```text
 POST /api/public/v1/rewards/claim.php
 ```
 
-The wallet action records:
-
-- `claim_status = claimed_in_quest_app`
-- `claim_report_status = reported_to_microgifter`
-- `claim_report_endpoint = /api/public/v1/rewards/claim.php`
-- `microgifter_event_id` from the claim response when available
+The wallet action records `claimed_in_quest_app`, `reported_to_microgifter`, the claim endpoint, and the returned Microgifter event ID when available.
 
 ## Permission model
 
-This demo has two permission layers.
-
-### Local app permission
-
 The Quest app checks that the participant is signed in, completed the quest, connected a Microgifter account, has not already received the quest reward, app mode is allowed, and reward IDs are configured.
-
-### Microgifter permission
 
 Microgifter still makes the final authorization decision: credential scope, app environment, program access, template membership, linked account validity, capacity, limits, and idempotency.
 
