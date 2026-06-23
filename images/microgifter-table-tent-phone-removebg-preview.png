@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1122" height="1402" viewBox="0 0 1122 1402" role="img" aria-label="Microgifter mobile gift preview">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f8fafc"/>
+      <stop offset="1" stop-color="#ede9fe"/>
+    </linearGradient>
+    <linearGradient id="phone" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#111827"/>
+      <stop offset="1" stop-color="#020617"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="30" stdDeviation="34" flood-color="#0f172a" flood-opacity="0.24"/>
+    </filter>
+  </defs>
+  <rect width="1122" height="1402" fill="url(#bg)" opacity="0"/>
+  <g transform="translate(118 125)" filter="url(#shadow)">
+    <rect x="0" y="110" width="405" height="690" rx="36" fill="#ffffff" stroke="#dbe5f1" stroke-width="6"/>
+    <rect x="50" y="170" width="305" height="210" rx="20" fill="#7c3aed" opacity="0.12"/>
+    <text x="202" y="260" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="36" font-weight="800" fill="#111827">Table Tent</text>
+    <rect x="105" y="425" width="195" height="195" rx="18" fill="#111827"/>
+    <rect x="128" y="448" width="35" height="35" fill="#fff"/>
+    <rect x="188" y="448" width="35" height="35" fill="#fff"/>
+    <rect x="248" y="448" width="35" height="35" fill="#fff"/>
+    <rect x="128" y="508" width="35" height="35" fill="#fff"/>
+    <rect x="188" y="508" width="35" height="35" fill="#fff"/>
+    <rect x="248" y="508" width="35" height="35" fill="#fff"/>
+    <rect x="128" y="568" width="35" height="35" fill="#fff"/>
+    <rect x="188" y="568" width="35" height="35" fill="#fff"/>
+    <rect x="248" y="568" width="35" height="35" fill="#fff"/>
+    <text x="202" y="690" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" fill="#64748b">Scan to send a local gift</text>
+  </g>
+  <g transform="translate(495 40)" filter="url(#shadow)">
+    <rect x="0" y="0" width="420" height="860" rx="62" fill="url(#phone)"/>
+    <rect x="28" y="36" width="364" height="788" rx="42" fill="#f8fafc"/>
+    <rect x="72" y="76" width="276" height="42" rx="21" fill="#0f172a" opacity="0.94"/>
+    <text x="210" y="176" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="800" fill="#64748b">Microgifter</text>
+    <rect x="62" y="230" width="296" height="170" rx="26" fill="#7c3aed"/>
+    <text x="210" y="304" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="800" fill="#ffffff">Coffee for Two</text>
+    <text x="210" y="346" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#ede9fe">Reward saved</text>
+    <rect x="62" y="436" width="296" height="90" rx="22" fill="#ffffff" stroke="#dbe5f1" stroke-width="3"/>
+    <text x="92" y="490" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="800" fill="#111827">Gift inbox</text>
+    <rect x="62" y="552" width="296" height="90" rx="22" fill="#ffffff" stroke="#dbe5f1" stroke-width="3"/>
+    <text x="92" y="606" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="800" fill="#111827">Claim code</text>
+    <rect x="92" y="704" width="236" height="58" rx="18" fill="#111827"/>
+    <text x="210" y="742" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="800" fill="#ffffff">Send Gift</text>
+  </g>
+</svg>
