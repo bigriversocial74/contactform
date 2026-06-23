@@ -29,15 +29,15 @@ require __DIR__ . '/includes/landing/index-v3/part09.php';
   min-height:100vh;
   background:#020304;
   color:#fff;
-  font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-family:"Inter","Helvetica Neue",Arial,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
 }
 .mg-v4 .mg-bg-mesh{
-  background:linear-gradient(90deg,rgba(0,0,0,.82),rgba(0,0,0,.18) 48%,rgba(0,0,0,.82)),url('/images/microgifter-hero-mesh.svg') center/cover no-repeat!important;
-  opacity:.72!important;
+  background:linear-gradient(90deg,rgba(0,0,0,.84),rgba(0,0,0,.2) 48%,rgba(0,0,0,.86)),url('/images/microgifter-hero-mesh.svg') center/cover no-repeat!important;
+  opacity:.74!important;
   mix-blend-mode:normal!important;
 }
 .mg-v4 .mg-bg-mesh::after{
-  background:linear-gradient(180deg,rgba(0,0,0,.16),rgba(0,0,0,.25) 48%,#020304 98%)!important;
+  background:linear-gradient(180deg,rgba(0,0,0,.16),rgba(0,0,0,.23) 48%,#020304 98%)!important;
 }
 .mg-v4-header,
 .mg-v4 .mg-site-header{
@@ -46,7 +46,7 @@ require __DIR__ . '/includes/landing/index-v3/part09.php';
   left:0!important;
   right:0!important;
   z-index:80!important;
-  background:rgba(2,3,4,.72)!important;
+  background:rgba(2,3,4,.74)!important;
   border-bottom:1px solid rgba(255,255,255,.12)!important;
   backdrop-filter:blur(18px)!important;
   animation:none!important;
@@ -58,7 +58,7 @@ require __DIR__ . '/includes/landing/index-v3/part09.php';
   height:82px!important;
   margin:0 auto!important;
   display:grid!important;
-  grid-template-columns:minmax(250px,.9fr) minmax(360px,1.25fr) minmax(420px,1fr)!important;
+  grid-template-columns:minmax(250px,.88fr) minmax(360px,1.25fr) minmax(340px,.82fr)!important;
   align-items:center!important;
   gap:26px!important;
 }
@@ -186,7 +186,7 @@ require __DIR__ . '/includes/landing/index-v3/part09.php';
   gap:56px;
   align-items:center;
 }
-.mg-v4-copy{max-width:850px;}
+.mg-v4-copy{max-width:900px;}
 .mg-v4-eyebrow{
   display:inline-flex;
   align-items:center;
@@ -208,27 +208,31 @@ require __DIR__ . '/includes/landing/index-v3/part09.php';
 }
 .mg-v4-title{
   margin:0;
+  max-width:930px;
   color:#fff;
-  font-size:clamp(56px,6.3vw,118px);
-  line-height:.95;
-  letter-spacing:-.075em;
-  font-weight:880;
+  font-family:"Helvetica Neue","Inter",Arial,ui-sans-serif,system-ui,sans-serif;
+  font-size:clamp(58px,5.85vw,108px);
+  line-height:1.025;
+  letter-spacing:-.052em;
+  font-weight:780;
   text-wrap:balance;
 }
 .mg-v4-lede{
   margin:34px 0 0;
   max-width:720px;
   color:#d1d1d1;
-  font-size:clamp(19px,1.55vw,29px);
+  font-size:clamp(19px,1.45vw,27px);
   line-height:1.55;
-  letter-spacing:-.035em;
+  letter-spacing:-.025em;
+  font-weight:420;
 }
 .mg-v4-note{
   margin:22px 0 0;
   max-width:720px;
   color:#b7b7b7;
-  font-size:clamp(16px,1.1vw,19px);
+  font-size:clamp(16px,1.05vw,19px);
   line-height:1.65;
+  font-weight:420;
 }
 .mg-v4-note strong{color:#fff;}
 .mg-v4-buttons{
@@ -299,7 +303,7 @@ require __DIR__ . '/includes/landing/index-v3/part09.php';
   .mg-v4-cta{min-height:44px!important;padding:0 14px!important;font-size:13px!important;}
   .mg-v4-hero{padding:118px 0 68px;}
   .mg-v4-hero-grid{width:calc(100% - 32px);}
-  .mg-v4-title{font-size:clamp(44px,13vw,68px);}
+  .mg-v4-title{font-size:clamp(44px,12vw,66px);letter-spacing:-.045em;}
   .mg-v4-lede{font-size:18px;}
   .mg-v4-buttons{gap:12px;margin-top:30px;}
   .mg-v4-btn{width:100%;min-height:56px;font-size:15px;}
@@ -334,7 +338,6 @@ require __DIR__ . '/includes/landing/index-v3/part09.php';
         <div class="mg-v4-links" aria-label="Primary navigation">
           <a href="#platform">Platform</a>
           <a href="#growth">API</a>
-          <a href="#merchants">Merchants</a>
           <a href="/developer-docs.php">Docs</a>
         </div>
         <a class="mg-v4-cta" href="/signup.php">Create Account <span>→</span></a>
