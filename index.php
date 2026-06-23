@@ -13,3 +13,4 @@ require __DIR__ . '/includes/landing/index-v3/part09.php';
 require __DIR__ . '/includes/landing/index-v3/part10.php';
 require __DIR__ . '/includes/landing/index-v3/part11.php';
 require __DIR__ . '/includes/landing/index-v3/part12.php';
+require __DIR__ . '/includes/landing/index-v3/part13.php';
