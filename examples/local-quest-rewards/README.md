@@ -13,7 +13,7 @@ It behaves like a real third-party local experience app:
 7. The app issues the mapped Microgift through the Public Distribution API.
 8. The app shows the reward in a Quest wallet.
 9. The participant can claim the reward inside the Quest app.
-10. Claim activity should report back to Microgifter.
+10. Claim activity reports back to Microgifter.
 
 Sandbox linking is only a developer shortcut. It is not the primary user flow.
 
@@ -44,6 +44,7 @@ examples/local-quest-rewards/
   index.php
   link-callback.php
   wallet.php
+  wallet-actions.php
   quests.php
   webhook.php
   data/README.md
@@ -86,7 +87,7 @@ http://127.0.0.1:8090/cover.php
 11. Open `wallet.php`.
 12. Refresh reward status from Microgifter.
 13. Claim the reward inside the Quest app.
-14. Report the claim back to Microgifter once `/api/public/v1/rewards/claim.php` exists.
+14. Confirm claim report status changes to `reported_to_microgifter`.
 
 ## Reward mapping
 
@@ -102,13 +103,18 @@ Reward rules live in `quests.php`. Each quest maps to:
 
 `wallet.php` displays issued rewards from the Local Quest user state. It pulls item IDs from reward issue/status responses when available.
 
-The app-side claim button currently records:
+The app-side claim button now calls:
+
+```text
+POST /api/public/v1/rewards/claim.php
+```
+
+The wallet action records:
 
 - `claim_status = claimed_in_quest_app`
-- `claim_report_status = pending_microgifter_claim_api`
-- target endpoint: `/api/public/v1/rewards/claim.php`
-
-That is intentional. The Quest UX is ready, but the Microgifter Public API still needs the claim/report endpoint described in `docs/public-api-third-party-wallet-claim.md`.
+- `claim_report_status = reported_to_microgifter`
+- `claim_report_endpoint = /api/public/v1/rewards/claim.php`
+- `microgifter_event_id` from the claim response when available
 
 ## Permission model
 
