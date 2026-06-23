@@ -9,4 +9,21 @@ return [
     'webhook_secret' => 'replace_with_rotated_webhook_signing_value',
     'mode' => 'test',
     'allow_sandbox_shortcut' => true,
+
+    // Demo admin. Change these before exposing the app publicly.
+    'admin' => [
+        'username' => 'admin',
+        'password' => 'change-me-admin-password',
+    ],
+
+    // Storage modes:
+    // - json: zero-config local demo, writes data/state.json and data/quests.json
+    // - mysql: real app mode target, schema lives in database/local_quest_rewards.sql
+    'storage' => [
+        'driver' => 'json',
+        'dsn' => 'mysql:host=127.0.0.1;dbname=local_quest_rewards;charset=utf8mb4',
+        'username' => 'local_quest_user',
+        'password' => 'replace_with_database_password',
+        'options' => [],
+    ],
 ];
