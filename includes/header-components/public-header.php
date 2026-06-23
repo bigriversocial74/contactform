@@ -20,25 +20,70 @@ $uses_standard_public_header = !$user;
 
 if ($uses_standard_public_header) {
     $public_nav_links = [
-        ['label'=>'Corporate Gifting','href'=>'/corporate.php'],
-        ['label'=>'Retail Subscriptions','href'=>'/retail.php'],
-        ['label'=>'Locations','href'=>'/locations.php'],
+        ['label'=>'Explore','href'=>'/discover.php'],
+        ['label'=>'Campaigns','href'=>'/campaign.php'],
+        ['label'=>'Merchant','href'=>'/merchant.php'],
+        ['label'=>'Docs','href'=>'/developer-docs.php'],
     ];
 }
+
+$market_ticker_items = is_array($public_header_config['ticker_items'] ?? null) ? $public_header_config['ticker_items'] : [];
+if (!$market_ticker_items) {
+    $market_ticker_items = [
+        ['symbol'=>'MGFTR','name'=>'Microgifter','price'=>'$0.842','change'=>'▲ 3.21%','trend'=>'up','href'=>'/profile.php?slug=microgifter'],
+        ['symbol'=>'COF2','name'=>'Coffee for Two','price'=>'$18.00','change'=>'▲ 4.2%','trend'=>'up','href'=>'/profile.php?slug=coffee-for-two'],
+        ['symbol'=>'BRNCH','name'=>'Weekend Brunch Drop','price'=>'$42.00','change'=>'▲ 8.7%','trend'=>'up','href'=>'/profile.php?slug=weekend-brunch-drop'],
+        ['symbol'=>'CHEF','name'=>'Chef Table Access','price'=>'$150.00','change'=>'▲ 12.4%','trend'=>'up','href'=>'/profile.php?slug=chef-table-access'],
+        ['symbol'=>'SHOW','name'=>'Venue Night Pass','price'=>'$36.00','change'=>'▲ 6.1%','trend'=>'up','href'=>'/profile.php?slug=venue-night-pass'],
+        ['symbol'=>'TACO','name'=>'Local Food Crawl','price'=>'$55.00','change'=>'▼ 1.8%','trend'=>'down','href'=>'/profile.php?slug=local-food-crawl'],
+        ['symbol'=>'VIPX','name'=>'Limited VIP Experience','price'=>'$225.00','change'=>'▲ 15.9%','trend'=>'up','href'=>'/profile.php?slug=limited-vip-experience'],
+    ];
+}
+if ($user && $account_profile_url) {
+    array_unshift($market_ticker_items, ['symbol'=>'YOU','name'=>'My Profile','price'=>'Profile','change'=>'OPEN','trend'=>'up','href'=>$account_profile_url]);
+}
+
 $show_home_search = $uses_standard_public_header;
 $show_public_search = $show_home_search || (bool)($public_header_config['search'] ?? false) || (bool)$user;
 $show_demo_button = !$user;
 ?>
-<header class="mg-site-header mg-unified-header" data-mg-universal-header data-public-header data-header-variant="<?= $user ? 'logged-in' : 'logged-out' ?>">
+<header class="mg-site-header mg-unified-header mg-market-universal-header" data-mg-universal-header data-public-header data-header-theme="market-dark" data-header-variant="<?= $user ? 'logged-in' : 'logged-out' ?>">
   <?php if ($public_page_id === 'home'): ?><span hidden>Turn future demand into present-day revenue</span><?php endif; ?>
   <div class="mg-header-inner nav-inner">
     <div class="mg-header-left">
       <a class="mg-brand brand" href="/index.php" aria-label="Microgifter home"><span>Microgifter</span></a>
-      <?php if ($show_public_search): ?>
+      <?php if ($show_public_search && $user): ?>
         <form class="mg-public-search" action="/discover.php" method="get" role="search">
           <input type="search" name="q" placeholder="Search Microgifter" aria-label="Search Microgifter" autocomplete="off">
         </form>
       <?php endif; ?>
+    </div>
+
+    <div class="mg-header-market" role="region" aria-label="Experience market ticker">
+      <div class="mg-header-market-label">Experience Market</div>
+      <div class="mg-header-market-track">
+        <div class="mg-header-market-marquee">
+          <?php for ($tickerPass = 0; $tickerPass < 2; $tickerPass++): ?>
+            <div class="mg-header-market-row" <?= $tickerPass === 1 ? 'aria-hidden="true"' : '' ?>>
+              <?php foreach ($market_ticker_items as $ticker_item): ?>
+                <?php
+                  $tickerHref = (string) ($ticker_item['href'] ?? '/discover.php');
+                  $tickerTrend = (string) ($ticker_item['trend'] ?? 'up');
+                ?>
+                <a class="mg-header-ticker-item" href="<?= mg_e($tickerHref) ?>">
+                  <strong><?= mg_e((string) ($ticker_item['symbol'] ?? 'MG')) ?></strong>
+                  <span><?= mg_e((string) ($ticker_item['name'] ?? 'Experience')) ?></span>
+                  <b><?= mg_e((string) ($ticker_item['price'] ?? '—')) ?></b>
+                  <em class="is-<?= mg_e($tickerTrend) ?>"><?= mg_e((string) ($ticker_item['change'] ?? 'OPEN')) ?></em>
+                </a>
+              <?php endforeach; ?>
+            </div>
+          <?php endfor; ?>
+        </div>
+      </div>
+    </div>
+
+    <div class="mg-header-actions" data-header-template="<?= $user ? 'logged-in-public' : 'logged-out-public' ?>">
       <?php if (!$user && $public_nav_links): ?>
         <nav class="mg-site-nav mg-public-nav" aria-label="Primary navigation">
           <?php foreach ($public_nav_links as $public_header_link): ?>
@@ -46,9 +91,6 @@ $show_demo_button = !$user;
           <?php endforeach; ?>
         </nav>
       <?php endif; ?>
-    </div>
-
-    <div class="mg-header-actions" data-header-template="<?= $user ? 'logged-in-public' : 'logged-out-public' ?>">
       <?php if ($show_demo_button): ?><a class="mg-public-demo" href="<?= mg_e($public_demo_href) ?>">Book A Demo</a><?php endif; ?>
       <?php if ($user): ?>
         <a class="mg-header-create" href="/build.php" data-header-create aria-label="Create">+</a>
