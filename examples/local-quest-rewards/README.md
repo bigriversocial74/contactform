@@ -8,11 +8,11 @@ It behaves like a third-party local experience app:
 2. The participant creates or signs into a Local Quest account.
 3. The app assigns a stable `external_user_id` for that Local Quest user.
 4. The participant connects a Microgifter account through Microgifter account-link consent.
-5. The participant completes a local quest.
+5. The participant completes a local quest using QR and optional geolocation context.
 6. The app checks its local reward permission rule.
 7. The app issues the mapped Microgift through the Public Distribution API.
 8. The app shows the reward in a Quest wallet.
-9. The participant can claim the reward inside the Quest app.
+9. The participant can claim the reward inside the Quest app with QR/geolocation evidence.
 10. Claim activity reports back to Microgifter.
 
 Sandbox linking is only a developer shortcut. It is not the primary user flow.
@@ -21,7 +21,26 @@ Sandbox linking is only a developer shortcut. It is not the primary user flow.
 
 One Microgifter merchant can approve products/templates for a Distribution Program. Multiple third-party Quest-style apps can be allowed to distribute those approved rewards.
 
-Microgifter remains the system of record for reward ownership, item status, claim state, redemption, webhooks, and audit history. The Quest app owns app login, quest progress, local action completion, wallet UX, and the admin controls for the third-party experience.
+Microgifter remains the system of record for reward ownership, item status, claim state, redemption, webhooks, and audit history. The Quest app owns app login, quest progress, QR/geolocation task context, local action completion, wallet UX, and the admin controls for the third-party experience.
+
+## UI model
+
+The user and admin surfaces now share a portal-style design system:
+
+- white dashboard cards
+- KPI blocks
+- quick action panels
+- top navigation bar
+- compact left rail navigation
+- rail expands on hover to reveal labels
+- user wallet and admin claim pages include QR/geolocation helpers
+
+Shared assets:
+
+```text
+assets/portal.css
+assets/portal.js
+```
 
 ## Microgifter account creation
 
@@ -46,8 +65,11 @@ examples/local-quest-rewards/
   wallet.php
   wallet-actions.php
   admin.php
+  admin-portal.php
   quests.php
   webhook.php
+  assets/portal.css
+  assets/portal.js
   database/local_quest_rewards.sql
   data/README.md
 ```
@@ -74,15 +96,21 @@ Open the participant app:
 http://127.0.0.1:8090/cover.php
 ```
 
-Open the admin backend:
+Open the original admin backend:
 
 ```text
 http://127.0.0.1:8090/admin.php
 ```
 
+Open the styled portal admin dashboard:
+
+```text
+http://127.0.0.1:8090/admin-portal.php
+```
+
 ## Admin backend
 
-`admin.php` is the Quest app control center. It includes:
+`admin.php` is the original Quest app control center. It includes:
 
 - admin login/logout
 - dashboard KPIs
@@ -94,7 +122,20 @@ http://127.0.0.1:8090/admin.php
 - integration event log
 - storage/settings view
 
+`admin-portal.php` is the styled dashboard layer based on the requested portal layout. It includes the expanding left rail, KPI cards, quick actions, user/customer views, wallet views, claim QR scan forms, geolocation capture, and links back to `admin.php` for existing write flows.
+
 The admin backend manages the third-party app layer only. It does not replace Microgifter merchant controls, Distribution Program approval, reward ownership, redemption truth, or Microgifter audit history.
+
+## QR scanning and geolocation
+
+`assets/portal.js` supports:
+
+- camera QR scanning through `BarcodeDetector` when available
+- manual QR/promo/prize code input fallback
+- browser geolocation capture
+- hidden form fields for `qr_payload`, `geo_lat`, `geo_lng`, `geo_accuracy`, and `geo_captured_at`
+
+User quest completion captures QR/geolocation context into local event state. Wallet claim reporting sends QR/geolocation evidence in the Microgifter claim metadata.
 
 ## SQL schema
 
@@ -117,13 +158,17 @@ Current runtime default is still `json` storage for zero-config demo use. The SQ
 5. Sign in or create a Microgifter account on Microgifter if prompted.
 6. Approve the account-link request.
 7. Return to `link-callback.php`.
-8. Complete a quest.
-9. Issue the reward.
-10. Check status.
-11. Open `wallet.php`.
-12. Refresh reward status from Microgifter.
-13. Claim the reward inside the Quest app.
-14. Confirm claim report status changes to `reported_to_microgifter`.
+8. Scan or paste a quest QR/task code.
+9. Capture geolocation if the quest requires location proof.
+10. Complete a quest.
+11. Issue the reward.
+12. Check status.
+13. Open `wallet.php`.
+14. Refresh reward status from Microgifter.
+15. Scan/paste claim QR or prize code.
+16. Capture claim geolocation.
+17. Claim the reward inside the Quest app.
+18. Confirm claim report status changes to `reported_to_microgifter`.
 
 ## Reward mapping
 
@@ -139,7 +184,7 @@ The app-side claim button calls:
 POST /api/public/v1/rewards/claim.php
 ```
 
-The wallet action records `claimed_in_quest_app`, `reported_to_microgifter`, the claim endpoint, and the returned Microgifter event ID when available.
+The wallet action records `claimed_in_quest_app`, `reported_to_microgifter`, the claim endpoint, the returned Microgifter event ID when available, the QR payload, and claim geolocation metadata.
 
 ## Permission model
 
