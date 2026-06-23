@@ -61,6 +61,10 @@ The helper verifies:
 
 Replay protection helpers are present so the app can mark a signed code as used.
 
+## SQL-only runtime note
+
+The starter foundation no longer supports file-backed JSON runtime state. App state is SQL-backed through `storage-sql.php`. SQL `JSON` columns remain valid for metadata, API responses, webhook context, claim context, QR/geolocation evidence, and audit payloads.
+
 ## Current scope
 
 This stage wires CSRF/session protection globally and adds the signed-code foundation. It does not yet replace every QR/manual code flow with signed-code-only behavior. Manual code input still exists for demo usability.
@@ -71,7 +75,7 @@ Before production use:
 
 1. Add signed QR generation for admins/venues.
 2. Require signed QR payloads for protected quests.
-3. Store replay keys in SQL rather than JSON state.
+3. Store replay keys in SQL rather than translated app state.
 4. Add role-specific owner/admin permission checks.
 5. Add login throttling and lockouts to admin and participant login.
 6. Add CSRF-specific tests.
