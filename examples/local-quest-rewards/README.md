@@ -29,6 +29,7 @@ Microgifter remains the system of record for reward ownership, item status, clai
 examples/local-quest-rewards/
   README.md
   app.php
+  install.php
   security.php
   storage-sql.php
   admin-auth.php
@@ -80,6 +81,14 @@ Start PHP:
 ```bash
 php -S 127.0.0.1:8090 -t examples/local-quest-rewards
 ```
+
+Run installer diagnostics:
+
+```text
+http://127.0.0.1:8090/install.php
+```
+
+The installer diagnostics screen verifies PHP version, PDO/MySQL support, HTTP client support, important config values, database connectivity, and required schema tables. Remove or protect `install.php` after deployment.
 
 Open the participant app:
 
