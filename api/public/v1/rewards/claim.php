@@ -1,8 +1,8 @@
 <?php
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/_public.php';
-require_once dirname(__DIR__, 2) . '/distribution/_developer_webhooks.php';
-require_once dirname(__DIR__, 2) . '/pppm/_pppm.php';
+require_once dirname(__DIR__, 3) . '/distribution/_developer_webhooks.php';
+require_once dirname(__DIR__, 3) . '/pppm/_pppm.php';
 
 mg_require_method('POST');
 $context = mg_public_context('distribution:rewards.issue');
