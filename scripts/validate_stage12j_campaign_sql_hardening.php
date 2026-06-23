@@ -9,6 +9,7 @@ $fullSql = is_file($fullImportFile) ? (string) file_get_contents($fullImportFile
 $checks = [
     'hardening_sql_file_exists' => is_file($hardeningFile),
     'full_import_sql_file_exists' => is_file($fullImportFile),
+    'hardening_points_to_full_import' => str_contains($hardeningSql, 'stage_12_campaign_features_full_import.sql'),
     'full_import_creates_reward_templates' => str_contains($fullSql, 'CREATE TABLE IF NOT EXISTS reward_templates'),
     'full_import_creates_campaigns' => str_contains($fullSql, 'CREATE TABLE IF NOT EXISTS campaigns'),
     'full_import_creates_campaign_contacts' => str_contains($fullSql, 'CREATE TABLE IF NOT EXISTS campaign_contacts'),
