@@ -44,12 +44,13 @@ $page_onboarding = is_array($page_manifest['onboarding'] ?? null)
 $agent_tab = $agent_tab ?? '';
 $section_css = $section_css ?? null;
 $is_app_page = in_array($header_mode, ['agent', 'account', 'crm', 'builder'], true);
+$is_profile_page = !$is_app_page && (string) ($page_manifest['id'] ?? '') === 'profile';
 $public_header_fix_style = '/assets/css/public-header-footer-fixes.css';
 $public_dark_shell_style = '/assets/css/public-dark-shell.css';
-if (!$is_app_page && !in_array($public_header_fix_style, $page_styles, true)) {
+if (!$is_app_page && !$is_profile_page && !in_array($public_header_fix_style, $page_styles, true)) {
     $page_styles[] = $public_header_fix_style;
 }
-if (!$is_app_page && !in_array($public_dark_shell_style, $page_styles, true)) {
+if (!$is_app_page && !$is_profile_page && !in_array($public_dark_shell_style, $page_styles, true)) {
     $page_styles[] = $public_dark_shell_style;
 }
 $user = $is_app_page ? mg_require_auth() : mg_current_user();
@@ -140,7 +141,9 @@ $can_admin_dashboard = $user && (
 <meta name="csrf-token" content="<?= mg_e(mg_csrf_token()) ?>">
 <title><?= mg_e($page_title) ?></title>
 <link rel="stylesheet" href="/assets/css/microgifter.css">
+<?php if (!$is_profile_page): ?>
 <link rel="stylesheet" href="/assets/css/public-program-pages.css">
+<?php endif; ?>
 <?php if ($is_app_page): ?>
 <link rel="stylesheet" href="/assets/css/app-shell.css">
 <link rel="stylesheet" href="/assets/css/create-menu.css">
@@ -168,7 +171,7 @@ $can_admin_dashboard = $user && (
 >
 <?php if ($is_app_page): ?>
   <?php require __DIR__ . '/header-components/app-header.php'; ?>
-<?php else: ?>
+<?php elseif (!$is_profile_page): ?>
   <?php require __DIR__ . '/header-components/public-header.php'; ?>
 <?php endif; ?>
 <script type="application/json" id="mg-page-manifest"><?= json_encode($page_manifest, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?></script>
