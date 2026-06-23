@@ -1,0 +1,57 @@
+name: Local Quest Checks
+
+on:
+  pull_request:
+    paths:
+      - 'examples/local-quest-rewards/**'
+      - 'docs/local-quest-*.md'
+      - 'docs/public-api-third-party-wallet-claim.md'
+      - 'docs/microgift-permission-system-plan.md'
+      - 'scripts/validate_local_quest_rewards_demo.php'
+      - '.github/workflows/local-quest-checks.yml'
+  push:
+    branches:
+      - main
+      - 'lq-*'
+      - 'saf-*'
+    paths:
+      - 'examples/local-quest-rewards/**'
+      - 'docs/local-quest-*.md'
+      - 'docs/public-api-third-party-wallet-claim.md'
+      - 'docs/microgift-permission-system-plan.md'
+      - 'scripts/validate_local_quest_rewards_demo.php'
+      - '.github/workflows/local-quest-checks.yml'
+
+jobs:
+  local-quest-validation:
+    name: Local Quest validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+
+      - name: PHP syntax check
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r file; do
+            php -l "$file"
+          done < <(find examples/local-quest-rewards scripts -name '*.php' -type f | sort)
+
+      - name: Validate Local Quest foundation
+        run: php scripts/validate_local_quest_rewards_demo.php
+
+      - name: Assert SQL-only runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -f examples/local-quest-rewards/scripts/migrate-json-to-sql.php
+          test ! -f examples/local-quest-rewards/data/README.md
+          ! grep -R "data/state.json\|migrate-json-to-sql\|lqr_state_path" examples/local-quest-rewards scripts/validate_local_quest_rewards_demo.php
