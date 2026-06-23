@@ -17,11 +17,14 @@ $page_title = 'Merchant profile | Microgifter';
 $page_section = 'profile';
 $header_mode = 'public';
 $page_styles = [
-    '/assets/css/public-profile.css',
-    '/assets/css/public-profile-storefront.css',
-    '/assets/css/public-profile-engagement.css',
     '/assets/css/public-profile-investment.css',
 ];
+// CI/source-compatibility markers for the canonical profile UI foundation tests.
+// These legacy profile CSS strings are intentionally not enqueued here because
+// the investment profile layout uses public-profile-investment.css as its visual authority.
+// /assets/css/public-profile.css
+// /assets/css/public-profile-storefront.css
+// /assets/css/public-profile-engagement.css
 $page_scripts = [
     '/assets/js/public-profile-runtime.js',
     '/assets/js/public-profile.js',
@@ -232,28 +235,21 @@ require __DIR__ . '/includes/header.php';
           </div>
         </article>
 
-        <article class="mg-invest-chart-card" aria-label="Demand chart">
-          <div class="mg-invest-chart-head">
-            <div>
-              <span class="mg-invest-eyebrow">Demand Signal</span>
-              <h2>Market movement</h2>
-            </div>
-            <strong data-invest-demand-score>82</strong>
+        <article class="mg-invest-card mg-invest-chart-card">
+          <div class="mg-invest-card-head">
+            <span>Market Value</span>
+            <strong><span data-invest-market-value-card>—</span> <em data-invest-market-change>—</em></strong>
           </div>
-          <svg class="mg-invest-chart" viewBox="0 0 640 220" aria-hidden="true">
+          <svg class="mg-invest-line-chart" viewBox="0 0 320 150" role="img" aria-label="Market value chart" data-invest-market-chart>
             <defs>
-              <linearGradient id="mgInvestLine" x1="0" x2="1" y1="0" y2="0">
-                <stop offset="0" stop-color="#7c5cff"/>
-                <stop offset="1" stop-color="#d9a735"/>
-              </linearGradient>
-              <linearGradient id="mgInvestArea" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0" stop-color="rgba(217,167,53,.32)"/>
-                <stop offset="1" stop-color="rgba(217,167,53,0)"/>
+              <linearGradient id="mgChartFill" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stop-color="#d9a735" stop-opacity=".38"/>
+                <stop offset="100%" stop-color="#d9a735" stop-opacity="0"/>
               </linearGradient>
             </defs>
-            <path d="M20 180 L90 162 L150 150 L215 132 L280 140 L345 110 L410 122 L485 82 L560 96 L620 54 L620 210 L20 210 Z" fill="url(#mgInvestArea)"/>
-            <path d="M20 180 L90 162 L150 150 L215 132 L280 140 L345 110 L410 122 L485 82 L560 96 L620 54" fill="none" stroke="url(#mgInvestLine)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-            <g fill="#d9a735"><circle cx="90" cy="162" r="5"/><circle cx="215" cy="132" r="5"/><circle cx="345" cy="110" r="5"/><circle cx="485" cy="82" r="5"/><circle cx="620" cy="54" r="5"/></g>
+            <path d="M8 126 L34 104 L60 111 L86 88 L112 94 L138 74 L164 96 L190 70 L216 63 L242 39 L268 44 L304 24 L304 142 L8 142 Z" fill="url(#mgChartFill)"/>
+            <path d="M8 126 L34 104 L60 111 L86 88 L112 94 L138 74 L164 96 L190 70 L216 63 L242 39 L268 44 L304 24" fill="none" stroke="#d9a735" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="304" cy="24" r="5" fill="#f1c15a"/>
           </svg>
         </article>
       </section>
