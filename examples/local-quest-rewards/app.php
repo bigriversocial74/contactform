@@ -30,42 +30,30 @@ function lqr_quests(): array
     return is_array($quests) ? $quests : [];
 }
 
-function lqr_data_dir(): string
-{
-    $dir = __DIR__ . '/data';
-    if (!is_dir($dir)) mkdir($dir, 0775, true);
-    return $dir;
-}
-
-function lqr_state_path(): string
-{
-    return lqr_data_dir() . '/state.json';
-}
-
 function lqr_default_state(): array
 {
-    return ['users'=>[], 'users_by_email'=>[], 'link_states'=>[], 'events'=>[], 'admin_users'=>[], 'admin_password_resets'=>[], 'security_replay'=>[], 'last_response'=>null, 'updated_at'=>gmdate('c')];
+    return [
+        'users' => [],
+        'users_by_email' => [],
+        'link_states' => [],
+        'events' => [],
+        'admin_users' => [],
+        'admin_password_resets' => [],
+        'security_replay' => [],
+        'last_response' => null,
+        'updated_at' => gmdate('c'),
+    ];
 }
 
 function lqr_load_state(): array
 {
-    $config = lqr_config();
-    if (lqr_storage_uses_sql($config)) return lqr_sql_load_state($config);
-    $path = lqr_state_path();
-    if (!is_file($path)) return lqr_default_state();
-    $state = json_decode((string)file_get_contents($path), true);
-    return is_array($state) ? array_replace_recursive(lqr_default_state(), $state) : lqr_default_state();
+    return lqr_sql_load_state(lqr_config());
 }
 
 function lqr_save_state(array $state): void
 {
-    $config = lqr_config();
     $state['updated_at'] = gmdate('c');
-    if (lqr_storage_uses_sql($config)) {
-        lqr_sql_save_state($config, $state);
-        return;
-    }
-    file_put_contents(lqr_state_path(), json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), LOCK_EX);
+    lqr_sql_save_state(lqr_config(), $state);
 }
 
 function lqr_h(string $value): string
@@ -99,17 +87,17 @@ function lqr_external_user_id(string $userId, string $email = ''): string
 function lqr_default_user(array $config, string $userId): array
 {
     return [
-        'id'=>$userId,
-        'display_name'=>'Local Quester',
-        'email'=>'',
-        'password_hash'=>'',
-        'external_user_id'=>lqr_external_user_id($userId),
-        'linked_account_id'=>'',
-        'link_status'=>'not_linked',
-        'completed_quests'=>[],
-        'rewards'=>[],
-        'created_at'=>gmdate('c'),
-        'updated_at'=>gmdate('c'),
+        'id' => $userId,
+        'display_name' => 'Local Quester',
+        'email' => '',
+        'password_hash' => '',
+        'external_user_id' => lqr_external_user_id($userId),
+        'linked_account_id' => '',
+        'link_status' => 'not_linked',
+        'completed_quests' => [],
+        'rewards' => [],
+        'created_at' => gmdate('c'),
+        'updated_at' => gmdate('c'),
     ];
 }
 
@@ -128,7 +116,7 @@ function lqr_put_user(array &$state, array $user): void
 
 function lqr_add_event(array &$state, string $type, string $message, array $context = []): void
 {
-    array_unshift($state['events'], ['at'=>gmdate('c'), 'type'=>$type, 'message'=>$message, 'context'=>$context]);
+    array_unshift($state['events'], ['at' => gmdate('c'), 'type' => $type, 'message' => $message, 'context' => $context]);
     $state['events'] = array_slice($state['events'], 0, 100);
 }
 
@@ -153,7 +141,7 @@ function lqr_action_register(array &$state, array $config): array
     $user['external_user_id'] = lqr_external_user_id($userId, $email);
     lqr_put_user($state, $user);
     $_SESSION['lqr_auth_user_id'] = $userId;
-    lqr_add_event($state, 'account.registered', 'Local Quest account created.', ['user_id'=>$userId, 'external_user_id'=>$user['external_user_id']]);
+    lqr_add_event($state, 'account.registered', 'Local Quest account created.', ['user_id' => $userId, 'external_user_id' => $user['external_user_id']]);
     return $user;
 }
 
@@ -166,7 +154,7 @@ function lqr_action_login(array &$state, array $config): array
     $user = lqr_get_user($state, $config, $userId);
     if (!password_verify($password, (string)$user['password_hash'])) throw new RuntimeException('Incorrect password.');
     $_SESSION['lqr_auth_user_id'] = $userId;
-    lqr_add_event($state, 'account.login', 'Local Quest account signed in.', ['user_id'=>$userId]);
+    lqr_add_event($state, 'account.login', 'Local Quest account signed in.', ['user_id' => $userId]);
     return $user;
 }
 
@@ -181,7 +169,7 @@ function lqr_action_identify(array &$state, array $config, array &$user): string
     lqr_require_real_user($user);
     $user['display_name'] = trim((string)($_POST['display_name'] ?? $user['display_name'])) ?: 'Local Quester';
     lqr_put_user($state, $user);
-    lqr_add_event($state, 'user.updated', 'Local Quest profile updated.', ['external_user_id'=>$user['external_user_id']]);
+    lqr_add_event($state, 'user.updated', 'Local Quest profile updated.', ['external_user_id' => $user['external_user_id']]);
     return 'Profile updated.';
 }
 
@@ -211,7 +199,7 @@ function lqr_call_microgifter(array $config, string $method, string $path, ?arra
     if (function_exists('curl_init')) {
         $ch = curl_init($url);
         if ($ch === false) throw new RuntimeException('Unable to initialize HTTP client.');
-        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER=>true, CURLOPT_HEADER=>true, CURLOPT_CUSTOMREQUEST=>$method, CURLOPT_HTTPHEADER=>$headers, CURLOPT_TIMEOUT=>30]);
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_HEADER => true, CURLOPT_CUSTOMREQUEST => $method, CURLOPT_HTTPHEADER => $headers, CURLOPT_TIMEOUT => 30]);
         if ($payload !== null) curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
         $raw = curl_exec($ch);
         if ($raw === false) { $error = curl_error($ch); curl_close($ch); throw new RuntimeException($error); }
@@ -221,21 +209,21 @@ function lqr_call_microgifter(array $config, string $method, string $path, ?arra
         $rawHeaders = substr((string)$raw, 0, $headerSize);
         $rawBody = substr((string)$raw, $headerSize);
     } else {
-        $context = stream_context_create(['http'=>['method'=>$method, 'header'=>implode("\r\n", $headers), 'content'=>$payload ?? '', 'ignore_errors'=>true, 'timeout'=>30]]);
+        $context = stream_context_create(['http' => ['method' => $method, 'header' => implode("\r\n", $headers), 'content' => $payload ?? '', 'ignore_errors' => true, 'timeout' => 30]]);
         $rawBody = file_get_contents($url, false, $context);
         $rawHeaders = implode("\n", $http_response_header ?? []);
         preg_match('/\s(\d{3})\s/', $http_response_header[0] ?? '', $m);
         $status = isset($m[1]) ? (int)$m[1] : 0;
     }
     $decoded = json_decode((string)$rawBody, true);
-    return ['status'=>$status, 'headers'=>$rawHeaders, 'body'=>is_array($decoded) ? $decoded : (string)$rawBody];
+    return ['status' => $status, 'headers' => $rawHeaders, 'body' => is_array($decoded) ? $decoded : (string)$rawBody];
 }
 
 function lqr_action_list_programs(array &$state, array $config): array
 {
     $response = lqr_call_microgifter($config, 'GET', '/api/public/v1/programs/index.php');
     $state['last_response'] = $response;
-    lqr_add_event($state, 'api.programs.list', 'Listed Microgifter programs.', ['status'=>$response['status']]);
+    lqr_add_event($state, 'api.programs.list', 'Listed Microgifter programs.', ['status' => $response['status']]);
     return $response;
 }
 
@@ -248,10 +236,10 @@ function lqr_action_start_account_link(array &$state, array $config, array &$use
 {
     lqr_require_real_user($user);
     $stateToken = 'lqr_state_' . bin2hex(random_bytes(16));
-    $state['link_states'][$stateToken] = ['user_id'=>$user['id'], 'external_user_id'=>$user['external_user_id'], 'created_at'=>gmdate('c')];
-    $response = lqr_call_microgifter($config, 'POST', '/api/public/v1/account-links/start.php', ['external_user_id'=>$user['external_user_id'], 'return_url'=>lqr_link_return_url($config), 'state'=>$stateToken, 'metadata'=>['app'=>'local-quest-rewards', 'local_user_id'=>$user['id']]]);
+    $state['link_states'][$stateToken] = ['user_id' => $user['id'], 'external_user_id' => $user['external_user_id'], 'created_at' => gmdate('c')];
+    $response = lqr_call_microgifter($config, 'POST', '/api/public/v1/account-links/start.php', ['external_user_id' => $user['external_user_id'], 'return_url' => lqr_link_return_url($config), 'state' => $stateToken, 'metadata' => ['app' => 'local-quest-rewards', 'local_user_id' => $user['id']]]);
     $state['last_response'] = $response;
-    lqr_add_event($state, 'microgifter.account_link_started', 'Microgifter account link started.', ['status'=>$response['status'], 'external_user_id'=>$user['external_user_id']]);
+    lqr_add_event($state, 'microgifter.account_link_started', 'Microgifter account link started.', ['status' => $response['status'], 'external_user_id' => $user['external_user_id']]);
     return $response;
 }
 
@@ -259,14 +247,14 @@ function lqr_action_sandbox_link(array &$state, array $config, array &$user): ar
 {
     lqr_require_real_user($user);
     if (empty($config['allow_sandbox_shortcut'])) throw new RuntimeException('Sandbox shortcut is disabled for this app. Use real Microgifter account linking.');
-    $response = lqr_call_microgifter($config, 'POST', '/api/public/v1/sandbox/linked-account.php', ['external_user_id'=>$user['external_user_id']]);
+    $response = lqr_call_microgifter($config, 'POST', '/api/public/v1/sandbox/linked-account.php', ['external_user_id' => $user['external_user_id']]);
     if (is_array($response['body']) && isset($response['body']['linked_account_id'])) {
         $user['linked_account_id'] = (string)$response['body']['linked_account_id'];
         $user['link_status'] = 'sandbox_linked';
         lqr_put_user($state, $user);
     }
     $state['last_response'] = $response;
-    lqr_add_event($state, 'microgifter.sandbox_linked_account', 'Developer sandbox linked account prepared.', ['status'=>$response['status'], 'linked_account_id'=>$user['linked_account_id']]);
+    lqr_add_event($state, 'microgifter.sandbox_linked_account', 'Developer sandbox linked account prepared.', ['status' => $response['status'], 'linked_account_id' => $user['linked_account_id']]);
     return $response;
 }
 
@@ -288,7 +276,7 @@ function lqr_complete_account_link(array &$state, array $config, array $query): 
     lqr_put_user($state, $user);
     unset($state['link_states'][$stateToken]);
     $_SESSION['lqr_auth_user_id'] = $userId;
-    lqr_add_event($state, 'microgifter.account_linked', 'Real Microgifter account linked.', ['linked_account_id'=>$linkedAccountId, 'external_user_id'=>$user['external_user_id']]);
+    lqr_add_event($state, 'microgifter.account_linked', 'Real Microgifter account linked.', ['linked_account_id' => $linkedAccountId, 'external_user_id' => $user['external_user_id']]);
     return $user;
 }
 
@@ -302,7 +290,7 @@ function lqr_can_issue_reward(array $user, string $questId, array $quest, array 
 {
     $permission = is_array($quest['permission'] ?? null) ? $quest['permission'] : [];
     $mode = (string)($config['mode'] ?? 'test');
-    $allowedModes = is_array($permission['allowed_modes'] ?? null) ? $permission['allowed_modes'] : ['test','live'];
+    $allowedModes = is_array($permission['allowed_modes'] ?? null) ? $permission['allowed_modes'] : ['test', 'live'];
     if (!lqr_is_authenticated() || empty($user['email'])) return [false, 'Sign in before issuing rewards.'];
     if (!in_array($mode, $allowedModes, true)) return [false, 'This quest is not allowed in the current app mode.'];
     if (!empty($permission['requires_completion']) && empty($user['completed_quests'][$questId])) return [false, 'Complete the quest before issuing the reward.'];
@@ -325,7 +313,7 @@ function lqr_action_complete_quest(array &$state, array $config, array &$user, s
     if (!$ok) return $message;
     $user['completed_quests'][$questId] = gmdate('c');
     lqr_put_user($state, $user);
-    lqr_add_event($state, 'quest.completed', 'Quest completed: ' . (string)$quest['title'], ['quest_id'=>$questId, 'user_id'=>$user['id']]);
+    lqr_add_event($state, 'quest.completed', 'Quest completed: ' . (string)$quest['title'], ['quest_id' => $questId, 'user_id' => $user['id']]);
     return 'Quest completed.';
 }
 
@@ -334,13 +322,13 @@ function lqr_action_issue_reward(array &$state, array $config, array &$user, str
     [$ok, $message] = lqr_can_issue_reward($user, $questId, $quest, $config);
     if (!$ok) throw new RuntimeException($message);
     $externalEventId = lqr_reward_external_event_id($questId, $user);
-    $response = lqr_call_microgifter($config, 'POST', '/api/public/v1/rewards/issue.php', ['program_id'=>lqr_quest_program_id($quest, $config), 'external_event_id'=>$externalEventId, 'event_type'=>(string)$quest['event_type'], 'recipient'=>['linked_account_id'=>$user['linked_account_id']], 'reward'=>['template_id'=>lqr_quest_template_id($quest, $config), 'quantity'=>1], 'metadata'=>['demo_app'=>'local-quest-rewards', 'quest_id'=>$questId, 'quest_title'=>(string)$quest['title'], 'local_user_id'=>$user['id']]], ['X-Request-ID: req_' . preg_replace('/[^a-zA-Z0-9_.:-]/', '_', $externalEventId), 'X-Idempotency-Key: ' . $externalEventId]);
+    $response = lqr_call_microgifter($config, 'POST', '/api/public/v1/rewards/issue.php', ['program_id' => lqr_quest_program_id($quest, $config), 'external_event_id' => $externalEventId, 'event_type' => (string)$quest['event_type'], 'recipient' => ['linked_account_id' => $user['linked_account_id']], 'reward' => ['template_id' => lqr_quest_template_id($quest, $config), 'quantity' => 1], 'metadata' => ['demo_app' => 'local-quest-rewards', 'quest_id' => $questId, 'quest_title' => (string)$quest['title'], 'local_user_id' => $user['id']]], ['X-Request-ID: req_' . preg_replace('/[^a-zA-Z0-9_.:-]/', '_', $externalEventId), 'X-Idempotency-Key: ' . $externalEventId]);
     if (is_array($response['body']) && !empty($response['body']['reward_id'])) {
-        $user['rewards'][$questId] = ['reward_id'=>(string)$response['body']['reward_id'], 'status'=>(string)($response['body']['status'] ?? 'unknown'), 'external_event_id'=>$externalEventId, 'issued_at'=>gmdate('c'), 'claim_status'=>'available_in_app', 'claim_report_status'=>'not_reported', 'last_checked_at'=>null, 'response'=>$response['body']];
+        $user['rewards'][$questId] = ['reward_id' => (string)$response['body']['reward_id'], 'status' => (string)($response['body']['status'] ?? 'unknown'), 'external_event_id' => $externalEventId, 'issued_at' => gmdate('c'), 'claim_status' => 'available_in_app', 'claim_report_status' => 'not_reported', 'last_checked_at' => null, 'response' => $response['body']];
         lqr_put_user($state, $user);
     }
     $state['last_response'] = $response;
-    lqr_add_event($state, 'microgifter.reward.issue', 'Reward issue requested for ' . (string)$quest['title'], ['status'=>$response['status'], 'quest_id'=>$questId, 'user_id'=>$user['id']]);
+    lqr_add_event($state, 'microgifter.reward.issue', 'Reward issue requested for ' . (string)$quest['title'], ['status' => $response['status'], 'quest_id' => $questId, 'user_id' => $user['id']]);
     return $response;
 }
 
@@ -357,7 +345,7 @@ function lqr_action_check_status(array &$state, array $config, array &$user, str
         lqr_put_user($state, $user);
     }
     $state['last_response'] = $response;
-    lqr_add_event($state, 'microgifter.reward.status', 'Reward status checked.', ['status'=>$response['status'], 'quest_id'=>$questId, 'reward_id'=>$rewardId]);
+    lqr_add_event($state, 'microgifter.reward.status', 'Reward status checked.', ['status' => $response['status'], 'quest_id' => $questId, 'reward_id' => $rewardId]);
     return $response;
 }
 
@@ -379,7 +367,7 @@ function lqr_wallet_rewards(array $user, array $quests): array
     foreach ($user['rewards'] ?? [] as $questId => $reward) {
         if (!is_array($reward)) continue;
         $quest = is_array($quests[$questId] ?? null) ? $quests[$questId] : [];
-        $out[] = ['quest_id'=>(string)$questId, 'quest_title'=>(string)($quest['title'] ?? $questId), 'reward_label'=>(string)($quest['reward_label'] ?? 'Microgift reward'), 'reward_id'=>(string)($reward['reward_id'] ?? ''), 'status'=>(string)($reward['status'] ?? 'unknown'), 'item_id'=>lqr_reward_item_id($reward), 'claim_status'=>(string)($reward['claim_status'] ?? 'available_in_app'), 'claim_report_status'=>(string)($reward['claim_report_status'] ?? 'not_reported'), 'issued_at'=>(string)($reward['issued_at'] ?? '')];
+        $out[] = ['quest_id' => (string)$questId, 'quest_title' => (string)($quest['title'] ?? $questId), 'reward_label' => (string)($quest['reward_label'] ?? 'Microgift reward'), 'reward_id' => (string)($reward['reward_id'] ?? ''), 'status' => (string)($reward['status'] ?? 'unknown'), 'item_id' => lqr_reward_item_id($reward), 'claim_status' => (string)($reward['claim_status'] ?? 'available_in_app'), 'claim_report_status' => (string)($reward['claim_report_status'] ?? 'not_reported'), 'issued_at' => (string)($reward['issued_at'] ?? '')];
     }
     return $out;
 }
@@ -395,6 +383,6 @@ function lqr_action_claim_reward(array &$state, array $config, array &$user, str
     $reward['claim_report_endpoint'] = '/api/public/v1/rewards/claim.php';
     $user['rewards'][$questId] = $reward;
     lqr_put_user($state, $user);
-    lqr_add_event($state, 'quest.reward.claimed', 'Reward claimed inside Local Quest. Microgifter claim-report endpoint is required for final platform reporting.', ['quest_id'=>$questId, 'reward_id'=>(string)($reward['reward_id'] ?? ''), 'item_id'=>lqr_reward_item_id($reward)]);
+    lqr_add_event($state, 'quest.reward.claimed', 'Reward claimed inside Local Quest. Microgifter claim-report endpoint is required for final platform reporting.', ['quest_id' => $questId, 'reward_id' => (string)($reward['reward_id'] ?? ''), 'item_id' => lqr_reward_item_id($reward)]);
     return 'Reward marked claimed in the Quest app. Platform reporting needs the public claim/report endpoint.';
 }
