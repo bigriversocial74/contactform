@@ -1,29 +1,6 @@
 <?php
 declare(strict_types=1);
 ?>
-<section class="mg-merchant-heading">
-  <div>
-    <span class="mg-eyebrow">Campaigns</span>
-    <h1>Reward campaigns</h1>
-    <p>Create newsletter signup, contest, QR drop, and agent-discovery flows that send approved value into the Microgifter inbox.</p>
-  </div>
-  <div class="mg-heading-actions">
-    <a class="mg-btn mg-btn-soft" href="/merchant-reward-templates.php">Reward templates</a>
-    <a class="mg-btn mg-btn-primary" href="/merchant-reward-templates.php">Create template</a>
-  </div>
-</section>
-
-<div class="mg-merchant-grid">
-  <section class="mg-app-panel">
-    <div class="mg-app-panel-head"><div><h2>Newsletter Signup</h2><p>Collect a contact and issue a source-tracked wallet item.</p></div></div>
-    <div class="mg-app-panel-body"><div class="mg-empty-state"><strong>Builder shell ready</strong><p>Next slice wires public form submission, contact creation, and inbox delivery.</p></div></div>
-  </section>
-  <section class="mg-app-panel">
-    <div class="mg-app-panel-head"><div><h2>Contest / Giveaway</h2><p>Issue entry rewards and winner rewards from reusable templates.</p></div></div>
-    <div class="mg-app-panel-body"><div class="mg-empty-state"><strong>Campaign type reserved</strong><p>Uses the same reward template and wallet item engine.</p></div></div>
-  </section>
-  <section class="mg-app-panel">
-    <div class="mg-app-panel-head"><div><h2>QR Reward Drop</h2><p>Turn table tents, event signage, and local scans into wallet pickups.</p></div></div>
-    <div class="mg-app-panel-body"><div class="mg-empty-state"><strong>QR flow reserved</strong><p>Scan, add to inbox, claim, redeem, and measure.</p></div></div>
-  </section>
-</div>
+<section class="mg-merchant-heading"><div><span class="mg-eyebrow">Campaigns</span><h1>Reward campaigns</h1><p>Create newsletter signup, contest, QR drop, and agent-discovery flows that send approved value into the Microgifter inbox.</p></div><div class="mg-heading-actions"><a class="mg-btn mg-btn-soft" href="/merchant-reward-templates.php">Reward templates</a><a class="mg-btn mg-btn-primary" href="#campaign-builder">Create campaign</a></div></section>
+<section class="mg-app-panel" id="campaign-builder"><div class="mg-app-panel-head"><div><h2>Campaign builder</h2><p>Choose the distribution trigger and attach a reward template.</p></div></div><div class="mg-app-panel-body"><form class="mg-merchant-form" data-stage12-campaign-builder><input type="hidden" name="campaign_id" value=""><div class="mg-grid-2"><label>Campaign type<select name="campaign_type"><option value="newsletter_signup">Newsletter Signup</option><option value="contest_giveaway">Contest / Giveaway</option><option value="qr_reward_drop">QR Reward Drop</option><option value="referral_reward">Referral Reward</option><option value="birthday_vip">Birthday / VIP</option><option value="agent_offer">Agent Offer</option></select></label><label>Status<select name="status"><option value="draft">Draft</option><option value="active">Active</option><option value="paused">Paused</option><option value="ended">Ended</option><option value="archived">Archived</option></select></label></div><label>Campaign title<input name="title" placeholder="Join the list and get a reward" required maxlength="180"></label><label>Reward template<select name="reward_template_id" data-stage12-campaign-template-select><option value="">No template attached yet</option></select></label><label>Form headline<input name="form_headline" placeholder="Join our rewards list"></label><label>Description<textarea name="description" placeholder="Explain the campaign and reward."></textarea></label><div class="mg-grid-2"><label>Quantity limit<input name="quantity_limit" type="number" min="1" placeholder="Unlimited"></label><label>Per-user limit<input name="per_user_limit" type="number" min="1" value="1"></label></div><label><input type="checkbox" name="agent_discoverable" value="1"> Agent-discoverable campaign</label><div class="mg-form-status" data-stage12-campaign-status>Ready to save a campaign.</div><div class="mg-heading-actions"><button class="mg-btn mg-btn-primary" type="submit" data-stage12-campaign-save>Save campaign</button><button class="mg-btn mg-btn-ghost" type="button" data-stage12-campaign-new>New campaign</button></div></form></div></section>
+<section class="mg-app-panel"><div class="mg-app-panel-head"><div><h2>Campaign activity</h2><p>Contacts, issued wallet items, claims, redemptions, and event counts.</p></div></div><div class="mg-app-panel-body"><div class="mg-product-list" data-stage12-campaign-list></div></div></section>
