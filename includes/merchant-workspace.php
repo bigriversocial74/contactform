@@ -5,6 +5,8 @@ $merchantNav = [
  'overview'=>['Overview','Workspace health','/merchant.php'],
  'onboarding'=>['Onboarding','Activation steps','/merchant-onboarding.php'],
  'products'=>['Products','Catalog and builder','/merchant-products.php'],
+ 'reward_templates'=>['Reward Templates','Wallet-ready offers','/merchant-reward-templates.php'],
+ 'campaigns'=>['Campaigns','Forms, contests, QR drops','/merchant-campaigns.php'],
  'storefront'=>['Storefront','Public merchant page','/merchant-storefront.php'],
  'pppm'=>['Orders & PPPM','Items and lifecycle','/merchant-pppm.php'],
  'distribution'=>['Distribution','Programs and inputs','/merchant-distribution.php'],
@@ -24,7 +26,7 @@ $user = mg_current_user();
   <div class="mg-app-sidebar-brand"><a class="mg-brand" href="/index.php"><span>Microgifter</span></a><span class="mg-merchant-shell-label">Merchant</span></div>
   <div class="mg-merchant-progress-card"><div><span>Workspace setup</span><strong data-merchant-progress>0%</strong></div><div class="mg-merchant-progress"><i data-merchant-progress-bar></i></div><small data-merchant-status>Loading activation status…</small></div>
   <nav class="mg-app-side-nav mg-merchant-nav" aria-label="Merchant workspace"><?php foreach($merchantNav as $key=>$item): ?><a class="<?= $merchantView===$key?'is-active':'' ?>" href="<?= mg_e($item[2]) ?>"><strong><?= mg_e($item[0]) ?></strong><span><?= mg_e($item[1]) ?></span></a><?php endforeach; ?></nav>
-  <div class="mg-merchant-sidebar-footer"><span class="mg-save-state" data-merchant-save-state>All changes saved</span><a class="mg-btn mg-btn-soft" href="/build.php">Create product</a></div>
+  <div class="mg-merchant-sidebar-footer"><span class="mg-save-state" data-merchant-save-state>All changes saved</span><a class="mg-btn mg-btn-soft" href="/merchant-campaigns.php">Create campaign</a></div>
  </aside>
  <main class="mg-app-workspace mg-merchant-main">
   <?php if(!$user): ?><section class="mg-app-panel"><div class="mg-app-panel-head"><div><h2>Merchant access</h2><p>Sign in to open your merchant workspace.</p></div></div><div class="mg-app-panel-body"><a class="mg-btn mg-btn-primary" href="/signin.php">Sign in</a></div></section>
