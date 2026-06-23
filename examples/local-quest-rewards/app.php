@@ -229,12 +229,7 @@ function lqr_action_start_account_link(array &$state, array $config, array &$use
     lqr_require_real_user($user);
     $stateToken = 'lqr_state_' . bin2hex(random_bytes(16));
     $state['link_states'][$stateToken] = ['user_id'=>$user['id'], 'external_user_id'=>$user['external_user_id'], 'created_at'=>gmdate('c')];
-    $response = lqr_call_microgifter($config, 'POST', '/api/public/v1/account-links/start.php', [
-        'external_user_id'=>$user['external_user_id'],
-        'return_url'=>lqr_link_return_url($config),
-        'state'=>$stateToken,
-        'metadata'=>['app'=>'local-quest-rewards', 'local_user_id'=>$user['id']],
-    ]);
+    $response = lqr_call_microgifter($config, 'POST', '/api/public/v1/account-links/start.php', ['external_user_id'=>$user['external_user_id'], 'return_url'=>lqr_link_return_url($config), 'state'=>$stateToken, 'metadata'=>['app'=>'local-quest-rewards', 'local_user_id'=>$user['id']]]);
     $state['last_response'] = $response;
     lqr_add_event($state, 'microgifter.account_link_started', 'Microgifter account link started.', ['status'=>$response['status'], 'external_user_id'=>$user['external_user_id']]);
     return $response;
@@ -319,16 +314,9 @@ function lqr_action_issue_reward(array &$state, array $config, array &$user, str
     [$ok, $message] = lqr_can_issue_reward($user, $questId, $quest, $config);
     if (!$ok) throw new RuntimeException($message);
     $externalEventId = lqr_reward_external_event_id($questId, $user);
-    $response = lqr_call_microgifter($config, 'POST', '/api/public/v1/rewards/issue.php', [
-        'program_id'=>lqr_quest_program_id($quest, $config),
-        'external_event_id'=>$externalEventId,
-        'event_type'=>(string)$quest['event_type'],
-        'recipient'=>['linked_account_id'=>$user['linked_account_id']],
-        'reward'=>['template_id'=>lqr_quest_template_id($quest, $config), 'quantity'=>1],
-        'metadata'=>['demo_app'=>'local-quest-rewards', 'quest_id'=>$questId, 'quest_title'=>(string)$quest['title'], 'local_user_id'=>$user['id']],
-    ], ['X-Request-ID: req_' . preg_replace('/[^a-zA-Z0-9_.:-]/', '_', $externalEventId), 'X-Idempotency-Key: ' . $externalEventId]);
+    $response = lqr_call_microgifter($config, 'POST', '/api/public/v1/rewards/issue.php', ['program_id'=>lqr_quest_program_id($quest, $config), 'external_event_id'=>$externalEventId, 'event_type'=>(string)$quest['event_type'], 'recipient'=>['linked_account_id'=>$user['linked_account_id']], 'reward'=>['template_id'=>lqr_quest_template_id($quest, $config), 'quantity'=>1], 'metadata'=>['demo_app'=>'local-quest-rewards', 'quest_id'=>$questId, 'quest_title'=>(string)$quest['title'], 'local_user_id'=>$user['id']]], ['X-Request-ID: req_' . preg_replace('/[^a-zA-Z0-9_.:-]/', '_', $externalEventId), 'X-Idempotency-Key: ' . $externalEventId]);
     if (is_array($response['body']) && !empty($response['body']['reward_id'])) {
-        $user['rewards'][$questId] = ['reward_id'=>(string)$response['body']['reward_id'], 'status'=>(string)($response['body']['status'] ?? 'unknown'), 'external_event_id'=>$externalEventId, 'issued_at'=>gmdate('c'), 'last_checked_at'=>null, 'response'=>$response['body']];
+        $user['rewards'][$questId] = ['reward_id'=>(string)$response['body']['reward_id'], 'status'=>(string)($response['body']['status'] ?? 'unknown'), 'external_event_id'=>$externalEventId, 'issued_at'=>gmdate('c'), 'claim_status'=>'available_in_app', 'claim_report_status'=>'not_reported', 'last_checked_at'=>null, 'response'=>$response['body']];
         lqr_put_user($state, $user);
     }
     $state['last_response'] = $response;
@@ -351,4 +339,41 @@ function lqr_action_check_status(array &$state, array $config, array &$user, str
     $state['last_response'] = $response;
     lqr_add_event($state, 'microgifter.reward.status', 'Reward status checked.', ['status'=>$response['status'], 'quest_id'=>$questId, 'reward_id'=>$rewardId]);
     return $response;
+}
+
+function lqr_reward_item_id(array $reward): string
+{
+    if (!empty($reward['response']['pppm_item_id'])) return (string)$reward['response']['pppm_item_id'];
+    $status = is_array($reward['status_response'] ?? null) ? $reward['status_response'] : [];
+    $jobs = is_array($status['jobs'] ?? null) ? $status['jobs'] : [];
+    foreach ($jobs as $job) {
+        if (!empty($job['pppm_item_id'])) return (string)$job['pppm_item_id'];
+    }
+    return '';
+}
+
+function lqr_wallet_rewards(array $user, array $quests): array
+{
+    $out = [];
+    foreach ($user['rewards'] ?? [] as $questId => $reward) {
+        if (!is_array($reward)) continue;
+        $quest = is_array($quests[$questId] ?? null) ? $quests[$questId] : [];
+        $out[] = ['quest_id'=>(string)$questId, 'quest_title'=>(string)($quest['title'] ?? $questId), 'reward_label'=>(string)($quest['reward_label'] ?? 'Microgift reward'), 'reward_id'=>(string)($reward['reward_id'] ?? ''), 'status'=>(string)($reward['status'] ?? 'unknown'), 'item_id'=>lqr_reward_item_id($reward), 'claim_status'=>(string)($reward['claim_status'] ?? 'available_in_app'), 'claim_report_status'=>(string)($reward['claim_report_status'] ?? 'not_reported'), 'issued_at'=>(string)($reward['issued_at'] ?? '')];
+    }
+    return $out;
+}
+
+function lqr_action_claim_reward(array &$state, array $config, array &$user, string $questId): string
+{
+    lqr_require_real_user($user);
+    if (empty($user['rewards'][$questId]) || !is_array($user['rewards'][$questId])) throw new RuntimeException('Reward not found in this Quest wallet.');
+    $reward = $user['rewards'][$questId];
+    $reward['claim_status'] = 'claimed_in_quest_app';
+    $reward['claimed_at'] = gmdate('c');
+    $reward['claim_report_status'] = 'pending_microgifter_claim_api';
+    $reward['claim_report_endpoint'] = '/api/public/v1/rewards/claim.php';
+    $user['rewards'][$questId] = $reward;
+    lqr_put_user($state, $user);
+    lqr_add_event($state, 'quest.reward.claimed', 'Reward claimed inside Local Quest. Microgifter claim-report endpoint is required for final platform reporting.', ['quest_id'=>$questId, 'reward_id'=>(string)($reward['reward_id'] ?? ''), 'item_id'=>lqr_reward_item_id($reward)]);
+    return 'Reward marked claimed in the Quest app. Platform reporting needs the public claim/report endpoint.';
 }
