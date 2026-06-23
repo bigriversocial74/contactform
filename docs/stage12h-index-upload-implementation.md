@@ -1,4 +1,4 @@
-# Stage 12H uploaded index implementation
+# Stage 12H uploaded landing/profile implementation
 
 The uploaded black/gold Microgifter landing page has been wired as the root `index.php` page through ordered include parts under:
 
@@ -17,13 +17,13 @@ includes/landing/index-v3/part11.php
 includes/landing/index-v3/part12.php
 ```
 
-Root `index.php` now explicitly requires those parts in order.
+Root `index.php` explicitly requires those parts in order.
 
-`profile.php` was not modified.
+After PR #85 was merged, `profile.php` was hotfixed on `main` with the current uploaded merchant/investment profile page. The profile keeps the public profile runtime/storefront/engagement scripts and adds the investment profile stylesheet/script.
 
-The obsolete staged replacement instructions were removed where possible. The connector blocked deleting `stage12h/profile.php.replacement`, so that file was neutralized and now contains only a do-not-apply marker.
+The obsolete staged replacement files and instructions were removed. The leftover neutralized `stage12h/profile.php.replacement` artifact was also removed from `main` after the merge.
 
-Known follow-up: several image references used by the uploaded index source are still missing from the branch and should be added before visual QA:
+The uploaded index image dependencies were added to avoid broken-image fallbacks:
 
 ```txt
 /images/cosmic_golden_network_on_black.png
