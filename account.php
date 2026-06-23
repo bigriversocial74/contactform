@@ -4,6 +4,7 @@ $accountView = defined('MG_ACCOUNT_VIEW') ? MG_ACCOUNT_VIEW : 'profile';
 $page_title = match ($accountView) {
   'admin' => 'Admin Dashboard | Microgifter',
   'profile_moderation' => 'Profile Moderation | Microgifter',
+  'wallet' => 'My Wallet | Microgifter',
   'profile' => 'Profile Editor | Microgifter',
   default => 'Account | Microgifter',
 };
@@ -20,6 +21,9 @@ if ($accountView === 'profile') {
 } elseif ($accountView === 'profile_moderation') {
   $page_styles[] = '/assets/css/profile-moderation.css';
   $page_scripts[] = '/assets/js/profile-moderation.js';
+} elseif ($accountView === 'wallet') {
+  $page_styles[] = '/assets/css/merchant-workspace.css';
+  $page_scripts[] = '/assets/js/stage12-wallet.js';
 } else {
   $page_scripts[] = '/assets/js/account.js';
 }
@@ -46,13 +50,14 @@ $adminPermissionSet = [
 $hasAdminAccess = $isSuperAdmin || count(array_intersect($adminPermissionSet, $permissions)) > 0;
 $accountNav = [
   'profile' => ['label' => 'Profile', 'href' => '/account.php', 'detail' => 'Public identity'],
+  'wallet' => ['label' => 'Wallet', 'href' => '/wallet.php', 'detail' => 'Local rewards'],
   'models' => ['label' => 'Models', 'href' => '/account-models.php', 'detail' => 'User model access'],
   'security' => ['label' => 'Security', 'href' => '/account-security.php', 'detail' => 'Sessions'],
   'access' => ['label' => 'Access', 'href' => '/account-access.php', 'detail' => 'Roles and permissions'],
 ];
 if ($hasAdminAccess) $accountNav['admin'] = ['label' => 'Admin', 'href' => '/account-admin.php', 'detail' => 'Platform controls'];
 if ($canViewProfileModeration) $accountNav['profile_moderation'] = ['label' => 'Moderation', 'href' => '/account-profile-moderation.php', 'detail' => 'Profile review queue'];
-$knownViews = ['profile', 'models', 'security', 'access', 'admin', 'profile_moderation'];
+$knownViews = ['profile', 'wallet', 'models', 'security', 'access', 'admin', 'profile_moderation'];
 if (!in_array($accountView, $knownViews, true)) $accountView = 'profile';
 require __DIR__ . '/includes/header.php';
 ?>
@@ -71,10 +76,12 @@ require __DIR__ . '/includes/header.php';
 
   <main class="mg-app-workspace mg-account-main">
     <?php if (!$user): ?>
-      <section class="mg-account-guest mg-app-panel"><div class="mg-app-panel-head"><div><h2>Account access</h2><p>Sign in to continue to your profile, models, security, and settings.</p></div></div><div class="mg-app-panel-body"><div class="mg-action-row"><a class="mg-btn mg-btn-primary" href="/signin.php">Sign in</a><a class="mg-btn mg-btn-ghost" href="/signup.php">Create account</a></div></div></section>
+      <section class="mg-account-guest mg-app-panel"><div class="mg-app-panel-head"><div><h2>Account access</h2><p>Sign in to continue to your profile, wallet, models, security, and settings.</p></div></div><div class="mg-app-panel-body"><div class="mg-action-row"><a class="mg-btn mg-btn-primary" href="/signin.php">Sign in</a><a class="mg-btn mg-btn-ghost" href="/signup.php">Create account</a></div></div></section>
     <?php elseif ($accountView === 'profile'): ?>
       <?php require __DIR__ . '/includes/account/profile-moderation-owner.php'; ?>
       <?php require __DIR__ . '/includes/account/profile-editor.php'; ?>
+    <?php elseif ($accountView === 'wallet'): ?>
+      <?php require __DIR__ . '/includes/account/wallet-view.php'; ?>
     <?php elseif ($accountView === 'models'): ?>
       <section class="mg-app-panel mg-account-pane is-active" data-account-pane="models"><div class="mg-app-panel-head"><div><h2>Identity onboarding</h2><p>Request the models you want to operate as. Approval-gated models keep the platform clean before commerce is added.</p></div></div><div class="mg-app-panel-body"><div class="mg-model-list" data-user-model-list><p class="mg-muted">Loading models…</p></div></div></section>
     <?php elseif ($accountView === 'security'): ?>
