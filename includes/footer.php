@@ -42,14 +42,65 @@ $can_sales_crm = $user && (in_array('sales.leads.view_own', $user_permissions, t
 $can_intelligence = $user && (in_array('intelligence.dashboard.view', $user_permissions, true) || in_array('demand.dashboard.view', $user_permissions, true) || in_array('super_admin', $user_roles, true));
 ?>
 </main>
-<footer class="mg-site-footer" data-mg-universal-footer>
-  <div class="mg-footer-inner">
-    <div class="mg-footer-brand">
+<footer class="mg-site-footer mg-universal-footer" data-mg-universal-footer>
+  <div class="mg-footer-shell">
+    <section class="mg-footer-brand-panel" aria-label="Microgifter footer overview">
       <a class="mg-brand mg-footer-logo" href="/index.php" aria-label="Microgifter home"><span>Microgifter</span></a>
-      <p>Pre-purchase gifts, local rewards, and agent-assisted gifting.</p>
-      <p class="mg-footer-copyright">&copy; <?= date('Y') ?> Microgifter. All rights reserved.</p>
+      <p>Rewards, tokenized local experiences, and agent-ready gifting tools for local commerce.</p>
+      <div class="mg-footer-market-strip" aria-label="Experience market summary">
+        <span><strong>MGFTR</strong> $0.842</span>
+        <span><strong>COF2</strong> ▲ 4.2%</span>
+        <span><strong>VIPX</strong> ▲ 15.9%</span>
+      </div>
+    </section>
+
+    <nav class="mg-footer-link-grid" aria-label="Footer navigation">
+      <div class="mg-footer-column">
+        <h2>Platform</h2>
+        <a href="/discover.php">Explore</a>
+        <a href="/developer-docs.php">Developer Docs</a>
+        <a href="/learn-more.php">Book A Demo</a>
+        <a href="/campaign.php">Campaigns</a>
+      </div>
+      <div class="mg-footer-column">
+        <h2>Developers</h2>
+        <a href="/developer-docs.php#overview">Overview</a>
+        <a href="/developer-docs.php#quickstart">Quickstart</a>
+        <a href="/developer-docs.php#authentication">Authentication</a>
+        <a href="/developer-docs.php#webhooks">Webhooks</a>
+      </div>
+      <div class="mg-footer-column">
+        <h2>Account</h2>
+        <?php if ($user): ?>
+          <a href="/inbox.php">IN/OUT Box</a>
+          <a href="/feed.php">My Feed</a>
+          <a href="/account.php">Profile Settings</a>
+          <a href="/commitments.php">Commitments</a>
+        <?php else: ?>
+          <a href="/signin.php">Sign In</a>
+          <a href="/signup.php">Create Account</a>
+          <a href="/forgot-password.php">Reset Password</a>
+          <a href="/discover.php">Browse Offers</a>
+        <?php endif; ?>
+      </div>
+      <div class="mg-footer-column">
+        <h2>Workspace</h2>
+        <a href="/build.php">Build</a>
+        <a href="/agent.php">Agent</a>
+        <?php if ($can_intelligence): ?><a href="/intelligence.php">Intelligence</a><?php endif; ?>
+        <?php if ($can_sales_crm): ?><a href="/sales-crm.php">CRM</a><?php endif; ?>
+        <a href="/account-commerce.php">Commerce Center</a>
+      </div>
+    </nav>
+
+    <div class="mg-footer-bottom">
+      <p>&copy; <?= date('Y') ?> Microgifter. All rights reserved.</p>
+      <div class="mg-footer-bottom-links" aria-label="Footer utility links">
+        <a href="/index.php">Home</a>
+        <a href="/developer-docs.php">Docs</a>
+        <a href="/signin.php">Sign In</a>
+      </div>
     </div>
-    <nav class="mg-footer-nav" aria-label="Footer navigation"><a href="/learn-more.php">Learn more</a><a href="/discover.php">Discover</a><a href="/feed.php">Feed</a><a href="/build.php">Build</a><a href="/agent.php">Agent</a><a href="/account.php">Account</a><?php if ($user): ?><a href="/commitments.php">Commitments</a><?php endif; ?><?php if ($can_intelligence): ?><a href="/intelligence.php">Intelligence</a><?php endif; ?><?php if ($can_sales_crm): ?><a href="/sales-crm.php">CRM</a><?php endif; ?><a href="/signin.php">Sign in</a></nav>
   </div>
 </footer>
 <?php foreach (array_unique($late_styles) as $style): ?><link rel="stylesheet" href="<?= mg_e($style) ?>"><?php endforeach; ?>

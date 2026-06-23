@@ -1,50 +1,115 @@
-/* Auth page layout
-   Signup, signin, forgot password, and reset password are form pages. */
+/* Dark public auth pages: signin, signup, forgot password, and reset password. */
 .mg-auth-page .mg-main{
-  min-height:calc(100svh - 64px);
+  min-height:calc(100svh - 70px);
   display:flex;
   align-items:center;
   justify-content:center;
-  padding:clamp(38px,6vw,76px) clamp(18px,4vw,48px);
-  background:linear-gradient(180deg,#fff 0%,#f8fafc 100%);
+  padding:clamp(42px,6vw,88px) clamp(18px,4vw,52px);
+  background:
+    radial-gradient(circle at 15% 12%,rgba(217,167,53,.22),transparent 32%),
+    radial-gradient(circle at 86% 14%,rgba(255,255,255,.08),transparent 28%),
+    linear-gradient(180deg,#030303 0%,#0b0905 54%,#030303 100%);
+  color:#f7f7f2;
+  overflow:hidden;
+  position:relative;
+}
+.mg-auth-page .mg-main:before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background-image:
+    linear-gradient(rgba(217,167,53,.07) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(217,167,53,.06) 1px,transparent 1px);
+  background-size:62px 62px;
+  mask-image:radial-gradient(circle at 50% 18%,#000,transparent 72%);
+  opacity:.58;
 }
 .mg-auth-page .mg-auth-shell{
-  width:min(1120px,100%);
+  width:min(1180px,100%);
   margin:0 auto;
   padding:0;
   display:grid;
-  grid-template-columns:minmax(280px,.85fr) minmax(320px,480px);
-  gap:clamp(24px,5vw,64px);
+  grid-template-columns:minmax(280px,.92fr) minmax(320px,480px);
+  gap:clamp(24px,5vw,72px);
   align-items:center;
+  position:relative;
+  z-index:1;
 }
 .mg-auth-page .mg-auth-aside{
   position:static;
   display:grid;
-  gap:18px;
-  max-width:560px;
+  gap:20px;
+  max-width:620px;
 }
-.mg-auth-page .mg-auth-aside .mg-badge{
+.mg-auth-page .mg-auth-aside .mg-badge,
+.mg-auth-page .mg-auth-kicker{
   width:max-content;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 12px;
+  border:1px solid rgba(217,167,53,.42);
+  border-radius:999px;
+  background:rgba(217,167,53,.12);
+  color:#f1c15a;
+  font-size:12px;
+  font-weight:950;
+  letter-spacing:.09em;
+  text-transform:uppercase;
 }
 .mg-auth-page .mg-auth-aside h1{
   margin:0;
-  font-size:clamp(44px,6vw,76px);
+  color:#f7f7f2;
+  font-size:clamp(44px,6vw,78px);
   line-height:.92;
   letter-spacing:-.075em;
 }
 .mg-auth-page .mg-auth-aside p{
-  max-width:420px;
+  max-width:500px;
   margin:0;
-  color:var(--mg-muted);
-  font-size:clamp(16px,1.8vw,19px);
+  color:#d9d4c8;
+  font-size:clamp(16px,1.8vw,20px);
+  line-height:1.62;
+  font-weight:620;
+}
+.mg-auth-page .mg-auth-value-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+  margin-top:8px;
+}
+.mg-auth-page .mg-auth-value-grid span{
+  min-height:86px;
+  display:grid;
+  align-content:center;
+  gap:5px;
+  padding:14px;
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:18px;
+  background:rgba(255,255,255,.045);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+}
+.mg-auth-page .mg-auth-value-grid strong{
+  color:#f1c15a;
+  font-size:12px;
+  font-weight:950;
+  letter-spacing:.07em;
+  text-transform:uppercase;
+}
+.mg-auth-page .mg-auth-value-grid small{
+  color:#a7a39a;
+  font-size:12px;
+  line-height:1.35;
 }
 .mg-auth-page .mg-auth-card{
   width:100%;
-  padding:clamp(24px,4vw,38px);
-  border:1px solid var(--mg-border);
-  border-radius:30px;
-  background:#fff;
-  box-shadow:0 24px 70px rgba(15,23,42,.10);
+  padding:clamp(24px,4vw,40px);
+  border:1px solid rgba(217,167,53,.24);
+  border-radius:32px;
+  background:linear-gradient(180deg,rgba(255,255,255,.095),rgba(255,255,255,.04));
+  box-shadow:0 32px 90px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.08);
+  backdrop-filter:blur(18px);
   display:grid;
   gap:16px;
   filter:none!important;
@@ -53,32 +118,82 @@
 }
 .mg-auth-page .mg-auth-card h2{
   margin:0 0 2px;
-  font-size:clamp(28px,3vw,38px);
+  color:#f7f7f2;
+  font-size:clamp(30px,3vw,40px);
   line-height:1;
-  letter-spacing:-.05em;
+  letter-spacing:-.055em;
+}
+.mg-auth-page .mg-auth-card .mg-auth-card-intro{
+  margin:-4px 0 4px;
+  color:#a7a39a;
+  font-size:14px;
+  line-height:1.5;
 }
 .mg-auth-page .mg-auth-card label{
   display:grid;
   gap:8px;
   font-weight:850;
-  color:var(--mg-text);
+  color:#f7f7f2;
 }
 .mg-auth-page .mg-auth-card input{
-  min-height:48px;
+  min-height:50px;
+  width:100%;
+  border:1px solid rgba(255,255,255,.13);
+  border-radius:16px;
+  background:rgba(3,3,3,.68);
+  color:#f7f7f2;
+  padding:0 14px;
+  outline:0;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
+}
+.mg-auth-page .mg-auth-card input:focus{
+  border-color:rgba(217,167,53,.7);
+  box-shadow:0 0 0 4px rgba(217,167,53,.14),inset 0 1px 0 rgba(255,255,255,.06);
 }
 .mg-auth-page .mg-auth-card .mg-btn{
   width:max-content;
-  min-width:160px;
+  min-width:170px;
+  min-height:50px;
+  border:0;
+  border-radius:16px;
+  background:linear-gradient(135deg,#d9a735,#f1c15a);
+  color:#050505;
+  font-weight:950;
+  box-shadow:0 18px 42px rgba(217,167,53,.22);
 }
-@media(max-width:860px){
-  .mg-auth-page .mg-main{
-    align-items:flex-start;
-    padding-top:34px;
-  }
-  .mg-auth-page .mg-auth-shell{
-    grid-template-columns:1fr;
-  }
-  .mg-auth-page .mg-auth-card .mg-btn{
-    width:100%;
-  }
+.mg-auth-page .mg-auth-card p{
+  margin:0;
+  color:#a7a39a;
+  font-size:14px;
+  line-height:1.5;
+}
+.mg-auth-page .mg-auth-card a{
+  color:#f1c15a;
+  font-weight:900;
+  text-decoration:none;
+}
+.mg-auth-page .mg-auth-card a:hover{text-decoration:underline}
+.mg-auth-page .mg-form-status{
+  min-height:0;
+  color:#f1c15a;
+  font-size:13px;
+  font-weight:800;
+}
+.mg-auth-page .mg-auth-switch-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px 14px;
+  align-items:center;
+  padding-top:4px;
+  border-top:1px solid rgba(255,255,255,.08);
+}
+@media(max-width:920px){
+  .mg-auth-page .mg-main{align-items:flex-start;padding-top:40px}
+  .mg-auth-page .mg-auth-shell{grid-template-columns:1fr}
+  .mg-auth-page .mg-auth-aside{max-width:760px}
+}
+@media(max-width:640px){
+  .mg-auth-page .mg-main{padding:30px 16px 48px}
+  .mg-auth-page .mg-auth-value-grid{grid-template-columns:1fr}
+  .mg-auth-page .mg-auth-card .mg-btn{width:100%}
 }
