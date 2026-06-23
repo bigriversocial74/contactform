@@ -29,9 +29,9 @@ mg_merchant_ensure_workspace($pdo, $user);
 try {
     $stmt = $pdo->prepare('SELECT c.public_id,c.title,c.campaign_type,c.status,c.updated_at,rt.title reward_template_title,
         COUNT(DISTINCT cc.id) contacts_count,
-        SUM(CASE WHEN wi.id IS NOT NULL THEN 1 ELSE 0 END) wallet_issued_count,
-        SUM(CASE WHEN wi.status = \'claimed\' THEN 1 ELSE 0 END) wallet_claimed_count,
-        SUM(CASE WHEN wi.status = \'redeemed\' THEN 1 ELSE 0 END) wallet_redeemed_count,
+        COUNT(DISTINCT wi.id) wallet_issued_count,
+        COUNT(DISTINCT CASE WHEN wi.status = \'claimed\' THEN wi.id END) wallet_claimed_count,
+        COUNT(DISTINCT CASE WHEN wi.status = \'redeemed\' THEN wi.id END) wallet_redeemed_count,
         COUNT(DISTINCT ce.id) events_count
         FROM campaigns c
         LEFT JOIN reward_templates rt ON rt.id = c.reward_template_id
