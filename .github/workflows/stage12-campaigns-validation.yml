@@ -12,12 +12,14 @@ on:
       - 'includes/merchant-workspace.php'
       - 'includes/merchant-view.php'
       - 'includes/header-components/app-header.php'
+      - 'api/merchant/reward-templates.php'
       - 'scripts/validate_stage12_campaigns_reward_templates.php'
       - '.github/workflows/stage12-campaigns-validation.yml'
   push:
     branches:
       - main
       - 'stage12-*'
+      - 'stage12b-*'
     paths:
       - 'database/stage_12_campaigns_reward_templates.sql'
       - 'docs/stage-12-campaigns-reward-templates-build-plan.md'
@@ -28,6 +30,7 @@ on:
       - 'includes/merchant-workspace.php'
       - 'includes/merchant-view.php'
       - 'includes/header-components/app-header.php'
+      - 'api/merchant/reward-templates.php'
       - 'scripts/validate_stage12_campaigns_reward_templates.php'
       - '.github/workflows/stage12-campaigns-validation.yml'
   workflow_dispatch:
@@ -60,6 +63,7 @@ jobs:
           php -l includes/merchant-workspace.php
           php -l includes/merchant-view.php
           php -l includes/header-components/app-header.php
+          php -l api/merchant/reward-templates.php
           php -l scripts/validate_stage12_campaigns_reward_templates.php
 
       - name: Validate Stage 12 campaigns foundation
