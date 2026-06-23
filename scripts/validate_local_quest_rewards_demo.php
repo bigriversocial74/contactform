@@ -5,6 +5,7 @@ $root = dirname(__DIR__);
 $required = [
     'examples/local-quest-rewards/README.md',
     'examples/local-quest-rewards/app.php',
+    'examples/local-quest-rewards/install.php',
     'examples/local-quest-rewards/security.php',
     'examples/local-quest-rewards/storage-sql.php',
     'examples/local-quest-rewards/config.example.php',
@@ -53,6 +54,7 @@ foreach ($forbidden as $path) {
 
 $index = is_file($root . '/examples/local-quest-rewards/index.php') ? (string)file_get_contents($root . '/examples/local-quest-rewards/index.php') : '';
 $app = is_file($root . '/examples/local-quest-rewards/app.php') ? (string)file_get_contents($root . '/examples/local-quest-rewards/app.php') : '';
+$install = is_file($root . '/examples/local-quest-rewards/install.php') ? (string)file_get_contents($root . '/examples/local-quest-rewards/install.php') : '';
 $readme = is_file($root . '/examples/local-quest-rewards/README.md') ? (string)file_get_contents($root . '/examples/local-quest-rewards/README.md') : '';
 $security = is_file($root . '/examples/local-quest-rewards/security.php') ? (string)file_get_contents($root . '/examples/local-quest-rewards/security.php') : '';
 $storage = is_file($root . '/examples/local-quest-rewards/storage-sql.php') ? (string)file_get_contents($root . '/examples/local-quest-rewards/storage-sql.php') : '';
@@ -84,10 +86,11 @@ $hasAdminAuth = str_contains($adminAuth, 'lqr_admin_create_user') && str_contain
 $hasSqlRuntime = str_contains($app, "require_once __DIR__ . '/storage-sql.php'") && str_contains($app, 'lqr_sql_load_state(lqr_config())') && str_contains($app, 'lqr_sql_save_state(lqr_config(), $state)') && str_contains($storage, 'lqr_sql_load_state') && str_contains($storage, 'lqr_sql_save_state');
 $noJsonRuntime = !str_contains($app, 'state.json') && !str_contains($app, 'lqr_state_path') && !str_contains($app, 'file_put_contents(lqr_state_path') && !str_contains($readme, 'data/state.json') && !str_contains($readme, 'migrate-json-to-sql');
 $hasSecurity = str_contains($app, "require_once __DIR__ . '/security.php'") && str_contains($app, 'lqr_require_csrf') && str_contains($security, 'lqr_auto_csrf_output') && str_contains($security, 'lqr_signed_payload') && str_contains($security, 'lqr_mark_replay');
+$hasInstaller = str_contains($install, 'Local Quest Installer') && str_contains($install, 'lqr_sql_db') && str_contains($install, 'lqr_admin_password_resets');
 $hasAssessment = str_contains($assessment, 'Overall: 7.5 / 10') && str_contains($assessment, 'SQL-only runtime stage completed');
 $hasAdminAuthDoc = str_contains($adminAuthDoc, 'Local Quest admin access hardening') && str_contains($adminAuthDoc, 'one-time recovery tokens');
 $hasSecurityDoc = str_contains($securityDoc, 'Local Quest security hardening') && str_contains($securityDoc, 'automatic hidden CSRF token injection');
-$ok = $ok && $requiresLogin && $usesRealLink && $hasWallet && $claimReportsToApi && $hasAdmin && $hasStyledPortal && $hasQrGeo && $hasSql && $hasQuestControls && $hasAdminAuth && $hasSqlRuntime && $noJsonRuntime && $hasSecurity && $hasAssessment && $hasAdminAuthDoc && $hasSecurityDoc;
+$ok = $ok && $requiresLogin && $usesRealLink && $hasWallet && $claimReportsToApi && $hasAdmin && $hasStyledPortal && $hasQrGeo && $hasSql && $hasQuestControls && $hasAdminAuth && $hasSqlRuntime && $noJsonRuntime && $hasSecurity && $hasInstaller && $hasAssessment && $hasAdminAuthDoc && $hasSecurityDoc;
 
-echo json_encode(['ok' => $ok, 'files' => $rows, 'requires_login' => $requiresLogin, 'uses_real_account_linking' => $usesRealLink, 'has_wallet_claim_flow' => $hasWallet, 'claim_reports_to_microgifter_api' => $claimReportsToApi, 'has_admin_backend' => $hasAdmin, 'has_styled_portal' => $hasStyledPortal, 'has_qr_and_geolocation' => $hasQrGeo, 'has_sql_schema' => $hasSql, 'has_quest_controls' => $hasQuestControls, 'has_admin_auth' => $hasAdminAuth, 'has_sql_runtime' => $hasSqlRuntime, 'no_json_runtime' => $noJsonRuntime, 'has_security' => $hasSecurity, 'has_assessment' => $hasAssessment, 'has_admin_auth_doc' => $hasAdminAuthDoc, 'has_security_doc' => $hasSecurityDoc], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
+echo json_encode(['ok' => $ok, 'files' => $rows, 'requires_login' => $requiresLogin, 'uses_real_account_linking' => $usesRealLink, 'has_wallet_claim_flow' => $hasWallet, 'claim_reports_to_microgifter_api' => $claimReportsToApi, 'has_admin_backend' => $hasAdmin, 'has_styled_portal' => $hasStyledPortal, 'has_qr_and_geolocation' => $hasQrGeo, 'has_sql_schema' => $hasSql, 'has_quest_controls' => $hasQuestControls, 'has_admin_auth' => $hasAdminAuth, 'has_sql_runtime' => $hasSqlRuntime, 'no_json_runtime' => $noJsonRuntime, 'has_security' => $hasSecurity, 'has_installer' => $hasInstaller, 'has_assessment' => $hasAssessment, 'has_admin_auth_doc' => $hasAdminAuthDoc, 'has_security_doc' => $hasSecurityDoc], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
 exit($ok ? 0 : 1);
