@@ -57,7 +57,7 @@ examples/local-quest-rewards/
 
 The starter foundation is now SQL-only. It requires MySQL or MariaDB through PDO.
 
-There is no `data/state.json` runtime, no JSON demo mode, and no JSON-to-SQL migration path in the starter foundation. SQL `JSON` columns are still used where they make sense for metadata, API responses, webhook payloads, QR/geolocation context, and audit context.
+There is no file-backed JSON runtime, no JSON demo mode, and no JSON-to-SQL migration path in the starter foundation. SQL `JSON` columns are still used where they make sense for metadata, API responses, webhook payloads, QR/geolocation context, and audit context.
 
 ## Install wizard
 
