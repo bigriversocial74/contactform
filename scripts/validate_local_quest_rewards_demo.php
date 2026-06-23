@@ -12,8 +12,10 @@ $required = [
     'examples/local-quest-rewards/link-callback.php',
     'examples/local-quest-rewards/wallet.php',
     'examples/local-quest-rewards/wallet-actions.php',
+    'examples/local-quest-rewards/admin.php',
     'examples/local-quest-rewards/quests.php',
     'examples/local-quest-rewards/webhook.php',
+    'examples/local-quest-rewards/database/local_quest_rewards.sql',
     'examples/local-quest-rewards/data/README.md',
     'docs/microgift-permission-system-plan.md',
     'docs/public-api-third-party-wallet-claim.md',
@@ -31,11 +33,15 @@ $index = is_file($root . '/examples/local-quest-rewards/index.php') ? (string)fi
 $app = is_file($root . '/examples/local-quest-rewards/app.php') ? (string)file_get_contents($root . '/examples/local-quest-rewards/app.php') : '';
 $wallet = is_file($root . '/examples/local-quest-rewards/wallet.php') ? (string)file_get_contents($root . '/examples/local-quest-rewards/wallet.php') : '';
 $walletActions = is_file($root . '/examples/local-quest-rewards/wallet-actions.php') ? (string)file_get_contents($root . '/examples/local-quest-rewards/wallet-actions.php') : '';
+$admin = is_file($root . '/examples/local-quest-rewards/admin.php') ? (string)file_get_contents($root . '/examples/local-quest-rewards/admin.php') : '';
+$sql = is_file($root . '/examples/local-quest-rewards/database/local_quest_rewards.sql') ? (string)file_get_contents($root . '/examples/local-quest-rewards/database/local_quest_rewards.sql') : '';
 $requiresLogin = str_contains($index, 'header(\'Location: cover.php\')') || str_contains($index, 'header("Location: cover.php")');
 $usesRealLink = str_contains($index, 'start_account_link');
 $hasWallet = str_contains($wallet, 'claim_reward') && str_contains($app, 'lqr_wallet_rewards');
 $claimReportsToApi = str_contains($wallet, 'lqr_action_claim_reward_reported') && str_contains($walletActions, '/api/public/v1/rewards/claim.php');
-$ok = $ok && $requiresLogin && $usesRealLink && $hasWallet && $claimReportsToApi;
+$hasAdmin = str_contains($admin, 'Quest app control center') && str_contains($admin, 'save_quest') && str_contains($admin, 'mark_claim_reported');
+$hasSql = str_contains($sql, 'CREATE TABLE IF NOT EXISTS lqr_admin_users') && str_contains($sql, 'CREATE TABLE IF NOT EXISTS lqr_reward_claims') && str_contains($sql, 'CREATE TABLE IF NOT EXISTS lqr_admin_audit_events');
+$ok = $ok && $requiresLogin && $usesRealLink && $hasWallet && $claimReportsToApi && $hasAdmin && $hasSql;
 
-echo json_encode(['ok' => $ok, 'files' => $rows, 'requires_login' => $requiresLogin, 'uses_real_account_linking' => $usesRealLink, 'has_wallet_claim_flow' => $hasWallet, 'claim_reports_to_microgifter_api' => $claimReportsToApi], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
+echo json_encode(['ok' => $ok, 'files' => $rows, 'requires_login' => $requiresLogin, 'uses_real_account_linking' => $usesRealLink, 'has_wallet_claim_flow' => $hasWallet, 'claim_reports_to_microgifter_api' => $claimReportsToApi, 'has_admin_backend' => $hasAdmin, 'has_sql_schema' => $hasSql], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
 exit($ok ? 0 : 1);
