@@ -1,12 +1,15 @@
 -- Stage 12J Campaign Feature SQL Hardening
 -- Applies after Stage 12 Campaigns + Reward Templates.
--- Purpose: align the Stage 12E-12I campaign, wallet, agent discovery,
--- feedback, and merchant next-step event code with the database schema.
--- Safe to import manually in phpMyAdmin after taking a database backup.
+--
+-- IMPORTANT:
+-- The one-file import requested for these campaign features is:
+-- database/stage_12_campaign_features_full_import.sql
+--
+-- Use that file in phpMyAdmin if you need a single import that creates the
+-- Stage 12 campaign tables and applies the later hardening changes.
+-- This file is kept as a smaller follow-up migration for databases that already
+-- imported database/stage_12_campaigns_reward_templates.sql.
 
--- Stage 12E/12G/12I agent-discovery event paths can create campaign_events
--- for reward-template-level activity before a campaign exists. Allow campaign_id
--- to be NULL while preserving the campaign foreign key for campaign-backed events.
 ALTER TABLE campaign_events
   MODIFY campaign_id BIGINT UNSIGNED NULL;
 
