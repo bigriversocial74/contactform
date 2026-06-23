@@ -9,5 +9,6 @@
 --
 -- Keep this ordered file intentionally simple so the canonical PDO migration
 -- runner remains safe while the one-file import remains available for operators.
+-- This statement intentionally returns no result set.
 
-SELECT 'stage_12j_campaign_feature_sql_hardening' AS migration_marker;
+SET @stage_12j_campaign_feature_sql_hardening := 1;
