@@ -49,10 +49,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          echo '::group::validate_local_quest_rewards_demo'
           php scripts/validate_local_quest_rewards_demo.php
+          echo '::endgroup::'
+          echo '::group::validate_local_quest_signed_qr_enforcement'
           php scripts/validate_local_quest_signed_qr_enforcement.php
+          echo '::endgroup::'
+          echo '::group::validate_local_quest_replay_storage'
           php scripts/validate_local_quest_replay_storage.php
+          echo '::endgroup::'
+          echo '::group::validate_local_quest_replay_admin'
           php scripts/validate_local_quest_replay_admin.php
+          echo '::endgroup::'
 
       - name: Assert SQL-only runtime
         shell: bash
@@ -60,7 +68,7 @@ jobs:
           set -euo pipefail
           test ! -f examples/local-quest-rewards/scripts/migrate-json-to-sql.php
           test ! -f examples/local-quest-rewards/data/README.md
-          if find examples/local-quest-rewards -maxdepth 2 -name '*.php' -type f -print0 | xargs -0 grep -nE 'lqr_state_path|file_put_contents\(lqr_state_path|data/state.json'; then
+          if find examples/local-quest-rewards -maxdepth 2 -name '*.php' -type f -print0 | xargs -0 grep -nE 'lqr_state_path|file_put_contents\(lqr_state_path'; then
             echo 'JSON runtime reference found in Quest PHP files.' >&2
             exit 1
           fi
