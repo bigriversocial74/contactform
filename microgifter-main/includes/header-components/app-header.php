@@ -51,11 +51,11 @@ $show_create_menu = true;
       <button class="mg-create-menu-close" type="button" data-create-menu-close aria-label="Close create menu">×</button>
     </header>
     <div class="mg-create-menu-grid">
-      <a href="/build.php" data-create-menu-option="microgift"><span class="mg-create-menu-icon" aria-hidden="true">M</span><strong>Microgift</strong><small>Create a prepaid local gift or offer.</small></a>
+      <a href="/build.php" data-create-menu-option="microgift"><span class="mg-create-menu-icon" aria-hidden="true">M</span><strong>Microgift</strong><small>Create a prepaid local gift.</small></a>
+      <a href="/merchant-campaigns.php" data-create-menu-option="campaign"><span class="mg-create-menu-icon" aria-hidden="true">C</span><strong>Campaign</strong><small>Create forms, contests, QR drops, and reward automations.</small></a>
+      <a href="/merchant-reward-templates.php" data-create-menu-option="agent_offer"><span class="mg-create-menu-icon" aria-hidden="true">A</span><strong>Agent Offer</strong><small>Publish an offer agents can discover and add to wallets.</small></a>
       <a href="/feed.php" data-create-menu-option="post" aria-controls="mg-post-composer-modal"><span class="mg-create-menu-icon" aria-hidden="true">P</span><strong>Post</strong><small>Publish an update to your public feed.</small></a>
-      <a href="/account-subscriptions.php" data-create-menu-option="subscription"><span class="mg-create-menu-icon" aria-hidden="true">S</span><strong>Subscription</strong><small>Create or manage a recurring membership.</small></a>
       <a href="/merchant-storefront.php" data-create-menu-option="storefront"><span class="mg-create-menu-icon" aria-hidden="true">F</span><strong>Storefront</strong><small>Configure your public merchant storefront.</small></a>
-      <a href="/agent.php" data-create-menu-option="agent"><span class="mg-create-menu-icon" aria-hidden="true">A</span><strong>Agent</strong><small>Create or open an automated gifting agent.</small></a>
       <a href="/merchant-locations.php" data-create-menu-option="location"><span class="mg-create-menu-icon" aria-hidden="true">L</span><strong>Add Location</strong><small>Add a merchant claim and redemption location.</small></a>
     </div>
   </section>
