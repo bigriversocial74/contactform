@@ -8,6 +8,7 @@ Stage API-15 packages the Public Distribution API for an outside developer and a
 - Copy/paste API examples.
 - A standalone test app that validates the docs.
 - A fuller Local Quest Rewards demo ecosystem.
+- Third-party reward wallet and claim reporting.
 - Webhook configuration, test delivery, and signature verification.
 - Error code reference.
 - Launch checklist for merchants.
@@ -36,7 +37,9 @@ Stage API-15 packages the Public Distribution API for an outside developer and a
 4. Store the returned linked account ID after approval.
 5. Issue a reward with an idempotency key.
 6. Poll status or consume webhook callbacks.
-7. Verify webhook signatures before trusting payload data.
+7. List rewards for the linked account when rendering an app wallet.
+8. Report third-party claim actions back to Microgifter.
+9. Verify webhook signatures before trusting payload data.
 
 ## Test app validation sequence
 
@@ -54,7 +57,7 @@ The docs are not finished until `examples/microgifter-api-test-app/` can be conf
 
 ## Full demo ecosystem
 
-`examples/local-quest-rewards/` is the first fuller app ecosystem. It adds guest identity, local quest state, quest-to-reward mapping, a local permission check, reward issue, reward status, webhook logging, and event history.
+`examples/local-quest-rewards/` is the first fuller app ecosystem. It adds account login, account linking, quest state, quest-to-reward mapping, local permission checks, reward issue, reward status, reward wallet, claim reporting, webhook logging, and event history.
 
 Use this app to drive the Microgift permission-system pass.
 
@@ -66,6 +69,8 @@ Use this app to drive the Microgift permission-system pass.
 - `POST /api/public/v1/sandbox/linked-account.php`
 - `POST /api/public/v1/rewards/issue.php`
 - `GET /api/public/v1/rewards/status.php?id=<reward_id>`
+- `GET /api/public/v1/rewards/list.php?linked_account_id=<linked_account_id>`
+- `POST /api/public/v1/rewards/claim.php`
 
 ## Required merchant endpoints
 
@@ -89,6 +94,7 @@ Use this app to drive the Microgift permission-system pass.
 - `docs/public-api-webhook-verification-examples.md`
 - `docs/public-api-sandbox-live-guide.md`
 - `docs/public-api-app-ideas.md`
+- `docs/public-api-third-party-wallet-claim.md`
 - `docs/microgift-permission-system-plan.md`
 - `examples/microgifter-api-test-app/README.md`
 - `examples/local-quest-rewards/README.md`
