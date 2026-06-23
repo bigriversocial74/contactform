@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 96" role="img" aria-label="Microgifter logo">
+  <g fill="#ffffff">
+    <path d="M10 12h22l20 20 20-20h22v72H72V46L52 66 32 46v38H10V12Z"/>
+    <path d="M36 39 52 55 68 39 52 23 36 39Z" opacity=".78"/>
+    <text x="126" y="61" font-family="Inter, Arial, sans-serif" font-size="36" font-weight="760" letter-spacing="9">MICROGIFTER</text>
+  </g>
+</svg>
