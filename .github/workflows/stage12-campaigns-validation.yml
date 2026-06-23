@@ -6,11 +6,12 @@ on:
       - 'database/stage_12_campaigns_reward_templates.sql'
       - 'database/stage_12b_campaign_events_agent_context.sql'
       - 'campaign.php'
+      - 'wallet.php'
       - 'merchant-campaigns.php'
       - 'merchant-reward-templates.php'
       - 'includes/merchant-campaigns-view.php'
       - 'includes/merchant-reward-templates-view.php'
-      - 'api/account/wallet-claim.php'
+      - 'api/account/wallet-*.php'
       - 'api/merchant/*.php'
       - 'api/public/campaigns/*.php'
       - 'api/public/offers/*.php'
@@ -29,11 +30,12 @@ on:
       - 'database/stage_12_campaigns_reward_templates.sql'
       - 'database/stage_12b_campaign_events_agent_context.sql'
       - 'campaign.php'
+      - 'wallet.php'
       - 'merchant-campaigns.php'
       - 'merchant-reward-templates.php'
       - 'includes/merchant-campaigns-view.php'
       - 'includes/merchant-reward-templates-view.php'
-      - 'api/account/wallet-claim.php'
+      - 'api/account/wallet-*.php'
       - 'api/merchant/*.php'
       - 'api/public/campaigns/*.php'
       - 'api/public/offers/*.php'
@@ -66,14 +68,18 @@ jobs:
         run: |
           set -euo pipefail
           php -l campaign.php
+          php -l wallet.php
           php -l merchant-campaigns.php
           php -l merchant-reward-templates.php
           php -l includes/merchant-campaigns-view.php
           php -l includes/merchant-reward-templates-view.php
+          php -l api/account/wallet-items.php
           php -l api/account/wallet-claim.php
           php -l api/merchant/reward-templates.php
           php -l api/merchant/campaigns.php
           php -l api/merchant/campaign-activity.php
+          php -l api/merchant/campaign-contacts.php
+          php -l api/merchant/campaign-public-tools.php
           php -l api/merchant/campaign-winner.php
           php -l api/merchant/wallet-redeem.php
           php -l api/public/campaigns/detail.php
