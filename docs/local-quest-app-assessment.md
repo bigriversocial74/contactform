@@ -2,11 +2,11 @@
 
 ## Current score
 
-**Overall: 6.8 / 10**
+**Overall: 7.3 / 10**
 
-The app is now a credible working ecosystem demo. It has participant accounts, account linking, quest completion, reward issuing, wallet display, claim reporting, admin pages, quest controls, SQL schema, webhook receiver, and validation coverage.
+The app is now a credible working ecosystem demo with participant accounts, account linking, quest completion, reward issuing, wallet display, claim reporting, admin pages, admin credential management, quest controls, SQL runtime storage support, JSON-to-SQL migration, webhook receiver, and validation coverage.
 
-It is not production-grade yet because runtime storage still defaults to JSON, admin security is demo-level, quest verification needs stronger rules, and the UX needs onboarding, notifications, and reporting polish.
+It is not production-grade yet because admin CSRF/session hardening, trusted quest verification, webhook reconciliation, analytics, role permissions, and end-to-end test automation still need more work.
 
 ## Score breakdown
 
@@ -14,17 +14,17 @@ It is not production-grade yet because runtime storage still defaults to JSON, a
 |---|---:|---|
 | Product concept | 8.5 | Quest apps distribute merchant-approved Microgifter rewards. |
 | API integration model | 8.0 | Issue, status, list, claim, and webhooks are represented. |
-| Participant UX | 6.5 | Cover, login, quest board, and wallet exist. |
-| Admin UX | 6.0 | Admin backend exists; needs SQL persistence and stronger auth. |
-| Data model | 7.0 | SQL schema exists; runtime conversion is still needed. |
-| Reward/wallet lifecycle | 7.0 | Wallet and claim reporting exist; redemption UX needs polish. |
-| Quest verification | 4.5 | QR/geolocation context exists, but needs trusted verification. |
-| Analytics/reporting | 5.5 | Event history exists; admin analytics are basic. |
-| Production readiness | 4.5 | Needs SQL runtime, CSRF, migrations, and tests. |
+| Participant UX | 6.8 | Cover, login, quest board, QR/geolocation, and wallet exist. |
+| Admin UX | 6.8 | Admin backend, credential tools, quest controls, and portal UI exist. |
+| Data model | 7.8 | SQL schema and runtime bridge exist; direct SQL-first repos/services can still be cleaner. |
+| Reward/wallet lifecycle | 7.2 | Wallet and claim reporting exist; redemption UX needs polish. |
+| Quest verification | 4.8 | QR/geolocation context exists, but needs trusted verification. |
+| Analytics/reporting | 5.8 | Event history exists; admin analytics are basic. |
+| Production readiness | 5.5 | SQL runtime is available; still needs CSRF, roles, email recovery, and tests. |
 
 ## User history and interactions captured today
 
-The app currently tracks these user interactions in local state and has SQL tables designed for them:
+The app tracks these interactions through JSON or SQL runtime storage:
 
 - account registration
 - account login/logout
@@ -40,10 +40,12 @@ The app currently tracks these user interactions in local state and has SQL tabl
 - reward wallet state
 - reward claim in Quest app
 - claim report to Microgifter
+- admin user creation/status/password events
+- recovery token creation/completion events
 - webhook deliveries in `webhook-events.log`
 - app/admin events in the local event log
 
-The admin can view or manage users, wallets, claims, quest definitions, quest controls, and event history.
+The admin can view or manage users, wallets, claims, quest definitions, quest controls, admin credentials, and event history.
 
 ## Quest controls added
 
@@ -58,25 +60,40 @@ Admins can now control:
 - max total completions
 - max total rewards
 
-The quest board now filters playable quests through those controls.
+The quest board filters playable quests through those controls.
+
+## SQL runtime stage completed
+
+`app.php` keeps the same `lqr_load_state()` and `lqr_save_state()` API, but those functions now switch by config:
+
+- `storage.driver = json` uses `data/state.json`
+- `storage.driver = mysql` uses `storage-sql.php` and the SQL tables
+
+A migration script exists:
+
+```text
+examples/local-quest-rewards/scripts/migrate-json-to-sql.php
+```
+
+It reads `data/state.json`, writes the SQL tables, and verifies counts by loading state back from SQL.
 
 ## What the app needs next
 
-### 1. SQL runtime storage
+### 1. CSRF and session hardening
 
-The schema exists, but `app.php` still uses `data/state.json` by default. Convert user accounts, link states, quest completions, rewards, claims, and event logs to PDO-backed storage.
+Add CSRF tokens to every admin/user POST, admin session timeout, secure cookie settings, and login throttling.
 
-### 2. Admin auth hardening
+### 2. Trusted quest verification
 
-Move admin users to `lqr_admin_users`, enforce password hashing, add CSRF tokens, rate limiting, and session expiration.
+QR/geolocation context exists, but it is not trusted yet. Add signed QR codes, venue check-in secrets, time windows, anti-replay checks, and optional merchant confirmation.
 
-### 3. Real quest verification
+### 3. SQL-first service layer
 
-QR/geolocation context exists, but it is not trusted yet. Add signed QR codes, venue check-in secrets, time windows, and optional merchant confirmation.
+The runtime bridge works, but a cleaner production version should have repository/service functions that query SQL directly instead of translating state arrays.
 
 ### 4. Reward rule builder
 
-The admin can edit quest rules, but it should have a better rule builder: choose Microgifter program/template from API, preview capacity, and validate reward permission before publishing.
+The admin can edit quest rules, but it should choose Microgifter program/template from API, preview capacity, and validate reward permission before publishing.
 
 ### 5. Wallet polish
 
@@ -92,27 +109,25 @@ Add admin charts for active users, completions, reward issue rate, claim rate, s
 
 ### 8. Webhook reconciliation
 
-Consume Microgifter webhook events into the app state/database so reward state updates automatically instead of relying on manual refresh.
+Consume Microgifter webhook events into SQL so reward state updates automatically instead of relying on manual refresh.
 
 ### 9. Sponsor reporting
 
 A third-party quest operator needs reports per sponsor/merchant: completions, rewards issued, claims, cost exposure, and demand driven.
 
-### 10. Test coverage
+### 10. End-to-end tests
 
-Add validation for syntax, schema existence, quest controls, wallet claim reporting, webhook verification, and end-to-end sandbox issue/list/claim.
+Add syntax checks, schema checks, migration checks, admin-auth checks, sandbox issue/list/claim tests, and webhook signature verification tests.
 
 ## Recommended next build stage
 
-**Stage LQ-DB — Convert Local Quest runtime to SQL**
+**Stage LQ-Security — CSRF, sessions, role checks, and trusted verification foundations**
 
 Scope:
 
-1. Add `lqr_db()` helper using config storage settings.
-2. Add JSON-to-SQL migration script.
-3. Replace user registration/login with `lqr_users`.
-4. Replace link states with `lqr_link_states`.
-5. Replace quest completions with `lqr_quest_completions`.
-6. Replace rewards and claims with `lqr_rewards` and `lqr_reward_claims`.
-7. Replace event logs with `lqr_events`.
-8. Update admin pages to read SQL when storage driver is `mysql`.
+1. Add CSRF helper and tokens to all POST forms.
+2. Add admin/user session timeout and secure cookie recommendations.
+3. Add admin role checks for owner-only credential actions.
+4. Add signed QR code format and verifier.
+5. Add replay protection for QR/claim codes.
+6. Add basic login throttling using SQL/app state.
