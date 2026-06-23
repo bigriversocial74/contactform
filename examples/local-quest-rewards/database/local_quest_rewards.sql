@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS lqr_quests (
   quest_key VARCHAR(96) NOT NULL,
   title VARCHAR(180) NOT NULL,
   merchant VARCHAR(180) DEFAULT NULL,
+  sponsor VARCHAR(180) DEFAULT NULL,
   location VARCHAR(180) DEFAULT NULL,
   description TEXT,
   event_type VARCHAR(80) NOT NULL DEFAULT 'quest.completed',
@@ -67,12 +68,22 @@ CREATE TABLE IF NOT EXISTS lqr_quests (
   reward_label VARCHAR(180) NOT NULL,
   difficulty VARCHAR(60) DEFAULT NULL,
   is_active TINYINT(1) NOT NULL DEFAULT 1,
+  is_featured TINYINT(1) NOT NULL DEFAULT 0,
+  visibility VARCHAR(40) NOT NULL DEFAULT 'public',
+  starts_at DATETIME DEFAULT NULL,
+  ends_at DATETIME DEFAULT NULL,
+  max_total_completions INT UNSIGNED NOT NULL DEFAULT 0,
+  max_total_rewards INT UNSIGNED NOT NULL DEFAULT 0,
   permission_json JSON DEFAULT NULL,
+  controls_json JSON DEFAULT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uq_lqr_quests_key (quest_key),
-  KEY idx_lqr_quests_active (is_active)
+  KEY idx_lqr_quests_active (is_active),
+  KEY idx_lqr_quests_schedule (starts_at, ends_at),
+  KEY idx_lqr_quests_sponsor (sponsor),
+  KEY idx_lqr_quests_visibility (visibility)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS lqr_quest_completions (
