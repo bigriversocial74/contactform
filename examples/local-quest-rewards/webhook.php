@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require __DIR__ . '/app.php';
+require __DIR__ . '/webhook-reconcile.php';
 
 $config = lqr_config();
 $secret = lqr_config_value($config, 'webhook_secret');
@@ -24,6 +25,7 @@ if ($secret !== '' && !str_contains($secret, 'replace_with') && $timestamp !== '
     $verified = abs(time() - (int)$timestamp) <= 300 && hash_equals($expected, $signature);
 }
 
+$decodedBody = json_decode($body, true) ?: $body;
 $entry = [
     'received_at' => gmdate('c'),
     'verified' => $verified,
@@ -31,7 +33,7 @@ $entry = [
     'delivery' => $delivery,
     'timestamp' => $timestamp,
     'signature_version' => $version,
-    'body' => json_decode($body, true) ?: $body,
+    'body' => $decodedBody,
 ];
 
 file_put_contents(__DIR__ . '/webhook-events.log', json_encode($entry, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . PHP_EOL, FILE_APPEND | LOCK_EX);
@@ -41,6 +43,11 @@ lqr_add_event($state, $verified ? 'webhook.verified' : 'webhook.rejected', $even
     'delivery' => $delivery,
     'verified' => $verified,
 ]);
+
+if ($verified && is_array($decodedBody)) {
+    lqr_reconcile_microgifter_webhook($state, $event, $decodedBody, $delivery);
+}
+
 lqr_save_state($state);
 
 if (!$verified) {

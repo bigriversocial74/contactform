@@ -74,6 +74,8 @@ CREATE TABLE IF NOT EXISTS lqr_quests (
   ends_at DATETIME DEFAULT NULL,
   max_total_completions INT UNSIGNED NOT NULL DEFAULT 0,
   max_total_rewards INT UNSIGNED NOT NULL DEFAULT 0,
+  requires_signed_code TINYINT(1) NOT NULL DEFAULT 0,
+  signed_code_type VARCHAR(80) NOT NULL DEFAULT 'quest_checkin',
   permission_json JSON DEFAULT NULL,
   controls_json JSON DEFAULT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -83,7 +85,8 @@ CREATE TABLE IF NOT EXISTS lqr_quests (
   KEY idx_lqr_quests_active (is_active),
   KEY idx_lqr_quests_schedule (starts_at, ends_at),
   KEY idx_lqr_quests_sponsor (sponsor),
-  KEY idx_lqr_quests_visibility (visibility)
+  KEY idx_lqr_quests_visibility (visibility),
+  KEY idx_lqr_quests_signed (requires_signed_code, signed_code_type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS lqr_quest_completions (
@@ -148,6 +151,37 @@ CREATE TABLE IF NOT EXISTS lqr_reward_claims (
   KEY idx_lqr_claims_reward (reward_id),
   KEY idx_lqr_claims_user (user_public_id),
   KEY idx_lqr_claims_report_status (report_status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS lqr_signed_code_replays (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  replay_key VARCHAR(128) NOT NULL,
+  quest_key VARCHAR(96) DEFAULT NULL,
+  code_type VARCHAR(80) DEFAULT NULL,
+  nonce VARCHAR(128) DEFAULT NULL,
+  payload_json JSON DEFAULT NULL,
+  first_seen_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_lqr_signed_replay_key (replay_key),
+  KEY idx_lqr_signed_replay_quest (quest_key),
+  KEY idx_lqr_signed_replay_seen (first_seen_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS lqr_webhook_deliveries (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  delivery_id VARCHAR(128) NOT NULL,
+  event_type VARCHAR(120) NOT NULL,
+  verified TINYINT(1) NOT NULL DEFAULT 0,
+  reconciled TINYINT(1) NOT NULL DEFAULT 0,
+  reward_id VARCHAR(96) DEFAULT NULL,
+  item_id VARCHAR(96) DEFAULT NULL,
+  payload_json JSON DEFAULT NULL,
+  received_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_lqr_webhook_delivery (delivery_id),
+  KEY idx_lqr_webhook_event (event_type),
+  KEY idx_lqr_webhook_reward (reward_id),
+  KEY idx_lqr_webhook_received (received_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS lqr_admin_audit_events (

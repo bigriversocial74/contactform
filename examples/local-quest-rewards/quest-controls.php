@@ -13,6 +13,8 @@ function lqr_quest_controls(array $quest): array
         'max_total_rewards' => 0,
         'featured' => false,
         'visibility' => 'public',
+        'requires_signed_code' => false,
+        'signed_code_type' => 'quest_checkin',
     ], $controls);
 }
 

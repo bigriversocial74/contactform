@@ -1,0 +1,4 @@
+config.php
+.installed.lock
+.install-unlock
+webhook-events.log
