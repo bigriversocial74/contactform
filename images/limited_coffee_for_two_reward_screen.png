@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1122" height="1402" viewBox="0 0 1122 1402" role="img" aria-label="Limited coffee for two reward screen">
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#121212"/><stop offset="1" stop-color="#030303"/></linearGradient><linearGradient id="card" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d9a735"/><stop offset="1" stop-color="#f6dc91"/></linearGradient></defs>
+  <rect width="1122" height="1402" rx="76" fill="url(#bg)"/>
+  <rect x="88" y="82" width="946" height="1238" rx="54" fill="#080808" stroke="#3b2b0a" stroke-width="4"/>
+  <text x="136" y="178" font-family="Arial, Helvetica, sans-serif" font-size="38" font-weight="800" fill="#fff">Microgifter Reward</text>
+  <text x="136" y="228" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#a7a39a">Tokenized local experience</text>
+  <rect x="136" y="318" width="850" height="520" rx="44" fill="url(#card)"/>
+  <circle cx="816" cy="458" r="96" fill="#111" opacity="0.18"/>
+  <text x="186" y="442" font-family="Arial" font-size="34" font-weight="800" fill="#141008">Limited Drop</text>
+  <text x="186" y="538" font-family="Arial" font-size="72" font-weight="900" fill="#050505">Coffee for Two</text>
+  <text x="186" y="606" font-family="Arial" font-size="30" fill="#17130a">Redeem one handcrafted coffee experience for two guests.</text>
+  <rect x="186" y="694" width="250" height="74" rx="24" fill="#050505"/><text x="250" y="743" font-family="Arial" font-size="26" font-weight="800" fill="#fff">0.22 MGFTR</text>
+  <rect x="136" y="900" width="850" height="104" rx="28" fill="#111" stroke="#33260c"/><text x="182" y="964" font-family="Arial" font-size="30" font-weight="800" fill="#fff">Wallet status</text><text x="780" y="964" font-family="Arial" font-size="30" font-weight="800" fill="#22c55e">Saved</text>
+  <rect x="136" y="1038" width="850" height="104" rx="28" fill="#111" stroke="#33260c"/><text x="182" y="1102" font-family="Arial" font-size="30" font-weight="800" fill="#fff">Transfer</text><text x="772" y="1102" font-family="Arial" font-size="30" font-weight="800" fill="#f1c15a">Enabled</text>
+  <rect x="136" y="1176" width="850" height="90" rx="28" fill="#fff"/><text x="466" y="1235" font-family="Arial" font-size="30" font-weight="900" fill="#050505">Claim Reward</text>
+</svg>
