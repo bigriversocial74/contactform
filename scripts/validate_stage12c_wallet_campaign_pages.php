@@ -6,6 +6,7 @@ $required = [
   'api/account/wallet-claim.php',
   'api/merchant/wallet-redeem.php',
   'api/merchant/campaign-contacts.php',
+  'api/merchant/campaign-events.php',
   'api/merchant/campaign-public-tools.php',
   'api/public/campaigns/detail.php',
   'campaign.php',
@@ -24,6 +25,7 @@ $walletItems = $get('api/account/wallet-items.php');
 $claim = $get('api/account/wallet-claim.php');
 $redeem = $get('api/merchant/wallet-redeem.php');
 $contacts = $get('api/merchant/campaign-contacts.php');
+$events = $get('api/merchant/campaign-events.php');
 $tools = $get('api/merchant/campaign-public-tools.php');
 $detail = $get('api/public/campaigns/detail.php');
 $page = $get('campaign.php');
@@ -45,6 +47,7 @@ $checks = [
   'merchant_complete_page' => str_contains($merchantCompletePage, 'data-stage12-redemptions') && str_contains($merchantCompletePage, '/assets/js/stage12-redemptions.js'),
   'merchant_complete_js' => str_contains($completeJs, '/api/merchant/wallet-redeem.php'),
   'contacts_endpoint' => str_contains($contacts, 'campaign_contacts') && str_contains($contacts, 'wallet_count'),
+  'events_endpoint' => str_contains($events, 'campaign_events') && str_contains($events, 'event_type'),
   'contacts_js' => str_contains($contactJs, '/api/merchant/campaign-contacts.php') && str_contains($contactJs, '/api/merchant/campaign-winner.php'),
   'public_tools_endpoint' => str_contains($tools, 'public_url') && str_contains($tools, 'qr_url'),
   'public_tools_js' => str_contains($toolJs, '/api/merchant/campaign-public-tools.php'),
