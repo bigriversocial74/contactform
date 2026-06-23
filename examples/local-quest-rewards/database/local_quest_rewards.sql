@@ -1,6 +1,23 @@
 -- Local Quest Rewards demo app schema
 -- Run this in the database used by the third-party Quest app, not the Microgifter platform database.
 
+CREATE TABLE IF NOT EXISTS lqr_admin_users (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id VARCHAR(64) NOT NULL,
+  username VARCHAR(120) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  display_name VARCHAR(180) DEFAULT NULL,
+  role_key VARCHAR(60) NOT NULL DEFAULT 'admin',
+  status VARCHAR(40) NOT NULL DEFAULT 'active',
+  last_login_at DATETIME DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_lqr_admin_public_id (public_id),
+  UNIQUE KEY uq_lqr_admin_username (username),
+  KEY idx_lqr_admin_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS lqr_users (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   public_id VARCHAR(64) NOT NULL,
@@ -11,13 +28,16 @@ CREATE TABLE IF NOT EXISTS lqr_users (
   linked_account_id VARCHAR(96) DEFAULT NULL,
   link_status VARCHAR(40) NOT NULL DEFAULT 'not_linked',
   linked_at DATETIME DEFAULT NULL,
+  status VARCHAR(40) NOT NULL DEFAULT 'active',
+  admin_notes TEXT DEFAULT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uq_lqr_users_public_id (public_id),
   UNIQUE KEY uq_lqr_users_email (email),
   UNIQUE KEY uq_lqr_users_external_user (external_user_id),
-  KEY idx_lqr_users_linked_account (linked_account_id)
+  KEY idx_lqr_users_linked_account (linked_account_id),
+  KEY idx_lqr_users_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS lqr_link_states (
@@ -115,7 +135,21 @@ CREATE TABLE IF NOT EXISTS lqr_reward_claims (
   UNIQUE KEY uq_lqr_claims_public_id (public_id),
   UNIQUE KEY uq_lqr_claims_external (external_claim_id),
   KEY idx_lqr_claims_reward (reward_id),
-  KEY idx_lqr_claims_user (user_public_id)
+  KEY idx_lqr_claims_user (user_public_id),
+  KEY idx_lqr_claims_report_status (report_status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS lqr_admin_audit_events (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  admin_username VARCHAR(120) DEFAULT NULL,
+  action_key VARCHAR(120) NOT NULL,
+  target_type VARCHAR(80) DEFAULT NULL,
+  target_id VARCHAR(120) DEFAULT NULL,
+  context_json JSON DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_lqr_admin_audit_action (action_key),
+  KEY idx_lqr_admin_audit_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS lqr_events (
