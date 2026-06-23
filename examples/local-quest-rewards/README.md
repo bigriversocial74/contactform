@@ -1,16 +1,28 @@
 # Local Quest Rewards
 
-Local Quest Rewards is a full demo app for the Microgifter Public Distribution API.
+Local Quest Rewards is a full working demo app for the Microgifter Public Distribution API.
 
-It behaves like a third-party local experience app:
+It behaves like a real third-party local experience app:
 
-1. A user opens the app as a guest/demo user.
-2. The app assigns a stable `external_user_id`.
-3. The app creates a sandbox linked Microgifter account.
-4. The user completes a local quest.
-5. The app checks its local reward permission rule.
-6. The app issues the mapped Microgift through the Public Distribution API.
-7. The app checks reward status and records webhook delivery.
+1. A participant lands on a cover page.
+2. The participant creates or signs into a Local Quest account.
+3. The app assigns a stable `external_user_id` for that Local Quest user.
+4. The participant connects a Microgifter account through Microgifter account-link consent.
+5. The participant completes a local quest.
+6. The app checks its local reward permission rule.
+7. The app issues the mapped Microgift through the Public Distribution API.
+8. The app checks reward status and records webhook delivery.
+
+Sandbox linking is only a developer shortcut. It is not the primary user flow.
+
+## Microgifter account creation
+
+Microgifter has its own account creation endpoint and page:
+
+- `signup.php`
+- `api/auth/register.php`
+
+That belongs to Microgifter identity, not the third-party Public Distribution API. A third-party app should not silently create Microgifter accounts. The real integration path is account-link consent: the user signs into or creates a Microgifter account on Microgifter, approves the connection, then returns to the app.
 
 ## Files
 
@@ -19,7 +31,10 @@ examples/local-quest-rewards/
   README.md
   app.php
   config.example.php
+  cover.php
+  signin.php
   index.php
+  link-callback.php
   quests.php
   webhook.php
   data/README.md
@@ -33,7 +48,7 @@ Copy config:
 cp examples/local-quest-rewards/config.example.php examples/local-quest-rewards/config.php
 ```
 
-Edit `config.php` with a test key, program ID, template ID, and webhook secret.
+Edit `config.php` with a test key, program ID, template ID, app public URL, and webhook secret.
 
 Start PHP:
 
@@ -44,18 +59,22 @@ php -S 127.0.0.1:8090 -t examples/local-quest-rewards
 Open:
 
 ```text
-http://127.0.0.1:8090/index.php
+http://127.0.0.1:8090/cover.php
 ```
 
-## Demo flow
+## Real app flow
 
-1. Save or change the demo user.
-2. Click **List Microgifter programs** to validate credentials.
-3. Click **Create sandbox linked account**.
-4. Complete a quest.
-5. Issue the reward.
-6. Check status.
-7. Send a Microgifter webhook test and confirm `webhook-events.log` records it.
+1. Open the cover page.
+2. Create a Local Quest account.
+3. Open the quest board.
+4. Click **Connect Microgifter account**.
+5. Sign in or create a Microgifter account on Microgifter if prompted.
+6. Approve the account-link request.
+7. Return to `link-callback.php`.
+8. Complete a quest.
+9. Issue the reward.
+10. Check status.
+11. Send a Microgifter webhook test and confirm `webhook-events.log` records it.
 
 ## Reward mapping
 
@@ -73,7 +92,7 @@ This demo has two permission layers.
 
 ### Local app permission
 
-The Quest app checks that the user completed the quest, has a linked account, has not already received the quest reward, app mode is allowed, and reward IDs are configured.
+The Quest app checks that the participant is signed in, completed the quest, connected a Microgifter account, has not already received the quest reward, app mode is allowed, and reward IDs are configured.
 
 ### Microgifter permission
 
