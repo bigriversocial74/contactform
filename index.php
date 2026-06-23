@@ -41,9 +41,9 @@ require __DIR__ . '/includes/landing/index-v3/part12.php';
   function setText(selector,value){var el=document.querySelector(selector);if(el){el.textContent=value;}}
   setText('.mg-hero-copy .mg-eyebrow','Local commerce support layer');
   setText('#mgHeroTitle','The easiest way to pre-purchase products and invest in your local community.');
-  setText('.mg-hero-copy .mg-lede','Microgifter turns future visits into wallet-ready rewards customers can buy, gift, save, redeem, or share with others.');
+  setText('.mg-hero-copy .mg-lede','Microgifter helps local businesses pre-sell products, launch reward campaigns, and manage customer demand from one simple platform.');
   var note=document.querySelector('.mg-future-demand-note');
-  if(note){note.innerHTML='<strong>Community-first, technology underneath:</strong> help merchants create upfront revenue, measurable demand, and a reason for people to keep coming back.';}
+  if(note){note.innerHTML='<strong>Rewards layer for local commerce:</strong> sell prepaid offers, distribute them anywhere, and track every claim, redemption, customer, and campaign through a connected rewards CRM.';}
   var imgs=document.querySelectorAll('img');
   imgs.forEach(function(img){var src=img.getAttribute('src')||'';if(src.indexOf('/images/')===0){img.classList.remove('mg-image-missing');img.setAttribute('src','images/'+src.substring(8));}});
 })();
