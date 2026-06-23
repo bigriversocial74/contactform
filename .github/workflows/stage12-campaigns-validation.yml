@@ -7,6 +7,7 @@ on:
       - 'database/stage_12b_campaign_events_agent_context.sql'
       - 'campaign.php'
       - 'wallet.php'
+      - 'merchant-wallet-redemptions.php'
       - 'merchant-campaigns.php'
       - 'merchant-reward-templates.php'
       - 'includes/merchant-campaigns-view.php'
@@ -31,6 +32,7 @@ on:
       - 'database/stage_12b_campaign_events_agent_context.sql'
       - 'campaign.php'
       - 'wallet.php'
+      - 'merchant-wallet-redemptions.php'
       - 'merchant-campaigns.php'
       - 'merchant-reward-templates.php'
       - 'includes/merchant-campaigns-view.php'
@@ -69,6 +71,7 @@ jobs:
           set -euo pipefail
           php -l campaign.php
           php -l wallet.php
+          php -l merchant-wallet-redemptions.php
           php -l merchant-campaigns.php
           php -l merchant-reward-templates.php
           php -l includes/merchant-campaigns-view.php
