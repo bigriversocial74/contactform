@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/replay-storage.php';
+
 function lqr_quest_requires_signed_code(array $quest): bool
 {
     $controls = function_exists('lqr_quest_controls') ? lqr_quest_controls($quest) : (array)($quest['controls'] ?? []);
@@ -33,8 +35,9 @@ function lqr_enforce_signed_quest_code(array $config, array &$state, string $que
     if ((string)($payload['quest_id'] ?? '') !== $questId) throw new RuntimeException('Signed QR code does not match this quest.');
 
     $replayKey = lqr_signed_code_replay_key($verified);
-    if (lqr_replay_seen($state, $replayKey)) throw new RuntimeException('Signed QR code has already been used.');
+    if (lqr_sql_replay_seen($config, $replayKey) || lqr_replay_seen($state, $replayKey)) throw new RuntimeException('Signed QR code has already been used.');
 
+    lqr_sql_mark_replay($config, $replayKey, $payload);
     lqr_mark_replay($state, $replayKey);
     lqr_add_event($state, 'quest.signed_code_verified', 'Signed quest QR verified.', ['quest_id'=>$questId, 'type'=>$expectedType, 'replay_key'=>$replayKey]);
 
