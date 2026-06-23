@@ -27,6 +27,13 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    env:
+      MG_TEST_BASE_URL: http://127.0.0.1:8080
+      MG_APP_ENV: testing
+      MG_DEBUG: '0'
+      MG_APP_URL: http://127.0.0.1:8080
+      MG_BASE_URL: http://127.0.0.1:8080
+      MG_RUNTIME_PROFILE: local
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
@@ -40,4 +47,22 @@ jobs:
       - run: php scripts/validate_stage12i_seed_browser_paths.php
       - run: npm install --no-audit --no-fund
       - run: npx playwright install --with-deps chromium
+      - name: Start PHP test server
+        run: |
+          php -S 127.0.0.1:8080 -t . > /tmp/microgifter-stage12i-server.log 2>&1 &
+          echo $! > /tmp/microgifter-stage12i-server.pid
+          for attempt in {1..30}; do
+            if curl --fail --silent --show-error http://127.0.0.1:8080/offers.php >/tmp/microgifter-stage12i-offers.html; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/microgifter-stage12i-server.log
+          exit 1
       - run: npm run test:browser:stage12
+      - name: Show PHP server log on failure
+        if: failure()
+        run: cat /tmp/microgifter-stage12i-server.log || true
+      - name: Stop PHP test server
+        if: always()
+        run: if [ -f /tmp/microgifter-stage12i-server.pid ]; then kill "$(cat /tmp/microgifter-stage12i-server.pid)" || true; fi
