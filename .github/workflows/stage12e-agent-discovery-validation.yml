@@ -1,0 +1,51 @@
+name: Stage 12E Agent Discovery Validation
+
+on:
+  pull_request:
+    paths:
+      - 'offers.php'
+      - 'api/public/offers/*.php'
+      - 'api/public/wallet/add.php'
+      - 'api/merchant/campaign-insights.php'
+      - 'assets/js/stage12-agent-offers.js'
+      - 'assets/js/stage12-campaign-insights.js'
+      - 'includes/merchant-campaigns-view.php'
+      - 'scripts/validate_stage12e_agent_discovery.php'
+      - '.github/workflows/stage12e-agent-discovery-validation.yml'
+  push:
+    branches:
+      - 'stage12e-*'
+    paths:
+      - 'offers.php'
+      - 'api/public/offers/*.php'
+      - 'api/public/wallet/add.php'
+      - 'api/merchant/campaign-insights.php'
+      - 'assets/js/stage12-agent-offers.js'
+      - 'assets/js/stage12-campaign-insights.js'
+      - 'includes/merchant-campaigns-view.php'
+      - 'scripts/validate_stage12e_agent_discovery.php'
+      - '.github/workflows/stage12e-agent-discovery-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+      - run: |
+          set -euo pipefail
+          php -l offers.php
+          php -l api/public/offers/search.php
+          php -l api/public/offers/detail.php
+          php -l api/public/wallet/add.php
+          php -l api/merchant/campaign-insights.php
+          php -l includes/merchant-campaigns-view.php
+          php -l scripts/validate_stage12e_agent_discovery.php
+          php scripts/validate_stage12e_agent_discovery.php
