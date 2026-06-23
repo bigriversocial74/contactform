@@ -3,6 +3,7 @@ name: Stage 12J Campaign SQL Validation
 on:
   pull_request:
     paths:
+      - 'database/stage_12_campaign_features_full_import.sql'
       - 'database/stage_12j_campaign_feature_sql_hardening.sql'
       - 'scripts/validate_stage12j_campaign_sql_hardening.php'
       - '.github/workflows/stage12j-campaign-sql-validation.yml'
@@ -10,6 +11,7 @@ on:
     branches:
       - 'stage12j-*'
     paths:
+      - 'database/stage_12_campaign_features_full_import.sql'
       - 'database/stage_12j_campaign_feature_sql_hardening.sql'
       - 'scripts/validate_stage12j_campaign_sql_hardening.php'
       - '.github/workflows/stage12j-campaign-sql-validation.yml'
