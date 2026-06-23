@@ -54,4 +54,7 @@ jobs:
           set -euo pipefail
           test ! -f examples/local-quest-rewards/scripts/migrate-json-to-sql.php
           test ! -f examples/local-quest-rewards/data/README.md
-          ! grep -R "lqr_state_path\|file_put_contents(lqr_state_path\|data/state.json" examples/local-quest-rewards/*.php examples/local-quest-rewards/scripts || true
+          if find examples/local-quest-rewards -maxdepth 2 -name '*.php' -type f -print0 | xargs -0 grep -nE 'lqr_state_path|file_put_contents\(lqr_state_path|data/state.json'; then
+            echo 'JSON runtime reference found in Quest PHP files.' >&2
+            exit 1
+          fi
