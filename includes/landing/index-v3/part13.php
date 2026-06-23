@@ -81,12 +81,12 @@ declare(strict_types=1);
     if (el) el.textContent = value;
   };
 
-  text('.mg-hero-copy .mg-eyebrow', 'Support local before the visit');
-  text('#mgHeroTitle', 'Pre-invest in the local places you love.');
-  text('.mg-hero-copy .mg-lede', 'Local businesses need demand before customers walk in. Microgifter turns future visits into wallet-ready rewards customers can buy, gift, save, redeem, or share with others.');
+  text('.mg-hero-copy .mg-eyebrow', 'Local commerce support layer');
+  text('#mgHeroTitle', 'Pre-invest and support your local community.');
+  text('.mg-hero-copy .mg-lede', 'Local businesses need revenue and demand before customers walk in. Microgifter turns future visits into wallet-ready rewards customers can buy, gift, save, redeem, or share with others.');
   const note = document.querySelector('.mg-future-demand-note');
   if (note) {
-    note.innerHTML = '<strong>Community-first, technology underneath:</strong> create upfront revenue, measurable demand, and a reason for people to come back without making the customer think about blockchain.';
+    note.innerHTML = '<strong>Community-first, technology underneath:</strong> help merchants create upfront revenue, measurable demand, and a reason for people to keep coming back.';
   }
 
   const metrics = document.querySelectorAll('.mg-hero-microcopy .mg-metric');
