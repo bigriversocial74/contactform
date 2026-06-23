@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require __DIR__ . '/app.php';
+require __DIR__ . '/wallet-actions.php';
 $config = lqr_config();
 $quests = lqr_quests();
 $state = lqr_load_state();
@@ -20,7 +21,7 @@ try {
         $result = lqr_action_check_status($state, $config, $user, $questId);
         $message = 'Reward status refreshed from Microgifter.';
     } elseif ($action === 'claim_reward') {
-        $message = lqr_action_claim_reward($state, $config, $user, $questId);
+        $message = lqr_action_claim_reward_reported($state, $config, $user, $questId, $quests);
     }
     lqr_save_state($state);
     $user = lqr_get_user($state, $config, $userId);
@@ -47,7 +48,7 @@ $wallet = lqr_wallet_rewards($user, $quests);
     <div class="panel">
       <span class="eyebrow">Quest wallet</span>
       <h1>Your rewards</h1>
-      <p>Participants should see issued Microgift rewards inside the Quest app. Claim actions should report back to Microgifter so ownership, claim, and redemption stay centralized.</p>
+      <p>Participants should see issued Microgift rewards inside the Quest app. Claim actions report back to Microgifter so ownership, claim, and redemption stay centralized.</p>
       <div class="actions"><a class="btn dark" href="index.php">Back to quests</a><a class="btn dark" href="webhook-events.log">Webhook log</a></div>
       <?php if ($message): ?><div class="notice"><?= lqr_h($message) ?></div><?php endif; ?>
       <?php if ($error): ?><div class="notice error"><?= lqr_h($error) ?></div><?php endif; ?>
