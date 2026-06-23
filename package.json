@@ -3,7 +3,8 @@
   "private": true,
   "scripts": {
     "test:browser": "playwright test",
-    "test:browser:v1": "playwright test tests/browser/v1-release-golden-path.spec.js"
+    "test:browser:v1": "playwright test tests/browser/v1-release-golden-path.spec.js",
+    "test:browser:stage12": "playwright test tests/browser/stage12-discovery-wallet-path.spec.js"
   },
   "devDependencies": {
     "@playwright/test": "1.52.0"
