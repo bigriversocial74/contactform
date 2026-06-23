@@ -12,6 +12,7 @@ $required = [
     'includes/merchant-workspace.php',
     'includes/merchant-view.php',
     'includes/header-components/app-header.php',
+    'api/merchant/reward-templates.php',
 ];
 
 $ok = true;
@@ -29,6 +30,7 @@ $nav = is_file($root . '/includes/merchant-workspace.php') ? (string)file_get_co
 $view = is_file($root . '/includes/merchant-view.php') ? (string)file_get_contents($root . '/includes/merchant-view.php') : '';
 $campaignView = is_file($root . '/includes/merchant-campaigns-view.php') ? (string)file_get_contents($root . '/includes/merchant-campaigns-view.php') : '';
 $templateView = is_file($root . '/includes/merchant-reward-templates-view.php') ? (string)file_get_contents($root . '/includes/merchant-reward-templates-view.php') : '';
+$templateApi = is_file($root . '/api/merchant/reward-templates.php') ? (string)file_get_contents($root . '/api/merchant/reward-templates.php') : '';
 
 $hasTables = true;
 foreach (['reward_templates','campaigns','campaign_contacts','wallet_items','campaign_events'] as $table) {
@@ -39,11 +41,13 @@ $hasSourceTracking = str_contains($sql, "'newsletter_signup'") && str_contains($
 $hasManifest = str_contains($manifest, 'stage_12_campaigns_reward_templates.sql');
 $hasCreateMenu = str_contains($header, 'data-create-menu-option="campaign"') && str_contains($header, 'data-create-menu-option="agent_offer"') && str_contains($header, '/merchant-campaigns.php') && str_contains($header, '/merchant-reward-templates.php');
 $hasNav = str_contains($nav, "'campaigns'=>") && str_contains($nav, "'reward_templates'=>");
-$hasViewRoutes = str_contains($view, "merchant-campaigns-view.php") && str_contains($view, "merchant-reward-templates-view.php");
+$hasViewRoutes = str_contains($view, 'merchant-campaigns-view.php') && str_contains($view, 'merchant-reward-templates-view.php');
 $hasCampaignShell = str_contains($campaignView, 'Newsletter Signup') && str_contains($campaignView, 'Contest / Giveaway') && str_contains($campaignView, 'QR Reward Drop');
 $hasTemplateShell = str_contains($templateView, 'Reward type') && str_contains($templateView, 'agent_discoverable') && str_contains($templateView, 'Redemption instructions');
+$hasTemplateApi = str_contains($templateApi, 'merchant.reward_templates.view') && str_contains($templateApi, 'merchant.reward_templates.manage') && str_contains($templateApi, 'INSERT INTO reward_templates') && str_contains($templateApi, 'UPDATE reward_templates') && str_contains($templateApi, 'mg_require_csrf_for_write');
+$hasTemplateApiOutput = str_contains($templateApi, "'templates'") && str_contains($templateApi, "'template'") && str_contains($templateApi, "'schema_ready'");
 
-$ok = $ok && $hasTables && $hasAgentFields && $hasSourceTracking && $hasManifest && $hasCreateMenu && $hasNav && $hasViewRoutes && $hasCampaignShell && $hasTemplateShell;
+$ok = $ok && $hasTables && $hasAgentFields && $hasSourceTracking && $hasManifest && $hasCreateMenu && $hasNav && $hasViewRoutes && $hasCampaignShell && $hasTemplateShell && $hasTemplateApi && $hasTemplateApiOutput;
 
 echo json_encode([
     'ok' => $ok,
@@ -57,6 +61,8 @@ echo json_encode([
     'has_view_routes' => $hasViewRoutes,
     'has_campaign_shell' => $hasCampaignShell,
     'has_template_shell' => $hasTemplateShell,
+    'has_template_api' => $hasTemplateApi,
+    'has_template_api_output' => $hasTemplateApiOutput,
 ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
 
 exit($ok ? 0 : 1);
