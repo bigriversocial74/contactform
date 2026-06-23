@@ -7,7 +7,7 @@ on:
       - 'docs/local-quest-*.md'
       - 'docs/public-api-third-party-wallet-claim.md'
       - 'docs/microgift-permission-system-plan.md'
-      - 'scripts/validate_local_quest_rewards_demo.php'
+      - 'scripts/validate_local_quest_*.php'
       - '.github/workflows/local-quest-checks.yml'
   push:
     branches:
@@ -19,7 +19,7 @@ on:
       - 'docs/local-quest-*.md'
       - 'docs/public-api-third-party-wallet-claim.md'
       - 'docs/microgift-permission-system-plan.md'
-      - 'scripts/validate_local_quest_rewards_demo.php'
+      - 'scripts/validate_local_quest_*.php'
       - '.github/workflows/local-quest-checks.yml'
 
 jobs:
@@ -46,7 +46,13 @@ jobs:
           done < <(find examples/local-quest-rewards scripts -name '*.php' -type f | sort)
 
       - name: Validate Local Quest foundation
-        run: php scripts/validate_local_quest_rewards_demo.php
+        shell: bash
+        run: |
+          set -euo pipefail
+          php scripts/validate_local_quest_rewards_demo.php
+          php scripts/validate_local_quest_signed_qr_enforcement.php
+          php scripts/validate_local_quest_replay_storage.php
+          php scripts/validate_local_quest_replay_admin.php
 
       - name: Assert SQL-only runtime
         shell: bash
