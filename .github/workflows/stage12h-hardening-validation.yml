@@ -1,0 +1,34 @@
+name: Stage 12H Hardening Validation
+
+on:
+  pull_request:
+    paths:
+      - 'api/merchant/stage12-health.php'
+      - 'scripts/validate_stage12h_e2e_hardening.php'
+      - '.github/workflows/stage12h-hardening-validation.yml'
+  push:
+    branches:
+      - 'stage12h-*'
+    paths:
+      - 'api/merchant/stage12-health.php'
+      - 'scripts/validate_stage12h_e2e_hardening.php'
+      - '.github/workflows/stage12h-hardening-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+      - run: |
+          set -euo pipefail
+          php -l api/merchant/stage12-health.php
+          php -l scripts/validate_stage12h_e2e_hardening.php
+          php scripts/validate_stage12h_e2e_hardening.php
