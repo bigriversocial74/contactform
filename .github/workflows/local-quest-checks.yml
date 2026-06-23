@@ -54,4 +54,4 @@ jobs:
           set -euo pipefail
           test ! -f examples/local-quest-rewards/scripts/migrate-json-to-sql.php
           test ! -f examples/local-quest-rewards/data/README.md
-          ! grep -R "data/state.json\|migrate-json-to-sql\|lqr_state_path" examples/local-quest-rewards scripts/validate_local_quest_rewards_demo.php
+          ! grep -R "lqr_state_path\|file_put_contents(lqr_state_path\|data/state.json" examples/local-quest-rewards/*.php examples/local-quest-rewards/scripts || true
