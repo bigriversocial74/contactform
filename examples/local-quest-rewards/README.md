@@ -59,9 +59,50 @@ The starter foundation is now SQL-only. It requires MySQL or MariaDB through PDO
 
 There is no `data/state.json` runtime, no JSON demo mode, and no JSON-to-SQL migration path in the starter foundation. SQL `JSON` columns are still used where they make sense for metadata, API responses, webhook payloads, QR/geolocation context, and audit context.
 
-## Run locally with SQL storage
+## Install wizard
 
-Copy config:
+Start PHP:
+
+```bash
+php -S 127.0.0.1:8090 -t examples/local-quest-rewards
+```
+
+Open:
+
+```text
+http://127.0.0.1:8090/install.php
+```
+
+The installer wizard collects:
+
+- database host
+- database name
+- database user
+- database secret
+- app name
+- app public URL
+- Microgifter base URL
+- Microgifter Developer API key
+- default Distribution Program ID
+- default reward template ID
+- webhook signing value
+- local signed-code secret
+- first owner admin username/email/secret
+
+The installer then:
+
+1. creates the database when the database user has permission
+2. runs `database/local_quest_rewards.sql`
+3. runs `database/local_quest_admin_auth.sql`
+4. creates or updates `config.php`
+5. seeds the first owner admin in `lqr_admin_users`
+6. shows setup diagnostics
+
+Remove or protect `install.php` after deployment.
+
+## Manual SQL setup
+
+If you do not use the installer, copy config manually:
 
 ```bash
 cp examples/local-quest-rewards/config.example.php examples/local-quest-rewards/config.php
@@ -74,21 +115,9 @@ mysql local_quest_rewards < examples/local-quest-rewards/database/local_quest_re
 mysql local_quest_rewards < examples/local-quest-rewards/database/local_quest_admin_auth.sql
 ```
 
-Edit `config.php` with the database DSN/user/secret, Microgifter test key, program ID, template ID, app public URL, webhook secret, security signing secret, and admin bootstrap values.
+Then edit `config.php` with the database DSN/user/secret, Microgifter test key, program ID, template ID, app public URL, webhook secret, security signing secret, and admin bootstrap values.
 
-Start PHP:
-
-```bash
-php -S 127.0.0.1:8090 -t examples/local-quest-rewards
-```
-
-Run installer diagnostics:
-
-```text
-http://127.0.0.1:8090/install.php
-```
-
-The installer diagnostics screen verifies PHP version, PDO/MySQL support, HTTP client support, important config values, database connectivity, and required schema tables. Remove or protect `install.php` after deployment.
+## App URLs
 
 Open the participant app:
 
