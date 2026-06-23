@@ -4,31 +4,36 @@ on:
   pull_request:
     paths:
       - 'database/stage_12_campaigns_reward_templates.sql'
-      - 'docs/stage-12-campaigns-reward-templates-build-plan.md'
+      - 'database/stage_12b_campaign_events_agent_context.sql'
       - 'merchant-campaigns.php'
       - 'merchant-reward-templates.php'
       - 'includes/merchant-campaigns-view.php'
       - 'includes/merchant-reward-templates-view.php'
-      - 'includes/merchant-workspace.php'
-      - 'includes/merchant-view.php'
-      - 'includes/header-components/app-header.php'
-      - 'scripts/validate_stage12_campaigns_reward_templates.php'
+      - 'api/merchant/*.php'
+      - 'api/public/campaigns/*.php'
+      - 'api/public/offers/*.php'
+      - 'api/public/wallet/*.php'
+      - 'assets/js/stage12-*.js'
+      - 'scripts/validate_stage12*.php'
       - '.github/workflows/stage12-campaigns-validation.yml'
   push:
     branches:
       - main
       - 'stage12-*'
+      - 'stage12b-*'
     paths:
       - 'database/stage_12_campaigns_reward_templates.sql'
-      - 'docs/stage-12-campaigns-reward-templates-build-plan.md'
+      - 'database/stage_12b_campaign_events_agent_context.sql'
       - 'merchant-campaigns.php'
       - 'merchant-reward-templates.php'
       - 'includes/merchant-campaigns-view.php'
       - 'includes/merchant-reward-templates-view.php'
-      - 'includes/merchant-workspace.php'
-      - 'includes/merchant-view.php'
-      - 'includes/header-components/app-header.php'
-      - 'scripts/validate_stage12_campaigns_reward_templates.php'
+      - 'api/merchant/*.php'
+      - 'api/public/campaigns/*.php'
+      - 'api/public/offers/*.php'
+      - 'api/public/wallet/*.php'
+      - 'assets/js/stage12-*.js'
+      - 'scripts/validate_stage12*.php'
       - '.github/workflows/stage12-campaigns-validation.yml'
   workflow_dispatch:
 
@@ -57,13 +62,21 @@ jobs:
           php -l merchant-reward-templates.php
           php -l includes/merchant-campaigns-view.php
           php -l includes/merchant-reward-templates-view.php
-          php -l includes/merchant-workspace.php
-          php -l includes/merchant-view.php
-          php -l includes/header-components/app-header.php
+          php -l api/merchant/reward-templates.php
+          php -l api/merchant/campaigns.php
+          php -l api/merchant/campaign-activity.php
+          php -l api/merchant/campaign-winner.php
+          php -l api/public/campaigns/signup.php
+          php -l api/public/campaigns/qr-pickup.php
+          php -l api/public/campaigns/contest-entry.php
+          php -l api/public/offers/search.php
+          php -l api/public/wallet/add.php
           php -l scripts/validate_stage12_campaigns_reward_templates.php
+          php -l scripts/validate_stage12b_runtime_fixes.php
 
       - name: Validate Stage 12 campaigns foundation
         shell: bash
         run: |
           set -euo pipefail
           php scripts/validate_stage12_campaigns_reward_templates.php
+          php scripts/validate_stage12b_runtime_fixes.php
