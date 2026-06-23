@@ -1,7 +1,18 @@
 <?php
 declare(strict_types=1);
 
-session_start();
+require_once __DIR__ . '/security.php';
+lqr_boot_session();
+lqr_auto_csrf_output();
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    try {
+        lqr_require_csrf();
+    } catch (Throwable $e) {
+        http_response_code(419);
+        echo '<!doctype html><meta charset="utf-8"><title>Security token expired</title><body style="font-family:Arial,sans-serif;background:#071225;color:#f5f9ff;padding:40px"><h1>Security token expired</h1><p>' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8') . '</p><p><a style="color:#9bd4ff" href="javascript:history.back()">Go back and refresh</a></p></body>';
+        exit;
+    }
+}
 
 function lqr_config(): array
 {
@@ -33,7 +44,7 @@ function lqr_state_path(): string
 
 function lqr_default_state(): array
 {
-    return ['users'=>[], 'users_by_email'=>[], 'link_states'=>[], 'events'=>[], 'admin_users'=>[], 'admin_password_resets'=>[], 'last_response'=>null, 'updated_at'=>gmdate('c')];
+    return ['users'=>[], 'users_by_email'=>[], 'link_states'=>[], 'events'=>[], 'admin_users'=>[], 'admin_password_resets'=>[], 'security_replay'=>[], 'last_response'=>null, 'updated_at'=>gmdate('c')];
 }
 
 function lqr_load_state(): array
