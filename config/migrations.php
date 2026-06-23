@@ -87,6 +87,7 @@ return [
         'stage_18g_pppm_resend_timeline.sql',
         'stage_18h_feed_media_assets.sql',
         'stage_18i_recipient_notifications.sql',
+        'stage_12_campaigns_reward_templates.sql',
         'stage_18j_' . 'content_' . 'moderation.sql',
         'stage_18k_admin_account_management.sql',
         'stage_18l_admin_commerce_operations.sql',
