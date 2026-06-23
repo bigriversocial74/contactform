@@ -12,6 +12,10 @@ foreach ($public_nav_links as $public_header_link) {
         $public_demo_href = (string) ($public_header_link['href'] ?? $public_demo_href);
         continue;
     }
+    $href = (string) ($public_header_link['href'] ?? '');
+    if (in_array($href, ['/corporate.php', '/retail.php', '/locations.php'], true)) {
+        continue;
+    }
     $filtered_links[] = $public_header_link;
 }
 $public_nav_links = $filtered_links;
