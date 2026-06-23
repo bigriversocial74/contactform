@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 1120" role="img" aria-label="Microgifter reward phone mockup">
+  <defs>
+    <linearGradient id="frame" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#262626"/><stop offset=".45" stop-color="#050505"/><stop offset="1" stop-color="#3a3a3a"/></linearGradient>
+    <linearGradient id="screen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#171819"/><stop offset="1" stop-color="#020202"/></linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#27292c"/><stop offset="1" stop-color="#101113"/></linearGradient>
+    <filter id="shadow" x="-40%" y="-30%" width="180%" height="170%"><feDropShadow dx="0" dy="42" stdDeviation="32" flood-color="#000" flood-opacity=".58"/></filter>
+  </defs>
+  <g transform="translate(95 38) rotate(5 285 520)" filter="url(#shadow)">
+    <rect x="42" y="10" width="542" height="1035" rx="78" fill="url(#frame)"/>
+    <rect x="62" y="31" width="502" height="993" rx="64" fill="#050505"/>
+    <rect x="76" y="45" width="474" height="965" rx="55" fill="url(#screen)"/>
+    <rect x="239" y="70" width="150" height="34" rx="17" fill="#020202"/>
+    <text x="112" y="105" fill="#fff" font-family="Inter,Arial,sans-serif" font-size="24" font-weight="750">9:41</text>
+    <g transform="translate(463 80)" fill="#fff" opacity=".9"><rect x="0" y="10" width="24" height="12" rx="3"/><rect x="27" y="6" width="5" height="16" rx="2"/><path d="M47 16c7-8 17-8 24 0" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/><path d="M52 22c4-5 10-5 14 0" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/></g>
+    <g transform="translate(303 188)" stroke="#f1e5cf" stroke-width="3" fill="none"><path d="M-12 8h42v32h-42z"/><path d="M9 8v32"/><path d="M-4 8c-14-13 10-27 13 0M18 8c5-25 29-12 12 0"/></g>
+    <text x="313" y="265" fill="#fff" opacity=".9" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="23">You’ve received a gift</text>
+    <path d="M143 334h340c24 0 43 19 43 43v288c0 24-19 43-43 43h-340c-24 0-43-19-43-43v-288c0-24 19-43 43-43Z" fill="url(#card)" stroke="rgba(255,255,255,.16)"/>
+    <circle cx="100" cy="532" r="20" fill="#070707"/><circle cx="526" cy="532" r="20" fill="#070707"/><circle cx="313" cy="708" r="20" fill="#070707"/>
+    <g transform="translate(268 415)" stroke="#fff3df" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M33 40h68l-8 118H41L33 40Z"/><path d="M25 40h84v-18H25v18Z"/><path d="M47 22h42v-18H47v18Z"/><circle cx="67" cy="94" r="16"/><path d="M101 64c45-7 45 65 0 58"/></g>
+    <text x="313" y="582" fill="#fff" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="38" font-weight="760">$5 Coffee</text>
+    <text x="313" y="626" fill="#fff" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="31" font-weight="640">on us</text>
+    <path d="M164 666h298" stroke="rgba(255,255,255,.12)"/>
+    <text x="313" y="732" fill="#fff" opacity=".9" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="21">BELMONT COFFEE</text>
+    <text x="313" y="770" fill="#fff" opacity=".62" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="18">⌖ 0.4 mi away</text>
+    <rect x="132" y="812" width="362" height="72" rx="14" fill="#fff"/>
+    <text x="313" y="858" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="23" font-weight="800" fill="#050505">Claim Gift</text>
+    <text x="313" y="940" fill="#fff" opacity=".52" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="20">◷ Valid for 7 days</text>
+    <path d="M76 968h474" stroke="rgba(255,255,255,.08)"/>
+    <g fill="#fff" font-family="Inter,Arial,sans-serif" font-size="16" text-anchor="middle"><text x="155" y="1020" opacity=".52">Activity</text><text x="313" y="1020" opacity=".52">Nearby</text><text x="470" y="1020" font-weight="800">Gifts</text></g>
+  </g>
+</svg>
