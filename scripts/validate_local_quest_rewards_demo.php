@@ -84,11 +84,12 @@ $adminRolesDoc = is_file($root . '/docs/local-quest-admin-roles.md') ? (string)f
 $adminAuthDoc = is_file($root . '/docs/local-quest-admin-auth.md') ? (string)file_get_contents($root . '/docs/local-quest-admin-auth.md') : '';
 $installerDoc = is_file($root . '/docs/local-quest-installer-hardening.md') ? (string)file_get_contents($root . '/docs/local-quest-installer-hardening.md') : '';
 $securityDoc = is_file($root . '/docs/local-quest-security-hardening.md') ? (string)file_get_contents($root . '/docs/local-quest-security-hardening.md') : '';
-$requiresLogin = str_contains($index, 'header(\'Location: cover.php\')') || str_contains($index, 'header("Location: cover.php")');
+
+$requiresLogin = str_contains($index, "header('Location: cover.php')") || str_contains($index, 'header("Location: cover.php")');
 $usesRealLink = str_contains($index, 'start_account_link');
 $hasWallet = str_contains($wallet, 'claim_reward') && str_contains($app, 'lqr_wallet_rewards');
 $claimReportsToApi = str_contains($wallet, 'lqr_action_claim_reward_reported') && str_contains($walletActions, '/api/public/v1/rewards/claim.php');
-$hasAdmin = str_contains($admin, 'Quest app control center') && str_contains($admin, 'save_quest') && str_contains($admin, 'mark_claim_reported');
+$hasAdmin = (str_contains($admin, 'Quest app control center') || str_contains($admin, 'Local Quest Control Center')) && str_contains($admin, 'save_quest') && str_contains($admin, 'mark_claim_reported');
 $hasStyledPortal = str_contains($adminPortal, 'Developer Portal') && str_contains($css, '.lq-sidebar:hover') && str_contains($css, '--lq-rail-open');
 $hasQrGeo = str_contains($js, 'BarcodeDetector') && str_contains($js, 'navigator.geolocation') && str_contains($walletActions, 'claim_geolocation') && str_contains($index, 'qr_payload');
 $hasSql = str_contains($sql, 'CREATE TABLE IF NOT EXISTS lqr_admin_users') && str_contains($sql, 'CREATE TABLE IF NOT EXISTS lqr_reward_claims') && str_contains($sql, 'max_total_rewards');
