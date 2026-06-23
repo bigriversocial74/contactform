@@ -11,6 +11,7 @@ $required = [
     'examples/local-quest-rewards/index.php',
     'examples/local-quest-rewards/link-callback.php',
     'examples/local-quest-rewards/wallet.php',
+    'examples/local-quest-rewards/wallet-actions.php',
     'examples/local-quest-rewards/quests.php',
     'examples/local-quest-rewards/webhook.php',
     'examples/local-quest-rewards/data/README.md',
@@ -29,11 +30,12 @@ foreach ($required as $path) {
 $index = is_file($root . '/examples/local-quest-rewards/index.php') ? (string)file_get_contents($root . '/examples/local-quest-rewards/index.php') : '';
 $app = is_file($root . '/examples/local-quest-rewards/app.php') ? (string)file_get_contents($root . '/examples/local-quest-rewards/app.php') : '';
 $wallet = is_file($root . '/examples/local-quest-rewards/wallet.php') ? (string)file_get_contents($root . '/examples/local-quest-rewards/wallet.php') : '';
+$walletActions = is_file($root . '/examples/local-quest-rewards/wallet-actions.php') ? (string)file_get_contents($root . '/examples/local-quest-rewards/wallet-actions.php') : '';
 $requiresLogin = str_contains($index, 'header(\'Location: cover.php\')') || str_contains($index, 'header("Location: cover.php")');
 $usesRealLink = str_contains($index, 'start_account_link');
 $hasWallet = str_contains($wallet, 'claim_reward') && str_contains($app, 'lqr_wallet_rewards');
-$claimReportsPendingApi = str_contains($app, 'pending_microgifter_claim_api') && str_contains($app, '/api/public/v1/rewards/claim.php');
-$ok = $ok && $requiresLogin && $usesRealLink && $hasWallet && $claimReportsPendingApi;
+$claimReportsToApi = str_contains($wallet, 'lqr_action_claim_reward_reported') && str_contains($walletActions, '/api/public/v1/rewards/claim.php');
+$ok = $ok && $requiresLogin && $usesRealLink && $hasWallet && $claimReportsToApi;
 
-echo json_encode(['ok' => $ok, 'files' => $rows, 'requires_login' => $requiresLogin, 'uses_real_account_linking' => $usesRealLink, 'has_wallet_claim_flow' => $hasWallet, 'claim_reporting_contract_needed' => $claimReportsPendingApi], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
+echo json_encode(['ok' => $ok, 'files' => $rows, 'requires_login' => $requiresLogin, 'uses_real_account_linking' => $usesRealLink, 'has_wallet_claim_flow' => $hasWallet, 'claim_reports_to_microgifter_api' => $claimReportsToApi], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
 exit($ok ? 0 : 1);
