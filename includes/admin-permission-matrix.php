@@ -51,7 +51,6 @@ function mg_admin_permission_matrix(): array
             'admin.commerce.cases.view' => ['admin.commerce.view', 'admin.commerce.manage'],
             'admin.commerce.cases.manage' => ['admin.commerce.manage'],
             'admin.commerce.tips.reverse' => ['tips.reverse'],
-            'admin.commerce.view' => ['merchant.payments.view', 'subscriptions.admin', 'microgift.operations.view', 'tips.reverse'],
         ],
     ];
 }
