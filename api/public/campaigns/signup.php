@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/bootstrap.php';
 require_once dirname(__DIR__, 2) . '/rewards/_zero_value_bridge.php';
 require_once dirname(__DIR__, 3) . '/includes/merchant-crm.php';
+require_once __DIR__ . '/_limits.php';
 
 function mg_public_campaign_uuid(): string
 {
@@ -24,15 +25,7 @@ function mg_public_campaign_expiry(array $template): ?string
 function mg_public_campaign_event(PDO $pdo, int $merchantId, int $campaignId, ?int $walletItemId, ?int $contactId, string $eventType, array $context = []): void
 {
     $stmt = $pdo->prepare('INSERT INTO campaign_events (public_id,merchant_user_id,campaign_id,wallet_item_id,contact_id,event_type,event_context_json,created_at) VALUES (?,?,?,?,?,?,?,NOW())');
-    $stmt->execute([
-        mg_public_campaign_uuid(),
-        $merchantId,
-        $campaignId,
-        $walletItemId,
-        $contactId,
-        $eventType,
-        json_encode($context, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
-    ]);
+    $stmt->execute([mg_public_campaign_uuid(), $merchantId, $campaignId, $walletItemId, $contactId, $eventType, json_encode($context, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)]);
 }
 
 function mg_public_campaign_find_user(PDO $pdo, string $email): ?int
@@ -71,57 +64,32 @@ function mg_public_campaign_bridge(PDO $pdo, array $campaign, array $contact, in
 mg_require_method('POST');
 $input = mg_input();
 $pdo = mg_db();
-
 $campaignRef = strtolower(trim((string) ($input['campaign_id'] ?? $input['campaign'] ?? $input['slug'] ?? '')));
 $email = strtolower(trim((string) ($input['email'] ?? '')));
 $name = trim((string) ($input['name'] ?? $input['full_name'] ?? ''));
 $phone = trim((string) ($input['phone'] ?? ''));
 $source = 'newsletter_signup';
-
-if ($campaignRef === '' || $email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || mb_strlen($email) > 255 || mb_strlen($name) > 180 || mb_strlen($phone) > 60) {
-    mg_fail('Invalid signup submission.', 422);
-}
+if ($campaignRef === '' || $email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || mb_strlen($email) > 255 || mb_strlen($name) > 180 || mb_strlen($phone) > 60) mg_fail('Invalid signup submission.', 422);
 
 try {
     $pdo->beginTransaction();
-
     $campaignSql = 'SELECT c.*, rt.id reward_template_db_id, rt.public_id reward_template_public_id, rt.title reward_template_title,
                            rt.description reward_template_description, rt.redemption_instructions,
                            rt.reward_type, rt.value_type, rt.value_amount_cents, rt.currency, rt.expiration_rule, rt.expiration_days, rt.expires_at,
-                           rt.quantity_limit reward_template_quantity_limit, rt.issued_count reward_template_issued_count
+                           rt.quantity_limit reward_template_quantity_limit, rt.issued_count reward_template_issued_count, rt.per_user_limit reward_template_per_user_limit
                     FROM campaigns c
                     INNER JOIN reward_templates rt ON rt.id = c.reward_template_id
-                    WHERE c.merchant_user_id IS NOT NULL
-                      AND c.campaign_type = \'newsletter_signup\'
-                      AND c.status = \'active\'
-                      AND rt.status = \'active\'
-                      AND (c.public_id = ? OR c.public_slug = ?)
+                    WHERE c.merchant_user_id IS NOT NULL AND c.campaign_type = \'newsletter_signup\' AND c.status = \'active\' AND rt.status = \'active\' AND (c.public_id = ? OR c.public_slug = ?)
                     LIMIT 1';
     $stmt = $pdo->prepare($campaignSql);
     $stmt->execute([$campaignRef, $campaignRef]);
     $campaign = $stmt->fetch();
-    if (!$campaign) {
-        $pdo->rollBack();
-        mg_fail('Campaign is not available.', 404);
-    }
-
+    if (!$campaign) { $pdo->rollBack(); mg_fail('Campaign is not available.', 404); }
     $now = time();
-    if (!empty($campaign['starts_at']) && strtotime((string) $campaign['starts_at']) > $now) {
-        $pdo->rollBack();
-        mg_fail('Campaign has not started yet.', 409);
-    }
-    if (!empty($campaign['ends_at']) && strtotime((string) $campaign['ends_at']) < $now) {
-        $pdo->rollBack();
-        mg_fail('Campaign has ended.', 409);
-    }
-    if ($campaign['quantity_limit'] !== null && (int) $campaign['issued_count'] >= (int) $campaign['quantity_limit']) {
-        $pdo->rollBack();
-        mg_fail('Campaign reward limit has been reached.', 409);
-    }
-    if ($campaign['reward_template_quantity_limit'] !== null && (int) $campaign['reward_template_issued_count'] >= (int) $campaign['reward_template_quantity_limit']) {
-        $pdo->rollBack();
-        mg_fail('Reward template limit has been reached.', 409);
-    }
+    if (!empty($campaign['starts_at']) && strtotime((string) $campaign['starts_at']) > $now) { $pdo->rollBack(); mg_fail('Campaign has not started yet.', 409); }
+    if (!empty($campaign['ends_at']) && strtotime((string) $campaign['ends_at']) < $now) { $pdo->rollBack(); mg_fail('Campaign has ended.', 409); }
+    if ($campaign['quantity_limit'] !== null && (int) $campaign['issued_count'] >= (int) $campaign['quantity_limit']) { $pdo->rollBack(); mg_fail('Campaign reward limit has been reached.', 409); }
+    if ($campaign['reward_template_quantity_limit'] !== null && (int) $campaign['reward_template_issued_count'] >= (int) $campaign['reward_template_quantity_limit']) { $pdo->rollBack(); mg_fail('Reward template limit has been reached.', 409); }
 
     $merchantId = (int) $campaign['merchant_user_id'];
     $campaignId = (int) $campaign['id'];
@@ -132,38 +100,13 @@ try {
     $contactPublicId = mg_public_campaign_uuid();
     $contactMetadata = ['campaign_type' => $campaignType, 'campaign_public_id' => (string) $campaign['public_id'], 'ip' => mg_client_ip(), 'user_agent' => substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255)];
     $contactStmt = $pdo->prepare('INSERT INTO campaign_contacts (public_id,merchant_user_id,campaign_id,user_id,email,phone,name,source,opt_in_status,metadata_json,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,NOW(),NOW()) ON DUPLICATE KEY UPDATE user_id=VALUES(user_id), phone=VALUES(phone), name=VALUES(name), opt_in_status=VALUES(opt_in_status), metadata_json=VALUES(metadata_json), updated_at=NOW()');
-    $contactStmt->execute([
-        $contactPublicId,
-        $merchantId,
-        $campaignId,
-        $userId,
-        $email,
-        $phone !== '' ? $phone : null,
-        $name !== '' ? $name : null,
-        $source,
-        'opted_in',
-        json_encode($contactMetadata, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
-    ]);
-
+    $contactStmt->execute([$contactPublicId, $merchantId, $campaignId, $userId, $email, $phone !== '' ? $phone : null, $name !== '' ? $name : null, $source, 'opted_in', json_encode($contactMetadata, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)]);
     $contactLookup = $pdo->prepare('SELECT id, public_id FROM campaign_contacts WHERE campaign_id = ? AND email = ? LIMIT 1');
     $contactLookup->execute([$campaignId, $email]);
     $contact = $contactLookup->fetch();
     $contactId = (int) $contact['id'];
 
-    $crm = mg_merchant_crm_record_event($pdo, [
-        'merchant_user_id' => $merchantId,
-        'campaign_id' => $campaignId,
-        'campaign_type' => $campaignType,
-        'event_type' => 'campaign.form_submitted',
-        'source_type' => $source,
-        'source_public_id' => (string) $contact['public_id'],
-        'user_id' => $userId,
-        'email' => $email,
-        'phone' => $phone,
-        'name' => $name,
-        'metadata' => $contactMetadata,
-    ]);
-
+    $crm = mg_merchant_crm_record_event($pdo, ['merchant_user_id' => $merchantId, 'campaign_id' => $campaignId, 'campaign_type' => $campaignType, 'event_type' => 'campaign.form_submitted', 'source_type' => $source, 'source_public_id' => (string) $contact['public_id'], 'user_id' => $userId, 'email' => $email, 'phone' => $phone, 'name' => $name, 'metadata' => $contactMetadata]);
     mg_public_campaign_event($pdo, $merchantId, $campaignId, null, $contactId, 'form.submitted', ['email' => $email, 'campaign_type' => $campaignType, 'merchant_crm' => $crm]);
 
     $expiresAt = mg_public_campaign_expiry($campaign);
@@ -173,53 +116,20 @@ try {
     if ($existing) {
         $bridge = mg_public_campaign_bridge($pdo, $campaign, $contact, (int) $existing['id'], (string) $existing['public_id'], $userId, $expiresAt, 'newsletter_signup');
         $pdo->commit();
-        mg_ok([
-            'contact_id' => (string) $contact['public_id'],
-            'wallet_item_id' => (string) $existing['public_id'],
-            'wallet_status' => (string) $existing['status'],
-            'already_issued' => true,
-            'pppm_bridge' => $bridge,
-            'merchant_crm' => $crm,
-        ], 'Signup already has this reward.');
+        mg_ok(['contact_id' => (string) $contact['public_id'], 'wallet_item_id' => (string) $existing['public_id'], 'wallet_status' => (string) $existing['status'], 'already_issued' => true, 'pppm_bridge' => $bridge, 'merchant_crm' => $crm], 'Signup already has this reward.');
     }
 
+    mg_public_campaign_enforce_reward_limits($pdo, $campaign, $userId, $email);
     $walletPublicId = mg_public_campaign_uuid();
     $walletStmt = $pdo->prepare('INSERT INTO wallet_items (public_id,user_id,contact_id,merchant_user_id,reward_template_id,campaign_id,source_type,source_id,status,value_cents_snapshot,currency_snapshot,title_snapshot,metadata_json,issued_at,expires_at,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),?,NOW(),NOW())');
-    $walletStmt->execute([
-        $walletPublicId,
-        $userId,
-        $contactId,
-        $merchantId,
-        $rewardTemplateId,
-        $campaignId,
-        'newsletter_signup',
-        (string) $contact['public_id'],
-        'issued',
-        (int) $campaign['value_amount_cents'],
-        (string) $campaign['currency'],
-        (string) $campaign['reward_template_title'],
-        json_encode(['campaign_type' => 'newsletter_signup', 'reward_template_id' => (string) $campaign['reward_template_public_id']], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
-        $expiresAt,
-    ]);
+    $walletStmt->execute([$walletPublicId, $userId, $contactId, $merchantId, $rewardTemplateId, $campaignId, 'newsletter_signup', (string) $contact['public_id'], 'issued', (int) $campaign['value_amount_cents'], (string) $campaign['currency'], (string) $campaign['reward_template_title'], json_encode(['campaign_type' => 'newsletter_signup', 'reward_template_id' => (string) $campaign['reward_template_public_id']], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), $expiresAt]);
     $walletDbId = (int) $pdo->lastInsertId();
-
     $pdo->prepare('UPDATE campaigns SET issued_count = issued_count + 1, updated_at = NOW() WHERE id = ?')->execute([$campaignId]);
     $pdo->prepare('UPDATE reward_templates SET issued_count = issued_count + 1, updated_at = NOW() WHERE id = ?')->execute([$rewardTemplateId]);
     $bridge = mg_public_campaign_bridge($pdo, $campaign, $contact, $walletDbId, $walletPublicId, $userId, $expiresAt, 'newsletter_signup');
     mg_public_campaign_event($pdo, $merchantId, $campaignId, $walletDbId, $contactId, 'wallet_item.issued', ['wallet_item_id' => $walletPublicId, 'campaign_type' => $campaignType, 'pppm_bridge' => $bridge, 'merchant_crm' => $crm]);
-
     $pdo->commit();
-
-    mg_ok([
-        'contact_id' => (string) $contact['public_id'],
-        'wallet_item_id' => $walletPublicId,
-        'wallet_status' => 'issued',
-        'already_issued' => false,
-        'reward_title' => (string) $campaign['reward_template_title'],
-        'expires_at' => $expiresAt,
-        'pppm_bridge' => $bridge,
-        'merchant_crm' => $crm,
-    ], 'Signup reward issued.', 201);
+    mg_ok(['contact_id' => (string) $contact['public_id'], 'wallet_item_id' => $walletPublicId, 'wallet_status' => 'issued', 'already_issued' => false, 'reward_title' => (string) $campaign['reward_template_title'], 'expires_at' => $expiresAt, 'pppm_bridge' => $bridge, 'merchant_crm' => $crm], 'Signup reward issued.', 201);
 } catch (Throwable $error) {
     if ($pdo->inTransaction()) $pdo->rollBack();
     mg_security_log('error', 'public.campaign_signup.failed', 'Unable to process campaign signup.', ['exception_class' => $error::class, 'message' => $error->getMessage()]);
