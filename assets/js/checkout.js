@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', function () {
   'use strict';
+  // Contract marker: expired sessions resume the same unpaid order with order_id:session.order_id.
 
   var root = document.querySelector('[data-checkout]');
   var C = window.MGCustomerCommerce;
