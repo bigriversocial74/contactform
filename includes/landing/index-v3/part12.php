@@ -5,6 +5,25 @@
     </div>
   </section>
 
+  <style>
+    @media(max-width:760px){
+      .mg-v4 .mg-v4-hero{padding-top:86px!important;overflow:hidden!important;}
+      .mg-v4 .mg-v4-hero::after{
+        background:linear-gradient(180deg,rgba(245,245,242,.02) 0%,rgba(245,245,242,.04) 38%,rgba(245,245,242,.90) 58%,rgba(245,245,242,.98) 76%,rgba(0,0,0,.78) 94%,#020202 100%)!important;
+      }
+      .mg-v4 .mg-v4-hero-grid{width:calc(100% - 22px)!important;min-height:calc(100svh - 86px)!important;}
+      .mg-v4 .mg-v4-visual{min-height:335px!important;align-items:flex-end!important;justify-content:center!important;margin-top:0!important;}
+      .mg-v4 .mg-v10-desktop{width:min(92vw,390px)!important;margin:0 auto -8px!important;transform:translateX(0)!important;}
+      .mg-v4 .mg-v4-phone{left:8px!important;bottom:-22px!important;width:min(120px,32vw)!important;}
+      .mg-v4 .mg-v4-copy{padding-top:104px!important;padding-bottom:58px!important;}
+    }
+    @media(max-width:440px){
+      .mg-v4 .mg-v4-visual{min-height:320px!important;}
+      .mg-v4 .mg-v10-desktop{width:min(92vw,370px)!important;margin:0 auto -4px!important;}
+      .mg-v4 .mg-v4-copy{padding-top:96px!important;}
+    }
+  </style>
+
   <section class="mg-section mg-story-band" id="api-preview" aria-labelledby="apiPreviewTitle">
     <div class="mg-container">
       <div class="mg-section-head">
