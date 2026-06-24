@@ -68,10 +68,14 @@ try {
 
     $merchantId = (int) $campaign['merchant_user_id'];
     $campaignId = (int) $campaign['id'];
-    $source = mg_public_campaign_engage_source((string) $campaign['campaign_type']);
+    $campaignType = (string) $campaign['campaign_type'];
+    $source = mg_public_campaign_engage_source($campaignType);
     $userId = mg_public_campaign_engage_find_user($pdo, $email);
     $contactPublicId = mg_public_campaign_engage_uuid();
     $metadata = [
+        'campaign_type' => $campaignType,
+        'campaign_public_id' => (string) $campaign['public_id'],
+        'crm_source' => $source,
         'entry' => $entry,
         'ip' => mg_client_ip(),
         'user_agent' => substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255),
@@ -94,14 +98,14 @@ try {
         null,
         $contactId ?: null,
         'campaign.engaged',
-        json_encode(['campaign_type' => (string) $campaign['campaign_type'], 'source' => $source, 'email' => $email], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+        json_encode(['campaign_type' => $campaignType, 'source' => $source, 'email' => $email, 'crm_entry' => true], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
     ]);
 
     $pdo->commit();
     mg_ok([
         'contact_id' => (string) ($contact['public_id'] ?? ''),
         'campaign_id' => (string) $campaign['public_id'],
-        'campaign_type' => (string) $campaign['campaign_type'],
+        'campaign_type' => $campaignType,
         'source' => $source,
     ], (string) ($campaign['success_message'] ?? 'Campaign response recorded.'), 201);
 } catch (Throwable $error) {
