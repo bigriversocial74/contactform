@@ -22,35 +22,6 @@
     </div>
   </section>
 
-  <section class="mg-section mg-discovery" id="platform" aria-labelledby="discoveryTitle">
-    <div class="mg-bg-mesh" aria-hidden="true"></div>
-    <div class="mg-container">
-      <div class="mg-eyebrow" data-reveal="left">For discovery</div>
-      <h2 class="mg-section-title" id="discoveryTitle" data-reveal="left" style="--delay:80ms">Wallet-ready rewards for agent gifting and discovery.</h2>
-      <p class="mg-lede" data-reveal="left" style="--delay:160ms">Microgifter helps merchants deliver rewards customers can save to a wallet, share through agents, and discover across the next generation of local commerce. Make every offer ready for gifting, discovery, and redemption.</p>
-
-      <div class="mg-feature-panels">
-        <article class="mg-panel" data-reveal="scale">
-          <div class="mg-panel-head"><div class="mg-panel-icon"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="3"/><path d="M6 6V4h12c2 0 3 1 3 3v2"/><path d="M14 11h7v5h-7z"/></svg></div><div><h3>Wallet system</h3><p>Let customers save rewards, claim them later, and redeem from a simple wallet experience.</p></div></div>
-          <div class="mg-mini-ui"><img src="/images/reward_saved_limited_coffee_for_two.svg" alt="Wallet screen with saved reward"></div>
-        </article>
-        <article class="mg-panel" data-reveal="scale" style="--delay:100ms">
-          <div class="mg-panel-head"><div class="mg-panel-icon"><svg viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="13" rx="2"/><path d="M12 7V4M8 4h8M8 12h.01M16 12h.01M9 16c2 1.5 4 1.5 6 0"/></svg></div><div><h3>Agent gifting</h3><p>Create structured rewards that AI agents, apps, and partners can send on behalf of customers.</p></div></div>
-          <div class="mg-mini-ui"><img src="/images/limited_coffee_for_two_reward_screen.svg" alt="Agent-ready reward structure screen"></div>
-        </article>
-        <article class="mg-panel" data-reveal="scale" style="--delay:200ms">
-          <div class="mg-panel-head"><div class="mg-panel-icon"><svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="M15 15l5 5"/></svg></div><div><h3>Discovery layer</h3><p>Make local offers discoverable across apps, assistant experiences, and future commerce channels.</p></div></div>
-          <div class="mg-mini-ui"><img src="/images/nearby_offers_in_belmont_ca.svg" alt="Nearby local offer discovery screen"></div>
-        </article>
-      </div>
-
-      <div class="mg-actions" data-reveal="left">
-        <a class="mg-btn mg-btn-primary" href="/signup.php">Create Account <span class="mg-arrow">→</span></a>
-        <a class="mg-btn mg-btn-secondary" href="/learn-more.php">Book a Demo <span class="mg-arrow">→</span></a>
-      </div>
-    </div>
-  </section>
-
   <section class="mg-section mg-story-band" id="future-demand" aria-labelledby="agenticTitle">
     <div class="mg-container">
       <div class="mg-story-grid">
