@@ -4,7 +4,7 @@ $page_title = 'Sales CRM | Microgifter';
 $page_section = 'sales';
 $header_mode = 'crm';
 $page_styles = ['/assets/css/sales-crm.css'];
-$page_scripts = ['/assets/js/sales-crm.js'];
+$page_scripts = ['/assets/js/sales-crm.js','/assets/js/sales-crm-sidebar-search.js'];
 $user = mg_current_user();
 $permissions = is_array($user['permissions'] ?? null) ? $user['permissions'] : [];
 $roles = is_array($user['roles'] ?? null) ? $user['roles'] : [];
@@ -18,6 +18,10 @@ require __DIR__ . '/includes/header.php';
       <?php if ($canCrm): ?><button class="crm-add-user-button" type="button" data-crm-tab="users" aria-label="Add sales user">+</button><?php endif; ?>
     </div>
     <?php if ($canCrm): ?>
+      <div class="mg-sidebar-search crm-sidebar-search">
+        <input type="search" placeholder="Search leads, email, business, ZIP..." aria-label="Search CRM leads" data-crm-sidebar-search>
+        <select aria-label="Filter CRM leads by status" data-crm-sidebar-status-filter><option value="all">All statuses</option><option value="new">New</option><option value="assigned">Assigned</option><option value="contacted">Contacted</option><option value="qualified">Qualified</option><option value="nurture">Nurture</option><option value="converted">Converted</option><option value="closed_lost">Closed lost</option><option value="spam">Spam</option></select>
+      </div>
       <nav class="crm-nav mg-app-side-nav" aria-label="CRM navigation">
         <button class="is-active" type="button" data-crm-tab="leads"><strong>Leads</strong><span>Sales pipeline</span></button>
         <button type="button" data-crm-tab="manual"><strong>Add lead</strong><span>Manual entry</span></button>
