@@ -13,10 +13,9 @@
 .mg-unified-header .mg-site-nav > a[href="/agent.php"]{display:none!important}
 
 /* Header agent tool alignment */
-.mg-unified-header .mg-header-agent-tools{display:flex!important;align-items:center!important;gap:8px!important;width:100%!important;min-width:0!important}
+.mg-unified-header .mg-header-agent-tools{display:flex!important;align-items:center!important;gap:8px!important;width:auto!important;min-width:0!important;flex:0 0 auto!important}
 .mg-unified-header .mg-header-agent-tabs{flex:0 0 auto!important}
-.mg-unified-header .mg-header-agent-search{flex:1 1 auto!important;min-width:180px!important;margin:0!important;display:flex!important;align-items:center!important}
-.mg-unified-header .mg-header-agent-search input{width:100%!important;height:42px!important;margin:0!important}
+.mg-unified-header .mg-header-agent-search{display:none!important;visibility:hidden!important;pointer-events:none!important}
 .mg-unified-header .mg-header-build-link{align-self:center!important;width:42px!important;height:42px!important;min-width:42px!important;margin:0!important;border-radius:11px!important;transform:none!important}
 
 /* Account menu */
@@ -46,9 +45,8 @@ body:has(.mg-cart-drawer.is-contained).mg-cart-open{overflow:auto!important}
 body.mg-item-modal-open{overflow:hidden!important}
 
 @media(max-width:980px){
-  .mg-unified-header .mg-header-agent-tools{gap:6px!important}
-  .mg-unified-header .mg-header-agent-search{min-width:140px!important}
-  .mg-unified-header .mg-header-agent-search input{height:38px!important}
+  .mg-unified-header .mg-header-agent-tools{gap:6px!important;width:auto!important;flex:0 0 auto!important}
+  .mg-unified-header .mg-header-agent-search{display:none!important;visibility:hidden!important;pointer-events:none!important}
   .mg-unified-header .mg-header-build-link{width:38px!important;height:38px!important;min-width:38px!important}
   .mg-gift-preview-close-floating{top:calc(14px + env(safe-area-inset-top))!important;right:14px!important;z-index:2200!important}
   .mg-account-actions{position:fixed!important;top:68px!important;right:12px!important;left:12px!important;width:auto!important}
