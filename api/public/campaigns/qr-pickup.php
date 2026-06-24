@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/bootstrap.php';
+require_once dirname(__DIR__, 2) . '/rewards/_zero_value_bridge.php';
 
 function mg_qr_campaign_uuid(): string
 {
@@ -33,6 +34,30 @@ function mg_qr_campaign_find_user(PDO $pdo, string $email): ?int
     return $id > 0 ? $id : null;
 }
 
+function mg_qr_campaign_bridge(PDO $pdo, array $campaign, array $contact, int $walletDbId, string $walletPublicId, ?int $userId, ?string $expiresAt): ?array
+{
+    if (!$userId) return null;
+    return mg_zero_reward_issue_from_wallet($pdo, [
+        'merchant_user_id' => (int) $campaign['merchant_user_id'],
+        'recipient_user_id' => $userId,
+        'recipient_external_id' => (string) ($contact['public_id'] ?? ''),
+        'wallet_item_db_id' => $walletDbId,
+        'wallet_item_public_id' => $walletPublicId,
+        'campaign_public_id' => (string) $campaign['public_id'],
+        'reward_template_public_id' => (string) $campaign['reward_template_public_id'],
+        'source_type' => 'qr_scan',
+        'source_reference' => $walletPublicId,
+        'source_line_reference' => (string) ($contact['public_id'] ?? $walletPublicId),
+        'title' => (string) $campaign['reward_template_title'],
+        'description' => $campaign['description'] ?? null,
+        'currency' => (string) ($campaign['currency'] ?? 'USD'),
+        'display_value_cents' => (int) ($campaign['value_amount_cents'] ?? 0),
+        'expires_at' => $expiresAt,
+        'redemption_instructions' => $campaign['redemption_instructions'] ?? null,
+        'terms' => ['campaign_type' => 'qr_reward_drop'],
+    ]);
+}
+
 mg_require_method('POST');
 $input = mg_input();
 $pdo = mg_db();
@@ -51,6 +76,7 @@ try {
     $pdo->beginTransaction();
 
     $sql = 'SELECT c.*, rt.id reward_template_db_id, rt.public_id reward_template_public_id, rt.title reward_template_title,
+                   rt.description reward_template_description, rt.redemption_instructions,
                    rt.value_amount_cents, rt.currency, rt.expiration_rule, rt.expiration_days, rt.expires_at,
                    rt.quantity_limit reward_template_quantity_limit, rt.issued_count reward_template_issued_count
             FROM campaigns c
@@ -63,28 +89,13 @@ try {
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$qrToken, $qrToken, $campaignRef, $campaignRef]);
     $campaign = $stmt->fetch();
-    if (!$campaign) {
-        $pdo->rollBack();
-        mg_fail('QR reward drop is not available.', 404);
-    }
+    if (!$campaign) { $pdo->rollBack(); mg_fail('QR reward drop is not available.', 404); }
 
     $now = time();
-    if (!empty($campaign['starts_at']) && strtotime((string) $campaign['starts_at']) > $now) {
-        $pdo->rollBack();
-        mg_fail('QR reward drop has not started yet.', 409);
-    }
-    if (!empty($campaign['ends_at']) && strtotime((string) $campaign['ends_at']) < $now) {
-        $pdo->rollBack();
-        mg_fail('QR reward drop has ended.', 409);
-    }
-    if ($campaign['quantity_limit'] !== null && (int) $campaign['issued_count'] >= (int) $campaign['quantity_limit']) {
-        $pdo->rollBack();
-        mg_fail('QR reward drop limit has been reached.', 409);
-    }
-    if ($campaign['reward_template_quantity_limit'] !== null && (int) $campaign['reward_template_issued_count'] >= (int) $campaign['reward_template_quantity_limit']) {
-        $pdo->rollBack();
-        mg_fail('Reward template limit has been reached.', 409);
-    }
+    if (!empty($campaign['starts_at']) && strtotime((string) $campaign['starts_at']) > $now) { $pdo->rollBack(); mg_fail('QR reward drop has not started yet.', 409); }
+    if (!empty($campaign['ends_at']) && strtotime((string) $campaign['ends_at']) < $now) { $pdo->rollBack(); mg_fail('QR reward drop has ended.', 409); }
+    if ($campaign['quantity_limit'] !== null && (int) $campaign['issued_count'] >= (int) $campaign['quantity_limit']) { $pdo->rollBack(); mg_fail('QR reward drop limit has been reached.', 409); }
+    if ($campaign['reward_template_quantity_limit'] !== null && (int) $campaign['reward_template_issued_count'] >= (int) $campaign['reward_template_quantity_limit']) { $pdo->rollBack(); mg_fail('Reward template limit has been reached.', 409); }
 
     $merchantId = (int) $campaign['merchant_user_id'];
     $campaignId = (int) $campaign['id'];
@@ -102,28 +113,30 @@ try {
 
     mg_qr_campaign_event($pdo, $merchantId, $campaignId, null, $contactId, 'qr.scanned', ['email' => $email]);
 
-    $existingStmt = $pdo->prepare('SELECT public_id,status FROM wallet_items WHERE campaign_id = ? AND contact_id = ? AND source_type = \'qr_scan\' AND status <> \'cancelled\' ORDER BY id DESC LIMIT 1');
+    $expiresAt = mg_qr_campaign_expiry($campaign);
+    $existingStmt = $pdo->prepare('SELECT id,public_id,status FROM wallet_items WHERE campaign_id = ? AND contact_id = ? AND source_type = \'qr_scan\' AND status <> \'cancelled\' ORDER BY id DESC LIMIT 1');
     $existingStmt->execute([$campaignId, $contactId]);
     $existing = $existingStmt->fetch();
     if ($existing) {
+        $bridge = mg_qr_campaign_bridge($pdo, $campaign, $contact, (int) $existing['id'], (string) $existing['public_id'], $userId, $expiresAt);
         $pdo->commit();
-        mg_ok(['contact_id' => (string) $contact['public_id'], 'wallet_item_id' => (string) $existing['public_id'], 'wallet_status' => (string) $existing['status'], 'already_issued' => true], 'QR reward already added.');
+        mg_ok(['contact_id' => (string) $contact['public_id'], 'wallet_item_id' => (string) $existing['public_id'], 'wallet_status' => (string) $existing['status'], 'already_issued' => true, 'pppm_bridge' => $bridge], 'QR reward already added.');
     }
 
     $walletPublicId = mg_qr_campaign_uuid();
-    $expiresAt = mg_qr_campaign_expiry($campaign);
     $walletStmt = $pdo->prepare('INSERT INTO wallet_items (public_id,user_id,contact_id,merchant_user_id,reward_template_id,campaign_id,source_type,source_id,status,value_cents_snapshot,currency_snapshot,title_snapshot,metadata_json,issued_at,expires_at,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),?,NOW(),NOW())');
     $walletStmt->execute([$walletPublicId, $userId, $contactId, $merchantId, $rewardTemplateId, $campaignId, 'qr_scan', (string) $contact['public_id'], 'issued', (int) $campaign['value_amount_cents'], (string) $campaign['currency'], (string) $campaign['reward_template_title'], json_encode(['campaign_type' => 'qr_reward_drop', 'reward_template_id' => (string) $campaign['reward_template_public_id']], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), $expiresAt]);
     $walletDbId = (int) $pdo->lastInsertId();
 
     $pdo->prepare('UPDATE campaigns SET issued_count = issued_count + 1, updated_at = NOW() WHERE id = ?')->execute([$campaignId]);
     $pdo->prepare('UPDATE reward_templates SET issued_count = issued_count + 1, updated_at = NOW() WHERE id = ?')->execute([$rewardTemplateId]);
-    mg_qr_campaign_event($pdo, $merchantId, $campaignId, $walletDbId, $contactId, 'wallet_item.issued', ['wallet_item_id' => $walletPublicId]);
+    $bridge = mg_qr_campaign_bridge($pdo, $campaign, $contact, $walletDbId, $walletPublicId, $userId, $expiresAt);
+    mg_qr_campaign_event($pdo, $merchantId, $campaignId, $walletDbId, $contactId, 'wallet_item.issued', ['wallet_item_id' => $walletPublicId, 'pppm_bridge' => $bridge]);
 
     $pdo->commit();
-    mg_ok(['contact_id' => (string) $contact['public_id'], 'wallet_item_id' => $walletPublicId, 'wallet_status' => 'issued', 'already_issued' => false, 'reward_title' => (string) $campaign['reward_template_title'], 'expires_at' => $expiresAt], 'QR reward added to wallet.', 201);
+    mg_ok(['contact_id' => (string) $contact['public_id'], 'wallet_item_id' => $walletPublicId, 'wallet_status' => 'issued', 'already_issued' => false, 'reward_title' => (string) $campaign['reward_template_title'], 'expires_at' => $expiresAt, 'pppm_bridge' => $bridge], 'QR reward added to wallet.', 201);
 } catch (Throwable $error) {
     if ($pdo->inTransaction()) $pdo->rollBack();
-    mg_security_log('error', 'public.qr_pickup.failed', 'Unable to process QR reward pickup.', ['exception_class' => $error::class]);
+    mg_security_log('error', 'public.qr_pickup.failed', 'Unable to process QR reward pickup.', ['exception_class' => $error::class, 'message' => $error->getMessage()]);
     mg_fail('Unable to process QR reward pickup.', 500);
 }
