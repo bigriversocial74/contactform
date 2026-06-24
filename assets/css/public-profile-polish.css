@@ -62,18 +62,41 @@ body.mg-profile-light-theme .mg-invest-cover-card{margin-top:0!important;}
 body.mg-profile-light-theme .mg-formula-card{display:none!important;}
 body.mg-profile-light-theme .mg-invest-actions{align-items:center!important;gap:10px!important;}
 body.mg-profile-light-theme .mg-invest-actions .mg-public-link-list,
-body.mg-profile-light-theme .mg-invest-actions .mg-invest-social-actions{display:flex!important;align-items:center!important;margin:0!important;}
-body.mg-profile-light-theme .mg-invest-actions .mg-public-link-list [data-profile-links]{display:flex!important;align-items:center!important;gap:10px!important;}
-body.mg-profile-light-theme .mg-invest-actions .mg-public-link-list [data-profile-links] a{
+body.mg-profile-light-theme .mg-invest-actions .mg-invest-social-actions{display:flex!important;align-items:center!important;margin:0!important;align-self:center!important;}
+body.mg-profile-light-theme .mg-invest-actions .mg-public-link-list [data-profile-links]{display:flex!important;align-items:center!important;gap:10px!important;line-height:0!important;}
+body.mg-profile-light-theme .mg-invest-actions .mg-public-link-list [data-profile-links] a,
+body.mg-profile-light-theme .mg-invest-actions .mg-public-link-list [data-profile-links] a:link,
+body.mg-profile-light-theme .mg-invest-actions .mg-public-link-list [data-profile-links] a:visited{
+  box-sizing:border-box!important;
   width:44px!important;
   height:40px!important;
   min-width:44px!important;
   max-width:44px!important;
+  min-height:40px!important;
+  max-height:40px!important;
   padding:0!important;
+  margin:0!important;
+  border:1px solid var(--mgp-line,#e5e7eb)!important;
   border-radius:8px!important;
   display:inline-flex!important;
   align-items:center!important;
   justify-content:center!important;
+  flex:0 0 44px!important;
+  line-height:1!important;
+  aspect-ratio:auto!important;
+  background:#fff!important;
+  overflow:hidden!important;
+  box-shadow:0 8px 20px rgba(17,24,39,.06)!important;
+  transform:none!important;
+}
+body.mg-profile-light-theme .mg-invest-actions .mg-public-link-list [data-profile-links] a span{display:none!important;}
+body.mg-profile-light-theme .mg-invest-actions .mg-public-link-list [data-profile-links] a svg{
+  width:16px!important;
+  height:16px!important;
+  display:block!important;
+  flex:0 0 16px!important;
+  max-width:16px!important;
+  max-height:16px!important;
 }
 body.mg-profile-light-theme .mg-profile-product-grid{grid-template-columns:repeat(auto-fit,minmax(220px,260px))!important;}
 body.mg-profile-light-theme .mg-profile-post-list{min-height:120px;}
