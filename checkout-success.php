@@ -5,8 +5,7 @@ $page_title = 'Order Complete | Microgifter';
 $page_section = 'checkout';
 $header_mode = 'account';
 $page_styles = ['/assets/css/checkout.css','/assets/css/account-commerce.css','/assets/css/account-commerce-fixes.css'];
-$page_scripts = ['/assets/js/order-success.js'];
-$page_scripts[] = '/assets/js/account-sidebar.js';
+$page_scripts = ['/assets/js/order-success.js','/assets/js/account-sidebar.js'];
 $accountView = 'orders';
 $order_id = trim((string)($_GET['order'] ?? ''));
 require __DIR__ . '/includes/header.php';
@@ -15,26 +14,35 @@ require __DIR__ . '/includes/header.php';
   <div class="mg-account-layout">
     <?php require __DIR__ . '/includes/account-sidebar.php'; ?>
     <main class="mg-account-shell" data-order-success data-order-id="<?= mg_e($order_id) ?>">
-      <section class="mg-commerce-page">
+      <section class="mg-commerce-page mg-order-complete-page">
         <div class="mg-commerce-shell">
-          <header class="mg-commerce-hero">
+          <header class="mg-commerce-hero mg-checkout-hero">
             <span class="mg-eyebrow">Payment received</span>
             <h1>Order complete</h1>
-            <p>Your payment was recorded, your receipt is available, and eligible purchased units are routed into PPPM issuance.</p>
+            <p>Your receipt, payment state, and Microgifter issuance status are shown below.</p>
           </header>
+
+          <div class="mg-checkout-process" aria-label="Checkout process">
+            <div><span>01</span><strong>Cart</strong><small>Reviewed</small></div>
+            <div><span>02</span><strong>Draft</strong><small>Snapshot locked</small></div>
+            <div><span>03</span><strong>Order</strong><small>Created</small></div>
+            <div><span>04</span><strong>Payment</strong><small>Recorded</small></div>
+            <div class="is-active"><span>05</span><strong>Issuance</strong><small>Microgifts routed</small></div>
+          </div>
+
           <div class="mg-commerce-grid">
-            <section class="mg-commerce-panel">
+            <section class="mg-commerce-panel mg-receipt-panel">
               <div data-order-success-receipt><div class="mg-empty-state">Loading receipt…</div></div>
             </section>
-            <aside class="mg-commerce-panel mg-commerce-summary">
+            <aside class="mg-commerce-panel mg-commerce-summary mg-sticky-summary">
               <span class="mg-eyebrow">Next steps</span>
               <h2>Manage this purchase</h2>
               <p class="mg-commerce-note">Permanent PPPM IDs are created during issuance and remain separate from payment IDs.</p>
               <div class="mg-commerce-actions is-stack">
-                <a class="mg-btn mg-btn-primary" href="/account-commerce.php">Open commerce center</a>
+                <a class="mg-btn mg-btn-primary" href="/inbox.php">Open inbox</a>
+                <a class="mg-btn mg-btn-soft" href="/account-commerce.php">Open commerce center</a>
                 <a class="mg-btn mg-btn-soft" href="/account/orders.php">View orders only</a>
-                <a class="mg-btn mg-btn-soft" href="/inbox.php">Open inbox</a>
-                <a class="mg-btn mg-btn-soft" href="/cart.php">Back to cart</a>
+                <a class="mg-btn mg-btn-soft" href="/discover.php">Continue shopping</a>
               </div>
             </aside>
           </div>
