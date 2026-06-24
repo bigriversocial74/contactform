@@ -17,11 +17,20 @@ function mg_wallet_lifecycle_followup(PDO $pdo, array $item, string $eventType, 
     if (empty($item['campaign_id']) || empty($item['merchant_user_id'])) return ['scheduled'=>0,'skipped'=>true];
     return mg_campaign_followup_schedule($pdo, ['merchant_user_id'=>(int)$item['merchant_user_id'],'campaign_id'=>(int)$item['campaign_id'],'contact_id'=>!empty($item['contact_id'])?(int)$item['contact_id']:null,'wallet_item_id'=>(int)$item['id'],'trigger_event'=>$eventType,'context'=>$context+['wallet_item_id'=>(string)$item['public_id']]]);
 }
+function mg_wallet_lifecycle_crm_exists(PDO $pdo, array $item, string $crmEvent): bool
+{
+    try {
+        $stmt = $pdo->prepare('SELECT COUNT(*) FROM merchant_crm_contact_events WHERE merchant_user_id=? AND source_type=? AND source_public_id=? AND event_type=?');
+        $stmt->execute([(int)$item['merchant_user_id'],'wallet_lifecycle',(string)$item['public_id'],$crmEvent]);
+        return (int)$stmt->fetchColumn() > 0;
+    } catch (Throwable) { return false; }
+}
 function mg_wallet_lifecycle_crm(PDO $pdo, array $item, string $eventType, int $actorUserId=0, array $actor=[], array $context=[]): array
 {
     $contact = mg_wallet_lifecycle_contact($pdo, $item);
     $campaignType = (string)($contact['campaign_type'] ?? $item['campaign_type'] ?? $item['source_type'] ?? 'wallet_reward');
     $crmEvent = $eventType === 'wallet_item.redeemed' ? 'reward.redeemed' : ($eventType === 'wallet_item.claimed' ? 'reward.claimed' : $eventType);
+    if (mg_wallet_lifecycle_crm_exists($pdo, $item, $crmEvent)) return ['schema_ready'=>true,'duplicate'=>true,'event_type'=>$crmEvent,'source_type'=>'wallet_lifecycle','source_public_id'=>(string)$item['public_id']];
     return mg_merchant_crm_record_event($pdo, ['merchant_user_id'=>(int)$item['merchant_user_id'],'campaign_id'=>!empty($item['campaign_id'])?(int)$item['campaign_id']:null,'campaign_type'=>$campaignType,'event_type'=>$crmEvent,'source_type'=>'wallet_lifecycle','source_public_id'=>(string)$item['public_id'],'user_id'=>$actorUserId>0?$actorUserId:(!empty($item['user_id'])?(int)$item['user_id']:null),'email'=>(string)($actor['email'] ?? $contact['email'] ?? ''),'phone'=>(string)($contact['phone'] ?? ''),'name'=>(string)($actor['display_name'] ?? $actor['full_name'] ?? $contact['name'] ?? ''),'value_cents'=>(int)($item['value_cents_snapshot'] ?? 0),'metadata'=>$context+['wallet_item_id'=>(string)$item['public_id'],'campaign_type'=>$campaignType,'wallet_status_event'=>$eventType]]);
 }
 function mg_wallet_lifecycle_notify(PDO $pdo, array $item, string $eventType, int $actorUserId=0, array $actor=[], array $context=[]): array
