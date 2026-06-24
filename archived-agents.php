@@ -2,14 +2,16 @@
 declare(strict_types=1);
 require_once __DIR__ . '/includes/app.php';
 $page_title = 'Archived Agents | Microgifter';
-$page_section = 'agent';
-$header_mode = 'agent';
-$agent_tab = 'agent';
+$page_section = 'workspace';
+$header_mode = 'account';
 $page_scripts = ['/assets/js/archived-agents.js'];
 require __DIR__ . '/includes/header.php';
+$appSidebarVariant = 'utility';
+$appSidebarLabel = 'Workspace';
+$appSidebarActive = 'agent';
 ?>
-<section class="mg-app-shell mg-agent-app mg-archive-app">
-  <?php require __DIR__ . '/includes/agent-sidebar.php'; ?>
+<section class="mg-app-shell mg-utility-app mg-archive-app">
+  <?php require __DIR__ . '/includes/app-sidebar.php'; ?>
 
   <div class="mg-app-workspace mg-archive-workspace">
     <section class="mg-archive-page" data-archived-agents-page>
