@@ -61,7 +61,6 @@ final class ProductionLiveUiHotfixTest extends TestCase
         $appHeader = $this->readFile('includes/header-components/app-header.php');
         $mirrorHeader = $this->readFile('microgifter-main/includes/header-components/app-header.php');
         $createTemplate = $this->readFile('includes/header-templates/create-menu.php');
-        $mirrorCreateTemplate = $this->readFile('microgifter-main/includes/header-templates/create-menu.php');
         $layout = $this->readFile('includes/header.php');
         $footer = $this->readFile('includes/footer.php');
         $createScript = $this->readFile('assets/js/create-menu.js');
@@ -72,7 +71,7 @@ final class ProductionLiveUiHotfixTest extends TestCase
             self::assertStringContainsString('data-global-create', $source);
             self::assertStringContainsString('/build.php', $source);
         }
-        foreach ([$createTemplate, $mirrorCreateTemplate] as $source) {
+        foreach ([$createTemplate, $mirrorHeader] as $source) {
             self::assertStringContainsString('role="dialog"', $source);
             self::assertStringContainsString('data-create-menu-option="post"', $source);
             self::assertStringContainsString('/feed.php', $source);
