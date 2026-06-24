@@ -13,7 +13,7 @@ foreach ($public_nav_links as $public_header_link) {
         continue;
     }
     $href = (string) ($public_header_link['href'] ?? '');
-    if (in_array($href, ['/corporate.php', '/retail.php', '/locations.php'], true)) {
+    if (in_array($href, ['/corporate.php', '/retail.php', '/locations.php', '/campaign.php'], true)) {
         continue;
     }
     $filtered_links[] = $public_header_link;
@@ -21,9 +21,9 @@ foreach ($public_nav_links as $public_header_link) {
 $public_nav_links = $filtered_links;
 
 if (!$user) {
-    $public_nav_links = $public_nav_links ?: [
+    // One logged-out public nav across every public page. Page-level link overrides are intentionally ignored.
+    $public_nav_links = [
         ['label'=>'Explore','href'=>'/discover.php'],
-        ['label'=>'Campaigns','href'=>'/campaign.php'],
         ['label'=>'Merchant','href'=>'/merchant.php'],
         ['label'=>'Docs','href'=>'/developer-docs.php'],
     ];
@@ -136,7 +136,6 @@ $show_demo_button = !$user;
       <?php foreach ($public_nav_links as $public_header_link): ?>
         <a href="<?= mg_e((string) ($public_header_link['href'] ?? '#')) ?>"><?= mg_e((string) ($public_header_link['label'] ?? 'Learn More')) ?></a>
       <?php endforeach; ?>
-      <a href="/discover.php">Discover</a>
       <a href="<?= mg_e($public_demo_href) ?>">Book A Demo</a>
     </nav>
     <div class="mg-public-mobile-auth">
