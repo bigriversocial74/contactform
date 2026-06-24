@@ -1,11 +1,23 @@
-/* Focused post-rollback app fixes. Keep this file small: header tabs and mobile sidebar only. */
+/* Focused post-rollback app fixes. Keep this file small: logged-in header, mobile tabs, and sidebars. */
 .mg-section-agent .mg-agent-tab-add,
 .mg-section-agent [data-agent-tab-add],
 .mg-section-agent .mg-header-agent-create,
 .mg-section-agent [data-agent-header-create]{display:none!important;visibility:hidden!important;pointer-events:none!important}
+
+.mg-app-sidebar .mg-app-sidebar-brand .mg-brand{font-size:0!important;letter-spacing:0!important;gap:0!important;display:inline-flex!important;align-items:center!important;min-width:0!important;text-decoration:none!important}
+.mg-app-sidebar .mg-app-sidebar-brand .mg-brand>span,.mg-app-sidebar .mg-app-sidebar-brand .mg-brand .mg-brand-mark{display:none!important}
+.mg-app-sidebar .mg-app-sidebar-brand .mg-brand::before{content:"";display:block;width:160px;height:30px;background:url('/images/logo_main_drk.png') left center/contain no-repeat}
+.mg-sidebar-search{display:grid;gap:8px;margin:10px 0 14px;padding:10px;border:1px solid #dce6f3;border-radius:16px;background:#f8fbff}
+.mg-sidebar-search input,.mg-sidebar-search select{width:100%;min-height:40px;border:1px solid #d8e3f1;border-radius:12px;background:#fff;color:#071225;padding:0 12px;font-size:13px;font-weight:750;outline:none}
+.mg-sidebar-search input:focus,.mg-sidebar-search select:focus{border-color:#93b4eb;box-shadow:0 0 0 3px rgba(37,99,235,.08)}
+
 @media(max-width:980px){
+  .mg-app-page .mg-unified-header .mg-header-crm-tools,
+  .mg-app-page .mg-unified-header .mg-header-account-tools,
+  .mg-app-page .mg-unified-header .mg-header-agent-search,
+  .mg-app-page .mg-unified-header input[type="search"],
+  .mg-app-page .mg-unified-header select[data-crm-status-filter]{display:none!important;visibility:hidden!important;pointer-events:none!important}
   .mg-section-agent .mg-header-agent-tools{display:grid!important;grid-template-columns:minmax(0,1fr) 44px!important;align-items:center!important;width:100%!important;min-width:0!important;gap:8px!important;padding:0 10px!important;overflow:hidden!important}
-  .mg-section-agent .mg-header-agent-search{display:none!important}
   .mg-section-agent .mg-header-build-link{grid-column:2!important;justify-self:end!important;align-self:center!important;width:44px!important;height:44px!important;min-width:44px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;margin:0!important;position:static!important;border:1px solid #d8e3f1!important;border-radius:14px!important;background:#fff!important;color:#1455d9!important;text-decoration:none!important;font-size:24px!important;font-weight:900!important;line-height:1!important;box-shadow:0 8px 18px rgba(15,23,42,.045)!important;transform:none!important}
   .mg-section-agent .mg-header-agent-tabs{grid-column:1!important;display:flex!important;align-items:center!important;gap:5px!important;width:100%!important;min-width:0!important;max-width:100%!important;overflow-x:auto!important;overflow-y:hidden!important;padding:0 0 2px 0!important;scrollbar-width:none!important;white-space:nowrap!important;flex-wrap:nowrap!important}
   .mg-section-agent .mg-header-agent-tabs::-webkit-scrollbar{display:none!important}
