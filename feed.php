@@ -5,8 +5,9 @@ require_once __DIR__ . '/includes/app.php';
 $page_title = 'Feed | Microgifter';
 $page_section = 'feed';
 $header_mode = 'public';
+$suppress_footer = true;
 $page_styles = ['/assets/css/public-app-header.css','/assets/css/social-feed.css','/assets/css/social-feed-upload.css','/assets/css/feed-centered-layout.css'];
-$page_scripts = ['/assets/js/social-feed.js','/assets/js/social-feed-upload.js'];
+$page_scripts = ['/assets/js/social-feed.js','/assets/js/social-feed-upload.js','/assets/js/feed-ui-redesign.js'];
 $page_manifest = [
     'id' => 'feed',
     'title' => $page_title,
@@ -15,6 +16,7 @@ $page_manifest = [
     'styles' => $page_styles,
     'scripts' => $page_scripts,
     'body_class' => 'mg-social-feed-page',
+    'footer' => false,
     'public_header' => [
         'presentation' => false,
         'search' => true,
@@ -54,7 +56,7 @@ require __DIR__ . '/includes/header.php';
           <option value="draft">Drafts</option>
           <option value="published">Published</option>
           <option value="archived">Archived</option>
-          <option value="retired">Deleted</option>
+          <option value="retired">Retired</option>
         </select>
       </label>
 
@@ -65,7 +67,7 @@ require __DIR__ . '/includes/header.php';
       <section class="mg-feed-message mg-hidden" data-feed-signin>
         <h2>Sign in to use this feed.</h2>
         <p>Following, publishing, saving, commenting, and owner post management require an account.</p>
-        <a class="mg-btn mg-btn-primary" href="/signin.php?return=%2Ffeed.php">Sign in</a>
+        <a class="mg-btn mg-btn-primary" href="/signin.php">Sign in</a>
       </section>
       <section class="mg-feed-message mg-hidden" data-feed-empty>
         <h2>No posts yet.</h2>
