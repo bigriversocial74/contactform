@@ -8,5 +8,53 @@ permissions:
   contents: read
 
 jobs:
+  validation-scope:
+    runs-on: ubuntu-latest
+    outputs:
+      heavy_validation_required: ${{ steps.scope.outputs.heavy_validation_required }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine validation scope
+        id: scope
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${GITHUB_EVENT_NAME}" != "pull_request" ]]; then
+            echo "heavy_validation_required=true" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          git fetch --no-tags --prune --depth=1 origin "${BASE_SHA}"
+
+          CHANGED_FILES="$(git diff --name-only "${BASE_SHA}" "${GITHUB_SHA}")"
+          if [[ -z "${CHANGED_FILES}" ]]; then
+            echo "heavy_validation_required=true" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          HEAVY_VALIDATION_REQUIRED=false
+          while IFS= read -r FILE; do
+            case "${FILE}" in
+              index.php|includes/landing/index-v3/*.php|.github/workflows/pr-validation.yml|.github/workflows/commerce-operations-validation.yml|.github/workflows/release-package-validation.yml)
+                ;;
+              *)
+                HEAVY_VALIDATION_REQUIRED=true
+                break
+                ;;
+            esac
+          done <<< "${CHANGED_FILES}"
+
+          echo "Changed files:"
+          printf '%s\n' "${CHANGED_FILES}"
+          echo "heavy_validation_required=${HEAVY_VALIDATION_REQUIRED}" >> "${GITHUB_OUTPUT}"
+
   validate:
+    needs: validation-scope
+    if: needs.validation-scope.outputs.heavy_validation_required == 'true'
     uses: ./.github/workflows/recovery-baseline.yml
