@@ -18,13 +18,16 @@
 .mg-unified-header .mg-header-agent-search{display:none!important;visibility:hidden!important;pointer-events:none!important}
 .mg-unified-header .mg-header-build-link{align-self:center!important;width:42px!important;height:42px!important;min-width:42px!important;margin:0!important;border-radius:11px!important;transform:none!important}
 
-/* Account menu */
-.mg-unified-header{overflow:visible!important;position:relative!important;z-index:500!important}
+/* Account menu and header overlays must sit above page shells, cards, drawers, and profile media. */
+.mg-unified-header{overflow:visible!important;position:sticky!important;z-index:10000!important;isolation:isolate!important}
+.mg-unified-header .mg-header-inner,
 .mg-header-actions{overflow:visible!important}
-.mg-account-menu{position:relative!important;display:inline-flex!important;align-items:center!important;z-index:520!important}
-.mg-account-actions{top:calc(100% + 10px)!important;right:0!important;left:auto!important;width:min(300px,calc(100vw - 24px))!important;max-height:min(520px,calc(100vh - 88px))!important;overflow:auto!important;visibility:hidden!important;opacity:0!important;transform:translateY(-6px) scale(.985)!important;pointer-events:none!important;display:grid!important;gap:4px!important;transition:opacity .16s ease,transform .16s ease,visibility 0s linear .16s!important}
-.mg-account-menu.is-open .mg-account-actions{visibility:visible!important;opacity:1!important;transform:translateY(0) scale(1)!important;pointer-events:auto!important;transition-delay:0s!important}
-.mg-account-menu:not(.is-open) .mg-account-actions{visibility:hidden!important;opacity:0!important;pointer-events:none!important}
+.mg-account-menu{position:relative!important;display:inline-flex!important;align-items:center!important;z-index:10030!important}
+.mg-account-actions{top:calc(100% + 10px)!important;right:0!important;left:auto!important;width:min(300px,calc(100vw - 24px))!important;max-height:min(520px,calc(100vh - 88px))!important;overflow:auto!important;visibility:hidden!important;opacity:0!important;transform:translateY(-6px) scale(.985)!important;pointer-events:none!important;display:grid!important;gap:4px!important;transition:opacity .16s ease,transform .16s ease,visibility 0s linear .16s!important;z-index:10050!important}
+.mg-account-menu.is-open .mg-account-actions,
+.mg-account-menu:hover .mg-account-actions,
+.mg-account-menu:focus-within .mg-account-actions{visibility:visible!important;opacity:1!important;transform:translateY(0) scale(1)!important;pointer-events:auto!important;transition-delay:0s!important}
+.mg-account-menu:not(.is-open):not(:hover):not(:focus-within) .mg-account-actions{visibility:hidden!important;opacity:0!important;pointer-events:none!important}
 .mg-account-menu-head{position:relative!important;min-width:0!important}
 .mg-account-head-copy,.mg-account-head-name,.mg-account-head-email{min-width:0!important}
 .mg-account-action{box-sizing:border-box!important;text-decoration:none!important;line-height:1.25!important}
@@ -49,7 +52,7 @@ body.mg-item-modal-open{overflow:hidden!important}
   .mg-unified-header .mg-header-agent-search{display:none!important;visibility:hidden!important;pointer-events:none!important}
   .mg-unified-header .mg-header-build-link{width:38px!important;height:38px!important;min-width:38px!important}
   .mg-gift-preview-close-floating{top:calc(14px + env(safe-area-inset-top))!important;right:14px!important;z-index:2200!important}
-  .mg-account-actions{position:fixed!important;top:68px!important;right:12px!important;left:12px!important;width:auto!important}
+  .mg-account-actions{position:fixed!important;top:68px!important;right:12px!important;left:12px!important;width:auto!important;z-index:10050!important}
   .mg-cart-drawer.is-contained{position:fixed!important;inset:0!important;z-index:900!important}
   .mg-cart-drawer.is-contained .mg-cart-backdrop{background:rgba(7,18,37,.38)!important;backdrop-filter:blur(2px)!important}
   body:has(.mg-cart-drawer.is-contained).mg-cart-open{overflow:hidden!important}
