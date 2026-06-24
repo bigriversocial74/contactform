@@ -4,8 +4,9 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/includes/app.php';
 require_once dirname(__DIR__) . '/includes/admin-auth.php';
 
-$user = mg_require_admin_page_key('admin.package_moderation');
-$canManagePackages = mg_admin_permission_user_has($user, 'admin.package_moderation.manage');
+$user = mg_require_admin_page_permission('admin.commerce.view');
+$canManagePackages = mg_admin_permission_user_has($user, 'admin.commerce.manage')
+    || mg_admin_permission_user_has($user, 'admin.settings.manage');
 
 $page_title = 'Package Moderation | Microgifter';
 $page_section = 'account';
