@@ -6,12 +6,16 @@
 .mg-app-page .mg-main{min-height:100svh;background:var(--mg-app-bg);position:relative;z-index:1}
 .mg-app-shell{min-height:100svh;padding-left:var(--mg-app-sidebar);padding-top:var(--mg-app-header);display:grid;grid-template-columns:minmax(0,1fr);background:var(--mg-app-bg)}
 .mg-app-shell.has-utility{grid-template-columns:minmax(0,1fr) var(--mg-app-utility)}
-.mg-app-sidebar{position:fixed;inset:0 auto 0 0;width:var(--mg-app-sidebar);height:100svh;padding:16px;border-right:1px solid var(--mg-app-border);background:var(--mg-app-sidebar-bg);overflow:auto;z-index:320}
-.mg-app-sidebar-brand{height:42px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.mg-app-sidebar{position:fixed;inset:0 auto 0 0;width:var(--mg-app-sidebar);height:100svh;padding:16px;border-right:1px solid var(--mg-app-border);background:var(--mg-app-sidebar-bg);overflow:auto;z-index:320;display:flex;flex-direction:column;box-sizing:border-box}
+.mg-app-sidebar-brand{height:42px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex:0 0 auto}
 .mg-app-sidebar-brand .mg-brand{font-size:24px;letter-spacing:-.05em}
 .mg-app-sidebar-brand .mg-brand-mark{width:36px;height:36px}
 .mg-app-sidebar-brand-badge{min-height:28px;padding:0 10px;border:1px solid #bfd2f4;border-radius:999px;background:#eef5ff;color:#1455d9;display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;white-space:nowrap}
 .mg-app-sidebar-brand-badge::before{content:"";width:6px;height:6px;border-radius:50%;background:#2563eb}
+.mg-universal-sidebar-label{min-height:28px;max-width:92px;padding:0 10px;border:1px solid #bfd2f4;border-radius:999px;background:#eef5ff;color:#1455d9;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:850;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mg-universal-sidebar-tools{display:inline-flex;align-items:center;justify-content:flex-end;gap:8px;flex:0 0 auto}
+.mg-universal-sidebar-footer,.mg-agent-side-footer{margin-top:auto;padding-top:14px;flex:0 0 auto}
+.mg-universal-side-nav,.mg-merchant-nav,.crm-nav{flex:0 0 auto}
 .crm-add-user-button{width:34px;height:34px;border:1px solid #bfd2f4;border-radius:10px;background:#eef5ff;color:#1455d9;display:grid;place-items:center;font-size:22px;font-weight:400;line-height:1;box-shadow:var(--mg-app-shadow)}
 .crm-add-user-button:hover,.crm-add-user-button.is-active{background:#2563eb;border-color:#2563eb;color:#fff}
 .mg-app-workspace{min-width:0;padding:14px;overflow:auto}
@@ -54,7 +58,7 @@ body.mg-mobile-sidebar-open{overflow:hidden}
   .mg-mobile-sidebar-backdrop{display:block;opacity:0;visibility:hidden;pointer-events:none;transition:.2s ease}
   body.mg-mobile-sidebar-open .mg-mobile-sidebar-backdrop{opacity:1;visibility:visible;pointer-events:auto}
   .mg-app-shell,.mg-app-shell.has-utility{padding-left:0;grid-template-columns:1fr}
-  .mg-app-sidebar{display:block;top:58px;bottom:0;height:auto;width:min(310px,86vw);padding:14px;transform:translateX(-105%);transition:transform .22s ease;box-shadow:20px 0 55px rgba(15,23,42,.18);z-index:321}
+  .mg-app-sidebar{display:flex;top:58px;bottom:0;height:auto;width:min(310px,86vw);padding:14px;transform:translateX(-105%);transition:transform .22s ease;box-shadow:20px 0 55px rgba(15,23,42,.18);z-index:321}
   .mg-app-sidebar.is-mobile-open{transform:translateX(0)}
   .mg-app-sidebar-brand{display:none}
   .mg-header-mobile-brand{display:inline-flex!important;font-size:20px!important;gap:8px!important;white-space:nowrap}
