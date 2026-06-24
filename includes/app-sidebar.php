@@ -76,8 +76,14 @@ $currentPath = '/' . ltrim((string) ($_SERVER['SCRIPT_NAME'] ?? ''), '/');
             || ($href !== '#' && $href === $currentPath);
         $label = (string) ($item['label'] ?? $key);
         $detail = (string) ($item['detail'] ?? '');
+        $isButton = (bool) ($item['button'] ?? false);
+        $dataTab = trim((string) ($item['data_tab'] ?? ''));
       ?>
-      <a class="<?= $isActive ? 'is-active' : '' ?>" href="<?= mg_e($href) ?>"><strong><?= mg_e($label) ?></strong><?php if ($detail !== ''): ?><span><?= mg_e($detail) ?></span><?php endif; ?></a>
+      <?php if ($isButton): ?>
+        <button class="<?= $isActive ? 'is-active' : '' ?>" type="button"<?= $dataTab !== '' ? ' data-crm-tab="' . mg_e($dataTab) . '"' : '' ?>><strong><?= mg_e($label) ?></strong><?php if ($detail !== ''): ?><span><?= mg_e($detail) ?></span><?php endif; ?></button>
+      <?php else: ?>
+        <a class="<?= $isActive ? 'is-active' : '' ?>" href="<?= mg_e($href) ?>"><strong><?= mg_e($label) ?></strong><?php if ($detail !== ''): ?><span><?= mg_e($detail) ?></span><?php endif; ?></a>
+      <?php endif; ?>
     <?php endforeach; ?>
   </nav>
 
