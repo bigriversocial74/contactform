@@ -1,0 +1,108 @@
+name: Stage 12 CRM Follow-up Validation
+
+on:
+  pull_request:
+    paths:
+      - 'api/account/wallet-claim.php'
+      - 'api/merchant/wallet-redeem.php'
+      - 'api/merchant/crm-*.php'
+      - 'api/merchant/campaign-followup*.php'
+      - 'api/public/campaigns/**'
+      - 'api/rewards/_wallet_lifecycle_automation.php'
+      - 'api/rewards/_zero_value_bridge.php'
+      - 'api/communications/**'
+      - 'includes/merchant-crm*.php'
+      - 'assets/js/merchant-crm*.js'
+      - 'assets/js/stage12-campaign-followups.js'
+      - 'assets/js/header-signals.js'
+      - 'database/stage_12_*.sql'
+      - 'docs/stages/stage_12_stabilization_audit.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint-stage12-crm:
+    name: PHP and JS syntax checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+
+      - name: PHP lint Stage 12 CRM and follow-up files
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=(
+            api/account/wallet-claim.php
+            api/merchant/wallet-redeem.php
+            api/rewards/_wallet_lifecycle_automation.php
+            api/rewards/_zero_value_bridge.php
+            api/communications/_delivery.php
+            api/communications/_email_worker.php
+            api/communications/campaign-followup-worker.php
+            api/communications/email-worker.php
+            api/merchant/campaign-followup-jobs.php
+            api/merchant/campaign-followups.php
+            api/merchant/campaign-timeline.php
+            api/merchant/crm-message.php
+            api/merchant/crm-messages.php
+            api/merchant/crm-send-gift.php
+            api/merchant/merchant-crm.php
+            api/public/campaigns/_email_suppression.php
+            api/public/campaigns/_followups.php
+            api/public/campaigns/_limits.php
+            api/public/campaigns/_outbound.php
+            api/public/campaigns/_security.php
+            api/public/campaigns/contest-entry.php
+            api/public/campaigns/engage.php
+            api/public/campaigns/qr-pickup.php
+            api/public/campaigns/signup.php
+            api/public/campaigns/unsubscribe.php
+            includes/merchant-crm.php
+            includes/merchant-crm-view.php
+            merchant-crm.php
+          )
+          for file in "${files[@]}"; do
+            if [[ -f "$file" ]]; then
+              php -l "$file"
+            else
+              echo "Missing expected file: $file" >&2
+              exit 1
+            fi
+          done
+
+      - name: JavaScript syntax checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=(
+            assets/js/header-signals.js
+            assets/js/merchant-crm.js
+            assets/js/merchant-crm-messages.js
+            assets/js/stage12-campaign-followups.js
+          )
+          for file in "${files[@]}"; do
+            if [[ -f "$file" ]]; then
+              node --check "$file"
+            else
+              echo "Missing expected file: $file" >&2
+              exit 1
+            fi
+          done
+
+      - name: SQL migration presence checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f database/stage_12_merchant_crm.sql
+          test -f database/stage_12_campaign_followups.sql
+          grep -q 'campaign_followup_rules' database/stage_12_campaign_followups.sql
+          grep -q 'campaign_followup_jobs' database/stage_12_campaign_followups.sql
