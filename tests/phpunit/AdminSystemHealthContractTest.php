@@ -14,7 +14,7 @@ final class AdminSystemHealthContractTest extends TestCase
         self::assertIsString($page);
         self::assertIsString($dashboard);
         self::assertIsString($shortcut);
-        self::assertStringContainsString("mg_has_permission('admin.health.view')",$page);
+        self::assertStringContainsString("mg_require_admin_page_key('admin.system_health')",$page);
         self::assertStringContainsString('/assets/css/admin-system-health.css',$page);
         self::assertStringContainsString('/assets/js/admin-system-health.js',$page);
         self::assertStringContainsString('/admin/system-health.php',$dashboard);

@@ -9,6 +9,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/app.php';
+require_once __DIR__ . '/admin-permission-matrix.php';
 require_once dirname(__DIR__) . '/api/db.php';
 require_once dirname(__DIR__) . '/api/security.php';
 require_once __DIR__ . '/user_models.php';
@@ -100,13 +101,7 @@ function mg_admin_page_refresh_session_user(): ?array
 
 function mg_admin_page_user_has_permission(array $user, string $permission): bool
 {
-    $roles = is_array($user['roles'] ?? null) ? $user['roles'] : [];
-    if (in_array('super_admin', $roles, true)) {
-        return true;
-    }
-
-    $permissions = is_array($user['permissions'] ?? null) ? $user['permissions'] : [];
-    return in_array($permission, $permissions, true);
+    return mg_admin_permission_user_has($user, $permission);
 }
 
 function mg_admin_page_forbidden(string $permission = 'admin'): never
@@ -121,17 +116,18 @@ function mg_require_admin_page_any(array $permissions): array
     $user = mg_admin_page_refresh_session_user();
     if (!$user) {
         mg_require_auth();
+        $user = mg_admin_page_refresh_session_user();
     }
 
-    if (($user['status'] ?? '') !== 'active') {
-        mg_security_log('warning', 'admin.page.inactive_account', 'Inactive account attempted admin page access.', [
+    if (!$user || ($user['status'] ?? '') !== 'active') {
+        mg_security_log('warning', 'admin.page.inactive_account', 'Inactive or missing account attempted admin page access.', [
             'permissions' => $permissions,
-        ], (int)$user['id']);
+        ], (int)($user['id'] ?? 0));
         mg_admin_page_forbidden($permissions[0] ?? 'admin');
     }
 
     foreach ($permissions as $permission) {
-        if (is_string($permission) && $permission !== '' && mg_admin_page_user_has_permission($user, $permission)) {
+        if (is_string($permission) && $permission !== '' && mg_admin_permission_user_has($user, $permission)) {
             header('Cache-Control: no-store, private');
             header('Pragma: no-cache');
             return $user;
@@ -147,4 +143,13 @@ function mg_require_admin_page_any(array $permissions): array
 function mg_require_admin_page_permission(string $permission): array
 {
     return mg_require_admin_page_any([$permission]);
+}
+
+function mg_require_admin_page_key(string $pageKey): array
+{
+    $permissions = mg_admin_page_permissions($pageKey);
+    if ($permissions === []) {
+        mg_admin_page_forbidden($pageKey);
+    }
+    return mg_require_admin_page_any($permissions);
 }
