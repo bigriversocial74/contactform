@@ -142,7 +142,8 @@ test.describe('V1 release browser golden path', () => {
     expect(addWrite.body.product_version_id).toBe('22222222-2222-4222-8222-222222222222');
     expect(Number(addWrite.body.quantity)).toBe(1);
 
-    await page.goto('/cart.php');
+    await page.goto('/tests/browser/fixtures/authenticate-v1.php?target=cart');
+    await expect(page).toHaveURL(/\/cart\.php/);
     await expect(page.locator('[data-cart-items]')).toContainText('Release Smoke Coffee Gift');
     await expect(page.locator('[data-cart-page] [data-cart-summary]')).toContainText('$25.00');
 
