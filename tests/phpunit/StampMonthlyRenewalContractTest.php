@@ -51,4 +51,19 @@ final class StampMonthlyRenewalContractTest extends TestCase
         self::assertStringContainsString('/api/stamps/monthly-renewals.php', $js);
         self::assertStringContainsString('previewRenewals', $js);
     }
+
+    public function testAdminPackageAssignmentControlsExist(): void
+    {
+        $api = $this->read('api/stamps/package-assignments.php');
+        $panel = $this->read('includes/admin-stamp-bundles-panel.php');
+        $js = $this->read('assets/js/admin-stamp-bundles.js');
+        foreach(['mg_stamp_plan_allowance','Package assignment saved','assignment_id'] as $needle){
+            self::assertStringContainsString($needle, $api);
+        }
+        foreach(['data-admin-package-assignment-form','data-admin-package-assignment-list','Package assignments'] as $needle){
+            self::assertStringContainsString($needle, $panel);
+        }
+        self::assertStringContainsString('/api/stamps/package-assignments.php', $js);
+        self::assertStringContainsString('loadAssignments', $js);
+    }
 }
