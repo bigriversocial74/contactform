@@ -1,5 +1,5 @@
       <div class="mg-eyebrow" data-reveal="left">For growth</div>
-      <h2 class="mg-section-title" id="growthTitle" data-reveal="left" style="--delay:80ms">Distribute rewards, run campaigns, and manage customer relationships.</h2>
+      <h2 class="mg-section-title" id="growthTitle" data-reveal="left" style="--delay:80ms">Does your CRM presell products, distribute rewards, run campaigns, and manage customer relationships?</h2>
       <p class="mg-lede" data-reveal="left" style="--delay:160ms">Microgifter gives merchants the tools to send rewards through the Distribution API, launch targeted campaigns, and organize customer activity in one connected CRM.</p>
 
       <div class="mg-feature-panels">
