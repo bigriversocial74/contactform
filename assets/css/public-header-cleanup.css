@@ -13,6 +13,12 @@ body[data-authenticated="true"] .mg-site-header [aria-label="Sample experience m
   display:none!important;
 }
 
+body .mg-site-header.mg-market-universal-header,
+body .mg-site-header.mg-market-universal-header .mg-header-inner,
+body .mg-site-header.mg-market-universal-header .mg-header-actions{
+  overflow:visible!important;
+}
+
 body[data-authenticated="false"].mg-investment-profile-page .mg-unified-header.mg-market-universal-header,
 body[data-authenticated="false"].mg-public-profile-page .mg-unified-header.mg-market-universal-header{
   display:flex!important;
