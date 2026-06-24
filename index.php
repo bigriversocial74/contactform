@@ -295,10 +295,10 @@ require __DIR__ . '/includes/landing/index-v3/part09.php';
   .mg-v4-logo img{width:128px!important;}
   .mg-v4-links{display:none!important;}
   .mg-v4-cta{min-height:38px!important;padding:0 14px!important;font-size:12px!important;}
-  .mg-v4-hero{min-height:1220px;padding:82px 0 0;overflow:hidden;}
+  .mg-v4-hero{min-height:1260px;padding:82px 0 0;overflow:hidden;}
   .mg-v4-hero::before{background-position:center top;background-size:cover;}
   .mg-v4-hero::after{
-    background:linear-gradient(180deg,rgba(245,245,242,.02) 0%,rgba(245,245,242,.04) 40%,rgba(245,245,242,.88) 60%,rgba(245,245,242,.98) 78%,rgba(0,0,0,.84) 92%,#020202 100%);
+    background:linear-gradient(180deg,rgba(245,245,242,.02) 0%,rgba(245,245,242,.04) 42%,rgba(245,245,242,.88) 62%,rgba(245,245,242,.98) 80%,rgba(0,0,0,.84) 93%,#020202 100%);
   }
   .mg-v4-hero-grid{
     width:calc(100% - 28px);
@@ -310,7 +310,7 @@ require __DIR__ . '/includes/landing/index-v3/part09.php';
   .mg-v4-visual{
     order:1;
     width:100%;
-    min-height:500px;
+    min-height:560px;
     align-items:flex-end;
     justify-content:center;
     margin-top:0;
@@ -319,31 +319,35 @@ require __DIR__ . '/includes/landing/index-v3/part09.php';
   }
   .mg-v10-desktop{
     position:relative;
-    z-index:4;
+    z-index:5;
     width:96vw;
-    margin:64px 0 -82px 28px;
+    margin:70px 0 -88px 28px;
     border-width:8px;
     border-bottom-width:15px;
     border-radius:13px 13px 7px 7px;
-    opacity:.72;
+    opacity:1!important;
   }
   .mg-v4-phone{
     left:50%;
-    bottom:-190px;
+    right:auto;
+    top:18px;
+    bottom:auto;
     z-index:1;
-    width:min(640px,172vw);
-    opacity:.82;
-    filter:drop-shadow(0 30px 42px rgba(0,0,0,.45));
-    transform:translateX(-54%) rotate(-5deg);
+    width:min(900px,240vw);
+    max-width:none!important;
+    opacity:1!important;
+    filter:drop-shadow(0 34px 46px rgba(0,0,0,.48));
+    transform:translateX(-38%) rotate(-5deg);
+    transform-origin:center center;
   }
   .mg-v4-copy{
     position:relative;
-    z-index:5;
+    z-index:6;
     order:2;
     width:100%;
     max-width:100%;
-    padding-top:166px;
-    padding-bottom:78px;
+    padding-top:184px;
+    padding-bottom:82px;
   }
   .mg-v4-title{
     max-width:100%;
@@ -364,8 +368,8 @@ require __DIR__ . '/includes/landing/index-v3/part09.php';
 @media(max-width:440px){
   .mg-v4-logo img{width:116px!important;}
   .mg-v4-cta{padding:0 12px!important;}
-  .mg-v10-desktop{width:100vw;margin-left:20px;}
-  .mg-v4-phone{left:50%;bottom:-178px;width:min(560px,166vw);transform:translateX(-55%) rotate(-5deg);}
+  .mg-v10-desktop{width:100vw;margin-left:20px;opacity:1!important;}
+  .mg-v4-phone{left:50%;top:28px;bottom:auto;width:min(820px,232vw);opacity:1!important;transform:translateX(-36%) rotate(-5deg);}
 }
 </style>
 
