@@ -22,6 +22,7 @@ $canPendingModels = $canAdminPage('admin.pending_models');
 $canMerchantCatalog = $canAdminPage('admin.merchant_catalog');
 $canCommerce = mg_admin_commerce_user_can_read_any($adminMatrixUser);
 $canModeration = $canAdminPage('admin.moderation');
+$canPackageModeration = $canCommerce;
 $canHealth = $canAdminPage('admin.system_health');
 $canLifecycleHealth = $canAdminPage('admin.lifecycle_health');
 $canSettings = $canAdminPage('admin.settings');
@@ -62,6 +63,12 @@ $adminNav = [
         'detail' => 'Orders and lifecycle',
         'href' => '/commerce-operations.php',
         'visible' => $canCommerce,
+    ],
+    'package-moderation' => [
+        'label' => 'Package moderation',
+        'detail' => 'Review and implementation',
+        'href' => '/admin/package-moderation.php',
+        'visible' => $canPackageModeration,
     ],
     'payments' => [
         'label' => 'Stripe payments',
