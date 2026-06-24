@@ -16,6 +16,7 @@
   "scripts": {
     "test": "phpunit --configuration phpunit.xml.dist",
     "test-security": "phpunit --configuration phpunit.xml.dist --filter SecurityFoundationTest",
+    "test-session-security": "phpunit --configuration phpunit.xml.dist tests/phpunit/SessionSecurityTest.php",
     "test-frontend-contracts": "php scripts/validate_frontend_contracts.php",
     "test-money-behavior": "php scripts/validate_money_behavior.php",
     "test-microgift-behavior": "php scripts/validate_microgift_behavior.php",
@@ -52,6 +53,7 @@
     "recovery-baseline": "bash scripts/recovery_baseline.sh",
     "validate-foundation": [
       "@test-security",
+      "@test-session-security",
       "@test-frontend-contracts",
       "@test"
     ],
