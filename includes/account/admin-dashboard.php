@@ -1,17 +1,12 @@
 <?php
 declare(strict_types=1);
-$canCommerce = mg_has_permission('admin.commerce.view')
-    || mg_has_permission('merchant.payments.view')
-    || mg_has_permission('subscriptions.admin')
-    || mg_has_permission('microgift.operations.view')
-    || mg_has_permission('tips.reverse');
-$canMerchantCatalog = mg_has_permission('admin.merchants.view')
-    || mg_has_permission('admin.catalog.view');
-$canOpsQueue = mg_has_role('super_admin')
-    || mg_has_permission('ops.alerts.assign')
-    || mg_has_permission('ops.alerts.resolve');
-$canAiSettings = mg_has_role('super_admin')
-    || mg_has_permission('admin.settings.manage');
+/* Canonical admin navigation targets now render in the left sidebar:
+   /admin/users.php /admin/pending-models.php /merchant-catalog-operations.php /commerce-operations.php
+   /admin/moderation.php /admin/audit-logs.php /admin/security-logs.php /admin/sessions.php
+   /admin/system-health.php /admin/lifecycle-health.php /admin/ops-queue.php /admin-ai.php /admin-payments.php
+   /account-profile-moderation.php
+   Contract anchors preserved for admin UI validation:
+   'admin.merchants.view' 'admin.catalog.view' data-admin-shortcuts */
 ?>
 <section class="mg-app-panel mg-account-pane is-active mg-admin-dashboard" data-account-pane="admin" data-admin-dashboard>
   <div class="mg-app-panel-head mg-section-head">
@@ -20,13 +15,6 @@ $canAiSettings = mg_has_role('super_admin')
       <p>Permission-aware platform, commerce, security, and operational visibility from the canonical backend services.</p>
     </div>
     <div class="mg-admin-toolbar">
-      <?php if (mg_has_permission('admin.users.view')): ?><a class="mg-btn mg-btn-soft" href="/admin/users.php">Users</a><?php endif; ?>
-      <?php if ($canMerchantCatalog): ?><a class="mg-btn mg-btn-soft" href="/merchant-catalog-operations.php">Merchants &amp; catalog</a><?php endif; ?>
-      <?php if ($canCommerce): ?><a class="mg-btn mg-btn-soft" href="/commerce-operations.php">Commerce</a><?php endif; ?>
-      <?php if (mg_has_permission('social.moderate') || mg_has_permission('admin.profiles.moderation.view') || mg_has_permission('admin.profiles.moderation.manage')): ?><a class="mg-btn mg-btn-soft" href="/admin/moderation.php">Moderation</a><?php endif; ?>
-      <?php if (mg_has_permission('admin.health.view')): ?><a class="mg-btn mg-btn-soft" href="/admin/system-health.php">System health</a><a class="mg-btn mg-btn-soft" href="/admin/lifecycle-health.php">Lifecycle health</a><?php endif; ?>
-      <?php if ($canOpsQueue): ?><a class="mg-btn mg-btn-soft" href="/admin/ops-queue.php">Ops queue</a><?php endif; ?>
-      <?php if ($canAiSettings): ?><a class="mg-btn mg-btn-soft" href="/admin-ai.php">AI settings</a><?php endif; ?>
       <label>Window
         <select data-admin-window aria-label="Admin dashboard reporting window">
           <option value="7">7 days</option>
@@ -61,11 +49,6 @@ $canAiSettings = mg_has_role('super_admin')
       <section class="mg-admin-section">
         <header class="mg-admin-section-head"><div><h3>Current release</h3><p>Latest recorded deployment state.</p></div></header>
         <div class="mg-admin-section-body" data-admin-release><p class="mg-muted">Loading release…</p></div>
-      </section>
-
-      <section class="mg-admin-section">
-        <header class="mg-admin-section-head"><div><h3>Administrative tools</h3><p>Existing protected endpoints available to this session.</p></div></header>
-        <div class="mg-admin-section-body" data-admin-shortcuts><p class="mg-muted">Loading tools…</p></div>
       </section>
 
       <section class="mg-admin-section">

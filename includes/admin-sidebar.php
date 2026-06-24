@@ -30,6 +30,9 @@ $canHealth = $isSuperAdmin || in_array('admin.health.view', $adminPermissions, t
 $canSettings = $isSuperAdmin || in_array('admin.settings.manage', $adminPermissions, true);
 $canAi = $canSettings;
 $canPayments = $canSettings;
+$canAudit = $isSuperAdmin || in_array('admin.audit.view', $adminPermissions, true);
+$canSecurity = $isSuperAdmin || in_array('security.logs.view', $adminPermissions, true) || in_array('admin.security_logs.view', $adminPermissions, true);
+$canSessions = $isSuperAdmin || in_array('admin.sessions.view', $adminPermissions, true);
 $canOpsQueue = $isSuperAdmin || count(array_intersect([
     'ops.alerts.assign',
     'ops.alerts.resolve',
@@ -46,6 +49,12 @@ $adminNav = [
         'label' => 'User center',
         'detail' => 'Accounts and access',
         'href' => '/admin/users.php',
+        'visible' => $canUsers,
+    ],
+    'pending-models' => [
+        'label' => 'Pending models',
+        'detail' => 'Model approval queue',
+        'href' => '/admin/pending-models.php',
         'visible' => $canUsers,
     ],
     'merchant-catalog' => [
@@ -67,10 +76,28 @@ $adminNav = [
         'visible' => $canPayments,
     ],
     'moderation' => [
-        'label' => 'Moderation center',
+        'label' => 'Moderation',
         'detail' => 'Reports and review',
         'href' => '/admin/moderation.php',
         'visible' => $canModeration,
+    ],
+    'audit-logs' => [
+        'label' => 'Audit logs',
+        'detail' => 'Administrative activity',
+        'href' => '/admin/audit-logs.php',
+        'visible' => $canAudit,
+    ],
+    'security-logs' => [
+        'label' => 'Security logs',
+        'detail' => 'Security events',
+        'href' => '/admin/security-logs.php',
+        'visible' => $canSecurity,
+    ],
+    'sessions' => [
+        'label' => 'Sessions',
+        'detail' => 'Active user sessions',
+        'href' => '/admin/sessions.php',
+        'visible' => $canSessions,
     ],
     'system-health' => [
         'label' => 'System health',
