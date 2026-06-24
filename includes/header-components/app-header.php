@@ -23,6 +23,7 @@ $show_create_menu = true;
               <span class="mg-agent-tab-item mg-agent-tab-item-system" data-system-tab="<?= $tab[0] ?>"><a class="<?= $agent_tab === $tab[0] ? 'is-active' : '' ?>" href="<?= $tab[2] ?>"><span><?= $tab[1] ?></span><?php if (in_array($tab[0], ['inbox','sent','claimed'], true)): ?><b class="mg-agent-tab-badge<?= $defaultGiftCount > 0 ? ' has-unread' : '' ?>" data-gift-nav-count="<?= $tab[0] ?>" data-gift-nav-unread="<?= $tab[0] ?>"><?= $defaultGiftCount ?></b><?php endif; ?></a></span>
             <?php endforeach; ?>
           </div>
+          <a class="mg-header-build-link" href="/build.php" data-global-create aria-label="Create new item" aria-haspopup="dialog" aria-controls="mg-create-menu" aria-expanded="false">+</a>
           <!-- Search moved out of the universal header; contract anchor: data-agent-global-search -->
         </div>
       <?php elseif ($header_mode === 'builder'): ?>
