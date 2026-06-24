@@ -8,6 +8,7 @@ require_once dirname(__DIR__) . '/microgifts/_delivery.php';
 require_once dirname(__DIR__) . '/pppm/_ownership.php';
 require_once dirname(__DIR__) . '/communications/_communications.php';
 require_once dirname(__DIR__) . '/messages/_messaging.php';
+require_once dirname(__DIR__) . '/stamps/_stamps.php';
 
 function mg_action_center_users_have_public_id(PDO $pdo): bool
 {
@@ -165,6 +166,17 @@ try{
         );
     }
 
+    $stampLedger=$duplicate?null:mg_stamp_debit_send($pdo,(int)$user['id'],(int)$user['id'],'regift_send',$idempotencyKey,[
+        'source_type'=>'action_center_regift',
+        'source_id'=>(string)$deliveryEvent['event_id'],
+        'reference'=>$actionItemId,
+        'metadata'=>[
+            'microgift_instance_id'=>(string)$instance['public_id'],
+            'recipient_user_id'=>$recipientUserId,
+            'delivery_event_id'=>(string)$deliveryEvent['event_id'],
+        ],
+    ]);
+
     $senderLabel=mg_notification_user_label($pdo,(int)$user['id']);
     $notificationId=mg_create_notification(
         $pdo,
@@ -195,6 +207,7 @@ try{
         'delivery_event_id'=>$deliveryEvent['event_id'],
         'notification_id'=>$notificationId,
         'message_id'=>$messageResult['message_id']??null,
+        'stamp_ledger_entry_id'=>$stampLedger['entry']['entry_id']??null,
         'original_issuer_user_id'=>$instance['issuer_user_id']??null,
         'duplicate'=>$duplicate,
     ],(int)$user['id']);
@@ -204,6 +217,7 @@ try{
         'idempotency_key'=>$idempotencyKey,
         'sent_at'=>$deliveryEvent['occurred_at'],
         'notification_id'=>$notificationId,
+        'stamp_ledger_entry_id'=>$stampLedger['entry']['entry_id']??null,
         'duplicate'=>$duplicate,
     ],(int)$user['id']);
     mg_ok([
@@ -216,6 +230,7 @@ try{
         'delivery_summary'=>$summary,
         'notification_id'=>$notificationId,
         'message'=>$messageResult,
+        'stamp_ledger'=>$stampLedger,
         'action_center'=>$projection,
     ],$duplicate?'Existing transfer result returned.':'Microgift regifted.',$duplicate?200:201);
 }catch(JsonException|InvalidArgumentException $error){

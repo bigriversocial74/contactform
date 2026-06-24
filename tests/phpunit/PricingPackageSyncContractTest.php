@@ -17,7 +17,7 @@ final class PricingPackageSyncContractTest extends TestCase
     {
         $source = file_get_contents(dirname(__DIR__,2).'/includes/stamp-ledger-config.php');
         self::assertIsString($source);
-        foreach(['function mg_stamp_debit_actions(): array','function mg_stamp_ledger_preview(string $scope =','function mg_stamp_debit_action_summary(): array','direct_microgift_send','direct_reward_send','campaign_feed_send','email_list_send','sms_send','\'stamp_value\' => 3','agentic_discovery_send'] as $needle){ self::assertStringContainsString($needle,$source); }
+        foreach(['function mg_stamp_debit_actions(): array','function mg_stamp_ledger_preview(string $scope =','function mg_stamp_debit_action_summary(): array','direct_microgift_send','direct_reward_send','campaign_feed_send','email_list_send','sms_send',"'stamp_value' => 3",'agentic_discovery_send'] as $needle){ self::assertStringContainsString($needle,$source); }
     }
 
     public function testStampLedgerDatabaseMigrationExists(): void
@@ -49,7 +49,7 @@ final class PricingPackageSyncContractTest extends TestCase
     {
         $source = file_get_contents(dirname(__DIR__,2).'/pricing.php');
         self::assertIsString($source);
-        foreach(["require_once __DIR__ . '/includes/pricing-packages.php" ,'$plans = mg_public_pricing_packages();','$summary = mg_pricing_package_summary();','data-package-id','Admin synced source','foreach ($plans as $plan)'] as $needle){ self::assertStringContainsString($needle,$source); }
+        foreach(["require_once __DIR__ . '/includes/pricing-packages.php" ,'$plans = mg_public_pricing_packages();','$summary = mg_pricing_package_summary();','data-package-id','Admin synced source',"foreach ($plans as $plan)"] as $needle){ self::assertStringContainsString($needle,$source); }
         self::assertStringNotContainsString("['Starter','$29'",$source);
     }
 

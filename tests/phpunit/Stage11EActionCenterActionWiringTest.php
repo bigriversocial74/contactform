@@ -31,6 +31,9 @@ final class Stage11EActionCenterActionWiringTest extends TestCase
         self::assertStringContainsString("['issued','delivered']",$source);
         self::assertStringContainsString("'sent_at'=>\$deliveryEvent['occurred_at']",$source);
         self::assertStringContainsString("SET owner_user_id=?,recipient_user_id=?,status='delivered'",$source);
+        self::assertStringContainsString("'regift_send'",$source);
+        self::assertStringContainsString('mg_stamp_debit_send(',$source);
+        self::assertStringContainsString('stamp_ledger',$source);
         self::assertStringNotContainsString('SET issuer_user_id=?',$source);
         self::assertStringNotContainsString('INSERT INTO pppm_items',$source);
     }
@@ -44,6 +47,8 @@ final class Stage11EActionCenterActionWiringTest extends TestCase
         self::assertStringContainsString('mg_message_conversation_key(',$source);
         self::assertStringContainsString("'follow_up'",$source);
         self::assertStringContainsString('mg_message_send_microgift(',$source);
+        self::assertStringContainsString('mg_stamp_debit_send(',$source);
+        self::assertStringContainsString("'action_center_follow_up'",$source);
         self::assertStringNotContainsString('mg_pppm_transfer_owner_canonical(',$source);
         self::assertStringNotContainsString('UPDATE pppm_items',$source);
         self::assertStringNotContainsString('UPDATE microgift_instances',$source);
@@ -69,6 +74,8 @@ final class Stage11EActionCenterActionWiringTest extends TestCase
         self::assertStringContainsString('mg_message_send_microgift(',$source);
         self::assertStringContainsString('action_sender_user_id',$source);
         self::assertStringContainsString('action_recipient_user_id',$source);
+        self::assertStringContainsString('mg_stamp_debit_send(',$source);
+        self::assertStringContainsString("'action_center_message'",$source);
         self::assertStringNotContainsString('INSERT INTO events',$source);
         self::assertStringNotContainsString('UPDATE microgift_instances',$source);
         self::assertStringNotContainsString('mg_action_center_project_lifecycle(',$source);
