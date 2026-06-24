@@ -61,6 +61,7 @@ $can_intelligence = $user && (in_array('intelligence.dashboard.view', $user_perm
       <div class="mg-footer-column">
         <h2>Platform</h2>
         <a href="/discover.php">Explore</a>
+        <a href="/pricing.php">Pricing</a>
         <a href="/developer-docs.php">Developer Docs</a>
         <a href="/learn-more.php">Book A Demo</a>
         <a href="/campaign.php">Campaigns</a>
@@ -100,12 +101,42 @@ $can_intelligence = $user && (in_array('intelligence.dashboard.view', $user_perm
       <p>&copy; <?= date('Y') ?> Microgifter. All rights reserved.</p>
       <div class="mg-footer-bottom-links" aria-label="Footer utility links">
         <a href="/index.php">Home</a>
+        <a href="/pricing.php">Pricing</a>
         <a href="/developer-docs.php">Docs</a>
         <a href="/signin.php">Sign In</a>
       </div>
     </div>
   </div>
 </footer>
+<?php if (!$user): ?>
+<script>
+(() => {
+  const addPricingLink = () => {
+    const addLink = (nav, beforeDemo) => {
+      if (!nav || nav.querySelector('a[href="/pricing.php"]')) return;
+      const link = document.createElement('a');
+      link.href = '/pricing.php';
+      link.textContent = 'Pricing';
+      if (beforeDemo) {
+        const demo = Array.from(nav.querySelectorAll('a')).find((item) => item.textContent.trim().toLowerCase().includes('demo'));
+        if (demo) {
+          nav.insertBefore(link, demo);
+          return;
+        }
+      }
+      nav.appendChild(link);
+    };
+    document.querySelectorAll('.mg-public-nav').forEach((nav) => addLink(nav, false));
+    document.querySelectorAll('.mg-public-mobile-nav').forEach((nav) => addLink(nav, true));
+  };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', addPricingLink, { once:true });
+  } else {
+    addPricingLink();
+  }
+})();
+</script>
+<?php endif; ?>
 <?php foreach (array_unique($late_styles) as $style): ?><link rel="stylesheet" href="<?= mg_e($style) ?>"><?php endforeach; ?>
 <?php foreach ($scripts as $script): ?><script src="<?= mg_e($script) ?>" defer></script><?php endforeach; ?>
 </body></html>
