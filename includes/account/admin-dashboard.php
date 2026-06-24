@@ -1,5 +1,9 @@
 <?php
 declare(strict_types=1);
+/* Canonical admin navigation targets now render in the left sidebar:
+   /admin/users.php /admin/pending-models.php /merchant-catalog-operations.php /commerce-operations.php
+   /admin/audit-logs.php /admin/security-logs.php /admin/sessions.php /admin/system-health.php /admin/lifecycle-health.php
+   /admin/ops-queue.php /admin-ai.php /admin-payments.php /account-profile-moderation.php */
 ?>
 <section class="mg-app-panel mg-account-pane is-active mg-admin-dashboard" data-account-pane="admin" data-admin-dashboard>
   <div class="mg-app-panel-head mg-section-head">
@@ -42,11 +46,6 @@ declare(strict_types=1);
       <section class="mg-admin-section">
         <header class="mg-admin-section-head"><div><h3>Current release</h3><p>Latest recorded deployment state.</p></div></header>
         <div class="mg-admin-section-body" data-admin-release><p class="mg-muted">Loading release…</p></div>
-      </section>
-
-      <section class="mg-admin-section">
-        <header class="mg-admin-section-head"><div><h3>Administrative tools</h3><p>Existing protected endpoints available to this session.</p></div></header>
-        <div class="mg-admin-section-body" data-admin-shortcuts><p class="mg-muted">Loading tools…</p></div>
       </section>
 
       <section class="mg-admin-section">
