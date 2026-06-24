@@ -23,9 +23,23 @@ require __DIR__ . '/includes/header.php';
   <div class="mg-account-layout">
     <?php require __DIR__ . '/includes/account-sidebar.php'; ?>
     <main class="mg-account-shell">
-      <section class="mg-checkout-page" data-checkout data-session-id="<?= mg_e($session_id) ?>">
-        <div class="mg-checkout-card">
-          <div data-checkout-content>
+      <section class="mg-commerce-page mg-checkout-page" data-checkout data-session-id="<?= mg_e($session_id) ?>">
+        <div class="mg-commerce-shell">
+          <header class="mg-commerce-hero mg-checkout-hero">
+            <span class="mg-eyebrow">Secure checkout</span>
+            <h1>Complete your purchase</h1>
+            <p>Confirm the frozen order snapshot, continue to the active payment session, then receive Microgifter issuance when payment completes.</p>
+          </header>
+
+          <div class="mg-checkout-process" aria-label="Checkout process">
+            <div><span>01</span><strong>Cart</strong><small>Reviewed</small></div>
+            <div><span>02</span><strong>Draft</strong><small>Snapshot locked</small></div>
+            <div><span>03</span><strong>Order</strong><small>Created</small></div>
+            <div class="is-active"><span>04</span><strong>Payment</strong><small>Action required</small></div>
+            <div><span>05</span><strong>Issuance</strong><small>After payment</small></div>
+          </div>
+
+          <div class="mg-checkout-card" data-checkout-content>
             <div class="mg-empty-state">Loading secure checkout…</div>
           </div>
         </div>
