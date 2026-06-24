@@ -1,4 +1,14 @@
-<aside class="mg-app-sidebar mg-agent-side" data-agent-sidebar>
+<?php
+$mgWorkspaceSidebarTabs = ['agent', 'inbox', 'sent', 'claimed'];
+if (!in_array((string) ($agent_tab ?? ''), $mgWorkspaceSidebarTabs, true)) {
+    $appSidebarVariant = 'utility';
+    $appSidebarLabel = 'Workspace';
+    $appSidebarActive = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''), '.php');
+    require __DIR__ . '/app-sidebar.php';
+    return;
+}
+?>
+<aside class="mg-app-sidebar mg-agent-side mg-workspace-sidebar" data-agent-sidebar data-sidebar-variant="workspace">
   <div class="mg-app-sidebar-brand mg-agent-sidebar-brand-row">
     <a class="mg-brand mg-sidebar-logo" href="/index.php" aria-label="Microgifter home"><img src="/images/logo_main_drk.png" alt="Microgifter"><span class="mg-sidebar-logo-text">Microgifter</span></a>
     <div class="mg-agent-sidebar-tools">
