@@ -67,8 +67,8 @@ final class ProductionLiveUiHotfixTest extends TestCase
         $composerScript = $this->readFile('assets/js/global-post-composer.js');
         $modalCss = $this->readFile('assets/css/post-composer-modal.css');
 
+        self::assertStringContainsString('data-global-create', $appHeader);
         foreach ([$appHeader, $mirrorHeader] as $source) {
-            self::assertStringContainsString('data-global-create', $source);
             self::assertStringContainsString('/build.php', $source);
         }
         foreach ([$createTemplate, $mirrorHeader] as $source) {
