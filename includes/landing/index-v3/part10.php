@@ -56,6 +56,7 @@
         <a href="#growth">API</a>
         <a href="#merchants">Merchants</a>
         <a href="/developer-docs.php">Docs</a>
+        <a href="/pricing.php">Pricing</a>
       </div>
         <a class="mg-header-cta" href="/signup.php">Create Account <span>→</span></a>
       </div>
