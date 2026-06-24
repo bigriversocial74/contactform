@@ -6,6 +6,13 @@ body[data-authenticated="false"][data-page-id="signin"] .mg-site-header.mg-marke
   display:none!important;
 }
 
+body[data-authenticated="true"] .mg-site-header .mg-header-market,
+body[data-authenticated="true"] .mg-site-header .mg-market-ticker,
+body[data-authenticated="true"] .mg-site-header [aria-label="Experience Market ticker"],
+body[data-authenticated="true"] .mg-site-header [aria-label="Sample experience market ticker"]{
+  display:none!important;
+}
+
 body[data-authenticated="false"] .mg-public-mobile-menu,
 body[data-authenticated="false"] .mg-index-mobile-menu{
   position:fixed!important;
