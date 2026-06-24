@@ -2,10 +2,11 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/includes/app.php';
+require_once dirname(__DIR__) . '/includes/admin-auth.php';
 require_once dirname(__DIR__) . '/api/db.php';
 
-$user = mg_require_auth();
-$canView = mg_has_permission('admin.audit.view');
+$user = mg_require_admin_page_permission('admin.audit.view');
+$canView = true;
 $page_title = 'Audit Logs | Microgifter';
 $page_section = 'account';
 $header_mode = 'account';
