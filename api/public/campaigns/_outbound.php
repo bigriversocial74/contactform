@@ -17,18 +17,13 @@ function mg_public_campaign_outbound_render(array $campaign, array $contact, str
     $name = trim((string)($contact['name'] ?? '')) ?: 'there';
     $title = (string)($campaign['reward_template_title'] ?? $campaign['title'] ?? 'your Microgifter reward');
     $campaignTitle = (string)($campaign['title'] ?? 'Microgifter campaign');
-    $baseUrl = mg_app_base_url();
-    $inboxUrl = $baseUrl . '/inbox.php';
+    $inboxUrl = mg_app_base_url() . '/inbox.php';
     $subject = $messageType === 'newsletter_signup_confirmation' ? 'Your Microgifter reward is waiting' : 'Microgifter campaign update';
     $body = '<p style="margin:0 0 16px;color:#334155;font-size:16px;line-height:1.6;">Hi ' . mg_mail_escape($name) . ', thanks for joining ' . mg_mail_escape($campaignTitle) . '.</p>'
         . '<p style="margin:0 0 16px;color:#334155;font-size:16px;line-height:1.6;">Your reward: <strong>' . mg_mail_escape($title) . '</strong>.</p>'
         . mg_email_button($inboxUrl, 'Open Microgifter inbox')
         . '<p style="margin:0;color:#64748b;font-size:13px;line-height:1.6;">If you do not have an account yet, create one with this email address and the reward will link to your inbox.</p>';
-    return [
-        'subject' => $subject,
-        'html' => mg_email_layout('Your reward is waiting', $body, 'Open your Microgifter reward.'),
-        'text' => "Hi {$name}, thanks for joining {$campaignTitle}. Your reward: {$title}. Open your Microgifter inbox: {$inboxUrl}",
-    ];
+    return ['subject'=>$subject,'html'=>mg_email_layout('Your reward is waiting',$body,'Open your Microgifter reward.'),'text'=>"Hi {$name}, thanks for joining {$campaignTitle}. Your reward: {$title}. Open your Microgifter inbox: {$inboxUrl}"];
 }
 
 function mg_public_campaign_queue_outbound(PDO $pdo, array $campaign, array $contact, string $messageType, array $context = []): array
@@ -36,38 +31,22 @@ function mg_public_campaign_queue_outbound(PDO $pdo, array $campaign, array $con
     $merchantId = (int) ($campaign['merchant_user_id'] ?? 0);
     $campaignId = (int) ($campaign['id'] ?? 0);
     $contactId = (int) ($contact['id'] ?? 0);
-    if ($merchantId < 1 || $campaignId < 1 || $contactId < 1) return ['queued' => false, 'reason' => 'missing_context'];
+    if ($merchantId < 1 || $campaignId < 1 || $contactId < 1) return ['queued'=>false,'reason'=>'missing_context'];
     $eventId = mg_public_campaign_outbound_uuid();
     $email = strtolower(trim((string)($contact['email'] ?? '')));
     $rendered = mg_public_campaign_outbound_render($campaign, $contact, $messageType, $context);
-    $payload = $context + $rendered + [
-        'message_type' => $messageType,
-        'campaign_type' => (string) ($campaign['campaign_type'] ?? 'unknown'),
-        'campaign_public_id' => (string) ($campaign['public_id'] ?? ''),
-        'contact_public_id' => (string) ($contact['public_id'] ?? ''),
-        'email' => $email,
-        'outbound_email_pending' => true,
-    ];
+    $payload = $context + $rendered + ['message_type'=>$messageType,'campaign_type'=>(string)($campaign['campaign_type'] ?? 'unknown'),'campaign_public_id'=>(string)($campaign['public_id'] ?? ''),'contact_public_id'=>(string)($contact['public_id'] ?? ''),'email'=>$email,'outbound_email_pending'=>true];
     $stmt = $pdo->prepare('INSERT INTO campaign_events (public_id,merchant_user_id,campaign_id,wallet_item_id,contact_id,event_type,event_context_json,created_at) VALUES (?,?,?,?,?,?,?,NOW())');
-    $stmt->execute([$eventId, $merchantId, $campaignId, null, $contactId, 'outbound_email.queued', json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)]);
-    $delivery = ['queued' => false, 'reason' => 'invalid_email'];
+    $stmt->execute([$eventId,$merchantId,$campaignId,null,$contactId,'outbound_email.queued',json_encode($payload,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE)]);
+    $delivery = ['queued'=>false,'reason'=>'invalid_email'];
     if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
         try {
-            $delivery = mg_delivery_enqueue($pdo, [
-                'idempotency_key' => 'campaign-email:' . $eventId,
-                'event_type' => 'campaign.outbound_email',
-                'category' => 'campaign',
-                'channel' => 'email',
-                'template_key' => 'campaign.' . $messageType,
-                'recipient_user_id' => (int)($context['recipient_user_id'] ?? $contact['user_id'] ?? 0),
-                'recipient_snapshot' => ['email'=>$email,'name'=>(string)($contact['name'] ?? '')],
-                'payload' => $payload,
-                'max_attempts' => 3,
-            ]);
+            $stableKey = 'campaign-email:' . $messageType . ':' . (string)($contact['public_id'] ?? $contactId);
+            $delivery = mg_delivery_enqueue($pdo, ['idempotency_key'=>$stableKey,'event_type'=>'campaign.outbound_email','category'=>'campaign','channel'=>'email','template_key'=>'campaign.' . $messageType,'recipient_user_id'=>(int)($context['recipient_user_id'] ?? $contact['user_id'] ?? 0),'recipient_snapshot'=>['email'=>$email,'name'=>(string)($contact['name'] ?? '')],'payload'=>$payload,'max_attempts'=>3]);
         } catch (Throwable $error) {
             mg_security_log('warning','campaign.outbound_enqueue_failed','Unable to create delivery job.',['exception_class'=>$error::class,'message'=>$error->getMessage(),'campaign_id'=>$campaignId,'contact_id'=>$contactId]);
-            $delivery = ['queued' => false, 'reason' => 'delivery_enqueue_failed'];
+            $delivery = ['queued'=>false,'reason'=>'delivery_enqueue_failed'];
         }
     }
-    return ['queued' => true, 'event_id' => $eventId, 'message_type' => $messageType, 'delivery' => $delivery];
+    return ['queued'=>true,'event_id'=>$eventId,'message_type'=>$messageType,'delivery'=>$delivery];
 }
