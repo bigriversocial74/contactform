@@ -7,6 +7,7 @@ if($merchantView==='overview'): ?>
 <?php elseif($merchantView==='products'): require __DIR__.'/merchant-products-view.php'; ?>
 <?php elseif($merchantView==='reward_templates'): require __DIR__.'/merchant-reward-templates-view.php'; ?>
 <?php elseif($merchantView==='campaigns'): require __DIR__.'/merchant-campaigns-view.php'; ?>
+<?php elseif($merchantView==='merchant_crm'): require __DIR__.'/merchant-crm-view.php'; ?>
 <?php elseif($merchantView==='product_detail'): require __DIR__.'/merchant-product-detail-view.php'; ?>
 <?php elseif($merchantView==='media'): require __DIR__.'/merchant-media-view.php'; ?>
 <?php elseif($merchantView==='storefront'): require __DIR__.'/merchant-storefront-view.php'; ?>
