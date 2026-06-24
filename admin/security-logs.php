@@ -2,10 +2,11 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/includes/app.php';
+require_once dirname(__DIR__) . '/includes/admin-auth.php';
 require_once dirname(__DIR__) . '/api/db.php';
 
-$user = mg_require_auth();
-$canView = mg_has_permission('security.logs.view') || mg_has_permission('admin.security_logs.view');
+$user = mg_require_admin_page_any(['security.logs.view', 'admin.security_logs.view']);
+$canView = true;
 $page_title = 'Security Logs | Microgifter';
 $page_section = 'account';
 $header_mode = 'account';
@@ -14,6 +15,9 @@ $page_styles = ['/assets/css/admin-shell.css','/assets/css/admin-table-pages.css
 $adminActive = 'security-logs';
 $limit = max(10, min(200, (int)($_GET['limit'] ?? 100)));
 $severity = trim((string)($_GET['severity'] ?? ''));
+if ($severity !== '' && !in_array($severity, ['debug', 'info', 'warning', 'error', 'critical'], true)) {
+    $severity = '';
+}
 $rows = [];
 if ($canView) {
     $pdo = mg_db();
