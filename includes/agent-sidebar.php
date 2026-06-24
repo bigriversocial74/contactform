@@ -8,6 +8,10 @@
     </div>
   </div>
 
+  <div class="mg-sidebar-search mg-agent-sidebar-search">
+    <input type="search" placeholder="Search gifts, claims, agents…" aria-label="Search agent workspace" data-agent-global-search>
+  </div>
+
   <div class="mg-agent-side-tabs" role="tablist" aria-label="Agent sidebar sections">
     <button type="button" role="tab" aria-selected="false" aria-controls="mg-agent-side-agents" data-agent-side-tab="agents">Agents</button>
     <button class="is-active" type="button" role="tab" aria-selected="true" aria-controls="mg-agent-side-merchant" data-agent-side-tab="merchant">Merchant info</button>
