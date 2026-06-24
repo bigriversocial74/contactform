@@ -1,6 +1,6 @@
 <?php
 $page_scripts = $page_scripts ?? [];
-$late_styles = [];
+$late_styles = ['/assets/css/universal-footer.css'];
 if (($page_body_class ?? '') === 'mg-admin-merchant-catalog-page') {
     require __DIR__ . '/footer-mc-snippet.php';
 }
