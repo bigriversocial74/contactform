@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/bootstrap.php';
 require_once dirname(__DIR__, 2) . '/rewards/_zero_value_bridge.php';
+require_once dirname(__DIR__, 3) . '/includes/merchant-crm.php';
 
 function mg_contest_campaign_uuid(): string
 {
@@ -96,18 +97,34 @@ try {
 
     $merchantId = (int) $campaign['merchant_user_id'];
     $campaignId = (int) $campaign['id'];
+    $campaignType = (string) $campaign['campaign_type'];
     $userId = mg_contest_campaign_find_user($pdo, $email);
 
     $contactPublicId = mg_contest_campaign_uuid();
+    $contactMetadata = ['campaign_type' => $campaignType, 'campaign_public_id' => (string) $campaign['public_id'], 'entry' => $entryContext, 'ip' => mg_client_ip()];
     $contactStmt = $pdo->prepare('INSERT INTO campaign_contacts (public_id,merchant_user_id,campaign_id,user_id,email,phone,name,source,opt_in_status,metadata_json,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,NOW(),NOW()) ON DUPLICATE KEY UPDATE user_id=VALUES(user_id), phone=VALUES(phone), name=VALUES(name), metadata_json=VALUES(metadata_json), updated_at=NOW()');
-    $contactStmt->execute([$contactPublicId, $merchantId, $campaignId, $userId, $email, $phone !== '' ? $phone : null, $name !== '' ? $name : null, 'contest_entry', 'opted_in', json_encode(['entry' => $entryContext, 'ip' => mg_client_ip()], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)]);
+    $contactStmt->execute([$contactPublicId, $merchantId, $campaignId, $userId, $email, $phone !== '' ? $phone : null, $name !== '' ? $name : null, 'contest_entry', 'opted_in', json_encode($contactMetadata, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)]);
 
     $contactLookup = $pdo->prepare('SELECT id, public_id FROM campaign_contacts WHERE campaign_id = ? AND email = ? LIMIT 1');
     $contactLookup->execute([$campaignId, $email]);
     $contact = $contactLookup->fetch();
     $contactId = (int) $contact['id'];
 
-    mg_contest_campaign_event($pdo, $merchantId, $campaignId, null, $contactId, 'contest.entered', ['email' => $email]);
+    $crm = mg_merchant_crm_record_event($pdo, [
+        'merchant_user_id' => $merchantId,
+        'campaign_id' => $campaignId,
+        'campaign_type' => $campaignType,
+        'event_type' => 'contest.entered',
+        'source_type' => 'contest_entry',
+        'source_public_id' => (string) $contact['public_id'],
+        'user_id' => $userId,
+        'email' => $email,
+        'phone' => $phone,
+        'name' => $name,
+        'metadata' => $contactMetadata,
+    ]);
+
+    mg_contest_campaign_event($pdo, $merchantId, $campaignId, null, $contactId, 'contest.entered', ['email' => $email, 'campaign_type' => $campaignType, 'merchant_crm' => $crm]);
 
     $walletPublicId = null;
     $walletStatus = null;
@@ -138,7 +155,7 @@ try {
             $pdo->prepare('UPDATE campaigns SET issued_count = issued_count + 1, updated_at = NOW() WHERE id = ?')->execute([$campaignId]);
             $pdo->prepare('UPDATE reward_templates SET issued_count = issued_count + 1, updated_at = NOW() WHERE id = ?')->execute([(int) $campaign['reward_template_db_id']]);
             $bridge = mg_contest_campaign_bridge($pdo, $campaign, $contact, $walletDbId, $walletPublicId, $userId, $expiresAt, 'contest_entry');
-            mg_contest_campaign_event($pdo, $merchantId, $campaignId, $walletDbId, $contactId, 'wallet_item.issued', ['wallet_item_id' => $walletPublicId, 'source_type' => 'contest_entry', 'pppm_bridge' => $bridge]);
+            mg_contest_campaign_event($pdo, $merchantId, $campaignId, $walletDbId, $contactId, 'wallet_item.issued', ['wallet_item_id' => $walletPublicId, 'source_type' => 'contest_entry', 'campaign_type' => $campaignType, 'pppm_bridge' => $bridge, 'merchant_crm' => $crm]);
         }
     }
 
@@ -151,6 +168,7 @@ try {
         'reward_title' => $rewardTitle,
         'expires_at' => $expiresAt,
         'pppm_bridge' => $bridge,
+        'merchant_crm' => $crm,
     ], 'Contest entry recorded.', 201);
 } catch (Throwable $error) {
     if ($pdo->inTransaction()) $pdo->rollBack();
