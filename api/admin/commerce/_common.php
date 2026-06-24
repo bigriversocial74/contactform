@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/bootstrap.php';
+require_once dirname(__DIR__, 3) . '/includes/admin-permission-matrix.php';
 
 const MG_ADMIN_COMMERCE_DEFAULT_LIMIT = 25;
 const MG_ADMIN_COMMERCE_MAX_LIMIT = 50;
@@ -24,27 +25,28 @@ final class MgAdminCommerceException extends RuntimeException
 function mg_admin_commerce_require_user(string $permission = 'admin.commerce.view'): array
 {
     $user = mg_require_api_user();
-    $allowed = mg_api_user_has_permission($user, $permission);
-    if (!$allowed && $permission === 'admin.commerce.view') {
-        foreach (['merchant.payments.view','subscriptions.admin','microgift.operations.view','tips.reverse'] as $legacyPermission) {
-            if (mg_api_user_has_permission($user, $legacyPermission)) {
-                $allowed = true;
-                break;
-            }
-        }
-    }
+    $allowed = $permission === 'admin.commerce.any_view'
+        ? mg_admin_commerce_user_can_read_any($user)
+        : mg_admin_permission_user_has($user, $permission);
+
     if (!$allowed) {
         mg_security_log('warning', 'admin.commerce.denied', 'Admin commerce access denied.', [
             'permission' => $permission,
+            'accepted_permissions' => mg_admin_permission_equivalents($permission),
         ], (int)$user['id']);
         mg_fail('Permission denied.', 403);
     }
     return $user;
 }
 
+function mg_admin_commerce_require_domain_user(string $domain): array
+{
+    return mg_admin_commerce_require_user(mg_admin_commerce_domain_permission($domain));
+}
+
 function mg_admin_commerce_has(array $user, string $permission): bool
 {
-    return mg_api_user_has_permission($user, $permission);
+    return mg_admin_permission_user_has($user, $permission);
 }
 
 function mg_admin_commerce_text(mixed $value, int $maxLength, bool $required = false): string
