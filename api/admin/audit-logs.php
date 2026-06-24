@@ -4,7 +4,8 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/bootstrap.php';
 
 mg_require_method('GET');
-mg_require_permission('admin.audit.view');
+$user = mg_require_permission('admin.audit.view');
+mg_rate_limit('admin.audit_logs.read', 'user:' . (int)$user['id'], 120, 60);
 
 $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 50;
 $limit = max(1, min($limit, 100));
@@ -27,6 +28,8 @@ $logs = array_map(static function (array $row): array {
     return $row;
 }, $stmt->fetchAll());
 
+header('Cache-Control: private, no-store, max-age=0');
+header('Vary: Cookie, Authorization');
 mg_ok([
     'audit_logs' => $logs,
     'limit' => $limit,
