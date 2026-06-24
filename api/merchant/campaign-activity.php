@@ -3,6 +3,30 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_merchant.php';
 
+function mg_activity_public_path(string $type): string
+{
+    return match ($type) {
+        'newsletter_signup' => '/newsletter-signup.php',
+        'contest_giveaway' => '/contest.php',
+        'qr_reward_drop' => '/qr-reward.php',
+        'referral_reward' => '/referral-reward.php',
+        'birthday_vip' => '/birthday-vip.php',
+        'agent_offer' => '/agent-offer.php',
+        default => '/campaign.php',
+    };
+}
+
+function mg_activity_public_url(array $row): string
+{
+    $type = (string) $row['campaign_type'];
+    $path = mg_activity_public_path($type);
+    if ($type === 'qr_reward_drop' && !empty($row['qr_code_token'])) {
+        return $path . '?token=' . rawurlencode((string) $row['qr_code_token']);
+    }
+    $ref = trim((string) ($row['public_slug'] ?? '')) !== '' ? (string) $row['public_slug'] : (string) $row['public_id'];
+    return $path . '?campaign=' . rawurlencode($ref);
+}
+
 function mg_activity_row(array $row): array
 {
     return [
@@ -10,6 +34,9 @@ function mg_activity_row(array $row): array
         'title' => (string) $row['title'],
         'campaign_type' => (string) $row['campaign_type'],
         'status' => (string) $row['status'],
+        'public_slug' => $row['public_slug'] ?? null,
+        'qr_code_token' => $row['qr_code_token'] ?? null,
+        'public_url' => mg_activity_public_url($row),
         'reward_template_title' => $row['reward_template_title'] ?? null,
         'contacts_count' => (int) ($row['contacts_count'] ?? 0),
         'wallet_issued_count' => (int) ($row['wallet_issued_count'] ?? 0),
@@ -27,7 +54,7 @@ $pdo = mg_db();
 mg_merchant_ensure_workspace($pdo, $user);
 
 try {
-    $stmt = $pdo->prepare('SELECT c.public_id,c.title,c.campaign_type,c.status,c.updated_at,rt.title reward_template_title,
+    $stmt = $pdo->prepare('SELECT c.public_id,c.public_slug,c.qr_code_token,c.title,c.campaign_type,c.status,c.updated_at,rt.title reward_template_title,
         COUNT(DISTINCT cc.id) contacts_count,
         COUNT(DISTINCT wi.id) wallet_issued_count,
         COUNT(DISTINCT CASE WHEN wi.status = \'claimed\' THEN wi.id END) wallet_claimed_count,
@@ -39,7 +66,7 @@ try {
         LEFT JOIN wallet_items wi ON wi.campaign_id = c.id
         LEFT JOIN campaign_events ce ON ce.campaign_id = c.id
         WHERE c.merchant_user_id = ?
-        GROUP BY c.id, c.public_id, c.title, c.campaign_type, c.status, c.updated_at, rt.title
+        GROUP BY c.id, c.public_id, c.public_slug, c.qr_code_token, c.title, c.campaign_type, c.status, c.updated_at, rt.title
         ORDER BY c.updated_at DESC, c.id DESC
         LIMIT 100');
     $stmt->execute([$merchantId]);
