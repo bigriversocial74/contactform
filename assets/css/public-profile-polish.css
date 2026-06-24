@@ -99,7 +99,10 @@ body.mg-profile-light-theme .mg-invest-actions .mg-public-link-list [data-profil
   max-height:16px!important;
 }
 body.mg-profile-light-theme .mg-profile-product-grid{grid-template-columns:repeat(auto-fit,minmax(220px,260px))!important;}
+body.mg-profile-light-theme .mg-invest-overview-grid .mg-profile-product-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+body.mg-profile-light-theme .mg-invest-overview-grid .mg-profile-product-card{min-width:0!important;width:100%!important;}
 body.mg-profile-light-theme .mg-profile-post-list{min-height:120px;}
+body.mg-profile-light-theme .mg-invest-post-grid{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))!important;gap:14px!important;}
 body.mg-profile-light-theme .mg-profile-post-card{padding:16px;border:1px solid #f3f4f6;border-radius:12px;background:#fff;box-shadow:0 10px 24px rgba(17,24,39,.06);}
 .mg-profile-owner-tools{display:none;position:absolute;right:14px;bottom:14px;z-index:4;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;}
 body.mg-profile-owner .mg-profile-owner-tools{display:flex;}
@@ -131,4 +134,4 @@ body.mg-profile-owner .mg-profile-image-tools{display:flex;}
 .mg-profile-image-tools a,
 .mg-profile-image-tools button{min-height:32px;padding:0 10px;border:1px solid #e5e7eb;border-radius:999px;background:#fff;color:#111827;text-decoration:none;font-size:12px;font-weight:850;cursor:pointer;}
 .mg-profile-image-tools button{color:#b42318;}
-@media(max-width:760px){body.mg-profile-light-theme .mg-site-header .mg-brand span{width:136px!important;height:30px!important}.mg-profile-owner-tools{left:12px;right:12px;justify-content:flex-start}.mg-cover-adjust-panel label{grid-template-columns:1fr}}
+@media(max-width:760px){body.mg-profile-light-theme .mg-site-header .mg-brand span{width:136px!important;height:30px!important}.mg-profile-owner-tools{left:12px;right:12px;justify-content:flex-start}.mg-cover-adjust-panel label{grid-template-columns:1fr}body.mg-profile-light-theme .mg-invest-overview-grid .mg-profile-product-grid{grid-template-columns:1fr!important}}
