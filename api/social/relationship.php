@@ -36,14 +36,14 @@ try{
     if($action==='follow'&&$targetProfile!==null&&!empty($result['relationship']['following'])){
         $result['merchant_crm']=mg_merchant_crm_record_event($pdo,[
             'merchant_user_id'=>(int)$targetProfile['user_id'],
-            'campaign_type'=>'profile_follow',
+            'campaign_type'=>'non_campaign',
             'event_type'=>'profile.followed',
             'source_type'=>'profile_follow',
             'source_public_id'=>(string)$result['profile_id'],
             'user_id'=>$actorId,
             'email'=>$user['email']??null,
             'name'=>$user['display_name']??($user['full_name']??null),
-            'metadata'=>['profile_id'=>(string)$result['profile_id'],'profile_slug'=>(string)$result['profile_slug']],
+            'metadata'=>['profile_id'=>(string)$result['profile_id'],'profile_slug'=>(string)$result['profile_slug'],'non_campaign'=>true],
         ]);
     }
     if($followNotification!==null)mg_follow_notification_send($pdo,$actorId,$followNotification);
