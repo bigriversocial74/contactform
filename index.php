@@ -295,10 +295,10 @@ require __DIR__ . '/includes/landing/index-v3/part09.php';
   .mg-v4-logo img{width:128px!important;}
   .mg-v4-links{display:none!important;}
   .mg-v4-cta{min-height:38px!important;padding:0 14px!important;font-size:12px!important;}
-  .mg-v4-hero{min-height:1260px;padding:82px 0 0;overflow:hidden;}
+  .mg-v4-hero{min-height:1280px;padding:82px 0 0;overflow:hidden;}
   .mg-v4-hero::before{background-position:center top;background-size:cover;}
   .mg-v4-hero::after{
-    background:linear-gradient(180deg,rgba(245,245,242,.02) 0%,rgba(245,245,242,.04) 42%,rgba(245,245,242,.88) 62%,rgba(245,245,242,.98) 80%,rgba(0,0,0,.84) 93%,#020202 100%);
+    background:linear-gradient(180deg,rgba(245,245,242,.02) 0%,rgba(245,245,242,.04) 44%,rgba(245,245,242,.88) 64%,rgba(245,245,242,.98) 81%,rgba(0,0,0,.84) 93%,#020202 100%);
   }
   .mg-v4-hero-grid{
     width:calc(100% - 28px);
@@ -310,7 +310,7 @@ require __DIR__ . '/includes/landing/index-v3/part09.php';
   .mg-v4-visual{
     order:1;
     width:100%;
-    min-height:560px;
+    min-height:610px;
     align-items:flex-end;
     justify-content:center;
     margin-top:0;
@@ -330,14 +330,14 @@ require __DIR__ . '/includes/landing/index-v3/part09.php';
   .mg-v4-phone{
     left:50%;
     right:auto;
-    top:18px;
+    top:118px;
     bottom:auto;
     z-index:1;
-    width:min(900px,240vw);
+    width:min(1050px,280vw);
     max-width:none!important;
     opacity:1!important;
     filter:drop-shadow(0 34px 46px rgba(0,0,0,.48));
-    transform:translateX(-38%) rotate(-5deg);
+    transform:translateX(-6%) rotate(-5deg);
     transform-origin:center center;
   }
   .mg-v4-copy{
@@ -346,7 +346,7 @@ require __DIR__ . '/includes/landing/index-v3/part09.php';
     order:2;
     width:100%;
     max-width:100%;
-    padding-top:184px;
+    padding-top:196px;
     padding-bottom:82px;
   }
   .mg-v4-title{
@@ -369,7 +369,7 @@ require __DIR__ . '/includes/landing/index-v3/part09.php';
   .mg-v4-logo img{width:116px!important;}
   .mg-v4-cta{padding:0 12px!important;}
   .mg-v10-desktop{width:100vw;margin-left:20px;opacity:1!important;}
-  .mg-v4-phone{left:50%;top:28px;bottom:auto;width:min(820px,232vw);opacity:1!important;transform:translateX(-36%) rotate(-5deg);}
+  .mg-v4-phone{left:50%;top:128px;bottom:auto;width:min(980px,270vw);opacity:1!important;transform:translateX(-5%) rotate(-5deg);}
 }
 </style>
 
