@@ -44,17 +44,17 @@ $page_onboarding = is_array($page_manifest['onboarding'] ?? null)
 $agent_tab = $agent_tab ?? '';
 $section_css = $section_css ?? null;
 $is_app_page = in_array($header_mode, ['agent', 'account', 'crm', 'builder'], true);
-$is_profile_page = !$is_app_page && (string) ($page_manifest['id'] ?? '') === 'profile';
+$is_profile_page = !$is_app_page && in_array((string) ($page_manifest['id'] ?? ''), ['profile', 'public-profile'], true);
 $public_header_fix_style = '/assets/css/public-header-footer-fixes.css';
 $public_dark_shell_style = '/assets/css/public-dark-shell.css';
 $public_header_cleanup_style = '/assets/css/public-header-cleanup.css';
-if (!$is_app_page && !$is_profile_page && !in_array($public_header_fix_style, $page_styles, true)) {
+if (!$is_app_page && !in_array($public_header_fix_style, $page_styles, true)) {
     $page_styles[] = $public_header_fix_style;
 }
-if (!$is_app_page && !$is_profile_page && !in_array($public_dark_shell_style, $page_styles, true)) {
+if (!$is_app_page && !in_array($public_dark_shell_style, $page_styles, true)) {
     $page_styles[] = $public_dark_shell_style;
 }
-if (!$is_app_page && !$is_profile_page && !in_array($public_header_cleanup_style, $page_styles, true)) {
+if (!$is_app_page && !in_array($public_header_cleanup_style, $page_styles, true)) {
     $page_styles[] = $public_header_cleanup_style;
 }
 $user = $is_app_page ? mg_require_auth() : mg_current_user();
@@ -176,7 +176,7 @@ $can_admin_dashboard = $user && (
 >
 <?php if ($is_app_page): ?>
   <?php require __DIR__ . '/header-components/app-header.php'; ?>
-<?php elseif (!$is_profile_page): ?>
+<?php else: ?>
   <?php require __DIR__ . '/header-components/public-header.php'; ?>
 <?php endif; ?>
 <script type="application/json" id="mg-page-manifest"><?= json_encode($page_manifest, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?></script>
