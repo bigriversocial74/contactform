@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/bootstrap.php';
+require_once dirname(__DIR__, 3) . '/includes/merchant-crm.php';
 
 function mg_public_campaign_engage_uuid(): string
 {
@@ -90,6 +91,20 @@ try {
     $contact = $contactLookup->fetch(PDO::FETCH_ASSOC);
     $contactId = (int) ($contact['id'] ?? 0);
 
+    $crm = mg_merchant_crm_record_event($pdo, [
+        'merchant_user_id' => $merchantId,
+        'campaign_id' => $campaignId,
+        'campaign_type' => $campaignType,
+        'event_type' => 'campaign.engaged',
+        'source_type' => $source,
+        'source_public_id' => (string) ($contact['public_id'] ?? ''),
+        'user_id' => $userId,
+        'email' => $email,
+        'phone' => $phone,
+        'name' => $name,
+        'metadata' => $metadata,
+    ]);
+
     $eventStmt = $pdo->prepare('INSERT INTO campaign_events (public_id,merchant_user_id,campaign_id,wallet_item_id,contact_id,event_type,event_context_json,created_at) VALUES (?,?,?,?,?,?,?,NOW())');
     $eventStmt->execute([
         mg_public_campaign_engage_uuid(),
@@ -98,7 +113,7 @@ try {
         null,
         $contactId ?: null,
         'campaign.engaged',
-        json_encode(['campaign_type' => $campaignType, 'source' => $source, 'email' => $email, 'crm_entry' => true], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+        json_encode(['campaign_type' => $campaignType, 'source' => $source, 'email' => $email, 'crm_entry' => true, 'merchant_crm' => $crm], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
     ]);
 
     $pdo->commit();
@@ -107,6 +122,7 @@ try {
         'campaign_id' => (string) $campaign['public_id'],
         'campaign_type' => $campaignType,
         'source' => $source,
+        'merchant_crm' => $crm,
     ], (string) ($campaign['success_message'] ?? 'Campaign response recorded.'), 201);
 } catch (Throwable $error) {
     if ($pdo->inTransaction()) $pdo->rollBack();
