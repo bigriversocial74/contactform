@@ -23,6 +23,7 @@ $canMerchantCatalog = $canAdminPage('admin.merchant_catalog');
 $canCommerce = mg_admin_commerce_user_can_read_any($adminMatrixUser);
 $canModeration = $canAdminPage('admin.moderation');
 $canPackageModeration = $canCommerce;
+$canStampHealth = $canCommerce;
 $canHealth = $canAdminPage('admin.system_health');
 $canLifecycleHealth = $canAdminPage('admin.lifecycle_health');
 $canSettings = $canAdminPage('admin.settings');
@@ -69,6 +70,12 @@ $adminNav = [
         'detail' => 'Review and implementation',
         'href' => '/admin/package-moderation.php',
         'visible' => $canPackageModeration,
+    ],
+    'stamp-health' => [
+        'label' => 'Stamp health',
+        'detail' => 'Usage economy checks',
+        'href' => '/admin/stamp-health.php',
+        'visible' => $canStampHealth,
     ],
     'payments' => [
         'label' => 'Stripe payments',
