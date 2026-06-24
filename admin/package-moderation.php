@@ -4,12 +4,17 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/includes/app.php';
 require_once dirname(__DIR__) . '/includes/admin-auth.php';
 require_once dirname(__DIR__) . '/includes/pricing-packages.php';
+require_once dirname(__DIR__) . '/includes/stamp-ledger-config.php';
 
 $user = mg_require_admin_page_permission('admin.commerce.view');
 $canManagePackages = mg_admin_permission_user_has($user, 'admin.commerce.manage')
     || mg_admin_permission_user_has($user, 'admin.settings.manage');
 $packages = mg_pricing_packages();
 $summary = mg_pricing_package_summary();
+$stampSummary = mg_stamp_debit_action_summary();
+$stampActions = mg_stamp_debit_actions();
+$adminLedger = mg_stamp_ledger_preview('admin');
+$merchantLedger = mg_stamp_ledger_preview('merchant');
 $activePackage = $packages[1] ?? ($packages[0] ?? []);
 $activeLimits = is_array($activePackage['limits'] ?? null) ? $activePackage['limits'] : [];
 
@@ -17,7 +22,7 @@ $page_title = 'Package Moderation | Microgifter';
 $page_section = 'account';
 $header_mode = 'account';
 $page_body_class = 'mg-admin-package-page';
-$page_styles = ['/assets/css/admin-shell.css','/assets/css/admin-package-moderation.css'];
+$page_styles = ['/assets/css/admin-shell.css','/assets/css/admin-package-moderation.css','/assets/css/stamp-ledger.css'];
 $adminActive = 'package-moderation';
 
 require dirname(__DIR__) . '/includes/header.php';
@@ -31,151 +36,120 @@ require dirname(__DIR__) . '/includes/header.php';
           <a class="mg-admin-package-back" href="/account-admin.php">← Admin dashboard</a>
           <span class="mg-eyebrow">Backend operations</span>
           <h1>Package moderation</h1>
-          <p>Review backend packages before implementation. Microgifts are paid products, Rewards are promotions, and every distribution action burns a Send Stamp across direct sends, email lists, and future SMS channels.</p>
+          <p>Moderate packages, usage limits, Stamp debit rules, admin ledgers, and merchant-visible Stamp ledger behavior from one protected admin workspace.</p>
         </div>
         <div class="mg-admin-package-hero-actions">
-          <span>Audit score</span>
-          <strong>10 / 10 synced shell</strong>
+          <span>Stamp engine</span>
+          <strong><?= (int)$stampSummary['enabled_actions'] ?> debit actions</strong>
         </div>
       </header>
 
       <section class="mg-admin-package-summary" aria-label="Package moderation summary">
-        <article><span>Total packages</span><strong data-package-metric="total"><?= (int)$summary['total'] ?></strong><small>Shared pricing source</small></article>
-        <article><span>Published</span><strong data-package-metric="published"><?= (int)$summary['published'] ?></strong><small>Visible on pricing page</small></article>
-        <article><span>Approved</span><strong data-package-metric="approved"><?= (int)$summary['approved'] ?></strong><small>Ready for checkout wiring</small></article>
-        <article><span>Monthly Stamps</span><strong data-package-metric="monthly_stamps_included"><?= number_format((int)$summary['monthly_stamps_included']) ?></strong><small>Included across fixed tiers</small></article>
-        <article><span>Bulk Stamps</span><strong data-package-metric="bulk_stamps">On</strong><small>Purchasable as needed</small></article>
+        <article><span>Total packages</span><strong><?= (int)$summary['total'] ?></strong><small>Shared pricing source</small></article>
+        <article><span>Published</span><strong><?= (int)$summary['published'] ?></strong><small>Visible on pricing page</small></article>
+        <article><span>Monthly Stamps</span><strong><?= number_format((int)$summary['monthly_stamps_included']) ?></strong><small>Included across fixed tiers</small></article>
+        <article><span>SMS cost</span><strong><?= (int)$stampSummary['sms_stamp_value'] ?></strong><small>Stamps per SMS send</small></article>
+        <article><span>Bulk Stamps</span><strong>On</strong><small>Purchasable as needed</small></article>
       </section>
 
-      <form class="mg-admin-package-filters" data-package-filters>
-        <label class="is-search">Search
-          <input type="search" name="q" maxlength="190" placeholder="Package, plan, Stamp, Microgift, Reward, or implementation ID">
-        </label>
-        <label>Status
-          <select name="status">
-            <option value="active">Active queue</option>
-            <option value="published">Published</option>
-            <option value="approved">Approved</option>
-            <option value="pending_review">Pending review</option>
-            <option value="on_hold">On hold</option>
-            <option value="implemented">Implemented</option>
-            <option value="all">All packages</option>
-          </select>
-        </label>
-        <label>Package type
-          <select name="package_type">
-            <option value="all">All types</option>
-            <option value="pricing_plan">Pricing plan</option>
-            <option value="stamp_bundle">Stamp bundle</option>
-            <option value="microgift_issuance">Microgift issuance</option>
-            <option value="campaign">Campaign package</option>
-          </select>
-        </label>
-        <label>Risk
-          <select name="risk">
-            <option value="all">All risk levels</option>
-            <option value="critical">Critical</option>
-            <option value="high">High</option>
-            <option value="normal">Normal</option>
-            <option value="low">Low</option>
-          </select>
-        </label>
-        <button class="mg-btn mg-btn-soft" type="submit" disabled>API pending</button>
-      </form>
+      <div class="mg-package-tabs" data-package-tabs>
+        <input id="pkg-tab-packages" name="pkg-tab" type="radio" checked>
+        <input id="pkg-tab-actions" name="pkg-tab" type="radio">
+        <input id="pkg-tab-admin-ledger" name="pkg-tab" type="radio">
+        <input id="pkg-tab-merchant-ledger" name="pkg-tab" type="radio">
+        <input id="pkg-tab-implementation" name="pkg-tab" type="radio">
 
-      <div class="mg-admin-package-workspace">
-        <aside class="mg-admin-package-queue">
-          <header>
-            <div>
-              <h2>Pricing package queue</h2>
-              <p><span data-package-total><?= count($packages) ?></span> packages synced to the public display</p>
-            </div>
-            <span class="mg-admin-package-readonly">Source synced</span>
-          </header>
-          <div class="mg-admin-package-list" data-package-list>
-            <?php foreach ($packages as $package): ?>
-              <?php $limits = is_array($package['limits'] ?? null) ? $package['limits'] : []; ?>
-              <article class="mg-admin-package-card<?= (($package['id'] ?? '') === ($activePackage['id'] ?? '')) ? ' is-active' : '' ?>">
-                <span class="mg-package-risk is-<?= mg_e((string)($package['risk_level'] ?? 'normal')) ?>"><?= mg_e((string)($package['risk_level'] ?? 'normal')) ?></span>
-                <h3><?= mg_e((string)$package['name']) ?> · <?= mg_e((string)$package['price_label']) ?><?= mg_e((string)$package['billing_label']) ?></h3>
-                <p><?= mg_e((string)$package['description']) ?></p>
-                <small><?= mg_e((string)$package['implementation_id']) ?> · <?= mg_e((string)$package['moderation_status']) ?> · <?= mg_e((string)$package['public_status']) ?> · Stamps: <?= isset($limits['monthly_stamps_included']) && $limits['monthly_stamps_included'] !== null ? number_format((int)$limits['monthly_stamps_included']) : 'Custom' ?></small>
-              </article>
-            <?php endforeach; ?>
+        <nav class="mg-package-tab-nav" aria-label="Package moderation tabs">
+          <label for="pkg-tab-packages">Packages</label>
+          <label for="pkg-tab-actions">Stamp actions</label>
+          <label for="pkg-tab-admin-ledger">Admin ledger</label>
+          <label for="pkg-tab-merchant-ledger">Merchant ledger</label>
+          <label for="pkg-tab-implementation">Implementation</label>
+        </nav>
+
+        <section class="mg-package-tab-panel is-packages">
+          <div class="mg-admin-package-workspace">
+            <aside class="mg-admin-package-queue">
+              <header><div><h2>Pricing package queue</h2><p><span data-package-total><?= count($packages) ?></span> packages synced to public pricing.</p></div><span class="mg-admin-package-readonly">Source synced</span></header>
+              <div class="mg-admin-package-list" data-package-list>
+                <?php foreach ($packages as $package): ?>
+                  <?php $limits = is_array($package['limits'] ?? null) ? $package['limits'] : []; ?>
+                  <article class="mg-admin-package-card<?= (($package['id'] ?? '') === ($activePackage['id'] ?? '')) ? ' is-active' : '' ?>">
+                    <span class="mg-package-risk is-<?= mg_e((string)($package['risk_level'] ?? 'normal')) ?>"><?= mg_e((string)($package['risk_level'] ?? 'normal')) ?></span>
+                    <h3><?= mg_e((string)$package['name']) ?> · <?= mg_e((string)$package['price_label']) ?><?= mg_e((string)$package['billing_label']) ?></h3>
+                    <p><?= mg_e((string)$package['description']) ?></p>
+                    <small><?= mg_e((string)$package['implementation_id']) ?> · Stamps: <?= isset($limits['monthly_stamps_included']) && $limits['monthly_stamps_included'] !== null ? number_format((int)$limits['monthly_stamps_included']) : 'Custom' ?></small>
+                  </article>
+                <?php endforeach; ?>
+              </div>
+            </aside>
+
+            <main class="mg-admin-package-detail">
+              <header class="mg-admin-package-detail-head"><div><span class="mg-eyebrow">Selected package</span><h2><?= mg_e((string)($activePackage['name'] ?? 'Pricing package')) ?> package</h2><p><?= mg_e((string)($activePackage['description'] ?? 'Shared package source.')) ?></p></div><span class="mg-package-status"><?= mg_e((string)($activePackage['moderation_status'] ?? 'pending_review')) ?></span></header>
+              <section class="mg-admin-package-review-grid">
+                <article><h3>Usage limits</h3><ul>
+                  <li>Paid Microgifts: <?= isset($activeLimits['max_microgifts']) && $activeLimits['max_microgifts'] !== null ? number_format((int)$activeLimits['max_microgifts']) : 'Custom' ?></li>
+                  <li>Promotional Rewards: <?= isset($activeLimits['max_rewards']) && $activeLimits['max_rewards'] !== null ? number_format((int)$activeLimits['max_rewards']) : 'Custom' ?></li>
+                  <li>Active campaigns: <?= isset($activeLimits['max_active_campaigns']) && $activeLimits['max_active_campaigns'] !== null ? number_format((int)$activeLimits['max_active_campaigns']) : 'Custom' ?></li>
+                  <li>CRM contacts: <?= isset($activeLimits['max_crm_contacts']) && $activeLimits['max_crm_contacts'] !== null ? number_format((int)$activeLimits['max_crm_contacts']) : 'Custom' ?></li>
+                  <li>Monthly Send Stamps: <?= isset($activeLimits['monthly_stamps_included']) && $activeLimits['monthly_stamps_included'] !== null ? number_format((int)$activeLimits['monthly_stamps_included']) : 'Custom' ?></li>
+                  <li>Bulk Stamp purchase: <?= !empty($activeLimits['bulk_stamp_purchase_enabled']) ? 'Enabled' : 'Disabled' ?></li>
+                </ul></article>
+                <article><h3>Included features</h3><ul><?php foreach (($activePackage['included_features'] ?? []) as $feature): ?><li><?= mg_e((string)$feature) ?></li><?php endforeach; ?></ul></article>
+              </section>
+            </main>
           </div>
-        </aside>
+        </section>
 
-        <main class="mg-admin-package-detail">
-          <header class="mg-admin-package-detail-head">
-            <div>
-              <span class="mg-eyebrow">Selected package</span>
-              <h2><?= mg_e((string)($activePackage['name'] ?? 'Pricing package')) ?> package</h2>
-              <p><?= mg_e((string)($activePackage['description'] ?? 'Shared package source.')) ?></p>
+        <section class="mg-package-tab-panel is-actions">
+          <section class="mg-stamp-panel">
+            <header><div><span class="mg-eyebrow">Stamp action catalog</span><h2>Actions that deduct Stamps</h2><p>Each action has a Stamp value field. SMS starts at 3 Stamps per recipient, while most direct/email/feed sends start at 1 Stamp.</p></div><span class="mg-package-status">API pending</span></header>
+            <div class="mg-stamp-action-table-wrap">
+              <table class="mg-stamp-table">
+                <thead><tr><th>Action</th><th>Channel</th><th>Scope</th><th>Stamp value</th><th>Status</th><th>Description</th></tr></thead>
+                <tbody>
+                  <?php foreach ($stampActions as $action): ?>
+                    <tr>
+                      <td><strong><?= mg_e((string)$action['label']) ?></strong><small><?= mg_e((string)$action['key']) ?></small></td>
+                      <td><?= mg_e((string)$action['channel']) ?></td>
+                      <td><?= mg_e((string)$action['scope']) ?></td>
+                      <td><input class="mg-stamp-value-input" type="number" name="stamp_value[<?= mg_e((string)$action['key']) ?>]" value="<?= (int)$action['stamp_value'] ?>" min="0" step="1" disabled></td>
+                      <td><?= !empty($action['enabled']) ? 'Enabled' : 'Disabled' ?></td>
+                      <td><?= mg_e((string)$action['description']) ?></td>
+                    </tr>
+                  <?php endforeach; ?>
+                </tbody>
+              </table>
             </div>
-            <span class="mg-package-status"><?= mg_e((string)($activePackage['moderation_status'] ?? 'pending_review')) ?></span>
-          </header>
-
-          <section class="mg-admin-package-review-grid">
-            <article>
-              <h3>Usage limits</h3>
-              <ul>
-                <li>Paid Microgifts: <?= isset($activeLimits['max_microgifts']) && $activeLimits['max_microgifts'] !== null ? number_format((int)$activeLimits['max_microgifts']) : 'Custom' ?></li>
-                <li>Promotional Rewards: <?= isset($activeLimits['max_rewards']) && $activeLimits['max_rewards'] !== null ? number_format((int)$activeLimits['max_rewards']) : 'Custom' ?></li>
-                <li>Active campaigns: <?= isset($activeLimits['max_active_campaigns']) && $activeLimits['max_active_campaigns'] !== null ? number_format((int)$activeLimits['max_active_campaigns']) : 'Custom' ?></li>
-                <li>CRM contacts: <?= isset($activeLimits['max_crm_contacts']) && $activeLimits['max_crm_contacts'] !== null ? number_format((int)$activeLimits['max_crm_contacts']) : 'Custom' ?></li>
-                <li>Monthly Send Stamps: <?= isset($activeLimits['monthly_stamps_included']) && $activeLimits['monthly_stamps_included'] !== null ? number_format((int)$activeLimits['monthly_stamps_included']) : 'Custom' ?></li>
-                <li>Bulk Stamp purchase: <?= !empty($activeLimits['bulk_stamp_purchase_enabled']) ? 'Enabled' : 'Disabled' ?></li>
-              </ul>
-            </article>
-            <article>
-              <h3>Included features</h3>
-              <ul>
-                <?php foreach (($activePackage['included_features'] ?? []) as $feature): ?><li><?= mg_e((string)$feature) ?></li><?php endforeach; ?>
-              </ul>
-            </article>
           </section>
+        </section>
 
-          <section class="mg-admin-package-audit-note">
-            <h3>Stamp rule</h3>
-            <p>A Stamp is the unit of send/distribution. Direct sends, campaign sends, email-list sends, and future SMS sends should debit the same Stamp ledger, with merchants able to buy bulk Stamp bundles when they need more volume.</p>
+        <section class="mg-package-tab-panel is-admin-ledger">
+          <section class="mg-stamp-panel">
+            <header><div><span class="mg-eyebrow">Admin ledger</span><h2>Platform Stamp ledger</h2><p>Admin view should show every credit, debit, void, overage, purchase, adjustment, and actor across merchants.</p></div><span class="mg-package-status">Admin</span></header>
+            <?php $ledger = $adminLedger; require dirname(__DIR__) . '/includes/stamp-ledger-table.php'; ?>
           </section>
-        </main>
+        </section>
 
-        <aside class="mg-admin-package-actions">
-          <header>
-            <h2>Package actions</h2>
-            <p>Actions remain disabled until the moderation API and persistence layer are created.</p>
-          </header>
-          <?php if ($canManagePackages): ?>
-            <form class="mg-admin-package-action-form" data-package-action-form>
-              <label>Action
-                <select name="action" disabled>
-                  <option value="claim">Claim package</option>
-                  <option value="request_changes">Request changes</option>
-                  <option value="approve">Approve for implementation</option>
-                  <option value="hold">Place on hold</option>
-                  <option value="close_implemented">Close as implemented</option>
-                </select>
-              </label>
-              <label>Reason code
-                <select name="reason_code" disabled>
-                  <option value="">Required before actions go live</option>
-                  <option value="security_review">Security review</option>
-                  <option value="pricing_change">Pricing change</option>
-                  <option value="stamp_limit_change">Stamp limit change</option>
-                  <option value="implementation_ready">Implementation ready</option>
-                  <option value="rollback_required">Rollback required</option>
-                </select>
-              </label>
-              <label>Internal note
-                <textarea name="note" rows="6" maxlength="5000" disabled placeholder="Document the evidence and decision."></textarea>
-              </label>
-              <button class="mg-btn mg-btn-primary" type="button" disabled>API pending</button>
-            </form>
-          <?php else: ?>
-            <div class="mg-admin-package-readonly-box"><strong>Read-only access</strong><span>This session can inspect synced package workflow requirements but cannot apply review actions.</span></div>
-          <?php endif; ?>
-        </aside>
+        <section class="mg-package-tab-panel is-merchant-ledger">
+          <section class="mg-stamp-panel">
+            <header><div><span class="mg-eyebrow">Merchant ledger</span><h2>Merchant-facing Stamp ledger</h2><p>Merchants should see their Stamp balance, included monthly credits, debits by send type, bulk purchases, and failed-send voids.</p></div><a class="mg-btn mg-btn-soft" href="/merchant-stamps.php">Open merchant view</a></header>
+            <?php $ledger = $merchantLedger; require dirname(__DIR__) . '/includes/stamp-ledger-table.php'; ?>
+          </section>
+        </section>
+
+        <section class="mg-package-tab-panel is-implementation">
+          <div class="mg-admin-package-workspace">
+            <main class="mg-admin-package-detail">
+              <header class="mg-admin-package-detail-head"><div><span class="mg-eyebrow">Implementation</span><h2>Stamp ledger backend plan</h2><p>The UI contract is now set for admin and merchant ledger views.</p></div><span class="mg-package-status">Next build</span></header>
+              <section class="mg-admin-package-review-grid">
+                <article><h3>Ledger requirements</h3><ul><li>Credits for monthly included Stamps.</li><li>Credits for bulk Stamp purchases.</li><li>Debits for every send action.</li><li>Voids/refunds for failed sends.</li><li>Admin adjustments require reason codes.</li><li>Merchant ledger must be scoped to the merchant account.</li></ul></article>
+                <article><h3>Database shape</h3><ul><li>stamp_debit_actions</li><li>stamp_ledger_entries</li><li>stamp_bundles</li><li>account_stamp_balances</li><li>package_stamp_limits</li><li>admin_stamp_adjustments</li></ul></article>
+              </section>
+            </main>
+            <aside class="mg-admin-package-actions"><header><h2>Package actions</h2><p>Actions remain disabled until the moderation API and persistence layer are created.</p></header><?php if ($canManagePackages): ?><form class="mg-admin-package-action-form"><label>Action<select disabled><option>Approve Stamp rules</option><option>Adjust Stamp value</option><option>Publish package limits</option><option>Audit merchant ledger</option></select></label><label>Reason code<select disabled><option>Required before actions go live</option><option>stamp_limit_change</option><option>pricing_change</option><option>ledger_adjustment</option></select></label><button class="mg-btn mg-btn-primary" type="button" disabled>API pending</button></form><?php else: ?><div class="mg-admin-package-readonly-box"><strong>Read-only access</strong><span>This session can inspect Stamp package workflow requirements but cannot apply review actions.</span></div><?php endif; ?></aside>
+          </div>
+        </section>
       </div>
     </section>
   </div>
