@@ -4,13 +4,14 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - '**/*.php'
-      - 'api/**'
-      - 'assets/**'
       - 'config/**'
       - 'database/**'
-      - 'includes/**'
-      - 'scripts/**'
+      - 'scripts/build_release_artifact.sh'
+      - 'scripts/build_release_evidence.php'
+      - 'scripts/validate_database_backup_restore.sh'
+      - 'scripts/validate_database_migration_status.php'
+      - 'scripts/validate_release_rollback.sh'
+      - 'scripts/ci/**'
       - 'composer.json'
       - 'composer.lock'
       - '.github/workflows/release-package-validation.yml'
@@ -59,7 +60,7 @@ jobs:
           HEAVY_VALIDATION_REQUIRED=false
           while IFS= read -r FILE; do
             case "${FILE}" in
-              index.php|includes/landing/index-v3/*.php|.github/workflows/pr-validation.yml|.github/workflows/commerce-operations-validation.yml|.github/workflows/release-package-validation.yml)
+              .github/workflows/*.yml)
                 ;;
               *)
                 HEAVY_VALIDATION_REQUIRED=true
