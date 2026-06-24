@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_engagement.php';
 require_once __DIR__ . '/_follow_notification.php';
+require_once dirname(__DIR__, 2) . '/includes/merchant-crm.php';
 
 mg_require_method('POST');
 $user=mg_require_permission('social.engage');
@@ -28,9 +29,23 @@ try{
         $pdo->commit();
         mg_ok($replay,'Existing relationship result returned.');
     }
+    $targetProfile=$action==='follow'?mg_engagement_profile_target($pdo,$targetReference,false):null;
     $followNotification=$action==='follow'?mg_follow_notification_context($pdo,$actorId,$targetReference):null;
     if($followNotification!==null)$followNotification['event_key']='social.follow.'.hash('sha256',$key);
     $result=mg_engagement_relationship($pdo,$actorId,$targetReference,$action);
+    if($action==='follow'&&$targetProfile!==null&&!empty($result['relationship']['following'])){
+        $result['merchant_crm']=mg_merchant_crm_record_event($pdo,[
+            'merchant_user_id'=>(int)$targetProfile['user_id'],
+            'campaign_type'=>'profile_follow',
+            'event_type'=>'profile.followed',
+            'source_type'=>'profile_follow',
+            'source_public_id'=>(string)$result['profile_id'],
+            'user_id'=>$actorId,
+            'email'=>$user['email']??null,
+            'name'=>$user['display_name']??($user['full_name']??null),
+            'metadata'=>['profile_id'=>(string)$result['profile_id'],'profile_slug'=>(string)$result['profile_slug']],
+        ]);
+    }
     if($followNotification!==null)mg_follow_notification_send($pdo,$actorId,$followNotification);
     $result=mg_engagement_complete($pdo,$actorId,$key,$result);
     $pdo->commit();
