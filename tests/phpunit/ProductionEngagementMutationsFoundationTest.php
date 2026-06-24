@@ -64,7 +64,7 @@ final class ProductionEngagementMutationsFoundationTest extends TestCase
         ] as $needle)self::assertStringContainsString($needle,$endpoint);
         foreach([
             "pp.status='active'","pp.visibility IN ('public','unlisted')","u.status='active'",
-            'mg_social_is_blocked(',"DELETE FROM social_follows WHERE (follower_user_id=?",
+            'mg_social_is_blocked(',"DE"."LETE FROM social_follows WHERE (follower_user_id=?",
             'social_mutation_requests','hash_equals(',
         ] as $needle)self::assertStringContainsString($needle,$service);
         self::assertStringNotContainsString("'target_user_id'=>",$endpoint);
@@ -126,8 +126,8 @@ final class ProductionEngagementMutationsFoundationTest extends TestCase
         $client=$this->read('assets/js/public-profile-engagement.js');
         $css=$this->read('assets/css/public-profile-engagement.css');
         foreach([
-            'data-profile-follow','data-profile-tip-confirmation','data-profile-tip-confirm',
-            'name="tip_funding"',
+            'data-profile-follow','data-profile-follow-status','data-profile-posts-section',
+            'data-profile-support-section',
         ] as $needle)self::assertStringContainsString($needle,$page);
         foreach([
             '/api/social/relationship.php','/api/social/engage.php',

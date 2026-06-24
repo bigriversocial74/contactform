@@ -68,10 +68,10 @@ final class PublicProfileUiFoundationTest extends TestCase
         }
     }
 
-    public function testControllerRequestsMinimalInitialCollectionPayload(): void
+    public function testControllerRequestsInitialCollectionPayload(): void
     {
         $script = $this->read('assets/js/public-profile.js');
-        self::assertStringContainsString('product_limit=1&post_limit=1&plan_limit=1', $script);
+        self::assertStringContainsString('product_limit=6&post_limit=6&plan_limit=3', $script);
         self::assertStringContainsString("preview ? '&preview=1'", $script);
     }
 

@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/admin-permission-matrix.php';
+
 $adminActive = $adminActive ?? basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''), '.php');
 $adminPermissions = is_array($user_permissions ?? null)
     ? $user_permissions
@@ -8,35 +10,27 @@ $adminPermissions = is_array($user_permissions ?? null)
 $adminRoles = is_array($user_roles ?? null)
     ? $user_roles
     : (is_array($user['roles'] ?? null) ? $user['roles'] : []);
-$isSuperAdmin = in_array('super_admin', $adminRoles, true);
 
-$canUsers = $isSuperAdmin || in_array('admin.users.view', $adminPermissions, true);
-$canMerchantCatalog = $isSuperAdmin
-    || in_array('admin.merchants.view', $adminPermissions, true)
-    || in_array('admin.catalog.view', $adminPermissions, true);
-$canCommerce = $isSuperAdmin || count(array_intersect([
-    'admin.commerce.view',
-    'merchant.payments.view',
-    'subscriptions.admin',
-    'microgift.operations.view',
-    'tips.reverse',
-], $adminPermissions)) > 0;
-$canModeration = $isSuperAdmin || count(array_intersect([
-    'social.moderate',
-    'admin.profiles.moderation.view',
-    'admin.profiles.moderation.manage',
-], $adminPermissions)) > 0;
-$canHealth = $isSuperAdmin || in_array('admin.health.view', $adminPermissions, true);
-$canSettings = $isSuperAdmin || in_array('admin.settings.manage', $adminPermissions, true);
-$canAi = $canSettings;
-$canPayments = $canSettings;
-$canAudit = $isSuperAdmin || in_array('admin.audit.view', $adminPermissions, true);
-$canSecurity = $isSuperAdmin || in_array('security.logs.view', $adminPermissions, true) || in_array('admin.security_logs.view', $adminPermissions, true);
-$canSessions = $isSuperAdmin || in_array('admin.sessions.view', $adminPermissions, true);
-$canOpsQueue = $isSuperAdmin || count(array_intersect([
-    'ops.alerts.assign',
-    'ops.alerts.resolve',
-], $adminPermissions)) > 0;
+$adminMatrixUser = is_array($user ?? null) ? $user : [];
+$adminMatrixUser['permissions'] = $adminPermissions;
+$adminMatrixUser['roles'] = $adminRoles;
+
+$canAdminPage = static fn(string $pageKey): bool => mg_admin_user_can_view_page($adminMatrixUser, $pageKey);
+
+$canUsers = $canAdminPage('admin.users');
+$canPendingModels = $canAdminPage('admin.pending_models');
+$canMerchantCatalog = $canAdminPage('admin.merchant_catalog');
+$canCommerce = mg_admin_commerce_user_can_read_any($adminMatrixUser);
+$canModeration = $canAdminPage('admin.moderation');
+$canHealth = $canAdminPage('admin.system_health');
+$canLifecycleHealth = $canAdminPage('admin.lifecycle_health');
+$canSettings = $canAdminPage('admin.settings');
+$canAi = $canAdminPage('admin.ai');
+$canPayments = $canAdminPage('admin.payments');
+$canAudit = $canAdminPage('admin.audit_logs');
+$canSecurity = $canAdminPage('admin.security_logs');
+$canSessions = $canAdminPage('admin.sessions');
+$canOpsQueue = $canAdminPage('admin.ops_queue');
 
 $adminNav = [
     'dashboard' => [
@@ -55,7 +49,7 @@ $adminNav = [
         'label' => 'Pending models',
         'detail' => 'Model approval queue',
         'href' => '/admin/pending-models.php',
-        'visible' => $canUsers,
+        'visible' => $canPendingModels,
     ],
     'merchant-catalog' => [
         'label' => 'Merchants & catalog',
@@ -109,7 +103,7 @@ $adminNav = [
         'label' => 'Lifecycle health',
         'detail' => 'Checkout to redemption',
         'href' => '/admin/lifecycle-health.php',
-        'visible' => $canHealth,
+        'visible' => $canLifecycleHealth,
     ],
     'ops-queue' => [
         'label' => 'Operations queue',

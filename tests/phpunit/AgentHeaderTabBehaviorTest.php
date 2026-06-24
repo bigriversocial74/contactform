@@ -7,8 +7,11 @@ final class AgentHeaderTabBehaviorTest extends TestCase
 {
     public function testSystemTabsAlwaysRemainInSharedHeader(): void
     {
-        $header=file_get_contents(dirname(__DIR__,2).'/includes/header-components/app-header.php');
+        $root=dirname(__DIR__,2);
+        $header=file_get_contents($root.'/includes/header-components/app-header.php');
+        $createMenu=file_get_contents($root.'/includes/header-templates/create-menu.php');
         self::assertIsString($header);
+        self::assertIsString($createMenu);
         self::assertStringContainsString("['agent','Agent','/agent.php']",$header);
         self::assertStringContainsString("['inbox','Inbox','/inbox.php']",$header);
         self::assertStringContainsString("['sent','Sent','/sent.php']",$header);
@@ -17,7 +20,7 @@ final class AgentHeaderTabBehaviorTest extends TestCase
         self::assertStringNotContainsString('data-agent-header-create',$header);
         self::assertStringNotContainsString('data-product-header-create',$header);
         self::assertStringNotContainsString('mg-header-product-create',$header);
-        self::assertStringContainsString('data-create-menu-option="microgift"',$header);
+        self::assertStringContainsString('data-create-menu-option="microgift"',$createMenu);
     }
 
     public function testAddAgentTabAndDuplicateCreateControlsAreRemoved(): void

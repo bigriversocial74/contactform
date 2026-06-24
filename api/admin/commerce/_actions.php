@@ -15,7 +15,7 @@ function mg_admin_commerce_action(mixed $value): string
 
 function mg_admin_commerce_action_permission(string $action): string
 {
-    return $action === 'reverse_tip' ? 'tips.reverse' : 'admin.commerce.manage';
+    return mg_admin_commerce_action_required_permission($action);
 }
 
 function mg_admin_commerce_execute(PDO $pdo, array $actor, array $input): array

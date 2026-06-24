@@ -18,7 +18,7 @@ final class AgentBadgeBuilderBrandTest extends TestCase
         self::assertStringContainsString('/api/account/action-center.php?folder=inbox&limit=1',$script);
     }
 
-    public function testActionCenterUsesGlobalHeaderSearchWithoutDuplicateToolbar(): void
+    public function testActionCenterUsesSharedHeaderWithoutDuplicateToolbar(): void
     {
         $root=dirname(__DIR__,2);
         $header=file_get_contents($root.'/includes/header-components/app-header.php');
@@ -27,7 +27,8 @@ final class AgentBadgeBuilderBrandTest extends TestCase
         self::assertIsString($header);
         self::assertIsString($workspace);
         self::assertIsString($search);
-        self::assertStringContainsString('data-agent-global-search',$header);
+        self::assertStringContainsString('data-agent-tabs',$header);
+        self::assertStringContainsString('data-global-create',$header);
         self::assertStringNotContainsString('data-gift-search',$workspace);
         self::assertStringNotContainsString('data-gift-folder-label',$workspace);
         self::assertStringContainsString('[data-gift-list] .mg-gift-row',$search);
