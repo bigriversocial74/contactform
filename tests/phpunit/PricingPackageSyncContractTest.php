@@ -34,7 +34,7 @@ final class PricingPackageSyncContractTest extends TestCase
             '$summary = mg_pricing_package_summary();',
             'data-package-id',
             'Admin synced source',
-            "foreach ($plans as $plan)",
+            'foreach ($plans as $plan)',
         ] as $needle){
             self::assertStringContainsString($needle,$source);
         }
