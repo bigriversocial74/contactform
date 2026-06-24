@@ -1,7 +1,90 @@
-.mg-dev-docs{max-width:100%!important;overflow-x:hidden!important}
-.mg-dev-shell,.mg-dev-content,.mg-dev-card{max-width:100%!important;min-width:0!important;overflow-x:hidden!important}
-.mg-dev-code{width:100%!important;max-width:100%!important;display:block!important;white-space:pre-wrap!important;word-break:break-word!important;overflow-x:auto!important}
-.mg-dev-table{width:100%!important;max-width:100%!important;display:table!important;table-layout:fixed!important;overflow:visible!important}
-.mg-dev-table th,.mg-dev-table td{overflow-wrap:anywhere!important;word-break:normal!important}
-.mg-dev-topbar{background:rgba(248,248,245,.96)!important;border-bottom:1px solid rgba(17,17,17,.08)!important;box-shadow:0 12px 34px rgba(0,0,0,.05)!important;color:#101010!important}
-@media(max-width:720px){.mg-dev-table{display:block!important;overflow-x:auto!important}}
+/* Developer docs late polish.
+   Loaded after the page's inline docs styles so docs-specific fixes live in one place. */
+
+body[data-page-id="developer-docs"]{overflow-x:hidden!important}
+body[data-page-id="developer-docs"] .mg-dev-docs{
+  width:100%!important;
+  max-width:100%!important;
+  margin-left:0!important;
+  margin-right:0!important;
+  overflow-x:hidden!important;
+  background:#f7f7f2!important;
+  color:#101010!important;
+}
+body[data-page-id="developer-docs"] .mg-dev-docs *,
+body[data-page-id="developer-docs"] .mg-dev-shell,
+body[data-page-id="developer-docs"] .mg-dev-content,
+body[data-page-id="developer-docs"] .mg-dev-intro,
+body[data-page-id="developer-docs"] .mg-dev-card,
+body[data-page-id="developer-docs"] .mg-dev-code,
+body[data-page-id="developer-docs"] .mg-dev-table{
+  min-width:0!important;
+  max-width:100%!important;
+}
+body[data-page-id="developer-docs"] .mg-dev-card{overflow:hidden!important}
+body[data-page-id="developer-docs"] .mg-dev-topbar{
+  background:rgba(248,248,245,.96)!important;
+  border-bottom:1px solid rgba(17,17,17,.08)!important;
+  box-shadow:0 12px 34px rgba(0,0,0,.05)!important;
+  color:#101010!important;
+}
+body[data-page-id="developer-docs"] .mg-dev-title-mark{
+  border-color:rgba(17,17,17,.10)!important;
+  background:#fff!important;
+  color:#101010!important;
+}
+body[data-page-id="developer-docs"] .mg-dev-title-copy strong{color:#101010!important}
+body[data-page-id="developer-docs"] .mg-dev-title-copy span{color:#4f4b43!important}
+body[data-page-id="developer-docs"] .mg-dev-top-actions{
+  min-width:0!important;
+  max-width:100%!important;
+}
+body[data-page-id="developer-docs"] .mg-dev-chip,
+body[data-page-id="developer-docs"] .mg-dev-btn{
+  max-width:100%!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  border-color:rgba(17,17,17,.10)!important;
+  background:#fff!important;
+  color:#101010!important;
+}
+body[data-page-id="developer-docs"] .mg-dev-chip strong{color:#101010!important}
+body[data-page-id="developer-docs"] .mg-dev-btn-primary{
+  background:#101010!important;
+  color:#fff!important;
+}
+body[data-page-id="developer-docs"] .mg-dev-code{
+  width:100%!important;
+  display:block!important;
+  white-space:pre-wrap!important;
+  word-break:break-word!important;
+  overflow-x:auto!important;
+}
+body[data-page-id="developer-docs"] .mg-dev-table{
+  width:100%!important;
+  display:table!important;
+  table-layout:fixed!important;
+  overflow:visible!important;
+}
+body[data-page-id="developer-docs"] .mg-dev-table th,
+body[data-page-id="developer-docs"] .mg-dev-table td{
+  overflow-wrap:anywhere!important;
+  word-break:normal!important;
+}
+@media(max-width:720px){
+  body[data-page-id="developer-docs"] .mg-dev-topbar{
+    top:64px!important;
+    width:100%!important;
+    padding:12px!important;
+  }
+  body[data-page-id="developer-docs"] .mg-dev-content{
+    width:100%!important;
+    padding-left:12px!important;
+    padding-right:12px!important;
+  }
+  body[data-page-id="developer-docs"] .mg-dev-top-actions{width:100%!important}
+  body[data-page-id="developer-docs"] .mg-dev-table{
+    display:block!important;
+    overflow-x:auto!important;
+  }
+}
