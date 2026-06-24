@@ -1,7 +1,9 @@
 <?php
 declare(strict_types=1);
 
-$show_header_create = $header_mode !== 'agent';
+$workspace_agent_tabs = ['agent', 'inbox', 'sent', 'claimed'];
+$is_agent_workspace_header = $header_mode === 'agent' && in_array((string) $agent_tab, $workspace_agent_tabs, true);
+$show_header_create = !$is_agent_workspace_header;
 $show_header_signals = true;
 $show_header_cart = true;
 ?>
@@ -16,7 +18,7 @@ $show_header_cart = true;
             <input data-crm-search placeholder="Search leads, email, business, ZIP..." aria-label="Search CRM leads">
             <select data-crm-status-filter aria-label="Filter CRM leads by status"><option value="all">All statuses</option><option value="new">New</option><option value="assigned">Assigned</option><option value="contacted">Contacted</option><option value="qualified">Qualified</option><option value="nurture">Nurture</option><option value="converted">Converted</option><option value="closed_lost">Closed lost</option><option value="spam">Spam</option></select>
           </div>
-        <?php elseif ($header_mode === 'agent'): ?>
+        <?php elseif ($is_agent_workspace_header): ?>
           <div class="mg-header-agent-tools">
             <div class="mg-header-agent-tabs" data-agent-tabs aria-label="Workspace tabs">
               <?php foreach ([['agent','Agent','/agent.php'],['inbox','Inbox','/inbox.php'],['sent','Sent','/sent.php'],['claimed','Claimed','/claimed.php']] as $tab): ?>
