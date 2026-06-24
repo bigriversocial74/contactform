@@ -112,5 +112,6 @@ return [
         '03Z_bootstrap_super_admin_user1.sql' => 'Promotes user ID 1 to super_admin and requires explicit operator confirmation.',
         'microgifter_complete_production_update_v1c_v1release.sql' => 'Operator-imported production bundle that consolidates the V1C, V1D, V1F, and V1 release hardening migrations.',
         'stage_12_campaign_features_full_import.sql' => 'Operator-imported one-file Stage 12 campaign feature schema for environments that need a single phpMyAdmin import.',
+        'stage_12_crm_followups_full_import.sql' => 'Operator-imported one-file Stage 12 CRM, follow-up, delivery, and suppression schema for manual phpMyAdmin import.',
     ],
 ];
