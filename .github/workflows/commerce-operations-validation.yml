@@ -41,7 +41,7 @@ jobs:
           HEAVY_VALIDATION_REQUIRED=false
           while IFS= read -r FILE; do
             case "${FILE}" in
-              index.php|includes/landing/index-v3/*.php)
+              index.php|includes/landing/index-v3/*.php|.github/workflows/pr-validation.yml|.github/workflows/commerce-operations-validation.yml|.github/workflows/release-package-validation.yml)
                 ;;
               *)
                 HEAVY_VALIDATION_REQUIRED=true
