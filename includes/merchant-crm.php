@@ -34,7 +34,7 @@ function mg_merchant_crm_stage(string $eventType, string $sourceType, string $ca
 {
     if (str_contains($eventType, 'purchase') || $sourceType === 'purchase') return 'customer';
     if (str_contains($eventType, 'redeem') || str_contains($eventType, 'claim')) return 'redeemer';
-    if ($sourceType === 'profile_follow' || $campaignType === 'profile_follow') return 'follower';
+    if ($sourceType === 'profile_follow') return 'follower';
     if (str_contains($eventType, 'support')) return 'supporter';
     if (str_contains($eventType, 'reward')) return 'prospect';
     return 'lead';
@@ -62,10 +62,12 @@ function mg_merchant_crm_record_event(PDO $pdo, array $input): array
     $merchantId = (int) ($input['merchant_user_id'] ?? 0);
     if ($merchantId < 1) return ['schema_ready' => false, 'skipped' => true];
 
-    $campaignType = mg_merchant_crm_token($input['campaign_type'] ?? null);
-    $sourceType = mg_merchant_crm_token($input['source_type'] ?? $campaignType, $campaignType);
+    $sourceType = mg_merchant_crm_token($input['source_type'] ?? null, 'unknown');
+    $campaignType = mg_merchant_crm_token($input['campaign_type'] ?? null, $sourceType === 'profile_follow' ? 'non_campaign' : 'unknown');
+    if ($sourceType === 'profile_follow' && $campaignType === 'profile_follow') $campaignType = 'non_campaign';
     $eventType = mg_merchant_crm_token($input['event_type'] ?? 'crm_entry', 'crm_entry');
     $campaignId = isset($input['campaign_id']) && (int) $input['campaign_id'] > 0 ? (int) $input['campaign_id'] : null;
+    if ($campaignId === null && $campaignType === 'profile_follow') $campaignType = 'non_campaign';
     $userId = isset($input['user_id']) && (int) $input['user_id'] > 0 ? (int) $input['user_id'] : null;
     $email = mg_merchant_crm_email($input['email'] ?? null);
     $phone = mg_merchant_crm_text($input['phone'] ?? null, 80);
@@ -76,6 +78,7 @@ function mg_merchant_crm_record_event(PDO $pdo, array $input): array
     $metadata['campaign_type'] = $campaignType;
     $metadata['source_type'] = $sourceType;
     $metadata['event_type'] = $eventType;
+    if ($campaignId === null && $campaignType === 'non_campaign') $metadata['non_campaign'] = true;
     $stage = mg_merchant_crm_stage($eventType, $sourceType, $campaignType);
 
     try {
