@@ -44,6 +44,30 @@ function mg_public_campaign_submit_label(string $type): string
     };
 }
 
+function mg_public_campaign_safe_url(mixed $value, bool $allowRelative = true): ?string
+{
+    $url = trim((string) $value);
+    if ($url === '' || strlen($url) > 600 || preg_match('/[\x00-\x1F\x7F]/', $url) === 1) return null;
+    if ($allowRelative && str_starts_with($url, '/') && !str_starts_with($url, '//')) {
+        $parts = parse_url($url);
+        return $parts !== false && !isset($parts['scheme'], $parts['host'], $parts['user'], $parts['pass']) ? $url : null;
+    }
+    if (filter_var($url, FILTER_VALIDATE_URL) === false) return null;
+    $parts = parse_url($url);
+    if (!is_array($parts) || !isset($parts['scheme'], $parts['host'])) return null;
+    return in_array(strtolower((string) $parts['scheme']), ['http', 'https'], true) && !isset($parts['user'], $parts['pass']) ? $url : null;
+}
+
+function mg_public_campaign_initials(string $name): string
+{
+    $name = trim($name);
+    if ($name === '') return 'MG';
+    $parts = preg_split('/\s+/u', $name) ?: [];
+    $first = mb_substr((string) ($parts[0] ?? 'M'), 0, 1);
+    $last = count($parts) > 1 ? mb_substr((string) $parts[count($parts) - 1], 0, 1) : '';
+    return mb_strtoupper($first . $last);
+}
+
 function mg_public_campaign_value(array $campaign): string
 {
     $type = (string) ($campaign['value_type'] ?? '');
@@ -64,13 +88,19 @@ function mg_public_campaign_load(?string $expectedType, string $campaignRef, str
 {
     if ($campaignRef === '' && $token === '') return null;
     $pdo = mg_db();
-    $sql = 'SELECT c.*, u.display_name merchant_label,
+    $sql = 'SELECT c.*, u.display_name merchant_user_display_name, u.full_name merchant_user_full_name,
+                   pp.public_id merchant_profile_public_id, pp.slug merchant_profile_slug, pp.display_name merchant_profile_display_name,
+                   pp.headline merchant_profile_headline, pp.avatar_url merchant_profile_avatar_url, pp.cover_url merchant_profile_cover_url,
+                   pp.location_label merchant_profile_location, pp.profile_type merchant_profile_type,
+                   (SELECT COUNT(*) FROM social_follows sf WHERE sf.followed_user_id = c.merchant_user_id AND sf.status = \'active\') merchant_follower_count,
+                   (SELECT COUNT(DISTINCT s.subscriber_user_id) FROM subscriptions s WHERE s.recipient_user_id = c.merchant_user_id AND s.recovery_status = \'clear\' AND s.status IN (\'trialing\',\'active\',\'cancel_pending\') AND s.current_period_end > NOW()) merchant_supporter_count,
                    rt.public_id reward_template_public_id, rt.title reward_template_title, rt.description reward_template_description,
                    rt.reward_type, rt.value_type, rt.value_amount_cents, rt.value_percent, rt.currency, rt.redemption_instructions,
                    rt.expiration_rule, rt.expiration_days, rt.expires_at reward_expires_at
             FROM campaigns c
             LEFT JOIN reward_templates rt ON rt.id = c.reward_template_id
             LEFT JOIN users u ON u.id = c.merchant_user_id
+            LEFT JOIN public_profiles pp ON pp.user_id = c.merchant_user_id AND pp.status = \'active\' AND pp.visibility IN (\'public\',\'unlisted\')
             WHERE c.status = \'active\'
               AND ((? <> \'\' AND (c.public_id = ? OR c.public_slug = ?)) OR (? <> \'\' AND c.qr_code_token = ?))';
     $params = [$campaignRef, $campaignRef, $campaignRef, $token, $token];
@@ -83,6 +113,14 @@ function mg_public_campaign_load(?string $expectedType, string $campaignRef, str
     $stmt->execute($params);
     $campaign = $stmt->fetch(PDO::FETCH_ASSOC);
     return $campaign ?: null;
+}
+
+function mg_public_campaign_viewer_following(PDO $pdo, ?int $viewerId, int $merchantId): bool
+{
+    if (!$viewerId || $viewerId === $merchantId) return false;
+    $stmt = $pdo->prepare("SELECT 1 FROM social_follows WHERE follower_user_id = ? AND followed_user_id = ? AND status = 'active' LIMIT 1");
+    $stmt->execute([$viewerId, $merchantId]);
+    return (bool) $stmt->fetchColumn();
 }
 
 function mg_public_campaign_unavailable(string $label, string $intro): void
@@ -114,6 +152,9 @@ if (!$mgCampaign) {
     return;
 }
 
+$viewer = mg_current_user();
+$viewerId = (int) ($viewer['id'] ?? 0) ?: null;
+$merchantId = (int) ($mgCampaign['merchant_user_id'] ?? 0);
 $campaignType = (string) $mgCampaign['campaign_type'];
 $typeLabel = mg_public_campaign_type_label($campaignType);
 $headline = trim((string) ($mgCampaign['form_headline'] ?? '')) ?: (string) $mgCampaign['title'];
@@ -123,6 +164,19 @@ $rewardDescription = trim((string) ($mgCampaign['reward_template_description'] ?
 $rewardValue = mg_public_campaign_value($mgCampaign);
 $submitEndpoint = mg_public_campaign_endpoint($campaignType);
 $submitLabel = mg_public_campaign_submit_label($campaignType);
+$merchantName = trim((string) ($mgCampaign['merchant_profile_display_name'] ?? '')) ?: (trim((string) ($mgCampaign['merchant_user_display_name'] ?? '')) ?: (trim((string) ($mgCampaign['merchant_user_full_name'] ?? '')) ?: 'Microgifter merchant'));
+$merchantHeadline = trim((string) ($mgCampaign['merchant_profile_headline'] ?? ''));
+$merchantLocation = trim((string) ($mgCampaign['merchant_profile_location'] ?? ''));
+$merchantProfileId = trim((string) ($mgCampaign['merchant_profile_public_id'] ?? ''));
+$merchantProfileSlug = trim((string) ($mgCampaign['merchant_profile_slug'] ?? ''));
+$merchantProfileUrl = $merchantProfileSlug !== '' ? '/profile.php?slug=' . rawurlencode($merchantProfileSlug) : null;
+$coverUrl = mg_public_campaign_safe_url($mgCampaign['merchant_profile_cover_url'] ?? null);
+$avatarUrl = mg_public_campaign_safe_url($mgCampaign['merchant_profile_avatar_url'] ?? null);
+$followerCount = (int) ($mgCampaign['merchant_follower_count'] ?? 0);
+$supporterCount = (int) ($mgCampaign['merchant_supporter_count'] ?? 0);
+$isFollowing = mg_public_campaign_viewer_following(mg_db(), $viewerId, $merchantId);
+$canFollow = $merchantProfileId !== '' && $viewerId !== null && $viewerId !== $merchantId;
+$signinFollowHref = '/signin.php?redirect=' . rawurlencode((string) ($_SERVER['REQUEST_URI'] ?? '/campaign.php'));
 $now = time();
 $isClosed = false;
 $closedMessage = '';
@@ -140,14 +194,37 @@ if ($mgCampaign['quantity_limit'] !== null && (int) $mgCampaign['issued_count'] 
 }
 ?>
 <section class="mg-public-campaign" data-public-campaign-page>
+  <div class="mg-public-campaign-cover"<?= $coverUrl ? ' style="background-image:linear-gradient(180deg,rgba(0,0,0,.08),rgba(0,0,0,.62)),url(' . mg_e($coverUrl) . ')"' : '' ?>></div>
   <div class="mg-public-campaign-shell">
     <div class="mg-public-campaign-hero">
-      <span class="mg-public-campaign-eyebrow"><?= mg_e($typeLabel) ?></span>
+      <div class="mg-public-campaign-profile-card">
+        <div class="mg-public-campaign-avatar">
+          <?php if ($avatarUrl): ?><img src="<?= mg_e($avatarUrl) ?>" alt="<?= mg_e($merchantName) ?> profile image"><?php else: ?><span><?= mg_e(mg_public_campaign_initials($merchantName)) ?></span><?php endif; ?>
+        </div>
+        <div class="mg-public-campaign-profile-copy">
+          <span class="mg-public-campaign-eyebrow"><?= mg_e($typeLabel) ?></span>
+          <h2><?= mg_e($merchantName) ?></h2>
+          <?php if ($merchantHeadline !== ''): ?><p><?= mg_e($merchantHeadline) ?></p><?php endif; ?>
+          <div class="mg-public-campaign-profile-stats">
+            <span><strong data-follower-count><?= number_format($followerCount) ?></strong> followers</span>
+            <span><strong><?= number_format($supporterCount) ?></strong> supporters</span>
+            <?php if ($merchantLocation !== ''): ?><span><?= mg_e($merchantLocation) ?></span><?php endif; ?>
+          </div>
+        </div>
+        <div class="mg-public-campaign-profile-actions">
+          <?php if ($merchantProfileUrl): ?><a class="mg-btn mg-btn-soft" href="<?= mg_e($merchantProfileUrl) ?>">View profile</a><?php endif; ?>
+          <?php if ($canFollow): ?>
+            <button class="mg-btn mg-btn-primary" type="button" data-follow-profile="<?= mg_e($merchantProfileId) ?>" data-following="<?= $isFollowing ? 'true' : 'false' ?>"><?= $isFollowing ? 'Following' : 'Follow' ?></button>
+          <?php elseif ($viewerId === null && $merchantProfileId !== ''): ?>
+            <a class="mg-btn mg-btn-primary" href="<?= mg_e($signinFollowHref) ?>">Follow</a>
+          <?php endif; ?>
+        </div>
+      </div>
       <h1><?= mg_e($headline) ?></h1>
       <p><?= mg_e($description) ?></p>
       <div class="mg-public-campaign-meta">
-        <span><?= mg_e((string) ($mgCampaign['merchant_label'] ?? 'Microgifter merchant')) ?></span>
         <span><?= mg_e($rewardValue) ?></span>
+        <span data-campaign-type="<?= mg_e($campaignType) ?>"><?= mg_e($typeLabel) ?></span>
         <?php if (!empty($mgCampaign['ends_at'])): ?><span>Ends <?= mg_e(date('M j, Y', strtotime((string) $mgCampaign['ends_at']))) ?></span><?php endif; ?>
       </div>
     </div>
@@ -164,6 +241,7 @@ if ($mgCampaign['quantity_limit'] !== null && (int) $mgCampaign['issued_count'] 
         <form class="mg-public-campaign-form" data-campaign-form data-submit-endpoint="<?= mg_e($submitEndpoint) ?>" data-campaign-type="<?= mg_e($campaignType) ?>">
           <input type="hidden" name="campaign_id" value="<?= mg_e((string) $mgCampaign['public_id']) ?>">
           <input type="hidden" name="campaign" value="<?= mg_e((string) ($mgCampaign['public_slug'] ?? $mgCampaign['public_id'])) ?>">
+          <input type="hidden" name="campaign_type" value="<?= mg_e($campaignType) ?>">
           <?php if ($campaignType === 'qr_reward_drop'): ?><input type="hidden" name="qr_token" value="<?= mg_e($mgCampaignToken !== '' ? $mgCampaignToken : (string) ($mgCampaign['qr_code_token'] ?? '')) ?>"><?php endif; ?>
           <label>Name<input name="name" placeholder="Your name" maxlength="180"></label>
           <label>Email<input name="email" type="email" placeholder="you@example.com" required maxlength="255"></label>
