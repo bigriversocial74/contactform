@@ -112,6 +112,12 @@ async function mockV1Commerce(page) {
     });
   });
 
+  await page.route('**/checkout.php?session=**', route => route.fulfill({
+    status: 200,
+    contentType: 'text/html',
+    body: '<!doctype html><html><body><h1>Stripe Checkout test boundary</h1></body></html>',
+  }));
+
   await page.route('https://checkout.stripe.test/**', route => route.fulfill({
     status: 200,
     contentType: 'text/html',
@@ -148,7 +154,7 @@ test.describe('V1 release browser golden path', () => {
     await expect(page.locator('[data-cart-page] [data-cart-summary]')).toContainText('$25.00');
 
     await page.locator('[data-cart-checkout]').click();
-    await expect(page).toHaveURL('https://checkout.stripe.test/c/pay/release-smoke');
+    await expect(page).toHaveURL(/\/checkout\.php\?session=66666666-6666-4666-8666-666666666666/);
     await expect(page.locator('h1')).toHaveText('Stripe Checkout test boundary');
 
     expect(state.writes.map(item => item.path)).toEqual(expect.arrayContaining([
