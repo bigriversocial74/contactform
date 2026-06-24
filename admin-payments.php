@@ -1,7 +1,8 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__.'/includes/app.php';
-if(!mg_has_role('super_admin')&&!mg_has_permission('admin.settings.manage')){http_response_code(403);exit('Forbidden');}
+require_once __DIR__.'/includes/admin-auth.php';
+$user = mg_require_admin_page_permission('admin.settings.manage');
 $page_title='Stripe Payment Settings | Microgifter';
 $page_section='account';
 $header_mode='account';
