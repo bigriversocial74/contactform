@@ -18,17 +18,17 @@ window.Microgifter = window.Microgifter || {};
     }).join('') + '</div>';
   }
   function messageMarkup(items) {
-    if (!items.length) return '<div class="mg-header-signal-empty"><strong>No new messages</strong><p>New conversations and gift replies will appear here.</p></div>';
-    return '<div class="mg-header-signal-list">' + items.map(function (item) { return '<a class="' + (item.unread ? 'is-unread' : '') + '" href="/messages.php?thread=' + encodeURIComponent(item.id || item.public_id) + '"><strong>' + escapeHtml(item.subject) + '</strong><p>' + escapeHtml(item.latest_message || 'Open conversation') + '</p><div class="mg-header-signal-meta"><span>' + escapeHtml(item.latest_sender || 'Conversation') + '</span><span>' + escapeHtml(item.latest_at || '') + '</span></div></a>'; }).join('') + '</div>';
+    if (!items.length) return '<div class="mg-header-signal-empty"><strong>No new messages</strong><p>New conversations, CRM replies, and gift messages will appear here.</p></div>';
+    return '<div class="mg-header-signal-list">' + items.map(function (item) { var href = item.action_url || ('/messages.php?thread=' + encodeURIComponent(item.id || item.public_id)); var label = item.is_crm ? 'CRM conversation' : (item.latest_sender || 'Conversation'); return '<a class="' + (item.unread ? 'is-unread' : '') + '" href="' + escapeHtml(href) + '"><strong>' + escapeHtml(item.subject) + '</strong><p>' + escapeHtml(item.latest_message || 'Open conversation') + '</p><div class="mg-header-signal-meta"><span>' + escapeHtml(label) + '</span><span>' + escapeHtml(item.latest_at || '') + '</span></div></a>'; }).join('') + '</div>';
   }
   async function loadSignal(shell) {
     var panel = ensureSignalPanel(shell), type = shell.dataset.headerSignal || 'notifications';
     panel.innerHTML = '<div class="mg-header-signal-empty"><strong>Loading…</strong></div>';
     try {
       if (type === 'messages') {
-        var messages = await Microgifter.get('/api/messages/threads.php?limit=8'); var threads = messages.data && Array.isArray(messages.data.threads) ? messages.data.threads : []; setMessageCount(messages.data ? messages.data.unread_count : 0); panel.innerHTML = '<div class="mg-header-signal-panel-head"><div><span>Messages</span><strong>Gift conversations</strong></div><a href="/messages.php">View all</a></div>' + messageMarkup(threads);
+        var messages = await Microgifter.get('/api/messages/threads.php?limit=8'); var data = messages.data || messages; var threads = Array.isArray(data.threads) ? data.threads : []; setMessageCount(data.unread_count || 0); panel.innerHTML = '<div class="mg-header-signal-panel-head"><div><span>Messages</span><strong>Messages & CRM</strong></div><a href="/messages.php">View all</a></div>' + messageMarkup(threads);
       } else {
-        var notifications = await Microgifter.get('/api/notifications/index.php?limit=8'); var items = notifications.data && Array.isArray(notifications.data.notifications) ? notifications.data.notifications : []; setNotificationCount(notifications.data ? notifications.data.unread_count : 0); panel.innerHTML = '<div class="mg-header-signal-panel-head"><div><span>Notifications</span><strong>Activity & alerts</strong></div><div><a href="/notifications.php">View all</a><a href="/notification-preferences.php">Preferences</a><button type="button" data-clear-notifications>Mark all read</button></div></div>' + notificationMarkup(items);
+        var notifications = await Microgifter.get('/api/notifications/index.php?limit=8'); var ndata = notifications.data || notifications; var items = Array.isArray(ndata.notifications) ? ndata.notifications : []; setNotificationCount(ndata.unread_count || 0); panel.innerHTML = '<div class="mg-header-signal-panel-head"><div><span>Notifications</span><strong>Activity & alerts</strong></div><div><a href="/notifications.php">View all</a><a href="/notification-preferences.php">Preferences</a><button type="button" data-clear-notifications>Mark all read</button></div></div>' + notificationMarkup(items);
       }
     } catch (error) { panel.innerHTML = '<div class="mg-header-signal-empty"><strong>Unable to load</strong><p>' + escapeHtml(error.message || 'Try again shortly.') + '</p></div>'; }
   }
@@ -40,13 +40,7 @@ window.Microgifter = window.Microgifter || {};
     document.querySelectorAll('[data-header-signal]').forEach(function (shell) { ensureSignalPanel(shell); loadSignal(shell); });
     document.querySelectorAll('[data-header-signal-trigger]').forEach(function (trigger) { trigger.addEventListener('click', function (event) { event.preventDefault(); event.stopPropagation(); var shell = trigger.closest('[data-header-signal]'); if (!shell) return; var willOpen = !shell.classList.contains('is-open'); closeSignals(shell); closeAccountMenu(); shell.classList.toggle('is-open', willOpen); trigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false'); lastTrigger = willOpen ? trigger : null; if (willOpen) loadSignal(shell); }); });
     document.querySelectorAll('[data-mg-auth-trigger]').forEach(function (trigger) { trigger.addEventListener('click', function (event) { event.stopPropagation(); var shell = trigger.closest('[data-mg-auth-menu]'); if (!shell) return; var willOpen = !shell.classList.contains('is-open'); closeAccountMenu(shell); closeSignals(); shell.classList.toggle('is-open', willOpen); trigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false'); lastTrigger = willOpen ? trigger : null; }); });
-    document.addEventListener('click', async function (event) {
-      var clear = event.target.closest('[data-clear-notifications]');
-      if (clear) { clear.disabled = true; try { var response = await Microgifter.post('/api/notifications/read.php', { id: 'all' }); setNotificationCount(response.data ? response.data.unread_count : 0); var shell = clear.closest('[data-header-signal]'); if (shell) await loadSignal(shell); } catch (error) { clear.disabled = false; } return; }
-      var notification = event.target.closest('[data-notification-id]');
-      if (notification) { try { await Microgifter.post('/api/notifications/read.php', { id: notification.dataset.notificationId }); } catch (ignore) {} }
-      if (!event.target.closest('[data-header-signal], [data-mg-auth-menu]')) closeAll(false);
-    });
+    document.addEventListener('click', async function (event) { var clear = event.target.closest('[data-clear-notifications]'); if (clear) { clear.disabled = true; try { var response = await Microgifter.post('/api/notifications/read.php', { id: 'all' }); var rdata = response.data || response; setNotificationCount(rdata.unread_count || 0); var shell = clear.closest('[data-header-signal]'); if (shell) await loadSignal(shell); } catch (error) { clear.disabled = false; } return; } var notification = event.target.closest('[data-notification-id]'); if (notification) { try { await Microgifter.post('/api/notifications/read.php', { id: notification.dataset.notificationId }); } catch (ignore) {} } if (!event.target.closest('[data-header-signal], [data-mg-auth-menu]')) closeAll(false); });
     document.addEventListener('keydown', function (event) { if (event.key === 'Escape') closeAll(true); });
   });
   document.addEventListener('mg:notifications:count', function (event) { setNotificationCount(event.detail && event.detail.count); });
