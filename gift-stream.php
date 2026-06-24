@@ -5,15 +5,17 @@ require_once __DIR__ . '/includes/app.php';
 
 $page_title = 'Gift Stream | Microgifter';
 $page_section = 'gift-stream';
-$header_mode = 'agent';
-$agent_tab = 'inbox';
+$header_mode = 'account';
 $page_styles = ['/assets/css/agent-workspace-layout.css','/assets/css/gift-stream.css'];
 $page_scripts = ['/assets/js/gift-stream.js'];
 
 require __DIR__ . '/includes/header.php';
+$appSidebarVariant = 'utility';
+$appSidebarLabel = 'Workspace';
+$appSidebarActive = 'messages';
 ?>
-<section class="mg-app-shell mg-agent-app mg-gift-stream-app">
-  <?php require __DIR__ . '/includes/agent-sidebar.php'; ?>
+<section class="mg-app-shell mg-utility-app mg-gift-stream-app">
+  <?php require __DIR__ . '/includes/app-sidebar.php'; ?>
   <div class="mg-app-workspace mg-gift-stream-workspace">
     <section class="mg-stream-shell" data-gift-stream data-start-item="<?= mg_e((string) ($_GET['item'] ?? '')) ?>">
       <div class="mg-stream-stage" data-stream-stage aria-live="polite">
