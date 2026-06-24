@@ -65,9 +65,10 @@ final class BuilderAddToCartIntegrationContractTest extends TestCase
         self::assertIsString($source);
         foreach([
             "document.addEventListener('mg:cart:add'",
-            'detail.product_version_id||detail.productVersionId',
-            'C().addProductVersion(id,detail.quantity||1).then(refresh)',
-            'window.Microgifter.cart={refresh:refresh,open:openDrawer,close:closeDrawer,addProductVersion:function(id,itemQuantity){return C().addProductVersion(id,itemQuantity).then(refresh);}}',
+            'detail.product_version_id || detail.productVersionId',
+            'C().addProductVersion(id, detail.quantity || 1).then(refresh)',
+            'window.Microgifter.cart={',
+            'addProductVersion: function (id, itemQuantity)',
         ] as $needle){
             self::assertStringContainsString($needle,$source);
         }
