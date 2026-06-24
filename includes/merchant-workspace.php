@@ -38,7 +38,7 @@ $appSidebarVariant = 'merchant';
 $appSidebarLabel = 'Merchant';
 $appSidebarActive = $merchantView;
 ?>
-<section class="mg-app-shell mg-merchant-app" data-merchant-app data-merchant-view="<?= mg_e($merchantView) ?>">
+<section class="mg-app-shell mg-merchant-app" data-merchant-app data-merchant-view="<?= mg_e($merchantView) ?>" data-sidebar-contract="mg-app-sidebar">
   <?php require __DIR__ . '/app-sidebar.php'; ?>
   <main class="mg-app-workspace mg-merchant-main">
    <?php if(!$user): ?><section class="mg-app-panel"><div class="mg-app-panel-head"><div><h2>Merchant access</h2><p>Sign in to open your merchant workspace.</p></div></div><div class="mg-app-panel-body"><a class="mg-btn mg-btn-primary" href="/signin.php">Sign in</a></div></section>
