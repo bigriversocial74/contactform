@@ -25,7 +25,8 @@ function mg_delivery_enqueue(PDO $pdo,array $input,?callable $failureHook=null):
     mg_delivery_ensure_schema($pdo);
     $key=trim((string)($input['idempotency_key']??''));$channel=(string)($input['channel']??'');$template=trim((string)($input['template_key']??''));$recipient=(int)($input['recipient_user_id']??0);$category=(string)($input['category']??'transactional');$recipientSnapshot=(array)($input['recipient_snapshot']??[]);$toEmail=trim((string)($recipientSnapshot['email']??$input['email']??''));
     $validExternalEmail=$channel==='email'&&$recipient<1&&filter_var($toEmail,FILTER_VALIDATE_EMAIL);
-    if($key===''||$template===''||(!($recipient>0)||false)&&!$validExternalEmail||!in_array($channel,['in_app','email','sms','webhook'],true))throw new MgDeliveryException('Invalid message delivery request.',422);
+    $validRecipient=$recipient>0||$validExternalEmail;
+    if($key===''||$template===''||!$validRecipient||!in_array($channel,['in_app','email','sms','webhook'],true))throw new MgDeliveryException('Invalid message delivery request.',422);
     $payload=mg_delivery_redact((array)($input['payload']??[]));$fingerprint=mg_delivery_fingerprint($input);$owns=!$pdo->inTransaction();if($owns)$pdo->beginTransaction();
     try{
         $find=$pdo->prepare('SELECT e.*,j.public_id job_public_id,j.status job_status FROM message_events e INNER JOIN message_delivery_jobs j ON j.message_event_id=e.id WHERE e.event_key=? LIMIT 1 FOR UPDATE');$find->execute([$key]);
