@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/bootstrap.php';
 require_once dirname(__DIR__) . '/rewards/_zero_value_bridge.php';
 require_once dirname(__DIR__) . '/rewards/_identity_gate.php';
+require_once dirname(__DIR__) . '/rewards/_wallet_lifecycle_automation.php';
 require_once dirname(__DIR__) . '/microgifts/_idempotency.php';
 require_once dirname(__DIR__) . '/microgifts/_golden_path_integrity.php';
 require_once dirname(__DIR__) . '/microgifts/_action_center_projection.php';
@@ -32,5 +33,5 @@ try{
  else{$claimResult=mg_microgift_integrity_claim($pdo,$userId,['instance_id'=>$instanceId,'idempotency_key'=>substr('wallet-claim:'.hash('sha256',$walletId.'|'.$userId),0,190)]);$instance=mg_microgift_load_instance($pdo,$instanceId);}
  $projection=mg_action_center_project_lifecycle($pdo,$instance,['sender_user_id'=>(int)$item['merchant_user_id'],'recipient_user_id'=>$userId,'merchant_user_id'=>(int)$item['merchant_user_id'],'occurred_at'=>date('Y-m-d H:i:s')]);
  $pdo->prepare("UPDATE wallet_items SET user_id=?,pppm_item_id=COALESCE(pppm_item_id,?),status='claimed',viewed_at=COALESCE(viewed_at,NOW()),claimed_at=COALESCE(claimed_at,NOW()),updated_at=NOW() WHERE id=?")->execute([$userId,(int)($bridge['pppm_item_db_id']??0),(int)$item['id']]);
- mg_wc_event($pdo,$item,'wallet_item.claimed',['pppm_bridge'=>$bridge,'claim'=>$claimResult,'action_center'=>$projection]);$pdo->commit();mg_ok(['wallet_item_id'=>$walletId,'wallet_status'=>'claimed','pppm_bridge'=>$bridge,'claim'=>$claimResult,'action_center'=>$projection],'Wallet item claimed.');
+ $automation=mg_wallet_lifecycle_automation($pdo,$item,'wallet_item.claimed',$userId,$user,['pppm_bridge'=>$bridge,'claim'=>$claimResult,'action_center'=>$projection]);mg_wc_event($pdo,$item,'wallet_item.claimed',['pppm_bridge'=>$bridge,'claim'=>$claimResult,'action_center'=>$projection,'lifecycle_automation'=>$automation]);$pdo->commit();mg_ok(['wallet_item_id'=>$walletId,'wallet_status'=>'claimed','pppm_bridge'=>$bridge,'claim'=>$claimResult,'action_center'=>$projection,'lifecycle_automation'=>$automation],'Wallet item claimed.');
 }catch(Throwable $error){if($pdo->inTransaction())$pdo->rollBack();mg_security_log('error','wallet.claim.failed','Unable to claim wallet item.',['exception_class'=>$error::class,'message'=>$error->getMessage()],$userId);mg_fail('Unable to claim wallet item.',500);}
