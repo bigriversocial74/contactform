@@ -10,12 +10,12 @@
         </article>
         <article class="mg-panel" data-reveal="scale" style="--delay:100ms">
           <div class="mg-panel-head"><div class="mg-panel-icon"><svg viewBox="0 0 24 24"><path d="M4 13h4l11-6v10L8 11H4v2Z"/><path d="M8 11v7a2 2 0 0 0 2 2h1M21 9c1 2 1 4 0 6"/></svg></div><div><h3>Campaigns</h3><p>Launch promotions, audience segments, and scheduled reward drops with measurable performance.</p></div></div>
-          <div class="mg-mini-ui"><img src="/images/sleek_saas_ui_with_gold_accents.svg" alt="Campaign performance dashboard preview"></div>
+          <div class="mg-mini-ui"><img src="/images/campaing_v1.png" alt="Campaign performance dashboard preview"></div>
           <div class="mg-panel-tags"><span>Audience</span><span>Offer</span><span>Performance</span></div>
         </article>
         <article class="mg-panel" data-reveal="scale" style="--delay:200ms">
           <div class="mg-panel-head"><div class="mg-panel-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-5 4.2-8 8-8s6.5 3 8 8"/></svg></div><div><h3>CRM</h3><p>See customer activity, reward history, and visit behavior in one simple relationship layer.</p></div></div>
-          <div class="mg-mini-ui"><img src="/images/sleek_saas_ui_with_gold_accents.svg" alt="CRM reward history preview"></div>
+          <div class="mg-mini-ui"><img src="/images/crm_v1.png" alt="CRM reward history preview"></div>
           <div class="mg-panel-tags"><span>Profile</span><span>History</span><span>Engagement</span></div>
         </article>
       </div>
