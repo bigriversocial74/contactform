@@ -135,11 +135,16 @@ require __DIR__ . '/includes/landing/index-v3/part09.php';
 .mg-v4-cta:hover{background:#f8f8f6!important;color:#000!important;}
 .mg-v4-hero{
   position:relative;
-  min-height:100svh;
-  overflow:hidden;
+  z-index:4;
+  min-height:108svh;
+  overflow:visible;
   padding:132px 0 0;
   isolation:isolate;
   background:#f2f2ef;
+}
+.mg-v4-hero + .mg-section{
+  position:relative;
+  z-index:1;
 }
 .mg-v4-hero::before{
   content:"";
@@ -160,7 +165,7 @@ require __DIR__ . '/includes/landing/index-v3/part09.php';
   position:relative;
   z-index:2;
   width:min(1180px,calc(100% - 40px));
-  min-height:calc(100svh - 132px);
+  min-height:calc(108svh - 132px);
   margin:0 auto;
   display:grid;
   grid-template-columns:minmax(0,650px) minmax(360px,1fr);
@@ -231,17 +236,21 @@ require __DIR__ . '/includes/landing/index-v3/part09.php';
 }
 .mg-v4-visual{
   position:relative;
+  z-index:3;
   grid-column:1 / -1;
   grid-row:2;
   align-self:end;
   width:100%;
-  min-height:360px;
+  min-height:430px;
   display:flex;
   align-items:flex-end;
   justify-content:center;
   pointer-events:none;
+  overflow:visible;
 }
 .mg-v10-desktop{
+  position:relative;
+  z-index:2;
   width:min(850px,78vw);
   margin:0 0 -74px 132px;
   border:12px solid #111;
@@ -255,13 +264,13 @@ require __DIR__ . '/includes/landing/index-v3/part09.php';
 }
 .mg-v4-phone{
   position:absolute;
-  left:92px;
-  bottom:-92px;
-  z-index:3;
-  width:min(230px,26vw);
+  left:56px;
+  bottom:-142px;
+  z-index:8;
+  width:min(330px,31vw);
   height:auto;
   display:block!important;
-  filter:drop-shadow(0 30px 44px rgba(0,0,0,.46));
+  filter:drop-shadow(0 34px 52px rgba(0,0,0,.50));
   transform:rotate(-2deg);
 }
 @media(max-width:1040px){
@@ -272,7 +281,7 @@ require __DIR__ . '/includes/landing/index-v3/part09.php';
   .mg-v4-hero-grid{grid-template-columns:1fr;}
   .mg-v4-copy{max-width:610px;}
   .mg-v10-desktop{margin-left:70px;width:min(760px,82vw);}
-  .mg-v4-phone{left:40px;width:min(205px,28vw);}
+  .mg-v4-phone{left:28px;bottom:-132px;width:min(285px,36vw);}
 }
 @media(max-width:760px){
   .mg-v4-header,.mg-v4 .mg-site-header{position:absolute!important;}
@@ -286,14 +295,14 @@ require __DIR__ . '/includes/landing/index-v3/part09.php';
   .mg-v4-logo img{width:128px!important;}
   .mg-v4-links{display:none!important;}
   .mg-v4-cta{min-height:38px!important;padding:0 14px!important;font-size:12px!important;}
-  .mg-v4-hero{min-height:100svh;padding:82px 0 0;}
+  .mg-v4-hero{min-height:1180px;padding:82px 0 0;overflow:hidden;}
   .mg-v4-hero::before{background-position:center top;background-size:cover;}
   .mg-v4-hero::after{
-    background:linear-gradient(180deg,rgba(245,245,242,.04) 0%,rgba(245,245,242,.08) 34%,rgba(245,245,242,.94) 48%,rgba(245,245,242,.98) 68%,rgba(0,0,0,.86) 88%,#020202 100%);
+    background:linear-gradient(180deg,rgba(245,245,242,.02) 0%,rgba(245,245,242,.04) 38%,rgba(245,245,242,.90) 58%,rgba(245,245,242,.98) 76%,rgba(0,0,0,.84) 92%,#020202 100%);
   }
   .mg-v4-hero-grid{
     width:calc(100% - 28px);
-    min-height:calc(100svh - 82px);
+    min-height:auto;
     display:flex;
     flex-direction:column;
     gap:0;
@@ -301,31 +310,37 @@ require __DIR__ . '/includes/landing/index-v3/part09.php';
   .mg-v4-visual{
     order:1;
     width:100%;
-    min-height:300px;
+    min-height:455px;
     align-items:flex-end;
     justify-content:center;
     margin-top:0;
+    overflow:visible;
   }
   .mg-v10-desktop{
-    width:92vw;
-    margin:0 0 -30px 34px;
+    position:relative;
+    z-index:3;
+    width:96vw;
+    margin:58px 0 -68px 28px;
     border-width:8px;
     border-bottom-width:15px;
     border-radius:13px 13px 7px 7px;
     opacity:.72;
   }
   .mg-v4-phone{
-    left:4px;
-    bottom:-34px;
-    width:min(132px,34vw);
-    filter:drop-shadow(0 22px 28px rgba(0,0,0,.42));
+    left:-110px;
+    bottom:-236px;
+    z-index:1;
+    width:min(396px,105vw);
+    filter:drop-shadow(0 26px 34px rgba(0,0,0,.45));
   }
   .mg-v4-copy{
+    position:relative;
+    z-index:4;
     order:2;
     width:100%;
     max-width:100%;
-    padding-top:72px;
-    padding-bottom:54px;
+    padding-top:142px;
+    padding-bottom:74px;
   }
   .mg-v4-title{
     max-width:100%;
@@ -346,8 +361,8 @@ require __DIR__ . '/includes/landing/index-v3/part09.php';
 @media(max-width:440px){
   .mg-v4-logo img{width:116px!important;}
   .mg-v4-cta{padding:0 12px!important;}
-  .mg-v10-desktop{width:96vw;margin-left:28px;}
-  .mg-v4-phone{width:min(118px,34vw);}
+  .mg-v10-desktop{width:100vw;margin-left:20px;}
+  .mg-v4-phone{left:-112px;bottom:-224px;width:min(354px,104vw);}
 }
 </style>
 
