@@ -44,6 +44,7 @@
     "test-demand-orchestration-recovery": "php scripts/validate_demand_orchestration_recovery_behavior.php",
     "test-checkout-fulfillment": "php scripts/validate_checkout_capture_behavior.php",
     "test-lifecycle-completion": "php scripts/validate_lifecycle_completion.php",
+    "test-production-sql-bundle-first-pass": "php scripts/build_production_sql_baseline.php && php scripts/seed_production_sql_bundle_fixture.php && php scripts/import_sql_file.php --file=database/microgifter_complete_production_update_v1c_v1release.sql && php scripts/verify_production_sql_bundle.php",
     "build-release": "bash scripts/build_release_artifact.sh",
     "validate-backup-restore": "bash scripts/validate_database_backup_restore.sh",
     "validate-release-rollback": "bash scripts/validate_release_rollback.sh",
