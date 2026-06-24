@@ -100,7 +100,7 @@ $adminNav = [
 ?>
 <aside class="mg-app-sidebar mg-admin-side" data-admin-sidebar>
   <div class="mg-app-sidebar-brand mg-admin-side-brand">
-    <a class="mg-brand" href="/account-admin.php" aria-label="Microgifter admin home"><span>Microgifter</span></a>
+    <a class="mg-brand mg-sidebar-logo" href="/account-admin.php" aria-label="Microgifter admin home"><img src="/images/logo_main_drk.png" alt="Microgifter"><span class="mg-sidebar-logo-text">Microgifter</span></a>
     <span class="mg-admin-side-badge">Admin</span>
   </div>
 

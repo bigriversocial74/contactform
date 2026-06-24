@@ -14,7 +14,7 @@ require __DIR__ . '/includes/header.php';
 <section class="mg-app-shell crm-shell">
   <aside class="mg-app-sidebar crm-sidebar">
     <div class="mg-app-sidebar-brand">
-      <a class="mg-brand" href="/index.php" aria-label="Microgifter home"><span class="mg-brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" focusable="false"><path d="M13 2 4 14h7l-1 8 10-13h-7l1-7Z" fill="currentColor"/></svg></span><span>Microgifter</span></a>
+      <a class="mg-brand mg-sidebar-logo" href="/index.php" aria-label="Microgifter home"><img src="/images/logo_main_drk.png" alt="Microgifter"><span class="mg-sidebar-logo-text">Microgifter</span></a>
       <?php if ($canCrm): ?><button class="crm-add-user-button" type="button" data-crm-tab="users" aria-label="Add sales user">+</button><?php endif; ?>
     </div>
     <?php if ($canCrm): ?>

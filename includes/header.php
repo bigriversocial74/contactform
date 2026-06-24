@@ -165,6 +165,7 @@ $can_admin_dashboard = $user && (
 <?php foreach ($page_styles as $style): ?><link rel="stylesheet" href="<?= mg_e($style) ?>"><?php endforeach; ?>
 <?php if ($is_app_page): ?>
 <link rel="stylesheet" href="/assets/css/mobile-app.css">
+<link rel="stylesheet" href="/assets/css/app-header-sidebar.css">
 <link rel="stylesheet" href="/assets/css/app-fixes.css">
 <?php endif; ?>
 </head>

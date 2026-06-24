@@ -23,7 +23,7 @@ $user = mg_current_user();
 ?>
 <section class="mg-app-shell mg-merchant-app" data-merchant-app data-merchant-view="<?= mg_e($merchantView) ?>">
  <aside class="mg-app-sidebar mg-merchant-sidebar">
-  <div class="mg-app-sidebar-brand"><a class="mg-brand" href="/index.php"><span>Microgifter</span></a><span class="mg-merchant-shell-label">Merchant</span></div>
+  <div class="mg-app-sidebar-brand"><a class="mg-brand mg-sidebar-logo" href="/index.php" aria-label="Microgifter home"><img src="/images/logo_main_drk.png" alt="Microgifter"><span class="mg-sidebar-logo-text">Microgifter</span></a><span class="mg-merchant-shell-label">Merchant</span></div>
   <div class="mg-merchant-progress-card"><div><span>Workspace setup</span><strong data-merchant-progress>0%</strong></div><div class="mg-merchant-progress"><i data-merchant-progress-bar></i></div><small data-merchant-status>Loading activation status…</small></div>
   <nav class="mg-app-side-nav mg-merchant-nav" aria-label="Merchant workspace"><?php foreach($merchantNav as $key=>$item): ?><a class="<?= $merchantView===$key?'is-active':'' ?>" href="<?= mg_e($item[2]) ?>"><strong><?= mg_e($item[0]) ?></strong><span><?= mg_e($item[1]) ?></span></a><?php endforeach; ?></nav>
   <div class="mg-merchant-sidebar-footer"><span class="mg-save-state" data-merchant-save-state>All changes saved</span><a class="mg-btn mg-btn-soft" href="/merchant-campaigns.php">Create campaign</a></div>

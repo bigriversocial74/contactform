@@ -64,7 +64,7 @@ require __DIR__ . '/includes/header.php';
 <section class="mg-app-shell mg-account-app">
   <aside class="mg-app-sidebar mg-account-left">
     <div class="mg-app-sidebar-brand">
-      <a class="mg-brand" href="/index.php" aria-label="Microgifter home"><span class="mg-brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" focusable="false"><path d="M13 2 4 14h7l-1 8 10-13h-7l1-7Z" fill="currentColor"/></svg></span><span>Microgifter</span></a>
+      <a class="mg-brand mg-sidebar-logo" href="/index.php" aria-label="Microgifter home"><img src="/images/logo_main_drk.png" alt="Microgifter"><span class="mg-sidebar-logo-text">Microgifter</span></a>
     </div>
     <?php if ($user): ?>
       <nav class="mg-app-side-nav mg-account-nav" aria-label="Account pages"><?php foreach ($accountNav as $key => $item): ?><a class="<?= $accountView === $key ? 'is-active' : '' ?>" href="<?= mg_e($item['href']) ?>"><strong><?= mg_e($item['label']) ?></strong><span><?= mg_e($item['detail']) ?></span></a><?php endforeach; ?></nav>
