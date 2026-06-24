@@ -4,6 +4,7 @@ require_once dirname(__DIR__, 2) . '/bootstrap.php';
 require_once dirname(__DIR__, 2) . '/rewards/_zero_value_bridge.php';
 require_once dirname(__DIR__, 3) . '/includes/merchant-crm.php';
 require_once __DIR__ . '/_limits.php';
+require_once __DIR__ . '/_security.php';
 
 function mg_contest_campaign_uuid(): string { $b=random_bytes(16);$b[6]=chr((ord($b[6])&15)|64);$b[8]=chr((ord($b[8])&63)|128);return vsprintf('%s%s-%s-%s-%s-%s%s%s',str_split(bin2hex($b),4)); }
 function mg_contest_campaign_expiry(array $t): ?string { $r=(string)($t['expiration_rule']??'none'); if($r==='fixed_date'||$r==='event_date')return $t['expires_at']?:null; if($r==='after_issue'&&!empty($t['expiration_days']))return date('Y-m-d H:i:s',time()+((int)$t['expiration_days']*86400)); return null; }
@@ -16,6 +17,7 @@ $input=mg_input();$pdo=mg_db();
 $campaignRef=strtolower(trim((string)($input['campaign_id']??$input['campaign']??$input['slug']??'')));
 $email=strtolower(trim((string)($input['email']??'')));$name=trim((string)($input['name']??$input['full_name']??''));$phone=trim((string)($input['phone']??''));$entryContext=is_array($input['entry']??null)?$input['entry']:[];
 if($campaignRef===''||$email===''||!filter_var($email,FILTER_VALIDATE_EMAIL)||mb_strlen($email)>255||mb_strlen($name)>180||mb_strlen($phone)>60)mg_fail('Invalid contest entry.',422);
+mg_public_campaign_throttle('contest_entry',$campaignRef,$email);
 try{
  $pdo->beginTransaction();
  $sql="SELECT c.*,rt.id reward_template_db_id,rt.public_id reward_template_public_id,rt.title reward_template_title,rt.description reward_template_description,rt.redemption_instructions,rt.value_amount_cents,rt.currency,rt.expiration_rule,rt.expiration_days,rt.expires_at,rt.quantity_limit reward_template_quantity_limit,rt.issued_count reward_template_issued_count,rt.per_user_limit reward_template_per_user_limit FROM campaigns c LEFT JOIN reward_templates rt ON rt.id=c.reward_template_id WHERE c.campaign_type='contest_giveaway' AND c.status='active' AND (c.public_id=? OR c.public_slug=?) LIMIT 1";
