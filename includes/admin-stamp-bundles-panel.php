@@ -25,3 +25,4 @@ $stampBundles = [
 <script src="/assets/js/admin-stamp-operations.js" defer></script>
 <script src="/assets/js/admin-stamp-sales.js" defer></script>
 <script src="/assets/js/admin-stamp-failures.js" defer></script>
+<script src="/assets/js/admin-stamp-test-runner.js" defer></script>
