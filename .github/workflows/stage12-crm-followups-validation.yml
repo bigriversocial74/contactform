@@ -104,5 +104,8 @@ jobs:
           set -euo pipefail
           test -f database/stage_12_merchant_crm.sql
           test -f database/stage_12_campaign_followups.sql
+          test -f database/stage_12_message_delivery_campaign_suppression.sql
           grep -q 'campaign_followup_rules' database/stage_12_campaign_followups.sql
           grep -q 'campaign_followup_jobs' database/stage_12_campaign_followups.sql
+          grep -q 'message_delivery_jobs' database/stage_12_message_delivery_campaign_suppression.sql
+          grep -q 'campaign_email_suppressions' database/stage_12_message_delivery_campaign_suppression.sql
