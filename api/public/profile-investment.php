@@ -7,21 +7,33 @@ mg_require_method('GET');
 
 $pdo = mg_db();
 $slug = mg_public_profile_slug((string)($_GET['slug'] ?? ''));
-$profile = mg_public_profile_read($pdo, $slug, [
-    'viewer_user_id' => (int)(mg_current_user()['id'] ?? 0),
-    'preview' => !empty($_GET['preview']),
-    'product_limit' => 6,
-    'post_limit' => 6,
-    'plan_limit' => 6,
-]);
+$currentUser = mg_current_user();
+$viewerId = (int)($currentUser['id'] ?? 0);
+$viewerId = $viewerId > 0 ? $viewerId : null;
 
-if (!$profile) {
+try {
+    $profile = mg_public_profile_read($pdo, $slug, [
+        'viewer_id' => $viewerId,
+        'preview' => !empty($_GET['preview']),
+        'product_limit' => 6,
+        'post_limit' => 6,
+        'plan_limit' => 6,
+    ]);
+} catch (Throwable) {
     mg_fail('Profile not found.', 404);
 }
 
-$ownerId = (int)($profile['profile']['user_id'] ?? $profile['owner']['id'] ?? 0);
-$displayName = (string)($profile['profile']['display_name'] ?? $profile['profile']['name'] ?? 'Microgifter Merchant');
-$tagline = (string)($profile['profile']['tagline'] ?? 'Tokenize local experiences and create future demand.');
+$ownerId = 0;
+try {
+    $ownerStmt = $pdo->prepare('SELECT user_id FROM public_profiles WHERE slug=? LIMIT 1');
+    $ownerStmt->execute([$slug]);
+    $ownerId = (int)($ownerStmt->fetchColumn() ?: 0);
+} catch (Throwable) {
+    $ownerId = 0;
+}
+
+$displayName = (string)($profile['profile']['display_name'] ?? 'Microgifter Merchant');
+$tagline = (string)($profile['profile']['headline'] ?? $profile['profile']['biography'] ?? 'Tokenize local experiences and create future demand.');
 
 function mg_invest_schema_table_exists(PDO $pdo, string $table): bool
 {
@@ -33,7 +45,7 @@ function mg_invest_schema_table_exists(PDO $pdo, string $table): bool
         $stmt = $pdo->prepare('SHOW TABLES LIKE ?');
         $stmt->execute([$table]);
         $cache[$table] = (bool)$stmt->fetchColumn();
-    } catch (Throwable $e) {
+    } catch (Throwable) {
         $cache[$table] = false;
     }
     return $cache[$table];
@@ -44,7 +56,7 @@ function mg_invest_money(int $cents): string
     return '$' . number_format($cents / 100, 0);
 }
 
-$activeDrops = 0;
+$activeDrops = (int)($profile['social_counts']['published_products'] ?? 0);
 $volume30dCents = 0;
 $redeemed = 0;
 $issued = 0;
@@ -53,8 +65,8 @@ if ($ownerId > 0 && mg_invest_schema_table_exists($pdo, 'campaigns')) {
     try {
         $stmt = $pdo->prepare('SELECT COUNT(*) FROM campaigns WHERE user_id=? AND COALESCE(status, "") NOT IN ("archived", "deleted")');
         $stmt->execute([$ownerId]);
-        $activeDrops = (int)$stmt->fetchColumn();
-    } catch (Throwable $e) {}
+        $activeDrops = max($activeDrops, (int)$stmt->fetchColumn());
+    } catch (Throwable) {}
 }
 
 if ($ownerId > 0 && mg_invest_schema_table_exists($pdo, 'wallet_items')) {
@@ -65,7 +77,7 @@ if ($ownerId > 0 && mg_invest_schema_table_exists($pdo, 'wallet_items')) {
         $issued = (int)($row['issued'] ?? 0);
         $redeemed = (int)($row['redeemed'] ?? 0);
         $volume30dCents = (int)($row['value_cents'] ?? 0);
-    } catch (Throwable $e) {}
+    } catch (Throwable) {}
 }
 
 $redemptionRate = $issued > 0 ? (int)round(($redeemed / $issued) * 100) : 0;
@@ -74,12 +86,10 @@ $marketValueCents = $volume30dCents + ($activeDrops * 2500);
 $floorPriceCents = $activeDrops > 0 ? (int)round($marketValueCents / max(1, $activeDrops)) : 0;
 $profileUrl = '/profile.php?slug=' . rawurlencode($slug);
 
-$response = [
-    'profile' => [
-        'display_name' => $displayName,
-        'tagline' => $tagline,
-        'slug' => $slug,
-    ],
+header('Cache-Control: private, no-store, max-age=0');
+header('Vary: Cookie, Authorization');
+mg_ok([
+    'profile' => ['display_name' => $displayName, 'tagline' => $tagline, 'slug' => $slug],
     'metrics' => [
         'demand_value' => mg_invest_money($marketValueCents),
         'floor_price' => mg_invest_money($floorPriceCents),
@@ -91,19 +101,6 @@ $response = [
         ['symbol' => 'MGFTR', 'price' => mg_invest_money($marketValueCents), 'change' => 'Demand', 'direction' => 'up', 'url' => $profileUrl],
         ['symbol' => 'DROPS', 'price' => (string)$activeDrops, 'change' => 'Active', 'direction' => 'flat', 'url' => $profileUrl],
         ['symbol' => 'VOL30', 'price' => mg_invest_money($volume30dCents), 'change' => '30D', 'direction' => 'flat', 'url' => $profileUrl],
-        ['symbol' => 'RDM', 'price' => $redemptionRate . '%', 'change' => 'Rate', 'direction' => 'up', 'url' => $profileUrl],
-        ['symbol' => 'DS', 'price' => (string)$demandScore, 'change' => 'Score', 'direction' => 'up', 'url' => $profileUrl],
-    ],
-    'schema_tables' => [
-        'wallet_items' => mg_invest_schema_table_exists($pdo, 'wallet_items'),
-        'campaigns' => mg_invest_schema_table_exists($pdo, 'campaigns'),
-        'campaign_contacts' => mg_invest_schema_table_exists($pdo, 'campaign_contacts'),
-        'campaign_events' => mg_invest_schema_table_exists($pdo, 'campaign_events'),
-        'reward_templates' => mg_invest_schema_table_exists($pdo, 'reward_templates'),
     ],
     'source' => $profile,
-];
-
-header('Cache-Control: private, no-store, max-age=0');
-header('Vary: Cookie, Authorization');
-mg_ok($response);
+]);
