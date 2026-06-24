@@ -77,6 +77,7 @@ return [
         'stage_16_agent_execution_orchestration.sql',
         'stage_17_multi_agent_swarms.sql',
         'stage_17b_demand_signal_agent_orchestration.sql',
+        'stage_17_stamp_ledger.sql',
         'stage_18_production_hardening_launch_readiness.sql',
         'stage_18b_demand_orchestration_operations.sql',
         'stage_18c_demand_orchestration_recovery.sql',
