@@ -42,7 +42,6 @@ $canViewProfileModeration = in_array('admin.profiles.moderation.view', $permissi
 $canManageProfileModeration = in_array('admin.profiles.moderation.manage', $permissions, true) || $isSuperAdmin;
 $canMerchantCatalog = in_array('admin.merchants.view', $permissions, true) || in_array('admin.catalog.view', $permissions, true) || $isSuperAdmin;
 $canCommerce = in_array('admin.commerce.view', $permissions, true) || in_array('merchant.payments.view', $permissions, true) || in_array('subscriptions.admin', $permissions, true) || in_array('microgift.operations.view', $permissions, true) || in_array('tips.reverse', $permissions, true) || $isSuperAdmin;
-$canAdminModeration = in_array('social.moderate', $permissions, true) || $canViewProfileModeration;
 $canOpsQueue = in_array('ops.alerts.assign', $permissions, true) || in_array('ops.alerts.resolve', $permissions, true) || $isSuperAdmin;
 $canAiSettings = in_array('admin.settings.manage', $permissions, true) || $isSuperAdmin;
 $adminPermissionSet = [
@@ -66,12 +65,16 @@ $adminSidebarNav = [
   'admin' => ['label' => 'Admin dashboard', 'href' => '/account-admin.php', 'detail' => 'Platform overview', 'visible' => $hasAdminAccess],
   'profile_moderation' => ['label' => 'Moderation', 'href' => '/account-profile-moderation.php', 'detail' => 'Profile review queue', 'visible' => $canViewProfileModeration],
   'admin_users' => ['label' => 'Users', 'href' => '/admin/users.php', 'detail' => 'Accounts and access', 'visible' => in_array('admin.users.view', $permissions, true) || $isSuperAdmin],
+  'pending_models' => ['label' => 'Pending models', 'href' => '/admin/pending-models.php', 'detail' => 'Model approval queue', 'visible' => in_array('admin.users.view', $permissions, true) || $isSuperAdmin],
   'merchant_catalog' => ['label' => 'Merchants & catalog', 'href' => '/merchant-catalog-operations.php', 'detail' => 'Stores, products, media', 'visible' => $canMerchantCatalog],
-  'commerce' => ['label' => 'Commerce', 'href' => '/commerce-operations.php', 'detail' => 'Orders and lifecycle', 'visible' => $canCommerce],
-  'moderation_center' => ['label' => 'Moderation center', 'href' => '/admin/moderation.php', 'detail' => 'Reports and review', 'visible' => $canAdminModeration],
+  'commerce' => ['label' => 'Commerce operations', 'href' => '/commerce-operations.php', 'detail' => 'Orders and lifecycle', 'visible' => $canCommerce],
+  'audit_logs' => ['label' => 'Audit logs', 'href' => '/admin/audit-logs.php', 'detail' => 'Administrative activity', 'visible' => in_array('admin.audit.view', $permissions, true) || $isSuperAdmin],
+  'security_logs' => ['label' => 'Security logs', 'href' => '/admin/security-logs.php', 'detail' => 'Security events', 'visible' => $canViewSecurityLogs],
+  'sessions' => ['label' => 'Sessions', 'href' => '/admin/sessions.php', 'detail' => 'Active user sessions', 'visible' => $canViewAdminSessions],
   'system_health' => ['label' => 'System health', 'href' => '/admin/system-health.php', 'detail' => 'Runtime and delivery', 'visible' => in_array('admin.health.view', $permissions, true) || $isSuperAdmin],
   'lifecycle_health' => ['label' => 'Lifecycle health', 'href' => '/admin/lifecycle-health.php', 'detail' => 'Checkout to redemption', 'visible' => in_array('admin.health.view', $permissions, true) || $isSuperAdmin],
   'ops_queue' => ['label' => 'Ops queue', 'href' => '/admin/ops-queue.php', 'detail' => 'Alerts and incidents', 'visible' => $canOpsQueue],
+  'payments' => ['label' => 'Stripe payments', 'href' => '/admin-payments.php', 'detail' => 'Credentials and readiness', 'visible' => $canAiSettings],
   'ai_settings' => ['label' => 'AI settings', 'href' => '/admin-ai.php', 'detail' => 'Models and providers', 'visible' => $canAiSettings],
 ];
 $sidebarNav = $accountView === 'admin' ? $adminSidebarNav : $accountNav;
