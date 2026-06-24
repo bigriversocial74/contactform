@@ -90,7 +90,7 @@ final class PublicProductStorefrontCartContractTest extends TestCase
 
         foreach([
             "event.target.closest('[data-cart-add],[data-add-to-cart]')",
-            'button.dataset.productVersionId||button.dataset.versionId||button.dataset.cartVersionId',
+            'button.dataset.productVersionId || button.dataset.versionId || button.dataset.cartVersionId',
             'C().addProductVersion(productVersionId',
             'openDrawer(button)',
         ] as $needle){
