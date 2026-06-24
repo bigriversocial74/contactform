@@ -24,7 +24,7 @@ $page_scripts = [
     '/assets/js/public-profile-investment.js',
 ];
 $page_manifest = [
-    'id' => 'profile',
+    'id' => 'public-profile',
     'title' => $page_title,
     'section' => $page_section,
     'header_mode' => $header_mode,
