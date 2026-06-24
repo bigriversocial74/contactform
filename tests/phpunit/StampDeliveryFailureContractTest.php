@@ -42,4 +42,16 @@ final class StampDeliveryFailureContractTest extends TestCase
             self::assertStringContainsString($needle, $source);
         }
     }
+
+    public function testAdminDeliveryFailureReportExists(): void
+    {
+        $api = $this->read('api/stamps/delivery-failure-report.php');
+        $panel = $this->read('includes/admin-stamp-bundles-panel.php');
+        $js = $this->read('assets/js/admin-stamp-failures.js');
+        foreach(['delivery_failure_void','failed_send_void','failures'] as $needle){
+            self::assertStringContainsString($needle, $api);
+        }
+        self::assertStringContainsString('data-admin-stamp-failure-list', $panel);
+        self::assertStringContainsString('/api/stamps/delivery-failure-report.php', $js);
+    }
 }
