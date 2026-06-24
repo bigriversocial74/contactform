@@ -1,0 +1,82 @@
+/* Public light polish: footer link color cleanup and developer docs light content. */
+body[data-authenticated="false"] .mg-universal-footer .mg-footer-column a,
+body[data-authenticated="false"] .mg-universal-footer .mg-footer-bottom-links a{
+  color:#4f4b43!important;
+}
+body[data-authenticated="false"] .mg-universal-footer .mg-footer-column a:hover,
+body[data-authenticated="false"] .mg-universal-footer .mg-footer-bottom-links a:hover{
+  color:#101010!important;
+}
+body[data-authenticated="false"] .mg-universal-footer .mg-footer-column h2{
+  color:#101010!important;
+}
+body[data-authenticated="false"] .mg-universal-footer .mg-footer-market-strip strong{
+  color:#101010!important;
+}
+
+body[data-authenticated="false"][data-page-id="developer-docs"] .mg-main{
+  background:
+    radial-gradient(circle at 12% 8%,rgba(0,0,0,.045),transparent 30%),
+    radial-gradient(circle at 88% 4%,rgba(217,167,53,.12),transparent 28%),
+    linear-gradient(180deg,#fbfaf6 0%,#f4f2eb 52%,#f7f7f2 100%)!important;
+  color:#101010!important;
+}
+body[data-authenticated="false"][data-page-id="developer-docs"] .mg-main h1,
+body[data-authenticated="false"][data-page-id="developer-docs"] .mg-main h2,
+body[data-authenticated="false"][data-page-id="developer-docs"] .mg-main h3,
+body[data-authenticated="false"][data-page-id="developer-docs"] .mg-main h4,
+body[data-authenticated="false"][data-page-id="developer-docs"] .mg-main strong{
+  color:#101010!important;
+}
+body[data-authenticated="false"][data-page-id="developer-docs"] .mg-main p,
+body[data-authenticated="false"][data-page-id="developer-docs"] .mg-main li,
+body[data-authenticated="false"][data-page-id="developer-docs"] .mg-main small,
+body[data-authenticated="false"][data-page-id="developer-docs"] .mg-main dd,
+body[data-authenticated="false"][data-page-id="developer-docs"] .mg-main td{
+  color:#4f4b43!important;
+}
+body[data-authenticated="false"][data-page-id="developer-docs"] .mg-main a{
+  color:#101010!important;
+  text-decoration-color:rgba(16,16,16,.32)!important;
+}
+body[data-authenticated="false"][data-page-id="developer-docs"] .mg-main section,
+body[data-authenticated="false"][data-page-id="developer-docs"] .mg-main article,
+body[data-authenticated="false"][data-page-id="developer-docs"] .mg-main aside,
+body[data-authenticated="false"][data-page-id="developer-docs"] .mg-main .card,
+body[data-authenticated="false"][data-page-id="developer-docs"] .mg-main .panel,
+body[data-authenticated="false"][data-page-id="developer-docs"] .mg-main .docs-card,
+body[data-authenticated="false"][data-page-id="developer-docs"] .mg-main .api-card,
+body[data-authenticated="false"][data-page-id="developer-docs"] .mg-main .mg-card{
+  border-color:rgba(0,0,0,.08)!important;
+  background:rgba(255,255,255,.82)!important;
+  color:#101010!important;
+  box-shadow:0 18px 48px rgba(0,0,0,.06)!important;
+}
+body[data-authenticated="false"][data-page-id="developer-docs"] .mg-main pre,
+body[data-authenticated="false"][data-page-id="developer-docs"] .mg-main code,
+body[data-authenticated="false"][data-page-id="developer-docs"] .mg-main kbd{
+  border-color:rgba(0,0,0,.08)!important;
+}
+body[data-authenticated="false"][data-page-id="developer-docs"] .mg-main pre{
+  background:#111!important;
+  color:#f7f7f2!important;
+  box-shadow:0 22px 52px rgba(0,0,0,.14)!important;
+}
+body[data-authenticated="false"][data-page-id="developer-docs"] .mg-main pre code{
+  background:transparent!important;
+  color:#f7f7f2!important;
+}
+body[data-authenticated="false"][data-page-id="developer-docs"] .mg-main :not(pre)>code,
+body[data-authenticated="false"][data-page-id="developer-docs"] .mg-main kbd{
+  background:#fff!important;
+  color:#101010!important;
+}
+body[data-authenticated="false"][data-page-id="developer-docs"] .mg-main table,
+body[data-authenticated="false"][data-page-id="developer-docs"] .mg-main th,
+body[data-authenticated="false"][data-page-id="developer-docs"] .mg-main td{
+  border-color:rgba(0,0,0,.08)!important;
+}
+body[data-authenticated="false"][data-page-id="developer-docs"] .mg-main th{
+  color:#101010!important;
+  background:#f1eee5!important;
+}
