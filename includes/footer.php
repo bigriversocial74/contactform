@@ -45,7 +45,7 @@ $can_intelligence = $user && (in_array('intelligence.dashboard.view', $user_perm
 <footer class="mg-site-footer mg-universal-footer" data-mg-universal-footer>
   <div class="mg-footer-shell">
     <section class="mg-footer-brand-panel" aria-label="Microgifter footer overview">
-      <a class="mg-brand mg-footer-logo" href="/index.php" aria-label="Microgifter home"><span>Microgifter</span></a>
+      <a class="mg-brand mg-footer-logo" href="/index.php" aria-label="Microgifter home"><img src="/images/logo_main_drk.png" alt="Microgifter"><span>Microgifter</span></a>
       <p>Rewards, tokenized local experiences, and agent-ready gifting tools for local commerce.</p>
       <div class="mg-footer-market-strip" aria-label="Experience market summary">
         <span><strong>MGFTR</strong> $0.842</span>
