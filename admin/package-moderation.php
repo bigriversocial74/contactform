@@ -11,6 +11,7 @@ $canManagePackages = mg_admin_permission_user_has($user, 'admin.commerce.manage'
 $packages = mg_pricing_packages();
 $summary = mg_pricing_package_summary();
 $activePackage = $packages[1] ?? ($packages[0] ?? []);
+$activeLimits = is_array($activePackage['limits'] ?? null) ? $activePackage['limits'] : [];
 
 $page_title = 'Package Moderation | Microgifter';
 $page_section = 'account';
@@ -30,7 +31,7 @@ require dirname(__DIR__) . '/includes/header.php';
           <a class="mg-admin-package-back" href="/account-admin.php">← Admin dashboard</a>
           <span class="mg-eyebrow">Backend operations</span>
           <h1>Package moderation</h1>
-          <p>Review backend packages before implementation. The public pricing page and this admin display now read the same package source, so plan names, prices, feature sets, and visibility are no longer drifting apart.</p>
+          <p>Review backend packages before implementation. Microgifts are paid products, Rewards are promotions, and every distribution action burns a Send Stamp across direct sends, email lists, and future SMS channels.</p>
         </div>
         <div class="mg-admin-package-hero-actions">
           <span>Audit score</span>
@@ -42,13 +43,13 @@ require dirname(__DIR__) . '/includes/header.php';
         <article><span>Total packages</span><strong data-package-metric="total"><?= (int)$summary['total'] ?></strong><small>Shared pricing source</small></article>
         <article><span>Published</span><strong data-package-metric="published"><?= (int)$summary['published'] ?></strong><small>Visible on pricing page</small></article>
         <article><span>Approved</span><strong data-package-metric="approved"><?= (int)$summary['approved'] ?></strong><small>Ready for checkout wiring</small></article>
-        <article><span>Pending review</span><strong data-package-metric="pending_review"><?= (int)$summary['pending_review'] ?></strong><small>Needs moderation</small></article>
-        <article><span>Implemented</span><strong data-package-metric="implemented"><?= (int)$summary['implemented'] ?></strong><small>Closed with evidence</small></article>
+        <article><span>Monthly Stamps</span><strong data-package-metric="monthly_stamps_included"><?= number_format((int)$summary['monthly_stamps_included']) ?></strong><small>Included across fixed tiers</small></article>
+        <article><span>Bulk Stamps</span><strong data-package-metric="bulk_stamps">On</strong><small>Purchasable as needed</small></article>
       </section>
 
       <form class="mg-admin-package-filters" data-package-filters>
         <label class="is-search">Search
-          <input type="search" name="q" maxlength="190" placeholder="Package, plan, price, feature, or implementation ID">
+          <input type="search" name="q" maxlength="190" placeholder="Package, plan, Stamp, Microgift, Reward, or implementation ID">
         </label>
         <label>Status
           <select name="status">
@@ -65,7 +66,7 @@ require dirname(__DIR__) . '/includes/header.php';
           <select name="package_type">
             <option value="all">All types</option>
             <option value="pricing_plan">Pricing plan</option>
-            <option value="checkout">Checkout package</option>
+            <option value="stamp_bundle">Stamp bundle</option>
             <option value="microgift_issuance">Microgift issuance</option>
             <option value="campaign">Campaign package</option>
           </select>
@@ -93,11 +94,12 @@ require dirname(__DIR__) . '/includes/header.php';
           </header>
           <div class="mg-admin-package-list" data-package-list>
             <?php foreach ($packages as $package): ?>
+              <?php $limits = is_array($package['limits'] ?? null) ? $package['limits'] : []; ?>
               <article class="mg-admin-package-card<?= (($package['id'] ?? '') === ($activePackage['id'] ?? '')) ? ' is-active' : '' ?>">
                 <span class="mg-package-risk is-<?= mg_e((string)($package['risk_level'] ?? 'normal')) ?>"><?= mg_e((string)($package['risk_level'] ?? 'normal')) ?></span>
                 <h3><?= mg_e((string)$package['name']) ?> · <?= mg_e((string)$package['price_label']) ?><?= mg_e((string)$package['billing_label']) ?></h3>
                 <p><?= mg_e((string)$package['description']) ?></p>
-                <small><?= mg_e((string)$package['implementation_id']) ?> · <?= mg_e((string)$package['moderation_status']) ?> · <?= mg_e((string)$package['public_status']) ?></small>
+                <small><?= mg_e((string)$package['implementation_id']) ?> · <?= mg_e((string)$package['moderation_status']) ?> · <?= mg_e((string)$package['public_status']) ?> · Stamps: <?= isset($limits['monthly_stamps_included']) && $limits['monthly_stamps_included'] !== null ? number_format((int)$limits['monthly_stamps_included']) : 'Custom' ?></small>
               </article>
             <?php endforeach; ?>
           </div>
@@ -115,13 +117,14 @@ require dirname(__DIR__) . '/includes/header.php';
 
           <section class="mg-admin-package-review-grid">
             <article>
-              <h3>Public package source</h3>
+              <h3>Usage limits</h3>
               <ul>
-                <li>Plan ID: <?= mg_e((string)($activePackage['id'] ?? '')) ?></li>
-                <li>Price: <?= mg_e((string)($activePackage['price_label'] ?? '')) ?><?= mg_e((string)($activePackage['billing_label'] ?? '')) ?></li>
-                <li>CTA: <?= mg_e((string)($activePackage['cta_label'] ?? '')) ?> → <?= mg_e((string)($activePackage['cta_href'] ?? '')) ?></li>
-                <li>Public status: <?= mg_e((string)($activePackage['public_status'] ?? '')) ?></li>
-                <li>Implementation ID: <?= mg_e((string)($activePackage['implementation_id'] ?? '')) ?></li>
+                <li>Paid Microgifts: <?= isset($activeLimits['max_microgifts']) && $activeLimits['max_microgifts'] !== null ? number_format((int)$activeLimits['max_microgifts']) : 'Custom' ?></li>
+                <li>Promotional Rewards: <?= isset($activeLimits['max_rewards']) && $activeLimits['max_rewards'] !== null ? number_format((int)$activeLimits['max_rewards']) : 'Custom' ?></li>
+                <li>Active campaigns: <?= isset($activeLimits['max_active_campaigns']) && $activeLimits['max_active_campaigns'] !== null ? number_format((int)$activeLimits['max_active_campaigns']) : 'Custom' ?></li>
+                <li>CRM contacts: <?= isset($activeLimits['max_crm_contacts']) && $activeLimits['max_crm_contacts'] !== null ? number_format((int)$activeLimits['max_crm_contacts']) : 'Custom' ?></li>
+                <li>Monthly Send Stamps: <?= isset($activeLimits['monthly_stamps_included']) && $activeLimits['monthly_stamps_included'] !== null ? number_format((int)$activeLimits['monthly_stamps_included']) : 'Custom' ?></li>
+                <li>Bulk Stamp purchase: <?= !empty($activeLimits['bulk_stamp_purchase_enabled']) ? 'Enabled' : 'Disabled' ?></li>
               </ul>
             </article>
             <article>
@@ -133,8 +136,8 @@ require dirname(__DIR__) . '/includes/header.php';
           </section>
 
           <section class="mg-admin-package-audit-note">
-            <h3>Audit upgrade completed</h3>
-            <p>The highest-risk gap was duplicated pricing data. That is now fixed by a shared pricing package source. The next backend step is replacing the PHP config source with database tables and API endpoints while keeping this same contract stable.</p>
+            <h3>Stamp rule</h3>
+            <p>A Stamp is the unit of send/distribution. Direct sends, campaign sends, email-list sends, and future SMS sends should debit the same Stamp ledger, with merchants able to buy bulk Stamp bundles when they need more volume.</p>
           </section>
         </main>
 
@@ -159,6 +162,7 @@ require dirname(__DIR__) . '/includes/header.php';
                   <option value="">Required before actions go live</option>
                   <option value="security_review">Security review</option>
                   <option value="pricing_change">Pricing change</option>
+                  <option value="stamp_limit_change">Stamp limit change</option>
                   <option value="implementation_ready">Implementation ready</option>
                   <option value="rollback_required">Rollback required</option>
                 </select>
