@@ -1,6 +1,5 @@
 /* Universal Microgifter footer component.
-   This file owns shared footer styling across public pages.
-   Keep page-level CSS out of .mg-universal-footer so footer changes stay centralized. */
+   This file owns shared footer styling across public pages only. */
 
 .mg-site-footer.mg-universal-footer{
   position:relative!important;
@@ -145,90 +144,9 @@
   justify-content:flex-end!important;
 }
 
-/* Late home-page polish: remove gold/orange borders/icons and force white buttons to black text. */
-body[data-page-id="home"]{
-  --mg-line:rgba(209,213,219,.42)!important;
-  --mg-gold:#d1d5db!important;
-  --mg-gold-2:#e5e7eb!important;
-}
-body[data-page-id="home"] .mg-page .mg-eyebrow::before,
-body[data-page-id="home"] .mg-page .mg-card,
-body[data-page-id="home"] .mg-page .mg-panel,
-body[data-page-id="home"] .mg-page .mg-panel-icon,
-body[data-page-id="home"] .mg-page .mg-mini-ui,
-body[data-page-id="home"] .mg-page .mg-codebox,
-body[data-page-id="home"] .mg-page .mg-panel-tags,
-body[data-page-id="home"] .mg-page .mg-metric,
-body[data-page-id="home"] .mg-page .mg-socials a,
-body[data-page-id="home"] .mg-page .mg-device-base,
-body[data-page-id="home"] .mg-page .mg-float-card,
-body[data-page-id="home"] .mg-page .mg-carousel-dot,
-body[data-page-id="home"] .mg-page .mg-header-cta,
-body[data-page-id="home"] .mg-page .mg-btn-secondary{
-  border-color:rgba(209,213,219,.38)!important;
-}
-body[data-page-id="home"] .mg-page .mg-icon,
-body[data-page-id="home"] .mg-page .mg-panel-icon,
-body[data-page-id="home"] .mg-page .mg-contact svg,
-body[data-page-id="home"] .mg-page .mg-location-marker{
-  color:#d1d5db!important;
-  stroke:#d1d5db!important;
-}
-body[data-page-id="home"] .mg-page .mg-eyebrow::before,
-body[data-page-id="home"] .mg-page .mg-carousel-dot.is-active,
-body[data-page-id="home"] .mg-page .mg-card::after{
-  background:#d1d5db!important;
-  box-shadow:none!important;
-}
-body[data-page-id="home"] .mg-page .mg-bg-mesh::after,
-body[data-page-id="home"] .mg-page .mg-phone::after,
-body[data-page-id="home"] .mg-page .mg-btn-secondary:hover,
-body[data-page-id="home"] .mg-page .mg-header-cta:hover,
-body[data-page-id="home"] .mg-page .mg-socials a:hover{
-  background:rgba(209,213,219,.08)!important;
-}
-body[data-page-id="home"] .mg-page .mg-card::after{
-  background:linear-gradient(90deg,transparent,#d1d5db,transparent)!important;
-}
-body[data-page-id="home"] .mg-page .mg-codebox .gold,
-body[data-page-id="home"] .mg-page .mg-dev-step strong{
-  color:#d1d5db!important;
-}
-body[data-page-id="home"] .mg-page .mg-btn-primary,
-body[data-page-id="home"] .mg-page .mg-btn-primary:visited,
-body[data-page-id="home"] .mg-page .mg-btn-primary *,
-body[data-page-id="home"] .mg-page .mg-v4-btn-primary,
-body[data-page-id="home"] .mg-page .mg-v4-btn-primary:visited,
-body[data-page-id="home"] .mg-page .mg-v4-btn-primary *{
-  color:#050505!important;
-}
-body[data-page-id="home"] .mg-page .mg-btn-primary span,
-body[data-page-id="home"] .mg-page .mg-btn-primary .mg-arrow,
-body[data-page-id="home"] .mg-page .mg-v4-btn-primary span,
-body[data-page-id="home"] .mg-page .mg-v4-btn-primary .mg-arrow{
-  color:#050505!important;
-}
-
-/* Developer docs late width cleanup. */
-.mg-dev-docs{max-width:100%!important;overflow-x:hidden!important}
-.mg-dev-shell,.mg-dev-content,.mg-dev-card{max-width:100%!important;min-width:0!important;overflow-x:hidden!important}
-.mg-dev-code{width:100%!important;max-width:100%!important;display:block!important;white-space:pre-wrap!important;word-break:break-word!important;overflow-x:auto!important}
-.mg-dev-table{width:100%!important;max-width:100%!important;display:table!important;table-layout:fixed!important;overflow:visible!important}
-.mg-dev-table th,.mg-dev-table td{overflow-wrap:anywhere!important;word-break:normal!important}
-.mg-dev-topbar{background:rgba(248,248,245,.96)!important;border-bottom:1px solid rgba(17,17,17,.08)!important;box-shadow:0 12px 34px rgba(0,0,0,.05)!important;color:#101010!important}
-
-/* Logged-in public header cleanup: no market ticker in authenticated headers. */
-body[data-authenticated="true"] .mg-site-header .mg-header-market,
-body[data-authenticated="true"] .mg-site-header .mg-market-ticker,
-body[data-authenticated="true"] .mg-site-header [aria-label="Experience Market ticker"],
-body[data-authenticated="true"] .mg-site-header [aria-label="Sample experience market ticker"]{display:none!important}
-
 @media(max-width:980px){
   .mg-universal-footer .mg-footer-shell{grid-template-columns:1fr!important}
   .mg-universal-footer .mg-footer-link-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
-}
-@media(max-width:720px){
-  .mg-dev-table{display:block!important;overflow-x:auto!important}
 }
 @media(max-width:620px){
   .mg-universal-footer .mg-footer-shell{width:min(100% - 28px,1380px)!important;padding-top:42px!important}
