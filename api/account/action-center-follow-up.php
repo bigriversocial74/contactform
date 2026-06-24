@@ -34,9 +34,9 @@ try{
     $stmt->execute([$actionItemId,(int)$user['id']]);
     $instance=$stmt->fetch(PDO::FETCH_ASSOC);
     if(!$instance)throw new RuntimeException('Sent Microgift not found.');
-    if((string)$instance['folder']!=='sent')throw new RuntimeException('This action is available only from Sent.');
+    if((string)$instance['folder']!=='sent')throw new RuntimeException('Follow Up is available only from Sent.');
     if((int)$instance['action_sender_user_id']!==(int)$user['id']){
-        throw new RuntimeException('Only the sender of this transfer can message the recipient.');
+        throw new RuntimeException('Only the most recent sender can follow up.');
     }
 
     $recipientUserId=(int)($instance['action_recipient_user_id']??0);
