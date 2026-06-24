@@ -1,6 +1,16 @@
 <?php
 declare(strict_types=1);
 
+/*
+ * Copy this file to api/config.local.php on the server using File Manager.
+ * api/config.local.php is ignored by Git and should never be committed.
+ */
+
+$mgPaymentCredentialKey = 'PASTE_GENERATED_PAYMENT_CREDENTIAL_KEY_HERE';
+if ($mgPaymentCredentialKey !== '' && $mgPaymentCredentialKey !== 'PASTE_GENERATED_PAYMENT_CREDENTIAL_KEY_HERE') {
+    putenv('MG_PAYMENT_CREDENTIAL_KEY=' . $mgPaymentCredentialKey);
+}
+
 return [
     'db' => [
         'host' => 'localhost',
@@ -25,6 +35,10 @@ return [
         'root' => '/home/YOUR-CPANEL-USER/microgifter-storage',
         'public_endpoint' => '/api/public/media.php',
         'require_persistent' => true,
+    ],
+    'payments' => [
+        // Generated from /admin-payments.php. This unlocks encrypted database storage for Stripe secret values.
+        'credential_key' => $mgPaymentCredentialKey,
     ],
     'features' => [
         'polling_notifications' => true,

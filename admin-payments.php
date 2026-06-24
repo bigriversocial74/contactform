@@ -19,6 +19,26 @@ require __DIR__.'/includes/header.php';
         <span class="mg-status-badge" data-payment-readiness>Loading readiness</span>
       </header>
       <section class="mg-payment-security-notice"><strong>Protected credentials</strong><p>Server environment values take priority. Database credentials are encrypted with <code>MG_PAYMENT_CREDENTIAL_KEY</code>, and stored secret values are never returned to the browser.</p></section>
+      <section class="mg-payment-credential-setup" data-payment-credential-setup>
+        <div class="mg-payment-credential-copy">
+          <span class="mg-eyebrow">Server credential setup</span>
+          <h2>Enable encrypted Stripe secret storage</h2>
+          <p><code>MG_PAYMENT_CREDENTIAL_KEY</code> is not a Stripe key. It is the private Microgifter encryption key used to lock stored Stripe secret and webhook values before they go into the database.</p>
+          <ol>
+            <li>Click <strong>Generate safe key</strong>.</li>
+            <li>Open File Manager and create <code>api/config.local.php</code>.</li>
+            <li>Paste the generated config block into that file.</li>
+            <li>Save the file, refresh this page, then save your Stripe configuration.</li>
+          </ol>
+          <p class="mg-payment-credential-warning">Keep this file private. <code>api/config.local.php</code> is already ignored by Git, so it should never be committed.</p>
+        </div>
+        <div class="mg-payment-credential-card">
+          <div class="mg-payment-credential-state" data-payment-credential-state>Checking encryption status…</div>
+          <button class="mg-btn mg-btn-soft" type="button" data-payment-key-generate>Generate safe key</button>
+          <button class="mg-btn mg-btn-ghost" type="button" data-payment-key-copy disabled>Copy config block</button>
+          <pre class="mg-payment-key-output" data-payment-key-output>// Click Generate safe key to create a File Manager config block.</pre>
+        </div>
+      </section>
       <section class="mg-payment-cash-panel">
         <div><span class="mg-eyebrow">Test payment methods</span><h2>Pay with cash</h2><p>Enable a manual cash option for testing checkout flows without creating a Stripe charge.</p><div class="mg-form-status" data-admin-cash-payment-status></div></div>
         <form data-admin-cash-payment-form>
