@@ -9,4 +9,5 @@ $page_scripts = ['/assets/js/merchant-workspace.js'];
 $merchantView = 'merchant_crm';
 require __DIR__ . '/includes/header.php';
 require __DIR__ . '/includes/merchant-workspace.php';
+echo '<script src="/assets/js/merchant-crm.js" defer></script>';
 require __DIR__ . '/includes/footer.php';
