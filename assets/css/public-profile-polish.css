@@ -10,12 +10,16 @@ body.mg-profile-light-theme [data-mg-universal-header]{
   left:0!important;
   right:0!important;
   min-height:70px!important;
-  z-index:9000!important;
+  z-index:100000!important;
+  isolation:isolate!important;
+  overflow:visible!important;
   background:#fff!important;
   color:#111827!important;
   border-bottom:1px solid #e5e7eb!important;
   box-shadow:0 8px 24px rgba(17,24,39,.06)!important;
 }
+body.mg-profile-light-theme .mg-site-header[data-public-header] *,
+body.mg-profile-light-theme .mg-site-header.mg-market-universal-header *{overflow:visible;}
 body.mg-profile-light-theme .mg-site-header[data-public-header] .mg-header-inner,
 body.mg-profile-light-theme .mg-site-header.mg-market-universal-header .mg-header-inner{
   min-height:70px!important;
@@ -25,6 +29,7 @@ body.mg-profile-light-theme .mg-site-header.mg-market-universal-header .mg-heade
   align-items:center!important;
   gap:18px!important;
   padding:0 clamp(16px,2.2vw,32px)!important;
+  overflow:visible!important;
 }
 body.mg-profile-light-theme .mg-site-header .mg-brand span{
   display:block!important;
@@ -47,9 +52,26 @@ body.mg-profile-light-theme .mg-site-header .mg-header-actions{
   align-items:center!important;
   justify-content:flex-end!important;
   gap:10px!important;
+  overflow:visible!important;
 }
-body.mg-profile-light-theme .mg-account-menu{position:relative!important;z-index:9300!important;}
-body.mg-profile-light-theme .mg-account-actions{z-index:9400!important;}
+body.mg-profile-light-theme .mg-notification-menu,
+body.mg-profile-light-theme .mg-notifications-menu,
+body.mg-profile-light-theme .mg-notification-dropdown,
+body.mg-profile-light-theme .mg-notifications-dropdown,
+body.mg-profile-light-theme [data-notification-menu],
+body.mg-profile-light-theme [data-notifications-menu],
+body.mg-profile-light-theme [data-mg-notifications-menu],
+body.mg-profile-light-theme [data-mg-notification-menu]{position:relative!important;z-index:110000!important;overflow:visible!important;}
+body.mg-profile-light-theme .mg-notification-panel,
+body.mg-profile-light-theme .mg-notifications-panel,
+body.mg-profile-light-theme .mg-notification-popover,
+body.mg-profile-light-theme .mg-notifications-popover,
+body.mg-profile-light-theme [data-notification-panel],
+body.mg-profile-light-theme [data-notifications-panel],
+body.mg-profile-light-theme [data-mg-notification-panel],
+body.mg-profile-light-theme [data-mg-notifications-panel]{z-index:120000!important;position:absolute!important;}
+body.mg-profile-light-theme .mg-account-menu{position:relative!important;z-index:110000!important;overflow:visible!important;}
+body.mg-profile-light-theme .mg-account-actions{z-index:120000!important;position:absolute!important;}
 body.mg-profile-light-theme .mg-account-menu.is-open .mg-account-actions,
 body.mg-profile-light-theme [data-mg-auth-menu].is-open .mg-account-actions,
 body.mg-profile-light-theme .mg-account-menu:focus-within .mg-account-actions{
@@ -58,7 +80,12 @@ body.mg-profile-light-theme .mg-account-menu:focus-within .mg-account-actions{
   opacity:1!important;
   pointer-events:auto!important;
 }
-body.mg-profile-light-theme .mg-invest-cover-card{margin-top:0!important;}
+body.mg-profile-light-theme .mg-invest-profile-shell,
+body.mg-profile-light-theme .mg-profile-content{position:relative!important;z-index:0!important;isolation:auto!important;}
+body.mg-profile-light-theme .mg-invest-cover-card{margin-top:0!important;position:relative!important;z-index:0!important;}
+body.mg-profile-light-theme .mg-invest-cover,
+body.mg-profile-light-theme .mg-invest-cover-card:after{z-index:0!important;}
+body.mg-profile-light-theme .mg-invest-top-grid{z-index:1!important;}
 body.mg-profile-light-theme .mg-formula-card{display:none!important;}
 body.mg-profile-light-theme .mg-invest-actions{align-items:center!important;gap:10px!important;}
 body.mg-profile-light-theme .mg-invest-actions .mg-public-link-list,
