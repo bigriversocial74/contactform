@@ -180,7 +180,22 @@ function mg_stamp_debit(PDO $pdo, int $accountUserId, int $actorUserId, string $
         'quantity' => $quantity,
         'metadata' => array_merge($options['metadata'] ?? [], ['action' => $action]),
     ]);
-    return mg_stamp_post_entry($pdo, $accountUserId, $actorUserId, 'merchant', 'debit', $delta, $options);
+    $actorType = (string)($options['actor_type'] ?? 'merchant');
+    return mg_stamp_post_entry($pdo, $accountUserId, $actorUserId, $actorType, 'debit', $delta, $options);
+}
+
+function mg_stamp_debit_send(PDO $pdo, int $accountUserId, int $actorUserId, string $actionKey, string $sendIdempotencyKey, array $options = []): array
+{
+    $quantity = max(1, (int)($options['quantity'] ?? 1));
+    $sourceType = (string)($options['source_type'] ?? 'send');
+    $sourceId = (string)($options['source_id'] ?? $sendIdempotencyKey);
+    $reference = (string)($options['reference'] ?? $actionKey);
+    return mg_stamp_debit($pdo, $accountUserId, $actorUserId, $actionKey, $quantity, 'stamp:send:' . $sendIdempotencyKey, array_merge($options, [
+        'source_type' => $sourceType,
+        'source_id' => $sourceId,
+        'reference' => $reference,
+        'actor_type' => (string)($options['actor_type'] ?? 'merchant'),
+    ]));
 }
 
 function mg_stamp_credit(PDO $pdo, int $accountUserId, ?int $actorUserId, int $stamps, string $idempotencyKey, array $options = []): array
