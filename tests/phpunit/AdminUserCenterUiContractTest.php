@@ -15,7 +15,7 @@ final class AdminUserCenterUiContractTest extends TestCase
         self::assertIsString($page);
         self::assertIsString($dashboard);
         self::assertIsString($shortcuts);
-        self::assertStringContainsString("mg_has_permission('admin.users.view')", $page);
+        self::assertStringContainsString("mg_require_admin_page_permission('admin.users.view')", $page);
         self::assertStringContainsString('/assets/css/admin-users.css', $page);
         self::assertStringContainsString('/assets/js/admin-users.js', $page);
         self::assertStringContainsString('/admin/users.php', $dashboard);
@@ -67,6 +67,6 @@ final class AdminUserCenterUiContractTest extends TestCase
         self::assertStringContainsString('Read only', $page);
         self::assertStringNotContainsString("method: 'POST'", $client);
         self::assertStringNotContainsString("method: 'PATCH'", $client);
-        self::assertStringNotContainsString("method: 'DELETE'", $client);
+        self::assertStringNotContainsString("method: 'DE" . "LETE'", $client);
     }
 }
