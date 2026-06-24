@@ -50,6 +50,249 @@ if ($user && $account_profile_url) {
 $show_home_search = $uses_standard_public_header;
 $show_public_search = $show_home_search || (bool)($public_header_config['search'] ?? false) || (bool)$user;
 $show_demo_button = !$user;
+
+if (!$user && $public_page_id === 'home'):
+?>
+<style>
+  .mg-index-public-header{
+    position:fixed!important;
+    top:0!important;
+    left:0!important;
+    right:0!important;
+    z-index:1000!important;
+    padding:10px 0!important;
+    background:transparent!important;
+    border:0!important;
+    box-shadow:none!important;
+    pointer-events:none!important;
+  }
+  .mg-index-header-inner{
+    width:min(1180px,calc(100% - 40px));
+    min-height:66px;
+    margin:0 auto;
+    padding:0 16px 0 18px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:28px;
+    border:1px solid rgba(18,18,18,.065);
+    border-radius:9px;
+    background:rgba(248,248,245,.82);
+    box-shadow:0 18px 54px rgba(0,0,0,.055);
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+    pointer-events:auto;
+  }
+  .mg-index-brand{
+    display:inline-flex;
+    align-items:center;
+    flex:0 0 auto;
+    text-decoration:none;
+  }
+  .mg-index-brand img{
+    width:148px;
+    max-width:100%;
+    height:auto;
+    display:block;
+  }
+  .mg-index-header-actions{
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:28px;
+    min-width:0;
+  }
+  .mg-index-nav{
+    display:flex;
+    align-items:center;
+    gap:26px;
+  }
+  .mg-index-nav a{
+    color:#111!important;
+    text-decoration:none!important;
+    font-size:13px;
+    font-weight:720;
+    line-height:1;
+    letter-spacing:-.02em;
+    white-space:nowrap;
+  }
+  .mg-index-nav a:not(:last-child)::after{
+    content:"+";
+    display:inline-block;
+    margin-left:26px;
+    color:#111;
+    font-size:12px;
+    font-weight:800;
+    opacity:.55;
+  }
+  .mg-index-cta{
+    min-height:40px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:0 20px;
+    border:1px solid rgba(0,0,0,.065);
+    border-radius:7px;
+    background:#fff;
+    color:#101010!important;
+    box-shadow:0 12px 30px rgba(0,0,0,.06);
+    text-decoration:none!important;
+    font-size:13px;
+    font-weight:820;
+    letter-spacing:-.02em;
+    white-space:nowrap;
+  }
+  .mg-index-menu-toggle{
+    width:42px;
+    height:40px;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    gap:4px;
+    border:1px solid rgba(0,0,0,.08);
+    border-radius:7px;
+    background:#fff;
+    color:#111;
+  }
+  .mg-index-menu-toggle span{
+    width:16px;
+    height:2px;
+    display:block;
+    border-radius:999px;
+    background:currentColor;
+  }
+  .mg-index-mobile-menu{
+    position:fixed;
+    inset:0;
+    z-index:1001;
+  }
+  .mg-index-mobile-menu[hidden]{display:none!important;}
+  .mg-index-mobile-backdrop{
+    position:absolute;
+    inset:0;
+    border:0;
+    background:rgba(0,0,0,.36);
+  }
+  .mg-index-mobile-panel{
+    position:absolute;
+    top:12px;
+    left:12px;
+    right:12px;
+    padding:18px;
+    border:1px solid rgba(0,0,0,.08);
+    border-radius:14px;
+    background:#f8f8f5;
+    box-shadow:0 24px 80px rgba(0,0,0,.22);
+  }
+  .mg-index-mobile-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    margin-bottom:18px;
+  }
+  .mg-index-mobile-head img{width:138px;height:auto;display:block;}
+  .mg-index-mobile-close{
+    width:38px;
+    height:38px;
+    border:1px solid rgba(0,0,0,.08);
+    border-radius:8px;
+    background:#fff;
+    color:#111;
+    font-size:24px;
+    line-height:1;
+  }
+  .mg-index-mobile-nav{
+    display:grid;
+    gap:10px;
+  }
+  .mg-index-mobile-nav a{
+    min-height:46px;
+    display:flex;
+    align-items:center;
+    padding:0 14px;
+    border:1px solid rgba(0,0,0,.06);
+    border-radius:9px;
+    background:#fff;
+    color:#111;
+    text-decoration:none;
+    font-size:14px;
+    font-weight:760;
+  }
+  @media(max-width:820px){
+    .mg-index-header-inner{width:calc(100% - 24px);min-height:60px;padding:0 12px;gap:14px;}
+    .mg-index-brand img{width:126px;}
+    .mg-index-nav{display:none;}
+    .mg-index-header-actions{gap:10px;}
+    .mg-index-cta{min-height:38px;padding:0 14px;font-size:12px;}
+    .mg-index-menu-toggle{display:inline-flex;}
+  }
+  @media(max-width:420px){
+    .mg-index-brand img{width:116px;}
+    .mg-index-cta{padding:0 12px;}
+  }
+</style>
+<header class="mg-site-header mg-index-public-header" data-public-header data-header-variant="logged-out-index">
+  <div class="mg-index-header-inner">
+    <a class="mg-index-brand" href="/index.php" aria-label="Microgifter home"><img src="/images/logo_main_drk.png" alt="Microgifter"></a>
+    <div class="mg-index-header-actions">
+      <nav class="mg-index-nav" aria-label="Primary navigation">
+        <a href="#platform">Platform</a>
+        <a href="#growth">API</a>
+        <a href="/developer-docs.php">Docs</a>
+      </nav>
+      <a class="mg-index-cta" href="/signup.php">Create Account</a>
+      <button class="mg-index-menu-toggle" type="button" data-index-menu-trigger aria-label="Open navigation menu" aria-controls="mg-index-mobile-menu" aria-expanded="false"><span></span><span></span><span></span></button>
+    </div>
+  </div>
+</header>
+<div class="mg-index-mobile-menu" id="mg-index-mobile-menu" data-index-mobile-menu hidden aria-hidden="true">
+  <button class="mg-index-mobile-backdrop" type="button" data-index-menu-close aria-label="Close navigation menu"></button>
+  <aside class="mg-index-mobile-panel" role="dialog" aria-modal="true" aria-labelledby="mg-index-mobile-title" tabindex="-1">
+    <div class="mg-index-mobile-head">
+      <a href="/index.php" id="mg-index-mobile-title"><img src="/images/logo_main_drk.png" alt="Microgifter"></a>
+      <button class="mg-index-mobile-close" type="button" data-index-menu-close aria-label="Close navigation menu">×</button>
+    </div>
+    <nav class="mg-index-mobile-nav" aria-label="Mobile navigation">
+      <a href="#platform">Platform</a>
+      <a href="#growth">API</a>
+      <a href="/developer-docs.php">Docs</a>
+      <a href="/signup.php">Create Account</a>
+    </nav>
+  </aside>
+</div>
+<script>
+(() => {
+  if (window.__mgIndexPublicHeaderBound) return;
+  window.__mgIndexPublicHeaderBound = true;
+  const menu = () => document.querySelector('[data-index-mobile-menu]');
+  const triggers = () => Array.from(document.querySelectorAll('[data-index-menu-trigger]'));
+  const setOpen = (open) => {
+    const panel = menu();
+    if (!panel) return;
+    triggers().forEach((trigger) => trigger.setAttribute('aria-expanded', open ? 'true' : 'false'));
+    panel.hidden = !open;
+    panel.setAttribute('aria-hidden', open ? 'false' : 'true');
+    document.body.classList.toggle('mg-index-mobile-menu-open', open);
+  };
+  document.addEventListener('click', (event) => {
+    if (event.target.closest('[data-index-menu-trigger]')) {
+      event.preventDefault();
+      const panel = menu();
+      setOpen(!(panel && !panel.hidden));
+      return;
+    }
+    if (event.target.closest('[data-index-menu-close]') || event.target.closest('.mg-index-mobile-nav a')) setOpen(false);
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') setOpen(false);
+  });
+})();
+</script>
+<?php
+return;
+endif;
 ?>
 <header class="mg-site-header mg-unified-header mg-market-universal-header" data-mg-universal-header data-public-header data-header-theme="market-dark" data-header-variant="<?= $user ? 'logged-in' : 'logged-out' ?>">
   <?php if ($public_page_id === 'home'): ?><span hidden>Turn future demand into present-day revenue</span><?php endif; ?>
