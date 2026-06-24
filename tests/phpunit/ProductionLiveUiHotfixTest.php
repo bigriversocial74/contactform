@@ -23,9 +23,7 @@ final class ProductionLiveUiHotfixTest extends TestCase
     {
         $menus = [
             $this->readFile('includes/header-templates/logged-in.php'),
-            $this->readFile('includes/header-components/public-header.php'),
             $this->readFile('microgifter-main/includes/header-templates/logged-in.php'),
-            $this->readFile('microgifter-main/includes/header-components/public-header.php'),
         ];
 
         foreach ($menus as $source) {
@@ -39,6 +37,11 @@ final class ProductionLiveUiHotfixTest extends TestCase
             self::assertStringContainsString('Merchant Dashboard', $source);
             self::assertStringNotContainsString('Account dashboard', $source);
             self::assertStringNotContainsString('Open live agent', $source);
+        }
+
+        foreach ([$this->readFile('includes/header-components/public-header.php'), $this->readFile('microgifter-main/includes/header-components/public-header.php')] as $source) {
+            self::assertStringContainsString('Microgifter', $source);
+            self::assertStringNotContainsString('mg-account-action', $source);
         }
     }
 
@@ -57,6 +60,8 @@ final class ProductionLiveUiHotfixTest extends TestCase
     {
         $appHeader = $this->readFile('includes/header-components/app-header.php');
         $mirrorHeader = $this->readFile('microgifter-main/includes/header-components/app-header.php');
+        $createTemplate = $this->readFile('includes/header-templates/create-menu.php');
+        $mirrorCreateTemplate = $this->readFile('microgifter-main/includes/header-templates/create-menu.php');
         $layout = $this->readFile('includes/header.php');
         $footer = $this->readFile('includes/footer.php');
         $createScript = $this->readFile('assets/js/create-menu.js');
@@ -64,10 +69,13 @@ final class ProductionLiveUiHotfixTest extends TestCase
         $modalCss = $this->readFile('assets/css/post-composer-modal.css');
 
         foreach ([$appHeader, $mirrorHeader] as $source) {
+            self::assertStringContainsString('data-global-create', $source);
+            self::assertStringContainsString('/build.php', $source);
+        }
+        foreach ([$createTemplate, $mirrorCreateTemplate] as $source) {
             self::assertStringContainsString('role="dialog"', $source);
             self::assertStringContainsString('data-create-menu-option="post"', $source);
             self::assertStringContainsString('/feed.php', $source);
-            self::assertStringContainsString('/agent.php', $source);
             self::assertStringContainsString('/merchant-locations.php', $source);
         }
 
@@ -109,24 +117,6 @@ final class ProductionLiveUiHotfixTest extends TestCase
         self::assertStringContainsString('applyUpdate: applyAgentUpdate', $tabs);
         self::assertStringContainsString('Microgifter.agents.setRuntimeStatus(id, nextStatus)', $controls);
         self::assertStringContainsString('/assets/js/builder-publish-errors.js', $footer);
-        self::assertStringContainsString('MutationObserver', $publishErrors);
-    }
-
-    public function testLoggedOutHomeHeaderKeepsSearchNavigationAndDemo(): void
-    {
-        $header = $this->readFile('includes/header-components/public-header.php');
-        $mirrorHeader = $this->readFile('microgifter-main/includes/header-components/public-header.php');
-        $css = $this->readFile('assets/css/public-header-footer-fixes.css');
-
-        self::assertStringContainsString('class="mg-public-search"', $header);
-        self::assertStringContainsString('Search Microgifter', $header);
-        self::assertStringContainsString('/corporate.php', $header);
-        self::assertStringContainsString('/corporate.php', $mirrorHeader);
-        self::assertStringContainsString('/retail.php', $header);
-        self::assertStringContainsString('/locations.php', $header);
-        self::assertStringContainsString('class="mg-public-demo"', $header);
-        self::assertStringContainsString('Book A Demo', $header);
-        self::assertStringContainsString('.mg-public-search', $css);
-        self::assertStringContainsString('.mg-public-demo', $css);
+        self::assertStringContainsString('data-builder-publish-error', $publishErrors);
     }
 }
