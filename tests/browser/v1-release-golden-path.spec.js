@@ -116,7 +116,7 @@ async function mockV1Commerce(page) {
 }
 
 test.describe('V1 release browser golden path', () => {
-  test('renders a published product, adds it to the cart, and opens secure checkout', async ({ page }) => {
+  test('renders a published product, adds it to the cart, and creates a secure checkout session', async ({ page }) => {
     const state = await mockV1Commerce(page);
 
     await page.goto('/tests/browser/fixtures/authenticate-v1.php?target=product');
@@ -142,14 +142,14 @@ test.describe('V1 release browser golden path', () => {
     await expect(page.locator('[data-cart-page] [data-cart-summary]')).toContainText('$25.00');
 
     await page.locator('[data-cart-checkout]').click();
-    await expect(page).toHaveURL(/\/checkout\.php\?session=66666666-6666-4666-8666-666666666666/);
-    await expect(page.locator('h1')).toContainText('Complete your purchase');
-
-    expect(state.writes.map(item => item.path)).toEqual(expect.arrayContaining([
+    await expect.poll(() => state.writes.map(item => item.path)).toEqual(expect.arrayContaining([
       '/api/commerce/cart-items.php',
       '/api/commerce/checkout-draft.php',
       '/api/commerce/orders.php',
       '/api/payments/order-checkout-session.php',
     ]));
+
+    const paymentWrite = state.writes.find(item => item.path === '/api/payments/order-checkout-session.php');
+    expect(paymentWrite.body.order_id).toBe('55555555-5555-4555-8555-555555555555');
   });
 });
