@@ -2,6 +2,27 @@ name: Commerce Operations Validation
 
 on:
   pull_request:
+    branches: [main]
+    paths:
+      - 'api/commerce/**'
+      - 'api/payments/**'
+      - 'api/public/product.php'
+      - 'assets/js/cart.js'
+      - 'assets/js/checkout.js'
+      - 'assets/js/customer-commerce*.js'
+      - 'cart.php'
+      - 'checkout.php'
+      - 'checkout-success.php'
+      - 'product.php'
+      - 'database/stage_3_commerce_microgift_fulfillment.sql'
+      - 'database/stage_5i_payments_checkout_reconciliation.sql'
+      - 'database/stage_v1c_checkout_session_intent_authority.sql'
+      - 'database/stage_v1f_stripe_payments.sql'
+      - 'tests/phpunit/*Cart*Test.php'
+      - 'tests/phpunit/*Checkout*Test.php'
+      - 'tests/phpunit/*Commerce*Test.php'
+      - 'tests/phpunit/*Payment*Test.php'
+      - '.github/workflows/commerce-operations-validation.yml'
   workflow_dispatch:
 
 permissions:
@@ -41,7 +62,7 @@ jobs:
           HEAVY_VALIDATION_REQUIRED=false
           while IFS= read -r FILE; do
             case "${FILE}" in
-              index.php|includes/landing/index-v3/*.php|.github/workflows/pr-validation.yml|.github/workflows/commerce-operations-validation.yml|.github/workflows/release-package-validation.yml)
+              .github/workflows/*.yml)
                 ;;
               *)
                 HEAVY_VALIDATION_REQUIRED=true
