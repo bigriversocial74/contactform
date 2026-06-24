@@ -112,6 +112,12 @@ async function mockV1Commerce(page) {
     });
   });
 
+  await page.route('**/checkout.php?session=**', route => route.fulfill({
+    status: 302,
+    headers: { location: 'https://checkout.stripe.test/c/pay/release-smoke' },
+    body: '',
+  }));
+
   await page.route('https://checkout.stripe.test/**', route => route.fulfill({
     status: 200,
     contentType: 'text/html',
