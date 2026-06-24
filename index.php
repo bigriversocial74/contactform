@@ -295,10 +295,10 @@ require __DIR__ . '/includes/landing/index-v3/part09.php';
   .mg-v4-logo img{width:128px!important;}
   .mg-v4-links{display:none!important;}
   .mg-v4-cta{min-height:38px!important;padding:0 14px!important;font-size:12px!important;}
-  .mg-v4-hero{min-height:1180px;padding:82px 0 0;overflow:hidden;}
+  .mg-v4-hero{min-height:1220px;padding:82px 0 0;overflow:hidden;}
   .mg-v4-hero::before{background-position:center top;background-size:cover;}
   .mg-v4-hero::after{
-    background:linear-gradient(180deg,rgba(245,245,242,.02) 0%,rgba(245,245,242,.04) 38%,rgba(245,245,242,.90) 58%,rgba(245,245,242,.98) 76%,rgba(0,0,0,.84) 92%,#020202 100%);
+    background:linear-gradient(180deg,rgba(245,245,242,.02) 0%,rgba(245,245,242,.04) 40%,rgba(245,245,242,.88) 60%,rgba(245,245,242,.98) 78%,rgba(0,0,0,.84) 92%,#020202 100%);
   }
   .mg-v4-hero-grid{
     width:calc(100% - 28px);
@@ -310,37 +310,40 @@ require __DIR__ . '/includes/landing/index-v3/part09.php';
   .mg-v4-visual{
     order:1;
     width:100%;
-    min-height:455px;
+    min-height:500px;
     align-items:flex-end;
     justify-content:center;
     margin-top:0;
     overflow:visible;
+    isolation:isolate;
   }
   .mg-v10-desktop{
     position:relative;
-    z-index:3;
+    z-index:4;
     width:96vw;
-    margin:58px 0 -68px 28px;
+    margin:64px 0 -82px 28px;
     border-width:8px;
     border-bottom-width:15px;
     border-radius:13px 13px 7px 7px;
     opacity:.72;
   }
   .mg-v4-phone{
-    left:-110px;
-    bottom:-236px;
+    left:50%;
+    bottom:-190px;
     z-index:1;
-    width:min(396px,105vw);
-    filter:drop-shadow(0 26px 34px rgba(0,0,0,.45));
+    width:min(640px,172vw);
+    opacity:.82;
+    filter:drop-shadow(0 30px 42px rgba(0,0,0,.45));
+    transform:translateX(-54%) rotate(-5deg);
   }
   .mg-v4-copy{
     position:relative;
-    z-index:4;
+    z-index:5;
     order:2;
     width:100%;
     max-width:100%;
-    padding-top:142px;
-    padding-bottom:74px;
+    padding-top:166px;
+    padding-bottom:78px;
   }
   .mg-v4-title{
     max-width:100%;
@@ -362,7 +365,7 @@ require __DIR__ . '/includes/landing/index-v3/part09.php';
   .mg-v4-logo img{width:116px!important;}
   .mg-v4-cta{padding:0 12px!important;}
   .mg-v10-desktop{width:100vw;margin-left:20px;}
-  .mg-v4-phone{left:-112px;bottom:-224px;width:min(354px,104vw);}
+  .mg-v4-phone{left:50%;bottom:-178px;width:min(560px,166vw);transform:translateX(-55%) rotate(-5deg);}
 }
 </style>
 
