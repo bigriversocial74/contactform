@@ -1,6 +1,6 @@
 <aside class="mg-app-sidebar mg-agent-side" data-agent-sidebar>
   <div class="mg-app-sidebar-brand mg-agent-sidebar-brand-row">
-    <a class="mg-brand" href="/index.php" aria-label="Microgifter home"><span>Microgifter</span></a>
+    <a class="mg-brand mg-sidebar-logo" href="/index.php" aria-label="Microgifter home"><img src="/images/logo_main_drk.png" alt="Microgifter"><span class="mg-sidebar-logo-text">Microgifter</span></a>
     <div class="mg-agent-sidebar-tools">
       <button type="button" class="mg-agent-tool-button mg-agent-scanner-button" data-scanner-trigger aria-haspopup="dialog" aria-label="Open scanner">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
