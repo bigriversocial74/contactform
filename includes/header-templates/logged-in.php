@@ -4,6 +4,13 @@ declare(strict_types=1);
 $show_header_create = $show_header_create ?? true;
 $show_header_signals = $show_header_signals ?? true;
 $show_header_cart = $show_header_cart ?? true;
+$can_merchant_crm = $user && (
+    in_array('merchant', $user_roles, true)
+    || in_array('admin', $user_roles, true)
+    || in_array('super_admin', $user_roles, true)
+    || in_array('merchant.campaigns.view', $user_permissions, true)
+    || in_array('merchant.crm.view', $user_permissions, true)
+);
 ?>
 <div class="mg-header-actions" data-header-template="logged-in">
   <?php if ($show_header_create): ?>
@@ -51,6 +58,7 @@ $show_header_cart = $show_header_cart ?? true;
       <a class="mg-account-action" href="/account.php"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Profile Settings</span></a>
       <a class="mg-account-action" href="/account-commerce.php"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Commerce center</span></a>
       <a class="mg-account-action" href="/merchant.php"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Merchant Dashboard</span></a>
+      <?php if ($can_merchant_crm): ?><a class="mg-account-action" href="/merchant-crm.php"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Merchant CRM</span></a><?php endif; ?>
       <a class="mg-account-action" href="/archived-agents.php"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Archived agents</span></a>
       <?php if ($can_sales_crm): ?><a class="mg-account-action" href="/sales-crm.php"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>CRM dashboard</span></a><?php endif; ?>
       <?php if ($can_admin_dashboard): ?><a class="mg-account-action" href="/account-admin.php"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Admin dashboard</span></a><?php endif; ?>
