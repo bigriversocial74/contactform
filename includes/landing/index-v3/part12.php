@@ -62,6 +62,7 @@
       <p>Walk through tokenized experience drops, wallet claims, resale controls, merchant tools, and the Distribution API in one focused demo.</p>
       <div class="mg-public-bottom-demo-actions">
         <a class="mg-public-bottom-demo-primary" href="/learn-more.php">Book a Demo</a>
+        <a class="mg-public-bottom-demo-secondary" href="/pricing.php">View Pricing</a>
         <a class="mg-public-bottom-demo-secondary" href="/developer-docs.php">Explore the API</a>
       </div>
     </div>
@@ -88,13 +89,13 @@
         <a class="mg-contact" href="mailto:hello@microgifter.com"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M4 7l8 6 8-6"/></svg>hello@microgifter.com</a>
       </div>
 
-      <div class="mg-footer-col" data-reveal="left" style="--delay:80ms"><h3>Product</h3><nav><a href="#merchants">Rewards</a><a href="#platform">Wallet</a><a href="#growth">Campaigns</a><a href="#merchants">Merchant Analytics</a></nav></div>
+      <div class="mg-footer-col" data-reveal="left" style="--delay:80ms"><h3>Product</h3><nav><a href="#merchants">Rewards</a><a href="#platform">Wallet</a><a href="#growth">Campaigns</a><a href="/pricing.php">Pricing</a></nav></div>
       <div class="mg-footer-col" data-reveal="left" style="--delay:160ms"><h3>Platform</h3><nav><a href="#growth">Distribution API</a><a href="#platform">Agent Toolkit</a><a href="/developer-docs.php">Docs</a><a href="/learn-more.php">Book a Demo</a></nav></div>
       <div class="mg-footer-col" data-reveal="left" style="--delay:240ms"><h3>Company</h3><nav><a href="/about.php">About Us</a><a href="/careers.php">Careers</a><a href="/support.php">Contact</a><a href="/pitch-deck.php">Press Kit</a></nav></div>
     </div>
     <div class="mg-footer-bottom" data-reveal="scale">
       <span>&copy; <?= date('Y') ?> Microgifter. All rights reserved.</span>
-      <div class="mg-footer-links"><a href="/privacy.php">Privacy Policy</a><span class="mg-dot">•</span><a href="/terms.php">Terms of Service</a><span class="mg-dot">•</span><a href="/security.php">Security</a><span class="mg-dot">•</span><a href="/status.php">Status</a></div>
+      <div class="mg-footer-links"><a href="/privacy.php">Privacy Policy</a><span class="mg-dot">•</span><a href="/pricing.php">Pricing</a><span class="mg-dot">•</span><a href="/terms.php">Terms of Service</a><span class="mg-dot">•</span><a href="/security.php">Security</a><span class="mg-dot">•</span><a href="/status.php">Status</a></div>
     </div>
   </div>
 </footer>
