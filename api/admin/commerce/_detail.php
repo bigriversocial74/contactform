@@ -19,8 +19,8 @@ function mg_admin_commerce_timeline_item(string $time,string $type,string $label
 function mg_admin_commerce_capabilities(array $actor,string $type,array $entity): array
 {
     return [
-        'manage_cases'=>mg_admin_commerce_has($actor,'admin.commerce.manage'),
-        'reverse_tip'=>$type==='tip'&&(string)($entity['status']??'')==='posted'&&mg_admin_commerce_has($actor,'tips.reverse'),
+        'manage_cases'=>mg_admin_commerce_has($actor,'admin.commerce.cases.manage'),
+        'reverse_tip'=>$type==='tip'&&(string)($entity['status']??'')==='posted'&&mg_admin_commerce_has($actor,'admin.commerce.tips.reverse'),
     ];
 }
 
