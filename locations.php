@@ -8,7 +8,10 @@ $page_title = 'Locations | Microgifter';
 $page_section = 'locations';
 $header_mode = 'public';
 $page_styles = ['/assets/css/public-header-footer-fixes.css'];
-$page_scripts = ['/assets/js/locations-map.js'];
+$page_scripts = [
+    'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+    '/assets/js/locations-map.js',
+];
 
 $page_manifest = [
     'id' => 'locations',
