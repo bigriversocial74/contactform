@@ -6,6 +6,7 @@ require_once dirname(__DIR__, 2) . '/rewards/_zero_value_bridge.php';
 require_once dirname(__DIR__, 3) . '/includes/merchant-crm.php';
 require_once __DIR__ . '/_limits.php';
 require_once __DIR__ . '/_outbound.php';
+require_once __DIR__ . '/_security.php';
 
 function mg_public_campaign_uuid(): string
 {
@@ -58,6 +59,7 @@ $name = trim((string) ($input['name'] ?? $input['full_name'] ?? ''));
 $phone = trim((string) ($input['phone'] ?? ''));
 $source = 'newsletter_signup';
 if ($campaignRef === '' || $email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || mb_strlen($email) > 255 || mb_strlen($name) > 180 || mb_strlen($phone) > 60) mg_fail('Invalid signup submission.', 422);
+mg_public_campaign_throttle('newsletter_signup', $campaignRef, $email);
 
 try {
     $pdo->beginTransaction();
@@ -103,7 +105,6 @@ try {
         $pdo->commit();
         mg_ok(['contact_id' => (string) $contact['public_id'], 'wallet_item_id' => (string) $existing['public_id'], 'wallet_status' => (string) $existing['status'], 'already_issued' => true, 'pppm_bridge' => $bridge, 'merchant_crm' => $crm, 'outbound_email' => $outbound], 'Signup already has this reward.');
     }
-
     mg_public_campaign_enforce_reward_limits($pdo, $campaign, $userId, $email);
     $walletPublicId = mg_public_campaign_uuid();
     $walletStmt = $pdo->prepare('INSERT INTO wallet_items (public_id,user_id,contact_id,merchant_user_id,reward_template_id,campaign_id,source_type,source_id,status,value_cents_snapshot,currency_snapshot,title_snapshot,metadata_json,issued_at,expires_at,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),?,NOW(),NOW())');
