@@ -39,6 +39,14 @@ function mg_merchant_crm_stage(string $eventType, string $sourceType, string $ca
     if (str_contains($eventType, 'reward')) return 'prospect';
     return 'lead';
 }
+function mg_merchant_crm_stage_rank(?string $stage): int
+{
+    return ['lead'=>10,'follower'=>20,'prospect'=>30,'supporter'=>40,'redeemer'=>50,'customer'=>60][(string)$stage] ?? 0;
+}
+function mg_merchant_crm_best_stage(?string $current, string $incoming): string
+{
+    return mg_merchant_crm_stage_rank($current) > mg_merchant_crm_stage_rank($incoming) ? (string)$current : $incoming;
+}
 
 function mg_merchant_crm_contact(PDO $pdo, int $merchantId, ?int $userId, ?string $email): ?array
 {
@@ -86,6 +94,7 @@ function mg_merchant_crm_record_event(PDO $pdo, array $input): array
         if ($contact) {
             $contactId = (int) $contact['id'];
             $contactPublicId = (string) $contact['public_id'];
+            $stage = mg_merchant_crm_best_stage($contact['lifecycle_stage'] ?? null, $stage);
             $pdo->prepare('UPDATE merchant_crm_contacts SET user_id=COALESCE(user_id,?), primary_email=COALESCE(primary_email,?), primary_phone=COALESCE(?,primary_phone), display_name=COALESCE(?,display_name), lifecycle_stage=?, last_campaign_type=?, last_source_type=?, last_seen_at=NOW(), last_engaged_at=NOW(), source_summary_json=?, metadata_json=?, updated_at=NOW() WHERE id=?')
                 ->execute([$userId, $email, $phone, $name, $stage, $campaignType, $sourceType, json_encode(['last_event_type'=>$eventType], JSON_UNESCAPED_SLASHES), json_encode($metadata, JSON_UNESCAPED_SLASHES), $contactId]);
         } else {
@@ -104,7 +113,7 @@ function mg_merchant_crm_record_event(PDO $pdo, array $input): array
                 ->execute([mg_merchant_crm_uuid(), $merchantId, $contactId, $campaignId, $campaignType, json_encode(['last_event_type'=>$eventType,'source_type'=>$sourceType], JSON_UNESCAPED_SLASHES)]);
         }
 
-        return ['schema_ready'=>true,'contact_id'=>$contactPublicId,'event_id'=>$eventPublicId,'campaign_type'=>$campaignType,'source_type'=>$sourceType];
+        return ['schema_ready'=>true,'contact_id'=>$contactPublicId,'event_id'=>$eventPublicId,'campaign_type'=>$campaignType,'source_type'=>$sourceType,'lifecycle_stage'=>$stage];
     } catch (Throwable $error) {
         mg_security_log('warning', 'merchant_crm.record_event_failed', 'Merchant CRM event could not be recorded.', ['exception_class'=>$error::class, 'message'=>$error->getMessage()], $merchantId);
         return ['schema_ready'=>false,'skipped'=>true,'campaign_type'=>$campaignType,'source_type'=>$sourceType];
