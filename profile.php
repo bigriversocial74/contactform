@@ -7,7 +7,7 @@
  if($preview)header('X-Robots-Tag: noindex, nofollow');
  $page_title='Merchant profile | Microgifter';$page_section='profile';$header_mode='public';
  $page_styles=['/assets/css/public-profile.css','/assets/css/public-profile-storefront.css','/assets/css/public-profile-engagement.css','/assets/css/public-profile-investment.css','/assets/css/public-profile-polish.css'];
- $page_scripts=['/assets/js/public-profile-runtime.js','/assets/js/public-profile.js','/assets/js/public-profile-storefront.js','/assets/js/public-profile-engagement.js','/assets/js/public-profile-investment.js'];
+ $page_scripts=['/assets/js/public-profile-runtime.js','/assets/js/public-profile.js','/assets/js/public-profile-storefront.js','/assets/js/public-profile-engagement.js','/assets/js/public-profile-investment.js','/assets/js/public-profile-posts-fix.js'];
  $page_manifest=['id'=>'public-profile','title'=>$page_title,'section'=>$page_section,'header_mode'=>$header_mode,'assets'=>['universal-header'],'styles'=>$page_styles,'scripts'=>$page_scripts,'body_class'=>'mg-public-profile-page mg-investment-profile-page mg-profile-light-theme mg-profile-no-footer','public_header'=>['presentation'=>false,'search'=>false],'onboarding'=>['enabled'=>false,'page'=>'profile','sections'=>[]]];
  require __DIR__.'/includes/header.php';
 ?>
