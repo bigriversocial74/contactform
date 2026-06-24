@@ -38,9 +38,9 @@ final class PublicProfileCommerceEngagementUiTest extends TestCase
         $page = $this->read('profile.php');
         foreach ([
             'data-profile-storefront-section',
-            'data-storefront-name',
-            'data-storefront-cover',
+            'data-invest-panel="storefront"',
             'data-profile-products-grid',
+            'data-profile-products-grid-clone',
             'data-products-load-more',
         ] as $marker) {
             self::assertStringContainsString($marker, $page);
@@ -55,9 +55,7 @@ final class PublicProfileCommerceEngagementUiTest extends TestCase
             'data-profile-posts-list',
             'data-posts-load-more',
             'data-profile-support-section',
-            'data-profile-plans-grid',
-            'data-plans-load-more',
-            'data-profile-tip-form',
+            'data-invest-panel="support"',
         ] as $marker) {
             self::assertStringContainsString($marker, $page);
         }
