@@ -32,12 +32,12 @@ final class CartCheckoutWiringContractTest extends TestCase
             "C().api('PATCH','/api/commerce/cart-item.php'",
             "C().api('DELETE','/api/commerce/cart-item.php'",
             "C().api('DELETE','/api/commerce/cart.php'",
-            'C().createCheckoutFromCart()'
+            'C().createCheckoutFromCart()',
+            'localCheckoutUrl(flow)',
+            "'/checkout.php?session=' + encodeURIComponent(id)",
         ] as $needle){
             self::assertStringContainsString($needle,$source);
         }
-
-        self::assertStringContainsString('window.location.href=flow.session.checkout_url',$source);
     }
 
     public function testCommerceHelperCreatesDraftOrderAndCheckoutSession(): void
