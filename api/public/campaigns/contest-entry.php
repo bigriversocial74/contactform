@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/bootstrap.php';
+require_once dirname(__DIR__, 2) . '/rewards/_zero_value_bridge.php';
 
 function mg_contest_campaign_uuid(): string
 {
@@ -33,6 +34,30 @@ function mg_contest_campaign_find_user(PDO $pdo, string $email): ?int
     return $id > 0 ? $id : null;
 }
 
+function mg_contest_campaign_bridge(PDO $pdo, array $campaign, array $contact, int $walletDbId, string $walletPublicId, ?int $userId, ?string $expiresAt, string $sourceType): ?array
+{
+    if (!$userId) return null;
+    return mg_zero_reward_issue_from_wallet($pdo, [
+        'merchant_user_id' => (int) $campaign['merchant_user_id'],
+        'recipient_user_id' => $userId,
+        'recipient_external_id' => (string) ($contact['public_id'] ?? ''),
+        'wallet_item_db_id' => $walletDbId,
+        'wallet_item_public_id' => $walletPublicId,
+        'campaign_public_id' => (string) $campaign['public_id'],
+        'reward_template_public_id' => (string) $campaign['reward_template_public_id'],
+        'source_type' => $sourceType,
+        'source_reference' => $walletPublicId,
+        'source_line_reference' => (string) ($contact['public_id'] ?? $walletPublicId),
+        'title' => (string) ($campaign['reward_template_title'] ?? 'Contest reward'),
+        'description' => $campaign['description'] ?? null,
+        'currency' => (string) ($campaign['currency'] ?? 'USD'),
+        'display_value_cents' => (int) ($campaign['value_amount_cents'] ?? 0),
+        'expires_at' => $expiresAt,
+        'redemption_instructions' => $campaign['redemption_instructions'] ?? null,
+        'terms' => ['campaign_type' => 'contest_giveaway'],
+    ]);
+}
+
 mg_require_method('POST');
 $input = mg_input();
 $pdo = mg_db();
@@ -51,6 +76,7 @@ try {
     $pdo->beginTransaction();
 
     $sql = 'SELECT c.*, rt.id reward_template_db_id, rt.public_id reward_template_public_id, rt.title reward_template_title,
+                   rt.description reward_template_description, rt.redemption_instructions,
                    rt.value_amount_cents, rt.currency, rt.expiration_rule, rt.expiration_days, rt.expires_at,
                    rt.quantity_limit reward_template_quantity_limit, rt.issued_count reward_template_issued_count
             FROM campaigns c
@@ -62,20 +88,11 @@ try {
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$campaignRef, $campaignRef]);
     $campaign = $stmt->fetch();
-    if (!$campaign) {
-        $pdo->rollBack();
-        mg_fail('Contest is not available.', 404);
-    }
+    if (!$campaign) { $pdo->rollBack(); mg_fail('Contest is not available.', 404); }
 
     $now = time();
-    if (!empty($campaign['starts_at']) && strtotime((string) $campaign['starts_at']) > $now) {
-        $pdo->rollBack();
-        mg_fail('Contest has not started yet.', 409);
-    }
-    if (!empty($campaign['ends_at']) && strtotime((string) $campaign['ends_at']) < $now) {
-        $pdo->rollBack();
-        mg_fail('Contest has ended.', 409);
-    }
+    if (!empty($campaign['starts_at']) && strtotime((string) $campaign['starts_at']) > $now) { $pdo->rollBack(); mg_fail('Contest has not started yet.', 409); }
+    if (!empty($campaign['ends_at']) && strtotime((string) $campaign['ends_at']) < $now) { $pdo->rollBack(); mg_fail('Contest has ended.', 409); }
 
     $merchantId = (int) $campaign['merchant_user_id'];
     $campaignId = (int) $campaign['id'];
@@ -97,15 +114,19 @@ try {
     $alreadyIssued = false;
     $rewardTitle = null;
     $expiresAt = null;
+    $bridge = null;
 
     if (!empty($campaign['reward_template_db_id']) && (!isset($campaign['reward_template_quantity_limit']) || $campaign['reward_template_quantity_limit'] === null || (int) $campaign['reward_template_issued_count'] < (int) $campaign['reward_template_quantity_limit']) && (!isset($campaign['quantity_limit']) || $campaign['quantity_limit'] === null || (int) $campaign['issued_count'] < (int) $campaign['quantity_limit'])) {
-        $existingStmt = $pdo->prepare('SELECT public_id,status FROM wallet_items WHERE campaign_id = ? AND contact_id = ? AND source_type = \'contest_entry\' AND status <> \'cancelled\' ORDER BY id DESC LIMIT 1');
+        $existingStmt = $pdo->prepare('SELECT id,public_id,status FROM wallet_items WHERE campaign_id = ? AND contact_id = ? AND source_type = \'contest_entry\' AND status <> \'cancelled\' ORDER BY id DESC LIMIT 1');
         $existingStmt->execute([$campaignId, $contactId]);
         $existing = $existingStmt->fetch();
         if ($existing) {
             $walletPublicId = (string) $existing['public_id'];
             $walletStatus = (string) $existing['status'];
             $alreadyIssued = true;
+            $expiresAt = mg_contest_campaign_expiry($campaign);
+            $rewardTitle = (string) ($campaign['reward_template_title'] ?? 'Contest reward');
+            $bridge = mg_contest_campaign_bridge($pdo, $campaign, $contact, (int) $existing['id'], $walletPublicId, $userId, $expiresAt, 'contest_entry');
         } else {
             $walletPublicId = mg_contest_campaign_uuid();
             $expiresAt = mg_contest_campaign_expiry($campaign);
@@ -116,7 +137,8 @@ try {
             $walletStatus = 'issued';
             $pdo->prepare('UPDATE campaigns SET issued_count = issued_count + 1, updated_at = NOW() WHERE id = ?')->execute([$campaignId]);
             $pdo->prepare('UPDATE reward_templates SET issued_count = issued_count + 1, updated_at = NOW() WHERE id = ?')->execute([(int) $campaign['reward_template_db_id']]);
-            mg_contest_campaign_event($pdo, $merchantId, $campaignId, $walletDbId, $contactId, 'wallet_item.issued', ['wallet_item_id' => $walletPublicId, 'source_type' => 'contest_entry']);
+            $bridge = mg_contest_campaign_bridge($pdo, $campaign, $contact, $walletDbId, $walletPublicId, $userId, $expiresAt, 'contest_entry');
+            mg_contest_campaign_event($pdo, $merchantId, $campaignId, $walletDbId, $contactId, 'wallet_item.issued', ['wallet_item_id' => $walletPublicId, 'source_type' => 'contest_entry', 'pppm_bridge' => $bridge]);
         }
     }
 
@@ -128,9 +150,10 @@ try {
         'already_issued' => $alreadyIssued,
         'reward_title' => $rewardTitle,
         'expires_at' => $expiresAt,
+        'pppm_bridge' => $bridge,
     ], 'Contest entry recorded.', 201);
 } catch (Throwable $error) {
     if ($pdo->inTransaction()) $pdo->rollBack();
-    mg_security_log('error', 'public.contest_entry.failed', 'Unable to process contest entry.', ['exception_class' => $error::class]);
+    mg_security_log('error', 'public.contest_entry.failed', 'Unable to process contest entry.', ['exception_class' => $error::class, 'message' => $error->getMessage()]);
     mg_fail('Unable to process contest entry.', 500);
 }
