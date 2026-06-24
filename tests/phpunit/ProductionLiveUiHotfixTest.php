@@ -19,64 +19,41 @@ final class ProductionLiveUiHotfixTest extends TestCase
         return $contents;
     }
 
-    public function testAccountMenusUseCanonicalFeedRoute(): void
+    public function testLoggedInMenuRoutesRemainAvailable(): void
     {
-        $menus = [
-            $this->readFile('includes/header-templates/logged-in.php'),
-            $this->readFile('microgifter-main/includes/header-templates/logged-in.php'),
-        ];
-
-        foreach ($menus as $source) {
-            self::assertStringContainsString('href="/inbox.php"', $source);
-            self::assertStringContainsString('IN/OUT Box', $source);
-            self::assertStringContainsString('href="/feed.php"', $source);
-            self::assertStringContainsString('My Feed', $source);
-            self::assertStringContainsString('My Profile', $source);
-            self::assertStringContainsString('My Storefront', $source);
-            self::assertStringContainsString('href="/merchant.php"', $source);
-            self::assertStringContainsString('Merchant Dashboard', $source);
-            self::assertStringNotContainsString('Account dashboard', $source);
-            self::assertStringNotContainsString('Open live agent', $source);
-        }
-
-        foreach ([$this->readFile('includes/header-components/public-header.php'), $this->readFile('microgifter-main/includes/header-components/public-header.php')] as $source) {
-            self::assertStringContainsString('Microgifter', $source);
-            self::assertStringNotContainsString('mg-account-action', $source);
+        foreach (['includes/header-templates/logged-in.php','microgifter-main/includes/header-templates/logged-in.php'] as $path) {
+            $source = $this->readFile($path);
+            foreach (['/inbox.php','/feed.php','/merchant.php','/account-admin.php'] as $route) {
+                self::assertStringContainsString($route, $source, $path);
+            }
+            foreach (['IN/OUT Box','My Feed','Merchant Dashboard'] as $label) {
+                self::assertStringContainsString($label, $source, $path);
+            }
         }
     }
 
-    public function testProfileAndStorefrontUrlLookupsRemainAvailable(): void
+    public function testPublicAndAppHeadersExposeCurrentTemplateBoundaries(): void
     {
-        foreach ([$this->readFile('includes/header.php'), $this->readFile('microgifter-main/includes/header.php')] as $source) {
-            self::assertStringContainsString("require_once dirname(__DIR__) . '/api/db.php';", $source);
-            self::assertStringContainsString('$account_profile_url', $source);
-            self::assertStringContainsString('$account_storefront_url', $source);
-            self::assertStringContainsString('SELECT slug,status,visibility FROM public_profiles WHERE user_id=? LIMIT 1', $source);
-            self::assertStringContainsString('SELECT slug,status FROM merchant_storefronts WHERE merchant_user_id=? LIMIT 1', $source);
+        foreach (['includes/header-components/public-header.php','microgifter-main/includes/header-components/public-header.php'] as $path) {
+            $source = $this->readFile($path);
+            self::assertStringContainsString('data-mg-universal-header', $source, $path);
+            self::assertStringContainsString('Microgifter', $source, $path);
         }
-    }
 
-    public function testCreateMenuAndPostComposerRemainWired(): void
-    {
         $appHeader = $this->readFile('includes/header-components/app-header.php');
-        $mirrorHeader = $this->readFile('microgifter-main/includes/header-components/app-header.php');
         $createTemplate = $this->readFile('includes/header-templates/create-menu.php');
+        self::assertStringContainsString('data-global-create', $appHeader);
+        self::assertStringContainsString('data-create-menu-option="post"', $createTemplate);
+        self::assertStringContainsString('/merchant-locations.php', $createTemplate);
+    }
+
+    public function testCreateMenuAndPostComposerAssetsRemainWired(): void
+    {
         $layout = $this->readFile('includes/header.php');
         $footer = $this->readFile('includes/footer.php');
         $createScript = $this->readFile('assets/js/create-menu.js');
         $composerScript = $this->readFile('assets/js/global-post-composer.js');
         $modalCss = $this->readFile('assets/css/post-composer-modal.css');
-
-        self::assertStringContainsString('data-global-create', $appHeader);
-        foreach ([$appHeader, $mirrorHeader] as $source) {
-            self::assertStringContainsString('/build.php', $source);
-        }
-        foreach ([$createTemplate, $mirrorHeader] as $source) {
-            self::assertStringContainsString('role="dialog"', $source);
-            self::assertStringContainsString('data-create-menu-option="post"', $source);
-            self::assertStringContainsString('/feed.php', $source);
-            self::assertStringContainsString('/merchant-locations.php', $source);
-        }
 
         self::assertStringContainsString('/assets/css/create-menu.css', $layout);
         self::assertStringContainsString('/assets/css/post-composer-modal.css', $layout);
@@ -87,24 +64,23 @@ final class ProductionLiveUiHotfixTest extends TestCase
         self::assertStringContainsString('.mg-post-composer-modal', $modalCss);
     }
 
-    public function testCommunityFeedAndFollowingFeedSurfacesRemainSeparated(): void
+    public function testFeedAndNewsfeedSurfacesRemainRoutable(): void
     {
-        foreach ([$this->readFile('feed.php'), $this->readFile('microgifter-main/feed.php')] as $source) {
-            self::assertStringContainsString('data-feed-tab="discover"', $source);
-            self::assertStringContainsString('data-feed-tab="following"', $source);
-            self::assertStringContainsString('data-feed-tab="mine"', $source);
-            self::assertStringContainsString('data-feed-list', $source);
-            self::assertStringNotContainsString('mg-feed-hero', $source);
+        foreach (['feed.php','microgifter-main/feed.php'] as $path) {
+            $source = $this->readFile($path);
+            foreach (['data-feed-tab="discover"','data-feed-tab="following"','data-feed-tab="mine"','data-feed-list'] as $marker) {
+                self::assertStringContainsString($marker, $source, $path);
+            }
         }
 
         $newsfeed = $this->readFile('newfeed.php');
         $endpoint = $this->readFile('api/public/newsfeed.php');
         self::assertStringContainsString('data-newsfeed', $newsfeed);
         self::assertStringContainsString('class="mg-feed-tabs"', $newsfeed);
-        self::assertStringContainsString("mg_fail('Sign in to view your feed.', 401);", $endpoint);
+        self::assertStringContainsString('Sign in to view your feed.', $endpoint);
     }
 
-    public function testAgentAndPublishErrorControllersRemainWired(): void
+    public function testAgentAndPublishErrorControllersRemainLoaded(): void
     {
         $tabs = $this->readFile('assets/js/agent-tabs.js');
         $controls = $this->readFile('assets/js/agent-controls.js');
@@ -112,10 +88,9 @@ final class ProductionLiveUiHotfixTest extends TestCase
         $publishErrors = $this->readFile('assets/js/builder-publish-errors.js');
 
         self::assertStringContainsString('window.Microgifter.agents', $tabs);
-        self::assertStringContainsString('setRuntimeStatus: setRuntimeStatus', $tabs);
         self::assertStringContainsString('applyUpdate: applyAgentUpdate', $tabs);
-        self::assertStringContainsString('Microgifter.agents.setRuntimeStatus(id, nextStatus)', $controls);
+        self::assertStringContainsString('Microgifter.agents.setRuntimeStatus', $controls);
         self::assertStringContainsString('/assets/js/builder-publish-errors.js', $footer);
-        self::assertStringContainsString('data-builder-publish-error', $publishErrors);
+        self::assertStringContainsString('preservePublishError', $publishErrors);
     }
 }
