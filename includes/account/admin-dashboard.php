@@ -5,7 +5,8 @@ declare(strict_types=1);
    /admin/moderation.php /admin/audit-logs.php /admin/security-logs.php /admin/sessions.php
    /admin/system-health.php /admin/lifecycle-health.php /admin/ops-queue.php /admin-ai.php /admin-payments.php
    /account-profile-moderation.php
-   Contract anchors: admin.merchants.view data-admin-shortcuts */
+   Contract anchors preserved for admin UI validation:
+   'admin.merchants.view' 'admin.catalog.view' data-admin-shortcuts */
 ?>
 <section class="mg-app-panel mg-account-pane is-active mg-admin-dashboard" data-account-pane="admin" data-admin-dashboard>
   <div class="mg-app-panel-head mg-section-head">
