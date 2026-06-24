@@ -184,7 +184,7 @@ window.Microgifter = window.Microgifter || {};
     lastTrigger = null;
   }
   async function addFromDataset(button) {
-    var productVersionId = button.dataset.productVersionId || button.dataset.versionId || button.datasetCartVersionId;
+    var productVersionId = button.dataset.productVersionId || button.dataset.versionId || button.dataset.cartVersionId;
     if (!productVersionId) {
       document.dispatchEvent(new CustomEvent('mg:cart:legacy-add', { detail: button.dataset }));
       return;
