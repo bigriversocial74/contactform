@@ -1,5 +1,5 @@
 /* Public header cleanup.
-   Keeps auth pages clean and makes the home hamburger use the same mobile slide-out behavior as public auth pages. */
+   Auth-page header cleanup and shared public mobile slide-out styling only. */
 
 body[data-authenticated="false"][data-page-id="signup"] .mg-site-header.mg-market-universal-header .mg-account-menu,
 body[data-authenticated="false"][data-page-id="signin"] .mg-site-header.mg-market-universal-header .mg-account-menu{
@@ -141,91 +141,6 @@ body[data-authenticated="false"] .mg-public-mobile-auth a::after,
 body[data-authenticated="false"] .mg-index-mobile-nav a::after{
   content:"→";
   opacity:.55;
-}
-
-/* Developer docs containment and light docs header row. */
-body[data-authenticated="false"][data-page-id="developer-docs"]{
-  overflow-x:hidden!important;
-}
-body[data-authenticated="false"][data-page-id="developer-docs"] .mg-dev-docs{
-  width:100%!important;
-  max-width:100%!important;
-  margin-left:0!important;
-  margin-right:0!important;
-  overflow-x:hidden!important;
-  background:#f7f7f2!important;
-  color:#101010!important;
-}
-body[data-authenticated="false"][data-page-id="developer-docs"] .mg-dev-docs *,
-body[data-authenticated="false"][data-page-id="developer-docs"] .mg-dev-shell,
-body[data-authenticated="false"][data-page-id="developer-docs"] .mg-dev-content,
-body[data-authenticated="false"][data-page-id="developer-docs"] .mg-dev-intro,
-body[data-authenticated="false"][data-page-id="developer-docs"] .mg-dev-card,
-body[data-authenticated="false"][data-page-id="developer-docs"] .mg-dev-code,
-body[data-authenticated="false"][data-page-id="developer-docs"] .mg-dev-table{
-  min-width:0!important;
-  max-width:100%!important;
-}
-body[data-authenticated="false"][data-page-id="developer-docs"] .mg-dev-topbar{
-  background:rgba(248,248,245,.96)!important;
-  border-bottom:1px solid rgba(17,17,17,.08)!important;
-  box-shadow:0 12px 34px rgba(0,0,0,.05)!important;
-  color:#101010!important;
-}
-body[data-authenticated="false"][data-page-id="developer-docs"] .mg-dev-title-mark{
-  border-color:rgba(17,17,17,.10)!important;
-  background:#fff!important;
-  color:#101010!important;
-}
-body[data-authenticated="false"][data-page-id="developer-docs"] .mg-dev-title-copy strong{
-  color:#101010!important;
-}
-body[data-authenticated="false"][data-page-id="developer-docs"] .mg-dev-title-copy span{
-  color:#4f4b43!important;
-}
-body[data-authenticated="false"][data-page-id="developer-docs"] .mg-dev-top-actions{
-  min-width:0!important;
-  max-width:100%!important;
-}
-body[data-authenticated="false"][data-page-id="developer-docs"] .mg-dev-chip,
-body[data-authenticated="false"][data-page-id="developer-docs"] .mg-dev-btn{
-  max-width:100%!important;
-  overflow:hidden!important;
-  text-overflow:ellipsis!important;
-  border-color:rgba(17,17,17,.10)!important;
-  background:#fff!important;
-  color:#101010!important;
-}
-body[data-authenticated="false"][data-page-id="developer-docs"] .mg-dev-chip strong{
-  color:#101010!important;
-}
-body[data-authenticated="false"][data-page-id="developer-docs"] .mg-dev-btn-primary{
-  background:#101010!important;
-  color:#fff!important;
-}
-body[data-authenticated="false"][data-page-id="developer-docs"] .mg-dev-code{
-  white-space:pre-wrap!important;
-  word-break:break-word!important;
-  overflow-x:auto!important;
-}
-body[data-authenticated="false"][data-page-id="developer-docs"] .mg-dev-table{
-  display:block!important;
-  overflow-x:auto!important;
-}
-@media(max-width:720px){
-  body[data-authenticated="false"][data-page-id="developer-docs"] .mg-dev-topbar{
-    top:64px!important;
-    width:100%!important;
-    padding:12px!important;
-  }
-  body[data-authenticated="false"][data-page-id="developer-docs"] .mg-dev-content{
-    width:100%!important;
-    padding-left:12px!important;
-    padding-right:12px!important;
-  }
-  body[data-authenticated="false"][data-page-id="developer-docs"] .mg-dev-top-actions{
-    width:100%!important;
-  }
 }
 
 @media(max-width:820px){
