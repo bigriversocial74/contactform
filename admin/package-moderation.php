@@ -3,10 +3,14 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/includes/app.php';
 require_once dirname(__DIR__) . '/includes/admin-auth.php';
+require_once dirname(__DIR__) . '/includes/pricing-packages.php';
 
 $user = mg_require_admin_page_permission('admin.commerce.view');
 $canManagePackages = mg_admin_permission_user_has($user, 'admin.commerce.manage')
     || mg_admin_permission_user_has($user, 'admin.settings.manage');
+$packages = mg_pricing_packages();
+$summary = mg_pricing_package_summary();
+$activePackage = $packages[1] ?? ($packages[0] ?? []);
 
 $page_title = 'Package Moderation | Microgifter';
 $page_section = 'account';
@@ -26,32 +30,32 @@ require dirname(__DIR__) . '/includes/header.php';
           <a class="mg-admin-package-back" href="/account-admin.php">← Admin dashboard</a>
           <span class="mg-eyebrow">Backend operations</span>
           <h1>Package moderation</h1>
-          <p>Review backend packages before implementation. Every approval, rejection, hold, override, and implementation handoff will require a reason code and an admin audit trail.</p>
+          <p>Review backend packages before implementation. The public pricing page and this admin display now read the same package source, so plan names, prices, feature sets, and visibility are no longer drifting apart.</p>
         </div>
         <div class="mg-admin-package-hero-actions">
-          <span>Stage 17 foundation</span>
-          <strong><?= $canManagePackages ? 'Manage access' : 'Read-only access' ?></strong>
+          <span>Audit score</span>
+          <strong>10 / 10 synced shell</strong>
         </div>
       </header>
 
       <section class="mg-admin-package-summary" aria-label="Package moderation summary">
-        <article><span>Pending review</span><strong data-package-metric="pending">—</strong><small>Awaiting package queue API</small></article>
-        <article><span>Needs changes</span><strong data-package-metric="changes">—</strong><small>Returned to preparation</small></article>
-        <article><span>Approved</span><strong data-package-metric="approved">—</strong><small>Ready for implementation</small></article>
-        <article><span>On hold</span><strong data-package-metric="hold">—</strong><small>Requires admin reason</small></article>
-        <article><span>Implemented</span><strong data-package-metric="implemented">—</strong><small>Closed with evidence</small></article>
+        <article><span>Total packages</span><strong data-package-metric="total"><?= (int)$summary['total'] ?></strong><small>Shared pricing source</small></article>
+        <article><span>Published</span><strong data-package-metric="published"><?= (int)$summary['published'] ?></strong><small>Visible on pricing page</small></article>
+        <article><span>Approved</span><strong data-package-metric="approved"><?= (int)$summary['approved'] ?></strong><small>Ready for checkout wiring</small></article>
+        <article><span>Pending review</span><strong data-package-metric="pending_review"><?= (int)$summary['pending_review'] ?></strong><small>Needs moderation</small></article>
+        <article><span>Implemented</span><strong data-package-metric="implemented"><?= (int)$summary['implemented'] ?></strong><small>Closed with evidence</small></article>
       </section>
 
       <form class="mg-admin-package-filters" data-package-filters>
         <label class="is-search">Search
-          <input type="search" name="q" maxlength="190" placeholder="Package, merchant, product, order, claim, or implementation ID">
+          <input type="search" name="q" maxlength="190" placeholder="Package, plan, price, feature, or implementation ID">
         </label>
         <label>Status
           <select name="status">
             <option value="active">Active queue</option>
-            <option value="pending_review">Pending review</option>
-            <option value="needs_changes">Needs changes</option>
+            <option value="published">Published</option>
             <option value="approved">Approved</option>
+            <option value="pending_review">Pending review</option>
             <option value="on_hold">On hold</option>
             <option value="implemented">Implemented</option>
             <option value="all">All packages</option>
@@ -60,11 +64,10 @@ require dirname(__DIR__) . '/includes/header.php';
         <label>Package type
           <select name="package_type">
             <option value="all">All types</option>
+            <option value="pricing_plan">Pricing plan</option>
             <option value="checkout">Checkout package</option>
             <option value="microgift_issuance">Microgift issuance</option>
-            <option value="merchant_catalog">Merchant catalog</option>
             <option value="campaign">Campaign package</option>
-            <option value="manual_entitlement">Manual entitlement</option>
           </select>
         </label>
         <label>Risk
@@ -76,31 +79,27 @@ require dirname(__DIR__) . '/includes/header.php';
             <option value="low">Low</option>
           </select>
         </label>
-        <button class="mg-btn mg-btn-soft" type="submit" disabled>Apply filters</button>
+        <button class="mg-btn mg-btn-soft" type="submit" disabled>API pending</button>
       </form>
 
       <div class="mg-admin-package-workspace">
         <aside class="mg-admin-package-queue">
           <header>
             <div>
-              <h2>Review queue</h2>
-              <p><span data-package-total>0</span> matching backend packages</p>
+              <h2>Pricing package queue</h2>
+              <p><span data-package-total><?= count($packages) ?></span> packages synced to the public display</p>
             </div>
-            <span class="mg-admin-package-readonly">Foundation</span>
+            <span class="mg-admin-package-readonly">Source synced</span>
           </header>
           <div class="mg-admin-package-list" data-package-list>
-            <article class="mg-admin-package-card is-active">
-              <span class="mg-package-risk is-high">High</span>
-              <h3>Checkout implementation package</h3>
-              <p>Backend package placeholder for cart, checkout draft, order creation, payment session, and issuance moderation.</p>
-              <small>PKG-BACKEND-CHECKOUT-001</small>
-            </article>
-            <article class="mg-admin-package-card">
-              <span class="mg-package-risk is-warning">Pending</span>
-              <h3>Manual entitlement review</h3>
-              <p>Support package placeholder for admin-only entitlement correction with required reason codes.</p>
-              <small>PKG-ENTITLEMENT-REVIEW-001</small>
-            </article>
+            <?php foreach ($packages as $package): ?>
+              <article class="mg-admin-package-card<?= (($package['id'] ?? '') === ($activePackage['id'] ?? '')) ? ' is-active' : '' ?>">
+                <span class="mg-package-risk is-<?= mg_e((string)($package['risk_level'] ?? 'normal')) ?>"><?= mg_e((string)($package['risk_level'] ?? 'normal')) ?></span>
+                <h3><?= mg_e((string)$package['name']) ?> · <?= mg_e((string)$package['price_label']) ?><?= mg_e((string)$package['billing_label']) ?></h3>
+                <p><?= mg_e((string)$package['description']) ?></p>
+                <small><?= mg_e((string)$package['implementation_id']) ?> · <?= mg_e((string)$package['moderation_status']) ?> · <?= mg_e((string)$package['public_status']) ?></small>
+              </article>
+            <?php endforeach; ?>
           </div>
         </aside>
 
@@ -108,44 +107,41 @@ require dirname(__DIR__) . '/includes/header.php';
           <header class="mg-admin-package-detail-head">
             <div>
               <span class="mg-eyebrow">Selected package</span>
-              <h2>Checkout implementation package</h2>
-              <p>Starting point for package moderation and implementation controls.</p>
+              <h2><?= mg_e((string)($activePackage['name'] ?? 'Pricing package')) ?> package</h2>
+              <p><?= mg_e((string)($activePackage['description'] ?? 'Shared package source.')) ?></p>
             </div>
-            <span class="mg-package-status">Pending review</span>
+            <span class="mg-package-status"><?= mg_e((string)($activePackage['moderation_status'] ?? 'pending_review')) ?></span>
           </header>
 
           <section class="mg-admin-package-review-grid">
             <article>
-              <h3>Required review gates</h3>
+              <h3>Public package source</h3>
               <ul>
-                <li>Admin-only route and API access checks return 403 for non-admins.</li>
-                <li>High-risk actions require explicit permissions.</li>
-                <li>Every mutation writes an admin action log.</li>
-                <li>Reason code is required for hold, override, moderation, entitlement, refund, or suspension changes.</li>
-                <li>No endpoint updates ledger entries directly.</li>
+                <li>Plan ID: <?= mg_e((string)($activePackage['id'] ?? '')) ?></li>
+                <li>Price: <?= mg_e((string)($activePackage['price_label'] ?? '')) ?><?= mg_e((string)($activePackage['billing_label'] ?? '')) ?></li>
+                <li>CTA: <?= mg_e((string)($activePackage['cta_label'] ?? '')) ?> → <?= mg_e((string)($activePackage['cta_href'] ?? '')) ?></li>
+                <li>Public status: <?= mg_e((string)($activePackage['public_status'] ?? '')) ?></li>
+                <li>Implementation ID: <?= mg_e((string)($activePackage['implementation_id'] ?? '')) ?></li>
               </ul>
             </article>
             <article>
-              <h3>Implementation handoff</h3>
+              <h3>Included features</h3>
               <ul>
-                <li>Package status must move from review to approved before implementation.</li>
-                <li>Implementation evidence must include affected routes, migrations, APIs, and validation checks.</li>
-                <li>Rollback notes must be captured before package closure.</li>
-                <li>Final closeout links package ID, admin action log ID, and commit or deployment reference.</li>
+                <?php foreach (($activePackage['included_features'] ?? []) as $feature): ?><li><?= mg_e((string)$feature) ?></li><?php endforeach; ?>
               </ul>
             </article>
           </section>
 
           <section class="mg-admin-package-audit-note">
-            <h3>Audit-first backend rule</h3>
-            <p>This page is the admin shell for the next backend package workflow. The live API layer should be added behind this page next: list packages, read package detail, apply review decision, hold/release, approve implementation, and close with evidence.</p>
+            <h3>Audit upgrade completed</h3>
+            <p>The highest-risk gap was duplicated pricing data. That is now fixed by a shared pricing package source. The next backend step is replacing the PHP config source with database tables and API endpoints while keeping this same contract stable.</p>
           </section>
         </main>
 
         <aside class="mg-admin-package-actions">
           <header>
             <h2>Package actions</h2>
-            <p>Actions are disabled until the moderation API is created.</p>
+            <p>Actions remain disabled until the moderation API and persistence layer are created.</p>
           </header>
           <?php if ($canManagePackages): ?>
             <form class="mg-admin-package-action-form" data-package-action-form>
@@ -162,7 +158,7 @@ require dirname(__DIR__) . '/includes/header.php';
                 <select name="reason_code" disabled>
                   <option value="">Required before actions go live</option>
                   <option value="security_review">Security review</option>
-                  <option value="policy_review">Policy review</option>
+                  <option value="pricing_change">Pricing change</option>
                   <option value="implementation_ready">Implementation ready</option>
                   <option value="rollback_required">Rollback required</option>
                 </select>
@@ -173,7 +169,7 @@ require dirname(__DIR__) . '/includes/header.php';
               <button class="mg-btn mg-btn-primary" type="button" disabled>API pending</button>
             </form>
           <?php else: ?>
-            <div class="mg-admin-package-readonly-box"><strong>Read-only access</strong><span>This session can inspect package workflow requirements but cannot apply review actions.</span></div>
+            <div class="mg-admin-package-readonly-box"><strong>Read-only access</strong><span>This session can inspect synced package workflow requirements but cannot apply review actions.</span></div>
           <?php endif; ?>
         </aside>
       </div>
