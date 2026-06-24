@@ -184,7 +184,7 @@ window.Microgifter = window.Microgifter || {};
     lastTrigger = null;
   }
   async function addFromDataset(button) {
-    var productVersionId = button.dataset.productVersionId || button.dataset.versionId || button.dataset.cartVersionId;
+    var productVersionId = button.dataset.productVersionId || button.dataset.versionId || button.datasetCartVersionId;
     if (!productVersionId) {
       document.dispatchEvent(new CustomEvent('mg:cart:legacy-add', { detail: button.dataset }));
       return;
@@ -239,7 +239,7 @@ window.Microgifter = window.Microgifter || {};
     var id = detail.product_version_id || detail.productVersionId;
     if (id) C().addProductVersion(id, detail.quantity || 1).then(refresh);
   });
-  window.Microgifter.cart = {
+  window.Microgifter.cart={
     refresh: refresh,
     open: openDrawer,
     close: closeDrawer,
