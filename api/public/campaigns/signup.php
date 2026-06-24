@@ -7,6 +7,7 @@ require_once dirname(__DIR__, 3) . '/includes/merchant-crm.php';
 require_once __DIR__ . '/_limits.php';
 require_once __DIR__ . '/_outbound.php';
 require_once __DIR__ . '/_security.php';
+require_once __DIR__ . '/_followups.php';
 
 function mg_public_campaign_uuid(): string
 {
@@ -15,7 +16,6 @@ function mg_public_campaign_uuid(): string
     $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
     return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
 }
-
 function mg_public_campaign_expiry(array $template): ?string
 {
     $rule = (string) ($template['expiration_rule'] ?? 'none');
@@ -23,13 +23,12 @@ function mg_public_campaign_expiry(array $template): ?string
     if ($rule === 'after_issue' && !empty($template['expiration_days'])) return date('Y-m-d H:i:s', time() + ((int) $template['expiration_days'] * 86400));
     return null;
 }
-
 function mg_public_campaign_event(PDO $pdo, int $merchantId, int $campaignId, ?int $walletItemId, ?int $contactId, string $eventType, array $context = []): void
 {
     $stmt = $pdo->prepare('INSERT INTO campaign_events (public_id,merchant_user_id,campaign_id,wallet_item_id,contact_id,event_type,event_context_json,created_at) VALUES (?,?,?,?,?,?,?,NOW())');
     $stmt->execute([mg_public_campaign_uuid(), $merchantId, $campaignId, $walletItemId, $contactId, $eventType, json_encode($context, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)]);
+    mg_campaign_followup_schedule($pdo,['merchant_user_id'=>$merchantId,'campaign_id'=>$campaignId,'contact_id'=>$contactId,'wallet_item_id'=>$walletItemId,'trigger_event'=>$eventType,'context'=>$context]);
 }
-
 function mg_public_campaign_find_user(PDO $pdo, string $email): ?int
 {
     $stmt = $pdo->prepare('SELECT id FROM users WHERE email = ? AND status = \'active\' LIMIT 1');
@@ -37,7 +36,6 @@ function mg_public_campaign_find_user(PDO $pdo, string $email): ?int
     $id = (int) ($stmt->fetchColumn() ?: 0);
     return $id > 0 ? $id : null;
 }
-
 function mg_public_campaign_bridge(PDO $pdo, array $campaign, array $contact, int $walletDbId, string $walletPublicId, ?int $userId, ?string $expiresAt, string $sourceType): ?array
 {
     if (!$userId) return null;
