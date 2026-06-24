@@ -7,6 +7,7 @@ $merchantNav = [
  'products'=>['Products','Catalog and builder','/merchant-products.php'],
  'reward_templates'=>['Reward Templates','Wallet-ready offers','/merchant-reward-templates.php'],
  'campaigns'=>['Campaigns','Forms, contests, QR drops','/merchant-campaigns.php'],
+ 'campaign_stamps'=>['Campaign Stamps','Distribution usage','/merchant-campaign-stamps.php'],
  'stamps'=>['Stamp Ledger','Sends and balance','/merchant-stamps.php'],
  'storefront'=>['Storefront','Public merchant page','/merchant-storefront.php'],
  'pppm'=>['Orders & PPPM','Items and lifecycle','/merchant-pppm.php'],
