@@ -1,0 +1,7 @@
+.mg-dev-docs{max-width:100%!important;overflow-x:hidden!important}
+.mg-dev-shell,.mg-dev-content,.mg-dev-card{max-width:100%!important;min-width:0!important;overflow-x:hidden!important}
+.mg-dev-code{width:100%!important;max-width:100%!important;display:block!important;white-space:pre-wrap!important;word-break:break-word!important;overflow-x:auto!important}
+.mg-dev-table{width:100%!important;max-width:100%!important;display:table!important;table-layout:fixed!important;overflow:visible!important}
+.mg-dev-table th,.mg-dev-table td{overflow-wrap:anywhere!important;word-break:normal!important}
+.mg-dev-topbar{background:rgba(248,248,245,.96)!important;border-bottom:1px solid rgba(17,17,17,.08)!important;box-shadow:0 12px 34px rgba(0,0,0,.05)!important;color:#101010!important}
+@media(max-width:720px){.mg-dev-table{display:block!important;overflow-x:auto!important}}
