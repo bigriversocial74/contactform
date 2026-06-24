@@ -2,15 +2,16 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/includes/app.php';
+require_once dirname(__DIR__) . '/includes/admin-auth.php';
 
-$user = mg_require_auth();
-$canViewUsers = mg_has_permission('admin.users.view');
+$user = mg_require_admin_page_permission('admin.users.view');
+$canViewUsers = true;
 $page_title = 'User Center | Microgifter';
 $page_section = 'account';
 $header_mode = 'account';
 $page_body_class = 'mg-admin-users-page';
 $page_styles = ['/assets/css/admin-shell.css','/assets/css/admin-users.css'];
-$page_scripts = $canViewUsers ? ['/assets/js/admin-users.js'] : [];
+$page_scripts = ['/assets/js/admin-users.js'];
 $adminActive = 'users';
 
 require dirname(__DIR__) . '/includes/header.php';

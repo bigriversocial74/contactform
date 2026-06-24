@@ -30,7 +30,7 @@ function mg_admin_commerce_table_exists(PDO $pdo, string $table): bool
 
 function mg_admin_commerce_schema_ready(PDO $pdo): bool
 {
-    foreach (['users','commerce_orders','payment_refunds','payment_disputes','subscriptions','subscription_plans','tips','microgift_instances','commerce_operation_cases'] as $table) {
+    foreach (['users','commerce_orders','payment_refunds','payment_disputes','subscriptions','subscription_plans','tips','microgift_instances','microgift_claim_attempts','commerce_operation_cases'] as $table) {
         if (!mg_admin_commerce_table_exists($pdo, $table)) return false;
     }
     return true;
