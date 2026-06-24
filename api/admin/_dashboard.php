@@ -53,13 +53,13 @@ function mg_admin_dashboard_shortcuts(array $access): array
     $items=[];
     if($access['users']){
         $items[]=['label'=>'Users','description'=>'Inspect platform identities.','href'=>'/admin/users.php'];
-        $items[]=['label'=>'Pending models','description'=>'Review requested user models.','href'=>'/api/admin/user-models/pending.php'];
+        $items[]=['label'=>'Pending models','description'=>'Review requested user models.','href'=>'/admin/pending-models.php'];
     }
     if($access['commerce'])$items[]=['label'=>'Commerce operations','description'=>'Inspect cross-domain payments, lifecycle activity, and review cases.','href'=>'/commerce-operations.php'];
     if($access['moderation'])$items[]=['label'=>'Profile moderation','description'=>'Review profile cases, restrictions, and appeals.','href'=>'/account-profile-moderation.php'];
-    if($access['audit'])$items[]=['label'=>'Audit logs','description'=>'Inspect administrative activity.','href'=>'/api/admin/audit-logs.php'];
-    if($access['security'])$items[]=['label'=>'Security logs','description'=>'Review security events.','href'=>'/api/admin/security-logs.php'];
-    if($access['sessions'])$items[]=['label'=>'Sessions','description'=>'Inspect active sessions.','href'=>'/api/admin/sessions.php'];
+    if($access['audit'])$items[]=['label'=>'Audit logs','description'=>'Inspect administrative activity.','href'=>'/admin/audit-logs.php'];
+    if($access['security'])$items[]=['label'=>'Security logs','description'=>'Review security events.','href'=>'/admin/security-logs.php'];
+    if($access['sessions'])$items[]=['label'=>'Sessions','description'=>'Inspect active sessions.','href'=>'/admin/sessions.php'];
     if($access['health'])$items[]=['label'=>'System health','description'=>'Inspect storage, notifications, migrations, and recovery tools.','href'=>'/admin/system-health.php'];
     return $items;
 }
