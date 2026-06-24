@@ -10,31 +10,31 @@ $permissions = is_array($user['permissions'] ?? null) ? $user['permissions'] : [
 $roles = is_array($user['roles'] ?? null) ? $user['roles'] : [];
 $canCrm = $user && (in_array('sales.leads.view_own', $permissions, true) || in_array('sales.leads.view_all', $permissions, true) || in_array('super_admin', $roles, true));
 require __DIR__ . '/includes/header.php';
+
+$appSidebarVariant = 'crm';
+$appSidebarLabel = 'CRM';
+$appSidebarActive = 'leads';
+$appSidebarTools = $canCrm ? '<button class="crm-add-user-button" type="button" data-crm-tab="users" aria-label="Add sales user">+</button>' : '';
+if ($canCrm) {
+  $appSidebarSearchPlaceholder = 'Search leads, email, business, ZIP...';
+  $appSidebarSearchLabel = 'Search CRM leads';
+  $appSidebarSearchDataAttr = 'data-crm-sidebar-search';
+  $appSidebarSearchSelectHtml = '<select aria-label="Filter CRM leads by status" data-crm-sidebar-status-filter><option value="all">All statuses</option><option value="new">New</option><option value="assigned">Assigned</option><option value="contacted">Contacted</option><option value="qualified">Qualified</option><option value="nurture">Nurture</option><option value="converted">Converted</option><option value="closed_lost">Closed lost</option><option value="spam">Spam</option></select>';
+  $appSidebarNav = [
+    'leads' => ['label'=>'Leads','detail'=>'Sales pipeline','button'=>true,'data_tab'=>'leads','active'=>true],
+    'manual' => ['label'=>'Add lead','detail'=>'Manual entry','button'=>true,'data_tab'=>'manual'],
+    'roster' => ['label'=>'Roster','detail'=>'Sales team','button'=>true,'data_tab'=>'roster'],
+  ];
+  $appSidebarAfterNav = '<div class="crm-mini-stats" data-crm-mini-stats><div><strong>—</strong><span>Today views</span></div><div><strong>—</strong><span>Today leads</span></div></div>';
+} else {
+  $appSidebarBeforeNav = '<div class="mg-app-sidebar-card"><h2>Sales CRM</h2><p>' . ($user ? 'Sales access is not active for this account.' : 'Sign in to view and manage CRM leads.') . '</p></div>';
+  $appSidebarNav = $user
+    ? ['account' => ['label'=>'Account','detail'=>'Review your access','href'=>'/account.php','visible'=>true]]
+    : ['signin' => ['label'=>'Sign in','detail'=>'Continue to the CRM','href'=>'/signin.php','visible'=>true], 'signup' => ['label'=>'Create account','detail'=>'Start a workspace','href'=>'/signup.php','visible'=>true]];
+}
 ?>
 <section class="mg-app-shell crm-shell">
-  <aside class="mg-app-sidebar crm-sidebar">
-    <div class="mg-app-sidebar-brand">
-      <a class="mg-brand mg-sidebar-logo" href="/index.php" aria-label="Microgifter home"><img src="/images/logo_main_drk.png" alt="Microgifter"><span class="mg-sidebar-logo-text">Microgifter</span></a>
-      <?php if ($canCrm): ?><button class="crm-add-user-button" type="button" data-crm-tab="users" aria-label="Add sales user">+</button><?php endif; ?>
-    </div>
-    <?php if ($canCrm): ?>
-      <div class="mg-sidebar-search crm-sidebar-search">
-        <input type="search" placeholder="Search leads, email, business, ZIP..." aria-label="Search CRM leads" data-crm-sidebar-search>
-        <select aria-label="Filter CRM leads by status" data-crm-sidebar-status-filter><option value="all">All statuses</option><option value="new">New</option><option value="assigned">Assigned</option><option value="contacted">Contacted</option><option value="qualified">Qualified</option><option value="nurture">Nurture</option><option value="converted">Converted</option><option value="closed_lost">Closed lost</option><option value="spam">Spam</option></select>
-      </div>
-      <nav class="crm-nav mg-app-side-nav" aria-label="CRM navigation">
-        <button class="is-active" type="button" data-crm-tab="leads"><strong>Leads</strong><span>Sales pipeline</span></button>
-        <button type="button" data-crm-tab="manual"><strong>Add lead</strong><span>Manual entry</span></button>
-        <button type="button" data-crm-tab="roster"><strong>Roster</strong><span>Sales team</span></button>
-      </nav>
-      <div class="crm-mini-stats" data-crm-mini-stats><div><strong>—</strong><span>Today views</span></div><div><strong>—</strong><span>Today leads</span></div></div>
-    <?php else: ?>
-      <div class="mg-app-sidebar-card"><h2>Sales CRM</h2><p><?= $user ? 'Sales access is not active for this account.' : 'Sign in to view and manage CRM leads.' ?></p></div>
-      <nav class="mg-app-side-nav" aria-label="CRM access actions">
-        <?php if ($user): ?><a href="/account.php"><strong>Account</strong><span>Review your access</span></a><?php else: ?><a href="/signin.php"><strong>Sign in</strong><span>Continue to the CRM</span></a><a href="/signup.php"><strong>Create account</strong><span>Start a workspace</span></a><?php endif; ?>
-      </nav>
-    <?php endif; ?>
-  </aside>
+  <?php require __DIR__ . '/includes/app-sidebar.php'; ?>
 
   <?php if (!$user): ?>
     <main class="crm-workspace crm-workspace-locked"><section class="crm-lock mg-app-panel"><div class="mg-app-panel-head"><div><h1>Sign in to use the CRM.</h1><p>Sales access is required to view, create, and manage CRM leads.</p></div></div><div class="mg-app-panel-body"><a class="mg-btn mg-btn-primary" href="/signin.php">Sign in</a></div></section></main>
