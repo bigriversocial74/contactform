@@ -32,6 +32,7 @@
 .mg-unified-header .mg-brand{
   display:inline-flex;
   align-items:center;
+  gap:10px;
   color:#071225;
   text-decoration:none;
   font-size:28px;
@@ -39,6 +40,17 @@
   letter-spacing:-.065em;
   line-height:1;
   white-space:nowrap;
+}
+
+.mg-unified-header .mg-brand img{
+  display:block;
+  width:154px;
+  max-width:100%;
+  height:auto;
+}
+
+.mg-unified-header .mg-brand img + span{
+  display:none;
 }
 
 .mg-unified-header .mg-header-page-controls{
@@ -87,6 +99,67 @@
   min-width:max-content;
 }
 
+.mg-unified-header .mg-header-create,
+.mg-unified-header .mg-header-icon,
+.mg-unified-header .mg-cart-header-button{
+  width:46px;
+  height:46px;
+  min-width:46px;
+  border:1px solid #d6e2f1;
+  border-radius:16px;
+  background:rgba(255,255,255,.78);
+  color:#071225;
+  display:grid;
+  place-items:center;
+  position:relative;
+  box-shadow:0 12px 26px rgba(15,23,42,.055);
+  cursor:pointer;
+}
+
+.mg-unified-header .mg-header-create{
+  text-decoration:none;
+  font-size:25px;
+  font-weight:900;
+  line-height:1;
+  color:#1455d9;
+}
+
+.mg-unified-header .mg-header-create:hover,
+.mg-unified-header .mg-header-icon:hover,
+.mg-unified-header .mg-cart-header-button:hover{
+  border-color:#b9d1fb;
+  background:#eff6ff;
+  color:#1455d9;
+}
+
+.mg-unified-header .mg-header-signal{
+  position:relative;
+  display:inline-flex;
+}
+
+.mg-unified-header .mg-header-icon svg,
+.mg-unified-header .mg-cart-header-button svg{
+  width:21px;
+  height:21px;
+}
+
+.mg-unified-header .mg-header-badge,
+.mg-unified-header .mg-cart-header-badge{
+  position:absolute;
+  right:-5px;
+  top:-6px;
+  min-width:19px;
+  height:19px;
+  border-radius:999px;
+  background:#2563eb;
+  color:#fff;
+  display:grid;
+  place-items:center;
+  font-size:9px;
+  font-weight:950;
+  border:2px solid #fff;
+}
+
 .mg-unified-header .mg-account-menu{
   position:relative;
   display:inline-flex;
@@ -105,6 +178,11 @@
   gap:10px;
   box-shadow:0 12px 26px rgba(15,23,42,.055);
   cursor:pointer;
+}
+
+.mg-unified-header .mg-account-trigger:hover{
+  border-color:#b9d1fb;
+  background:#eff6ff;
 }
 
 .mg-unified-header .mg-avatar{
@@ -174,7 +252,9 @@
 }
 
 .mg-unified-header .mg-account-trigger[aria-expanded="true"]+.mg-account-actions,
-.mg-unified-header .mg-account-menu.is-open .mg-account-actions{
+.mg-unified-header .mg-account-menu.is-open .mg-account-actions,
+.mg-unified-header .mg-account-menu:hover .mg-account-actions,
+.mg-unified-header .mg-account-menu:focus-within .mg-account-actions{
   opacity:1;
   visibility:visible;
   transform:translateY(0);
@@ -264,52 +344,19 @@
   font-weight:950;
 }
 
-.mg-unified-header .mg-cart-header-button{
-  width:46px;
-  height:46px;
-  min-width:46px;
-  border:1px solid #d6e2f1;
-  border-radius:16px;
-  background:rgba(255,255,255,.78);
-  color:#071225;
-  display:grid;
-  place-items:center;
-  position:relative;
-  box-shadow:0 12px 26px rgba(15,23,42,.055);
-  cursor:pointer;
-}
-
-.mg-unified-header .mg-cart-header-button svg{
-  width:21px;
-  height:21px;
-}
-
-.mg-unified-header .mg-cart-header-badge{
-  position:absolute;
-  right:-5px;
-  top:-6px;
-  min-width:19px;
-  height:19px;
-  border-radius:999px;
-  background:#2563eb;
-  color:#fff;
-  display:grid;
-  place-items:center;
-  font-size:9px;
-  font-weight:950;
-  border:2px solid #fff;
-}
-
 @media(max-width:760px){
   .mg-unified-header{min-height:60px}
   .mg-unified-header .mg-header-inner{min-height:60px;padding:0 12px;gap:10px}
   .mg-unified-header .mg-brand{font-size:20px}
+  .mg-unified-header .mg-brand img{width:132px}
   .mg-unified-header .mg-header-page-controls{display:none}
   .mg-unified-header .mg-header-actions{gap:6px}
+  .mg-unified-header .mg-header-create,
+  .mg-unified-header .mg-header-icon,
+  .mg-unified-header .mg-cart-header-button{width:42px;height:42px;min-width:42px;border-radius:14px}
   .mg-unified-header .mg-account-trigger{min-width:42px;width:42px;height:42px;padding:0;justify-content:center}
   .mg-unified-header .mg-account-copy,
   .mg-unified-header .mg-account-caret{display:none}
   .mg-unified-header .mg-avatar{width:30px;height:30px}
-  .mg-unified-header .mg-cart-header-button{width:42px;height:42px;min-width:42px;border-radius:14px}
   .mg-unified-header .mg-account-actions{position:fixed;top:66px;right:10px;width:min(292px,calc(100vw - 20px))}
 }
