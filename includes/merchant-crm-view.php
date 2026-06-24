@@ -52,3 +52,22 @@
     <div class="mg-crm-drawer-body" data-crm-timeline-list></div>
   </aside>
 </div>
+<div class="mg-crm-modal" data-crm-message-modal hidden>
+  <div class="mg-crm-drawer-backdrop" data-crm-message-close></div>
+  <form class="mg-crm-modal-panel" data-crm-message-form>
+    <header class="mg-crm-drawer-head">
+      <div>
+        <span class="mg-eyebrow">Direct message</span>
+        <h2 data-crm-message-title>Message contact</h2>
+        <p data-crm-message-subtitle>Send through Microgifter if the contact has an account; otherwise queue email fallback.</p>
+      </div>
+      <button class="mg-btn mg-btn-soft" type="button" data-crm-message-close>Close</button>
+    </header>
+    <label class="mg-crm-field"><span>Message</span><textarea data-crm-message-body maxlength="4000" required placeholder="Write a short, helpful message…"></textarea></label>
+    <p class="mg-form-status" data-crm-message-status></p>
+    <div class="mg-heading-actions">
+      <button class="mg-btn mg-btn-soft" type="button" data-crm-message-close>Cancel</button>
+      <button class="mg-btn" type="submit" data-crm-message-submit>Send message</button>
+    </div>
+  </form>
+</div>
