@@ -4,7 +4,7 @@
   <div>
     <span class="mg-eyebrow">Merchant CRM</span>
     <h1>Customer CRM</h1>
-    <p>Track campaign contacts from signup through email delivery, account creation, reward claim, and redemption. Use the action hooks here for direct messages and direct gift sends as the next build layer.</p>
+    <p>Track campaign contacts, customer messages, rewards, email delivery, account creation, claims, and redemptions from the merchant workspace.</p>
   </div>
   <div class="mg-heading-actions">
     <a class="mg-btn mg-btn-soft" href="/merchant-campaigns.php">Campaigns</a>
@@ -17,9 +17,12 @@
   <div class="mg-merchant-kpi"><span>Email verified</span><strong data-merchant-crm-verified>—</strong></div>
   <div class="mg-merchant-kpi"><span>Rewards</span><strong data-merchant-crm-wallets>—</strong></div>
 </div>
+<section class="mg-app-panel" data-merchant-crm-messages>
+  <div class="mg-empty-state"><strong>Loading CRM messages</strong><p>Merchant-owned customer conversations will appear here.</p></div>
+</section>
 <section class="mg-app-panel" data-merchant-crm-app>
   <div class="mg-app-panel-head">
-    <div><h2>Campaign contacts</h2><p>Operational contact list with campaign type, account status, reward status, email status, and timeline actions.</p></div>
+    <div><h2>Campaign contacts</h2><p>Operational contact list with campaign type, account status, reward status, email status, timeline, message, and gift actions.</p></div>
     <div class="mg-heading-actions"><select class="mg-input" data-crm-campaign-filter aria-label="Campaign filter"><option value="">All campaigns</option></select><button class="mg-btn mg-btn-soft" type="button" data-crm-refresh>Refresh</button></div>
   </div>
   <div class="mg-app-panel-body"><div class="mg-crm-table-wrap" data-merchant-crm-table><div class="mg-empty-state"><strong>Loading contacts</strong><p>Campaign signups, QR pickups, contest entries, and reward activity will appear here.</p></div></div></div>
