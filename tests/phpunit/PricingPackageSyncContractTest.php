@@ -13,11 +13,15 @@ final class PricingPackageSyncContractTest extends TestCase
             'function mg_public_pricing_packages(): array',
             'function mg_pricing_package_summary(): array',
             'Promotional CRM',
-            'Direct Feed Distribution',
-            'Engagement Campaigns',
-            'Landing Pages',
-            'Pre Sale Commerce',
-            'Automated Commerce Solutions',
+            'paid Microgifts',
+            'promotional Rewards',
+            'monthly Stamps',
+            'max_microgifts',
+            'max_rewards',
+            'monthly_stamps_included',
+            'bulk_stamp_purchase_enabled',
+            'email_stamps_enabled',
+            'sms_stamps_enabled',
             'PKG-PRICING-GROWTH',
         ] as $needle){
             self::assertStringContainsString($needle,$source);
@@ -50,10 +54,12 @@ final class PricingPackageSyncContractTest extends TestCase
             '$packages = mg_pricing_packages();',
             '$summary = mg_pricing_package_summary();',
             'Package moderation',
-            'now read the same package source',
-            'data-package-total',
-            'implementation_id',
-            'pricing_change',
+            'Microgifts are paid products',
+            'Rewards are promotions',
+            'Send Stamp',
+            'monthly_stamps_included',
+            'bulk_stamp_purchase_enabled',
+            'stamp_limit_change',
         ] as $needle){
             self::assertStringContainsString($needle,$source);
         }
