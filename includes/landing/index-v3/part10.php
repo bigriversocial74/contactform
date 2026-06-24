@@ -94,10 +94,10 @@
               <div class="mg-phone-screen">
                 
                 <span class="mg-phone-shine" aria-hidden="true"></span>
-                <img class="mg-carousel-screen is-active" src="/images/reward_saved_limited_coffee_for_two.png" alt="Wallet-ready reward screen">
-                <img class="mg-carousel-screen" src="/images/merchant_analytics_dashboard_design.png" alt="Merchant analytics mobile screen">
-                <img class="mg-carousel-screen" src="/images/limited_coffee_for_two_reward_screen.png" alt="Agent-ready reward mobile screen">
-                <img class="mg-carousel-screen" src="/images/nearby_offers_in_belmont_ca.png" alt="Local discovery mobile screen">
+                <img class="mg-carousel-screen is-active" src="/images/reward_saved_limited_coffee_for_two.svg" alt="Wallet-ready reward screen">
+                <img class="mg-carousel-screen" src="/images/merchant_analytics_dashboard_design.svg" alt="Merchant analytics mobile screen">
+                <img class="mg-carousel-screen" src="/images/limited_coffee_for_two_reward_screen.svg" alt="Agent-ready reward mobile screen">
+                <img class="mg-carousel-screen" src="/images/nearby_offers_in_belmont_ca.svg" alt="Local discovery mobile screen">
                 <div class="mg-carousel-dots" aria-hidden="true"><span class="mg-carousel-dot is-active"></span><span class="mg-carousel-dot"></span><span class="mg-carousel-dot"></span><span class="mg-carousel-dot"></span></div>
               </div>
             </div>
