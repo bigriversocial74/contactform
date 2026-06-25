@@ -79,10 +79,11 @@ The smoke test checks:
 - export queue reliability columns exist
 - campaign link uniqueness column exists
 - admin export worker endpoint file exists
+- renderer library file exists
 
-## Export queue monitor
+## Export queue and active renderer
 
-After a merchant queues a proof or export package in `/design-studio.php`, open this admin URL:
+After a merchant queues a proof or QR SVG export in `/design-studio.php`, open this admin URL:
 
 ```text
 /api/admin/design-export-worker.php
@@ -93,10 +94,21 @@ It returns JSON with queue counts and recent jobs.
 Expected renderer status for this build:
 
 ```json
-"renderer_status": "scaffold_ready"
+"renderer_status": "active_partial"
 ```
 
-That means the queue can be monitored and claimed, but final PDF/PNG/SVG/ZIP rendering still needs the renderer implementation.
+Supported active render outputs:
+
+- `proof` -> local proof HTML asset
+- `qr_svg` -> local SVG QR asset
+
+Rendered files are written under:
+
+```text
+/uploads/design-studio/{workspace_id}/{year}/{month}/
+```
+
+PDF, PNG, and ZIP jobs fail cleanly with `renderer_not_implemented` until those renderers are added.
 
 ## Manual database verification, optional
 
@@ -146,4 +158,4 @@ docs/design-studio-release-checklist.md
 - This migration is intended for a fresh Stage 19 install.
 - If an older Stage 19 draft was partially imported, compare existing table definitions before running this file against production.
 - The Design Studio page and APIs include setup guards. If required tables are missing, the page shows a setup-required state and APIs return a clean setup error.
-- Export jobs queue records and can now be monitored/claimed by the admin worker scaffold. Final file rendering is still a separate build step.
+- Export jobs queue records can now be monitored, claimed, and partially rendered. Proof HTML and QR SVG are active. PDF/PNG/ZIP output still needs separate renderer implementation.
