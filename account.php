@@ -4,6 +4,7 @@ $accountView = defined('MG_ACCOUNT_VIEW') ? MG_ACCOUNT_VIEW : 'profile';
 $page_title = match ($accountView) {
   'admin' => 'Admin Dashboard | Microgifter',
   'investment_tests' => 'Investment Tests | Microgifter',
+  'marketplace_index' => 'Marketplace Index | Microgifter',
   'market' => 'Market Dashboard | Microgifter',
   'profile_moderation' => 'Profile Moderation | Microgifter',
   'wallet' => 'My Wallet | Microgifter',
@@ -33,7 +34,10 @@ if ($accountView === 'profile') {
 if ($accountView === 'market') {
   $page_styles[] = '/assets/css/market-dashboard.css';
 }
-if ($accountView === 'admin' || $accountView === 'investment_tests') {
+if ($accountView === 'marketplace_index') {
+  $page_styles[] = '/assets/css/marketplace-dashboard.css';
+}
+if ($accountView === 'admin' || $accountView === 'investment_tests' || $accountView === 'marketplace_index') {
   $page_styles[] = '/assets/css/admin-dashboard.css';
   if ($accountView === 'investment_tests') $page_styles[] = '/assets/css/investment-tests.css';
   if ($accountView === 'admin') $page_scripts[] = '/assets/js/admin-dashboard.js';
@@ -52,6 +56,7 @@ $canCommerce = in_array('admin.commerce.view', $permissions, true) || in_array('
 $canOpsQueue = in_array('ops.alerts.assign', $permissions, true) || in_array('ops.alerts.resolve', $permissions, true) || $isSuperAdmin;
 $canAiSettings = in_array('admin.settings.manage', $permissions, true) || $isSuperAdmin;
 $canInvestmentTests = in_array('admin.health.view', $permissions, true) || in_array('demand.dashboard.view', $permissions, true) || in_array('intelligence.dashboard.view', $permissions, true) || $isSuperAdmin;
+$canMarketplaceIndex = $canInvestmentTests;
 $adminPermissionSet = [
   'admin.users.view', 'admin.users.manage', 'admin.audit.view', 'admin.health.view',
   'admin.profiles.moderation.view', 'admin.profiles.moderation.manage',
@@ -73,6 +78,7 @@ if ($hasAdminAccess) $accountNav['admin'] = ['label' => 'Admin', 'href' => '/acc
 if ($canViewProfileModeration) $accountNav['profile_moderation'] = ['label' => 'Moderation', 'href' => '/account-profile-moderation.php', 'detail' => 'Profile review queue', 'visible' => true];
 $adminSidebarNav = [
   'admin' => ['label' => 'Admin dashboard', 'href' => '/account-admin.php', 'detail' => 'Platform overview', 'visible' => $hasAdminAccess],
+  'marketplace_index' => ['label' => 'Marketplace Index', 'href' => '/account-marketplace.php', 'detail' => 'Aggregate value, scores, movers', 'visible' => $canMarketplaceIndex],
   'investment_tests' => ['label' => 'Investment Tests', 'href' => '/account-investment-tests.php', 'detail' => 'Market scores and snapshots', 'visible' => $canInvestmentTests],
   'profile_moderation' => ['label' => 'Moderation', 'href' => '/account-profile-moderation.php', 'detail' => 'Profile review queue', 'visible' => $canViewProfileModeration],
   'admin_users' => ['label' => 'Users', 'href' => '/admin/users.php', 'detail' => 'Accounts and access', 'visible' => in_array('admin.users.view', $permissions, true) || $isSuperAdmin],
@@ -88,8 +94,8 @@ $adminSidebarNav = [
   'payments' => ['label' => 'Stripe payments', 'href' => '/admin-payments.php', 'detail' => 'Credentials and readiness', 'visible' => $canAiSettings],
   'ai_settings' => ['label' => 'AI settings', 'href' => '/admin-ai.php', 'detail' => 'Models and providers', 'visible' => $canAiSettings],
 ];
-$sidebarNav = in_array($accountView, ['admin', 'investment_tests'], true) ? $adminSidebarNav : $accountNav;
-$knownViews = ['profile', 'market', 'subscriptions', 'wallet', 'models', 'security', 'access', 'admin', 'investment_tests', 'profile_moderation'];
+$sidebarNav = in_array($accountView, ['admin', 'investment_tests', 'marketplace_index'], true) ? $adminSidebarNav : $accountNav;
+$knownViews = ['profile', 'market', 'subscriptions', 'wallet', 'models', 'security', 'access', 'admin', 'investment_tests', 'marketplace_index', 'profile_moderation'];
 if (!in_array($accountView, $knownViews, true)) $accountView = 'profile';
 require __DIR__ . '/includes/header.php';
 ?>
@@ -99,7 +105,7 @@ require __DIR__ . '/includes/header.php';
       <a class="mg-brand mg-sidebar-logo" href="/index.php" aria-label="Microgifter home"><img src="/images/logo_main_drk.png" alt="Microgifter"><span class="mg-sidebar-logo-text">Microgifter</span></a>
     </div>
     <?php if ($user): ?>
-      <nav class="mg-app-side-nav mg-account-nav" aria-label="<?= in_array($accountView, ['admin', 'investment_tests'], true) ? 'Admin pages' : 'Account pages' ?>">
+      <nav class="mg-app-side-nav mg-account-nav" aria-label="<?= in_array($accountView, ['admin', 'investment_tests', 'marketplace_index'], true) ? 'Admin pages' : 'Account pages' ?>">
         <?php foreach ($sidebarNav as $key => $item): ?>
           <?php if (array_key_exists('visible', $item) && !$item['visible']) { continue; } ?>
           <a class="<?= $accountView === $key ? 'is-active' : '' ?>" href="<?= mg_e($item['href']) ?>"><strong><?= mg_e($item['label']) ?></strong><span><?= mg_e($item['detail']) ?></span></a>
@@ -151,6 +157,10 @@ require __DIR__ . '/includes/header.php';
       <?php require __DIR__ . '/includes/account/investment-tests.php'; ?>
     <?php elseif ($accountView === 'investment_tests'): ?>
       <section class="mg-app-panel mg-account-pane is-active"><div class="mg-app-panel-head"><div><h2>Investment Tests access is not active.</h2><p>This account does not have permission to run market score and snapshot tests.</p></div></div><div class="mg-app-panel-body"><a class="mg-btn mg-btn-ghost" href="/account-admin.php">Back to admin</a></div></section>
+    <?php elseif ($accountView === 'marketplace_index' && $canMarketplaceIndex): ?>
+      <?php require __DIR__ . '/includes/account/marketplace-dashboard.php'; ?>
+    <?php elseif ($accountView === 'marketplace_index'): ?>
+      <section class="mg-app-panel mg-account-pane is-active"><div class="mg-app-panel-head"><div><h2>Marketplace Index access is not active.</h2><p>This account does not have permission to view marketplace value and movement.</p></div></div><div class="mg-app-panel-body"><a class="mg-btn mg-btn-ghost" href="/account-admin.php">Back to admin</a></div></section>
     <?php elseif ($hasAdminAccess): ?>
       <?php require __DIR__ . '/includes/account/admin-dashboard.php'; ?>
     <?php else: ?>
