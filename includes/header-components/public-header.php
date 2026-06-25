@@ -45,6 +45,9 @@ if (!$user) {
 if (!$market_ticker_items && is_array($public_header_config['ticker_items'] ?? null)) {
     $market_ticker_items = $public_header_config['ticker_items'];
 }
+if (!$market_ticker_items && !$user) {
+    $market_ticker_items = mg_public_market_ticker_fallback_items();
+}
 if ($user && $account_profile_url) {
     array_unshift($market_ticker_items, ['symbol'=>'YOU','name'=>'My Profile','price'=>'Profile','change'=>'OPEN','trend'=>'up','href'=>$account_profile_url]);
 }
