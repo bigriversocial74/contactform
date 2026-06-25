@@ -26,6 +26,38 @@
   const state = { cursor: null, loading: false, controller: null, filters: {} };
   const number = new Intl.NumberFormat();
 
+  function injectDiscoveryLayoutUpgrades() {
+    if (document.getElementById('mg-discovery-compact-card-upgrades')) return;
+    const style = document.createElement('style');
+    style.id = 'mg-discovery-compact-card-upgrades';
+    style.textContent = `
+      body.mg-discovery-page .mg-discovery-main-panel{padding:24px 30px 48px!important;}
+      body.mg-discovery-page .mg-discovery-card-grid{grid-template-columns:repeat(4,minmax(180px,1fr))!important;gap:16px!important;align-items:stretch!important;}
+      body.mg-discovery-page .mg-discovery-card{min-height:236px!important;border-radius:18px!important;box-shadow:0 14px 34px rgba(15,23,42,.075)!important;}
+      body.mg-discovery-page .mg-discovery-card:hover{transform:translateY(-2px)!important;box-shadow:0 20px 48px rgba(15,23,42,.11)!important;}
+      body.mg-discovery-page .mg-discovery-card.is-skeleton{min-height:230px!important;border-radius:18px!important;}
+      body.mg-discovery-page .mg-discovery-card-top{gap:10px!important;padding:14px 14px 4px!important;}
+      body.mg-discovery-page .mg-discovery-avatar{width:48px!important;height:48px!important;border-width:3px!important;box-shadow:0 8px 18px rgba(15,23,42,.14)!important;}
+      body.mg-discovery-page .mg-discovery-card h3{font-size:15.5px!important;line-height:1.08!important;letter-spacing:-.035em!important;}
+      body.mg-discovery-page .mg-discovery-type{margin-top:4px!important;font-size:9.5px!important;letter-spacing:.075em!important;}
+      body.mg-discovery-page .mg-discovery-headline{min-height:34px!important;margin:8px 14px 0!important;font-size:12.5px!important;line-height:1.35!important;display:-webkit-box!important;-webkit-line-clamp:2!important;-webkit-box-orient:vertical!important;overflow:hidden!important;}
+      body.mg-discovery-page .mg-discovery-meta{gap:6px!important;margin:10px 14px 0!important;}
+      body.mg-discovery-page .mg-discovery-meta span{min-height:22px!important;padding:0 8px!important;font-size:9.5px!important;}
+      body.mg-discovery-page .mg-discovery-counts{gap:6px!important;margin:10px 14px 0!important;font-size:10.5px!important;}
+      body.mg-discovery-page .mg-discovery-counts span{display:inline-flex!important;align-items:center!important;min-height:22px!important;padding:0 7px!important;border-radius:999px!important;background:#f8fafc!important;border:1px solid rgba(226,232,240,.9)!important;}
+      body.mg-discovery-page .mg-discovery-market-counts{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:6px!important;margin:10px 14px 0!important;padding-top:10px!important;}
+      body.mg-discovery-page .mg-discovery-market-counts span{justify-content:space-between!important;border-color:rgba(124,58,237,.14)!important;background:linear-gradient(135deg,rgba(124,58,237,.055),rgba(32,191,210,.045))!important;}
+      body.mg-discovery-page .mg-discovery-market-counts strong{margin-right:4px!important;}
+      body.mg-discovery-page .mg-discovery-open{margin:14px!important;margin-top:auto!important;min-height:34px!important;padding:0 12px!important;font-size:12px!important;border-radius:12px!important;}
+      @media(max-width:1380px){body.mg-discovery-page .mg-discovery-card-grid{grid-template-columns:repeat(3,minmax(190px,1fr))!important;}}
+      @media(max-width:1040px){body.mg-discovery-page .mg-discovery-card-grid{grid-template-columns:repeat(2,minmax(220px,1fr))!important;}}
+      @media(max-width:680px){body.mg-discovery-page .mg-discovery-main-panel{padding:18px 14px 42px!important;}body.mg-discovery-page .mg-discovery-card-grid{grid-template-columns:1fr!important;}body.mg-discovery-page .mg-discovery-market-counts{grid-template-columns:1fr!important;}}
+    `;
+    document.head.appendChild(style);
+  }
+
+  injectDiscoveryLayoutUpgrades();
+
   function show(node, visible) {
     if (node) node.classList.toggle('mg-hidden', !visible);
   }
@@ -82,8 +114,8 @@
     row.append(
       textMetric(market.ticker_symbol || 'ticker', market.ticker_value),
       metric('score', market.merchant_score),
-      textMetric('campaign value', market.campaign_conversion_value || '$0'),
-      textMetric('snapshot', market.snapshot_freshness || 'No snapshot')
+      textMetric('campaign', market.campaign_conversion_value || '$0'),
+      textMetric('freshness', market.snapshot_freshness || 'No snapshot')
     );
     return row;
   }
@@ -125,7 +157,7 @@
     }
     if (profile.has_published_storefront) {
       const storefront = document.createElement('span');
-      storefront.textContent = 'Published storefront';
+      storefront.textContent = 'Storefront';
       meta.appendChild(storefront);
     }
     article.appendChild(meta);
@@ -209,7 +241,7 @@
     state.controller?.abort();
     state.controller = new AbortController();
 
-    const params = new URLSearchParams({ ...state.filters, limit: '18' });
+    const params = new URLSearchParams({ ...state.filters, limit: '24' });
     if (append && state.cursor) params.set('cursor', state.cursor);
 
     try {
