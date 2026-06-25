@@ -9,7 +9,6 @@ function mg_market_action_center_metric_raw(array $payload, string $key): float
 function mg_market_action_center_cards(array $payload, array $movement): array
 {
     $metrics = $payload['metrics'] ?? [];
-    $market = $payload['merchant_market'] ?? [];
     $risk = $payload['risk'] ?? [];
     $actions = [];
     $add = static function (array $card) use (&$actions): void {
@@ -72,6 +71,7 @@ function mg_market_action_center_cards(array $payload, array $movement): array
 
 $marketActionCards = mg_market_action_center_cards($marketPayload ?? [], $movement ?? []);
 ?>
+<link rel="stylesheet" href="/assets/css/market-action-center.css">
 <section class="mg-market-action-center">
   <header>
     <div>
