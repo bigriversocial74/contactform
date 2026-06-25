@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/includes/app.php';
+require_once __DIR__ . '/api/merchant/_design_studio_guard.php';
 
 $page_title = 'Design Studio | Microgifter';
 $page_section = 'agent';
@@ -29,44 +30,57 @@ $storefrontStatus = 'Not connected';
 $storefrontUrl = '';
 $profileUrl = '';
 $merchantWebsite = '';
+$designStudioReady = false;
+$designStudioMissingTables = [];
+$designStudioSetupError = '';
 
 if ($user && function_exists('mg_db')) {
     try {
         $pdo = mg_db();
+        $designStudioMissingTables = mg_design_studio_missing_tables($pdo, mg_design_studio_core_tables());
+        $designStudioReady = count($designStudioMissingTables) === 0;
         $accountUserId = (int) ($user['id'] ?? 0);
 
         if ($accountUserId > 0) {
-            $profileStmt = $pdo->prepare("SELECT slug, headline FROM public_profiles WHERE user_id = ? LIMIT 1");
-            $profileStmt->execute([$accountUserId]);
-            $profile = $profileStmt->fetch(PDO::FETCH_ASSOC);
-            if (is_array($profile)) {
-                $profileSlug = trim((string) ($profile['slug'] ?? ''));
-                $profileHeadline = trim((string) ($profile['headline'] ?? ''));
-                if ($profileHeadline !== '') $merchantHeadline = $profileHeadline;
-                if ($profileSlug !== '') $profileUrl = '/profile.php?slug=' . rawurlencode($profileSlug) . '&preview=1';
+            if (mg_design_studio_table_exists($pdo, 'public_profiles')) {
+                $profileStmt = $pdo->prepare("SELECT slug, headline FROM public_profiles WHERE user_id = ? LIMIT 1");
+                $profileStmt->execute([$accountUserId]);
+                $profile = $profileStmt->fetch(PDO::FETCH_ASSOC);
+                if (is_array($profile)) {
+                    $profileSlug = trim((string) ($profile['slug'] ?? ''));
+                    $profileHeadline = trim((string) ($profile['headline'] ?? ''));
+                    if ($profileHeadline !== '') $merchantHeadline = $profileHeadline;
+                    if ($profileSlug !== '') $profileUrl = '/profile.php?slug=' . rawurlencode($profileSlug) . '&preview=1';
+                }
             }
 
-            $storeStmt = $pdo->prepare("SELECT slug, status FROM merchant_storefronts WHERE merchant_user_id = ? LIMIT 1");
-            $storeStmt->execute([$accountUserId]);
-            $storefront = $storeStmt->fetch(PDO::FETCH_ASSOC);
-            if (is_array($storefront)) {
-                $storeSlug = trim((string) ($storefront['slug'] ?? ''));
-                $storefrontStatus = ucfirst((string) ($storefront['status'] ?? 'draft'));
-                if ($storeSlug !== '') $storefrontUrl = '/store.php?s=' . rawurlencode($storeSlug);
+            if (mg_design_studio_table_exists($pdo, 'merchant_storefronts')) {
+                $storeStmt = $pdo->prepare("SELECT slug, status FROM merchant_storefronts WHERE merchant_user_id = ? LIMIT 1");
+                $storeStmt->execute([$accountUserId]);
+                $storefront = $storeStmt->fetch(PDO::FETCH_ASSOC);
+                if (is_array($storefront)) {
+                    $storeSlug = trim((string) ($storefront['slug'] ?? ''));
+                    $storefrontStatus = ucfirst((string) ($storefront['status'] ?? 'draft'));
+                    if ($storeSlug !== '') $storefrontUrl = '/store.php?s=' . rawurlencode($storeSlug);
+                }
             }
 
-            $workspaceStmt = $pdo->prepare("SELECT website_url FROM merchant_workspaces WHERE merchant_user_id = ? LIMIT 1");
-            $workspaceStmt->execute([$accountUserId]);
-            $workspace = $workspaceStmt->fetch(PDO::FETCH_ASSOC);
-            if (is_array($workspace)) $merchantWebsite = trim((string) ($workspace['website_url'] ?? ''));
+            if (mg_design_studio_column_exists($pdo, 'merchant_workspaces', 'website_url')) {
+                $workspaceStmt = $pdo->prepare("SELECT website_url FROM merchant_workspaces WHERE merchant_user_id = ? LIMIT 1");
+                $workspaceStmt->execute([$accountUserId]);
+                $workspace = $workspaceStmt->fetch(PDO::FETCH_ASSOC);
+                if (is_array($workspace)) $merchantWebsite = trim((string) ($workspace['website_url'] ?? ''));
+            }
         }
     } catch (Throwable) {
         $storefrontStatus = 'Profile sync pending';
+        $designStudioReady = false;
+        $designStudioSetupError = 'Design Studio setup check failed. Confirm the database is reachable and Stage 19 is imported.';
     }
 }
 
 $defaultQrDestination = $storefrontUrl !== '' ? $storefrontUrl : ($profileUrl !== '' ? $profileUrl : '/store.php');
-$defaultWebsiteScan = $merchantWebsite !== '' ? $merchantWebsite : ($storefrontUrl !== '' ? $storefrontUrl : '');
+$defaultWebsiteScan = $merchantWebsite !== '' ? $merchantWebsite : '';
 
 $designStudioScripts = [
     '/assets/js/microgifter.js',
@@ -83,6 +97,7 @@ $designStudioScripts = [
   class="mg-app-shell mg-design-studio-app"
   data-design-studio-app
   data-merchant-only="<?= $canAccessDesignStudio ? 'true' : 'false' ?>"
+  data-design-ready="<?= $designStudioReady ? 'true' : 'false' ?>"
   data-qr-api="/api/merchant/qr-library.php"
   data-design-api="/api/merchant/design-studio-assets.php"
   data-brand-api="/api/merchant/brand-kit.php"
@@ -107,6 +122,19 @@ $designStudioScripts = [
         <div class="mg-app-panel-body">
           <div class="mg-design-access-grid"><article><strong>Required access</strong><span>Merchant role or merchant workspace permission.</span></article><article><strong>Current account</strong><span><?= mg_e($merchantEmail !== '' ? $merchantEmail : 'Signed-in account') ?></span></article></div>
           <div class="mg-design-access-actions"><a class="mg-btn mg-btn-primary" href="/merchant-onboarding.php">Open merchant onboarding</a><a class="mg-btn mg-btn-soft" href="/account.php">Account settings</a></div>
+        </div>
+      </section>
+    </div>
+  <?php elseif (!$designStudioReady): ?>
+    <div class="mg-app-workspace mg-design-studio-workspace">
+      <section class="mg-app-panel mg-design-access-panel">
+        <div class="mg-app-panel-head"><div><span class="mg-design-eyebrow">Setup required</span><h1>Design Studio database tables are not installed yet.</h1><p>Import <code>database/stage_19_design_studio_qr_library.sql</code> before using the QR library, brand kit scanner, saved templates, projects, exports, campaigns, and AI preset queue.</p></div></div>
+        <div class="mg-app-panel-body">
+          <div class="mg-design-access-grid">
+            <article><strong>Status</strong><span><?= mg_e($designStudioSetupError !== '' ? $designStudioSetupError : 'Stage 19 migration required.') ?></span></article>
+            <article><strong>Missing tables</strong><span><?= mg_e($designStudioMissingTables ? implode(', ', array_slice($designStudioMissingTables, 0, 8)) . (count($designStudioMissingTables) > 8 ? '…' : '') : 'Unable to verify tables') ?></span></article>
+          </div>
+          <div class="mg-design-access-actions"><a class="mg-btn mg-btn-primary" href="/agent.php">Back to workspace</a><a class="mg-btn mg-btn-soft" href="/account.php">Account settings</a></div>
         </div>
       </section>
     </div>
@@ -153,45 +181,18 @@ $designStudioScripts = [
             <div class="mg-design-panel-head"><span>02</span><div><h2>Brand kit scanner</h2><p>Pull logo, images, and colors from website.</p></div></div>
             <label>Website URL<input type="url" value="<?= mg_e($defaultWebsiteScan) ?>" placeholder="https://example.com" data-brand-website></label>
             <button type="button" class="mg-design-link-button" data-brand-scan>Scan website for brand kit</button>
-            <div class="mg-design-brand-preview" data-brand-preview>
-              <div class="mg-design-brand-logo" data-brand-logo>Logo pending</div>
-              <div class="mg-design-brand-palette" data-brand-palette><span></span><span></span><span></span></div>
-            </div>
+            <div class="mg-design-brand-preview" data-brand-preview><div class="mg-design-brand-logo" data-brand-logo>Logo pending</div><div class="mg-design-brand-palette" data-brand-palette><span></span><span></span><span></span></div></div>
           </section>
 
-          <section class="mg-design-panel">
-            <div class="mg-design-panel-head"><span>03</span><div><h2>Saved templates</h2><p>Reusable merchant assets.</p></div></div>
-            <div class="mg-design-saved-template-list" data-saved-template-list><button type="button" disabled><strong>No saved templates yet</strong><span>Save this canvas as a template.</span></button></div>
-          </section>
-
-          <section class="mg-design-panel">
-            <div class="mg-design-panel-head"><span>04</span><div><h2>Merchant data</h2><p>Loaded from account profile.</p></div></div>
-            <div class="mg-design-merchant-card"><div class="mg-design-avatar"><?= mg_e($merchantInitial) ?></div><div><strong><?= mg_e($merchantName) ?></strong><span><?= mg_e($merchantHeadline) ?></span></div></div>
-            <label>Primary headline<input type="text" value="Give local. Claim instantly." data-design-field="headline"></label>
-            <label>Promotion line<textarea rows="3" data-design-field="offer">Scan to unlock today’s featured microgift, local reward, or pre-sale offer.</textarea></label>
-            <label>Call to action<input type="text" value="Scan to claim your reward" data-design-field="cta"></label>
-          </section>
-
-          <section class="mg-design-panel">
-            <div class="mg-design-panel-head"><span>05</span><div><h2>Media imports</h2><p>Merchant files, AI, and campaign assets.</p></div></div>
-            <div class="mg-design-media-grid" aria-label="Imported media"><button type="button" class="is-active" data-media-swatch="gradient"><span></span><strong>Brand gradient</strong></button><button type="button" data-media-swatch="food"><span></span><strong>Product photo</strong></button><button type="button" data-media-swatch="event"><span></span><strong>Event image</strong></button><button type="button" data-media-swatch="logo"><span></span><strong>Logo mark</strong></button></div>
-            <button type="button" class="mg-design-link-button" data-design-import-media>Import from media library</button>
-            <button type="button" class="mg-design-link-button" data-design-ai-image>Queue AI image concept</button>
-          </section>
-
-          <section class="mg-design-panel">
-            <div class="mg-design-panel-head"><span>06</span><div><h2>QR code library</h2><p>Use real claim and campaign codes.</p></div></div>
-            <div class="mg-design-qr-list" data-qr-library><button type="button" class="is-active" data-qr-label="Featured Gift" data-qr-kind="Claim QR"><strong>Featured Gift</strong><span>Claim QR · active</span></button><button type="button" data-qr-label="Newsletter Signup" data-qr-kind="Lead QR"><strong>Newsletter Signup</strong><span>Lead QR · draft</span></button><button type="button" data-qr-label="Contest Entry" data-qr-kind="Campaign QR"><strong>Contest Entry</strong><span>Campaign QR · active</span></button></div>
-            <button type="button" class="mg-design-link-button" data-design-create-qr>Create new QR code</button>
-            <button type="button" class="mg-design-link-button" data-design-qr-asset>Queue QR image asset</button>
-          </section>
+          <section class="mg-design-panel"><div class="mg-design-panel-head"><span>03</span><div><h2>Saved templates</h2><p>Reusable merchant assets.</p></div></div><div class="mg-design-saved-template-list" data-saved-template-list><button type="button" disabled><strong>No saved templates yet</strong><span>Save this canvas as a template.</span></button></div></section>
+          <section class="mg-design-panel"><div class="mg-design-panel-head"><span>04</span><div><h2>Merchant data</h2><p>Loaded from account profile.</p></div></div><div class="mg-design-merchant-card"><div class="mg-design-avatar"><?= mg_e($merchantInitial) ?></div><div><strong><?= mg_e($merchantName) ?></strong><span><?= mg_e($merchantHeadline) ?></span></div></div><label>Primary headline<input type="text" value="Give local. Claim instantly." data-design-field="headline"></label><label>Promotion line<textarea rows="3" data-design-field="offer">Scan to unlock today’s featured microgift, local reward, or pre-sale offer.</textarea></label><label>Call to action<input type="text" value="Scan to claim your reward" data-design-field="cta"></label></section>
+          <section class="mg-design-panel"><div class="mg-design-panel-head"><span>05</span><div><h2>Media imports</h2><p>Merchant files, AI, and campaign assets.</p></div></div><div class="mg-design-media-grid" aria-label="Imported media"><button type="button" class="is-active" data-media-swatch="gradient"><span></span><strong>Brand gradient</strong></button><button type="button" data-media-swatch="food"><span></span><strong>Product photo</strong></button><button type="button" data-media-swatch="event"><span></span><strong>Event image</strong></button><button type="button" data-media-swatch="logo"><span></span><strong>Logo mark</strong></button></div><button type="button" class="mg-design-link-button" data-design-import-media>Import from media library</button><button type="button" class="mg-design-link-button" data-design-ai-image>Queue AI image concept</button></section>
+          <section class="mg-design-panel"><div class="mg-design-panel-head"><span>06</span><div><h2>QR code library</h2><p>Use real claim and campaign codes.</p></div></div><div class="mg-design-qr-list" data-qr-library><button type="button" class="is-active" data-qr-label="Featured Gift" data-qr-kind="Claim QR"><strong>Featured Gift</strong><span>Claim QR · active</span></button><button type="button" data-qr-label="Newsletter Signup" data-qr-kind="Lead QR"><strong>Newsletter Signup</strong><span>Lead QR · draft</span></button><button type="button" data-qr-label="Contest Entry" data-qr-kind="Campaign QR"><strong>Contest Entry</strong><span>Campaign QR · active</span></button></div><button type="button" class="mg-design-link-button" data-design-create-qr>Create new QR code</button><button type="button" class="mg-design-link-button" data-design-qr-asset>Queue QR image asset</button></section>
         </aside>
 
         <section class="mg-design-canvas-column" aria-label="Template preview">
           <div class="mg-design-canvas-toolbar"><div><span data-preview-format-label>Table Tent</span><strong data-preview-size>4 × 6 in folded</strong></div><div class="mg-design-canvas-tools" aria-label="Preview tools"><button type="button" class="is-active" data-preview-side="front">Front</button><button type="button" data-preview-side="back">Back</button><button type="button" data-preview-fit>Fit</button></div></div>
-          <section class="mg-design-canvas-stage">
-            <article class="mg-design-template is-table-tent" data-design-template data-ratio="portrait"><div class="mg-design-template-safe-zone"><header class="mg-design-template-brand"><span><?= mg_e($merchantName) ?></span><b>MICROGIFT</b></header><div class="mg-design-template-media" data-template-media></div><div class="mg-design-template-copy"><span class="mg-design-template-kicker">LOCAL REWARD</span><h2 data-template-headline>Give local. Claim instantly.</h2><p data-template-offer>Scan to unlock today’s featured microgift, local reward, or pre-sale offer.</p></div><div class="mg-design-template-qr-row"><div class="mg-design-template-qr" aria-label="QR code placeholder" data-template-qr><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div><strong data-template-qr-label>Featured Gift</strong><span data-template-qr-kind>Claim QR</span><small data-template-cta>Scan to claim your reward</small><small data-template-qr-payload><?= mg_e($defaultQrDestination) ?></small></div></div><footer><span><?= mg_e($storefrontUrl !== '' ? $storefrontUrl : ($profileUrl !== '' ? $profileUrl : 'microgifter.com')) ?></span><span>Powered by Microgifter</span></footer></div></article>
-          </section>
+          <section class="mg-design-canvas-stage"><article class="mg-design-template is-table-tent" data-design-template data-ratio="portrait"><div class="mg-design-template-safe-zone"><header class="mg-design-template-brand"><span><?= mg_e($merchantName) ?></span><b>MICROGIFT</b></header><div class="mg-design-template-media" data-template-media></div><div class="mg-design-template-copy"><span class="mg-design-template-kicker">LOCAL REWARD</span><h2 data-template-headline>Give local. Claim instantly.</h2><p data-template-offer>Scan to unlock today’s featured microgift, local reward, or pre-sale offer.</p></div><div class="mg-design-template-qr-row"><div class="mg-design-template-qr" aria-label="QR code placeholder" data-template-qr><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div><strong data-template-qr-label>Featured Gift</strong><span data-template-qr-kind>Claim QR</span><small data-template-cta>Scan to claim your reward</small><small data-template-qr-payload><?= mg_e($defaultQrDestination) ?></small></div></div><footer><span><?= mg_e($storefrontUrl !== '' ? $storefrontUrl : ($profileUrl !== '' ? $profileUrl : 'microgifter.com')) ?></span><span>Powered by Microgifter</span></footer></div></article></section>
           <div class="mg-design-template-notes"><article><strong>Brand-aware templates</strong><span>Website scanner can seed logo, image candidates, and color palette for future template rendering.</span></article><article><strong>Queued production exports</strong><span>Export buttons now create queue records for proof, print PDF, social PNG, QR image, and ZIP package rendering.</span></article></div>
         </section>
 
