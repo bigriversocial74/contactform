@@ -122,4 +122,14 @@ final class CampaignStampDistributionContractTest extends TestCase
         self::assertStringContainsString('events_count', $source);
         self::assertStringContainsString('data-campaign-row', $source);
     }
+
+    public function testMerchantCampaignBuilderBlocksActiveWithoutTemplate(): void
+    {
+        $source = $this->read('assets/js/stage12-campaigns.js');
+        self::assertStringContainsString('activeCampaignRequiresTemplate', $source);
+        self::assertStringContainsString("String(data.status||'')==='active'", $source);
+        self::assertStringContainsString("!String(data.reward_template_id||'').trim()", $source);
+        self::assertStringContainsString('Choose a reward template before activating this campaign.', $source);
+        self::assertStringContainsString('form.elements.reward_template_id.focus()', $source);
+    }
 }
