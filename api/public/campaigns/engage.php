@@ -2,7 +2,9 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/bootstrap.php';
+require_once dirname(__DIR__, 2) . '/rewards/_zero_value_bridge.php';
 require_once dirname(__DIR__, 3) . '/includes/merchant-crm.php';
+require_once __DIR__ . '/_limits.php';
 
 function mg_public_campaign_engage_uuid(): string
 {
@@ -24,12 +26,44 @@ function mg_public_campaign_engage_source(string $campaignType): string
     };
 }
 
+function mg_public_campaign_engage_expiry(array $template): ?string
+{
+    $rule = (string)($template['expiration_rule'] ?? 'none');
+    if ($rule === 'fixed_date' || $rule === 'event_date') return $template['expires_at'] ?: null;
+    if ($rule === 'after_issue' && !empty($template['expiration_days'])) return date('Y-m-d H:i:s', time() + ((int)$template['expiration_days'] * 86400));
+    return null;
+}
+
 function mg_public_campaign_engage_find_user(PDO $pdo, string $email): ?int
 {
     $stmt = $pdo->prepare('SELECT id FROM users WHERE email = ? AND status = \'active\' LIMIT 1');
     $stmt->execute([$email]);
     $id = (int) ($stmt->fetchColumn() ?: 0);
     return $id > 0 ? $id : null;
+}
+
+function mg_public_campaign_engage_bridge(PDO $pdo, array $campaign, array $contact, int $walletDbId, string $walletPublicId, ?int $userId, ?string $expiresAt, string $source): ?array
+{
+    if (!$userId) return null;
+    return mg_zero_reward_issue_from_wallet($pdo, [
+        'merchant_user_id' => (int)$campaign['merchant_user_id'],
+        'recipient_user_id' => $userId,
+        'recipient_external_id' => (string)($contact['public_id'] ?? ''),
+        'wallet_item_db_id' => $walletDbId,
+        'wallet_item_public_id' => $walletPublicId,
+        'campaign_public_id' => (string)$campaign['public_id'],
+        'reward_template_public_id' => (string)$campaign['reward_template_public_id'],
+        'source_type' => $source,
+        'source_reference' => $walletPublicId,
+        'source_line_reference' => (string)($contact['public_id'] ?? $walletPublicId),
+        'title' => (string)$campaign['reward_template_title'],
+        'description' => $campaign['reward_template_description'] ?? $campaign['description'] ?? null,
+        'currency' => (string)($campaign['currency'] ?? 'USD'),
+        'display_value_cents' => (int)($campaign['value_amount_cents'] ?? 0),
+        'expires_at' => $expiresAt,
+        'redemption_instructions' => $campaign['redemption_instructions'] ?? null,
+        'terms' => ['campaign_type' => (string)$campaign['campaign_type']],
+    ]);
 }
 
 mg_require_method('POST');
@@ -49,7 +83,7 @@ if ($campaignRef === '' || $email === '' || !filter_var($email, FILTER_VALIDATE_
 
 try {
     $pdo->beginTransaction();
-    $stmt = $pdo->prepare('SELECT * FROM campaigns WHERE status = \'active\' AND (public_id = ? OR public_slug = ?) LIMIT 1 FOR UPDATE');
+    $stmt = $pdo->prepare('SELECT c.*, rt.id reward_template_db_id, rt.public_id reward_template_public_id, rt.title reward_template_title, rt.description reward_template_description, rt.redemption_instructions, rt.value_amount_cents, rt.currency, rt.expiration_rule, rt.expiration_days, rt.expires_at, rt.quantity_limit reward_template_quantity_limit, rt.issued_count reward_template_issued_count, rt.per_user_limit reward_template_per_user_limit FROM campaigns c INNER JOIN reward_templates rt ON rt.id = c.reward_template_id WHERE c.status = \'active\' AND rt.status = \'active\' AND (c.public_id = ? OR c.public_slug = ?) LIMIT 1 FOR UPDATE');
     $stmt->execute([$campaignRef, $campaignRef]);
     $campaign = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$campaign) {
@@ -66,10 +100,19 @@ try {
         $pdo->rollBack();
         mg_fail('Campaign has ended.', 409);
     }
+    if ($campaign['quantity_limit'] !== null && (int)$campaign['issued_count'] >= (int)$campaign['quantity_limit']) {
+        $pdo->rollBack();
+        mg_fail('Campaign reward limit has been reached.', 409);
+    }
+    if ($campaign['reward_template_quantity_limit'] !== null && (int)$campaign['reward_template_issued_count'] >= (int)$campaign['reward_template_quantity_limit']) {
+        $pdo->rollBack();
+        mg_fail('Reward template limit has been reached.', 409);
+    }
 
     $merchantId = (int) $campaign['merchant_user_id'];
     $campaignId = (int) $campaign['id'];
     $campaignType = (string) $campaign['campaign_type'];
+    $rewardTemplateId = (int) $campaign['reward_template_db_id'];
     $source = mg_public_campaign_engage_source($campaignType);
     $userId = mg_public_campaign_engage_find_user($pdo, $email);
     $contactPublicId = mg_public_campaign_engage_uuid();
@@ -116,14 +159,75 @@ try {
         json_encode(['campaign_type' => $campaignType, 'source' => $source, 'email' => $email, 'crm_entry' => true, 'merchant_crm' => $crm], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
     ]);
 
+    $expiresAt = mg_public_campaign_engage_expiry($campaign);
+    $existingStmt = $pdo->prepare('SELECT id, public_id, status FROM wallet_items WHERE campaign_id = ? AND contact_id = ? AND source_type = ? AND status <> \'cancelled\' ORDER BY id DESC LIMIT 1');
+    $existingStmt->execute([$campaignId, $contactId, $source]);
+    $existing = $existingStmt->fetch(PDO::FETCH_ASSOC);
+    if ($existing) {
+        $bridge = mg_public_campaign_engage_bridge($pdo, $campaign, $contact, (int)$existing['id'], (string)$existing['public_id'], $userId, $expiresAt, $source);
+        $pdo->commit();
+        mg_ok([
+            'contact_id' => (string) ($contact['public_id'] ?? ''),
+            'campaign_id' => (string) $campaign['public_id'],
+            'campaign_type' => $campaignType,
+            'source' => $source,
+            'wallet_item_id' => (string)$existing['public_id'],
+            'wallet_status' => (string)$existing['status'],
+            'already_issued' => true,
+            'reward_title' => (string)$campaign['reward_template_title'],
+            'expires_at' => $expiresAt,
+            'pppm_bridge' => $bridge,
+            'merchant_crm' => $crm,
+        ], 'Campaign reward already issued.');
+    }
+
+    mg_public_campaign_enforce_reward_limits($pdo, $campaign, $userId, $email);
+    $walletPublicId = mg_public_campaign_engage_uuid();
+    $walletStmt = $pdo->prepare('INSERT INTO wallet_items (public_id,user_id,contact_id,merchant_user_id,reward_template_id,campaign_id,source_type,source_id,status,value_cents_snapshot,currency_snapshot,title_snapshot,metadata_json,issued_at,expires_at,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),?,NOW(),NOW())');
+    $walletStmt->execute([
+        $walletPublicId,
+        $userId,
+        $contactId,
+        $merchantId,
+        $rewardTemplateId,
+        $campaignId,
+        $source,
+        (string)($contact['public_id'] ?? ''),
+        'issued',
+        (int)($campaign['value_amount_cents'] ?? 0),
+        (string)($campaign['currency'] ?? 'USD'),
+        (string)$campaign['reward_template_title'],
+        json_encode(['campaign_type' => $campaignType, 'reward_template_id' => (string)$campaign['reward_template_public_id'], 'generic_engagement' => true], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+        $expiresAt,
+    ]);
+    $walletDbId = (int)$pdo->lastInsertId();
+    $pdo->prepare('UPDATE campaigns SET issued_count = issued_count + 1, updated_at = NOW() WHERE id = ?')->execute([$campaignId]);
+    $pdo->prepare('UPDATE reward_templates SET issued_count = issued_count + 1, updated_at = NOW() WHERE id = ?')->execute([$rewardTemplateId]);
+    $bridge = mg_public_campaign_engage_bridge($pdo, $campaign, $contact, $walletDbId, $walletPublicId, $userId, $expiresAt, $source);
+    $eventStmt->execute([
+        mg_public_campaign_engage_uuid(),
+        $merchantId,
+        $campaignId,
+        $walletDbId,
+        $contactId ?: null,
+        'wallet_item.issued',
+        json_encode(['wallet_item_id' => $walletPublicId, 'campaign_type' => $campaignType, 'source' => $source, 'pppm_bridge' => $bridge, 'merchant_crm' => $crm], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+    ]);
+
     $pdo->commit();
     mg_ok([
         'contact_id' => (string) ($contact['public_id'] ?? ''),
         'campaign_id' => (string) $campaign['public_id'],
         'campaign_type' => $campaignType,
         'source' => $source,
+        'wallet_item_id' => $walletPublicId,
+        'wallet_status' => 'issued',
+        'already_issued' => false,
+        'reward_title' => (string)$campaign['reward_template_title'],
+        'expires_at' => $expiresAt,
+        'pppm_bridge' => $bridge,
         'merchant_crm' => $crm,
-    ], (string) ($campaign['success_message'] ?? 'Campaign response recorded.'), 201);
+    ], (string) ($campaign['success_message'] ?? 'Campaign reward issued.'), 201);
 } catch (Throwable $error) {
     if ($pdo->inTransaction()) $pdo->rollBack();
     mg_security_log('error', 'public.campaign_engage.failed', 'Unable to record campaign engagement.', ['exception_class' => $error::class, 'message' => $error->getMessage()]);
