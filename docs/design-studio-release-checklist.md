@@ -78,7 +78,24 @@ Confirm:
 - [ ] Queue QR image asset creates an asset/export job
 - [ ] Campaign link saves with a campaign reference
 
-## 5. Public QR test
+## 5. Export queue admin check
+
+After generating a proof or export package, open this URL while logged in as admin:
+
+```text
+/api/admin/design-export-worker.php
+```
+
+Confirm:
+
+- [ ] The endpoint returns JSON
+- [ ] `renderer_status` is `scaffold_ready`
+- [ ] recent export jobs are listed
+- [ ] queued/running/failed counts are visible when jobs exist
+
+Important: this endpoint can monitor and claim worker jobs, but it does not render final files yet.
+
+## 6. Public QR test
 
 After creating a QR code, open the payload URL from the QR library.
 
@@ -89,7 +106,7 @@ Confirm:
 - [ ] Scan count increments
 - [ ] Invalid short code returns not found
 
-## 6. Optional database verification
+## 7. Optional database verification
 
 Use your database tool's SQL/query screen.
 
@@ -134,7 +151,7 @@ local-rewards-campaign
 restaurant-food-promo
 ```
 
-## 7. Optional terminal checks for a developer
+## 8. Optional terminal checks for a developer
 
 These are optional. Use only if someone helping you is comfortable with terminal commands.
 
@@ -149,11 +166,12 @@ php -l api/merchant/design-studio-assets.php
 php -l api/merchant/qr-library.php
 php -l api/admin/design-studio-templates.php
 php -l api/admin/design-studio-smoke-test.php
+php -l api/admin/design-export-worker.php
 php tools/design-studio-smoke-test.php
 ```
 
-## 8. Known non-blocking limitation
+## 9. Known non-blocking limitation
 
-The Design Studio can queue export jobs, but the renderer worker still needs to be implemented before final PDF/PNG/SVG/ZIP files are generated.
+The Design Studio can queue export jobs, and the admin worker scaffold can claim/release/fail jobs. The renderer still needs to generate final PDF/PNG/SVG/ZIP files.
 
-Do not present export rendering as complete until the worker exists and has been tested.
+Do not present export rendering as complete until final file rendering is implemented and tested.
