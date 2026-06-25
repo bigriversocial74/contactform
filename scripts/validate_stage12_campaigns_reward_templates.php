@@ -29,6 +29,8 @@ foreach ($required as $path) {
 $sql = is_file($root . '/database/stage_12_campaigns_reward_templates.sql') ? (string)file_get_contents($root . '/database/stage_12_campaigns_reward_templates.sql') : '';
 $manifest = is_file($root . '/config/migrations.php') ? (string)file_get_contents($root . '/config/migrations.php') : '';
 $header = is_file($root . '/includes/header-components/app-header.php') ? (string)file_get_contents($root . '/includes/header-components/app-header.php') : '';
+$createMenu = is_file($root . '/includes/header-templates/create-menu.php') ? (string)file_get_contents($root . '/includes/header-templates/create-menu.php') : '';
+$headerCreateMenuSurface = $header . "\n" . $createMenu;
 $nav = is_file($root . '/includes/merchant-workspace.php') ? (string)file_get_contents($root . '/includes/merchant-workspace.php') : '';
 $view = is_file($root . '/includes/merchant-view.php') ? (string)file_get_contents($root . '/includes/merchant-view.php') : '';
 $campaignView = is_file($root . '/includes/merchant-campaigns-view.php') ? (string)file_get_contents($root . '/includes/merchant-campaigns-view.php') : '';
@@ -45,7 +47,7 @@ foreach (['reward_templates','campaigns','campaign_contacts','wallet_items','cam
 $hasAgentFields = str_contains($sql, 'agent_discoverable') && str_contains($sql, 'agent_add_to_wallet_allowed') && str_contains($sql, 'agent_gift_send_allowed');
 $hasSourceTracking = str_contains($sql, "'newsletter_signup'") && str_contains($sql, "'contest_entry'") && str_contains($sql, "'qr_scan'") && str_contains($sql, "'agent_discovery'");
 $hasManifest = str_contains($manifest, 'stage_12_campaigns_reward_templates.sql');
-$hasCreateMenu = str_contains($header, 'data-create-menu-option="campaign"') && str_contains($header, 'data-create-menu-option="agent_offer"') && str_contains($header, '/merchant-campaigns.php') && str_contains($header, '/merchant-reward-templates.php');
+$hasCreateMenu = str_contains($headerCreateMenuSurface, 'data-create-menu-option="campaign"') && str_contains($headerCreateMenuSurface, 'data-create-menu-option="agent_offer"') && str_contains($headerCreateMenuSurface, '/merchant-campaigns.php') && str_contains($headerCreateMenuSurface, '/merchant-reward-templates.php');
 $hasNav = str_contains($nav, "'campaigns'=>") && str_contains($nav, "'reward_templates'=>");
 $hasViewRoutes = str_contains($view, 'merchant-campaigns-view.php') && str_contains($view, 'merchant-reward-templates-view.php');
 $hasCampaignShell = str_contains($campaignView, 'Newsletter Signup') && str_contains($campaignView, 'Contest / Giveaway') && str_contains($campaignView, 'QR Reward Drop');

@@ -93,6 +93,9 @@ return [
         'stage_12_campaigns_reward_templates.sql',
         'stage_12b_campaign_events_agent_context.sql',
         'stage_12j_campaign_feature_sql_hardening.sql',
+        'stage_12_merchant_crm.sql',
+        'stage_12_campaign_followups.sql',
+        'stage_12_message_delivery_campaign_suppression.sql',
         'stage_18j_' . 'content_' . 'moderation.sql',
         'stage_18k_admin_account_management.sql',
         'stage_18l_admin_commerce_operations.sql',
@@ -113,6 +116,7 @@ return [
         '03Z_bootstrap_super_admin_user1.sql' => 'Promotes user ID 1 to super_admin and requires explicit operator confirmation.',
         'microgifter_complete_production_update_v1c_v1release.sql' => 'Operator-imported production bundle that consolidates the V1C, V1D, V1F, and V1 release hardening migrations.',
         'stage_12_campaign_features_full_import.sql' => 'Operator-imported one-file Stage 12 campaign feature schema for environments that need a single phpMyAdmin import.',
+        'stage_12_crm_followups_full_import.sql' => 'Operator-imported one-file Stage 12 CRM, follow-up, delivery, and suppression schema for manual phpMyAdmin import.',
         'stage_17_all_stamp_system.sql' => 'Operator-imported consolidated Stamp system bundle. The canonical ordered migrations are stage_17_stamp_ledger.sql, stage_17b_stamp_purchases.sql, and stage_17c_stamp_package_assignments.sql.',
     ],
 ];
