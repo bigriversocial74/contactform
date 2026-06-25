@@ -11,6 +11,13 @@
   const exportApi = app.dataset.exportApi || '/api/merchant/design-export.php';
   const isMerchant = app.dataset.merchantOnly === 'true';
   const isReady = app.dataset.designReady !== 'false';
+  const wiringCssHref = '/assets/css/design-studio-wiring.css';
+  if (!document.querySelector(`link[href="${wiringCssHref}"]`)) {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = wiringCssHref;
+    document.head.appendChild(link);
+  }
 
   const template = qs('[data-design-template]');
   const formatLabel = qs('[data-preview-format-label]');
@@ -44,11 +51,6 @@
     app.dataset.lastDesignStatus = message;
   };
 
-  const safeText = (value, fallback = '') => {
-    const text = String(value || '').trim();
-    return text || fallback;
-  };
-
   const getHost = (url) => {
     try {
       return new URL(url, window.location.origin).hostname.replace(/^www\./, '');
@@ -72,11 +74,9 @@
   };
 
   const ensureUiScaffolding = () => {
-    const brandPreview = qs('[data-brand-preview]');
-    ensureDynamicPanel(brandPreview, 'data-brand-candidates', 'Image candidates', 'Approve or import later');
+    ensureDynamicPanel(qs('[data-brand-preview]'), 'data-brand-candidates', 'Image candidates', 'Approve or import later');
     ensureDynamicPanel(savedTemplateList, 'data-saved-project-list', 'Recent projects', 'Click to continue a draft');
-    const exportList = qs('.mg-design-export-list');
-    ensureDynamicPanel(exportList, 'data-export-job-list', 'Export queue', 'Latest jobs and assets');
+    ensureDynamicPanel(qs('.mg-design-export-list'), 'data-export-job-list', 'Export queue', 'Latest jobs and assets');
   };
 
   ensureUiScaffolding();
@@ -251,12 +251,7 @@
   const scanBrandKit = async () => {
     const website = brandWebsite?.value?.trim() || '';
     if (!website) throw new Error('Website URL is required.');
-    const data = await postJson(brandApi, {
-      action: 'scan_website',
-      id: app.dataset.selectedBrandKitId || '',
-      website_url: website,
-      name: 'Website Brand Kit',
-    });
+    const data = await postJson(brandApi, { action: 'scan_website', id: app.dataset.selectedBrandKitId || '', website_url: website, name: 'Website Brand Kit' });
     renderBrandKit(data.brand_kit);
     return data.brand_kit;
   };
@@ -301,11 +296,7 @@
     if (templateCount) templateCount.textContent = `${list.length} saved`;
     savedTemplateList.innerHTML = '';
     if (!list.length) {
-      const empty = document.createElement('button');
-      empty.type = 'button';
-      empty.disabled = true;
-      empty.innerHTML = '<strong>No saved templates yet</strong><span>Save this canvas as a template.</span>';
-      savedTemplateList.appendChild(empty);
+      savedTemplateList.innerHTML = '<button type="button" disabled><strong>No saved templates yet</strong><span>Save this canvas as a template.</span></button>';
       return;
     }
     list.forEach((item) => {
@@ -437,38 +428,14 @@
 
   const createQr = async () => {
     const info = activeFormatInfo();
-    const data = await postJson(qrApi, {
-      action: 'create',
-      label: `${info.title} QR`,
-      qr_type: 'claim',
-      status: 'active',
-      destination_url: app.dataset.defaultQrDestination || '/store.php',
-      metadata: { source: 'design_studio', format: info.format_key, template_type: info.template_type, brand_kit_id: app.dataset.selectedBrandKitId || null },
-    });
+    const data = await postJson(qrApi, { action: 'create', label: `${info.title} QR`, qr_type: 'claim', status: 'active', destination_url: app.dataset.defaultQrDestination || '/store.php', metadata: { source: 'design_studio', format: info.format_key, template_type: info.template_type, brand_kit_id: app.dataset.selectedBrandKitId || null } });
     await loadQrLibrary();
     return data.item;
   };
 
   const saveTemplate = async () => {
     const info = activeFormatInfo();
-    const data = await postJson(designApi, {
-      action: 'save_template',
-      brand_kit_id: app.dataset.selectedBrandKitId || null,
-      template_type: info.template_type,
-      format_key: info.format_key,
-      name: `${info.title} Template`,
-      description: `${info.title} template saved from Design Studio.`,
-      status: 'active',
-      width_px: info.width_px,
-      height_px: info.height_px,
-      print_width_in: info.print_width_in,
-      print_height_in: info.print_height_in,
-      bleed_in: info.template_type === 'print' ? 0.125 : null,
-      qr_required: true,
-      layout: currentLayout(),
-      default_copy: currentCopy(),
-      render_config: { output: info.template_type === 'social' ? 'png' : 'print_pdf', size: info.size },
-    });
+    const data = await postJson(designApi, { action: 'save_template', brand_kit_id: app.dataset.selectedBrandKitId || null, template_type: info.template_type, format_key: info.format_key, name: `${info.title} Template`, description: `${info.title} template saved from Design Studio.`, status: 'active', width_px: info.width_px, height_px: info.height_px, print_width_in: info.print_width_in, print_height_in: info.print_height_in, bleed_in: info.template_type === 'print' ? 0.125 : null, qr_required: true, layout: currentLayout(), default_copy: currentCopy(), render_config: { output: info.template_type === 'social' ? 'png' : 'print_pdf', size: info.size } });
     app.dataset.selectedTemplateId = data.template?.id || '';
     await loadDesignAssets();
     return data.template;
@@ -476,22 +443,7 @@
 
   const saveProject = async () => {
     const info = activeFormatInfo();
-    const data = await postJson(designApi, {
-      action: 'save_project',
-      id: app.dataset.selectedProjectId || '',
-      brand_kit_id: app.dataset.selectedBrandKitId || null,
-      template_id: app.dataset.selectedTemplateId || null,
-      qr_code_id: app.dataset.selectedQrId || null,
-      project_type: info.template_type,
-      format_key: info.format_key,
-      name: `${info.title} Project`,
-      status: 'draft',
-      canvas: currentLayout(),
-      copy: currentCopy(),
-      media: { swatch: templateMedia?.dataset.swatch || 'gradient', brand_kit_id: app.dataset.selectedBrandKitId || null, selected_brand_image_url: app.dataset.selectedBrandImageUrl || null },
-      print_options: { source: 'design_studio', size: info.size },
-      export_manifest: { qr_required: true, template_type: info.template_type, format_key: info.format_key, brand_kit_id: app.dataset.selectedBrandKitId || null },
-    });
+    const data = await postJson(designApi, { action: 'save_project', id: app.dataset.selectedProjectId || '', brand_kit_id: app.dataset.selectedBrandKitId || null, template_id: app.dataset.selectedTemplateId || null, qr_code_id: app.dataset.selectedQrId || null, project_type: info.template_type, format_key: info.format_key, name: `${info.title} Project`, status: 'draft', canvas: currentLayout(), copy: currentCopy(), media: { swatch: templateMedia?.dataset.swatch || 'gradient', brand_kit_id: app.dataset.selectedBrandKitId || null, selected_brand_image_url: app.dataset.selectedBrandImageUrl || null }, print_options: { source: 'design_studio', size: info.size }, export_manifest: { qr_required: true, template_type: info.template_type, format_key: info.format_key, brand_kit_id: app.dataset.selectedBrandKitId || null } });
     app.dataset.selectedProjectId = data.project?.id || '';
     if (exportProject) exportProject.textContent = data.project?.name || 'Saved project';
     await loadDesignAssets();
@@ -502,13 +454,7 @@
     const info = activeFormatInfo();
     const project = await saveProject();
     const type = exportType || (info.template_type === 'social' ? 'social_png' : 'proof');
-    const data = await postJson(exportApi, {
-      action: 'queue_export',
-      project_id: project?.id || app.dataset.selectedProjectId || null,
-      export_type: type,
-      options: { size: info.size, template_type: info.template_type, format_key: info.format_key, verify_qr: true },
-      manifest: { source: 'design_studio', selected_qr_id: app.dataset.selectedQrId || null, selected_brand_kit_id: app.dataset.selectedBrandKitId || null },
-    });
+    const data = await postJson(exportApi, { action: 'queue_export', project_id: project?.id || app.dataset.selectedProjectId || null, export_type: type, options: { size: info.size, template_type: info.template_type, format_key: info.format_key, verify_qr: true }, manifest: { source: 'design_studio', selected_qr_id: app.dataset.selectedQrId || null, selected_brand_kit_id: app.dataset.selectedBrandKitId || null } });
     if (exportJob) exportJob.textContent = `${data.export_type || type} · ${data.status || 'queued'}`;
     await loadExportAssets();
     return data;
@@ -526,28 +472,12 @@
     const campaignType = qs('[data-campaign-type]')?.value || 'custom';
     if (!campaignRef) throw new Error('Campaign reference is required.');
     await saveProject();
-    return postJson(exportApi, {
-      action: 'link_campaign',
-      project_id: app.dataset.selectedProjectId || null,
-      qr_code_id: app.dataset.selectedQrId || null,
-      campaign_type: campaignType,
-      campaign_ref: campaignRef,
-      label: `${activeFormatInfo().title} campaign asset`,
-      metadata: { source: 'design_studio', brand_kit_id: app.dataset.selectedBrandKitId || null },
-    });
+    return postJson(exportApi, { action: 'link_campaign', project_id: app.dataset.selectedProjectId || null, qr_code_id: app.dataset.selectedQrId || null, campaign_type: campaignType, campaign_ref: campaignRef, label: `${activeFormatInfo().title} campaign asset`, metadata: { source: 'design_studio', brand_kit_id: app.dataset.selectedBrandKitId || null } });
   };
 
   const queueAiImage = async () => {
     const info = activeFormatInfo();
-    return postJson(designApi, {
-      action: 'queue_ai_job',
-      project_id: app.dataset.selectedProjectId || null,
-      brand_kit_id: app.dataset.selectedBrandKitId || null,
-      generation_type: 'image',
-      provider_key: 'agent_api',
-      model_key: 'design-image-default',
-      prompt: { source: 'design_studio', format_key: info.format_key, template_type: info.template_type, copy: currentCopy(), brand_kit_id: app.dataset.selectedBrandKitId || null, instruction: 'Create a merchant-safe promotional image concept for this asset.' },
-    });
+    return postJson(designApi, { action: 'queue_ai_job', project_id: app.dataset.selectedProjectId || null, brand_kit_id: app.dataset.selectedBrandKitId || null, generation_type: 'image', provider_key: 'agent_api', model_key: 'design-image-default', prompt: { source: 'design_studio', format_key: info.format_key, template_type: info.template_type, copy: currentCopy(), brand_kit_id: app.dataset.selectedBrandKitId || null, instruction: 'Create a merchant-safe promotional image concept for this asset.' } });
   };
 
   qsa('[data-format]').forEach((button) => {
@@ -577,25 +507,9 @@
     sync();
   });
 
-  qsa('[data-media-swatch]').forEach((button) => {
-    button.addEventListener('click', () => {
-      setActive(button, '[data-media-swatch]');
-      if (templateMedia) templateMedia.dataset.swatch = button.dataset.mediaSwatch || 'gradient';
-    });
-  });
-
-  qsa('[data-qr-label]').forEach((button) => {
-    button.addEventListener('click', () => selectQr(button, { id: button.dataset.qrId || '', label: button.dataset.qrLabel || 'Featured Gift', kind_label: button.dataset.qrKind || 'Claim QR', qr_payload_url: button.dataset.qrPayload || '' }));
-  });
-
-  qsa('[data-preview-side]').forEach((button) => {
-    button.addEventListener('click', () => {
-      setActive(button, '[data-preview-side]');
-      const side = button.dataset.previewSide || 'front';
-      app.dataset.previewSide = side;
-      setStatus(`${side === 'back' ? 'Back' : 'Front'} side preview`, 'ready');
-    });
-  });
+  qsa('[data-media-swatch]').forEach((button) => button.addEventListener('click', () => { setActive(button, '[data-media-swatch]'); if (templateMedia) templateMedia.dataset.swatch = button.dataset.mediaSwatch || 'gradient'; }));
+  qsa('[data-qr-label]').forEach((button) => button.addEventListener('click', () => selectQr(button, { id: button.dataset.qrId || '', label: button.dataset.qrLabel || 'Featured Gift', kind_label: button.dataset.qrKind || 'Claim QR', qr_payload_url: button.dataset.qrPayload || '' })));
+  qsa('[data-preview-side]').forEach((button) => button.addEventListener('click', () => { setActive(button, '[data-preview-side]'); const side = button.dataset.previewSide || 'front'; app.dataset.previewSide = side; setStatus(`${side === 'back' ? 'Back' : 'Front'} side preview`, 'ready'); }));
 
   const withBusyText = async (button, busyText, successText, failureText, action, resetText, delay = 1600) => {
     if (!button) return;
@@ -609,121 +523,42 @@
       button.textContent = failureText;
       throw error;
     } finally {
-      setTimeout(() => {
-        button.disabled = false;
-        button.textContent = resetText;
-      }, delay);
+      setTimeout(() => { button.disabled = false; button.textContent = resetText; }, delay);
     }
   };
 
   const brandScanButton = qs('[data-brand-scan]');
-  if (brandScanButton) brandScanButton.addEventListener('click', async () => {
-    try {
-      await withBusyText(brandScanButton, 'Scanning website…', 'Brand kit scanned', 'Scan failed', scanBrandKit, 'Scan website for brand kit', 1800);
-      setStatus('Brand kit ready', 'ready');
-    } catch (error) {
-      setStatus(error.message || 'Unable to scan brand kit', 'warning');
-    }
-  });
+  if (brandScanButton) brandScanButton.addEventListener('click', async () => { try { await withBusyText(brandScanButton, 'Scanning website…', 'Brand kit scanned', 'Scan failed', scanBrandKit, 'Scan website for brand kit', 1800); setStatus('Brand kit ready', 'ready'); } catch (error) { setStatus(error.message || 'Unable to scan brand kit', 'warning'); } });
 
   const saveButton = qs('[data-design-save]');
-  if (saveButton) saveButton.addEventListener('click', async () => {
-    try {
-      await withBusyText(saveButton, 'Saving project…', 'Project saved', 'Save failed', saveProject, 'Save project', 1400);
-      setStatus('Project saved', 'ready');
-    } catch (error) {
-      setStatus('Unable to save project', 'warning');
-    }
-  });
+  if (saveButton) saveButton.addEventListener('click', async () => { try { await withBusyText(saveButton, 'Saving project…', 'Project saved', 'Save failed', saveProject, 'Save project', 1400); setStatus('Project saved', 'ready'); } catch (error) { setStatus('Unable to save project', 'warning'); } });
 
   const templateButton = qs('[data-design-save-template]');
-  if (templateButton) templateButton.addEventListener('click', async () => {
-    try {
-      await withBusyText(templateButton, 'Saving template…', 'Template saved', 'Save failed', saveTemplate, 'Save as template', 1500);
-      setStatus('Reusable template saved', 'ready');
-    } catch (error) {
-      setStatus('Unable to save template', 'warning');
-    }
-  });
+  if (templateButton) templateButton.addEventListener('click', async () => { try { await withBusyText(templateButton, 'Saving template…', 'Template saved', 'Save failed', saveTemplate, 'Save as template', 1500); setStatus('Reusable template saved', 'ready'); } catch (error) { setStatus('Unable to save template', 'warning'); } });
 
   const exportButton = qs('[data-design-export]');
-  if (exportButton) exportButton.addEventListener('click', async () => {
-    try {
-      await withBusyText(exportButton, 'Queueing export…', 'Export queued', 'Export blocked', async () => {
-        const info = activeFormatInfo();
-        return queueExport(info.template_type === 'social' ? 'social_png' : 'zip_package');
-      }, 'Export package', 1600);
-      setStatus(app.dataset.selectedQrId ? 'Export queued with live QR' : 'Export queued; QR still recommended', 'ready');
-    } catch (error) {
-      setStatus('Export queue failed', 'warning');
-    }
-  });
+  if (exportButton) exportButton.addEventListener('click', async () => { try { await withBusyText(exportButton, 'Queueing export…', 'Export queued', 'Export blocked', async () => { const info = activeFormatInfo(); return queueExport(info.template_type === 'social' ? 'social_png' : 'zip_package'); }, 'Export package', 1600); setStatus(app.dataset.selectedQrId ? 'Export queued with live QR' : 'Export queued; QR still recommended', 'ready'); } catch (error) { setStatus('Export queue failed', 'warning'); } });
 
   const proofButton = qs('[data-design-proof]');
-  if (proofButton) proofButton.addEventListener('click', async () => {
-    try {
-      await withBusyText(proofButton, 'Queueing proof…', 'Proof queued', 'Proof failed', () => queueExport('proof'), 'Generate proof', 1500);
-      setStatus(app.dataset.selectedQrId ? 'Proof queued with live QR' : 'Proof queued; QR still recommended', 'ready');
-    } catch (error) {
-      setStatus('Unable to queue proof', 'warning');
-    }
-  });
+  if (proofButton) proofButton.addEventListener('click', async () => { try { await withBusyText(proofButton, 'Queueing proof…', 'Proof queued', 'Proof failed', () => queueExport('proof'), 'Generate proof', 1500); setStatus(app.dataset.selectedQrId ? 'Proof queued with live QR' : 'Proof queued; QR still recommended', 'ready'); } catch (error) { setStatus('Unable to queue proof', 'warning'); } });
 
   const importButton = qs('[data-design-import-media]');
-  if (importButton) importButton.addEventListener('click', () => {
-    importButton.textContent = 'Media library sync pending';
-    setStatus('Media library connection is queued for the next build', 'info');
-    setTimeout(() => { importButton.textContent = 'Import from media library'; }, 1600);
-  });
+  if (importButton) importButton.addEventListener('click', () => { importButton.textContent = 'Media library sync pending'; setStatus('Media library connection is queued for the next build', 'info'); setTimeout(() => { importButton.textContent = 'Import from media library'; }, 1600); });
 
   const aiButton = qs('[data-design-ai-image]');
-  if (aiButton) aiButton.addEventListener('click', async () => {
-    try {
-      await withBusyText(aiButton, 'Queueing AI job…', 'AI job queued', 'AI queue failed', async () => {
-        await saveProject();
-        return queueAiImage();
-      }, 'Queue AI image concept', 1600);
-      setStatus('AI image job queued for approval', 'ready');
-    } catch (error) {
-      setStatus('Unable to queue AI image', 'warning');
-    }
-  });
+  if (aiButton) aiButton.addEventListener('click', async () => { try { await withBusyText(aiButton, 'Queueing AI job…', 'AI job queued', 'AI queue failed', async () => { await saveProject(); return queueAiImage(); }, 'Queue AI image concept', 1600); setStatus('AI image job queued for approval', 'ready'); } catch (error) { setStatus('Unable to queue AI image', 'warning'); } });
 
   const qrButton = qs('[data-design-create-qr]');
-  if (qrButton) qrButton.addEventListener('click', async () => {
-    try {
-      await withBusyText(qrButton, 'Creating QR code…', 'QR code created', 'QR failed', createQr, 'Create new QR code', 1200);
-      setStatus('Live QR code created', 'ready');
-    } catch (error) {
-      setStatus('Unable to create QR', 'warning');
-    }
-  });
+  if (qrButton) qrButton.addEventListener('click', async () => { try { await withBusyText(qrButton, 'Creating QR code…', 'QR code created', 'QR failed', createQr, 'Create new QR code', 1200); setStatus('Live QR code created', 'ready'); } catch (error) { setStatus('Unable to create QR', 'warning'); } });
 
   const qrAssetButton = qs('[data-design-qr-asset]');
-  if (qrAssetButton) qrAssetButton.addEventListener('click', async () => {
-    try {
-      await withBusyText(qrAssetButton, 'Queueing QR asset…', 'QR asset queued', 'QR asset failed', createQrAsset, 'Queue QR image asset', 1600);
-      setStatus('QR image asset queued', 'ready');
-    } catch (error) {
-      setStatus('Select or create a QR first', 'warning');
-    }
-  });
+  if (qrAssetButton) qrAssetButton.addEventListener('click', async () => { try { await withBusyText(qrAssetButton, 'Queueing QR asset…', 'QR asset queued', 'QR asset failed', createQrAsset, 'Queue QR image asset', 1600); setStatus('QR image asset queued', 'ready'); } catch (error) { setStatus('Select or create a QR first', 'warning'); } });
 
   const campaignButton = qs('[data-campaign-link]');
-  if (campaignButton) campaignButton.addEventListener('click', async () => {
-    try {
-      await withBusyText(campaignButton, 'Saving campaign link…', 'Campaign linked', 'Link failed', linkCampaign, 'Save campaign link', 1600);
-      setStatus('Campaign link saved', 'ready');
-    } catch (error) {
-      setStatus('Campaign reference required', 'warning');
-    }
-  });
+  if (campaignButton) campaignButton.addEventListener('click', async () => { try { await withBusyText(campaignButton, 'Saving campaign link…', 'Campaign linked', 'Link failed', linkCampaign, 'Save campaign link', 1600); setStatus('Campaign link saved', 'ready'); } catch (error) { setStatus('Campaign reference required', 'warning'); } });
 
   const fitButton = qs('[data-preview-fit]');
-  if (fitButton) fitButton.addEventListener('click', () => {
-    const stage = qs('.mg-design-canvas-stage');
-    if (stage) stage.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
-  });
+  if (fitButton) fitButton.addEventListener('click', () => { const stage = qs('.mg-design-canvas-stage'); if (stage) stage.scrollTo({ top: 0, left: 0, behavior: 'smooth' }); });
 
   loadBrandKit();
   loadQrLibrary();
