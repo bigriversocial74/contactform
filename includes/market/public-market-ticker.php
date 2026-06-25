@@ -4,9 +4,9 @@ declare(strict_types=1);
 function mg_public_market_ticker_table(PDO $pdo, string $table): bool
 {
     try {
-        $stmt = $pdo->prepare('SHOW TABLES LIKE ?');
+        $stmt = $pdo->prepare('SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?');
         $stmt->execute([$table]);
-        return (bool)$stmt->fetchColumn();
+        return (int)$stmt->fetchColumn() > 0;
     } catch (Throwable) {
         return false;
     }
@@ -51,20 +51,22 @@ function mg_public_market_ticker_items(PDO $pdo, int $limit = 12, bool $fallback
     $limit = max(4, min(24, $limit));
 
     $sql = "SELECT pp.slug,pp.display_name,mms.merchant_user_id,mms.ticker_symbol,mms.ticker_value_cents,mms.merchant_score,mms.snapshot_date
-      FROM merchant_market_snapshots mms
-      INNER JOIN (
-        SELECT merchant_user_id,MAX(snapshot_date) AS latest_snapshot_date
-        FROM merchant_market_snapshots
-        GROUP BY merchant_user_id
-      ) latest ON latest.merchant_user_id=mms.merchant_user_id AND latest.latest_snapshot_date=mms.snapshot_date
-      INNER JOIN public_profiles pp ON pp.user_id=mms.merchant_user_id AND pp.status='active' AND pp.visibility IN ('public','unlisted')
+      FROM public_profiles pp
+      INNER JOIN merchant_market_snapshots mms ON mms.id = (
+        SELECT latest.id
+        FROM merchant_market_snapshots latest
+        WHERE latest.merchant_user_id = pp.user_id
+        ORDER BY latest.snapshot_date DESC, latest.id DESC
+        LIMIT 1
+      )
+      WHERE pp.status='active' AND pp.visibility IN ('public','unlisted')
       ORDER BY mms.ticker_value_cents DESC,mms.merchant_score DESC,pp.display_name ASC
       LIMIT {$limit}";
     $stmt = $pdo->query($sql);
     $rows = $stmt ? ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: []) : [];
     if (!$rows) return $fallback ? mg_public_market_ticker_fallback_items() : [];
 
-    $previousStmt = $pdo->prepare("SELECT ticker_value_cents FROM merchant_market_snapshots WHERE merchant_user_id=? AND snapshot_date < ? ORDER BY snapshot_date DESC LIMIT 1");
+    $previousStmt = $pdo->prepare("SELECT ticker_value_cents FROM merchant_market_snapshots WHERE merchant_user_id=? AND snapshot_date < ? ORDER BY snapshot_date DESC,id DESC LIMIT 1");
     $items = [];
     foreach ($rows as $row) {
         $merchantId = (int)($row['merchant_user_id'] ?? 0);
