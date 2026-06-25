@@ -207,6 +207,39 @@ CREATE TABLE IF NOT EXISTS merchant_design_projects (
   CONSTRAINT fk_merchant_design_projects_updated_by FOREIGN KEY (updated_by_user_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS merchant_design_ai_jobs (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  workspace_id BIGINT UNSIGNED NOT NULL,
+  merchant_user_id BIGINT UNSIGNED NOT NULL,
+  project_id BIGINT UNSIGNED NULL,
+  brand_kit_id BIGINT UNSIGNED NULL,
+  provider_key VARCHAR(80) NULL,
+  model_key VARCHAR(120) NULL,
+  generation_type ENUM('image','copy','layout','variation') NOT NULL DEFAULT 'image',
+  prompt_json JSON NOT NULL,
+  status ENUM('draft','queued','running','needs_approval','completed','failed','canceled') NOT NULL DEFAULT 'draft',
+  approval_status ENUM('not_required','pending','approved','rejected') NOT NULL DEFAULT 'pending',
+  result_json JSON NULL,
+  error_message VARCHAR(500) NULL,
+  requested_by_user_id BIGINT UNSIGNED NOT NULL,
+  approved_by_user_id BIGINT UNSIGNED NULL,
+  output_asset_id BIGINT UNSIGNED NULL,
+  completed_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_merchant_design_ai_jobs_public_id (public_id),
+  KEY idx_merchant_design_ai_jobs_workspace (workspace_id,status,generation_type,created_at),
+  KEY idx_merchant_design_ai_jobs_project (project_id,status,created_at),
+  CONSTRAINT fk_merchant_design_ai_jobs_workspace FOREIGN KEY (workspace_id) REFERENCES merchant_workspaces(id) ON DELETE CASCADE,
+  CONSTRAINT fk_merchant_design_ai_jobs_merchant_user FOREIGN KEY (merchant_user_id) REFERENCES users(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_merchant_design_ai_jobs_project FOREIGN KEY (project_id) REFERENCES merchant_design_projects(id) ON DELETE SET NULL,
+  CONSTRAINT fk_merchant_design_ai_jobs_brand_kit FOREIGN KEY (brand_kit_id) REFERENCES merchant_brand_kits(id) ON DELETE SET NULL,
+  CONSTRAINT fk_merchant_design_ai_jobs_requested_by FOREIGN KEY (requested_by_user_id) REFERENCES users(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_merchant_design_ai_jobs_approved_by FOREIGN KEY (approved_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS merchant_design_assets (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   public_id CHAR(36) NOT NULL,
@@ -245,6 +278,7 @@ CREATE TABLE IF NOT EXISTS merchant_design_assets (
   CONSTRAINT fk_merchant_design_assets_project FOREIGN KEY (project_id) REFERENCES merchant_design_projects(id) ON DELETE SET NULL,
   CONSTRAINT fk_merchant_design_assets_template FOREIGN KEY (template_id) REFERENCES merchant_design_templates(id) ON DELETE SET NULL,
   CONSTRAINT fk_merchant_design_assets_qr FOREIGN KEY (qr_code_id) REFERENCES merchant_qr_codes(id) ON DELETE SET NULL,
+  CONSTRAINT fk_merchant_design_assets_ai_job FOREIGN KEY (ai_job_id) REFERENCES merchant_design_ai_jobs(id) ON DELETE SET NULL,
   CONSTRAINT fk_merchant_design_assets_created_by FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE RESTRICT,
   CONSTRAINT fk_merchant_design_assets_updated_by FOREIGN KEY (updated_by_user_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -277,9 +311,6 @@ CREATE TABLE IF NOT EXISTS merchant_design_export_jobs (
   CONSTRAINT fk_merchant_design_export_jobs_requested_by FOREIGN KEY (requested_by_user_id) REFERENCES users(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-ALTER TABLE merchant_design_assets
-  ADD CONSTRAINT fk_merchant_design_assets_ai_job FOREIGN KEY (ai_job_id) REFERENCES merchant_design_export_jobs(id) ON DELETE SET NULL;
-
 CREATE TABLE IF NOT EXISTS merchant_design_campaign_links (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   public_id CHAR(36) NOT NULL,
@@ -306,45 +337,6 @@ CREATE TABLE IF NOT EXISTS merchant_design_campaign_links (
   CONSTRAINT fk_merchant_design_campaign_links_qr FOREIGN KEY (qr_code_id) REFERENCES merchant_qr_codes(id) ON DELETE SET NULL,
   CONSTRAINT fk_merchant_design_campaign_links_created_by FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS merchant_design_ai_jobs (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  public_id CHAR(36) NOT NULL,
-  workspace_id BIGINT UNSIGNED NOT NULL,
-  merchant_user_id BIGINT UNSIGNED NOT NULL,
-  project_id BIGINT UNSIGNED NULL,
-  brand_kit_id BIGINT UNSIGNED NULL,
-  provider_key VARCHAR(80) NULL,
-  model_key VARCHAR(120) NULL,
-  generation_type ENUM('image','copy','layout','variation') NOT NULL DEFAULT 'image',
-  prompt_json JSON NOT NULL,
-  status ENUM('draft','queued','running','needs_approval','completed','failed','canceled') NOT NULL DEFAULT 'draft',
-  approval_status ENUM('not_required','pending','approved','rejected') NOT NULL DEFAULT 'pending',
-  result_json JSON NULL,
-  error_message VARCHAR(500) NULL,
-  requested_by_user_id BIGINT UNSIGNED NOT NULL,
-  approved_by_user_id BIGINT UNSIGNED NULL,
-  output_asset_id BIGINT UNSIGNED NULL,
-  completed_at DATETIME NULL,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  UNIQUE KEY uq_merchant_design_ai_jobs_public_id (public_id),
-  KEY idx_merchant_design_ai_jobs_workspace (workspace_id,status,generation_type,created_at),
-  KEY idx_merchant_design_ai_jobs_project (project_id,status,created_at),
-  CONSTRAINT fk_merchant_design_ai_jobs_workspace FOREIGN KEY (workspace_id) REFERENCES merchant_workspaces(id) ON DELETE CASCADE,
-  CONSTRAINT fk_merchant_design_ai_jobs_merchant_user FOREIGN KEY (merchant_user_id) REFERENCES users(id) ON DELETE RESTRICT,
-  CONSTRAINT fk_merchant_design_ai_jobs_project FOREIGN KEY (project_id) REFERENCES merchant_design_projects(id) ON DELETE SET NULL,
-  CONSTRAINT fk_merchant_design_ai_jobs_brand_kit FOREIGN KEY (brand_kit_id) REFERENCES merchant_brand_kits(id) ON DELETE SET NULL,
-  CONSTRAINT fk_merchant_design_ai_jobs_requested_by FOREIGN KEY (requested_by_user_id) REFERENCES users(id) ON DELETE RESTRICT,
-  CONSTRAINT fk_merchant_design_ai_jobs_approved_by FOREIGN KEY (approved_by_user_id) REFERENCES users(id) ON DELETE SET NULL,
-  CONSTRAINT fk_merchant_design_ai_jobs_output_asset FOREIGN KEY (output_asset_id) REFERENCES merchant_design_assets(id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-ALTER TABLE merchant_design_assets
-  DROP FOREIGN KEY fk_merchant_design_assets_ai_job;
-ALTER TABLE merchant_design_assets
-  ADD CONSTRAINT fk_merchant_design_assets_ai_job FOREIGN KEY (ai_job_id) REFERENCES merchant_design_ai_jobs(id) ON DELETE SET NULL;
 
 CREATE TABLE IF NOT EXISTS merchant_design_ai_presets (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
