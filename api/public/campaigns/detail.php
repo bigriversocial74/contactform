@@ -30,7 +30,8 @@ try {
     if (!empty($row['ends_at']) && strtotime((string) $row['ends_at']) < $now) mg_fail('Campaign has ended.', 409);
     if ($row['quantity_limit'] !== null && (int) $row['issued_count'] >= (int) $row['quantity_limit']) mg_fail('Campaign reward limit has been reached.', 409);
 
-    $submitEndpoint = '/api/public/campaigns/signup.php';
+    $submitEndpoint = '/api/public/campaigns/engage.php';
+    if ($row['campaign_type'] === 'newsletter_signup') $submitEndpoint = '/api/public/campaigns/signup.php';
     if ($row['campaign_type'] === 'qr_reward_drop') $submitEndpoint = '/api/public/campaigns/qr-pickup.php';
     if ($row['campaign_type'] === 'contest_giveaway') $submitEndpoint = '/api/public/campaigns/contest-entry.php';
 
