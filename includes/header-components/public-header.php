@@ -126,7 +126,7 @@ $show_demo_button = !$user;
                   <strong><?= mg_e((string) ($ticker_item['symbol'] ?? 'MG')) ?></strong>
                   <span><?= mg_e((string) ($ticker_item['name'] ?? 'Merchant')) ?></span>
                   <b><?= mg_e((string) ($ticker_item['price'] ?? '—')) ?></b>
-                  <em class="is-<?= mg_e($tickerTrend) ?>"><?= mg_e((string) ($ticker_item['change'] ?? 'LIVE')) ?></em>
+                  <em class="is-<?= mg_e($tickerTrend) ?>"><?= mg_e((string) ($ticker_item['change'] ?? '●')) ?></em>
                   <?php if ($tickerStatLabel !== '' || $tickerStatValue !== ''): ?>
                     <small class="mg-header-ticker-stat" data-ticker-stats="<?= mg_e($tickerStatsJson) ?>"><i><?= mg_e($tickerStatLabel) ?></i> <?= mg_e($tickerStatValue) ?></small>
                   <?php endif; ?>
