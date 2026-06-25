@@ -36,13 +36,67 @@ function mg_qr_clean_text(mixed $value, string $fallback, int $max): string
     return mb_substr($text, 0, $max);
 }
 
+function mg_qr_allowed_hosts(): array
+{
+    $hosts = [];
+    $current = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
+    $current = preg_replace('/:\d+$/', '', $current) ?: '';
+    if ($current !== '') $hosts[] = $current;
+    $configured = trim((string) getenv('MG_QR_ALLOWED_EXTERNAL_HOSTS'));
+    if ($configured !== '') {
+        foreach (preg_split('/[,\s]+/', $configured) ?: [] as $host) {
+            $host = strtolower(trim($host));
+            $host = preg_replace('/^https?:\/\//', '', $host) ?: $host;
+            $host = preg_replace('/\/.*$/', '', $host) ?: $host;
+            $host = preg_replace('/:\d+$/', '', $host) ?: $host;
+            if ($host !== '') $hosts[] = $host;
+        }
+    }
+    return array_values(array_unique($hosts));
+}
+
+function mg_qr_host_allowed(string $host): bool
+{
+    $host = strtolower(trim($host));
+    foreach (mg_qr_allowed_hosts() as $allowed) {
+        if ($host === $allowed) return true;
+        if (str_starts_with($allowed, '*.')) {
+            $suffix = substr($allowed, 1);
+            if (str_ends_with($host, $suffix)) return true;
+        }
+    }
+    return false;
+}
+
+function mg_qr_public_host(string $host): bool
+{
+    $ips = @gethostbynamel($host) ?: [];
+    if (!$ips) return false;
+    foreach ($ips as $ip) {
+        if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) return false;
+    }
+    return true;
+}
+
 function mg_qr_destination(mixed $value): string
 {
     $url = trim((string) $value);
     if ($url === '') mg_fail('QR destination URL is required.', 422);
     if (mb_strlen($url) > 1000) mg_fail('QR destination URL is too long.', 422);
+    if (preg_match('/[\r\n]/', $url)) mg_fail('Invalid QR destination URL.', 422);
+    if (str_starts_with($url, '//')) mg_fail('Protocol-relative QR destinations are not allowed.', 422);
     if (str_starts_with($url, '/')) return $url;
     if (!filter_var($url, FILTER_VALIDATE_URL)) mg_fail('Invalid QR destination URL.', 422);
+    $parts = parse_url($url);
+    if (!is_array($parts) || empty($parts['scheme']) || empty($parts['host'])) mg_fail('Invalid QR destination URL.', 422);
+    $scheme = strtolower((string) $parts['scheme']);
+    $host = strtolower((string) $parts['host']);
+    if ($scheme !== 'https') mg_fail('External QR destinations must use https.', 422);
+    if (!empty($parts['user']) || !empty($parts['pass'])) mg_fail('QR destination cannot include credentials.', 422);
+    $port = isset($parts['port']) ? (int) $parts['port'] : 443;
+    if ($port !== 443) mg_fail('External QR destinations must use the standard https port.', 422);
+    if (!mg_qr_host_allowed($host)) mg_fail('External QR destination host is not allowed.', 422);
+    if (!mg_qr_public_host($host)) mg_fail('External QR destination host is not public.', 422);
     return $url;
 }
 
@@ -80,7 +134,12 @@ function mg_qr_short_code(PDO $pdo): string
         $stmt->execute([$code]);
         if (!$stmt->fetch()) return $code;
     }
-    return bin2hex(random_bytes(8));
+    do {
+        $code = bin2hex(random_bytes(8));
+        $stmt = $pdo->prepare('SELECT id FROM merchant_qr_codes WHERE short_code = ? LIMIT 1');
+        $stmt->execute([$code]);
+    } while ($stmt->fetch());
+    return $code;
 }
 
 function mg_qr_format(array $row): array
