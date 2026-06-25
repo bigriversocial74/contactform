@@ -177,6 +177,11 @@ $can_admin_dashboard = $user && (
   .mg-app-header .mg-account-menu,
   [data-mg-auth-menu],
   [data-mg-auth-trigger]{display:none!important;visibility:hidden!important;pointer-events:none!important;}
+  html body .mg-v4 .mg-v4-visual .mg-v10-desktop{position:relative!important;z-index:2!important;}
+  html body .mg-v4 .mg-v4-visual .mg-v4-phone{top:auto!important;left:10px!important;right:auto!important;bottom:-24px!important;z-index:9!important;width:min(128px,34vw)!important;max-width:128px!important;transform:rotate(-2deg)!important;opacity:1!important;}
+}
+@media (max-width: 440px){
+  html body .mg-v4 .mg-v4-visual .mg-v4-phone{top:auto!important;left:8px!important;bottom:-22px!important;width:min(118px,33vw)!important;max-width:118px!important;transform:rotate(-2deg)!important;}
 }
 </style>
 </head>
