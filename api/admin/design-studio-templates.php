@@ -18,6 +18,12 @@ function mg_admin_design_require(): array
     return $user;
 }
 
+function mg_admin_design_uuid(): string
+{
+    if (function_exists('mg_public_uuid')) return mg_public_uuid();
+    return bin2hex(random_bytes(16));
+}
+
 function mg_admin_design_status(mixed $value): string
 {
     $status = strtolower(trim((string) $value));
@@ -86,8 +92,11 @@ if ($action === 'review_template') {
     try {
         $lookup->execute([$templateId]);
         $template = $lookup->fetch();
-        if (!$template) mg_fail('Template not found.', 404);
-        $reviewId = mg_merchant_uuid();
+        if (!$template) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            mg_fail('Template not found.', 404);
+        }
+        $reviewId = mg_admin_design_uuid();
         $pdo->prepare('INSERT INTO merchant_design_template_reviews (public_id,template_id,review_status,reviewer_user_id,notes,checklist_json,reviewed_at,created_at,updated_at) VALUES (?,?,?,?,?,?,NOW(),NOW(),NOW())')
             ->execute([$reviewId, (int) $template['id'], $reviewStatus, (int) $user['id'], $notes ?: null, json_encode(is_array($input['checklist'] ?? null) ? $input['checklist'] : [], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)]);
         $nextStatus = $reviewStatus === 'approved' ? 'active' : (string) $template['status'];
