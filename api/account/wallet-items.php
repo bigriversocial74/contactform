@@ -22,11 +22,13 @@ function mg_wallet_item_public(array $row): array
     $expiresAt = $row['microgift_expires_at'] ?? $row['expires_at'] ?? null;
     $expired = !empty($expiresAt) && strtotime((string)$expiresAt) < time() && !in_array($status, ['redeemed','cancelled'], true);
     if ($expired) $status = 'expired';
-    $canClaim = in_array($status, ['issued','viewed'], true) && !empty($row['action_item_id']);
+    $canClaim = in_array($status, ['issued','viewed'], true);
     $canComplete = $status === 'claimed';
     $displayValue = ((string)($row['value_cents_snapshot'] ?? '0')) !== '0'
         ? ((string)($row['currency_snapshot'] ?? 'USD')) . ' ' . number_format(((int)$row['value_cents_snapshot']) / 100, 2)
         : 'Reward';
+    $actionUrl = !empty($row['action_item_id']) ? '/inbox.php?item=' . rawurlencode((string)$row['action_item_id']) : null;
+    if ($status === 'claimed' && !empty($row['action_item_id'])) $actionUrl = '/claimed.php?item=' . rawurlencode((string)$row['action_item_id']);
     return [
         'id' => (string)$row['public_id'],
         'title' => (string)$row['title_snapshot'],
@@ -47,6 +49,7 @@ function mg_wallet_item_public(array $row): array
         'action_item_id' => $row['action_item_id'] ?? null,
         'action_folder' => $row['action_folder'] ?? null,
         'action_state' => $row['action_state'] ?? null,
+        'action_url' => $actionUrl,
         'can_claim' => $canClaim,
         'can_complete' => $canComplete,
         'timeline' => [
@@ -104,7 +107,7 @@ try {
         if ($item['can_claim']) $totals['claimable']++;
     }
 
-    mg_ok(['items' => $items, 'totals' => $totals, 'schema_ready' => true, 'canonical_source' => 'pppm_action_center']);
+    mg_ok(['items' => $items, 'totals' => $totals, 'schema_ready' => true, 'canonical_source' => 'wallet_to_pppm_action_center']);
 } catch (Throwable $error) {
     mg_security_log('warning', 'account.wallet_items.unavailable', 'Wallet items unavailable.', ['exception_class' => $error::class, 'message' => $error->getMessage()], $userId);
     mg_ok(['items' => [], 'totals' => ['all'=>0,'issued'=>0,'viewed'=>0,'claimed'=>0,'redeemed'=>0,'expired'=>0,'cancelled'=>0,'claimable'=>0], 'schema_ready' => false], 'Wallet items unavailable until the Stage 12 schema is installed.');
