@@ -1,106 +1,26 @@
 <?php
 declare(strict_types=1);
-
 require_once dirname(__DIR__) . '/profiles/_public_profile.php';
-
 mg_require_method('GET');
-
-$pdo = mg_db();
-$slug = mg_public_profile_slug((string)($_GET['slug'] ?? ''));
-$currentUser = mg_current_user();
-$viewerId = (int)($currentUser['id'] ?? 0);
-$viewerId = $viewerId > 0 ? $viewerId : null;
-
-try {
-    $profile = mg_public_profile_read($pdo, $slug, [
-        'viewer_id' => $viewerId,
-        'preview' => !empty($_GET['preview']),
-        'product_limit' => 6,
-        'post_limit' => 6,
-        'plan_limit' => 6,
-    ]);
-} catch (Throwable) {
-    mg_fail('Profile not found.', 404);
-}
-
-$ownerId = 0;
-try {
-    $ownerStmt = $pdo->prepare('SELECT user_id FROM public_profiles WHERE slug=? LIMIT 1');
-    $ownerStmt->execute([$slug]);
-    $ownerId = (int)($ownerStmt->fetchColumn() ?: 0);
-} catch (Throwable) {
-    $ownerId = 0;
-}
-
-$displayName = (string)($profile['profile']['display_name'] ?? 'Microgifter Merchant');
-$tagline = (string)($profile['profile']['headline'] ?? $profile['profile']['biography'] ?? 'Tokenize local experiences and create future demand.');
-
-function mg_invest_schema_table_exists(PDO $pdo, string $table): bool
-{
-    static $cache = [];
-    $allowed = ['wallet_items', 'campaigns', 'campaign_contacts', 'campaign_events', 'reward_templates'];
-    if (!in_array($table, $allowed, true)) return false;
-    if (array_key_exists($table, $cache)) return $cache[$table];
-    try {
-        $stmt = $pdo->prepare('SHOW TABLES LIKE ?');
-        $stmt->execute([$table]);
-        $cache[$table] = (bool)$stmt->fetchColumn();
-    } catch (Throwable) {
-        $cache[$table] = false;
-    }
-    return $cache[$table];
-}
-
-function mg_invest_money(int $cents): string
-{
-    return '$' . number_format($cents / 100, 0);
-}
-
-$activeDrops = (int)($profile['social_counts']['published_products'] ?? 0);
-$volume30dCents = 0;
-$redeemed = 0;
-$issued = 0;
-
-if ($ownerId > 0 && mg_invest_schema_table_exists($pdo, 'campaigns')) {
-    try {
-        $stmt = $pdo->prepare('SELECT COUNT(*) FROM campaigns WHERE user_id=? AND COALESCE(status, "") NOT IN ("archived", "deleted")');
-        $stmt->execute([$ownerId]);
-        $activeDrops = max($activeDrops, (int)$stmt->fetchColumn());
-    } catch (Throwable) {}
-}
-
-if ($ownerId > 0 && mg_invest_schema_table_exists($pdo, 'wallet_items')) {
-    try {
-        $stmt = $pdo->prepare('SELECT COUNT(*) issued, SUM(CASE WHEN status IN ("redeemed", "claimed") THEN 1 ELSE 0 END) redeemed, COALESCE(SUM(value_amount_cents),0) value_cents FROM wallet_items WHERE user_id=? AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)');
-        $stmt->execute([$ownerId]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
-        $issued = (int)($row['issued'] ?? 0);
-        $redeemed = (int)($row['redeemed'] ?? 0);
-        $volume30dCents = (int)($row['value_cents'] ?? 0);
-    } catch (Throwable) {}
-}
-
-$redemptionRate = $issued > 0 ? (int)round(($redeemed / $issued) * 100) : 0;
-$demandScore = min(100, max(0, (int)round(($activeDrops * 8) + ($issued * 2) + ($redemptionRate * .5))));
-$marketValueCents = $volume30dCents + ($activeDrops * 2500);
-$floorPriceCents = $activeDrops > 0 ? (int)round($marketValueCents / max(1, $activeDrops)) : 0;
-$profileUrl = '/profile.php?slug=' . rawurlencode($slug);
-
-header('Cache-Control: private, no-store, max-age=0');
-header('Vary: Cookie, Authorization');
-mg_ok([
-    'profile' => ['display_name' => $displayName, 'tagline' => $tagline, 'slug' => $slug],
-    'metrics' => [
-        'demand_value' => mg_invest_money($marketValueCents),
-        'floor_price' => mg_invest_money($floorPriceCents),
-        'volume_30d' => mg_invest_money($volume30dCents),
-        'redemption_rate' => $redemptionRate . '%',
-        'demand_score' => (string)$demandScore,
-    ],
-    'ticker' => [
-        ['symbol' => 'MGFTR', 'price' => mg_invest_money($marketValueCents), 'change' => 'Demand', 'direction' => 'up', 'url' => $profileUrl],
-        ['symbol' => 'DROPS', 'price' => (string)$activeDrops, 'change' => 'Active', 'direction' => 'flat', 'url' => $profileUrl],
-        ['symbol' => 'VOL30', 'price' => mg_invest_money($volume30dCents), 'change' => '30D', 'direction' => 'flat', 'url' => $profileUrl],
-    ],
-    'source' => $profile,
-]);
+function mg_pi_table(PDO $pdo,string $table):bool{static $c=[];$allowed=['public_profiles','catalog_products','catalog_product_versions','campaigns','campaign_contacts','campaign_events','wallet_items','feed_posts'];if(!in_array($table,$allowed,true))return false;if(array_key_exists($table,$c))return $c[$table];try{$s=$pdo->prepare('SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? LIMIT 1');$s->execute([$table]);return $c[$table]=(bool)$s->fetchColumn();}catch(Throwable){try{$s=$pdo->prepare('SHOW TABLES LIKE ?');$s->execute([$table]);return $c[$table]=(bool)$s->fetchColumn();}catch(Throwable){return $c[$table]=false;}}}
+function mg_pi_row(PDO $pdo,string $sql,array $p=[]):array{try{$s=$pdo->prepare($sql);$s->execute($p);return $s->fetch(PDO::FETCH_ASSOC)?:[];}catch(Throwable){return [];}}
+function mg_pi_rows(PDO $pdo,string $sql,array $p=[]):array{try{$s=$pdo->prepare($sql);$s->execute($p);return $s->fetchAll(PDO::FETCH_ASSOC)?:[];}catch(Throwable){return [];}}
+function mg_pi_money(int $c,string $cur='USD'):string{$pre=strtoupper($cur)==='USD'?'$':strtoupper($cur).' ';return $pre.number_format(max(0,$c)/100,$c>0&&$c<10000?2:0);} 
+function mg_pi_num(int|float $v):string{return number_format((float)$v,is_float($v)&&fmod($v,1.0)!==0.0?1:0);} 
+function mg_pi_pct(?float $v,int $p=0):string{return $v===null||!is_finite($v)?'No trend':number_format($v,$p).'%';}
+function mg_pi_metric(string $d,int|float|string|null $r=null,bool $h=true,?string $detail=null):array{return ['display'=>$d,'raw'=>$r,'has_data'=>$h,'detail'=>$detail];}
+function mg_pi_campaign_url(array $r):?string{$slug=trim((string)($r['public_slug']??''));if($slug==='')return null;$page=match((string)($r['campaign_type']??'')){'newsletter_signup'=>'/newsletter-signup.php','contest_giveaway'=>'/contest.php','qr_reward_drop'=>'/qr-reward.php','referral_reward'=>'/referral-reward.php','birthday_vip'=>'/birthday-vip.php','agent_offer'=>'/agent-offer.php',default=>'/campaign.php'};return $page.'?campaign='.rawurlencode($slug);} 
+function mg_pi_progress(array $r):?int{$limit=(int)($r['quantity_limit']??0);$issued=(int)($r['issued_count']??0);if($limit>0)return max(0,min(100,(int)round(($issued/$limit)*100)));$st=!empty($r['starts_at'])?strtotime((string)$r['starts_at']):false;$en=!empty($r['ends_at'])?strtotime((string)$r['ends_at']):false;if($st!==false&&$en!==false&&$en>$st)return max(0,min(100,(int)round(((time()-$st)/($en-$st))*100)));return null;}
+$pdo=mg_db();$slug=mg_public_profile_slug((string)($_GET['slug']??''));$u=mg_current_user();$viewer=(int)($u['id']??0);$viewer=$viewer>0?$viewer:null;
+try{$source=mg_public_profile_read($pdo,$slug,['viewer_id'=>$viewer,'preview'=>!empty($_GET['preview']),'product_limit'=>6,'post_limit'=>6,'plan_limit'=>6]);}catch(Throwable){mg_fail('Profile not found.',404);} 
+$owner=mg_pi_row($pdo,'SELECT id,user_id,website_url FROM public_profiles WHERE slug=? LIMIT 1',[$slug]);$ownerId=(int)($owner['user_id']??0);if($ownerId<1)mg_fail('Profile not found.',404);
+$profile=$source['profile']??[];$counts=$source['social_counts']??[];$display=(string)($profile['display_name']??'Microgifter Merchant');$tagline=(string)($profile['headline']??$profile['biography']??'Tokenize local experiences and create future demand.');$followers=(int)($counts['followers']??0);$productCount=(int)($counts['published_products']??0);
+$productValue=0;$floor=0;if(mg_pi_table($pdo,'catalog_products')&&mg_pi_table($pdo,'catalog_product_versions')){$r=mg_pi_row($pdo,"SELECT COUNT(*) product_count,COALESCE(SUM(cpv.unit_value_cents),0) product_value,COALESCE(MIN(NULLIF(cpv.unit_value_cents,0)),0) floor FROM catalog_products cp INNER JOIN catalog_product_versions cpv ON cpv.id=cp.current_version_id AND cpv.version_status='published' WHERE cp.merchant_user_id=? AND cp.status='published'",[$ownerId]);$productCount=(int)($r['product_count']??$productCount);$productValue=(int)($r['product_value']??0);$floor=(int)($r['floor']??0);}elseif(!empty($source['products']['items'])){$a=array_values(array_filter(array_map(static fn($i)=>(int)($i['amount_cents']??0),$source['products']['items']),static fn($v)=>$v>0));$productValue=array_sum($a);$floor=$a?min($a):0;}
+$activeCampaigns=0;$totalCampaigns=0;$campaignIssued=0;$campaignCapacity=0;$campaignItems=[];$contacts=0;$events=0;if(mg_pi_table($pdo,'campaigns')){$r=mg_pi_row($pdo,"SELECT COUNT(*) total_campaigns,SUM(CASE WHEN status='active' THEN 1 ELSE 0 END) active_campaigns,COALESCE(SUM(issued_count),0) issued,COALESCE(SUM(quantity_limit),0) capacity FROM campaigns WHERE merchant_user_id=? AND status NOT IN ('archived')",[$ownerId]);$totalCampaigns=(int)($r['total_campaigns']??0);$activeCampaigns=(int)($r['active_campaigns']??0);$campaignIssued=(int)($r['issued']??0);$campaignCapacity=(int)($r['capacity']??0);foreach(mg_pi_rows($pdo,"SELECT public_id,campaign_type,title,description,status,starts_at,ends_at,quantity_limit,issued_count,public_slug,updated_at FROM campaigns WHERE merchant_user_id=? AND status IN ('active','paused') ORDER BY CASE WHEN status='active' THEN 0 ELSE 1 END,COALESCE(starts_at,updated_at) DESC,public_id DESC LIMIT 8",[$ownerId]) as $row){$campaignItems[]=['id'=>(string)$row['public_id'],'type'=>(string)$row['campaign_type'],'title'=>(string)$row['title'],'description'=>$row['description']!==null?(string)$row['description']:null,'status'=>(string)$row['status'],'progress'=>mg_pi_progress($row),'issued_count'=>(int)($row['issued_count']??0),'quantity_limit'=>$row['quantity_limit']!==null?(int)$row['quantity_limit']:null,'url'=>mg_pi_campaign_url($row)];}}
+if(mg_pi_table($pdo,'campaign_contacts'))$contacts=(int)(mg_pi_row($pdo,'SELECT COUNT(*) total FROM campaign_contacts WHERE merchant_user_id=?',[$ownerId])['total']??0);if(mg_pi_table($pdo,'campaign_events'))$events=(int)(mg_pi_row($pdo,'SELECT COUNT(*) total FROM campaign_events WHERE merchant_user_id=?',[$ownerId])['total']??0);
+$issued30=0;$redeemed30=0;$volume30=0;$prevVolume=0;$outstanding=0;$activity=[];$series=[];if(mg_pi_table($pdo,'wallet_items')){$r=mg_pi_row($pdo,"SELECT COUNT(*) issued_30,SUM(CASE WHEN status IN ('redeemed','claimed') THEN 1 ELSE 0 END) redeemed_30,COALESCE(SUM(value_cents_snapshot),0) volume_30,COALESCE(SUM(CASE WHEN status NOT IN ('redeemed','expired','cancelled') THEN value_cents_snapshot ELSE 0 END),0) outstanding FROM wallet_items WHERE merchant_user_id=? AND issued_at>=DATE_SUB(NOW(),INTERVAL 30 DAY)",[$ownerId]);$issued30=(int)($r['issued_30']??0);$redeemed30=(int)($r['redeemed_30']??0);$volume30=(int)($r['volume_30']??0);$outstanding=(int)($r['outstanding']??0);$prevVolume=(int)(mg_pi_row($pdo,"SELECT COALESCE(SUM(value_cents_snapshot),0) total FROM wallet_items WHERE merchant_user_id=? AND issued_at>=DATE_SUB(NOW(),INTERVAL 60 DAY) AND issued_at<DATE_SUB(NOW(),INTERVAL 30 DAY)",[$ownerId])['total']??0);foreach(mg_pi_rows($pdo,"SELECT title_snapshot,status,value_cents_snapshot,currency_snapshot,issued_at,claimed_at,redeemed_at,created_at FROM wallet_items WHERE merchant_user_id=? ORDER BY COALESCE(redeemed_at,claimed_at,issued_at,created_at) DESC LIMIT 5",[$ownerId]) as $row){$activity[]=['title'=>(string)($row['title_snapshot']??'Reward'),'status'=>(string)($row['status']??'issued'),'value'=>mg_pi_money((int)($row['value_cents_snapshot']??0),(string)($row['currency_snapshot']??'USD')),'date'=>(string)($row['redeemed_at']??$row['claimed_at']??$row['issued_at']??$row['created_at']??'')];}foreach(mg_pi_rows($pdo,"SELECT DATE(issued_at) day,COALESCE(SUM(value_cents_snapshot),0) value_cents FROM wallet_items WHERE merchant_user_id=? AND issued_at>=DATE_SUB(CURDATE(),INTERVAL 29 DAY) GROUP BY DATE(issued_at) ORDER BY day ASC",[$ownerId]) as $row){$series[]=['date'=>(string)$row['day'],'value_cents'=>(int)$row['value_cents']];}}
+$postCount=0;$interactions=0;$trending=[];if(mg_pi_table($pdo,'feed_posts')){$r=mg_pi_row($pdo,"SELECT COUNT(*) post_count,COALESCE(SUM(comment_count+reaction_count+share_count+save_count),0) interactions FROM feed_posts WHERE merchant_user_id=? AND status='published' AND moderation_status NOT IN ('hidden','removed')",[$ownerId]);$postCount=(int)($r['post_count']??0);$interactions=(int)($r['interactions']??0);if(mg_pi_table($pdo,'catalog_products')&&mg_pi_table($pdo,'catalog_product_versions'))foreach(mg_pi_rows($pdo,"SELECT cp.slug,cpv.title,COALESCE(SUM(fp.comment_count*3+fp.reaction_count+fp.share_count*4+fp.save_count*2),0) score FROM catalog_products cp INNER JOIN catalog_product_versions cpv ON cpv.id=cp.current_version_id AND cpv.version_status='published' INNER JOIN feed_posts fp ON fp.catalog_product_id=cp.id AND fp.status='published' AND fp.moderation_status NOT IN ('hidden','removed') WHERE cp.merchant_user_id=? AND cp.status='published' AND fp.created_at>=DATE_SUB(NOW(),INTERVAL 30 DAY) GROUP BY cp.id,cp.slug,cpv.title HAVING score>0 ORDER BY score DESC,cp.public_id DESC LIMIT 5",[$ownerId]) as $row){$trending[]=['title'=>(string)$row['title'],'score'=>(int)$row['score'],'url'=>'/product.php?p='.rawurlencode((string)$row['slug'])];}}
+$redRate=$issued30>0?($redeemed30/$issued30)*100:0.0;$engRate=$interactions>0?($interactions/max(1,$followers+$postCount))*100:0.0;$growth=$prevVolume>0?(($volume30-$prevVolume)/$prevVolume)*100:null;$demandValue=$volume30+$outstanding;$activeDrops=$productCount+$activeCampaigns;$productFactor=min(25,$productCount*5);$campaignFactor=min(25,$activeCampaigns*8);$redFactor=min(25,$issued30>0?$redRate*.25:0);$engFactor=min(25,$interactions>0?log10($interactions+1)*10:0);$score=max(0,min(100,(int)round($productFactor+$campaignFactor+$redFactor+$engFactor)));$label=$score>=75?'High Demand':($score>=45?'Building Demand':($score>0?'Early Demand':'No data'));$has=$productCount>0||$activeCampaigns>0||$issued30>0||$interactions>0;
+$analytics=[['label'=>'Published Products','value'=>mg_pi_num($productCount),'detail'=>'Count of published product versions on this merchant profile.','has_data'=>$productCount>0],['label'=>'Active Campaigns','value'=>mg_pi_num($activeCampaigns),'detail'=>'Campaigns currently marked active.','has_data'=>$activeCampaigns>0],['label'=>'Issued 30D','value'=>mg_pi_num($issued30),'detail'=>'Wallet items issued during the last 30 days.','has_data'=>$issued30>0],['label'=>'Redeemed / Claimed 30D','value'=>mg_pi_num($redeemed30),'detail'=>'Wallet items redeemed or claimed during the last 30 days.','has_data'=>$redeemed30>0],['label'=>'Campaign Contacts','value'=>mg_pi_num($contacts),'detail'=>'Contacts collected through CRM campaigns.','has_data'=>$contacts>0],['label'=>'Post Interactions','value'=>mg_pi_num($interactions),'detail'=>'Comments, reactions, shares, and saves across published posts.','has_data'=>$interactions>0]];
+$formulas=['Demand Value = 30-day issued wallet value + outstanding unredeemed wallet value.','Floor Price = lowest published product version price greater than zero.','Redemption Rate = redeemed or claimed wallet items ÷ issued wallet items over the last 30 days.','Engagement Rate = post interactions ÷ followers plus published posts.','Demand Score = products factor + campaign factor + redemption factor + engagement factor, capped at 100.'];$profileUrl='/profile.php?slug='.rawurlencode($slug);$website=trim((string)($owner['website_url']??''));
+header('Cache-Control: private, no-store, max-age=0');header('Vary: Cookie, Authorization');mg_ok(['profile'=>['display_name'=>$display,'tagline'=>$tagline,'slug'=>$slug],'metrics'=>['active_drops'=>mg_pi_metric(mg_pi_num($activeDrops),$activeDrops,$activeDrops>0),'active_campaigns'=>mg_pi_metric(mg_pi_num($activeCampaigns),$activeCampaigns,$activeCampaigns>0),'demand_value'=>mg_pi_metric(mg_pi_money($demandValue),$demandValue,$demandValue>0),'floor_price'=>mg_pi_metric(mg_pi_money($floor),$floor,$floor>0),'volume_30d'=>mg_pi_metric(mg_pi_money($volume30),$volume30,$volume30>0),'redemption_rate'=>mg_pi_metric($issued30>0?mg_pi_pct($redRate,0):'0%',$redRate,$issued30>0),'demand_score'=>mg_pi_metric((string)$score,$score,$has),'demand_label'=>mg_pi_metric($label,$score,$has),'market_growth_30d'=>mg_pi_metric($growth===null?'No trend':(($growth>=0?'▲ ':'▼ ').mg_pi_pct(abs($growth),1).' 30D'),$growth,$growth!==null),'posts_total'=>mg_pi_metric(mg_pi_num($postCount),$postCount,$postCount>0),'post_interactions'=>mg_pi_metric(mg_pi_num($interactions),$interactions,$interactions>0),'engagement_rate'=>mg_pi_metric($interactions>0?mg_pi_pct($engRate,1):'0%',$engRate,$interactions>0),'issued_30d'=>mg_pi_metric(mg_pi_num($issued30),$issued30,$issued30>0),'redeemed_30d'=>mg_pi_metric(mg_pi_num($redeemed30),$redeemed30,$redeemed30>0)],'factors'=>['products'=>(int)round($productFactor),'campaigns'=>(int)round($campaignFactor),'redemptions'=>(int)round($redFactor),'engagement'=>(int)round($engFactor)],'campaigns'=>['items'=>$campaignItems,'has_data'=>$campaignItems!==[],'total'=>$totalCampaigns,'active'=>$activeCampaigns,'issued'=>$campaignIssued,'capacity'=>$campaignCapacity,'events'=>$events],'analytics'=>['items'=>$analytics,'has_data'=>array_reduce($analytics,static fn(bool $c,array $i):bool=>$c||!empty($i['has_data']),false),'formulas'=>$formulas],'portfolio'=>['has_data'=>$demandValue>0||$productValue>0,'value'=>mg_pi_money($demandValue+$productValue),'subtitle'=>'Demand value + published product value'],'activity'=>['items'=>$activity,'has_data'=>$activity!==[]],'trending'=>['items'=>$trending,'has_data'=>$trending!==[]],'series'=>['volume_30d'=>$series,'has_data'=>$series!==[]],'actions'=>['share_url'=>$profileUrl,'message_url'=>$website!==''?$website:null,'message_enabled'=>$website!=='','save_uses_follow'=>true],'source'=>$source]);
