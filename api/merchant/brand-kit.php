@@ -43,6 +43,9 @@ function mg_brand_public_url(string $raw): string
     if (!is_array($parts) || empty($parts['scheme']) || empty($parts['host'])) mg_fail('Invalid website URL.', 422);
     $scheme = strtolower((string) $parts['scheme']);
     if (!in_array($scheme, ['http', 'https'], true)) mg_fail('Only http and https website URLs can be scanned.', 422);
+    if (!empty($parts['user']) || !empty($parts['pass'])) mg_fail('Website URL cannot include credentials.', 422);
+    $port = isset($parts['port']) ? (int) $parts['port'] : ($scheme === 'https' ? 443 : 80);
+    if (!in_array($port, [80, 443], true)) mg_fail('Website scanner only supports standard web ports.', 422);
     $host = strtolower((string) $parts['host']);
     $ips = @gethostbynamel($host) ?: [];
     if (!$ips) mg_fail('Website host could not be resolved.', 422);
@@ -69,25 +72,86 @@ function mg_brand_absolute_url(string $base, string $url): ?string
     return $origin . $dir . $url;
 }
 
-function mg_brand_fetch_url(string $url, int $limit = 700000): string
+function mg_brand_header_value(array $headers, string $name): ?string
 {
-    $url = mg_brand_public_url($url);
-    $context = stream_context_create([
-        'http' => [
-            'method' => 'GET',
-            'timeout' => 7,
-            'ignore_errors' => true,
-            'user_agent' => 'MicrogifterDesignStudioScanner/1.0',
-            'header' => "Accept: text/html,text/css;q=0.9,*/*;q=0.5\r\n",
-        ],
-        'ssl' => [
-            'verify_peer' => true,
-            'verify_peer_name' => true,
-        ],
-    ]);
-    $content = @file_get_contents($url, false, $context, 0, $limit);
-    if (!is_string($content) || $content === '') mg_fail('Unable to scan website.', 422);
-    return $content;
+    $prefix = strtolower($name) . ':';
+    for ($i = count($headers) - 1; $i >= 0; $i--) {
+        $header = trim((string) $headers[$i]);
+        if (str_starts_with(strtolower($header), $prefix)) return trim(substr($header, strlen($prefix)));
+    }
+    return null;
+}
+
+function mg_brand_status_code(array $headers): int
+{
+    foreach ($headers as $header) {
+        if (preg_match('#^HTTP/\S+\s+(\d{3})#i', (string) $header, $m)) return (int) $m[1];
+    }
+    return 0;
+}
+
+function mg_brand_content_type_allowed(?string $contentType, array $allowedTypes, string $content): bool
+{
+    $contentType = strtolower(trim((string) $contentType));
+    if ($contentType !== '') {
+        foreach ($allowedTypes as $allowed) {
+            if (str_contains($contentType, strtolower($allowed))) return true;
+        }
+        return false;
+    }
+    $prefix = strtolower(substr(ltrim($content), 0, 80));
+    if (in_array('text/html', $allowedTypes, true) || in_array('application/xhtml+xml', $allowedTypes, true)) {
+        return str_starts_with($prefix, '<!doctype') || str_starts_with($prefix, '<html') || str_starts_with($prefix, '<head');
+    }
+    if (in_array('text/css', $allowedTypes, true)) {
+        return str_contains($prefix, '{') || str_contains($prefix, '@charset') || str_contains($prefix, ':root');
+    }
+    return false;
+}
+
+function mg_brand_fetch_url(string $url, int $limit = 700000, array $allowedTypes = ['text/html', 'application/xhtml+xml']): string
+{
+    $currentUrl = mg_brand_public_url($url);
+    $seen = [];
+    for ($hop = 0; $hop < 4; $hop++) {
+        $currentUrl = mg_brand_public_url($currentUrl);
+        if (isset($seen[$currentUrl])) mg_fail('Website redirect loop detected.', 422);
+        $seen[$currentUrl] = true;
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'GET',
+                'timeout' => 7,
+                'ignore_errors' => true,
+                'max_redirects' => 0,
+                'user_agent' => 'MicrogifterDesignStudioScanner/1.0',
+                'header' => "Accept: text/html,application/xhtml+xml,text/css;q=0.9,*/*;q=0.2\r\nConnection: close\r\n",
+            ],
+            'ssl' => [
+                'verify_peer' => true,
+                'verify_peer_name' => true,
+            ],
+        ]);
+        $content = @file_get_contents($currentUrl, false, $context, 0, $limit + 1);
+        $headers = isset($http_response_header) && is_array($http_response_header) ? $http_response_header : [];
+        $status = mg_brand_status_code($headers);
+        if ($status >= 300 && $status < 400) {
+            $location = mg_brand_header_value($headers, 'Location');
+            if ($location === null || $location === '') mg_fail('Website redirect did not include a location.', 422);
+            $nextUrl = mg_brand_absolute_url($currentUrl, $location);
+            if (!$nextUrl) mg_fail('Website redirect location is invalid.', 422);
+            $currentUrl = $nextUrl;
+            continue;
+        }
+        if (!is_string($content) || $content === '') mg_fail('Unable to scan website.', 422);
+        if (strlen($content) > $limit) mg_fail('Website response is too large to scan.', 422);
+        if ($status >= 400) mg_fail('Website returned an error response.', 422);
+        $contentType = mg_brand_header_value($headers, 'Content-Type');
+        if (!mg_brand_content_type_allowed($contentType, $allowedTypes, $content)) {
+            mg_fail('Website response type is not supported for brand scanning.', 422);
+        }
+        return $content;
+    }
+    mg_fail('Website redirected too many times.', 422);
 }
 
 function mg_brand_normalize_color(string $color): ?string
@@ -164,16 +228,14 @@ function mg_brand_scan_html(string $url, string $html): array
         $href = (string) ($node->attributes->getNamedItem('href')?->nodeValue ?? '');
         $lower = strtolower($href);
         foreach (['instagram','facebook','linkedin','tiktok','twitter','x.com','youtube'] as $network) {
-            if (str_contains($lower, $network) && count($social) < 12) {
-                $social[$network] = $href;
-            }
+            if (str_contains($lower, $network) && count($social) < 12) $social[$network] = $href;
         }
     }
 
     $colors = mg_brand_extract_colors($html);
     foreach ($stylesheets as $sheet) {
         try {
-            $css = mg_brand_fetch_url($sheet, 200000);
+            $css = mg_brand_fetch_url($sheet, 200000, ['text/css', 'text/plain']);
             $colors = array_values(array_unique(array_merge($colors, mg_brand_extract_colors($css))));
         } catch (Throwable) {
         }
@@ -239,8 +301,12 @@ $action = strtolower(trim((string) ($input['action'] ?? 'scan_website')));
 mg_brand_require($user, 'merchant.brand_kits.manage');
 
 if ($action === 'scan_website') {
+    $rate = $pdo->prepare("SELECT COUNT(*) scan_count FROM merchant_brand_kits WHERE workspace_id=? AND scanned_at >= DATE_SUB(NOW(), INTERVAL 10 MINUTE)");
+    $rate->execute([$workspaceId]);
+    if ((int) (($rate->fetch()['scan_count'] ?? 0)) >= 10) mg_fail('Too many website scans. Try again later.', 429);
+
     $websiteUrl = mg_brand_public_url((string) ($input['website_url'] ?? ''));
-    $html = mg_brand_fetch_url($websiteUrl);
+    $html = mg_brand_fetch_url($websiteUrl, 700000, ['text/html', 'application/xhtml+xml']);
     $scan = mg_brand_scan_html($websiteUrl, $html);
     $name = mg_brand_clean_text($input['name'] ?? ($scan['title'] ?: $workspace['display_name'] ?? 'Merchant Brand Kit'), 'Merchant Brand Kit', 180);
     $kitId = trim((string) ($input['id'] ?? ''));
