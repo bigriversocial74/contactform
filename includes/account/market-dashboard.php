@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require_once dirname(__DIR__) . '/market/merchant-market-engine.php';
+require_once dirname(__DIR__) . '/market/merchant-market-explainer.php';
 
 $marketPdo = mg_db();
 $marketUserId = (int)($user['id'] ?? 0);
@@ -9,23 +9,8 @@ $marketProfile = [];
 $marketPayload = null;
 $marketSnapshots = [];
 $marketError = null;
+$marketMessage = null;
 
-function mg_account_market_money(int $cents): string
-{
-    return '$' . number_format(max(0, $cents) / 100, $cents > 0 && $cents < 10000 ? 2 : 0);
-}
-function mg_account_market_table(PDO $pdo, string $table): bool
-{
-    if (!in_array($table, ['merchant_market_snapshots'], true)) return false;
-    try {
-        $stmt = $pdo->prepare('SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? LIMIT 1');
-        $stmt->execute([$table]);
-        return (bool)$stmt->fetchColumn();
-    } catch (Throwable) {
-        try { $stmt = $pdo->prepare('SHOW TABLES LIKE ?'); $stmt->execute([$table]); return (bool)$stmt->fetchColumn(); }
-        catch (Throwable) { return false; }
-    }
-}
 function mg_account_market_chart_points(array $rows, string $key, int $width = 640, int $height = 190): string
 {
     if (count($rows) < 2) return '';
@@ -62,39 +47,17 @@ function mg_account_market_bar_chart(array $components): string
     }
     return $out . '</div>';
 }
-function mg_account_market_positive_text(array $payload): array
-{
-    $mm = $payload['merchant_market'] ?? [];
-    $c = $mm['components'] ?? [];
-    $items = [];
-    if (($c['funnel_quality'] ?? 0) >= 4) $items[] = 'Your campaign funnel is creating measurable demand. Keep pushing QR, newsletter, contest, and referral entry points.';
-    if (($c['distribution_reach'] ?? 0) >= 3) $items[] = 'Distribution is adding value. More active channels improve your market signal beyond your own audience.';
-    if (($c['engagement_signal'] ?? 0) >= 3) $items[] = 'Engagement is contributing to your score. Posts, saves, shares, comments, and supporters are helping prove demand.';
-    if (($c['stamp_power'] ?? 0) >= 2) $items[] = 'Stamp activity is visible in the model. Stamp inventory and spend show that you are fueling campaigns.';
-    if (!$items) $items[] = 'The fastest way to lift the score is to publish products, run campaigns, and create measurable claims or redemptions.';
-    return $items;
-}
-function mg_account_market_risk_text(array $payload): array
-{
-    $risk = $payload['risk'] ?? [];
-    $items = [];
-    if ((int)($risk['opt_outs'] ?? 0) > 0) $items[] = 'Opt-outs are lowering market quality. Tighten audience targeting and reduce low-intent messaging.';
-    if ((int)($risk['bad_signals'] ?? 0) > 0) $items[] = 'Bounces or complaints are counted as bad campaign signals. Clean lists before sending more campaigns.';
-    if ((int)($risk['expired_cancelled_rewards'] ?? 0) > 0) $items[] = 'Expired or cancelled rewards reduce confidence. Keep offers simple, redeemable, and easy to understand.';
-    if ((int)($risk['lost_followers_30d'] ?? 0) > 0) $items[] = 'Follower loss is creating a negative momentum adjustment. Use fewer generic drops and more direct-value offers.';
-    if (!$items) $items[] = 'No major risk signals are currently pulling the market score down.';
-    return $items;
-}
-function mg_account_market_next_actions(array $payload): array
+function mg_account_market_next_actions(array $payload, array $movement): array
 {
     $m = $payload['metrics'] ?? [];
     $actions = [];
+    if (!empty($movement['recommended_action'])) $actions[] = (string)$movement['recommended_action'];
     if ((int)($m['active_campaigns']['raw'] ?? 0) < 1) $actions[] = 'Launch one simple active campaign tied to a QR, newsletter, contest, or referral entry point.';
     if ((int)($m['campaign_conversions']['raw'] ?? 0) < 10) $actions[] = 'Drive more campaign conversions. The model rewards contacts, issued rewards, claims, and redemptions.';
     if ((float)($m['campaign_redemption_rate']['raw'] ?? 0) < 20) $actions[] = 'Improve the redemption path. Make the offer easier to claim and easier for staff to verify.';
     if ((int)($m['distribution_channels']['raw'] ?? 0) < 1) $actions[] = 'Connect at least one distribution channel so demand is not limited to your own audience.';
     if (!$actions) $actions[] = 'Keep the campaign running and take another snapshot tomorrow to track movement.';
-    return $actions;
+    return array_values(array_unique($actions));
 }
 
 try {
@@ -103,11 +66,12 @@ try {
     $marketProfile = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
     if ($marketProfile) {
         $marketPayload = mg_merchant_market_build($marketPdo, (string)$marketProfile['slug'], ['viewer_id'=>$marketUserId]);
-        if (mg_account_market_table($marketPdo, 'merchant_market_snapshots')) {
-            $stmt = $marketPdo->prepare('SELECT snapshot_date,formula_version,ticker_symbol,merchant_score,ticker_value_cents,campaign_conversion_value_cents,funnel_quality_score,distribution_value_cents,stamp_inventory_value_cents,stamp_spend_value_cents,follower_brand_value_cents,risk_adjustment_cents FROM merchant_market_snapshots WHERE merchant_user_id=? ORDER BY snapshot_date ASC LIMIT 60');
-            $stmt->execute([$marketUserId]);
-            $marketSnapshots = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string)($_POST['market_action'] ?? '') === 'take_snapshot') {
+            if (!mg_verify_csrf((string)($_POST['csrf_token'] ?? ''))) throw new RuntimeException('Security token expired. Refresh and try again.');
+            $saved = mg_market_snapshot_save($marketPdo, $marketProfile, $marketPayload, date('Y-m-d'));
+            $marketMessage = 'Snapshot saved for ' . $saved['date'] . ' · ' . $saved['ticker_value'] . ' · score ' . $saved['merchant_score'] . '.';
         }
+        $marketSnapshots = mg_market_snapshot_load($marketPdo, $marketUserId, 90);
     }
 } catch (Throwable $e) {
     $marketError = $e->getMessage();
@@ -117,6 +81,7 @@ $mm = $marketPayload['merchant_market'] ?? [];
 $metrics = $marketPayload['metrics'] ?? [];
 $conv = $marketPayload['campaign_conversions'] ?? [];
 $components = $marketPayload['series']['score_components'] ?? [];
+$movement = $marketPayload ? mg_market_explain_movement($marketPayload, $marketSnapshots) : [];
 $chartRows = $marketSnapshots;
 if (!$chartRows && !empty($marketPayload['series']['volume_30d'])) {
     foreach ($marketPayload['series']['volume_30d'] as $row) $chartRows[] = ['snapshot_date'=>$row['date'] ?? '', 'ticker_value_cents'=>$row['value_cents'] ?? 0, 'merchant_score'=>$mm['merchant_score'] ?? 0, 'funnel_quality_score'=>$mm['campaign_funnel_quality'] ?? 0, 'risk_adjustment_cents'=>$mm['risk_adjustment_value_cents'] ?? 0];
@@ -129,14 +94,27 @@ if (!$chartRows && !empty($marketPayload['series']['volume_30d'])) {
       <h2>Your local demand ticker</h2>
       <p>Track the value signals Microgifter can see: products, campaigns, funnel quality, redemptions, distribution, stamps, followers, and risk.</p>
     </div>
-    <?php if ($marketProfile): ?><a class="mg-btn mg-btn-ghost" href="/profile.php?slug=<?= mg_e((string)$marketProfile['slug']) ?>">View public profile</a><?php endif; ?>
+    <?php if ($marketProfile): ?>
+      <div class="mg-market-hero-actions">
+        <form method="post"><?= mg_csrf_field() ?><input type="hidden" name="market_action" value="take_snapshot"><button class="mg-btn mg-btn-primary" type="submit">Take Snapshot Now</button></form>
+        <a class="mg-btn mg-btn-ghost" href="/profile.php?slug=<?= mg_e((string)$marketProfile['slug']) ?>">View public profile</a>
+      </div>
+    <?php endif; ?>
   </div>
+
+  <?php if ($marketMessage): ?><div class="mg-market-notice is-success"><strong>Snapshot captured</strong><span><?= mg_e($marketMessage) ?></span></div><?php endif; ?>
 
   <?php if (!$marketProfile): ?>
     <div class="mg-market-empty"><h3>No public merchant profile yet.</h3><p>Create or publish your profile first. The market dashboard needs an active public or unlisted merchant profile to calculate a ticker.</p><a class="mg-btn mg-btn-primary" href="/account.php">Open profile editor</a></div>
   <?php elseif ($marketError): ?>
     <div class="mg-market-empty"><h3>Market dashboard unavailable.</h3><p><?= mg_e($marketError) ?></p></div>
   <?php else: ?>
+    <section class="mg-market-movement-card">
+      <header><div><span class="mg-market-kicker">Market Movement</span><h3><?= mg_e((string)($movement['summary'] ?? 'Market movement is ready.')) ?></h3><p>Comparison point: <?= mg_e((string)($movement['baseline_date'] ?? 'No baseline')) ?> · Latest snapshot: <?= mg_e((string)($movement['latest_snapshot_date'] ?? 'No snapshot yet')) ?></p></div></header>
+      <div class="mg-market-movement-grid"><?php foreach (($movement['cards'] ?? []) as $card): ?><article class="<?= ((float)($card['raw'] ?? 0) < 0) ? 'is-negative' : (((float)($card['raw'] ?? 0) > 0) ? 'is-positive' : '') ?>"><span><?= mg_e((string)$card['label']) ?></span><strong><?= mg_e((string)$card['value']) ?></strong></article><?php endforeach; ?></div>
+      <div class="mg-market-driver-grid"><article><span>Top Positive Driver</span><p><?= mg_e((string)($movement['top_positive'] ?? 'No major positive movement detected yet.')) ?></p></article><article><span>Top Negative Driver</span><p><?= mg_e((string)($movement['top_negative'] ?? 'No major negative movement detected yet.')) ?></p></article><article class="is-wide"><span>Recommended Action</span><p><?= mg_e((string)($movement['recommended_action'] ?? 'Take a snapshot after the next campaign push.')) ?></p></article></div>
+    </section>
+
     <div class="mg-market-top-grid">
       <article class="mg-market-main-card"><span>Ticker Value</span><strong><?= mg_e((string)($mm['ticker_value'] ?? '$0')) ?></strong><small><?= mg_e((string)($mm['ticker_symbol'] ?? 'MGFT')) ?> · <?= mg_e((string)($mm['rating'] ?? 'No Market Signal')) ?> · confidence <?= mg_e((string)($mm['confidence'] ?? 'no data')) ?></small></article>
       <article><span>Merchant Score</span><strong><?= mg_e((string)($mm['merchant_score'] ?? '0')) ?></strong><small>Composite score out of 100</small></article>
@@ -164,9 +142,9 @@ if (!$chartRows && !empty($marketPayload['series']['volume_30d'])) {
     </div>
 
     <div class="mg-market-explain-grid">
-      <section><h3>Why this value moved up</h3><?php foreach (mg_account_market_positive_text($marketPayload) as $text): ?><p><?= mg_e($text) ?></p><?php endforeach; ?></section>
-      <section><h3>What is pulling it down</h3><?php foreach (mg_account_market_risk_text($marketPayload) as $text): ?><p><?= mg_e($text) ?></p><?php endforeach; ?></section>
-      <section class="is-wide"><h3>Recommended next moves</h3><div class="mg-market-action-list"><?php foreach (mg_account_market_next_actions($marketPayload) as $i => $text): ?><p><b><?= $i + 1 ?></b><span><?= mg_e($text) ?></span></p><?php endforeach; ?></div></section>
+      <section><h3>Why this value moved up</h3><p><?= mg_e((string)($movement['top_positive'] ?? 'No major positive movement detected yet.')) ?></p></section>
+      <section><h3>What is pulling it down</h3><p><?= mg_e((string)($movement['top_negative'] ?? 'No major negative movement detected yet.')) ?></p></section>
+      <section class="is-wide"><h3>Recommended next moves</h3><div class="mg-market-action-list"><?php foreach (mg_account_market_next_actions($marketPayload, $movement) as $i => $text): ?><p><b><?= $i + 1 ?></b><span><?= mg_e($text) ?></span></p><?php endforeach; ?></div></section>
     </div>
 
     <section class="mg-market-table-card"><header><h3>Campaign funnel detail</h3><p>Source-level conversion quality feeding the score.</p></header><div class="mg-market-funnel-table"><table><thead><tr><th>Source</th><th>Contacts</th><th>Issued</th><th>Claimed</th><th>Redeemed</th><th>Drop-off</th><th>Value</th></tr></thead><tbody><?php foreach (($conv['sources'] ?? []) as $row): ?><tr><td><?= mg_e((string)$row['label']) ?></td><td><?= mg_e((string)$row['contacts']) ?></td><td><?= mg_e((string)$row['issued']) ?></td><td><?= mg_e((string)$row['claimed']) ?></td><td><?= mg_e((string)$row['redeemed']) ?></td><td><?= mg_e((string)$row['drop_off_display']) ?></td><td><?= mg_e((string)$row['value']) ?></td></tr><?php endforeach; ?></tbody></table></div></section>
