@@ -116,12 +116,20 @@ $show_demo_button = !$user;
                   $tickerHref = (string) ($ticker_item['href'] ?? '/discover.php');
                   $tickerTrend = (string) ($ticker_item['trend'] ?? 'up');
                   $tickerFallback = !empty($ticker_item['is_fallback']);
+                  $tickerStats = is_array($ticker_item['stats'] ?? null) ? $ticker_item['stats'] : [];
+                  $tickerStat = is_array($ticker_item['stat'] ?? null) ? $ticker_item['stat'] : ($tickerStats[0] ?? null);
+                  $tickerStatLabel = is_array($tickerStat) ? trim((string) ($tickerStat['label'] ?? '')) : '';
+                  $tickerStatValue = is_array($tickerStat) ? trim((string) ($tickerStat['value'] ?? '')) : '';
+                  $tickerStatsJson = json_encode($tickerStats, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?: '[]';
                 ?>
                 <a class="mg-header-ticker-item<?= $tickerFallback ? ' is-opening-soon' : '' ?>" href="<?= mg_e($tickerHref) ?>">
                   <strong><?= mg_e((string) ($ticker_item['symbol'] ?? 'MG')) ?></strong>
                   <span><?= mg_e((string) ($ticker_item['name'] ?? 'Merchant')) ?></span>
                   <b><?= mg_e((string) ($ticker_item['price'] ?? '—')) ?></b>
                   <em class="is-<?= mg_e($tickerTrend) ?>"><?= mg_e((string) ($ticker_item['change'] ?? 'LIVE')) ?></em>
+                  <?php if ($tickerStatLabel !== '' || $tickerStatValue !== ''): ?>
+                    <small class="mg-header-ticker-stat" data-ticker-stats="<?= mg_e($tickerStatsJson) ?>"><i><?= mg_e($tickerStatLabel) ?></i> <?= mg_e($tickerStatValue) ?></small>
+                  <?php endif; ?>
                 </a>
               <?php endforeach; ?>
             </div>
