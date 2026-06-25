@@ -168,6 +168,17 @@ $can_admin_dashboard = $user && (
 <link rel="stylesheet" href="/assets/css/app-header-sidebar.css">
 <link rel="stylesheet" href="/assets/css/app-fixes.css">
 <?php endif; ?>
+<style>
+@media (max-width: 760px){
+  .mg-unified-header .mg-account-menu,
+  .mg-site-header .mg-account-menu,
+  .mg-market-universal-header .mg-account-menu,
+  .mg-public-header .mg-account-menu,
+  .mg-app-header .mg-account-menu,
+  [data-mg-auth-menu],
+  [data-mg-auth-trigger]{display:none!important;visibility:hidden!important;pointer-events:none!important;}
+}
+</style>
 </head>
 <body
   class="mg-page mg-section-<?= mg_e($page_section) ?><?= $is_app_page ? ' mg-app-page' : '' ?><?= $page_body_class !== '' ? ' ' . mg_e($page_body_class) : '' ?>"
