@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/merchant-market-engine.php';
+
 function mg_public_market_ticker_table(PDO $pdo, string $table): bool
 {
     try {
@@ -15,41 +17,15 @@ function mg_public_market_ticker_table(PDO $pdo, string $table): bool
 function mg_public_market_ticker_fallback_items(): array
 {
     return [
-        ['symbol'=>'MGFT','name'=>'Local Market','price'=>'Opening soon','change'=>'LIVE SOON','trend'=>'up','href'=>'/discover.php','stats'=>[['label'=>'MARKET','value'=>'BETA']],'is_fallback'=>true],
-        ['symbol'=>'MERCH','name'=>'Merchant indexes','price'=>'Building','change'=>'SNAPSHOTS','trend'=>'up','href'=>'/discover.php','stats'=>[['label'=>'DATA','value'=>'LOADING']],'is_fallback'=>true],
-        ['symbol'=>'DROP','name'=>'Reward drops','price'=>'Coming online','change'=>'DISCOVER','trend'=>'up','href'=>'/discover.php','stats'=>[['label'=>'REWARDS','value'=>'LIVE SOON']],'is_fallback'=>true],
-        ['symbol'=>'SCORE','name'=>'Market scores','price'=>'Calculating','change'=>'BETA','trend'=>'up','href'=>'/learn-more.php','stats'=>[['label'=>'SCORE','value'=>'PENDING']],'is_fallback'=>true],
+        ['symbol'=>'MGFT','name'=>'Local Market','price'=>'Opening soon','change'=>'● LIVE SOON','trend'=>'flat','href'=>'/discover.php','stats'=>[['label'=>'MARKET','value'=>'BETA']],'is_fallback'=>true],
+        ['symbol'=>'MERCH','name'=>'Merchant indexes','price'=>'Building','change'=>'● SNAPSHOTS','trend'=>'flat','href'=>'/discover.php','stats'=>[['label'=>'DATA','value'=>'LOADING']],'is_fallback'=>true],
+        ['symbol'=>'DROP','name'=>'Reward drops','price'=>'Coming online','change'=>'● DISCOVER','trend'=>'flat','href'=>'/discover.php','stats'=>[['label'=>'REWARDS','value'=>'LIVE SOON']],'is_fallback'=>true],
     ];
 }
 
 function mg_public_market_ticker_profile_href(string $slug): string
 {
     return '/profile.php?slug=' . rawurlencode($slug);
-}
-
-function mg_public_market_ticker_symbol(?string $symbol, string $name, string $slug): string
-{
-    $clean = strtoupper((string)preg_replace('/[^a-z0-9]/i', '', (string)$symbol));
-    if ($clean !== '') return substr($clean, 0, 8);
-
-    $initials = '';
-    $words = preg_split('/[^a-z0-9]+/i', trim($name)) ?: [];
-    foreach ($words as $word) {
-        if ($word === '') continue;
-        $initials .= strtoupper($word[0]);
-        if (strlen($initials) >= 5) break;
-    }
-    if (strlen($initials) >= 2) return $initials;
-
-    $slugSymbol = strtoupper((string)preg_replace('/[^a-z0-9]/i', '', $slug));
-    return $slugSymbol !== '' ? substr($slugSymbol, 0, 5) : 'MGFT';
-}
-
-function mg_public_market_ticker_money(int $cents): string
-{
-    if ($cents === 0) return '$0.00';
-    $prefix = $cents < 0 ? '-$' : '$';
-    return $prefix . number_format(abs($cents) / 100, abs($cents) >= 10000 ? 0 : 2);
 }
 
 function mg_public_market_ticker_compact_money(int $cents): string
@@ -61,44 +37,105 @@ function mg_public_market_ticker_compact_money(int $cents): string
     return $prefix . number_format($amount, $amount >= 100 ? 0 : 2);
 }
 
-function mg_public_market_ticker_change(int $currentCents, ?int $previousCents): array
+function mg_public_market_ticker_change(int $currentCents, ?int $previousCents, ?float $fallbackPercent = null): array
 {
-    if ($previousCents === null || $previousCents === 0) {
-        return ['label' => 'LIVE', 'trend' => 'up', 'delta_cents' => null, 'delta_percent' => null];
+    if ($previousCents !== null && $previousCents > 0) {
+        $delta = $currentCents - $previousCents;
+        $percent = ($delta / $previousCents) * 100;
+        if ($delta > 0) {
+            return ['label'=>'▲ ' . number_format(abs($percent), 1) . '%','trend'=>'up','delta_cents'=>$delta,'delta_percent'=>round($percent, 2),'source'=>'ticker_history'];
+        }
+        if ($delta < 0) {
+            return ['label'=>'▼ ' . number_format(abs($percent), 1) . '%','trend'=>'down','delta_cents'=>$delta,'delta_percent'=>round($percent, 2),'source'=>'ticker_history'];
+        }
+        return ['label'=>'• 0.0%','trend'=>'flat','delta_cents'=>0,'delta_percent'=>0.0,'source'=>'ticker_history'];
     }
-    $delta = $currentCents - $previousCents;
-    $percent = ($delta / max(1, abs($previousCents))) * 100;
-    $trend = $delta < 0 ? 'down' : 'up';
-    return [
-        'label' => ($delta < 0 ? '▼ ' : '▲ ') . number_format(abs($percent), 1) . '%',
-        'trend' => $trend,
-        'delta_cents' => $delta,
-        'delta_percent' => round($percent, 2),
-    ];
+
+    if ($fallbackPercent !== null && is_finite($fallbackPercent)) {
+        if ($fallbackPercent > 0) return ['label'=>'▲ ' . number_format(abs($fallbackPercent), 1) . '% 30D','trend'=>'up','delta_cents'=>null,'delta_percent'=>round($fallbackPercent, 2),'source'=>'market_growth_30d'];
+        if ($fallbackPercent < 0) return ['label'=>'▼ ' . number_format(abs($fallbackPercent), 1) . '% 30D','trend'=>'down','delta_cents'=>null,'delta_percent'=>round($fallbackPercent, 2),'source'=>'market_growth_30d'];
+        return ['label'=>'• 0.0% 30D','trend'=>'flat','delta_cents'=>null,'delta_percent'=>0.0,'source'=>'market_growth_30d'];
+    }
+
+    return ['label'=>'● LIVE','trend'=>'flat','delta_cents'=>null,'delta_percent'=>null,'source'=>'live'];
 }
 
-function mg_public_market_ticker_stats(array $row, bool $hasSnapshot): array
+function mg_public_market_ticker_metric(array $metrics, string $key): array
 {
-    if (!$hasSnapshot) {
-        return [[
-            'label' => 'PROFILE',
-            'value' => max(0, min(100, (int)($row['completion_score'] ?? 0))) . '%',
-        ]];
-    }
+    return is_array($metrics[$key] ?? null) ? $metrics[$key] : [];
+}
 
-    $stats = [
-        ['label' => 'SCORE', 'value' => (string)(int)($row['merchant_score'] ?? 0)],
-        ['label' => 'DEMAND', 'value' => mg_public_market_ticker_compact_money((int)($row['demand_value_cents'] ?? 0))],
-        ['label' => 'CONV', 'value' => mg_public_market_ticker_compact_money((int)($row['campaign_conversion_value_cents'] ?? 0))],
-        ['label' => 'FUNNEL', 'value' => number_format((float)($row['funnel_quality_score'] ?? 0), 1)],
-        ['label' => 'DIST', 'value' => mg_public_market_ticker_compact_money((int)($row['distribution_value_cents'] ?? 0))],
-        ['label' => 'BRAND', 'value' => mg_public_market_ticker_compact_money((int)($row['follower_brand_value_cents'] ?? 0))],
+function mg_public_market_ticker_stats(array $payload): array
+{
+    $market = is_array($payload['merchant_market'] ?? null) ? $payload['merchant_market'] : [];
+    $metrics = is_array($payload['metrics'] ?? null) ? $payload['metrics'] : [];
+    $stats = [];
+
+    $stats[] = ['label'=>'SCORE','value'=>(string)(int)($market['merchant_score'] ?? 0)];
+
+    $map = [
+        'active_drops' => 'DROPS',
+        'posts_total' => 'POSTS',
+        'post_interactions' => 'ACTIVITY',
+        'engagement_rate' => 'ENG',
+        'demand_value' => 'DEMAND',
+        'volume_30d' => 'VOL 30D',
+        'campaign_conversions' => 'CONV',
+        'campaign_funnel_quality' => 'FUNNEL',
     ];
 
-    return array_values(array_filter($stats, static function (array $stat): bool {
-        if ($stat['label'] === 'SCORE') return true;
-        return !in_array($stat['value'], ['$0.00', '$0', '0.0'], true);
-    }));
+    foreach ($map as $key => $label) {
+        $metric = mg_public_market_ticker_metric($metrics, $key);
+        if ($metric === []) continue;
+        $display = trim((string)($metric['display'] ?? ''));
+        $raw = $metric['raw'] ?? null;
+        $hasData = !empty($metric['has_data']);
+        if (!$hasData && (!is_numeric($raw) || (float)$raw === 0.0)) continue;
+        if ($display === '' || in_array(strtolower($display), ['no trend','no data','no issue data'], true)) continue;
+        $stats[] = ['label'=>$label,'value'=>$display];
+    }
+
+    return array_slice($stats, 0, 8);
+}
+
+function mg_public_market_ticker_previous_value(PDO $pdo, int $merchantUserId): ?int
+{
+    if (!mg_public_market_ticker_table($pdo, 'merchant_market_snapshots')) return null;
+    try {
+        $stmt = $pdo->prepare('SELECT ticker_value_cents FROM merchant_market_snapshots WHERE merchant_user_id=? AND snapshot_date < CURDATE() ORDER BY snapshot_date DESC,id DESC LIMIT 1');
+        $stmt->execute([$merchantUserId]);
+        $value = $stmt->fetchColumn();
+        return $value === false ? null : (int)$value;
+    } catch (Throwable) {
+        return null;
+    }
+}
+
+function mg_public_market_ticker_profile_rows(PDO $pdo, int $limit): array
+{
+    $signals = ["pp.profile_type='merchant'"];
+    if (mg_public_market_ticker_table($pdo, 'merchant_storefronts')) {
+        $signals[] = "EXISTS(SELECT 1 FROM merchant_storefronts ms WHERE ms.merchant_user_id=pp.user_id AND ms.status='published')";
+    }
+    if (mg_public_market_ticker_table($pdo, 'catalog_products') && mg_public_market_ticker_table($pdo, 'catalog_product_versions')) {
+        $signals[] = "EXISTS(SELECT 1 FROM catalog_products cp INNER JOIN catalog_product_versions cpv ON cpv.id=cp.current_version_id WHERE cp.merchant_user_id=pp.user_id AND cp.status='published' AND cpv.version_status='published')";
+    }
+
+    $sql = "SELECT pp.user_id,pp.slug,pp.display_name,pp.avatar_url,pp.location_label
+            FROM public_profiles pp
+            INNER JOIN users u ON u.id=pp.user_id
+            WHERE u.status='active'
+              AND pp.status='active'
+              AND pp.visibility IN ('public','unlisted')
+              AND (" . implode(' OR ', $signals) . ")
+            ORDER BY pp.updated_at DESC,pp.display_name ASC
+            LIMIT {$limit}";
+    try {
+        $stmt = $pdo->query($sql);
+        return $stmt ? ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: []) : [];
+    } catch (Throwable) {
+        return [];
+    }
 }
 
 function mg_public_market_ticker_items(PDO $pdo, int $limit = 12, bool $fallback = false): array
@@ -107,129 +144,54 @@ function mg_public_market_ticker_items(PDO $pdo, int $limit = 12, bool $fallback
         return $fallback ? mg_public_market_ticker_fallback_items() : [];
     }
 
-    $limit = max(4, min(24, $limit));
-    $hasSnapshots = mg_public_market_ticker_table($pdo, 'merchant_market_snapshots');
-    $hasStorefronts = mg_public_market_ticker_table($pdo, 'merchant_storefronts');
-    $hasProducts = mg_public_market_ticker_table($pdo, 'catalog_products');
-    $hasProductVersions = mg_public_market_ticker_table($pdo, 'catalog_product_versions');
-
-    $merchantSignals = ["pp.profile_type='merchant'"];
-    if ($hasStorefronts) {
-        $merchantSignals[] = "EXISTS(SELECT 1 FROM merchant_storefronts ms WHERE ms.merchant_user_id=pp.user_id AND ms.status='published')";
-    }
-    if ($hasProducts && $hasProductVersions) {
-        $merchantSignals[] = "EXISTS(
-            SELECT 1
-            FROM catalog_products cp
-            INNER JOIN catalog_product_versions cpv ON cpv.id=cp.current_version_id
-            WHERE cp.merchant_user_id=pp.user_id
-              AND cp.status='published'
-              AND cpv.version_status='published'
-        )";
-    }
-    if ($hasSnapshots) {
-        $merchantSignals[] = 'mms.id IS NOT NULL';
-    }
-
-    $snapshotSelect = $hasSnapshots
-        ? 'mms.merchant_user_id,mms.ticker_symbol,mms.ticker_value_cents,mms.merchant_score,mms.snapshot_date,mms.demand_value_cents,mms.campaign_conversion_value_cents,mms.funnel_quality_score,mms.distribution_value_cents,mms.stamp_inventory_value_cents,mms.stamp_spend_value_cents,mms.follower_brand_value_cents,mms.risk_adjustment_cents'
-        : 'pp.user_id AS merchant_user_id,NULL AS ticker_symbol,NULL AS ticker_value_cents,0 AS merchant_score,NULL AS snapshot_date,0 AS demand_value_cents,0 AS campaign_conversion_value_cents,0 AS funnel_quality_score,0 AS distribution_value_cents,0 AS stamp_inventory_value_cents,0 AS stamp_spend_value_cents,0 AS follower_brand_value_cents,0 AS risk_adjustment_cents';
-
-    $snapshotJoin = $hasSnapshots
-        ? "LEFT JOIN merchant_market_snapshots mms ON mms.id = (
-            SELECT latest.id
-            FROM merchant_market_snapshots latest
-            WHERE latest.merchant_user_id=pp.user_id
-            ORDER BY latest.snapshot_date DESC,latest.id DESC
-            LIMIT 1
-          )"
-        : '';
-
-    $orderBy = $hasSnapshots
-        ? 'ORDER BY (mms.id IS NOT NULL) DESC,mms.ticker_value_cents DESC,mms.merchant_score DESC,pp.completion_score DESC,pp.updated_at DESC,pp.display_name ASC'
-        : 'ORDER BY pp.completion_score DESC,pp.updated_at DESC,pp.display_name ASC';
-
-    $sql = "SELECT
-        pp.user_id AS profile_user_id,
-        pp.slug,
-        pp.display_name AS profile_display_name,
-        pp.profile_type,
-        pp.avatar_url,
-        pp.location_label,
-        pp.completion_score,
-        u.display_name AS user_display_name,
-        u.full_name AS user_full_name,
-        {$snapshotSelect}
-      FROM public_profiles pp
-      INNER JOIN users u ON u.id=pp.user_id
-      {$snapshotJoin}
-      WHERE u.status='active'
-        AND pp.status='active'
-        AND pp.visibility IN ('public','unlisted')
-        AND (" . implode(' OR ', $merchantSignals) . ")
-      {$orderBy}
-      LIMIT {$limit}";
-
-    $stmt = $pdo->query($sql);
-    $rows = $stmt ? ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: []) : [];
-    if (!$rows) return $fallback ? mg_public_market_ticker_fallback_items() : [];
-
-    $previousStmt = $hasSnapshots
-        ? $pdo->prepare('SELECT ticker_value_cents FROM merchant_market_snapshots WHERE merchant_user_id=? AND snapshot_date < ? ORDER BY snapshot_date DESC,id DESC LIMIT 1')
-        : null;
-
+    $limit = max(1, min(12, $limit));
+    $rows = mg_public_market_ticker_profile_rows($pdo, $limit);
     $items = [];
+
     foreach ($rows as $row) {
-        $merchantId = (int)($row['merchant_user_id'] ?? $row['profile_user_id'] ?? 0);
         $slug = trim((string)($row['slug'] ?? ''));
-        if ($merchantId < 1 || $slug === '') continue;
+        $merchantUserId = (int)($row['user_id'] ?? 0);
+        if ($slug === '' || $merchantUserId < 1) continue;
 
-        $name = trim((string)($row['profile_display_name'] ?? ''));
-        if ($name === '') $name = trim((string)($row['user_display_name'] ?? ''));
-        if ($name === '') $name = trim((string)($row['user_full_name'] ?? ''));
-        if ($name === '') $name = $slug;
-
-        $snapshotDate = trim((string)($row['snapshot_date'] ?? ''));
-        $hasSnapshot = $hasSnapshots && $snapshotDate !== '' && $row['ticker_value_cents'] !== null;
-        $currentCents = $hasSnapshot ? (int)$row['ticker_value_cents'] : null;
-        $change = ['label' => 'VIEW PROFILE', 'trend' => 'up', 'delta_cents' => null, 'delta_percent' => null];
-
-        if ($hasSnapshot && $previousStmt instanceof PDOStatement) {
-            $previousCents = null;
-            $previousStmt->execute([$merchantId, $snapshotDate]);
-            $prev = $previousStmt->fetch(PDO::FETCH_ASSOC);
-            if ($prev) $previousCents = (int)($prev['ticker_value_cents'] ?? 0);
-            $change = mg_public_market_ticker_change((int)$currentCents, $previousCents);
+        try {
+            $payload = mg_merchant_market_build($pdo, $slug);
+        } catch (Throwable) {
+            continue;
         }
 
-        $stats = mg_public_market_ticker_stats($row, $hasSnapshot);
+        $market = is_array($payload['merchant_market'] ?? null) ? $payload['merchant_market'] : [];
+        $metrics = is_array($payload['metrics'] ?? null) ? $payload['metrics'] : [];
+        if (empty($market['has_data'])) continue;
+
+        $currentCents = (int)($market['ticker_value_cents'] ?? 0);
+        $symbol = trim((string)($market['ticker_symbol'] ?? 'MGFT'));
+        $name = trim((string)($payload['profile']['display_name'] ?? $row['display_name'] ?? $slug));
+        $growthMetric = mg_public_market_ticker_metric($metrics, 'market_growth_30d');
+        $growthRaw = $growthMetric['raw'] ?? null;
+        $fallbackPercent = is_numeric($growthRaw) ? (float)$growthRaw : null;
+        $change = mg_public_market_ticker_change($currentCents, mg_public_market_ticker_previous_value($pdo, $merchantUserId), $fallbackPercent);
+        $stats = mg_public_market_ticker_stats($payload);
         $profileHref = mg_public_market_ticker_profile_href($slug);
+
         $items[] = [
-            'symbol' => mg_public_market_ticker_symbol($row['ticker_symbol'] ?? null, $name, $slug),
-            'name' => $name,
-            'price' => $hasSnapshot ? mg_public_market_ticker_money((int)$currentCents) : 'Profile live',
+            'symbol' => $symbol !== '' ? $symbol : 'MGFT',
+            'name' => $name !== '' ? $name : $slug,
+            'price' => mg_public_market_ticker_compact_money($currentCents),
             'change' => $change['label'],
             'trend' => $change['trend'],
+            'trend_source' => $change['source'],
             'stat' => $stats[0] ?? null,
             'stats' => $stats,
             'href' => $profileHref,
             'profile_url' => $profileHref,
             'profile_slug' => $slug,
-            'profile_type' => (string)($row['profile_type'] ?? 'merchant'),
             'avatar_url' => $row['avatar_url'] !== null ? (string)$row['avatar_url'] : null,
             'location_label' => $row['location_label'] !== null ? (string)$row['location_label'] : null,
-            'merchant_user_id' => $merchantId,
+            'merchant_user_id' => $merchantUserId,
             'ticker_value_cents' => $currentCents,
-            'merchant_score' => (int)($row['merchant_score'] ?? 0),
-            'demand_value_cents' => (int)($row['demand_value_cents'] ?? 0),
-            'campaign_conversion_value_cents' => (int)($row['campaign_conversion_value_cents'] ?? 0),
-            'funnel_quality_score' => (float)($row['funnel_quality_score'] ?? 0),
-            'distribution_value_cents' => (int)($row['distribution_value_cents'] ?? 0),
-            'follower_brand_value_cents' => (int)($row['follower_brand_value_cents'] ?? 0),
-            'snapshot_date' => $hasSnapshot ? $snapshotDate : null,
+            'merchant_score' => (int)($market['merchant_score'] ?? 0),
             'delta_cents' => $change['delta_cents'],
             'delta_percent' => $change['delta_percent'],
-            'is_profile_only' => !$hasSnapshot,
             'is_fallback' => false,
         ];
     }
