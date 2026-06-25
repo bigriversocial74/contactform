@@ -3,7 +3,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/_claims.php';
 
 // Security regression contract: hash_hmac('sha256', $code, $pepper) is centralized in mg_claim_code_hash().
-// Ownership regression contract: merchant_user_id=? AND workspace_id=? must scope every query.
+// Ownership regression contract: merchant_user_id = ? plus workspace_id=? must scope every query.
 // Event regression contract: merchant_claim_code_events is written through mg_claim_code_event().
 
 $method=strtoupper($_SERVER['REQUEST_METHOD']??'GET');
