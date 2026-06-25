@@ -6,6 +6,8 @@ require_once dirname(__DIR__) . '/market/public-market-ticker.php';
 $public_header_config = is_array($page_manifest['public_header'] ?? null) ? $page_manifest['public_header'] : [];
 $public_nav_links = is_array($public_header_config['links'] ?? null) ? $public_header_config['links'] : [];
 $public_demo_href = '/learn-more.php';
+$public_phone_number = '1-800-269-7433';
+$public_phone_href = 'tel:18002697433';
 
 $filtered_links = [];
 foreach ($public_nav_links as $public_header_link) {
@@ -47,13 +49,17 @@ if ($user && $account_profile_url) {
     array_unshift($market_ticker_items, ['symbol'=>'YOU','name'=>'My Profile','price'=>'Profile','change'=>'OPEN','trend'=>'up','href'=>$account_profile_url]);
 }
 
-$show_market_ticker = !$user && ($public_header_config['ticker'] ?? true) !== false && !empty($market_ticker_items);
+// The real market ticker is now part of the universal logged-out header, not a per-page widget.
+$show_market_ticker = !$user && !empty($market_ticker_items);
 $show_demo_button = !$user;
 ?>
 <header class="mg-site-header mg-unified-header mg-market-universal-header" data-mg-universal-header data-public-header data-header-theme="market-dark" data-header-variant="<?= $user ? 'logged-in' : 'logged-out' ?>">
   <div class="mg-header-inner nav-inner">
     <div class="mg-header-left">
       <a class="mg-brand brand" href="/index.php" aria-label="Microgifter home"><img src="/images/logo_main_drk.png" alt="Microgifter"><span>Microgifter</span></a>
+      <?php if (!$user): ?>
+        <a class="mg-header-phone" href="<?= mg_e($public_phone_href) ?>" aria-label="Call Microgifter at <?= mg_e($public_phone_number) ?>"><?= mg_e($public_phone_number) ?></a>
+      <?php endif; ?>
       <?php if ($user && (bool)($public_header_config['search'] ?? false)): ?>
         <form class="mg-public-search" action="/discover.php" method="get" role="search">
           <input type="search" name="q" placeholder="Search Microgifter" aria-label="Search Microgifter" autocomplete="off">
@@ -153,6 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <a class="mg-public-mobile-logo" href="/index.php" id="mg-public-mobile-title"><img src="/images/logo_main_drk.png" alt="Microgifter"><span>Microgifter</span></a>
       <button class="mg-public-mobile-close" type="button" data-public-menu-close aria-label="Close navigation menu">×</button>
     </div>
+    <a class="mg-public-mobile-phone" href="<?= mg_e($public_phone_href) ?>" aria-label="Call Microgifter at <?= mg_e($public_phone_number) ?>"><?= mg_e($public_phone_number) ?></a>
     <form class="mg-public-mobile-search" action="/discover.php" method="get" role="search">
       <input type="search" name="q" placeholder="Search Microgifter" aria-label="Search Microgifter" autocomplete="off">
     </form>
