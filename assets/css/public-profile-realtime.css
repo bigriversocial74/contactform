@@ -63,6 +63,13 @@
 .mg-profile-action-status.is-error{color:#b42318;}
 .mg-invest-chart-row svg.mg-hidden{display:none!important;}
 .mg-invest-trending a{color:inherit;text-decoration:none;font-weight:800;}
+.mg-demand-factors{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:7px 12px;
+}
+.mg-demand-factors div{min-width:0;}
+.mg-demand-factors dt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 @media(max-width:760px){
   .mg-invest-empty-state{min-height:140px;padding:22px;}
   .mg-invest-card>.mg-invest-empty-state{margin:0 14px 14px;}
