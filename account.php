@@ -4,6 +4,7 @@ $accountView = defined('MG_ACCOUNT_VIEW') ? MG_ACCOUNT_VIEW : 'profile';
 $page_title = match ($accountView) {
   'admin' => 'Admin Dashboard | Microgifter',
   'investment_tests' => 'Investment Tests | Microgifter',
+  'market' => 'Market Dashboard | Microgifter',
   'profile_moderation' => 'Profile Moderation | Microgifter',
   'wallet' => 'My Wallet | Microgifter',
   'subscriptions' => 'My Subscription | Microgifter',
@@ -28,6 +29,9 @@ if ($accountView === 'profile') {
   $page_scripts[] = '/assets/js/stage12-wallet.js';
 } else {
   $page_scripts[] = '/assets/js/account.js';
+}
+if ($accountView === 'market') {
+  $page_styles[] = '/assets/css/market-dashboard.css';
 }
 if ($accountView === 'admin' || $accountView === 'investment_tests') {
   $page_styles[] = '/assets/css/admin-dashboard.css';
@@ -58,6 +62,7 @@ $adminPermissionSet = [
 $hasAdminAccess = $isSuperAdmin || count(array_intersect($adminPermissionSet, $permissions)) > 0;
 $accountNav = [
   'profile' => ['label' => 'Profile', 'href' => '/account.php', 'detail' => 'Public identity', 'visible' => true],
+  'market' => ['label' => 'Market', 'href' => '/account-market.php', 'detail' => 'Ticker, score, funnel, and risk', 'visible' => true],
   'subscriptions' => ['label' => 'My Subscription', 'href' => '/account-subscriptions.php', 'detail' => 'Plan and upgrade', 'visible' => true],
   'wallet' => ['label' => 'Wallet', 'href' => '/wallet.php', 'detail' => 'Local rewards', 'visible' => true],
   'models' => ['label' => 'Models', 'href' => '/account-models.php', 'detail' => 'User model access', 'visible' => true],
@@ -84,7 +89,7 @@ $adminSidebarNav = [
   'ai_settings' => ['label' => 'AI settings', 'href' => '/admin-ai.php', 'detail' => 'Models and providers', 'visible' => $canAiSettings],
 ];
 $sidebarNav = in_array($accountView, ['admin', 'investment_tests'], true) ? $adminSidebarNav : $accountNav;
-$knownViews = ['profile', 'subscriptions', 'wallet', 'models', 'security', 'access', 'admin', 'investment_tests', 'profile_moderation'];
+$knownViews = ['profile', 'market', 'subscriptions', 'wallet', 'models', 'security', 'access', 'admin', 'investment_tests', 'profile_moderation'];
 if (!in_array($accountView, $knownViews, true)) $accountView = 'profile';
 require __DIR__ . '/includes/header.php';
 ?>
@@ -112,6 +117,8 @@ require __DIR__ . '/includes/header.php';
     <?php elseif ($accountView === 'profile'): ?>
       <?php require __DIR__ . '/includes/account/profile-moderation-owner.php'; ?>
       <?php require __DIR__ . '/includes/account/profile-editor.php'; ?>
+    <?php elseif ($accountView === 'market'): ?>
+      <?php require __DIR__ . '/includes/account/market-dashboard.php'; ?>
     <?php elseif ($accountView === 'subscriptions'): ?>
       <section class="mg-app-panel mg-account-pane is-active" data-account-pane="subscriptions">
         <div class="mg-app-panel-head"><div><h2>My Subscription</h2><p>The Rewards Layer for Local Commerce.</p></div></div>
