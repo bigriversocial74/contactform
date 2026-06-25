@@ -38,9 +38,41 @@ function mg_profile_discovery_market_apply(array $items, array $metrics): array
     return $items;
 }
 
-function mg_profile_discovery_enrich_market_metrics(PDO $pdo, array $data): array
+function mg_profile_discovery_market_sort(array $items, string $sort): array
 {
-    if (!mg_profile_discovery_market_table($pdo, 'merchant_market_snapshots')) return $data;
+    $sort = in_array($sort, ['trending', 'score', 'newest', 'active'], true) ? $sort : 'trending';
+    usort($items, static function (array $a, array $b) use ($sort): int {
+        $marketA = is_array($a['market'] ?? null) ? $a['market'] : [];
+        $marketB = is_array($b['market'] ?? null) ? $b['market'] : [];
+        if ($sort === 'score') {
+            return ((int)($marketB['merchant_score'] ?? 0) <=> (int)($marketA['merchant_score'] ?? 0))
+                ?: ((int)($marketB['ticker_value_cents'] ?? 0) <=> (int)($marketA['ticker_value_cents'] ?? 0))
+                ?: strcmp((string)($a['display_name'] ?? ''), (string)($b['display_name'] ?? ''));
+        }
+        if ($sort === 'newest') {
+            return strtotime((string)($b['recent_activity'] ?? $b['updated_at'] ?? '1970-01-01')) <=> strtotime((string)($a['recent_activity'] ?? $a['updated_at'] ?? '1970-01-01'));
+        }
+        if ($sort === 'active') {
+            $activityA = (int)($a['audience']['followers'] ?? 0) + (int)($a['audience']['supporters'] ?? 0) + ((int)($a['published_products'] ?? 0) * 3);
+            $activityB = (int)($b['audience']['followers'] ?? 0) + (int)($b['audience']['supporters'] ?? 0) + ((int)($b['published_products'] ?? 0) * 3);
+            return ($activityB <=> $activityA)
+                ?: ((int)($marketB['campaign_conversion_value_cents'] ?? 0) <=> (int)($marketA['campaign_conversion_value_cents'] ?? 0));
+        }
+        return ((int)($marketB['ticker_value_cents'] ?? 0) <=> (int)($marketA['ticker_value_cents'] ?? 0))
+            ?: ((int)($marketB['merchant_score'] ?? 0) <=> (int)($marketA['merchant_score'] ?? 0))
+            ?: ((int)($b['published_products'] ?? 0) <=> (int)($a['published_products'] ?? 0));
+    });
+    return array_values($items);
+}
+
+function mg_profile_discovery_enrich_market_metrics(PDO $pdo, array $data, string $sort = 'trending'): array
+{
+    if (!mg_profile_discovery_market_table($pdo, 'merchant_market_snapshots')) {
+        if (isset($data['results']['items']) && is_array($data['results']['items'])) {
+            $data['results']['items'] = mg_profile_discovery_market_sort($data['results']['items'], $sort === 'score' ? 'active' : $sort);
+        }
+        return $data;
+    }
 
     $slugMap = [];
     mg_profile_discovery_market_collect_slugs($data['results']['items'] ?? [], $slugMap);
@@ -95,6 +127,7 @@ function mg_profile_discovery_enrich_market_metrics(PDO $pdo, array $data): arra
     }
 
     $data['results']['items'] = mg_profile_discovery_market_apply($data['results']['items'] ?? [], $metrics);
+    $data['results']['items'] = mg_profile_discovery_market_sort($data['results']['items'], $sort);
     foreach (($data['sections'] ?? []) as $key => $sectionItems) {
         if (is_array($sectionItems)) $data['sections'][$key] = mg_profile_discovery_market_apply($sectionItems, $metrics);
     }
