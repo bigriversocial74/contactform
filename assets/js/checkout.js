@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
           C.status(status, 'Creating a new secure payment session…', 'info');
           var response = await C.api('POST','/api/payments/order-checkout-session.php', {
-            order_id: (data.session || {}).order_id,
+            order_id:session.order_id,
             idempotency_key: 'payment:' + C.uuid(),
             success_url: '/checkout-success.php',
             cancel_url: '/cart.php'
