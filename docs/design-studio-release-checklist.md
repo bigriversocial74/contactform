@@ -4,43 +4,55 @@ Use this checklist after the other branch is merged into `main` and this branch 
 
 ## 1. Update branch
 
-```bash
-git checkout index-hero-section-update
-git fetch origin
-git merge origin/main
+Use GitHub Desktop, your hosting Git integration, or the GitHub web UI to update/merge the branch after the other branch lands.
+
+Confirm:
+
+- [ ] The other branch is merged into `main`
+- [ ] `index-hero-section-update` has been updated from `main`
+- [ ] Any merge conflicts are resolved
+- [ ] The branch deploys to staging
+
+## 2. Import Stage 19 SQL without terminal
+
+Use your hosting database tool, such as phpMyAdmin, Adminer, cPanel database tools, Plesk database tools, or your host's MySQL import screen.
+
+Import this file:
+
+```text
+database/stage_19_design_studio_qr_library.sql
 ```
 
-Resolve conflicts before importing SQL.
+Confirm:
 
-## 2. PHP lint
+- [ ] The import finishes successfully
+- [ ] No SQL error is reported by the database tool
+- [ ] The `microgifter_schema_migrations` table exists
+- [ ] The migration row `stage_19_design_studio_qr_library` exists
 
-```bash
-php -l design-studio.php
-php -l qr.php
-php -l api/merchant/_design_studio_guard.php
-php -l api/merchant/_merchant.php
-php -l api/merchant/brand-kit.php
-php -l api/merchant/design-export.php
-php -l api/merchant/design-studio-assets.php
-php -l api/merchant/qr-library.php
-php -l api/admin/design-studio-templates.php
+## 3. Browser smoke test
+
+Open this URL while logged in as an admin:
+
+```text
+/api/admin/design-studio-smoke-test.php
 ```
 
-## 3. Import Stage 19 SQL
+Confirm the JSON response shows:
 
-```bash
-mysql -u YOUR_DB_USER -p YOUR_DB_NAME < database/stage_19_design_studio_qr_library.sql
+```json
+"status": "passed"
 ```
 
-## 4. Run smoke test
+and:
 
-```bash
-php tools/design-studio-smoke-test.php
+```json
+"failed": 0
 ```
 
-The smoke test should report zero failures before browser testing.
+If the smoke test fails, fix the listed failures before browser testing `/design-studio.php`.
 
-## 5. Browser test
+## 4. Browser test
 
 Open:
 
@@ -66,7 +78,7 @@ Confirm:
 - [ ] Queue QR image asset creates an asset/export job
 - [ ] Campaign link saves with a campaign reference
 
-## 6. Public QR test
+## 5. Public QR test
 
 After creating a QR code, open the payload URL from the QR library.
 
@@ -77,18 +89,30 @@ Confirm:
 - [ ] Scan count increments
 - [ ] Invalid short code returns not found
 
-## 7. Database verification
+## 6. Optional database verification
+
+Use your database tool's SQL/query screen.
+
+Check migration row:
 
 ```sql
 SELECT migration_key, applied_at
 FROM microgifter_schema_migrations
 WHERE migration_group = 'design_studio'
 ORDER BY applied_at DESC;
+```
 
+Check AI presets:
+
+```sql
 SELECT preset_key, name
 FROM merchant_design_ai_presets
 ORDER BY preset_key;
+```
 
+Check export queue rows after testing proof/export buttons:
+
+```sql
 SELECT status, export_type, COUNT(*)
 FROM merchant_design_export_jobs
 GROUP BY status, export_type;
@@ -108,6 +132,24 @@ holiday-gift-card
 live-event-promo
 local-rewards-campaign
 restaurant-food-promo
+```
+
+## 7. Optional terminal checks for a developer
+
+These are optional. Use only if someone helping you is comfortable with terminal commands.
+
+```text
+php -l design-studio.php
+php -l qr.php
+php -l api/merchant/_design_studio_guard.php
+php -l api/merchant/_merchant.php
+php -l api/merchant/brand-kit.php
+php -l api/merchant/design-export.php
+php -l api/merchant/design-studio-assets.php
+php -l api/merchant/qr-library.php
+php -l api/admin/design-studio-templates.php
+php -l api/admin/design-studio-smoke-test.php
+php tools/design-studio-smoke-test.php
 ```
 
 ## 8. Known non-blocking limitation
