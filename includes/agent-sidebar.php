@@ -47,12 +47,12 @@ $mgMerchantLinkClass = static function (string $page) use ($mgAgentSidebarPage):
     </div>
     <nav class="mg-merchant-side-nav" aria-label="Merchant information">
       <a<?= $mgMerchantLinkClass('account') ?> href="/account.php">Business profile</a>
-      <a<?= $mgMerchantLinkClass('merchant-locations') ?> href="/merchant-locations.php">Locations</a>
-      <a<?= $mgMerchantLinkClass('merchant-products') ?> href="/merchant-products.php">Products &amp; offers</a>
-      <a<?= $mgMerchantLinkClass('merchant-pppm') ?> href="/merchant-pppm.php">Orders &amp; redemptions</a>
+      <a href="/merchant-locations.php">Locations</a>
+      <a href="/merchant-products.php">Products &amp; offers</a>
+      <a href="/merchant-pppm.php">Orders &amp; redemptions</a>
       <a<?= $mgMerchantLinkClass('design-studio') ?> href="/design-studio.php">Design Studio</a>
       <a<?= $mgMerchantLinkClass('merchant-media') ?> href="/merchant-media.php">Media library</a>
-      <a<?= $mgMerchantLinkClass('merchant-settings') ?> href="/merchant-settings.php">Merchant settings</a>
+      <a href="/merchant-settings.php">Merchant settings</a>
       <div class="mg-merchant-side-actions">
         <a class="mg-merchant-side-action" href="/messages.php">Messages</a>
         <a class="mg-merchant-side-action is-primary" href="/build.php">Create gift</a>
