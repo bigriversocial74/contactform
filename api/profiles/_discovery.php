@@ -52,9 +52,11 @@ function mg_profile_discovery_filters(array $input): array
     $type = mb_strtolower(mg_profile_discovery_text($input['type'] ?? '', 40));
     $location = mb_strtolower(mg_profile_discovery_text($input['location'] ?? '', 100));
     $category = mb_strtolower(mg_profile_discovery_text($input['category'] ?? '', 60));
+    $sort = mb_strtolower(mg_profile_discovery_text($input['sort'] ?? 'trending', 30));
+    if (!in_array($sort, ['trending', 'score', 'newest', 'active'], true)) $sort = 'trending';
     if ($type !== '' && preg_match('/^[a-z0-9_-]+$/', $type) !== 1) throw new InvalidArgumentException('Invalid search filters.');
     if ($category !== '' && preg_match('/^[a-z0-9 _-]+$/', $category) !== 1) throw new InvalidArgumentException('Invalid search filters.');
-    return compact('query', 'type', 'location', 'category');
+    return compact('query', 'type', 'location', 'category', 'sort');
 }
 
 function mg_profile_discovery_signature(array $filters): string
@@ -160,6 +162,9 @@ function mg_profile_discovery_item(array $row, string $resultKind = 'organic'): 
         'location' => $row['location_label'] !== null ? (string)$row['location_label'] : null,
         'profile_type' => (string)$row['profile_type'],
         'visibility' => (string)$row['visibility'],
+        'published_at' => $row['published_at'] !== null ? (string)$row['published_at'] : null,
+        'updated_at' => $row['updated_at'] !== null ? (string)$row['updated_at'] : null,
+        'recent_activity' => $row['recent_activity'] !== null ? (string)$row['recent_activity'] : null,
         'url' => '/profile.php?slug=' . rawurlencode((string)$row['slug']),
         'audience' => ['followers' => (int)$row['follower_count'], 'supporters' => (int)$row['supporter_count']],
         'published_products' => (int)$row['published_product_count'],
@@ -210,7 +215,7 @@ function mg_profile_discovery_search(PDO $pdo, array $input, ?int $viewerId): ar
 function mg_profile_discovery_section(PDO $pdo, string $kind, ?int $viewerId, int $limit = MG_PROFILE_DISCOVERY_SECTION_LIMIT): array
 {
     $params = [];
-    $base = mg_profile_discovery_base_sql(['query' => '', 'type' => '', 'location' => '', 'category' => ''], $viewerId, $params);
+    $base = mg_profile_discovery_base_sql(['query' => '', 'type' => '', 'location' => '', 'category' => '', 'sort' => 'trending'], $viewerId, $params);
     $order = match ($kind) {
         'recent' => 'recent_activity DESC,featured_score DESC,public_id ASC',
         'storefronts' => 'has_published_storefront DESC,published_product_count DESC,featured_score DESC,public_id ASC',
