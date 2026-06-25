@@ -31,75 +31,71 @@
     ['newest', 'Newest'],
     ['active', 'Most Active'],
   ];
-  const sortBadgeCopy = {
-    trending: 'Trending',
-    score: 'Score',
-    newest: 'Newest',
-    active: 'Active',
-  };
+  const sortBadgeCopy = { trending: 'Trending', score: 'Score', newest: 'Newest', active: 'Active' };
 
   function injectDiscoveryLayoutUpgrades() {
-    if (document.getElementById('mg-discovery-investable-card-upgrades')) return;
+    if (document.getElementById('mg-discovery-compact-market-cards')) return;
     const style = document.createElement('style');
-    style.id = 'mg-discovery-investable-card-upgrades';
+    style.id = 'mg-discovery-compact-market-cards';
     style.textContent = `
-      body.mg-discovery-page .mg-discovery-main-panel{padding:24px 30px 56px!important;}
-      body.mg-discovery-page .mg-discovery-sortbar{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:14px!important;margin:0 0 18px!important;padding:10px!important;border:1px solid rgba(219,229,241,.95)!important;border-radius:18px!important;background:rgba(255,255,255,.92)!important;box-shadow:0 12px 28px rgba(15,23,42,.06)!important;}
-      body.mg-discovery-page .mg-discovery-sortbar strong{font-size:12px!important;letter-spacing:.11em!important;text-transform:uppercase!important;color:#64748b!important;white-space:nowrap!important;}
-      body.mg-discovery-page .mg-discovery-sort-actions{display:flex!important;flex-wrap:wrap!important;gap:8px!important;justify-content:flex-end!important;}
-      body.mg-discovery-page .mg-discovery-sort-button{min-height:32px!important;border:1px solid #dbe5f1!important;border-radius:999px!important;background:#fff!important;color:#475569!important;cursor:pointer!important;padding:0 12px!important;font-size:11px!important;font-weight:950!important;letter-spacing:.04em!important;text-transform:uppercase!important;}
+      body.mg-discovery-page .mg-discovery-main-panel{padding:22px 28px 46px!important;}
+      body.mg-discovery-page .mg-discovery-sortbar{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important;margin:0 0 16px!important;padding:9px 10px!important;border:1px solid rgba(219,229,241,.95)!important;border-radius:17px!important;background:rgba(255,255,255,.92)!important;box-shadow:0 10px 24px rgba(15,23,42,.055)!important;}
+      body.mg-discovery-page .mg-discovery-sortbar strong{font-size:11px!important;letter-spacing:.11em!important;text-transform:uppercase!important;color:#64748b!important;white-space:nowrap!important;}
+      body.mg-discovery-page .mg-discovery-sort-actions{display:flex!important;flex-wrap:wrap!important;gap:7px!important;justify-content:flex-end!important;}
+      body.mg-discovery-page .mg-discovery-sort-button{min-height:30px!important;border:1px solid #dbe5f1!important;border-radius:999px!important;background:#fff!important;color:#475569!important;cursor:pointer!important;padding:0 11px!important;font-size:10px!important;font-weight:950!important;letter-spacing:.04em!important;text-transform:uppercase!important;}
       body.mg-discovery-page .mg-discovery-sort-button:hover,body.mg-discovery-page .mg-discovery-sort-button.is-active{border-color:rgba(124,58,237,.45)!important;background:linear-gradient(135deg,rgba(124,58,237,.10),rgba(32,191,210,.08))!important;color:#071225!important;}
-      body.mg-discovery-page .mg-discovery-card-grid{grid-template-columns:repeat(2,minmax(430px,1fr))!important;gap:22px!important;align-items:stretch!important;}
-      body.mg-discovery-page .mg-discovery-card{position:relative!important;min-height:440px!important;padding:0!important;border:1px solid rgba(219,229,241,.95)!important;border-radius:28px!important;background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(255,255,255,.94))!important;box-shadow:0 24px 70px rgba(15,23,42,.09)!important;cursor:pointer!important;outline:none!important;overflow:hidden!important;}
-      body.mg-discovery-page .mg-discovery-card:before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 92% 6%,rgba(217,167,53,.10),transparent 28%),linear-gradient(90deg,rgba(15,23,42,.018) 1px,transparent 1px),linear-gradient(0deg,rgba(15,23,42,.014) 1px,transparent 1px);background-size:auto,54px 54px,54px 54px;opacity:.9;}
-      body.mg-discovery-page .mg-discovery-card:hover{transform:translateY(-3px)!important;box-shadow:0 34px 84px rgba(15,23,42,.14)!important;border-color:rgba(217,167,53,.42)!important;}
-      body.mg-discovery-page .mg-discovery-card:focus-visible{box-shadow:0 0 0 4px rgba(217,167,53,.18),0 34px 84px rgba(15,23,42,.14)!important;border-color:rgba(217,167,53,.48)!important;}
-      body.mg-discovery-page .mg-discovery-card.is-skeleton{min-height:300px!important;border-radius:22px!important;cursor:default!important;}
+      body.mg-discovery-page .mg-discovery-card-grid{grid-template-columns:repeat(3,minmax(260px,1fr))!important;gap:16px!important;align-items:stretch!important;}
+      body.mg-discovery-page .mg-discovery-card{position:relative!important;min-height:330px!important;padding:0!important;border:1px solid rgba(219,229,241,.95)!important;border-radius:20px!important;background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(255,255,255,.95))!important;box-shadow:0 16px 38px rgba(15,23,42,.08)!important;cursor:pointer!important;outline:none!important;overflow:hidden!important;}
+      body.mg-discovery-page .mg-discovery-card:before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 94% 8%,rgba(217,167,53,.09),transparent 26%),linear-gradient(90deg,rgba(15,23,42,.016) 1px,transparent 1px),linear-gradient(0deg,rgba(15,23,42,.012) 1px,transparent 1px);background-size:auto,44px 44px,44px 44px;opacity:.8;}
+      body.mg-discovery-page .mg-discovery-card:hover{transform:translateY(-2px)!important;box-shadow:0 24px 54px rgba(15,23,42,.12)!important;border-color:rgba(217,167,53,.38)!important;}
+      body.mg-discovery-page .mg-discovery-card:focus-visible{box-shadow:0 0 0 4px rgba(217,167,53,.16),0 24px 54px rgba(15,23,42,.12)!important;border-color:rgba(217,167,53,.48)!important;}
+      body.mg-discovery-page .mg-discovery-card.is-skeleton{min-height:230px!important;border-radius:18px!important;cursor:default!important;}
       body.mg-discovery-page .mg-discovery-sr{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important;}
-      body.mg-discovery-page .mg-market-rank-badge{position:absolute!important;top:20px!important;right:20px!important;z-index:5!important;display:inline-flex!important;align-items:center!important;min-height:30px!important;padding:0 12px!important;border:1px solid rgba(217,167,53,.22)!important;border-radius:999px!important;background:rgba(255,255,255,.92)!important;color:#9a6a06!important;box-shadow:0 10px 24px rgba(15,23,42,.10)!important;backdrop-filter:blur(10px)!important;font-size:10px!important;font-weight:950!important;letter-spacing:.075em!important;text-transform:uppercase!important;}
-      body.mg-discovery-page .mg-market-rank-badge.is-top-rank{background:linear-gradient(135deg,rgba(217,167,53,.14),rgba(255,255,255,.92))!important;border-color:rgba(217,167,53,.36)!important;color:#071225!important;}
+      body.mg-discovery-page .mg-market-rank-badge{position:absolute!important;top:14px!important;right:14px!important;z-index:5!important;display:inline-flex!important;align-items:center!important;min-height:24px!important;padding:0 9px!important;border:1px solid rgba(217,167,53,.22)!important;border-radius:999px!important;background:rgba(255,255,255,.94)!important;color:#9a6a06!important;box-shadow:0 8px 18px rgba(15,23,42,.09)!important;backdrop-filter:blur(10px)!important;font-size:8.5px!important;font-weight:950!important;letter-spacing:.07em!important;text-transform:uppercase!important;}
+      body.mg-discovery-page .mg-market-rank-badge.is-top-rank{background:linear-gradient(135deg,rgba(217,167,53,.14),rgba(255,255,255,.92))!important;border-color:rgba(217,167,53,.34)!important;color:#071225!important;}
       body.mg-discovery-page .mg-market-rank-badge.is-fresh{background:linear-gradient(135deg,rgba(36,214,128,.16),rgba(255,255,255,.92))!important;border-color:rgba(36,214,128,.30)!important;color:#065f46!important;}
-      body.mg-discovery-page .mg-discovery-card-top{position:relative!important;z-index:2!important;display:grid!important;grid-template-columns:auto minmax(0,1fr)!important;gap:16px!important;align-items:center!important;padding:28px 28px 16px!important;}
-      body.mg-discovery-page .mg-discovery-avatar{width:76px!important;height:76px!important;border:5px solid #fff!important;border-radius:999px!important;background:linear-gradient(135deg,#f8f1df,#eef2ff)!important;color:#071225!important;font-size:20px!important;box-shadow:0 16px 34px rgba(15,23,42,.15)!important;}
-      body.mg-discovery-page .mg-discovery-identity{min-width:0!important;padding-right:118px!important;}
-      body.mg-discovery-page .mg-discovery-name-row{display:flex!important;align-items:center!important;flex-wrap:wrap!important;gap:9px!important;min-width:0!important;}
-      body.mg-discovery-page .mg-discovery-card h3{margin:0!important;color:#050814!important;font-size:27px!important;line-height:1!important;letter-spacing:-.06em!important;padding-right:0!important;}
+      body.mg-discovery-page .mg-discovery-card-top{position:relative!important;z-index:2!important;display:grid!important;grid-template-columns:auto minmax(0,1fr)!important;gap:11px!important;align-items:center!important;padding:18px 16px 10px!important;}
+      body.mg-discovery-page .mg-discovery-avatar{width:50px!important;height:50px!important;border:3px solid #fff!important;border-radius:999px!important;background:linear-gradient(135deg,#f8f1df,#eef2ff)!important;color:#071225!important;font-size:15px!important;box-shadow:0 10px 22px rgba(15,23,42,.14)!important;}
+      body.mg-discovery-page .mg-discovery-identity{min-width:0!important;padding-right:78px!important;}
+      body.mg-discovery-page .mg-discovery-name-row{display:flex!important;align-items:center!important;flex-wrap:wrap!important;gap:6px!important;min-width:0!important;}
+      body.mg-discovery-page .mg-discovery-card h3{margin:0!important;color:#050814!important;font-size:20px!important;line-height:1!important;letter-spacing:-.055em!important;padding-right:0!important;}
       body.mg-discovery-page .mg-discovery-card h3 a{position:relative!important;z-index:4!important;color:inherit!important;text-decoration:none!important;}
-      body.mg-discovery-page .mg-discovery-symbol-pill,body.mg-discovery-page .mg-discovery-type{display:inline-flex!important;align-items:center!important;min-height:31px!important;padding:0 12px!important;border-radius:10px!important;font-size:11px!important;font-weight:950!important;letter-spacing:.055em!important;text-transform:uppercase!important;}
+      body.mg-discovery-page .mg-discovery-symbol-pill,body.mg-discovery-page .mg-discovery-type{display:inline-flex!important;align-items:center!important;min-height:22px!important;padding:0 8px!important;border-radius:8px!important;font-size:8.5px!important;font-weight:950!important;letter-spacing:.055em!important;text-transform:uppercase!important;}
       body.mg-discovery-page .mg-discovery-symbol-pill{border:1px solid rgba(203,213,225,.85)!important;background:#f1f5f9!important;color:#475569!important;}
-      body.mg-discovery-page .mg-discovery-type{margin-top:0!important;border:1px solid rgba(124,58,237,.12)!important;background:linear-gradient(135deg,rgba(124,58,237,.14),rgba(124,58,237,.07))!important;color:#6d28d9!important;}
-      body.mg-discovery-page .mg-discovery-headline{position:relative!important;z-index:2!important;min-height:0!important;margin:10px 0 0!important;color:#475569!important;font-size:16px!important;line-height:1.35!important;display:-webkit-box!important;-webkit-line-clamp:2!important;-webkit-box-orient:vertical!important;overflow:hidden!important;}
-      body.mg-discovery-page .mg-discovery-status-line{display:flex!important;flex-wrap:wrap!important;align-items:center!important;gap:9px!important;margin-top:9px!important;color:#64748b!important;font-size:12px!important;font-weight:800!important;}
-      body.mg-discovery-page .mg-discovery-status-line span{display:inline-flex!important;align-items:center!important;gap:5px!important;}
-      body.mg-discovery-page .mg-discovery-market-panel{position:relative!important;z-index:2!important;display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:0!important;margin:18px 28px 0!important;border:1px solid rgba(219,229,241,.95)!important;border-radius:22px!important;background:rgba(255,255,255,.72)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.92)!important;overflow:hidden!important;}
-      body.mg-discovery-page .mg-discovery-market-metric{position:relative!important;min-height:134px!important;display:grid!important;grid-template-columns:auto minmax(0,1fr)!important;gap:16px!important;align-items:center!important;padding:22px 24px!important;}
+      body.mg-discovery-page .mg-discovery-type{margin-top:0!important;border:1px solid rgba(124,58,237,.12)!important;background:linear-gradient(135deg,rgba(124,58,237,.13),rgba(124,58,237,.06))!important;color:#6d28d9!important;}
+      body.mg-discovery-page .mg-discovery-headline{position:relative!important;z-index:2!important;min-height:0!important;margin:7px 0 0!important;color:#475569!important;font-size:12.5px!important;line-height:1.32!important;display:-webkit-box!important;-webkit-line-clamp:2!important;-webkit-box-orient:vertical!important;overflow:hidden!important;}
+      body.mg-discovery-page .mg-discovery-status-line{display:flex!important;flex-wrap:wrap!important;align-items:center!important;gap:7px!important;margin-top:6px!important;color:#64748b!important;font-size:10px!important;font-weight:800!important;}
+      body.mg-discovery-page .mg-discovery-status-line span{display:inline-flex!important;align-items:center!important;gap:4px!important;}
+      body.mg-discovery-page .mg-discovery-market-panel{position:relative!important;z-index:2!important;display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:0!important;margin:10px 16px 0!important;border:1px solid rgba(219,229,241,.95)!important;border-radius:16px!important;background:rgba(255,255,255,.74)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.92)!important;overflow:hidden!important;}
+      body.mg-discovery-page .mg-discovery-market-metric{position:relative!important;min-height:78px!important;display:grid!important;grid-template-columns:auto minmax(0,1fr)!important;gap:9px!important;align-items:center!important;padding:12px 13px!important;}
       body.mg-discovery-page .mg-discovery-market-metric+.mg-discovery-market-metric{border-left:1px solid rgba(219,229,241,.95)!important;}
-      body.mg-discovery-page .mg-discovery-market-icon{width:58px!important;height:58px!important;display:grid!important;place-items:center!important;border-radius:999px!important;background:radial-gradient(circle at 30% 20%,#fff,rgba(217,167,53,.13))!important;color:#b98006!important;font-size:25px!important;font-weight:950!important;}
-      body.mg-discovery-page .mg-discovery-market-label{display:block!important;color:#94a3b8!important;font-size:11px!important;font-weight:950!important;letter-spacing:.12em!important;text-transform:uppercase!important;}
-      body.mg-discovery-page .mg-discovery-market-value{display:block!important;margin-top:5px!important;color:#050814!important;font-size:43px!important;line-height:.95!important;font-weight:950!important;letter-spacing:-.07em!important;}
-      body.mg-discovery-page .mg-discovery-market-detail{display:block!important;margin-top:10px!important;color:#64748b!important;font-size:12px!important;font-weight:850!important;}
+      body.mg-discovery-page .mg-discovery-market-icon{width:34px!important;height:34px!important;display:grid!important;place-items:center!important;border-radius:999px!important;background:radial-gradient(circle at 30% 20%,#fff,rgba(217,167,53,.13))!important;color:#b98006!important;font-size:16px!important;font-weight:950!important;}
+      body.mg-discovery-page .mg-discovery-market-label{display:block!important;color:#94a3b8!important;font-size:8.5px!important;font-weight:950!important;letter-spacing:.10em!important;text-transform:uppercase!important;}
+      body.mg-discovery-page .mg-discovery-market-value{display:block!important;margin-top:3px!important;color:#050814!important;font-size:28px!important;line-height:.96!important;font-weight:950!important;letter-spacing:-.07em!important;}
+      body.mg-discovery-page .mg-discovery-market-detail{display:block!important;margin-top:5px!important;color:#64748b!important;font-size:9.5px!important;font-weight:850!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;}
       body.mg-discovery-page .mg-discovery-market-detail.is-up{color:#16a34a!important;}
       body.mg-discovery-page .mg-discovery-market-detail.is-down{color:#dc2626!important;}
-      body.mg-discovery-page .mg-discovery-sparkline{width:94px!important;height:36px!important;margin-left:auto!important;color:#c69211!important;}
-      body.mg-discovery-page .mg-discovery-stat-grid{position:relative!important;z-index:2!important;display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:0!important;margin:22px 28px 0!important;border-top:1px solid rgba(226,232,240,.92)!important;border-bottom:1px solid rgba(226,232,240,.92)!important;}
-      body.mg-discovery-page .mg-discovery-stat{min-height:82px!important;display:grid!important;grid-template-columns:auto minmax(0,1fr)!important;gap:10px!important;align-items:center!important;padding:14px 12px!important;border-right:1px solid rgba(226,232,240,.92)!important;}
+      body.mg-discovery-page .mg-discovery-sparkline{width:52px!important;height:24px!important;margin-left:auto!important;color:#c69211!important;}
+      body.mg-discovery-page .mg-discovery-stat-grid{position:relative!important;z-index:2!important;display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:0!important;margin:12px 16px 0!important;border-top:1px solid rgba(226,232,240,.92)!important;border-bottom:1px solid rgba(226,232,240,.92)!important;}
+      body.mg-discovery-page .mg-discovery-stat{min-height:58px!important;display:grid!important;grid-template-columns:1fr!important;gap:3px!important;align-items:start!important;padding:10px 8px!important;border-right:1px solid rgba(226,232,240,.92)!important;}
       body.mg-discovery-page .mg-discovery-stat:nth-child(4n){border-right:0!important;}
-      body.mg-discovery-page .mg-discovery-stat-icon{width:34px!important;height:34px!important;display:grid!important;place-items:center!important;border:1px solid rgba(217,167,53,.20)!important;border-radius:11px!important;background:#fff!important;color:#b98006!important;font-size:15px!important;}
-      body.mg-discovery-page .mg-discovery-stat-label{display:block!important;color:#64748b!important;font-size:10px!important;font-weight:950!important;letter-spacing:.08em!important;text-transform:uppercase!important;}
-      body.mg-discovery-page .mg-discovery-stat-value{display:block!important;margin-top:4px!important;color:#050814!important;font-size:21px!important;line-height:1!important;font-weight:950!important;letter-spacing:-.04em!important;}
-      body.mg-discovery-page .mg-discovery-stat-detail{display:block!important;margin-top:6px!important;color:#64748b!important;font-size:10.5px!important;font-weight:800!important;}
-      body.mg-discovery-page .mg-discovery-business-row{position:relative!important;z-index:2!important;display:grid!important;grid-template-columns:1fr 1fr 1.2fr 1.2fr!important;gap:0!important;margin:22px 28px 0!important;}
-      body.mg-discovery-page .mg-discovery-business-item{padding-right:16px!important;border-right:1px solid rgba(226,232,240,.92)!important;}
+      body.mg-discovery-page .mg-discovery-stat-icon{display:none!important;}
+      body.mg-discovery-page .mg-discovery-stat-label{display:block!important;color:#64748b!important;font-size:8.2px!important;font-weight:950!important;letter-spacing:.07em!important;text-transform:uppercase!important;line-height:1.05!important;}
+      body.mg-discovery-page .mg-discovery-stat-value{display:block!important;margin-top:2px!important;color:#050814!important;font-size:18px!important;line-height:1!important;font-weight:950!important;letter-spacing:-.04em!important;}
+      body.mg-discovery-page .mg-discovery-stat-detail{display:block!important;margin-top:3px!important;color:#64748b!important;font-size:8.5px!important;line-height:1.15!important;font-weight:800!important;}
+      body.mg-discovery-page .mg-discovery-business-row{position:relative!important;z-index:2!important;display:grid!important;grid-template-columns:.7fr 1fr 1.3fr 1fr!important;gap:0!important;margin:12px 16px 0!important;}
+      body.mg-discovery-page .mg-discovery-business-item{min-width:0!important;padding-right:9px!important;border-right:1px solid rgba(226,232,240,.92)!important;}
       body.mg-discovery-page .mg-discovery-business-item:last-child{border-right:0!important;}
-      body.mg-discovery-page .mg-discovery-business-label{display:block!important;color:#64748b!important;font-size:10px!important;font-weight:950!important;letter-spacing:.10em!important;text-transform:uppercase!important;}
-      body.mg-discovery-page .mg-discovery-business-value{display:block!important;margin-top:8px!important;color:#071225!important;font-size:13px!important;font-weight:850!important;line-height:1.25!important;}
-      body.mg-discovery-page .mg-discovery-actions{position:relative!important;z-index:4!important;display:flex!important;justify-content:flex-end!important;gap:12px!important;margin:24px 28px 28px!important;margin-top:auto!important;}
-      body.mg-discovery-page .mg-discovery-open{position:relative!important;z-index:4!important;margin:0!important;min-height:48px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;padding:0 22px!important;border-radius:14px!important;font-size:14px!important;font-weight:950!important;text-decoration:none!important;}
-      body.mg-discovery-page .mg-discovery-market-open{border:1px solid rgba(15,23,42,.86)!important;background:#fff!important;color:#071225!important;}
-      body.mg-discovery-page .mg-discovery-profile-open{border:1px solid #050505!important;background:#050505!important;color:#fff!important;box-shadow:0 16px 32px rgba(0,0,0,.18)!important;}
+      body.mg-discovery-page .mg-discovery-business-label{display:block!important;color:#64748b!important;font-size:7.8px!important;font-weight:950!important;letter-spacing:.09em!important;text-transform:uppercase!important;white-space:nowrap!important;}
+      body.mg-discovery-page .mg-discovery-business-value{display:block!important;margin-top:5px!important;color:#071225!important;font-size:10.5px!important;font-weight:850!important;line-height:1.2!important;overflow:hidden!important;text-overflow:ellipsis!important;}
+      body.mg-discovery-page .mg-discovery-actions{position:relative!important;z-index:4!important;display:flex!important;justify-content:flex-end!important;gap:8px!important;margin:14px 16px 16px!important;margin-top:auto!important;}
+      body.mg-discovery-page .mg-discovery-open{position:relative!important;z-index:4!important;margin:0!important;min-height:34px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;padding:0 13px!important;border-radius:11px!important;font-size:11px!important;font-weight:950!important;text-decoration:none!important;}
+      body.mg-discovery-page .mg-discovery-market-open{border:1px solid rgba(15,23,42,.78)!important;background:#fff!important;color:#071225!important;}
+      body.mg-discovery-page .mg-discovery-profile-open{border:1px solid #050505!important;background:#050505!important;color:#fff!important;box-shadow:0 10px 22px rgba(0,0,0,.16)!important;}
       body.mg-discovery-page .mg-discovery-counts,body.mg-discovery-page .mg-discovery-meta{display:none!important;}
-      @media(max-width:1440px){body.mg-discovery-page .mg-discovery-card-grid{grid-template-columns:1fr!important;}body.mg-discovery-page .mg-discovery-card{max-width:980px!important;}}
-      @media(max-width:760px){body.mg-discovery-page .mg-discovery-main-panel{padding:18px 14px 42px!important;}body.mg-discovery-page .mg-discovery-sortbar{display:grid!important;}body.mg-discovery-page .mg-discovery-sort-actions{justify-content:flex-start!important;}body.mg-discovery-page .mg-discovery-card-grid{grid-template-columns:1fr!important;}body.mg-discovery-page .mg-discovery-card{min-height:0!important;border-radius:22px!important;}body.mg-discovery-page .mg-discovery-card-top{grid-template-columns:1fr!important;padding:22px!important;}body.mg-discovery-page .mg-discovery-identity{padding-right:0!important;}body.mg-discovery-page .mg-market-rank-badge{position:relative!important;top:auto!important;right:auto!important;margin:18px 18px 0!important;width:max-content!important;}body.mg-discovery-page .mg-discovery-market-panel{grid-template-columns:1fr!important;margin:14px 18px 0!important;}body.mg-discovery-page .mg-discovery-market-metric+.mg-discovery-market-metric{border-left:0!important;border-top:1px solid rgba(219,229,241,.95)!important;}body.mg-discovery-page .mg-discovery-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;margin:18px 18px 0!important;}body.mg-discovery-page .mg-discovery-stat:nth-child(2n){border-right:0!important;}body.mg-discovery-page .mg-discovery-business-row{grid-template-columns:1fr!important;gap:12px!important;margin:18px!important;}body.mg-discovery-page .mg-discovery-business-item{border-right:0!important;border-bottom:1px solid rgba(226,232,240,.92)!important;padding:0 0 12px!important;}body.mg-discovery-page .mg-discovery-business-item:last-child{border-bottom:0!important;}body.mg-discovery-page .mg-discovery-actions{display:grid!important;margin:18px!important;}body.mg-discovery-page .mg-discovery-open{width:100%!important;}}
+      @media(max-width:1480px){body.mg-discovery-page .mg-discovery-card-grid{grid-template-columns:repeat(2,minmax(300px,1fr))!important;}}
+      @media(max-width:1080px){body.mg-discovery-page .mg-discovery-card-grid{grid-template-columns:1fr!important;}body.mg-discovery-page .mg-discovery-card{max-width:620px!important;}}
+      @media(max-width:760px){body.mg-discovery-page .mg-discovery-main-panel{padding:18px 14px 42px!important;}body.mg-discovery-page .mg-discovery-sortbar{display:grid!important;}body.mg-discovery-page .mg-discovery-sort-actions{justify-content:flex-start!important;}body.mg-discovery-page .mg-discovery-card-grid{grid-template-columns:1fr!important;}body.mg-discovery-page .mg-discovery-card{max-width:none!important;min-height:0!important;border-radius:18px!important;}body.mg-discovery-page .mg-discovery-card-top{padding:16px!important;}body.mg-discovery-page .mg-discovery-identity{padding-right:0!important;}body.mg-discovery-page .mg-market-rank-badge{position:relative!important;top:auto!important;right:auto!important;margin:14px 14px 0!important;width:max-content!important;}body.mg-discovery-page .mg-discovery-market-panel{grid-template-columns:1fr!important;margin:10px 14px 0!important;}body.mg-discovery-page .mg-discovery-market-metric+.mg-discovery-market-metric{border-left:0!important;border-top:1px solid rgba(219,229,241,.95)!important;}body.mg-discovery-page .mg-discovery-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;margin:12px 14px 0!important;}body.mg-discovery-page .mg-discovery-stat:nth-child(2n){border-right:0!important;}body.mg-discovery-page .mg-discovery-business-row{grid-template-columns:1fr 1fr!important;gap:10px!important;margin:12px 14px 0!important;}body.mg-discovery-page .mg-discovery-business-item{border-right:0!important;border-bottom:1px solid rgba(226,232,240,.92)!important;padding:0 0 9px!important;}body.mg-discovery-page .mg-discovery-actions{display:grid!important;margin:14px!important;}body.mg-discovery-page .mg-discovery-open{width:100%!important;}}
     `;
     document.head.appendChild(style);
   }
@@ -215,10 +211,7 @@
     const display = marketText(profile, 'market_growth_30d_display');
     if (Number.isFinite(Number(raw))) {
       const numeric = Number(raw);
-      return {
-        copy: `${numeric >= 0 ? '▲' : '▼'} ${Math.abs(numeric).toFixed(1)}% 30D`,
-        direction: numeric > 0 ? 'up' : numeric < 0 ? 'down' : 'flat',
-      };
+      return { copy: `${numeric >= 0 ? '▲' : '▼'} ${Math.abs(numeric).toFixed(1)}% 30D`, direction: numeric > 0 ? 'up' : numeric < 0 ? 'down' : 'flat' };
     }
     if (display && !/no trend/i.test(display)) {
       return { copy: display.replace(/\bLIVE\b/gi, '').trim(), direction: display.includes('▼') ? 'down' : display.includes('▲') ? 'up' : 'flat' };
@@ -295,6 +288,7 @@
   function marketPanel(profile) {
     const wrap = document.createElement('div');
     wrap.className = 'mg-discovery-market-panel';
+
     const ticker = document.createElement('div');
     ticker.className = 'mg-discovery-market-metric';
     const tickerIcon = document.createElement('div');
@@ -332,17 +326,14 @@
     hiddenScore.textContent = `${scoreNumber} score`;
     scoreCopy.append(scoreLabel, scoreValue, scoreDetail, hiddenScore);
     score.append(scoreCopy, sparkline());
+
     wrap.append(ticker, score);
     return wrap;
   }
 
-  function statTile(label, value, detail, icon) {
+  function statTile(label, value, detail) {
     const item = document.createElement('div');
     item.className = 'mg-discovery-stat';
-    const iconNode = document.createElement('span');
-    iconNode.className = 'mg-discovery-stat-icon';
-    iconNode.textContent = icon;
-    const copy = document.createElement('span');
     const labelNode = document.createElement('span');
     labelNode.className = 'mg-discovery-stat-label';
     labelNode.textContent = label;
@@ -352,28 +343,22 @@
     const detailNode = document.createElement('span');
     detailNode.className = 'mg-discovery-stat-detail';
     detailNode.textContent = detail;
-    copy.append(labelNode, valueNode, detailNode);
-    item.append(iconNode, copy);
+    item.append(labelNode, valueNode, detailNode);
     return item;
   }
 
   function statGrid(profile) {
     const data = market(profile);
     const activeDrops = data.active_drops ?? profile.published_products ?? 0;
-    const posts = Number(data.posts_total ?? 0);
-    const interactions = Number(data.post_interactions ?? 0);
-    const engagement = text(data.engagement_rate_display || data.engagement_rate || '');
     const stats = [
-      ['Active Drops', formatCount(activeDrops), activeDrops > 0 ? 'Live market supply' : 'No active drops', '◈'],
-      ['Followers', formatCount(profile.audience?.followers), data.follower_momentum ? `${data.follower_momentum} momentum` : 'Audience signal', '◎'],
-      ['Supporters', formatCount(profile.audience?.supporters), Number(profile.audience?.supporters || 0) > 0 ? 'Paid support' : 'Be the first', '♡'],
-      ['Products', formatCount(profile.published_products), profile.has_published_storefront ? 'Across storefront' : 'Published offers', '▢'],
+      ['Active Drops', formatCount(activeDrops), activeDrops > 0 ? 'Live supply' : 'No drops'],
+      ['Followers', formatCount(profile.audience?.followers), 'Audience'],
+      ['Supporters', formatCount(profile.audience?.supporters), Number(profile.audience?.supporters || 0) > 0 ? 'Paid support' : 'Be first'],
+      ['Products', formatCount(profile.published_products), profile.has_published_storefront ? 'Storefront' : 'Offers'],
     ];
-    if (posts > 0) stats.push(['Posts', formatCount(posts), 'Published content', '◌']);
-    if (interactions > 0) stats.push(['Activity', formatCount(interactions), engagement && engagement !== '0%' ? `${engagement} engagement` : 'Post interactions', '◍']);
     const wrap = document.createElement('div');
     wrap.className = 'mg-discovery-stat-grid';
-    stats.slice(0, 6).forEach(([label, value, detail, icon]) => wrap.appendChild(statTile(label, value, detail, icon)));
+    stats.forEach(([label, value, detail]) => wrap.appendChild(statTile(label, value, detail)));
     return wrap;
   }
 
@@ -394,10 +379,10 @@
     const wrap = document.createElement('div');
     wrap.className = 'mg-discovery-business-row';
     wrap.append(
-      businessItem('Market Rank', `#${position}`),
-      businessItem('Category', cleanType(profile.profile_type)),
-      businessItem('Location', profile.location || 'Location pending'),
-      businessItem('Verified', profile.has_published_storefront ? 'Storefront active' : 'Public profile')
+      businessItem('Rank', `#${position}`),
+      businessItem('Type', cleanType(profile.profile_type)),
+      businessItem('Location', profile.location || 'Pending'),
+      businessItem('Status', profile.has_published_storefront ? 'Storefront' : 'Profile')
     );
     return wrap;
   }
