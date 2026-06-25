@@ -32,11 +32,12 @@ function mg_merchant_crm_text(mixed $value, int $max): ?string
 
 function mg_merchant_crm_stage(string $eventType, string $sourceType, string $campaignType): string
 {
-    if (str_contains($eventType, 'purchase') || $sourceType === 'purchase') return 'customer';
-    if (str_contains($eventType, 'redeem') || str_contains($eventType, 'claim')) return 'redeemer';
+    if (str_contains($eventType, 'purchase') || str_contains($eventType, 'payment') || $sourceType === 'purchase') return 'customer';
+    if (str_contains($eventType, 'redeem')) return 'redeemer';
+    if (str_contains($eventType, 'claim')) return 'redeemer';
     if ($sourceType === 'profile_follow') return 'follower';
     if (str_contains($eventType, 'support')) return 'supporter';
-    if (str_contains($eventType, 'reward')) return 'prospect';
+    if (str_contains($eventType, 'wallet') || str_contains($eventType, 'reward')) return 'prospect';
     return 'lead';
 }
 function mg_merchant_crm_stage_rank(?string $stage): int
@@ -65,6 +66,21 @@ function mg_merchant_crm_contact(PDO $pdo, int $merchantId, ?int $userId, ?strin
     return null;
 }
 
+function mg_merchant_crm_event_counters(string $eventType, string $sourceType, ?int $valueCents): array
+{
+    $purchase = str_contains($eventType, 'purchase') || str_contains($eventType, 'payment') || $sourceType === 'purchase';
+    return [
+        'purchase_cents' => $purchase ? max(0, (int)($valueCents ?? 0)) : 0,
+        'reward_issued' => (str_contains($eventType, 'wallet') || str_contains($eventType, 'issued') || str_contains($eventType, 'reward')) ? 1 : 0,
+        'reward_claimed' => str_contains($eventType, 'claim') ? 1 : 0,
+        'reward_redeemed' => str_contains($eventType, 'redeem') ? 1 : 0,
+        'last_purchased' => $purchase,
+        'last_issued' => (str_contains($eventType, 'wallet') || str_contains($eventType, 'issued') || str_contains($eventType, 'reward')),
+        'last_claimed' => str_contains($eventType, 'claim'),
+        'last_redeemed' => str_contains($eventType, 'redeem'),
+    ];
+}
+
 function mg_merchant_crm_record_event(PDO $pdo, array $input): array
 {
     $merchantId = (int) ($input['merchant_user_id'] ?? 0);
@@ -88,6 +104,7 @@ function mg_merchant_crm_record_event(PDO $pdo, array $input): array
     $metadata['event_type'] = $eventType;
     if ($campaignId === null && $campaignType === 'non_campaign') $metadata['non_campaign'] = true;
     $stage = mg_merchant_crm_stage($eventType, $sourceType, $campaignType);
+    $counters = mg_merchant_crm_event_counters($eventType, $sourceType, $valueCents);
 
     try {
         $contact = mg_merchant_crm_contact($pdo, $merchantId, $userId, $email);
@@ -95,12 +112,12 @@ function mg_merchant_crm_record_event(PDO $pdo, array $input): array
             $contactId = (int) $contact['id'];
             $contactPublicId = (string) $contact['public_id'];
             $stage = mg_merchant_crm_best_stage($contact['lifecycle_stage'] ?? null, $stage);
-            $pdo->prepare('UPDATE merchant_crm_contacts SET user_id=COALESCE(user_id,?), primary_email=COALESCE(primary_email,?), primary_phone=COALESCE(?,primary_phone), display_name=COALESCE(?,display_name), lifecycle_stage=?, last_campaign_type=?, last_source_type=?, last_seen_at=NOW(), last_engaged_at=NOW(), source_summary_json=?, metadata_json=?, updated_at=NOW() WHERE id=?')
-                ->execute([$userId, $email, $phone, $name, $stage, $campaignType, $sourceType, json_encode(['last_event_type'=>$eventType], JSON_UNESCAPED_SLASHES), json_encode($metadata, JSON_UNESCAPED_SLASHES), $contactId]);
+            $pdo->prepare('UPDATE merchant_crm_contacts SET user_id=COALESCE(user_id,?), primary_email=COALESCE(primary_email,?), primary_phone=COALESCE(?,primary_phone), display_name=COALESCE(?,display_name), lifecycle_stage=?, last_campaign_type=?, last_source_type=?, last_seen_at=NOW(), last_engaged_at=NOW(), last_purchased_at=IF(?,NOW(),last_purchased_at), last_reward_issued_at=IF(?,NOW(),last_reward_issued_at), last_reward_claimed_at=IF(?,NOW(),last_reward_claimed_at), last_reward_redeemed_at=IF(?,NOW(),last_reward_redeemed_at), total_purchase_cents=total_purchase_cents+?, total_rewards_issued=total_rewards_issued+?, total_rewards_claimed=total_rewards_claimed+?, total_rewards_redeemed=total_rewards_redeemed+?, source_summary_json=?, metadata_json=?, updated_at=NOW() WHERE id=?')
+                ->execute([$userId, $email, $phone, $name, $stage, $campaignType, $sourceType, $counters['last_purchased'] ? 1 : 0, $counters['last_issued'] ? 1 : 0, $counters['last_claimed'] ? 1 : 0, $counters['last_redeemed'] ? 1 : 0, $counters['purchase_cents'], $counters['reward_issued'], $counters['reward_claimed'], $counters['reward_redeemed'], json_encode(['last_event_type'=>$eventType], JSON_UNESCAPED_SLASHES), json_encode($metadata, JSON_UNESCAPED_SLASHES), $contactId]);
         } else {
             $contactPublicId = mg_merchant_crm_uuid();
-            $pdo->prepare('INSERT INTO merchant_crm_contacts (public_id,merchant_user_id,user_id,primary_email,primary_phone,display_name,lifecycle_stage,crm_status,last_campaign_type,last_source_type,first_seen_at,last_seen_at,last_engaged_at,source_summary_json,metadata_json,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,NOW(),NOW(),NOW(),?,?,NOW(),NOW())')
-                ->execute([$contactPublicId, $merchantId, $userId, $email, $phone, $name, $stage, 'active', $campaignType, $sourceType, json_encode(['last_event_type'=>$eventType], JSON_UNESCAPED_SLASHES), json_encode($metadata, JSON_UNESCAPED_SLASHES)]);
+            $pdo->prepare('INSERT INTO merchant_crm_contacts (public_id,merchant_user_id,user_id,primary_email,primary_phone,display_name,lifecycle_stage,crm_status,last_campaign_type,last_source_type,first_seen_at,last_seen_at,last_engaged_at,last_purchased_at,last_reward_issued_at,last_reward_claimed_at,last_reward_redeemed_at,total_purchase_cents,total_rewards_issued,total_rewards_claimed,total_rewards_redeemed,source_summary_json,metadata_json,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,NOW(),NOW(),NOW(),IF(?,NOW(),NULL),IF(?,NOW(),NULL),IF(?,NOW(),NULL),IF(?,NOW(),NULL),?,?,?,?,?,?,NOW(),NOW())')
+                ->execute([$contactPublicId, $merchantId, $userId, $email, $phone, $name, $stage, 'active', $campaignType, $sourceType, $counters['last_purchased'] ? 1 : 0, $counters['last_issued'] ? 1 : 0, $counters['last_claimed'] ? 1 : 0, $counters['last_redeemed'] ? 1 : 0, $counters['purchase_cents'], $counters['reward_issued'], $counters['reward_claimed'], $counters['reward_redeemed'], json_encode(['last_event_type'=>$eventType], JSON_UNESCAPED_SLASHES), json_encode($metadata, JSON_UNESCAPED_SLASHES)]);
             $contactId = (int) $pdo->lastInsertId();
         }
 
