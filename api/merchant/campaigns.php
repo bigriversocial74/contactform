@@ -46,6 +46,12 @@ function mg_campaign_row(array $row): array
         'agent_discoverable' => (bool) ((int) ($row['agent_discoverable'] ?? 0)),
         'public_slug' => $row['public_slug'] ?? null,
         'qr_code_token' => $row['qr_code_token'] ?? null,
+        'activity' => [
+            'contacts' => (int) ($row['contact_count'] ?? 0),
+            'wallet_items' => (int) ($row['wallet_item_count'] ?? 0),
+            'events' => (int) ($row['event_count'] ?? 0),
+            'last_event_at' => $row['last_event_at'] ?? null,
+        ],
         'created_at' => $row['created_at'] ?? null,
         'updated_at' => $row['updated_at'] ?? null,
     ];
@@ -78,7 +84,11 @@ if ($method === 'GET') {
     try {
         $status = trim((string) ($_GET['status'] ?? 'all'));
         $allowedStatus = ['draft', 'active', 'paused', 'ended', 'archived'];
-        $sql = 'SELECT c.*, rt.public_id reward_template_public_id, rt.title reward_template_title
+        $sql = 'SELECT c.*, rt.public_id reward_template_public_id, rt.title reward_template_title,
+                    (SELECT COUNT(*) FROM campaign_contacts cc WHERE cc.campaign_id = c.id) contact_count,
+                    (SELECT COUNT(*) FROM wallet_items wi WHERE wi.campaign_id = c.id AND wi.status <> \'cancelled\') wallet_item_count,
+                    (SELECT COUNT(*) FROM campaign_events ce WHERE ce.campaign_id = c.id) event_count,
+                    (SELECT MAX(ce2.created_at) FROM campaign_events ce2 WHERE ce2.campaign_id = c.id) last_event_at
                 FROM campaigns c
                 LEFT JOIN reward_templates rt ON rt.id = c.reward_template_id
                 WHERE c.merchant_user_id = ?';
@@ -156,7 +166,8 @@ try {
         $message = 'Campaign updated.';
     }
 
-    $select = $pdo->prepare('SELECT c.*, rt.public_id reward_template_public_id, rt.title reward_template_title
+    $select = $pdo->prepare('SELECT c.*, rt.public_id reward_template_public_id, rt.title reward_template_title,
+            0 contact_count, 0 wallet_item_count, 0 event_count, NULL last_event_at
         FROM campaigns c LEFT JOIN reward_templates rt ON rt.id = c.reward_template_id
         WHERE c.id = ? AND c.merchant_user_id = ? LIMIT 1');
     $select->execute([$dbId, $merchantId]);
