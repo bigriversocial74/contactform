@@ -10,8 +10,8 @@ function mg_claim_workspace(PDO $pdo, array $user): array
 function mg_claim_location(PDO $pdo, array $user, string $publicId, bool $forUpdate=false): array
 {
     $workspace=mg_claim_workspace($pdo,$user);
-    $sql='SELECT ml.* FROM merchant_locations ml WHERE ml.public_id=? AND ml.workspace_id=? LIMIT 1'.($forUpdate?' FOR UPDATE':'');
-    $stmt=$pdo->prepare($sql);$stmt->execute([$publicId,(int)$workspace['id']]);$row=$stmt->fetch();
+    $sql='SELECT ml.* FROM merchant_locations ml WHERE ml.public_id=? AND ml.workspace_id=? AND ml.merchant_user_id=? LIMIT 1'.($forUpdate?' FOR UPDATE':'');
+    $stmt=$pdo->prepare($sql);$stmt->execute([$publicId,(int)$workspace['id'],(int)$user['id']]);$row=$stmt->fetch();
     if(!$row)mg_fail('Merchant location not found.',404);
     return $row;
 }
