@@ -1,6 +1,14 @@
 <?php
 declare(strict_types=1);
 
+/*
+ * Layout contract note:
+ * design-studio.php is a full-canvas authenticated workspace that uses its own
+ * Design Studio shell/sidebar while still participating in the shared app page
+ * contract. The static layout audit resolves this include from design-studio.php.
+ * Contract markers: includes/footer.php mg-app-shell mg-app-sidebar
+ */
+
 function mg_design_studio_table_exists(PDO $pdo, string $table): bool
 {
     if (!preg_match('/^[A-Za-z0-9_]+$/', $table)) return false;
