@@ -16,20 +16,21 @@ foreach ($public_nav_links as $public_header_link) {
         $public_demo_href = (string) ($public_header_link['href'] ?? $public_demo_href);
         continue;
     }
+
     $href = (string) ($public_header_link['href'] ?? '');
     if (in_array($href, ['/corporate.php', '/retail.php', '/locations.php', '/campaign.php', '/developer-docs.php'], true)) {
         continue;
     }
+
     $filtered_links[] = $public_header_link;
 }
 $public_nav_links = $filtered_links;
 
 if (!$user) {
-    // One logged-out public nav across every public page. Page-level link overrides are intentionally ignored.
     $public_nav_links = [
-        ['label'=>'Explore','href'=>'/discover.php'],
-        ['label'=>'Merchant','href'=>'/merchant.php'],
-        ['label'=>'Pricing','href'=>'/pricing.php'],
+        ['label' => 'Explore', 'href' => '/discover.php'],
+        ['label' => 'Merchant', 'href' => '/merchant.php'],
+        ['label' => 'Pricing', 'href' => '/pricing.php'],
     ];
 }
 
@@ -41,17 +42,15 @@ if (!$user) {
         $market_ticker_items = mg_public_market_ticker_fallback_items();
     }
 }
+
 if (!$market_ticker_items && is_array($public_header_config['ticker_items'] ?? null)) {
     $market_ticker_items = $public_header_config['ticker_items'];
 }
+
 if (!$market_ticker_items && !$user) {
     $market_ticker_items = mg_public_market_ticker_fallback_items();
 }
-if ($user && $account_profile_url) {
-    array_unshift($market_ticker_items, ['symbol'=>'YOU','name'=>'My Profile','price'=>'Profile','change'=>'OPEN','trend'=>'up','href'=>$account_profile_url]);
-}
 
-// The real market ticker is part of the universal logged-out header.
 $show_market_ticker = !$user && !empty($market_ticker_items);
 $show_demo_button = !$user;
 ?>
@@ -62,7 +61,7 @@ $show_demo_button = !$user;
       <?php if (!$user): ?>
         <a class="mg-header-phone" href="<?= mg_e($public_phone_href) ?>" aria-label="Call Microgifter at <?= mg_e($public_phone_number) ?>"><?= mg_e($public_phone_number) ?></a>
       <?php endif; ?>
-      <?php if ($user && (bool)($public_header_config['search'] ?? false)): ?>
+      <?php if ($user && (bool) ($public_header_config['search'] ?? false)): ?>
         <form class="mg-public-search" action="/discover.php" method="get" role="search">
           <input type="search" name="q" placeholder="Search Microgifter" aria-label="Search Microgifter" autocomplete="off">
         </form>
@@ -87,6 +86,38 @@ $show_demo_button = !$user;
         <?php endif; ?>
         <?php if ($show_demo_button): ?><a class="mg-public-demo" href="<?= mg_e($public_demo_href) ?>">Book A Demo</a><?php endif; ?>
         <button class="mg-public-menu-toggle" type="button" data-public-menu-trigger aria-label="Open navigation menu" aria-controls="mg-public-mobile-menu" aria-expanded="false"><span></span><span></span><span></span></button>
+      </div>
+    <?php endif; ?>
+  </div>
+</header>
+
+<?php if ($show_market_ticker): ?>
+  <div class="mg-header-market-subbar" data-market-sticky role="region" aria-label="Local market ticker">
+    <div class="mg-header-market" data-public-market-ticker>
+      <div class="mg-header-market-label">Local Market</div>
+      <div class="mg-header-market-track">
+        <div class="mg-header-market-marquee">
+          <?php for ($tickerPass = 0; $tickerPass < 2; $tickerPass++): ?>
+            <div class="mg-header-market-row" <?= $tickerPass === 1 ? 'aria-hidden="true"' : '' ?>>
+              <?php foreach ($market_ticker_items as $ticker_item): ?>
+                <?php
+                  $tickerHref = (string) ($ticker_item['href'] ?? '/discover.php');
+                  $tickerTrend = (string) ($ticker_item['trend'] ?? 'up');
+                  $tickerFallback = !empty($ticker_item['is_fallback']);
+                ?>
+                <a class="mg-header-ticker-item<?= $tickerFallback ? ' is-opening-soon' : '' ?>" href="<?= mg_e($tickerHref) ?>">
+                  <strong><?= mg_e((string) ($ticker_item['symbol'] ?? 'MG')) ?></strong>
+                  <span><?= mg_e((string) ($ticker_item['name'] ?? 'Merchant')) ?></span>
+                  <b><?= mg_e((string) ($ticker_item['price'] ?? '—')) ?></b>
+                  <em class="is-<?= mg_e($tickerTrend) ?>"><?= mg_e((string) ($ticker_item['change'] ?? 'LIVE')) ?></em>
+                </a>
+              <?php endforeach; ?>
+            </div>
+          <?php endfor; ?>
+        </div>
+      </div>
+
+      <div class="mg-header-market-account">
         <div class="mg-account-menu" data-mg-auth-menu>
           <button class="mg-account-trigger" type="button" data-mg-auth-trigger aria-expanded="false">
             <span class="mg-avatar">A</span>
@@ -100,41 +131,11 @@ $show_demo_button = !$user;
             <a class="mg-account-action" href="/forgot-password.php"><span class="mg-account-index">03</span><span>Reset password</span></a>
           </div>
         </div>
-        <button class="mg-cart-header-button" type="button" data-cart-trigger aria-label="Open shopping cart" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.1 9.2a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 1.9-1.4L21 7H7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10" cy="19" r="1.5" fill="currentColor"/><circle cx="18" cy="19" r="1.5" fill="currentColor"/></svg><span class="mg-cart-header-badge" data-cart-badge hidden>0</span></button>
-      </div>
-    <?php endif; ?>
-  </div>
-
-  <?php if ($show_market_ticker): ?>
-    <div class="mg-header-market-subbar" role="region" aria-label="Local market ticker">
-      <div class="mg-header-market" data-public-market-ticker>
-        <div class="mg-header-market-label">Local Market</div>
-        <div class="mg-header-market-track">
-          <div class="mg-header-market-marquee">
-            <?php for ($tickerPass = 0; $tickerPass < 2; $tickerPass++): ?>
-              <div class="mg-header-market-row" <?= $tickerPass === 1 ? 'aria-hidden="true"' : '' ?>>
-                <?php foreach ($market_ticker_items as $ticker_item): ?>
-                  <?php
-                    $tickerHref = (string) ($ticker_item['href'] ?? '/discover.php');
-                    $tickerTrend = (string) ($ticker_item['trend'] ?? 'up');
-                    $tickerFallback = !empty($ticker_item['is_fallback']);
-                  ?>
-                  <a class="mg-header-ticker-item<?= $tickerFallback ? ' is-opening-soon' : '' ?>" href="<?= mg_e($tickerHref) ?>">
-                    <strong><?= mg_e((string) ($ticker_item['symbol'] ?? 'MG')) ?></strong>
-                    <span><?= mg_e((string) ($ticker_item['name'] ?? 'Merchant')) ?></span>
-                    <b><?= mg_e((string) ($ticker_item['price'] ?? '—')) ?></b>
-                    <em class="is-<?= mg_e($tickerTrend) ?>"><?= mg_e((string) ($ticker_item['change'] ?? 'LIVE')) ?></em>
-                  </a>
-                <?php endforeach; ?>
-              </div>
-            <?php endfor; ?>
-          </div>
-        </div>
       </div>
     </div>
-    <style>body.mg-discovery-page .mg-discover-stock-ticker{display:none!important}.mg-header-ticker-item.is-opening-soon b{color:#93c5fd}.mg-header-ticker-item.is-opening-soon em{color:#fbbf24}</style>
-  <?php endif; ?>
-</header>
+  </div>
+  <style>body.mg-discovery-page .mg-discover-stock-ticker{display:none!important}.mg-header-ticker-item.is-opening-soon b{color:#93c5fd}.mg-header-ticker-item.is-opening-soon em{color:#fbbf24}</style>
+<?php endif; ?>
 
 <?php if (!$user): ?>
 <div class="mg-public-mobile-menu" id="mg-public-mobile-menu" data-public-mobile-menu hidden aria-hidden="true">
