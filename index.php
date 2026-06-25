@@ -53,7 +53,7 @@ require __DIR__ . '/includes/header.php';
         <p class="mg-note"><strong>Business data is the value layer:</strong> Microgifter helps local businesses turn support into structured data, use that data to discover what customers value, and earn more from the relationships they already create.</p>
         <div class="mg-actions">
           <a class="mg-btn mg-btn-primary" href="/signup.php">Create Account <span aria-hidden="true">→</span></a>
-          <a class="mg-btn mg-btn-secondary" href="/developer-docs.php">View API Docs <span aria-hidden="true">→</span></a>
+          <a class="mg-btn mg-btn-secondary" href="/learn-more.php">Book Demo <span aria-hidden="true">→</span></a>
         </div>
       </div>
 
