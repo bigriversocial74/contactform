@@ -6,8 +6,6 @@ $show_header_signals = $show_header_signals ?? true;
 $show_header_cart = $show_header_cart ?? true;
 ?>
 <div class="mg-header-actions" data-header-template="logged-in">
-  <a class="mg-header-pricing-link" href="/pricing.php">Pricing</a>
-
   <?php if ($show_header_create): ?>
     <a class="mg-header-create" href="/build.php" data-header-create data-global-create aria-label="Create" aria-haspopup="dialog" aria-controls="mg-create-menu" aria-expanded="false">+</a>
   <?php endif; ?>
