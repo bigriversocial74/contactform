@@ -4,7 +4,7 @@
   <div>
     <span class="mg-eyebrow">Merchant CRM</span>
     <h1>Customer CRM</h1>
-    <p>Track campaign contacts, customer messages, rewards, email delivery, account creation, claims, and redemptions from the merchant workspace.</p>
+    <p>Track campaign contacts, rewards, wallet activity, follow-ups, customer value, claims, redemptions, and message history from one merchant workspace.</p>
   </div>
   <div class="mg-heading-actions">
     <a class="mg-btn mg-btn-soft" href="/merchant-campaigns.php">Campaigns</a>
@@ -14,9 +14,15 @@
 <div class="mg-merchant-kpis">
   <div class="mg-merchant-kpi"><span>Total contacts</span><strong data-merchant-crm-total>—</strong></div>
   <div class="mg-merchant-kpi"><span>With accounts</span><strong data-merchant-crm-accounts>—</strong></div>
-  <div class="mg-merchant-kpi"><span>Email verified</span><strong data-merchant-crm-verified>—</strong></div>
   <div class="mg-merchant-kpi"><span>Rewards</span><strong data-merchant-crm-wallets>—</strong></div>
+  <div class="mg-merchant-kpi"><span>Redeemed</span><strong data-merchant-crm-redeemed>—</strong></div>
+  <div class="mg-merchant-kpi"><span>Customer value</span><strong data-merchant-crm-value>—</strong></div>
+  <div class="mg-merchant-kpi"><span>Follow-ups queued</span><strong data-merchant-crm-followups>—</strong></div>
 </div>
+<section class="mg-app-panel" data-merchant-crm-intelligence>
+  <div class="mg-app-panel-head"><div><h2>CRM intelligence</h2><p>Segments, campaign sources, recent CRM events, and follow-up queue health.</p></div><button class="mg-btn mg-btn-soft" type="button" data-crm-intelligence-refresh>Refresh</button></div>
+  <div class="mg-app-panel-body"><div class="mg-crm-intelligence-grid"><div data-crm-segments></div><div data-crm-sources></div><div data-crm-followups></div><div data-crm-recent-events></div></div></div>
+</section>
 <section class="mg-app-panel" data-merchant-crm-messages>
   <div class="mg-empty-state"><strong>Loading CRM messages</strong><p>Merchant-owned customer conversations will appear here.</p></div>
 </section>
