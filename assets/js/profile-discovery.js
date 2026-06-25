@@ -50,15 +50,17 @@
       body.mg-discovery-page .mg-discovery-sort-button{min-height:32px!important;border:1px solid #dbe5f1!important;border-radius:999px!important;background:#fff!important;color:#475569!important;cursor:pointer!important;padding:0 12px!important;font-size:11px!important;font-weight:950!important;letter-spacing:.04em!important;text-transform:uppercase!important;}
       body.mg-discovery-page .mg-discovery-sort-button:hover,body.mg-discovery-page .mg-discovery-sort-button.is-active{border-color:rgba(124,58,237,.45)!important;background:linear-gradient(135deg,rgba(124,58,237,.10),rgba(32,191,210,.08))!important;color:#071225!important;}
       body.mg-discovery-page .mg-discovery-card-grid{grid-template-columns:repeat(4,minmax(180px,1fr))!important;gap:16px!important;align-items:stretch!important;}
-      body.mg-discovery-page .mg-discovery-card{position:relative!important;min-height:236px!important;border-radius:18px!important;box-shadow:0 14px 34px rgba(15,23,42,.075)!important;}
+      body.mg-discovery-page .mg-discovery-card{position:relative!important;min-height:236px!important;border-radius:18px!important;box-shadow:0 14px 34px rgba(15,23,42,.075)!important;cursor:pointer!important;outline:none!important;}
       body.mg-discovery-page .mg-discovery-card:hover{transform:translateY(-2px)!important;box-shadow:0 20px 48px rgba(15,23,42,.11)!important;}
-      body.mg-discovery-page .mg-discovery-card.is-skeleton{min-height:230px!important;border-radius:18px!important;}
+      body.mg-discovery-page .mg-discovery-card:focus-visible{box-shadow:0 0 0 4px rgba(124,58,237,.20),0 20px 48px rgba(15,23,42,.11)!important;border-color:rgba(124,58,237,.42)!important;}
+      body.mg-discovery-page .mg-discovery-card.is-skeleton{min-height:230px!important;border-radius:18px!important;cursor:default!important;}
       body.mg-discovery-page .mg-market-rank-badge{position:absolute!important;top:10px!important;right:10px!important;z-index:3!important;display:inline-flex!important;align-items:center!important;min-height:25px!important;padding:0 9px!important;border:1px solid rgba(124,58,237,.18)!important;border-radius:999px!important;background:rgba(255,255,255,.92)!important;color:#4338ca!important;box-shadow:0 8px 18px rgba(15,23,42,.10)!important;backdrop-filter:blur(10px)!important;font-size:9.5px!important;font-weight:950!important;letter-spacing:.06em!important;text-transform:uppercase!important;}
       body.mg-discovery-page .mg-market-rank-badge.is-top-rank{background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(32,191,210,.10))!important;border-color:rgba(124,58,237,.32)!important;color:#071225!important;}
       body.mg-discovery-page .mg-market-rank-badge.is-fresh{background:linear-gradient(135deg,rgba(36,214,128,.16),rgba(32,191,210,.10))!important;border-color:rgba(36,214,128,.28)!important;color:#065f46!important;}
       body.mg-discovery-page .mg-discovery-card-top{gap:10px!important;padding:14px 14px 4px!important;}
       body.mg-discovery-page .mg-discovery-avatar{width:48px!important;height:48px!important;border-width:3px!important;box-shadow:0 8px 18px rgba(15,23,42,.14)!important;}
       body.mg-discovery-page .mg-discovery-card h3{font-size:15.5px!important;line-height:1.08!important;letter-spacing:-.035em!important;padding-right:64px!important;}
+      body.mg-discovery-page .mg-discovery-card h3 a{position:relative!important;z-index:4!important;}
       body.mg-discovery-page .mg-discovery-type{margin-top:4px!important;font-size:9.5px!important;letter-spacing:.075em!important;}
       body.mg-discovery-page .mg-discovery-headline{min-height:34px!important;margin:8px 14px 0!important;font-size:12.5px!important;line-height:1.35!important;display:-webkit-box!important;-webkit-line-clamp:2!important;-webkit-box-orient:vertical!important;overflow:hidden!important;}
       body.mg-discovery-page .mg-discovery-meta{gap:6px!important;margin:10px 14px 0!important;}
@@ -68,7 +70,7 @@
       body.mg-discovery-page .mg-discovery-market-counts{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:6px!important;margin:10px 14px 0!important;padding-top:10px!important;}
       body.mg-discovery-page .mg-discovery-market-counts span{justify-content:space-between!important;border-color:rgba(124,58,237,.14)!important;background:linear-gradient(135deg,rgba(124,58,237,.055),rgba(32,191,210,.045))!important;}
       body.mg-discovery-page .mg-discovery-market-counts strong{margin-right:4px!important;}
-      body.mg-discovery-page .mg-discovery-open{margin:14px!important;margin-top:auto!important;min-height:34px!important;padding:0 12px!important;font-size:12px!important;border-radius:12px!important;}
+      body.mg-discovery-page .mg-discovery-open{position:relative!important;z-index:4!important;margin:14px!important;margin-top:auto!important;min-height:34px!important;padding:0 12px!important;font-size:12px!important;border-radius:12px!important;}
       @media(max-width:1380px){body.mg-discovery-page .mg-discovery-card-grid{grid-template-columns:repeat(3,minmax(190px,1fr))!important;}}
       @media(max-width:1040px){body.mg-discovery-page .mg-discovery-card-grid{grid-template-columns:repeat(2,minmax(220px,1fr))!important;}}
       @media(max-width:680px){body.mg-discovery-page .mg-discovery-main-panel{padding:18px 14px 42px!important;}body.mg-discovery-page .mg-discovery-sortbar{display:grid!important;}body.mg-discovery-page .mg-discovery-sort-actions{justify-content:flex-start!important;}body.mg-discovery-page .mg-discovery-card-grid{grid-template-columns:1fr!important;}body.mg-discovery-page .mg-discovery-market-counts{grid-template-columns:1fr!important;}}
@@ -192,9 +194,32 @@
     return badge;
   }
 
+  function isInteractiveClick(event) {
+    return Boolean(event.target.closest('a,button,input,select,textarea,label,[role="button"],[data-no-card-link]'));
+  }
+
+  function openProfile(url) {
+    if (!url) return;
+    window.location.href = url;
+  }
+
   function card(profile, position) {
     const article = document.createElement('article');
     article.className = 'mg-discovery-card';
+    article.tabIndex = 0;
+    article.setAttribute('role', 'link');
+    article.setAttribute('aria-label', `View ${profile.display_name || 'merchant'} profile`);
+    article.dataset.href = profile.url || '';
+    article.addEventListener('click', (event) => {
+      if (isInteractiveClick(event)) return;
+      openProfile(article.dataset.href);
+    });
+    article.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      if (isInteractiveClick(event)) return;
+      event.preventDefault();
+      openProfile(article.dataset.href);
+    });
     article.appendChild(rankBadge(profile, position));
 
     const top = document.createElement('div');
