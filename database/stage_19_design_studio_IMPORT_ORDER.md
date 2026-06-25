@@ -78,6 +78,25 @@ The smoke test checks:
 - seeded AI presets exist
 - export queue reliability columns exist
 - campaign link uniqueness column exists
+- admin export worker endpoint file exists
+
+## Export queue monitor
+
+After a merchant queues a proof or export package in `/design-studio.php`, open this admin URL:
+
+```text
+/api/admin/design-export-worker.php
+```
+
+It returns JSON with queue counts and recent jobs.
+
+Expected renderer status for this build:
+
+```json
+"renderer_status": "scaffold_ready"
+```
+
+That means the queue can be monitored and claimed, but final PDF/PNG/SVG/ZIP rendering still needs the renderer implementation.
 
 ## Manual database verification, optional
 
@@ -127,4 +146,4 @@ docs/design-studio-release-checklist.md
 - This migration is intended for a fresh Stage 19 install.
 - If an older Stage 19 draft was partially imported, compare existing table definitions before running this file against production.
 - The Design Studio page and APIs include setup guards. If required tables are missing, the page shows a setup-required state and APIs return a clean setup error.
-- Export jobs queue records only. A renderer worker still needs to convert queued jobs into final PDF/PNG/SVG/ZIP assets.
+- Export jobs queue records and can now be monitored/claimed by the admin worker scaffold. Final file rendering is still a separate build step.
