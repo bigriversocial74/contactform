@@ -65,9 +65,6 @@ body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data
 body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-header-phone:focus-visible{
   color:#fff!important;
 }
-body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-header-market{
-  display:grid!important;
-}
 
 body[data-authenticated="false"] .mg-public-mobile-menu,
 body[data-authenticated="false"] .mg-index-mobile-menu{
@@ -219,26 +216,195 @@ body[data-authenticated="false"] .mg-index-mobile-nav a::after{
   opacity:.55;
 }
 
+/* Public header ticker subbar layout. */
+body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"]{
+  display:block!important;
+  background:rgba(255,255,255,.94)!important;
+  color:#050505!important;
+  border-bottom:1px solid rgba(10,10,10,.08)!important;
+  box-shadow:0 14px 32px rgba(0,0,0,.10)!important;
+  backdrop-filter:blur(18px)!important;
+}
+body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-header-inner{
+  min-height:66px!important;
+  display:grid!important;
+  grid-template-columns:auto minmax(0,1fr)!important;
+  align-items:center!important;
+  gap:20px!important;
+  padding:0 clamp(18px,3.3vw,56px)!important;
+  width:100%!important;
+}
+body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-header-actions{
+  justify-self:end!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:14px!important;
+  min-width:0!important;
+}
+body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-public-nav{
+  display:inline-flex!important;
+  align-items:center!important;
+  gap:22px!important;
+}
+body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-public-nav a{
+  color:#0f0f0f!important;
+  font-size:13px!important;
+  font-weight:950!important;
+  letter-spacing:-.02em!important;
+}
+body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-public-demo{
+  min-height:40px!important;
+  padding:0 16px!important;
+  border:1px solid rgba(0,0,0,.10)!important;
+  border-radius:12px!important;
+  background:#fff!important;
+  color:#050505!important;
+  box-shadow:0 10px 24px rgba(0,0,0,.06)!important;
+}
+body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-account-trigger{
+  min-height:42px!important;
+  border-color:rgba(0,0,0,.08)!important;
+  background:#fff!important;
+  color:#050505!important;
+  box-shadow:0 10px 24px rgba(0,0,0,.06)!important;
+}
+body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-avatar{
+  border-color:rgba(217,167,53,.28)!important;
+  background:#f8f1df!important;
+  color:#050505!important;
+}
+body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-account-name{
+  color:#050505!important;
+}
+body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-account-role,
+body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-account-caret{
+  color:#6b6256!important;
+}
+body[data-authenticated="false"] .mg-header-market-subbar{
+  width:100%!important;
+  padding:0 clamp(18px,3.3vw,56px) 12px!important;
+  background:linear-gradient(180deg,rgba(255,255,255,.94),rgba(255,255,255,.88))!important;
+}
+body[data-authenticated="false"] .mg-header-market-subbar .mg-header-market{
+  width:100%!important;
+  min-width:0!important;
+  display:grid!important;
+  grid-template-columns:auto minmax(0,1fr)!important;
+  align-items:center!important;
+  gap:12px!important;
+  max-width:1240px!important;
+  margin:0 auto!important;
+  padding:9px 12px!important;
+  border:1px solid rgba(217,167,53,.26)!important;
+  border-radius:18px!important;
+  background:rgba(255,255,255,.76)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.86),0 12px 28px rgba(0,0,0,.055)!important;
+  overflow:hidden!important;
+}
+body[data-authenticated="false"] .mg-header-market-subbar .mg-header-market-label{
+  padding:6px 13px!important;
+  border-radius:999px!important;
+  background:#fbf0d1!important;
+  color:#d9a735!important;
+  font-size:11px!important;
+  font-weight:950!important;
+  letter-spacing:.12em!important;
+  text-transform:uppercase!important;
+  white-space:nowrap!important;
+}
+body[data-authenticated="false"] .mg-header-market-subbar .mg-header-market-track{
+  min-width:0!important;
+  overflow:hidden!important;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent)!important;
+  mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent)!important;
+}
+body[data-authenticated="false"] .mg-header-market-subbar .mg-header-ticker-item{
+  min-height:32px!important;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  color:#0f0f0f!important;
+}
+body[data-authenticated="false"] .mg-header-market-subbar .mg-header-ticker-item strong,
+body[data-authenticated="false"] .mg-header-market-subbar .mg-header-ticker-item em.is-up{
+  color:#13b45f!important;
+}
+body[data-authenticated="false"] .mg-header-market-subbar .mg-header-ticker-item span{
+  color:#6b6256!important;
+}
+body[data-authenticated="false"] .mg-header-market-subbar .mg-header-ticker-item b{
+  color:#0f0f0f!important;
+}
+body[data-authenticated="false"] .mg-header-market-subbar .mg-header-ticker-item em.is-down{
+  color:#dc2626!important;
+}
+
 @media(max-width:1220px){
   body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-header-phone{
     display:none!important;
   }
+  body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-public-nav{
+    gap:14px!important;
+  }
 }
 
 @media(max-width:980px){
+  body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-header-inner{
+    grid-template-columns:minmax(0,1fr) auto!important;
+    gap:10px!important;
+    padding-left:14px!important;
+    padding-right:14px!important;
+  }
+  body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-public-nav,
+  body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-public-demo,
   body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-account-menu{
     display:none!important;
+  }
+  body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-header-actions{
+    justify-self:end!important;
+    min-width:44px!important;
+    flex:0 0 auto!important;
+  }
+  body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-public-menu-toggle{
+    display:inline-flex!important;
+    position:relative!important;
+    right:auto!important;
+    margin-right:0!important;
+    flex:0 0 44px!important;
+    width:44px!important;
+    min-width:44px!important;
+  }
+  body[data-authenticated="false"] .mg-header-market-subbar{
+    padding-left:14px!important;
+    padding-right:14px!important;
+    padding-bottom:10px!important;
   }
 }
 
 @media(max-width:560px){
   body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-header-inner{
-    grid-template-columns:auto minmax(0,1fr) auto!important;
-    gap:8px!important;
+    min-height:62px!important;
+    grid-template-columns:minmax(0,1fr) 44px!important;
+    overflow:hidden!important;
   }
-  body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-header-market{
-    display:grid!important;
+  body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-header-left{
     min-width:0!important;
+    overflow:hidden!important;
+  }
+  body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-brand.brand img{
+    width:138px!important;
+  }
+  body[data-authenticated="false"] .mg-header-market-subbar .mg-header-market{
+    grid-template-columns:1fr!important;
+    padding:7px 8px!important;
+    border-radius:14px!important;
+  }
+  body[data-authenticated="false"] .mg-header-market-subbar .mg-header-market-label{
+    display:none!important;
+  }
+  body[data-authenticated="false"] .mg-header-market-subbar .mg-header-ticker-item span,
+  body[data-authenticated="false"] .mg-header-market-subbar .mg-header-ticker-item b{
+    display:none!important;
   }
 }
 
