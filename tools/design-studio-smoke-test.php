@@ -66,6 +66,7 @@ function mg_smoke_count_where(PDO $pdo, string $table, string $where, array $par
 $requiredFiles = [
     'database/stage_19_design_studio_qr_library.sql',
     'database/stage_19_design_studio_IMPORT_ORDER.md',
+    'includes/design-studio-renderer.php',
     'design-studio.php',
     'qr.php',
     'api/merchant/_design_studio_guard.php',
