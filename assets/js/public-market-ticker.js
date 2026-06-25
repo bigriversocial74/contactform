@@ -7,31 +7,93 @@
   if (!ticker && !footerStrip && !discoverRoot) return;
 
   const endpoint = '/api/public/market-ticker.php?limit=12';
+  const refreshIntervalMs = 45000;
+  const statRotationIntervalMs = 5000;
+  let statIndex = 0;
+  let refreshInFlight = false;
 
   function text(value, fallback = '') {
     return String(value ?? fallback).trim();
   }
 
+  function normalizeStats(item) {
+    const source = Array.isArray(item?.stats) ? item.stats : (item?.stat ? [item.stat] : []);
+    return source
+      .map((stat) => ({
+        label: text(stat?.label).toUpperCase(),
+        value: text(stat?.value),
+      }))
+      .filter((stat) => stat.label || stat.value);
+  }
+
+  function setStatContent(node, stat) {
+    if (!node || !stat) return;
+    node.replaceChildren();
+    if (stat.label) {
+      const label = document.createElement('i');
+      label.textContent = stat.label;
+      node.appendChild(label);
+    }
+    if (stat.value) node.appendChild(document.createTextNode(`${stat.label ? ' ' : ''}${stat.value}`));
+  }
+
+  function applyTickerStat(link, index) {
+    const stats = Array.isArray(link.__mgTickerStats) ? link.__mgTickerStats : [];
+    const node = link.querySelector('.mg-header-ticker-stat');
+    if (!node || stats.length === 0) return;
+    const next = stats[index % stats.length];
+    node.classList.add('is-changing');
+    window.setTimeout(() => {
+      setStatContent(node, next);
+      node.classList.remove('is-changing');
+    }, 120);
+  }
+
+  function hydrateServerTickerStats() {
+    if (!ticker) return;
+    ticker.querySelectorAll('.mg-header-ticker-item').forEach((link) => {
+      const node = link.querySelector('.mg-header-ticker-stat');
+      if (!node) return;
+      try {
+        const parsed = JSON.parse(node.dataset.tickerStats || '[]');
+        link.__mgTickerStats = normalizeStats({ stats: parsed });
+      } catch (_) {
+        link.__mgTickerStats = [];
+      }
+      applyTickerStat(link, statIndex);
+    });
+  }
+
   function createTickerItem(item) {
     const link = document.createElement('a');
-    link.className = 'mg-header-ticker-item';
-    link.href = text(item.href, '/discover.php') || '/discover.php';
+    link.className = `mg-header-ticker-item${item?.is_fallback ? ' is-opening-soon' : ''}`;
+    link.href = text(item?.href, '/discover.php') || '/discover.php';
 
     const symbol = document.createElement('strong');
-    symbol.textContent = text(item.symbol, 'MGFT') || 'MGFT';
+    symbol.textContent = text(item?.symbol, 'MGFT') || 'MGFT';
 
     const name = document.createElement('span');
-    name.textContent = text(item.name, 'Merchant') || 'Merchant';
+    name.textContent = text(item?.name, 'Merchant') || 'Merchant';
 
     const price = document.createElement('b');
-    price.textContent = text(item.price, '—') || '—';
+    price.textContent = text(item?.price, '—') || '—';
 
     const change = document.createElement('em');
-    const trend = text(item.trend, 'up') === 'down' ? 'down' : 'up';
+    const trend = text(item?.trend, 'up') === 'down' ? 'down' : 'up';
     change.className = `is-${trend}`;
-    change.textContent = text(item.change, 'LIVE') || 'LIVE';
+    change.textContent = text(item?.change, 'LIVE') || 'LIVE';
 
     link.append(symbol, name, price, change);
+
+    const stats = normalizeStats(item);
+    link.__mgTickerStats = stats;
+    if (stats.length > 0) {
+      const stat = document.createElement('small');
+      stat.className = 'mg-header-ticker-stat';
+      link.appendChild(stat);
+      applyTickerStat(link, statIndex);
+    }
+
     return link;
   }
 
@@ -48,14 +110,20 @@
     }
   }
 
+  function rotateTickerStats() {
+    if (!ticker || document.hidden) return;
+    statIndex += 1;
+    ticker.querySelectorAll('.mg-header-ticker-item').forEach((link) => applyTickerStat(link, statIndex));
+  }
+
   function renderFooter(items) {
     if (!footerStrip || !Array.isArray(items) || items.length === 0) return;
     footerStrip.replaceChildren();
     items.slice(0, 3).forEach((item) => {
       const span = document.createElement('span');
       const strong = document.createElement('strong');
-      strong.textContent = text(item.symbol, 'MGFT') || 'MGFT';
-      span.append(strong, document.createTextNode(` ${text(item.change, item.price || 'LIVE')}`));
+      strong.textContent = text(item?.symbol, 'MGFT') || 'MGFT';
+      span.append(strong, document.createTextNode(` ${text(item?.change, item?.price || 'LIVE')}`));
       footerStrip.appendChild(span);
     });
   }
@@ -163,9 +231,13 @@
   }
 
   async function refreshTicker() {
+    if (refreshInFlight) return;
+    refreshInFlight = true;
     try {
-      const response = await fetch(endpoint, {
+      const separator = endpoint.includes('?') ? '&' : '?';
+      const response = await fetch(`${endpoint}${separator}_=${Date.now()}`, {
         credentials: 'same-origin',
+        cache: 'no-store',
         headers: { Accept: 'application/json' },
       });
       const payload = await response.json().catch(() => null);
@@ -175,9 +247,21 @@
       renderFooter(items);
     } catch (_) {
       // Keep the server-rendered ticker if the live endpoint is unavailable.
+    } finally {
+      refreshInFlight = false;
     }
   }
 
+  hydrateServerTickerStats();
   refreshTicker();
   bootDiscoverSummary();
+
+  if (ticker) window.setInterval(rotateTickerStats, statRotationIntervalMs);
+  if (ticker || footerStrip) window.setInterval(() => {
+    if (!document.hidden) refreshTicker();
+  }, refreshIntervalMs);
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) refreshTicker();
+  });
 })();
