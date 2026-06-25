@@ -134,8 +134,11 @@ require __DIR__ . '/includes/header.php';
                 <div><dt>Ticker Value</dt><dd data-invest-field="ticker_value">$0</dd></div>
                 <div><dt>Merchant Score</dt><dd data-invest-field="merchant_score">0</dd></div>
                 <div><dt>Rating</dt><dd data-invest-field="rating">No data</dd></div>
+                <div><dt>Funnel Quality</dt><dd data-invest-field="campaign_funnel_quality">0</dd></div>
+                <div><dt>Risk Adjustment</dt><dd data-invest-field="risk_adjustment">$0</dd></div>
                 <div><dt>Active Drops</dt><dd data-profile-products data-invest-field="active_drops">0</dd></div>
                 <div><dt>Campaigns</dt><dd data-invest-field="active_campaigns">0</dd></div>
+                <div><dt>Conversions</dt><dd data-invest-field="campaign_conversions">0</dd></div>
                 <div><dt>Distribution</dt><dd data-invest-field="distribution_channels">0</dd></div>
                 <div><dt>Stamp Inventory</dt><dd data-invest-field="stamp_inventory">0</dd></div>
                 <div><dt>Stamp Spend 30D</dt><dd data-invest-field="stamp_spend_30d">0</dd></div>
@@ -189,12 +192,15 @@ require __DIR__ . '/includes/header.php';
               <dl class="mg-demand-factors">
                 <div><dt>Products</dt><dd data-invest-factor="products">0</dd></div>
                 <div><dt>Campaigns</dt><dd data-invest-factor="campaigns">0</dd></div>
+                <div><dt>Conversions</dt><dd data-invest-factor="conversions">0</dd></div>
+                <div><dt>Funnel</dt><dd data-invest-factor="funnel">0</dd></div>
                 <div><dt>Redemptions</dt><dd data-invest-factor="redemptions">0</dd></div>
                 <div><dt>Engagement</dt><dd data-invest-factor="engagement">0</dd></div>
                 <div><dt>Distribution</dt><dd data-invest-factor="distribution">0</dd></div>
                 <div><dt>Stamps</dt><dd data-invest-factor="stamps">0</dd></div>
                 <div><dt>Followers</dt><dd data-invest-factor="followers">0</dd></div>
                 <div><dt>Momentum</dt><dd data-invest-factor="momentum">0</dd></div>
+                <div><dt>Risk</dt><dd data-invest-factor="risk">0</dd></div>
               </dl>
             </article>
           </section>
