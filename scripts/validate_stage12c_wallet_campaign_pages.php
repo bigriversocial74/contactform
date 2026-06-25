@@ -42,16 +42,18 @@ $walletJs = $get('assets/js/stage12-wallet.js');
 $completeJs = $get('assets/js/stage12-redemptions.js');
 $contactJs = $get('assets/js/stage12-campaign-contacts.js');
 $toolJs = $get('assets/js/stage12-campaign-tools.js');
+$claimStatusMarker = str_contains($claim, "status = 'claimed'") || str_contains($claim, "status='claimed'") || str_contains($claim, "status = \\'claimed\\'");
+$redeemStatusMarker = str_contains($redeem, "status = 'redeemed'") || str_contains($redeem, "status='redeemed'") || str_contains($redeem, "status = \\'redeemed\\'");
 $checks = [
   'wallet_list_endpoint' => str_contains($walletItems, 'wallet_items') && str_contains($walletItems, 'campaign_contacts'),
   'wallet_page_delegates' => str_contains($walletPage, "MG_ACCOUNT_VIEW") && str_contains($walletPage, '/account.php'),
   'wallet_account_route' => str_contains($accountPage, "'wallet'") && str_contains($accountPage, 'includes/account/wallet-view.php'),
   'wallet_view' => str_contains($accountWalletView, 'data-stage12-wallet') && str_contains($accountWalletView, 'data-wallet-list'),
   'wallet_js_claims' => str_contains($walletJs, '/api/account/wallet-items.php') && str_contains($walletJs, '/api/account/wallet-claim.php'),
-  'claim_updates_status' => str_contains($claim, "status = \'claimed\'") && str_contains($claim, 'wallet_item.claimed'),
+  'claim_updates_status' => $claimStatusMarker && str_contains($claim, 'wallet_item.claimed'),
   'claim_ownership' => str_contains($claim, 'contact_email') && str_contains($claim, 'source_id'),
   'redeem_requires_merchant' => str_contains($redeem, 'merchant.campaigns.manage') && str_contains($redeem, 'mg_require_csrf_for_write'),
-  'redeem_updates_status' => str_contains($redeem, "status = \'redeemed\'") && str_contains($redeem, 'wallet_item.redeemed'),
+  'redeem_updates_status' => $redeemStatusMarker && str_contains($redeem, 'wallet_item.redeemed'),
   'merchant_complete_page' => str_contains($merchantCompletePage, 'includes/merchant-workspace.php') && str_contains($merchantCompletePage, '/assets/js/stage12-redemptions.js'),
   'merchant_complete_view' => str_contains($merchantCompleteView, 'data-stage12-redemptions') && str_contains($merchantCompleteView, 'data-redemption-form'),
   'merchant_complete_js' => str_contains($completeJs, '/api/merchant/wallet-redeem.php'),
