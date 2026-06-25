@@ -92,4 +92,18 @@ final class CampaignStampDistributionContractTest extends TestCase
         self::assertStringContainsString('mg-public-campaign-result-details', $js);
         self::assertStringContainsString('data.entry={note:data.entry_note}', $js);
     }
+
+    public function testMerchantCampaignListReturnsActivitySummary(): void
+    {
+        $source = $this->read('api/merchant/campaigns.php');
+        self::assertStringContainsString("'activity' => [", $source);
+        self::assertStringContainsString("'contacts' => (int) (\$row['contact_count'] ?? 0)", $source);
+        self::assertStringContainsString("'wallet_items' => (int) (\$row['wallet_item_count'] ?? 0)", $source);
+        self::assertStringContainsString("'events' => (int) (\$row['event_count'] ?? 0)", $source);
+        self::assertStringContainsString("'last_event_at' => \$row['last_event_at'] ?? null", $source);
+        self::assertStringContainsString('(SELECT COUNT(*) FROM campaign_contacts cc WHERE cc.campaign_id = c.id) contact_count', $source);
+        self::assertStringContainsString('(SELECT COUNT(*) FROM wallet_items wi WHERE wi.campaign_id = c.id', $source);
+        self::assertStringContainsString('(SELECT COUNT(*) FROM campaign_events ce WHERE ce.campaign_id = c.id) event_count', $source);
+        self::assertStringContainsString('(SELECT MAX(ce2.created_at) FROM campaign_events ce2 WHERE ce2.campaign_id = c.id) last_event_at', $source);
+    }
 }
