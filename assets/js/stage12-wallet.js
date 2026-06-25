@@ -8,18 +8,19 @@ document.addEventListener('DOMContentLoaded',function(){
   function label(s){return String(s||'').replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});}
   function step(item){
     if(item.status==='redeemed'){return 'Completed at merchant.';}
-    if(item.status==='claimed'){return 'Claimed. Show this wallet item to the merchant.';}
+    if(item.status==='claimed'){return 'Claimed. Open it in Claimed gifts or show it to the merchant.';}
     if(item.status==='expired'){return 'Expired.';}
     if(item.status==='cancelled'){return 'Cancelled.';}
-    return 'Ready to claim.';
+    return 'Ready to claim into your Microgifter inbox.';
   }
   function card(item){
     var action=item.can_claim?'<button class="mg-btn mg-btn-primary" type="button" data-claim="'+html(item.id)+'">Claim</button>':'';
+    var open=item.action_url?'<a class="mg-btn mg-btn-soft" href="'+html(item.action_url)+'">Open gift</a>':'';
     var merchant=item.merchant_label||'Local merchant';
     var campaign=item.campaign_title||label(item.source_type);
     var timeline=item.timeline||{};
     var expires=timeline.expires_at?' · Expires '+html(timeline.expires_at):'';
-    return '<div class="mg-product-card"><span><strong>'+html(item.title)+'</strong><span>'+html(merchant)+' · '+html(campaign)+' · '+html(item.display_value||'Reward')+'</span><small>'+html(step(item))+' '+html(item.redemption_instructions||'')+expires+'</small></span><span class="mg-card-meta"><em>'+html(label(item.status))+'</em>'+action+'</span></div>';
+    return '<div class="mg-product-card"><span><strong>'+html(item.title)+'</strong><span>'+html(merchant)+' · '+html(campaign)+' · '+html(item.display_value||'Reward')+'</span><small>'+html(step(item))+' '+html(item.redemption_instructions||'')+expires+'</small></span><span class="mg-card-meta"><em>'+html(label(item.status))+'</em>'+open+action+'</span></div>';
   }
   function summary(totals){return '<div class="mg-empty-state"><strong>Wallet summary</strong><p>'+Number(totals.claimable||0)+' claimable · '+Number(totals.claimed||0)+' claimed · '+Number(totals.redeemed||0)+' completed · '+Number(totals.expired||0)+' expired</p></div>';}
   async function load(){
@@ -28,7 +29,7 @@ document.addEventListener('DOMContentLoaded',function(){
     var items=data.items||[];
     list.innerHTML=summary(data.totals||{})+(items.length?items.map(card).join(''):'<div class="mg-empty-state"><p>No wallet items yet.</p></div>');
     list.querySelectorAll('[data-claim]').forEach(function(button){button.addEventListener('click',async function(){
-      try{setStatus('Claiming reward...');var r=await Microgifter.post('/api/account/wallet-claim.php',{wallet_item_id:button.getAttribute('data-claim')});setStatus(r.message||'Reward claimed.');await load();}
+      try{setStatus('Claiming reward into your Microgifter inbox...');var r=await Microgifter.post('/api/account/wallet-claim.php',{wallet_item_id:button.getAttribute('data-claim')});setStatus(r.message||'Reward claimed.');await load();}
       catch(error){setStatus(error.message||'Unable to claim reward.');}
     });});
   }
