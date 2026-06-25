@@ -1,0 +1,58 @@
+name: Stage 12 CRM Follow-up Validation
+
+on:
+  pull_request:
+    paths:
+      - 'api/merchant/crm-*.php'
+      - 'api/merchant/campaign-followup*.php'
+      - 'api/rewards/_wallet_lifecycle_automation.php'
+      - 'api/rewards/_zero_value_bridge.php'
+      - 'api/public/campaigns/**'
+      - 'includes/merchant-crm*.php'
+      - 'assets/js/merchant-crm*.js'
+      - 'assets/js/stage12-campaign-followups.js'
+      - 'database/stage_12_*.sql'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stage12-crm-followups:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+      - name: PHP lint high-risk Stage 12 files
+        run: |
+          set -e
+          php -l api/rewards/_wallet_lifecycle_automation.php
+          php -l api/rewards/_zero_value_bridge.php
+          php -l api/merchant/campaign-followups.php
+          php -l api/merchant/campaign-followup-jobs.php
+          php -l api/merchant/crm-message.php
+          php -l api/merchant/crm-messages.php
+          php -l api/merchant/crm-send-gift.php
+          php -l api/public/campaigns/signup.php
+          php -l api/public/campaigns/qr-pickup.php
+          php -l api/public/campaigns/contest-entry.php
+          php -l api/public/campaigns/engage.php
+          php -l includes/merchant-crm.php
+          php -l includes/merchant-crm-view.php
+      - name: JavaScript syntax checks
+        run: |
+          set -e
+          node --check assets/js/merchant-crm.js
+          node --check assets/js/merchant-crm-messages.js
+          node --check assets/js/stage12-campaign-followups.js
+      - name: Migration checks
+        run: |
+          set -e
+          test -f database/stage_12_merchant_crm.sql
+          test -f database/stage_12_campaign_followups.sql
+          test -f database/stage_12_message_delivery_campaign_suppression.sql
+          grep -q 'campaign_followup_rules' database/stage_12_campaign_followups.sql
+          grep -q 'campaign_email_suppressions' database/stage_12_message_delivery_campaign_suppression.sql
