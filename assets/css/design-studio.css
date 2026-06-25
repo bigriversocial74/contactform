@@ -50,7 +50,7 @@
 .mg-design-media-grid button[data-media-swatch="logo"] span:after{content:"MG";position:absolute;inset:0;display:grid;place-items:center;color:#1d4ed8;font-size:16px;font-weight:950}
 .mg-design-link-button{width:100%;min-height:38px;margin-top:10px;border:1px dashed #a8c2eb;border-radius:12px;background:#f8fbff;color:#1d4ed8;font-size:12px;font-weight:850;cursor:pointer}
 .mg-design-link-button:hover{border-color:#2563eb;background:#eff6ff}
-.mg-design-link-button:disabled,.mg-design-hero-actions .mg-btn:disabled{opacity:.7;cursor:wait}
+.mg-design-link-button:disabled,.mg-design-hero-actions .mg-btn:disabled,.mg-design-header-actions .mg-btn:disabled{opacity:.7;cursor:wait}
 .mg-design-qr-list{display:grid;gap:7px}
 .mg-design-qr-list button{display:grid;gap:2px;padding:10px}
 .mg-design-canvas-column{display:grid;grid-template-rows:auto minmax(0,1fr) auto;min-width:0;min-height:0;border:1px solid var(--mg-app-border);border-radius:20px;background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.04);overflow:hidden}
@@ -125,3 +125,24 @@
 @media(max-width:1360px){.mg-design-hero-actions .mg-btn{min-height:36px;padding:0 12px;font-size:12px}.mg-design-studio-hero h1{font-size:24px}}
 @media(max-width:1280px){.mg-design-layout{grid-template-columns:minmax(245px,20%) minmax(450px,1fr) 290px}.mg-design-status-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.mg-design-layout{height:calc(100% - 172px)}}
 @media(max-width:1080px){.mg-design-studio-page{overflow:auto}.mg-design-studio-app{min-height:100svh}.mg-design-studio-workspace{display:none!important}.mg-design-mobile-lock{display:grid;place-items:center;min-height:calc(100svh - 58px);padding:24px}.mg-design-mobile-card{max-width:520px;padding:24px;border:1px solid var(--mg-app-border);border-radius:22px;background:#fff;text-align:center;box-shadow:0 18px 48px rgba(15,23,42,.14)}.mg-design-lock-icon{display:grid;place-items:center;width:60px;height:60px;margin:0 auto 14px;border-radius:18px;background:#eff6ff;color:#1d4ed8;font-size:28px}.mg-design-mobile-card h1{margin:0;color:#071225;font-size:24px;letter-spacing:-.05em}.mg-design-mobile-card p{margin:10px 0 18px;color:#60728f;font-size:13px;line-height:1.5}}
+
+/* Design Studio custom shell */
+.mg-design-custom-page .mg-app-header,.mg-design-custom-page .mg-mobile-sidebar-backdrop{display:none!important}
+.mg-design-custom-page .mg-main{height:100svh;margin:0!important;padding:0!important;overflow:hidden;background:#edf4fb}
+.mg-design-custom-page .mg-design-studio-app{display:grid;grid-template-columns:320px minmax(0,1fr);height:100svh;min-height:100svh;overflow:hidden;background:#edf4fb}
+.mg-design-sidebar{display:grid;grid-template-rows:auto auto minmax(0,1fr);gap:14px;min-width:0;min-height:0;padding:18px;border-right:1px solid #d8e4f3;background:linear-gradient(180deg,#f9fcff 0%,#f4f8fd 100%);overflow:auto;scrollbar-width:thin}
+.mg-design-sidebar::-webkit-scrollbar{width:8px}.mg-design-sidebar::-webkit-scrollbar-thumb{border-radius:999px;background:#c6d6eb}
+.mg-design-sidebar-brand-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px}
+.mg-design-sidebar-logo{display:flex!important;align-items:center;gap:10px;text-decoration:none}.mg-design-sidebar-logo img{width:145px;max-width:100%;height:auto;display:block}.mg-design-sidebar-logo .mg-sidebar-logo-text{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.mg-design-sidebar-title{padding:12px 14px;border:1px solid #dbe7f6;border-radius:18px;background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+.mg-design-sidebar-title h2{margin:0;color:#071225;font-size:18px;line-height:1;letter-spacing:-.05em}.mg-design-sidebar-title p{margin:6px 0 0;color:#60728f;font-size:12px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mg-design-sidebar .mg-design-controls{display:grid;gap:10px;overflow:visible;padding:0}.mg-design-sidebar .mg-design-panel{box-shadow:none}.mg-design-sidebar .mg-design-panel-head h2{font-size:14px}.mg-design-sidebar .mg-design-panel-head p{font-size:10px}
+.mg-design-sidebar-fallback{display:grid;gap:8px}.mg-design-sidebar-fallback a{display:block;padding:12px 14px;border:1px solid #dbe7f6;border-radius:14px;background:#fff;color:#071225;text-decoration:none;font-size:13px;font-weight:850}.mg-design-sidebar-fallback a:hover{border-color:#9ec0f8;background:#eff6ff;color:#1d4ed8}
+.mg-design-main-shell{display:grid;grid-template-rows:auto minmax(0,1fr);min-width:0;min-height:0;overflow:hidden}
+.mg-design-page-header{display:flex;align-items:center;justify-content:space-between;gap:18px;min-height:72px;padding:12px 20px;border-bottom:1px solid #d8e4f3;background:rgba(255,255,255,.92);box-shadow:0 1px 2px rgba(15,23,42,.04);backdrop-filter:blur(14px)}
+.mg-design-page-header h1{margin:0;color:#071225;font-size:22px;line-height:1.05;letter-spacing:-.055em}.mg-design-page-header p{margin:4px 0 0;color:#60728f;font-size:12px;line-height:1.35}.mg-design-page-header .mg-design-eyebrow{margin-bottom:4px}
+.mg-design-header-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}.mg-design-header-actions .mg-btn{min-height:42px;white-space:nowrap}.mg-design-header-actions .mg-btn-primary{background:#020a18;color:#fff;border-color:#020a18}
+.mg-design-custom-page .mg-design-studio-workspace{height:auto;min-height:0;padding:12px;overflow:hidden}.mg-design-message-workspace{display:grid;place-items:start center;overflow:auto}
+.mg-design-custom-page .mg-design-layout{grid-template-columns:minmax(0,1fr) 318px;gap:12px;height:100%;min-height:0}.mg-design-custom-page .mg-design-print-options{overflow:auto;padding-right:2px}.mg-design-custom-page .mg-design-canvas-column{min-height:0}.mg-design-custom-page .mg-design-studio-hero,.mg-design-custom-page .mg-design-status-strip{display:none!important}
+@media(max-width:1280px){.mg-design-custom-page .mg-design-studio-app{grid-template-columns:300px minmax(0,1fr)}.mg-design-custom-page .mg-design-layout{grid-template-columns:minmax(0,1fr) 292px;height:100%}.mg-design-page-header h1{font-size:20px}.mg-design-header-actions .mg-btn{min-height:38px;padding:0 12px;font-size:12px}}
+@media(max-width:1080px){.mg-design-custom-page .mg-design-studio-app{display:block;height:auto;min-height:100svh}.mg-design-custom-page .mg-design-sidebar,.mg-design-custom-page .mg-design-main-shell{display:none!important}.mg-design-custom-page .mg-design-mobile-lock{display:grid;place-items:center;min-height:100svh;padding:24px}}
