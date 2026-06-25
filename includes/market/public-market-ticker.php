@@ -17,9 +17,9 @@ function mg_public_market_ticker_table(PDO $pdo, string $table): bool
 function mg_public_market_ticker_fallback_items(): array
 {
     return [
-        ['symbol'=>'MGFT','name'=>'Local Market','price'=>'Opening soon','change'=>'● LIVE SOON','trend'=>'flat','href'=>'/discover.php','stats'=>[['label'=>'MARKET','value'=>'BETA']],'is_fallback'=>true],
+        ['symbol'=>'MGFT','name'=>'Local Market','price'=>'Opening soon','change'=>'● SOON','trend'=>'flat','href'=>'/discover.php','stats'=>[['label'=>'MARKET','value'=>'BETA']],'is_fallback'=>true],
         ['symbol'=>'MERCH','name'=>'Merchant indexes','price'=>'Building','change'=>'● SNAPSHOTS','trend'=>'flat','href'=>'/discover.php','stats'=>[['label'=>'DATA','value'=>'LOADING']],'is_fallback'=>true],
-        ['symbol'=>'DROP','name'=>'Reward drops','price'=>'Coming online','change'=>'● DISCOVER','trend'=>'flat','href'=>'/discover.php','stats'=>[['label'=>'REWARDS','value'=>'LIVE SOON']],'is_fallback'=>true],
+        ['symbol'=>'DROP','name'=>'Reward drops','price'=>'Coming online','change'=>'● DISCOVER','trend'=>'flat','href'=>'/discover.php','stats'=>[['label'=>'REWARDS','value'=>'SOON']],'is_fallback'=>true],
     ];
 }
 
@@ -57,7 +57,7 @@ function mg_public_market_ticker_change(int $currentCents, ?int $previousCents, 
         return ['label'=>'• 0.0% 30D','trend'=>'flat','delta_cents'=>null,'delta_percent'=>0.0,'source'=>'market_growth_30d'];
     }
 
-    return ['label'=>'● LIVE','trend'=>'flat','delta_cents'=>null,'delta_percent'=>null,'source'=>'live'];
+    return ['label'=>'●','trend'=>'flat','delta_cents'=>null,'delta_percent'=>null,'source'=>'live'];
 }
 
 function mg_public_market_ticker_metric(array $metrics, string $key): array
