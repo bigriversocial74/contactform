@@ -73,4 +73,23 @@ final class CampaignStampDistributionContractTest extends TestCase
         self::assertStringContainsString("'already_issued' => true", $source);
         self::assertStringContainsString("'already_issued' => false", $source);
     }
+
+    public function testPublicCampaignFormShowsWalletResultAndGenericDetailRoutesToEngage(): void
+    {
+        $detail = $this->read('api/public/campaigns/detail.php');
+        $js = $this->read('assets/js/public-campaign.js');
+
+        self::assertStringContainsString("\$submitEndpoint = '/api/public/campaigns/engage.php';", $detail);
+        self::assertStringContainsString("newsletter_signup') \$submitEndpoint = '/api/public/campaigns/signup.php'", $detail);
+        self::assertStringContainsString("qr_reward_drop') \$submitEndpoint = '/api/public/campaigns/qr-pickup.php'", $detail);
+        self::assertStringContainsString("contest_giveaway') \$submitEndpoint = '/api/public/campaigns/contest-entry.php'", $detail);
+
+        self::assertStringContainsString('data.reward_title', $js);
+        self::assertStringContainsString('data.wallet_item_id', $js);
+        self::assertStringContainsString('data.wallet_status', $js);
+        self::assertStringContainsString('data.already_issued', $js);
+        self::assertStringContainsString('data.expires_at', $js);
+        self::assertStringContainsString('mg-public-campaign-result-details', $js);
+        self::assertStringContainsString('data.entry={note:data.entry_note}', $js);
+    }
 }

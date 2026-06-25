@@ -56,8 +56,17 @@ document.querySelectorAll('[data-campaign-form]').forEach(function(form){
     if(window.Microgifter&&typeof Microgifter.setStatus==='function'){Microgifter.setStatus(status,message,type);return;}
     if(status)status.textContent=message||'';
   }
-  function showResult(message){
-    if(result){result.classList.add('is-visible');result.innerHTML='<strong>'+esc(message||'Submitted.')+'</strong>';}
+  function showResult(message,payload){
+    var data=(payload&&payload.data)||payload||{};
+    var details=[];
+    if(data.reward_title)details.push('<span>Reward: '+esc(data.reward_title)+'</span>');
+    if(data.wallet_item_id)details.push('<span>Wallet item: '+esc(data.wallet_item_id)+'</span>');
+    if(data.wallet_status)details.push('<span>Status: '+esc(data.already_issued?'already issued':data.wallet_status)+'</span>');
+    if(data.expires_at)details.push('<span>Expires: '+esc(data.expires_at)+'</span>');
+    if(result){
+      result.classList.add('is-visible');
+      result.innerHTML='<strong>'+esc(message||'Submitted.')+'</strong>'+(details.length?'<div class="mg-public-campaign-result-details">'+details.join('')+'</div>':'');
+    }
     form.hidden=true;
   }
   form.addEventListener('submit',async function(event){
@@ -68,7 +77,7 @@ document.querySelectorAll('[data-campaign-form]').forEach(function(form){
     try{
       setStatus('Submitting…');
       var response=await Microgifter.post(endpoint,data);
-      showResult(response.message||'Campaign response submitted.');
+      showResult(response.message||'Campaign response submitted.',response);
     }catch(error){
       setStatus(error.message||'Unable to submit campaign form.','error');
     }
