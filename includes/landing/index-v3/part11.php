@@ -26,25 +26,25 @@
     <div class="mg-container">
       <div class="mg-story-grid">
         <div class="mg-story-copy" data-reveal="left">
-          <span class="mg-story-kicker">Tokenized experiences</span>
-          <h2 id="agenticTitle">Local experiences can become scarce, ownable, and tradable.</h2>
-          <p>Microgifter turns limited local experiences into programmable demand objects. Customers can buy early access, hold it, gift it, redeem it, or transfer it through a controlled resale market.</p>
+          <span class="mg-story-kicker">Promotional CRM</span>
+          <h2 id="agenticTitle">Turn every promotion into a tracked revenue workflow.</h2>
+          <p>Microgifter connects promotions, gift certificates, loyalty rewards, newsletters, contests, landing pages, QR codes, and customer profiles so merchants know what sold, who claimed, and what drove redemption.</p>
         </div>
         <div>
           <div class="mg-agentic-panel">
             <article class="mg-agentic-card" data-reveal="up">
-              <h3>What tokenized experience means</h3>
-              <p>A real-world experience becomes a wallet-ready claim with limited supply, ownership, redemption rules, transferability, and performance data.</p>
-              <p>The blockchain layer is not the headline. It supports proof, scarcity, ownership, and transfer while the customer still buys a real local experience.</p>
+              <h3>What Promotional CRM means</h3>
+              <p>Promotions stop being one-off posts, flyers, and coupon codes. Each campaign becomes a customer-aware revenue object with a destination, QR code, offer, audience, claim history, and redemption trail.</p>
+              <p>The merchant can run simple local marketing while Microgifter tracks the full path from offer creation to customer engagement and verified in-store activity.</p>
             </article>
             <article class="mg-agentic-card" data-reveal="up" style="--delay:120ms">
-              <h3>The future demand object</h3>
-              <div class="mg-agent-flow" aria-label="Tokenized experiences flow">
-                <div class="mg-flow-item"><span>Limited experience</span><span>→</span></div>
-                <div class="mg-flow-item"><span>Tokenized claim</span><span>→</span></div>
-                <div class="mg-flow-item"><span>Marketplace demand</span><span>→</span></div>
-                <div class="mg-flow-item"><span>Customer wallet</span><span>→</span></div>
-                <div class="mg-flow-item"><span>Redeem or resell</span><span>✓</span></div>
+              <h3>The tracked revenue layer</h3>
+              <div class="mg-agent-flow" aria-label="Promotional CRM revenue flow">
+                <div class="mg-flow-item"><span>Promotion or gift certificate</span><span>→</span></div>
+                <div class="mg-flow-item"><span>Campaign, QR, feed, or landing page</span><span>→</span></div>
+                <div class="mg-flow-item"><span>Claim and customer capture</span><span>→</span></div>
+                <div class="mg-flow-item"><span>Redemption tracking</span><span>→</span></div>
+                <div class="mg-flow-item"><span>Repeat revenue insight</span><span>✓</span></div>
               </div>
             </article>
           </div>
@@ -52,8 +52,8 @@
             <div class="mg-proof-pill">Restaurants</div>
             <div class="mg-proof-pill">Venues</div>
             <div class="mg-proof-pill">Fitness</div>
-            <div class="mg-proof-pill">Local guides</div>
-            <div class="mg-proof-pill">Developers</div>
+            <div class="mg-proof-pill">Multi-location</div>
+            <div class="mg-proof-pill">Local services</div>
           </div>
         </div>
       </div>
@@ -64,26 +64,26 @@
     <div class="mg-container">
       <div class="mg-story-grid">
         <div class="mg-story-copy" data-reveal="left">
-          <span class="mg-story-kicker">How it works</span>
-          <h2 id="howTitle">A simple loop from limited access to verified future demand.</h2>
-          <p>The page story should feel like a market system: create limited access, distribute demand, let customers hold or transfer the claim, then verify redemption when the visit happens.</p>
+          <span class="mg-story-kicker">Revenue loop</span>
+          <h2 id="howTitle">A simple loop from campaign launch to tracked redemption.</h2>
+          <p>Microgifter gives local merchants one practical workflow: create the offer, distribute it everywhere, capture the customer, verify the redemption, and reuse that data for the next campaign.</p>
         </div>
         <div class="mg-story-list">
           <article class="mg-story-step" data-reveal="up">
             <b>01</b>
-            <div><h3>Create a limited experience</h3><p>Build a scarce local experience with supply, price, rules, transfer settings, expiration, and redemption logic.</p></div>
+            <div><h3>Create the offer</h3><p>Build a promotion, gift certificate, loyalty reward, contest entry, landing page offer, or pre-sale product with pricing, rules, quantity, expiration, and redemption details.</p></div>
           </article>
           <article class="mg-story-step" data-reveal="up" style="--delay:100ms">
             <b>02</b>
-            <div><h3>Release the drop</h3><p>Launch through your website, QR codes, campaigns, partner apps, social channels, or the Microgifter Distribution API.</p></div>
+            <div><h3>Distribute the campaign</h3><p>Send the offer through QR codes, direct feed distribution, newsletters, contests, social posts, in-store table tents, landing pages, partner apps, or the Distribution API.</p></div>
           </article>
           <article class="mg-story-step" data-reveal="up" style="--delay:200ms">
             <b>03</b>
-            <div><h3>Hold, gift, or transfer</h3><p>The customer keeps the experience in a wallet and can redeem, gift, transfer, or resell it when demand exists.</p></div>
+            <div><h3>Capture the customer</h3><p>Every claim creates a measurable customer signal: who engaged, what offer moved them, where they came from, and which campaign generated the action.</p></div>
           </article>
           <article class="mg-story-step" data-reveal="up" style="--delay:300ms">
             <b>04</b>
-            <div><h3>Verify demand</h3><p>Measure primary sales, transfers, claims, redemptions, resale activity, revenue, and merchant demand signals.</p></div>
+            <div><h3>Track redemption and revenue</h3><p>Verify visits, redemptions, repeat engagement, campaign performance, and committed demand so local businesses can see which promotions actually turn into revenue.</p></div>
           </article>
         </div>
       </div>
