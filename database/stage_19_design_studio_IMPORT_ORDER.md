@@ -1,6 +1,6 @@
 # Stage 19 Design Studio migration
 
-Stage 19 now uses **one authoritative SQL file** for this feature:
+Stage 19 uses **one authoritative SQL file** for this feature:
 
 ```text
  database/stage_19_design_studio_qr_library.sql
@@ -32,7 +32,7 @@ The single SQL file creates and seeds the full Design Studio foundation:
 - Design Studio / QR / brand kit / asset / template / AI permissions
 - System AI prompt presets
 
-## Verify import
+## Verify import manually
 
 ```sql
 SELECT migration_key, applied_at
@@ -75,6 +75,33 @@ holiday-gift-card
 live-event-promo
 local-rewards-campaign
 restaurant-food-promo
+```
+
+## Run smoke test
+
+After importing the SQL, run the read-only smoke test:
+
+```bash
+php tools/design-studio-smoke-test.php
+```
+
+The smoke test checks:
+
+- required files exist
+- database connection works
+- required Stage 19 tables exist
+- migration ledger has `stage_19_design_studio_qr_library`
+- required permissions exist
+- seeded AI presets exist
+- export queue reliability columns exist
+- campaign link uniqueness column exists
+
+## Full release checklist
+
+Use this checklist for staging and merge validation:
+
+```text
+docs/design-studio-release-checklist.md
 ```
 
 ## Notes
