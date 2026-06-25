@@ -1,5 +1,6 @@
--- Stage 19 Design Studio, QR Library, Saved Templates, and Future AI Generation Foundation
--- Adds merchant-owned QR destinations, reusable design templates, saved studio projects, and AI generation job records.
+-- Stage 19 Design Studio Production Foundation
+-- QR library, brand kit website scanner, reusable templates, social formats, saved projects,
+-- design assets, export jobs, admin template publishing, campaign links, AI presets, and AI job queue.
 
 CREATE TABLE IF NOT EXISTS merchant_qr_codes (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -48,17 +49,74 @@ CREATE TABLE IF NOT EXISTS merchant_qr_code_scans (
   CONSTRAINT fk_merchant_qr_code_scans_code FOREIGN KEY (qr_code_id) REFERENCES merchant_qr_codes(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS merchant_brand_kits (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  workspace_id BIGINT UNSIGNED NOT NULL,
+  merchant_user_id BIGINT UNSIGNED NOT NULL,
+  name VARCHAR(180) NOT NULL,
+  status ENUM('draft','active','archived') NOT NULL DEFAULT 'draft',
+  source_url VARCHAR(1000) NULL,
+  logo_url VARCHAR(1000) NULL,
+  primary_color CHAR(7) NULL,
+  secondary_color CHAR(7) NULL,
+  accent_color CHAR(7) NULL,
+  palette_json JSON NULL,
+  font_json JSON NULL,
+  social_json JSON NULL,
+  image_candidates_json JSON NULL,
+  scan_result_json JSON NULL,
+  scan_status ENUM('not_started','queued','scanned','failed','approved') NOT NULL DEFAULT 'not_started',
+  scanned_at DATETIME NULL,
+  approved_at DATETIME NULL,
+  approved_by_user_id BIGINT UNSIGNED NULL,
+  created_by_user_id BIGINT UNSIGNED NOT NULL,
+  updated_by_user_id BIGINT UNSIGNED NULL,
+  archived_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_merchant_brand_kits_public_id (public_id),
+  KEY idx_merchant_brand_kits_workspace (workspace_id,status,updated_at),
+  CONSTRAINT fk_merchant_brand_kits_workspace FOREIGN KEY (workspace_id) REFERENCES merchant_workspaces(id) ON DELETE CASCADE,
+  CONSTRAINT fk_merchant_brand_kits_merchant_user FOREIGN KEY (merchant_user_id) REFERENCES users(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_merchant_brand_kits_created_by FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_merchant_brand_kits_updated_by FOREIGN KEY (updated_by_user_id) REFERENCES users(id) ON DELETE SET NULL,
+  CONSTRAINT fk_merchant_brand_kits_approved_by FOREIGN KEY (approved_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS merchant_brand_kit_assets (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  brand_kit_id BIGINT UNSIGNED NOT NULL,
+  asset_role ENUM('logo','favicon','hero_image','product_image','social_image','background','other') NOT NULL DEFAULT 'other',
+  source_url VARCHAR(1000) NOT NULL,
+  status ENUM('candidate','approved','rejected','imported','archived') NOT NULL DEFAULT 'candidate',
+  metadata_json JSON NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_merchant_brand_kit_assets_public_id (public_id),
+  KEY idx_merchant_brand_kit_assets_kit (brand_kit_id,status,asset_role),
+  CONSTRAINT fk_merchant_brand_kit_assets_kit FOREIGN KEY (brand_kit_id) REFERENCES merchant_brand_kits(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS merchant_design_templates (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   public_id CHAR(36) NOT NULL,
   workspace_id BIGINT UNSIGNED NULL,
   merchant_user_id BIGINT UNSIGNED NULL,
+  brand_kit_id BIGINT UNSIGNED NULL,
+  parent_template_id BIGINT UNSIGNED NULL,
   template_scope ENUM('system','admin','merchant') NOT NULL DEFAULT 'merchant',
   template_type ENUM('print','social','digital') NOT NULL DEFAULT 'print',
+  category_key VARCHAR(80) NULL,
   format_key VARCHAR(80) NOT NULL,
+  version_number INT UNSIGNED NOT NULL DEFAULT 1,
   name VARCHAR(180) NOT NULL,
   description VARCHAR(500) NULL,
   status ENUM('draft','active','archived') NOT NULL DEFAULT 'draft',
+  review_status ENUM('not_submitted','pending','approved','rejected','changes_requested') NOT NULL DEFAULT 'not_submitted',
   width_px INT UNSIGNED NULL,
   height_px INT UNSIGNED NULL,
   print_width_in DECIMAL(8,3) NULL,
@@ -69,8 +127,13 @@ CREATE TABLE IF NOT EXISTS merchant_design_templates (
   render_config_json JSON NULL,
   qr_required TINYINT(1) NOT NULL DEFAULT 1,
   is_presigned TINYINT(1) NOT NULL DEFAULT 0,
+  is_featured TINYINT(1) NOT NULL DEFAULT 0,
   signature_hash CHAR(64) NULL,
   signed_at DATETIME NULL,
+  submitted_at DATETIME NULL,
+  approved_at DATETIME NULL,
+  published_at DATETIME NULL,
+  approved_by_user_id BIGINT UNSIGNED NULL,
   created_by_user_id BIGINT UNSIGNED NULL,
   updated_by_user_id BIGINT UNSIGNED NULL,
   archived_at DATETIME NULL,
@@ -79,11 +142,33 @@ CREATE TABLE IF NOT EXISTS merchant_design_templates (
   PRIMARY KEY (id),
   UNIQUE KEY uq_merchant_design_templates_public_id (public_id),
   KEY idx_merchant_design_templates_workspace (workspace_id,status,template_type,format_key),
-  KEY idx_merchant_design_templates_scope (template_scope,status,template_type,format_key),
+  KEY idx_merchant_design_templates_scope (template_scope,status,review_status,template_type,format_key),
+  KEY idx_merchant_design_templates_category (category_key,is_featured,status),
   CONSTRAINT fk_merchant_design_templates_workspace FOREIGN KEY (workspace_id) REFERENCES merchant_workspaces(id) ON DELETE CASCADE,
   CONSTRAINT fk_merchant_design_templates_merchant_user FOREIGN KEY (merchant_user_id) REFERENCES users(id) ON DELETE SET NULL,
+  CONSTRAINT fk_merchant_design_templates_brand_kit FOREIGN KEY (brand_kit_id) REFERENCES merchant_brand_kits(id) ON DELETE SET NULL,
+  CONSTRAINT fk_merchant_design_templates_parent FOREIGN KEY (parent_template_id) REFERENCES merchant_design_templates(id) ON DELETE SET NULL,
   CONSTRAINT fk_merchant_design_templates_created_by FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE SET NULL,
-  CONSTRAINT fk_merchant_design_templates_updated_by FOREIGN KEY (updated_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+  CONSTRAINT fk_merchant_design_templates_updated_by FOREIGN KEY (updated_by_user_id) REFERENCES users(id) ON DELETE SET NULL,
+  CONSTRAINT fk_merchant_design_templates_approved_by FOREIGN KEY (approved_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS merchant_design_template_reviews (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  template_id BIGINT UNSIGNED NOT NULL,
+  review_status ENUM('pending','approved','rejected','changes_requested') NOT NULL DEFAULT 'pending',
+  reviewer_user_id BIGINT UNSIGNED NULL,
+  notes TEXT NULL,
+  checklist_json JSON NULL,
+  reviewed_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_merchant_design_template_reviews_public_id (public_id),
+  KEY idx_merchant_design_template_reviews_template (template_id,review_status,created_at),
+  CONSTRAINT fk_merchant_design_template_reviews_template FOREIGN KEY (template_id) REFERENCES merchant_design_templates(id) ON DELETE CASCADE,
+  CONSTRAINT fk_merchant_design_template_reviews_reviewer FOREIGN KEY (reviewer_user_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS merchant_design_projects (
@@ -91,6 +176,7 @@ CREATE TABLE IF NOT EXISTS merchant_design_projects (
   public_id CHAR(36) NOT NULL,
   workspace_id BIGINT UNSIGNED NOT NULL,
   merchant_user_id BIGINT UNSIGNED NOT NULL,
+  brand_kit_id BIGINT UNSIGNED NULL,
   template_id BIGINT UNSIGNED NULL,
   qr_code_id BIGINT UNSIGNED NULL,
   project_type ENUM('print','social','digital') NOT NULL DEFAULT 'print',
@@ -114,10 +200,111 @@ CREATE TABLE IF NOT EXISTS merchant_design_projects (
   KEY idx_merchant_design_projects_merchant (merchant_user_id,status,updated_at),
   CONSTRAINT fk_merchant_design_projects_workspace FOREIGN KEY (workspace_id) REFERENCES merchant_workspaces(id) ON DELETE CASCADE,
   CONSTRAINT fk_merchant_design_projects_merchant_user FOREIGN KEY (merchant_user_id) REFERENCES users(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_merchant_design_projects_brand_kit FOREIGN KEY (brand_kit_id) REFERENCES merchant_brand_kits(id) ON DELETE SET NULL,
   CONSTRAINT fk_merchant_design_projects_template FOREIGN KEY (template_id) REFERENCES merchant_design_templates(id) ON DELETE SET NULL,
   CONSTRAINT fk_merchant_design_projects_qr FOREIGN KEY (qr_code_id) REFERENCES merchant_qr_codes(id) ON DELETE SET NULL,
   CONSTRAINT fk_merchant_design_projects_created_by FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE RESTRICT,
   CONSTRAINT fk_merchant_design_projects_updated_by FOREIGN KEY (updated_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS merchant_design_assets (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  workspace_id BIGINT UNSIGNED NOT NULL,
+  merchant_user_id BIGINT UNSIGNED NOT NULL,
+  brand_kit_id BIGINT UNSIGNED NULL,
+  project_id BIGINT UNSIGNED NULL,
+  template_id BIGINT UNSIGNED NULL,
+  qr_code_id BIGINT UNSIGNED NULL,
+  ai_job_id BIGINT UNSIGNED NULL,
+  asset_type ENUM('logo','image','ai_image','qr_svg','qr_png','proof_pdf','print_pdf','social_png','zip_package','thumbnail','other') NOT NULL DEFAULT 'other',
+  name VARCHAR(180) NOT NULL,
+  status ENUM('candidate','active','approved','archived','failed') NOT NULL DEFAULT 'active',
+  storage_driver ENUM('external_url','local','s3','generated','pending') NOT NULL DEFAULT 'pending',
+  source_url VARCHAR(1000) NULL,
+  storage_key VARCHAR(500) NULL,
+  public_url VARCHAR(1000) NULL,
+  mime_type VARCHAR(120) NULL,
+  byte_size BIGINT UNSIGNED NULL,
+  width_px INT UNSIGNED NULL,
+  height_px INT UNSIGNED NULL,
+  checksum CHAR(64) NULL,
+  metadata_json JSON NULL,
+  created_by_user_id BIGINT UNSIGNED NOT NULL,
+  updated_by_user_id BIGINT UNSIGNED NULL,
+  archived_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_merchant_design_assets_public_id (public_id),
+  KEY idx_merchant_design_assets_workspace (workspace_id,status,asset_type,updated_at),
+  KEY idx_merchant_design_assets_project (project_id,status,asset_type),
+  CONSTRAINT fk_merchant_design_assets_workspace FOREIGN KEY (workspace_id) REFERENCES merchant_workspaces(id) ON DELETE CASCADE,
+  CONSTRAINT fk_merchant_design_assets_merchant_user FOREIGN KEY (merchant_user_id) REFERENCES users(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_merchant_design_assets_brand_kit FOREIGN KEY (brand_kit_id) REFERENCES merchant_brand_kits(id) ON DELETE SET NULL,
+  CONSTRAINT fk_merchant_design_assets_project FOREIGN KEY (project_id) REFERENCES merchant_design_projects(id) ON DELETE SET NULL,
+  CONSTRAINT fk_merchant_design_assets_template FOREIGN KEY (template_id) REFERENCES merchant_design_templates(id) ON DELETE SET NULL,
+  CONSTRAINT fk_merchant_design_assets_qr FOREIGN KEY (qr_code_id) REFERENCES merchant_qr_codes(id) ON DELETE SET NULL,
+  CONSTRAINT fk_merchant_design_assets_created_by FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_merchant_design_assets_updated_by FOREIGN KEY (updated_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS merchant_design_export_jobs (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  workspace_id BIGINT UNSIGNED NOT NULL,
+  merchant_user_id BIGINT UNSIGNED NOT NULL,
+  project_id BIGINT UNSIGNED NULL,
+  output_asset_id BIGINT UNSIGNED NULL,
+  export_type ENUM('print_pdf','social_png','qr_svg','qr_png','zip_package','proof') NOT NULL DEFAULT 'proof',
+  status ENUM('queued','running','completed','failed','canceled') NOT NULL DEFAULT 'queued',
+  options_json JSON NULL,
+  manifest_json JSON NULL,
+  error_message VARCHAR(500) NULL,
+  requested_by_user_id BIGINT UNSIGNED NOT NULL,
+  started_at DATETIME NULL,
+  completed_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_merchant_design_export_jobs_public_id (public_id),
+  KEY idx_merchant_design_export_jobs_workspace (workspace_id,status,export_type,created_at),
+  KEY idx_merchant_design_export_jobs_project (project_id,status,created_at),
+  CONSTRAINT fk_merchant_design_export_jobs_workspace FOREIGN KEY (workspace_id) REFERENCES merchant_workspaces(id) ON DELETE CASCADE,
+  CONSTRAINT fk_merchant_design_export_jobs_merchant_user FOREIGN KEY (merchant_user_id) REFERENCES users(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_merchant_design_export_jobs_project FOREIGN KEY (project_id) REFERENCES merchant_design_projects(id) ON DELETE SET NULL,
+  CONSTRAINT fk_merchant_design_export_jobs_output FOREIGN KEY (output_asset_id) REFERENCES merchant_design_assets(id) ON DELETE SET NULL,
+  CONSTRAINT fk_merchant_design_export_jobs_requested_by FOREIGN KEY (requested_by_user_id) REFERENCES users(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE merchant_design_assets
+  ADD CONSTRAINT fk_merchant_design_assets_ai_job FOREIGN KEY (ai_job_id) REFERENCES merchant_design_export_jobs(id) ON DELETE SET NULL;
+
+CREATE TABLE IF NOT EXISTS merchant_design_campaign_links (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  workspace_id BIGINT UNSIGNED NOT NULL,
+  merchant_user_id BIGINT UNSIGNED NOT NULL,
+  project_id BIGINT UNSIGNED NULL,
+  template_id BIGINT UNSIGNED NULL,
+  asset_id BIGINT UNSIGNED NULL,
+  qr_code_id BIGINT UNSIGNED NULL,
+  campaign_type ENUM('promotional_crm','newsletter','contest','landing_page','distribution','product','custom') NOT NULL DEFAULT 'custom',
+  campaign_ref VARCHAR(180) NOT NULL,
+  label VARCHAR(180) NULL,
+  metadata_json JSON NULL,
+  created_by_user_id BIGINT UNSIGNED NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_merchant_design_campaign_links_public_id (public_id),
+  KEY idx_merchant_design_campaign_links_workspace (workspace_id,campaign_type,campaign_ref),
+  CONSTRAINT fk_merchant_design_campaign_links_workspace FOREIGN KEY (workspace_id) REFERENCES merchant_workspaces(id) ON DELETE CASCADE,
+  CONSTRAINT fk_merchant_design_campaign_links_merchant_user FOREIGN KEY (merchant_user_id) REFERENCES users(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_merchant_design_campaign_links_project FOREIGN KEY (project_id) REFERENCES merchant_design_projects(id) ON DELETE SET NULL,
+  CONSTRAINT fk_merchant_design_campaign_links_template FOREIGN KEY (template_id) REFERENCES merchant_design_templates(id) ON DELETE SET NULL,
+  CONSTRAINT fk_merchant_design_campaign_links_asset FOREIGN KEY (asset_id) REFERENCES merchant_design_assets(id) ON DELETE SET NULL,
+  CONSTRAINT fk_merchant_design_campaign_links_qr FOREIGN KEY (qr_code_id) REFERENCES merchant_qr_codes(id) ON DELETE SET NULL,
+  CONSTRAINT fk_merchant_design_campaign_links_created_by FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS merchant_design_ai_jobs (
@@ -126,6 +313,7 @@ CREATE TABLE IF NOT EXISTS merchant_design_ai_jobs (
   workspace_id BIGINT UNSIGNED NOT NULL,
   merchant_user_id BIGINT UNSIGNED NOT NULL,
   project_id BIGINT UNSIGNED NULL,
+  brand_kit_id BIGINT UNSIGNED NULL,
   provider_key VARCHAR(80) NULL,
   model_key VARCHAR(120) NULL,
   generation_type ENUM('image','copy','layout','variation') NOT NULL DEFAULT 'image',
@@ -136,6 +324,7 @@ CREATE TABLE IF NOT EXISTS merchant_design_ai_jobs (
   error_message VARCHAR(500) NULL,
   requested_by_user_id BIGINT UNSIGNED NOT NULL,
   approved_by_user_id BIGINT UNSIGNED NULL,
+  output_asset_id BIGINT UNSIGNED NULL,
   completed_at DATETIME NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -146,22 +335,72 @@ CREATE TABLE IF NOT EXISTS merchant_design_ai_jobs (
   CONSTRAINT fk_merchant_design_ai_jobs_workspace FOREIGN KEY (workspace_id) REFERENCES merchant_workspaces(id) ON DELETE CASCADE,
   CONSTRAINT fk_merchant_design_ai_jobs_merchant_user FOREIGN KEY (merchant_user_id) REFERENCES users(id) ON DELETE RESTRICT,
   CONSTRAINT fk_merchant_design_ai_jobs_project FOREIGN KEY (project_id) REFERENCES merchant_design_projects(id) ON DELETE SET NULL,
+  CONSTRAINT fk_merchant_design_ai_jobs_brand_kit FOREIGN KEY (brand_kit_id) REFERENCES merchant_brand_kits(id) ON DELETE SET NULL,
   CONSTRAINT fk_merchant_design_ai_jobs_requested_by FOREIGN KEY (requested_by_user_id) REFERENCES users(id) ON DELETE RESTRICT,
-  CONSTRAINT fk_merchant_design_ai_jobs_approved_by FOREIGN KEY (approved_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+  CONSTRAINT fk_merchant_design_ai_jobs_approved_by FOREIGN KEY (approved_by_user_id) REFERENCES users(id) ON DELETE SET NULL,
+  CONSTRAINT fk_merchant_design_ai_jobs_output_asset FOREIGN KEY (output_asset_id) REFERENCES merchant_design_assets(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE merchant_design_assets
+  DROP FOREIGN KEY fk_merchant_design_assets_ai_job;
+ALTER TABLE merchant_design_assets
+  ADD CONSTRAINT fk_merchant_design_assets_ai_job FOREIGN KEY (ai_job_id) REFERENCES merchant_design_ai_jobs(id) ON DELETE SET NULL;
+
+CREATE TABLE IF NOT EXISTS merchant_design_ai_presets (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  workspace_id BIGINT UNSIGNED NULL,
+  template_scope ENUM('system','admin','merchant') NOT NULL DEFAULT 'system',
+  preset_key VARCHAR(120) NOT NULL,
+  name VARCHAR(180) NOT NULL,
+  category_key VARCHAR(80) NULL,
+  generation_type ENUM('image','copy','layout','variation') NOT NULL DEFAULT 'image',
+  status ENUM('draft','active','archived') NOT NULL DEFAULT 'active',
+  prompt_template_json JSON NOT NULL,
+  safety_json JSON NULL,
+  created_by_user_id BIGINT UNSIGNED NULL,
+  updated_by_user_id BIGINT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_merchant_design_ai_presets_public_id (public_id),
+  UNIQUE KEY uq_merchant_design_ai_presets_scope_key (template_scope,preset_key,workspace_id),
+  KEY idx_merchant_design_ai_presets_scope (template_scope,status,category_key,generation_type),
+  CONSTRAINT fk_merchant_design_ai_presets_workspace FOREIGN KEY (workspace_id) REFERENCES merchant_workspaces(id) ON DELETE CASCADE,
+  CONSTRAINT fk_merchant_design_ai_presets_created_by FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE SET NULL,
+  CONSTRAINT fk_merchant_design_ai_presets_updated_by FOREIGN KEY (updated_by_user_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT IGNORE INTO permissions (slug,name,description,created_at) VALUES
 ('merchant.design_studio.view','View Design Studio','Open the merchant design studio workspace.',NOW()),
 ('merchant.design_studio.manage','Manage Design Studio','Create, edit, and export merchant design studio assets.',NOW()),
+('merchant.brand_kits.view','View brand kits','View merchant brand kits and scanner results.',NOW()),
+('merchant.brand_kits.manage','Manage brand kits','Scan websites and manage merchant brand kits.',NOW()),
 ('merchant.design_templates.view','View design templates','View saved print and social templates.',NOW()),
 ('merchant.design_templates.manage','Manage design templates','Create and update saved print and social templates.',NOW()),
+('merchant.design_templates.admin','Administer design templates','Approve, publish, and feature system design templates.',NOW()),
 ('merchant.design_projects.view','View design projects','View saved Design Studio projects.',NOW()),
 ('merchant.design_projects.manage','Manage design projects','Save and update Design Studio projects.',NOW()),
+('merchant.design_assets.view','View design assets','View exported and generated Design Studio assets.',NOW()),
+('merchant.design_assets.manage','Manage design assets','Create design asset records and export jobs.',NOW()),
 ('merchant.design_ai.generate','Generate design assets with AI','Request AI-generated Design Studio images, copy, layouts, and variations.',NOW()),
+('merchant.design_ai.admin','Administer design AI','Manage AI prompt presets and approve generated asset workflows.',NOW()),
 ('merchant.qr_library.view','View merchant QR library','View QR codes available to merchant design and campaign tools.',NOW()),
 ('merchant.qr_library.manage','Manage merchant QR library','Create, update, pause, and archive merchant QR codes.',NOW());
 
 INSERT IGNORE INTO role_permissions (role_id,permission_id,created_at)
 SELECT r.id,p.id,NOW() FROM roles r JOIN permissions p
-ON p.slug IN ('merchant.design_studio.view','merchant.design_studio.manage','merchant.design_templates.view','merchant.design_templates.manage','merchant.design_projects.view','merchant.design_projects.manage','merchant.design_ai.generate','merchant.qr_library.view','merchant.qr_library.manage')
+ON p.slug IN ('merchant.design_studio.view','merchant.design_studio.manage','merchant.brand_kits.view','merchant.brand_kits.manage','merchant.design_templates.view','merchant.design_templates.manage','merchant.design_projects.view','merchant.design_projects.manage','merchant.design_assets.view','merchant.design_assets.manage','merchant.design_ai.generate','merchant.qr_library.view','merchant.qr_library.manage')
 WHERE r.slug IN ('merchant','admin','super_admin');
+
+INSERT IGNORE INTO role_permissions (role_id,permission_id,created_at)
+SELECT r.id,p.id,NOW() FROM roles r JOIN permissions p
+ON p.slug IN ('merchant.design_templates.admin','merchant.design_ai.admin')
+WHERE r.slug IN ('admin','super_admin');
+
+INSERT IGNORE INTO merchant_design_ai_presets (public_id,template_scope,preset_key,name,category_key,generation_type,status,prompt_template_json,safety_json,created_at,updated_at) VALUES
+(UUID(),'system','restaurant-food-promo','Restaurant Food Promo','restaurant','image','active',JSON_OBJECT('prompt','Create a clean, appetizing promotional image for a local restaurant offer. Keep room for headline, CTA, and QR code.','negative','No alcohol focus, no medical claims, no fake coupons.'),JSON_OBJECT('requires_review',true),NOW(),NOW()),
+(UUID(),'system','live-event-promo','Live Event Promo','event','image','active',JSON_OBJECT('prompt','Create an energetic local event promotional image with stage-light energy and clear negative space for QR and text.','negative','No copyrighted artist likenesses, no unsafe crowd scenes.'),JSON_OBJECT('requires_review',true),NOW(),NOW()),
+(UUID(),'system','fitness-challenge','Fitness Challenge','fitness','image','active',JSON_OBJECT('prompt','Create a bright fitness challenge promotional image for a local gym or studio with motivational energy and space for CTA.','negative','No body-shaming, no medical transformation claims.'),JSON_OBJECT('requires_review',true),NOW(),NOW()),
+(UUID(),'system','holiday-gift-card','Holiday Gift Card Promo','holiday','image','active',JSON_OBJECT('prompt','Create a warm seasonal gift-card promotional image for a local merchant with premium retail feel.','negative','Avoid religious specificity unless merchant provides it.'),JSON_OBJECT('requires_review',true),NOW(),NOW()),
+(UUID(),'system','local-rewards-campaign','Local Rewards Campaign','rewards','image','active',JSON_OBJECT('prompt','Create a modern local rewards campaign image with community-commerce feel, branded space, CTA, and QR placement.','negative','No fake endorsements or misleading reward values.'),JSON_OBJECT('requires_review',true),NOW(),NOW());
