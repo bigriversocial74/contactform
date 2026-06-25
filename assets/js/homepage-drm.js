@@ -5,6 +5,13 @@
     const root = document.querySelector('.mg-home-page');
     if (!root) return;
 
+    const secondaryCta = root.querySelector('.mg-hero .mg-btn-secondary');
+    if (secondaryCta) {
+      secondaryCta.href = '/learn-more.php';
+      secondaryCta.innerHTML = 'Book Demo <span aria-hidden="true">→</span>';
+      secondaryCta.setAttribute('aria-label', 'Book a Microgifter demo');
+    }
+
     const revealItems = Array.from(root.querySelectorAll('[data-reveal]'));
     const progressBar = root.querySelector('#mgProgressBar');
 
