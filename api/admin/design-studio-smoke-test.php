@@ -69,6 +69,7 @@ $requiredFiles = [
     'database/stage_19_design_studio_qr_library.sql',
     'database/stage_19_design_studio_IMPORT_ORDER.md',
     'docs/design-studio-release-checklist.md',
+    'includes/design-studio-renderer.php',
     'design-studio.php',
     'qr.php',
     'api/merchant/_design_studio_guard.php',
