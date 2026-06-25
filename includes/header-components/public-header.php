@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/market/public-market-ticker.php';
+
 $public_header_config = is_array($page_manifest['public_header'] ?? null) ? $page_manifest['public_header'] : [];
 $public_nav_links = is_array($public_header_config['links'] ?? null) ? $public_header_config['links'] : [];
 $public_demo_href = '/learn-more.php';
@@ -30,23 +32,22 @@ if (!$user) {
     ];
 }
 
-$market_ticker_items = is_array($public_header_config['ticker_items'] ?? null) ? $public_header_config['ticker_items'] : [];
-if (!$market_ticker_items) {
-    $market_ticker_items = [
-        ['symbol'=>'MGFTR','name'=>'Microgifter','price'=>'$0.842','change'=>'▲ 3.21%','trend'=>'up','href'=>'/profile.php?slug=microgifter'],
-        ['symbol'=>'COF2','name'=>'Coffee for Two','price'=>'$18.00','change'=>'▲ 4.2%','trend'=>'up','href'=>'/profile.php?slug=coffee-for-two'],
-        ['symbol'=>'BRNCH','name'=>'Weekend Brunch Drop','price'=>'$42.00','change'=>'▲ 8.7%','trend'=>'up','href'=>'/profile.php?slug=weekend-brunch-drop'],
-        ['symbol'=>'CHEF','name'=>'Chef Table Access','price'=>'$150.00','change'=>'▲ 12.4%','trend'=>'up','href'=>'/profile.php?slug=chef-table-access'],
-        ['symbol'=>'SHOW','name'=>'Venue Night Pass','price'=>'$36.00','change'=>'▲ 6.1%','trend'=>'up','href'=>'/profile.php?slug=venue-night-pass'],
-        ['symbol'=>'TACO','name'=>'Local Food Crawl','price'=>'$55.00','change'=>'▼ 1.8%','trend'=>'down','href'=>'/profile.php?slug=local-food-crawl'],
-        ['symbol'=>'VIPX','name'=>'Limited VIP Experience','price'=>'$225.00','change'=>'▲ 15.9%','trend'=>'up','href'=>'/profile.php?slug=limited-vip-experience'],
-    ];
+$market_ticker_items = [];
+if (!$user) {
+    try {
+        $market_ticker_items = mg_public_market_ticker_items(mg_db(), 12);
+    } catch (Throwable) {
+        $market_ticker_items = [];
+    }
+}
+if (!$market_ticker_items && is_array($public_header_config['ticker_items'] ?? null)) {
+    $market_ticker_items = $public_header_config['ticker_items'];
 }
 if ($user && $account_profile_url) {
     array_unshift($market_ticker_items, ['symbol'=>'YOU','name'=>'My Profile','price'=>'Profile','change'=>'OPEN','trend'=>'up','href'=>$account_profile_url]);
 }
 
-$show_market_ticker = !$user && ($public_header_config['ticker'] ?? true) !== false;
+$show_market_ticker = !$user && !empty($market_ticker_items);
 $show_demo_button = !$user;
 ?>
 <header class="mg-site-header mg-unified-header mg-market-universal-header" data-mg-universal-header data-public-header data-header-theme="market-dark" data-header-variant="<?= $user ? 'logged-in' : 'logged-out' ?>">
@@ -61,8 +62,8 @@ $show_demo_button = !$user;
     </div>
 
     <?php if ($show_market_ticker): ?>
-      <div class="mg-header-market" role="region" aria-label="Experience market ticker">
-        <div class="mg-header-market-label">Experience Market</div>
+      <div class="mg-header-market" role="region" aria-label="Local market ticker" data-public-market-ticker>
+        <div class="mg-header-market-label">Local Market</div>
         <div class="mg-header-market-track">
           <div class="mg-header-market-marquee">
             <?php for ($tickerPass = 0; $tickerPass < 2; $tickerPass++): ?>
@@ -74,9 +75,9 @@ $show_demo_button = !$user;
                   ?>
                   <a class="mg-header-ticker-item" href="<?= mg_e($tickerHref) ?>">
                     <strong><?= mg_e((string) ($ticker_item['symbol'] ?? 'MG')) ?></strong>
-                    <span><?= mg_e((string) ($ticker_item['name'] ?? 'Experience')) ?></span>
+                    <span><?= mg_e((string) ($ticker_item['name'] ?? 'Merchant')) ?></span>
                     <b><?= mg_e((string) ($ticker_item['price'] ?? '—')) ?></b>
-                    <em class="is-<?= mg_e($tickerTrend) ?>"><?= mg_e((string) ($ticker_item['change'] ?? 'OPEN')) ?></em>
+                    <em class="is-<?= mg_e($tickerTrend) ?>"><?= mg_e((string) ($ticker_item['change'] ?? 'LIVE')) ?></em>
                   </a>
                 <?php endforeach; ?>
               </div>
@@ -84,6 +85,7 @@ $show_demo_button = !$user;
           </div>
         </div>
       </div>
+      <style>body.mg-discovery-page .mg-discover-stock-ticker{display:none!important}</style>
     <?php endif; ?>
 
     <?php if ($user): ?>
