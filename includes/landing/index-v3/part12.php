@@ -6,6 +6,8 @@
   </section>
 
   <style>
+    .mg-public-bottom-demo-primary,.mg-public-bottom-demo-primary:visited{color:#050505!important;}
+    .mg-public-bottom-demo-primary:hover{color:#050505!important;}
     @media(max-width:760px){
       .mg-v4 .mg-v4-hero{padding-top:86px!important;overflow:hidden!important;}
       .mg-v4 .mg-v4-hero::after{
@@ -28,28 +30,28 @@
     <div class="mg-container">
       <div class="mg-section-head">
         <span class="mg-story-kicker" data-reveal="left">Distribution API</span>
-        <h2 class="mg-section-title" id="apiPreviewTitle" data-reveal="left">A future-demand layer developers can wire into their own products.</h2>
-        <p class="mg-section-copy" data-reveal="left" style="--delay:120ms">Use Microgifter to issue, distribute, track, and verify tokenized local experiences from apps, campaigns, CRMs, loyalty workflows, and AI-powered commerce systems.</p>
+        <h2 class="mg-section-title" id="apiPreviewTitle" data-reveal="left">A Promotional CRM layer developers can wire into their own products.</h2>
+        <p class="mg-section-copy" data-reveal="left" style="--delay:120ms">Use Microgifter to issue, distribute, track, and verify local rewards from apps, campaigns, CRMs, loyalty workflows, and AI-powered commerce systems.</p>
       </div>
       <div class="mg-api-story">
         <pre class="mg-code-panel" data-reveal="up"><span class="gold">POST</span> /v1/distribution/send
 {
   "merchant_id": <span class="green">"m_local_123"</span>,
-  "reward": <span class="green">"limited_coffee_for_two"</span>,
+  "reward": <span class="green">"coffee_for_two"</span>,
   "recipient": {
     "type": <span class="green">"email"</span>,
     "value": <span class="green">"customer@example.com"</span>
   },
   "metadata": {
-    "source": <span class="green">"future-demand"</span>
+    "source": <span class="green">"promotional-crm"</span>
   }
 }</pre>
         <article class="mg-api-flow" data-reveal="up" style="--delay:120ms">
-          <h3>From experience drop to redemption</h3>
-          <div class="mg-api-flow-row"><span class="mg-api-flow-dot">01</span><p>A merchant or partner app releases a limited experience.</p></div>
-          <div class="mg-api-flow-row"><span class="mg-api-flow-dot">02</span><p>Microgifter issues the claim and tracks ownership.</p></div>
-          <div class="mg-api-flow-row"><span class="mg-api-flow-dot">03</span><p>Customer holds, gifts, transfers, resells, or redeems.</p></div>
-          <div class="mg-api-flow-row"><span class="mg-api-flow-dot">04</span><p>Merchant verifies redemption and sees demand activity.</p></div>
+          <h3>From promotion to redemption</h3>
+          <div class="mg-api-flow-row"><span class="mg-api-flow-dot">01</span><p>A merchant or partner app releases a promotion, gift certificate, or reward.</p></div>
+          <div class="mg-api-flow-row"><span class="mg-api-flow-dot">02</span><p>Microgifter creates the claim, QR destination, and campaign tracking record.</p></div>
+          <div class="mg-api-flow-row"><span class="mg-api-flow-dot">03</span><p>Customer claims, shares, saves, or redeems the reward.</p></div>
+          <div class="mg-api-flow-row"><span class="mg-api-flow-dot">04</span><p>Merchant sees tracked revenue, engagement, redemption, and repeat demand signals.</p></div>
         </article>
       </div>
     </div>
@@ -58,8 +60,8 @@
   <section class="mg-public-bottom-demo" aria-labelledby="mgPublicDemoTitle">
     <div class="mg-public-bottom-demo-inner">
       <span class="mg-public-bottom-demo-eyebrow">Book a demo</span>
-      <h2 id="mgPublicDemoTitle">See how Microgifter creates future local demand.</h2>
-      <p>Walk through tokenized experience drops, wallet claims, resale controls, merchant tools, and the Distribution API in one focused demo.</p>
+      <h2 id="mgPublicDemoTitle">See how Microgifter turns local promotions into tracked revenue.</h2>
+      <p>Walk through Promotional CRM, gift certificates, loyalty rewards, QR campaigns, direct distribution, redemption tracking, merchant tools, and the Distribution API in one focused demo.</p>
       <div class="mg-public-bottom-demo-actions">
         <a class="mg-public-bottom-demo-primary" href="/learn-more.php">Book a Demo</a>
         <a class="mg-public-bottom-demo-secondary" href="/pricing.php">View Pricing</a>
@@ -79,7 +81,7 @@
           <svg class="mg-logo-mark" viewBox="0 0 256 256" aria-hidden="true"><path d="M38 54H86L128 96L170 54H218V202H170V118L128 160L86 118V202H38V54Z" fill="currentColor"/><path d="M96 108L128 140L160 108L128 76L96 108Z" fill="currentColor" opacity=".72"/></svg>
           <span class="mg-logo-text">Microgifter</span>
         </a>
-        <p class="mg-footer-tag">Local rewards. Real results.<br>Powering agent-ready commerce.</p>
+        <p class="mg-footer-tag">Local rewards. Real results.<br>Powering Promotional CRM for local commerce.</p>
         <div class="mg-socials" aria-label="Social links">
           <a href="https://linkedin.com/company/microgifter" aria-label="LinkedIn"><svg viewBox="0 0 24 24"><path d="M4 8h4v12H4V8Zm2-5a2.3 2.3 0 1 1 0 4.6A2.3 2.3 0 0 1 6 3Zm5 5h4v1.7c.7-1.1 2-2 4-2 3.4 0 5 2.2 5 6.1V20h-4v-5.5c0-2.1-.8-3.1-2.3-3.1-1.7 0-2.7 1.2-2.7 3.1V20h-4V8Z"/></svg></a>
           <a href="https://x.com/microgifter" aria-label="X"><svg viewBox="0 0 24 24"><path d="M4 4l16 16M20 4L4 20" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg></a>
