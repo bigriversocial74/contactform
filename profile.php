@@ -121,16 +121,24 @@ require __DIR__ . '/includes/header.php';
               <dl>
                 <div><dt>Followers</dt><dd data-profile-followers>0</dd></div>
                 <div><dt>Supporters</dt><dd data-profile-supporters>0</dd></div>
+                <div><dt>Follower Momentum</dt><dd data-invest-field="follower_momentum">0</dd></div>
                 <div><dt>Posts</dt><dd data-invest-field="posts_total">0</dd></div>
                 <div><dt>Interactions</dt><dd data-invest-field="post_interactions">0</dd></div>
                 <div><dt>Engagement</dt><dd data-invest-field="engagement_rate">0%</dd></div>
               </dl>
             </div>
             <div class="mg-invest-stat-group">
-              <span>Market and Performance</span>
+              <span>Market and Distribution</span>
               <dl>
+                <div><dt>Ticker</dt><dd data-invest-field="ticker_symbol">MGFT</dd></div>
+                <div><dt>Ticker Value</dt><dd data-invest-field="ticker_value">$0</dd></div>
+                <div><dt>Merchant Score</dt><dd data-invest-field="merchant_score">0</dd></div>
+                <div><dt>Rating</dt><dd data-invest-field="rating">No data</dd></div>
                 <div><dt>Active Drops</dt><dd data-profile-products data-invest-field="active_drops">0</dd></div>
                 <div><dt>Campaigns</dt><dd data-invest-field="active_campaigns">0</dd></div>
+                <div><dt>Distribution</dt><dd data-invest-field="distribution_channels">0</dd></div>
+                <div><dt>Stamp Inventory</dt><dd data-invest-field="stamp_inventory">0</dd></div>
+                <div><dt>Stamp Spend 30D</dt><dd data-invest-field="stamp_spend_30d">0</dd></div>
                 <div><dt>Demand Value</dt><dd data-invest-field="demand_value">$0</dd></div>
                 <div><dt>Floor Price</dt><dd data-invest-field="floor_price">$0</dd></div>
                 <div><dt>Volume 30D</dt><dd data-invest-field="volume_30d">$0</dd></div>
@@ -154,8 +162,8 @@ require __DIR__ . '/includes/header.php';
           <section class="mg-invest-chart-row" aria-label="Market charts">
             <article class="mg-invest-card mg-market-card">
               <div class="mg-invest-card-head">
-                <span>Demand Value</span>
-                <strong><span data-invest-field="demand_value">$0</span><em data-invest-field="market_growth_30d">No trend</em></strong>
+                <span>Ticker Value</span>
+                <strong><span data-invest-field="ticker_value">$0</span><em data-invest-field="market_growth_30d">No trend</em></strong>
               </div>
               <div class="mg-invest-empty-state mg-hidden" data-invest-chart-empty>No data available.</div>
               <svg viewBox="0 0 330 150" role="img" aria-label="30-day demand value chart" data-invest-market-chart>
@@ -167,8 +175,8 @@ require __DIR__ . '/includes/header.php';
 
             <article class="mg-invest-card mg-demand-card">
               <div class="mg-invest-card-head">
-                <span>Demand Score</span>
-                <strong><span data-invest-field="demand_score">0</span><em data-invest-field="demand_label">No data</em></strong>
+                <span>Merchant Score</span>
+                <strong><span data-invest-field="merchant_score">0</span><em data-invest-field="rating">No data</em></strong>
               </div>
               <div class="mg-invest-empty-state mg-hidden" data-invest-demand-empty>No data available.</div>
               <div class="mg-demand-meter" data-invest-demand-meter>
@@ -183,6 +191,10 @@ require __DIR__ . '/includes/header.php';
                 <div><dt>Campaigns</dt><dd data-invest-factor="campaigns">0</dd></div>
                 <div><dt>Redemptions</dt><dd data-invest-factor="redemptions">0</dd></div>
                 <div><dt>Engagement</dt><dd data-invest-factor="engagement">0</dd></div>
+                <div><dt>Distribution</dt><dd data-invest-factor="distribution">0</dd></div>
+                <div><dt>Stamps</dt><dd data-invest-factor="stamps">0</dd></div>
+                <div><dt>Followers</dt><dd data-invest-factor="followers">0</dd></div>
+                <div><dt>Momentum</dt><dd data-invest-factor="momentum">0</dd></div>
               </dl>
             </article>
           </section>
@@ -259,7 +271,7 @@ require __DIR__ . '/includes/header.php';
             <article class="mg-invest-card">
               <div class="mg-invest-section-head">
                 <h2>Analytics</h2>
-                <span>Calculated from real profile, product, campaign, wallet, and post data</span>
+                <span>Calculated from real profile, product, campaign, wallet, distribution, stamp, follower, and post data</span>
               </div>
               <div class="mg-invest-analytics-grid" data-invest-analytics-grid></div>
               <div class="mg-invest-empty-state mg-hidden" data-invest-analytics-empty>No data available.</div>
