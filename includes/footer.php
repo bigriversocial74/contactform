@@ -27,7 +27,7 @@ if (($page_body_class ?? '') === 'mg-admin-commerce-page') {
     $page_scripts[] = '/assets/js/admin-commerce-workflow.js';
     $late_styles[] = '/assets/css/admin-commerce-drawer.css';
 }
-if (in_array((string) ($page_manifest['id'] ?? ''), ['home', 'index'], true)) {
+if ((string) ($page_manifest['id'] ?? '') === 'home') {
     $page_scripts[] = '/assets/js/home-sticky-usa-map.js';
 }
 $core_scripts = [
