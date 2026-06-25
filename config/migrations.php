@@ -103,6 +103,7 @@ return [
         'stage_18m_admin_merchant_catalog_operations.sql',
         'stage_19_ai_provider_models.sql',
         'stage_19b_ai_permission_guard.sql',
+        'stage_19_merchant_market_snapshots.sql',
         'stage_v1_release_trigger_portability.sql',
     ],
 
