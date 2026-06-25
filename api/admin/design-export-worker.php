@@ -9,14 +9,14 @@ declare(strict_types=1);
  *
  * POST /api/admin/design-export-worker.php
  *      action=claim_next     Claim one queued job and mark it running.
+ *      action=render_next    Claim and render one queued job.
  *      action=release_stale  Release stale running jobs back to queued.
  *      action=mark_failed    Mark a claimed/running job failed.
- *
- * This file intentionally does not generate final PDF/PNG/SVG/ZIP output yet.
  */
 
 require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/../merchant/_design_studio_guard.php';
+require_once dirname(__DIR__, 2) . '/includes/design-studio-renderer.php';
 
 function mg_design_export_admin_user_can(array $user): bool
 {
@@ -67,6 +67,32 @@ function mg_design_export_job_public(array $row): array
     ];
 }
 
+function mg_design_export_asset_public(PDO $pdo, ?int $assetId): ?array
+{
+    if (!$assetId) return null;
+    $stmt = $pdo->prepare('SELECT public_id,asset_type,name,status,lifecycle_status,storage_driver,storage_key,public_url,mime_type,byte_size,checksum,renderer_version,metadata_json,created_at,updated_at FROM merchant_design_assets WHERE id=? LIMIT 1');
+    $stmt->execute([$assetId]);
+    $asset = $stmt->fetch();
+    if (!is_array($asset)) return null;
+    return [
+        'id' => (string) $asset['public_id'],
+        'asset_type' => (string) $asset['asset_type'],
+        'name' => (string) $asset['name'],
+        'status' => (string) $asset['status'],
+        'lifecycle_status' => (string) $asset['lifecycle_status'],
+        'storage_driver' => (string) $asset['storage_driver'],
+        'storage_key' => $asset['storage_key'] ?? null,
+        'public_url' => $asset['public_url'] ?? null,
+        'mime_type' => $asset['mime_type'] ?? null,
+        'byte_size' => $asset['byte_size'] !== null ? (int) $asset['byte_size'] : null,
+        'checksum' => $asset['checksum'] ?? null,
+        'renderer_version' => $asset['renderer_version'] ?? null,
+        'metadata' => json_decode((string) ($asset['metadata_json'] ?? ''), true) ?: [],
+        'created_at' => $asset['created_at'] ?? null,
+        'updated_at' => $asset['updated_at'] ?? null,
+    ];
+}
+
 function mg_design_export_worker_counts(PDO $pdo): array
 {
     $stmt = $pdo->query('SELECT status, export_type, COUNT(*) job_count FROM merchant_design_export_jobs GROUP BY status, export_type ORDER BY status, export_type');
@@ -95,7 +121,7 @@ function mg_design_export_claim_next(PDO $pdo, string $workerId): ?array
             return null;
         }
 
-        $update = $pdo->prepare("UPDATE merchant_design_export_jobs SET status='running', attempt_count=attempt_count+1, locked_at=NOW(), locked_by=?, last_attempt_at=NOW(), error_message=NULL, failure_code=NULL, updated_at=NOW() WHERE id=? AND status='queued'");
+        $update = $pdo->prepare("UPDATE merchant_design_export_jobs SET status='running', started_at=COALESCE(started_at,NOW()), attempt_count=attempt_count+1, locked_at=NOW(), locked_by=?, last_attempt_at=NOW(), error_message=NULL, failure_code=NULL, updated_at=NOW() WHERE id=? AND status='queued'");
         $update->execute([$workerId, (int) $job['id']]);
 
         $reload = $pdo->prepare('SELECT * FROM merchant_design_export_jobs WHERE id=? LIMIT 1');
@@ -125,8 +151,8 @@ function mg_design_export_mark_failed(PDO $pdo, string $publicId, string $failur
     $failureCode = substr($failureCode, 0, 80);
     $message = mb_substr(trim($message) !== '' ? trim($message) : 'Renderer job failed.', 0, 500);
 
-    $stmt = $pdo->prepare("UPDATE merchant_design_export_jobs SET status='failed', failed_at=NOW(), locked_at=NULL, locked_by=NULL, failure_code=?, error_message=?, updated_at=NOW() WHERE public_id=? AND status IN ('running','queued') LIMIT 1");
-    $stmt->execute([$failureCode, $message, $publicId]);
+    $stmt = $pdo->prepare("UPDATE merchant_design_export_jobs SET status='failed', failed_at=NOW(), locked_at=NULL, locked_by=NULL, failure_code=?, error_message=?, renderer_version=?, updated_at=NOW() WHERE public_id=? AND status IN ('running','queued') LIMIT 1");
+    $stmt->execute([$failureCode, $message, MG_DESIGN_RENDERER_VERSION, $publicId]);
     if ($stmt->rowCount() < 1) return null;
 
     $reload = $pdo->prepare('SELECT * FROM merchant_design_export_jobs WHERE public_id=? LIMIT 1');
@@ -146,8 +172,9 @@ if ($method === 'GET') {
     mg_ok([
         'counts' => mg_design_export_worker_counts($pdo),
         'recent_jobs' => mg_design_export_recent_jobs($pdo, 75),
-        'renderer_status' => 'scaffold_ready',
-        'renderer_note' => 'Jobs can be claimed/released/failed, but final file rendering is not implemented in this endpoint.',
+        'renderer_status' => 'active_partial',
+        'renderer_version' => MG_DESIGN_RENDERER_VERSION,
+        'renderer_note' => 'QR SVG and proof HTML rendering are active. PDF, PNG, and ZIP rendering still return renderer_not_implemented.',
     ]);
 }
 
@@ -165,6 +192,17 @@ if ($action === 'claim_next') {
     }
     mg_audit('admin.design_export_job_claimed', 'merchant_design_export_job', ['job_id' => (string) $job['public_id'], 'worker_id' => $workerId], (int) $user['id']);
     mg_ok(['claimed' => true, 'job' => mg_design_export_job_public($job), 'worker_id' => $workerId], 'Export job claimed.');
+}
+
+if ($action === 'render_next') {
+    $job = mg_design_export_claim_next($pdo, $workerId);
+    if (!$job) {
+        mg_ok(['rendered' => false, 'job' => null, 'asset' => null, 'worker_id' => $workerId], 'No queued export jobs available.');
+    }
+    $rendered = mg_design_renderer_render_job($pdo, $job);
+    $asset = mg_design_export_asset_public($pdo, !empty($rendered['output_asset_id']) ? (int) $rendered['output_asset_id'] : null);
+    mg_audit('admin.design_export_job_rendered', 'merchant_design_export_job', ['job_id' => (string) $rendered['public_id'], 'status' => (string) $rendered['status'], 'export_type' => (string) $rendered['export_type'], 'worker_id' => $workerId], (int) $user['id']);
+    mg_ok(['rendered' => (string) $rendered['status'] === 'completed', 'job' => mg_design_export_job_public($rendered), 'asset' => $asset, 'worker_id' => $workerId], (string) $rendered['status'] === 'completed' ? 'Export job rendered.' : 'Export job could not be rendered.');
 }
 
 if ($action === 'release_stale') {
