@@ -103,7 +103,6 @@ return [
         'stage_18m_admin_merchant_catalog_operations.sql',
         'stage_19_ai_provider_models.sql',
         'stage_19b_ai_permission_guard.sql',
-        'stage_19_design_studio_qr_library.sql',
         'stage_v1_release_trigger_portability.sql',
     ],
 
@@ -119,6 +118,7 @@ return [
         'stage_12_campaign_features_full_import.sql' => 'Operator-imported one-file Stage 12 campaign feature schema for environments that need a single phpMyAdmin import.',
         'stage_12_crm_followups_full_import.sql' => 'Operator-imported one-file Stage 12 CRM, follow-up, delivery, and suppression schema for manual phpMyAdmin import.',
         'stage_17_all_stamp_system.sql' => 'Operator-imported consolidated Stamp system bundle. The canonical ordered migrations are stage_17_stamp_ledger.sql, stage_17b_stamp_purchases.sql, and stage_17c_stamp_package_assignments.sql.',
+        'stage_19_design_studio_qr_library.sql' => 'Operator-imported single-file Stage 19 Design Studio foundation bundle for QR library, brand kits, design projects, assets, exports, and campaign links.',
         'stage_19_design_studio_campaign_links_import_fix.sql' => 'Operator-imported recovery patch for environments where the Stage 19 Design Studio campaign links table failed on foreign-key creation.',
     ],
 ];
