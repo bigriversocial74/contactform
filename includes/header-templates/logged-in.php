@@ -6,6 +6,8 @@ $show_header_signals = $show_header_signals ?? true;
 $show_header_cart = $show_header_cart ?? true;
 ?>
 <div class="mg-header-actions" data-header-template="logged-in">
+  <a class="mg-header-pricing-link" href="/pricing.php">Pricing</a>
+
   <?php if ($show_header_create): ?>
     <a class="mg-header-create" href="/build.php" data-header-create data-global-create aria-label="Create" aria-haspopup="dialog" aria-controls="mg-create-menu" aria-expanded="false">+</a>
   <?php endif; ?>
@@ -44,6 +46,8 @@ $show_header_cart = $show_header_cart ?? true;
         <span class="mg-account-session-label">SESSION</span>
       </div>
       <?php $menuIndex = 1; ?>
+      <a class="mg-account-action mg-account-upgrade" href="/pricing.php"><span class="mg-account-index">UP</span><span>Upgrade</span></a>
+      <a class="mg-account-action" href="/account-subscriptions.php"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>My Subscription</span></a>
       <a class="mg-account-action" href="/inbox.php"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>IN/OUT Box</span></a>
       <a class="mg-account-action" href="/feed.php"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>My Feed</span></a>
       <?php if ($account_profile_url): ?><a class="mg-account-action" href="<?= mg_e($account_profile_url) ?>"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>My Profile</span></a><?php endif; ?>
