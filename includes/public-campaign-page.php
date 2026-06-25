@@ -46,7 +46,7 @@ function mg_public_campaign_submit_label(string $type): string
 function mg_public_campaign_safe_url(mixed $value, bool $allowRelative = true): ?string
 {
     $url = trim((string)$value);
-    if ($url === '' || strlen($url) > 600 || preg_match('/[\x00-\x1F\x7F]/', $url) === 1) return null;
+    if ($url === '' || strlen($url) > 600) return null;
     if ($allowRelative && str_starts_with($url, '/') && !str_starts_with($url, '//')) return $url;
     if (filter_var($url, FILTER_VALIDATE_URL) === false) return null;
     $parts = parse_url($url);
@@ -172,6 +172,7 @@ if (($mgCampaign['quantity_limit'] ?? null) !== null && (int)($mgCampaign['issue
           <input type="hidden" name="campaign_id" value="<?= mg_e((string)$mgCampaign['public_id']) ?>">
           <input type="hidden" name="campaign" value="<?= mg_e((string)($mgCampaign['public_slug'] ?? $mgCampaign['public_id'])) ?>">
           <input type="hidden" name="campaign_type" value="<?= mg_e($campaignType) ?>">
+          <input type="hidden" name="source_url" value="<?= mg_e((string)($_SERVER['REQUEST_URI'] ?? '')) ?>">
           <?php if ($campaignType === 'qr_reward_drop'): ?><input type="hidden" name="qr_token" value="<?= mg_e($mgCampaignToken !== '' ? $mgCampaignToken : (string)($mgCampaign['qr_code_token'] ?? '')) ?>"><?php endif; ?>
           <label>Name<input name="name" placeholder="Your name" maxlength="180"></label>
           <label>Email<input name="email" type="email" placeholder="you@example.com" required maxlength="255"></label>
@@ -180,6 +181,7 @@ if (($mgCampaign['quantity_limit'] ?? null) !== null && (int)($mgCampaign['issue
           <?php if ($campaignType === 'referral_reward'): ?><label>Referral note<textarea name="entry_note" placeholder="Who referred you or who should we contact?"></textarea></label><?php endif; ?>
           <?php if ($campaignType === 'birthday_vip'): ?><label>Birthday month<input name="entry_note" placeholder="Example: March"></label><?php endif; ?>
           <?php if ($campaignType === 'agent_offer'): ?><label>What are you looking for?<textarea name="entry_note" placeholder="Tell the merchant what kind of reward or offer interests you."></textarea></label><?php endif; ?>
+          <label class="mg-public-campaign-consent"><input name="marketing_opt_in" type="checkbox" value="1" required> I agree to join this merchant campaign and receive follow-up messages related to this reward.</label>
           <div class="mg-public-campaign-status" data-campaign-status></div>
           <button class="mg-btn mg-btn-primary" type="submit"><?= mg_e($submitLabel) ?></button>
         </form>
