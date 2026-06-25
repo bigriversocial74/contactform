@@ -66,6 +66,28 @@
     return item;
   }
 
+  function textMetric(label, value) {
+    const item = document.createElement('span');
+    const strong = document.createElement('strong');
+    strong.textContent = String(value || '—');
+    item.append(strong, document.createTextNode(` ${label}`));
+    return item;
+  }
+
+  function marketMetrics(profile) {
+    const market = profile.market || null;
+    if (!market || !market.ticker_value) return null;
+    const row = document.createElement('div');
+    row.className = 'mg-discovery-counts mg-discovery-market-counts';
+    row.append(
+      textMetric(market.ticker_symbol || 'ticker', market.ticker_value),
+      metric('score', market.merchant_score),
+      textMetric('campaign value', market.campaign_conversion_value || '$0'),
+      textMetric('snapshot', market.snapshot_freshness || 'No snapshot')
+    );
+    return row;
+  }
+
   function card(profile) {
     const article = document.createElement('article');
     article.className = 'mg-discovery-card';
@@ -116,6 +138,9 @@
       metric('products', profile.published_products)
     );
     article.appendChild(counts);
+
+    const market = marketMetrics(profile);
+    if (market) article.appendChild(market);
 
     const action = document.createElement('a');
     action.className = 'mg-btn mg-btn-ghost mg-discovery-open';
