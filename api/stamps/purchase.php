@@ -28,7 +28,7 @@ try {
         $bundle = $stmt->fetch();
         if (!$bundle) throw new RuntimeException('Stamp bundle not found.');
         $purchasePublicId = mg_public_uuid();
-        $checkoutReference = 'stamp-checkout:' . $purchasePublicId;
+        $checkoutReference = 'stamp:purchase:' . $purchasePublicId;
         $pdo->prepare('INSERT INTO stamp_purchases (public_id,account_user_id,bundle_id,bundle_key,label_snapshot,stamps_snapshot,price_cents_snapshot,currency_snapshot,status,checkout_reference,idempotency_key,metadata_json,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,JSON_OBJECT(),NOW(),NOW())')
             ->execute([$purchasePublicId,$accountUserId,(int)$bundle['id'],(string)$bundle['bundle_key'],(string)$bundle['label'],(int)$bundle['stamps'],(int)$bundle['price_cents'],(string)$bundle['currency'],'checkout_created',$checkoutReference,$idempotencyKey]);
         $existing->execute([$accountUserId, $idempotencyKey]);
