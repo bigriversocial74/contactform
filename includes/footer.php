@@ -35,7 +35,7 @@ $core_scripts = [
     '/assets/js/agent-global-search.js','/assets/js/customer-commerce.js','/assets/js/cart.js','/assets/js/auth.js',
     '/assets/js/auth-state.js','/assets/js/onboarding.js','/assets/js/agent-tabs.js','/assets/js/agent-controls.js',
     '/assets/js/agent-toolbar-state.js','/assets/js/agent-sidebar.js','/assets/js/agent-items.js','/assets/js/media-delivery.js',
-    '/assets/js/gift-stream-launch.js','/assets/js/merchant-claim.js','/assets/js/agent-tools.js','/assets/js/market-alerts.js',
+    '/assets/js/gift-stream-launch.js','/assets/js/merchant-claim.js','/assets/js/agent-tools.js','/assets/js/market-alerts.js','/assets/js/public-market-ticker.js',
 ];
 $scripts = array_values(array_unique(array_merge($core_scripts, $page_scripts)));
 $user = mg_current_user();
@@ -50,10 +50,10 @@ $can_intelligence = $user && (in_array('intelligence.dashboard.view', $user_perm
     <section class="mg-footer-brand-panel" aria-label="Microgifter footer overview">
       <a class="mg-brand mg-footer-logo" href="/index.php" aria-label="Microgifter home"><img src="/images/logo_main_drk.png" alt="Microgifter"><span>Microgifter</span></a>
       <p>Rewards, tokenized local experiences, and agent-ready gifting tools for local commerce.</p>
-      <div class="mg-footer-market-strip" aria-label="Experience market summary">
-        <span><strong>MGFTR</strong> $0.842</span>
-        <span><strong>COF2</strong> ▲ 4.2%</span>
-        <span><strong>VIPX</strong> ▲ 15.9%</span>
+      <div class="mg-footer-market-strip" aria-label="Experience market summary" data-footer-market-strip>
+        <span><strong>MGFT</strong> Opening soon</span>
+        <span><strong>MERCH</strong> Snapshots</span>
+        <span><strong>SCORE</strong> Beta</span>
       </div>
     </section>
 
