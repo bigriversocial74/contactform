@@ -1,0 +1,69 @@
+/* Real data states for the public investment profile. */
+.mg-invest-empty-state{
+  min-height:180px;
+  width:100%;
+  display:grid;
+  place-items:center;
+  padding:28px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.12);
+  background:#030712;
+  color:#fff;
+  text-align:center;
+  font-size:14px;
+  font-weight:900;
+  letter-spacing:.01em;
+}
+.mg-invest-card>.mg-invest-empty-state{margin:0 18px 18px;width:auto;}
+.mg-market-card .mg-invest-empty-state,.mg-demand-card .mg-invest-empty-state{min-height:148px;margin:10px 0 0;}
+.mg-invest-sidebar .mg-invest-empty-state{min-height:104px;margin:8px 14px 14px;}
+.mg-invest-no-data{opacity:.58;}
+.mg-invest-campaign-list a.mg-invest-campaign-title{
+  color:var(--mgp-text,#111827);
+  text-decoration:none;
+  font-weight:900;
+}
+.mg-invest-campaign-list small.mg-invest-campaign-meta{
+  grid-column:1/-1;
+  color:var(--mgp-muted,#6b7280);
+  font-size:11px;
+  font-weight:800;
+}
+.mg-invest-analytics-grid small{
+  display:block;
+  margin-top:6px;
+  color:var(--mgp-muted,#6b7280);
+  font-size:11px;
+  line-height:1.35;
+}
+.mg-invest-formula-list{
+  display:grid;
+  gap:8px;
+  padding:0 18px 18px;
+}
+.mg-invest-formula-list p{
+  margin:0;
+  padding:10px 12px;
+  border:1px solid var(--mgp-line,#e5e7eb);
+  border-radius:10px;
+  background:#fffdf6;
+  color:#4c4337;
+  font-size:12px;
+  line-height:1.45;
+  font-weight:750;
+}
+.mg-profile-action-status.is-visible{
+  display:block;
+  margin-top:8px;
+  color:#111827;
+  font-size:12px;
+  font-weight:850;
+}
+.mg-profile-action-status.is-success{color:#047857;}
+.mg-profile-action-status.is-error{color:#b42318;}
+.mg-invest-chart-row svg.mg-hidden{display:none!important;}
+.mg-invest-trending a{color:inherit;text-decoration:none;font-weight:800;}
+@media(max-width:760px){
+  .mg-invest-empty-state{min-height:140px;padding:22px;}
+  .mg-invest-card>.mg-invest-empty-state{margin:0 14px 14px;}
+}
