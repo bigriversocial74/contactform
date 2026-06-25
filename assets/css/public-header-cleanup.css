@@ -83,7 +83,7 @@ body[data-authenticated="false"] .mg-header-market-subbar{
   background:linear-gradient(180deg,rgba(255,255,255,.94),rgba(255,255,255,.88))!important;
   overflow:visible!important;
 }
-body[data-authenticated="false"] .mg-header-market-subbar .mg-header-market{
+body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-header-market-subbar .mg-header-market{
   width:100%!important;
   min-width:0!important;
   display:grid!important;
@@ -102,6 +102,7 @@ body[data-authenticated="false"] .mg-header-market-subbar .mg-header-market{
   box-shadow:inset 0 1px 0 rgba(255,255,255,.86),0 12px 28px rgba(0,0,0,.055)!important;
   overflow:hidden!important;
 }
+body[data-authenticated="false"] .mg-header-market-subbar:empty{display:none!important;min-height:0!important;padding:0!important}
 body[data-authenticated="false"] .mg-header-market-subbar .mg-header-market-label{display:inline-flex!important;align-items:center!important;padding:6px 13px!important;border-radius:999px!important;background:#fbf0d1!important;color:#d9a735!important;font-size:11px!important;font-weight:950!important;letter-spacing:.12em!important;text-transform:uppercase!important;white-space:nowrap!important}
 body[data-authenticated="false"] .mg-header-market-subbar .mg-header-market-track{display:block!important;min-width:0!important;overflow:hidden!important;-webkit-mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent)!important;mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent)!important}
 body[data-authenticated="false"] .mg-header-market-subbar .mg-header-market-marquee{display:flex!important;width:max-content!important;animation:mgPublicMarketTicker 34s linear infinite!important;will-change:transform!important}
@@ -170,7 +171,7 @@ body[data-authenticated="false"] .mg-index-mobile-nav a::after{content:"→";opa
   body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-header-inner{min-height:62px!important;grid-template-columns:minmax(0,1fr) 44px!important}
   body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-header-left{min-width:0!important;overflow:hidden!important}
   body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-brand.brand img{width:138px!important}
-  body[data-authenticated="false"] .mg-header-market-subbar .mg-header-market{display:grid!important;grid-template-columns:1fr!important;padding:7px 8px!important;border-radius:14px!important}
+  body[data-authenticated="false"] .mg-header-market-subbar .mg-header-market{grid-template-columns:1fr!important;padding:7px 8px!important;border-radius:14px!important}
   body[data-authenticated="false"] .mg-header-market-subbar .mg-header-market-label{display:none!important}
   body[data-authenticated="false"] .mg-header-market-subbar .mg-header-ticker-item span,
   body[data-authenticated="false"] .mg-header-market-subbar .mg-header-ticker-item b{display:none!important}
