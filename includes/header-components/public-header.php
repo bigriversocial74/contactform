@@ -18,7 +18,7 @@ foreach ($public_nav_links as $public_header_link) {
     }
 
     $href = (string) ($public_header_link['href'] ?? '');
-    if (in_array($href, ['/corporate.php', '/retail.php', '/locations.php', '/campaign.php', '/developer-docs.php'], true)) {
+    if (in_array($href, ['/corporate.php', '/retail.php', '/locations.php', '/campaign.php', '/developer-docs.php', '/merchant.php'], true)) {
         continue;
     }
 
@@ -29,7 +29,6 @@ $public_nav_links = $filtered_links;
 if (!$user) {
     $public_nav_links = [
         ['label' => 'Explore', 'href' => '/discover.php'],
-        ['label' => 'Merchant', 'href' => '/merchant.php'],
         ['label' => 'Pricing', 'href' => '/pricing.php'],
     ];
 }
@@ -85,6 +84,19 @@ $show_demo_button = !$user;
           </nav>
         <?php endif; ?>
         <?php if ($show_demo_button): ?><a class="mg-public-demo" href="<?= mg_e($public_demo_href) ?>">Book A Demo</a><?php endif; ?>
+        <div class="mg-account-menu" data-mg-auth-menu>
+          <button class="mg-account-trigger" type="button" data-mg-auth-trigger aria-expanded="false">
+            <span class="mg-avatar">A</span>
+            <span class="mg-account-copy"><span class="mg-account-name">Account</span><span class="mg-account-role">Guest</span></span>
+            <span class="mg-account-caret">⌄</span>
+          </button>
+          <div class="mg-account-actions">
+            <div class="mg-account-menu-head"><span class="mg-account-status-light"></span><span class="mg-account-head-copy"><span class="mg-account-head-name">Account</span><span class="mg-account-head-email">Guest</span></span><span class="mg-account-session-label">SESSION</span></div>
+            <a class="mg-account-action" href="/signin.php"><span class="mg-account-index">01</span><span>Sign in</span></a>
+            <a class="mg-account-action" href="/signup.php"><span class="mg-account-index">02</span><span>Create account</span></a>
+            <a class="mg-account-action" href="/forgot-password.php"><span class="mg-account-index">03</span><span>Reset password</span></a>
+          </div>
+        </div>
         <button class="mg-public-menu-toggle" type="button" data-public-menu-trigger aria-label="Open navigation menu" aria-controls="mg-public-mobile-menu" aria-expanded="false"><span></span><span></span><span></span></button>
       </div>
     <?php endif; ?>
@@ -114,22 +126,6 @@ $show_demo_button = !$user;
               <?php endforeach; ?>
             </div>
           <?php endfor; ?>
-        </div>
-      </div>
-
-      <div class="mg-header-market-account">
-        <div class="mg-account-menu" data-mg-auth-menu>
-          <button class="mg-account-trigger" type="button" data-mg-auth-trigger aria-expanded="false">
-            <span class="mg-avatar">A</span>
-            <span class="mg-account-copy"><span class="mg-account-name">Account</span><span class="mg-account-role">Guest</span></span>
-            <span class="mg-account-caret">⌄</span>
-          </button>
-          <div class="mg-account-actions">
-            <div class="mg-account-menu-head"><span class="mg-account-status-light"></span><span class="mg-account-head-copy"><span class="mg-account-head-name">Account</span><span class="mg-account-head-email">Guest</span></span><span class="mg-account-session-label">SESSION</span></div>
-            <a class="mg-account-action" href="/signin.php"><span class="mg-account-index">01</span><span>Sign in</span></a>
-            <a class="mg-account-action" href="/signup.php"><span class="mg-account-index">02</span><span>Create account</span></a>
-            <a class="mg-account-action" href="/forgot-password.php"><span class="mg-account-index">03</span><span>Reset password</span></a>
-          </div>
         </div>
       </div>
     </div>
