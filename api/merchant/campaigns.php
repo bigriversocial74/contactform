@@ -24,6 +24,30 @@ function mg_campaign_unique_slug(PDO $pdo, int $merchantId, string $title, strin
     }
 }
 
+function mg_campaign_public_path(string $campaignType): string
+{
+    return match ($campaignType) {
+        'newsletter_signup' => '/newsletter-signup.php',
+        'contest_giveaway' => '/contest-entry.php',
+        'qr_reward_drop' => '/qr-drop.php',
+        'referral_reward' => '/referral-reward.php',
+        'birthday_vip' => '/birthday-vip.php',
+        'agent_offer' => '/agent-offer.php',
+        default => '/campaign.php',
+    };
+}
+
+function mg_campaign_public_url(array $row): string
+{
+    $type = (string) $row['campaign_type'];
+    $ref = (string) ($row['public_slug'] ?: $row['public_id']);
+    $path = mg_campaign_public_path($type);
+    $query = $type === 'qr_reward_drop' && !empty($row['qr_code_token'])
+        ? ('?token=' . rawurlencode((string) $row['qr_code_token']))
+        : ('?campaign=' . rawurlencode($ref));
+    return $path . $query;
+}
+
 function mg_campaign_row(array $row): array
 {
     return [
@@ -45,6 +69,8 @@ function mg_campaign_row(array $row): array
         'agent_discoverable' => (bool) ((int) ($row['agent_discoverable'] ?? 0)),
         'public_slug' => $row['public_slug'] ?? null,
         'qr_code_token' => $row['qr_code_token'] ?? null,
+        'public_url' => mg_campaign_public_url($row),
+        'landing_page_url' => mg_campaign_public_url($row),
         'created_at' => $row['created_at'] ?? null,
         'updated_at' => $row['updated_at'] ?? null,
     ];
@@ -158,6 +184,7 @@ try {
         'campaign_id' => $campaignId,
         'campaign_type' => $campaignType,
         'status' => $status,
+        'public_url' => mg_campaign_public_url($row),
     ], $merchantId);
 
     mg_ok(['campaign' => mg_campaign_row($row), 'schema_ready' => true], $message, 201);
