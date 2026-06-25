@@ -5,9 +5,10 @@ declare(strict_types=1);
   <div>
     <span class="mg-eyebrow">Catalog operations</span>
     <h1>Product management</h1>
-    <p>Review drafts, publish new versions, monitor storefront placement, inspect media, and preserve immutable product history.</p>
+    <p>Review drafts, publish products, and turn published offers into reusable reward templates for campaigns.</p>
   </div>
   <div class="mg-heading-actions">
+    <a class="mg-btn mg-btn-ghost" href="/merchant-reward-templates.php">Reward templates</a>
     <a class="mg-btn mg-btn-ghost" href="/merchant-storefront.php">Manage storefront</a>
     <a class="mg-btn mg-btn-soft" href="/merchant-media.php">Media library</a>
     <a class="mg-btn mg-btn-primary" href="/build.php">Create product</a>
@@ -73,7 +74,7 @@ declare(strict_types=1);
 <section class="mg-app-panel mg-hidden" data-products-content>
   <div class="mg-product-list-header">
     <div><strong data-products-result-count>0 products</strong><span data-products-page-summary></span></div>
-    <span>Published versions are immutable. Editing creates a new draft.</span>
+    <span>Published products can become reward templates for Promotional CRM campaigns.</span>
   </div>
   <div class="mg-product-list" data-product-list></div>
   <div class="mg-product-empty mg-hidden" data-products-empty>
@@ -87,3 +88,25 @@ declare(strict_types=1);
     <button class="mg-btn mg-btn-ghost" type="button" data-product-page="next">Next</button>
   </nav>
 </section>
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+  var list=document.querySelector('[data-product-list]');
+  if(!list)return;
+  function addTemplateLinks(){
+    list.querySelectorAll('.mg-product-row').forEach(function(row){
+      if(row.querySelector('[data-product-template-link]'))return;
+      var id=row.getAttribute('data-product-id');
+      var actions=row.querySelector('.mg-product-actions');
+      var publicLink=actions&&Array.from(actions.querySelectorAll('a')).find(function(a){return a.textContent.trim()==='Public page';});
+      if(!id||!actions||!publicLink)return;
+      var link=document.createElement('a');
+      link.href='/merchant-reward-templates.php?source_product_id='+encodeURIComponent(id);
+      link.textContent='Make reward template';
+      link.setAttribute('data-product-template-link','');
+      actions.insertBefore(link, publicLink);
+    });
+  }
+  new MutationObserver(addTemplateLinks).observe(list,{childList:true,subtree:true});
+  addTemplateLinks();
+});
+</script>
