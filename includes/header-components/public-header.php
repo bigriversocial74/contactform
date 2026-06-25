@@ -132,25 +132,6 @@ $show_demo_button = !$user;
   </div>
 </header>
 
-<?php if ((string)($page_manifest['id'] ?? '') === 'home'): ?>
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  const title = document.getElementById('mgHeroTitle');
-  const lede = document.querySelector('.mg-v4-lede');
-  const nav = document.querySelector('.mg-v4-links');
-  if (title) title.textContent = 'The Rewards Layer for Local Commerce.';
-  if (lede) lede.textContent = 'Turn promotions, gift certificates, loyalty rewards, and customer engagement into tracked revenue from one simple platform.';
-  if (nav && !nav.querySelector('a[href="/pricing.php"]')) {
-    const pricing = document.createElement('a');
-    pricing.href = '/pricing.php';
-    pricing.textContent = 'Pricing';
-    const docs = nav.querySelector('a[href="/developer-docs.php"]');
-    nav.insertBefore(pricing, docs || null);
-  }
-});
-</script>
-<?php endif; ?>
-
 <?php if (!$user): ?>
 <div class="mg-public-mobile-menu" id="mg-public-mobile-menu" data-public-mobile-menu hidden aria-hidden="true">
   <button class="mg-public-mobile-backdrop" type="button" data-public-menu-close aria-label="Close navigation menu"></button>
