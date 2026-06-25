@@ -78,9 +78,9 @@ Confirm:
 - [ ] Queue QR image asset creates an asset/export job
 - [ ] Campaign link saves with a campaign reference
 
-## 5. Export queue admin check
+## 5. Export queue and renderer check
 
-After generating a proof or export package, open this URL while logged in as admin:
+After generating a proof or QR SVG export, open this URL while logged in as admin:
 
 ```text
 /api/admin/design-export-worker.php
@@ -89,11 +89,30 @@ After generating a proof or export package, open this URL while logged in as adm
 Confirm:
 
 - [ ] The endpoint returns JSON
-- [ ] `renderer_status` is `scaffold_ready`
+- [ ] `renderer_status` is `active_partial`
+- [ ] `renderer_version` is present
 - [ ] recent export jobs are listed
-- [ ] queued/running/failed counts are visible when jobs exist
+- [ ] queued/running/completed/failed counts are visible when jobs exist
 
-Important: this endpoint can monitor and claim worker jobs, but it does not render final files yet.
+To render one queued job, send a POST request with CSRF token and:
+
+```json
+{
+  "action": "render_next"
+}
+```
+
+Expected current renderer support:
+
+- [ ] `proof` jobs generate local proof HTML assets
+- [ ] `qr_svg` jobs generate local SVG QR assets
+- [ ] `print_pdf`, `social_png`, `qr_png`, and `zip_package` jobs fail cleanly with `renderer_not_implemented`
+
+Rendered files are written under:
+
+```text
+/uploads/design-studio/{workspace_id}/{year}/{month}/
+```
 
 ## 6. Public QR test
 
@@ -158,6 +177,7 @@ These are optional. Use only if someone helping you is comfortable with terminal
 ```text
 php -l design-studio.php
 php -l qr.php
+php -l includes/design-studio-renderer.php
 php -l api/merchant/_design_studio_guard.php
 php -l api/merchant/_merchant.php
 php -l api/merchant/brand-kit.php
@@ -172,6 +192,4 @@ php tools/design-studio-smoke-test.php
 
 ## 9. Known non-blocking limitation
 
-The Design Studio can queue export jobs, and the admin worker scaffold can claim/release/fail jobs. The renderer still needs to generate final PDF/PNG/SVG/ZIP files.
-
-Do not present export rendering as complete until final file rendering is implemented and tested.
+The Design Studio now renders local proof HTML and QR SVG assets. PDF, PNG, and ZIP output are intentionally marked `renderer_not_implemented` until those file renderers are added and tested.
