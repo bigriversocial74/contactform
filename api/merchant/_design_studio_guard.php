@@ -30,13 +30,14 @@ function mg_design_studio_require_tables(PDO $pdo, array $tables): void
 {
     $missing = mg_design_studio_missing_tables($pdo, $tables);
     if ($missing) {
-        mg_fail('Design Studio setup is incomplete. Import database/stage_19_design_studio_qr_library.sql before using this endpoint.', 503);
+        mg_fail('Design Studio setup is incomplete. Import the split Stage 19 migrations before using this endpoint.', 503);
     }
 }
 
 function mg_design_studio_core_tables(): array
 {
     return [
+        'microgifter_schema_migrations',
         'merchant_qr_codes',
         'merchant_qr_code_scans',
         'merchant_brand_kits',
