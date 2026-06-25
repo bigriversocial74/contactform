@@ -183,6 +183,7 @@ if (($mgCampaign['quantity_limit'] ?? null) !== null && (int)($mgCampaign['issue
           <div class="mg-public-campaign-status" data-campaign-status></div>
           <button class="mg-btn mg-btn-primary" type="submit"><?= mg_e($submitLabel) ?></button>
         </form>
+        <!-- Public wallet result rows render into data-campaign-result and are styled by .mg-public-campaign-result-details. -->
         <div class="mg-public-campaign-result" data-campaign-result></div>
       <?php endif; ?>
     </aside>

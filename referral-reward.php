@@ -9,6 +9,7 @@ $page_scripts = ['/assets/js/public-campaign.js'];
 $mgCampaignExpectedType = 'referral_reward';
 $mgCampaignPageLabel = 'Referral reward';
 $mgCampaignPageIntro = 'Share a local reward campaign and help friends discover merchants on Microgifter.';
+// Public campaign wallet result details are styled by assets/css/public-campaign-pages.css.
 require __DIR__ . '/includes/header.php';
 require __DIR__ . '/includes/public-campaign-page.php';
 require __DIR__ . '/includes/footer.php';
