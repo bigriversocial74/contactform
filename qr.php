@@ -18,6 +18,23 @@ function mg_qr_redirect_destination_safe(string $destination): bool
     return $port === 443;
 }
 
+function mg_qr_scan_campaign_event(PDO $pdo, array $qr, string $scanId, array $metadata): void
+{
+    $campaignRef = strtolower(trim((string)($qr['campaign_ref'] ?? '')));
+    if ($campaignRef === '') return;
+    $stmt = $pdo->prepare('SELECT id,public_id,campaign_type,merchant_user_id FROM campaigns WHERE merchant_user_id=? AND (public_id=? OR public_slug=?) LIMIT 1');
+    $stmt->execute([(int)$qr['merchant_user_id'], $campaignRef, $campaignRef]);
+    $campaign = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$campaign) return;
+    $metadata['qr_id'] = (string)$qr['public_id'];
+    $metadata['qr_short_code'] = (string)$qr['short_code'];
+    $metadata['scan_id'] = $scanId;
+    $metadata['campaign_public_id'] = (string)$campaign['public_id'];
+    $metadata['campaign_type'] = (string)$campaign['campaign_type'];
+    $event = $pdo->prepare('INSERT INTO campaign_events (public_id,merchant_user_id,campaign_id,wallet_item_id,contact_id,event_type,event_context_json,created_at) VALUES (?,?,?,?,?,?,?,NOW())');
+    $event->execute([mg_public_uuid(), (int)$campaign['merchant_user_id'], (int)$campaign['id'], null, null, 'qr.scanned', json_encode($metadata, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)]);
+}
+
 $code = trim((string) ($_GET['c'] ?? ''));
 if ($code === '' || !preg_match('/^[A-Za-z0-9_-]{6,80}$/', $code)) {
     http_response_code(404);
@@ -27,7 +44,7 @@ if ($code === '' || !preg_match('/^[A-Za-z0-9_-]{6,80}$/', $code)) {
 
 try {
     $pdo = mg_db();
-    $stmt = $pdo->prepare("SELECT id, public_id, destination_url, status FROM merchant_qr_codes WHERE short_code = ? LIMIT 1");
+    $stmt = $pdo->prepare('SELECT id, public_id, merchant_user_id, short_code, destination_url, status, qr_type, campaign_ref, product_ref, metadata_json FROM merchant_qr_codes WHERE short_code = ? LIMIT 1');
     $stmt->execute([$code]);
     $qr = $stmt->fetch();
     if (!$qr || (string) $qr['status'] !== 'active') {
@@ -52,16 +69,11 @@ try {
 
     try {
         $scanId = function_exists('mg_public_uuid') ? mg_public_uuid() : bin2hex(random_bytes(16));
+        $metadata = ['source' => 'qr_redirect', 'qr_type' => (string)($qr['qr_type'] ?? ''), 'campaign_ref' => $qr['campaign_ref'] ?? null, 'product_ref' => $qr['product_ref'] ?? null];
         $scan = $pdo->prepare('INSERT INTO merchant_qr_code_scans (public_id,qr_code_id,ip_hash,user_agent_hash,referer_url,metadata_json,scanned_at) VALUES (?,?,?,?,?,?,NOW())');
-        $scan->execute([
-            $scanId,
-            (int) $qr['id'],
-            $ipHash,
-            $uaHash,
-            $referer,
-            json_encode(['source' => 'qr_redirect'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
-        ]);
+        $scan->execute([$scanId, (int) $qr['id'], $ipHash, $uaHash, $referer, json_encode($metadata, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)]);
         $pdo->prepare('UPDATE merchant_qr_codes SET scan_count=scan_count+1,last_scanned_at=NOW(),updated_at=NOW() WHERE id=?')->execute([(int) $qr['id']]);
+        mg_qr_scan_campaign_event($pdo, $qr, $scanId, $metadata);
     } catch (Throwable) {
         // Do not block the customer redirect if scan analytics fails.
     }
