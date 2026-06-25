@@ -23,8 +23,14 @@
     recent: [root.querySelector('[data-recent-section]'), root.querySelector('[data-recent-grid]')],
   };
 
-  const state = { cursor: null, loading: false, controller: null, filters: {} };
+  const state = { cursor: null, loading: false, controller: null, filters: {}, sort: 'trending' };
   const number = new Intl.NumberFormat();
+  const sortOptions = [
+    ['trending', 'Trending'],
+    ['score', 'Highest Score'],
+    ['newest', 'Newest'],
+    ['active', 'Most Active'],
+  ];
 
   function injectDiscoveryLayoutUpgrades() {
     if (document.getElementById('mg-discovery-compact-card-upgrades')) return;
@@ -32,6 +38,11 @@
     style.id = 'mg-discovery-compact-card-upgrades';
     style.textContent = `
       body.mg-discovery-page .mg-discovery-main-panel{padding:24px 30px 48px!important;}
+      body.mg-discovery-page .mg-discovery-sortbar{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:14px!important;margin:0 0 18px!important;padding:10px!important;border:1px solid rgba(219,229,241,.95)!important;border-radius:18px!important;background:rgba(255,255,255,.92)!important;box-shadow:0 12px 28px rgba(15,23,42,.06)!important;}
+      body.mg-discovery-page .mg-discovery-sortbar strong{font-size:12px!important;letter-spacing:.11em!important;text-transform:uppercase!important;color:#64748b!important;white-space:nowrap!important;}
+      body.mg-discovery-page .mg-discovery-sort-actions{display:flex!important;flex-wrap:wrap!important;gap:8px!important;justify-content:flex-end!important;}
+      body.mg-discovery-page .mg-discovery-sort-button{min-height:32px!important;border:1px solid #dbe5f1!important;border-radius:999px!important;background:#fff!important;color:#475569!important;cursor:pointer!important;padding:0 12px!important;font-size:11px!important;font-weight:950!important;letter-spacing:.04em!important;text-transform:uppercase!important;}
+      body.mg-discovery-page .mg-discovery-sort-button:hover,body.mg-discovery-page .mg-discovery-sort-button.is-active{border-color:rgba(124,58,237,.45)!important;background:linear-gradient(135deg,rgba(124,58,237,.10),rgba(32,191,210,.08))!important;color:#071225!important;}
       body.mg-discovery-page .mg-discovery-card-grid{grid-template-columns:repeat(4,minmax(180px,1fr))!important;gap:16px!important;align-items:stretch!important;}
       body.mg-discovery-page .mg-discovery-card{min-height:236px!important;border-radius:18px!important;box-shadow:0 14px 34px rgba(15,23,42,.075)!important;}
       body.mg-discovery-page .mg-discovery-card:hover{transform:translateY(-2px)!important;box-shadow:0 20px 48px rgba(15,23,42,.11)!important;}
@@ -51,12 +62,49 @@
       body.mg-discovery-page .mg-discovery-open{margin:14px!important;margin-top:auto!important;min-height:34px!important;padding:0 12px!important;font-size:12px!important;border-radius:12px!important;}
       @media(max-width:1380px){body.mg-discovery-page .mg-discovery-card-grid{grid-template-columns:repeat(3,minmax(190px,1fr))!important;}}
       @media(max-width:1040px){body.mg-discovery-page .mg-discovery-card-grid{grid-template-columns:repeat(2,minmax(220px,1fr))!important;}}
-      @media(max-width:680px){body.mg-discovery-page .mg-discovery-main-panel{padding:18px 14px 42px!important;}body.mg-discovery-page .mg-discovery-card-grid{grid-template-columns:1fr!important;}body.mg-discovery-page .mg-discovery-market-counts{grid-template-columns:1fr!important;}}
+      @media(max-width:680px){body.mg-discovery-page .mg-discovery-main-panel{padding:18px 14px 42px!important;}body.mg-discovery-page .mg-discovery-sortbar{display:grid!important;}body.mg-discovery-page .mg-discovery-sort-actions{justify-content:flex-start!important;}body.mg-discovery-page .mg-discovery-card-grid{grid-template-columns:1fr!important;}body.mg-discovery-page .mg-discovery-market-counts{grid-template-columns:1fr!important;}}
     `;
     document.head.appendChild(style);
   }
 
+  function ensureSortControls() {
+    if (root.querySelector('[data-discovery-sortbar]')) return;
+    const panel = root.querySelector('.mg-discovery-main-panel') || content?.parentElement;
+    if (!panel) return;
+    const bar = document.createElement('div');
+    bar.className = 'mg-discovery-sortbar';
+    bar.dataset.discoverySortbar = 'true';
+    const label = document.createElement('strong');
+    label.textContent = 'Sort market';
+    const actions = document.createElement('div');
+    actions.className = 'mg-discovery-sort-actions';
+    sortOptions.forEach(([value, copy]) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'mg-discovery-sort-button';
+      button.dataset.discoverySort = value;
+      button.textContent = copy;
+      button.addEventListener('click', () => {
+        if (state.sort === value || state.loading) return;
+        state.sort = value;
+        syncSortButtons();
+        load();
+      });
+      actions.appendChild(button);
+    });
+    bar.append(label, actions);
+    panel.insertBefore(bar, panel.firstChild);
+    syncSortButtons();
+  }
+
+  function syncSortButtons() {
+    root.querySelectorAll('[data-discovery-sort]').forEach((button) => {
+      button.classList.toggle('is-active', button.dataset.discoverySort === state.sort);
+    });
+  }
+
   injectDiscoveryLayoutUpgrades();
+  ensureSortControls();
 
   function show(node, visible) {
     if (node) node.classList.toggle('mg-hidden', !visible);
@@ -189,11 +237,13 @@
 
   function filtersFromForm() {
     const data = new FormData(form);
-    return ['q', 'type', 'location', 'category'].reduce((out, key) => {
+    const filters = ['q', 'type', 'location', 'category'].reduce((out, key) => {
       const value = String(data.get(key) || '').trim();
       if (value) out[key] = value;
       return out;
     }, {});
+    filters.sort = state.sort;
+    return filters;
   }
 
   function syncUrl(filters) {
@@ -202,6 +252,8 @@
       if (filters[key]) url.searchParams.set(key, filters[key]);
       else url.searchParams.delete(key);
     });
+    if (filters.sort && filters.sort !== 'trending') url.searchParams.set('sort', filters.sort);
+    else url.searchParams.delete('sort');
     url.searchParams.delete('cursor');
     window.history.replaceState({}, '', url);
   }
@@ -212,14 +264,18 @@
       const field = form.elements.namedItem(key);
       if (field) field.value = params.get(key) || '';
     });
+    const incomingSort = params.get('sort') || 'trending';
+    state.sort = sortOptions.some(([value]) => value === incomingSort) ? incomingSort : 'trending';
+    syncSortButtons();
   }
 
   function setBusy(busy, append) {
     state.loading = busy;
     form.querySelectorAll('input,select,button').forEach((field) => { field.disabled = busy; });
+    root.querySelectorAll('[data-discovery-sort]').forEach((button) => { button.disabled = busy; });
     if (moreButton) moreButton.disabled = busy;
     show(loading, busy && !append);
-    if (busy) status.textContent = append ? 'Loading more profiles…' : 'Searching profiles…';
+    if (busy) status.textContent = append ? 'Loading more merchants…' : 'Loading merchant market…';
   }
 
   function hideStates() {
@@ -268,14 +324,14 @@
       }
 
       const totalVisible = resultsGrid.children.length;
-      const filtered = Object.keys(state.filters).length > 0;
+      const filtered = Object.keys(state.filters).some((key) => key !== 'sort' && state.filters[key]);
       show(content, totalVisible > 0 || !filtered);
       show(empty, !filtered && totalVisible === 0 && !(data.sections?.featured || []).length);
       show(noResults, filtered && totalVisible === 0);
       summary.textContent = filtered
-        ? `${number.format(totalVisible)} matching profile${totalVisible === 1 ? '' : 's'} shown.`
-        : 'Organic results are ranked separately from curated profile sections.';
-      status.textContent = totalVisible > 0 ? 'Profile results loaded.' : '';
+        ? `${number.format(totalVisible)} matching merchant${totalVisible === 1 ? '' : 's'} shown.`
+        : `${number.format(totalVisible)} merchants sorted by ${sortOptions.find(([value]) => value === state.sort)?.[1] || 'Trending'}.`;
+      status.textContent = totalVisible > 0 ? 'Merchant results loaded.' : '';
     } catch (failure) {
       if (failure.name === 'AbortError') return;
       root.querySelector('[data-discovery-error-message]').textContent = failure.message || 'Unable to search profiles.';
@@ -288,7 +344,11 @@
   }
 
   form.addEventListener('submit', (event) => { event.preventDefault(); load(); });
-  form.addEventListener('reset', () => window.setTimeout(() => load(), 0));
+  form.addEventListener('reset', () => window.setTimeout(() => {
+    state.sort = 'trending';
+    syncSortButtons();
+    load();
+  }, 0));
   resetButton?.addEventListener('click', () => {});
   retryButton?.addEventListener('click', () => load());
   moreButton?.addEventListener('click', () => load({ append: true }));
