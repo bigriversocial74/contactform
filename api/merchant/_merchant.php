@@ -3,6 +3,22 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/intelligence/_intelligence.php';
 
+$mgDesignStudioEndpoint = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+if (in_array($mgDesignStudioEndpoint, ['brand-kit.php', 'design-export.php', 'design-studio-assets.php', 'qr-library.php'], true)) {
+    require_once __DIR__ . '/_design_studio_guard.php';
+    if (function_exists('mg_db') && function_exists('mg_design_studio_require_tables')) {
+        try {
+            mg_design_studio_require_tables(mg_db(), mg_design_studio_core_tables());
+        } catch (Throwable $e) {
+            if (function_exists('mg_security_log')) {
+                mg_security_log('error', 'merchant.design_studio_setup_check_failed', 'Design Studio setup check failed.', ['exception_type' => get_class($e)], null);
+            }
+            if (function_exists('mg_fail')) mg_fail('Design Studio setup is incomplete. Import database/stage_19_design_studio_qr_library.sql before using this endpoint.', 503);
+            throw $e;
+        }
+    }
+}
+
 function mg_merchant_uuid(): string
 {
     return mg_intelligence_uuid();
