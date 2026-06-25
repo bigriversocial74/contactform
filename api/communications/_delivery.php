@@ -19,6 +19,13 @@ function mg_delivery_ensure_schema(PDO $pdo): void
 {
     if(!$pdo->inTransaction())mg_delivery_install_schema($pdo);
 }
+function mg_delivery_user_exists(PDO $pdo,int $userId): bool
+{
+    if($userId<1)return false;
+    $stmt=$pdo->prepare('SELECT 1 FROM users WHERE id=? LIMIT 1');
+    $stmt->execute([$userId]);
+    return (bool)$stmt->fetchColumn();
+}
 function mg_delivery_json(array $value): string {return json_encode($value,JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR);}
 function mg_delivery_redact(array $payload): array
 {
@@ -33,7 +40,7 @@ function mg_delivery_fingerprint(array $input): string
 }
 function mg_delivery_suppressed(PDO $pdo,int $userId,string $channel,string $category): bool
 {
-    if($category==='security')return false;
+    if($userId<1||$category==='security')return false;
     $stmt=$pdo->prepare("SELECT COUNT(*) FROM message_suppression_rules WHERE user_id=? AND channel=? AND category=? AND status='active'");$stmt->execute([$userId,$channel,$category]);return (int)$stmt->fetchColumn()>0;
 }
 function mg_delivery_enqueue(PDO $pdo,array $input,?callable $failureHook=null): array
@@ -43,13 +50,15 @@ function mg_delivery_enqueue(PDO $pdo,array $input,?callable $failureHook=null):
     if($key===''||$template===''||$recipient<1||!in_array($channel,['in_app','email','sms','webhook'],true))throw new MgDeliveryException('Invalid message delivery request.',422);
     $payload=mg_delivery_redact((array)($input['payload']??[]));$fingerprint=mg_delivery_fingerprint($input);$owns=!$pdo->inTransaction();if($owns)$pdo->beginTransaction();
     try{
+        $jobRecipientId=mg_delivery_user_exists($pdo,$recipient)?$recipient:null;
         $find=$pdo->prepare('SELECT e.*,j.public_id job_public_id,j.status job_status FROM message_events e INNER JOIN message_delivery_jobs j ON j.message_event_id=e.id WHERE e.event_key=? LIMIT 1 FOR UPDATE');$find->execute([$key]);
         if($row=$find->fetch(PDO::FETCH_ASSOC)){if(!hash_equals((string)$row['event_fingerprint'],$fingerprint))throw new MgDeliveryException('Message event conflicts with the recorded payload.',409);if($owns)$pdo->commit();return ['event_id'=>$row['public_id'],'job_id'=>$row['job_public_id'],'status'=>$row['job_status'],'duplicate'=>true];}
-        $eventPublic=mg_public_uuid();$jobPublic=mg_public_uuid();$status=mg_delivery_suppressed($pdo,$recipient,$channel,$category)?'suppressed':'queued';
+        $eventPublic=mg_public_uuid();$jobPublic=mg_public_uuid();$status=mg_delivery_suppressed($pdo,$jobRecipientId??0,$channel,$category)?'suppressed':'queued';
         $pdo->prepare('INSERT INTO message_events (public_id,event_key,event_fingerprint,event_type,category,payload_json,created_at) VALUES (?,?,?,?,?,?,NOW())')->execute([$eventPublic,$key,$fingerprint,(string)($input['event_type']??'message.event'),$category,mg_delivery_json($payload)]);
         $eventId=(int)$pdo->lastInsertId();
         if($failureHook)$failureHook('after_event',['event_id'=>$eventPublic]);
-        $pdo->prepare('INSERT INTO message_delivery_jobs (public_id,message_event_id,recipient_user_id,channel,template_key,status,max_attempts,recipient_snapshot_json,payload_snapshot_json,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,NOW(),NOW())')->execute([$jobPublic,$eventId,$recipient,$channel,$template,$status,(int)($input['max_attempts']??3),mg_delivery_json((array)($input['recipient_snapshot']??[])),mg_delivery_json($payload)]);
+        $snapshot=(array)($input['recipient_snapshot']??[]);if($jobRecipientId===null)$snapshot['recipient_user_id']=$recipient;
+        $pdo->prepare('INSERT INTO message_delivery_jobs (public_id,message_event_id,recipient_user_id,channel,template_key,status,max_attempts,recipient_snapshot_json,payload_snapshot_json,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,NOW(),NOW())')->execute([$jobPublic,$eventId,$jobRecipientId,$channel,$template,$status,(int)($input['max_attempts']??3),mg_delivery_json($snapshot),mg_delivery_json($payload)]);
         if($failureHook)$failureHook('before_complete',['job_id'=>$jobPublic]);
         if($owns)$pdo->commit();return ['event_id'=>$eventPublic,'job_id'=>$jobPublic,'status'=>$status,'duplicate'=>false];
     }catch(Throwable $e){if($owns&&$pdo->inTransaction())$pdo->rollBack();throw $e;}
