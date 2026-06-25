@@ -2,9 +2,8 @@
 declare(strict_types=1);
 
 /*
- * Microgifter Homepage - consolidated content with shared full-width header.
- * This file uses the same public universal header/footer stack as the rest of the site.
- * The homepage content itself is consolidated into this file.
+ * Microgifter public homepage.
+ * Uses the shared public header/footer stack and the real public market ticker.
  */
 
 $page_title = 'Microgifter | Invest Local, Discover Value & Support Humans';
@@ -12,7 +11,7 @@ $page_section = 'public';
 $header_mode = 'public';
 $page_styles = ['/assets/css/public-header-footer-fixes.css'];
 $page_manifest = [
-    'id' => 'home-consolidated',
+    'id' => 'index',
     'title' => $page_title,
     'section' => $page_section,
     'header_mode' => $header_mode,
@@ -40,87 +39,42 @@ require __DIR__ . '/includes/header.php';
 ?>
 <script>document.documentElement.classList.add('mg-js');</script>
 
-<script>
-(() => {
-  const addHeaderPhone = () => {
-    const headerLeft = document.querySelector('[data-public-header] .mg-header-left');
-    const brand = headerLeft ? headerLeft.querySelector('.mg-brand') : null;
-    if (!headerLeft || !brand || headerLeft.querySelector('.mg-header-phone')) return;
-
-    const phone = document.createElement('a');
-    phone.className = 'mg-header-phone';
-    phone.href = 'tel:18002697433';
-    phone.textContent = '1-800-269-7433';
-    phone.setAttribute('aria-label', 'Call Microgifter at 1-800-269-7433');
-    brand.insertAdjacentElement('afterend', phone);
-  };
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', addHeaderPhone, { once:true });
-  } else {
-    addHeaderPhone();
-  }
-})();
-</script>
-
 <style>
-
-  /* Page-only phone number beside logo in universal header */
-  body[data-page-id="home-consolidated"] .mg-header-phone{
-    display:inline-flex;
-    align-items:center;
-    margin-left:18px;
-    padding-left:18px;
-    border-left:1px solid rgba(0,0,0,.14);
-    color:#050505;
-    text-decoration:none;
-    font-size:13px;
-    font-weight:850;
-    letter-spacing:.02em;
-    white-space:nowrap;
-  }
-  body[data-page-id="home-consolidated"] .mg-header-phone:hover{
-    color:#8a650c;
-  }
-
   :root{
     --mg-ink:#050505;
     --mg-text:#171717;
     --mg-muted:#5f5f5a;
     --mg-paper:#f4f4f1;
-    --mg-paper-2:#fbfbf8;
-    --mg-line:rgba(10,10,10,.10);
-    --mg-black:#030303;
-    --mg-dark:#050505;
-    --mg-dark-soft:#0c0c0b;
     --mg-white:#f7f7f2;
     --mg-soft:#c9c4ba;
     --mg-gold:#d9a735;
-    --mg-gold-2:#f1c15a;
-    --mg-green:#20d475;
-    --mg-red:#ff5f57;
     --mg-max:1180px;
-    --mg-radius:24px;
   }
 
-  *{box-sizing:border-box}
-  html{scroll-behavior:smooth;min-height:100%;overflow-x:hidden}
-  body{
-    min-height:100%;
+  body[data-page-id="index"]{
     margin:0;
     overflow-x:hidden;
     background:var(--mg-paper);
     color:var(--mg-text);
     font-family:"Inter","Helvetica Neue",Arial,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   }
-
-  .mg-home-page{min-height:100vh;background:#020202}
+  body[data-page-id="index"] .mg-home-page,
+  body[data-page-id="index"] .mg-home-page *{box-sizing:border-box}
+  body[data-page-id="index"] .mg-home-page{
+    min-height:100vh;
+    overflow-x:hidden;
+    background:#020202;
+  }
+  body[data-page-id="index"] .mg-home-page a:focus-visible,
+  body[data-page-id="index"] .mg-home-page button:focus-visible{
+    outline:3px solid rgba(217,167,53,.72);
+    outline-offset:3px;
+  }
   .mg-container{width:min(var(--mg-max),calc(100% - 72px));margin:0 auto}
   .mg-progress{position:fixed;z-index:120;left:0;top:0;width:100%;height:3px;background:rgba(0,0,0,.04)}
   .mg-progress-bar{display:block;height:100%;width:0;background:linear-gradient(90deg,#050505,var(--mg-gold));box-shadow:0 0 20px rgba(217,167,53,.35)}
 
-
-  /* Real public market ticker is provided by the universal public header. */
+  /* The public market ticker is rendered by the universal logged-out header. */
   .mg-hero{
     position:relative;
     z-index:4;
@@ -160,23 +114,25 @@ require __DIR__ . '/includes/header.php';
     align-items:start;
   }
   .mg-hero-copy{max-width:760px;padding-top:32px}
-  .mg-eyebrow{
+  .mg-hero-pretitle{
     display:inline-flex;
     align-items:center;
     gap:10px;
-    margin:0 0 16px;
+    margin:0 0 22px;
     color:#050505;
-    font-size:11px;
-    font-weight:900;
-    letter-spacing:.24em;
+    font-size:13px;
+    font-weight:950;
+    letter-spacing:.14em;
+    line-height:1.2;
     text-transform:uppercase;
   }
-  .mg-eyebrow::before{
+  .mg-hero-pretitle::before{
     content:"";
     width:9px;
     height:9px;
     border-radius:999px;
-    background:#050505;
+    background:var(--mg-gold);
+    box-shadow:0 0 18px rgba(217,167,53,.42);
   }
   .mg-title{
     margin:0;
@@ -188,15 +144,6 @@ require __DIR__ . '/includes/header.php';
     letter-spacing:-.067em;
     font-weight:900;
     text-wrap:balance;
-  }
-  .mg-lede{
-    margin:30px 0 0;
-    max-width:590px;
-    color:#1c1c1c;
-    font-size:clamp(20px,1.9vw,27px);
-    line-height:1.03;
-    letter-spacing:-.046em;
-    font-weight:560;
   }
   .mg-note{
     margin:20px 0 0;
@@ -214,29 +161,19 @@ require __DIR__ . '/includes/header.php';
     justify-content:center;
     gap:16px;
     padding:0 24px;
+    border:1px solid rgba(0,0,0,.08);
     border-radius:7px;
+    background:#fff;
+    color:#050505!important;
     text-decoration:none;
+    box-shadow:0 14px 34px rgba(0,0,0,.055);
     font-size:14px;
     font-weight:830;
     letter-spacing:-.02em;
   }
-  .mg-btn-primary,.mg-btn-primary:visited{
-    border:1px solid rgba(0,0,0,.08);
-    background:#fff;
-    color:#050505;
-    box-shadow:0 14px 34px rgba(0,0,0,.055);
-  }
-  .mg-hero .mg-btn-secondary,
-  .mg-hero .mg-btn-secondary:visited,
-  .mg-hero .mg-btn-secondary span{
-    color:#fff!important;
-  }
-  .mg-btn-secondary,.mg-btn-secondary:visited{
-    border:1px solid #050505;
-    background:#050505;
-    color:#fff;
-    box-shadow:0 16px 38px rgba(0,0,0,.18);
-  }
+  .mg-btn:visited,
+  .mg-btn span{color:#050505!important}
+  .mg-btn:hover{background:#f8f8f5;color:#050505!important}
   .mg-hero-visual{
     position:relative;
     z-index:3;
@@ -297,6 +234,7 @@ require __DIR__ . '/includes/header.php';
       linear-gradient(rgba(217,167,53,.055) 1px,transparent 1px),
       linear-gradient(90deg,rgba(217,167,53,.05) 1px,transparent 1px);
     background-size:auto,auto,72px 72px,72px 72px;
+    -webkit-mask-image:linear-gradient(180deg,transparent 0%,#000 18%,#000 82%,transparent 100%);
     mask-image:linear-gradient(180deg,transparent 0%,#000 18%,#000 82%,transparent 100%);
   }
   .mg-section .mg-container{position:relative;z-index:2}
@@ -320,12 +258,12 @@ require __DIR__ . '/includes/header.php';
     display:inline-flex;
     align-items:center;
     gap:10px;
+    margin-bottom:18px;
     color:#d9a735;
     font-size:10px;
     font-weight:850;
     letter-spacing:.3em;
     text-transform:uppercase;
-    margin-bottom:18px;
   }
   .mg-story-kicker::before{
     content:"";
@@ -336,84 +274,9 @@ require __DIR__ . '/includes/header.php';
     box-shadow:0 0 20px rgba(217,167,53,.55);
   }
 
-
-  .mg-feature-panels.mg-growth-feature-grid{
-    grid-template-columns:repeat(3,1fr);
-    gap:20px;
-  }
-  .mg-feature-panels.mg-growth-feature-grid .mg-panel{
-    min-height:390px;
-  }
-  .mg-signal-list{
-    display:grid;
-    gap:10px;
-    margin-top:24px;
-  }
-  .mg-signal-row{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:14px;
-    min-height:44px;
-    padding:0 14px;
-    border:1px solid rgba(217,167,53,.20);
-    border-radius:12px;
-    background:rgba(255,255,255,.025);
-    color:#e8e2d6;
-    font-size:12px;
-    font-weight:800;
-  }
-  .mg-signal-row span:last-child{
-    color:var(--mg-gold);
-    font-variant-numeric:tabular-nums;
-  }
-  .mg-value-score{
-    margin-top:24px;
-    padding:22px;
-    border:1px solid rgba(217,167,53,.24);
-    border-radius:16px;
-    background:radial-gradient(circle at 20% 20%,rgba(217,167,53,.14),transparent 38%),rgba(255,255,255,.025);
-  }
-  .mg-value-score strong{
-    display:block;
-    color:#fff;
-    font-size:46px;
-    line-height:1;
-    letter-spacing:-.06em;
-  }
-  .mg-value-score span{
-    display:block;
-    margin-top:8px;
-    color:#c9c4ba;
-    font-size:13px;
-    line-height:1.45;
-  }
-  .mg-mini-path{
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:8px;
-    margin-top:24px;
-  }
-  .mg-mini-path span{
-    min-height:58px;
-    display:grid;
-    place-items:center;
-    text-align:center;
-    padding:8px;
-    border:1px solid rgba(217,167,53,.22);
-    border-radius:12px;
-    background:rgba(255,255,255,.025);
-    color:#ede7dc;
-    font-size:11px;
-    font-weight:850;
-  }
-
-  .mg-feature-panels{
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    gap:24px;
-    margin-top:54px;
-  }
+  .mg-feature-panels{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:54px}
+  .mg-feature-panels.mg-growth-feature-grid{grid-template-columns:repeat(3,1fr);gap:20px}
+  .mg-feature-panels.mg-growth-feature-grid .mg-panel{min-height:390px}
   .mg-panel{
     border:1px solid rgba(217,167,53,.32);
     border-radius:20px;
@@ -423,31 +286,9 @@ require __DIR__ . '/includes/header.php';
     box-shadow:0 24px 80px rgba(0,0,0,.42);
     overflow:hidden;
   }
-  .mg-panel-head{
-    display:grid;
-    grid-template-columns:56px 1fr;
-    gap:18px;
-    align-items:start;
-    margin-bottom:24px;
-  }
-  .mg-panel-icon{
-    width:56px;
-    height:56px;
-    border:1px solid rgba(217,167,53,.5);
-    border-radius:12px;
-    display:grid;
-    place-items:center;
-    color:var(--mg-gold);
-  }
-  .mg-panel-icon svg{
-    width:28px;
-    height:28px;
-    stroke:currentColor;
-    fill:none;
-    stroke-width:2;
-    stroke-linecap:round;
-    stroke-linejoin:round;
-  }
+  .mg-panel-head{display:grid;grid-template-columns:56px 1fr;gap:18px;align-items:start;margin-bottom:24px}
+  .mg-panel-icon{width:56px;height:56px;border:1px solid rgba(217,167,53,.5);border-radius:12px;display:grid;place-items:center;color:var(--mg-gold)}
+  .mg-panel-icon svg{width:28px;height:28px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
   .mg-panel h3{margin:0;color:#fff;font-size:28px;letter-spacing:-.04em;line-height:1}
   .mg-panel p{margin:10px 0 0;color:var(--mg-soft);font-size:15px;line-height:1.48}
   .mg-codebox,.mg-code-panel{
@@ -466,133 +307,40 @@ require __DIR__ . '/includes/header.php';
   .gold{color:var(--mg-gold)}
   .green{color:#7fd18a}
   .muted{color:#858076}
-  .mg-mini-ui{
-    margin-top:22px;
-    min-height:300px;
-    border:1px solid rgba(217,167,53,.22);
-    border-radius:14px;
-    overflow:hidden;
-    background:
-      radial-gradient(circle at 30% 20%,rgba(217,167,53,.20),transparent 28%),
-      linear-gradient(145deg,#050505,#10100f);
-    display:grid;
-    place-items:center;
-    padding:18px;
-  }
-  .mg-mini-ui img{display:block;width:100%;height:300px;object-fit:cover;object-position:top center}
-  .mg-mini-ui-fallback{
-    width:100%;
-    min-height:240px;
-    display:grid;
-    gap:12px;
-    align-content:center;
-  }
-  .mg-ui-line{height:12px;border-radius:999px;background:rgba(255,255,255,.10)}
-  .mg-ui-line:nth-child(1){width:64%}
-  .mg-ui-line:nth-child(2){width:86%}
-  .mg-ui-line:nth-child(3){width:52%}
-  .mg-ui-card-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:18px}
-  .mg-ui-card{min-height:72px;border:1px solid rgba(217,167,53,.22);border-radius:12px;background:rgba(255,255,255,.035)}
-  .mg-panel-tags{
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    gap:8px;
-    margin-top:22px;
-    padding-top:20px;
-    border-top:1px solid rgba(217,167,53,.24);
-  }
+  .mg-panel-tags{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:22px;padding-top:20px;border-top:1px solid rgba(217,167,53,.24)}
   .mg-panel-tags span{text-align:center;color:#ece7dc;font-size:13px}
+  .mg-signal-list{display:grid;gap:10px;margin-top:24px}
+  .mg-signal-row{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:44px;padding:0 14px;border:1px solid rgba(217,167,53,.20);border-radius:12px;background:rgba(255,255,255,.025);color:#e8e2d6;font-size:12px;font-weight:800}
+  .mg-signal-row span:last-child{color:var(--mg-gold);font-variant-numeric:tabular-nums}
+  .mg-value-score{margin-top:24px;padding:22px;border:1px solid rgba(217,167,53,.24);border-radius:16px;background:radial-gradient(circle at 20% 20%,rgba(217,167,53,.14),transparent 38%),rgba(255,255,255,.025)}
+  .mg-value-score strong{display:block;color:#fff;font-size:46px;line-height:1;letter-spacing:-.06em}
+  .mg-value-score span{display:block;margin-top:8px;color:#c9c4ba;font-size:13px;line-height:1.45}
+  .mg-mini-path{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:24px}
+  .mg-mini-path span{min-height:58px;display:grid;place-items:center;text-align:center;padding:8px;border:1px solid rgba(217,167,53,.22);border-radius:12px;background:rgba(255,255,255,.025);color:#ede7dc;font-size:11px;font-weight:850}
 
   .mg-story-grid{display:grid;grid-template-columns:.82fr 1.18fr;gap:54px;align-items:start}
   .mg-story-copy{position:sticky;top:92px}
   .mg-story-copy h2{margin:0;color:#fff;font-size:clamp(34px,4vw,62px);line-height:.98;letter-spacing:-.06em}
   .mg-story-copy p{margin:20px 0 0;color:#c4bfb6;font-size:16px;line-height:1.62;max-width:560px}
   .mg-agentic-panel{display:grid;grid-template-columns:1.05fr .95fr;gap:24px;align-items:stretch;margin-top:8px}
-  .mg-agentic-card{
-    padding:28px;
-    border:1px solid rgba(217,167,53,.25);
-    border-radius:22px;
-    background:linear-gradient(145deg,rgba(12,12,11,.9),rgba(0,0,0,.68));
-  }
+  .mg-agentic-card{padding:28px;border:1px solid rgba(217,167,53,.25);border-radius:22px;background:linear-gradient(145deg,rgba(12,12,11,.9),rgba(0,0,0,.68))}
   .mg-agentic-card h3{margin:0;color:#fff;font-size:26px;letter-spacing:-.05em}
   .mg-agentic-card p{margin:16px 0 0;color:#c3beb4;font-size:15px;line-height:1.62}
   .mg-agent-flow{display:grid;gap:12px}
-  .mg-flow-item{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:18px;
-    padding:16px 18px;
-    border:1px solid rgba(255,255,255,.08);
-    border-radius:15px;
-    background:rgba(255,255,255,.025);
-    font-size:13px;
-    color:#f4f1e8;
-    font-weight:750;
-  }
+  .mg-flow-item{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:16px 18px;border:1px solid rgba(255,255,255,.08);border-radius:15px;background:rgba(255,255,255,.025);font-size:13px;color:#f4f1e8;font-weight:750}
   .mg-flow-item span:last-child{color:#d9a735}
   .mg-social-proof{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:34px}
-  .mg-proof-pill{
-    min-height:78px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    text-align:center;
-    padding:14px;
-    border:1px solid rgba(217,167,53,.18);
-    border-radius:16px;
-    background:rgba(255,255,255,.025);
-    color:#e9e4d8;
-    font-size:12px;
-    font-weight:850;
-    letter-spacing:.08em;
-    text-transform:uppercase;
-  }
+  .mg-proof-pill{min-height:78px;display:flex;align-items:center;justify-content:center;text-align:center;padding:14px;border:1px solid rgba(217,167,53,.18);border-radius:16px;background:rgba(255,255,255,.025);color:#e9e4d8;font-size:12px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}
 
   .mg-story-list{display:grid;gap:14px}
-  .mg-story-step{
-    display:grid;
-    grid-template-columns:52px 1fr;
-    gap:18px;
-    padding:24px;
-    border:1px solid rgba(217,167,53,.24);
-    border-radius:18px;
-    background:linear-gradient(145deg,rgba(255,255,255,.035),rgba(255,255,255,.012));
-    box-shadow:0 0 0 1px rgba(255,255,255,.025) inset;
-  }
-  .mg-story-step b{
-    width:42px;
-    height:42px;
-    display:grid;
-    place-items:center;
-    border:1px solid rgba(217,167,53,.45);
-    border-radius:13px;
-    color:#d9a735;
-    font-size:12px;
-  }
+  .mg-story-step{display:grid;grid-template-columns:52px 1fr;gap:18px;padding:24px;border:1px solid rgba(217,167,53,.24);border-radius:18px;background:linear-gradient(145deg,rgba(255,255,255,.035),rgba(255,255,255,.012));box-shadow:0 0 0 1px rgba(255,255,255,.025) inset}
+  .mg-story-step b{width:42px;height:42px;display:grid;place-items:center;border:1px solid rgba(217,167,53,.45);border-radius:13px;color:#d9a735;font-size:12px}
   .mg-story-step h3{margin:0;color:#fff;font-size:20px;letter-spacing:-.04em}
   .mg-story-step p{margin:9px 0 0;color:#bbb5aa;font-size:14px;line-height:1.55}
 
   .mg-examples-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:40px}
-  .mg-example-card{
-    position:relative;
-    overflow:hidden;
-    min-height:230px;
-    padding:22px;
-    border:1px solid rgba(217,167,53,.23);
-    border-radius:18px;
-    background:linear-gradient(160deg,rgba(255,255,255,.04),rgba(255,255,255,.012));
-  }
-  .mg-example-card::after{
-    content:"";
-    position:absolute;
-    right:-36px;
-    bottom:-36px;
-    width:120px;
-    height:120px;
-    border-radius:999px;
-    border:1px solid rgba(217,167,53,.15);
-  }
+  .mg-example-card{position:relative;overflow:hidden;min-height:230px;padding:22px;border:1px solid rgba(217,167,53,.23);border-radius:18px;background:linear-gradient(160deg,rgba(255,255,255,.04),rgba(255,255,255,.012))}
+  .mg-example-card::after{content:"";position:absolute;right:-36px;bottom:-36px;width:120px;height:120px;border-radius:999px;border:1px solid rgba(217,167,53,.15)}
   .mg-example-card small{display:block;color:#d9a735;font-size:10px;font-weight:850;letter-spacing:.22em;text-transform:uppercase}
   .mg-example-card h3{margin:18px 0 0;color:#fff;font-size:20px;letter-spacing:-.04em}
   .mg-example-card p{margin:10px 0 18px;color:#bdb7ad;font-size:13px;line-height:1.45}
@@ -607,58 +355,17 @@ require __DIR__ . '/includes/header.php';
   .mg-api-flow-dot{width:34px;height:34px;display:grid;place-items:center;border-radius:12px;background:rgba(217,167,53,.12);border:1px solid rgba(217,167,53,.32);color:#d9a735;font-size:11px;font-weight:900}
   .mg-api-flow-row p{margin:0;color:#c3beb4;font-size:14px;line-height:1.45}
 
-  .mg-public-bottom-demo{
-    position:relative;
-    isolation:isolate;
-    overflow:hidden;
-    padding:104px 20px;
-    background:#050505;
-    color:#fff;
-    border-top:1px solid rgba(217,167,53,.24);
-  }
-  .mg-public-bottom-demo::before{
-    content:"";
-    position:absolute;
-    inset:0;
-    pointer-events:none;
-    background:radial-gradient(circle at 18% 18%,rgba(217,167,53,.16),transparent 34%),radial-gradient(circle at 82% 60%,rgba(217,167,53,.11),transparent 36%);
-  }
+  .mg-public-bottom-demo{position:relative;isolation:isolate;overflow:hidden;padding:104px 20px;background:#050505;color:#fff;border-top:1px solid rgba(217,167,53,.24)}
+  .mg-public-bottom-demo::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 18% 18%,rgba(217,167,53,.16),transparent 34%),radial-gradient(circle at 82% 60%,rgba(217,167,53,.11),transparent 36%)}
   .mg-public-bottom-demo-inner{position:relative;z-index:1;width:min(920px,100%);margin:0 auto;text-align:center}
   .mg-public-bottom-demo-eyebrow{display:inline-flex;align-items:center;gap:10px;margin-bottom:18px;color:#d9a735;font-size:10px;font-weight:850;letter-spacing:.28em;text-transform:uppercase}
   .mg-public-bottom-demo h2{margin:0;color:#fff;font-size:clamp(36px,5vw,68px);line-height:.98;letter-spacing:-.06em;font-weight:850}
   .mg-public-bottom-demo p{margin:22px auto 0;max-width:660px;color:#c9c4ba;font-size:17px;line-height:1.6}
   .mg-public-bottom-demo-actions{display:flex;justify-content:center;flex-wrap:wrap;gap:14px;margin-top:32px}
   .mg-public-bottom-demo-actions a{min-height:52px;display:inline-flex;align-items:center;justify-content:center;padding:0 22px;border-radius:12px;text-decoration:none;font-size:13px;font-weight:850}
-  .mg-public-bottom-demo-primary{background:#fff;color:#050505}
+  .mg-public-bottom-demo-primary{border:1px solid rgba(0,0,0,.08);background:#fff;color:#050505!important}
+  .mg-public-bottom-demo-primary:visited{color:#050505!important}
   .mg-public-bottom-demo-secondary{border:1px solid rgba(217,167,53,.46);color:#fff;background:rgba(255,255,255,.03)}
-
-  .mg-footer{
-    position:relative;
-    padding:98px 0 66px;
-    background:#020202;
-    color:var(--mg-white);
-    overflow:hidden;
-  }
-  .mg-footer-grid{display:grid;grid-template-columns:1.45fr repeat(3,1fr);gap:74px;align-items:start}
-  .mg-footer-brand .mg-logo{margin-bottom:34px;color:#fff}
-  .mg-footer-brand .mg-logo-mark{display:block;color:#fff}
-  .mg-footer-brand .mg-logo-text{display:block;color:#fff}
-  .mg-footer-tag{max-width:360px;color:var(--mg-soft);font-size:17px;line-height:1.45;margin:0}
-  .mg-socials{display:flex;gap:18px;margin-top:38px}
-  .mg-socials a{width:54px;height:54px;display:grid;place-items:center;border:1px solid rgba(217,167,53,.4);border-radius:10px;color:#fff;text-decoration:none;transition:.2s ease;background:rgba(255,255,255,.02)}
-  .mg-socials a:hover{transform:translateY(-3px);border-color:rgba(241,193,90,.8);background:rgba(217,167,53,.08)}
-  .mg-socials svg{width:24px;height:24px;fill:currentColor;stroke:currentColor}
-  .mg-contact{display:inline-flex;align-items:center;gap:14px;margin-top:36px;color:#e7e1d5;text-decoration:none;font-size:17px}
-  .mg-contact svg{width:24px;height:24px;stroke:var(--mg-gold);fill:none;stroke-width:2}
-  .mg-footer-col h3{margin:8px 0 34px;color:var(--mg-gold);font-size:13px;letter-spacing:.42em;text-transform:uppercase;font-weight:800}
-  .mg-footer-col h3::after{content:"";display:block;width:40px;height:2px;margin-top:20px;background:var(--mg-gold)}
-  .mg-footer-col nav{display:grid;gap:0}
-  .mg-footer-col a{display:block;padding:18px 0;border-bottom:1px solid rgba(255,255,255,.07);color:#f2eee6;text-decoration:none;font-size:18px;transition:color .2s ease,transform .2s ease}
-  .mg-footer-col a:hover{color:var(--mg-gold);transform:translateX(4px)}
-  .mg-footer-bottom{display:flex;justify-content:space-between;gap:30px;align-items:center;margin-top:92px;padding-top:46px;border-top:1px solid rgba(217,167,53,.45);color:#bbb4a7;font-size:15px}
-  .mg-footer-links{display:flex;gap:24px;align-items:center;flex-wrap:wrap}
-  .mg-footer-links a{color:#f5efe5;text-decoration:none}
-  .mg-dot{color:var(--mg-gold)}
 
   [data-reveal]{opacity:1;transform:none;filter:none}
   .mg-js [data-reveal]{opacity:0;transform:translateY(42px);filter:blur(8px);transition:opacity .85s cubic-bezier(.16,1,.3,1),transform .85s cubic-bezier(.16,1,.3,1),filter .85s cubic-bezier(.16,1,.3,1);transition-delay:var(--delay,0ms)}
@@ -669,182 +376,77 @@ require __DIR__ . '/includes/header.php';
   .mg-js [data-reveal="left"].is-visible,
   .mg-js [data-reveal="right"].is-visible,
   .mg-js [data-reveal="scale"].is-visible{transform:none}
-  .mg-image-missing{display:none!important}
 
-  @media(max-width:1180px){
+  @media (min-width:981px){
+    body[data-page-id="index"] .mg-hero-copy{max-width:1040px!important}
+    body[data-page-id="index"] .mg-title{max-width:1040px!important;width:1040px!important}
+    body[data-page-id="index"] .mg-title-line{display:block;white-space:nowrap}
+  }
+  @media (max-width:1180px){
     .mg-feature-panels{grid-template-columns:1fr}
     .mg-story-grid,.mg-agentic-panel,.mg-api-story{grid-template-columns:1fr}
     .mg-story-copy{position:relative;top:auto}
     .mg-examples-grid{grid-template-columns:repeat(2,1fr)}
     .mg-social-proof{grid-template-columns:repeat(3,1fr)}
-    .mg-footer-grid{grid-template-columns:1fr 1fr}
-    .mg-footer-brand{grid-column:1/-1}
   }
-  @media(max-width:1040px){
+  @media (max-width:1040px){
     .mg-hero-grid{grid-template-columns:1fr}
     .mg-hero-copy{max-width:610px}
     .mg-desktop{margin-left:70px;width:min(760px,82vw)}
     .mg-phone-img{left:28px;bottom:-132px;width:min(285px,36vw)}
   }
-  @media(max-width:760px){
+  @media (max-width:980px){body[data-page-id="index"] .mg-title-line{display:block}}
+  @media (max-width:760px){
     .mg-hero{min-height:1280px;padding:82px 0 64px;overflow:hidden}
     .mg-hero::before{background-position:center top;background-size:cover}
-    .mg-hero::after{
-      background:linear-gradient(180deg,rgba(245,245,242,.02) 0%,rgba(245,245,242,.04) 38%,rgba(245,245,242,.90) 58%,rgba(245,245,242,.98) 76%,rgba(0,0,0,.78) 94%,#020202 100%);
-    }
-    .mg-hero-grid{
-      width:calc(100% - 22px);
-      min-height:calc(100svh - 86px);
-      display:flex;
-      flex-direction:column;
-      gap:0;
-    }
-    .mg-hero-visual{
-      order:1;
-      width:100%;
-      min-height:335px;
-      align-items:flex-end;
-      justify-content:center;
-      margin-top:0;
-      overflow:visible;
-      isolation:isolate;
-    }
-    .mg-desktop{
-      position:relative;
-      z-index:5;
-      width:min(92vw,390px);
-      margin:0 auto 16px;
-      border-width:8px;
-      border-bottom-width:15px;
-      border-radius:13px 13px 7px 7px;
-      opacity:1;
-      transform:translateX(0);
-    }
-    .mg-phone-img{
-      left:8px;
-      right:auto;
-      top:auto;
-      bottom:-22px;
-      z-index:8;
-      width:min(120px,32vw);
-      max-width:none;
-      opacity:1;
-      filter:drop-shadow(0 34px 46px rgba(0,0,0,.48));
-      transform:rotate(-3deg);
-      transform-origin:center center;
-    }
-    .mg-hero-copy{
-      position:relative;
-      z-index:6;
-      order:2;
-      width:100%;
-      max-width:100%;
-      padding-top:104px;
-      padding-bottom:58px;
-    }
+    .mg-hero::after{background:linear-gradient(180deg,rgba(245,245,242,.02) 0%,rgba(245,245,242,.04) 38%,rgba(245,245,242,.90) 58%,rgba(245,245,242,.98) 76%,rgba(0,0,0,.78) 94%,#020202 100%)}
+    .mg-hero-grid{width:calc(100% - 22px);min-height:calc(100svh - 86px);display:flex;flex-direction:column;gap:0}
+    .mg-hero-visual{order:1;width:100%;min-height:335px;align-items:flex-end;justify-content:center;margin-top:0;overflow:visible;isolation:isolate}
+    .mg-desktop{position:relative;z-index:5;width:min(92vw,390px);margin:0 auto 16px;border-width:8px;border-bottom-width:15px;border-radius:13px 13px 7px 7px;opacity:1;transform:translateX(0)}
+    .mg-phone-img{left:8px;right:auto;top:auto;bottom:-22px;z-index:8;width:min(120px,32vw);max-width:none;opacity:1;filter:drop-shadow(0 34px 46px rgba(0,0,0,.48));transform:rotate(-3deg);transform-origin:center center}
+    .mg-hero-copy{position:relative;z-index:6;order:2;width:100%;max-width:100%;padding-top:104px;padding-bottom:58px}
+    .mg-hero-pretitle{margin-bottom:16px;font-size:11px;letter-spacing:.11em}
     .mg-title{max-width:100%;font-size:clamp(34px,10vw,47px);line-height:1;letter-spacing:-.058em}
-    .mg-lede{max-width:100%;margin-top:22px;font-size:18px;line-height:1.12;letter-spacing:-.035em}
     .mg-actions{gap:10px;margin-top:24px}
     .mg-btn{min-height:48px;padding:0 18px;font-size:13px}
     .mg-container{width:min(100% - 32px,680px)}
     .mg-section{padding:84px 0}
-
     .mg-feature-panels.mg-growth-feature-grid{grid-template-columns:1fr}
     .mg-feature-panels.mg-growth-feature-grid .mg-panel{min-height:auto}
     .mg-mini-path{grid-template-columns:repeat(2,1fr)}
     .mg-story-step{grid-template-columns:1fr;gap:14px}
     .mg-examples-grid,.mg-social-proof{grid-template-columns:1fr}
     .mg-agentic-card,.mg-api-flow{padding:22px}
-    .mg-footer{padding:90px 0 48px}
-    .mg-footer-grid{grid-template-columns:1fr;gap:44px}
-    .mg-footer-bottom{display:grid;margin-top:56px}
-    .mg-footer-col a{font-size:17px}
   }
-  @media(max-width:440px){
+  @media (max-width:440px){
     .mg-desktop{width:min(92vw,370px);margin:0 auto 12px;opacity:1}
     .mg-phone-img{left:8px;bottom:-18px;width:min(112px,31vw);opacity:1}
     .mg-hero-copy{padding-top:96px}
   }
-  @media(prefers-reduced-motion:reduce){
+  @media (prefers-reduced-motion:reduce){
     *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
     [data-reveal]{opacity:1!important;transform:none!important;filter:none!important}
   }
-
-
-
-
-
-  /* Desktop hero title lock: exactly three lines */
-  @media (min-width:981px){
-    body[data-page-id="home-consolidated"] .mg-hero-copy{
-      max-width:1040px!important;
-    }
-    body[data-page-id="home-consolidated"] .mg-title{
-      max-width:1040px!important;
-      width:1040px!important;
-    }
-    body[data-page-id="home-consolidated"] .mg-title-line{
-      display:block;
-      white-space:nowrap;
-    }
-  }
-  @media (max-width:980px){
-    body[data-page-id="home-consolidated"] .mg-title-line{
-      display:block;
-    }
-  }
-
-
-  .mg-hero-pretitle{
-    display:inline-flex;
-    align-items:center;
-    gap:10px;
-    margin:0 0 22px;
-    color:#050505;
-    font-size:13px;
-    font-weight:950;
-    letter-spacing:.14em;
-    line-height:1.2;
-    text-transform:uppercase;
-  }
-  .mg-hero-pretitle::before{
-    content:"";
-    width:9px;
-    height:9px;
-    border-radius:999px;
-    background:var(--mg-gold);
-    box-shadow:0 0 18px rgba(217,167,53,.42);
-  }
-  @media(max-width:680px){
-    .mg-hero-pretitle{
-      margin-bottom:16px;
-      font-size:11px;
-      letter-spacing:.11em;
-    }
-  }
-
 </style>
 
 <div class="mg-home-page" id="top">
   <div class="mg-progress" aria-hidden="true"><span class="mg-progress-bar" id="mgProgressBar"></span></div>
 
-
   <section class="mg-hero" aria-labelledby="mgHeroTitle">
     <div class="mg-hero-grid">
       <div class="mg-hero-copy" data-reveal="left">
-
         <span class="mg-hero-pretitle">Data Resource Management Solutions (DRM)</span>
         <h1 class="mg-title" id="mgHeroTitle"><span class="mg-title-line">INVEST LOCAL,</span><span class="mg-title-line">DISCOVER VALUE &amp;</span><span class="mg-title-line">SUPPORT HUMANS</span></h1>
         <p class="mg-note"><strong>Business data is the value layer:</strong> Microgifter helps local businesses turn support into structured data, use that data to discover what customers value, and earn more from the relationships they already create.</p>
         <div class="mg-actions">
-          <a class="mg-btn mg-btn-primary" href="/signup.php">Create Account <span>→</span></a>
-          <a class="mg-btn mg-btn-secondary" href="/developer-docs.php">View API Docs <span>→</span></a>
+          <a class="mg-btn mg-btn-primary" href="/signup.php">Create Account <span aria-hidden="true">→</span></a>
+          <a class="mg-btn mg-btn-secondary" href="/developer-docs.php">View API Docs <span aria-hidden="true">→</span></a>
         </div>
       </div>
 
       <div class="mg-hero-visual" data-reveal="right" aria-label="Microgifter product preview">
-        <img class="mg-desktop" src="/images/desktop_bg_main_v10.png" alt="Microgifter desktop product preview">
-        <img class="mg-phone-img" src="/images/mobile_bg_main.png" alt="Microgifter mobile product preview">
+        <img class="mg-desktop" src="/images/desktop_bg_main_v10.png" alt="Microgifter desktop product preview" decoding="async" fetchpriority="high">
+        <img class="mg-phone-img" src="/images/mobile_bg_main.png" alt="Microgifter mobile product preview" decoding="async" fetchpriority="high">
       </div>
     </div>
   </section>
@@ -861,7 +463,7 @@ require __DIR__ . '/includes/header.php';
       <div class="mg-feature-panels mg-growth-feature-grid">
         <article class="mg-panel" data-reveal="scale">
           <div class="mg-panel-head">
-            <div class="mg-panel-icon"><svg viewBox="0 0 24 24"><path d="M8 5l-5 7 5 7M16 5l5 7-5 7M14 4l-4 16"/></svg></div>
+            <div class="mg-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5l-5 7 5 7M16 5l5 7-5 7M14 4l-4 16"/></svg></div>
             <div><h3>Create Value</h3><p>Build offers, rewards, gift certificates, pre-sale products, and local experiences that give customers a clear reason to act.</p></div>
           </div>
           <div class="mg-codebox" aria-label="Create value data example"><span class="gold">VALUE OBJECT</span><br>{<br>&nbsp;&nbsp;<span class="muted">"offer"</span>: <span class="green">"coffee_for_two"</span>,<br>&nbsp;&nbsp;<span class="muted">"price"</span>: <span class="green">"$18.00"</span>,<br>&nbsp;&nbsp;<span class="muted">"goal"</span>: <span class="green">"bring two humans in"</span>,<br>&nbsp;&nbsp;<span class="muted">"signal"</span>: <span class="green">"visit_intent"</span><br>}</div>
@@ -870,7 +472,7 @@ require __DIR__ . '/includes/header.php';
 
         <article class="mg-panel" data-reveal="scale" style="--delay:80ms">
           <div class="mg-panel-head">
-            <div class="mg-panel-icon"><svg viewBox="0 0 24 24"><path d="M4 13h4l11-6v10L8 11H4v2Z"/><path d="M8 11v7a2 2 0 0 0 2 2h1M21 9c1 2 1 4 0 6"/></svg></div>
+            <div class="mg-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 13h4l11-6v10L8 11H4v2Z"/><path d="M8 11v7a2 2 0 0 0 2 2h1M21 9c1 2 1 4 0 6"/></svg></div>
             <div><h3>Capture Data</h3><p>Turn claims, purchases, redemptions, QR scans, shares, saves, and visits into clean customer and campaign data.</p></div>
           </div>
           <div class="mg-signal-list" aria-label="Captured data signals">
@@ -884,7 +486,7 @@ require __DIR__ . '/includes/header.php';
 
         <article class="mg-panel" data-reveal="scale" style="--delay:160ms">
           <div class="mg-panel-head">
-            <div class="mg-panel-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/><path d="M8 11h6M11 8v6"/></svg></div>
+            <div class="mg-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/><path d="M8 11h6M11 8v6"/></svg></div>
             <div><h3>Discover Value</h3><p>See which offers, prices, channels, timing, and experiences customers actually respond to — not what you guessed they wanted.</p></div>
           </div>
           <div class="mg-value-score" aria-label="Value discovery score">
@@ -896,18 +498,16 @@ require __DIR__ . '/includes/header.php';
 
         <article class="mg-panel" data-reveal="scale" style="--delay:240ms">
           <div class="mg-panel-head">
-            <div class="mg-panel-icon"><svg viewBox="0 0 24 24"><path d="M12 21s-7-4.2-9-9.5C1.8 8.4 3.7 5 7.1 5c2 0 3.5 1.1 4.9 3 1.4-1.9 2.9-3 4.9-3 3.4 0 5.3 3.4 4.1 6.5C19 16.8 12 21 12 21Z"/></svg></div>
+            <div class="mg-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 21s-7-4.2-9-9.5C1.8 8.4 3.7 5 7.1 5c2 0 3.5 1.1 4.9 3 1.4-1.9 2.9-3 4.9-3 3.4 0 5.3 3.4 4.1 6.5C19 16.8 12 21 12 21Z"/></svg></div>
             <div><h3>Activate Support</h3><p>Give customers a direct way to support real local businesses and real humans while creating measurable demand for the merchant.</p></div>
           </div>
-          <div class="mg-mini-path" aria-label="Support activation path">
-            <span>Find</span><span>Support</span><span>Gift</span><span>Redeem</span>
-          </div>
+          <div class="mg-mini-path" aria-label="Support activation path"><span>Find</span><span>Support</span><span>Gift</span><span>Redeem</span></div>
           <div class="mg-panel-tags"><span>Human</span><span>Local</span><span>Direct</span></div>
         </article>
 
         <article class="mg-panel" data-reveal="scale" style="--delay:320ms">
           <div class="mg-panel-head">
-            <div class="mg-panel-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-5 4.2-8 8-8s6.5 3 8 8"/></svg></div>
+            <div class="mg-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-5 4.2-8 8-8s6.5 3 8 8"/></svg></div>
             <div><h3>Utilize Insight</h3><p>Use captured data to personalize follow-up, improve the next campaign, identify valuable customers, and reduce wasted marketing effort.</p></div>
           </div>
           <div class="mg-signal-list" aria-label="Utilized data actions">
@@ -921,7 +521,7 @@ require __DIR__ . '/includes/header.php';
 
         <article class="mg-panel" data-reveal="scale" style="--delay:400ms">
           <div class="mg-panel-head">
-            <div class="mg-panel-icon"><svg viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M7 16l4-5 3 3 5-8"/></svg></div>
+            <div class="mg-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M7 16l4-5 3 3 5-8"/></svg></div>
             <div><h3>Earn on Value</h3><p>Turn support, customer data, and future demand into repeat revenue — earning more from the relationships the business already owns.</p></div>
           </div>
           <div class="mg-value-score" aria-label="Earned value example">
@@ -953,11 +553,11 @@ require __DIR__ . '/includes/header.php';
             <article class="mg-agentic-card" data-reveal="up" style="--delay:120ms">
               <h3>The efficient value loop</h3>
               <div class="mg-agent-flow" aria-label="Promotional CRM revenue flow">
-                <div class="mg-flow-item"><span>Create a local value action</span><span>→</span></div>
-                <div class="mg-flow-item"><span>Capture the customer signal</span><span>→</span></div>
-                <div class="mg-flow-item"><span>Connect actions to business intelligence</span><span>→</span></div>
-                <div class="mg-flow-item"><span>Use insight to improve the next offer</span><span>→</span></div>
-                <div class="mg-flow-item"><span>Earn more from owned relationships</span><span>✓</span></div>
+                <div class="mg-flow-item"><span>Create a local value action</span><span aria-hidden="true">→</span></div>
+                <div class="mg-flow-item"><span>Capture the customer signal</span><span aria-hidden="true">→</span></div>
+                <div class="mg-flow-item"><span>Connect actions to business intelligence</span><span aria-hidden="true">→</span></div>
+                <div class="mg-flow-item"><span>Use insight to improve the next offer</span><span aria-hidden="true">→</span></div>
+                <div class="mg-flow-item"><span>Earn more from owned relationships</span><span aria-hidden="true">✓</span></div>
               </div>
             </article>
           </div>
@@ -1057,9 +657,11 @@ require __DIR__ . '/includes/header.php';
 
 <script>
 (() => {
-  const revealItems = Array.from(document.querySelectorAll('[data-reveal]'));
-  const progressBar = document.getElementById('mgProgressBar');
+  const root = document.querySelector('.mg-home-page');
+  if (!root) return;
 
+  const revealItems = Array.from(root.querySelectorAll('[data-reveal]'));
+  const progressBar = root.querySelector('#mgProgressBar');
 
   const showAllRevealItems = () => {
     revealItems.forEach((item) => item.classList.add('is-visible'));
@@ -1068,41 +670,27 @@ require __DIR__ . '/includes/header.php';
   if ('IntersectionObserver' in window) {
     const revealObserver = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('is-visible');
-          revealObserver.unobserve(entry.target);
-        }
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add('is-visible');
+        revealObserver.unobserve(entry.target);
       });
     }, { threshold: 0.08, rootMargin: '0px 0px 12% 0px' });
 
     revealItems.forEach((item) => revealObserver.observe(item));
-    setTimeout(showAllRevealItems, 1800);
+    window.setTimeout(showAllRevealItems, 1800);
   } else {
     showAllRevealItems();
   }
 
-  document.querySelectorAll('img').forEach((img) => {
-    img.addEventListener('error', () => {
-      img.classList.add('mg-image-missing');
-      const fallback = img.parentElement && img.parentElement.querySelector('.mg-mini-ui-fallback');
-      if (fallback) fallback.style.display = 'grid';
-    }, { once: true });
-
-    img.addEventListener('load', () => {
-      const fallback = img.parentElement && img.parentElement.querySelector('.mg-mini-ui-fallback');
-      if (fallback) fallback.style.display = 'none';
-    }, { once: true });
-  });
-
   const updateProgress = () => {
     if (!progressBar) return;
     const scrollTop = window.scrollY || document.documentElement.scrollTop;
-    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    const docHeight = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
     const pct = docHeight > 0 ? Math.min(1, scrollTop / docHeight) : 0;
     progressBar.style.width = `${pct * 100}%`;
   };
 
-  window.addEventListener('scroll', updateProgress, { passive: true });
+  window.addEventListener('scroll', updateProgress, { passive:true });
   window.addEventListener('resize', updateProgress);
   updateProgress();
 })();
