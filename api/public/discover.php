@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/profiles/_product_discovery.php';
+require_once dirname(__DIR__) . '/profiles/_discovery_market_metrics.php';
 
 mg_require_method('GET');
 $pdo = mg_db();
@@ -13,6 +14,7 @@ mg_rate_limit('profile.discovery.read', $identifier, $viewerId !== null ? 240 : 
 
 try {
     $data = mg_profile_discovery_read($pdo, $_GET, $viewerId);
+    $data = mg_profile_discovery_enrich_market_metrics($pdo, $data);
     $data['products'] = mg_product_discovery_search($pdo, $_GET, $viewerId);
 } catch (InvalidArgumentException $error) {
     mg_security_log('warning', 'profile.discovery.invalid_request', 'Invalid profile discovery request.', [
