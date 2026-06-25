@@ -77,7 +77,7 @@ $mgMerchantLinkClass = static function (string $page) use ($mgAgentSidebarPage):
   </section>
 </div>
 
-<div class="mg-agent-tool-modal mg-scanner-modal" data-scanner-modal aria-hidden="true">
+<div class="mg-agent-tool-modal mg-scanner-modal" data-scanner-modal data-scanner-api="/api/merchant/scanner-claim.php" aria-hidden="true">
   <div class="mg-agent-tool-backdrop" data-scanner-close></div>
   <section class="mg-agent-tool-dialog mg-scanner-dialog" role="dialog" aria-modal="true" aria-labelledby="mg-scanner-title">
     <header><div><span>Hardware tools</span><h2 id="mg-scanner-title">Scanner</h2></div><button type="button" data-scanner-close aria-label="Close scanner">×</button></header>
@@ -88,15 +88,23 @@ $mgMerchantLinkClass = static function (string $page) use ($mgAgentSidebarPage):
         <p data-scanner-status>Camera is off.</p>
       </div>
       <div class="mg-scanner-settings">
-        <label>Scanner mode<select data-scanner-mode><option value="qr">QR code</option><option value="barcode">Barcode</option><option value="document">Document</option><option value="hardware">Hardware scanner</option></select></label>
+        <label>Scanner mode<select data-scanner-mode><option value="qr">QR code</option><option value="barcode">Barcode</option><option value="hardware">Hardware/manual scanner</option></select></label>
         <label>Camera<select data-scanner-camera><option value="environment">Rear camera</option><option value="user">Front camera</option></select></label>
-        <label>Hardware integration<select><option>None configured</option><option disabled>USB scanner — coming later</option><option disabled>Bluetooth scanner — coming later</option><option disabled>POS scanner — coming later</option></select></label>
+        <label>Merchant location<select data-scanner-location><option value="">Loading locations…</option></select></label>
+        <div class="mg-scanner-location-note" data-scanner-location-note>Choose a location with an active claim code.</div>
+        <label>Scanned Microgift<input type="text" data-scanner-scan-value placeholder="Scan QR or enter gift ID" autocomplete="off"></label>
         <div class="mg-scanner-auto-claim">
-          <label class="mg-scanner-toggle"><input type="checkbox" data-scanner-auto-claim><span>Auto-claim after a matching scan</span></label>
-          <label>Claim code<input type="text" data-scanner-claim-code placeholder="Enter claim code for auto-claim" autocomplete="off"></label>
-          <p>This is the interface outline only. Verification and redemption are not connected yet.</p>
+          <label class="mg-scanner-toggle"><input type="checkbox" data-scanner-auto-claim checked><span>Verify and claim after a matching scan</span></label>
+          <label class="mg-scanner-toggle"><input type="checkbox" data-scanner-two-step checked><span>Require second confirmation before claiming voucher</span></label>
+          <p>Location claim code is used server-side. Staff do not need to type or expose the code at redemption.</p>
         </div>
-        <div class="mg-scanner-actions"><button type="button" data-scanner-stop>Stop</button><button type="button" class="is-primary" data-scanner-start>Start scanner</button></div>
+        <div class="mg-scanner-confirm" data-scanner-confirm hidden>
+          <strong>Gift verified. Claim voucher now?</strong>
+          <span data-scanner-confirm-copy>This action permanently redeems the voucher for the selected location.</span>
+          <div><button type="button" data-scanner-cancel-confirm>Cancel</button><button type="button" class="is-primary" data-scanner-confirm-claim>Claim voucher</button></div>
+        </div>
+        <div class="mg-scanner-result" data-scanner-result hidden></div>
+        <div class="mg-scanner-actions"><button type="button" data-scanner-stop>Stop</button><button type="button" data-scanner-verify>Verify scan</button><button type="button" class="is-primary" data-scanner-start>Start scanner</button></div>
       </div>
     </div>
   </section>
