@@ -4,6 +4,20 @@ declare(strict_types=1);
 require_once __DIR__ . '/includes/app.php';
 require_once __DIR__ . '/api/db.php';
 
+function mg_qr_redirect_destination_safe(string $destination): bool
+{
+    if ($destination === '' || preg_match('/[\r\n]/', $destination)) return false;
+    if (str_starts_with($destination, '//')) return false;
+    if (str_starts_with($destination, '/')) return true;
+    if (!filter_var($destination, FILTER_VALIDATE_URL)) return false;
+    $parts = parse_url($destination);
+    if (!is_array($parts) || empty($parts['scheme']) || empty($parts['host'])) return false;
+    if (strtolower((string) $parts['scheme']) !== 'https') return false;
+    if (!empty($parts['user']) || !empty($parts['pass'])) return false;
+    $port = isset($parts['port']) ? (int) $parts['port'] : 443;
+    return $port === 443;
+}
+
 $code = trim((string) ($_GET['c'] ?? ''));
 if ($code === '' || !preg_match('/^[A-Za-z0-9_-]{6,80}$/', $code)) {
     http_response_code(404);
@@ -16,9 +30,16 @@ try {
     $stmt = $pdo->prepare("SELECT id, public_id, destination_url, status FROM merchant_qr_codes WHERE short_code = ? LIMIT 1");
     $stmt->execute([$code]);
     $qr = $stmt->fetch();
-    if (!$qr || !in_array((string) $qr['status'], ['active', 'draft'], true)) {
+    if (!$qr || (string) $qr['status'] !== 'active') {
         http_response_code(404);
         echo 'QR code not available.';
+        exit;
+    }
+
+    $destination = (string) $qr['destination_url'];
+    if (!mg_qr_redirect_destination_safe($destination)) {
+        http_response_code(422);
+        echo 'QR destination is not available.';
         exit;
     }
 
@@ -45,8 +66,8 @@ try {
         // Do not block the customer redirect if scan analytics fails.
     }
 
-    $destination = (string) $qr['destination_url'];
     header('Cache-Control: no-store, private');
+    header('Referrer-Policy: no-referrer');
     header('Location: ' . $destination, true, 302);
     exit;
 } catch (Throwable) {
