@@ -17,7 +17,7 @@ foreach ($public_nav_links as $public_header_link) {
         continue;
     }
     $href = (string) ($public_header_link['href'] ?? '');
-    if (in_array($href, ['/corporate.php', '/retail.php', '/locations.php', '/campaign.php'], true)) {
+    if (in_array($href, ['/corporate.php', '/retail.php', '/locations.php', '/campaign.php', '/developer-docs.php'], true)) {
         continue;
     }
     $filtered_links[] = $public_header_link;
@@ -30,7 +30,6 @@ if (!$user) {
         ['label'=>'Explore','href'=>'/discover.php'],
         ['label'=>'Merchant','href'=>'/merchant.php'],
         ['label'=>'Pricing','href'=>'/pricing.php'],
-        ['label'=>'Docs','href'=>'/developer-docs.php'],
     ];
 }
 
