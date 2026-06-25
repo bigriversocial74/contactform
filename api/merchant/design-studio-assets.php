@@ -213,6 +213,7 @@ if ($action === 'save_template') {
 if ($action === 'save_project') {
     mg_design_require($user, 'merchant.design_projects.manage');
     $projectId = trim((string) ($input['id'] ?? ''));
+    $wasUpdate = $projectId !== '';
     $brandKitDbId = mg_design_lookup_brand_kit_id($pdo, $workspaceId, isset($input['brand_kit_id']) ? trim((string) $input['brand_kit_id']) : null);
     $type = mg_design_template_type($input['project_type'] ?? 'print');
     $formatKey = mg_design_clean_text($input['format_key'] ?? 'custom', 'custom', 80);
@@ -226,7 +227,7 @@ if ($action === 'save_project') {
     $printOptionsJson = mg_design_optional_json($input['print_options'] ?? null);
     $exportJson = mg_design_optional_json($input['export_manifest'] ?? null);
 
-    if ($projectId !== '') {
+    if ($wasUpdate) {
         $stmt = $pdo->prepare('SELECT id FROM merchant_design_projects WHERE public_id=? AND workspace_id=? LIMIT 1');
         $stmt->execute([$projectId, $workspaceId]);
         $existing = $stmt->fetch();
@@ -242,7 +243,7 @@ if ($action === 'save_project') {
     $fresh = $pdo->prepare('SELECT p.*,t.public_id template_public_id,q.public_id qr_public_id,bk.public_id brand_kit_public_id FROM merchant_design_projects p LEFT JOIN merchant_design_templates t ON t.id=p.template_id LEFT JOIN merchant_qr_codes q ON q.id=p.qr_code_id LEFT JOIN merchant_brand_kits bk ON bk.id=p.brand_kit_id WHERE p.public_id=? AND p.workspace_id=? LIMIT 1');
     $fresh->execute([$projectId, $workspaceId]);
     mg_audit('merchant.design_project_saved', 'merchant_design_project', ['project_id' => $projectId, 'format_key' => $formatKey, 'project_type' => $type, 'brand_kit_id' => $input['brand_kit_id'] ?? null], $userId);
-    mg_ok(['project' => mg_design_format_project($fresh->fetch())], 'Project saved.', $input['id'] ?? null ? 200 : 201);
+    mg_ok(['project' => mg_design_format_project($fresh->fetch())], 'Project saved.', $wasUpdate ? 200 : 201);
 }
 
 if ($action === 'queue_ai_job') {
