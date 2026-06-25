@@ -74,6 +74,8 @@ $requiredFiles = [
     'api/merchant/design-studio-assets.php',
     'api/merchant/qr-library.php',
     'api/admin/design-studio-templates.php',
+    'api/admin/design-studio-smoke-test.php',
+    'api/admin/design-export-worker.php',
     'assets/js/design-studio.js',
     'assets/css/design-studio.css',
     'assets/css/design-studio-wiring.css',
