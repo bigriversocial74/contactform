@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/bootstrap.php';
 require_once dirname(__DIR__, 3) . '/includes/merchant-crm.php';
+require_once __DIR__ . '/_security.php';
 
 function mg_public_campaign_engage_uuid(): string
 {
@@ -40,12 +41,15 @@ $campaignRef = strtolower(trim((string) ($input['campaign_id'] ?? $input['campai
 $email = strtolower(trim((string) ($input['email'] ?? '')));
 $name = trim((string) ($input['name'] ?? $input['full_name'] ?? ''));
 $phone = trim((string) ($input['phone'] ?? ''));
+$sourceUrl = substr(trim((string) ($input['source_url'] ?? '')), 0, 600);
+$marketingOptIn = !empty($input['marketing_opt_in']) || !empty($input['consent']);
 $entry = $input['entry'] ?? [];
 if (!is_array($entry)) $entry = [];
 
 if ($campaignRef === '' || $email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || mb_strlen($email) > 255 || mb_strlen($name) > 180 || mb_strlen($phone) > 60) {
     mg_fail('Invalid campaign engagement.', 422);
 }
+mg_public_campaign_throttle('engage', $campaignRef, $email);
 
 try {
     $pdo->beginTransaction();
@@ -78,13 +82,16 @@ try {
         'campaign_public_id' => (string) $campaign['public_id'],
         'crm_source' => $source,
         'entry' => $entry,
+        'marketing_opt_in' => $marketingOptIn,
+        'source_url' => $sourceUrl,
         'ip' => mg_client_ip(),
         'user_agent' => substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255),
         'generic_engagement' => true,
     ];
 
-    $contactStmt = $pdo->prepare('INSERT INTO campaign_contacts (public_id,merchant_user_id,campaign_id,user_id,email,phone,name,source,opt_in_status,metadata_json,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,NOW(),NOW()) ON DUPLICATE KEY UPDATE user_id=VALUES(user_id), phone=VALUES(phone), name=VALUES(name), source=VALUES(source), metadata_json=VALUES(metadata_json), updated_at=NOW()');
-    $contactStmt->execute([$contactPublicId, $merchantId, $campaignId, $userId, $email, $phone !== '' ? $phone : null, $name !== '' ? $name : null, $source, 'opted_in', json_encode($metadata, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)]);
+    $optInStatus = $marketingOptIn ? 'opted_in' : 'unknown';
+    $contactStmt = $pdo->prepare('INSERT INTO campaign_contacts (public_id,merchant_user_id,campaign_id,user_id,email,phone,name,source,opt_in_status,metadata_json,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,NOW(),NOW()) ON DUPLICATE KEY UPDATE user_id=VALUES(user_id), phone=VALUES(phone), name=VALUES(name), source=VALUES(source), opt_in_status=VALUES(opt_in_status), metadata_json=VALUES(metadata_json), updated_at=NOW()');
+    $contactStmt->execute([$contactPublicId, $merchantId, $campaignId, $userId, $email, $phone !== '' ? $phone : null, $name !== '' ? $name : null, $source, $optInStatus, json_encode($metadata, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)]);
 
     $contactLookup = $pdo->prepare('SELECT id, public_id FROM campaign_contacts WHERE campaign_id = ? AND email = ? LIMIT 1');
     $contactLookup->execute([$campaignId, $email]);
@@ -119,6 +126,7 @@ try {
     $pdo->commit();
     mg_ok([
         'contact_id' => (string) ($contact['public_id'] ?? ''),
+        'crm_contact_id' => (string) ($crm['contact_id'] ?? ''),
         'campaign_id' => (string) $campaign['public_id'],
         'campaign_type' => $campaignType,
         'source' => $source,
