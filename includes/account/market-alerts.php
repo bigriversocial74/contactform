@@ -13,6 +13,7 @@ $marketHeaderAlerts = array_map(static function (array $alert): array {
     ];
 }, $marketAlerts);
 ?>
+<link rel="stylesheet" href="/assets/css/market-alerts.css">
 <section class="mg-market-alerts-panel">
   <header>
     <div>
@@ -37,3 +38,4 @@ $marketHeaderAlerts = array_map(static function (array $alert): array {
   </div>
 </section>
 <script type="application/json" id="mg-market-alerts-json"><?= json_encode($marketHeaderAlerts, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?></script>
+<script src="/assets/js/market-alerts.js"></script>
