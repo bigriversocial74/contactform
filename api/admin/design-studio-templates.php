@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/bootstrap.php';
+require_once dirname(__DIR__) . '/merchant/_design_studio_guard.php';
 
 function mg_admin_design_has(array $user, string $permission): bool
 {
@@ -59,6 +60,7 @@ function mg_admin_design_template_row(array $row): array
 
 $user = mg_admin_design_require();
 $pdo = mg_db();
+mg_design_studio_require_tables($pdo, mg_design_studio_core_tables());
 $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 
 if ($method === 'GET') {
