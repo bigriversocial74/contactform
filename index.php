@@ -29,7 +29,6 @@ $page_manifest = [
             ['label' => 'Explore', 'href' => '/discover.php'],
             ['label' => 'Merchant', 'href' => '/merchant.php'],
             ['label' => 'Pricing', 'href' => '/pricing.php'],
-            ['label' => 'Docs', 'href' => '/developer-docs.php'],
             ['label' => 'Book A Demo', 'href' => '/learn-more.php'],
         ],
     ],
