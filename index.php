@@ -17,7 +17,7 @@ $page_scripts = [
     '/assets/js/homepage-drm.js',
 ];
 $page_manifest = [
-    'id' => 'homepage-drm',
+    'id' => 'index',
     'title' => $page_title,
     'section' => $page_section,
     'header_mode' => $header_mode,
