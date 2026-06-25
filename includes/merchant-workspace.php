@@ -7,10 +7,11 @@ $merchantNav = [
  'products'=>['Products','Catalog and builder','/merchant-products.php'],
  'reward_templates'=>['Reward Templates','Wallet-ready offers','/merchant-reward-templates.php'],
  'campaigns'=>['Campaigns','Forms, contests, QR drops','/merchant-campaigns.php'],
+ 'merchant_crm'=>['Merchant CRM','Customers and campaign history','/merchant-crm.php'],
  'campaign_stamps'=>['Campaign Stamps','Distribution usage','/merchant-campaign-stamps.php'],
  'stamps'=>['Stamp Ledger','Sends and balance','/merchant-stamps.php'],
  'storefront'=>['Storefront','Public merchant page','/merchant-storefront.php'],
- 'pppm'=>['Orders & PPPM','Items and lifecycle','/merchant-pppm.php'],
+ 'pppm'=>['Orders and PPPM','Items and lifecycle','/merchant-pppm.php'],
  'distribution'=>['Distribution','Programs and inputs','/merchant-distribution.php'],
  'developer_api'=>['Developer API','Apps and access','/merchant-distribution.php?developer_api=1'],
  'claims'=>['Claims','Verification and redemption','/merchant-claims.php'],
@@ -33,7 +34,7 @@ foreach ($merchantNav as $key => $item) {
     ];
 }
 ob_start(); ?>
-<div class="mg-merchant-progress-card"><div><span>Workspace setup</span><strong data-merchant-progress>0%</strong></div><div class="mg-merchant-progress"><i data-merchant-progress-bar></i></div><small data-merchant-status>Loading activation status…</small></div>
+<div class="mg-merchant-progress-card"><div><span>Workspace setup</span><strong data-merchant-progress>0%</strong></div><div class="mg-merchant-progress"><i data-merchant-progress-bar></i></div><small data-merchant-status>Loading activation status...</small></div>
 <?php $appSidebarBeforeNav = ob_get_clean();
 $appSidebarFooter = '<div class="mg-merchant-sidebar-footer"><span class="mg-save-state" data-merchant-save-state>All changes saved</span><a class="mg-btn mg-btn-soft" href="/merchant-campaigns.php">Create campaign</a></div>';
 $appSidebarVariant = 'merchant';
