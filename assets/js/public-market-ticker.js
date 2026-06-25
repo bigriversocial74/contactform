@@ -32,6 +32,20 @@
     return Math.round((match[1] === '-' ? -1 : 1) * amount * multiplier * 100);
   }
 
+  function setMarqueeMode(marquee, looping) {
+    if (!marquee) return;
+    marquee.classList.toggle('is-static', !looping);
+    if (looping) {
+      marquee.style.removeProperty('animation');
+      marquee.style.removeProperty('width');
+      marquee.style.removeProperty('transform');
+      return;
+    }
+    marquee.style.setProperty('animation', 'none', 'important');
+    marquee.style.setProperty('width', '100%', 'important');
+    marquee.style.setProperty('transform', 'none', 'important');
+  }
+
   function normalizeStats(item) {
     const source = Array.isArray(item?.stats) ? item.stats : (item?.stat ? [item.stat] : []);
     return source
@@ -116,7 +130,7 @@
     row.className = 'mg-header-market-row';
     row.appendChild(firstLink);
     marquee.replaceChildren(row);
-    marquee.classList.add('is-static');
+    setMarqueeMode(marquee, false);
   }
 
   function hydrateServerTickerStats() {
@@ -154,6 +168,7 @@
     const trend = requestedTrend === 'down' ? 'down' : requestedTrend === 'up' ? 'up' : 'flat';
     change.className = `is-${trend}`;
     change.textContent = text(item?.change, '● LIVE') || '● LIVE';
+    if (trend === 'flat') change.style.setProperty('color', '#64748b', 'important');
 
     link.append(symbol, name, price, change);
 
@@ -174,7 +189,7 @@
     if (!marquee || !Array.isArray(items) || items.length === 0) return;
     const normalized = applyLiveMovement(items);
     const looping = normalized.length > 1;
-    marquee.classList.toggle('is-static', !looping);
+    setMarqueeMode(marquee, looping);
     marquee.replaceChildren();
     const passes = looping ? 2 : 1;
     for (let pass = 0; pass < passes; pass += 1) {
