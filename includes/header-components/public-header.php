@@ -17,7 +17,7 @@ foreach ($public_nav_links as $public_header_link) {
         continue;
     }
     $href = (string) ($public_header_link['href'] ?? '');
-    if (in_array($href, ['/corporate.php', '/retail.php', '/locations.php', '/campaign.php'], true)) {
+    if (in_array($href, ['/corporate.php', '/retail.php', '/locations.php', '/campaign.php', '/developer-docs.php'], true)) {
         continue;
     }
     $filtered_links[] = $public_header_link;
@@ -30,7 +30,6 @@ if (!$user) {
         ['label'=>'Explore','href'=>'/discover.php'],
         ['label'=>'Merchant','href'=>'/merchant.php'],
         ['label'=>'Pricing','href'=>'/pricing.php'],
-        ['label'=>'Docs','href'=>'/developer-docs.php'],
     ];
 }
 
@@ -44,6 +43,9 @@ if (!$user) {
 }
 if (!$market_ticker_items && is_array($public_header_config['ticker_items'] ?? null)) {
     $market_ticker_items = $public_header_config['ticker_items'];
+}
+if (!$market_ticker_items && !$user) {
+    $market_ticker_items = mg_public_market_ticker_fallback_items();
 }
 if ($user && $account_profile_url) {
     array_unshift($market_ticker_items, ['symbol'=>'YOU','name'=>'My Profile','price'=>'Profile','change'=>'OPEN','trend'=>'up','href'=>$account_profile_url]);
