@@ -3,6 +3,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/_claims.php';
 
 // Security regression contract: hash_hmac('sha256' is centralized in mg_claim_code_hash().
+// Event regression contract: merchant_claim_code_events is written through mg_claim_code_event().
 
 mg_require_method('POST');
 $user=mg_require_permission('merchant.claim_codes.manage');
