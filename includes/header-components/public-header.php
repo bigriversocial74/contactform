@@ -8,6 +8,12 @@ $public_nav_links = is_array($public_header_config['links'] ?? null) ? $public_h
 $public_demo_href = '/learn-more.php';
 $public_phone_number = '1-800-269-7433';
 $public_phone_href = 'tel:18002697433';
+$public_brand_equation = 'DAVE™ — Digital Asset Value Equation';
+$public_social_links = is_array($public_header_config['social_links'] ?? null) ? $public_header_config['social_links'] : [
+    ['label' => 'LinkedIn', 'short' => 'IN', 'href' => 'https://www.linkedin.com/company/microgifter/'],
+    ['label' => 'X', 'short' => 'X', 'href' => 'https://x.com/microgifter'],
+    ['label' => 'Instagram', 'short' => 'IG', 'href' => 'https://www.instagram.com/microgifter/'],
+];
 
 $filtered_links = [];
 foreach ($public_nav_links as $public_header_link) {
@@ -57,9 +63,25 @@ $show_demo_button = !$user;
 <header class="mg-site-header mg-unified-header mg-market-universal-header" data-mg-universal-header data-public-header data-header-theme="market-dark" data-header-variant="<?= $user ? 'logged-in' : 'logged-out' ?>">
   <div class="mg-header-inner nav-inner">
     <div class="mg-header-left">
-      <a class="mg-brand brand" href="/index.php" aria-label="Microgifter home"><img src="/images/logo_main_drk.png" alt="Microgifter"><span>Microgifter</span></a>
+      <div class="mg-brand-stack">
+        <a class="mg-brand brand" href="/index.php" aria-label="Microgifter home"><img src="/images/logo_main_drk.png" alt="Microgifter"><span>Microgifter</span></a>
+        <span class="mg-brand-equation"><?= mg_e($public_brand_equation) ?></span>
+      </div>
       <?php if (!$user): ?>
         <a class="mg-header-phone" href="<?= mg_e($public_phone_href) ?>" aria-label="Call Microgifter at <?= mg_e($public_phone_number) ?>"><?= mg_e($public_phone_number) ?></a>
+        <?php if ($public_social_links): ?>
+          <nav class="mg-header-socials" aria-label="Microgifter social links">
+            <?php foreach ($public_social_links as $public_social_link): ?>
+              <?php
+                $socialHref = trim((string) ($public_social_link['href'] ?? ''));
+                $socialLabel = trim((string) ($public_social_link['label'] ?? 'Social'));
+                $socialShort = trim((string) ($public_social_link['short'] ?? $socialLabel));
+                if ($socialHref === '') continue;
+              ?>
+              <a class="mg-header-social-link" href="<?= mg_e($socialHref) ?>" target="_blank" rel="noopener noreferrer" aria-label="Microgifter on <?= mg_e($socialLabel) ?>"><?= mg_e($socialShort) ?></a>
+            <?php endforeach; ?>
+          </nav>
+        <?php endif; ?>
       <?php endif; ?>
       <?php if ($user && (bool) ($public_header_config['search'] ?? false)): ?>
         <form class="mg-public-search" action="/discover.php" method="get" role="search">
