@@ -174,7 +174,23 @@ $show_demo_button = !$user;
       <a class="mg-public-mobile-logo" href="/index.php" id="mg-public-mobile-title"><img src="/images/logo_main_drk.png" alt="Microgifter"><span>Microgifter</span></a>
       <button class="mg-public-mobile-close" type="button" data-public-menu-close aria-label="Close navigation menu">×</button>
     </div>
-    <a class="mg-public-mobile-phone" href="<?= mg_e($public_phone_href) ?>" aria-label="Call Microgifter at <?= mg_e($public_phone_number) ?>"><?= mg_e($public_phone_number) ?></a>
+    <div class="mg-public-mobile-contact">
+      <a class="mg-public-mobile-phone" href="<?= mg_e($public_phone_href) ?>" aria-label="Call Microgifter at <?= mg_e($public_phone_number) ?>"><?= mg_e($public_phone_number) ?></a>
+      <span class="mg-public-mobile-equation"><?= mg_e($public_brand_equation) ?></span>
+      <?php if ($public_social_links): ?>
+        <nav class="mg-public-mobile-socials" aria-label="Microgifter social links">
+          <?php foreach ($public_social_links as $public_social_link): ?>
+            <?php
+              $mobileSocialHref = trim((string) ($public_social_link['href'] ?? ''));
+              $mobileSocialLabel = trim((string) ($public_social_link['label'] ?? 'Social'));
+              $mobileSocialShort = trim((string) ($public_social_link['short'] ?? $mobileSocialLabel));
+              if ($mobileSocialHref === '') continue;
+            ?>
+            <a href="<?= mg_e($mobileSocialHref) ?>" target="_blank" rel="noopener noreferrer" aria-label="Microgifter on <?= mg_e($mobileSocialLabel) ?>"><?= mg_e($mobileSocialShort) ?></a>
+          <?php endforeach; ?>
+        </nav>
+      <?php endif; ?>
+    </div>
     <form class="mg-public-mobile-search" action="/discover.php" method="get" role="search">
       <input type="search" name="q" placeholder="Search Microgifter" aria-label="Search Microgifter" autocomplete="off">
     </form>
