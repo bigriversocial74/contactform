@@ -109,4 +109,17 @@ final class CampaignStampDistributionContractTest extends TestCase
         self::assertStringContainsString('(SELECT COUNT(*) FROM campaign_events ce WHERE ce.campaign_id = c.id) event_count', $source);
         self::assertStringContainsString('(SELECT MAX(ce2.created_at) FROM campaign_events ce2 WHERE ce2.campaign_id = c.id) last_event_at', $source);
     }
+
+    public function testMerchantCampaignActivityUiShowsPublicLinksAndLifecycleCounts(): void
+    {
+        $source = $this->read('assets/js/stage12-campaigns.js');
+        self::assertStringContainsString('/api/merchant/campaign-activity.php', $source);
+        self::assertStringContainsString('c.public_url', $source);
+        self::assertStringContainsString('Open public page', $source);
+        self::assertStringContainsString('wallet_claimed_count', $source);
+        self::assertStringContainsString('emails_delivered_count', $source);
+        self::assertStringContainsString('emails_failed_count', $source);
+        self::assertStringContainsString('events_count', $source);
+        self::assertStringContainsString('data-campaign-row', $source);
+    }
 }
