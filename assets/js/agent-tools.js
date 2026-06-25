@@ -119,6 +119,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+  function locationHasClaimCode(location) {
+    return location === true || location === 1 || String(location || '') === '1' || String(location || '').toLowerCase() === 'true';
+  }
+
   function selectedLocation() {
     if (!scannerModal) return null;
     var select = scannerModal.querySelector('[data-scanner-location]');
@@ -126,7 +130,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var option = select.options[select.selectedIndex];
     return {
       id: select.value,
-      name: option ? option.textContent.replace(/ · claim \*\*\*\*.*$/, '') : 'Selected location',
+      name: option ? option.textContent.replace(/ · claim \*\*\*\*.*$/, '').replace(/ · no active claim code$/, '') : 'Selected location',
       claimCodeLast4: option ? (option.getAttribute('data-claim-last4') || '') : '',
       hasClaimCode: option ? option.getAttribute('data-has-claim-code') === '1' : false
     };
@@ -162,12 +166,13 @@ document.addEventListener('DOMContentLoaded', function () {
       select.innerHTML = '<option value="">Choose scanner location</option>';
       locations.forEach(function (location) {
         if (location.status && location.status !== 'active') return;
+        var ready = locationHasClaimCode(location.has_active_claim_code);
         var option = document.createElement('option');
         option.value = location.public_id || '';
-        option.textContent = (location.name || 'Merchant location') + (location.claim_code_last4 ? ' · claim ****' + location.claim_code_last4 : ' · no active claim code');
+        option.textContent = (location.name || 'Merchant location') + (ready && location.claim_code_last4 ? ' · claim ****' + location.claim_code_last4 : ' · no active claim code');
         option.setAttribute('data-claim-last4', location.claim_code_last4 || '');
-        option.setAttribute('data-has-claim-code', location.has_active_claim_code ? '1' : '0');
-        if (!location.has_active_claim_code) option.disabled = true;
+        option.setAttribute('data-has-claim-code', ready ? '1' : '0');
+        if (!ready) option.disabled = true;
         select.appendChild(option);
       });
       var firstReady = Array.prototype.slice.call(select.options).find(function (option) { return option.value && option.getAttribute('data-has-claim-code') === '1'; });
