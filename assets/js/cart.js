@@ -239,7 +239,7 @@ window.Microgifter = window.Microgifter || {};
     var id = detail.product_version_id || detail.productVersionId;
     if (id) C().addProductVersion(id, detail.quantity || 1).then(refresh);
   });
-  window.Microgifter.cart = {
+  window.Microgifter.cart={
     refresh: refresh,
     open: openDrawer,
     close: closeDrawer,

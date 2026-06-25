@@ -15,6 +15,13 @@ if($environment!=='testing'||!$browserAuthEnabled||!$isLoopback){
 
 if(session_status()!==PHP_SESSION_ACTIVE)session_start();
 session_regenerate_id(true);
+setcookie(session_name(),session_id(),[
+    'expires'=>0,
+    'path'=>'/',
+    'secure'=>false,
+    'httponly'=>true,
+    'samesite'=>'Lax',
+]);
 $_SESSION['mg_user']=[
     'id'=>999998,
     'public_id'=>'99999999-9999-4999-8999-999999999998',

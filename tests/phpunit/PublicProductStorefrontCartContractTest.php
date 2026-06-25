@@ -87,14 +87,12 @@ final class PublicProductStorefrontCartContractTest extends TestCase
     {
         $source=file_get_contents(dirname(__DIR__,2).'/assets/js/cart.js');
         self::assertIsString($source);
+        $compact=preg_replace('/\s+/', '', $source);
+        self::assertIsString($compact);
 
-        foreach([
-            "event.target.closest('[data-cart-add],[data-add-to-cart]')",
-            'button.dataset.productVersionId||button.dataset.versionId||button.dataset.cartVersionId',
-            'C().addProductVersion(productVersionId',
-            'openDrawer(button)',
-        ] as $needle){
-            self::assertStringContainsString($needle,$source);
-        }
+        self::assertStringContainsString("event.target.closest('[data-cart-add],[data-add-to-cart]')",$source);
+        self::assertStringContainsString('button.dataset.productVersionId||button.dataset.versionId||button.dataset.cartVersionId',$compact);
+        self::assertStringContainsString('C().addProductVersion(productVersionId',$source);
+        self::assertStringContainsString('openDrawer(button)',$source);
     }
 }

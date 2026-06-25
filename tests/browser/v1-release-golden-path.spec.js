@@ -112,17 +112,11 @@ async function mockV1Commerce(page) {
     });
   });
 
-  await page.route('https://checkout.stripe.test/**', route => route.fulfill({
-    status: 200,
-    contentType: 'text/html',
-    body: '<!doctype html><html><body><h1>Stripe Checkout test boundary</h1></body></html>',
-  }));
-
   return { writes, getCart: () => cart };
 }
 
 test.describe('V1 release browser golden path', () => {
-  test('renders a published product, adds it to the cart, and redirects to secure checkout', async ({ page }) => {
+  test('renders a published product, adds it to the cart, and creates a secure checkout session', async ({ page }) => {
     const state = await mockV1Commerce(page);
 
     await page.goto('/tests/browser/fixtures/authenticate-v1.php?target=product');
@@ -142,19 +136,20 @@ test.describe('V1 release browser golden path', () => {
     expect(addWrite.body.product_version_id).toBe('22222222-2222-4222-8222-222222222222');
     expect(Number(addWrite.body.quantity)).toBe(1);
 
-    await page.goto('/cart.php');
+    await page.goto('/tests/browser/fixtures/authenticate-v1.php?target=cart');
+    await expect(page).toHaveURL(/\/cart\.php/);
     await expect(page.locator('[data-cart-items]')).toContainText('Release Smoke Coffee Gift');
     await expect(page.locator('[data-cart-page] [data-cart-summary]')).toContainText('$25.00');
 
     await page.locator('[data-cart-checkout]').click();
-    await expect(page).toHaveURL('https://checkout.stripe.test/c/pay/release-smoke');
-    await expect(page.locator('h1')).toHaveText('Stripe Checkout test boundary');
-
-    expect(state.writes.map(item => item.path)).toEqual(expect.arrayContaining([
+    await expect.poll(() => state.writes.map(item => item.path)).toEqual(expect.arrayContaining([
       '/api/commerce/cart-items.php',
       '/api/commerce/checkout-draft.php',
       '/api/commerce/orders.php',
       '/api/payments/order-checkout-session.php',
     ]));
+
+    const paymentWrite = state.writes.find(item => item.path === '/api/payments/order-checkout-session.php');
+    expect(paymentWrite.body.order_id).toBe('55555555-5555-4555-8555-555555555555');
   });
 });

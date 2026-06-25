@@ -77,6 +77,9 @@ return [
         'stage_16_agent_execution_orchestration.sql',
         'stage_17_multi_agent_swarms.sql',
         'stage_17b_demand_signal_agent_orchestration.sql',
+        'stage_17_stamp_ledger.sql',
+        'stage_17b_stamp_purchases.sql',
+        'stage_17c_stamp_package_assignments.sql',
         'stage_18_production_hardening_launch_readiness.sql',
         'stage_18b_demand_orchestration_operations.sql',
         'stage_18c_demand_orchestration_recovery.sql',
@@ -110,5 +113,6 @@ return [
         '03Z_bootstrap_super_admin_user1.sql' => 'Promotes user ID 1 to super_admin and requires explicit operator confirmation.',
         'microgifter_complete_production_update_v1c_v1release.sql' => 'Operator-imported production bundle that consolidates the V1C, V1D, V1F, and V1 release hardening migrations.',
         'stage_12_campaign_features_full_import.sql' => 'Operator-imported one-file Stage 12 campaign feature schema for environments that need a single phpMyAdmin import.',
+        'stage_17_all_stamp_system.sql' => 'Operator-imported consolidated Stamp system bundle. The canonical ordered migrations are stage_17_stamp_ledger.sql, stage_17b_stamp_purchases.sql, and stage_17c_stamp_package_assignments.sql.',
     ],
 ];

@@ -60,7 +60,8 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
     var data = C.data(await C.api('GET','/api/payments/session.php?id=' + encodeURIComponent(sessionId)));
-    render(data.session || {}, data.items || []);
+    var session = data.session || {};
+    render(session, data.items || []);
 
     var status = root.querySelector('[data-checkout-status]');
     var confirm = root.querySelector('[data-sandbox-confirm]');
@@ -72,7 +73,7 @@ document.addEventListener('DOMContentLoaded', function () {
           var response = await C.api('POST','/api/payments/sandbox-confirm.php', { session_id: sessionId });
           var result = C.data(response);
           C.status(status, response.message || 'Payment completed.', 'success');
-          location.href = '/checkout-success.php?order=' + encodeURIComponent(result.order_id || (data.session || {}).order_id || '');
+          location.href = '/checkout-success.php?order=' + encodeURIComponent(result.order_id || session.order_id || '');
         } catch (error) {
           C.status(status, error.message || 'Unable to complete sandbox payment.', 'error');
           confirm.disabled = false;
@@ -87,7 +88,7 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
           C.status(status, 'Creating a new secure payment session…', 'info');
           var response = await C.api('POST','/api/payments/order-checkout-session.php', {
-            order_id: (data.session || {}).order_id,
+            order_id:session.order_id,
             idempotency_key: 'payment:' + C.uuid(),
             success_url: '/checkout-success.php',
             cancel_url: '/cart.php'
