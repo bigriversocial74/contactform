@@ -178,19 +178,6 @@ body[data-authenticated="false"] .mg-index-mobile-nav a::after{
   opacity:.55;
 }
 
-body[data-authenticated="false"][data-page-id="home-consolidated"] .mg-hero .mg-btn-primary,
-body[data-authenticated="false"][data-page-id="home-consolidated"] .mg-hero .mg-btn-primary:visited,
-body[data-authenticated="false"][data-page-id="home-consolidated"] .mg-hero .mg-btn-primary span,
-body[data-authenticated="false"][data-page-id="home-consolidated"] .mg-hero .mg-btn-secondary,
-body[data-authenticated="false"][data-page-id="home-consolidated"] .mg-hero .mg-btn-secondary:visited,
-body[data-authenticated="false"][data-page-id="home-consolidated"] .mg-hero .mg-btn-secondary span,
-body[data-authenticated="false"][data-page-id="home-consolidated"] .mg-public-bottom-demo-primary,
-body[data-authenticated="false"][data-page-id="home-consolidated"] .mg-public-bottom-demo-primary:visited{
-  background:#fff!important;
-  color:#050505!important;
-  border-color:rgba(0,0,0,.08)!important;
-}
-
 @media(max-width:980px){
   body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-account-menu{
     display:none!important;
