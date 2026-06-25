@@ -58,4 +58,19 @@ final class CampaignStampDistributionContractTest extends TestCase
         self::assertStringContainsString("'reward_attached' => !empty(\$row['reward_template_public_id'])", $source);
         self::assertStringContainsString("'reward_attached' => \$rewardTemplateId !== null", $source);
     }
+
+    public function testGenericCampaignEngagementIssuesWalletRewards(): void
+    {
+        $source = $this->read('api/public/campaigns/engage.php');
+        self::assertStringContainsString("INNER JOIN reward_templates rt ON rt.id = c.reward_template_id", $source);
+        self::assertStringContainsString("rt.status = 'active'", $source);
+        self::assertStringContainsString('mg_public_campaign_enforce_reward_limits', $source);
+        self::assertStringContainsString('INSERT INTO wallet_items', $source);
+        self::assertStringContainsString("'wallet_item.issued'", $source);
+        self::assertStringContainsString('UPDATE campaigns SET issued_count = issued_count + 1', $source);
+        self::assertStringContainsString('UPDATE reward_templates SET issued_count = issued_count + 1', $source);
+        self::assertStringContainsString('mg_zero_reward_issue_from_wallet', $source);
+        self::assertStringContainsString("'already_issued' => true", $source);
+        self::assertStringContainsString("'already_issued' => false", $source);
+    }
 }
