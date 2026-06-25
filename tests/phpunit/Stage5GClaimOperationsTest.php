@@ -71,7 +71,7 @@ final class Stage5GClaimOperationsTest extends TestCase
         foreach([
             'mg_claim_code_normalize',
             "hash_hmac('sha256',\$claimCode,\$pepper)",
-            "merchant_user_id=? AND code_hash=? AND status='active'",
+            "merchant_user_id=?ANDcode_hash=?ANDstatus='active'",
             'mg_claim_code_event',
         ] as $needle){
             self::assertStringContainsString($needle,self::compactSource($helper));
