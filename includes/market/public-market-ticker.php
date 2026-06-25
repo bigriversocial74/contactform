@@ -12,6 +12,16 @@ function mg_public_market_ticker_table(PDO $pdo, string $table): bool
     }
 }
 
+function mg_public_market_ticker_fallback_items(): array
+{
+    return [
+        ['symbol'=>'MGFT','name'=>'Local Market','price'=>'Opening soon','change'=>'LIVE SOON','trend'=>'up','href'=>'/discover.php','is_fallback'=>true],
+        ['symbol'=>'MERCH','name'=>'Merchant indexes','price'=>'Building','change'=>'SNAPSHOTS','trend'=>'up','href'=>'/merchant.php','is_fallback'=>true],
+        ['symbol'=>'DROP','name'=>'Reward drops','price'=>'Coming online','change'=>'DISCOVER','trend'=>'up','href'=>'/discover.php','is_fallback'=>true],
+        ['symbol'=>'SCORE','name'=>'Market scores','price'=>'Calculating','change'=>'BETA','trend'=>'up','href'=>'/learn-more.php','is_fallback'=>true],
+    ];
+}
+
 function mg_public_market_ticker_money(int $cents): string
 {
     if ($cents === 0) return '$0.00';
@@ -35,9 +45,9 @@ function mg_public_market_ticker_change(int $currentCents, ?int $previousCents):
     ];
 }
 
-function mg_public_market_ticker_items(PDO $pdo, int $limit = 12): array
+function mg_public_market_ticker_items(PDO $pdo, int $limit = 12, bool $fallback = false): array
 {
-    if (!mg_public_market_ticker_table($pdo, 'merchant_market_snapshots')) return [];
+    if (!mg_public_market_ticker_table($pdo, 'merchant_market_snapshots')) return $fallback ? mg_public_market_ticker_fallback_items() : [];
     $limit = max(4, min(24, $limit));
 
     $sql = "SELECT pp.slug,pp.display_name,mms.merchant_user_id,mms.ticker_symbol,mms.ticker_value_cents,mms.merchant_score,mms.snapshot_date
@@ -52,7 +62,7 @@ function mg_public_market_ticker_items(PDO $pdo, int $limit = 12): array
       LIMIT {$limit}";
     $stmt = $pdo->query($sql);
     $rows = $stmt ? ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: []) : [];
-    if (!$rows) return [];
+    if (!$rows) return $fallback ? mg_public_market_ticker_fallback_items() : [];
 
     $previousStmt = $pdo->prepare("SELECT ticker_value_cents FROM merchant_market_snapshots WHERE merchant_user_id=? AND snapshot_date < ? ORDER BY snapshot_date DESC LIMIT 1");
     $items = [];
@@ -79,7 +89,16 @@ function mg_public_market_ticker_items(PDO $pdo, int $limit = 12): array
             'snapshot_date' => $snapshotDate,
             'delta_cents' => $change['delta_cents'],
             'delta_percent' => $change['delta_percent'],
+            'is_fallback' => false,
         ];
     }
     return $items;
+}
+
+function mg_public_market_ticker_has_live_items(array $items): bool
+{
+    foreach ($items as $item) {
+        if (empty($item['is_fallback'])) return true;
+    }
+    return false;
 }
