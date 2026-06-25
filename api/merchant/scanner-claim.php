@@ -49,6 +49,15 @@ function mg_scanner_claim_identifier(mixed $value): string
     mg_fail('This scan does not look like a Microgifter gift or claim QR code.', 422);
 }
 
+function mg_scanner_claim_assert_location_binding(array $claim, int $locationId): void
+{
+    $status = (string) ($claim['status'] ?? '');
+    $claimLocationId = (int) ($claim['location_id'] ?? 0);
+    if ($claimLocationId > 0 && $claimLocationId !== $locationId && in_array($status, ['verified','redeemed'], true)) {
+        mg_fail('This gift was already verified for another merchant location.', 409);
+    }
+}
+
 mg_require_method('POST');
 $user = mg_require_permission('merchant.gifts.redeem');
 $input = mg_input();
@@ -60,11 +69,7 @@ if (!in_array($action, ['verify','redeem'], true)) {
 }
 
 $identifier = mg_scanner_claim_identifier($input['scan'] ?? $input['gift_id'] ?? '');
-$locationPublicId = strtolower(trim((string) ($input['location_id'] ?? '')));
-if (strlen($locationPublicId) !== 36 || !preg_match('/^[a-f0-9-]{36}$/', $locationPublicId)) {
-    mg_fail('Choose a merchant location for this scanner.', 422);
-}
-
+$locationPublicId = mg_claim_code_public_id((string) ($input['location_id'] ?? ''), 'Choose a merchant location for this scanner.');
 $requireConfirm = !empty($input['require_confirmation']);
 $confirmed = !empty($input['confirmed']);
 $pdo = mg_db();
@@ -121,6 +126,8 @@ try {
     if (!$claim) {
         mg_fail('Unable to initialize this gift claim.', 500);
     }
+
+    mg_scanner_claim_assert_location_binding($claim, (int) $location['id']);
 
     if ((string) $claim['status'] === 'redeemed' || (string) $gift['status'] === 'claimed') {
         $pdo->commit();
