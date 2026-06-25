@@ -5,15 +5,15 @@ require_once dirname(__DIR__) . '/bootstrap.php';
 
 function mg_admin_design_has(array $user, string $permission): bool
 {
-    return mg_api_user_has_permission($user, $permission) || mg_api_user_has_permission($user, 'admin.catalog.view');
+    return mg_api_user_has_permission($user, $permission);
 }
 
 function mg_admin_design_require(): array
 {
     $user = mg_require_api_user();
     if (!mg_admin_design_has($user, 'merchant.design_templates.admin')) {
-        mg_security_log('warning', 'admin.design_templates.denied', 'Design template admin access denied.', [], (int) $user['id']);
-        mg_fail('Permission denied.', 403);
+        mg_security_log('warning', 'admin.design_templates.denied', 'Design template admin access refused.', [], (int) $user['id']);
+        mg_fail('Access refused.', 403);
     }
     return $user;
 }
