@@ -30,6 +30,7 @@ function mg_campaign_row(array $row): array
         'id' => (string) $row['public_id'],
         'reward_template_id' => $row['reward_template_public_id'] ?? null,
         'reward_template_title' => $row['reward_template_title'] ?? null,
+        'reward_attached' => !empty($row['reward_template_public_id']),
         'campaign_type' => (string) $row['campaign_type'],
         'title' => (string) $row['title'],
         'description' => (string) ($row['description'] ?? ''),
@@ -60,6 +61,11 @@ function mg_campaign_reward_template_id(PDO $pdo, int $merchantId, string $publi
     $id = (int) ($stmt->fetchColumn() ?: 0);
     if ($id <= 0) mg_fail('Reward template not found.', 404);
     return $id;
+}
+
+function mg_campaign_requires_reward_template(string $campaignType, string $status): bool
+{
+    return $status === 'active' && in_array($campaignType, ['newsletter_signup', 'contest_giveaway', 'qr_reward_drop', 'referral_reward', 'birthday_vip', 'agent_offer'], true);
 }
 
 $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
@@ -122,6 +128,9 @@ if (
 ) {
     mg_fail('Invalid campaign.', 422);
 }
+if (mg_campaign_requires_reward_template($campaignType, $status) && $rewardTemplateId === null) {
+    mg_fail('Active campaigns require an attached reward template.', 422);
+}
 
 try {
     if ($campaignId === '') {
@@ -158,6 +167,7 @@ try {
         'campaign_id' => $campaignId,
         'campaign_type' => $campaignType,
         'status' => $status,
+        'reward_attached' => $rewardTemplateId !== null,
     ], $merchantId);
 
     mg_ok(['campaign' => mg_campaign_row($row), 'schema_ready' => true], $message, 201);
