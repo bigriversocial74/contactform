@@ -16,7 +16,7 @@ body .mg-site-header.mg-market-universal-header .mg-header-actions{overflow:visi
 body[data-authenticated="false"].mg-investment-profile-page .mg-unified-header.mg-market-universal-header,
 body[data-authenticated="false"].mg-public-profile-page .mg-unified-header.mg-market-universal-header{display:block!important;visibility:visible!important;opacity:1!important}
 
-body .mg-site-header.mg-market-universal-header .mg-brand-stack{display:grid!important;gap:4px!important;align-items:start!important;min-width:0!important;line-height:1!important}
+body .mg-site-header.mg-market-universal-header .mg-brand-stack{display:grid!important;gap:0!important;align-items:start!important;min-width:0!important;line-height:1!important}
 body .mg-site-header.mg-market-universal-header .mg-brand.brand{width:auto!important;height:auto!important;min-width:0!important;background:none!important;color:#071225!important;overflow:visible!important}
 body .mg-site-header.mg-market-universal-header .mg-brand.brand img{display:block!important;width:154px!important;max-width:100%!important;height:auto!important}
 body .mg-site-header.mg-market-universal-header .mg-brand.brand img + span{display:none!important}
@@ -51,6 +51,7 @@ body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data
 body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-account-menu{position:relative!important;z-index:10!important}
 body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-account-actions{z-index:1500!important}
 
+body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-header-phone-stack{display:grid!important;align-items:start!important;gap:4px!important;flex:0 0 auto!important;padding-left:16px!important;border-left:1px solid rgba(0,0,0,.16)!important;line-height:1!important}
 body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-header-phone{
   display:inline-flex!important;
   align-items:center!important;
@@ -65,6 +66,8 @@ body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data
   line-height:1!important;
   white-space:nowrap!important;
 }
+body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-header-phone-stack .mg-header-phone{padding-left:0!important;border-left:0!important}
+body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-header-phone-stack .mg-phone-equation{font-size:8px!important;letter-spacing:.095em!important;color:#8a650c!important}
 body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-header-phone:hover,
 body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-header-phone:focus-visible{color:#8a650c!important}
 body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-header-socials{display:inline-flex!important;align-items:center!important;gap:7px!important;flex:0 0 auto!important;margin-left:-4px!important}
@@ -176,7 +179,8 @@ body[data-authenticated="false"] .mg-public-mobile-auth a::after,
 body[data-authenticated="false"] .mg-index-mobile-nav a::after{content:"→";opacity:.55}
 
 @media(max-width:1220px){
-  body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-header-phone{display:none!important}
+  body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-header-phone-stack,
+  body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-header-socials{display:none!important}
   body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-public-nav{gap:14px!important}
 }
 
