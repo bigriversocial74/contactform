@@ -20,7 +20,7 @@ require __DIR__ . '/includes/header.php';
           <header class="mg-commerce-hero mg-checkout-hero">
             <span class="mg-eyebrow">Payment received</span>
             <h1>Order complete</h1>
-            <p>Your receipt, payment state, and Microgifter issuance status are shown below.</p>
+            <p>Your receipt, payment state, wallet/PPPM issuance, and Microgifter inbox routing are shown below.</p>
           </header>
 
           <div class="mg-checkout-process" aria-label="Checkout process">
@@ -41,6 +41,8 @@ require __DIR__ . '/includes/header.php';
               <p class="mg-commerce-note">Permanent PPPM IDs are created during issuance and remain separate from payment IDs.</p>
               <div class="mg-commerce-actions is-stack">
                 <a class="mg-btn mg-btn-primary" href="/inbox.php">Open inbox</a>
+                <a class="mg-btn mg-btn-soft" href="/wallet.php">Open wallet</a>
+                <a class="mg-btn mg-btn-soft" href="/claimed.php">Claimed gifts</a>
                 <a class="mg-btn mg-btn-soft" href="/account-commerce.php">Open commerce center</a>
                 <a class="mg-btn mg-btn-soft" href="/account/orders.php">View orders only</a>
                 <a class="mg-btn mg-btn-soft" href="/discover.php">Continue shopping</a>
