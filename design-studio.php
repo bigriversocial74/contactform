@@ -219,7 +219,7 @@ $designStudioScripts = [
           </section>
         </aside>
 
-        <main class="mg-design-canvas-column" aria-label="Template preview">
+        <section class="mg-design-canvas-column" aria-label="Template preview">
           <div class="mg-design-canvas-toolbar">
             <div>
               <span data-preview-format-label>Table Tent</span>
@@ -267,7 +267,7 @@ $designStudioScripts = [
             <article><strong>Signed template</strong><span>Template signature, bleed, safe zone, and export hash will be attached before production.</span></article>
             <article><strong>Live data placeholders</strong><span>Merchant profile, media files, product offers, and QR targets are ready for backend binding.</span></article>
           </div>
-        </main>
+        </section>
 
         <aside class="mg-design-print-options" aria-label="Print options">
           <section class="mg-design-panel">
