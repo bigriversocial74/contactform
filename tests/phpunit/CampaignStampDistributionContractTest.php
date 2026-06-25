@@ -78,6 +78,7 @@ final class CampaignStampDistributionContractTest extends TestCase
     {
         $detail = $this->read('api/public/campaigns/detail.php');
         $js = $this->read('assets/js/public-campaign.js');
+        $css = $this->read('assets/css/public-campaign-pages.css');
 
         self::assertStringContainsString("\$submitEndpoint = '/api/public/campaigns/engage.php';", $detail);
         self::assertStringContainsString("newsletter_signup') \$submitEndpoint = '/api/public/campaigns/signup.php'", $detail);
@@ -91,5 +92,7 @@ final class CampaignStampDistributionContractTest extends TestCase
         self::assertStringContainsString('data.expires_at', $js);
         self::assertStringContainsString('mg-public-campaign-result-details', $js);
         self::assertStringContainsString('data.entry={note:data.entry_note}', $js);
+        self::assertStringContainsString('.mg-public-campaign-result-details', $css);
+        self::assertStringContainsString('.mg-public-campaign-result-details span', $css);
     }
 }
