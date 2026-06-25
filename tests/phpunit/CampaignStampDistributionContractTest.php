@@ -48,4 +48,14 @@ final class CampaignStampDistributionContractTest extends TestCase
         self::assertStringContainsString('merchant-campaign-stamps-view.php', $router);
         self::assertStringContainsString('/api/merchant/campaign-send.php', $js);
     }
+
+    public function testActiveCampaignsRequireAttachedRewardTemplates(): void
+    {
+        $source = $this->read('api/merchant/campaigns.php');
+        self::assertStringContainsString('mg_campaign_requires_reward_template', $source);
+        self::assertStringContainsString("\$status === 'active'", $source);
+        self::assertStringContainsString('Active campaigns require an attached reward template.', $source);
+        self::assertStringContainsString("'reward_attached' => !empty(\$row['reward_template_public_id'])", $source);
+        self::assertStringContainsString("'reward_attached' => \$rewardTemplateId !== null", $source);
+    }
 }
