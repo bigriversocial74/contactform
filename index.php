@@ -396,7 +396,7 @@ require __DIR__ . '/includes/landing/index-v3/part09.php';
       <div class="mg-v4-copy" data-reveal="left">
         <div class="mg-v4-eyebrow">The rewards layer for local commerce</div>
         <h1 class="mg-v4-title" id="mgHeroTitle">Promotional Marketing CRM &amp; Automated Commerce Solutions</h1>
-        <p class="mg-v4-lede">Microgifter helps creators, local businesses, and musicians pre-sell products, launch reward campaigns, and manage customer demand from one simple platform.</p>
+        <p class="mg-v4-lede">Microgifter simplifies the busyness of social networking, promotions, gift certificates, rewards, customer engagement, redemption tracking, and automated sales into one simple platform.</p>
         <p class="mg-v4-note"><strong>Rewards layer for local commerce:</strong> sell prepaid offers, distribute them anywhere, and track every claim, redemption, customer, and campaign through a connected rewards CRM.</p>
         <div class="mg-v4-buttons">
           <a class="mg-v4-btn mg-v4-btn-primary" href="/signup.php">Create Account <span>→</span></a>
