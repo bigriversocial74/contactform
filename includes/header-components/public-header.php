@@ -35,9 +35,9 @@ if (!$user) {
 $market_ticker_items = [];
 if (!$user) {
     try {
-        $market_ticker_items = mg_public_market_ticker_items(mg_db(), 12);
+        $market_ticker_items = mg_public_market_ticker_items(mg_db(), 12, true);
     } catch (Throwable) {
-        $market_ticker_items = [];
+        $market_ticker_items = mg_public_market_ticker_fallback_items();
     }
 }
 if (!$market_ticker_items && is_array($public_header_config['ticker_items'] ?? null)) {
@@ -47,7 +47,7 @@ if ($user && $account_profile_url) {
     array_unshift($market_ticker_items, ['symbol'=>'YOU','name'=>'My Profile','price'=>'Profile','change'=>'OPEN','trend'=>'up','href'=>$account_profile_url]);
 }
 
-$show_market_ticker = !$user && !empty($market_ticker_items);
+$show_market_ticker = !$user && ($public_header_config['ticker'] ?? true) !== false && !empty($market_ticker_items);
 $show_demo_button = !$user;
 ?>
 <header class="mg-site-header mg-unified-header mg-market-universal-header" data-mg-universal-header data-public-header data-header-theme="market-dark" data-header-variant="<?= $user ? 'logged-in' : 'logged-out' ?>">
@@ -72,8 +72,9 @@ $show_demo_button = !$user;
                   <?php
                     $tickerHref = (string) ($ticker_item['href'] ?? '/discover.php');
                     $tickerTrend = (string) ($ticker_item['trend'] ?? 'up');
+                    $tickerFallback = !empty($ticker_item['is_fallback']);
                   ?>
-                  <a class="mg-header-ticker-item" href="<?= mg_e($tickerHref) ?>">
+                  <a class="mg-header-ticker-item<?= $tickerFallback ? ' is-opening-soon' : '' ?>" href="<?= mg_e($tickerHref) ?>">
                     <strong><?= mg_e((string) ($ticker_item['symbol'] ?? 'MG')) ?></strong>
                     <span><?= mg_e((string) ($ticker_item['name'] ?? 'Merchant')) ?></span>
                     <b><?= mg_e((string) ($ticker_item['price'] ?? '—')) ?></b>
@@ -85,7 +86,7 @@ $show_demo_button = !$user;
           </div>
         </div>
       </div>
-      <style>body.mg-discovery-page .mg-discover-stock-ticker{display:none!important}</style>
+      <style>body.mg-discovery-page .mg-discover-stock-ticker{display:none!important}.mg-header-ticker-item.is-opening-soon b{color:#93c5fd}.mg-header-ticker-item.is-opening-soon em{color:#fbbf24}</style>
     <?php endif; ?>
 
     <?php if ($user): ?>
