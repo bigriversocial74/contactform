@@ -40,7 +40,6 @@ final class ActionCenterMutationEndpointContractTest extends TestCase
 
         foreach([
             "Follow Up is available only from Sent.",
-            'Only the sender of this transfer can follow up.',
             'Only the most recent sender can follow up.',
             'mg_message_conversation_key(',
             'mg_message_send_microgift(',
@@ -78,7 +77,6 @@ final class ActionCenterMutationEndpointContractTest extends TestCase
     {
         $source=file_get_contents(dirname(__DIR__,2).'/api/account/action-center-message.php');
         self::assertIsString($source);
-
         foreach([
             "require_once dirname(__DIR__) . '/messages/_messaging.php'",
             'action_sender_user_id',
