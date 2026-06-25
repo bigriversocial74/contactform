@@ -6,10 +6,38 @@ Stage 19 uses **one authoritative SQL file** for this feature:
  database/stage_19_design_studio_qr_library.sql
 ```
 
-Run it once on staging after this branch is merged/updated and before opening `/design-studio.php`:
+## No-terminal import path
 
-```bash
-mysql -u YOUR_DB_USER -p YOUR_DB_NAME < database/stage_19_design_studio_qr_library.sql
+Use your hosting database tool, such as phpMyAdmin, Adminer, cPanel database tools, Plesk database tools, or your host's MySQL import screen.
+
+General steps:
+
+1. Open your database tool.
+2. Select the Microgifter database.
+3. Open the import screen.
+4. Choose this file from the deployed codebase or your local copy:
+
+```text
+database/stage_19_design_studio_qr_library.sql
+```
+
+5. Run/import the file.
+6. After import finishes, open this URL while logged in as an admin:
+
+```text
+/api/admin/design-studio-smoke-test.php
+```
+
+The smoke-test URL returns JSON. Look for:
+
+```json
+"status": "passed"
+```
+
+and:
+
+```json
+"failed": 0
 ```
 
 ## What the migration installs
@@ -32,7 +60,28 @@ The single SQL file creates and seeds the full Design Studio foundation:
 - Design Studio / QR / brand kit / asset / template / AI permissions
 - System AI prompt presets
 
-## Verify import manually
+## Browser smoke test
+
+Open this URL after importing the SQL:
+
+```text
+/api/admin/design-studio-smoke-test.php
+```
+
+The smoke test checks:
+
+- required files exist
+- database connection works
+- required Stage 19 tables exist
+- migration ledger has `stage_19_design_studio_qr_library`
+- required permissions exist
+- seeded AI presets exist
+- export queue reliability columns exist
+- campaign link uniqueness column exists
+
+## Manual database verification, optional
+
+Use your database tool's SQL/query screen and run:
 
 ```sql
 SELECT migration_key, applied_at
@@ -45,18 +94,6 @@ Expected Stage 19 row:
 
 ```text
 stage_19_design_studio_qr_library
-```
-
-Confirm core tables:
-
-```sql
-SHOW TABLES LIKE 'merchant_qr_codes';
-SHOW TABLES LIKE 'merchant_brand_kits';
-SHOW TABLES LIKE 'merchant_design_templates';
-SHOW TABLES LIKE 'merchant_design_projects';
-SHOW TABLES LIKE 'merchant_design_assets';
-SHOW TABLES LIKE 'merchant_design_export_jobs';
-SHOW TABLES LIKE 'merchant_design_ai_presets';
 ```
 
 Confirm AI presets:
@@ -76,25 +113,6 @@ live-event-promo
 local-rewards-campaign
 restaurant-food-promo
 ```
-
-## Run smoke test
-
-After importing the SQL, run the read-only smoke test:
-
-```bash
-php tools/design-studio-smoke-test.php
-```
-
-The smoke test checks:
-
-- required files exist
-- database connection works
-- required Stage 19 tables exist
-- migration ledger has `stage_19_design_studio_qr_library`
-- required permissions exist
-- seeded AI presets exist
-- export queue reliability columns exist
-- campaign link uniqueness column exists
 
 ## Full release checklist
 
