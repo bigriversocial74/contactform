@@ -147,6 +147,8 @@ if (!$chartRows && !empty($marketPayload['series']['volume_30d'])) {
       <section class="is-wide"><h3>Recommended next moves</h3><div class="mg-market-action-list"><?php foreach (mg_account_market_next_actions($marketPayload, $movement) as $i => $text): ?><p><b><?= $i + 1 ?></b><span><?= mg_e($text) ?></span></p><?php endforeach; ?></div></section>
     </div>
 
+    <?php require __DIR__ . '/market-action-center.php'; ?>
+
     <section class="mg-market-table-card"><header><h3>Campaign funnel detail</h3><p>Source-level conversion quality feeding the score.</p></header><div class="mg-market-funnel-table"><table><thead><tr><th>Source</th><th>Contacts</th><th>Issued</th><th>Claimed</th><th>Redeemed</th><th>Drop-off</th><th>Value</th></tr></thead><tbody><?php foreach (($conv['sources'] ?? []) as $row): ?><tr><td><?= mg_e((string)$row['label']) ?></td><td><?= mg_e((string)$row['contacts']) ?></td><td><?= mg_e((string)$row['issued']) ?></td><td><?= mg_e((string)$row['claimed']) ?></td><td><?= mg_e((string)$row['redeemed']) ?></td><td><?= mg_e((string)$row['drop_off_display']) ?></td><td><?= mg_e((string)$row['value']) ?></td></tr><?php endforeach; ?></tbody></table></div></section>
   <?php endif; ?>
 </section>
