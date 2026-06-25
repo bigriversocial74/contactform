@@ -16,3 +16,19 @@
 [data-status="ready"]{color:#bbf7d0!important}
 [data-status="warning"]{color:#fde68a!important}
 [data-status="blocked"]{color:#fecaca!important}
+
+/* Design Studio page cleanup: no global/header row and no bottom canvas notes. */
+.mg-design-custom-page .mg-unified-header,
+.mg-design-custom-page .mg-site-header,
+.mg-design-custom-page .mg-app-header,
+.mg-design-custom-page .mg-mobile-sidebar-backdrop,
+.mg-design-custom-page .mg-design-page-header,
+.mg-design-custom-page .mg-design-template-notes{display:none!important}
+.mg-design-custom-page .mg-main{height:100svh!important;margin:0!important;padding:0!important;overflow:hidden!important;background:#edf4fb!important}
+.mg-design-custom-page .mg-design-studio-app{display:grid!important;grid-template-columns:320px minmax(0,1fr)!important;height:100svh!important;min-height:100svh!important;overflow:hidden!important}
+.mg-design-custom-page .mg-design-main-shell{display:block!important;min-width:0!important;min-height:0!important;overflow:hidden!important}
+.mg-design-custom-page .mg-design-studio-workspace{height:100svh!important;min-height:0!important;padding:12px!important;overflow:hidden!important}
+.mg-design-custom-page .mg-design-layout{height:100%!important;min-height:0!important;grid-template-columns:minmax(0,1fr) 318px!important}
+.mg-design-custom-page .mg-design-canvas-column{grid-template-rows:auto minmax(0,1fr)!important}
+@media(max-width:1280px){.mg-design-custom-page .mg-design-layout{grid-template-columns:minmax(0,1fr) 292px!important}.mg-design-custom-page .mg-design-studio-app{grid-template-columns:300px minmax(0,1fr)!important}}
+@media(max-width:1080px){.mg-design-custom-page .mg-design-studio-app{display:block!important;height:auto!important;min-height:100svh!important}.mg-design-custom-page .mg-design-sidebar,.mg-design-custom-page .mg-design-main-shell{display:none!important}.mg-design-custom-page .mg-design-mobile-lock{display:grid!important;place-items:center;min-height:100svh;padding:24px}}
