@@ -65,10 +65,12 @@ $show_demo_button = !$user;
     <div class="mg-header-left">
       <div class="mg-brand-stack">
         <a class="mg-brand brand" href="/index.php" aria-label="Microgifter home"><img src="/images/logo_main_drk.png" alt="Microgifter"><span>Microgifter</span></a>
-        <span class="mg-brand-equation"><?= mg_e($public_brand_equation) ?></span>
       </div>
       <?php if (!$user): ?>
-        <a class="mg-header-phone" href="<?= mg_e($public_phone_href) ?>" aria-label="Call Microgifter at <?= mg_e($public_phone_number) ?>"><?= mg_e($public_phone_number) ?></a>
+        <div class="mg-header-phone-stack">
+          <a class="mg-header-phone" href="<?= mg_e($public_phone_href) ?>" aria-label="Call Microgifter at <?= mg_e($public_phone_number) ?>"><?= mg_e($public_phone_number) ?></a>
+          <span class="mg-brand-equation mg-phone-equation"><?= mg_e($public_brand_equation) ?></span>
+        </div>
         <?php if ($public_social_links): ?>
           <nav class="mg-header-socials" aria-label="Microgifter social links">
             <?php foreach ($public_social_links as $public_social_link): ?>
