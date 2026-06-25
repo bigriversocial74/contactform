@@ -17,6 +17,14 @@
     return String(value ?? fallback).trim();
   }
 
+  function cleanChangeLabel(value, fallback = '●') {
+    const cleaned = text(value, fallback)
+      .replace(/\bLIVE\b/gi, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+    return cleaned || text(fallback, '●') || '●';
+  }
+
   function itemKey(item) {
     return text(item?.profile_slug) || text(item?.href) || `${text(item?.symbol)}|${text(item?.name)}`;
   }
@@ -46,6 +54,24 @@
     marquee.style.setProperty('transform', 'none', 'important');
   }
 
+  function repeatCountForMarquee(itemCount) {
+    if (itemCount <= 1) return 10;
+    if (itemCount === 2) return 6;
+    if (itemCount === 3) return 4;
+    if (itemCount < 6) return 3;
+    return 1;
+  }
+
+  function buildMarqueeSequence(items) {
+    const base = Array.isArray(items) ? items : [];
+    const repeat = repeatCountForMarquee(base.length);
+    const sequence = [];
+    for (let index = 0; index < repeat; index += 1) {
+      base.forEach((item) => sequence.push(item));
+    }
+    return sequence;
+  }
+
   function normalizeStats(item) {
     const source = Array.isArray(item?.stats) ? item.stats : (item?.stat ? [item.stat] : []);
     return source
@@ -71,6 +97,7 @@
       const next = { ...item };
       const key = itemKey(next);
       const cents = Number(next.ticker_value_cents);
+      next.change = cleanChangeLabel(next.change);
       if (!key || !Number.isFinite(cents)) return next;
 
       const previous = lastTickerValues.get(key);
@@ -78,7 +105,7 @@
         const delta = cents - previous;
         const percent = (delta / previous) * 100;
         next.trend = delta > 0 ? 'up' : 'down';
-        next.change = `${delta > 0 ? '▲' : '▼'} ${Math.abs(percent).toFixed(1)}% LIVE`;
+        next.change = `${delta > 0 ? '▲' : '▼'} ${Math.abs(percent).toFixed(1)}%`;
         next.delta_cents = delta;
         next.delta_percent = Number(percent.toFixed(2));
       }
@@ -110,32 +137,61 @@
     }, 120);
   }
 
-  function collapseSingleServerItem() {
-    if (!ticker) return;
-    const marquee = ticker.querySelector('.mg-header-market-marquee');
-    if (!marquee) return;
-    const links = Array.from(marquee.querySelectorAll('.mg-header-ticker-item'));
+  function serverTickerKey(link) {
+    const symbol = text(link.querySelector('strong')?.textContent);
+    return `${link.getAttribute('href') || ''}|${symbol}`;
+  }
+
+  function collectUniqueServerLinks(marquee) {
     const unique = new Map();
-    links.forEach((link) => {
-      const symbol = text(link.querySelector('strong')?.textContent);
-      const key = `${link.getAttribute('href') || ''}|${symbol}`;
+    marquee.querySelectorAll('.mg-header-ticker-item').forEach((link) => {
+      const key = serverTickerKey(link);
       if (!unique.has(key)) unique.set(key, link);
       const cents = parseCompactCurrency(link.querySelector('b')?.textContent);
       if (Number.isFinite(cents) && !lastTickerValues.has(key)) lastTickerValues.set(key, cents);
     });
-    if (unique.size !== 1) return;
+    return Array.from(unique.values());
+  }
 
-    const firstLink = unique.values().next().value;
-    const row = document.createElement('div');
-    row.className = 'mg-header-market-row';
-    row.appendChild(firstLink);
-    marquee.replaceChildren(row);
-    setMarqueeMode(marquee, false);
+  function normalizeServerChangeLabels(root) {
+    root.querySelectorAll('.mg-header-ticker-item em').forEach((change) => {
+      change.textContent = cleanChangeLabel(change.textContent);
+    });
+  }
+
+  function expandServerMarqueeForContinuity() {
+    if (!ticker) return;
+    const marquee = ticker.querySelector('.mg-header-market-marquee');
+    if (!marquee) return;
+    normalizeServerChangeLabels(marquee);
+    const uniqueLinks = collectUniqueServerLinks(marquee);
+    if (uniqueLinks.length === 0) return;
+
+    const sequenceLength = uniqueLinks.length * repeatCountForMarquee(uniqueLinks.length);
+    const existingRows = marquee.querySelectorAll('.mg-header-market-row').length;
+    const existingItems = marquee.querySelectorAll('.mg-header-ticker-item').length;
+    if (existingRows === 2 && existingItems >= sequenceLength * 2) {
+      setMarqueeMode(marquee, true);
+      return;
+    }
+
+    marquee.replaceChildren();
+    const repeat = repeatCountForMarquee(uniqueLinks.length);
+    for (let pass = 0; pass < 2; pass += 1) {
+      const row = document.createElement('div');
+      row.className = 'mg-header-market-row';
+      if (pass === 1) row.setAttribute('aria-hidden', 'true');
+      for (let index = 0; index < repeat; index += 1) {
+        uniqueLinks.forEach((base) => row.appendChild(base.cloneNode(true)));
+      }
+      marquee.appendChild(row);
+    }
+    setMarqueeMode(marquee, true);
   }
 
   function hydrateServerTickerStats() {
     if (!ticker) return;
-    collapseSingleServerItem();
+    expandServerMarqueeForContinuity();
     ticker.querySelectorAll('.mg-header-ticker-item').forEach((link) => {
       const node = link.querySelector('.mg-header-ticker-stat');
       if (!node) return;
@@ -167,7 +223,7 @@
     const requestedTrend = text(item?.trend, 'flat');
     const trend = requestedTrend === 'down' ? 'down' : requestedTrend === 'up' ? 'up' : 'flat';
     change.className = `is-${trend}`;
-    change.textContent = text(item?.change, '● LIVE') || '● LIVE';
+    change.textContent = cleanChangeLabel(item?.change, '●');
     if (trend === 'flat') change.style.setProperty('color', '#64748b', 'important');
 
     link.append(symbol, name, price, change);
@@ -188,15 +244,14 @@
     const marquee = ticker?.querySelector('.mg-header-market-marquee');
     if (!marquee || !Array.isArray(items) || items.length === 0) return;
     const normalized = applyLiveMovement(items);
-    const looping = normalized.length > 1;
-    setMarqueeMode(marquee, looping);
+    const sequence = buildMarqueeSequence(normalized);
+    setMarqueeMode(marquee, true);
     marquee.replaceChildren();
-    const passes = looping ? 2 : 1;
-    for (let pass = 0; pass < passes; pass += 1) {
+    for (let pass = 0; pass < 2; pass += 1) {
       const row = document.createElement('div');
       row.className = 'mg-header-market-row';
       if (pass === 1) row.setAttribute('aria-hidden', 'true');
-      normalized.forEach((item) => row.appendChild(createTickerItem(item)));
+      sequence.forEach((item) => row.appendChild(createTickerItem(item)));
       marquee.appendChild(row);
     }
   }
@@ -214,7 +269,7 @@
       const span = document.createElement('span');
       const strong = document.createElement('strong');
       strong.textContent = text(item?.symbol, 'MGFT') || 'MGFT';
-      span.append(strong, document.createTextNode(` ${text(item?.price, '—')} ${text(item?.change, '● LIVE')}`));
+      span.append(strong, document.createTextNode(` ${text(item?.price, '—')} ${cleanChangeLabel(item?.change, '●')}`));
       footerStrip.appendChild(span);
     });
   }
