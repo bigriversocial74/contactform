@@ -124,6 +124,43 @@
   color:#1455d9;
 }
 
+.mg-unified-header .mg-header-pricing-link{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:42px;
+  padding:0 14px;
+  border:1px solid #d6e2f1;
+  border-radius:14px;
+  background:rgba(255,255,255,.78);
+  color:#071225;
+  text-decoration:none;
+  font-size:13px;
+  font-weight:900;
+  box-shadow:0 12px 26px rgba(15,23,42,.055);
+}
+
+.mg-unified-header .mg-header-pricing-link:hover{
+  border-color:#b9d1fb;
+  background:#eff6ff;
+  color:#1455d9;
+}
+
+.mg-unified-header .mg-account-upgrade{
+  background:#071225;
+  color:#fff;
+}
+
+.mg-unified-header .mg-account-upgrade .mg-account-index{
+  background:#fff;
+  color:#071225;
+}
+
+.mg-unified-header .mg-account-upgrade:hover{
+  background:#1455d9;
+  color:#fff;
+}
+
 .mg-unified-header .mg-header-create:hover,
 .mg-unified-header .mg-header-icon:hover,
 .mg-unified-header .mg-cart-header-button:hover{
@@ -351,12 +388,9 @@
   .mg-unified-header .mg-brand img{width:132px}
   .mg-unified-header .mg-header-page-controls{display:none}
   .mg-unified-header .mg-header-actions{gap:6px}
+  .mg-unified-header .mg-account-menu{display:none!important}
   .mg-unified-header .mg-header-create,
   .mg-unified-header .mg-header-icon,
   .mg-unified-header .mg-cart-header-button{width:42px;height:42px;min-width:42px;border-radius:14px}
-  .mg-unified-header .mg-account-trigger{min-width:42px;width:42px;height:42px;padding:0;justify-content:center}
-  .mg-unified-header .mg-account-copy,
-  .mg-unified-header .mg-account-caret{display:none}
-  .mg-unified-header .mg-avatar{width:30px;height:30px}
-  .mg-unified-header .mg-account-actions{position:fixed;top:66px;right:10px;width:min(292px,calc(100vw - 20px))}
+  .mg-unified-header .mg-header-pricing-link{min-height:38px;padding:0 11px;border-radius:12px;font-size:12px}
 }
