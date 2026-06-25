@@ -1,0 +1,61 @@
+.mg-crm-modal[hidden]{
+  display:none;
+}
+.mg-crm-modal{
+  position:fixed;
+  inset:0;
+  z-index:90;
+}
+.mg-crm-modal-panel{
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  width:min(560px,94vw);
+  background:#fff;
+  border:1px solid #dbe4ef;
+  border-radius:18px;
+  box-shadow:0 30px 90px rgba(15,23,42,.28);
+  padding:18px;
+  display:grid;
+  gap:14px;
+}
+.mg-crm-field{
+  display:grid;
+  gap:7px;
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  color:#61728f;
+  font-weight:850;
+}
+.mg-crm-field textarea{
+  min-height:150px;
+  border:1px solid #d3deeb;
+  border-radius:12px;
+  background:#fff;
+  padding:12px;
+  color:#0f172a;
+  font:inherit;
+  font-size:13px;
+  line-height:1.5;
+  resize:vertical;
+}
+.mg-crm-modal .mg-heading-actions{
+  justify-content:flex-end;
+}
+.mg-crm-modal-open{
+  overflow:hidden;
+}
+@media(max-width:700px){
+  .mg-crm-modal-panel{
+    width:100vw;
+    min-height:50vh;
+    bottom:0;
+    top:auto;
+    left:0;
+    right:0;
+    transform:none;
+    border-radius:18px 18px 0 0;
+  }
+}
