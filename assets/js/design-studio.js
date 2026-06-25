@@ -9,6 +9,8 @@
   const designApi = app.dataset.designApi || '/api/merchant/design-studio-assets.php';
   const brandApi = app.dataset.brandApi || '/api/merchant/brand-kit.php';
   const exportApi = app.dataset.exportApi || '/api/merchant/design-export.php';
+  const isMerchant = app.dataset.merchantOnly === 'true';
+  const isReady = app.dataset.designReady !== 'false';
 
   const template = qs('[data-design-template]');
   const formatLabel = qs('[data-preview-format-label]');
@@ -34,6 +36,55 @@
   const brandLogo = qs('[data-brand-logo]');
   const brandPalette = qs('[data-brand-palette]');
 
+  const setStatus = (message, state = 'info') => {
+    if (proofEstimate) {
+      proofEstimate.textContent = message;
+      proofEstimate.dataset.status = state;
+    }
+    app.dataset.lastDesignStatus = message;
+  };
+
+  const safeText = (value, fallback = '') => {
+    const text = String(value || '').trim();
+    return text || fallback;
+  };
+
+  const getHost = (url) => {
+    try {
+      return new URL(url, window.location.origin).hostname.replace(/^www\./, '');
+    } catch (_) {
+      return '';
+    }
+  };
+
+  const ensureDynamicPanel = (afterEl, attr, title, subtitle) => {
+    if (!afterEl) return null;
+    const selector = `[${attr}]`;
+    const existing = qs(selector);
+    if (existing) return existing;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'mg-design-dynamic-panel';
+    wrapper.innerHTML = `<div class="mg-design-dynamic-head"><strong></strong><span></span></div><div class="mg-design-dynamic-list" ${attr}></div>`;
+    wrapper.querySelector('strong').textContent = title;
+    wrapper.querySelector('span').textContent = subtitle;
+    afterEl.insertAdjacentElement('afterend', wrapper);
+    return wrapper.querySelector(selector);
+  };
+
+  const ensureUiScaffolding = () => {
+    const brandPreview = qs('[data-brand-preview]');
+    ensureDynamicPanel(brandPreview, 'data-brand-candidates', 'Image candidates', 'Approve or import later');
+    ensureDynamicPanel(savedTemplateList, 'data-saved-project-list', 'Recent projects', 'Click to continue a draft');
+    const exportList = qs('.mg-design-export-list');
+    ensureDynamicPanel(exportList, 'data-export-job-list', 'Export queue', 'Latest jobs and assets');
+  };
+
+  ensureUiScaffolding();
+
+  const brandCandidates = qs('[data-brand-candidates]');
+  const savedProjectList = qs('[data-saved-project-list]');
+  const exportJobList = qs('[data-export-job-list]');
+
   const setActive = (button, selector) => {
     qsa(selector).forEach((item) => {
       const active = item === button;
@@ -41,6 +92,19 @@
       if (item.hasAttribute('aria-selected')) item.setAttribute('aria-selected', active ? 'true' : 'false');
     });
   };
+
+  const disableInteractiveUi = (message) => {
+    qsa('button, input, textarea, select').forEach((control) => {
+      if (control.closest('.mg-design-access-panel')) return;
+      control.disabled = true;
+    });
+    setStatus(message, 'blocked');
+  };
+
+  if (!isReady || !isMerchant) {
+    disableInteractiveUi(!isReady ? 'Design Studio setup required' : 'Merchant access required');
+    return;
+  }
 
   const postJson = async (url, body) => {
     const response = await fetch(url, {
@@ -100,10 +164,53 @@
     };
   };
 
+  const renderBrandCandidates = (kit) => {
+    if (!brandCandidates) return;
+    const scan = kit?.scan_result || {};
+    const candidates = [];
+    if (Array.isArray(scan.logo_candidates)) candidates.push(...scan.logo_candidates);
+    if (Array.isArray(kit?.image_candidates)) candidates.push(...kit.image_candidates);
+    const unique = [];
+    const seen = new Set();
+    candidates.forEach((item) => {
+      const url = item?.url || '';
+      if (!url || seen.has(url)) return;
+      seen.add(url);
+      unique.push(item);
+    });
+    brandCandidates.innerHTML = '';
+    if (!unique.length) {
+      brandCandidates.innerHTML = '<button type="button" disabled><strong>No image candidates yet</strong><span>Scan a website to populate this list.</span></button>';
+      return;
+    }
+    unique.slice(0, 6).forEach((item) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'mg-design-candidate-card';
+      button.innerHTML = '<i></i><strong></strong><span></span>';
+      button.querySelector('i').style.backgroundImage = `url("${String(item.url).replace(/"/g, '%22')}")`;
+      button.querySelector('strong').textContent = item.role || 'image';
+      button.querySelector('span').textContent = getHost(item.url) || 'website asset';
+      button.addEventListener('click', () => {
+        qsa('.mg-design-candidate-card', brandCandidates).forEach((card) => card.classList.remove('is-active'));
+        button.classList.add('is-active');
+        app.dataset.selectedBrandImageUrl = item.url || '';
+        if (brandLogo) {
+          brandLogo.style.backgroundImage = `url("${String(item.url).replace(/"/g, '%22')}")`;
+          brandLogo.classList.add('has-logo');
+          brandLogo.textContent = 'Selected asset';
+        }
+        setStatus('Brand candidate selected', 'ready');
+      });
+      brandCandidates.appendChild(button);
+    });
+  };
+
   const renderBrandKit = (kit) => {
     if (!kit) {
       if (brandKitStatus) brandKitStatus.textContent = 'Not scanned';
       if (exportBrand) exportBrand.textContent = 'Not scanned yet';
+      renderBrandCandidates(null);
       return;
     }
     app.dataset.selectedBrandKitId = kit.id || '';
@@ -127,10 +234,10 @@
     }
     if (template && colors[0]) template.style.setProperty('--mg-design-brand-primary', colors[0]);
     if (template && colors[1]) template.style.setProperty('--mg-design-brand-secondary', colors[1]);
+    renderBrandCandidates(kit);
   };
 
   const loadBrandKit = async () => {
-    if (app.dataset.merchantOnly !== 'true') return;
     try {
       const response = await fetch(brandApi, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
       const payload = await response.json();
@@ -213,6 +320,61 @@
     });
   };
 
+  const renderProjects = (projects) => {
+    if (!savedProjectList) return;
+    const list = Array.isArray(projects) ? projects : [];
+    savedProjectList.innerHTML = '';
+    if (!list.length) {
+      savedProjectList.innerHTML = '<button type="button" disabled><strong>No saved projects yet</strong><span>Save a project to continue it later.</span></button>';
+      return;
+    }
+    list.slice(0, 6).forEach((project) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.dataset.projectId = project.id || '';
+      button.innerHTML = '<strong></strong><span></span>';
+      button.querySelector('strong').textContent = project.name || 'Design project';
+      button.querySelector('span').textContent = `${project.project_type || 'print'} · ${project.format_key || 'custom'} · ${project.status || 'draft'}`;
+      button.addEventListener('click', () => {
+        qsa('button', savedProjectList).forEach((item) => item.classList.remove('is-active'));
+        button.classList.add('is-active');
+        app.dataset.selectedProjectId = project.id || '';
+        if (exportProject) exportProject.textContent = project.name || 'Saved project';
+        setStatus('Project selected', 'ready');
+      });
+      savedProjectList.appendChild(button);
+    });
+  };
+
+  const renderExportJobs = (payload) => {
+    if (!exportJobList) return;
+    const jobs = Array.isArray(payload?.export_jobs) ? payload.export_jobs : [];
+    const assets = Array.isArray(payload?.assets) ? payload.assets : [];
+    exportJobList.innerHTML = '';
+    if (!jobs.length && !assets.length) {
+      exportJobList.innerHTML = '<button type="button" disabled><strong>No export jobs yet</strong><span>Generate proof or export package to queue one.</span></button>';
+      return;
+    }
+    jobs.slice(0, 5).forEach((job) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.disabled = true;
+      button.innerHTML = '<strong></strong><span></span>';
+      button.querySelector('strong').textContent = `${job.export_type || 'export'} · ${job.status || 'queued'}`;
+      button.querySelector('span').textContent = job.created_at || job.updated_at || 'queued';
+      exportJobList.appendChild(button);
+    });
+    if (assets.length) {
+      const summary = document.createElement('button');
+      summary.type = 'button';
+      summary.disabled = true;
+      summary.innerHTML = '<strong></strong><span></span>';
+      summary.querySelector('strong').textContent = `${assets.length} design asset${assets.length === 1 ? '' : 's'}`;
+      summary.querySelector('span').textContent = 'Latest asset library records';
+      exportJobList.appendChild(summary);
+    }
+  };
+
   const applyTemplate = (item, button) => {
     if (button) setActive(button, '[data-saved-template-list] button');
     app.dataset.selectedTemplateId = item.id || '';
@@ -228,11 +390,11 @@
     if (cta && copy.cta) cta.value = copy.cta;
     qsa('[data-design-field]').forEach((field) => field.dispatchEvent(new Event('input')));
     if (templateMedia && layout.media_swatch) templateMedia.dataset.swatch = layout.media_swatch;
-    if (proofEstimate) proofEstimate.textContent = 'Saved template loaded';
+    setStatus('Saved template loaded', 'ready');
   };
 
   const loadQrLibrary = async () => {
-    if (!qrLibrary || app.dataset.merchantOnly !== 'true') return;
+    if (!qrLibrary) return;
     qrLibrary.setAttribute('aria-busy', 'true');
     try {
       const response = await fetch(`${qrApi}?status=open`, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
@@ -241,23 +403,35 @@
       renderQrLibrary(payload.data?.items || []);
     } catch (error) {
       renderQrLibrary([]);
-      if (proofEstimate) proofEstimate.textContent = 'QR library offline';
+      setStatus('QR library offline', 'warning');
     } finally {
       qrLibrary.removeAttribute('aria-busy');
     }
   };
 
   const loadDesignAssets = async () => {
-    if (app.dataset.merchantOnly !== 'true') return;
     const info = activeFormatInfo();
     try {
       const response = await fetch(`${designApi}?mode=bootstrap&template_type=${encodeURIComponent(info.template_type)}`, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
       const payload = await response.json();
       if (!response.ok || !payload.ok) throw new Error(payload.message || 'Unable to load templates.');
       renderSavedTemplates(payload.data?.templates || []);
+      renderProjects(payload.data?.projects || []);
     } catch (error) {
       renderSavedTemplates([]);
+      renderProjects([]);
       if (templateCount) templateCount.textContent = 'Offline';
+    }
+  };
+
+  const loadExportAssets = async () => {
+    try {
+      const response = await fetch(exportApi, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+      const payload = await response.json();
+      if (!response.ok || !payload.ok) throw new Error(payload.message || 'Unable to load export jobs.');
+      renderExportJobs(payload.data || {});
+    } catch (error) {
+      renderExportJobs({ export_jobs: [], assets: [] });
     }
   };
 
@@ -314,12 +488,13 @@
       status: 'draft',
       canvas: currentLayout(),
       copy: currentCopy(),
-      media: { swatch: templateMedia?.dataset.swatch || 'gradient', brand_kit_id: app.dataset.selectedBrandKitId || null },
+      media: { swatch: templateMedia?.dataset.swatch || 'gradient', brand_kit_id: app.dataset.selectedBrandKitId || null, selected_brand_image_url: app.dataset.selectedBrandImageUrl || null },
       print_options: { source: 'design_studio', size: info.size },
       export_manifest: { qr_required: true, template_type: info.template_type, format_key: info.format_key, brand_kit_id: app.dataset.selectedBrandKitId || null },
     });
     app.dataset.selectedProjectId = data.project?.id || '';
     if (exportProject) exportProject.textContent = data.project?.name || 'Saved project';
+    await loadDesignAssets();
     return data.project;
   };
 
@@ -335,12 +510,15 @@
       manifest: { source: 'design_studio', selected_qr_id: app.dataset.selectedQrId || null, selected_brand_kit_id: app.dataset.selectedBrandKitId || null },
     });
     if (exportJob) exportJob.textContent = `${data.export_type || type} · ${data.status || 'queued'}`;
+    await loadExportAssets();
     return data;
   };
 
   const createQrAsset = async () => {
     if (!app.dataset.selectedQrId) throw new Error('Select or create a QR first.');
-    return postJson(exportApi, { action: 'create_qr_asset', qr_code_id: app.dataset.selectedQrId, asset_type: 'qr_svg', name: `${templateQrLabel?.textContent || 'Design Studio'} QR SVG` });
+    const data = await postJson(exportApi, { action: 'create_qr_asset', qr_code_id: app.dataset.selectedQrId, asset_type: 'qr_svg', name: `${templateQrLabel?.textContent || 'Design Studio'} QR SVG` });
+    await loadExportAssets();
+    return data;
   };
 
   const linkCampaign = async () => {
@@ -383,7 +561,7 @@
         template.dataset.ratio = info.ratio;
         template.className = `mg-design-template is-${info.format}`;
       }
-      if (proofEstimate) proofEstimate.textContent = `${info.title} proof ready`;
+      setStatus(`${info.title} proof ready`, 'ready');
       loadDesignAssets();
     });
   });
@@ -415,159 +593,129 @@
       setActive(button, '[data-preview-side]');
       const side = button.dataset.previewSide || 'front';
       app.dataset.previewSide = side;
-      if (proofEstimate) proofEstimate.textContent = `${side === 'back' ? 'Back' : 'Front'} side preview`;
+      setStatus(`${side === 'back' ? 'Back' : 'Front'} side preview`, 'ready');
     });
   });
 
+  const withBusyText = async (button, busyText, successText, failureText, action, resetText, delay = 1600) => {
+    if (!button) return;
+    button.disabled = true;
+    button.textContent = busyText;
+    try {
+      const result = await action();
+      button.textContent = successText;
+      return result;
+    } catch (error) {
+      button.textContent = failureText;
+      throw error;
+    } finally {
+      setTimeout(() => {
+        button.disabled = false;
+        button.textContent = resetText;
+      }, delay);
+    }
+  };
+
   const brandScanButton = qs('[data-brand-scan]');
   if (brandScanButton) brandScanButton.addEventListener('click', async () => {
-    brandScanButton.disabled = true;
-    brandScanButton.textContent = 'Scanning website…';
     try {
-      await scanBrandKit();
-      brandScanButton.textContent = 'Brand kit scanned';
-      if (proofEstimate) proofEstimate.textContent = 'Brand kit ready';
+      await withBusyText(brandScanButton, 'Scanning website…', 'Brand kit scanned', 'Scan failed', scanBrandKit, 'Scan website for brand kit', 1800);
+      setStatus('Brand kit ready', 'ready');
     } catch (error) {
-      brandScanButton.textContent = 'Scan failed';
-      if (proofEstimate) proofEstimate.textContent = error.message || 'Unable to scan brand kit';
-    } finally {
-      setTimeout(() => { brandScanButton.disabled = false; brandScanButton.textContent = 'Scan website for brand kit'; }, 1800);
+      setStatus(error.message || 'Unable to scan brand kit', 'warning');
     }
   });
 
   const saveButton = qs('[data-design-save]');
   if (saveButton) saveButton.addEventListener('click', async () => {
-    saveButton.disabled = true;
-    saveButton.textContent = 'Saving project…';
     try {
-      await saveProject();
-      saveButton.textContent = 'Project saved';
-      if (proofEstimate) proofEstimate.textContent = 'Project saved';
+      await withBusyText(saveButton, 'Saving project…', 'Project saved', 'Save failed', saveProject, 'Save project', 1400);
+      setStatus('Project saved', 'ready');
     } catch (error) {
-      saveButton.textContent = 'Save failed';
-      if (proofEstimate) proofEstimate.textContent = 'Unable to save project';
-    } finally {
-      setTimeout(() => { saveButton.disabled = false; saveButton.textContent = 'Save project'; }, 1400);
+      setStatus('Unable to save project', 'warning');
     }
   });
 
   const templateButton = qs('[data-design-save-template]');
   if (templateButton) templateButton.addEventListener('click', async () => {
-    templateButton.disabled = true;
-    templateButton.textContent = 'Saving template…';
     try {
-      await saveTemplate();
-      templateButton.textContent = 'Template saved';
-      if (proofEstimate) proofEstimate.textContent = 'Reusable template saved';
+      await withBusyText(templateButton, 'Saving template…', 'Template saved', 'Save failed', saveTemplate, 'Save as template', 1500);
+      setStatus('Reusable template saved', 'ready');
     } catch (error) {
-      templateButton.textContent = 'Save failed';
-      if (proofEstimate) proofEstimate.textContent = 'Unable to save template';
-    } finally {
-      setTimeout(() => { templateButton.disabled = false; templateButton.textContent = 'Save as template'; }, 1500);
+      setStatus('Unable to save template', 'warning');
     }
   });
 
   const exportButton = qs('[data-design-export]');
   if (exportButton) exportButton.addEventListener('click', async () => {
-    exportButton.disabled = true;
-    exportButton.textContent = 'Queueing export…';
     try {
-      const info = activeFormatInfo();
-      await queueExport(info.template_type === 'social' ? 'social_png' : 'zip_package');
-      exportButton.textContent = 'Export queued';
-      if (proofEstimate) proofEstimate.textContent = app.dataset.selectedQrId ? 'Export queued with live QR' : 'Export queued; QR still recommended';
+      await withBusyText(exportButton, 'Queueing export…', 'Export queued', 'Export blocked', async () => {
+        const info = activeFormatInfo();
+        return queueExport(info.template_type === 'social' ? 'social_png' : 'zip_package');
+      }, 'Export package', 1600);
+      setStatus(app.dataset.selectedQrId ? 'Export queued with live QR' : 'Export queued; QR still recommended', 'ready');
     } catch (error) {
-      exportButton.textContent = 'Export blocked';
-      if (proofEstimate) proofEstimate.textContent = 'Export queue failed';
-    } finally {
-      setTimeout(() => { exportButton.disabled = false; exportButton.textContent = 'Export package'; }, 1600);
+      setStatus('Export queue failed', 'warning');
     }
   });
 
   const proofButton = qs('[data-design-proof]');
   if (proofButton) proofButton.addEventListener('click', async () => {
-    proofButton.disabled = true;
-    proofButton.textContent = 'Queueing proof…';
     try {
-      await queueExport('proof');
-      if (proofEstimate) proofEstimate.textContent = app.dataset.selectedQrId ? 'Proof queued with live QR' : 'Proof queued; QR still recommended';
-      proofButton.textContent = 'Proof queued';
+      await withBusyText(proofButton, 'Queueing proof…', 'Proof queued', 'Proof failed', () => queueExport('proof'), 'Generate proof', 1500);
+      setStatus(app.dataset.selectedQrId ? 'Proof queued with live QR' : 'Proof queued; QR still recommended', 'ready');
     } catch (error) {
-      proofButton.textContent = 'Proof failed';
-      if (proofEstimate) proofEstimate.textContent = 'Unable to queue proof';
-    } finally {
-      setTimeout(() => { proofButton.disabled = false; proofButton.textContent = 'Generate proof'; }, 1500);
+      setStatus('Unable to queue proof', 'warning');
     }
   });
 
   const importButton = qs('[data-design-import-media]');
   if (importButton) importButton.addEventListener('click', () => {
     importButton.textContent = 'Media library sync pending';
+    setStatus('Media library connection is queued for the next build', 'info');
     setTimeout(() => { importButton.textContent = 'Import from media library'; }, 1600);
   });
 
   const aiButton = qs('[data-design-ai-image]');
   if (aiButton) aiButton.addEventListener('click', async () => {
-    aiButton.disabled = true;
-    aiButton.textContent = 'Queueing AI job…';
     try {
-      await saveProject();
-      await queueAiImage();
-      aiButton.textContent = 'AI job queued';
-      if (proofEstimate) proofEstimate.textContent = 'AI image job queued for approval';
+      await withBusyText(aiButton, 'Queueing AI job…', 'AI job queued', 'AI queue failed', async () => {
+        await saveProject();
+        return queueAiImage();
+      }, 'Queue AI image concept', 1600);
+      setStatus('AI image job queued for approval', 'ready');
     } catch (error) {
-      aiButton.textContent = 'AI queue failed';
-      if (proofEstimate) proofEstimate.textContent = 'Unable to queue AI image';
-    } finally {
-      setTimeout(() => { aiButton.disabled = false; aiButton.textContent = 'Queue AI image concept'; }, 1600);
+      setStatus('Unable to queue AI image', 'warning');
     }
   });
 
   const qrButton = qs('[data-design-create-qr]');
   if (qrButton) qrButton.addEventListener('click', async () => {
-    if (app.dataset.merchantOnly !== 'true') return;
-    qrButton.disabled = true;
-    qrButton.textContent = 'Creating QR code…';
     try {
-      const item = await createQr();
-      if (item && proofEstimate) proofEstimate.textContent = 'Live QR code created';
+      await withBusyText(qrButton, 'Creating QR code…', 'QR code created', 'QR failed', createQr, 'Create new QR code', 1200);
+      setStatus('Live QR code created', 'ready');
     } catch (error) {
-      if (proofEstimate) proofEstimate.textContent = 'Unable to create QR';
-    } finally {
-      qrButton.disabled = false;
-      qrButton.textContent = 'Create new QR code';
+      setStatus('Unable to create QR', 'warning');
     }
   });
 
   const qrAssetButton = qs('[data-design-qr-asset]');
   if (qrAssetButton) qrAssetButton.addEventListener('click', async () => {
-    qrAssetButton.disabled = true;
-    qrAssetButton.textContent = 'Queueing QR asset…';
     try {
-      await createQrAsset();
-      qrAssetButton.textContent = 'QR asset queued';
-      if (proofEstimate) proofEstimate.textContent = 'QR image asset queued';
+      await withBusyText(qrAssetButton, 'Queueing QR asset…', 'QR asset queued', 'QR asset failed', createQrAsset, 'Queue QR image asset', 1600);
+      setStatus('QR image asset queued', 'ready');
     } catch (error) {
-      qrAssetButton.textContent = 'QR asset failed';
-      if (proofEstimate) proofEstimate.textContent = 'Select or create a QR first';
-    } finally {
-      setTimeout(() => { qrAssetButton.disabled = false; qrAssetButton.textContent = 'Queue QR image asset'; }, 1600);
+      setStatus('Select or create a QR first', 'warning');
     }
   });
 
   const campaignButton = qs('[data-campaign-link]');
   if (campaignButton) campaignButton.addEventListener('click', async () => {
-    campaignButton.disabled = true;
-    campaignButton.textContent = 'Saving campaign link…';
     try {
-      await linkCampaign();
-      campaignButton.textContent = 'Campaign linked';
-      if (proofEstimate) proofEstimate.textContent = 'Campaign link saved';
+      await withBusyText(campaignButton, 'Saving campaign link…', 'Campaign linked', 'Link failed', linkCampaign, 'Save campaign link', 1600);
+      setStatus('Campaign link saved', 'ready');
     } catch (error) {
-      campaignButton.textContent = 'Link failed';
-      if (proofEstimate) proofEstimate.textContent = 'Campaign reference required';
-    } finally {
-      setTimeout(() => { campaignButton.disabled = false; campaignButton.textContent = 'Save campaign link'; }, 1600);
+      setStatus('Campaign reference required', 'warning');
     }
   });
 
@@ -580,4 +728,5 @@
   loadBrandKit();
   loadQrLibrary();
   loadDesignAssets();
+  loadExportAssets();
 })();
