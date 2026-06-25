@@ -30,10 +30,12 @@ final class StampPurchaseFlowContractTest extends TestCase
     public function testPurchaseEndpointsExist(): void
     {
         $purchase = $this->read('api/stamps/purchase.php');
+        $helper = $this->read('api/stamps/_purchases.php');
         $history = $this->read('api/stamps/purchases.php');
-        foreach(['stamp_purchases','stamp:purchase:','bulk_stamp_purchase','sandbox_confirm','checkout_url','mg_stamp_credit'] as $needle){
-            self::assertStringContainsString($needle, $purchase);
+        foreach(['stamp_purchases','stamp:purchase:','bulk_stamp_purchase','sandbox_confirm','mg_stamp_credit'] as $needle){
+            self::assertStringContainsString($needle, $purchase . $helper);
         }
+        self::assertStringContainsString('checkout_url', $helper);
         self::assertStringContainsString('stamp_purchases', $history);
         self::assertStringContainsString('purchases', $history);
     }
