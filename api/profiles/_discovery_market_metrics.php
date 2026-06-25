@@ -4,9 +4,9 @@ declare(strict_types=1);
 function mg_profile_discovery_market_table(PDO $pdo, string $table): bool
 {
     try {
-        $stmt = $pdo->prepare('SHOW TABLES LIKE ?');
+        $stmt = $pdo->prepare('SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?');
         $stmt->execute([$table]);
-        return (bool)$stmt->fetchColumn();
+        return (int)$stmt->fetchColumn() > 0;
     } catch (Throwable) {
         return false;
     }
@@ -88,14 +88,13 @@ function mg_profile_discovery_enrich_market_metrics(PDO $pdo, array $data, strin
         mms.campaign_conversion_value_cents,mms.funnel_quality_score,
         mms.distribution_value_cents,mms.risk_adjustment_cents,mms.snapshot_date
       FROM public_profiles pp
-      LEFT JOIN (
-        SELECT s.* FROM merchant_market_snapshots s
-        INNER JOIN (
-          SELECT merchant_user_id, MAX(snapshot_date) AS latest_snapshot_date
-          FROM merchant_market_snapshots
-          GROUP BY merchant_user_id
-        ) latest ON latest.merchant_user_id=s.merchant_user_id AND latest.latest_snapshot_date=s.snapshot_date
-      ) mms ON mms.merchant_user_id=pp.user_id
+      LEFT JOIN merchant_market_snapshots mms ON mms.id = (
+        SELECT latest.id
+        FROM merchant_market_snapshots latest
+        WHERE latest.merchant_user_id = pp.user_id
+        ORDER BY latest.snapshot_date DESC, latest.id DESC
+        LIMIT 1
+      )
       WHERE pp.slug IN ($placeholders)";
     $stmt = $pdo->prepare($sql);
     $stmt->execute($slugs);
