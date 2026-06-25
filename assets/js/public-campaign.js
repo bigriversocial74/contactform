@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded',function(){
 'use strict';
 if(!window.Microgifter)return;
+var detailEndpoint='/api/public/campaigns/detail.php';
 function esc(v){return String(v==null?'':v).replace(/[&<>'"]/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'})[c];});}
 function idKey(prefix){return prefix+':campaign:'+Date.now()+':'+Math.random().toString(16).slice(2);}
 function setButtonBusy(button,busy){button.disabled=!!busy;button.setAttribute('aria-busy',busy?'true':'false');}
@@ -11,6 +12,16 @@ function followerCountDelta(delta){
     node.textContent=next.toLocaleString();
   });
 }
+function loadLegacyCampaignDetail(){
+  var root=document.querySelector('[data-public-campaign]');
+  if(!root)return;
+  var params=new URLSearchParams(window.location.search);
+  var ref=params.get('c')||params.get('campaign')||params.get('slug')||'';
+  var token=params.get('token')||params.get('qr_token')||'';
+  if(!ref&&!token)return;
+  Microgifter.get(detailEndpoint+'?campaign='+encodeURIComponent(ref)+'&token='+encodeURIComponent(token)).catch(function(){});
+}
+loadLegacyCampaignDetail();
 document.querySelectorAll('[data-follow-profile]').forEach(function(button){
   button.addEventListener('click',async function(){
     var profile=button.getAttribute('data-follow-profile')||'';
