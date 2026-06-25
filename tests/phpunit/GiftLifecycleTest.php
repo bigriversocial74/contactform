@@ -107,6 +107,27 @@ final class GiftLifecycleTest extends TestCase
         self::assertStringContainsString('mg_gift_event($pdo', $redeem);
     }
 
+    public function testScannerRedemptionUsesServerSideLocationCodeAndProtectsVerifiedClaims(): void
+    {
+        $scanner = file_get_contents(dirname(__DIR__, 2) . '/api/merchant/scanner-claim.php');
+        $sidebar = file_get_contents(dirname(__DIR__, 2) . '/includes/agent-sidebar.php');
+
+        self::assertIsString($scanner);
+        self::assertIsString($sidebar);
+        self::assertStringContainsString('data-scanner-api="/api/merchant/scanner-claim.php"', $sidebar);
+        self::assertStringContainsString("mg_require_permission('merchant.gifts.redeem')", $scanner);
+        self::assertStringContainsString('mg_scanner_claim_identifier', $scanner);
+        self::assertStringContainsString('mg_scanner_claim_assert_location_binding', $scanner);
+        self::assertStringContainsString('already verified for another merchant location', $scanner);
+        self::assertStringContainsString('This scanner location does not have an active claim code assigned.', $scanner);
+        self::assertStringContainsString('require_confirmation', $scanner);
+        self::assertStringContainsString('confirmed', $scanner);
+        self::assertStringContainsString("status='verified'", $scanner);
+        self::assertStringContainsString("status='redeemed'", $scanner);
+        self::assertStringContainsString('usage_count=usage_count+1', $scanner);
+        self::assertStringContainsString('gift.scanner_claim_redeemed', $scanner);
+    }
+
     public function testMerchantManagementApisAreOwnerScoped(): void
     {
         $locations = file_get_contents(dirname(__DIR__, 2) . '/api/merchant/locations.php');
