@@ -63,7 +63,7 @@ final class CampaignStampDistributionContractTest extends TestCase
     {
         $source = $this->read('api/public/campaigns/engage.php');
         self::assertStringContainsString("INNER JOIN reward_templates rt ON rt.id = c.reward_template_id", $source);
-        self::assertStringContainsString("rt.status = 'active'", $source);
+        self::assertStringContainsString("rt.status = \\'active\\'", $source);
         self::assertStringContainsString('mg_public_campaign_enforce_reward_limits', $source);
         self::assertStringContainsString('INSERT INTO wallet_items', $source);
         self::assertStringContainsString("'wallet_item.issued'", $source);
