@@ -29,6 +29,7 @@ $public_nav_links = $filtered_links;
 if (!$user) {
     $public_nav_links = [
         ['label' => 'Explore', 'href' => '/discover.php'],
+        ['label' => 'Buy In', 'href' => '/buy-in.php'],
         ['label' => 'Pricing', 'href' => '/pricing.php'],
     ];
 }
