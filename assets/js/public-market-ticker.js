@@ -9,11 +9,27 @@
   const endpoint = '/api/public/market-ticker.php?limit=12';
   const refreshIntervalMs = 45000;
   const statRotationIntervalMs = 5000;
+  const lastTickerValues = new Map();
   let statIndex = 0;
   let refreshInFlight = false;
 
   function text(value, fallback = '') {
     return String(value ?? fallback).trim();
+  }
+
+  function itemKey(item) {
+    return text(item?.profile_slug) || text(item?.href) || `${text(item?.symbol)}|${text(item?.name)}`;
+  }
+
+  function parseCompactCurrency(value) {
+    const match = text(value).replace(/,/g, '').match(/^(-?)\$([0-9.]+)([KMB])?$/i);
+    if (!match) return null;
+    const amount = Number(match[2]);
+    if (!Number.isFinite(amount)) return null;
+    const multiplier = match[3]?.toUpperCase() === 'B' ? 1_000_000_000
+      : match[3]?.toUpperCase() === 'M' ? 1_000_000
+        : match[3]?.toUpperCase() === 'K' ? 1_000 : 1;
+    return Math.round((match[1] === '-' ? -1 : 1) * amount * multiplier * 100);
   }
 
   function normalizeStats(item) {
@@ -24,6 +40,37 @@
         value: text(stat?.value),
       }))
       .filter((stat) => stat.label || stat.value);
+  }
+
+  function uniqueItems(items) {
+    const seen = new Set();
+    return (Array.isArray(items) ? items : []).filter((item) => {
+      const key = itemKey(item);
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  function applyLiveMovement(items) {
+    return uniqueItems(items).map((item) => {
+      const next = { ...item };
+      const key = itemKey(next);
+      const cents = Number(next.ticker_value_cents);
+      if (!key || !Number.isFinite(cents)) return next;
+
+      const previous = lastTickerValues.get(key);
+      if (Number.isFinite(previous) && previous > 0 && cents !== previous) {
+        const delta = cents - previous;
+        const percent = (delta / previous) * 100;
+        next.trend = delta > 0 ? 'up' : 'down';
+        next.change = `${delta > 0 ? '▲' : '▼'} ${Math.abs(percent).toFixed(1)}% LIVE`;
+        next.delta_cents = delta;
+        next.delta_percent = Number(percent.toFixed(2));
+      }
+      lastTickerValues.set(key, cents);
+      return next;
+    });
   }
 
   function setStatContent(node, stat) {
@@ -49,8 +96,32 @@
     }, 120);
   }
 
+  function collapseSingleServerItem() {
+    if (!ticker) return;
+    const marquee = ticker.querySelector('.mg-header-market-marquee');
+    if (!marquee) return;
+    const links = Array.from(marquee.querySelectorAll('.mg-header-ticker-item'));
+    const unique = new Map();
+    links.forEach((link) => {
+      const symbol = text(link.querySelector('strong')?.textContent);
+      const key = `${link.getAttribute('href') || ''}|${symbol}`;
+      if (!unique.has(key)) unique.set(key, link);
+      const cents = parseCompactCurrency(link.querySelector('b')?.textContent);
+      if (Number.isFinite(cents) && !lastTickerValues.has(key)) lastTickerValues.set(key, cents);
+    });
+    if (unique.size !== 1) return;
+
+    const firstLink = unique.values().next().value;
+    const row = document.createElement('div');
+    row.className = 'mg-header-market-row';
+    row.appendChild(firstLink);
+    marquee.replaceChildren(row);
+    marquee.classList.add('is-static');
+  }
+
   function hydrateServerTickerStats() {
     if (!ticker) return;
+    collapseSingleServerItem();
     ticker.querySelectorAll('.mg-header-ticker-item').forEach((link) => {
       const node = link.querySelector('.mg-header-ticker-stat');
       if (!node) return;
@@ -79,9 +150,10 @@
     price.textContent = text(item?.price, '—') || '—';
 
     const change = document.createElement('em');
-    const trend = text(item?.trend, 'up') === 'down' ? 'down' : 'up';
+    const requestedTrend = text(item?.trend, 'flat');
+    const trend = requestedTrend === 'down' ? 'down' : requestedTrend === 'up' ? 'up' : 'flat';
     change.className = `is-${trend}`;
-    change.textContent = text(item?.change, 'LIVE') || 'LIVE';
+    change.textContent = text(item?.change, '● LIVE') || '● LIVE';
 
     link.append(symbol, name, price, change);
 
@@ -100,12 +172,16 @@
   function renderTicker(items) {
     const marquee = ticker?.querySelector('.mg-header-market-marquee');
     if (!marquee || !Array.isArray(items) || items.length === 0) return;
+    const normalized = applyLiveMovement(items);
+    const looping = normalized.length > 1;
+    marquee.classList.toggle('is-static', !looping);
     marquee.replaceChildren();
-    for (let pass = 0; pass < 2; pass += 1) {
+    const passes = looping ? 2 : 1;
+    for (let pass = 0; pass < passes; pass += 1) {
       const row = document.createElement('div');
       row.className = 'mg-header-market-row';
       if (pass === 1) row.setAttribute('aria-hidden', 'true');
-      items.forEach((item) => row.appendChild(createTickerItem(item)));
+      normalized.forEach((item) => row.appendChild(createTickerItem(item)));
       marquee.appendChild(row);
     }
   }
@@ -119,11 +195,11 @@
   function renderFooter(items) {
     if (!footerStrip || !Array.isArray(items) || items.length === 0) return;
     footerStrip.replaceChildren();
-    items.slice(0, 3).forEach((item) => {
+    uniqueItems(items).slice(0, 3).forEach((item) => {
       const span = document.createElement('span');
       const strong = document.createElement('strong');
       strong.textContent = text(item?.symbol, 'MGFT') || 'MGFT';
-      span.append(strong, document.createTextNode(` ${text(item?.change, item?.price || 'LIVE')}`));
+      span.append(strong, document.createTextNode(` ${text(item?.price, '—')} ${text(item?.change, '● LIVE')}`));
       footerStrip.appendChild(span);
     });
   }
