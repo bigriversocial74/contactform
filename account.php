@@ -5,6 +5,7 @@ $page_title = match ($accountView) {
   'admin' => 'Admin Dashboard | Microgifter',
   'profile_moderation' => 'Profile Moderation | Microgifter',
   'wallet' => 'My Wallet | Microgifter',
+  'subscriptions' => 'My Subscription | Microgifter',
   'profile' => 'Profile Editor | Microgifter',
   default => 'Account | Microgifter',
 };
@@ -54,6 +55,7 @@ $adminPermissionSet = [
 $hasAdminAccess = $isSuperAdmin || count(array_intersect($adminPermissionSet, $permissions)) > 0;
 $accountNav = [
   'profile' => ['label' => 'Profile', 'href' => '/account.php', 'detail' => 'Public identity', 'visible' => true],
+  'subscriptions' => ['label' => 'My Subscription', 'href' => '/account-subscriptions.php', 'detail' => 'Plan and upgrade', 'visible' => true],
   'wallet' => ['label' => 'Wallet', 'href' => '/wallet.php', 'detail' => 'Local rewards', 'visible' => true],
   'models' => ['label' => 'Models', 'href' => '/account-models.php', 'detail' => 'User model access', 'visible' => true],
   'security' => ['label' => 'Security', 'href' => '/account-security.php', 'detail' => 'Sessions', 'visible' => true],
@@ -78,7 +80,7 @@ $adminSidebarNav = [
   'ai_settings' => ['label' => 'AI settings', 'href' => '/admin-ai.php', 'detail' => 'Models and providers', 'visible' => $canAiSettings],
 ];
 $sidebarNav = $accountView === 'admin' ? $adminSidebarNav : $accountNav;
-$knownViews = ['profile', 'wallet', 'models', 'security', 'access', 'admin', 'profile_moderation'];
+$knownViews = ['profile', 'subscriptions', 'wallet', 'models', 'security', 'access', 'admin', 'profile_moderation'];
 if (!in_array($accountView, $knownViews, true)) $accountView = 'profile';
 require __DIR__ . '/includes/header.php';
 ?>
@@ -106,6 +108,22 @@ require __DIR__ . '/includes/header.php';
     <?php elseif ($accountView === 'profile'): ?>
       <?php require __DIR__ . '/includes/account/profile-moderation-owner.php'; ?>
       <?php require __DIR__ . '/includes/account/profile-editor.php'; ?>
+    <?php elseif ($accountView === 'subscriptions'): ?>
+      <section class="mg-app-panel mg-account-pane is-active" data-account-pane="subscriptions">
+        <div class="mg-app-panel-head"><div><h2>My Subscription</h2><p>The Rewards Layer for Local Commerce.</p></div></div>
+        <div class="mg-app-panel-body">
+          <div class="mg-account-section">
+            <h3>Current platform access</h3>
+            <p class="mg-muted">Turn promotions, gift certificates, loyalty rewards, and customer engagement into tracked revenue from one simple platform.</p>
+            <div class="mg-chip-list"><span class="mg-chip">Promotional CRM</span><span class="mg-chip">Rewards layer</span><span class="mg-chip">Commerce tracking</span></div>
+          </div>
+          <div class="mg-account-section">
+            <h3>Upgrade options</h3>
+            <p class="mg-muted">Compare plans for Promotional CRM, direct feed distribution, engagement campaigns, landing pages, pre-sale commerce, multi-location management, design studio, and automated commerce solutions.</p>
+            <div class="mg-action-row"><a class="mg-btn mg-btn-primary" href="/pricing.php">Upgrade plan</a><a class="mg-btn mg-btn-soft" href="/learn-more.php">Book a demo</a></div>
+          </div>
+        </div>
+      </section>
     <?php elseif ($accountView === 'wallet'): ?>
       <?php require __DIR__ . '/includes/account/wallet-view.php'; ?>
     <?php elseif ($accountView === 'models'): ?>
