@@ -25,6 +25,7 @@ if (!$user) {
     $public_nav_links = [
         ['label'=>'Explore','href'=>'/discover.php'],
         ['label'=>'Merchant','href'=>'/merchant.php'],
+        ['label'=>'Pricing','href'=>'/pricing.php'],
         ['label'=>'Docs','href'=>'/developer-docs.php'],
     ];
 }
@@ -113,6 +114,7 @@ $show_demo_button = !$user;
             <div class="mg-account-menu-head"><span class="mg-account-status-light"></span><span class="mg-account-head-copy"><span class="mg-account-head-name">Account</span><span class="mg-account-head-email">Guest</span></span><span class="mg-account-session-label">SESSION</span></div>
             <a class="mg-account-action" href="/signin.php"><span class="mg-account-index">01</span><span>Sign in</span></a>
             <a class="mg-account-action" href="/signup.php"><span class="mg-account-index">02</span><span>Create account</span></a>
+            <a class="mg-account-action mg-account-upgrade" href="/pricing.php"><span class="mg-account-index">UP</span><span>Pricing</span></a>
           </div>
         </div>
         <button class="mg-cart-header-button" type="button" data-cart-trigger aria-label="Open shopping cart" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.1 9.2a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 1.9-1.4L21 7H7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10" cy="19" r="1.5" fill="currentColor"/><circle cx="18" cy="19" r="1.5" fill="currentColor"/></svg><span class="mg-cart-header-badge" data-cart-badge hidden>0</span></button>
