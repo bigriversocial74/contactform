@@ -88,5 +88,7 @@ function mg_delivery_process_callback(PDO $pdo,string $provider,string $eventId,
 {
     mg_delivery_ensure_schema($pdo);$hash=hash('sha256',mg_delivery_json($payload));$jobPublic=(string)($payload['job_id']??'');$stmt=$pdo->prepare('SELECT id FROM message_delivery_jobs WHERE public_id=? LIMIT 1 FOR UPDATE');$stmt->execute([$jobPublic]);$jobId=(int)$stmt->fetchColumn();if($jobId<1)throw new MgDeliveryException('Callback delivery job not found.',404);
     $existing=$pdo->prepare('SELECT * FROM message_provider_callbacks WHERE provider_key=? AND provider_event_id=? LIMIT 1 FOR UPDATE');$existing->execute([$provider,$eventId]);if($row=$existing->fetch(PDO::FETCH_ASSOC)){if(!hash_equals((string)$row['payload_hash'],$hash)||$row['event_type']!==$type)throw new MgDeliveryException('Provider callback conflicts with the recorded payload.',409);return ['duplicate'=>true,'status'=>$row['status']];}
-    $pdo->prepare('INSERT INTO message_provider_callbacks (public_id,provider_key,provider_event_id,job_id,event_type,payload_hash,payload_json,status,received_at,processed_at) VALUES (?,?,?,?,?,?,?,' . "'processed'" . ',NOW(),NOW())')->execute([mg_public_uuid(),$provider,$eventId,$jobId,$type,$hash,mg_delivery_json($payload)]);return ['duplicate'=>false,'status'=>'processed';
+    $pdo->prepare('INSERT INTO message_provider_callbacks (public_id,provider_key,provider_event_id,job_id,event_type,payload_hash,payload_json,status,received_at,processed_at) VALUES (?,?,?,?,?,?,?,' . "'processed'" . ',NOW(),NOW())')->execute([mg_public_uuid(),$provider,$eventId,$jobId,$type,$hash,mg_delivery_json($payload)]);
+    $result=['duplicate'=>false,'status'=>'processed'];
+    return $result;
 }
