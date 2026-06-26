@@ -37,8 +37,8 @@ $used = is_numeric($included) ? max(0, (int)$included - 9720) : 280;
       <div class="mg-app-panel-head mg-stamp-ledger-panel-head">
         <div>
           <span class="mg-eyebrow">Stamp Ledger</span>
-          <h2>Transaction history</h2>
-          <p>Audit included monthly Stamps, purchased bulk Stamps, campaign debits, failed-send voids, and balance-after history.</p>
+          <h2>Merchant Stamp balance</h2>
+          <p>Transaction history for included monthly Stamps, purchased bulk Stamps, campaign debits, failed-send voids, and balance-after history.</p>
         </div>
         <div class="mg-heading-actions">
           <a class="mg-btn mg-btn-soft" href="/merchant-campaign-stamps.php">Campaign Credits</a>
