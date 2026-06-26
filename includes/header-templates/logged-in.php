@@ -4,6 +4,18 @@ declare(strict_types=1);
 $show_header_create = $show_header_create ?? true;
 $show_header_signals = $show_header_signals ?? true;
 $show_header_cart = $show_header_cart ?? true;
+$user_roles = is_array($user_roles ?? null) ? $user_roles : [];
+$user_permissions = is_array($user_permissions ?? null) ? $user_permissions : [];
+$can_merchant_nav = $can_merchant_nav ?? (
+    in_array('merchant', $user_roles, true)
+    || in_array('admin', $user_roles, true)
+    || in_array('super_admin', $user_roles, true)
+    || in_array('merchant.manage', $user_permissions, true)
+    || in_array('merchant.workspace.view', $user_permissions, true)
+    || in_array('merchant.crm.view', $user_permissions, true)
+    || in_array('merchant.products.manage', $user_permissions, true)
+    || !empty($account_storefront_url)
+);
 ?>
 <div class="mg-header-actions" data-header-template="logged-in">
   <?php if ($show_header_create): ?>
@@ -55,12 +67,13 @@ $show_header_cart = $show_header_cart ?? true;
       <a class="mg-account-action" href="/inbox.php"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>IN/OUT Box</span></a>
       <a class="mg-account-action" href="/feed.php"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>My Feed</span></a>
       <?php if ($account_profile_url): ?><a class="mg-account-action" href="<?= mg_e($account_profile_url) ?>"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>My Profile</span></a><?php endif; ?>
-      <?php if ($account_storefront_url): ?><a class="mg-account-action" href="<?= mg_e($account_storefront_url) ?>"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>My Storefront</span></a><?php endif; ?>
+      <?php if ($can_merchant_nav && $account_storefront_url): ?><a class="mg-account-action" href="<?= mg_e($account_storefront_url) ?>"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>My Storefront</span></a><?php endif; ?>
       <a class="mg-account-action" href="/account.php"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Profile Settings</span></a>
       <a class="mg-account-action" href="/account-commerce.php"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Commerce center</span></a>
-      <a class="mg-account-action" href="/merchant.php"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Merchant Dashboard</span></a>
-      <a class="mg-account-action" href="/merchant-crm.php"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Merchant CRM</span></a>
-      <a class="mg-account-action" href="/archived-agents.php"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Archived agents</span></a>
+      <?php if ($can_merchant_nav): ?>
+        <a class="mg-account-action" href="/merchant.php"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Merchant Dashboard</span></a>
+        <a class="mg-account-action" href="/merchant-crm.php"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Merchant CRM</span></a>
+      <?php endif; ?>
       <?php if ($can_sales_crm): ?><a class="mg-account-action" href="/sales-crm.php"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Sales CRM</span></a><?php endif; ?>
       <?php if ($can_admin_dashboard): ?><a class="mg-account-action" href="/account-admin.php"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Admin dashboard</span></a><?php endif; ?>
       <a class="mg-account-action mg-account-upgrade" href="/pricing.php"><span class="mg-account-index">UP</span><span>Upgrade</span></a>
