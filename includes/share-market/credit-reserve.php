@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/admin-actions.php';
 require_once __DIR__ . '/merchant-state.php';
 require_once __DIR__ . '/notifications.php';
 
