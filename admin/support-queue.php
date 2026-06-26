@@ -9,7 +9,7 @@ $page_title = 'Support Queue | Microgifter';
 $page_section = 'account';
 $header_mode = 'account';
 $page_body_class = 'mg-admin-support-queue-page';
-$page_styles = ['/assets/css/admin-shell.css','/assets/css/admin-support-queue.css'];
+$page_styles = ['/assets/css/admin-shell.css','/assets/css/admin-support-queue.css','/assets/css/admin-queue-playbooks.css'];
 $page_scripts = ['/assets/js/admin-support-queue.js','/assets/js/admin-sla-routing.js','/assets/js/admin-queue-playbooks.js'];
 $adminActive = 'support-queue';
 
