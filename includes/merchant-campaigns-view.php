@@ -1,12 +1,102 @@
 <?php
 declare(strict_types=1);
 ?>
-<section class="mg-merchant-heading"><div><span class="mg-eyebrow">Campaigns</span><h1>Reward campaigns</h1><p>Create newsletter signup, contest, QR drop, and agent-discovery flows that send approved value into the Microgifter inbox.</p></div><div class="mg-heading-actions"><a class="mg-btn mg-btn-soft" href="/merchant-reward-templates.php">Reward templates</a><a class="mg-btn mg-btn-primary" href="#campaign-builder">Create campaign</a></div></section>
-<section class="mg-app-panel" id="campaign-builder"><div class="mg-app-panel-head"><div><h2>Campaign builder</h2><p>Choose the distribution trigger and attach a reward template.</p></div></div><div class="mg-app-panel-body"><form class="mg-merchant-form" data-stage12-campaign-builder><input type="hidden" name="campaign_id" value=""><div class="mg-grid-2"><label>Campaign type<select name="campaign_type"><option value="newsletter_signup">Newsletter Signup</option><option value="contest_giveaway">Contest / Giveaway</option><option value="qr_reward_drop">QR Reward Drop</option><option value="referral_reward">Referral Reward</option><option value="birthday_vip">Birthday / VIP</option><option value="agent_offer">Agent Offer</option></select></label><label>Status<select name="status"><option value="draft">Draft</option><option value="active">Active</option><option value="paused">Paused</option><option value="ended">Ended</option><option value="archived">Archived</option></select></label></div><label>Campaign title<input name="title" placeholder="Join the list and get a reward" required maxlength="180"></label><label>Reward template<select name="reward_template_id" data-stage12-campaign-template-select><option value="">No template attached yet</option></select></label><label>Form headline<input name="form_headline" placeholder="Join our rewards list"></label><label>Description<textarea name="description" placeholder="Explain the campaign and reward."></textarea></label><div class="mg-grid-2"><label>Quantity limit<input name="quantity_limit" type="number" min="1" placeholder="Unlimited"></label><label>Per-user limit<input name="per_user_limit" type="number" min="1" value="1"></label></div><label><input type="checkbox" name="agent_discoverable" value="1"> Agent-discoverable campaign</label><div class="mg-form-status" data-stage12-campaign-status>Ready to save a campaign.</div><div class="mg-heading-actions"><button class="mg-btn mg-btn-primary" type="submit" data-stage12-campaign-save>Save campaign</button><button class="mg-btn mg-btn-ghost" type="button" data-stage12-campaign-new>New campaign</button></div></form></div></section>
-<section class="mg-app-panel"><div class="mg-app-panel-head"><div><h2>Follow-up messages</h2><p>Create action-based campaign follow-ups by time: 1 hour, 6 hours, 1 day, 15 days, automatic, or custom.</p></div></div><div class="mg-app-panel-body" data-stage12-followup-panel><div class="mg-empty-state"><p>Loading follow-up rules...</p></div></div></section>
-<section class="mg-app-panel"><div class="mg-app-panel-head"><div><h2>Follow-up queue</h2><p>Monitor queued, due, sent, skipped, failed, and cancelled campaign follow-up jobs.</p></div><div class="mg-heading-actions"><select class="mg-input" data-followup-job-status><option value="all">All statuses</option><option value="queued">Queued</option><option value="failed">Failed</option><option value="sent">Sent</option><option value="skipped">Skipped</option><option value="cancelled">Cancelled</option></select><button class="mg-btn mg-btn-soft" type="button" data-followup-job-refresh>Refresh</button></div></div><div class="mg-app-panel-body" data-stage12-followup-jobs><div class="mg-empty-state"><p>Loading follow-up queue...</p></div></div></section>
-<section class="mg-app-panel"><div class="mg-app-panel-head"><div><h2>Campaign activity</h2><p>Contacts, issued wallet items, claims, redemptions, and event counts.</p></div></div><div class="mg-app-panel-body"><div class="mg-product-list" data-stage12-campaign-list></div></div></section>
-<section class="mg-app-panel"><div class="mg-app-panel-head"><div><h2>Campaign contacts</h2><p>Select a campaign from the activity list and review contacts, reward progress, and follow-up actions.</p></div></div><div class="mg-app-panel-body"><div class="mg-form-status" data-stage12-contact-status>Select a campaign to load contacts.</div><div class="mg-product-list" data-stage12-contact-list></div></div></section>
+<section class="mg-campaign-command" data-campaign-command-center>
+  <div class="mg-campaign-toolbar">
+    <nav class="mg-campaign-tabs" aria-label="Campaign sections">
+      <a class="is-active" href="#campaign-overview">Overview</a>
+      <a href="#campaign-activity">Active</a>
+      <a href="#campaign-builder">Drafts</a>
+      <a href="#campaign-builder">QR Drops</a>
+      <a href="#campaign-builder">Contests</a>
+      <a href="#campaign-builder">Forms</a>
+      <a href="#campaign-performance">Performance</a>
+    </nav>
+    <a class="mg-btn mg-btn-primary" href="#campaign-builder">Create Campaign</a>
+  </div>
+
+  <section class="mg-campaign-kpis" id="campaign-overview" aria-label="Campaign metrics">
+    <article><span>Active campaigns</span><strong data-campaign-kpi-active>—</strong><small>Currently running</small></article>
+    <article><span>Contacts</span><strong data-campaign-kpi-contacts>—</strong><small>Total campaign contacts</small></article>
+    <article><span>Rewards issued</span><strong data-campaign-kpi-issued>—</strong><small>Wallet items issued</small></article>
+    <article><span>Claims</span><strong data-campaign-kpi-claimed>—</strong><small>Claimed rewards</small></article>
+    <article><span>Redemptions</span><strong data-campaign-kpi-redeemed>—</strong><small>Completed redemptions</small></article>
+  </section>
+
+  <div class="mg-campaign-layout">
+    <section class="mg-app-panel mg-campaign-panel mg-campaign-list-panel" id="campaign-activity">
+      <div class="mg-app-panel-head mg-campaign-panel-head">
+        <div>
+          <span class="mg-eyebrow">Campaign Command Center</span>
+          <h2>Campaign activity</h2>
+          <p>Monitor active campaigns, QR drops, contests, forms, issued rewards, claims, redemptions, and email delivery.</p>
+        </div>
+        <div class="mg-heading-actions">
+          <a class="mg-btn mg-btn-soft" href="/merchant-crm.php">View CRM</a>
+          <a class="mg-btn mg-btn-soft" href="/merchant-reward-templates.php">Rewards</a>
+        </div>
+      </div>
+      <div class="mg-app-panel-body">
+        <div class="mg-campaign-list" data-stage12-campaign-list></div>
+      </div>
+    </section>
+
+    <aside class="mg-campaign-side">
+      <section class="mg-app-panel mg-campaign-panel mg-campaign-health" id="campaign-performance">
+        <div class="mg-app-panel-head mg-campaign-panel-head is-compact"><div><h2>Campaign health</h2><p>What needs attention next.</p></div></div>
+        <div class="mg-app-panel-body">
+          <div class="mg-campaign-health-score"><span>Readiness</span><strong data-campaign-health-score>—</strong></div>
+          <div class="mg-campaign-health-list">
+            <p><b></b><span data-campaign-health-primary>Create or activate one campaign to start collecting demand.</span></p>
+            <p><b></b><span data-campaign-health-secondary>Attach reward templates before activating campaigns.</span></p>
+            <p><b></b><span data-campaign-health-tertiary>Use contacts and follow-ups to improve claim volume.</span></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="mg-app-panel mg-campaign-panel mg-campaign-actions">
+        <div class="mg-app-panel-head mg-campaign-panel-head is-compact"><div><h2>Quick actions</h2><p>Common campaign moves.</p></div></div>
+        <div class="mg-app-panel-body">
+          <a href="#campaign-builder">Create QR drop</a>
+          <a href="#campaign-builder">Create contest</a>
+          <a href="#campaign-builder">Create signup form</a>
+          <a href="/merchant-campaign-stamps.php">Review campaign stamps</a>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <section class="mg-app-panel mg-campaign-panel mg-campaign-builder-panel" id="campaign-builder">
+    <div class="mg-app-panel-head mg-campaign-panel-head">
+      <div>
+        <span class="mg-eyebrow">Builder</span>
+        <h2>Campaign builder</h2>
+        <p>Choose the distribution trigger, attach a reward template, and save as draft or active.</p>
+      </div>
+    </div>
+    <div class="mg-app-panel-body">
+      <form class="mg-merchant-form mg-campaign-builder-form" data-stage12-campaign-builder>
+        <input type="hidden" name="campaign_id" value="">
+        <div class="mg-grid-2"><label>Campaign type<select name="campaign_type"><option value="newsletter_signup">Newsletter Signup</option><option value="contest_giveaway">Contest / Giveaway</option><option value="qr_reward_drop">QR Reward Drop</option><option value="referral_reward">Referral Reward</option><option value="birthday_vip">Birthday / VIP</option><option value="agent_offer">Agent Offer</option></select></label><label>Status<select name="status"><option value="draft">Draft</option><option value="active">Active</option><option value="paused">Paused</option><option value="ended">Ended</option><option value="archived">Archived</option></select></label></div>
+        <label>Campaign title<input name="title" placeholder="Join the list and get a reward" required maxlength="180"></label>
+        <label>Reward template<select name="reward_template_id" data-stage12-campaign-template-select><option value="">No template attached yet</option></select></label>
+        <label>Form headline<input name="form_headline" placeholder="Join our rewards list"></label>
+        <label>Description<textarea name="description" placeholder="Explain the campaign and reward."></textarea></label>
+        <div class="mg-grid-2"><label>Quantity limit<input name="quantity_limit" type="number" min="1" placeholder="Unlimited"></label><label>Per-user limit<input name="per_user_limit" type="number" min="1" value="1"></label></div>
+        <label class="mg-campaign-check"><input type="checkbox" name="agent_discoverable" value="1"> <span>Agent-discoverable campaign</span></label>
+        <div class="mg-form-status" data-stage12-campaign-status>Ready to save a campaign.</div>
+        <div class="mg-heading-actions"><button class="mg-btn mg-btn-primary" type="submit" data-stage12-campaign-save>Save campaign</button><button class="mg-btn mg-btn-ghost" type="button" data-stage12-campaign-new>New campaign</button></div>
+      </form>
+    </div>
+  </section>
+
+  <div class="mg-campaign-bottom-grid">
+    <section class="mg-app-panel mg-campaign-panel"><div class="mg-app-panel-head mg-campaign-panel-head"><div><h2>Follow-up messages</h2><p>Create action-based campaign follow-ups by time: 1 hour, 6 hours, 1 day, 15 days, automatic, or custom.</p></div></div><div class="mg-app-panel-body" data-stage12-followup-panel><div class="mg-empty-state"><p>Loading follow-up rules...</p></div></div></section>
+    <section class="mg-app-panel mg-campaign-panel"><div class="mg-app-panel-head mg-campaign-panel-head"><div><h2>Follow-up queue</h2><p>Monitor queued, due, sent, skipped, failed, and cancelled campaign follow-up jobs.</p></div><div class="mg-heading-actions"><select class="mg-input" data-followup-job-status><option value="all">All statuses</option><option value="queued">Queued</option><option value="failed">Failed</option><option value="sent">Sent</option><option value="skipped">Skipped</option><option value="cancelled">Cancelled</option></select><button class="mg-btn mg-btn-soft" type="button" data-followup-job-refresh>Refresh</button></div></div><div class="mg-app-panel-body" data-stage12-followup-jobs><div class="mg-empty-state"><p>Loading follow-up queue...</p></div></div></section>
+  </div>
+
+  <section class="mg-app-panel mg-campaign-panel"><div class="mg-app-panel-head mg-campaign-panel-head"><div><h2>Campaign contacts</h2><p>Select a campaign from the activity list and review contacts, reward progress, and follow-up actions.</p></div></div><div class="mg-app-panel-body"><div class="mg-form-status" data-stage12-contact-status>Select a campaign to load contacts.</div><div class="mg-product-list mg-campaign-contact-list" data-stage12-contact-list></div></div></section>
+</section>
 <script src="/assets/js/stage12-campaigns.js" defer></script>
 <script src="/assets/js/stage12-campaign-followups.js" defer></script>
 <script src="/assets/js/stage12-campaign-contacts.js" defer></script>
