@@ -10,6 +10,7 @@ $script .= '<script src="/assets/js/dave-share-market-credit-reserve.js"></scrip
 $script .= '<script src="/assets/js/dave-share-market-treasury-clarity.js"></script>';
 $script .= '<script src="/assets/js/dave-share-market-launch-readiness.js"></script>';
 $script .= '<script src="/assets/js/dave-share-market-lockbox.js"></script>';
+$script .= '<script src="/assets/js/dave-share-market-operator-checklist.js"></script>';
 
 if (stripos($html, '</body>') !== false) {
     echo str_ireplace('</body>', $script . '</body>', $html);
