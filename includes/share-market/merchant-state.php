@@ -102,17 +102,120 @@ if (!function_exists('mg_share_market_workflow_from_snapshot')) {
     }
 }
 
+if (!function_exists('mg_share_market_review_feedback')) {
+    function mg_share_market_review_feedback(?array $enrollment, ?array $latestSeries, array $workflow): array
+    {
+        $current = (string)($workflow['current'] ?? 'not_enrolled');
+        $enrollmentNote = trim((string)($enrollment['admin_note'] ?? ''));
+        $seriesNote = trim((string)($latestSeries['admin_note'] ?? ''));
+        $latestNote = $seriesNote !== '' ? $seriesNote : $enrollmentNote;
+        $seriesName = trim((string)($latestSeries['name'] ?? 'controlled market series')) ?: 'controlled market series';
+
+        $messages = [
+            'not_enrolled' => ['Request DAVE Share Market review', 'Submit the merchant opt-in request so Microgifter can review participation before any public market activity.'],
+            'review_requested' => ['Waiting for admin review', 'Your merchant opt-in has been submitted. You can prepare draft details, but public launch remains locked.'],
+            'approved' => ['Merchant opt-in approved', 'Your merchant account is approved for the optional DAVE Share Market workflow. Next, reserve credits or create the first controlled series.'],
+            'credits_purchased' => ['Treasury ready', 'Share credits are available. Next, create or submit a controlled market series for review.'],
+            'series_draft' => ['Draft series ready', 'Review the current draft terms, then submit the series for admin review.'],
+            'series_submitted' => ['Series submitted', $seriesName . ' has been submitted. Wait for admin review before any launch activity.'],
+            'changes_requested' => ['Changes requested', 'Admin requested updates to ' . $seriesName . '. Review the note, edit the draft, and resubmit.'],
+            'approved_to_launch' => ['Series approved, launch locked', $seriesName . ' is approved for the next stage, but public activation remains an admin-gated execution step.'],
+            'live' => ['Series live', $seriesName . ' is live. Monitor review notes, ledger state, redemption, and risk controls.'],
+            'paused' => ['Share Market paused', 'Participation or the current series is paused. Review admin notes before taking another action.'],
+            'rejected' => ['Review rejected', 'Review the admin note and use the resubmission path when ready.'],
+            'closed' => ['Participation closed', 'DAVE Share Market participation is closed for this merchant. Normal Microgifter commerce tools are unaffected.'],
+        ];
+        $message = $messages[$current] ?? $messages['not_enrolled'];
+        return [
+            'status' => $current,
+            'title' => $message[0],
+            'body' => $message[1],
+            'latest_note' => $latestNote,
+            'enrollment_note' => $enrollmentNote,
+            'series_note' => $seriesNote,
+            'next_action' => $message[1],
+            'highlight' => in_array($current, ['changes_requested','rejected','paused','closed'], true) ? 'attention' : 'normal',
+        ];
+    }
+}
+
+if (!function_exists('mg_share_market_review_timeline')) {
+    function mg_share_market_review_timeline(PDO $pdo, ?array $enrollment, array $series): array
+    {
+        $items = [];
+        if ($enrollment) {
+            $items[] = [
+                'type' => 'merchant_submission',
+                'label' => 'Merchant opt-in submitted',
+                'state' => (string)($enrollment['status'] ?? 'under_review'),
+                'note' => trim((string)($enrollment['admin_note'] ?? '')),
+                'created_at' => (string)($enrollment['submitted_at'] ?: $enrollment['created_at'] ?: $enrollment['updated_at'] ?: ''),
+                'target_type' => 'enrollment',
+                'target_public_id' => (string)($enrollment['public_id'] ?? $enrollment['participant_id'] ?? ''),
+            ];
+        }
+        foreach ($series as $entry) {
+            if (!is_array($entry)) continue;
+            $items[] = [
+                'type' => 'series_' . (string)($entry['state'] ?? 'draft'),
+                'label' => 'Series ' . ucfirst(str_replace('_', ' ', (string)($entry['state'] ?? 'draft'))),
+                'state' => (string)($entry['state'] ?? 'draft'),
+                'note' => trim((string)($entry['admin_note'] ?? '')),
+                'created_at' => (string)($entry['updated_at'] ?: $entry['created_at'] ?: ''),
+                'target_type' => 'series',
+                'target_public_id' => (string)($entry['public_id'] ?? $entry['series_id'] ?? ''),
+            ];
+        }
+
+        $targetIds = [];
+        if ($enrollment) $targetIds[] = (string)($enrollment['public_id'] ?? $enrollment['participant_id'] ?? '');
+        foreach ($series as $entry) {
+            if (is_array($entry)) $targetIds[] = (string)($entry['public_id'] ?? $entry['series_id'] ?? '');
+        }
+        $targetIds = array_values(array_filter(array_unique($targetIds)));
+        if ($targetIds !== []) {
+            try {
+                $placeholders = implode(',', array_fill(0, count($targetIds), '?'));
+                $stmt = $pdo->prepare('SELECT event_type,target_type,target_public_id,old_state,new_state,note,created_at FROM share_market_admin_events WHERE target_public_id IN (' . $placeholders . ') ORDER BY created_at DESC,id DESC LIMIT 50');
+                $stmt->execute($targetIds);
+                foreach (($stmt->fetchAll(PDO::FETCH_ASSOC) ?: []) as $row) {
+                    $items[] = [
+                        'type' => (string)$row['event_type'],
+                        'label' => ucwords(str_replace(['share_market.sql.','_','.'], ['', ' ', ' '], (string)$row['event_type'])),
+                        'state' => (string)($row['new_state'] ?? ''),
+                        'old_state' => (string)($row['old_state'] ?? ''),
+                        'note' => trim((string)($row['note'] ?? '')),
+                        'created_at' => (string)($row['created_at'] ?? ''),
+                        'target_type' => (string)($row['target_type'] ?? ''),
+                        'target_public_id' => (string)($row['target_public_id'] ?? ''),
+                    ];
+                }
+            } catch (Throwable) {
+                // Timeline stays useful from snapshot data even when the audit table is unavailable.
+            }
+        }
+
+        usort($items, static function (array $a, array $b): int {
+            return strcmp((string)($b['created_at'] ?? ''), (string)($a['created_at'] ?? ''));
+        });
+        return array_slice($items, 0, 12);
+    }
+}
+
 if (!function_exists('mg_share_market_merchant_state')) {
     function mg_share_market_merchant_state(PDO $pdo, int $userId): array
     {
         if (!mg_share_market_sql_schema_available($pdo)) {
             $treasury = mg_share_market_default_treasury();
+            $workflow = mg_share_market_workflow_from_snapshot(null, null, $treasury);
             return [
                 'enrollment' => null,
                 'series' => [],
                 'latest_series' => null,
                 'treasury' => $treasury,
-                'workflow' => mg_share_market_workflow_from_snapshot(null, null, $treasury),
+                'workflow' => $workflow,
+                'review_feedback' => mg_share_market_review_feedback(null, null, $workflow),
+                'review_timeline' => [],
                 'execution_enabled' => false,
                 'storage_mode' => 'share_market_sql_unavailable',
             ];
@@ -123,10 +226,13 @@ if (!function_exists('mg_share_market_merchant_state')) {
         $series = is_array($snapshot['series'] ?? null) ? $snapshot['series'] : [];
         $latestSeries = mg_share_market_latest_series($series);
         $treasury = mg_share_market_fetch_treasury_by_user($pdo, $userId);
+        $workflow = mg_share_market_workflow_from_snapshot($enrollment, $latestSeries, $treasury);
 
         $snapshot['latest_series'] = $latestSeries;
         $snapshot['treasury'] = $treasury;
-        $snapshot['workflow'] = mg_share_market_workflow_from_snapshot($enrollment, $latestSeries, $treasury);
+        $snapshot['workflow'] = $workflow;
+        $snapshot['review_feedback'] = mg_share_market_review_feedback($enrollment, $latestSeries, $workflow);
+        $snapshot['review_timeline'] = mg_share_market_review_timeline($pdo, $enrollment, $series);
         return $snapshot;
     }
 }
