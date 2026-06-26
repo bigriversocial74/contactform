@@ -56,11 +56,12 @@ function mg_queue_sla_recalculate(PDO $pdo, int $actorId, int $limit = 250): arr
          LIMIT ' . max(1, min(500, $limit))
     );
     $stmt->execute();
+    $notes = $stmt->fetchAll(PDO::FETCH_ASSOC);
     $updated = 0;
     $breached = 0;
     $autoEscalated = 0;
     $autoRouted = 0;
-    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $note) {
+    foreach ($notes as $note) {
         $policy = mg_queue_sla_policy((string)$note['priority'], (string)$note['category'], (string)$note['flag_state']);
         $lane = mg_queue_sla_lane((string)$note['category'], (string)$note['flag_state']);
         $base = strtotime((string)($note['created_at'] ?: $note['updated_at']) . ' UTC') ?: time();
@@ -122,7 +123,7 @@ function mg_queue_sla_recalculate(PDO $pdo, int $actorId, int $limit = 250): arr
         $update->execute($params);
         $updated += $update->rowCount();
     }
-    return ['processed' => count($stmt->fetchAll(PDO::FETCH_ASSOC)), 'updated' => $updated, 'breached' => $breached, 'auto_escalated' => $autoEscalated, 'auto_routed' => $autoRouted];
+    return ['processed' => count($notes), 'updated' => $updated, 'breached' => $breached, 'auto_escalated' => $autoEscalated, 'auto_routed' => $autoRouted];
 }
 
 function mg_queue_sla_health(PDO $pdo): array
