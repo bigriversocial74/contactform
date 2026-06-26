@@ -6,7 +6,7 @@ require_once __DIR__.'/includes/app.php';
 $page_title='Merchant Locations | Microgifter';
 $page_section='merchant';
 $header_mode='account';
-$page_styles=['/assets/css/merchant-workspace.css'];
+$page_styles=['/assets/css/merchant-workspace.css','/assets/css/merchant-locations-redemption.css'];
 $page_scripts=['/assets/js/merchant-workspace.js'];
 $merchantView='locations';
 
