@@ -30,6 +30,9 @@ if (($page_body_class ?? '') === 'mg-admin-commerce-page') {
 if ((string) ($page_manifest['id'] ?? '') === 'home') {
     $page_scripts[] = '/assets/js/home-sticky-usa-map.js';
 }
+if ((string) ($page_manifest['id'] ?? '') === 'discover') {
+    $page_scripts[] = '/assets/js/discover-state-results-link.js';
+}
 $core_scripts = [
     '/assets/js/microgifter.js','/assets/js/universal-header.js','/assets/js/header-signals.js','/assets/js/create-menu.js','/assets/js/builder-publish-errors.js','/assets/js/api-client.js','/assets/js/global-post-composer.js','/assets/js/agent-folder-counts.js',
     '/assets/js/agent-global-search.js','/assets/js/customer-commerce.js','/assets/js/cart.js','/assets/js/auth.js',

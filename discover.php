@@ -59,11 +59,73 @@ $discoverStates = [
     '' => 'All states', 'AL' => 'Alabama', 'AK' => 'Alaska', 'AZ' => 'Arizona', 'AR' => 'Arkansas', 'CA' => 'California', 'CO' => 'Colorado', 'CT' => 'Connecticut', 'DE' => 'Delaware', 'FL' => 'Florida', 'GA' => 'Georgia', 'HI' => 'Hawaii', 'ID' => 'Idaho', 'IL' => 'Illinois', 'IN' => 'Indiana', 'IA' => 'Iowa', 'KS' => 'Kansas', 'KY' => 'Kentucky', 'LA' => 'Louisiana', 'ME' => 'Maine', 'MD' => 'Maryland', 'MA' => 'Massachusetts', 'MI' => 'Michigan', 'MN' => 'Minnesota', 'MS' => 'Mississippi', 'MO' => 'Missouri', 'MT' => 'Montana', 'NE' => 'Nebraska', 'NV' => 'Nevada', 'NH' => 'New Hampshire', 'NJ' => 'New Jersey', 'NM' => 'New Mexico', 'NY' => 'New York', 'NC' => 'North Carolina', 'ND' => 'North Dakota', 'OH' => 'Ohio', 'OK' => 'Oklahoma', 'OR' => 'Oregon', 'PA' => 'Pennsylvania', 'RI' => 'Rhode Island', 'SC' => 'South Carolina', 'SD' => 'South Dakota', 'TN' => 'Tennessee', 'TX' => 'Texas', 'UT' => 'Utah', 'VT' => 'Vermont', 'VA' => 'Virginia', 'WA' => 'Washington', 'WV' => 'West Virginia', 'WI' => 'Wisconsin', 'WY' => 'Wyoming', 'DC' => 'Washington DC',
 ];
 
+$discoverStateCounts = array_fill_keys(array_keys($discoverStates), 0);
+$discoverStateLookup = [];
+foreach ($discoverStates as $abbr => $name) {
+    if ($abbr === '') {
+        continue;
+    }
+    $normalizedName = strtolower(trim(preg_replace('/[^a-z0-9]+/i', ' ', $name) ?? ''));
+    $discoverStateLookup[strtolower($abbr)] = $abbr;
+    $discoverStateLookup[$normalizedName] = $abbr;
+}
+$discoverStateLookup['district of columbia'] = 'DC';
+$discoverStateLookup['washington d c'] = 'DC';
+$discoverStateLookup['washington dc'] = 'DC';
+
+if (!function_exists('mg_discover_state_key')) {
+    function mg_discover_state_key(string $region, array $states, array $lookup): string
+    {
+        $region = trim($region);
+        if ($region === '') {
+            return '';
+        }
+
+        $abbr = strtoupper(preg_replace('/[^a-z]/i', '', $region) ?? '');
+        if (strlen($abbr) === 2 && isset($states[$abbr])) {
+            return $abbr;
+        }
+
+        $normalized = strtolower(trim(preg_replace('/[^a-z0-9]+/i', ' ', $region) ?? ''));
+        return (string)($lookup[$normalized] ?? '');
+    }
+}
+
+try {
+    $stateMerchantIndex = [];
+    $allMerchantIndex = [];
+    $stmt = mg_db()->query("\n        SELECT DISTINCT ml.workspace_id, ml.region\n        FROM merchant_locations ml\n        INNER JOIN merchant_workspaces mw ON mw.id = ml.workspace_id\n        WHERE ml.country_code = 'US'\n          AND ml.status = 'active'\n          AND mw.status NOT IN ('suspended','archived')\n          AND ml.region IS NOT NULL\n          AND TRIM(ml.region) <> ''\n    ");
+
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $workspaceId = (string)($row['workspace_id'] ?? '');
+        $stateKey = mg_discover_state_key((string)($row['region'] ?? ''), $discoverStates, $discoverStateLookup);
+        if ($workspaceId === '' || $stateKey === '') {
+            continue;
+        }
+        $stateMerchantIndex[$stateKey][$workspaceId] = true;
+        $allMerchantIndex[$workspaceId] = true;
+    }
+
+    foreach ($stateMerchantIndex as $stateKey => $merchantIds) {
+        if (array_key_exists($stateKey, $discoverStateCounts)) {
+            $discoverStateCounts[$stateKey] = count($merchantIds);
+        }
+    }
+    $discoverStateCounts[''] = count($allMerchantIndex);
+} catch (Throwable $error) {
+    if (function_exists('mg_security_log')) {
+        mg_security_log('warning', 'profile.discovery.state_counts_failed', 'Unable to load discovery state merchant counts.', [
+            'exception_class' => $error::class,
+        ]);
+    }
+}
+
 require __DIR__ . '/includes/header.php';
 ?>
 
 <style>
 :root{--discover-dark:#071225;--discover-muted:#64748b;--discover-border:#dbe5f1;--discover-soft:#f8fafc;--discover-purple:#7c3aed;--discover-teal:#20bfd2;--discover-green:#24d680}body.mg-discovery-page .mg-cart-trigger,body.mg-discovery-page .mg-header-cart,body.mg-discovery-page [data-mg-cart-trigger],body.mg-discovery-page [data-header-cart],body.mg-discovery-page .mg-cart-control{display:none!important}.mg-discovery-shell{min-height:100vh;background:radial-gradient(circle at 88% 8%,rgba(237,233,254,.54),transparent 30%),radial-gradient(circle at 12% 18%,rgba(220,252,231,.34),transparent 26%),linear-gradient(180deg,#fff,#f8fafc 72%,#fff);color:var(--discover-dark)}.mg-discovery-content{position:relative;overflow:hidden;padding:0 0 96px}.mg-discovery-content:before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.42;background:linear-gradient(90deg,rgba(15,23,42,.035) 1px,transparent 1px),linear-gradient(0deg,rgba(15,23,42,.035) 1px,transparent 1px);background-size:72px 72px}.mg-discovery-content>*{position:relative;z-index:1}.mg-discovery-layout.mg-container{width:100%!important;max-width:none!important;margin:0!important;padding:0!important}.mg-discovery-layout{display:grid!important;grid-template-columns:20% 80%!important;gap:0!important;align-items:start!important;width:100%!important}.mg-discovery-sidebar{position:sticky!important;top:42px!important;display:grid;gap:18px;width:100%!important;max-width:100%!important;padding:0!important;overflow:hidden!important;z-index:2!important}.mg-discovery-filter-panel,.mg-discovery-main-panel{border:1px solid var(--discover-border);background:rgba(255,255,255,.92);box-shadow:0 24px 70px rgba(15,23,42,.08);backdrop-filter:blur(14px)}.mg-discovery-filter-panel{width:100%!important;max-width:100%!important;border-radius:0!important;border-left:0!important;border-top:0!important;box-shadow:none!important;background:rgba(255,255,255,.96)!important;overflow:hidden!important}.mg-discovery-filter-panel h1,.mg-discovery-filter-panel h2{margin:0;color:var(--discover-dark);letter-spacing:-.045em}.mg-discovery-filter-panel h1{font-size:clamp(24px,1.8vw,31px)!important;line-height:1.05!important}.mg-discovery-filter-panel p{max-width:100%!important;margin:10px 0 0;color:var(--discover-muted);font-size:13px!important;line-height:1.45!important}.mg-discovery-sidebar-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.mg-discovery-sidebar-title span{color:#64748b;font-size:11px;font-weight:950;letter-spacing:.12em;text-transform:uppercase}.mg-discovery-sidebar-title strong{color:var(--discover-dark);font-size:16px;font-weight:950}.mg-discovery-search{display:grid;grid-template-columns:1fr!important;gap:12px;margin-top:0;width:100%!important}.mg-discovery-search label{display:grid;gap:7px;min-width:0!important;max-width:100%!important;color:#071225;font-size:12px;font-weight:900}.mg-discovery-search input,.mg-discovery-search select{width:100%;min-width:0!important;max-width:100%!important;min-height:44px;border:1px solid var(--discover-border);border-radius:14px;background:#fff;color:#071225;font:inherit;font-size:13px;font-weight:760;padding:0 14px;outline:none}.mg-discovery-search input:focus,.mg-discovery-search select:focus{border-color:rgba(124,58,237,.55);box-shadow:0 0 0 4px rgba(124,58,237,.10)}.mg-discovery-filter-actions{display:grid;grid-template-columns:1fr!important;gap:10px}.mg-discovery-filter-actions .mg-btn{width:100%;justify-content:center}.mg-discovery-chip-list{display:grid;gap:8px;max-height:420px;overflow:auto;padding-right:4px}.mg-discovery-chip{width:100%;min-width:0!important;max-width:100%!important;min-height:39px;display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid #e2e8f0;border-radius:14px;background:#fff;color:#0f172a;cursor:pointer;font-size:13px;font-weight:850;padding:0 12px;text-align:left}.mg-discovery-chip span{color:#94a3b8;font-size:11px;font-weight:950;letter-spacing:.08em}.mg-discovery-chip:hover,.mg-discovery-chip.is-active{border-color:rgba(124,58,237,.42);background:linear-gradient(135deg,rgba(124,58,237,.08),rgba(32,191,210,.08))}.mg-discovery-main-panel{width:100%!important;max-width:none!important;min-height:620px;padding:38px 42px 64px!important;border:0!important;border-left:1px solid rgba(219,229,241,.9)!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;backdrop-filter:none!important;overflow:visible!important;z-index:1!important}.mg-discovery-main-header,.mg-discovery-section[aria-labelledby="discovery-results-title"] .mg-discovery-heading{display:none!important}.mg-discovery-status{display:none!important;margin:0!important;padding:0!important;border:0!important;height:0!important;min-height:0!important;overflow:hidden!important}.mg-discovery-card-grid{width:100%!important;display:grid;grid-template-columns:repeat(3,minmax(240px,1fr))!important;gap:26px!important}.mg-discovery-card{overflow:hidden;min-width:0!important;min-height:300px;display:flex;flex-direction:column;border:1px solid var(--discover-border);border-radius:24px;background:#fff;box-shadow:0 20px 54px rgba(15,23,42,.08);transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease}.mg-discovery-card:hover{transform:translateY(-3px);border-color:rgba(124,58,237,.28);box-shadow:0 30px 70px rgba(15,23,42,.12)}.mg-discovery-card.is-skeleton{min-height:260px;background:linear-gradient(90deg,rgba(226,232,240,.65),rgba(248,250,252,.92),rgba(226,232,240,.65));background-size:220% 100%;animation:mgDiscoverSkeleton 1.4s linear infinite}@keyframes mgDiscoverSkeleton{from{background-position:0 0}to{background-position:-220% 0}}.mg-discovery-card-top{display:flex;align-items:center;gap:14px;padding:22px 22px 8px}.mg-discovery-avatar,.mg-profile-avatar,[data-profile-avatar]{flex:0 0 auto;width:64px;height:64px;display:grid;place-items:center;overflow:hidden;border:4px solid #fff;border-radius:999px;background:linear-gradient(135deg,#ede9fe,#cffafe);color:#071225;font-weight:950;box-shadow:0 10px 26px rgba(15,23,42,.16)}.mg-discovery-avatar img,.mg-profile-avatar img,[data-profile-avatar] img{width:100%;height:100%;display:block;object-fit:cover}.mg-discovery-card h3{margin:0;color:#071225;font-size:18px;line-height:1.1;letter-spacing:-.035em}.mg-discovery-card h3 a{color:inherit;text-decoration:none}.mg-discovery-type{display:inline-flex;margin-top:6px;color:#7c3aed;font-size:11px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}.mg-discovery-headline{min-height:48px;margin:12px 22px 0;color:#334155;font-size:14px;line-height:1.45}.mg-discovery-meta{display:flex;flex-wrap:wrap;gap:8px;margin:16px 22px 0}.mg-discovery-meta span{display:inline-flex;align-items:center;min-height:28px;padding:0 10px;border-radius:999px;background:#f1f5f9;color:#475569;font-size:11px;font-weight:900}.mg-discovery-counts{display:flex;flex-wrap:wrap;gap:10px;margin:18px 22px 0;color:#64748b;font-size:12px;font-weight:800}.mg-discovery-counts strong{color:#071225}.mg-discovery-market-counts{margin-top:12px;padding-top:12px;border-top:1px solid rgba(226,232,240,.9)}.mg-discovery-market-counts span:first-child{color:#7c3aed}.mg-discovery-open{margin:22px;margin-top:auto;align-self:flex-start}.mg-discovery-message{max-width:580px;padding:34px;border:1px solid var(--discover-border);border-radius:24px;background:#fff;box-shadow:0 20px 54px rgba(15,23,42,.08)}.mg-discovery-message h2{margin:0;color:#071225;font-size:28px;letter-spacing:-.04em}.mg-discovery-message p{margin:12px 0 0;color:#64748b}[data-featured-section],[data-storefront-section],[data-recent-section],[data-discovery-pagination]{display:none!important}.mg-discovery-section[aria-labelledby="discovery-results-title"]{display:block!important}.mg-discovery-tabs{display:flex;width:100%;border-bottom:1px solid var(--discover-border);background:#fff}.mg-discovery-tab{flex:1 1 0;min-height:52px;border:0;border-right:1px solid var(--discover-border);background:#f8fafc;color:#64748b;cursor:pointer;font-size:12px;font-weight:950;letter-spacing:.09em;text-transform:uppercase}.mg-discovery-tab:last-child{border-right:0}.mg-discovery-tab.is-active{background:#fff;color:#071225}.mg-discovery-tab-panel{display:none;padding:22px}.mg-discovery-tab-panel.is-active{display:block}@media(max-width:1180px){.mg-discovery-layout{grid-template-columns:260px minmax(0,1fr)!important}.mg-discovery-card-grid{grid-template-columns:repeat(2,minmax(240px,1fr))!important}}@media(max-width:860px){.mg-discovery-layout{grid-template-columns:1fr!important}.mg-discovery-sidebar{position:relative!important;top:auto!important}.mg-discovery-filter-panel{border-right:0!important}.mg-discovery-main-panel{border-left:0!important;padding:24px 20px 54px!important}.mg-discovery-card-grid{grid-template-columns:1fr!important}}@media(max-width:680px){.mg-discovery-filter-actions{grid-template-columns:1fr}.mg-discovery-main-panel{padding:20px;border-radius:22px}}
+body.mg-discovery-page .mg-discovery-state-count{min-width:24px;text-align:right;color:#475569!important;font-variant-numeric:tabular-nums!important;letter-spacing:.02em!important}
 </style>
 
 <main class="mg-discovery-shell" data-profile-discovery>
@@ -94,7 +156,11 @@ require __DIR__ . '/includes/header.php';
             <div class="mg-discovery-sidebar-title"><div><span>Browse by</span><strong>State</strong></div></div>
             <div class="mg-discovery-chip-list" data-discover-state-list>
               <?php foreach ($discoverStates as $abbr => $name): ?>
-                <button class="mg-discovery-chip" type="button" data-discover-state="<?= mg_e($abbr) ?>"><?= mg_e($name) ?><span><?= mg_e($abbr === '' ? 'ALL' : $abbr) ?></span></button>
+                <?php
+                  $merchantCount = (int)($discoverStateCounts[$abbr] ?? 0);
+                  $merchantCountLabel = number_format($merchantCount) . ' ' . ($merchantCount === 1 ? 'merchant' : 'merchants');
+                ?>
+                <button class="mg-discovery-chip" type="button" data-discover-state="<?= mg_e($abbr) ?>" data-discover-merchant-count="<?= mg_e((string)$merchantCount) ?>" title="<?= mg_e($merchantCountLabel) ?>" aria-label="<?= mg_e($name . ', ' . $merchantCountLabel) ?>"><?= mg_e($name) ?><span class="mg-discovery-state-count" aria-hidden="true"><?= mg_e(number_format($merchantCount)) ?></span></button>
               <?php endforeach; ?>
             </div>
           </div>
