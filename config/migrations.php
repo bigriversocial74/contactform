@@ -111,6 +111,7 @@ return [
         'stage_18u_admin_resolution_reporting.sql',
         'stage_18v_admin_queue_automation.sql',
         'stage_18w_admin_operations_command.sql',
+        'stage_18x_admin_ops_incidents.sql',
         'stage_19_ai_provider_models.sql',
         'stage_19b_ai_permission_guard.sql',
         'stage_19_merchant_market_snapshots.sql',
