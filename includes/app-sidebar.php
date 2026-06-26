@@ -20,26 +20,28 @@ $appSidebarSearchName = trim((string) ($appSidebarSearchName ?? 'q'));
 $appSidebarSearchDataAttr = trim((string) ($appSidebarSearchDataAttr ?? ''));
 $appSidebarSearchSelectHtml = (string) ($appSidebarSearchSelectHtml ?? '');
 $appSidebarTools = (string) ($appSidebarTools ?? '');
+$appSidebarCompact = (bool) ($appSidebarCompact ?? true);
 
 if (!$appSidebarNav) {
     $appSidebarNav = [
-        'account' => ['label' => 'Account', 'detail' => 'Profile and access', 'href' => '/account.php', 'visible' => true],
+        'account' => ['section' => 'Overview', 'label' => 'Account', 'detail' => 'Profile and access', 'href' => '/account.php', 'visible' => true],
         'wallet' => ['label' => 'Wallet', 'detail' => 'Rewards and balance', 'href' => '/wallet.php', 'visible' => true],
-        'merchant' => ['label' => 'Merchant', 'detail' => 'Business workspace', 'href' => '/merchant.php', 'visible' => true],
+        'merchant' => ['section' => 'Commerce', 'label' => 'Merchant', 'detail' => 'Business workspace', 'href' => '/merchant.php', 'visible' => true],
         'messages' => ['label' => 'Messages', 'detail' => 'Gift conversations', 'href' => '/messages.php', 'visible' => true],
-        'feed' => ['label' => 'Feed', 'detail' => 'Public activity', 'href' => '/feed.php', 'visible' => true],
+        'feed' => ['section' => 'Community', 'label' => 'Feed', 'detail' => 'Public activity', 'href' => '/feed.php', 'visible' => true],
     ];
     if (($can_sales_crm ?? false) === true) {
-        $appSidebarNav['sales-crm'] = ['label' => 'Sales CRM', 'detail' => 'Leads and pipeline', 'href' => '/sales-crm.php', 'visible' => true];
+        $appSidebarNav['sales-crm'] = ['section' => 'CRM', 'label' => 'Sales CRM', 'detail' => 'Leads and pipeline', 'href' => '/sales-crm.php', 'visible' => true];
     }
     if (($can_admin_dashboard ?? false) === true) {
-        $appSidebarNav['admin'] = ['label' => 'Admin', 'detail' => 'Platform controls', 'href' => '/account-admin.php', 'visible' => true];
+        $appSidebarNav['admin'] = ['section' => 'Admin', 'label' => 'Admin', 'detail' => 'Platform controls', 'href' => '/account-admin.php', 'visible' => true];
     }
 }
 
 $currentPath = '/' . ltrim((string) ($_SERVER['SCRIPT_NAME'] ?? ''), '/');
+$lastSection = null;
 ?>
-<aside class="mg-app-sidebar mg-universal-sidebar mg-<?= mg_e($appSidebarVariant) ?>-sidebar" data-app-sidebar data-sidebar-variant="<?= mg_e($appSidebarVariant) ?>">
+<aside class="mg-app-sidebar mg-universal-sidebar mg-<?= mg_e($appSidebarVariant) ?>-sidebar <?= $appSidebarCompact ? 'is-text-sidebar' : '' ?>" data-app-sidebar data-sidebar-variant="<?= mg_e($appSidebarVariant) ?>">
   <div class="mg-app-sidebar-brand mg-universal-sidebar-brand">
     <a class="mg-brand mg-sidebar-logo" href="/index.php" aria-label="Microgifter home"><img src="/images/logo_main_drk.png" alt="Microgifter"><span class="mg-sidebar-logo-text">Microgifter</span></a>
     <?php if ($appSidebarTools !== ''): ?>
@@ -69,6 +71,11 @@ $currentPath = '/' . ltrim((string) ($_SERVER['SCRIPT_NAME'] ?? ''), '/');
       <?php
         if (isset($item['visible']) && !$item['visible']) {
             continue;
+        }
+        $section = trim((string) ($item['section'] ?? ''));
+        if ($section !== '' && $section !== $lastSection) {
+            echo '<span class="mg-side-nav-section">' . mg_e($section) . '</span>';
+            $lastSection = $section;
         }
         $href = (string) ($item['href'] ?? '#');
         $isActive = (bool) ($item['active'] ?? false)
