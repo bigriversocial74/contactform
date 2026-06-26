@@ -91,8 +91,11 @@ function mg_admin_dashboard_read(PDO $pdo,array $user,array $options=[]): array
 
     $days=mg_admin_dashboard_window_days($options['window_days']??null);
     $cutoff=gmdate('Y-m-d H:i:s',time()-($days*86400));
-    $required=['users','public_profiles','user_model_assignments','merchant_storefronts','catalog_products','feed_posts','commerce_orders','payment_refunds','payment_disputes','subscriptions','tips','microgift_instances','microgift_claims','microgift_redemptions','operational_alerts','security_logs','audit_logs','user_sessions','demand_signal_orchestrations','operational_incidents','deployment_releases','operational_check_results','profile_moderation_cases','profile_moderation_actions','profile_moderation_appeals','admin_queue_notifications','admin_user_notes'];
+    $required=['users','public_profiles','user_model_assignments','merchant_storefronts','catalog_products','feed_posts','commerce_orders','payment_refunds','payment_disputes','subscriptions','tips','microgift_instances','microgift_claims','microgift_redemptions','operational_alerts','security_logs','audit_logs','user_sessions','demand_signal_orchestrations','operational_incidents','deployment_releases','operational_check_results','profile_moderation_cases','profile_moderation_actions','profile_moderation_appeals'];
     $tables=mg_admin_dashboard_existing_tables($pdo);
+    $noteTableStmt=$pdo->prepare('SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME IN (?,?)');
+    $noteTableStmt->execute(['admin_queue_notifications','admin_user_notes']);
+    foreach($noteTableStmt->fetchAll(PDO::FETCH_ASSOC) as $row){$tables[(string)$row['TABLE_NAME']]=true;}
     $missing=array_values(array_diff($required,array_keys($tables)));
 
     $platform=($access['users']||$access['models']||$access['moderation'])?mg_admin_dashboard_platform($pdo,$tables,$cutoff,$access['moderation']):null;
