@@ -31,12 +31,11 @@ window.Microgifter = window.Microgifter || {};
   function createDrawer() {
     if (document.querySelector('[data-cart-drawer]')) return;
     var drawer = document.createElement('div');
-    var shell = document.querySelector('.mg-app-shell');
-    drawer.className = 'mg-cart-drawer' + (shell ? ' is-contained' : '');
+    drawer.className = 'mg-cart-drawer is-contained';
     drawer.dataset.cartDrawer = '';
     drawer.setAttribute('aria-hidden', 'true');
     drawer.innerHTML = '<div class="mg-cart-backdrop" data-cart-close></div><aside class="mg-cart-drawer-panel" role="dialog" aria-modal="true" aria-label="Shopping cart"><header class="mg-cart-drawer-top"><h2>Shopping cart</h2><button class="mg-cart-close" type="button" data-cart-close aria-label="Close shopping cart">×</button></header><div class="mg-cart-drawer-body"><section class="mg-cart-panel" data-cart-panel><header class="mg-cart-panel-head"><div><span class="mg-cart-eyebrow">Server cart</span><h2>Your gifts</h2></div><span class="mg-cart-count-label"><strong data-cart-count>0</strong> items</span></header><div class="mg-cart-items" data-cart-drawer-items></div><div class="mg-cart-empty" data-cart-empty><div class="mg-cart-empty-icon" aria-hidden="true">🛒</div><strong>Your cart is empty</strong><p>Add a published product and it will appear here.</p></div><footer class="mg-cart-summary" data-cart-summary hidden><div><span>Subtotal</span><strong data-cart-subtotal>$0.00</strong></div><p>Taxes and payment are finalized through secure checkout.</p><a class="mg-btn mg-btn-primary" href="/cart.php">Review cart</a><button class="mg-btn mg-btn-ghost" type="button" data-cart-clear>Clear cart</button></footer></section></div></aside>';
-    (shell || document.body).appendChild(drawer);
+    document.body.appendChild(drawer);
   }
   function renderBadges(cart) {
     var total = Number(cart.totals.unit_count || 0);
