@@ -54,6 +54,12 @@ $adminNav = [
         'href' => '/admin/roles.php',
         'visible' => $canRoles,
     ],
+    'support-queue' => [
+        'label' => 'Follow-up queue',
+        'detail' => 'Notes and assignments',
+        'href' => '/admin/support-queue.php',
+        'visible' => $canAdminPage('admin.support_queue'),
+    ],
     'pending-models' => [
         'label' => 'Pending models',
         'detail' => 'Model approval queue',
