@@ -9,7 +9,7 @@ $page_title = 'DAVE Share Market Review Console | Microgifter';
 $page_section = 'account';
 $header_mode = 'account';
 $page_styles = ['/assets/css/admin-dashboard.css'];
-$page_scripts = ['/assets/js/account.js', '/assets/js/share-market-readiness-dashboard-admin.js', '/assets/js/share-market-program-review-console.js', '/assets/js/share-market-credit-reserve-admin.js', '/assets/js/share-market-launch-readiness-admin.js', '/assets/js/share-market-approval-queue.js', '/assets/js/share-market-execution-prep.js'];
+$page_scripts = ['/assets/js/account.js', '/assets/js/share-market-readiness-digest-admin.js', '/assets/js/share-market-readiness-dashboard-admin.js', '/assets/js/share-market-program-review-console.js', '/assets/js/share-market-credit-reserve-admin.js', '/assets/js/share-market-launch-readiness-admin.js', '/assets/js/share-market-approval-queue.js', '/assets/js/share-market-execution-prep.js'];
 
 require __DIR__ . '/includes/header.php';
 ?>
