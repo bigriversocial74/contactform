@@ -43,6 +43,7 @@ if ($accountView === 'admin' || $accountView === 'share_market_admin' || $accoun
   $page_styles[] = '/assets/css/admin-dashboard.css';
   if ($accountView === 'investment_tests') $page_styles[] = '/assets/css/investment-tests.css';
   if ($accountView === 'admin') $page_scripts[] = '/assets/js/admin-dashboard.js';
+  if ($accountView === 'share_market_admin') $page_scripts[] = '/assets/js/share-market-admin.js';
 }
 $user = mg_current_user();
 $roles = is_array($user['roles'] ?? null) ? $user['roles'] : [];
@@ -67,7 +68,7 @@ $adminPermissionSet = [
   'merchant.payments.view', 'subscriptions.admin', 'microgift.operations.view', 'tips.reverse', 'share_market.admin',
 ];
 $hasAdminAccess = $isSuperAdmin || count(array_intersect($adminPermissionSet, $permissions)) > 0;
-$canShareMarketAdmin = $hasAdminAccess || in_array('share_market.admin', $permissions, true) || $isSuperAdmin;
+$canShareMarketAdmin = in_array('share_market.admin', $permissions, true) || $isSuperAdmin;
 $accountNav = [
   'profile' => ['label' => 'Profile', 'href' => '/account.php', 'detail' => 'Public identity', 'visible' => true],
   'market' => ['label' => 'Market', 'href' => '/account-market.php', 'detail' => 'Ticker, score, funnel, and risk', 'visible' => true],
@@ -170,8 +171,9 @@ require __DIR__ . '/includes/header.php';
       <section class="mg-app-panel mg-account-pane is-active"><div class="mg-app-panel-head"><div><h2>Marketplace Index access is not active.</h2><p>This account does not have permission to view marketplace value and movement.</p></div></div><div class="mg-app-panel-body"><a class="mg-btn mg-btn-ghost" href="/account-admin.php">Back to admin</a></div></section>
     <?php elseif ($accountView === 'share_market_admin' && $canShareMarketAdmin): ?>
       <?php require __DIR__ . '/includes/account/share-market-admin.php'; ?>
+      <?php require __DIR__ . '/includes/account/share-market-admin-workflow.php'; ?>
     <?php elseif ($accountView === 'share_market_admin'): ?>
-      <section class="mg-app-panel mg-account-pane is-active"><div class="mg-app-panel-head"><div><h2>Share Market Admin access is not active.</h2><p>This account does not have permission to control platform share pools, credits, series, risk, or ledger events.</p></div></div><div class="mg-app-panel-body"><a class="mg-btn mg-btn-ghost" href="/account-admin.php">Back to admin</a></div></section>
+      <section class="mg-app-panel mg-account-pane is-active"><div class="mg-app-panel-head"><div><h2>Share Market Admin access is not active.</h2><p>This account requires the explicit share_market.admin permission or the super_admin role.</p></div></div><div class="mg-app-panel-body"><a class="mg-btn mg-btn-ghost" href="/account-admin.php">Back to admin</a></div></section>
     <?php elseif ($hasAdminAccess): ?>
       <?php require __DIR__ . '/includes/account/admin-dashboard.php'; ?>
     <?php else: ?>
