@@ -256,9 +256,23 @@ async function loadTeam(){
     var list=root.querySelector('[data-team-list]');
     var form=root.querySelector('[data-team-form]');
     if(!list||!form)return;
+    function updateTeamMetrics(items){
+        items=items||[];
+        var active=items.filter(function(x){return x.status==='active';}).length;
+        var pending=items.filter(function(x){return x.status==='invited'||x.status==='pending';}).length;
+        var redemption=items.filter(function(x){return x.role_key==='claims_staff'||x.role_key==='location_staff';}).length;
+        var admin=items.filter(function(x){return x.role_key==='admin';}).length;
+        var gaps=pending+(redemption?0:1);
+        setText('[data-team-kpi-active]',active.toLocaleString());
+        setText('[data-team-kpi-pending]',pending.toLocaleString());
+        setText('[data-team-kpi-redemption]',redemption.toLocaleString());
+        setText('[data-team-kpi-admin]',admin.toLocaleString());
+        setText('[data-team-kpi-gaps]',gaps.toLocaleString());
+    }
     async function refresh(){
         var r=await Microgifter.get('/api/merchant/team.php');
         var items=(r.data||r).members||[];
+        updateTeamMetrics(items);
         list.innerHTML=items.map(function(x){
             return'<div class="mg-team-card"><span><strong>'+esc(x.display_name||'Invited member')+'</strong><span>'+esc(title(x.role_key))+'</span></span><span class="mg-card-meta"><em>'+esc(x.status)+'</em></span></div>';
         }).join('')||'<div class="mg-empty-state"><p>No team members found.</p></div>';
