@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_user_management.php';
+require_once __DIR__ . '/_queue_alerts.php';
 
 $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 $actor = mg_require_api_user();
@@ -150,17 +151,22 @@ function mg_admin_queue_list(PDO $pdo, array $filters): array
         ] : null,
     ], $stmt->fetchAll(PDO::FETCH_ASSOC));
 
-    $summary = $pdo->query('SELECT COUNT(*) total, SUM(status <> "resolved") active_total, SUM(status = "escalated") escalated_total, SUM(flag_state IN ("flagged","review")) review_total, SUM(due_at IS NOT NULL AND due_at < NOW() AND status <> "resolved") overdue_total FROM admin_user_notes')->fetch(PDO::FETCH_ASSOC) ?: [];
+    $alerts = mg_queue_alert_summary($pdo, (int)($filters['actor_id'] ?? 0));
     return [
         'items' => $items,
         'summary' => [
-            'total' => (int)($summary['total'] ?? 0),
-            'active_total' => (int)($summary['active_total'] ?? 0),
-            'escalated_total' => (int)($summary['escalated_total'] ?? 0),
-            'review_total' => (int)($summary['review_total'] ?? 0),
-            'overdue_total' => (int)($summary['overdue_total'] ?? 0),
+            'total' => $alerts['total'],
+            'active_total' => $alerts['active_total'],
+            'escalated_total' => $alerts['escalated_total'],
+            'review_total' => $alerts['review_total'],
+            'overdue_total' => $alerts['overdue_total'],
+            'due_today_total' => $alerts['due_today_total'],
+            'due_soon_total' => $alerts['due_soon_total'],
+            'assigned_to_me_total' => $alerts['assigned_to_me_total'],
+            'header_badge_total' => $alerts['header_badge_total'],
             'score' => ['section' => 'Support queue', 'score' => 10, 'max' => 10, 'status' => 'cleared'],
         ],
+        'alerts' => $alerts,
     ];
 }
 
@@ -189,10 +195,44 @@ function mg_admin_queue_action_updates(PDO $pdo, array $actor, array $input): ar
     return [$action, $updates, $params];
 }
 
+function mg_admin_queue_notice_for_action(PDO $pdo, int $noteDbId, string $notePublicId, string $action, int $actorId, string $reason): void
+{
+    $map = [
+        'assign_self' => ['assigned','info','Queue item assigned','A follow-up queue item was assigned.'],
+        'assign_user' => ['assigned','info','Queue item assigned','A follow-up queue item was assigned.'],
+        'escalate' => ['escalated','critical','Queue item escalated','A follow-up queue item was escalated.'],
+        'reopen' => ['reopened','warning','Queue item reopened','A follow-up queue item was reopened.'],
+        'flag_review' => ['review_flag','warning','Review flag added','A follow-up queue item was marked for review.'],
+        'flag_user' => ['review_flag','warning','Queue item flagged','A follow-up queue item was flagged.'],
+    ];
+    if (!isset($map[$action])) {
+        return;
+    }
+    $stmt = $pdo->prepare('SELECT target_user_id, assigned_admin_user_id FROM admin_user_notes WHERE id = ? LIMIT 1');
+    $stmt->execute([$noteDbId]);
+    $note = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$note) {
+        return;
+    }
+    [$type, $severity, $title, $message] = $map[$action];
+    mg_queue_notice_create($pdo, [
+        'note_id' => $noteDbId,
+        'target_user_id' => (int)$note['target_user_id'],
+        'assigned_admin_user_id' => $note['assigned_admin_user_id'] !== null ? (int)$note['assigned_admin_user_id'] : null,
+        'actor_user_id' => $actorId,
+        'notification_type' => $type,
+        'severity' => $severity,
+        'title' => $title,
+        'message' => $message,
+        'metadata' => ['note_public_id' => $notePublicId, 'action' => $action, 'reason' => $reason],
+    ]);
+}
+
 try {
     if ($method === 'GET') {
         mg_rate_limit('admin.support_queue.read', 'user:' . $actorId, 180, 60);
         mg_admin_queue_require($actor, 'admin.support_queue.view');
+        mg_queue_seed_due_notices($pdo, $actorId);
         $payload = mg_admin_queue_list($pdo, $_GET + ['actor_id' => $actorId]);
         header('Cache-Control: private, no-store, max-age=0');
         header('Vary: Cookie, Authorization');
@@ -218,6 +258,7 @@ try {
         $params[] = (int)$note['id'];
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
+        mg_admin_queue_notice_for_action($pdo, (int)$note['id'], $noteId, $action, $actorId, $reason);
         $metadata = [
             'note_id' => $noteId,
             'target_user_id' => (int)$note['target_user_id'],
