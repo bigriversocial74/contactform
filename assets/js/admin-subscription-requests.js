@@ -1,0 +1,1 @@
+window.Microgifter = window.Microgifter || {};
