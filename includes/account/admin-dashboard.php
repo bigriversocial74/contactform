@@ -9,11 +9,12 @@ declare(strict_types=1);
    'admin.merchants.view' 'admin.catalog.view' data-admin-shortcuts */
 ?>
 <link rel="stylesheet" href="/assets/css/admin-queue-reporting.css">
+<link rel="stylesheet" href="/assets/css/admin-queue-automation.css">
 <section class="mg-app-panel mg-account-pane is-active mg-admin-dashboard" data-account-pane="admin" data-admin-dashboard>
   <div class="mg-app-panel-head mg-section-head">
     <div>
       <h2>Admin control center</h2>
-      <p>Permission-aware platform, commerce, security, notification, reporting, and operational visibility from the canonical backend services.</p>
+      <p>Permission-aware platform, commerce, security, notification, automation, reporting, and operational visibility from the canonical backend services.</p>
     </div>
     <div class="mg-admin-toolbar">
       <label>Window
@@ -45,6 +46,10 @@ declare(strict_types=1);
       <section class="mg-admin-section is-wide">
         <header class="mg-admin-section-head"><div><h3>Notification center</h3><p>Unread alerts, overdue queue items, escalations, assigned work, and review flags.</p></div></header>
         <div class="mg-admin-section-body" data-admin-notifications><p class="mg-muted">Loading notification metrics…</p></div>
+      </section>
+
+      <section class="mg-admin-section is-wide mg-queue-auto-dashboard">
+        <div class="mg-queue-auto-panel" data-queue-automation-panel><p class="mg-muted">Loading queue automation…</p></div>
       </section>
 
       <section class="mg-admin-section is-wide mg-queue-report-dashboard">
@@ -89,3 +94,4 @@ declare(strict_types=1);
   </div>
 </section>
 <script defer src="/assets/js/admin-queue-reporting.js"></script>
+<script defer src="/assets/js/admin-queue-automation.js"></script>
