@@ -22,6 +22,7 @@ $canRoles = mg_admin_permission_user_has($adminMatrixUser, 'admin.roles.manage')
 $canPendingModels = $canAdminPage('admin.pending_models');
 $canMerchantCatalog = $canAdminPage('admin.merchant_catalog');
 $canCommerce = mg_admin_commerce_user_can_read_any($adminMatrixUser);
+$canSubscriptionRequests = mg_admin_permission_user_has($adminMatrixUser, 'subscriptions.admin');
 $canModeration = $canAdminPage('admin.moderation');
 $canNotifications = $canAdminPage('admin.notifications');
 $canOperationsCommand = $canAdminPage('admin.operations_command');
@@ -94,6 +95,12 @@ $adminNav = [
         'detail' => 'Orders and lifecycle',
         'href' => '/commerce-operations.php',
         'visible' => $canCommerce,
+    ],
+    'subscription-requests' => [
+        'label' => 'Subscription requests',
+        'detail' => 'Package upgrades',
+        'href' => '/admin/subscription-requests.php',
+        'visible' => $canSubscriptionRequests,
     ],
     'package-moderation' => [
         'label' => 'Package moderation',
