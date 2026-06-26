@@ -189,6 +189,7 @@ $can_admin_dashboard = $user && (
 <link rel="stylesheet" href="/assets/css/app-fixes.css">
 <link rel="stylesheet" href="/assets/css/app-mobile-unified.css">
 <link rel="stylesheet" href="/assets/css/mobile-sidebar-layering-fix.css">
+<link rel="stylesheet" href="/assets/css/cart-drawer-layering-fix.css">
 <?php endif; ?>
 <style>
 @media (max-width: 760px){
