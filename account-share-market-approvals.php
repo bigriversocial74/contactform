@@ -22,6 +22,7 @@ require __DIR__ . '/includes/header.php';
       <a href="/account-admin.php"><strong>Admin dashboard</strong><span>Platform overview</span></a>
       <a href="/account-share-market-admin.php"><strong>Share Market Admin</strong><span>Pool and action controls</span></a>
       <a class="is-active" href="/account-share-market-approvals.php"><strong>Approval Queue</strong><span>Maker-checker review</span></a>
+      <a href="/account-share-market-execution-audit.php"><strong>Audit Review</strong><span>Evidence and preflight records</span></a>
       <a href="/account-marketplace.php"><strong>Marketplace Index</strong><span>Aggregate value and movement</span></a>
     </nav>
   </aside>
