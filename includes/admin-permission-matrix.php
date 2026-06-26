@@ -10,6 +10,7 @@ function mg_admin_permission_matrix(): array
             'admin.pending_models' => ['admin.users.view'],
             'admin.merchant_catalog' => ['admin.merchants.view', 'admin.catalog.view'],
             'admin.commerce' => ['admin.commerce.view'],
+            'admin.subscription_requests' => ['subscriptions.admin'],
             'admin.payments' => ['admin.settings.manage'],
             'admin.moderation' => ['social.moderate', 'admin.profiles.moderation.view', 'admin.profiles.moderation.manage'],
             'admin.sessions' => ['admin.sessions.view'],
