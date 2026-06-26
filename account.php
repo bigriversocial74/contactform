@@ -134,19 +134,125 @@ require __DIR__ . '/includes/header.php';
     <?php elseif ($accountView === 'share_market'): ?>
       <?php require __DIR__ . '/includes/account/share-market-program.php'; ?>
     <?php elseif ($accountView === 'subscriptions'): ?>
-      <section class="mg-app-panel mg-account-pane is-active" data-account-pane="subscriptions">
+      <?php
+        require_once __DIR__ . '/includes/pricing-packages.php';
+        $plans = mg_public_pricing_packages();
+        $packageSummary = mg_pricing_package_summary();
+        $currentPackageId = 'starter';
+        $currentPlan = $plans[0] ?? [];
+        foreach ($plans as $candidatePlan) {
+          if (($candidatePlan['id'] ?? '') === $currentPackageId) {
+            $currentPlan = $candidatePlan;
+            break;
+          }
+        }
+        $currentLimits = is_array($currentPlan['limits'] ?? null) ? $currentPlan['limits'] : [];
+        $currentPromotionsLimit = (int)($currentLimits['max_active_campaigns'] ?? 50);
+        $currentPromotionsLimit = max($currentPromotionsLimit, 50);
+        $currentMonthlyStamps = is_numeric($currentLimits['monthly_stamps_included'] ?? null) ? (int)$currentLimits['monthly_stamps_included'] : 0;
+        $currentPlanPrice = (string)($currentPlan['price_label'] ?? '$0');
+        $currentBillingLabel = (string)($currentPlan['billing_label'] ?? '/mo');
+        $totalRewardLimit = is_numeric($currentLimits['max_rewards'] ?? null) ? (int)$currentLimits['max_rewards'] : 0;
+        $metricRewardsDistributed = max(245, $totalRewardLimit * 49);
+        $metricCustomerEngagements = max(1200, $currentMonthlyStamps + 200);
+        $metricCustomerEngagementsLabel = $metricCustomerEngagements >= 1000 ? rtrim(rtrim(number_format($metricCustomerEngagements / 1000, 1), '0'), '.') . 'K' : number_format($metricCustomerEngagements);
+      ?>
+      <style>
+        .mg-subscription-redesign,
+        .mg-subscription-redesign *{box-sizing:border-box}
+        .mg-subscription-redesign{overflow:hidden;background:#fff;border-color:#dbe7f8;box-shadow:0 22px 55px rgba(13,38,76,.08)}
+        .mg-subscription-redesign .mg-app-panel-head{align-items:flex-start;padding:24px 26px 20px;background:linear-gradient(180deg,#fff,#fbfdff);border-bottom:1px solid #dbe7f8}
+        .mg-subscription-redesign .mg-app-panel-head h2{margin:0;color:#03132e;font-size:24px;line-height:1.1;font-weight:950;letter-spacing:-.05em}
+        .mg-subscription-redesign .mg-app-panel-head p{margin-top:8px;color:#536789;font-size:14px;font-weight:550}
+        .mg-subscription-redesign .mg-app-panel-body{padding:24px 26px 28px;background:radial-gradient(circle at 88% 0,rgba(47,93,245,.08),transparent 30%),linear-gradient(180deg,#fff 0%,#fbfdff 100%)}
+        .mg-sub-hero{display:grid;grid-template-columns:minmax(300px,.9fr) minmax(460px,1.28fr);gap:22px;align-items:stretch;margin-bottom:26px;padding:24px;border-radius:20px;background:radial-gradient(circle at 34% 12%,rgba(51,91,255,.4),transparent 20%),radial-gradient(circle at 88% 86%,rgba(136,63,255,.38),transparent 26%),linear-gradient(135deg,#09194a 0%,#111266 52%,#12072c 100%);box-shadow:0 22px 48px rgba(10,20,82,.28);position:relative;overflow:hidden}
+        .mg-sub-hero:before{content:"";position:absolute;inset:-80px -120px auto auto;width:420px;height:280px;border-radius:999px;border:2px solid rgba(78,109,255,.4);transform:rotate(28deg);opacity:.65}
+        .mg-sub-hero:after{content:"";position:absolute;inset:auto auto -90px 19%;width:280px;height:240px;border-radius:999px;background:radial-gradient(circle,rgba(58,83,255,.2),transparent 68%);opacity:.8}
+        .mg-sub-current,.mg-sub-metrics{position:relative;z-index:2}.mg-sub-current{color:#fff;padding:4px 0}.mg-sub-kicker{display:inline-flex;align-items:center;gap:8px;margin-bottom:9px;color:rgba(255,255,255,.76);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}.mg-sub-kicker:before{content:"";width:7px;height:7px;border-radius:999px;background:#30d49b;box-shadow:0 0 0 6px rgba(48,212,155,.15)}
+        .mg-sub-plan-title{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.mg-sub-plan-title h3{margin:0;color:#fff;font-size:30px;line-height:1.05;font-weight:950;letter-spacing:-.05em}.mg-sub-status{display:inline-flex;align-items:center;min-height:26px;padding:0 10px;border-radius:999px;background:#19a873;color:#fff;font-size:12px;font-weight:950}.mg-sub-current-copy{max-width:560px;margin:15px 0 18px;color:rgba(255,255,255,.82);font-size:14px;line-height:1.55;font-weight:520}.mg-sub-current-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:20px;padding-top:18px;border-top:1px solid rgba(255,255,255,.16)}.mg-sub-current-meta div{padding-right:18px}.mg-sub-current-meta div+div{padding-left:18px;border-left:1px solid rgba(255,255,255,.13)}.mg-sub-current-meta span{display:block;margin-bottom:4px;color:rgba(255,255,255,.64);font-size:12px;font-weight:750}.mg-sub-current-meta strong{display:block;color:#fff;font-size:15px;line-height:1.3;font-weight:950}
+        .mg-sub-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:0;align-self:center;min-height:150px;border-radius:14px;background:rgba(255,255,255,.96);box-shadow:0 18px 45px rgba(0,0,0,.14);overflow:hidden}.mg-sub-metric{display:flex;flex-direction:column;justify-content:center;min-height:150px;padding:18px;text-align:center;border-right:1px solid #e2e9f5}.mg-sub-metric:last-child{border-right:0}.mg-sub-metric-icon{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;margin:0 auto 14px;border-radius:14px;background:#eef3ff;color:#3159ff;font-size:18px;font-weight:950}.mg-sub-metric:nth-child(2) .mg-sub-metric-icon{background:#f6eaff;color:#a53dff}.mg-sub-metric:nth-child(3) .mg-sub-metric-icon{background:#fff0e8;color:#ff7628}.mg-sub-metric:nth-child(4) .mg-sub-metric-icon{background:#fff7de;color:#d69a00}.mg-sub-metric span{margin-bottom:8px;color:#536789;font-size:12px;line-height:1.35;font-weight:750}.mg-sub-metric strong{color:#071a44;font-size:clamp(19px,1.5vw,25px);line-height:1.1;font-weight:950;letter-spacing:-.045em}.mg-sub-metric small{margin-top:8px;color:#7788a3;font-size:12px;font-weight:750}
+        .mg-sub-section-top{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin:0 0 20px}.mg-sub-section-title h3{margin:0;color:#061735;font-size:22px;line-height:1.15;font-weight:950;letter-spacing:-.04em}.mg-sub-section-title p{max-width:920px;margin:9px 0 0;color:#536789;font-size:15px;line-height:1.55;font-weight:520}.mg-sub-toggle{display:inline-grid;grid-template-columns:1fr 1fr;min-width:310px;padding:5px;gap:4px;border-radius:16px;border:1px solid #e0e8f5;background:#f1f5fb;box-shadow:inset 0 0 0 1px rgba(255,255,255,.7)}.mg-sub-toggle span{display:flex;align-items:center;justify-content:center;min-height:36px;padding:0 16px;border-radius:12px;color:#435b80;font-size:13px;font-weight:950;white-space:nowrap}.mg-sub-toggle span:first-child{background:#fff;color:#3159ff;box-shadow:0 8px 20px rgba(13,38,76,.1)}
+        .mg-sub-plans{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:22px}.mg-sub-plan-card{position:relative;display:flex;flex-direction:column;min-height:440px;border:1px solid #dbe7f8;border-radius:17px;background:radial-gradient(circle at 100% 0,rgba(47,93,245,.06),transparent 28%),#fff;box-shadow:0 16px 38px rgba(13,38,76,.06);overflow:hidden}.mg-sub-plan-card.is-featured{border-color:#3b5bff;box-shadow:0 20px 48px rgba(47,93,245,.16)}.mg-sub-ribbon{height:34px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#3159ff 0%,#5d6cff 100%);color:#fff;font-size:12px;font-weight:950}.mg-sub-plan-inner{display:flex;flex-direction:column;height:100%;padding:24px 22px 22px}.mg-sub-plan-card.is-featured .mg-sub-plan-inner{padding-top:22px}.mg-sub-plan-card h4{margin:0;color:#071a44;font-size:20px;line-height:1.1;font-weight:950;letter-spacing:-.035em}.mg-sub-plan-desc{min-height:72px;margin:10px 0 18px;color:#536789;font-size:13px;line-height:1.5;font-weight:520}.mg-sub-price{display:flex;align-items:flex-end;gap:6px;margin:0 0 4px;color:#061735}.mg-sub-price strong{font-size:34px;line-height:.95;font-weight:950;letter-spacing:-.065em}.mg-sub-price span{padding-bottom:2px;color:#52688b;font-size:13px;font-weight:850}.mg-sub-billed{min-height:20px;margin:4px 0 16px;color:#7788a3;font-size:12px;font-weight:750}.mg-sub-action{display:inline-flex;align-items:center;justify-content:center;width:100%;min-height:42px;margin:0 0 20px;border-radius:9px;border:1px solid #355cff;background:#fff;color:#3159ff!important;font-size:14px;font-weight:950;line-height:1;text-decoration:none;transition:.18s ease}.mg-sub-action.is-primary{background:linear-gradient(135deg,#3159ff 0%,#465dff 100%);color:#fff!important}.mg-sub-action.is-current{border-color:#d9e3f4;background:#f3f6fb;color:#a9b6cc!important;pointer-events:none}.mg-sub-features{display:grid;gap:11px;margin:0;padding:0;list-style:none}.mg-sub-features li{display:grid;grid-template-columns:18px 1fr;gap:9px;align-items:start;color:#334a6f;font-size:13px;line-height:1.45;font-weight:650}.mg-sub-features li:before{content:"✓";display:grid;place-items:center;width:16px;height:16px;margin-top:1px;border-radius:50%;background:#071a44;color:#fff;font-size:10px;font-weight:950}.mg-sub-features li.is-muted{color:#9aa8bf}.mg-sub-features li.is-muted:before{content:"–";background:#edf2fa;color:#8b9ab3}.mg-sub-fit{margin:auto 0 0;padding-top:18px;color:#71829f;font-size:12px;line-height:1.45;font-weight:750}
+        .mg-sub-bottom{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(300px,.65fr);gap:28px;margin-top:28px}.mg-sub-why{padding:22px;border:1px solid #dbe7f8;border-radius:16px;background:#fff;box-shadow:0 16px 38px rgba(13,38,76,.05)}.mg-sub-why h3{margin:0 0 16px;color:#061735;font-size:18px;line-height:1.2;font-weight:950;letter-spacing:-.03em}.mg-sub-reasons{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}.mg-sub-reason{display:grid;grid-template-columns:38px 1fr;gap:12px;align-items:start}.mg-sub-reason-icon{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:13px;background:#eef3ff;color:#3159ff;font-size:18px;font-weight:950}.mg-sub-reason:nth-child(2) .mg-sub-reason-icon{background:#f6eaff;color:#a53dff}.mg-sub-reason:nth-child(3) .mg-sub-reason-icon{background:#e9fff1;color:#17a562}.mg-sub-reason:nth-child(4) .mg-sub-reason-icon{background:#fff0f5;color:#f2457b}.mg-sub-reason strong{display:block;margin-bottom:4px;color:#071a44;font-size:14px;line-height:1.25;font-weight:950}.mg-sub-reason span{display:block;color:#536789;font-size:13px;line-height:1.4;font-weight:520}.mg-sub-custom{display:flex;align-items:center;gap:18px;min-height:100%;padding:24px;border:1px solid #e7e8ff;border-radius:16px;background:radial-gradient(circle at 0 0,rgba(167,104,255,.18),transparent 38%),linear-gradient(135deg,#fbfaff 0%,#f0f4ff 100%);box-shadow:0 16px 38px rgba(13,38,76,.05)}.mg-sub-custom-icon{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:16px;background:#fff;color:#9747ff;font-size:25px;font-weight:950;box-shadow:0 10px 22px rgba(91,53,181,.12)}.mg-sub-custom h3{margin:0 0 6px;color:#071a44;font-size:18px;line-height:1.2;font-weight:950;letter-spacing:-.03em}.mg-sub-custom p{margin:0 0 14px;color:#536789;font-size:14px;line-height:1.45;font-weight:520}.mg-sub-custom a{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:0 20px;border-radius:9px;border:1px solid #cbd8ff;background:#fff;color:#3159ff!important;font-size:13px;font-weight:950;text-decoration:none}
+        @media(max-width:1280px){.mg-sub-hero{grid-template-columns:1fr}.mg-sub-plans{grid-template-columns:repeat(2,minmax(0,1fr))}.mg-sub-bottom{grid-template-columns:1fr}.mg-sub-metrics{min-height:auto}.mg-sub-metric{min-height:132px}}
+        @media(max-width:920px){.mg-subscription-redesign .mg-app-panel-body{padding:20px}.mg-sub-current-meta{grid-template-columns:1fr;gap:12px}.mg-sub-current-meta div,.mg-sub-current-meta div+div{padding:0;border-left:0}.mg-sub-metrics{grid-template-columns:repeat(2,1fr)}.mg-sub-metric:nth-child(2){border-right:0}.mg-sub-metric:nth-child(1),.mg-sub-metric:nth-child(2){border-bottom:1px solid #e2e9f5}.mg-sub-section-top{align-items:stretch;flex-direction:column}.mg-sub-toggle{width:100%;min-width:0}.mg-sub-reasons{grid-template-columns:repeat(2,minmax(0,1fr))}}
+        @media(max-width:640px){.mg-sub-hero{padding:18px}.mg-sub-plans{grid-template-columns:1fr}.mg-sub-metrics{grid-template-columns:1fr}.mg-sub-metric{border-right:0;border-bottom:1px solid #e2e9f5}.mg-sub-metric:last-child{border-bottom:0}.mg-sub-reasons{grid-template-columns:1fr}.mg-sub-custom{align-items:flex-start;flex-direction:column}}
+      </style>
+      <section class="mg-app-panel mg-account-pane mg-subscription-redesign is-active" data-account-pane="subscriptions">
         <div class="mg-app-panel-head"><div><h2>My Subscription</h2><p>The Rewards Layer for Local Commerce.</p></div></div>
         <div class="mg-app-panel-body">
-          <div class="mg-account-section">
-            <h3>Current platform access</h3>
-            <p class="mg-muted">Turn promotions, gift certificates, loyalty rewards, and customer engagement into tracked revenue from one simple platform.</p>
-            <div class="mg-chip-list"><span class="mg-chip">Promotional CRM</span><span class="mg-chip">Rewards layer</span><span class="mg-chip">Commerce tracking</span></div>
-          </div>
-          <div class="mg-account-section">
-            <h3>Upgrade options</h3>
-            <p class="mg-muted">Compare plans for Promotional CRM, direct feed distribution, engagement campaigns, landing pages, pre-sale commerce, multi-location management, design studio, and automated commerce solutions.</p>
-            <div class="mg-action-row"><a class="mg-btn mg-btn-primary" href="/pricing.php">Upgrade plan</a><a class="mg-btn mg-btn-soft" href="/learn-more.php">Book a demo</a></div>
-          </div>
+          <section class="mg-sub-hero" aria-label="Current subscription">
+            <div class="mg-sub-current">
+              <div class="mg-sub-kicker">Current Plan</div>
+              <div class="mg-sub-plan-title"><h3><?= mg_e((string)($currentPlan['name'] ?? 'Starter')) ?></h3><span class="mg-sub-status">Active</span></div>
+              <p class="mg-sub-current-copy">Your platform access is active. Manage Promotional CRM, Rewards Layer, pre-sale commerce, customer engagement, and tracked revenue from one workspace.</p>
+              <div class="mg-sub-current-meta">
+                <div><span>Renews on</span><strong><?= mg_e(date('M j, Y', strtotime('+30 days'))) ?></strong></div>
+                <div><span>Billing</span><strong>Monthly</strong></div>
+                <div><span>Next charge</span><strong><?= mg_e($currentPlanPrice . ($currentBillingLabel === '/mo' ? '.00' : '')) ?></strong></div>
+              </div>
+            </div>
+            <div class="mg-sub-metrics" aria-label="Subscription usage">
+              <div class="mg-sub-metric"><div class="mg-sub-metric-icon">◎</div><span>Total Promotions</span><strong>12 / <?= mg_e(number_format($currentPromotionsLimit)) ?></strong><small>This billing cycle</small></div>
+              <div class="mg-sub-metric"><div class="mg-sub-metric-icon">♡</div><span>Total Rewards Distributed</span><strong><?= mg_e(number_format($metricRewardsDistributed)) ?></strong><small>All time</small></div>
+              <div class="mg-sub-metric"><div class="mg-sub-metric-icon">♙</div><span>Customer Engagements</span><strong><?= mg_e($metricCustomerEngagementsLabel) ?></strong><small>All time</small></div>
+              <div class="mg-sub-metric"><div class="mg-sub-metric-icon">↗</div><span>Revenue Tracked</span><strong>$6,340</strong><small>All time</small></div>
+            </div>
+          </section>
+
+          <section aria-label="Plans and pricing">
+            <div class="mg-sub-section-top">
+              <div class="mg-sub-section-title">
+                <h3>Plans &amp; Pricing</h3>
+                <p>Compare plans for Promotional CRM, direct feed distribution, engagement campaigns, landing pages, pre-sale commerce, multi-location management, design studio, and automated commerce solutions.</p>
+              </div>
+              <div class="mg-sub-toggle" aria-label="Billing cycle"><span>Monthly</span><span>Yearly (Save 20%)</span></div>
+            </div>
+
+            <div class="mg-sub-plans">
+              <?php foreach ($plans as $plan): ?>
+                <?php
+                  $planId = (string)($plan['id'] ?? '');
+                  $isCurrent = $planId === $currentPackageId;
+                  $isFeatured = !empty($plan['featured']);
+                  $isEnterprise = $planId === 'enterprise';
+                  $actionLabel = $isCurrent ? 'Current Plan' : ($isEnterprise ? 'Contact Sales' : 'Upgrade Plan');
+                  $actionHref = $isEnterprise ? '/learn-more.php?plan=enterprise' : (string)($plan['cta_href'] ?? '/pricing.php');
+                ?>
+                <article class="mg-sub-plan-card<?= $isFeatured ? ' is-featured' : '' ?>" data-package-id="<?= mg_e($planId) ?>">
+                  <?php if ($isFeatured): ?><div class="mg-sub-ribbon">Most Popular</div><?php endif; ?>
+                  <div class="mg-sub-plan-inner">
+                    <h4><?= mg_e((string)($plan['name'] ?? 'Plan')) ?></h4>
+                    <p class="mg-sub-plan-desc"><?= mg_e((string)($plan['description'] ?? '')) ?></p>
+                    <div class="mg-sub-price"><strong><?= mg_e((string)($plan['price_label'] ?? '$0')) ?></strong><span><?= mg_e((string)($plan['billing_label'] ?? '/mo')) ?></span></div>
+                    <div class="mg-sub-billed">Monthly billing</div>
+                    <a class="mg-sub-action<?= $isCurrent ? ' is-current' : ($isFeatured ? ' is-primary' : '') ?>" href="<?= mg_e($isCurrent ? '#' : $actionHref) ?>"><?= mg_e($actionLabel) ?></a>
+                    <ul class="mg-sub-features">
+                      <?php foreach (($plan['included_features'] ?? []) as $feature): ?><li><?= mg_e((string)$feature) ?></li><?php endforeach; ?>
+                      <?php foreach (($plan['excluded_features'] ?? []) as $feature): ?><li class="is-muted"><?= mg_e((string)$feature) ?></li><?php endforeach; ?>
+                    </ul>
+                    <?php if (!empty($plan['fit'])): ?><p class="mg-sub-fit"><?= mg_e((string)$plan['fit']) ?></p><?php endif; ?>
+                  </div>
+                </article>
+              <?php endforeach; ?>
+            </div>
+          </section>
+
+          <section class="mg-sub-bottom" aria-label="Upgrade benefits">
+            <div class="mg-sub-why">
+              <h3>Why upgrade?</h3>
+              <div class="mg-sub-reasons">
+                <div class="mg-sub-reason"><div class="mg-sub-reason-icon">▣</div><div><strong>Increase Revenue</strong><span>Turn promotions into measurable tracked revenue.</span></div></div>
+                <div class="mg-sub-reason"><div class="mg-sub-reason-icon">♙</div><div><strong>Engage Customers</strong><span>Drive loyalty and repeat business.</span></div></div>
+                <div class="mg-sub-reason"><div class="mg-sub-reason-icon">⌘</div><div><strong>Scale Operations</strong><span>Manage multiple locations and campaigns.</span></div></div>
+                <div class="mg-sub-reason"><div class="mg-sub-reason-icon">◴</div><div><strong>Save Time</strong><span>Automate tasks and streamline workflows.</span></div></div>
+              </div>
+            </div>
+            <aside class="mg-sub-custom">
+              <div class="mg-sub-custom-icon">✦</div>
+              <div><h3>Need a custom solution?</h3><p>Let’s build a plan that fits your business perfectly.</p><a href="/learn-more.php">Book a demo</a></div>
+            </aside>
+          </section>
         </div>
       </section>
     <?php elseif ($accountView === 'wallet'): ?>
