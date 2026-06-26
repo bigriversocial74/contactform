@@ -102,6 +102,7 @@ return [
         'stage_18l2_admin_commerce_permission_split.sql',
         'stage_18m_admin_merchant_catalog_operations.sql',
         'stage_18n_admin_user_notes.sql',
+        'stage_18o_admin_queue_notes.sql',
         'stage_19_ai_provider_models.sql',
         'stage_19b_ai_permission_guard.sql',
         'stage_19_merchant_market_snapshots.sql',
