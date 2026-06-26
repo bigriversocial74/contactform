@@ -114,6 +114,7 @@ return [
         'stage_18x_admin_ops_incidents.sql',
         'stage_18y_admin_incident_reviews.sql',
         'stage_18z_admin_incident_analytics.sql',
+        'stage_18aa_admin_predictive_ops.sql',
         'stage_19_ai_provider_models.sql',
         'stage_19b_ai_permission_guard.sql',
         'stage_19_merchant_market_snapshots.sql',
