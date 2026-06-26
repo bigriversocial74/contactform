@@ -10,11 +10,21 @@ require_once __DIR__ . '/db.php';
 require_once dirname(__DIR__) . '/includes/user_models.php';
 require_once __DIR__ . '/security.php';
 
-mg_apply_api_security_headers();
+if (!function_exists('mg_is_direct_api_request')) {
+    function mg_is_direct_api_request(?string $scriptName = null): bool
+    {
+        $scriptName = str_replace('\\', '/', $scriptName ?? (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+        return preg_match('#(?:^|/)api(?:/|$)#', $scriptName) === 1;
+    }
+}
 
-if (strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET')) === 'OPTIONS') {
-    http_response_code(204);
-    exit;
+if (mg_is_direct_api_request()) {
+    mg_apply_api_security_headers();
+
+    if (strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET')) === 'OPTIONS') {
+        http_response_code(204);
+        exit;
+    }
 }
 
 function mg_require_method(string $method): void
