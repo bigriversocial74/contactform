@@ -112,6 +112,7 @@ return [
         'stage_19_merchant_market_snapshots.sql',
         'stage_20_buy_in_share_market.sql',
         'stage_21_buy_in_execution_audit_scaffolding.sql',
+        'stage_22_buy_in_evidence_candidates.sql',
         'stage_v1_release_trigger_portability.sql',
     ],
 
