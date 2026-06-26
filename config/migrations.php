@@ -121,6 +121,7 @@ return [
         'stage_21_buy_in_execution_audit_scaffolding.sql',
         'stage_22_buy_in_evidence_candidates.sql',
         'stage_23_buy_in_final_reviewer_acknowledgements.sql',
+        'stage_24_buy_in_handoff_archives.sql',
         'stage_v1_release_trigger_portability.sql',
     ],
 
