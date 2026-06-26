@@ -18,6 +18,7 @@ function mg_admin_permission_matrix(): array
             'admin.system_health' => ['admin.health.view'],
             'admin.lifecycle_health' => ['admin.health.view'],
             'admin.ops_queue' => ['ops.alerts.assign', 'ops.alerts.resolve'],
+            'admin.support_queue' => ['admin.support_queue.view', 'admin.user_notes.view', 'admin.users.manage'],
             'admin.settings' => ['admin.settings.manage'],
             'admin.ai' => ['admin.settings.manage'],
         ],
@@ -42,6 +43,8 @@ function mg_admin_permission_matrix(): array
         ],
         'aliases' => [
             'admin.security_logs.view' => ['security.logs.view'],
+            'admin.support_queue.view' => ['admin.user_notes.view', 'admin.users.manage'],
+            'admin.support_queue.manage' => ['admin.user_notes.manage', 'admin.users.manage'],
             'admin.commerce.orders.view' => ['admin.commerce.view', 'merchant.payments.view'],
             'admin.commerce.refunds.view' => ['admin.commerce.view', 'merchant.payments.view'],
             'admin.commerce.disputes.view' => ['admin.commerce.view', 'merchant.payments.view'],
