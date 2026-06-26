@@ -19,5 +19,21 @@ CREATE TABLE IF NOT EXISTS admin_ops_incident_reviews (
   UNIQUE KEY uq_admin_ops_incident_reviews_public_id (public_id),
   UNIQUE KEY uq_admin_ops_incident_reviews_incident (incident_id),
   KEY idx_admin_ops_incident_reviews_status_due (status,followup_due_at),
-  CONSTRAINT fk_admin_ops_incident_reviews_incident FOREIGN KEY (incident_id) REFERENCES admin_ops_incidents(id) ON DELETE CASCADE
+  KEY idx_admin_ops_incident_reviews_owner_due (followup_owner_user_id,followup_due_at),
+  CONSTRAINT fk_admin_ops_incident_reviews_incident FOREIGN KEY (incident_id) REFERENCES admin_ops_incidents(id) ON DELETE CASCADE,
+  CONSTRAINT fk_admin_ops_incident_reviews_owner FOREIGN KEY (followup_owner_user_id) REFERENCES users(id) ON DELETE SET NULL,
+  CONSTRAINT fk_admin_ops_incident_reviews_completed_by FOREIGN KEY (completed_by_user_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE admin_queue_notifications
+  MODIFY notification_type ENUM('assigned','overdue','due_soon','escalated','reopened','review_flag','digest','auto_routed','sla_breach','auto_escalated','workload_balance','playbook_applied','template_used','checklist_completed','case_comment','case_comment_pinned','timeline_viewed','automation_summary','automation_failed','quality_review','incident_declared','incident_updated','incident_resolved','incident_review_required','incident_review_completed','incident_review_followup_due') NOT NULL;
+
+INSERT IGNORE INTO permissions (slug,name,description,created_at) VALUES
+('admin.operations_reviews.view','View admin incident reviews','View incident timelines, structured reviews, action items, and follow-up status.',NOW()),
+('admin.operations_reviews.manage','Manage admin incident reviews','Create and complete incident reviews and follow-up action items.',NOW());
+
+INSERT IGNORE INTO role_permissions (role_id,permission_id,created_at)
+SELECT r.id,p.id,NOW()
+FROM roles r
+JOIN permissions p ON p.slug IN ('admin.operations_reviews.view','admin.operations_reviews.manage')
+WHERE r.slug IN ('admin','super_admin');
