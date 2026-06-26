@@ -24,6 +24,7 @@ $canMerchantCatalog = $canAdminPage('admin.merchant_catalog');
 $canCommerce = mg_admin_commerce_user_can_read_any($adminMatrixUser);
 $canModeration = $canAdminPage('admin.moderation');
 $canNotifications = $canAdminPage('admin.notifications');
+$canOperationsCommand = $canAdminPage('admin.operations_command');
 $canPackageModeration = $canCommerce;
 $canStampHealth = $canCommerce;
 $canHealth = $canAdminPage('admin.system_health');
@@ -42,6 +43,13 @@ $adminNav = [
         'detail' => 'Platform overview',
         'href' => '/account-admin.php',
         'visible' => true,
+    ],
+    'operations-command' => [
+        'label' => 'Command center',
+        'detail' => 'Mission control',
+        'href' => '/admin/operations-command.php',
+        'visible' => $canOperationsCommand,
+        'badge' => 'ops_command',
     ],
     'users' => [
         'label' => 'User center',
@@ -190,7 +198,7 @@ $adminNav = [
   fetch('/api/admin/notifications.php?limit=10',{credentials:'same-origin',headers:{Accept:'application/json'}}).then(function(response){return response.json();}).then(function(payload){
     if(!payload||!payload.ok||!payload.data||!payload.data.summary)return;
     var summary=payload.data.summary;
-    var counts={notifications:summary.unread_total||0,support_queue:summary.urgent_unread_total||0};
+    var counts={notifications:summary.unread_total||0,support_queue:summary.urgent_unread_total||0,ops_command:summary.urgent_unread_total||0};
     nodes.forEach(function(node){var value=Number(counts[node.getAttribute('data-admin-nav-count')]||0);node.textContent=value>99?'99+':String(value);node.hidden=value<=0;});
   }).catch(function(){});
 })();

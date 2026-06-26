@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 /* Canonical admin navigation targets now render in the left sidebar:
-   /admin/users.php /admin/pending-models.php /merchant-catalog-operations.php /commerce-operations.php
+   /admin/operations-command.php /admin/users.php /admin/pending-models.php /merchant-catalog-operations.php /commerce-operations.php
    /admin/notifications.php /admin/moderation.php /admin/audit-logs.php /admin/security-logs.php /admin/sessions.php
    /admin/system-health.php /admin/lifecycle-health.php /admin/ops-queue.php /admin-ai.php /admin-payments.php
    /account-profile-moderation.php
@@ -14,9 +14,10 @@ declare(strict_types=1);
   <div class="mg-app-panel-head mg-section-head">
     <div>
       <h2>Admin control center</h2>
-      <p>Permission-aware platform, commerce, security, notification, automation, reporting, and operational visibility from the canonical backend services.</p>
+      <p>Permission-aware platform, commerce, security, notification, automation, reporting, command center, and operational visibility from the canonical backend services.</p>
     </div>
     <div class="mg-admin-toolbar">
+      <a class="mg-btn mg-btn-soft" href="/admin/operations-command.php">Command center</a>
       <label>Window
         <select data-admin-window aria-label="Admin dashboard reporting window">
           <option value="7">7 days</option>
@@ -33,6 +34,11 @@ declare(strict_types=1);
     <div class="mg-admin-metric-grid" data-admin-overview><p class="mg-muted">Loading dashboard overview…</p></div>
 
     <div class="mg-admin-section-grid">
+      <section class="mg-admin-section is-wide">
+        <header class="mg-admin-section-head"><div><h3>Operations command center</h3><p>Mission control for queue health, automation, reporting, notifications, workload, critical work, and action routing.</p></div><a class="mg-btn mg-btn-soft" href="/admin/operations-command.php">Open command center</a></header>
+        <div class="mg-admin-section-body"><p class="mg-muted">Central entry point for admin operations.</p></div>
+      </section>
+
       <section class="mg-admin-section is-wide">
         <header class="mg-admin-section-head"><div><h3>Platform foundation</h3><p>Users, profiles, model approvals, storefronts, products, and posts.</p></div></header>
         <div class="mg-admin-section-body" data-admin-platform><p class="mg-muted">Loading platform metrics…</p></div>
