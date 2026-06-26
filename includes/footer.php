@@ -62,6 +62,7 @@ $can_intelligence = $user && (in_array('intelligence.dashboard.view', $user_perm
         <h2>Platform</h2>
         <a href="/discover.php">Explore</a>
         <a href="/pricing.php">Pricing</a>
+        <a href="/investors.php">Investors</a>
         <a href="/developer-docs.php">Developer Docs</a>
         <a href="/learn-more.php">Book A Demo</a>
         <a href="/campaign.php">Campaigns</a>
@@ -102,6 +103,7 @@ $can_intelligence = $user && (in_array('intelligence.dashboard.view', $user_perm
       <div class="mg-footer-bottom-links" aria-label="Footer utility links">
         <a href="/index.php">Home</a>
         <a href="/pricing.php">Pricing</a>
+        <a href="/investors.php">Investors</a>
         <a href="/developer-docs.php">Docs</a>
         <a href="/signin.php">Sign In</a>
       </div>
