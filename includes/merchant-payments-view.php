@@ -75,7 +75,7 @@
     <div class="mg-app-panel-head mg-payments-panel-head">
       <div>
         <span class="mg-eyebrow">Checkout Settings</span>
-        <h2>Test payment methods</h2>
+        <h2>Pay with cash</h2>
         <p>Allow this merchant to use a cash payment option during local testing. Cash payments are marked for manual collection and do not create Stripe charges.</p>
         <div class="mg-form-status" data-payment-methods-status></div>
       </div>
