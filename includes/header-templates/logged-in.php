@@ -16,12 +16,20 @@ $show_header_cart = $show_header_cart ?? true;
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0-6 6v3.6L4.7 15a1 1 0 0 0 .88 1.5h12.84A1 1 0 0 0 19.3 15L18 12.6V9a6 6 0 0 0-6-6Z" fill="currentColor"/></svg>
         <span class="mg-header-badge" data-notification-badge hidden>0</span>
       </button>
+      <div class="mg-header-signal-panel" data-header-signal-panel="notifications">
+        <div class="mg-header-signal-panel-head"><div><span>Notifications</span><strong>Activity &amp; alerts</strong></div><a href="/notifications.php">View all</a></div>
+        <div class="mg-header-signal-empty"><strong>Loading notifications…</strong><p>Gift, claim, campaign, delivery, and account updates will appear here.</p></div>
+      </div>
     </div>
     <div class="mg-header-signal" data-header-signal="messages">
       <button class="mg-header-icon" type="button" data-header-signal-trigger aria-expanded="false" aria-label="Messages">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-5 3v-3a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" fill="currentColor"/></svg>
         <span class="mg-header-badge" data-message-badge hidden>0</span>
       </button>
+      <div class="mg-header-signal-panel" data-header-signal-panel="messages">
+        <div class="mg-header-signal-panel-head"><div><span>Messages</span><strong>Gift conversations</strong></div><a href="/messages.php">View all</a></div>
+        <div class="mg-header-signal-empty"><strong>Loading messages…</strong><p>New conversations and gift replies will appear here.</p></div>
+      </div>
     </div>
   <?php endif; ?>
 
