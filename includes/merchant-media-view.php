@@ -2,7 +2,7 @@
 declare(strict_types=1);
 ?>
 <section class="mg-media-assets" data-media-asset-manager>
-  <div class="mg-media-contract-label">Media library</div>
+  <div class="mg-media-contract-label">Asset management Media library</div>
 
   <div class="mg-media-commandbar">
     <nav class="mg-media-tabs" aria-label="Media library sections">
