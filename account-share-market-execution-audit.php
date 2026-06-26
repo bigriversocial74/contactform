@@ -9,7 +9,7 @@ $page_title = 'Share Market Audit Review | Microgifter';
 $page_section = 'account';
 $header_mode = 'account';
 $page_styles = ['/assets/css/admin-dashboard.css'];
-$page_scripts = ['/assets/js/account.js', '/assets/js/share-market-execution-audit.js', '/assets/js/share-market-credit-reserve-audit.js'];
+$page_scripts = ['/assets/js/account.js', '/assets/js/share-market-execution-audit.js', '/assets/js/share-market-operations-handoff-links.js', '/assets/js/share-market-credit-reserve-audit.js'];
 
 require __DIR__ . '/includes/header.php';
 ?>
