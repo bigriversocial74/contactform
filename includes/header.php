@@ -187,16 +187,17 @@ $can_admin_dashboard = $user && (
 <link rel="stylesheet" href="/assets/css/mobile-app.css">
 <link rel="stylesheet" href="/assets/css/app-header-sidebar.css">
 <link rel="stylesheet" href="/assets/css/app-fixes.css">
+<link rel="stylesheet" href="/assets/css/app-mobile-unified.css">
 <?php endif; ?>
 <style>
 @media (max-width: 760px){
-  .mg-unified-header .mg-account-menu,
-  .mg-site-header .mg-account-menu,
-  .mg-market-universal-header .mg-account-menu,
-  .mg-public-header .mg-account-menu,
-  .mg-app-header .mg-account-menu,
-  [data-mg-auth-menu],
-  [data-mg-auth-trigger]{display:none!important;visibility:hidden!important;pointer-events:none!important;}
+  body:not(.mg-app-page) .mg-unified-header .mg-account-menu,
+  body:not(.mg-app-page) .mg-site-header .mg-account-menu,
+  body:not(.mg-app-page) .mg-market-universal-header .mg-account-menu,
+  body:not(.mg-app-page) .mg-public-header .mg-account-menu,
+  body:not(.mg-app-page) .mg-app-header .mg-account-menu,
+  body:not(.mg-app-page) [data-mg-auth-menu],
+  body:not(.mg-app-page) [data-mg-auth-trigger]{display:none!important;visibility:hidden!important;pointer-events:none!important;}
   html body .mg-v4 .mg-v4-visual .mg-v10-desktop{position:relative!important;z-index:2!important;}
   html body .mg-v4 .mg-v4-visual .mg-v4-phone{top:auto!important;left:10px!important;right:auto!important;bottom:-24px!important;z-index:9!important;width:min(128px,34vw)!important;max-width:128px!important;transform:rotate(-2deg)!important;opacity:1!important;}
 }

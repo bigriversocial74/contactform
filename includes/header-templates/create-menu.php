@@ -20,7 +20,7 @@ $GLOBALS['mg_create_menu_rendered'] = true;
     <div class="mg-create-menu-grid">
       <a href="/build.php" data-create-menu-option="microgift"><span class="mg-create-menu-icon" aria-hidden="true">M</span><strong>Microgift</strong><small>Create a prepaid local gift or offer.</small></a>
       <a href="/merchant-campaigns.php" data-create-menu-option="campaign"><span class="mg-create-menu-icon" aria-hidden="true">C</span><strong>Campaign</strong><small>Create forms, contests, QR drops, and reward automations.</small></a>
-      <a href="/merchant-reward-templates.php" data-create-menu-option="agent_offer"><span class="mg-create-menu-icon" aria-hidden="true">A</span><strong>Agent Offer</strong><small>Publish an offer agents can discover and add to wallets.</small></a>
+      <a href="/merchant-reward-templates.php" data-create-menu-option="add_reward"><span class="mg-create-menu-icon" aria-hidden="true">R</span><strong>Add Reward</strong><small>Create a merchant reward template customers can earn, claim, or redeem.</small></a>
       <a href="/feed.php" data-create-menu-option="post" aria-controls="mg-post-composer-modal"><span class="mg-create-menu-icon" aria-hidden="true">P</span><strong>Post</strong><small>Publish an update to your public feed.</small></a>
       <a href="/merchant-storefront.php" data-create-menu-option="storefront"><span class="mg-create-menu-icon" aria-hidden="true">F</span><strong>Storefront</strong><small>Configure your public merchant storefront.</small></a>
       <a href="/merchant-locations.php" data-create-menu-option="location"><span class="mg-create-menu-icon" aria-hidden="true">L</span><strong>Add Location</strong><small>Add a merchant claim and redemption location.</small></a>

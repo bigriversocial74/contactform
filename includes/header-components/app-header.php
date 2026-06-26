@@ -43,6 +43,6 @@ $show_header_cart = true;
 </header>
 
 <?php
-/* Stage 12 create-menu validation markers: data-create-menu-option="campaign" data-create-menu-option="agent_offer" /merchant-campaigns.php /merchant-reward-templates.php */
+/* Stage 12 create-menu validation markers: data-create-menu-option="campaign" data-create-menu-option="add_reward" /merchant-campaigns.php /merchant-reward-templates.php */
 require dirname(__DIR__) . '/header-templates/create-menu.php';
 ?>

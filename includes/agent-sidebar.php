@@ -17,15 +17,8 @@ $appSidebarAfterNav = <<<'HTML'
 HTML;
 $appSidebarFooter = '';
 $appSidebarNav = [
-    'agent' => [
-        'section' => 'Workspace',
-        'label' => 'Agent',
-        'detail' => 'Build and manage gifting agents',
-        'href' => '/agent.php',
-        'visible' => true,
-        'active' => $agentSidebarActive === 'agent',
-    ],
     'inbox' => [
+        'section' => 'Workspace',
         'label' => 'Inbox',
         'detail' => 'Received and redeemable gifts',
         'href' => '/inbox.php',
