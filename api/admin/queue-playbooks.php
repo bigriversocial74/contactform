@@ -36,6 +36,22 @@ function mg_admin_queue_playbook_note_id(mixed $value): string
     return $id;
 }
 
+function mg_admin_queue_playbook_note_payload(array $note): array
+{
+    return [
+        'id' => (string)$note['public_id'],
+        'playbook_slug' => $note['playbook_slug'] ?? null,
+        'resolution_template_slug' => $note['resolution_template_slug'] ?? null,
+        'playbook_checklist' => !empty($note['playbook_checklist_json']) ? json_decode((string)$note['playbook_checklist_json'], true) : null,
+        'playbook_applied_at' => $note['playbook_applied_at'] ?? null,
+        'status' => (string)$note['status'],
+        'flag_state' => (string)$note['flag_state'],
+        'category' => (string)$note['category'],
+        'priority' => (string)$note['priority'],
+        'sla_status' => $note['sla_status'] ?? null,
+    ];
+}
+
 try {
     if ($method === 'GET') {
         mg_rate_limit('admin.queue_playbooks.read', 'user:' . $actorId, 180, 60);
@@ -44,9 +60,13 @@ try {
         if (isset($_GET['note_id']) && trim((string)$_GET['note_id']) !== '') {
             $note = mg_queue_note_by_public_id($pdo, mg_admin_queue_playbook_note_id($_GET['note_id']), false);
         }
+        $payload = mg_queue_playbook_payload($note);
+        if ($note) {
+            $payload['note'] = mg_admin_queue_playbook_note_payload($note);
+        }
         header('Cache-Control: private, no-store, max-age=0');
         header('Vary: Cookie, Authorization');
-        mg_ok(mg_queue_playbook_payload($note), 'Queue playbooks loaded.');
+        mg_ok($payload, 'Queue playbooks loaded.');
     }
 
     if ($method === 'POST') {
@@ -83,7 +103,7 @@ try {
         $freshNote = mg_queue_note_by_public_id($pdo, $noteId, false);
         header('Cache-Control: private, no-store, max-age=0');
         header('Vary: Cookie, Authorization');
-        mg_ok(['result' => $result, 'note' => ['id' => (string)$freshNote['public_id'], 'playbook_slug' => $freshNote['playbook_slug'] ?? null, 'resolution_template_slug' => $freshNote['resolution_template_slug'] ?? null, 'playbook_checklist' => $freshNote['playbook_checklist_json'] ? json_decode((string)$freshNote['playbook_checklist_json'], true) : null, 'status' => (string)$freshNote['status'], 'flag_state' => (string)$freshNote['flag_state']], 'playbooks' => mg_queue_playbook_payload($freshNote)], 'Queue playbook action completed.');
+        mg_ok(['result' => $result, 'note' => mg_admin_queue_playbook_note_payload($freshNote), 'playbooks' => mg_queue_playbook_payload($freshNote)], 'Queue playbook action completed.');
     }
 
     mg_fail('Method not allowed.', 405);
