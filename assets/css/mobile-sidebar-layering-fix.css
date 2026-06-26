@@ -130,6 +130,168 @@
     filter:none!important;
     opacity:1!important;
   }
+
+  body.mg-agent-tool-open .mg-unified-header,
+  body.mg-agent-tool-open .mg-site-header.mg-unified-header,
+  body.mg-agent-tool-open .mg-site-nav{
+    z-index:100!important;
+    pointer-events:none!important;
+  }
+
+  html body.mg-app-page .mg-agent-tool-modal,
+  html body.mg-app-page .mg-scanner-modal{
+    position:fixed!important;
+    inset:0!important;
+    z-index:90000!important;
+  }
+
+  html body.mg-app-page .mg-agent-tool-modal.is-open,
+  html body.mg-app-page .mg-scanner-modal.is-open{
+    display:block!important;
+  }
+
+  html body.mg-app-page .mg-scanner-modal .mg-agent-tool-backdrop{
+    position:fixed!important;
+    inset:0!important;
+    z-index:0!important;
+    background:rgba(15,23,42,.46)!important;
+    backdrop-filter:blur(5px)!important;
+    -webkit-backdrop-filter:blur(5px)!important;
+  }
+
+  html body.mg-app-page .mg-scanner-modal .mg-agent-tool-dialog,
+  html body.mg-app-page .mg-scanner-modal .mg-scanner-dialog{
+    position:fixed!important;
+    inset:0!important;
+    width:100vw!important;
+    height:100dvh!important;
+    max-width:none!important;
+    max-height:none!important;
+    border:0!important;
+    border-radius:0!important;
+    transform:none!important;
+    background:#f4f7fb!important;
+    display:grid!important;
+    grid-template-rows:auto minmax(0,1fr)!important;
+    overflow:hidden!important;
+    z-index:2!important;
+  }
+
+  html body.mg-app-page .mg-scanner-dialog>header{
+    min-height:72px!important;
+    padding:calc(10px + env(safe-area-inset-top)) 16px 10px!important;
+    background:rgba(255,255,255,.98)!important;
+    border-bottom:1px solid #d8e4f2!important;
+    box-shadow:0 10px 26px rgba(15,23,42,.08)!important;
+    z-index:3!important;
+  }
+
+  html body.mg-app-page .mg-scanner-dialog>header span{
+    color:#2563eb!important;
+    font-size:9px!important;
+    letter-spacing:.12em!important;
+  }
+
+  html body.mg-app-page .mg-scanner-dialog>header h2{
+    margin:3px 0 0!important;
+    font-size:18px!important;
+    line-height:1.1!important;
+  }
+
+  html body.mg-app-page .mg-scanner-dialog>header button{
+    width:42px!important;
+    height:42px!important;
+    border-radius:14px!important;
+    font-size:24px!important;
+  }
+
+  html body.mg-app-page .mg-scanner-body{
+    min-height:0!important;
+    height:auto!important;
+    display:grid!important;
+    grid-template-columns:1fr!important;
+    grid-template-rows:minmax(220px,34dvh) minmax(0,1fr)!important;
+    overflow:hidden!important;
+    background:#f4f7fb!important;
+  }
+
+  html body.mg-app-page .mg-scanner-viewfinder{
+    min-height:220px!important;
+    height:100%!important;
+    border-bottom:1px solid #1e293b!important;
+  }
+
+  html body.mg-app-page .mg-scanner-frame{
+    width:min(56vw,230px)!important;
+    border-radius:22px!important;
+  }
+
+  html body.mg-app-page .mg-scanner-viewfinder p{
+    left:14px!important;
+    right:14px!important;
+    bottom:14px!important;
+    padding:10px 12px!important;
+    border-radius:14px!important;
+    font-size:11px!important;
+    font-weight:850!important;
+  }
+
+  html body.mg-app-page .mg-scanner-settings{
+    min-height:0!important;
+    max-height:none!important;
+    overflow:auto!important;
+    display:grid!important;
+    align-content:start!important;
+    gap:14px!important;
+    padding:18px 18px calc(22px + env(safe-area-inset-bottom))!important;
+    background:#fff!important;
+  }
+
+  html body.mg-app-page .mg-scanner-settings label{
+    gap:8px!important;
+    color:#172236!important;
+    font-size:11px!important;
+    font-weight:950!important;
+  }
+
+  html body.mg-app-page .mg-scanner-settings select,
+  html body.mg-app-page .mg-scanner-settings input[type="text"]{
+    height:58px!important;
+    border-radius:16px!important;
+    padding:0 14px!important;
+    font-size:15px!important;
+    font-weight:850!important;
+  }
+
+  html body.mg-app-page .mg-scanner-location-note,
+  html body.mg-app-page .mg-scanner-auto-claim{
+    border-radius:16px!important;
+  }
+
+  html body.mg-app-page .mg-scanner-toggle{
+    min-height:26px!important;
+  }
+
+  html body.mg-app-page .mg-scanner-toggle input{
+    width:22px!important;
+    height:22px!important;
+  }
+
+  html body.mg-app-page .mg-scanner-actions{
+    position:sticky!important;
+    bottom:0!important;
+    grid-template-columns:1fr 1fr!important;
+    gap:10px!important;
+    padding-top:6px!important;
+    background:#fff!important;
+  }
+
+  html body.mg-app-page .mg-scanner-actions button{
+    height:48px!important;
+    border-radius:999px!important;
+    font-size:12px!important;
+    font-weight:950!important;
+  }
 }
 
 @media(max-width:520px){
@@ -145,10 +307,18 @@
     min-height:calc(100dvh - var(--mg-mobile-shell-offset) - 34px)!important;
     padding-top:96px!important;
   }
+
+  html body.mg-app-page .mg-scanner-body{
+    grid-template-rows:minmax(220px,32dvh) minmax(0,1fr)!important;
+  }
 }
 
 @media(max-width:390px){
   html body.mg-app-page.mg-section-agent .mg-header-agent-tabs .mg-agent-tab-item > a{
     min-width:78px!important;
+  }
+
+  html body.mg-app-page .mg-scanner-body{
+    grid-template-rows:minmax(200px,30dvh) minmax(0,1fr)!important;
   }
 }
