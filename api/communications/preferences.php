@@ -16,6 +16,7 @@ $definitions = [
     'distribution' => ['label'=>'Distribution','description'=>'Distribution program and recipient-delivery activity.'],
     'campaign' => ['label'=>'Campaigns','description'=>'Campaign status and scheduled campaign activity.'],
     'merchant' => ['label'=>'Merchant operations','description'=>'Merchant account, location, and operational updates.'],
+    'share_market' => ['label'=>'DAVE Share Market','description'=>'Merchant opt-in, series review, admin decisions, and Share Market workflow alerts.'],
     'security' => ['label'=>'Security','description'=>'Account security, sign-in, and recovery notifications.'],
     'system' => ['label'=>'System','description'=>'Required service and platform notices.'],
 ];
