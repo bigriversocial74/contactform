@@ -40,6 +40,7 @@ try {
             'created_at' => (string)$permission['created_at'],
         ], $permissions),
         'can_manage_elevated' => mg_admin_account_actor_is_super($actor),
+        'source' => 'admin_roles_permissions_manager',
     ];
 } catch (Throwable $error) {
     mg_security_log('error', 'admin.roles.read_failed', 'Admin roles query failed.', [
