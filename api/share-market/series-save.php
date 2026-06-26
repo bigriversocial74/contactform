@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/bootstrap.php';
-require_once dirname(__DIR__, 2) . '/includes/share-market/program-workflow.php';
+require_once dirname(__DIR__, 2) . '/includes/share-market/sql-adapter.php';
 
 mg_require_method('POST');
 $input = mg_input();
@@ -13,9 +13,7 @@ mg_rate_limit('share_market.series.save', 'user:' . (int)$user['id'], 20, 300);
 try {
     $pdo = mg_db();
     $series = mg_share_market_validate_series_draft($input, $user, false);
-    $series['created_at'] = gmdate('c');
-    mg_share_market_program_append_event($pdo, 'share_market.program.series_draft_saved', $series, (int)$user['id']);
-    mg_ok(['series' => $series, 'snapshot' => mg_share_market_user_snapshot($pdo, (int)$user['id'])], 'Series draft saved. No market was launched.');
+    mg_ok(mg_share_market_sql_save_series($pdo, $series, (int)$user['id'], false), 'Series draft saved. No market was launched.');
 } catch (InvalidArgumentException $e) {
     mg_fail($e->getMessage(), 422);
 } catch (DomainException $e) {
