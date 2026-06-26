@@ -25,6 +25,11 @@ function setStatus(node,message,type){
     if(node)node.textContent=message||'';
 }
 
+function setText(selector,value){
+    var node=root.querySelector(selector);
+    if(node)node.textContent=value;
+}
+
 function setProgress(data){
     var workspace=data.workspace||{};
     var value=Number(workspace.onboarding_percent||0);
@@ -168,10 +173,29 @@ async function loadLocations(){
     var form=root.querySelector('[data-location-form]');
     if(!list||!form)return;
 
+    function updateLocationMetrics(items){
+        items=items||[];
+        var active=items.filter(function(x){return x.status==='active';}).length;
+        var archived=items.filter(function(x){return x.status==='archived';}).length;
+        var primary=items.filter(function(x){return Number(x.is_primary);}).length;
+        var claim=items.filter(function(x){return Boolean(x.claim_code_last4||x.has_active_claim_code);}).length;
+        var staff=items.filter(function(x){return x.address_line1&&x.city&&x.phone;}).length;
+        setText('[data-location-kpi-active]',active.toLocaleString());
+        setText('[data-location-kpi-claim]',claim.toLocaleString());
+        setText('[data-location-kpi-primary]',primary?primary.toLocaleString():'—');
+        setText('[data-location-kpi-archived]',archived.toLocaleString());
+        setText('[data-location-kpi-staff]',staff.toLocaleString());
+        setText('[data-location-readiness-score]',items.length?Math.round(((active>0?1:0)+(claim>0?1:0)+(primary>0?1:0)+(staff>0?1:0))/4*100)+'%':'—');
+        setText('[data-location-ready-primary]',active>0?active+' active claim location'+(active===1?' is':'s are')+' available.':'Add at least one active claim location.');
+        setText('[data-location-ready-secondary]',claim===active&&active>0?'Active claim sites have protected claim codes.':'Each active claim site needs a protected claim code.');
+        setText('[data-location-ready-tertiary]',primary>0?'Primary location is set for default routing.':'Set one primary location for storefront and staff routing.');
+    }
+
     async function refresh(){
         var r=await Microgifter.get('/api/merchant/locations.php');
         var payload=r.data||r;
         var items=payload.locations||[];
+        updateLocationMetrics(items);
         list.innerHTML=items.map(function(x){
             var address=[x.address_line1,x.city,x.region,x.postal_code].filter(Boolean).join(', ');
             var codeText=x.claim_code_last4?'ending '+x.claim_code_last4:'not set';
@@ -260,19 +284,9 @@ function showLoadError(err){
     if(main)main.insertAdjacentHTML('afterbegin','<div class="mg-empty-state">'+esc(err.message||'Unable to load merchant workspace.')+'</div>');
 }
 
-(async function boot(){
-    try{
-        await loadOverview();
-    }catch(err){
-        if(view==='overview')showLoadError(err);
-    }
-
-    try{
-        if(view==='settings')await loadSettings();
-        if(view==='locations')await loadLocations();
-        if(view==='team')await loadTeam();
-    }catch(err){
-        showLoadError(err);
-    }
-})();
+loadOverview().then(function(){
+    if(view==='settings')return loadSettings();
+    if(view==='locations')return loadLocations();
+    if(view==='team')return loadTeam();
+}).catch(showLoadError);
 });
