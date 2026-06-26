@@ -70,6 +70,7 @@ return [
         'stage_12a_tip_financial_integrity.sql',
         'stage_12d_tip_recovery.sql',
         'stage_13_subscriptions_monetization.sql',
+        'stage_13b_subscription_package_changes.sql',
         'stage_14_posts_feed_social.sql',
         'stage_14b_social_content.sql',
         'stage_15_psr_demand_intelligence.sql',
