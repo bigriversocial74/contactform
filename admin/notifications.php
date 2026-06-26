@@ -24,7 +24,7 @@ require dirname(__DIR__) . '/includes/header.php';
           <a class="mg-admin-notifications-back" href="/admin/support-queue.php">← Follow-up queue</a>
           <span class="mg-eyebrow">Admin operations</span>
           <h1>Notification center</h1>
-          <p>Manage queue alerts, SLA breaches, auto-routing, auto-escalation, playbook usage, timeline activity, case comments, checklist completion, overdue reminders, review flags, assignments, reopen events, and digest records.</p>
+          <p>Manage queue alerts, automation summaries, SLA breaches, auto-routing, auto-escalation, playbook usage, timeline activity, case comments, checklist completion, overdue reminders, review flags, assignments, reopen events, and digest records.</p>
         </div>
         <div class="mg-admin-notifications-actions">
           <span>Center score <strong>10/10</strong></span>
@@ -57,6 +57,9 @@ require dirname(__DIR__) . '/includes/header.php';
             <option value="case_comment">Case comment</option>
             <option value="case_comment_pinned">Pinned case comment</option>
             <option value="timeline_viewed">Timeline viewed</option>
+            <option value="automation_summary">Automation summary</option>
+            <option value="automation_failed">Automation failed</option>
+            <option value="quality_review">Quality review</option>
           </select>
         </label>
         <label>Severity
