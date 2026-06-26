@@ -30,126 +30,125 @@ require __DIR__ . '/includes/header.php';
   --mgt-bg:#f7f4ee;
   --mgt-surface:#fffdf9;
   --mgt-card:#ffffff;
-  --mgt-ink:#11110f;
-  --mgt-muted:#6d6a63;
-  --mgt-line:#e7e1d7;
+  --mgt-ink:#10100e;
+  --mgt-muted:#69655e;
+  --mgt-line:#e8e1d6;
   --mgt-gold:#d9a83e;
-  --mgt-gold-dark:#9d7419;
+  --mgt-gold-dark:#8d6412;
   --mgt-gold-soft:#fbf1d9;
-  --mgt-green:#14965a;
-  --mgt-green-soft:#e8f7ef;
-  --mgt-red:#c85b52;
-  --mgt-shadow:0 24px 70px rgba(53,43,24,.09);
+  --mgt-green:#0d9255;
+  --mgt-green-soft:#e8f8ef;
+  --mgt-shadow:0 24px 70px rgba(53,43,24,.10);
   --mgt-max:1240px;
 }
 .mg-token-network-page{background:var(--mgt-bg)!important;color:var(--mgt-ink)}
 .mg-token-network-page .mg-main{background:var(--mgt-bg);overflow:hidden}
 .mgt-page,.mgt-page *{box-sizing:border-box}
-.mgt-page{position:relative;isolation:isolate;background:
-  radial-gradient(circle at 10% 2%,rgba(217,168,62,.18),transparent 24%),
-  radial-gradient(circle at 88% 9%,rgba(20,150,90,.08),transparent 21%),
-  linear-gradient(180deg,#fbf9f5 0,#f7f4ee 46%,#f9f7f2 100%);
+.mgt-page{position:relative;background:
+  radial-gradient(circle at 12% 6%,rgba(217,168,62,.18),transparent 24%),
+  radial-gradient(circle at 84% 10%,rgba(20,150,90,.10),transparent 22%),
+  linear-gradient(180deg,#fbf9f4 0,#f7f4ee 58%,#fbf9f4 100%);
   color:var(--mgt-ink);font-family:Inter,"Helvetica Neue",Arial,sans-serif}
-.mgt-shell{width:min(var(--mgt-max),calc(100% - 48px));margin:0 auto;padding:116px 0 92px}
-.mgt-eyebrow{display:inline-flex;align-items:center;gap:8px;min-height:28px;padding:0 12px;border:1px solid rgba(157,116,25,.22);border-radius:999px;background:rgba(255,255,255,.72);color:var(--mgt-gold-dark);font-size:10px;font-weight:900;letter-spacing:.14em;text-transform:uppercase}
-.mgt-eyebrow:before{content:"";width:6px;height:6px;border-radius:50%;background:var(--mgt-gold)}
-.mgt-hero{display:grid;grid-template-columns:minmax(0,.84fr) minmax(520px,1.16fr);gap:34px;align-items:start}
-.mgt-intro{padding-top:12px}
-.mgt-title{max-width:590px;margin:26px 0 0;color:var(--mgt-ink);font-size:clamp(52px,5.3vw,82px);line-height:.92;letter-spacing:-.075em;font-weight:930;text-wrap:balance}
-.mgt-lede{max-width:610px;margin:24px 0 0;color:#33312d;font-size:clamp(17px,1.5vw,21px);line-height:1.36;letter-spacing:-.028em;font-weight:560}
-.mgt-participation{margin-top:30px;padding:22px;border:1px solid var(--mgt-line);border-radius:22px;background:rgba(255,255,255,.78);box-shadow:0 18px 56px rgba(53,43,24,.07);backdrop-filter:blur(14px)}
-.mgt-form-top{display:flex;align-items:center;justify-content:space-between;gap:16px}
-.mgt-form-top h2{margin:0;font-size:17px;letter-spacing:-.035em;font-weight:900}
-.mgt-live{display:inline-flex;align-items:center;gap:7px;min-height:26px;padding:0 10px;border-radius:999px;background:var(--mgt-green-soft);color:#0d7a47;font-size:9px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+.mgt-full-hero{position:relative;min-height:calc(100vh - 74px);width:100%;display:flex;align-items:stretch;overflow:hidden;background:
+  linear-gradient(90deg,rgba(247,244,238,.98) 0%,rgba(247,244,238,.72) 48%,rgba(247,244,238,.38) 100%),
+  radial-gradient(circle at 6% 10%,rgba(126,178,209,.30),transparent 24%),
+  radial-gradient(circle at 85% 8%,rgba(217,168,62,.30),transparent 35%),
+  url('/images/header_gradient_bg.png') center/cover no-repeat}
+.mgt-full-hero:before{content:"";position:absolute;inset:0;background:
+  linear-gradient(180deg,rgba(255,255,255,.20),rgba(255,255,255,.05) 42%,rgba(247,244,238,.70) 100%),
+  repeating-linear-gradient(90deg,rgba(255,255,255,.18) 0 1px,transparent 1px 96px);pointer-events:none}
+.mgt-hero-grid{position:relative;z-index:1;width:100%;display:grid;grid-template-columns:minmax(0,1fr) minmax(330px,390px);gap:28px;align-items:center;padding:clamp(28px,3.4vw,54px)}
+.mgt-chart-stage{min-width:0}
+.mgt-live{display:inline-flex;align-items:center;gap:7px;min-height:26px;padding:0 10px;border-radius:999px;background:var(--mgt-green-soft);color:#0b7a46;font-size:9px;font-weight:950;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
 .mgt-live:before{content:"";width:7px;height:7px;border-radius:50%;background:#20b56c;box-shadow:0 0 0 4px rgba(32,181,108,.13)}
-.mgt-label{display:block;margin:20px 0 8px;color:#494640;font-size:10px;font-weight:900;letter-spacing:.1em;text-transform:uppercase}
-.mgt-input-row{display:grid;grid-template-columns:118px minmax(0,1fr);gap:8px}
-.mgt-select,.mgt-input{height:52px;border:1px solid var(--mgt-line);border-radius:12px;background:#fff;color:var(--mgt-ink);font:inherit;font-size:14px;font-weight:800;outline:none}
-.mgt-select{padding:0 12px}
-.mgt-input{width:100%;padding:0 15px}
-.mgt-input:focus,.mgt-select:focus{border-color:rgba(217,168,62,.7);box-shadow:0 0 0 4px rgba(217,168,62,.12)}
-.mgt-rate{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:8px;color:var(--mgt-muted);font-size:10px;font-weight:700}
-.mgt-rate strong{color:var(--mgt-green);font-weight:900}
+.mgt-hero-title{margin:22px 0 0;color:#111;font-size:clamp(28px,3vw,46px);line-height:.95;letter-spacing:-.055em;font-weight:930}
+.mgt-hero-value{margin-top:18px}
+.mgt-value-label{display:block;color:#5e5a53;font-size:10px;font-weight:950;letter-spacing:.09em;text-transform:uppercase}
+.mgt-value{display:block;margin-top:8px;color:#050505;font-size:clamp(42px,5vw,76px);line-height:.86;letter-spacing:-.065em;font-weight:950}
+.mgt-change{display:block;margin-top:9px;color:var(--mgt-green);font-size:12px;font-weight:950}
+.mgt-hero-chart-wrap{position:relative;margin-top:24px;min-height:410px}
+.mgt-periods{position:absolute;right:1%;top:-42px;display:flex;gap:7px;align-items:center;z-index:2}
+.mgt-periods button{min-width:36px;height:30px;border:1px solid transparent;border-radius:999px;background:rgba(255,255,255,.54);color:#5d584f;font-size:9px;font-weight:950;cursor:pointer}
+.mgt-periods button.is-active{border-color:rgba(217,168,62,.40);background:var(--mgt-gold-soft);color:#6e500e}
+.mgt-main-chart{display:block;width:100%;height:auto;min-height:390px;overflow:visible}
+.mgt-chart-grid line{stroke:#ded7cc;stroke-width:1}
+.mgt-chart-axis{fill:#6c675e;font-size:10px;font-weight:800}
+.mgt-area{fill:url(#mgtHeroArea)}
+.mgt-line{fill:none;stroke:var(--mgt-gold);stroke-width:4;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 5px 10px rgba(217,168,62,.20))}
+.mgt-chart-dot{fill:#fff;stroke:var(--mgt-gold);stroke-width:4}
+.mgt-chart-pill{position:absolute;right:.6%;top:16%;padding:7px 10px;border-radius:10px;background:var(--mgt-gold);color:#fff;font-size:11px;font-weight:950;box-shadow:0 12px 26px rgba(217,168,62,.28)}
+.mgt-hero-stat-strip{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));margin-top:18px;border:1px solid rgba(232,225,214,.86);border-radius:18px;background:rgba(255,255,255,.72);box-shadow:0 20px 54px rgba(53,43,24,.08);backdrop-filter:blur(14px);overflow:hidden}
+.mgt-hero-stat{min-height:126px;padding:24px 20px;border-right:1px solid rgba(232,225,214,.86)}
+.mgt-hero-stat:last-child{border-right:0}
+.mgt-hero-stat span{display:block;min-height:26px;color:#6d685f;font-size:9px;line-height:1.25;font-weight:950;letter-spacing:.08em;text-transform:uppercase}
+.mgt-hero-stat strong{display:block;margin-top:13px;color:#111;font-size:26px;line-height:.96;font-weight:950;letter-spacing:-.04em}
+.mgt-hero-stat em{display:block;margin-top:9px;color:var(--mgt-green);font-size:10px;line-height:1.25;font-style:normal;font-weight:900}
+.mgt-participation{padding:22px;border:1px solid rgba(232,225,214,.95);border-radius:22px;background:rgba(255,255,255,.86);box-shadow:0 24px 70px rgba(53,43,24,.13);backdrop-filter:blur(18px)}
+.mgt-form-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.mgt-form-top h2{max-width:230px;margin:0;font-size:16px;line-height:1.1;letter-spacing:-.035em;font-weight:950}
+.mgt-label{display:block;margin:18px 0 8px;color:#4f4b44;font-size:9px;font-weight:950;letter-spacing:.11em;text-transform:uppercase}
+.mgt-input-row{display:grid;grid-template-columns:82px minmax(0,1fr);gap:8px}
+.mgt-select,.mgt-input{height:48px;border:1px solid var(--mgt-line);border-radius:11px;background:#fff;color:var(--mgt-ink);font:inherit;font-size:13px;font-weight:850;outline:none}
+.mgt-select{padding:0 10px}
+.mgt-input{width:100%;padding:0 13px}
+.mgt-input:focus,.mgt-select:focus{border-color:rgba(217,168,62,.70);box-shadow:0 0 0 4px rgba(217,168,62,.12)}
+.mgt-rate{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:8px;color:var(--mgt-muted);font-size:9px;font-weight:780}
+.mgt-rate strong{color:var(--mgt-green);font-weight:950}
 .mgt-allocation{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}
-.mgt-allocation button{min-height:42px;border:1px solid var(--mgt-line);border-radius:11px;background:#fff;color:#2b2925;font-size:11px;font-weight:900;cursor:pointer;transition:.2s ease}
+.mgt-allocation button{min-height:39px;border:1px solid var(--mgt-line);border-radius:11px;background:#fff;color:#2b2925;font-size:10px;font-weight:950;cursor:pointer;transition:.18s ease}
 .mgt-allocation button:hover,.mgt-allocation button.is-active{border-color:rgba(217,168,62,.62);background:var(--mgt-gold-soft);color:#6e500e;transform:translateY(-1px)}
-.mgt-summary{display:grid;gap:9px;margin-top:18px;padding:15px;border-radius:14px;background:#f8f5ef}
-.mgt-summary-row{display:flex;align-items:center;justify-content:space-between;gap:18px;color:#595650;font-size:11px;font-weight:720}
-.mgt-summary-row strong{color:#161512;font-size:12px;font-weight:900}
-.mgt-benefits{display:grid;gap:10px;margin-top:18px}
+.mgt-summary{display:grid;gap:8px;margin-top:16px;padding:14px;border-radius:14px;background:#f7f3ec}
+.mgt-summary-row{display:flex;align-items:center;justify-content:space-between;gap:18px;color:#5b564e;font-size:10px;font-weight:780}
+.mgt-summary-row strong{color:#151411;font-size:11px;font-weight:950}
+.mgt-benefits{display:grid;gap:10px;margin-top:16px}
 .mgt-benefit{display:grid;grid-template-columns:30px 1fr;gap:10px;align-items:start}
-.mgt-benefit-icon{display:grid;place-items:center;width:30px;height:30px;border-radius:10px;background:var(--mgt-gold-soft);color:var(--mgt-gold-dark);font-size:13px;font-weight:900}
-.mgt-benefit strong{display:block;color:#23211e;font-size:11px;font-weight:900}
-.mgt-benefit span{display:block;margin-top:3px;color:var(--mgt-muted);font-size:10px;line-height:1.35;font-weight:650}
-.mgt-primary-btn,.mgt-secondary-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:48px;padding:0 19px;border-radius:12px;text-decoration:none!important;font-size:12px;font-weight:900;transition:.2s ease}
+.mgt-benefit-icon{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--mgt-gold-soft);color:var(--mgt-gold-dark);font-size:12px;font-weight:950}
+.mgt-benefit strong{display:block;color:#211f1c;font-size:11px;font-weight:950}
+.mgt-benefit span{display:block;margin-top:3px;color:var(--mgt-muted);font-size:9.5px;line-height:1.38;font-weight:650}
+.mgt-primary-btn,.mgt-secondary-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:46px;padding:0 18px;border-radius:12px;text-decoration:none!important;font-size:12px;font-weight:950;transition:.18s ease}
 .mgt-primary-btn{border:1px solid #111;background:#111;color:#fff!important;box-shadow:0 14px 30px rgba(17,17,17,.15)}
-.mgt-primary-btn:hover{transform:translateY(-2px);box-shadow:0 18px 38px rgba(17,17,17,.2)}
+.mgt-primary-btn:hover{transform:translateY(-2px);box-shadow:0 18px 38px rgba(17,17,17,.20)}
 .mgt-secondary-btn{border:1px solid var(--mgt-line);background:#fff;color:#161512!important}
 .mgt-form-submit{width:100%;margin-top:18px}
-.mgt-secure{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:13px;color:#77736b;font-size:9px;font-weight:800}
-.mgt-network-card{padding:24px;border:1px solid var(--mgt-line);border-radius:26px;background:rgba(255,255,255,.88);box-shadow:var(--mgt-shadow);backdrop-filter:blur(16px)}
-.mgt-network-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start}
-.mgt-network-head h2{margin:0;font-size:24px;line-height:1;letter-spacing:-.045em;font-weight:930}
-.mgt-system-value{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-top:22px}
-.mgt-value-label{display:block;color:var(--mgt-muted);font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
-.mgt-value{display:block;margin-top:8px;color:var(--mgt-ink);font-size:38px;line-height:.9;letter-spacing:-.055em;font-weight:930}
-.mgt-change{display:block;margin-top:8px;color:var(--mgt-green);font-size:11px;font-weight:900}
-.mgt-periods{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
-.mgt-periods button{min-width:38px;height:31px;border:1px solid transparent;border-radius:9px;background:transparent;color:#77736b;font-size:9px;font-weight:900;cursor:pointer}
-.mgt-periods button.is-active{border-color:rgba(217,168,62,.4);background:var(--mgt-gold-soft);color:#6e500e}
-.mgt-chart{position:relative;margin-top:18px;padding:12px 0 0}
-.mgt-chart svg{display:block;width:100%;height:auto;overflow:visible}
-.mgt-chart-grid line{stroke:#e9e4dc;stroke-width:1}
-.mgt-chart-axis{fill:#77736b;font-size:10px;font-weight:700}
-.mgt-area{fill:url(#mgtAreaGradient)}
-.mgt-line{fill:none;stroke:var(--mgt-gold);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 4px 8px rgba(217,168,62,.18))}
-.mgt-chart-dot{fill:#fff;stroke:var(--mgt-gold);stroke-width:3}
-.mgt-chart-pill{position:absolute;right:2.5%;top:8%;padding:7px 9px;border-radius:9px;background:var(--mgt-gold);color:#fff;font-size:10px;font-weight:900;box-shadow:0 8px 20px rgba(217,168,62,.25)}
-.mgt-network-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:18px;border-top:1px solid var(--mgt-line)}
-.mgt-network-stat{min-height:116px;padding:20px 14px 4px;border-right:1px solid var(--mgt-line)}
-.mgt-network-stat:nth-child(3n){border-right:0}
-.mgt-network-stat:nth-child(n+4){border-top:1px solid var(--mgt-line)}
-.mgt-network-stat span{display:block;min-height:28px;color:var(--mgt-muted);font-size:9px;line-height:1.3;font-weight:850;text-transform:uppercase;letter-spacing:.055em}
-.mgt-network-stat strong{display:block;margin-top:8px;color:#1b1a17;font-size:21px;line-height:1;font-weight:930;letter-spacing:-.04em}
-.mgt-network-stat em{display:block;margin-top:8px;color:var(--mgt-green);font-style:normal;font-size:9px;font-weight:900}
-.mgt-trust{display:grid;grid-template-columns:auto repeat(4,minmax(0,1fr));gap:12px;align-items:center;margin-top:26px;padding:14px;border:1px solid var(--mgt-line);border-radius:18px;background:rgba(255,255,255,.68)}
-.mgt-trust-label{padding:0 9px;color:#77736b;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.08em}
+.mgt-secure{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:13px;color:#77736b;font-size:9px;font-weight:800}
+.mgt-shell{width:min(var(--mgt-max),calc(100% - 48px));margin:0 auto;padding:72px 0 92px}
+.mgt-trust{display:grid;grid-template-columns:auto repeat(4,minmax(0,1fr));gap:12px;align-items:center;padding:14px;border:1px solid var(--mgt-line);border-radius:18px;background:rgba(255,255,255,.72);box-shadow:0 14px 48px rgba(53,43,24,.045)}
+.mgt-trust-label{padding:0 9px;color:#77736b;font-size:9px;font-weight:950;text-transform:uppercase;letter-spacing:.08em}
 .mgt-trust-item{display:flex;align-items:center;gap:10px;min-height:48px;padding:0 12px;border-left:1px solid var(--mgt-line);color:#37342f;font-size:10px;font-weight:850}
 .mgt-trust-icon{display:grid;place-items:center;flex:0 0 28px;width:28px;height:28px;border-radius:9px;background:#f4efe6;color:#7c5a13;font-size:12px}
 .mgt-section{margin-top:72px}
 .mgt-section-head{display:flex;align-items:end;justify-content:space-between;gap:28px;margin-bottom:26px}
 .mgt-section-head>div{max-width:720px}
-.mgt-kicker{display:block;color:var(--mgt-gold-dark);font-size:10px;font-weight:900;letter-spacing:.13em;text-transform:uppercase}
-.mgt-section-title{margin:10px 0 0;color:var(--mgt-ink);font-size:clamp(34px,4vw,54px);line-height:.96;letter-spacing:-.06em;font-weight:930;text-wrap:balance}
+.mgt-kicker{display:block;color:var(--mgt-gold-dark);font-size:10px;font-weight:950;letter-spacing:.13em;text-transform:uppercase}
+.mgt-section-title{margin:10px 0 0;color:var(--mgt-ink);font-size:clamp(34px,4vw,54px);line-height:.96;letter-spacing:-.06em;font-weight:950;text-wrap:balance}
 .mgt-section-copy{max-width:640px;margin:14px 0 0;color:#5b5750;font-size:15px;line-height:1.5;font-weight:560}
 .mgt-overview-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
-.mgt-metric-card{min-height:224px;padding:20px;border:1px solid var(--mgt-line);border-radius:18px;background:rgba(255,255,255,.8);box-shadow:0 12px 38px rgba(53,43,24,.045)}
-.mgt-metric-card span{display:block;min-height:30px;color:var(--mgt-muted);font-size:9px;line-height:1.35;font-weight:900;letter-spacing:.06em;text-transform:uppercase}
-.mgt-metric-card strong{display:block;margin-top:11px;color:#171612;font-size:26px;line-height:.95;letter-spacing:-.045em;font-weight:930}
-.mgt-metric-card em{display:block;margin-top:8px;color:var(--mgt-green);font-style:normal;font-size:9px;font-weight:900}
+.mgt-metric-card{min-height:224px;padding:20px;border:1px solid var(--mgt-line);border-radius:18px;background:rgba(255,255,255,.82);box-shadow:0 12px 38px rgba(53,43,24,.045)}
+.mgt-metric-card span{display:block;min-height:30px;color:var(--mgt-muted);font-size:9px;line-height:1.35;font-weight:950;letter-spacing:.06em;text-transform:uppercase}
+.mgt-metric-card strong{display:block;margin-top:11px;color:#171612;font-size:26px;line-height:.95;letter-spacing:-.045em;font-weight:950}
+.mgt-metric-card em{display:block;margin-top:8px;color:var(--mgt-green);font-style:normal;font-size:9px;font-weight:950}
 .mgt-spark{display:block;width:100%;height:76px;margin-top:22px}
 .mgt-spark-grid{stroke:#eee9e1;stroke-width:1}
 .mgt-spark-line{fill:none;stroke:var(--mgt-green);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 .mgt-spark-line.gold{stroke:var(--mgt-gold)}
 .mgt-spark-line.gray{stroke:#8b8984}
-.mgt-spark-area{fill:rgba(20,150,90,.08)}
-.mgt-reasons{padding:30px;border:1px solid var(--mgt-line);border-radius:22px;background:rgba(255,255,255,.7)}
+.mgt-reasons{padding:30px;border:1px solid var(--mgt-line);border-radius:22px;background:rgba(255,255,255,.74)}
 .mgt-reason-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin-top:28px}
 .mgt-reason{min-height:198px;padding:4px 26px 8px;border-left:1px solid var(--mgt-line)}
 .mgt-reason:first-child{border-left:0;padding-left:0}
 .mgt-reason:last-child{padding-right:0}
-.mgt-reason-icon{display:grid;place-items:center;width:46px;height:46px;border:1px solid var(--mgt-line);border-radius:50%;background:#fff;color:#151411;font-size:17px;font-weight:900}
-.mgt-reason h3{margin:22px 0 0;color:#1b1a17;font-size:17px;line-height:1.05;letter-spacing:-.035em;font-weight:930}
+.mgt-reason-icon{display:grid;place-items:center;width:46px;height:46px;border:1px solid var(--mgt-line);border-radius:50%;background:#fff;color:#151411;font-size:17px;font-weight:950}
+.mgt-reason h3{margin:22px 0 0;color:#1b1a17;font-size:17px;line-height:1.05;letter-spacing:-.035em;font-weight:950}
 .mgt-reason p{margin:12px 0 0;color:#68645d;font-size:12px;line-height:1.5;font-weight:600}
 .mgt-performance-layout{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(290px,.55fr);gap:14px;align-items:stretch}
-.mgt-performance-card,.mgt-side-card{border:1px solid var(--mgt-line);border-radius:22px;background:rgba(255,255,255,.82);box-shadow:0 14px 46px rgba(53,43,24,.045)}
+.mgt-performance-card,.mgt-side-card{border:1px solid var(--mgt-line);border-radius:22px;background:rgba(255,255,255,.84);box-shadow:0 14px 46px rgba(53,43,24,.045)}
 .mgt-performance-card{padding:26px}
 .mgt-performance-top{display:flex;align-items:flex-start;justify-content:space-between;gap:24px}
-.mgt-performance-top h3{margin:0;color:#171612;font-size:25px;line-height:1;letter-spacing:-.05em;font-weight:930}
+.mgt-performance-top h3{margin:0;color:#171612;font-size:25px;line-height:1;letter-spacing:-.05em;font-weight:950}
 .mgt-performance-top p{max-width:500px;margin:11px 0 0;color:#68645d;font-size:12px;line-height:1.48;font-weight:600}
 .mgt-token-price{text-align:right}
-.mgt-token-price strong{display:block;font-size:31px;line-height:.9;letter-spacing:-.045em;font-weight:930}
-.mgt-token-price span{display:block;margin-top:8px;color:var(--mgt-green);font-size:10px;font-weight:900}
+.mgt-token-price strong{display:block;font-size:31px;line-height:.9;letter-spacing:-.045em;font-weight:950}
+.mgt-token-price span{display:block;margin-top:8px;color:var(--mgt-green);font-size:10px;font-weight:950}
 .mgt-token-chart{margin-top:20px;padding:16px 0 4px;border-top:1px solid var(--mgt-line);border-bottom:1px solid var(--mgt-line)}
 .mgt-token-chart svg{display:block;width:100%;height:auto}
 .mgt-token-grid line{stroke:#ebe6de;stroke-width:1}
@@ -158,50 +157,53 @@ require __DIR__ . '/includes/header.php';
 .mgt-token-dot{fill:#fff;stroke:var(--mgt-gold);stroke-width:3}
 .mgt-token-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:20px}
 .mgt-token-stat span{display:block;color:var(--mgt-muted);font-size:9px;font-weight:850;text-transform:uppercase;letter-spacing:.06em}
-.mgt-token-stat strong{display:block;margin-top:8px;color:#1b1a17;font-size:17px;line-height:1;font-weight:930}
+.mgt-token-stat strong{display:block;margin-top:8px;color:#1b1a17;font-size:17px;line-height:1;font-weight:950}
 .mgt-performance-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:22px}
 .mgt-side-stack{display:grid;grid-template-rows:auto auto;gap:14px}
 .mgt-side-card{padding:22px}
 .mgt-side-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:14px;border-bottom:1px solid var(--mgt-line)}
-.mgt-side-head h3{margin:0;font-size:16px;letter-spacing:-.035em;font-weight:930}
-.mgt-side-head a{color:#77736b;font-size:9px;font-weight:900;text-decoration:none}
-.mgt-stat-list{display:grid;gap:0}
+.mgt-side-head h3{margin:0;font-size:16px;letter-spacing:-.035em;font-weight:950}
+.mgt-side-head a{color:#77736b;font-size:9px;font-weight:950;text-decoration:none}
 .mgt-stat-list-row{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;align-items:center;min-height:49px;border-bottom:1px solid #eee9e1}
 .mgt-stat-list-row:last-child{border-bottom:0}
 .mgt-stat-list-row b{display:grid;place-items:center;width:26px;height:26px;border-radius:9px;background:var(--mgt-gold-soft);color:var(--mgt-gold-dark);font-size:11px}
 .mgt-stat-list-row span{color:#5e5a53;font-size:9px;line-height:1.25;font-weight:800}
-.mgt-stat-list-row strong{color:#1a1916;font-size:10px;font-weight:930;text-align:right}
+.mgt-stat-list-row strong{color:#1a1916;font-size:10px;font-weight:950;text-align:right}
 .mgt-network-info{display:grid;gap:11px;margin-top:15px}
 .mgt-network-info-row{display:flex;align-items:center;justify-content:space-between;gap:16px;color:#68645d;font-size:10px;font-weight:760}
-.mgt-network-info-row strong{color:#1b1a17;font-weight:900;text-align:right}
-.mgt-distribution{overflow:hidden;border:1px solid var(--mgt-line);border-radius:22px;background:rgba(255,255,255,.8)}
+.mgt-network-info-row strong{color:#1b1a17;font-weight:950;text-align:right}
+.mgt-distribution{overflow:hidden;border:1px solid var(--mgt-line);border-radius:22px;background:rgba(255,255,255,.82)}
 .mgt-distribution-head{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:22px 24px;border-bottom:1px solid var(--mgt-line)}
-.mgt-distribution-head h3{margin:0;font-size:20px;letter-spacing:-.045em;font-weight:930}
+.mgt-distribution-head h3{margin:0;font-size:20px;letter-spacing:-.045em;font-weight:950}
 .mgt-distribution-head span{color:#77736b;font-size:9px;font-weight:850;text-transform:uppercase;letter-spacing:.08em}
 .mgt-table{width:100%;border-collapse:collapse}
 .mgt-table th,.mgt-table td{padding:15px 20px;border-bottom:1px solid #eee9e1;text-align:left}
-.mgt-table th{color:#77736b;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.07em}
+.mgt-table th{color:#77736b;font-size:9px;font-weight:950;text-transform:uppercase;letter-spacing:.07em}
 .mgt-table td{color:#44413b;font-size:11px;font-weight:730}
-.mgt-table td strong{display:block;color:#1b1a17;font-size:12px;font-weight:930}
+.mgt-table td strong{display:block;color:#1b1a17;font-size:12px;font-weight:950}
 .mgt-table tbody tr:last-child td{border-bottom:0}
-.mgt-table .positive{color:var(--mgt-green);font-weight:900}
+.mgt-table .positive{color:var(--mgt-green);font-weight:950}
 .mgt-row-meter{width:100%;height:7px;border-radius:999px;background:#eee9e1;overflow:hidden}
 .mgt-row-meter span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--mgt-gold),#e7c66e)}
 .mgt-cta{display:grid;grid-template-columns:minmax(0,1fr) minmax(360px,.65fr);gap:24px;align-items:center;margin-top:72px;padding:38px;border:1px solid var(--mgt-line);border-radius:26px;background:
   radial-gradient(circle at 85% 18%,rgba(217,168,62,.17),transparent 30%),
   linear-gradient(135deg,#fffdfa,#f6f0e6);box-shadow:var(--mgt-shadow)}
-.mgt-cta h2{max-width:700px;margin:0;color:#141310;font-size:clamp(34px,4vw,56px);line-height:.95;letter-spacing:-.065em;font-weight:930;text-wrap:balance}
+.mgt-cta h2{max-width:700px;margin:0;color:#141310;font-size:clamp(34px,4vw,56px);line-height:.95;letter-spacing:-.065em;font-weight:950;text-wrap:balance}
 .mgt-cta p{max-width:650px;margin:18px 0 0;color:#5c5851;font-size:14px;line-height:1.5;font-weight:580}
 .mgt-cta-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
 .mgt-cta-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .mgt-cta-card{min-height:188px;padding:22px;border:1px solid rgba(0,0,0,.07);border-radius:18px;background:rgba(255,255,255,.78)}
 .mgt-cta-card b{display:grid;place-items:center;width:36px;height:36px;border-radius:12px;background:#111;color:#fff;font-size:14px}
-.mgt-cta-card h3{margin:22px 0 0;font-size:15px;font-weight:930;letter-spacing:-.03em}
+.mgt-cta-card h3{margin:22px 0 0;font-size:15px;font-weight:950;letter-spacing:-.03em}
 .mgt-cta-card p{margin:9px 0 0;color:#6a665f;font-size:10px;line-height:1.45;font-weight:650}
-.mgt-cta-card a{display:inline-flex;margin-top:15px;color:#151411;font-size:10px;font-weight:900;text-decoration:none}
+.mgt-cta-card a{display:inline-flex;margin-top:15px;color:#151411;font-size:10px;font-weight:950;text-decoration:none}
 @media(max-width:1120px){
-  .mgt-hero{grid-template-columns:1fr}
-  .mgt-intro{max-width:760px}
+  .mgt-hero-grid{grid-template-columns:1fr;padding:30px 22px}
+  .mgt-full-hero{min-height:auto}
+  .mgt-participation{max-width:520px;margin-left:auto;margin-right:auto}
+  .mgt-hero-stat-strip{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .mgt-hero-stat:nth-child(3n){border-right:0}
+  .mgt-hero-stat:nth-child(n+4){border-top:1px solid rgba(232,225,214,.86)}
   .mgt-overview-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
   .mgt-performance-layout{grid-template-columns:1fr}
   .mgt-side-stack{grid-template-columns:1fr 1fr;grid-template-rows:auto}
@@ -210,10 +212,10 @@ require __DIR__ . '/includes/header.php';
   .mgt-trust-item{border-left:0}
 }
 @media(max-width:820px){
-  .mgt-shell{width:min(var(--mgt-max),calc(100% - 28px));padding-top:102px}
-  .mgt-title{font-size:clamp(48px,13vw,70px)}
-  .mgt-network-card{padding:18px}
-  .mgt-overview-grid{grid-template-columns:1fr 1fr}
+  .mgt-shell{width:min(var(--mgt-max),calc(100% - 28px));padding-top:54px}
+  .mgt-hero-chart-wrap{min-height:auto;margin-top:70px}
+  .mgt-periods{left:0;right:auto;top:-50px}
+  .mgt-hero-stat-strip,.mgt-overview-grid{grid-template-columns:1fr 1fr}
   .mgt-reason-grid{grid-template-columns:1fr 1fr;gap:22px}
   .mgt-reason{border-left:0;border-top:1px solid var(--mgt-line);padding:22px 0 0}
   .mgt-reason:nth-child(-n+2){border-top:0;padding-top:0}
@@ -223,19 +225,17 @@ require __DIR__ . '/includes/header.php';
   .mgt-distribution{overflow-x:auto}
 }
 @media(max-width:560px){
-  .mgt-shell{width:min(var(--mgt-max),calc(100% - 20px));padding-top:92px}
-  .mgt-title{font-size:45px}
-  .mgt-input-row{grid-template-columns:104px minmax(0,1fr)}
+  .mgt-hero-grid{padding:22px 14px 30px}
+  .mgt-hero-title{font-size:30px}
+  .mgt-value{font-size:46px}
+  .mgt-input-row{grid-template-columns:86px minmax(0,1fr)}
   .mgt-allocation{grid-template-columns:1fr 1fr}
-  .mgt-network-head,.mgt-system-value,.mgt-performance-top,.mgt-section-head{display:grid}
-  .mgt-periods{justify-content:flex-start}
-  .mgt-network-stats{grid-template-columns:1fr 1fr}
-  .mgt-network-stat:nth-child(3n){border-right:1px solid var(--mgt-line)}
-  .mgt-network-stat:nth-child(2n){border-right:0}
-  .mgt-network-stat:nth-child(n+3){border-top:1px solid var(--mgt-line)}
-  .mgt-overview-grid,.mgt-side-stack,.mgt-cta-cards{grid-template-columns:1fr}
+  .mgt-hero-stat-strip,.mgt-overview-grid,.mgt-side-stack,.mgt-cta-cards{grid-template-columns:1fr}
+  .mgt-hero-stat{border-right:0!important;border-top:1px solid rgba(232,225,214,.86)}
+  .mgt-hero-stat:first-child{border-top:0}
   .mgt-reason-grid{grid-template-columns:1fr}
   .mgt-reason:nth-child(2){border-top:1px solid var(--mgt-line);padding-top:22px}
+  .mgt-performance-top{display:grid}
   .mgt-token-price{text-align:left}
   .mgt-performance-actions{grid-template-columns:1fr}
   .mgt-trust{grid-template-columns:1fr}
@@ -244,74 +244,18 @@ require __DIR__ . '/includes/header.php';
 </style>
 
 <main class="mgt-page">
-  <div class="mgt-shell">
-    <section class="mgt-hero" aria-labelledby="mgt-title">
-      <div class="mgt-intro">
-        <span class="mgt-eyebrow">Invest in the network</span>
-        <h1 class="mgt-title" id="mgt-title">Invest in local momentum.</h1>
-        <p class="mgt-lede">Join the Microgifter token ecosystem and participate in the system powering local gifting, rewards, redemption, and creator commerce.</p>
-
-        <form class="mgt-participation" id="mgtParticipationForm" action="/signup.php" method="get">
-          <div class="mgt-form-top">
-            <h2>Participate in the Microgifter ecosystem</h2>
-            <span class="mgt-live">Network active</span>
-          </div>
-
-          <label class="mgt-label" for="mgtSendAmount">You contribute</label>
-          <div class="mgt-input-row">
-            <select class="mgt-select" id="mgtSendAsset" aria-label="Contribution asset">
-              <option value="USD">USD</option>
-              <option value="USDC">USDC</option>
-            </select>
-            <input class="mgt-input" id="mgtSendAmount" name="amount" type="number" min="10" step="10" value="1000" inputmode="decimal">
-          </div>
-
-          <label class="mgt-label" for="mgtReceiveAmount">Estimated MGF allocation</label>
-          <div class="mgt-input-row">
-            <select class="mgt-select" aria-label="Microgifter token" disabled>
-              <option>MGF</option>
-            </select>
-            <input class="mgt-input" id="mgtReceiveAmount" type="text" value="1,234.57" readonly>
-          </div>
-          <div class="mgt-rate"><span>Illustrative rate: 1 MGF = $0.810</span><strong>Early network access</strong></div>
-
-          <span class="mgt-label">Choose an allocation</span>
-          <div class="mgt-allocation" aria-label="Quick allocation amounts">
-            <button type="button" data-amount="250">$250</button>
-            <button class="is-active" type="button" data-amount="1000">$1,000</button>
-            <button type="button" data-amount="5000">$5,000</button>
-            <button type="button" data-amount="10000">$10,000</button>
-          </div>
-
-          <div class="mgt-summary" aria-live="polite">
-            <div class="mgt-summary-row"><span>Estimated allocation</span><strong id="mgtSummaryTokens">1,234.57 MGF</strong></div>
-            <div class="mgt-summary-row"><span>Share of circulating supply</span><strong id="mgtSummaryShare">0.0043%</strong></div>
-            <div class="mgt-summary-row"><span>Current system value</span><strong>$23.04M</strong></div>
-          </div>
-
-          <div class="mgt-benefits">
-            <div class="mgt-benefit"><span class="mgt-benefit-icon">↗</span><div><strong>Participate in ecosystem growth</strong><span>Track the network as circulation, distribution, redemption, and local commerce expand.</span></div></div>
-            <div class="mgt-benefit"><span class="mgt-benefit-icon">◎</span><div><strong>Support real local activity</strong><span>Microgifter connects token value to gifts, rewards, creator products, and merchant redemption.</span></div></div>
-            <div class="mgt-benefit"><span class="mgt-benefit-icon">✓</span><div><strong>Transparent system metrics</strong><span>See the full network instead of a single merchant or campaign chart.</span></div></div>
-          </div>
-
-          <button class="mgt-primary-btn mgt-form-submit" type="submit">Join the Microgifter Ecosystem <span>→</span></button>
-          <div class="mgt-secure"><span>Secure access</span><span>•</span><span>Transparent metrics</span><span>•</span><span>Built for local impact</span></div>
-        </form>
-      </div>
-
-      <aside class="mgt-network-card" aria-labelledby="network-card-title">
-        <div class="mgt-network-head">
-          <h2 id="network-card-title">Microgifter Token Network</h2>
-          <span class="mgt-live">Live system</span>
+  <section class="mgt-full-hero" aria-labelledby="mgt-network-title">
+    <div class="mgt-hero-grid">
+      <div class="mgt-chart-stage">
+        <span class="mgt-live">Live system</span>
+        <h1 class="mgt-hero-title" id="mgt-network-title">Microgifter Token Network</h1>
+        <div class="mgt-hero-value">
+          <span class="mgt-value-label">Total system value</span>
+          <strong class="mgt-value" id="mgtSystemValue">$23.04M</strong>
+          <span class="mgt-change" id="mgtSystemChange">↑ 28.47% over 30 days</span>
         </div>
 
-        <div class="mgt-system-value">
-          <div>
-            <span class="mgt-value-label">Total system value</span>
-            <strong class="mgt-value" id="mgtSystemValue">$23.04M</strong>
-            <span class="mgt-change" id="mgtSystemChange">↑ 28.47% over 30 days</span>
-          </div>
+        <div class="mgt-hero-chart-wrap" aria-label="Microgifter token network chart">
           <div class="mgt-periods" aria-label="Chart period">
             <button type="button" data-period="7D">7D</button>
             <button class="is-active" type="button" data-period="30D">30D</button>
@@ -319,47 +263,94 @@ require __DIR__ . '/includes/header.php';
             <button type="button" data-period="1Y">1Y</button>
             <button type="button" data-period="ALL">All</button>
           </div>
-        </div>
-
-        <div class="mgt-chart" aria-label="Overall Microgifter token system value chart">
-          <svg viewBox="0 0 720 330" role="img" aria-labelledby="mgtChartTitle mgtChartDesc">
+          <svg class="mgt-main-chart" viewBox="0 0 900 430" role="img" aria-labelledby="mgtChartTitle mgtChartDesc">
             <title id="mgtChartTitle">Microgifter token network value</title>
             <desc id="mgtChartDesc">A light-background line chart showing the overall Microgifter system value increasing over time.</desc>
             <defs>
-              <linearGradient id="mgtAreaGradient" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stop-color="#d9a83e" stop-opacity=".27"/>
+              <linearGradient id="mgtHeroArea" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stop-color="#d9a83e" stop-opacity=".30"/>
                 <stop offset="100%" stop-color="#d9a83e" stop-opacity="0"/>
               </linearGradient>
             </defs>
             <g class="mgt-chart-grid">
-              <line x1="66" y1="34" x2="696" y2="34"/>
-              <line x1="66" y1="92" x2="696" y2="92"/>
-              <line x1="66" y1="150" x2="696" y2="150"/>
-              <line x1="66" y1="208" x2="696" y2="208"/>
-              <line x1="66" y1="266" x2="696" y2="266"/>
+              <line x1="74" y1="52" x2="872" y2="52"/>
+              <line x1="74" y1="120" x2="872" y2="120"/>
+              <line x1="74" y1="188" x2="872" y2="188"/>
+              <line x1="74" y1="256" x2="872" y2="256"/>
+              <line x1="74" y1="324" x2="872" y2="324"/>
             </g>
             <g class="mgt-chart-axis">
-              <text x="8" y="38">$30M</text><text x="8" y="96">$24M</text><text x="8" y="154">$18M</text><text x="8" y="212">$12M</text><text x="8" y="270">$6M</text>
-              <text x="70" y="312">May 8</text><text x="210" y="312">May 15</text><text x="356" y="312">May 22</text><text x="504" y="312">May 29</text><text x="644" y="312">Jun 5</text>
+              <text x="14" y="56">$25M</text><text x="14" y="124">$20M</text><text x="14" y="192">$15M</text><text x="14" y="260">$10M</text><text x="14" y="328">$5M</text>
+              <text x="74" y="385">May 3</text><text x="230" y="385">May 10</text><text x="386" y="385">May 17</text><text x="542" y="385">May 24</text><text x="698" y="385">May 31</text><text x="824" y="385">Jun 6</text>
             </g>
-            <path class="mgt-area" id="mgtMainArea" d="M66 244 L94 230 L122 239 L150 210 L178 218 L206 188 L234 171 L262 179 L290 149 L318 164 L346 153 L374 125 L402 113 L430 120 L458 96 L486 102 L514 85 L542 93 L570 55 L598 39 L626 77 L654 57 L682 45 L696 49 L696 266 L66 266 Z"/>
-            <path class="mgt-line" id="mgtMainLine" d="M66 244 L94 230 L122 239 L150 210 L178 218 L206 188 L234 171 L262 179 L290 149 L318 164 L346 153 L374 125 L402 113 L430 120 L458 96 L486 102 L514 85 L542 93 L570 55 L598 39 L626 77 L654 57 L682 45 L696 49"/>
-            <circle class="mgt-chart-dot" id="mgtMainDot" cx="696" cy="49" r="5"/>
+            <path class="mgt-area" id="mgtMainArea" d="M74 324 L110 304 L146 313 L182 278 L218 292 L254 258 L290 252 L326 218 L362 224 L398 188 L434 205 L470 222 L506 184 L542 174 L578 138 L614 142 L650 104 L686 112 L722 78 L758 89 L794 48 L830 96 L866 72 L872 75 L872 342 L74 342 Z"/>
+            <path class="mgt-line" id="mgtMainLine" d="M74 324 L110 304 L146 313 L182 278 L218 292 L254 258 L290 252 L326 218 L362 224 L398 188 L434 205 L470 222 L506 184 L542 174 L578 138 L614 142 L650 104 L686 112 L722 78 L758 89 L794 48 L830 96 L866 72 L872 75"/>
+            <circle class="mgt-chart-dot" id="mgtMainDot" cx="872" cy="75" r="6"/>
           </svg>
           <span class="mgt-chart-pill" id="mgtChartPill">$23.04M</span>
         </div>
 
-        <div class="mgt-network-stats">
-          <div class="mgt-network-stat"><span>Total Microgifter circulation</span><strong>28.45M</strong><em>MGF across the system</em></div>
-          <div class="mgt-network-stat"><span>Distributed</span><strong>17.32M</strong><em>MGF sent to participants</em></div>
-          <div class="mgt-network-stat"><span>Redeemed</span><strong>6.84M</strong><em>MGF converted to utility</em></div>
-          <div class="mgt-network-stat"><span>Active holders</span><strong>8,921</strong><em>↑ 18.41% in 30D</em></div>
-          <div class="mgt-network-stat"><span>Total token volume</span><strong>$1.92M</strong><em>30-day network activity</em></div>
-          <div class="mgt-network-stat"><span>Ecosystem growth</span><strong>+28.47%</strong><em>Compared with prior 30D</em></div>
+        <div class="mgt-hero-stat-strip">
+          <div class="mgt-hero-stat"><span>Total Microgifter system value</span><strong>$23.04M</strong><em>↑ 28.47% vs. 30D</em></div>
+          <div class="mgt-hero-stat"><span>Circulating supply</span><strong>28.45M</strong><em>MGF across the system</em></div>
+          <div class="mgt-hero-stat"><span>Distributed</span><strong>17.32M</strong><em>MGF sent to participants</em></div>
+          <div class="mgt-hero-stat"><span>Redeemed</span><strong>6.84M</strong><em>MGF converted to utility</em></div>
+          <div class="mgt-hero-stat"><span>Total token volume</span><strong>$1.92M</strong><em>30-day average activity</em></div>
+          <div class="mgt-hero-stat"><span>Ecosystem growth</span><strong>+28.47%</strong><em>Compound rate prior 30D</em></div>
         </div>
-      </aside>
-    </section>
+      </div>
 
+      <form class="mgt-participation" id="mgtParticipationForm" action="/signup.php" method="get">
+        <div class="mgt-form-top">
+          <h2>Participate in the Microgifter ecosystem</h2>
+          <span class="mgt-live">Network active</span>
+        </div>
+
+        <label class="mgt-label" for="mgtSendAmount">You contribute</label>
+        <div class="mgt-input-row">
+          <select class="mgt-select" id="mgtSendAsset" aria-label="Contribution asset">
+            <option value="USD">USD</option>
+            <option value="USDC">USDC</option>
+          </select>
+          <input class="mgt-input" id="mgtSendAmount" name="amount" type="number" min="10" step="10" value="1000" inputmode="decimal">
+        </div>
+
+        <label class="mgt-label" for="mgtReceiveAmount">Estimated MGF allocation</label>
+        <div class="mgt-input-row">
+          <select class="mgt-select" aria-label="Microgifter token" disabled>
+            <option>MGF</option>
+          </select>
+          <input class="mgt-input" id="mgtReceiveAmount" type="text" value="1,234.57" readonly>
+        </div>
+        <div class="mgt-rate"><span>Illustrative rate: 1 MGF = $0.810</span><strong>Early network access</strong></div>
+
+        <span class="mgt-label">Choose an allocation</span>
+        <div class="mgt-allocation" aria-label="Quick allocation amounts">
+          <button type="button" data-amount="250">$250</button>
+          <button class="is-active" type="button" data-amount="1000">$1,000</button>
+          <button type="button" data-amount="5000">$5,000</button>
+          <button type="button" data-amount="10000">$10,000</button>
+        </div>
+
+        <div class="mgt-summary" aria-live="polite">
+          <div class="mgt-summary-row"><span>Estimated allocation</span><strong id="mgtSummaryTokens">1,234.57 MGF</strong></div>
+          <div class="mgt-summary-row"><span>Share of circulating supply</span><strong id="mgtSummaryShare">0.0043%</strong></div>
+          <div class="mgt-summary-row"><span>Current system value</span><strong>$23.04M</strong></div>
+        </div>
+
+        <div class="mgt-benefits">
+          <div class="mgt-benefit"><span class="mgt-benefit-icon">✓</span><div><strong>Participate in ecosystem growth</strong><span>Support real local activity, distribution, redemption, and local commerce impact.</span></div></div>
+          <div class="mgt-benefit"><span class="mgt-benefit-icon">✓</span><div><strong>Transparent system metrics</strong><span>See the full network balance sheet, value recirculation, and compute charts.</span></div></div>
+          <div class="mgt-benefit"><span class="mgt-benefit-icon">✓</span><div><strong>Built for local impact</strong><span>Empowering creators, merchants, communities, and mission-driven projects.</span></div></div>
+        </div>
+
+        <button class="mgt-primary-btn mgt-form-submit" type="submit">Join the Microgifter Ecosystem <span>→</span></button>
+        <div class="mgt-secure"><span>Secure access</span><span>•</span><span>Transparent metrics</span><span>•</span><span>Built for local impact</span></div>
+      </form>
+    </div>
+  </section>
+
+  <div class="mgt-shell">
     <section class="mgt-trust" aria-label="Microgifter network foundations">
       <span class="mgt-trust-label">Built around real platform activity</span>
       <div class="mgt-trust-item"><span class="mgt-trust-icon">◎</span><span>Local commerce</span></div>
@@ -406,9 +397,9 @@ require __DIR__ . '/includes/header.php';
       <h2 class="mgt-section-title" id="why-title">A token system connected to measurable local activity.</h2>
       <div class="mgt-reason-grid">
         <article class="mgt-reason"><span class="mgt-reason-icon">◎</span><h3>Real local impact</h3><p>Distribution supports merchants, creators, events, hospitality businesses, and community programs.</p></article>
-        <article class="mgt-reason"><span class="mgt-reason-icon">↗</span><h3>Network growth</h3><p>Circulation expands as more gifts, rewards, promotions, and automated commerce programs launch.</p></article>
+        <article class="mgt-reason"><span class="mgt-reason-icon">↗</span><h3>Network growth</h3><p>Circulation expands as more gifts, transactions, partners, and automated revenue programs launch.</p></article>
         <article class="mgt-reason"><span class="mgt-reason-icon">✓</span><h3>Redemption visibility</h3><p>Microgifter tracks when value moves from distribution into claimed products, offers, and experiences.</p></article>
-        <article class="mgt-reason"><span class="mgt-reason-icon">◇</span><h3>System transparency</h3><p>Investors and participants see ecosystem totals rather than relying on a single merchant performance chart.</p></article>
+        <article class="mgt-reason"><span class="mgt-reason-icon">◇</span><h3>System transparency</h3><p>Investors and participants see ecosystem token flow and performance in a single system dashboard.</p></article>
       </div>
     </section>
 
@@ -540,11 +531,11 @@ require __DIR__ . '/includes/header.php';
   updateAllocation();
 
   const chartData = {
-    '7D': {value:'$23.04M',change:'↑ 8.16% over 7 days',pill:'$23.04M',line:'M66 220 L126 201 L186 208 L246 176 L306 185 L366 142 L426 154 L486 110 L546 123 L606 75 L666 61 L696 49',area:'M66 220 L126 201 L186 208 L246 176 L306 185 L366 142 L426 154 L486 110 L546 123 L606 75 L666 61 L696 49 L696 266 L66 266 Z',dotY:'49'},
-    '30D': {value:'$23.04M',change:'↑ 28.47% over 30 days',pill:'$23.04M',line:'M66 244 L94 230 L122 239 L150 210 L178 218 L206 188 L234 171 L262 179 L290 149 L318 164 L346 153 L374 125 L402 113 L430 120 L458 96 L486 102 L514 85 L542 93 L570 55 L598 39 L626 77 L654 57 L682 45 L696 49',area:'M66 244 L94 230 L122 239 L150 210 L178 218 L206 188 L234 171 L262 179 L290 149 L318 164 L346 153 L374 125 L402 113 L430 120 L458 96 L486 102 L514 85 L542 93 L570 55 L598 39 L626 77 L654 57 L682 45 L696 49 L696 266 L66 266 Z',dotY:'49'},
-    '90D': {value:'$23.04M',change:'↑ 46.31% over 90 days',pill:'$23.04M',line:'M66 255 L116 248 L166 232 L216 238 L266 205 L316 212 L366 176 L416 181 L466 142 L516 151 L566 101 L616 112 L666 62 L696 49',area:'M66 255 L116 248 L166 232 L216 238 L266 205 L316 212 L366 176 L416 181 L466 142 L516 151 L566 101 L616 112 L666 62 L696 49 L696 266 L66 266 Z',dotY:'49'},
-    '1Y': {value:'$23.04M',change:'↑ 112.80% over 1 year',pill:'$23.04M',line:'M66 260 L126 252 L186 241 L246 224 L306 230 L366 198 L426 176 L486 152 L546 126 L606 91 L666 67 L696 49',area:'M66 260 L126 252 L186 241 L246 224 L306 230 L366 198 L426 176 L486 152 L546 126 L606 91 L666 67 L696 49 L696 266 L66 266 Z',dotY:'49'},
-    'ALL': {value:'$23.04M',change:'↑ 284.12% since network launch',pill:'$23.04M',line:'M66 262 L126 258 L186 251 L246 238 L306 220 L366 196 L426 172 L486 148 L546 117 L606 88 L666 60 L696 49',area:'M66 262 L126 258 L186 251 L246 238 L306 220 L366 196 L426 172 L486 148 L546 117 L606 88 L666 60 L696 49 L696 266 L66 266 Z',dotY:'49'}
+    '7D': {value:'$23.04M',change:'↑ 8.16% over 7 days',pill:'$23.04M',line:'M74 302 L154 280 L234 288 L314 245 L394 252 L474 200 L554 212 L634 156 L714 166 L794 96 L872 75',area:'M74 302 L154 280 L234 288 L314 245 L394 252 L474 200 L554 212 L634 156 L714 166 L794 96 L872 75 L872 342 L74 342 Z',dotY:'75'},
+    '30D': {value:'$23.04M',change:'↑ 28.47% over 30 days',pill:'$23.04M',line:'M74 324 L110 304 L146 313 L182 278 L218 292 L254 258 L290 252 L326 218 L362 224 L398 188 L434 205 L470 222 L506 184 L542 174 L578 138 L614 142 L650 104 L686 112 L722 78 L758 89 L794 48 L830 96 L866 72 L872 75',area:'M74 324 L110 304 L146 313 L182 278 L218 292 L254 258 L290 252 L326 218 L362 224 L398 188 L434 205 L470 222 L506 184 L542 174 L578 138 L614 142 L650 104 L686 112 L722 78 L758 89 L794 48 L830 96 L866 72 L872 75 L872 342 L74 342 Z',dotY:'75'},
+    '90D': {value:'$23.04M',change:'↑ 46.31% over 90 days',pill:'$23.04M',line:'M74 336 L136 327 L198 306 L260 315 L322 276 L384 282 L446 232 L508 240 L570 192 L632 200 L694 136 L756 151 L818 87 L872 75',area:'M74 336 L136 327 L198 306 L260 315 L322 276 L384 282 L446 232 L508 240 L570 192 L632 200 L694 136 L756 151 L818 87 L872 75 L872 342 L74 342 Z',dotY:'75'},
+    '1Y': {value:'$23.04M',change:'↑ 112.80% over 1 year',pill:'$23.04M',line:'M74 340 L154 332 L234 315 L314 300 L394 286 L474 246 L554 214 L634 182 L714 137 L794 100 L872 75',area:'M74 340 L154 332 L234 315 L314 300 L394 286 L474 246 L554 214 L634 182 L714 137 L794 100 L872 75 L872 342 L74 342 Z',dotY:'75'},
+    'ALL': {value:'$23.04M',change:'↑ 284.12% since network launch',pill:'$23.04M',line:'M74 342 L154 336 L234 326 L314 308 L394 284 L474 250 L554 212 L634 174 L714 132 L794 96 L872 75',area:'M74 342 L154 336 L234 326 L314 308 L394 284 L474 250 L554 212 L634 174 L714 132 L794 96 L872 75 L872 342 L74 342 Z',dotY:'75'}
   };
 
   const periodButtons = Array.from(document.querySelectorAll('.mgt-periods button'));
