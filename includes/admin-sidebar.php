@@ -18,6 +18,7 @@ $adminMatrixUser['roles'] = $adminRoles;
 $canAdminPage = static fn(string $pageKey): bool => mg_admin_user_can_view_page($adminMatrixUser, $pageKey);
 
 $canUsers = $canAdminPage('admin.users');
+$canRoles = mg_admin_permission_user_has($adminMatrixUser, 'admin.roles.manage');
 $canPendingModels = $canAdminPage('admin.pending_models');
 $canMerchantCatalog = $canAdminPage('admin.merchant_catalog');
 $canCommerce = mg_admin_commerce_user_can_read_any($adminMatrixUser);
@@ -46,6 +47,12 @@ $adminNav = [
         'detail' => 'Accounts and access',
         'href' => '/admin/users.php',
         'visible' => $canUsers,
+    ],
+    'roles' => [
+        'label' => 'Roles & permissions',
+        'detail' => 'Access matrix',
+        'href' => '/admin/roles.php',
+        'visible' => $canRoles,
     ],
     'pending-models' => [
         'label' => 'Pending models',
