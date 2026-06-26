@@ -148,6 +148,15 @@ window.Microgifter = window.Microgifter || {};
     if (output) output.textContent = JSON.stringify(manifest, null, 2);
     var preview = qs('[data-share-action-preview]', modal);
     if (preview) preview.hidden = false;
+
+    var validation = {
+      manifest: manifest,
+      validation_token: data && data.validation_token ? data.validation_token : '',
+      guardrails: data && data.guardrails ? data.guardrails : {},
+      definition: data && data.definition ? data.definition : {}
+    };
+    MG.shareMarketValidation = validation;
+    document.dispatchEvent(new CustomEvent('mg:share-market-manifest-validated', { detail: validation }));
     setStatus((payload && payload.message) || 'Action validated. No mutation was performed.', 'success');
   }
 
