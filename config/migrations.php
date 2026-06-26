@@ -105,6 +105,7 @@ return [
         'stage_18o_admin_queue_notes.sql',
         'stage_18p_admin_queue_notifications.sql',
         'stage_18q_admin_notifications_center.sql',
+        'stage_18r_admin_queue_sla_routing.sql',
         'stage_19_ai_provider_models.sql',
         'stage_19b_ai_permission_guard.sql',
         'stage_19_merchant_market_snapshots.sql',
