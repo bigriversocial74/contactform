@@ -16,7 +16,7 @@
 .mg-account-sidebar,
 .mg-account-left,
 .mg-admin-side{
-  overflow-y:auto!important;
+  overflow-y:hidden!important;
   overflow-x:hidden!important;
   scrollbar-width:none!important;
   -ms-overflow-style:none!important;
@@ -106,7 +106,7 @@
 .mg-account-side-nav,
 .mg-account-left nav{
   display:grid!important;
-  gap:6px!important;
+  gap:5px!important;
   align-content:start!important;
 }
 .mg-app-side-nav a,
@@ -118,8 +118,8 @@
 .mg-account-side-nav a,
 .mg-account-left nav a{
   position:relative!important;
-  min-height:32px!important;
-  padding:7px 10px 7px 16px!important;
+  min-height:29px!important;
+  padding:6px 10px 6px 16px!important;
   border:0!important;
   border-radius:0!important;
   background:transparent!important;
@@ -130,9 +130,9 @@
   display:grid!important;
   align-content:center!important;
   gap:0!important;
-  font-size:13px!important;
+  font-size:12px!important;
   font-weight:760!important;
-  line-height:1.25!important;
+  line-height:1.2!important;
 }
 .mg-app-side-nav a::before,
 .mg-app-side-nav button::before,
@@ -189,9 +189,9 @@
 .mg-account-left .mg-app-side-nav strong,
 .mg-account-side-nav strong,
 .mg-account-left nav strong{
-  font-size:13px!important;
+  font-size:12px!important;
   font-weight:760!important;
-  line-height:1.25!important;
+  line-height:1.2!important;
 }
 .mg-app-side-nav span,
 .mg-universal-sidebar.is-text-sidebar .mg-app-side-nav span,
@@ -204,6 +204,49 @@
 .mg-merchant-side-actions{
   display:none!important;
 }
+
+/* Storefront page polish: avoid nested scroll feel and normalize oversized command buttons. */
+.mg-merchant-app .mg-app-workspace,
+.mg-merchant-app .mg-merchant-main{
+  overflow:visible!important;
+}
+.mg-storefront-commandbar{
+  min-height:54px!important;
+  padding:0!important;
+  gap:14px!important;
+  align-items:center!important;
+}
+.mg-storefront-commandbar .mg-heading-actions{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-end!important;
+  gap:9px!important;
+  flex:0 0 auto!important;
+  flex-wrap:nowrap!important;
+}
+.mg-storefront-commandbar .mg-heading-actions .mg-btn,
+.mg-storefront-panel-head .mg-btn,
+.mg-storefront-form-actions .mg-btn,
+.mg-storefront-dirty-bar .mg-btn{
+  min-height:34px!important;
+  height:34px!important;
+  padding:0 14px!important;
+  border-radius:999px!important;
+  font-size:12px!important;
+  line-height:1!important;
+  white-space:nowrap!important;
+}
+.mg-storefront-commandbar .mg-heading-actions .mg-btn-primary{
+  padding-inline:16px!important;
+}
+.mg-storefront-tabs{
+  min-width:0!important;
+  overflow-x:auto!important;
+  scrollbar-width:none!important;
+}
+.mg-storefront-tabs::-webkit-scrollbar{
+  display:none!important;
+}
 @media(max-width:980px){
   .mg-app-sidebar,
   .mg-app-sidebar.is-text-sidebar,
@@ -212,6 +255,7 @@
   .mg-account-left,
   .mg-agent-side.is-text-sidebar{
     padding:18px 16px!important;
+    overflow-y:auto!important;
   }
   .mg-app-sidebar .mg-app-sidebar-brand,
   .mg-app-sidebar.is-text-sidebar .mg-app-sidebar-brand,
@@ -221,5 +265,14 @@
   .mg-agent-side.is-text-sidebar .mg-agent-sidebar-brand-row{
     display:flex!important;
     margin-bottom:20px!important;
+  }
+  .mg-storefront-commandbar{
+    align-items:flex-start!important;
+    flex-direction:column!important;
+  }
+  .mg-storefront-commandbar .mg-heading-actions{
+    width:100%!important;
+    justify-content:flex-start!important;
+    flex-wrap:wrap!important;
   }
 }
