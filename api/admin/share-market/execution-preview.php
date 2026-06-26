@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/bootstrap.php';
-require_once dirname(__DIR__, 3) . '/includes/share-market/execution-prep.php';
+require_once dirname(__DIR__, 3) . '/includes/share-market/execution-gate.php';
 
 mg_require_method('GET');
 $user = mg_require_api_user();
@@ -10,10 +10,12 @@ if (!mg_share_market_admin_authorized($user)) mg_fail('Share Market Admin permis
 mg_rate_limit('share_market.execution.preview', 'user:' . (int)$user['id'], 60, 300);
 
 $requestId = trim((string)($_GET['request_id'] ?? ''));
+$runMode = strtolower(trim((string)($_GET['run_mode'] ?? 'dry_run')));
 if ($requestId === '' || preg_match('/^[A-Za-z0-9-]{20,80}$/', $requestId) !== 1) mg_fail('Enter a valid approval request identifier.', 422);
+if (!in_array($runMode, ['dry_run','live'], true)) mg_fail('Select dry_run or live mode.', 422);
 
 try {
-    mg_ok(['execution' => mg_share_market_execution_preview(mg_db(), $requestId, $user)], 'Execution preview loaded. No share action was executed.');
+    mg_ok(['execution' => mg_share_market_execution_preview_with_gate(mg_db(), $requestId, $user, $runMode)], 'Execution release gate evaluated. No share action was executed.');
 } catch (InvalidArgumentException $e) {
     mg_fail($e->getMessage(), 422);
 } catch (Throwable $e) {
