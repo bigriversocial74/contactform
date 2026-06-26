@@ -40,6 +40,13 @@ $page_body_class = trim((string) $page_manifest['body_class']);
 $page_onboarding = is_array($page_manifest['onboarding'] ?? null)
     ? $page_manifest['onboarding']
     : mg_onboarding_config($page_manifest['id']);
+$page_meta = is_array($page_meta ?? null) ? $page_meta : [];
+$page_description = trim((string) ($page_meta['description'] ?? $page_manifest['description'] ?? ''));
+$page_canonical_url = trim((string) ($page_meta['canonical'] ?? ''));
+$page_og_title = trim((string) ($page_meta['og_title'] ?? $page_title));
+$page_og_description = trim((string) ($page_meta['og_description'] ?? $page_description));
+$page_og_image = trim((string) ($page_meta['og_image'] ?? ''));
+$page_robots = trim((string) ($page_meta['robots'] ?? ''));
 
 $agent_tab = $agent_tab ?? '';
 $section_css = $section_css ?? null;
@@ -144,6 +151,18 @@ $can_admin_dashboard = $user && (
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="csrf-token" content="<?= mg_e(mg_csrf_token()) ?>">
 <title><?= mg_e($page_title) ?></title>
+<?php if ($page_description !== ''): ?><meta name="description" content="<?= mg_e($page_description) ?>"><?php endif; ?>
+<?php if ($page_robots !== ''): ?><meta name="robots" content="<?= mg_e($page_robots) ?>"><?php endif; ?>
+<?php if ($page_canonical_url !== ''): ?><link rel="canonical" href="<?= mg_e($page_canonical_url) ?>"><?php endif; ?>
+<?php if ($page_og_title !== ''): ?><meta property="og:title" content="<?= mg_e($page_og_title) ?>"><?php endif; ?>
+<?php if ($page_og_description !== ''): ?><meta property="og:description" content="<?= mg_e($page_og_description) ?>"><?php endif; ?>
+<meta property="og:type" content="website">
+<?php if ($page_canonical_url !== ''): ?><meta property="og:url" content="<?= mg_e($page_canonical_url) ?>"><?php endif; ?>
+<?php if ($page_og_image !== ''): ?><meta property="og:image" content="<?= mg_e($page_og_image) ?>"><?php endif; ?>
+<meta name="twitter:card" content="<?= $page_og_image !== '' ? 'summary_large_image' : 'summary' ?>">
+<?php if ($page_og_title !== ''): ?><meta name="twitter:title" content="<?= mg_e($page_og_title) ?>"><?php endif; ?>
+<?php if ($page_og_description !== ''): ?><meta name="twitter:description" content="<?= mg_e($page_og_description) ?>"><?php endif; ?>
+<?php if ($page_og_image !== ''): ?><meta name="twitter:image" content="<?= mg_e($page_og_image) ?>"><?php endif; ?>
 <link rel="stylesheet" href="/assets/css/microgifter.css">
 <?php if (!$is_profile_page): ?>
 <link rel="stylesheet" href="/assets/css/public-program-pages.css">
