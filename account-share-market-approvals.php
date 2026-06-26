@@ -9,7 +9,7 @@ $page_title = 'Share Market Approval Queue | Microgifter';
 $page_section = 'account';
 $header_mode = 'account';
 $page_styles = ['/assets/css/admin-dashboard.css'];
-$page_scripts = ['/assets/js/account.js', '/assets/js/share-market-approval-queue.js'];
+$page_scripts = ['/assets/js/account.js', '/assets/js/share-market-approval-queue.js', '/assets/js/share-market-execution-prep.js'];
 
 require __DIR__ . '/includes/header.php';
 ?>
