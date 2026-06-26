@@ -2,7 +2,7 @@
 declare(strict_types=1);
 /* Canonical admin navigation targets now render in the left sidebar:
    /admin/users.php /admin/pending-models.php /merchant-catalog-operations.php /commerce-operations.php
-   /admin/moderation.php /admin/audit-logs.php /admin/security-logs.php /admin/sessions.php
+   /admin/notifications.php /admin/moderation.php /admin/audit-logs.php /admin/security-logs.php /admin/sessions.php
    /admin/system-health.php /admin/lifecycle-health.php /admin/ops-queue.php /admin-ai.php /admin-payments.php
    /account-profile-moderation.php
    Contract anchors preserved for admin UI validation:
@@ -12,7 +12,7 @@ declare(strict_types=1);
   <div class="mg-app-panel-head mg-section-head">
     <div>
       <h2>Admin control center</h2>
-      <p>Permission-aware platform, commerce, security, and operational visibility from the canonical backend services.</p>
+      <p>Permission-aware platform, commerce, security, notification, and operational visibility from the canonical backend services.</p>
     </div>
     <div class="mg-admin-toolbar">
       <label>Window
@@ -39,6 +39,11 @@ declare(strict_types=1);
       <section class="mg-admin-section is-wide">
         <header class="mg-admin-section-head"><div><h3>Commerce and lifecycle</h3><p>Paid orders, fulfillment, subscriptions, tips, claims, and redemption.</p></div></header>
         <div class="mg-admin-section-body" data-admin-commerce><p class="mg-muted">Loading commerce metrics…</p></div>
+      </section>
+
+      <section class="mg-admin-section is-wide">
+        <header class="mg-admin-section-head"><div><h3>Notification center</h3><p>Unread alerts, overdue queue items, escalations, assigned work, and review flags.</p></div></header>
+        <div class="mg-admin-section-body" data-admin-notifications><p class="mg-muted">Loading notification metrics…</p></div>
       </section>
 
       <section class="mg-admin-section is-wide">

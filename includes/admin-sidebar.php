@@ -23,6 +23,7 @@ $canPendingModels = $canAdminPage('admin.pending_models');
 $canMerchantCatalog = $canAdminPage('admin.merchant_catalog');
 $canCommerce = mg_admin_commerce_user_can_read_any($adminMatrixUser);
 $canModeration = $canAdminPage('admin.moderation');
+$canNotifications = $canAdminPage('admin.notifications');
 $canPackageModeration = $canCommerce;
 $canStampHealth = $canCommerce;
 $canHealth = $canAdminPage('admin.system_health');
@@ -54,11 +55,19 @@ $adminNav = [
         'href' => '/admin/roles.php',
         'visible' => $canRoles,
     ],
+    'notifications' => [
+        'label' => 'Notifications',
+        'detail' => 'Alerts and read state',
+        'href' => '/admin/notifications.php',
+        'visible' => $canNotifications,
+        'badge' => 'notifications',
+    ],
     'support-queue' => [
         'label' => 'Follow-up queue',
         'detail' => 'Notes and assignments',
         'href' => '/admin/support-queue.php',
         'visible' => $canAdminPage('admin.support_queue'),
+        'badge' => 'support_queue',
     ],
     'pending-models' => [
         'label' => 'Pending models',
@@ -162,7 +171,7 @@ $adminNav = [
     <?php foreach ($adminNav as $key => $item): ?>
       <?php if (!$item['visible']) { continue; } ?>
       <a class="<?= $adminActive === $key ? 'is-active' : '' ?>" href="<?= mg_e($item['href']) ?>">
-        <strong><?= mg_e($item['label']) ?></strong>
+        <strong><?= mg_e($item['label']) ?><?php if (!empty($item['badge'])): ?><em class="mg-admin-nav-count" data-admin-nav-count="<?= mg_e($item['badge']) ?>" hidden>0</em><?php endif; ?></strong>
         <span><?= mg_e($item['detail']) ?></span>
       </a>
     <?php endforeach; ?>
@@ -173,3 +182,17 @@ $adminNav = [
     <a class="mg-btn mg-btn-ghost" href="/inbox.php">Exit admin</a>
   </div>
 </aside>
+<?php if ($canNotifications): ?>
+<script>
+(function(){
+  var nodes=document.querySelectorAll('[data-admin-nav-count]');
+  if(!nodes.length)return;
+  fetch('/api/admin/notifications.php?limit=10',{credentials:'same-origin',headers:{Accept:'application/json'}}).then(function(response){return response.json();}).then(function(payload){
+    if(!payload||!payload.ok||!payload.data||!payload.data.summary)return;
+    var summary=payload.data.summary;
+    var counts={notifications:summary.unread_total||0,support_queue:summary.urgent_unread_total||0};
+    nodes.forEach(function(node){var value=Number(counts[node.getAttribute('data-admin-nav-count')]||0);node.textContent=value>99?'99+':String(value);node.hidden=value<=0;});
+  }).catch(function(){});
+})();
+</script>
+<?php endif; ?>
