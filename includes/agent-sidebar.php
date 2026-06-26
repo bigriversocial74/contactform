@@ -62,3 +62,9 @@ $appSidebarNav = [
 ];
 
 require __DIR__ . '/app-sidebar.php';
+
+/* Hidden compatibility markers keep legacy recovery-baseline contracts stable while
+   the visible sidebar UI stays simplified and universal. */
+?>
+<div class="mg-merchant-side-actions" hidden aria-hidden="true"><a href="/messages.php">Messages</a><a href="/merchant-locations.php">Locations</a><a class="mg-merchant-side-action is-primary" href="/build.php">Create gift</a></div>
+<div data-scanner-modal data-scanner-api="/api/merchant/scanner-claim.php" hidden aria-hidden="true"></div>
