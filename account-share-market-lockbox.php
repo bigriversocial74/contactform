@@ -9,7 +9,7 @@ $page_title = 'DAVE Lockbox Review | Microgifter';
 $page_section = 'account';
 $header_mode = 'account';
 $page_styles = ['/assets/css/admin-dashboard.css'];
-$page_scripts = ['/assets/js/account.js', '/assets/js/share-market-lockbox-admin.js'];
+$page_scripts = ['/assets/js/account.js', '/assets/js/share-market-lockbox-admin.js', '/assets/js/share-market-operator-checklist-admin.js'];
 
 require __DIR__ . '/includes/header.php';
 ?>
