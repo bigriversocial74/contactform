@@ -3,6 +3,7 @@ declare(strict_types=1);
 ?>
 <section class="mg-locations-redemption" data-location-redemption-manager>
   <div class="mg-locations-commandbar">
+    <div class="mg-locations-contract-label">Claim locations</div>
     <nav class="mg-locations-tabs" aria-label="Location sections">
       <a class="is-active" href="#locations-overview">Overview</a>
       <a href="#locations-list-panel">Active Locations</a>
