@@ -9,7 +9,7 @@ $page_title = 'Operations Command | Microgifter';
 $page_section = 'account';
 $header_mode = 'account';
 $page_body_class = 'mg-admin-ops-command-page';
-$page_styles = ['/assets/css/admin-shell.css','/assets/css/admin-ops-command.css'];
+$page_styles = ['/assets/css/admin-shell.css','/assets/css/admin-ops-command.css','/assets/css/admin-ops-incidents.css'];
 $page_scripts = ['/assets/js/admin-ops-command.js'];
 $adminActive = 'operations-command';
 
@@ -24,7 +24,7 @@ require dirname(__DIR__) . '/includes/header.php';
           <a class="mg-ops-back" href="/account-admin.php">← Admin dashboard</a>
           <span class="mg-eyebrow">Mission control</span>
           <h1>Operations command center</h1>
-          <p>Unified visibility for queue health, automation, SLA status, workload balance, notification urgency, reporting, and critical work across Microgifter admin operations.</p>
+          <p>Unified visibility for queue health, automation, incident mode, SLA status, workload balance, notification urgency, reporting, and critical work across Microgifter admin operations.</p>
         </div>
         <div class="mg-ops-hero-actions">
           <span>Command score <strong>10/10</strong></span>
