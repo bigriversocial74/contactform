@@ -45,6 +45,18 @@ document.addEventListener('DOMContentLoaded', function () {
     element.classList.add('is-' + (['healthy', 'warning', 'critical'].includes(status) ? status : 'warning'));
   }
 
+  function downloadText(filename, text) {
+    var blob = new Blob([text || ''], { type: 'text/sql;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement('a');
+    link.href = url;
+    link.download = filename || 'microgifter_admin_ops_recovery.sql';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 800);
+  }
+
   function renderBanner(data) {
     var banner = root.querySelector('[data-system-health-banner]');
     if (!banner) return;
@@ -148,19 +160,36 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  function recoveryButton(action, text, enabled) {
+    var button = node('button', 'mg-btn mg-btn-soft', text);
+    button.type = 'button';
+    button.dataset.healthAction = action;
+    button.dataset.healthActionEnabled = enabled ? 'true' : 'false';
+    button.disabled = !enabled;
+    return button;
+  }
+
+  function renderRecoveryTools(actions) {
+    var container = root.querySelector('[data-system-health-recovery]');
+    if (!container) return;
+    var available = Boolean(actions && Object.values(actions).some(Boolean));
+    container.replaceChildren(
+      recoveryButton('admin_ops_sql_plan', 'Prepare Admin Ops SQL', Boolean(actions && actions.admin_ops_sql_plan)),
+      recoveryButton('migration_plan', 'Migration Plan', Boolean(actions && actions.migration_plan)),
+      recoveryButton('verify_storage', 'Verify Storage', Boolean(actions && actions.verify_storage)),
+      recoveryButton('retry_notifications', 'Retry Notifications', Boolean(actions && actions.retry_notifications)),
+      recoveryButton('clean_uploads', 'Clean Uploads', Boolean(actions && actions.clean_uploads)),
+      node('p', '', available ? 'Recovery actions are limited, audited, and available only to super administrators.' : 'Recovery actions require a super administrator session.')
+    );
+  }
+
   function renderActions(actions) {
     root.querySelectorAll('[data-health-action]').forEach(function (button) {
       var enabled = Boolean(actions && actions[button.dataset.healthAction]);
       button.disabled = !enabled;
       button.dataset.healthActionEnabled = enabled ? 'true' : 'false';
     });
-    var actionPanel = root.querySelector('[data-system-health-actions]');
-    var note = actionPanel ? actionPanel.querySelector('p') : null;
-    if (note) {
-      note.textContent = actions && Object.values(actions).some(Boolean)
-        ? 'Recovery actions are limited, audited, and available only to super administrators.'
-        : 'Recovery actions require a super administrator session.';
-    }
+    renderRecoveryTools(actions || {});
   }
 
   function render(data) {
@@ -208,7 +237,8 @@ document.addEventListener('DOMContentLoaded', function () {
       verify_storage: 'Run a protected write, read, and delete verification on persistent storage?',
       retry_notifications: 'Requeue up to 100 eligible failed notification deliveries?',
       clean_uploads: 'Archive and remove up to 100 unattached uploads older than 24 hours?',
-      migration_plan: 'Prepare a read-only migration recovery plan? This does not run database migrations.'
+      migration_plan: 'Prepare a read-only migration recovery plan? This does not run database migrations.',
+      admin_ops_sql_plan: 'Prepare a downloadable admin ops SQL recovery plan? This does not execute database changes.'
     }[action] || 'Run this recovery action?';
   }
 
@@ -220,6 +250,9 @@ document.addEventListener('DOMContentLoaded', function () {
       var missing = Number(result.missing_count || 0).toLocaleString();
       var command = result.command || 'php scripts/run_migrations.php';
       return missing + ' missing migration file(s). Run: ' + command;
+    }
+    if (action === 'admin_ops_sql_plan') {
+      return 'Admin ops SQL plan prepared: ' + Number(result.sql_bytes || 0).toLocaleString() + ' bytes.';
     }
     return 'Recovery action completed.';
   }
@@ -234,7 +267,11 @@ document.addEventListener('DOMContentLoaded', function () {
     try {
       var response = await MG.post('/api/admin/system-health-action.php', { action: action });
       var data = response.data || response;
-      if (MG.toast) MG.toast(actionResult(action, data.result || {}), 'success');
+      var result = data.result || {};
+      if (action === 'admin_ops_sql_plan' && result.sql) {
+        downloadText(result.filename || 'microgifter_admin_ops_recovery.sql', result.sql);
+      }
+      if (MG.toast) MG.toast(actionResult(action, result), 'success');
       await load();
     } catch (error) {
       if (MG.toast) MG.toast(error.message || 'Unable to complete the recovery action.', 'error');

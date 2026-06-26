@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/_ops_installer.php';
+
 function mg_admin_system_health_can_manage(array $user): bool
 {
     $roles = is_array($user['roles'] ?? null) ? $user['roles'] : [];
