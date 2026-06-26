@@ -1,0 +1,155 @@
+-- Stage 21 Buy-In execution audit scaffolding
+-- Additive only. Stores future-runner audit/preflight evidence without moving value or mutating Share Market balances.
+
+CREATE TABLE IF NOT EXISTS share_market_execution_attempts (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  approval_request_id BIGINT UNSIGNED NOT NULL,
+  request_public_id CHAR(36) NOT NULL,
+  actor_user_id BIGINT UNSIGNED NOT NULL,
+  run_mode ENUM('dry_run','live_requested') NOT NULL DEFAULT 'dry_run',
+  status ENUM('created','preflight_ready','blocked_by_gate','reconciliation_mismatch','reserved','cancelled','expired','failed','void') NOT NULL DEFAULT 'created',
+  idempotency_key VARCHAR(190) NOT NULL,
+  release_gate_status VARCHAR(80) NOT NULL DEFAULT 'not_evaluated',
+  simulator_status VARCHAR(80) NOT NULL DEFAULT 'not_run',
+  target_type VARCHAR(120) NOT NULL,
+  target_public_id VARCHAR(120) NOT NULL,
+  target_snapshot_hash CHAR(64) NULL,
+  preflight_payload_hash CHAR(64) NOT NULL,
+  release_gate_json JSON NULL,
+  simulator_json JSON NULL,
+  metadata_json JSON NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_sm_execution_attempts_public_id (public_id),
+  UNIQUE KEY uq_sm_execution_attempts_preflight_hash (preflight_payload_hash),
+  KEY idx_sm_execution_attempts_request (approval_request_id,created_at),
+  KEY idx_sm_execution_attempts_status (status,created_at),
+  KEY idx_sm_execution_attempts_target (target_type,target_public_id),
+  KEY idx_sm_execution_attempts_actor (actor_user_id,created_at),
+  CONSTRAINT fk_sm_execution_attempts_request FOREIGN KEY (approval_request_id) REFERENCES share_market_approval_requests(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_sm_execution_attempts_actor FOREIGN KEY (actor_user_id) REFERENCES users(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS share_market_execution_preflight_snapshots (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  execution_attempt_id BIGINT UNSIGNED NOT NULL,
+  approval_request_id BIGINT UNSIGNED NOT NULL,
+  snapshot_type ENUM('release_gate','ledger_simulator','target_snapshot','approval_request','operator_context') NOT NULL,
+  target_type VARCHAR(120) NOT NULL,
+  target_public_id VARCHAR(120) NOT NULL,
+  snapshot_json JSON NOT NULL,
+  payload_hash CHAR(64) NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_sm_preflight_snapshots_public_id (public_id),
+  UNIQUE KEY uq_sm_preflight_snapshots_payload_hash (payload_hash),
+  KEY idx_sm_preflight_snapshots_attempt (execution_attempt_id,snapshot_type),
+  KEY idx_sm_preflight_snapshots_request (approval_request_id,created_at),
+  KEY idx_sm_preflight_snapshots_target (target_type,target_public_id),
+  CONSTRAINT fk_sm_preflight_snapshots_attempt FOREIGN KEY (execution_attempt_id) REFERENCES share_market_execution_attempts(id) ON DELETE CASCADE,
+  CONSTRAINT fk_sm_preflight_snapshots_request FOREIGN KEY (approval_request_id) REFERENCES share_market_approval_requests(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS share_market_execution_operator_signoffs (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  execution_attempt_id BIGINT UNSIGNED NOT NULL,
+  approval_request_id BIGINT UNSIGNED NOT NULL,
+  operator_user_id BIGINT UNSIGNED NOT NULL,
+  signoff_type ENUM('engineering','security','legal','operations','database_backup','product_owner') NOT NULL,
+  status ENUM('pending','approved','rejected','revoked','expired') NOT NULL DEFAULT 'pending',
+  note TEXT NULL,
+  evidence_ref VARCHAR(255) NULL,
+  evidence_hash CHAR(64) NULL,
+  signed_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_sm_operator_signoffs_public_id (public_id),
+  UNIQUE KEY uq_sm_operator_signoffs_attempt_type (execution_attempt_id,signoff_type),
+  KEY idx_sm_operator_signoffs_request (approval_request_id,status),
+  KEY idx_sm_operator_signoffs_operator (operator_user_id,created_at),
+  CONSTRAINT fk_sm_operator_signoffs_attempt FOREIGN KEY (execution_attempt_id) REFERENCES share_market_execution_attempts(id) ON DELETE CASCADE,
+  CONSTRAINT fk_sm_operator_signoffs_request FOREIGN KEY (approval_request_id) REFERENCES share_market_approval_requests(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_sm_operator_signoffs_operator FOREIGN KEY (operator_user_id) REFERENCES users(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS share_market_legal_release_evidence (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  execution_attempt_id BIGINT UNSIGNED NULL,
+  approval_request_id BIGINT UNSIGNED NOT NULL,
+  recorded_by_user_id BIGINT UNSIGNED NOT NULL,
+  evidence_type ENUM('legal_note','policy_reference','contract_reference','board_approval','operator_release','external_review') NOT NULL DEFAULT 'legal_note',
+  status ENUM('draft','submitted','approved','rejected','superseded') NOT NULL DEFAULT 'draft',
+  evidence_ref VARCHAR(255) NULL,
+  summary VARCHAR(255) NOT NULL,
+  evidence_hash CHAR(64) NOT NULL,
+  evidence_json JSON NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_sm_legal_release_public_id (public_id),
+  UNIQUE KEY uq_sm_legal_release_evidence_hash (evidence_hash),
+  KEY idx_sm_legal_release_attempt (execution_attempt_id,status),
+  KEY idx_sm_legal_release_request (approval_request_id,status),
+  KEY idx_sm_legal_release_recorder (recorded_by_user_id,created_at),
+  CONSTRAINT fk_sm_legal_release_attempt FOREIGN KEY (execution_attempt_id) REFERENCES share_market_execution_attempts(id) ON DELETE SET NULL,
+  CONSTRAINT fk_sm_legal_release_request FOREIGN KEY (approval_request_id) REFERENCES share_market_approval_requests(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_sm_legal_release_recorder FOREIGN KEY (recorded_by_user_id) REFERENCES users(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS share_market_execution_rollback_evidence (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  execution_attempt_id BIGINT UNSIGNED NOT NULL,
+  approval_request_id BIGINT UNSIGNED NOT NULL,
+  recorded_by_user_id BIGINT UNSIGNED NOT NULL,
+  rollback_status ENUM('not_required','plan_recorded','rollback_ready','rollback_tested','rollback_invoked','rollback_failed','rollback_completed') NOT NULL DEFAULT 'plan_recorded',
+  reason_code VARCHAR(120) NOT NULL,
+  note TEXT NULL,
+  evidence_hash CHAR(64) NOT NULL,
+  evidence_json JSON NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_sm_rollback_evidence_public_id (public_id),
+  UNIQUE KEY uq_sm_rollback_evidence_hash (evidence_hash),
+  KEY idx_sm_rollback_evidence_attempt (execution_attempt_id,created_at),
+  KEY idx_sm_rollback_evidence_request (approval_request_id,created_at),
+  CONSTRAINT fk_sm_rollback_evidence_attempt FOREIGN KEY (execution_attempt_id) REFERENCES share_market_execution_attempts(id) ON DELETE CASCADE,
+  CONSTRAINT fk_sm_rollback_evidence_request FOREIGN KEY (approval_request_id) REFERENCES share_market_approval_requests(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_sm_rollback_evidence_recorder FOREIGN KEY (recorded_by_user_id) REFERENCES users(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS share_market_idempotency_reservations (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  idempotency_key VARCHAR(190) NOT NULL,
+  execution_attempt_id BIGINT UNSIGNED NOT NULL,
+  approval_request_id BIGINT UNSIGNED NOT NULL,
+  reserved_by_user_id BIGINT UNSIGNED NOT NULL,
+  status ENUM('reserved','released','expired','used','void') NOT NULL DEFAULT 'reserved',
+  reserved_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  expires_at DATETIME NOT NULL,
+  released_at DATETIME NULL,
+  used_at DATETIME NULL,
+  payload_hash CHAR(64) NOT NULL,
+  metadata_json JSON NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_sm_idempotency_reservations_public_id (public_id),
+  UNIQUE KEY uq_sm_idempotency_reservations_key (idempotency_key),
+  UNIQUE KEY uq_sm_idempotency_reservations_payload_hash (payload_hash),
+  KEY idx_sm_idempotency_reservations_attempt (execution_attempt_id,status),
+  KEY idx_sm_idempotency_reservations_request (approval_request_id,status),
+  KEY idx_sm_idempotency_reservations_expiry (status,expires_at),
+  CONSTRAINT fk_sm_idempotency_reservations_attempt FOREIGN KEY (execution_attempt_id) REFERENCES share_market_execution_attempts(id) ON DELETE CASCADE,
+  CONSTRAINT fk_sm_idempotency_reservations_request FOREIGN KEY (approval_request_id) REFERENCES share_market_approval_requests(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_sm_idempotency_reservations_reserved_by FOREIGN KEY (reserved_by_user_id) REFERENCES users(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO schema_migrations (migration_key,description,checksum,applied_at)
+VALUES ('stage_21_buy_in_execution_audit_scaffolding','Buy-In execution attempt, signoff, evidence, rollback, preflight snapshot, and idempotency reservation scaffolding.',NULL,NOW())
+ON DUPLICATE KEY UPDATE description=VALUES(description);
