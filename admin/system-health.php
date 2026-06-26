@@ -25,7 +25,7 @@ require dirname(__DIR__) . '/includes/header.php';
           <a class="mg-system-health-back" href="/account-admin.php">← Admin dashboard</a>
           <span class="mg-eyebrow">Platform operations</span>
           <h1>System health</h1>
-          <p>Persistent media, notification delivery, database migrations, and recent operational warnings.</p>
+          <p>Persistent media, notification delivery, database migrations, admin ops deployment readiness, and recent operational warnings.</p>
         </div>
         <div class="mg-system-health-hero-actions">
           <span class="mg-system-health-updated">Last checked <strong data-system-health-updated>—</strong></span>
@@ -60,6 +60,12 @@ require dirname(__DIR__) . '/includes/header.php';
             <article><span><?= mg_e($label) ?></span><strong>—</strong><small>Waiting for health data</small></article>
           <?php endforeach; ?>
         </div>
+      </section>
+
+      <section class="mg-system-health-section mg-system-health-readiness" data-system-health-readiness>
+        <header><div><h2>Admin ops deployment readiness</h2><p>Validates required tables, columns, enum values, permissions, APIs, and command center assets.</p></div><span data-readiness-status>Checking</span></header>
+        <div class="mg-system-health-readiness-summary" data-readiness-summary>Loading admin ops readiness…</div>
+        <div class="mg-system-health-readiness-grid" data-readiness-grid></div>
       </section>
 
       <div class="mg-system-health-columns">
