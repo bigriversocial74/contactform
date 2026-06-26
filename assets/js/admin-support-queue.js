@@ -9,8 +9,11 @@
   const status = root.querySelector('[data-support-status]');
   const refresh = root.querySelector('[data-support-refresh]');
   const reset = root.querySelector('[data-support-reset]');
+  const heroActions = root.querySelector('.mg-admin-support-hero-actions');
   let currentItems = [];
   let activeDrawer = null;
+  let headerBadge = null;
+  let digestPanel = null;
 
   const make = (tag, cls = '', text = '') => {
     const node = document.createElement(tag);
@@ -51,6 +54,58 @@
     });
     return params.toString();
   }
+  function setField(name, value) {
+    const field = form.elements[name];
+    if (field) field.value = value;
+  }
+  function clearFilters() {
+    form.reset();
+  }
+  function applyQuickFilter(filter) {
+    clearFilters();
+    if (filter === 'my') setField('assigned', 'me');
+    if (filter === 'overdue') setField('due', 'overdue');
+    if (filter === 'escalated') setField('status', 'escalated');
+    if (filter === 'review') setField('flag_state', 'review');
+    if (filter === 'merchant') setField('status', 'waiting_on_merchant');
+    if (filter === 'customer') setField('status', 'waiting_on_customer');
+    load();
+  }
+  function installQueueTools() {
+    if (!root.querySelector('[data-support-quick-filters]')) {
+      const quick = make('section', 'mg-admin-support-quick');
+      quick.dataset.supportQuickFilters = '1';
+      [['my','My queue'], ['overdue','Overdue'], ['escalated','Escalated'], ['review','Review flags'], ['merchant','Waiting on merchant'], ['customer','Waiting on customer'], ['clear','Clear filters']].forEach(([key, label]) => {
+        const btn = make('button', '', label);
+        btn.type = 'button';
+        btn.dataset.quickFilter = key;
+        btn.addEventListener('click', () => applyQuickFilter(key));
+        quick.appendChild(btn);
+      });
+      root.insertBefore(quick, form);
+    }
+    if (!root.querySelector('[data-support-digest-panel]')) {
+      digestPanel = make('section', 'mg-admin-support-digest mg-hidden');
+      digestPanel.dataset.supportDigestPanel = '1';
+      root.insertBefore(digestPanel, form);
+    } else {
+      digestPanel = root.querySelector('[data-support-digest-panel]');
+    }
+    if (heroActions && !heroActions.querySelector('[data-support-digest]')) {
+      const badge = make('span', '', 'Urgent ');
+      headerBadge = make('strong', '', '0');
+      headerBadge.dataset.supportHeaderBadge = '1';
+      badge.appendChild(headerBadge);
+      const digest = make('button', 'mg-btn mg-btn-soft', 'Generate digest');
+      digest.type = 'button';
+      digest.dataset.supportDigest = '1';
+      digest.addEventListener('click', generateDigest);
+      heroActions.insertBefore(badge, refresh);
+      heroActions.insertBefore(digest, refresh);
+    } else if (heroActions) {
+      headerBadge = heroActions.querySelector('[data-support-header-badge]');
+    }
+  }
   function pill(value) {
     return make('span', 'mg-admin-support-pill is-' + String(value || 'none'), readable(value));
   }
@@ -67,8 +122,12 @@
       card('Active', num(s.active_total)),
       card('Escalated', num(s.escalated_total)),
       card('Review flags', num(s.review_total)),
-      card('Overdue', num(s.overdue_total))
+      card('Overdue', num(s.overdue_total)),
+      card('Due today', num(s.due_today_total)),
+      card('Due soon', num(s.due_soon_total)),
+      card('My queue', num(s.assigned_to_me_total))
     );
+    if (headerBadge) headerBadge.textContent = num(s.header_badge_total || 0);
   }
   function reasonFor(action) {
     const defaults = {
@@ -102,6 +161,35 @@
       setStatus(error.message || 'Unable to update queue item.', 'error');
       return false;
     }
+  }
+  async function generateDigest() {
+    setStatus('Generating daily queue digest…');
+    try {
+      const response = await apiPost('/api/admin/queue-digest.php', {});
+      renderDigest(response.data || {});
+      await load(false);
+      setStatus('Daily queue digest generated.', 'success');
+    } catch (error) {
+      setStatus(error.message || 'Unable to generate daily queue digest.', 'error');
+    }
+  }
+  function renderDigest(data) {
+    if (!digestPanel) return;
+    digestPanel.classList.remove('mg-hidden');
+    clear(digestPanel);
+    const alerts = data.alerts || {};
+    const head = make('header');
+    head.append(make('h2', '', 'Daily queue digest'), make('p', '', `${num(alerts.active_total)} active · ${num(alerts.overdue_total)} overdue · ${num(alerts.escalated_total)} escalated · ${num(data.notifications_created)} new alerts`));
+    const grid = make('div', 'mg-admin-support-digest-grid');
+    grid.append(card('Assigned to me', num(alerts.assigned_to_me_total)), card('Due today', num(alerts.due_today_total)), card('Due soon', num(alerts.due_soon_total)), card('Review flags', num(alerts.review_total)));
+    const items = make('div', 'mg-admin-support-digest-items');
+    (data.top_items || []).forEach((item) => {
+      const row = make('article', 'mg-admin-support-row-mini');
+      row.append(make('strong', '', item.target || 'Queue item'), make('span', '', `${readable(item.priority)} · ${readable(item.status)} · ${readable(item.category)} · Due ${item.due_at || 'none'}`));
+      items.appendChild(row);
+    });
+    if (!items.children.length) items.appendChild(make('div', 'mg-admin-support-empty', 'No active digest items.'));
+    digestPanel.append(head, grid, items);
   }
   function findItem(noteId) {
     return currentItems.find((item) => item.id === noteId) || null;
@@ -193,8 +281,17 @@
     activeDrawer.append(backdrop, drawer);
     document.body.appendChild(activeDrawer);
   }
+  function itemTimingClass(item) {
+    if (!item.due_at || item.status === 'resolved') return '';
+    const due = new Date(String(item.due_at).replace(' ', 'T'));
+    if (Number.isNaN(due.getTime())) return '';
+    const now = new Date();
+    if (due < now) return ' is-overdue';
+    if (due.getTime() - now.getTime() <= 48 * 60 * 60 * 1000) return ' is-due-soon';
+    return '';
+  }
   function renderItem(item) {
-    const node = make('article', 'mg-admin-support-item');
+    const node = make('article', 'mg-admin-support-item' + itemTimingClass(item));
     const head = make('div', 'mg-admin-support-item-head');
     const copy = make('div');
     copy.append(make('h3', '', item.target?.display_name || item.target?.email || 'User'), make('p', '', item.note || 'No note text.'));
@@ -254,6 +351,7 @@
       refresh.disabled = false;
     }
   }
+  installQueueTools();
   form.addEventListener('submit', (event) => { event.preventDefault(); load(); });
   reset.addEventListener('click', () => window.setTimeout(load, 0));
   refresh.addEventListener('click', () => load());
