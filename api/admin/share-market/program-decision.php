@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/bootstrap.php';
 require_once dirname(__DIR__, 3) . '/includes/share-market/sql-adapter.php';
+require_once dirname(__DIR__, 3) . '/includes/share-market/notifications.php';
 
 mg_require_method('POST');
 $input = mg_input();
@@ -12,7 +13,10 @@ if (!mg_share_market_admin_authorized($user)) mg_fail('Share Market Admin permis
 mg_rate_limit('share_market.program.decision', 'user:' . (int)$user['id'], 20, 300);
 
 try {
-    mg_ok(mg_share_market_sql_record_program_decision(mg_db(), $input, $user), 'Share Market review decision recorded. No market was launched.');
+    $pdo = mg_db();
+    $result = mg_share_market_sql_record_program_decision($pdo, $input, $user);
+    mg_share_market_notify_decision($pdo, (int)$user['id'], $input);
+    mg_ok($result, 'Share Market review decision recorded. No market was launched.');
 } catch (InvalidArgumentException $e) {
     mg_fail($e->getMessage(), 422);
 } catch (DomainException $e) {
