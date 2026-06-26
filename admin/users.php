@@ -91,7 +91,7 @@ require dirname(__DIR__) . '/includes/header.php';
               <h2>Platform identities</h2>
               <p data-users-summary>Loading user directory…</p>
             </div>
-            <span class="mg-admin-users-readonly">Permission gated</span>
+            <span class="mg-admin-users-readonly">Read only directory</span>
           </header>
 
           <div class="mg-admin-users-status" data-users-status role="status" aria-live="polite"></div>
