@@ -15,6 +15,7 @@ $page_styles = ['/assets/css/admin-shell.css','/assets/css/admin-users.css'];
 $page_scripts = [
     '/assets/js/admin-users.js',
     '/assets/js/admin-user-detail-drawer.js',
+    '/assets/js/admin-user-ops-detail.js',
     '/assets/js/admin-user-management.js',
     '/assets/js/admin-create-user.js',
 ];
