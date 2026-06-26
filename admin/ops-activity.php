@@ -4,7 +4,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/includes/app.php';
 require_once dirname(__DIR__) . '/includes/admin-auth.php';
 
-$user = mg_require_admin_page_permission('admin.operations_command');
+$user = mg_require_admin_page_any(['admin.audit.view','admin.operations_command.view','admin.operations_analytics.view','admin.operations_forecast.view','admin.users.manage']);
 $page_title = 'Ops Activity Log | Microgifter';
 $page_section = 'account';
 $header_mode = 'account';
