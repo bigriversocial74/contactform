@@ -150,6 +150,7 @@ $can_admin_dashboard = $user && (
 <?php endif; ?>
 <?php if ($is_app_page): ?>
 <link rel="stylesheet" href="/assets/css/app-shell.css">
+<link rel="stylesheet" href="/assets/css/compact-sidebars.css">
 <link rel="stylesheet" href="/assets/css/create-menu.css">
 <link rel="stylesheet" href="/assets/css/social-feed.css">
 <link rel="stylesheet" href="/assets/css/social-feed-upload.css">
