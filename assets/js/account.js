@@ -277,10 +277,94 @@ window.Microgifter = window.Microgifter || {};
     }
   }
 
+  function subscriptionPlanFromLink(link) {
+    if (!link) return '';
+    var card = link.closest('[data-package-id]');
+    if (card && card.getAttribute('data-package-id')) return card.getAttribute('data-package-id');
+    try {
+      return new URL(link.href, window.location.origin).searchParams.get('plan') || '';
+    } catch (error) {
+      return '';
+    }
+  }
+
+  function packageName(plan) {
+    return String(plan || '').replace(/[-_]+/g, ' ').replace(/\b\w/g, function (letter) { return letter.toUpperCase(); });
+  }
+
+  function renderSubscriptionRequestBanner(request) {
+    var panelBody = MG.qs('.mg-subscription-redesign .mg-app-panel-body');
+    if (!panelBody) return;
+    var existing = MG.qs('[data-subscription-request-banner]', panelBody);
+    if (existing) existing.remove();
+    if (!request) return;
+
+    var status = request.status || '';
+    var tone = status === 'rejected' || status === 'canceled' ? 'error' : (status === 'completed' ? 'success' : 'info');
+    var title = request.status_label || 'Package request pending';
+    var copy = 'Requested package: ' + packageName(request.requested_package_id || '') + '.';
+    if (status === 'pending_payment') copy += ' Continue to payment to activate this package.';
+    if (status === 'pending_admin_review') copy += ' Admin review is required before this package is activated.';
+    if (status === 'completed') copy += ' This package has been approved and marked active.';
+
+    var border = tone === 'error' ? '#fecaca' : (tone === 'success' ? '#bbf7d0' : '#c7d2fe');
+    var background = tone === 'error' ? '#fff1f2' : (tone === 'success' ? '#f0fdf4' : '#eef2ff');
+    var color = tone === 'error' ? '#991b1b' : (tone === 'success' ? '#166534' : '#1e3a8a');
+    var action = request.checkout_url ? '<a href="' + escapeHtml(request.checkout_url) + '" style="display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:0 14px;border-radius:9px;background:#fff;color:' + color + ';border:1px solid ' + border + ';font-size:12px;font-weight:950;text-decoration:none;white-space:nowrap">Continue</a>' : '';
+
+    var banner = document.createElement('div');
+    banner.setAttribute('data-subscription-request-banner', '');
+    banner.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 20px;padding:16px 18px;border-radius:14px;border:1px solid ' + border + ';background:' + background + ';color:' + color + ';box-shadow:0 12px 28px rgba(13,38,76,.06)';
+    banner.innerHTML = '<div><strong style="display:block;font-size:14px;font-weight:950;margin-bottom:3px">' + escapeHtml(title) + '</strong><span style="display:block;font-size:13px;line-height:1.45;font-weight:650">' + escapeHtml(copy) + '</span></div>' + action;
+    panelBody.insertBefore(banner, panelBody.firstChild);
+  }
+
+  async function loadSubscriptionPackageChangeStatus() {
+    if (!MG.qs('.mg-subscription-redesign')) return;
+    try {
+      var response = await MG.get('/api/subscriptions/package-change-status.php');
+      var data = response.data || response;
+      renderSubscriptionRequestBanner(data.request || null);
+    } catch (error) {
+      var params = new URLSearchParams(window.location.search || '');
+      if (params.get('upgrade') === 'error') MG.toast(params.get('message') || 'Unable to load subscription request status.', 'error');
+    }
+  }
+
+  async function requestSubscriptionPackage(plan, link) {
+    if (!plan || link.classList.contains('is-current')) return;
+    var isEnterprise = plan === 'enterprise';
+    var prompt = isEnterprise
+      ? 'Submit this Enterprise package request for review?'
+      : 'Submit package request for ' + packageName(plan) + '?';
+    if (!window.confirm(prompt)) return;
+
+    MG.setBusy(link, true, isEnterprise ? 'Submitting…' : 'Requesting…');
+    try {
+      var response = await MG.post('/api/subscriptions/request-upgrade.php', {
+        plan: plan,
+        source: 'account_subscription',
+        response: 'json'
+      });
+      var data = response.data || response;
+      var request = data.request || null;
+      renderSubscriptionRequestBanner(request);
+      MG.toast(response.message || 'Package request submitted.', 'success');
+      if (request && request.checkout_url && request.status === 'pending_payment') {
+        window.location.href = request.checkout_url;
+      }
+    } catch (error) {
+      MG.toast(error.message || 'Unable to submit package request.', 'error');
+    } finally {
+      MG.setBusy(link, false);
+    }
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     loadSessions();
     loadProfile();
     loadModels();
+    loadSubscriptionPackageChangeStatus();
 
     MG.qsa('[data-account-tab]').forEach(function (button) {
       button.addEventListener('click', function () {
@@ -305,6 +389,16 @@ window.Microgifter = window.Microgifter || {};
     }
 
     document.addEventListener('click', function (event) {
+      var subscriptionLink = event.target.closest('.mg-subscription-redesign .mg-sub-action');
+      if (subscriptionLink && !subscriptionLink.classList.contains('is-current')) {
+        var plan = subscriptionPlanFromLink(subscriptionLink);
+        if (plan) {
+          event.preventDefault();
+          requestSubscriptionPackage(plan, subscriptionLink);
+          return;
+        }
+      }
+
       var requestButton = event.target.closest('[data-request-model]');
       if (requestButton) requestModel(requestButton.getAttribute('data-request-model'), requestButton);
       var switchButton = event.target.closest('[data-switch-model]');
