@@ -89,6 +89,37 @@ CREATE TABLE IF NOT EXISTS share_market_credit_treasuries (
   CONSTRAINT fk_share_market_credit_treasuries_created_by FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS dave_scores (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  target_type ENUM('profile','enrollment','series','merchant','artist','creator','venue') NOT NULL,
+  target_public_id VARCHAR(120) NOT NULL,
+  formula_version VARCHAR(120) NOT NULL,
+  status ENUM('draft','active','locked','under_review','archived') NOT NULL DEFAULT 'active',
+  attention_score DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  action_score DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  redemption_score DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  commerce_score DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  distribution_score DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  risk_adjustment DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  confidence_score DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  dave_score DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  calculated_from DATETIME NULL,
+  calculated_to DATETIME NULL,
+  locked_by_user_id BIGINT UNSIGNED NULL,
+  locked_at DATETIME NULL,
+  input_snapshot_json JSON NOT NULL,
+  output_snapshot_json JSON NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_dave_scores_public_id (public_id),
+  KEY idx_dave_scores_target_formula (target_type,target_public_id,formula_version,calculated_to),
+  KEY idx_dave_scores_target_status (target_type,target_public_id,status),
+  KEY idx_dave_scores_score (dave_score,confidence_score),
+  CONSTRAINT fk_dave_scores_locked_by FOREIGN KEY (locked_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS share_market_series (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   public_id VARCHAR(80) NOT NULL,
@@ -126,7 +157,8 @@ CREATE TABLE IF NOT EXISTS share_market_series (
   CONSTRAINT fk_share_market_series_enrollment FOREIGN KEY (enrollment_id) REFERENCES share_market_enrollments(id) ON DELETE RESTRICT,
   CONSTRAINT fk_share_market_series_participant FOREIGN KEY (participant_user_id) REFERENCES users(id) ON DELETE RESTRICT,
   CONSTRAINT fk_share_market_series_treasury FOREIGN KEY (treasury_id) REFERENCES share_market_credit_treasuries(id) ON DELETE SET NULL,
-  CONSTRAINT fk_share_market_series_reviewer FOREIGN KEY (reviewed_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+  CONSTRAINT fk_share_market_series_reviewer FOREIGN KEY (reviewed_by_user_id) REFERENCES users(id) ON DELETE SET NULL,
+  CONSTRAINT fk_share_market_series_dave_score FOREIGN KEY (dave_score_snapshot_id) REFERENCES dave_scores(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS share_market_series_redemptions (
@@ -265,33 +297,6 @@ CREATE TABLE IF NOT EXISTS share_market_holder_positions (
   CONSTRAINT fk_share_market_holder_positions_holder FOREIGN KEY (holder_user_id) REFERENCES users(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS share_market_resale_listings (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  public_id CHAR(36) NOT NULL,
-  holder_position_id BIGINT UNSIGNED NOT NULL,
-  series_id BIGINT UNSIGNED NOT NULL,
-  seller_user_id BIGINT UNSIGNED NOT NULL,
-  status ENUM('draft','active','paused','cancelled','filled','expired','frozen','rejected') NOT NULL DEFAULT 'draft',
-  shares_listed BIGINT UNSIGNED NOT NULL,
-  price_per_share_cents BIGINT UNSIGNED NOT NULL,
-  currency CHAR(3) NOT NULL DEFAULT 'USD',
-  platform_fee_bps INT UNSIGNED NOT NULL DEFAULT 0,
-  hold_settlement_until DATETIME NULL,
-  expires_at DATETIME NULL,
-  risk_flag_id BIGINT UNSIGNED NULL,
-  metadata_json JSON NULL,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  UNIQUE KEY uq_share_market_resale_listings_public_id (public_id),
-  KEY idx_share_market_resale_listings_series_status (series_id,status,price_per_share_cents),
-  KEY idx_share_market_resale_listings_seller_status (seller_user_id,status),
-  KEY idx_share_market_resale_listings_position (holder_position_id,status),
-  CONSTRAINT fk_share_market_resale_listings_position FOREIGN KEY (holder_position_id) REFERENCES share_market_holder_positions(id) ON DELETE RESTRICT,
-  CONSTRAINT fk_share_market_resale_listings_series FOREIGN KEY (series_id) REFERENCES share_market_series(id) ON DELETE RESTRICT,
-  CONSTRAINT fk_share_market_resale_listings_seller FOREIGN KEY (seller_user_id) REFERENCES users(id) ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 CREATE TABLE IF NOT EXISTS share_market_risk_flags (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   public_id CHAR(36) NOT NULL,
@@ -318,42 +323,33 @@ CREATE TABLE IF NOT EXISTS share_market_risk_flags (
   CONSTRAINT fk_share_market_risk_flags_resolver FOREIGN KEY (resolved_by_user_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-ALTER TABLE share_market_resale_listings
-  ADD CONSTRAINT fk_share_market_resale_listings_risk_flag FOREIGN KEY (risk_flag_id) REFERENCES share_market_risk_flags(id) ON DELETE SET NULL;
-
-CREATE TABLE IF NOT EXISTS dave_scores (
+CREATE TABLE IF NOT EXISTS share_market_resale_listings (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   public_id CHAR(36) NOT NULL,
-  target_type ENUM('profile','enrollment','series','merchant','artist','creator','venue') NOT NULL,
-  target_public_id VARCHAR(120) NOT NULL,
-  formula_version VARCHAR(120) NOT NULL,
-  status ENUM('draft','active','locked','under_review','archived') NOT NULL DEFAULT 'active',
-  attention_score DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-  action_score DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-  redemption_score DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-  commerce_score DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-  distribution_score DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-  risk_adjustment DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-  confidence_score DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-  dave_score DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-  calculated_from DATETIME NULL,
-  calculated_to DATETIME NULL,
-  locked_by_user_id BIGINT UNSIGNED NULL,
-  locked_at DATETIME NULL,
-  input_snapshot_json JSON NOT NULL,
-  output_snapshot_json JSON NOT NULL,
+  holder_position_id BIGINT UNSIGNED NOT NULL,
+  series_id BIGINT UNSIGNED NOT NULL,
+  seller_user_id BIGINT UNSIGNED NOT NULL,
+  status ENUM('draft','active','paused','cancelled','filled','expired','frozen','rejected') NOT NULL DEFAULT 'draft',
+  shares_listed BIGINT UNSIGNED NOT NULL,
+  price_per_share_cents BIGINT UNSIGNED NOT NULL,
+  currency CHAR(3) NOT NULL DEFAULT 'USD',
+  platform_fee_bps INT UNSIGNED NOT NULL DEFAULT 0,
+  hold_settlement_until DATETIME NULL,
+  expires_at DATETIME NULL,
+  risk_flag_id BIGINT UNSIGNED NULL,
+  metadata_json JSON NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
-  UNIQUE KEY uq_dave_scores_public_id (public_id),
-  UNIQUE KEY uq_dave_scores_target_formula (target_type,target_public_id,formula_version,calculated_to),
-  KEY idx_dave_scores_target_status (target_type,target_public_id,status),
-  KEY idx_dave_scores_score (dave_score,confidence_score),
-  CONSTRAINT fk_dave_scores_locked_by FOREIGN KEY (locked_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+  UNIQUE KEY uq_share_market_resale_listings_public_id (public_id),
+  KEY idx_share_market_resale_listings_series_status (series_id,status,price_per_share_cents),
+  KEY idx_share_market_resale_listings_seller_status (seller_user_id,status),
+  KEY idx_share_market_resale_listings_position (holder_position_id,status),
+  CONSTRAINT fk_share_market_resale_listings_position FOREIGN KEY (holder_position_id) REFERENCES share_market_holder_positions(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_share_market_resale_listings_series FOREIGN KEY (series_id) REFERENCES share_market_series(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_share_market_resale_listings_seller FOREIGN KEY (seller_user_id) REFERENCES users(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_share_market_resale_listings_risk_flag FOREIGN KEY (risk_flag_id) REFERENCES share_market_risk_flags(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-ALTER TABLE share_market_series
-  ADD CONSTRAINT fk_share_market_series_dave_score FOREIGN KEY (dave_score_snapshot_id) REFERENCES dave_scores(id) ON DELETE SET NULL;
 
 CREATE TABLE IF NOT EXISTS dave_score_events (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -446,9 +442,9 @@ CREATE TABLE IF NOT EXISTS share_market_series_snapshots (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT IGNORE INTO permissions (slug,name,created_at) VALUES
-('share_market.admin','Manage Buy-In Share Market','Manage Buy-In pools, approvals, treasury, series, risk, and ledger review.',NOW()),
-('share_market.participate','Participate in Buy-In Share Market','Request Buy-In participation and create submitted series drafts.',NOW()),
-('share_market.review','Review Buy-In Share Market','Review Buy-In enrollments, submitted series, redemption utility, and risk flags.',NOW());
+('share_market.admin','Manage Buy-In Share Market',NOW()),
+('share_market.participate','Participate in Buy-In Share Market',NOW()),
+('share_market.review','Review Buy-In Share Market',NOW());
 
 INSERT IGNORE INTO role_permissions (role_id,permission_id,created_at)
 SELECT r.id,p.id,NOW() FROM roles r JOIN permissions p ON p.slug IN ('share_market.admin','share_market.review')
