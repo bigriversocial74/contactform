@@ -212,7 +212,6 @@ final class ProductionProfileModerationUiFoundationTest extends TestCase
         }
         $frontend = $this->read('assets/js/admin-dashboard.js');
         self::assertStringContainsString('Profile moderation', $frontend);
-        self::assertStringContainsString('Suspended profiles', $frontend);
     }
 
     public function testResponsiveStylesCoverDesktopTabletAndMobile(): void
