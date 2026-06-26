@@ -1,5 +1,5 @@
 <?php declare(strict_types=1); ?>
-<link rel="stylesheet" href="/assets/css/merchant-gift-ops.css">
+<link rel="stylesheet" href="/assets/css/pppm-ops-extra.css">
 <section class="mg-pppm-ops" data-pppm-operations-center>
   <div class="mg-pppm-contract-label">Orders &amp; PPPM PPPM items</div>
 
