@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function label(value) {
-    return String(value || '').replace(/_/g, ' ').replace(/\b\w/g, function (character) { return character.toUpperCase(); });
+    return String(value || '').replace(/_/g, ' ').replace(/-/g, ' ').replace(/\b\w/g, function (character) { return character.toUpperCase(); });
   }
 
   function detailValue(value) {
@@ -102,6 +102,31 @@ document.addEventListener('DOMContentLoaded', function () {
     );
   }
 
+  function renderReadiness(data) {
+    var panel = root.querySelector('[data-system-health-readiness]');
+    if (!panel) return;
+    var status = panel.querySelector('[data-readiness-status]');
+    var summary = panel.querySelector('[data-readiness-summary]');
+    var grid = panel.querySelector('[data-readiness-grid]');
+    setTone(panel, data.status || (data.ready ? 'healthy' : 'critical'));
+    if (status) status.textContent = data.ready ? 'Ready' : 'Needs attention';
+    if (summary) summary.textContent = data.summary || 'Admin ops readiness loaded.';
+    if (!grid) return;
+    grid.replaceChildren();
+    (data.sections || []).forEach(function (section) {
+      var card = node('article', 'mg-system-health-readiness-card is-' + (section.ready ? 'healthy' : 'critical'));
+      var header = node('header');
+      header.append(node('strong', '', section.label || label(section.key)), node('span', '', section.ready ? 'Ready' : Number(section.missing_count || 0).toLocaleString() + ' missing'));
+      var list = node('ul');
+      (section.checks || []).filter(function (check) { return !check.ready; }).slice(0, 8).forEach(function (check) {
+        list.appendChild(node('li', '', check.label || check.key));
+      });
+      if (!list.children.length) list.appendChild(node('li', '', 'All required items are present.'));
+      card.append(header, list);
+      grid.appendChild(card);
+    });
+  }
+
   function renderWarnings(items) {
     var container = root.querySelector('[data-system-health-warnings]');
     if (!container) return;
@@ -148,6 +173,15 @@ document.addEventListener('DOMContentLoaded', function () {
     if (updated) updated.textContent = formatDate(data.generated_at);
   }
 
+  async function loadReadiness() {
+    try {
+      var response = await MG.get('/api/admin/admin-ops-readiness.php');
+      renderReadiness(response.data || response);
+    } catch (error) {
+      renderReadiness({ status: 'critical', ready: false, summary: error.message || 'Unable to load admin ops readiness.', sections: [] });
+    }
+  }
+
   async function load() {
     if (refreshButton) {
       refreshButton.disabled = true;
@@ -156,9 +190,11 @@ document.addEventListener('DOMContentLoaded', function () {
     try {
       var response = await MG.get('/api/admin/system-health.php');
       render(response.data || response);
+      await loadReadiness();
     } catch (error) {
       renderBanner({ status: 'critical', summary: error.message || 'Unable to load system health.' });
       if (MG.toast) MG.toast(error.message || 'Unable to load system health.', 'error');
+      await loadReadiness();
     } finally {
       if (refreshButton) {
         refreshButton.disabled = false;
