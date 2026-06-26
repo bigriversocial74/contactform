@@ -18,8 +18,6 @@ require __DIR__ . '/includes/header.php';
   <section class="mg-builder-canvas" aria-label="Live product preview">
     <div class="mg-builder-canvas-header">
       <div>
-        <span class="mg-builder-section-title">PPPM voucher builder</span>
-        <h1>Create a local digital voucher</h1>
         <p><span class="mg-builder-status" data-builder-status>New draft</span></p>
       </div>
       <div class="mg-builder-preview-toolbar" aria-label="Builder actions">
