@@ -55,15 +55,7 @@ function mg_subscription_webhook_find_or_create_plan(PDO $pdo, array $request, a
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($row) {
         $pdo->prepare("UPDATE subscription_plans SET name=?,description=?,amount_cents=?,currency=?,interval_unit='month',interval_count=1,funding_type='stripe',status='active',metadata_json=JSON_SET(COALESCE(metadata_json, JSON_OBJECT()), '$.package_id', ?, '$.pricing_package_id', ?),updated_at=NOW() WHERE id=?")
-            ->execute([
-                'Microgifter ' . (string)($plan['name'] ?? ucfirst($packageId)),
-                (string)($plan['description'] ?? ''),
-                (int)$request['amount_cents'],
-                (string)$request['currency'],
-                $packageId,
-                $packageId,
-                (int)$row['id'],
-            ]);
+            ->execute(['Microgifter ' . (string)($plan['name'] ?? ucfirst($packageId)), (string)($plan['description'] ?? ''), (int)$request['amount_cents'], (string)$request['currency'], $packageId, $packageId, (int)$row['id']]);
         $reload = $pdo->prepare('SELECT * FROM subscription_plans WHERE id=? LIMIT 1');
         $reload->execute([(int)$row['id']]);
         return $reload->fetch(PDO::FETCH_ASSOC) ?: $row;
@@ -71,21 +63,7 @@ function mg_subscription_webhook_find_or_create_plan(PDO $pdo, array $request, a
 
     $publicId = mg_public_uuid();
     $pdo->prepare("INSERT INTO subscription_plans (public_id,owner_user_id,target_type,target_reference,name,description,amount_cents,currency,interval_unit,interval_count,trial_days,funding_type,status,metadata_json,created_at,updated_at) VALUES (?,?, 'merchant', ?, ?, ?, ?, ?, 'month', 1, 0, 'stripe', 'active', ?, NOW(), NOW())")
-        ->execute([
-            $publicId,
-            $userId,
-            $targetReference,
-            'Microgifter ' . (string)($plan['name'] ?? ucfirst($packageId)),
-            (string)($plan['description'] ?? ''),
-            (int)$request['amount_cents'],
-            (string)$request['currency'],
-            mg_subscription_webhook_json([
-                'source' => 'subscription_package_change',
-                'package_id' => $packageId,
-                'pricing_package_id' => $packageId,
-                'pricing_source' => 'includes/pricing-packages.php',
-            ]),
-        ]);
+        ->execute([$publicId, $userId, $targetReference, 'Microgifter ' . (string)($plan['name'] ?? ucfirst($packageId)), (string)($plan['description'] ?? ''), (int)$request['amount_cents'], (string)$request['currency'], mg_subscription_webhook_json(['source' => 'subscription_package_change', 'package_id' => $packageId, 'pricing_package_id' => $packageId, 'pricing_source' => 'includes/pricing-packages.php'])]);
     $reload = $pdo->prepare('SELECT * FROM subscription_plans WHERE public_id=? LIMIT 1');
     $reload->execute([$publicId]);
     return $reload->fetch(PDO::FETCH_ASSOC) ?: [];
@@ -115,62 +93,25 @@ function mg_subscription_webhook_upsert_subscription(PDO $pdo, array $request, a
         'activated_source' => 'stripe_checkout_webhook',
     ];
 
-    $existingStmt = $pdo->prepare("SELECT * FROM subscriptions WHERE subscriber_user_id=? AND (provider_subscription_id=? OR metadata_json->>'$.package_change_request_id'=? OR status IN ('pending_payment','trialing','active','past_due','paused','cancel_pending')) ORDER BY FIELD(status,'active','trialing','pending_payment','past_due','paused','cancel_pending'), updated_at DESC, id DESC LIMIT 1 FOR UPDATE");
-    $existingStmt->execute([$userId, $providerSubscription, $requestId]);
+    $existingStmt = $pdo->prepare("SELECT * FROM subscriptions WHERE subscriber_user_id=? AND (provider_subscription_id=? OR status IN ('pending_payment','trialing','active','past_due','paused','cancel_pending')) ORDER BY FIELD(status,'active','trialing','pending_payment','past_due','paused','cancel_pending'), updated_at DESC, id DESC LIMIT 1 FOR UPDATE");
+    $existingStmt->execute([$userId, $providerSubscription]);
     $existing = $existingStmt->fetch(PDO::FETCH_ASSOC);
 
     if ($existing) {
         $fromStatus = (string)$existing['status'];
-        $pdo->prepare("UPDATE subscriptions SET plan_id=?,recipient_user_id=?,target_type='merchant',target_reference=?,amount_cents=?,currency=?,funding_type='stripe',status='active',provider_subscription_id=NULLIF(?,''),provider_customer_id=NULLIF(?,''),current_period_start=?,current_period_end=?,next_billing_at=?,initial_payment_required=0,funded_at=COALESCE(funded_at,NOW()),activated_at=COALESCE(activated_at,NOW()),metadata_json=JSON_MERGE_PATCH(COALESCE(metadata_json, JSON_OBJECT()), ?),updated_at=NOW() WHERE id=?")
-            ->execute([
-                (int)$planRow['id'],
-                $userId,
-                (string)$planRow['target_reference'],
-                (int)$request['amount_cents'],
-                (string)$request['currency'],
-                $providerSubscription,
-                $providerCustomer,
-                $periodStart,
-                $periodEnd,
-                $nextBilling,
-                mg_subscription_webhook_json($metadata),
-                (int)$existing['id'],
-            ]);
+        $pdo->prepare("UPDATE subscriptions SET plan_id=?,recipient_user_id=?,target_type='merchant',target_reference=?,amount_cents=?,currency=?,funding_type='stripe',status='active',provider_subscription_id=NULLIF(?,''),provider_customer_id=NULLIF(?,''),current_period_start=?,current_period_end=?,next_billing_at=?,initial_payment_required=0,funded_at=COALESCE(funded_at,NOW()),activated_at=COALESCE(activated_at,NOW()),metadata_json=JSON_SET(COALESCE(metadata_json, JSON_OBJECT()), '$.source', ?, '$.package_id', ?, '$.pricing_package_id', ?, '$.package_change_request_id', ?, '$.stripe_checkout_session_id', ?, '$.stripe_subscription_id', ?, '$.stripe_customer_id', ?, '$.stripe_payment_intent_id', ?, '$.stripe_event_id', ?, '$.activated_source', ?),updated_at=NOW() WHERE id=?")
+            ->execute([(int)$planRow['id'], $userId, (string)$planRow['target_reference'], (int)$request['amount_cents'], (string)$request['currency'], $providerSubscription, $providerCustomer, $periodStart, $periodEnd, $nextBilling, 'subscription_package_change', $packageId, $packageId, $requestId, (string)($ids['provider_session_reference'] ?? ''), $providerSubscription, $providerCustomer, (string)($ids['provider_intent_reference'] ?? ''), (string)($event['id'] ?? ''), 'stripe_checkout_webhook', (int)$existing['id']]);
         $subscriptionId = (int)$existing['id'];
     } else {
         $fromStatus = null;
         $publicId = mg_public_uuid();
         $pdo->prepare("INSERT INTO subscriptions (public_id,plan_id,subscriber_user_id,recipient_user_id,target_type,target_reference,amount_cents,currency,funding_type,status,idempotency_key,provider_subscription_id,provider_customer_id,current_period_start,current_period_end,next_billing_at,initial_payment_required,funded_at,activated_at,metadata_json,created_at,updated_at) VALUES (?,?,?,?, 'merchant', ?, ?, ?, 'stripe', 'active', ?, NULLIF(?,''), NULLIF(?,''), ?, ?, ?, 0, NOW(), NOW(), ?, NOW(), NOW())")
-            ->execute([
-                $publicId,
-                (int)$planRow['id'],
-                $userId,
-                $userId,
-                (string)$planRow['target_reference'],
-                (int)$request['amount_cents'],
-                (string)$request['currency'],
-                'subscription-package:' . $requestId,
-                $providerSubscription,
-                $providerCustomer,
-                $periodStart,
-                $periodEnd,
-                $nextBilling,
-                mg_subscription_webhook_json($metadata),
-            ]);
+            ->execute([$publicId, (int)$planRow['id'], $userId, $userId, (string)$planRow['target_reference'], (int)$request['amount_cents'], (string)$request['currency'], 'subscription-package:' . $requestId, $providerSubscription, $providerCustomer, $periodStart, $periodEnd, $nextBilling, mg_subscription_webhook_json($metadata)]);
         $subscriptionId = (int)$pdo->lastInsertId();
     }
 
-    $pdo->prepare('INSERT INTO subscription_events (public_id,subscription_id,event_type,from_status,to_status,actor_user_id,reason_code,payload_json,created_at) VALUES (?,?,?,?,?,?,?, ?,NOW())')
-        ->execute([
-            mg_public_uuid(),
-            $subscriptionId,
-            'package_change.activated',
-            $fromStatus,
-            'active',
-            $userId,
-            'stripe_checkout_completed',
-            mg_subscription_webhook_json($metadata),
-        ]);
+    $pdo->prepare('INSERT INTO subscription_events (public_id,subscription_id,event_type,from_status,to_status,actor_user_id,reason_code,payload_json,created_at) VALUES (?,?,?,?,?,?,?,?,NOW())')
+        ->execute([mg_public_uuid(), $subscriptionId, 'package_change.activated', $fromStatus, 'active', $userId, 'stripe_checkout_completed', mg_subscription_webhook_json($metadata)]);
 
     return ['subscription_id' => $subscriptionId, 'from_status' => $fromStatus, 'to_status' => 'active'];
 }
@@ -180,9 +121,7 @@ function mg_subscription_webhook_activate_package_change(PDO $pdo, string $provi
     if ($provider !== 'stripe' || !mg_subscription_webhook_is_package_change($ids)) return null;
     $requestId = mg_subscription_webhook_request_id($ids);
     if ($requestId === '') throw new MgSubscriptionWebhookActivationException('Subscription package change request ID is missing from webhook metadata.', 422);
-    if ((string)($ids['payment_status'] ?? '') !== '' && (string)$ids['payment_status'] !== 'paid') {
-        return ['processed' => false, 'subscription_request_id' => $requestId, 'reason' => 'checkout_session_not_paid'];
-    }
+    if ((string)($ids['payment_status'] ?? '') !== '' && (string)$ids['payment_status'] !== 'paid') return ['processed' => false, 'subscription_request_id' => $requestId, 'reason' => 'checkout_session_not_paid'];
 
     mg_subscription_package_change_schema($pdo);
     $stmt = $pdo->prepare('SELECT * FROM subscription_package_change_requests WHERE public_id=? LIMIT 1 FOR UPDATE');
@@ -199,10 +138,7 @@ function mg_subscription_webhook_activate_package_change(PDO $pdo, string $provi
     $plans = mg_subscription_package_change_plans();
     $plan = mg_subscription_package_change_plan($plans, (string)$request['requested_package_id']);
     if (!$plan) throw new MgSubscriptionWebhookActivationException('Requested package is no longer available.', 422);
-
-    if ((string)$request['status'] === 'completed') {
-        return ['processed' => true, 'subscription_request_id' => $requestId, 'duplicate_request' => true];
-    }
+    if ((string)$request['status'] === 'completed') return ['processed' => true, 'subscription_request_id' => $requestId, 'duplicate_request' => true];
 
     $planRow = mg_subscription_webhook_find_or_create_plan($pdo, $request, $plan);
     if (!$planRow || empty($planRow['id'])) throw new MgSubscriptionWebhookActivationException('Unable to resolve package subscription plan.', 500);
@@ -225,16 +161,8 @@ function mg_subscription_webhook_activate_package_change(PDO $pdo, string $provi
     $pdo->prepare("UPDATE subscription_package_change_requests SET status='completed',admin_note=COALESCE(admin_note,'Activated automatically by Stripe checkout.'),completed_at=COALESCE(completed_at,NOW()),metadata_json=?,updated_at=NOW() WHERE id=?")
         ->execute([mg_subscription_webhook_json($meta), (int)$request['id']]);
 
-    mg_audit('subscription.package_change_checkout_completed', 'subscription_package_change_request', [
-        'request_id' => $requestId,
-        'requested_package_id' => (string)$request['requested_package_id'],
-        'internal_subscription_id' => $subscription['subscription_id'],
-    ], (int)$request['user_id']);
-    mg_event('subscription.package_change_checkout_completed', [
-        'request_id' => $requestId,
-        'requested_package_id' => (string)$request['requested_package_id'],
-        'internal_subscription_id' => $subscription['subscription_id'],
-    ], (int)$request['user_id']);
+    mg_audit('subscription.package_change_checkout_completed', 'subscription_package_change_request', ['request_id' => $requestId, 'requested_package_id' => (string)$request['requested_package_id'], 'internal_subscription_id' => $subscription['subscription_id']], (int)$request['user_id']);
+    mg_event('subscription.package_change_checkout_completed', ['request_id' => $requestId, 'requested_package_id' => (string)$request['requested_package_id'], 'internal_subscription_id' => $subscription['subscription_id']], (int)$request['user_id']);
 
     return ['processed' => true, 'subscription_request_id' => $requestId, 'subscription' => $subscription];
 }
