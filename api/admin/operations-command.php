@@ -6,6 +6,7 @@ require_once __DIR__ . '/_queue_alerts.php';
 require_once __DIR__ . '/_queue_sla.php';
 require_once __DIR__ . '/_queue_reporting.php';
 require_once __DIR__ . '/_queue_automation.php';
+require_once __DIR__ . '/_ops_incidents.php';
 
 $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 $actor = mg_require_api_user();
@@ -19,6 +20,7 @@ function mg_admin_ops_command_has(array $actor, string $permission): bool
         || mg_admin_account_actor_has($actor, 'admin.queue_automation.run')
         || mg_admin_account_actor_has($actor, 'admin.queue_reporting.view')
         || mg_admin_account_actor_has($actor, 'admin.notifications.view')
+        || mg_admin_account_actor_has($actor, 'admin.operations_incidents.manage')
         || mg_admin_account_actor_has($actor, 'admin.users.manage');
 }
 
@@ -126,13 +128,14 @@ function mg_admin_ops_critical_items(PDO $pdo, ?string $filter = null): array
     }, $stmt->fetchAll(PDO::FETCH_ASSOC));
 }
 
-function mg_admin_ops_score(array $sla, array $notifications, array $reporting, array $automation, array $counts): array
+function mg_admin_ops_score(array $sla, array $notifications, array $reporting, array $automation, array $counts, array $incidents): array
 {
     $score = 100;
     $score -= min(30, ((int)($sla['summary']['breached_total'] ?? 0)) * 6);
     $score -= min(20, ((int)($notifications['critical_unread_total'] ?? 0)) * 4);
     $score -= min(15, ((int)($counts['aging'] ?? 0)) * 3);
     $score -= min(15, ((int)($counts['incomplete'] ?? 0)) * 3);
+    $score -= min(20, ((int)($incidents['summary']['critical_total'] ?? 0)) * 10);
     $lastCompleted = (string)($automation['summary']['last_completed_at'] ?? '');
     if ($lastCompleted === '' || strtotime($lastCompleted . ' UTC') < time() - 86400) {
         $score -= 15;
@@ -141,7 +144,7 @@ function mg_admin_ops_score(array $sla, array $notifications, array $reporting, 
         $score -= 5;
     }
     $score = max(0, $score);
-    return ['value' => $score, 'label' => $score >= 90 ? 'healthy' : ($score >= 70 ? 'watch' : 'attention'), 'inputs' => ['sla_breached' => (int)($sla['summary']['breached_total'] ?? 0), 'critical_unread' => (int)($notifications['critical_unread_total'] ?? 0), 'aging' => (int)($counts['aging'] ?? 0), 'incomplete_notes' => (int)($counts['incomplete'] ?? 0), 'automation_last_completed_at' => $lastCompleted]];
+    return ['value' => $score, 'label' => $score >= 90 ? 'healthy' : ($score >= 70 ? 'watch' : 'attention'), 'inputs' => ['sla_breached' => (int)($sla['summary']['breached_total'] ?? 0), 'critical_unread' => (int)($notifications['critical_unread_total'] ?? 0), 'aging' => (int)($counts['aging'] ?? 0), 'incomplete_notes' => (int)($counts['incomplete'] ?? 0), 'active_incidents' => (int)($incidents['summary']['active_total'] ?? 0), 'automation_last_completed_at' => $lastCompleted]];
 }
 
 function mg_admin_ops_apply_action(PDO $pdo, int $actorId, string $noteId, string $action): array
@@ -198,11 +201,13 @@ try {
     $notifications = mg_admin_ops_notification_summary($pdo);
     $counts = mg_admin_ops_critical_counts($pdo);
     $critical = mg_admin_ops_critical_items($pdo, $filter);
+    $incidents = mg_ops_incident_payload($pdo);
     $payload = [
         'queue_health' => $sla,
         'reporting' => ['summary' => $reporting['summary'], 'outcomes' => $reporting['outcomes'], 'playbooks' => $reporting['playbooks'], 'aging' => $reporting['aging']],
         'automation' => $automation,
         'notifications' => $notifications,
+        'incidents' => $incidents,
         'critical_items' => $critical,
         'critical_filter' => $filter,
         'drilldowns' => [
@@ -215,18 +220,19 @@ try {
             ['filter' => 'stale_waiting', 'label' => 'Stale waiting', 'count' => (int)($counts['stale_waiting'] ?? 0), 'href' => '/admin/operations-command.php?critical=stale_waiting'],
         ],
         'actions' => [
+            ['label' => 'Declare incident', 'action' => 'declare_incident', 'href' => '/admin/operations-command.php'],
             ['label' => 'Run automation', 'action' => 'run_automation', 'href' => '/admin/operations-command.php'],
             ['label' => 'Open follow-up queue', 'href' => '/admin/support-queue.php'],
             ['label' => 'Open notifications', 'href' => '/admin/notifications.php'],
             ['label' => 'Open reporting', 'href' => '/admin/support-queue.php'],
             ['label' => 'Open system health', 'href' => '/admin/system-health.php'],
         ],
-        'ops_score' => mg_admin_ops_score($sla, $notifications, $reporting, $automation, $counts),
-        'score' => ['section' => 'Operations command center hardening', 'score' => 10, 'max' => 10, 'status' => 'cleared'],
+        'ops_score' => mg_admin_ops_score($sla, $notifications, $reporting, $automation, $counts, $incidents),
+        'score' => ['section' => 'Operations incident mode', 'score' => 10, 'max' => 10, 'status' => 'cleared'],
         'generated_at' => gmdate('Y-m-d H:i:s'),
     ];
-    mg_audit('admin_operations_command_viewed', 'user', ['critical_items' => count($critical), 'critical_filter' => $filter], $actorId);
-    mg_event('admin.operations_command.viewed', ['critical_items' => count($critical), 'critical_filter' => $filter, 'admin_user_id' => $actorId], $actorId);
+    mg_audit('admin_operations_command_viewed', 'user', ['critical_items' => count($critical), 'critical_filter' => $filter, 'active_incidents' => $incidents['summary']['active_total']], $actorId);
+    mg_event('admin.operations_command.viewed', ['critical_items' => count($critical), 'critical_filter' => $filter, 'active_incidents' => $incidents['summary']['active_total'], 'admin_user_id' => $actorId], $actorId);
     header('Cache-Control: private, no-store, max-age=0');
     header('Vary: Cookie, Authorization');
     mg_ok($payload, 'Operations command center loaded.');
