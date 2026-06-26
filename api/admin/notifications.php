@@ -10,7 +10,7 @@ $pdo = mg_db();
 
 function mg_admin_notifications_types(): array
 {
-    return ['assigned','overdue','due_soon','escalated','reopened','review_flag','digest','auto_routed','sla_breach','auto_escalated','workload_balance'];
+    return ['assigned','overdue','due_soon','escalated','reopened','review_flag','digest','auto_routed','sla_breach','auto_escalated','workload_balance','playbook_applied','template_used','checklist_completed'];
 }
 
 function mg_admin_notifications_has(array $actor, string $permission): bool
