@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_user_management.php';
+require_once __DIR__ . '/_risk_forecast_notices.php';
 
 $actor = mg_require_api_user();
 $actorId = (int)$actor['id'];
@@ -116,6 +117,7 @@ try {
     mg_rate_limit('admin.risk_forecast.read', 'user:' . $actorId, 180, 60);
     mg_admin_risk_forecast_require($actor, 'admin.operations_forecast.view');
     $payload = mg_risk_forecast_payload($pdo);
+    mg_risk_forecast_notify($pdo, $actorId, $payload);
     mg_audit('admin_risk_forecast_viewed', 'user', ['risk_score'=>$payload['risk']['score'], 'risk_level'=>$payload['risk']['level'], 'next_failure_point'=>$payload['risk']['next_failure_point']], $actorId);
     mg_event('admin.risk_forecast.viewed', ['admin_user_id'=>$actorId, 'risk_score'=>$payload['risk']['score'], 'risk_level'=>$payload['risk']['level']], $actorId);
     header('Cache-Control: private, no-store, max-age=0');
