@@ -38,7 +38,7 @@
 .mg-admin-side,
 .mg-account-left,
 .mg-agent-side.is-text-sidebar{
-  padding:26px 18px!important;
+  padding:20px 18px 26px!important;
 }
 .mg-app-sidebar .mg-app-sidebar-brand,
 .mg-app-sidebar.is-text-sidebar .mg-app-sidebar-brand,
@@ -47,12 +47,12 @@
 .mg-account-left .mg-app-sidebar-brand,
 .mg-agent-side.is-text-sidebar .mg-agent-sidebar-brand-row{
   height:auto!important;
-  min-height:34px!important;
-  margin:0 0 24px!important;
+  min-height:30px!important;
+  margin:-6px 0 18px!important;
   padding:0!important;
   border:0!important;
   display:flex!important;
-  align-items:center!important;
+  align-items:flex-start!important;
   justify-content:flex-start!important;
   gap:0!important;
 }
@@ -61,21 +61,23 @@
 .mg-account-left .mg-brand,
 .mg-account-sidebar .mg-brand{
   display:inline-flex!important;
-  align-items:center!important;
+  align-items:flex-start!important;
   text-decoration:none!important;
   color:#0f172a!important;
   min-width:0!important;
+  line-height:1!important;
 }
 .mg-app-sidebar .mg-sidebar-logo img,
 .mg-app-sidebar .mg-app-sidebar-brand .mg-brand img,
 .mg-account-left .mg-brand img,
 .mg-account-sidebar .mg-brand img{
   display:block!important;
-  width:156px!important;
+  width:164px!important;
   max-width:100%!important;
   height:auto!important;
-  max-height:30px!important;
+  max-height:32px!important;
   object-fit:contain!important;
+  object-position:left top!important;
 }
 .mg-universal-sidebar-label,
 .mg-admin-side-badge,
@@ -211,7 +213,7 @@
   .mg-admin-side,
   .mg-account-left,
   .mg-agent-side.is-text-sidebar{
-    padding:18px 16px!important;
+    padding:14px 16px 22px!important;
   }
   .mg-app-sidebar .mg-app-sidebar-brand,
   .mg-app-sidebar.is-text-sidebar .mg-app-sidebar-brand,
@@ -220,6 +222,7 @@
   .mg-account-left .mg-app-sidebar-brand,
   .mg-agent-side.is-text-sidebar .mg-agent-sidebar-brand-row{
     display:flex!important;
-    margin-bottom:20px!important;
+    margin:-7px 0 16px!important;
+    padding-bottom:12px!important;
   }
 }
