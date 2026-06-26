@@ -34,10 +34,9 @@ foreach ($merchantNav as $key => $item) {
         'active' => $merchantView === $key,
     ];
 }
-ob_start(); ?>
-<div class="mg-merchant-progress-card"><div><span>Workspace setup</span><strong data-merchant-progress>0%</strong></div><div class="mg-merchant-progress"><i data-merchant-progress-bar></i></div><small data-merchant-status>Loading activation status...</small></div>
-<?php $appSidebarBeforeNav = ob_get_clean();
-$appSidebarFooter = '<div class="mg-merchant-sidebar-footer"><span class="mg-save-state" data-merchant-save-state>All changes saved</span><a class="mg-btn mg-btn-soft" href="/merchant-campaigns.php">Create campaign</a></div>';
+$appSidebarBeforeNav = '';
+$appSidebarAfterNav = '';
+$appSidebarFooter = '';
 $appSidebarVariant = 'merchant';
 $appSidebarLabel = 'Merchant';
 $appSidebarActive = $merchantView;
