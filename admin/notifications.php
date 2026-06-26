@@ -24,7 +24,7 @@ require dirname(__DIR__) . '/includes/header.php';
           <a class="mg-admin-notifications-back" href="/admin/support-queue.php">← Follow-up queue</a>
           <span class="mg-eyebrow">Admin operations</span>
           <h1>Notification center</h1>
-          <p>Manage queue alerts, automation summaries, incident updates, incident reviews, SLA breaches, auto-routing, auto-escalation, playbook usage, timeline activity, case comments, checklist completion, overdue reminders, review flags, assignments, reopen events, and digest records.</p>
+          <p>Manage queue alerts, automation summaries, incident updates, incident analytics, prevention work, SLA breaches, auto-routing, auto-escalation, playbook usage, timeline activity, case comments, checklist completion, overdue reminders, review flags, assignments, reopen events, and digest records.</p>
         </div>
         <div class="mg-admin-notifications-actions">
           <span>Center score <strong>10/10</strong></span>
@@ -66,6 +66,9 @@ require dirname(__DIR__) . '/includes/header.php';
             <option value="incident_review_required">Incident review required</option>
             <option value="incident_review_completed">Incident review completed</option>
             <option value="incident_review_followup_due">Incident review follow-up due</option>
+            <option value="repeat_incident_detected">Repeat incident detected</option>
+            <option value="prevention_task_overdue">Prevention task overdue</option>
+            <option value="incident_trend_worsening">Incident trend worsening</option>
           </select>
         </label>
         <label>Severity
