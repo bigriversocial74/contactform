@@ -1,5 +1,4 @@
 <div class="mg-builder-sidebar-backdrop" data-builder-sidebar-backdrop hidden></div>
-<button class="mg-builder-sidebar-toggle" type="button" data-builder-sidebar-toggle aria-label="Open builder controls" aria-expanded="false">Builder</button>
 <aside class="mg-builder-sidebar mg-app-sidebar" id="product-builder-sidebar" data-builder-sidebar aria-label="Product builder controls" aria-hidden="false">
   <div class="mg-app-sidebar-brand mg-builder-brand-row">
     <a class="mg-brand mg-sidebar-logo" href="/index.php" aria-label="Microgifter home"><img src="/images/logo_main_drk.png" alt="Microgifter"><span class="mg-sidebar-logo-text">Microgifter</span></a>
