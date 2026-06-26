@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/bootstrap.php';
 require_once dirname(__DIR__, 2) . '/includes/share-market/merchant-state.php';
+require_once dirname(__DIR__, 2) . '/includes/share-market/notifications.php';
 
 mg_require_method('POST');
 $input = mg_input();
@@ -19,11 +20,13 @@ try {
     if ($note === '') $note = 'Merchant opted out from DAVE Share Market Admin.';
     if (mb_strlen($note) > 1000) throw new InvalidArgumentException('Opt-out note cannot exceed 1,000 characters.');
 
+    $closedId = '';
     $pdo->beginTransaction();
     try {
         $row = mg_share_market_sql_fetch_enrollment_by_user($pdo, (int)$user['id'], true);
         if ($row) {
             $oldState = (string)$row['status'];
+            $closedId = (string)$row['public_id'];
             if (!in_array($oldState, ['closed','rejected'], true)) {
                 $stmt = $pdo->prepare("UPDATE share_market_enrollments SET status='closed', review_note=?, closed_at=NOW() WHERE id=?");
                 $stmt->execute([$note, (int)$row['id']]);
@@ -36,7 +39,11 @@ try {
         throw $e;
     }
 
-    mg_ok(mg_share_market_merchant_state($pdo, (int)$user['id']), 'Share Market participation closed.');
+    $state = mg_share_market_merchant_state($pdo, (int)$user['id']);
+    if ($closedId !== '') {
+        mg_share_market_notify_admins($pdo, (int)$user['id'], 'DAVE merchant opted out', 'A merchant closed Share Market participation.', 'enrollment_closed.' . strtolower(preg_replace('/[^a-zA-Z0-9_-]+/', '_', $closedId)), ['target_type'=>'enrollment','target_public_id'=>$closedId,'share_market_status'=>'closed']);
+    }
+    mg_ok($state, 'Share Market participation closed.');
 } catch (InvalidArgumentException $e) {
     mg_fail($e->getMessage(), 422);
 } catch (DomainException $e) {
