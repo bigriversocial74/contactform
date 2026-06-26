@@ -4,6 +4,7 @@ if (!in_array((string) ($agent_tab ?? ''), $mgWorkspaceSidebarTabs, true)) {
     $appSidebarVariant = 'utility';
     $appSidebarLabel = 'Workspace';
     $appSidebarActive = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''), '.php');
+    $appSidebarCompact = true;
     require __DIR__ . '/app-sidebar.php';
     return;
 }
@@ -13,7 +14,7 @@ $mgMerchantLinkClass = static function (string $page) use ($mgAgentSidebarPage):
     return $mgAgentSidebarPage === $page ? ' class="is-active"' : '';
 };
 ?>
-<aside class="mg-app-sidebar mg-agent-side mg-workspace-sidebar" data-agent-sidebar data-sidebar-variant="workspace">
+<aside class="mg-app-sidebar mg-agent-side mg-workspace-sidebar is-text-sidebar" data-agent-sidebar data-sidebar-variant="workspace">
   <div class="mg-app-sidebar-brand mg-agent-sidebar-brand-row">
     <a class="mg-brand mg-sidebar-logo" href="/index.php" aria-label="Microgifter home"><img src="/images/logo_main_drk.png" alt="Microgifter"><span class="mg-sidebar-logo-text">Microgifter</span></a>
     <div class="mg-agent-sidebar-tools">
@@ -29,29 +30,35 @@ $mgMerchantLinkClass = static function (string $page) use ($mgAgentSidebarPage):
 
   <div class="mg-agent-side-tabs" role="tablist" aria-label="Agent sidebar sections">
     <button type="button" role="tab" aria-selected="false" aria-controls="mg-agent-side-agents" data-agent-side-tab="agents">Agents</button>
-    <button class="is-active" type="button" role="tab" aria-selected="true" aria-controls="mg-agent-side-merchant" data-agent-side-tab="merchant">Merchant info</button>
+    <button class="is-active" type="button" role="tab" aria-selected="true" aria-controls="mg-agent-side-merchant" data-agent-side-tab="merchant">Merchant</button>
   </div>
 
   <section class="mg-agent-side-panel" id="mg-agent-side-agents" role="tabpanel" data-agent-side-panel="agents" hidden>
     <div class="mg-agent-side-panel-head">
       <h3>Saved agents</h3>
-      <span>Manage active workspaces</span>
+      <span>Active workspaces</span>
     </div>
-    <div class="mg-app-side-nav" data-saved-agent-list></div>
+    <div class="mg-app-side-nav mg-agent-saved-text-nav" data-saved-agent-list></div>
   </section>
 
   <section class="mg-agent-side-panel is-active" id="mg-agent-side-merchant" role="tabpanel" data-agent-side-panel="merchant">
-    <div class="mg-agent-side-panel-head">
-      <h3>Merchant info</h3>
-      <span>Business workspace</span>
-    </div>
-    <nav class="mg-merchant-side-nav" aria-label="Merchant information">
+    <nav class="mg-merchant-side-nav mg-agent-text-nav" aria-label="Merchant information">
+      <span class="mg-side-nav-section">Overview</span>
       <a<?= $mgMerchantLinkClass('account') ?> href="/account.php">Business profile</a>
-      <a href="/merchant-locations.php">Locations</a>
+      <a href="/merchant.php">Workspace health</a>
+      <span class="mg-side-nav-section">Commerce</span>
       <a href="/merchant-products.php">Products &amp; offers</a>
       <a href="/merchant-pppm.php">Orders &amp; redemptions</a>
+      <a href="/merchant-claims.php">Claims</a>
+      <span class="mg-side-nav-section">Engage</span>
+      <a href="/merchant-crm.php">Merchant CRM</a>
+      <a href="/merchant-campaigns.php">Campaigns</a>
+      <a href="/merchant-distribution.php">Distribution</a>
+      <span class="mg-side-nav-section">Build</span>
       <a<?= $mgMerchantLinkClass('design-studio') ?> href="/design-studio.php">Design Studio</a>
       <a<?= $mgMerchantLinkClass('merchant-media') ?> href="/merchant-media.php">Media library</a>
+      <span class="mg-side-nav-section">Manage</span>
+      <a href="/merchant-locations.php">Locations</a>
       <a href="/merchant-settings.php">Merchant settings</a>
       <div class="mg-merchant-side-actions">
         <a class="mg-merchant-side-action" href="/messages.php">Messages</a>
@@ -63,7 +70,7 @@ $mgMerchantLinkClass = static function (string $page) use ($mgAgentSidebarPage):
   <footer class="mg-agent-side-footer">
     <button type="button" class="mg-agent-side-scanner-launch" data-scanner-trigger aria-haspopup="dialog">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      <span><strong>Scanner</strong><small>Scan QR codes, barcodes, and claim codes</small></span>
+      <span><strong>Scanner</strong><small>Scan QR, barcode, or claim code</small></span>
     </button>
   </footer>
 </aside>
