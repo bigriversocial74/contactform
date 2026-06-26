@@ -10,7 +10,7 @@ $page_section = 'account';
 $header_mode = 'account';
 $page_body_class = 'mg-admin-support-queue-page';
 $page_styles = ['/assets/css/admin-shell.css','/assets/css/admin-support-queue.css'];
-$page_scripts = ['/assets/js/admin-support-queue.js'];
+$page_scripts = ['/assets/js/admin-support-queue.js','/assets/js/admin-sla-routing.js'];
 $adminActive = 'support-queue';
 
 require dirname(__DIR__) . '/includes/header.php';
@@ -24,13 +24,31 @@ require dirname(__DIR__) . '/includes/header.php';
           <a class="mg-admin-support-back" href="/admin/users.php">← User center</a>
           <span class="mg-eyebrow">Admin operations</span>
           <h1>Support queue</h1>
-          <p>Review internal user notes, follow-up status, due dates, assignments, and review flags across the platform.</p>
+          <p>Review internal user notes, SLA health, auto-routing, follow-up status, due dates, assignments, and review flags across the platform.</p>
         </div>
         <div class="mg-admin-support-hero-actions">
           <span>Queue score <strong>10/10</strong></span>
+          <button class="mg-btn mg-btn-soft" type="button" data-sla-apply>Apply SLA rules</button>
           <button class="mg-btn mg-btn-ghost" type="button" data-support-refresh disabled>Refresh</button>
         </div>
       </header>
+
+      <section class="mg-admin-sla-panel" data-sla-panel>
+        <header>
+          <div>
+            <span class="mg-eyebrow">SLA routing</span>
+            <h2>Queue health and auto-routing</h2>
+            <p>Monitor compliant, at-risk, breached, unassigned, stale waiting, auto-escalated, lane, and admin workload metrics.</p>
+          </div>
+          <button class="mg-btn mg-btn-ghost" type="button" data-sla-refresh>Refresh SLA</button>
+        </header>
+        <div class="mg-admin-sla-summary" data-sla-summary></div>
+        <div class="mg-admin-sla-grids">
+          <section><h3>Routing lanes</h3><div data-sla-lanes></div></section>
+          <section><h3>Admin workload</h3><div data-sla-workload></div></section>
+        </div>
+        <div class="mg-admin-sla-status" data-sla-status role="status" aria-live="polite"></div>
+      </section>
 
       <form class="mg-admin-support-filters" data-support-filters>
         <label>Search
