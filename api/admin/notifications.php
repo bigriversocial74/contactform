@@ -8,6 +8,11 @@ $actor = mg_require_api_user();
 $actorId = (int)$actor['id'];
 $pdo = mg_db();
 
+function mg_admin_notifications_types(): array
+{
+    return ['assigned','overdue','due_soon','escalated','reopened','review_flag','digest','auto_routed','sla_breach','auto_escalated','workload_balance'];
+}
+
 function mg_admin_notifications_has(array $actor, string $permission): bool
 {
     return mg_admin_account_actor_has($actor, $permission)
@@ -47,7 +52,7 @@ function mg_admin_notifications_list(PDO $pdo, array $filters): array
 {
     $where = ['1=1'];
     $params = [];
-    $type = mg_admin_notifications_value($filters['type'] ?? null, ['assigned','overdue','due_soon','escalated','reopened','review_flag','digest']);
+    $type = mg_admin_notifications_value($filters['type'] ?? null, mg_admin_notifications_types());
     $severity = mg_admin_notifications_value($filters['severity'] ?? null, ['info','warning','critical']);
     $unreadOnly = (string)($filters['unread'] ?? '') === '1';
     $q = trim((string)($filters['q'] ?? ''));
@@ -96,7 +101,7 @@ function mg_admin_notifications_list(PDO $pdo, array $filters): array
         ] : null,
     ], $stmt->fetchAll(PDO::FETCH_ASSOC));
 
-    $summary = $pdo->query('SELECT COUNT(*) total, SUM(read_at IS NULL) unread_total, SUM(read_at IS NULL AND severity = "critical") critical_unread_total, SUM(read_at IS NULL AND severity = "warning") warning_unread_total, SUM(notification_type = "overdue" AND read_at IS NULL) overdue_unread_total, SUM(notification_type = "escalated" AND read_at IS NULL) escalated_unread_total FROM admin_queue_notifications')->fetch(PDO::FETCH_ASSOC) ?: [];
+    $summary = $pdo->query('SELECT COUNT(*) total, SUM(read_at IS NULL) unread_total, SUM(read_at IS NULL AND severity = "critical") critical_unread_total, SUM(read_at IS NULL AND severity = "warning") warning_unread_total, SUM(notification_type IN ("overdue","sla_breach") AND read_at IS NULL) overdue_unread_total, SUM(notification_type IN ("escalated","auto_escalated") AND read_at IS NULL) escalated_unread_total FROM admin_queue_notifications')->fetch(PDO::FETCH_ASSOC) ?: [];
 
     return [
         'items' => $items,
@@ -111,7 +116,7 @@ function mg_admin_notifications_list(PDO $pdo, array $filters): array
             'score' => ['section' => 'Admin notifications', 'score' => 10, 'max' => 10, 'status' => 'cleared'],
         ],
         'filters' => [
-            'types' => ['assigned','overdue','due_soon','escalated','reopened','review_flag','digest'],
+            'types' => mg_admin_notifications_types(),
             'severities' => ['info','warning','critical'],
         ],
     ];
