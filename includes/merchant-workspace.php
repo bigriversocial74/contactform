@@ -2,30 +2,31 @@
 declare(strict_types=1);
 $merchantView = $merchantView ?? 'overview';
 $merchantNav = [
- 'overview'=>['Overview','Workspace health','/merchant.php'],
- 'onboarding'=>['Onboarding','Activation steps','/merchant-onboarding.php'],
- 'products'=>['Products','Catalog and builder','/merchant-products.php'],
- 'reward_templates'=>['Reward Templates','Wallet-ready offers','/merchant-reward-templates.php'],
- 'campaigns'=>['Campaigns','Forms, contests, QR drops','/merchant-campaigns.php'],
- 'merchant_crm'=>['Merchant CRM','Customers and campaign history','/merchant-crm.php'],
- 'campaign_stamps'=>['Campaign Stamps','Distribution usage','/merchant-campaign-stamps.php'],
- 'stamps'=>['Stamp Ledger','Sends and balance','/merchant-stamps.php'],
- 'storefront'=>['Storefront','Public merchant page','/merchant-storefront.php'],
- 'pppm'=>['Orders and PPPM','Items and lifecycle','/merchant-pppm.php'],
- 'distribution'=>['Distribution','Programs and inputs','/merchant-distribution.php'],
- 'developer_api'=>['Developer API','Apps and access','/merchant-distribution.php?developer_api=1'],
- 'claims'=>['Claims','Verification and redemption','/merchant-claims.php'],
- 'media'=>['Media','Assets and processing','/merchant-media.php'],
- 'intelligence'=>['Intelligence','Forecasts and analytics','/merchant-intelligence.php'],
- 'locations'=>['Locations','Stores and claim scope','/merchant-locations.php'],
- 'team'=>['Team','Roles and access','/merchant-team.php'],
- 'payments'=>['Payments','Checkout and reconciliation','/merchant-payments.php'],
- 'settings'=>['Settings','Business configuration','/merchant-settings.php'],
+ 'overview'=>['Overview','Workspace health','/merchant.php','Overview'],
+ 'onboarding'=>['Onboarding','Activation steps','/merchant-onboarding.php','Overview'],
+ 'products'=>['Products','Catalog and builder','/merchant-products.php','Commerce'],
+ 'reward_templates'=>['Reward Templates','Wallet-ready offers','/merchant-reward-templates.php','Commerce'],
+ 'campaigns'=>['Campaigns','Forms, contests, QR drops','/merchant-campaigns.php','Engage'],
+ 'merchant_crm'=>['Merchant CRM','Customers and campaign history','/merchant-crm.php','Engage'],
+ 'campaign_stamps'=>['Campaign Stamps','Distribution usage','/merchant-campaign-stamps.php','Engage'],
+ 'stamps'=>['Stamp Ledger','Sends and balance','/merchant-stamps.php','Finance'],
+ 'storefront'=>['Storefront','Public merchant page','/merchant-storefront.php','Presence'],
+ 'pppm'=>['Orders and PPPM','Items and lifecycle','/merchant-pppm.php','Commerce'],
+ 'distribution'=>['Distribution','Programs and inputs','/merchant-distribution.php','Engage'],
+ 'developer_api'=>['Developer API','Apps and access','/merchant-distribution.php?developer_api=1','Build'],
+ 'claims'=>['Claims','Verification and redemption','/merchant-claims.php','Commerce'],
+ 'media'=>['Media','Assets and processing','/merchant-media.php','Presence'],
+ 'intelligence'=>['Intelligence','Forecasts and analytics','/merchant-intelligence.php','Insights'],
+ 'locations'=>['Locations','Stores and claim scope','/merchant-locations.php','Manage'],
+ 'team'=>['Team','Roles and access','/merchant-team.php','Manage'],
+ 'payments'=>['Payments','Checkout and reconciliation','/merchant-payments.php','Finance'],
+ 'settings'=>['Settings','Business configuration','/merchant-settings.php','Manage'],
 ];
 $user = mg_current_user();
 $appSidebarNav = [];
 foreach ($merchantNav as $key => $item) {
     $appSidebarNav[$key] = [
+        'section' => $item[3] ?? '',
         'label' => $item[0],
         'detail' => $item[1],
         'href' => $item[2],
@@ -40,6 +41,7 @@ $appSidebarFooter = '<div class="mg-merchant-sidebar-footer"><span class="mg-sav
 $appSidebarVariant = 'merchant';
 $appSidebarLabel = 'Merchant';
 $appSidebarActive = $merchantView;
+$appSidebarCompact = true;
 ?>
 <section class="mg-app-shell mg-merchant-app" data-merchant-app data-merchant-view="<?= mg_e($merchantView) ?>" data-sidebar-contract="mg-app-sidebar">
   <?php require __DIR__ . '/app-sidebar.php'; ?>
