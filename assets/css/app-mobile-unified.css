@@ -1,0 +1,376 @@
+/* Unified mobile app header/sidebar recovery.
+   Purpose: make every logged-in app page use the same mobile header and visible slide-out sidebar.
+   This file intentionally loads after the older app mobile/sidebar CSS files. */
+
+@media (max-width:980px){
+  body.mg-app-page{
+    --mg-mobile-topbar:68px;
+    --mg-app-header:var(--mg-mobile-topbar);
+  }
+
+  body.mg-app-page.mg-section-agent{
+    --mg-app-header:calc(var(--mg-mobile-topbar) + var(--mg-mobile-tabs,64px));
+  }
+
+  html body.mg-app-page .mg-unified-header,
+  html body.mg-app-page .mg-site-header.mg-unified-header{
+    position:fixed!important;
+    inset:0 0 auto 0!important;
+    left:0!important;
+    right:0!important;
+    top:0!important;
+    width:100%!important;
+    height:var(--mg-mobile-topbar)!important;
+    min-height:var(--mg-mobile-topbar)!important;
+    padding:0 14px!important;
+    display:grid!important;
+    grid-template-columns:42px minmax(112px,1fr) max-content!important;
+    align-items:center!important;
+    gap:10px!important;
+    background:rgba(248,251,255,.97)!important;
+    border-bottom:1px solid rgba(207,219,234,.9)!important;
+    box-shadow:0 10px 28px rgba(15,23,42,.045)!important;
+    backdrop-filter:blur(18px)!important;
+    overflow:visible!important;
+    z-index:10000!important;
+  }
+
+  html body.mg-app-page .mg-unified-header .mg-header-inner,
+  html body.mg-app-page .mg-unified-header .nav-inner,
+  html body.mg-app-page .mg-unified-header .mg-header-left{
+    display:contents!important;
+    width:auto!important;
+    min-width:0!important;
+    max-width:none!important;
+    overflow:visible!important;
+  }
+
+  html body.mg-app-page .mg-mobile-menu-toggle{
+    grid-column:1!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    justify-self:start!important;
+    align-self:center!important;
+    width:40px!important;
+    height:40px!important;
+    min-width:40px!important;
+    margin:0!important;
+    padding:0!important;
+    position:static!important;
+    border:0!important;
+    border-radius:0!important;
+    background:transparent!important;
+    color:#0b1730!important;
+    box-shadow:none!important;
+    z-index:2!important;
+  }
+
+  html body.mg-app-page .mg-mobile-menu-toggle span{
+    width:24px!important;
+    height:2.5px!important;
+    border-radius:999px!important;
+    background:currentColor!important;
+  }
+
+  body.mg-mobile-sidebar-open.mg-app-page .mg-mobile-menu-toggle span:nth-child(1){transform:translateY(7px) rotate(45deg)!important}
+  body.mg-mobile-sidebar-open.mg-app-page .mg-mobile-menu-toggle span:nth-child(2){opacity:0!important}
+  body.mg-mobile-sidebar-open.mg-app-page .mg-mobile-menu-toggle span:nth-child(3){transform:translateY(-7px) rotate(-45deg)!important}
+
+  html body.mg-app-page .mg-header-mobile-brand{
+    grid-column:2!important;
+    display:inline-flex!important;
+    align-items:center!important;
+    justify-content:flex-start!important;
+    justify-self:start!important;
+    align-self:center!important;
+    min-width:0!important;
+    max-width:100%!important;
+    margin:0!important;
+    padding:0!important;
+    gap:0!important;
+    overflow:hidden!important;
+    position:static!important;
+    text-decoration:none!important;
+    color:#071225!important;
+  }
+
+  html body.mg-app-page .mg-header-mobile-brand img{
+    display:block!important;
+    width:min(152px,36vw)!important;
+    min-width:112px!important;
+    max-width:152px!important;
+    max-height:34px!important;
+    height:auto!important;
+    object-fit:contain!important;
+    object-position:left center!important;
+  }
+
+  html body.mg-app-page .mg-header-mobile-brand > span{
+    display:none!important;
+  }
+
+  html body.mg-app-page .mg-site-nav{
+    min-width:0!important;
+    margin:0!important;
+    padding:0!important;
+  }
+
+  html body.mg-app-page:not(.mg-section-agent) .mg-site-nav{
+    display:none!important;
+  }
+
+  html body.mg-app-page.mg-section-agent .mg-site-nav{
+    grid-column:1 / -1!important;
+  }
+
+  html body.mg-app-page .mg-header-actions{
+    grid-column:3!important;
+    justify-self:end!important;
+    align-self:center!important;
+    margin:0!important;
+    padding:0!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:flex-end!important;
+    gap:6px!important;
+    min-width:max-content!important;
+    position:static!important;
+    transform:none!important;
+    float:none!important;
+    z-index:3!important;
+  }
+
+  html body.mg-app-page .mg-header-actions .mg-header-signal,
+  html body.mg-app-page .mg-header-actions .mg-account-menu,
+  html body.mg-app-page .mg-header-actions [data-mg-auth-menu],
+  html body.mg-app-page .mg-header-actions .mg-cart-header-button{
+    display:inline-flex!important;
+    visibility:visible!important;
+    pointer-events:auto!important;
+    opacity:1!important;
+    position:relative!important;
+    inset:auto!important;
+    transform:none!important;
+    float:none!important;
+    margin:0!important;
+  }
+
+  html body.mg-app-page .mg-header-actions [data-mg-auth-trigger],
+  html body.mg-app-page .mg-account-trigger{
+    display:grid!important;
+    place-items:center!important;
+    visibility:visible!important;
+    pointer-events:auto!important;
+    opacity:1!important;
+  }
+
+  html body.mg-app-page .mg-account-copy,
+  html body.mg-app-page .mg-account-caret{
+    display:none!important;
+  }
+
+  html body.mg-app-page .mg-header-icon,
+  html body.mg-app-page .mg-account-trigger,
+  html body.mg-app-page .mg-cart-header-button{
+    width:40px!important;
+    height:40px!important;
+    min-width:40px!important;
+    max-width:40px!important;
+    padding:0!important;
+    margin:0!important;
+    border:1px solid #d6e2f1!important;
+    border-radius:14px!important;
+    background:rgba(255,255,255,.8)!important;
+    color:#0b1730!important;
+    box-shadow:0 10px 22px rgba(15,23,42,.055)!important;
+  }
+
+  html body.mg-app-page .mg-header-icon svg,
+  html body.mg-app-page .mg-cart-header-button svg{
+    width:18px!important;
+    height:18px!important;
+  }
+
+  html body.mg-app-page .mg-avatar{
+    width:27px!important;
+    height:27px!important;
+    margin:0!important;
+    font-size:12px!important;
+  }
+
+  html body.mg-app-page .mg-account-actions{
+    position:fixed!important;
+    top:calc(var(--mg-mobile-topbar) + 8px)!important;
+    right:10px!important;
+    left:auto!important;
+    width:min(286px,calc(100vw - 20px))!important;
+    z-index:10050!important;
+  }
+
+  html body.mg-app-page .mg-app-shell,
+  html body.mg-app-page .mg-app-shell.has-utility{
+    padding-left:0!important;
+    padding-top:var(--mg-app-header)!important;
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+
+  html body.mg-app-page .mg-app-workspace{
+    width:100%!important;
+    min-width:0!important;
+  }
+
+  html body.mg-app-page .mg-app-sidebar,
+  html body.mg-app-page .mg-account-sidebar,
+  html body.mg-app-page .mg-account-left,
+  html body.mg-app-page .mg-admin-side{
+    display:flex!important;
+    position:fixed!important;
+    left:0!important;
+    right:auto!important;
+    top:var(--mg-mobile-topbar)!important;
+    bottom:0!important;
+    width:min(340px,86vw)!important;
+    max-width:86vw!important;
+    height:auto!important;
+    min-height:0!important;
+    padding:14px 16px 22px!important;
+    background:#fff!important;
+    border-right:1px solid #dce6f3!important;
+    box-shadow:22px 0 60px rgba(15,23,42,.2)!important;
+    z-index:10020!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    scrollbar-width:none!important;
+    -ms-overflow-style:none!important;
+    transform:translateX(-110%)!important;
+    transition:transform .22s ease!important;
+  }
+
+  html body.mg-app-page .mg-app-sidebar::-webkit-scrollbar,
+  html body.mg-app-page .mg-account-sidebar::-webkit-scrollbar,
+  html body.mg-app-page .mg-account-left::-webkit-scrollbar,
+  html body.mg-app-page .mg-admin-side::-webkit-scrollbar{
+    width:0!important;
+    height:0!important;
+    display:none!important;
+  }
+
+  html body.mg-mobile-sidebar-open.mg-app-page .mg-app-sidebar,
+  html body.mg-mobile-sidebar-open.mg-app-page .mg-account-sidebar,
+  html body.mg-mobile-sidebar-open.mg-app-page .mg-account-left,
+  html body.mg-mobile-sidebar-open.mg-app-page .mg-admin-side,
+  html body.mg-app-page .mg-app-sidebar.is-mobile-open,
+  html body.mg-app-page .mg-account-sidebar.is-mobile-open,
+  html body.mg-app-page .mg-account-left.is-mobile-open,
+  html body.mg-app-page .mg-admin-side.is-mobile-open{
+    transform:translateX(0)!important;
+  }
+
+  html body:not(.mg-mobile-sidebar-open).mg-app-page .mg-app-sidebar:not(.is-mobile-open),
+  html body:not(.mg-mobile-sidebar-open).mg-app-page .mg-account-sidebar:not(.is-mobile-open),
+  html body:not(.mg-mobile-sidebar-open).mg-app-page .mg-account-left:not(.is-mobile-open),
+  html body:not(.mg-mobile-sidebar-open).mg-app-page .mg-admin-side:not(.is-mobile-open){
+    transform:translateX(-110%)!important;
+  }
+
+  html body.mg-app-page .mg-mobile-sidebar-backdrop{
+    display:block!important;
+    position:fixed!important;
+    inset:var(--mg-mobile-topbar) 0 0!important;
+    background:rgba(15,23,42,.42)!important;
+    backdrop-filter:blur(4px)!important;
+    opacity:0!important;
+    visibility:hidden!important;
+    pointer-events:none!important;
+    transition:.2s ease!important;
+    z-index:10010!important;
+  }
+
+  html body.mg-mobile-sidebar-open.mg-app-page .mg-mobile-sidebar-backdrop{
+    opacity:1!important;
+    visibility:visible!important;
+    pointer-events:auto!important;
+  }
+
+  html body.mg-app-page .mg-app-sidebar .mg-app-sidebar-brand,
+  html body.mg-app-page .mg-account-sidebar .mg-app-sidebar-brand,
+  html body.mg-app-page .mg-account-left .mg-app-sidebar-brand,
+  html body.mg-app-page .mg-admin-side .mg-app-sidebar-brand,
+  html body.mg-app-page .mg-agent-side.is-text-sidebar .mg-agent-sidebar-brand-row{
+    display:flex!important;
+    align-items:flex-start!important;
+    justify-content:flex-start!important;
+    min-height:34px!important;
+    height:auto!important;
+    margin:0 0 16px!important;
+    padding:0 0 12px!important;
+    border-bottom:1px solid #e5edf7!important;
+    transform:translateY(-6px)!important;
+  }
+
+  html body.mg-app-page .mg-app-sidebar .mg-sidebar-logo img,
+  html body.mg-app-page .mg-app-sidebar .mg-app-sidebar-brand .mg-brand img,
+  html body.mg-app-page .mg-account-sidebar .mg-sidebar-logo img,
+  html body.mg-app-page .mg-account-left .mg-brand img,
+  html body.mg-app-page .mg-admin-side .mg-sidebar-logo img{
+    display:block!important;
+    width:168px!important;
+    max-width:100%!important;
+    max-height:32px!important;
+    height:auto!important;
+    object-fit:contain!important;
+    object-position:left center!important;
+  }
+
+  html body.mg-app-page .mg-app-side-nav,
+  html body.mg-app-page .mg-merchant-nav,
+  html body.mg-app-page .crm-nav,
+  html body.mg-app-page .mg-admin-side-nav,
+  html body.mg-app-page .mg-account-side-nav,
+  html body.mg-app-page .mg-account-left nav{
+    display:grid!important;
+    gap:8px!important;
+    width:100%!important;
+    align-content:start!important;
+  }
+}
+
+@media (max-width:430px){
+  html body.mg-app-page .mg-unified-header,
+  html body.mg-app-page .mg-site-header.mg-unified-header{
+    grid-template-columns:34px minmax(92px,1fr) max-content!important;
+    gap:8px!important;
+    padding:0 8px!important;
+  }
+
+  html body.mg-app-page .mg-mobile-menu-toggle{
+    width:34px!important;
+    height:34px!important;
+    min-width:34px!important;
+  }
+
+  html body.mg-app-page .mg-header-mobile-brand img{
+    width:min(132px,31vw)!important;
+    min-width:96px!important;
+    max-height:30px!important;
+  }
+
+  html body.mg-app-page .mg-header-actions{gap:4px!important}
+
+  html body.mg-app-page .mg-header-icon,
+  html body.mg-app-page .mg-account-trigger,
+  html body.mg-app-page .mg-cart-header-button{
+    width:35px!important;
+    height:35px!important;
+    min-width:35px!important;
+    max-width:35px!important;
+    border-radius:12px!important;
+  }
+
+  html body.mg-app-page .mg-avatar{
+    width:24px!important;
+    height:24px!important;
+    font-size:11px!important;
+  }
+}
