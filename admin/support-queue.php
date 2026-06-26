@@ -9,8 +9,8 @@ $page_title = 'Support Queue | Microgifter';
 $page_section = 'account';
 $header_mode = 'account';
 $page_body_class = 'mg-admin-support-queue-page';
-$page_styles = ['/assets/css/admin-shell.css','/assets/css/admin-support-queue.css'];
-$page_scripts = ['/assets/js/admin-support-queue.js','/assets/js/admin-sla-routing.js'];
+$page_styles = ['/assets/css/admin-shell.css','/assets/css/admin-support-queue.css','/assets/css/admin-queue-playbooks.css'];
+$page_scripts = ['/assets/js/admin-support-queue.js','/assets/js/admin-sla-routing.js','/assets/js/admin-queue-playbooks.js'];
 $adminActive = 'support-queue';
 
 require dirname(__DIR__) . '/includes/header.php';
@@ -24,7 +24,7 @@ require dirname(__DIR__) . '/includes/header.php';
           <a class="mg-admin-support-back" href="/admin/users.php">← User center</a>
           <span class="mg-eyebrow">Admin operations</span>
           <h1>Support queue</h1>
-          <p>Review internal user notes, SLA health, auto-routing, follow-up status, due dates, assignments, and review flags across the platform.</p>
+          <p>Review internal user notes, SLA health, auto-routing, playbooks, follow-up status, due dates, assignments, and review flags across the platform.</p>
         </div>
         <div class="mg-admin-support-hero-actions">
           <span>Queue score <strong>10/10</strong></span>
