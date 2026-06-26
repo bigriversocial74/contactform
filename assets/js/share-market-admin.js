@@ -51,6 +51,26 @@ window.Microgifter = window.Microgifter || {};
     if (output) output.textContent = '';
   }
 
+  function persistValidation(validation) {
+    MG.shareMarketValidation = validation;
+    try {
+      window.sessionStorage.setItem('mgShareMarketValidation', JSON.stringify(validation));
+    } catch (error) {
+    }
+    document.dispatchEvent(new CustomEvent('mg:share-market-manifest-validated', { detail: validation }));
+  }
+
+  function addApprovalQueueLink() {
+    var actions = qs('.sm-admin-actions');
+    if (!actions || qs('[data-share-approval-link]', actions)) return;
+    var link = document.createElement('a');
+    link.className = 'sm-admin-btn';
+    link.href = '/account-share-market-approvals.php';
+    link.setAttribute('data-share-approval-link', '');
+    link.textContent = 'Approval Queue';
+    actions.appendChild(link);
+  }
+
   function populateStates(item) {
     var wrapper = qs('[data-share-state-field]', modal);
     var select = qs('[data-share-current-state]', modal);
@@ -148,6 +168,14 @@ window.Microgifter = window.Microgifter || {};
     if (output) output.textContent = JSON.stringify(manifest, null, 2);
     var preview = qs('[data-share-action-preview]', modal);
     if (preview) preview.hidden = false;
+
+    persistValidation({
+      manifest: manifest,
+      validation_token: data && data.validation_token ? data.validation_token : '',
+      guardrails: data && data.guardrails ? data.guardrails : {},
+      definition: data && data.definition ? data.definition : {},
+      stored_at: new Date().toISOString()
+    });
     setStatus((payload && payload.message) || 'Action validated. No mutation was performed.', 'success');
   }
 
@@ -203,6 +231,7 @@ window.Microgifter = window.Microgifter || {};
 
     definitions = parseDefinitions();
     enhanceExistingControls();
+    addApprovalQueueLink();
 
     document.addEventListener('click', function (event) {
       var open = event.target.closest('[data-share-action]');
