@@ -56,6 +56,7 @@ $canViewProfileModeration = in_array('admin.profiles.moderation.view', $permissi
 $canManageProfileModeration = in_array('admin.profiles.moderation.manage', $permissions, true) || $isSuperAdmin;
 $canMerchantCatalog = in_array('admin.merchants.view', $permissions, true) || in_array('admin.catalog.view', $permissions, true) || $isSuperAdmin;
 $canCommerce = in_array('admin.commerce.view', $permissions, true) || in_array('merchant.payments.view', $permissions, true) || in_array('subscriptions.admin', $permissions, true) || in_array('microgift.operations.view', $permissions, true) || in_array('tips.reverse', $permissions, true) || $isSuperAdmin;
+$canSubscriptionRequests = in_array('subscriptions.admin', $permissions, true) || $isSuperAdmin;
 $canOpsQueue = in_array('ops.alerts.assign', $permissions, true) || in_array('ops.alerts.resolve', $permissions, true) || $isSuperAdmin;
 $canAiSettings = in_array('admin.settings.manage', $permissions, true) || $isSuperAdmin;
 $canInvestmentTests = in_array('admin.health.view', $permissions, true) || in_array('demand.dashboard.view', $permissions, true) || in_array('intelligence.dashboard.view', $permissions, true) || $isSuperAdmin;
@@ -91,6 +92,7 @@ $adminSidebarNav = [
   'pending_models' => ['label' => 'Pending models', 'href' => '/admin/pending-models.php', 'detail' => 'Model approval queue', 'visible' => in_array('admin.users.view', $permissions, true) || $isSuperAdmin],
   'merchant_catalog' => ['label' => 'Merchants & catalog', 'href' => '/merchant-catalog-operations.php', 'detail' => 'Stores, products, media', 'visible' => $canMerchantCatalog],
   'commerce' => ['label' => 'Commerce operations', 'href' => '/commerce-operations.php', 'detail' => 'Orders and lifecycle', 'visible' => $canCommerce],
+  'subscription_requests' => ['label' => 'Subscription requests', 'href' => '/admin/subscription-requests.php', 'detail' => 'Package upgrades', 'visible' => $canSubscriptionRequests],
   'audit_logs' => ['label' => 'Audit logs', 'href' => '/admin/audit-logs.php', 'detail' => 'Administrative activity', 'visible' => in_array('admin.audit.view', $permissions, true) || $isSuperAdmin],
   'security_logs' => ['label' => 'Security logs', 'href' => '/admin/security-logs.php', 'detail' => 'Security events', 'visible' => $canViewSecurityLogs],
   'sessions' => ['label' => 'Sessions', 'href' => '/admin/sessions.php', 'detail' => 'Active user sessions', 'visible' => $canViewAdminSessions],
