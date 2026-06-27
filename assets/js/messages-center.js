@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var detail = app.querySelector('[data-thread-detail]');
   var search = app.querySelector('[data-message-search]');
   var refresh = app.querySelector('[data-message-refresh]');
-  var state = { threads: [], current: null };
+  var state = { threads: [], current: null, sending: false };
 
   function esc(value) {
     return String(value == null ? '' : value).replace(/[&<>'"]/g, function (character) {
@@ -41,6 +41,27 @@ document.addEventListener('DOMContentLoaded', function () {
     if (context.contact_source) rows.push('<small>Original contact source</small><strong>' + esc(context.contact_source) + '</strong>');
     if (context.contact_id) rows.push('<small>CRM contact</small><strong>' + esc(context.contact_id) + '</strong>');
     return '<div class="mg-thread-source-context"><span>Delivery context</span>' + rows.join('') + '</div>';
+  }
+
+  function composerStatus(form, message, type) {
+    if (!form) return;
+    var node = form.querySelector('[data-message-compose-status]');
+    if (!node) return;
+    node.textContent = message || '';
+    node.classList.toggle('is-visible', Boolean(message));
+    node.classList.toggle('is-success', type === 'success');
+    node.classList.toggle('is-error', type === 'error');
+  }
+
+  function setComposerBusy(form, busy) {
+    var textarea = form && form.querySelector('textarea[name="body"]');
+    var button = form && form.querySelector('[data-message-send]');
+    if (textarea) textarea.disabled = busy;
+    if (button) {
+      button.disabled = busy;
+      button.textContent = busy ? 'Sending...' : 'Send';
+    }
+    if (form) form.setAttribute('aria-busy', busy ? 'true' : 'false');
   }
 
   function render() {
@@ -100,25 +121,76 @@ document.addEventListener('DOMContentLoaded', function () {
         return '<article class="mg-message-bubble ' + (message.mine ? 'is-mine' : '') + '"><strong>' + esc(message.sender_name || 'User') + '</strong>' +
           '<p>' + esc(message.body) + '</p><small>' + esc(message.created_at || '') + '</small>' + messageSource + '</article>';
       }).join('') || '<div class="mg-empty-state"><strong>No messages yet.</strong></div>') + '</div>' +
-      '<form class="mg-message-composer" data-thread-reply><textarea name="body" maxlength="4000" required placeholder="Write a reply"></textarea><button class="mg-btn mg-btn-primary" type="submit">Send</button></form>';
+      '<form class="mg-message-composer" data-thread-reply data-thread-id="' + esc(thread.id || id) + '" aria-busy="false">' +
+      '<textarea name="body" maxlength="4000" required placeholder="Write a reply"></textarea>' +
+      '<button class="mg-btn mg-btn-primary" type="button" data-message-send>Send</button>' +
+      '<div class="mg-message-compose-status" data-message-compose-status role="status" aria-live="polite"></div>' +
+      '</form>';
 
     var stream = detail.querySelector('.mg-message-stream');
     if (stream) stream.scrollTop = stream.scrollHeight;
   }
 
+  async function sendReply(form) {
+    if (!form || state.sending) return;
+    var textarea = form.querySelector('textarea[name="body"]');
+    var threadId = form.dataset.threadId || state.current;
+    var body = textarea ? textarea.value.trim() : '';
+
+    if (!threadId) {
+      composerStatus(form, 'Select a conversation before sending.', 'error');
+      return;
+    }
+    if (!body) {
+      composerStatus(form, 'Type a message before sending.', 'error');
+      if (textarea) textarea.focus();
+      return;
+    }
+
+    state.sending = true;
+    setComposerBusy(form, true);
+    composerStatus(form, 'Sending message...', '');
+
+    try {
+      await Microgifter.post('/api/messages/send.php', {
+        thread_id: threadId,
+        body: body,
+        csrf_token: Microgifter.getCsrfToken ? Microgifter.getCsrfToken() : ''
+      });
+      if (textarea) textarea.value = '';
+      composerStatus(form, 'Message sent.', 'success');
+      await openThread(threadId);
+      await load();
+      if (Microgifter.toast) Microgifter.toast('Message sent.', 'success');
+    } catch (error) {
+      composerStatus(form, error && error.message ? error.message : 'Message could not be sent.', 'error');
+      if (Microgifter.toast) Microgifter.toast(error && error.message ? error.message : 'Message could not be sent.', 'error');
+    } finally {
+      state.sending = false;
+      setComposerBusy(form, false);
+    }
+  }
+
   list.addEventListener('click', function (event) {
     var row = event.target.closest('[data-thread-id]');
-    if (row) openThread(row.datasetThreadId || row.dataset.threadId).catch(console.error);
+    if (row) openThread(row.dataset.threadId).catch(function (error) {
+      if (Microgifter.toast) Microgifter.toast(error && error.message ? error.message : 'Unable to open conversation.', 'error');
+      console.error(error);
+    });
   });
 
-  detail.addEventListener('submit', async function (event) {
+  detail.addEventListener('click', function (event) {
+    var button = event.target.closest('[data-message-send]');
+    if (!button) return;
+    event.preventDefault();
+    sendReply(button.closest('[data-thread-reply]')).catch(console.error);
+  });
+
+  detail.addEventListener('submit', function (event) {
     var form = event.target.closest('[data-thread-reply]');
     if (!form) return;
     event.preventDefault();
-    await Microgifter.post('/api/messages/send.php', { thread_id: state.current, body: form.elements.body.value });
-    form.reset();
-    await openThread(state.current);
-    await load();
+    sendReply(form).catch(console.error);
   });
 
   if (search) search.addEventListener('input', render);
