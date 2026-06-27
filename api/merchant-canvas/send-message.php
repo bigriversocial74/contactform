@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require_once dirname(__DIR__) . '/store/_canvas.php';
+require_once dirname(__DIR__) . '/store/_canvas_messaging.php';
 
 mg_require_method('POST');
 $input = mg_input();
@@ -17,8 +17,8 @@ try {
     $sessionId = mg_store_safe_public_id($input['session_id'] ?? '', 'Store session');
     $body = $input['message'] ?? '';
     mg_rate_limit('merchant_canvas.send_message', 'user:' . (int)$user['id'], 90, 60);
-    $message = mg_store_send_direct_message($pdo, (int)$user['id'], $sessionId, $body);
-    mg_ok(['message' => $message], 'Message sent to customer inbox.');
+    $message = mg_store_send_direct_message_via_messaging($pdo, (int)$user['id'], $sessionId, $body);
+    mg_ok(['message' => $message], 'Message sent through Messages and Notifications.');
 } catch (InvalidArgumentException $error) {
     mg_fail($error->getMessage(), 422);
 } catch (RuntimeException $error) {
