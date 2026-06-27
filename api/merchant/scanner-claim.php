@@ -3,22 +3,33 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/gifts/_gift.php';
 require_once __DIR__ . '/_claims.php';
+require_once dirname(__DIR__) . '/account/_claim_voucher_token.php';
 
 function mg_scanner_claim_identifier(mixed $value): string
 {
     $raw = trim((string) $value);
-    if ($raw === '' || mb_strlen($raw) > 700) {
+    if ($raw === '' || mb_strlen($raw) > 1400) {
         mg_fail('Scan a Microgifter gift QR code or enter a gift identifier.', 422);
     }
 
     $decoded = html_entity_decode($raw, ENT_QUOTES | ENT_HTML5, 'UTF-8');
     $decoded = trim(rawurldecode($decoded));
-
     $queryCandidates = [];
+
     $parts = @parse_url($decoded);
     if (is_array($parts)) {
         if (!empty($parts['query'])) {
             parse_str((string) $parts['query'], $query);
+            foreach (['t','token','voucher_token'] as $tokenKey) {
+                if (isset($query[$tokenKey]) && !is_array($query[$tokenKey])) {
+                    try {
+                        $payload = mg_claim_voucher_decode_token((string) $query[$tokenKey]);
+                        return trim((string) $payload['id']);
+                    } catch (Throwable $error) {
+                        mg_fail('The scanned voucher QR is invalid or expired. Refresh the customer voucher and scan again.', 422);
+                    }
+                }
+            }
             foreach (['gift','gift_id','id','item','action_item','action_item_id','voucher','voucher_id','instance','instance_id','g','claim','code'] as $key) {
                 if (isset($query[$key]) && !is_array($query[$key])) {
                     $queryCandidates[] = trim((string) $query[$key]);
@@ -29,11 +40,28 @@ function mg_scanner_claim_identifier(mixed $value): string
             $queryCandidates[] = trim((string) $parts['path']);
         }
     }
+
     if (str_starts_with(strtoupper($decoded), 'MGFT-CLAIM|')) {
         $queryCandidates[] = substr($decoded, 11);
     }
-    $queryCandidates[] = $decoded;
+    if (str_starts_with(strtoupper($decoded), 'MGFT-CLAIM-TOKEN|')) {
+        try {
+            $payload = mg_claim_voucher_decode_token(substr($decoded, 17));
+            return trim((string) $payload['id']);
+        } catch (Throwable $error) {
+            mg_fail('The scanned voucher QR is invalid or expired. Refresh the customer voucher and scan again.', 422);
+        }
+    }
+    if (preg_match('/^[A-Za-z0-9_-]+\.[a-f0-9]{64}$/', $decoded) === 1) {
+        try {
+            $payload = mg_claim_voucher_decode_token($decoded);
+            return trim((string) $payload['id']);
+        } catch (Throwable $error) {
+            mg_fail('The scanned voucher QR is invalid or expired. Refresh the customer voucher and scan again.', 422);
+        }
+    }
 
+    $queryCandidates[] = $decoded;
     foreach ($queryCandidates as $candidate) {
         if ($candidate === '') continue;
         if (preg_match('/GFT-[A-Z0-9-]{4,32}/i', $candidate, $match)) {
@@ -205,13 +233,14 @@ function mg_scanner_claim_process_microgift(PDO $pdo, array $instance, array $lo
         'claim_code_last4' => (string) ($claimCode['code_last4'] ?? ''),
         'source' => 'merchant_scanner',
     ];
-    $pdo->prepare("INSERT INTO microgift_redemptions (public_id,instance_id,claimant_user_id,merchant_user_id,location_reference,amount_cents,currency,status,idempotency_key,source_reference,redeemed_at,metadata_json,created_at) VALUES (?,?,?,?,?,?,'USD','completed',?,?,NOW(),?,NOW())")->execute([
+    $pdo->prepare("INSERT INTO microgift_redemptions (public_id,instance_id,claimant_user_id,merchant_user_id,location_reference,amount_cents,currency,status,idempotency_key,source_reference,redeemed_at,metadata_json,created_at) VALUES (?,?,?,?,?,?,?,'completed',?,?,NOW(),?,NOW())")->execute([
         $redemptionPublicId,
         (int) $instance['id'],
         $claimantUserId,
         $merchantUserId,
         $locationPublicId,
         (int) ($instance['face_value_cents'] ?? 0),
+        (string) ($instance['currency'] ?? 'USD'),
         $idempotencyKey,
         'merchant_scanner:' . $locationPublicId,
         json_encode($metadata, JSON_UNESCAPED_SLASHES),
