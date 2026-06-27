@@ -39,6 +39,14 @@ final class MerchantNotificationCenterTest extends TestCase
         foreach (["require_once __DIR__ . '/_merchant.php';",'mg_merchant_ensure_workspace($pdo, $user)','operational_alerts','notifications','wallet_reward_message','tip_received','mg_merchant_notification_action_url','/merchant-notifications.php?filter=tips','/messages.php?thread=','/merchant-claims.php','mg_require_csrf_for_write($input)','UPDATE notifications SET read_at=COALESCE(read_at,NOW())','UPDATE operational_alerts SET status=?'] as $needle) self::assertStringContainsString($needle, $api);
     }
 
+    public function testMerchantTipsRouteToMerchantNotificationCenter(): void
+    {
+        $tips = $this->source('api/tips/_notifications.php');
+        self::assertStringContainsString('mg_tip_recipient_action_url', $tips);
+        self::assertStringContainsString('/merchant-notifications.php?filter=tips', $tips);
+        self::assertStringContainsString('recipient_wallet_owner_type', $tips);
+    }
+
     public function testMerchantNotificationJavascriptLoadsAndAcknowledgesFeed(): void
     {
         $js = $this->source('assets/js/merchant-notifications.js');
