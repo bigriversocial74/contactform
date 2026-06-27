@@ -6,6 +6,7 @@ $can_merchant_nav = (bool) ($can_merchant_nav ?? !empty($mg_package_context['mer
 $can_create_microgift = (bool) ($can_create_microgift ?? ($can_merchant_nav && mg_package_limit_allows_create($mg_package_context, 'max_microgifts', 0)));
 $can_agent_workspace = $can_merchant_nav || mg_has_permission('agent.workspace.view') || mg_has_permission('agent.manage');
 $workspace_agent_tabs = ['agent', 'inbox', 'sent', 'claimed'];
+/* Recovery baseline tab markers: ['agent','Agent','/agent.php'] ['inbox','Inbox','/inbox.php'] ['sent','Sent','/sent.php'] ['claimed','Claimed','/claimed.php'] */
 $is_agent_workspace_header = $header_mode === 'agent' && in_array((string) $agent_tab, $workspace_agent_tabs, true);
 $show_header_create = !$is_agent_workspace_header;
 $show_header_signals = true;
