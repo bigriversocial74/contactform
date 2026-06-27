@@ -3,8 +3,11 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/security.php';
 lqr_boot_session();
-lqr_auto_csrf_output();
-if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+$lqrSkipCsrf = defined('LQR_SKIP_CSRF') && LQR_SKIP_CSRF === true;
+if (!$lqrSkipCsrf) {
+    lqr_auto_csrf_output();
+}
+if (!$lqrSkipCsrf && (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST')) {
     try {
         lqr_require_csrf();
     } catch (Throwable $e) {
