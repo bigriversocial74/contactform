@@ -1,0 +1,27 @@
+.mg-store-presence-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0 0;padding:12px 14px;border:1px solid rgba(37,99,235,.18);border-radius:18px;background:linear-gradient(135deg,#f8fbff,#eef6ff);box-shadow:0 12px 32px rgba(37,99,235,.06)}
+.mg-store-presence-copy{display:flex;align-items:center;gap:10px;min-width:0;color:#334155;font-size:13px;font-weight:800}
+.mg-store-presence-dot{width:10px;height:10px;border-radius:999px;background:#2563eb;box-shadow:0 0 0 6px rgba(37,99,235,.11);flex:0 0 auto}
+.mg-store-presence-row.is-inside .mg-store-presence-dot{background:#22c55e;box-shadow:0 0 0 6px rgba(34,197,94,.13)}
+.mg-store-presence-row.is-other .mg-store-presence-dot{background:#f59e0b;box-shadow:0 0 0 6px rgba(245,158,11,.13)}
+.mg-store-presence-copy span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mg-store-presence-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.mg-store-presence-actions button,.mg-store-presence-actions a{appearance:none;border:0;border-radius:999px;padding:9px 13px;font-size:12px;font-weight:950;text-decoration:none;cursor:pointer;white-space:nowrap}
+.mg-store-enter-btn{background:#0f172a;color:#fff;box-shadow:0 10px 20px rgba(15,23,42,.12)}
+.mg-store-enter-btn.is-active{background:#16a34a;color:#fff}
+.mg-store-enter-btn.is-switch{background:#f59e0b;color:#111827}
+.mg-store-exit-btn{background:#fff;color:#334155;border:1px solid rgba(148,163,184,.35)!important}
+.mg-store-active-pill{position:fixed;z-index:1180;left:50%;top:70px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;max-width:calc(100vw - 32px);padding:10px 12px;border:1px solid rgba(37,99,235,.2);border-radius:999px;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);box-shadow:0 18px 50px rgba(15,23,42,.14);color:#0f172a;font-size:13px;font-weight:900}
+.mg-store-active-pill[hidden]{display:none}
+.mg-store-active-pill strong{max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mg-store-active-pill button{border:0;border-radius:999px;background:#fee2e2;color:#991b1b;font-size:12px;font-weight:950;padding:7px 10px;cursor:pointer}
+.mg-store-switch-modal{position:fixed;z-index:1300;inset:0;display:grid;place-items:center;padding:20px;background:rgba(15,23,42,.44)}
+.mg-store-switch-modal[hidden]{display:none}
+.mg-store-switch-card{width:min(460px,100%);border-radius:26px;background:#fff;border:1px solid rgba(148,163,184,.26);box-shadow:0 35px 100px rgba(15,23,42,.28);padding:22px}
+.mg-store-switch-card span{display:inline-flex;margin-bottom:8px;color:#1d4ed8;font-size:11px;font-weight:950;letter-spacing:.14em;text-transform:uppercase}
+.mg-store-switch-card h2{margin:0 0 8px;color:#0f172a;font-size:26px;letter-spacing:-.045em}
+.mg-store-switch-card p{margin:0;color:#526173;line-height:1.6}
+.mg-store-switch-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;flex-wrap:wrap}
+.mg-store-switch-actions button{border:0;border-radius:999px;padding:11px 14px;font-size:13px;font-weight:950;cursor:pointer}
+.mg-store-switch-cancel{background:#eef2ff;color:#1e293b}
+.mg-store-switch-confirm{background:#0f172a;color:#fff}
+@media (max-width:720px){.mg-store-presence-row{align-items:flex-start;flex-direction:column}.mg-store-presence-actions{width:100%}.mg-store-presence-actions button,.mg-store-presence-actions a{flex:1;text-align:center}.mg-store-active-pill{top:auto;bottom:14px;left:14px;right:14px;transform:none;justify-content:space-between}.mg-store-active-pill strong{max-width:calc(100vw - 160px)}}

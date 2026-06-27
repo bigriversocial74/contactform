@@ -5,6 +5,11 @@ $accountNav = [
   'overview' => ['Commerce', 'Overview', 'Account summary', '/account-commerce.php#overview'],
   'orders' => ['Commerce', 'Orders', 'Orders and receipts', '/account-commerce.php#orders'],
   'items' => ['Commerce', 'Items', 'Purchased and owned items', '/account-commerce.php#items'],
+];
+if (function_exists('mg_user_has_merchant_access') && mg_user_has_merchant_access()) {
+  $accountNav['store-canvas'] = ['Merchant', 'Store Canvas', 'Live avatars, CRM, and agent messaging', '/merchant-canvas.php'];
+}
+$accountNav += [
   'cart' => ['Checkout', 'Cart', 'Checkout and payment draft', '/cart.php'],
   'inbox' => ['Gifts', 'Inbox', 'Received and redeemable gifts', '/inbox.php'],
   'sent' => ['Gifts', 'Sent', 'Gifts sent to recipients', '/sent.php'],

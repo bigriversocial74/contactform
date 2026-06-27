@@ -122,6 +122,7 @@ return [
         'stage_19_ai_provider_models.sql',
         'stage_19b_ai_permission_guard.sql',
         'stage_19_merchant_market_snapshots.sql',
+        'stage_20_agent_store_canvas.sql',
         'stage_20_buy_in_share_market.sql',
         'stage_21_buy_in_execution_audit_scaffolding.sql',
         'stage_22_buy_in_evidence_candidates.sql',
