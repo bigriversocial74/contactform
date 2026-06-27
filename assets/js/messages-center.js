@@ -31,6 +31,18 @@ document.addEventListener('DOMContentLoaded', function () {
     return '<span class="mg-message-source-chip" data-source-system="' + esc(system) + '">' + esc(label) + '</span>';
   }
 
+  function sourceContextPanel(source) {
+    var context = source && source.context ? source.context : {};
+    if (!context || !Object.keys(context).length) return '';
+    var rows = [];
+    if (context.merchant_name) rows.push('<small>Merchant</small><strong>' + esc(context.merchant_name) + '</strong>');
+    if (context.campaign_title) rows.push('<small>Campaign</small><strong>' + esc(context.campaign_title) + '</strong>');
+    if (context.campaign_type) rows.push('<small>Campaign type</small><strong>' + esc(context.campaign_type) + '</strong>');
+    if (context.contact_source) rows.push('<small>Original contact source</small><strong>' + esc(context.contact_source) + '</strong>');
+    if (context.contact_id) rows.push('<small>CRM contact</small><strong>' + esc(context.contact_id) + '</strong>');
+    return '<div class="mg-thread-source-context"><span>Delivery context</span>' + rows.join('') + '</div>';
+  }
+
   function render() {
     var query = (search && search.value || '').toLowerCase();
     var items = state.threads.filter(function (thread) {
@@ -46,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function () {
         '<div><div class="mg-thread-card-title"><strong>' + esc(thread.subject || 'Conversation') + '</strong>' + sourceBadge(thread) + '</div>' +
         '<p>' + esc(thread.latest_message || 'No messages yet') + '</p>' +
         '<small>' + esc(thread.latest_at || thread.updated_at || '') + '</small></div></article>';
-    }).join('') : '<div class="mg-empty-state"><strong>No conversations found.</strong><p>Gift, Store Canvas, and IN/OUT Box conversations will appear here.</p></div>';
+    }).join('') : '<div class="mg-empty-state"><strong>No conversations found.</strong><p>Gift, Store Canvas, Merchant CRM, and IN/OUT Box conversations will appear here.</p></div>';
   }
 
   async function load() {
@@ -76,11 +88,11 @@ document.addEventListener('DOMContentLoaded', function () {
     var thread = (response.data || response).thread || {};
     var source = thread.source || {};
     var sourceMeta = source.label
-      ? '<div class="mg-thread-source-meta"><span>Source</span><strong>' + esc(source.label) + '</strong>' + (source.system ? '<small>' + esc(source.system) + '</small>' : '') + '</div>'
+      ? '<div class="mg-thread-source-meta"><span>Source</span><strong>' + esc(source.label) + '</strong>' + (source.system ? '<small>' + esc(source.system) + '</small>' : '') + sourceContextPanel(source) + '</div>'
       : '';
 
     detail.innerHTML = '<div class="mg-thread-detail-head"><div><div class="mg-thread-detail-title"><h2>' + esc(thread.subject || 'Conversation') + '</h2>' + sourceBadge(thread) + '</div>' +
-      '<p>' + esc(thread.gift_id || thread.pppm_id || 'Gift communication') + '</p></div>' + sourceMeta + '</div>' +
+      '<p>' + esc(thread.gift_id || thread.pppm_id || thread.conversation_key || 'Gift communication') + '</p></div>' + sourceMeta + '</div>' +
       '<div class="mg-message-stream">' + ((thread.messages || []).map(function (message) {
         var messageSource = message.source && message.source.label
           ? '<span class="mg-message-bubble-source">' + esc(message.source.label) + '</span>'
@@ -96,7 +108,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   list.addEventListener('click', function (event) {
     var row = event.target.closest('[data-thread-id]');
-    if (row) openThread(row.dataset.threadId).catch(console.error);
+    if (row) openThread(row.datasetThreadId || row.dataset.threadId).catch(console.error);
   });
 
   detail.addEventListener('submit', async function (event) {
