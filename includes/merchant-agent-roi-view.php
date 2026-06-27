@@ -9,6 +9,7 @@ declare(strict_types=1);
       <p>Connect agent workflow activity to claims, redemptions, influenced revenue, message-to-claim performance, follow-up conversion, and PSR impact estimates.</p>
     </div>
     <div class="mg-agent-roi-actions">
+      <a class="mg-btn mg-btn-secondary" href="/merchant-agent-forecast.php">ROI Forecasting</a>
       <a class="mg-btn mg-btn-secondary" href="/merchant-agent-analytics.php">Outcome Analytics</a>
       <a class="mg-btn mg-btn-secondary" href="/merchant-customer.php?tab=timeline">Customer Timeline</a>
       <a class="mg-btn mg-btn-secondary" href="/merchant-claims.php">Claims</a>
@@ -27,13 +28,13 @@ declare(strict_types=1);
 
   <section class="mg-agent-roi-grid">
     <article class="mg-app-panel mg-agent-roi-panel">
-      <div class="mg-app-panel-head"><div><h2>Attribution Funnel</h2><p>Agent touchpoints matched to redemption value for the selected time window.</p></div></div>
+      <div class="mg-app-panel-head"><div><h2>Attribution Funnel</h2><p>Agent touchpoints matched to redemption value for the selected time window.</p></div><a class="mg-btn mg-btn-secondary" href="/merchant-agent-forecast.php">Forecast next</a></div>
       <div class="mg-agent-roi-funnel" data-agent-roi-funnel><div class="mg-empty-state"><strong>Loading ROI funnel…</strong></div></div>
     </article>
     <article class="mg-app-panel mg-agent-roi-panel">
       <div class="mg-app-panel-head"><div><h2>Time Window</h2><p>Adjust ROI attribution without changing the underlying event log.</p></div></div>
       <div class="mg-agent-roi-window" data-agent-roi-window><button type="button" data-roi-days="30">30 days</button><button type="button" class="is-active" data-roi-days="90">90 days</button><button type="button" data-roi-days="180">180 days</button><button type="button" data-roi-days="365">365 days</button></div>
-      <div class="mg-agent-roi-links"><a href="/merchant-agent-analytics.php">Analytics</a><a href="/merchant-agent-messages.php">Messages</a><a href="/merchant-agent-execution.php">Execution</a><a href="/merchant-followups.php">Follow-ups</a><a href="/merchant-claims.php">Claims</a></div>
+      <div class="mg-agent-roi-links"><a href="/merchant-agent-forecast.php">Forecast</a><a href="/merchant-agent-analytics.php">Analytics</a><a href="/merchant-agent-messages.php">Messages</a><a href="/merchant-agent-execution.php">Execution</a><a href="/merchant-followups.php">Follow-ups</a><a href="/merchant-claims.php">Claims</a></div>
       <div class="mg-agent-roi-sources" data-roi-sources></div>
     </article>
   </section>
@@ -49,7 +50,7 @@ declare(strict_types=1);
   </section>
 
   <article class="mg-app-panel mg-agent-roi-panel">
-    <div class="mg-app-panel-head"><div><h2>Recent Agent-Influenced Redemptions</h2><p>Latest redemption value linked to agent touchpoints.</p></div><p class="mg-form-status" data-agent-roi-status></p></div>
+    <div class="mg-app-panel-head"><div><h2>Recent Agent-Influenced Redemptions</h2><p>Latest redemption value linked to agent touchpoints.</p></div><div class="mg-crm-tab-actions"><a class="mg-btn mg-btn-secondary" href="/merchant-agent-forecast.php">Open ROI forecast</a><p class="mg-form-status" data-agent-roi-status></p></div></div>
     <div class="mg-agent-roi-events" data-roi-recent><div class="mg-empty-state"><strong>Loading attributed redemptions…</strong></div></div>
   </article>
 </section>
