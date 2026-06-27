@@ -49,6 +49,7 @@ $appSidebarNav = [
         'detail' => 'Gift conversations',
         'href' => '/messages.php',
         'visible' => true,
+        'active' => $agentSidebarActive === 'messages',
     ],
     'merchant' => [
         'section' => 'Merchant',
@@ -56,12 +57,21 @@ $appSidebarNav = [
         'detail' => 'Products, campaigns, claims',
         'href' => '/merchant.php',
         'visible' => $canMerchantNav,
+        'active' => $agentSidebarActive === 'merchant',
+    ],
+    'store-canvas' => [
+        'label' => 'Store Canvas',
+        'detail' => 'Live avatars and CRM',
+        'href' => '/merchant-canvas.php',
+        'visible' => $canMerchantNav,
+        'active' => $agentSidebarActive === 'store-canvas' || $agentSidebarActive === 'merchant-canvas',
     ],
     'build' => [
         'label' => 'Create Gift',
         'detail' => 'Open the builder',
         'href' => '/build.php',
         'visible' => $canCreateGift,
+        'active' => $agentSidebarActive === 'build',
     ],
     'upgrade' => [
         'section' => $canMerchantNav ? '' : 'Merchant',
@@ -69,6 +79,7 @@ $appSidebarNav = [
         'detail' => 'Unlock merchant tools',
         'href' => '/pricing.php',
         'visible' => !$canMerchantNav,
+        'active' => $agentSidebarActive === 'upgrade',
     ],
 ];
 
@@ -101,7 +112,7 @@ require __DIR__ . '/app-sidebar.php';
         <span>Merchant scanner</span>
         <h2 id="mg-scanner-title">Scan and redeem voucher</h2>
       </div>
-      <button type="button" data-scanner-close aria-label="Close scanner">×</button>
+      <button type="button" data-scanner-close aria-label="Close scanner">x</button>
     </header>
     <div class="mg-scanner-body">
       <div class="mg-scanner-viewfinder" data-scanner-camera>
