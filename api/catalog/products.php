@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_catalog.php';
+require_once dirname(__DIR__, 2) . '/includes/package-entitlements.php';
 
 $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
 
@@ -61,6 +62,10 @@ try {
         $metadata = mg_catalog_json($input['metadata'] ?? null);
 
         if ($productId === '') {
+            $activeProducts = $pdo->prepare("SELECT COUNT(*) FROM catalog_products WHERE merchant_user_id=? AND status<>'archived'");
+            $activeProducts->execute([(int) $user['id']]);
+            mg_package_require_limit_available($pdo, $user, 'max_microgifts', (int) $activeProducts->fetchColumn(), 'Product limit reached.');
+
             $productId = mg_catalog_uuid();
             $pdo->prepare(
                 "INSERT INTO catalog_products
