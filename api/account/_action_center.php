@@ -19,6 +19,48 @@ function mg_action_center_search(mixed $value): string
     return mb_substr(trim((string)$value),0,120);
 }
 
+function mg_action_center_source_label(string $sourceSystem, string $fallback = ''): string
+{
+    $sourceSystem = strtolower(trim($sourceSystem));
+    return match ($sourceSystem) {
+        'campaigns', 'campaign', 'campaign_reward' => 'Campaign Rewards',
+        'wallet_item', 'campaign_wallet' => 'Campaign Wallet',
+        'store_canvas' => 'Store Canvas',
+        'agent', 'agent_orchestration' => 'Agent Orchestration',
+        'action_center', 'in_out_box' => 'IN/OUT Box',
+        'distribution_api' => 'Distribution API',
+        'merchant_canvas' => 'Merchant Canvas',
+        default => $fallback !== '' ? $fallback : ($sourceSystem !== '' ? ucwords(str_replace(['_', '-'], ' ', $sourceSystem)) : 'Microgifter'),
+    };
+}
+
+function mg_action_center_source_fields(array $metadata): array
+{
+    $sourceSystem = trim((string)($metadata['source_system'] ?? $metadata['sourceSystem'] ?? $metadata['system'] ?? ''));
+    $sourceType = trim((string)($metadata['source_type'] ?? $metadata['sourceType'] ?? ''));
+    $sourceReference = trim((string)($metadata['source_reference'] ?? $metadata['sourceReference'] ?? $metadata['wallet_item_id'] ?? ''));
+    $sourceLabel = trim((string)($metadata['source_label'] ?? $metadata['sourceLabel'] ?? ''));
+    $sourceDetail = trim((string)($metadata['source_detail'] ?? $metadata['sourceDetail'] ?? $metadata['campaign_title'] ?? $metadata['campaign_type'] ?? ''));
+
+    if ($sourceSystem === '') {
+        if (in_array($sourceType, ['campaign_reward','wallet_item','newsletter_signup','contest_giveaway','qr_reward_drop','referral_reward','birthday_vip','agent_offer'], true)) {
+            $sourceSystem = 'campaigns';
+        } elseif ($sourceType !== '') {
+            $sourceSystem = $sourceType;
+        } else {
+            $sourceSystem = 'in_out_box';
+        }
+    }
+
+    return [
+        'source_system' => $sourceSystem,
+        'source_type' => $sourceType !== '' ? $sourceType : $sourceSystem,
+        'source_label' => $sourceLabel !== '' ? $sourceLabel : mg_action_center_source_label($sourceSystem),
+        'source_detail' => $sourceDetail,
+        'source_reference' => $sourceReference,
+    ];
+}
+
 function mg_action_center_encode_cursor(string $updatedAt,int $id): string
 {
     return rtrim(strtr(base64_encode(json_encode(['updated_at'=>$updatedAt,'id'=>$id],JSON_THROW_ON_ERROR)),'+/','-_'),'=');
@@ -98,6 +140,7 @@ function mg_action_center_public_item(array $row): array
     if($rawMetadata!==''){
         try{$decoded=json_decode($rawMetadata,true,512,JSON_THROW_ON_ERROR);if(is_array($decoded))$metadata=$decoded;}catch(Throwable){}
     }
+    $source = mg_action_center_source_fields($metadata);
     if(!empty($row['delivery_first_sent_at']))$row['sent_at']=$row['delivery_first_sent_at'];
     $row['resend_count']=(int)($row['resend_count']??0);
     $row['follow_up_count']=(int)($row['follow_up_count']??0);
@@ -112,7 +155,7 @@ function mg_action_center_public_item(array $row): array
     $row['demo_scenario']=(string)($metadata['demo_scenario']??'');
     $row['is_demo_preview']=false;
     $row['is_system_demo']=($row['sandbox_mode']==='admin_demo');
-    return $row;
+    return $row + $source;
 }
 
 function mg_action_center_page(PDO $pdo,int $userId,string $folder,int $limit=50,string $search='',?array $cursor=null): array
