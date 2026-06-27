@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/_merchant.php';
 require_once dirname(__DIR__) . '/gifts/_gift.php';
 require_once dirname(__DIR__, 2) . '/includes/merchant-crm-bulk.php';
+require_once dirname(__DIR__, 2) . '/includes/merchant-crm-action-history.php';
 
 mg_require_method('POST');
 $user = mg_require_permission('merchant.campaigns.manage');
