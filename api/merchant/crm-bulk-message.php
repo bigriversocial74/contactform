@@ -6,6 +6,21 @@ require_once dirname(__DIR__) . '/gifts/_gift.php';
 require_once dirname(__DIR__, 2) . '/includes/merchant-crm-bulk.php';
 require_once dirname(__DIR__, 2) . '/includes/merchant-crm-action-history.php';
 
+function mg_crm_bulk_resolve_message_contact_user(PDO $pdo, array $contact): array
+{
+    if ((int)($contact['user_id'] ?? 0) > 0) return $contact;
+    $email = strtolower(trim((string)($contact['email'] ?? '')));
+    if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) return $contact;
+    $stmt = $pdo->prepare('SELECT id FROM users WHERE LOWER(email)=? LIMIT 1');
+    $stmt->execute([$email]);
+    $userId = (int)($stmt->fetchColumn() ?: 0);
+    if ($userId > 0) {
+        $contact['user_id'] = $userId;
+        $pdo->prepare('UPDATE campaign_contacts SET user_id=?,updated_at=NOW() WHERE id=? AND user_id IS NULL')->execute([$userId, (int)$contact['id']]);
+    }
+    return $contact;
+}
+
 mg_require_method('POST');
 $user = mg_require_permission('merchant.campaigns.manage');
 $merchantId = (int)$user['id'];
@@ -28,7 +43,7 @@ try {
             $results[] = ['contact_id' => $contactRef, 'status' => 'failed', 'reason' => 'not_found'];
             continue;
         }
-        $contact = $contacts[$contactRef];
+        $contact = mg_crm_bulk_resolve_message_contact_user($pdo, $contacts[$contactRef]);
         try {
             $contactKey = substr($batchKey . ':' . hash('sha256', $contactRef . ':' . $index), 0, 190);
             $result = mg_crm_bulk_queue_message($pdo, $contact, $merchantId, $body, $contactKey);
