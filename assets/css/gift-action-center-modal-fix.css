@@ -1,0 +1,66 @@
+/* Viewport-level modal fix for Inbox, Sent, and Claimed action center pages. */
+body > .mg-action-modal-backdrop{
+  position:fixed!important;
+  inset:0!important;
+  z-index:70000!important;
+  background:rgba(7,18,37,.58)!important;
+  backdrop-filter:blur(3px)!important;
+}
+body > .mg-action-modal-backdrop[hidden]{display:none!important}
+body > .mg-action-modal{
+  position:fixed!important;
+  inset:auto!important;
+  left:50%!important;
+  top:50%!important;
+  right:auto!important;
+  bottom:auto!important;
+  z-index:70010!important;
+  width:min(640px,calc(100vw - 32px))!important;
+  max-width:calc(100vw - 32px)!important;
+  max-height:calc(100dvh - 48px)!important;
+  margin:0!important;
+  transform:translate(-50%,-50%)!important;
+  border-radius:22px!important;
+  background:#fff!important;
+  box-shadow:0 28px 80px rgba(15,23,42,.30)!important;
+  overflow:hidden!important;
+}
+body > .mg-action-modal[aria-hidden="true"]{display:none!important;opacity:0!important;pointer-events:none!important}
+body > .mg-action-modal[aria-hidden="false"],
+body > .mg-action-modal.is-open{display:block!important;opacity:1!important;pointer-events:auto!important}
+body > .mg-action-modal .mg-action-modal-body{max-height:calc(100dvh - 150px)!important;overflow:auto!important}
+body > .mg-gift-drawer-backdrop{
+  position:fixed!important;
+  inset:0!important;
+  z-index:69900!important;
+  background:rgba(15,23,42,.18)!important;
+}
+body > .mg-gift-drawer-backdrop[hidden]{display:none!important}
+body > .mg-gift-drawer{
+  position:fixed!important;
+  top:0!important;
+  right:0!important;
+  bottom:auto!important;
+  left:auto!important;
+  z-index:69910!important;
+  width:min(480px,96vw)!important;
+  height:100dvh!important;
+  max-height:100dvh!important;
+}
+body.mg-modal-lock{overflow:hidden!important}
+@media(max-width:760px){
+  body > .mg-action-modal{
+    left:0!important;
+    top:0!important;
+    right:auto!important;
+    bottom:auto!important;
+    width:100vw!important;
+    max-width:100vw!important;
+    height:100dvh!important;
+    max-height:100dvh!important;
+    border-radius:0!important;
+    transform:none!important;
+  }
+  body > .mg-action-modal .mg-action-modal-body{max-height:calc(100dvh - 72px)!important}
+  body > .mg-gift-drawer{width:100vw!important;height:100dvh!important}
+}
