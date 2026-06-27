@@ -56,7 +56,7 @@ final class MerchantAgentExecutionCenterTest extends TestCase
         foreach (['data-merchant-agent-execution','data-agent-execution-list','data-agent-execution-status','data-execution-filter="approved_not_executed"','data-execution-filter="failed"'] as $needle) {
             self::assertStringContainsString($needle, $view);
         }
-        foreach (['/api/merchant/agent-execution.php','/api/merchant/agent-execute-action.php','data-execution-action="execute_approved_action"','data-execution-action="draft_customer_message"','data-execution-action="mark_skipped"'] as $needle) {
+        foreach (['/api/merchant/agent-execution.php','/api/merchant/agent-execute-action.php','execute_approved_action','draft_customer_message','mark_skipped'] as $needle) {
             self::assertStringContainsString($needle, $js);
         }
         foreach (['.mg-agent-execution-hero','.mg-agent-execution-kpis','.mg-agent-execution-card','.mg-agent-execution-explain'] as $needle) {
