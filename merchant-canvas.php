@@ -71,10 +71,25 @@ require __DIR__ . '/includes/header.php';
                 <h1>Customer avatars</h1>
               </div>
               <div class="mg-canvas-stage-tools">
-                <span class="mg-canvas-live-pill" data-canvas-live-pill>Polling every few seconds</span>
+                <span class="mg-canvas-live-pill" data-canvas-live-pill>Checking database</span>
+                <button class="mg-btn mg-btn-soft" type="button" data-canvas-health-refresh>Diagnostics</button>
+                <button class="mg-btn mg-btn-soft" type="button" data-canvas-test-add>Add Test Avatar</button>
+                <button class="mg-btn mg-btn-soft" type="button" data-canvas-test-clear>Clear Test</button>
                 <a class="mg-btn mg-btn-soft" href="/feed.php">Open Feed</a>
                 <button class="mg-btn mg-btn-primary" type="button" data-canvas-refresh>Refresh Canvas</button>
               </div>
+            </div>
+
+            <div class="mg-canvas-command-strip" aria-label="Store Canvas summary">
+              <article><span>Inside now</span><strong data-canvas-active-count>0</strong></article>
+              <article><span>Today entries</span><strong data-canvas-today-entries>0</strong></article>
+              <article><span>Canvas events</span><strong data-canvas-today-events>0</strong></article>
+              <article><span>History rows</span><strong data-canvas-history-rows>0</strong></article>
+              <article><span>Test avatars</span><strong data-canvas-test-count>0</strong></article>
+            </div>
+
+            <div class="mg-canvas-state-banner" data-canvas-state>
+              Database check pending. Run diagnostics if the canvas does not load.
             </div>
 
             <div class="mg-canvas-map" data-canvas-map>
@@ -92,9 +107,19 @@ require __DIR__ . '/includes/header.php';
               <div class="mg-canvas-avatar-layer" data-canvas-customers></div>
               <article class="mg-canvas-empty-state" data-canvas-empty>
                 <span>No avatars inside yet</span>
-                <p>Add Enter Store buttons to feed posts and customers will appear here when they enter your merchant location.</p>
+                <p data-canvas-empty-copy>Add Enter Store buttons to feed posts, or add a test avatar to verify the canvas before live testing.</p>
               </article>
             </div>
+
+            <details class="mg-canvas-diagnostics" data-canvas-diagnostics>
+              <summary>
+                <span>Store Canvas diagnostics</span>
+                <strong data-canvas-health-status>Not checked</strong>
+              </summary>
+              <div class="mg-canvas-health-grid" data-canvas-health>
+                <p>Run diagnostics to confirm active database, installed tables, merchant access, and row counts.</p>
+              </div>
+            </details>
           </section>
         </div>
       </section>
