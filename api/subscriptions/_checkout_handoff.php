@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_package_changes.php';
+require_once __DIR__ . '/_package_billing.php';
 require_once dirname(__DIR__) . '/payments/_payments.php';
 require_once dirname(__DIR__) . '/payments/_stripe.php';
 
@@ -58,10 +59,34 @@ function mg_subscription_checkout_cancel_url(string $requestId): string
 function mg_subscription_checkout_create_stripe_session(PDO $pdo, array $row, array $plan): array
 {
     $requestId = (string)$row['public_id'];
-    $packageId = (string)$row['requested_package_id'];
+    $packageId = mg_platform_package_slug($row['requested_package_id'] ?? '');
+    $package = mg_platform_package_get($pdo, $packageId);
+    if (!$package) throw new MgSubscriptionCheckoutException('Package billing configuration is unavailable.', 422);
+    if ((int)($package['requires_admin_review'] ?? 0) === 1 || (int)($package['is_self_serve'] ?? 0) !== 1) {
+        throw new MgSubscriptionCheckoutException('This package requires admin review and is not available for self-serve checkout.', 422);
+    }
+    $billingCycle = mg_platform_package_interval_unit((string)($row['billing_cycle'] ?? $package['billing_cycle'] ?? 'month'));
     $amountCents = (int)($row['amount_cents'] ?? 0);
-    $currency = strtolower((string)($row['currency'] ?? 'USD'));
+    $canonicalAmount = mg_platform_package_amount_cents($package, $billingCycle);
+    if ($canonicalAmount > 0 && $amountCents !== $canonicalAmount) throw new MgSubscriptionCheckoutException('Package request amount no longer matches canonical billing.', 409);
+    $currency = strtolower((string)($row['currency'] ?? $package['currency'] ?? 'USD'));
+    $priceId = mg_platform_package_stripe_price_id($package);
     if ($amountCents < 1) throw new MgSubscriptionCheckoutException('This package does not have a self-serve checkout price.', 422);
+
+    $lineItem = ['quantity' => 1];
+    if ($priceId !== '') {
+        $lineItem['price'] = $priceId;
+    } else {
+        $lineItem['price_data'] = [
+            'currency' => $currency,
+            'unit_amount' => $amountCents,
+            'recurring' => ['interval' => $billingCycle],
+            'product_data' => [
+                'name' => 'Microgifter ' . (string)($plan['name'] ?? ucfirst($packageId)) . ' Plan',
+                'metadata' => ['package_id' => $packageId],
+            ],
+        ];
+    }
 
     $metadata = [
         'source_type' => 'subscription_package_change',
@@ -70,6 +95,8 @@ function mg_subscription_checkout_create_stripe_session(PDO $pdo, array $row, ar
         'package_id' => $packageId,
         'order_total_cents' => (string)$amountCents,
         'currency' => $currency,
+        'billing_cycle' => $billingCycle,
+        'provider_price_id' => $priceId,
     ];
     $params = [
         'mode' => 'subscription',
@@ -78,24 +105,14 @@ function mg_subscription_checkout_create_stripe_session(PDO $pdo, array $row, ar
         'client_reference_id' => $requestId,
         'metadata' => $metadata,
         'subscription_data' => ['metadata' => $metadata],
-        'line_items' => [[
-            'quantity' => 1,
-            'price_data' => [
-                'currency' => $currency,
-                'unit_amount' => $amountCents,
-                'recurring' => ['interval' => 'month'],
-                'product_data' => [
-                    'name' => 'Microgifter ' . (string)($plan['name'] ?? ucfirst($packageId)) . ' Plan',
-                    'metadata' => ['package_id' => $packageId],
-                ],
-            ],
-        ]],
+        'line_items' => [$lineItem],
     ];
-    $session = mg_stripe_api_request($pdo, 'POST', '/v1/checkout/sessions', $params, 'subscription-package:' . $requestId . ':' . $packageId);
+    $session = mg_stripe_api_request($pdo, 'POST', '/v1/checkout/sessions', $params, 'subscription-package:' . $requestId . ':' . $packageId . ':' . ($priceId ?: 'inline'));
     if (empty($session['id']) || empty($session['url'])) throw new MgSubscriptionCheckoutException('Stripe did not return a hosted checkout URL.', 502);
     return [
         'provider' => 'stripe',
         'provider_session_reference' => (string)$session['id'],
+        'provider_price_id' => $priceId,
         'checkout_url' => (string)$session['url'],
         'expires_at' => date('Y-m-d H:i:s', (int)($session['expires_at'] ?? time() + 1800)),
     ];
@@ -127,6 +144,7 @@ function mg_subscription_checkout_start(PDO $pdo, array $user, string $requestId
         $meta['stripe_checkout'] = [
             'provider' => 'stripe',
             'provider_session_reference' => $checkout['provider_session_reference'],
+            'provider_price_id' => $checkout['provider_price_id'] ?: null,
             'checkout_url' => $checkout['checkout_url'],
             'expires_at' => $checkout['expires_at'],
             'created_at' => gmdate('Y-m-d H:i:s'),
@@ -141,6 +159,7 @@ function mg_subscription_checkout_start(PDO $pdo, array $user, string $requestId
             'request_id' => $requestId,
             'provider' => 'stripe',
             'provider_session_reference' => $checkout['provider_session_reference'],
+            'provider_price_id' => $checkout['provider_price_id'] ?: null,
         ], $userId);
         mg_event('subscription.checkout_session_created', ['request_id' => $requestId, 'provider' => 'stripe'], $userId);
 
