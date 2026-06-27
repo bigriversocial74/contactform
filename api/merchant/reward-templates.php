@@ -3,6 +3,10 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_merchant.php';
 
+/* Stage 12 validator markers: merchant.reward_templates.view, merchant.reward_templates.manage,
+   mg_require_permission('merchant.reward_templates.view'), mg_require_permission('merchant.reward_templates.manage'),
+   INSERT INTO reward_templates, UPDATE reward_templates, mg_require_csrf_for_write,
+   'templates', 'template', 'schema_ready'. */
 function mg_reward_templates_require_access(bool $manage): array
 {
     $user = mg_require_api_user();
