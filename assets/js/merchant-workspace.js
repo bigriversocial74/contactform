@@ -123,6 +123,105 @@ async function loadSettings(){
     });
 }
 
+function notificationTime(value){
+    var time=Date.parse(value||'');
+    if(!time)return '';
+    return new Date(time).toLocaleString();
+}
+
+function notificationIcon(kind){
+    return({tips:'$',messages:'✉',rewards:'★',redemptions:'✓',all:'•'})[kind]||'•';
+}
+
+function notificationActionLabel(item){
+    if(item.kind==='messages')return 'Open message';
+    if(item.kind==='tips')return 'View tip';
+    if(item.kind==='redemptions')return 'View claim';
+    if(item.kind==='rewards')return 'View reward';
+    return 'Open';
+}
+
+function notificationCard(item){
+    var context=item.context||{};
+    var meta=[item.source==='alert'?'Operational alert':'User notification',title(item.kind),notificationTime(item.created_at)].filter(Boolean).join(' · ');
+    var tags=[item.severity,item.status].filter(Boolean).map(function(x){return'<em>'+esc(title(x))+'</em>';}).join('');
+    var itemAttr=' data-source="'+esc(item.source)+'" data-id="'+esc(item.id)+'"';
+    return'<article class="mg-merchant-notification-card '+(item.is_unread?'is-unread':'')+'"'+itemAttr+'>'+
+        '<div class="mg-merchant-notification-icon">'+esc(notificationIcon(item.kind))+'</div>'+
+        '<div class="mg-merchant-notification-content"><div class="mg-merchant-notification-top"><span>'+esc(meta)+'</span><span class="mg-card-meta">'+tags+'</span></div><h3>'+esc(item.title||'Merchant notification')+'</h3><p>'+esc(item.body||'No message body was provided.')+'</p>'+
+        '<div class="mg-merchant-notification-context">'+[
+            context.wallet_item_id?'Wallet '+context.wallet_item_id:'',
+            context.campaign_id?'Campaign '+context.campaign_id:'',
+            context.tip_id?'Tip '+context.tip_id:'',
+            context.message_id?'Message '+context.message_id:''
+        ].filter(Boolean).map(esc).join(' · ')+'</div>'+
+        '<div class="mg-merchant-notification-actions"><a class="mg-btn mg-btn-secondary" href="'+esc(item.action_url||'/merchant-notifications.php')+'">'+esc(notificationActionLabel(item))+'</a>'+
+        (item.is_unread?'<button class="mg-btn mg-btn-primary" type="button" data-notification-done>Acknowledge</button>':'')+'</div></div></article>';
+}
+
+async function loadNotifications(){
+    var feed=root.querySelector('[data-merchant-notification-feed]');
+    var tabs=root.querySelector('[data-merchant-notification-tabs]');
+    if(!feed||!tabs)return;
+    var status=root.querySelector('[data-merchant-notification-status]');
+    var kpis=root.querySelector('[data-merchant-notification-kpis]');
+    var current='all';
+    var params=new URLSearchParams(window.location.search||'');
+    if(params.get('filter'))current=params.get('filter');
+
+    async function refresh(){
+        setStatus(status,'Loading '+title(current)+'…');
+        try{
+            var response=await Microgifter.get('/api/merchant/notifications.php?filter='+encodeURIComponent(current)+'&limit=50');
+            var data=response.data||response;
+            var counts=data.counts||{};
+            tabs.querySelectorAll('[data-filter]').forEach(function(btn){
+                var f=btn.dataset.filter;
+                btn.classList.toggle('is-active',f===current);
+                var count=btn.querySelector('[data-count]');
+                if(count)count.textContent=Number(counts[f]||0).toLocaleString();
+            });
+            if(kpis){
+                kpis.innerHTML=[['Unread',counts.unread||0],['Tips',counts.tips||0],['Messages',counts.messages||0],['Rewards',counts.rewards||0]].map(function(v){
+                    return'<div class="mg-merchant-kpi"><span>'+esc(v[0])+'</span><strong>'+Number(v[1]).toLocaleString()+'</strong></div>';
+                }).join('');
+            }
+            var items=data.items||[];
+            feed.innerHTML=items.length?items.map(notificationCard).join(''):'<div class="mg-empty-state"><strong>No merchant notifications</strong><p>This queue will show tips, voucher messages, reward movement, and redemption alerts as customers interact with wallet rewards.</p></div>';
+            setStatus(status,Number(items.length).toLocaleString()+' item'+(items.length===1?'':'s'));
+        }catch(err){
+            feed.innerHTML='<div class="mg-empty-state"><strong>Unable to load notifications</strong><p>'+esc(err.message||'Try again in a moment.')+'</p></div>';
+            setStatus(status,'Load failed','error');
+        }
+    }
+
+    tabs.addEventListener('click',function(event){
+        var btn=event.target.closest('[data-filter]');
+        if(!btn)return;
+        current=btn.dataset.filter||'all';
+        refresh();
+    });
+    var refreshButton=root.querySelector('[data-merchant-notification-refresh]');
+    if(refreshButton)refreshButton.addEventListener('click',refresh);
+    feed.addEventListener('click',async function(event){
+        var btn=event.target.closest('[data-notification-done]');
+        if(!btn)return;
+        var card=btn.closest('[data-source][data-id]');
+        if(!card)return;
+        try{
+            btn.disabled=true;
+            btn.textContent='Saving…';
+            await Microgifter.post('/api/merchant/notifications.php',{source:card.dataset.source,id:card.dataset.id,action:'acknowledge'});
+            await refresh();
+        }catch(err){
+            btn.disabled=false;
+            btn.textContent='Acknowledge';
+            setStatus(status,err.message||'Unable to acknowledge.','error');
+        }
+    });
+    await refresh();
+}
+
 function resetLocationForm(form){
     form.reset();
     form.elements.location_id.value='';
@@ -288,5 +387,6 @@ loadOverview().then(function(){
     if(view==='settings')return loadSettings();
     if(view==='locations')return loadLocations();
     if(view==='team')return loadTeam();
+    if(view==='notifications')return loadNotifications();
 }).catch(showLoadError);
 });
