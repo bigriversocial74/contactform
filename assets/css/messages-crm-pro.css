@@ -1,0 +1,35 @@
+body[data-page-id="messages"] .mg-thread-detail-shell.has-crm-profile{grid-template-rows:auto minmax(0,1fr) auto}
+body[data-page-id="messages"] .mg-thread-main-grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:0;min-height:0;overflow:hidden}
+body[data-page-id="messages"] .mg-thread-main-grid .mg-message-stream-wrap{min-width:0}
+body[data-page-id="messages"] .mg-customer-profile-panel{min-width:0;overflow:auto;border-left:1px solid #e2eaf4;background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);padding:14px;display:flex;flex-direction:column;gap:10px}
+body[data-page-id="messages"] .mg-profile-card,body[data-page-id="messages"] .mg-profile-next{border:1px solid #dbe5f0;border-radius:16px;background:#fff;padding:12px;box-shadow:0 8px 18px rgba(15,23,42,.035)}
+body[data-page-id="messages"] .mg-profile-card span,body[data-page-id="messages"] .mg-profile-next span,body[data-page-id="messages"] .mg-profile-grid span,body[data-page-id="messages"] .mg-profile-note span{display:block;margin-bottom:4px;font-size:9px;font-weight:950;text-transform:uppercase;letter-spacing:.08em;color:#64748b}
+body[data-page-id="messages"] .mg-profile-card strong,body[data-page-id="messages"] .mg-profile-next strong,body[data-page-id="messages"] .mg-profile-grid strong{display:block;color:#0f172a;font-size:13px;line-height:1.25;overflow:hidden;text-overflow:ellipsis}
+body[data-page-id="messages"] .mg-profile-card small{display:block;margin-top:4px;color:#64748b;font-size:11px;line-height:1.35;overflow:hidden;text-overflow:ellipsis}
+body[data-page-id="messages"] .mg-profile-hero{display:grid;grid-template-columns:46px minmax(0,1fr);gap:10px;align-items:center;background:#f8fbff}
+body[data-page-id="messages"] .mg-profile-avatar{display:grid;place-items:center;width:46px;height:46px;border-radius:16px;background:#0f172a;color:#fff;font-size:15px;font-weight:950;letter-spacing:-.03em}
+body[data-page-id="messages"] .mg-profile-score{position:relative;border:1px solid #dbe5f0;border-radius:16px;background:#fff;padding:12px;overflow:hidden}
+body[data-page-id="messages"] .mg-profile-score div{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:10px}
+body[data-page-id="messages"] .mg-profile-score span{font-size:9px;font-weight:950;text-transform:uppercase;letter-spacing:.08em;color:#64748b}
+body[data-page-id="messages"] .mg-profile-score strong{font-size:15px;color:#0f172a}
+body[data-page-id="messages"] .mg-profile-score i{position:absolute;left:0;bottom:0;height:4px;background:#2563eb;border-radius:0 999px 999px 0}
+body[data-page-id="messages"] .mg-profile-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+body[data-page-id="messages"] .mg-profile-grid div{min-width:0;border:1px solid #dbe5f0;border-radius:14px;background:#fff;padding:10px}
+body[data-page-id="messages"] .mg-profile-next{background:#eff6ff;border-color:#bfdbfe}
+body[data-page-id="messages"] .mg-profile-next button{margin-top:9px;width:100%;height:34px;border:1px solid #bfdbfe;border-radius:12px;background:#fff;color:#1d4ed8;font-size:11px;font-weight:950;cursor:pointer}
+body[data-page-id="messages"] .mg-profile-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+body[data-page-id="messages"] .mg-profile-actions button{height:34px;border:1px solid #dbe5f0;border-radius:12px;background:#fff;color:#0f172a;font-size:10px;font-weight:950;cursor:pointer}
+body[data-page-id="messages"] .mg-profile-note{display:block;border:1px solid #dbe5f0;border-radius:16px;background:#fff;padding:12px}
+body[data-page-id="messages"] .mg-profile-note textarea{width:100%;min-height:78px;resize:vertical;border:1px solid #dbe5f0;border-radius:12px;padding:10px;font-size:12px;line-height:1.4;outline:none;background:#f8fbff;color:#0f172a}
+body[data-page-id="messages"] .mg-profile-note textarea:focus{border-color:#9bbcf6;box-shadow:0 0 0 4px rgba(37,99,235,.08);background:#fff}
+body[data-page-id="messages"] .mg-template-tray{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:center;margin:0 0 8px;padding:10px;border:1px solid #dbe5f0;border-radius:18px;background:#fff;box-shadow:0 10px 22px rgba(15,23,42,.04)}
+body[data-page-id="messages"] .mg-template-tray span{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.08em;font-weight:950;color:#64748b}
+body[data-page-id="messages"] .mg-template-tray strong{display:block;font-size:12px;color:#0f172a;white-space:nowrap}
+body[data-page-id="messages"] .mg-template-list{display:flex;gap:7px;overflow:auto;padding-bottom:1px}
+body[data-page-id="messages"] .mg-template-list button{flex:0 0 auto;height:32px;border:1px solid #bfdbfe;border-radius:999px;background:#eff6ff;color:#1d4ed8;font-size:11px;font-weight:950;padding:0 10px;cursor:pointer}
+body[data-page-id="messages"] .mg-thread-detail-shell.is-profile-collapsed .mg-thread-main-grid{grid-template-columns:minmax(0,1fr)}
+body[data-page-id="messages"] .mg-thread-detail-shell.is-profile-collapsed .mg-customer-profile-panel{display:none}
+body[data-page-id="messages"] [data-profile-toggle]{min-width:62px!important;width:auto!important;padding:0 10px!important;color:#1d4ed8!important;background:#eff6ff!important;border-color:#bfdbfe!important}
+@media(max-width:1180px){body[data-page-id="messages"] .mg-thread-main-grid{grid-template-columns:minmax(0,1fr) 292px}}
+@media(max-width:980px){body[data-page-id="messages"] .mg-thread-main-grid{position:relative;grid-template-columns:minmax(0,1fr)}body[data-page-id="messages"] .mg-customer-profile-panel{position:absolute;inset:0 0 0 auto;width:min(330px,92vw);z-index:6;transform:translateX(102%);transition:transform .2s ease;box-shadow:-18px 0 42px rgba(15,23,42,.16)}body[data-page-id="messages"] .mg-thread-detail-shell:not(.is-profile-collapsed) .mg-customer-profile-panel{transform:translateX(0)}body[data-page-id="messages"] .mg-template-tray{grid-template-columns:1fr}body[data-page-id="messages"] .mg-template-list{padding-bottom:3px}body[data-page-id="messages"] .mg-thread-detail-shell.has-crm-profile:not(.is-profile-collapsed) .mg-message-stream-wrap{filter:brightness(.92)}}
+@media(max-width:680px){body[data-page-id="messages"] .mg-profile-grid{grid-template-columns:1fr}body[data-page-id="messages"] .mg-template-tray{padding:8px}body[data-page-id="messages"] .mg-template-list button{height:30px;font-size:10px;padding:0 9px}}
