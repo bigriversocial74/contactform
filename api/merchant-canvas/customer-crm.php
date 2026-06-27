@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require_once dirname(__DIR__) . '/store/_canvas.php';
+require_once dirname(__DIR__) . '/store/_canvas_schema.php';
 
 mg_require_method('GET');
 $user = mg_require_api_user();
@@ -13,11 +13,7 @@ if (!mg_user_has_merchant_access($user, $pdo)) {
 
 function mg_merchant_canvas_customer_crm_core(PDO $pdo, int $merchantUserId, string $sessionPublicId): array
 {
-    foreach (['mg_store_sessions','mg_store_session_events','mg_customer_store_history'] as $table) {
-        if (!mg_store_table_exists($pdo, $table)) {
-            throw new RuntimeException('Store Canvas setup is incomplete. Missing: ' . $table . '.');
-        }
-    }
+    mg_store_canvas_require_tables($pdo, ['mg_store_sessions','mg_store_session_events','mg_customer_store_history'], 'Store Canvas');
 
     $stmt = $pdo->prepare(
         "SELECT s.*,cp.display_name customer_name,cp.avatar_url customer_avatar_url,cp.slug customer_slug,cp.profile_type customer_profile_type,
@@ -38,7 +34,7 @@ function mg_merchant_canvas_customer_crm_core(PDO $pdo, int $merchantUserId, str
     $visit->execute([(int)$session['customer_user_id'], $merchantUserId]);
     $stats['visit_count'] = (int)$visit->fetchColumn();
 
-    if (mg_store_table_exists($pdo, 'mg_agent_messages')) {
+    if (mg_store_canvas_table_exists($pdo, 'mg_agent_messages')) {
         $messages = $pdo->prepare('SELECT COUNT(*) FROM mg_agent_messages WHERE recipient_user_id=? AND merchant_user_id=?');
         $messages->execute([(int)$session['customer_user_id'], $merchantUserId]);
         $stats['messages_sent'] = (int)$messages->fetchColumn();
