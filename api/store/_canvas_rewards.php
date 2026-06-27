@@ -1,20 +1,19 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/_canvas.php';
+require_once __DIR__ . '/_canvas_schema.php';
 require_once dirname(__DIR__) . '/merchant/_merchant.php';
 
 function mg_store_reward_required_tables(PDO $pdo): bool
 {
-    foreach (['reward_templates','campaigns','wallet_items','campaign_events'] as $table) {
-        if (!mg_store_table_exists($pdo, $table)) return false;
-    }
-    return mg_store_canvas_schema_ready($pdo);
+    $required = ['reward_templates','campaigns','wallet_items','campaign_events','mg_store_sessions','mg_store_session_events','mg_customer_store_history'];
+    return mg_store_canvas_missing_tables($pdo, $required) === [];
 }
 
 function mg_store_reward_require_schema(PDO $pdo): void
 {
-    if (!mg_store_reward_required_tables($pdo)) mg_fail('Store Canvas reward delivery requires campaign, wallet, and Store Canvas tables.', 503);
+    $required = ['reward_templates','campaigns','wallet_items','campaign_events','mg_store_sessions','mg_store_session_events','mg_customer_store_history'];
+    mg_store_canvas_require_tables($pdo, $required, 'Store Canvas reward delivery');
 }
 
 function mg_store_reward_uuid(): string

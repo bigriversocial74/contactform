@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require_once dirname(__DIR__) . '/store/_canvas.php';
+require_once dirname(__DIR__) . '/store/_canvas_schema.php';
 
 mg_require_method('GET');
 $user = mg_require_api_user();
@@ -11,13 +11,21 @@ if (!mg_user_has_merchant_access($user, $pdo)) {
     mg_fail('Merchant access required.', 403);
 }
 
+function mg_merchant_canvas_crm_metadata(array $session): array
+{
+    $raw = (string)($session['metadata_json'] ?? '');
+    if ($raw === '') return [];
+    try {
+        $decoded = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
+        return is_array($decoded) ? $decoded : [];
+    } catch (Throwable) {
+        return [];
+    }
+}
+
 function mg_merchant_canvas_customer_crm_core(PDO $pdo, int $merchantUserId, string $sessionPublicId): array
 {
-    foreach (['mg_store_sessions','mg_store_session_events','mg_customer_store_history'] as $table) {
-        if (!mg_store_table_exists($pdo, $table)) {
-            throw new RuntimeException('Store Canvas setup is incomplete. Missing: ' . $table . '.');
-        }
-    }
+    mg_store_canvas_require_tables($pdo, ['mg_store_sessions','mg_store_session_events','mg_customer_store_history'], 'Store Canvas');
 
     $stmt = $pdo->prepare(
         "SELECT s.*,cp.display_name customer_name,cp.avatar_url customer_avatar_url,cp.slug customer_slug,cp.profile_type customer_profile_type,
@@ -33,12 +41,25 @@ function mg_merchant_canvas_customer_crm_core(PDO $pdo, int $merchantUserId, str
         throw new RuntimeException('Customer session is not available.');
     }
 
+    $metadata = mg_merchant_canvas_crm_metadata($session);
+    $isTest = !empty($metadata['test_canvas_avatar']) || (($metadata['source'] ?? '') === 'merchant_canvas_test_seed');
+    $customerName = trim((string)($session['customer_name'] ?? ''));
+    if ($customerName === '') {
+        $customerName = trim((string)($metadata['customer_name'] ?? '')) ?: 'Customer';
+    }
+    $customerAvatar = mg_store_avatar_url($session['customer_avatar_url'] ?? null) ?: mg_store_avatar_url($metadata['customer_avatar_url'] ?? null);
+    $customerProfileType = (string)($session['customer_profile_type'] ?: ($isTest ? 'test_customer' : 'customer'));
+    $sessionProjection = mg_store_project_session($session);
+    if (is_array($sessionProjection) && empty($sessionProjection['source_post']['headline']) && isset($metadata['source_label'])) {
+        $sessionProjection['source_post']['headline'] = (string)$metadata['source_label'];
+    }
+
     $stats = ['visit_count'=>0,'messages_sent'=>0,'rewards_received'=>0,'rewards_claimed'=>0,'gifts_sent'=>0];
     $visit = $pdo->prepare('SELECT COUNT(*) FROM mg_store_sessions WHERE customer_user_id=? AND merchant_user_id=?');
     $visit->execute([(int)$session['customer_user_id'], $merchantUserId]);
     $stats['visit_count'] = (int)$visit->fetchColumn();
 
-    if (mg_store_table_exists($pdo, 'mg_agent_messages')) {
+    if (mg_store_canvas_table_exists($pdo, 'mg_agent_messages')) {
         $messages = $pdo->prepare('SELECT COUNT(*) FROM mg_agent_messages WHERE recipient_user_id=? AND merchant_user_id=?');
         $messages->execute([(int)$session['customer_user_id'], $merchantUserId]);
         $stats['messages_sent'] = (int)$messages->fetchColumn();
@@ -66,13 +87,13 @@ function mg_merchant_canvas_customer_crm_core(PDO $pdo, int $merchantUserId, str
     }
 
     return [
-        'session' => mg_store_project_session($session),
+        'session' => $sessionProjection,
         'customer' => [
-            'name' => (string)($session['customer_name'] ?: 'Customer'),
+            'name' => $customerName,
             'slug' => (string)($session['customer_slug'] ?? ''),
-            'avatar_url' => mg_store_avatar_url($session['customer_avatar_url'] ?? null),
-            'profile_type' => (string)($session['customer_profile_type'] ?: 'customer'),
-            'account_status' => 'In system',
+            'avatar_url' => $customerAvatar,
+            'profile_type' => $customerProfileType,
+            'account_status' => $isTest ? 'Test avatar' : 'In system',
         ],
         'stats' => $stats,
         'events' => $events,
