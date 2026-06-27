@@ -9,6 +9,7 @@ declare(strict_types=1);
       <p>Run merchant-reviewed agent actions, draft customer messages, create follow-up tasks, skip duplicates, retry failures, and keep every result in the automation history.</p>
     </div>
     <div class="mg-agent-execution-actions">
+      <a class="mg-btn mg-btn-secondary" href="/merchant-agent-messages.php">Message Outbox</a>
       <a class="mg-btn mg-btn-secondary" href="/merchant-agent-approvals.php">Review Queue</a>
       <a class="mg-btn mg-btn-secondary" href="/merchant-agent-monitor.php">Agent Monitor</a>
       <button class="mg-btn mg-btn-primary" type="button" data-agent-execution-refresh>Refresh center</button>
@@ -30,6 +31,7 @@ declare(strict_types=1);
           <h2>Execution Filters</h2>
           <p>Focus on approved work, completed results, failures, skipped items, or active execution.</p>
         </div>
+        <a class="mg-btn mg-btn-secondary" href="/merchant-agent-messages.php">Review drafts</a>
       </div>
       <div class="mg-agent-execution-filters" data-agent-execution-filters>
         <button type="button" class="is-active" data-execution-filter="all">All</button>
@@ -63,7 +65,10 @@ declare(strict_types=1);
         <h2>Execution Items</h2>
         <p>Each item includes the reviewed action, guardrail applied, current state, latest result, and available safe next actions.</p>
       </div>
-      <p class="mg-form-status" data-agent-execution-status></p>
+      <div class="mg-crm-tab-actions">
+        <a class="mg-btn mg-btn-secondary" href="/merchant-agent-messages.php">Open message outbox</a>
+        <p class="mg-form-status" data-agent-execution-status></p>
+      </div>
     </div>
     <div class="mg-agent-execution-list" data-agent-execution-list>
       <div class="mg-empty-state"><strong>Loading execution center…</strong></div>
