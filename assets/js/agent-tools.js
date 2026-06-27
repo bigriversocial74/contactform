@@ -39,6 +39,21 @@ document.addEventListener('DOMContentLoaded', function () {
     { id: 'llama', name: 'Llama', provider: 'Meta', detail: 'Open-weight model option.', enabled: true }
   ];
 
+  function escapeHtml(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, function (char) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char];
+    });
+  }
+
+  function formatMoney(cents, currency) {
+    var value = Number(cents || 0) / 100;
+    try {
+      return new Intl.NumberFormat([], { style: 'currency', currency: currency || 'USD' }).format(value);
+    } catch (error) {
+      return '$' + value.toFixed(2);
+    }
+  }
+
   function readSelectedModel() {
     try { return localStorage.getItem(MODEL_KEY) || 'claude'; }
     catch (error) { return 'claude'; }
@@ -88,7 +103,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (status) status.textContent = message;
   }
 
-  function scannerResult(message, type) {
+  function scannerResult(message, type, link) {
     if (!scannerModal) return;
     var result = scannerModal.querySelector('[data-scanner-result]');
     if (!result) return;
@@ -101,6 +116,31 @@ document.addEventListener('DOMContentLoaded', function () {
     result.hidden = false;
     result.className = 'mg-scanner-result is-' + (type || 'info');
     result.textContent = message;
+    if (link && link.href) {
+      var anchor = document.createElement('a');
+      anchor.href = link.href;
+      anchor.className = 'mg-scanner-receipt-link';
+      anchor.textContent = link.label || 'View receipt';
+      result.appendChild(document.createElement('br'));
+      result.appendChild(anchor);
+    }
+  }
+
+  function renderConfirmationDetails(payload) {
+    var confirmation = payload && (payload.confirmation || null);
+    var gift = confirmation || (payload && payload.gift ? payload.gift : {});
+    var customer = confirmation && confirmation.customer ? confirmation.customer : null;
+    var location = confirmation && confirmation.location ? confirmation.location : { name: payload.location_name || '' };
+    var rows = [
+      ['Gift', gift.title || payload.gift_id || 'Microgift'],
+      ['Value', formatMoney(gift.value_cents || (payload.gift && payload.gift.value_cents), gift.currency || (payload.gift && payload.gift.currency) || 'USD')],
+      ['Customer', customer ? ((customer.name || 'Customer') + (customer.masked_email ? ' · ' + customer.masked_email : '')) : 'Customer present'],
+      ['Location', location.name || payload.location_name || 'Selected location'],
+      ['Claim code', 'Ending ' + (payload.claim_code_last4 || gift.claim_code_last4 || '••••')]
+    ];
+    return '<div class="mg-scanner-confirm-card">' + rows.map(function (row) {
+      return '<div class="mg-scanner-confirm-row"><span>' + escapeHtml(row[0]) + '</span><strong>' + escapeHtml(row[1]) + '</strong></div>';
+    }).join('') + '</div>';
   }
 
   function showScannerConfirm(data) {
@@ -108,15 +148,19 @@ document.addEventListener('DOMContentLoaded', function () {
     pendingConfirmation = data || null;
     var confirm = scannerModal.querySelector('[data-scanner-confirm]');
     var copy = scannerModal.querySelector('[data-scanner-confirm-copy]');
+    var details = scannerModal.querySelector('[data-scanner-confirm-details]');
     if (!confirm) return;
     if (!pendingConfirmation) {
       confirm.hidden = true;
+      if (details) details.innerHTML = '';
       return;
     }
     confirm.hidden = false;
     if (copy) {
-      copy.textContent = 'Gift ' + (pendingConfirmation.gift_id || '') + ' is verified for ' + (pendingConfirmation.location_name || 'this location') + '. Confirm to permanently redeem it.';
+      var confirmation = pendingConfirmation.confirmation || {};
+      copy.textContent = confirmation.copy || ('Gift ' + (pendingConfirmation.gift_id || '') + ' is verified for ' + (pendingConfirmation.location_name || 'this location') + '. Confirm to permanently redeem it.');
     }
+    if (details) details.innerHTML = renderConfirmationDetails(pendingConfirmation);
   }
 
   function locationHasClaimCode(location) {
@@ -206,7 +250,9 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!value) return '';
     try {
       var url = new URL(value, window.location.origin);
-      var keys = ['gift', 'gift_id', 'id', 'item', 'g', 'claim', 'code'];
+      var token = url.searchParams.get('t') || url.searchParams.get('token') || url.searchParams.get('voucher_token');
+      if (token) return value;
+      var keys = ['gift', 'gift_id', 'id', 'item', 'action_item', 'action_item_id', 'voucher', 'voucher_id', 'g', 'claim', 'code'];
       for (var i = 0; i < keys.length; i++) {
         var candidate = url.searchParams.get(keys[i]);
         if (candidate && /GFT-[A-Z0-9-]+/i.test(candidate)) return candidate.match(/GFT-[A-Z0-9-]+/i)[0].toUpperCase();
@@ -221,7 +267,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var valueInput = scannerModal.querySelector('[data-scanner-scan-value]');
     var auto = scannerModal.querySelector('[data-scanner-auto-claim]');
     var twoStep = scannerModal.querySelector('[data-scanner-two-step]');
-    var api = scannerModal.getAttribute('data-scanner-api') || '/api/merchant/scanner-claim.php';
+    var api = scannerModal.getAttribute('data-scanner-api') || '/api/merchant/scanner-claim-trust.php';
     var location = selectedLocation();
     var scanValue = valueInput ? extractScanIdentifier(valueInput.value) : '';
 
@@ -254,9 +300,10 @@ document.addEventListener('DOMContentLoaded', function () {
         showScannerConfirm(payload);
         scannerResult(response.message || 'Gift verified. Confirm redemption before claiming voucher.', 'warning');
       } else if (payload && payload.redeemed) {
-        scannerResult(response.message || 'Gift redeemed.', 'success');
+        scannerResult(response.message || 'Gift redeemed.', 'success', payload.receipt_url ? { href: payload.receipt_url, label: 'View redemption receipt' } : null);
         scannerStatus('Voucher claimed successfully.');
       } else if (payload && payload.verified) {
+        showScannerConfirm(payload);
         scannerResult(response.message || 'Gift verified for this location.', 'success');
         scannerStatus('Gift verified.');
       } else {
