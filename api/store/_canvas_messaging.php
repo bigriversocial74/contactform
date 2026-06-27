@@ -11,6 +11,7 @@ declare(strict_types=1);
  */
 require_once __DIR__ . '/_canvas.php';
 require_once dirname(__DIR__) . '/messages/_messaging.php';
+require_once dirname(__DIR__) . '/messages/_delivery_validation.php';
 
 function mg_store_canvas_core_schema_require(PDO $pdo): void
 {
@@ -218,6 +219,19 @@ function mg_store_send_direct_message_via_messaging(PDO $pdo, int $merchantUserI
             ]
         );
 
+        $deliveryValidation = mg_message_delivery_validate($pdo, [
+            'thread_id' => (int)$thread['id'],
+            'thread_public_id' => (string)$thread['public_id'],
+            'message_id' => $messagePublicId,
+            'sender_user_id' => $merchantUserId,
+            'recipient_user_ids' => [$customerUserId],
+            'notification_ids' => $notificationPublicId !== '' ? [$notificationPublicId] : [],
+            'source_type' => $sourceType,
+            'source_reference' => $sourceReference,
+            'conversation_key' => $conversationKey,
+        ]);
+        mg_message_delivery_throw_if_failed($deliveryValidation);
+
         $pdo->commit();
     } catch (Throwable $error) {
         if ($pdo->inTransaction()) {
@@ -232,6 +246,7 @@ function mg_store_send_direct_message_via_messaging(PDO $pdo, int $merchantUserI
         'session_id' => $sessionPublicId,
         'customer_user_id' => $customerUserId,
         'source_system' => 'messages',
+        'delivery_validation' => $deliveryValidation['status'] ?? 'unknown',
     ], $merchantUserId);
 
     return [
@@ -243,5 +258,6 @@ function mg_store_send_direct_message_via_messaging(PDO $pdo, int $merchantUserI
         'source_label' => 'Store Canvas',
         'body' => $body,
         'created_at' => date('Y-m-d H:i:s'),
+        'delivery_validation' => $deliveryValidation,
     ];
 }

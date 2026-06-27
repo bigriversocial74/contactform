@@ -5,6 +5,7 @@ require_once dirname(__DIR__) . '/gifts/_gift.php';
 require_once dirname(__DIR__) . '/pppm/_activity.php';
 require_once dirname(__DIR__) . '/communications/_communications.php';
 require_once dirname(__DIR__) . '/social/_account_restrictions.php';
+require_once __DIR__ . '/_delivery_validation.php';
 
 function mg_messages_reply_source_label(string $sourceType): string
 {
@@ -69,6 +70,7 @@ $threadId = trim((string) ($input['thread_id'] ?? ''));
 $pdo = mg_db();
 $gift = null;
 $pppm = null;
+$deliveryValidation = null;
 
 try {
     mg_require_user_not_restricted($pdo, (int)$user['id'], 'messaging');
@@ -167,6 +169,7 @@ try {
     );
     $participantStmt->execute([(int) $thread['id'], (int) $user['id']]);
     $recipients = $participantStmt->fetchAll(PDO::FETCH_ASSOC);
+    $recipientUserIds = array_values(array_map(static fn(array $recipient): int => (int)$recipient['user_id'], $recipients));
     $recipientUserId = count($recipients) === 1 ? (int)$recipients[0]['user_id'] : null;
 
     $source = mg_messages_reply_source($thread, is_array($pppm) ? $pppm : null);
@@ -202,6 +205,7 @@ try {
         default => 'New gift message',
     };
     $notificationType = $sourceType === 'merchant_crm_message' ? 'merchant_crm_message' : 'message';
+    $notificationIds = [];
     foreach ($recipients as $recipient) {
         if (empty($recipient['notifications_enabled'])) continue;
         if (!empty($recipient['muted_until']) && strtotime((string)$recipient['muted_until']) > time()) continue;
@@ -222,7 +226,7 @@ try {
         if ($conversationKey !== '') {
             $context['conversation_key'] = $conversationKey;
         }
-        mg_create_notification(
+        $notificationId = mg_create_notification(
             $pdo,
             (int)$recipient['user_id'],
             $notificationType,
@@ -231,6 +235,7 @@ try {
             '/messages.php?thread=' . rawurlencode((string)$thread['public_id']),
             $context
         );
+        if ($notificationId !== '') $notificationIds[] = $notificationId;
     }
 
     if (is_array($gift) && !empty($gift['id'])) mg_gift_event($pdo, (int) $gift['id'], (int) $user['id'], 'message', ['thread_id' => $thread['public_id']]);
@@ -245,12 +250,25 @@ try {
         ]);
     }
 
+    $deliveryValidation = mg_message_delivery_validate($pdo, [
+        'thread_id' => (int)$thread['id'],
+        'thread_public_id' => (string)$thread['public_id'],
+        'message_id' => $messagePublicId,
+        'sender_user_id' => (int)$user['id'],
+        'recipient_user_ids' => $recipientUserIds,
+        'notification_ids' => $notificationIds,
+        'source_type' => $sourceType,
+        'source_reference' => $sourceReference,
+        'conversation_key' => $conversationKey,
+    ]);
+    mg_message_delivery_throw_if_failed($deliveryValidation);
+
     $pdo->commit();
-    mg_audit('message.sent', 'message_thread', ['thread_id' => $thread['public_id'], 'source_type' => $sourceType], (int) $user['id']);
-    mg_event('message.sent', ['thread_id' => $thread['public_id'], 'source_type' => $sourceType], (int) $user['id']);
-    mg_ok(['thread_id'=>(string)$thread['public_id'],'message_id'=>$messagePublicId,'source_type'=>$sourceType,'source_label'=>$sourceLabel], 'Message sent.', 201);
+    mg_audit('message.sent', 'message_thread', ['thread_id' => $thread['public_id'], 'source_type' => $sourceType, 'delivery_validation' => $deliveryValidation['status'] ?? 'unknown'], (int) $user['id']);
+    mg_event('message.sent', ['thread_id' => $thread['public_id'], 'source_type' => $sourceType, 'delivery_validation' => $deliveryValidation['status'] ?? 'unknown'], (int) $user['id']);
+    mg_ok(['thread_id'=>(string)$thread['public_id'],'message_id'=>$messagePublicId,'source_type'=>$sourceType,'source_label'=>$sourceLabel,'delivery_validation'=>$deliveryValidation], 'Message sent.', 201);
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) $pdo->rollBack();
-    mg_security_log('error', 'message.send_failed', 'Message send failed.', ['exception_type' => get_class($e)], (int) $user['id']);
+    mg_security_log('error', 'message.send_failed', 'Message send failed.', ['exception_type' => get_class($e), 'delivery_validation' => $deliveryValidation], (int) $user['id']);
     mg_fail('Unable to send message right now.', 500);
 }
