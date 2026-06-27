@@ -4,8 +4,8 @@ require_once __DIR__ . '/includes/app.php';
 $page_title = 'Notifications | Microgifter';
 $page_section = 'account';
 $header_mode = 'account';
-$page_styles = ['/assets/css/account-commerce.css','/assets/css/account-commerce-fixes.css','/assets/css/communications.css','/assets/css/recipient-notifications.css'];
-$page_scripts = ['/assets/js/notifications-page.js','/assets/js/account-sidebar.js'];
+$page_styles = ['/assets/css/account-commerce.css','/assets/css/account-commerce-fixes.css','/assets/css/communications.css','/assets/css/recipient-notifications.css','/assets/css/message-delivery-proof.css'];
+$page_scripts = ['/assets/js/notifications-page.js','/assets/js/notifications-source-metadata.js','/assets/js/account-sidebar.js'];
 $accountView = 'notifications';
 require __DIR__ . '/includes/header.php';
 ?>
