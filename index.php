@@ -48,9 +48,9 @@ require __DIR__ . '/includes/header.php';
   <section class="mg-hero" aria-labelledby="mgHeroTitle">
     <div class="mg-hero-grid">
       <div class="mg-hero-copy" data-reveal="left">
-        <span class="mg-hero-pretitle">Data Resource Management Solutions (DRM)</span>
-        <h1 class="mg-title" id="mgHeroTitle"><span class="mg-title-line">INVEST LOCAL,</span><span class="mg-title-line">DISCOVER VALUE &amp;</span><span class="mg-title-line">SUPPORT HUMANS</span></h1>
-        <p class="mg-note"><strong>Business data is the value layer:</strong> Microgifter helps local businesses turn support into structured data, use that data to discover what customers value, and earn more from the relationships they already create.</p>
+        <span class="mg-hero-pretitle">Build A Network Powered With Predictive Intelligence</span>
+        <h1 class="mg-title" id="mgHeroTitle"><span class="mg-title-line">THE VALUE OF</span><span class="mg-title-line">SOCIAL GIFTING</span><span class="mg-title-line">JUST GOT REAL</span></h1>
+        <p class="mg-note"><strong>Connect &amp; build a loyal customer base:</strong> Microgifter helps local businesses turn support into structured data, use that data to discover what customers value, and earn more from the relationships they already create.</p>
         <div class="mg-actions">
           <a class="mg-btn mg-btn-primary" href="/signup.php">Create Account <span aria-hidden="true">→</span></a>
           <a class="mg-btn mg-btn-secondary" href="/learn-more.php">Book Demo <span aria-hidden="true">→</span></a>
