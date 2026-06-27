@@ -59,4 +59,23 @@ final class MerchantCrmPerformanceInsightsContractTest extends TestCase
         self::assertStringContainsString('is-insight-prefilled', $builder);
         self::assertStringContainsString('mg-crm-insight-actions', $css);
     }
+
+    public function testDraftReviewCenterUsesExistingBuilderDrafts(): void
+    {
+        $ui = $this->read('assets/js/merchant-crm-performance-insights.js');
+        $drafts = $this->read('assets/js/merchant-crm-draft-review-center.js');
+        $css = $this->read('assets/css/merchant-crm-command-center.css');
+        self::assertStringContainsString('merchant-crm-draft-review-center.js', $ui);
+        self::assertStringContainsString('data-crm-tab-target\',\'drafts\'', $drafts);
+        self::assertStringContainsString('data-crm-tab-panel\',\'drafts\'', $drafts);
+        self::assertStringContainsString('/api/merchant/crm-campaign-builder.php', $drafts);
+        self::assertStringContainsString('data-crm-draft-needs', $drafts);
+        self::assertStringContainsString('data-crm-draft-ready', $drafts);
+        self::assertStringContainsString('data-crm-draft-insights', $drafts);
+        self::assertStringContainsString('mgCrmDraftReviewState', $drafts);
+        self::assertStringContainsString('quality', $drafts);
+        self::assertStringContainsString('mg:crm-builder:prefill', $drafts);
+        self::assertStringContainsString('mg-crm-draft-review-grid', $css);
+        self::assertStringContainsString('mg-crm-draft-kpis', $css);
+    }
 }
