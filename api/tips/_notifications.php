@@ -40,20 +40,24 @@ function mg_tip_notify_recipient(PDO $pdo,array $tip): string
     $recipientUserId=(int)$tip['recipient_user_id'];
     $existing=mg_tip_existing_alert($pdo,$recipientUserId,'tip_received',$tipPublicId);
     $title=mg_tip_notification_title($tip);
-    $amount=number_format(((int)$tip['net_cents'])/100,2);$currency=(string)$tip['currency'];
+    $amount=number_format(((int)$tip['net_cents'])/100,2);
+    $currency=(string)$tip['currency'];
     $context=mg_tip_notification_context($tip);
     $notificationId=mg_create_notification($pdo,$recipientUserId,'tip_received',$title,"A {$currency} {$amount} tip was added to your available wallet balance.",'/inbox.php',$context+[
         'actor_user_id'=>(int)$tip['sender_user_id'],
         'event_key'=>'tip_received:'.$tipPublicId,
     ]);
     $alertId=$existing??mg_create_operational_alert($pdo,$recipientUserId,'tip_received','info','You received a tip',"A {$currency} {$amount} tip was added to your available wallet balance.",'/inbox.php',$context);
-    mg_event('tip.received',['tip_id'=>$tipPublicId,'sender_user_id'=>(int)$tip['sender_user_id'],'recipient_user_id'=>$recipientUserId,'net_cents'=>(int)$tip['net_cents'],'currency'=>$currency,'alert_id'=>$alertId,'notification_id'=>$notificationId],$recipientUserId);
+    if($existing===null){
+        mg_event('tip.received',['tip_id'=>$tipPublicId,'sender_user_id'=>(int)$tip['sender_user_id'],'recipient_user_id'=>$recipientUserId,'net_cents'=>(int)$tip['net_cents'],'currency'=>$currency,'alert_id'=>$alertId,'notification_id'=>$notificationId],$recipientUserId);
+    }
     return $notificationId!==''?$notificationId:$alertId;
 }
 
 function mg_tip_notify_reversal(PDO $pdo,array $tip,string $reason): string
 {
-    $tipPublicId=(string)$tip['public_id'];$recipientUserId=(int)$tip['recipient_user_id'];
+    $tipPublicId=(string)$tip['public_id'];
+    $recipientUserId=(int)$tip['recipient_user_id'];
     $existing=mg_tip_existing_alert($pdo,$recipientUserId,'tip_reversed',$tipPublicId);
     if($existing!==null)return $existing;
     return mg_create_operational_alert($pdo,$recipientUserId,'tip_reversed','warning','A tip was reversed',mb_substr('A previously posted tip was reversed. '.$reason,0,1000),'/inbox.php',['tip_id'=>$tipPublicId,'reason'=>$reason]);
@@ -68,8 +72,11 @@ function mg_tip_recovery_alert_type(string $kind): string
 
 function mg_tip_notify_recovery(PDO $pdo,array $tip,array $result): array
 {
-    $kind=(string)($result['recovery_type']??'recovery');$type=mg_tip_recovery_alert_type($kind);$tipPublicId=(string)$tip['public_id'];
-    $amount=number_format(((int)($result['amount_cents']??0))/100,2);$currency=(string)$tip['currency'];
+    $kind=(string)($result['recovery_type']??'recovery');
+    $type=mg_tip_recovery_alert_type($kind);
+    $tipPublicId=(string)$tip['public_id'];
+    $amount=number_format(((int)($result['amount_cents']??0))/100,2);
+    $currency=(string)$tip['currency'];
     [$severity,$title,$message]=match($kind){
         'refund'=>['warning','A tip was refunded',"A {$currency} {$amount} tip refund was processed."],
         'dispute_opened'=>['warning','A tip payment was disputed',"A {$currency} {$amount} tip is under dispute and the related proceeds are on hold."],
@@ -79,12 +86,14 @@ function mg_tip_notify_recovery(PDO $pdo,array $tip,array $result): array
         default=>['warning','Tip payment recovery update',"A {$currency} {$amount} tip payment recovery update was processed."],
     };
     $metadata=['tip_id'=>$tipPublicId,'recovery_id'=>$result['recovery_id']??null,'recovery_type'=>$kind,'amount_cents'=>(int)($result['amount_cents']??0),'currency'=>$currency];
-    $alerts=[];$recipient=(int)$tip['recipient_user_id'];
+    $alerts=[];
+    $recipient=(int)$tip['recipient_user_id'];
     $existing=mg_tip_existing_alert($pdo,$recipient,$type,$tipPublicId);
     $alerts[]=$existing??mg_create_operational_alert($pdo,$recipient,$type,$severity,$title,$message,'/inbox.php',$metadata);
     $admins=$pdo->query("SELECT DISTINCT u.id FROM users u INNER JOIN user_roles ur ON ur.user_id=u.id INNER JOIN roles r ON r.id=ur.role_id WHERE u.status='active' AND r.slug IN ('admin','super_admin')")->fetchAll(PDO::FETCH_COLUMN);
     foreach($admins as $adminId){
-        $adminId=(int)$adminId;if($adminId===$recipient)continue;
+        $adminId=(int)$adminId;
+        if($adminId===$recipient)continue;
         $existing=mg_tip_existing_alert($pdo,$adminId,$type,$tipPublicId);
         $alerts[]=$existing??mg_create_operational_alert($pdo,$adminId,$type,$severity,$title,$message,'/admin/finance.php',$metadata);
     }
