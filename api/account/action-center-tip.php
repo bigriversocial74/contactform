@@ -2,60 +2,9 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_action_center.php';
+require_once __DIR__ . '/_action_center_wallet.php';
 require_once dirname(__DIR__) . '/tips/_tips.php';
 require_once dirname(__DIR__) . '/tips/_notifications.php';
-
-function mg_action_center_tip_wallet_action_id(string $actionItemId): ?string
-{
-    $value=trim($actionItemId);
-    if(!str_starts_with($value,'wallet-'))return null;
-    $walletId=strtolower(substr($value,7));
-    return preg_match('/^[a-f0-9-]{36}$/',$walletId)===1?$walletId:null;
-}
-
-function mg_action_center_tip_load_wallet_item(PDO $pdo,string $walletId,int $userId,string $userEmail): ?array
-{
-    $stmt=$pdo->prepare("SELECT wi.*,cc.email contact_email,c.public_id campaign_public_id,c.title campaign_title,rt.public_id reward_template_public_id,rt.title reward_template_title,u.display_name merchant_display_name,u.full_name merchant_full_name
-        FROM wallet_items wi
-        LEFT JOIN campaign_contacts cc ON cc.id=wi.contact_id
-        LEFT JOIN campaigns c ON c.id=wi.campaign_id
-        LEFT JOIN reward_templates rt ON rt.id=wi.reward_template_id
-        LEFT JOIN users u ON u.id=wi.merchant_user_id
-        WHERE wi.public_id=? AND wi.status<>'cancelled'
-          AND (wi.user_id=? OR (?<>'' AND (LOWER(cc.email)=? OR LOWER(wi.source_id)=?)))
-        LIMIT 1 FOR UPDATE");
-    $stmt->execute([$walletId,$userId,$userEmail,$userEmail,$userEmail]);
-    $item=$stmt->fetch(PDO::FETCH_ASSOC);
-    return $item?:null;
-}
-
-function mg_action_center_tip_wallet_target(PDO $pdo,array $item): array
-{
-    $merchantUserId=(int)($item['merchant_user_id']??0);
-    if($merchantUserId<1)throw new RuntimeException('Tip merchant is unavailable.');
-    try{
-        $stmt=$pdo->prepare("SELECT public_id FROM merchant_workspaces WHERE merchant_user_id=? AND status='active' ORDER BY id ASC LIMIT 1");
-        $stmt->execute([$merchantUserId]);
-        $workspacePublicId=trim((string)($stmt->fetchColumn()?:''));
-        if($workspacePublicId!=='')return ['target_type'=>'merchant','target_reference'=>$workspacePublicId];
-    }catch(Throwable){}
-    return ['target_type'=>'profile','target_reference'=>(string)$merchantUserId];
-}
-
-function mg_action_center_tip_wallet_event(PDO $pdo,array $item,string $eventType,array $context=[]): void
-{
-    if(empty($item['campaign_id']))return;
-    $pdo->prepare('INSERT INTO campaign_events (public_id,merchant_user_id,campaign_id,wallet_item_id,contact_id,event_type,event_context_json,created_at) VALUES (?,?,?,?,?,?,?,NOW())')
-        ->execute([
-            mg_public_uuid(),
-            (int)$item['merchant_user_id'],
-            (int)$item['campaign_id'],
-            (int)$item['id'],
-            $item['contact_id']===null?null:(int)$item['contact_id'],
-            $eventType,
-            json_encode($context+['wallet_item_id'=>(string)$item['public_id']],JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR),
-        ]);
-}
 
 function mg_action_center_tip_response(array $tip,array $extra=[]): array
 {
@@ -83,12 +32,12 @@ if($actionItemId===''||$idempotencyKey===''||$amountCents<1)mg_fail('Action Cent
 $pdo=mg_db();
 try{
     $pdo->beginTransaction();
-    $walletId=mg_action_center_tip_wallet_action_id($actionItemId);
+    $walletId=mg_ac_wallet_action_id($actionItemId);
     if($walletId!==null){
-        $walletItem=mg_action_center_tip_load_wallet_item($pdo,$walletId,(int)$user['id'],strtolower(trim((string)($user['email']??''))));
+        $walletItem=mg_ac_wallet_load_for_user($pdo,$walletId,(int)$user['id'],mg_ac_wallet_user_email($user));
         if(!$walletItem)throw new RuntimeException('Action Center wallet reward not found.');
-        if((string)$walletItem['status']!=='redeemed')throw new RuntimeException('This wallet reward is eligible for tipping after merchant redemption.');
-        $target=mg_action_center_tip_wallet_target($pdo,$walletItem);
+        if(!mg_ac_wallet_can_tip($walletItem,(int)$user['id']))throw new RuntimeException('This wallet reward is eligible for tipping after merchant redemption.');
+        $target=mg_ac_wallet_merchant_target($pdo,$walletItem);
         $tip=mg_tip_create($pdo,(int)$user['id'],[
             'target_type'=>$target['target_type'],
             'target_reference'=>$target['target_reference'],
@@ -101,13 +50,15 @@ try{
                 'action_item_id'=>$actionItemId,
                 'wallet_item_id'=>(string)$walletItem['public_id'],
                 'campaign_id'=>(string)($walletItem['campaign_public_id']??''),
+                'merchant_user_id'=>$target['merchant_user_id'],
+                'merchant_workspace_id'=>$target['merchant_workspace_id'],
                 'message'=>trim((string)($input['message']??'')),
             ],
         ]);
         if((string)$tip['status']==='posted'&&empty($tip['duplicate'])){
             $tip['notification_id']=mg_tip_notify_recipient($pdo,$tip);
             $tip['alert_id']=$tip['notification_id'];
-            mg_action_center_tip_wallet_event($pdo,$walletItem,'wallet_item.tip_posted',['tip_id'=>(string)$tip['public_id'],'sender_user_id'=>(int)$user['id'],'amount_cents'=>(int)$tip['amount_cents'],'currency'=>(string)$tip['currency'],'notification_id'=>$tip['notification_id']]);
+            mg_ac_wallet_event($pdo,$walletItem,'wallet_item.tip_posted',['tip_id'=>(string)$tip['public_id'],'sender_user_id'=>(int)$user['id'],'amount_cents'=>(int)$tip['amount_cents'],'currency'=>(string)$tip['currency'],'notification_id'=>$tip['notification_id']]);
         }
         $pdo->commit();
         mg_ok(mg_action_center_tip_response($tip,['wallet_item_id'=>$walletId]),$tip['duplicate']?'Existing tip returned.':'Tip created.',$tip['duplicate']?200:201);
