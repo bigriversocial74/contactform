@@ -9,21 +9,13 @@ declare(strict_types=1);
  * mg_agent_messages table remains an optional Store Canvas audit mirror that
  * points back to the canonical thread/message IDs.
  */
-require_once __DIR__ . '/_canvas.php';
+require_once __DIR__ . '/_canvas_schema.php';
 require_once dirname(__DIR__) . '/messages/_messaging.php';
 require_once dirname(__DIR__) . '/messages/_delivery_validation.php';
 
 function mg_store_canvas_core_schema_require(PDO $pdo): void
 {
-    $missing = [];
-    foreach (['mg_store_sessions','mg_store_session_events','mg_customer_store_history'] as $table) {
-        if (!mg_store_table_exists($pdo, $table)) {
-            $missing[] = $table;
-        }
-    }
-    if ($missing !== []) {
-        throw new RuntimeException('Store Canvas setup is incomplete. Missing: ' . implode(', ', $missing) . '.');
-    }
+    mg_store_canvas_require_tables($pdo, ['mg_store_sessions','mg_store_session_events','mg_customer_store_history'], 'Store Canvas');
 }
 
 function mg_store_canvas_message_source_label(string $sourceType): string
@@ -158,7 +150,7 @@ function mg_store_send_direct_message_via_messaging(PDO $pdo, int $merchantUserI
         $pdo->prepare('UPDATE message_thread_participants SET last_read_at=NOW() WHERE thread_id=? AND user_id=?')->execute([(int)$thread['id'], $merchantUserId]);
 
         $auditPublicId = '';
-        if (mg_store_table_exists($pdo, 'mg_agent_messages')) {
+        if (mg_store_canvas_table_exists($pdo, 'mg_agent_messages')) {
             try {
                 $auditPublicId = mg_public_uuid();
                 $audit = $pdo->prepare(
