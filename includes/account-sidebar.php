@@ -14,6 +14,7 @@ $accountNav += [
   'inbox' => ['Gifts', 'Inbox', 'Received and redeemable gifts', '/inbox.php'],
   'sent' => ['Gifts', 'Sent', 'Gifts sent to recipients', '/sent.php'],
   'claimed' => ['Gifts', 'Claimed', 'Redeemed gift history', '/claimed.php'],
+  'store-history' => ['Activity', 'Store History', 'Merchant visits, messages, and rewards', '/store-history.php'],
   'messages' => ['Activity', 'Messages', 'Gift and recipient conversations', '/messages.php'],
   'notifications' => ['Activity', 'Notifications', 'Activity and account alerts', '/notifications.php'],
   'preferences' => ['Activity', 'Preferences', 'Notification delivery settings', '/notification-preferences.php'],
