@@ -120,24 +120,57 @@ function mg_automation_record_event(PDO $pdo, int $merchantId, string $eventType
     return $eventId;
 }
 
+function mg_automation_log_event_types(): array
+{
+    return [
+        'crm.playbook.triggered',
+        'crm.followup.created',
+        'crm.automation.settings.updated',
+        'crm.automation.approval.granted',
+        'crm.automation.approval.rejected',
+        'crm.automation.message.drafted',
+        'crm.agent.message.draft.created',
+        'merchant.ai_plan_item.approved',
+        'merchant.ai_plan_item.deferred',
+        'merchant.ai_plan_item.rejected',
+        'merchant.ai_plan_item.executed',
+        'merchant.ai.alert.created',
+        'merchant.ai.recommendation.package_upgrade',
+        'merchant.ai.recommendation.location_fix',
+        'merchant.ai.recommendation.api_integration',
+        'merchant.ai.recommendation.claim_review',
+        'merchant.ai.recommendation.reward_optimization',
+        'merchant.ai.recommendation.campaign_optimization',
+    ];
+}
+
 function mg_automation_log(PDO $pdo, int $merchantId, int $limit = 50): array
 {
     $limit = max(1, min(150, $limit));
-    $types = ['crm.playbook.triggered','crm.followup.created','crm.automation.settings.updated','crm.automation.approval.granted','crm.automation.approval.rejected','crm.automation.message.drafted'];
+    $types = mg_automation_log_event_types();
     $in = implode(',', array_fill(0, count($types), '?'));
     $stmt = $pdo->prepare("SELECT ce.public_id,ce.event_type,ce.event_context_json,ce.created_at,c.title campaign_title,cc.public_id contact_public_id,cc.email contact_email,cc.name contact_name FROM campaign_events ce LEFT JOIN campaigns c ON c.id=ce.campaign_id AND c.merchant_user_id=ce.merchant_user_id LEFT JOIN campaign_contacts cc ON cc.id=ce.contact_id AND cc.merchant_user_id=ce.merchant_user_id WHERE ce.merchant_user_id=? AND ce.event_type IN ({$in}) ORDER BY ce.created_at DESC,ce.id DESC LIMIT {$limit}");
     $stmt->execute(array_merge([$merchantId], $types));
     return array_map(static function (array $row): array {
         $ctx = mg_automation_json($row['event_context_json'] ?? null);
-        $playbook = (string)($ctx['playbook_title'] ?? $ctx['playbook_key'] ?? 'Automation');
+        $playbook = (string)($ctx['playbook_title'] ?? $ctx['title'] ?? $ctx['action_key'] ?? $ctx['playbook_key'] ?? 'Automation');
         $type = (string)$row['event_type'];
         $label = match ($type) {
             'crm.automation.settings.updated' => 'Settings updated',
-            'crm.automation.approval.granted' => 'Merchant approved action',
-            'crm.automation.approval.rejected' => 'Merchant rejected action',
-            'crm.automation.message.drafted' => 'Message drafted',
+            'crm.automation.approval.granted', 'merchant.ai_plan_item.approved' => 'Merchant approved action',
+            'crm.automation.approval.rejected', 'merchant.ai_plan_item.rejected' => 'Merchant rejected action',
+            'merchant.ai_plan_item.deferred' => 'Merchant deferred action',
+            'merchant.ai_plan_item.executed' => 'AI recommendation created resource',
+            'crm.automation.message.drafted', 'crm.agent.message.draft.created' => 'Message drafted',
             'crm.followup.created' => 'Task created',
             'crm.playbook.triggered' => 'Playbook triggered',
+            'merchant.ai.alert.created' => 'Merchant alert created',
+            'merchant.ai.recommendation.package_upgrade' => 'Package recommendation recorded',
+            'merchant.ai.recommendation.location_fix' => 'Location recommendation recorded',
+            'merchant.ai.recommendation.api_integration' => 'API recommendation recorded',
+            'merchant.ai.recommendation.claim_review' => 'Claim review recommendation recorded',
+            'merchant.ai.recommendation.reward_optimization' => 'Reward recommendation recorded',
+            'merchant.ai.recommendation.campaign_optimization' => 'Campaign recommendation recorded',
             default => $type,
         };
         return [
@@ -150,7 +183,7 @@ function mg_automation_log(PDO $pdo, int $merchantId, int $limit = 50): array
             'campaign_title' => (string)($row['campaign_title'] ?? ''),
             'automation_level' => (string)($ctx['automation_level'] ?? ''),
             'status' => (string)($ctx['status'] ?? $ctx['action_status'] ?? 'recorded'),
-            'requires_approval' => !empty($ctx['requires_approval']) || !empty($ctx['agent_requires_approval']),
+            'requires_approval' => !empty($ctx['requires_approval']) || !empty($ctx['agent_requires_approval']) || !empty($ctx['merchant_approval_required']),
             'created_at' => $row['created_at'] ?? null,
             'context' => $ctx,
         ];
