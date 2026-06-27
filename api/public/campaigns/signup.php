@@ -8,6 +8,7 @@ require_once __DIR__ . '/_limits.php';
 require_once __DIR__ . '/_outbound.php';
 require_once __DIR__ . '/_security.php';
 require_once __DIR__ . '/_followups.php';
+require_once __DIR__ . '/_merchant_notifications.php';
 
 function mg_public_campaign_uuid(): string
 {
@@ -46,26 +47,6 @@ function mg_public_campaign_bridge(PDO $pdo, array $campaign, array $contact, in
         'description' => $campaign['description'] ?? null, 'currency' => (string)($campaign['currency'] ?? 'USD'), 'display_value_cents' => (int)($campaign['value_amount_cents'] ?? 0), 'expires_at' => $expiresAt,
         'redemption_instructions' => $campaign['redemption_instructions'] ?? null, 'terms' => ['campaign_type' => (string)$campaign['campaign_type']],
     ]);
-}
-function mg_public_campaign_notify_merchant_signup(PDO $pdo, array $campaign, array $contact, string $email, string $name, string $phone, array $crm): array
-{
-    $merchantId = (int)($campaign['merchant_user_id'] ?? 0);
-    if ($merchantId < 1) return ['created' => false, 'reason' => 'missing_merchant'];
-    $contactPublicId = (string)($contact['public_id'] ?? '');
-    $campaignPublicId = (string)($campaign['public_id'] ?? '');
-    $displayName = trim($name) !== '' ? trim($name) : $email;
-    $campaignTitle = trim((string)($campaign['title'] ?? '')) ?: 'newsletter campaign';
-    $title = 'New newsletter signup';
-    $body = $displayName . ' signed up for ' . $campaignTitle . '.';
-    $actionUrl = '/merchant-crm.php?campaign=' . rawurlencode($campaignPublicId) . '&contact=' . rawurlencode($contactPublicId);
-    try {
-        $stmt = $pdo->prepare('INSERT INTO notifications (public_id,user_id,type,title,body,action_url,created_at) VALUES (?,?,?,?,?,?,NOW())');
-        $stmt->execute([mg_public_campaign_uuid(), $merchantId, 'merchant_campaign_signup', $title, $body, $actionUrl]);
-        return ['created' => true, 'type' => 'merchant_campaign_signup', 'action_url' => $actionUrl];
-    } catch (Throwable $error) {
-        mg_security_log('warning', 'public.campaign_signup.merchant_notification_failed', 'Unable to create merchant signup notification.', ['exception_class' => $error::class, 'message' => $error->getMessage(), 'campaign_id' => $campaignPublicId, 'contact_id' => $contactPublicId, 'crm' => $crm], $merchantId);
-        return ['created' => false, 'reason' => 'notification_failed'];
-    }
 }
 
 mg_require_method('POST');
@@ -115,7 +96,7 @@ try {
     $contact = $contactLookup->fetch();
     $contactId = (int)$contact['id'];
     $crm = mg_merchant_crm_record_event($pdo, ['merchant_user_id' => $merchantId, 'campaign_id' => $campaignId, 'campaign_type' => $campaignType, 'event_type' => 'campaign.form_submitted', 'source_type' => $source, 'source_public_id' => (string)$contact['public_id'], 'user_id' => $userId, 'email' => $email, 'phone' => $phone, 'name' => $name, 'metadata' => $contactMetadata]);
-    $merchantNotification = $isNewContact ? mg_public_campaign_notify_merchant_signup($pdo, $campaign, $contact, $email, $name, $phone, $crm) : ['created' => false, 'reason' => 'existing_contact'];
+    $merchantNotification = mg_public_campaign_notify_merchant_contact($pdo, $campaign, $contact, $email, $name, $phone, $source, $crm, $isNewContact);
     $outbound = mg_public_campaign_queue_outbound($pdo, $campaign, $contact, 'newsletter_signup_confirmation', ['reward_template_id' => (string)$campaign['reward_template_public_id']]);
     mg_public_campaign_event($pdo, $merchantId, $campaignId, null, $contactId, 'form.submitted', ['email' => $email, 'campaign_type' => $campaignType, 'merchant_crm' => $crm, 'merchant_notification' => $merchantNotification, 'outbound_email' => $outbound]);
 
