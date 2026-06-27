@@ -11,6 +11,9 @@ $files = [
     'examples/local-quest-rewards/runtime-diagnostics.php',
     'examples/local-quest-rewards/webhook-tools.php',
     'examples/local-quest-rewards/admin-demo-tools.php',
+    'examples/local-quest-rewards/demo.php',
+    'examples/local-quest-rewards/how-it-works.php',
+    'examples/local-quest-rewards/deployment-checklist.php',
     'docs/local-quest-demo-v2.md',
     'docs/local-quest-developer-handoff.md',
 ];
@@ -32,6 +35,9 @@ $readiness = lqdv2_read($root, 'examples/local-quest-rewards/admin-developer-rea
 $diagnostics = lqdv2_read($root, 'examples/local-quest-rewards/runtime-diagnostics.php');
 $webhookTools = lqdv2_read($root, 'examples/local-quest-rewards/webhook-tools.php');
 $demoTools = lqdv2_read($root, 'examples/local-quest-rewards/admin-demo-tools.php');
+$demo = lqdv2_read($root, 'examples/local-quest-rewards/demo.php');
+$how = lqdv2_read($root, 'examples/local-quest-rewards/how-it-works.php');
+$checklist = lqdv2_read($root, 'examples/local-quest-rewards/deployment-checklist.php');
 $doc = lqdv2_read($root, 'docs/local-quest-demo-v2.md');
 $handoff = lqdv2_read($root, 'docs/local-quest-developer-handoff.md');
 
@@ -45,7 +51,10 @@ $checks[] = [
         && str_contains($start, 'Verify webhook delivery')
         && str_contains($start, 'runtime-diagnostics.php')
         && str_contains($start, 'webhook-tools.php')
-        && str_contains($start, 'admin-demo-tools.php'),
+        && str_contains($start, 'admin-demo-tools.php')
+        && str_contains($start, 'demo.php')
+        && str_contains($start, 'how-it-works.php')
+        && str_contains($start, 'deployment-checklist.php'),
 ];
 
 $checks[] = [
@@ -94,6 +103,34 @@ $checks[] = [
         && str_contains($demoTools, 'reset_demo')
         && str_contains($demoTools, 'RESET LOCAL QUEST DEMO')
         && str_contains($demoTools, 'partner-demo@example.test'),
+];
+
+$checks[] = [
+    'name' => 'demo overview page',
+    'ok' => str_contains($demo, 'Local Quest Rewards demo')
+        && str_contains($demo, 'Start Demo')
+        && str_contains($demo, 'how-it-works.php')
+        && str_contains($demo, 'deployment-checklist.php')
+        && str_contains($demo, 'runtime-diagnostics.php')
+        && str_contains($demo, 'admin-developer-readiness.php'),
+];
+
+$checks[] = [
+    'name' => 'how it works page',
+    'ok' => str_contains($how, 'How the outside app and Microgifter work together')
+        && str_contains($how, 'Lifecycle stages')
+        && str_contains($how, 'Endpoint map')
+        && str_contains($how, '/api/public/v1/rewards/issue.php')
+        && str_contains($how, '/api/public/v1/rewards/claim.php'),
+];
+
+$checks[] = [
+    'name' => 'deployment checklist page',
+    'ok' => str_contains($checklist, 'Demo environment checklist')
+        && str_contains($checklist, 'Environment')
+        && str_contains($checklist, 'API handoff')
+        && str_contains($checklist, 'Webhook readiness')
+        && str_contains($checklist, 'Demo evidence'),
 ];
 
 $checks[] = [
