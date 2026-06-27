@@ -4,7 +4,7 @@ require_once __DIR__ . '/includes/app.php';
 $page_title='Customer Profile | Microgifter';
 $page_section='merchant';
 $header_mode='account';
-$page_styles=['/assets/css/merchant-workspace.css','/assets/css/merchant-customer-profile.css'];
+$page_styles=['/assets/css/merchant-workspace.css','/assets/css/merchant-customer-profile.css','/assets/css/merchant-followup-tasks.css'];
 $page_scripts=['/assets/js/merchant-customer-profile.js'];
 $user=mg_current_user();
 $merchantNav=[
@@ -13,6 +13,7 @@ $merchantNav=[
  'campaigns'=>['Campaigns','Forms, contests, QR drops','/merchant-campaigns.php','Engage'],
  'merchant_crm'=>['Merchant CRM','Customers and campaign history','/merchant-crm.php','Engage'],
  'customer_profile'=>['Customer Profile','Expanded CRM profile','/merchant-customer.php','Engage'],
+ 'followups'=>['Follow-ups','Customer task queue','/merchant-followups.php','Engage'],
  'claims'=>['Claims','Verification and redemption','/merchant-claims.php','Commerce'],
  'stamps'=>['Stamp Ledger','Sends and balance','/merchant-stamps.php','Finance'],
  'locations'=>['Locations','Stores and claim scope','/merchant-locations.php','Manage'],
