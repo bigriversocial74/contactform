@@ -49,7 +49,7 @@
           <div class="mg-crm-mini-feed" data-crm-command-feed>
             <article><div><strong>Reward invite workflow is active</strong><small>No-account contacts can receive reserved reward invite links.</small></div><span class="mg-crm-badge is-good">ready</span></article>
             <article><div><strong>Direct rewards are active</strong><small>Account contacts can receive rewards directly into their Microgifter inbox.</small></div><span class="mg-crm-badge is-good">ready</span></article>
-            <article><div><strong>CRM message visibility patched</strong><small>New messages now create active CRM threads and refresh the Messages panel.</small></div><span class="mg-crm-badge is-good">fixed</span></article>
+            <article><div><strong>Bulk campaign actions are ready</strong><small>Select contacts, segment audiences, message, reward, invite, follow up, or export at scale.</small></div><span class="mg-crm-badge is-good">bulk</span></article>
           </div>
         </div>
       </section>
@@ -77,14 +77,36 @@
       <div class="mg-app-panel-head mg-crm-card-head">
         <div>
           <h2>Campaign Contacts</h2>
-          <p>Operational contact list with campaign type, account status, reward status, email status, timeline, message, and compact reward actions.</p>
+          <p>Operational contact list with campaign type, account status, reward status, email status, timeline, message, compact reward actions, and bulk campaign execution.</p>
         </div>
         <div class="mg-heading-actions mg-crm-card-actions">
           <select class="mg-input" data-crm-campaign-filter aria-label="Campaign filter"><option value="">All campaigns</option></select>
           <button class="mg-btn mg-btn-soft" type="button" data-crm-refresh>Refresh</button>
         </div>
       </div>
-      <div class="mg-app-panel-body"><div class="mg-crm-table-wrap" data-merchant-crm-table><div class="mg-empty-state"><strong>Loading contacts</strong><p>Campaign signups, QR pickups, contest entries, and reward activity will appear here.</p></div></div></div>
+      <div class="mg-app-panel-body">
+        <div class="mg-crm-segment-bar" data-crm-segments aria-label="CRM smart segments">
+          <button class="is-active" type="button" data-crm-segment="all">All</button>
+          <button type="button" data-crm-segment="accounts">Account contacts</button>
+          <button type="button" data-crm-segment="no_accounts">No-account contacts</button>
+          <button type="button" data-crm-segment="verified">Email verified</button>
+          <button type="button" data-crm-segment="reward_issued">Reward issued</button>
+          <button type="button" data-crm-segment="reward_claimed">Reward claimed/redeemed</button>
+          <button type="button" data-crm-segment="invite_pending">Invite pending</button>
+          <button type="button" data-crm-segment="no_recent_activity">No recent activity</button>
+        </div>
+        <div class="mg-crm-bulk-bar" data-crm-bulk-bar>
+          <label class="mg-crm-select-visible"><input type="checkbox" data-crm-select-visible> Select visible</label>
+          <span class="mg-crm-selected-pill" data-crm-selected-count>0 selected</span>
+          <div class="mg-crm-bulk-actions">
+            <button class="mg-btn mg-btn-soft" type="button" data-crm-bulk-action="message" disabled>Message selected</button>
+            <button class="mg-btn mg-btn-soft" type="button" data-crm-bulk-action="reward" disabled>Send / invite reward</button>
+            <button class="mg-btn mg-btn-soft" type="button" data-crm-bulk-action="followup" disabled>Create follow-up</button>
+            <button class="mg-btn mg-btn-soft" type="button" data-crm-bulk-action="export" disabled>Export selected</button>
+          </div>
+        </div>
+        <div class="mg-crm-table-wrap" data-merchant-crm-table><div class="mg-empty-state"><strong>Loading contacts</strong><p>Campaign signups, QR pickups, contest entries, and reward activity will appear here.</p></div></div>
+      </div>
     </section>
   </section>
 
@@ -117,3 +139,4 @@
 <div class="mg-crm-drawer" data-crm-drawer hidden><div class="mg-crm-drawer-backdrop" data-crm-drawer-close></div><aside class="mg-crm-drawer-panel" role="dialog" aria-labelledby="crmTimelineTitle"><header class="mg-crm-drawer-head"><div><span class="mg-eyebrow" data-crm-drawer-kicker>Campaign timeline</span><h2 id="crmTimelineTitle" data-crm-drawer-title>Contact timeline</h2><p data-crm-drawer-subtitle>Loading...</p></div><button class="mg-btn mg-btn-soft" type="button" data-crm-drawer-close>Close</button></header><div class="mg-crm-action-row"><button class="mg-btn mg-btn-soft" type="button" data-crm-action="message">Direct message</button><button class="mg-btn mg-btn-soft" type="button" data-crm-action="reward">Send reward</button><button class="mg-btn mg-btn-soft" type="button" data-crm-action="copy">Copy contact ID</button></div><div class="mg-crm-drawer-body" data-crm-timeline-list></div></aside></div>
 <div class="mg-crm-modal" data-crm-message-modal hidden><div class="mg-crm-drawer-backdrop" data-crm-message-close></div><form class="mg-crm-modal-panel" data-crm-message-form><header class="mg-crm-drawer-head"><div><span class="mg-eyebrow">Direct message</span><h2 data-crm-message-title>Message contact</h2><p data-crm-message-subtitle>Send through Microgifter if the contact has an account; otherwise queue email fallback.</p></div><button class="mg-btn mg-btn-soft" type="button" data-crm-message-close>Close</button></header><label class="mg-crm-field"><span>Message</span><textarea data-crm-message-body maxlength="4000" required placeholder="Write a short, helpful message..."></textarea></label><p class="mg-form-status" data-crm-message-status></p><div class="mg-heading-actions"><button class="mg-btn mg-btn-soft" type="button" data-crm-message-close>Cancel</button><button class="mg-btn" type="submit" data-crm-message-submit>Send message</button></div></form></div>
 <div class="mg-crm-modal" data-crm-reward-modal hidden><div class="mg-crm-drawer-backdrop" data-crm-reward-close></div><form class="mg-crm-modal-panel" data-crm-reward-form><header class="mg-crm-drawer-head"><div><span class="mg-eyebrow">Send reward</span><h2 data-crm-reward-title>Choose a reward</h2><p data-crm-reward-subtitle>Select an active reward template for this customer.</p></div><button class="mg-btn mg-btn-soft" type="button" data-crm-reward-close>Close</button></header><label class="mg-crm-field"><span>Reward template</span><select data-crm-reward-template required><option value="">Loading rewards...</option></select></label><label class="mg-crm-field"><span>Optional note</span><textarea data-crm-reward-note maxlength="1000" placeholder="Add a short merchant note..."></textarea></label><p class="mg-form-status" data-crm-reward-status></p><div class="mg-heading-actions"><button class="mg-btn mg-btn-soft" type="button" data-crm-reward-close>Cancel</button><button class="mg-btn" type="submit" data-crm-reward-submit>Send reward</button></div></form></div>
+<div class="mg-crm-modal" data-crm-bulk-modal hidden><div class="mg-crm-drawer-backdrop" data-crm-bulk-close></div><form class="mg-crm-modal-panel mg-crm-bulk-modal-panel" data-crm-bulk-form><header class="mg-crm-drawer-head"><div><span class="mg-eyebrow">Bulk campaign action</span><h2 data-crm-bulk-title>Bulk action</h2><p data-crm-bulk-subtitle>Preview recipients before processing.</p></div><button class="mg-btn mg-btn-soft" type="button" data-crm-bulk-close>Close</button></header><div class="mg-crm-bulk-preview" data-crm-bulk-preview></div><label class="mg-crm-field" data-crm-bulk-message-field><span>Message</span><textarea data-crm-bulk-message maxlength="4000" placeholder="Write one message for the selected contacts..."></textarea></label><label class="mg-crm-field" data-crm-bulk-reward-field hidden><span>Reward template</span><select data-crm-bulk-template><option value="">Loading rewards...</option></select></label><label class="mg-crm-field" data-crm-bulk-note-field><span data-crm-bulk-note-label>Optional note</span><textarea data-crm-bulk-note maxlength="1000" placeholder="Add a short note..."></textarea></label><label class="mg-crm-field" data-crm-bulk-due-field hidden><span>Follow-up due date</span><input class="mg-input" type="date" data-crm-bulk-due></label><div class="mg-crm-bulk-results" data-crm-bulk-results hidden></div><p class="mg-form-status" data-crm-bulk-status></p><div class="mg-heading-actions"><button class="mg-btn mg-btn-soft" type="button" data-crm-bulk-close>Cancel</button><button class="mg-btn" type="submit" data-crm-bulk-submit>Run bulk action</button></div></form></div>
