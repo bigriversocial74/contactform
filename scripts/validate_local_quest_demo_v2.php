@@ -12,6 +12,7 @@ $files = [
     'examples/local-quest-rewards/webhook-tools.php',
     'examples/local-quest-rewards/admin-demo-tools.php',
     'examples/local-quest-rewards/admin-programs.php',
+    'examples/local-quest-rewards/program-builder.php',
     'docs/local-quest-demo-v2.md',
     'docs/local-quest-developer-handoff.md',
 ];
@@ -34,6 +35,8 @@ $diagnostics = lqdv2_read($root, 'examples/local-quest-rewards/runtime-diagnosti
 $webhookTools = lqdv2_read($root, 'examples/local-quest-rewards/webhook-tools.php');
 $demoTools = lqdv2_read($root, 'examples/local-quest-rewards/admin-demo-tools.php');
 $programAdmin = lqdv2_read($root, 'examples/local-quest-rewards/admin-programs.php');
+$builder = lqdv2_read($root, 'examples/local-quest-rewards/program-builder.php');
+$app = lqdv2_read($root, 'examples/local-quest-rewards/app.php');
 $doc = lqdv2_read($root, 'docs/local-quest-demo-v2.md');
 $handoff = lqdv2_read($root, 'docs/local-quest-developer-handoff.md');
 
@@ -99,13 +102,24 @@ $checks[] = [
 ];
 
 $checks[] = [
-    'name' => 'merchant program admin',
-    'ok' => str_contains($programAdmin, 'Distribution Program Admin')
-        && str_contains($programAdmin, 'Reward template mapping')
-        && str_contains($programAdmin, 'Developer app access')
-        && str_contains($programAdmin, 'Program QA checklist')
-        && str_contains($programAdmin, 'admin-developer-readiness.php')
-        && str_contains($programAdmin, 'developer-starter.php'),
+    'name' => 'editable merchant program builder',
+    'ok' => str_contains($programAdmin, 'Program Builder')
+        && str_contains($programAdmin, 'save_program')
+        && str_contains($programAdmin, 'save_mapping')
+        && str_contains($programAdmin, 'seed_builder')
+        && str_contains($programAdmin, 'reset_builder')
+        && str_contains($programAdmin, 'Action → template mapping'),
+];
+
+$checks[] = [
+    'name' => 'builder issue gate',
+    'ok' => str_contains($builder, 'lqr_builder_issue_gate')
+        && str_contains($builder, 'lqr_builder_save_settings')
+        && str_contains($builder, 'This quest action is disabled in Program Admin')
+        && str_contains($builder, 'This Distribution Program is disabled in Program Admin')
+        && str_contains($app, 'merchant_programs')
+        && str_contains($app, 'lqr_builder_issue_gate($state')
+        && str_contains($app, 'merchant_program_key'),
 ];
 
 $checks[] = [
