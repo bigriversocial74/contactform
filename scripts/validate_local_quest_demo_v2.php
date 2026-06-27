@@ -13,6 +13,9 @@ $files = [
     'examples/local-quest-rewards/admin-demo-tools.php',
     'examples/local-quest-rewards/admin-programs.php',
     'examples/local-quest-rewards/program-builder.php',
+    'examples/local-quest-rewards/wallet-actions.php',
+    'examples/local-quest-rewards/wallet.php',
+    'examples/local-quest-rewards/webhook-reconcile.php',
     'docs/local-quest-demo-v2.md',
     'docs/local-quest-developer-handoff.md',
 ];
@@ -37,6 +40,9 @@ $demoTools = lqdv2_read($root, 'examples/local-quest-rewards/admin-demo-tools.ph
 $programAdmin = lqdv2_read($root, 'examples/local-quest-rewards/admin-programs.php');
 $builder = lqdv2_read($root, 'examples/local-quest-rewards/program-builder.php');
 $app = lqdv2_read($root, 'examples/local-quest-rewards/app.php');
+$walletActions = lqdv2_read($root, 'examples/local-quest-rewards/wallet-actions.php');
+$wallet = lqdv2_read($root, 'examples/local-quest-rewards/wallet.php');
+$reconcile = lqdv2_read($root, 'examples/local-quest-rewards/webhook-reconcile.php');
 $doc = lqdv2_read($root, 'docs/local-quest-demo-v2.md');
 $handoff = lqdv2_read($root, 'docs/local-quest-developer-handoff.md');
 
@@ -66,9 +72,8 @@ $checks[] = [
 
 $checks[] = [
     'name' => 'admin developer readiness',
-    'ok' => str_contains($readiness, 'Admin Developer Readiness')
+    'ok' => str_contains($readiness, 'Developer readiness review')
         && str_contains($readiness, 'lqr_admin_authed')
-        && str_contains($readiness, 'Verified webhooks received')
         && str_contains($readiness, 'Claims reported')
         && str_contains($readiness, 'admin-developer-readiness.php'),
 ];
@@ -120,6 +125,25 @@ $checks[] = [
         && str_contains($app, 'merchant_programs')
         && str_contains($app, 'lqr_builder_issue_gate($state')
         && str_contains($app, 'merchant_program_key'),
+];
+
+$checks[] = [
+    'name' => 'claim report retry flow',
+    'ok' => str_contains($walletActions, 'lqr_action_retry_claim_report')
+        && str_contains($walletActions, 'claim_report_attempts')
+        && str_contains($walletActions, 'claim_retry_available')
+        && str_contains($wallet, 'retry_claim_report')
+        && str_contains($wallet, 'Retry report'),
+];
+
+$checks[] = [
+    'name' => 'claim webhook sync evidence',
+    'ok' => str_contains($reconcile, 'last_webhook_verified_at')
+        && str_contains($reconcile, 'claim_sync_status')
+        && str_contains($reconcile, 'webhook_evidence')
+        && str_contains($wallet, 'Webhook synced')
+        && str_contains($readiness, 'Claim sync evidence')
+        && str_contains($readiness, 'Retry queue'),
 ];
 
 $checks[] = [
