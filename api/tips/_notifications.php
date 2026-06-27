@@ -11,18 +11,44 @@ function mg_tip_existing_alert(PDO $pdo,int $userId,string $type,string $tipPubl
     return $publicId!==false?(string)$publicId:null;
 }
 
+function mg_tip_notification_title(array $tip): string
+{
+    $amount=number_format(((int)$tip['net_cents'])/100,2);
+    return 'You received a '.(string)$tip['currency'].' '.$amount.' tip';
+}
+
+function mg_tip_notification_context(array $tip): array
+{
+    $recipientUserId=(int)$tip['recipient_user_id'];
+    $merchantUserId=((string)($tip['recipient_wallet_owner_type']??'')==='merchant')?$recipientUserId:null;
+    return [
+        'tip_id'=>(string)$tip['public_id'],
+        'sender_user_id'=>(int)$tip['sender_user_id'],
+        'target_type'=>(string)$tip['target_type'],
+        'target_reference'=>(string)$tip['target_reference'],
+        'amount_cents'=>(int)$tip['amount_cents'],
+        'fee_cents'=>(int)$tip['fee_cents'],
+        'net_cents'=>(int)$tip['net_cents'],
+        'currency'=>(string)$tip['currency'],
+        'merchant_user_id'=>$merchantUserId,
+    ];
+}
+
 function mg_tip_notify_recipient(PDO $pdo,array $tip): string
 {
     $tipPublicId=(string)$tip['public_id'];
     $recipientUserId=(int)$tip['recipient_user_id'];
     $existing=mg_tip_existing_alert($pdo,$recipientUserId,'tip_received',$tipPublicId);
-    if($existing!==null)return $existing;
+    $title=mg_tip_notification_title($tip);
     $amount=number_format(((int)$tip['net_cents'])/100,2);$currency=(string)$tip['currency'];
-    $alertId=mg_create_operational_alert($pdo,$recipientUserId,'tip_received','info','You received a tip',"A {$currency} {$amount} tip was added to your available wallet balance.",'/inbox.php',[
-        'tip_id'=>$tipPublicId,'sender_user_id'=>(int)$tip['sender_user_id'],'target_type'=>(string)$tip['target_type'],'target_reference'=>(string)$tip['target_reference'],'amount_cents'=>(int)$tip['amount_cents'],'fee_cents'=>(int)$tip['fee_cents'],'net_cents'=>(int)$tip['net_cents'],'currency'=>$currency,
+    $context=mg_tip_notification_context($tip);
+    $notificationId=mg_create_notification($pdo,$recipientUserId,'tip_received',$title,"A {$currency} {$amount} tip was added to your available wallet balance.",'/inbox.php',$context+[
+        'actor_user_id'=>(int)$tip['sender_user_id'],
+        'event_key'=>'tip_received:'.$tipPublicId,
     ]);
-    mg_event('tip.received',['tip_id'=>$tipPublicId,'sender_user_id'=>(int)$tip['sender_user_id'],'recipient_user_id'=>$recipientUserId,'net_cents'=>(int)$tip['net_cents'],'currency'=>$currency,'alert_id'=>$alertId],$recipientUserId);
-    return $alertId;
+    $alertId=$existing??mg_create_operational_alert($pdo,$recipientUserId,'tip_received','info','You received a tip',"A {$currency} {$amount} tip was added to your available wallet balance.",'/inbox.php',$context);
+    mg_event('tip.received',['tip_id'=>$tipPublicId,'sender_user_id'=>(int)$tip['sender_user_id'],'recipient_user_id'=>$recipientUserId,'net_cents'=>(int)$tip['net_cents'],'currency'=>$currency,'alert_id'=>$alertId,'notification_id'=>$notificationId],$recipientUserId);
+    return $notificationId!==''?$notificationId:$alertId;
 }
 
 function mg_tip_notify_reversal(PDO $pdo,array $tip,string $reason): string
