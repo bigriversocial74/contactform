@@ -133,6 +133,9 @@ $merchantProfileSlug = trim((string)($mgCampaign['merchant_profile_slug'] ?? '')
 $merchantProfileUrl = $merchantProfileSlug !== '' ? '/profile.php?slug=' . rawurlencode($merchantProfileSlug) : null;
 $coverUrl = mg_public_campaign_safe_url($mgCampaign['merchant_profile_cover_url'] ?? null);
 $avatarUrl = mg_public_campaign_safe_url($mgCampaign['merchant_profile_avatar_url'] ?? null);
+$currentUser = function_exists('mg_current_user') ? mg_current_user() : null;
+$prefillName = is_array($currentUser) ? trim((string)($currentUser['display_name'] ?? $currentUser['full_name'] ?? '')) : '';
+$prefillEmail = is_array($currentUser) ? strtolower(trim((string)($currentUser['email'] ?? ''))) : '';
 $now = time();
 $isClosed = false;
 $closedMessage = '';
@@ -156,15 +159,16 @@ if (($mgCampaign['quantity_limit'] ?? null) !== null && (int)($mgCampaign['issue
       </div>
       <h1><?= mg_e($headline) ?></h1>
       <p><?= mg_e($description) ?></p>
-      <div class="mg-public-campaign-meta"><span><?= mg_e($rewardValue) ?></span><span data-campaign-type="<?= mg_e($campaignType) ?>"><?= mg_e($typeLabel) ?></span><?php if (!empty($mgCampaign['ends_at'])): ?><span>Ends <?= mg_e(date('M j, Y', strtotime((string)$mgCampaign['ends_at']))) ?></span><?php endif; ?></div>
-    </div>
-    <aside class="mg-public-campaign-card">
-      <div class="mg-public-campaign-reward">
-        <span>Reward</span>
+      <div class="mg-public-campaign-reward mg-public-campaign-reward-left">
+        <span>Attached reward</span>
         <strong><?= mg_e($rewardTitle) ?></strong>
+        <em><?= mg_e($rewardValue) ?></em>
         <?php if ($rewardDescription !== ''): ?><p><?= mg_e($rewardDescription) ?></p><?php endif; ?>
         <?php if (!empty($mgCampaign['redemption_instructions'])): ?><small><?= mg_e((string)$mgCampaign['redemption_instructions']) ?></small><?php endif; ?>
       </div>
+      <div class="mg-public-campaign-meta"><span><?= mg_e($rewardValue) ?></span><span data-campaign-type="<?= mg_e($campaignType) ?>"><?= mg_e($typeLabel) ?></span><?php if (!empty($mgCampaign['ends_at'])): ?><span>Ends <?= mg_e(date('M j, Y', strtotime((string)$mgCampaign['ends_at']))) ?></span><?php endif; ?></div>
+    </div>
+    <aside class="mg-public-campaign-card">
       <?php if ($isClosed): ?>
         <div class="mg-public-campaign-result is-visible"><strong><?= mg_e($closedMessage) ?></strong></div>
       <?php else: ?>
@@ -173,8 +177,8 @@ if (($mgCampaign['quantity_limit'] ?? null) !== null && (int)($mgCampaign['issue
           <input type="hidden" name="campaign" value="<?= mg_e((string)($mgCampaign['public_slug'] ?? $mgCampaign['public_id'])) ?>">
           <input type="hidden" name="campaign_type" value="<?= mg_e($campaignType) ?>">
           <?php if ($campaignType === 'qr_reward_drop'): ?><input type="hidden" name="qr_token" value="<?= mg_e($mgCampaignToken !== '' ? $mgCampaignToken : (string)($mgCampaign['qr_code_token'] ?? '')) ?>"><?php endif; ?>
-          <label>Name<input name="name" placeholder="Your name" maxlength="180"></label>
-          <label>Email<input name="email" type="email" placeholder="you@example.com" required maxlength="255"></label>
+          <label>Name<input name="name" placeholder="Your name" maxlength="180" value="<?= mg_e($prefillName) ?>"></label>
+          <label>Email<input name="email" type="email" placeholder="you@example.com" required maxlength="255" value="<?= mg_e($prefillEmail) ?>"></label>
           <label>Phone<input name="phone" placeholder="Optional" maxlength="60"></label>
           <?php if ($campaignType === 'contest_giveaway'): ?><label>Entry note<textarea name="entry_note" placeholder="Optional note for this contest"></textarea></label><?php endif; ?>
           <?php if ($campaignType === 'referral_reward'): ?><label>Referral note<textarea name="entry_note" placeholder="Who referred you or who should we contact?"></textarea></label><?php endif; ?>
