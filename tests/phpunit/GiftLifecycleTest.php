@@ -73,7 +73,7 @@ final class GiftLifecycleTest extends TestCase
     public function testRedemptionRequiresVerifiedMerchantAndUpdatesCodeUsage(): void
     {
         $redeem = $this->source('api/gifts/redeem-merchant-claim.php');
-        foreach (["mg_require_permission('merchant.gifts.redeem')",'verified_by_user_id','redeemed_by_user_id','usage_count = usage_count + 1',"status = 'redeemed'","status = 'claimed",'mg_gift_event($pdo'] as $needle) {
+        foreach (["mg_require_permission('merchant.gifts.redeem')",'verified_by_user_id','redeemed_by_user_id','usage_count = usage_count + 1',"status = 'redeemed'","status = 'claimed'",'mg_gift_event($pdo'] as $needle) {
             self::assertStringContainsString($needle, $redeem);
         }
     }
@@ -85,7 +85,7 @@ final class GiftLifecycleTest extends TestCase
         self::assertStringContainsString('data-scanner-api=', $sidebar);
         self::assertStringContainsString("mg_require_permission('merchant.gifts.redeem')", $scanner);
         self::assertMatchesRegularExpression('/mg_scanner_claim_(identifier|context)/', $scanner);
-        foreach (['mg_scanner_claim_assert_location_binding','already verified for another merchant location','This scanner location does not have an active claim code assigned.','require_confirmation','confirmed',"status='verified'","status='redeemed",'usage_count=usage_count+1','gift.scanner_claim_redeemed'] as $needle) {
+        foreach (['mg_scanner_claim_assert_location_binding','already verified for another merchant location','This scanner location does not have an active claim code assigned.','require_confirmation','confirmed',"status='verified'","status='redeemed'",'usage_count=usage_count+1','gift.scanner_claim_redeemed'] as $needle) {
             self::assertStringContainsString($needle, $scanner);
         }
     }
