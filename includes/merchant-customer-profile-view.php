@@ -8,9 +8,9 @@ declare(strict_types=1);
       <p>Expanded CRM record for wallet rewards, messages, tips, claims, and campaign history.</p>
     </div>
     <div class="mg-cp-actions">
-      <a class="mg-btn mg-btn-primary" href="/merchant-crm.php">🎁 Send Reward</a>
-      <a class="mg-btn mg-btn-secondary" href="/merchant-notifications.php?filter=messages">💬 Message Customer</a>
-      <button class="mg-btn mg-btn-secondary" type="button" data-profile-tab="notes">✎ Add Note</button>
+      <a class="mg-btn mg-btn-primary" href="/merchant-crm.php?tab=contacts" data-cp-send-reward>🎁 Send Reward</a>
+      <a class="mg-btn mg-btn-secondary" href="/merchant-crm.php?tab=contacts" data-cp-message-customer>💬 Message Customer</a>
+      <button class="mg-btn mg-btn-secondary" type="button" data-cp-note-trigger>✎ Add Note</button>
     </div>
   </header>
 
@@ -68,7 +68,7 @@ declare(strict_types=1);
 
       <div class="mg-cp-table-row">
         <article class="mg-cp-card mg-cp-table-card">
-          <div class="mg-cp-card-head"><h3>Recent Rewards</h3><a href="/merchant-crm.php">View all rewards →</a></div>
+          <div class="mg-cp-card-head"><h3>Recent Rewards</h3><a href="/merchant-crm.php?tab=rewards">View all rewards →</a></div>
           <table><thead><tr><th>Reward</th><th>Campaign</th><th>Status</th><th>Sent Date</th><th>Claimed Date</th></tr></thead><tbody data-cp-rewards><tr><td colspan="5">Loading rewards…</td></tr></tbody></table>
         </article>
         <article class="mg-cp-card mg-cp-tip-card">
@@ -83,7 +83,7 @@ declare(strict_types=1);
           <div class="mg-cp-card-head"><h3>Campaign Source History</h3></div>
           <table><thead><tr><th>Source / Campaign</th><th>Type</th><th>First Seen</th><th>Interactions</th></tr></thead><tbody data-cp-sources><tr><td colspan="4">Loading campaign sources…</td></tr></tbody></table>
         </article>
-        <article class="mg-cp-card mg-cp-notes-card">
+        <article class="mg-cp-card mg-cp-notes-card" data-cp-notes-card>
           <div class="mg-cp-card-head"><h3>CRM Notes</h3></div>
           <p class="mg-cp-note" data-cp-note>Loading CRM notes…</p>
           <div class="mg-cp-tags"><span>Loyal Customer</span><span>Redeems Quickly</span><span>Coffee Buyer</span><span>High Value</span></div>
