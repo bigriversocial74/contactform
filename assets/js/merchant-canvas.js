@@ -15,6 +15,10 @@ window.Microgifter = window.Microgifter || {};
   function qsa(selector, scope) { return Array.from((scope || root).querySelectorAll(selector)); }
   function payload(response) { return response && response.data ? response.data : response; }
   function clear(node) { if (node) node.replaceChildren(); }
+  function setText(selector, value, scope) {
+    var node = qs(selector, scope);
+    if (node) node.textContent = value == null ? '' : String(value);
+  }
   function escapeHtml(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, function (character) {
       return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character];
@@ -25,7 +29,7 @@ window.Microgifter = window.Microgifter || {};
     if (MG.setBusy) return MG.setBusy(button, value, text);
     if (value) button.dataset.originalLabel = button.textContent;
     button.disabled = value;
-    button.textContent = value ? (text || 'Working…') : (button.dataset.originalLabel || button.textContent);
+    button.textContent = value ? (text || 'Working...') : (button.dataset.originalLabel || button.textContent);
   }
   function initials(name) {
     return String(name || 'C').split(/\s+/).filter(Boolean).slice(0, 2).map(function (part) { return part[0]; }).join('').toUpperCase() || 'C';
@@ -65,24 +69,36 @@ window.Microgifter = window.Microgifter || {};
   function activityItem(item) {
     var customer = item.customer || {};
     var eventLabel = item.last_event && item.last_event.label ? item.last_event.label : 'Inside store';
-    return '<article class="mg-canvas-activity-item"><strong>' + escapeHtml(customer.name || 'Customer') + '</strong><span>' + escapeHtml(eventLabel) + ' · ' + escapeHtml(formatDuration(item.seconds_inside)) + '</span></article>';
+    return '<article class="mg-canvas-activity-item"><strong>' + escapeHtml(customer.name || 'Customer') + '</strong><span>' + escapeHtml(eventLabel) + ' - ' + escapeHtml(formatDuration(item.seconds_inside)) + '</span></article>';
+  }
+
+  function setLiveStatus(message, type) {
+    var pill = qs('[data-canvas-live-pill]');
+    if (!pill) return;
+    pill.textContent = message;
+    pill.classList.toggle('is-error', type === 'error');
   }
 
   function renderCanvas(data) {
     customers = Array.isArray(data.customers) ? data.customers : [];
-    qs('[data-canvas-active-count]').textContent = String(customers.length);
-    qs('[data-canvas-agent-status]').textContent = data.summary && data.summary.agent_status ? data.summary.agent_status : 'Watching';
-    qs('[data-canvas-live-pill]').textContent = customers.length ? 'Live customers inside' : 'Polling every few seconds';
+    setText('[data-canvas-active-count]', String(customers.length));
+    setText('[data-canvas-agent-status]', data.summary && data.summary.agent_status ? data.summary.agent_status : 'Watching');
+    setLiveStatus(customers.length ? 'Live customers inside' : 'Polling every few seconds', '');
 
     var layer = qs('[data-canvas-customers]');
-    clear(layer);
-    layer.insertAdjacentHTML('beforeend', customers.map(customerCard).join(''));
-    qs('[data-canvas-empty]').classList.toggle('is-hidden', customers.length > 0);
+    if (layer) {
+      clear(layer);
+      layer.insertAdjacentHTML('beforeend', customers.map(customerCard).join(''));
+    }
+    var empty = qs('[data-canvas-empty]');
+    if (empty) empty.classList.toggle('is-hidden', customers.length > 0);
 
     var activity = qs('[data-canvas-activity]');
-    clear(activity);
-    if (!customers.length) activity.innerHTML = '<p>Canvas activity will appear as customers enter, idle, message, claim, or leave.</p>';
-    else activity.insertAdjacentHTML('beforeend', customers.slice(0, 8).map(activityItem).join(''));
+    if (activity) {
+      clear(activity);
+      if (!customers.length) activity.innerHTML = '<p>Canvas activity will appear as customers enter, idle, message, claim, or leave.</p>';
+      else activity.insertAdjacentHTML('beforeend', customers.slice(0, 8).map(activityItem).join(''));
+    }
   }
 
   async function loadCanvas() {
@@ -90,17 +106,21 @@ window.Microgifter = window.Microgifter || {};
       var data = payload(await MG.get('/api/merchant-canvas/active-users.php'));
       renderCanvas(data || {});
     } catch (error) {
-      qs('[data-canvas-live-pill]').textContent = error.message || 'Unable to load canvas';
+      setLiveStatus(error.message || 'Unable to load canvas', 'error');
     }
   }
 
   function openDrawer() {
-    qs('[data-canvas-drawer]').classList.add('is-open');
-    qs('[data-canvas-drawer]').setAttribute('aria-hidden', 'false');
+    var drawer = qs('[data-canvas-drawer]');
+    if (!drawer) return;
+    drawer.classList.add('is-open');
+    drawer.setAttribute('aria-hidden', 'false');
   }
   function closeDrawer() {
-    qs('[data-canvas-drawer]').classList.remove('is-open');
-    qs('[data-canvas-drawer]').setAttribute('aria-hidden', 'true');
+    var drawer = qs('[data-canvas-drawer]');
+    if (!drawer) return;
+    drawer.classList.remove('is-open');
+    drawer.setAttribute('aria-hidden', 'true');
   }
 
   function renderCrm(data) {
@@ -108,39 +128,47 @@ window.Microgifter = window.Microgifter || {};
     var stats = data.stats || {};
     var session = data.session || {};
     var events = Array.isArray(data.events) ? data.events : [];
-    qs('[data-drawer-name]').textContent = customer.name || 'Customer CRM';
-    qs('[data-drawer-body]').innerHTML =
-      '<section class="mg-canvas-customer-summary">' + avatarHtml(customer) + '<div><strong>' + escapeHtml(customer.name || 'Customer') + '</strong><span>' + escapeHtml(customer.profile_type || 'customer') + ' · ' + escapeHtml(customer.account_status || 'In system') + '</span><small>Current status: ' + escapeHtml(session.status || 'active') + '</small></div></section>' +
-      '<section class="mg-canvas-crm-grid">' +
-        '<article class="mg-canvas-crm-stat"><span>Visits</span><strong>' + Number(stats.visit_count || 0).toLocaleString() + '</strong></article>' +
-        '<article class="mg-canvas-crm-stat"><span>Messages</span><strong>' + Number(stats.messages_sent || 0).toLocaleString() + '</strong></article>' +
-        '<article class="mg-canvas-crm-stat"><span>Rewards</span><strong>' + Number(stats.rewards_received || 0).toLocaleString() + '</strong></article>' +
-        '<article class="mg-canvas-crm-stat"><span>Claims</span><strong>' + Number(stats.rewards_claimed || 0).toLocaleString() + '</strong></article>' +
-      '</section>' +
-      '<section><span class="mg-canvas-eyebrow">Store source</span><p>' + escapeHtml(session.source_post && session.source_post.headline ? session.source_post.headline : 'Feed post') + '</p></section>' +
-      '<section><span class="mg-canvas-eyebrow">Session events</span><div class="mg-canvas-event-list">' + (events.length ? events.map(function (event) {
-        return '<article><strong>' + escapeHtml(event.label || event.type || 'Store event') + '</strong><span>' + escapeHtml(formatDate(event.created_at)) + '</span></article>';
-      }).join('') : '<article><strong>No events yet</strong><span>Customer has just entered the store.</span></article>') + '</div></section>';
+    setText('[data-drawer-name]', customer.name || 'Customer CRM');
+    var body = qs('[data-drawer-body]');
+    if (body) {
+      body.innerHTML =
+        '<section class="mg-canvas-customer-summary">' + avatarHtml(customer) + '<div><strong>' + escapeHtml(customer.name || 'Customer') + '</strong><span>' + escapeHtml(customer.profile_type || 'customer') + ' - ' + escapeHtml(customer.account_status || 'In system') + '</span><small>Current status: ' + escapeHtml(session.status || 'active') + '</small></div></section>' +
+        '<section class="mg-canvas-crm-grid">' +
+          '<article class="mg-canvas-crm-stat"><span>Visits</span><strong>' + Number(stats.visit_count || 0).toLocaleString() + '</strong></article>' +
+          '<article class="mg-canvas-crm-stat"><span>Messages</span><strong>' + Number(stats.messages_sent || 0).toLocaleString() + '</strong></article>' +
+          '<article class="mg-canvas-crm-stat"><span>Rewards</span><strong>' + Number(stats.rewards_received || 0).toLocaleString() + '</strong></article>' +
+          '<article class="mg-canvas-crm-stat"><span>Claims</span><strong>' + Number(stats.rewards_claimed || 0).toLocaleString() + '</strong></article>' +
+        '</section>' +
+        '<section><span class="mg-canvas-eyebrow">Store source</span><p>' + escapeHtml(session.source_post && session.source_post.headline ? session.source_post.headline : 'Feed post') + '</p></section>' +
+        '<section><span class="mg-canvas-eyebrow">Session events</span><div class="mg-canvas-event-list">' + (events.length ? events.map(function (event) {
+          return '<article><strong>' + escapeHtml(event.label || event.type || 'Store event') + '</strong><span>' + escapeHtml(formatDate(event.created_at)) + '</span></article>';
+        }).join('') : '<article><strong>No events yet</strong><span>Customer has just entered the store.</span></article>') + '</div></section>';
+    }
 
-    var message = qs('[name="message"]', qs('[data-message-form]'));
+    var form = qs('[data-message-form]');
+    var message = form ? qs('[name="message"]', form) : null;
     var submit = qs('[data-message-submit]');
-    message.disabled = false;
-    submit.disabled = false;
-    qs('[data-message-status]').textContent = '';
-    qs('[data-message-status]').className = 'mg-canvas-form-status';
+    if (message) message.disabled = false;
+    if (submit) submit.disabled = false;
+    var status = qs('[data-message-status]');
+    if (status) {
+      status.textContent = '';
+      status.className = 'mg-canvas-form-status';
+    }
   }
 
   async function loadCrm(sessionId) {
     selectedSessionId = String(sessionId || '');
     qsa('[data-session-id]').forEach(function (button) { button.classList.toggle('is-active', button.dataset.sessionId === selectedSessionId); });
     openDrawer();
-    qs('[data-drawer-name]').textContent = 'Loading customer…';
-    qs('[data-drawer-body]').innerHTML = '<p>Loading CRM context…</p>';
+    setText('[data-drawer-name]', 'Loading customer...');
+    var drawerBody = qs('[data-drawer-body]');
+    if (drawerBody) drawerBody.innerHTML = '<p>Loading CRM context...</p>';
     try {
       var data = payload(await MG.get('/api/merchant-canvas/customer-crm.php?session_id=' + encodeURIComponent(selectedSessionId)));
       renderCrm(data || {});
     } catch (error) {
-      qs('[data-drawer-body]').innerHTML = '<p>' + escapeHtml(error.message || 'Unable to load customer CRM.') + '</p>';
+      if (drawerBody) drawerBody.innerHTML = '<p>' + escapeHtml(error.message || 'Unable to load customer CRM.') + '</p>';
     }
   }
 
@@ -151,19 +179,25 @@ window.Microgifter = window.Microgifter || {};
     if (!body) return;
     var button = qs('[data-message-submit]', form);
     var status = qs('[data-message-status]', form);
-    busy(button, true, 'Sending…');
-    status.className = 'mg-canvas-form-status';
-    status.textContent = '';
+    busy(button, true, 'Sending...');
+    if (status) {
+      status.className = 'mg-canvas-form-status';
+      status.textContent = '';
+    }
     try {
       await MG.post('/api/merchant-canvas/send-message.php', { session_id: selectedSessionId, message: body });
       input.value = '';
-      status.textContent = 'Message sent to customer IN/OUT Box.';
-      status.className = 'mg-canvas-form-status is-success';
+      if (status) {
+        status.textContent = 'Message sent to customer IN/OUT Box.';
+        status.className = 'mg-canvas-form-status is-success';
+      }
       await loadCanvas();
       await loadCrm(selectedSessionId);
     } catch (error) {
-      status.textContent = error.message || 'Unable to send message.';
-      status.className = 'mg-canvas-form-status is-error';
+      if (status) {
+        status.textContent = error.message || 'Unable to send message.';
+        status.className = 'mg-canvas-form-status is-error';
+      }
     } finally {
       busy(button, false);
     }
