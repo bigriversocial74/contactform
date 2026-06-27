@@ -7,13 +7,19 @@ document.addEventListener('DOMContentLoaded', function () {
   var list = app.querySelector('[data-thread-list]');
   var detail = app.querySelector('[data-thread-detail]');
   var search = app.querySelector('[data-message-search]');
-  var refresh = app.querySelector('[data-message-refresh]');
-  var state = { threads: [], current: null, sending: false };
+  var refreshButtons = app.querySelectorAll('[data-message-refresh]');
+  var filterButtons = app.querySelectorAll('[data-message-filter]');
+  var state = { threads: [], current: null, sending: false, filter: 'all' };
 
   function esc(value) {
     return String(value == null ? '' : value).replace(/[&<>'"]/g, function (character) {
       return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[character];
     });
+  }
+
+  function initials(value) {
+    var label = String(value || 'Conversation').replace(/^CRM:\s*/i, '').trim();
+    return label.split(/\s+/).filter(Boolean).slice(0, 2).map(function (part) { return part.charAt(0); }).join('').toUpperCase() || 'MG';
   }
 
   function sourceLabel(item) {
@@ -64,46 +70,69 @@ document.addEventListener('DOMContentLoaded', function () {
     if (form) form.setAttribute('aria-busy', busy ? 'true' : 'false');
   }
 
-  function render() {
-    var query = (search && search.value || '').toLowerCase();
-    var items = state.threads.filter(function (thread) {
-      return [thread.subject, thread.latest_message, thread.source_label, thread.source_system, thread.source_reference]
-        .join(' ')
-        .toLowerCase()
-        .includes(query);
-    });
+  function matchesFilter(thread) {
+    if (state.filter === 'unread') return Boolean(thread.unread);
+    if (state.filter === 'open') return true;
+    return true;
+  }
 
+  function filteredThreads() {
+    var query = (search && search.value || '').toLowerCase();
+    return state.threads.filter(function (thread) {
+      var haystack = [thread.subject, thread.latest_message, thread.source_label, thread.source_system, thread.source_reference]
+        .join(' ')
+        .toLowerCase();
+      return matchesFilter(thread) && haystack.includes(query);
+    });
+  }
+
+  function render() {
+    var items = filteredThreads();
+    if (!list) return;
     list.innerHTML = items.length ? items.map(function (thread) {
       var active = state.current === thread.public_id;
-      return '<article class="mg-thread-card ' + (thread.unread ? 'is-unread ' : '') + (active ? 'is-active' : '') + '" data-thread-id="' + esc(thread.public_id) + '">' +
+      return '<article class="mg-thread-card ' + (thread.unread ? 'is-unread ' : '') + (active ? 'is-active' : '') + '" data-thread-id="' + esc(thread.public_id) + '" data-thread-initial="' + esc(initials(thread.subject || sourceLabel(thread))) + '">' +
         '<div><div class="mg-thread-card-title"><strong>' + esc(thread.subject || 'Conversation') + '</strong>' + sourceBadge(thread) + '</div>' +
         '<p>' + esc(thread.latest_message || 'No messages yet') + '</p>' +
         '<small>' + esc(thread.latest_at || thread.updated_at || '') + '</small></div></article>';
-    }).join('') : '<div class="mg-empty-state"><strong>No conversations found.</strong><p>Gift, Store Canvas, Merchant CRM, and IN/OUT Box conversations will appear here.</p></div>';
+    }).join('') : '<div class="mg-empty-state"><strong>No conversations found.</strong><p>Merchant CRM, Store Canvas, gift, recipient, and PPPM conversations will appear here.</p></div>';
   }
 
-  async function load() {
+  function renderKpis(counts) {
+    var kpiNode = app.querySelector('[data-message-kpis]');
+    if (!kpiNode) return;
+    kpiNode.innerHTML = [
+      ['Unread', counts.message_unread],
+      ['Open', state.threads.length],
+      ['Alerts', counts.open_alerts]
+    ].map(function (item) {
+      return '<div class="mg-communications-kpi"><span>' + esc(item[0]) + '</span><strong>' + Number(item[1] || 0).toLocaleString() + '</strong></div>';
+    }).join('');
+  }
+
+  async function load(options) {
+    options = options || {};
     var response = await Microgifter.get('/api/communications/dashboard.php?limit=100');
     var data = response.data || response;
     var counts = data.counts || {};
     state.threads = data.threads || [];
 
-    app.querySelector('[data-message-kpis]').innerHTML = [
-      ['Unread messages', counts.message_unread],
-      ['Open conversations', state.threads.length],
-      ['Operational alerts', counts.open_alerts]
-    ].map(function (item) {
-      return '<div class="mg-communications-kpi"><span>' + esc(item[0]) + '</span><strong>' + Number(item[1] || 0).toLocaleString() + '</strong></div>';
-    }).join('');
-
+    renderKpis(counts);
     render();
     if (Microgifter.setMessageCount) Microgifter.setMessageCount(counts.message_unread || 0);
+
+    var requested = new URLSearchParams(location.search).get('thread');
+    var nextThread = requested || state.current || (state.threads[0] && state.threads[0].public_id) || '';
+    if (nextThread && options.open !== false) {
+      await openThread(nextThread);
+    }
   }
 
   async function openThread(id) {
     state.current = id;
     render();
-    detail.innerHTML = '<div class="mg-empty-state"><strong>Loading conversation…</strong></div>';
+    if (!detail) return;
+    detail.innerHTML = '<div class="mg-empty-state"><strong>Loading conversation...</strong></div>';
 
     var response = await Microgifter.get('/api/messages/thread.php?id=' + encodeURIComponent(id));
     var thread = (response.data || response).thread || {};
@@ -112,7 +141,7 @@ document.addEventListener('DOMContentLoaded', function () {
       ? '<div class="mg-thread-source-meta"><span>Source</span><strong>' + esc(source.label) + '</strong>' + (source.system ? '<small>' + esc(source.system) + '</small>' : '') + sourceContextPanel(source) + '</div>'
       : '';
 
-    detail.innerHTML = '<div class="mg-thread-detail-head"><div><div class="mg-thread-detail-title"><h2>' + esc(thread.subject || 'Conversation') + '</h2>' + sourceBadge(thread) + '</div>' +
+    detail.innerHTML = '<div class="mg-thread-detail-head"><div><div class="mg-thread-detail-title"><h2>' + esc(thread.subject || 'Conversation') + '</h2>' + sourceBadge(thread) + '<span class="mg-message-source-chip is-live">Active</span></div>' +
       '<p>' + esc(thread.gift_id || thread.pppm_id || thread.conversation_key || 'Gift communication') + '</p></div>' + sourceMeta + '</div>' +
       '<div class="mg-message-stream">' + ((thread.messages || []).map(function (message) {
         var messageSource = message.source && message.source.label
@@ -121,9 +150,9 @@ document.addEventListener('DOMContentLoaded', function () {
         return '<article class="mg-message-bubble ' + (message.mine ? 'is-mine' : '') + '"><strong>' + esc(message.sender_name || 'User') + '</strong>' +
           '<p>' + esc(message.body) + '</p><small>' + esc(message.created_at || '') + '</small>' + messageSource + '</article>';
       }).join('') || '<div class="mg-empty-state"><strong>No messages yet.</strong></div>') + '</div>' +
-      '<form class="mg-message-composer" data-thread-reply data-thread-id="' + esc(thread.id || id) + '" aria-busy="false">' +
-      '<textarea name="body" maxlength="4000" required placeholder="Write a reply"></textarea>' +
-      '<button class="mg-btn mg-btn-primary" type="button" data-message-send>Send</button>' +
+      '<form class="mg-message-composer" data-thread-reply data-thread-id="' + esc(thread.public_id || thread.id || id) + '" aria-busy="false">' +
+      '<textarea name="body" maxlength="4000" required placeholder="Type your message..."></textarea>' +
+      '<button class="mg-btn mg-btn-primary" type="submit" data-message-send>Send</button>' +
       '<div class="mg-message-compose-status" data-message-compose-status role="status" aria-live="polite"></div>' +
       '</form>';
 
@@ -152,52 +181,65 @@ document.addEventListener('DOMContentLoaded', function () {
     composerStatus(form, 'Sending message...', '');
 
     try {
-      await Microgifter.post('/api/messages/send.php', {
+      var result = await Microgifter.post('/api/messages/send.php', {
         thread_id: threadId,
         body: body,
         csrf_token: Microgifter.getCsrfToken ? Microgifter.getCsrfToken() : ''
       });
+      var data = result && result.data ? result.data : result;
+      var nextThread = data && data.thread_id ? data.thread_id : threadId;
       if (textarea) textarea.value = '';
       composerStatus(form, 'Message sent.', 'success');
-      await openThread(threadId);
-      await load();
+      await openThread(nextThread);
+      await load({ open: false });
       if (Microgifter.toast) Microgifter.toast('Message sent.', 'success');
     } catch (error) {
-      composerStatus(form, error && error.message ? error.message : 'Message could not be sent.', 'error');
-      if (Microgifter.toast) Microgifter.toast(error && error.message ? error.message : 'Message could not be sent.', 'error');
+      var message = error && error.message ? error.message : 'Message could not be sent.';
+      composerStatus(form, message, 'error');
+      if (Microgifter.toast) Microgifter.toast(message, 'error');
     } finally {
       state.sending = false;
       setComposerBusy(form, false);
     }
   }
 
-  list.addEventListener('click', function (event) {
-    var row = event.target.closest('[data-thread-id]');
-    if (row) openThread(row.dataset.threadId).catch(function (error) {
-      if (Microgifter.toast) Microgifter.toast(error && error.message ? error.message : 'Unable to open conversation.', 'error');
-      console.error(error);
+  if (list) {
+    list.addEventListener('click', function (event) {
+      var row = event.target.closest('[data-thread-id]');
+      if (row) openThread(row.dataset.threadId).catch(function (error) {
+        if (Microgifter.toast) Microgifter.toast(error && error.message ? error.message : 'Unable to open conversation.', 'error');
+        console.error(error);
+      });
+    });
+  }
+
+  if (detail) {
+    detail.addEventListener('click', function (event) {
+      var button = event.target.closest('[data-message-send]');
+      if (!button) return;
+      event.preventDefault();
+      sendReply(button.closest('[data-thread-reply]')).catch(console.error);
+    });
+
+    detail.addEventListener('submit', function (event) {
+      var form = event.target.closest('[data-thread-reply]');
+      if (!form) return;
+      event.preventDefault();
+      sendReply(form).catch(console.error);
+    });
+  }
+
+  if (search) search.addEventListener('input', render);
+  refreshButtons.forEach(function (button) {
+    button.addEventListener('click', function () { load().catch(console.error); });
+  });
+  filterButtons.forEach(function (button) {
+    button.addEventListener('click', function () {
+      state.filter = button.dataset.messageFilter || 'all';
+      filterButtons.forEach(function (item) { item.classList.toggle('is-active', item === button); });
+      render();
     });
   });
 
-  detail.addEventListener('click', function (event) {
-    var button = event.target.closest('[data-message-send]');
-    if (!button) return;
-    event.preventDefault();
-    sendReply(button.closest('[data-thread-reply]')).catch(console.error);
-  });
-
-  detail.addEventListener('submit', function (event) {
-    var form = event.target.closest('[data-thread-reply]');
-    if (!form) return;
-    event.preventDefault();
-    sendReply(form).catch(console.error);
-  });
-
-  if (search) search.addEventListener('input', render);
-  if (refresh) refresh.addEventListener('click', function () { load().catch(console.error); });
-
-  var requested = new URLSearchParams(location.search).get('thread');
-  load().then(function () {
-    if (requested) openThread(requested).catch(console.error);
-  }).catch(console.error);
+  load().catch(console.error);
 });
