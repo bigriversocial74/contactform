@@ -75,6 +75,18 @@ body.mg-cart-open .mg-site-header.mg-unified-header,
 body:has(.mg-cart-drawer.is-open) .mg-unified-header,
 body:has(.mg-cart-drawer.is-open) .mg-site-header.mg-unified-header{z-index:100!important;pointer-events:none!important}
 
+/* Shared mobile overflow contract for app/workspace pages. */
+html,body{max-width:100%!important;overflow-x:hidden!important}
+*,*::before,*::after{box-sizing:border-box}
+img,svg,video,canvas,iframe{max-width:100%;height:auto}
+.mg-main,.mg-page,.mg-content,.mg-container,.mg-app-shell,.mg-app-workspace,.mg-app-panel,.mg-panel,.mg-card,.mg-section-agent,.mg-section-merchant,.mg-dashboard-shell,.mg-dashboard-main,.mg-dashboard-panel,.mg-gift-center-page,.mg-gift-center-workspace,.mg-gift-center-main,.mg-gift-feed-column,.mg-gift-list{max-width:100%!important;min-width:0!important}
+.mg-app-shell,.mg-app-workspace,.mg-gift-center-page,.mg-gift-center-workspace,.mg-gift-center-main{width:100%!important;overflow-x:hidden!important}
+input,select,textarea,button{max-width:100%;min-width:0}
+.mg-btn,.mg-pill,.mg-chip,.mg-filter-chip,.mg-tab,.mg-action-card,.mg-quick-action{max-width:100%;min-width:0}
+.mg-card-grid,.mg-kpi-grid,.mg-stats-grid,.mg-merchant-kpis,.mg-dashboard-grid,.mg-panel-grid{min-width:0;max-width:100%}
+.mg-table-wrap,.mg-scroll-wrap,.mg-overflow-x{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{max-width:100%}
+
 @media(max-width:980px){
   .mg-unified-header .mg-header-agent-tools{display:grid!important;grid-template-columns:minmax(0,1fr) 48px!important;align-items:center!important;gap:10px!important;width:100%!important;flex:1 1 auto!important}
   .mg-unified-header .mg-header-agent-search{display:none!important;visibility:hidden!important;pointer-events:none!important}
@@ -87,6 +99,16 @@ body:has(.mg-cart-drawer.is-open) .mg-site-header.mg-unified-header{z-index:100!
   .mg-cart-drawer.is-contained .mg-cart-backdrop,.mg-cart-drawer .mg-cart-backdrop{position:fixed!important;inset:0!important;background:rgba(7,18,37,.42)!important;backdrop-filter:blur(3px)!important;z-index:60010!important}
   .mg-cart-drawer-panel{position:fixed!important;top:0!important;right:0!important;bottom:0!important;height:100vh!important;max-height:100vh!important;z-index:60020!important}
   body:has(.mg-cart-drawer.is-contained).mg-cart-open,body.mg-cart-open{overflow:hidden!important}
+}
+
+@media(max-width:760px){
+  .mg-app-shell,.mg-app-workspace,.mg-dashboard-shell,.mg-dashboard-main,.mg-content,.mg-main{padding-left:min(12px,3vw)!important;padding-right:min(12px,3vw)!important}
+  .mg-app-workspace,.mg-gift-center-workspace{padding-left:10px!important;padding-right:10px!important}
+  .mg-card-grid,.mg-kpi-grid,.mg-stats-grid,.mg-merchant-kpis,.mg-dashboard-grid,.mg-panel-grid{grid-template-columns:1fr!important;width:100%!important}
+  .mg-toolbar,.mg-filter-row,.mg-action-row,.mg-button-row,.mg-form-row{flex-wrap:wrap!important;max-width:100%;min-width:0}
+  .mg-toolbar>*,.mg-filter-row>*,.mg-action-row>*,.mg-button-row>*,.mg-form-row>*{min-width:0;max-width:100%}
+  .mg-btn,.mg-action-card,.mg-quick-action{white-space:normal!important}
+  h1,h2,h3,h4,p,span,a,button,label{overflow-wrap:anywhere}
 }
 
 @media(max-width:640px){
