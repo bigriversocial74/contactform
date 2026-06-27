@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . '/_merchant.php';
+require_once dirname(__DIR__) . '/gifts/_gift.php';
 require_once dirname(__DIR__) . '/communications/_communications.php';
 require_once dirname(__DIR__) . '/communications/_delivery.php';
 require_once dirname(__DIR__, 2) . '/includes/merchant-crm.php';
