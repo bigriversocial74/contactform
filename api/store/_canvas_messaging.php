@@ -12,6 +12,19 @@ declare(strict_types=1);
 require_once __DIR__ . '/_canvas.php';
 require_once dirname(__DIR__) . '/messages/_messaging.php';
 
+function mg_store_canvas_core_schema_require(PDO $pdo): void
+{
+    $missing = [];
+    foreach (['mg_store_sessions','mg_store_session_events','mg_customer_store_history'] as $table) {
+        if (!mg_store_table_exists($pdo, $table)) {
+            $missing[] = $table;
+        }
+    }
+    if ($missing !== []) {
+        throw new RuntimeException('Store Canvas setup is incomplete. Missing: ' . implode(', ', $missing) . '.');
+    }
+}
+
 function mg_store_canvas_message_source_label(string $sourceType): string
 {
     return match ($sourceType) {
@@ -82,7 +95,7 @@ function mg_store_canvas_thread(PDO $pdo, array $session, int $merchantUserId, s
 
 function mg_store_send_direct_message_via_messaging(PDO $pdo, int $merchantUserId, string $sessionPublicId, string $body): array
 {
-    mg_store_require_schema($pdo);
+    mg_store_canvas_core_schema_require($pdo);
     $sessionPublicId = mg_store_safe_public_id($sessionPublicId, 'Store session');
     $body = mg_message_validate_body($body);
 
