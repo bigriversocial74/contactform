@@ -64,7 +64,7 @@ function followerCountDelta(delta){
 }
 
 function loadLegacyCampaignDetail(){
-  var root=document.querySelector('[data-public-campaign]');
+  var root=document.querySelector('[data-public-campaign-page]');
   if(!root)return;
   var params=new URLSearchParams(window.location.search);
   var ref=params.get('c')||params.get('campaign')||params.get('slug')||'';
