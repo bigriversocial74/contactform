@@ -10,6 +10,8 @@ window.Microgifter = window.Microgifter || {};
   var selectedSessionId = '';
   var customers = [];
   var pollTimer = null;
+  var rewardOptions = { schema_ready: false, campaigns: [], templates: [], can_send_reward: false };
+  var rewardOptionsLoaded = false;
 
   function qs(selector, scope) { return (scope || root).querySelector(selector); }
   function qsa(selector, scope) { return Array.from((scope || root).querySelectorAll(selector)); }
@@ -50,6 +52,19 @@ window.Microgifter = window.Microgifter || {};
   }
   function formatNumber(value) {
     return Number(value || 0).toLocaleString();
+  }
+  function moneyLabel(cents, currency) {
+    cents = Number(cents || 0);
+    currency = currency || 'USD';
+    if (!cents) return '';
+    try { return new Intl.NumberFormat(undefined, { style: 'currency', currency: currency }).format(cents / 100); }
+    catch (error) { return '$' + (cents / 100).toFixed(2); }
+  }
+  function rewardValueLabel(template) {
+    template = template || {};
+    if (template.value_type === 'percent' && template.value_percent != null) return String(template.value_percent).replace(/\.0+$/, '') + '% off';
+    if (template.value_amount_cents) return moneyLabel(template.value_amount_cents, template.currency || 'USD');
+    return template.reward_type ? String(template.reward_type).replace(/_/g, ' ') : 'Reward';
   }
   function avatarHtml(customer) {
     var src = customer && customer.avatar_url ? String(customer.avatar_url) : '';
@@ -197,6 +212,55 @@ window.Microgifter = window.Microgifter || {};
     }
   }
 
+  async function loadRewardOptions(force) {
+    if (rewardOptionsLoaded && !force) return rewardOptions;
+    try {
+      rewardOptions = payload(await MG.get('/api/merchant-canvas/reward-options.php')) || rewardOptions;
+      rewardOptions.campaigns = Array.isArray(rewardOptions.campaigns) ? rewardOptions.campaigns : [];
+      rewardOptions.templates = Array.isArray(rewardOptions.templates) ? rewardOptions.templates : [];
+      rewardOptionsLoaded = true;
+    } catch (error) {
+      rewardOptions = { schema_ready: false, campaigns: [], templates: [], can_send_reward: false, error: error.message || 'Reward options unavailable.' };
+      rewardOptionsLoaded = true;
+    }
+    return rewardOptions;
+  }
+
+  function selectOptions(items, selectedId, labelFn) {
+    return items.map(function (item) {
+      return '<option value="' + escapeHtml(item.id) + '"' + (item.id === selectedId ? ' selected' : '') + '>' + escapeHtml(labelFn(item)) + '</option>';
+    }).join('');
+  }
+
+  function renderRewardPanel(customer) {
+    customer = customer || {};
+    var isTest = customer.profile_type === 'test_customer' || customer.account_status === 'Test avatar';
+    if (isTest) {
+      return '<section class="mg-canvas-reward-panel" data-reward-panel hidden><p class="mg-canvas-reward-note">Reward sending requires a real customer account. Test avatars are only for canvas visual testing.</p></section>';
+    }
+    if (!rewardOptionsLoaded) {
+      return '<section class="mg-canvas-reward-panel" data-reward-panel hidden><p class="mg-canvas-reward-note">Loading reward options...</p></section>';
+    }
+    if (!rewardOptions.schema_ready) {
+      return '<section class="mg-canvas-reward-panel" data-reward-panel hidden><p class="mg-canvas-reward-note is-error">Reward delivery setup is not ready. Run diagnostics and confirm campaign, wallet, and Store Canvas tables are installed.</p></section>';
+    }
+    if (!rewardOptions.can_send_reward || !rewardOptions.campaigns.length || !rewardOptions.templates.length) {
+      return '<section class="mg-canvas-reward-panel" data-reward-panel hidden><p class="mg-canvas-reward-note">Create an active campaign and reward template before sending Store Canvas rewards.</p></section>';
+    }
+    var defaultCampaign = rewardOptions.campaigns[0] || {};
+    var defaultTemplateId = defaultCampaign.reward_template_id || (rewardOptions.templates[0] && rewardOptions.templates[0].id) || '';
+    return '<section class="mg-canvas-reward-panel" data-reward-panel hidden>' +
+      '<form data-reward-form>' +
+        '<label>Campaign<select name="campaign_id" required>' + selectOptions(rewardOptions.campaigns, defaultCampaign.id, function (item) { return item.title + ' · ' + item.campaign_type; }) + '</select></label>' +
+        '<label>Reward<select name="reward_template_id" required>' + selectOptions(rewardOptions.templates, defaultTemplateId, function (item) { return item.title + ' · ' + rewardValueLabel(item); }) + '</select></label>' +
+        '<label>Expires<select name="expiration_days"><option value="">Use template rule</option><option value="7">7 days</option><option value="14">14 days</option><option value="30">30 days</option><option value="60">60 days</option></select></label>' +
+        '<label>Note<textarea name="note" rows="3" maxlength="1000" placeholder="Optional customer note..."></textarea></label>' +
+        '<button class="mg-btn mg-btn-primary" type="submit" data-reward-submit>Send Reward</button>' +
+        '<p class="mg-canvas-form-status" data-reward-status role="status"></p>' +
+      '</form>' +
+    '</section>';
+  }
+
   async function updateTestAvatar(action, button) {
     busy(button, true, action === 'clear' ? 'Clearing...' : 'Adding...');
     try {
@@ -228,6 +292,7 @@ window.Microgifter = window.Microgifter || {};
     var stats = data.stats || {};
     var session = data.session || {};
     var events = Array.isArray(data.events) ? data.events : [];
+    var canOpenReward = rewardOptionsLoaded && rewardOptions.can_send_reward && customer.profile_type !== 'test_customer' && customer.account_status !== 'Test avatar';
     setText('[data-drawer-name]', customer.name || 'Customer CRM');
     var body = qs('[data-drawer-body]');
     if (body) {
@@ -239,7 +304,8 @@ window.Microgifter = window.Microgifter || {};
           '<article class="mg-canvas-crm-stat"><span>Rewards</span><strong>' + Number(stats.rewards_received || 0).toLocaleString() + '</strong></article>' +
           '<article class="mg-canvas-crm-stat"><span>Claims</span><strong>' + Number(stats.rewards_claimed || 0).toLocaleString() + '</strong></article>' +
         '</section>' +
-        '<section class="mg-canvas-action-grid"><button type="button" data-drawer-focus-message>Send Message</button><button type="button" disabled>Send Reward</button><button type="button" disabled>Add to Campaign</button><button type="button" disabled>Follow-Up</button></section>' +
+        '<section class="mg-canvas-action-grid"><button type="button" data-drawer-focus-message>Send Message</button><button type="button" data-drawer-toggle-reward' + (canOpenReward ? '' : ' disabled') + '>Send Reward</button><button type="button" disabled>Add to Campaign</button><button type="button" disabled>Follow-Up</button></section>' +
+        renderRewardPanel(customer) +
         '<section><span class="mg-canvas-eyebrow">Store source</span><p>' + escapeHtml(session.source_post && session.source_post.headline ? session.source_post.headline : 'Feed post / Store Canvas') + '</p></section>' +
         '<section><span class="mg-canvas-eyebrow">Session events</span><div class="mg-canvas-event-list">' + (events.length ? events.map(function (event) {
           return '<article><strong>' + escapeHtml(event.label || event.type || 'Store event') + '</strong><span>' + escapeHtml(formatDate(event.created_at)) + '</span></article>';
@@ -266,6 +332,7 @@ window.Microgifter = window.Microgifter || {};
     var drawerBody = qs('[data-drawer-body]');
     if (drawerBody) drawerBody.innerHTML = '<p>Loading CRM context...</p>';
     try {
+      await loadRewardOptions(false);
       var data = payload(await MG.get('/api/merchant-canvas/customer-crm.php?session_id=' + encodeURIComponent(selectedSessionId)));
       renderCrm(data || {});
     } catch (error) {
@@ -304,6 +371,42 @@ window.Microgifter = window.Microgifter || {};
     }
   }
 
+  async function sendReward(form) {
+    if (!selectedSessionId || !form) return;
+    var button = qs('[data-reward-submit]', form);
+    var status = qs('[data-reward-status]', form);
+    var data = {
+      session_id: selectedSessionId,
+      campaign_id: form.elements.campaign_id ? form.elements.campaign_id.value : '',
+      reward_template_id: form.elements.reward_template_id ? form.elements.reward_template_id.value : '',
+      expiration_days: form.elements.expiration_days ? form.elements.expiration_days.value : '',
+      note: form.elements.note ? form.elements.note.value : '',
+      idempotency_key: 'canvas-reward-' + selectedSessionId + '-' + Date.now()
+    };
+    busy(button, true, 'Sending...');
+    if (status) {
+      status.className = 'mg-canvas-form-status';
+      status.textContent = '';
+    }
+    try {
+      var result = payload(await MG.post('/api/merchant-canvas/send-reward.php', data));
+      if (status) {
+        status.textContent = (result && result.reward && result.reward.title ? result.reward.title + ' sent.' : 'Reward sent to customer IN/OUT Box.');
+        status.className = 'mg-canvas-form-status is-success';
+      }
+      if (form.elements.note) form.elements.note.value = '';
+      await loadCanvas();
+      await loadCrm(selectedSessionId);
+    } catch (error) {
+      if (status) {
+        status.textContent = error.message || 'Unable to send reward.';
+        status.className = 'mg-canvas-form-status is-error';
+      }
+    } finally {
+      busy(button, false);
+    }
+  }
+
   root.addEventListener('click', function (event) {
     var refresh = event.target.closest('[data-canvas-refresh]');
     if (refresh) return void loadCanvas();
@@ -319,6 +422,12 @@ window.Microgifter = window.Microgifter || {};
       if (messageInput) messageInput.focus();
       return;
     }
+    var toggleReward = event.target.closest('[data-drawer-toggle-reward]');
+    if (toggleReward) {
+      var panel = qs('[data-reward-panel]');
+      if (panel) panel.hidden = !panel.hidden;
+      return;
+    }
     var close = event.target.closest('[data-drawer-close]');
     if (close) return closeDrawer();
     var avatar = event.target.closest('[data-session-id]');
@@ -326,6 +435,12 @@ window.Microgifter = window.Microgifter || {};
   });
 
   root.addEventListener('submit', function (event) {
+    var rewardForm = event.target.closest('[data-reward-form]');
+    if (rewardForm) {
+      event.preventDefault();
+      sendReward(rewardForm);
+      return;
+    }
     var form = event.target.closest('[data-message-form]');
     if (!form) return;
     event.preventDefault();
@@ -334,6 +449,7 @@ window.Microgifter = window.Microgifter || {};
 
   loadCanvas();
   loadHealth(false);
+  loadRewardOptions(false);
   pollTimer = window.setInterval(loadCanvas, 7000);
   window.addEventListener('beforeunload', function () { if (pollTimer) window.clearInterval(pollTimer); });
 })(window, document);
