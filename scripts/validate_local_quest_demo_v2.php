@@ -11,6 +11,7 @@ $files = [
     'examples/local-quest-rewards/runtime-diagnostics.php',
     'examples/local-quest-rewards/webhook-tools.php',
     'examples/local-quest-rewards/admin-demo-tools.php',
+    'examples/local-quest-rewards/admin-programs.php',
     'docs/local-quest-demo-v2.md',
     'docs/local-quest-developer-handoff.md',
 ];
@@ -32,6 +33,7 @@ $readiness = lqdv2_read($root, 'examples/local-quest-rewards/admin-developer-rea
 $diagnostics = lqdv2_read($root, 'examples/local-quest-rewards/runtime-diagnostics.php');
 $webhookTools = lqdv2_read($root, 'examples/local-quest-rewards/webhook-tools.php');
 $demoTools = lqdv2_read($root, 'examples/local-quest-rewards/admin-demo-tools.php');
+$programAdmin = lqdv2_read($root, 'examples/local-quest-rewards/admin-programs.php');
 $doc = lqdv2_read($root, 'docs/local-quest-demo-v2.md');
 $handoff = lqdv2_read($root, 'docs/local-quest-developer-handoff.md');
 
@@ -94,6 +96,16 @@ $checks[] = [
         && str_contains($demoTools, 'reset_demo')
         && str_contains($demoTools, 'RESET LOCAL QUEST DEMO')
         && str_contains($demoTools, 'partner-demo@example.test'),
+];
+
+$checks[] = [
+    'name' => 'merchant program admin',
+    'ok' => str_contains($programAdmin, 'Distribution Program Admin')
+        && str_contains($programAdmin, 'Reward template mapping')
+        && str_contains($programAdmin, 'Developer app access')
+        && str_contains($programAdmin, 'Program QA checklist')
+        && str_contains($programAdmin, 'admin-developer-readiness.php')
+        && str_contains($programAdmin, 'developer-starter.php'),
 ];
 
 $checks[] = [
