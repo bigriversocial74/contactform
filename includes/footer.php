@@ -10,6 +10,8 @@ if (($page_body_class ?? '') === 'mg-admin-merchant-catalog-page') {
 if (($page_section ?? '') === 'feed') {
     $page_scripts[] = '/assets/js/social-feed-attachments.js';
     $page_scripts[] = '/assets/js/social-feed-attachment-cards.js';
+    $page_scripts[] = '/assets/js/store-presence-feed.js';
+    $late_styles[] = '/assets/css/store-presence-feed.css';
 }
 if (($page_body_class ?? '') === 'mg-admin-moderation-page') {
     $page_scripts[] = '/assets/js/admin-moderation.js';
@@ -98,6 +100,7 @@ $can_intelligence = $user && (in_array('intelligence.dashboard.view', $user_perm
         <?php if ($can_intelligence): ?><a href="/intelligence.php">Intelligence</a><?php endif; ?>
         <?php if ($can_sales_crm): ?><a href="/sales-crm.php">CRM</a><?php endif; ?>
         <a href="/account-commerce.php">Commerce Center</a>
+        <?php if ($user && function_exists('mg_user_has_merchant_access') && mg_user_has_merchant_access($user)): ?><a href="/merchant-canvas.php">Store Canvas</a><?php endif; ?>
       </div>
     </nav>
 
