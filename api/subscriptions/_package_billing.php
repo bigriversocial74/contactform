@@ -60,6 +60,14 @@ function mg_platform_package_amount_cents(array $package,string $billingCycle='m
 function mg_platform_package_interval_unit(string $billingCycle): string { return in_array($billingCycle,['year','yearly'],true)?'year':'month'; }
 function mg_platform_package_stripe_price_id(array $package,?string $mode=null): string { $mode=$mode?: (function_exists('mg_payment_mode')?mg_payment_mode():'test'); $field=$mode==='live'?'stripe_price_id_live':'stripe_price_id_test'; return trim((string)($package[$field]??'')); }
 
+function mg_platform_account_subscription_grant_merchant_role(PDO $pdo,int $userId): void
+{
+    if($userId<1)return;
+    try{
+        $pdo->prepare("INSERT IGNORE INTO user_roles (user_id,role_id,created_at) SELECT ?,id,NOW() FROM roles WHERE slug='merchant'")->execute([$userId]);
+    }catch(Throwable $e){ if(function_exists('mg_security_log'))mg_security_log('warning','platform_subscription.role_grant_failed','Unable to grant merchant role for active platform package.',['exception'=>get_class($e)],$userId); }
+}
+
 function mg_platform_account_subscription_event(PDO $pdo,int $accountSubscriptionId,string $eventType,?string $fromStatus,?string $toStatus,?int $actorUserId,array $payload=[]): void
 {
     try{$pdo->prepare('INSERT INTO platform_subscription_events (public_id,account_subscription_id,event_type,from_status,to_status,actor_user_id,provider_key,provider_event_id,payload_json,created_at) VALUES (?,?,?,?,?,?,?,?,?,NOW())')->execute([mg_public_uuid(),$accountSubscriptionId,$eventType,$fromStatus,$toStatus,$actorUserId,$payload['provider_key']??null,$payload['provider_event_id']??null,json_encode($payload,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR)]);}catch(Throwable $e){ if(function_exists('mg_security_log'))mg_security_log('warning','platform_subscription.event_failed','Platform subscription event write failed.',['exception'=>$e->getMessage()],$actorUserId); }
@@ -97,6 +105,7 @@ function mg_platform_account_subscription_upsert(PDO $pdo,array $requestRow,arra
         $stmt->execute([$publicId,$userId,$packageId,$billingCycle,$amount,$currency,$providerKey,trim((string)($providerRefs['provider_customer_id']??''))?:null,trim((string)($providerRefs['provider_subscription_id']??''))?:null,trim((string)($providerRefs['provider_session_reference']??''))?:null,$providerPriceId,$start->format('Y-m-d H:i:s'),$end->format('Y-m-d H:i:s'),$end->format('Y-m-d H:i:s'),(string)($requestRow['public_id']??''),json_encode($metadata,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR)]);
         mg_platform_account_subscription_event($pdo,(int)$pdo->lastInsertId(),'platform_subscription.activated',null,'active',$userId,$metadata+['provider_key'=>$providerKey]);
     }
+    mg_platform_account_subscription_grant_merchant_role($pdo,$userId);
     $snapshot=mg_platform_account_subscription_snapshot($pdo,$userId,true);
     if(!$snapshot)throw new RuntimeException('Platform subscription record was not created.');
     return $snapshot;
