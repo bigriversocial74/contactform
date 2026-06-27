@@ -97,6 +97,7 @@ return [
         'stage_12_merchant_crm.sql',
         'stage_12_campaign_followups.sql',
         'stage_12_message_delivery_campaign_suppression.sql',
+        'stage_12_crm_reward_invites.sql',
         'stage_18j_' . 'content_' . 'moderation.sql',
         'stage_18k_admin_account_management.sql',
         'stage_18l_admin_commerce_operations.sql',

@@ -1,6 +1,7 @@
 <?php declare(strict_types=1); ?>
 <link rel="stylesheet" href="/assets/css/merchant-crm.css">
 <script src="/assets/js/merchant-crm-reward-picker.js" defer></script>
+<script src="/assets/js/merchant-crm-reward-invite-bridge.js" defer></script>
 <section class="mg-crm-workspace" data-merchant-crm-shell>
   <div class="mg-crm-toolbar">
     <nav class="mg-crm-tabs" aria-label="Merchant CRM sections">
