@@ -1,6 +1,9 @@
 <?php
 declare(strict_types=1);
 
+/**
+ * Canonical Microgifter migration manifest.
+ */
 return [
     'ordered_files' => [
         'stage_1_identity.sql',
@@ -126,6 +129,20 @@ return [
         'stage_24_buy_in_handoff_archives.sql',
         'stage_v1_release_trigger_portability.sql',
     ],
-    'coverage_markers' => [],
-    'manual_only' => [],
+
+    'coverage_markers' => [
+        'stage_9e4_consolidated_stage1_to_stage9_upgrade' => 'stage_9d_microgift_operations.sql',
+        'stage_11h_backend_hardening' => 'schema_v2_action_center_crm_addendum.sql',
+        'stage_v1_release_trigger_portability' => 'stage_v1_release_trigger_portability.sql',
+    ],
+
+    'manual_only' => [
+        '03Z_bootstrap_super_admin_user1.sql' => 'Manual operator import only.',
+        'microgifter_complete_production_update_v1c_v1release.sql' => 'Manual consolidated production bundle.',
+        'stage_12_campaign_features_full_import.sql' => 'Manual Stage 12 campaign import.',
+        'stage_12_crm_followups_full_import.sql' => 'Manual Stage 12 CRM import.',
+        'stage_17_all_stamp_system.sql' => 'Manual consolidated Stamp system import.',
+        'stage_19_design_studio_qr_library.sql' => 'Manual Stage 19 Design Studio import.',
+        'stage_19_design_studio_campaign_links_import_fix.sql' => 'Manual Stage 19 recovery import.',
+    ],
 ];
