@@ -75,7 +75,7 @@ final class MerchantAgentApprovalQueueTest extends TestCase
         foreach (['/merchant-agent-approvals.php','Review Queue'] as $needle) {
             self::assertStringContainsString($needle, $automationView . $monitorView . $retention . $customer);
         }
-        foreach (['agent_review','/merchant-agent-approvals.php'] as $needle) {
+        foreach (['agent_approvals','/merchant-agent-approvals.php'] as $needle) {
             self::assertStringContainsString($needle, $monitorPage);
         }
         foreach (['Review approval','Approval queue'] as $needle) {
