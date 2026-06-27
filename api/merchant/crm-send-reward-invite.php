@@ -21,6 +21,8 @@ if (!mg_crm_reward_invites_ready($pdo)) mg_fail('CRM reward invite schema is not
 try {
     mg_delivery_install_schema($pdo);
     $pdo->beginTransaction();
+    $packageContext = mg_user_package_context($pdo, $user);
+    if (!mg_package_limit_value($packageContext, 'email_stamps_enabled')) { $pdo->rollBack(); mg_fail('Email Stamps are not enabled for this package.', 402); }
     $stmt = $pdo->prepare('SELECT cc.*,c.public_id campaign_public_id,c.campaign_type FROM campaign_contacts cc INNER JOIN campaigns c ON c.id=cc.campaign_id WHERE cc.public_id=? AND cc.merchant_user_id=? LIMIT 1 FOR UPDATE');
     $stmt->execute([$contactRef, $merchantId]);
     $contact = $stmt->fetch(PDO::FETCH_ASSOC);
