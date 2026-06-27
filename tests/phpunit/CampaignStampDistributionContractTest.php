@@ -93,12 +93,12 @@ final class CampaignStampDistributionContractTest extends TestCase
         ] as $type){
             self::assertStringContainsString($type, $helper);
         }
+        self::assertStringContainsString('existing_contact', $helper);
 
         foreach([$signup, $engage, $contest, $qr] as $source){
             self::assertStringContainsString("_merchant_notifications.php", $source);
             self::assertStringContainsString('mg_public_campaign_notify_merchant_contact', $source);
             self::assertStringContainsString('merchant_notification', $source);
-            self::assertStringContainsString('existing_contact', $source);
         }
     }
 
