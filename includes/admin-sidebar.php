@@ -37,6 +37,7 @@ $canAudit = $canAdminPage('admin.audit_logs');
 $canSecurity = $canAdminPage('admin.security_logs');
 $canSessions = $canAdminPage('admin.sessions');
 $canOpsQueue = $canAdminPage('admin.ops_queue');
+$canOpsActivity = $canOperationsCommand || $canAudit;
 
 $adminNav = [
     'dashboard' => [
@@ -51,6 +52,12 @@ $adminNav = [
         'href' => '/admin/operations-command.php',
         'visible' => $canOperationsCommand,
         'badge' => 'ops_command',
+    ],
+    'ops-activity' => [
+        'label' => 'Ops activity log',
+        'detail' => 'Admin ops audit trail',
+        'href' => '/admin/ops-activity.php',
+        'visible' => $canOpsActivity,
     ],
     'users' => [
         'label' => 'User center',
