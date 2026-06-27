@@ -28,7 +28,7 @@ final class MerchantCrmCampaignPerformanceContractTest extends TestCase
         $dashboard = $this->read('assets/js/merchant-crm-performance-dashboard.js');
         $css = $this->read('assets/css/merchant-crm-command-center.css');
         self::assertStringContainsString('data-crm-tab-target="performance"', $command);
-        self::assertStringContainsString('data-crm-performance-dashboard', $command);
+        self::assertStringContainsString('mg-crm-performance-panel', $command);
         self::assertStringContainsString('merchant-crm-performance-dashboard.js', $command);
         self::assertStringContainsString('/api/merchant/crm-campaign-performance.php', $dashboard);
         self::assertStringContainsString('data-crm-performance-kpis', $dashboard);
