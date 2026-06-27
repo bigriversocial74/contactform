@@ -61,6 +61,14 @@ final class MerchantNotificationCenterTest extends TestCase
         }
     }
 
+    public function testMerchantTipNotificationsRouteToMerchantNotificationCenter(): void
+    {
+        $source = $this->source('api/tips/_notifications.php');
+        self::assertStringContainsString("'/merchant-notifications.php?filter=tips'", $source);
+        self::assertStringContainsString("recipient_wallet_owner_type", $source);
+        self::assertStringContainsString('mg_tip_notify_recipient', $source);
+    }
+
     public function testMerchantWorkspaceJavascriptLoadsAndAcknowledgesNotificationFeed(): void
     {
         $js = $this->source('assets/js/merchant-workspace.js');
