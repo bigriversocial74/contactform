@@ -6,6 +6,13 @@ function qsa(s,r){return Array.prototype.slice.call((r||document).querySelectorA
 function esc(v){return String(v==null?'':v).replace(/[&<>'"]/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'})[c]})}
 function safeSel(v){return window.CSS&&CSS.escape?CSS.escape(v):String(v).replace(/[^a-zA-Z0-9_-]/g,'\\$&')}
 function toast(m){window.Microgifter&&Microgifter.toast?Microgifter.toast(m):alert(m)}
+function ensureCampaignBuilderPanel(){
+  var campaigns=qs('[data-crm-tab-panel="campaigns"]',shell);if(!campaigns||qs('[data-crm-campaign-builder]',campaigns))return;
+  var panel=document.createElement('section');panel.className='mg-app-panel mg-crm-card mg-crm-builder-card';panel.setAttribute('data-crm-campaign-builder','');
+  panel.innerHTML='<div class="mg-app-panel-head mg-crm-card-head"><div><span class="mg-eyebrow">Campaign builder</span><h2>Build reusable CRM campaigns</h2><p>Save smart segments, build a message/reward/follow-up sequence, save drafts, and launch to the matched audience.</p></div><span class="mg-crm-selected-pill" data-crm-builder-audience-count>0 contacts</span></div><div class="mg-app-panel-body mg-crm-builder-layout"><section class="mg-crm-builder-main"><div class="mg-crm-builder-preview" data-crm-builder-preview></div><div class="mg-crm-builder-fields"><label class="mg-crm-field"><span>Campaign name</span><input class="mg-input" type="text" data-crm-builder-name maxlength="180" placeholder="Weekend VIP reward push"></label><label class="mg-crm-field"><span>Audience</span><select class="mg-input" data-crm-builder-segment><option value="all">All contacts</option></select></label><label class="mg-crm-field is-full"><span>Message</span><textarea data-crm-builder-message maxlength="4000" placeholder="Write the campaign message..."></textarea></label><label class="mg-crm-field"><span>Optional reward</span><select class="mg-input" data-crm-builder-reward><option value="">No reward</option></select></label><label class="mg-crm-field"><span>Reward note</span><textarea data-crm-builder-note maxlength="1000" placeholder="Short reward note..."></textarea></label><label class="mg-crm-field"><span>Follow-up due date</span><input class="mg-input" type="date" data-crm-builder-followup-due></label><label class="mg-crm-field"><span>Follow-up note</span><textarea data-crm-builder-followup-note maxlength="1000" placeholder="Follow-up task note..."></textarea></label></div><p class="mg-form-status" data-crm-builder-status></p><div class="mg-heading-actions"><button class="mg-btn mg-btn-soft" type="button" data-crm-save-draft>Save draft</button><button class="mg-btn" type="button" data-crm-launch-campaign>Launch campaign</button></div></section><aside class="mg-crm-builder-side"><section class="mg-crm-builder-box"><h3>Save segment</h3><p>Save the current smart audience so it can be reused by this builder.</p><label class="mg-crm-field"><span>Segment name</span><input class="mg-input" type="text" data-crm-save-segment-name maxlength="140" placeholder="Inactive reward leads"></label><label class="mg-crm-field"><span>Based on</span><select class="mg-input" data-crm-save-segment-key><option value="all">All contacts</option></select></label><button class="mg-btn mg-btn-soft" type="button" data-crm-save-segment>Save segment</button></section><section class="mg-crm-builder-box"><h3>Drafts</h3><div class="mg-crm-builder-list" data-crm-builder-drafts></div></section><section class="mg-crm-builder-box"><h3>Recent launches</h3><div class="mg-crm-builder-list" data-crm-builder-launches></div></section></aside></div>';
+  campaigns.appendChild(panel);
+  if(!qs('script[data-crm-campaign-builder-script]')){var s=document.createElement('script');s.src='/assets/js/merchant-crm-campaign-builder.js';s.defer=true;s.setAttribute('data-crm-campaign-builder-script','1');document.head.appendChild(s)}
+}
 function ensureActionHistoryPanel(){
   var nav=qs('.mg-crm-tabs',shell),campaignTab=qs('[data-crm-tab-target="campaigns"]',shell);
   if(nav&&!qs('[data-crm-tab-target="actions"]',shell)){
@@ -18,6 +25,7 @@ function ensureActionHistoryPanel(){
     var campaigns=qs('[data-crm-tab-panel="campaigns"]',shell);if(campaigns&&campaigns.nextSibling)shell.insertBefore(panel,campaigns.nextSibling);else shell.appendChild(panel);
   }
 }
+ensureCampaignBuilderPanel();
 ensureActionHistoryPanel();
 var tabs=qsa('[data-crm-tab-target]',shell);
 var panels=qsa('[data-crm-tab-panel]',shell);
@@ -54,6 +62,7 @@ function selectRetryable(ids){ids=(ids||[]).filter(Boolean);if(!ids.length)retur
 tabs.forEach(function(tab){tab.addEventListener('click',function(ev){ev.preventDefault();activate(tab.getAttribute('data-crm-tab-target'),true);});});
 document.addEventListener('click',function(ev){var refresh=ev.target&&ev.target.closest&&ev.target.closest('[data-crm-history-refresh]');if(refresh){historyLoaded=false;loadActionHistory(true)}var retry=ev.target&&ev.target.closest&&ev.target.closest('[data-crm-history-retry]');if(retry)selectRetryable(String(retry.getAttribute('data-crm-history-retry')||'').split(','));});
 document.addEventListener('change',function(ev){if(ev.target&&ev.target.matches&&ev.target.matches('[data-crm-history-type],[data-crm-history-status]')){historyLoaded=false;loadActionHistory(true)}});
+document.addEventListener('mg:crm-action-history:refresh',function(){historyLoaded=false;loadActionHistory(true)});
 var query=new URLSearchParams(location.search||'');
 var initial=(query.get('tab')||query.get('crm_tab')||(location.hash||'').replace(/^#crm-/,'').replace(/^#/,'')).trim();
 activate(initial||'overview',false);
