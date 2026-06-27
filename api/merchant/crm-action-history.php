@@ -16,22 +16,26 @@ $campaignRef = strtolower(trim((string)($_GET['campaign'] ?? '')));
 $limit = max(1, min(100, (int)($_GET['limit'] ?? 40)));
 
 try {
-    $where = ["ce.merchant_user_id=?", "ce.event_type='crm.bulk_action.result'"];
+    $where = ["ce.merchant_user_id=?", "(ce.event_type='crm.bulk_action.result' OR ce.event_type IN ('crm.gift.issued','crm.reward_invite.sent','crm.followup.created'))"];
     $params = [$merchantId];
     if ($campaignRef !== '') { $where[] = '(c.public_id=? OR c.public_slug=?)'; $params[] = $campaignRef; $params[] = $campaignRef; }
-    $sql = 'SELECT ce.public_id event_public_id,ce.event_context_json,ce.created_at,c.public_id campaign_public_id,c.public_slug,c.title campaign_title,c.campaign_type,cc.public_id contact_public_id,cc.name contact_name,cc.user_id contact_user_id FROM campaign_events ce LEFT JOIN campaigns c ON c.id=ce.campaign_id LEFT JOIN campaign_contacts cc ON cc.id=ce.contact_id WHERE ' . implode(' AND ', $where) . ' ORDER BY ce.created_at DESC,ce.id DESC LIMIT 1000';
+    $sql = 'SELECT ce.public_id event_public_id,ce.event_type,ce.event_context_json,ce.created_at,c.public_id campaign_public_id,c.public_slug,c.title campaign_title,c.campaign_type,cc.public_id contact_public_id,cc.name contact_name,cc.user_id contact_user_id FROM campaign_events ce LEFT JOIN campaigns c ON c.id=ce.campaign_id LEFT JOIN campaign_contacts cc ON cc.id=ce.contact_id WHERE ' . implode(' AND ', $where) . ' ORDER BY ce.created_at DESC,ce.id DESC LIMIT 1000';
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
     $runs = [];
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $ctx = mg_crm_action_history_json($row['event_context_json'] ?? null);
-        $actionType = strtolower((string)($ctx['bulk_action_type'] ?? 'bulk'));
+        if (($row['event_type'] ?? '') !== 'crm.bulk_action.result' && empty($ctx['bulk_action'])) continue;
+        $eventType = (string)($row['event_type'] ?? '');
+        $actionType = strtolower((string)($ctx['bulk_action_type'] ?? ''));
+        if ($actionType === '') $actionType = $eventType === 'crm.followup.created' ? 'followup' : 'reward';
         $result = is_array($ctx['result'] ?? null) ? $ctx['result'] : [];
-        $resultStatus = strtolower((string)($result['status'] ?? ($ctx['status'] ?? 'unknown')));
+        $resultStatus = strtolower((string)($result['status'] ?? ($ctx['status'] ?? '')));
+        if ($resultStatus === '') $resultStatus = $eventType === 'crm.gift.issued' ? 'issued' : ($eventType === 'crm.reward_invite.sent' ? 'invited' : 'sent');
         if ($typeFilter !== '' && $actionType !== $typeFilter) continue;
         if ($statusFilter !== '' && $resultStatus !== $statusFilter) continue;
         $batchKey = (string)($ctx['bulk_batch_key'] ?? '');
-        if ($batchKey === '') $batchKey = 'legacy:' . substr((string)$row['event_public_id'], 0, 13);
+        if ($batchKey === '') $batchKey = 'legacy:' . $actionType . ':' . substr((string)$row['event_public_id'], 0, 13);
         $key = $batchKey . '|' . $actionType;
         if (!isset($runs[$key])) $runs[$key] = ['id' => hash('sha256', $key), 'batch_key' => $batchKey, 'action_type' => $actionType, 'title' => mg_crm_action_history_action_label($actionType), 'status' => 'complete', 'summary' => mg_crm_action_history_summary_seed(), 'campaigns' => [], 'recipients' => [], 'retry_contact_ids' => [], 'created_at' => (string)$row['created_at'], 'last_event_at' => (string)$row['created_at']];
         $run =& $runs[$key];
