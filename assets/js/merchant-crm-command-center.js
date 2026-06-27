@@ -13,6 +13,19 @@ function ensureCampaignBuilderPanel(){
   campaigns.appendChild(panel);
   if(!qs('script[data-crm-campaign-builder-script]')){var s=document.createElement('script');s.src='/assets/js/merchant-crm-campaign-builder.js';s.defer=true;s.setAttribute('data-crm-campaign-builder-script','1');document.head.appendChild(s)}
 }
+function ensurePerformancePanel(){
+  var nav=qs('.mg-crm-tabs',shell),campaignTab=qs('[data-crm-tab-target="campaigns"]',shell);
+  if(nav&&!qs('[data-crm-tab-target="performance"]',shell)){
+    var btn=document.createElement('button');btn.type='button';btn.setAttribute('role','tab');btn.setAttribute('aria-selected','false');btn.setAttribute('data-crm-tab-target','performance');btn.textContent='Performance';
+    if(campaignTab&&campaignTab.nextSibling)nav.insertBefore(btn,campaignTab.nextSibling);else nav.appendChild(btn);
+  }
+  if(!qs('[data-crm-tab-panel="performance"]',shell)){
+    var panel=document.createElement('section');panel.className='mg-crm-tab-panel mg-crm-performance-panel';panel.setAttribute('data-crm-tab-panel','performance');panel.setAttribute('role','tabpanel');panel.hidden=true;
+    panel.innerHTML='<div class="mg-crm-tab-title"><div><h2>Campaign Performance</h2><p>Measure builder runs, audience reach, reward conversion, follow-ups, failed delivery, and segment performance.</p></div><div class="mg-crm-tab-actions"><select class="mg-input" data-crm-performance-days aria-label="Performance window"><option value="30">Last 30 days</option><option value="90" selected>Last 90 days</option><option value="180">Last 180 days</option><option value="365">Last year</option></select><button class="mg-btn mg-btn-soft" type="button" data-crm-performance-refresh>Refresh</button></div></div><div class="mg-crm-performance-kpis" data-crm-performance-kpis></div><div class="mg-crm-performance-grid"><section class="mg-app-panel mg-crm-card mg-crm-performance-card"><div class="mg-app-panel-head mg-crm-card-head"><div><h3>Builder runs</h3><p>Recent CRM campaign builder runs and their immediate action results.</p></div></div><div class="mg-crm-performance-list" data-crm-performance-runs></div></section><section class="mg-app-panel mg-crm-card mg-crm-performance-card"><div class="mg-app-panel-head mg-crm-card-head"><div><h3>Saved segment performance</h3><p>Which audience buckets are turning into reward activity.</p></div></div><div class="mg-crm-performance-list" data-crm-performance-segments></div></section><section class="mg-app-panel mg-crm-card mg-crm-performance-card"><div class="mg-app-panel-head mg-crm-card-head"><div><h3>Campaign conversion</h3><p>Claim and redemption momentum by campaign.</p></div></div><div class="mg-crm-performance-table" data-crm-performance-campaigns></div></section><section class="mg-app-panel mg-crm-card mg-crm-performance-card"><div class="mg-app-panel-head mg-crm-card-head"><div><h3>Recent activity</h3><p>Latest CRM campaign events from the reporting window.</p></div></div><div class="mg-crm-performance-feed" data-crm-performance-activity></div></section></div>';
+    var campaigns=qs('[data-crm-tab-panel="campaigns"]',shell);if(campaigns&&campaigns.nextSibling)shell.insertBefore(panel,campaigns.nextSibling);else shell.appendChild(panel);
+  }
+  if(!qs('script[data-crm-performance-script]')){var s=document.createElement('script');s.src='/assets/js/merchant-crm-performance-dashboard.js';s.defer=true;s.setAttribute('data-crm-performance-script','1');document.head.appendChild(s)}
+}
 function ensureActionHistoryPanel(){
   var nav=qs('.mg-crm-tabs',shell),campaignTab=qs('[data-crm-tab-target="campaigns"]',shell);
   if(nav&&!qs('[data-crm-tab-target="actions"]',shell)){
@@ -26,6 +39,7 @@ function ensureActionHistoryPanel(){
   }
 }
 ensureCampaignBuilderPanel();
+ensurePerformancePanel();
 ensureActionHistoryPanel();
 var tabs=qsa('[data-crm-tab-target]',shell);
 var panels=qsa('[data-crm-tab-panel]',shell);
