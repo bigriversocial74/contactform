@@ -24,6 +24,7 @@ function lqr_claim_payload(array $user, string $questId, array $quest, array $re
             'app' => 'local-quest-rewards',
             'quest_id' => $questId,
             'quest_title' => (string)($quest['title'] ?? $questId),
+            'partner_app_id' => (string)($reward['partner_app_id'] ?? 'local_quest_rewards'),
             'qr_payload' => trim((string)($_POST['qr_payload'] ?? '')),
             'claim_geolocation' => lqr_claim_geo_from_post(),
             'retry_count' => (int)($reward['claim_report_attempts'] ?? 0),
@@ -38,6 +39,8 @@ function lqr_action_claim_reward_reported(array &$state, array $config, array &$
         throw new RuntimeException('Reward not found in this Quest wallet.');
     }
     $reward = $user['rewards'][$questId];
+    $appGate = lqr_app_status_gate($state, $config, (string)($reward['program_id'] ?? ''), (string)($reward['template_id'] ?? ''));
+    if (empty($appGate['ok'])) throw new RuntimeException('Partner app cannot report claims: ' . (string)$appGate['message']);
     $itemId = lqr_reward_item_id($reward);
     if ($itemId === '') {
         lqr_action_check_status($state, $config, $user, $questId);
@@ -73,6 +76,7 @@ function lqr_action_claim_reward_reported(array &$state, array $config, array &$
         $user['rewards'][$questId]['claim_report_response'] = $response;
         $user['rewards'][$questId]['claim_retry_available'] = true;
         lqr_put_user($state, $user);
+        lqr_app_console_note_api_call($state);
         lqr_add_event($state, 'quest.reward.claim_failed', 'Microgifter rejected the Quest reward claim report.', ['quest_id'=>$questId, 'reward_id'=>$rewardId, 'status'=>$response['status'], 'attempts'=>$attempts]);
         throw new RuntimeException('Microgifter claim report failed. Retry is available from the wallet.');
     }
@@ -89,6 +93,7 @@ function lqr_action_claim_reward_reported(array &$state, array $config, array &$
     $user['rewards'][$questId]['microgifter_event_id'] = (string)($data['microgifter_event_id'] ?? '');
     if (!empty($data['item_status'])) $user['rewards'][$questId]['item_status'] = (string)$data['item_status'];
     lqr_put_user($state, $user);
+    lqr_app_console_note_api_call($state);
     lqr_add_event($state, 'quest.reward.claimed', 'Reward claimed in Local Quest and reported to Microgifter.', ['quest_id'=>$questId, 'reward_id'=>$rewardId, 'item_id'=>$itemId, 'external_claim_id'=>$externalClaimId, 'microgifter_event_id'=>(string)($data['microgifter_event_id'] ?? ''), 'attempts'=>$attempts]);
     return $attempts > 1 ? 'Claim report retry succeeded and was reported to Microgifter.' : 'Reward claimed in the Quest app and reported to Microgifter.';
 }
