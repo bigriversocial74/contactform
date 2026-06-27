@@ -57,6 +57,21 @@ function mg_action_center_tip_wallet_event(PDO $pdo,array $item,string $eventTyp
         ]);
 }
 
+function mg_action_center_tip_response(array $tip,array $extra=[]): array
+{
+    return [
+        'tip_id'=>(string)$tip['public_id'],
+        'status'=>(string)$tip['status'],
+        'provider_payment_id'=>$tip['provider_payment_id']??null,
+        'amount_cents'=>(int)$tip['amount_cents'],
+        'fee_cents'=>(int)$tip['fee_cents'],
+        'net_cents'=>(int)$tip['net_cents'],
+        'notification_id'=>$tip['notification_id']??$tip['alert_id']??null,
+        'alert_id'=>$tip['alert_id']??null,
+        'duplicate'=>(bool)$tip['duplicate'],
+    ]+$extra;
+}
+
 mg_require_method('POST');
 $user=mg_require_permission('tips.create');
 $input=mg_input();
@@ -66,13 +81,13 @@ $idempotencyKey=trim((string)($input['idempotency_key']??''));
 $amountCents=(int)($input['amount_cents']??0);
 if($actionItemId===''||$idempotencyKey===''||$amountCents<1)mg_fail('Action Center item, amount, and idempotency key are required.',422);
 $pdo=mg_db();
-$pdo->beginTransaction();
 try{
+    $pdo->beginTransaction();
     $walletId=mg_action_center_tip_wallet_action_id($actionItemId);
     if($walletId!==null){
         $walletItem=mg_action_center_tip_load_wallet_item($pdo,$walletId,(int)$user['id'],strtolower(trim((string)($user['email']??''))));
         if(!$walletItem)throw new RuntimeException('Action Center wallet reward not found.');
-        if(!in_array((string)$walletItem['status'],['claimed','redeemed'],true))throw new RuntimeException('This wallet reward is not eligible for tipping yet.');
+        if((string)$walletItem['status']!=='redeemed')throw new RuntimeException('This wallet reward is eligible for tipping after merchant redemption.');
         $target=mg_action_center_tip_wallet_target($pdo,$walletItem);
         $tip=mg_tip_create($pdo,(int)$user['id'],[
             'target_type'=>$target['target_type'],
@@ -90,11 +105,12 @@ try{
             ],
         ]);
         if((string)$tip['status']==='posted'&&empty($tip['duplicate'])){
-            $tip['alert_id']=mg_tip_notify_recipient($pdo,$tip);
-            mg_action_center_tip_wallet_event($pdo,$walletItem,'wallet_item.tip_posted',['tip_id'=>(string)$tip['public_id'],'sender_user_id'=>(int)$user['id'],'amount_cents'=>(int)$tip['amount_cents'],'currency'=>(string)$tip['currency']]);
+            $tip['notification_id']=mg_tip_notify_recipient($pdo,$tip);
+            $tip['alert_id']=$tip['notification_id'];
+            mg_action_center_tip_wallet_event($pdo,$walletItem,'wallet_item.tip_posted',['tip_id'=>(string)$tip['public_id'],'sender_user_id'=>(int)$user['id'],'amount_cents'=>(int)$tip['amount_cents'],'currency'=>(string)$tip['currency'],'notification_id'=>$tip['notification_id']]);
         }
         $pdo->commit();
-        mg_ok(['tip_id'=>$tip['public_id'],'status'=>$tip['status'],'provider_payment_id'=>$tip['provider_payment_id'],'amount_cents'=>(int)$tip['amount_cents'],'fee_cents'=>(int)$tip['fee_cents'],'net_cents'=>(int)$tip['net_cents'],'alert_id'=>$tip['alert_id']??null,'duplicate'=>(bool)$tip['duplicate'],'wallet_item_id'=>$walletId],$tip['duplicate']?'Existing tip returned.':'Tip created.',$tip['duplicate']?200:201);
+        mg_ok(mg_action_center_tip_response($tip,['wallet_item_id'=>$walletId]),$tip['duplicate']?'Existing tip returned.':'Tip created.',$tip['duplicate']?200:201);
     }
 
     $stmt=$pdo->prepare("SELECT ac.can_tip,ac.folder,ac.state,i.public_id instance_id
@@ -116,7 +132,10 @@ try{
         'idempotency_key'=>$idempotencyKey,
         'metadata'=>['action_item_id'=>$actionItemId,'message'=>trim((string)($input['message']??''))],
     ]);
-    if((string)$tip['status']==='posted'&&empty($tip['duplicate']))$tip['alert_id']=mg_tip_notify_recipient($pdo,$tip);
+    if((string)$tip['status']==='posted'&&empty($tip['duplicate'])){
+        $tip['notification_id']=mg_tip_notify_recipient($pdo,$tip);
+        $tip['alert_id']=$tip['notification_id'];
+    }
     $pdo->commit();
-    mg_ok(['tip_id'=>$tip['public_id'],'status'=>$tip['status'],'provider_payment_id'=>$tip['provider_payment_id'],'amount_cents'=>(int)$tip['amount_cents'],'fee_cents'=>(int)$tip['fee_cents'],'net_cents'=>(int)$tip['net_cents'],'alert_id'=>$tip['alert_id']??null,'duplicate'=>(bool)$tip['duplicate']],$tip['duplicate']?'Existing tip returned.':'Tip created.',$tip['duplicate']?200:201);
+    mg_ok(mg_action_center_tip_response($tip),$tip['duplicate']?'Existing tip returned.':'Tip created.',$tip['duplicate']?200:201);
 }catch(InvalidArgumentException $e){if($pdo->inTransaction())$pdo->rollBack();mg_fail($e->getMessage(),422);}catch(RuntimeException $e){if($pdo->inTransaction())$pdo->rollBack();mg_fail($e->getMessage(),409);}catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();mg_security_log('error','action_center.tip_failed','Action Center tip failed.',['exception'=>$e->getMessage()],(int)$user['id']);mg_fail('Unable to create this tip.',500);}
