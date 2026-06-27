@@ -12,6 +12,7 @@ function mg_campaign_contact_no_recent_activity(mixed $value): bool
 function mg_campaign_contact_row(array $row): array
 {
     $lastActivityAt = $row['last_activity_at'] ?? $row['updated_at'] ?? $row['created_at'] ?? null;
+    $resolvedUserId = (int)($row['resolved_user_id'] ?? $row['user_id'] ?? 0);
 
     return [
         'id' => (string)$row['public_id'],
@@ -23,7 +24,9 @@ function mg_campaign_contact_row(array $row): array
         'name' => (string)($row['name'] ?? ''),
         'source' => (string)$row['source'],
         'opt_in_status' => (string)$row['opt_in_status'],
-        'has_account' => (int)($row['user_id'] ?? 0) > 0,
+        'has_account' => $resolvedUserId > 0,
+        'account_linked' => (int)($row['user_id'] ?? 0) > 0,
+        'account_resolved_by_email' => $resolvedUserId > 0 && (int)($row['user_id'] ?? 0) <= 0,
         'email_verified' => !empty($row['email_verified_at']),
         'wallet_count' => (int)($row['wallet_count'] ?? 0),
         'issued_count' => (int)($row['issued_count'] ?? 0),
@@ -48,7 +51,28 @@ mg_merchant_ensure_workspace($pdo, $user);
 $campaignPublicId = strtolower(trim((string)($_GET['campaign_id'] ?? $_GET['campaign'] ?? '')));
 
 try {
-    $sql = "SELECT cc.*,c.public_id campaign_public_id,c.title campaign_title,c.campaign_type,u.email_verified_at,cc.updated_at last_activity_at,COUNT(DISTINCT wi.id) wallet_count,COUNT(DISTINCT CASE WHEN wi.status='issued' THEN wi.id END) issued_count,COUNT(DISTINCT CASE WHEN wi.status='claimed' THEN wi.id END) claimed_count,COUNT(DISTINCT CASE WHEN wi.status='redeemed' THEN wi.id END) redeemed_count,COUNT(DISTINCT cri.id) invite_pending_count,COUNT(DISTINCT CASE WHEN ce.event_type='outbound_email.queued' THEN ce.id END) emails_queued_count,COUNT(DISTINCT CASE WHEN mdj.status='delivered' THEN mdj.id END) emails_delivered_count,COUNT(DISTINCT CASE WHEN mdj.status IN ('failed','dead_letter') THEN mdj.id END) emails_failed_count FROM campaign_contacts cc INNER JOIN campaigns c ON c.id=cc.campaign_id LEFT JOIN users u ON u.id=cc.user_id LEFT JOIN wallet_items wi ON wi.contact_id=cc.id LEFT JOIN crm_reward_invites cri ON cri.contact_id=cc.id AND cri.status='sent' AND (cri.expires_at IS NULL OR cri.expires_at>NOW()) LEFT JOIN campaign_events ce ON ce.contact_id=cc.id LEFT JOIN message_events me ON me.event_type='campaign.outbound_email' AND JSON_UNQUOTE(JSON_EXTRACT(me.payload_json,'$.contact_public_id'))=cc.public_id LEFT JOIN message_delivery_jobs mdj ON mdj.message_event_id=me.id AND mdj.channel='email' WHERE cc.merchant_user_id=?";
+    $sql = "SELECT cc.*,c.public_id campaign_public_id,c.title campaign_title,c.campaign_type,
+                   COALESCE(cc.user_id,email_user.id) resolved_user_id,
+                   COALESCE(linked_user.email_verified_at,email_user.email_verified_at) email_verified_at,
+                   cc.updated_at last_activity_at,
+                   COUNT(DISTINCT wi.id) wallet_count,
+                   COUNT(DISTINCT CASE WHEN wi.status='issued' THEN wi.id END) issued_count,
+                   COUNT(DISTINCT CASE WHEN wi.status='claimed' THEN wi.id END) claimed_count,
+                   COUNT(DISTINCT CASE WHEN wi.status='redeemed' THEN wi.id END) redeemed_count,
+                   COUNT(DISTINCT cri.id) invite_pending_count,
+                   COUNT(DISTINCT CASE WHEN ce.event_type='outbound_email.queued' THEN ce.id END) emails_queued_count,
+                   COUNT(DISTINCT CASE WHEN mdj.status='delivered' THEN mdj.id END) emails_delivered_count,
+                   COUNT(DISTINCT CASE WHEN mdj.status IN ('failed','dead_letter') THEN mdj.id END) emails_failed_count
+            FROM campaign_contacts cc
+            INNER JOIN campaigns c ON c.id=cc.campaign_id
+            LEFT JOIN users linked_user ON linked_user.id=cc.user_id
+            LEFT JOIN users email_user ON cc.user_id IS NULL AND LOWER(email_user.email)=LOWER(cc.email)
+            LEFT JOIN wallet_items wi ON wi.contact_id=cc.id
+            LEFT JOIN crm_reward_invites cri ON cri.contact_id=cc.id AND cri.status='sent' AND (cri.expires_at IS NULL OR cri.expires_at>NOW())
+            LEFT JOIN campaign_events ce ON ce.contact_id=cc.id
+            LEFT JOIN message_events me ON me.event_type='campaign.outbound_email' AND JSON_UNQUOTE(JSON_EXTRACT(me.payload_json,'$.contact_public_id'))=cc.public_id
+            LEFT JOIN message_delivery_jobs mdj ON mdj.message_event_id=me.id AND mdj.channel='email'
+            WHERE cc.merchant_user_id=?";
     $params = [$merchantId];
 
     if ($campaignPublicId !== '') {
@@ -57,7 +81,7 @@ try {
         $params[] = $campaignPublicId;
     }
 
-    $sql .= ' GROUP BY cc.id,c.public_id,c.title,c.campaign_type,u.email_verified_at ORDER BY cc.updated_at DESC,cc.id DESC LIMIT 250';
+    $sql .= ' GROUP BY cc.id,c.public_id,c.title,c.campaign_type,linked_user.email_verified_at,email_user.id,email_user.email_verified_at ORDER BY cc.updated_at DESC,cc.id DESC LIMIT 250';
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
