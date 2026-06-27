@@ -48,10 +48,31 @@ window.Microgifter = window.Microgifter || {};
     if (Number.isNaN(parsed.getTime())) return String(value);
     return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(parsed);
   }
+  function formatNumber(value) {
+    return Number(value || 0).toLocaleString();
+  }
   function avatarHtml(customer) {
     var src = customer && customer.avatar_url ? String(customer.avatar_url) : '';
     if (src) return '<span class="mg-canvas-avatar"><img src="' + escapeHtml(src) + '" alt=""></span>';
     return '<span class="mg-canvas-avatar">' + escapeHtml(initials(customer && customer.name)) + '</span>';
+  }
+
+  function setLiveStatus(message, type) {
+    var pill = qs('[data-canvas-live-pill]');
+    if (!pill) return;
+    pill.textContent = message;
+    pill.classList.toggle('is-error', type === 'error');
+    pill.classList.toggle('is-live', type === 'live');
+    pill.classList.toggle('is-warn', type === 'warn');
+  }
+
+  function setCanvasState(message, type) {
+    var state = qs('[data-canvas-state]');
+    if (!state) return;
+    state.textContent = message;
+    state.classList.toggle('is-error', type === 'error');
+    state.classList.toggle('is-live', type === 'live');
+    state.classList.toggle('is-warn', type === 'warn');
   }
 
   function customerCard(item, index) {
@@ -59,10 +80,12 @@ window.Microgifter = window.Microgifter || {};
     var last = item.last_event && item.last_event.label ? item.last_event.label : 'Entered store';
     var source = item.source_post && item.source_post.headline ? item.source_post.headline : 'Merchant feed post';
     var offset = (index % 5) * 12;
-    return '<button class="mg-canvas-avatar-card' + (item.status === 'idle' ? ' is-idle' : '') + (item.session_id === selectedSessionId ? ' is-active' : '') + '" type="button" data-session-id="' + escapeHtml(item.session_id) + '" style="margin-top:' + offset + 'px">' +
+    var classes = 'mg-canvas-avatar-card' + (item.status === 'idle' ? ' is-idle' : '') + (item.is_test ? ' is-test' : '') + (item.session_id === selectedSessionId ? ' is-active' : '');
+    return '<button class="' + classes + '" type="button" data-session-id="' + escapeHtml(item.session_id) + '" style="margin-top:' + offset + 'px">' +
       '<span class="mg-canvas-avatar-status" aria-hidden="true"></span>' +
       avatarHtml(customer) +
       '<span class="mg-canvas-avatar-meta"><strong>' + escapeHtml(customer.name || 'Customer') + '</strong><span>Inside ' + escapeHtml(formatDuration(item.seconds_inside)) + '</span><small title="' + escapeHtml(source) + '">' + escapeHtml(last) + '</small></span>' +
+      (item.is_test ? '<em>Test</em>' : '') +
       '</button>';
   }
 
@@ -72,18 +95,22 @@ window.Microgifter = window.Microgifter || {};
     return '<article class="mg-canvas-activity-item"><strong>' + escapeHtml(customer.name || 'Customer') + '</strong><span>' + escapeHtml(eventLabel) + ' - ' + escapeHtml(formatDuration(item.seconds_inside)) + '</span></article>';
   }
 
-  function setLiveStatus(message, type) {
-    var pill = qs('[data-canvas-live-pill]');
-    if (!pill) return;
-    pill.textContent = message;
-    pill.classList.toggle('is-error', type === 'error');
+  function renderSummary(summary) {
+    summary = summary || {};
+    setText('[data-canvas-active-count]', formatNumber(summary.active_customers || customers.length));
+    setText('[data-canvas-today-entries]', formatNumber(summary.today_entries));
+    setText('[data-canvas-today-events]', formatNumber(summary.today_events));
+    setText('[data-canvas-history-rows]', formatNumber(summary.history_rows));
+    setText('[data-canvas-test-count]', formatNumber(summary.test_avatars));
   }
 
   function renderCanvas(data) {
     customers = Array.isArray(data.customers) ? data.customers : [];
-    setText('[data-canvas-active-count]', String(customers.length));
-    setText('[data-canvas-agent-status]', data.summary && data.summary.agent_status ? data.summary.agent_status : 'Watching');
-    setLiveStatus(customers.length ? 'Live customers inside' : 'Polling every few seconds', '');
+    var summary = data.summary || {};
+    renderSummary(summary);
+    setText('[data-canvas-agent-status]', summary.agent_status || 'Watching');
+    setLiveStatus(customers.length ? 'Live customers inside' : 'Database connected', customers.length ? 'live' : '');
+    setCanvasState(customers.length ? 'Canvas live: customer sessions are rendering from the active database.' : 'Database connected, waiting for customers. Use Add Test Avatar if you want to verify the visual layer now.', customers.length ? 'live' : '');
 
     var layer = qs('[data-canvas-customers]');
     if (layer) {
@@ -107,6 +134,79 @@ window.Microgifter = window.Microgifter || {};
       renderCanvas(data || {});
     } catch (error) {
       setLiveStatus(error.message || 'Unable to load canvas', 'error');
+      setCanvasState(error.message || 'Unable to load canvas. Run diagnostics to confirm the active database and table status.', 'error');
+    }
+  }
+
+  function healthRow(label, value, state) {
+    return '<article class="mg-canvas-health-row' + (state ? ' is-' + escapeHtml(state) : '') + '"><span>' + escapeHtml(label) + '</span><strong>' + escapeHtml(value == null ? '—' : value) + '</strong></article>';
+  }
+
+  function renderHealth(data) {
+    var health = qs('[data-canvas-health]');
+    var status = qs('[data-canvas-health-status]');
+    if (!health) return;
+    var schema = data.schema || {};
+    var stats = data.stats || {};
+    var database = data.database || {};
+    var tables = schema.tables || {};
+    var html = '';
+    html += '<section class="mg-canvas-health-section"><h3>Connection</h3>';
+    html += healthRow('Active database', database.name || 'unknown', database.name ? 'ready' : 'warn');
+    html += healthRow('Driver', database.driver || 'unknown', 'ready');
+    html += healthRow('Merchant user', data.merchant && data.merchant.user_id ? data.merchant.user_id : 'unknown', 'ready');
+    html += healthRow('Schema status', schema.ready ? 'ready' : 'missing', schema.ready ? 'ready' : 'error');
+    html += '</section>';
+    html += '<section class="mg-canvas-health-section"><h3>Merchant activity</h3>';
+    html += healthRow('Active customers', stats.active_customers, 'ready');
+    html += healthRow('Today entries', stats.today_entries, 'ready');
+    html += healthRow('Today events', stats.today_events, 'ready');
+    html += healthRow('Store history rows', stats.history_rows, 'ready');
+    html += healthRow('Test avatars', stats.test_avatars, stats.test_avatars ? 'warn' : 'ready');
+    html += '</section>';
+    html += '<section class="mg-canvas-health-section mg-canvas-health-section-wide"><h3>Tables</h3>';
+    Object.keys(tables).forEach(function (table) {
+      var item = tables[table] || {};
+      html += healthRow(table, (item.exists ? 'found' : 'missing') + (item.rows == null ? '' : ' · ' + formatNumber(item.rows) + ' rows'), item.exists ? 'ready' : 'error');
+    });
+    html += '</section>';
+    health.innerHTML = html;
+    if (status) {
+      status.textContent = schema.ready ? 'Ready' : 'Missing tables';
+      status.classList.toggle('is-error', !schema.ready);
+    }
+    setCanvasState(schema.ready ? 'Diagnostics passed. The Store Canvas tables are visible in the active database.' : 'Diagnostics found missing Store Canvas tables: ' + (schema.missing || []).join(', '), schema.ready ? 'live' : 'error');
+  }
+
+  async function loadHealth(openPanel) {
+    var diagnostics = qs('[data-canvas-diagnostics]');
+    var status = qs('[data-canvas-health-status]');
+    if (openPanel && diagnostics) diagnostics.open = true;
+    if (status) status.textContent = 'Checking...';
+    try {
+      var data = payload(await MG.get('/api/merchant-canvas/health.php'));
+      renderHealth(data || {});
+    } catch (error) {
+      if (status) {
+        status.textContent = 'Error';
+        status.classList.add('is-error');
+      }
+      var health = qs('[data-canvas-health]');
+      if (health) health.innerHTML = '<p class="mg-canvas-health-error">' + escapeHtml(error.message || 'Unable to run diagnostics.') + '</p>';
+      setCanvasState(error.message || 'Unable to run diagnostics.', 'error');
+    }
+  }
+
+  async function updateTestAvatar(action, button) {
+    busy(button, true, action === 'clear' ? 'Clearing...' : 'Adding...');
+    try {
+      await MG.post('/api/merchant-canvas/test-avatar.php', { action: action });
+      await loadCanvas();
+      await loadHealth(false);
+    } catch (error) {
+      setCanvasState(error.message || 'Unable to update test avatars.', 'error');
+    } finally {
+      busy(button, false);
     }
   }
 
@@ -132,14 +232,15 @@ window.Microgifter = window.Microgifter || {};
     var body = qs('[data-drawer-body]');
     if (body) {
       body.innerHTML =
-        '<section class="mg-canvas-customer-summary">' + avatarHtml(customer) + '<div><strong>' + escapeHtml(customer.name || 'Customer') + '</strong><span>' + escapeHtml(customer.profile_type || 'customer') + ' - ' + escapeHtml(customer.account_status || 'In system') + '</span><small>Current status: ' + escapeHtml(session.status || 'active') + '</small></div></section>' +
+        '<section class="mg-canvas-customer-summary">' + avatarHtml(customer) + '<div><strong>' + escapeHtml(customer.name || 'Customer') + '</strong><span>' + escapeHtml(customer.profile_type || 'customer') + ' · ' + escapeHtml(customer.account_status || 'In system') + '</span><small>Current status: ' + escapeHtml(session.status || 'active') + '</small></div></section>' +
         '<section class="mg-canvas-crm-grid">' +
           '<article class="mg-canvas-crm-stat"><span>Visits</span><strong>' + Number(stats.visit_count || 0).toLocaleString() + '</strong></article>' +
           '<article class="mg-canvas-crm-stat"><span>Messages</span><strong>' + Number(stats.messages_sent || 0).toLocaleString() + '</strong></article>' +
           '<article class="mg-canvas-crm-stat"><span>Rewards</span><strong>' + Number(stats.rewards_received || 0).toLocaleString() + '</strong></article>' +
           '<article class="mg-canvas-crm-stat"><span>Claims</span><strong>' + Number(stats.rewards_claimed || 0).toLocaleString() + '</strong></article>' +
         '</section>' +
-        '<section><span class="mg-canvas-eyebrow">Store source</span><p>' + escapeHtml(session.source_post && session.source_post.headline ? session.source_post.headline : 'Feed post') + '</p></section>' +
+        '<section class="mg-canvas-action-grid"><button type="button" data-drawer-focus-message>Send Message</button><button type="button" disabled>Send Reward</button><button type="button" disabled>Add to Campaign</button><button type="button" disabled>Follow-Up</button></section>' +
+        '<section><span class="mg-canvas-eyebrow">Store source</span><p>' + escapeHtml(session.source_post && session.source_post.headline ? session.source_post.headline : 'Feed post / Store Canvas') + '</p></section>' +
         '<section><span class="mg-canvas-eyebrow">Session events</span><div class="mg-canvas-event-list">' + (events.length ? events.map(function (event) {
           return '<article><strong>' + escapeHtml(event.label || event.type || 'Store event') + '</strong><span>' + escapeHtml(formatDate(event.created_at)) + '</span></article>';
         }).join('') : '<article><strong>No events yet</strong><span>Customer has just entered the store.</span></article>') + '</div></section>';
@@ -206,6 +307,18 @@ window.Microgifter = window.Microgifter || {};
   root.addEventListener('click', function (event) {
     var refresh = event.target.closest('[data-canvas-refresh]');
     if (refresh) return void loadCanvas();
+    var health = event.target.closest('[data-canvas-health-refresh]');
+    if (health) return void loadHealth(true);
+    var addTest = event.target.closest('[data-canvas-test-add]');
+    if (addTest) return void updateTestAvatar('add', addTest);
+    var clearTest = event.target.closest('[data-canvas-test-clear]');
+    if (clearTest) return void updateTestAvatar('clear', clearTest);
+    var focusMessage = event.target.closest('[data-drawer-focus-message]');
+    if (focusMessage) {
+      var messageInput = qs('[data-message-form] textarea');
+      if (messageInput) messageInput.focus();
+      return;
+    }
     var close = event.target.closest('[data-drawer-close]');
     if (close) return closeDrawer();
     var avatar = event.target.closest('[data-session-id]');
@@ -220,6 +333,7 @@ window.Microgifter = window.Microgifter || {};
   });
 
   loadCanvas();
+  loadHealth(false);
   pollTimer = window.setInterval(loadCanvas, 7000);
   window.addEventListener('beforeunload', function () { if (pollTimer) window.clearInterval(pollTimer); });
 })(window, document);
