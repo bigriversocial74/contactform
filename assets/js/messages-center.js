@@ -62,6 +62,37 @@ document.addEventListener('DOMContentLoaded', function () {
     }).join('') + '</div>';
   }
 
+  function formatDateLabel(value) {
+    if (!value) return '';
+    var parsed = new Date(String(value).replace(' ', 'T'));
+    if (Number.isNaN(parsed.getTime())) return '';
+    var today = new Date();
+    var yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+    if (parsed.toDateString() === today.toDateString()) return 'Today';
+    if (parsed.toDateString() === yesterday.toDateString()) return 'Yesterday';
+    return parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: parsed.getFullYear() === today.getFullYear() ? undefined : 'numeric' });
+  }
+
+  function formatTime(value) {
+    if (!value) return '';
+    var parsed = new Date(String(value).replace(' ', 'T'));
+    if (Number.isNaN(parsed.getTime())) return String(value);
+    return parsed.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  }
+
+  function messageStatus(message) {
+    if (message.status) return message.status;
+    if (message.delivery_status) return message.delivery_status;
+    if (message.failed) return 'Failed';
+    if (message.mine) return message.read_at ? 'Read' : (message.delivered_at ? 'Delivered' : 'Sent');
+    return 'Received';
+  }
+
+  function statusClass(status) {
+    return 'is-' + String(status || 'sent').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  }
+
   function composerStatus(form, message, type) {
     if (!form) return;
     var node = form.querySelector('[data-message-compose-status]');
@@ -77,10 +108,23 @@ document.addEventListener('DOMContentLoaded', function () {
     var button = form && form.querySelector('[data-message-send]');
     if (textarea) textarea.disabled = busy;
     if (button) {
-      button.disabled = busy;
+      button.disabled = busy || !String(textarea && textarea.value || '').trim();
       button.textContent = busy ? 'Sending...' : 'Send';
     }
     if (form) form.setAttribute('aria-busy', busy ? 'true' : 'false');
+  }
+
+  function syncComposer(form) {
+    if (!form) return;
+    var textarea = form.querySelector('textarea[name="body"]');
+    var button = form.querySelector('[data-message-send]');
+    var counter = form.querySelector('[data-compose-count]');
+    var body = String(textarea && textarea.value || '');
+    if (button) button.disabled = state.sending || !body.trim();
+    if (counter) {
+      counter.textContent = body.length + ' / 4000';
+      counter.classList.toggle('is-warn', body.length > 3400);
+    }
   }
 
   function setSidebarOpen(open) {
@@ -112,8 +156,9 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!list) return;
     list.innerHTML = items.length ? items.map(function (thread) {
       var active = state.current === thread.public_id;
+      var unread = Number(thread.unread || 0);
       return '<article class="mg-thread-card ' + (thread.unread ? 'is-unread ' : '') + (active ? 'is-active' : '') + '" data-thread-id="' + esc(thread.public_id) + '" data-thread-initial="' + esc(initials(thread.subject || sourceLabel(thread))) + '">' +
-        '<div><div class="mg-thread-card-title"><strong>' + esc(thread.subject || 'Conversation') + '</strong>' + sourceBadge(thread) + '</div>' +
+        '<div><div class="mg-thread-card-title"><strong>' + esc(thread.subject || 'Conversation') + '</strong>' + sourceBadge(thread) + (unread ? '<span class="mg-thread-unread-count">' + unread + '</span>' : '') + '</div>' +
         '<p>' + esc(thread.latest_message || 'No messages yet') + '</p>' +
         '<small>' + esc(thread.latest_at || thread.updated_at || '') + '</small></div></article>';
     }).join('') : '<div class="mg-empty-state"><strong>No conversations found.</strong><p>Merchant CRM, Store Canvas, gift, recipient, and PPPM conversations will appear here.</p></div>';
@@ -149,47 +194,84 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+  function renderMessages(messagesData) {
+    var html = [];
+    var previousDate = '';
+    var previousSender = '';
+    var previousMine = null;
+
+    (messagesData || []).forEach(function (message) {
+      var mine = Boolean(message.mine);
+      var dateLabel = formatDateLabel(message.created_at || message.created_at_iso || '');
+      var senderName = message.sender_name || (mine ? 'Me' : 'User');
+      var grouped = previousSender === senderName && previousMine === mine && previousDate === dateLabel;
+      var status = messageStatus(message);
+      var messageSource = message.source && message.source.label
+        ? '<span class="mg-message-bubble-source">' + esc(message.source.label) + '</span>'
+        : '';
+      var avatar = initials(senderName).slice(0, 1);
+
+      if (dateLabel && dateLabel !== previousDate) {
+        html.push('<div class="mg-message-date-divider"><span>' + esc(dateLabel) + '</span></div>');
+      }
+
+      html.push('<article class="mg-message-row ' + (mine ? 'is-mine' : 'is-theirs') + (grouped ? ' is-grouped' : '') + '">' +
+        '<div class="mg-message-avatar" aria-hidden="true">' + (grouped ? '' : esc(avatar)) + '</div>' +
+        '<div class="mg-message-bubble ' + (mine ? 'is-mine' : 'is-theirs') + '">' +
+          (grouped ? '' : '<strong>' + esc(senderName) + '</strong>') +
+          '<p>' + esc(message.body) + '</p>' +
+          '<div class="mg-message-meta"><small>' + esc(formatTime(message.created_at) || message.created_at || '') + '</small><span class="mg-message-status ' + esc(statusClass(status)) + '">' + esc(status) + '</span></div>' +
+          '<div class="mg-message-actions" aria-label="Message actions"><button type="button" data-copy-message>Copy</button><button type="button">Task</button><button type="button">Follow up</button></div>' +
+          messageSource +
+        '</div>' +
+      '</article>');
+
+      previousDate = dateLabel;
+      previousSender = senderName;
+      previousMine = mine;
+    });
+
+    return html.join('') || '<div class="mg-empty-state mg-empty-chat"><strong>No messages yet.</strong><p>Send the first message in this thread.</p></div>';
+  }
+
   async function openThread(id) {
     state.current = id;
     render();
     setSidebarOpen(false);
     if (!detail) return;
-    detail.innerHTML = '<div class="mg-empty-state"><strong>Loading conversation...</strong></div>';
+    detail.innerHTML = '<div class="mg-message-skeleton"><span></span><span></span><span></span></div>';
 
     var response = await Microgifter.get('/api/messages/thread.php?id=' + encodeURIComponent(id));
     var thread = (response.data || response).thread || {};
     var source = thread.source || {};
-
-    var messages = (thread.messages || []).map(function (message) {
-      var mine = Boolean(message.mine);
-      var messageSource = message.source && message.source.label
-        ? '<span class="mg-message-bubble-source">' + esc(message.source.label) + '</span>'
-        : '';
-      var avatar = initials(message.sender_name || (mine ? 'Me' : 'User')).slice(0, 1);
-      return '<article class="mg-message-row ' + (mine ? 'is-mine' : 'is-theirs') + '">' +
-        '<div class="mg-message-avatar" aria-hidden="true">' + esc(avatar) + '</div>' +
-        '<div class="mg-message-bubble ' + (mine ? 'is-mine' : 'is-theirs') + '"><strong>' + esc(message.sender_name || (mine ? 'Me' : 'User')) + '</strong>' +
-        '<p>' + esc(message.body) + '</p><small>' + esc(message.created_at || '') + '</small>' + messageSource + '</div>' +
-        '</article>';
-    }).join('') || '<div class="mg-empty-state"><strong>No messages yet.</strong></div>';
+    var messages = renderMessages(thread.messages || []);
+    var threadSubtitle = thread.gift_id || thread.pppm_id || thread.conversation_key || 'Gift communication';
 
     detail.innerHTML = '<div class="mg-thread-detail-shell">' +
       '<div class="mg-thread-detail-top">' + contextBar(source) +
-      '<div class="mg-thread-title-bar"><div class="mg-thread-title-block"><div class="mg-thread-title-line"><h2>' + esc(thread.subject || 'Conversation') + '</h2>' + sourceBadge(thread) + '<span class="mg-message-source-chip is-live">Active</span></div>' +
-      '<p>' + esc(thread.gift_id || thread.pppm_id || thread.conversation_key || 'Gift communication') + '</p></div>' +
-      '<div class="mg-thread-title-actions"><button type="button" aria-label="Mark complete">✓</button><button type="button" aria-label="Tag conversation">#</button><button type="button" aria-label="More actions">...</button></div></div></div>' +
+        '<div class="mg-thread-title-bar"><div class="mg-thread-title-block"><div class="mg-thread-title-line"><h2>' + esc(thread.subject || 'Conversation') + '</h2>' + sourceBadge(thread) + '<span class="mg-message-source-chip is-live">Active</span></div>' +
+        '<p>' + esc(threadSubtitle) + '</p><div class="mg-thread-presence"><span></span> Conversation open · customer context attached</div></div>' +
+        '<div class="mg-thread-title-actions"><button type="button" aria-label="Mark resolved" title="Mark resolved">✓</button><button type="button" aria-label="Assign conversation" title="Assign conversation">@</button><button type="button" aria-label="Add label" title="Add label">#</button><button type="button" aria-label="More actions" title="More actions">...</button></div></div></div>' +
       '<div class="mg-message-stream-wrap"><div class="mg-message-stream">' + messages + '</div></div>' +
       '<form class="mg-message-composer is-detached" data-thread-reply data-thread-id="' + esc(thread.public_id || thread.id || id) + '" aria-busy="false">' +
-      '<div class="mg-message-composer-inner"><div class="mg-message-compose-main"><textarea name="body" maxlength="4000" required placeholder="Type your message..."></textarea><div class="mg-message-compose-meta"><span data-compose-count>0 / 4000</span></div></div>' +
-      '<div class="mg-message-compose-tools"><button class="mg-compose-tool" type="button" aria-label="Add attachment">+</button><button class="mg-compose-tool" type="button" aria-label="Add note">Aa</button><button class="mg-btn mg-btn-primary" type="submit" data-message-send>Send</button></div></div>' +
-      '<div class="mg-message-compose-status" data-message-compose-status role="status" aria-live="polite"></div></form></div>';
+        '<div class="mg-message-quick-actions" aria-label="Quick actions"><button type="button">Reply</button><button type="button">Send Reward</button><button type="button">Send Gift</button><button type="button">Claim Link</button><button type="button">Template</button></div>' +
+        '<div class="mg-message-composer-inner"><div class="mg-message-compose-main"><textarea name="body" maxlength="4000" required placeholder="Type your message... Enter to send, Shift+Enter for a new line."></textarea><div class="mg-message-compose-meta"><span data-compose-hint>Enter sends · Shift+Enter new line</span><span data-compose-count>0 / 4000</span></div></div>' +
+        '<div class="mg-message-compose-tools"><button class="mg-compose-tool" type="button" aria-label="Add attachment">+</button><button class="mg-compose-tool" type="button" aria-label="Insert template">Aa</button><button class="mg-btn mg-btn-primary" type="submit" data-message-send disabled>Send</button></div></div>' +
+        '<div class="mg-message-compose-status" data-message-compose-status role="status" aria-live="polite"></div></form></div>';
 
     var stream = detail.querySelector('.mg-message-stream');
     if (stream) stream.scrollTop = stream.scrollHeight;
     var textarea = detail.querySelector('textarea[name="body"]');
-    var counter = detail.querySelector('[data-compose-count]');
-    if (textarea && counter) {
-      textarea.addEventListener('input', function () { counter.textContent = textarea.value.length + ' / 4000'; });
+    var form = detail.querySelector('[data-thread-reply]');
+    if (textarea && form) {
+      textarea.addEventListener('input', function () { syncComposer(form); });
+      textarea.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter' && !event.shiftKey) {
+          event.preventDefault();
+          sendReply(form).catch(console.error);
+        }
+      });
+      syncComposer(form);
     }
   }
 
@@ -233,6 +315,7 @@ document.addEventListener('DOMContentLoaded', function () {
     } finally {
       state.sending = false;
       setComposerBusy(form, false);
+      syncComposer(form);
     }
   }
 
@@ -252,6 +335,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
   if (detail) {
     detail.addEventListener('click', function (event) {
+      var copyButton = event.target.closest('[data-copy-message]');
+      if (copyButton) {
+        var bubble = copyButton.closest('.mg-message-bubble');
+        var text = bubble && bubble.querySelector('p') ? bubble.querySelector('p').textContent : '';
+        if (navigator.clipboard && text) navigator.clipboard.writeText(text).catch(function () {});
+        return;
+      }
       var button = event.target.closest('[data-message-send]');
       if (!button) return;
       event.preventDefault();
