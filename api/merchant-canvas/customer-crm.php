@@ -11,10 +11,79 @@ if (!mg_user_has_merchant_access($user, $pdo)) {
     mg_fail('Merchant access required.', 403);
 }
 
+function mg_merchant_canvas_customer_crm_core(PDO $pdo, int $merchantUserId, string $sessionPublicId): array
+{
+    foreach (['mg_store_sessions','mg_store_session_events','mg_customer_store_history'] as $table) {
+        if (!mg_store_table_exists($pdo, $table)) {
+            throw new RuntimeException('Store Canvas setup is incomplete. Missing: ' . $table . '.');
+        }
+    }
+
+    $stmt = $pdo->prepare(
+        "SELECT s.*,cp.display_name customer_name,cp.avatar_url customer_avatar_url,cp.slug customer_slug,cp.profile_type customer_profile_type,
+                fp.public_id source_post_public_id,fp.headline source_post_headline
+         FROM mg_store_sessions s
+         LEFT JOIN public_profiles cp ON cp.user_id=s.customer_user_id
+         LEFT JOIN feed_posts fp ON fp.id=s.source_feed_post_id
+         WHERE s.public_id=? AND s.merchant_user_id=? LIMIT 1"
+    );
+    $stmt->execute([$sessionPublicId, $merchantUserId]);
+    $session = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$session) {
+        throw new RuntimeException('Customer session is not available.');
+    }
+
+    $stats = ['visit_count'=>0,'messages_sent'=>0,'rewards_received'=>0,'rewards_claimed'=>0,'gifts_sent'=>0];
+    $visit = $pdo->prepare('SELECT COUNT(*) FROM mg_store_sessions WHERE customer_user_id=? AND merchant_user_id=?');
+    $visit->execute([(int)$session['customer_user_id'], $merchantUserId]);
+    $stats['visit_count'] = (int)$visit->fetchColumn();
+
+    if (mg_store_table_exists($pdo, 'mg_agent_messages')) {
+        $messages = $pdo->prepare('SELECT COUNT(*) FROM mg_agent_messages WHERE recipient_user_id=? AND merchant_user_id=?');
+        $messages->execute([(int)$session['customer_user_id'], $merchantUserId]);
+        $stats['messages_sent'] = (int)$messages->fetchColumn();
+    }
+
+    $eventStats = $pdo->prepare('SELECT event_type,COUNT(*) total FROM mg_store_session_events WHERE customer_user_id=? AND merchant_user_id=? GROUP BY event_type');
+    $eventStats->execute([(int)$session['customer_user_id'], $merchantUserId]);
+    foreach ($eventStats->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $type = (string)$row['event_type'];
+        if ($type === 'message_received') $stats['messages_sent'] = max($stats['messages_sent'], (int)$row['total']);
+        if ($type === 'received_reward') $stats['rewards_received'] = (int)$row['total'];
+        if ($type === 'claimed_reward') $stats['rewards_claimed'] = (int)$row['total'];
+        if ($type === 'sent_gift') $stats['gifts_sent'] = (int)$row['total'];
+    }
+
+    $events = [];
+    $eventsStmt = $pdo->prepare('SELECT event_type,event_label,created_at FROM mg_store_session_events WHERE store_session_id=? ORDER BY id DESC LIMIT 20');
+    $eventsStmt->execute([(int)$session['id']]);
+    foreach ($eventsStmt->fetchAll(PDO::FETCH_ASSOC) as $event) {
+        $events[] = [
+            'type' => (string)$event['event_type'],
+            'label' => $event['event_label'] !== null ? (string)$event['event_label'] : null,
+            'created_at' => (string)$event['created_at'],
+        ];
+    }
+
+    return [
+        'session' => mg_store_project_session($session),
+        'customer' => [
+            'name' => (string)($session['customer_name'] ?: 'Customer'),
+            'slug' => (string)($session['customer_slug'] ?? ''),
+            'avatar_url' => mg_store_avatar_url($session['customer_avatar_url'] ?? null),
+            'profile_type' => (string)($session['customer_profile_type'] ?: 'customer'),
+            'account_status' => 'In system',
+        ],
+        'stats' => $stats,
+        'events' => $events,
+        'actions' => ['send_direct_message'=>true,'send_reward'=>false,'invite_campaign'=>false,'remove_from_store'=>false],
+    ];
+}
+
 try {
     $sessionId = mg_store_safe_public_id($_GET['session_id'] ?? '', 'Store session');
     mg_rate_limit('merchant_canvas.customer_crm', 'user:' . (int)$user['id'], 240, 60);
-    mg_ok(mg_store_customer_crm($pdo, (int)$user['id'], $sessionId));
+    mg_ok(mg_merchant_canvas_customer_crm_core($pdo, (int)$user['id'], $sessionId));
 } catch (InvalidArgumentException $error) {
     mg_fail($error->getMessage(), 422);
 } catch (RuntimeException $error) {
