@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/intelligence/_intelligence.php';
+require_once dirname(__DIR__, 2) . '/includes/package-entitlements.php';
 
 $mgDesignStudioEndpoint = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
 if (in_array($mgDesignStudioEndpoint, ['brand-kit.php', 'design-export.php', 'design-studio-assets.php', 'qr-library.php'], true)) {
@@ -33,6 +34,31 @@ function mg_merchant_email_hash(string $email): string
     return hash_hmac('sha256', $email, $secret);
 }
 
+function mg_merchant_package_context(PDO $pdo, array $user): array
+{
+    return mg_user_package_context($pdo, $user);
+}
+
+function mg_merchant_require_access(PDO $pdo, array $user): array
+{
+    return mg_package_require_merchant_access($pdo, $user, 'Upgrade to a paid Microgifter package to use merchant tools.');
+}
+
+function mg_merchant_require_permission(string $permission): array
+{
+    $user = mg_require_api_user();
+    $pdo = mg_db();
+    $hasPermission = mg_api_user_has_permission($user, $permission);
+    $hasPackageAccess = mg_user_has_merchant_access($user, $pdo);
+    if ($hasPermission || $hasPackageAccess) {
+        mg_merchant_require_access($pdo, $user);
+        return $user;
+    }
+    mg_audit('permission_denied', 'security', ['permission' => $permission], (int) $user['id']);
+    mg_security_log('warning', 'permission.denied', 'Permission denied.', ['permission' => $permission], (int) $user['id']);
+    mg_fail('Merchant access is not enabled for this account.', 403);
+}
+
 function mg_merchant_workspace(PDO $pdo, int $userId, bool $forUpdate = false): array
 {
     $sql = 'SELECT * FROM merchant_workspaces WHERE merchant_user_id = ? LIMIT 1' . ($forUpdate ? ' FOR UPDATE' : '');
@@ -45,6 +71,8 @@ function mg_merchant_workspace(PDO $pdo, int $userId, bool $forUpdate = false): 
 
 function mg_merchant_ensure_workspace(PDO $pdo, array $user): array
 {
+    mg_merchant_require_access($pdo, $user);
+
     $stmt = $pdo->prepare('SELECT * FROM merchant_workspaces WHERE merchant_user_id = ? LIMIT 1');
     $stmt->execute([(int) $user['id']]);
     $workspace = $stmt->fetch();

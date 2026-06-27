@@ -74,8 +74,15 @@ function mg_campaign_requires_reward_template(string $campaignType, string $stat
     return $status === 'active' && in_array($campaignType, ['newsletter_signup', 'contest_giveaway', 'qr_reward_drop', 'referral_reward', 'birthday_vip', 'agent_offer'], true);
 }
 
+function mg_campaign_active_usage(PDO $pdo, int $merchantId, string $excludePublicId = ''): int
+{
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM campaigns WHERE merchant_user_id = ? AND status = \'active\' AND public_id <> ?');
+    $stmt->execute([$merchantId, $excludePublicId]);
+    return (int) $stmt->fetchColumn();
+}
+
 $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
-$user = $method === 'GET' ? mg_require_permission('merchant.campaigns.view') : mg_require_permission('merchant.campaigns.manage');
+$user = $method === 'GET' ? mg_merchant_require_permission('merchant.campaigns.view') : mg_merchant_require_permission('merchant.campaigns.manage');
 $merchantId = (int) $user['id'];
 $pdo = mg_db();
 mg_merchant_ensure_workspace($pdo, $user);
@@ -101,7 +108,7 @@ if ($method === 'GET') {
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
         $campaigns = array_map('mg_campaign_row', $stmt->fetchAll());
-        mg_ok(['campaigns' => $campaigns, 'schema_ready' => true]);
+        mg_ok(['campaigns' => $campaigns, 'schema_ready' => true, 'package' => mg_merchant_package_context($pdo, $user)]);
     } catch (Throwable $error) {
         mg_security_log('warning', 'merchant.campaigns.schema_unavailable', 'Campaign schema is unavailable.', [
             'exception_class' => $error::class,
@@ -140,6 +147,15 @@ if (
 }
 if (mg_campaign_requires_reward_template($campaignType, $status) && $rewardTemplateId === null) {
     mg_fail('Active campaigns require an attached reward template.', 422);
+}
+if ($status === 'active') {
+    mg_package_require_limit_available(
+        $pdo,
+        $user,
+        'max_active_campaigns',
+        mg_campaign_active_usage($pdo, $merchantId, $campaignId),
+        'Active campaign limit reached.'
+    );
 }
 
 try {
@@ -181,7 +197,7 @@ try {
         'reward_attached' => $rewardTemplateId !== null,
     ], $merchantId);
 
-    mg_ok(['campaign' => mg_campaign_row($row), 'schema_ready' => true], $message, 201);
+    mg_ok(['campaign' => mg_campaign_row($row), 'schema_ready' => true, 'package' => mg_merchant_package_context($pdo, $user)], $message, 201);
 } catch (Throwable $error) {
     mg_security_log('error', 'merchant.campaigns.save_failed', 'Unable to save campaign.', [
         'exception_class' => $error::class,

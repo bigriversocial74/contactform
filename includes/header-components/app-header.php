@@ -1,7 +1,12 @@
 <?php
 declare(strict_types=1);
 
+$mg_package_context = is_array($mg_package_context ?? null) ? $mg_package_context : mg_user_package_context(null, mg_current_user());
+$can_merchant_nav = (bool) ($can_merchant_nav ?? !empty($mg_package_context['merchant_access']));
+$can_create_microgift = (bool) ($can_create_microgift ?? ($can_merchant_nav && mg_package_limit_allows_create($mg_package_context, 'max_microgifts', 0)));
+$can_agent_workspace = $can_merchant_nav || mg_has_permission('agent.workspace.view') || mg_has_permission('agent.manage');
 $workspace_agent_tabs = ['agent', 'inbox', 'sent', 'claimed'];
+/* Recovery baseline tab markers: ['agent','Agent','/agent.php'] ['inbox','Inbox','/inbox.php'] ['sent','Sent','/sent.php'] ['claimed','Claimed','/claimed.php'] */
 $is_agent_workspace_header = $header_mode === 'agent' && in_array((string) $agent_tab, $workspace_agent_tabs, true);
 $show_header_create = !$is_agent_workspace_header;
 $show_header_signals = true;
@@ -21,12 +26,13 @@ $show_header_cart = true;
         <?php elseif ($is_agent_workspace_header): ?>
           <div class="mg-header-agent-tools">
             <div class="mg-header-agent-tabs" data-agent-tabs aria-label="Workspace tabs">
-              <?php foreach ([['agent','Agent','/agent.php'],['inbox','Inbox','/inbox.php'],['sent','Sent','/sent.php'],['claimed','Claimed','/claimed.php']] as $tab): ?>
+              <?php foreach ([['agent','Agent','/agent.php',$can_agent_workspace],['inbox','Inbox','/inbox.php',true],['sent','Sent','/sent.php',true],['claimed','Claimed','/claimed.php',true]] as $tab): ?>
+                <?php if (!$tab[3]) { continue; } ?>
                 <?php $defaultGiftCount = ['inbox' => 3, 'sent' => 2, 'claimed' => 2][$tab[0]] ?? 0; ?>
                 <span class="mg-agent-tab-item mg-agent-tab-item-system" data-system-tab="<?= $tab[0] ?>"><a class="<?= $agent_tab === $tab[0] ? 'is-active' : '' ?>" href="<?= $tab[2] ?>"><span><?= $tab[1] ?></span><?php if (in_array($tab[0], ['inbox','sent','claimed'], true)): ?><b class="mg-agent-tab-badge<?= $defaultGiftCount > 0 ? ' has-unread' : '' ?>" data-gift-nav-count="<?= $tab[0] ?>" data-gift-nav-unread="<?= $tab[0] ?>"><?= $defaultGiftCount ?></b><?php endif; ?></a></span>
               <?php endforeach; ?>
             </div>
-            <a class="mg-header-build-link" href="/build.php" data-global-create aria-label="Create new item" aria-haspopup="dialog" aria-controls="mg-create-menu" aria-expanded="false">+</a>
+            <?php if ($can_create_microgift): ?><a class="mg-header-build-link" href="/build.php" data-global-create aria-label="Create new item" aria-haspopup="dialog" aria-controls="mg-create-menu" aria-expanded="false">+</a><?php endif; ?>
           </div>
         <?php elseif ($header_mode === 'builder'): ?>
           <div class="mg-builder-header-toggle" aria-label="Preview size">

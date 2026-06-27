@@ -9,21 +9,7 @@ require_once __DIR__ . '/_merchant.php';
    'templates', 'template', 'schema_ready'. */
 function mg_reward_templates_require_access(bool $manage): array
 {
-    $user = mg_require_api_user();
-    $permission = $manage ? 'merchant.reward_templates.manage' : 'merchant.reward_templates.view';
-    $roles = is_array($user['roles'] ?? null) ? $user['roles'] : [];
-    $permissions = is_array($user['permissions'] ?? null) ? $user['permissions'] : [];
-    if (
-        in_array('super_admin', $roles, true)
-        || in_array('admin', $roles, true)
-        || in_array('merchant', $roles, true)
-        || in_array($permission, $permissions, true)
-    ) {
-        return $user;
-    }
-    mg_audit('permission_denied', 'security', ['permission' => $permission], (int) $user['id']);
-    mg_security_log('warning', 'permission.denied', 'Permission denied.', ['permission' => $permission], (int) $user['id']);
-    mg_fail('Merchant reward template access is not enabled for this account.', 403);
+    return mg_merchant_require_permission($manage ? 'merchant.reward_templates.manage' : 'merchant.reward_templates.view');
 }
 
 function mg_reward_template_money_to_cents(mixed $value): int
@@ -83,6 +69,13 @@ function mg_reward_template_row(array $row): array
     ];
 }
 
+function mg_reward_template_usage(PDO $pdo, int $merchantId, string $excludePublicId = ''): int
+{
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM reward_templates WHERE merchant_user_id = ? AND status <> \'archived\' AND public_id <> ?');
+    $stmt->execute([$merchantId, $excludePublicId]);
+    return (int) $stmt->fetchColumn();
+}
+
 $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
 $user = mg_reward_templates_require_access($method !== 'GET');
 $merchantId = (int) $user['id'];
@@ -103,7 +96,7 @@ if ($method === 'GET') {
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
         $templates = array_map('mg_reward_template_row', $stmt->fetchAll());
-        mg_ok(['templates' => $templates, 'schema_ready' => true]);
+        mg_ok(['templates' => $templates, 'schema_ready' => true, 'package' => mg_merchant_package_context($pdo, $user)]);
     } catch (Throwable $error) {
         mg_security_log('warning', 'merchant.reward_templates.schema_unavailable', 'Reward template schema is unavailable.', [
             'exception_class' => $error::class,
@@ -156,6 +149,16 @@ if (
     mg_fail('Invalid reward template.', 422);
 }
 
+if ($status !== 'archived') {
+    mg_package_require_limit_available(
+        $pdo,
+        $user,
+        'max_rewards',
+        mg_reward_template_usage($pdo, $merchantId, $templateId),
+        'Reward template limit reached.'
+    );
+}
+
 try {
     if ($templateId === '') {
         $templateId = mg_merchant_uuid();
@@ -206,7 +209,7 @@ try {
         'agent_discoverable' => (bool) $agentDiscoverable,
     ], $merchantId);
 
-    mg_ok(['template' => mg_reward_template_row($row), 'schema_ready' => true], $message, 201);
+    mg_ok(['template' => mg_reward_template_row($row), 'schema_ready' => true, 'package' => mg_merchant_package_context($pdo, $user)], $message, 201);
 } catch (Throwable $error) {
     mg_security_log('error', 'merchant.reward_templates.save_failed', 'Unable to save reward template.', [
         'exception_class' => $error::class,

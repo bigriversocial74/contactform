@@ -82,6 +82,15 @@ $display_email = $user ? (string) ($user['email'] ?? '') : 'Guest';
 $display_initial = strtoupper(substr($display_name !== '' ? $display_name : 'A', 0, 1));
 $user_permissions = is_array($user['permissions'] ?? null) ? $user['permissions'] : [];
 $user_roles = is_array($user['roles'] ?? null) ? $user['roles'] : [];
+$mg_package_context = $user ? mg_user_package_context(null, $user) : mg_package_entitlement_free_context(null);
+$mg_package_limits = is_array($mg_package_context['limits'] ?? null) ? $mg_package_context['limits'] : [];
+$can_merchant_nav = $user && !empty($mg_package_context['merchant_access']);
+$can_create_microgift = $can_merchant_nav && mg_package_limit_allows_create($mg_package_context, 'max_microgifts', 0);
+$can_create_campaigns = $can_merchant_nav && mg_package_limit_allows_create($mg_package_context, 'max_active_campaigns', 0);
+$can_create_rewards = $can_merchant_nav && mg_package_limit_allows_create($mg_package_context, 'max_rewards', 0);
+$can_manage_storefront = $can_merchant_nav;
+$can_manage_locations = $can_merchant_nav && mg_package_limit_allows_create($mg_package_context, 'max_locations', 0);
+$can_create_post = (bool) $user;
 
 $account_profile_url = null;
 $account_storefront_url = null;
@@ -103,12 +112,14 @@ if ($user) {
                 }
             }
 
-            $storeStmt = $pdo->prepare("SELECT slug,status FROM merchant_storefronts WHERE merchant_user_id=? LIMIT 1");
-            $storeStmt->execute([$accountUserId]);
-            $storefront = $storeStmt->fetch(PDO::FETCH_ASSOC);
-            $storeSlug = trim((string) ($storefront['slug'] ?? ''));
-            if ($storeSlug !== '' && (string) ($storefront['status'] ?? '') === 'published') {
-                $account_storefront_url = '/store.php?s=' . rawurlencode($storeSlug);
+            if ($can_merchant_nav) {
+                $storeStmt = $pdo->prepare("SELECT slug,status FROM merchant_storefronts WHERE merchant_user_id=? LIMIT 1");
+                $storeStmt->execute([$accountUserId]);
+                $storefront = $storeStmt->fetch(PDO::FETCH_ASSOC);
+                $storeSlug = trim((string) ($storefront['slug'] ?? ''));
+                if ($storeSlug !== '' && (string) ($storefront['status'] ?? '') === 'published') {
+                    $account_storefront_url = '/store.php?s=' . rawurlencode($storeSlug);
+                }
             }
         }
     } catch (Throwable) {
@@ -212,6 +223,7 @@ $can_admin_dashboard = $user && (
   class="mg-page mg-section-<?= mg_e($page_section) ?><?= $is_app_page ? ' mg-app-page' : '' ?><?= $page_body_class !== '' ? ' ' . mg_e($page_body_class) : '' ?>"
   data-authenticated="<?= $user ? 'true' : 'false' ?>"
   data-page-id="<?= mg_e((string) $page_manifest['id']) ?>"
+  data-package-id="<?= mg_e((string) ($mg_package_context['package_id'] ?? 'free')) ?>"
 >
 <?php if ($is_app_page): ?>
   <?php require __DIR__ . '/header-components/app-header.php'; ?>
