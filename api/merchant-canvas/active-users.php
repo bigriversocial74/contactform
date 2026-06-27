@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require_once dirname(__DIR__) . '/store/_canvas.php';
+require_once dirname(__DIR__) . '/store/_canvas_schema.php';
 
 mg_require_method('GET');
 $user = mg_require_api_user();
@@ -13,13 +13,30 @@ if (!mg_user_has_merchant_access($user, $pdo)) {
 
 function mg_merchant_canvas_required_tables_missing(PDO $pdo): array
 {
-    $missing = [];
-    foreach (['mg_store_sessions','mg_store_session_events','mg_customer_store_history'] as $table) {
-        if (!mg_store_table_exists($pdo, $table)) {
-            $missing[] = $table;
-        }
+    return mg_store_canvas_missing_tables($pdo, ['mg_store_sessions','mg_store_session_events','mg_customer_store_history']);
+}
+
+function mg_merchant_canvas_session_metadata(array $row): array
+{
+    $raw = (string)($row['metadata_json'] ?? '');
+    if ($raw === '') return [];
+    try {
+        $decoded = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
+        return is_array($decoded) ? $decoded : [];
+    } catch (Throwable) {
+        return [];
     }
-    return $missing;
+}
+
+function mg_merchant_canvas_count(PDO $pdo, string $sql, array $params = []): int
+{
+    try {
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        return (int)$stmt->fetchColumn();
+    } catch (Throwable) {
+        return 0;
+    }
 }
 
 function mg_merchant_canvas_active_customers(PDO $pdo, int $merchantUserId): array
@@ -54,18 +71,30 @@ function mg_merchant_canvas_active_customers(PDO $pdo, int $merchantUserId): arr
 
     $items = [];
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $metadata = mg_merchant_canvas_session_metadata($row);
+        $isTest = !empty($metadata['test_canvas_avatar']) || (($metadata['source'] ?? '') === 'merchant_canvas_test_seed');
+        $profileName = trim((string)($row['customer_name'] ?? ''));
+        $metadataName = trim((string)($metadata['customer_name'] ?? ''));
+        $profileAvatar = mg_store_avatar_url($row['customer_avatar_url'] ?? null);
+        $metadataAvatar = mg_store_avatar_url($metadata['customer_avatar_url'] ?? null);
+        $sourceHeadline = $row['source_post_headline'] !== null ? (string)$row['source_post_headline'] : null;
+        if ($sourceHeadline === null && isset($metadata['source_label'])) {
+            $sourceHeadline = (string)$metadata['source_label'];
+        }
+
         $items[] = [
             'session_id' => (string)$row['public_id'],
             'status' => (string)$row['status'],
+            'is_test' => $isTest,
             'customer' => [
-                'name' => (string)($row['customer_name'] ?: 'Customer'),
+                'name' => $profileName !== '' ? $profileName : ($metadataName !== '' ? $metadataName : 'Customer'),
                 'slug' => (string)($row['customer_slug'] ?? ''),
-                'avatar_url' => mg_store_avatar_url($row['customer_avatar_url'] ?? null),
-                'profile_type' => (string)($row['customer_profile_type'] ?: 'customer'),
+                'avatar_url' => $profileAvatar ?: $metadataAvatar,
+                'profile_type' => (string)($row['customer_profile_type'] ?: ($isTest ? 'test_customer' : 'customer')),
             ],
             'source_post' => [
                 'id' => $row['source_post_public_id'] !== null ? (string)$row['source_post_public_id'] : null,
-                'headline' => $row['source_post_headline'] !== null ? (string)$row['source_post_headline'] : null,
+                'headline' => $sourceHeadline,
             ],
             'seconds_inside' => (int)$row['seconds_inside'],
             'seconds_since_active' => (int)$row['seconds_since_active'],
@@ -86,14 +115,25 @@ try {
         mg_fail('Store Canvas setup is incomplete. Missing: ' . implode(', ', $missing) . '. Run database/stage_20_agent_store_canvas.sql on the active database.', 503);
     }
 
-    $customers = mg_merchant_canvas_active_customers($pdo, (int)$user['id']);
+    $merchantUserId = (int)$user['id'];
+    $customers = mg_merchant_canvas_active_customers($pdo, $merchantUserId);
+    $todayEntries = mg_merchant_canvas_count($pdo, 'SELECT COUNT(*) FROM mg_store_sessions WHERE merchant_user_id=? AND entered_at >= CURDATE()', [$merchantUserId]);
+    $todayEvents = mg_merchant_canvas_count($pdo, 'SELECT COUNT(*) FROM mg_store_session_events WHERE merchant_user_id=? AND created_at >= CURDATE()', [$merchantUserId]);
+    $historyRows = mg_merchant_canvas_count($pdo, 'SELECT COUNT(*) FROM mg_customer_store_history WHERE merchant_user_id=?', [$merchantUserId]);
+    $testAvatars = mg_merchant_canvas_count($pdo, "SELECT COUNT(*) FROM mg_store_sessions WHERE merchant_user_id=? AND active_key IS NOT NULL AND metadata_json LIKE '%merchant_canvas_test_seed%'", [$merchantUserId]);
+
     mg_ok([
         'customers' => $customers,
         'summary' => [
             'active_customers' => count($customers),
-            'agent_status' => 'Watching store canvas',
+            'today_entries' => $todayEntries,
+            'today_events' => $todayEvents,
+            'history_rows' => $historyRows,
+            'test_avatars' => $testAvatars,
+            'agent_status' => count($customers) ? 'Canvas live' : 'Database connected, waiting for customers',
             'message_enabled' => true,
-            'audit_mirror_enabled' => mg_store_table_exists($pdo, 'mg_agent_messages'),
+            'audit_mirror_enabled' => mg_store_canvas_table_exists($pdo, 'mg_agent_messages'),
+            'schema_ready' => true,
         ],
     ]);
 } catch (RuntimeException $error) {
