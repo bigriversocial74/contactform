@@ -27,6 +27,46 @@ declare(strict_types=1);
     <article><strong data-auto-drafts>—</strong><span>Message drafts</span></article>
   </section>
 
+  <article class="mg-app-panel mg-automation-panel mg-automation-ai-panel">
+    <div class="mg-app-panel-head">
+      <div>
+        <span class="mg-eyebrow">Claude Sonnet merchant agent</span>
+        <h2>Merchant Account Review</h2>
+        <p>Ask Claude to review rewards, campaigns, CRM, claims, reports, analytics, locations, and API opportunities. It creates reviewable recommendations only; execution still requires merchant approval.</p>
+      </div>
+      <div class="mg-crm-tab-actions">
+        <select data-ai-plan-scope aria-label="AI planning scope">
+          <option value="all">Full merchant review</option>
+          <option value="campaigns">Campaigns</option>
+          <option value="rewards">Rewards</option>
+          <option value="crm">CRM follow-ups</option>
+          <option value="claims">Claims</option>
+          <option value="analytics">Analytics / reports</option>
+          <option value="developer_api">Developer API</option>
+        </select>
+        <button class="mg-btn mg-btn-primary" type="button" data-ai-plan-run>Run Claude review</button>
+      </div>
+    </div>
+    <div class="mg-form-grid">
+      <label>
+        <span>Merchant goal</span>
+        <input type="text" data-ai-plan-goal placeholder="Example: increase weekday lunch redemptions without issuing value automatically">
+      </label>
+      <label>
+        <span>Review window</span>
+        <select data-ai-plan-days>
+          <option value="30">Last 30 days</option>
+          <option value="90" selected>Last 90 days</option>
+          <option value="180">Last 180 days</option>
+          <option value="365">Last 365 days</option>
+        </select>
+      </label>
+    </div>
+    <div class="mg-automation-log" data-ai-plan-output>
+      <div class="mg-empty-state"><strong>No Claude review yet</strong><p>Run a review to create supervised merchant recommendations.</p></div>
+    </div>
+  </article>
+
   <section class="mg-automation-grid">
     <article class="mg-app-panel mg-automation-panel">
       <div class="mg-app-panel-head">
