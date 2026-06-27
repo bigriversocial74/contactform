@@ -1,20 +1,24 @@
 <?php
 declare(strict_types=1);
 
+$user = mg_current_user();
+$mg_package_context = is_array($mg_package_context ?? null) ? $mg_package_context : mg_user_package_context(null, $user);
+$canMerchantNav = (bool) ($can_merchant_nav ?? !empty($mg_package_context['merchant_access']));
+$canCreateGift = (bool) ($can_create_microgift ?? ($canMerchantNav && mg_package_limit_allows_create($mg_package_context, 'max_microgifts', 0)));
 $agentSidebarActive = (string) ($agent_tab ?? basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''), '.php'));
 $appSidebarVariant = 'utility';
 $appSidebarLabel = 'Workspace';
 $appSidebarActive = $agentSidebarActive;
 $appSidebarCompact = true;
 $appSidebarBeforeNav = '';
-$appSidebarAfterNav = <<<'HTML'
+$appSidebarAfterNav = $canMerchantNav ? <<<'HTML'
 <div class="mg-sidebar-mobile-scanner">
   <button class="mg-sidebar-scanner-button" type="button" data-scanner-trigger aria-label="Open merchant scanner">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M7 8h2v2H7V8Zm4 0h2v2h-2V8Zm4 0h2v2h-2V8ZM7 12h2v2H7v-2Zm4 0h6v2h-6v-2ZM7 16h6v2H7v-2Zm8 0h2v2h-2v-2Z" fill="currentColor"/></svg>
     <span><strong>Scanner</strong><small>Redeem voucher QR codes</small></span>
   </button>
 </div>
-HTML;
+HTML : '';
 $appSidebarFooter = '';
 $appSidebarNav = [
     'inbox' => [
@@ -51,13 +55,20 @@ $appSidebarNav = [
         'label' => 'Merchant Workspace',
         'detail' => 'Products, campaigns, claims',
         'href' => '/merchant.php',
-        'visible' => true,
+        'visible' => $canMerchantNav,
     ],
     'build' => [
         'label' => 'Create Gift',
         'detail' => 'Open the builder',
         'href' => '/build.php',
-        'visible' => true,
+        'visible' => $canCreateGift,
+    ],
+    'upgrade' => [
+        'section' => $canMerchantNav ? '' : 'Merchant',
+        'label' => 'Upgrade',
+        'detail' => 'Unlock merchant tools',
+        'href' => '/pricing.php',
+        'visible' => !$canMerchantNav,
     ],
 ];
 
@@ -81,6 +92,7 @@ require __DIR__ . '/app-sidebar.php';
   html body.mg-app-page.mg-section-agent .mg-sidebar-scanner-button small{display:block!important;margin-top:3px!important;font-size:11px!important;font-weight:800!important;color:#456184!important;line-height:1.25!important}
 }
 </style>
+<?php if ($canMerchantNav): ?>
 <section class="mg-agent-tool-modal mg-scanner-modal" data-scanner-modal data-scanner-api="/api/merchant/scanner-claim-trust.php" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="mg-scanner-title">
   <div class="mg-agent-tool-backdrop" data-scanner-close></div>
   <div class="mg-agent-tool-dialog mg-scanner-dialog">
@@ -141,3 +153,4 @@ require __DIR__ . '/app-sidebar.php';
   },true);
 })(document);
 </script>
+<?php endif; ?>
