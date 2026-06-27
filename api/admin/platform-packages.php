@@ -72,7 +72,7 @@ function mg_admin_platform_package_public(array $row): array
 function mg_admin_platform_package_rows(PDO $pdo): array
 {
     mg_platform_package_sync_defaults($pdo);
-    $stmt = $pdo->query("SELECT * FROM platform_subscription_packages ORDER BY FIELD(package_id,'starter','growth','pro','enterprise'), sort_order, id");
+    $stmt = $pdo->query("SELECT * FROM platform_subscription_packages ORDER BY FIELD(package_id,'starter','growth','pro','enterprise'), id");
     $rows = [];
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $rows[] = mg_admin_platform_package_public($row);
