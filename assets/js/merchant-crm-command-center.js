@@ -14,5 +14,7 @@ function activate(id,updateHash){
   document.dispatchEvent(new CustomEvent('mg:crm-tab:changed',{detail:{tab:id}}));
 }
 tabs.forEach(function(tab){tab.addEventListener('click',function(ev){ev.preventDefault();activate(tab.getAttribute('data-crm-tab-target'),true);});});
-var initial=(location.hash||'').replace(/^#crm-/,'').replace(/^#/,'');activate(initial||'overview',false);
+var query=new URLSearchParams(location.search||'');
+var initial=(query.get('tab')||query.get('crm_tab')||(location.hash||'').replace(/^#crm-/,'').replace(/^#/,'')).trim();
+activate(initial||'overview',false);
 });
