@@ -23,7 +23,7 @@ window.Microgifter = window.Microgifter || {};
       var data = response.data || response;
       return data.request || request;
     } catch (error) {
-      if (MG.toast) MG.toast(error.message || 'Subscription checkout is not configured yet. Request saved for review.', 'error');
+      if (MG.toast) MG.toast(error.message || 'Subscription checkout is not configured yet. Request saved.', 'error');
       return request;
     }
   }
@@ -31,9 +31,9 @@ window.Microgifter = window.Microgifter || {};
   async function submitPackage(link, plan) {
     if (!plan || link.classList.contains('is-current')) return;
     var isEnterprise = plan === 'enterprise';
-    var message = isEnterprise ? 'Submit this Enterprise package request for review?' : 'Submit package request for ' + nicePlan(plan) + '?';
+    var message = isEnterprise ? 'Submit this Enterprise package request for review?' : 'Continue to checkout for ' + nicePlan(plan) + '?';
     if (!window.confirm(message)) return;
-    if (MG.setBusy) MG.setBusy(link, true, isEnterprise ? 'Submitting…' : 'Starting…');
+    if (MG.setBusy) MG.setBusy(link, true, isEnterprise ? 'Submitting…' : 'Opening checkout…');
     try {
       var response = await MG.post('/api/subscriptions/request-upgrade.php', { plan: plan, source: 'account_subscription', response: 'json' });
       var data = response.data || response;
@@ -42,10 +42,10 @@ window.Microgifter = window.Microgifter || {};
         window.location.href = request.checkout_url;
         return;
       }
-      if (MG.toast) MG.toast(response.message || 'Package request submitted.', 'success');
+      if (MG.toast) MG.toast(response.message || (isEnterprise ? 'Package request submitted for review.' : 'Package request saved. Checkout is not configured yet.'), 'success');
       window.location.href = '/account-subscriptions.php?upgrade=requested&request=' + encodeURIComponent((request && request.request_id) || '');
     } catch (error) {
-      if (MG.toast) MG.toast(error.message || 'Unable to submit package request.', 'error');
+      if (MG.toast) MG.toast(error.message || 'Unable to start package checkout.', 'error');
     } finally {
       if (MG.setBusy) MG.setBusy(link, false);
     }
