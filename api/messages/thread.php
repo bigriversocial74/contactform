@@ -9,6 +9,7 @@ function mg_messages_source_type(?string $sourceType, ?string $conversationKey =
     $conversationKey = trim((string)$conversationKey);
     if ($sourceType !== '' && $sourceType !== 'messaging') return $sourceType;
     if ($conversationKey !== '' && str_starts_with($conversationKey, 'store_canvas:')) return 'store_canvas_direct';
+    if ($conversationKey !== '' && str_starts_with($conversationKey, 'crm:')) return 'merchant_crm_message';
     if (trim((string)$pppmId) !== '') return 'pppm_message';
     return $sourceType !== '' ? $sourceType : 'messaging';
 }
@@ -18,6 +19,7 @@ function mg_messages_source_label(string $sourceType): string
     return match ($sourceType) {
         'store_canvas_direct' => 'Store Canvas',
         'store_canvas_reply' => 'Store Canvas Reply',
+        'merchant_crm_message', 'merchant_crm' => 'Merchant CRM',
         'action_center_follow_up' => 'Action Center Follow Up',
         'action_center' => 'Action Center',
         'pppm_message' => 'PPPM / IN-OUT Box',
@@ -29,8 +31,38 @@ function mg_messages_source_label(string $sourceType): string
 function mg_messages_source_system(string $sourceType): string
 {
     if (str_starts_with($sourceType, 'store_canvas')) return 'store_canvas';
+    if ($sourceType === 'merchant_crm_message' || $sourceType === 'merchant_crm') return 'merchant_crm';
     if (str_starts_with($sourceType, 'action_center') || $sourceType === 'pppm_message') return 'in_out_box';
     return 'messages';
+}
+
+function mg_messages_source_context(PDO $pdo, string $sourceType, string $sourceReference): array
+{
+    if (!in_array($sourceType, ['merchant_crm_message','merchant_crm'], true) || $sourceReference === '') return [];
+    $stmt = $pdo->prepare(
+        "SELECT cc.public_id contact_public_id,cc.email,cc.name,cc.source contact_source,
+                c.public_id campaign_public_id,c.title campaign_title,c.campaign_type,
+                COALESCE(NULLIF(mp.display_name,''),NULLIF(mu.display_name,''),mu.email) merchant_name
+         FROM campaign_contacts cc
+         INNER JOIN campaigns c ON c.id=cc.campaign_id
+         INNER JOIN users mu ON mu.id=cc.merchant_user_id
+         LEFT JOIN public_profiles mp ON mp.user_id=cc.merchant_user_id
+         WHERE cc.public_id=?
+         LIMIT 1"
+    );
+    $stmt->execute([$sourceReference]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row) return [];
+    return [
+        'contact_id' => (string)$row['contact_public_id'],
+        'contact_email' => (string)$row['email'],
+        'contact_name' => (string)($row['name'] ?? ''),
+        'contact_source' => (string)($row['contact_source'] ?? ''),
+        'campaign_id' => (string)$row['campaign_public_id'],
+        'campaign_title' => (string)$row['campaign_title'],
+        'campaign_type' => (string)$row['campaign_type'],
+        'merchant_name' => (string)($row['merchant_name'] ?? 'Merchant'),
+    ];
 }
 
 $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
@@ -87,7 +119,10 @@ if ($method === 'GET') {
             ],
         ];
     }, $messagesStmt->fetchAll(PDO::FETCH_ASSOC));
-    $latestSourceType = $messages !== [] ? (string)($messages[array_key_last($messages)]['source']['type'] ?? 'messaging') : mg_messages_source_type(null, (string)($thread['conversation_key'] ?? ''), (string)($thread['pppm_public_id'] ?? ''));
+    $latest = $messages !== [] ? $messages[array_key_last($messages)] : null;
+    $latestSourceType = $latest ? (string)($latest['source']['type'] ?? 'messaging') : mg_messages_source_type(null, (string)($thread['conversation_key'] ?? ''), (string)($thread['pppm_public_id'] ?? ''));
+    $latestReference = $latest ? (string)($latest['source']['reference'] ?? '') : '';
+    $sourceContext = mg_messages_source_context($pdo, $latestSourceType, $latestReference);
     $pdo->prepare('UPDATE message_thread_participants SET last_read_at = NOW() WHERE thread_id = ? AND user_id = ?')->execute([(int)$thread['id'], (int)$user['id']]);
     mg_ok(['thread' => [
         'id' => (string)$thread['public_id'],
@@ -95,7 +130,7 @@ if ($method === 'GET') {
         'gift_id' => $thread['gift_public_id'] !== null ? (string)$thread['gift_public_id'] : null,
         'pppm_id' => $thread['pppm_public_id'] !== null ? (string)$thread['pppm_public_id'] : null,
         'conversation_key' => (string)($thread['conversation_key'] ?? ''),
-        'source' => ['type' => $latestSourceType, 'label' => mg_messages_source_label($latestSourceType), 'system' => mg_messages_source_system($latestSourceType)],
+        'source' => ['type' => $latestSourceType, 'label' => mg_messages_source_label($latestSourceType), 'system' => mg_messages_source_system($latestSourceType), 'reference' => $latestReference, 'context' => $sourceContext],
         'messages' => $messages,
     ]]);
 }
