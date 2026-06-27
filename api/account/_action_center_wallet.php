@@ -169,15 +169,27 @@ function mg_ac_wallet_public_item(array $row): array
     $title=trim((string)($row['title_snapshot']??'')) ?: trim((string)($row['reward_template_title']??'')) ?: 'Microgifter reward';
     $message=trim((string)($row['reward_template_description']??'')) ?: trim((string)($row['campaign_title']??'')) ?: 'Campaign reward ready to open.';
     $campaignType=trim((string)($row['campaign_type']??''));
+    $campaignTitle=trim((string)($row['campaign_title']??''));
+    $sourceSystem='campaigns';
+    $sourceType='campaign_reward';
+    $sourceLabel=mg_action_center_source_label($sourceSystem,'Campaign Rewards');
+    $sourceDetail=$campaignTitle!==''?$campaignTitle:($campaignType!==''?mg_ac_wallet_type_label($campaignType):'Campaign reward');
+    $sourceReference=(string)($row['campaign_public_id']??$row['public_id']??'');
     $metadata=[
         'wallet_item_id'=>(string)$row['public_id'],
-        'source_type'=>(string)($row['source_type']??'wallet_item'),
+        'source_system'=>$sourceSystem,
+        'source_type'=>$sourceType,
+        'source_label'=>$sourceLabel,
+        'source_detail'=>$sourceDetail,
+        'source_reference'=>$sourceReference,
+        'campaign_id'=>(string)($row['campaign_public_id']??''),
+        'campaign_title'=>$campaignTitle,
         'campaign_type'=>$campaignType,
         'reward_template_title'=>(string)($row['reward_template_title']??''),
         'redemption_instructions'=>$row['redemption_instructions']??null,
         'posts'=>[
-            ['type'=>'message','title'=>$title,'body'=>$message,'meta'=>$merchant],
-            ['type'=>'offer','title'=>$title,'body'=>trim((string)($row['redemption_instructions']??'')) ?: 'Present this reward to the merchant when you are ready to redeem.','meta'=>'Wallet reward'],
+            ['type'=>'message','title'=>$title,'body'=>$message,'meta'=>$sourceLabel],
+            ['type'=>'offer','title'=>$title,'body'=>trim((string)($row['redemption_instructions']??'')) ?: 'Present this reward to the merchant when you are ready to redeem.','meta'=>$sourceDetail],
         ],
     ];
     return [
@@ -216,6 +228,11 @@ function mg_ac_wallet_public_item(array $row): array
         'created_at'=>$row['created_at']??null,
         'wallet_item_id'=>(string)$row['public_id'],
         'is_wallet_reward'=>true,
+        'source_system'=>$sourceSystem,
+        'source_type'=>$sourceType,
+        'source_label'=>$sourceLabel,
+        'source_detail'=>$sourceDetail,
+        'source_reference'=>$sourceReference,
         'can_follow_up'=>false,
         'follow_up_count'=>0,
         'sandbox_mode'=>'',
