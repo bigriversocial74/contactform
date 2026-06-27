@@ -1,10 +1,60 @@
 document.addEventListener('DOMContentLoaded',function(){
 'use strict';
-if(!window.Microgifter)return;
-var detailEndpoint='/api/public/campaigns/detail.php';
+
 function esc(v){return String(v==null?'':v).replace(/[&<>'"]/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'})[c];});}
 function idKey(prefix){return prefix+':campaign:'+Date.now()+':'+Math.random().toString(16).slice(2);}
 function setButtonBusy(button,busy){button.disabled=!!busy;button.setAttribute('aria-busy',busy?'true':'false');}
+function invalidControl(form){
+  return Array.prototype.slice.call(form.elements||[]).find(function(field){
+    return field && typeof field.checkValidity==='function' && !field.checkValidity();
+  })||null;
+}
+function setCampaignTab(form,name,validate){
+  if(!form)return false;
+  if(validate){
+    var invalid=invalidControl(form);
+    if(invalid){
+      setCampaignTab(form,'info',false);
+      window.requestAnimationFrame(function(){
+        if(typeof invalid.reportValidity==='function')invalid.reportValidity();
+        else if(typeof form.reportValidity==='function')form.reportValidity();
+      });
+      return false;
+    }
+  }
+  var target=name||'info';
+  form.querySelectorAll('[data-campaign-tab]').forEach(function(tab){
+    var active=tab.getAttribute('data-campaign-tab')===target;
+    tab.classList.toggle('is-active',active);
+    tab.setAttribute('aria-selected',active?'true':'false');
+  });
+  form.querySelectorAll('[data-campaign-panel]').forEach(function(panel){
+    var active=panel.getAttribute('data-campaign-panel')===target;
+    panel.classList.toggle('is-active',active);
+    panel.hidden=!active;
+  });
+  return true;
+}
+
+document.querySelectorAll('[data-public-campaign-tabs]').forEach(function(form){
+  form.querySelectorAll('[data-campaign-tab]').forEach(function(tab){
+    tab.addEventListener('click',function(){
+      var target=tab.getAttribute('data-campaign-tab')||'info';
+      setCampaignTab(form,target,target==='reward');
+    });
+  });
+  form.querySelectorAll('[data-campaign-next-tab]').forEach(function(button){
+    button.addEventListener('click',function(){
+      var target=button.getAttribute('data-campaign-next-tab')||'info';
+      setCampaignTab(form,target,target==='reward');
+    });
+  });
+});
+
+if(!window.Microgifter)return;
+
+var detailEndpoint='/api/public/campaigns/detail.php';
+
 function followerCountDelta(delta){
   document.querySelectorAll('[data-follower-count]').forEach(function(node){
     var raw=String(node.textContent||'0').replace(/[^0-9]/g,'');
@@ -12,6 +62,7 @@ function followerCountDelta(delta){
     node.textContent=next.toLocaleString();
   });
 }
+
 function loadLegacyCampaignDetail(){
   var root=document.querySelector('[data-public-campaign]');
   if(!root)return;
@@ -22,6 +73,7 @@ function loadLegacyCampaignDetail(){
   Microgifter.get(detailEndpoint+'?campaign='+encodeURIComponent(ref)+'&token='+encodeURIComponent(token)).catch(function(){});
 }
 loadLegacyCampaignDetail();
+
 document.querySelectorAll('[data-follow-profile]').forEach(function(button){
   button.addEventListener('click',async function(){
     var profile=button.getAttribute('data-follow-profile')||'';
@@ -49,6 +101,7 @@ document.querySelectorAll('[data-follow-profile]').forEach(function(button){
     }
   });
 });
+
 document.querySelectorAll('[data-campaign-form]').forEach(function(form){
   var status=form.querySelector('[data-campaign-status]')||document.querySelector('[data-campaign-status]');
   var result=form.parentElement&&form.parentElement.querySelector('[data-campaign-result]')||document.querySelector('[data-campaign-result]');
@@ -71,6 +124,15 @@ document.querySelectorAll('[data-campaign-form]').forEach(function(form){
   }
   form.addEventListener('submit',async function(event){
     event.preventDefault();
+    var invalid=invalidControl(form);
+    if(invalid){
+      setCampaignTab(form,'info',false);
+      window.requestAnimationFrame(function(){
+        if(typeof invalid.reportValidity==='function')invalid.reportValidity();
+        else if(typeof form.reportValidity==='function')form.reportValidity();
+      });
+      return;
+    }
     var endpoint=form.dataset.submitEndpoint||form.dataset.endpoint||'/api/public/campaigns/engage.php';
     var data=Object.fromEntries(new FormData(form).entries());
     if(data.entry_note){data.entry={note:data.entry_note};delete data.entry_note;}
