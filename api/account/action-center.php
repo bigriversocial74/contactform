@@ -74,7 +74,7 @@ function mg_action_center_wallet_public_item(array $row): array
         'action_item_id'=>'wallet-'.(string)$row['public_id'],
         'folder'=>$folder,
         'state'=>$state,
-        'can_tip'=>0,
+        'can_tip'=>$state==='redeemed'?1:0,
         'read_at'=>null,
         'first_received_at'=>$row['issued_at']??$row['created_at']??null,
         'sent_at'=>$row['issued_at']??$row['created_at']??null,
@@ -122,7 +122,7 @@ function mg_action_center_wallet_items(PDO $pdo,int $userId,string $email,string
     $search=mg_action_center_search($search);
     $email=strtolower(trim($email));
     $params=[$userId];
-    $where=['wi.pppm_item_id IS NULL','wi.status<>\'cancelled\'',mg_action_center_wallet_identity_where($email,$params)];
+    $where=['wi.pppm_item_id IS NULL',"wi.status<>'cancelled'",mg_action_center_wallet_identity_where($email,$params)];
     if($folder==='inbox'){
         $where[]="(wi.status IN ('issued','viewed') AND (wi.expires_at IS NULL OR wi.expires_at>=NOW()))";
     }else{
@@ -149,7 +149,7 @@ function mg_action_center_wallet_counts(PDO $pdo,int $userId,string $email): arr
 {
     $email=strtolower(trim($email));
     $params=[$userId];
-    $where=['wi.pppm_item_id IS NULL','wi.status<>\'cancelled\'',mg_action_center_wallet_identity_where($email,$params)];
+    $where=['wi.pppm_item_id IS NULL',"wi.status<>'cancelled'",mg_action_center_wallet_identity_where($email,$params)];
     $sql="SELECT wi.status,wi.expires_at
           FROM wallet_items wi
           LEFT JOIN campaign_contacts cc ON cc.id=wi.contact_id
