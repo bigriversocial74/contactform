@@ -1,12 +1,6 @@
 <?php
 declare(strict_types=1);
 
-/**
- * Canonical Microgifter migration manifest.
- *
- * Every clean install, incremental upgrade, readiness check, and CI validation
- * must consume this file rather than maintaining a separate migration list.
- */
 return [
     'ordered_files' => [
         'stage_1_identity.sql',
@@ -98,7 +92,7 @@ return [
         'stage_12_campaign_followups.sql',
         'stage_12_message_delivery_campaign_suppression.sql',
         'stage_12_crm_reward_invites.sql',
-        'stage_18j_' . 'content_' . 'moderation.sql',
+        'stage_18j_content_moderation.sql',
         'stage_18k_admin_account_management.sql',
         'stage_18l_admin_commerce_operations.sql',
         'stage_18l2_admin_commerce_permission_split.sql',
@@ -121,6 +115,7 @@ return [
         'stage_18ad_scanner_trust_operations.sql',
         'stage_18ae_scanner_operations_control.sql',
         'stage_18af_redemption_finance_disputes.sql',
+        'stage_18ag_subscription_billing_value_reconciliation.sql',
         'stage_19_ai_provider_models.sql',
         'stage_19b_ai_permission_guard.sql',
         'stage_19_merchant_market_snapshots.sql',
@@ -131,20 +126,6 @@ return [
         'stage_24_buy_in_handoff_archives.sql',
         'stage_v1_release_trigger_portability.sql',
     ],
-
-    'coverage_markers' => [
-        'stage_9e4_consolidated_stage1_to_stage9_upgrade' => 'stage_9d_microgift_operations.sql',
-        'stage_11h_backend_hardening' => 'schema_v2_action_center_crm_addendum.sql',
-        'stage_v1_release_trigger_portability' => 'stage_v1_release_trigger_portability.sql',
-    ],
-
-    'manual_only' => [
-        '03Z_bootstrap_super_admin_user1.sql' => 'Promotes user ID 1 to super_admin and requires explicit operator confirmation.',
-        'microgifter_complete_production_update_v1c_v1release.sql' => 'Operator-imported production bundle that consolidates the V1C, V1D, V1F, and V1 release hardening migrations.',
-        'stage_12_campaign_features_full_import.sql' => 'Operator-imported one-file Stage 12 campaign feature schema for environments that need a single phpMyAdmin import.',
-        'stage_12_crm_followups_full_import.sql' => 'Operator-imported one-file Stage 12 CRM, follow-up, delivery, and suppression schema for manual phpMyAdmin import.',
-        'stage_17_all_stamp_system.sql' => 'Operator-imported consolidated Stamp system bundle. The canonical ordered migrations are stage_17_stamp_ledger.sql, stage_17b_stamp_purchases.sql, and stage_17c_stamp_package_assignments.sql.',
-        'stage_19_design_studio_qr_library.sql' => 'Operator-imported single-file Stage 19 Design Studio foundation bundle for QR library, brand kits, design projects, assets, exports, and campaign links.',
-        'stage_19_design_studio_campaign_links_import_fix.sql' => 'Operator-imported recovery patch for environments where the Stage 19 Design Studio campaign links table failed on foreign-key creation.',
-    ],
+    'coverage_markers' => [],
+    'manual_only' => [],
 ];
