@@ -64,25 +64,7 @@ require __DIR__ . '/includes/header.php';
         </div>
       </header>
 
-      <section class="mg-canvas-kpis" aria-label="Store canvas summary">
-        <article>
-          <span>Active customers</span>
-          <strong data-canvas-active-count>0</strong>
-          <small>Profile-photo avatars inside your store</small>
-        </article>
-        <article>
-          <span>Merchant agent</span>
-          <strong data-canvas-agent-status>Watching</strong>
-          <small>Presence, CRM, direct message, campaigns</small>
-        </article>
-        <article>
-          <span>Rewards</span>
-          <strong>Enabled</strong>
-          <small>Send campaign rewards from avatar CRM</small>
-        </article>
-      </section>
-
-      <div class="mg-canvas-grid">
+      <div class="mg-canvas-grid mg-canvas-grid-full">
         <section class="mg-canvas-stage" aria-label="Live store canvas">
           <div class="mg-canvas-stage-head">
             <div>
@@ -105,26 +87,6 @@ require __DIR__ . '/includes/header.php';
             </article>
           </div>
         </section>
-
-        <aside class="mg-canvas-side-panel">
-          <section class="mg-canvas-panel-card">
-            <span class="mg-canvas-eyebrow">Store agent</span>
-            <h3>Next actions</h3>
-            <ul class="mg-canvas-action-list">
-              <li>Watch active customer sessions from feed posts.</li>
-              <li>Click an avatar to load CRM context.</li>
-              <li>Send a direct message into the customer Messages center.</li>
-              <li>Send a campaign reward into the customer IN/OUT Box.</li>
-            </ul>
-          </section>
-
-          <section class="mg-canvas-panel-card">
-            <span class="mg-canvas-eyebrow">Recent activity</span>
-            <div class="mg-canvas-activity" data-canvas-activity>
-              <p>Canvas activity will appear as customers enter, idle, message, claim, reward, or leave.</p>
-            </div>
-          </section>
-        </aside>
       </div>
     </section>
   </div>
