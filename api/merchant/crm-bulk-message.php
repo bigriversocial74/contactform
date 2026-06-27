@@ -28,11 +28,16 @@ try {
             $results[] = ['contact_id' => $contactRef, 'status' => 'failed', 'reason' => 'not_found'];
             continue;
         }
+        $contact = $contacts[$contactRef];
         try {
             $contactKey = substr($batchKey . ':' . hash('sha256', $contactRef . ':' . $index), 0, 190);
-            $results[] = mg_crm_bulk_queue_message($pdo, $contacts[$contactRef], $merchantId, $body, $contactKey);
+            $result = mg_crm_bulk_queue_message($pdo, $contact, $merchantId, $body, $contactKey);
+            mg_crm_action_history_record_result($pdo, $contact, $merchantId, $batchKey, 'message', $result, ['message_length' => mb_strlen($body)]);
+            $results[] = $result;
         } catch (Throwable $contactError) {
-            $results[] = ['contact_id' => $contactRef, 'status' => 'failed', 'reason' => 'message_failed'];
+            $result = ['contact_id' => $contactRef, 'status' => 'failed', 'reason' => 'message_failed'];
+            mg_crm_action_history_record_result($pdo, $contact, $merchantId, $batchKey, 'message', $result, ['message_length' => mb_strlen($body)]);
+            $results[] = $result;
         }
     }
     $pdo->commit();
