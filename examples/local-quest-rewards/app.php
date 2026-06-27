@@ -27,6 +27,7 @@ function lqr_config(): array
 
 require_once __DIR__ . '/storage-sql.php';
 require_once __DIR__ . '/program-builder.php';
+require_once __DIR__ . '/app-console.php';
 
 function lqr_quests(): array
 {
@@ -45,6 +46,7 @@ function lqr_default_state(): array
         'admin_password_resets' => [],
         'security_replay' => [],
         'merchant_programs' => [],
+        'partner_app' => [],
         'last_response' => null,
         'updated_at' => gmdate('c'),
     ];
@@ -228,6 +230,7 @@ function lqr_action_list_programs(array &$state, array $config): array
 {
     $response = lqr_call_microgifter($config, 'GET', '/api/public/v1/programs/index.php');
     $state['last_response'] = $response;
+    lqr_app_console_note_api_call($state);
     lqr_add_event($state, 'api.programs.list', 'Listed Microgifter programs.', ['status' => $response['status']]);
     return $response;
 }
@@ -240,10 +243,13 @@ function lqr_link_return_url(array $config): string
 function lqr_action_start_account_link(array &$state, array $config, array &$user): array
 {
     lqr_require_real_user($user);
+    $appGate = lqr_app_status_gate($state, $config);
+    if (empty($appGate['ok'])) throw new RuntimeException((string)$appGate['message']);
     $stateToken = 'lqr_state_' . bin2hex(random_bytes(16));
     $state['link_states'][$stateToken] = ['user_id' => $user['id'], 'external_user_id' => $user['external_user_id'], 'created_at' => gmdate('c')];
     $response = lqr_call_microgifter($config, 'POST', '/api/public/v1/account-links/start.php', ['external_user_id' => $user['external_user_id'], 'return_url' => lqr_link_return_url($config), 'state' => $stateToken, 'metadata' => ['app' => 'local-quest-rewards', 'local_user_id' => $user['id']]]);
     $state['last_response'] = $response;
+    lqr_app_console_note_api_call($state);
     lqr_add_event($state, 'microgifter.account_link_started', 'Microgifter account link started.', ['status' => $response['status'], 'external_user_id' => $user['external_user_id']]);
     return $response;
 }
@@ -251,6 +257,8 @@ function lqr_action_start_account_link(array &$state, array $config, array &$use
 function lqr_action_sandbox_link(array &$state, array $config, array &$user): array
 {
     lqr_require_real_user($user);
+    $appGate = lqr_app_status_gate($state, $config);
+    if (empty($appGate['ok'])) throw new RuntimeException((string)$appGate['message']);
     if (empty($config['allow_sandbox_shortcut'])) throw new RuntimeException('Sandbox shortcut is disabled for this app. Use real Microgifter account linking.');
     $response = lqr_call_microgifter($config, 'POST', '/api/public/v1/sandbox/linked-account.php', ['external_user_id' => $user['external_user_id']]);
     if (is_array($response['body']) && isset($response['body']['linked_account_id'])) {
@@ -259,6 +267,7 @@ function lqr_action_sandbox_link(array &$state, array $config, array &$user): ar
         lqr_put_user($state, $user);
     }
     $state['last_response'] = $response;
+    lqr_app_console_note_api_call($state);
     lqr_add_event($state, 'microgifter.sandbox_linked_account', 'Developer sandbox linked account prepared.', ['status' => $response['status'], 'linked_account_id' => $user['linked_account_id']]);
     return $response;
 }
@@ -302,8 +311,11 @@ function lqr_can_issue_reward(array $user, string $questId, array $quest, array 
     if (!empty($permission['requires_linked_account']) && trim((string)$user['linked_account_id']) === '') return [false, 'Connect a real Microgifter account first.'];
     $max = (int)($permission['max_rewards_per_user'] ?? 1);
     if ($max > 0 && !empty($user['rewards'][$questId])) return [false, 'Reward already issued for this quest/user.'];
-    $gate = lqr_builder_issue_gate($state ?? lqr_load_state(), $config, $questId, $quest);
+    $activeState = $state ?? lqr_load_state();
+    $gate = lqr_builder_issue_gate($activeState, $config, $questId, $quest);
     if (empty($gate['ok'])) return [false, (string)$gate['message']];
+    $appGate = lqr_app_status_gate($activeState, $config, (string)$gate['program_id'], (string)$gate['template_id']);
+    if (empty($appGate['ok'])) return [false, (string)$appGate['message']];
     return [true, 'Reward can be issued.'];
 }
 
@@ -329,14 +341,18 @@ function lqr_action_issue_reward(array &$state, array $config, array &$user, str
     if (!$ok) throw new RuntimeException($message);
     $gate = lqr_builder_issue_gate($state, $config, $questId, $quest);
     if (empty($gate['ok'])) throw new RuntimeException((string)$gate['message']);
+    $appGate = lqr_app_status_gate($state, $config, (string)$gate['program_id'], (string)$gate['template_id']);
+    if (empty($appGate['ok'])) throw new RuntimeException((string)$appGate['message']);
+    $partnerApp = is_array($appGate['app'] ?? null) ? $appGate['app'] : [];
     $externalEventId = lqr_reward_external_event_id($questId, $user);
-    $response = lqr_call_microgifter($config, 'POST', '/api/public/v1/rewards/issue.php', ['program_id' => (string)$gate['program_id'], 'external_event_id' => $externalEventId, 'event_type' => (string)$quest['event_type'], 'recipient' => ['linked_account_id' => $user['linked_account_id']], 'reward' => ['template_id' => (string)$gate['template_id'], 'quantity' => 1], 'metadata' => ['demo_app' => 'local-quest-rewards', 'quest_id' => $questId, 'quest_title' => (string)$quest['title'], 'merchant_program_key' => (string)($gate['program']['key'] ?? ''), 'mapping_status' => (string)($gate['mapping']['status'] ?? ''), 'local_user_id' => $user['id']]], ['X-Request-ID: req_' . preg_replace('/[^a-zA-Z0-9_.:-]/', '_', $externalEventId), 'X-Idempotency-Key: ' . $externalEventId]);
+    $response = lqr_call_microgifter($config, 'POST', '/api/public/v1/rewards/issue.php', ['program_id' => (string)$gate['program_id'], 'external_event_id' => $externalEventId, 'event_type' => (string)$quest['event_type'], 'recipient' => ['linked_account_id' => $user['linked_account_id']], 'reward' => ['template_id' => (string)$gate['template_id'], 'quantity' => 1], 'metadata' => ['demo_app' => 'local-quest-rewards', 'partner_app_id' => (string)($partnerApp['app_id'] ?? ''), 'partner_app_status' => (string)($partnerApp['app_status'] ?? ''), 'quest_id' => $questId, 'quest_title' => (string)$quest['title'], 'merchant_program_key' => (string)($gate['program']['key'] ?? ''), 'mapping_status' => (string)($gate['mapping']['status'] ?? ''), 'local_user_id' => $user['id']]], ['X-Request-ID: req_' . preg_replace('/[^a-zA-Z0-9_.:-]/', '_', $externalEventId), 'X-Idempotency-Key: ' . $externalEventId]);
     if (is_array($response['body']) && !empty($response['body']['reward_id'])) {
-        $user['rewards'][$questId] = ['reward_id' => (string)$response['body']['reward_id'], 'status' => (string)($response['body']['status'] ?? 'unknown'), 'external_event_id' => $externalEventId, 'program_id' => (string)$gate['program_id'], 'template_id' => (string)$gate['template_id'], 'reward_label' => (string)$gate['reward_label'], 'issued_at' => gmdate('c'), 'claim_status' => 'available_in_app', 'claim_report_status' => 'not_reported', 'last_checked_at' => null, 'response' => $response['body']];
+        $user['rewards'][$questId] = ['reward_id' => (string)$response['body']['reward_id'], 'status' => (string)($response['body']['status'] ?? 'unknown'), 'external_event_id' => $externalEventId, 'program_id' => (string)$gate['program_id'], 'template_id' => (string)$gate['template_id'], 'partner_app_id' => (string)($partnerApp['app_id'] ?? ''), 'reward_label' => (string)$gate['reward_label'], 'issued_at' => gmdate('c'), 'claim_status' => 'available_in_app', 'claim_report_status' => 'not_reported', 'last_checked_at' => null, 'response' => $response['body']];
         lqr_put_user($state, $user);
     }
     $state['last_response'] = $response;
-    lqr_add_event($state, 'microgifter.reward.issue', 'Reward issue requested for ' . (string)$quest['title'], ['status' => $response['status'], 'quest_id' => $questId, 'user_id' => $user['id'], 'program_id' => (string)$gate['program_id'], 'template_id' => (string)$gate['template_id']]);
+    lqr_app_console_note_api_call($state);
+    lqr_add_event($state, 'microgifter.reward.issue', 'Reward issue requested for ' . (string)$quest['title'], ['status' => $response['status'], 'quest_id' => $questId, 'user_id' => $user['id'], 'program_id' => (string)$gate['program_id'], 'template_id' => (string)$gate['template_id'], 'partner_app_status' => (string)($partnerApp['app_status'] ?? '')]);
     return $response;
 }
 
@@ -353,6 +369,7 @@ function lqr_action_check_status(array &$state, array $config, array &$user, str
         lqr_put_user($state, $user);
     }
     $state['last_response'] = $response;
+    lqr_app_console_note_api_call($state);
     lqr_add_event($state, 'microgifter.reward.status', 'Reward status checked.', ['status' => $response['status'], 'quest_id' => $questId, 'reward_id' => $rewardId]);
     return $response;
 }
