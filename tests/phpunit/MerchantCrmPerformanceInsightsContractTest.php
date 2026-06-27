@@ -95,4 +95,23 @@ final class MerchantCrmPerformanceInsightsContractTest extends TestCase
         self::assertStringContainsString('merchant-crm-review-checklist.css', $gate);
         self::assertStringContainsString('mg-crm-review-checklist', $css);
     }
+
+    public function testLaunchAuditTrailUsesExistingBuilderLaunches(): void
+    {
+        $gate = $this->read('assets/js/merchant-crm-draft-approval-gate.js');
+        $audit = $this->read('assets/js/merchant-crm-launch-audit-trail.js');
+        $css = $this->read('assets/css/merchant-crm-launch-audit-trail.css');
+        $endpoint = $this->read('api/merchant/crm-campaign-builder.php');
+        self::assertStringContainsString('merchant-crm-launch-audit-trail.js', $gate);
+        self::assertStringContainsString('data-crm-tab-target\',\'launch-audit\'', $audit);
+        self::assertStringContainsString('data-crm-tab-panel\',\'launch-audit\'', $audit);
+        self::assertStringContainsString('/api/merchant/crm-campaign-builder.php', $audit);
+        self::assertStringContainsString('crm.campaign_builder.launched', $endpoint);
+        self::assertStringContainsString('data-crm-launch-audit-list', $audit);
+        self::assertStringContainsString('data-crm-launch-audit-kpis', $audit);
+        self::assertStringContainsString('mgCrmDraftReviewState', $audit);
+        self::assertStringContainsString('Action History', $audit);
+        self::assertStringContainsString('mg-crm-launch-audit-kpis', $css);
+        self::assertStringContainsString('mg-crm-launch-audit-stats', $css);
+    }
 }
