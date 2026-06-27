@@ -6,6 +6,8 @@ if(!root||!window.Microgifter)return;
 
 var view=root.dataset.merchantView||'overview';
 var overview=null;
+var LIMIT_LABELS={max_microgifts:'Microgifts',max_rewards:'Rewards',max_active_campaigns:'Campaigns',max_crm_contacts:'CRM Contacts',monthly_stamps_included:'Monthly Stamps',max_landing_pages:'Landing Pages',max_locations:'Locations',max_team_seats:'Team Seats'};
+var LIMIT_ORDER=['max_microgifts','max_rewards','max_active_campaigns','max_crm_contacts','max_locations','max_team_seats','monthly_stamps_included'];
 
 function esc(v){
     return String(v==null?'':v).replace(/[&<>'"]/g,function(c){
@@ -28,6 +30,82 @@ function setStatus(node,message,type){
 function setText(selector,value){
     var node=root.querySelector(selector);
     if(node)node.textContent=value;
+}
+
+function packageUsage(){
+    return (overview&&overview.package_limits&&overview.package_limits.usage)||{};
+}
+
+function packageName(){
+    return (overview&&overview.package_limits&&overview.package_limits.package_name)||'current';
+}
+
+function metric(key){
+    return packageUsage()[key]||null;
+}
+
+function metricAtLimit(key){
+    var m=metric(key);
+    return Boolean(m&&m.at_limit&&!m.unlimited);
+}
+
+function limitText(m){
+    if(!m)return '—';
+    if(m.unlimited)return Number(m.used||0).toLocaleString()+' / Unlimited';
+    return Number(m.used||0).toLocaleString()+' / '+Number(m.limit||0).toLocaleString();
+}
+
+function limitUpgradeMessage(key){
+    var label=LIMIT_LABELS[key]||title(key);
+    return packageName()+' limit reached for '+label+'. Upgrade Package to add more.';
+}
+
+function renderPackageLimitCards(data){
+    var mount=root.querySelector('[data-package-limit-cards]');
+    if(!mount)return;
+    var usage=(data&&data.package_limits&&data.package_limits.usage)||{};
+    mount.innerHTML=LIMIT_ORDER.map(function(key){
+        var m=usage[key]||{used:0,limit:null,remaining:null,unlimited:true,at_limit:false};
+        var pct=0;
+        if(!m.unlimited&&Number(m.limit)>0)pct=Math.max(0,Math.min(100,Math.round(Number(m.used||0)/Number(m.limit)*100)));
+        return '<article class="mg-package-limit-card '+(m.at_limit?'is-limit-hit':'')+'" data-package-limit-card="'+esc(key)+'">'
+            +'<div><span>'+esc(LIMIT_LABELS[key]||title(key))+'</span><strong>'+esc(limitText(m))+'</strong></div>'
+            +'<div class="mg-package-limit-meter" aria-hidden="true"><b style="width:'+pct+'%"></b></div>'
+            +'<small>'+(m.unlimited?'Unlimited package capacity':(m.at_limit?'Limit reached':Number(m.remaining||0).toLocaleString()+' remaining'))+'</small>'
+            +(m.at_limit?'<a href="/account-subscriptions.php">Upgrade Package</a>':'')
+            +'</article>';
+    }).join('');
+}
+
+function lockAction(el,key){
+    if(!el||el.dataset.packageLimitBound==='1')return;
+    el.dataset.packageLimitBound='1';
+    el.classList.add('is-package-locked');
+    el.setAttribute('aria-disabled','true');
+    el.setAttribute('title',limitUpgradeMessage(key));
+    if(el.tagName==='BUTTON')el.disabled=true;
+    el.addEventListener('click',function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        if(window.Microgifter&&typeof Microgifter.toast==='function')Microgifter.toast(limitUpgradeMessage(key),'error');
+        else alert(limitUpgradeMessage(key));
+    },true);
+}
+
+function applyPackageLocks(){
+    var lockMap={
+        max_microgifts:['a[href="/build.php"]'],
+        max_rewards:['a[href="#reward-builder"]'],
+        max_active_campaigns:['a[href="#campaign-builder"]'],
+        max_locations:['[data-location-new]'],
+        max_team_seats:['a[href="#team-invite-panel"]']
+    };
+    Object.keys(lockMap).forEach(function(key){
+        if(!metricAtLimit(key))return;
+        lockMap[key].forEach(function(selector){
+            root.querySelectorAll(selector).forEach(function(el){lockAction(el,key);});
+        });
+    });
 }
 
 function setProgress(data){
@@ -54,6 +132,8 @@ async function loadOverview(){
     var data=response.data||response;
     overview=data;
     setProgress(data);
+    renderPackageLimitCards(data);
+    applyPackageLocks();
     var stepList=root.querySelector('[data-merchant-step-list]');
     if(stepList)stepList.innerHTML=stepsHtml(data.steps,5);
     var onboarding=root.querySelector('[data-merchant-onboarding]');
@@ -138,7 +218,7 @@ function resetLocationForm(form){
     }
     var help=form.querySelector('[data-location-code-help]');
     if(help)help.textContent='Required for a new location. Codes are stored securely and cannot be displayed again.';
-    setStatus(form.querySelector('[data-location-status]'),'');
+    setStatus(form.querySelector('[data-location-status]'),metricAtLimit('max_locations')?limitUpgradeMessage('max_locations'):'');
 }
 
 function editLocationForm(form,item){
@@ -219,6 +299,10 @@ async function loadLocations(){
         var status=form.querySelector('[data-location-status]');
         var submit=form.querySelector('[data-location-save]')||form.querySelector('[type="submit"]');
 
+        if(isCreate&&metricAtLimit('max_locations')){
+            setStatus(status,limitUpgradeMessage('max_locations'),'error');
+            return;
+        }
         if(isCreate&&!data.claim_code){
             setStatus(status,'Enter a claim code for the new location.','error');
             form.elements.claim_code.focus();
@@ -266,12 +350,17 @@ async function loadTeam(){
     form.addEventListener('submit',async function(e){
         e.preventDefault();
         var status=form.querySelector('[data-team-status]');
+        if(metricAtLimit('max_team_seats')){
+            setStatus(status,limitUpgradeMessage('max_team_seats'),'error');
+            return;
+        }
         try{
             setStatus(status,'Saving invitation…');
             var r=await Microgifter.post('/api/merchant/team.php',Object.fromEntries(new FormData(form).entries()));
             setStatus(status,r.message||'Invitation recorded','success');
             form.reset();
             await refresh();
+            loadOverview().catch(function(){});
         }catch(err){
             setStatus(status,err.message||'Unable to record invitation.','error');
         }
