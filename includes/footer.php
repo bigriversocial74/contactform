@@ -38,7 +38,7 @@ $core_scripts = [
     '/assets/js/agent-global-search.js','/assets/js/customer-commerce.js','/assets/js/cart.js','/assets/js/auth.js',
     '/assets/js/auth-state.js','/assets/js/onboarding.js','/assets/js/agent-tabs.js','/assets/js/agent-controls.js',
     '/assets/js/agent-toolbar-state.js','/assets/js/agent-sidebar.js','/assets/js/agent-items.js','/assets/js/media-delivery.js',
-    '/assets/js/gift-stream-launch.js','/assets/js/merchant-claim.js','/assets/js/agent-tools.js','/assets/js/market-alerts.js','/assets/js/public-market-ticker.js','/assets/js/subscription-checkout.js',
+    '/assets/js/gift-stream-launch.js','/assets/js/merchant-claim.js','/assets/js/agent-tools.js','/assets/js/scanner-device-session.js','/assets/js/market-alerts.js','/assets/js/public-market-ticker.js','/assets/js/subscription-checkout.js',
 ];
 $scripts = array_values(array_unique(array_merge($core_scripts, $page_scripts)));
 $user = mg_current_user();
