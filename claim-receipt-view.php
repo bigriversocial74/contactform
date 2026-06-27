@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-require_once __DIR__ . '/api/bootstrap.php';
+require_once __DIR__ . '/includes/app.php';
 $user = mg_refresh_session_user();
 if (!$user) { header('Location: /signin.php'); exit; }
 $id = trim((string)($_GET['id'] ?? ''));
@@ -18,26 +18,33 @@ else {
     if (!$allowed) $error = 'You do not have permission to view this receipt.';
   }
 }
-$page_title='Claim Receipt | Microgifter'; $page_section='agent'; $header_mode='agent';
+$page_title='Claim Receipt | Microgifter';
+$page_section='agent';
+$header_mode='agent';
+$agent_tab='claimed';
+$page_styles=['/assets/css/agent-workspace-layout.css','/assets/css/gift-action-center.css','/assets/css/gift-action-center-cleanup.css'];
 require __DIR__ . '/includes/header.php';
 ?>
-<main style="padding:42px 18px;background:#f8fbff;min-height:70vh">
-  <section style="max-width:880px;margin:0 auto;background:#fff;border:1px solid #dbeafe;border-radius:24px;padding:28px;box-shadow:0 24px 70px rgba(15,23,42,.1)">
-    <?php if ($error): ?>
-      <h1><?= mg_e($error) ?></h1><p><a href="/claimed.php">Back to claimed gifts</a></p>
-    <?php else: ?>
-      <p style="font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:#2563eb;font-weight:900">Microgifter redemption receipt</p>
-      <h1>Receipt <?= mg_e((string)$row['public_id']) ?></h1>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:20px">
-        <p><strong>Gift</strong><br><?= mg_e((string)$row['gift_public_id']) ?></p>
-        <p><strong>Value</strong><br><?= mg_e(strtoupper((string)$row['currency']) . ' ' . number_format(((int)$row['amount_cents'])/100,2)) ?></p>
-        <p><strong>Location</strong><br><?= mg_e((string)$row['location_name']) ?></p>
-        <p><strong>Claim code</strong><br>Ending <?= mg_e((string)($row['claim_code_last4'] ?: '••••')) ?></p>
-        <p><strong>Status</strong><br><?= mg_e((string)$row['status']) ?></p>
-        <p><strong>Redeemed at</strong><br><?= mg_e((string)$row['redeemed_at']) ?></p>
-      </div>
-      <p><a href="/claimed.php">Back to claimed gifts</a></p>
-    <?php endif; ?>
-  </section>
-</main>
+<section class="mg-app-shell mg-agent-app mg-claim-receipt-app">
+  <?php require __DIR__ . '/includes/agent-sidebar.php'; ?>
+  <div class="mg-app-workspace">
+    <section class="mg-app-panel" style="max-width:880px;margin:0 auto;background:#fff;border:1px solid #dbeafe;border-radius:24px;padding:28px;box-shadow:0 24px 70px rgba(15,23,42,.1)">
+      <?php if ($error): ?>
+        <h1><?= mg_e($error) ?></h1><p><a href="/claimed.php">Back to claimed gifts</a></p>
+      <?php else: ?>
+        <p style="font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:#2563eb;font-weight:900">Microgifter redemption receipt</p>
+        <h1>Receipt <?= mg_e((string)$row['public_id']) ?></h1>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:20px">
+          <p><strong>Gift</strong><br><?= mg_e((string)$row['gift_public_id']) ?></p>
+          <p><strong>Value</strong><br><?= mg_e(strtoupper((string)$row['currency']) . ' ' . number_format(((int)$row['amount_cents'])/100,2)) ?></p>
+          <p><strong>Location</strong><br><?= mg_e((string)$row['location_name']) ?></p>
+          <p><strong>Claim code</strong><br>Ending <?= mg_e((string)($row['claim_code_last4'] ?: '••••')) ?></p>
+          <p><strong>Status</strong><br><?= mg_e((string)$row['status']) ?></p>
+          <p><strong>Redeemed at</strong><br><?= mg_e((string)$row['redeemed_at']) ?></p>
+        </div>
+        <p><a href="/claimed.php">Back to claimed gifts</a></p>
+      <?php endif; ?>
+    </section>
+  </div>
+</section>
 <?php require __DIR__ . '/includes/footer.php'; ?>
