@@ -52,6 +52,9 @@ jobs:
           echo '::group::validate_local_quest_rewards_demo'
           php scripts/validate_local_quest_rewards_demo.php
           echo '::endgroup::'
+          echo '::group::validate_local_quest_demo_v2'
+          php scripts/validate_local_quest_demo_v2.php
+          echo '::endgroup::'
           echo '::group::validate_local_quest_signed_qr_enforcement'
           php scripts/validate_local_quest_signed_qr_enforcement.php
           echo '::endgroup::'
