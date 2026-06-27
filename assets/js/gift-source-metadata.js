@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', function () {
     return system.replace(/[_-]+/g, ' ').replace(/\b\w/g, function (letter) { return letter.toUpperCase(); });
   }
 
-  function remember(item) {
+  function remember(item, force) {
     if (!item || !item.action_item_id) return;
     var metadata = parseMetadata(item);
     var system = item.source_system || metadata.source_system || metadata.sourceSystem || metadata.system || '';
@@ -38,6 +38,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var detail = item.source_detail || metadata.source_detail || metadata.sourceDetail || metadata.campaign_title || metadata.campaign_type || '';
     var reference = item.source_reference || metadata.source_reference || metadata.sourceReference || metadata.wallet_item_id || '';
     if (!label && !system && !detail && !reference) return;
+    if (!force && sourceMap[item.action_item_id] && sourceMap[item.action_item_id].system === 'store_canvas') return;
     sourceMap[item.action_item_id] = {
       system: String(system || '').trim(),
       label: String(label || '').trim(),
@@ -53,9 +54,14 @@ document.addEventListener('DOMContentLoaded', function () {
       await Promise.all(['inbox', 'sent', 'claimed'].map(async function (folder) {
         var response = await Microgifter.get('/api/account/action-center.php?folder=' + encodeURIComponent(folder) + '&limit=100');
         var data = response.data || response;
-        (data.items || []).forEach(remember);
+        (data.items || []).forEach(function (item) { remember(item, false); });
       }));
-      decorateRows();
+      try {
+        var overrideResponse = await Microgifter.get('/api/account/wallet-source-metadata.php?limit=200');
+        var overrideData = overrideResponse.data || overrideResponse;
+        (overrideData.items || []).forEach(function (item) { remember(item, true); });
+      } catch (overrideError) {}
+      decorateRows(true);
     } catch (error) {
       console.error(error);
     } finally {
@@ -63,9 +69,11 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  function decorateRows() {
+  function decorateRows(refresh) {
     app.querySelectorAll('[data-gift-id]').forEach(function (row) {
-      if (row.querySelector('[data-gift-source-meta]')) return;
+      if (refresh) {
+        row.querySelectorAll('[data-gift-source-meta]').forEach(function (node) { node.remove(); });
+      } else if (row.querySelector('[data-gift-source-meta]')) return;
       var source = sourceMap[row.dataset.giftId];
       if (!source || (!source.label && !source.system)) return;
       var meta = row.querySelector('.mg-gift-row-meta');
@@ -83,7 +91,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var list = app.querySelector('[data-gift-list]');
   if (list) {
     new MutationObserver(function () {
-      decorateRows();
+      decorateRows(false);
       if (!Object.keys(sourceMap).length) loadSources();
     }).observe(list, { childList: true, subtree: true });
   }

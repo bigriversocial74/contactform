@@ -9,7 +9,7 @@ if (!mg_user_has_merchant_access($user, $pdo)) {
     $page_title = 'Merchant Store Canvas | Microgifter';
     $page_section = 'account-commerce';
     $header_mode = 'account';
-    $page_styles = ['/assets/css/account-commerce.css','/assets/css/merchant-canvas.css'];
+    $page_styles = ['/assets/css/account-commerce.css','/assets/css/merchant-canvas.css','/assets/css/merchant-canvas-rewards.css'];
     $accountView = 'store-canvas';
     require __DIR__ . '/includes/header.php';
     ?>
@@ -20,7 +20,7 @@ if (!mg_user_has_merchant_access($user, $pdo)) {
           <article class="mg-canvas-empty-card">
             <span class="mg-canvas-eyebrow">Merchant access required</span>
             <h1>Store Canvas is for merchant accounts.</h1>
-            <p>Upgrade or sign into a merchant account to view customer avatars, campaign agents, and direct store-session messages.</p>
+            <p>Upgrade or sign into a merchant account to view customer avatars, campaign agents, direct store-session messages, and Store Canvas rewards.</p>
             <a class="mg-btn mg-btn-primary" href="/pricing.php">View merchant packages</a>
           </article>
         </section>
@@ -33,8 +33,8 @@ if (!mg_user_has_merchant_access($user, $pdo)) {
 $page_title = 'Merchant Store Canvas | Microgifter';
 $page_section = 'account-commerce';
 $header_mode = 'account';
-$page_styles = ['/assets/css/account-commerce.css','/assets/css/merchant-canvas.css'];
-$page_scripts = ['/assets/js/account-sidebar.js','/assets/js/merchant-canvas.js'];
+$page_styles = ['/assets/css/account-commerce.css','/assets/css/merchant-canvas.css','/assets/css/merchant-canvas-rewards.css'];
+$page_scripts = ['/assets/js/account-sidebar.js','/assets/js/merchant-canvas.js','/assets/js/merchant-canvas-rewards.js'];
 $accountView = 'store-canvas';
 $page_manifest = [
     'id' => 'merchant-canvas',
@@ -56,7 +56,7 @@ require __DIR__ . '/includes/header.php';
         <div>
           <span class="mg-canvas-eyebrow">Agent Store Canvas</span>
           <h1>Merchant Store Canvas</h1>
-          <p>See customer avatars currently inside your merchant location, open CRM context, and send direct store-session messages from one private dashboard.</p>
+          <p>See customer avatars currently inside your merchant location, open CRM context, send direct messages, and issue campaign rewards into the customer IN/OUT Box.</p>
         </div>
         <div class="mg-canvas-hero-actions">
           <a class="mg-btn mg-btn-soft" href="/feed.php">Open Feed</a>
@@ -76,9 +76,9 @@ require __DIR__ . '/includes/header.php';
           <small>Presence, CRM, direct message, campaigns</small>
         </article>
         <article>
-          <span>Direct messages</span>
+          <span>Rewards</span>
           <strong>Enabled</strong>
-          <small>Send from avatar CRM drawer</small>
+          <small>Send campaign rewards from avatar CRM</small>
         </article>
       </section>
 
@@ -113,15 +113,15 @@ require __DIR__ . '/includes/header.php';
             <ul class="mg-canvas-action-list">
               <li>Watch active customer sessions from feed posts.</li>
               <li>Click an avatar to load CRM context.</li>
-              <li>Send a direct message into the customer IN/OUT Box.</li>
-              <li>Reward/campaign agent triggers come next.</li>
+              <li>Send a direct message into the customer Messages center.</li>
+              <li>Send a campaign reward into the customer IN/OUT Box.</li>
             </ul>
           </section>
 
           <section class="mg-canvas-panel-card">
             <span class="mg-canvas-eyebrow">Recent activity</span>
             <div class="mg-canvas-activity" data-canvas-activity>
-              <p>Canvas activity will appear as customers enter, idle, message, claim, or leave.</p>
+              <p>Canvas activity will appear as customers enter, idle, message, claim, reward, or leave.</p>
             </div>
           </section>
         </aside>
@@ -142,7 +142,7 @@ require __DIR__ . '/includes/header.php';
     </div>
     <form class="mg-canvas-message-form" data-message-form>
       <label for="mg-canvas-message">Direct message</label>
-      <textarea id="mg-canvas-message" name="message" rows="4" maxlength="1000" placeholder="Send a message to this customer’s IN/OUT Box…" required disabled></textarea>
+      <textarea id="mg-canvas-message" name="message" rows="4" maxlength="1000" placeholder="Send a message to this customer’s Messages center…" required disabled></textarea>
       <button class="mg-btn mg-btn-primary" type="submit" disabled data-message-submit>Send Message</button>
       <p class="mg-canvas-form-status" data-message-status role="status"></p>
     </form>
