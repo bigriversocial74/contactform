@@ -22,6 +22,40 @@ function mg_store_schema_expected_tables(): array
     ];
 }
 
+function mg_store_schema_database(PDO $pdo): string
+{
+    try {
+        return (string)$pdo->query('SELECT DATABASE()')->fetchColumn();
+    } catch (Throwable) {
+        return '';
+    }
+}
+
+function mg_store_schema_connection_user(PDO $pdo): string
+{
+    try {
+        return (string)$pdo->query('SELECT CURRENT_USER()')->fetchColumn();
+    } catch (Throwable) {
+        return '';
+    }
+}
+
+function mg_store_schema_table_exists(PDO $pdo, string $table): bool
+{
+    if (preg_match('/^[A-Za-z0-9_]+$/', $table) !== 1) return false;
+    try {
+        $stmt = $pdo->prepare('SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?');
+        $stmt->execute([$table]);
+        if ((int)$stmt->fetchColumn() > 0) return true;
+    } catch (Throwable) {}
+    try {
+        $pdo->query('SELECT 1 FROM `' . str_replace('`', '``', $table) . '` LIMIT 1');
+        return true;
+    } catch (Throwable) {
+        return false;
+    }
+}
+
 function mg_store_schema_columns(PDO $pdo, string $table): array
 {
     try {
@@ -37,7 +71,7 @@ function mg_store_schema_count(PDO $pdo, string $table): ?int
 {
     if (preg_match('/^[A-Za-z0-9_]+$/', $table) !== 1) return null;
     try {
-        return (int)$pdo->query("SELECT COUNT(*) FROM {$table}")->fetchColumn();
+        return (int)$pdo->query('SELECT COUNT(*) FROM `' . str_replace('`', '``', $table) . '`')->fetchColumn();
     } catch (Throwable) {
         return null;
     }
@@ -46,7 +80,7 @@ function mg_store_schema_count(PDO $pdo, string $table): ?int
 function mg_store_schema_migration(PDO $pdo): array
 {
     $migration = [
-        'table_exists' => mg_store_table_exists($pdo, 'schema_migrations'),
+        'table_exists' => mg_store_schema_table_exists($pdo, 'schema_migrations'),
         'key' => 'stage_20_agent_store_canvas',
         'applied' => false,
         'applied_at' => null,
@@ -68,11 +102,12 @@ function mg_store_schema_migration(PDO $pdo): array
 
 try {
     $expected = mg_store_schema_expected_tables();
+    $database = mg_store_schema_database($pdo);
     $tables = [];
     $missingTables = [];
     $missingColumns = [];
     foreach ($expected as $table => $requiredColumns) {
-        $installed = mg_store_table_exists($pdo, $table);
+        $installed = mg_store_schema_table_exists($pdo, $table);
         $columns = $installed ? mg_store_schema_columns($pdo, $table) : [];
         $missing = $installed ? array_values(array_diff($requiredColumns, $columns)) : $requiredColumns;
         if (!$installed) $missingTables[] = $table;
@@ -96,19 +131,25 @@ try {
             $stmt->execute([(int)$user['id']]);
             $readCheck = ['ok' => true, 'message' => 'Store Canvas session read check passed.', 'active_sessions' => (int)$stmt->fetchColumn()];
         } catch (Throwable $error) {
-            $readCheck = ['ok' => false, 'message' => 'Store Canvas session read check failed.'];
+            $readCheck = ['ok' => false, 'message' => 'Store Canvas session read check failed.', 'error' => $error->getMessage()];
             $ready = false;
         }
     } else {
-        $readCheck = ['ok' => false, 'message' => 'Store Canvas tables or columns are missing.'];
+        $readCheck = ['ok' => false, 'message' => 'Store Canvas tables or columns are missing from the app database connection.'];
     }
+
+    $guidance = $ready
+        ? 'Stage 20 Store Canvas schema is ready.'
+        : 'The app connection cannot see the Stage 20 tables in database ' . ($database !== '' ? $database : '(unknown)') . '. Confirm the imported tables are in this same database and that the app database user has access.';
 
     mg_ok([
         'schema_ready' => $ready,
+        'database' => $database,
+        'connection_user' => mg_store_schema_connection_user($pdo),
         'migration' => $migration,
         'migration_file' => 'database/stage_20_agent_store_canvas.sql',
         'install_command' => 'mysql < database/stage_20_agent_store_canvas.sql',
-        'guidance' => $ready ? 'Stage 20 Store Canvas schema is ready.' : 'Install or re-run database/stage_20_agent_store_canvas.sql, then refresh this page.',
+        'guidance' => $guidance,
         'missing_tables' => $missingTables,
         'missing_columns' => $missingColumns,
         'tables' => $tables,
