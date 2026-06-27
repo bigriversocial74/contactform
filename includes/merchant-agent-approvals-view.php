@@ -9,6 +9,7 @@ declare(strict_types=1);
       <p>Review agent-recommended actions before execution. Approve, reject, defer, or convert recommendations into follow-up tasks.</p>
     </div>
     <div class="mg-agent-approvals-actions">
+      <a class="mg-btn mg-btn-secondary" href="/merchant-agent-execution.php">Execution Center</a>
       <a class="mg-btn mg-btn-secondary" href="/merchant-agent-monitor.php">Agent Monitor</a>
       <a class="mg-btn mg-btn-secondary" href="/merchant-automation.php">Automation Controls</a>
       <button class="mg-btn mg-btn-primary" type="button" data-agent-approval-refresh>Refresh queue</button>
@@ -30,6 +31,7 @@ declare(strict_types=1);
           <h2>Review Filters</h2>
           <p>Focus on pending decisions, completed decisions, or risk level.</p>
         </div>
+        <a class="mg-btn mg-btn-secondary" href="/merchant-agent-execution.php">Run approved</a>
       </div>
       <div class="mg-agent-approval-filters" data-agent-approval-filters>
         <button type="button" class="is-active" data-approval-filter="all">All</button>
@@ -66,7 +68,10 @@ declare(strict_types=1);
         <h2>Approval Items</h2>
         <p>Each item shows why the agent recommends it, customer/campaign source, guardrail applied, expected action, risk level, and approval requirement.</p>
       </div>
-      <p class="mg-form-status" data-agent-approval-status></p>
+      <div class="mg-crm-tab-actions">
+        <a class="mg-btn mg-btn-secondary" href="/merchant-agent-execution.php">Open execution center</a>
+        <p class="mg-form-status" data-agent-approval-status></p>
+      </div>
     </div>
     <div class="mg-agent-approval-list" data-agent-approval-list>
       <div class="mg-empty-state"><strong>Loading approval queue…</strong></div>
