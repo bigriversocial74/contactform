@@ -111,13 +111,13 @@ $remaining=10;
 $relationshipConfigs=[];
 
 if(mg_ac_table_exists($pdo,'social_follows')){
-    $relationshipConfigs[]=['source'=>'following','join'=>'FROM social_follows f INNER JOIN users u ON u.id=f.followed_user_id','where'=>'f.follower_user_id=? AND u.id<>? AND COALESCE(f.status,\'active\')=\'active\''];
+    $relationshipConfigs[]=['table'=>'social_follows','source'=>'following','join'=>'FROM social_follows f INNER JOIN users u ON u.id=f.followed_user_id','where'=>'f.follower_user_id=? AND u.id<>? AND COALESCE(f.status,\'active\')=\'active\''];
 }
 if(mg_ac_table_exists($pdo,'user_followers')){
-    $relationshipConfigs[]=['source'=>'follower','join'=>'FROM user_followers f INNER JOIN users u ON u.id=f.follower_user_id','where'=>'f.user_id=? AND u.id<>?'];
+    $relationshipConfigs[]=['table'=>'user_followers','source'=>'follower','join'=>'FROM user_followers f INNER JOIN users u ON u.id=f.follower_user_id','where'=>'f.user_id=? AND u.id<>?'];
 }
 if(mg_ac_table_exists($pdo,'followers')){
-    $relationshipConfigs[]=['source'=>'follower','join'=>'FROM followers f INNER JOIN users u ON u.id=f.follower_user_id','where'=>'f.user_id=? AND u.id<>?'];
+    $relationshipConfigs[]=['table'=>'followers','source'=>'follower','join'=>'FROM followers f INNER JOIN users u ON u.id=f.follower_user_id','where'=>'f.user_id=? AND u.id<>?'];
 }
 
 foreach($relationshipConfigs as $config){
@@ -127,7 +127,7 @@ foreach($relationshipConfigs as $config){
         mg_ac_append_unique_recipients($rows,$incoming);
         $remaining=10-count($rows);
     }catch(Throwable $error){
-        if(function_exists('mg_security_log'))mg_security_log('warning','action_center.recipient_relationship_search_failed','Recipient relationship search failed.',['source'=>$config['source'],'exception'=>$error->getMessage()],(int)$user['id']);
+        if(function_exists('mg_security_log'))mg_security_log('warning','action_center.recipient_relationship_search_failed','Recipient relationship search failed.',['table'=>$config['table'],'exception'=>$error->getMessage()],(int)$user['id']);
     }
 }
 
