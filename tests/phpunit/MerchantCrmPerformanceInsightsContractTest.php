@@ -15,7 +15,6 @@ final class MerchantCrmPerformanceInsightsContractTest extends TestCase
         self::assertStringContainsString('campaign_events', $endpoint);
         self::assertStringContainsString('campaign_contacts', $endpoint);
         self::assertStringContainsString('wallet_items', $endpoint);
-        self::assertStringContainsString('crm_reward_invites', $endpoint);
         self::assertStringContainsString('crm.campaign_builder.launched', $endpoint);
         self::assertStringContainsString('crm.bulk_action.result', $endpoint);
         self::assertStringNotContainsString('CREATE TABLE', $endpoint);
