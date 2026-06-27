@@ -83,3 +83,6 @@ $appSidebarCompact = true;
     <?php endif; ?>
   </main>
 </section>
+<?php if ($canMerchantAccess): ?>
+<script src="/assets/js/merchant-module-limits.js" defer></script>
+<?php endif; ?>
