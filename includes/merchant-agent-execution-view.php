@@ -9,6 +9,7 @@ declare(strict_types=1);
       <p>Run merchant-reviewed agent actions, draft customer messages, create follow-up tasks, skip duplicates, retry failures, and keep every result in the automation history.</p>
     </div>
     <div class="mg-agent-execution-actions">
+      <a class="mg-btn mg-btn-secondary" href="/merchant-agent-analytics.php">Outcome Analytics</a>
       <a class="mg-btn mg-btn-secondary" href="/merchant-agent-messages.php">Message Outbox</a>
       <a class="mg-btn mg-btn-secondary" href="/merchant-agent-approvals.php">Review Queue</a>
       <a class="mg-btn mg-btn-secondary" href="/merchant-agent-monitor.php">Agent Monitor</a>
@@ -66,6 +67,7 @@ declare(strict_types=1);
         <p>Each item includes the reviewed action, guardrail applied, current state, latest result, and available safe next actions.</p>
       </div>
       <div class="mg-crm-tab-actions">
+        <a class="mg-btn mg-btn-secondary" href="/merchant-agent-analytics.php">Open outcome analytics</a>
         <a class="mg-btn mg-btn-secondary" href="/merchant-agent-messages.php">Open message outbox</a>
         <p class="mg-form-status" data-agent-execution-status></p>
       </div>
