@@ -4,6 +4,7 @@ function initCrmPerformanceInsights(){
 if(!window.Microgifter)return;
 var shell=document.querySelector('[data-merchant-crm-shell]');if(!shell)return;
 function qs(s,r){return(r||document).querySelector(s)}
+function qsa(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
 function esc(v){return String(v==null?'':v).replace(/[&<>'"]/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'})[c]})}
 function num(v){return Number(v||0).toLocaleString()}
 function pct(v){return Number(v||0).toFixed(Number(v||0)%1?1:0)+'%'}
@@ -20,6 +21,8 @@ function ensurePanel(){
     var performance=qs('[data-crm-tab-panel="performance"]',shell),campaigns=qs('[data-crm-tab-panel="campaigns"]',shell);if(performance&&performance.nextSibling)shell.insertBefore(panel,performance.nextSibling);else if(campaigns&&campaigns.nextSibling)shell.insertBefore(panel,campaigns.nextSibling);else shell.appendChild(panel);
   }
 }
+function activateInsights(){qsa('[data-crm-tab-target]',shell).forEach(function(tab){var on=tab.getAttribute('data-crm-tab-target')==='insights';tab.classList.toggle('is-active',on);tab.setAttribute('aria-selected',on?'true':'false')});qsa('[data-crm-tab-panel]',shell).forEach(function(panel){panel.hidden=panel.getAttribute('data-crm-tab-panel')!=='insights'});shell.setAttribute('data-crm-active-tab','insights');if(history.replaceState)history.replaceState(null,'','#crm-insights');load(false)}
+function hideInsights(){var panel=qs('[data-crm-tab-panel="insights"]',shell),tab=qs('[data-crm-tab-target="insights"]',shell);if(panel)panel.hidden=true;if(tab){tab.classList.remove('is-active');tab.setAttribute('aria-selected','false')}}
 function metric(label,value,sub){return '<article><span>'+esc(label)+'</span><strong>'+esc(value)+'</strong>'+(sub?'<small>'+esc(sub)+'</small>':'')+'</article>'}
 function impactClass(v){return String(v||'medium')==='high'?'is-high':'is-medium'}
 function renderKpis(t){var box=qs('[data-crm-insights-kpis]',shell);if(!box)return;box.innerHTML=metric('Insights',num(t.insights),'ranked signals')+metric('High impact',num(t.high_impact),'review first')+metric('Contacts to review',num(t.contacts_to_review),'action exceptions')+metric('Segments analyzed',num(t.segments_analyzed),'builder data')}
@@ -28,11 +31,11 @@ function renderSegments(items){var box=qs('[data-crm-insights-segments]',shell);
 var loaded=false;
 async function load(force){if(loaded&&!force)return;var days=(qs('[data-crm-insights-days]',shell)||{}).value||'90';var box=qs('[data-crm-insights-list]',shell);if(box)box.innerHTML=empty('Loading insights','');try{var r=await Microgifter.get('/api/merchant/crm-performance-insights.php?days='+encodeURIComponent(days)),d=r.data||r;loaded=true;renderKpis(d.totals||{});renderInsights(d.insights||[]);renderSegments(d.segments||[])}catch(e){if(box)box.innerHTML=empty('Unable to load insights',e.message||'Try again.')}}
 ensurePanel();
-document.addEventListener('mg:crm-tab:changed',function(ev){if(ev.detail&&ev.detail.tab==='insights')load(false)});
+document.addEventListener('mg:crm-tab:changed',function(ev){if(ev.detail&&ev.detail.tab==='insights')load(false);else hideInsights()});
 document.addEventListener('mg:crm-action-history:refresh',function(){loaded=false});
-document.addEventListener('click',function(ev){var refresh=ev.target&&ev.target.closest&&ev.target.closest('[data-crm-insights-refresh]');if(refresh){loaded=false;load(true)}});
+document.addEventListener('click',function(ev){var insightTab=ev.target&&ev.target.closest&&ev.target.closest('[data-crm-tab-target="insights"]');if(insightTab){ev.preventDefault();activateInsights();return}var otherTab=ev.target&&ev.target.closest&&ev.target.closest('[data-crm-tab-target]');if(otherTab&&otherTab.getAttribute('data-crm-tab-target')!=='insights')hideInsights();var refresh=ev.target&&ev.target.closest&&ev.target.closest('[data-crm-insights-refresh]');if(refresh){loaded=false;load(true)}});
 document.addEventListener('change',function(ev){if(ev.target&&ev.target.matches&&ev.target.matches('[data-crm-insights-days]')){loaded=false;load(true)}});
-if(shell.getAttribute('data-crm-active-tab')==='insights')load(false);
+if((location.hash||'').replace(/^#crm-/,'')==='insights')setTimeout(activateInsights,0);else if(shell.getAttribute('data-crm-active-tab')==='insights')load(false);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initCrmPerformanceInsights);else initCrmPerformanceInsights();
 })();
