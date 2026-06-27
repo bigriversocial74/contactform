@@ -26,6 +26,7 @@ function lqr_config(): array
 }
 
 require_once __DIR__ . '/storage-sql.php';
+require_once __DIR__ . '/program-builder.php';
 
 function lqr_quests(): array
 {
@@ -43,6 +44,7 @@ function lqr_default_state(): array
         'admin_users' => [],
         'admin_password_resets' => [],
         'security_replay' => [],
+        'merchant_programs' => [],
         'last_response' => null,
         'updated_at' => gmdate('c'),
     ];
@@ -289,7 +291,7 @@ function lqr_can_complete_quest(array $user, string $questId, array $quest): arr
     return [true, 'Quest can be completed.'];
 }
 
-function lqr_can_issue_reward(array $user, string $questId, array $quest, array $config): array
+function lqr_can_issue_reward(array $user, string $questId, array $quest, array $config, ?array $state = null): array
 {
     $permission = is_array($quest['permission'] ?? null) ? $quest['permission'] : [];
     $mode = (string)($config['mode'] ?? 'test');
@@ -300,7 +302,8 @@ function lqr_can_issue_reward(array $user, string $questId, array $quest, array 
     if (!empty($permission['requires_linked_account']) && trim((string)$user['linked_account_id']) === '') return [false, 'Connect a real Microgifter account first.'];
     $max = (int)($permission['max_rewards_per_user'] ?? 1);
     if ($max > 0 && !empty($user['rewards'][$questId])) return [false, 'Reward already issued for this quest/user.'];
-    if (lqr_quest_program_id($quest, $config) === '' || lqr_quest_template_id($quest, $config) === '') return [false, 'Program ID and template ID must be configured before issuing rewards.'];
+    $gate = lqr_builder_issue_gate($state ?? lqr_load_state(), $config, $questId, $quest);
+    if (empty($gate['ok'])) return [false, (string)$gate['message']];
     return [true, 'Reward can be issued.'];
 }
 
@@ -322,16 +325,18 @@ function lqr_action_complete_quest(array &$state, array $config, array &$user, s
 
 function lqr_action_issue_reward(array &$state, array $config, array &$user, string $questId, array $quest): array
 {
-    [$ok, $message] = lqr_can_issue_reward($user, $questId, $quest, $config);
+    [$ok, $message] = lqr_can_issue_reward($user, $questId, $quest, $config, $state);
     if (!$ok) throw new RuntimeException($message);
+    $gate = lqr_builder_issue_gate($state, $config, $questId, $quest);
+    if (empty($gate['ok'])) throw new RuntimeException((string)$gate['message']);
     $externalEventId = lqr_reward_external_event_id($questId, $user);
-    $response = lqr_call_microgifter($config, 'POST', '/api/public/v1/rewards/issue.php', ['program_id' => lqr_quest_program_id($quest, $config), 'external_event_id' => $externalEventId, 'event_type' => (string)$quest['event_type'], 'recipient' => ['linked_account_id' => $user['linked_account_id']], 'reward' => ['template_id' => lqr_quest_template_id($quest, $config), 'quantity' => 1], 'metadata' => ['demo_app' => 'local-quest-rewards', 'quest_id' => $questId, 'quest_title' => (string)$quest['title'], 'local_user_id' => $user['id']]], ['X-Request-ID: req_' . preg_replace('/[^a-zA-Z0-9_.:-]/', '_', $externalEventId), 'X-Idempotency-Key: ' . $externalEventId]);
+    $response = lqr_call_microgifter($config, 'POST', '/api/public/v1/rewards/issue.php', ['program_id' => (string)$gate['program_id'], 'external_event_id' => $externalEventId, 'event_type' => (string)$quest['event_type'], 'recipient' => ['linked_account_id' => $user['linked_account_id']], 'reward' => ['template_id' => (string)$gate['template_id'], 'quantity' => 1], 'metadata' => ['demo_app' => 'local-quest-rewards', 'quest_id' => $questId, 'quest_title' => (string)$quest['title'], 'merchant_program_key' => (string)($gate['program']['key'] ?? ''), 'mapping_status' => (string)($gate['mapping']['status'] ?? ''), 'local_user_id' => $user['id']]], ['X-Request-ID: req_' . preg_replace('/[^a-zA-Z0-9_.:-]/', '_', $externalEventId), 'X-Idempotency-Key: ' . $externalEventId]);
     if (is_array($response['body']) && !empty($response['body']['reward_id'])) {
-        $user['rewards'][$questId] = ['reward_id' => (string)$response['body']['reward_id'], 'status' => (string)($response['body']['status'] ?? 'unknown'), 'external_event_id' => $externalEventId, 'issued_at' => gmdate('c'), 'claim_status' => 'available_in_app', 'claim_report_status' => 'not_reported', 'last_checked_at' => null, 'response' => $response['body']];
+        $user['rewards'][$questId] = ['reward_id' => (string)$response['body']['reward_id'], 'status' => (string)($response['body']['status'] ?? 'unknown'), 'external_event_id' => $externalEventId, 'program_id' => (string)$gate['program_id'], 'template_id' => (string)$gate['template_id'], 'reward_label' => (string)$gate['reward_label'], 'issued_at' => gmdate('c'), 'claim_status' => 'available_in_app', 'claim_report_status' => 'not_reported', 'last_checked_at' => null, 'response' => $response['body']];
         lqr_put_user($state, $user);
     }
     $state['last_response'] = $response;
-    lqr_add_event($state, 'microgifter.reward.issue', 'Reward issue requested for ' . (string)$quest['title'], ['status' => $response['status'], 'quest_id' => $questId, 'user_id' => $user['id']]);
+    lqr_add_event($state, 'microgifter.reward.issue', 'Reward issue requested for ' . (string)$quest['title'], ['status' => $response['status'], 'quest_id' => $questId, 'user_id' => $user['id'], 'program_id' => (string)$gate['program_id'], 'template_id' => (string)$gate['template_id']]);
     return $response;
 }
 
@@ -370,7 +375,7 @@ function lqr_wallet_rewards(array $user, array $quests): array
     foreach ($user['rewards'] ?? [] as $questId => $reward) {
         if (!is_array($reward)) continue;
         $quest = is_array($quests[$questId] ?? null) ? $quests[$questId] : [];
-        $out[] = ['quest_id' => (string)$questId, 'quest_title' => (string)($quest['title'] ?? $questId), 'reward_label' => (string)($quest['reward_label'] ?? 'Microgift reward'), 'reward_id' => (string)($reward['reward_id'] ?? ''), 'status' => (string)($reward['status'] ?? 'unknown'), 'item_id' => lqr_reward_item_id($reward), 'claim_status' => (string)($reward['claim_status'] ?? 'available_in_app'), 'claim_report_status' => (string)($reward['claim_report_status'] ?? 'not_reported'), 'issued_at' => (string)($reward['issued_at'] ?? '')];
+        $out[] = ['quest_id' => (string)$questId, 'quest_title' => (string)($quest['title'] ?? $questId), 'reward_label' => (string)($reward['reward_label'] ?? $quest['reward_label'] ?? 'Microgift reward'), 'reward_id' => (string)($reward['reward_id'] ?? ''), 'status' => (string)($reward['status'] ?? 'unknown'), 'item_id' => lqr_reward_item_id($reward), 'claim_status' => (string)($reward['claim_status'] ?? 'available_in_app'), 'claim_report_status' => (string)($reward['claim_report_status'] ?? 'not_reported'), 'issued_at' => (string)($reward['issued_at'] ?? '')];
     }
     return $out;
 }
