@@ -45,13 +45,12 @@ if ($method === 'GET') {
     $limit = max(1, min(50, (int) ($_GET['limit'] ?? 25)));
     $stmt = $pdo->prepare(
         "SELECT p.public_id id,p.scope,p.merchant_goal,p.status,p.priority,p.summary,p.input_tokens,p.output_tokens,p.created_at,p.updated_at,
-                ap.provider_key,m.model_key,COUNT(i.id) item_count
+                ap.provider_key,m.model_key,
+                (SELECT COUNT(*) FROM ai_merchant_plan_items i WHERE i.plan_id = p.id) item_count
          FROM ai_merchant_plans p
          INNER JOIN ai_providers ap ON ap.id = p.provider_id
          INNER JOIN ai_models m ON m.id = p.model_id
-         LEFT JOIN ai_merchant_plan_items i ON i.plan_id = p.id
          WHERE p.merchant_user_id = ?
-         GROUP BY p.id
          ORDER BY p.updated_at DESC,p.id DESC
          LIMIT {$limit}"
     );
