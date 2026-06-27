@@ -39,7 +39,7 @@ final class SubscriptionActivationVerificationContractTest extends TestCase
         self::assertStringContainsString("'merchant_access' => false", $source);
         self::assertStringContainsString('mg_package_entitlement_active_statuses', $source);
         self::assertStringContainsString("'active', 'trialing', 'cancel_pending', 'past_due'", $source);
-        self::assertStringContainsString("'merchant_access' => $active && $packageId !== 'free'", $source);
+        self::assertStringContainsString("'merchant_access' => \$active && \$packageId !== 'free'", $source);
     }
 
     public function testPackageChangeStatusReportsActivationState(): void
