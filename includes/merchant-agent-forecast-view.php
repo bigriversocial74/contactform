@@ -9,6 +9,7 @@ declare(strict_types=1);
       <p>Forecast expected agent-influenced claims, redemption value, message-to-claim projection, follow-up conversion, playbook ROI, campaign ROI, and 30/60/90 day PSR impact.</p>
     </div>
     <div class="mg-agent-forecast-actions">
+      <a class="mg-btn mg-btn-secondary" href="/merchant-agent-growth-plan.php">Growth Planner</a>
       <a class="mg-btn mg-btn-secondary" href="/merchant-agent-roi.php">ROI Attribution</a>
       <a class="mg-btn mg-btn-secondary" href="/merchant-agent-analytics.php">Outcome Analytics</a>
       <a class="mg-btn mg-btn-secondary" href="/merchant-claims.php">Claims</a>
@@ -34,13 +35,13 @@ declare(strict_types=1);
 
   <section class="mg-agent-forecast-grid">
     <article class="mg-app-panel mg-agent-forecast-panel">
-      <div class="mg-app-panel-head"><div><h2>30 / 60 / 90 Day Forecast</h2><p>Expected agent-influenced claims, redemption value, and PSR impact by projection window.</p></div></div>
+      <div class="mg-app-panel-head"><div><h2>30 / 60 / 90 Day Forecast</h2><p>Expected agent-influenced claims, redemption value, and PSR impact by projection window.</p></div><a class="mg-btn mg-btn-secondary" href="/merchant-agent-growth-plan.php">Plan actions</a></div>
       <div class="mg-agent-forecast-periods" data-forecast-periods><div class="mg-empty-state"><strong>Loading forecast windows…</strong></div></div>
     </article>
     <article class="mg-app-panel mg-agent-forecast-panel">
       <div class="mg-app-panel-head"><div><h2>Forecast Inputs</h2><p>Scenario model and actual attribution source state used to generate the forecast.</p></div></div>
       <div class="mg-agent-forecast-inputs" data-forecast-inputs></div>
-      <div class="mg-agent-forecast-links"><a href="/merchant-agent-roi.php">ROI Attribution</a><a href="/merchant-agent-analytics.php">Analytics</a><a href="/merchant-customer.php?tab=timeline">Customer timeline</a><a href="/merchant-agent-messages.php">Messages</a><a href="/merchant-claims.php">Claims</a></div>
+      <div class="mg-agent-forecast-links"><a href="/merchant-agent-growth-plan.php">Growth Planner</a><a href="/merchant-agent-roi.php">ROI Attribution</a><a href="/merchant-agent-analytics.php">Analytics</a><a href="/merchant-customer.php?tab=timeline">Customer timeline</a><a href="/merchant-agent-messages.php">Messages</a><a href="/merchant-claims.php">Claims</a></div>
     </article>
   </section>
 
@@ -55,6 +56,6 @@ declare(strict_types=1);
   </section>
 
   <article class="mg-app-panel mg-agent-forecast-panel">
-    <div class="mg-app-panel-head"><div><h2>Forecast Status</h2><p>Forecasts are model estimates based on existing ROI attribution and merchant-controlled agent events.</p></div><p class="mg-form-status" data-agent-forecast-status></p></div>
+    <div class="mg-app-panel-head"><div><h2>Forecast Status</h2><p>Forecasts are model estimates based on existing ROI attribution and merchant-controlled agent events.</p></div><div class="mg-crm-tab-actions"><a class="mg-btn mg-btn-secondary" href="/merchant-agent-growth-plan.php">Open growth planner</a><p class="mg-form-status" data-agent-forecast-status></p></div></div>
   </article>
 </section>
