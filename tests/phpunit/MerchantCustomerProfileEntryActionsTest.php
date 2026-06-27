@@ -24,10 +24,10 @@ final class MerchantCustomerProfileEntryActionsTest extends TestCase
     {
         $view=$this->source('includes/merchant-customer-profile-view.php');
         $js=$this->source('assets/js/merchant-customer-profile.js');
-        foreach(['data-cp-send-reward','data-cp-message-customer','data-cp-note-trigger','data-cp-notes-card'] as $needle) {
+        foreach(['data-cp-send-reward','data-cp-message-customer','data-cp-note-trigger','data-cp-notes-card','data-cp-open-panel="reward"','data-cp-open-panel="message"','data-cp-open-panel="followup"'] as $needle) {
             self::assertStringContainsString($needle,$view);
         }
-        foreach(['actionQuery','data-cp-note-trigger','scrollIntoView'] as $needle) {
+        foreach(['actionQuery','data-cp-open-panel','openPanel','scrollIntoView'] as $needle) {
             self::assertStringContainsString($needle,$js);
         }
     }

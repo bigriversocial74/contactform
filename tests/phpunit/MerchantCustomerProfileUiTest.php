@@ -21,14 +21,14 @@ final class MerchantCustomerProfileUiTest extends TestCase
     public function testCustomerProfileViewContainsLiveDataHooks(): void
     {
         $view=$this->source('includes/merchant-customer-profile-view.php');
-        foreach(['Expanded CRM record for wallet rewards, messages, tips, claims, and campaign history.','Wallet Rewards Received','Customer Snapshot','Reward & Redemption Activity','Recent Messages','Recent Rewards','Tips & Commerce Summary','Campaign Source History','CRM Notes','Customer Timeline','data-cp-name','data-cp-snapshot','data-cp-chart','data-cp-messages','data-cp-rewards','data-cp-tips','data-cp-sources','data-cp-note-form','data-cp-timeline'] as $needle) self::assertStringContainsString($needle,$view);
+        foreach(['Customer Profile Command Center','Manage rewards, messages, notes, follow-ups, redemptions, tips, and timeline activity','Wallet Rewards Received','Customer Snapshot','Reward & Redemption Activity','Recent Messages','Recent Rewards','Tips & Commerce Summary','Campaign Source History','CRM Notes','Customer Timeline','data-cp-name','data-cp-snapshot','data-cp-chart','data-cp-messages','data-cp-rewards','data-cp-tips','data-cp-sources','data-cp-note-form','data-cp-timeline'] as $needle) self::assertStringContainsString($needle,$view);
     }
 
     public function testCustomerProfileCssAndJsContractsExist(): void
     {
         $css=$this->source('assets/css/merchant-customer-profile.css');
         $js=$this->source('assets/js/merchant-customer-profile.js');
-        foreach(['.mg-cp-grid','.mg-cp-timeline-card','.mg-cp-timeline','.mg-cp-kpis','.mg-cp-profile-card'] as $needle) self::assertStringContainsString($needle,$css);
-        foreach(['data-profile-tab','/api/merchant/customer-profile.php','data-customer-profile-page','data-cp-note-form','Microgifter.post'] as $needle) self::assertStringContainsString($needle,$js);
+        foreach(['.mg-cp-grid','.mg-cp-section-card','.mg-cp-timeline','.mg-cp-kpis','.mg-cp-profile-card'] as $needle) self::assertStringContainsString($needle,$css);
+        foreach(['data-profile-tab','data-profile-section','data-cp-action-panel','/api/merchant/customer-profile.php','data-customer-profile-page','data-cp-note-form','Microgifter.post'] as $needle) self::assertStringContainsString($needle,$js);
     }
 }
