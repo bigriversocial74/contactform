@@ -9,6 +9,7 @@ declare(strict_types=1);
       <p>Watch playbook triggers, recommended actions, guardrails, approval gates, and daily action usage before agents are allowed to act.</p>
     </div>
     <div class="mg-agent-monitor-actions">
+      <a class="mg-btn mg-btn-secondary" href="/merchant-agent-analytics.php">Outcome Analytics</a>
       <a class="mg-btn mg-btn-secondary" href="/merchant-agent-messages.php">Message Outbox</a>
       <a class="mg-btn mg-btn-secondary" href="/merchant-agent-execution.php">Execution Center</a>
       <a class="mg-btn mg-btn-secondary" href="/merchant-agent-approvals.php">Approval Queue</a>
@@ -65,6 +66,7 @@ declare(strict_types=1);
         <p>Every item includes why the action exists, customer/campaign source, guardrail applied, and whether merchant approval is required.</p>
       </div>
       <div class="mg-crm-tab-actions">
+        <a class="mg-btn mg-btn-secondary" href="/merchant-agent-analytics.php">Open outcome analytics</a>
         <a class="mg-btn mg-btn-secondary" href="/merchant-agent-messages.php">Open message outbox</a>
         <a class="mg-btn mg-btn-secondary" href="/merchant-agent-execution.php">Open execution center</a>
         <a class="mg-btn mg-btn-secondary" href="/merchant-agent-approvals.php">Open approval queue</a>
