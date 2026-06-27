@@ -3,6 +3,7 @@ declare(strict_types=1);
 $merchantView = $merchantView ?? 'overview';
 $merchantNav = [
  'overview'=>['Overview','Workspace health','/merchant.php','Overview'],
+ 'notifications'=>['Notifications','Tips, voucher messages, alerts','/merchant-notifications.php','Overview'],
  'onboarding'=>['Onboarding','Activation steps','/merchant-onboarding.php','Overview'],
  'products'=>['Products','Catalog and builder','/merchant-products.php','Commerce'],
  'reward_templates'=>['Reward Templates','Wallet-ready offers','/merchant-reward-templates.php','Commerce'],
