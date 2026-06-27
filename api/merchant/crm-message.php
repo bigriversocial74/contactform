@@ -1,115 +1,29 @@
 <?php
 declare(strict_types=1);
-
 require_once __DIR__ . '/_merchant.php';
 require_once dirname(__DIR__) . '/communications/_communications.php';
 require_once dirname(__DIR__) . '/communications/_delivery.php';
 require_once dirname(__DIR__, 2) . '/includes/merchant-crm.php';
-
 function mg_crm_message_public_id(): string { return mg_public_uuid(); }
 function mg_crm_message_conversation_key(array $contact): string { return 'crm:' . (string)$contact['public_id']; }
-function mg_crm_message_thread(PDO $pdo, array $contact, int $merchantId, int $recipientId): array
-{
-    $conversationKey = mg_crm_message_conversation_key($contact);
-    $stmt = $pdo->prepare('SELECT id,public_id,conversation_key FROM message_threads WHERE conversation_key=? LIMIT 1 FOR UPDATE');
-    $stmt->execute([$conversationKey]);
-    $thread = $stmt->fetch(PDO::FETCH_ASSOC);
-    if (!$thread) {
-        $publicId = mg_crm_message_public_id();
-        $subject = mb_substr('CRM: ' . ((string)($contact['name'] ?? '') ?: (string)$contact['email']), 0, 160);
-        $pdo->prepare('INSERT INTO message_threads (public_id,conversation_key,created_by_user_id,subject,created_at,updated_at) VALUES (?,?,?,?,NOW(),NOW())')
-            ->execute([$publicId, $conversationKey, $merchantId, $subject]);
-        $thread = ['id' => (int)$pdo->lastInsertId(), 'public_id' => $publicId, 'conversation_key' => $conversationKey];
-    }
-    $participant = $pdo->prepare('INSERT IGNORE INTO message_thread_participants (thread_id,user_id,joined_at,last_read_at) VALUES (?,?,NOW(),NOW())');
-    $participant->execute([(int)$thread['id'], $merchantId]);
-    if ($recipientId > 0) {
-        $pdo->prepare('INSERT IGNORE INTO message_thread_participants (thread_id,user_id,joined_at) VALUES (?,?,NOW())')->execute([(int)$thread['id'], $recipientId]);
-    }
-    return $thread;
+function mg_crm_message_thread(PDO $pdo, array $contact, int $merchantId, int $recipientId): array{
+ $key=mg_crm_message_conversation_key($contact);$stmt=$pdo->prepare('SELECT id,public_id,conversation_key FROM message_threads WHERE conversation_key=? LIMIT 1 FOR UPDATE');$stmt->execute([$key]);$thread=$stmt->fetch(PDO::FETCH_ASSOC);
+ if(!$thread){$pid=mg_crm_message_public_id();$subject=mb_substr('CRM: '.(((string)($contact['name']??''))?:((string)$contact['email'])),0,160);$pdo->prepare('INSERT INTO message_threads (public_id,conversation_key,created_by_user_id,subject,created_at,updated_at) VALUES (?,?,?,?,NOW(),NOW())')->execute([$pid,$key,$merchantId,$subject]);$thread=['id'=>(int)$pdo->lastInsertId(),'public_id'=>$pid,'conversation_key'=>$key];}
+ $pdo->prepare('INSERT IGNORE INTO message_thread_participants (thread_id,user_id,joined_at,last_read_at) VALUES (?,?,NOW(),NOW())')->execute([(int)$thread['id'],$merchantId]);
+ if($recipientId>0)$pdo->prepare('INSERT IGNORE INTO message_thread_participants (thread_id,user_id,joined_at) VALUES (?,?,NOW())')->execute([(int)$thread['id'],$recipientId]);
+ return $thread;
 }
-
-mg_require_method('POST');
-$user = mg_require_permission('merchant.campaigns.manage');
-$merchantId = (int)$user['id'];
-$pdo = mg_db();
-mg_merchant_ensure_workspace($pdo, $user);
-$input = mg_input();
-mg_require_csrf_for_write($input);
-
-$contactRef = strtolower(trim((string)($input['contact_id'] ?? $input['contact'] ?? '')));
-$body = mg_message_validate_body($input['message'] ?? $input['body'] ?? '');
-$idempotencyKey = trim((string)($input['idempotency_key'] ?? ''));
-if ($contactRef === '' || strlen($contactRef) !== 36) mg_fail('Contact is required.', 422);
-if ($idempotencyKey === '') $idempotencyKey = 'crm-message:' . $merchantId . ':' . $contactRef . ':' . hash('sha256', $body . '|' . microtime(true));
-if (mb_strlen($idempotencyKey) > 190) mg_fail('Invalid message request.', 422);
-
-try {
-    $pdo->beginTransaction();
-    $stmt = $pdo->prepare('SELECT cc.*,c.public_id campaign_public_id,c.title campaign_title,c.campaign_type FROM campaign_contacts cc INNER JOIN campaigns c ON c.id=cc.campaign_id WHERE cc.public_id=? AND cc.merchant_user_id=? LIMIT 1 FOR UPDATE');
-    $stmt->execute([$contactRef, $merchantId]);
-    $contact = $stmt->fetch(PDO::FETCH_ASSOC);
-    if (!$contact) { $pdo->rollBack(); mg_fail('CRM contact not found.', 404); }
-
-    $recipientId = (int)($contact['user_id'] ?? 0);
-    $thread = mg_crm_message_thread($pdo, $contact, $merchantId, $recipientId);
-    $existing = $pdo->prepare('SELECT public_id FROM messages WHERE sender_user_id=? AND idempotency_key=? LIMIT 1 FOR UPDATE');
-    $existing->execute([$merchantId, $idempotencyKey]);
-    $messageId = (string)($existing->fetchColumn() ?: '');
-    $duplicate = $messageId !== '';
-    if (!$duplicate) {
-        $messageId = mg_crm_message_public_id();
-        $pdo->prepare('INSERT INTO messages (public_id,thread_id,sender_user_id,recipient_user_id,body,idempotency_key,source_type,source_reference,created_at) VALUES (?,?,?,?,?,?,?,?,NOW())')
-            ->execute([$messageId, (int)$thread['id'], $merchantId, $recipientId > 0 ? $recipientId : null, $body, $idempotencyKey, 'merchant_crm_message', (string)$contact['public_id']]);
-        $pdo->prepare('UPDATE message_threads SET updated_at=NOW() WHERE id=?')->execute([(int)$thread['id']]);
-        $pdo->prepare('UPDATE message_thread_participants SET last_read_at=NOW() WHERE thread_id=? AND user_id=?')->execute([(int)$thread['id'], $merchantId]);
-    }
-
-    $result = ['delivered_via' => 'email_fallback', 'notification_id' => null, 'email_delivery' => null, 'thread_id' => (string)$thread['public_id'], 'message_id' => $messageId, 'duplicate' => $duplicate];
-
-    if (!$duplicate && $recipientId > 0) {
-        $notificationId = mg_create_notification($pdo, $recipientId, 'merchant_crm_message', 'New message from a merchant', $body, '/messages.php?thread=' . rawurlencode((string)$thread['public_id']), [
-            'actor_user_id' => $merchantId,
-            'event_key' => 'crm.message.' . $messageId,
-            'campaign_id' => (int)$contact['campaign_id'],
-            'contact_id' => (int)$contact['id'],
-            'thread_id' => (int)$thread['id'],
-            'message_id' => $messageId,
-            'campaign_type' => (string)$contact['campaign_type'],
-        ]);
-        $result['delivered_via'] = 'microgifter_thread';
-        $result['notification_id'] = $notificationId ?: null;
-    } elseif (!$duplicate && filter_var((string)$contact['email'], FILTER_VALIDATE_EMAIL)) {
-        $result['email_delivery'] = mg_delivery_enqueue($pdo, [
-            'idempotency_key' => 'crm-email:' . $merchantId . ':' . $contactRef . ':' . $messageId,
-            'event_type' => 'campaign.outbound_email',
-            'category' => 'campaign',
-            'channel' => 'email',
-            'template_key' => 'campaign.merchant_crm_message',
-            'recipient_user_id' => 0,
-            'recipient_snapshot' => ['email' => (string)$contact['email'], 'name' => (string)($contact['name'] ?? '')],
-            'payload' => ['subject' => 'Microgifter merchant message', 'text' => $body, 'message_type' => 'merchant_crm_message', 'thread_id' => (string)$thread['public_id'], 'message_id' => $messageId],
-            'max_attempts' => 3,
-        ]);
-    }
-
-    mg_merchant_crm_record_event($pdo, [
-        'merchant_user_id' => $merchantId,
-        'campaign_id' => (int)$contact['campaign_id'],
-        'campaign_type' => (string)$contact['campaign_type'],
-        'event_type' => 'crm.message.sent',
-        'source_type' => 'merchant_crm_message',
-        'source_public_id' => (string)$contact['public_id'],
-        'user_id' => $recipientId > 0 ? $recipientId : null,
-        'email' => (string)$contact['email'],
-        'name' => (string)($contact['name'] ?? ''),
-        'metadata' => $result,
-    ]);
-
-    $pdo->commit();
-    mg_ok(['contact_id' => (string)$contact['public_id'], 'campaign_id' => (string)$contact['campaign_public_id'], 'campaign_type' => (string)$contact['campaign_type'], 'thread_id' => (string)$thread['public_id'], 'message_id' => $messageId, 'message' => $result], 'CRM message queued.');
-} catch (Throwable $error) {
-    if ($pdo->inTransaction()) $pdo->rollBack();
-    mg_security_log('error', 'merchant.crm_message.failed', 'Unable to send CRM message.', ['exception_class' => $error::class, 'message' => $error->getMessage()], $merchantId);
-    mg_fail('Unable to send CRM message.', 500);
-}
+mg_require_method('POST');$user=mg_require_permission('merchant.campaigns.manage');$merchantId=(int)$user['id'];$pdo=mg_db();mg_merchant_ensure_workspace($pdo,$user);$input=mg_input();mg_require_csrf_for_write($input);
+$contactRef=strtolower(trim((string)($input['contact_id']??$input['contact']??'')));$body=mg_message_validate_body($input['message']??$input['body']??'');$idempotencyKey=trim((string)($input['idempotency_key']??''));
+if($contactRef===''||strlen($contactRef)!==36)mg_fail('Contact is required.',422);if($idempotencyKey==='')$idempotencyKey='crm-message:'.$merchantId.':'.$contactRef.':'.hash('sha256',$body.'|'.microtime(true));if(mb_strlen($idempotencyKey)>190)mg_fail('Invalid message request.',422);
+try{$pdo->beginTransaction();
+ $stmt=$pdo->prepare("SELECT cc.*,c.public_id campaign_public_id,c.title campaign_title,c.campaign_type,COALESCE(cc.user_id,email_user.id) resolved_user_id FROM campaign_contacts cc INNER JOIN campaigns c ON c.id=cc.campaign_id LEFT JOIN users email_user ON cc.user_id IS NULL AND LOWER(email_user.email)=LOWER(cc.email) WHERE cc.public_id=? AND cc.merchant_user_id=? LIMIT 1 FOR UPDATE");$stmt->execute([$contactRef,$merchantId]);$contact=$stmt->fetch(PDO::FETCH_ASSOC);if(!$contact){$pdo->rollBack();mg_fail('CRM contact not found.',404);}
+ $recipientId=(int)($contact['resolved_user_id']??$contact['user_id']??0);if($recipientId>0&&empty($contact['user_id'])){$pdo->prepare('UPDATE campaign_contacts SET user_id=?,updated_at=NOW() WHERE id=? AND user_id IS NULL')->execute([$recipientId,(int)$contact['id']]);$contact['user_id']=$recipientId;}
+ $thread=mg_crm_message_thread($pdo,$contact,$merchantId,$recipientId);$existing=$pdo->prepare('SELECT public_id FROM messages WHERE sender_user_id=? AND idempotency_key=? LIMIT 1 FOR UPDATE');$existing->execute([$merchantId,$idempotencyKey]);$messageId=(string)($existing->fetchColumn()?:'');$duplicate=$messageId!=='';
+ if(!$duplicate){$messageId=mg_crm_message_public_id();$pdo->prepare('INSERT INTO messages (public_id,thread_id,sender_user_id,recipient_user_id,body,idempotency_key,source_type,source_reference,created_at) VALUES (?,?,?,?,?,?,?,?,NOW())')->execute([$messageId,(int)$thread['id'],$merchantId,$recipientId>0?$recipientId:null,$body,$idempotencyKey,'merchant_crm_message',(string)$contact['public_id']]);$pdo->prepare('UPDATE message_threads SET updated_at=NOW() WHERE id=?')->execute([(int)$thread['id']]);$pdo->prepare('UPDATE message_thread_participants SET last_read_at=NOW() WHERE thread_id=? AND user_id=?')->execute([(int)$thread['id'],$merchantId]);}
+ $result=['delivered_via'=>'email_fallback','notification_id'=>null,'email_delivery'=>null,'thread_id'=>(string)$thread['public_id'],'message_id'=>$messageId,'duplicate'=>$duplicate,'recipient_user_id'=>$recipientId?:null];
+ if(!$duplicate&&$recipientId>0){$nid=mg_create_notification($pdo,$recipientId,'message','New merchant CRM message',$body,'/messages.php?thread='.rawurlencode((string)$thread['public_id']),['actor_user_id'=>$merchantId,'event_key'=>'crm.message.'.$messageId,'campaign_id'=>(int)$contact['campaign_id'],'contact_id'=>(int)$contact['id'],'thread_id'=>(int)$thread['id'],'thread_public_id'=>(string)$thread['public_id'],'message_id'=>$messageId,'campaign_type'=>(string)$contact['campaign_type'],'source_system'=>'merchant_crm','source_channel'=>'campaign_contacts','source_label'=>'Merchant CRM']);$result['delivered_via']='microgifter_thread';$result['notification_id']=$nid?:null;}
+ elseif(!$duplicate&&filter_var((string)$contact['email'],FILTER_VALIDATE_EMAIL)){$result['email_delivery']=mg_delivery_enqueue($pdo,['idempotency_key'=>'crm-email:'.$merchantId.':'.$contactRef.':'.$messageId,'event_type'=>'campaign.outbound_email','category'=>'campaign','channel'=>'email','template_key'=>'campaign.merchant_crm_message','recipient_user_id'=>0,'recipient_snapshot'=>['email'=>(string)$contact['email'],'name'=>(string)($contact['name']??'')],'payload'=>['subject'=>'Microgifter merchant message','text'=>$body,'message_type'=>'merchant_crm_message','thread_id'=>(string)$thread['public_id'],'message_id'=>$messageId],'max_attempts'=>3]);}
+ mg_merchant_crm_record_event($pdo,['merchant_user_id'=>$merchantId,'campaign_id'=>(int)$contact['campaign_id'],'campaign_type'=>(string)$contact['campaign_type'],'event_type'=>'crm.message.sent','source_type'=>'merchant_crm_message','source_public_id'=>(string)$contact['public_id'],'user_id'=>$recipientId>0?$recipientId:null,'email'=>(string)$contact['email'],'name'=>(string)($contact['name']??''),'metadata'=>$result]);
+ $pdo->commit();$notice=$result['delivered_via']==='microgifter_thread'?'CRM message delivered to customer Messages.':'CRM message queued for email fallback.';mg_ok(['contact_id'=>(string)$contact['public_id'],'campaign_id'=>(string)$contact['campaign_public_id'],'campaign_type'=>(string)$contact['campaign_type'],'thread_id'=>(string)$thread['public_id'],'message_id'=>$messageId,'message'=>$result],$notice,$duplicate?200:201);
+}catch(Throwable $error){if($pdo->inTransaction())$pdo->rollBack();mg_security_log('error','merchant.crm_message.failed','Unable to send CRM message.',['exception_class'=>$error::class,'message'=>$error->getMessage()],$merchantId);mg_fail('Unable to send CRM message.',500);}
