@@ -11,6 +11,18 @@ if (!mg_user_has_merchant_access($user, $pdo)) {
     mg_fail('Merchant access required.', 403);
 }
 
+function mg_merchant_canvas_crm_metadata(array $session): array
+{
+    $raw = (string)($session['metadata_json'] ?? '');
+    if ($raw === '') return [];
+    try {
+        $decoded = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
+        return is_array($decoded) ? $decoded : [];
+    } catch (Throwable) {
+        return [];
+    }
+}
+
 function mg_merchant_canvas_customer_crm_core(PDO $pdo, int $merchantUserId, string $sessionPublicId): array
 {
     mg_store_canvas_require_tables($pdo, ['mg_store_sessions','mg_store_session_events','mg_customer_store_history'], 'Store Canvas');
@@ -27,6 +39,19 @@ function mg_merchant_canvas_customer_crm_core(PDO $pdo, int $merchantUserId, str
     $session = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$session) {
         throw new RuntimeException('Customer session is not available.');
+    }
+
+    $metadata = mg_merchant_canvas_crm_metadata($session);
+    $isTest = !empty($metadata['test_canvas_avatar']) || (($metadata['source'] ?? '') === 'merchant_canvas_test_seed');
+    $customerName = trim((string)($session['customer_name'] ?? ''));
+    if ($customerName === '') {
+        $customerName = trim((string)($metadata['customer_name'] ?? '')) ?: 'Customer';
+    }
+    $customerAvatar = mg_store_avatar_url($session['customer_avatar_url'] ?? null) ?: mg_store_avatar_url($metadata['customer_avatar_url'] ?? null);
+    $customerProfileType = (string)($session['customer_profile_type'] ?: ($isTest ? 'test_customer' : 'customer'));
+    $sessionProjection = mg_store_project_session($session);
+    if (is_array($sessionProjection) && empty($sessionProjection['source_post']['headline']) && isset($metadata['source_label'])) {
+        $sessionProjection['source_post']['headline'] = (string)$metadata['source_label'];
     }
 
     $stats = ['visit_count'=>0,'messages_sent'=>0,'rewards_received'=>0,'rewards_claimed'=>0,'gifts_sent'=>0];
@@ -62,13 +87,13 @@ function mg_merchant_canvas_customer_crm_core(PDO $pdo, int $merchantUserId, str
     }
 
     return [
-        'session' => mg_store_project_session($session),
+        'session' => $sessionProjection,
         'customer' => [
-            'name' => (string)($session['customer_name'] ?: 'Customer'),
+            'name' => $customerName,
             'slug' => (string)($session['customer_slug'] ?? ''),
-            'avatar_url' => mg_store_avatar_url($session['customer_avatar_url'] ?? null),
-            'profile_type' => (string)($session['customer_profile_type'] ?: 'customer'),
-            'account_status' => 'In system',
+            'avatar_url' => $customerAvatar,
+            'profile_type' => $customerProfileType,
+            'account_status' => $isTest ? 'Test avatar' : 'In system',
         ],
         'stats' => $stats,
         'events' => $events,
