@@ -1,0 +1,6 @@
+.mg-crm-review-checklist{display:grid;grid-template-columns:minmax(0,1fr) minmax(240px,.7fr) auto;gap:14px;align-items:center;border:1px solid #dbeafe;border-radius:18px;background:linear-gradient(180deg,#fff,#f8fbff);box-shadow:0 14px 34px rgba(37,99,235,.08);padding:14px;margin:0 0 14px}
+.mg-crm-review-checklist.is-ready{border-color:#bbf7d0;background:linear-gradient(180deg,#fff,#f7fef9)}
+.mg-crm-review-checklist strong{display:block;color:#071225;font-size:15px;margin-top:4px}.mg-crm-review-checklist p{margin:5px 0 0;color:#536582;font-size:12px;line-height:1.5}
+.mg-crm-review-checklist ul{display:grid;gap:6px;margin:0;padding:0;list-style:none}.mg-crm-review-checklist li{display:flex;align-items:center;gap:7px;color:#536582;font-size:12px;font-weight:800}.mg-crm-review-checklist li span{width:9px;height:9px;border-radius:999px;background:#f59e0b}.mg-crm-review-checklist li.is-good span{background:#22c55e}.mg-crm-review-checklist li.is-missing span{background:#ef4444}
+.mg-crm-review-checklist .mg-btn{min-height:32px!important;height:32px!important;border-radius:10px!important;font-size:12px!important;font-weight:850!important;white-space:nowrap}
+@media(max-width:900px){.mg-crm-review-checklist{grid-template-columns:1fr;align-items:start}.mg-crm-review-checklist .mg-btn{justify-self:start}}
