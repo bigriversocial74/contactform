@@ -12,11 +12,13 @@ declare(strict_types=1);
       <button class="mg-btn mg-btn-secondary" type="button" data-cp-message-customer data-cp-open-panel="message">💬 Message Customer</button>
       <button class="mg-btn mg-btn-secondary" type="button" data-cp-note-trigger data-cp-open-panel="note">✎ Add Note</button>
       <button class="mg-btn mg-btn-secondary" type="button" data-cp-open-panel="followup">⏱ Follow Up</button>
+      <a class="mg-btn mg-btn-secondary" href="/merchant-followups.php" data-cp-open-followup-queue>Task Queue</a>
     </div>
   </header>
 
   <nav class="mg-cp-tabs" aria-label="Customer profile sections" role="tablist">
     <button class="is-active" type="button" role="tab" aria-selected="true" data-profile-tab="overview">Overview</button>
+    <button type="button" role="tab" aria-selected="false" data-profile-tab="followups">Follow-ups</button>
     <button type="button" role="tab" aria-selected="false" data-profile-tab="timeline">Timeline</button>
     <button type="button" role="tab" aria-selected="false" data-profile-tab="rewards">Rewards</button>
     <button type="button" role="tab" aria-selected="false" data-profile-tab="messages">Messages</button>
@@ -113,22 +115,30 @@ declare(strict_types=1);
         </div>
 
         <div class="mg-cp-table-row">
+          <article class="mg-cp-card mg-cp-followups-card" data-cp-followups-card>
+            <div class="mg-cp-card-head"><div><h3>Follow-up Tasks</h3><span data-cp-followup-summary>Loading tasks…</span></div><button type="button" data-profile-tab-jump="followups">Open tasks →</button></div>
+            <div class="mg-cp-task-summary"><span><strong data-cp-followup-open>—</strong> Open</span><span><strong data-cp-followup-overdue>—</strong> Overdue</span><span><strong data-cp-followup-today>—</strong> Today</span></div>
+            <table><thead><tr><th>Due</th><th>Task</th><th>Status</th><th>Actions</th></tr></thead><tbody data-cp-followups><tr><td colspan="4">Loading follow-ups…</td></tr></tbody></table>
+          </article>
           <article class="mg-cp-card mg-cp-table-card">
             <div class="mg-cp-card-head"><h3>Recent Rewards</h3><button type="button" data-profile-tab-jump="rewards">View rewards →</button></div>
             <table><thead><tr><th>Reward</th><th>Campaign</th><th>Status</th><th>Sent</th><th>Action</th></tr></thead><tbody data-cp-rewards><tr><td colspan="5">Loading rewards…</td></tr></tbody></table>
           </article>
+        </div>
+
+        <div class="mg-cp-table-row">
           <article class="mg-cp-card mg-cp-tip-card">
             <div class="mg-cp-card-head"><h3>Tips & Commerce Summary</h3><button type="button" data-profile-tab-jump="tips">View tips →</button></div>
             <div class="mg-cp-tip-total"><div><small>Total Tips Received</small><strong data-cp-tip-total>—</strong></div><div><small>Number of Tips</small><strong data-cp-tip-count>—</strong></div></div>
             <table><thead><tr><th>Date</th><th>Amount</th><th>Action</th></tr></thead><tbody data-cp-tips><tr><td colspan="3">Loading tips…</td></tr></tbody></table>
           </article>
-        </div>
-
-        <div class="mg-cp-bottom-row">
           <article class="mg-cp-card mg-cp-source-card">
             <div class="mg-cp-card-head"><h3>Campaign Source History</h3></div>
             <table><thead><tr><th>Source / Campaign</th><th>Type</th><th>First Seen</th><th>Action</th></tr></thead><tbody data-cp-sources><tr><td colspan="4">Loading campaign sources…</td></tr></tbody></table>
           </article>
+        </div>
+
+        <div class="mg-cp-bottom-row">
           <article class="mg-cp-card mg-cp-timeline-card" aria-label="Customer timeline">
             <div class="mg-cp-card-head"><h3>Customer Timeline</h3><button type="button" data-profile-tab-jump="timeline">Open timeline →</button></div>
             <ol class="mg-cp-timeline" data-cp-timeline><li><span class="is-blue">•</span><div><strong>Loading timeline</strong><p>Customer events will appear here.</p></div></li></ol>
@@ -136,6 +146,14 @@ declare(strict_types=1);
         </div>
       </section>
     </section>
+  </section>
+
+  <section class="mg-cp-section" data-profile-section="followups" hidden>
+    <article class="mg-cp-card mg-cp-section-card">
+      <div class="mg-cp-card-head"><div><h3>Follow-ups / Tasks</h3><span>Open, overdue, upcoming, snoozed, and completed follow-up tasks for this customer.</span></div><div class="mg-cp-inline-actions"><button type="button" data-cp-open-panel="followup">Create task</button><a href="/merchant-followups.php">Merchant queue</a></div></div>
+      <div class="mg-cp-task-summary"><span><strong data-cp-followup-total>—</strong> Total</span><span><strong data-cp-followup-open-full>—</strong> Open</span><span><strong data-cp-followup-completed>—</strong> Completed</span></div>
+      <table><thead><tr><th>Due</th><th>Task</th><th>Campaign</th><th>Status</th><th>Quick actions</th></tr></thead><tbody data-cp-followups-full><tr><td colspan="5">Loading follow-ups…</td></tr></tbody></table>
+    </article>
   </section>
 
   <section class="mg-cp-section" data-profile-section="timeline" hidden>
