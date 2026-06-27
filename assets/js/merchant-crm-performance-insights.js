@@ -9,6 +9,7 @@ function esc(v){return String(v==null?'':v).replace(/[&<>'"]/g,function(c){retur
 function num(v){return Number(v||0).toLocaleString()}
 function pct(v){return Number(v||0).toFixed(Number(v||0)%1?1:0)+'%'}
 function empty(title,body){return '<div class="mg-empty-state"><strong>'+esc(title)+'</strong>'+(body?'<p>'+esc(body)+'</p>':'')+'</div>'}
+function loadDraftReviewBundle(){if(qs('script[data-crm-draft-review-script]'))return;var s=document.createElement('script');s.src='/assets/js/merchant-crm-draft-review-center.js';s.defer=true;s.setAttribute('data-crm-draft-review-script','1');document.head.appendChild(s)}
 function ensurePanel(){
   var nav=qs('.mg-crm-tabs',shell),perfTab=qs('[data-crm-tab-target="performance"]',shell),campaignTab=qs('[data-crm-tab-target="campaigns"]',shell);
   if(nav&&!qs('[data-crm-tab-target="insights"]',shell)){
@@ -35,7 +36,7 @@ function renderInsights(items){var box=qs('[data-crm-insights-list]',shell);if(!
 function renderSegments(items){var box=qs('[data-crm-insights-segments]',shell);if(!box)return;if(!items.length){box.innerHTML=empty('No segment signals','Saved segment performance will appear after builder runs.');return}box.innerHTML=items.slice(0,8).map(function(s){return '<article class="mg-crm-insight-segment"><div><strong>'+esc(s.segment_key||'all')+'</strong><small>'+num(s.audience)+' audience · '+num(s.runs)+' runs</small></div><span>'+pct(s.conversion_rate)+'</span></article>'}).join('')}
 var loaded=false;
 async function load(force){if(loaded&&!force)return;var days=(qs('[data-crm-insights-days]',shell)||{}).value||'90';var box=qs('[data-crm-insights-list]',shell);if(box)box.innerHTML=empty('Loading insights','');try{var r=await Microgifter.get('/api/merchant/crm-performance-insights.php?days='+encodeURIComponent(days)),d=r.data||r;loaded=true;renderKpis(d.totals||{});renderInsights(d.insights||[]);renderSegments(d.segments||[])}catch(e){if(box)box.innerHTML=empty('Unable to load insights',e.message||'Try again.')}}
-ensurePanel();
+ensurePanel();loadDraftReviewBundle();
 document.addEventListener('mg:crm-tab:changed',function(ev){if(ev.detail&&ev.detail.tab==='insights')load(false);else hideInsights()});
 document.addEventListener('mg:crm-action-history:refresh',function(){loaded=false});
 document.addEventListener('click',function(ev){var insightAction=ev.target&&ev.target.closest&&ev.target.closest('[data-crm-insight-action]');if(insightAction){ev.preventDefault();launchInsight(insightMap[String(insightAction.getAttribute('data-crm-insight-action'))]);return}var insightTab=ev.target&&ev.target.closest&&ev.target.closest('[data-crm-tab-target="insights"]');if(insightTab){ev.preventDefault();activateInsights();return}var otherTab=ev.target&&ev.target.closest&&ev.target.closest('[data-crm-tab-target]');if(otherTab&&otherTab.getAttribute('data-crm-tab-target')!=='insights')hideInsights();var refresh=ev.target&&ev.target.closest&&ev.target.closest('[data-crm-insights-refresh]');if(refresh){loaded=false;load(true)}});
