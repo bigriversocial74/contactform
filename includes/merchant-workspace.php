@@ -53,6 +53,9 @@ $appSidebarLabel = $canMerchantAccess ? 'Merchant' : 'Workspace';
 $appSidebarActive = $canMerchantAccess ? $merchantView : 'subscriptions';
 $appSidebarCompact = true;
 ?>
+<?php if ($canMerchantAccess): ?>
+<link rel="stylesheet" href="/assets/css/merchant-module-limits.css">
+<?php endif; ?>
 <section class="mg-app-shell mg-merchant-app" data-merchant-app data-merchant-view="<?= mg_e($merchantView) ?>" data-sidebar-contract="mg-app-sidebar" data-merchant-access="<?= $canMerchantAccess ? 'true' : 'false' ?>">
   <?php require __DIR__ . '/app-sidebar.php'; ?>
   <main class="mg-app-workspace mg-merchant-main">
@@ -83,3 +86,6 @@ $appSidebarCompact = true;
     <?php endif; ?>
   </main>
 </section>
+<?php if ($canMerchantAccess): ?>
+<script src="/assets/js/merchant-module-limits.js" defer></script>
+<?php endif; ?>
