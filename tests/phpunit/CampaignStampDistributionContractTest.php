@@ -63,7 +63,7 @@ final class CampaignStampDistributionContractTest extends TestCase
     {
         $source = $this->read('api/public/campaigns/engage.php');
         self::assertStringContainsString("INNER JOIN reward_templates rt ON rt.id = c.reward_template_id", $source);
-        self::assertStringContainsString("rt.status = \\'active\\'", $source);
+        self::assertStringContainsString("rt.status = \\\'active\\\'", $source);
         self::assertStringContainsString('mg_public_campaign_enforce_reward_limits', $source);
         self::assertStringContainsString('INSERT INTO wallet_items', $source);
         self::assertStringContainsString("'wallet_item.issued'", $source);
@@ -72,6 +72,18 @@ final class CampaignStampDistributionContractTest extends TestCase
         self::assertStringContainsString('mg_zero_reward_issue_from_wallet', $source);
         self::assertStringContainsString("'already_issued' => true", $source);
         self::assertStringContainsString("'already_issued' => false", $source);
+    }
+
+    public function testNewsletterSignupCreatesMerchantNotification(): void
+    {
+        $source = $this->read('api/public/campaigns/signup.php');
+        self::assertStringContainsString('mg_public_campaign_notify_merchant_signup', $source);
+        self::assertStringContainsString('INSERT INTO notifications', $source);
+        self::assertStringContainsString('merchant_campaign_signup', $source);
+        self::assertStringContainsString('New newsletter signup', $source);
+        self::assertStringContainsString('/merchant-crm.php?campaign=', $source);
+        self::assertStringContainsString('merchant_notification', $source);
+        self::assertStringContainsString('existing_contact', $source);
     }
 
     public function testPublicCampaignFormShowsWalletResultAndGenericDetailRoutesToEngage(): void
