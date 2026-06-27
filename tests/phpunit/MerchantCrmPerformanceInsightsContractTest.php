@@ -44,4 +44,19 @@ final class MerchantCrmPerformanceInsightsContractTest extends TestCase
         self::assertStringContainsString('mg-crm-insights-grid', $css);
         self::assertStringContainsString('mg-crm-insight-chips', $css);
     }
+
+    public function testInsightsActionLauncherPrefillsBuilderForReview(): void
+    {
+        $ui = $this->read('assets/js/merchant-crm-performance-insights.js');
+        $builder = $this->read('assets/js/merchant-crm-campaign-builder.js');
+        $css = $this->read('assets/css/merchant-crm-command-center.css');
+        self::assertStringContainsString('data-crm-insight-action', $ui);
+        self::assertStringContainsString('mg:crm-builder:prefill', $ui);
+        self::assertStringContainsString('action_exceptions', $ui);
+        self::assertStringContainsString('mg:crm-action-history:refresh', $ui);
+        self::assertStringContainsString('prefillFromInsight', $builder);
+        self::assertStringContainsString('Insight loaded into Campaign Builder for review', $builder);
+        self::assertStringContainsString('is-insight-prefilled', $builder);
+        self::assertStringContainsString('mg-crm-insight-actions', $css);
+    }
 }
