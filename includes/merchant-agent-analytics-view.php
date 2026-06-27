@@ -9,6 +9,7 @@ declare(strict_types=1);
       <p>Measure recommendations, merchant decisions, execution results, message conversion, follow-up conversion, and customer reach across the controlled agent workflow.</p>
     </div>
     <div class="mg-agent-analytics-actions">
+      <a class="mg-btn mg-btn-secondary" href="/merchant-agent-roi.php">ROI Attribution</a>
       <a class="mg-btn mg-btn-secondary" href="/merchant-agent-monitor.php">Agent Monitor</a>
       <a class="mg-btn mg-btn-secondary" href="/merchant-agent-approvals.php">Review Queue</a>
       <a class="mg-btn mg-btn-secondary" href="/merchant-agent-execution.php">Execution Center</a>
@@ -28,13 +29,13 @@ declare(strict_types=1);
 
   <section class="mg-agent-analytics-grid">
     <article class="mg-app-panel mg-agent-analytics-panel">
-      <div class="mg-app-panel-head"><div><h2>Outcome Funnel</h2><p>Path from recommendation to approval, execution, message, and follow-up.</p></div></div>
+      <div class="mg-app-panel-head"><div><h2>Outcome Funnel</h2><p>Path from recommendation to approval, execution, message, and follow-up.</p></div><a class="mg-btn mg-btn-secondary" href="/merchant-agent-roi.php">Attribute ROI</a></div>
       <div class="mg-agent-analytics-funnel" data-agent-analytics-funnel><div class="mg-empty-state"><strong>Loading outcome funnel…</strong></div></div>
     </article>
     <article class="mg-app-panel mg-agent-analytics-panel">
       <div class="mg-app-panel-head"><div><h2>Time Window</h2><p>Adjust the analytics window without changing the event log.</p></div></div>
       <div class="mg-agent-analytics-window" data-agent-analytics-window><button type="button" data-aa-days="30">30 days</button><button type="button" class="is-active" data-aa-days="90">90 days</button><button type="button" data-aa-days="180">180 days</button><button type="button" data-aa-days="365">365 days</button></div>
-      <div class="mg-agent-analytics-links"><a href="/merchant-agent-monitor.php">Monitor</a><a href="/merchant-agent-approvals.php">Review</a><a href="/merchant-agent-execution.php">Execute</a><a href="/merchant-agent-messages.php">Messages</a><a href="/merchant-customer.php?tab=timeline">Customer timeline</a></div>
+      <div class="mg-agent-analytics-links"><a href="/merchant-agent-roi.php">ROI Attribution</a><a href="/merchant-agent-monitor.php">Monitor</a><a href="/merchant-agent-approvals.php">Review</a><a href="/merchant-agent-execution.php">Execute</a><a href="/merchant-agent-messages.php">Messages</a><a href="/merchant-customer.php?tab=timeline">Customer timeline</a></div>
     </article>
   </section>
 
@@ -49,7 +50,7 @@ declare(strict_types=1);
   </section>
 
   <article class="mg-app-panel mg-agent-analytics-panel">
-    <div class="mg-app-panel-head"><div><h2>Recent Outcome Events</h2><p>Latest agent workflow events with links back to the right controlled workflow surface.</p></div><p class="mg-form-status" data-agent-analytics-status></p></div>
+    <div class="mg-app-panel-head"><div><h2>Recent Outcome Events</h2><p>Latest agent workflow events with links back to the right controlled workflow surface.</p></div><div class="mg-crm-tab-actions"><a class="mg-btn mg-btn-secondary" href="/merchant-agent-roi.php">Open ROI attribution</a><p class="mg-form-status" data-agent-analytics-status></p></div></div>
     <div class="mg-agent-analytics-events" data-aa-recent><div class="mg-empty-state"><strong>Loading recent agent outcome events…</strong></div></div>
   </article>
 </section>
