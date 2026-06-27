@@ -1,0 +1,9 @@
+.mg-canvas-reward-panel{border:1px solid rgba(37,99,235,.18);border-radius:18px;background:linear-gradient(135deg,#eff6ff,#ffffff);padding:12px}
+.mg-canvas-reward-panel[hidden]{display:none!important}
+.mg-canvas-reward-panel form{display:flex;flex-direction:column;gap:10px}
+.mg-canvas-reward-panel label{display:flex;flex-direction:column;gap:6px;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#475569;font-weight:950}
+.mg-canvas-reward-panel select,.mg-canvas-reward-panel textarea{width:100%;border:1px solid rgba(148,163,184,.35);border-radius:14px;background:#fff;color:#0f172a;font:inherit;text-transform:none;letter-spacing:0;padding:10px 12px;line-height:1.45}
+.mg-canvas-reward-panel textarea{resize:vertical;min-height:86px}
+.mg-canvas-reward-note{margin:0;color:#475569;font-weight:800;line-height:1.45}
+.mg-canvas-reward-note.is-error{color:#b91c1c}
+.mg-canvas-action-grid button:not(:disabled)[data-drawer-toggle-reward]{background:#ecfdf5;border-color:rgba(16,185,129,.28);color:#047857}
