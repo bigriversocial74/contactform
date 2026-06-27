@@ -88,6 +88,7 @@ try {
     $existingContactStmt->execute([$campaignId, $email]);
     $existingContact = $existingContactStmt->fetch(PDO::FETCH_ASSOC);
     $isNewContact = !$existingContact;
+    mg_public_campaign_enforce_crm_contact_limit($pdo, $merchantId, $email, $isNewContact);
     $contactMetadata = ['campaign_type' => $campaignType, 'campaign_public_id' => (string)$campaign['public_id'], 'ip' => mg_client_ip(), 'user_agent' => substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255)];
     $contactStmt = $pdo->prepare('INSERT INTO campaign_contacts (public_id,merchant_user_id,campaign_id,user_id,email,phone,name,source,opt_in_status,metadata_json,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,NOW(),NOW()) ON DUPLICATE KEY UPDATE user_id=VALUES(user_id), phone=VALUES(phone), name=VALUES(name), opt_in_status=VALUES(opt_in_status), metadata_json=VALUES(metadata_json), updated_at=NOW()');
     $contactStmt->execute([$contactPublicId, $merchantId, $campaignId, $userId, $email, $phone !== '' ? $phone : null, $name !== '' ? $name : null, $source, 'opted_in', json_encode($contactMetadata, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)]);
@@ -110,6 +111,7 @@ try {
         mg_ok(['contact_id' => (string)$contact['public_id'], 'wallet_item_id' => (string)$existing['public_id'], 'wallet_status' => (string)$existing['status'], 'already_issued' => true, 'pppm_bridge' => $bridge, 'merchant_crm' => $crm, 'merchant_notification' => $merchantNotification, 'outbound_email' => $outbound], 'Signup already has this reward.');
     }
     mg_public_campaign_enforce_reward_limits($pdo, $campaign, $userId, $email);
+    mg_public_campaign_enforce_monthly_stamp_limit($pdo, $merchantId);
     $walletPublicId = mg_public_campaign_uuid();
     $walletStmt = $pdo->prepare('INSERT INTO wallet_items (public_id,user_id,contact_id,merchant_user_id,reward_template_id,campaign_id,source_type,source_id,status,value_cents_snapshot,currency_snapshot,title_snapshot,metadata_json,issued_at,expires_at,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),?,NOW(),NOW())');
     $walletStmt->execute([$walletPublicId, $userId, $contactId, $merchantId, $rewardTemplateId, $campaignId, 'newsletter_signup', (string)$contact['public_id'], 'issued', (int)$campaign['value_amount_cents'], (string)$campaign['currency'], (string)$campaign['reward_template_title'], json_encode(['campaign_type' => 'newsletter_signup', 'reward_template_id' => (string)$campaign['reward_template_public_id']], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), $expiresAt]);
