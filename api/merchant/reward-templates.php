@@ -3,6 +3,68 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_merchant.php';
 
+function mg_reward_templates_require_access(bool $manage): array
+{
+    $user = mg_require_api_user();
+    $permission = $manage ? 'merchant.reward_templates.manage' : 'merchant.reward_templates.view';
+    $roles = is_array($user['roles'] ?? null) ? $user['roles'] : [];
+    $permissions = is_array($user['permissions'] ?? null) ? $user['permissions'] : [];
+    if (
+        in_array('super_admin', $roles, true)
+        || in_array('admin', $roles, true)
+        || in_array('merchant', $roles, true)
+        || in_array($permission, $permissions, true)
+    ) {
+        return $user;
+    }
+    mg_audit('permission_denied', 'security', ['permission' => $permission], (int) $user['id']);
+    mg_security_log('warning', 'permission.denied', 'Permission denied.', ['permission' => $permission], (int) $user['id']);
+    mg_fail('Merchant reward template access is not enabled for this account.', 403);
+}
+
+function mg_reward_templates_ensure_schema(PDO $pdo): void
+{
+    $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS reward_templates (
+          id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+          public_id CHAR(36) NOT NULL,
+          merchant_user_id BIGINT UNSIGNED NOT NULL,
+          location_id BIGINT UNSIGNED NULL,
+          title VARCHAR(180) NOT NULL,
+          description TEXT NULL,
+          reward_type ENUM('dollar_credit','free_item','discount','perk_upgrade','event_reward','custom') NOT NULL DEFAULT 'custom',
+          value_type ENUM('fixed_amount','percent','free_item','custom') NOT NULL DEFAULT 'custom',
+          value_amount_cents INT UNSIGNED NOT NULL DEFAULT 0,
+          value_percent DECIMAL(5,2) NULL,
+          currency CHAR(3) NOT NULL DEFAULT 'USD',
+          redemption_instructions TEXT NULL,
+          expiration_rule ENUM('none','after_issue','after_claim','fixed_date','event_date') NOT NULL DEFAULT 'none',
+          expiration_days INT UNSIGNED NULL,
+          expires_at DATETIME NULL,
+          quantity_limit INT UNSIGNED NULL,
+          issued_count INT UNSIGNED NOT NULL DEFAULT 0,
+          per_user_limit INT UNSIGNED NOT NULL DEFAULT 1,
+          agent_discoverable TINYINT(1) NOT NULL DEFAULT 0,
+          agent_summary VARCHAR(500) NULL,
+          agent_categories_json JSON NULL,
+          agent_locations_json JSON NULL,
+          agent_budget_hint_cents INT UNSIGNED NULL,
+          agent_use_cases_json JSON NULL,
+          agent_add_to_wallet_allowed TINYINT(1) NOT NULL DEFAULT 0,
+          agent_gift_send_allowed TINYINT(1) NOT NULL DEFAULT 0,
+          status ENUM('draft','active','paused','archived') NOT NULL DEFAULT 'draft',
+          metadata_json JSON NULL,
+          created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          PRIMARY KEY (id),
+          UNIQUE KEY uq_reward_templates_public_id (public_id),
+          KEY idx_reward_templates_merchant_status (merchant_user_id,status,updated_at),
+          KEY idx_reward_templates_agent (agent_discoverable,status,updated_at),
+          KEY idx_reward_templates_type (reward_type,status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    );
+}
+
 function mg_reward_template_money_to_cents(mixed $value): int
 {
     $raw = trim((string) $value);
@@ -61,10 +123,11 @@ function mg_reward_template_row(array $row): array
 }
 
 $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
-$user = $method === 'GET' ? mg_require_permission('merchant.reward_templates.view') : mg_require_permission('merchant.reward_templates.manage');
+$user = mg_reward_templates_require_access($method !== 'GET');
 $merchantId = (int) $user['id'];
 $pdo = mg_db();
 mg_merchant_ensure_workspace($pdo, $user);
+mg_reward_templates_ensure_schema($pdo);
 
 if ($method === 'GET') {
     try {
@@ -99,8 +162,10 @@ $description = trim((string) ($input['description'] ?? '')) ?: null;
 $rewardType = trim((string) ($input['reward_type'] ?? 'custom'));
 $status = trim((string) ($input['status'] ?? 'draft'));
 $valueType = trim((string) ($input['value_type'] ?? ($rewardType === 'discount' ? 'percent' : 'fixed_amount')));
-$valueAmountCents = $valueType === 'percent' ? 0 : mg_reward_template_money_to_cents($input['value_amount'] ?? $input['value_amount_cents'] ?? 0);
-$valuePercent = $valueType === 'percent' ? (float) ($input['value_percent'] ?? $input['value_amount'] ?? 0) : null;
+$valueRaw = trim((string) ($input['value_amount'] ?? $input['value_amount_cents'] ?? ''));
+$percentRaw = trim((string) ($input['value_percent'] ?? $valueRaw));
+$valueAmountCents = $valueType === 'percent' ? 0 : mg_reward_template_money_to_cents($valueRaw);
+$valuePercent = $valueType === 'percent' ? ($percentRaw === '' ? null : (float) $percentRaw) : null;
 $currency = strtoupper(trim((string) ($input['currency'] ?? 'USD')));
 $redemptionInstructions = trim((string) ($input['redemption_instructions'] ?? '')) ?: null;
 $expirationRule = trim((string) ($input['expiration_rule'] ?? 'none'));
@@ -125,6 +190,7 @@ if (
     || !in_array($status, ['draft','active','paused','archived'], true)
     || !in_array($expirationRule, ['none','after_issue','after_claim','fixed_date','event_date'], true)
     || !preg_match('/^[A-Z]{3}$/', $currency)
+    || ($valueType === 'percent' && $percentRaw !== '' && !preg_match('/^\d+(?:\.\d{1,2})?$/', $percentRaw))
     || ($valuePercent !== null && ($valuePercent <= 0 || $valuePercent > 100))
 ) {
     mg_fail('Invalid reward template.', 422);
