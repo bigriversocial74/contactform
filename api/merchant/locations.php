@@ -187,6 +187,12 @@ if(
     mg_fail('Invalid location.',422);
 }
 
+if($isCreate){
+    $locationUsage=$pdo->prepare("SELECT COUNT(*) FROM merchant_locations WHERE merchant_user_id=? AND status<>'archived'");
+    $locationUsage->execute([$merchantId]);
+    mg_package_require_limit_available($pdo,$user,'max_locations',(int)$locationUsage->fetchColumn(),'Location limit reached.');
+}
+
 $pepper=$claimCode!==''?mg_claim_code_pepper():'';
 
 $pdo->beginTransaction();
