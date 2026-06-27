@@ -6,6 +6,7 @@ $user = mg_current_user();
 $mg_package_context = is_array($mg_package_context ?? null) ? $mg_package_context : mg_user_package_context(null, $user);
 $canMerchantAccess = (bool) ($can_merchant_nav ?? !empty($mg_package_context['merchant_access']));
 /* Stage 12 validation markers: 'campaigns'=> 'reward_templates'=> */
+/* Recovery baseline nav markers: 'notifications'=>['Notifications' 'stamps'=>['Stamp Ledger' */
 
 $merchantNav = [
     'overview' => ['Overview','Workspace health','/merchant.php','Overview'],
