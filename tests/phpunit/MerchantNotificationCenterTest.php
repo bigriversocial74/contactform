@@ -15,8 +15,8 @@ final class MerchantNotificationCenterTest extends TestCase
     public function testMerchantNotificationPageUsesMerchantShell(): void
     {
         $page = $this->source('merchant-notifications.php');
-        self::assertStringContainsString("$merchantView='notifications'", $page);
-        self::assertStringContainsString("includes/merchant-workspace.php", $page);
+        self::assertStringContainsString('$merchantView=\'notifications\'', $page);
+        self::assertStringContainsString('includes/merchant-workspace.php', $page);
         self::assertStringContainsString('merchant-notifications.css', $page);
     }
 
@@ -54,8 +54,8 @@ final class MerchantNotificationCenterTest extends TestCase
             '/messages.php?thread=',
             '/merchant-claims.php',
             'mg_require_csrf_for_write($input)',
-            "UPDATE notifications SET read_at=COALESCE(read_at,NOW())",
-            "UPDATE operational_alerts SET status=?",
+            'UPDATE notifications SET read_at=COALESCE(read_at,NOW())',
+            'UPDATE operational_alerts SET status=?',
         ] as $needle) {
             self::assertStringContainsString($needle, $api);
         }
