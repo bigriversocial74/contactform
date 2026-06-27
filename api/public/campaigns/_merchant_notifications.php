@@ -1,6 +1,16 @@
 <?php
 declare(strict_types=1);
 
+if (!function_exists('mg_public_campaign_notification_uuid')) {
+    function mg_public_campaign_notification_uuid(): string
+    {
+        $bytes = random_bytes(16);
+        $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
+        $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
+        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
+    }
+}
+
 if (!function_exists('mg_public_campaign_merchant_notification_type')) {
     function mg_public_campaign_merchant_notification_type(string $campaignType, string $source): string
     {
@@ -65,7 +75,7 @@ if (!function_exists('mg_public_campaign_notify_merchant_contact')) {
 
         try {
             $stmt = $pdo->prepare('INSERT INTO notifications (public_id,user_id,type,title,body,action_url,created_at) VALUES (?,?,?,?,?,?,NOW())');
-            $stmt->execute([mg_public_campaign_uuid(), $merchantId, $type, $title, $body, $actionUrl]);
+            $stmt->execute([mg_public_campaign_notification_uuid(), $merchantId, $type, $title, $body, $actionUrl]);
             return ['created' => true, 'type' => $type, 'action_url' => $actionUrl];
         } catch (Throwable $error) {
             mg_security_log('warning', 'public.campaign.merchant_notification_failed', 'Unable to create merchant campaign notification.', [
