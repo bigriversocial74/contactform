@@ -19,6 +19,19 @@ function mg_ac_table_exists(PDO $pdo,string $table): bool
     }catch(Throwable){return false;}
 }
 
+function mg_ac_column_exists(PDO $pdo,string $table,string $column): bool
+{
+    static $cache=[];
+    $key=$table.'.'.$column;
+    if(array_key_exists($key,$cache))return $cache[$key];
+    try{
+        $stmt=$pdo->prepare("SHOW COLUMNS FROM `{$table}` LIKE ?");
+        $stmt->execute([$column]);
+        $cache[$key]=(bool)$stmt->fetchColumn();
+    }catch(Throwable){$cache[$key]=false;}
+    return $cache[$key];
+}
+
 function mg_ac_email_hint(string $email): string
 {
     $email=trim($email);
@@ -28,38 +41,97 @@ function mg_ac_email_hint(string $email): string
     return $localHint.'@'.$domain;
 }
 
+function mg_ac_user_identity_expr(PDO $pdo,string $alias='u'): string
+{
+    return mg_ac_column_exists($pdo,'users','public_id') ? "{$alias}.public_id" : "{$alias}.email";
+}
+
+function mg_ac_user_display_expr(PDO $pdo,string $alias='u'): string
+{
+    $parts=[];
+    foreach(['display_name','full_name','email'] as $column){
+        if(mg_ac_column_exists($pdo,'users',$column))$parts[]="{$alias}.{$column}";
+    }
+    return 'COALESCE('.implode(',',array_unique($parts ?: ["{$alias}.email"])).')';
+}
+
+function mg_ac_user_search_clause(PDO $pdo,string $alias='u'): string
+{
+    $parts=[];
+    foreach(['display_name','full_name','email','public_id'] as $column){
+        if(mg_ac_column_exists($pdo,'users',$column))$parts[]="{$alias}.{$column} LIKE ?";
+    }
+    return '('.implode(' OR ',$parts ?: ["{$alias}.email LIKE ?"]).')';
+}
+
+function mg_ac_user_search_params(PDO $pdo,string $like): array
+{
+    $params=[];
+    foreach(['display_name','full_name','email','public_id'] as $column){
+        if(mg_ac_column_exists($pdo,'users',$column))$params[]=$like;
+    }
+    return $params ?: [$like];
+}
+
+function mg_ac_user_status_clause(PDO $pdo,string $alias='u'): string
+{
+    return mg_ac_column_exists($pdo,'users','status') ? " AND {$alias}.status='active'" : '';
+}
+
+function mg_ac_append_unique_recipients(array &$rows,array $incoming): void
+{
+    $seen=array_fill_keys(array_map(static fn(array $row): string=>(string)$row['recipient_user_id'],$rows),true);
+    foreach($incoming as $row){
+        $key=(string)($row['recipient_user_id']??'');
+        if($key===''||isset($seen[$key]))continue;
+        $rows[]=$row;
+        $seen[$key]=true;
+    }
+}
+
+function mg_ac_recipient_query(PDO $pdo,string $source,string $joinSql,string $whereSql,array $baseParams,int $limit,string $like): array
+{
+    if($limit<1)return [];
+    $identity=mg_ac_user_identity_expr($pdo,'u');
+    $display=mg_ac_user_display_expr($pdo,'u');
+    $search=mg_ac_user_search_clause($pdo,'u');
+    $status=mg_ac_user_status_clause($pdo,'u');
+    $sql="SELECT {$identity} recipient_user_id,{$display} display_name,u.email,? source
+        {$joinSql}
+        WHERE {$whereSql} {$status} AND {$search}
+        ORDER BY {$display}
+        LIMIT {$limit}";
+    $stmt=$pdo->prepare($sql);
+    $stmt->execute(array_merge([$source],$baseParams,mg_ac_user_search_params($pdo,$like)));
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
 $rows=[];
-if(mg_ac_table_exists($pdo,'user_followers')){
-    $stmt=$pdo->prepare("SELECT u.public_id recipient_user_id,COALESCE(u.display_name,u.full_name,u.email) display_name,u.email,'follower' source
-        FROM user_followers f
-        INNER JOIN users u ON u.id=f.follower_user_id
-        WHERE f.user_id=? AND u.id<>? AND u.status='active' AND (COALESCE(u.display_name,u.full_name,'') LIKE ? OR u.email LIKE ? OR u.public_id LIKE ?)
-        ORDER BY COALESCE(u.display_name,u.full_name,u.email)
-        LIMIT 10");
-    $stmt->execute([(int)$user['id'],(int)$user['id'],$like,$like,$like]);
-    $rows=$stmt->fetchAll(PDO::FETCH_ASSOC);
-}elseif(mg_ac_table_exists($pdo,'followers')){
-    $stmt=$pdo->prepare("SELECT u.public_id recipient_user_id,COALESCE(u.display_name,u.full_name,u.email) display_name,u.email,'follower' source
-        FROM followers f
-        INNER JOIN users u ON u.id=f.follower_user_id
-        WHERE f.user_id=? AND u.id<>? AND u.status='active' AND (COALESCE(u.display_name,u.full_name,'') LIKE ? OR u.email LIKE ? OR u.public_id LIKE ?)
-        ORDER BY COALESCE(u.display_name,u.full_name,u.email)
-        LIMIT 10");
-    $stmt->execute([(int)$user['id'],(int)$user['id'],$like,$like,$like]);
-    $rows=$stmt->fetchAll(PDO::FETCH_ASSOC);
+$remaining=10;
+
+foreach([
+    ['table'=>'social_follows','source'=>'following','join'=>'FROM social_follows f INNER JOIN users u ON u.id=f.followed_user_id','where'=>'f.follower_user_id=? AND u.id<>? AND COALESCE(f.status,\'active\')=\'active\''],
+    ['table'=>'user_followers','source'=>'follower','join'=>'FROM user_followers f INNER JOIN users u ON u.id=f.follower_user_id','where'=>'f.user_id=? AND u.id<>?'],
+    ['table'=>'followers','source'=>'follower','join'=>'FROM followers f INNER JOIN users u ON u.id=f.follower_user_id','where'=>'f.user_id=? AND u.id<>?'],
+] as $config){
+    if($remaining<1||!mg_ac_table_exists($pdo,$config['table']))continue;
+    try{
+        $incoming=mg_ac_recipient_query($pdo,$config['source'],$config['join'],$config['where'],[(int)$user['id'],(int)$user['id']],$remaining,$like);
+        mg_ac_append_unique_recipients($rows,$incoming);
+        $remaining=10-count($rows);
+    }catch(Throwable $error){
+        if(function_exists('mg_security_log'))mg_security_log('warning','action_center.recipient_relationship_search_failed','Recipient relationship search failed.',['table'=>$config['table'],'exception'=>$error->getMessage()],(int)$user['id']);
+    }
 }
 
 if(count($rows)<10){
-    $stmt=$pdo->prepare("SELECT public_id recipient_user_id,COALESCE(display_name,full_name,email) display_name,email,'user' source
-        FROM users
-        WHERE id<>? AND status='active' AND (COALESCE(display_name,full_name,'') LIKE ? OR email LIKE ? OR public_id LIKE ?)
-        ORDER BY COALESCE(display_name,full_name,email)
-        LIMIT ?");
-    $stmt->execute([(int)$user['id'],$like,$like,$like,10-count($rows)]);
-    $seen=array_fill_keys(array_map(static fn(array $row): string=>(string)$row['recipient_user_id'],$rows),true);
-    foreach($stmt->fetchAll(PDO::FETCH_ASSOC) as $row){
-        if(isset($seen[(string)$row['recipient_user_id']]))continue;
-        $rows[]=$row;
+    try{
+        $remaining=10-count($rows);
+        $incoming=mg_ac_recipient_query($pdo,'user','FROM users u','u.id<>?',[(int)$user['id']],$remaining,$like);
+        mg_ac_append_unique_recipients($rows,$incoming);
+    }catch(Throwable $error){
+        if(function_exists('mg_security_log'))mg_security_log('error','action_center.recipient_user_search_failed','Recipient user search failed.',['exception'=>$error->getMessage()],(int)$user['id']);
+        mg_ok(['recipients'=>[]]);
     }
 }
 
