@@ -34,6 +34,109 @@ function mg_action_center_resolve_recipient(PDO $pdo,string $reference): int
     return (int)($stmt->fetchColumn()?:0);
 }
 
+function mg_action_center_wallet_action_id(string $actionItemId): ?string
+{
+    $value=trim($actionItemId);
+    if(!str_starts_with($value,'wallet-'))return null;
+    $walletId=strtolower(substr($value,7));
+    return preg_match('/^[a-f0-9-]{36}$/',$walletId)===1?$walletId:null;
+}
+
+function mg_action_center_load_wallet_item_for_user(PDO $pdo,string $walletId,int $userId,string $userEmail): ?array
+{
+    $stmt=$pdo->prepare("SELECT wi.*,cc.email contact_email,c.public_id campaign_public_id,rt.public_id reward_template_public_id,rt.title reward_template_title,rt.description reward_template_description,rt.redemption_instructions
+        FROM wallet_items wi
+        LEFT JOIN campaign_contacts cc ON cc.id=wi.contact_id
+        LEFT JOIN campaigns c ON c.id=wi.campaign_id
+        LEFT JOIN reward_templates rt ON rt.id=wi.reward_template_id
+        WHERE wi.public_id=? AND wi.status<>'cancelled'
+          AND (wi.user_id=? OR (?<>'' AND (LOWER(cc.email)=? OR LOWER(wi.source_id)=?)))
+        LIMIT 1 FOR UPDATE");
+    $stmt->execute([$walletId,$userId,$userEmail,$userEmail,$userEmail]);
+    $item=$stmt->fetch(PDO::FETCH_ASSOC);
+    return $item?:null;
+}
+
+function mg_action_center_wallet_event(PDO $pdo,array $item,string $eventType,array $context=[]): void
+{
+    if(empty($item['campaign_id']))return;
+    $pdo->prepare('INSERT INTO campaign_events (public_id,merchant_user_id,campaign_id,wallet_item_id,contact_id,event_type,event_context_json,created_at) VALUES (?,?,?,?,?,?,?,NOW())')
+        ->execute([
+            mg_microgift_uuid(),
+            (int)$item['merchant_user_id'],
+            (int)$item['campaign_id'],
+            (int)$item['id'],
+            $item['contact_id']===null?null:(int)$item['contact_id'],
+            $eventType,
+            mg_microgift_json($context+['wallet_item_id'=>(string)$item['public_id']]),
+        ]);
+}
+
+function mg_action_center_send_wallet_item(PDO $pdo,array $item,array $sender,int $recipientUserId,string $actionItemId,string $idempotencyKey,string $message): array
+{
+    $senderUserId=(int)$sender['id'];
+    $status=(string)($item['status']??'issued');
+    if(!empty($item['expires_at'])&&strtotime((string)$item['expires_at'])<time()&&!in_array($status,['redeemed','expired','cancelled'],true)){
+        $pdo->prepare("UPDATE wallet_items SET status='expired',updated_at=NOW() WHERE id=?")->execute([(int)$item['id']]);
+        mg_action_center_wallet_event($pdo,$item,'wallet_item.expired',['action_item_id'=>$actionItemId]);
+        throw new RuntimeException('Wallet item has expired.');
+    }
+    if(in_array($status,['redeemed','expired','cancelled'],true))throw new RuntimeException('Wallet item cannot be transferred.');
+    if($recipientUserId===$senderUserId)throw new RuntimeException('Choose another recipient for this Microgift.');
+
+    $title=trim((string)($item['title_snapshot']??$item['reward_template_title']??'Microgifter reward'));
+    $occurredAt=date('Y-m-d H:i:s');
+    $pdo->prepare("UPDATE wallet_items SET user_id=?,contact_id=NULL,source_id=NULL,status='issued',viewed_at=NULL,claimed_at=NULL,updated_at=? WHERE id=?")
+        ->execute([$recipientUserId,$occurredAt,(int)$item['id']]);
+    mg_action_center_wallet_event($pdo,$item,'wallet_item.regifted',[
+        'action_item_id'=>$actionItemId,
+        'idempotency_key'=>$idempotencyKey,
+        'sender_user_id'=>$senderUserId,
+        'recipient_user_id'=>$recipientUserId,
+        'message'=>$message,
+    ]);
+
+    $senderLabel=mg_notification_user_label($pdo,$senderUserId);
+    $notificationId=mg_create_notification(
+        $pdo,
+        $recipientUserId,
+        'microgift_received',
+        $senderLabel.' sent you a Microgift',
+        $message!==''?$message:($title!==''?$title:'Open your Microgift.'),
+        '/inbox.php?item='.rawurlencode($actionItemId),
+        [
+            'actor_user_id'=>$senderUserId,
+            'event_key'=>'wallet_item_regifted:'.hash('sha256',$idempotencyKey.'|'.$actionItemId),
+            'wallet_item_id'=>(string)$item['public_id'],
+            'sender_user_id'=>$senderUserId,
+            'recipient_user_id'=>$recipientUserId,
+        ]
+    );
+
+    return [
+        'instance_id'=>$actionItemId,
+        'wallet_item_id'=>(string)$item['public_id'],
+        'recipient_user_id'=>$recipientUserId,
+        'status'=>'sent',
+        'duplicate'=>false,
+        'delivery_event'=>[
+            'event_id'=>'wallet-'.hash('sha256',$idempotencyKey.'|'.$actionItemId),
+            'event_type'=>'sent',
+            'occurred_at'=>$occurredAt,
+            'duplicate'=>false,
+        ],
+        'delivery_summary'=>[
+            'sent_at'=>$occurredAt,
+            'recipient_user_id'=>$recipientUserId,
+        ],
+        'notification_id'=>$notificationId,
+        'action_center'=>[
+            'sent_item_id'=>null,
+            'recipient_inbox_item_id'=>$actionItemId,
+        ],
+    ];
+}
+
 mg_require_method('POST');
 $user=mg_require_api_user();
 $input=mg_input();
@@ -53,6 +156,32 @@ if(mb_strlen($message)>5000)mg_fail('Message is too long.',422);
 try{
     $pdo->beginTransaction();
 
+    $recipientUserId=mg_action_center_resolve_recipient($pdo,$recipientReference);
+    if($recipientUserId<1)throw new RuntimeException('Recipient not found.');
+
+    $walletId=mg_action_center_wallet_action_id($actionItemId);
+    if($walletId!==null){
+        $walletItem=mg_action_center_load_wallet_item_for_user($pdo,$walletId,(int)$user['id'],strtolower(trim((string)($user['email']??''))));
+        if(!$walletItem)throw new RuntimeException('Action Center item not found.');
+        $result=mg_action_center_send_wallet_item($pdo,$walletItem,$user,$recipientUserId,$actionItemId,$idempotencyKey,$message);
+        $pdo->commit();
+        mg_audit('action_center.wallet_item_regifted','wallet_item',[
+            'wallet_item_id'=>$walletId,
+            'action_item_id'=>$actionItemId,
+            'recipient_user_id'=>$recipientUserId,
+            'sent_at'=>$result['delivery_event']['occurred_at'],
+            'notification_id'=>$result['notification_id'],
+        ],(int)$user['id']);
+        mg_event('wallet_item.regifted',[
+            'wallet_item_id'=>$walletId,
+            'recipient_user_id'=>$recipientUserId,
+            'idempotency_key'=>$idempotencyKey,
+            'sent_at'=>$result['delivery_event']['occurred_at'],
+            'notification_id'=>$result['notification_id'],
+        ],(int)$user['id']);
+        mg_ok($result,'Wallet reward regifted.',201);
+    }
+
     $stmt=$pdo->prepare("SELECT
             ac.public_id action_item_id,ac.folder,ac.sender_user_id action_sender_user_id,
             ac.recipient_user_id action_recipient_user_id,ac.archived_at,
@@ -66,8 +195,6 @@ try{
     $instance=$stmt->fetch(PDO::FETCH_ASSOC);
     if(!$instance)throw new RuntimeException('Action Center item not found.');
 
-    $recipientUserId=mg_action_center_resolve_recipient($pdo,$recipientReference);
-    if($recipientUserId<1)throw new RuntimeException('Recipient not found.');
     if($recipientUserId===(int)$user['id'])throw new RuntimeException('Choose another recipient for this Microgift.');
 
     if((string)$instance['folder']==='sent'){
