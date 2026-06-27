@@ -120,3 +120,19 @@ require __DIR__ . '/app-sidebar.php';
     </div>
   </div>
 </section>
+<script>
+(function(document){
+  'use strict';
+  var modal=document.querySelector('[data-scanner-modal]');
+  if(!modal)return;
+  function mountScannerModal(){
+    if(!document.body)return;
+    if(modal.parentNode!==document.body)document.body.appendChild(modal);
+    modal.setAttribute('data-body-mounted','true');
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mountScannerModal);else mountScannerModal();
+  document.addEventListener('click',function(event){
+    if(event.target.closest('[data-scanner-trigger]'))mountScannerModal();
+  },true);
+})(document);
+</script>
