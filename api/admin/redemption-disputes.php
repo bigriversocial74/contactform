@@ -10,7 +10,7 @@ $pdo = mg_db();
 
 if ($method === 'GET') {
     $limit = max(1, min(100, (int)($_GET['limit'] ?? 50)));
-    $stmt = $pdo->query('SELECT d.*, l.settlement_status, l.merchant_net_cents FROM redemption_disputes d LEFT JOIN redemption_settlement_ledger l ON l.receipt_public_id=d.receipt_public_id ORDER BY d.created_at DESC, d.id DESC LIMIT ' . $limit);
+    $stmt = $pdo->query('SELECT d.*, l.settlement_status, l.reconciliation_status, l.value_type, l.cash_movement, l.face_value_cents, l.customer_paid_cents, l.platform_fee_cents, l.payout_due_cents FROM redemption_disputes d LEFT JOIN redemption_settlement_ledger l ON l.receipt_public_id=d.receipt_public_id ORDER BY d.created_at DESC, d.id DESC LIMIT ' . $limit);
     mg_ok(['disputes' => $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : []], 'Admin redemption disputes loaded.');
 }
 
