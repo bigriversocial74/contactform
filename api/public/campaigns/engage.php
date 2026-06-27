@@ -5,6 +5,7 @@ require_once dirname(__DIR__, 2) . '/bootstrap.php';
 require_once dirname(__DIR__, 2) . '/rewards/_zero_value_bridge.php';
 require_once dirname(__DIR__, 3) . '/includes/merchant-crm.php';
 require_once __DIR__ . '/_limits.php';
+require_once __DIR__ . '/_merchant_notifications.php';
 
 function mg_public_campaign_engage_uuid(): string
 {
@@ -116,6 +117,10 @@ try {
     $source = mg_public_campaign_engage_source($campaignType);
     $userId = mg_public_campaign_engage_find_user($pdo, $email);
     $contactPublicId = mg_public_campaign_engage_uuid();
+    $existingContactStmt = $pdo->prepare('SELECT id, public_id FROM campaign_contacts WHERE campaign_id = ? AND email = ? LIMIT 1 FOR UPDATE');
+    $existingContactStmt->execute([$campaignId, $email]);
+    $existingContact = $existingContactStmt->fetch(PDO::FETCH_ASSOC);
+    $isNewContact = !$existingContact;
     $metadata = [
         'campaign_type' => $campaignType,
         'campaign_public_id' => (string) $campaign['public_id'],
@@ -147,6 +152,7 @@ try {
         'name' => $name,
         'metadata' => $metadata,
     ]);
+    $merchantNotification = mg_public_campaign_notify_merchant_contact($pdo, $campaign, $contact ?: [], $email, $name, $phone, $source, $crm, $isNewContact);
 
     $eventStmt = $pdo->prepare('INSERT INTO campaign_events (public_id,merchant_user_id,campaign_id,wallet_item_id,contact_id,event_type,event_context_json,created_at) VALUES (?,?,?,?,?,?,?,NOW())');
     $eventStmt->execute([
@@ -156,7 +162,7 @@ try {
         null,
         $contactId ?: null,
         'campaign.engaged',
-        json_encode(['campaign_type' => $campaignType, 'source' => $source, 'email' => $email, 'crm_entry' => true, 'merchant_crm' => $crm], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+        json_encode(['campaign_type' => $campaignType, 'source' => $source, 'email' => $email, 'crm_entry' => true, 'merchant_crm' => $crm, 'merchant_notification' => $merchantNotification], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
     ]);
 
     $expiresAt = mg_public_campaign_engage_expiry($campaign);
@@ -178,6 +184,7 @@ try {
             'expires_at' => $expiresAt,
             'pppm_bridge' => $bridge,
             'merchant_crm' => $crm,
+            'merchant_notification' => $merchantNotification,
         ], 'Campaign reward already issued.');
     }
 
@@ -211,7 +218,7 @@ try {
         $walletDbId,
         $contactId ?: null,
         'wallet_item.issued',
-        json_encode(['wallet_item_id' => $walletPublicId, 'campaign_type' => $campaignType, 'source' => $source, 'pppm_bridge' => $bridge, 'merchant_crm' => $crm], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+        json_encode(['wallet_item_id' => $walletPublicId, 'campaign_type' => $campaignType, 'source' => $source, 'pppm_bridge' => $bridge, 'merchant_crm' => $crm, 'merchant_notification' => $merchantNotification], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
     ]);
 
     $pdo->commit();
@@ -227,6 +234,7 @@ try {
         'expires_at' => $expiresAt,
         'pppm_bridge' => $bridge,
         'merchant_crm' => $crm,
+        'merchant_notification' => $merchantNotification,
     ], (string) ($campaign['success_message'] ?? 'Campaign reward issued.'), 201);
 } catch (Throwable $error) {
     if ($pdo->inTransaction()) $pdo->rollBack();
