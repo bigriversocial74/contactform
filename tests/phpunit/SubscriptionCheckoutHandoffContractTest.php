@@ -27,7 +27,11 @@ final class SubscriptionCheckoutHandoffContractTest extends TestCase
         self::assertStringContainsString("'/v1/checkout/sessions'", $helper);
         self::assertStringContainsString("'source_type' => 'subscription_package_change'", $helper);
         self::assertStringContainsString("'subscription_data' => ['metadata' => \$metadata]", $helper);
-        self::assertStringContainsString("'recurring' => ['interval' => 'month']", $helper);
+        self::assertStringContainsString('mg_platform_package_interval_unit', $helper);
+        self::assertStringContainsString("'recurring' => ['interval' => \$billingCycle]", $helper);
+        self::assertStringContainsString('mg_platform_package_stripe_price_id', $helper);
+        self::assertStringContainsString("\$lineItem['price'] = \$priceId;", $helper);
+        self::assertStringContainsString("\$lineItem['price_data']", $helper);
         self::assertStringContainsString("'package_change_request_id'", $helper);
     }
 
