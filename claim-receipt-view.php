@@ -21,7 +21,7 @@ else {
 $page_title='Claim Receipt | Microgifter'; $page_section='agent'; $header_mode='agent';
 require __DIR__ . '/includes/header.php';
 ?>
-<main style="padding:42px 18px;background:#f8fbff;min-height:70vh">
+<main class="mg-app-shell" style="padding:42px 18px;background:#f8fbff;min-height:70vh"><aside class="mg-app-sidebar" hidden></aside>
   <section style="max-width:880px;margin:0 auto;background:#fff;border:1px solid #dbeafe;border-radius:24px;padding:28px;box-shadow:0 24px 70px rgba(15,23,42,.1)">
     <?php if ($error): ?>
       <h1><?= mg_e($error) ?></h1><p><a href="/claimed.php">Back to claimed gifts</a></p>
