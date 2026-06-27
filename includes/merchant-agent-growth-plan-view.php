@@ -9,6 +9,7 @@ declare(strict_types=1);
       <p>Turn ROI forecasts into an actionable merchant plan with recommended playbooks, customer follow-ups, campaign repeats, message opportunities, and PSR targets.</p>
     </div>
     <div class="mg-agent-growth-actions">
+      <a class="mg-btn mg-btn-secondary" href="/merchant-agent-action-composer.php">Action Composer</a>
       <a class="mg-btn mg-btn-secondary" href="/merchant-agent-forecast.php">ROI Forecasting</a>
       <a class="mg-btn mg-btn-secondary" href="/merchant-agent-roi.php">ROI Attribution</a>
       <a class="mg-btn mg-btn-secondary" href="/merchant-agent-approvals.php">Review Queue</a>
@@ -34,13 +35,13 @@ declare(strict_types=1);
 
   <section class="mg-agent-growth-grid">
     <article class="mg-app-panel mg-agent-growth-panel">
-      <div class="mg-app-panel-head"><div><h2>Recommended Agent Actions</h2><p>Prioritized actions to route through merchant review, message drafts, and follow-up tasks.</p></div></div>
+      <div class="mg-app-panel-head"><div><h2>Recommended Agent Actions</h2><p>Prioritized actions to route through merchant review, message drafts, and follow-up tasks.</p></div><a class="mg-btn mg-btn-secondary" href="/merchant-agent-action-composer.php">Compose actions</a></div>
       <div class="mg-agent-growth-actions-list" data-growth-actions-list><div class="mg-empty-state"><strong>Loading growth actions…</strong></div></div>
     </article>
     <article class="mg-app-panel mg-agent-growth-panel">
       <div class="mg-app-panel-head"><div><h2>Plan Summary</h2><p>Selected controls and forecast-to-action assumptions.</p></div></div>
       <div class="mg-agent-growth-summary" data-growth-summary></div>
-      <div class="mg-agent-growth-links"><a href="/merchant-agent-forecast.php">Forecast</a><a href="/merchant-agent-roi.php">ROI</a><a href="/merchant-agent-analytics.php">Analytics</a><a href="/merchant-agent-approvals.php">Review</a><a href="/merchant-agent-messages.php">Messages</a><a href="/merchant-followups.php">Follow-ups</a></div>
+      <div class="mg-agent-growth-links"><a href="/merchant-agent-action-composer.php">Composer</a><a href="/merchant-agent-forecast.php">Forecast</a><a href="/merchant-agent-roi.php">ROI</a><a href="/merchant-agent-analytics.php">Analytics</a><a href="/merchant-agent-approvals.php">Review</a><a href="/merchant-agent-messages.php">Messages</a><a href="/merchant-followups.php">Follow-ups</a></div>
     </article>
   </section>
 
@@ -55,6 +56,6 @@ declare(strict_types=1);
   </section>
 
   <article class="mg-app-panel mg-agent-growth-panel">
-    <div class="mg-app-panel-head"><div><h2>Planner Status</h2><p>Growth plans are recommendations. Merchants still review, approve, execute, and send final actions.</p></div><p class="mg-form-status" data-growth-status></p></div>
+    <div class="mg-app-panel-head"><div><h2>Planner Status</h2><p>Growth plans are recommendations. Merchants still review, approve, execute, and send final actions.</p></div><div class="mg-crm-tab-actions"><a class="mg-btn mg-btn-secondary" href="/merchant-agent-action-composer.php">Open action composer</a><p class="mg-form-status" data-growth-status></p></div></div>
   </article>
 </section>

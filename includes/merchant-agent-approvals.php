@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/merchant-agent-monitor.php';
+require_once __DIR__ . '/merchant-agent-action-composer.php';
 
 function mg_agent_approval_event_types(): array
 {
@@ -127,6 +128,10 @@ function mg_agent_approval_queue(PDO $pdo, int $merchantId, array $input = []): 
     foreach (mg_automation_log($pdo, $merchantId, 60) as $event) {
         if (empty($event['requires_approval'])) continue;
         $item = mg_agent_approval_event_item($merchantId, $event);
+        if (isset($decisions[$item['approval_id']])) { $item['status'] = (string)$decisions[$item['approval_id']]['decision']; $item['decision'] = $decisions[$item['approval_id']]; }
+        $items[] = $item;
+    }
+    foreach (mg_agent_composer_approval_items($pdo, $merchantId) as $item) {
         if (isset($decisions[$item['approval_id']])) { $item['status'] = (string)$decisions[$item['approval_id']]['decision']; $item['decision'] = $decisions[$item['approval_id']]; }
         $items[] = $item;
     }
