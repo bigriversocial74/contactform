@@ -9,6 +9,7 @@ declare(strict_types=1);
       <p>Watch playbook triggers, recommended actions, guardrails, approval gates, and daily action usage before agents are allowed to act.</p>
     </div>
     <div class="mg-agent-monitor-actions">
+      <a class="mg-btn mg-btn-secondary" href="/merchant-agent-approvals.php">Approval Queue</a>
       <a class="mg-btn mg-btn-secondary" href="/merchant-automation.php">Automation Controls</a>
       <a class="mg-btn mg-btn-secondary" href="/merchant-crm.php?tab=retention">Retention Playbooks</a>
       <button class="mg-btn mg-btn-primary" type="button" data-agent-monitor-refresh>Refresh monitor</button>
@@ -30,6 +31,7 @@ declare(strict_types=1);
           <h2>Agent Status Panels</h2>
           <p>Each playbook shows what the agent can monitor, recommend, create, or why it is blocked.</p>
         </div>
+        <a class="mg-btn mg-btn-secondary" href="/merchant-agent-approvals.php">Review approvals</a>
       </div>
       <div class="mg-agent-status-grid" data-agent-statuses>
         <div class="mg-empty-state"><strong>Loading agent statuses…</strong></div>
@@ -60,7 +62,10 @@ declare(strict_types=1);
         <h2>Agent-readable Activity</h2>
         <p>Every item includes why the action exists, customer/campaign source, guardrail applied, and whether merchant approval is required.</p>
       </div>
-      <p class="mg-form-status" data-agent-monitor-status></p>
+      <div class="mg-crm-tab-actions">
+        <a class="mg-btn mg-btn-secondary" href="/merchant-agent-approvals.php">Open approval queue</a>
+        <p class="mg-form-status" data-agent-monitor-status></p>
+      </div>
     </div>
     <div class="mg-agent-activity-list" data-agent-activity>
       <div class="mg-empty-state"><strong>Loading agent activity…</strong></div>
