@@ -1,0 +1,14 @@
+(function(){
+'use strict';
+if(!window.Microgifter)return;
+var inviteContact=null,confirmed=false;
+function q(s,r){return(r||document).querySelector(s)}
+function set(s,v){var e=q(s);if(e)e.textContent=String(v||'')}
+function toast(m){if(Microgifter.toast)Microgifter.toast(m);else alert(m)}
+async function contacts(){var r=await Microgifter.get('/api/merchant/campaign-contacts.php');return(r.data||r).contacts||[]}
+async function find(row){var id=row.getAttribute('data-contact-id'),list=await contacts();return list.find(function(c){return String(c.id)===String(id)})}
+function open(c){inviteContact=c;confirmed=false;var m=q('[data-crm-reward-modal]');if(!m)return;m.hidden=false;document.body.classList.add('mg-crm-modal-open');set('[data-crm-reward-title]','Invite reward');set('[data-crm-reward-subtitle]',(c.email||'')+' · invite link');set('[data-crm-reward-status]','Choose a reward, then review invite.');var b=q('[data-crm-reward-submit]');if(b)b.textContent='Review invite'}
+function close(){var m=q('[data-crm-reward-modal]');if(m)m.hidden=true;document.body.classList.remove('mg-crm-modal-open');inviteContact=null;confirmed=false}
+document.addEventListener('click',function(e){var t=e.target.closest('[data-crm-gift],[data-crm-reward]');if(!t)return;var row=t.closest('tr[data-contact-id]');if(!row)return;find(row).then(function(c){if(c&&!c.has_account){e.preventDefault();e.stopImmediatePropagation();open(c)}})},true);
+document.addEventListener('submit',async function(e){if(!inviteContact||!e.target.matches('[data-crm-reward-form]'))return;e.preventDefault();e.stopImmediatePropagation();var s=q('[data-crm-reward-template]'),n=q('[data-crm-reward-note]'),b=q('[data-crm-reward-submit]');if(!s||!s.value){set('[data-crm-reward-status]','Choose a reward first.');return}if(!confirmed){confirmed=true;set('[data-crm-reward-confirm-text]','Send reward invite to '+(inviteContact.email||'contact')+'?');var c=q('[data-crm-reward-confirm]');if(c)c.hidden=false;if(b)b.textContent='Send invite';return}if(b){b.disabled=true;b.textContent='Sending invite...'}try{var r=await Microgifter.post('/api/merchant/crm-send-reward-invite.php',{contact_id:inviteContact.id,reward_template_id:s.value,note:n?n.value:'',idempotency_key:'crm-reward-invite-ui:'+inviteContact.id+':'+s.value+':'+Date.now()});var d=r.data||r;set('[data-crm-reward-status]','Invite sent: '+(d.invite_id||'queued'));toast('Reward invite sent.');setTimeout(function(){close();var x=q('[data-crm-refresh]');if(x)x.click()},500)}catch(err){set('[data-crm-reward-status]',err.message||'Unable to send invite.');confirmed=false}finally{if(b){b.disabled=false;b.textContent=confirmed?'Send invite':'Review invite'}}},true);
+})();
