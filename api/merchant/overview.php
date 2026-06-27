@@ -26,6 +26,29 @@ function mg_merchant_overview_rows(PDO $pdo, string $sql, array $params): array
         return [];
     }
 }
+function mg_merchant_overview_count(PDO $pdo, string $sql, array $params): int
+{
+    try {
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        return max(0, (int) $stmt->fetchColumn());
+    } catch (Throwable) {
+        return 0;
+    }
+}
+function mg_merchant_overview_limit_metric(array $context, string $key, int $used): array
+{
+    $limit = mg_package_limit_value($context, $key);
+    $unlimited = $limit === null || $limit === '';
+    $numericLimit = $unlimited ? null : max(0, (int) $limit);
+    return [
+        'used' => $used,
+        'limit' => $numericLimit,
+        'remaining' => $unlimited ? null : max(0, (int) $numericLimit - $used),
+        'unlimited' => $unlimited,
+        'at_limit' => !$unlimited && $used >= (int) $numericLimit,
+    ];
+}
 $locations = mg_merchant_overview_row($pdo,"SELECT COUNT(*) total,SUM(status='active') active_count,SUM(is_primary=1) primary_count FROM merchant_locations WHERE workspace_id=?",[(int)$workspace['id']],['total'=>0,'active_count'=>0,'primary_count'=>0]);
 $team = mg_merchant_overview_row($pdo,"SELECT COUNT(*) total,SUM(status='active') active_count,SUM(status='invited') invited_count FROM merchant_team_members WHERE workspace_id=?",[(int)$workspace['id']],['total'=>0,'active_count'=>0,'invited_count'=>0]);
 $payments = mg_merchant_overview_row($pdo,'SELECT mode,provider_key,account_connected,identity_verified,charges_enabled,payouts_enabled,tax_setup_complete,test_payment_complete,live_approved,state_json FROM merchant_payment_readiness WHERE workspace_id=? LIMIT 1',[(int)$workspace['id']],['mode'=>'test','provider_key'=>null,'account_connected'=>0,'identity_verified'=>0,'charges_enabled'=>0,'payouts_enabled'=>0,'tax_setup_complete'=>0,'test_payment_complete'=>0,'live_approved'=>0,'state_json'=>null]);
@@ -43,4 +66,13 @@ if((int)($productCounts['published_count']??0)>0){
 }
 $steps = mg_merchant_overview_rows($pdo,'SELECT step_key,step_order,status,completed_at,state_json FROM merchant_onboarding_steps WHERE workspace_id=? ORDER BY step_order',[(int)$workspace['id']]);
 $programs = mg_merchant_overview_row($pdo,"SELECT COUNT(*) total,SUM(status='active') active_count FROM distribution_programs WHERE merchant_user_id=?",[(int)$user['id']],['total'=>0,'active_count'=>0]);
-mg_ok(['workspace'=>$workspace,'steps'=>$steps,'locations'=>$locations,'team'=>$team,'payments'=>$payments,'products'=>$productCounts,'programs'=>$programs]);
+$packageContext = mg_user_package_context($pdo, $user);
+$packageUsage = [
+    'max_microgifts' => mg_merchant_overview_limit_metric($packageContext, 'max_microgifts', mg_merchant_overview_count($pdo, "SELECT COUNT(*) FROM catalog_products WHERE merchant_user_id=? AND status<>'archived'", [(int)$user['id']])),
+    'max_rewards' => mg_merchant_overview_limit_metric($packageContext, 'max_rewards', mg_merchant_overview_count($pdo, "SELECT COUNT(*) FROM reward_templates WHERE merchant_user_id=? AND status<>'archived'", [(int)$user['id']])),
+    'max_active_campaigns' => mg_merchant_overview_limit_metric($packageContext, 'max_active_campaigns', mg_merchant_overview_count($pdo, "SELECT COUNT(*) FROM campaigns WHERE merchant_user_id=? AND status='active'", [(int)$user['id']])),
+    'max_crm_contacts' => mg_merchant_overview_limit_metric($packageContext, 'max_crm_contacts', mg_merchant_overview_count($pdo, "SELECT COUNT(DISTINCT email) FROM campaign_contacts WHERE merchant_user_id=? AND email<>''", [(int)$user['id']])),
+    'max_locations' => mg_merchant_overview_limit_metric($packageContext, 'max_locations', mg_merchant_overview_count($pdo, "SELECT COUNT(*) FROM merchant_locations WHERE merchant_user_id=? AND status<>'archived'", [(int)$user['id']])),
+    'max_team_seats' => mg_merchant_overview_limit_metric($packageContext, 'max_team_seats', mg_merchant_overview_count($pdo, "SELECT COUNT(*) FROM merchant_team_members mtm INNER JOIN merchant_workspaces mw ON mw.id=mtm.workspace_id WHERE mw.merchant_user_id=? AND mtm.status<>'removed'", [(int)$user['id']])),
+];
+mg_ok(['workspace'=>$workspace,'steps'=>$steps,'locations'=>$locations,'team'=>$team,'payments'=>$payments,'products'=>$productCounts,'programs'=>$programs,'package_limits'=>['package_id'=>(string)($packageContext['package_id']??'free'),'package_name'=>(string)($packageContext['package_name']??'Free'),'usage'=>$packageUsage]]);
