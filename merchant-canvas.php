@@ -20,6 +20,35 @@ $page_manifest = [
     'body_class' => 'mg-merchant-canvas-page',
     'onboarding' => ['enabled' => false, 'page' => 'merchant-canvas', 'sections' => []],
 ];
+
+$merchantDisplayName = trim((string)($user['display_name'] ?? $user['name'] ?? 'Merchant Agent')) ?: 'Merchant Agent';
+$merchantAvatarUrl = '';
+try {
+    $profile = $pdo->prepare('SELECT display_name, avatar_url FROM public_profiles WHERE user_id=? LIMIT 1');
+    $profile->execute([(int)$user['id']]);
+    $row = $profile->fetch(PDO::FETCH_ASSOC);
+    if (is_array($row)) {
+        $profileName = trim((string)($row['display_name'] ?? ''));
+        if ($profileName !== '') {
+            $merchantDisplayName = $profileName;
+        }
+        $avatarCandidate = trim((string)($row['avatar_url'] ?? ''));
+        if ($avatarCandidate !== '' && strlen($avatarCandidate) <= 600 && preg_match('/[\x00-\x1F\x7F]/', $avatarCandidate) !== 1) {
+            if ((str_starts_with($avatarCandidate, '/') && !str_starts_with($avatarCandidate, '//')) || filter_var($avatarCandidate, FILTER_VALIDATE_URL) !== false) {
+                $merchantAvatarUrl = $avatarCandidate;
+            }
+        }
+    }
+} catch (Throwable) {
+    $merchantAvatarUrl = '';
+}
+$merchantInitials = 'MG';
+$merchantNameParts = preg_split('/\s+/u', $merchantDisplayName, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+if ($merchantNameParts !== []) {
+    $merchantInitials = strtoupper(substr((string)$merchantNameParts[0], 0, 1) . substr((string)($merchantNameParts[1] ?? ''), 0, 1));
+    $merchantInitials = $merchantInitials !== '' ? $merchantInitials : 'MG';
+}
+
 require __DIR__ . '/includes/header.php';
 ?>
 <section class="mg-app-shell mg-agent-app mg-store-canvas" data-merchant-canvas>
@@ -34,33 +63,31 @@ require __DIR__ . '/includes/header.php';
       </article>
     <?php else: ?>
       <section class="mg-canvas-shell">
-        <header class="mg-canvas-hero">
-          <div>
-            <span class="mg-canvas-eyebrow">Agent Store Canvas</span>
-            <h1>Merchant Store Canvas</h1>
-            <p>See customer avatars currently inside your merchant location, open CRM context, send direct messages, and issue campaign rewards into the customer IN/OUT Box.</p>
-          </div>
-          <div class="mg-canvas-hero-actions">
-            <a class="mg-btn mg-btn-soft" href="/feed.php">Open Feed</a>
-            <button class="mg-btn mg-btn-primary" type="button" data-canvas-refresh>Refresh Canvas</button>
-          </div>
-        </header>
-
         <div class="mg-canvas-grid mg-canvas-grid-full">
           <section class="mg-canvas-stage" aria-label="Live store canvas">
             <div class="mg-canvas-stage-head">
               <div>
                 <span class="mg-canvas-eyebrow">Live store</span>
-                <h2>Customer avatars</h2>
+                <h1>Customer avatars</h1>
               </div>
-              <span class="mg-canvas-live-pill" data-canvas-live-pill>Polling every few seconds</span>
+              <div class="mg-canvas-stage-tools">
+                <span class="mg-canvas-live-pill" data-canvas-live-pill>Polling every few seconds</span>
+                <a class="mg-btn mg-btn-soft" href="/feed.php">Open Feed</a>
+                <button class="mg-btn mg-btn-primary" type="button" data-canvas-refresh>Refresh Canvas</button>
+              </div>
             </div>
 
             <div class="mg-canvas-map" data-canvas-map>
               <div class="mg-canvas-agent-node mg-canvas-merchant-node">
-                <span class="mg-canvas-agent-icon">MG</span>
-                <strong>Merchant Agent</strong>
-                <small>Campaigns · rewards · CRM</small>
+                <span class="mg-canvas-agent-icon">
+                  <?php if ($merchantAvatarUrl !== ''): ?>
+                    <img src="<?php echo mg_e($merchantAvatarUrl); ?>" alt="">
+                  <?php else: ?>
+                    <?php echo mg_e($merchantInitials); ?>
+                  <?php endif; ?>
+                </span>
+                <strong><?php echo mg_e($merchantDisplayName); ?></strong>
+                <small>Merchant Agent · campaigns · rewards · CRM</small>
               </div>
               <div class="mg-canvas-avatar-layer" data-canvas-customers></div>
               <article class="mg-canvas-empty-state" data-canvas-empty>
