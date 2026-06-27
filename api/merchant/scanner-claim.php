@@ -7,7 +7,7 @@ require_once __DIR__ . '/_claims.php';
 function mg_scanner_claim_identifier(mixed $value): string
 {
     $raw = trim((string) $value);
-    if ($raw === '' || mb_strlen($raw) > 500) {
+    if ($raw === '' || mb_strlen($raw) > 700) {
         mg_fail('Scan a Microgifter gift QR code or enter a gift identifier.', 422);
     }
 
@@ -19,7 +19,7 @@ function mg_scanner_claim_identifier(mixed $value): string
     if (is_array($parts)) {
         if (!empty($parts['query'])) {
             parse_str((string) $parts['query'], $query);
-            foreach (['gift','gift_id','id','item','g','claim','code'] as $key) {
+            foreach (['gift','gift_id','id','item','action_item','action_item_id','voucher','voucher_id','instance','instance_id','g','claim','code'] as $key) {
                 if (isset($query[$key]) && !is_array($query[$key])) {
                     $queryCandidates[] = trim((string) $query[$key]);
                 }
@@ -28,6 +28,9 @@ function mg_scanner_claim_identifier(mixed $value): string
         if (!empty($parts['path'])) {
             $queryCandidates[] = trim((string) $parts['path']);
         }
+    }
+    if (str_starts_with(strtoupper($decoded), 'MGFT-CLAIM|')) {
+        $queryCandidates[] = substr($decoded, 11);
     }
     $queryCandidates[] = $decoded;
 
@@ -49,6 +52,34 @@ function mg_scanner_claim_identifier(mixed $value): string
     mg_fail('This scan does not look like a Microgifter gift or claim QR code.', 422);
 }
 
+function mg_scanner_claim_notify(PDO $pdo, int $userId, int $actorUserId, string $type, string $title, string $body, string $actionUrl, ?int $giftDbId = null): void
+{
+    if ($userId < 1) return;
+    try {
+        $stmt = $pdo->prepare('INSERT INTO notifications (public_id,user_id,type,title,body,action_url,gift_id,created_at) VALUES (?,?,?,?,?,?,?,NOW())');
+        $stmt->execute([mg_public_uuid(), $userId, $type, $title, $body, $actionUrl, $giftDbId]);
+    } catch (Throwable $error) {
+        if (function_exists('mg_security_log')) {
+            mg_security_log('warning', 'scanner_claim.notification_failed', 'Scanner claim notification failed.', [
+                'recipient_user_id' => $userId,
+                'type' => $type,
+                'exception_class' => $error::class,
+            ], $actorUserId);
+        }
+    }
+}
+
+function mg_scanner_claim_notify_many(PDO $pdo, array $userIds, int $actorUserId, string $type, string $title, string $body, string $actionUrl, ?int $giftDbId = null): void
+{
+    $sent = [];
+    foreach ($userIds as $userId) {
+        $id = (int) $userId;
+        if ($id < 1 || isset($sent[$id])) continue;
+        $sent[$id] = true;
+        mg_scanner_claim_notify($pdo, $id, $actorUserId, $type, $title, $body, $actionUrl, $giftDbId);
+    }
+}
+
 function mg_scanner_claim_assert_location_binding(array $claim, int $locationId): void
 {
     $status = (string) ($claim['status'] ?? '');
@@ -56,6 +87,177 @@ function mg_scanner_claim_assert_location_binding(array $claim, int $locationId)
     if ($claimLocationId > 0 && $claimLocationId !== $locationId && in_array($status, ['verified','redeemed'], true)) {
         mg_fail('This gift was already verified for another merchant location.', 409);
     }
+}
+
+function mg_scanner_claim_legacy_lookup(PDO $pdo, int $merchantUserId, string $identifier): ?array
+{
+    $stmt = $pdo->prepare("SELECT g.id gift_db_id,g.public_id gift_id,g.status gift_status,g.expires_at,g.sender_user_id,g.recipient_user_id,g.title,g.value_cents,g.currency,
+            gc.id claim_db_id,gc.public_id claim_id,gc.status claim_status,gc.failed_attempts,gc.locked_at,gc.verified_at,gc.redeemed_at,gc.expires_at claim_expires_at,gc.location_id,gc.merchant_claim_code_id,
+            m.pppm_item_id,pi.public_id pppm_id,pi.status pppm_status
+        FROM gifts g
+        LEFT JOIN gift_claims gc ON gc.gift_id=g.id
+        LEFT JOIN pppm_legacy_gift_map m ON m.gift_id=g.id
+        LEFT JOIN pppm_items pi ON pi.id=m.pppm_item_id
+        WHERE (g.public_id=? OR pi.public_id=? OR gc.public_id=?)
+          AND EXISTS (SELECT 1 FROM gift_merchant_eligibility e WHERE e.gift_id=g.id AND e.merchant_user_id=?)
+        LIMIT 1 FOR UPDATE");
+    $stmt->execute([$identifier, $identifier, $identifier, $merchantUserId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $row ?: null;
+}
+
+function mg_scanner_claim_microgift_lookup(PDO $pdo, int $merchantUserId, string $identifier): ?array
+{
+    $stmt = $pdo->prepare("SELECT mi.*, mt.name template_name, mt.owner_user_id template_owner_user_id, ac.public_id action_item_id
+        FROM microgift_instances mi
+        INNER JOIN microgift_templates mt ON mt.id=mi.template_id
+        LEFT JOIN microgift_inbox_items ac ON ac.instance_id=mi.id AND ac.public_id=?
+        WHERE (mi.public_id=? OR ac.public_id=?)
+          AND (mt.owner_user_id=? OR mi.issuer_user_id=?)
+        LIMIT 1 FOR UPDATE");
+    $stmt->execute([$identifier, $identifier, $identifier, $merchantUserId, $merchantUserId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $row ?: null;
+}
+
+function mg_scanner_claim_claim_code(PDO $pdo, int $merchantUserId, int $locationId): array
+{
+    $claimCodeStmt = $pdo->prepare("SELECT * FROM merchant_claim_codes WHERE merchant_user_id=? AND location_id=? AND status='active' AND (valid_from IS NULL OR valid_from<=NOW()) AND (valid_until IS NULL OR valid_until>=NOW()) AND (usage_limit IS NULL OR usage_count<usage_limit) ORDER BY id DESC LIMIT 1 FOR UPDATE");
+    $claimCodeStmt->execute([$merchantUserId, $locationId]);
+    $claimCode = $claimCodeStmt->fetch(PDO::FETCH_ASSOC);
+    if (!$claimCode) {
+        mg_fail('This scanner location does not have an active claim code assigned.', 409);
+    }
+    return $claimCode;
+}
+
+function mg_scanner_claim_process_microgift(PDO $pdo, array $instance, array $location, array $claimCode, int $merchantUserId, string $locationPublicId, string $action, bool $requireConfirm, bool $confirmed): void
+{
+    $instancePublicId = (string) $instance['public_id'];
+    $claimantUserId = (int) ($instance['owner_user_id'] ?: $instance['recipient_user_id'] ?: 0);
+    if ($claimantUserId < 1) {
+        mg_fail('This Microgift is not assigned to a customer account yet.', 409);
+    }
+    if (in_array((string) $instance['status'], ['cancelled','revoked','expired'], true)) {
+        mg_fail('This Microgift is not available for scanner redemption.', 409);
+    }
+    if (!empty($instance['expires_at']) && strtotime((string) $instance['expires_at']) < time()) {
+        $pdo->prepare("UPDATE microgift_instances SET status='expired',updated_at=NOW() WHERE id=?")->execute([(int) $instance['id']]);
+        mg_fail('This Microgift has expired.', 410);
+    }
+
+    $redemptionStmt = $pdo->prepare("SELECT * FROM microgift_redemptions WHERE instance_id=? AND status='completed' LIMIT 1 FOR UPDATE");
+    $redemptionStmt->execute([(int) $instance['id']]);
+    $existing = $redemptionStmt->fetch(PDO::FETCH_ASSOC);
+    if ($existing || (string) $instance['status'] === 'redeemed') {
+        $pdo->commit();
+        mg_ok([
+            'gift_id' => $instancePublicId,
+            'instance_id' => $instancePublicId,
+            'location_id' => $locationPublicId,
+            'location_name' => (string) $location['name'],
+            'verified' => true,
+            'redeemed' => true,
+            'already_redeemed' => true,
+            'gift' => [
+                'title' => (string) ($instance['title_snapshot'] ?: $instance['template_name'] ?: 'Microgift'),
+                'value_cents' => (int) ($instance['face_value_cents'] ?? 0),
+                'currency' => (string) ($instance['currency'] ?? 'USD'),
+            ],
+        ], 'Microgift already redeemed.');
+    }
+
+    if ($action === 'verify' || ($action === 'redeem' && $requireConfirm && !$confirmed)) {
+        $pdo->prepare('INSERT INTO microgift_events (public_id,instance_id,event_type,actor_user_id,source_type,source_reference,payload_json,created_at) VALUES (?,?,?,?,?,?,?,NOW())')->execute([
+            mg_public_uuid(),
+            (int) $instance['id'],
+            'scanner_verified',
+            $merchantUserId,
+            'merchant_scanner',
+            $locationPublicId,
+            json_encode(['location_id' => $locationPublicId, 'claim_code_last4' => (string) ($claimCode['code_last4'] ?? '')], JSON_UNESCAPED_SLASHES),
+        ]);
+        $pdo->commit();
+        mg_audit('microgift.scanner_claim_verified', 'microgift_instance', ['instance_id' => $instancePublicId, 'location_id' => $locationPublicId], $merchantUserId);
+        mg_ok([
+            'gift_id' => $instancePublicId,
+            'instance_id' => $instancePublicId,
+            'location_id' => $locationPublicId,
+            'location_name' => (string) $location['name'],
+            'claim_code_last4' => (string) ($claimCode['code_last4'] ?? ''),
+            'verified' => true,
+            'redeemed' => false,
+            'needs_confirmation' => $action === 'redeem' && $requireConfirm && !$confirmed,
+            'gift' => [
+                'title' => (string) ($instance['title_snapshot'] ?: $instance['template_name'] ?: 'Microgift'),
+                'value_cents' => (int) ($instance['face_value_cents'] ?? 0),
+                'currency' => (string) ($instance['currency'] ?? 'USD'),
+            ],
+        ], $action === 'verify' ? 'Microgift verified for this scanner location.' : 'Microgift verified. Confirm redemption before claiming voucher.');
+    }
+
+    $redemptionPublicId = mg_public_uuid();
+    $idempotencyKey = 'scanner:' . $instancePublicId . ':' . $locationPublicId;
+    $metadata = [
+        'location_id' => $locationPublicId,
+        'location_name' => (string) $location['name'],
+        'merchant_claim_code_id' => (string) $claimCode['public_id'],
+        'claim_code_last4' => (string) ($claimCode['code_last4'] ?? ''),
+        'source' => 'merchant_scanner',
+    ];
+    $pdo->prepare("INSERT INTO microgift_redemptions (public_id,instance_id,claimant_user_id,merchant_user_id,location_reference,amount_cents,currency,status,idempotency_key,source_reference,redeemed_at,metadata_json,created_at) VALUES (?,?,?,?,?,?,'USD','completed',?,?,NOW(),?,NOW())")->execute([
+        $redemptionPublicId,
+        (int) $instance['id'],
+        $claimantUserId,
+        $merchantUserId,
+        $locationPublicId,
+        (int) ($instance['face_value_cents'] ?? 0),
+        $idempotencyKey,
+        'merchant_scanner:' . $locationPublicId,
+        json_encode($metadata, JSON_UNESCAPED_SLASHES),
+    ]);
+    $redemptionId = (int) $pdo->lastInsertId();
+    $pdo->prepare("UPDATE microgift_instances SET status='redeemed',redeemed_at=NOW(),updated_at=NOW() WHERE id=?")->execute([(int) $instance['id']]);
+    $pdo->prepare('UPDATE merchant_claim_codes SET usage_count=usage_count+1,updated_at=NOW() WHERE id=?')->execute([(int) $claimCode['id']]);
+    $pdo->prepare("UPDATE microgift_inbox_items SET folder='claimed',state='redeemed',merchant_user_id=?,location_id=?,redemption_id=?,redeemed_at=NOW(),updated_at=NOW() WHERE instance_id=? AND user_id=? AND archived_at IS NULL")->execute([
+        $merchantUserId,
+        (int) $location['id'],
+        $redemptionId,
+        (int) $instance['id'],
+        $claimantUserId,
+    ]);
+    $pdo->prepare('INSERT INTO microgift_events (public_id,instance_id,event_type,actor_user_id,source_type,source_reference,payload_json,created_at) VALUES (?,?,?,?,?,?,?,NOW())')->execute([
+        mg_public_uuid(),
+        (int) $instance['id'],
+        'scanner_redeemed',
+        $merchantUserId,
+        'merchant_scanner',
+        $locationPublicId,
+        json_encode($metadata, JSON_UNESCAPED_SLASHES),
+    ]);
+
+    $title = (string) ($instance['title_snapshot'] ?: $instance['template_name'] ?: 'Microgift');
+    mg_scanner_claim_notify_many($pdo, [$claimantUserId, (int) ($instance['issuer_user_id'] ?? 0), $merchantUserId], $merchantUserId, 'microgift_redeemed', 'Microgift redeemed', $title . ' was redeemed at ' . (string) $location['name'] . '.', '/claimed.php?gift=' . rawurlencode($instancePublicId), null);
+
+    $pdo->commit();
+    mg_audit('microgift.scanner_claim_redeemed', 'microgift_instance', ['instance_id' => $instancePublicId, 'location_id' => $locationPublicId, 'redemption_id' => $redemptionPublicId], $merchantUserId);
+    mg_event('microgift.scanner_claim_redeemed', ['instance_id' => $instancePublicId, 'location_id' => $locationPublicId], $merchantUserId);
+    mg_ok([
+        'gift_id' => $instancePublicId,
+        'instance_id' => $instancePublicId,
+        'redemption_id' => $redemptionPublicId,
+        'location_id' => $locationPublicId,
+        'location_name' => (string) $location['name'],
+        'claim_code_last4' => (string) ($claimCode['code_last4'] ?? ''),
+        'verified' => true,
+        'redeemed' => true,
+        'notifications' => true,
+        'gift' => [
+            'title' => $title,
+            'value_cents' => (int) ($instance['face_value_cents'] ?? 0),
+            'currency' => (string) ($instance['currency'] ?? 'USD'),
+        ],
+    ], 'Microgift redeemed and notifications queued.');
 }
 
 mg_require_method('POST');
@@ -79,7 +281,24 @@ $merchantUserId = (int) $user['id'];
 try {
     $pdo->beginTransaction();
 
-    $lookup = mg_claim_lookup($pdo, $merchantUserId, $identifier);
+    $locationStmt = $pdo->prepare("SELECT ml.* FROM merchant_locations ml WHERE ml.public_id=? AND ml.workspace_id=? AND ml.merchant_user_id=? AND ml.status='active' LIMIT 1 FOR UPDATE");
+    $locationStmt->execute([$locationPublicId, (int) $workspace['id'], $merchantUserId]);
+    $location = $locationStmt->fetch(PDO::FETCH_ASSOC);
+    if (!$location) {
+        mg_fail('Merchant location not found or inactive.', 404);
+    }
+
+    $claimCode = mg_scanner_claim_claim_code($pdo, $merchantUserId, (int) $location['id']);
+    $lookup = mg_scanner_claim_legacy_lookup($pdo, $merchantUserId, $identifier);
+
+    if (!$lookup) {
+        $microgift = mg_scanner_claim_microgift_lookup($pdo, $merchantUserId, $identifier);
+        if ($microgift) {
+            mg_scanner_claim_process_microgift($pdo, $microgift, $location, $claimCode, $merchantUserId, $locationPublicId, $action, $requireConfirm, $confirmed);
+        }
+        mg_fail('Eligible gift, Microgift, or PPPM item not found.', 404);
+    }
+
     $giftPublicId = (string) ($lookup['gift_id'] ?? $identifier);
 
     $giftStmt = $pdo->prepare("SELECT * FROM gifts WHERE public_id=? AND status IN ('sent','delivered','claimed') LIMIT 1 FOR UPDATE");
@@ -89,24 +308,10 @@ try {
         mg_fail('Gift is not available for scanner redemption.', 404);
     }
 
-    $locationStmt = $pdo->prepare("SELECT ml.* FROM merchant_locations ml WHERE ml.public_id=? AND ml.workspace_id=? AND ml.merchant_user_id=? AND ml.status='active' LIMIT 1 FOR UPDATE");
-    $locationStmt->execute([$locationPublicId, (int) $workspace['id'], $merchantUserId]);
-    $location = $locationStmt->fetch(PDO::FETCH_ASSOC);
-    if (!$location) {
-        mg_fail('Merchant location not found or inactive.', 404);
-    }
-
     $eligibilityStmt = $pdo->prepare('SELECT 1 FROM gift_merchant_eligibility WHERE gift_id=? AND merchant_user_id=? AND (location_id IS NULL OR location_id=?) LIMIT 1');
     $eligibilityStmt->execute([(int) $gift['id'], $merchantUserId, (int) $location['id']]);
     if (!$eligibilityStmt->fetchColumn()) {
         mg_fail('This location is not authorized for the gift.', 403);
-    }
-
-    $claimCodeStmt = $pdo->prepare("SELECT * FROM merchant_claim_codes WHERE merchant_user_id=? AND location_id=? AND status='active' AND (valid_from IS NULL OR valid_from<=NOW()) AND (valid_until IS NULL OR valid_until>=NOW()) AND (usage_limit IS NULL OR usage_count<usage_limit) ORDER BY id DESC LIMIT 1 FOR UPDATE");
-    $claimCodeStmt->execute([$merchantUserId, (int) $location['id']]);
-    $claimCode = $claimCodeStmt->fetch(PDO::FETCH_ASSOC);
-    if (!$claimCode) {
-        mg_fail('This scanner location does not have an active claim code assigned.', 409);
     }
 
     $claimStmt = $pdo->prepare('SELECT * FROM gift_claims WHERE gift_id=? LIMIT 1 FOR UPDATE');
@@ -199,18 +404,7 @@ try {
         'source' => 'scanner',
     ]);
 
-    if ((int) ($gift['sender_user_id'] ?? 0) > 0) {
-        $notificationStmt = $pdo->prepare('INSERT INTO notifications (public_id,user_id,type,title,body,action_url,gift_id,created_at) VALUES (?,?,?,?,?,?,?,NOW())');
-        $notificationStmt->execute([
-            mg_public_uuid(),
-            (int) $gift['sender_user_id'],
-            'gift_claimed',
-            'Gift redeemed',
-            'A merchant location successfully redeemed your gift.',
-            '/claimed.php?gift=' . rawurlencode($giftPublicId),
-            (int) $gift['id'],
-        ]);
-    }
+    mg_scanner_claim_notify_many($pdo, [(int) ($gift['sender_user_id'] ?? 0), (int) ($gift['recipient_user_id'] ?? 0), $merchantUserId], $merchantUserId, 'gift_claimed', 'Gift redeemed', 'A merchant location successfully redeemed your gift.', '/claimed.php?gift=' . rawurlencode($giftPublicId), (int) $gift['id']);
 
     $pdo->commit();
     mg_audit('gift.scanner_claim_redeemed', 'gift', ['gift_id' => $giftPublicId, 'location_id' => $locationPublicId], $merchantUserId);
@@ -223,12 +417,13 @@ try {
         'claim_code_last4' => (string) ($claimCode['code_last4'] ?? ''),
         'verified' => true,
         'redeemed' => true,
+        'notifications' => true,
         'gift' => [
             'title' => (string) ($gift['title'] ?? 'Microgift'),
             'value_cents' => (int) ($gift['value_cents'] ?? 0),
             'currency' => (string) ($gift['currency'] ?? 'USD'),
         ],
-    ], 'Gift redeemed.');
+    ], 'Gift redeemed and notifications queued.');
 } catch (Throwable $error) {
     if ($pdo->inTransaction()) $pdo->rollBack();
     mg_security_log('error', 'merchant.scanner_claim_failed', 'Scanner claim failed.', [
