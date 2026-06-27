@@ -42,6 +42,7 @@ if($q!==''){
 
 $sql="SELECT a.public_id attempt_id,a.result,a.reason_code,a.correlation_id,a.attempted_at,
         i.public_id instance_id,i.status instance_status,i.face_value_cents,i.currency,i.title_snapshot,
+        i.owner_user_id,i.recipient_user_id,COALESCE(i.owner_user_id,i.recipient_user_id) customer_user_id,
         p.public_id pppm_id,l.public_id location_id,l.name location_name,
         r.public_id redemption_id,r.status redemption_status,r.redeemed_at,
         r.amount_cents redemption_amount_cents,r.currency redemption_currency,
