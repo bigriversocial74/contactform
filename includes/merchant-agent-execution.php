@@ -101,6 +101,8 @@ function mg_agent_execution_item(int $merchantId, array $source, ?array $latest)
         'approval_id' => $approvalId,
         'source_event_id' => (string)$source['event_id'],
         'source_event_type' => (string)$source['event_type'],
+        'source_type' => (string)($ctx['source_type'] ?? ''),
+        'source_id' => (string)($ctx['source_id'] ?? ''),
         'state' => $state,
         'playbook_key' => (string)($ctx['playbook_key'] ?? ''),
         'playbook_title' => (string)($ctx['playbook_title'] ?? 'Agent action'),
@@ -158,14 +160,7 @@ function mg_agent_execution_find_item(PDO $pdo, int $merchantId, string $executi
 
 function mg_agent_execution_find_recommendation(PDO $pdo, int $merchantId, array $item): ?array
 {
-    $sourceId = '';
-    if (preg_match('/source_id";s:\d+:"([^"]+)"/', serialize($item), $m)) $sourceId = $m[1];
-    $approvalId = (string)($item['approval_id'] ?? '');
-    foreach (mg_agent_approval_queue($pdo, $merchantId, ['limit' => 100])['items'] as $approval) {
-        if ((string)$approval['approval_id'] !== $approvalId) continue;
-        $sourceId = (string)($approval['source_id'] ?? $sourceId);
-        break;
-    }
+    $sourceId = (string)($item['source_id'] ?? '');
     if ($sourceId === '') return null;
     foreach (mg_crm_playbook_scan($pdo, $merchantId, ['limit' => 75]) as $rec) {
         if ((string)$rec['id'] === $sourceId) return $rec;
@@ -178,6 +173,8 @@ function mg_agent_execution_record(PDO $pdo, int $merchantId, string $eventType,
     $context = array_merge([
         'execution_id' => (string)$item['execution_id'],
         'approval_id' => (string)$item['approval_id'],
+        'source_type' => (string)($item['source_type'] ?? ''),
+        'source_id' => (string)($item['source_id'] ?? ''),
         'playbook_key' => (string)$item['playbook_key'],
         'playbook_title' => (string)$item['playbook_title'],
         'expected_action' => (string)$item['expected_action'],
