@@ -4,16 +4,47 @@ require_once __DIR__ . '/includes/app.php';
 $page_title='Messages | Microgifter';
 $page_section='agent';
 $header_mode='agent';
-$agent_tab='';
+$agent_tab='messages';
 $page_styles=['/assets/css/communications.css','/assets/css/messages-source-metadata.css','/assets/css/message-delivery-proof.css'];
 $page_scripts=['/assets/js/messages-center.js'];
 require __DIR__ . '/includes/header.php';
 ?>
-<section class="mg-app-shell mg-agent-app mg-communications-app" data-messages-center>
-<?php require __DIR__ . '/includes/agent-sidebar.php'; ?>
-<div class="mg-app-workspace mg-communications-workspace">
-<header class="mg-communications-header"><div><span class="mg-eyebrow">Gift communication</span><h1>Messages</h1><p>Conversations connected to gifts, recipients, merchants, agents, Store Canvas sessions, Merchant CRM, and PPPM items.</p></div><div class="mg-gift-center-header-actions"><a class="mg-btn mg-btn-soft" href="/inbox.php">Gift Inbox</a><a class="mg-btn mg-btn-soft" href="/notification-preferences.php">Notification preferences</a></div></header>
-<div class="mg-communications-kpis" data-message-kpis></div>
-<section class="mg-app-panel"><div class="mg-communications-toolbar"><input type="search" data-message-search placeholder="Search conversations"><button class="mg-btn mg-btn-soft" type="button" data-message-refresh>Refresh</button></div><div class="mg-communications-split"><div class="mg-thread-list" data-thread-list></div><section class="mg-thread-detail" data-thread-detail><div class="mg-empty-state"><strong>Select a conversation</strong><p>Loaded gift, Store Canvas, Merchant CRM, and recipient conversations will appear here.</p></div></section></div></section>
-</div></section>
+<section class="mg-app-shell mg-agent-app mg-communications-app mg-messages-layout" data-messages-center>
+  <aside class="mg-app-sidebar mg-universal-sidebar mg-messages-sidebar is-text-sidebar" data-app-sidebar data-sidebar-variant="messages">
+    <div class="mg-app-sidebar-brand mg-universal-sidebar-brand">
+      <a class="mg-brand mg-sidebar-logo" href="/index.php" aria-label="Microgifter home"><img src="/images/logo_main_drk.png" alt="Microgifter"><span class="mg-sidebar-logo-text">Microgifter</span></a>
+    </div>
+    <div class="mg-messages-sidebar-head">
+      <div>
+        <span class="mg-eyebrow">Gift communication</span>
+        <h1>Messages</h1>
+      </div>
+      <button class="mg-message-compose-trigger" type="button" data-message-refresh aria-label="Refresh conversations">↻</button>
+    </div>
+    <div class="mg-messages-sidebar-search">
+      <input type="search" data-message-search placeholder="Search conversations" aria-label="Search conversations">
+    </div>
+    <div class="mg-messages-sidebar-filters" aria-label="Conversation filters">
+      <button type="button" class="is-active" data-message-filter="all">All</button>
+      <button type="button" data-message-filter="open">Open</button>
+      <button type="button" data-message-filter="unread">Unread</button>
+    </div>
+    <div class="mg-messages-sidebar-meta" data-message-kpis></div>
+    <div class="mg-thread-list mg-messages-thread-list" data-thread-list></div>
+    <div class="mg-messages-sidebar-actions">
+      <a href="/inbox.php">Gift Inbox</a>
+      <a href="/notification-preferences.php">Notification Preferences</a>
+    </div>
+  </aside>
+  <div class="mg-app-workspace mg-communications-workspace mg-messages-workspace">
+    <section class="mg-app-panel mg-messages-panel">
+      <section class="mg-thread-detail" data-thread-detail>
+        <div class="mg-empty-state mg-messages-empty-state">
+          <strong>Select a conversation</strong>
+          <p>Merchant CRM, Store Canvas, gift, recipient, and PPPM conversations will appear here.</p>
+        </div>
+      </section>
+    </section>
+  </div>
+</section>
 <?php require __DIR__ . '/includes/footer.php'; ?>
