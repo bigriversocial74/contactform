@@ -91,7 +91,7 @@ try{
         $item=mg_action_center_load_wallet_item_for_user($pdo,$walletId,(int)$user['id'],strtolower(trim((string)($user['email']??''))));
         if(!$item)throw new RuntimeException('Action Center item not found.');
         $result=mg_action_center_claim_wallet_item($pdo,$item,(int)$user['id'],$actionItemId,$idempotencyKey);
-        $pdo->commit();
+        $pdo->commit ();
         mg_audit('action_center.wallet_item_claimed','wallet_item',['wallet_item_id'=>$walletId,'action_item_id'=>$actionItemId,'duplicate'=>$result['duplicate'],'claim_mode'=>'wallet_item'],(int)$user['id']);
         mg_ok($result,'Wallet reward claimed.',$result['duplicate']?200:201);
     }
