@@ -8,19 +8,21 @@ final class PackageFlowQaContractTest extends TestCase
     public function testFreeToPaidActivationChainIsCovered(): void
     {
         $request = file_get_contents(dirname(__DIR__, 2) . '/api/subscriptions/request-upgrade.php');
+        $changes = file_get_contents(dirname(__DIR__, 2) . '/api/subscriptions/_package_changes.php');
         $webhook = file_get_contents(dirname(__DIR__, 2) . '/api/subscriptions/_package_webhook.php');
         $billing = file_get_contents(dirname(__DIR__, 2) . '/api/subscriptions/_package_billing.php');
         $entitlements = file_get_contents(dirname(__DIR__, 2) . '/includes/package-entitlements.php');
         $status = file_get_contents(dirname(__DIR__, 2) . '/api/subscriptions/package-change-status.php');
 
         self::assertIsString($request);
+        self::assertIsString($changes);
         self::assertIsString($webhook);
         self::assertIsString($billing);
         self::assertIsString($entitlements);
         self::assertIsString($status);
 
         self::assertStringContainsString('mg_subscription_checkout_try_start', $request);
-        self::assertStringContainsString('pending_payment', $request);
+        self::assertStringContainsString('pending_payment', $changes);
         self::assertStringContainsString('checkout.session.completed', $webhook);
         self::assertStringContainsString('mg_platform_account_subscription_upsert', $webhook);
         self::assertStringContainsString('mg_platform_account_subscription_grant_merchant_role', $billing);
