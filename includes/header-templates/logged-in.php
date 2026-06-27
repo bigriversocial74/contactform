@@ -6,16 +6,10 @@ $show_header_signals = $show_header_signals ?? true;
 $show_header_cart = $show_header_cart ?? true;
 $user_roles = is_array($user_roles ?? null) ? $user_roles : [];
 $user_permissions = is_array($user_permissions ?? null) ? $user_permissions : [];
-$can_merchant_nav = $can_merchant_nav ?? (
-    in_array('merchant', $user_roles, true)
-    || in_array('admin', $user_roles, true)
-    || in_array('super_admin', $user_roles, true)
-    || in_array('merchant.manage', $user_permissions, true)
-    || in_array('merchant.workspace.view', $user_permissions, true)
-    || in_array('merchant.crm.view', $user_permissions, true)
-    || in_array('merchant.products.manage', $user_permissions, true)
-    || !empty($account_storefront_url)
-);
+$mg_package_context = is_array($mg_package_context ?? null) ? $mg_package_context : mg_user_package_context(null, mg_current_user());
+$account_package_label = (string) ($mg_package_context['package_name'] ?? 'Free');
+$account_is_free = !empty($mg_package_context['is_free']);
+$can_merchant_nav = $can_merchant_nav ?? !empty($mg_package_context['merchant_access']);
 ?>
 <div class="mg-header-actions" data-header-template="logged-in">
   <?php if ($show_header_create): ?>
@@ -45,12 +39,12 @@ $can_merchant_nav = $can_merchant_nav ?? (
     </div>
   <?php endif; ?>
 
-  <div class="mg-account-menu" data-mg-auth-menu>
+  <div class="mg-account-menu" data-mg-auth-menu data-package-id="<?= mg_e((string) ($mg_package_context['package_id'] ?? 'free')) ?>">
     <button class="mg-account-trigger" type="button" data-mg-auth-trigger aria-expanded="false">
       <span class="mg-avatar"><?= mg_e($display_initial) ?></span>
       <span class="mg-account-copy">
         <span class="mg-account-name"><?= mg_e($display_name) ?></span>
-        <span class="mg-account-role"><?= mg_e($user_roles[0] ?? 'member') ?></span>
+        <span class="mg-account-role"><?= mg_e($account_package_label) ?></span>
       </span>
       <span class="mg-account-caret">⌄</span>
     </button>
@@ -61,7 +55,7 @@ $can_merchant_nav = $can_merchant_nav ?? (
           <span class="mg-account-head-name"><?= mg_e($display_name) ?></span>
           <span class="mg-account-head-email"><?= mg_e($display_email) ?></span>
         </span>
-        <span class="mg-account-session-label">SESSION</span>
+        <span class="mg-account-session-label"><?= mg_e(strtoupper($account_package_label)) ?></span>
       </div>
       <?php $menuIndex = 1; ?>
       <a class="mg-account-action" href="/inbox.php"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>IN/OUT Box</span></a>
@@ -69,14 +63,14 @@ $can_merchant_nav = $can_merchant_nav ?? (
       <?php if ($account_profile_url): ?><a class="mg-account-action" href="<?= mg_e($account_profile_url) ?>"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>My Profile</span></a><?php endif; ?>
       <?php if ($can_merchant_nav && $account_storefront_url): ?><a class="mg-account-action" href="<?= mg_e($account_storefront_url) ?>"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>My Storefront</span></a><?php endif; ?>
       <a class="mg-account-action" href="/account.php"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Profile Settings</span></a>
-      <a class="mg-account-action" href="/account-commerce.php"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Commerce center</span></a>
       <?php if ($can_merchant_nav): ?>
+        <a class="mg-account-action" href="/account-commerce.php"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Commerce center</span></a>
         <a class="mg-account-action" href="/merchant.php"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Merchant Dashboard</span></a>
         <a class="mg-account-action" href="/merchant-crm.php"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Merchant CRM</span></a>
       <?php endif; ?>
       <?php if ($can_sales_crm): ?><a class="mg-account-action" href="/sales-crm.php"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Sales CRM</span></a><?php endif; ?>
       <?php if ($can_admin_dashboard): ?><a class="mg-account-action" href="/account-admin.php"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Admin dashboard</span></a><?php endif; ?>
-      <a class="mg-account-action mg-account-upgrade" href="/pricing.php"><span class="mg-account-index">UP</span><span>Upgrade</span></a>
+      <a class="mg-account-action mg-account-upgrade" href="<?= $account_is_free ? '/pricing.php' : '/account-subscriptions.php' ?>"><span class="mg-account-index"><?= $account_is_free ? 'UP' : str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span><?= $account_is_free ? 'Upgrade' : 'Manage package' ?></span></a>
       <a class="mg-account-action" href="/account-subscriptions.php"><span class="mg-account-index"><?= str_pad((string) $menuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>My Subscriptions</span></a>
       <button class="mg-account-action mg-account-logout" type="button" data-auth-logout><span class="mg-account-index">00</span><span>Sign out</span></button>
     </div>
