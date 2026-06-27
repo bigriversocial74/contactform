@@ -65,7 +65,11 @@ function lqr_reconcile_microgifter_webhook(array &$state, string $event, array $
             $reward['last_webhook_event'] = $event;
             $reward['last_webhook_delivery'] = $deliveryId;
             $reward['last_webhook_at'] = gmdate('c');
+            $reward['last_webhook_verified_at'] = gmdate('c');
             $reward['last_webhook_payload'] = $payload;
+            $reward['claim_sync_status'] = 'synced_by_webhook';
+            $reward['webhook_evidence'][] = ['event'=>$event, 'delivery'=>$deliveryId, 'at'=>gmdate('c'), 'status'=>$status];
+            if (is_array($reward['webhook_evidence'])) $reward['webhook_evidence'] = array_slice($reward['webhook_evidence'], -10);
 
             if (in_array($event, ['reward.claimed_in_app', 'reward.redeem_started', 'reward.redeem_handoff', 'reward.redeemed'], true)) {
                 $reward['claim_status'] = $status !== '' ? $status : $event;
