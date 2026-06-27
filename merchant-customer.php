@@ -4,8 +4,8 @@ require_once __DIR__ . '/includes/app.php';
 $page_title='Customer Profile | Microgifter';
 $page_section='merchant';
 $header_mode='account';
-$page_styles=['/assets/css/merchant-workspace.css','/assets/css/merchant-customer-profile.css','/assets/css/merchant-followup-tasks.css'];
-$page_scripts=['/assets/js/merchant-customer-profile.js'];
+$page_styles=['/assets/css/merchant-workspace.css','/assets/css/merchant-customer-profile.css','/assets/css/merchant-followup-tasks.css','/assets/css/merchant-crm-retention-playbooks.css'];
+$page_scripts=['/assets/js/merchant-customer-profile.js','/assets/js/merchant-customer-retention-recommendations.js'];
 $user=mg_current_user();
 $merchantNav=[
  'overview'=>['Overview','Workspace health','/merchant.php','Overview'],
