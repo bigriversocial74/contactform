@@ -78,4 +78,21 @@ final class MerchantCrmPerformanceInsightsContractTest extends TestCase
         self::assertStringContainsString('mg-crm-draft-review-grid', $css);
         self::assertStringContainsString('mg-crm-draft-kpis', $css);
     }
+
+    public function testDraftApprovalGateBlocksUntilChecklistPasses(): void
+    {
+        $drafts = $this->read('assets/js/merchant-crm-draft-review-center.js');
+        $gate = $this->read('assets/js/merchant-crm-draft-approval-gate.js');
+        $css = $this->read('assets/css/merchant-crm-review-checklist.css');
+        self::assertStringContainsString('merchant-crm-draft-approval-gate.js', $drafts);
+        self::assertStringContainsString('data-crm-launch-campaign', $gate);
+        self::assertStringContainsString('stopImmediatePropagation', $gate);
+        self::assertStringContainsString('data-crm-approval-gate', $gate);
+        self::assertStringContainsString('campaign name present', $gate);
+        self::assertStringContainsString('contact count above zero', $gate);
+        self::assertStringContainsString('draft marked ready in Draft Review', $gate);
+        self::assertStringContainsString('mgCrmDraftReviewState', $gate);
+        self::assertStringContainsString('merchant-crm-review-checklist.css', $gate);
+        self::assertStringContainsString('mg-crm-review-checklist', $css);
+    }
 }
