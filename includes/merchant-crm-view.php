@@ -1,35 +1,83 @@
 <?php declare(strict_types=1); ?>
 <link rel="stylesheet" href="/assets/css/merchant-crm.css">
+<link rel="stylesheet" href="/assets/css/merchant-crm-command-center.css">
+<script src="/assets/js/merchant-crm-command-center.js" defer></script>
+<script src="/assets/js/merchant-crm.js" defer></script>
+<script src="/assets/js/merchant-crm-messages.js" defer></script>
 <script src="/assets/js/merchant-crm-reward-picker.js" defer></script>
 <script src="/assets/js/merchant-crm-reward-invite-bridge.js" defer></script>
 <script src="/assets/js/merchant-crm-reward-invite-operations.js" defer></script>
-<section class="mg-crm-workspace" data-merchant-crm-shell>
+<section class="mg-crm-workspace mg-crm-command-shell" data-merchant-crm-shell>
   <div class="mg-crm-toolbar">
-    <nav class="mg-crm-tabs" aria-label="Merchant CRM sections">
-      <a class="is-active" href="/merchant-crm.php">Overview</a>
-      <a href="#crm-messages">Messages</a>
-      <a href="#campaign-contacts">Contacts</a>
-      <a href="/merchant-campaigns.php">Campaigns</a>
-      <a href="/merchant-reward-templates.php">Rewards</a>
-      <a href="/merchant-campaign-stamps.php">Stamps</a>
-      <a href="/merchant-stamps.php">Ledger</a>
+    <nav class="mg-crm-tabs" aria-label="Merchant CRM sections" role="tablist">
+      <button class="is-active" type="button" role="tab" aria-selected="true" data-crm-tab-target="overview">Overview</button>
+      <button type="button" role="tab" aria-selected="false" data-crm-tab-target="messages">Messages</button>
+      <button type="button" role="tab" aria-selected="false" data-crm-tab-target="contacts">Contacts</button>
+      <button type="button" role="tab" aria-selected="false" data-crm-tab-target="campaigns">Campaigns</button>
+      <button type="button" role="tab" aria-selected="false" data-crm-tab-target="rewards">Rewards</button>
+      <button type="button" role="tab" aria-selected="false" data-crm-tab-target="stamps">Stamps</button>
+      <button type="button" role="tab" aria-selected="false" data-crm-tab-target="ledger">Ledger</button>
     </nav>
     <a class="mg-btn mg-btn-soft mg-crm-distribution-btn" href="/merchant-distribution.php">Distribution</a>
   </div>
 
-  <div class="mg-merchant-kpis mg-crm-kpis">
-    <div class="mg-merchant-kpi mg-crm-kpi is-total"><span>Total contacts</span><strong data-merchant-crm-total>—</strong><small>All campaign contacts</small></div>
-    <div class="mg-merchant-kpi mg-crm-kpi is-accounts"><span>With accounts</span><strong data-merchant-crm-accounts>—</strong><small>Signed up customers</small></div>
-    <div class="mg-merchant-kpi mg-crm-kpi is-verified"><span>Email verified</span><strong data-merchant-crm-verified>—</strong><small>Verified email addresses</small></div>
-    <div class="mg-merchant-kpi mg-crm-kpi is-rewards"><span>Rewards</span><strong data-merchant-crm-wallets>—</strong><small>Total rewards sent</small></div>
-  </div>
+  <section class="mg-crm-tab-panel" data-crm-tab-panel="overview" role="tabpanel">
+    <div class="mg-merchant-kpis mg-crm-kpis">
+      <div class="mg-merchant-kpi mg-crm-kpi is-total"><span>Total contacts</span><strong data-merchant-crm-total>—</strong><small>All campaign contacts</small></div>
+      <div class="mg-merchant-kpi mg-crm-kpi is-accounts"><span>With accounts</span><strong data-merchant-crm-accounts>—</strong><small>Signed up customers</small></div>
+      <div class="mg-merchant-kpi mg-crm-kpi is-verified"><span>Email verified</span><strong data-merchant-crm-verified>—</strong><small>Verified email addresses</small></div>
+      <div class="mg-merchant-kpi mg-crm-kpi is-rewards"><span>Rewards</span><strong data-merchant-crm-wallets>—</strong><small>Total rewards sent</small></div>
+    </div>
 
-  <div class="mg-crm-primary-grid">
+    <div class="mg-crm-command-grid" data-crm-command-scoreboard>
+      <article class="mg-crm-command-card"><span>01</span><h3>Contacts</h3><p>Review account status, email readiness, reward state, and customer timeline from one operational table.</p></article>
+      <article class="mg-crm-command-card"><span>02</span><h3>Messages</h3><p>Create a CRM thread from any contact and keep active merchant conversations visible in the Messages tab.</p></article>
+      <article class="mg-crm-command-card"><span>03</span><h3>Reward Invites</h3><p>Reserve rewards for no-account contacts, resend links, copy invite URLs, or revoke stale pending invites.</p></article>
+      <article class="mg-crm-command-card"><span>04</span><h3>Performance</h3><p>Track campaign contacts, accounts created, invites delivered, rewards issued, and redemption follow-up opportunities.</p></article>
+    </div>
+
+    <div class="mg-crm-primary-grid">
+      <section class="mg-app-panel mg-crm-card mg-crm-card is-full">
+        <div class="mg-app-panel-head mg-crm-card-head">
+          <div>
+            <h2>Campaign Command Center</h2>
+            <p>Use the tabs above to move from contact operations to messages, campaigns, rewards, stamps, and ledger activity without leaving Merchant CRM.</p>
+          </div>
+          <div class="mg-tab-actions"><button class="mg-btn mg-btn-soft" type="button" data-crm-tab-target="contacts">Open contacts</button><button class="mg-btn mg-btn-soft" type="button" data-crm-tab-target="messages">Open messages</button></div>
+        </div>
+        <div class="mg-app-panel-body">
+          <div class="mg-crm-mini-feed" data-crm-command-feed>
+            <article><div><strong>Reward invite workflow is active</strong><small>No-account contacts can receive reserved reward invite links.</small></div><span class="mg-crm-badge is-good">ready</span></article>
+            <article><div><strong>Direct rewards are active</strong><small>Account contacts can receive rewards directly into their Microgifter inbox.</small></div><span class="mg-crm-badge is-good">ready</span></article>
+            <article><div><strong>CRM message visibility patched</strong><small>New messages now create active CRM threads and refresh the Messages panel.</small></div><span class="mg-crm-badge is-good">fixed</span></article>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <section class="mg-crm-insight-card" aria-label="CRM insight">
+      <div class="mg-crm-insight-icon">◎</div>
+      <div>
+        <h2>CRM Insight</h2>
+        <p>Use CRM conversations to follow up with high-value leads, answer questions, and drive more redemptions.</p>
+      </div>
+      <div class="mg-crm-insight-graphic" aria-hidden="true"><span></span><span></span><span></span><span></span><i></i></div>
+    </section>
+  </section>
+
+  <section class="mg-crm-tab-panel" data-crm-tab-panel="messages" role="tabpanel" hidden>
+    <div class="mg-crm-tab-title"><div><h2>CRM Messages</h2><p>Active merchant/customer threads created from CRM contacts appear here.</p></div><div class="mg-crm-tab-actions"><button class="mg-btn mg-btn-soft" type="button" data-crm-messages-refresh>Refresh</button></div></div>
+    <section class="mg-app-panel mg-crm-card mg-crm-messages-card" id="crm-messages" data-merchant-crm-messages>
+      <div class="mg-empty-state"><strong>Loading CRM messages</strong><p>Merchant-owned customer conversations will appear here.</p></div>
+    </section>
+  </section>
+
+  <section class="mg-crm-tab-panel" data-crm-tab-panel="contacts" role="tabpanel" hidden>
     <section class="mg-app-panel mg-crm-card mg-crm-contacts-card" id="campaign-contacts" data-merchant-crm-app>
       <div class="mg-app-panel-head mg-crm-card-head">
         <div>
           <h2>Campaign Contacts</h2>
-          <p>Operational contact list with campaign type, account status, reward status, email status, timeline, message, and reward actions.</p>
+          <p>Operational contact list with campaign type, account status, reward status, email status, timeline, message, and compact reward actions.</p>
         </div>
         <div class="mg-heading-actions mg-crm-card-actions">
           <select class="mg-input" data-crm-campaign-filter aria-label="Campaign filter"><option value="">All campaigns</option></select>
@@ -38,19 +86,31 @@
       </div>
       <div class="mg-app-panel-body"><div class="mg-crm-table-wrap" data-merchant-crm-table><div class="mg-empty-state"><strong>Loading contacts</strong><p>Campaign signups, QR pickups, contest entries, and reward activity will appear here.</p></div></div></div>
     </section>
+  </section>
 
-    <section class="mg-app-panel mg-crm-card mg-crm-messages-card" id="crm-messages" data-merchant-crm-messages>
-      <div class="mg-empty-state"><strong>Loading CRM messages</strong><p>Merchant-owned customer conversations will appear here.</p></div>
-    </section>
-  </div>
-
-  <section class="mg-crm-insight-card" aria-label="CRM insight">
-    <div class="mg-crm-insight-icon">◎</div>
-    <div>
-      <h2>CRM Insight</h2>
-      <p>Use CRM conversations to follow up with high-value leads, answer questions, and drive more redemptions.</p>
+  <section class="mg-crm-tab-panel" data-crm-tab-panel="campaigns" role="tabpanel" hidden>
+    <div class="mg-crm-tab-title"><div><h2>Campaigns</h2><p>Campaign-level operations for newsletters, contests, QR pickups, referrals, reward invites, and follow-up workflows.</p></div><a class="mg-btn mg-btn-soft" href="/merchant-campaigns.php">Manage campaigns</a></div>
+    <div class="mg-crm-command-grid">
+      <article class="mg-crm-command-card"><span>C</span><h3>Campaign filters</h3><p>Use the contact filter to focus the CRM workspace by campaign and review the matching customers.</p></article>
+      <article class="mg-crm-command-card"><span>F</span><h3>Follow-ups</h3><p>Create follow-up tasks after messages, reward sends, and redemption activity.</p></article>
+      <article class="mg-crm-command-card"><span>A</span><h3>Activity feed</h3><p>Timeline cards show message, invite, direct reward, claim, and redemption events.</p></article>
+      <article class="mg-crm-command-card"><span>P</span><h3>Performance</h3><p>Measure contacts, accounts, delivered invites, rewards issued, and redemption momentum.</p></article>
     </div>
-    <div class="mg-crm-insight-graphic" aria-hidden="true"><span></span><span></span><span></span><span></span><i></i></div>
+  </section>
+
+  <section class="mg-crm-tab-panel" data-crm-tab-panel="rewards" role="tabpanel" hidden>
+    <div class="mg-crm-tab-title"><div><h2>Rewards</h2><p>Manage direct rewards and pending no-account reward invites from one operations panel.</p></div><a class="mg-btn mg-btn-soft" href="/merchant-reward-templates.php">Reward templates</a></div>
+    <section class="mg-app-panel mg-crm-card" data-crm-reward-invite-ops-host><div class="mg-operations-empty"><strong>Loading reward invite operations</strong><p>Pending, delivered, revoked, and expired reward invites will appear here.</p></div></section>
+  </section>
+
+  <section class="mg-crm-tab-panel" data-crm-tab-panel="stamps" role="tabpanel" hidden>
+    <div class="mg-crm-tab-title"><div><h2>Stamps</h2><p>Campaign stamps and stamp ledger activity connect customer engagement to merchant reward operations.</p></div><div class="mg-crm-tab-actions"><a class="mg-btn mg-btn-soft" href="/merchant-campaign-stamps.php">Campaign stamps</a><a class="mg-btn mg-btn-soft" href="/merchant-stamps.php">Stamp ledger</a></div></div>
+    <div class="mg-crm-command-grid"><article class="mg-crm-command-card"><span>S</span><h3>Campaign stamps</h3><p>Attach stamps to CRM campaigns and customer engagement actions.</p></article><article class="mg-crm-command-card"><span>L</span><h3>Ledger</h3><p>Review stamp balance movement and customer reward triggers.</p></article></div>
+  </section>
+
+  <section class="mg-crm-tab-panel" data-crm-tab-panel="ledger" role="tabpanel" hidden>
+    <div class="mg-crm-tab-title"><div><h2>Ledger</h2><p>Operational links for claims, redemptions, PPPM, scanner settings, and settlement activity.</p></div><div class="mg-crm-tab-actions"><a class="mg-btn mg-btn-soft" href="/merchant-redemptions.php">Redemptions</a><a class="mg-btn mg-btn-soft" href="/merchant-scanner-settings.php">Scanner settings</a></div></div>
+    <div class="mg-crm-command-grid"><article class="mg-crm-command-card"><span>R</span><h3>Redemptions</h3><p>Monitor redeemed value, settlement status, receipts, and scanner events.</p></article><article class="mg-crm-command-card"><span>P</span><h3>Orders and PPPM</h3><p>Connect CRM reward activity back to ownership, claims, receipts, and redemption lifecycle.</p></article></div>
   </section>
 </section>
 
