@@ -4,7 +4,7 @@ require_once __DIR__ . '/includes/app.php';
 $page_title='Merchant Notifications | Microgifter';
 $page_section='merchant';
 $header_mode='account';
-$page_styles=['/assets/css/merchant-workspace.css'];
+$page_styles=['/assets/css/merchant-workspace.css','/assets/css/merchant-notifications.css'];
 $page_scripts=['/assets/js/merchant-workspace.js'];
 $merchantView='notifications';
 require __DIR__ . '/includes/header.php';
