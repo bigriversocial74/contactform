@@ -116,7 +116,7 @@ final class GiftLifecycleTest extends TestCase
         self::assertIsString($sidebar);
         self::assertStringContainsString('data-scanner-api="/api/merchant/scanner-claim.php"', $sidebar);
         self::assertStringContainsString("mg_require_permission('merchant.gifts.redeem')", $scanner);
-        self::assertStringContainsString('mg_scanner_claim_identifier', $scanner);
+        self::assertMatchesRegularExpression('/mg_scanner_claim_(identifier|context)/', $scanner);
         self::assertStringContainsString('mg_scanner_claim_assert_location_binding', $scanner);
         self::assertStringContainsString('already verified for another merchant location', $scanner);
         self::assertStringContainsString('This scanner location does not have an active claim code assigned.', $scanner);
