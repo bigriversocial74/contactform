@@ -120,6 +120,7 @@ return [
         'stage_18ac_claim_voucher_tokens.sql',
         'stage_18ad_scanner_trust_operations.sql',
         'stage_18ae_scanner_operations_control.sql',
+        'stage_18af_redemption_finance_disputes.sql',
         'stage_19_ai_provider_models.sql',
         'stage_19b_ai_permission_guard.sql',
         'stage_19_merchant_market_snapshots.sql',
