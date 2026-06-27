@@ -66,6 +66,8 @@ function mg_public_campaign_enforce_monthly_stamp_limit(PDO $pdo, int $merchantI
 
 function mg_public_campaign_enforce_reward_limits(PDO $pdo, array $campaign, ?int $userId, string $email): void
 {
+    $merchantId = (int) ($campaign['merchant_user_id'] ?? 0);
+    if ($merchantId > 0) mg_public_campaign_enforce_monthly_stamp_limit($pdo, $merchantId);
     $campaignId = (int) ($campaign['id'] ?? 0);
     $templateId = (int) ($campaign['reward_template_db_id'] ?? $campaign['reward_template_id'] ?? 0);
     $campaignLimit = max(1, (int) ($campaign['per_user_limit'] ?? 1));
