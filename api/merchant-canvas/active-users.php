@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require_once dirname(__DIR__) . '/store/_canvas.php';
+require_once dirname(__DIR__) . '/store/_canvas_schema.php';
 
 mg_require_method('GET');
 $user = mg_require_api_user();
@@ -13,13 +13,7 @@ if (!mg_user_has_merchant_access($user, $pdo)) {
 
 function mg_merchant_canvas_required_tables_missing(PDO $pdo): array
 {
-    $missing = [];
-    foreach (['mg_store_sessions','mg_store_session_events','mg_customer_store_history'] as $table) {
-        if (!mg_store_table_exists($pdo, $table)) {
-            $missing[] = $table;
-        }
-    }
-    return $missing;
+    return mg_store_canvas_missing_tables($pdo, ['mg_store_sessions','mg_store_session_events','mg_customer_store_history']);
 }
 
 function mg_merchant_canvas_active_customers(PDO $pdo, int $merchantUserId): array
@@ -93,7 +87,7 @@ try {
             'active_customers' => count($customers),
             'agent_status' => 'Watching store canvas',
             'message_enabled' => true,
-            'audit_mirror_enabled' => mg_store_table_exists($pdo, 'mg_agent_messages'),
+            'audit_mirror_enabled' => mg_store_canvas_table_exists($pdo, 'mg_agent_messages'),
         ],
     ]);
 } catch (RuntimeException $error) {
