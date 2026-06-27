@@ -65,8 +65,10 @@ final class MerchantAgentActionComposerTest extends TestCase
             self::assertStringContainsString($needle, $growthView);
         }
         $approvals = $this->source('includes/merchant-agent-approvals.php');
-        foreach (['merchant-agent-action-composer.php','mg_agent_composer_approval_items','source_type\' => \'composer'] as $needle) {
+        $composer = $this->source('includes/merchant-agent-action-composer.php');
+        foreach (['merchant-agent-action-composer.php','mg_agent_composer_approval_items'] as $needle) {
             self::assertStringContainsString($needle, $approvals);
         }
+        self::assertStringContainsString("source_type' => 'composer", $composer);
     }
 }
