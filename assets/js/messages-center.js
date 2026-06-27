@@ -7,6 +7,9 @@ document.addEventListener('DOMContentLoaded', function () {
   var list = app.querySelector('[data-thread-list]');
   var detail = app.querySelector('[data-thread-detail]');
   var search = app.querySelector('[data-message-search]');
+  var sidebar = app.querySelector('[data-app-sidebar]');
+  var sidebarToggle = app.querySelector('[data-messages-sidebar-toggle]');
+  var sidebarBackdrop = app.querySelector('[data-messages-sidebar-backdrop]');
   var refreshButtons = app.querySelectorAll('[data-message-refresh]');
   var filterButtons = app.querySelectorAll('[data-message-filter]');
   var state = { threads: [], current: null, sending: false, filter: 'all' };
@@ -37,16 +40,26 @@ document.addEventListener('DOMContentLoaded', function () {
     return '<span class="mg-message-source-chip" data-source-system="' + esc(system) + '">' + esc(label) + '</span>';
   }
 
-  function sourceContextPanel(source) {
+  function contextItems(source) {
     var context = source && source.context ? source.context : {};
-    if (!context || !Object.keys(context).length) return '';
     var rows = [];
-    if (context.merchant_name) rows.push('<small>Merchant</small><strong>' + esc(context.merchant_name) + '</strong>');
-    if (context.campaign_title) rows.push('<small>Campaign</small><strong>' + esc(context.campaign_title) + '</strong>');
-    if (context.campaign_type) rows.push('<small>Campaign type</small><strong>' + esc(context.campaign_type) + '</strong>');
-    if (context.contact_source) rows.push('<small>Original contact source</small><strong>' + esc(context.contact_source) + '</strong>');
-    if (context.contact_id) rows.push('<small>CRM contact</small><strong>' + esc(context.contact_id) + '</strong>');
-    return '<div class="mg-thread-source-context"><span>Delivery context</span>' + rows.join('') + '</div>';
+    if (source && source.label) rows.push(['Source', source.label]);
+    if (source && source.system) rows.push(['System', source.system]);
+    if (context.merchant_name) rows.push(['Merchant', context.merchant_name]);
+    if (context.campaign_title) rows.push(['Campaign', context.campaign_title]);
+    if (context.campaign_type) rows.push(['Campaign type', context.campaign_type]);
+    if (context.contact_source) rows.push(['Contact source', context.contact_source]);
+    if (context.contact_id) rows.push(['CRM contact', context.contact_id]);
+    if (context.store_session_id) rows.push(['Store session', context.store_session_id]);
+    return rows;
+  }
+
+  function contextBar(source) {
+    var rows = contextItems(source);
+    if (!rows.length) return '';
+    return '<div class="mg-thread-context-bar">' + rows.map(function (row) {
+      return '<div class="mg-thread-context-item"><span>' + esc(row[0]) + '</span><strong>' + esc(row[1]) + '</strong></div>';
+    }).join('') + '</div>';
   }
 
   function composerStatus(form, message, type) {
@@ -68,6 +81,14 @@ document.addEventListener('DOMContentLoaded', function () {
       button.textContent = busy ? 'Sending...' : 'Send';
     }
     if (form) form.setAttribute('aria-busy', busy ? 'true' : 'false');
+  }
+
+  function setSidebarOpen(open) {
+    if (!sidebar) return;
+    sidebar.classList.toggle('is-mobile-open', open);
+    document.body.classList.toggle('mg-messages-sidebar-open', open);
+    if (sidebarToggle) sidebarToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (sidebarBackdrop) sidebarBackdrop.hidden = !open;
   }
 
   function matchesFilter(thread) {
@@ -131,33 +152,45 @@ document.addEventListener('DOMContentLoaded', function () {
   async function openThread(id) {
     state.current = id;
     render();
+    setSidebarOpen(false);
     if (!detail) return;
     detail.innerHTML = '<div class="mg-empty-state"><strong>Loading conversation...</strong></div>';
 
     var response = await Microgifter.get('/api/messages/thread.php?id=' + encodeURIComponent(id));
     var thread = (response.data || response).thread || {};
     var source = thread.source || {};
-    var sourceMeta = source.label
-      ? '<div class="mg-thread-source-meta"><span>Source</span><strong>' + esc(source.label) + '</strong>' + (source.system ? '<small>' + esc(source.system) + '</small>' : '') + sourceContextPanel(source) + '</div>'
-      : '';
 
-    detail.innerHTML = '<div class="mg-thread-detail-head"><div><div class="mg-thread-detail-title"><h2>' + esc(thread.subject || 'Conversation') + '</h2>' + sourceBadge(thread) + '<span class="mg-message-source-chip is-live">Active</span></div>' +
-      '<p>' + esc(thread.gift_id || thread.pppm_id || thread.conversation_key || 'Gift communication') + '</p></div>' + sourceMeta + '</div>' +
-      '<div class="mg-message-stream">' + ((thread.messages || []).map(function (message) {
-        var messageSource = message.source && message.source.label
-          ? '<span class="mg-message-bubble-source">' + esc(message.source.label) + '</span>'
-          : '';
-        return '<article class="mg-message-bubble ' + (message.mine ? 'is-mine' : '') + '"><strong>' + esc(message.sender_name || 'User') + '</strong>' +
-          '<p>' + esc(message.body) + '</p><small>' + esc(message.created_at || '') + '</small>' + messageSource + '</article>';
-      }).join('') || '<div class="mg-empty-state"><strong>No messages yet.</strong></div>') + '</div>' +
-      '<form class="mg-message-composer" data-thread-reply data-thread-id="' + esc(thread.public_id || thread.id || id) + '" aria-busy="false">' +
-      '<textarea name="body" maxlength="4000" required placeholder="Type your message..."></textarea>' +
-      '<button class="mg-btn mg-btn-primary" type="submit" data-message-send>Send</button>' +
-      '<div class="mg-message-compose-status" data-message-compose-status role="status" aria-live="polite"></div>' +
-      '</form>';
+    var messages = (thread.messages || []).map(function (message) {
+      var mine = Boolean(message.mine);
+      var messageSource = message.source && message.source.label
+        ? '<span class="mg-message-bubble-source">' + esc(message.source.label) + '</span>'
+        : '';
+      var avatar = initials(message.sender_name || (mine ? 'Me' : 'User')).slice(0, 1);
+      return '<article class="mg-message-row ' + (mine ? 'is-mine' : 'is-theirs') + '">' +
+        '<div class="mg-message-avatar" aria-hidden="true">' + esc(avatar) + '</div>' +
+        '<div class="mg-message-bubble ' + (mine ? 'is-mine' : 'is-theirs') + '"><strong>' + esc(message.sender_name || (mine ? 'Me' : 'User')) + '</strong>' +
+        '<p>' + esc(message.body) + '</p><small>' + esc(message.created_at || '') + '</small>' + messageSource + '</div>' +
+        '</article>';
+    }).join('') || '<div class="mg-empty-state"><strong>No messages yet.</strong></div>';
+
+    detail.innerHTML = '<div class="mg-thread-detail-shell">' +
+      '<div class="mg-thread-detail-top">' + contextBar(source) +
+      '<div class="mg-thread-title-bar"><div class="mg-thread-title-block"><div class="mg-thread-title-line"><h2>' + esc(thread.subject || 'Conversation') + '</h2>' + sourceBadge(thread) + '<span class="mg-message-source-chip is-live">Active</span></div>' +
+      '<p>' + esc(thread.gift_id || thread.pppm_id || thread.conversation_key || 'Gift communication') + '</p></div>' +
+      '<div class="mg-thread-title-actions"><button type="button" aria-label="Mark complete">✓</button><button type="button" aria-label="Tag conversation">#</button><button type="button" aria-label="More actions">...</button></div></div></div>' +
+      '<div class="mg-message-stream-wrap"><div class="mg-message-stream">' + messages + '</div></div>' +
+      '<form class="mg-message-composer is-detached" data-thread-reply data-thread-id="' + esc(thread.public_id || thread.id || id) + '" aria-busy="false">' +
+      '<div class="mg-message-composer-inner"><div class="mg-message-compose-main"><textarea name="body" maxlength="4000" required placeholder="Type your message..."></textarea><div class="mg-message-compose-meta"><span data-compose-count>0 / 4000</span></div></div>' +
+      '<div class="mg-message-compose-tools"><button class="mg-compose-tool" type="button" aria-label="Add attachment">+</button><button class="mg-compose-tool" type="button" aria-label="Add note">Aa</button><button class="mg-btn mg-btn-primary" type="submit" data-message-send>Send</button></div></div>' +
+      '<div class="mg-message-compose-status" data-message-compose-status role="status" aria-live="polite"></div></form></div>';
 
     var stream = detail.querySelector('.mg-message-stream');
     if (stream) stream.scrollTop = stream.scrollHeight;
+    var textarea = detail.querySelector('textarea[name="body"]');
+    var counter = detail.querySelector('[data-compose-count]');
+    if (textarea && counter) {
+      textarea.addEventListener('input', function () { counter.textContent = textarea.value.length + ' / 4000'; });
+    }
   }
 
   async function sendReply(form) {
@@ -202,6 +235,10 @@ document.addEventListener('DOMContentLoaded', function () {
       setComposerBusy(form, false);
     }
   }
+
+  if (sidebarToggle) sidebarToggle.addEventListener('click', function () { setSidebarOpen(!(sidebar && sidebar.classList.contains('is-mobile-open'))); });
+  if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', function () { setSidebarOpen(false); });
+  document.addEventListener('keydown', function (event) { if (event.key === 'Escape') setSidebarOpen(false); });
 
   if (list) {
     list.addEventListener('click', function (event) {
