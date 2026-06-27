@@ -9,6 +9,7 @@ declare(strict_types=1);
       <p>Control which retention playbooks can monitor, recommend, create tasks, draft messages, or execute only after merchant approval.</p>
     </div>
     <div class="mg-automation-actions">
+      <a class="mg-btn mg-btn-secondary" href="/merchant-agent-approvals.php" data-automation-open-agent-review>Review Queue</a>
       <a class="mg-btn mg-btn-secondary" href="/merchant-agent-monitor.php" data-automation-open-agent-monitor>Agent Monitor</a>
       <a class="mg-btn mg-btn-secondary" href="/merchant-crm.php?tab=retention" data-automation-open-retention>Retention Playbooks</a>
       <button class="mg-btn mg-btn-secondary" type="button" data-automation-refresh>Refresh</button>
@@ -74,6 +75,7 @@ declare(strict_types=1);
         <p>Playbook triggers, task creation, message drafts, approvals, rejections, and settings changes.</p>
       </div>
       <div class="mg-crm-tab-actions">
+        <a class="mg-btn mg-btn-secondary" href="/merchant-agent-approvals.php">Review queue</a>
         <a class="mg-btn mg-btn-secondary" href="/merchant-agent-monitor.php">Explain activity</a>
         <button class="mg-btn mg-btn-secondary" type="button" data-automation-log-refresh>Refresh log</button>
       </div>
