@@ -25,10 +25,10 @@ final class MerchantRetentionPlaybooksTest extends TestCase
         $api = $this->source('api/merchant/crm-playbooks.php');
         $runner = $this->source('api/merchant/crm-playbook-runner.php');
         $engine = $this->source('includes/merchant-crm-playbooks.php');
-        foreach (['mg_require_permission(\'merchant.campaigns.view\')','mg_merchant_ensure_workspace','mg_crm_playbook_scan'] as $needle) {
+        foreach (["mg_require_permission('merchant.campaigns.view')",'mg_merchant_ensure_workspace','mg_crm_playbook_scan'] as $needle) {
             self::assertStringContainsString($needle, $api);
         }
-        foreach (['mg_require_permission(\'merchant.campaigns.manage\')','mg_require_csrf_for_write','crm.playbook.triggered','crm.followup.created'] as $needle) {
+        foreach (["mg_require_permission('merchant.campaigns.manage')",'mg_require_csrf_for_write','crm.playbook.triggered','crm.followup.created'] as $needle) {
             self::assertStringContainsString($needle, $runner . $engine);
         }
         foreach (['wi.merchant_user_id=?','cc.merchant_user_id=?','merchant_crm_contacts WHERE public_id=? AND merchant_user_id=?','campaign_events WHERE merchant_user_id=?'] as $needle) {
@@ -44,7 +44,7 @@ final class MerchantRetentionPlaybooksTest extends TestCase
         foreach (['merchant-crm-retention-playbooks.css','merchant-crm-retention-playbooks.js'] as $needle) {
             self::assertStringContainsString($needle, $page);
         }
-        foreach (['data-crm-tab-target","retention','Retention Playbooks','/api/merchant/crm-playbooks.php','/api/merchant/crm-playbook-runner.php','Triggered by playbook','Recommended Next Actions'] as $needle) {
+        foreach (["setAttribute('data-crm-tab-target','retention')",'Retention Playbooks','/api/merchant/crm-playbooks.php','/api/merchant/crm-playbook-runner.php','Triggered by playbook','Recommended Next Actions'] as $needle) {
             self::assertStringContainsString($needle, $js);
         }
         foreach (['.mg-retention-kpis','.mg-retention-grid','.mg-retention-playbook-card','.mg-retention-rec-card'] as $needle) {
