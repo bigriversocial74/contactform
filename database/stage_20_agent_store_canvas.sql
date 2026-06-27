@@ -126,3 +126,7 @@ CREATE TABLE IF NOT EXISTS mg_agent_messages (
   KEY idx_mg_agent_messages_merchant (merchant_user_id, created_at),
   KEY idx_mg_agent_messages_session (store_session_id, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO schema_migrations (migration_key,description,checksum,applied_at)
+VALUES ('stage_20_agent_store_canvas','Agent Store Canvas presence, session history, and merchant direct message foundation.',NULL,NOW())
+ON DUPLICATE KEY UPDATE description=VALUES(description);
