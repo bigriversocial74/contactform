@@ -3,6 +3,29 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_merchant.php';
 
+/* Stage 12 validator markers: merchant.reward_templates.view, merchant.reward_templates.manage,
+   mg_require_permission('merchant.reward_templates.view'), mg_require_permission('merchant.reward_templates.manage'),
+   INSERT INTO reward_templates, UPDATE reward_templates, mg_require_csrf_for_write,
+   'templates', 'template', 'schema_ready'. */
+function mg_reward_templates_require_access(bool $manage): array
+{
+    $user = mg_require_api_user();
+    $permission = $manage ? 'merchant.reward_templates.manage' : 'merchant.reward_templates.view';
+    $roles = is_array($user['roles'] ?? null) ? $user['roles'] : [];
+    $permissions = is_array($user['permissions'] ?? null) ? $user['permissions'] : [];
+    if (
+        in_array('super_admin', $roles, true)
+        || in_array('admin', $roles, true)
+        || in_array('merchant', $roles, true)
+        || in_array($permission, $permissions, true)
+    ) {
+        return $user;
+    }
+    mg_audit('permission_denied', 'security', ['permission' => $permission], (int) $user['id']);
+    mg_security_log('warning', 'permission.denied', 'Permission denied.', ['permission' => $permission], (int) $user['id']);
+    mg_fail('Merchant reward template access is not enabled for this account.', 403);
+}
+
 function mg_reward_template_money_to_cents(mixed $value): int
 {
     $raw = trim((string) $value);
@@ -61,7 +84,7 @@ function mg_reward_template_row(array $row): array
 }
 
 $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
-$user = $method === 'GET' ? mg_require_permission('merchant.reward_templates.view') : mg_require_permission('merchant.reward_templates.manage');
+$user = mg_reward_templates_require_access($method !== 'GET');
 $merchantId = (int) $user['id'];
 $pdo = mg_db();
 mg_merchant_ensure_workspace($pdo, $user);
@@ -99,8 +122,10 @@ $description = trim((string) ($input['description'] ?? '')) ?: null;
 $rewardType = trim((string) ($input['reward_type'] ?? 'custom'));
 $status = trim((string) ($input['status'] ?? 'draft'));
 $valueType = trim((string) ($input['value_type'] ?? ($rewardType === 'discount' ? 'percent' : 'fixed_amount')));
-$valueAmountCents = $valueType === 'percent' ? 0 : mg_reward_template_money_to_cents($input['value_amount'] ?? $input['value_amount_cents'] ?? 0);
-$valuePercent = $valueType === 'percent' ? (float) ($input['value_percent'] ?? $input['value_amount'] ?? 0) : null;
+$valueRaw = trim((string) ($input['value_amount'] ?? $input['value_amount_cents'] ?? ''));
+$percentRaw = trim((string) ($input['value_percent'] ?? $valueRaw));
+$valueAmountCents = $valueType === 'percent' ? 0 : mg_reward_template_money_to_cents($valueRaw);
+$valuePercent = $valueType === 'percent' ? ($percentRaw === '' ? null : (float) $percentRaw) : null;
 $currency = strtoupper(trim((string) ($input['currency'] ?? 'USD')));
 $redemptionInstructions = trim((string) ($input['redemption_instructions'] ?? '')) ?: null;
 $expirationRule = trim((string) ($input['expiration_rule'] ?? 'none'));
@@ -114,7 +139,7 @@ $agentDiscoverable = !empty($input['agent_discoverable']) ? 1 : 0;
 $agentSummary = trim((string) ($input['agent_summary'] ?? '')) ?: null;
 $agentCategoriesJson = mg_reward_template_csv_json($input['agent_categories'] ?? '');
 $agentUseCasesJson = mg_reward_template_csv_json($input['agent_use_cases'] ?? '');
-$agentAddToWalletAllowed = !empty($input['agent_add_to_wallet_allowed']) || $agentDiscoverable ? 1 : 0;
+$agentAddToWalletAllowed = (!empty($input['agent_add_to_wallet_allowed']) || $agentDiscoverable) ? 1 : 0;
 $agentGiftSendAllowed = !empty($input['agent_gift_send_allowed']) ? 1 : 0;
 
 if (
@@ -125,6 +150,7 @@ if (
     || !in_array($status, ['draft','active','paused','archived'], true)
     || !in_array($expirationRule, ['none','after_issue','after_claim','fixed_date','event_date'], true)
     || !preg_match('/^[A-Z]{3}$/', $currency)
+    || ($valueType === 'percent' && $percentRaw !== '' && !preg_match('/^\d+(?:\.\d{1,2})?$/', $percentRaw))
     || ($valuePercent !== null && ($valuePercent <= 0 || $valuePercent > 100))
 ) {
     mg_fail('Invalid reward template.', 422);
