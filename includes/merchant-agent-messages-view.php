@@ -9,6 +9,7 @@ declare(strict_types=1);
       <p>Review, edit, approve, send, discard, or convert agent-written customer messages into follow-up tasks before any customer communication is finalized.</p>
     </div>
     <div class="mg-agent-messages-actions">
+      <a class="mg-btn mg-btn-secondary" href="/merchant-agent-analytics.php">Outcome Analytics</a>
       <a class="mg-btn mg-btn-secondary" href="/merchant-agent-execution.php">Execution Center</a>
       <a class="mg-btn mg-btn-secondary" href="/merchant-agent-approvals.php">Review Queue</a>
       <button class="mg-btn mg-btn-primary" type="button" data-agent-message-refresh>Refresh outbox</button>
@@ -30,6 +31,7 @@ declare(strict_types=1);
           <h2>Outbox Filters</h2>
           <p>Focus on draft, edited, approved, sent, discarded, or follow-up converted messages.</p>
         </div>
+        <a class="mg-btn mg-btn-secondary" href="/merchant-agent-analytics.php">Measure messages</a>
       </div>
       <div class="mg-agent-message-filters" data-agent-message-filters>
         <button type="button" class="is-active" data-message-filter="all">All</button>
@@ -64,7 +66,10 @@ declare(strict_types=1);
         <h2>Draft Messages</h2>
         <p>Each draft shows the customer, campaign source, message body, guardrail applied, and the available merchant-controlled actions.</p>
       </div>
-      <p class="mg-form-status" data-agent-message-status></p>
+      <div class="mg-crm-tab-actions">
+        <a class="mg-btn mg-btn-secondary" href="/merchant-agent-analytics.php">Open outcome analytics</a>
+        <p class="mg-form-status" data-agent-message-status></p>
+      </div>
     </div>
     <div class="mg-agent-message-list" data-agent-message-list>
       <div class="mg-empty-state"><strong>Loading agent message drafts…</strong></div>
