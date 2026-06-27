@@ -13,6 +13,8 @@ $files = [
     'examples/local-quest-rewards/admin-demo-tools.php',
     'examples/local-quest-rewards/admin-programs.php',
     'examples/local-quest-rewards/program-builder.php',
+    'examples/local-quest-rewards/app-console.php',
+    'examples/local-quest-rewards/app-console-admin.php',
     'examples/local-quest-rewards/wallet-actions.php',
     'examples/local-quest-rewards/wallet.php',
     'examples/local-quest-rewards/webhook-reconcile.php',
@@ -39,10 +41,13 @@ $webhookTools = lqdv2_read($root, 'examples/local-quest-rewards/webhook-tools.ph
 $demoTools = lqdv2_read($root, 'examples/local-quest-rewards/admin-demo-tools.php');
 $programAdmin = lqdv2_read($root, 'examples/local-quest-rewards/admin-programs.php');
 $builder = lqdv2_read($root, 'examples/local-quest-rewards/program-builder.php');
+$appConsole = lqdv2_read($root, 'examples/local-quest-rewards/app-console.php');
+$appConsolePage = lqdv2_read($root, 'examples/local-quest-rewards/app-console-admin.php');
 $app = lqdv2_read($root, 'examples/local-quest-rewards/app.php');
 $walletActions = lqdv2_read($root, 'examples/local-quest-rewards/wallet-actions.php');
 $wallet = lqdv2_read($root, 'examples/local-quest-rewards/wallet.php');
 $reconcile = lqdv2_read($root, 'examples/local-quest-rewards/webhook-reconcile.php');
+$webhook = lqdv2_read($root, 'examples/local-quest-rewards/webhook.php');
 $doc = lqdv2_read($root, 'docs/local-quest-demo-v2.md');
 $handoff = lqdv2_read($root, 'docs/local-quest-developer-handoff.md');
 
@@ -123,8 +128,35 @@ $checks[] = [
         && str_contains($builder, 'This quest action is disabled in Program Admin')
         && str_contains($builder, 'This Distribution Program is disabled in Program Admin')
         && str_contains($app, 'merchant_programs')
-        && str_contains($app, 'lqr_builder_issue_gate($state')
+        && str_contains($app, 'lqr_builder_issue_gate($activeState')
         && str_contains($app, 'merchant_program_key'),
+];
+
+$checks[] = [
+    'name' => 'partner app console helpers',
+    'ok' => str_contains($appConsole, 'lqr_app_console_default')
+        && str_contains($appConsole, 'lqr_app_status_gate')
+        && str_contains($appConsole, 'Partner app is disabled in App Console')
+        && str_contains($app, "require_once __DIR__ . '/app-console.php'")
+        && str_contains($app, "'partner_app' => []"),
+];
+
+$checks[] = [
+    'name' => 'partner app admin console',
+    'ok' => str_contains($appConsolePage, 'App Console')
+        && str_contains($appConsolePage, 'save_app')
+        && str_contains($appConsolePage, 'request_review')
+        && str_contains($appConsolePage, 'approve_app')
+        && str_contains($appConsolePage, 'disable_app')
+        && str_contains($appConsolePage, 'Developer handoff'),
+];
+
+$checks[] = [
+    'name' => 'partner app runtime gate',
+    'ok' => str_contains($app, 'lqr_app_status_gate($activeState')
+        && str_contains($app, 'partner_app_status')
+        && str_contains($walletActions, 'Partner app cannot report claims')
+        && str_contains($webhook, 'lqr_app_console_note_webhook'),
 ];
 
 $checks[] = [
