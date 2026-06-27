@@ -15,8 +15,8 @@ if ($actionItemId === '' || strlen($actionItemId) > 120) {
 
 $pdo = mg_db();
 try {
-    $stmt = $pdo->prepare("SELECT ac.public_id action_item_id, ac.folder, ac.state, ac.user_id, ac.archived_at,
-            i.public_id instance_id, i.status instance_status, i.expires_at,
+    $stmt = $pdo->prepare("SELECT ac.id action_item_internal_id, ac.public_id action_item_id, ac.folder, ac.state, ac.user_id, ac.archived_at,
+            i.id instance_internal_id, i.public_id instance_id, i.status instance_status, i.expires_at,
             t.name template_name
         FROM microgift_inbox_items ac
         INNER JOIN microgift_instances i ON i.id=ac.instance_id
@@ -25,35 +25,28 @@ try {
         LIMIT 1");
     $stmt->execute([$actionItemId, $userId]);
     $voucher = $stmt->fetch(PDO::FETCH_ASSOC);
-    if (!$voucher) {
-        mg_fail('Action Center voucher not found.', 404);
-    }
-    if (!in_array((string)$voucher['folder'], ['inbox','claimed'], true)) {
-        mg_fail('Only customer-held vouchers can be prepared for merchant scan.', 409);
-    }
-    if (in_array((string)$voucher['instance_status'], ['cancelled','revoked','expired'], true)) {
-        mg_fail('This voucher is not available for merchant scan.', 409);
-    }
-    if (!empty($voucher['expires_at']) && strtotime((string)$voucher['expires_at']) < time()) {
-        mg_fail('This voucher has expired.', 410);
-    }
+    if (!$voucher) mg_fail('Action Center voucher not found.', 404);
+    if (!in_array((string)$voucher['folder'], ['inbox','claimed'], true)) mg_fail('Only customer-held vouchers can be prepared for merchant scan.', 409);
+    if (in_array((string)$voucher['instance_status'], ['cancelled','revoked','expired','redeemed'], true)) mg_fail('This voucher is not available for merchant scan.', 409);
+    if (!empty($voucher['expires_at']) && strtotime((string)$voucher['expires_at']) < time()) mg_fail('This voucher has expired.', 410);
 
-    $token = mg_claim_voucher_issue_token($actionItemId, $userId, 900);
-    $base = rtrim((string)((require dirname(__DIR__) . '/config.php')['app']['base_url'] ?? ''), '/');
-    if ($base === '') {
-        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'https';
-        $host = (string)($_SERVER['HTTP_HOST'] ?? 'microgifter.com');
-        $base = $scheme . '://' . $host;
-    }
-    $payloadUrl = $base . '/claim-voucher.php?t=' . rawurlencode($token);
+    $issued = mg_claim_voucher_issue_token(
+        $pdo,
+        (int)$voucher['action_item_internal_id'],
+        (string)$voucher['action_item_id'],
+        (int)$voucher['instance_internal_id'],
+        $userId,
+        900
+    );
 
     mg_ok([
         'action_item_id' => $actionItemId,
         'instance_id' => (string)$voucher['instance_id'],
-        'token' => $token,
-        'expires_at' => date(DATE_ATOM, time() + 900),
-        'scan_payload' => $payloadUrl,
-        'qr_image_url' => 'https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=12&format=svg&data=' . rawurlencode($payloadUrl),
+        'token_id' => $issued['public_id'],
+        'token' => $issued['token'],
+        'expires_at' => $issued['expires_at'],
+        'scan_payload' => $issued['scan_payload'],
+        'qr_image_url' => '/api/account/action-center-voucher-qr.php?t=' . rawurlencode($issued['token']),
         'voucher' => [
             'title' => (string)($voucher['template_name'] ?? 'Microgift voucher'),
             'state' => (string)($voucher['state'] ?? ''),
