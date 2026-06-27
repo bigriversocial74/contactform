@@ -6,6 +6,58 @@ require_once dirname(__DIR__) . '/pppm/_activity.php';
 require_once dirname(__DIR__) . '/communications/_communications.php';
 require_once dirname(__DIR__) . '/social/_account_restrictions.php';
 
+function mg_messages_reply_source_label(string $sourceType): string
+{
+    return match ($sourceType) {
+        'store_canvas_reply' => 'Store Canvas Reply',
+        'store_canvas_direct' => 'Store Canvas',
+        'merchant_crm_message', 'merchant_crm' => 'Merchant CRM',
+        'pppm_message' => 'PPPM / IN-OUT Box',
+        'messaging' => 'Messages',
+        default => ucwords(str_replace(['_', '-'], ' ', $sourceType ?: 'Messages')),
+    };
+}
+
+function mg_messages_reply_source_system(string $sourceType): string
+{
+    if (str_starts_with($sourceType, 'store_canvas')) return 'store_canvas';
+    if ($sourceType === 'merchant_crm_message' || $sourceType === 'merchant_crm') return 'merchant_crm';
+    if ($sourceType === 'pppm_message') return 'in_out_box';
+    return 'messages';
+}
+
+function mg_messages_reply_source(array $thread, ?array $pppm = null): array
+{
+    $conversationKey = trim((string)($thread['conversation_key'] ?? ''));
+    if ($conversationKey !== '' && str_starts_with($conversationKey, 'store_canvas:')) {
+        return [
+            'type' => 'store_canvas_reply',
+            'reference' => $conversationKey,
+            'conversation_key' => $conversationKey,
+        ];
+    }
+    if ($conversationKey !== '' && str_starts_with($conversationKey, 'crm:')) {
+        $reference = trim(substr($conversationKey, 4));
+        return [
+            'type' => 'merchant_crm_message',
+            'reference' => $reference !== '' ? $reference : $conversationKey,
+            'conversation_key' => $conversationKey,
+        ];
+    }
+    if ($pppm || !empty($thread['pppm_item_id'])) {
+        return [
+            'type' => 'pppm_message',
+            'reference' => isset($thread['pppm_item_id']) ? (string)$thread['pppm_item_id'] : '',
+            'conversation_key' => $conversationKey,
+        ];
+    }
+    return [
+        'type' => 'messaging',
+        'reference' => '',
+        'conversation_key' => $conversationKey,
+    ];
+}
+
 mg_require_method('POST');
 $user = mg_require_permission('gift.message.send');
 $input = mg_input();
@@ -117,10 +169,12 @@ try {
     $recipients = $participantStmt->fetchAll(PDO::FETCH_ASSOC);
     $recipientUserId = count($recipients) === 1 ? (int)$recipients[0]['user_id'] : null;
 
-    $conversationKey = trim((string)($thread['conversation_key'] ?? ''));
-    $isStoreCanvas = $conversationKey !== '' && str_starts_with($conversationKey, 'store_canvas:');
-    $sourceType = $isStoreCanvas ? 'store_canvas_reply' : 'messaging';
-    $sourceReference = $isStoreCanvas ? $conversationKey : null;
+    $source = mg_messages_reply_source($thread, is_array($pppm) ? $pppm : null);
+    $sourceType = (string)$source['type'];
+    $sourceReference = trim((string)$source['reference']) !== '' ? (string)$source['reference'] : null;
+    $conversationKey = trim((string)$source['conversation_key']);
+    $sourceLabel = mg_messages_reply_source_label($sourceType);
+    $sourceSystem = mg_messages_reply_source_system($sourceType);
 
     $messagePublicId = mg_public_uuid();
     $pdo->prepare(
@@ -141,7 +195,13 @@ try {
         ->execute([(int) $thread['id'], (int) $user['id']]);
 
     $senderName = mg_notification_user_label($pdo, (int)$user['id']);
-    $notificationTitle = $pppm ? 'New item message' : ($isStoreCanvas ? 'New Store Canvas message' : 'New gift message');
+    $notificationTitle = match ($sourceType) {
+        'merchant_crm_message' => 'New Merchant CRM reply',
+        'store_canvas_reply' => 'New Store Canvas message',
+        'pppm_message' => 'New item message',
+        default => 'New gift message',
+    };
+    $notificationType = $sourceType === 'merchant_crm_message' ? 'merchant_crm_message' : 'message';
     foreach ($recipients as $recipient) {
         if (empty($recipient['notifications_enabled'])) continue;
         if (!empty($recipient['muted_until']) && strtotime((string)$recipient['muted_until']) > time()) continue;
@@ -153,19 +213,19 @@ try {
             'gift_id'=>!empty($thread['gift_id'])?(int)$thread['gift_id']:null,
             'pppm_item_id'=>!empty($thread['pppm_item_id'])?(int)$thread['pppm_item_id']:null,
             'thread_id'=>(int)$thread['id'],
+            'thread_public_id'=>(string)$thread['public_id'],
+            'source_type'=>$sourceType,
+            'source_reference'=>$sourceReference,
+            'source_system'=>$sourceSystem,
+            'source_label'=>$sourceLabel,
         ];
-        if ($isStoreCanvas) {
-            $context += [
-                'source_system' => 'store_canvas',
-                'source_channel' => 'messages_reply',
-                'source_label' => 'Merchant Store Canvas',
-                'conversation_key' => $conversationKey,
-            ];
+        if ($conversationKey !== '') {
+            $context['conversation_key'] = $conversationKey;
         }
         mg_create_notification(
             $pdo,
             (int)$recipient['user_id'],
-            'message',
+            $notificationType,
             $notificationTitle,
             $senderName . ': ' . mb_substr($body, 0, 500),
             '/messages.php?thread=' . rawurlencode((string)$thread['public_id']),
@@ -188,7 +248,7 @@ try {
     $pdo->commit();
     mg_audit('message.sent', 'message_thread', ['thread_id' => $thread['public_id'], 'source_type' => $sourceType], (int) $user['id']);
     mg_event('message.sent', ['thread_id' => $thread['public_id'], 'source_type' => $sourceType], (int) $user['id']);
-    mg_ok(['thread_id'=>(string)$thread['public_id'],'message_id'=>$messagePublicId,'source_type'=>$sourceType], 'Message sent.', 201);
+    mg_ok(['thread_id'=>(string)$thread['public_id'],'message_id'=>$messagePublicId,'source_type'=>$sourceType,'source_label'=>$sourceLabel], 'Message sent.', 201);
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) $pdo->rollBack();
     mg_security_log('error', 'message.send_failed', 'Message send failed.', ['exception_type' => get_class($e)], (int) $user['id']);
