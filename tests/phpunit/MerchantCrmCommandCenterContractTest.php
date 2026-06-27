@@ -59,7 +59,7 @@ final class MerchantCrmCommandCenterContractTest extends TestCase
         self::assertStringContainsString('function mg_crm_message_thread', $endpoint);
         self::assertStringContainsString("'crm:' . (string)$" . "contact['public_id']", $endpoint);
         self::assertStringContainsString('INSERT INTO message_threads', $endpoint);
-        self::assertStringContainsString('INSERT INTO message_thread_participants', $endpoint);
+        self::assertStringContainsString('INSERT IGNORE INTO message_thread_participants', $endpoint);
         self::assertStringContainsString('INSERT INTO messages', $endpoint);
         self::assertStringContainsString('thread_id', $endpoint);
         self::assertStringContainsString('/api/merchant/crm-message.php', $crmJs);
