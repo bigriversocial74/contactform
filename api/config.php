@@ -84,7 +84,8 @@ if (!function_exists('mg_apply_local_secret_env')) {
         if ($value === '' || in_array($value, $placeholders, true)) {
             return;
         }
-        if ((string) getenv($envKey) === '') {
+        $current = trim((string) (getenv($envKey) ?: ''));
+        if ($current === '' || in_array($current, $placeholders, true)) {
             putenv($envKey . '=' . $value);
         }
     }
@@ -177,6 +178,7 @@ $anthropicKey = mg_local_secret_value($config, [
 mg_apply_local_secret_env('MG_ANTHROPIC_API_KEY', $anthropicKey, [
     'PASTE_ANTHROPIC_CREDENTIAL_HERE',
     'PASTE_ANTHROPIC_API_KEY_HERE',
+    'ANTHROPIC_API_KEY_GOES_HERE',
     'sk-ant-api03-YOUR-REAL-KEY-HERE',
 ]);
 
