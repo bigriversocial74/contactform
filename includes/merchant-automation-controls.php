@@ -11,37 +11,18 @@ function mg_automation_levels(): array
         'create_task' => ['key' => 'create_task', 'title' => 'Create task', 'description' => 'Automation can create follow-up tasks inside the merchant task center.'],
         'draft_message' => ['key' => 'draft_message', 'title' => 'Draft message', 'description' => 'Automation can draft messages for merchant approval before send.'],
         'execute_with_approval' => ['key' => 'execute_with_approval', 'title' => 'Execute with approval', 'description' => 'Automation can execute approved actions after a merchant click.'],
-        'fully_automated_later' => ['key' => 'fully_automated_later', 'title' => 'Fully automated later', 'description' => 'Reserved for future agent-managed execution after stronger controls exist.'],
+        'agent_operator' => ['key' => 'agent_operator', 'title' => 'Agent operator', 'description' => 'Agent can create approved merchant assets, messages, rewards, campaigns, products, and Store Canvas zones within guardrails.'],
     ];
 }
 
 function mg_agent_autonomy_levels(): array
 {
     return [
-        'advisory' => [
-            'key' => 'advisory',
-            'rank' => 10,
-            'title' => 'Advisory only',
-            'description' => 'Agent can analyze and recommend. No drafts, tasks, queue changes, or execution without a user action.',
-        ],
-        'review_queue' => [
-            'key' => 'review_queue',
-            'rank' => 20,
-            'title' => 'Controlled review',
-            'description' => 'Agent can create review-ready cards and queue items. Merchant approval is still required before execution.',
-        ],
-        'approval_first' => [
-            'key' => 'approval_first',
-            'rank' => 30,
-            'title' => 'Approval first',
-            'description' => 'Agent can prepare drafts, tasks, and execution plans, but every action remains approval-gated.',
-        ],
-        'trusted_autopilot' => [
-            'key' => 'trusted_autopilot',
-            'rank' => 40,
-            'title' => 'Trusted autopilot',
-            'description' => 'Reserved for future limited auto-execution with budgets, risk caps, audit logs, and admin ceiling approval.',
-        ],
+        'advisory' => ['key' => 'advisory', 'rank' => 10, 'title' => 'Advisory only', 'description' => 'Agent can analyze and recommend. No drafts, tasks, queue changes, or execution without a user action.'],
+        'review_queue' => ['key' => 'review_queue', 'rank' => 20, 'title' => 'Controlled review', 'description' => 'Agent can create review-ready cards and queue items. Merchant approval is still required before execution.'],
+        'approval_first' => ['key' => 'approval_first', 'rank' => 30, 'title' => 'Approval first', 'description' => 'Agent can prepare drafts, tasks, and execution plans, but every action remains approval-gated.'],
+        'agent_operator' => ['key' => 'agent_operator', 'rank' => 40, 'title' => 'Agent operator', 'description' => 'Agent can create approved products, rewards, campaigns, messages, reports, CRM tasks, and trigger zones within daily budgets and audit logs.'],
+        'trusted_autopilot' => ['key' => 'trusted_autopilot', 'rank' => 50, 'title' => 'Trusted autopilot', 'description' => 'Reserved for future limited auto-execution with budgets, risk caps, audit logs, and admin ceiling approval.'],
     ];
 }
 
@@ -55,7 +36,15 @@ function mg_agent_autonomy_platform_ceiling(): string
 {
     $configured = trim((string)(getenv('MG_AGENT_AUTONOMY_PLATFORM_CEILING') ?: ''));
     $levels = mg_agent_autonomy_levels();
-    return isset($levels[$configured]) ? $configured : 'approval_first';
+    return isset($levels[$configured]) ? $configured : 'agent_operator';
+}
+
+function mg_automation_bool(mixed $value, bool $default = false): bool
+{
+    if (is_bool($value)) return $value;
+    if (is_numeric($value)) return (int)$value === 1;
+    if (is_string($value)) return in_array(strtolower(trim($value)), ['1','true','yes','on','enabled'], true);
+    return $default;
 }
 
 function mg_agent_autonomy_normalize(mixed $raw): array
@@ -66,9 +55,16 @@ function mg_agent_autonomy_normalize(mixed $raw): array
         'merchant_level' => 'review_queue',
         'platform_ceiling' => $platformCeiling,
         'effective_level' => 'review_queue',
+        'allow_review_queue' => true,
         'allow_message_drafts' => true,
         'allow_task_creation' => true,
-        'allow_review_queue' => true,
+        'allow_reports' => true,
+        'allow_alerts' => true,
+        'allow_products' => true,
+        'allow_rewards' => true,
+        'allow_campaigns' => true,
+        'allow_messages' => true,
+        'allow_trigger_zones' => true,
         'allow_execution_without_approval' => false,
         'daily_action_budget' => 10,
         'high_risk_requires_approval' => true,
@@ -82,22 +78,95 @@ function mg_agent_autonomy_normalize(mixed $raw): array
         'merchant_level' => $merchantLevel,
         'platform_ceiling' => $platformCeiling,
         'effective_level' => $effective,
+        'allow_review_queue' => mg_automation_bool($incoming['allow_review_queue'] ?? $default['allow_review_queue'], true),
         'allow_message_drafts' => mg_automation_bool($incoming['allow_message_drafts'] ?? $default['allow_message_drafts'], true),
         'allow_task_creation' => mg_automation_bool($incoming['allow_task_creation'] ?? $default['allow_task_creation'], true),
-        'allow_review_queue' => mg_automation_bool($incoming['allow_review_queue'] ?? $default['allow_review_queue'], true),
-        'allow_execution_without_approval' => false,
+        'allow_reports' => mg_automation_bool($incoming['allow_reports'] ?? $default['allow_reports'], true),
+        'allow_alerts' => mg_automation_bool($incoming['allow_alerts'] ?? $default['allow_alerts'], true),
+        'allow_products' => mg_automation_bool($incoming['allow_products'] ?? $default['allow_products'], true),
+        'allow_rewards' => mg_automation_bool($incoming['allow_rewards'] ?? $default['allow_rewards'], true),
+        'allow_campaigns' => mg_automation_bool($incoming['allow_campaigns'] ?? $default['allow_campaigns'], true),
+        'allow_messages' => mg_automation_bool($incoming['allow_messages'] ?? $default['allow_messages'], true),
+        'allow_trigger_zones' => mg_automation_bool($incoming['allow_trigger_zones'] ?? $default['allow_trigger_zones'], true),
+        'allow_execution_without_approval' => $effective === 'trusted_autopilot' && mg_automation_bool($incoming['allow_execution_without_approval'] ?? false, false),
         'daily_action_budget' => max(0, min(100, (int)($incoming['daily_action_budget'] ?? $default['daily_action_budget']))),
         'high_risk_requires_approval' => true,
         'updated_at' => $incoming['updated_at'] ?? null,
     ]);
 }
 
-function mg_automation_bool(mixed $value, bool $default = false): bool
+function mg_agent_autonomy_capability_for_action_key(string $actionKey): string
 {
-    if (is_bool($value)) return $value;
-    if (is_numeric($value)) return (int)$value === 1;
-    if (is_string($value)) return in_array(strtolower(trim($value)), ['1','true','yes','on','enabled'], true);
-    return $default;
+    return match ($actionKey) {
+        'create_product_draft', 'update_product_draft' => 'products',
+        'create_reward_template_draft', 'update_reward_template_draft' => 'rewards',
+        'create_campaign_draft', 'update_campaign_draft', 'pause_campaign', 'resume_campaign' => 'campaigns',
+        'create_message_draft', 'send_customer_message' => 'messages',
+        'create_crm_followup_task' => 'tasks',
+        'create_trigger_zone', 'update_trigger_zone' => 'trigger_zones',
+        'create_report_snapshot' => 'reports',
+        'create_merchant_alert' => 'alerts',
+        default => 'recommendations',
+    };
+}
+
+function mg_agent_autonomy_level_allows(array $autonomy, string $capability): bool
+{
+    $level = (string)($autonomy['effective_level'] ?? 'advisory');
+    $rank = mg_agent_autonomy_rank($level);
+    if ($capability === 'recommendations') return $rank >= 10;
+    if ($capability === 'review_queue') return $rank >= 20 && !empty($autonomy['allow_review_queue']);
+    if (in_array($capability, ['tasks','messages','reports','alerts'], true)) return $rank >= 30;
+    if (in_array($capability, ['products','rewards','campaigns','trigger_zones'], true)) return $rank >= 40;
+    if ($capability === 'execution_without_approval') return $rank >= 50 && !empty($autonomy['allow_execution_without_approval']);
+    return false;
+}
+
+function mg_agent_autonomy_setting_allows(array $autonomy, string $capability): bool
+{
+    return match ($capability) {
+        'review_queue' => !empty($autonomy['allow_review_queue']),
+        'tasks' => !empty($autonomy['allow_task_creation']),
+        'messages' => !empty($autonomy['allow_messages']) || !empty($autonomy['allow_message_drafts']),
+        'reports' => !empty($autonomy['allow_reports']),
+        'alerts' => !empty($autonomy['allow_alerts']),
+        'products' => !empty($autonomy['allow_products']),
+        'rewards' => !empty($autonomy['allow_rewards']),
+        'campaigns' => !empty($autonomy['allow_campaigns']),
+        'trigger_zones' => !empty($autonomy['allow_trigger_zones']),
+        default => true,
+    };
+}
+
+function mg_agent_autonomy_can(array $autonomy, string $capability): bool
+{
+    return mg_agent_autonomy_level_allows($autonomy, $capability) && mg_agent_autonomy_setting_allows($autonomy, $capability);
+}
+
+function mg_agent_autonomy_require(array $autonomy, string $capability, string $label = 'this agent action'): void
+{
+    if (!mg_agent_autonomy_can($autonomy, $capability)) {
+        $level = (string)($autonomy['effective_level'] ?? 'advisory');
+        mg_fail('Agent autonomy blocked ' . $label . '. Required capability: ' . $capability . '. Current effective level: ' . $level . '.', 403, ['capability' => $capability, 'effective_level' => $level, 'agent_autonomy' => $autonomy]);
+    }
+}
+
+function mg_agent_autonomy_for_merchant(PDO $pdo, int $merchantId): array
+{
+    return mg_automation_current_settings($pdo, $merchantId)['agent_autonomy'];
+}
+
+function mg_agent_autonomy_require_for_merchant(PDO $pdo, int $merchantId, string $capability, string $label = 'this agent action'): array
+{
+    $autonomy = mg_agent_autonomy_for_merchant($pdo, $merchantId);
+    mg_agent_autonomy_require($autonomy, $capability, $label);
+    return $autonomy;
+}
+
+function mg_agent_autonomy_require_action_key(PDO $pdo, int $merchantId, string $actionKey): array
+{
+    $capability = mg_agent_autonomy_capability_for_action_key($actionKey);
+    return mg_agent_autonomy_require_for_merchant($pdo, $merchantId, $capability, $actionKey);
 }
 
 function mg_automation_default_settings(): array
@@ -187,13 +256,7 @@ function mg_automation_settings_summary(array $settings): array
 function mg_automation_save_settings(PDO $pdo, int $merchantId, int $actorId, array $settings, array $agentAutonomy = []): string
 {
     $eventId = mg_crm_playbook_uuid();
-    $context = [
-        'settings' => $settings,
-        'agent_autonomy' => mg_agent_autonomy_normalize($agentAutonomy),
-        'updated_by_user_id' => $actorId,
-        'guardrail_version' => 2,
-        'agent_permission_model' => true,
-    ];
+    $context = ['settings' => $settings, 'agent_autonomy' => mg_agent_autonomy_normalize($agentAutonomy), 'updated_by_user_id' => $actorId, 'guardrail_version' => 3, 'agent_permission_model' => true];
     $pdo->prepare('INSERT INTO campaign_events (public_id,merchant_user_id,campaign_id,contact_id,event_type,event_context_json,created_at) VALUES (?,?,?,?,?,?,NOW())')->execute([$eventId, $merchantId, null, null, 'crm.automation.settings.updated', json_encode($context, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)]);
     return $eventId;
 }
@@ -207,26 +270,7 @@ function mg_automation_record_event(PDO $pdo, int $merchantId, string $eventType
 
 function mg_automation_log_event_types(): array
 {
-    return [
-        'crm.playbook.triggered',
-        'crm.followup.created',
-        'crm.automation.settings.updated',
-        'crm.automation.approval.granted',
-        'crm.automation.approval.rejected',
-        'crm.automation.message.drafted',
-        'crm.agent.message.draft.created',
-        'merchant.ai_plan_item.approved',
-        'merchant.ai_plan_item.deferred',
-        'merchant.ai_plan_item.rejected',
-        'merchant.ai_plan_item.executed',
-        'merchant.ai.alert.created',
-        'merchant.ai.recommendation.package_upgrade',
-        'merchant.ai.recommendation.location_fix',
-        'merchant.ai.recommendation.api_integration',
-        'merchant.ai.recommendation.claim_review',
-        'merchant.ai.recommendation.reward_optimization',
-        'merchant.ai.recommendation.campaign_optimization',
-    ];
+    return ['crm.playbook.triggered','crm.followup.created','crm.automation.settings.updated','crm.automation.approval.granted','crm.automation.approval.rejected','crm.automation.message.drafted','crm.agent.message.draft.created','merchant.ai_plan_item.approved','merchant.ai_plan_item.deferred','merchant.ai_plan_item.rejected','merchant.ai_plan_item.executed','merchant.ai.alert.created','merchant.ai.recommendation.package_upgrade','merchant.ai.recommendation.location_fix','merchant.ai.recommendation.api_integration','merchant.ai.recommendation.claim_review','merchant.ai.recommendation.reward_optimization','merchant.ai.recommendation.campaign_optimization','merchant.ai.trigger_zone.created'];
 }
 
 function mg_automation_log(PDO $pdo, int $merchantId, int $limit = 50): array
@@ -250,6 +294,7 @@ function mg_automation_log(PDO $pdo, int $merchantId, int $limit = 50): array
             'crm.followup.created' => 'Task created',
             'crm.playbook.triggered' => 'Playbook triggered',
             'merchant.ai.alert.created' => 'Merchant alert created',
+            'merchant.ai.trigger_zone.created' => 'Trigger zone created',
             'merchant.ai.recommendation.package_upgrade' => 'Package recommendation recorded',
             'merchant.ai.recommendation.location_fix' => 'Location recommendation recorded',
             'merchant.ai.recommendation.api_integration' => 'API recommendation recorded',
@@ -258,20 +303,6 @@ function mg_automation_log(PDO $pdo, int $merchantId, int $limit = 50): array
             'merchant.ai.recommendation.campaign_optimization' => 'Campaign recommendation recorded',
             default => $type,
         };
-        return [
-            'id' => (string)$row['public_id'],
-            'event_type' => $type,
-            'label' => $label,
-            'playbook' => $playbook,
-            'customer_name' => (string)($row['contact_name'] ?? ''),
-            'customer_email' => (string)($row['contact_email'] ?? ''),
-            'campaign_title' => (string)($row['campaign_title'] ?? ''),
-            'automation_level' => (string)($ctx['automation_level'] ?? ''),
-            'agent_autonomy' => $ctx['agent_autonomy'] ?? null,
-            'status' => (string)($ctx['status'] ?? $ctx['action_status'] ?? 'recorded'),
-            'requires_approval' => !empty($ctx['requires_approval']) || !empty($ctx['agent_requires_approval']) || !empty($ctx['merchant_approval_required']),
-            'created_at' => $row['created_at'] ?? null,
-            'context' => $ctx,
-        ];
+        return ['id' => (string)$row['public_id'], 'event_type' => $type, 'label' => $label, 'playbook' => $playbook, 'customer_name' => (string)($row['contact_name'] ?? ''), 'customer_email' => (string)($row['contact_email'] ?? ''), 'campaign_title' => (string)($row['campaign_title'] ?? ''), 'automation_level' => (string)($ctx['automation_level'] ?? ''), 'agent_autonomy' => $ctx['agent_autonomy'] ?? null, 'status' => (string)($ctx['status'] ?? $ctx['action_status'] ?? 'recorded'), 'requires_approval' => !empty($ctx['requires_approval']) || !empty($ctx['agent_requires_approval']) || !empty($ctx['merchant_approval_required']), 'created_at' => $row['created_at'] ?? null, 'context' => $ctx];
     }, $stmt->fetchAll(PDO::FETCH_ASSOC));
 }
