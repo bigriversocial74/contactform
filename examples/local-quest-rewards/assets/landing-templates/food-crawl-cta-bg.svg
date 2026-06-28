@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="220" viewBox="0 0 1400 220" role="img" aria-labelledby="title desc">
+<title id="title">Food Crawl call to action background</title>
+<desc id="desc">Warm red-orange local food district line art background.</desc>
+<defs><linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="#d73f2b"/><stop offset="1" stop-color="#ef7b35"/></linearGradient></defs>
+<rect width="1400" height="220" fill="url(#g)"/>
+<g fill="none" stroke="#ffd1a2" stroke-width="4" opacity=".4" stroke-linecap="round" stroke-linejoin="round"><path d="M40 176h590"/><path d="M74 176v-64h68v64m24 0V82h74v94m24 0V112h74v64m24 0V70h74v106m24 0v-44h78v44"/><path d="M92 112h52l-9-26H101z"/><path d="M294 112h52l-9-26h-34z"/><path d="M72 64c32-32 76-32 108 0"/><path d="M542 78c36-22 70-18 102 12"/><path d="M805 40c48 6 76 34 84 83"/><path d="M844 42v86m-34-58l72 40m0-40l-72 40"/><path d="M1174 30c80 34 130 86 150 154" stroke-dasharray="12 16"/><path d="M1266 62l28 48 28-48c0-26-56-26-56 0z" fill="#ffd1a2" opacity=".62"/></g><g fill="#ffd1a2" opacity=".32"><circle cx="980" cy="78" r="18"/><circle cx="1048" cy="104" r="11"/><ellipse cx="1042" cy="160" rx="54" ry="20" transform="rotate(-14 1042 160)"/><ellipse cx="1136" cy="180" rx="66" ry="30" transform="rotate(18 1136 180)"/><path d="M930 118c28-20 58-20 86 0-12 18-26 26-43 26s-31-8-43-26z"/></g>
+</svg>
