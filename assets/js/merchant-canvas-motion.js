@@ -17,24 +17,38 @@ window.Microgifter = window.Microgifter || {};
   var lastTrigger = new Map();
   var merchant = null;
   var triggerZone = null;
+  var triggerButton = null;
   var animationFrame = null;
   var lastTick = 0;
   var storageKey = 'mgCanvasMotion:v2';
+  var triggerConfigKey = 'mgCanvasTriggerConfig:v2';
   var saved = {};
+  var triggerCampaigns = [];
+  var triggerCampaignLoaded = false;
+  var dragState = null;
+  var triggerConfig = { exists: false, x: 0, y: 0, width: 280, height: 130, campaign_id: '' };
 
-  try { saved = JSON.parse(window.sessionStorage.getItem(storageKey) || '{}') || {}; }
-  catch (error) { saved = {}; }
+  try { saved = JSON.parse(window.sessionStorage.getItem(storageKey) || '{}') || {}; } catch (error) { saved = {}; }
+  try { triggerConfig = Object.assign(triggerConfig, JSON.parse(window.localStorage.getItem(triggerConfigKey) || '{}') || {}); } catch (error) {}
 
   function payload(response) { return response && response.data ? response.data : response; }
   function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
   function now() { return Date.now(); }
   function rand(min, max) { return min + Math.random() * (max - min); }
+  function escapeHtml(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, function (character) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character];
+    });
+  }
   function saveState() {
     var out = { customers: {}, merchant: merchant ? { x: merchant.x, y: merchant.y, vx: merchant.vx, vy: merchant.vy } : null };
     nodes.forEach(function (node, id) {
       out.customers[id] = { x: node.x, y: node.y, vx: node.vx, vy: node.vy, welcomed: node.welcomed };
     });
     try { window.sessionStorage.setItem(storageKey, JSON.stringify(out)); } catch (error) {}
+  }
+  function saveTriggerConfig() {
+    try { window.localStorage.setItem(triggerConfigKey, JSON.stringify(triggerConfig)); } catch (error) {}
   }
 
   function makeNode(card, index) {
@@ -64,13 +78,11 @@ window.Microgifter = window.Microgifter || {};
   function makeMerchant() {
     if (!merchantCard) return null;
     var start = saved.merchant || {};
-    var width = Math.max(240, merchantCard.offsetWidth || 260);
-    var height = Math.max(74, merchantCard.offsetHeight || 74);
     return {
       id: 'merchant',
       card: merchantCard,
-      width: width,
-      height: height,
+      width: Math.max(240, merchantCard.offsetWidth || 260),
+      height: Math.max(74, merchantCard.offsetHeight || 74),
       x: Number.isFinite(start.x) ? start.x : 0,
       y: Number.isFinite(start.y) ? start.y : 0,
       vx: Number.isFinite(start.vx) ? start.vx : 0.045,
@@ -81,19 +93,168 @@ window.Microgifter = window.Microgifter || {};
     };
   }
 
+  function ensureTriggerButton() {
+    if (triggerButton && triggerButton.isConnected) return triggerButton;
+    triggerButton = document.createElement('button');
+    triggerButton.type = 'button';
+    triggerButton.className = 'mg-canvas-trigger-add-btn';
+    triggerButton.innerHTML = '<span>+</span> Trigger';
+    triggerButton.setAttribute('data-canvas-add-trigger', '');
+    map.appendChild(triggerButton);
+    triggerButton.addEventListener('click', function () {
+      var bounds = layer.getBoundingClientRect();
+      if (!triggerConfig.exists) {
+        triggerConfig.exists = true;
+        triggerConfig.width = Math.min(300, Math.max(180, bounds.width * 0.3));
+        triggerConfig.height = 130;
+        triggerConfig.x = clamp(bounds.width - triggerConfig.width - 24, 8, Math.max(8, bounds.width - triggerConfig.width - 8));
+        triggerConfig.y = clamp(bounds.height - triggerConfig.height - 24, 8, Math.max(8, bounds.height - triggerConfig.height - 8));
+      }
+      saveTriggerConfig();
+      ensureTriggerZone();
+      applyTriggerConfig();
+      triggerZone.hidden = false;
+      triggerZone.classList.add('is-editing');
+      window.setTimeout(function () { if (triggerZone) triggerZone.classList.remove('is-editing'); }, 1800);
+    });
+    return triggerButton;
+  }
+
+  function selectedCampaignId() {
+    var select = triggerZone ? triggerZone.querySelector('[data-canvas-trigger-campaign]') : null;
+    return select ? String(select.value || '') : String(triggerConfig.campaign_id || '');
+  }
+
+  function renderTriggerCampaignOptions() {
+    if (!triggerZone) return;
+    var select = triggerZone.querySelector('[data-canvas-trigger-campaign]');
+    var status = triggerZone.querySelector('[data-canvas-trigger-status]');
+    if (!select) return;
+    if (!triggerCampaignLoaded) {
+      select.innerHTML = '<option value="">Loading campaigns...</option>';
+      select.disabled = true;
+      if (status) status.textContent = 'Loading active merchant campaigns.';
+      return;
+    }
+    if (!triggerCampaigns.length) {
+      select.innerHTML = '<option value="">No active campaigns</option>';
+      select.disabled = true;
+      triggerConfig.campaign_id = '';
+      saveTriggerConfig();
+      if (status) status.textContent = 'Create an active campaign to assign this trigger.';
+      return;
+    }
+    var current = String(triggerConfig.campaign_id || '');
+    var found = triggerCampaigns.some(function (campaign) { return String(campaign.id || '') === current; });
+    if (!found) current = String(triggerCampaigns[0].id || '');
+    triggerConfig.campaign_id = current;
+    saveTriggerConfig();
+    select.disabled = false;
+    select.innerHTML = triggerCampaigns.map(function (campaign) {
+      var label = String(campaign.title || 'Campaign') + (campaign.reward_template_title ? ' · ' + String(campaign.reward_template_title) : '');
+      return '<option value="' + escapeHtml(campaign.id || '') + '"' + (String(campaign.id || '') === current ? ' selected' : '') + '>' + escapeHtml(label) + '</option>';
+    }).join('');
+    if (status) status.textContent = 'Drag/resize this square. Crossing it fires the selected campaign.';
+  }
+
+  async function loadTriggerCampaigns() {
+    if (!MG.get) {
+      triggerCampaignLoaded = true;
+      renderTriggerCampaignOptions();
+      return;
+    }
+    try {
+      var data = payload(await MG.get('/api/merchant-canvas/reward-options.php')) || {};
+      triggerCampaigns = Array.isArray(data.campaigns) ? data.campaigns.filter(function (campaign) { return campaign && campaign.available !== false; }) : [];
+    } catch (error) {
+      triggerCampaigns = [];
+    }
+    triggerCampaignLoaded = true;
+    renderTriggerCampaignOptions();
+  }
+
+  function applyTriggerConfig() {
+    if (!triggerZone) return;
+    var bounds = layer.getBoundingClientRect();
+    triggerConfig.width = clamp(Number(triggerConfig.width || 280), 140, Math.max(160, bounds.width - 16));
+    triggerConfig.height = clamp(Number(triggerConfig.height || 130), 92, Math.max(110, bounds.height - 16));
+    triggerConfig.x = clamp(Number(triggerConfig.x || 8), 8, Math.max(8, bounds.width - triggerConfig.width - 8));
+    triggerConfig.y = clamp(Number(triggerConfig.y || 8), 8, Math.max(8, bounds.height - triggerConfig.height - 8));
+    triggerZone.style.left = Math.round(triggerConfig.x) + 'px';
+    triggerZone.style.top = Math.round(triggerConfig.y) + 'px';
+    triggerZone.style.width = Math.round(triggerConfig.width) + 'px';
+    triggerZone.style.height = Math.round(triggerConfig.height) + 'px';
+    triggerZone.hidden = !triggerConfig.exists;
+  }
+
   function ensureTriggerZone() {
     if (triggerZone && triggerZone.isConnected) return triggerZone;
     triggerZone = document.createElement('div');
     triggerZone.className = 'mg-canvas-trigger-zone';
     triggerZone.setAttribute('data-canvas-trigger-zone', 'in_out_box_zone');
-    triggerZone.innerHTML = '<span class="mg-canvas-trigger-zone-icon">IO</span><span class="mg-canvas-trigger-zone-copy"><strong>IN/OUT Box Trigger</strong><span>Customer crossing this space can trigger a campaign, message, or reward.</span></span>';
+    triggerZone.innerHTML = '<span class="mg-canvas-trigger-zone-icon">IO</span><span class="mg-canvas-trigger-zone-copy"><strong>IN/OUT Box Trigger</strong><span>Transparent campaign trigger square.</span><label>Assigned campaign<select data-canvas-trigger-campaign><option value="">Loading campaigns...</option></select></label><em data-canvas-trigger-status>Drag or resize anywhere on the canvas.</em></span><span class="mg-canvas-trigger-drag-hint">Drag zone</span><span class="mg-canvas-trigger-resize" data-canvas-trigger-resize aria-hidden="true"></span>';
     layer.appendChild(triggerZone);
+    triggerZone.addEventListener('change', function (event) {
+      var select = event.target.closest('[data-canvas-trigger-campaign]');
+      if (!select) return;
+      triggerConfig.campaign_id = String(select.value || '');
+      saveTriggerConfig();
+      var status = triggerZone.querySelector('[data-canvas-trigger-status]');
+      if (status) status.textContent = triggerConfig.campaign_id ? 'Trigger assigned. Crossing this square fires this campaign.' : 'Select a campaign for this trigger.';
+    });
+    triggerZone.addEventListener('pointerdown', startTriggerPointer);
+    renderTriggerCampaignOptions();
+    applyTriggerConfig();
     return triggerZone;
+  }
+
+  function startTriggerPointer(event) {
+    if (!triggerZone || event.button !== 0) return;
+    if (event.target.closest('select,label')) return;
+    var resizing = !!event.target.closest('[data-canvas-trigger-resize]');
+    var bounds = layer.getBoundingClientRect();
+    dragState = {
+      mode: resizing ? 'resize' : 'move',
+      startX: event.clientX,
+      startY: event.clientY,
+      x: Number(triggerConfig.x || 0),
+      y: Number(triggerConfig.y || 0),
+      width: Number(triggerConfig.width || 280),
+      height: Number(triggerConfig.height || 130),
+      boundsWidth: bounds.width,
+      boundsHeight: bounds.height
+    };
+    triggerZone.setPointerCapture(event.pointerId);
+    triggerZone.classList.add('is-editing');
+    event.preventDefault();
+  }
+
+  function moveTriggerPointer(event) {
+    if (!dragState || !triggerZone) return;
+    var dx = event.clientX - dragState.startX;
+    var dy = event.clientY - dragState.startY;
+    if (dragState.mode === 'resize') {
+      triggerConfig.width = clamp(dragState.width + dx, 140, Math.max(160, dragState.boundsWidth - dragState.x - 8));
+      triggerConfig.height = clamp(dragState.height + dy, 92, Math.max(110, dragState.boundsHeight - dragState.y - 8));
+    } else {
+      triggerConfig.x = clamp(dragState.x + dx, 8, Math.max(8, dragState.boundsWidth - triggerConfig.width - 8));
+      triggerConfig.y = clamp(dragState.y + dy, 8, Math.max(8, dragState.boundsHeight - triggerConfig.height - 8));
+    }
+    applyTriggerConfig();
+  }
+
+  function endTriggerPointer() {
+    if (!dragState) return;
+    dragState = null;
+    if (triggerZone) triggerZone.classList.remove('is-editing');
+    saveTriggerConfig();
   }
 
   function syncNodes() {
     map.classList.add('is-motion-enabled');
-    ensureTriggerZone();
+    ensureTriggerButton();
+    if (triggerConfig.exists) ensureTriggerZone();
+    if (triggerZone) applyTriggerConfig();
     if (merchantCard && !merchant) merchant = makeMerchant();
     if (merchant && merchant.card) {
       merchant.card.classList.add('is-moving');
@@ -135,21 +296,21 @@ window.Microgifter = window.Microgifter || {};
   }
 
   function zoneRect() {
+    if (!triggerConfig.exists) return null;
     var zone = ensureTriggerZone();
-    if (!zone) return null;
-    var z = zone.getBoundingClientRect();
-    var l = layer.getBoundingClientRect();
-    return { x: z.left - l.left, y: z.top - l.top, width: z.width, height: z.height, el: zone };
+    if (!zone || zone.hidden) return null;
+    return { x: Number(triggerConfig.x || 0), y: Number(triggerConfig.y || 0), width: Number(triggerConfig.width || 280), height: Number(triggerConfig.height || 130), el: zone };
   }
 
   function bubble(node, text, label) {
     if (!node || !node.card) return;
     var b = document.createElement('div');
     b.className = 'mg-canvas-chat-bubble';
-    b.innerHTML = text + '<small>' + (label || 'Actual message sent') + '</small>';
+    b.innerHTML = escapeHtml(text) + '<small>' + escapeHtml(label || 'Actual message sent') + '</small>';
     var rect = node.id === 'merchant' ? merchantRect() : node;
+    if (!rect) return;
     b.style.left = Math.round((rect.x || 0) + (rect.width || node.width) / 2) + 'px';
-    b.style.top = Math.round((rect.y || node.y) + 4) + 'px';
+    b.style.top = Math.round((rect.y || node.y || 0) + 4) + 'px';
     layer.appendChild(b);
     window.setTimeout(function () { b.remove(); }, 4300);
   }
@@ -197,16 +358,17 @@ window.Microgifter = window.Microgifter || {};
   }
 
   async function fireCampaignTrigger(node) {
-    var key = 'in_out_box_zone:' + node.id;
+    var campaignId = selectedCampaignId();
+    var key = 'in_out_box_zone:' + node.id + ':' + (campaignId || 'none');
     if (now() - (lastTrigger.get(key) || 0) < 240000) return;
     lastTrigger.set(key, now());
     var zone = ensureTriggerZone();
     if (zone) zone.classList.add('is-hot');
     node.card.classList.add('is-triggered');
-    bubble(node, 'Campaign trigger zone activated.', 'IN/OUT Box');
+    bubble(node, campaignId ? 'Assigned campaign trigger activated.' : 'Trigger zone activated without assigned campaign.', 'IN/OUT Box');
     try {
-      var data = payload(await MG.post('/api/merchant-canvas/campaign-trigger.php', { session_id: node.id, trigger_key: 'in_out_box_zone', trigger_label: 'IN/OUT Box Campaign Trigger' }));
-      if (data && data.reward_sent) bubble(node, 'Reward sent from trigger zone.', 'Campaign fired');
+      var data = payload(await MG.post('/api/merchant-canvas/campaign-trigger.php', { session_id: node.id, trigger_key: 'in_out_box_zone', trigger_label: 'IN/OUT Box Campaign Trigger', campaign_id: campaignId }));
+      if (data && data.reward_sent) bubble(node, 'Reward sent from assigned campaign.', 'Campaign fired');
       else if (data && data.message_sent) bubble(node, 'Campaign message sent to IN/OUT Box.', 'Campaign fired');
     } catch (error) {
       lastTrigger.set(key, 0);
@@ -346,7 +508,12 @@ window.Microgifter = window.Microgifter || {};
 
   var observer = new MutationObserver(syncNodes);
   observer.observe(layer, { childList: true, subtree: false });
+  document.addEventListener('pointermove', moveTriggerPointer);
+  document.addEventListener('pointerup', endTriggerPointer);
   window.addEventListener('resize', syncNodes);
   window.addEventListener('beforeunload', saveState);
+  ensureTriggerButton();
+  if (triggerConfig.exists) ensureTriggerZone();
+  loadTriggerCampaigns();
   syncNodes();
 })(window, document);
