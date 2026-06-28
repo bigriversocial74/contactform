@@ -27,6 +27,8 @@ declare(strict_types=1);
     <article><strong data-auto-drafts>—</strong><span>Message drafts</span></article>
   </section>
 
+  <?php require __DIR__ . '/merchant-agent-control-center-widget.php'; ?>
+
   <article class="mg-app-panel mg-automation-panel mg-automation-ai-panel">
     <div class="mg-app-panel-head">
       <div>

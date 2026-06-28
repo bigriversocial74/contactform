@@ -4,8 +4,8 @@ require_once __DIR__ . '/includes/app.php';
 $page_title='Automation Control Center | Microgifter';
 $page_section='merchant';
 $header_mode='account';
-$page_styles=['/assets/css/merchant-workspace.css','/assets/css/merchant-automation-control.css'];
-$page_scripts=['/assets/js/merchant-automation-control.js'];
+$page_styles=['/assets/css/merchant-workspace.css','/assets/css/merchant-automation-control.css','/assets/css/merchant-agent-policy.css'];
+$page_scripts=['/assets/js/merchant-automation-control.js','/assets/js/merchant-agent-policy.js'];
 $user=mg_current_user();
 $merchantNav=[
  'overview'=>['Overview','Workspace health','/merchant.php','Overview'],

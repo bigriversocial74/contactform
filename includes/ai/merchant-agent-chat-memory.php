@@ -3,10 +3,11 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/merchant-agent-chat.php';
 require_once dirname(__DIR__) . '/merchant-agent-memory.php';
+require_once dirname(__DIR__) . '/merchant-agent-policy.php';
 
 function mg_ai_chat_memory_system_prompt(): string
 {
-    return mg_ai_chat_system_prompt() . "\n\nMemory guidance:\n- Use merchant_agent_memory when recommending next steps.\n- Prefer saved preferences and approved patterns.\n- Avoid ideas similar to rejected or too-risky feedback.\n- Do not recommend action keys listed in avoid_actions unless there is a clear merchant benefit and lower-risk review-only framing.\n";
+    return mg_ai_chat_system_prompt() . "\n\nMemory and policy guidance:\n- Use merchant_agent_memory and merchant_agent_policy when recommending next steps.\n- Prefer saved preferences and approved patterns.\n- Avoid ideas similar to rejected or too-risky feedback.\n- Use only allowed action keys and avoid action keys listed in policy.\n- Cap card risk at the policy max risk level.\n- If confidence is below the policy threshold, explain uncertainty and use a low-risk review-only card.\n";
 }
 
 function mg_ai_chat_send_with_memory(PDO $pdo, array $user, array $input): array
@@ -23,6 +24,7 @@ function mg_ai_chat_send_with_memory(PDO $pdo, array $user, array $input): array
     $history = array_slice(mg_ai_chat_recent_messages($pdo, $merchantId, 12), -12);
     $context = mg_ai_merchant_context($pdo, $user, ['scope' => $scope === 'overview' ? 'all' : $scope, 'days' => $days, 'merchant_goal' => $message]);
     $memory = mg_agent_memory_prompt_context($pdo, $merchantId);
+    $policy = mg_agent_policy_prompt_context($pdo, $merchantId);
     $request = [
         'model' => (string)$model['model_key'],
         'max_tokens' => max(512, min(2200, (int)($input['max_tokens'] ?? 1400))),
@@ -40,6 +42,7 @@ function mg_ai_chat_send_with_memory(PDO $pdo, array $user, array $input): array
                     'recent_chat_history' => $history,
                     'merchant_operating_snapshot' => $context,
                     'merchant_agent_memory' => $memory,
+                    'merchant_agent_policy' => $policy,
                     'bridge_instruction' => 'When useful, include review_action_key and review_payload so the merchant can send a card to the Agent Review Queue.',
                 ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
             ]],
@@ -52,19 +55,19 @@ function mg_ai_chat_send_with_memory(PDO $pdo, array $user, array $input): array
         $reply = mg_ai_chat_clean($decoded['reply'] ?? $text, 6000);
         if ($reply === '') $reply = 'I reviewed the merchant workspace. I do not have a safe recommendation to create yet.';
         $cards = mg_ai_chat_normalize_cards($decoded['cards'] ?? []);
-        mg_ai_merchant_record_usage_event($pdo, (int)$provider['id'], (int)$model['id'], $merchantId, null, 'completed', $rawResponse, ['source' => 'merchant_agent_chat', 'scope' => $scope, 'memory_used' => true]);
+        mg_ai_merchant_record_usage_event($pdo, (int)$provider['id'], (int)$model['id'], $merchantId, null, 'completed', $rawResponse, ['source' => 'merchant_agent_chat', 'scope' => $scope, 'memory_used' => true, 'policy_used' => true]);
         $pdo->beginTransaction();
         $userId = mg_ai_chat_record_message($pdo, $merchantId, 'user', $message, [], ['scope' => $scope]);
-        $assistantId = mg_ai_chat_record_message($pdo, $merchantId, 'assistant', $reply, $cards, ['scope' => $scope, 'model' => (string)$model['model_key'], 'memory_snapshot' => $memory]);
+        $assistantId = mg_ai_chat_record_message($pdo, $merchantId, 'assistant', $reply, $cards, ['scope' => $scope, 'model' => (string)$model['model_key'], 'memory_snapshot' => $memory, 'policy_snapshot' => $policy]);
         $pdo->commit();
         return [
             'user_message' => ['id' => $userId, 'role' => 'user', 'body' => $message, 'cards' => [], 'scope' => $scope, 'created_at' => date('c')],
             'assistant_message' => ['id' => $assistantId, 'role' => 'assistant', 'body' => $reply, 'cards' => $cards, 'scope' => $scope, 'model' => (string)$model['model_key'], 'created_at' => date('c')],
-            'state' => mg_ai_chat_public_state($pdo, $merchantId) + ['memory' => mg_agent_memory_summary($pdo, $merchantId)],
+            'state' => mg_ai_chat_public_state($pdo, $merchantId) + ['memory' => mg_agent_memory_summary($pdo, $merchantId), 'policy' => $policy],
         ];
     } catch (Throwable $error) {
         if ($pdo->inTransaction()) $pdo->rollBack();
-        mg_ai_merchant_record_usage_event($pdo, (int)$provider['id'], (int)$model['id'], $merchantId, null, 'failed', [], ['source' => 'merchant_agent_chat', 'scope' => $scope, 'error' => $error->getMessage(), 'memory_used' => true]);
+        mg_ai_merchant_record_usage_event($pdo, (int)$provider['id'], (int)$model['id'], $merchantId, null, 'failed', [], ['source' => 'merchant_agent_chat', 'scope' => $scope, 'error' => $error->getMessage(), 'memory_used' => true, 'policy_used' => true]);
         mg_security_log('error', 'merchant.agent_chat.failed', 'Merchant agent chat failed.', ['exception_class' => $error::class, 'scope' => $scope], $merchantId);
         mg_fail('Unable to run merchant agent chat: ' . $error->getMessage(), 500);
     }
