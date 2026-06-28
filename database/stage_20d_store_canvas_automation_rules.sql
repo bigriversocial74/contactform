@@ -11,6 +11,14 @@
 --   Each column/index addition is guarded so rerunning this file is safe.
 -- ------------------------------------------------------------
 
+CREATE TABLE IF NOT EXISTS schema_migrations (
+  migration_key VARCHAR(190) NOT NULL,
+  description VARCHAR(500) NULL,
+  checksum VARCHAR(128) NULL,
+  applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (migration_key)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS mg_store_trigger_zones (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   public_id CHAR(36) NOT NULL,
