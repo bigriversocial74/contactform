@@ -1,4 +1,4 @@
-.mg-merchant-canvas-page .mg-main{z-index:auto!important;isolation:auto!important}
-.mg-merchant-canvas-page .mg-canvas-crm-drawer{position:fixed!important;z-index:2147483000!important;top:0!important;right:0!important;bottom:0!important;height:100dvh!important;max-height:100dvh!important;transform:translateX(100%);isolation:isolate!important}
-.mg-merchant-canvas-page .mg-canvas-crm-drawer.is-open{transform:translateX(0)!important}
+.mg-merchant-canvas-page .mg-main{position:static!important;z-index:auto!important;isolation:auto!important}
+.mg-merchant-canvas-page .mg-canvas-crm-drawer[data-canvas-drawer-portal="body"]{position:fixed!important;z-index:2147483000!important;top:0!important;right:0!important;bottom:0!important;height:100dvh!important;max-height:100dvh!important;transform:translateX(100%)!important;isolation:isolate!important}
+.mg-merchant-canvas-page .mg-canvas-crm-drawer[data-canvas-drawer-portal="body"].is-open{transform:translateX(0)!important}
 .mg-merchant-canvas-page .mg-canvas-drawer-head{padding-top:max(18px,env(safe-area-inset-top))}
