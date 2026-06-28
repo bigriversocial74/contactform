@@ -162,12 +162,26 @@ $config = [
 ];
 
 $localConfigFile = __DIR__ . '/config.local.php';
+$localScalarSecrets = [];
 if (is_file($localConfigFile)) {
     $localConfig = require $localConfigFile;
+    if (isset($mgAnthropicCredential) && is_scalar($mgAnthropicCredential)) {
+        $localScalarSecrets['anthropic_api_key'] = trim((string) $mgAnthropicCredential);
+    }
+    if (isset($mgPaymentCredentialKey) && is_scalar($mgPaymentCredentialKey)) {
+        $localScalarSecrets['payment_credential_key'] = trim((string) $mgPaymentCredentialKey);
+    }
     if (is_array($localConfig)) {
         $config = mg_array_deep_merge($config, $localConfig);
     }
 }
+
+$anthropicPlaceholders = [
+    'PASTE_ANTHROPIC_CREDENTIAL_HERE',
+    'PASTE_ANTHROPIC_API_KEY_HERE',
+    'ANTHROPIC_API_KEY_GOES_HERE',
+    'sk-ant-api03-YOUR-REAL-KEY-HERE',
+];
 
 $anthropicKey = mg_local_secret_value($config, [
     ['ai', 'anthropic_api_key'],
@@ -175,19 +189,23 @@ $anthropicKey = mg_local_secret_value($config, [
     ['anthropic', 'api_key'],
     ['anthropic', 'credential'],
 ]);
-mg_apply_local_secret_env('MG_ANTHROPIC_API_KEY', $anthropicKey, [
-    'PASTE_ANTHROPIC_CREDENTIAL_HERE',
-    'PASTE_ANTHROPIC_API_KEY_HERE',
-    'ANTHROPIC_API_KEY_GOES_HERE',
-    'sk-ant-api03-YOUR-REAL-KEY-HERE',
-]);
+$localAnthropicVariable = $localScalarSecrets['anthropic_api_key'] ?? '';
+if ($localAnthropicVariable !== '' && !in_array($localAnthropicVariable, $anthropicPlaceholders, true)) {
+    $anthropicKey = $localAnthropicVariable;
+}
+mg_apply_local_secret_env('MG_ANTHROPIC_API_KEY', $anthropicKey, $anthropicPlaceholders);
 
+$paymentPlaceholders = [
+    'PASTE_GENERATED_PAYMENT_CREDENTIAL_KEY_HERE',
+];
 $paymentCredentialKey = mg_local_secret_value($config, [
     ['payments', 'credential_key'],
     ['security', 'payment_credential_key'],
 ]);
-mg_apply_local_secret_env('MG_PAYMENT_CREDENTIAL_KEY', $paymentCredentialKey, [
-    'PASTE_GENERATED_PAYMENT_CREDENTIAL_KEY_HERE',
-]);
+$localPaymentVariable = $localScalarSecrets['payment_credential_key'] ?? '';
+if ($localPaymentVariable !== '' && !in_array($localPaymentVariable, $paymentPlaceholders, true)) {
+    $paymentCredentialKey = $localPaymentVariable;
+}
+mg_apply_local_secret_env('MG_PAYMENT_CREDENTIAL_KEY', $paymentCredentialKey, $paymentPlaceholders);
 
 return $config;
