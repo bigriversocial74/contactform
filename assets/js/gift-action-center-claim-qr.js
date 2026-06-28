@@ -10,6 +10,7 @@
   }
 
   function activeVoucherId(form) {
+    if (form && form.dataset && form.dataset.actionItemId) return String(form.dataset.actionItemId).trim();
     const direct = form && form.querySelector('[name="action_item_id"],[data-action-item-id]');
     const directValue = direct && (direct.value || direct.getAttribute('data-action-item-id'));
     if (directValue) return String(directValue).trim();
@@ -25,7 +26,14 @@
     const meta = Array.from(row.querySelectorAll('.mg-gift-row-meta span')).map((span) => span.textContent.trim());
     const merchantMeta = meta.find((piece) => /^Merchant:/i.test(piece)) || meta.find((piece) => /^From:/i.test(piece));
     const merchant = merchantMeta ? merchantMeta.replace(/^(Merchant|From):\s*/i, '').trim() : '';
-    return { title, merchant };
+    const demo = row.classList.contains('is-demo') || /^demo-/i.test(String(row.dataset.giftId || ''));
+    return { title, merchant, demo };
+  }
+
+  function isDemoVoucher(form, voucherId) {
+    if (form && form.dataset && (form.dataset.demoVoucher === 'true' || form.dataset.demoOnly === 'true')) return true;
+    if (/^demo-/i.test(String(voucherId || ''))) return true;
+    return !!activeRowContext().demo;
   }
 
   function activeContext(form, data, fallbackTitle) {
@@ -77,6 +85,9 @@
 
   function friendlyClaimError(error) {
     const raw = (error && error.message ? error.message : '').trim();
+    if (/Action Center voucher not found|wallet voucher not found|voucher ID is required/i.test(raw)) {
+      return 'This gift row is not attached to an active Action Center voucher. Refresh the list, then try again.';
+    }
     if (/invalid merchant claim code|invalid claim code|wrong|claim code/i.test(raw)) {
       return 'Wrong merchant claim code. Check the code and try again.';
     }
@@ -93,7 +104,11 @@
   }
 
   function claimStepMarkup(state, statusMessage, statusState) {
-    const disabled = !state.qrImage;
+    const disabled = !state.qrImage && !state.isDemo;
+    const placeholder = state.isDemo ? 'Demo preview' : 'QR unavailable';
+    const demoNote = state.isDemo ? '<div class="mg-action-form-note"><strong>Demo preview only.</strong> This claim does not call the voucher API and does not create redemptions, ledger entries, notifications, payouts, ownership changes, or webhooks.</div>' : '';
+    const defaultCode = state.isDemo && state.demoClaimCode ? ` value="${esc(state.demoClaimCode)}"` : '';
+    const inputType = state.isDemo ? 'text' : 'password';
     return `
       ${stepper('claim')}
       <div class="mg-claim-voucher-product">
@@ -101,12 +116,13 @@
         <span>${esc(state.merchant)}</span>
       </div>
       <div class="mg-claim-voucher-frame">
-        ${state.qrImage ? `<img src="${esc(state.qrImage)}" alt="QR code for ${esc(state.title)}" loading="eager" referrerpolicy="no-referrer">` : '<div class="mg-claim-voucher-qr-placeholder">QR unavailable</div>'}
+        ${state.qrImage ? `<img src="${esc(state.qrImage)}" alt="QR code for ${esc(state.title)}" loading="eager" referrerpolicy="no-referrer">` : `<div class="mg-claim-voucher-qr-placeholder">${esc(placeholder)}</div>`}
       </div>
+      ${demoNote}
       <div class="mg-claim-voucher-manual" data-voucher-claim-panel>
         <label class="mg-claim-voucher-code-label">
-          <span>Manual claim code</span>
-          <input type="password" name="merchant_claim_code" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Enter claim code" ${disabled ? 'disabled' : ''} required>
+          <span>${state.isDemo ? 'Demo claim code' : 'Manual claim code'}</span>
+          <input type="${inputType}" name="merchant_claim_code" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Enter claim code"${defaultCode} ${disabled ? 'disabled' : ''} required>
         </label>
         <div class="mg-claim-voucher-manual-actions">
           <button class="mg-btn mg-btn-primary" type="button" data-voucher-review-claim ${disabled ? 'disabled' : ''}>Review claim</button>
@@ -125,8 +141,8 @@
       <section class="mg-claim-voucher-confirm-card">
         <div class="mg-claim-voucher-confirm-icon" aria-hidden="true">✓</div>
         <div>
-          <strong>Confirm claim</strong>
-          <p>Manual claim code entered. Confirm to submit this gift claim to the merchant redemption system.</p>
+          <strong>${state.isDemo ? 'Confirm demo preview' : 'Confirm claim'}</strong>
+          <p>${state.isDemo ? 'Confirm this demo-only claim preview. No secure voucher token, redemption, ledger, or merchant claim write will run.' : 'Manual claim code entered. Confirm to submit this gift claim to the merchant redemption system.'}</p>
         </div>
       </section>
       <div class="mg-claim-voucher-review-grid">
@@ -136,7 +152,7 @@
       </div>
       <div class="mg-action-form-footer mg-claim-voucher-step-actions">
         <button class="mg-btn mg-btn-soft" type="button" data-voucher-back>Back</button>
-        <button class="mg-btn mg-btn-primary" type="button" data-voucher-confirm-claim>Confirm claim</button>
+        <button class="mg-btn mg-btn-primary" type="button" data-voucher-confirm-claim>${state.isDemo ? 'Complete preview' : 'Confirm claim'}</button>
       </div>
       ${statusMarkup('', '')}`;
   }
@@ -148,12 +164,12 @@
       <section class="mg-claim-voucher-success-card">
         <div class="mg-claim-voucher-success-icon" aria-hidden="true">✓</div>
         <strong>${esc(message || 'Gift claimed successfully.')}</strong>
-        <p>${esc(state.title)} was claimed${location ? ' at ' + esc(location) : ''}.</p>
+        <p>${esc(state.title)} was ${state.isDemo ? 'previewed' : 'claimed'}${location ? ' at ' + esc(location) : ''}.</p>
       </section>
       <div class="mg-claim-voucher-review-grid">
         <div><span>Product</span><strong>${esc(state.title)}</strong></div>
         <div><span>Merchant</span><strong>${esc(location || state.merchant)}</strong></div>
-        <div><span>Status</span><strong>Claimed</strong></div>
+        <div><span>Status</span><strong>${state.isDemo ? 'Demo preview' : 'Claimed'}</strong></div>
       </div>
       <div class="mg-action-form-footer mg-claim-voucher-step-actions">
         <button class="mg-btn mg-btn-soft" type="button" data-action-modal-close>Done</button>
@@ -208,20 +224,23 @@
       </section>`;
   }
 
-  function voucherMarkup(title, voucherId, data, form) {
+  function voucherMarkup(title, voucherId, data, form, options) {
     const context = activeContext(form, data, title);
+    const isDemo = !!(options && options.isDemo);
     const state = {
       actionItemId: voucherId,
       title: context.title,
       merchant: context.merchant,
       value: context.value,
-      token: data.token || '',
-      qrImage: data.qr_image_url || '',
-      payload: data.scan_payload || '',
+      token: isDemo ? '' : (data.token || ''),
+      qrImage: isDemo ? '' : (data.qr_image_url || ''),
+      payload: isDemo ? '' : (data.scan_payload || ''),
       claimResponse: null,
-      pendingClaimCode: ''
+      pendingClaimCode: '',
+      isDemo,
+      demoClaimCode: isDemo ? (form.querySelector('[name="claim_code"]')?.value || form.dataset.demoClaimCode || 'DEMO') : ''
     };
-    const markup = `<section class="mg-claim-voucher-qr" data-voucher-flow data-action-item-id="${esc(voucherId)}" data-voucher-token="${esc(state.token)}" aria-label="Claim gift QR and manual claim code"></section>`;
+    const markup = `<section class="mg-claim-voucher-qr" data-voucher-flow data-action-item-id="${esc(voucherId)}" data-voucher-token="${esc(state.token)}" data-demo-voucher="${isDemo ? 'true' : 'false'}" aria-label="Claim gift QR and manual claim code"></section>`;
     window.setTimeout(() => {
       const selectorId = window.CSS && CSS.escape ? CSS.escape(voucherId) : String(voucherId).replace(/"/g, '\\"');
       const root = document.querySelector('[data-voucher-flow][data-action-item-id="' + selectorId + '"]');
@@ -233,17 +252,18 @@
   }
 
   function actionFormMarkup(action, state) {
+    const demoNote = state.isDemo ? '<div class="mg-action-form-note"><strong>Demo preview only.</strong> This action stays local and does not create transactions.</div>' : '';
     if (action === 'tip') {
       return '<form class="mg-action-form" data-action-form="tip">' +
         '<label>Tip amount<input type="number" name="amount" placeholder="5.00" required></label>' +
-        '<label>Message<textarea name="message" placeholder="Add a thank-you note"></textarea></label>' +
+        '<label>Message<textarea name="message" placeholder="Add a thank-you note"></textarea></label>' + demoNote +
         '<div class="mg-action-form-note">Tip for ' + esc(state.merchant) + ' after claiming ' + esc(state.title) + '.</div>' +
         '<div class="mg-action-form-footer"><button class="mg-btn mg-btn-soft" type="button" data-action-modal-close>Cancel</button>' +
         '<button class="mg-btn mg-btn-primary" type="submit">Continue to tip</button></div></form>';
     }
     return '<form class="mg-action-form" data-action-form="message">' +
       '<label>To<input type="text" name="recipient" value="' + esc(state.merchant) + '" required></label>' +
-      '<label>Message<textarea name="message" placeholder="Write a message" required></textarea></label>' +
+      '<label>Message<textarea name="message" placeholder="Write a message" required></textarea></label>' + demoNote +
       '<div class="mg-action-form-note">Message thread for ' + esc(state.title) + '.</div>' +
       '<div class="mg-action-form-footer"><button class="mg-btn mg-btn-soft" type="button" data-action-modal-close>Cancel</button>' +
       '<button class="mg-btn mg-btn-primary" type="submit">Send message</button></div></form>';
@@ -262,6 +282,11 @@
 
   async function prepareVoucher(form, voucherId, title) {
     try {
+      if (!voucherId) throw new Error('Action Center voucher ID is required.');
+      if (isDemoVoucher(form, voucherId)) {
+        form.innerHTML = voucherMarkup(title, voucherId, {}, form, { isDemo: true });
+        return;
+      }
       if (!window.Microgifter || typeof window.Microgifter.get !== 'function') {
         throw new Error('Microgifter API client is unavailable.');
       }
@@ -270,19 +295,29 @@
       if (!data || !data.scan_payload || !data.qr_image_url) {
         throw new Error('Voucher QR payload was not returned.');
       }
-      form.innerHTML = voucherMarkup(title, voucherId, data, form);
+      form.innerHTML = voucherMarkup(title, voucherId, data, form, { isDemo: false });
     } catch (error) {
-      form.innerHTML = errorMarkup(title, error.message);
+      form.innerHTML = errorMarkup(title, friendlyClaimError(error));
     }
   }
 
   function enhanceClaimVoucher(form) {
     if (!form || form.dataset.claimVoucherQr === 'true') return;
     const voucherId = activeVoucherId(form);
-    if (!voucherId) return;
+    if (!voucherId) {
+      const modal = form.closest('[data-action-modal]') || document;
+      const title = form.dataset.productTitle || activeRowContext().title || modal.querySelector('[data-action-modal-eyebrow]')?.textContent?.trim() || 'Microgift voucher';
+      form.dataset.claimVoucherQr = 'true';
+      form.innerHTML = errorMarkup(title, 'This claim form is missing its Action Center voucher ID. Refresh the list and try again.');
+      return;
+    }
     const modal = form.closest('[data-action-modal]') || document;
     const title = form.dataset.productTitle || activeRowContext().title || modal.querySelector('[data-action-modal-eyebrow]')?.textContent?.trim() || 'Microgift voucher';
     form.dataset.claimVoucherQr = 'true';
+    if (isDemoVoucher(form, voucherId)) {
+      form.innerHTML = voucherMarkup(title, voucherId, {}, form, { isDemo: true });
+      return;
+    }
     form.innerHTML = loadingMarkup(title);
     prepareVoucher(form, voucherId, title);
   }
@@ -295,7 +330,7 @@
     const panel = root.querySelector('[data-voucher-claim-panel]');
     const input = panel && panel.querySelector('[name="merchant_claim_code"]');
     const merchantClaimCode = input ? input.value.trim() : '';
-    if (input) input.value = '';
+    if (input && !rootState(root).isDemo) input.value = '';
     if (!merchantClaimCode) {
       const status = panel && panel.querySelector('[data-voucher-claim-status]');
       if (status) {
@@ -312,6 +347,13 @@
     const state = rootState(root);
     if (!state.actionItemId || !state.pendingClaimCode) {
       renderStep(root, 'claim', { message: 'Enter the merchant claim code before continuing.', state: 'error' });
+      return;
+    }
+    if (state.isDemo) {
+      state.pendingClaimCode = '';
+      state.claimResponse = { demo_preview: true, location_name: state.merchant, title: state.title };
+      setRootState(root, state);
+      renderStep(root, 'claimed', { payload: state.claimResponse, message: 'Demo claim preview complete. No real claim was created.' });
       return;
     }
     if (!window.Microgifter || typeof window.Microgifter.post !== 'function') {
@@ -348,6 +390,11 @@
       state.pendingClaimCode = '';
       setRootState(root, state);
       renderStep(root, 'claim', { message: friendlyClaimError(error), state: 'error' });
+    } finally {
+      if (button) {
+        button.disabled = false;
+        button.textContent = 'Confirm claim';
+      }
     }
   }
 
