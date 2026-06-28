@@ -46,6 +46,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function cleanErrorMessage(error) {
     var message = String((error && error.message) || error || '').trim();
     if (!message) return 'Unable to run merchant agent chat.';
+    if (/invalid\s*x-api-key|x-api-key|invalid api key|authentication_error/i.test(message)) return 'Anthropic rejected the server API key. Replace the value in api/config.local.php with a valid Anthropic Console API key, save the file, then retry.';
     if (/csrf/i.test(message)) return 'The security token expired. Refresh the page and send the message again.';
     if (/permission|forbidden|unauthorized|merchant\.ai\.plan|merchant\.ai\.review/i.test(message)) return 'Your account needs the merchant AI permission for this action. Re-run the Stage 19C Claude planner migration or update this user role.';
     if (/not configured|MG_ANTHROPIC_API_KEY|Anthropic API key/i.test(message)) return 'Anthropic is not configured on the server. Check api/config.local.php and reload the page.';
