@@ -6,8 +6,8 @@ document.addEventListener('DOMContentLoaded',function(){
   function html(v){return String(v==null?'':v).replace(/[&<>'"]/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'})[c];});}
   function setStatus(message){status.textContent=message||'';}
   function card(c){
-    var action=c.source==='contest_entry'&&Number(c.winner_count||0)===0?'<button class="mg-btn mg-btn-primary" type="button" data-award="'+html(c.id)+'" data-campaign="'+html(c.campaign_id)+'">Issue prize</button>':'';
-    return '<div class="mg-product-card"><span><strong>'+html(c.name||c.email)+'</strong><span>'+html(c.email)+' · '+html(c.source)+'</span><small>'+Number(c.wallet_count||0)+' wallet items · '+Number(c.redeemed_count||0)+' redeemed</small></span><span class="mg-card-meta"><em>'+html(c.opt_in_status)+'</em>'+action+'</span></div>';
+    var action=c.source==='contest_entry'&&c.winner_action_allowed?'<button class="mg-btn mg-btn-primary" type="button" data-award="'+html(c.id)+'" data-campaign="'+html(c.campaign_id)+'">Issue prize</button>':'';
+    return '<div class="mg-product-card"><span><strong>'+html(c.name||c.email)+'</strong><span>'+html(c.email)+' · '+html(c.source)+'</span><small>'+Number(c.wallet_count||0)+' wallet items · '+Number(c.redeemed_count||0)+' redeemed · '+Number(c.winner_count||0)+' winner rewards</small></span><span class="mg-card-meta"><em>'+html(c.opt_in_status)+'</em>'+action+'</span></div>';
   }
   async function load(campaignId){
     if(window.MicrogifterCampaignTabs&&typeof window.MicrogifterCampaignTabs.activate==='function'){window.MicrogifterCampaignTabs.activate('contacts',{scroll:true});}
