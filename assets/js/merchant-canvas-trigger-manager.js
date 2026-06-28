@@ -8,9 +8,21 @@ window.Microgifter = window.Microgifter || {};
   if (!root || !MG.post) return;
 
   var map = root.querySelector('[data-canvas-map]');
-  var layer = root.querySelector('[data-canvas-customers]');
-  if (!map || !layer) return;
+  var customerLayer = root.querySelector('[data-canvas-customers]');
+  if (!map || !customerLayer) return;
 
+  var triggerLayer = root.querySelector('[data-canvas-triggers]');
+  if (!triggerLayer) {
+    triggerLayer = document.createElement('div');
+    triggerLayer.className = 'mg-canvas-trigger-layer';
+    triggerLayer.setAttribute('data-canvas-triggers', '');
+    if (customerLayer.nextSibling) map.insertBefore(triggerLayer, customerLayer.nextSibling);
+    else map.appendChild(triggerLayer);
+  }
+  triggerLayer.style.pointerEvents = 'none';
+  triggerLayer.style.zIndex = triggerLayer.style.zIndex || '16';
+
+  var layer = triggerLayer;
   var campaigns = [];
   var campaignsReady = false;
   var zones = [];
@@ -33,6 +45,7 @@ window.Microgifter = window.Microgifter || {};
   function tempId() { return 'tmp-' + Date.now() + '-' + Math.floor(Math.random() * 10000); }
   function isTemp(zone) { return zone && String(zone.id || '').indexOf('tmp-') === 0; }
   function priority(value) { return clamp(parseInt(value || 3, 10) || 3, 1, 5); }
+  function opacityForPriority(value) { return clamp(0.27 + (priority(value) * 0.08), 0.35, 0.70); }
   function boolInt(value) { return value === true || value === 1 || value === '1' || value === 'true' || value === 'on' ? 1 : 0; }
   function canvasRect() { return map.getBoundingClientRect(); }
 
@@ -224,20 +237,24 @@ window.Microgifter = window.Microgifter || {};
     node.setAttribute('role', 'button');
     node.setAttribute('tabindex', '0');
     node.innerHTML = '<span class="mg-canvas-trigger-main"><strong data-zone-name></strong><small data-zone-campaign></small></span><span class="mg-canvas-trigger-actions"><button type="button" class="mg-canvas-trigger-settings-icon" data-trigger-settings aria-label="Open trigger settings">⚙</button></span><span class="mg-canvas-trigger-resize" data-trigger-resize aria-hidden="true"></span>';
+    node.style.pointerEvents = 'auto';
     layer.appendChild(node);
     nodes.set(id, node);
     return node;
   }
 
   function updateZoneNode(zone, node) {
+    var zonePriority = priority(zone.priority);
     node.hidden = false;
     node.style.visibility = 'visible';
+    node.style.pointerEvents = 'auto';
     node.dataset.canvasTriggerZone = String(zone.id || '');
-    node.dataset.triggerPriority = String(priority(zone.priority));
+    node.dataset.triggerPriority = String(zonePriority);
     node.classList.toggle('is-paused', zone.status === 'paused');
     node.classList.toggle('is-saving', !!zone.saving);
     node.classList.toggle('is-settings-open', String(zone.id || '') === activeId);
-    node.style.zIndex = String(30 + priority(zone.priority) + (String(zone.id || '') === activeId ? 20 : 0));
+    node.style.zIndex = String(30 + zonePriority + (String(zone.id || '') === activeId ? 20 : 0));
+    node.style.opacity = String(opacityForPriority(zonePriority));
     var rect = pixelRect(zone);
     node.style.left = Math.round(rect.x) + 'px';
     node.style.top = Math.round(rect.y) + 'px';
@@ -472,7 +489,7 @@ window.Microgifter = window.Microgifter || {};
   }
 
   function scan() {
-    Array.from(layer.querySelectorAll('[data-session-id]')).forEach(function (card) {
+    Array.from(customerLayer.querySelectorAll('[data-session-id]')).forEach(function (card) {
       var avatar = relRect(card);
       var candidates = zones.filter(function (zone) {
         if (zone.status === 'paused' || isTemp(zone) || zone.saving) return false;
