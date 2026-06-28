@@ -24,7 +24,7 @@ require __DIR__ . '/includes/header.php';
         <span class="mg-eyebrow">Gift communication</span>
         <h1>Messages</h1>
       </div>
-      <button class="mg-message-compose-trigger" type="button" data-message-refresh aria-label="Refresh conversations">Refresh</button>
+      <button class="mg-message-compose-trigger" type="button" data-message-refresh aria-label="Refresh conversations">R</button>
     </div>
     <div class="mg-messages-sidebar-search">
       <input type="search" data-message-search placeholder="Search conversations" aria-label="Search conversations">
