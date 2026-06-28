@@ -19,13 +19,18 @@ if ($method === 'GET') {
 }
 
 if ($method === 'POST') {
-    $user = mg_merchant_require_permission('merchant.ai.plan');
-    mg_merchant_ensure_workspace($pdo, $user);
     $input = mg_input();
     mg_require_csrf_for_write($input);
-
-    $merchantId = (int)$user['id'];
     $action = strtolower(trim((string)($input['action'] ?? 'send_message')));
+    $localActions = ['save_agent_profile','create_thread','save_thread','archive_thread','clear_thread','rename_thread','load_thread'];
+
+    if (!in_array($action, array_merge(['send_message'], $localActions), true)) {
+        mg_fail('Unknown merchant agent chat action.', 422);
+    }
+
+    $user = mg_merchant_require_permission($action === 'send_message' ? 'merchant.ai.plan' : 'merchant.ai.review');
+    mg_merchant_ensure_workspace($pdo, $user);
+    $merchantId = (int)$user['id'];
 
     if ($action === 'save_agent_profile') {
         $profile = mg_agent_save_profile($pdo, $merchantId, $input);
