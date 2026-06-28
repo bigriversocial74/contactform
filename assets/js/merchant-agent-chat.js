@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var menu = root.querySelector('[data-agent-context-menu]');
   var menuToggle = root.querySelector('[data-agent-context-toggle]');
   var state = { messages: [], quick_prompts: [], overview: null, agent_profile: null, active_thread: null, threads: [], skills: [] };
+  var inFlight = false;
 
   var fallbackPrompts = [
     'Analyze my product opportunities and show a chart.',
@@ -73,7 +74,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function updateSendState() {
     if (!send || !textarea) return;
-    send.disabled = !textarea.value.trim() || textarea.disabled;
+    send.disabled = inFlight || !textarea.value.trim() || textarea.disabled;
   }
 
   function growTextarea() {
@@ -91,6 +92,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function busy(on) {
+    inFlight = !!on;
     if (send) {
       send.disabled = !!on || !(textarea && textarea.value.trim());
       send.textContent = on ? '…' : '↑';
@@ -273,17 +275,38 @@ document.addEventListener('DOMContentLoaded', function () {
     feed.scrollTop = feed.scrollHeight;
   }
 
-  function applyState(data) {
+  function applyState(data, options) {
+    options = options || {};
     if (!data) return;
     if (data.state) data = data.state;
-    state.messages = data.messages || state.messages || [];
+    var nextMessages = Array.isArray(data.messages) ? data.messages : null;
+    if (nextMessages && (nextMessages.length || !options.preserveMessages)) {
+      state.messages = nextMessages;
+    }
     state.quick_prompts = data.quick_prompts || state.quick_prompts || [];
     state.overview = data.overview || state.overview || null;
     state.agent_profile = data.agent_profile || data.agentProfile || state.agent_profile || null;
-    state.active_thread = data.active_thread || state.activeThread || state.active_thread || null;
+    state.active_thread = data.active_thread || data.activeThread || state.active_thread || null;
     state.threads = data.threads || state.threads || [];
     state.skills = data.skills || state.skills || [];
     render();
+  }
+
+  function replacePendingMessages(tempUserId, tempAssistantId, userMessage, assistantMessage) {
+    var additions = [];
+    if (userMessage) additions.push(userMessage);
+    if (assistantMessage) additions.push(assistantMessage);
+    state.messages = state.messages.filter(function (item) {
+      return item.id !== tempUserId && item.id !== tempAssistantId;
+    }).concat(additions.length ? additions : [{
+      id: 'agent-' + Date.now(),
+      role: 'assistant',
+      body: 'Claude returned a response, but the chat payload was incomplete.',
+      cards: [],
+      blocks: [],
+      created_at: nowIso(),
+      error: true
+    }]);
   }
 
   async function load() {
@@ -310,7 +333,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   async function submit(message) {
     message = String(message || '').trim();
-    if (!message) return;
+    if (!message || inFlight) return;
 
     var scope = contextValue('[data-agent-chat-scope]', 'overview');
     var days = parseInt(contextValue('[data-agent-chat-days]', '90'), 10) || 90;
@@ -366,23 +389,12 @@ document.addEventListener('DOMContentLoaded', function () {
         thread_id: activeThreadId()
       }));
 
+      replacePendingMessages(tempUserId, tempAssistantId, data.user_message || tempUser, data.assistant_message);
       if (data.state) {
-        applyState(data.state);
+        applyState(data.state, { preserveMessages: true });
       } else {
-        state.messages = state.messages.filter(function (item) {
-          return item.id !== tempUserId && item.id !== tempAssistantId;
-        }).concat([data.user_message || tempUser, data.assistant_message || {
-          id: 'agent-' + Date.now(),
-          role: 'assistant',
-          body: 'Claude returned a response, but the chat payload was incomplete.',
-          cards: [],
-          blocks: [],
-          created_at: nowIso(),
-          error: true
-        }]);
         render();
       }
-
       setStatus('Agent reply created.', 'success');
     } catch (error) {
       var clean = cleanErrorMessage(error);
@@ -422,10 +434,30 @@ document.addEventListener('DOMContentLoaded', function () {
       data = data || {};
       data.action = action;
       var response = payload(await Microgifter.post('/api/ai/merchant-agent-chat.php', data));
-      applyState(response.state ? response.state : response);
+      applyState(response.state ? response.state : response, { preserveMessages: true });
       setStatus(success || 'Agent chat updated.', 'success');
     } catch (error) {
       setStatus(cleanErrorMessage(error), 'error');
+    }
+  }
+
+  async function saveAgentProfile(button) {
+    var input = root.querySelector('[data-agent-name-input]');
+    var name = input ? input.value.trim() : '';
+    if (!name) name = 'Merchant Agent';
+    state.agent_profile = Object.assign({}, state.agent_profile || {}, { agent_name: name });
+    renderRail();
+    setStatus('Saving agent name…', '');
+    if (button) button.disabled = true;
+    try {
+      var response = payload(await Microgifter.post('/api/ai/merchant-agent-chat.php', { action: 'save_agent_profile', agent_name: name }));
+      if (response.agent_profile) state.agent_profile = response.agent_profile;
+      if (response.state) applyState(response.state, { preserveMessages: true }); else renderRail();
+      setStatus('Agent name saved.', 'success');
+    } catch (error) {
+      setStatus(cleanErrorMessage(error), 'error');
+    } finally {
+      if (button) button.disabled = false;
     }
   }
 
@@ -438,7 +470,7 @@ document.addEventListener('DOMContentLoaded', function () {
     setStatus('Adding card to review queue…', '');
     try {
       var data = payload(await Microgifter.post('/api/ai/merchant-agent-chat-review.php', { message_id: messageId, card_index: cardIndex }));
-      if (data.state) applyState(data.state);
+      if (data.state) applyState(data.state, { preserveMessages: true });
       render();
       setStatus('Card added to the Agent Review queue.', 'success');
     } catch (error) {
@@ -480,8 +512,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var saveProfile = root.querySelector('[data-agent-save-profile]');
   if (saveProfile) {
     saveProfile.addEventListener('click', function () {
-      var input = root.querySelector('[data-agent-name-input]');
-      postAction('save_agent_profile', { agent_name: input ? input.value : '' }, 'Agent name saved.');
+      saveAgentProfile(saveProfile);
     });
   }
 
