@@ -4,8 +4,8 @@ require_once __DIR__ . '/includes/app.php';
 $page_title = 'Merchant Agent Chat | Microgifter';
 $page_section = 'merchant';
 $header_mode = 'account';
-$page_styles = ['/assets/css/merchant-workspace.css','/assets/css/merchant-agent-chat.css','/assets/css/merchant-agent-command.css'];
-$page_scripts = ['/assets/js/merchant-agent-chat.js','/assets/js/merchant-agent-command.js'];
+$page_styles = ['/assets/css/merchant-workspace.css','/assets/css/merchant-agent-chat.css'];
+$page_scripts = ['/assets/js/merchant-agent-chat.js'];
 $user = mg_current_user();
 $merchantNav = [
   'overview' => ['Overview','Workspace health','/merchant.php','Overview'],
