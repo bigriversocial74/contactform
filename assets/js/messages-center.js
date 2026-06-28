@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function detailsPopover(source) {
     var rows = contextItems(source);
     if (!rows.length) return '';
-    return '<div class="mg-thread-details-popover" data-thread-details-panel hidden>' + rows.map(function (row) {
+    return '<div class="mg-thread-details-popover" data-thread-details-panel hidden aria-hidden="true">' + rows.map(function (row) {
       return '<div class="mg-thread-details-row"><span>' + esc(row[0]) + '</span><strong>' + esc(row[1]) + '</strong></div>';
     }).join('') + '</div>';
   }
@@ -219,6 +219,14 @@ document.addEventListener('DOMContentLoaded', function () {
     if (sourceNode) sourceNode.textContent = status === 'failed' ? 'Not sent' : 'Just posted';
   }
 
+  function setDetailsPanelOpen(panel, button, open) {
+    if (!panel || !button) return;
+    panel.hidden = !open;
+    panel.classList.toggle('is-open', open);
+    panel.setAttribute('aria-hidden', open ? 'false' : 'true');
+    button.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+
   async function sendReply(form) {
     if (!form || state.sending) return;
     var textarea = form.querySelector('textarea[name="body"]');
@@ -267,7 +275,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
   if (sidebarToggle) sidebarToggle.addEventListener('click', function () { setSidebarOpen(!(sidebar && sidebar.classList.contains('is-mobile-open'))); });
   if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', function () { setSidebarOpen(false); });
-  document.addEventListener('keydown', function (event) { if (event.key === 'Escape') setSidebarOpen(false); });
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') {
+      setSidebarOpen(false);
+      var panel = detail && detail.querySelector('[data-thread-details-panel]');
+      var detailsButton = detail && detail.querySelector('[data-thread-details]');
+      if (panel && detailsButton) setDetailsPanelOpen(panel, detailsButton, false);
+    }
+  });
   if (list) list.addEventListener('click', function (event) { var row = event.target.closest('[data-thread-id]'); if (row) openThread(row.dataset.threadId).catch(function (error) { if (Microgifter.toast) Microgifter.toast(error && error.message ? error.message : 'Unable to open conversation.', 'error'); console.error(error); }); });
   if (detail) {
     detail.addEventListener('click', function (event) {
@@ -275,12 +290,13 @@ document.addEventListener('DOMContentLoaded', function () {
       if (detailsButton) {
         event.preventDefault();
         var panel = detail.querySelector('[data-thread-details-panel]');
-        if (panel) {
-          var opening = panel.hasAttribute('hidden');
-          panel.hidden = !opening;
-          detailsButton.setAttribute('aria-expanded', opening ? 'true' : 'false');
-        }
+        if (panel) setDetailsPanelOpen(panel, detailsButton, panel.hidden);
         return;
+      }
+      if (!event.target.closest('[data-thread-details-panel]')) {
+        var openPanel = detail.querySelector('[data-thread-details-panel].is-open');
+        var openButton = detail.querySelector('[data-thread-details]');
+        if (openPanel && openButton) setDetailsPanelOpen(openPanel, openButton, false);
       }
       var button = event.target.closest('[data-message-send]');
       if (!button) return;
