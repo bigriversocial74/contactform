@@ -1,0 +1,39 @@
+.mg-canvas-trigger-settings-drawer,.mg-canvas-merchant-settings-drawer{position:fixed;z-index:1665;right:0;top:0;bottom:0;width:min(500px,100vw);height:100svh;background:#fff;border-left:1px solid rgba(148,163,184,.28);box-shadow:0 30px 95px rgba(15,23,42,.24);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .24s ease;overflow:hidden}
+.mg-canvas-trigger-settings-drawer.is-open,.mg-canvas-merchant-settings-drawer.is-open{transform:translateX(0)}
+.mg-trigger-settings-head,.mg-merchant-settings-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:18px;border-bottom:1px solid rgba(148,163,184,.2);background:linear-gradient(135deg,#fff,#f8fbff);flex:0 0 auto}
+.mg-trigger-settings-head span,.mg-merchant-settings-head span{display:block;font-size:11px;font-weight:950;letter-spacing:.14em;text-transform:uppercase;color:#6d28d9}
+.mg-merchant-settings-head span{color:#0f766e}
+.mg-trigger-settings-head h2,.mg-merchant-settings-head h2{margin:5px 0 0;color:#0f172a;font-size:23px;line-height:1.05;letter-spacing:-.04em}
+.mg-trigger-settings-head button,.mg-merchant-settings-head button{border:0;background:#eef2ff;color:#1e293b;border-radius:12px;width:36px;height:36px;font-size:18px;cursor:pointer}
+.mg-trigger-settings-body,.mg-merchant-settings-body{padding:16px;overflow:auto;display:flex;flex-direction:column;gap:14px;flex:1 1 auto;min-height:0}
+.mg-trigger-settings-foot,.mg-merchant-settings-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-top:1px solid rgba(148,163,184,.2);background:#f8fafc;flex:0 0 auto}
+.mg-trigger-settings-status,.mg-merchant-settings-status{margin:0;color:#64748b;font-size:12px;font-weight:850}
+.mg-trigger-settings-status.is-success,.mg-merchant-settings-status.is-success{color:#047857}
+.mg-trigger-settings-status.is-error,.mg-merchant-settings-status.is-error{color:#b91c1c}
+.mg-trigger-settings-status.is-saving,.mg-merchant-settings-status.is-saving{color:#1d4ed8}
+.mg-trigger-settings-form,.mg-merchant-settings-form{display:flex;flex-direction:column;gap:12px}
+.mg-trigger-settings-form label,.mg-merchant-settings-form label{display:flex;flex-direction:column;gap:6px;color:#334155;font-size:11px;font-weight:950;text-transform:uppercase;letter-spacing:.08em}
+.mg-trigger-settings-form input,.mg-trigger-settings-form select,.mg-trigger-settings-form textarea,.mg-merchant-settings-form input,.mg-merchant-settings-form select,.mg-merchant-settings-form textarea{width:100%;border:1px solid rgba(148,163,184,.3);border-radius:14px;background:#fff;color:#0f172a;font-size:13px;font-weight:750;line-height:1.35;padding:11px 12px;outline:none;text-transform:none;letter-spacing:0}
+.mg-trigger-settings-form textarea,.mg-merchant-settings-form textarea{resize:vertical;min-height:96px}
+.mg-trigger-settings-form small,.mg-merchant-settings-form small{color:#64748b;font-size:11px;font-weight:750;line-height:1.35;text-transform:none;letter-spacing:0}
+.mg-trigger-settings-row,.mg-merchant-settings-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.mg-trigger-settings-summary,.mg-merchant-settings-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.mg-trigger-settings-summary article,.mg-merchant-settings-summary article{border:1px solid rgba(148,163,184,.22);border-radius:16px;background:#f8fafc;padding:12px}
+.mg-trigger-settings-summary span,.mg-merchant-settings-summary span{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#64748b;font-weight:950}
+.mg-trigger-settings-summary strong,.mg-merchant-settings-summary strong{display:block;margin-top:4px;color:#0f172a;font-size:15px;letter-spacing:-.03em}
+.mg-trigger-settings-check,.mg-merchant-settings-check{flex-direction:row!important;align-items:center;justify-content:flex-start;gap:8px;border:1px solid rgba(148,163,184,.22);border-radius:14px;background:#f8fafc;padding:12px;text-transform:none!important;letter-spacing:0!important;font-size:13px!important}
+.mg-trigger-settings-check input,.mg-merchant-settings-check input{width:auto!important}
+.mg-trigger-settings-actions,.mg-merchant-settings-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.mg-trigger-settings-actions button,.mg-merchant-settings-actions button{border:1px solid rgba(148,163,184,.28);border-radius:14px;background:#fff;color:#0f172a;font-size:12px;font-weight:950;padding:11px 12px;cursor:pointer}
+.mg-trigger-settings-actions button:hover,.mg-merchant-settings-actions button:hover{border-color:rgba(37,99,235,.35);background:#eff6ff;color:#1d4ed8}
+.mg-canvas-trigger-zone{cursor:pointer}
+.mg-canvas-trigger-zone.is-settings-open{border-style:solid;border-color:rgba(37,99,235,.78);box-shadow:0 30px 80px rgba(37,99,235,.18)}
+.mg-canvas-trigger-zone-title b{display:inline-flex;align-items:center;border-radius:999px;background:#ecfdf5;color:#047857;font-size:9px;font-weight:950;line-height:1;padding:4px 7px;text-transform:uppercase;letter-spacing:.08em}
+.mg-canvas-trigger-zone.is-paused .mg-canvas-trigger-zone-title b{background:#f1f5f9;color:#64748b}
+.mg-canvas-merchant-node{cursor:pointer}
+.mg-canvas-merchant-node:after{content:"Settings";position:absolute;right:10px;bottom:8px;border-radius:999px;background:rgba(15,23,42,.84);color:#fff;font-size:9px;font-weight:950;letter-spacing:.08em;text-transform:uppercase;padding:4px 7px;opacity:0;transform:translateY(4px);transition:opacity .18s ease,transform .18s ease}
+.mg-canvas-merchant-node:hover:after,.mg-canvas-merchant-node.is-settings-open:after{opacity:1;transform:translateY(0)}
+.mg-merchant-behavior-preview{border:1px solid rgba(16,185,129,.18);border-radius:18px;background:linear-gradient(135deg,#ecfdf5,#eff6ff);padding:14px;color:#0f172a}
+.mg-merchant-behavior-preview strong{display:block;margin-bottom:5px;font-size:14px;letter-spacing:-.02em}
+.mg-merchant-behavior-preview p{margin:0;color:#475569;font-size:13px;line-height:1.45}
+@media(max-width:760px){.mg-canvas-trigger-settings-drawer,.mg-canvas-merchant-settings-drawer{width:100vw}.mg-trigger-settings-row,.mg-merchant-settings-row,.mg-trigger-settings-summary,.mg-merchant-settings-summary{grid-template-columns:1fr}}
