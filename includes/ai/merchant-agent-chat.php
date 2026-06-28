@@ -53,6 +53,25 @@ function mg_ai_chat_allowed_links(): array
     ];
 }
 
+function mg_ai_chat_infer_action_key(array $card): string
+{
+    $candidate = mg_ai_chat_clean($card['review_action_key'] ?? $card['action_key'] ?? '', 80);
+    if ($candidate !== '' && in_array($candidate, mg_ai_merchant_allowed_actions(), true)) return $candidate;
+
+    $type = strtolower(mg_ai_chat_clean($card['type'] ?? '', 80));
+    $url = mg_ai_chat_clean($card['action_url'] ?? $card['url'] ?? '', 220);
+    $text = strtolower(($type . ' ' . ($card['title'] ?? '') . ' ' . ($card['body'] ?? '') . ' ' . $url));
+
+    if (str_contains($url, 'reward') || str_contains($text, 'reward')) return 'recommend_reward_optimization';
+    if (str_contains($url, 'crm') || str_contains($url, 'followup') || str_contains($text, 'follow-up') || str_contains($text, 'follow up') || str_contains($text, 'crm')) return 'create_crm_followup_task';
+    if (str_contains($url, 'claim') || str_contains($text, 'claim') || str_contains($text, 'redemption')) return 'recommend_claim_review';
+    if (str_contains($url, 'distribution') || str_contains($text, 'api') || str_contains($text, 'developer')) return 'recommend_api_integration';
+    if (str_contains($url, 'location') || str_contains($text, 'location') || str_contains($text, 'store')) return 'recommend_location_fix';
+    if (str_contains($url, 'campaign') || str_contains($text, 'campaign') || str_contains($text, 'contest')) return 'recommend_campaign_optimization';
+    if (str_contains($text, 'upgrade') || str_contains($text, 'package')) return 'recommend_package_upgrade';
+    return 'create_report_snapshot';
+}
+
 function mg_ai_chat_normalize_cards(mixed $cards): array
 {
     if (!is_array($cards)) return [];
@@ -65,12 +84,22 @@ function mg_ai_chat_normalize_cards(mixed $cards): array
         if ($title === '' && $body === '') continue;
         $url = mg_ai_chat_clean($card['action_url'] ?? $card['url'] ?? '', 220);
         if ($url !== '' && !in_array($url, $allowedLinks, true)) $url = '';
+        $actionKey = mg_ai_chat_infer_action_key($card);
+        $payload = mg_ai_chat_json($card['review_payload'] ?? $card['suggested_payload'] ?? []);
+        $risk = strtolower(mg_ai_chat_clean($card['risk_level'] ?? 'low', 20));
+        if (!in_array($risk, ['low','medium','high','critical'], true)) $risk = 'low';
         $out[] = [
             'type' => mg_ai_chat_clean($card['type'] ?? 'recommendation', 40) ?: 'recommendation',
             'title' => $title !== '' ? $title : 'Agent recommendation',
             'body' => $body,
             'action_label' => mg_ai_chat_clean($card['action_label'] ?? ($url !== '' ? 'Open' : ''), 60),
             'action_url' => $url,
+            'review_action_key' => $actionKey,
+            'review_payload' => $payload,
+            'risk_level' => $risk,
+            'review_plan_id' => mg_ai_chat_clean($card['review_plan_id'] ?? '', 80),
+            'review_item_id' => mg_ai_chat_clean($card['review_item_id'] ?? '', 80),
+            'bridgeable' => empty($card['review_item_id']),
         ];
         if (count($out) >= 4) break;
     }
@@ -92,6 +121,9 @@ Hard rules:
 - Avoid customer-level private data. Use summaries, counts, trends, and operational observations.
 - Return valid JSON only. No markdown. No prose outside JSON.
 
+Allowed review_action_key values:
+create_campaign_draft, update_campaign_draft, pause_campaign, resume_campaign, create_reward_template_draft, update_reward_template_draft, create_crm_followup_task, create_message_draft, create_report_snapshot, create_merchant_alert, recommend_package_upgrade, recommend_location_fix, recommend_api_integration, recommend_claim_review, recommend_reward_optimization, recommend_campaign_optimization
+
 Return this JSON shape:
 {
   "reply": "chat reply for the merchant",
@@ -101,7 +133,10 @@ Return this JSON shape:
       "title": "short card title",
       "body": "short supporting detail",
       "action_label": "optional button label",
-      "action_url": "optional app URL from the allowed links list"
+      "action_url": "optional app URL from the allowed links list",
+      "review_action_key": "optional allowed review action key",
+      "risk_level": "low|medium|high|critical",
+      "review_payload": {"optional":"safe draft/review payload"}
     }
   ]
 }
@@ -129,6 +164,51 @@ function mg_ai_chat_recent_messages(PDO $pdo, int $merchantId, int $limit = 30):
     }, $rows);
 }
 
+function mg_ai_chat_overview(PDO $pdo, int $merchantId): array
+{
+    $overview = [
+        'pending_reviews' => 0,
+        'review_ready_plans' => 0,
+        'executed_items' => 0,
+        'chat_messages' => 0,
+        'latest' => [],
+    ];
+
+    try {
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM campaign_events WHERE merchant_user_id=? AND event_type IN ('merchant.agent_chat.user','merchant.agent_chat.assistant')");
+        $stmt->execute([$merchantId]);
+        $overview['chat_messages'] = (int) $stmt->fetchColumn();
+
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM ai_merchant_plans WHERE merchant_user_id=? AND status='review_ready'");
+        $stmt->execute([$merchantId]);
+        $overview['review_ready_plans'] = (int) $stmt->fetchColumn();
+
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM ai_merchant_plan_items i INNER JOIN ai_merchant_plans p ON p.id=i.plan_id WHERE p.merchant_user_id=? AND i.status IN ('recommended','deferred','failed')");
+        $stmt->execute([$merchantId]);
+        $overview['pending_reviews'] = (int) $stmt->fetchColumn();
+
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM ai_merchant_plan_items i INNER JOIN ai_merchant_plans p ON p.id=i.plan_id WHERE p.merchant_user_id=? AND i.status='executed'");
+        $stmt->execute([$merchantId]);
+        $overview['executed_items'] = (int) $stmt->fetchColumn();
+
+        $stmt = $pdo->prepare("SELECT i.public_id,i.title,i.action_key,i.status,i.created_at FROM ai_merchant_plan_items i INNER JOIN ai_merchant_plans p ON p.id=i.plan_id WHERE p.merchant_user_id=? ORDER BY i.id DESC LIMIT 5");
+        $stmt->execute([$merchantId]);
+        $overview['latest'] = array_map(static function (array $row): array {
+            return [
+                'id' => (string) $row['public_id'],
+                'title' => (string) $row['title'],
+                'action_key' => (string) $row['action_key'],
+                'status' => (string) $row['status'],
+                'created_at' => $row['created_at'] ?? null,
+            ];
+        }, $stmt->fetchAll(PDO::FETCH_ASSOC));
+    } catch (Throwable $error) {
+        $overview['unavailable'] = true;
+    }
+
+    return $overview;
+}
+
 function mg_ai_chat_record_message(PDO $pdo, int $merchantId, string $role, string $body, array $cards = [], array $meta = []): string
 {
     $publicId = mg_ai_chat_uuid();
@@ -148,6 +228,7 @@ function mg_ai_chat_record_message(PDO $pdo, int $merchantId, string $role, stri
 function mg_ai_chat_public_state(PDO $pdo, int $merchantId): array
 {
     return [
+        'overview' => mg_ai_chat_overview($pdo, $merchantId),
         'messages' => mg_ai_chat_recent_messages($pdo, $merchantId),
         'quick_prompts' => [
             'What should I focus on today?',
@@ -157,6 +238,133 @@ function mg_ai_chat_public_state(PDO $pdo, int $merchantId): array
         ],
         'scopes' => mg_ai_chat_allowed_scopes(),
     ];
+}
+
+function mg_ai_chat_catalog_model(PDO $pdo, string $preferredModelKey = ''): array
+{
+    if ($preferredModelKey !== '') {
+        $stmt = $pdo->prepare("SELECT m.*,p.provider_key,p.display_name provider_name,p.env_var_name FROM ai_models m INNER JOIN ai_providers p ON p.id=m.provider_id WHERE p.provider_key='anthropic' AND p.enabled=1 AND m.enabled=1 AND m.model_key=? LIMIT 1");
+        $stmt->execute([$preferredModelKey]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (is_array($row)) return $row;
+    }
+    $stmt = $pdo->prepare("SELECT m.*,p.provider_key,p.display_name provider_name,p.env_var_name FROM ai_models m INNER JOIN ai_providers p ON p.id=m.provider_id WHERE p.provider_key='anthropic' AND p.enabled=1 AND m.enabled=1 AND m.model_key IN ('claude-sonnet-4-6','claude-3-5-sonnet-latest') ORDER BY (m.model_key='claude-sonnet-4-6') DESC,m.is_default DESC,m.sort_order ASC LIMIT 1");
+    $stmt->execute();
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!is_array($row)) mg_fail('Claude Sonnet is not enabled in the AI model catalog.', 503);
+    return $row;
+}
+
+function mg_ai_chat_bridge_to_review(PDO $pdo, array $user, array $input): array
+{
+    $merchantId = (int) $user['id'];
+    $messageId = mg_ai_chat_clean($input['message_id'] ?? '', 80);
+    $cardIndex = (int) ($input['card_index'] ?? -1);
+    if ($messageId === '' || $cardIndex < 0) mg_fail('Select an agent response card to send to review.', 422);
+
+    $stmt = $pdo->prepare("SELECT id,public_id,event_context_json FROM campaign_events WHERE merchant_user_id=? AND public_id=? AND event_type='merchant.agent_chat.assistant' LIMIT 1");
+    $stmt->execute([$merchantId, $messageId]);
+    $event = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!is_array($event)) mg_fail('Agent chat message was not found.', 404);
+
+    $ctx = mg_ai_chat_json($event['event_context_json'] ?? null);
+    $cards = mg_ai_chat_normalize_cards($ctx['cards'] ?? []);
+    if (!isset($cards[$cardIndex])) mg_fail('Agent response card was not found.', 404);
+    $card = $cards[$cardIndex];
+    if (!empty($card['review_item_id'])) {
+        return ['card' => $card, 'state' => mg_ai_chat_public_state($pdo, $merchantId)];
+    }
+
+    $model = mg_ai_chat_catalog_model($pdo, mg_ai_chat_clean($ctx['model'] ?? '', 120));
+    $scope = mg_ai_chat_clean($ctx['scope'] ?? 'overview', 40) ?: 'overview';
+    $actionKey = mg_ai_chat_infer_action_key($card);
+    $risk = in_array($card['risk_level'] ?? 'low', ['low','medium','high','critical'], true) ? (string) $card['risk_level'] : 'low';
+    $title = mg_ai_chat_clean($card['title'] ?? 'Agent chat recommendation', 180);
+    $reason = mg_ai_chat_clean($card['body'] ?? '', 1000);
+    $payload = mg_ai_chat_json($card['review_payload'] ?? []);
+    $payload = array_merge($payload, [
+        'source' => 'merchant_agent_chat',
+        'source_chat_message_id' => $messageId,
+        'source_card_index' => $cardIndex,
+        'title' => $title,
+        'reason' => $reason,
+        'action_url' => $card['action_url'] ?? '',
+    ]);
+
+    try {
+        $pdo->beginTransaction();
+        $planPublicId = mg_ai_chat_uuid();
+        $itemPublicId = mg_ai_chat_uuid();
+        $contextJson = json_encode([
+            'source' => 'merchant_agent_chat',
+            'chat_message_id' => $messageId,
+            'card_index' => $cardIndex,
+            'card' => $card,
+        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        $fingerprint = hash('sha256', $messageId . '|' . $cardIndex . '|' . $title . '|' . $actionKey);
+
+        $stmt = $pdo->prepare('INSERT INTO ai_merchant_plans (public_id,merchant_user_id,agent_id,provider_id,model_id,scope,merchant_goal,status,priority,summary,prompt_fingerprint,input_context_json,raw_response_json,input_tokens,output_tokens,created_by_user_id,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())');
+        $stmt->execute([
+            $planPublicId,
+            $merchantId,
+            null,
+            (int) $model['provider_id'],
+            (int) $model['id'],
+            $scope === 'overview' ? 'all' : $scope,
+            $title,
+            'review_ready',
+            $risk === 'critical' ? 'high' : ($risk ?: 'medium'),
+            $reason !== '' ? $reason : $title,
+            $fingerprint,
+            $contextJson,
+            json_encode(['source' => 'merchant_agent_chat_bridge'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+            0,
+            0,
+            $merchantId,
+        ]);
+        $planId = (int) $pdo->lastInsertId();
+
+        $stmt = $pdo->prepare('INSERT INTO ai_merchant_plan_items (public_id,plan_id,sequence_no,action_key,target_type,target_reference,risk_level,requires_approval,confidence,title,reason,suggested_payload_json,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,\'recommended\',NOW(),NOW())');
+        $stmt->execute([
+            $itemPublicId,
+            $planId,
+            1,
+            $actionKey,
+            'agent_chat_card',
+            $messageId,
+            $risk,
+            1,
+            0.8,
+            $title,
+            $reason,
+            json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+        ]);
+
+        $cards[$cardIndex]['review_plan_id'] = $planPublicId;
+        $cards[$cardIndex]['review_item_id'] = $itemPublicId;
+        $cards[$cardIndex]['bridgeable'] = false;
+        $ctx['cards'] = $cards;
+        $pdo->prepare('UPDATE campaign_events SET event_context_json=? WHERE id=? LIMIT 1')
+            ->execute([json_encode($ctx, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), (int) $event['id']]);
+
+        if (function_exists('mg_audit')) {
+            mg_audit('merchant.agent_chat_sent_to_review', $merchantId, ['plan_id' => $planPublicId, 'item_id' => $itemPublicId, 'action_key' => $actionKey]);
+        }
+        if (function_exists('mg_event')) {
+            mg_event($merchantId, 'merchant.agent_chat.sent_to_review', ['plan_id' => $planPublicId, 'item_id' => $itemPublicId, 'action_key' => $actionKey]);
+        }
+
+        $pdo->commit();
+        return [
+            'plan_id' => $planPublicId,
+            'item_id' => $itemPublicId,
+            'card' => $cards[$cardIndex],
+            'state' => mg_ai_chat_public_state($pdo, $merchantId),
+        ];
+    } catch (Throwable $error) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        mg_fail('Unable to send agent card to review: ' . $error->getMessage(), 500);
+    }
 }
 
 function mg_ai_chat_send(PDO $pdo, array $user, array $input): array
@@ -196,6 +404,7 @@ function mg_ai_chat_send(PDO $pdo, array $user, array $input): array
                     'allowed_action_urls' => mg_ai_chat_allowed_links(),
                     'recent_chat_history' => $history,
                     'merchant_operating_snapshot' => $context,
+                    'bridge_instruction' => 'When useful, include review_action_key and review_payload so the merchant can send a card to the Agent Review Queue.',
                 ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
             ]],
         ]],
