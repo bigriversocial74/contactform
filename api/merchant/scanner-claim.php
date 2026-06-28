@@ -48,7 +48,7 @@ function mg_scanner_claim_context(PDO $pdo, mixed $value): array
 
     if (str_starts_with(strtoupper($decoded), 'MGFT-WALLET-CLAIM-TOKEN|')) {
         try {
-            $row = mg_wallet_claim_voucher_require_active($pdo, substr($decoded, 25), true);
+            $row = mg_wallet_claim_voucher_require_active($pdo, substr($decoded, 24), true);
             return ['identifier' => 'wallet-' . (string)$row['wallet_item_public_id'], 'voucher_token' => null, 'wallet_voucher_token' => $row, 'wallet_id' => (string)$row['wallet_item_public_id']];
         } catch (Throwable) {
             mg_fail('The scanned wallet reward QR is invalid or expired. Refresh the customer voucher and scan again.', 422);
