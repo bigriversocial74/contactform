@@ -5,8 +5,8 @@ $page_title='Messages | Microgifter';
 $page_section='agent';
 $header_mode='agent';
 $agent_tab='messages';
-$page_styles=['/assets/css/communications.css','/assets/css/messages-source-metadata.css','/assets/css/message-delivery-proof.css','/assets/css/messages-redesign.css','/assets/css/messages-crm-pro.css','/assets/css/messages-chat-scroll-fix.css','/assets/css/messages-chat-polish.css','/assets/css/messages-thread-actions.css','/assets/css/messages-layout-repair.css'];
-$page_scripts=['/assets/js/messages-center.js','/assets/js/messages-crm-pro.js'];
+$page_styles=['/assets/css/communications.css','/assets/css/messages-source-metadata.css','/assets/css/message-delivery-proof.css','/assets/css/messages-redesign.css','/assets/css/messages-page-clean.css'];
+$page_scripts=['/assets/js/messages-center.js'];
 require __DIR__ . '/includes/header.php';
 ?>
 <section class="mg-app-shell mg-agent-app mg-communications-app mg-messages-layout" data-messages-center>
@@ -32,10 +32,6 @@ require __DIR__ . '/includes/header.php';
     <div class="mg-messages-sidebar-filters" aria-label="Conversation filters">
       <button type="button" class="is-active" data-message-filter="all">All</button>
       <button type="button" data-message-filter="open">Open</button>
-      <button type="button" data-message-filter="resolved">Resolved</button>
-      <button type="button" data-message-filter="assigned">Assigned</button>
-      <button type="button" data-message-filter="high-value">High Value</button>
-      <button type="button" data-message-filter="drafts">Drafts</button>
       <button type="button" data-message-filter="unread">Unread</button>
     </div>
     <div class="mg-messages-sidebar-meta" data-message-kpis></div>
