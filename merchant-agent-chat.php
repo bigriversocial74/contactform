@@ -8,28 +8,19 @@ $page_styles = ['/assets/css/merchant-workspace.css','/assets/css/merchant-agent
 $page_scripts = ['/assets/js/merchant-agent-chat.js'];
 $user = mg_current_user();
 $merchantNav = [
-  'overview' => ['Overview','Workspace health','/merchant.php','Overview'],
-  'notifications' => ['Notifications','Tips, voucher messages, alerts','/merchant-notifications.php','Overview'],
-  'campaigns' => ['Campaigns','Forms, contests, QR drops','/merchant-campaigns.php','Engage'],
-  'merchant_crm' => ['Merchant CRM','Customers and campaign history','/merchant-crm.php','Engage'],
-  'agent_chat' => ['Agent Chat','Ask the merchant agent','/merchant-agent-chat.php','Engage'],
-  'automation' => ['Automation','Guardrails and agent controls','/merchant-automation.php','Engage'],
-  'agent_monitor' => ['Agent Monitor','Agent activity and explanations','/merchant-agent-monitor.php','Engage'],
-  'agent_approvals' => ['Agent Review','Review and approve agent actions','/merchant-agent-approvals.php','Engage'],
-  'agent_execution' => ['Agent Execution','Run reviewed agent actions','/merchant-agent-execution.php','Engage'],
-  'agent_messages' => ['Agent Messages','Review agent message drafts','/merchant-agent-messages.php','Engage'],
-  'followups' => ['Follow-ups','Customer task queue','/merchant-followups.php','Engage'],
-  'claims' => ['Claims','Verification and redemption','/merchant-claims.php','Commerce'],
-  'stamps' => ['Stamp Ledger','Sends and balance','/merchant-stamps.php','Finance'],
-  'locations' => ['Locations','Stores and claim scope','/merchant-locations.php','Manage'],
-  'settings' => ['Settings','Business configuration','/merchant-settings.php','Manage'],
+  'agent_chat' => ['Agent Chat','Merchant agent conversation','/merchant-agent-chat.php','Agents'],
+  'automation' => ['Automation','Agent controls','/merchant-automation.php','Agents'],
+  'agent_monitor' => ['Agent Monitor','Agent activity','/merchant-agent-monitor.php','Agents'],
+  'agent_approvals' => ['Agent Review','Review queue','/merchant-agent-approvals.php','Agents'],
+  'agent_execution' => ['Agent Execution','Approved action queue','/merchant-agent-execution.php','Agents'],
+  'agent_messages' => ['Agent Messages','Message drafts','/merchant-agent-messages.php','Agents'],
 ];
 $appSidebarNav = [];
 foreach ($merchantNav as $key => $item) {
     $appSidebarNav[$key] = ['section' => $item[3] ?? '', 'label' => $item[0], 'detail' => $item[1], 'href' => $item[2], 'visible' => true, 'active' => $key === 'agent_chat'];
 }
 $appSidebarVariant = 'merchant';
-$appSidebarLabel = 'Merchant';
+$appSidebarLabel = 'Agents';
 $appSidebarActive = 'agent_chat';
 $appSidebarCompact = true;
 require __DIR__ . '/includes/header.php';
