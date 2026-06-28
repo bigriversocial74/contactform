@@ -27,6 +27,34 @@ function mg_ai_chat_json(mixed $value): array
     return is_array($decoded) ? $decoded : [];
 }
 
+function mg_ai_chat_decode_agent_payload(string $text): array
+{
+    $raw = trim($text);
+    if ($raw === '') return ['reply' => '', 'cards' => [], 'blocks' => []];
+    $candidates = [$raw];
+    if (preg_match('/```(?:json)?\s*(\{.*\})\s*```/is', $raw, $match)) {
+        $candidates[] = trim($match[1]);
+    }
+    $first = strpos($raw, '{');
+    $last = strrpos($raw, '}');
+    if ($first !== false && $last !== false && $last > $first) {
+        $candidates[] = substr($raw, $first, $last - $first + 1);
+    }
+    foreach ($candidates as $candidate) {
+        $decoded = json_decode($candidate, true);
+        if (is_array($decoded)) {
+            $reply = mg_ai_chat_clean($decoded['reply'] ?? $decoded['body'] ?? '', 6000);
+            return [
+                'reply' => $reply !== '' ? $reply : $raw,
+                'cards' => is_array($decoded['cards'] ?? null) ? $decoded['cards'] : [],
+                'blocks' => is_array($decoded['blocks'] ?? null) ? $decoded['blocks'] : [],
+                'parsed' => true,
+            ];
+        }
+    }
+    return ['reply' => $raw, 'cards' => [], 'blocks' => [], 'parsed' => false];
+}
+
 function mg_ai_chat_allowed_scopes(): array
 {
     return ['overview','campaigns','rewards','crm','claims','analytics','developer_api','locations','onboarding'];
@@ -99,7 +127,7 @@ Hard rules:
 - You may recommend next steps, explain merchant data, create draft/review actions, and render useful blocks directly inside the chat.
 - Use merchant-facing language. Be direct, specific, and brief.
 - Avoid customer-level private data. Use summaries, counts, trends, and operational observations.
-- Return valid JSON only. No markdown. No prose outside JSON.
+- Return valid JSON only. No markdown fences. No prose outside JSON. Never wrap JSON in ```json fences.
 
 Allowed review_action_key values:
 create_campaign_draft, update_campaign_draft, pause_campaign, resume_campaign, create_reward_template_draft, update_reward_template_draft, create_crm_followup_task, create_message_draft, create_report_snapshot, create_merchant_alert, recommend_package_upgrade, recommend_location_fix, recommend_api_integration, recommend_claim_review, recommend_reward_optimization, recommend_campaign_optimization
@@ -135,6 +163,35 @@ Return this JSON shape:
 PROMPT;
 }
 
+function mg_ai_chat_message_from_row(array $row): array
+{
+    $ctx = mg_ai_chat_json($row['event_context_json'] ?? null);
+    $role = (string)($ctx['role'] ?? ((string)$row['event_type'] === 'merchant.agent_chat.user' ? 'user' : 'assistant'));
+    $body = (string)($ctx['body'] ?? '');
+    $cards = mg_ai_chat_normalize_cards($ctx['cards'] ?? []);
+    $blocks = mg_agent_chat_normalize_blocks($ctx['blocks'] ?? []);
+    if ($role === 'assistant') {
+        $decoded = mg_ai_chat_decode_agent_payload($body);
+        if (!empty($decoded['parsed'])) {
+            $body = mg_ai_chat_clean($decoded['reply'] ?? $body, 6000);
+            if ($cards === []) $cards = mg_ai_chat_normalize_cards($decoded['cards'] ?? []);
+            if ($blocks === []) $blocks = mg_agent_chat_normalize_blocks($decoded['blocks'] ?? []);
+        }
+    }
+    return [
+        'id' => (string)$row['public_id'],
+        'role' => $role,
+        'body' => $body,
+        'cards' => $cards,
+        'blocks' => $blocks,
+        'model' => (string)($ctx['model'] ?? ''),
+        'scope' => (string)($ctx['scope'] ?? 'overview'),
+        'thread_public_id' => (string)($ctx['thread_public_id'] ?? ''),
+        'skills' => mg_agent_skill_keys($ctx['skills'] ?? null),
+        'created_at' => $row['created_at'] ?? null,
+    ];
+}
+
 function mg_ai_chat_recent_messages(PDO $pdo, int $merchantId, int $limit = 30, string $threadPublicId = ''): array
 {
     $limit = max(1, min(60, $limit));
@@ -158,22 +215,7 @@ function mg_ai_chat_recent_messages(PDO $pdo, int $merchantId, int $limit = 30, 
     $stmt = $pdo->prepare("SELECT public_id,event_type,event_context_json,created_at FROM campaign_events WHERE {$where} ORDER BY id DESC LIMIT {$limit}");
     $stmt->execute($params);
     $rows = array_reverse($stmt->fetchAll(PDO::FETCH_ASSOC));
-    return array_map(static function (array $row): array {
-        $ctx = mg_ai_chat_json($row['event_context_json'] ?? null);
-        $role = (string)($ctx['role'] ?? ((string)$row['event_type'] === 'merchant.agent_chat.user' ? 'user' : 'assistant'));
-        return [
-            'id' => (string)$row['public_id'],
-            'role' => $role,
-            'body' => (string)($ctx['body'] ?? ''),
-            'cards' => mg_ai_chat_normalize_cards($ctx['cards'] ?? []),
-            'blocks' => mg_agent_chat_normalize_blocks($ctx['blocks'] ?? []),
-            'model' => (string)($ctx['model'] ?? ''),
-            'scope' => (string)($ctx['scope'] ?? 'overview'),
-            'thread_public_id' => (string)($ctx['thread_public_id'] ?? ''),
-            'skills' => mg_agent_skill_keys($ctx['skills'] ?? null),
-            'created_at' => $row['created_at'] ?? null,
-        ];
-    }, $rows);
+    return array_map('mg_ai_chat_message_from_row', $rows);
 }
 
 function mg_ai_chat_overview(PDO $pdo, int $merchantId): array
@@ -206,9 +248,14 @@ function mg_ai_chat_public_state(PDO $pdo, int $merchantId): array
     $profile = mg_agent_profile($pdo, $merchantId);
     $activeThread = mg_agent_active_thread($pdo, $merchantId);
     $threadId = (string)($activeThread['id'] ?? '');
+    $messages = mg_ai_chat_recent_messages($pdo,$merchantId,30,$threadId);
+    $cleared = !empty($activeThread['cleared_at']);
+    if ($messages === [] && $threadId !== '' && !$cleared) {
+        $messages = mg_ai_chat_recent_messages($pdo,$merchantId,30,'');
+    }
     return [
         'overview' => mg_ai_chat_overview($pdo,$merchantId),
-        'messages' => mg_ai_chat_recent_messages($pdo,$merchantId,30,$threadId),
+        'messages' => $messages,
         'quick_prompts' => [
             'Analyze my product opportunities and show a chart.',
             'Create a social campaign from my best current offer.',
@@ -254,7 +301,7 @@ function mg_ai_chat_send(PDO $pdo, array $user, array $input): array
     $model=mg_ai_merchant_find_anthropic_model($pdo,null);$provider=mg_ai_merchant_provider($pdo,(int)$model['provider_id']);mg_ai_enforce_rate_limits($pdo,$provider,$model,$merchantId,null);
     $history=array_slice(mg_ai_chat_recent_messages($pdo,$merchantId,12,$threadId),-12);$context=mg_ai_merchant_context($pdo,$user,['scope'=>$scope==='overview'?'all':$scope,'days'=>$days,'merchant_goal'=>$message]);
     $request=['model'=>(string)$model['model_key'],'max_tokens'=>max(512,min(2600,(int)($input['max_tokens']??1600))),'temperature'=>0.25,'system'=>mg_ai_chat_system_prompt()."\n\n".mg_agent_soul_prompt()."\n\n".mg_agent_skill_system_prompt(),'messages'=>[['role'=>'user','content'=>[['type'=>'text','text'=>json_encode(['merchant_message'=>$message,'scope'=>$scope,'review_window_days'=>$days,'allowed_action_urls'=>mg_ai_chat_allowed_links(),'recent_chat_history'=>$history,'merchant_operating_snapshot'=>$context,'enabled_skills'=>mg_agent_skill_prompt_context($skillKeys),'agent_profile'=>mg_agent_profile($pdo,$merchantId),'active_thread'=>$thread,'bridge_instruction'=>'When useful, include review_action_key and review_payload so the merchant can send a card to the Agent Review Queue.'],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE)]]]]];
-    try{$rawResponse=mg_anthropic_messages($request);$text=mg_anthropic_text_from_response($rawResponse);try{$decoded=mg_anthropic_extract_json_object($text);}catch(Throwable){$decoded=['reply'=>$text,'cards'=>[],'blocks'=>[]];}$reply=mg_ai_chat_clean($decoded['reply']??$text,6000);if($reply==='')$reply='I reviewed the merchant workspace. I do not have a safe recommendation to create yet.';$cards=mg_ai_chat_normalize_cards($decoded['cards']??[]);$blocks=mg_agent_chat_normalize_blocks($decoded['blocks']??[]);if($blocks===[])$blocks=mg_agent_skill_fallback_blocks($message,$skillKeys,$context);mg_ai_merchant_record_usage_event($pdo,(int)$provider['id'],(int)$model['id'],$merchantId,null,'completed',$rawResponse,['source'=>'merchant_agent_chat','scope'=>$scope,'skills'=>$skillKeys,'thread_id'=>$threadId]);
+    try{$rawResponse=mg_anthropic_messages($request);$text=mg_anthropic_text_from_response($rawResponse);$decoded=mg_ai_chat_decode_agent_payload($text);$reply=mg_ai_chat_clean($decoded['reply']??$text,6000);if($reply==='')$reply='I reviewed the merchant workspace. I do not have a safe recommendation to create yet.';$cards=mg_ai_chat_normalize_cards($decoded['cards']??[]);$blocks=mg_agent_chat_normalize_blocks($decoded['blocks']??[]);if($blocks===[])$blocks=mg_agent_skill_fallback_blocks($message,$skillKeys,$context);mg_ai_merchant_record_usage_event($pdo,(int)$provider['id'],(int)$model['id'],$merchantId,null,'completed',$rawResponse,['source'=>'merchant_agent_chat','scope'=>$scope,'skills'=>$skillKeys,'thread_id'=>$threadId]);
         $pdo->beginTransaction();$meta=['scope'=>$scope,'thread_public_id'=>$threadId,'skills'=>$skillKeys];$userId=mg_ai_chat_record_message($pdo,$merchantId,'user',$message,[],$meta);$assistantId=mg_ai_chat_record_message($pdo,$merchantId,'assistant',$reply,$cards,$meta+['blocks'=>$blocks,'model'=>(string)$model['model_key']]);$pdo->commit();return ['user_message'=>['id'=>$userId,'role'=>'user','body'=>$message,'cards'=>[],'blocks'=>[],'scope'=>$scope,'thread_public_id'=>$threadId,'created_at'=>date('c')],'assistant_message'=>['id'=>$assistantId,'role'=>'assistant','body'=>$reply,'cards'=>$cards,'blocks'=>$blocks,'scope'=>$scope,'thread_public_id'=>$threadId,'model'=>(string)$model['model_key'],'created_at'=>date('c')],'state'=>mg_ai_chat_public_state($pdo,$merchantId)];
     }catch(Throwable $error){if($pdo->inTransaction())$pdo->rollBack();mg_ai_merchant_record_usage_event($pdo,(int)$provider['id'],(int)$model['id'],$merchantId,null,'failed',[],['source'=>'merchant_agent_chat','scope'=>$scope,'error'=>$error->getMessage()]);mg_security_log('error','merchant.agent_chat.failed','Merchant agent chat failed.',['exception_class'=>$error::class,'scope'=>$scope],$merchantId);mg_fail('Unable to run merchant agent chat: '.$error->getMessage(),500);}
 }
