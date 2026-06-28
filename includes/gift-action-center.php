@@ -10,6 +10,7 @@ $giftCenterCopy=[
 ][$giftCenterFolder];
 ?>
 <link rel="stylesheet" href="/assets/css/gift-action-center-modal-fix.css">
+<link rel="stylesheet" href="/assets/css/gift-action-center-claim-step-polish.css">
 <section class="mg-app-shell mg-gift-center-page" data-gift-center data-initial-folder="<?= mg_e($giftCenterFolder) ?>" data-demo-enabled="<?= $giftCenterDemoEnabled?'true':'false' ?>">
   <?php require __DIR__ . '/agent-sidebar.php'; ?>
 
