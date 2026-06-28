@@ -6,6 +6,7 @@ $page_section = 'merchant';
 $header_mode = 'account';
 $page_styles = ['/assets/css/merchant-workspace.css','/assets/css/merchant-agent-chat.css','/assets/css/merchant-agent-chat-followup.css','/assets/css/merchant-agent-chat-skills.css'];
 $page_scripts = ['/assets/js/merchant-agent-chat.js','/assets/js/merchant-agent-chat-json-format.js'];
+$page_scripts[] = '/assets/js/merchant-agent-chat-admin-mode.js';
 $user = mg_current_user();
 $merchantNav = [
   'agent_chat' => ['Agent Chat','Merchant agent conversation','/merchant-agent-chat.php','Agents'],
