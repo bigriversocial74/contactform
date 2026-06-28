@@ -182,18 +182,14 @@ function mg_qr_svg(string $payload): string
 mg_require_method('GET');
 $user = mg_require_api_user();
 $token = trim((string)($_GET['t'] ?? $_GET['token'] ?? ''));
-$actionItemId = trim((string)($_GET['action_item_id'] ?? ''));
+$walletToken = trim((string)($_GET['wt'] ?? $_GET['wallet_token'] ?? ''));
 
 try {
     $pdo = mg_db();
-    $payload = '';
-    $walletId = mg_ac_wallet_action_id($actionItemId);
-    if ($walletId !== null) {
-        $wallet = mg_ac_wallet_load_for_user($pdo, $walletId, (int)$user['id'], mg_ac_wallet_user_email($user), false);
-        if (!$wallet) mg_fail('Voucher token not found.', 404);
-        if (mg_ac_wallet_expired($wallet)) mg_fail('This wallet reward has expired.', 410);
-        if ((string)($wallet['status'] ?? '') === 'redeemed') mg_fail('This gift has already been claimed. A refund must be issued before it can be claimed again.', 409);
-        $payload = 'MGFT-WALLET-CLAIM|' . $walletId;
+    if ($walletToken !== '') {
+        $row = mg_wallet_claim_voucher_require_active($pdo, $walletToken, false);
+        if ((int)$row['user_id'] !== (int)$user['id']) mg_fail('Voucher token not found.', 404);
+        $payload = mg_wallet_claim_voucher_scan_payload($walletToken);
     } else {
         if ($token === '') mg_fail('Voucher token is required.', 422);
         $row = mg_claim_voucher_require_active($pdo, $token, false);
