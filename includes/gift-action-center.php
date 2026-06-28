@@ -3,6 +3,11 @@ declare(strict_types=1);
 $giftCenterFolder=in_array($giftCenterFolder??'inbox',['inbox','sent','claimed'],true)?$giftCenterFolder:'inbox';
 $giftCenterTitle=['inbox'=>'Inbox','sent'=>'Sent','claimed'=>'Claimed'][$giftCenterFolder];
 $giftCenterDemoEnabled=mg_has_role('super_admin');
+$giftCenterCopy=[
+    'inbox'=>'Received Microgifts ready to open, regift, claim, or load into the PPPM view.',
+    'sent'=>'Outbound Microgifts, transfer history, and private Follow Up actions.',
+    'claimed'=>'Redeemed Microgifts, redemption history, merchant messages, and tip actions.',
+][$giftCenterFolder];
 ?>
 <link rel="stylesheet" href="/assets/css/gift-action-center-modal-fix.css">
 <link rel="stylesheet" href="/assets/css/gift-action-center-claim-step-polish.css">
@@ -10,7 +15,30 @@ $giftCenterDemoEnabled=mg_has_role('super_admin');
   <?php require __DIR__ . '/agent-sidebar.php'; ?>
 
   <div class="mg-app-workspace mg-gift-center-workspace">
+    <header class="mg-gift-center-header">
+      <div>
+        <span class="mg-eyebrow">Microgifter wallet</span>
+        <h1 data-gift-folder-label><?= mg_e($giftCenterTitle) ?></h1>
+        <p data-gift-folder-description><?= mg_e($giftCenterCopy) ?></p>
+      </div>
+      <div class="mg-gift-center-header-actions">
+        <a class="mg-btn mg-btn-secondary" href="/merchant-agent-chat.php">Ask Agent</a>
+        <a class="mg-btn mg-btn-secondary" href="/merchant-crm.php">Merchant CRM</a>
+        <a class="mg-btn mg-btn-primary" href="/feed.php">My Feed</a>
+      </div>
+    </header>
+
     <section class="mg-gift-center-main" aria-label="<?= mg_e($giftCenterTitle) ?> gifts">
+      <div class="mg-gift-toolbar">
+        <div>
+          <span class="mg-eyebrow">Gift lifecycle</span>
+          <strong data-gift-folder-subtitle><?= mg_e($giftCenterCopy) ?></strong>
+        </div>
+        <div class="mg-gift-toolbar-actions">
+          <input type="search" data-gift-search placeholder="Search gifts, merchants, people, status…" aria-label="Search gifts">
+          <button class="mg-btn mg-btn-secondary" type="button" data-gift-refresh>Refresh</button>
+        </div>
+      </div>
       <div class="mg-gift-feed-column">
         <div class="mg-gift-list" data-gift-list></div>
       </div>
