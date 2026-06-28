@@ -21,21 +21,15 @@ window.Microgifter = window.Microgifter || {};
   function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
   function zoneId(el) { return el ? String(el.dataset.canvasTriggerZone || '') : ''; }
   function toast(m, t) { if (MG.toast) MG.toast(m, t || 'info'); }
+  function readNumber(text) { var value = String(text || '').replace(/[^0-9]/g, ''); return value ? parseInt(value, 10) || 0 : 0; }
+  function behaviorScore(stats) { return Math.max(0, Math.min(100, Math.round(15 + Number(stats.visits || 0) * 10 + Number(stats.messages || 0) * 7 + Number(stats.rewards || 0) * 11 + Number(stats.claims || 0) * 18 + Number(stats.minutes || 0) / 2))); }
 
   function defaults(id) {
     return Object.assign({ id: id, automation_action: 'message_and_reward', cooldown_policy: 'fifteen_minutes', auto_message_text: '', fallback_action: 'notify_only', crm_segment_name: '', notify_merchant: true }, settings[id] || {});
   }
 
   function actionOptions(selected) {
-    var labels = {
-      message_and_reward: 'Message + Reward',
-      message_only: 'Message only',
-      reward_only: 'Reward only',
-      notify_only: 'Notify merchant only',
-      follow_up: 'Add follow-up',
-      crm_segment: 'Add to CRM segment',
-      analytics_only: 'Analytics only'
-    };
+    var labels = { message_and_reward: 'Message + Reward', message_only: 'Message only', reward_only: 'Reward only', notify_only: 'Notify merchant only', follow_up: 'Add follow-up', crm_segment: 'Add to CRM segment', analytics_only: 'Analytics only' };
     return Object.keys(labels).map(function (key) { return '<option value="' + key + '"' + (selected === key ? ' selected' : '') + '>' + labels[key] + '</option>'; }).join('');
   }
 
@@ -101,6 +95,7 @@ window.Microgifter = window.Microgifter || {};
 
   function syncControls() {
     Array.from(layer.querySelectorAll('[data-canvas-persistent-zone]')).forEach(function (el) { inject(el); hydrate(el); });
+    tagBehaviorScores();
   }
 
   async function loadSettings() {
@@ -110,24 +105,13 @@ window.Microgifter = window.Microgifter || {};
       stampPreview = data.stamp_preview || stampPreview;
       loaded = true;
       syncControls();
-    } catch (error) {
-      loaded = true;
-      syncControls();
-    }
+    } catch (error) { loaded = true; syncControls(); }
   }
 
   function collect(el) {
     var id = zoneId(el);
     var current = defaults(id);
-    return {
-      id: id,
-      automation_action: (el.querySelector('[data-trigger-action]') || {}).value || current.automation_action,
-      cooldown_policy: (el.querySelector('[data-trigger-cooldown]') || {}).value || current.cooldown_policy,
-      fallback_action: (el.querySelector('[data-trigger-fallback]') || {}).value || current.fallback_action,
-      auto_message_text: (el.querySelector('[data-trigger-message]') || {}).value || '',
-      crm_segment_name: (el.querySelector('[data-trigger-segment]') || {}).value || '',
-      notify_merchant: !!((el.querySelector('[data-trigger-notify]') || {}).checked)
-    };
+    return { id: id, automation_action: (el.querySelector('[data-trigger-action]') || {}).value || current.automation_action, cooldown_policy: (el.querySelector('[data-trigger-cooldown]') || {}).value || current.cooldown_policy, fallback_action: (el.querySelector('[data-trigger-fallback]') || {}).value || current.fallback_action, auto_message_text: (el.querySelector('[data-trigger-message]') || {}).value || '', crm_segment_name: (el.querySelector('[data-trigger-segment]') || {}).value || '', notify_merchant: !!((el.querySelector('[data-trigger-notify]') || {}).checked) };
   }
 
   async function save(el) {
@@ -139,35 +123,58 @@ window.Microgifter = window.Microgifter || {};
       var result = payload(await originalPost('/api/merchant-canvas/trigger-zone-automation-save.php', data)) || {};
       settings[data.id] = Object.assign({}, settings[data.id] || {}, result);
       toast('Automation saved.', 'success');
-    } catch (error) {
-      toast(error.message || 'Unable to save automation.', 'error');
-    } finally {
-      saving.delete(data.id);
-      hydrate(el);
+    } catch (error) { toast(error.message || 'Unable to save automation.', 'error'); }
+    finally { saving.delete(data.id); hydrate(el); }
+  }
+
+  function tagBehaviorScores() {
+    Array.from(layer.querySelectorAll('[data-session-id]')).forEach(function (card) {
+      if (!card.querySelector('.mg-canvas-avatar-score')) {
+        var minutes = card.textContent.indexOf('hr') !== -1 ? readNumber(card.textContent) * 60 : readNumber(card.textContent);
+        var badge = document.createElement('span');
+        badge.className = 'mg-canvas-avatar-score';
+        badge.textContent = 'Score ' + behaviorScore({ minutes: minutes });
+        card.appendChild(badge);
+      }
+    });
+    var grid = root.querySelector('.mg-canvas-crm-grid');
+    if (grid && !grid.querySelector('[data-behavior-score-card]')) {
+      var stats = { visits: 0, messages: 0, rewards: 0, claims: 0 };
+      Array.from(grid.querySelectorAll('.mg-canvas-crm-stat')).forEach(function (card) {
+        var label = ((card.querySelector('span') || {}).textContent || '').toLowerCase();
+        var value = readNumber((card.querySelector('strong') || {}).textContent || '0');
+        if (label.indexOf('visits') !== -1) stats.visits = value;
+        if (label.indexOf('messages') !== -1) stats.messages = value;
+        if (label.indexOf('rewards') !== -1) stats.rewards = value;
+        if (label.indexOf('claims') !== -1) stats.claims = value;
+      });
+      var score = behaviorScore(stats);
+      var article = document.createElement('article');
+      article.className = 'mg-canvas-crm-stat is-score';
+      article.setAttribute('data-behavior-score-card', '');
+      article.innerHTML = '<span>Behavior score</span><strong>' + score + '</strong>';
+      grid.insertBefore(article, grid.firstChild);
+      var summary = root.querySelector('.mg-canvas-customer-summary div');
+      if (summary && !summary.querySelector('.mg-canvas-score-pill')) {
+        var pill = document.createElement('span');
+        pill.className = 'mg-canvas-score-pill';
+        pill.textContent = 'Live behavior score ' + score;
+        summary.appendChild(pill);
+      }
     }
   }
 
   MG.post = function (url, data, options) {
-    if (String(url || '') === '/api/merchant-canvas/campaign-trigger.php') {
-      return originalPost('/api/merchant-canvas/campaign-trigger-automation.php', data || {}, options);
-    }
+    if (String(url || '') === '/api/merchant-canvas/campaign-trigger.php') return originalPost('/api/merchant-canvas/campaign-trigger-automation.php', data || {}, options);
     return originalPost(url, data, options);
   };
 
-  layer.addEventListener('change', function (event) {
-    if (!event.target.closest('[data-trigger-automation-controls]')) return;
-    var el = event.target.closest('[data-canvas-persistent-zone]');
-    if (el) save(el);
-  });
-
-  layer.addEventListener('focusout', function (event) {
-    if (!event.target.matches('[data-trigger-message],[data-trigger-segment]')) return;
-    var el = event.target.closest('[data-canvas-persistent-zone]');
-    if (el) save(el);
-  });
+  layer.addEventListener('change', function (event) { if (!event.target.closest('[data-trigger-automation-controls]')) return; var el = event.target.closest('[data-canvas-persistent-zone]'); if (el) save(el); });
+  layer.addEventListener('focusout', function (event) { if (!event.target.matches('[data-trigger-message],[data-trigger-segment]')) return; var el = event.target.closest('[data-canvas-persistent-zone]'); if (el) save(el); });
 
   var observer = new MutationObserver(syncControls);
   observer.observe(layer, { childList: true, subtree: true });
+  new MutationObserver(tagBehaviorScores).observe(root, { childList: true, subtree: true });
   loadSettings();
   window.setInterval(syncControls, 1200);
 })(window, document);
