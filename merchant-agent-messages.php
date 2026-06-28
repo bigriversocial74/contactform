@@ -12,6 +12,7 @@ $merchantNav=[
  'notifications'=>['Notifications','Tips, voucher messages, alerts','/merchant-notifications.php','Overview'],
  'campaigns'=>['Campaigns','Forms, contests, QR drops','/merchant-campaigns.php','Engage'],
  'merchant_crm'=>['Merchant CRM','Customers and campaign history','/merchant-crm.php','Engage'],
+ 'agent_chat'=>['Agent Chat','Merchant agent feed','/merchant-agent-chat.php','Engage'],
  'automation'=>['Automation','Guardrails and agent controls','/merchant-automation.php','Engage'],
  'agent_monitor'=>['Agent Monitor','Agent activity and explanations','/merchant-agent-monitor.php','Engage'],
  'agent_approvals'=>['Agent Review','Review and approve agent actions','/merchant-agent-approvals.php','Engage'],
