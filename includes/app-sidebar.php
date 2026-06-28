@@ -44,7 +44,9 @@ $lastSection = null;
 ?>
 <?php if ($appSidebarAgentBadges): ?>
 <link rel="stylesheet" href="/assets/css/merchant-agent-notification-digest.css">
+<link rel="stylesheet" href="/assets/css/merchant-agent-memory.css">
 <script src="/assets/js/merchant-agent-notification-digest.js" defer></script>
+<script src="/assets/js/merchant-agent-memory.js" defer></script>
 <?php endif; ?>
 <aside class="mg-app-sidebar mg-universal-sidebar mg-<?= mg_e($appSidebarVariant) ?>-sidebar <?= $appSidebarCompact ? 'is-text-sidebar' : '' ?>" data-app-sidebar data-sidebar-variant="<?= mg_e($appSidebarVariant) ?>">
   <div class="mg-app-sidebar-brand mg-universal-sidebar-brand">
