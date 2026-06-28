@@ -92,6 +92,7 @@ return [
         'stage_12_campaigns_reward_templates.sql',
         'stage_12b_campaign_events_agent_context.sql',
         'stage_12j_campaign_feature_sql_hardening.sql',
+        'stage_12k_reward_media_packs.sql',
         'stage_12_merchant_crm.sql',
         'stage_12_campaign_followups.sql',
         'stage_12_message_delivery_campaign_suppression.sql',
