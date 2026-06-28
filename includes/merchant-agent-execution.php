@@ -2,10 +2,11 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/merchant-agent-approvals.php';
+require_once __DIR__ . '/ai/merchant-plan-actions.php';
 
 function mg_agent_execution_event_types(): array
 {
-    return ['crm.agent.execution.started','crm.agent.execution.completed','crm.agent.execution.failed','crm.agent.execution.skipped','crm.agent.message.draft.created'];
+    return ['crm.agent.execution.started','crm.agent.execution.completed','crm.agent.execution.failed','crm.agent.execution.skipped','crm.agent.message.draft.created','merchant.ai_plan_item.approved','merchant.ai_plan_item.executed','merchant.ai_plan_item.rejected','merchant.ai_plan_item.deferred'];
 }
 
 function mg_agent_execution_source_types(): array
@@ -16,6 +17,11 @@ function mg_agent_execution_source_types(): array
 function mg_agent_execution_id(int $merchantId, string $approvalId): string
 {
     return 'age_' . substr(hash('sha256', $merchantId . '|execution|' . $approvalId), 0, 24);
+}
+
+function mg_agent_execution_ai_id(int $merchantId, string $itemId): string
+{
+    return 'air_' . substr(hash('sha256', $merchantId . '|ai-result|' . $itemId), 0, 24);
 }
 
 function mg_agent_execution_json_context($value): array
@@ -35,6 +41,27 @@ function mg_agent_execution_latest_events(PDO $pdo, int $merchantId): array
         $approvalId = (string)($ctx['approval_id'] ?? '');
         if ($approvalId === '' || isset($latest[$approvalId])) continue;
         $latest[$approvalId] = [
+            'event_id' => (string)$row['public_id'],
+            'event_type' => (string)$row['event_type'],
+            'created_at' => $row['created_at'] ?? null,
+            'context' => $ctx,
+        ];
+    }
+    return $latest;
+}
+
+function mg_agent_execution_ai_latest_events(PDO $pdo, int $merchantId): array
+{
+    $types = ['merchant.ai_plan_item.approved','merchant.ai_plan_item.executed','merchant.ai_plan_item.rejected','merchant.ai_plan_item.deferred'];
+    $in = implode(',', array_fill(0, count($types), '?'));
+    $stmt = $pdo->prepare("SELECT public_id,event_type,event_context_json,created_at FROM campaign_events WHERE merchant_user_id=? AND event_type IN ({$in}) ORDER BY created_at DESC,id DESC LIMIT 300");
+    $stmt->execute(array_merge([$merchantId], $types));
+    $latest = [];
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $ctx = mg_agent_execution_json_context($row['event_context_json'] ?? null);
+        $itemId = (string)($ctx['ai_plan_item_id'] ?? '');
+        if ($itemId === '' || isset($latest[$itemId])) continue;
+        $latest[$itemId] = [
             'event_id' => (string)$row['public_id'],
             'event_type' => (string)$row['event_type'],
             'created_at' => $row['created_at'] ?? null,
@@ -90,12 +117,45 @@ function mg_agent_execution_action_options(array $item): array
     return $actions;
 }
 
+function mg_agent_execution_result_label(string $resourceType): string
+{
+    return match ($resourceType) {
+        'campaign' => 'Open campaign draft',
+        'reward_template' => 'Open reward template',
+        'saved_report' => 'Open saved report',
+        'campaign_event' => 'Open related workspace',
+        default => 'Open result',
+    };
+}
+
+function mg_agent_execution_result_links(array $execution): array
+{
+    $url = trim((string)($execution['url'] ?? ''));
+    if ($url === '') return [];
+    return [[
+        'label' => mg_agent_execution_result_label((string)($execution['resource_type'] ?? '')),
+        'url' => $url,
+        'resource_type' => (string)($execution['resource_type'] ?? ''),
+        'resource_id' => (string)($execution['resource_id'] ?? ''),
+        'status' => (string)($execution['status'] ?? ''),
+    ]];
+}
+
+function mg_agent_execution_result_summary(array $execution, string $fallback = ''): string
+{
+    $resource = (string)($execution['resource_type'] ?? '');
+    $status = (string)($execution['status'] ?? 'completed');
+    if ($resource !== '') return ucfirst(str_replace('_', ' ', $resource)) . ' result: ' . str_replace('_', ' ', $status) . '.';
+    return $fallback !== '' ? $fallback : 'Execution completed.';
+}
+
 function mg_agent_execution_item(int $merchantId, array $source, ?array $latest): array
 {
     $ctx = is_array($source['context'] ?? null) ? $source['context'] : [];
     $approvalId = (string)($ctx['approval_id'] ?? '');
     $state = mg_agent_execution_state($source, $latest);
     $executionId = mg_agent_execution_id($merchantId, $approvalId);
+    $execution = is_array($latest['context']['execution'] ?? null) ? $latest['context']['execution'] : [];
     $item = [
         'execution_id' => $executionId,
         'approval_id' => $approvalId,
@@ -116,12 +176,72 @@ function mg_agent_execution_item(int $merchantId, array $source, ?array $latest)
         'campaign_title' => (string)($ctx['campaign_title'] ?? ''),
         'created_at' => $source['created_at'] ?? null,
         'latest_event' => $latest,
-        'result_summary' => $latest ? (string)($latest['context']['result_summary'] ?? $latest['context']['note'] ?? $latest['event_type'] ?? '') : 'Approved, not executed.',
+        'execution_result' => $execution,
+        'result_links' => mg_agent_execution_result_links($execution),
+        'result_summary' => $execution ? mg_agent_execution_result_summary($execution) : ($latest ? (string)($latest['context']['result_summary'] ?? $latest['context']['note'] ?? $latest['event_type'] ?? '') : 'Approved, not executed.'),
         'campaign_id' => $source['campaign_id'] ?? null,
         'contact_id' => $source['contact_id'] ?? null,
     ];
     $item['actions'] = mg_agent_execution_action_options($item);
     return $item;
+}
+
+function mg_agent_execution_ai_plan_items(PDO $pdo, int $merchantId): array
+{
+    $latest = mg_agent_execution_ai_latest_events($pdo, $merchantId);
+    $stmt = $pdo->prepare("SELECT i.*, p.public_id plan_public_id, p.scope, p.summary plan_summary, p.merchant_goal
+        FROM ai_merchant_plan_items i
+        INNER JOIN ai_merchant_plans p ON p.id=i.plan_id
+        WHERE p.merchant_user_id=? AND i.status IN ('executed','approved','rejected','deferred','failed')
+        ORDER BY i.updated_at DESC,i.id DESC LIMIT 100");
+    $stmt->execute([$merchantId]);
+    $items = [];
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $itemId = (string)$row['public_id'];
+        $payload = mg_ai_plan_json($row['suggested_payload_json'] ?? null);
+        $event = $latest[$itemId] ?? null;
+        $ctx = is_array($event['context'] ?? null) ? $event['context'] : [];
+        $execution = is_array($ctx['execution'] ?? null) ? $ctx['execution'] : [];
+        $status = (string)$row['status'];
+        $state = match ($status) {
+            'executed' => 'completed',
+            'failed' => 'failed',
+            'rejected' => 'skipped',
+            'deferred' => 'skipped',
+            default => 'approved_not_executed',
+        };
+        $source = (string)($payload['source'] ?? 'ai_merchant_plan');
+        $items[] = [
+            'execution_id' => mg_agent_execution_ai_id($merchantId, $itemId),
+            'approval_id' => mg_agent_approval_id($merchantId, 'ai_plan', $itemId),
+            'source_event_id' => (string)($event['event_id'] ?? ''),
+            'source_event_type' => (string)($event['event_type'] ?? 'ai_plan_item.' . $status),
+            'source_type' => 'ai_plan',
+            'source_id' => $itemId,
+            'source_label' => mg_agent_approval_source_label($source),
+            'source_context' => (string)($payload['package_title'] ?? $source),
+            'state' => $state,
+            'playbook_key' => (string)$row['action_key'],
+            'playbook_title' => (string)$row['title'],
+            'why' => (string)($row['reason'] ?? $payload['reason'] ?? 'AI plan item was reviewed by the merchant.'),
+            'guardrail_applied' => 'Stage 19C safe adapter result. Merchant approval was required before the result was created.',
+            'expected_action' => (string)($payload['recommended_next_action'] ?? $row['action_key']),
+            'risk_level' => (string)($row['risk_level'] ?? 'medium'),
+            'action_type' => (string)$row['action_key'],
+            'customer_name' => '',
+            'customer_email' => '',
+            'campaign_title' => mg_agent_approval_source_label($source),
+            'created_at' => $event['created_at'] ?? $row['updated_at'] ?? null,
+            'latest_event' => $event,
+            'execution_result' => $execution,
+            'result_links' => mg_agent_execution_result_links($execution),
+            'result_summary' => $execution ? mg_agent_execution_result_summary($execution) : 'AI plan item status: ' . str_replace('_', ' ', $status) . '.',
+            'campaign_id' => null,
+            'contact_id' => null,
+            'actions' => $state === 'failed' ? ['retry_failed_execution','mark_skipped'] : [],
+        ];
+    }
+    return $items;
 }
 
 function mg_agent_execution_queue(PDO $pdo, int $merchantId, array $input = []): array
@@ -130,6 +250,10 @@ function mg_agent_execution_queue(PDO $pdo, int $merchantId, array $input = []):
     $limit = max(1, min(100, (int)($input['limit'] ?? 60)));
     $latest = mg_agent_execution_latest_events($pdo, $merchantId);
     $items = [];
+    foreach (mg_agent_execution_ai_plan_items($pdo, $merchantId) as $item) {
+        if ($filter !== '' && $filter !== 'all' && (string)$item['state'] !== $filter) continue;
+        $items[] = $item;
+    }
     foreach (mg_agent_execution_source_events($pdo, $merchantId) as $source) {
         $ctx = is_array($source['context'] ?? null) ? $source['context'] : [];
         $approvalId = (string)($ctx['approval_id'] ?? '');
@@ -200,6 +324,10 @@ function mg_agent_execution_perform(PDO $pdo, int $merchantId, int $actorId, arr
         if ($draft === '') $draft = 'Hi — following up with a quick note based on your recent Microgifter activity.';
         $eventId = mg_agent_execution_record($pdo, $merchantId, 'crm.agent.message.draft.created', $item, ['decided_by_user_id' => $actorId, 'draft_body' => $draft, 'result_summary' => 'Customer message draft created.']);
         return ['status' => 'completed', 'event_id' => $eventId, 'draft_body' => $draft];
+    }
+    if ((string)($item['source_type'] ?? '') === 'ai_plan') {
+        $eventId = mg_agent_execution_record($pdo, $merchantId, 'crm.agent.execution.completed', $item, ['decided_by_user_id' => $actorId, 'execution_action' => $action, 'result_summary' => (string)($item['result_summary'] ?? 'AI plan result already completed.'), 'execution_result' => $item['execution_result'] ?? []]);
+        return ['status' => 'completed', 'event_id' => $eventId, 'result_summary' => (string)($item['result_summary'] ?? 'AI plan result recorded.')];
     }
     $started = mg_agent_execution_record($pdo, $merchantId, 'crm.agent.execution.started', $item, ['decided_by_user_id' => $actorId, 'execution_action' => $action]);
     $taskResult = null;
