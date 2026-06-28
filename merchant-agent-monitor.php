@@ -15,6 +15,7 @@ $merchantNav=[
  'agent_chat'=>['Agent Chat','Merchant agent feed','/merchant-agent-chat.php','Engage'],
  'automation'=>['Automation','Guardrails and agent controls','/merchant-automation.php','Engage'],
  'agent_monitor'=>['Agent Monitor','Agent activity and explanations','/merchant-agent-monitor.php','Engage'],
+ 'agent_qa'=>['Agent QA','System health checks','/merchant-agent-qa.php','Engage'],
  'agent_approvals'=>['Agent Approvals','Review and approve agent actions','/merchant-agent-approvals.php','Engage'],
  'customer_profile'=>['Customer Profile','Expanded CRM profile','/merchant-customer.php','Engage'],
  'followups'=>['Follow-ups','Customer task queue','/merchant-followups.php','Engage'],
