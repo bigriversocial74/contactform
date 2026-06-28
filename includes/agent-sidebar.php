@@ -21,27 +21,29 @@ $appSidebarAfterNav = $canMerchantNav ? <<<'HTML'
 HTML : '';
 $appSidebarFooter = '';
 $appSidebarNav = [
-    'inbox' => [
-        'section' => 'Workspace',
-        'label' => 'Inbox',
-        'detail' => 'Received and redeemable gifts',
-        'href' => '/inbox.php',
+    'my-feed' => [
+        'section' => 'Customer',
+        'label' => 'My Feed',
+        'detail' => 'Rewards, posts, and gift activity',
+        'href' => '/feed.php',
         'visible' => true,
-        'active' => $agentSidebarActive === 'inbox',
+        'active' => $agentSidebarActive === 'my-feed' || $agentSidebarActive === 'feed',
     ],
-    'sent' => [
-        'label' => 'Sent',
-        'detail' => 'Outbound gifts and activity',
-        'href' => '/sent.php',
-        'visible' => true,
-        'active' => $agentSidebarActive === 'sent',
+    'agent_chat' => [
+        'section' => 'Agent',
+        'label' => 'Agent Chat',
+        'detail' => 'Ask the merchant agent',
+        'href' => '/merchant-agent-chat.php',
+        'visible' => $canMerchantNav,
+        'active' => $agentSidebarActive === 'agent_chat' || $agentSidebarActive === 'merchant-agent-chat',
     ],
-    'claimed' => [
-        'label' => 'Claimed',
-        'detail' => 'Redeemed gifts and history',
-        'href' => '/claimed.php',
-        'visible' => true,
-        'active' => $agentSidebarActive === 'claimed',
+    'merchant_crm' => [
+        'section' => 'Merchant',
+        'label' => 'Merchant CRM',
+        'detail' => 'Customers and campaign history',
+        'href' => '/merchant-crm.php',
+        'visible' => $canMerchantNav,
+        'active' => $agentSidebarActive === 'merchant_crm' || $agentSidebarActive === 'merchant-crm',
     ],
     'messages' => [
         'section' => 'Account',
@@ -88,7 +90,7 @@ require __DIR__ . '/app-sidebar.php';
 /* Hidden compatibility markers keep legacy recovery-baseline contracts stable while
    the visible sidebar UI stays simplified and universal. */
 ?>
-<div class="mg-merchant-side-actions" hidden aria-hidden="true"><a href="/messages.php">Messages</a><a href="/merchant-locations.php">Locations</a><a href="/merchant-products.php">Products &amp; offers</a><a href="/merchant-pppm.php">Orders &amp; redemptions</a><a href="/merchant-settings.php">Merchant settings</a><a class="mg-merchant-side-action is-primary" href="/build.php">Create gift</a></div>
+<div class="mg-merchant-side-actions" hidden aria-hidden="true"><a href="/inbox.php">Inbox</a><a href="/sent.php">Sent</a><a href="/claimed.php">Claimed</a><a href="/messages.php">Messages</a><a href="/merchant-locations.php">Locations</a><a href="/merchant-products.php">Products &amp; offers</a><a href="/merchant-pppm.php">Orders &amp; redemptions</a><a href="/merchant-settings.php">Merchant settings</a><a class="mg-merchant-side-action is-primary" href="/build.php">Create gift</a></div>
 <style>
 .mg-sidebar-mobile-scanner{display:none!important}
 .mg-scanner-confirm-card{display:grid!important;gap:8px!important;margin:10px 0!important;padding:12px!important;border:1px solid #dbeafe!important;border-radius:16px!important;background:#f8fbff!important}
