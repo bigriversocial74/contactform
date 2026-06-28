@@ -5,6 +5,10 @@ require_once __DIR__ . '/_ai.php';
 require_once dirname(__DIR__) . '/merchant/_merchant.php';
 require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-chat.php';
 
+if (strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+    mg_fail('Method not allowed.', 405);
+}
+
 $pdo = mg_db();
 $user = mg_merchant_require_permission('merchant.ai.review');
 mg_merchant_ensure_workspace($pdo, $user);
