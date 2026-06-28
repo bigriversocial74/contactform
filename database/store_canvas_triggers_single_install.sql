@@ -1,14 +1,22 @@
 -- ------------------------------------------------------------
--- Stage 20D Store Canvas Automation Rules
+-- Store Canvas Triggers Single Install
 -- ------------------------------------------------------------
 -- Purpose:
---   Adds per-trigger automation controls, cooldown policy, Stamp fallback
---   behavior, and CRM/follow-up metadata for Store Canvas trigger zones.
+--   Single-file phpMyAdmin import for Store Canvas trigger zones, trigger
+--   analytics stamp registration, and trigger automation settings.
 --
--- Notes:
---   This migration is defensive. If Stage 20B was not imported yet, it creates
---   the base mg_store_trigger_zones table first, then applies the 20D columns.
---   Each column/index addition is guarded so rerunning this file is safe.
+-- Includes:
+--   Stage 20B Store Canvas Trigger Zones
+--   Stage 20C Store Canvas Trigger Analytics + Stamp Ledger Hook
+--   Stage 20D Store Canvas Automation Rules
+--
+-- Safe to re-run:
+--   This file uses CREATE TABLE IF NOT EXISTS and guarded column/index adds.
+--
+-- Note:
+--   The canonical CI migration path still uses the ordered stage files.
+--   This file is intentionally named single_install so manifest validation
+--   treats it as a manual helper import instead of an ordered migration.
 -- ------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -18,6 +26,10 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
   applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (migration_key)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------
+-- Stage 20B Store Canvas Trigger Zones
+-- ------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS mg_store_trigger_zones (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -46,6 +58,34 @@ CREATE TABLE IF NOT EXISTS mg_store_trigger_zones (
   CONSTRAINT chk_mg_store_trigger_zones_width CHECK (width_percent > 0 AND width_percent <= 100),
   CONSTRAINT chk_mg_store_trigger_zones_height CHECK (height_percent > 0 AND height_percent <= 100)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO schema_migrations (migration_key,description,checksum,applied_at)
+VALUES ('stage_20b_store_canvas_trigger_zones','Persistent merchant Store Canvas trigger zones with campaign assignment and priority.',NULL,NOW())
+ON DUPLICATE KEY UPDATE description=VALUES(description);
+
+-- ------------------------------------------------------------
+-- Stage 20C Store Canvas Trigger Analytics + Stamp Ledger Hook
+-- ------------------------------------------------------------
+-- If the Stamp Ledger tables are not installed yet, this import skips the
+-- stamp action insert instead of failing. The Store Canvas automation endpoint
+-- already falls back when Stamp Ledger tables are unavailable.
+-- ------------------------------------------------------------
+
+SET @mg20c_stamp_table := (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='stamp_debit_actions');
+SET @mg20c_sql := IF(
+  @mg20c_stamp_table > 0,
+  "INSERT IGNORE INTO stamp_debit_actions (public_id,action_key,label,channel,scope,stamp_value,description,status,created_at,updated_at) VALUES (UUID(),'store_canvas_auto_message_send','Store Canvas automated message','Store Canvas','Automation',1,'Automated merchant message sent when a customer avatar crosses a Store Canvas trigger zone.','active',NOW(),NOW())",
+  "SELECT 1"
+);
+PREPARE mg20c_stmt FROM @mg20c_sql; EXECUTE mg20c_stmt; DEALLOCATE PREPARE mg20c_stmt;
+
+INSERT INTO schema_migrations (migration_key,description,checksum,applied_at)
+VALUES ('stage_20c_store_canvas_trigger_analytics_stamps','Store Canvas trigger analytics stamp debit action for automated trigger messaging.',NULL,NOW())
+ON DUPLICATE KEY UPDATE description=VALUES(description);
+
+-- ------------------------------------------------------------
+-- Stage 20D Store Canvas Automation Rules
+-- ------------------------------------------------------------
 
 SET @mg20d_col := (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mg_store_trigger_zones' AND COLUMN_NAME='automation_action');
 SET @mg20d_sql := IF(@mg20d_col=0, "ALTER TABLE mg_store_trigger_zones ADD COLUMN automation_action ENUM('message_and_reward','message_only','reward_only','notify_only','follow_up','crm_segment','analytics_only') NOT NULL DEFAULT 'message_and_reward' AFTER campaign_public_id", "SELECT 1");
@@ -86,3 +126,13 @@ PREPARE mg20d_stmt FROM @mg20d_sql; EXECUTE mg20d_stmt; DEALLOCATE PREPARE mg20d
 INSERT INTO schema_migrations (migration_key,description,checksum,applied_at)
 VALUES ('stage_20d_store_canvas_automation_rules','Per-zone Store Canvas automation actions, cooldowns, Stamp fallback behavior, and CRM metadata.',NULL,NOW())
 ON DUPLICATE KEY UPDATE description=VALUES(description);
+
+-- ------------------------------------------------------------
+-- Verification helpers
+-- ------------------------------------------------------------
+
+SELECT 'store_canvas_triggers_single_install_complete' AS import_status;
+SELECT COUNT(*) AS mg_store_trigger_zones_table_exists
+FROM information_schema.TABLES
+WHERE TABLE_SCHEMA=DATABASE()
+  AND TABLE_NAME='mg_store_trigger_zones';

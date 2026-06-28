@@ -8,8 +8,8 @@ $page_title = 'Merchant Store Canvas | Microgifter';
 $page_section = 'agent';
 $header_mode = 'agent';
 $agent_tab = 'store-canvas';
-$page_styles = ['/assets/css/merchant-canvas.css','/assets/css/merchant-canvas-rewards.css','/assets/css/merchant-canvas-phase2.css','/assets/css/merchant-canvas-motion.css','/assets/css/merchant-canvas-drawer-layer.css'];
-$page_scripts = ['/assets/js/merchant-canvas.js','/assets/js/merchant-canvas-rewards.js','/assets/js/merchant-canvas-motion.js','/assets/js/merchant-canvas-automation-rules.js'];
+$page_styles = ['/assets/css/merchant-canvas.css','/assets/css/merchant-canvas-rewards.css','/assets/css/merchant-canvas-phase2.css','/assets/css/merchant-canvas-motion.css','/assets/css/merchant-canvas-drawer-layer.css','/assets/css/merchant-canvas-settings-drawers.css'];
+$page_scripts = ['/assets/js/merchant-canvas.js','/assets/js/merchant-canvas-rewards.js','/assets/js/merchant-canvas-motion.js','/assets/js/merchant-canvas-automation-rules.js','/assets/js/merchant-canvas-merchant-settings.js'];
 $page_manifest = [
     'id' => 'merchant-canvas',
     'title' => $page_title,
@@ -33,7 +33,7 @@ try {
             $merchantDisplayName = $profileName;
         }
         $avatarCandidate = trim((string)($row['avatar_url'] ?? ''));
-        if ($avatarCandidate !== '' && strlen($avatarCandidate) <= 600 && preg_match('/[\x00-\x1F\x7F]/', $avatarCandidate) !== 1) {
+        if ($avatarCandidate !== '' && strlen($avatarCandidate) <= 600 && preg_match('/[[:cntrl:]]/', $avatarCandidate) !== 1) {
             if ((str_starts_with($avatarCandidate, '/') && !str_starts_with($avatarCandidate, '//')) || filter_var($avatarCandidate, FILTER_VALIDATE_URL) !== false) {
                 $merchantAvatarUrl = $avatarCandidate;
             }
@@ -79,7 +79,7 @@ require __DIR__ . '/includes/header.php';
             </div>
 
             <div class="mg-canvas-map" data-canvas-map>
-              <div class="mg-canvas-agent-node mg-canvas-merchant-node">
+              <div class="mg-canvas-agent-node mg-canvas-merchant-node" data-merchant-avatar-settings>
                 <span class="mg-canvas-agent-icon">
                   <?php if ($merchantAvatarUrl !== ''): ?>
                     <img src="<?php echo mg_e($merchantAvatarUrl); ?>" alt="">

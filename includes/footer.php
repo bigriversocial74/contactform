@@ -36,6 +36,7 @@ if ((string) ($page_manifest['id'] ?? '') === 'discover') {
     $page_scripts[] = '/assets/js/discover-state-results-link.js';
 }
 if ((string) ($page_manifest['id'] ?? '') === 'merchant-canvas') {
+    $page_scripts[] = '/assets/js/merchant-canvas-behavior-post.js';
     $page_scripts[] = '/assets/js/merchant-canvas-trigger-manager.js';
 }
 $core_scripts = [
