@@ -229,13 +229,15 @@ window.Microgifter = window.Microgifter || {};
     node.setAttribute('data-canvas-trigger-zone', id);
     node.setAttribute('role', 'button');
     node.setAttribute('tabindex', '0');
-    node.innerHTML = '<span class="mg-canvas-trigger-main"><strong data-zone-name></strong><small data-zone-campaign></small></span><span class="mg-canvas-trigger-actions"><button type="button" data-trigger-settings aria-label="Open trigger settings">Settings</button><button type="button" data-trigger-delete aria-label="Delete trigger">Delete</button></span><span class="mg-canvas-trigger-resize" data-trigger-resize aria-hidden="true"></span>';
+    node.innerHTML = '<span class="mg-canvas-trigger-main"><strong data-zone-name></strong><small data-zone-campaign></small></span><span class="mg-canvas-trigger-actions"><button type="button" class="mg-canvas-trigger-settings-icon" data-trigger-settings aria-label="Open trigger settings">⚙</button></span><span class="mg-canvas-trigger-resize" data-trigger-resize aria-hidden="true"></span>';
     layer.appendChild(node);
     nodes.set(id, node);
     return node;
   }
 
   function updateZoneNode(zone, node) {
+    node.hidden = false;
+    node.style.visibility = 'visible';
     node.dataset.canvasTriggerZone = String(zone.id || '');
     node.classList.toggle('is-paused', zone.status === 'paused');
     node.classList.toggle('is-saving', !!zone.saving);
@@ -257,6 +259,7 @@ window.Microgifter = window.Microgifter || {};
     var active = new Set(zones.map(function (zone) { return String(zone.id || ''); }));
     nodes.forEach(function (node, id) {
       if (!active.has(id)) { node.remove(); nodes.delete(id); }
+      else { node.hidden = false; node.style.visibility = 'visible'; }
     });
     zones.forEach(function (zone) { updateZoneNode(zone, ensureZoneNode(zone)); });
   }
@@ -491,11 +494,19 @@ window.Microgifter = window.Microgifter || {};
     var key = String(zone.id) + ':' + sessionId;
     if (now() - (recentFire.get(key) || 0) < 240000) return;
     recentFire.set(key, now());
+    node.hidden = false;
+    node.style.visibility = 'visible';
     node.classList.add('is-hot');
     card.classList.add('is-triggered');
     try {
-      await MG.post('/api/merchant-canvas/campaign-trigger-automation.php', { session_id:sessionId, trigger_zone_id:zone.id });
-      toast('Trigger fired.', 'success');
+      var data = payload(await MG.post('/api/merchant-canvas/campaign-trigger-automation.php', { session_id:sessionId, trigger_zone_id:zone.id })) || {};
+      if (data.cooldown) {
+        node.classList.add('is-cooldown');
+        toast('Trigger cooldown active.', 'info');
+      } else {
+        node.classList.remove('is-cooldown');
+        toast('Trigger fired.', 'success');
+      }
     } catch (error) {
       try { await MG.post('/api/merchant-canvas/campaign-trigger.php', { session_id:sessionId, trigger_zone_id:zone.id, trigger_key:zone.trigger_key || 'store_canvas_zone', trigger_label:zone.name || 'Trigger Zone', campaign_id:zone.campaign_id || '', priority:priority(zone.priority) }); }
       catch (fallbackError) { recentFire.set(key, 0); }
@@ -536,7 +547,6 @@ window.Microgifter = window.Microgifter || {};
     if (!node) return;
     var zone = zoneById(node.dataset.canvasTriggerZone);
     if (!zone) return;
-    if (event.target.closest('[data-trigger-delete]')) { deleteZone(zone); return; }
     if (event.target.closest('[data-trigger-settings]')) { openDrawer(zone); return; }
     if (event.target.closest('select,input,label,textarea,[data-trigger-resize]')) return;
     if (now() - lastDragAt < 220) return;
