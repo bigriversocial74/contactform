@@ -76,18 +76,19 @@ if ($method === 'POST') {
         $input['mode'] = 'execute_plan';
         $input['approval_mode'] = 'review_queue';
         $input['admin_operator'] = true;
+        $input['admin_autonomy_override'] = true;
         $agentMode = 'execute_plan';
         $approvalMode = 'review_queue';
     }
 
-    if ($approvalMode === 'review_queue' || $outputType === 'admin_recommendation') {
-        mg_agent_autonomy_require_for_merchant($pdo, $merchantId, 'review_queue', $adminOperator ? 'admin operator review bridge' : 'Agent Review queue card creation');
+    if (!$adminOperator && ($approvalMode === 'review_queue' || $outputType === 'admin_recommendation')) {
+        mg_agent_autonomy_require_for_merchant($pdo, $merchantId, 'review_queue', 'Agent Review queue card creation');
     }
-    if ($outputType === 'message_draft') {
+    if (!$adminOperator && $outputType === 'message_draft') {
         mg_agent_autonomy_require_for_merchant($pdo, $merchantId, 'messages', 'agent message draft creation');
     }
-    if ($agentMode === 'execute_plan') {
-        mg_agent_autonomy_require_for_merchant($pdo, $merchantId, 'review_queue', $adminOperator ? 'admin operator plan preparation' : 'plan preparation');
+    if (!$adminOperator && $agentMode === 'execute_plan') {
+        mg_agent_autonomy_require_for_merchant($pdo, $merchantId, 'review_queue', 'plan preparation');
     }
     mg_ok(mg_ai_chat_send_with_memory($pdo, $user, $input), $adminOperator ? 'Admin operator agent plan created.' : 'Merchant agent reply created.', 201);
 }
