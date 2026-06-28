@@ -3,13 +3,9 @@ declare(strict_types=1);
 ?>
 <section class="mg-agent-chat-page" data-merchant-agent-chat>
   <div class="mg-agent-chat-topbar">
-    <div class="mg-agent-chat-tabs" aria-label="Merchant agent workspace tabs">
-      <a class="is-active" href="#agent-chat"><span aria-hidden="true">✦</span>Chat</a>
-      <a href="#agent-overview"><span aria-hidden="true">◷</span>Overview</a>
-      <a href="#agent-goals"><span aria-hidden="true">◎</span>Goals</a>
-      <a href="#agent-health"><span aria-hidden="true">▰</span>Health Scores</a>
-      <a href="#agent-memory"><span aria-hidden="true">◌</span>Agent Memory</a>
-      <a href="#agent-timeline"><span aria-hidden="true">↻</span>Timeline</a>
+    <div class="mg-agent-chat-context-label">
+      <span aria-hidden="true">✦</span>
+      <strong>Merchant Agent Chat</strong>
     </div>
     <div class="mg-agent-chat-actions">
       <button class="mg-btn mg-btn-soft" type="button" data-agent-chat-refresh>Refresh</button>
@@ -26,12 +22,6 @@ declare(strict_types=1);
           <p>The agent feed will show your prompts, Claude replies, and recommended next-step cards.</p>
         </div>
       </div>
-      <form class="mg-agent-chat-composer" data-agent-chat-form>
-        <button class="mg-agent-chat-tool" type="button" aria-label="Add context">+</button>
-        <textarea name="message" rows="2" maxlength="2000" placeholder="Ask the merchant agent what to review, fix, draft, or prioritize…" required></textarea>
-        <button class="mg-agent-chat-send" type="submit" data-agent-chat-send aria-label="Send message">↑</button>
-      </form>
-      <p class="mg-form-status" data-agent-chat-status role="status"></p>
     </section>
 
     <aside class="mg-agent-chat-right" aria-label="Agent workspace controls">
@@ -132,8 +122,21 @@ declare(strict_types=1);
     </aside>
   </section>
 
-  <section class="mg-agent-command-row">
-    <div class="mg-agent-modes" data-agent-modes></div>
-    <label class="mg-agent-demo-toggle" data-agent-demo-wrap hidden><input type="checkbox" data-agent-demo-mode> Demo data</label>
-  </section>
+  <footer class="mg-agent-chat-footer" aria-label="Merchant agent message composer">
+    <section class="mg-agent-command-row">
+      <label class="mg-agent-mode-select-wrap">
+        <span>Agent mode</span>
+        <select data-agent-mode-select>
+          <option value="">Loading modes…</option>
+        </select>
+      </label>
+      <label class="mg-agent-demo-toggle" data-agent-demo-wrap hidden><input type="checkbox" data-agent-demo-mode> Demo data</label>
+    </section>
+    <form class="mg-agent-chat-composer" data-agent-chat-form>
+      <button class="mg-agent-chat-tool" type="button" aria-label="Add context">+</button>
+      <textarea name="message" rows="2" maxlength="2000" placeholder="Ask the merchant agent what to review, fix, draft, or prioritize…" required></textarea>
+      <button class="mg-agent-chat-send" type="submit" data-agent-chat-send aria-label="Send message">↑</button>
+    </form>
+    <p class="mg-form-status" data-agent-chat-status role="status"></p>
+  </footer>
 </section>
