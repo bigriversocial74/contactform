@@ -1,0 +1,37 @@
+.mg-store-chat-widget{position:fixed;right:22px;bottom:22px;z-index:2200;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#0f172a}
+.mg-store-chat-widget[hidden]{display:none!important}
+.mg-store-chat-launch{display:flex;align-items:center;gap:10px;max-width:min(360px,calc(100vw - 32px));border:1px solid rgba(37,99,235,.2);border-radius:999px;background:rgba(255,255,255,.94);box-shadow:0 22px 70px rgba(15,23,42,.2);padding:10px 12px 10px 10px;backdrop-filter:blur(16px);cursor:pointer}
+.mg-store-chat-launch-avatar{display:grid;place-items:center;width:38px;height:38px;border-radius:999px;background:#0f172a;color:#fff;font-size:13px;font-weight:950;overflow:hidden;box-shadow:0 8px 22px rgba(15,23,42,.18)}
+.mg-store-chat-launch-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.mg-store-chat-launch-copy{min-width:0;text-align:left;line-height:1.15}
+.mg-store-chat-launch-copy strong{display:block;font-size:13px;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:210px}
+.mg-store-chat-launch-copy span{display:block;margin-top:3px;font-size:11px;color:#64748b;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:230px}
+.mg-store-chat-launch-badge{display:grid;place-items:center;min-width:22px;height:22px;border-radius:999px;background:#16a34a;color:#fff;font-size:11px;font-weight:950;padding:0 7px}
+.mg-store-chat-panel{position:absolute;right:0;bottom:58px;width:min(390px,calc(100vw - 32px));border:1px solid rgba(148,163,184,.28);border-radius:24px;background:#fff;box-shadow:0 30px 100px rgba(15,23,42,.26);overflow:hidden;transform:translateY(10px) scale(.97);opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease}
+.mg-store-chat-widget.is-open .mg-store-chat-panel{opacity:1;pointer-events:auto;transform:translateY(0) scale(1)}
+.mg-store-chat-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 14px 12px;background:linear-gradient(135deg,#eff6ff,#ffffff);border-bottom:1px solid rgba(148,163,184,.2)}
+.mg-store-chat-head-main{display:flex;align-items:center;gap:10px;min-width:0}
+.mg-store-chat-head h2{margin:0;font-size:15px;color:#0f172a;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}
+.mg-store-chat-head p{margin:2px 0 0;font-size:11px;color:#64748b;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:230px}
+.mg-store-chat-close{border:0;background:#eaf1ff;color:#1e293b;border-radius:12px;width:34px;height:34px;cursor:pointer;font-weight:950}
+.mg-store-chat-body{display:flex;flex-direction:column;gap:8px;min-height:170px;max-height:315px;overflow:auto;background:#f8fafc;padding:14px}
+.mg-store-chat-empty{margin:auto;text-align:center;color:#64748b;font-weight:800;font-size:13px;line-height:1.45;max-width:280px}
+.mg-store-chat-message{display:flex;flex-direction:column;max-width:82%;gap:4px}
+.mg-store-chat-message.is-mine{align-self:flex-end;align-items:flex-end}
+.mg-store-chat-message:not(.is-mine){align-self:flex-start;align-items:flex-start}
+.mg-store-chat-message strong{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#64748b;font-weight:950}
+.mg-store-chat-message p{margin:0;border:1px solid rgba(148,163,184,.18);border-radius:17px;background:#fff;padding:9px 11px;color:#0f172a;font-size:13px;line-height:1.38;box-shadow:0 8px 18px rgba(15,23,42,.04);white-space:pre-wrap;word-break:break-word}
+.mg-store-chat-message.is-mine p{background:#2563eb;border-color:#2563eb;color:#fff}
+.mg-store-chat-message time{font-size:10px;color:#94a3b8;font-weight:800}
+.mg-store-chat-form{display:flex;gap:8px;border-top:1px solid rgba(148,163,184,.2);background:#fff;padding:12px}
+.mg-store-chat-form textarea{flex:1;resize:none;border:1px solid rgba(148,163,184,.35);border-radius:16px;min-height:44px;max-height:110px;padding:11px 12px;font:inherit;font-size:13px;line-height:1.35;outline:none}
+.mg-store-chat-form textarea:focus{border-color:rgba(37,99,235,.55);box-shadow:0 0 0 4px rgba(37,99,235,.08)}
+.mg-store-chat-send{border:0;border-radius:15px;background:#2563eb;color:#fff;font-weight:950;padding:0 14px;cursor:pointer}
+.mg-store-chat-send:disabled{opacity:.55;cursor:not-allowed}
+.mg-store-chat-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-top:1px solid rgba(148,163,184,.16);background:#f8fafc}
+.mg-store-chat-actions a,.mg-store-chat-actions button{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid rgba(148,163,184,.24);border-radius:999px;background:#fff;color:#334155;text-decoration:none;font-size:12px;font-weight:900;padding:9px 11px;cursor:pointer}
+.mg-store-chat-actions .mg-store-chat-exit{background:#fff7ed;border-color:rgba(245,158,11,.3);color:#b45309}
+.mg-store-chat-status{min-height:17px;margin:0;padding:0 14px 11px;background:#fff;color:#64748b;font-size:12px;font-weight:800}
+.mg-store-chat-status.is-error{color:#b91c1c}
+.mg-store-chat-status.is-success{color:#047857}
+@media(max-width:760px){.mg-store-chat-widget{right:12px;bottom:12px}.mg-store-chat-panel{right:0;bottom:58px;width:calc(100vw - 24px);border-radius:22px}.mg-store-chat-body{max-height:42vh}.mg-store-chat-launch-copy strong{max-width:180px}.mg-store-chat-launch-copy span{max-width:190px}}
