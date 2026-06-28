@@ -71,3 +71,7 @@ CREATE TABLE IF NOT EXISTS merchant_agent_insight_snapshots (
   KEY idx_merchant_agent_insight_snapshots_thread (thread_public_id),
   KEY idx_merchant_agent_insight_snapshots_skill (skill_key, snapshot_type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO merchant_agent_skill_registry (skill_key,label,description,default_enabled,block_types_json,status,created_at,updated_at) VALUES
+('merchant_analysis_charts','Analysis + charts','Analyze merchant products, campaigns, claims, redemptions, customer segments, and opportunities.',1,'["chart","metric_grid","forecast","product_opportunity","project"]','active',NOW(),NOW()),
+('social_campaign_advisor','Social campaigns','Create social media campaign advice, channel-specific post drafts, CTA ideas, reward angles, and approval-ready campaign projects based on merchant data.',1,'["social_campaign","social_posts","project"]','active',NOW(),NOW());
