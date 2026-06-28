@@ -1,0 +1,159 @@
+<?php
+declare(strict_types=1);
+
+require_once dirname(__DIR__) . '/store/_canvas_schema.php';
+require_once dirname(__DIR__) . '/store/_canvas_rewards.php';
+
+function mg_canvas_trigger_zone_table(): string
+{
+    return 'mg_store_trigger_zones';
+}
+
+function mg_canvas_trigger_zone_schema_ready(PDO $pdo): bool
+{
+    return mg_store_canvas_table_exists($pdo, mg_canvas_trigger_zone_table());
+}
+
+function mg_canvas_trigger_zone_require_schema(PDO $pdo): void
+{
+    mg_store_canvas_require_tables($pdo, [mg_canvas_trigger_zone_table()], 'Store Canvas trigger zones');
+}
+
+function mg_canvas_trigger_zone_uuid(): string
+{
+    return mg_public_uuid();
+}
+
+function mg_canvas_trigger_zone_clamp_float(mixed $value, float $min, float $max, float $default): float
+{
+    if ($value === null || $value === '') return $default;
+    $number = (float)$value;
+    if (!is_finite($number)) return $default;
+    return max($min, min($max, $number));
+}
+
+function mg_canvas_trigger_zone_clamp_priority(mixed $value): int
+{
+    return max(1, min(5, (int)$value));
+}
+
+function mg_canvas_trigger_zone_name(mixed $value): string
+{
+    $name = trim((string)$value);
+    if ($name === '') $name = 'IN/OUT Box Trigger';
+    if (mb_strlen($name) > 160) $name = mb_substr($name, 0, 160);
+    return $name;
+}
+
+function mg_canvas_trigger_zone_key(mixed $value): string
+{
+    $key = trim((string)$value);
+    if ($key === '') $key = 'store_canvas_zone';
+    $key = preg_replace('/[^A-Za-z0-9_.:-]+/', '_', $key) ?: 'store_canvas_zone';
+    return mb_substr($key, 0, 120);
+}
+
+function mg_canvas_trigger_zone_campaign_id(PDO $pdo, int $merchantUserId, mixed $campaignPublicId): ?string
+{
+    $campaignPublicId = trim((string)$campaignPublicId);
+    if ($campaignPublicId === '') return null;
+    $campaignPublicId = mg_store_safe_public_id($campaignPublicId, 'Campaign');
+    if (!mg_store_canvas_table_exists($pdo, 'campaigns')) throw new RuntimeException('Campaign schema is not available.');
+    $stmt = $pdo->prepare("SELECT public_id FROM campaigns WHERE public_id=? AND merchant_user_id=? AND status='active' AND (starts_at IS NULL OR starts_at<=NOW()) AND (ends_at IS NULL OR ends_at>=NOW()) LIMIT 1");
+    $stmt->execute([$campaignPublicId, $merchantUserId]);
+    if (!$stmt->fetchColumn()) throw new RuntimeException('Selected trigger campaign is not active or available.');
+    return $campaignPublicId;
+}
+
+function mg_canvas_trigger_zone_public(array $row): array
+{
+    return [
+        'id'=>(string)$row['public_id'],
+        'name'=>(string)$row['name'],
+        'trigger_key'=>(string)$row['trigger_key'],
+        'campaign_id'=>$row['campaign_public_id'] !== null ? (string)$row['campaign_public_id'] : '',
+        'campaign_title'=>$row['campaign_title'] !== null ? (string)$row['campaign_title'] : '',
+        'priority'=>max(1, min(5, (int)$row['priority'])),
+        'x'=>max(0.0, min(100.0, (float)$row['x_percent'])),
+        'y'=>max(0.0, min(100.0, (float)$row['y_percent'])),
+        'width'=>max(1.0, min(100.0, (float)$row['width_percent'])),
+        'height'=>max(1.0, min(100.0, (float)$row['height_percent'])),
+        'status'=>(string)$row['status'],
+        'last_triggered_at'=>$row['last_triggered_at'] ?? null,
+        'updated_at'=>(string)$row['updated_at'],
+    ];
+}
+
+function mg_canvas_trigger_zone_list(PDO $pdo, int $merchantUserId): array
+{
+    mg_canvas_trigger_zone_require_schema($pdo);
+    $campaignJoin = mg_store_canvas_table_exists($pdo, 'campaigns') ? 'LEFT JOIN campaigns c ON c.public_id=z.campaign_public_id AND c.merchant_user_id=z.merchant_user_id' : '';
+    $campaignTitle = $campaignJoin !== '' ? 'c.title campaign_title' : 'NULL campaign_title';
+    $stmt = $pdo->prepare("SELECT z.*,{$campaignTitle} FROM mg_store_trigger_zones z {$campaignJoin} WHERE z.merchant_user_id=? AND z.status<>'archived' ORDER BY z.priority DESC,z.updated_at DESC,z.id DESC LIMIT 50");
+    $stmt->execute([$merchantUserId]);
+    return array_map('mg_canvas_trigger_zone_public', $stmt->fetchAll(PDO::FETCH_ASSOC));
+}
+
+function mg_canvas_trigger_zone_save(PDO $pdo, int $merchantUserId, array $input): array
+{
+    mg_canvas_trigger_zone_require_schema($pdo);
+    $publicId = trim((string)($input['id'] ?? ''));
+    if ($publicId !== '') $publicId = mg_store_safe_public_id($publicId, 'Trigger zone');
+    $name = mg_canvas_trigger_zone_name($input['name'] ?? 'IN/OUT Box Trigger');
+    $triggerKey = mg_canvas_trigger_zone_key($input['trigger_key'] ?? 'store_canvas_zone');
+    $campaignPublicId = mg_canvas_trigger_zone_campaign_id($pdo, $merchantUserId, $input['campaign_id'] ?? '');
+    $priority = mg_canvas_trigger_zone_clamp_priority($input['priority'] ?? 3);
+    $x = mg_canvas_trigger_zone_clamp_float($input['x'] ?? null, 0, 100, 8);
+    $y = mg_canvas_trigger_zone_clamp_float($input['y'] ?? null, 0, 100, 8);
+    $width = mg_canvas_trigger_zone_clamp_float($input['width'] ?? null, 1, 100, 28);
+    $height = mg_canvas_trigger_zone_clamp_float($input['height'] ?? null, 1, 100, 18);
+    if ($x + $width > 100) $x = max(0, 100 - $width);
+    if ($y + $height > 100) $y = max(0, 100 - $height);
+    $status = strtolower(trim((string)($input['status'] ?? 'active')));
+    if (!in_array($status, ['active','paused'], true)) $status = 'active';
+
+    if ($publicId === '') {
+        $publicId = mg_canvas_trigger_zone_uuid();
+        $stmt = $pdo->prepare("INSERT INTO mg_store_trigger_zones (public_id,merchant_user_id,name,trigger_key,campaign_public_id,priority,x_percent,y_percent,width_percent,height_percent,status,metadata_json,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,NULL,NOW(),NOW())");
+        $stmt->execute([$publicId,$merchantUserId,$name,$triggerKey,$campaignPublicId,$priority,$x,$y,$width,$height,$status]);
+    } else {
+        $stmt = $pdo->prepare("UPDATE mg_store_trigger_zones SET name=?,trigger_key=?,campaign_public_id=?,priority=?,x_percent=?,y_percent=?,width_percent=?,height_percent=?,status=?,updated_at=NOW() WHERE public_id=? AND merchant_user_id=? AND status<>'archived'");
+        $stmt->execute([$name,$triggerKey,$campaignPublicId,$priority,$x,$y,$width,$height,$status,$publicId,$merchantUserId]);
+        if ($stmt->rowCount() < 1) throw new RuntimeException('Trigger zone is not available.');
+    }
+
+    $zones = mg_canvas_trigger_zone_list($pdo, $merchantUserId);
+    foreach ($zones as $zone) {
+        if ((string)$zone['id'] === $publicId) return $zone;
+    }
+    throw new RuntimeException('Unable to save trigger zone.');
+}
+
+function mg_canvas_trigger_zone_archive(PDO $pdo, int $merchantUserId, string $publicId): void
+{
+    mg_canvas_trigger_zone_require_schema($pdo);
+    $publicId = mg_store_safe_public_id($publicId, 'Trigger zone');
+    $stmt = $pdo->prepare("UPDATE mg_store_trigger_zones SET status='archived',updated_at=NOW() WHERE public_id=? AND merchant_user_id=?");
+    $stmt->execute([$publicId, $merchantUserId]);
+    if ($stmt->rowCount() < 1) throw new RuntimeException('Trigger zone is not available.');
+}
+
+function mg_canvas_trigger_zone_load(PDO $pdo, int $merchantUserId, string $publicId): ?array
+{
+    if (!mg_canvas_trigger_zone_schema_ready($pdo)) return null;
+    $publicId = mg_store_safe_public_id($publicId, 'Trigger zone');
+    $stmt = $pdo->prepare("SELECT * FROM mg_store_trigger_zones WHERE public_id=? AND merchant_user_id=? AND status='active' LIMIT 1");
+    $stmt->execute([$publicId, $merchantUserId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $row ?: null;
+}
+
+function mg_canvas_trigger_zone_touch(PDO $pdo, int $merchantUserId, string $publicId): void
+{
+    if (!mg_canvas_trigger_zone_schema_ready($pdo)) return;
+    try {
+        $publicId = mg_store_safe_public_id($publicId, 'Trigger zone');
+        $stmt = $pdo->prepare('UPDATE mg_store_trigger_zones SET last_triggered_at=NOW(),updated_at=NOW() WHERE public_id=? AND merchant_user_id=?');
+        $stmt->execute([$publicId, $merchantUserId]);
+    } catch (Throwable) {}
+}
