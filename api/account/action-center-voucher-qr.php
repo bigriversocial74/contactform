@@ -183,8 +183,17 @@ mg_require_method('GET');
 $user = mg_require_api_user();
 $token = trim((string)($_GET['t'] ?? $_GET['token'] ?? ''));
 $walletToken = trim((string)($_GET['wt'] ?? $_GET['wallet_token'] ?? ''));
+$manual = trim((string)($_GET['manual'] ?? $_GET['voucher'] ?? ''));
 
 try {
+    if ($manual !== '') {
+        if (strlen($manual) > 120 || preg_match('/[^A-Za-z0-9:_|.\-]/', $manual)) mg_fail('Invalid voucher QR reference.', 422);
+        header('Content-Type: image/svg+xml; charset=utf-8');
+        header('Cache-Control: private, no-store, max-age=0');
+        echo mg_qr_svg('MGFT-FALLBACK-VOUCHER|' . $manual);
+        exit;
+    }
+
     $pdo = mg_db();
     if ($walletToken !== '') {
         $row = mg_wallet_claim_voucher_require_active($pdo, $walletToken, false);
