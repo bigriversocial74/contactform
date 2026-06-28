@@ -7,6 +7,7 @@ $header_mode='agent';
 $agent_tab='messages';
 $page_styles=['/assets/css/communications.css','/assets/css/messages-isolated-clean.css'];
 $page_scripts=['/assets/js/messages-isolated-clean.js'];
+// Recovery baseline compatibility: messages-center.js replaced by messages-isolated-clean.js for the isolated messages page restore.
 require __DIR__ . '/includes/header.php';
 ?>
 <section class="mg-app-shell mg-agent-app mg-communications-app mg-messages-layout" data-messages-center>
