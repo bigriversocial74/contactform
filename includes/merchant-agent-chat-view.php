@@ -73,6 +73,8 @@ declare(strict_types=1);
         </div>
       </section>
 
+      <?php require __DIR__ . '/merchant-agent-memory-widget.php'; ?>
+
       <section class="mg-app-panel mg-agent-chat-panel">
         <div class="mg-app-panel-head is-compact"><div><h2>Guardrails</h2><p>Merchant approval remains required.</p></div></div>
         <div class="mg-app-panel-body">
