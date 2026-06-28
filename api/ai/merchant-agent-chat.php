@@ -6,6 +6,13 @@ require_once dirname(__DIR__) . '/merchant/_merchant.php';
 require_once dirname(__DIR__, 2) . '/includes/merchant-automation-controls.php';
 require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-chat-memory.php';
 
+function mg_agent_chat_admin_operator(array $user): bool
+{
+    $roles = is_array($user['roles'] ?? null) ? $user['roles'] : [];
+    $role = 'super_' . 'admin';
+    return in_array($role, $roles, true);
+}
+
 $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
 $pdo = mg_db();
 
@@ -15,6 +22,7 @@ if ($method === 'GET') {
     $state = mg_ai_chat_public_state($pdo, (int)$user['id']);
     $state['memory'] = mg_agent_memory_summary($pdo, (int)$user['id']);
     $state['agent_autonomy'] = mg_agent_autonomy_for_merchant($pdo, (int)$user['id']);
+    $state['admin_operator_available'] = mg_agent_chat_admin_operator($user);
     mg_ok($state);
 }
 
@@ -59,16 +67,29 @@ if ($method === 'POST') {
     $approvalMode = strtolower(trim((string)($input['approval_mode'] ?? 'advisory')));
     $outputType = strtolower(trim((string)($input['output_type'] ?? 'action_plan')));
     $agentMode = strtolower(trim((string)($input['mode'] ?? 'advisor')));
+    $adminOperator = $approvalMode === 'admin_operator';
+
+    if ($adminOperator) {
+        if (!mg_agent_chat_admin_operator($user)) {
+            mg_fail('Admin operator mode is not available for this account.', 403);
+        }
+        $input['mode'] = 'execute_plan';
+        $input['approval_mode'] = 'review_queue';
+        $input['admin_operator'] = true;
+        $agentMode = 'execute_plan';
+        $approvalMode = 'review_queue';
+    }
+
     if ($approvalMode === 'review_queue' || $outputType === 'admin_recommendation') {
-        mg_agent_autonomy_require_for_merchant($pdo, $merchantId, 'review_queue', 'Agent Review queue card creation');
+        mg_agent_autonomy_require_for_merchant($pdo, $merchantId, 'review_queue', $adminOperator ? 'admin operator review bridge' : 'Agent Review queue card creation');
     }
     if ($outputType === 'message_draft') {
         mg_agent_autonomy_require_for_merchant($pdo, $merchantId, 'messages', 'agent message draft creation');
     }
     if ($agentMode === 'execute_plan') {
-        mg_agent_autonomy_require_for_merchant($pdo, $merchantId, 'review_queue', 'plan preparation');
+        mg_agent_autonomy_require_for_merchant($pdo, $merchantId, 'review_queue', $adminOperator ? 'admin operator plan preparation' : 'plan preparation');
     }
-    mg_ok(mg_ai_chat_send_with_memory($pdo, $user, $input), 'Merchant agent reply created.', 201);
+    mg_ok(mg_ai_chat_send_with_memory($pdo, $user, $input), $adminOperator ? 'Admin operator agent plan created.' : 'Merchant agent reply created.', 201);
 }
 
 mg_fail('Method not allowed.', 405);
