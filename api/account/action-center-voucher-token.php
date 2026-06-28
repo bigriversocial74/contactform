@@ -6,6 +6,21 @@ require_once __DIR__ . '/_action_center_wallet.php';
 require_once dirname(__DIR__) . '/merchant/_claims.php';
 require_once __DIR__ . '/_claim_voucher_token.php';
 
+function mg_ac_voucher_table_exists(PDO $pdo, string $table): bool
+{
+    static $cache = [];
+    $table = trim($table);
+    if ($table === '') return false;
+    if (array_key_exists($table, $cache)) return $cache[$table];
+    try {
+        $stmt = $pdo->prepare('SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? LIMIT 1');
+        $stmt->execute([$table]);
+        return $cache[$table] = (bool)$stmt->fetchColumn();
+    } catch (Throwable) {
+        return $cache[$table] = false;
+    }
+}
+
 function mg_ac_completed_microgift_redemption_exists(PDO $pdo, int $instanceId): bool
 {
     $stmt = $pdo->prepare("SELECT 1 FROM microgift_redemptions WHERE instance_id=? AND status='completed' LIMIT 1");
@@ -15,6 +30,7 @@ function mg_ac_completed_microgift_redemption_exists(PDO $pdo, int $instanceId):
 
 function mg_ac_completed_wallet_redemption_exists(PDO $pdo, int $walletItemId): bool
 {
+    if (!mg_ac_voucher_table_exists($pdo, 'wallet_item_redemptions')) return false;
     $stmt = $pdo->prepare("SELECT 1 FROM wallet_item_redemptions WHERE wallet_item_id=? AND status='completed' LIMIT 1");
     $stmt->execute([$walletItemId]);
     return (bool)$stmt->fetchColumn();
@@ -43,6 +59,9 @@ try {
         if (!in_array($walletStatus, ['issued','viewed','claimed','redeemed'], true)) {
             mg_fail('This wallet reward is not available for merchant scan.', 409);
         }
+        if (!mg_ac_voucher_table_exists($pdo, 'wallet_claim_voucher_tokens')) {
+            mg_fail('Wallet signed QR tokens are waiting on the Stage 18AH wallet claim integrity migration.', 503);
+        }
         $issued = mg_wallet_claim_voucher_issue_token(
             $pdo,
             (int)$wallet['id'],
@@ -60,6 +79,7 @@ try {
             'scan_payload' => $issued['scan_payload'],
             'qr_image_url' => '/api/account/action-center-voucher-qr.php?wt=' . rawurlencode($issued['token']),
             'is_wallet_reward' => true,
+            'wallet_claim_integrity_schema_ready' => mg_ac_voucher_table_exists($pdo, 'wallet_item_redemptions'),
             'voucher' => [
                 'title' => trim((string)($wallet['title_snapshot'] ?? '')) ?: trim((string)($wallet['reward_template_title'] ?? '')) ?: 'Microgifter reward',
                 'state' => mg_ac_wallet_state($wallet),
