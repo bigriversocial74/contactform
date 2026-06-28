@@ -11,6 +11,26 @@ if (!function_exists('mg_public_campaign_notification_uuid')) {
     }
 }
 
+if (!function_exists('mg_public_campaign_create_notification')) {
+    function mg_public_campaign_create_notification(PDO $pdo, int $userId, string $type, string $title, string $body, string $actionUrl = ''): array
+    {
+        if ($userId < 1) return ['created' => false, 'reason' => 'missing_user'];
+        try {
+            $stmt = $pdo->prepare('INSERT INTO notifications (public_id,user_id,type,title,body,action_url,created_at) VALUES (?,?,?,?,?,?,NOW())');
+            $stmt->execute([mg_public_campaign_notification_uuid(), $userId, $type, $title, $body, $actionUrl]);
+            return ['created' => true, 'type' => $type, 'action_url' => $actionUrl];
+        } catch (Throwable $error) {
+            mg_security_log('warning', 'public.campaign.notification_failed', 'Unable to create campaign notification.', [
+                'exception_class' => $error::class,
+                'message' => $error->getMessage(),
+                'type' => $type,
+                'user_id' => $userId,
+            ], $userId);
+            return ['created' => false, 'reason' => 'notification_failed'];
+        }
+    }
+}
+
 if (!function_exists('mg_public_campaign_merchant_notification_type')) {
     function mg_public_campaign_merchant_notification_type(string $campaignType, string $source): string
     {
@@ -62,7 +82,6 @@ if (!function_exists('mg_public_campaign_notify_merchant_contact')) {
         $merchantId = (int)($campaign['merchant_user_id'] ?? 0);
         if ($merchantId < 1) return ['created' => false, 'reason' => 'missing_merchant'];
         if (!$isNewContact) return ['created' => false, 'reason' => 'existing_contact'];
-
         $campaignType = (string)($campaign['campaign_type'] ?? 'campaign');
         $campaignPublicId = (string)($campaign['public_id'] ?? '');
         $contactPublicId = (string)($contact['public_id'] ?? '');
@@ -72,22 +91,22 @@ if (!function_exists('mg_public_campaign_notify_merchant_contact')) {
         $title = mg_public_campaign_merchant_notification_title($campaignType);
         $body = mg_public_campaign_merchant_notification_body($campaignType, $displayName, $campaignTitle);
         $actionUrl = '/merchant-crm.php?campaign=' . rawurlencode($campaignPublicId) . '&contact=' . rawurlencode($contactPublicId);
+        return mg_public_campaign_create_notification($pdo, $merchantId, $type, $title, $body, $actionUrl);
+    }
+}
 
-        try {
-            $stmt = $pdo->prepare('INSERT INTO notifications (public_id,user_id,type,title,body,action_url,created_at) VALUES (?,?,?,?,?,?,NOW())');
-            $stmt->execute([mg_public_campaign_notification_uuid(), $merchantId, $type, $title, $body, $actionUrl]);
-            return ['created' => true, 'type' => $type, 'action_url' => $actionUrl];
-        } catch (Throwable $error) {
-            mg_security_log('warning', 'public.campaign.merchant_notification_failed', 'Unable to create merchant campaign notification.', [
-                'exception_class' => $error::class,
-                'message' => $error->getMessage(),
-                'campaign_id' => $campaignPublicId,
-                'campaign_type' => $campaignType,
-                'contact_id' => $contactPublicId,
-                'source' => $source,
-                'crm' => $crm,
-            ], $merchantId);
-            return ['created' => false, 'reason' => 'notification_failed'];
+if (!function_exists('mg_public_campaign_notify_merchant_lifecycle')) {
+    function mg_public_campaign_notify_merchant_lifecycle(PDO $pdo, array $campaign, string $eventType): array
+    {
+        $merchantId = (int)($campaign['merchant_user_id'] ?? 0);
+        if ($merchantId < 1) return ['created' => false, 'reason' => 'missing_merchant'];
+        $campaignTitle = trim((string)($campaign['title'] ?? '')) ?: 'Campaign';
+        if ($eventType === 'campaign.launched') {
+            return mg_public_campaign_create_notification($pdo, $merchantId, 'merchant_campaign_launched', 'Campaign launched', $campaignTitle . ' is active and ready to collect demand.', '/merchant-campaigns.php#campaign-active');
         }
+        if ($eventType === 'campaign.created') {
+            return mg_public_campaign_create_notification($pdo, $merchantId, 'merchant_campaign_created', 'Campaign created', $campaignTitle . ' was created.', '/merchant-campaigns.php#campaign-drafts');
+        }
+        return ['created' => false, 'reason' => 'unsupported_event'];
     }
 }

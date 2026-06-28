@@ -138,18 +138,72 @@ declare(strict_types=1);
           <div>
             <span class="mg-eyebrow">Builder</span>
             <h2>Create campaign</h2>
-            <p>Choose the distribution trigger, attach a reward template, and save as draft or active. This tab intentionally only shows the campaign builder.</p>
+            <p>Choose the distribution trigger, attach a reward template, set the campaign rules, and save as draft or active.</p>
           </div>
         </div>
         <div class="mg-app-panel-body">
           <form class="mg-merchant-form mg-campaign-builder-form" data-stage12-campaign-builder>
             <input type="hidden" name="campaign_id" value="">
-            <div class="mg-grid-2"><label>Campaign type<select name="campaign_type"><option value="newsletter_signup">Newsletter Signup</option><option value="contest_giveaway">Contest / Giveaway</option><option value="qr_reward_drop">QR Reward Drop</option><option value="referral_reward">Referral Reward</option><option value="birthday_vip">Birthday / VIP</option><option value="agent_offer">Agent Offer</option></select></label><label>Status<select name="status"><option value="draft">Draft</option><option value="active">Active</option><option value="paused">Paused</option><option value="ended">Ended</option><option value="archived">Archived</option></select></label></div>
+            <div class="mg-grid-2">
+              <label>Campaign type<select name="campaign_type" data-campaign-type-select><option value="newsletter_signup">Newsletter Signup</option><option value="contest_giveaway">Contest / Giveaway</option><option value="qr_reward_drop">QR Reward Drop</option><option value="referral_reward">Referral Reward</option><option value="birthday_vip">Birthday / VIP</option><option value="agent_offer">Agent Offer</option></select></label>
+              <label>Status<select name="status"><option value="draft">Draft</option><option value="active">Active</option><option value="paused">Paused</option><option value="ended">Ended</option><option value="archived">Archived</option></select></label>
+            </div>
             <label>Campaign title<input name="title" placeholder="Join the list and get a reward" required maxlength="180"></label>
             <label>Reward template<select name="reward_template_id" data-stage12-campaign-template-select><option value="">No template attached yet</option></select></label>
             <label>Form headline<input name="form_headline" placeholder="Join our rewards list"></label>
             <label>Description<textarea name="description" placeholder="Explain the campaign and reward."></textarea></label>
+            <label>Form description<textarea name="form_description" placeholder="Short landing-page instructions shown above the form."></textarea></label>
+
+            <div class="mg-campaign-rule-card" data-campaign-type-fields="contest_giveaway" hidden>
+              <span class="mg-eyebrow">Contest rules</span>
+              <h3>Choose how this contest issues rewards.</h3>
+              <p>Start simple: first X signups, instant entry reward, or random/manual drawing. The public page stays simple and uses the current newsletter-style design.</p>
+              <div class="mg-grid-2">
+                <label>Contest mode<select name="contest_mode" data-contest-mode>
+                  <option value="first_x">First X signups get the reward</option>
+                  <option value="random_draw">Random drawing later</option>
+                  <option value="manual_winner">Manual winner selection</option>
+                  <option value="instant_reward">Every entry gets the reward</option>
+                </select></label>
+                <label>Winner / reward limit<input name="contest_winner_limit" type="number" min="1" placeholder="100"></label>
+              </div>
+              <div class="mg-grid-2">
+                <label>Draw date<input name="contest_draw_at" type="datetime-local"></label>
+                <label class="mg-campaign-check"><input type="checkbox" name="contest_entry_reward_enabled" value="1"> <span>Issue an entry reward even when winner selection happens later</span></label>
+              </div>
+              <label>Official rules / eligibility<textarea name="contest_rules" placeholder="Example: No purchase necessary. One entry per person. Winner will be selected after the campaign ends."></textarea></label>
+            </div>
+
+            <div class="mg-campaign-rule-card" data-campaign-type-fields="qr_reward_drop" hidden>
+              <span class="mg-eyebrow">QR reward drop</span>
+              <h3>Use the public QR link for table tents, flyers, events, and in-store pickup.</h3>
+              <p>The system creates a QR token for this campaign. Use the quantity limit below to control how many QR rewards can be claimed.</p>
+            </div>
+
+            <div class="mg-campaign-rule-card" data-campaign-type-fields="referral_reward" hidden>
+              <span class="mg-eyebrow">Referral reward</span>
+              <h3>Collect referral intent first.</h3>
+              <p>This version captures who referred the customer or who should be contacted. Deeper referral code tracking can be layered in after the flow is live.</p>
+              <label>Referral instructions<textarea name="referral_instructions" placeholder="Ask the customer who referred them, or who they want to invite."></textarea></label>
+            </div>
+
+            <div class="mg-campaign-rule-card" data-campaign-type-fields="birthday_vip" hidden>
+              <span class="mg-eyebrow">Birthday / VIP</span>
+              <h3>Build a birthday or VIP list.</h3>
+              <p>The landing page captures name, email, phone, and birthday month using the existing public form design.</p>
+              <label>VIP instructions<textarea name="vip_instructions" placeholder="Example: Join our birthday club and receive a reward during your birthday month."></textarea></label>
+            </div>
+
+            <div class="mg-campaign-rule-card" data-campaign-type-fields="agent_offer" hidden>
+              <span class="mg-eyebrow">Agent offer</span>
+              <h3>Capture agent-discoverable customer interest.</h3>
+              <p>Customers can tell the merchant what kind of reward or offer interests them. Mark the campaign as agent-discoverable below when ready.</p>
+              <label>Agent offer instructions<textarea name="agent_offer_instructions" placeholder="Example: Tell us what you are looking for and we will recommend a local reward."></textarea></label>
+            </div>
+
             <div class="mg-grid-2"><label>Quantity limit<input name="quantity_limit" type="number" min="1" placeholder="Unlimited"></label><label>Per-user limit<input name="per_user_limit" type="number" min="1" value="1"></label></div>
+            <div class="mg-grid-2"><label>Starts at<input name="starts_at" type="datetime-local"></label><label>Ends at<input name="ends_at" type="datetime-local"></label></div>
+            <label>Success message<input name="success_message" maxlength="500" placeholder="Campaign response submitted."></label>
             <label class="mg-campaign-check"><input type="checkbox" name="agent_discoverable" value="1"> <span>Agent-discoverable campaign</span></label>
             <div class="mg-form-status" data-stage12-campaign-status>Ready to save a campaign.</div>
             <div class="mg-heading-actions"><button class="mg-btn mg-btn-primary" type="submit" data-stage12-campaign-save>Save campaign</button><button class="mg-btn mg-btn-ghost" type="button" data-stage12-campaign-new>New campaign</button></div>
