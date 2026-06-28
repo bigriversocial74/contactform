@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="220" viewBox="0 0 1400 220" role="img" aria-labelledby="title desc">
+<title id="title">Coffee Quest call to action background</title>
+<desc id="desc">Warm orange city line art background with coffee and map details.</desc>
+<defs><linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="#a34827"/><stop offset="1" stop-color="#cc6a35"/></linearGradient></defs>
+<rect width="1400" height="220" fill="url(#g)"/>
+<g fill="none" stroke="#f4c096" stroke-width="4" opacity=".42" stroke-linecap="round" stroke-linejoin="round">
+<path d="M38 171h520"/><path d="M66 172v-52h34v52m20 0V86h46v86m20 0V42h52v130m22 0V72h42v100m22 0V116h52v56m22 0V96h42v76"/>
+<path d="M26 180c44-60 98-76 162-45s104 16 158-24 108-34 172 2"/><path d="M82 74c20-28 46-29 67 0"/><path d="M514 62c19-16 40-15 58 1"/><path d="M720 44c18 18 18 44 0 62s-44 18-62 0-18-44 0-62 44-18 62 0z"/><path d="M1180 28c76 32 122 80 142 146" stroke-dasharray="12 16"/><path d="M1265 68l28 48 28-48c0-26-56-26-56 0z" fill="#f4c096" opacity=".55"/><path d="M1088 150c27-16 59-19 92-9"/><path d="M1052 178c-26-10-50-8-72 7"/>
+</g>
+<g fill="#f4c096" opacity=".32"><circle cx="958" cy="70" r="22"/><circle cx="1022" cy="92" r="13"/><ellipse cx="1024" cy="155" rx="46" ry="20" transform="rotate(-24 1024 155)"/><ellipse cx="1138" cy="182" rx="72" ry="34" transform="rotate(18 1138 182)"/></g>
+</svg>
