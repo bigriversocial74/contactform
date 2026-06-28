@@ -7,38 +7,15 @@ document.addEventListener('DOMContentLoaded', function () {
   var detail = root.querySelector('[data-thread-detail]');
   var activeThreadId = '';
   var activeController = 0;
+  var saveTimers = {};
 
   var templates = [
-    {
-      key: 'thanks',
-      label: 'Thanks',
-      text: 'Thanks for reaching out. I am reviewing this now and will follow up with the best next step.'
-    },
-    {
-      key: 'reward',
-      label: 'Reward follow-up',
-      text: 'Thanks for connecting with us. I can send over a reward for your next visit. Let me know the best option for you.'
-    },
-    {
-      key: 'claim',
-      label: 'Claim link',
-      text: 'Here is your claim link. Please open it before your visit and show the claim code when you arrive.'
-    },
-    {
-      key: 'visit',
-      label: 'Visit follow-up',
-      text: 'Thanks for visiting. I wanted to follow up and make sure everything went smoothly with your Microgifter reward.'
-    },
-    {
-      key: 'support',
-      label: 'Support issue',
-      text: 'I am sorry about that. I am checking the claim and reward details now so we can get this corrected.'
-    },
-    {
-      key: 'close',
-      label: 'Close loop',
-      text: 'I am going to mark this as resolved for now. Reply here anytime if you need more help.'
-    }
+    { key: 'thanks', label: 'Thanks', text: 'Thanks for reaching out. I am reviewing this now and will follow up with the best next step.' },
+    { key: 'reward', label: 'Reward follow-up', text: 'Thanks for connecting with us. I can send over a reward for your next visit. Let me know the best option for you.' },
+    { key: 'claim', label: 'Claim link', text: 'Here is your claim link. Please open it before your visit and show the claim code when you arrive.' },
+    { key: 'visit', label: 'Visit follow-up', text: 'Thanks for visiting. I wanted to follow up and make sure everything went smoothly with your Microgifter reward.' },
+    { key: 'support', label: 'Support issue', text: 'I am sorry about that. I am checking the claim and reward details now so we can get this corrected.' },
+    { key: 'close', label: 'Close loop', text: 'I am going to mark this as resolved for now. Reply here anytime if you need more help.' }
   ];
 
   function esc(value) {
@@ -58,35 +35,24 @@ document.addEventListener('DOMContentLoaded', function () {
     }).join('') || 'CU';
   }
 
-  function draftKey(threadId) {
-    return 'mg:messages:draft:' + threadId;
+  function draftKey(threadId) { return 'mg:messages:draft:' + threadId; }
+  function noteKey(threadId) { return 'mg:messages:note:' + threadId; }
+  function stateKey(threadId) { return 'mg:messages:ops:' + threadId; }
+
+  function safeGet(key) { try { return localStorage.getItem(key) || ''; } catch (error) { return ''; } }
+  function safeSet(key, value) { try { value ? localStorage.setItem(key, value) : localStorage.removeItem(key); } catch (error) {} }
+  function safeJsonGet(key) { try { return JSON.parse(localStorage.getItem(key) || '{}') || {}; } catch (error) { return {}; } }
+  function safeJsonSet(key, value) { try { localStorage.setItem(key, JSON.stringify(value || {})); } catch (error) {} }
+
+  function csrf() { return Microgifter.getCsrfToken ? Microgifter.getCsrfToken() : ''; }
+
+  function apiPost(threadId, payload) {
+    return Microgifter.post('/api/messages/crm-ops.php', Object.assign({ thread_id: threadId, csrf_token: csrf() }, payload || {}));
   }
 
-  function noteKey(threadId) {
-    return 'mg:messages:note:' + threadId;
-  }
-
-  function stateKey(threadId) {
-    return 'mg:messages:ops:' + threadId;
-  }
-
-  function safeGet(key) {
-    try { return localStorage.getItem(key) || ''; } catch (error) { return ''; }
-  }
-
-  function safeSet(key, value) {
-    try {
-      if (value) localStorage.setItem(key, value);
-      else localStorage.removeItem(key);
-    } catch (error) {}
-  }
-
-  function safeJsonGet(key) {
-    try { return JSON.parse(localStorage.getItem(key) || '{}') || {}; } catch (error) { return {}; }
-  }
-
-  function safeJsonSet(key, value) {
-    try { localStorage.setItem(key, JSON.stringify(value || {})); } catch (error) {}
+  function scheduleSave(name, fn, delay) {
+    clearTimeout(saveTimers[name]);
+    saveTimers[name] = setTimeout(fn, delay || 420);
   }
 
   function setTextareaValue(textarea, value) {
@@ -99,13 +65,25 @@ document.addEventListener('DOMContentLoaded', function () {
     textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
   }
 
+  function normalizeOps(threadId, thread) {
+    var remote = thread.crm_ops || {};
+    var local = safeJsonGet(stateKey(threadId));
+    return {
+      status: remote.status || (local.resolved ? 'resolved' : 'open'),
+      label: remote.label || local.label || 'Needs follow-up',
+      assigned_user_name: remote.assigned_user_name || local.assignee || 'Unassigned',
+      note: typeof remote.note === 'string' ? remote.note : safeGet(noteKey(threadId)),
+      draft: typeof remote.draft === 'string' ? remote.draft : safeGet(draftKey(threadId))
+    };
+  }
+
   function profileFromThread(thread) {
     var source = thread.source || {};
     var context = source.context || {};
     var messages = thread.messages || [];
     var latest = messages.length ? messages[messages.length - 1] : {};
-    var customerName = context.customer_name || context.name || thread.customer_name || thread.recipient_name || thread.subject || 'Customer';
-    var customerEmail = context.customer_email || context.email || thread.customer_email || thread.recipient_email || '';
+    var customerName = context.contact_name || context.customer_name || context.name || thread.customer_name || thread.recipient_name || thread.subject || 'Customer';
+    var customerEmail = context.contact_email || context.customer_email || context.email || thread.customer_email || thread.recipient_email || '';
     var claimed = Number(context.rewards_claimed_count || context.claimed_count || 0);
     var sent = Number(context.rewards_sent_count || context.rewards_received_count || 0);
     var visits = Number(context.visit_count || context.visits || context.store_visits || 0);
@@ -133,11 +111,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function renderProfilePanel(thread, threadId) {
     var profile = profileFromThread(thread);
-    var ops = safeJsonGet(stateKey(threadId));
-    var note = safeGet(noteKey(threadId));
-    var status = ops.resolved ? 'Resolved' : 'Open';
-    var label = ops.label || 'Needs follow-up';
-    var assignee = ops.assignee || 'Unassigned';
+    var ops = normalizeOps(threadId, thread);
+    var status = ops.status === 'resolved' ? 'Resolved' : 'Open';
 
     return '' +
       '<aside class="mg-customer-profile-panel" data-profile-panel>' +
@@ -148,8 +123,8 @@ document.addEventListener('DOMContentLoaded', function () {
         '<div class="mg-profile-score"><div><span>CRM score</span><strong>' + profile.score + '/100</strong></div><i style="width:' + profile.score + '%"></i></div>' +
         '<div class="mg-profile-grid">' +
           '<div><span>Status</span><strong data-profile-status>' + esc(status) + '</strong></div>' +
-          '<div><span>Label</span><strong data-profile-label>' + esc(label) + '</strong></div>' +
-          '<div><span>Owner</span><strong data-profile-assignee>' + esc(assignee) + '</strong></div>' +
+          '<div><span>Label</span><strong data-profile-label>' + esc(ops.label) + '</strong></div>' +
+          '<div><span>Owner</span><strong data-profile-assignee>' + esc(ops.assigned_user_name) + '</strong></div>' +
           '<div><span>Messages</span><strong>' + profile.messagesCount + '</strong></div>' +
           '<div><span>Rewards sent</span><strong>' + profile.rewardsSent + '</strong></div>' +
           '<div><span>Claimed</span><strong>' + profile.rewardsClaimed + '</strong></div>' +
@@ -158,8 +133,8 @@ document.addEventListener('DOMContentLoaded', function () {
         '<div class="mg-profile-card"><span>Source</span><strong>' + esc(profile.contactSource) + '</strong><small>' + esc(text(profile.contactId, 'No contact reference')) + '</small></div>' +
         (profile.storeSession ? '<div class="mg-profile-card"><span>Store session</span><strong>' + esc(profile.storeSession) + '</strong><small>Active Store Canvas context</small></div>' : '') +
         '<div class="mg-profile-next"><span>Suggested next action</span><strong>' + esc(profile.nextAction) + '</strong><button type="button" data-insert-suggestion>Use as message</button></div>' +
-        '<div class="mg-profile-actions"><button type="button" data-profile-resolve>' + (ops.resolved ? 'Reopen' : 'Resolve') + '</button><button type="button" data-profile-assign>Assign me</button><button type="button" data-profile-label-action>High value</button></div>' +
-        '<label class="mg-profile-note"><span>Internal note</span><textarea data-profile-note placeholder="Private merchant note...">' + esc(note) + '</textarea></label>' +
+        '<div class="mg-profile-actions"><button type="button" data-profile-resolve>' + (ops.status === 'resolved' ? 'Reopen' : 'Resolve') + '</button><button type="button" data-profile-assign>Assign me</button><button type="button" data-profile-label-action>High value</button></div>' +
+        '<label class="mg-profile-note"><span>Internal note</span><textarea data-profile-note placeholder="Private merchant note...">' + esc(ops.note) + '</textarea></label>' +
       '</aside>';
   }
 
@@ -170,6 +145,17 @@ document.addEventListener('DOMContentLoaded', function () {
         return '<button type="button" data-template-key="' + esc(template.key) + '">' + esc(template.label) + '</button>';
       }).join('') + '</div>' +
     '</div>';
+  }
+
+  function applyOpsToPanel(ops) {
+    var statusNode = detail.querySelector('[data-profile-status]');
+    var labelNode = detail.querySelector('[data-profile-label]');
+    var assigneeNode = detail.querySelector('[data-profile-assignee]');
+    var resolveButton = detail.querySelector('[data-profile-resolve]');
+    if (statusNode) statusNode.textContent = ops.status === 'resolved' ? 'Resolved' : 'Open';
+    if (labelNode) labelNode.textContent = ops.label || 'Needs follow-up';
+    if (assigneeNode) assigneeNode.textContent = ops.assigned_user_name || 'Unassigned';
+    if (resolveButton) resolveButton.textContent = ops.status === 'resolved' ? 'Reopen' : 'Resolve';
   }
 
   function enhanceThread(threadId) {
@@ -205,7 +191,9 @@ document.addEventListener('DOMContentLoaded', function () {
       }
 
       var textarea = composer.querySelector('textarea[name="body"]');
-      var savedDraft = safeGet(draftKey(threadId));
+      var ops = normalizeOps(threadId, thread);
+      var localDraft = safeGet(draftKey(threadId));
+      var savedDraft = ops.draft || localDraft;
       if (textarea && savedDraft && !textarea.value.trim()) {
         textarea.value = savedDraft;
         textarea.dispatchEvent(new Event('input', { bubbles: true }));
@@ -229,11 +217,21 @@ document.addEventListener('DOMContentLoaded', function () {
     detail.addEventListener('input', function (event) {
       var form = event.target.closest('[data-thread-reply]');
       if (form && event.target.matches('textarea[name="body"]')) {
-        safeSet(draftKey(form.dataset.threadId || ''), event.target.value);
+        var threadId = form.dataset.threadId || '';
+        var body = event.target.value;
+        safeSet(draftKey(threadId), body);
+        scheduleSave('draft:' + threadId, function () {
+          apiPost(threadId, { action: 'save_draft', body: body }).catch(function () {});
+        });
       }
       if (event.target.matches('[data-profile-note]')) {
         var activeForm = detail.querySelector('[data-thread-reply]');
-        safeSet(noteKey(activeForm && activeForm.dataset.threadId || ''), event.target.value);
+        var noteThreadId = activeForm && activeForm.dataset.threadId || '';
+        var note = event.target.value;
+        safeSet(noteKey(noteThreadId), note);
+        scheduleSave('note:' + noteThreadId, function () {
+          apiPost(noteThreadId, { action: 'save_note', note: note }).catch(function () {});
+        }, 520);
       }
     });
 
@@ -243,7 +241,10 @@ document.addEventListener('DOMContentLoaded', function () {
       var threadId = form.dataset.threadId || '';
       setTimeout(function () {
         var textarea = form.querySelector('textarea[name="body"]');
-        if (!textarea || !textarea.value.trim()) safeSet(draftKey(threadId), '');
+        if (!textarea || !textarea.value.trim()) {
+          safeSet(draftKey(threadId), '');
+          apiPost(threadId, { action: 'clear_draft' }).catch(function () {});
+        }
       }, 1400);
     }, true);
 
@@ -274,30 +275,33 @@ document.addEventListener('DOMContentLoaded', function () {
       }
 
       if (event.target.closest('[data-profile-resolve]')) {
-        var ops = safeJsonGet(stateKey(threadId));
-        ops.resolved = !ops.resolved;
-        safeJsonSet(stateKey(threadId), ops);
         var statusNode = detail.querySelector('[data-profile-status]');
-        if (statusNode) statusNode.textContent = ops.resolved ? 'Resolved' : 'Open';
-        event.target.textContent = ops.resolved ? 'Reopen' : 'Resolve';
+        var nextStatus = statusNode && statusNode.textContent === 'Resolved' ? 'open' : 'resolved';
+        apiPost(threadId, { action: 'update_state', status: nextStatus }).then(function (response) {
+          var ops = (response.data || response).crm_ops || {};
+          safeJsonSet(stateKey(threadId), { resolved: ops.status === 'resolved', label: ops.label, assignee: ops.assigned_user_name });
+          applyOpsToPanel(ops);
+        }).catch(function () {});
         return;
       }
 
       if (event.target.closest('[data-profile-assign]')) {
-        var assignOps = safeJsonGet(stateKey(threadId));
-        assignOps.assignee = 'Me';
-        safeJsonSet(stateKey(threadId), assignOps);
-        var assigneeNode = detail.querySelector('[data-profile-assignee]');
-        if (assigneeNode) assigneeNode.textContent = 'Me';
+        apiPost(threadId, { action: 'update_state', assign_to_self: true }).then(function (response) {
+          var ops = (response.data || response).crm_ops || {};
+          safeJsonSet(stateKey(threadId), { resolved: ops.status === 'resolved', label: ops.label, assignee: ops.assigned_user_name });
+          applyOpsToPanel(ops);
+        }).catch(function () {});
         return;
       }
 
       if (event.target.closest('[data-profile-label-action]')) {
-        var labelOps = safeJsonGet(stateKey(threadId));
-        labelOps.label = labelOps.label === 'High value' ? 'Needs follow-up' : 'High value';
-        safeJsonSet(stateKey(threadId), labelOps);
-        var labelNode = detail.querySelector('[data-profile-label]');
-        if (labelNode) labelNode.textContent = labelOps.label;
+        var current = detail.querySelector('[data-profile-label]');
+        var nextLabel = current && current.textContent === 'High value' ? 'Needs follow-up' : 'High value';
+        apiPost(threadId, { action: 'update_state', label: nextLabel }).then(function (response) {
+          var ops = (response.data || response).crm_ops || {};
+          safeJsonSet(stateKey(threadId), { resolved: ops.status === 'resolved', label: ops.label, assignee: ops.assigned_user_name });
+          applyOpsToPanel(ops);
+        }).catch(function () {});
       }
     });
   }

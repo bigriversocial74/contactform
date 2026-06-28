@@ -43,6 +43,7 @@ return [
         'stage_5f_merchant_intelligence_reporting.sql',
         'stage_5g_claim_operations.sql',
         'stage_5h_notifications_messaging_alerts.sql',
+        'stage_5i_message_crm_ops.sql',
         'stage_5i_payments_checkout_reconciliation.sql',
         'stage_v1c_checkout_session_intent_authority.sql',
         'stage_v1f_stripe_payments.sql',

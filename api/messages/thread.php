@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/gifts/_gift.php';
+require_once __DIR__ . '/_crm_ops.php';
 
 function mg_messages_source_type(?string $sourceType, ?string $conversationKey = null, ?string $pppmId = null): string
 {
@@ -123,6 +124,7 @@ if ($method === 'GET') {
     $latestSourceType = $latest ? (string)($latest['source']['type'] ?? 'messaging') : mg_messages_source_type(null, (string)($thread['conversation_key'] ?? ''), (string)($thread['pppm_public_id'] ?? ''));
     $latestReference = $latest ? (string)($latest['source']['reference'] ?? '') : '';
     $sourceContext = mg_messages_source_context($pdo, $latestSourceType, $latestReference);
+    $crmOps = mg_message_crm_ops_get($pdo, (int)$thread['id'], (int)$user['id']);
     $pdo->prepare('UPDATE message_thread_participants SET last_read_at = NOW() WHERE thread_id = ? AND user_id = ?')->execute([(int)$thread['id'], (int)$user['id']]);
     mg_ok(['thread' => [
         'id' => (string)$thread['public_id'],
@@ -131,6 +133,7 @@ if ($method === 'GET') {
         'pppm_id' => $thread['pppm_public_id'] !== null ? (string)$thread['pppm_public_id'] : null,
         'conversation_key' => (string)($thread['conversation_key'] ?? ''),
         'source' => ['type' => $latestSourceType, 'label' => mg_messages_source_label($latestSourceType), 'system' => mg_messages_source_system($latestSourceType), 'reference' => $latestReference, 'context' => $sourceContext],
+        'crm_ops' => $crmOps,
         'messages' => $messages,
     ]]);
 }
