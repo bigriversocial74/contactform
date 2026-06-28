@@ -38,9 +38,16 @@ function mg_ac_projection_notify(PDO $pdo, int $customerUserId, int $merchantUse
         'location_name' => $locationName,
         'pppm_item_id' => $pppmItemId,
     ];
+    $ids = ['customer_notification_id' => '', 'merchant_notification_id' => '', 'merchant_alert_id' => ''];
     $customerType = $walletItemId !== null ? 'wallet_item_redeemed' : 'microgift_redeemed';
-    $customerNotification = mg_create_notification($pdo, $customerUserId, $customerType, 'Gift redeemed', $title . ' was redeemed at ' . $locationName . '.', '/claimed.php' . ($actionItemId ? '?item=' . rawurlencode($actionItemId) : ''), $context + ['event_key' => $customerType . ':' . $redemptionPublicId]);
-    $merchantNotification = mg_create_notification($pdo, $merchantUserId, 'merchant_redemption', 'Gift redemption completed', $title . ' · ' . $amountLabel . ' · ' . $locationName, '/merchant-claims.php?redemption=' . rawurlencode($redemptionPublicId), $context + ['allow_self' => true, 'event_key' => 'merchant_redemption:' . $redemptionPublicId]);
-    $merchantAlert = mg_create_operational_alert($pdo, $merchantUserId, 'merchant_redemption_completed', 'info', 'Gift redemption completed', $title . ' · ' . $amountLabel . ' · ' . $locationName, '/merchant-claims.php?redemption=' . rawurlencode($redemptionPublicId), $context + ['merchant_user_id' => $merchantUserId, 'claim_id' => $redemptionPublicId]);
-    return ['customer_notification_id' => $customerNotification, 'merchant_notification_id' => $merchantNotification, 'merchant_alert_id' => $merchantAlert];
+    try {
+        $ids['customer_notification_id'] = mg_create_notification($pdo, $customerUserId, $customerType, 'Gift redeemed', $title . ' was redeemed at ' . $locationName . '.', '/claimed.php' . ($actionItemId ? '?item=' . rawurlencode($actionItemId) : ''), $context + ['event_key' => $customerType . ':' . $redemptionPublicId]);
+    } catch (Throwable) {}
+    try {
+        $ids['merchant_notification_id'] = mg_create_notification($pdo, $merchantUserId, 'merchant_redemption', 'Gift redemption completed', $title . ' · ' . $amountLabel . ' · ' . $locationName, '/merchant-claims.php?redemption=' . rawurlencode($redemptionPublicId), $context + ['allow_self' => true, 'event_key' => 'merchant_redemption:' . $redemptionPublicId]);
+    } catch (Throwable) {}
+    try {
+        $ids['merchant_alert_id'] = mg_create_operational_alert($pdo, $merchantUserId, 'merchant_redemption_completed', 'info', 'Gift redemption completed', $title . ' · ' . $amountLabel . ' · ' . $locationName, '/merchant-claims.php?redemption=' . rawurlencode($redemptionPublicId), $context + ['merchant_user_id' => $merchantUserId, 'claim_id' => $redemptionPublicId]);
+    } catch (Throwable) {}
+    return $ids;
 }
