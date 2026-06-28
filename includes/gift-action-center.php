@@ -43,4 +43,5 @@ $giftCenterDemoEnabled=mg_has_role('super_admin');
 </section>
 <script src="/assets/js/gift-action-center-actions.js" defer></script>
 <script src="/assets/js/gift-action-center-claim-qr.js" defer></script>
+<script src="/assets/js/gift-action-center-claim-restore.js" defer></script>
 <script src="/assets/js/gift-action-center-modal-portal.js" defer></script>
