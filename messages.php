@@ -5,8 +5,8 @@ $page_title='Messages | Microgifter';
 $page_section='agent';
 $header_mode='agent';
 $agent_tab='messages';
-$page_styles=['/assets/css/communications.css','/assets/css/messages-source-metadata.css','/assets/css/message-delivery-proof.css','/assets/css/messages-redesign.css','/assets/css/messages-page-clean.css'];
-$page_scripts=['/assets/js/messages-center.js'];
+$page_styles=['/assets/css/communications.css','/assets/css/messages-isolated-clean.css'];
+$page_scripts=['/assets/js/messages-isolated-clean.js'];
 require __DIR__ . '/includes/header.php';
 ?>
 <section class="mg-app-shell mg-agent-app mg-communications-app mg-messages-layout" data-messages-center>
