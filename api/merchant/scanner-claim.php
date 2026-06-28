@@ -12,17 +12,28 @@ function mg_scanner_claim_context(PDO $pdo, mixed $value): array
     if ($raw === '' || mb_strlen($raw) > 1400) mg_fail('Scan a Microgifter gift QR code or enter a gift identifier.', 422);
     $decoded = trim(rawurldecode(html_entity_decode($raw, ENT_QUOTES | ENT_HTML5, 'UTF-8')));
     $tokenKeys = ['t','token','voucher_token'];
+    $walletTokenKeys = ['wt','wallet_token','wallet_voucher_token'];
     $queryCandidates = [];
 
     $parts = @parse_url($decoded);
     if (is_array($parts)) {
         if (!empty($parts['query'])) {
             parse_str((string)$parts['query'], $query);
+            foreach ($walletTokenKeys as $tokenKey) {
+                if (isset($query[$tokenKey]) && !is_array($query[$tokenKey])) {
+                    try {
+                        $row = mg_wallet_claim_voucher_require_active($pdo, (string)$query[$tokenKey], true);
+                        return ['identifier' => 'wallet-' . (string)$row['wallet_item_public_id'], 'voucher_token' => null, 'wallet_voucher_token' => $row, 'wallet_id' => (string)$row['wallet_item_public_id']];
+                    } catch (Throwable) {
+                        mg_fail('The scanned wallet reward QR is invalid or expired. Refresh the customer voucher and scan again.', 422);
+                    }
+                }
+            }
             foreach ($tokenKeys as $tokenKey) {
                 if (isset($query[$tokenKey]) && !is_array($query[$tokenKey])) {
                     try {
                         $row = mg_claim_voucher_require_active($pdo, (string)$query[$tokenKey], true);
-                        return ['identifier' => (string)$row['action_item_public_id'], 'voucher_token' => $row, 'wallet_id' => null];
+                        return ['identifier' => (string)$row['action_item_public_id'], 'voucher_token' => $row, 'wallet_voucher_token' => null, 'wallet_id' => null];
                     } catch (Throwable) {
                         mg_fail('The scanned voucher QR is invalid or expired. Refresh the customer voucher and scan again.', 422);
                     }
@@ -35,24 +46,40 @@ function mg_scanner_claim_context(PDO $pdo, mixed $value): array
         if (!empty($parts['path'])) $queryCandidates[] = trim((string)$parts['path']);
     }
 
+    if (str_starts_with(strtoupper($decoded), 'MGFT-WALLET-CLAIM-TOKEN|')) {
+        try {
+            $row = mg_wallet_claim_voucher_require_active($pdo, substr($decoded, 25), true);
+            return ['identifier' => 'wallet-' . (string)$row['wallet_item_public_id'], 'voucher_token' => null, 'wallet_voucher_token' => $row, 'wallet_id' => (string)$row['wallet_item_public_id']];
+        } catch (Throwable) {
+            mg_fail('The scanned wallet reward QR is invalid or expired. Refresh the customer voucher and scan again.', 422);
+        }
+    }
+    if (preg_match('/^mgwv1_[0-9a-f-]{36}_[a-f0-9]{32}$/i', $decoded) === 1) {
+        try {
+            $row = mg_wallet_claim_voucher_require_active($pdo, $decoded, true);
+            return ['identifier' => 'wallet-' . (string)$row['wallet_item_public_id'], 'voucher_token' => null, 'wallet_voucher_token' => $row, 'wallet_id' => (string)$row['wallet_item_public_id']];
+        } catch (Throwable) {
+            mg_fail('The scanned wallet reward QR is invalid or expired. Refresh the customer voucher and scan again.', 422);
+        }
+    }
     if (str_starts_with(strtoupper($decoded), 'MGFT-CLAIM-TOKEN|')) {
         try {
             $row = mg_claim_voucher_require_active($pdo, substr($decoded, 17), true);
-            return ['identifier' => (string)$row['action_item_public_id'], 'voucher_token' => $row, 'wallet_id' => null];
+            return ['identifier' => (string)$row['action_item_public_id'], 'voucher_token' => $row, 'wallet_voucher_token' => null, 'wallet_id' => null];
         } catch (Throwable) {
             mg_fail('The scanned voucher QR is invalid or expired. Refresh the customer voucher and scan again.', 422);
         }
     }
     if (str_starts_with(strtoupper($decoded), 'MGFT-WALLET-CLAIM|')) {
         $walletId = strtolower(trim(substr($decoded, 18)));
-        if (preg_match('/^[a-f0-9-]{36}$/', $walletId) === 1) return ['identifier' => 'wallet-' . $walletId, 'voucher_token' => null, 'wallet_id' => $walletId];
+        if (preg_match('/^[a-f0-9-]{36}$/', $walletId) === 1) return ['identifier' => 'wallet-' . $walletId, 'voucher_token' => null, 'wallet_voucher_token' => null, 'wallet_id' => $walletId];
         mg_fail('The scanned wallet reward QR is invalid.', 422);
     }
     if (str_starts_with(strtoupper($decoded), 'MGFT-CLAIM|')) $queryCandidates[] = substr($decoded, 11);
     if (preg_match('/^mgv1_[0-9a-f-]{36}_[a-f0-9]{32}$/i', $decoded) === 1) {
         try {
             $row = mg_claim_voucher_require_active($pdo, $decoded, true);
-            return ['identifier' => (string)$row['action_item_public_id'], 'voucher_token' => $row, 'wallet_id' => null];
+            return ['identifier' => (string)$row['action_item_public_id'], 'voucher_token' => $row, 'wallet_voucher_token' => null, 'wallet_id' => null];
         } catch (Throwable) {
             mg_fail('The scanned voucher QR is invalid or expired. Refresh the customer voucher and scan again.', 422);
         }
@@ -61,11 +88,11 @@ function mg_scanner_claim_context(PDO $pdo, mixed $value): array
     $queryCandidates[] = $decoded;
     foreach ($queryCandidates as $candidate) {
         if ($candidate === '') continue;
-        if (preg_match('/wallet-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i', $candidate, $match)) return ['identifier' => 'wallet-' . strtolower($match[1]), 'voucher_token' => null, 'wallet_id' => strtolower($match[1])];
-        if (preg_match('/GFT-[A-Z0-9-]{4,32}/i', $candidate, $match)) return ['identifier' => strtoupper($match[0]), 'voucher_token' => null, 'wallet_id' => null];
-        if (preg_match('/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i', $candidate, $match)) return ['identifier' => strtolower($match[0]), 'voucher_token' => null, 'wallet_id' => null];
+        if (preg_match('/wallet-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i', $candidate, $match)) return ['identifier' => 'wallet-' . strtolower($match[1]), 'voucher_token' => null, 'wallet_voucher_token' => null, 'wallet_id' => strtolower($match[1])];
+        if (preg_match('/GFT-[A-Z0-9-]{4,32}/i', $candidate, $match)) return ['identifier' => strtoupper($match[0]), 'voucher_token' => null, 'wallet_voucher_token' => null, 'wallet_id' => null];
+        if (preg_match('/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i', $candidate, $match)) return ['identifier' => strtolower($match[0]), 'voucher_token' => null, 'wallet_voucher_token' => null, 'wallet_id' => null];
     }
-    if (preg_match('/^GFT-[A-Z0-9-]{4,32}$/', strtoupper($decoded))) return ['identifier' => strtoupper($decoded), 'voucher_token' => null, 'wallet_id' => null];
+    if (preg_match('/^GFT-[A-Z0-9-]{4,32}$/', strtoupper($decoded))) return ['identifier' => strtoupper($decoded), 'voucher_token' => null, 'wallet_voucher_token' => null, 'wallet_id' => null];
     mg_fail('This scan does not look like a Microgifter gift or claim QR code.', 422);
 }
 
@@ -131,7 +158,7 @@ function mg_scanner_claim_microgift_lookup(PDO $pdo, int $merchantUserId, string
 
 function mg_scanner_claim_wallet_lookup(PDO $pdo, int $merchantUserId, string $walletId): ?array
 {
-    $sql = mg_ac_wallet_select_sql() . ' WHERE wi.public_id=? AND wi.merchant_user_id=? AND wi.status<>\'cancelled\' LIMIT 1 FOR UPDATE';
+    $sql = mg_ac_wallet_select_sql() . " WHERE wi.public_id=? AND wi.merchant_user_id=? AND wi.status<>'cancelled' LIMIT 1 FOR UPDATE";
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$walletId, $merchantUserId]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -147,7 +174,29 @@ function mg_scanner_claim_claim_code(PDO $pdo, int $merchantUserId, int $locatio
     return $claimCode;
 }
 
-function mg_scanner_claim_process_wallet(PDO $pdo, array $wallet, array $location, array $claimCode, int $merchantUserId, string $locationPublicId, string $action, bool $requireConfirm, bool $confirmed): void
+function mg_scanner_claim_wallet_completed_redemption(PDO $pdo, int $walletItemId): ?array
+{
+    $stmt = $pdo->prepare("SELECT * FROM wallet_item_redemptions WHERE wallet_item_id=? AND status='completed' LIMIT 1 FOR UPDATE");
+    $stmt->execute([$walletItemId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $row ?: null;
+}
+
+function mg_scanner_claim_wallet_redemption_cycle(PDO $pdo, int $walletItemId): int
+{
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM wallet_item_redemptions WHERE wallet_item_id=?');
+    $stmt->execute([$walletItemId]);
+    return (int)$stmt->fetchColumn() + 1;
+}
+
+function mg_scanner_claim_microgift_redemption_cycle(PDO $pdo, int $instanceId): int
+{
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM microgift_redemptions WHERE instance_id=?');
+    $stmt->execute([$instanceId]);
+    return (int)$stmt->fetchColumn() + 1;
+}
+
+function mg_scanner_claim_process_wallet(PDO $pdo, array $wallet, array $location, array $claimCode, int $merchantUserId, string $locationPublicId, string $action, bool $requireConfirm, bool $confirmed, ?array $walletToken): void
 {
     $walletPublicId = (string)$wallet['public_id'];
     if (mg_ac_wallet_expired($wallet)) {
@@ -156,28 +205,34 @@ function mg_scanner_claim_process_wallet(PDO $pdo, array $wallet, array $locatio
         mg_fail('This wallet reward has expired.', 410);
     }
     $status = (string)($wallet['status'] ?? 'issued');
-    if ($status === 'redeemed') {
+    if (mg_scanner_claim_wallet_completed_redemption($pdo, (int)$wallet['id'])) {
         $pdo->commit();
         mg_fail('This gift has already been claimed. A refund must be issued before it can be claimed again.', 409);
     }
-    if (!in_array($status, ['issued','viewed','claimed'], true)) mg_fail('This wallet reward is not available for scanner redemption.', 409);
+    if (!in_array($status, ['issued','viewed','claimed','redeemed'], true)) mg_fail('This wallet reward is not available for scanner redemption.', 409);
 
     $title = trim((string)($wallet['title_snapshot'] ?? '')) ?: trim((string)($wallet['reward_template_title'] ?? '')) ?: 'Microgifter reward';
     if ($action === 'verify' || ($action === 'redeem' && $requireConfirm && !$confirmed)) {
-        mg_ac_wallet_event($pdo, $wallet, 'wallet_item.scanner_verified', ['location_id' => $locationPublicId, 'claim_code_last4' => (string)($claimCode['code_last4'] ?? '')]);
+        mg_ac_wallet_event($pdo, $wallet, 'wallet_item.scanner_verified', ['location_id' => $locationPublicId, 'claim_code_last4' => (string)($claimCode['code_last4'] ?? ''), 'voucher_token_id' => $walletToken['public_id'] ?? null]);
+        if ($walletToken) mg_wallet_claim_voucher_mark_scanned($pdo, (int)$walletToken['id'], $merchantUserId, (int)$location['id']);
         $pdo->commit();
         mg_audit('wallet.scanner_claim_verified', 'wallet_item', ['wallet_item_id' => $walletPublicId, 'location_id' => $locationPublicId], $merchantUserId);
         mg_ok(['gift_id' => 'wallet-' . $walletPublicId, 'instance_id' => $walletPublicId, 'location_id' => $locationPublicId, 'location_name' => (string)$location['name'], 'claim_code_last4' => (string)($claimCode['code_last4'] ?? ''), 'verified' => true, 'redeemed' => false, 'needs_confirmation' => $action === 'redeem' && $requireConfirm && !$confirmed, 'is_wallet_reward' => true, 'gift' => ['title' => $title, 'value_cents' => (int)($wallet['value_cents_snapshot'] ?? 0), 'currency' => (string)($wallet['currency_snapshot'] ?? 'USD')]], $action === 'verify' ? 'Wallet reward verified for this scanner location.' : 'Wallet reward verified. Confirm redemption before claiming voucher.');
     }
 
-    $eventContext = ['location_id' => $locationPublicId, 'location_name' => (string)$location['name'], 'merchant_claim_code_id' => (string)$claimCode['public_id'], 'claim_code_last4' => (string)($claimCode['code_last4'] ?? ''), 'source' => 'merchant_scanner'];
-    $pdo->prepare("UPDATE wallet_items SET status='redeemed',claimed_at=COALESCE(claimed_at,NOW()),redeemed_at=NOW(),updated_at=NOW() WHERE id=? AND status<>'redeemed'")->execute([(int)$wallet['id']]);
+    $redemptionPublicId = mg_public_uuid();
+    $cycle = mg_scanner_claim_wallet_redemption_cycle($pdo, (int)$wallet['id']);
+    $idempotencyKey = 'wallet-scanner:' . $walletPublicId . ':' . $locationPublicId . ':' . $cycle;
+    $eventContext = ['redemption_id' => $redemptionPublicId, 'location_id' => $locationPublicId, 'location_name' => (string)$location['name'], 'merchant_claim_code_id' => (string)$claimCode['public_id'], 'claim_code_last4' => (string)($claimCode['code_last4'] ?? ''), 'source' => 'merchant_scanner', 'voucher_token_id' => $walletToken['public_id'] ?? null];
+    $pdo->prepare("INSERT INTO wallet_item_redemptions (public_id,wallet_item_id,user_id,merchant_user_id,location_id,location_reference,amount_cents,currency,status,idempotency_key,source_reference,redeemed_at,metadata_json,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,'completed',?,?,NOW(),?,NOW(),NOW())")->execute([$redemptionPublicId, (int)$wallet['id'], $wallet['user_id'] === null ? null : (int)$wallet['user_id'], $merchantUserId, (int)$location['id'], $locationPublicId, (int)($wallet['value_cents_snapshot'] ?? 0), (string)($wallet['currency_snapshot'] ?? 'USD'), $idempotencyKey, 'merchant_scanner:' . $locationPublicId, json_encode($eventContext, JSON_UNESCAPED_SLASHES)]);
+    $pdo->prepare("UPDATE wallet_items SET status='redeemed',claimed_at=COALESCE(claimed_at,NOW()),redeemed_at=NOW(),updated_at=NOW() WHERE id=?")->execute([(int)$wallet['id']]);
     $pdo->prepare('UPDATE merchant_claim_codes SET usage_count=usage_count+1,updated_at=NOW() WHERE id=?')->execute([(int)$claimCode['id']]);
+    if ($walletToken) mg_wallet_claim_voucher_mark_redeemed($pdo, (int)$walletToken['id'], $merchantUserId, (int)$location['id']);
     mg_ac_wallet_event($pdo, $wallet, 'wallet_item.redeemed', $eventContext);
     $pdo->commit();
-    mg_audit('wallet.scanner_claim_redeemed', 'wallet_item', ['wallet_item_id' => $walletPublicId, 'location_id' => $locationPublicId], $merchantUserId);
+    mg_audit('wallet.scanner_claim_redeemed', 'wallet_item', ['wallet_item_id' => $walletPublicId, 'location_id' => $locationPublicId, 'redemption_id' => $redemptionPublicId], $merchantUserId);
     mg_event('wallet.scanner_claim_redeemed', ['wallet_item_id' => $walletPublicId, 'location_id' => $locationPublicId], $merchantUserId);
-    mg_ok(['gift_id' => 'wallet-' . $walletPublicId, 'instance_id' => $walletPublicId, 'location_id' => $locationPublicId, 'location_name' => (string)$location['name'], 'claim_code_last4' => (string)($claimCode['code_last4'] ?? ''), 'verified' => true, 'redeemed' => true, 'notifications' => true, 'is_wallet_reward' => true, 'gift' => ['title' => $title, 'value_cents' => (int)($wallet['value_cents_snapshot'] ?? 0), 'currency' => (string)($wallet['currency_snapshot'] ?? 'USD')]], 'Wallet reward redeemed.');
+    mg_ok(['gift_id' => 'wallet-' . $walletPublicId, 'instance_id' => $walletPublicId, 'redemption_id' => $redemptionPublicId, 'location_id' => $locationPublicId, 'location_name' => (string)$location['name'], 'claim_code_last4' => (string)($claimCode['code_last4'] ?? ''), 'verified' => true, 'redeemed' => true, 'notifications' => true, 'is_wallet_reward' => true, 'gift' => ['title' => $title, 'value_cents' => (int)($wallet['value_cents_snapshot'] ?? 0), 'currency' => (string)($wallet['currency_snapshot'] ?? 'USD')]], 'Wallet reward redeemed.');
 }
 
 function mg_scanner_claim_process_microgift(PDO $pdo, array $instance, array $location, array $claimCode, int $merchantUserId, string $locationPublicId, string $action, bool $requireConfirm, bool $confirmed, ?array $voucherToken): void
@@ -206,7 +261,8 @@ function mg_scanner_claim_process_microgift(PDO $pdo, array $instance, array $lo
     }
 
     $redemptionPublicId = mg_public_uuid();
-    $idempotencyKey = 'scanner:' . $instancePublicId . ':' . $locationPublicId . ':' . $redemptionPublicId;
+    $cycle = mg_scanner_claim_microgift_redemption_cycle($pdo, (int)$instance['id']);
+    $idempotencyKey = 'scanner:' . $instancePublicId . ':' . $locationPublicId . ':' . $cycle;
     $metadata = ['location_id' => $locationPublicId, 'location_name' => (string)$location['name'], 'merchant_claim_code_id' => (string)$claimCode['public_id'], 'claim_code_last4' => (string)($claimCode['code_last4'] ?? ''), 'source' => 'merchant_scanner', 'voucher_token_id' => $voucherToken['public_id'] ?? null];
     $pdo->prepare("INSERT INTO microgift_redemptions (public_id,instance_id,claimant_user_id,merchant_user_id,location_reference,amount_cents,currency,status,idempotency_key,source_reference,redeemed_at,metadata_json,created_at) VALUES (?,?,?,?,?,?,?,'completed',?,?,NOW(),?,NOW())")->execute([$redemptionPublicId, (int)$instance['id'], $claimantUserId, $merchantUserId, $locationPublicId, (int)($instance['face_value_cents'] ?? 0), (string)($instance['currency'] ?? 'USD'), $idempotencyKey, 'merchant_scanner:' . $locationPublicId, json_encode($metadata, JSON_UNESCAPED_SLASHES)]);
     $redemptionId = (int)$pdo->lastInsertId();
@@ -244,6 +300,7 @@ try {
     $context = mg_scanner_claim_context($pdo, $scanInput);
     $identifier = (string)$context['identifier'];
     $voucherToken = is_array($context['voucher_token'] ?? null) ? $context['voucher_token'] : null;
+    $walletToken = is_array($context['wallet_voucher_token'] ?? null) ? $context['wallet_voucher_token'] : null;
     $walletId = is_string($context['wallet_id'] ?? null) ? (string)$context['wallet_id'] : null;
 
     $locationStmt = $pdo->prepare("SELECT ml.* FROM merchant_locations ml WHERE ml.public_id=? AND ml.workspace_id=? AND ml.merchant_user_id=? AND ml.status='active' LIMIT 1 FOR UPDATE");
@@ -252,10 +309,11 @@ try {
     if (!$location) mg_fail('Merchant location not found or inactive.', 404);
     $claimCode = mg_scanner_claim_claim_code($pdo, $merchantUserId, (int)$location['id']);
     if ($voucherToken) mg_claim_voucher_mark_scanned($pdo, (int)$voucherToken['id'], $merchantUserId, (int)$location['id']);
+    if ($walletToken) mg_wallet_claim_voucher_mark_scanned($pdo, (int)$walletToken['id'], $merchantUserId, (int)$location['id']);
 
     if ($walletId !== null) {
         $wallet = mg_scanner_claim_wallet_lookup($pdo, $merchantUserId, $walletId);
-        if ($wallet) mg_scanner_claim_process_wallet($pdo, $wallet, $location, $claimCode, $merchantUserId, $locationPublicId, $action, $requireConfirm, $confirmed);
+        if ($wallet) mg_scanner_claim_process_wallet($pdo, $wallet, $location, $claimCode, $merchantUserId, $locationPublicId, $action, $requireConfirm, $confirmed, $walletToken);
         mg_fail('Eligible wallet reward not found.', 404);
     }
 
