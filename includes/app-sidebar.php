@@ -21,6 +21,7 @@ $appSidebarSearchDataAttr = trim((string) ($appSidebarSearchDataAttr ?? ''));
 $appSidebarSearchSelectHtml = (string) ($appSidebarSearchSelectHtml ?? '');
 $appSidebarTools = (string) ($appSidebarTools ?? '');
 $appSidebarCompact = (bool) ($appSidebarCompact ?? true);
+$appSidebarAgentBadges = $appSidebarVariant === 'merchant';
 
 if (!$appSidebarNav) {
     $appSidebarNav = [
@@ -41,6 +42,10 @@ if (!$appSidebarNav) {
 $currentPath = '/' . ltrim((string) ($_SERVER['SCRIPT_NAME'] ?? ''), '/');
 $lastSection = null;
 ?>
+<?php if ($appSidebarAgentBadges): ?>
+<link rel="stylesheet" href="/assets/css/merchant-agent-notification-digest.css">
+<script src="/assets/js/merchant-agent-notification-digest.js" defer></script>
+<?php endif; ?>
 <aside class="mg-app-sidebar mg-universal-sidebar mg-<?= mg_e($appSidebarVariant) ?>-sidebar <?= $appSidebarCompact ? 'is-text-sidebar' : '' ?>" data-app-sidebar data-sidebar-variant="<?= mg_e($appSidebarVariant) ?>">
   <div class="mg-app-sidebar-brand mg-universal-sidebar-brand">
     <a class="mg-brand mg-sidebar-logo" href="/index.php" aria-label="Microgifter home"><img src="/images/logo_main_drk.png" alt="Microgifter"><span class="mg-sidebar-logo-text">Microgifter</span></a>
@@ -85,11 +90,12 @@ $lastSection = null;
         $detail = (string) ($item['detail'] ?? '');
         $isButton = (bool) ($item['button'] ?? false);
         $dataTab = trim((string) ($item['data_tab'] ?? ''));
+        $badge = $appSidebarAgentBadges ? '<em class="mg-agent-nav-badge" data-agent-nav-badge="' . mg_e((string)$key) . '" hidden>0</em>' : '';
       ?>
       <?php if ($isButton): ?>
-        <button class="<?= $isActive ? 'is-active' : '' ?>" type="button"<?= $dataTab !== '' ? ' data-crm-tab="' . mg_e($dataTab) . '"' : '' ?>><strong><?= mg_e($label) ?></strong><?php if ($detail !== ''): ?><span><?= mg_e($detail) ?></span><?php endif; ?></button>
+        <button class="<?= $isActive ? 'is-active' : '' ?>" type="button"<?= $dataTab !== '' ? ' data-crm-tab="' . mg_e($dataTab) . '"' : '' ?>><strong><?= mg_e($label) ?></strong><?php if ($detail !== ''): ?><span><?= mg_e($detail) ?></span><?php endif; ?><?= $badge ?></button>
       <?php else: ?>
-        <a class="<?= $isActive ? 'is-active' : '' ?>" href="<?= mg_e($href) ?>"><strong><?= mg_e($label) ?></strong><?php if ($detail !== ''): ?><span><?= mg_e($detail) ?></span><?php endif; ?></a>
+        <a class="<?= $isActive ? 'is-active' : '' ?>" href="<?= mg_e($href) ?>"><strong><?= mg_e($label) ?></strong><?php if ($detail !== ''): ?><span><?= mg_e($detail) ?></span><?php endif; ?><?= $badge ?></a>
       <?php endif; ?>
     <?php endforeach; ?>
   </nav>
