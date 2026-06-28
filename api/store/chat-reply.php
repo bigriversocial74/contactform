@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_canvas_runtime.php';
-require_once dirname(__DIR__) . '/messages/_messaging.php';
+require_once __DIR__ . '/_canvas_messaging.php';
 require_once dirname(__DIR__) . '/messages/_delivery_validation.php';
 
 mg_require_method('POST');
