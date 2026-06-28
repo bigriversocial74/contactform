@@ -44,6 +44,42 @@ function mg_canvas_trigger_pick_template(array $campaign, array $templates): ?ar
     return isset($templates[0]) && is_array($templates[0]) ? $templates[0] : null;
 }
 
+function mg_canvas_trigger_stamp_debit(PDO $pdo, int $merchantUserId, string $sessionId, string $eventKey, string $triggerLabel, array $metadata): array
+{
+    $required = ['stamp_debit_actions','account_stamp_balances','stamp_ledger_entries'];
+    foreach ($required as $table) {
+        if (!mg_store_canvas_table_exists($pdo, $table)) {
+            return ['debited'=>false,'error'=>'Stamp ledger schema unavailable.'];
+        }
+    }
+    try {
+        $actionStmt = $pdo->prepare("SELECT stamp_value FROM stamp_debit_actions WHERE action_key='store_canvas_auto_message_send' AND status='active' LIMIT 1");
+        $actionStmt->execute();
+        $stampValue = (int)($actionStmt->fetchColumn() ?: 0);
+        if ($stampValue < 1) return ['debited'=>false,'error'=>'Store Canvas automated message stamp action is unavailable.'];
+        $period = date('Y-m');
+        $balanceStmt = $pdo->prepare('SELECT balance FROM account_stamp_balances WHERE account_user_id=? AND current_period_key=? LIMIT 1');
+        $balanceStmt->execute([$merchantUserId, $period]);
+        $balance = $balanceStmt->fetchColumn();
+        if ($balance === false || (int)$balance < $stampValue) {
+            return ['debited'=>false,'error'=>'Insufficient Stamps for automated Store Canvas message.'];
+        }
+        require_once dirname(__DIR__) . '/stamps/_stamps.php';
+        $result = mg_stamp_debit_send($pdo, $merchantUserId, $merchantUserId, 'store_canvas_auto_message_send', $eventKey . ':message', [
+            'source_type' => 'store_canvas_trigger_message',
+            'source_id' => $metadata['trigger_zone_id'] ?: $sessionId,
+            'reference' => $eventKey,
+            'reason_code' => 'store_canvas_trigger_automated_message',
+            'note' => 'Automated Store Canvas trigger message: ' . $triggerLabel,
+            'metadata' => $metadata,
+        ]);
+        return ['debited'=>true,'result'=>$result,'entry_id'=>(string)($result['entry']['entry_id'] ?? '')];
+    } catch (Throwable $error) {
+        mg_security_log('warning', 'merchant_canvas.trigger_stamp_debit_failed', 'Store Canvas trigger stamp debit failed.', ['exception_class'=>$error::class,'message'=>$error->getMessage(),'trigger_label'=>$triggerLabel], $merchantUserId);
+        return ['debited'=>false,'error'=>'Stamp debit failed.'];
+    }
+}
+
 try {
     $merchantUserId = (int)$user['id'];
     $sessionId = mg_store_safe_public_id($input['session_id'] ?? '', 'Store session');
@@ -52,7 +88,7 @@ try {
     if ($zoneId !== '') {
         $zoneId = mg_store_safe_public_id($zoneId, 'Trigger zone');
         $zone = mg_canvas_trigger_zone_load($pdo, $merchantUserId, $zoneId);
-        if (!$zone) throw new RuntimeException('Trigger zone is not active or available.');
+        if (!$zone || (string)($zone['status'] ?? '') !== 'active') throw new RuntimeException('Trigger zone is not active or available.');
     }
     $triggerKey = mg_canvas_trigger_zone_key($input['trigger_key'] ?? ($zone['trigger_key'] ?? 'in_out_box_zone'));
     $triggerLabel = mg_canvas_trigger_zone_name($input['trigger_label'] ?? ($zone['name'] ?? 'IN/OUT Box Campaign Trigger'));
@@ -74,14 +110,26 @@ try {
 
     $messageResult = null;
     $rewardResult = null;
+    $stampDebit = ['debited'=>false,'error'=>'No automated message was sent.'];
     $campaign = null;
     $template = null;
 
     try {
         $messageBody = 'Hi ' . $firstName . ' — you entered the ' . $triggerLabel . ' zone. I sent this to your IN/OUT Box so you can review the offer or ask questions.';
         $messageResult = mg_store_send_direct_message_via_messaging($pdo, $merchantUserId, $sessionId, $messageBody);
+        $stampDebit = mg_canvas_trigger_stamp_debit($pdo, $merchantUserId, $sessionId, $eventKey, $triggerLabel, [
+            'trigger_zone_id' => $zoneId ?: null,
+            'trigger_key' => $triggerKey,
+            'trigger_priority' => $priority,
+            'store_session_id' => $sessionId,
+            'campaign_id' => $selectedCampaignId ?: null,
+            'message_id' => is_array($messageResult) ? ($messageResult['id'] ?? null) : null,
+            'source_system' => 'store_canvas',
+            'source_channel' => 'merchant_canvas_trigger',
+        ]);
     } catch (Throwable $messageError) {
         mg_security_log('error', 'merchant_canvas.trigger_message_failed', 'Campaign trigger message failed.', ['exception_class'=>$messageError::class], $merchantUserId);
+        $stampDebit = ['debited'=>false,'error'=>'Automated message failed before stamp debit.'];
     }
 
     try {
@@ -113,6 +161,12 @@ try {
         'selected_campaign_id'=>$selectedCampaignId ?: null,
         'source_system'=>'store_canvas',
         'source_channel'=>'merchant_canvas_motion',
+        'message_sent'=>is_array($messageResult),
+        'reward_sent'=>is_array($rewardResult),
+        'stamp_debited'=>!empty($stampDebit['debited']),
+        'stamp_ledger_entry_id'=>(string)($stampDebit['entry_id'] ?? ''),
+        'stamp_action_key'=>'store_canvas_auto_message_send',
+        'stamp_debit_error'=>(string)($stampDebit['error'] ?? ''),
         'message_id'=>is_array($messageResult) ? ($messageResult['id'] ?? null) : null,
         'wallet_item_id'=>is_array($rewardResult) ? ($rewardResult['wallet_item_id'] ?? null) : null,
         'campaign_id'=>is_array($rewardResult) ? ($rewardResult['campaign_id'] ?? null) : ($campaign['id'] ?? null),
@@ -120,8 +174,8 @@ try {
         'reward_template_id'=>is_array($rewardResult) ? ($rewardResult['reward_template_id'] ?? null) : ($template['id'] ?? null),
     ]);
 
-    mg_event('store_canvas.campaign_trigger_zone', ['session_id'=>$sessionId,'trigger_zone_id'=>$zoneId ?: null,'priority'=>$priority,'campaign_id'=>is_array($campaign) ? ($campaign['id'] ?? null) : null,'message_sent'=>is_array($messageResult),'reward_sent'=>is_array($rewardResult)], $merchantUserId);
-    mg_ok(['triggered'=>true,'trigger_key'=>$triggerKey,'trigger_zone_id'=>$zoneId ?: null,'priority'=>$priority,'campaign_id'=>is_array($campaign) ? ($campaign['id'] ?? null) : null,'campaign_title'=>is_array($campaign) ? ($campaign['title'] ?? null) : null,'message_sent'=>is_array($messageResult),'reward_sent'=>is_array($rewardResult),'message'=>$messageResult,'reward'=>$rewardResult], 'Campaign trigger fired.');
+    mg_event('store_canvas.campaign_trigger_zone', ['session_id'=>$sessionId,'trigger_zone_id'=>$zoneId ?: null,'priority'=>$priority,'campaign_id'=>is_array($campaign) ? ($campaign['id'] ?? null) : null,'message_sent'=>is_array($messageResult),'reward_sent'=>is_array($rewardResult),'stamp_debited'=>!empty($stampDebit['debited'])], $merchantUserId);
+    mg_ok(['triggered'=>true,'trigger_key'=>$triggerKey,'trigger_zone_id'=>$zoneId ?: null,'priority'=>$priority,'campaign_id'=>is_array($campaign) ? ($campaign['id'] ?? null) : null,'campaign_title'=>is_array($campaign) ? ($campaign['title'] ?? null) : null,'message_sent'=>is_array($messageResult),'reward_sent'=>is_array($rewardResult),'stamp_debited'=>!empty($stampDebit['debited']),'stamp_ledger_entry_id'=>(string)($stampDebit['entry_id'] ?? ''),'stamp_debit_error'=>(string)($stampDebit['error'] ?? ''),'message'=>$messageResult,'reward'=>$rewardResult], 'Campaign trigger fired.');
 } catch (InvalidArgumentException $error) {
     mg_fail($error->getMessage(), 422);
 } catch (RuntimeException $error) {
