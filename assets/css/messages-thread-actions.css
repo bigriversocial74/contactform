@@ -2,11 +2,17 @@ body[data-page-id="messages"] .mg-messages-sidebar-filters{grid-template-columns
 body[data-page-id="messages"] .mg-messages-sidebar-filters button{height:32px!important;font-size:10px!important;border-radius:10px!important;padding:0 6px!important}
 body[data-page-id="messages"] .mg-thread-card[data-thread-status="resolved"]{opacity:.78}
 body[data-page-id="messages"] .mg-thread-card small{display:flex;align-items:center;justify-content:space-between;gap:8px}
-body[data-page-id="messages"] .mg-thread-clean-subtitle{display:block!important;margin:4px 0 0!important;color:#607086!important;font-size:11px!important;font-weight:850!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-body[data-page-id="messages"] .mg-thread-title-actions{position:relative}
+body[data-page-id="messages"] .mg-thread-detail-top{min-height:48px!important;height:48px!important;padding:6px 18px!important}
+body[data-page-id="messages"] .mg-thread-title-bar{justify-content:flex-start!important;gap:10px!important}
+body[data-page-id="messages"] .mg-thread-title-block{display:flex!important;align-items:center!important;gap:8px!important;flex:0 1 auto!important;min-width:0!important}
+body[data-page-id="messages"] .mg-thread-title-line{gap:7px!important}
+body[data-page-id="messages"] .mg-thread-title-line h2{font-size:15px!important;line-height:1!important;max-width:360px!important}
+body[data-page-id="messages"] .mg-thread-clean-subtitle{display:none!important}
+body[data-page-id="messages"] .mg-thread-title-actions{position:relative!important;display:flex!important;align-items:center!important;gap:5px!important;flex:0 0 auto!important;margin-left:2px!important}
+body[data-page-id="messages"] .mg-thread-title-actions button{width:28px!important;height:28px!important;min-width:28px!important;border-radius:9px!important;font-size:11px!important;box-shadow:none!important;padding:0!important}
 body[data-page-id="messages"] .mg-thread-title-actions [data-thread-search-toggle],
-body[data-page-id="messages"] .mg-thread-title-actions [data-thread-menu-toggle]{font-size:13px!important}
-body[data-page-id="messages"] .mg-thread-action-menu{position:absolute;right:0;top:calc(100% + 8px);z-index:30;min-width:190px;padding:8px;border:1px solid #d8e3f1;border-radius:15px;background:#fff;box-shadow:0 20px 44px rgba(15,23,42,.14)}
+body[data-page-id="messages"] .mg-thread-title-actions [data-thread-menu-toggle]{font-size:11px!important}
+body[data-page-id="messages"] .mg-thread-action-menu{position:absolute;left:0;right:auto;top:calc(100% + 8px);z-index:30;min-width:190px;padding:8px;border:1px solid #d8e3f1;border-radius:15px;background:#fff;box-shadow:0 20px 44px rgba(15,23,42,.14)}
 body[data-page-id="messages"] .mg-thread-action-menu[hidden]{display:none!important}
 body[data-page-id="messages"] .mg-thread-action-menu button{width:100%!important;height:34px!important;min-width:0!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;padding:0 10px!important;border:0!important;border-radius:10px!important;background:transparent!important;color:#1f2f4a!important;font-size:12px!important;box-shadow:none!important}
 body[data-page-id="messages"] .mg-thread-action-menu button:hover{background:#f3f7ff!important;color:#075be8!important}
@@ -23,4 +29,12 @@ body[data-page-id="messages"] .mg-message-row.is-failed-local .mg-message-bubble
 body[data-page-id="messages"] .mg-message-row.is-failed-local .mg-message-meta button{border:0;background:transparent;color:#b42318;font-size:10px;font-weight:950;cursor:pointer;padding:0}
 body[data-page-id="messages"] .mg-thread-detail.show-profile .mg-customer-profile-panel{display:block!important;position:absolute;right:18px;top:76px;bottom:96px;z-index:25;width:320px;max-width:calc(100vw - 40px);overflow:auto;background:#fff;border:1px solid #d8e3f1;border-radius:18px;box-shadow:0 24px 58px rgba(15,23,42,.18)}
 body[data-page-id="messages"] .mg-message-stream-wrap:after{content:'Live';position:absolute;right:18px;top:12px;z-index:5;border:1px solid #bbf7d0;border-radius:999px;background:#f0fdf4;color:#047857;padding:4px 8px;font-size:9px;font-weight:950;text-transform:uppercase;letter-spacing:.06em}
-@media(max-width:980px){body[data-page-id="messages"] .mg-thread-search-row{padding:7px 10px}body[data-page-id="messages"] .mg-attachment-tray{overflow:auto}body[data-page-id="messages"] .mg-thread-action-menu{right:-4px}body[data-page-id="messages"] .mg-message-stream-wrap:after{right:10px;top:9px}}
+body[data-page-id="messages"] [data-merchant-canvas],
+body[data-page-id="messages"] .mg-canvas-avatar-card,
+body[data-page-id="messages"] .mg-canvas-avatar-stack,
+body[data-page-id="messages"] .mg-canvas-floating,
+body[data-page-id="messages"] .mg-canvas-live-widget,
+body[data-page-id="messages"] .mg-store-canvas-widget,
+body[data-page-id="messages"] [class*="canvas-widget"],
+body[data-page-id="messages"] [class*="store-canvas"]{display:none!important;visibility:hidden!important;pointer-events:none!important}
+@media(max-width:980px){body[data-page-id="messages"] .mg-thread-detail-top{height:auto!important;min-height:44px!important;padding:6px 10px!important}body[data-page-id="messages"] .mg-thread-title-line h2{max-width:44vw!important;font-size:14px!important}body[data-page-id="messages"] .mg-thread-search-row{padding:7px 10px}body[data-page-id="messages"] .mg-attachment-tray{overflow:auto}body[data-page-id="messages"] .mg-thread-action-menu{left:auto;right:-4px}body[data-page-id="messages"] .mg-message-stream-wrap:after{right:10px;top:9px}}
