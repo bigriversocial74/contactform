@@ -5,17 +5,17 @@ $page_title='Messages | Microgifter';
 $page_section='agent';
 $header_mode='agent';
 $agent_tab='messages';
-$page_styles=['/assets/css/messages.css'];
+$page_styles=['/assets/css/communications.css','/assets/css/messages-source-metadata.css','/assets/css/message-delivery-proof.css','/assets/css/messages-redesign.css'];
 $page_scripts=['/assets/js/messages-center.js'];
 require __DIR__ . '/includes/header.php';
 ?>
-<section class="mg-app-shell mg-messages-layout" data-messages-center>
+<section class="mg-app-shell mg-agent-app mg-communications-app mg-messages-layout" data-messages-center>
   <button class="mg-messages-mobile-toggle" type="button" data-messages-sidebar-toggle aria-expanded="false" aria-controls="mg-messages-sidebar">
     <span></span><span></span><span></span>
     <strong>Threads</strong>
   </button>
   <div class="mg-messages-sidebar-backdrop" data-messages-sidebar-backdrop hidden></div>
-  <aside id="mg-messages-sidebar" class="mg-app-sidebar mg-messages-sidebar" data-app-sidebar data-sidebar-variant="messages" aria-label="Message conversations">
+  <aside id="mg-messages-sidebar" class="mg-app-sidebar mg-universal-sidebar mg-messages-sidebar is-text-sidebar" data-app-sidebar data-sidebar-variant="messages" aria-label="Message conversations">
     <div class="mg-app-sidebar-brand mg-universal-sidebar-brand">
       <a class="mg-brand mg-sidebar-logo" href="/index.php" aria-label="Microgifter home"><img src="/images/logo_main_drk.png" alt="Microgifter"><span class="mg-sidebar-logo-text">Microgifter</span></a>
     </div>
@@ -24,7 +24,7 @@ require __DIR__ . '/includes/header.php';
         <span class="mg-eyebrow">Gift communication</span>
         <h1>Messages</h1>
       </div>
-      <button class="mg-message-compose-trigger" type="button" data-message-refresh aria-label="Refresh conversations">R</button>
+      <button class="mg-message-compose-trigger" type="button" data-message-refresh aria-label="Refresh conversations">↻</button>
     </div>
     <div class="mg-messages-sidebar-search">
       <input type="search" data-message-search placeholder="Search conversations" aria-label="Search conversations">
@@ -41,7 +41,7 @@ require __DIR__ . '/includes/header.php';
       <a href="/notification-preferences.php">Notification Preferences</a>
     </div>
   </aside>
-  <div class="mg-app-workspace mg-messages-workspace">
+  <div class="mg-app-workspace mg-communications-workspace mg-messages-workspace">
     <section class="mg-app-panel mg-messages-panel">
       <section class="mg-thread-detail" data-thread-detail>
         <div class="mg-empty-state mg-messages-empty-state">
