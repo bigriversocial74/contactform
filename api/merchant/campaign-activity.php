@@ -16,6 +16,13 @@ function mg_activity_public_path(string $type): string
     };
 }
 
+function mg_activity_rules(mixed $json): array
+{
+    if (!is_string($json) || trim($json) === '') return [];
+    $decoded = json_decode($json, true);
+    return is_array($decoded) ? $decoded : [];
+}
+
 function mg_activity_public_url(array $row): string
 {
     $type = (string)$row['campaign_type'];
@@ -36,6 +43,9 @@ function mg_activity_row(array $row): array
         'qr_code_token' => $row['qr_code_token'] ?? null,
         'public_url' => mg_activity_public_url($row),
         'reward_template_title' => $row['reward_template_title'] ?? null,
+        'rules' => mg_activity_rules($row['rules_json'] ?? null),
+        'quantity_limit' => $row['quantity_limit'] === null ? null : (int)$row['quantity_limit'],
+        'issued_count' => (int)($row['issued_count'] ?? 0),
         'contacts_count' => (int)($row['contacts_count'] ?? 0),
         'wallet_issued_count' => (int)($row['wallet_issued_count'] ?? 0),
         'wallet_claimed_count' => (int)($row['wallet_claimed_count'] ?? 0),
@@ -55,7 +65,7 @@ $pdo = mg_db();
 mg_merchant_ensure_workspace($pdo, $user);
 
 try {
-    $stmt = $pdo->prepare('SELECT c.public_id,c.public_slug,c.qr_code_token,c.title,c.campaign_type,c.status,c.updated_at,rt.title reward_template_title,
+    $stmt = $pdo->prepare('SELECT c.public_id,c.public_slug,c.qr_code_token,c.title,c.campaign_type,c.status,c.updated_at,c.rules_json,c.quantity_limit,c.issued_count,rt.title reward_template_title,
         COUNT(DISTINCT cc.id) contacts_count,
         COUNT(DISTINCT wi.id) wallet_issued_count,
         COUNT(DISTINCT CASE WHEN wi.status = \'claimed\' THEN wi.id END) wallet_claimed_count,
@@ -72,7 +82,7 @@ try {
         LEFT JOIN message_events me ON me.event_type = \'campaign.outbound_email\' AND JSON_UNQUOTE(JSON_EXTRACT(me.payload_json, \'$.campaign_public_id\')) = c.public_id
         LEFT JOIN message_delivery_jobs mdj ON mdj.message_event_id = me.id AND mdj.channel = \'email\'
         WHERE c.merchant_user_id = ?
-        GROUP BY c.id, c.public_id, c.public_slug, c.qr_code_token, c.title, c.campaign_type, c.status, c.updated_at, rt.title
+        GROUP BY c.id, c.public_id, c.public_slug, c.qr_code_token, c.title, c.campaign_type, c.status, c.updated_at, c.rules_json, c.quantity_limit, c.issued_count, rt.title
         ORDER BY c.updated_at DESC, c.id DESC
         LIMIT 100');
     $stmt->execute([$merchantId]);
