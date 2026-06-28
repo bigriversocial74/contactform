@@ -9,16 +9,30 @@ function mg_campaign_contact_no_recent_activity(mixed $value): bool
     return $timestamp > 0 && $timestamp < strtotime('-30 days');
 }
 
+function mg_campaign_contact_rules(mixed $json): array
+{
+    if (!is_string($json) || trim($json) === '') return [];
+    $decoded = json_decode($json, true);
+    return is_array($decoded) ? $decoded : [];
+}
+
 function mg_campaign_contact_row(array $row): array
 {
     $lastActivityAt = $row['last_activity_at'] ?? $row['updated_at'] ?? $row['created_at'] ?? null;
     $resolvedUserId = (int)($row['resolved_user_id'] ?? $row['user_id'] ?? 0);
+    $rules = mg_campaign_contact_rules($row['campaign_rules_json'] ?? null);
+    $ruleMode = (string)($rules['mode'] ?? '');
+    $winnerActionAllowed = (string)($row['campaign_type'] ?? '') === 'contest_giveaway'
+        && in_array($ruleMode, ['manual_winner', 'random_draw'], true)
+        && (int)($row['winner_count'] ?? 0) <= 0;
 
     return [
         'id' => (string)$row['public_id'],
         'campaign_id' => (string)($row['campaign_public_id'] ?? ''),
         'campaign_title' => (string)($row['campaign_title'] ?? ''),
         'campaign_type' => (string)($row['campaign_type'] ?? ''),
+        'campaign_rules' => $rules,
+        'winner_action_allowed' => $winnerActionAllowed,
         'email' => (string)$row['email'],
         'phone' => (string)($row['phone'] ?? ''),
         'name' => (string)($row['name'] ?? ''),
@@ -52,7 +66,7 @@ mg_merchant_ensure_workspace($pdo, $user);
 $campaignPublicId = strtolower(trim((string)($_GET['campaign_id'] ?? $_GET['campaign'] ?? '')));
 
 try {
-    $sql = "SELECT cc.*,c.public_id campaign_public_id,c.title campaign_title,c.campaign_type,
+    $sql = "SELECT cc.*,c.public_id campaign_public_id,c.title campaign_title,c.campaign_type,c.rules_json campaign_rules_json,
                    COALESCE(cc.user_id,email_user.id) resolved_user_id,
                    COALESCE(linked_user.email_verified_at,email_user.email_verified_at) email_verified_at,
                    cc.updated_at last_activity_at,
@@ -83,7 +97,7 @@ try {
         $params[] = $campaignPublicId;
     }
 
-    $sql .= ' GROUP BY cc.id,c.public_id,c.title,c.campaign_type,linked_user.email_verified_at,email_user.id,email_user.email_verified_at ORDER BY cc.updated_at DESC,cc.id DESC LIMIT 250';
+    $sql .= ' GROUP BY cc.id,c.public_id,c.title,c.campaign_type,c.rules_json,linked_user.email_verified_at,email_user.id,email_user.email_verified_at ORDER BY cc.updated_at DESC,cc.id DESC LIMIT 250';
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
