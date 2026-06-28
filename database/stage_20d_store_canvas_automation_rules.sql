@@ -76,9 +76,5 @@ SET @mg20d_sql := IF(@mg20d_idx=0, "CREATE INDEX idx_mg_store_trigger_zones_cool
 PREPARE mg20d_stmt FROM @mg20d_sql; EXECUTE mg20d_stmt; DEALLOCATE PREPARE mg20d_stmt;
 
 INSERT INTO schema_migrations (migration_key,description,checksum,applied_at)
-VALUES ('stage_20b_store_canvas_trigger_zones','Persistent merchant Store Canvas trigger zones with campaign assignment and priority.',NULL,NOW())
-ON DUPLICATE KEY UPDATE description=VALUES(description);
-
-INSERT INTO schema_migrations (migration_key,description,checksum,applied_at)
 VALUES ('stage_20d_store_canvas_automation_rules','Per-zone Store Canvas automation actions, cooldowns, Stamp fallback behavior, and CRM metadata.',NULL,NOW())
 ON DUPLICATE KEY UPDATE description=VALUES(description);
