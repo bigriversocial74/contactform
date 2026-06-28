@@ -15,6 +15,83 @@ function mg_automation_levels(): array
     ];
 }
 
+function mg_agent_autonomy_levels(): array
+{
+    return [
+        'advisory' => [
+            'key' => 'advisory',
+            'rank' => 10,
+            'title' => 'Advisory only',
+            'description' => 'Agent can analyze and recommend. No drafts, tasks, queue changes, or execution without a user action.',
+        ],
+        'review_queue' => [
+            'key' => 'review_queue',
+            'rank' => 20,
+            'title' => 'Controlled review',
+            'description' => 'Agent can create review-ready cards and queue items. Merchant approval is still required before execution.',
+        ],
+        'approval_first' => [
+            'key' => 'approval_first',
+            'rank' => 30,
+            'title' => 'Approval first',
+            'description' => 'Agent can prepare drafts, tasks, and execution plans, but every action remains approval-gated.',
+        ],
+        'trusted_autopilot' => [
+            'key' => 'trusted_autopilot',
+            'rank' => 40,
+            'title' => 'Trusted autopilot',
+            'description' => 'Reserved for future limited auto-execution with budgets, risk caps, audit logs, and admin ceiling approval.',
+        ],
+    ];
+}
+
+function mg_agent_autonomy_rank(string $level): int
+{
+    $levels = mg_agent_autonomy_levels();
+    return (int)($levels[$level]['rank'] ?? 0);
+}
+
+function mg_agent_autonomy_platform_ceiling(): string
+{
+    $configured = trim((string)(getenv('MG_AGENT_AUTONOMY_PLATFORM_CEILING') ?: ''));
+    $levels = mg_agent_autonomy_levels();
+    return isset($levels[$configured]) ? $configured : 'approval_first';
+}
+
+function mg_agent_autonomy_normalize(mixed $raw): array
+{
+    $levels = mg_agent_autonomy_levels();
+    $platformCeiling = mg_agent_autonomy_platform_ceiling();
+    $default = [
+        'merchant_level' => 'review_queue',
+        'platform_ceiling' => $platformCeiling,
+        'effective_level' => 'review_queue',
+        'allow_message_drafts' => true,
+        'allow_task_creation' => true,
+        'allow_review_queue' => true,
+        'allow_execution_without_approval' => false,
+        'daily_action_budget' => 10,
+        'high_risk_requires_approval' => true,
+        'updated_at' => null,
+    ];
+    $incoming = is_array($raw) ? $raw : [];
+    $merchantLevel = (string)($incoming['merchant_level'] ?? $incoming['level'] ?? $default['merchant_level']);
+    if (!isset($levels[$merchantLevel])) $merchantLevel = $default['merchant_level'];
+    $effective = mg_agent_autonomy_rank($merchantLevel) > mg_agent_autonomy_rank($platformCeiling) ? $platformCeiling : $merchantLevel;
+    return array_merge($default, [
+        'merchant_level' => $merchantLevel,
+        'platform_ceiling' => $platformCeiling,
+        'effective_level' => $effective,
+        'allow_message_drafts' => mg_automation_bool($incoming['allow_message_drafts'] ?? $default['allow_message_drafts'], true),
+        'allow_task_creation' => mg_automation_bool($incoming['allow_task_creation'] ?? $default['allow_task_creation'], true),
+        'allow_review_queue' => mg_automation_bool($incoming['allow_review_queue'] ?? $default['allow_review_queue'], true),
+        'allow_execution_without_approval' => false,
+        'daily_action_budget' => max(0, min(100, (int)($incoming['daily_action_budget'] ?? $default['daily_action_budget']))),
+        'high_risk_requires_approval' => true,
+        'updated_at' => $incoming['updated_at'] ?? null,
+    ]);
+}
+
 function mg_automation_bool(mixed $value, bool $default = false): bool
 {
     if (is_bool($value)) return $value;
@@ -89,7 +166,9 @@ function mg_automation_current_settings(PDO $pdo, int $merchantId): array
     $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
     $context = mg_automation_json($row['event_context_json'] ?? null);
     $settings = mg_automation_normalize_settings($context['settings'] ?? []);
-    return ['settings' => $settings, 'updated_at' => $row['created_at'] ?? null, 'source' => $row ? 'merchant_saved' : 'defaults'];
+    $autonomy = mg_agent_autonomy_normalize($context['agent_autonomy'] ?? []);
+    if (!empty($row['created_at'])) $autonomy['updated_at'] = $row['created_at'];
+    return ['settings' => $settings, 'agent_autonomy' => $autonomy, 'updated_at' => $row['created_at'] ?? null, 'source' => $row ? 'merchant_saved' : 'defaults'];
 }
 
 function mg_automation_settings_summary(array $settings): array
@@ -105,10 +184,16 @@ function mg_automation_settings_summary(array $settings): array
     return $summary;
 }
 
-function mg_automation_save_settings(PDO $pdo, int $merchantId, int $actorId, array $settings): string
+function mg_automation_save_settings(PDO $pdo, int $merchantId, int $actorId, array $settings, array $agentAutonomy = []): string
 {
     $eventId = mg_crm_playbook_uuid();
-    $context = ['settings' => $settings, 'updated_by_user_id' => $actorId, 'guardrail_version' => 1, 'agent_permission_model' => true];
+    $context = [
+        'settings' => $settings,
+        'agent_autonomy' => mg_agent_autonomy_normalize($agentAutonomy),
+        'updated_by_user_id' => $actorId,
+        'guardrail_version' => 2,
+        'agent_permission_model' => true,
+    ];
     $pdo->prepare('INSERT INTO campaign_events (public_id,merchant_user_id,campaign_id,contact_id,event_type,event_context_json,created_at) VALUES (?,?,?,?,?,?,NOW())')->execute([$eventId, $merchantId, null, null, 'crm.automation.settings.updated', json_encode($context, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)]);
     return $eventId;
 }
@@ -182,6 +267,7 @@ function mg_automation_log(PDO $pdo, int $merchantId, int $limit = 50): array
             'customer_email' => (string)($row['contact_email'] ?? ''),
             'campaign_title' => (string)($row['campaign_title'] ?? ''),
             'automation_level' => (string)($ctx['automation_level'] ?? ''),
+            'agent_autonomy' => $ctx['agent_autonomy'] ?? null,
             'status' => (string)($ctx['status'] ?? $ctx['action_status'] ?? 'recorded'),
             'requires_approval' => !empty($ctx['requires_approval']) || !empty($ctx['agent_requires_approval']) || !empty($ctx['merchant_approval_required']),
             'created_at' => $row['created_at'] ?? null,
