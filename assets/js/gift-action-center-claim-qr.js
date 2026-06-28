@@ -22,7 +22,7 @@
         <div class="mg-claim-voucher-copy">
           <span>Customer voucher QR</span>
           <strong>${esc(title)}</strong>
-          <p>Preparing a merchant-ready voucher QR and manual claim code fallback.</p>
+          <p>Preparing a merchant-ready signed voucher QR and manual claim fallback.</p>
         </div>
         <div class="mg-action-form-note">Generating scanner payload…</div>
         <div class="mg-action-form-footer"><button class="mg-btn mg-btn-soft" type="button" data-action-modal-close>Close</button></div>
@@ -33,13 +33,13 @@
     return `
       <form class="mg-claim-voucher-manual" data-voucher-claim-form data-action-item-id="${esc(voucherId)}" data-voucher-token="${esc(token || '')}">
         <div class="mg-claim-voucher-manual-copy">
-          <span>Manual merchant claim</span>
-          <strong>Merchant claim code</strong>
-          <p>If the merchant does not scan the QR, they can enter their active location claim code here. The claim system verifies the merchant/location, records the timestamp, and blocks duplicate claims.</p>
+          <span>Merchant-only fallback</span>
+          <strong>Manual claim code</strong>
+          <p>If the merchant scanner cannot read the QR, the merchant can enter their active location claim code here. The value is masked, never displayed back, cleared immediately after submit, logged, and rate-limited.</p>
         </div>
         <label class="mg-claim-voucher-code-label">
           <span>Merchant claim code</span>
-          <input type="text" name="merchant_claim_code" inputmode="text" autocomplete="one-time-code" placeholder="Enter merchant claim code" ${disabled ? 'disabled' : ''} required>
+          <input type="password" name="merchant_claim_code" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Merchant-only claim code" ${disabled ? 'disabled' : ''} required>
         </label>
         <div class="mg-claim-voucher-manual-actions">
           <button class="mg-btn mg-btn-primary" type="submit" data-voucher-claim-submit ${disabled ? 'disabled' : ''}>Verify & claim</button>
@@ -72,7 +72,7 @@
     const token = data.token || '';
     const expires = data.expires_at ? ` Signed QR expires ${esc(new Date(data.expires_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }))}.` : '';
     const copy = data.is_wallet_reward
-      ? 'Show this QR code to the merchant. The QR identifies this wallet reward for merchant scanner redemption.'
+      ? 'Show this QR code to the merchant. The QR contains a signed, short-lived wallet reward token.'
       : 'Show this QR code to the merchant. The QR contains a signed, short-lived voucher token.';
     return `
       <section class="mg-claim-voucher-qr" aria-label="Merchant scan voucher QR">
@@ -91,7 +91,7 @@
         </div>
         <input type="hidden" data-voucher-scan-payload value="${esc(payload)}">
         ${manualClaimForm(voucherId, token, false)}
-        <div class="mg-action-form-note">Merchant flow: scan customer QR or enter the merchant claim code → verify authorized merchant/location → record a single redemption. Already-claimed gifts cannot be claimed again unless a refund has reversed the prior redemption.</div>
+        <div class="mg-action-form-note">Merchant flow: scan customer QR or use the merchant-only fallback → verify authorized merchant/location → record a single redemption. Already-claimed gifts cannot be claimed again unless a refund has reversed the prior redemption.</div>
         <div class="mg-action-form-footer">
           <button class="mg-btn mg-btn-soft" type="button" data-action-modal-close>Close</button>
         </div>
@@ -119,8 +119,6 @@
         throw new Error('Voucher QR payload was not returned.');
       }
       form.innerHTML = voucherMarkup(title, voucherId, data);
-      const input = form.querySelector('[name="merchant_claim_code"]');
-      if (input) window.setTimeout(() => input.focus({ preventScroll: true }), 80);
     } catch (error) {
       form.innerHTML = errorMarkup(title, error.message, voucherId);
     }
@@ -155,6 +153,7 @@
     const input = form.querySelector('[name="merchant_claim_code"]');
     const button = form.querySelector('[data-voucher-claim-submit]');
     const merchantClaimCode = input ? input.value.trim() : '';
+    if (input) input.value = '';
     if (!voucherId || !merchantClaimCode) {
       setStatus(form, 'Enter the merchant claim code to verify and claim this gift.', 'error');
       return;
