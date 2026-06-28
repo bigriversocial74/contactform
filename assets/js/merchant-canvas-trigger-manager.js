@@ -105,6 +105,20 @@ window.Microgifter = window.Microgifter || {};
     return { x:clamp(fallback.x + (zones.length % 3) * 3, 2, 78), y:clamp(fallback.y + (zones.length % 4) * 3, 2, 82), width:size.width, height:size.height };
   }
 
+  function baseName(value) {
+    var raw = String(value || 'Trigger Zone').trim() || 'Trigger Zone';
+    return raw.replace(/\s+(copy\s*)?\d+$/i, '').replace(/\s+copy$/i, '').trim() || raw;
+  }
+
+  function uniqueName(seed, excludeId) {
+    var base = baseName(seed || 'Trigger Zone');
+    var used = new Set(zones.filter(function (zone) { return String(zone.id || '') !== String(excludeId || ''); }).map(function (zone) { return String(zone.name || '').trim().toLowerCase(); }));
+    if (!used.has(base.toLowerCase())) return base;
+    var n = 2;
+    while (used.has((base + ' ' + n).toLowerCase())) n++;
+    return base + ' ' + n;
+  }
+
   function normalizeZone(raw) {
     raw = raw || {};
     return {
@@ -131,35 +145,15 @@ window.Microgifter = window.Microgifter || {};
     };
   }
 
-  function separateOverlaps() {
-    var moved = false;
-    for (var i = 0; i < zones.length; i++) {
-      var current = zones[i];
-      var currentRect = { x:Number(current.x || 0), y:Number(current.y || 0), width:Number(current.width || 16), height:Number(current.height || 10) };
-      for (var j = 0; j < i; j++) {
-        var previous = zones[j];
-        var previousRect = { x:Number(previous.x || 0), y:Number(previous.y || 0), width:Number(previous.width || 16), height:Number(previous.height || 10) };
-        if (rectsOverlap(currentRect, previousRect, 2)) {
-          var placement = nextPlacement();
-          current.x = placement.x;
-          current.y = placement.y;
-          current.width = current.width || placement.width;
-          current.height = current.height || placement.height;
-          moved = true;
-          break;
-        }
-      }
-    }
-    return moved;
-  }
-
   function newZone() {
     var placement = nextPlacement();
     var count = zones.length + 1;
+    var name = uniqueName('Trigger Zone ' + count);
+    var numeric = (name.match(/\d+$/) || [String(count)])[0];
     return {
       id: tempId(),
-      name: 'Trigger Zone ' + count,
-      trigger_key: 'store_canvas_zone_' + count,
+      name: name,
+      trigger_key: 'store_canvas_zone_' + numeric,
       campaign_id: campaigns[0] ? String(campaigns[0].id || '') : '',
       campaign_title: campaigns[0] ? String(campaigns[0].title || '') : '',
       priority: 3,
@@ -239,10 +233,11 @@ window.Microgifter = window.Microgifter || {};
     node.hidden = false;
     node.style.visibility = 'visible';
     node.dataset.canvasTriggerZone = String(zone.id || '');
+    node.dataset.triggerPriority = String(priority(zone.priority));
     node.classList.toggle('is-paused', zone.status === 'paused');
     node.classList.toggle('is-saving', !!zone.saving);
     node.classList.toggle('is-settings-open', String(zone.id || '') === activeId);
-    node.style.zIndex = String(zone.id || '') === activeId ? '15' : '5';
+    node.style.zIndex = String(30 + priority(zone.priority) + (String(zone.id || '') === activeId ? 20 : 0));
     var rect = pixelRect(zone);
     node.style.left = Math.round(rect.x) + 'px';
     node.style.top = Math.round(rect.y) + 'px';
@@ -341,7 +336,7 @@ window.Microgifter = window.Microgifter || {};
 
   function readForm(form, zone) {
     if (!form || !zone) return;
-    zone.name = (form.elements.name ? form.elements.name.value.trim() : zone.name) || 'Trigger Zone';
+    zone.name = uniqueName((form.elements.name ? form.elements.name.value.trim() : zone.name) || 'Trigger Zone', zone.id);
     zone.trigger_key = zone.trigger_key || 'store_canvas_zone';
     zone.campaign_id = form.elements.campaign_id ? form.elements.campaign_id.value || '' : zone.campaign_id || '';
     zone.campaign_title = campaignTitle(zone.campaign_id);
@@ -371,6 +366,7 @@ window.Microgifter = window.Microgifter || {};
   async function saveZone(zone, created) {
     if (!zone) return;
     zone.saving = true;
+    zone.name = uniqueName(zone.name || 'Trigger Zone', zone.id);
     render();
     setDrawerStatus('Saving...', 'saving');
     try {
@@ -378,6 +374,7 @@ window.Microgifter = window.Microgifter || {};
       var data = payload(await MG.post('/api/merchant-canvas/trigger-zone-save.php', payloadFor(zone))) || {};
       if (data.zone) {
         var saved = normalizeZone(data.zone);
+        saved.name = uniqueName(saved.name, oldId === saved.id ? saved.id : '');
         if (isTemp(zone)) {
           var oldNode = nodes.get(oldId);
           if (oldNode) oldNode.remove();
@@ -393,7 +390,6 @@ window.Microgifter = window.Microgifter || {};
       } else if (Array.isArray(data.zones)) {
         zones = data.zones.map(normalizeZone);
       }
-      separateOverlaps();
       setDrawerStatus('Saved.', 'success');
       if (created) toast('Trigger zone added.', 'success');
     } catch (error) {
@@ -434,7 +430,7 @@ window.Microgifter = window.Microgifter || {};
     drag = { zone:zone, node:node, resize:!!event.target.closest('[data-trigger-resize]'), sx:event.clientX, sy:event.clientY, rect:rect, bw:box.width, bh:box.height, moved:false };
     if (typeof node.setPointerCapture === 'function') node.setPointerCapture(event.pointerId);
     node.classList.add('is-editing');
-    node.style.zIndex = '20';
+    node.style.zIndex = '70';
     event.preventDefault();
   }
 
@@ -478,13 +474,19 @@ window.Microgifter = window.Microgifter || {};
   function scan() {
     Array.from(layer.querySelectorAll('[data-session-id]')).forEach(function (card) {
       var avatar = relRect(card);
-      zones.forEach(function (zone) {
-        if (zone.status === 'paused' || isTemp(zone) || zone.saving) return;
+      var candidates = zones.filter(function (zone) {
+        if (zone.status === 'paused' || isTemp(zone) || zone.saving) return false;
         var node = nodes.get(String(zone.id));
-        if (!node) return;
-        var rect = pixelRect(zone);
-        if (rectsOverlap(avatar, rect, -8)) fire(card, zone, node);
+        if (!node) return false;
+        return rectsOverlap(avatar, pixelRect(zone), -8);
+      }).sort(function (a, b) {
+        var diff = priority(b.priority) - priority(a.priority);
+        if (diff !== 0) return diff;
+        return String(a.id || '').localeCompare(String(b.id || ''));
       });
+      if (!candidates.length) return;
+      var zone = candidates[0];
+      fire(card, zone, nodes.get(String(zone.id)));
     });
   }
 
@@ -531,7 +533,6 @@ window.Microgifter = window.Microgifter || {};
     try {
       var data = payload(await MG.get('/api/merchant-canvas/trigger-zones.php')) || {};
       zones = Array.isArray(data.zones) ? data.zones.map(normalizeZone) : [];
-      separateOverlaps();
     } catch (error) {
       zones = [];
     }
