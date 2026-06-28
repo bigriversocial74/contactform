@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_merchant.php';
+require_once dirname(__DIR__) . '/public/campaigns/_merchant_notifications.php';
 
 function mg_campaign_slug(string $title): string
 {
@@ -81,6 +82,7 @@ function mg_campaign_row(array $row): array
         'id' => (string) $row['public_id'],
         'reward_template_id' => $row['reward_template_public_id'] ?? null,
         'reward_template_title' => $row['reward_template_title'] ?? null,
+        'reward_template_status' => $row['reward_template_status'] ?? null,
         'reward_attached' => !empty($row['reward_template_public_id']),
         'campaign_type' => (string) $row['campaign_type'],
         'title' => (string) $row['title'],
@@ -109,16 +111,19 @@ function mg_campaign_row(array $row): array
     ];
 }
 
-function mg_campaign_reward_template_id(PDO $pdo, int $merchantId, string $publicId): ?int
+function mg_campaign_reward_template_id(PDO $pdo, int $merchantId, string $publicId, string $campaignStatus): ?int
 {
     $publicId = strtolower(trim($publicId));
     if ($publicId === '') return null;
     if (strlen($publicId) !== 36 || !preg_match('/^[a-f0-9-]{36}$/', $publicId)) mg_fail('Invalid reward template.', 422);
-    $stmt = $pdo->prepare('SELECT id FROM reward_templates WHERE public_id = ? AND merchant_user_id = ? AND status <> \'archived\' LIMIT 1');
+    $stmt = $pdo->prepare('SELECT id,status FROM reward_templates WHERE public_id = ? AND merchant_user_id = ? AND status <> \'archived\' LIMIT 1');
     $stmt->execute([$publicId, $merchantId]);
-    $id = (int) ($stmt->fetchColumn() ?: 0);
-    if ($id <= 0) mg_fail('Reward template not found.', 404);
-    return $id;
+    $template = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$template) mg_fail('Reward template not found.', 404);
+    if ($campaignStatus === 'active' && (string)$template['status'] !== 'active') {
+        mg_fail('Active campaigns require an active reward template.', 422);
+    }
+    return (int)$template['id'];
 }
 
 function mg_campaign_requires_reward_template(string $campaignType, string $status): bool
@@ -143,7 +148,7 @@ if ($method === 'GET') {
     try {
         $status = trim((string) ($_GET['status'] ?? 'all'));
         $allowedStatus = ['draft', 'active', 'paused', 'ended', 'archived'];
-        $sql = 'SELECT c.*, rt.public_id reward_template_public_id, rt.title reward_template_title,
+        $sql = 'SELECT c.*, rt.public_id reward_template_public_id, rt.title reward_template_title, rt.status reward_template_status,
                     (SELECT COUNT(*) FROM campaign_contacts cc WHERE cc.campaign_id = c.id) contact_count,
                     (SELECT COUNT(*) FROM wallet_items wi WHERE wi.campaign_id = c.id AND wi.status <> \'cancelled\') wallet_item_count,
                     (SELECT COUNT(*) FROM campaign_events ce WHERE ce.campaign_id = c.id) event_count,
@@ -162,9 +167,7 @@ if ($method === 'GET') {
         $campaigns = array_map('mg_campaign_row', $stmt->fetchAll());
         mg_ok(['campaigns' => $campaigns, 'schema_ready' => true, 'package' => mg_merchant_package_context($pdo, $user)]);
     } catch (Throwable $error) {
-        mg_security_log('warning', 'merchant.campaigns.schema_unavailable', 'Campaign schema is unavailable.', [
-            'exception_class' => $error::class,
-        ], $merchantId);
+        mg_security_log('warning', 'merchant.campaigns.schema_unavailable', 'Campaign schema is unavailable.', ['exception_class' => $error::class], $merchantId);
         mg_ok(['campaigns' => [], 'schema_ready' => false], 'Campaigns unavailable until the Stage 12 schema is installed.');
     }
 }
@@ -177,7 +180,6 @@ $campaignId = strtolower(trim((string) ($input['campaign_id'] ?? '')));
 $title = trim((string) ($input['title'] ?? ''));
 $campaignType = trim((string) ($input['campaign_type'] ?? 'newsletter_signup'));
 $status = trim((string) ($input['status'] ?? 'draft'));
-$rewardTemplateId = mg_campaign_reward_template_id($pdo, $merchantId, (string) ($input['reward_template_id'] ?? ''));
 $description = trim((string) ($input['description'] ?? '')) ?: null;
 $formHeadline = trim((string) ($input['form_headline'] ?? '')) ?: null;
 $formDescription = trim((string) ($input['form_description'] ?? '')) ?: null;
@@ -203,23 +205,20 @@ if ($startsAt !== null && $endsAt !== null && strtotime($startsAt) >= strtotime(
 if ($campaignType === 'contest_giveaway' && trim((string)($input['contest_mode'] ?? 'first_x')) === 'first_x' && $quantityLimit === null) {
     $quantityLimit = max(1, (int)($input['contest_winner_limit'] ?? 100));
 }
+$rewardTemplateId = mg_campaign_reward_template_id($pdo, $merchantId, (string) ($input['reward_template_id'] ?? ''), $status);
 $rulesJson = mg_campaign_build_rules($campaignType, $input, $quantityLimit);
 
 if (mg_campaign_requires_reward_template($campaignType, $status) && $rewardTemplateId === null) {
     mg_fail('Active campaigns require an attached reward template.', 422);
 }
 if ($status === 'active') {
-    mg_package_require_limit_available(
-        $pdo,
-        $user,
-        'max_active_campaigns',
-        mg_campaign_active_usage($pdo, $merchantId, $campaignId),
-        'Active campaign limit reached.'
-    );
+    mg_package_require_limit_available($pdo, $user, 'max_active_campaigns', mg_campaign_active_usage($pdo, $merchantId, $campaignId), 'Active campaign limit reached.');
 }
 
 try {
-    if ($campaignId === '') {
+    $previousStatus = null;
+    $isNew = $campaignId === '';
+    if ($isNew) {
         $campaignId = mg_merchant_uuid();
         $slug = mg_campaign_unique_slug($pdo, $merchantId, $title);
         $qrToken = $campaignType === 'qr_reward_drop' ? bin2hex(random_bytes(16)) : null;
@@ -230,11 +229,12 @@ try {
         $dbId = (int) $pdo->lastInsertId();
         $message = 'Campaign created.';
     } else {
-        $lookup = $pdo->prepare('SELECT id, qr_code_token FROM campaigns WHERE public_id = ? AND merchant_user_id = ? LIMIT 1');
+        $lookup = $pdo->prepare('SELECT id, qr_code_token, status FROM campaigns WHERE public_id = ? AND merchant_user_id = ? LIMIT 1');
         $lookup->execute([$campaignId, $merchantId]);
         $existing = $lookup->fetch(PDO::FETCH_ASSOC);
         $dbId = (int) ($existing['id'] ?? 0);
         if ($dbId <= 0) mg_fail('Campaign not found.', 404);
+        $previousStatus = (string)($existing['status'] ?? '');
         $slug = mg_campaign_unique_slug($pdo, $merchantId, $title, $campaignId);
         $qrToken = $campaignType === 'qr_reward_drop' ? ((string)($existing['qr_code_token'] ?? '') ?: bin2hex(random_bytes(16))) : null;
         $stmt = $pdo->prepare('UPDATE campaigns
@@ -244,13 +244,20 @@ try {
         $message = 'Campaign updated.';
     }
 
-    $select = $pdo->prepare('SELECT c.*, rt.public_id reward_template_public_id, rt.title reward_template_title,
+    $select = $pdo->prepare('SELECT c.*, rt.public_id reward_template_public_id, rt.title reward_template_title, rt.status reward_template_status,
             0 contact_count, 0 wallet_item_count, 0 event_count, NULL last_event_at
         FROM campaigns c LEFT JOIN reward_templates rt ON rt.id = c.reward_template_id
         WHERE c.id = ? AND c.merchant_user_id = ? LIMIT 1');
     $select->execute([$dbId, $merchantId]);
-    $row = $select->fetch();
+    $row = $select->fetch(PDO::FETCH_ASSOC);
     if (!$row) mg_fail('Campaign could not be loaded.', 500);
+
+    $notification = ['created' => false, 'reason' => 'not_required'];
+    if ($status === 'active' && ($isNew || $previousStatus !== 'active')) {
+        $notification = mg_public_campaign_notify_merchant_lifecycle($pdo, $row, 'campaign.launched');
+    } elseif ($isNew) {
+        $notification = mg_public_campaign_notify_merchant_lifecycle($pdo, $row, 'campaign.created');
+    }
 
     mg_audit('merchant.campaign_saved', 'campaign', [
         'campaign_id' => $campaignId,
@@ -258,12 +265,11 @@ try {
         'status' => $status,
         'reward_attached' => $rewardTemplateId !== null,
         'rules' => mg_campaign_decode_rules($rulesJson),
+        'notification' => $notification,
     ], $merchantId);
 
-    mg_ok(['campaign' => mg_campaign_row($row), 'schema_ready' => true, 'package' => mg_merchant_package_context($pdo, $user)], $message, 201);
+    mg_ok(['campaign' => mg_campaign_row($row), 'notification' => $notification, 'schema_ready' => true, 'package' => mg_merchant_package_context($pdo, $user)], $message, 201);
 } catch (Throwable $error) {
-    mg_security_log('error', 'merchant.campaigns.save_failed', 'Unable to save campaign.', [
-        'exception_class' => $error::class,
-    ], $merchantId);
+    mg_security_log('error', 'merchant.campaigns.save_failed', 'Unable to save campaign.', ['exception_class' => $error::class], $merchantId);
     mg_fail('Unable to save campaign.', 500);
 }
