@@ -1,11 +1,26 @@
 .mg-canvas-map.is-motion-enabled .mg-canvas-avatar-layer{inset:108px 18px 18px;display:block;position:absolute}
 .mg-canvas-map.is-motion-enabled .mg-canvas-avatar-card{position:absolute;left:0;top:0;margin-top:0!important;will-change:transform;transition:box-shadow .18s ease,border-color .18s ease,background .18s ease;z-index:3}
-.mg-canvas-map.is-motion-enabled .mg-canvas-avatar-card.is-moving{animation:mgCanvasAvatarPulse 4.5s ease-in-out infinite}
+.mg-canvas-map.is-motion-enabled .mg-canvas-avatar-card.is-moving{animation:mgCanvasAvatarPulse 3.6s ease-in-out infinite}
 .mg-canvas-map.is-motion-enabled .mg-canvas-avatar-card.is-nearby{border-color:rgba(14,165,233,.55);box-shadow:0 28px 60px rgba(14,165,233,.18)}
 .mg-canvas-map.is-motion-enabled .mg-canvas-avatar-card.is-chatting{border-color:rgba(16,185,129,.55);background:rgba(236,253,245,.94);box-shadow:0 30px 70px rgba(16,185,129,.2)}
-.mg-canvas-chat-bubble{position:absolute;z-index:6;max-width:240px;border:1px solid rgba(15,23,42,.12);border-radius:18px;background:rgba(255,255,255,.96);box-shadow:0 20px 48px rgba(15,23,42,.16);padding:10px 12px;color:#0f172a;font-size:12px;font-weight:850;line-height:1.35;pointer-events:none;transform:translate(-50%,-100%);animation:mgCanvasBubble 4.2s ease forwards}
+.mg-canvas-map.is-motion-enabled .mg-canvas-avatar-card.is-triggered{border-color:rgba(124,58,237,.55);background:rgba(245,243,255,.94);box-shadow:0 30px 70px rgba(124,58,237,.2)}
+.mg-canvas-map.is-motion-enabled .mg-canvas-merchant-node{will-change:transform;transition:box-shadow .18s ease,border-color .18s ease,background .18s ease;z-index:5}
+.mg-canvas-map.is-motion-enabled .mg-canvas-merchant-node.is-moving{animation:mgCanvasMerchantPulse 3.8s ease-in-out infinite}
+.mg-canvas-map.is-motion-enabled .mg-canvas-merchant-node.is-approaching{border-color:rgba(37,99,235,.46);box-shadow:0 28px 70px rgba(37,99,235,.2)}
+.mg-canvas-map.is-motion-enabled .mg-canvas-merchant-node.is-chatting{border-color:rgba(16,185,129,.56);background:rgba(236,253,245,.92);box-shadow:0 32px 80px rgba(16,185,129,.24)}
+.mg-canvas-chat-bubble{position:absolute;z-index:8;max-width:250px;border:1px solid rgba(15,23,42,.12);border-radius:18px;background:rgba(255,255,255,.96);box-shadow:0 20px 48px rgba(15,23,42,.16);padding:10px 12px;color:#0f172a;font-size:12px;font-weight:850;line-height:1.35;pointer-events:none;transform:translate(-50%,-100%);animation:mgCanvasBubble 4.2s ease forwards}
 .mg-canvas-chat-bubble small{display:block;margin-top:4px;color:#64748b;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.08em}
 .mg-canvas-motion-line{position:absolute;z-index:2;height:2px;transform-origin:left center;background:linear-gradient(90deg,rgba(37,99,235,.1),rgba(14,165,233,.38),rgba(37,99,235,.08));pointer-events:none;opacity:.85}
-@keyframes mgCanvasAvatarPulse{0%,100%{filter:drop-shadow(0 14px 18px rgba(15,23,42,.08))}50%{filter:drop-shadow(0 22px 24px rgba(37,99,235,.14))}}
+.mg-canvas-trigger-zone{position:absolute;right:22px;bottom:22px;z-index:4;width:min(280px,42%);min-height:118px;border:1px dashed rgba(124,58,237,.5);border-radius:24px;background:linear-gradient(135deg,rgba(245,243,255,.92),rgba(239,246,255,.88));box-shadow:inset 0 0 0 1px rgba(255,255,255,.65),0 24px 60px rgba(88,28,135,.12);display:flex;align-items:center;gap:12px;padding:16px;color:#3b0764;pointer-events:none;overflow:hidden}
+.mg-canvas-trigger-zone:before{content:"";position:absolute;inset:-45%;background:radial-gradient(circle,rgba(124,58,237,.18),transparent 54%);animation:mgCanvasTriggerSpin 9s linear infinite}
+.mg-canvas-trigger-zone-icon{position:relative;z-index:1;display:grid;place-items:center;flex:0 0 auto;width:48px;height:48px;border-radius:18px;background:#4c1d95;color:#fff;font-weight:950;letter-spacing:-.06em;box-shadow:0 14px 34px rgba(76,29,149,.24)}
+.mg-canvas-trigger-zone-copy{position:relative;z-index:1;min-width:0}
+.mg-canvas-trigger-zone-copy strong{display:block;color:#2e1065;font-size:14px;letter-spacing:-.02em}
+.mg-canvas-trigger-zone-copy span{display:block;margin-top:4px;color:#6d28d9;font-size:12px;font-weight:850;line-height:1.35}
+.mg-canvas-trigger-zone.is-hot{border-style:solid;background:linear-gradient(135deg,rgba(237,233,254,.98),rgba(220,252,231,.94));box-shadow:0 30px 80px rgba(124,58,237,.22)}
+@keyframes mgCanvasAvatarPulse{0%,100%{filter:drop-shadow(0 14px 18px rgba(15,23,42,.08))}50%{filter:drop-shadow(0 22px 24px rgba(37,99,235,.16))}}
+@keyframes mgCanvasMerchantPulse{0%,100%{filter:drop-shadow(0 18px 22px rgba(37,99,235,.12))}50%{filter:drop-shadow(0 28px 30px rgba(16,185,129,.18))}}
 @keyframes mgCanvasBubble{0%{opacity:0;transform:translate(-50%,-90%) scale(.94)}14%,78%{opacity:1;transform:translate(-50%,-112%) scale(1)}100%{opacity:0;transform:translate(-50%,-125%) scale(.96)}}
-@media (prefers-reduced-motion:reduce){.mg-canvas-map.is-motion-enabled .mg-canvas-avatar-card{transition:none}.mg-canvas-map.is-motion-enabled .mg-canvas-avatar-card.is-moving{animation:none}.mg-canvas-chat-bubble{animation:none}}
+@keyframes mgCanvasTriggerSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@media (max-width:760px){.mg-canvas-trigger-zone{left:14px;right:14px;bottom:14px;width:auto;min-height:96px}.mg-canvas-map.is-motion-enabled .mg-canvas-avatar-layer{inset:94px 14px 126px}}
+@media (prefers-reduced-motion:reduce){.mg-canvas-map.is-motion-enabled .mg-canvas-avatar-card,.mg-canvas-map.is-motion-enabled .mg-canvas-merchant-node{transition:none}.mg-canvas-map.is-motion-enabled .mg-canvas-avatar-card.is-moving,.mg-canvas-map.is-motion-enabled .mg-canvas-merchant-node.is-moving,.mg-canvas-trigger-zone:before{animation:none}.mg-canvas-chat-bubble{animation:none}}
