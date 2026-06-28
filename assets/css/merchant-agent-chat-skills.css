@@ -1,0 +1,241 @@
+/* Merchant Agent Chat skill/thread layer. Loaded after followup; preserves existing two-column layout. */
+.mg-agent-chat-app .mg-agent-chat-right{
+  max-height:calc(100vh - 94px)!important;
+  overflow:hidden!important;
+}
+.mg-agent-compact-rail{
+  max-height:calc(100vh - 94px)!important;
+  overflow:hidden!important;
+}
+.mg-agent-profile-fields{
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:end;
+  gap:7px!important;
+  margin-bottom:8px!important;
+}
+.mg-agent-rail-btn{white-space:nowrap}
+.mg-agent-thread-actions{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:6px;
+  margin:0 0 8px;
+}
+.mg-agent-thread-actions .mg-btn{
+  width:100%;
+  min-width:0!important;
+  padding-left:4px!important;
+  padding-right:4px!important;
+}
+.mg-agent-thread-actions .is-danger{
+  color:#991b1b!important;
+  border-color:#fecaca!important;
+  background:#fff7f7!important;
+}
+.mg-agent-thread-fields{margin-bottom:8px!important}
+.mg-agent-skill-picker{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:6px;
+  margin:0 0 9px;
+  padding:8px;
+  border:1px solid #e3e9f2;
+  border-radius:12px;
+  background:#fbfcfe;
+}
+.mg-agent-skill-picker label{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  margin:0;
+  font-size:10px;
+  font-weight:850;
+  color:#263245;
+  line-height:1.2;
+}
+.mg-agent-skill-picker input{width:13px;height:13px;margin:0}
+.mg-agent-context-min{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:7px!important;
+  margin-bottom:8px!important;
+}
+.mg-agent-context-min label{font-size:9px!important}
+.mg-agent-context-min select{min-height:32px!important;font-size:10px!important;padding:0 7px!important;border-radius:9px!important}
+.mg-agent-data-pills{
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
+}
+.mg-agent-data-pills span{
+  border:1px solid #e0e6ef;
+  border-radius:999px;
+  background:#f7f9fc;
+  color:#4b5565;
+  padding:4px 7px;
+  font-size:9px;
+  font-weight:850;
+}
+.mg-agent-chat-blocks{
+  display:grid;
+  gap:9px;
+  margin-top:10px;
+}
+.mg-agent-block{
+  border:1px solid #dbe3ef;
+  border-radius:13px;
+  background:#fbfdff;
+  padding:10px;
+  color:#0b1220;
+}
+.mg-agent-block-head{
+  display:grid;
+  gap:3px;
+  margin-bottom:8px;
+}
+.mg-agent-block-head strong{
+  font-size:12px;
+  line-height:1.2;
+  letter-spacing:-.02em;
+  color:#101827;
+}
+.mg-agent-block-head span{
+  font-size:10.5px;
+  line-height:1.35;
+  font-weight:650;
+  color:#536072;
+}
+.mg-agent-bars{
+  display:grid;
+  gap:7px;
+}
+.mg-agent-bar-row{
+  display:grid;
+  grid-template-columns:minmax(96px,1fr) minmax(120px,2fr) auto;
+  gap:8px;
+  align-items:center;
+}
+.mg-agent-bar-row span{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:10px;
+  font-weight:800;
+  color:#263245;
+}
+.mg-agent-bar-row div{
+  height:8px;
+  border-radius:999px;
+  background:#edf2f7;
+  overflow:hidden;
+}
+.mg-agent-bar-row i{
+  display:block;
+  height:100%;
+  border-radius:999px;
+  background:#1d4ed8;
+}
+.mg-agent-bar-row b{
+  font-size:10px;
+  font-weight:900;
+  color:#0f172a;
+}
+.mg-agent-line-chart{
+  width:100%;
+  height:130px;
+  color:#1d4ed8;
+  background:linear-gradient(180deg,#fff,#f8fafc);
+  border:1px solid #e5ebf3;
+  border-radius:10px;
+}
+.mg-agent-chart-labels{
+  display:flex;
+  justify-content:space-between;
+  gap:4px;
+  margin-top:5px;
+}
+.mg-agent-chart-labels span{
+  font-size:9px;
+  font-weight:750;
+  color:#697586;
+}
+.mg-agent-metrics{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:7px;
+}
+.mg-agent-metrics article{
+  border:1px solid #e4eaf2;
+  border-radius:10px;
+  background:#fff;
+  padding:8px;
+}
+.mg-agent-metrics strong{
+  display:block;
+  font-size:16px;
+  letter-spacing:-.04em;
+  color:#101827;
+}
+.mg-agent-metrics span{
+  display:block;
+  margin-top:2px;
+  font-size:8.5px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  color:#697586;
+}
+.mg-agent-social-block p{
+  margin:5px 0!important;
+  font-size:11px!important;
+  line-height:1.38!important;
+  color:#354052!important;
+}
+.mg-agent-social-posts{
+  display:grid;
+  gap:7px;
+  margin-top:8px;
+}
+.mg-agent-social-posts article{
+  border:1px solid #e4eaf2;
+  border-radius:10px;
+  background:#fff;
+  padding:8px;
+}
+.mg-agent-social-posts strong{
+  display:block;
+  margin-bottom:4px;
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  color:#1d4ed8;
+}
+.mg-agent-social-posts p{
+  margin:0!important;
+  white-space:pre-wrap;
+}
+.mg-agent-project-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
+}
+.mg-agent-project-meta span{
+  border:1px solid #dbe3ef;
+  border-radius:999px;
+  background:#fff;
+  padding:4px 7px;
+  font-size:9px;
+  font-weight:850;
+  color:#475569;
+}
+@media(max-width:1180px){
+  .mg-agent-chat-app .mg-agent-chat-right,
+  .mg-agent-compact-rail{max-height:none!important;overflow:visible!important}
+}
+@media(max-width:760px){
+  .mg-agent-context-min{grid-template-columns:1fr!important}
+  .mg-agent-profile-fields{grid-template-columns:1fr}
+  .mg-agent-thread-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .mg-agent-bar-row{grid-template-columns:1fr;gap:4px}
+  .mg-agent-metrics{grid-template-columns:1fr}
+}
