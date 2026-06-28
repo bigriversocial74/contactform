@@ -6,7 +6,7 @@ $page_section='agent';
 $header_mode='agent';
 $agent_tab='messages';
 $page_styles=['/assets/css/messages.css'];
-$page_scripts=['/assets/js/messages.js'];
+$page_scripts=['/assets/js/messages-center.js'];
 require __DIR__ . '/includes/header.php';
 ?>
 <section class="mg-app-shell mg-agent-app mg-communications-app mg-messages-layout" data-messages-center>
