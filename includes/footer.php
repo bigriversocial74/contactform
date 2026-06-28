@@ -44,6 +44,10 @@ $core_scripts = [
 ];
 $scripts = array_values(array_unique(array_merge($core_scripts, $page_scripts)));
 $user = mg_current_user();
+if ($user) {
+    $late_styles[] = '/assets/css/store-chat-widget.css';
+    $scripts[] = '/assets/js/store-chat-widget.js';
+}
 $user_permissions = is_array($user['permissions'] ?? null) ? $user['permissions'] : [];
 $user_roles = is_array($user['roles'] ?? null) ? $user['roles'] : [];
 $can_sales_crm = $user && (in_array('sales.leads.view_own', $user_permissions, true) || in_array('sales.leads.view_all', $user_permissions, true) || in_array('super_admin', $user_roles, true));
@@ -146,5 +150,5 @@ $can_intelligence = $user && (in_array('intelligence.dashboard.view', $user_perm
 </script>
 <?php endif; ?>
 <?php foreach (array_unique($late_styles) as $style): ?><link rel="stylesheet" href="<?= mg_e($style) ?>"><?php endforeach; ?>
-<?php foreach ($scripts as $script): ?><script src="<?= mg_e($script) ?>" defer></script><?php endforeach; ?>
+<?php foreach (array_unique($scripts) as $script): ?><script src="<?= mg_e($script) ?>" defer></script><?php endforeach; ?>
 </body></html>
