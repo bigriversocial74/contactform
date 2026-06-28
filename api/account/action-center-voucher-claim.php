@@ -38,15 +38,6 @@ function mg_ac_voucher_match_claim_code(PDO $pdo, string $merchantCode, array $m
     return $row;
 }
 
-function mg_ac_voucher_attempt_hashes(): array
-{
-    $pepper = mg_claim_code_pepper();
-    return [
-        'ip_hash' => hash_hmac('sha256', (string)($_SERVER['REMOTE_ADDR'] ?? ''), $pepper),
-        'user_agent_hash' => hash_hmac('sha256', (string)($_SERVER['HTTP_USER_AGENT'] ?? ''), $pepper),
-    ];
-}
-
 function mg_ac_voucher_mark_optional_token(PDO $pdo, string $token, string $actionItemId, int $userId, int $merchantUserId, int $locationId): void
 {
     $token = trim($token);
@@ -136,6 +127,7 @@ function mg_ac_voucher_claim_microgift(PDO $pdo, string $actionItemId, string $m
     ]);
     mg_audit('microgift.action_center_manual_redeemed', 'microgift_instance', ['instance_id' => (string)$voucher['instance_id'], 'location_id' => $locationPublicId, 'redemption_id' => $redemptionPublicId], (int)$claimCode['merchant_user_id']);
     mg_event('microgift.action_center_manual_redeemed', ['instance_id' => (string)$voucher['instance_id'], 'location_id' => $locationPublicId], (int)$claimCode['merchant_user_id']);
+    $pdo->commit();
     mg_ok([
         'action_item_id' => $actionItemId,
         'instance_id' => (string)$voucher['instance_id'],
@@ -178,6 +170,7 @@ function mg_ac_voucher_claim_wallet(PDO $pdo, string $actionItemId, string $wall
     mg_audit('wallet.action_center_manual_redeemed', 'wallet_item', ['wallet_item_id' => $walletId, 'location_id' => (string)$claimCode['location_public_id']], (int)$claimCode['merchant_user_id']);
     mg_event('wallet.action_center_manual_redeemed', ['wallet_item_id' => $walletId, 'location_id' => (string)$claimCode['location_public_id']], (int)$claimCode['merchant_user_id']);
     $title = trim((string)($wallet['title_snapshot'] ?? '')) ?: trim((string)($wallet['reward_template_title'] ?? '')) ?: 'Microgifter reward';
+    $pdo->commit();
     mg_ok([
         'action_item_id' => $actionItemId,
         'instance_id' => $walletId,
