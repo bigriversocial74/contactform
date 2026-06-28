@@ -4,7 +4,19 @@ declare(strict_types=1);
 /*
  * Copy this file to api/config.local.php on the server using File Manager.
  * api/config.local.php is ignored by Git and should never be committed.
+ *
+ * Agent / Claude setup:
+ * - Prefer setting MG_ANTHROPIC_API_KEY in the hosting environment.
+ * - On cPanel/HostGator-style hosting without environment variable UI,
+ *   paste the Claude / Anthropic credential into $mgAnthropicCredential below.
+ * - Never paste a production provider credential into a public PHP page,
+ *   JavaScript file, committed source file, or browser-visible form.
  */
+
+$mgAnthropicCredential = 'PASTE_ANTHROPIC_CREDENTIAL_HERE';
+if ($mgAnthropicCredential !== '' && $mgAnthropicCredential !== 'PASTE_ANTHROPIC_CREDENTIAL_HERE') {
+    putenv('MG_ANTHROPIC_API_KEY=' . $mgAnthropicCredential);
+}
 
 $mgPaymentCredentialKey = 'PASTE_GENERATED_PAYMENT_CREDENTIAL_KEY_HERE';
 if ($mgPaymentCredentialKey !== '' && $mgPaymentCredentialKey !== 'PASTE_GENERATED_PAYMENT_CREDENTIAL_KEY_HERE') {
