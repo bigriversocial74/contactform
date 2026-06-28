@@ -16,6 +16,7 @@ $merchantNav = [
     'reward_templates' => ['Reward Templates','Wallet-ready offers','/merchant-reward-templates.php','Commerce'],
     'campaigns' => ['Campaigns','Forms, contests, QR drops','/merchant-campaigns.php','Engage'],
     'merchant_crm' => ['Merchant CRM','Customers and campaign history','/merchant-crm.php','Engage'],
+    'agent_chat' => ['Agent Chat','Merchant agent feed','/merchant-agent-chat.php','Engage'],
     'campaign_stamps' => ['Campaign Stamps','Distribution usage','/merchant-campaign-stamps.php','Engage'],
     'stamps' => ['Stamp Ledger','Sends and balance','/merchant-stamps.php','Finance'],
     'storefront' => ['Storefront','Public merchant page','/merchant-storefront.php','Presence'],
