@@ -10,6 +10,19 @@ function mg_s12d_decode_json(?string $json): array
     return is_array($decoded) ? $decoded : [];
 }
 
+function mg_s12d_public_path(string $type): string
+{
+    return match ($type) {
+        'newsletter_signup' => '/newsletter-signup.php',
+        'contest_giveaway' => '/contest.php',
+        'qr_reward_drop' => '/qr-reward.php',
+        'referral_reward' => '/referral-reward.php',
+        'birthday_vip' => '/birthday-vip.php',
+        'agent_offer' => '/agent-offer.php',
+        default => '/campaign.php',
+    };
+}
+
 function mg_s12d_campaign_tool_urls(array $campaign): array
 {
     $base = rtrim((string) (defined('MG_APP_URL') ? MG_APP_URL : ''), '/');
@@ -18,10 +31,12 @@ function mg_s12d_campaign_tool_urls(array $campaign): array
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
         $base = $scheme . '://' . $host;
     }
+    $type = (string)($campaign['campaign_type'] ?? '');
+    $path = mg_s12d_public_path($type);
     $slugOrId = $campaign['public_slug'] ?: $campaign['public_id'];
     return [
-        'public_url' => $base . '/campaign.php?c=' . rawurlencode((string) $slugOrId),
-        'qr_url' => !empty($campaign['qr_code_token']) ? $base . '/campaign.php?token=' . rawurlencode((string) $campaign['qr_code_token']) : null,
+        'public_url' => $base . $path . '?campaign=' . rawurlencode((string) $slugOrId),
+        'qr_url' => !empty($campaign['qr_code_token']) ? $base . '/qr-reward.php?token=' . rawurlencode((string) $campaign['qr_code_token']) : null,
         'qr_token' => $campaign['qr_code_token'] ?? null,
     ];
 }
@@ -112,10 +127,11 @@ try {
         'agent_discoverable' => (bool) $campaign['agent_discoverable'],
         'quantity_limit' => $campaign['quantity_limit'] === null ? null : (int) $campaign['quantity_limit'],
         'issued_count' => (int) $campaign['issued_count'],
-        'claimed_count' => (int) $campaign['claimed_count'],
-        'redeemed_count' => (int) $campaign['redeemed_count'],
+        'claimed_count' => (int) ($walletStatus['claimed'] ?? 0),
+        'redeemed_count' => (int) ($walletStatus['redeemed'] ?? 0),
         'starts_at' => $campaign['starts_at'] ?? null,
         'ends_at' => $campaign['ends_at'] ?? null,
+        'rules' => mg_s12d_decode_json($campaign['rules_json'] ?? null),
         'reward_template' => [
             'id' => $campaign['reward_template_public_id'] ?? null,
             'title' => $campaign['reward_template_title'] ?? null,
