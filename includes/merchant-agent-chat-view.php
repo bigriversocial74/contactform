@@ -11,12 +11,12 @@ declare(strict_types=1);
           <p>The agent feed will show your prompts, Claude replies, and recommended next-step cards.</p>
         </div>
       </div>
+      <p class="mg-form-status" data-agent-chat-status role="status"></p>
       <form class="mg-agent-chat-composer" data-agent-chat-form>
         <button class="mg-agent-chat-tool" type="button" aria-label="Add context">+</button>
         <textarea name="message" rows="1" maxlength="2000" placeholder="Ask the merchant agent what to review, fix, draft, or prioritize…" aria-label="Ask the merchant agent" required></textarea>
         <button class="mg-agent-chat-send" type="submit" data-agent-chat-send aria-label="Send message">↑</button>
       </form>
-      <p class="mg-form-status" data-agent-chat-status role="status"></p>
     </section>
 
     <aside class="mg-agent-chat-right" aria-label="Agent context controls">
