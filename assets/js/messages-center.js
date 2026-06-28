@@ -33,28 +33,6 @@ document.addEventListener('DOMContentLoaded', function () {
     return '<span class="mg-message-source-chip" data-source-system="' + esc(sourceSystem(item)) + '">' + esc(label) + '</span>';
   }
 
-  function contextItems(source) {
-    var context = source && source.context ? source.context : {};
-    var rows = [];
-    if (source && source.label) rows.push(['Source', source.label]);
-    if (source && source.system) rows.push(['System', source.system]);
-    if (context.merchant_name) rows.push(['Merchant', context.merchant_name]);
-    if (context.campaign_title) rows.push(['Campaign', context.campaign_title]);
-    if (context.campaign_type) rows.push(['Campaign type', context.campaign_type]);
-    if (context.contact_source) rows.push(['Contact source', context.contact_source]);
-    if (context.contact_id) rows.push(['CRM contact', context.contact_id]);
-    if (context.store_session_id) rows.push(['Store session', context.store_session_id]);
-    return rows;
-  }
-
-  function contextBar(source) {
-    var rows = contextItems(source);
-    if (!rows.length) return '';
-    return '<div class="mg-thread-context-bar">' + rows.map(function (row) {
-      return '<div class="mg-thread-context-item"><span>' + esc(row[0]) + '</span><strong>' + esc(row[1]) + '</strong></div>';
-    }).join('') + '</div>';
-  }
-
   function composerStatus(form, message, type) {
     if (!form) return;
     var node = form.querySelector('[data-message-compose-status]');
@@ -134,14 +112,13 @@ document.addEventListener('DOMContentLoaded', function () {
     detail.innerHTML = '<div class="mg-empty-state"><strong>Loading conversation...</strong></div>';
     var response = await Microgifter.get('/api/messages/thread.php?id=' + encodeURIComponent(id));
     var thread = (response.data || response).thread || {};
-    var source = thread.source || {};
     var messages = (thread.messages || []).map(function (message) {
       var mine = Boolean(message.mine);
       var messageSource = message.source && message.source.label ? '<span class="mg-message-bubble-source">' + esc(message.source.label) + '</span>' : '';
       var avatar = initials(message.sender_name || (mine ? 'Me' : 'User')).slice(0, 1);
       return '<article class="mg-message-row ' + (mine ? 'is-mine' : 'is-theirs') + '"><div class="mg-message-avatar" aria-hidden="true">' + esc(avatar) + '</div><div class="mg-message-bubble ' + (mine ? 'is-mine' : 'is-theirs') + '"><strong>' + esc(message.sender_name || (mine ? 'Me' : 'User')) + '</strong><p>' + esc(message.body) + '</p><small>' + esc(message.created_at || '') + '</small>' + messageSource + '</div></article>';
     }).join('') || '<div class="mg-empty-state"><strong>No messages yet.</strong></div>';
-    detail.innerHTML = '<div class="mg-thread-detail-shell"><div class="mg-thread-detail-top">' + contextBar(source) + '<div class="mg-thread-title-bar"><div class="mg-thread-title-block"><div class="mg-thread-title-line"><h2>' + esc(thread.subject || 'Conversation') + '</h2>' + sourceBadge(thread) + '<span class="mg-message-source-chip is-live">Active</span></div><p>' + esc(thread.gift_id || thread.pppm_id || thread.conversation_key || 'Gift communication') + '</p></div><div class="mg-thread-title-actions"><button type="button" aria-label="Mark complete">Done</button><button type="button" aria-label="Tag conversation">#</button><button type="button" aria-label="More actions">More</button></div></div></div><div class="mg-message-stream-wrap"><div class="mg-message-stream">' + messages + '</div></div><form class="mg-message-composer is-detached" data-thread-reply data-thread-id="' + esc(thread.public_id || thread.id || id) + '" aria-busy="false"><div class="mg-message-composer-inner"><div class="mg-message-compose-main"><textarea name="body" maxlength="4000" required placeholder="Type your message..."></textarea><div class="mg-message-compose-meta"><span data-compose-count>0 / 4000</span></div></div><div class="mg-message-compose-tools"><button class="mg-compose-tool" type="button" aria-label="Add attachment">+</button><button class="mg-compose-tool" type="button" aria-label="Add note">Aa</button><button class="mg-btn mg-btn-primary" type="submit" data-message-send>Send</button></div></div><div class="mg-message-compose-status" data-message-compose-status role="status" aria-live="polite"></div></form></div>';
+    detail.innerHTML = '<div class="mg-thread-detail-shell"><div class="mg-thread-detail-top"><div class="mg-thread-title-bar"><div class="mg-thread-title-block"><div class="mg-thread-title-line"><h2>' + esc(thread.subject || 'Conversation') + '</h2></div></div><div class="mg-thread-title-actions"><button type="button" data-thread-details>Details</button></div></div></div><div class="mg-message-stream-wrap"><div class="mg-message-stream">' + messages + '</div></div><form class="mg-message-composer is-detached" data-thread-reply data-thread-id="' + esc(thread.public_id || thread.id || id) + '" aria-busy="false"><div class="mg-message-composer-inner"><div class="mg-message-compose-main"><textarea name="body" maxlength="4000" required placeholder="Type your message..."></textarea><div class="mg-message-compose-meta"><span data-compose-count>0 / 4000</span></div></div><div class="mg-message-compose-tools"><button class="mg-compose-tool" type="button" aria-label="Add attachment">+</button><button class="mg-compose-tool" type="button" aria-label="Add note">Aa</button><button class="mg-btn mg-btn-primary" type="submit" data-message-send>Send</button></div></div><div class="mg-message-compose-status" data-message-compose-status role="status" aria-live="polite"></div></form></div>';
     var stream = detail.querySelector('.mg-message-stream');
     if (stream) stream.scrollTop = stream.scrollHeight;
     var textarea = detail.querySelector('textarea[name="body"]');
