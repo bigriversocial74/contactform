@@ -59,6 +59,23 @@ body.mg-modal-lock{overflow:hidden!important}
 .mg-claim-voucher-id span{grid-column:1/-1;color:#6b7b93;font-size:10px;font-weight:950;letter-spacing:.09em;text-transform:uppercase}
 .mg-claim-voucher-id code{min-width:0;overflow:auto;color:#071225;font-size:12px;font-weight:900;white-space:nowrap}
 .mg-claim-voucher-id button{min-height:38px!important;white-space:nowrap!important}
+.mg-claim-voucher-manual{display:grid;gap:12px;padding:14px;border:1px solid #cfe0ff;border-radius:18px;background:linear-gradient(135deg,#f8fbff,#eef5ff)}
+.mg-claim-voucher-manual-copy{display:grid;gap:4px}
+.mg-claim-voucher-manual-copy span{color:#0b5cff;font-size:10px;font-weight:950;letter-spacing:.1em;text-transform:uppercase}
+.mg-claim-voucher-manual-copy strong{color:#071225;font-size:16px;font-weight:950;letter-spacing:-.03em}
+.mg-claim-voucher-manual-copy p{margin:0;color:#5b6b83;font-size:12px;line-height:1.45;font-weight:700}
+.mg-claim-voucher-code-label{display:grid!important;gap:7px!important;margin:0!important;color:#42526b!important;font-size:11px!important;font-weight:950!important;letter-spacing:.08em!important;text-transform:uppercase!important}
+.mg-claim-voucher-code-label input{width:100%!important;min-height:48px!important;border:1px solid #b9cef7!important;border-radius:14px!important;background:#fff!important;color:#071225!important;font-size:16px!important;font-weight:900!important;letter-spacing:.03em!important;padding:0 14px!important;outline:none!important;text-transform:uppercase!important;box-shadow:0 1px 0 rgba(15,23,42,.04)!important}
+.mg-claim-voucher-code-label input:focus{border-color:#0b5cff!important;box-shadow:0 0 0 4px rgba(11,92,255,.12)!important}
+.mg-claim-voucher-manual-actions{display:flex;justify-content:flex-end;gap:10px;align-items:center}
+.mg-claim-voucher-manual-actions .mg-btn{min-height:44px!important}
+.mg-claim-voucher-status{min-height:18px;color:#5b6b83;font-size:12px;font-weight:800;line-height:1.45}
+.mg-claim-voucher-status[data-state="loading"]{color:#0b5cff}
+.mg-claim-voucher-status[data-state="error"]{color:#b42318}
+.mg-claim-voucher-status[data-state="success"]{color:#0f7a3b}
+.mg-claim-voucher-success{display:grid!important;gap:12px!important;text-align:left!important}
+.mg-claim-voucher-success strong{font-size:20px!important;line-height:1.1!important;color:#071225!important}
+.mg-claim-voucher-success p{margin:0!important;color:#5b6b83!important;font-weight:700!important;line-height:1.5!important}
 @media(max-width:760px){
   body > .mg-action-modal{
     left:0!important;
@@ -75,6 +92,8 @@ body.mg-modal-lock{overflow:hidden!important}
   body > .mg-action-modal .mg-action-modal-body{max-height:calc(100dvh - 72px)!important}
   body > .mg-gift-drawer{width:100vw!important;height:100dvh!important}
   .mg-claim-voucher-id{grid-template-columns:1fr}
+  .mg-claim-voucher-manual-actions{display:grid;grid-template-columns:1fr}
+  .mg-claim-voucher-manual-actions .mg-btn{width:100%!important}
 }
 
 /* Mobile width correction for the Inbox, Sent, and Claimed action center screens. */
