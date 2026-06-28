@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var sidebarBackdrop = app.querySelector('[data-messages-sidebar-backdrop]');
   var refreshButtons = app.querySelectorAll('[data-message-refresh]');
   var filterButtons = app.querySelectorAll('[data-message-filter]');
-  var state = { threads: [], current: null, sending: false, filter: 'all' };
+  var state = { threads: [], current: null, sending: false, filter: 'all', pollTimer: null };
 
   function esc(value) {
     return String(value == null ? '' : value).replace(/[&<>'"]/g, function (character) {
@@ -25,12 +25,65 @@ document.addEventListener('DOMContentLoaded', function () {
     return label.split(/\s+/).filter(Boolean).slice(0, 2).map(function (part) { return part.charAt(0); }).join('').toUpperCase() || 'MG';
   }
 
-  function sourceLabel(item) { return item && (item.source_label || (item.source && item.source.label)) || ''; }
-  function sourceSystem(item) { return item && (item.source_system || (item.source && item.source.system)) || ''; }
+  function sourceLabel(item) { return item && (item.source_label || item.label || (item.source && item.source.label)) || ''; }
+  function sourceSystem(item) { return item && (item.source_system || item.system || (item.source && item.source.system)) || ''; }
   function sourceBadge(item) {
     var label = sourceLabel(item);
     if (!label) return '';
     return '<span class="mg-message-source-chip" data-source-system="' + esc(sourceSystem(item)) + '">' + esc(label) + '</span>';
+  }
+
+  function parseTime(value) {
+    if (!value) return null;
+    var normalized = String(value).replace(' ', 'T');
+    var date = new Date(normalized);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  function formatMessageTime(value) {
+    var date = parseTime(value);
+    if (!date) return value || '';
+    var delta = Math.max(0, Date.now() - date.getTime());
+    var minute = 60000;
+    var hour = 60 * minute;
+    var day = 24 * hour;
+    if (delta < 45000) return 'Just now';
+    if (delta < hour) return Math.max(1, Math.floor(delta / minute)) + 'm ago';
+    if (delta < day) return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    if (delta < 2 * day) return 'Yesterday ' + date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    return date.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' at ' + date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  }
+
+  function contextItems(source) {
+    var context = source && source.context ? source.context : {};
+    var rows = [];
+    if (source && source.label) rows.push(['Source', source.label]);
+    if (source && source.system) rows.push(['System', source.system]);
+    if (context.merchant_name) rows.push(['Merchant', context.merchant_name]);
+    if (context.campaign_title) rows.push(['Campaign', context.campaign_title]);
+    if (context.campaign_type) rows.push(['Campaign type', context.campaign_type]);
+    if (context.contact_source) rows.push(['Contact source', context.contact_source]);
+    if (context.contact_id) rows.push(['CRM contact', context.contact_id]);
+    if (context.store_session_id) rows.push(['Store session', context.store_session_id]);
+    return rows;
+  }
+
+  function detailsPopover(source) {
+    var rows = contextItems(source);
+    if (!rows.length) return '';
+    return '<div class="mg-thread-details-popover" data-thread-details-panel hidden>' + rows.map(function (row) {
+      return '<div class="mg-thread-details-row"><span>' + esc(row[0]) + '</span><strong>' + esc(row[1]) + '</strong></div>';
+    }).join('') + '</div>';
+  }
+
+  function isNearBottom(node) {
+    if (!node) return true;
+    return node.scrollHeight - node.scrollTop - node.clientHeight < 160;
+  }
+
+  function hasDraft() {
+    var textarea = detail && detail.querySelector('textarea[name="body"]');
+    return Boolean(textarea && textarea.value.trim());
   }
 
   function composerStatus(form, message, type) {
@@ -47,8 +100,11 @@ document.addEventListener('DOMContentLoaded', function () {
     var textarea = form && form.querySelector('textarea[name="body"]');
     var button = form && form.querySelector('[data-message-send]');
     if (textarea) textarea.disabled = busy;
-    if (button) { button.disabled = busy; button.textContent = busy ? 'Sending...' : 'Send'; }
-    if (form) form.setAttribute('aria-busy', busy ? 'true' : 'false');
+    if (button) { button.disabled = busy; button.textContent = busy ? 'Sending' : 'Send'; }
+    if (form) {
+      form.setAttribute('aria-busy', busy ? 'true' : 'false');
+      form.classList.toggle('is-sending', busy);
+    }
   }
 
   function setSidebarOpen(open) {
@@ -78,7 +134,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!list) return;
     list.innerHTML = items.length ? items.map(function (thread) {
       var active = state.current === thread.public_id;
-      return '<article class="mg-thread-card ' + (thread.unread ? 'is-unread ' : '') + (active ? 'is-active' : '') + '" data-thread-id="' + esc(thread.public_id) + '" data-thread-initial="' + esc(initials(thread.subject || sourceLabel(thread))) + '"><div><div class="mg-thread-card-title"><strong>' + esc(thread.subject || 'Conversation') + '</strong>' + sourceBadge(thread) + '</div><p>' + esc(thread.latest_message || 'No messages yet') + '</p><small>' + esc(thread.latest_at || thread.updated_at || '') + '</small></div></article>';
+      return '<article class="mg-thread-card ' + (thread.unread ? 'is-unread ' : '') + (active ? 'is-active' : '') + '" data-thread-id="' + esc(thread.public_id) + '" data-thread-initial="' + esc(initials(thread.subject || sourceLabel(thread))) + '"><div><div class="mg-thread-card-title"><strong>' + esc(thread.subject || 'Conversation') + '</strong>' + sourceBadge(thread) + '</div><p>' + esc(thread.latest_message || 'No messages yet') + '</p><small>' + esc(formatMessageTime(thread.latest_at || thread.updated_at || '')) + '</small></div></article>';
     }).join('') : '<div class="mg-empty-state"><strong>No conversations found.</strong><p>Merchant CRM, Store Canvas, gift, recipient, and PPPM conversations will appear here.</p></div>';
   }
 
@@ -101,29 +157,66 @@ document.addEventListener('DOMContentLoaded', function () {
     if (Microgifter.setMessageCount) Microgifter.setMessageCount(counts.message_unread || 0);
     var requested = new URLSearchParams(location.search).get('thread');
     var nextThread = requested || state.current || (state.threads[0] && state.threads[0].public_id) || '';
-    if (nextThread && options.open !== false) await openThread(nextThread);
+    if (nextThread && options.open !== false) await openThread(nextThread, options);
   }
 
-  async function openThread(id) {
+  function renderMessage(message) {
+    var mine = Boolean(message.mine);
+    var status = message.status || (mine ? 'sent' : 'received');
+    var messageSource = sourceLabel(message.source || {}) ? '<span class="mg-message-bubble-source">' + esc(sourceLabel(message.source)) + '</span>' : '';
+    var avatar = initials(message.sender_name || (mine ? 'You' : 'User')).slice(0, 1);
+    var statusText = status === 'pending' ? 'Sending' : (status === 'failed' ? 'Not sent' : (mine ? 'Sent' : 'Received'));
+    var statusClass = 'mg-message-delivery-state is-' + esc(status);
+    return '<article class="mg-message-row ' + (mine ? 'is-mine' : 'is-theirs') + ' is-' + esc(status) + '"><div class="mg-message-avatar" aria-hidden="true">' + esc(avatar) + '</div><div class="mg-message-bubble ' + (mine ? 'is-mine' : 'is-theirs') + '"><strong>' + esc(message.sender_name || (mine ? 'You' : 'User')) + '</strong><p>' + esc(message.body) + '</p><small><time>' + esc(formatMessageTime(message.created_at || message.created_label || '')) + '</time><span class="' + statusClass + '">' + esc(statusText) + '</span></small>' + messageSource + '</div></article>';
+  }
+
+  async function openThread(id, options) {
+    options = options || {};
     state.current = id;
     render();
     setSidebarOpen(false);
     if (!detail) return;
-    detail.innerHTML = '<div class="mg-empty-state"><strong>Loading conversation...</strong></div>';
+    var previousStream = detail.querySelector('.mg-message-stream');
+    var keepPosition = options.preserveScroll && previousStream && !isNearBottom(previousStream);
+    var oldScrollTop = previousStream ? previousStream.scrollTop : 0;
+    if (!options.silent) detail.innerHTML = '<div class="mg-empty-state"><strong>Loading conversation...</strong></div>';
     var response = await Microgifter.get('/api/messages/thread.php?id=' + encodeURIComponent(id));
     var thread = (response.data || response).thread || {};
-    var messages = (thread.messages || []).map(function (message) {
-      var mine = Boolean(message.mine);
-      var messageSource = message.source && message.source.label ? '<span class="mg-message-bubble-source">' + esc(message.source.label) + '</span>' : '';
-      var avatar = initials(message.sender_name || (mine ? 'Me' : 'User')).slice(0, 1);
-      return '<article class="mg-message-row ' + (mine ? 'is-mine' : 'is-theirs') + '"><div class="mg-message-avatar" aria-hidden="true">' + esc(avatar) + '</div><div class="mg-message-bubble ' + (mine ? 'is-mine' : 'is-theirs') + '"><strong>' + esc(message.sender_name || (mine ? 'Me' : 'User')) + '</strong><p>' + esc(message.body) + '</p><small>' + esc(message.created_at || '') + '</small>' + messageSource + '</div></article>';
-    }).join('') || '<div class="mg-empty-state"><strong>No messages yet.</strong></div>';
-    detail.innerHTML = '<div class="mg-thread-detail-shell"><div class="mg-thread-detail-top"><div class="mg-thread-title-bar"><div class="mg-thread-title-block"><div class="mg-thread-title-line"><h2>' + esc(thread.subject || 'Conversation') + '</h2></div></div><div class="mg-thread-title-actions"><button type="button" data-thread-details>Details</button></div></div></div><div class="mg-message-stream-wrap"><div class="mg-message-stream">' + messages + '</div></div><form class="mg-message-composer is-detached" data-thread-reply data-thread-id="' + esc(thread.public_id || thread.id || id) + '" aria-busy="false"><div class="mg-message-composer-inner"><div class="mg-message-compose-main"><textarea name="body" maxlength="4000" required placeholder="Type your message..."></textarea><div class="mg-message-compose-meta"><span data-compose-count>0 / 4000</span></div></div><div class="mg-message-compose-tools"><button class="mg-compose-tool" type="button" aria-label="Add attachment">+</button><button class="mg-compose-tool" type="button" aria-label="Add note">Aa</button><button class="mg-btn mg-btn-primary" type="submit" data-message-send>Send</button></div></div><div class="mg-message-compose-status" data-message-compose-status role="status" aria-live="polite"></div></form></div>';
+    var source = thread.source || {};
+    var messages = (thread.messages || []).map(renderMessage).join('') || '<div class="mg-empty-state"><strong>No messages yet.</strong></div>';
+    detail.innerHTML = '<div class="mg-thread-detail-shell"><div class="mg-thread-detail-top"><div class="mg-thread-title-bar"><div class="mg-thread-title-block"><div class="mg-thread-title-line"><h2>' + esc(thread.subject || 'Conversation') + '</h2><span class="mg-thread-live-dot">Live</span></div></div><div class="mg-thread-title-actions"><button type="button" data-thread-details aria-expanded="false">Details</button>' + detailsPopover(source) + '</div></div></div><div class="mg-message-stream-wrap"><div class="mg-message-stream">' + messages + '</div></div><form class="mg-message-composer is-detached" data-thread-reply data-thread-id="' + esc(thread.public_id || thread.id || id) + '" aria-busy="false"><div class="mg-message-composer-inner"><div class="mg-message-compose-main"><textarea name="body" maxlength="4000" required placeholder="Type your message..."></textarea><div class="mg-message-compose-meta"><span data-compose-count>0 / 4000</span><span class="mg-message-compose-live">Live updates on</span></div></div><div class="mg-message-compose-tools"><button class="mg-compose-tool" type="button" aria-label="Add attachment">+</button><button class="mg-compose-tool" type="button" aria-label="Add note">Aa</button><button class="mg-btn mg-btn-primary" type="submit" data-message-send>Send</button></div></div><div class="mg-message-compose-status" data-message-compose-status role="status" aria-live="polite"></div></form></div>';
     var stream = detail.querySelector('.mg-message-stream');
-    if (stream) stream.scrollTop = stream.scrollHeight;
+    if (stream) stream.scrollTop = keepPosition ? oldScrollTop : stream.scrollHeight;
     var textarea = detail.querySelector('textarea[name="body"]');
     var counter = detail.querySelector('[data-compose-count]');
     if (textarea && counter) textarea.addEventListener('input', function () { counter.textContent = textarea.value.length + ' / 4000'; });
+  }
+
+  function addOptimisticMessage(body) {
+    var stream = detail && detail.querySelector('.mg-message-stream');
+    if (!stream) return null;
+    var node = document.createElement('div');
+    node.innerHTML = renderMessage({ mine: true, sender_name: 'You', body: body, created_at: new Date().toISOString(), status: 'pending', source: { label: 'Sending' } });
+    var row = node.firstChild;
+    if (row) {
+      row.classList.add('is-new');
+      stream.appendChild(row);
+      stream.scrollTop = stream.scrollHeight;
+    }
+    return row;
+  }
+
+  function setOptimisticStatus(row, status, label) {
+    if (!row) return;
+    row.classList.remove('is-pending', 'is-failed', 'is-sent');
+    row.classList.add('is-' + status);
+    var stateNode = row.querySelector('.mg-message-delivery-state');
+    if (stateNode) {
+      stateNode.className = 'mg-message-delivery-state is-' + status;
+      stateNode.textContent = label;
+    }
+    var sourceNode = row.querySelector('.mg-message-bubble-source');
+    if (sourceNode) sourceNode.textContent = status === 'failed' ? 'Not sent' : 'Just posted';
   }
 
   async function sendReply(form) {
@@ -133,6 +226,10 @@ document.addEventListener('DOMContentLoaded', function () {
     var body = textarea ? textarea.value.trim() : '';
     if (!threadId) return composerStatus(form, 'Select a conversation before sending.', 'error');
     if (!body) { composerStatus(form, 'Type your message before sending.', 'error'); if (textarea) textarea.focus(); return; }
+    var optimisticRow = addOptimisticMessage(body);
+    if (textarea) textarea.value = '';
+    var counter = form.querySelector('[data-compose-count]');
+    if (counter) counter.textContent = '0 / 4000';
     state.sending = true;
     setComposerBusy(form, true);
     composerStatus(form, 'Sending message...', '');
@@ -140,18 +237,31 @@ document.addEventListener('DOMContentLoaded', function () {
       var result = await Microgifter.post('/api/messages/send.php', { thread_id: threadId, body: body, csrf_token: Microgifter.getCsrfToken ? Microgifter.getCsrfToken() : '' });
       var data = result && result.data ? result.data : result;
       var nextThread = data && data.thread_id ? data.thread_id : threadId;
-      if (textarea) textarea.value = '';
-      composerStatus(form, 'Message sent.', 'success');
-      await openThread(nextThread);
-      await load({ open: false });
+      setOptimisticStatus(optimisticRow, 'sent', 'Sent just now');
+      composerStatus(form, 'Message sent just now.', 'success');
+      await openThread(nextThread, { silent: true });
+      await load({ open: false, silent: true });
       if (Microgifter.toast) Microgifter.toast('Message sent.', 'success');
     } catch (error) {
       var message = error && error.message ? error.message : 'Message could not be sent.';
+      setOptimisticStatus(optimisticRow, 'failed', 'Not sent');
       composerStatus(form, message, 'error');
+      if (textarea) textarea.value = body;
+      if (counter) counter.textContent = body.length + ' / 4000';
       if (Microgifter.toast) Microgifter.toast(message, 'error');
     } finally {
       state.sending = false;
       setComposerBusy(form, false);
+    }
+  }
+
+  async function pollMessages() {
+    if (state.sending || document.hidden) return;
+    try {
+      await load({ open: false, silent: true });
+      if (state.current && !hasDraft()) await openThread(state.current, { silent: true, preserveScroll: true });
+    } catch (error) {
+      console.warn('Message polling paused.', error);
     }
   }
 
@@ -160,11 +270,29 @@ document.addEventListener('DOMContentLoaded', function () {
   document.addEventListener('keydown', function (event) { if (event.key === 'Escape') setSidebarOpen(false); });
   if (list) list.addEventListener('click', function (event) { var row = event.target.closest('[data-thread-id]'); if (row) openThread(row.dataset.threadId).catch(function (error) { if (Microgifter.toast) Microgifter.toast(error && error.message ? error.message : 'Unable to open conversation.', 'error'); console.error(error); }); });
   if (detail) {
-    detail.addEventListener('click', function (event) { var button = event.target.closest('[data-message-send]'); if (!button) return; event.preventDefault(); sendReply(button.closest('[data-thread-reply]')).catch(console.error); });
+    detail.addEventListener('click', function (event) {
+      var detailsButton = event.target.closest('[data-thread-details]');
+      if (detailsButton) {
+        event.preventDefault();
+        var panel = detail.querySelector('[data-thread-details-panel]');
+        if (panel) {
+          var opening = panel.hasAttribute('hidden');
+          panel.hidden = !opening;
+          detailsButton.setAttribute('aria-expanded', opening ? 'true' : 'false');
+        }
+        return;
+      }
+      var button = event.target.closest('[data-message-send]');
+      if (!button) return;
+      event.preventDefault();
+      sendReply(button.closest('[data-thread-reply]')).catch(console.error);
+    });
     detail.addEventListener('submit', function (event) { var form = event.target.closest('[data-thread-reply]'); if (!form) return; event.preventDefault(); sendReply(form).catch(console.error); });
   }
   if (search) search.addEventListener('input', render);
   refreshButtons.forEach(function (button) { button.addEventListener('click', function () { load().catch(console.error); }); });
   filterButtons.forEach(function (button) { button.addEventListener('click', function () { state.filter = button.dataset.messageFilter || 'all'; filterButtons.forEach(function (item) { item.classList.toggle('is-active', item === button); }); render(); }); });
+  state.pollTimer = window.setInterval(pollMessages, 12000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) pollMessages(); });
   load().catch(console.error);
 });
