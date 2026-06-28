@@ -61,6 +61,11 @@ function mg_communications_project_thread(array $row): array
     $row['source_label'] = mg_communications_source_label($sourceType);
     $row['source_system'] = mg_communications_source_system($sourceType);
     $row['source_reference'] = isset($row['source_reference']) ? (string)$row['source_reference'] : '';
+    $row['crm_status'] = (string)($row['crm_status'] ?? 'open');
+    $row['crm_label'] = (string)($row['crm_label'] ?? '');
+    $row['assigned_user_id'] = isset($row['assigned_user_id']) ? (int)$row['assigned_user_id'] : null;
+    $row['assigned_to_me'] = !empty($row['assigned_to_me']);
+    $row['high_value'] = strtolower((string)$row['crm_label']) === 'high value';
     return $row;
 }
 
@@ -93,6 +98,10 @@ $threads = $pdo->prepare(
             latest.source_reference,
             COALESCE(mts.archived_at IS NOT NULL,0) archived,
             COALESCE(mts.pinned_at IS NOT NULL,0) pinned,
+            COALESCE(mcs.status,'open') crm_status,
+            mcs.label crm_label,
+            mcs.assigned_user_id,
+            CASE WHEN mcs.assigned_user_id=? THEN 1 ELSE 0 END assigned_to_me,
             CASE
               WHEN latest.created_at IS NOT NULL
                AND (mtp.last_read_at IS NULL OR latest.created_at>mtp.last_read_at)
@@ -102,6 +111,7 @@ $threads = $pdo->prepare(
      FROM message_thread_participants mtp
      INNER JOIN message_threads mt ON mt.id=mtp.thread_id
      LEFT JOIN message_thread_settings mts ON mts.thread_id=mt.id AND mts.user_id=mtp.user_id
+     LEFT JOIN message_thread_crm_state mcs ON mcs.thread_id=mt.id
      LEFT JOIN gifts g ON g.id=mt.gift_id
      LEFT JOIN pppm_items pi ON pi.id=mt.pppm_item_id
      LEFT JOIN messages latest ON latest.id=(
@@ -111,7 +121,7 @@ $threads = $pdo->prepare(
      ORDER BY pinned DESC,COALESCE(latest.created_at,mt.updated_at) DESC
      LIMIT {$limit}"
 );
-$threads->execute([(int)$user['id'], (int)$user['id']]);
+$threads->execute([(int)$user['id'], (int)$user['id'], (int)$user['id']]);
 
 $alerts = $pdo->prepare(
     "SELECT public_id,alert_type,severity,status,title,body,action_url,created_at,acknowledged_at,resolved_at
