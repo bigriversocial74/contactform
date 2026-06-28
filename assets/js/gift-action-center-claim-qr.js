@@ -7,6 +7,19 @@
     })[char]);
   }
 
+  function safeErrorMessage(message) {
+    const text = String(message || '').trim();
+    if (!text) return 'Unable to prepare the signed scanner QR right now.';
+    if (/SQLSTATE|Base table|PDOException|doesn'?t exist|syntax error/i.test(text)) {
+      return 'The signed scanner QR is waiting on the wallet claim integrity database migration. Use the fallback QR and merchant claim code, then run the Stage 18AH migration before final wallet redemption testing.';
+    }
+    return text;
+  }
+
+  function fallbackQrUrl(voucherId) {
+    return '/api/account/action-center-voucher-qr.php?manual=' + encodeURIComponent(voucherId || '');
+  }
+
   function activeVoucherId(form) {
     const direct = form && form.querySelector('[name="action_item_id"],[data-action-item-id]');
     const directValue = direct && (direct.value || direct.getAttribute('data-action-item-id'));
@@ -49,19 +62,19 @@
   }
 
   function errorMarkup(title, message, voucherId) {
+    const cleanMessage = safeErrorMessage(message);
     return `
       <section class="mg-claim-voucher-qr" aria-label="Merchant scan voucher QR">
         <div class="mg-claim-voucher-copy">
           <span>Customer voucher QR</span>
           <strong>${esc(title)}</strong>
-          <p>${esc(message || 'Unable to prepare the scanner QR right now.')}</p>
+          <p>${esc(cleanMessage)}</p>
         </div>
-        <div class="mg-claim-voucher-id">
-          <span>Manual voucher ID</span>
-          <code>${esc(voucherId)}</code>
-          <button class="mg-btn mg-btn-soft" type="button" data-copy-voucher-id="${esc(voucherId)}">Copy ID</button>
+        <div class="mg-claim-voucher-frame is-fallback">
+          <img src="${esc(fallbackQrUrl(voucherId))}" alt="Fallback QR code for ${esc(title)}" loading="eager" referrerpolicy="no-referrer">
         </div>
-        ${manualClaimForm(voucherId, '', true)}
+        <div class="mg-action-form-note">Fallback QR payload: merchant scanner can identify the voucher reference, but final redemption still requires the merchant-only claim code and the wallet claim integrity migration for wallet rewards.</div>
+        ${manualClaimForm(voucherId, '', false)}
         <div class="mg-action-form-footer"><button class="mg-btn mg-btn-soft" type="button" data-action-modal-close>Close</button></div>
       </section>`;
   }
@@ -83,11 +96,6 @@
         </div>
         <div class="mg-claim-voucher-frame">
           <img src="${esc(qrImage)}" alt="QR code for ${esc(title)}" loading="eager" referrerpolicy="no-referrer">
-        </div>
-        <div class="mg-claim-voucher-id">
-          <span>Voucher ID</span>
-          <code>${esc(voucherId)}</code>
-          <button class="mg-btn mg-btn-soft" type="button" data-copy-voucher-id="${esc(voucherId)}">Copy ID</button>
         </div>
         <input type="hidden" data-voucher-scan-payload value="${esc(payload)}">
         ${manualClaimForm(voucherId, token, false)}
@@ -190,24 +198,9 @@
         input.disabled = false;
         input.focus();
       }
-      setStatus(form, error.message || 'Unable to claim this gift right now.', 'error');
+      setStatus(form, safeErrorMessage(error.message || 'Unable to claim this gift right now.'), 'error');
     }
   }
-
-  document.addEventListener('click', async (event) => {
-    const copyButton = event.target.closest('[data-copy-voucher-id]');
-    if (!copyButton) return;
-    event.preventDefault();
-    const value = copyButton.getAttribute('data-copy-voucher-id') || '';
-    try {
-      await navigator.clipboard.writeText(value);
-      copyButton.textContent = 'Copied';
-      window.setTimeout(() => { copyButton.textContent = 'Copy ID'; }, 1600);
-    } catch (error) {
-      copyButton.textContent = 'Copy failed';
-      window.setTimeout(() => { copyButton.textContent = 'Copy ID'; }, 1600);
-    }
-  });
 
   document.addEventListener('submit', (event) => {
     const form = event.target.closest('[data-voucher-claim-form]');
