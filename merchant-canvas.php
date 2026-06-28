@@ -91,6 +91,7 @@ require __DIR__ . '/includes/header.php';
                 <small>Merchant Agent · campaigns · rewards · CRM</small>
               </div>
               <div class="mg-canvas-avatar-layer" data-canvas-customers></div>
+              <div class="mg-canvas-trigger-layer" data-canvas-triggers></div>
               <article class="mg-canvas-empty-state" data-canvas-empty>
                 <span>No avatars inside yet</span>
                 <p data-canvas-empty-copy>Customer avatars will appear here when shoppers enter from merchant feed posts.</p>
