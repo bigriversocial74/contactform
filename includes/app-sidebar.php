@@ -92,7 +92,7 @@ $lastSection = null;
         $detail = (string) ($item['detail'] ?? '');
         $isButton = (bool) ($item['button'] ?? false);
         $dataTab = trim((string) ($item['data_tab'] ?? ''));
-        $badge = $appSidebarAgentBadges ? '<em class="mg-agent-nav-badge" data-agent-nav-badge="' . mg_e((string)$key) . '" hidden>0</em>' : '';
+        $badge = '';
       ?>
       <?php if ($isButton): ?>
         <button class="<?= $isActive ? 'is-active' : '' ?>" type="button"<?= $dataTab !== '' ? ' data-crm-tab="' . mg_e($dataTab) . '"' : '' ?>><strong><?= mg_e($label) ?></strong><?php if ($detail !== ''): ?><span><?= mg_e($detail) ?></span><?php endif; ?><?= $badge ?></button>
