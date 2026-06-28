@@ -9,6 +9,14 @@
 .mg-agent-chat-composer-shell{position:sticky;bottom:0;z-index:30;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:end;width:100%;margin-top:10px;padding:16px;border:1px solid rgba(219,227,239,.95);border-radius:28px;background:rgba(255,255,255,.98);box-shadow:0 18px 42px rgba(15,23,42,.1)}
 .mg-agent-chat-composer-shell textarea{width:100%;resize:none;min-height:52px;max-height:170px;border:1px solid #dbe3ef;border-radius:26px;background:#fff;padding:16px 18px;font:inherit;font-size:15px;font-weight:780;line-height:1.45;color:#0f172a;outline:none;box-shadow:0 14px 36px rgba(15,23,42,.045)}
 .mg-agent-chat-composer-shell textarea:focus{border-color:#bfdbfe;box-shadow:0 16px 42px rgba(37,99,235,.1)}
+.mg-agent-chat-send:disabled{opacity:.45}
+.mg-agent-chat-tool-wrap{position:relative;display:grid;align-items:end}
+.mg-agent-context-menu{position:absolute;left:0;bottom:64px;z-index:50;width:230px;border:1px solid #dbe3ef;border-radius:18px;background:#fff;padding:8px;box-shadow:0 20px 46px rgba(15,23,42,.16)}
+.mg-agent-context-menu button{display:block;width:100%;border:0;border-radius:12px;background:transparent;padding:10px 12px;text-align:left;font:inherit;font-size:12px;font-weight:900;color:#0f172a}
+.mg-agent-context-menu button:hover{background:#eff6ff;color:#2563eb}
+.mg-agent-context-summary{margin:-2px 0 14px;border:1px solid #dbe3ef;border-radius:16px;background:#f8fafc;padding:10px 12px;color:#334155;font-size:11px;font-weight:900;line-height:1.45}
+.mg-agent-chat-fields{gap:12px}
+.mg-agent-chat-card-actions .mg-btn[disabled]{opacity:.7}
 .mg-agent-chat-right{position:sticky;top:0;align-self:start;margin-top:0;min-width:0}
 @media(max-width:1180px){.mg-agent-chat-layout{grid-template-columns:1fr}.mg-agent-chat-right{position:static}.mg-agent-chat-main-stack{min-height:calc(100vh - 122px)}.mg-agent-chat-feed{min-height:0}}
-@media(max-width:760px){.mg-agent-chat-app .mg-merchant-main{height:auto;min-height:calc(100vh - 74px);overflow:visible}.mg-agent-chat-main-stack{min-height:calc(100vh - 126px)}.mg-agent-chat-composer-shell{gap:8px;padding:10px;border-radius:22px}.mg-agent-chat-composer-shell textarea{min-height:48px;border-radius:22px;padding:13px 14px;font-size:14px}}
+@media(max-width:760px){.mg-agent-chat-app .mg-merchant-main{height:auto;min-height:calc(100vh - 74px);overflow:visible}.mg-agent-chat-main-stack{min-height:calc(100vh - 126px)}.mg-agent-chat-composer-shell{gap:8px;padding:10px;border-radius:22px}.mg-agent-chat-composer-shell textarea{min-height:48px;border-radius:22px;padding:13px 14px;font-size:14px}.mg-agent-context-menu{bottom:58px;width:min(260px,82vw)}}
