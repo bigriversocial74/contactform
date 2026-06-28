@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/_canvas.php';
+require_once __DIR__ . '/_canvas_runtime.php';
 
 mg_require_method('GET');
 $pdo = mg_db();
@@ -10,19 +10,20 @@ $viewerId = $user ? (int)$user['id'] : null;
 $postId = trim((string)($_GET['post_id'] ?? ''));
 
 try {
+    $schemaReady = mg_store_runtime_schema_ready($pdo);
     $data = [
         'authenticated' => $viewerId !== null,
-        'schema_ready' => mg_store_canvas_schema_ready($pdo),
+        'schema_ready' => $schemaReady,
         'active_session' => null,
         'post_state' => null,
     ];
 
-    if ($viewerId !== null && mg_store_canvas_schema_ready($pdo)) {
-        $data['active_session'] = mg_store_project_session(mg_store_active_session_for_customer($pdo, $viewerId));
+    if ($viewerId !== null && $schemaReady) {
+        $data['active_session'] = mg_store_project_session(mg_store_runtime_active_session_for_customer($pdo, $viewerId));
     }
 
     if ($postId !== '') {
-        $data['post_state'] = mg_store_feed_status_for_post($pdo, $viewerId, $postId);
+        $data['post_state'] = mg_store_runtime_feed_status_for_post($pdo, $viewerId, $postId);
     }
 
     mg_ok($data);
