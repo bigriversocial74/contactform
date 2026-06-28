@@ -6,7 +6,7 @@ declare(strict_types=1);
     <div>
       <span class="mg-eyebrow">Agentic merchant workspace</span>
       <h1>Merchant Agent Chat</h1>
-      <p>Ask the merchant agent for a quick account review, campaign ideas, reward fixes, CRM follow-ups, approval checks, or operational next steps. Replies stay advisory until you open a review or draft action.</p>
+      <p>Ask the merchant agent for a quick account review, campaign ideas, reward fixes, CRM follow-ups, approval checks, or operational next steps. Replies stay advisory until you send a card to the review queue.</p>
     </div>
     <div class="mg-agent-chat-hero-actions">
       <a class="mg-btn mg-btn-secondary" href="/merchant-automation.php">Automation controls</a>
@@ -14,6 +14,23 @@ declare(strict_types=1);
       <button class="mg-btn mg-btn-primary" type="button" data-agent-chat-refresh>Refresh</button>
     </div>
   </header>
+
+  <section class="mg-agent-overview" data-agent-chat-overview>
+    <article><strong>—</strong><span>Pending reviews</span></article>
+    <article><strong>—</strong><span>Review-ready plans</span></article>
+    <article><strong>—</strong><span>Executed items</span></article>
+    <article><strong>—</strong><span>Chat messages</span></article>
+  </section>
+
+  <section class="mg-app-panel mg-agent-overview-latest">
+    <div class="mg-app-panel-head is-compact">
+      <div><h2>Agentic Overview</h2><p>Latest review items created by Claude planning or the chat-to-approval bridge.</p></div>
+      <a class="mg-btn mg-btn-soft" href="/merchant-agent-approvals.php">Open review queue</a>
+    </div>
+    <div class="mg-agent-overview-list" data-agent-chat-overview-list>
+      <div class="mg-empty-state"><strong>Loading agent overview…</strong></div>
+    </div>
+  </section>
 
   <section class="mg-agent-chat-shell">
     <aside class="mg-agent-chat-side">
@@ -61,9 +78,9 @@ declare(strict_types=1);
         <div class="mg-app-panel-body">
           <div class="mg-agent-chat-guardrails">
             <span>Advisory only</span>
-            <span>No automatic sends</span>
-            <span>No claim redemption</span>
-            <span>No money movement</span>
+            <span>Review queue bridge</span>
+            <span>Controlled workflow</span>
+            <span>Approval-first actions</span>
           </div>
         </div>
       </section>
