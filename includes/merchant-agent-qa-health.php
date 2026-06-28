@@ -22,11 +22,17 @@ function mg_agent_qa_status(bool $ok, bool $warn = false): string
 function mg_agent_qa_table_exists(PDO $pdo, string $table): bool
 {
     try {
-        $stmt = $pdo->prepare('SHOW TABLES LIKE ?');
+        $stmt = $pdo->prepare('SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?');
         $stmt->execute([$table]);
-        return (bool)$stmt->fetchColumn();
+        return (int)$stmt->fetchColumn() > 0;
     } catch (Throwable) {
-        return false;
+        try {
+            $safeTable = str_replace(['\\', "'", '%', '_'], ['\\\\', "\\'", '\\%', '\\_'], $table);
+            $stmt = $pdo->query("SHOW TABLES LIKE '" . $safeTable . "'");
+            return $stmt ? (bool)$stmt->fetchColumn() : false;
+        } catch (Throwable) {
+            return false;
+        }
     }
 }
 
@@ -44,6 +50,7 @@ function mg_agent_qa_count(PDO $pdo, string $sql, array $params = []): int
 function mg_agent_qa_latest_error(PDO $pdo, int $merchantId): array
 {
     try {
+        if (!mg_agent_qa_table_exists($pdo, 'campaign_events')) return [];
         $stmt = $pdo->prepare("SELECT event_type,event_context_json,created_at FROM campaign_events WHERE merchant_user_id=? AND (event_type LIKE '%failed%' OR event_type LIKE '%error%') ORDER BY id DESC LIMIT 1");
         $stmt->execute([$merchantId]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -58,6 +65,7 @@ function mg_agent_qa_latest_error(PDO $pdo, int $merchantId): array
 function mg_agent_qa_model_state(PDO $pdo): array
 {
     try {
+        if (!mg_agent_qa_table_exists($pdo, 'ai_models') || !mg_agent_qa_table_exists($pdo, 'ai_providers')) return [];
         $stmt = $pdo->query("SELECT p.provider_key,p.enabled provider_enabled,p.env_var_name,m.model_key,m.enabled model_enabled,m.is_default FROM ai_models m INNER JOIN ai_providers p ON p.id=m.provider_id WHERE p.provider_key='anthropic' ORDER BY m.is_default DESC,m.sort_order ASC LIMIT 5");
         $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
         return $rows ?: [];
@@ -109,9 +117,9 @@ function mg_agent_qa_health(PDO $pdo, array $user): array
     $demoLocked = function_exists('mg_agent_cmd_is_super_admin') ? !mg_agent_cmd_is_super_admin($user) : true;
     $checks[] = mg_agent_qa_check('demo_permission', 'Demo permission lock', $demoLocked ? 'pass' : 'warn', $demoLocked ? 'Current user is not treated as super-admin for demo data.' : 'Current user has super-admin demo access.', ['can_demo' => !$demoLocked]);
 
-    $chatMessages = mg_agent_qa_count($pdo, "SELECT COUNT(*) FROM campaign_events WHERE merchant_user_id=? AND event_type IN ('merchant.agent_chat.user','merchant.agent_chat.assistant')", [$merchantId]);
-    $reviewItems = mg_agent_qa_count($pdo, "SELECT COUNT(*) FROM ai_merchant_plan_items i INNER JOIN ai_merchant_plans p ON p.id=i.plan_id WHERE p.merchant_user_id=?", [$merchantId]);
-    $executedItems = mg_agent_qa_count($pdo, "SELECT COUNT(*) FROM ai_merchant_plan_items i INNER JOIN ai_merchant_plans p ON p.id=i.plan_id WHERE p.merchant_user_id=? AND i.status='executed'", [$merchantId]);
+    $chatMessages = mg_agent_qa_table_exists($pdo, 'campaign_events') ? mg_agent_qa_count($pdo, "SELECT COUNT(*) FROM campaign_events WHERE merchant_user_id=? AND event_type IN ('merchant.agent_chat.user','merchant.agent_chat.assistant')", [$merchantId]) : 0;
+    $reviewItems = (mg_agent_qa_table_exists($pdo, 'ai_merchant_plan_items') && mg_agent_qa_table_exists($pdo, 'ai_merchant_plans')) ? mg_agent_qa_count($pdo, "SELECT COUNT(*) FROM ai_merchant_plan_items i INNER JOIN ai_merchant_plans p ON p.id=i.plan_id WHERE p.merchant_user_id=?", [$merchantId]) : 0;
+    $executedItems = (mg_agent_qa_table_exists($pdo, 'ai_merchant_plan_items') && mg_agent_qa_table_exists($pdo, 'ai_merchant_plans')) ? mg_agent_qa_count($pdo, "SELECT COUNT(*) FROM ai_merchant_plan_items i INNER JOIN ai_merchant_plans p ON p.id=i.plan_id WHERE p.merchant_user_id=? AND i.status='executed'", [$merchantId]) : 0;
     $latestError = mg_agent_qa_latest_error($pdo, $merchantId);
 
     $fail = count(array_filter($checks, static fn(array $c): bool => $c['status'] === 'fail'));
