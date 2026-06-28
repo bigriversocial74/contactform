@@ -5,7 +5,7 @@ $page_title='Messages | Microgifter';
 $page_section='agent';
 $header_mode='agent';
 $agent_tab='messages';
-$page_styles=['/assets/css/communications.css','/assets/css/messages-isolated-clean.css','/assets/css/messages-footer-cleanup.css'];
+$page_styles=['/assets/css/communications.css','/assets/css/messages-isolated-clean.css','/assets/css/messages-footer-cleanup.css','/assets/css/messages-chat-boundary-fix.css'];
 $page_scripts=['/assets/js/messages-isolated-clean.js'];
 // Recovery baseline compatibility: messages-center.js replaced by messages-isolated-clean.js for the isolated messages page restore.
 require __DIR__ . '/includes/header.php';
