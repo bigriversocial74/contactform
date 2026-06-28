@@ -9,7 +9,7 @@ declare(strict_types=1);
       <p>Create merchant developer apps, connect them to Distribution Programs, configure credentials, test sandbox rewards, monitor webhooks, and get the integration ready for public launch.</p>
     </div>
     <div class="mg-dev-hero-actions" aria-label="Developer API quick actions">
-      <a class="mg-btn mg-btn-primary" href="/merchant-distribution.php#distribution-editor">+ Create Distribution Plan</a>
+      <button class="mg-btn mg-btn-primary" type="button" data-dev-tab-trigger="distribution" data-dev-new-plan>+ Create Distribution Plan</button>
       <button class="mg-btn mg-btn-primary" type="button" data-dev-tab-trigger="apps">+ Create Developer App</button>
       <button class="mg-btn mg-btn-primary" type="button" data-dev-tab-trigger="credentials">+ Create Credential</button>
       <a class="mg-btn mg-btn-soft" href="/developer-docs.php">Public docs</a>
@@ -33,84 +33,34 @@ declare(strict_types=1);
   <section class="mg-dev-tab-panel is-active" data-dev-tab-panel="overview">
     <div class="mg-dev-overview-grid">
       <section class="mg-app-panel mg-dev-panel">
-        <div class="mg-app-panel-head">
-          <div>
-            <h2>Developer setup checklist</h2>
-            <p>Guided setup from the first Distribution Program through sandbox testing and live readiness.</p>
-          </div>
-          <span class="mg-status-badge" data-dev-api-readiness>Loading</span>
-        </div>
-        <div class="mg-app-panel-body">
-          <div data-dev-api-onboarding></div>
-        </div>
+        <div class="mg-app-panel-head"><div><h2>Developer setup checklist</h2><p>Guided setup from the first Distribution Program through sandbox testing and live readiness.</p></div><span class="mg-status-badge" data-dev-api-readiness>Loading</span></div>
+        <div class="mg-app-panel-body"><div data-dev-api-onboarding></div></div>
       </section>
-
       <aside class="mg-app-panel mg-dev-panel mg-dev-flow-card">
-        <div class="mg-app-panel-head">
-          <div>
-            <h2>Recommended flow</h2>
-            <p>Keep test and live work separated until the app is ready.</p>
-          </div>
-        </div>
+        <div class="mg-app-panel-head"><div><h2>Recommended flow</h2><p>Keep test and live work separated until the app is ready.</p></div></div>
         <div class="mg-app-panel-body">
-          <div class="mg-dev-flow-step">
-            <span>1</span>
-            <div>
-              <strong>Test app</strong>
-              <p>Create a test app and credential first.</p>
-              <button type="button" data-dev-tab-trigger="apps">Start</button>
-            </div>
-          </div>
-          <div class="mg-dev-flow-step">
-            <span>2</span>
-            <div>
-              <strong>Sandbox reward</strong>
-              <p>Run the sandbox linked-account and reward issue flow.</p>
-              <button type="button" data-dev-tab-trigger="sandbox">Guide</button>
-            </div>
-          </div>
-          <div class="mg-dev-flow-step">
-            <span>3</span>
-            <div>
-              <strong>Webhooks</strong>
-              <p>Configure callback delivery before live launch.</p>
-              <button type="button" data-dev-tab-trigger="webhooks">Configure</button>
-            </div>
-          </div>
+          <div class="mg-dev-flow-step"><span>1</span><div><strong>Test app</strong><p>Create a test app and credential first.</p><button type="button" data-dev-tab-trigger="apps">Start</button></div></div>
+          <div class="mg-dev-flow-step"><span>2</span><div><strong>Sandbox reward</strong><p>Run the sandbox linked-account and reward issue flow.</p><button type="button" data-dev-tab-trigger="sandbox">Guide</button></div></div>
+          <div class="mg-dev-flow-step"><span>3</span><div><strong>Webhooks</strong><p>Configure callback delivery before live launch.</p><button type="button" data-dev-tab-trigger="webhooks">Configure</button></div></div>
         </div>
       </aside>
     </div>
-
     <div class="mg-dev-status-strip">
-      <article>
-        <span>Distribution source</span>
-        <strong>Program required</strong>
-        <p>Every app should attach to a default Distribution Program before issuing rewards.</p>
-      </article>
-      <article>
-        <span>Security</span>
-        <strong>Credential + webhook secret</strong>
-        <p>Credentials authenticate reward requests. Webhook secrets verify event delivery.</p>
-      </article>
-      <article>
-        <span>Launch readiness</span>
-        <strong>Sandbox first</strong>
-        <p>Use the sandbox path before promoting apps and keys to live access.</p>
-      </article>
+      <article><span>Distribution source</span><strong>Program required</strong><p>Every app should attach to a default Distribution Program before issuing rewards.</p></article>
+      <article><span>Security</span><strong>Credential + webhook secret</strong><p>Credentials authenticate reward requests. Webhook secrets verify event delivery.</p></article>
+      <article><span>Launch readiness</span><strong>Sandbox first</strong><p>Use the sandbox path before promoting apps and keys to live access.</p></article>
     </div>
   </section>
 
   <section class="mg-dev-tab-panel" data-dev-tab-panel="distribution" hidden>
     <section class="mg-app-panel mg-dev-panel mg-dev-distribution-plan">
       <div class="mg-app-panel-head">
-        <div>
-          <h2>Distribution Plan</h2>
-          <p>Create and manage the reward source that developer apps can issue from. This keeps app access connected to approved products, recipient rules, budgets, limits, and issuance status.</p>
-        </div>
-        <a class="mg-btn mg-btn-primary" href="/merchant-distribution.php#distribution-editor">Create Distribution Program</a>
+        <div><h2>Distribution Plan</h2><p>Create and manage the reward source that developer apps can issue from. This tab now keeps program setup, product attachment, limits, status, and source health inside the Developer API workflow.</p></div>
+        <button class="mg-btn mg-btn-primary" type="button" data-program-new>+ New Distribution Program</button>
       </div>
       <div class="mg-app-panel-body">
-        <div class="mg-dev-plan-grid">
+        <div class="mg-merchant-kpis mg-dev-distribution-kpis" data-distribution-kpis></div>
+        <div class="mg-dev-plan-grid" style="margin-top:14px">
           <article><span>01</span><strong>Select products</strong><p>Attach published products or reward templates before API reward issuance.</p></article>
           <article><span>02</span><strong>Set limits</strong><p>Control max items, budget, per-recipient limits, dates, and active status.</p></article>
           <article><span>03</span><strong>Connect app</strong><p>Choose the program as the app default inside the Developer Apps tab.</p></article>
@@ -119,21 +69,36 @@ declare(strict_types=1);
       </div>
     </section>
 
-    <div class="mg-dev-two-col">
-      <section class="mg-app-panel mg-dev-panel">
-        <div class="mg-app-panel-head"><div><h2>Interactive workflow</h2><p>The existing Distribution builder remains the source of truth for program creation and product attachment.</p></div></div>
+    <div class="mg-distribution-layout mg-dev-distribution-workspace">
+      <section class="mg-app-panel mg-dev-panel mg-distribution-panel">
+        <div class="mg-app-panel-head mg-distribution-panel-head"><div><span class="mg-eyebrow">Programs</span><h2>Distribution programs</h2><p>Search, review, open, and edit reward issuance programs without leaving the Developer API page.</p></div></div>
         <div class="mg-app-panel-body">
-          <div class="mg-dev-action-list">
-            <a href="/merchant-distribution.php#distribution-editor"><strong>Create or edit program</strong><span>Open builder</span></a>
-            <button type="button" data-dev-tab-trigger="apps"><strong>Attach default app program</strong><span>Developer Apps</span></button>
-            <button type="button" data-dev-tab-trigger="sandbox"><strong>Run test issue flow</strong><span>Sandbox Testing</span></button>
-          </div>
+          <div class="mg-distribution-toolbar"><input type="search" data-program-search placeholder="Search programs, channels, partners"><select data-program-status><option value="all">All statuses</option><option value="draft">Draft</option><option value="scheduled">Scheduled</option><option value="active">Active</option><option value="paused">Paused</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option><option value="archived">Archived</option></select></div>
+          <div class="mg-program-list" data-program-list></div>
         </div>
       </section>
-      <section class="mg-app-panel mg-dev-panel">
-        <div class="mg-app-panel-head"><div><h2>Program requirements</h2><p>What the integration should have before public issuance.</p></div></div>
-        <div class="mg-app-panel-body"><div class="mg-dev-check-list"><p><b></b><span>At least one active Distribution Program.</span></p><p><b></b><span>Approved products attached to the program.</span></p><p><b></b><span>App default program selected.</span></p><p><b></b><span>Credential and webhook signing configured.</span></p></div></div>
-      </section>
+
+      <aside class="mg-app-panel mg-dev-panel mg-distribution-panel mg-dev-inline-editor" id="developer-distribution-editor">
+        <div class="mg-app-panel-head mg-distribution-panel-head"><div><span class="mg-eyebrow">Builder</span><h2>Program editor</h2><p>Create or update the program developers will use as their default reward source.</p></div></div>
+        <div class="mg-app-panel-body">
+          <form class="mg-merchant-form mg-distribution-form" data-program-form>
+            <input type="hidden" name="program_id">
+            <label>Name<input name="name" required maxlength="180" placeholder="Developer reward source"></label>
+            <div class="mg-grid-2"><label>Type<select name="program_type"><option value="merchant_grant">Merchant grant</option><option value="contest">Contest</option><option value="giveaway">Giveaway</option><option value="fundraiser">Fundraiser</option><option value="workplace_reward">Workplace reward</option><option value="gaming">Gaming</option><option value="external_api">External API</option><option value="batch">Batch</option><option value="purchase">Purchase</option><option value="other">Other</option></select></label><label>Status<select name="status"><option value="draft">Draft</option><option value="scheduled">Scheduled</option><option value="active">Active</option><option value="paused">Paused</option><option value="completed">Completed</option></select></label></div>
+            <div class="mg-program-product-field"><div class="mg-program-product-field-head"><span>Products included</span><small>Choose one or more published products this developer-facing program can issue.</small></div><div class="mg-program-product-picker" data-program-product-picker><p>Loading available products…</p></div></div>
+            <div class="mg-grid-2"><label>Starts at<input name="starts_at" type="datetime-local"></label><label>Ends at<input name="ends_at" type="datetime-local"></label></div>
+            <div class="mg-grid-2"><label>Budget, cents<input name="budget_cents" type="number" min="0"></label><label>Maximum items<input name="max_items" type="number" min="1"></label></div>
+            <label>Per-recipient limit<input name="per_recipient_limit" type="number" min="1"></label>
+            <div class="mg-form-status" data-program-status-message></div>
+            <button class="mg-btn mg-btn-primary" type="submit">Save distribution program</button>
+          </form>
+        </div>
+      </aside>
+    </div>
+
+    <div class="mg-dev-two-col" style="margin-top:16px">
+      <section class="mg-app-panel mg-dev-panel"><div class="mg-app-panel-head"><div><h2>Source and issuance health</h2><p>External input connections and the current PPPM issuance queue.</p></div></div><div class="mg-app-panel-body"><div class="mg-distribution-health"><div data-distribution-sources></div><div data-distribution-queue></div></div></div></section>
+      <section class="mg-app-panel mg-dev-panel"><div class="mg-app-panel-head"><div><h2>How this connects to apps</h2><p>Once saved, choose this program as the default source in the Developer Apps tab.</p></div></div><div class="mg-app-panel-body"><div class="mg-dev-action-list"><button type="button" data-dev-tab-trigger="apps"><strong>Attach to developer app</strong><span>Developer Apps</span></button><button type="button" data-dev-tab-trigger="sandbox"><strong>Run sandbox issue test</strong><span>Sandbox Testing</span></button><button type="button" data-dev-tab-trigger="analytics"><strong>Review API activity</strong><span>Analytics</span></button></div></div></section>
     </div>
   </section>
 
