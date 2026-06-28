@@ -25,11 +25,10 @@ window.Microgifter = window.Microgifter || {};
   function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
   function now() { return Date.now(); }
   function rand(min, max) { return min + Math.random() * (max - min); }
-  function safeId(value) { return String(value || '').replace(/[^a-zA-Z0-9_-]/g, ''); }
   function saveState() {
     var out = {};
     nodes.forEach(function (node, id) {
-      out[id] = { x: node.x, y: node.y, vx: node.vx, vy: node.vy };
+      out[id] = { x: node.x, y: node.y, vx: node.vx, vy: node.vy, welcomed: node.welcomed };
     });
     try { window.sessionStorage.setItem(storageKey, JSON.stringify(out)); } catch (error) {}
   }
@@ -50,6 +49,8 @@ window.Microgifter = window.Microgifter || {};
       y: Number.isFinite(start.y) ? start.y : rand(18, Math.max(22, bounds.height - height - 18)),
       vx: Number.isFinite(start.vx) ? start.vx : rand(-0.045, 0.045),
       vy: Number.isFinite(start.vy) ? start.vy : rand(-0.035, 0.035),
+      welcomed: Boolean(start.welcomed),
+      welcomeAt: now() + rand(5000, 9500),
       nextTurn: now() + rand(1200, 4200)
     };
   }
@@ -138,7 +139,11 @@ window.Microgifter = window.Microgifter || {};
     var m = merchantRect();
     list.forEach(function (node) {
       node.card.classList.remove('is-nearby');
-      if (m && rectanglesOverlap(node, m, 22)) {
+      if (!node.welcomed && now() >= node.welcomeAt) {
+        node.welcomed = true;
+        sendAutoChat(node, 'merchant_proximity', '');
+      }
+      if (m && rectanglesOverlap(node, m, 120)) {
         node.card.classList.add('is-nearby');
         sendAutoChat(node, 'merchant_proximity', '');
       }
