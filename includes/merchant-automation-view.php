@@ -27,6 +27,42 @@ declare(strict_types=1);
     <article><strong data-auto-drafts>—</strong><span>Message drafts</span></article>
   </section>
 
+  <article class="mg-app-panel mg-automation-panel mg-agent-autonomy-panel" data-agent-autonomy-panel>
+    <div class="mg-app-panel-head">
+      <div>
+        <span class="mg-eyebrow">Agent autonomy</span>
+        <h2>How much control can the agent have?</h2>
+        <p>Main admin defines the platform ceiling. Each merchant can choose a level up to that ceiling. Execution without approval is still locked off until the ceiling explicitly allows it.</p>
+      </div>
+      <div class="mg-agent-autonomy-status">
+        <span>Effective level</span>
+        <strong data-agent-autonomy-effective>—</strong>
+      </div>
+    </div>
+    <div class="mg-agent-autonomy-grid">
+      <label>
+        <span>Merchant autonomy level</span>
+        <select data-agent-autonomy-level></select>
+      </label>
+      <label>
+        <span>Platform ceiling</span>
+        <input type="text" data-agent-autonomy-ceiling readonly value="Loading…">
+      </label>
+      <label>
+        <span>Daily action budget</span>
+        <input type="number" min="0" max="100" data-agent-autonomy-budget value="10">
+      </label>
+    </div>
+    <div class="mg-agent-autonomy-switches">
+      <label><input type="checkbox" data-agent-autonomy-field="allow_review_queue" checked> Allow review queue cards</label>
+      <label><input type="checkbox" data-agent-autonomy-field="allow_task_creation" checked> Allow task creation</label>
+      <label><input type="checkbox" data-agent-autonomy-field="allow_message_drafts" checked> Allow message drafts</label>
+      <label><input type="checkbox" data-agent-autonomy-field="high_risk_requires_approval" checked disabled> High-risk actions always require approval</label>
+      <label><input type="checkbox" data-agent-autonomy-field="allow_execution_without_approval" disabled> Execution without approval locked by platform ceiling</label>
+    </div>
+    <div class="mg-agent-autonomy-copy" data-agent-autonomy-copy>Loading autonomy guardrails…</div>
+  </article>
+
   <?php require __DIR__ . '/merchant-agent-control-center-widget.php'; ?>
 
   <article class="mg-app-panel mg-automation-panel mg-automation-ai-panel">
