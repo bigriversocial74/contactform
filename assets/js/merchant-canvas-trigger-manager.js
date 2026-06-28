@@ -15,12 +15,13 @@ window.Microgifter = window.Microgifter || {};
   var campaignsReady = false;
   var zones = [];
   var nodes = new Map();
-  var drag = null;
   var addButton = null;
   var drawer = null;
   var activeId = '';
+  var drag = null;
   var saveTimer = null;
   var lastDragAt = 0;
+  var recentFire = new Map();
 
   var defaultMessage = 'Hi {first_name} — I noticed you crossed the {trigger_name} zone. I can help with {campaign_title}.';
 
@@ -33,7 +34,6 @@ window.Microgifter = window.Microgifter || {};
   function isTemp(zone) { return zone && String(zone.id || '').indexOf('tmp-') === 0; }
   function priority(value) { return clamp(parseInt(value || 3, 10) || 3, 1, 5); }
   function boolInt(value) { return value === true || value === 1 || value === '1' || value === 'true' || value === 'on' ? 1 : 0; }
-
   function canvasRect() { return map.getBoundingClientRect(); }
 
   function zoneById(id) {
@@ -51,7 +51,7 @@ window.Microgifter = window.Microgifter || {};
     campaigns.forEach(function (campaign) {
       var id = String(campaign.id || '');
       var label = String(campaign.title || 'Campaign');
-      if (campaign.reward_template_title) label += ' · ' + String(campaign.reward_template_title);
+      if (campaign.reward_template_title) label += ' - ' + String(campaign.reward_template_title);
       html += '<option value="' + esc(id) + '"' + (id === String(current || '') ? ' selected' : '') + '>' + esc(label) + '</option>';
     });
     return html;
@@ -63,62 +63,15 @@ window.Microgifter = window.Microgifter || {};
     }).join('');
   }
 
-  function newZone() {
-    var count = zones.length + 1;
-    var offset = zones.length % 6;
-    return {
-      id: tempId(),
-      name: 'Trigger Zone ' + count,
-      trigger_key: 'store_canvas_zone_' + count,
-      campaign_id: campaigns[0] ? String(campaigns[0].id || '') : '',
-      campaign_title: campaigns[0] ? String(campaigns[0].title || '') : '',
-      priority: 3,
-      x: clamp(10 + offset * 7, 2, 74),
-      y: clamp(12 + offset * 7, 2, 74),
-      width: 18,
-      height: 13,
-      status: 'active',
-      automation_action: 'message_and_reward',
-      cooldown_policy: 'fifteen_minutes',
-      cooldown_seconds: 900,
-      auto_message_text: defaultMessage,
-      fallback_action: 'notify_only',
-      crm_segment_name: '',
-      notify_merchant: 1,
-      saving: false
-    };
-  }
-
-  function normalizeZone(raw) {
-    raw = raw || {};
-    return {
-      id: String(raw.id || tempId()),
-      name: String(raw.name || 'Trigger Zone'),
-      trigger_key: String(raw.trigger_key || 'store_canvas_zone'),
-      campaign_id: String(raw.campaign_id || ''),
-      campaign_title: String(raw.campaign_title || ''),
-      priority: priority(raw.priority),
-      x: Number(raw.x || 0),
-      y: Number(raw.y || 0),
-      width: Number(raw.width || 18),
-      height: Number(raw.height || 13),
-      status: String(raw.status || 'active'),
-      automation_action: String(raw.automation_action || 'message_and_reward'),
-      cooldown_policy: String(raw.cooldown_policy || 'fifteen_minutes'),
-      cooldown_seconds: Math.max(60, parseInt(raw.cooldown_seconds || 900, 10) || 900),
-      auto_message_text: String(raw.auto_message_text || defaultMessage),
-      fallback_action: String(raw.fallback_action || 'notify_only'),
-      crm_segment_name: String(raw.crm_segment_name || ''),
-      notify_merchant: boolInt(raw.notify_merchant == null ? 1 : raw.notify_merchant),
-      last_triggered_at: raw.last_triggered_at || null,
-      saving: false
-    };
+  function rectsOverlap(a, b, pad) {
+    pad = pad || 0;
+    return a.x < b.x + b.width + pad && a.x + a.width + pad > b.x && a.y < b.y + b.height + pad && a.y + a.height + pad > b.y;
   }
 
   function pixelRect(zone) {
     var box = canvasRect();
-    var width = clamp(box.width * (Number(zone.width || 18) / 100), 130, Math.max(130, box.width - 16));
-    var height = clamp(box.height * (Number(zone.height || 13) / 100), 84, Math.max(84, box.height - 16));
+    var width = clamp(box.width * (Number(zone.width || 16) / 100), 130, Math.max(130, box.width - 16));
+    var height = clamp(box.height * (Number(zone.height || 10) / 100), 74, Math.max(74, box.height - 16));
     var x = clamp(box.width * (Number(zone.x || 0) / 100), 8, Math.max(8, box.width - width - 8));
     var y = clamp(box.height * (Number(zone.y || 0) / 100), 8, Math.max(8, box.height - height - 8));
     return { x:x, y:y, width:width, height:height };
@@ -132,6 +85,100 @@ window.Microgifter = window.Microgifter || {};
     zone.y = clamp((rect.y / box.height) * 100, 0, Math.max(0, 100 - zone.height));
   }
 
+  function nextPlacement() {
+    var size = { width:16, height:10 };
+    var candidates = [];
+    [8, 28, 48, 68].forEach(function (x) {
+      [10, 26, 42, 58, 74].forEach(function (y) {
+        candidates.push({ x:x, y:y, width:size.width, height:size.height });
+      });
+    });
+    var existing = zones.map(function (zone) {
+      return { x:Number(zone.x || 0), y:Number(zone.y || 0), width:Number(zone.width || size.width), height:Number(zone.height || size.height) };
+    });
+    for (var i = 0; i < candidates.length; i++) {
+      var candidate = candidates[i];
+      var blocked = existing.some(function (item) { return rectsOverlap(candidate, item, 3); });
+      if (!blocked) return candidate;
+    }
+    var fallback = candidates[zones.length % candidates.length];
+    return { x:clamp(fallback.x + (zones.length % 3) * 3, 2, 78), y:clamp(fallback.y + (zones.length % 4) * 3, 2, 82), width:size.width, height:size.height };
+  }
+
+  function normalizeZone(raw) {
+    raw = raw || {};
+    return {
+      id: String(raw.id || tempId()),
+      name: String(raw.name || 'Trigger Zone'),
+      trigger_key: String(raw.trigger_key || 'store_canvas_zone'),
+      campaign_id: String(raw.campaign_id || ''),
+      campaign_title: String(raw.campaign_title || ''),
+      priority: priority(raw.priority),
+      x: Number(raw.x || 0),
+      y: Number(raw.y || 0),
+      width: Number(raw.width || 16),
+      height: Number(raw.height || 10),
+      status: String(raw.status || 'active'),
+      automation_action: String(raw.automation_action || 'message_and_reward'),
+      cooldown_policy: String(raw.cooldown_policy || 'fifteen_minutes'),
+      cooldown_seconds: Math.max(60, parseInt(raw.cooldown_seconds || 900, 10) || 900),
+      auto_message_text: String(raw.auto_message_text || defaultMessage),
+      fallback_action: String(raw.fallback_action || 'notify_only'),
+      crm_segment_name: String(raw.crm_segment_name || ''),
+      notify_merchant: boolInt(raw.notify_merchant == null ? 1 : raw.notify_merchant),
+      last_triggered_at: raw.last_triggered_at || null,
+      saving: false
+    };
+  }
+
+  function separateOverlaps() {
+    var moved = false;
+    for (var i = 0; i < zones.length; i++) {
+      var current = zones[i];
+      var currentRect = { x:Number(current.x || 0), y:Number(current.y || 0), width:Number(current.width || 16), height:Number(current.height || 10) };
+      for (var j = 0; j < i; j++) {
+        var previous = zones[j];
+        var previousRect = { x:Number(previous.x || 0), y:Number(previous.y || 0), width:Number(previous.width || 16), height:Number(previous.height || 10) };
+        if (rectsOverlap(currentRect, previousRect, 2)) {
+          var placement = nextPlacement();
+          current.x = placement.x;
+          current.y = placement.y;
+          current.width = current.width || placement.width;
+          current.height = current.height || placement.height;
+          moved = true;
+          break;
+        }
+      }
+    }
+    return moved;
+  }
+
+  function newZone() {
+    var placement = nextPlacement();
+    var count = zones.length + 1;
+    return {
+      id: tempId(),
+      name: 'Trigger Zone ' + count,
+      trigger_key: 'store_canvas_zone_' + count,
+      campaign_id: campaigns[0] ? String(campaigns[0].id || '') : '',
+      campaign_title: campaigns[0] ? String(campaigns[0].title || '') : '',
+      priority: 3,
+      x: placement.x,
+      y: placement.y,
+      width: placement.width,
+      height: placement.height,
+      status: 'active',
+      automation_action: 'message_and_reward',
+      cooldown_policy: 'fifteen_minutes',
+      cooldown_seconds: 900,
+      auto_message_text: defaultMessage,
+      fallback_action: 'notify_only',
+      crm_segment_name: '',
+      notify_merchant: 1,
+      saving: false
+    };
+  }
+
   function payloadFor(zone) {
     return {
       id: isTemp(zone) ? '' : zone.id,
@@ -141,8 +188,8 @@ window.Microgifter = window.Microgifter || {};
       priority: priority(zone.priority),
       x: Number(zone.x || 0),
       y: Number(zone.y || 0),
-      width: Number(zone.width || 18),
-      height: Number(zone.height || 13),
+      width: Number(zone.width || 16),
+      height: Number(zone.height || 10),
       status: zone.status || 'active',
       automation_action: zone.automation_action || 'message_and_reward',
       cooldown_policy: zone.cooldown_policy || 'fifteen_minutes',
@@ -176,11 +223,12 @@ window.Microgifter = window.Microgifter || {};
     var id = String(zone.id || '');
     var node = nodes.get(id);
     if (node && node.isConnected) return node;
-    node = document.createElement('button');
-    node.type = 'button';
+    node = document.createElement('div');
     node.className = 'mg-canvas-trigger-zone';
     node.setAttribute('data-canvas-persistent-zone', '1');
     node.setAttribute('data-canvas-trigger-zone', id);
+    node.setAttribute('role', 'button');
+    node.setAttribute('tabindex', '0');
     node.innerHTML = '<span class="mg-canvas-trigger-main"><strong data-zone-name></strong><small data-zone-campaign></small></span><span class="mg-canvas-trigger-actions"><button type="button" data-trigger-settings aria-label="Open trigger settings">Settings</button><button type="button" data-trigger-delete aria-label="Delete trigger">Delete</button></span><span class="mg-canvas-trigger-resize" data-trigger-resize aria-hidden="true"></span>';
     layer.appendChild(node);
     nodes.set(id, node);
@@ -192,6 +240,7 @@ window.Microgifter = window.Microgifter || {};
     node.classList.toggle('is-paused', zone.status === 'paused');
     node.classList.toggle('is-saving', !!zone.saving);
     node.classList.toggle('is-settings-open', String(zone.id || '') === activeId);
+    node.style.zIndex = String(zone.id || '') === activeId ? '15' : '5';
     var rect = pixelRect(zone);
     node.style.left = Math.round(rect.x) + 'px';
     node.style.top = Math.round(rect.y) + 'px';
@@ -210,7 +259,6 @@ window.Microgifter = window.Microgifter || {};
       if (!active.has(id)) { node.remove(); nodes.delete(id); }
     });
     zones.forEach(function (zone) { updateZoneNode(zone, ensureZoneNode(zone)); });
-    if (activeId) refreshDrawer();
   }
 
   function setDrawerStatus(message, state) {
@@ -227,7 +275,7 @@ window.Microgifter = window.Microgifter || {};
     drawer.className = 'mg-canvas-trigger-settings-drawer';
     drawer.setAttribute('aria-hidden', 'true');
     drawer.style.zIndex = '100000';
-    drawer.innerHTML = '<div class="mg-trigger-settings-head"><div><span>Trigger Settings</span><h2 data-trigger-settings-title>Trigger Zone</h2></div><button type="button" data-trigger-settings-close aria-label="Close trigger settings">×</button></div><div class="mg-trigger-settings-body" data-trigger-settings-body></div><div class="mg-trigger-settings-foot"><p class="mg-trigger-settings-status" data-trigger-settings-status role="status"></p><button type="button" class="mg-btn mg-btn-primary" data-trigger-settings-save>Save Settings</button></div>';
+    drawer.innerHTML = '<div class="mg-trigger-settings-head"><div><span>Trigger Settings</span><h2 data-trigger-settings-title>Trigger Zone</h2></div><button type="button" data-trigger-settings-close aria-label="Close trigger settings">x</button></div><div class="mg-trigger-settings-body" data-trigger-settings-body></div><div class="mg-trigger-settings-foot"><p class="mg-trigger-settings-status" data-trigger-settings-status role="status"></p><button type="button" class="mg-btn mg-btn-primary" data-trigger-settings-save>Save Settings</button></div>';
     document.body.appendChild(drawer);
     drawer.addEventListener('click', function (event) {
       if (event.target.closest('[data-trigger-settings-close]')) return closeDrawer();
@@ -270,12 +318,6 @@ window.Microgifter = window.Microgifter || {};
     render();
   }
 
-  function refreshDrawer() {
-    if (!drawer || !drawer.classList.contains('is-open')) return;
-    var zone = zoneById(activeId);
-    if (zone) renderDrawer(zone);
-  }
-
   function renderDrawer(zone) {
     var title = drawer.querySelector('[data-trigger-settings-title]');
     var body = drawer.querySelector('[data-trigger-settings-body]');
@@ -316,6 +358,7 @@ window.Microgifter = window.Microgifter || {};
     var zone = zoneById(activeId);
     if (!form || !zone) return;
     readForm(form, zone);
+    renderDrawer(zone);
     render();
     setDrawerStatus('Unsaved changes...', 'saving');
     if (saveTimer) window.clearTimeout(saveTimer);
@@ -347,6 +390,7 @@ window.Microgifter = window.Microgifter || {};
       } else if (Array.isArray(data.zones)) {
         zones = data.zones.map(normalizeZone);
       }
+      separateOverlaps();
       setDrawerStatus('Saved.', 'success');
       if (created) toast('Trigger zone added.', 'success');
     } catch (error) {
@@ -385,8 +429,9 @@ window.Microgifter = window.Microgifter || {};
     var rect = pixelRect(zone);
     var box = canvasRect();
     drag = { zone:zone, node:node, resize:!!event.target.closest('[data-trigger-resize]'), sx:event.clientX, sy:event.clientY, rect:rect, bw:box.width, bh:box.height, moved:false };
-    node.setPointerCapture(event.pointerId);
+    if (typeof node.setPointerCapture === 'function') node.setPointerCapture(event.pointerId);
     node.classList.add('is-editing');
+    node.style.zIndex = '20';
     event.preventDefault();
   }
 
@@ -398,7 +443,7 @@ window.Microgifter = window.Microgifter || {};
     var rect = { x:drag.rect.x, y:drag.rect.y, width:drag.rect.width, height:drag.rect.height };
     if (drag.resize) {
       rect.width = clamp(drag.rect.width + dx, 130, Math.max(130, drag.bw - rect.x - 8));
-      rect.height = clamp(drag.rect.height + dy, 84, Math.max(84, drag.bh - rect.y - 8));
+      rect.height = clamp(drag.rect.height + dy, 74, Math.max(74, drag.bh - rect.y - 8));
     } else {
       rect.x = clamp(drag.rect.x + dx, 8, Math.max(8, drag.bw - rect.width - 8));
       rect.y = clamp(drag.rect.y + dy, 8, Math.max(8, drag.bh - rect.height - 8));
@@ -416,6 +461,8 @@ window.Microgifter = window.Microgifter || {};
     if (moved) {
       lastDragAt = now();
       saveZone(zone, false);
+    } else {
+      render();
     }
   }
 
@@ -423,11 +470,6 @@ window.Microgifter = window.Microgifter || {};
     var rect = node.getBoundingClientRect();
     var box = canvasRect();
     return { x:rect.left - box.left, y:rect.top - box.top, width:rect.width, height:rect.height };
-  }
-
-  function overlaps(a, b, pad) {
-    pad = pad || 0;
-    return a.x < b.x + b.width + pad && a.x + a.width + pad > b.x && a.y < b.y + b.height + pad && a.y + a.height + pad > b.y;
   }
 
   function scan() {
@@ -438,12 +480,11 @@ window.Microgifter = window.Microgifter || {};
         var node = nodes.get(String(zone.id));
         if (!node) return;
         var rect = pixelRect(zone);
-        if (overlaps(avatar, rect, -8)) fire(card, zone, node);
+        if (rectsOverlap(avatar, rect, -8)) fire(card, zone, node);
       });
     });
   }
 
-  var recentFire = new Map();
   async function fire(card, zone, node) {
     var sessionId = card.dataset.sessionId || '';
     if (!sessionId) return;
@@ -479,6 +520,7 @@ window.Microgifter = window.Microgifter || {};
     try {
       var data = payload(await MG.get('/api/merchant-canvas/trigger-zones.php')) || {};
       zones = Array.isArray(data.zones) ? data.zones.map(normalizeZone) : [];
+      separateOverlaps();
     } catch (error) {
       zones = [];
     }
@@ -495,8 +537,19 @@ window.Microgifter = window.Microgifter || {};
     var zone = zoneById(node.dataset.canvasTriggerZone);
     if (!zone) return;
     if (event.target.closest('[data-trigger-delete]')) { deleteZone(zone); return; }
+    if (event.target.closest('[data-trigger-settings]')) { openDrawer(zone); return; }
     if (event.target.closest('select,input,label,textarea,[data-trigger-resize]')) return;
     if (now() - lastDragAt < 220) return;
+    openDrawer(zone);
+  });
+
+  layer.addEventListener('keydown', function (event) {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    var node = event.target.closest('[data-canvas-persistent-zone]');
+    if (!node) return;
+    var zone = zoneById(node.dataset.canvasTriggerZone);
+    if (!zone) return;
+    event.preventDefault();
     openDrawer(zone);
   });
 
