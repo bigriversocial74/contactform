@@ -1,0 +1,44 @@
+body[data-page-id="messages"] .mg-messages-workspace,
+body[data-page-id="messages"] .mg-messages-panel,
+body[data-page-id="messages"] .mg-thread-detail,
+body[data-page-id="messages"] .mg-thread-detail-shell,
+body[data-page-id="messages"] .mg-thread-main-grid,
+body[data-page-id="messages"] .mg-message-stream-wrap{
+  min-height:0!important;
+}
+body[data-page-id="messages"] .mg-thread-detail-shell{
+  height:100%!important;
+  max-height:100%!important;
+  overflow:hidden!important;
+}
+body[data-page-id="messages"] .mg-thread-main-grid{
+  height:100%!important;
+  max-height:100%!important;
+  overflow:hidden!important;
+}
+body[data-page-id="messages"] .mg-thread-main-grid .mg-message-stream-wrap,
+body[data-page-id="messages"] .mg-message-stream-wrap{
+  height:100%!important;
+  max-height:100%!important;
+  overflow:hidden!important;
+  display:block!important;
+}
+body[data-page-id="messages"] .mg-message-stream{
+  height:100%!important;
+  max-height:100%!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable;
+  -webkit-overflow-scrolling:touch;
+}
+body[data-page-id="messages"] .mg-message-composer.is-detached{
+  position:relative!important;
+  bottom:auto!important;
+  flex:0 0 auto;
+}
+@media(max-width:980px){
+  body[data-page-id="messages"] .mg-message-stream{
+    padding-bottom:18px!important;
+  }
+}
