@@ -10,9 +10,13 @@ $mg_package_context = is_array($mg_package_context ?? null) ? $mg_package_contex
 $account_package_label = (string) ($mg_package_context['package_name'] ?? 'Free');
 $account_is_free = !empty($mg_package_context['is_free']);
 $can_merchant_nav = $can_merchant_nav ?? !empty($mg_package_context['merchant_access']);
+$can_create_microgift = (bool) ($can_create_microgift ?? ($can_merchant_nav && mg_package_limit_allows_create($mg_package_context, 'max_microgifts', 0)));
+$can_create_campaigns = (bool) ($can_create_campaigns ?? ($can_merchant_nav && mg_package_limit_allows_create($mg_package_context, 'max_active_campaigns', 0)));
+$can_create_rewards = (bool) ($can_create_rewards ?? ($can_merchant_nav && mg_package_limit_allows_create($mg_package_context, 'max_rewards', 0)));
+$can_header_create = $show_header_create && $can_merchant_nav && ($can_create_microgift || $can_create_campaigns || $can_create_rewards || in_array('super_admin', $user_roles, true));
 ?>
 <div class="mg-header-actions" data-header-template="logged-in">
-  <?php if ($show_header_create): ?>
+  <?php if ($can_header_create): ?>
     <a class="mg-header-create" href="/build.php" data-header-create data-global-create aria-label="Create" aria-haspopup="dialog" aria-controls="mg-create-menu" aria-expanded="false">+</a>
   <?php endif; ?>
 
