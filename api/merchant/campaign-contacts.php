@@ -32,6 +32,7 @@ function mg_campaign_contact_row(array $row): array
         'issued_count' => (int)($row['issued_count'] ?? 0),
         'claimed_count' => (int)($row['claimed_count'] ?? 0),
         'redeemed_count' => (int)($row['redeemed_count'] ?? 0),
+        'winner_count' => (int)($row['winner_count'] ?? 0),
         'invite_pending_count' => (int)($row['invite_pending_count'] ?? 0),
         'emails_queued_count' => (int)($row['emails_queued_count'] ?? 0),
         'emails_delivered_count' => (int)($row['emails_delivered_count'] ?? 0),
@@ -59,6 +60,7 @@ try {
                    COUNT(DISTINCT CASE WHEN wi.status='issued' THEN wi.id END) issued_count,
                    COUNT(DISTINCT CASE WHEN wi.status='claimed' THEN wi.id END) claimed_count,
                    COUNT(DISTINCT CASE WHEN wi.status='redeemed' THEN wi.id END) redeemed_count,
+                   COUNT(DISTINCT CASE WHEN wi.source_type='contest_winner' AND wi.status<>'cancelled' THEN wi.id END) winner_count,
                    COUNT(DISTINCT cri.id) invite_pending_count,
                    COUNT(DISTINCT CASE WHEN ce.event_type='outbound_email.queued' THEN ce.id END) emails_queued_count,
                    COUNT(DISTINCT CASE WHEN mdj.status='delivered' THEN mdj.id END) emails_delivered_count,
@@ -95,6 +97,7 @@ try {
         'wallets' => array_sum(array_column($contacts, 'wallet_count')),
         'reward_issued' => count(array_filter($contacts, fn($c) => (int)$c['issued_count'] > 0)),
         'reward_claimed' => count(array_filter($contacts, fn($c) => (int)$c['claimed_count'] > 0 || (int)$c['redeemed_count'] > 0)),
+        'winner_rewards' => array_sum(array_column($contacts, 'winner_count')),
         'invite_pending' => count(array_filter($contacts, fn($c) => (int)$c['invite_pending_count'] > 0)),
         'no_recent_activity' => count(array_filter($contacts, fn($c) => $c['no_recent_activity'])),
         'emails_queued' => array_sum(array_column($contacts, 'emails_queued_count')),
@@ -105,5 +108,5 @@ try {
     mg_ok(['contacts' => $contacts, 'totals' => $totals, 'count' => count($contacts), 'schema_ready' => true]);
 } catch (Throwable $error) {
     mg_security_log('warning', 'merchant.campaign_contacts.unavailable', 'Campaign contacts unavailable.', ['exception_class' => $error::class, 'message' => $error->getMessage()], $merchantId);
-    mg_ok(['contacts' => [], 'totals' => ['contacts' => 0, 'accounts' => 0, 'no_accounts' => 0, 'verified' => 0, 'wallets' => 0, 'reward_issued' => 0, 'reward_claimed' => 0, 'invite_pending' => 0, 'no_recent_activity' => 0, 'emails_queued' => 0, 'emails_delivered' => 0, 'emails_failed' => 0], 'count' => 0, 'schema_ready' => false], 'Campaign contacts unavailable until schemas are installed.');
+    mg_ok(['contacts' => [], 'totals' => ['contacts' => 0, 'accounts' => 0, 'no_accounts' => 0, 'verified' => 0, 'wallets' => 0, 'reward_issued' => 0, 'reward_claimed' => 0, 'winner_rewards' => 0, 'invite_pending' => 0, 'no_recent_activity' => 0, 'emails_queued' => 0, 'emails_delivered' => 0, 'emails_failed' => 0], 'count' => 0, 'schema_ready' => false], 'Campaign contacts unavailable until schemas are installed.');
 }
