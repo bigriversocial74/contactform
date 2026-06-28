@@ -14,6 +14,8 @@ if ($method === 'GET') {
     $current = mg_automation_current_settings($pdo, $merchantId);
     mg_ok([
         'levels' => array_values(mg_automation_levels()),
+        'agent_autonomy_levels' => array_values(mg_agent_autonomy_levels()),
+        'agent_autonomy' => $current['agent_autonomy'],
         'playbooks' => array_values(mg_crm_playbook_defs()),
         'settings' => array_values($current['settings']),
         'settings_by_key' => $current['settings'],
@@ -30,12 +32,15 @@ mg_require_csrf_for_write($input);
 $raw = $input['settings'] ?? [];
 if (!is_array($raw)) mg_fail('Automation settings payload is required.', 422);
 $settings = mg_automation_normalize_settings($raw);
+$agentAutonomy = mg_agent_autonomy_normalize($input['agent_autonomy'] ?? []);
 try {
-    $eventId = mg_automation_save_settings($pdo, $merchantId, (int)$user['id'], $settings);
+    $eventId = mg_automation_save_settings($pdo, $merchantId, (int)$user['id'], $settings, $agentAutonomy);
     mg_ok([
         'event_id' => $eventId,
         'settings' => array_values($settings),
         'settings_by_key' => $settings,
+        'agent_autonomy' => $agentAutonomy,
+        'agent_autonomy_levels' => array_values(mg_agent_autonomy_levels()),
         'summary' => mg_automation_settings_summary($settings),
     ], 'Automation settings saved.');
 } catch (Throwable $error) {
