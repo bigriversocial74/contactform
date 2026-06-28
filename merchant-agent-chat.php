@@ -4,8 +4,8 @@ require_once __DIR__ . '/includes/app.php';
 $page_title = 'Merchant Agent Chat | Microgifter';
 $page_section = 'merchant';
 $header_mode = 'account';
-$page_styles = ['/assets/css/merchant-workspace.css','/assets/css/merchant-agent-chat.css'];
-$page_scripts = ['/assets/js/merchant-agent-chat.js'];
+$page_styles = ['/assets/css/merchant-workspace.css','/assets/css/merchant-agent-chat.css','/assets/css/merchant-agent-command.css'];
+$page_scripts = ['/assets/js/merchant-agent-chat.js','/assets/js/merchant-agent-command.js'];
 $user = mg_current_user();
 $merchantNav = [
   'overview' => ['Overview','Workspace health','/merchant.php','Overview'],
@@ -39,7 +39,10 @@ require __DIR__ . '/includes/header.php';
   <main class="mg-app-workspace mg-merchant-main">
     <?php if (!$user): ?>
       <section class="mg-app-panel"><div class="mg-app-panel-head"><div><h2>Merchant access</h2><p>Sign in to use merchant agent chat.</p></div></div><div class="mg-app-panel-body"><a class="mg-btn mg-btn-primary" href="/signin.php">Sign in</a></div></section>
-    <?php else: require __DIR__ . '/includes/merchant-agent-chat-view.php'; endif; ?>
+    <?php else: ?>
+      <?php require __DIR__ . '/includes/merchant-agent-chat-view.php'; ?>
+      <?php require __DIR__ . '/includes/merchant-agent-command-widgets.php'; ?>
+    <?php endif; ?>
   </main>
 </section>
 <?php require __DIR__ . '/includes/footer.php'; ?>
