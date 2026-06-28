@@ -41,7 +41,6 @@ require __DIR__ . '/includes/header.php';
       <section class="mg-app-panel"><div class="mg-app-panel-head"><div><h2>Merchant access</h2><p>Sign in to use merchant agent chat.</p></div></div><div class="mg-app-panel-body"><a class="mg-btn mg-btn-primary" href="/signin.php">Sign in</a></div></section>
     <?php else: ?>
       <?php require __DIR__ . '/includes/merchant-agent-chat-view.php'; ?>
-      <?php require __DIR__ . '/includes/merchant-agent-command-widgets.php'; ?>
     <?php endif; ?>
   </main>
 </section>
