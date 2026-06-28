@@ -1,6 +1,16 @@
 <?php
 declare(strict_types=1);
 
+/*
+ * Copy this file to api/config.local.php on the server using File Manager.
+ * api/config.local.php is ignored by Git and should never be committed.
+ */
+
+$mgAnthropicCredential = 'PASTE_ANTHROPIC_CREDENTIAL_HERE';
+if ($mgAnthropicCredential !== '' && $mgAnthropicCredential !== 'PASTE_ANTHROPIC_CREDENTIAL_HERE') {
+    putenv('MG_ANTHROPIC_API_KEY=' . $mgAnthropicCredential);
+}
+
 return [
     'db' => [
         'host' => 'localhost',
