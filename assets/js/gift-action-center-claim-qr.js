@@ -75,6 +75,17 @@
     return `<div class="mg-claim-voucher-status" data-voucher-claim-status data-state="${esc(state || '')}" role="status" aria-live="polite">${esc(message || '')}</div>`;
   }
 
+  function friendlyClaimError(error) {
+    const raw = (error && error.message ? error.message : '').trim();
+    if (/invalid merchant claim code|invalid claim code|wrong|claim code/i.test(raw)) {
+      return 'Wrong merchant claim code. Check the code and try again.';
+    }
+    if (/too many|temporarily locked|locked/i.test(raw)) {
+      return raw || 'Too many invalid claim-code attempts. Try again later.';
+    }
+    return raw || 'Unable to claim this gift right now.';
+  }
+
   function claimStepMarkup(state, statusMessage, statusState) {
     const disabled = !state.qrImage;
     return `
@@ -86,16 +97,16 @@
       <div class="mg-claim-voucher-frame">
         ${state.qrImage ? `<img src="${esc(state.qrImage)}" alt="QR code for ${esc(state.title)}" loading="eager" referrerpolicy="no-referrer">` : '<div class="mg-claim-voucher-qr-placeholder">QR unavailable</div>'}
       </div>
-      <form class="mg-claim-voucher-manual" data-voucher-claim-form>
+      <div class="mg-claim-voucher-manual" data-voucher-claim-panel>
         <label class="mg-claim-voucher-code-label">
           <span>Manual claim code</span>
           <input type="password" name="merchant_claim_code" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Enter claim code" ${disabled ? 'disabled' : ''} required>
         </label>
         <div class="mg-claim-voucher-manual-actions">
-          <button class="mg-btn mg-btn-primary" type="submit" data-voucher-review-claim ${disabled ? 'disabled' : ''}>Review claim</button>
+          <button class="mg-btn mg-btn-primary" type="button" data-voucher-review-claim ${disabled ? 'disabled' : ''}>Review claim</button>
         </div>
         ${statusMarkup(statusMessage || '', statusState || '')}
-      </form>`;
+      </div>`;
   }
 
   function confirmStepMarkup(state) {
@@ -274,6 +285,23 @@
     document.querySelectorAll('[data-action-form="claim"]').forEach(enhanceClaimVoucher);
   }
 
+  function reviewManualClaim(root) {
+    const panel = root.querySelector('[data-voucher-claim-panel]');
+    const input = panel && panel.querySelector('[name="merchant_claim_code"]');
+    const merchantClaimCode = input ? input.value.trim() : '';
+    if (input) input.value = '';
+    if (!merchantClaimCode) {
+      const status = panel && panel.querySelector('[data-voucher-claim-status]');
+      if (status) {
+        status.textContent = 'Enter the merchant claim code to continue.';
+        status.dataset.state = 'error';
+      }
+      return;
+    }
+    setRootState(root, { pendingClaimCode: merchantClaimCode });
+    renderStep(root, 'confirm');
+  }
+
   async function submitConfirmedClaim(root, button) {
     const state = rootState(root);
     if (!state.actionItemId || !state.pendingClaimCode) {
@@ -305,40 +333,49 @@
       const message = response && response.message ? response.message : 'Gift claimed successfully.';
       renderStep(root, 'claimed', { payload: state.claimResponse, message });
       document.dispatchEvent(new CustomEvent('mg:action-center:voucher-claimed', { detail: state.claimResponse }));
+      const refresh = document.querySelector('[data-gift-refresh]');
+      if (refresh) window.setTimeout(() => refresh.click(), 650);
     } catch (error) {
       state.pendingClaimCode = '';
       setRootState(root, state);
-      renderStep(root, 'claim', { message: error.message || 'Unable to claim this gift right now.', state: 'error' });
+      renderStep(root, 'claim', { message: friendlyClaimError(error), state: 'error' });
     }
   }
 
   document.addEventListener('submit', (event) => {
-    const form = event.target.closest('[data-voucher-claim-form]');
-    if (!form) return;
+    const flow = event.target.closest('[data-voucher-flow]');
+    if (!flow) return;
     event.preventDefault();
-    const root = form.closest('[data-voucher-flow]');
-    const input = form.querySelector('[name="merchant_claim_code"]');
-    const merchantClaimCode = input ? input.value.trim() : '';
-    if (input) input.value = '';
-    if (!root || !merchantClaimCode) {
-      const status = form.querySelector('[data-voucher-claim-status]');
-      if (status) {
-        status.textContent = 'Enter the merchant claim code to continue.';
-        status.dataset.state = 'error';
-      }
-      return;
-    }
-    setRootState(root, { pendingClaimCode: merchantClaimCode });
-    renderStep(root, 'confirm');
+    event.stopPropagation();
+    reviewManualClaim(flow);
+  }, true);
+
+  document.addEventListener('keydown', (event) => {
+    const input = event.target.closest('[data-voucher-flow] [name="merchant_claim_code"]');
+    if (!input || event.key !== 'Enter') return;
+    const root = input.closest('[data-voucher-flow]');
+    if (!root) return;
+    event.preventDefault();
+    event.stopPropagation();
+    reviewManualClaim(root);
   }, true);
 
   document.addEventListener('click', (event) => {
     const root = event.target.closest('[data-voucher-flow]');
     if (!root) return;
 
+    const review = event.target.closest('[data-voucher-review-claim]');
+    if (review) {
+      event.preventDefault();
+      event.stopPropagation();
+      reviewManualClaim(root);
+      return;
+    }
+
     const back = event.target.closest('[data-voucher-back]');
     if (back) {
       event.preventDefault();
+      event.stopPropagation();
       setRootState(root, { pendingClaimCode: '' });
       renderStep(root, 'claim');
       return;
@@ -347,6 +384,7 @@
     const confirm = event.target.closest('[data-voucher-confirm-claim]');
     if (confirm) {
       event.preventDefault();
+      event.stopPropagation();
       submitConfirmedClaim(root, confirm);
       return;
     }
@@ -354,6 +392,7 @@
     const actions = event.target.closest('[data-voucher-actions]');
     if (actions) {
       event.preventDefault();
+      event.stopPropagation();
       renderStep(root, 'actions');
       return;
     }
@@ -361,9 +400,10 @@
     const nextAction = event.target.closest('[data-voucher-next-action]');
     if (nextAction) {
       event.preventDefault();
+      event.stopPropagation();
       openNextAction(root, nextAction.getAttribute('data-voucher-next-action'));
     }
-  });
+  }, true);
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', scanForClaimForms, { once: true });
