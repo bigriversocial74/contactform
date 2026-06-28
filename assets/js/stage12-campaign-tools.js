@@ -1,8 +1,7 @@
 document.addEventListener('DOMContentLoaded',function(){
   if(!window.Microgifter){return;}
-  var campaignList=document.querySelector('[data-stage12-campaign-list]');
   var contactStatus=document.querySelector('[data-stage12-contact-status]');
-  if(!campaignList||!contactStatus){return;}
+  if(!contactStatus){return;}
   var toolBox=document.createElement('div');
   toolBox.className='mg-empty-state';
   toolBox.setAttribute('data-stage12-campaign-tools','');
@@ -28,5 +27,5 @@ document.addEventListener('DOMContentLoaded',function(){
     var campaign=(response.data||response).campaign;
     if(campaign){renderDetail(campaign);}
   }
-  campaignList.addEventListener('click',function(event){var target=event.target.closest('[data-campaign-id]');if(target){load(target.getAttribute('data-campaign-id')).catch(function(error){toolBox.innerHTML='<p>'+html(error.message||'Unable to load campaign tools.')+'</p>';});}});
+  document.addEventListener('click',function(event){var target=event.target.closest('[data-campaign-contact-id]');if(target){load(target.getAttribute('data-campaign-contact-id')).catch(function(error){toolBox.innerHTML='<p>'+html(error.message||'Unable to load campaign tools.')+'</p>';});}});
 });
