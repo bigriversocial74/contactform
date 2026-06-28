@@ -7,7 +7,10 @@
     })[char]);
   }
 
-  function activeVoucherId() {
+  function activeVoucherId(form) {
+    const direct = form && form.querySelector('[name="action_item_id"],[data-action-item-id]');
+    const directValue = direct && (direct.value || direct.getAttribute('data-action-item-id'));
+    if (directValue) return String(directValue).trim();
     const app = document.querySelector('[data-gift-center]');
     const row = app && app.querySelector('.mg-gift-row.is-active[data-gift-id]');
     return row && row.dataset ? String(row.dataset.giftId || '').trim() : '';
@@ -19,11 +22,30 @@
         <div class="mg-claim-voucher-copy">
           <span>Customer voucher QR</span>
           <strong>${esc(title)}</strong>
-          <p>Preparing a signed voucher QR for the merchant scanner.</p>
+          <p>Preparing a merchant-ready voucher QR and manual claim code fallback.</p>
         </div>
         <div class="mg-action-form-note">Generating scanner payload…</div>
         <div class="mg-action-form-footer"><button class="mg-btn mg-btn-soft" type="button" data-action-modal-close>Close</button></div>
       </section>`;
+  }
+
+  function manualClaimForm(voucherId, token, disabled) {
+    return `
+      <form class="mg-claim-voucher-manual" data-voucher-claim-form data-action-item-id="${esc(voucherId)}" data-voucher-token="${esc(token || '')}">
+        <div class="mg-claim-voucher-manual-copy">
+          <span>Manual merchant claim</span>
+          <strong>Merchant claim code</strong>
+          <p>If the merchant does not scan the QR, they can enter their active location claim code here. The claim system verifies the merchant/location, records the timestamp, and blocks duplicate claims.</p>
+        </div>
+        <label class="mg-claim-voucher-code-label">
+          <span>Merchant claim code</span>
+          <input type="text" name="merchant_claim_code" inputmode="text" autocomplete="one-time-code" placeholder="Enter merchant claim code" ${disabled ? 'disabled' : ''} required>
+        </label>
+        <div class="mg-claim-voucher-manual-actions">
+          <button class="mg-btn mg-btn-primary" type="submit" data-voucher-claim-submit ${disabled ? 'disabled' : ''}>Verify & claim</button>
+        </div>
+        <div class="mg-claim-voucher-status" data-voucher-claim-status role="status" aria-live="polite"></div>
+      </form>`;
   }
 
   function errorMarkup(title, message, voucherId) {
@@ -39,6 +61,7 @@
           <code>${esc(voucherId)}</code>
           <button class="mg-btn mg-btn-soft" type="button" data-copy-voucher-id="${esc(voucherId)}">Copy ID</button>
         </div>
+        ${manualClaimForm(voucherId, '', true)}
         <div class="mg-action-form-footer"><button class="mg-btn mg-btn-soft" type="button" data-action-modal-close>Close</button></div>
       </section>`;
   }
@@ -46,13 +69,17 @@
   function voucherMarkup(title, voucherId, data) {
     const payload = data.scan_payload || '';
     const qrImage = data.qr_image_url || '';
+    const token = data.token || '';
     const expires = data.expires_at ? ` Signed QR expires ${esc(new Date(data.expires_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }))}.` : '';
+    const copy = data.is_wallet_reward
+      ? 'Show this QR code to the merchant. The QR identifies this wallet reward for merchant scanner redemption.'
+      : 'Show this QR code to the merchant. The QR contains a signed, short-lived voucher token.';
     return `
       <section class="mg-claim-voucher-qr" aria-label="Merchant scan voucher QR">
         <div class="mg-claim-voucher-copy">
           <span>Customer voucher QR</span>
           <strong>${esc((data.voucher && data.voucher.title) || title)}</strong>
-          <p>Show this QR code to the merchant. The QR contains a signed, short-lived voucher token. The merchant scanner applies the selected location claim code automatically.${expires}</p>
+          <p>${copy} The merchant scanner verifies the merchant location before the claim is recorded.${expires}</p>
         </div>
         <div class="mg-claim-voucher-frame">
           <img src="${esc(qrImage)}" alt="QR code for ${esc(title)}" loading="eager" referrerpolicy="no-referrer">
@@ -63,11 +90,22 @@
           <button class="mg-btn mg-btn-soft" type="button" data-copy-voucher-id="${esc(voucherId)}">Copy ID</button>
         </div>
         <input type="hidden" data-voucher-scan-payload value="${esc(payload)}">
-        <div class="mg-action-form-note">Merchant scanner flow: scan customer QR → verify selected merchant location → apply that location's active claim code → record redemption and notifications.</div>
+        ${manualClaimForm(voucherId, token, false)}
+        <div class="mg-action-form-note">Merchant flow: scan customer QR or enter the merchant claim code → verify authorized merchant/location → record a single redemption. Already-claimed gifts cannot be claimed again unless a refund has reversed the prior redemption.</div>
         <div class="mg-action-form-footer">
           <button class="mg-btn mg-btn-soft" type="button" data-action-modal-close>Close</button>
         </div>
       </section>`;
+  }
+
+  function successMarkup(data, message) {
+    const gift = (data && data.gift) || {};
+    return `
+      <div class="mg-action-success mg-claim-voucher-success">
+        <strong>${esc(message || 'Gift claimed successfully.')}</strong>
+        <p>${esc(gift.title || 'The voucher')} was verified and claimed${data && data.location_name ? ' at ' + esc(data.location_name) : ''}. The gift has moved into the claimed state and cannot be claimed again unless a refund reverses this redemption.</p>
+        <button class="mg-btn mg-btn-primary" type="button" data-action-modal-close>Done</button>
+      </div>`;
   }
 
   async function prepareVoucher(form, voucherId, title) {
@@ -81,6 +119,8 @@
         throw new Error('Voucher QR payload was not returned.');
       }
       form.innerHTML = voucherMarkup(title, voucherId, data);
+      const input = form.querySelector('[name="merchant_claim_code"]');
+      if (input) window.setTimeout(() => input.focus({ preventScroll: true }), 80);
     } catch (error) {
       form.innerHTML = errorMarkup(title, error.message, voucherId);
     }
@@ -88,7 +128,7 @@
 
   function enhanceClaimVoucher(form) {
     if (!form || form.dataset.claimVoucherQr === 'true') return;
-    const voucherId = activeVoucherId();
+    const voucherId = activeVoucherId(form);
     if (!voucherId) return;
     const modal = form.closest('[data-action-modal]') || document;
     const title = modal.querySelector('[data-action-modal-eyebrow]')?.textContent?.trim() || 'Microgift voucher';
@@ -99,6 +139,60 @@
 
   function scanForClaimForms() {
     document.querySelectorAll('[data-action-form="claim"]').forEach(enhanceClaimVoucher);
+  }
+
+  function setStatus(form, message, state) {
+    const status = form.querySelector('[data-voucher-claim-status]');
+    if (!status) return;
+    status.textContent = message || '';
+    status.dataset.state = state || '';
+  }
+
+  async function submitManualClaim(event, form) {
+    event.preventDefault();
+    const voucherId = form.getAttribute('data-action-item-id') || '';
+    const token = form.getAttribute('data-voucher-token') || '';
+    const input = form.querySelector('[name="merchant_claim_code"]');
+    const button = form.querySelector('[data-voucher-claim-submit]');
+    const merchantClaimCode = input ? input.value.trim() : '';
+    if (!voucherId || !merchantClaimCode) {
+      setStatus(form, 'Enter the merchant claim code to verify and claim this gift.', 'error');
+      return;
+    }
+    if (!window.Microgifter || typeof window.Microgifter.post !== 'function') {
+      setStatus(form, 'Microgifter API client is unavailable.', 'error');
+      return;
+    }
+    if (button) {
+      button.disabled = true;
+      button.textContent = 'Claiming…';
+    }
+    if (input) input.disabled = true;
+    setStatus(form, 'Verifying merchant claim code…', 'loading');
+    try {
+      const response = await window.Microgifter.post('/api/account/action-center-voucher-claim.php', {
+        action_item_id: voucherId,
+        merchant_claim_code: merchantClaimCode,
+        voucher_token: token
+      });
+      const payload = response && response.data ? response.data : response;
+      const message = response && response.message ? response.message : 'Gift claimed successfully.';
+      const container = form.closest('[data-action-form="claim"]') || form.closest('.mg-claim-voucher-qr') || form;
+      container.innerHTML = successMarkup(payload, message);
+      document.dispatchEvent(new CustomEvent('mg:action-center:voucher-claimed', { detail: payload }));
+      const refresh = document.querySelector('[data-gift-refresh]');
+      if (refresh) window.setTimeout(() => refresh.click(), 650);
+    } catch (error) {
+      if (button) {
+        button.disabled = false;
+        button.textContent = 'Verify & claim';
+      }
+      if (input) {
+        input.disabled = false;
+        input.focus();
+      }
+      setStatus(form, error.message || 'Unable to claim this gift right now.', 'error');
+    }
   }
 
   document.addEventListener('click', async (event) => {
@@ -115,6 +209,12 @@
       window.setTimeout(() => { copyButton.textContent = 'Copy ID'; }, 1600);
     }
   });
+
+  document.addEventListener('submit', (event) => {
+    const form = event.target.closest('[data-voucher-claim-form]');
+    if (!form) return;
+    submitManualClaim(event, form);
+  }, true);
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', scanForClaimForms, { once: true });
