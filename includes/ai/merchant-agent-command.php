@@ -6,8 +6,7 @@ require_once __DIR__ . '/merchant-agent-chat.php';
 function mg_agent_cmd_is_super_admin(array $user): bool
 {
     $roles = is_array($user['roles'] ?? null) ? $user['roles'] : [];
-    $permissions = is_array($user['permissions'] ?? null) ? $user['permissions'] : [];
-    return in_array('super_admin', $roles, true) || in_array('admin.users.manage', $permissions, true);
+    return in_array('super_admin', $roles, true);
 }
 
 function mg_agent_cmd_event(PDO $pdo, int $merchantId, string $type, array $ctx): string
@@ -135,6 +134,48 @@ function mg_agent_cmd_save_goals(PDO $pdo, array $user, array $input): array
     return ['goals' => $goals, 'state' => mg_agent_cmd_state($pdo, $user, false)];
 }
 
+function mg_agent_cmd_package_payload(string $actionKey, string $packageTitle, string $itemTitle, string $reason): array
+{
+    $base = ['source' => 'agent_draft_package', 'package_title' => $packageTitle, 'title' => $itemTitle, 'reason' => $reason];
+    if ($actionKey === 'create_campaign_draft') {
+        return array_merge($base, [
+            'campaign_type' => 'referral_reward',
+            'description' => 'Agent-created campaign draft package for merchant review.',
+            'form_headline' => $itemTitle,
+            'form_description' => 'Join this local campaign and claim the reward after merchant approval.',
+            'success_message' => 'Thanks — your reward request has been prepared.',
+            'quantity_limit' => 100,
+            'per_user_limit' => 1,
+            'agent_discoverable' => true,
+        ]);
+    }
+    if ($actionKey === 'create_reward_template_draft') {
+        return array_merge($base, [
+            'reward_type' => 'discount',
+            'value_type' => 'percent',
+            'value_percent' => 10,
+            'description' => 'Agent-created reward template draft for campaign testing.',
+            'redemption_instructions' => 'Merchant reviews and edits redemption terms before launch.',
+            'expiration_rule' => 'after_claim',
+            'expiration_days' => 30,
+            'per_user_limit' => 1,
+            'agent_discoverable' => true,
+            'agent_summary' => 'A low-risk draft reward for local customer engagement.',
+            'agent_categories' => ['local', 'referral', 'engagement'],
+            'agent_use_cases' => ['campaign test', 'CRM follow-up'],
+            'agent_add_to_wallet_allowed' => true,
+            'agent_gift_send_allowed' => true,
+        ]);
+    }
+    return array_merge($base, [
+        'recommended_next_action' => 'Create a CRM follow-up task for merchant review.',
+        'task_title' => $itemTitle,
+        'due_in_days' => 3,
+        'priority' => 'medium',
+        'followup_type' => 'campaign_package',
+    ]);
+}
+
 function mg_agent_cmd_create_package(PDO $pdo, array $user, array $input): array
 {
     $merchantId = (int) $user['id'];
@@ -156,7 +197,7 @@ function mg_agent_cmd_create_package(PDO $pdo, array $user, array $input): array
         $created = [];
         foreach ($items as $idx => $item) {
             $itemId = mg_ai_chat_uuid();
-            $payload = ['source' => 'agent_draft_package', 'package_title' => $title, 'title' => $item[1], 'reason' => $item[2]];
+            $payload = mg_agent_cmd_package_payload($item[0], $title, $item[1], $item[2]);
             $itemStmt->execute([$itemId, $planId, $idx + 1, $item[0], 'agent_package', $planPublicId, 'low', 1, 0.82, $item[1], $item[2], json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)]);
             $created[] = ['id' => $itemId, 'title' => $item[1], 'action_key' => $item[0]];
         }
