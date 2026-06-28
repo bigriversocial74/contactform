@@ -12,8 +12,22 @@ window.Microgifter = window.Microgifter || {};
   var pollTimer = null;
   var rewardOptions = { schema_ready: false, campaigns: [], templates: [], can_send_reward: false };
   var rewardOptionsLoaded = false;
+  var drawer = root.querySelector('[data-canvas-drawer]');
 
-  function qs(selector, scope) { return (scope || root).querySelector(selector); }
+  function portalDrawer() {
+    if (!drawer || !document.body) return null;
+    if (drawer.parentElement !== document.body) document.body.appendChild(drawer);
+    drawer.setAttribute('data-canvas-drawer-portal', 'body');
+    return drawer;
+  }
+
+  function qs(selector, scope) {
+    if (scope) return scope.querySelector(selector);
+    var node = root.querySelector(selector);
+    if (node) return node;
+    if (drawer && drawer.isConnected) return drawer.querySelector(selector);
+    return document.querySelector(selector);
+  }
   function qsa(selector, scope) { return Array.from((scope || root).querySelectorAll(selector)); }
   function payload(response) { return response && response.data ? response.data : response; }
   function clear(node) { if (node) node.replaceChildren(); }
@@ -275,16 +289,16 @@ window.Microgifter = window.Microgifter || {};
   }
 
   function openDrawer() {
-    var drawer = qs('[data-canvas-drawer]');
-    if (!drawer) return;
-    drawer.classList.add('is-open');
-    drawer.setAttribute('aria-hidden', 'false');
+    var activeDrawer = portalDrawer();
+    if (!activeDrawer) return;
+    activeDrawer.classList.add('is-open');
+    activeDrawer.setAttribute('aria-hidden', 'false');
   }
   function closeDrawer() {
-    var drawer = qs('[data-canvas-drawer]');
-    if (!drawer) return;
-    drawer.classList.remove('is-open');
-    drawer.setAttribute('aria-hidden', 'true');
+    var activeDrawer = portalDrawer();
+    if (!activeDrawer) return;
+    activeDrawer.classList.remove('is-open');
+    activeDrawer.setAttribute('aria-hidden', 'true');
   }
 
   function renderCrm(data) {
@@ -407,7 +421,11 @@ window.Microgifter = window.Microgifter || {};
     }
   }
 
-  root.addEventListener('click', function (event) {
+  document.addEventListener('click', function (event) {
+    var inRoot = root.contains(event.target);
+    var inDrawer = drawer && drawer.contains(event.target);
+    if (!inRoot && !inDrawer) return;
+
     var refresh = event.target.closest('[data-canvas-refresh]');
     if (refresh) return void loadCanvas();
     var health = event.target.closest('[data-canvas-health-refresh]');
@@ -430,11 +448,14 @@ window.Microgifter = window.Microgifter || {};
     }
     var close = event.target.closest('[data-drawer-close]');
     if (close) return closeDrawer();
-    var avatar = event.target.closest('[data-session-id]');
+    var avatar = inRoot ? event.target.closest('[data-session-id]') : null;
     if (avatar) return void loadCrm(avatar.datasetSessionId || avatar.dataset.sessionId);
   });
 
-  root.addEventListener('submit', function (event) {
+  document.addEventListener('submit', function (event) {
+    var inRoot = root.contains(event.target);
+    var inDrawer = drawer && drawer.contains(event.target);
+    if (!inRoot && !inDrawer) return;
     var rewardForm = event.target.closest('[data-reward-form]');
     if (rewardForm) {
       event.preventDefault();
@@ -447,6 +468,7 @@ window.Microgifter = window.Microgifter || {};
     sendMessage(form);
   });
 
+  portalDrawer();
   loadCanvas();
   loadHealth(false);
   loadRewardOptions(false);
