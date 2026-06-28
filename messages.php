@@ -5,9 +5,8 @@ $page_title='Messages | Microgifter';
 $page_section='agent';
 $header_mode='agent';
 $agent_tab='messages';
-$page_styles=['/assets/css/communications.css','/assets/css/messages-isolated-clean.css','/assets/css/messages-footer-cleanup.css','/assets/css/messages-chat-boundary-fix.css'];
-$page_scripts=['/assets/js/messages-isolated-clean.js'];
-// Recovery baseline compatibility: messages-center.js replaced by messages-isolated-clean.js for the isolated messages page restore.
+$page_styles=['/assets/css/messages.css'];
+$page_scripts=['/assets/js/messages.js'];
 require __DIR__ . '/includes/header.php';
 ?>
 <section class="mg-app-shell mg-agent-app mg-communications-app mg-messages-layout" data-messages-center>
@@ -25,7 +24,7 @@ require __DIR__ . '/includes/header.php';
         <span class="mg-eyebrow">Gift communication</span>
         <h1>Messages</h1>
       </div>
-      <button class="mg-message-compose-trigger" type="button" data-message-refresh aria-label="Refresh conversations">↻</button>
+      <button class="mg-message-compose-trigger" type="button" data-message-refresh aria-label="Refresh conversations">Refresh</button>
     </div>
     <div class="mg-messages-sidebar-search">
       <input type="search" data-message-search placeholder="Search conversations" aria-label="Search conversations">
