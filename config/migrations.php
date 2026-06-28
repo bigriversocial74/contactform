@@ -128,6 +128,7 @@ return [
         'stage_20_agent_store_canvas.sql',
         'stage_20b_store_canvas_trigger_zones.sql',
         'stage_20c_store_canvas_trigger_analytics_stamps.sql',
+        'stage_20d_store_canvas_automation_rules.sql',
         'stage_20_buy_in_share_market.sql',
         'stage_21_buy_in_execution_audit_scaffolding.sql',
         'stage_22_buy_in_evidence_candidates.sql',
@@ -135,13 +136,11 @@ return [
         'stage_24_buy_in_handoff_archives.sql',
         'stage_v1_release_trigger_portability.sql',
     ],
-
     'coverage_markers' => [
         'stage_9e4_consolidated_stage1_to_stage9_upgrade' => 'stage_9d_microgift_operations.sql',
         'stage_11h_backend_hardening' => 'schema_v2_action_center_crm_addendum.sql',
         'stage_v1_release_trigger_portability' => 'stage_v1_release_trigger_portability.sql',
     ],
-
     'manual_only' => [
         '03Z_bootstrap_super_admin_user1.sql' => 'Manual operator import only.',
         'microgifter_complete_production_update_v1c_v1release.sql' => 'Manual consolidated production bundle.',
