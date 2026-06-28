@@ -126,6 +126,7 @@ return [
         'stage_19c_claude_sonnet_merchant_agent_planner.sql',
         'stage_19_merchant_market_snapshots.sql',
         'stage_20_agent_store_canvas.sql',
+        'stage_20b_store_canvas_trigger_zones.sql',
         'stage_20_buy_in_share_market.sql',
         'stage_21_buy_in_execution_audit_scaffolding.sql',
         'stage_22_buy_in_evidence_candidates.sql',
