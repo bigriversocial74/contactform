@@ -47,6 +47,19 @@ function mg_canvas_trigger_recent(PDO $pdo, array $session, string $key): bool
     }
 }
 
+function mg_canvas_trigger_pick_template(array $campaign, array $templates): ?array
+{
+    $attachedTemplateId = trim((string)($campaign['reward_template_id'] ?? ''));
+    if ($attachedTemplateId !== '') {
+        foreach ($templates as $template) {
+            if (is_array($template) && (string)($template['id'] ?? '') === $attachedTemplateId) {
+                return $template;
+            }
+        }
+    }
+    return isset($templates[0]) && is_array($templates[0]) ? $templates[0] : null;
+}
+
 try {
     $merchantUserId = (int)$user['id'];
     $sessionId = mg_store_safe_public_id($input['session_id'] ?? '', 'Store session');
@@ -55,20 +68,26 @@ try {
     $triggerKey = mb_substr($triggerKey, 0, 90);
     $triggerLabel = trim((string)($input['trigger_label'] ?? 'IN/OUT Box Campaign Trigger'));
     $triggerLabel = mb_substr($triggerLabel !== '' ? $triggerLabel : 'IN/OUT Box Campaign Trigger', 0, 140);
+    $selectedCampaignId = trim((string)($input['campaign_id'] ?? ''));
+    if ($selectedCampaignId !== '') {
+        $selectedCampaignId = mg_store_safe_public_id($selectedCampaignId, 'Campaign');
+    }
 
     mg_rate_limit('merchant_canvas.campaign_trigger', 'user:' . $merchantUserId, 80, 60);
     $session = mg_canvas_trigger_session($pdo, $merchantUserId, $sessionId);
     $customerName = trim((string)($session['customer_name'] ?? '')) ?: 'there';
     $firstName = preg_split('/\s+/u', $customerName, -1, PREG_SPLIT_NO_EMPTY)[0] ?? $customerName;
-    $eventKey = $triggerKey . ':' . $sessionId;
+    $eventKey = $triggerKey . ':' . $sessionId . ':' . ($selectedCampaignId !== '' ? $selectedCampaignId : 'default');
 
     if (mg_canvas_trigger_recent($pdo, $session, $eventKey)) {
-        mg_ok(['triggered'=>false,'recent'=>true,'trigger_key'=>$triggerKey], 'Campaign trigger recently fired.');
+        mg_ok(['triggered'=>false,'recent'=>true,'trigger_key'=>$triggerKey,'campaign_id'=>$selectedCampaignId ?: null], 'Campaign trigger recently fired.');
         return;
     }
 
     $messageResult = null;
     $rewardResult = null;
+    $campaign = null;
+    $template = null;
     $messageBody = 'Hi ' . $firstName . ' — you just entered a campaign trigger zone in the store. I sent this to your IN/OUT Box so you can review the offer or ask questions.';
 
     try {
@@ -79,8 +98,24 @@ try {
 
     try {
         $options = mg_store_reward_options($pdo, $merchantUserId);
-        $campaign = $options['campaigns'][0] ?? null;
-        $template = $options['templates'][0] ?? null;
+        $campaigns = is_array($options['campaigns'] ?? null) ? $options['campaigns'] : [];
+        $templates = is_array($options['templates'] ?? null) ? $options['templates'] : [];
+        if ($selectedCampaignId !== '') {
+            foreach ($campaigns as $candidate) {
+                if (is_array($candidate) && (string)($candidate['id'] ?? '') === $selectedCampaignId) {
+                    $campaign = $candidate;
+                    break;
+                }
+            }
+            if (!$campaign) {
+                throw new RuntimeException('Selected trigger campaign is not active or available.');
+            }
+        } else {
+            $campaign = isset($campaigns[0]) && is_array($campaigns[0]) ? $campaigns[0] : null;
+        }
+        if (is_array($campaign)) {
+            $template = mg_canvas_trigger_pick_template($campaign, $templates);
+        }
         if (is_array($campaign) && is_array($template) && !empty($campaign['id']) && !empty($template['id'])) {
             $rewardResult = mg_store_reward_issue(
                 $pdo,
@@ -91,29 +126,33 @@ try {
                 'Triggered by ' . $triggerLabel . ' on the Merchant Store Canvas.',
                 null,
                 null,
-                'canvas-trigger:' . hash('sha256', $merchantUserId . '|' . $sessionId . '|' . $triggerKey . '|' . gmdate('YmdHi'))
+                'canvas-trigger:' . hash('sha256', $merchantUserId . '|' . $sessionId . '|' . $triggerKey . '|' . (string)$campaign['id'] . '|' . gmdate('YmdHi'))
             );
         }
     } catch (Throwable $rewardError) {
-        mg_security_log('error', 'merchant_canvas.trigger_reward_failed', 'Campaign trigger reward failed.', ['exception_class'=>$rewardError::class,'message'=>$rewardError->getMessage()], $merchantUserId);
+        mg_security_log('error', 'merchant_canvas.trigger_reward_failed', 'Campaign trigger reward failed.', ['exception_class'=>$rewardError::class,'message'=>$rewardError->getMessage(),'selected_campaign_id'=>$selectedCampaignId], $merchantUserId);
     }
 
     mg_store_log_event($pdo, $session, 'campaign_trigger_zone', $triggerLabel, [
         'trigger_key' => $triggerKey,
         'event_key' => $eventKey,
+        'selected_campaign_id' => $selectedCampaignId ?: null,
         'source_system' => 'store_canvas',
         'source_channel' => 'merchant_canvas_motion',
         'message_id' => is_array($messageResult) ? ($messageResult['id'] ?? null) : null,
         'thread_id' => is_array($messageResult) ? ($messageResult['thread_id'] ?? null) : null,
         'wallet_item_id' => is_array($rewardResult) ? ($rewardResult['wallet_item_id'] ?? null) : null,
-        'campaign_id' => is_array($rewardResult) ? ($rewardResult['campaign_id'] ?? null) : null,
-        'reward_template_id' => is_array($rewardResult) ? ($rewardResult['reward_template_id'] ?? null) : null,
+        'campaign_id' => is_array($rewardResult) ? ($rewardResult['campaign_id'] ?? null) : ($campaign['id'] ?? null),
+        'campaign_title' => is_array($campaign) ? ($campaign['title'] ?? null) : null,
+        'reward_template_id' => is_array($rewardResult) ? ($rewardResult['reward_template_id'] ?? null) : ($template['id'] ?? null),
     ]);
 
-    mg_event('store_canvas.campaign_trigger_zone', ['session_id'=>$sessionId,'trigger_key'=>$triggerKey,'message_sent'=>is_array($messageResult),'reward_sent'=>is_array($rewardResult)], $merchantUserId);
+    mg_event('store_canvas.campaign_trigger_zone', ['session_id'=>$sessionId,'trigger_key'=>$triggerKey,'campaign_id'=>is_array($campaign) ? ($campaign['id'] ?? null) : null,'message_sent'=>is_array($messageResult),'reward_sent'=>is_array($rewardResult)], $merchantUserId);
     mg_ok([
         'triggered' => true,
         'trigger_key' => $triggerKey,
+        'campaign_id' => is_array($campaign) ? ($campaign['id'] ?? null) : null,
+        'campaign_title' => is_array($campaign) ? ($campaign['title'] ?? null) : null,
         'message_sent' => is_array($messageResult),
         'reward_sent' => is_array($rewardResult),
         'message' => $messageResult,
