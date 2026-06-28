@@ -14,6 +14,18 @@ function goStatus(message,type){var node=document.querySelector('[data-dev-api-l
 function showReveal(data,message){var node=document.querySelector('[data-dev-credential-secret]');if(!node)return;var parts=[];if(data.credential)parts.push('<div class="mg-empty-state"><strong>'+esc(message||'Copy once')+'</strong><p><code>'+esc(data.credential)+'</code></p></div>');if(data.webhook_secret)parts.push('<div class="mg-empty-state"><strong>Copy webhook signing value now</strong><p><code>'+esc(data.webhook_secret)+'</code></p><p>Hint: '+esc(data.webhook_secret_hint||'')+'</p></div>');node.innerHTML=parts.join('');}
 function decodeJsonList(value){try{var out=JSON.parse(value||'[]');return Array.isArray(out)?out:[];}catch(e){return [];}}
 function appId(app){return app.public_id||app.app_id||'';}
+function renderSummaryKpis(data){
+  var node=document.querySelector('[data-dev-api-kpis]');
+  if(!node)return;
+  var summary=data.summary||{},setup=data.onboarding||{},completed=Number(setup.completed||0),total=Number(setup.total||(setup.steps||[]).length||0),progress=total?Math.round(completed*100/total):0;
+  node.innerHTML=[
+    kpi('Apps',n(summary.app_count)),
+    kpi('Active apps',n(summary.active_apps)),
+    kpi('Credentials',n(summary.key_count)),
+    kpi('Active credentials',n(summary.active_keys)),
+    kpi('Setup progress',progress+'%')
+  ].join('');
+}
 function renderOnboarding(data){
   var setup=data.onboarding||{},node=document.querySelector('[data-dev-api-onboarding]'),badge=document.querySelector('[data-dev-api-readiness]');
   if(!node)return;
@@ -46,7 +58,7 @@ async function loadDeveloperAnalytics(){
   try{
     var response=await Microgifter.get('/api/merchant/developer-api.php');
     var data=response.data||response;devData=data;
-    renderOnboarding(data);renderDeveloperApps(data);renderKeysAndLogs(data);wireDeveloperForms();normalizeDocLinks();
+    renderSummaryKpis(data);renderOnboarding(data);renderDeveloperApps(data);renderKeysAndLogs(data);wireDeveloperForms();normalizeDocLinks();
     var analytics=data.analytics||{},totals=analytics.totals||{},sandbox=analytics.sandbox||{},kpis=document.querySelector('[data-dev-api-analytics-kpis]');
     if(kpis){kpis.innerHTML=[kpi('Total requests',n(totals.total_requests)),kpi('Requests 24h',n(totals.requests_24h)),kpi('Errors 24h',n(totals.errors_24h)),kpi('Rate limits 24h',n(totals.rate_limited_24h)),kpi('Sandbox rewards',n(sandbox.sandbox_rewards)),kpi('Sandbox 24h',n(sandbox.sandbox_rewards_24h))].join('');}
     renderRows(document.querySelector('[data-dev-api-daily]'),analytics.daily,function(x){return row('<strong>'+esc(x.day)+'</strong><br><small>'+n(x.errors)+' errors · '+n(x.rate_limited)+' limited</small>','<strong>'+n(x.requests)+'</strong>');},'No request history yet.');
