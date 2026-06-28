@@ -2,6 +2,7 @@ window.Microgifter = window.Microgifter || {};
 (function (document) {
   'use strict';
   var lastTrigger = null;
+  var pollingStarted = false;
   function escapeHtml(value) { return String(value == null ? '' : value).replace(/[&<>'"]/g, function (character) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[character]; }); }
   function apiGet(url) {
     if (window.Microgifter && typeof window.Microgifter.get === 'function') return window.Microgifter.get(url);
@@ -45,33 +46,46 @@ window.Microgifter = window.Microgifter || {};
   }
   function messageMarkup(items) {
     if (!items.length) return '<div class="mg-header-signal-empty"><strong>No new messages</strong><p>New conversations and gift replies will appear here.</p></div>';
-    return '<div class="mg-header-signal-list">' + items.map(function (item) { return '<a class="' + (item.unread ? 'is-unread' : '') + '" href="/messages.php?thread=' + encodeURIComponent(item.id || item.public_id || '') + '"><strong>' + escapeHtml(item.subject || 'Conversation') + '</strong><p>' + escapeHtml(item.latest_message || 'Open conversation') + '</p><div class="mg-header-signal-meta"><span>' + escapeHtml(item.latest_sender || 'Conversation') + '</span><span>' + escapeHtml(item.latest_at || '') + '</span></div></a>'; }).join('') + '</div>';
+    return '<div class="mg-header-signal-list">' + items.map(function (item) { return '<a class="' + (item.unread ? 'is-unread' : '') + '" href="/messages.php?thread=' + encodeURIComponent(item.id || item.public_id || '') + '"><strong>' + escapeHtml(item.subject || 'Conversation') + '</strong><p>' + escapeHtml(item.latest_message || 'Open conversation') + '</p><div class="mg-header-signal-meta"><span>' + escapeHtml(item.latest_sender || (item.crm_status || 'Conversation')) + '</span><span>' + escapeHtml(item.latest_at || '') + '</span></div></a>'; }).join('') + '</div>';
   }
-  async function loadSignal(shell) {
+  async function loadSignal(shell, quiet) {
     var panel = ensureSignalPanel(shell), type = shell.dataset.headerSignal || 'notifications';
-    panel.innerHTML = '<div class="mg-header-signal-empty"><strong>Loading…</strong></div>';
+    if (!quiet || shell.classList.contains('is-open')) panel.innerHTML = '<div class="mg-header-signal-empty"><strong>Loading…</strong></div>';
     try {
       if (type === 'messages') {
         var messages = await apiGet('/api/messages/threads.php?limit=8');
         var messageData = messages.data || messages || {};
         var threads = Array.isArray(messageData.threads) ? messageData.threads : [];
         setMessageCount(messageData.unread_count || 0);
-        panel.innerHTML = '<div class="mg-header-signal-panel-head"><div><span>Messages</span><strong>Gift conversations</strong></div><a href="/messages.php">View all</a></div>' + messageMarkup(threads);
+        if (shell.classList.contains('is-open') || !quiet) panel.innerHTML = '<div class="mg-header-signal-panel-head"><div><span>Messages</span><strong>Gift conversations</strong></div><a href="/messages.php">View all</a></div>' + messageMarkup(threads);
       } else {
         var notifications = await apiGet('/api/notifications/index.php?limit=8');
         var notificationData = notifications.data || notifications || {};
         var items = Array.isArray(notificationData.notifications) ? notificationData.notifications : [];
         setNotificationCount(notificationData.unread_count || 0);
-        panel.innerHTML = '<div class="mg-header-signal-panel-head"><div><span>Notifications</span><strong>Activity & alerts</strong></div><div><a href="/notifications.php">View all</a><a href="/notification-preferences.php">Preferences</a><button type="button" data-clear-notifications>Mark all read</button></div></div>' + notificationMarkup(items);
+        if (shell.classList.contains('is-open') || !quiet) panel.innerHTML = '<div class="mg-header-signal-panel-head"><div><span>Notifications</span><strong>Activity & alerts</strong></div><div><a href="/notifications.php">View all</a><a href="/notification-preferences.php">Preferences</a><button type="button" data-clear-notifications>Mark all read</button></div></div>' + notificationMarkup(items);
       }
     } catch (error) {
-      if (type === 'messages') setMessageCount(0); else setNotificationCount(0);
-      panel.innerHTML = '<div class="mg-header-signal-panel-head"><div><span>' + (type === 'messages' ? 'Messages' : 'Notifications') + '</span><strong>' + (type === 'messages' ? 'Gift conversations' : 'Activity & alerts') + '</strong></div></div><div class="mg-header-signal-empty"><strong>Unable to load</strong><p>' + escapeHtml(error.message || 'Try again shortly.') + '</p></div>';
+      if (!quiet) {
+        if (type === 'messages') setMessageCount(0); else setNotificationCount(0);
+        panel.innerHTML = '<div class="mg-header-signal-panel-head"><div><span>' + (type === 'messages' ? 'Messages' : 'Notifications') + '</span><strong>' + (type === 'messages' ? 'Gift conversations' : 'Activity & alerts') + '</strong></div></div><div class="mg-header-signal-empty"><strong>Unable to load</strong><p>' + escapeHtml(error.message || 'Try again shortly.') + '</p></div>';
+      }
     }
   }
   function closeSignals(except) { document.querySelectorAll('[data-header-signal].is-open').forEach(function (node) { if (node !== except) { node.classList.remove('is-open'); setExpanded(node, false); } }); }
   function closeAccountMenu(except) { document.querySelectorAll('[data-mg-auth-menu].is-open').forEach(function (node) { if (node !== except) { node.classList.remove('is-open'); setExpanded(node, false); } }); }
   function closeAll(restoreFocus) { closeSignals(); closeAccountMenu(); if (restoreFocus && lastTrigger && document.contains(lastTrigger)) lastTrigger.focus(); lastTrigger = null; }
+  function refreshAllSignals(quiet) { document.querySelectorAll('[data-header-signal]').forEach(function (shell) { loadSignal(shell, quiet !== false); }); }
+  function startPolling() {
+    if (pollingStarted) return;
+    pollingStarted = true;
+    setInterval(function () {
+      if (document.hidden) return;
+      refreshAllSignals(true);
+      document.dispatchEvent(new CustomEvent('mg:signals:poll'));
+    }, 25000);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) refreshAllSignals(true); });
+  }
   document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.mg-header-badge').forEach(function (badge) { setBadgeCount(badge, badge.textContent); });
     document.querySelectorAll('[data-header-signal]').forEach(function (shell) { ensureSignalPanel(shell); loadSignal(shell); });
@@ -85,9 +99,10 @@ window.Microgifter = window.Microgifter || {};
       if (!event.target.closest('[data-header-signal], [data-mg-auth-menu]')) closeAll(false);
     });
     document.addEventListener('keydown', function (event) { if (event.key === 'Escape') closeAll(true); });
+    startPolling();
   });
   document.addEventListener('mg:notifications:count', function (event) { setNotificationCount(event.detail && event.detail.count); });
-  document.addEventListener('mg:notifications:refresh', function () { document.querySelectorAll('[data-header-signal="notifications"]').forEach(loadSignal); });
-  document.addEventListener('mg:messages:refresh', function () { document.querySelectorAll('[data-header-signal="messages"]').forEach(loadSignal); });
-  window.Microgifter.setNotificationCount = setNotificationCount; window.Microgifter.setMessageCount = setMessageCount;
+  document.addEventListener('mg:notifications:refresh', function () { document.querySelectorAll('[data-header-signal="notifications"]').forEach(function (shell) { loadSignal(shell); }); });
+  document.addEventListener('mg:messages:refresh', function () { document.querySelectorAll('[data-header-signal="messages"]').forEach(function (shell) { loadSignal(shell); }); });
+  window.Microgifter.setNotificationCount = setNotificationCount; window.Microgifter.setMessageCount = setMessageCount; window.Microgifter.refreshHeaderSignals = refreshAllSignals;
 })(document);
