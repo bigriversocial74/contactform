@@ -2,17 +2,21 @@
 declare(strict_types=1);
 ?>
 <section class="mg-agent-chat-page" data-merchant-agent-chat>
-  <section class="mg-agent-chat-grid" id="agent-chat">
-    <section class="mg-app-panel mg-agent-chat-main" aria-label="Merchant agent conversation">
-      <div class="mg-agent-chat-feed" data-agent-chat-feed>
-        <div class="mg-agent-chat-empty">
-          <div class="mg-agent-chat-empty-icon" aria-hidden="true">✦</div>
-          <strong>Loading merchant agent chat…</strong>
-          <p>The agent feed will show your prompts, Claude replies, and recommended next-step cards.</p>
+  <section class="mg-agent-chat-layout" id="agent-chat">
+    <section class="mg-agent-chat-main-stack">
+      <section class="mg-app-panel mg-agent-chat-main" aria-label="Merchant agent conversation">
+        <div class="mg-agent-chat-feed" data-agent-chat-feed>
+          <div class="mg-agent-chat-empty">
+            <div class="mg-agent-chat-empty-icon" aria-hidden="true">✦</div>
+            <strong>Loading merchant agent chat…</strong>
+            <p>The agent feed will show your prompts, Claude replies, and recommended next-step cards.</p>
+          </div>
         </div>
-      </div>
+      </section>
+
       <p class="mg-form-status" data-agent-chat-status role="status"></p>
-      <form class="mg-agent-chat-composer" data-agent-chat-form>
+
+      <form class="mg-agent-chat-composer-shell" data-agent-chat-form>
         <button class="mg-agent-chat-tool" type="button" aria-label="Add context">+</button>
         <textarea name="message" rows="1" maxlength="2000" placeholder="Ask the merchant agent what to review, fix, draft, or prioritize…" aria-label="Ask the merchant agent" required></textarea>
         <button class="mg-agent-chat-send" type="submit" data-agent-chat-send aria-label="Send message">↑</button>
