@@ -86,6 +86,12 @@
     return raw || 'Unable to claim this gift right now.';
   }
 
+  function reloadAfterClaimExit(modal) {
+    if (!modal || modal.dataset.voucherClaimed !== 'true' || modal.dataset.voucherReloadQueued === 'true') return;
+    modal.dataset.voucherReloadQueued = 'true';
+    window.setTimeout(() => window.location.reload(), 260);
+  }
+
   function claimStepMarkup(state, statusMessage, statusState) {
     const disabled = !state.qrImage;
     return `
@@ -332,9 +338,12 @@
       setRootState(root, state);
       const message = response && response.message ? response.message : 'Gift claimed successfully.';
       renderStep(root, 'claimed', { payload: state.claimResponse, message });
+      const modal = root.closest('[data-action-modal]');
+      if (modal) {
+        modal.dataset.voucherClaimed = 'true';
+        modal.dataset.voucherReloadQueued = 'false';
+      }
       document.dispatchEvent(new CustomEvent('mg:action-center:voucher-claimed', { detail: state.claimResponse }));
-      const refresh = document.querySelector('[data-gift-refresh]');
-      if (refresh) window.setTimeout(() => refresh.click(), 650);
     } catch (error) {
       state.pendingClaimCode = '';
       setRootState(root, state);
@@ -361,6 +370,11 @@
   }, true);
 
   document.addEventListener('click', (event) => {
+    const closeButton = event.target.closest('[data-action-modal-close]');
+    if (closeButton) {
+      reloadAfterClaimExit(closeButton.closest('[data-action-modal]'));
+    }
+
     const root = event.target.closest('[data-voucher-flow]');
     if (!root) return;
 
