@@ -10,6 +10,7 @@ final class ClaimVoucherQrScannerContractTest extends TestCase
         $root=dirname(__DIR__,2);
         $qrSource=file_get_contents($root.'/assets/js/gift-action-center-claim-qr.js');
         $scannerSource=file_get_contents($root.'/api/merchant/scanner-claim.php');
+        $merchantClaimSource=file_get_contents($root.'/assets/js/merchant-claim.js');
         $tokenEndpoint=file_get_contents($root.'/api/account/action-center-voucher-token.php');
         $qrEndpoint=file_get_contents($root.'/api/account/action-center-voucher-qr.php');
         $claimEndpoint=file_get_contents($root.'/api/account/action-center-voucher-claim.php');
@@ -18,6 +19,7 @@ final class ClaimVoucherQrScannerContractTest extends TestCase
         $walletMigration=file_get_contents($root.'/database/stage_18ah_wallet_claim_integrity.sql');
         self::assertIsString($qrSource);
         self::assertIsString($scannerSource);
+        self::assertIsString($merchantClaimSource);
         self::assertIsString($tokenEndpoint);
         self::assertIsString($qrEndpoint);
         self::assertIsString($claimEndpoint);
@@ -28,20 +30,26 @@ final class ClaimVoucherQrScannerContractTest extends TestCase
         foreach([
             '/api/account/action-center-voucher-token.php?action_item_id=',
             '/api/account/action-center-voucher-claim.php',
-            'signed, short-lived voucher token',
-            'signed, short-lived wallet reward token',
-            'qr_image_url',
-            'data-voucher-scan-payload',
-            'data-copy-voucher-id',
-            'data-voucher-claim-form',
-            'merchant_claim_code',
+            'mg-voucher-stepper',
+            'Claim',
+            'Confirm',
+            'Claimed',
+            'Actions',
+            'Manual claim code',
+            'Review claim',
+            'Confirm claim',
+            'data-voucher-next-action="message"',
+            'data-voucher-next-action="tip"',
             'type="password"',
             'autocomplete="off"',
-            'Verify & claim',
-            'unless a refund reverses this redemption',
+            'merchant_claim_code',
+            'data-action-form="message"',
+            'data-action-form="tip"',
         ] as $needle){
             self::assertStringContainsString($needle,$qrSource);
         }
+        self::assertStringNotContainsString('CUSTOMER VOUCHER QR',$qrSource);
+        self::assertStringNotContainsString('signed, short-lived voucher token',$qrSource);
         self::assertStringNotContainsString('api.qrserver.com',$qrSource.$tokenEndpoint);
 
         foreach([
@@ -132,6 +140,17 @@ final class ClaimVoucherQrScannerContractTest extends TestCase
             '$pdo->commit();',
         ] as $needle){
             self::assertStringContainsString($needle,$claimEndpoint);
+        }
+
+        foreach([
+            'renderApproval',
+            'Approved — ready to claim',
+            'Confirm claim',
+            'Claimed successfully',
+            'mg-merchant-claim-approved',
+            "form.dataset.merchantClaimStage === 'approved'",
+        ] as $needle){
+            self::assertStringContainsString($needle,$merchantClaimSource);
         }
     }
 }
