@@ -118,6 +118,7 @@ return [
         'stage_18z_admin_incident_analytics.sql',
         'stage_18aa_admin_predictive_ops.sql',
         'stage_18ac_claim_voucher_tokens.sql',
+        'stage_18ah_wallet_claim_integrity.sql',
         'stage_18ad_scanner_trust_operations.sql',
         'stage_18ae_scanner_operations_control.sql',
         'stage_18af_redemption_finance_disputes.sql',
