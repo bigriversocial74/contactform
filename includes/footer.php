@@ -37,7 +37,9 @@ if ((string) ($page_manifest['id'] ?? '') === 'discover') {
 }
 if ((string) ($page_manifest['id'] ?? '') === 'merchant-canvas') {
     $page_scripts[] = '/assets/js/merchant-canvas-behavior-post.js';
-    $page_scripts[] = '/assets/js/merchant-canvas-trigger-manager.js';
+    // Temporarily disabled on repair-main-20260628: the trigger manager depends on incomplete trigger endpoints
+    // and can lock the page through trigger-suite DOM mutation loops.
+    // $page_scripts[] = '/assets/js/merchant-canvas-trigger-manager.js';
 }
 $core_scripts = [
     '/assets/js/microgifter.js','/assets/js/universal-header.js','/assets/js/header-signals.js','/assets/js/create-menu.js','/assets/js/builder-publish-errors.js','/assets/js/api-client.js','/assets/js/global-post-composer.js','/assets/js/agent-folder-counts.js',
