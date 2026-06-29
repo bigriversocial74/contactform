@@ -7,6 +7,8 @@
 -- - Optional customer journey snapshots
 --
 -- Safe to re-run.
+-- phpMyAdmin note: select the Microgifter application database first.
+-- Do NOT run this while information_schema is selected.
 -- ------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -86,6 +88,7 @@ VALUES ('stage_20f_store_canvas_persistence','Store Canvas intelligence persiste
 ON DUPLICATE KEY UPDATE description=VALUES(description);
 
 SELECT 'stage_20f_store_canvas_persistence_complete' AS import_status;
-SELECT COUNT(*) AS mg_store_canvas_settings_table_exists FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mg_store_canvas_settings';
-SELECT COUNT(*) AS mg_store_trigger_rule_simulations_table_exists FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mg_store_trigger_rule_simulations';
-SELECT COUNT(*) AS mg_store_customer_journey_snapshots_table_exists FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mg_store_customer_journey_snapshots';
+SELECT DATABASE() AS active_database;
+SHOW TABLES LIKE 'mg_store_canvas_settings';
+SHOW TABLES LIKE 'mg_store_trigger_rule_simulations';
+SHOW TABLES LIKE 'mg_store_customer_journey_snapshots';
