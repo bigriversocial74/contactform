@@ -56,8 +56,11 @@ Reset Demo State
 
 ```text
 labs/app/index.php
+labs/app/campaigns.php
+labs/app/campaign-detail.php
 labs/app/sequence-tasks.php
 labs/app/proof-upload.php
+labs/admin/index.php
 labs/admin/review-queue.php
 labs/app/rewards.php
 labs/app/wallet.php
@@ -69,17 +72,26 @@ labs/app/wallet.php
 labs/assets/js/labs.js
 ```
 
+## Browser test checklist
+
+```text
+labs/stage-2-browser-test-checklist.md
+```
+
 ## Manual test path
 
 ```text
 1. Open /app/index.php
-2. Open /app/sequence-tasks.php
-3. Open /app/proof-upload.php
-4. Click Submit Demo Proof
-5. Open /admin/review-queue.php
-6. Click Approve Demo
-7. Open /app/rewards.php
-8. Open /app/wallet.php
-9. Confirm status text has updated
-10. Click Reset Demo State
+2. Open /app/campaigns.php
+3. Open /app/campaign-detail.php
+4. Open /app/sequence-tasks.php
+5. Open /app/proof-upload.php
+6. Click Submit Demo Proof
+7. Open /admin/index.php
+8. Open /admin/review-queue.php
+9. Click Approve Demo
+10. Open /app/rewards.php
+11. Open /app/wallet.php
+12. Confirm status text has updated
+13. Click Reset Demo State
 ```
