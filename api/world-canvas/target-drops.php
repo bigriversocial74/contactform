@@ -4,7 +4,7 @@
  */
 declare(strict_types=1);
 
-require_once __DIR__ . '/_target_drops.php';
+require_once __DIR__ . '/_target_drop_campaigns.php';
 
 $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
 $user = $method === 'GET' ? mg_require_api_user() : mg_require_permission('merchant.locations.manage');
@@ -15,6 +15,7 @@ try {
         mg_ok([
             'schema_ready' => mg_world_target_drops_ready($pdo),
             'drops' => mg_world_target_drop_list($pdo, $user),
+            'campaigns' => mg_world_target_drop_campaign_options($pdo, $user),
         ]);
     }
 
@@ -23,6 +24,7 @@ try {
     $input = mg_input();
     mg_require_csrf_for_write($input);
     mg_rate_limit('world_canvas.target_drops', 'user:' . (int)($user['id'] ?? 0), 80, 60);
+    $input = mg_world_target_drop_enrich_input_with_campaign($pdo, $user, $input);
 
     $action = strtolower(trim((string)($input['action'] ?? 'update')));
     if ($action === 'create') {
