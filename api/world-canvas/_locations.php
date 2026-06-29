@@ -34,8 +34,8 @@ function mg_world_location_is_merchant(PDO $pdo, array $user): bool
     if ($userId <= 0) return false;
     $profileType = strtolower((string)($user['profile_type'] ?? ''));
     if (in_array($profileType, ['merchant','business','store','vendor','admin','super_admin'], true)) return true;
-    if (mg_world_canvas_table($pdo, 'merchant_storefronts') && mg_world_canvas_count($pdo, 'SELECT COUNT(*) FROM merchant_storefronts WHERE merchant_user_id=? LIMIT 1', [$userId]) > 0) return true;
     if (mg_world_canvas_table($pdo, 'merchant_workspaces') && mg_world_canvas_count($pdo, "SELECT COUNT(*) FROM merchant_workspaces WHERE merchant_user_id=? AND status <> 'archived' LIMIT 1", [$userId]) > 0) return true;
+    if (mg_world_canvas_table($pdo, 'merchant_storefronts') && mg_world_canvas_count($pdo, 'SELECT COUNT(*) FROM merchant_storefronts WHERE merchant_user_id=? LIMIT 1', [$userId]) > 0) return true;
     if (mg_world_canvas_table($pdo, 'public_profiles')) return mg_world_canvas_count($pdo, "SELECT COUNT(*) FROM public_profiles WHERE user_id=? AND profile_type IN ('merchant','business','store','vendor') LIMIT 1", [$userId]) > 0;
     return false;
 }
@@ -49,22 +49,34 @@ function mg_world_location_current_user(PDO $pdo, int $userId): ?array
     return mg_world_canvas_valid_geo($row['latitude'] ?? null, $row['longitude'] ?? null, $row['accuracy_meters'] ?? null, (string)($row['geo_source'] ?? 'user_world_positions'));
 }
 
+function mg_world_location_missing_columns(PDO $pdo): array
+{
+    $missing = [];
+    if (!mg_world_canvas_table($pdo, 'merchant_locations')) $missing[] = 'merchant_locations table';
+    foreach (['latitude','longitude','geo_accuracy_meters','geo_source','world_zone_radius_meters'] as $column) {
+        if (!mg_world_canvas_column($pdo, 'merchant_locations', $column)) $missing[] = 'merchant_locations.' . $column;
+    }
+    $hasOwner = mg_world_canvas_column($pdo, 'merchant_locations', 'merchant_user_id')
+        || (mg_world_canvas_column($pdo, 'merchant_locations', 'workspace_id') && mg_world_canvas_table($pdo, 'merchant_workspaces'));
+    if (!$hasOwner) $missing[] = 'merchant_locations owner link';
+    if (!mg_world_canvas_table($pdo, 'user_world_positions')) $missing[] = 'user_world_positions table';
+    return $missing;
+}
+
 function mg_world_location_columns_ready(PDO $pdo): bool
 {
-    return mg_world_canvas_table($pdo, 'merchant_locations')
-        && mg_world_canvas_column($pdo, 'merchant_locations', 'merchant_user_id')
-        && mg_world_canvas_column($pdo, 'merchant_locations', 'latitude')
-        && mg_world_canvas_column($pdo, 'merchant_locations', 'longitude')
-        && mg_world_canvas_column($pdo, 'merchant_locations', 'geo_accuracy_meters')
-        && mg_world_canvas_column($pdo, 'merchant_locations', 'geo_source')
-        && mg_world_canvas_column($pdo, 'merchant_locations', 'world_zone_radius_meters');
+    return mg_world_location_missing_columns($pdo) === [];
 }
 
 function mg_world_location_merchant_rows(PDO $pdo, int $merchantUserId, bool $onlyGeo = true): array
 {
     if ($merchantUserId <= 0 || !mg_world_location_columns_ready($pdo)) return [];
-    $where = "merchant_user_id=? AND status='active'" . ($onlyGeo ? ' AND latitude IS NOT NULL AND longitude IS NOT NULL' : '');
-    return mg_world_canvas_rows($pdo, "SELECT id, public_id, merchant_user_id, name, location_code, address_line1, address_line2, city, region, postal_code, country_code, timezone, phone, status, is_primary, latitude, longitude, geo_accuracy_meters, geo_source, world_zone_radius_meters, updated_at FROM merchant_locations WHERE {$where} ORDER BY is_primary DESC, name ASC, id ASC", [$merchantUserId]);
+    $geo = $onlyGeo ? ' AND ml.latitude IS NOT NULL AND ml.longitude IS NOT NULL' : '';
+    $select = "ml.id, ml.public_id, {$merchantUserId} AS merchant_user_id, ml.name, ml.location_code, ml.address_line1, ml.address_line2, ml.city, ml.region, ml.postal_code, ml.country_code, ml.timezone, ml.phone, ml.status, ml.is_primary, ml.latitude, ml.longitude, ml.geo_accuracy_meters, ml.geo_source, ml.world_zone_radius_meters, ml.updated_at";
+    if (mg_world_canvas_column($pdo, 'merchant_locations', 'merchant_user_id')) {
+        return mg_world_canvas_rows($pdo, "SELECT {$select} FROM merchant_locations ml WHERE ml.merchant_user_id=? AND ml.status='active'{$geo} ORDER BY ml.is_primary DESC, ml.name ASC, ml.id ASC", [$merchantUserId]);
+    }
+    return mg_world_canvas_rows($pdo, "SELECT {$select} FROM merchant_locations ml JOIN merchant_workspaces mw ON mw.id=ml.workspace_id WHERE mw.merchant_user_id=? AND ml.status='active'{$geo} ORDER BY ml.is_primary DESC, ml.name ASC, ml.id ASC", [$merchantUserId]);
 }
 
 function mg_world_location_main_merchant(PDO $pdo, int $merchantUserId): ?array
@@ -94,25 +106,36 @@ function mg_world_location_save_user(PDO $pdo, int $userId, array $geo, string $
     }
 }
 
+function mg_world_location_find_merchant_location(PDO $pdo, int $merchantUserId, string $locationPublicId): ?array
+{
+    if (mg_world_canvas_column($pdo, 'merchant_locations', 'merchant_user_id')) {
+        $rows = mg_world_canvas_rows($pdo, 'SELECT id, public_id, name FROM merchant_locations WHERE public_id=? AND merchant_user_id=? LIMIT 1', [$locationPublicId, $merchantUserId]);
+    } else {
+        $rows = mg_world_canvas_rows($pdo, 'SELECT ml.id, ml.public_id, ml.name FROM merchant_locations ml JOIN merchant_workspaces mw ON mw.id=ml.workspace_id WHERE ml.public_id=? AND mw.merchant_user_id=? LIMIT 1', [$locationPublicId, $merchantUserId]);
+    }
+    return $rows[0] ?? null;
+}
+
+function mg_world_location_default_merchant_location(PDO $pdo, int $merchantUserId): ?array
+{
+    if (mg_world_canvas_column($pdo, 'merchant_locations', 'merchant_user_id')) {
+        $rows = mg_world_canvas_rows($pdo, "SELECT id, public_id, name FROM merchant_locations WHERE merchant_user_id=? AND status='active' ORDER BY is_primary DESC, updated_at DESC, id DESC LIMIT 1", [$merchantUserId]);
+    } else {
+        $rows = mg_world_canvas_rows($pdo, "SELECT ml.id, ml.public_id, ml.name FROM merchant_locations ml JOIN merchant_workspaces mw ON mw.id=ml.workspace_id WHERE mw.merchant_user_id=? AND ml.status='active' ORDER BY ml.is_primary DESC, ml.updated_at DESC, ml.id DESC LIMIT 1", [$merchantUserId]);
+    }
+    return $rows[0] ?? null;
+}
+
 function mg_world_location_save_merchant_main(PDO $pdo, int $merchantUserId, array $geo, array $input = []): array
 {
     if ($merchantUserId <= 0) throw new InvalidArgumentException('Merchant user is required.');
-    if (!mg_world_location_columns_ready($pdo)) throw new RuntimeException('Merchant location geo columns are not installed.');
+    if (!mg_world_location_columns_ready($pdo)) throw new RuntimeException('Merchant location geo columns are not installed: ' . implode(', ', mg_world_location_missing_columns($pdo)));
     $locationPublicId = strtolower(trim((string)($input['location_id'] ?? $input['public_id'] ?? '')));
-    $zone = (int)($input['world_zone_radius_meters'] ?? $input['zone_radius_meters'] ?? 250);
-    $zone = max(50, min(5000, $zone));
-
-    $rows = [];
-    if ($locationPublicId !== '') {
-        $rows = mg_world_canvas_rows($pdo, "SELECT id, public_id, name FROM merchant_locations WHERE public_id=? AND merchant_user_id=? LIMIT 1", [$locationPublicId, $merchantUserId]);
-    }
-    if (!$rows) {
-        $rows = mg_world_canvas_rows($pdo, "SELECT id, public_id, name FROM merchant_locations WHERE merchant_user_id=? AND status='active' ORDER BY is_primary DESC, updated_at DESC, id DESC LIMIT 1", [$merchantUserId]);
-    }
-    if (!$rows) throw new RuntimeException('Create a merchant location in merchant-locations.php before saving World Canvas coordinates.');
-
-    $row = $rows[0];
-    $stmt = $pdo->prepare('UPDATE merchant_locations SET latitude=?, longitude=?, geo_accuracy_meters=?, geo_source=?, world_zone_radius_meters=?, updated_at=NOW() WHERE id=? AND merchant_user_id=?');
-    $stmt->execute([$geo['latitude'], $geo['longitude'], $geo['accuracy_meters'], $geo['source'], $zone, (int)$row['id'], $merchantUserId]);
+    $zone = max(50, min(5000, (int)($input['world_zone_radius_meters'] ?? $input['zone_radius_meters'] ?? 250)));
+    $row = $locationPublicId !== '' ? mg_world_location_find_merchant_location($pdo, $merchantUserId, $locationPublicId) : null;
+    if (!$row) $row = mg_world_location_default_merchant_location($pdo, $merchantUserId);
+    if (!$row) throw new RuntimeException('Create a merchant location in merchant-locations.php before saving World Canvas coordinates.');
+    $stmt = $pdo->prepare('UPDATE merchant_locations SET latitude=?, longitude=?, geo_accuracy_meters=?, geo_source=?, world_zone_radius_meters=?, updated_at=NOW() WHERE id=?');
+    $stmt->execute([$geo['latitude'], $geo['longitude'], $geo['accuracy_meters'], $geo['source'], $zone, (int)$row['id']]);
     return ['id' => (string)$row['public_id'], 'location_name' => (string)($row['name'] ?? 'Merchant location'), 'latitude' => $geo['latitude'], 'longitude' => $geo['longitude'], 'accuracy_meters' => $geo['accuracy_meters'], 'source' => $geo['source'], 'world_zone_radius_meters' => $zone];
 }
