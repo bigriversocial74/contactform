@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_action_center.php';
 require_once dirname(__DIR__) . '/messages/_messaging.php';
+require_once dirname(__DIR__) . '/stamps/_stamps.php';
 
 mg_require_method('POST');
 $user=mg_require_api_user();
@@ -65,7 +66,17 @@ try{
         'follow_up',
         true
     );
-    $stampLedger=null;
+    $stampLedger=!empty($result['duplicate'])?null:mg_stamp_debit_send($pdo,(int)$user['id'],(int)$user['id'],'direct_microgift_send',$idempotencyKey,[
+        'source_type'=>'action_center_follow_up',
+        'source_id'=>(string)($result['message_id']??$idempotencyKey),
+        'reference'=>$actionItemId,
+        'metadata'=>[
+            'thread_id'=>$result['thread_id']??null,
+            'message_id'=>$result['message_id']??null,
+            'instance_id'=>(string)$instance['public_id'],
+            'recipient_user_id'=>$recipientUserId,
+        ],
+    ]);
     $pdo->commit();
 
     mg_audit('action_center.follow_up_sent','message_thread',[
@@ -76,7 +87,7 @@ try{
         'recipient_user_id'=>$recipientUserId,
         'conversation_key'=>$result['conversation_key'],
         'notification_id'=>$result['notification_id'],
-        'stamp_ledger_entry_id'=>null,
+        'stamp_ledger_entry_id'=>$stampLedger['entry']['entry_id']??null,
         'duplicate'=>$result['duplicate'],
     ],(int)$user['id']);
 
