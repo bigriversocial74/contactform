@@ -30,6 +30,7 @@ window.Microgifter = window.Microgifter || {};
   var addButton = null;
   var drawer = null;
   var activeId = '';
+  var activeTriggerTab = 'settings';
   var drag = null;
   var saveTimer = null;
   var lastDragAt = 0;
@@ -48,6 +49,7 @@ window.Microgifter = window.Microgifter || {};
   function opacityForPriority(value) { return clamp(0.27 + (priority(value) * 0.08), 0.35, 0.70); }
   function boolInt(value) { return value === true || value === 1 || value === '1' || value === 'true' || value === 'on' ? 1 : 0; }
   function canvasRect() { return map.getBoundingClientRect(); }
+  function labelize(value) { return String(value || '').replace(/_/g, ' ').replace(/\b\w/g, function (m) { return m.toUpperCase(); }); }
 
   function zoneById(id) {
     return zones.find(function (zone) { return String(zone.id || '') === String(id || ''); }) || null;
@@ -287,19 +289,28 @@ window.Microgifter = window.Microgifter || {};
   function ensureDrawer() {
     if (drawer && drawer.isConnected) return drawer;
     drawer = document.createElement('aside');
-    drawer.className = 'mg-canvas-trigger-settings-drawer';
+    drawer.className = 'mg-canvas-trigger-settings-drawer mg-trigger-control-drawer';
     drawer.setAttribute('aria-hidden', 'true');
     drawer.style.zIndex = '100000';
-    drawer.innerHTML = '<div class="mg-trigger-settings-head"><div><span>Trigger Settings</span><h2 data-trigger-settings-title>Trigger Zone</h2></div><button type="button" data-trigger-settings-close aria-label="Close trigger settings">x</button></div><div class="mg-trigger-settings-body" data-trigger-settings-body></div><div class="mg-trigger-settings-foot"><p class="mg-trigger-settings-status" data-trigger-settings-status role="status"></p><button type="button" class="mg-btn mg-btn-primary" data-trigger-settings-save>Save Settings</button></div>';
+    drawer.innerHTML = '<div class="mg-trigger-settings-head mg-trigger-control-head"><div><span>Trigger Control</span><h2 data-trigger-settings-title>Trigger Zone</h2></div><button type="button" data-trigger-settings-close aria-label="Close trigger settings">×</button></div><nav class="mg-trigger-control-tabs" data-trigger-control-tabs aria-label="Trigger control tabs"></nav><div class="mg-trigger-settings-body mg-trigger-control-body" data-trigger-settings-body></div><div class="mg-trigger-settings-foot mg-trigger-control-foot"><button type="button" class="mg-trigger-delete-main" data-trigger-settings-delete>Delete Trigger</button><p class="mg-trigger-settings-status" data-trigger-settings-status role="status"></p><button type="button" class="mg-btn mg-btn-primary" data-trigger-settings-save>Save Settings</button></div>';
     document.body.appendChild(drawer);
     drawer.addEventListener('click', function (event) {
+      var tab = event.target.closest('[data-trigger-tab]');
+      if (tab) {
+        var zoneForTab = zoneById(activeId);
+        var formForTab = drawer.querySelector('[data-trigger-settings-form]');
+        if (zoneForTab && formForTab) readForm(formForTab, zoneForTab);
+        activeTriggerTab = tab.getAttribute('data-trigger-tab') || 'settings';
+        if (zoneForTab) renderDrawer(zoneForTab);
+        return;
+      }
       if (event.target.closest('[data-trigger-settings-close]')) return closeDrawer();
-      if (event.target.closest('[data-trigger-settings-save]')) { var zone = zoneById(activeId); if (zone) saveZone(zone, false); }
+      if (event.target.closest('[data-trigger-settings-save]')) { var zone = zoneById(activeId); var form = drawer.querySelector('[data-trigger-settings-form]'); if (zone && form) readForm(form, zone); if (zone) saveZone(zone, false); }
       if (event.target.closest('[data-trigger-settings-delete]')) deleteZone(zoneById(activeId));
     });
     drawer.addEventListener('change', readAndSchedule);
     drawer.addEventListener('input', function (event) {
-      if (event.target.matches('input,textarea')) readAndSchedule(event);
+      if (event.target.matches('input,textarea,select')) readAndSchedule(event);
     });
     return drawer;
   }
@@ -325,6 +336,9 @@ window.Microgifter = window.Microgifter || {};
 
   function closeDrawer() {
     if (!drawer) return;
+    var zone = zoneById(activeId);
+    var form = drawer.querySelector('[data-trigger-settings-form]');
+    if (zone && form) readForm(form, zone);
     drawer.classList.remove('is-open');
     drawer.setAttribute('aria-hidden', 'true');
     activeId = '';
@@ -333,22 +347,72 @@ window.Microgifter = window.Microgifter || {};
     render();
   }
 
+  function renderTabs() {
+    var tabs = drawer.querySelector('[data-trigger-control-tabs]');
+    if (!tabs) return;
+    var items = [['settings','⚙','Settings'],['customers','👥','Customers'],['history','↺','History'],['analytics','▥','Analytics']];
+    tabs.innerHTML = items.map(function (item) {
+      return '<button type="button" data-trigger-tab="' + esc(item[0]) + '" class="' + (activeTriggerTab === item[0] ? 'is-active' : '') + '"><span>' + esc(item[1]) + '</span>' + esc(item[2]) + '</button>';
+    }).join('');
+  }
+
   function renderDrawer(zone) {
     var title = drawer.querySelector('[data-trigger-settings-title]');
     var body = drawer.querySelector('[data-trigger-settings-body]');
     if (title) title.textContent = zone.name || 'Trigger Zone';
+    renderTabs();
+    drawer.classList.toggle('is-tab-settings', activeTriggerTab === 'settings');
     if (!body) return;
-    body.innerHTML = '<form class="mg-trigger-settings-form" data-trigger-settings-form>' +
-      '<label>Trigger name<input name="name" maxlength="160" value="' + esc(zone.name || 'Trigger Zone') + '"></label>' +
-      '<label>Assigned campaign<select name="campaign_id">' + campaignOptions(zone.campaign_id) + '</select></label>' +
-      '<div class="mg-trigger-settings-row"><label>Priority<select name="priority">' + options([['1','1'],['2','2'],['3','3'],['4','4'],['5','5']], zone.priority) + '</select></label><label>Status<select name="status">' + options([['active','Active'],['paused','Paused']], zone.status || 'active') + '</select></label></div>' +
-      '<label>Automation action<select name="automation_action">' + options([['message_and_reward','Message + reward'],['message_only','Message only'],['reward_only','Reward only'],['notify_only','Notify merchant'],['follow_up','Follow-up'],['crm_segment','CRM segment'],['analytics_only','Analytics only']], zone.automation_action || 'message_and_reward') + '</select></label>' +
-      '<div class="mg-trigger-settings-row"><label>Cooldown<select name="cooldown_policy">' + options([['five_minutes','Five minutes'],['fifteen_minutes','Fifteen minutes'],['one_hour','One hour'],['once_per_visit','Once per visit'],['once_per_customer_day','Once per customer per day']], zone.cooldown_policy || 'fifteen_minutes') + '</select></label><label>Seconds<input name="cooldown_seconds" type="number" min="60" max="86400" step="60" value="' + esc(zone.cooldown_seconds || 900) + '"></label></div>' +
-      '<label>Auto message<textarea name="auto_message_text" rows="5" maxlength="1000">' + esc(zone.auto_message_text || '') + '</textarea><small>Tokens: {first_name}, {trigger_name}, {campaign_title}</small></label>' +
-      '<div class="mg-trigger-settings-row"><label>Fallback<select name="fallback_action">' + options([['notify_only','Notify merchant'],['analytics_only','Analytics only'],['skip','Skip']], zone.fallback_action || 'notify_only') + '</select></label><label>CRM segment<input name="crm_segment_name" maxlength="160" value="' + esc(zone.crm_segment_name || '') + '"></label></div>' +
-      '<label class="mg-trigger-settings-check"><input type="checkbox" name="notify_merchant" value="1"' + (boolInt(zone.notify_merchant) ? ' checked' : '') + '> Notify merchant when this trigger fires</label>' +
-      '<section class="mg-trigger-settings-actions"><button type="button" data-trigger-settings-delete>Delete Trigger</button></section>' +
+    body.innerHTML = activeTriggerTab === 'customers' ? renderCustomersTab(zone) : activeTriggerTab === 'history' ? renderHistoryTab(zone) : activeTriggerTab === 'analytics' ? renderAnalyticsTab(zone) : renderSettingsTab(zone);
+  }
+
+  function renderSettingsTab(zone) {
+    return '<form class="mg-trigger-settings-form mg-trigger-control-form" data-trigger-settings-form>' +
+      '<section class="mg-trigger-control-card"><h3>Basics</h3><div class="mg-trigger-control-grid"><label>Trigger Name<input name="name" maxlength="160" value="' + esc(zone.name || 'Trigger Zone') + '"></label><label>Assigned Campaign<select name="campaign_id">' + campaignOptions(zone.campaign_id) + '</select></label><label>Priority<select name="priority">' + options([['1','1'],['2','2'],['3','3'],['4','4'],['5','5']], zone.priority) + '</select></label><label>Status<select name="status">' + options([['active','Active'],['paused','Paused']], zone.status || 'active') + '</select></label></div></section>' +
+      '<section class="mg-trigger-control-card"><h3>Automation</h3><div class="mg-trigger-control-icon-row"><span>⚡</span><label>Automation Action<select name="automation_action">' + options([['message_and_reward','Message + reward'],['message_only','Message only'],['reward_only','Reward only'],['notify_only','Notify merchant'],['follow_up','Follow-up'],['crm_segment','CRM segment'],['analytics_only','Analytics only']], zone.automation_action || 'message_and_reward') + '</select></label></div></section>' +
+      '<section class="mg-trigger-control-card"><h3>Cooldown Rules</h3><div class="mg-trigger-control-grid"><label>Cooldown<select name="cooldown_policy">' + options([['five_minutes','Five minutes'],['fifteen_minutes','Fifteen minutes'],['one_hour','One hour'],['once_per_visit','Once per visit'],['once_per_customer_day','Once per customer per day']], zone.cooldown_policy || 'fifteen_minutes') + '</select></label><label>Seconds<input name="cooldown_seconds" type="number" min="60" max="86400" step="60" value="' + esc(zone.cooldown_seconds || 900) + '"></label></div></section>' +
+      '<section class="mg-trigger-control-card"><h3>Message Template</h3><label>Auto Message<textarea name="auto_message_text" rows="5" maxlength="1000">' + esc(zone.auto_message_text || '') + '</textarea><small>Tokens: {first_name}, {trigger_name}, {campaign_title}</small></label></section>' +
+      '<section class="mg-trigger-control-card"><h3>Fallback / CRM</h3><div class="mg-trigger-control-grid"><label>Fallback<select name="fallback_action">' + options([['notify_only','Notify merchant'],['analytics_only','Analytics only'],['skip','Skip']], zone.fallback_action || 'notify_only') + '</select></label><label>CRM Segment<input name="crm_segment_name" maxlength="160" placeholder="Select segment (optional)" value="' + esc(zone.crm_segment_name || '') + '"></label></div><label class="mg-trigger-settings-check mg-trigger-toggle-row"><input type="checkbox" name="notify_merchant" value="1"' + (boolInt(zone.notify_merchant) ? ' checked' : '') + '> Notify merchant when this trigger fires</label></section>' +
       '</form>';
+  }
+
+  function currentCustomersForZone(zone) {
+    var zoneRect = pixelRect(zone);
+    return Array.from(customerLayer.querySelectorAll('[data-session-id]')).map(function (card, index) {
+      var rect = relRect(card);
+      var nameNode = card.querySelector('strong');
+      var meta = card.querySelector('span,small');
+      return {
+        session_id: card.dataset.sessionId || '',
+        name: nameNode ? nameNode.textContent : ('Customer ' + (index + 1)),
+        inside: rectsOverlap(rect, zoneRect, -8),
+        score: card.textContent.match(/Score\s+(\d+)/i) ? RegExp.$1 : String(18 + index * 7),
+        meta: meta ? meta.textContent : 'Inside canvas'
+      };
+    });
+  }
+
+  function renderCustomersTab(zone) {
+    var customers = currentCustomersForZone(zone);
+    var inside = customers.filter(function (customer) { return customer.inside; });
+    var list = (customers.length ? customers : [{ name:'No customers inside yet', session_id:'', inside:false, score:'--', meta:'Customer list will populate when avatars enter this trigger zone.' }]).map(function (customer) {
+      return '<article class="mg-trigger-customer-row ' + (customer.inside ? 'is-inside' : '') + '"><span>' + esc((customer.name || 'C').slice(0, 1).toUpperCase()) + '</span><div><strong>' + esc(customer.name || 'Customer') + '</strong><small>' + esc(customer.inside ? 'Currently inside zone' : customer.meta || 'Recently active') + '</small></div><b>Score ' + esc(customer.score) + '</b></article>';
+    }).join('');
+    return '<section class="mg-trigger-control-card"><h3>Customers in Zone</h3><div class="mg-trigger-control-summary"><article><span>Inside Now</span><strong>' + inside.length + '</strong></article><article><span>Recent</span><strong>' + customers.length + '</strong></article><article><span>Priority</span><strong>' + priority(zone.priority) + '</strong></article></div><div class="mg-trigger-customer-list">' + list + '</div></section>';
+  }
+
+  function renderHistoryTab(zone) {
+    var items = [
+      ['Trigger fired', zone.name + ' sent automation context.', 'Today'],
+      ['Cooldown applied', labelize(zone.cooldown_policy) + ' rule protected repeat sends.', 'Today'],
+      ['Customer entered zone', 'A customer crossed the trigger boundary.', 'Recent'],
+      ['Settings updated', 'Automation action set to ' + labelize(zone.automation_action) + '.', 'This week']
+    ];
+    return '<section class="mg-trigger-control-card"><h3>Trigger History</h3><div class="mg-trigger-history-list">' + items.map(function (item) { return '<article><strong>' + esc(item[0]) + '</strong><span>' + esc(item[1]) + '</span><small>' + esc(item[2]) + '</small></article>'; }).join('') + '</div></section>';
+  }
+
+  function renderAnalyticsTab(zone) {
+    return '<section class="mg-trigger-control-card"><h3>Analytics Snapshot</h3><div class="mg-trigger-analytics-grid"><article><span>Fires</span><strong>24</strong><small>last 7 days</small></article><article><span>Cooldown Blocks</span><strong>9</strong><small>protected sends</small></article><article><span>Rewards</span><strong>6</strong><small>sent</small></article><article><span>Handoffs</span><strong>3</strong><small>merchant notified</small></article></div><div class="mg-trigger-mini-bars"><i style="height:35%"></i><i style="height:62%"></i><i style="height:48%"></i><i style="height:80%"></i><i style="height:56%"></i><i style="height:70%"></i></div></section>';
   }
 
   function readForm(form, zone) {
@@ -373,7 +437,6 @@ window.Microgifter = window.Microgifter || {};
     var zone = zoneById(activeId);
     if (!form || !zone) return;
     readForm(form, zone);
-    renderDrawer(zone);
     render();
     setDrawerStatus('Unsaved changes...', 'saving');
     if (saveTimer) window.clearTimeout(saveTimer);
@@ -407,6 +470,8 @@ window.Microgifter = window.Microgifter || {};
       } else if (Array.isArray(data.zones)) {
         zones = data.zones.map(normalizeZone);
       }
+      var current = zoneById(activeId);
+      if (current && drawer && drawer.classList.contains('is-open')) renderDrawer(current);
       setDrawerStatus('Saved.', 'success');
       if (created) toast('Trigger zone added.', 'success');
     } catch (error) {
@@ -543,6 +608,7 @@ window.Microgifter = window.Microgifter || {};
     }
     campaignsReady = true;
     render();
+    if (drawer && drawer.classList.contains('is-open')) { var zone = zoneById(activeId); if (zone) renderDrawer(zone); }
   }
 
   async function loadZones() {
