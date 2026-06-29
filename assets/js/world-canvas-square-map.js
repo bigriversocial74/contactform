@@ -23,5 +23,7 @@ window.Microgifter = window.Microgifter || {};
   if (state) state.textContent = 'Geo network map: zoomed out shows stable clusters; zooming in spreads clusters into live user and merchant avatars.';
   addCss('/assets/css/world-canvas-geo-zoom.css', 'data-world-geo-zoom-css');
   addCss('/assets/css/world-canvas-reference-fix.css', 'data-world-reference-fix-css');
+  addCss('/assets/css/world-canvas-exact-reference.css', 'data-world-exact-reference-css');
+  addScript('/assets/js/world-canvas-reference-map.js', 'data-world-reference-map-js');
   addScript('/assets/js/world-canvas-geo-zoom.js', 'data-world-geo-zoom-js');
 })(window, document);
