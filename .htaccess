@@ -11,6 +11,11 @@ DirectoryIndex index.php
   # Load the PHP landing page when the domain root is requested.
   RewriteRule ^$ index.php [L]
 
+  # Merchant-branded PWA install routes.
+  RewriteRule ^m/([A-Za-z0-9-]+)/?$ merchant-install.php?merchant=$1 [L,QSA]
+  RewriteRule ^m/([A-Za-z0-9-]+)/app/?$ merchant-pwa-app.php?merchant=$1 [L,QSA]
+  RewriteRule ^m/([A-Za-z0-9-]+)/manifest\.webmanifest$ manifest-merchant.php?merchant=$1 [L,QSA]
+
   # Clean public profile route aliases.
   RewriteRule ^p/([A-Za-z0-9-]+)/?$ profile.php?slug=$1 [L,QSA]
   RewriteRule ^@([A-Za-z0-9-]+)/?$ profile.php?slug=$1 [L,QSA]
@@ -20,7 +25,7 @@ DirectoryIndex index.php
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteCond %{REQUEST_URI} !^/(api|assets|docs|database|tests|includes|scripts)(/|$) [NC]
-  RewriteCond %{REQUEST_URI} !^/(index|account|agent|build|builder|signin|signup|logout|profile)(\.php)?/?$ [NC]
+  RewriteCond %{REQUEST_URI} !^/(index|account|agent|build|builder|signin|signup|logout|profile|m)(\.php)?/?$ [NC]
   RewriteRule ^([A-Za-z0-9-]+)/?$ profile.php?slug=$1 [L,QSA]
 
   # Prototype HTML files are no longer active runtime pages.

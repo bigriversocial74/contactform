@@ -20,6 +20,7 @@ $merchantNav = [
     'campaign_stamps' => ['Campaign Stamps','Distribution usage','/merchant-campaign-stamps.php','Engage'],
     'stamps' => ['Stamp Ledger','Sends and balance','/merchant-stamps.php','Finance'],
     'storefront' => ['Storefront','Public merchant page','/merchant-storefront.php','Presence'],
+    'merchant_pwa' => ['Branded App','Merchant PWA install screen','/merchant-pwa.php','Presence'],
     'pppm' => ['Orders and PPPM','Items and lifecycle','/merchant-pppm.php','Commerce'],
     'distribution' => ['Distribution','Programs and inputs','/merchant-distribution.php','Engage'],
     'developer_api' => ['Developer API','Apps and access','/merchant-distribution.php?developer_api=1','Build'],
