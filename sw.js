@@ -22,14 +22,15 @@ function safeAssetUrl(value, fallback) {
   } catch (error) { return fallback || MG_DEFAULT_ICON; }
 }
 
-async function manifestIconFallback() {
+async function brandingDefaults() {
   try {
-    const response = await fetch('/manifest.php', { cache: 'no-store', credentials: 'omit' });
-    const manifest = await response.json();
-    const icons = Array.isArray(manifest.icons) ? manifest.icons : [];
-    const picked = icons.find((icon) => String(icon.sizes || '').includes('192')) || icons.find((icon) => String(icon.sizes || '').includes('512')) || icons[0];
-    return picked && picked.src ? safeAssetUrl(picked.src, MG_DEFAULT_ICON) : MG_DEFAULT_ICON;
-  } catch (error) { return MG_DEFAULT_ICON; }
+    const response = await fetch('/api/pwa/branding.php', { cache: 'no-store', credentials: 'omit' });
+    const payload = await response.json();
+    const data = payload && payload.data ? payload.data : {};
+    return { icon: safeAssetUrl(data.icon, MG_DEFAULT_ICON), badge: safeAssetUrl(data.badge, data.icon || MG_DEFAULT_ICON) };
+  } catch (error) {
+    return { icon: MG_DEFAULT_ICON, badge: MG_DEFAULT_ICON };
+  }
 }
 
 self.addEventListener('install', (event) => { event.waitUntil(self.skipWaiting()); });
@@ -40,11 +41,11 @@ self.addEventListener('push', (event) => {
     let payload = {};
     try { payload = event.data ? event.data.json() : {}; }
     catch (error) { payload = { title: 'Microgifter update', body: 'Open Microgifter for details.' }; }
-    const manifestIcon = await manifestIconFallback();
+    const branding = await brandingDefaults();
     const payloadIcon = String(payload.icon || '');
     const payloadBadge = String(payload.badge || '');
-    const icon = payloadIcon === MG_DEFAULT_ICON || payloadIcon === '' ? manifestIcon : safeAssetUrl(payloadIcon, manifestIcon);
-    const badge = payloadBadge === MG_DEFAULT_ICON || payloadBadge === '' ? manifestIcon : safeAssetUrl(payloadBadge, manifestIcon);
+    const icon = payloadIcon === MG_DEFAULT_ICON || payloadIcon === '' ? branding.icon : safeAssetUrl(payloadIcon, branding.icon);
+    const badge = payloadBadge === MG_DEFAULT_ICON || payloadBadge === '' ? branding.badge : safeAssetUrl(payloadBadge, branding.badge);
     const title = String(payload.title || 'Microgifter update').slice(0, 90);
     const options = {
       body: String(payload.body || 'Open Microgifter for details.').slice(0, 180),
