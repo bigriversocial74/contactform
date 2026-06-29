@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__, 3) . '/includes/pwa-push.php';
+
 if (!function_exists('mg_public_campaign_notification_uuid')) {
     function mg_public_campaign_notification_uuid(): string
     {
@@ -16,9 +18,15 @@ if (!function_exists('mg_public_campaign_create_notification')) {
     {
         if ($userId < 1) return ['created' => false, 'reason' => 'missing_user'];
         try {
+            $publicId = mg_public_campaign_notification_uuid();
             $stmt = $pdo->prepare('INSERT INTO notifications (public_id,user_id,type,title,body,action_url,created_at) VALUES (?,?,?,?,?,?,NOW())');
-            $stmt->execute([mg_public_campaign_notification_uuid(), $userId, $type, $title, $body, $actionUrl]);
-            return ['created' => true, 'type' => $type, 'action_url' => $actionUrl];
+            $stmt->execute([$publicId, $userId, $type, $title, $body, $actionUrl]);
+            $notificationId = (int)$pdo->lastInsertId();
+            $pwa = ['queued' => 0, 'reason' => 'not_available'];
+            if (function_exists('mg_pwa_push_queue_for_notification')) {
+                $pwa = mg_pwa_push_queue_for_notification($pdo, $notificationId);
+            }
+            return ['created' => true, 'type' => $type, 'action_url' => $actionUrl, 'pwa_push' => $pwa];
         } catch (Throwable $error) {
             mg_security_log('warning', 'public.campaign.notification_failed', 'Unable to create campaign notification.', [
                 'exception_class' => $error::class,

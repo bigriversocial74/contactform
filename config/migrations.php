@@ -137,6 +137,7 @@ return [
         'stage_22_buy_in_evidence_candidates.sql',
         'stage_23_buy_in_final_reviewer_acknowledgements.sql',
         'stage_24_buy_in_handoff_archives.sql',
+        'stage_25_pwa_notifications.sql',
         'stage_v1_release_trigger_portability.sql',
     ],
     'coverage_markers' => [

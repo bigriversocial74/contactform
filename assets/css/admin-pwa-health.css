@@ -1,0 +1,10 @@
+.mg-system-health-pwa-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+.mg-system-health-pwa-grid article{padding:13px;border:1px solid #e4eaf2;border-radius:13px;background:#f8fafc}
+.mg-system-health-pwa-grid article.is-warning{border-color:#f5d08a;background:#fffbeb}
+.mg-system-health-pwa-grid article.is-critical{border-color:#fecaca;background:#fff1f2}
+.mg-system-health-pwa-grid span,.mg-system-health-pwa-grid small{display:block;color:#64748b;font-size:.64rem}
+.mg-system-health-pwa-grid strong{display:block;margin:.35rem 0;color:#0f172a;font-size:1.25rem;letter-spacing:-.03em}
+.mg-pwa-health-section>header .mg-btn{flex:0 0 auto;justify-content:center;white-space:nowrap}
+@media(max-width:1040px){.mg-system-health-pwa-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:720px){.mg-system-health-pwa-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.mg-pwa-health-section>header{align-items:flex-start;flex-direction:column}.mg-pwa-health-section>header .mg-btn{width:100%}}
+@media(max-width:460px){.mg-system-health-pwa-grid{grid-template-columns:1fr}}
