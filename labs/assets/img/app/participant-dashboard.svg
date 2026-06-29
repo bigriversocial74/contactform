@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="640" viewBox="0 0 900 640" role="img" aria-labelledby="title desc">
+  <title id="title">Participant dashboard mockup illustration</title>
+  <desc id="desc">Minimal dashboard with KPI cards, tasks, and reward progress.</desc>
+  <rect width="900" height="640" rx="48" fill="#eef8f2"/>
+  <rect x="95" y="80" width="710" height="480" rx="42" fill="#ffffff" stroke="#dfeae4" stroke-width="4"/>
+  <rect x="130" y="118" width="145" height="404" rx="28" fill="#f6faf7"/>
+  <rect x="160" y="155" width="72" height="22" rx="11" fill="#0f3d2e"/>
+  <rect x="160" y="208" width="82" height="16" rx="8" fill="#cfeee0"/>
+  <rect x="160" y="252" width="92" height="16" rx="8" fill="#cfeee0"/>
+  <rect x="315" y="130" width="145" height="92" rx="24" fill="#eef8f2"/>
+  <rect x="480" y="130" width="145" height="92" rx="24" fill="#eef8f2"/>
+  <rect x="645" y="130" width="115" height="92" rx="24" fill="#eef8f2"/>
+  <rect x="315" y="260" width="445" height="185" rx="30" fill="#ffffff" stroke="#dfeae4" stroke-width="3"/>
+  <g fill="#0f3d2e">
+    <circle cx="355" cy="315" r="18"/>
+    <circle cx="355" cy="370" r="18"/>
+  </g>
+  <rect x="392" y="305" width="250" height="16" rx="8" fill="#dfeae4"/>
+  <rect x="392" y="360" width="210" height="16" rx="8" fill="#dfeae4"/>
+  <rect x="315" y="475" width="445" height="28" rx="14" fill="#eef8f2"/>
+  <rect x="315" y="475" width="330" height="28" rx="14" fill="#0f3d2e"/>
+</svg>
