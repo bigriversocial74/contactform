@@ -20,6 +20,14 @@ if (!function_exists('labs_is_active')) {
     }
 }
 
+if (!function_exists('labs_nav_link')) {
+    function labs_nav_link(string $active, string $key, string $href, string $label, string $class = ''): void
+    {
+        $classes = trim($class . labs_is_active($active, $key));
+        echo '<a class="' . htmlspecialchars($classes, ENT_QUOTES, 'UTF-8') . '" href="' . htmlspecialchars($href, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</a>';
+    }
+}
+
 if (!function_exists('labs_page_start')) {
     function labs_page_start(array $page = []): void
     {
@@ -47,10 +55,12 @@ if (!function_exists('labs_page_start')) {
         </span>
       </a>
       <nav class="labs-public-nav" aria-label="Main navigation">
-        <a class="<?php echo labs_is_active($active, 'home'); ?>" href="/">Home</a>
-        <a class="<?php echo labs_is_active($active, 'pricing'); ?>" href="/pricing.php">Pricing</a>
-        <a class="<?php echo labs_is_active($active, 'signin'); ?>" href="/signin.php">Sign In</a>
-        <a class="labs-nav-cta<?php echo labs_is_active($active, 'signup'); ?>" href="/signup.php">Get Started</a>
+        <?php labs_nav_link($active, 'home', '/', 'Home'); ?>
+        <?php labs_nav_link($active, 'how-it-works', '/how-it-works.php', 'How It Works'); ?>
+        <?php labs_nav_link($active, 'pricing', '/pricing.php', 'Pricing'); ?>
+        <?php labs_nav_link($active, 'blog', '/blog.php', 'Blog'); ?>
+        <?php labs_nav_link($active, 'signin', '/signin.php', 'Sign In'); ?>
+        <?php labs_nav_link($active, 'signup', '/signup.php', 'Get Started', 'labs-nav-cta'); ?>
       </nav>
     </header>
         <?php
@@ -106,6 +116,11 @@ if (!function_exists('labs_page_end')) {
         ?>
     <footer class="labs-footer">
       <span>Training Lab by Microgifter</span>
+      <nav aria-label="Footer navigation">
+        <a href="/about.php">About</a>
+        <a href="/team.php">Team</a>
+        <a href="/contact.php">Contact</a>
+      </nav>
       <span>Stage 1 UI shell only</span>
     </footer>
   </div>
