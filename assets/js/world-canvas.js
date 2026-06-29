@@ -10,12 +10,18 @@ window.Microgifter = window.Microgifter || {};
   var activeFilter = 'all';
   var selectedNodeId = '';
   var pollTimer = null;
+  var animationFrame = null;
+  var nodeStates = new Map();
+  var latestNodes = [];
+  var attractionModel = { enabled: true, saved_lat_long_weight: 0.72, same_location_weight: 0.46, same_conversation_weight: 0.38, shared_affinity_weight: 0.28, repel_distance: 11 };
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var drawer = root.querySelector('[data-world-drawer]');
 
   function qs(selector, scope) { return (scope || root).querySelector(selector); }
   function qsa(selector, scope) { return Array.from((scope || root).querySelectorAll(selector)); }
   function payload(response) { return response && response.data ? response.data : response; }
   function clear(node) { if (node) node.replaceChildren(); }
+  function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
   function escapeHtml(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, function (character) {
       return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character];
@@ -38,18 +44,8 @@ window.Microgifter = window.Microgifter || {};
     drawer.setAttribute('data-world-drawer-portal', 'body');
     return drawer;
   }
-  function openDrawer() {
-    var activeDrawer = portalDrawer();
-    if (!activeDrawer) return;
-    activeDrawer.classList.add('is-open');
-    activeDrawer.setAttribute('aria-hidden', 'false');
-  }
-  function closeDrawer() {
-    var activeDrawer = portalDrawer();
-    if (!activeDrawer) return;
-    activeDrawer.classList.remove('is-open');
-    activeDrawer.setAttribute('aria-hidden', 'true');
-  }
+  function openDrawer() { var activeDrawer = portalDrawer(); if (activeDrawer) { activeDrawer.classList.add('is-open'); activeDrawer.setAttribute('aria-hidden', 'false'); } }
+  function closeDrawer() { var activeDrawer = portalDrawer(); if (activeDrawer) { activeDrawer.classList.remove('is-open'); activeDrawer.setAttribute('aria-hidden', 'true'); } }
 
   function setLiveStatus(message, type) {
     var pill = qs('[data-world-live-pill]');
@@ -59,23 +55,17 @@ window.Microgifter = window.Microgifter || {};
     pill.classList.toggle('is-warn', type === 'warn');
     pill.classList.toggle('is-error', type === 'error');
   }
-  function setState(message) {
-    var state = qs('[data-world-state]');
-    if (state) state.textContent = message;
-  }
-
+  function setState(message) { var state = qs('[data-world-state]'); if (state) state.textContent = message; }
   function setStats(summary) {
     summary = summary || {};
     Object.keys(summary).forEach(function (key) {
-      qsa('[data-world-stat="' + key + '"]').forEach(function (node) {
-        node.textContent = number(summary[key]);
-      });
+      qsa('[data-world-stat="' + key + '"]').forEach(function (node) { node.textContent = number(summary[key]); });
     });
   }
 
   function nodeIcon(node) {
     if (node.avatar_url) return '<span class="mg-world-node-icon"><img src="' + escapeHtml(node.avatar_url) + '" alt=""></span>';
-    var label = node.type === 'campaign' ? 'CA' : node.type === 'reward' ? 'RW' : node.type === 'claim' ? 'CL' : initials(node.title);
+    var label = node.type === 'avatar' ? 'AV' : node.type === 'campaign' ? 'CA' : node.type === 'reward' ? 'RW' : node.type === 'claim' ? 'CL' : initials(node.title);
     return '<span class="mg-world-node-icon">' + escapeHtml(label) + '</span>';
   }
 
@@ -83,28 +73,134 @@ window.Microgifter = window.Microgifter || {};
     var type = node.type || 'node';
     var tone = node.owned ? 'owned' : (node.tone || 'soft');
     var hidden = activeFilter !== 'all' && activeFilter !== type;
-    return '<button class="mg-world-node is-' + escapeHtml(type) + ' is-' + escapeHtml(tone) + (node.id === selectedNodeId ? ' is-active' : '') + '" type="button" data-world-node data-world-node-id="' + escapeHtml(node.id || '') + '" data-world-type="' + escapeHtml(type) + '" data-world-detail-id="' + escapeHtml(node.detail_id || '') + '" style="left:' + escapeHtml(node.x || 50) + '%;top:' + escapeHtml(node.y || 50) + '%"' + (hidden ? ' hidden' : '') + '>' +
+    var classes = 'mg-world-node is-' + escapeHtml(type) + ' is-' + escapeHtml(tone) + (node.has_geo ? ' is-geo' : '') + (node.geo_locked ? ' is-geo-locked' : '') + (node.id === selectedNodeId ? ' is-active' : '');
+    return '<button class="' + classes + '" type="button" data-world-node data-world-node-id="' + escapeHtml(node.id || '') + '" data-world-type="' + escapeHtml(type) + '" data-world-detail-id="' + escapeHtml(node.detail_id || '') + '" data-world-location-key="' + escapeHtml(node.location_key || '') + '" data-world-conversation-key="' + escapeHtml(node.conversation_key || '') + '" data-world-affinity="' + escapeHtml((node.affinity_tags || []).join(',')) + '" data-world-target-x="' + escapeHtml(node.x || 50) + '" data-world-target-y="' + escapeHtml(node.y || 50) + '" data-world-geo-locked="' + (node.geo_locked ? 'true' : 'false') + '" style="left:' + escapeHtml(node.x || 50) + '%;top:' + escapeHtml(node.y || 50) + '%"' + (hidden ? ' hidden' : '') + '>' +
       '<span class="mg-world-node-status" aria-hidden="true"></span>' +
       '<span class="mg-world-node-head">' + nodeIcon(node) + '<span class="mg-world-node-copy"><strong>' + escapeHtml(node.title || 'World signal') + '</strong><span>' + escapeHtml(node.subtitle || '') + '</span></span><span class="mg-world-node-value">' + escapeHtml(node.value || '') + '</span></span>' +
       '<small class="mg-world-node-meta">' + escapeHtml(node.meta || '') + '</small>' +
       '</button>';
   }
 
+  function sharedTags(a, b) {
+    if (!a.tags.length || !b.tags.length) return 0;
+    var count = 0;
+    a.tags.forEach(function (tag) { if (b.tags.indexOf(tag) !== -1) count += 1; });
+    return count;
+  }
+
+  function syncNodeStates(nodes) {
+    var seen = new Set();
+    qsa('[data-world-node]').forEach(function (el) {
+      var id = el.dataset.worldNodeId || '';
+      if (!id) return;
+      seen.add(id);
+      var targetX = Number(el.dataset.worldTargetX || 50);
+      var targetY = Number(el.dataset.worldTargetY || 50);
+      var current = nodeStates.get(id) || { x: targetX, y: targetY, vx: 0, vy: 0 };
+      current.el = el;
+      current.id = id;
+      current.type = el.dataset.worldType || 'node';
+      current.location = el.dataset.worldLocationKey || '';
+      current.conversation = el.dataset.worldConversationKey || '';
+      current.tags = String(el.dataset.worldAffinity || '').split(',').filter(Boolean);
+      current.targetX = targetX;
+      current.targetY = targetY;
+      current.geoLocked = el.dataset.worldGeoLocked === 'true';
+      current.visible = !el.hidden;
+      nodeStates.set(id, current);
+    });
+    Array.from(nodeStates.keys()).forEach(function (id) { if (!seen.has(id)) nodeStates.delete(id); });
+    if (reduceMotion || !attractionModel.enabled) {
+      nodeStates.forEach(function (state) {
+        state.x = state.targetX;
+        state.y = state.targetY;
+        if (state.el) { state.el.style.left = state.x + '%'; state.el.style.top = state.y + '%'; }
+      });
+      renderFlows(nodes);
+      return;
+    }
+    if (!animationFrame) animationFrame = window.requestAnimationFrame(tickPhysics);
+  }
+
+  function tickPhysics() {
+    animationFrame = null;
+    var states = Array.from(nodeStates.values()).filter(function (state) { return state.visible; });
+    var repelDistance = Number(attractionModel.repel_distance || 11);
+    states.forEach(function (state) {
+      var anchorStrength = state.geoLocked ? 0.052 : 0.012;
+      state.vx += (state.targetX - state.x) * anchorStrength;
+      state.vy += (state.targetY - state.y) * anchorStrength;
+    });
+    for (var i = 0; i < states.length; i += 1) {
+      for (var j = i + 1; j < states.length; j += 1) {
+        var a = states[i];
+        var b = states[j];
+        var dx = b.x - a.x;
+        var dy = b.y - a.y;
+        var dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
+        var nx = dx / dist;
+        var ny = dy / dist;
+        var attraction = 0;
+        if (a.conversation && a.conversation === b.conversation) attraction += 0.0048 * Number(attractionModel.same_conversation_weight || 0.38);
+        if (a.location && a.location === b.location) attraction += 0.0037 * Number(attractionModel.same_location_weight || 0.46);
+        attraction += Math.min(3, sharedTags(a, b)) * 0.0016 * Number(attractionModel.shared_affinity_weight || 0.28);
+        if (attraction && dist > 5) {
+          a.vx += nx * attraction;
+          a.vy += ny * attraction;
+          b.vx -= nx * attraction;
+          b.vy -= ny * attraction;
+        }
+        if (dist < repelDistance) {
+          var repel = (repelDistance - dist) * 0.0026;
+          a.vx -= nx * repel;
+          a.vy -= ny * repel;
+          b.vx += nx * repel;
+          b.vy += ny * repel;
+        }
+      }
+    }
+    states.forEach(function (state) {
+      state.vx *= state.geoLocked ? 0.72 : 0.82;
+      state.vy *= state.geoLocked ? 0.72 : 0.82;
+      state.x = clamp(state.x + state.vx, 4, 96);
+      state.y = clamp(state.y + state.vy, 5, 95);
+      if (state.geoLocked) {
+        state.x = clamp(state.x, state.targetX - 8, state.targetX + 8);
+        state.y = clamp(state.y, state.targetY - 8, state.targetY + 8);
+      }
+      if (state.el) {
+        state.el.style.left = state.x.toFixed(3) + '%';
+        state.el.style.top = state.y.toFixed(3) + '%';
+      }
+    });
+    renderFlows(latestNodes, true);
+    animationFrame = window.requestAnimationFrame(tickPhysics);
+  }
+
+  function positionFor(node) {
+    var state = nodeStates.get(node.id || '');
+    return state ? { x: state.x, y: state.y } : { x: Number(node.x || 50), y: Number(node.y || 50) };
+  }
+
   function renderFlows(nodes) {
     var svg = qs('[data-world-flows]');
     if (!svg) return;
     clear(svg);
-    if (!nodes || nodes.length < 2) return;
-    var merchants = nodes.filter(function (node) { return node.type === 'merchant'; }).slice(0, 8);
-    var movers = nodes.filter(function (node) { return node.type === 'reward' || node.type === 'claim' || node.type === 'campaign'; }).slice(0, 16);
+    nodes = Array.isArray(nodes) ? nodes : [];
+    if (nodes.length < 2) return;
+    var anchors = nodes.filter(function (node) { return node.type === 'merchant' || node.type === 'avatar'; }).slice(0, 12);
+    var movers = nodes.filter(function (node) { return node.type === 'avatar' || node.type === 'reward' || node.type === 'claim' || node.type === 'campaign'; }).slice(0, 20);
     movers.forEach(function (node, index) {
-      var from = merchants[index % Math.max(1, merchants.length)] || nodes[index % nodes.length];
+      var from = anchors.find(function (anchor) { return anchor.id !== node.id && anchor.location_key && anchor.location_key === node.location_key; }) || anchors[index % Math.max(1, anchors.length)] || nodes[index % nodes.length];
       if (!from || from.id === node.id) return;
+      var start = positionFor(from);
+      var end = positionFor(node);
       var line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      line.setAttribute('x1', String(from.x || 50));
-      line.setAttribute('y1', String(from.y || 50));
-      line.setAttribute('x2', String(node.x || 50));
-      line.setAttribute('y2', String(node.y || 50));
+      line.setAttribute('x1', String(start.x));
+      line.setAttribute('y1', String(start.y));
+      line.setAttribute('x2', String(end.x));
+      line.setAttribute('y2', String(end.y));
+      if (node.type === 'avatar') line.classList.add('is-avatar');
       if (node.type === 'reward') line.classList.add('is-reward');
       if (node.type === 'claim') line.classList.add('is-claim');
       svg.appendChild(line);
@@ -116,44 +212,38 @@ window.Microgifter = window.Microgifter || {};
     if (!list) return;
     clear(list);
     events = Array.isArray(events) ? events : [];
-    if (!events.length) {
-      list.innerHTML = '<p>No live network events yet.</p>';
-      return;
-    }
+    if (!events.length) { list.innerHTML = '<p>No live network events yet.</p>'; return; }
     list.innerHTML = events.slice(0, 12).map(function (event) {
-      var type = event.type || 'session';
-      var icon = type === 'campaign' ? 'CA' : type === 'reward' ? 'RW' : type === 'claim' ? 'CL' : 'EV';
+      var type = event.type || 'avatar';
+      var icon = type === 'avatar' ? 'AV' : type === 'campaign' ? 'CA' : type === 'reward' ? 'RW' : type === 'claim' ? 'CL' : 'EV';
       return '<article class="mg-world-event is-' + escapeHtml(type) + '"><b>' + escapeHtml(icon) + '</b><span><strong>' + escapeHtml(event.label || event.title || 'World activity') + '</strong><span>' + escapeHtml(event.title || '') + (event.meta ? ' · ' + escapeHtml(event.meta) : '') + '</span></span><time>' + escapeHtml(timeLabel(event.created_at)) + '</time></article>';
     }).join('');
   }
 
   function applyFilter() {
-    qsa('[data-world-filter]').forEach(function (button) {
-      button.classList.toggle('is-active', button.dataset.worldFilter === activeFilter);
-    });
-    qsa('[data-world-node]').forEach(function (node) {
-      node.hidden = activeFilter !== 'all' && node.dataset.worldType !== activeFilter;
-    });
+    qsa('[data-world-filter]').forEach(function (button) { button.classList.toggle('is-active', button.dataset.worldFilter === activeFilter); });
+    qsa('[data-world-node]').forEach(function (node) { node.hidden = activeFilter !== 'all' && node.dataset.worldType !== activeFilter; });
+    nodeStates.forEach(function (state) { state.visible = !state.el || !state.el.hidden; });
   }
 
   function renderWorld(data) {
     data = data || {};
     var summary = data.summary || {};
-    var nodes = Array.isArray(data.nodes) ? data.nodes : [];
+    latestNodes = Array.isArray(data.nodes) ? data.nodes : [];
+    attractionModel = Object.assign(attractionModel, data.attraction_model || {});
     setStats(summary);
-    setLiveStatus(nodes.length ? 'World Canvas live' : (summary.schema_ready ? 'Network ready' : 'Setup pending'), nodes.length ? 'live' : (summary.schema_ready ? 'warn' : 'error'));
-    setState(summary.schema_ready ? 'Showing aggregate Microgifter network signals. Customer identities are anonymized at world level.' : 'World Canvas is waiting on Store Canvas tables before live activity can appear.');
-
+    setLiveStatus(latestNodes.length ? 'World Canvas live' : (summary.schema_ready ? 'Network ready' : 'Setup pending'), latestNodes.length ? 'live' : (summary.schema_ready ? 'warn' : 'error'));
+    setState(summary.schema_ready ? 'Avatars use saved latitude/longitude when available, then attract toward similar avatars and same-location conversations.' : 'World Canvas is waiting on Store Canvas tables before live activity can appear.');
     var layer = qs('[data-world-nodes]');
     if (layer) {
       clear(layer);
-      layer.insertAdjacentHTML('beforeend', nodes.map(renderNode).join(''));
+      layer.insertAdjacentHTML('beforeend', latestNodes.map(renderNode).join(''));
     }
     var empty = qs('[data-world-empty]');
-    if (empty) empty.classList.toggle('is-hidden', nodes.length > 0);
-    renderFlows(nodes);
+    if (empty) empty.classList.toggle('is-hidden', latestNodes.length > 0);
     renderEvents(data.events || []);
     applyFilter();
+    syncNodeStates(latestNodes);
   }
 
   async function loadWorld() {
@@ -169,27 +259,19 @@ window.Microgifter = window.Microgifter || {};
   function statMarkup(stats) {
     stats = Array.isArray(stats) ? stats : [];
     if (!stats.length) return '';
-    return '<section class="mg-world-detail-grid">' + stats.map(function (stat) {
-      return '<article class="mg-world-detail-stat"><span>' + escapeHtml(stat.label || 'Metric') + '</span><strong>' + escapeHtml(stat.value == null ? '—' : stat.value) + '</strong></article>';
-    }).join('') + '</section>';
+    return '<section class="mg-world-detail-grid">' + stats.map(function (stat) { return '<article class="mg-world-detail-stat"><span>' + escapeHtml(stat.label || 'Metric') + '</span><strong>' + escapeHtml(stat.value == null ? '—' : stat.value) + '</strong></article>'; }).join('') + '</section>';
   }
-
   function actionsMarkup(actions) {
     actions = Array.isArray(actions) ? actions.filter(function (item) { return item && item.href; }) : [];
     if (!actions.length) return '';
-    return '<section class="mg-world-detail-actions">' + actions.map(function (action) {
-      return '<a href="' + escapeHtml(action.href) + '">' + escapeHtml(action.label || 'Open') + '</a>';
-    }).join('') + '</section>';
+    return '<section class="mg-world-detail-actions">' + actions.map(function (action) { return '<a href="' + escapeHtml(action.href) + '">' + escapeHtml(action.label || 'Open') + '</a>'; }).join('') + '</section>';
   }
-
   function renderDetail(detail) {
     detail = detail || {};
     var body = drawer ? drawer.querySelector('[data-world-drawer-body]') : null;
     if (!body) return;
     var avatar = detail.avatar_url ? '<span class="mg-world-detail-avatar"><img src="' + escapeHtml(detail.avatar_url) + '" alt=""></span>' : '<span class="mg-world-detail-avatar">' + escapeHtml(initials(detail.title)) + '</span>';
-    body.innerHTML = '<section class="mg-world-detail-hero">' + avatar + '<div><strong>' + escapeHtml(detail.title || 'World detail') + '</strong><span>' + escapeHtml(detail.subtitle || '') + '</span></div></section>' +
-      statMarkup(detail.stats) + actionsMarkup(detail.actions) +
-      (detail.note ? '<section class="mg-world-detail-note">' + escapeHtml(detail.note) + '</section>' : '');
+    body.innerHTML = '<section class="mg-world-detail-hero">' + avatar + '<div><strong>' + escapeHtml(detail.title || 'World detail') + '</strong><span>' + escapeHtml(detail.subtitle || '') + '</span></div></section>' + statMarkup(detail.stats) + actionsMarkup(detail.actions) + (detail.note ? '<section class="mg-world-detail-note">' + escapeHtml(detail.note) + '</section>' : '');
   }
 
   async function loadDetail(type, detailId, nodeId) {
@@ -222,38 +304,19 @@ window.Microgifter = window.Microgifter || {};
     var inRoot = root.contains(event.target);
     var inDrawer = drawer && drawer.contains(event.target);
     if (!inRoot && !inDrawer) return;
-
     var filter = event.target.closest('[data-world-filter]');
-    if (filter) {
-      activeFilter = filter.dataset.worldFilter || 'all';
-      applyFilter();
-      return;
-    }
-
+    if (filter) { activeFilter = filter.dataset.worldFilter || 'all'; applyFilter(); return; }
     var refresh = event.target.closest('[data-world-refresh]');
-    if (refresh) {
-      loadWorld();
-      return;
-    }
-
+    if (refresh) { loadWorld(); return; }
     var close = event.target.closest('[data-world-drawer-close]');
-    if (close) {
-      closeDrawer();
-      return;
-    }
-
+    if (close) { closeDrawer(); return; }
     var node = event.target.closest('[data-world-node]');
-    if (node) {
-      loadDetail(node.dataset.worldType, node.dataset.worldDetailId, node.dataset.worldNodeId);
-    }
+    if (node) loadDetail(node.dataset.worldType, node.dataset.worldDetailId, node.dataset.worldNodeId);
   });
 
-  document.addEventListener('keydown', function (event) {
-    if (event.key === 'Escape') closeDrawer();
-  });
-
+  document.addEventListener('keydown', function (event) { if (event.key === 'Escape') closeDrawer(); });
   portalDrawer();
   loadWorld();
   pollTimer = window.setInterval(loadWorld, 9000);
-  window.addEventListener('beforeunload', function () { if (pollTimer) window.clearInterval(pollTimer); });
+  window.addEventListener('beforeunload', function () { if (pollTimer) window.clearInterval(pollTimer); if (animationFrame) window.cancelAnimationFrame(animationFrame); });
 })(window, document);
