@@ -4,8 +4,8 @@ require_once __DIR__ . '/includes/app.php';
 $page_title='Customer Profile | Microgifter';
 $page_section='merchant';
 $header_mode='account';
-$page_styles=['/assets/css/merchant-workspace.css','/assets/css/merchant-customer-profile.css','/assets/css/merchant-followup-tasks.css','/assets/css/merchant-crm-retention-playbooks.css','/assets/css/merchant-customer-agent-timeline.css'];
-$page_scripts=['/assets/js/merchant-customer-profile.js','/assets/js/merchant-customer-profile-fallback.js','/assets/js/merchant-customer-profile-actions-fix.js','/assets/js/merchant-customer-retention-recommendations.js','/assets/js/merchant-customer-agent-timeline.js','/assets/js/merchant-customer-profile-timeout.js'];
+$page_styles=['/assets/css/merchant-workspace.css','/assets/css/merchant-customer-profile.css','/assets/css/merchant-followup-tasks.css','/assets/css/merchant-crm-retention-playbooks.css','/assets/css/merchant-customer-agent-timeline.css','/assets/css/merchant-customer-profile-intelligence.css'];
+$page_scripts=['/assets/js/merchant-customer-profile.js','/assets/js/merchant-customer-profile-fallback.js','/assets/js/merchant-customer-profile-intelligence.js','/assets/js/merchant-customer-profile-actions-fix.js','/assets/js/merchant-customer-retention-recommendations.js','/assets/js/merchant-customer-agent-timeline.js','/assets/js/merchant-customer-profile-timeout.js'];
 $user=mg_current_user();
 $merchantNav=[
  'overview'=>['Overview','Workspace health','/merchant.php','Overview'],
