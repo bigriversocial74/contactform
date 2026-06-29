@@ -6,6 +6,11 @@
  * payment processing, real uploads, or reward issuing here.
  */
 
+$componentPath = __DIR__ . '/labs-components.php';
+if (is_file($componentPath)) {
+    require_once $componentPath;
+}
+
 if (!function_exists('labs_asset')) {
     function labs_asset(string $path): string
     {
