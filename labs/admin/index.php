@@ -10,27 +10,28 @@ labs_page_start([
   <div>
     <span class="labs-eyebrow">Backend overview</span>
     <h1>Training Lab overview</h1>
-    <p class="labs-copy">Static backend dashboard shell based on the approved operations pattern.</p>
+    <p class="labs-copy">Stage 2 surfaces the browser-only demo proof state in the backend overview.</p>
   </div>
   <a class="labs-btn labs-btn-primary" href="/admin/review-queue.php">Review Queue</a>
 </section>
 <section class="labs-kpis">
   <?php labs_stat_card('Active campaigns', '12', 'demo campaigns'); ?>
   <?php labs_stat_card('Participants', '248', 'static count'); ?>
-  <?php labs_stat_card('Pending reviews', '31', 'visual queue'); ?>
-  <?php labs_stat_card('Visual rewards', '86', 'not issued'); ?>
+  <div class="labs-kpi"><span class="labs-muted">Primary review</span><strong data-demo-review-status>Not submitted</strong><small>demo state</small></div>
+  <div class="labs-kpi"><span class="labs-muted">Primary reward</span><strong data-demo-reward-status>Pending</strong><small>visual only</small></div>
 </section>
 <section class="labs-dashboard-grid">
   <article class="labs-card">
     <h2>Program activity</h2>
-    <p class="labs-muted">Chart placeholder for Stage 1.</p>
-    <div style="height:220px;border-radius:22px;background:var(--labs-surface-soft);display:grid;place-items:center;color:var(--labs-muted);font-weight:800">Activity chart placeholder</div>
+    <p class="labs-muted">Progress updates from localStorage demo state.</p>
+    <div class="labs-progress-track"><div class="labs-progress-fill" data-demo-progress-fill></div></div><br>
+    <span class="labs-pill" data-demo-progress-label>80% complete</span>
   </article>
   <aside class="labs-card">
     <h2>Needs attention</h2>
-    <div class="labs-mini-row"><strong>Proof reviews</strong><span class="labs-pill">31</span></div>
-    <div class="labs-mini-row"><strong>Campaign drafts</strong><span class="labs-pill">2</span></div>
-    <div class="labs-mini-row"><strong>Visual rewards</strong><span class="labs-pill">86</span></div>
+    <div class="labs-mini-row"><strong>Proof review</strong><span class="labs-pill" data-demo-review-status>Not submitted</span></div>
+    <div class="labs-mini-row"><strong>Proof status</strong><span class="labs-pill" data-demo-proof-status>Not submitted</span></div>
+    <div class="labs-mini-row"><strong>Last update</strong><span class="labs-pill" data-demo-updated-at>Not updated yet</span></div>
   </aside>
 </section>
 <section class="labs-section-band labs-split-card">
