@@ -40,6 +40,7 @@ Consistency/streak data updates
 - [Product Requirements](./product-requirements.md)
 - [Expanded Platform Outline](./expanded-platform-outline.md)
 - [MVP Scope](./mvp-scope.md)
+- [Pricing Concept](./pricing-concept.md)
 - [Demo Script](./demo-script.md)
 - [Acceptance Checklist](./acceptance-checklist.md)
 
