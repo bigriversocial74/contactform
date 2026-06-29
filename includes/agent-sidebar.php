@@ -29,21 +29,6 @@ $appSidebarNav = [
         'visible' => true,
         'active' => $agentSidebarActive === 'my-feed' || $agentSidebarActive === 'feed',
     ],
-    'world-canvas' => [
-        'section' => 'World',
-        'label' => 'World Canvas',
-        'detail' => 'Avatar map and microgift movement',
-        'href' => '/world-canvas.php',
-        'visible' => true,
-        'active' => $agentSidebarActive === 'world-canvas',
-    ],
-    'world-executive' => [
-        'label' => 'World Executive',
-        'detail' => 'Network health and demand pulse',
-        'href' => '/world-executive.php',
-        'visible' => true,
-        'active' => $agentSidebarActive === 'world-executive',
-    ],
     'agent_chat' => [
         'section' => 'Agent',
         'label' => 'Agent Chat',
@@ -68,15 +53,8 @@ $appSidebarNav = [
         'visible' => true,
         'active' => $agentSidebarActive === 'messages',
     ],
-    'merchant' => [
-        'section' => 'Merchant',
-        'label' => 'Merchant Workspace',
-        'detail' => 'Products, campaigns, claims',
-        'href' => '/merchant.php',
-        'visible' => $canMerchantNav,
-        'active' => $agentSidebarActive === 'merchant',
-    ],
     'store-canvas' => [
+        'section' => 'Merchant',
         'label' => 'Store Canvas',
         'detail' => 'Live avatars and CRM',
         'href' => '/merchant-canvas.php',
