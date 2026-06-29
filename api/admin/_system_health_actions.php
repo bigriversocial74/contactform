@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_ops_installer.php';
+require_once dirname(__DIR__, 2) . '/includes/pwa-push.php';
 
 function mg_admin_system_health_can_manage(array $user): bool
 {
@@ -98,6 +99,11 @@ function mg_admin_system_health_retry_notifications(PDO $pdo, int $limit = 100):
         if ($pdo->inTransaction()) $pdo->rollBack();
         throw $error;
     }
+}
+
+function mg_admin_system_health_test_pwa_notification(PDO $pdo, array $user): array
+{
+    return mg_pwa_push_send_test_to_user($pdo, (int)$user['id']);
 }
 
 function mg_admin_system_health_post_media_references(PDO $pdo): array
