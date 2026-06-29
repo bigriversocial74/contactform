@@ -25,9 +25,11 @@ Consistency/streak data updates
 
 ## Build docs
 
+- [Expanded Platform Outline](./expanded-platform-outline.md)
 - [Build Plan](./build-plan.md)
 - [Schema Outline](./schema.md)
 - [Status Model](./status-model.md)
+- [MVP Scope](./mvp-scope.md)
 - [Demo Script](./demo-script.md)
 - [Acceptance Checklist](./acceptance-checklist.md)
 
@@ -64,3 +66,17 @@ examples/local-quest-rewards/database/training_campaign_lab.sql
 ## Build principle
 
 Start with manual proof upload and manual review. Add AI-assisted review, computer vision, motion scoring, and agentic coaching after the basic proof/reward loop works.
+
+## MVP rule
+
+Build one working vertical slice before adding advanced features:
+
+```text
+one campaign
+one participant
+four proof submissions
+one reviewer
+one verified sequence
+one Action Receipt
+one reward issue
+```
