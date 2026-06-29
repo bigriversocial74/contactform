@@ -25,6 +25,13 @@ window.Microgifter = window.Microgifter || {};
     return clean(node ? node.textContent : '') || 'Customer';
   }
 
+  function selectedSessionId() {
+    var name = drawerName().toLowerCase();
+    var cards = Array.from(root.querySelectorAll('.mg-canvas-avatar-card[data-session-id]'));
+    var matched = cards.find(function (card) { return clean((card.querySelector('strong') || {}).textContent || '').toLowerCase() === name; });
+    return matched ? (matched.dataset.sessionId || '') : (cards[0] ? cards[0].dataset.sessionId || '' : '');
+  }
+
   function extractEvents(body) {
     var list = body.querySelector('.mg-canvas-event-list');
     if (!list) return [];
@@ -68,6 +75,29 @@ window.Microgifter = window.Microgifter || {};
     }).join('');
   }
 
+  function movementFallback(events, customerName) {
+    var basic = events.length ? events : [{ label: customerName + ' entered Store Canvas.', time: 'Current session' }];
+    return basic.map(function (event, index) {
+      var label = event.label || 'Store event';
+      var lower = label.toLowerCase();
+      var stage = index === 0 ? 'Entered' : (lower.indexOf('message') !== -1 ? 'Chat' : (lower.indexOf('reward') !== -1 ? 'Reward' : (lower.indexOf('trigger') !== -1 ? 'Trigger Zone' : 'Action')));
+      return { stage: stage, label: label, time: event.time || '' };
+    });
+  }
+
+  function renderMovement(events, customerName) {
+    var intel = window.Microgifter && window.Microgifter.storeCanvasIntelligence;
+    var sessionId = selectedSessionId();
+    var path = intel && typeof intel.getPath === 'function' ? intel.getPath(sessionId) : movementFallback(events, customerName);
+    if (!path.length) path = movementFallback(events, customerName);
+    var score = intel && typeof intel.getScore === 'function' ? intel.getScore(sessionId) : { score: Math.min(100, 20 + path.length * 15), label: 'Watching', why: 'Score will become more specific as customer actions are recorded.' };
+    return '<section class="mg-customer-path-score"><span>Customer Score</span><strong>' + esc(score.score) + '</strong><em>' + esc(score.label) + '</em><p>' + esc(score.why) + '</p></section>' +
+      '<section class="mg-customer-path-list">' + path.map(function (step) {
+        return '<article><b>' + esc(step.stage || 'Action') + '</b><div><strong>' + esc(step.label || 'Store Canvas event') + '</strong><span>' + esc(step.time || '') + '</span></div></article>';
+      }).join('') + '</section>' +
+      '<section class="mg-customer-path-next"><strong>Next Best Action</strong><p>' + (score.score >= 75 ? 'Send a direct offer or reward while the customer is engaged.' : (score.score >= 45 ? 'Ask a question or send a lightweight follow-up message.' : 'Let the customer continue browsing before sending a stronger promotion.')) + '</p></section>';
+  }
+
   function makeCampaignPanel(rewardPanel, sourceSection) {
     var reward = rewardPanel ? rewardPanel.outerHTML : '<section class="mg-canvas-reward-panel"><p class="mg-canvas-reward-note">Reward options load when a real customer account is selected.</p></section>';
     var source = sourceSection ? sourceSection.outerHTML : '<section><span class="mg-canvas-eyebrow">Store source</span><p>Feed post / Store Canvas</p></section>';
@@ -80,6 +110,7 @@ window.Microgifter = window.Microgifter || {};
     drawer.classList.toggle('is-customer-tab-chat', activeTab === 'chat');
     drawer.classList.toggle('is-customer-tab-history', activeTab === 'history');
     drawer.classList.toggle('is-customer-tab-overview', activeTab === 'overview');
+    drawer.classList.toggle('is-customer-tab-movement', activeTab === 'movement');
     drawer.classList.toggle('is-customer-tab-campaigns', activeTab === 'campaigns');
     qsa('[data-customer-tab]').forEach(function (button) {
       button.classList.toggle('is-active', button.dataset.customerTab === activeTab);
@@ -115,12 +146,14 @@ window.Microgifter = window.Microgifter || {};
         '<button type="button" data-customer-tab="overview"><span>▦</span>Overview</button>' +
         '<button type="button" data-customer-tab="chat"><span>●</span>Chat</button>' +
         '<button type="button" data-customer-tab="history"><span>↺</span>History</button>' +
+        '<button type="button" data-customer-tab="movement"><span>↝</span>Movement</button>' +
         '<button type="button" data-customer-tab="campaigns"><span>✦</span>Campaigns</button>' +
       '</nav>' +
       '<div class="mg-customer-tab-panels">' +
         '<section class="mg-customer-tab-panel" data-customer-panel="overview">' + overviewHtml + '</section>' +
         '<section class="mg-customer-tab-panel mg-customer-chat-panel" data-customer-panel="chat">' + renderChat(events, customerName) + '</section>' +
         '<section class="mg-customer-tab-panel" data-customer-panel="history"><div class="mg-customer-history-list">' + makeHistory(events) + '</div></section>' +
+        '<section class="mg-customer-tab-panel mg-customer-movement-panel" data-customer-panel="movement">' + renderMovement(events, customerName) + '</section>' +
         '<section class="mg-customer-tab-panel" data-customer-panel="campaigns">' + makeCampaignPanel(rewardPanel, sourceSection) + '</section>' +
       '</div>';
 
@@ -133,6 +166,14 @@ window.Microgifter = window.Microgifter || {};
     var tab = event.target.closest('[data-customer-tab]');
     if (!tab) return;
     activate(tab.dataset.customerTab || 'chat');
+  });
+
+  document.addEventListener('mg:storeCanvasIntelligenceLoaded', function () {
+    var body = qs('[data-drawer-body]');
+    if (!body || body.dataset.customerTabsReady !== '1') return;
+    var panel = qs('[data-customer-panel="movement"]', body);
+    if (!panel) return;
+    panel.innerHTML = renderMovement([], drawerName());
   });
 
   observer = new MutationObserver(function () {
