@@ -102,12 +102,16 @@ function mg_world_target_drop_row_to_payload(array $row, bool $owned): array
 function mg_world_target_drop_launch_location(PDO $pdo, int $merchantUserId, ?int $locationId = null): array
 {
     if ($locationId !== null && $locationId > 0) {
+        $geoAccuracy = mg_world_location_select_expr($pdo, 'geo_accuracy_meters', 'NULL');
+        $geoSource = mg_world_location_select_expr($pdo, 'geo_source', 'NULL');
+        $zoneRadius = mg_world_location_select_expr($pdo, 'world_zone_radius_meters', '250');
+        $select = "ml.id, ml.public_id, ml.name, ml.location_code, ml.address_line1, ml.address_line2, ml.city, ml.region, ml.postal_code, ml.country_code, ml.status, ml.is_primary, ml.latitude, ml.longitude, {$geoAccuracy}, {$geoSource}, {$zoneRadius}, ml.updated_at";
         if (mg_world_canvas_column($pdo, 'merchant_locations', 'merchant_user_id')) {
-            $rows = mg_world_canvas_rows($pdo, 'SELECT id, latitude, longitude FROM merchant_locations WHERE id=? AND merchant_user_id=? LIMIT 1', [$locationId, $merchantUserId]);
+            $rows = mg_world_canvas_rows($pdo, "SELECT {$select} FROM merchant_locations ml WHERE ml.id=? AND ml.merchant_user_id=? LIMIT 1", [$locationId, $merchantUserId]);
         } else {
-            $rows = mg_world_canvas_rows($pdo, 'SELECT ml.id, ml.latitude, ml.longitude FROM merchant_locations ml JOIN merchant_workspaces mw ON mw.id=ml.workspace_id WHERE ml.id=? AND mw.merchant_user_id=? LIMIT 1', [$locationId, $merchantUserId]);
+            $rows = mg_world_canvas_rows($pdo, "SELECT {$select} FROM merchant_locations ml JOIN merchant_workspaces mw ON mw.id=ml.workspace_id WHERE ml.id=? AND mw.merchant_user_id=? LIMIT 1", [$locationId, $merchantUserId]);
         }
-        if ($rows) return $rows[0];
+        if ($rows) return mg_world_location_backfill_merchant_geo($pdo, $rows[0]);
     }
     $rows = mg_world_location_merchant_rows($pdo, $merchantUserId, true);
     return $rows[0] ?? ['id' => null, 'latitude' => null, 'longitude' => null];
