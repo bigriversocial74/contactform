@@ -63,22 +63,16 @@ require __DIR__ . '/includes/header.php';
       </article>
     <?php else: ?>
       <section class="mg-canvas-shell">
-        <header class="mg-canvas-topbar" aria-label="Store Canvas live metrics">
-          <div class="mg-canvas-topbar-title">
-            <span class="mg-canvas-eyebrow">Store Canvas</span>
-            <strong>Live store session map</strong>
-          </div>
-          <div class="mg-canvas-header-stats" aria-label="Store Canvas summary">
-            <article><span>Inside Now</span><strong data-canvas-active-count>0</strong></article>
-            <article><span>Today Entries</span><strong data-canvas-today-entries>0</strong></article>
-            <article><span>Canvas Events</span><strong data-canvas-today-events>0</strong></article>
-            <article><span>History Rows</span><strong data-canvas-history-rows>0</strong></article>
-          </div>
-        </header>
-
         <div class="mg-canvas-grid mg-canvas-grid-full">
           <section class="mg-canvas-stage" aria-label="Live store canvas">
             <span class="mg-canvas-live-pill mg-canvas-live-pill-hidden" data-canvas-live-pill>Checking database</span>
+
+            <div class="mg-canvas-command-strip" aria-label="Store Canvas summary">
+              <article><span>Inside now</span><strong data-canvas-active-count>0</strong></article>
+              <article><span>Today entries</span><strong data-canvas-today-entries>0</strong></article>
+              <article><span>Canvas events</span><strong data-canvas-today-events>0</strong></article>
+              <article><span>History rows</span><strong data-canvas-history-rows>0</strong></article>
+            </div>
 
             <div class="mg-canvas-state-banner mg-canvas-state-hidden" data-canvas-state>
               Database check pending.
@@ -94,14 +88,13 @@ require __DIR__ . '/includes/header.php';
                   <?php endif; ?>
                 </span>
                 <strong><?php echo mg_e($merchantDisplayName); ?></strong>
-                <small>Merchant Agent · campaigns · rewards</small>
-                <em>Online</em>
+                <small>Merchant Agent · campaigns · rewards · CRM</small>
               </div>
               <div class="mg-canvas-avatar-layer" data-canvas-customers></div>
               <div class="mg-canvas-trigger-layer" data-canvas-triggers></div>
               <article class="mg-canvas-empty-state" data-canvas-empty>
                 <span>No avatars inside yet</span>
-                <p data-canvas-empty-copy>Customer avatars will appear here when shoppers enter from merchant feed posts. Click an avatar to open the In-Store Chat sidebar.</p>
+                <p data-canvas-empty-copy>Customer avatars will appear here when shoppers enter from merchant feed posts.</p>
               </article>
             </div>
           </section>
@@ -110,33 +103,21 @@ require __DIR__ . '/includes/header.php';
     <?php endif; ?>
   </div>
 
-  <aside class="mg-canvas-crm-drawer mg-canvas-chat-drawer" data-canvas-drawer aria-hidden="true">
+  <aside class="mg-canvas-crm-drawer" data-canvas-drawer aria-hidden="true">
     <div class="mg-canvas-drawer-head">
       <div>
-        <span class="mg-canvas-eyebrow">In-Store Chat</span>
-        <h2 data-drawer-name>Customer chats</h2>
-        <p class="mg-canvas-chat-presence"><span></span> Online · <strong data-canvas-active-count>0</strong> visitor(s)</p>
+        <span class="mg-canvas-eyebrow">Customer CRM</span>
+        <h2 data-drawer-name>Select an avatar</h2>
       </div>
-      <button type="button" data-drawer-close aria-label="Close in-store chat drawer">×</button>
+      <button type="button" data-drawer-close aria-label="Close customer CRM drawer">x</button>
     </div>
-
-    <nav class="mg-canvas-chat-tabs" data-chat-tabs aria-label="Customer chat tabs">
-      <button type="button" disabled>No active chats</button>
-    </nav>
-
-    <div class="mg-canvas-drawer-body mg-canvas-chat-body" data-drawer-body>
-      <div class="mg-canvas-chat-empty">
-        <strong>Select a customer avatar</strong>
-        <p>Customer conversations open here as a slide-out sidebar while the Store Canvas stays full size.</p>
-      </div>
+    <div class="mg-canvas-drawer-body" data-drawer-body>
+      <p>Click a customer avatar on the Store Canvas to load CRM details.</p>
     </div>
-
-    <form class="mg-canvas-message-form mg-canvas-chat-composer" data-message-form>
-      <label for="mg-canvas-message">In-store reply</label>
-      <div class="mg-canvas-chat-input-row">
-        <textarea id="mg-canvas-message" name="message" rows="2" maxlength="1000" placeholder="Type a message..." required disabled></textarea>
-        <button class="mg-btn mg-btn-primary" type="submit" disabled data-message-submit>Send</button>
-      </div>
+    <form class="mg-canvas-message-form" data-message-form>
+      <label for="mg-canvas-message">Direct message</label>
+      <textarea id="mg-canvas-message" name="message" rows="4" maxlength="1000" placeholder="Send a message to this customer's Messages center..." required disabled></textarea>
+      <button class="mg-btn mg-btn-primary" type="submit" disabled data-message-submit>Send Message</button>
       <p class="mg-canvas-form-status" data-message-status role="status"></p>
     </form>
   </aside>
