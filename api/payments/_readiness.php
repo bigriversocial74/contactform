@@ -46,6 +46,29 @@ function mg_payment_readiness(PDO $pdo,string $provider='stripe',?string $mode=n
     $appUrl=rtrim(trim((string)(getenv('MG_APP_URL')?:'')),'/');
     $runtimeProvider=mg_payment_provider_key();
     $prefix=$mode==='live'?'live':'test';
+    $publishable=(string)$config['publishable_key'];
+    $secret=(string)$config['secret_key'];
+    $webhookSecret=(string)$config['webhook_secret'];
+    $publishablePrefix='pk_'.$prefix.'_';
+    $secretPrefix='sk_'.$prefix.'_';
+    $publishableOk=str_starts_with($publishable,$publishablePrefix);
+    $secretOk=str_starts_with($secret,$secretPrefix)||mg_stripe_stub_enabled();
+    $webhookOk=str_starts_with($webhookSecret,'whsec_')||mg_stripe_stub_enabled();
+    $publishableDetail=!$status['publishable_configured']
+        ? 'Missing Stripe publishable key.'
+        : ($publishableOk
+            ? 'Configured with '.$publishablePrefix.' for '.$mode.' mode.'
+            : 'Configured key does not match '.$mode.' mode. Expected prefix '.$publishablePrefix.'.');
+    $secretDetail=!$status['secret_configured']&&!mg_stripe_stub_enabled()
+        ? 'Missing Stripe secret key.'
+        : ($secretOk
+            ? (mg_stripe_stub_enabled()?'Stripe stub mode is enabled.':'Configured with '.$secretPrefix.' for '.$mode.' mode.')
+            : 'Configured secret key does not match '.$mode.' mode. Expected prefix '.$secretPrefix.'.');
+    $webhookDetail=!$status['webhook_configured']&&!mg_stripe_stub_enabled()
+        ? 'Missing Stripe webhook signing secret.'
+        : ($webhookOk
+            ? (mg_stripe_stub_enabled()?'Stripe stub mode is enabled.':'Configured as a Stripe webhook signing secret.')
+            : 'Configured webhook value does not look like a Stripe webhook signing secret. Expected prefix whsec_.');
     $checks=[
         'runtime_provider'=>[
             'ok'=>$runtimeProvider===$provider,
@@ -63,19 +86,19 @@ function mg_payment_readiness(PDO $pdo,string $provider='stripe',?string $mode=n
             'detail'=>mg_payment_mode()===$mode?'MG_PAYMENT_MODE selects '.$mode.'.':'Set MG_PAYMENT_MODE='.$mode.' before using this configuration.',
         ],
         'publishable_key'=>[
-            'ok'=>str_starts_with((string)$config['publishable_key'],'pk_'.$prefix.'_'),
+            'ok'=>$publishableOk,
             'label'=>'Publishable key',
-            'detail'=>$status['publishable_configured']?'Configured with the expected mode prefix.':'Missing Stripe publishable key.',
+            'detail'=>$publishableDetail,
         ],
         'secret_key'=>[
-            'ok'=>str_starts_with((string)$config['secret_key'],'sk_'.$prefix.'_')||mg_stripe_stub_enabled(),
+            'ok'=>$secretOk,
             'label'=>'Secret key',
-            'detail'=>$status['secret_configured']||mg_stripe_stub_enabled()?'Configured with the expected mode prefix.':'Missing Stripe secret key.',
+            'detail'=>$secretDetail,
         ],
         'webhook_secret'=>[
-            'ok'=>str_starts_with((string)$config['webhook_secret'],'whsec_')||mg_stripe_stub_enabled(),
+            'ok'=>$webhookOk,
             'label'=>'Webhook secret',
-            'detail'=>$status['webhook_configured']||mg_stripe_stub_enabled()?'Configured.':'Missing Stripe webhook signing secret.',
+            'detail'=>$webhookDetail,
         ],
         'application_url'=>[
             'ok'=>$appUrl!==''&&($mode==='test'||str_starts_with($appUrl,'https://')),
