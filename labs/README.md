@@ -33,6 +33,14 @@ Open this local address in a browser:
 http://127.0.0.1:8091/
 ```
 
+## Full PHP syntax check
+
+From the repository root:
+
+```bash
+bash labs/run-full-syntax-check.sh
+```
+
 ## Current files
 
 ```text
@@ -53,7 +61,9 @@ labs/
   receipt.php
   routes-notes.md
   syntax-check-report.md
+  full-syntax-check-report.md
   full-shell-review.md
+  run-full-syntax-check.sh
 
   app/index.php
   app/campaigns.php
@@ -72,9 +82,10 @@ labs/
   assets/css/labs.css
   assets/js/labs.js
 
-  assets/img/marketing/
-  assets/img/app/
-  assets/img/admin/
+  assets/img/marketing/training-lab-hero.svg
+  assets/img/marketing/about-progress.svg
+  assets/img/app/participant-dashboard.svg
+  assets/img/admin/backend-overview.svg
   assets/img/icons/
 ```
 
@@ -90,6 +101,10 @@ The checkout flow reaches a visual success page and a static receipt preview.
 
 The support page PHP syntax check pass is documented in `syntax-check-report.md`.
 
-The image placeholder system and key page image slots are in place. Review checklist is documented in `full-shell-review.md`.
+Imported SVG image assets are in place and have replaced the key image placeholder slots on landing, about, app dashboard, and backend overview.
 
-Next pass: import approved image assets, replace placeholder slots, and run a full PHP syntax check across all labs pages.
+A full shell review checklist is documented in `full-shell-review.md`.
+
+A full syntax-check script is available at `run-full-syntax-check.sh`, with notes in `full-syntax-check-report.md`.
+
+Next pass: run the syntax-check script from a checkout or CI environment, then review the browser flow end-to-end.
