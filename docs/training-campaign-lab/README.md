@@ -23,23 +23,37 @@ Wallet and claim status are tracked
 Consistency/streak data updates
 ```
 
-## Build docs
+## Product and scope docs
 
+- [Product Requirements](./product-requirements.md)
 - [Expanded Platform Outline](./expanded-platform-outline.md)
-- [Build Plan](./build-plan.md)
-- [Schema Outline](./schema.md)
-- [Status Model](./status-model.md)
 - [MVP Scope](./mvp-scope.md)
 - [Demo Script](./demo-script.md)
 - [Acceptance Checklist](./acceptance-checklist.md)
 
 ## Build-control docs
 
+- [Documentation Completion Plan](./documentation-completion-plan.md)
 - [Branch Strategy](./branch-strategy.md)
+- [Build Plan](./build-plan.md)
 - [Route Map](./route-map.md)
-- [UI Data Map](./ui-data-map.md)
 - [Implementation Tickets](./implementation-tickets.md)
 - [QA Test Script](./qa-test-script.md)
+
+## Data and security docs
+
+- [Schema Outline](./schema.md)
+- [Schema Install Plan](./schema-install.md)
+- [Status Model](./status-model.md)
+- [UI Data Map](./ui-data-map.md)
+- [Data Lifecycle](./data-lifecycle.md)
+- [Security and Permissions](./security-permissions.md)
+
+## Workflow docs
+
+- [Admin Workflows](./admin-workflows.md)
+- [Participant Workflows](./participant-workflows.md)
+- [Open Questions](./open-questions.md)
 
 ## UI planning docs
 
