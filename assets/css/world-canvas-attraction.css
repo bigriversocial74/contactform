@@ -3,3 +3,10 @@
 .mg-world-node.is-geo .mg-world-node-status{background:#06b6d4}
 .mg-world-flow-svg line.is-avatar{stroke:rgba(8,145,178,.34)}
 .mg-world-event.is-avatar b{background:#cffafe;color:#0e7490}
+.mg-world-heat-layer,.mg-world-cluster-layer{position:absolute;inset:0;z-index:2;pointer-events:none}
+.mg-world-cluster-layer{z-index:6}
+.mg-world-heat-zone{position:absolute;display:grid;place-items:center;min-width:130px;min-height:130px;border-radius:999px;transform:translate(-50%,-50%);background:rgba(14,165,233,.12);opacity:.9;pointer-events:none}
+.mg-world-heat-zone span{display:grid;place-items:center;width:34px;height:34px;border-radius:999px;background:#fff;color:#075985;font-size:12px;font-weight:950;box-shadow:0 10px 30px rgba(14,165,233,.18)}
+.mg-world-cluster{position:absolute;transform:translate(-50%,-100%);display:flex;flex-direction:column;gap:2px;max-width:220px;border:1px solid rgba(15,23,42,.1);border-radius:16px;background:rgba(255,255,255,.9);color:#0f172a;box-shadow:0 18px 42px rgba(15,23,42,.12);padding:9px 11px;text-align:left;pointer-events:auto;cursor:pointer}
+.mg-world-cluster strong{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mg-world-cluster span{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#64748b;font-weight:950}
