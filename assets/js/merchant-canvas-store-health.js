@@ -6,7 +6,8 @@ window.Microgifter = window.Microgifter || {};
   if (!root || !window.Microgifter || !window.Microgifter.get) return;
   var MG = window.Microgifter;
   var storageKey = 'mgStoreHealthActions:v1';
-  var state = { intelligence: null, contacts: null, loading: false };
+  var endpoint = '/api/merchant/store-health-actions.php';
+  var state = { intelligence: null, contacts: null, loading: false, backend: {}, backendReady: false };
 
   function qs(selector, scope) { return (scope || document).querySelector(selector); }
   function qsa(selector, scope) { return Array.from((scope || document).querySelectorAll(selector)); }
@@ -17,12 +18,54 @@ window.Microgifter = window.Microgifter || {};
   function number(value) { return Number(value || 0) || 0; }
   function nowIso() { return new Date().toISOString(); }
 
-  function readActionStore() {
-    try { return JSON.parse(window.localStorage.getItem(storageKey) || '{}') || {}; } catch (error) { return {}; }
+  function readActionStore() { try { return JSON.parse(window.localStorage.getItem(storageKey) || '{}') || {}; } catch (error) { return {}; } }
+  function writeActionStore(store) { try { window.localStorage.setItem(storageKey, JSON.stringify(store || {})); } catch (error) {} }
+
+  function normalizeBackendAction(record) {
+    if (!record || !record.key) return null;
+    return {
+      key: record.key,
+      type: record.type || '',
+      condition: record.condition || '',
+      title: record.title || 'Store Health action',
+      copy: record.copy || '',
+      priority: record.priority || 'low',
+      status: record.status || 'suggested',
+      count: number(record.count),
+      metadata: record.metadata || {},
+      createdAt: record.createdAt || record.created_at || null,
+      updatedAt: record.updatedAt || record.updated_at || null,
+      startedAt: record.startedAt || record.started_at || null,
+      completedAt: record.completedAt || record.completed_at || null,
+      snoozedAt: record.snoozedAt || null,
+      snoozedUntil: record.snoozedUntil || record.snoozed_until || null,
+      dismissedAt: record.dismissedAt || record.dismissed_at || null,
+      backend: true
+    };
   }
 
-  function writeActionStore(store) {
-    try { window.localStorage.setItem(storageKey, JSON.stringify(store || {})); } catch (error) {}
+  function syncBackendStore(actions) {
+    var local = readActionStore();
+    (actions || []).forEach(function (record) {
+      var normalized = normalizeBackendAction(record);
+      if (!normalized) return;
+      var existing = local[normalized.key] || {};
+      if (!existing.updatedAt || String(normalized.updatedAt || '').localeCompare(String(existing.updatedAt || '')) >= 0) {
+        local[normalized.key] = Object.assign({}, existing, normalized);
+      }
+      state.backend[normalized.key] = normalized;
+    });
+    writeActionStore(local);
+  }
+
+  async function loadBackendActions() {
+    if (!MG.get) return;
+    try {
+      var res = await MG.get(endpoint);
+      var data = payload(res) || {};
+      if (Array.isArray(data.actions)) syncBackendStore(data.actions);
+      state.backendReady = data.persistence === 'database';
+    } catch (error) { state.backendReady = false; }
   }
 
   function actionKey(action) {
@@ -34,24 +77,39 @@ window.Microgifter = window.Microgifter || {};
   function actionState(action) {
     var store = readActionStore();
     var key = actionKey(action);
-    var record = store[key] || null;
+    var record = store[key] || state.backend[key] || null;
     if (!record) return { key: key, status: 'suggested', label: 'Suggested', record: null };
     var status = String(record.status || 'suggested');
     var labels = { suggested: 'Suggested', started: 'Started', completed: 'Completed', snoozed: 'Snoozed', dismissed: 'Dismissed' };
     return { key: key, status: status, label: labels[status] || 'Suggested', record: record };
   }
 
+  async function persistActionState(record) {
+    if (!MG.post || !record || !record.key) return;
+    try {
+      var res = await MG.post(endpoint, { action: record });
+      var data = payload(res) || {};
+      if (Array.isArray(data.actions)) syncBackendStore(data.actions);
+      else if (data.action) syncBackendStore([data.action]);
+      state.backendReady = true;
+    } catch (error) {
+      state.backendReady = false;
+    }
+  }
+
   function setActionState(action, status, extra) {
     var store = readActionStore();
     var key = actionKey(action);
-    var previous = store[key] || {};
+    var previous = store[key] || state.backend[key] || {};
     store[key] = Object.assign({}, previous, extra || {}, {
       key: key,
       type: action.type || previous.type || '',
+      condition: action.condition || previous.condition || '',
       title: action.title || previous.title || 'Store Health action',
       copy: action.copy || previous.copy || '',
       priority: action.priority || previous.priority || 'low',
       status: status,
+      count: action.count || previous.count || 0,
       updatedAt: nowIso()
     });
     if (!previous.createdAt) store[key].createdAt = nowIso();
@@ -60,11 +118,13 @@ window.Microgifter = window.Microgifter || {};
     if (status === 'snoozed') store[key].snoozedAt = nowIso();
     if (status === 'dismissed') store[key].dismissedAt = nowIso();
     writeActionStore(store);
+    persistActionState(store[key]);
     return store[key];
   }
 
   function recentActionHistory(limit) {
     var store = readActionStore();
+    Object.keys(state.backend || {}).forEach(function (key) { if (!store[key]) store[key] = state.backend[key]; });
     return Object.keys(store).map(function (key) { return store[key]; })
       .filter(function (record) { return record && record.title; })
       .sort(function (a, b) { return String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')); })
@@ -85,7 +145,8 @@ window.Microgifter = window.Microgifter || {};
     try {
       var results = await Promise.allSettled([
         MG.get('/api/merchant-canvas/intelligence.php'),
-        MG.get('/api/merchant/campaign-contacts.php')
+        MG.get('/api/merchant/campaign-contacts.php'),
+        loadBackendActions()
       ]);
       if (results[0].status === 'fulfilled') state.intelligence = payload(results[0].value) || {};
       if (results[1].status === 'fulfilled') state.contacts = payload(results[1].value) || {};
@@ -151,7 +212,8 @@ window.Microgifter = window.Microgifter || {};
   function renderHistory() {
     var rows = recentActionHistory(6);
     return '<section class="mg-merchant-health-history"><h4>Action Completion History</h4>' + (rows.length ? rows.map(function (record) {
-      return '<article class="is-status-' + esc(record.status || 'suggested') + '"><strong>' + esc(record.title) + '</strong><span>' + esc(record.status || 'suggested') + ' · ' + esc(record.updatedAt ? new Date(record.updatedAt).toLocaleString() : '') + '</span></article>';
+      var source = record.backend ? 'database' : 'local';
+      return '<article class="is-status-' + esc(record.status || 'suggested') + '"><strong>' + esc(record.title) + '</strong><span>' + esc(record.status || 'suggested') + ' · ' + esc(record.updatedAt ? new Date(record.updatedAt).toLocaleString() : '') + ' · ' + esc(source) + '</span></article>';
     }).join('') : '<article><strong>No completed actions yet</strong><span>Executed, completed, snoozed, and dismissed actions will appear here.</span></article>') + '</section>';
   }
 
@@ -164,8 +226,9 @@ window.Microgifter = window.Microgifter || {};
     if (tab) tab.classList.add('is-active');
     var data = health();
     var actions = actionsFor(data);
+    var persistenceLabel = state.backendReady ? 'Database sync active' : 'Local fallback active';
     body.innerHTML = '<section class="mg-merchant-health-panel">' +
-      '<header><span>Store Health</span><h3>Merchant Action Center</h3><p>Track suggested, started, completed, snoozed, and dismissed CRM actions from Store Canvas health.</p><button type="button" data-merchant-action-execute="refresh">Refresh</button></header>' +
+      '<header><span>Store Health</span><h3>Merchant Action Center</h3><p>Track suggested, started, completed, snoozed, and dismissed CRM actions from Store Canvas health. ' + esc(persistenceLabel) + '.</p><button type="button" data-merchant-action-execute="refresh">Refresh</button></header>' +
       '<div class="mg-merchant-health-grid"><article><span>High Intent</span><strong>' + esc(data.highIntent.length) + '</strong><small>ready customers</small></article><article><span>Needs Follow-Up</span><strong>' + esc(data.followup.length) + '</strong><small>contacts queued</small></article><article><span>Unclaimed Rewards</span><strong>' + esc(data.rewardsUnclaimed.length) + '</strong><small>recover now</small></article><article><span>Claims Not Redeemed</span><strong>' + esc(data.claimsNotRedeemed.length) + '</strong><small>needs nudge</small></article><article><span>Noisy Zones</span><strong>' + esc(data.noisyZones.length) + '</strong><small>tune rules</small></article><article><span>Do Not Message</span><strong>' + esc(data.doNotMessage.length) + '</strong><small>safeguards</small></article></div>' +
       '<section class="mg-merchant-health-actions"><h4>Tracked Actions</h4>' + actions.map(renderAction).join('') + '</section>' +
       renderHistory() +
