@@ -53,6 +53,7 @@ labs/
   receipt.php
   routes-notes.md
   syntax-check-report.md
+  full-shell-review.md
 
   app/index.php
   app/campaigns.php
@@ -89,4 +90,6 @@ The checkout flow reaches a visual success page and a static receipt preview.
 
 The support page PHP syntax check pass is documented in `syntax-check-report.md`.
 
-Next pass: image placement, remaining fine-detail polish, and full-shell review.
+The image placeholder system and key page image slots are in place. Review checklist is documented in `full-shell-review.md`.
+
+Next pass: import approved image assets, replace placeholder slots, and run a full PHP syntax check across all labs pages.
