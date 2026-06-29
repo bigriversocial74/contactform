@@ -25,16 +25,19 @@ labs_page_start([
     </div>
   </div>
 </section>
-<section class="labs-section-band">
-  <span class="labs-eyebrow">Core loop</span>
-  <h2>One simple flow from task to reward.</h2>
-  <p class="labs-copy">Training Lab is designed around visible action, proof, review, and progress. Stage 1 shows the product shell before any backend wiring.</p>
-  <div class="labs-timeline">
-    <div class="labs-step"><span class="labs-mini-icon">1</span><strong>Campaign created</strong><span class="labs-pill">Admin</span></div>
-    <div class="labs-step"><span class="labs-mini-icon">2</span><strong>Participant completes action</strong><span class="labs-pill">App</span></div>
-    <div class="labs-step"><span class="labs-mini-icon">3</span><strong>Proof moves into review queue</strong><span class="labs-pill">Backend</span></div>
-    <div class="labs-step"><span class="labs-mini-icon">4</span><strong>Reward progress updates visually</strong><span class="labs-pill">Wallet later</span></div>
+<section class="labs-section-band labs-split-card">
+  <div>
+    <span class="labs-eyebrow">Core loop</span>
+    <h2>One simple flow from task to reward.</h2>
+    <p class="labs-copy">Training Lab is designed around visible action, proof, review, and progress. Stage 1 shows the product shell before any backend wiring.</p>
+    <div class="labs-timeline">
+      <div class="labs-step"><span class="labs-mini-icon">1</span><strong>Campaign created</strong><span class="labs-pill">Admin</span></div>
+      <div class="labs-step"><span class="labs-mini-icon">2</span><strong>Participant completes action</strong><span class="labs-pill">App</span></div>
+      <div class="labs-step"><span class="labs-mini-icon">3</span><strong>Proof moves into review queue</strong><span class="labs-pill">Backend</span></div>
+      <div class="labs-step"><span class="labs-mini-icon">4</span><strong>Reward progress updates visually</strong><span class="labs-pill">Wallet later</span></div>
+    </div>
   </div>
+  <div class="labs-image-slot"><span>Hero illustration slot<small>Use marketing hero asset here during final image placement.</small></span></div>
 </section>
 <section class="labs-grid">
   <article class="labs-card"><span class="labs-mini-icon">C</span><h3>Complete Sequences</h3><p class="labs-muted">Participants follow guided tasks designed around real action and consistency.</p></article>
