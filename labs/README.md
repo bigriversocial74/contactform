@@ -1,6 +1,6 @@
-# Training Lab Stage 1 UI Shell
+# Training Lab Stage 2 Demo State Shell
 
-Stage 1 visual-first PHP shell for Training Lab by Microgifter.
+Stage 2 browser-only demo-state shell for Training Lab by Microgifter.
 
 Target host:
 
@@ -8,13 +8,15 @@ Target host:
 https://labs.microgifter.com
 ```
 
-Stage 1 rules:
+Stage 2 rules:
 
 ```text
-static UI shell only
+localStorage demo state only
 no database writes
-no uploads
+no real uploads
 no payments
+no wallet balance changes
+no claim or redeem logic
 no separate account system
 no production DNS changes
 ```
@@ -41,6 +43,21 @@ From the repository root:
 bash labs/run-full-syntax-check.sh
 ```
 
+## Stage 2 demo test path
+
+```text
+1. Open /app/index.php
+2. Open /app/sequence-tasks.php
+3. Open /app/proof-upload.php
+4. Click Submit Demo Proof
+5. Open /admin/review-queue.php
+6. Click Approve Demo
+7. Open /app/rewards.php
+8. Open /app/wallet.php
+9. Confirm status text has updated
+10. Click Reset Demo State
+```
+
 ## Current files
 
 ```text
@@ -63,6 +80,7 @@ labs/
   syntax-check-report.md
   full-syntax-check-report.md
   full-shell-review.md
+  stage-2-demo-state-notes.md
   run-full-syntax-check.sh
 
   app/index.php
@@ -91,20 +109,23 @@ labs/
 
 ## Current build state
 
-The public, participant app, and backend shell pages exist with static demo content.
+The public, participant app, and backend shell pages exist with static/demo content.
 
-The shared layout, public navigation, footer navigation, workspace sidebar, responsive CSS, form styles, table styles, reusable component helpers, route notes, and image asset folder map are in place.
+Stage 2 adds browser-only demo state across proof, review, reward, and wallet surfaces using `localStorage`.
 
-Polished pages now include the landing page, pricing page, about page, team page, blog pages, contact page, signup page, signin page, cart page, success page, receipt page, app dashboard, app campaigns, proof upload, progress page, wallet page, and backend overview.
+The demo state is wired through `labs/assets/js/labs.js` and the key app/backend pages.
 
-The checkout flow reaches a visual success page and a static receipt preview.
+Pages wired for Stage 2 demo state:
 
-The support page PHP syntax check pass is documented in `syntax-check-report.md`.
+```text
+labs/app/index.php
+labs/app/sequence-tasks.php
+labs/app/proof-upload.php
+labs/admin/review-queue.php
+labs/app/rewards.php
+labs/app/wallet.php
+```
 
-Imported SVG image assets are in place and have replaced the key image placeholder slots on landing, about, app dashboard, and backend overview.
+Imported SVG image assets remain in place on landing, about, app dashboard, and backend overview.
 
-A full shell review checklist is documented in `full-shell-review.md`.
-
-A full syntax-check script is available at `run-full-syntax-check.sh`, with notes in `full-syntax-check-report.md`.
-
-Next pass: run the syntax-check script from a checkout or CI environment, then review the browser flow end-to-end.
+Next pass: run local syntax check, browser-test the Stage 2 demo path, then open a PR back into `training-lab-stage-1-ui-shell` or `local-quest-workspace` depending on review preference.
