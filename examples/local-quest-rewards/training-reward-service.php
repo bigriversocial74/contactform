@@ -1,65 +1,20 @@
 <?php
  declare(strict_types=1);
-
-require_once __DIR__ . '/training-storage.php';
-
+require_once __DIR__.'/training-storage.php';
 function tcl_evaluate_rewards_for_submission(string $submissionId): array
 {
-    $state = tcl_state_load();
-    $submission = $state['submissions'][$submissionId] ?? null;
-    if (!is_array($submission) || ($submission['status'] ?? '') !== 'approved') return [];
-
-    $participantId = (string)$submission['participant_id'];
-    $campaignSlug = (string)$submission['campaign_slug'];
-    $campaign = tcl_storage_campaign_by_slug($campaignSlug);
-    if (!$campaign) return [];
-
-    $issues = [];
-    foreach ($state['receipts'] as $receipt) {
-        if (($receipt['participant_id'] ?? '') !== $participantId) continue;
-        if (($receipt['campaign_slug'] ?? '') !== $campaignSlug) continue;
-        if (($receipt['receipt_type'] ?? '') !== 'sequence_completion') continue;
-
-        $rules = (array)($campaign['reward_ladder'] ?? []);
-        foreach ($rules as $rule) {
-            $ruleKey = (string)($rule['public_id'] ?? $rule['label'] ?? 'rule');
-            $issueKey = 'reward|' . $participantId . '|' . ($receipt['id'] ?? $receipt['key']) . '|' . $ruleKey;
-            if (!empty($state['reward_issues'][$issueKey])) continue;
-
-            $linked = false;
-            if (function_exists('lqr_config')) {
-                $lqrState = function_exists('lqr_load_state') ? lqr_load_state() : [];
-                foreach (($lqrState['users'] ?? []) as $user) {
-                    if (($user['id'] ?? '') !== ($submission['user_id'] ?? '')) continue;
-                    $linked = !empty($user['linked_account_id']);
-                }
-            }
-
-            $status = $linked ? 'pending_issue' : 'needs_linked_account';
-            $state['reward_issues'][$issueKey] = [
-                'id' => tcl_public_id(),
-                'key' => $issueKey,
-                'participant_id' => $participantId,
-                'campaign_slug' => $campaignSlug,
-                'receipt_id' => (string)($receipt['id'] ?? ''),
-                'reward_rule' => $rule,
-                'reward_label' => (string)($rule['reward'] ?? 'Reward'),
-                'status' => $status,
-                'microgifter_reward_id' => '',
-                'failure_reason' => $linked ? 'Demo-safe issue record created. Real Microgifter issuing is not called in this branch.' : 'Participant needs linked Microgifter account before issuing.',
-                'created_at' => tcl_now(),
-                'updated_at' => tcl_now(),
-            ];
-            $issues[] = $state['reward_issues'][$issueKey];
-            tcl_event($state, 'training.reward.' . $status, 'Reward issue record created.', ['issue_key' => $issueKey, 'status' => $status]);
-        }
+    if(tcl_runtime_sql()){
+        $pdo=tcl_storage_pdo();
+        try{
+            $st=$pdo->prepare('SELECT s.*,p.user_id FROM training_task_submissions s JOIN training_participants p ON p.id=s.participant_id WHERE s.public_id=:p AND s.status="approved" LIMIT 1');
+            $st->execute(['p'=>$submissionId]);$sub=$st->fetch();if(!$sub)return [];
+            $receipts=$pdo->prepare("SELECT * FROM training_action_receipts WHERE participant_id=:p AND campaign_id=:c AND receipt_type='sequence_completion'");
+            $receipts->execute(['p'=>$sub['participant_id'],'c'=>$sub['campaign_id']]);$created=[];
+            foreach($receipts->fetchAll() as $receipt){$rules=$pdo->prepare("SELECT * FROM training_reward_rules WHERE campaign_id=:c AND status='active'");$rules->execute(['c'=>$sub['campaign_id']]);foreach($rules->fetchAll() as $rule){$exists=$pdo->prepare('SELECT id FROM training_reward_issues WHERE receipt_id=:r AND reward_rule_id=:rr AND participant_id=:p LIMIT 1');$exists->execute(['r'=>$receipt['id'],'rr'=>$rule['id'],'p'=>$sub['participant_id']]);if($exists->fetchColumn())continue;$linked='';if(function_exists('lqr_load_state')){foreach((lqr_load_state()['users']??[]) as $u){if(($u['id']??'')===$sub['user_id'])$linked=(string)($u['linked_account_id']??'');}}$status=$linked!==''?'pending_issue':'needs_linked_account';$pub=tcl_public_id();$ins=$pdo->prepare('INSERT INTO training_reward_issues(public_id,campaign_id,participant_id,receipt_id,reward_rule_id,linked_account_id,status,failure_reason) VALUES(:pub,:c,:p,:r,:rr,:l,:s,:f)');$ins->execute(['pub'=>$pub,'c'=>$sub['campaign_id'],'p'=>$sub['participant_id'],'r'=>$receipt['id'],'rr'=>$rule['id'],'l'=>$linked?:null,'s'=>$status,'f'=>$linked!==''?'Demo-safe issue record created. Real issuing is not called here.':'Participant needs linked Microgifter account before issuing.']);$created[]=['id'=>$pub,'status'=>$status,'reward_label'=>(string)$rule['reward_label']];$tmp=[];tcl_event($tmp,'training.reward.'.$status,'Reward issue record created.',['target_id'=>$pub,'status'=>$status]);}}
+            return $created;
+        }catch(Throwable $e){return [];}
     }
-
-    tcl_state_save($state);
-    return $issues;
+    $state=tcl_state_load();$submission=$state['submissions'][$submissionId]??null;if(!is_array($submission)||($submission['status']??'')!=='approved')return [];$participantId=(string)$submission['participant_id'];$campaignSlug=(string)$submission['campaign_slug'];$campaign=tcl_storage_campaign_by_slug($campaignSlug);if(!$campaign)return [];$issues=[];foreach($state['receipts'] as $receipt){if(($receipt['participant_id']??'')!==$participantId||($receipt['campaign_slug']??'')!==$campaignSlug||($receipt['receipt_type']??'')!=='sequence_completion')continue;foreach((array)($campaign['reward_ladder']??[]) as $rule){$ruleKey=(string)($rule['public_id']??$rule['label']??'rule');$issueKey='reward|'.$participantId.'|'.($receipt['id']??$receipt['key']).'|'.$ruleKey;if(!empty($state['reward_issues'][$issueKey]))continue;$linked=false;if(function_exists('lqr_load_state'))foreach((lqr_load_state()['users']??[]) as $user){if(($user['id']??'')!==($submission['user_id']??''))continue;$linked=!empty($user['linked_account_id']);}$status=$linked?'pending_issue':'needs_linked_account';$state['reward_issues'][$issueKey]=['id'=>tcl_public_id(),'key'=>$issueKey,'participant_id'=>$participantId,'campaign_slug'=>$campaignSlug,'receipt_id'=>(string)($receipt['id']??''),'reward_rule'=>$rule,'reward_label'=>(string)($rule['reward']??'Reward'),'status'=>$status,'microgifter_reward_id'=>'','failure_reason'=>$linked?'Demo-safe issue record created. Real Microgifter issuing is not called in this branch.':'Participant needs linked Microgifter account before issuing.','created_at'=>tcl_now(),'updated_at'=>tcl_now()];$issues[]=$state['reward_issues'][$issueKey];tcl_event($state,'training.reward.'.$status,'Reward issue record created.',['issue_key'=>$issueKey,'status'=>$status]);}}
+    tcl_state_save($state);return $issues;
 }
-
-function tcl_reward_status_label(string $status): string
-{
-    return ucwords(str_replace('_', ' ', $status));
-}
+function tcl_reward_status_label(string $status): string{return ucwords(str_replace('_',' ',$status));}
