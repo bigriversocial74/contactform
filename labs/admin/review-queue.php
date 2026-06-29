@@ -10,7 +10,7 @@ labs_page_start([
   <div>
     <span class="labs-eyebrow">Review queue</span>
     <h1>Proof submissions</h1>
-    <p class="labs-copy">Static review queue shell. Buttons are visual only in Stage 1.</p>
+    <p class="labs-copy">Stage 2 lets the reviewer approve the demo proof state in the browser only.</p>
   </div>
 </section>
 <section class="labs-card">
@@ -18,7 +18,7 @@ labs_page_start([
     <table class="labs-table">
       <thead><tr><th>Participant</th><th>Campaign</th><th>Task</th><th>Status</th><th>Action</th></tr></thead>
       <tbody>
-        <tr><td>Jamie R.</td><td>Movement Challenge</td><td>Day 5 Proof</td><td><span class="labs-pill">Needs Review</span></td><td><button class="labs-btn" type="button">View</button></td></tr>
+        <tr><td>Jamie R.</td><td>Movement Challenge</td><td>Day 5 Proof</td><td><span class="labs-pill" data-demo-review-status>Not submitted</span></td><td><button class="labs-btn labs-btn-primary" type="button" data-demo-action="approve-proof">Approve Demo</button></td></tr>
         <tr><td>Chris M.</td><td>Safety Readiness</td><td>Checklist Proof</td><td><span class="labs-pill">Needs Review</span></td><td><button class="labs-btn" type="button">View</button></td></tr>
         <tr><td>Avery L.</td><td>Service Basics</td><td>Scenario Proof</td><td><span class="labs-pill">Changes Needed</span></td><td><button class="labs-btn" type="button">View</button></td></tr>
       </tbody>
@@ -26,8 +26,8 @@ labs_page_start([
   </div>
 </section>
 <section class="labs-grid" style="margin-top:18px">
-  <article class="labs-card"><h2>Review guide</h2><p class="labs-muted">Visual placeholder for proof review guidelines and reviewer notes.</p></article>
-  <article class="labs-card"><h2>Queue filters</h2><p class="labs-muted">Filter controls will be added when real review data exists.</p></article>
-  <article class="labs-card"><h2>Actions</h2><p class="labs-muted">Approve and request-change actions are intentionally disabled in Stage 1.</p></article>
+  <article class="labs-card"><h2>Review guide</h2><p class="labs-muted">Reviewer buttons update browser-only demo state. No backend approval is performed.</p></article>
+  <article class="labs-card"><h2>Last update</h2><p class="labs-muted" data-demo-updated-at>Not updated yet</p></article>
+  <article class="labs-card"><h2>Actions</h2><p class="labs-muted">Approve and reset are demo-state actions only.</p><button class="labs-btn" type="button" data-demo-action="reset-demo">Reset Demo</button></article>
 </section>
 <?php labs_page_end(['section' => 'admin']); ?>
