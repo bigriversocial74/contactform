@@ -19,11 +19,11 @@ window.Microgifter = window.Microgifter || {};
     script.setAttribute(key, '1');
     document.body.appendChild(script);
   }
-  var state = document.querySelector('[data-world-state]');
-  if (state) state.textContent = 'Geo network map: zoomed out shows stable clusters; zooming in spreads clusters into live user and merchant avatars.';
   addCss('/assets/css/world-canvas-geo-zoom.css', 'data-world-geo-zoom-css');
   addCss('/assets/css/world-canvas-reference-fix.css', 'data-world-reference-fix-css');
   addCss('/assets/css/world-canvas-exact-reference.css', 'data-world-exact-reference-css');
+  addCss('/assets/css/world-canvas-merchant-settings.css', 'data-world-merchant-css');
   addScript('/assets/js/world-canvas-reference-map.js', 'data-world-reference-map-js');
   addScript('/assets/js/world-canvas-geo-zoom.js', 'data-world-geo-zoom-js');
+  addScript('/assets/js/world-canvas-merchant-settings.js', 'data-world-merchant-js');
 })(window, document);
