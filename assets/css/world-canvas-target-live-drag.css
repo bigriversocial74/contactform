@@ -1,0 +1,3 @@
+.mg-world-canvas[data-world-target-live-drag="on"] .mg-world-target-drop{transition:none!important}
+.mg-world-canvas[data-world-target-live-drag="on"] .mg-world-test-launch-layer,.mg-world-canvas[data-world-target-live-drag="on"] .mg-world-target-launch-layer{pointer-events:none!important}
+.mg-world-canvas .mg-world-target-drop.is-owned{touch-action:none}
