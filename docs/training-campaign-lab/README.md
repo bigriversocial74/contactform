@@ -1,12 +1,24 @@
 # Training Campaign Lab
 
-This folder contains the build package for the Microgifter Training Campaign Lab on the `local-quest-workspace` branch.
+This folder contains the **documentation-only planning package** for the Microgifter Training Campaign Lab on the `local-quest-workspace` branch.
 
-The goal is to extend the Local Quest example into a new proof-of-action training module without changing the original quest script on `main`.
+The goal is to document a future proof-of-action training module before implementation begins.
+
+## Current status
+
+```text
+Documentation only.
+Do not build code yet.
+Do not add PHP implementation files yet.
+Do not add SQL implementation files yet.
+Do not modify existing Loyalty Quest files.
+```
+
+The previous premature implementation files have been removed from this branch. The remaining work in this folder should be planning, specifications, routes, workflows, schema design, QA plans, and agent handoff instructions only.
 
 ## Product statement
 
-Microgifter Training Campaigns let organizations create action-based challenges, assign them to teams or public participants, collect proof of completion, verify progress, and issue rewards for completed sequences, streaks, and milestones.
+Microgifter Training Campaigns will let organizations create action-based challenges, assign them to teams or public participants, collect proof of completion, verify progress, and issue rewards for completed sequences, streaks, and milestones.
 
 ## Core loop
 
@@ -66,22 +78,9 @@ Consistency/streak data updates
 - [Mockup Index](./ui/mockups.md)
 - [Mockup Image Folder](./ui/mockups/)
 
-## Build artifacts
+## Future MVP target
 
-```text
-examples/local-quest-rewards/training-lab.php
-examples/local-quest-rewards/training-campaigns.php
-examples/local-quest-rewards/training-campaign-data.php
-examples/local-quest-rewards/assets/training-lab.css
-examples/local-quest-rewards/assets/training-lab.js
-examples/local-quest-rewards/database/training_campaign_lab.sql
-examples/local-quest-rewards/database/training_campaign_lab_seed.sql
-scripts/validate_training_campaign_lab.php
-```
-
-## First MVP target
-
-Build one complete vertical slice:
+The future build should create one complete vertical slice:
 
 ```text
 Participant joins 5-Day Movement Challenge
@@ -94,34 +93,11 @@ Microgifter reward is issued
 Wallet displays reward status
 ```
 
-## Recommended next build files
+## Future build principle
 
-```text
-examples/local-quest-rewards/training-storage.php
-examples/local-quest-rewards/training-campaign-detail.php
-examples/local-quest-rewards/training-sequence.php
-examples/local-quest-rewards/training-proof-upload.php
-examples/local-quest-rewards/admin-training-review.php
-examples/local-quest-rewards/admin-training-receipts.php
-examples/local-quest-rewards/training-rewards.php
-examples/local-quest-rewards/training-profile-wallet.php
-examples/local-quest-rewards/training-receipt-service.php
-examples/local-quest-rewards/training-reward-service.php
-```
+Start with manual proof upload and manual review. Add AI-assisted review, computer vision, motion scoring, and agentic coaching only after the basic proof/reward loop works.
 
-## Build principle
-
-Start with manual proof upload and manual review. Add AI-assisted review, computer vision, motion scoring, and agentic coaching after the basic proof/reward loop works.
-
-## Validation
-
-Run after each implementation phase:
-
-```bash
-php scripts/validate_training_campaign_lab.php
-```
-
-## MVP rule
+## Future MVP rule
 
 Build one working vertical slice before adding advanced features:
 
@@ -134,3 +110,7 @@ one verified sequence
 one Action Receipt
 one reward issue
 ```
+
+## Stop rule
+
+If an agent is working from this folder and the user has not explicitly said `build code`, the agent must stop at documentation and planning. Do not create PHP, SQL, CSS, JS, validation scripts, upload folders, or runtime files until implementation is explicitly approved.
