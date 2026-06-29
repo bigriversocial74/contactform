@@ -1,5 +1,5 @@
 -- Stage 27 World Canvas Canonical Locations
--- Safe to re-run.
+-- Safe to re-run before import.
 -- Adds canonical location storage for static merchant MAIN locations and dynamic user/avatar positions.
 
 CREATE TABLE IF NOT EXISTS merchant_locations (
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS merchant_locations (
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uq_merchant_locations_public_id (public_id),
-  UNIQUE KEY uq_merchant_locations_primary (merchant_user_id, is_primary),
+  KEY idx_merchant_locations_primary (merchant_user_id, is_primary, location_type, status),
   KEY idx_merchant_locations_geo (main_latitude, main_longitude),
   KEY idx_merchant_locations_merchant_status (merchant_user_id, status, location_type),
   CONSTRAINT fk_merchant_locations_user FOREIGN KEY (merchant_user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -47,7 +47,6 @@ CREATE TABLE IF NOT EXISTS user_world_positions (
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uq_user_world_positions_public_id (public_id),
-  UNIQUE KEY uq_user_world_positions_current (user_id, is_current),
   KEY idx_user_world_positions_geo (latitude, longitude),
   KEY idx_user_world_positions_user_current (user_id, is_current, updated_at),
   CONSTRAINT fk_user_world_positions_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
