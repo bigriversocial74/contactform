@@ -2,8 +2,7 @@ window.Microgifter = window.Microgifter || {};
 (function(window, document){
   'use strict';
   var root = document.querySelector('[data-world-canvas]');
-  if (!root || !window.Microgifter) return;
-  if (window.Microgifter.__worldDropAcceptanceMock) return;
+  if (!root || !window.Microgifter || window.Microgifter.__worldDropAcceptanceMock) return;
   window.Microgifter.__worldDropAcceptanceMock = true;
 
   var MG = window.Microgifter;
@@ -56,8 +55,7 @@ window.Microgifter = window.Microgifter || {};
     active.el.querySelector('[data-accept-body]').innerHTML = '<div class="mg-accept-grid">'+metric('Estimated people in zone',est.people)+metric('Reachable inboxes',est.reachable)+metric('Accepted users',s.acceptedSeen)+metric('Accept rate',rate+'%')+'</div><div class="mg-accept-flow"><section class="mg-accept-card"><h3>Reward + stamp budget</h3><p>The campaign only delivers rewards to users who accept the drop notification. The reward quantity must cover the accepted users.</p><div class="mg-accept-grid" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-top:12px">'+metric('Rewards needed',est.rewardQuantityRequired)+metric('Current quantity',s.quantity||'Not set')+metric('Stamps funded',est.stamps)+metric('Stamp fee',money(est.totalCents))+'</div></section><section class="mg-accept-card"><h3>Drop-zone notification</h3><p>Mock users receive an accept/decline notification before the reward is dropped into inboxes.</p><div class="mg-accept-bar"><span style="width:'+progress+'%"></span></div><p>'+progress+'% notification responses simulated.</p></section></div><section class="mg-accept-card"><h3>Sample users in Target Zone</h3><div class="mg-accept-users">'+s.users.map(function(u,i){return '<div class="mg-accept-user '+(u.status==='accepted'?'is-accepted':u.status==='declined'?'is-declined':'')+'"><i>U'+(i+1)+'</i><div><strong>'+esc(u.name)+'</strong><small>Inside Target Zone · '+esc(s.drop.title)+'</small></div><em>'+esc(u.status)+'</em></div>';}).join('')+'</div></section>'+statusNote(s)+'<div class="mg-accept-actions"><button type="button" class="soft" data-accept-notify '+(s.notified?'disabled':'')+'>Notify users / simulate accepts</button><button type="button" class="blue" data-accept-match>Match reward quantity to '+est.rewardQuantityRequired+'</button><button type="button" class="dark" data-accept-launch '+(!s.notified||s.pending>0||!s.quantityOk?'disabled':'')+'>Fund stamps & run Test Launch</button></div>';
   }
   function openPreflight(d,f){
-    ensureStyle();
-    close();
+    ensureStyle(); close();
     var est=estimate(d),wrap=document.createElement('div');
     wrap.className='mg-accept-backdrop';
     wrap.innerHTML='<article class="mg-accept-modal"><header class="mg-accept-head"><div><span>Target Zone preflight</span><strong>Acceptance + quantity check</strong><p>Mock flow for stamp-funded Target Drop delivery before the launch animation.</p></div><button type="button" class="mg-accept-close" data-accept-close>×</button></header><div class="mg-accept-body" data-accept-body></div></article>';
@@ -65,53 +63,40 @@ window.Microgifter = window.Microgifter || {};
     active={el:wrap,form:f,drop:d,est:est,users:users(est,d),notified:false,pending:est.reachable,acceptedSeen:0,declinedSeen:0,quantity:d.quantity,quantityOk:false,timer:0};
     render();
   }
-  function close(){ if(active&&active.el&&active.el.parentNode)active.el.remove(); if(active&&active.timer)clearInterval(active.timer); active=null; }
+  function close(){if(active&&active.el&&active.el.parentNode)active.el.remove();if(active&&active.timer)clearInterval(active.timer);active=null;}
   function simulate(){
     if(!active||active.notified)return;
-    active.notified=true; active.pending=active.est.reachable; active.acceptedSeen=0; active.declinedSeen=0;
+    active.notified=true;active.pending=active.est.reachable;active.acceptedSeen=0;active.declinedSeen=0;
     var ticks=0,totalTicks=12,acceptedFinal=active.est.accepted,declinedFinal=active.est.declined;
     active.timer=setInterval(function(){
       ticks++;
       active.acceptedSeen=Math.min(acceptedFinal,Math.round(acceptedFinal*(ticks/totalTicks)));
       active.declinedSeen=Math.min(declinedFinal,Math.round(declinedFinal*(ticks/totalTicks)));
       active.pending=Math.max(0,active.est.reachable-active.acceptedSeen-active.declinedSeen);
-      active.users.forEach(function(u,i){
-        if(i<Math.ceil(active.users.length*(ticks/totalTicks))){ u.status=(i%4===3?'declined':'accepted'); }
-      });
+      active.users.forEach(function(u,i){if(i<Math.ceil(active.users.length*(ticks/totalTicks))){u.status=(i%4===3?'declined':'accepted');}});
       render();
       if(ticks>=totalTicks){clearInterval(active.timer);active.timer=0;active.acceptedSeen=acceptedFinal;active.declinedSeen=declinedFinal;active.pending=0;active.users.forEach(function(u,i){u.status=(i%4===3?'declined':'accepted');});render();}
     },220);
     render();
   }
-  function matchQuantity(){
-    if(!active)return;
-    active.quantity=active.est.rewardQuantityRequired;
-    if(active.form&&active.form.elements.quantity_limit)active.form.elements.quantity_limit.value=String(active.quantity);
-    render();
-  }
-  function setPanelStatus(message){
-    var f=form(),slot=f&&f.querySelector('[data-target-zone-status]');
-    if(slot)slot.textContent=message;
-  }
+  function matchQuantity(){if(!active)return;active.quantity=active.est.rewardQuantityRequired;if(active.form&&active.form.elements.quantity_limit)active.form.elements.quantity_limit.value=String(active.quantity);render();}
+  function setPanelStatus(message){var f=form(),slot=f&&f.querySelector('[data-target-zone-status]');if(slot)slot.textContent=message;}
   async function runLaunch(){
     if(!active||!active.quantityOk||active.pending>0)return;
-    var d=active.drop,token=csrf(),accepted=active.est.accepted,stamps=active.est.stamps;
+    var d=active.drop,token=csrf(),accepted=active.est.accepted,stamps=active.est.stamps,reachable=active.est.reachable,quantity=active.quantity;
     setPanelStatus('Accepted '+accepted+' users. Funding '+stamps+' stamps and starting Test Launch…');
-    var launchDrop=null;
     try{
-      var res=await MG.post('/api/world-canvas/runs.php',{id:d.id,csrf_token:token,_csrf:token,csrf:token,mock_acceptance_count:String(accepted),mock_stamp_count:String(stamps),mock_reward_quantity:String(active.quantity)});
-      var data=res.data||res||{}; launchDrop=data.delivery_run||null;
+      var res=await MG.post('/api/world-canvas/runs.php',{id:d.id,csrf_token:token,_csrf:token,csrf:token,mock_acceptance_count:String(accepted),mock_stamp_count:String(stamps),mock_reward_quantity:String(quantity)});
+      var data=res.data||res||{},launchDrop=data.delivery_run||null;
       close();
       if(launchDrop&&window.MicrogifterTargetDropTestLaunch&&typeof window.MicrogifterTargetDropTestLaunch.launch==='function'){
         window.MicrogifterTargetDropTestLaunch.launch(launchDrop,{duration:Number(launchDrop.duration_ms||30000),elapsed_ms:Number(launchDrop.elapsed_ms||0)});
       }
-      setPanelStatus('Mock delivery queued: '+accepted+' accepted users will receive the reward in their inbox after delivery. Accept rate: '+Math.round((accepted/Math.max(1,active.est.reachable))*100)+'%.');
-    }catch(error){
-      setPanelStatus((error&&error.message)?error.message:'Unable to start test launch.');
-    }
+      setPanelStatus('Mock delivery queued: '+accepted+' accepted users will receive the reward in their inbox after delivery. Accept rate: '+Math.round((accepted/Math.max(1,reachable))*100)+'%.');
+    }catch(error){setPanelStatus((error&&error.message)?error.message:'Unable to start test launch.');}
   }
   window.addEventListener('click',function(event){
-    var closeBtn=event.target.closest('[data-accept-close]'); if(closeBtn){event.preventDefault();close();return;}
+    if(event.target.closest('[data-accept-close]')){event.preventDefault();close();return;}
     if(event.target.closest('[data-accept-notify]')){event.preventDefault();simulate();return;}
     if(event.target.closest('[data-accept-match]')){event.preventDefault();matchQuantity();return;}
     if(event.target.closest('[data-accept-launch]')){event.preventDefault();runLaunch();return;}
