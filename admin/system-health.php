@@ -25,7 +25,7 @@ require dirname(__DIR__) . '/includes/header.php';
           <a class="mg-system-health-back" href="/account-admin.php">← Admin dashboard</a>
           <span class="mg-eyebrow">Platform operations</span>
           <h1>System health</h1>
-          <p>Persistent media, notification delivery, database migrations, admin ops deployment readiness, and recent operational warnings.</p>
+          <p>Persistent media, notification delivery, PWA browser push, database migrations, admin ops deployment readiness, and recent operational warnings.</p>
         </div>
         <div class="mg-system-health-hero-actions">
           <span class="mg-system-health-updated">Last checked <strong data-system-health-updated>—</strong></span>
@@ -42,6 +42,7 @@ require dirname(__DIR__) . '/includes/header.php';
         <?php foreach ([
           ['storage','Persistent media','Storage location, write access, capacity, and file integrity.'],
           ['notifications','Notification delivery','Queued, delivered, failed, and retrying delivery jobs.'],
+          ['pwa_notifications','PWA notifications','Browser service worker, permission support, subscriptions, provider, and test delivery status.'],
           ['migrations','Database migrations','Canonical migration status and the latest applied schema change.'],
           ['runtime','Application runtime','Database connectivity, environment, and release readiness.'],
         ] as [$key,$label,$description]): ?>
@@ -52,6 +53,18 @@ require dirname(__DIR__) . '/includes/header.php';
           </article>
         <?php endforeach; ?>
       </div>
+
+      <section class="mg-system-health-section mg-pwa-health-section" data-pwa-notification-health>
+        <header>
+          <div><h2>PWA notification health</h2><p>Browser push is a permission-gated delivery channel for existing Microgifter notification events.</p></div>
+          <button class="mg-btn mg-btn-soft" type="button" data-health-action="test_pwa_notification" data-health-action-enabled="false" disabled>Send test notification to myself</button>
+        </header>
+        <div class="mg-system-health-pwa-grid" data-pwa-health-grid>
+          <?php foreach (['Service worker','Permission support','Push endpoint','Active subscriptions','Failed delivery','Last test'] as $label): ?>
+            <article><span><?= mg_e($label) ?></span><strong>—</strong><small>Waiting for health data</small></article>
+          <?php endforeach; ?>
+        </div>
+      </section>
 
       <section class="mg-system-health-section">
         <header><div><h2>Operational totals</h2><p>Current storage and notification workload.</p></div></header>
