@@ -32,7 +32,7 @@ require __DIR__ . '/includes/header.php';
   <main class="mg-app-workspace mg-merchant-main mg-customer-profile-main">
     <?php if(!$user): ?>
       <section class="mg-app-panel"><div class="mg-app-panel-head"><div><h2>Merchant access</h2><p>Sign in to open this customer profile.</p></div></div><div class="mg-app-panel-body"><a class="mg-btn mg-btn-primary" href="/signin.php">Sign in</a></div></section>
-    <?php else: require __DIR__ . '/includes/merchant-customer-profile-view.php'; endif; ?>
+    <?php else: require __DIR__ . '/includes/merchant-customer-profile-server-fallback.php'; require __DIR__ . '/includes/merchant-customer-profile-view.php'; endif; ?>
   </main>
 </section>
 <?php require __DIR__ . '/includes/footer.php'; ?>
