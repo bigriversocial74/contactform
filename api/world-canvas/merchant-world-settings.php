@@ -18,11 +18,14 @@ try {
     }
 
     if ($method === 'GET') {
-        $schemaReady = mg_world_location_columns_ready($pdo);
+        $requiredMissing = mg_world_location_required_missing($pdo);
+        $optionalMissing = mg_world_location_optional_missing($pdo);
+        $schemaReady = $requiredMissing === [];
         $locations = mg_world_location_merchant_rows($pdo, $merchantId, false);
         mg_ok([
             'schema_ready' => $schemaReady,
-            'missing_columns' => $schemaReady ? [] : mg_world_location_missing_columns($pdo),
+            'missing_columns' => $requiredMissing,
+            'optional_missing_columns' => $optionalMissing,
             'locations' => array_map(static function (array $row): array {
                 return [
                     'public_id' => (string)($row['public_id'] ?? ''),
@@ -62,6 +65,6 @@ try {
 } catch (InvalidArgumentException|RuntimeException $error) {
     mg_fail($error->getMessage(), 400);
 } catch (Throwable $error) {
-    mg_security_log('error', 'world_canvas.merchant_world_settings_failed', 'Merchant World Canvas settings failed.', ['exception_class' => $error::class], $merchantId);
+    mg_security_log('error', 'world_canvas.merchant_world_settings_failed', 'Merchant World Canvas settings failed.', ['exception_class' => $error::class, 'message' => $error->getMessage()], $merchantId);
     mg_fail('Unable to save merchant World Canvas settings.', 500);
 }

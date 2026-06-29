@@ -25,6 +25,7 @@ window.Microgifter = window.Microgifter || {};
   function activeDrops(){return state.drops.filter(function(d){return ['launching','active','scheduled'].indexOf(d.status)>-1;});}
   function draftDrops(){return state.drops.filter(function(d){return d.owned && d.status==='draft';});}
   function ownedTools(){return state.tools || [];}
+  function listText(items){return (items||[]).map(function(item){return '<code>'+esc(item)+'</code>';}).join(', ');}
 
   function ensureButton(){
     var button = map.querySelector('[data-world-merchant-settings-open]');
@@ -117,11 +118,11 @@ window.Microgifter = window.Microgifter || {};
       +'<div class="mg-world-merchant-location-actions"><button type="submit">Save zone</button><button type="button" data-world-use-current-location>Use current location</button><button type="button" data-world-find-location>Find on World Canvas</button><a href="'+esc(mapsUrl)+'" target="_blank" rel="noopener">Search address</a><a href="/merchant-locations.php">Edit location</a></div><p data-world-location-status></p></form>';
   }
   function settingsHtml(){
-    var payload = state.settings || {};
+    var payload = state.settings || {}, optional = payload.optional_missing_columns || [];
     if (payload.error) return '<section class="mg-world-dashboard-section"><h3>Settings</h3><div class="mg-world-merchant-settings-empty"><strong>Settings unavailable</strong><p>'+esc(payload.error)+'</p></div></section>';
-    if (!payload.schema_ready) return '<section class="mg-world-dashboard-section"><h3>Settings</h3><div class="mg-world-merchant-settings-empty"><strong>World geo columns missing</strong><p>Import Stage 27 before setting map zones.</p></div></section>';
+    if (!payload.schema_ready) return '<section class="mg-world-dashboard-section"><h3>Settings</h3><div class="mg-world-merchant-settings-empty"><strong>World geo schema needs repair</strong><p>Required missing: '+(listText(payload.missing_columns)||'unknown')+'. Import <code>database/stage_32_world_canvas_geo_schema_repair.sql</code>.</p></div></section>';
     var locations = payload.locations || [];
-    return '<section class="mg-world-dashboard-section"><h3>Location Zones</h3><p class="mg-world-dashboard-note">Merchant location mapping stays here while the dashboard expands.</p>'+(locations.length ? locations.map(formHtml).join('') : '<div class="mg-world-merchant-settings-empty"><strong>No merchant locations</strong><p>Add locations first.</p><a href="/merchant-locations.php">Open merchant locations</a></div>')+'</section>';
+    return '<section class="mg-world-dashboard-section"><h3>Location Zones</h3>'+(optional.length?'<p class="mg-world-dashboard-note">Optional schema repair available: '+listText(optional)+'. Import <code>database/stage_32_world_canvas_geo_schema_repair.sql</code> when convenient.</p>':'<p class="mg-world-dashboard-note">Merchant location mapping stays here while the dashboard expands.</p>')+(locations.length ? locations.map(formHtml).join('') : '<div class="mg-world-merchant-settings-empty"><strong>No merchant locations</strong><p>Add locations first.</p><a href="/merchant-locations.php">Open merchant locations</a></div>')+'</section>';
   }
 
   function renderBody(){
