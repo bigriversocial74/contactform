@@ -18,9 +18,11 @@ try {
     }
 
     if ($method === 'GET') {
+        $schemaReady = mg_world_location_columns_ready($pdo);
         $locations = mg_world_location_merchant_rows($pdo, $merchantId, false);
         mg_ok([
-            'schema_ready' => mg_world_location_columns_ready($pdo),
+            'schema_ready' => $schemaReady,
+            'missing_columns' => $schemaReady ? [] : mg_world_location_missing_columns($pdo),
             'locations' => array_map(static function (array $row): array {
                 return [
                     'public_id' => (string)($row['public_id'] ?? ''),
@@ -29,6 +31,8 @@ try {
                     'address_line1' => (string)($row['address_line1'] ?? ''),
                     'city' => (string)($row['city'] ?? ''),
                     'region' => (string)($row['region'] ?? ''),
+                    'postal_code' => (string)($row['postal_code'] ?? ''),
+                    'country_code' => (string)($row['country_code'] ?? ''),
                     'status' => (string)($row['status'] ?? ''),
                     'is_primary' => (int)($row['is_primary'] ?? 0),
                     'latitude' => $row['latitude'] === null ? null : (float)$row['latitude'],
