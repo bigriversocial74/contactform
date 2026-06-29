@@ -8,6 +8,7 @@ window.Microgifter = window.Microgifter || {};
   var rail = null;
   var observer = null;
   var lastStatsHost = null;
+  var queued = false;
 
   function qs(selector, scope) { return (scope || document).querySelector(selector); }
   function qsa(selector, scope) { return Array.from((scope || document).querySelectorAll(selector)); }
@@ -69,8 +70,11 @@ window.Microgifter = window.Microgifter || {};
     var count = activeCount();
     var countNode = node.querySelector('[data-chat-rail-count]');
     var label = node.querySelector('[data-chat-rail-label]');
-    if (countNode) countNode.textContent = String(count);
-    if (label) label.textContent = count === 1 ? '1 active chat' : String(count) + ' active chats';
+    if (countNode && countNode.textContent !== String(count)) countNode.textContent = String(count);
+    if (label) {
+      var nextLabel = count === 1 ? '1 active chat' : String(count) + ' active chats';
+      if (label.textContent !== nextLabel) label.textContent = nextLabel;
+    }
     node.classList.toggle('is-drawer-open', isOpen(drawer));
     node.setAttribute('aria-expanded', isOpen(drawer) ? 'true' : 'false');
   }
@@ -100,28 +104,36 @@ window.Microgifter = window.Microgifter || {};
         main.appendChild(meta);
       }
       var priority = node.dataset.triggerPriority || '3';
-      if (node.classList.contains('is-cooldown')) meta.textContent = 'Cooling down · Priority ' + priority;
-      else if (node.classList.contains('is-hot')) meta.textContent = 'Triggered · Priority ' + priority;
-      else meta.textContent = 'Rules active · Priority ' + priority;
+      var text = 'Rules active · Priority ' + priority;
+      if (node.classList.contains('is-cooldown')) text = 'Cooling down · Priority ' + priority;
+      if (node.classList.contains('is-hot')) text = 'Triggered · Priority ' + priority;
+      if (meta.textContent !== text) meta.textContent = text;
     });
   }
 
   function keepDrawersOnTop() {
     qsa('.mg-canvas-trigger-settings-drawer,.mg-canvas-merchant-settings-drawer,.mg-canvas-trigger-analytics-drawer,.mg-canvas-crm-drawer').forEach(function (drawer) {
-      drawer.style.zIndex = '2147483002';
-      drawer.style.top = '0';
-      drawer.style.height = '100dvh';
-      drawer.style.maxHeight = '100dvh';
+      if (drawer.style.zIndex !== '2147483002') drawer.style.zIndex = '2147483002';
+      if (drawer.style.top !== '0px') drawer.style.top = '0';
+      if (drawer.style.height !== '100dvh') drawer.style.height = '100dvh';
+      if (drawer.style.maxHeight !== '100dvh') drawer.style.maxHeight = '100dvh';
     });
   }
 
   function tick() {
+    queued = false;
     installHeaderStats();
     ensureRail();
     syncRail();
     decorateChatTabs();
     decorateTriggerZones();
     keepDrawersOnTop();
+  }
+
+  function queueTick() {
+    if (queued) return;
+    queued = true;
+    window.requestAnimationFrame(tick);
   }
 
   tick();
@@ -133,8 +145,8 @@ window.Microgifter = window.Microgifter || {};
     decorateTriggerZones();
   }, 2500);
 
-  observer = new MutationObserver(function () { tick(); });
-  observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style', 'aria-hidden'] });
+  observer = new MutationObserver(queueTick);
+  observer.observe(document.body, { childList: true, subtree: true });
 
   window.addEventListener('beforeunload', function () { if (observer) observer.disconnect(); });
 })(window, document);
