@@ -43,25 +43,33 @@ Consistency/streak data updates
 - [Demo Script](./demo-script.md)
 - [Acceptance Checklist](./acceptance-checklist.md)
 
-## Build-control docs
+## Build-control and guardrail docs
 
+- [Do Not Build Yet](./DO-NOT-BUILD-YET.md)
 - [Documentation Completion Plan](./documentation-completion-plan.md)
 - [Branch Strategy](./branch-strategy.md)
 - [Build Plan](./build-plan.md)
+- [Build Readiness Checklist](./build-readiness-checklist.md)
+- [Implementation Boundaries](./implementation-boundaries.md)
+- [Future File Manifest](./future-file-manifest.md)
 - [Route Map](./route-map.md)
+- [Route/Data Contract](./route-data-contract.md)
 - [Implementation Tickets](./implementation-tickets.md)
 - [QA Test Script](./qa-test-script.md)
 - [Agent Build Handoff](./agent-build-handoff.md)
 - [Next Build Outline](./next-build-outline.md)
+- [Final Docs Audit](./final-docs-audit.md)
 
 ## Data and security docs
 
 - [Schema Outline](./schema.md)
 - [Schema Install Plan](./schema-install.md)
+- [SQL Schema Design](./sql-schema-design.md)
 - [Status Model](./status-model.md)
 - [UI Data Map](./ui-data-map.md)
 - [Data Lifecycle](./data-lifecycle.md)
 - [Security and Permissions](./security-permissions.md)
+- [Security Decision Log](./security-decision-log.md)
 
 ## Workflow docs
 
