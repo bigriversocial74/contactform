@@ -36,4 +36,5 @@ window.Microgifter = window.Microgifter || {};
   addScript('/assets/js/world-canvas-zoom-sync.js', 'data-world-zoom-sync-js');
   addScript('/assets/js/world-canvas-test-launch.js', 'data-world-test-launch-js');
   addScript('/assets/js/world-canvas-target-drops.js', 'data-world-target-drops-js');
+  addScript('/assets/js/world-canvas-run-hooks.js', 'data-world-run-hooks-js');
 })(window, document);
