@@ -30,7 +30,7 @@ $page_manifest = [
 
 require __DIR__ . '/includes/header.php';
 ?>
-<section class="mg-app-shell mg-agent-app mg-world-canvas" data-world-canvas>
+<section class="mg-app-shell mg-agent-app mg-world-canvas" data-world-canvas data-world-mode="live">
   <?php require __DIR__ . '/includes/agent-sidebar.php'; ?>
 
   <div class="mg-app-workspace mg-world-workspace">
@@ -67,6 +67,14 @@ require __DIR__ . '/includes/header.php';
           </nav>
         </div>
 
+        <div class="mg-world-modebar" data-world-modebar aria-label="World Canvas modes">
+          <button type="button" class="is-active" data-world-mode-button="live">Live World</button>
+          <button type="button" data-world-mode-button="heat">Heat Zones</button>
+          <button type="button" data-world-mode-button="conversations">Conversations</button>
+          <button type="button" data-world-mode-button="geo">Geo Anchors</button>
+          <button type="button" data-world-mode-button="movement">Gift Movement</button>
+        </div>
+
         <div class="mg-world-map" data-world-map>
           <svg class="mg-world-flow-svg" data-world-flows viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
           <div class="mg-world-grid-label is-north">Avatar geography · lat/long anchors</div>
@@ -87,11 +95,9 @@ require __DIR__ . '/includes/header.php';
           </div>
         </article>
         <article class="mg-world-panel">
-          <div class="mg-world-panel-head"><span class="mg-world-eyebrow">Meaning</span><strong>What this canvas shows</strong></div>
-          <div class="mg-world-meaning-grid">
-            <div><b>Avatar gravity</b><span>Similar avatars attract into conversation clusters by affinity tags and location keys.</span></div>
-            <div><b>Lat/long placement</b><span>Saved coordinates anchor avatars into the world before affinity movement is applied.</span></div>
-            <div><b>Microgift movement</b><span>Rewards, claims, campaigns, and store sessions become live signals between avatars and merchants.</span></div>
+          <div class="mg-world-panel-head"><span class="mg-world-eyebrow">Insights</span><strong>Live world readout</strong></div>
+          <div class="mg-world-insights" data-world-insights>
+            <p>World Canvas insights appear as avatars, heat zones, rewards, claims, and conversations form.</p>
           </div>
         </article>
       </section>
