@@ -1,6 +1,6 @@
 # Training Lab Stage 1 UI Shell
 
-This folder contains the Stage 1 visual-first PHP shell for Training Lab by Microgifter.
+Stage 1 visual-first PHP shell for Training Lab by Microgifter.
 
 Target host:
 
@@ -13,30 +13,49 @@ Stage 1 rules:
 ```text
 static UI shell only
 no database writes
-no real uploads
-no real payments
-no real reward issuing
+no uploads
+no payments
+no reward issuing
 no separate account system
 no production DNS changes
 ```
 
-## Structure
+## Current files
 
 ```text
 labs/
   index.php
   pricing.php
+  how-it-works.php
+  about.php
+  team.php
+  blog.php
+  blog-article.php
+  contact.php
   signup.php
   signin.php
-  app/
-    index.php
-  admin/
-    index.php
-  includes/
-    labs-layout.php
-  assets/
-    css/labs.css
-    js/labs.js
+  cart.php
+  checkout.php
+
+  app/index.php
+  app/campaigns.php
+  app/campaign-detail.php
+  app/sequence-tasks.php
+  app/proof-upload.php
+  app/rewards.php
+  app/wallet.php
+
+  admin/index.php
+  admin/campaigns.php
+  admin/review-queue.php
+
+  includes/labs-layout.php
+  assets/css/labs.css
+  assets/js/labs.js
 ```
 
-Additional public, app, and admin pages will be added after the shared shell is stable.
+## Current build state
+
+The public, participant app, and admin shell pages exist with static demo content.
+
+Next pass: refine visual details, route consistency, shared components, mobile spacing, and image placement.
