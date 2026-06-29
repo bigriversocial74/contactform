@@ -15,8 +15,8 @@ $page_title = 'World Canvas | Microgifter';
 $page_section = 'agent';
 $header_mode = 'agent';
 $agent_tab = 'world-canvas';
-$page_styles = ['/assets/css/world-canvas.css','/assets/css/world-canvas-attraction.css','/assets/css/world-canvas-identity.css','/assets/css/world-canvas-conversations.css','/assets/css/world-canvas-reward-drops.css','/assets/css/world-canvas-insights.css','/assets/css/world-canvas-opportunities.css','/assets/css/world-canvas-replay.css'];
-$page_scripts = ['/assets/js/world-canvas.js','/assets/js/world-canvas-overlays.js','/assets/js/world-canvas-identity.js','/assets/js/world-canvas-conversations.js','/assets/js/world-canvas-reward-drops.js','/assets/js/world-canvas-insights.js','/assets/js/world-canvas-opportunities.js','/assets/js/world-canvas-replay.js'];
+$page_styles = ['/assets/css/world-canvas.css','/assets/css/world-canvas-attraction.css','/assets/css/world-canvas-identity.css','/assets/css/world-canvas-conversations.css','/assets/css/world-canvas-reward-drops.css','/assets/css/world-canvas-insights.css','/assets/css/world-canvas-opportunities.css','/assets/css/world-canvas-replay.css','/assets/css/world-canvas-square-map.css'];
+$page_scripts = ['/assets/js/world-canvas.js','/assets/js/world-canvas-overlays.js','/assets/js/world-canvas-identity.js','/assets/js/world-canvas-conversations.js','/assets/js/world-canvas-reward-drops.js','/assets/js/world-canvas-insights.js','/assets/js/world-canvas-opportunities.js','/assets/js/world-canvas-replay.js','/assets/js/world-canvas-square-map.js'];
 $page_manifest = [
     'id' => 'world-canvas',
     'title' => $page_title,
@@ -60,7 +60,6 @@ require __DIR__ . '/includes/header.php';
             <button type="button" class="is-active" data-world-filter="all">All</button>
             <button type="button" data-world-filter="avatar">Avatars</button>
             <button type="button" data-world-filter="merchant">Merchants</button>
-            <button type="button" data-world-filter="campaign">Campaigns</button>
             <button type="button" data-world-filter="reward">Rewards</button>
             <button type="button" data-world-filter="claim">Claims</button>
             <button type="button" data-world-refresh>Refresh</button>
@@ -69,20 +68,18 @@ require __DIR__ . '/includes/header.php';
 
         <div class="mg-world-modebar" data-world-modebar aria-label="World Canvas modes">
           <button type="button" class="is-active" data-world-mode-button="live">Live World</button>
-          <button type="button" data-world-mode-button="heat">Heat Zones</button>
-          <button type="button" data-world-mode-button="conversations">Conversations</button>
           <button type="button" data-world-mode-button="geo">Geo Anchors</button>
           <button type="button" data-world-mode-button="movement">Gift Movement</button>
         </div>
 
         <div class="mg-world-map" data-world-map>
           <svg class="mg-world-flow-svg" data-world-flows viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
-          <div class="mg-world-grid-label is-north">Avatar geography · lat/long anchors</div>
-          <div class="mg-world-grid-label is-south">Affinity gravity · same locations attract</div>
+          <div class="mg-world-grid-label is-north">User avatars · merchant avatars</div>
+          <div class="mg-world-grid-label is-south">Zoom in to reveal labels</div>
           <div class="mg-world-node-layer" data-world-nodes></div>
           <div class="mg-world-empty-state" data-world-empty>
-            <span>No world signals yet</span>
-            <p>World Canvas will light up as avatars enter stores, save coordinates, attract into conversations, receive rewards, and claim Microgifts.</p>
+            <span>No world avatars yet</span>
+            <p>World Canvas will display user and merchant avatars as dots as stores, rewards, and claims become active.</p>
           </div>
         </div>
       </section>
@@ -108,15 +105,15 @@ require __DIR__ . '/includes/header.php';
     <div class="mg-world-drawer-head">
       <div>
         <span class="mg-world-eyebrow" data-world-drawer-type>World detail</span>
-        <h2 data-world-drawer-title>Select a node</h2>
-        <p data-world-drawer-subtitle>Choose an avatar, merchant, campaign, claim, or reward signal from the canvas.</p>
+        <h2 data-world-drawer-title>Select a dot</h2>
+        <p data-world-drawer-subtitle>Choose a user avatar, merchant avatar, reward, or claim signal from the square canvas.</p>
       </div>
       <button type="button" data-world-drawer-close aria-label="Close World Canvas detail drawer">×</button>
     </div>
     <div class="mg-world-drawer-body" data-world-drawer-body>
       <div class="mg-world-drawer-empty">
         <strong>World Canvas detail</strong>
-        <p>Node details open here without shrinking the canvas.</p>
+        <p>Dot details open here without shrinking the canvas.</p>
       </div>
     </div>
   </aside>
