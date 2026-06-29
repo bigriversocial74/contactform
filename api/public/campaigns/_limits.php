@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__, 3) . '/includes/package-entitlements.php';
+require_once dirname(__DIR__, 2) . '/stamps/_stamps.php';
 
 function mg_public_campaign_limit_count(PDO $pdo, string $field, int $id, ?int $userId, string $email): int
 {
@@ -78,4 +79,24 @@ function mg_public_campaign_enforce_reward_limits(PDO $pdo, array $campaign, ?in
     if ($templateId > 0 && mg_public_campaign_limit_count($pdo, 'reward_template_id', $templateId, $userId, $email) >= $templateLimit) {
         mg_fail('Reward template limit reached for this customer.', 409);
     }
+}
+
+function mg_public_campaign_debit_reward_stamp(PDO $pdo, array $campaign, string $walletPublicId, string $sourceType, array $metadata = []): array
+{
+    $merchantId = (int)($campaign['merchant_user_id'] ?? 0);
+    if ($merchantId < 1) mg_fail('Campaign merchant is unavailable.', 409);
+
+    return mg_stamp_debit_send($pdo, $merchantId, $merchantId, 'direct_reward_send', 'campaign-reward:' . $walletPublicId, [
+        'source_type' => 'public_campaign_reward',
+        'source_id' => $walletPublicId,
+        'reference' => (string)($campaign['public_id'] ?? $sourceType),
+        'reason_code' => 'campaign_reward_issue',
+        'note' => 'Campaign reward issued via ' . $sourceType,
+        'metadata' => $metadata + [
+            'campaign_id' => (string)($campaign['public_id'] ?? ''),
+            'campaign_type' => (string)($campaign['campaign_type'] ?? ''),
+            'reward_template_id' => (string)($campaign['reward_template_public_id'] ?? ''),
+            'source_type' => $sourceType,
+        ],
+    ]);
 }
