@@ -10,8 +10,8 @@ $page_title = 'System Health | Microgifter';
 $page_section = 'account';
 $header_mode = 'account';
 $page_body_class = 'mg-admin-system-health-page';
-$page_styles = ['/assets/css/admin-shell.css','/assets/css/admin-system-health.css'];
-$page_scripts = ['/assets/js/admin-system-health.js'];
+$page_styles = ['/assets/css/admin-shell.css','/assets/css/admin-system-health.css','/assets/css/admin-pwa-health.css'];
+$page_scripts = ['/assets/js/admin-system-health.js','/assets/js/admin-pwa-health.js'];
 $adminActive = 'system-health';
 
 require dirname(__DIR__) . '/includes/header.php';
