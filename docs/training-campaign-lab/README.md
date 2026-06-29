@@ -41,6 +41,7 @@ Consistency/streak data updates
 - [Expanded Platform Outline](./expanded-platform-outline.md)
 - [MVP Scope](./mvp-scope.md)
 - [Pricing Concept](./pricing-concept.md)
+- [Account System and Hosting Integration](./account-system-integration.md)
 - [Demo Script](./demo-script.md)
 - [Acceptance Checklist](./acceptance-checklist.md)
 
