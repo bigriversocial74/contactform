@@ -18,11 +18,36 @@ window.Microgifter = window.Microgifter || {};
   function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
   function rect() { return map.getBoundingClientRect(); }
   function ease(t) { return 1 - Math.pow(1 - t, 3); }
+  function csrfToken() {
+    if (window.Microgifter && typeof window.Microgifter.getCsrfToken === 'function') return window.Microgifter.getCsrfToken() || '';
+    var meta = document.querySelector('meta[name="csrf-token"],meta[name="mg-csrf-token"]');
+    return meta ? meta.getAttribute('content') || '' : (window.MG_CSRF_TOKEN || '');
+  }
 
   function geoToPoint(lat, lng) {
     var lon = clamp(parseFloat(lng), -180, 180);
     var la = clamp(parseFloat(lat), -85, 85);
     return { x: ((lon + 180) / 360) * 100, y: ((85 - la) / 170) * 100 };
+  }
+
+  function saveUserPosition(lat, lng, accuracy) {
+    var token = csrfToken();
+    var payload = {
+      latitude: lat,
+      longitude: lng,
+      accuracy_meters: Math.round(accuracy || 0),
+      geo_source: 'browser',
+      position_context: 'browser',
+      csrf_token: token,
+      _csrf: token,
+      csrf: token
+    };
+    return fetch('/api/world-canvas/user-position.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': token },
+      body: JSON.stringify(payload)
+    }).catch(function () {});
   }
 
   function nodePoint(node) {
@@ -126,6 +151,7 @@ window.Microgifter = window.Microgifter || {};
     navigator.geolocation.getCurrentPosition(function (pos) {
       var point = geoToPoint(pos.coords.latitude, pos.coords.longitude);
       updateViewerDot(point, 'Browser location');
+      saveUserPosition(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
       centerOn(point, 3);
     }, function () {
       updateViewerDot(viewerPoint, 'North America fallback');

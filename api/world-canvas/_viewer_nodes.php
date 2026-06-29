@@ -2,11 +2,15 @@
 /**
  * Viewer-specific World Canvas nodes.
  *
- * A merchant account can have two independent map anchors:
- * - static merchant MAIN location from storefront/profile metadata
- * - dynamic user/avatar location from profile/avatar metadata or browser/client updates
+ * A merchant account has two independent map anchors:
+ * - static merchant MAIN location from merchant_locations
+ * - dynamic user/avatar location from user_world_positions
+ *
+ * Metadata remains as a fallback for older records.
  */
 declare(strict_types=1);
+
+require_once __DIR__ . '/_locations.php';
 
 function mg_world_canvas_viewer_geo_from_metadata(mixed $raw, string $source): ?array
 {
@@ -51,7 +55,10 @@ function mg_world_canvas_viewer_nodes(PDO $pdo, array $viewer): array
 
     $profileTitle = trim((string)($profile['display_name'] ?? '')) ?: 'Your avatar';
     $profilePublicId = trim((string)($profile['public_id'] ?? '')) ?: 'viewer-' . substr(hash('sha256', (string)$userId), 0, 16);
-    $profileGeo = $profile ? mg_world_canvas_viewer_geo_from_metadata($profile['metadata_json'] ?? '', 'profile_metadata') : null;
+    $profileGeo = mg_world_location_current_user($pdo, $userId);
+    if ($profileGeo === null && $profile) {
+        $profileGeo = mg_world_canvas_viewer_geo_from_metadata($profile['metadata_json'] ?? '', 'profile_metadata');
+    }
 
     if ($profileGeo !== null) {
         $position = mg_world_canvas_geo_project($profileGeo, $profilePublicId, 0, 'avatar');
@@ -72,14 +79,17 @@ function mg_world_canvas_viewer_nodes(PDO $pdo, array $viewer): array
     }
 
     $merchantTitle = trim((string)($storefront['display_name'] ?? '')) ?: $profileTitle;
-    $merchantPublicId = trim((string)($profile['public_id'] ?? '')) ?: trim((string)($storefront['public_id'] ?? '')) ?: 'merchant-' . substr(hash('sha256', (string)$userId), 0, 16);
-    $merchantGeo = $storefront ? mg_world_canvas_viewer_geo_from_metadata($storefront['metadata_json'] ?? '', 'storefront_main_location') : null;
+    $merchantPublicId = trim((string)($storefront['public_id'] ?? '')) ?: trim((string)($profile['public_id'] ?? '')) ?: 'merchant-' . substr(hash('sha256', (string)$userId), 0, 16);
+    $merchantGeo = mg_world_location_main_merchant($pdo, $userId);
+    if ($merchantGeo === null && $storefront) {
+        $merchantGeo = mg_world_canvas_viewer_geo_from_metadata($storefront['metadata_json'] ?? '', 'storefront_main_location');
+    }
     if ($merchantGeo === null && $profile) {
         $merchantGeo = mg_world_canvas_viewer_geo_from_metadata($profile['metadata_json'] ?? '', 'profile_main_location');
     }
 
     $profileType = strtolower((string)($profile['profile_type'] ?? ''));
-    $isMerchant = $storefront !== null || in_array($profileType, ['merchant','business','store','vendor'], true);
+    $isMerchant = $storefront !== null || in_array($profileType, ['merchant','business','store','vendor'], true) || mg_world_location_is_merchant($pdo, $viewer);
     if ($isMerchant && $merchantGeo !== null) {
         $position = mg_world_canvas_geo_project($merchantGeo, $merchantPublicId . ':merchant', 0, 'merchant');
         $nodes[] = mg_world_canvas_node('merchant', $merchantPublicId, 'Your merchant avatar', $merchantTitle, 'MAIN location anchor', 'MAIN', $position, [
