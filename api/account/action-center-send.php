@@ -163,7 +163,17 @@ try{
     if($walletId!==null){
         $walletItem=mg_action_center_load_wallet_item_for_user($pdo,$walletId,(int)$user['id'],strtolower(trim((string)($user['email']??''))));
         if(!$walletItem)throw new RuntimeException('Action Center item not found.');
+        $stampLedger=mg_stamp_debit_send($pdo,(int)$user['id'],(int)$user['id'],'regift_send',$idempotencyKey,[
+            'source_type'=>'action_center_wallet_regift',
+            'source_id'=>$walletId,
+            'reference'=>$actionItemId,
+            'metadata'=>[
+                'wallet_item_id'=>$walletId,
+                'recipient_user_id'=>$recipientUserId,
+            ],
+        ]);
         $result=mg_action_center_send_wallet_item($pdo,$walletItem,$user,$recipientUserId,$actionItemId,$idempotencyKey,$message);
+        $result['stamp_ledger']=$stampLedger;
         $pdo->commit();
         mg_audit('action_center.wallet_item_regifted','wallet_item',[
             'wallet_item_id'=>$walletId,
@@ -171,6 +181,7 @@ try{
             'recipient_user_id'=>$recipientUserId,
             'sent_at'=>$result['delivery_event']['occurred_at'],
             'notification_id'=>$result['notification_id'],
+            'stamp_ledger_entry_id'=>$stampLedger['entry']['entry_id']??null,
         ],(int)$user['id']);
         mg_event('wallet_item.regifted',[
             'wallet_item_id'=>$walletId,
@@ -178,6 +189,7 @@ try{
             'idempotency_key'=>$idempotencyKey,
             'sent_at'=>$result['delivery_event']['occurred_at'],
             'notification_id'=>$result['notification_id'],
+            'stamp_ledger_entry_id'=>$stampLedger['entry']['entry_id']??null,
         ],(int)$user['id']);
         mg_ok($result,'Wallet reward regifted.',201);
     }
@@ -235,6 +247,17 @@ try{
         throw new RuntimeException('PPPM ownership does not match this Action Center item.');
     }
 
+    $stampLedger=mg_stamp_debit_send($pdo,(int)$user['id'],(int)$user['id'],'regift_send',$idempotencyKey,[
+        'source_type'=>'action_center_regift',
+        'source_id'=>(string)$instance['public_id'],
+        'reference'=>$actionItemId,
+        'metadata'=>[
+            'microgift_instance_id'=>(string)$instance['public_id'],
+            'pppm_item_id'=>$pppmPublicId,
+            'recipient_user_id'=>$recipientUserId,
+        ],
+    ]);
+
     $transfer=mg_pppm_transfer_owner_canonical(
         $pdo,
         $pppmPublicId,
@@ -242,7 +265,7 @@ try{
         'action_center_regift',
         $idempotencyKey,
         (int)$user['id'],
-        ['microgift_instance_id'=>(string)$instance['public_id'],'action_item_id'=>$actionItemId]
+        ['microgift_instance_id'=>(string)$instance['public_id'],'action_item_id'=>$actionItemId,'stamp_ledger_entry_id'=>$stampLedger['entry']['entry_id']??null]
     );
     $duplicate=(bool)($transfer['duplicate']??false);
 
@@ -260,7 +283,7 @@ try{
         $recipientUserId,
         $idempotencyKey,
         $actionItemId,
-        ['pppm_item_id'=>$pppmPublicId,'transfer_id'=>$transfer['transfer_id']??null,'transfer_type'=>'regift']
+        ['pppm_item_id'=>$pppmPublicId,'transfer_id'=>$transfer['transfer_id']??null,'transfer_type'=>'regift','stamp_ledger_entry_id'=>$stampLedger['entry']['entry_id']??null]
     );
     $duplicate=$duplicate||(bool)$deliveryEvent['duplicate'];
     $projection=mg_action_center_sent(
@@ -292,17 +315,6 @@ try{
             false
         );
     }
-
-    $stampLedger=$duplicate?null:mg_stamp_debit_send($pdo,(int)$user['id'],(int)$user['id'],'regift_send',$idempotencyKey,[
-        'source_type'=>'action_center_regift',
-        'source_id'=>(string)$deliveryEvent['event_id'],
-        'reference'=>$actionItemId,
-        'metadata'=>[
-            'microgift_instance_id'=>(string)$instance['public_id'],
-            'recipient_user_id'=>$recipientUserId,
-            'delivery_event_id'=>(string)$deliveryEvent['event_id'],
-        ],
-    ]);
 
     $senderLabel=mg_notification_user_label($pdo,(int)$user['id']);
     $notificationId=mg_create_notification(

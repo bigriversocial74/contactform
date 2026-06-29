@@ -182,6 +182,7 @@ try {
     $rewardTitle = null;
     $expiresAt = null;
     $bridge = null;
+    $stampLedger = null;
     $shouldIssueEntryReward = mg_contest_campaign_should_issue_entry_reward($campaign, $rules);
 
     $existingStmt = $pdo->prepare('SELECT id, public_id, status FROM wallet_items WHERE campaign_id = ? AND contact_id = ? AND source_type = \'contest_entry\' AND status <> \'cancelled\' ORDER BY id DESC LIMIT 1');
@@ -206,16 +207,27 @@ try {
         }
         mg_public_campaign_enforce_reward_limits($pdo, $campaign, $userId, $email);
         $walletPublicId = mg_contest_campaign_uuid();
+        $stampLedger = mg_public_campaign_debit_reward_stamp($pdo, $campaign, $walletPublicId, $source, [
+            'contact_id' => (string)($contact['public_id'] ?? ''),
+            'email' => $email,
+            'rules' => $rules,
+        ]);
         $expiresAt = mg_contest_campaign_expiry($campaign);
         $rewardTitle = (string)$campaign['reward_template_title'];
+        $walletMetadata = [
+            'campaign_type' => 'contest_giveaway',
+            'reward_template_id' => (string)$campaign['reward_template_public_id'],
+            'rules' => $rules,
+            'stamp_ledger_entry_id' => $stampLedger['entry']['entry_id'] ?? null,
+        ];
         $walletStmt = $pdo->prepare('INSERT INTO wallet_items (public_id,user_id,contact_id,merchant_user_id,reward_template_id,campaign_id,source_type,source_id,status,value_cents_snapshot,currency_snapshot,title_snapshot,metadata_json,issued_at,expires_at,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),?,NOW(),NOW())');
-        $walletStmt->execute([$walletPublicId, $userId, $contactId, $merchantId, (int)$campaign['reward_template_db_id'], $campaignId, $source, (string)($contact['public_id'] ?? ''), 'issued', (int)($campaign['value_amount_cents'] ?? 0), (string)($campaign['currency'] ?? 'USD'), $rewardTitle, json_encode(['campaign_type' => 'contest_giveaway', 'reward_template_id' => (string)$campaign['reward_template_public_id'], 'rules' => $rules], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), $expiresAt]);
+        $walletStmt->execute([$walletPublicId, $userId, $contactId, $merchantId, (int)$campaign['reward_template_db_id'], $campaignId, $source, (string)($contact['public_id'] ?? ''), 'issued', (int)($campaign['value_amount_cents'] ?? 0), (string)($campaign['currency'] ?? 'USD'), $rewardTitle, json_encode($walletMetadata, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), $expiresAt]);
         $walletDbId = (int)$pdo->lastInsertId();
         $walletStatus = 'issued';
         $pdo->prepare('UPDATE campaigns SET issued_count = issued_count + 1, updated_at = NOW() WHERE id = ?')->execute([$campaignId]);
         $pdo->prepare('UPDATE reward_templates SET issued_count = issued_count + 1, updated_at = NOW() WHERE id = ?')->execute([(int)$campaign['reward_template_db_id']]);
         $bridge = mg_contest_campaign_bridge($pdo, $campaign, $contact ?: [], $walletDbId, $walletPublicId, $userId, $expiresAt, $source);
-        mg_contest_campaign_event($pdo, $merchantId, $campaignId, $walletDbId, $contactId, 'wallet_item.issued', ['wallet_item_id' => $walletPublicId, 'source_type' => $source, 'campaign_type' => $campaignType, 'rules' => $rules, 'pppm_bridge' => $bridge, 'merchant_crm' => $crm, 'merchant_notification' => $merchantNotification]);
+        mg_contest_campaign_event($pdo, $merchantId, $campaignId, $walletDbId, $contactId, 'wallet_item.issued', ['wallet_item_id' => $walletPublicId, 'source_type' => $source, 'campaign_type' => $campaignType, 'rules' => $rules, 'pppm_bridge' => $bridge, 'merchant_crm' => $crm, 'merchant_notification' => $merchantNotification, 'stamp_ledger_entry_id' => $stampLedger['entry']['entry_id'] ?? null]);
     }
 
     $pdo->commit();
@@ -231,6 +243,7 @@ try {
         'pppm_bridge' => $bridge,
         'merchant_crm' => $crm,
         'merchant_notification' => $merchantNotification,
+        'stamp_ledger' => $stampLedger,
     ], $message, $walletPublicId !== null && !$alreadyIssued ? 201 : 200);
 } catch (Throwable $error) {
     if ($pdo->inTransaction()) $pdo->rollBack();
