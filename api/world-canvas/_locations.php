@@ -52,8 +52,12 @@ function mg_world_location_current_user(PDO $pdo, int $userId): ?array
 function mg_world_location_columns_ready(PDO $pdo): bool
 {
     return mg_world_canvas_table($pdo, 'merchant_locations')
+        && mg_world_canvas_column($pdo, 'merchant_locations', 'merchant_user_id')
         && mg_world_canvas_column($pdo, 'merchant_locations', 'latitude')
-        && mg_world_canvas_column($pdo, 'merchant_locations', 'longitude');
+        && mg_world_canvas_column($pdo, 'merchant_locations', 'longitude')
+        && mg_world_canvas_column($pdo, 'merchant_locations', 'geo_accuracy_meters')
+        && mg_world_canvas_column($pdo, 'merchant_locations', 'geo_source')
+        && mg_world_canvas_column($pdo, 'merchant_locations', 'world_zone_radius_meters');
 }
 
 function mg_world_location_merchant_rows(PDO $pdo, int $merchantUserId, bool $onlyGeo = true): array
