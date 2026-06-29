@@ -35,6 +35,9 @@ window.Microgifter = window.Microgifter || {};
   function signIn() {
     window.location.href = '/signin.php?return=' + encodeURIComponent(window.location.pathname + window.location.search);
   }
+  function notifyStoreEntered() {
+    try { document.dispatchEvent(new CustomEvent('mg:store-entered', { detail: { session: activeSession } })); } catch (error) {}
+  }
   function buttonClass(state) {
     if (state === 'inside_this') return 'mg-store-enter-btn is-active';
     if (state === 'inside_other') return 'mg-store-enter-btn is-switch';
@@ -69,7 +72,7 @@ window.Microgifter = window.Microgifter || {};
     }
     var name = activeSession.merchant.name || 'Merchant Store';
     pill.hidden = false;
-    pill.innerHTML = '<span>Shopping in</span><strong>' + escapeHtml(name) + '</strong><button type="button" data-store-global-exit>Exit</button>';
+    pill.innerHTML = '<span>Shopping in</span><strong>' + escapeHtml(name) + '</strong><button type="button" data-avatar-anchor-prompt>Map Avatar</button><button type="button" data-store-global-exit>Exit</button>';
   }
 
   function ensureModal() {
@@ -111,7 +114,7 @@ window.Microgifter = window.Microgifter || {};
     var primaryLabel = state.label || 'Enter Store';
     var secondary = '';
     if (state.state === 'inside_this') {
-      secondary = '<button class="mg-store-exit-btn" type="button" data-store-exit>Exit Store</button>';
+      secondary = '<button class="mg-store-exit-btn" type="button" data-store-exit>Exit Store</button><button class="mg-store-exit-btn" type="button" data-avatar-anchor-prompt>Map Avatar</button>';
     }
     row.innerHTML = '<div class="mg-store-presence-copy"><span class="mg-store-presence-dot" aria-hidden="true"></span><span>' + escapeHtml(noticeText(state)) + '</span></div><div class="mg-store-presence-actions"><button class="' + buttonClass(state.state) + '" type="button" data-store-enter>' + escapeHtml(primaryLabel) + '</button>' + secondary + '</div>';
   }
@@ -189,6 +192,7 @@ window.Microgifter = window.Microgifter || {};
       }
       activeSession = data && data.session ? data.session : activeSession;
       toast('Your avatar entered the merchant store.', 'success');
+      notifyStoreEntered();
       refreshAllCards();
     } catch (error) {
       toast(error.message || 'Unable to enter store.', 'error');
@@ -212,6 +216,11 @@ window.Microgifter = window.Microgifter || {};
   }
 
   document.addEventListener('click', function (event) {
+    var anchorPrompt = event.target.closest('[data-avatar-anchor-prompt]');
+    if (anchorPrompt) {
+      notifyStoreEntered();
+      return;
+    }
     var enter = event.target.closest('[data-store-enter]');
     if (enter) {
       var card = enter.closest('[data-post-id]');

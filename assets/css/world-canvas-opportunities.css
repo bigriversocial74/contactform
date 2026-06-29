@@ -1,0 +1,20 @@
+.mg-world-opportunity-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.mg-world-opportunity-grid.is-compact{grid-template-columns:1fr}
+.mg-world-opportunity-card{border:1px solid rgba(20,184,166,.22);border-radius:18px;background:#f0fdfa;padding:12px;box-shadow:0 14px 34px rgba(15,23,42,.05)}
+.mg-world-opportunity-card header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.mg-world-opportunity-card header span{display:inline-flex;border-radius:999px;background:#ccfbf1;color:#0f766e;font-size:9px;font-weight:950;text-transform:uppercase;letter-spacing:.08em;padding:4px 7px}
+.mg-world-opportunity-card header strong{display:grid;place-items:center;width:30px;height:30px;border-radius:999px;background:#0f766e;color:#fff;font-size:12px;font-weight:950}
+.mg-world-opportunity-card h3{margin:0;color:#0f172a;font-size:15px;line-height:1.12;letter-spacing:-.03em}
+.mg-world-opportunity-card p{margin:7px 0 0;color:#475569;font-size:12px;line-height:1.42;font-weight:750}
+.mg-world-opportunity-card em{display:block;margin-top:8px;color:#0f172a;font-size:12px;line-height:1.35;font-style:normal;font-weight:900}
+.mg-world-opportunity-card a,.mg-world-opportunity-card button{display:inline-flex;align-items:center;justify-content:center;min-height:32px;margin-top:10px;border:0;border-radius:999px;background:#0f766e;color:#fff;font-size:11px;font-weight:950;text-decoration:none;padding:0 11px;cursor:pointer}
+.mg-world-opportunity-card.is-urgent{border-color:rgba(239,68,68,.28);background:#fef2f2}
+.mg-world-opportunity-card.is-urgent header span{background:#fee2e2;color:#b91c1c}
+.mg-world-opportunity-card.is-urgent header strong{background:#b91c1c}
+.mg-world-opportunity-card.is-high{border-color:rgba(37,99,235,.28);background:#eff6ff}
+.mg-world-opportunity-card.is-high header span{background:#dbeafe;color:#1d4ed8}
+.mg-world-opportunity-card.is-high header strong{background:#1d4ed8}
+.mg-world-opportunity-card.is-low{background:#f8fafc;border-color:rgba(148,163,184,.22)}
+.mg-world-opportunity-empty{margin:0;border:1px dashed rgba(20,184,166,.32);border-radius:16px;background:#f8fafc;color:#64748b;text-align:center;font-size:13px;font-weight:800;padding:14px}
+.mg-world-drawer-opportunities{display:grid;gap:10px;border:1px solid rgba(20,184,166,.16);border-radius:18px;background:#f0fdfa;padding:10px}
+@media(max-width:760px){.mg-world-opportunity-grid{grid-template-columns:1fr}}
