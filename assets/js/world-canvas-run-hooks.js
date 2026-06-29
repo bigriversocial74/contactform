@@ -16,7 +16,12 @@ window.Microgifter = window.Microgifter || {};
     if (seen[run.id]) return;
     if (run.status !== 'sending' && run.status !== 'queued') return;
     seen[run.id] = 1;
-    if (window.MicrogifterTargetDropTestLaunch && typeof window.MicrogifterTargetDropTestLaunch.launch === 'function') window.MicrogifterTargetDropTestLaunch.launch(run, {duration:Number(run.duration_ms || 1700)});
+    if (window.MicrogifterTargetDropTestLaunch && typeof window.MicrogifterTargetDropTestLaunch.launch === 'function') {
+      window.MicrogifterTargetDropTestLaunch.launch(run, {
+        duration: Number(run.duration_ms || (run.run_type === 'test' ? 30000 : 30000)),
+        elapsed_ms: Number(run.elapsed_ms || 0)
+      });
+    }
   }
   async function createTestRun(form){
     if (!form || !window.Microgifter.post) return;
@@ -24,12 +29,12 @@ window.Microgifter = window.Microgifter || {};
     var msg = form.querySelector('[data-target-zone-status]');
     if (!id) return;
     try {
-      if (msg) msg.textContent = 'Creating test run…';
+      if (msg) msg.textContent = 'Creating 30-second test launch…';
       var c = csrf();
       var response = await window.Microgifter.post('/api/world-canvas/runs.php', {id:id, csrf_token:c, _csrf:c, csrf:c});
       var payload = response.data || response || {};
       if (payload.delivery_run) runArc(payload.delivery_run);
-      if (msg) msg.textContent = 'Test run started. Intercept window opened.';
+      if (msg) msg.textContent = 'Test launch running for 30 seconds.';
     } catch (error) { if (msg) msg.textContent = error.message || 'Unable to start test run.'; }
   }
   async function poll(){
