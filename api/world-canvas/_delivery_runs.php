@@ -62,8 +62,11 @@ function mg_world_delivery_run_create(PDO $pdo, array $drop, string $runType = '
     if (!$launchPoint) $launchPoint = $targetPoint;
     $control = mg_world_delivery_run_control((float)$launchPoint['x'], (float)$launchPoint['y'], (float)$targetPoint['x'], (float)$targetPoint['y']);
     $publicId = mg_world_delivery_run_public_id();
-    $stmt = $pdo->prepare("INSERT INTO merchant_target_drop_delivery_runs (public_id,target_drop_id,merchant_user_id,status,run_type,launch_latitude,launch_longitude,target_latitude,target_longitude,launch_x,launch_y,target_x,target_y,control_point_json,animation_duration_ms,animation_started_at,intercept_window_opens_at,intercept_window_closes_at,metadata_json,created_at,updated_at) VALUES (?,?,?,'sending',?,?,?,?,?,?,?,?,?,?,?,?,DATE_ADD(NOW(), INTERVAL 250 MILLISECOND),DATE_ADD(NOW(), INTERVAL 1300 MILLISECOND),?,NOW(),NOW())");
-    $stmt->execute([$publicId, $dropId, $merchantId, $runType, $launchLat, $launchLng, $targetLat, $targetLng, $launchPoint['x'], $launchPoint['y'], $targetPoint['x'], $targetPoint['y'], json_encode($control, JSON_UNESCAPED_SLASHES), 1700, date('Y-m-d H:i:s'), json_encode(['source' => 'world_canvas', 'drop_public_id' => (string)($drop['public_id'] ?? '')], JSON_UNESCAPED_SLASHES)]);
+    $startedAt = date('Y-m-d H:i:s');
+    $interceptOpens = date('Y-m-d H:i:s', time() + 1);
+    $interceptCloses = date('Y-m-d H:i:s', time() + 2);
+    $stmt = $pdo->prepare("INSERT INTO merchant_target_drop_delivery_runs (public_id,target_drop_id,merchant_user_id,status,run_type,launch_latitude,launch_longitude,target_latitude,target_longitude,launch_x,launch_y,target_x,target_y,control_point_json,animation_duration_ms,animation_started_at,intercept_window_opens_at,intercept_window_closes_at,metadata_json,created_at,updated_at) VALUES (?,?,?,'sending',?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())");
+    $stmt->execute([$publicId, $dropId, $merchantId, $runType, $launchLat, $launchLng, $targetLat, $targetLng, $launchPoint['x'], $launchPoint['y'], $targetPoint['x'], $targetPoint['y'], json_encode($control, JSON_UNESCAPED_SLASHES), 1700, $startedAt, $interceptOpens, $interceptCloses, json_encode(['source' => 'world_canvas', 'drop_public_id' => (string)($drop['public_id'] ?? '')], JSON_UNESCAPED_SLASHES)]);
     return mg_world_delivery_run_get($pdo, $publicId);
 }
 
@@ -78,7 +81,7 @@ function mg_world_delivery_run_payload(array $row): array
 {
     $started = !empty($row['animation_started_at']) ? strtotime((string)$row['animation_started_at']) : time();
     $duration = max(700, (int)($row['animation_duration_ms'] ?? 1700));
-    $elapsed = max(0, (int)round((microtime(true) - (float)$started) * 1000));
+    $elapsed = max(0, (int)round((time() - (int)$started) * 1000));
     $status = (string)($row['status'] ?? 'queued');
     if ($status === 'sending' && $elapsed >= $duration) $status = 'delivered';
     return [
