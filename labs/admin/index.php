@@ -39,6 +39,6 @@ labs_page_start([
     <h2>Three backend pages define the admin style.</h2>
     <p class="labs-copy">Overview, campaigns, and review queue establish the backend UI pattern. Additional backend sections should inherit these components later.</p>
   </div>
-  <div class="labs-image-slot"><span>Backend mockup slot<small>Use final backend overview image here after image import.</small></span></div>
+  <div class="labs-image-slot"><img src="/assets/img/admin/backend-overview.svg" alt="Backend overview mockup illustration" style="position:relative;width:100%;max-height:330px;object-fit:contain"></div>
 </section>
 <?php labs_page_end(['section' => 'admin']); ?>
