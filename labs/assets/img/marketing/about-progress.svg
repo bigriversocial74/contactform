@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="640" viewBox="0 0 900 640" role="img" aria-labelledby="title desc">
+  <title id="title">Verified progress illustration</title>
+  <desc id="desc">Minimal green illustration of a team workflow and progress cards.</desc>
+  <rect width="900" height="640" rx="48" fill="#f6faf7"/>
+  <rect x="120" y="115" width="660" height="410" rx="44" fill="#fff" stroke="#dfeae4" stroke-width="4"/>
+  <circle cx="260" cy="250" r="58" fill="#cfeee0"/>
+  <circle cx="450" cy="250" r="58" fill="#dff7e9"/>
+  <circle cx="640" cy="250" r="58" fill="#cfeee0"/>
+  <g fill="#0f3d2e">
+    <circle cx="260" cy="235" r="18"/>
+    <circle cx="450" cy="235" r="18"/>
+    <circle cx="640" cy="235" r="18"/>
+  </g>
+  <g fill="none" stroke="#0f3d2e" stroke-width="6" stroke-linecap="round">
+    <path d="M318 250h74"/>
+    <path d="M508 250h74"/>
+  </g>
+  <rect x="190" y="355" width="520" height="28" rx="14" fill="#eef8f2"/>
+  <rect x="190" y="355" width="375" height="28" rx="14" fill="#0f3d2e"/>
+  <rect x="215" y="420" width="150" height="42" rx="21" fill="#eef8f2"/>
+  <rect x="390" y="420" width="150" height="42" rx="21" fill="#eef8f2"/>
+  <rect x="565" y="420" width="120" height="42" rx="21" fill="#0f3d2e"/>
+</svg>
