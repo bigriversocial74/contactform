@@ -35,9 +35,12 @@ labs_page_start([
     <a class="labs-btn" href="/app/rewards.php">View Rewards</a>
   </aside>
 </section>
-<section class="labs-section-band">
-  <span class="labs-eyebrow">Stage 1 note</span>
-  <h2>This dashboard is a static UI shell.</h2>
-  <p class="labs-copy">The data shown here is demo content. Real proof, review, wallet, and reward integration will come after the visual shell is approved.</p>
+<section class="labs-section-band labs-split-card">
+  <div>
+    <span class="labs-eyebrow">Stage 1 note</span>
+    <h2>This dashboard is a static UI shell.</h2>
+    <p class="labs-copy">The data shown here is demo content. Real proof, review, wallet, and reward integration will come after the visual shell is approved.</p>
+  </div>
+  <div class="labs-image-slot"><span>App screenshot slot<small>Use final participant app mockup here after image import.</small></span></div>
 </section>
 <?php labs_page_end(['section' => 'app']); ?>
