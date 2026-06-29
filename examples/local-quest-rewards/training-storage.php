@@ -1,317 +1,51 @@
 <?php
  declare(strict_types=1);
 
-/**
- * Training Campaign Lab storage helpers.
- *
- * Phase 3 read model:
- * - Reads from SQL when configured and schema exists.
- * - Falls back to training-campaign-data.php when SQL is unavailable.
- * - Does not modify existing Local Quest storage files.
- */
-
 require_once __DIR__ . '/training-campaign-data.php';
 
-function tcl_storage_config(): array
-{
-    if (function_exists('lqr_config')) {
-        $config = lqr_config();
-        return is_array($config) ? $config : [];
-    }
+function tcl_storage_config(): array{ if(function_exists('lqr_config')){ $c=lqr_config(); return is_array($c)?$c:[]; } $p=__DIR__.'/config.php'; if(!is_file($p))$p=__DIR__.'/config.example.php'; $c=require $p; return is_array($c)?$c:[]; }
+function tcl_storage_h(string $v): string{ return function_exists('lqr_h')?lqr_h($v):htmlspecialchars($v,ENT_QUOTES,'UTF-8'); }
+function tcl_public_id(): string{ $d=random_bytes(16); $d[6]=chr((ord($d[6])&0x0f)|0x40); $d[8]=chr((ord($d[8])&0x3f)|0x80); $h=bin2hex($d); return substr($h,0,8).'-'.substr($h,8,4).'-'.substr($h,12,4).'-'.substr($h,16,4).'-'.substr($h,20); }
+function tcl_now(): string{ return gmdate('c'); }
 
-    $path = __DIR__ . '/config.php';
-    if (!is_file($path)) $path = __DIR__ . '/config.example.php';
-    $config = require $path;
-    return is_array($config) ? $config : [];
+function tcl_storage_pdo(): ?PDO{ static $pdo=null,$attempted=false; if($attempted)return $pdo; $attempted=true; $s=tcl_storage_config()['storage']??[]; if(!is_array($s)||($s['driver']??'')!=='mysql')return null; $dsn=trim((string)($s['dsn']??'')); if($dsn==='')return null; try{ $o=is_array($s['options']??null)?$s['options']:[]; $o[PDO::ATTR_ERRMODE]=PDO::ERRMODE_EXCEPTION; $o[PDO::ATTR_DEFAULT_FETCH_MODE]=PDO::FETCH_ASSOC; return $pdo=new PDO($dsn,(string)($s['username']??''),(string)($s['password']??''),$o);}catch(Throwable $e){return null;} }
+function tcl_storage_schema_available(): bool{ $pdo=tcl_storage_pdo(); if(!$pdo)return false; try{$st=$pdo->query("SHOW TABLES LIKE 'training_campaigns'"); return (bool)$st && (bool)$st->fetchColumn();}catch(Throwable $e){return false;} }
+function tcl_storage_using_sql(): bool{ return tcl_storage_schema_available(); }
+function tcl_storage_seed_campaigns(): array{ return tcl_campaigns(); }
+
+function tcl_storage_campaigns(): array{
+    if(!tcl_storage_schema_available()) return tcl_storage_seed_campaigns(); $pdo=tcl_storage_pdo(); if(!$pdo)return tcl_storage_seed_campaigns();
+    try{ $rows=$pdo->query("SELECT * FROM training_campaigns WHERE status IN ('active','draft','paused','completed') ORDER BY FIELD(status,'active','draft','paused','completed'), title ASC")->fetchAll(); $out=[]; foreach($rows as $r){ $c=tcl_storage_normalize_campaign_row($r); $id=(int)$r['id']; $c['sequence_count']=tcl_storage_count_for_campaign('training_sequences',$id); $c['task_count']=tcl_storage_count_for_campaign('training_tasks',$id); $c['participant_count']=tcl_storage_count_for_campaign('training_participants',$id); $c['reward_ladder']=tcl_storage_reward_ladder($id); $c['sequence']=tcl_storage_first_sequence_bundle($id); $out[(string)$c['id']]=$c; } return $out?:tcl_storage_seed_campaigns(); }catch(Throwable $e){ return tcl_storage_seed_campaigns(); }
 }
+function tcl_storage_count_for_campaign(string $table,int $campaignId): int{ if(!in_array($table,['training_sequences','training_tasks','training_participants'],true))return 0; $pdo=tcl_storage_pdo(); if(!$pdo)return 0; try{$st=$pdo->prepare("SELECT COUNT(*) FROM {$table} WHERE campaign_id=:id");$st->execute(['id'=>$campaignId]);return (int)$st->fetchColumn();}catch(Throwable $e){return 0;} }
+function tcl_storage_campaign_by_slug(string $slug): ?array{ $slug=trim($slug); if($slug==='')return null; if(!tcl_storage_schema_available()){ $cs=tcl_storage_seed_campaigns(); return $cs[$slug]??null; } $pdo=tcl_storage_pdo(); if(!$pdo)return null; try{$st=$pdo->prepare('SELECT * FROM training_campaigns WHERE slug=:slug LIMIT 1');$st->execute(['slug'=>$slug]);$r=$st->fetch(); if(!$r)return null; $c=tcl_storage_normalize_campaign_row($r); $id=(int)$r['id']; $c['sequence_count']=tcl_storage_count_for_campaign('training_sequences',$id); $c['task_count']=tcl_storage_count_for_campaign('training_tasks',$id); $c['participant_count']=tcl_storage_count_for_campaign('training_participants',$id); $c['reward_ladder']=tcl_storage_reward_ladder($id); $c['sequences']=tcl_storage_sequences($id); $c['sequence']=$c['sequences'][0]??tcl_storage_first_sequence_bundle($id); return $c;}catch(Throwable $e){ $cs=tcl_storage_seed_campaigns(); return $cs[$slug]??null; } }
+function tcl_storage_normalize_campaign_row(array $r): array{ $m=[]; if(!empty($r['metadata_json'])){$d=json_decode((string)$r['metadata_json'],true); if(is_array($d))$m=$d;} $tags=$m['tags']??[]; if(!is_array($tags))$tags=[]; return ['db_id'=>(int)($r['id']??0),'public_id'=>(string)($r['public_id']??''),'id'=>(string)($r['slug']??''),'slug'=>(string)($r['slug']??''),'title'=>(string)($r['title']??''),'eyebrow'=>(string)(($r['subtitle']??'')?:ucwords(str_replace('_',' ',(string)($r['campaign_type']??'Campaign')))),'type'=>(string)($r['campaign_type']??'general'),'status'=>(string)($r['status']??'draft'),'difficulty'=>(string)($r['difficulty']??'Standard'),'visibility'=>(string)($r['visibility']??'public'),'description'=>(string)($r['description']??''),'short_description'=>(string)($r['description']??''),'image_hint'=>strtoupper(substr((string)($r['campaign_type']??'TC'),0,2)),'reward_preview'=>(string)($m['reward_preview']??'Reward configured'),'next_reward'=>(string)($m['next_reward']??($m['reward_preview']??'Next reward')),'sequence_count'=>0,'task_count'=>0,'participant_count'=>0,'duration'=>(string)($m['duration']??'Campaign'),'streak'=>(int)($m['streak']??0),'progress'=>(int)($m['progress']??0),'points'=>(int)($m['points']??0),'next_points'=>(int)($m['next_points']??0),'tags'=>array_values(array_map('strval',$tags)),'sequence'=>['title'=>'Sequence','description'=>'','steps'=>[]],'reward_ladder'=>[]]; }
+function tcl_storage_sequences(int $campaignId): array{ $pdo=tcl_storage_pdo(); if(!$pdo)return []; try{$st=$pdo->prepare('SELECT * FROM training_sequences WHERE campaign_id=:id ORDER BY sort_order,id');$st->execute(['id'=>$campaignId]);$out=[]; foreach($st->fetchAll() as $r){$out[]=['db_id'=>(int)$r['id'],'public_id'=>(string)$r['public_id'],'slug'=>(string)$r['slug'],'title'=>(string)$r['title'],'description'=>(string)($r['description']??''),'status'=>(string)$r['status'],'is_required'=>(bool)$r['is_required'],'steps'=>tcl_storage_tasks((int)$r['id'])];} return $out;}catch(Throwable $e){return [];} }
+function tcl_storage_first_sequence_bundle(int $campaignId): array{ $s=tcl_storage_sequences($campaignId); return $s[0]??['title'=>'Sequence','description'=>'','steps'=>[]]; }
+function tcl_storage_tasks(int $sequenceId): array{ $pdo=tcl_storage_pdo(); if(!$pdo)return []; try{$st=$pdo->prepare('SELECT * FROM training_tasks WHERE sequence_id=:id ORDER BY sort_order,id');$st->execute(['id'=>$sequenceId]);$out=[]; foreach($st->fetchAll() as $i=>$r){$out[]=['db_id'=>(int)$r['id'],'public_id'=>(string)$r['public_id'],'slug'=>(string)$r['slug'],'title'=>(string)$r['title'],'status'=>$i===0?'current':'pending','proof'=>(string)$r['proof_type'],'points'=>(int)$r['points'],'description'=>(string)($r['description']??''),'instructions'=>(string)($r['instructions']??''),'accepted_extensions'=>(string)($r['accepted_extensions']??''),'max_file_size_mb'=>$r['max_file_size_mb']===null?null:(int)$r['max_file_size_mb'],'is_required'=>(bool)$r['is_required']];} return $out;}catch(Throwable $e){return [];} }
+function tcl_storage_reward_ladder(int $campaignId): array{ $pdo=tcl_storage_pdo(); if(!$pdo)return []; try{$st=$pdo->prepare('SELECT * FROM training_reward_rules WHERE campaign_id=:id ORDER BY sort_order,id');$st->execute(['id'=>$campaignId]);$out=[]; foreach($st->fetchAll() as $i=>$r){$out[]=['db_id'=>(int)$r['id'],'public_id'=>(string)$r['public_id'],'label'=>(string)$r['title'],'requirement'=>tcl_storage_reward_requirement_label($r),'reward'=>(string)$r['reward_label'],'status'=>$i===0?'current':'locked','trigger_type'=>(string)$r['trigger_type'],'reward_type'=>(string)$r['reward_type'],'reward_value_cents'=>(int)$r['reward_value_cents']];}return $out;}catch(Throwable $e){return [];} }
+function tcl_storage_reward_requirement_label(array $r): string{ $t=(string)($r['trigger_type']??'sequence_completion'); if($t==='streak_completion')return 'Complete '.number_format((int)($r['required_streak']??0)).' day streak'; if($t==='milestone_completion')return 'Reach milestone '.number_format((int)($r['milestone_target']??0)); if($t==='task_completion')return 'Complete '.number_format((int)($r['required_completions']??1)).' task'; return 'Complete '.number_format((int)($r['required_completions']??1)).' sequence'; }
+function tcl_storage_summary(array $campaigns): array{ $active=0;$participants=0;$tasks=0;$progress=0; foreach($campaigns as $c){ if(($c['status']??'')==='active')$active++; $participants+=(int)($c['participant_count']??0); $tasks+=(int)($c['task_count']??0); $progress+=(int)($c['progress']??0);} return ['active_campaigns'=>$active,'total_participants'=>$participants,'total_tasks'=>$tasks,'average_progress'=>$campaigns?(int)round($progress/max(1,count($campaigns))):0,'source'=>tcl_storage_using_sql()?'sql':'seed']; }
 
-function tcl_storage_h(string $value): string
-{
-    return function_exists('lqr_h') ? lqr_h($value) : htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
-}
-
-function tcl_storage_pdo(): ?PDO
-{
-    static $pdo = null;
-    static $attempted = false;
-
-    if ($attempted) return $pdo;
-    $attempted = true;
-
-    $config = tcl_storage_config();
-    $storage = is_array($config['storage'] ?? null) ? $config['storage'] : [];
-    if (($storage['driver'] ?? '') !== 'mysql') return null;
-
-    $dsn = trim((string)($storage['dsn'] ?? ''));
-    if ($dsn === '') return null;
-
-    try {
-        $options = is_array($storage['options'] ?? null) ? $storage['options'] : [];
-        $options[PDO::ATTR_ERRMODE] = PDO::ERRMODE_EXCEPTION;
-        $options[PDO::ATTR_DEFAULT_FETCH_MODE] = PDO::FETCH_ASSOC;
-        $pdo = new PDO($dsn, (string)($storage['username'] ?? ''), (string)($storage['password'] ?? ''), $options);
-        return $pdo;
-    } catch (Throwable $e) {
-        return null;
-    }
-}
-
-function tcl_storage_schema_available(): bool
-{
-    $pdo = tcl_storage_pdo();
-    if (!$pdo) return false;
-
-    try {
-        $stmt = $pdo->query("SHOW TABLES LIKE 'training_campaigns'");
-        return (bool)$stmt && (bool)$stmt->fetchColumn();
-    } catch (Throwable $e) {
-        return false;
-    }
-}
-
-function tcl_storage_using_sql(): bool
-{
-    return tcl_storage_schema_available();
-}
-
-function tcl_storage_seed_campaigns(): array
-{
-    return tcl_campaigns();
-}
-
-function tcl_storage_campaigns(): array
-{
-    if (!tcl_storage_schema_available()) return tcl_storage_seed_campaigns();
-
-    $pdo = tcl_storage_pdo();
-    if (!$pdo) return tcl_storage_seed_campaigns();
-
-    try {
-        $stmt = $pdo->query("SELECT * FROM training_campaigns WHERE status IN ('active','draft','paused','completed') ORDER BY FIELD(status,'active','draft','paused','completed'), title ASC");
-        $campaigns = [];
-        foreach ($stmt->fetchAll() as $row) {
-            $campaign = tcl_storage_normalize_campaign_row($row);
-            $campaign['sequence_count'] = tcl_storage_count_for_campaign('training_sequences', (int)$row['id']);
-            $campaign['task_count'] = tcl_storage_count_for_campaign('training_tasks', (int)$row['id']);
-            $campaign['participant_count'] = tcl_storage_count_for_campaign('training_participants', (int)$row['id']);
-            $campaign['reward_ladder'] = tcl_storage_reward_ladder((int)$row['id']);
-            $campaign['sequence'] = tcl_storage_first_sequence_bundle((int)$row['id']);
-            $campaigns[(string)$campaign['id']] = $campaign;
-        }
-        return $campaigns ?: tcl_storage_seed_campaigns();
-    } catch (Throwable $e) {
-        return tcl_storage_seed_campaigns();
-    }
-}
-
-function tcl_storage_count_for_campaign(string $table, int $campaignId): int
-{
-    $allowed = ['training_sequences','training_tasks','training_participants'];
-    if (!in_array($table, $allowed, true)) return 0;
-    $pdo = tcl_storage_pdo();
-    if (!$pdo) return 0;
-
-    try {
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM {$table} WHERE campaign_id = :campaign_id");
-        $stmt->execute(['campaign_id' => $campaignId]);
-        return (int)$stmt->fetchColumn();
-    } catch (Throwable $e) {
-        return 0;
-    }
-}
-
-function tcl_storage_campaign_by_slug(string $slug): ?array
-{
-    $slug = trim($slug);
-    if ($slug === '') return null;
-
-    if (!tcl_storage_schema_available()) {
-        $campaigns = tcl_storage_seed_campaigns();
-        return $campaigns[$slug] ?? null;
-    }
-
-    $pdo = tcl_storage_pdo();
-    if (!$pdo) return null;
-
-    try {
-        $stmt = $pdo->prepare('SELECT * FROM training_campaigns WHERE slug = :slug LIMIT 1');
-        $stmt->execute(['slug' => $slug]);
-        $row = $stmt->fetch();
-        if (!$row) return null;
-
-        $campaign = tcl_storage_normalize_campaign_row($row);
-        $campaign['sequence_count'] = tcl_storage_count_for_campaign('training_sequences', (int)$row['id']);
-        $campaign['task_count'] = tcl_storage_count_for_campaign('training_tasks', (int)$row['id']);
-        $campaign['participant_count'] = tcl_storage_count_for_campaign('training_participants', (int)$row['id']);
-        $campaign['reward_ladder'] = tcl_storage_reward_ladder((int)$row['id']);
-        $campaign['sequences'] = tcl_storage_sequences((int)$row['id']);
-        $campaign['sequence'] = $campaign['sequences'][0] ?? tcl_storage_first_sequence_bundle((int)$row['id']);
-        return $campaign;
-    } catch (Throwable $e) {
-        $campaigns = tcl_storage_seed_campaigns();
-        return $campaigns[$slug] ?? null;
-    }
-}
-
-function tcl_storage_normalize_campaign_row(array $row): array
-{
-    $metadata = [];
-    if (!empty($row['metadata_json'])) {
-        $decoded = json_decode((string)$row['metadata_json'], true);
-        if (is_array($decoded)) $metadata = $decoded;
-    }
-
-    $tags = $metadata['tags'] ?? [];
-    if (!is_array($tags)) $tags = [];
-
-    return [
-        'db_id' => (int)($row['id'] ?? 0),
-        'public_id' => (string)($row['public_id'] ?? ''),
-        'id' => (string)($row['slug'] ?? ''),
-        'slug' => (string)($row['slug'] ?? ''),
-        'title' => (string)($row['title'] ?? ''),
-        'eyebrow' => (string)($row['subtitle'] ?: ucwords(str_replace('_', ' ', (string)($row['campaign_type'] ?? 'Campaign')))),
-        'type' => (string)($row['campaign_type'] ?? 'general'),
-        'status' => (string)($row['status'] ?? 'draft'),
-        'difficulty' => (string)($row['difficulty'] ?? 'Standard'),
-        'visibility' => (string)($row['visibility'] ?? 'public'),
-        'description' => (string)($row['description'] ?? ''),
-        'short_description' => (string)($row['description'] ?? ''),
-        'image_hint' => strtoupper(substr((string)($row['campaign_type'] ?? 'TC'), 0, 2)),
-        'reward_preview' => (string)($metadata['reward_preview'] ?? 'Reward configured'),
-        'next_reward' => (string)($metadata['next_reward'] ?? ($metadata['reward_preview'] ?? 'Next reward')), 
-        'sequence_count' => 0,
-        'task_count' => 0,
-        'participant_count' => 0,
-        'duration' => (string)($metadata['duration'] ?? 'Campaign'),
-        'streak' => (int)($metadata['streak'] ?? 0),
-        'progress' => (int)($metadata['progress'] ?? 0),
-        'points' => (int)($metadata['points'] ?? 0),
-        'next_points' => (int)($metadata['next_points'] ?? 0),
-        'tags' => array_values(array_map('strval', $tags)),
-        'sequence' => ['title' => 'Sequence', 'description' => '', 'steps' => []],
-        'reward_ladder' => [],
-    ];
-}
-
-function tcl_storage_sequences(int $campaignId): array
-{
-    $pdo = tcl_storage_pdo();
-    if (!$pdo) return [];
-
-    try {
-        $stmt = $pdo->prepare('SELECT * FROM training_sequences WHERE campaign_id = :campaign_id ORDER BY sort_order ASC, id ASC');
-        $stmt->execute(['campaign_id' => $campaignId]);
-        $sequences = [];
-        foreach ($stmt->fetchAll() as $row) {
-            $sequences[] = [
-                'db_id' => (int)$row['id'],
-                'public_id' => (string)$row['public_id'],
-                'slug' => (string)$row['slug'],
-                'title' => (string)$row['title'],
-                'description' => (string)($row['description'] ?? ''),
-                'status' => (string)$row['status'],
-                'is_required' => (bool)$row['is_required'],
-                'steps' => tcl_storage_tasks((int)$row['id']),
-            ];
-        }
-        return $sequences;
-    } catch (Throwable $e) {
-        return [];
-    }
-}
-
-function tcl_storage_first_sequence_bundle(int $campaignId): array
-{
-    $sequences = tcl_storage_sequences($campaignId);
-    return $sequences[0] ?? ['title' => 'Sequence', 'description' => '', 'steps' => []];
-}
-
-function tcl_storage_tasks(int $sequenceId): array
-{
-    $pdo = tcl_storage_pdo();
-    if (!$pdo) return [];
-
-    try {
-        $stmt = $pdo->prepare('SELECT * FROM training_tasks WHERE sequence_id = :sequence_id ORDER BY sort_order ASC, id ASC');
-        $stmt->execute(['sequence_id' => $sequenceId]);
-        $tasks = [];
-        foreach ($stmt->fetchAll() as $index => $row) {
-            $tasks[] = [
-                'db_id' => (int)$row['id'],
-                'public_id' => (string)$row['public_id'],
-                'slug' => (string)$row['slug'],
-                'title' => (string)$row['title'],
-                'status' => $index === 0 ? 'current' : 'pending',
-                'proof' => (string)$row['proof_type'],
-                'points' => (int)$row['points'],
-                'description' => (string)($row['description'] ?? ''),
-                'instructions' => (string)($row['instructions'] ?? ''),
-                'accepted_extensions' => (string)($row['accepted_extensions'] ?? ''),
-                'max_file_size_mb' => $row['max_file_size_mb'] === null ? null : (int)$row['max_file_size_mb'],
-                'is_required' => (bool)$row['is_required'],
-            ];
-        }
-        return $tasks;
-    } catch (Throwable $e) {
-        return [];
-    }
-}
-
-function tcl_storage_reward_ladder(int $campaignId): array
-{
-    $pdo = tcl_storage_pdo();
-    if (!$pdo) return [];
-
-    try {
-        $stmt = $pdo->prepare('SELECT * FROM training_reward_rules WHERE campaign_id = :campaign_id ORDER BY sort_order ASC, id ASC');
-        $stmt->execute(['campaign_id' => $campaignId]);
-        $items = [];
-        foreach ($stmt->fetchAll() as $index => $row) {
-            $items[] = [
-                'db_id' => (int)$row['id'],
-                'public_id' => (string)$row['public_id'],
-                'label' => (string)$row['title'],
-                'requirement' => tcl_storage_reward_requirement_label($row),
-                'reward' => (string)$row['reward_label'],
-                'status' => $index === 0 ? 'current' : 'locked',
-                'trigger_type' => (string)$row['trigger_type'],
-                'reward_type' => (string)$row['reward_type'],
-                'reward_value_cents' => (int)$row['reward_value_cents'],
-            ];
-        }
-        return $items;
-    } catch (Throwable $e) {
-        return [];
-    }
-}
-
-function tcl_storage_reward_requirement_label(array $row): string
-{
-    $trigger = (string)($row['trigger_type'] ?? 'sequence_completion');
-    if ($trigger === 'streak_completion') return 'Complete ' . number_format((int)($row['required_streak'] ?? 0)) . ' day streak';
-    if ($trigger === 'milestone_completion') return 'Reach milestone ' . number_format((int)($row['milestone_target'] ?? 0));
-    if ($trigger === 'task_completion') return 'Complete ' . number_format((int)($row['required_completions'] ?? 1)) . ' task';
-    return 'Complete ' . number_format((int)($row['required_completions'] ?? 1)) . ' sequence';
-}
-
-function tcl_storage_summary(array $campaigns): array
-{
-    $active = 0;
-    $participants = 0;
-    $tasks = 0;
-    $progressTotal = 0;
-    foreach ($campaigns as $campaign) {
-        if (($campaign['status'] ?? '') === 'active') $active++;
-        $participants += (int)($campaign['participant_count'] ?? 0);
-        $tasks += (int)($campaign['task_count'] ?? 0);
-        $progressTotal += (int)($campaign['progress'] ?? 0);
-    }
-    return [
-        'active_campaigns' => $active,
-        'total_participants' => $participants,
-        'total_tasks' => $tasks,
-        'average_progress' => $campaigns ? (int)round($progressTotal / max(1, count($campaigns))) : 0,
-        'source' => tcl_storage_using_sql() ? 'sql' : 'seed',
-    ];
-}
+function tcl_state_path(): string{ return __DIR__.'/data/training_lab_state.json'; }
+function tcl_default_state(): array{ return ['participants'=>[],'submissions'=>[],'reviews'=>[],'receipts'=>[],'reward_issues'=>[],'events'=>[],'updated_at'=>tcl_now()]; }
+function tcl_state_load(): array{ $p=tcl_state_path(); if(!is_file($p))return tcl_default_state(); $d=json_decode((string)file_get_contents($p),true); return is_array($d)?array_replace_recursive(tcl_default_state(),$d):tcl_default_state(); }
+function tcl_state_save(array $s): void{ $dir=dirname(tcl_state_path()); if(!is_dir($dir))@mkdir($dir,0775,true); $s['updated_at']=tcl_now(); file_put_contents(tcl_state_path(), json_encode($s,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES)); }
+function tcl_event(array &$s,string $type,string $message,array $ctx=[]): void{ array_unshift($s['events'],['id'=>tcl_public_id(),'at'=>tcl_now(),'type'=>$type,'message'=>$message,'context'=>$ctx]); $s['events']=array_slice($s['events'],0,250); }
+function tcl_participant_key(string $campaignSlug,string $userId): string{ return $campaignSlug.'|'.$userId; }
+function tcl_get_participant(string $campaignSlug,string $userId): ?array{ $s=tcl_state_load(); return $s['participants'][tcl_participant_key($campaignSlug,$userId)]??null; }
+function tcl_join_campaign(string $campaignSlug,array $user): array{ $campaign=tcl_storage_campaign_by_slug($campaignSlug); if(!$campaign)throw new RuntimeException('Campaign not found.'); $s=tcl_state_load(); $userId=(string)($user['id']??''); if($userId==='')throw new RuntimeException('Unable to determine user.'); $key=tcl_participant_key($campaignSlug,$userId); if(empty($s['participants'][$key])){ $s['participants'][$key]=['id'=>tcl_public_id(),'campaign_slug'=>$campaignSlug,'user_id'=>$userId,'display_name'=>(string)($user['display_name']??'Participant'),'email'=>(string)($user['email']??''),'status'=>'active','joined_at'=>tcl_now(),'completed_at'=>null]; tcl_event($s,'training.campaign.joined','Participant joined campaign.',['campaign'=>$campaignSlug,'user_id'=>$userId]); tcl_state_save($s);} return $s['participants'][$key]; }
+function tcl_participant_required(string $campaignSlug,array $user): array{ $p=tcl_get_participant($campaignSlug,(string)($user['id']??'')); if(!$p)throw new RuntimeException('Join this campaign before continuing.'); return $p; }
+function tcl_submissions_for_participant(string $participantId,string $campaignSlug=''): array{ $s=tcl_state_load(); return array_values(array_filter($s['submissions'],fn($x)=>($x['participant_id']??'')===$participantId && ($campaignSlug===''||($x['campaign_slug']??'')===$campaignSlug))); }
+function tcl_reviews_for_submission(string $submissionId): array{ $s=tcl_state_load(); return array_values(array_filter($s['reviews'],fn($x)=>($x['submission_id']??'')===$submissionId)); }
+function tcl_latest_submission_for_task(string $participantId,string $campaignSlug,string $taskSlug): ?array{ $subs=tcl_submissions_for_participant($participantId,$campaignSlug); $subs=array_values(array_filter($subs,fn($x)=>($x['task_slug']??'')===$taskSlug)); usort($subs,fn($a,$b)=>strcmp((string)($b['submitted_at']??''),(string)($a['submitted_at']??''))); return $subs[0]??null; }
+function tcl_progress(string $campaignSlug,array $user): array{ $campaign=tcl_storage_campaign_by_slug($campaignSlug); $p=tcl_get_participant($campaignSlug,(string)($user['id']??'')); $steps=(array)($campaign['sequence']['steps']??[]); $approved=0;$pending=0;$needs=0;$total=0;$annotated=[]; foreach($steps as $i=>$step){ if(!($step['is_required']??true))continue; $total++; $latest=$p?tcl_latest_submission_for_task((string)$p['id'],$campaignSlug,(string)$step['slug']):null; $status=$latest['status']??($i===0?'current':'locked'); if($status==='approved')$approved++; elseif($status==='pending_review')$pending++; elseif($status==='needs_resubmission'||$status==='rejected')$needs++; $step['status']=$status; $step['submission']=$latest; $annotated[]=$step; } return ['joined'=>(bool)$p,'participant'=>$p,'total'=>$total,'approved'=>$approved,'pending'=>$pending,'needs_action'=>$needs,'percent'=>$total?(int)floor(($approved/$total)*100):0,'complete'=>$total>0&&$approved>=$total,'steps'=>$annotated]; }
+function tcl_save_submission(array $participant,string $campaignSlug,string $sequenceSlug,string $taskSlug,array $file,array $note=[]): array{ $s=tcl_state_load(); $attempt=1; foreach($s['submissions'] as $sub){ if(($sub['participant_id']??'')===$participant['id']&&($sub['campaign_slug']??'')===$campaignSlug&&($sub['task_slug']??'')===$taskSlug)$attempt=max($attempt,((int)($sub['attempt_number']??1))+1); } $submission=['id'=>tcl_public_id(),'participant_id'=>$participant['id'],'campaign_slug'=>$campaignSlug,'sequence_slug'=>$sequenceSlug,'task_slug'=>$taskSlug,'file'=>$file,'attempt_number'=>$attempt,'participant_note'=>(string)($note['participant_note']??''),'status'=>'pending_review','submitted_at'=>tcl_now(),'reviewed_at'=>null]; $s['submissions'][$submission['id']]=$submission; tcl_event($s,'training.proof.uploaded','Proof submitted for review.',['campaign'=>$campaignSlug,'task'=>$taskSlug,'submission_id'=>$submission['id']]); tcl_state_save($s); return $submission; }
+function tcl_pending_submissions(): array{ $s=tcl_state_load(); return array_values(array_filter($s['submissions'],fn($x)=>($x['status']??'')==='pending_review')); }
+function tcl_get_submission(string $id): ?array{ $s=tcl_state_load(); return $s['submissions'][$id]??null; }
+function tcl_review_submission(string $submissionId,string $decision,string $note,array $reviewer): array{ if(!in_array($decision,['approved','rejected','needs_resubmission'],true))throw new RuntimeException('Invalid review decision.'); $s=tcl_state_load(); if(empty($s['submissions'][$submissionId]))throw new RuntimeException('Submission not found.'); $before=$s['submissions'][$submissionId]['status']; $s['submissions'][$submissionId]['status']=$decision; $s['submissions'][$submissionId]['reviewed_at']=tcl_now(); $review=['id'=>tcl_public_id(),'submission_id'=>$submissionId,'decision'=>$decision,'reviewer_user_id'=>(string)($reviewer['id']??'admin'),'reviewer_name'=>(string)($reviewer['display_name']??'Reviewer'),'reviewer_note'=>$note,'reviewed_at'=>tcl_now()]; $s['reviews'][$review['id']]=$review; tcl_event($s,'training.review.'.$decision,'Submission reviewed.',['submission_id'=>$submissionId,'before'=>$before,'after'=>$decision]); tcl_state_save($s); if($decision==='approved'){ tcl_create_receipts_for_submission($submissionId); tcl_evaluate_rewards_for_submission($submissionId); } return $review; }
+function tcl_receipts_for_participant(string $participantId): array{ $s=tcl_state_load(); return array_values(array_filter($s['receipts'],fn($x)=>($x['participant_id']??'')===$participantId)); }
+function tcl_reward_issues_for_participant(string $participantId): array{ $s=tcl_state_load(); return array_values(array_filter($s['reward_issues'],fn($x)=>($x['participant_id']??'')===$participantId)); }
+function tcl_all_receipts(): array{ $s=tcl_state_load(); return array_values($s['receipts']); }
+function tcl_all_reward_issues(): array{ $s=tcl_state_load(); return array_values($s['reward_issues']); }
+function tcl_training_events(): array{ $s=tcl_state_load(); return $s['events']; }
