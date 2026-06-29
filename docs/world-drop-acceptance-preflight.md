@@ -1,22 +1,26 @@
-# Target Drop acceptance preflight mock
+# Target Drop send-first acceptance mock
 
 Purpose:
-- Mock the future stamp-funded Target Zone delivery flow from the Test Launch button.
+- Mock the future stamp-funded Target Zone delivery flow from the Test Launch button for audio/media pack drops.
 
 Flow:
 1. Merchant clicks Test Launch.
-2. A preflight modal estimates people inside the Target Zone, reachable inboxes, accepted users, required stamps, and stamp fees.
-3. Mock users inside the zone receive a drop notification and accept or decline.
-4. Analytics update with accepted users and accept rate.
-5. Reward quantity must match the accepted-user count before delivery can proceed.
-6. Merchant clicks to match reward quantity if the current reward quantity is short.
-7. Merchant funds stamps and runs the normal 30-second Test Launch animation.
+2. The preflight modal estimates people inside the Target Zone, reachable inboxes, projected accepts, recommended reserved rewards, required stamps, and stamp fees.
+3. The system queries the attached campaign and reward quantity through `api/world-canvas/drop-campaign-inventory.php`.
+4. If the attached campaign/reward quantity is too low, the merchant sees a warning and cannot send until more rewards are set aside.
+5. If quantity is sufficient, the merchant gets one action button: `Agree to pay $X for stamps and send`.
+6. The campaign is sent before users accept it.
+7. The normal 30-second Test Launch animation runs.
+8. Interaction tracking starts after the campaign lands.
+9. Mock users in the Target Zone receive the post-landing notification and accept or decline the dropped media pack.
+10. Analytics update with accepts, declines, response progress, and accept rate.
 
 Rules:
 - Estimate is simulated for now.
-- The mock only delivers to users who accepted the notification.
-- The number of rewards included must cover the accepted users.
-- The stamp count equals the accepted delivery count.
+- Acceptance is uncertain and happens after delivery/landing.
+- Recommended reward reserve is based on projected accepts plus a small buffer.
+- The available quantity is checked from the attached campaign's `quantity_limit` when available.
+- The merchant must have enough rewards set aside before paying stamps and sending.
 - No real inbox delivery rows are written yet.
 
 SQL:
