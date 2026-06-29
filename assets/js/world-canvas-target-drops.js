@@ -8,6 +8,8 @@ window.Microgifter = window.Microgifter || {};
   if (!map) return;
   var drops = [];
   var activeDrop = null;
+  var dragState = null;
+  var suppressClick = false;
 
   function esc(value){return String(value == null ? '' : value).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];});}
   function token(){var meta=document.querySelector('meta[name="csrf-token"],meta[name="mg-csrf-token"]');return meta?meta.getAttribute('content')||'':(window.MG_CSRF_TOKEN||'');}
@@ -16,6 +18,7 @@ window.Microgifter = window.Microgifter || {};
   function pointToGeo(point){return {latitude:clamp(85-(point.y/100)*170,-85,85),longitude:clamp((point.x/100)*360-180,-180,180)};}
   function geoToPoint(lat,lng){return {x:clamp(((Number(lng)+180)/360)*100,0,100),y:clamp(((85-Number(lat))/170)*100,0,100)};}
   function radiusSize(meters){var m=clamp(Number(meters||2500),250,5000000);return clamp(48+(Math.log10(m)-2.3)*58,48,260);}
+  function metersFromSize(size){return Math.round(clamp(Math.pow(10, ((clamp(size,48,260)-48)/58)+2.3),250,5000000));}
   function nowIsoLocal(){var d=new Date(Date.now()+3600000);d.setMinutes(0,0,0);return d.toISOString().slice(0,16);}
   function expiresIsoLocal(){var d=new Date(Date.now()+86400000);d.setMinutes(0,0,0);return d.toISOString().slice(0,16);}
 
@@ -36,11 +39,7 @@ window.Microgifter = window.Microgifter || {};
   function layer(){
     var vp = viewport();
     var el = map.querySelector('[data-world-target-drops-layer]');
-    if (!el) {
-      el = document.createElement('div');
-      el.className = 'mg-world-target-drops-layer';
-      el.dataset.worldTargetDropsLayer = '1';
-    }
+    if (!el) { el = document.createElement('div'); el.className = 'mg-world-target-drops-layer'; el.dataset.worldTargetDropsLayer = '1'; }
     if (el.parentNode !== vp) vp.appendChild(el);
     return el;
   }
@@ -48,11 +47,7 @@ window.Microgifter = window.Microgifter || {};
   function launchLayer(){
     var vp = viewport();
     var el = map.querySelector('[data-world-target-launch-layer]');
-    if (!el) {
-      el = document.createElement('div');
-      el.className = 'mg-world-target-launch-layer';
-      el.dataset.worldTargetLaunchLayer = '1';
-    }
+    if (!el) { el = document.createElement('div'); el.className = 'mg-world-target-launch-layer'; el.dataset.worldTargetLaunchLayer = '1'; }
     if (el.parentNode !== vp) vp.appendChild(el);
     return el;
   }
@@ -69,19 +64,8 @@ window.Microgifter = window.Microgifter || {};
     return panel;
   }
 
-  function openPanel(drop){
-    activeDrop = drop;
-    var panel = ensurePanel();
-    panel.classList.add('is-open');
-    panel.setAttribute('aria-hidden','false');
-    renderPanel(drop);
-  }
-
-  function closePanel(){
-    var panel = ensurePanel();
-    panel.classList.remove('is-open');
-    panel.setAttribute('aria-hidden','true');
-  }
+  function openPanel(drop){activeDrop = drop; var panel = ensurePanel(); panel.classList.add('is-open'); panel.setAttribute('aria-hidden','false'); renderPanel(drop);}
+  function closePanel(){var panel = ensurePanel(); panel.classList.remove('is-open'); panel.setAttribute('aria-hidden','true');}
 
   function renderPanel(drop){
     var body = ensurePanel().querySelector('[data-target-zone-body]');
@@ -106,13 +90,12 @@ window.Microgifter = window.Microgifter || {};
   }
 
   function renderDrops(){
-    var html = drops.map(function(drop){
+    layer().innerHTML = drops.map(function(drop){
       var point = drop.target_x != null ? {x:Number(drop.target_x),y:Number(drop.target_y)} : geoToPoint(drop.target_latitude, drop.target_longitude);
       var size = radiusSize(drop.radius_meters);
       var label = drop.status === 'scheduled' ? 'SCHEDULED' : drop.status === 'active' || drop.status === 'launching' ? 'ACTIVE' : drop.status === 'expired' ? 'EXPIRED' : 'DRAFT';
-      return '<button type="button" class="mg-world-target-drop is-'+esc(drop.status)+' '+(drop.owned?'is-owned':'')+'" data-target-drop-id="'+esc(drop.id)+'" style="left:'+point.x+'%;top:'+point.y+'%;width:'+size+'px;height:'+size+'px"><span></span><b>'+esc(label)+'</b><em>'+esc(drop.campaign_title||drop.drop_name||'Target Drop')+'</em><i data-target-radius-handle></i><small data-target-settings>⚙</small></button>';
+      return '<button type="button" class="mg-world-target-drop is-'+esc(drop.status)+' '+(drop.owned?'is-owned':'')+'" data-target-drop-id="'+esc(drop.id)+'" style="left:'+point.x+'%;top:'+point.y+'%;width:'+size+'px;height:'+size+'px"><span></span><b>'+esc(label)+'</b><em>'+esc(drop.campaign_title||drop.drop_name||'Target Drop')+'</em><i data-target-radius-handle title="Drag to change spread"></i><small data-target-settings title="Target Zone settings">⚙</small></button>';
     }).join('');
-    layer().innerHTML = html;
   }
 
   function payloadFromForm(form, action){
@@ -125,23 +108,16 @@ window.Microgifter = window.Microgifter || {};
     return data;
   }
 
+  function mergeDrop(drop){drops = drops.filter(function(item){return item.id!==drop.id;}); drops.unshift(drop); renderDrops(); if(activeDrop && activeDrop.id===drop.id) openPanel(drop);}
+  async function saveDropQuick(drop){try{var csrf=token();await MG.post('/api/world-canvas/target-drops.php',{action:'update',id:drop.id,target_latitude:drop.target_latitude,target_longitude:drop.target_longitude,radius_meters:drop.radius_meters,drop_name:drop.drop_name||'Target Drop',campaign_title:drop.campaign_title||'',payload_type:drop.payload_type||'reward',visibility:drop.visibility||'public',launch_at:drop.launch_at||'',expires_at:drop.expires_at||'',quantity_limit:drop.quantity_limit||'',claim_limit_per_user:drop.claim_limit_per_user||1,teaser_enabled:drop.teaser_enabled?'1':'0',signup_required:drop.signup_required?'1':'0',csrf_token:csrf,_csrf:csrf,csrf:csrf});}catch(e){}}
+
   async function loadDrops(){
-    try{
-      var response = await MG.get('/api/world-canvas/target-drops.php');
-      var payload = response.data || response || {};
-      drops = payload.drops || [];
-      renderDrops();
-    }catch(e){}
+    try{var response = await MG.get('/api/world-canvas/target-drops.php'); var payload = response.data || response || {}; drops = payload.drops || []; renderDrops();}catch(e){}
   }
 
   async function createDropAt(point){
     var geo = pointToGeo(point);
-    try{
-      var csrf = token();
-      var response = await MG.post('/api/world-canvas/target-drops.php', {action:'create',target_latitude:geo.latitude,target_longitude:geo.longitude,radius_meters:2500,csrf_token:csrf,_csrf:csrf,csrf:csrf});
-      var drop = (response.data && response.data.drop) || response.drop;
-      if (drop) { drops.unshift(drop); renderDrops(); openPanel(drop); }
-    }catch(error){console.warn(error);}
+    try{var csrf = token(); var response = await MG.post('/api/world-canvas/target-drops.php', {action:'create',target_latitude:geo.latitude,target_longitude:geo.longitude,radius_meters:2500,csrf_token:csrf,_csrf:csrf,csrf:csrf}); var drop = (response.data && response.data.drop) || response.drop; if (drop) { drops.unshift(drop); renderDrops(); openPanel(drop); }}catch(error){console.warn(error);}
   }
 
   function launchAnimation(drop){
@@ -149,68 +125,77 @@ window.Microgifter = window.Microgifter || {};
     var target = drop.target_x != null ? {x:Number(drop.target_x),y:Number(drop.target_y)} : geoToPoint(drop.target_latitude, drop.target_longitude);
     var start = {x:Number(drop.launch_x),y:Number(drop.launch_y)};
     var el = document.createElement('div');
-    el.className = 'mg-world-drop-package';
-    el.innerHTML = '<span>🎁</span><i></i>';
-    el.style.left = start.x + '%'; el.style.top = start.y + '%';
-    launchLayer().appendChild(el);
+    el.className = 'mg-world-drop-package'; el.innerHTML = '<span>🎁</span><i></i>'; el.style.left = start.x + '%'; el.style.top = start.y + '%'; launchLayer().appendChild(el);
     var startTime = performance.now();
-    function frame(now){
-      var t = Math.min(1, (now-startTime)/1300);
-      var ease = t<.5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2;
-      var arc = Math.sin(ease*Math.PI)*-13;
-      el.style.left = (start.x + (target.x-start.x)*ease) + '%';
-      el.style.top = (start.y + (target.y-start.y)*ease + arc) + '%';
-      el.style.transform = 'translate(-50%,-50%) scale('+(1+.18*Math.sin(ease*Math.PI))+') rotate('+(ease*24)+'deg)';
-      if(t<1) requestAnimationFrame(frame); else { el.classList.add('has-landed'); setTimeout(function(){el.remove();},700); }
-    }
+    function frame(now){var t=Math.min(1,(now-startTime)/1300);var ease=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;var arc=Math.sin(ease*Math.PI)*-13;el.style.left=(start.x+(target.x-start.x)*ease)+'%';el.style.top=(start.y+(target.y-start.y)*ease+arc)+'%';el.style.transform='translate(-50%,-50%) scale('+(1+.18*Math.sin(ease*Math.PI))+') rotate('+(ease*24)+'deg)';if(t<1)requestAnimationFrame(frame);else{el.classList.add('has-landed');setTimeout(function(){el.remove();},700);}}
     requestAnimationFrame(frame);
   }
 
+  function startDrag(event){
+    var dropEl = event.target.closest('[data-target-drop-id]');
+    if (!dropEl || event.target.closest('[data-target-settings]')) return;
+    var drop = drops.find(function(item){return item.id===dropEl.dataset.targetDropId;});
+    if (!drop || !drop.owned) return;
+    event.preventDefault(); event.stopPropagation(); suppressClick = true;
+    dragState = {id:drop.id, mode:event.target.closest('[data-target-radius-handle]')?'radius':'center'};
+    document.body.classList.add('is-target-drop-dragging');
+  }
+
+  function moveDrag(event){
+    if (!dragState) return;
+    var drop = drops.find(function(item){return item.id===dragState.id;});
+    if (!drop) return;
+    var point = pointFromEvent(event);
+    if (dragState.mode === 'center') {
+      var geo = pointToGeo(point);
+      drop.target_latitude = geo.latitude.toFixed(7); drop.target_longitude = geo.longitude.toFixed(7); drop.target_x = point.x; drop.target_y = point.y;
+    } else {
+      var center = drop.target_x != null ? {x:Number(drop.target_x),y:Number(drop.target_y)} : geoToPoint(drop.target_latitude, drop.target_longitude);
+      var rect = map.getBoundingClientRect();
+      var px = Math.hypot((point.x-center.x)/100*rect.width, (point.y-center.y)/100*rect.height) * 2;
+      drop.radius_meters = metersFromSize(px);
+    }
+    renderDrops();
+    if (activeDrop && activeDrop.id === drop.id) renderPanel(drop);
+  }
+
+  function endDrag(){
+    if (!dragState) return;
+    var drop = drops.find(function(item){return item.id===dragState.id;});
+    dragState = null; document.body.classList.remove('is-target-drop-dragging');
+    if (drop) saveDropQuick(drop);
+    setTimeout(function(){suppressClick=false;},100);
+  }
+
+  map.addEventListener('pointerdown', startDrag);
+  document.addEventListener('pointermove', moveDrag);
+  document.addEventListener('pointerup', endDrag);
+
   map.addEventListener('click', function(event){
+    if (suppressClick) return;
     if (event.target.closest('[data-target-drop-id]')) return;
     if (event.target.closest('button,a,input,select,label,textarea,.mg-world-square-zoom,.mg-world-merchant-settings-btn')) return;
     createDropAt(pointFromEvent(event));
   });
 
   document.addEventListener('click', function(event){
-    var close = event.target.closest('[data-target-zone-close]');
-    if (close) { closePanel(); return; }
-    var settings = event.target.closest('[data-target-settings]');
-    var dropButton = event.target.closest('[data-target-drop-id]');
-    if (settings || dropButton) {
-      var id = (dropButton || settings.closest('[data-target-drop-id]')).dataset.targetDropId;
-      var drop = drops.find(function(item){return item.id===id;});
-      if (drop) openPanel(drop);
-    }
+    if (suppressClick) return;
+    var close = event.target.closest('[data-target-zone-close]'); if (close) { closePanel(); return; }
+    var settings = event.target.closest('[data-target-settings]'); var dropButton = event.target.closest('[data-target-drop-id]');
+    if (settings || dropButton) { var id = (dropButton || settings.closest('[data-target-drop-id]')).dataset.targetDropId; var drop = drops.find(function(item){return item.id===id;}); if (drop) openPanel(drop); }
   });
 
   document.addEventListener('submit', async function(event){
-    var form = event.target.closest('[data-target-zone-form]');
-    if (!form) return;
-    event.preventDefault();
-    var status = form.querySelector('[data-target-zone-status]');
-    try{
-      if(status) status.textContent='Saving…';
-      var response = await MG.post('/api/world-canvas/target-drops.php', payloadFromForm(form,'update'));
-      var drop = (response.data && response.data.drop) || response.drop;
-      if(drop){drops = drops.filter(function(item){return item.id!==drop.id;}); drops.unshift(drop); renderDrops(); openPanel(drop);}
-      if(status) status.textContent='Saved.';
-    }catch(error){if(status) status.textContent=error.message||'Unable to save Target Drop.';}
+    var form = event.target.closest('[data-target-zone-form]'); if (!form) return;
+    event.preventDefault(); var status = form.querySelector('[data-target-zone-status]');
+    try{if(status) status.textContent='Saving…'; var response = await MG.post('/api/world-canvas/target-drops.php', payloadFromForm(form,'update')); var drop = (response.data && response.data.drop) || response.drop; if(drop) mergeDrop(drop); if(status) status.textContent='Saved.';}catch(error){if(status) status.textContent=error.message||'Unable to save Target Drop.';}
   });
 
   document.addEventListener('click', async function(event){
-    var publish = event.target.closest('[data-target-zone-publish]');
-    if (!publish) return;
-    var form = publish.closest('[data-target-zone-form]');
-    if (!form) return;
+    var publish = event.target.closest('[data-target-zone-publish]'); if (!publish) return;
+    var form = publish.closest('[data-target-zone-form]'); if (!form) return;
     var status = form.querySelector('[data-target-zone-status]');
-    try{
-      if(status) status.textContent='Publishing…';
-      var response = await MG.post('/api/world-canvas/target-drops.php', payloadFromForm(form,'publish'));
-      var drop = (response.data && response.data.drop) || response.drop;
-      if(drop){drops = drops.filter(function(item){return item.id!==drop.id;}); drops.unshift(drop); renderDrops(); openPanel(drop); launchAnimation(drop);}
-      if(status) status.textContent='Drop launched / scheduled.';
-    }catch(error){if(status) status.textContent=error.message||'Unable to publish Target Drop.';}
+    try{if(status) status.textContent='Publishing…'; var response = await MG.post('/api/world-canvas/target-drops.php', payloadFromForm(form,'publish')); var drop = (response.data && response.data.drop) || response.drop; if(drop){mergeDrop(drop); launchAnimation(drop);} if(status) status.textContent='Drop launched / scheduled.';}catch(error){if(status) status.textContent=error.message||'Unable to publish Target Drop.';}
   });
 
   window.setInterval(loadDrops, 12000);
