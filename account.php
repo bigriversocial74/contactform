@@ -77,11 +77,7 @@ $agent_tab = $accountView;
 require __DIR__ . '/includes/header.php';
 ?>
 <section class="mg-app-shell mg-account-app">
-  <?php if ($accountView === 'admin'): ?>
-    <?php $adminActive = 'dashboard'; require __DIR__ . '/includes/admin-sidebar.php'; ?>
-  <?php else: ?>
-    <?php require __DIR__ . '/includes/agent-sidebar.php'; ?>
-  <?php endif; ?>
+  <?php require __DIR__ . '/includes/agent-sidebar.php'; ?>
 
   <main class="mg-app-workspace mg-account-main">
     <?php if (!$user): ?>
