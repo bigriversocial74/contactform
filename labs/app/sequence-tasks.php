@@ -15,13 +15,15 @@ labs_page_start([
   <a class="labs-btn labs-btn-primary" href="/app/proof-upload.php">Upload Proof</a>
 </section>
 <section class="labs-card">
-  <table class="labs-table">
-    <thead><tr><th>Task</th><th>Status</th><th>Action</th></tr></thead>
-    <tbody>
-      <tr><td>Day 1 Walk</td><td><span class="labs-pill">Approved</span></td><td>View</td></tr>
-      <tr><td>Day 2 Stretch</td><td><span class="labs-pill">Approved</span></td><td>View</td></tr>
-      <tr><td>Day 5 Movement Proof</td><td><span class="labs-pill">Ready</span></td><td><a href="/app/proof-upload.php">Upload</a></td></tr>
-    </tbody>
-  </table>
+  <div class="labs-table-wrap">
+    <table class="labs-table">
+      <thead><tr><th>Task</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td>Day 1 Walk</td><td><span class="labs-pill">Approved</span></td><td><a class="labs-btn" href="#">View</a></td></tr>
+        <tr><td>Day 2 Stretch</td><td><span class="labs-pill">Approved</span></td><td><a class="labs-btn" href="#">View</a></td></tr>
+        <tr><td>Day 5 Movement Proof</td><td><span class="labs-pill">Ready</span></td><td><a class="labs-btn labs-btn-primary" href="/app/proof-upload.php">Upload</a></td></tr>
+      </tbody>
+    </table>
+  </div>
 </section>
 <?php labs_page_end(['section' => 'app']); ?>
