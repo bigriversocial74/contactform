@@ -1,0 +1,7 @@
+.mg-world-canvas{--mg-world-inverse-zoom:1}
+.mg-world-canvas .mg-world-node.is-current-viewer{width:28px!important;min-width:28px!important;height:28px!important;padding:0!important;border:0!important;border-radius:999px!important;background:transparent!important;box-shadow:none!important;backdrop-filter:none!important;overflow:visible!important;transform:translate(-50%,-50%) scale(var(--mg-world-inverse-zoom,1))!important;transform-origin:center center!important;transition:opacity .18s ease!important}
+.mg-world-canvas .mg-world-node.is-current-viewer:hover,.mg-world-canvas .mg-world-node.is-current-viewer.is-active,.mg-world-canvas .mg-world-node.is-current-viewer.is-selected{transform:translate(-50%,-50%) scale(var(--mg-world-inverse-zoom,1))!important}
+.mg-world-canvas .mg-world-node.is-current-viewer:before{display:none!important}
+.mg-world-canvas .mg-world-node.is-current-viewer .mg-world-avatar-badge{display:grid!important;width:28px!important;height:28px!important;font-size:9px!important;box-shadow:0 0 0 6px rgba(37,99,235,.14),0 12px 28px rgba(15,23,42,.2)!important}
+.mg-world-canvas [data-world-merchant-zone-layer],.mg-world-canvas .mg-world-merchant-zone-layer{pointer-events:none!important}
+.mg-world-canvas .mg-world-merchant-zone{transform:translate(-50%,-50%)!important;transform-origin:center center!important}
