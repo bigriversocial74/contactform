@@ -2,7 +2,7 @@
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/includes/app.php';
 require_once dirname(__DIR__) . '/includes/admin-auth.php';
-$user = mg_require_admin_page_key('admin.pwa_branding');
+$user = mg_require_admin_page_any(['admin.pwa_branding.view','admin.pwa_branding.manage','admin.settings.manage']);
 $page_title = 'PWA Branding | Microgifter';
 $page_section = 'account';
 $header_mode = 'account';
