@@ -52,6 +52,7 @@ Consistency/streak data updates
 - [Branch Strategy](./branch-strategy.md)
 - [Build Plan](./build-plan.md)
 - [Build Readiness Checklist](./build-readiness-checklist.md)
+- [Stage 1 Build Start Checklist](./stage-1-build-start-checklist.md)
 - [Implementation Boundaries](./implementation-boundaries.md)
 - [Future File Manifest](./future-file-manifest.md)
 - [Route Map](./route-map.md)
