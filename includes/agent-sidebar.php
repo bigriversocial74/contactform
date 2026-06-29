@@ -37,6 +37,13 @@ $appSidebarNav = [
         'visible' => true,
         'active' => $agentSidebarActive === 'world-canvas',
     ],
+    'world-executive' => [
+        'label' => 'World Executive',
+        'detail' => 'Network health and demand pulse',
+        'href' => '/world-executive.php',
+        'visible' => true,
+        'active' => $agentSidebarActive === 'world-executive',
+    ],
     'agent_chat' => [
         'section' => 'Agent',
         'label' => 'Agent Chat',
