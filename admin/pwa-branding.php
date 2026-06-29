@@ -17,10 +17,34 @@ require dirname(__DIR__) . '/includes/header.php';
   <div class="mg-app-workspace mg-admin-workspace">
     <section class="mg-pwa-branding-shell" data-pwa-branding-admin>
       <header class="mg-pwa-branding-hero">
-        <div><a class="mg-pwa-branding-back" href="/admin/system-health.php">← System health</a><span class="mg-eyebrow">PWA brand control</span><h1>PWA icons, splash, and notification images</h1><p>Manage install icons, maskable launcher art, notification badge/icon assets, and the branded PWA splash page from the admin section.</p></div>
+        <div><a class="mg-pwa-branding-back" href="/admin/system-health.php">← System health</a><span class="mg-eyebrow">PWA brand control</span><h1>PWA icons, splash, and notification images</h1><p>Manage install icons, maskable launcher art, notification badge/icon assets, the branded splash page, and VAPID setup helpers from the admin section.</p></div>
         <div class="mg-pwa-branding-hero-actions"><a class="mg-btn mg-btn-ghost" href="/manifest.php" target="_blank" rel="noopener">View manifest</a><a class="mg-btn mg-btn-soft" href="/pwa-splash.php" target="_blank" rel="noopener">Preview splash</a></div>
       </header>
-      <section class="mg-pwa-branding-status is-loading" data-pwa-branding-status aria-live="polite"><span class="mg-pwa-branding-status-dot" aria-hidden="true"></span><div><strong>Loading PWA branding</strong><p>Checking schema, settings, and active images.</p></div></section>
+      <section class="mg-pwa-branding-status is-loading" data-pwa-branding-status aria-live="polite"><span class="mg-pwa-branding-status-dot" aria-hidden="true"></span><div><strong>Loading PWA branding</strong><p>Checking schema, settings, active images, and push config.</p></div></section>
+      <section class="mg-pwa-branding-panel mg-pwa-vapid-panel" data-pwa-vapid-panel>
+        <header>
+          <div>
+            <h2>Push notification setup</h2>
+            <p>Browser push requires VAPID keys. Generate a key pair here, then copy the values into your private server environment config. The private key is never saved by this admin page.</p>
+          </div>
+          <button class="mg-btn mg-btn-primary" type="button" data-pwa-generate-vapid>Generate VAPID keys</button>
+        </header>
+        <div class="mg-pwa-vapid-grid">
+          <div class="mg-pwa-vapid-card"><span>PWA push</span><strong data-pwa-vapid-enabled>Checking…</strong></div>
+          <div class="mg-pwa-vapid-card"><span>Public key</span><strong data-pwa-vapid-public>Checking…</strong></div>
+          <div class="mg-pwa-vapid-card"><span>Private key</span><strong data-pwa-vapid-private>Checking…</strong></div>
+          <div class="mg-pwa-vapid-card"><span>WebPush library</span><strong data-pwa-vapid-provider>Checking…</strong></div>
+        </div>
+        <div class="mg-pwa-vapid-help">
+          <strong>Can this be bypassed?</strong>
+          <p>Only if you do not use real browser push. You can keep in-app notifications, but installed PWA/browser notifications require VAPID keys.</p>
+        </div>
+        <div class="mg-pwa-vapid-output" data-pwa-vapid-output hidden>
+          <div><strong>Generated keys — copy now</strong><p data-pwa-vapid-warning>The private key is shown one time and should only be placed in server config.</p></div>
+          <textarea readonly spellcheck="false" data-pwa-vapid-env></textarea>
+          <button class="mg-btn mg-btn-soft" type="button" data-pwa-copy-vapid>Copy env block</button>
+        </div>
+      </section>
       <div class="mg-pwa-branding-layout">
         <section class="mg-pwa-branding-panel mg-pwa-branding-settings">
           <header><div><h2>App and splash copy</h2><p>These settings drive the dynamic manifest and launch screen.</p></div><button class="mg-btn mg-btn-primary" type="button" data-pwa-save>Save settings</button></header>
