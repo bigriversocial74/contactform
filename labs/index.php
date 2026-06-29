@@ -13,7 +13,7 @@ labs_page_start([
     <p class="labs-copy">Complete guided training sequences, upload proof, build streaks, and unlock rewards for verified consistency.</p>
     <div class="labs-actions">
       <a class="labs-btn labs-btn-primary" href="/signup.php">Start Training Lab</a>
-      <a class="labs-btn" href="/pricing.php">View Pricing</a>
+      <a class="labs-btn" href="/how-it-works.php">See How It Works</a>
     </div>
   </div>
   <div class="labs-card-soft labs-visual" aria-label="Training Lab action flow preview">
@@ -25,9 +25,20 @@ labs_page_start([
     </div>
   </div>
 </section>
+<section class="labs-section-band">
+  <span class="labs-eyebrow">Core loop</span>
+  <h2>One simple flow from task to reward.</h2>
+  <p class="labs-copy">Training Lab is designed around visible action, proof, review, and progress. Stage 1 shows the product shell before any backend wiring.</p>
+  <div class="labs-timeline">
+    <div class="labs-step"><span class="labs-mini-icon">1</span><strong>Campaign created</strong><span class="labs-pill">Admin</span></div>
+    <div class="labs-step"><span class="labs-mini-icon">2</span><strong>Participant completes action</strong><span class="labs-pill">App</span></div>
+    <div class="labs-step"><span class="labs-mini-icon">3</span><strong>Proof moves into review queue</strong><span class="labs-pill">Backend</span></div>
+    <div class="labs-step"><span class="labs-mini-icon">4</span><strong>Reward progress updates visually</strong><span class="labs-pill">Wallet later</span></div>
+  </div>
+</section>
 <section class="labs-grid">
-  <article class="labs-card"><span class="labs-mini-icon">✓</span><h3>Complete Sequences</h3><p class="labs-muted">Participants follow guided tasks designed around real action and consistency.</p></article>
-  <article class="labs-card"><span class="labs-mini-icon">↑</span><h3>Upload Proof</h3><p class="labs-muted">Photo, video, and document proof states are visual in Stage 1.</p></article>
-  <article class="labs-card"><span class="labs-mini-icon">★</span><h3>Earn Rewards</h3><p class="labs-muted">Reward states connect visually now and integrate with Microgifter later.</p></article>
+  <article class="labs-card"><span class="labs-mini-icon">C</span><h3>Complete Sequences</h3><p class="labs-muted">Participants follow guided tasks designed around real action and consistency.</p></article>
+  <article class="labs-card"><span class="labs-mini-icon">P</span><h3>Upload Proof</h3><p class="labs-muted">Photo, video, and document proof states are visual in Stage 1.</p></article>
+  <article class="labs-card"><span class="labs-mini-icon">R</span><h3>Earn Rewards</h3><p class="labs-muted">Reward states connect visually now and integrate with Microgifter later.</p></article>
 </section>
 <?php labs_page_end(['section' => 'public']); ?>
