@@ -29,6 +29,7 @@ require dirname(__DIR__) . '/includes/header.php';
         </div>
         <div class="mg-system-health-hero-actions">
           <span class="mg-system-health-updated">Last checked <strong data-system-health-updated>—</strong></span>
+          <a class="mg-btn mg-btn-soft" href="/admin/pwa-branding.php">PWA branding</a>
           <button class="mg-btn mg-btn-ghost" type="button" data-system-health-refresh disabled>Refresh</button>
         </div>
       </header>
@@ -82,15 +83,8 @@ require dirname(__DIR__) . '/includes/header.php';
       </section>
 
       <div class="mg-system-health-columns">
-        <section class="mg-system-health-section">
-          <header><div><h2>Recent warnings</h2><p>Operational and security events that may require attention.</p></div></header>
-          <div class="mg-system-health-list" data-system-health-warnings><p class="mg-muted">Loading recent warnings…</p></div>
-        </section>
-
-        <section class="mg-system-health-section">
-          <header><div><h2>Recovery tools</h2><p>Protected actions for safe operational recovery.</p></div></header>
-          <div class="mg-system-health-list" data-system-health-recovery><p class="mg-muted">Loading recovery tools…</p></div>
-        </section>
+        <section class="mg-system-health-section"><header><div><h2>Recent warnings</h2><p>Operational and security events that may require attention.</p></div></header><div class="mg-system-health-list" data-system-health-warnings><p class="mg-muted">Loading recent warnings…</p></div></section>
+        <section class="mg-system-health-section"><header><div><h2>Recovery tools</h2><p>Protected actions for safe operational recovery.</p></div></header><div class="mg-system-health-list" data-system-health-recovery><p class="mg-muted">Loading recovery tools…</p></div></section>
       </div>
     </section>
   </div>
