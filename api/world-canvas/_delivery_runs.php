@@ -19,14 +19,33 @@ function mg_world_delivery_run_control(float $startX, float $startY, float $endX
 {
     $dx = $endX - $startX;
     $dy = $endY - $startY;
-    $lift = max(8.0, min(24.0, sqrt(($dx * $dx) + ($dy * $dy)) * 0.34));
-    return ['x' => $startX + ($dx * 0.5), 'y' => max(-12.0, min(112.0, $startY + ($dy * 0.5) - $lift))];
+    $distance = sqrt(($dx * $dx) + ($dy * $dy));
+    $lift = max(10.0, min(48.0, $distance * 0.54));
+    return [
+        'x' => max(-28.0, min(128.0, $startX + ($dx * 0.5) - ($dx * 0.035))),
+        'y' => max(-28.0, min(128.0, $startY + ($dy * 0.5) - $lift)),
+    ];
 }
 
 function mg_world_delivery_run_project(?float $lat, ?float $lng, string $seed, string $type): ?array
 {
     $geo = mg_world_canvas_valid_geo($lat, $lng, null, $type);
     return $geo ? mg_world_canvas_geo_project($geo, $seed, 0, $type) : null;
+}
+
+function mg_world_delivery_run_duration_ms(array $drop, string $runType): int
+{
+    if ($runType === 'test') return 30000;
+
+    $now = time();
+    $startAt = !empty($drop['launch_at']) ? strtotime((string)$drop['launch_at']) : $now;
+    if (!$startAt || $startAt < $now) $startAt = $now;
+
+    $stopAt = !empty($drop['expires_at']) ? strtotime((string)$drop['expires_at']) : null;
+    if (!$stopAt || $stopAt <= $startAt) return 30000;
+
+    $milliseconds = (int)(($stopAt - $startAt) * 1000);
+    return max(30000, min(2147483647, $milliseconds));
 }
 
 function mg_world_delivery_run_target_row(PDO $pdo, string $dropPublicId, int $merchantId = 0): ?array
@@ -77,12 +96,14 @@ function mg_world_delivery_run_create(PDO $pdo, array $drop, string $runType = '
     if (!$targetPoint) return null;
     if (!$launchPoint) throw new RuntimeException('Set your merchant World location before running a test launch.');
     $control = mg_world_delivery_run_control((float)$launchPoint['x'], (float)$launchPoint['y'], (float)$targetPoint['x'], (float)$targetPoint['y']);
+    $durationMs = mg_world_delivery_run_duration_ms($drop, $runType);
+    $durationSeconds = max(1, (int)ceil($durationMs / 1000));
     $publicId = mg_world_delivery_run_public_id();
     $startedAt = date('Y-m-d H:i:s');
-    $interceptOpens = date('Y-m-d H:i:s', time() + 1);
-    $interceptCloses = date('Y-m-d H:i:s', time() + 2);
+    $interceptOpens = $runType === 'test' ? date('Y-m-d H:i:s', time() + 2) : $startedAt;
+    $interceptCloses = date('Y-m-d H:i:s', time() + $durationSeconds);
     $stmt = $pdo->prepare("INSERT INTO merchant_target_drop_delivery_runs (public_id,target_drop_id,merchant_user_id,status,run_type,launch_latitude,launch_longitude,target_latitude,target_longitude,launch_x,launch_y,target_x,target_y,control_point_json,animation_duration_ms,animation_started_at,intercept_window_opens_at,intercept_window_closes_at,metadata_json,created_at,updated_at) VALUES (?,?,?,'sending',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())");
-    $stmt->execute([$publicId, $dropId, $merchantId, $runType, $launchLat, $launchLng, $targetLat, $targetLng, $launchPoint['x'], $launchPoint['y'], $targetPoint['x'], $targetPoint['y'], json_encode($control, JSON_UNESCAPED_SLASHES), 1700, $startedAt, $interceptOpens, $interceptCloses, json_encode(['source' => 'world_canvas', 'drop_public_id' => (string)($drop['public_id'] ?? '')], JSON_UNESCAPED_SLASHES)]);
+    $stmt->execute([$publicId, $dropId, $merchantId, $runType, $launchLat, $launchLng, $targetLat, $targetLng, $launchPoint['x'], $launchPoint['y'], $targetPoint['x'], $targetPoint['y'], json_encode($control, JSON_UNESCAPED_SLASHES), $durationMs, $startedAt, $interceptOpens, $interceptCloses, json_encode(['source' => 'world_canvas', 'drop_public_id' => (string)($drop['public_id'] ?? ''), 'timing_source' => $runType === 'test' ? 'fixed_30s_test' : 'launch_window_expires_at'], JSON_UNESCAPED_SLASHES)]);
     return mg_world_delivery_run_get($pdo, $publicId);
 }
 
@@ -96,7 +117,7 @@ function mg_world_delivery_run_get(PDO $pdo, string $publicId, int $viewerUserId
 function mg_world_delivery_run_payload(array $row, int $viewerUserId = 0): array
 {
     $started = !empty($row['animation_started_at']) ? strtotime((string)$row['animation_started_at']) : time();
-    $duration = max(700, (int)($row['animation_duration_ms'] ?? 1700));
+    $duration = max(700, (int)($row['animation_duration_ms'] ?? 30000));
     $elapsed = max(0, (int)round((time() - (int)$started) * 1000));
     $status = (string)($row['status'] ?? 'queued');
     if ($status === 'sending' && $elapsed >= $duration) $status = 'delivered';
@@ -119,6 +140,7 @@ function mg_world_delivery_run_payload(array $row, int $viewerUserId = 0): array
         'control' => mg_world_canvas_json_array($row['control_point_json'] ?? null),
         'duration_ms' => $duration,
         'elapsed_ms' => min($duration, $elapsed),
+        'progress' => $duration > 0 ? round(min(1, $elapsed / $duration), 4) : 1,
         'animation_started_at' => $row['animation_started_at'] ?? null,
         'delivered_at' => $row['delivered_at'] ?? null,
         'intercept_window_opens_at' => $row['intercept_window_opens_at'] ?? null,
