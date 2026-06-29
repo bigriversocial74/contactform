@@ -82,6 +82,7 @@ Consistency/streak data updates
 
 - [UI Page Map](./ui/ui-page-map.md)
 - [UI Layout Specification](./ui/ui-layout-spec.md)
+- [Admin Backend UI Patterns](./admin-backend-ui-patterns.md)
 - [Component Inventory](./ui/component-inventory.md)
 - [Responsive Rules](./ui/responsive-rules.md)
 - [Mockup Index](./ui/mockups.md)
