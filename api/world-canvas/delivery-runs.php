@@ -34,7 +34,8 @@ try {
     if (!$drop) throw new RuntimeException('Target Drop not found.');
 
     $run = mg_world_delivery_run_create($pdo, $drop, $action === 'test' ? 'test' : 'live');
-    if (!$run) throw new RuntimeException('Delivery runs table is not installed.');
+    if (!$run) throw new RuntimeException('Set your merchant World location before running a test launch.');
+    $run = mg_world_delivery_run_get($pdo, (string)$run['id'], (int)($user['id'] ?? 0)) ?: $run;
 
     mg_ok(['delivery_run' => $run], $action === 'test' ? 'Test delivery run started.' : 'Live delivery run started.');
 } catch (InvalidArgumentException|RuntimeException $error) {
