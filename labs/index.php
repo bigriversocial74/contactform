@@ -37,7 +37,7 @@ labs_page_start([
       <div class="labs-step"><span class="labs-mini-icon">4</span><strong>Reward progress updates visually</strong><span class="labs-pill">Wallet later</span></div>
     </div>
   </div>
-  <div class="labs-image-slot"><span>Hero illustration slot<small>Use marketing hero asset here during final image placement.</small></span></div>
+  <div class="labs-image-slot"><img src="/assets/img/marketing/training-lab-hero.svg" alt="Training Lab proof and progress illustration" style="position:relative;width:100%;max-height:330px;object-fit:contain"></div>
 </section>
 <section class="labs-grid">
   <article class="labs-card"><span class="labs-mini-icon">C</span><h3>Complete Sequences</h3><p class="labs-muted">Participants follow guided tasks designed around real action and consistency.</p></article>
