@@ -8,8 +8,8 @@ $page_title = 'Merchant Store Canvas | Microgifter';
 $page_section = 'agent';
 $header_mode = 'agent';
 $agent_tab = 'store-canvas';
-$page_styles = ['/assets/css/merchant-canvas.css','/assets/css/merchant-canvas-rewards.css','/assets/css/merchant-canvas-phase2.css','/assets/css/merchant-canvas-motion.css','/assets/css/merchant-canvas-drawer-layer.css','/assets/css/merchant-canvas-settings-drawers.css','/assets/css/merchant-canvas-drawer-fixes.css'];
-$page_scripts = ['/assets/js/merchant-canvas.js','/assets/js/merchant-canvas-rewards.js','/assets/js/merchant-canvas-motion.js','/assets/js/merchant-canvas-automation-rules.js','/assets/js/merchant-canvas-merchant-settings.js','/assets/js/merchant-canvas-drawer-coordinator.js'];
+$page_styles = ['/assets/css/merchant-canvas.css','/assets/css/merchant-canvas-rewards.css','/assets/css/merchant-canvas-phase2.css','/assets/css/merchant-canvas-motion.css','/assets/css/merchant-canvas-drawer-layer.css','/assets/css/merchant-canvas-settings-drawers.css','/assets/css/merchant-canvas-drawer-fixes.css','/assets/css/merchant-canvas-customer-tabs.css'];
+$page_scripts = ['/assets/js/merchant-canvas.js','/assets/js/merchant-canvas-rewards.js','/assets/js/merchant-canvas-motion.js','/assets/js/merchant-canvas-automation-rules.js','/assets/js/merchant-canvas-merchant-settings.js','/assets/js/merchant-canvas-drawer-coordinator.js','/assets/js/merchant-canvas-customer-tabs.js'];
 $page_manifest = [
     'id' => 'merchant-canvas',
     'title' => $page_title,
@@ -63,20 +63,29 @@ require __DIR__ . '/includes/header.php';
       </article>
     <?php else: ?>
       <section class="mg-canvas-shell">
+        <div class="mg-canvas-command-strip" aria-label="Store Canvas summary">
+          <article><span>Inside Now</span><strong data-canvas-active-count>0</strong></article>
+          <article><span>Today Entries</span><strong data-canvas-today-entries>0</strong></article>
+          <article><span>Canvas Events</span><strong data-canvas-today-events>0</strong></article>
+          <article><span>History Rows</span><strong data-canvas-history-rows>0</strong></article>
+        </div>
+
         <div class="mg-canvas-grid mg-canvas-grid-full">
           <section class="mg-canvas-stage" aria-label="Live store canvas">
             <span class="mg-canvas-live-pill mg-canvas-live-pill-hidden" data-canvas-live-pill>Checking database</span>
 
-            <div class="mg-canvas-command-strip" aria-label="Store Canvas summary">
-              <article><span>Inside now</span><strong data-canvas-active-count>0</strong></article>
-              <article><span>Today entries</span><strong data-canvas-today-entries>0</strong></article>
-              <article><span>Canvas events</span><strong data-canvas-today-events>0</strong></article>
-              <article><span>History rows</span><strong data-canvas-history-rows>0</strong></article>
-            </div>
-
             <div class="mg-canvas-state-banner mg-canvas-state-hidden" data-canvas-state>
               Database check pending.
             </div>
+
+            <details class="mg-canvas-diagnostics" data-canvas-diagnostics>
+              <summary>
+                <span>Database diagnostics</span>
+                <strong data-canvas-health-status>Not checked</strong>
+              </summary>
+              <div class="mg-canvas-health-grid" data-canvas-health></div>
+              <button type="button" class="mg-btn mg-btn-secondary" data-canvas-health-refresh>Run diagnostics</button>
+            </details>
 
             <div class="mg-canvas-map" data-canvas-map>
               <div class="mg-canvas-agent-node mg-canvas-merchant-node" data-merchant-avatar-settings>
