@@ -33,9 +33,12 @@ labs_page_start([
     <div class="labs-mini-row"><strong>Visual rewards</strong><span class="labs-pill">86</span></div>
   </aside>
 </section>
-<section class="labs-section-band">
-  <span class="labs-eyebrow">Backend rule</span>
-  <h2>Three backend pages define the admin style.</h2>
-  <p class="labs-copy">Overview, campaigns, and review queue establish the backend UI pattern. Additional backend sections should inherit these components later.</p>
+<section class="labs-section-band labs-split-card">
+  <div>
+    <span class="labs-eyebrow">Backend rule</span>
+    <h2>Three backend pages define the admin style.</h2>
+    <p class="labs-copy">Overview, campaigns, and review queue establish the backend UI pattern. Additional backend sections should inherit these components later.</p>
+  </div>
+  <div class="labs-image-slot"><span>Backend mockup slot<small>Use final backend overview image here after image import.</small></span></div>
 </section>
 <?php labs_page_end(['section' => 'admin']); ?>
