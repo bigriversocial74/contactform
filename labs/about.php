@@ -30,7 +30,7 @@ labs_page_start([
     <h2>Most programs need better follow-through, not more dashboards.</h2>
     <p class="labs-copy">The product is designed around the participant journey first, then gives managers the clean backend patterns needed to review progress.</p>
   </div>
-  <div class="labs-image-slot"><span>About illustration slot<small>Use verified progress or team collaboration asset here.</small></span></div>
+  <div class="labs-image-slot"><img src="/assets/img/marketing/about-progress.svg" alt="Verified progress workflow illustration" style="position:relative;width:100%;max-height:330px;object-fit:contain"></div>
 </section>
 <section class="labs-grid">
   <article class="labs-card"><h2>For organizations</h2><p class="labs-muted">Create campaign structure, assign tasks, and review proof from one backend area.</p></article>
