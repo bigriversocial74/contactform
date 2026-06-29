@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (document.querySelector('link[rel="manifest"]')) return;
     var link = document.createElement('link');
     link.rel = 'manifest';
-    link.href = '/manifest.webmanifest';
+    link.href = '/manifest.php';
     document.head.appendChild(link);
   }
 
