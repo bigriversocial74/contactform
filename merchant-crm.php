@@ -5,7 +5,7 @@ $page_title = 'Merchant CRM | Microgifter';
 $page_section = 'merchant';
 $header_mode = 'account';
 $page_styles = ['/assets/css/merchant-workspace.css','/assets/css/merchant-crm.css','/assets/css/communications.css','/assets/css/merchant-crm-retention-playbooks.css','/assets/css/merchant-crm-contact-stats.css'];
-$page_scripts = ['/assets/js/merchant-workspace.js'];
+$page_scripts = ['/assets/js/merchant-workspace.js','/assets/js/store-health-completion-events.js'];
 $merchantView = 'merchant_crm';
 require __DIR__ . '/includes/header.php';
 require __DIR__ . '/includes/merchant-workspace.php';
