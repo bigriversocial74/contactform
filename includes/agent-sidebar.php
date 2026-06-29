@@ -61,6 +61,13 @@ $appSidebarNav = [
         'visible' => $canMerchantNav,
         'active' => $agentSidebarActive === 'store-canvas' || $agentSidebarActive === 'merchant-canvas',
     ],
+    'world-canvas' => [
+        'label' => 'World Canvas',
+        'detail' => 'Avatar map and microgift movement',
+        'href' => '/world-canvas.php',
+        'visible' => true,
+        'active' => $agentSidebarActive === 'world-canvas',
+    ],
     'build' => [
         'label' => 'Create Gift',
         'detail' => 'Open the builder',
