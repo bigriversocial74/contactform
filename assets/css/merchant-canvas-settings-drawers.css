@@ -103,5 +103,51 @@
 .mg-merchant-history-list small{display:block;margin-top:7px;color:#64748b;font-size:10px;font-weight:950;text-transform:uppercase;letter-spacing:.08em}
 .mg-canvas-merchant-node.is-walk-around-enabled{border-color:rgba(37,99,235,.38)!important;box-shadow:0 28px 68px rgba(37,99,235,.17)!important;transition:left 1.2s ease,top 1.2s ease,transform .2s ease,box-shadow .18s ease,border-color .18s ease!important}
 .mg-canvas-merchant-node.is-walk-outside:after{content:"Walking";background:#2563eb}
-@media(max-width:1020px){.mg-merchant-control-drawer{width:100vw!important}.mg-merchant-control-summary,.mg-merchant-compact-grid{grid-template-columns:1fr}.mg-merchant-control-grid,.mg-merchant-rule-grid{grid-template-columns:1fr}.mg-merchant-control-foot{grid-template-columns:1fr;gap:10px}.mg-merchant-control-foot .mg-btn,.mg-merchant-reset{width:100%}}
-@media(max-width:760px){.mg-canvas-trigger-settings-drawer,.mg-canvas-merchant-settings-drawer{width:100vw}.mg-trigger-settings-row,.mg-merchant-settings-row,.mg-trigger-settings-summary,.mg-merchant-settings-summary{grid-template-columns:1fr}.mg-merchant-control-tabs{padding:0 14px}.mg-merchant-control-body{padding:14px!important}.mg-merchant-control-head{padding:16px!important}}
+
+/* Trigger Control Center */
+.mg-trigger-control-drawer{z-index:2147483002!important;width:min(620px,100vw)!important;background:linear-gradient(180deg,#fff,#fbfdff)!important}
+.mg-trigger-control-head{padding:18px 22px 14px!important;border-bottom:1px solid rgba(148,163,184,.18)!important;background:linear-gradient(135deg,#fff,#f8fbff)!important}
+.mg-trigger-control-head span{color:#6d28d9!important;font-size:11px!important;letter-spacing:.14em!important}
+.mg-trigger-control-head h2{font-size:26px!important;letter-spacing:-.045em!important;margin-top:4px!important}
+.mg-trigger-control-head button{width:42px!important;height:42px!important;border-radius:16px!important;background:#eef2ff!important;color:#0f172a!important}
+.mg-trigger-control-tabs{display:flex;align-items:center;gap:8px;padding:0 22px;border-bottom:1px solid rgba(148,163,184,.18);background:rgba(255,255,255,.94);overflow:auto;flex:0 0 auto}
+.mg-trigger-control-tabs button{position:relative;display:inline-flex;align-items:center;gap:8px;border:0;background:transparent;color:#475569;font:inherit;font-size:13px;font-weight:950;padding:14px 16px 13px;cursor:pointer;white-space:nowrap}
+.mg-trigger-control-tabs button span{font-size:15px;color:inherit}
+.mg-trigger-control-tabs button.is-active{color:#6d28d9}
+.mg-trigger-control-tabs button.is-active:after{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:3px;border-radius:999px;background:#7c3aed;box-shadow:0 0 0 4px rgba(124,58,237,.08)}
+.mg-trigger-control-body{padding:14px 22px 18px!important;gap:12px!important;background:linear-gradient(180deg,#fff,#fbfdff)}
+.mg-trigger-control-foot{display:grid!important;grid-template-columns:auto 1fr auto;align-items:center;padding:14px 22px!important;background:#fff!important;box-shadow:0 -18px 50px rgba(15,23,42,.04)}
+.mg-trigger-control-foot .mg-btn{border-radius:14px!important;min-height:44px!important;padding:0 22px!important;background:linear-gradient(135deg,#7c3aed,#2563eb)!important;box-shadow:0 18px 40px rgba(124,58,237,.24)!important;color:#fff!important}
+.mg-trigger-delete-main{border:1px solid rgba(239,68,68,.42);border-radius:14px;background:#fff;color:#dc2626;font-size:12px;font-weight:950;padding:12px 18px;cursor:pointer;min-height:44px}
+.mg-trigger-delete-main:hover{background:#fef2f2;border-color:#ef4444}
+.mg-trigger-control-card{border:1px solid rgba(148,163,184,.22);border-radius:18px;background:#fff;padding:14px;box-shadow:0 14px 38px rgba(15,23,42,.045)}
+.mg-trigger-control-card h3{margin:0 0 12px;color:#0f172a;font-size:14px;font-weight:950;letter-spacing:-.01em}
+.mg-trigger-control-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.mg-trigger-control-form label,.mg-trigger-control-grid label{color:#334155!important;font-size:10px!important;font-weight:950!important;letter-spacing:.085em!important;text-transform:uppercase!important}
+.mg-trigger-control-form input,.mg-trigger-control-form select,.mg-trigger-control-form textarea{border-radius:14px!important;border-color:rgba(148,163,184,.28)!important;background:#fff!important;min-height:42px!important;font-size:13px!important;font-weight:850!important;color:#0f172a!important}
+.mg-trigger-control-icon-row{display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:center}
+.mg-trigger-control-icon-row>span{display:grid;place-items:center;width:34px;height:34px;border-radius:13px;background:#f5f3ff;color:#7c3aed;font-size:15px}
+.mg-trigger-toggle-row{margin-top:12px!important;justify-content:flex-start!important;background:linear-gradient(135deg,#fff,#f8fbff)!important}
+.mg-trigger-toggle-row input{accent-color:#2563eb}
+.mg-trigger-control-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.mg-trigger-control-summary article{border:1px solid rgba(148,163,184,.22);border-radius:16px;background:#f8fafc;padding:12px}
+.mg-trigger-control-summary span{display:block;color:#64748b;font-size:9px;font-weight:950;text-transform:uppercase;letter-spacing:.08em}
+.mg-trigger-control-summary strong{display:block;margin-top:5px;color:#0f172a;font-size:20px;font-weight:950;letter-spacing:-.04em}
+.mg-trigger-customer-list,.mg-trigger-history-list{display:grid;gap:10px}
+.mg-trigger-customer-row{display:grid;grid-template-columns:40px 1fr auto;align-items:center;gap:10px;border:1px solid rgba(148,163,184,.22);border-radius:16px;background:#f8fafc;padding:11px}
+.mg-trigger-customer-row.is-inside{background:linear-gradient(135deg,#eff6ff,#ecfeff);border-color:rgba(14,165,233,.32)}
+.mg-trigger-customer-row>span{display:grid;place-items:center;width:40px;height:40px;border-radius:15px;background:#eef2ff;color:#4f46e5;font-weight:950}
+.mg-trigger-customer-row strong,.mg-trigger-history-list strong{display:block;color:#0f172a;font-size:13px;font-weight:950;letter-spacing:-.01em}
+.mg-trigger-customer-row small,.mg-trigger-history-list span{display:block;color:#64748b;font-size:12px;font-weight:800;line-height:1.35;margin-top:3px}
+.mg-trigger-customer-row b{border-radius:999px;background:#111827;color:#fff;font-size:10px;font-weight:950;padding:5px 8px;white-space:nowrap}
+.mg-trigger-history-list article{border:1px solid rgba(148,163,184,.22);border-radius:16px;background:#f8fafc;padding:12px}
+.mg-trigger-history-list small{display:block;margin-top:7px;color:#64748b;font-size:10px;font-weight:950;text-transform:uppercase;letter-spacing:.08em}
+.mg-trigger-analytics-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.mg-trigger-analytics-grid article{border:1px solid rgba(148,163,184,.22);border-radius:16px;background:#f8fafc;padding:12px}
+.mg-trigger-analytics-grid span{display:block;color:#64748b;font-size:9px;font-weight:950;text-transform:uppercase;letter-spacing:.08em}
+.mg-trigger-analytics-grid strong{display:block;margin-top:5px;color:#0f172a;font-size:22px;font-weight:950;letter-spacing:-.04em}
+.mg-trigger-analytics-grid small{display:block;margin-top:2px;color:#64748b;font-size:10px;font-weight:850}
+.mg-trigger-mini-bars{height:110px;margin-top:14px;border:1px solid rgba(148,163,184,.18);border-radius:18px;background:linear-gradient(135deg,#f8fafc,#f5f3ff);display:flex;align-items:end;gap:10px;padding:16px}
+.mg-trigger-mini-bars i{flex:1;border-radius:999px 999px 4px 4px;background:linear-gradient(180deg,#8b5cf6,#2563eb);box-shadow:0 8px 18px rgba(124,58,237,.18)}
+@media(max-width:1020px){.mg-merchant-control-drawer,.mg-trigger-control-drawer{width:100vw!important}.mg-merchant-control-summary,.mg-merchant-compact-grid{grid-template-columns:1fr}.mg-merchant-control-grid,.mg-merchant-rule-grid,.mg-trigger-control-grid,.mg-trigger-control-summary,.mg-trigger-analytics-grid{grid-template-columns:1fr}.mg-merchant-control-foot,.mg-trigger-control-foot{grid-template-columns:1fr;gap:10px}.mg-merchant-control-foot .mg-btn,.mg-merchant-reset,.mg-trigger-delete-main,.mg-trigger-control-foot .mg-btn{width:100%}}
+@media(max-width:760px){.mg-canvas-trigger-settings-drawer,.mg-canvas-merchant-settings-drawer{width:100vw}.mg-trigger-settings-row,.mg-merchant-settings-row,.mg-trigger-settings-summary,.mg-merchant-settings-summary{grid-template-columns:1fr}.mg-merchant-control-tabs,.mg-trigger-control-tabs{padding:0 14px}.mg-merchant-control-body,.mg-trigger-control-body{padding:14px!important}.mg-merchant-control-head,.mg-trigger-control-head{padding:16px!important}}
