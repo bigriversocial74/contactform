@@ -98,11 +98,18 @@ $config = [
         'redis' => mg_env_bool('MG_ENABLE_REDIS', false),
         'websockets' => mg_env_bool('MG_ENABLE_WEBSOCKETS', false),
         'sse' => mg_env_bool('MG_ENABLE_SSE', false),
+        'pwa_push' => mg_env_bool('MG_ENABLE_PWA_PUSH', true),
     ],
     'delivery' => [
         'poll_interval_seconds' => mg_env_int('MG_POLL_INTERVAL_SECONDS', 15),
         'poll_fast_interval_seconds' => mg_env_int('MG_POLL_FAST_INTERVAL_SECONDS', 5),
         'tracking_event_retention_days' => mg_env_int('MG_TRACKING_EVENT_RETENTION_DAYS', 365),
+        'pwa_push_batch_size' => mg_env_int('MG_PWA_PUSH_BATCH_SIZE', 25),
+    ],
+    'pwa_push' => [
+        'vapid_public_key' => (string) mg_env('MG_PWA_VAPID_PUBLIC_KEY', ''),
+        'vapid_private_key' => (string) mg_env('MG_PWA_VAPID_PRIVATE_KEY', ''),
+        'vapid_subject' => (string) mg_env('MG_PWA_VAPID_SUBJECT', 'mailto:admin@microgifter.com'),
     ],
     'security' => [
         'session_name' => (string) mg_env('MG_SESSION_NAME', 'mg_session'),
