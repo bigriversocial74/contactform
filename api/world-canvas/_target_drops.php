@@ -49,12 +49,20 @@ function mg_world_target_drop_status(array $row): string
     return $status;
 }
 
+function mg_world_target_drop_seconds_until(?string $date): ?int
+{
+    if (!$date) return null;
+    $ts = strtotime($date);
+    return $ts ? $ts - time() : null;
+}
+
 function mg_world_target_drop_row_to_payload(array $row, bool $owned): array
 {
     $targetGeo = mg_world_canvas_valid_geo($row['target_latitude'] ?? null, $row['target_longitude'] ?? null, null, 'target_drop');
     $target = $targetGeo ? mg_world_canvas_geo_project($targetGeo, (string)$row['public_id'], 0, 'campaign') : ['x' => 50, 'y' => 50];
     $launchGeo = mg_world_canvas_valid_geo($row['launch_latitude'] ?? null, $row['launch_longitude'] ?? null, null, 'merchant_launch');
     $launch = $launchGeo ? mg_world_canvas_geo_project($launchGeo, (string)$row['public_id'] . ':launch', 0, 'merchant') : null;
+    $status = mg_world_target_drop_status($row);
     return [
         'id' => (string)$row['public_id'],
         'owned' => $owned,
@@ -64,7 +72,7 @@ function mg_world_target_drop_row_to_payload(array $row, bool $owned): array
         'campaign_title' => (string)($row['campaign_title'] ?? ''),
         'campaign_public_id' => (string)($row['campaign_public_id'] ?? ''),
         'payload_type' => (string)($row['payload_type'] ?? 'reward'),
-        'status' => mg_world_target_drop_status($row),
+        'status' => $status,
         'raw_status' => (string)($row['status'] ?? 'draft'),
         'visibility' => (string)($row['visibility'] ?? 'public'),
         'target_latitude' => (float)$row['target_latitude'],
@@ -78,6 +86,8 @@ function mg_world_target_drop_row_to_payload(array $row, bool $owned): array
         'radius_meters' => (int)($row['radius_meters'] ?? 2500),
         'launch_at' => $row['launch_at'] ?? null,
         'expires_at' => $row['expires_at'] ?? null,
+        'seconds_to_launch' => mg_world_target_drop_seconds_until($row['launch_at'] ?? null),
+        'seconds_to_expire' => mg_world_target_drop_seconds_until($row['expires_at'] ?? null),
         'timezone' => (string)($row['timezone'] ?? ''),
         'quantity_limit' => $row['quantity_limit'] === null ? null : (int)$row['quantity_limit'],
         'claim_limit_per_user' => (int)($row['claim_limit_per_user'] ?? 1),
@@ -155,4 +165,27 @@ function mg_world_target_drop_update(PDO $pdo, array $user, array $input, bool $
     $fresh = mg_world_target_drop_get_owned($pdo, $merchantId, $publicId);
     if (!$fresh) throw new RuntimeException('Unable to update target drop.');
     return mg_world_target_drop_row_to_payload($fresh, true);
+}
+
+function mg_world_target_drop_set_status(PDO $pdo, array $user, array $input, string $status): array
+{
+    $merchantId = (int)($user['id'] ?? 0);
+    $publicId = trim((string)($input['id'] ?? $input['public_id'] ?? ''));
+    $row = mg_world_target_drop_get_owned($pdo, $merchantId, $publicId);
+    if (!$row) throw new RuntimeException('Target Drop not found.');
+    if (!in_array($status, ['draft','scheduled','active','paused','completed','expired','cancelled'], true)) throw new RuntimeException('Unsupported Target Drop status.');
+    $pdo->prepare('UPDATE merchant_target_drops SET status=?, updated_at=NOW() WHERE id=? AND merchant_user_id=?')->execute([$status, (int)$row['id'], $merchantId]);
+    $fresh = mg_world_target_drop_get_owned($pdo, $merchantId, $publicId);
+    if (!$fresh) throw new RuntimeException('Unable to update target drop.');
+    return mg_world_target_drop_row_to_payload($fresh, true);
+}
+
+function mg_world_target_drop_delete(PDO $pdo, array $user, array $input): array
+{
+    $merchantId = (int)($user['id'] ?? 0);
+    $publicId = trim((string)($input['id'] ?? $input['public_id'] ?? ''));
+    $row = mg_world_target_drop_get_owned($pdo, $merchantId, $publicId);
+    if (!$row) throw new RuntimeException('Target Drop not found.');
+    $pdo->prepare('DELETE FROM merchant_target_drops WHERE id=? AND merchant_user_id=?')->execute([(int)$row['id'], $merchantId]);
+    return ['id' => $publicId, 'deleted' => true];
 }

@@ -26,6 +26,7 @@ window.Microgifter = window.Microgifter || {};
   addCss('/assets/css/world-canvas-hotfix.css', 'data-world-hotfix-css');
   addCss('/assets/css/world-canvas-target-drops.css', 'data-world-target-drops-css');
   addCss('/assets/css/world-canvas-target-hotfix.css', 'data-world-target-hotfix-css');
+  addCss('/assets/css/world-canvas-target-drops-phase15.css', 'data-world-target-drops-phase15-css');
   addScript('/assets/js/world-canvas-reference-map.js', 'data-world-reference-map-js');
   addScript('/assets/js/world-canvas-geo-zoom.js', 'data-world-geo-zoom-js');
   addScript('/assets/js/world-canvas-merchant-settings.js', 'data-world-merchant-js');
