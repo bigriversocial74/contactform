@@ -80,7 +80,7 @@ window.Microgifter = window.Microgifter || {};
     if(!active) return '';
     var q=availableQty(), need=active.est.reservedRewards;
     if(active.loading) return '<div class="mg-accept-note">Checking the attached campaign and reward quantity…</div>';
-    if(active.stage === 'preflight' && q < need) return '<div class="mg-accept-note mg-accept-warn">Not enough rewards set aside. '+esc(qtySource())+' has '+q+' available, but this Target Drop should reserve '+need+' rewards for projected post-delivery accepts.</div>';
+    if(active.stage === 'preflight' && q < need) return '<div class="mg-accept-note mg-accept-warn">Reward quantity warning only. '+esc(qtySource())+' has '+q+' available, and this Target Drop estimates '+need+' rewards for projected post-delivery accepts. Test launch is still enabled.</div>';
     if(active.stage === 'preflight') return '<div class="mg-accept-note mg-accept-ok">Ready to send. You are sending the campaign first and reserving stamps/rewards for expected acceptance after the media pack lands.</div>';
     if(active.stage === 'sending') return '<div class="mg-accept-note">Campaign sent. Delivery animation is in flight. Interaction tracking starts after the drop lands.</div>';
     return '<div class="mg-accept-note mg-accept-ok">Drop landed. Users are accepting or declining the media pack from their inbox notification.</div>';
@@ -90,7 +90,7 @@ window.Microgifter = window.Microgifter || {};
     var e=active.est, q=availableQty(), accepted=active.accepted || 0, declined=active.declined || 0, responded=accepted+declined;
     var rate=Math.round((accepted/Math.max(1,e.reachable))*100), progress=Math.round((responded/Math.max(1,e.reachable))*100);
     var rewardTitle=(active.inventory && active.inventory.reward && active.inventory.reward.title) || active.drop.title;
-    var disabled=active.loading || active.stage !== 'preflight' || !hasEnoughRewards();
+    var disabled=active.loading || active.stage !== 'preflight';
     var btnText=active.stage === 'preflight' ? 'Agree to pay '+money(e.totalCents)+' for stamps and send' : (active.stage === 'sending' ? 'Sent — waiting for landing' : 'Tracking post-delivery accepts');
     active.el.querySelector('[data-accept-body]').innerHTML='<div class="mg-accept-grid">'+metric('Estimated people',e.people)+metric('Reachable inboxes',e.reachable)+metric('Projected accepts',e.projectedAccepts)+metric('Reserved rewards',e.reservedRewards)+'</div><div class="mg-accept-flow"><section class="mg-accept-card"><h3>Campaign reward quantity</h3><p>'+esc(qtySource())+'</p><div class="mg-accept-grid" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-top:12px">'+metric('Reward/media pack',rewardTitle)+metric('Available quantity',q)+metric('Needed reserve',e.reservedRewards)+metric('Stamp budget',money(e.totalCents))+'</div></section><section class="mg-accept-card"><h3>Post-landing acceptance tracking</h3><p>Interaction analytics start after the campaign lands in the Target Zone.</p><div class="mg-accept-bar"><span style="width:'+progress+'%"></span></div><p>'+progress+'% responses simulated · '+accepted+' accepted · '+declined+' declined · '+rate+'% accept rate.</p></section></div><section class="mg-accept-card"><h3>Sample users in Target Zone</h3><div class="mg-accept-users">'+active.users.map(function(u,i){return '<div class="mg-accept-user '+(u.status==='accepted'?'is-accepted':u.status==='declined'?'is-declined':u.status==='notified'?'is-notified':'')+'"><i>U'+(i+1)+'</i><div><strong>'+esc(u.name)+'</strong><small>Eligible for '+esc(active.drop.payload||'media pack')+' · '+esc(active.drop.title)+'</small></div><em>'+esc(u.status)+'</em></div>';}).join('')+'</div></section>'+statusNote()+'<div class="mg-accept-actions"><button type="button" class="dark" data-accept-send '+(disabled?'disabled':'')+'>'+esc(btnText)+'</button></div>';
   }
@@ -124,7 +124,7 @@ window.Microgifter = window.Microgifter || {};
     },260);
   }
   async function sendDrop(){
-    if(!active || active.stage !== 'preflight' || !hasEnoughRewards()) return;
+    if(!active || active.stage !== 'preflight') return;
     var d=active.drop,t=csrf(),reserve=active.est.reservedRewards;
     active.stage='sending'; render();
     setPanelStatus('Paid '+money(active.est.totalCents)+' for '+reserve+' stamps. Sending Target Drop…');
