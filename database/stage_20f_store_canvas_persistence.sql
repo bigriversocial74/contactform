@@ -7,9 +7,10 @@
 -- - Optional customer journey snapshots
 --
 -- Safe to re-run.
--- phpMyAdmin note: select the Microgifter application database first.
--- Do NOT run this while information_schema is selected.
+-- cPanel/phpMyAdmin fix: this file forces the app database before CREATE TABLE.
 -- ------------------------------------------------------------
+
+USE `ywzyeite_gifter2026`;
 
 CREATE TABLE IF NOT EXISTS schema_migrations (
   migration_key VARCHAR(190) NOT NULL,
