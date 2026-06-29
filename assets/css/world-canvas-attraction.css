@@ -1,0 +1,5 @@
+.mg-world-node.is-avatar .mg-world-node-icon{background:#cffafe;color:#0e7490}
+.mg-world-node.is-avatar:before{background:#0891b2}
+.mg-world-node.is-geo .mg-world-node-status{background:#06b6d4}
+.mg-world-flow-svg line.is-avatar{stroke:rgba(8,145,178,.34)}
+.mg-world-event.is-avatar b{background:#cffafe;color:#0e7490}
