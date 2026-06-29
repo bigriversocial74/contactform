@@ -19,7 +19,7 @@ window.Microgifter = window.Microgifter || {};
 
   function syncLayers(){
     var viewport = ensureViewport();
-    ['.mg-world-reference-map-svg','.mg-world-flow-svg','[data-world-nodes]','[data-world-reward-radius-layer]','[data-world-merchant-zone-layer]'].forEach(function(selector){
+    ['.mg-world-reference-map-svg','.mg-world-flow-svg','[data-world-nodes]','[data-world-reward-radius-layer]','[data-world-merchant-zone-layer]','[data-world-target-drops-layer]','[data-world-target-launch-layer]'].forEach(function(selector){
       Array.from(map.querySelectorAll(selector)).forEach(function(layer){
         if (layer.parentNode !== viewport) viewport.appendChild(layer);
       });
@@ -31,5 +31,6 @@ window.Microgifter = window.Microgifter || {};
 
   syncLayers();
   document.addEventListener('mg:world-merchant-settings-saved', syncLayers);
+  document.addEventListener('mg:world-target-drop-saved', syncLayers);
   window.setInterval(syncLayers, 600);
 })(document);
