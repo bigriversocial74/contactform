@@ -11,6 +11,7 @@ window.Microgifter = window.Microgifter || {};
   function token(){var meta=document.querySelector('meta[name="csrf-token"],meta[name="mg-csrf-token"]');return meta?meta.getAttribute('content')||'':(window.MG_CSRF_TOKEN||'');}
   function pointFromNode(node){return {x:parseFloat(node.dataset.worldTargetX||node.style.left||50),y:parseFloat(node.dataset.worldTargetY||node.style.top||50)};}
   function zoneSize(meters){var m=Math.max(50,Math.min(5000,Number(meters||250)));return Math.max(36,Math.min(180,Math.round(34+(m/5000)*146)));}
+  function addressText(location){return [location.address_line1,location.city,location.region,location.postal_code,location.country_code].filter(Boolean).join(', ');}
 
   function ensureButton(){
     var button = map.querySelector('[data-world-merchant-settings-open]');
@@ -65,16 +66,43 @@ window.Microgifter = window.Microgifter || {};
   }
 
   function formHtml(location){
-    var address=[location.address_line1,location.city,location.region].filter(Boolean).join(', ');
-    return '<form class="mg-world-merchant-location-form" data-world-merchant-location-form data-location-id="'+esc(location.public_id)+'">'
-      +'<div><strong>'+esc(location.name||'Merchant location')+'</strong><span>'+esc(address||location.location_code||'No address saved')+'</span>'+(Number(location.is_primary)?'<em>Primary</em>':'')+'</div>'
+    var address=addressText(location);
+    var mapped = location.latitude != null && location.longitude != null;
+    var statusClass = mapped ? 'is-mapped' : 'is-missing';
+    var statusText = mapped ? 'Mapped' : 'Missing coordinates';
+    var mapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(address || location.name || '');
+    return '<form class="mg-world-merchant-location-form '+statusClass+'" data-world-merchant-location-form data-location-id="'+esc(location.public_id)+'">'
+      +'<div><strong>'+esc(location.name||'Merchant location')+'</strong><span>'+esc(address||location.location_code||'No address saved')+'</span>'+(Number(location.is_primary)?'<em>Primary</em>':'')+'<mark>'+esc(statusText)+'</mark></div>'
       +'<label>Latitude<input name="latitude" inputmode="decimal" value="'+esc(location.latitude==null?'':location.latitude)+'" placeholder="33.4484"></label>'
       +'<label>Longitude<input name="longitude" inputmode="decimal" value="'+esc(location.longitude==null?'':location.longitude)+'" placeholder="-112.0740"></label>'
       +'<label>Zone radius meters<input name="world_zone_radius_meters" inputmode="numeric" value="'+esc(location.world_zone_radius_meters||250)+'"></label>'
       +'<input type="hidden" name="location_id" value="'+esc(location.public_id)+'">'
-      +'<div class="mg-world-merchant-location-actions"><button type="submit">Save zone</button><a href="/merchant-locations.php">Edit location</a></div>'
+      +'<input type="hidden" name="geo_accuracy_meters" value="'+esc(location.geo_accuracy_meters||0)+'">'
+      +'<div class="mg-world-merchant-location-actions"><button type="submit">Save zone</button><button type="button" data-world-use-current-location>Use current location</button><button type="button" data-world-find-location>Find on World Canvas</button><a href="'+esc(mapsUrl)+'" target="_blank" rel="noopener">Search address</a><a href="/merchant-locations.php">Edit location</a></div>'
       +'<p data-world-location-status></p>'
       +'</form>';
+  }
+
+  function focusLocation(form){
+    var id = form.dataset.locationId || '';
+    var node = map.querySelector('[data-world-node-id="'+CSS.escape(id)+'"], [data-world-detail-id="'+CSS.escape(id)+'"]');
+    if (node) {
+      node.scrollIntoView({behavior:'smooth',block:'center',inline:'center'});
+      node.classList.add('is-active');
+      setTimeout(function(){node.classList.remove('is-active');}, 1800);
+    }
+  }
+
+  function useCurrentLocation(form){
+    var status = form.querySelector('[data-world-location-status]');
+    if (!navigator.geolocation) { if(status) status.textContent = 'Browser location is not available.'; return; }
+    if(status) status.textContent = 'Reading browser location…';
+    navigator.geolocation.getCurrentPosition(function(pos){
+      if(form.elements.latitude) form.elements.latitude.value = pos.coords.latitude.toFixed(7);
+      if(form.elements.longitude) form.elements.longitude.value = pos.coords.longitude.toFixed(7);
+      if(form.elements.geo_accuracy_meters) form.elements.geo_accuracy_meters.value = Math.round(pos.coords.accuracy || 0);
+      if(status) status.textContent = 'Location filled. Save zone to map this merchant location.';
+    }, function(){ if(status) status.textContent = 'Unable to read browser location.'; }, {enableHighAccuracy:false,timeout:8000,maximumAge:300000});
   }
 
   function renderPanel(panel, payload){
@@ -87,6 +115,10 @@ window.Microgifter = window.Microgifter || {};
     var locations = payload.locations || [];
     body.innerHTML = locations.length ? locations.map(formHtml).join('') : '<div class="mg-world-merchant-settings-empty"><strong>No merchant locations</strong><p>Add locations in merchant-locations.php first.</p><a href="/merchant-locations.php">Open merchant locations</a></div>';
     body.querySelectorAll('[data-world-merchant-location-form]').forEach(function(form){
+      form.addEventListener('click', function(event){
+        if(event.target.closest('[data-world-use-current-location]')) useCurrentLocation(form);
+        if(event.target.closest('[data-world-find-location]')) focusLocation(form);
+      });
       form.addEventListener('submit', async function(event){
         event.preventDefault();
         var status = form.querySelector('[data-world-location-status]');
