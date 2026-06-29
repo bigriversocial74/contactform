@@ -17,10 +17,31 @@ require dirname(__DIR__) . '/includes/header.php';
   <div class="mg-app-workspace mg-admin-workspace">
     <section class="mg-pwa-branding-shell" data-pwa-branding-admin>
       <header class="mg-pwa-branding-hero">
-        <div><a class="mg-pwa-branding-back" href="/admin/system-health.php">← System health</a><span class="mg-eyebrow">PWA brand control</span><h1>PWA icons, splash, and notification images</h1><p>Manage install icons, maskable launcher art, notification badge/icon assets, the branded splash page, and VAPID setup helpers from the admin section.</p></div>
-        <div class="mg-pwa-branding-hero-actions"><a class="mg-btn mg-btn-ghost" href="/manifest.php" target="_blank" rel="noopener">View manifest</a><a class="mg-btn mg-btn-soft" href="/pwa-splash.php" target="_blank" rel="noopener">Preview splash</a></div>
+        <div><a class="mg-pwa-branding-back" href="/admin/system-health.php">← System health</a><span class="mg-eyebrow">PWA control center</span><h1>PWA readiness, push tests, icons, and splash</h1><p>Manage install icons, notification assets, VAPID setup, readiness checks, and live browser push testing from one admin section.</p></div>
+        <div class="mg-pwa-branding-hero-actions"><a class="mg-btn mg-btn-ghost" href="/manifest.php" target="_blank" rel="noopener">View manifest</a><a class="mg-btn mg-btn-soft" href="/pwa-splash.php" target="_blank" rel="noopener">Preview splash</a><a class="mg-btn mg-btn-soft" href="/notifications.php" target="_blank" rel="noopener">Open notifications</a></div>
       </header>
-      <section class="mg-pwa-branding-status is-loading" data-pwa-branding-status aria-live="polite"><span class="mg-pwa-branding-status-dot" aria-hidden="true"></span><div><strong>Loading PWA branding</strong><p>Checking schema, settings, active images, and push config.</p></div></section>
+      <section class="mg-pwa-branding-status is-loading" data-pwa-branding-status aria-live="polite"><span class="mg-pwa-branding-status-dot" aria-hidden="true"></span><div><strong>Loading PWA control center</strong><p>Checking SQL, settings, subscriptions, delivery status, active images, and push config.</p></div></section>
+      <section class="mg-pwa-branding-panel mg-pwa-ready-panel" data-pwa-readiness-panel>
+        <header>
+          <div>
+            <h2>PWA readiness checklist</h2>
+            <p>Confirm the installable app, push keys, service worker, subscription status, delivery worker, and last test result before going live.</p>
+          </div>
+          <div class="mg-pwa-ready-actions">
+            <button class="mg-btn mg-btn-primary" type="button" data-pwa-test-push>Send test notification</button>
+            <button class="mg-btn mg-btn-soft" type="button" data-pwa-refresh-readiness>Refresh checks</button>
+          </div>
+        </header>
+        <div class="mg-pwa-ready-summary" data-pwa-ready-summary>
+          <div><span>Ready</span><strong data-pwa-ready-count>0</strong></div>
+          <div><span>Warnings</span><strong data-pwa-warning-count>0</strong></div>
+          <div><span>Missing</span><strong data-pwa-missing-count>0</strong></div>
+          <div><span>Active subscriptions</span><strong data-pwa-active-count>0</strong></div>
+        </div>
+        <div class="mg-pwa-ready-list" data-pwa-ready-list><p class="mg-muted">Loading readiness checks…</p></div>
+        <div class="mg-pwa-worker-note"><strong>Delivery worker</strong><code data-pwa-worker-command>php scripts/process_pwa_push_deliveries.php</code><span data-pwa-last-worker>Waiting for delivery status…</span></div>
+        <div class="mg-pwa-test-output" data-pwa-test-output hidden></div>
+      </section>
       <section class="mg-pwa-branding-panel mg-pwa-vapid-panel" data-pwa-vapid-panel>
         <header>
           <div>
