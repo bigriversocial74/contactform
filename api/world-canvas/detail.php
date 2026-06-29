@@ -25,6 +25,76 @@ function mg_world_canvas_safe_detail_id(mixed $value): string
     return $id;
 }
 
+function mg_world_canvas_avatar_identity(array $row, array $viewer): array
+{
+    $viewerUserId = (int)($viewer['id'] ?? 0);
+    $customerUserId = (int)($row['customer_user_id'] ?? 0);
+    $merchantUserId = (int)($row['merchant_user_id'] ?? 0);
+    $profileStatus = (string)($row['customer_profile_status'] ?? '');
+    $profileVisibility = (string)($row['customer_profile_visibility'] ?? '');
+    $profilePublic = $profileStatus === 'active' && $profileVisibility === 'public';
+    $customerName = trim((string)($row['customer_display_name'] ?? ''));
+    $customerSlug = trim((string)($row['customer_slug'] ?? ''));
+
+    if ($customerUserId > 0 && $customerUserId === $viewerUserId) {
+        return [
+            'mode' => 'my_avatar',
+            'label' => 'My avatar',
+            'title' => 'Your live avatar',
+            'display_name' => $customerName !== '' ? $customerName : 'Your avatar',
+            'avatar_url' => mg_store_avatar_url($row['customer_avatar_url'] ?? null),
+            'profile_url' => $customerSlug !== '' ? '/profile.php?slug=' . rawurlencode($customerSlug) : '',
+            'detail_level' => 'full',
+            'can_open_profile' => $customerSlug !== '',
+            'can_open_store_canvas' => false,
+            'note' => 'This is your own World Canvas avatar. You can see your own avatar context and geo-anchor state.',
+        ];
+    }
+
+    if ($merchantUserId > 0 && $merchantUserId === $viewerUserId) {
+        return [
+            'mode' => 'merchant_owned',
+            'label' => 'Merchant-owned',
+            'title' => $profilePublic && $customerName !== '' ? $customerName : 'Customer avatar in your store',
+            'display_name' => $profilePublic && $customerName !== '' ? $customerName : 'Customer avatar',
+            'avatar_url' => $profilePublic ? mg_store_avatar_url($row['customer_avatar_url'] ?? null) : null,
+            'profile_url' => $profilePublic && $customerSlug !== '' ? '/profile.php?slug=' . rawurlencode($customerSlug) : '',
+            'detail_level' => 'merchant_crm',
+            'can_open_profile' => $profilePublic && $customerSlug !== '',
+            'can_open_store_canvas' => true,
+            'note' => 'This avatar is inside your merchant store. Open Store Canvas for private CRM details and direct support context.',
+        ];
+    }
+
+    if ($profilePublic && $customerName !== '') {
+        return [
+            'mode' => 'public_profile',
+            'label' => 'Public profile',
+            'title' => $customerName,
+            'display_name' => $customerName,
+            'avatar_url' => mg_store_avatar_url($row['customer_avatar_url'] ?? null),
+            'profile_url' => $customerSlug !== '' ? '/profile.php?slug=' . rawurlencode($customerSlug) : '',
+            'detail_level' => 'public',
+            'can_open_profile' => $customerSlug !== '',
+            'can_open_store_canvas' => false,
+            'note' => 'This avatar is linked to an active public profile. Private store and CRM activity remains hidden.',
+        ];
+    }
+
+    return [
+        'mode' => 'anonymous',
+        'label' => 'Anonymous',
+        'title' => 'Anonymous world avatar',
+        'display_name' => 'Anonymous avatar',
+        'avatar_url' => null,
+        'profile_url' => '',
+        'detail_level' => 'anonymous',
+        'can_open_profile' => false,
+        'can_open_store_canvas' => false,
+        'note' => 'This avatar is anonymous at the World Canvas layer. Identity and CRM details are hidden unless you own the relationship.',
+    ];
+}
+
 function mg_world_canvas_merchant_detail(PDO $pdo, string $profilePublicId, array $viewer): array
 {
     $stmt = $pdo->prepare('SELECT pp.public_id, pp.user_id, pp.display_name, pp.avatar_url, pp.slug, pp.profile_type, ms.slug store_slug, ms.status store_status FROM public_profiles pp LEFT JOIN merchant_storefronts ms ON ms.merchant_user_id=pp.user_id WHERE pp.public_id=? LIMIT 1');
@@ -45,6 +115,7 @@ function mg_world_canvas_merchant_detail(PDO $pdo, string $profilePublicId, arra
         'title' => trim((string)($row['display_name'] ?? '')) ?: 'Merchant Store',
         'subtitle' => 'Public merchant node',
         'avatar_url' => mg_store_avatar_url($row['avatar_url'] ?? null),
+        'identity' => ['mode' => $merchantUserId === $viewerUserId ? 'my_merchant' : 'public_merchant', 'label' => $merchantUserId === $viewerUserId ? 'My merchant' : 'Public merchant'],
         'stats' => [
             ['label' => 'Live avatars', 'value' => $liveSessions],
             ['label' => 'Events today', 'value' => $eventsToday],
@@ -68,29 +139,40 @@ function mg_world_canvas_avatar_detail(PDO $pdo, string $sessionPublicId, array 
     $lng = mg_world_canvas_column($pdo, 'mg_store_sessions', 'avatar_longitude') ? 's.avatar_longitude' : 'NULL';
     $accuracy = mg_world_canvas_column($pdo, 'mg_store_sessions', 'avatar_geo_accuracy_meters') ? 's.avatar_geo_accuracy_meters' : 'NULL';
     $sourceCol = mg_world_canvas_column($pdo, 'mg_store_sessions', 'avatar_geo_source') ? 's.avatar_geo_source' : 'NULL';
-    $stmt = $pdo->prepare("SELECT s.public_id, s.customer_user_id, s.merchant_user_id, s.status, s.entered_at, s.last_active_at, s.metadata_json, {$lat} avatar_latitude, {$lng} avatar_longitude, {$accuracy} avatar_geo_accuracy_meters, {$sourceCol} avatar_geo_source, pp.display_name merchant_name, fp.headline source_headline, TIMESTAMPDIFF(SECOND, s.entered_at, NOW()) seconds_inside, (SELECT event_type FROM mg_store_session_events e WHERE e.store_session_id=s.id ORDER BY e.id DESC LIMIT 1) last_event_type, (SELECT event_label FROM mg_store_session_events e WHERE e.store_session_id=s.id ORDER BY e.id DESC LIMIT 1) last_event_label FROM mg_store_sessions s LEFT JOIN public_profiles pp ON pp.user_id=s.merchant_user_id LEFT JOIN feed_posts fp ON fp.id=s.source_feed_post_id WHERE s.public_id=? LIMIT 1");
+    $stmt = $pdo->prepare("SELECT s.public_id, s.customer_user_id, s.merchant_user_id, s.status, s.entered_at, s.last_active_at, s.metadata_json, {$lat} avatar_latitude, {$lng} avatar_longitude, {$accuracy} avatar_geo_accuracy_meters, {$sourceCol} avatar_geo_source, mp.display_name merchant_name, fp.headline source_headline, cp.display_name customer_display_name, cp.avatar_url customer_avatar_url, cp.slug customer_slug, cp.profile_type customer_profile_type, cp.visibility customer_profile_visibility, cp.status customer_profile_status, TIMESTAMPDIFF(SECOND, s.entered_at, NOW()) seconds_inside, (SELECT event_type FROM mg_store_session_events e WHERE e.store_session_id=s.id ORDER BY e.id DESC LIMIT 1) last_event_type, (SELECT event_label FROM mg_store_session_events e WHERE e.store_session_id=s.id ORDER BY e.id DESC LIMIT 1) last_event_label FROM mg_store_sessions s LEFT JOIN public_profiles mp ON mp.user_id=s.merchant_user_id LEFT JOIN public_profiles cp ON cp.user_id=s.customer_user_id LEFT JOIN feed_posts fp ON fp.id=s.source_feed_post_id WHERE s.public_id=? LIMIT 1");
     $stmt->execute([$sessionPublicId]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$row) throw new RuntimeException('Avatar node is no longer available.');
-    $viewerUserId = (int)($viewer['id'] ?? 0);
-    $owned = (int)($row['customer_user_id'] ?? 0) === $viewerUserId || (int)($row['merchant_user_id'] ?? 0) === $viewerUserId;
+
+    $identity = mg_world_canvas_avatar_identity($row, $viewer);
     $geo = mg_world_canvas_geo_from_session($row);
     $eventType = (string)($row['last_event_type'] ?? 'entered_store');
     $eventLabel = trim((string)($row['last_event_label'] ?? '')) ?: ucwords(str_replace('_', ' ', $eventType));
+    $actions = [];
+    if (!empty($identity['can_open_profile']) && !empty($identity['profile_url'])) {
+        $actions[] = ['label' => 'View public profile', 'href' => (string)$identity['profile_url']];
+    }
+    if (!empty($identity['can_open_store_canvas'])) {
+        $actions[] = ['label' => 'Open Store Canvas', 'href' => '/merchant-canvas.php'];
+    }
 
     return [
         'type' => 'avatar',
-        'title' => $owned ? 'Your live avatar' : 'Anonymous world avatar',
+        'title' => (string)$identity['title'],
         'subtitle' => $eventLabel . ' · ' . (trim((string)($row['merchant_name'] ?? '')) ?: 'Merchant location'),
+        'avatar_url' => $identity['avatar_url'] ?? null,
+        'identity' => $identity,
         'stats' => [
+            ['label' => 'Identity', 'value' => (string)$identity['label']],
+            ['label' => 'Visibility', 'value' => (string)$identity['detail_level']],
             ['label' => 'Status', 'value' => (string)($row['status'] ?? 'active')],
             ['label' => 'Seconds inside', 'value' => (int)($row['seconds_inside'] ?? 0)],
             ['label' => 'Source', 'value' => trim((string)($row['source_headline'] ?? '')) ?: 'Store Canvas'],
             ['label' => 'Geo anchor', 'value' => $geo !== null ? 'Lat/long saved' : 'Affinity placed'],
             ['label' => 'Accuracy', 'value' => $geo && $geo['accuracy_meters'] !== null ? $geo['accuracy_meters'] . 'm' : '—'],
         ],
-        'actions' => [],
-        'note' => $geo !== null ? 'This avatar is anchored from saved latitude/longitude, then lightly attracted toward similar avatars and same-location conversations.' : 'This avatar has no saved coordinates yet, so World Canvas places it by location, conversation, and affinity tags.',
+        'actions' => $actions,
+        'note' => (string)$identity['note'] . ' ' . ($geo !== null ? 'This avatar is anchored from saved latitude/longitude, then lightly attracted toward similar avatars and same-location conversations.' : 'This avatar has no saved coordinates yet, so World Canvas places it by location, conversation, and affinity tags.'),
     ];
 }
 
@@ -106,7 +188,7 @@ function mg_world_canvas_campaign_detail(PDO $pdo, string $campaignPublicId): ar
     $events = mg_world_canvas_table($pdo, 'campaign_events') ? mg_world_canvas_count($pdo, 'SELECT COUNT(*) FROM campaign_events WHERE campaign_id=?', [$campaignId]) : 0;
     $rewards = mg_world_canvas_table($pdo, 'wallet_items') ? mg_world_canvas_count($pdo, 'SELECT COUNT(*) FROM wallet_items WHERE campaign_id=? AND status <> \'cancelled\'', [$campaignId]) : (int)($row['issued_count'] ?? 0);
     $limit = $row['quantity_limit'] === null ? 'No cap' : number_format((int)$row['quantity_limit']);
-    return ['type' => 'campaign', 'title' => (string)($row['title'] ?? 'Campaign'), 'subtitle' => trim((string)($row['merchant_name'] ?? '')) ?: 'Microgifter campaign', 'stats' => [['label' => 'Type', 'value' => (string)($row['campaign_type'] ?? 'campaign')], ['label' => 'Issued', 'value' => $rewards], ['label' => 'Limit', 'value' => $limit], ['label' => 'Events', 'value' => $events], ['label' => 'Reward', 'value' => trim((string)($row['reward_template_title'] ?? '')) ?: 'Reward template']], 'actions' => [], 'note' => 'Campaign details are shown as aggregate world activity. Merchant-only campaign controls stay inside merchant tools.'];
+    return ['type' => 'campaign', 'title' => (string)($row['title'] ?? 'Campaign'), 'subtitle' => trim((string)($row['merchant_name'] ?? '')) ?: 'Microgifter campaign', 'identity' => ['mode' => 'campaign', 'label' => 'Campaign'], 'stats' => [['label' => 'Type', 'value' => (string)($row['campaign_type'] ?? 'campaign')], ['label' => 'Issued', 'value' => $rewards], ['label' => 'Limit', 'value' => $limit], ['label' => 'Events', 'value' => $events], ['label' => 'Reward', 'value' => trim((string)($row['reward_template_title'] ?? '')) ?: 'Reward template']], 'actions' => [], 'note' => 'Campaign details are shown as aggregate world activity. Merchant-only campaign controls stay inside merchant tools.'];
 }
 
 function mg_world_canvas_signal_detail(PDO $pdo, string $type, string $id, array $viewer): array
@@ -118,7 +200,7 @@ function mg_world_canvas_signal_detail(PDO $pdo, string $type, string $id, array
         if ($row) {
             $viewerUserId = (int)($viewer['id'] ?? 0);
             $owned = ((int)($row['user_id'] ?? 0) === $viewerUserId || (int)($row['merchant_user_id'] ?? 0) === $viewerUserId);
-            return ['type' => 'reward', 'title' => trim((string)($row['title_snapshot'] ?? '')) ?: 'Reward movement', 'subtitle' => 'Reward signal · ' . (trim((string)($row['merchant_name'] ?? '')) ?: 'Microgifter merchant'), 'stats' => [['label' => 'Status', 'value' => (string)($row['status'] ?? 'issued')], ['label' => 'Campaign', 'value' => trim((string)($row['campaign_title'] ?? '')) ?: 'Not attached'], ['label' => 'Issued', 'value' => (string)($row['issued_at'] ?? '')]], 'actions' => [], 'note' => $owned ? 'This reward is connected to your account or merchant workspace.' : 'This public world signal hides recipient details unless you own the relationship.'];
+            return ['type' => 'reward', 'title' => trim((string)($row['title_snapshot'] ?? '')) ?: 'Reward movement', 'subtitle' => 'Reward signal · ' . (trim((string)($row['merchant_name'] ?? '')) ?: 'Microgifter merchant'), 'identity' => ['mode' => $owned ? 'owned_reward' : 'public_signal', 'label' => $owned ? 'Owned reward' : 'Public signal'], 'stats' => [['label' => 'Status', 'value' => (string)($row['status'] ?? 'issued')], ['label' => 'Campaign', 'value' => trim((string)($row['campaign_title'] ?? '')) ?: 'Not attached'], ['label' => 'Issued', 'value' => (string)($row['issued_at'] ?? '')]], 'actions' => [], 'note' => $owned ? 'This reward is connected to your account or merchant workspace.' : 'This public world signal hides recipient details unless you own the relationship.'];
         }
     }
     if (($type === 'claim' || $type === 'session') && mg_world_canvas_store_ready($pdo)) {
@@ -126,7 +208,7 @@ function mg_world_canvas_signal_detail(PDO $pdo, string $type, string $id, array
         $stmt->execute([$id]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($row) {
-            return ['type' => $type, 'title' => trim((string)($row['event_label'] ?? '')) ?: ucwords(str_replace('_', ' ', (string)($row['event_type'] ?? 'Canvas signal'))), 'subtitle' => trim((string)($row['merchant_name'] ?? '')) ?: 'Store Canvas event', 'stats' => [['label' => 'Signal', 'value' => (string)($row['event_type'] ?? 'event')], ['label' => 'Source', 'value' => trim((string)($row['source_headline'] ?? '')) ?: 'World Canvas'], ['label' => 'Time', 'value' => (string)($row['created_at'] ?? '')]], 'actions' => [], 'note' => 'Customer identity is anonymized in World Canvas. Open Merchant Store Canvas for owned CRM context.'];
+            return ['type' => $type, 'title' => trim((string)($row['event_label'] ?? '')) ?: ucwords(str_replace('_', ' ', (string)($row['event_type'] ?? 'Canvas signal'))), 'subtitle' => trim((string)($row['merchant_name'] ?? '')) ?: 'Store Canvas event', 'identity' => ['mode' => 'public_signal', 'label' => 'Public signal'], 'stats' => [['label' => 'Signal', 'value' => (string)($row['event_type'] ?? 'event')], ['label' => 'Source', 'value' => trim((string)($row['source_headline'] ?? '')) ?: 'World Canvas'], ['label' => 'Time', 'value' => (string)($row['created_at'] ?? '')]], 'actions' => [], 'note' => 'Customer identity is anonymized in World Canvas. Open Merchant Store Canvas for owned CRM context.'];
         }
     }
     throw new RuntimeException('World Canvas node is no longer available.');
