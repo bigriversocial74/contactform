@@ -30,6 +30,26 @@ try {
         mg_ok(['drop' => $drop], 'Target Drop draft created.');
     }
 
+    if ($action === 'delete') {
+        $drop = mg_world_target_drop_delete($pdo, $user, $input);
+        mg_ok(['drop' => $drop], 'Target Drop deleted.');
+    }
+
+    if ($action === 'cancel') {
+        $drop = mg_world_target_drop_set_status($pdo, $user, $input, 'cancelled');
+        mg_ok(['drop' => $drop], 'Target Drop cancelled.');
+    }
+
+    if ($action === 'pause') {
+        $drop = mg_world_target_drop_set_status($pdo, $user, $input, 'paused');
+        mg_ok(['drop' => $drop], 'Target Drop paused.');
+    }
+
+    if ($action === 'complete') {
+        $drop = mg_world_target_drop_set_status($pdo, $user, $input, 'completed');
+        mg_ok(['drop' => $drop], 'Target Drop completed.');
+    }
+
     if ($action === 'publish' || $action === 'schedule') {
         $drop = mg_world_target_drop_update($pdo, $user, $input, true);
         mg_ok(['drop' => $drop], $drop['status'] === 'scheduled' ? 'Target Drop scheduled.' : 'Target Drop launched.');
