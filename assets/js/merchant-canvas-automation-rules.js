@@ -8,14 +8,17 @@ window.Microgifter = window.Microgifter || {};
   if (!root || !MG.post || !MG.get) return;
 
   var map = root.querySelector('[data-canvas-map]');
-  var layer = root.querySelector('[data-canvas-customers]');
-  if (!map || !layer) return;
+  var customerLayer = root.querySelector('[data-canvas-customers]');
+  var triggerLayer = root.querySelector('[data-canvas-triggers]');
+  var layer = triggerLayer || customerLayer;
+  if (!map || !customerLayer || !layer) return;
 
   var settings = {};
   var stampPreview = { stamp_cost: 1, balance: 0, can_auto_message: false };
   var loaded = false;
   var saving = new Set();
   var originalPost = MG.post.bind(MG);
+  var legacyDisableNotified = false;
 
   function payload(r) { return r && r.data ? r.data : r; }
   function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
@@ -48,6 +51,12 @@ window.Microgifter = window.Microgifter || {};
     var balance = Number(stampPreview.balance || 0);
     if (!stampPreview.schema_ready) return 'Stamp preview unavailable.';
     return 'Auto message cost: ' + cost + ' Stamp · Balance: ' + balance + (balance >= cost ? ' · ready' : ' · fallback will apply');
+  }
+
+  function disableLegacyMotionTriggers() {
+    root.querySelectorAll('[data-canvas-add-trigger]:not([data-persistent-trigger-button]), [data-canvas-trigger-zone="in_out_box_zone"]').forEach(function (el) {
+      el.remove();
+    });
   }
 
   function inject(el) {
@@ -94,6 +103,7 @@ window.Microgifter = window.Microgifter || {};
   }
 
   function syncControls() {
+    disableLegacyMotionTriggers();
     Array.from(layer.querySelectorAll('[data-canvas-persistent-zone]')).forEach(function (el) { inject(el); hydrate(el); });
     tagBehaviorScores();
   }
@@ -128,7 +138,7 @@ window.Microgifter = window.Microgifter || {};
   }
 
   function tagBehaviorScores() {
-    Array.from(layer.querySelectorAll('[data-session-id]')).forEach(function (card) {
+    Array.from(customerLayer.querySelectorAll('[data-session-id]')).forEach(function (card) {
       if (!card.querySelector('.mg-canvas-avatar-score')) {
         var minutes = card.textContent.indexOf('hr') !== -1 ? readNumber(card.textContent) * 60 : readNumber(card.textContent);
         var badge = document.createElement('span');
@@ -165,7 +175,14 @@ window.Microgifter = window.Microgifter || {};
   }
 
   MG.post = function (url, data, options) {
-    if (String(url || '') === '/api/merchant-canvas/campaign-trigger.php') return originalPost('/api/merchant-canvas/campaign-trigger-automation.php', data || {}, options);
+    if (String(url || '') === '/api/merchant-canvas/campaign-trigger.php') {
+      if (data && data.trigger_zone_id) return originalPost('/api/merchant-canvas/campaign-trigger-automation.php', data || {}, options);
+      if (!legacyDisableNotified) {
+        legacyDisableNotified = true;
+        window.setTimeout(function () { legacyDisableNotified = false; }, 60000);
+      }
+      return Promise.resolve({ data: { triggered: false, skipped: true, legacy_trigger_disabled: true, message: 'Legacy local trigger ignored. Persistent trigger zones own automation rules.' } });
+    }
     return originalPost(url, data, options);
   };
 
@@ -174,7 +191,8 @@ window.Microgifter = window.Microgifter || {};
 
   var observer = new MutationObserver(syncControls);
   observer.observe(layer, { childList: true, subtree: true });
-  new MutationObserver(tagBehaviorScores).observe(root, { childList: true, subtree: true });
+  new MutationObserver(function () { disableLegacyMotionTriggers(); tagBehaviorScores(); }).observe(root, { childList: true, subtree: true });
   loadSettings();
+  disableLegacyMotionTriggers();
   window.setInterval(syncControls, 1200);
 })(window, document);

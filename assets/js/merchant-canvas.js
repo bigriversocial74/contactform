@@ -32,8 +32,7 @@ window.Microgifter = window.Microgifter || {};
   function payload(response) { return response && response.data ? response.data : response; }
   function clear(node) { if (node) node.replaceChildren(); }
   function setText(selector, value, scope) {
-    var node = qs(selector, scope);
-    if (node) node.textContent = value == null ? '' : String(value);
+    qsa(selector, scope || document).forEach(function (node) { node.textContent = value == null ? '' : String(value); });
   }
   function escapeHtml(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, function (character) {
@@ -64,9 +63,13 @@ window.Microgifter = window.Microgifter || {};
     if (Number.isNaN(parsed.getTime())) return String(value);
     return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(parsed);
   }
-  function formatNumber(value) {
-    return Number(value || 0).toLocaleString();
+  function formatTime(value) {
+    if (!value) return '';
+    var parsed = new Date(String(value).replace(' ', 'T') + (String(value).indexOf('T') === -1 ? 'Z' : ''));
+    if (Number.isNaN(parsed.getTime())) return '';
+    return new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(parsed);
   }
+  function formatNumber(value) { return Number(value || 0).toLocaleString(); }
   function moneyLabel(cents, currency) {
     cents = Number(cents || 0);
     currency = currency || 'USD';
@@ -133,10 +136,36 @@ window.Microgifter = window.Microgifter || {};
     setText('[data-canvas-test-count]', formatNumber(summary.test_avatars));
   }
 
+  function renderChatTabs() {
+    var tabs = qs('[data-chat-tabs]');
+    if (!tabs) return;
+    clear(tabs);
+    if (!customers.length) {
+      tabs.innerHTML = '<button type="button" disabled>No active chats</button>';
+      return;
+    }
+    customers.slice(0, 12).forEach(function (item, index) {
+      var customer = item.customer || {};
+      var label = customer.name || ('Visitor ' + (index + 1));
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.dataset.chatSessionId = item.session_id || '';
+      button.className = item.session_id === selectedSessionId ? 'is-active' : '';
+      button.innerHTML = '<span>' + escapeHtml(label) + '</span><small>×</small>';
+      tabs.appendChild(button);
+    });
+    var add = document.createElement('button');
+    add.type = 'button';
+    add.disabled = true;
+    add.textContent = '+';
+    tabs.appendChild(add);
+  }
+
   function renderCanvas(data) {
     customers = Array.isArray(data.customers) ? data.customers : [];
     var summary = data.summary || {};
     renderSummary(summary);
+    renderChatTabs();
     setText('[data-canvas-agent-status]', summary.agent_status || 'Watching');
     setLiveStatus(customers.length ? 'Live customers inside' : 'Database connected', customers.length ? 'live' : '');
     setCanvasState(customers.length ? 'Canvas live: customer sessions are rendering from the active database.' : 'Database connected, waiting for customers. Use Add Test Avatar if you want to verify the visual layer now.', customers.length ? 'live' : '');
@@ -185,15 +214,13 @@ window.Microgifter = window.Microgifter || {};
     html += healthRow('Driver', database.driver || 'unknown', 'ready');
     html += healthRow('Merchant user', data.merchant && data.merchant.user_id ? data.merchant.user_id : 'unknown', 'ready');
     html += healthRow('Schema status', schema.ready ? 'ready' : 'missing', schema.ready ? 'ready' : 'error');
-    html += '</section>';
-    html += '<section class="mg-canvas-health-section"><h3>Merchant activity</h3>';
+    html += '</section><section class="mg-canvas-health-section"><h3>Merchant activity</h3>';
     html += healthRow('Active customers', stats.active_customers, 'ready');
     html += healthRow('Today entries', stats.today_entries, 'ready');
     html += healthRow('Today events', stats.today_events, 'ready');
     html += healthRow('Store history rows', stats.history_rows, 'ready');
     html += healthRow('Test avatars', stats.test_avatars, stats.test_avatars ? 'warn' : 'ready');
-    html += '</section>';
-    html += '<section class="mg-canvas-health-section mg-canvas-health-section-wide"><h3>Tables</h3>';
+    html += '</section><section class="mg-canvas-health-section mg-canvas-health-section-wide"><h3>Tables</h3>';
     Object.keys(tables).forEach(function (table) {
       var item = tables[table] || {};
       html += healthRow(table, (item.exists ? 'found' : 'missing') + (item.rows == null ? '' : ' · ' + formatNumber(item.rows) + ' rows'), item.exists ? 'ready' : 'error');
@@ -249,18 +276,10 @@ window.Microgifter = window.Microgifter || {};
   function renderRewardPanel(customer) {
     customer = customer || {};
     var isTest = customer.profile_type === 'test_customer' || customer.account_status === 'Test avatar';
-    if (isTest) {
-      return '<section class="mg-canvas-reward-panel" data-reward-panel hidden><p class="mg-canvas-reward-note">Reward sending requires a real customer account. Test avatars are only for canvas visual testing.</p></section>';
-    }
-    if (!rewardOptionsLoaded) {
-      return '<section class="mg-canvas-reward-panel" data-reward-panel hidden><p class="mg-canvas-reward-note">Loading reward options...</p></section>';
-    }
-    if (!rewardOptions.schema_ready) {
-      return '<section class="mg-canvas-reward-panel" data-reward-panel hidden><p class="mg-canvas-reward-note is-error">Reward delivery setup is not ready. Run diagnostics and confirm campaign, wallet, and Store Canvas tables are installed.</p></section>';
-    }
-    if (!rewardOptions.can_send_reward || !rewardOptions.campaigns.length || !rewardOptions.templates.length) {
-      return '<section class="mg-canvas-reward-panel" data-reward-panel hidden><p class="mg-canvas-reward-note">Create an active campaign and reward template before sending Store Canvas rewards.</p></section>';
-    }
+    if (isTest) return '<section class="mg-canvas-reward-panel" data-reward-panel hidden><p class="mg-canvas-reward-note">Reward sending requires a real customer account. Test avatars are only for canvas visual testing.</p></section>';
+    if (!rewardOptionsLoaded) return '<section class="mg-canvas-reward-panel" data-reward-panel hidden><p class="mg-canvas-reward-note">Loading reward options...</p></section>';
+    if (!rewardOptions.schema_ready) return '<section class="mg-canvas-reward-panel" data-reward-panel hidden><p class="mg-canvas-reward-note is-error">Reward delivery setup is not ready. Run diagnostics and confirm campaign, wallet, and Store Canvas tables are installed.</p></section>';
+    if (!rewardOptions.can_send_reward || !rewardOptions.campaigns.length || !rewardOptions.templates.length) return '<section class="mg-canvas-reward-panel" data-reward-panel hidden><p class="mg-canvas-reward-note">Create an active campaign and reward template before sending Store Canvas rewards.</p></section>';
     var defaultCampaign = rewardOptions.campaigns[0] || {};
     var defaultTemplateId = defaultCampaign.reward_template_id || (rewardOptions.templates[0] && rewardOptions.templates[0].id) || '';
     return '<section class="mg-canvas-reward-panel" data-reward-panel hidden>' +
@@ -301,29 +320,41 @@ window.Microgifter = window.Microgifter || {};
     activeDrawer.setAttribute('aria-hidden', 'true');
   }
 
+  function renderChatThread(customer, session, events) {
+    var name = customer.name || 'Visitor';
+    var entered = events[0] && events[0].created_at ? formatTime(events[0].created_at) : 'Now';
+    var last = events[events.length - 1] || {};
+    var lastLabel = last.label || last.type || 'Browsing the store';
+    return '<section class="mg-canvas-chat-thread">' +
+      '<div class="mg-canvas-chat-day">Today</div>' +
+      '<article class="mg-canvas-chat-message">' + avatarHtml(customer) + '<div class="mg-canvas-chat-bubble-card"><header><strong>' + escapeHtml(name) + '</strong><span>' + escapeHtml(entered) + '</span></header><p>Hi, I am inside the store and looking at this offer.</p></div></article>' +
+      '<article class="mg-canvas-chat-message is-agent"><div class="mg-canvas-chat-bubble-card"><header><strong>Merchant</strong><span>Auto</span></header><p>Welcome in. I can help with rewards, campaigns, gift offers, or loyalty questions.</p></div>' + avatarHtml({ name: 'Merchant' }) + '</article>' +
+      '<article class="mg-canvas-chat-message"><span class="mg-canvas-avatar">' + escapeHtml(initials(name)) + '</span><div class="mg-canvas-chat-bubble-card"><header><strong>' + escapeHtml(name) + '</strong><span>' + escapeHtml(formatTime(last.created_at) || 'Now') + '</span></header><p>' + escapeHtml(lastLabel) + '</p></div></article>' +
+    '</section>';
+  }
+
   function renderCrm(data) {
     var customer = data.customer || {};
     var stats = data.stats || {};
     var session = data.session || {};
     var events = Array.isArray(data.events) ? data.events : [];
     var canOpenReward = rewardOptionsLoaded && rewardOptions.can_send_reward && customer.profile_type !== 'test_customer' && customer.account_status !== 'Test avatar';
-    setText('[data-drawer-name]', customer.name || 'Customer CRM');
+    setText('[data-drawer-name]', customer.name || 'Visitor chat');
+    renderChatTabs();
     var body = qs('[data-drawer-body]');
     if (body) {
       body.innerHTML =
         '<section class="mg-canvas-customer-summary">' + avatarHtml(customer) + '<div><strong>' + escapeHtml(customer.name || 'Customer') + '</strong><span>' + escapeHtml(customer.profile_type || 'customer') + ' · ' + escapeHtml(customer.account_status || 'In system') + '</span><small>Current status: ' + escapeHtml(session.status || 'active') + '</small></div></section>' +
+        renderChatThread(customer, session, events) +
         '<section class="mg-canvas-crm-grid">' +
           '<article class="mg-canvas-crm-stat"><span>Visits</span><strong>' + Number(stats.visit_count || 0).toLocaleString() + '</strong></article>' +
           '<article class="mg-canvas-crm-stat"><span>Messages</span><strong>' + Number(stats.messages_sent || 0).toLocaleString() + '</strong></article>' +
           '<article class="mg-canvas-crm-stat"><span>Rewards</span><strong>' + Number(stats.rewards_received || 0).toLocaleString() + '</strong></article>' +
           '<article class="mg-canvas-crm-stat"><span>Claims</span><strong>' + Number(stats.rewards_claimed || 0).toLocaleString() + '</strong></article>' +
         '</section>' +
-        '<section class="mg-canvas-action-grid"><button type="button" data-drawer-focus-message>Send Message</button><button type="button" data-drawer-toggle-reward' + (canOpenReward ? '' : ' disabled') + '>Send Reward</button><button type="button" disabled>Add to Campaign</button><button type="button" disabled>Follow-Up</button></section>' +
+        '<section class="mg-canvas-action-grid"><button type="button" data-drawer-focus-message>Reply</button><button type="button" data-drawer-toggle-reward' + (canOpenReward ? '' : ' disabled') + '>Send Reward</button><button type="button" disabled>Add to Campaign</button><button type="button" disabled>Follow-Up</button></section>' +
         renderRewardPanel(customer) +
-        '<section><span class="mg-canvas-eyebrow">Store source</span><p>' + escapeHtml(session.source_post && session.source_post.headline ? session.source_post.headline : 'Feed post / Store Canvas') + '</p></section>' +
-        '<section><span class="mg-canvas-eyebrow">Session events</span><div class="mg-canvas-event-list">' + (events.length ? events.map(function (event) {
-          return '<article><strong>' + escapeHtml(event.label || event.type || 'Store event') + '</strong><span>' + escapeHtml(formatDate(event.created_at)) + '</span></article>';
-        }).join('') : '<article><strong>No events yet</strong><span>Customer has just entered the store.</span></article>') + '</div></section>';
+        '<section><span class="mg-canvas-eyebrow">Store source</span><p>' + escapeHtml(session.source_post && session.source_post.headline ? session.source_post.headline : 'Feed post / Store Canvas') + '</p></section>';
     }
 
     var form = qs('[data-message-form]');
@@ -341,10 +372,11 @@ window.Microgifter = window.Microgifter || {};
   async function loadCrm(sessionId) {
     selectedSessionId = String(sessionId || '');
     qsa('[data-session-id]').forEach(function (button) { button.classList.toggle('is-active', button.dataset.sessionId === selectedSessionId); });
+    renderChatTabs();
     openDrawer();
-    setText('[data-drawer-name]', 'Loading customer...');
+    setText('[data-drawer-name]', 'Loading chat...');
     var drawerBody = qs('[data-drawer-body]');
-    if (drawerBody) drawerBody.innerHTML = '<p>Loading CRM context...</p>';
+    if (drawerBody) drawerBody.innerHTML = '<div class="mg-canvas-chat-empty"><strong>Loading chat...</strong><p>Pulling customer CRM and message context.</p></div>';
     try {
       await loadRewardOptions(false);
       var data = payload(await MG.get('/api/merchant-canvas/customer-crm.php?session_id=' + encodeURIComponent(selectedSessionId)));
@@ -426,6 +458,8 @@ window.Microgifter = window.Microgifter || {};
     var inDrawer = drawer && drawer.contains(event.target);
     if (!inRoot && !inDrawer) return;
 
+    var tab = event.target.closest('[data-chat-session-id]');
+    if (tab && tab.dataset.chatSessionId) return void loadCrm(tab.dataset.chatSessionId);
     var refresh = event.target.closest('[data-canvas-refresh]');
     if (refresh) return void loadCanvas();
     var health = event.target.closest('[data-canvas-health-refresh]');
@@ -469,6 +503,7 @@ window.Microgifter = window.Microgifter || {};
   });
 
   portalDrawer();
+  renderChatTabs();
   loadCanvas();
   loadHealth(false);
   loadRewardOptions(false);
