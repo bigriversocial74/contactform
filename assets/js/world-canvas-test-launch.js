@@ -8,12 +8,13 @@ window.Microgifter = window.Microgifter || {};
 
   function viewport(){ return map.querySelector('[data-world-viewport]') || map; }
   function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+  function validPoint(drop){ return drop && drop.launch_x != null && drop.launch_y != null && drop.target_x != null && drop.target_y != null; }
   function xy(drop){
     return {
-      startX: Number(drop.launch_x != null ? drop.launch_x : drop.target_x || 50),
-      startY: Number(drop.launch_y != null ? drop.launch_y : drop.target_y || 50),
-      endX: Number(drop.target_x != null ? drop.target_x : 50),
-      endY: Number(drop.target_y != null ? drop.target_y : 50)
+      startX: Number(drop.launch_x),
+      startY: Number(drop.launch_y),
+      endX: Number(drop.target_x),
+      endY: Number(drop.target_y)
     };
   }
   function layer(){
@@ -38,13 +39,13 @@ window.Microgifter = window.Microgifter || {};
     return 'M ' + points.startX + ' ' + points.startY + ' Q ' + controlX + ' ' + controlY + ' ' + points.endX + ' ' + points.endY;
   }
   function launch(drop, options){
-    if (!drop) return;
+    if (!validPoint(drop)) return;
     var points = xy(drop);
     var host = layer();
     host.innerHTML = '';
     var wrap = document.createElement('div');
     wrap.className = 'mg-test-launch-wrap';
-    wrap.innerHTML = '<svg class="mg-test-launch-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path class="mg-test-launch-path-shadow"></path><path class="mg-test-launch-path"></path></svg><div class="mg-test-launch-package"><span>🎁</span></div><div class="mg-test-launch-status">Sending test drop…</div><div class="mg-test-launch-ripple"></div>';
+    wrap.innerHTML = '<svg class="mg-test-launch-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path class="mg-test-launch-path-shadow"></path><path class="mg-test-launch-path"></path></svg><div class="mg-test-launch-package"><span>🎁</span></div><div class="mg-test-launch-status">Sending package…</div><div class="mg-test-launch-ripple"></div>';
     host.appendChild(wrap);
     var pathText = makePath(points);
     var path = wrap.querySelector('.mg-test-launch-path');
