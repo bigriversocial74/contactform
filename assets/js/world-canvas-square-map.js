@@ -44,6 +44,7 @@ window.Microgifter = window.Microgifter || {};
   addScript('/assets/js/world-canvas-intercept-tools.js', 'data-world-intercept-tools-js');
   addScript('/assets/js/world-canvas-panel-guard.js', 'data-world-panel-guard-js');
   addScript('/assets/js/world-canvas-launch-timing-guard.js', 'data-world-launch-timing-js');
+  addScript('/assets/js/world-canvas-drop-acceptance-mock.js', 'data-world-drop-acceptance-mock-js');
   addScript('/assets/js/world-canvas-launch-diagnostics.js', 'data-world-launch-diagnostics-js');
   addScript('/assets/js/world-canvas-icon-zoom-stability.js', 'data-world-icon-zoom-stability-js');
 })(window, document);
