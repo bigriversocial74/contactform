@@ -52,6 +52,17 @@ function mg_pwa_push_safe_internal_url(mixed $value, string $fallback = '/notifi
     return mb_substr($url, 0, 500);
 }
 
+function mg_pwa_push_safe_push_text(mixed $value, string $fallback, int $limit): string
+{
+    $text = trim((string)$value);
+    if ($text === '') return $fallback;
+    $sensitive = preg_match('/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i', $text)
+        || preg_match('/\b(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)\d{3}[-.\s]?\d{4}\b/', $text)
+        || preg_match('/\b(?:claim|code|token|secret|password|api key|gift id)\b/i', $text);
+    if ($sensitive) return $fallback;
+    return mb_substr($text, 0, $limit);
+}
+
 function mg_pwa_push_public_metadata(mixed $value, int $depth = 0): array
 {
     if (!is_array($value) || $depth > 2) return [];
@@ -144,8 +155,8 @@ function mg_pwa_push_notification_payload(array $n): array
         $context = mg_pwa_push_public_metadata($decoded);
     }
     return [
-        'title' => mb_substr(trim((string)($n['title'] ?? 'Microgifter update')) ?: 'Microgifter update', 0, 90),
-        'body' => mb_substr(trim((string)($n['body'] ?? 'Open Microgifter for details.')) ?: 'Open Microgifter for details.', 0, 180),
+        'title' => mg_pwa_push_safe_push_text($n['title'] ?? 'Microgifter update', 'Microgifter update', 90),
+        'body' => mg_pwa_push_safe_push_text($n['body'] ?? 'Open Microgifter for details.', 'Open Microgifter for details.', 180),
         'notification_type' => mb_substr(trim((string)($n['type'] ?? 'system')), 0, 80),
         'notification_id' => (string)($n['public_id'] ?? ''),
         'action_url' => mg_pwa_push_safe_internal_url($n['action_url'] ?? '/notifications.php'),
