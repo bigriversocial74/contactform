@@ -92,7 +92,11 @@ function mg_world_target_drop_row_to_payload(array $row, bool $owned): array
 function mg_world_target_drop_launch_location(PDO $pdo, int $merchantUserId, ?int $locationId = null): array
 {
     if ($locationId !== null && $locationId > 0) {
-        $rows = mg_world_canvas_rows($pdo, "SELECT ml.id, ml.latitude, ml.longitude FROM merchant_locations ml LEFT JOIN merchant_workspaces mw ON mw.id=ml.workspace_id WHERE ml.id=? AND (ml.merchant_user_id=? OR mw.merchant_user_id=?) LIMIT 1", [$locationId, $merchantUserId, $merchantUserId]);
+        if (mg_world_canvas_column($pdo, 'merchant_locations', 'merchant_user_id')) {
+            $rows = mg_world_canvas_rows($pdo, 'SELECT id, latitude, longitude FROM merchant_locations WHERE id=? AND merchant_user_id=? LIMIT 1', [$locationId, $merchantUserId]);
+        } else {
+            $rows = mg_world_canvas_rows($pdo, 'SELECT ml.id, ml.latitude, ml.longitude FROM merchant_locations ml JOIN merchant_workspaces mw ON mw.id=ml.workspace_id WHERE ml.id=? AND mw.merchant_user_id=? LIMIT 1', [$locationId, $merchantUserId]);
+        }
         if ($rows) return $rows[0];
     }
     $rows = mg_world_location_merchant_rows($pdo, $merchantUserId, true);
