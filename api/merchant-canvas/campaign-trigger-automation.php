@@ -19,9 +19,15 @@ function mg_sc_auto_column_exists(PDO $pdo, string $column): bool
     catch (Throwable) { return false; }
 }
 
+function mg_sc_auto_require_delivery_ledger(PDO $pdo): void
+{
+    mg_store_canvas_require_tables($pdo, ['mg_store_trigger_deliveries'], 'Store Canvas trigger delivery ledger');
+}
+
 function mg_sc_auto_session(PDO $pdo, int $merchantUserId, string $sessionPublicId): array
 {
     mg_store_canvas_require_tables($pdo, ['mg_store_sessions','mg_store_session_events','mg_customer_store_history'], 'Store Canvas');
+    mg_sc_auto_require_delivery_ledger($pdo);
     $sessionPublicId = mg_store_safe_public_id($sessionPublicId, 'Store session');
     $stmt = $pdo->prepare("SELECT s.*,cp.display_name customer_name FROM mg_store_sessions s LEFT JOIN public_profiles cp ON cp.user_id=s.customer_user_id WHERE s.public_id=? AND s.merchant_user_id=? AND s.active_key IS NOT NULL AND s.status IN ('entered','active','idle') AND s.exited_at IS NULL LIMIT 1");
     $stmt->execute([$sessionPublicId, $merchantUserId]);
@@ -51,24 +57,43 @@ function mg_sc_auto_cooldown_seconds(array $zone): int
     return max(60, min(86400, (int)($zone['cooldown_seconds'] ?? 900)));
 }
 
-function mg_sc_auto_cooldown_after_fire(array $zone): array
+function mg_sc_auto_cooldown_window(array $zone): array
 {
     $policy = (string)($zone['cooldown_policy'] ?? 'fifteen_minutes');
     if ($policy === 'once_per_visit') {
-        return ['cooldown_policy'=>$policy,'cooldown_started'=>true,'cooldown_locked'=>true,'cooldown_remaining_seconds'=>86400,'cooldown_until'=>null];
+        return ['cooldown_policy'=>$policy,'cooldown_started'=>true,'cooldown_locked'=>true,'cooldown_remaining_seconds'=>86400,'cooldown_until'=>null,'cooldown_until_sql'=>null,'cooldown_seconds'=>0];
     }
     if ($policy === 'once_per_customer_day') {
         $until = strtotime('tomorrow');
         $remaining = $until !== false ? max(60, $until - time()) : 86400;
-        return ['cooldown_policy'=>$policy,'cooldown_started'=>true,'cooldown_locked'=>false,'cooldown_remaining_seconds'=>$remaining,'cooldown_until'=>$until !== false ? date('c', $until) : null];
+        return ['cooldown_policy'=>$policy,'cooldown_started'=>true,'cooldown_locked'=>false,'cooldown_remaining_seconds'=>$remaining,'cooldown_until'=>$until !== false ? date('c', $until) : null,'cooldown_until_sql'=>$until !== false ? date('Y-m-d H:i:s', $until) : null,'cooldown_seconds'=>$remaining];
     }
     $seconds = mg_sc_auto_cooldown_seconds($zone);
-    return ['cooldown_policy'=>$policy,'cooldown_started'=>true,'cooldown_locked'=>false,'cooldown_remaining_seconds'=>$seconds,'cooldown_until'=>date('c', time() + $seconds)];
+    $until = time() + $seconds;
+    return ['cooldown_policy'=>$policy,'cooldown_started'=>true,'cooldown_locked'=>false,'cooldown_remaining_seconds'=>$seconds,'cooldown_until'=>date('c', $until),'cooldown_until_sql'=>date('Y-m-d H:i:s', $until),'cooldown_seconds'=>$seconds];
 }
 
-function mg_sc_auto_json_token(string $field, string $value): string
+function mg_sc_auto_delivery_state_from_row(array $row, string $policy): array
 {
-    return '%"' . $field . '":"' . $value . '"%';
+    $cooldownUntil = trim((string)($row['cooldown_until'] ?? ''));
+    $cooldownAt = $cooldownUntil !== '' ? strtotime($cooldownUntil) : false;
+    $remaining = $cooldownAt !== false ? max(1, $cooldownAt - time()) : 0;
+    if ($policy === 'once_per_visit') $remaining = 86400;
+    if ($remaining < 1 && (string)($row['status'] ?? '') === 'pending') $remaining = 60;
+    return [
+        'active'=>true,
+        'cooldown'=>true,
+        'cooldown_policy'=>$policy,
+        'cooldown_locked'=>$policy === 'once_per_visit',
+        'cooldown_remaining_seconds'=>$remaining,
+        'cooldown_until'=>$cooldownAt !== false ? date('c', $cooldownAt) : null,
+        'last_triggered_at'=>(string)($row['fired_at'] ?: $row['created_at'] ?: ''),
+        'delivery_id'=>(string)($row['public_id'] ?? ''),
+        'delivery_status'=>(string)($row['status'] ?? ''),
+        'message_sent'=>!empty($row['message_sent']),
+        'reward_sent'=>!empty($row['reward_sent']),
+        'fallback_applied'=>!empty($row['fallback_applied']),
+    ];
 }
 
 function mg_sc_auto_cooldown_state(PDO $pdo, array $session, array $zone): array
@@ -79,37 +104,122 @@ function mg_sc_auto_cooldown_state(PDO $pdo, array $session, array $zone): array
     if ($zoneId === '') return $empty;
 
     try {
-        $zoneToken = mg_sc_auto_json_token('trigger_zone_id', $zoneId);
         if ($policy === 'once_per_visit') {
-            $stmt = $pdo->prepare("SELECT created_at FROM mg_store_session_events WHERE store_session_id=? AND event_type='campaign_trigger_zone' AND event_data_json LIKE ? ORDER BY created_at DESC LIMIT 1");
-            $stmt->execute([(int)$session['id'], $zoneToken]);
-            $createdAt = $stmt->fetchColumn();
-            if (!$createdAt) return $empty;
-            return ['active'=>true,'cooldown'=>true,'cooldown_policy'=>$policy,'cooldown_locked'=>true,'cooldown_remaining_seconds'=>86400,'cooldown_until'=>null,'last_triggered_at'=>(string)$createdAt];
+            $stmt = $pdo->prepare("SELECT * FROM mg_store_trigger_deliveries WHERE store_session_id=? AND trigger_zone_public_id=? AND status IN ('pending','fired','skipped','failed') ORDER BY created_at DESC LIMIT 1");
+            $stmt->execute([(int)$session['id'], $zoneId]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $row ? mg_sc_auto_delivery_state_from_row($row, $policy) : $empty;
         }
 
         if ($policy === 'once_per_customer_day') {
-            $stmt = $pdo->prepare("SELECT created_at FROM mg_store_session_events WHERE merchant_user_id=? AND customer_user_id=? AND event_type='campaign_trigger_zone' AND event_data_json LIKE ? AND created_at >= CURDATE() ORDER BY created_at DESC LIMIT 1");
-            $stmt->execute([(int)$session['merchant_user_id'], (int)$session['customer_user_id'], $zoneToken]);
-            $createdAt = $stmt->fetchColumn();
-            if (!$createdAt) return $empty;
-            $until = strtotime('tomorrow');
-            $remaining = $until !== false ? max(60, $until - time()) : 86400;
-            return ['active'=>true,'cooldown'=>true,'cooldown_policy'=>$policy,'cooldown_locked'=>false,'cooldown_remaining_seconds'=>$remaining,'cooldown_until'=>$until !== false ? date('c', $until) : null,'last_triggered_at'=>(string)$createdAt];
+            $stmt = $pdo->prepare("SELECT * FROM mg_store_trigger_deliveries WHERE merchant_user_id=? AND customer_user_id=? AND trigger_zone_public_id=? AND status IN ('pending','fired','skipped','failed') AND (cooldown_until > NOW() OR fired_at >= CURDATE() OR created_at >= CURDATE()) ORDER BY created_at DESC LIMIT 1");
+            $stmt->execute([(int)$session['merchant_user_id'], (int)$session['customer_user_id'], $zoneId]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $row ? mg_sc_auto_delivery_state_from_row($row, $policy) : $empty;
         }
 
-        $seconds = mg_sc_auto_cooldown_seconds($zone);
-        $stmt = $pdo->prepare("SELECT created_at FROM mg_store_session_events WHERE store_session_id=? AND event_type='campaign_trigger_zone' AND event_data_json LIKE ? AND created_at >= DATE_SUB(NOW(), INTERVAL {$seconds} SECOND) ORDER BY created_at DESC LIMIT 1");
-        $stmt->execute([(int)$session['id'], $zoneToken]);
-        $createdAt = $stmt->fetchColumn();
-        if (!$createdAt) return $empty;
-        $last = strtotime((string)$createdAt);
-        $until = $last !== false ? $last + $seconds : time() + $seconds;
-        return ['active'=>true,'cooldown'=>true,'cooldown_policy'=>$policy,'cooldown_locked'=>false,'cooldown_remaining_seconds'=>max(1, $until - time()),'cooldown_until'=>date('c', $until),'last_triggered_at'=>(string)$createdAt];
+        $stmt = $pdo->prepare("SELECT * FROM mg_store_trigger_deliveries WHERE store_session_id=? AND trigger_zone_public_id=? AND status IN ('pending','fired','skipped','failed') AND cooldown_until > NOW() ORDER BY created_at DESC LIMIT 1");
+        $stmt->execute([(int)$session['id'], $zoneId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ? mg_sc_auto_delivery_state_from_row($row, $policy) : $empty;
     } catch (Throwable $error) {
-        mg_security_log('warning', 'merchant_canvas.auto_cooldown_check_failed', 'Store Canvas automation cooldown check failed.', ['exception_class'=>$error::class,'message'=>$error->getMessage()], (int)($session['merchant_user_id'] ?? 0));
+        mg_security_log('warning', 'merchant_canvas.auto_cooldown_check_failed', 'Store Canvas trigger delivery cooldown check failed.', ['exception_class'=>$error::class,'message'=>$error->getMessage()], (int)($session['merchant_user_id'] ?? 0));
         return $empty;
     }
+}
+
+function mg_sc_auto_idempotency_key(int $merchantUserId, array $session, array $zone, string $campaignId, string $action): string
+{
+    $policy = (string)($zone['cooldown_policy'] ?? 'fifteen_minutes');
+    $zoneId = (string)($zone['public_id'] ?? '');
+    if ($policy === 'once_per_visit') {
+        $window = 'visit:' . (string)($session['public_id'] ?? $session['id']);
+    } elseif ($policy === 'once_per_customer_day') {
+        $window = 'day:' . date('Ymd');
+    } else {
+        $seconds = mg_sc_auto_cooldown_seconds($zone);
+        $window = 'bucket:' . (string)floor(time() / max(60, $seconds));
+    }
+    return 'store-canvas-trigger:' . hash('sha256', $merchantUserId . '|' . (int)$session['customer_user_id'] . '|' . (int)$session['id'] . '|' . $zoneId . '|' . $campaignId . '|' . $action . '|' . $policy . '|' . $window);
+}
+
+function mg_sc_auto_load_delivery_by_key(PDO $pdo, string $idempotencyKey): ?array
+{
+    $stmt = $pdo->prepare('SELECT * FROM mg_store_trigger_deliveries WHERE idempotency_key=? LIMIT 1');
+    $stmt->execute([$idempotencyKey]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $row ?: null;
+}
+
+function mg_sc_auto_create_delivery(PDO $pdo, array $session, array $zone, string $campaignId, string $campaignTitle, ?array $template, string $action, string $eventKey, string $idempotencyKey, array $cooldownWindow): array
+{
+    $publicId = mg_public_uuid();
+    $metadata = [
+        'event_key'=>$eventKey,
+        'source_system'=>'store_canvas',
+        'source_channel'=>'merchant_canvas_automation',
+    ];
+    try {
+        $stmt = $pdo->prepare("INSERT INTO mg_store_trigger_deliveries (
+            public_id,merchant_user_id,customer_user_id,store_session_id,store_session_public_id,
+            trigger_zone_id,trigger_zone_public_id,trigger_key,trigger_label,trigger_priority,
+            campaign_public_id,campaign_title,reward_template_id,automation_action,cooldown_policy,cooldown_seconds,cooldown_until,
+            idempotency_key,status,crm_segment_name,metadata_json,created_at,updated_at
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())");
+        $stmt->execute([
+            $publicId,
+            (int)$session['merchant_user_id'],
+            (int)$session['customer_user_id'],
+            (int)$session['id'],
+            (string)$session['public_id'],
+            (int)($zone['id'] ?? 0) ?: null,
+            (string)$zone['public_id'],
+            (string)($zone['trigger_key'] ?? 'store_canvas_zone'),
+            (string)($zone['name'] ?? 'IN/OUT Box Trigger'),
+            max(1, min(5, (int)($zone['priority'] ?? 3))),
+            $campaignId !== '' ? $campaignId : null,
+            $campaignTitle !== '' ? $campaignTitle : null,
+            is_array($template) ? (string)($template['id'] ?? '') : null,
+            $action,
+            (string)($zone['cooldown_policy'] ?? 'fifteen_minutes'),
+            (int)($cooldownWindow['cooldown_seconds'] ?? 0),
+            $cooldownWindow['cooldown_until_sql'] ?? null,
+            $idempotencyKey,
+            'pending',
+            trim((string)($zone['crm_segment_name'] ?? '')) ?: null,
+            json_encode($metadata, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+        ]);
+        return ['created'=>true,'row'=>mg_sc_auto_load_delivery_by_key($pdo, $idempotencyKey) ?: ['public_id'=>$publicId,'id'=>(int)$pdo->lastInsertId(),'status'=>'pending']];
+    } catch (PDOException $error) {
+        if ((string)$error->getCode() === '23000') {
+            $existing = mg_sc_auto_load_delivery_by_key($pdo, $idempotencyKey);
+            if ($existing) return ['created'=>false,'row'=>$existing];
+        }
+        throw $error;
+    }
+}
+
+function mg_sc_auto_update_delivery(PDO $pdo, int $deliveryId, array $fields): void
+{
+    if ($deliveryId < 1 || !$fields) return;
+    $allowed = [
+        'status','fallback_applied','skipped_reason','notify_merchant','follow_up_created','crm_segment_added','crm_segment_name','analytics_only',
+        'message_sent','reward_sent','stamp_debited','stamp_ledger_entry_id','stamp_action_key','stamp_debit_error','message_id','wallet_item_id',
+        'message_error','reward_error','campaign_public_id','campaign_title','reward_template_id','metadata_json','fired_at'
+    ];
+    $sets = [];
+    $params = [];
+    foreach ($fields as $key => $value) {
+        if (!in_array($key, $allowed, true)) continue;
+        $sets[] = $key . '=?';
+        if ($key === 'metadata_json' && is_array($value)) $value = json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+        $params[] = $value;
+    }
+    if (!$sets) return;
+    $sets[] = 'updated_at=NOW()';
+    $params[] = $deliveryId;
+    $stmt = $pdo->prepare('UPDATE mg_store_trigger_deliveries SET ' . implode(',', $sets) . ' WHERE id=?');
+    $stmt->execute($params);
 }
 
 function mg_sc_auto_stamp_preview(PDO $pdo, int $merchantUserId): array
@@ -214,6 +324,20 @@ try {
         }
     }
     $campaignTitle = is_array($campaign) ? (string)($campaign['title'] ?? '') : (string)($zone['campaign_title'] ?? '');
+    if ($sendReward && (!is_array($campaign) || !is_array($template) || empty($campaign['id']) || empty($template['id']))) {
+        $rewardError = 'No active reward campaign/template assigned.';
+    }
+
+    $cooldownWindow = mg_sc_auto_cooldown_window($zone);
+    $idempotencyKey = mg_sc_auto_idempotency_key($merchantUserId, $session, $zone, $campaignId, $action);
+    $deliveryResult = mg_sc_auto_create_delivery($pdo, $session, $zone, $campaignId, $campaignTitle, $template, $action, $eventKey, $idempotencyKey, $cooldownWindow);
+    $delivery = is_array($deliveryResult['row'] ?? null) ? $deliveryResult['row'] : [];
+    if (empty($deliveryResult['created'])) {
+        mg_ok(array_merge(['triggered'=>false,'duplicate'=>true,'trigger_zone_id'=>$zoneId,'automation_action'=>$action], mg_sc_auto_delivery_state_from_row($delivery, (string)($zone['cooldown_policy'] ?? 'fifteen_minutes'))), 'Trigger delivery already exists for this cooldown window.');
+        return;
+    }
+    $deliveryId = (int)($delivery['id'] ?? 0);
+    $deliveryPublicId = (string)($delivery['public_id'] ?? '');
 
     if ($sendMessage) {
         $preview = mg_sc_auto_stamp_preview($pdo, $merchantUserId);
@@ -222,8 +346,8 @@ try {
             $fallback = (string)($zone['fallback_action'] ?? 'notify_only');
             $stampDebit = ['debited'=>false,'error'=>(string)($preview['error'] ?? 'Insufficient Stamps.')];
             if ($fallback === 'skip') {
-                $afterCooldown = mg_sc_auto_cooldown_after_fire($zone);
-                mg_sc_auto_log_fire($pdo, $session, $triggerLabel, [
+                $metadata = [
+                    'delivery_id'=>$deliveryPublicId,
                     'trigger_key'=>$triggerKey,
                     'trigger_zone_id'=>$zoneId,
                     'trigger_priority'=>$priority,
@@ -248,12 +372,27 @@ try {
                     'stamp_debit_error'=>$stampDebit['error'],
                     'campaign_id'=>$campaignId ?: null,
                     'campaign_title'=>$campaignTitle ?: null,
+                ];
+                mg_sc_auto_update_delivery($pdo, $deliveryId, [
+                    'status'=>'skipped',
+                    'fallback_applied'=>1,
+                    'skipped_reason'=>'stamp_unavailable',
+                    'notify_merchant'=>0,
+                    'message_sent'=>0,
+                    'reward_sent'=>0,
+                    'stamp_debited'=>0,
+                    'stamp_action_key'=>'store_canvas_auto_message_send',
+                    'stamp_debit_error'=>$stampDebit['error'],
+                    'metadata_json'=>$metadata,
+                    'fired_at'=>date('Y-m-d H:i:s'),
                 ]);
-                mg_ok(array_merge(['triggered'=>false,'skipped'=>true,'fallback_applied'=>true,'trigger_zone_id'=>$zoneId,'automation_action'=>$action,'stamp_debit_error'=>$stampDebit['error']], $afterCooldown), 'Trigger skipped because automated message Stamps are unavailable.');
+                mg_sc_auto_log_fire($pdo, $session, $triggerLabel, $metadata);
+                mg_ok(array_merge(['triggered'=>false,'skipped'=>true,'fallback_applied'=>true,'trigger_zone_id'=>$zoneId,'delivery_id'=>$deliveryPublicId,'automation_action'=>$action,'stamp_debit_error'=>$stampDebit['error']], $cooldownWindow), 'Trigger skipped because automated message Stamps are unavailable.');
                 return;
             }
             $sendMessage = false;
             $sendReward = false;
+            $rewardError = '';
             $notifyOnly = $fallback === 'notify_only';
             $analyticsOnly = $fallback === 'analytics_only';
         }
@@ -265,25 +404,31 @@ try {
             $firstName = preg_split('/\s+/u', $customerName, -1, PREG_SPLIT_NO_EMPTY)[0] ?? $customerName;
             $messageBody = mg_sc_auto_render_message((string)($zone['auto_message_text'] ?? ''), $firstName, $triggerLabel, $campaignTitle);
             $messageResult = mg_store_send_direct_message_via_messaging($pdo, $merchantUserId, $sessionId, $messageBody);
-            $stampDebit = mg_sc_auto_debit_stamp($pdo, $merchantUserId, $eventKey, $zoneId, $triggerLabel, ['trigger_zone_id'=>$zoneId,'trigger_key'=>$triggerKey,'trigger_priority'=>$priority,'store_session_id'=>$sessionId,'campaign_id'=>$campaignId ?: null,'message_id'=>is_array($messageResult) ? ($messageResult['id'] ?? null) : null,'automation_action'=>$action,'source_system'=>'store_canvas']);
+            $stampDebit = mg_sc_auto_debit_stamp($pdo, $merchantUserId, $eventKey, $zoneId, $triggerLabel, ['delivery_id'=>$deliveryPublicId,'trigger_zone_id'=>$zoneId,'trigger_key'=>$triggerKey,'trigger_priority'=>$priority,'store_session_id'=>$sessionId,'campaign_id'=>$campaignId ?: null,'message_id'=>is_array($messageResult) ? ($messageResult['id'] ?? null) : null,'automation_action'=>$action,'source_system'=>'store_canvas']);
         } catch (Throwable $error) {
             $messageError = 'Automated message failed.';
             $stampDebit = ['debited'=>false,'error'=>'Automated message failed before stamp debit.'];
-            mg_security_log('error', 'merchant_canvas.auto_message_failed', 'Store Canvas automation message failed.', ['exception_class'=>$error::class,'message'=>$error->getMessage(),'trigger_zone_id'=>$zoneId], $merchantUserId);
+            mg_security_log('error', 'merchant_canvas.auto_message_failed', 'Store Canvas automation message failed.', ['exception_class'=>$error::class,'message'=>$error->getMessage(),'trigger_zone_id'=>$zoneId,'delivery_id'=>$deliveryPublicId], $merchantUserId);
         }
     }
 
-    if ($sendReward && is_array($campaign) && is_array($template) && !empty($campaign['id']) && !empty($template['id'])) {
+    if ($sendReward && $rewardError === '') {
         try {
-            $rewardResult = mg_store_reward_issue($pdo, $user, $sessionId, (string)$campaign['id'], (string)$template['id'], 'Triggered by ' . $triggerLabel . ' on the Merchant Store Canvas.', null, null, 'canvas-trigger-auto:' . hash('sha256', $merchantUserId . '|' . $sessionId . '|' . $zoneId . '|' . (string)$campaign['id'] . '|' . gmdate('YmdHi')));
+            $rewardResult = mg_store_reward_issue($pdo, $user, $sessionId, (string)$campaign['id'], (string)$template['id'], 'Triggered by ' . $triggerLabel . ' on the Merchant Store Canvas.', null, null, 'canvas-trigger-auto:' . hash('sha256', $merchantUserId . '|' . $sessionId . '|' . $zoneId . '|' . (string)$campaign['id'] . '|' . $deliveryPublicId));
         } catch (Throwable $error) {
             $rewardError = 'Automated reward failed.';
-            mg_security_log('error', 'merchant_canvas.auto_reward_failed', 'Store Canvas automation reward failed.', ['exception_class'=>$error::class,'message'=>$error->getMessage(),'trigger_zone_id'=>$zoneId,'campaign_id'=>$campaignId], $merchantUserId);
+            mg_security_log('error', 'merchant_canvas.auto_reward_failed', 'Store Canvas automation reward failed.', ['exception_class'=>$error::class,'message'=>$error->getMessage(),'trigger_zone_id'=>$zoneId,'campaign_id'=>$campaignId,'delivery_id'=>$deliveryPublicId], $merchantUserId);
         }
     }
 
-    $afterCooldown = mg_sc_auto_cooldown_after_fire($zone);
-    mg_sc_auto_log_fire($pdo, $session, $triggerLabel, [
+    $messageSent = is_array($messageResult);
+    $rewardSent = is_array($rewardResult);
+    $hadRequestedDelivery = $sendMessage || $sendReward;
+    $allRequestedDeliveryFailed = $hadRequestedDelivery && !$messageSent && !$rewardSent && ($messageError !== '' || $rewardError !== '' || !empty($stampDebit['error']));
+    $status = $allRequestedDeliveryFailed ? 'failed' : 'fired';
+
+    $metadata = [
+        'delivery_id'=>$deliveryPublicId,
         'trigger_key'=>$triggerKey,
         'trigger_zone_id'=>$zoneId,
         'trigger_priority'=>$priority,
@@ -299,22 +444,48 @@ try {
         'analytics_only'=>$analyticsOnly,
         'source_system'=>'store_canvas',
         'source_channel'=>'merchant_canvas_automation',
-        'message_sent'=>is_array($messageResult),
-        'reward_sent'=>is_array($rewardResult),
+        'message_sent'=>$messageSent,
+        'reward_sent'=>$rewardSent,
         'stamp_debited'=>!empty($stampDebit['debited']),
         'stamp_ledger_entry_id'=>(string)($stampDebit['entry_id'] ?? ''),
         'stamp_action_key'=>'store_canvas_auto_message_send',
         'stamp_debit_error'=>(string)($stampDebit['error'] ?? ''),
         'message_error'=>$messageError ?: null,
         'reward_error'=>$rewardError ?: null,
-        'message_id'=>is_array($messageResult) ? ($messageResult['id'] ?? null) : null,
-        'wallet_item_id'=>is_array($rewardResult) ? ($rewardResult['wallet_item_id'] ?? null) : null,
-        'campaign_id'=>is_array($rewardResult) ? ($rewardResult['campaign_id'] ?? null) : ($campaign['id'] ?? null),
-        'campaign_title'=>is_array($campaign) ? ($campaign['title'] ?? null) : null,
-        'reward_template_id'=>is_array($rewardResult) ? ($rewardResult['reward_template_id'] ?? null) : ($template['id'] ?? null),
-    ]);
+        'message_id'=>$messageSent ? ($messageResult['id'] ?? null) : null,
+        'wallet_item_id'=>$rewardSent ? ($rewardResult['wallet_item_id'] ?? null) : null,
+        'campaign_id'=>$rewardSent ? ($rewardResult['campaign_id'] ?? null) : ($campaign['id'] ?? ($campaignId ?: null)),
+        'campaign_title'=>is_array($campaign) ? ($campaign['title'] ?? null) : ($campaignTitle ?: null),
+        'reward_template_id'=>$rewardSent ? ($rewardResult['reward_template_id'] ?? null) : ($template['id'] ?? null),
+    ];
 
-    mg_ok(array_merge(['triggered'=>true,'trigger_zone_id'=>$zoneId,'priority'=>$priority,'automation_action'=>$action,'fallback_applied'=>$fallbackApplied,'message_sent'=>is_array($messageResult),'reward_sent'=>is_array($rewardResult),'notify_merchant'=>$notifyOnly,'follow_up_created'=>$followUp,'crm_segment_added'=>$crmSegment,'analytics_only'=>$analyticsOnly,'stamp_debited'=>!empty($stampDebit['debited']),'stamp_ledger_entry_id'=>(string)($stampDebit['entry_id'] ?? ''),'stamp_debit_error'=>(string)($stampDebit['error'] ?? ''),'message_error'=>$messageError,'reward_error'=>$rewardError,'campaign_id'=>is_array($campaign) ? ($campaign['id'] ?? null) : null,'campaign_title'=>is_array($campaign) ? ($campaign['title'] ?? null) : null], $afterCooldown), 'Automation trigger fired.');
+    mg_sc_auto_update_delivery($pdo, $deliveryId, [
+        'status'=>$status,
+        'fallback_applied'=>$fallbackApplied ? 1 : 0,
+        'notify_merchant'=>($notifyOnly || !empty($zone['notify_merchant'])) ? 1 : 0,
+        'follow_up_created'=>$followUp ? 1 : 0,
+        'crm_segment_added'=>$crmSegment ? 1 : 0,
+        'crm_segment_name'=>trim((string)($zone['crm_segment_name'] ?? '')) ?: null,
+        'analytics_only'=>$analyticsOnly ? 1 : 0,
+        'message_sent'=>$messageSent ? 1 : 0,
+        'reward_sent'=>$rewardSent ? 1 : 0,
+        'stamp_debited'=>!empty($stampDebit['debited']) ? 1 : 0,
+        'stamp_ledger_entry_id'=>(string)($stampDebit['entry_id'] ?? '') ?: null,
+        'stamp_action_key'=>'store_canvas_auto_message_send',
+        'stamp_debit_error'=>(string)($stampDebit['error'] ?? '') ?: null,
+        'message_id'=>$messageSent ? (string)($messageResult['id'] ?? '') : null,
+        'wallet_item_id'=>$rewardSent ? (string)($rewardResult['wallet_item_id'] ?? '') : null,
+        'message_error'=>$messageError ?: null,
+        'reward_error'=>$rewardError ?: null,
+        'campaign_public_id'=>is_array($campaign) ? (string)($campaign['id'] ?? $campaignId) : ($campaignId ?: null),
+        'campaign_title'=>is_array($campaign) ? (string)($campaign['title'] ?? '') : ($campaignTitle ?: null),
+        'reward_template_id'=>is_array($template) ? (string)($template['id'] ?? '') : null,
+        'metadata_json'=>$metadata,
+        'fired_at'=>date('Y-m-d H:i:s'),
+    ]);
+    mg_sc_auto_log_fire($pdo, $session, $triggerLabel, $metadata);
+
+    mg_ok(array_merge(['triggered'=>true,'trigger_zone_id'=>$zoneId,'delivery_id'=>$deliveryPublicId,'delivery_status'=>$status,'priority'=>$priority,'automation_action'=>$action,'fallback_applied'=>$fallbackApplied,'message_sent'=>$messageSent,'reward_sent'=>$rewardSent,'notify_merchant'=>$notifyOnly,'follow_up_created'=>$followUp,'crm_segment_added'=>$crmSegment,'analytics_only'=>$analyticsOnly,'stamp_debited'=>!empty($stampDebit['debited']),'stamp_ledger_entry_id'=>(string)($stampDebit['entry_id'] ?? ''),'stamp_debit_error'=>(string)($stampDebit['error'] ?? ''),'message_error'=>$messageError,'reward_error'=>$rewardError,'campaign_id'=>is_array($campaign) ? ($campaign['id'] ?? null) : null,'campaign_title'=>is_array($campaign) ? ($campaign['title'] ?? null) : null], $cooldownWindow), 'Automation trigger fired.');
 } catch (InvalidArgumentException $error) {
     mg_fail($error->getMessage(), 422);
 } catch (RuntimeException $error) {
