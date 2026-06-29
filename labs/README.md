@@ -52,6 +52,7 @@ labs/
   checkout.php
   success.php
   receipt.php
+  routes-notes.md
 
   app/index.php
   app/campaigns.php
@@ -80,8 +81,10 @@ labs/
 
 The public, participant app, and backend shell pages exist with static demo content.
 
-The shared layout, public navigation, footer navigation, workspace sidebar, responsive CSS, form styles, table styles, reusable component helpers, and image asset folder map are in place.
+The shared layout, public navigation, footer navigation, workspace sidebar, responsive CSS, form styles, table styles, reusable component helpers, route notes, and image asset folder map are in place.
 
-The checkout flow now reaches a visual success page and a static receipt preview.
+The landing page, pricing page, app dashboard, and backend overview have received the first visual polish pass.
 
-Next pass: image placement, route cleanup, page-by-page visual polish, and optional local PHP syntax check.
+The checkout flow reaches a visual success page and a static receipt preview.
+
+Next pass: image placement, remaining page polish, and optional local PHP syntax check.
