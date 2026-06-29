@@ -4,7 +4,7 @@
  */
 declare(strict_types=1);
 
-require_once __DIR__ . '/_target_drop_campaigns.php';
+require_once __DIR__ . '/_target_drop_interests.php';
 
 $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
 $user = $method === 'GET' ? mg_require_api_user() : mg_require_permission('merchant.locations.manage');
@@ -12,9 +12,12 @@ $pdo = mg_db();
 
 try {
     if ($method === 'GET') {
+        $drops = mg_world_target_drop_list($pdo, $user);
+        $drops = mg_world_target_drop_enrich_interest_stats($pdo, $drops, $user);
         mg_ok([
             'schema_ready' => mg_world_target_drops_ready($pdo),
-            'drops' => mg_world_target_drop_list($pdo, $user),
+            'interest_schema_ready' => mg_world_target_drop_interests_ready($pdo),
+            'drops' => $drops,
             'campaigns' => mg_world_target_drop_campaign_options($pdo, $user),
         ]);
     }
