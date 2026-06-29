@@ -40,6 +40,21 @@ function mg_world_delivery_run_target_row(PDO $pdo, string $dropPublicId, int $m
     return $rows[0] ?? null;
 }
 
+function mg_world_delivery_run_ensure_launch(PDO $pdo, array $drop): array
+{
+    if (!empty($drop['launch_latitude']) && !empty($drop['launch_longitude'])) return $drop;
+    $merchantId = (int)($drop['merchant_user_id'] ?? 0);
+    $locationId = isset($drop['merchant_location_id']) ? (int)$drop['merchant_location_id'] : null;
+    if ($merchantId <= 0 || !function_exists('mg_world_target_drop_launch_location')) return $drop;
+    $launch = mg_world_target_drop_launch_location($pdo, $merchantId, $locationId);
+    if (!empty($launch['latitude']) && !empty($launch['longitude'])) {
+        $drop['merchant_location_id'] = $launch['id'] ?? ($drop['merchant_location_id'] ?? null);
+        $drop['launch_latitude'] = $launch['latitude'];
+        $drop['launch_longitude'] = $launch['longitude'];
+    }
+    return $drop;
+}
+
 function mg_world_delivery_run_create(PDO $pdo, array $drop, string $runType = 'live'): ?array
 {
     if (!mg_world_delivery_runs_ready($pdo)) return null;
@@ -51,6 +66,7 @@ function mg_world_delivery_run_create(PDO $pdo, array $drop, string $runType = '
         $dropId = (int)($drop['id'] ?? 0);
     }
     if ($dropId <= 0) return null;
+    $drop = mg_world_delivery_run_ensure_launch($pdo, $drop);
     $merchantId = (int)($drop['merchant_user_id'] ?? 0);
     $targetLat = (float)($drop['target_latitude'] ?? 0);
     $targetLng = (float)($drop['target_longitude'] ?? 0);
@@ -59,7 +75,7 @@ function mg_world_delivery_run_create(PDO $pdo, array $drop, string $runType = '
     $targetPoint = isset($drop['target_x'], $drop['target_y']) ? ['x' => (float)$drop['target_x'], 'y' => (float)$drop['target_y']] : mg_world_delivery_run_project($targetLat, $targetLng, (string)($drop['public_id'] ?? $dropId), 'target_drop');
     $launchPoint = isset($drop['launch_x'], $drop['launch_y']) ? ['x' => (float)$drop['launch_x'], 'y' => (float)$drop['launch_y']] : mg_world_delivery_run_project($launchLat, $launchLng, (string)($drop['public_id'] ?? $dropId) . ':launch', 'merchant');
     if (!$targetPoint) return null;
-    if (!$launchPoint) $launchPoint = $targetPoint;
+    if (!$launchPoint) throw new RuntimeException('Set your merchant World location before running a test launch.');
     $control = mg_world_delivery_run_control((float)$launchPoint['x'], (float)$launchPoint['y'], (float)$targetPoint['x'], (float)$targetPoint['y']);
     $publicId = mg_world_delivery_run_public_id();
     $startedAt = date('Y-m-d H:i:s');
@@ -70,25 +86,29 @@ function mg_world_delivery_run_create(PDO $pdo, array $drop, string $runType = '
     return mg_world_delivery_run_get($pdo, $publicId);
 }
 
-function mg_world_delivery_run_get(PDO $pdo, string $publicId): ?array
+function mg_world_delivery_run_get(PDO $pdo, string $publicId, int $viewerUserId = 0): ?array
 {
     if (!mg_world_delivery_runs_ready($pdo)) return null;
     $rows = mg_world_canvas_rows($pdo, 'SELECT r.*, d.public_id AS drop_public_id, d.drop_name, d.campaign_title FROM merchant_target_drop_delivery_runs r JOIN merchant_target_drops d ON d.id=r.target_drop_id WHERE r.public_id=? LIMIT 1', [$publicId]);
-    return $rows ? mg_world_delivery_run_payload($rows[0]) : null;
+    return $rows ? mg_world_delivery_run_payload($rows[0], $viewerUserId) : null;
 }
 
-function mg_world_delivery_run_payload(array $row): array
+function mg_world_delivery_run_payload(array $row, int $viewerUserId = 0): array
 {
     $started = !empty($row['animation_started_at']) ? strtotime((string)$row['animation_started_at']) : time();
     $duration = max(700, (int)($row['animation_duration_ms'] ?? 1700));
     $elapsed = max(0, (int)round((time() - (int)$started) * 1000));
     $status = (string)($row['status'] ?? 'queued');
     if ($status === 'sending' && $elapsed >= $duration) $status = 'delivered';
+    $merchantUserId = (int)($row['merchant_user_id'] ?? 0);
+    $owned = $viewerUserId > 0 && $merchantUserId === $viewerUserId;
     return [
         'id' => (string)$row['public_id'],
         'target_drop_id' => (string)($row['drop_public_id'] ?? ''),
         'drop_name' => (string)($row['drop_name'] ?? ''),
         'campaign_title' => (string)($row['campaign_title'] ?? ''),
+        'merchant_user_id' => $merchantUserId,
+        'owned' => $owned,
         'run_type' => (string)($row['run_type'] ?? 'live'),
         'status' => $status,
         'stored_status' => (string)($row['status'] ?? 'queued'),
@@ -103,7 +123,8 @@ function mg_world_delivery_run_payload(array $row): array
         'delivered_at' => $row['delivered_at'] ?? null,
         'intercept_window_opens_at' => $row['intercept_window_opens_at'] ?? null,
         'intercept_window_closes_at' => $row['intercept_window_closes_at'] ?? null,
-        'intercept_ready' => true,
+        'intercept_ready' => !$owned,
+        'can_intercept' => !$owned,
         'intercepted_by_user_id' => $row['intercepted_by_user_id'] === null ? null : (int)$row['intercepted_by_user_id'],
         'intercept_tool_public_id' => $row['intercept_tool_public_id'] ?? null,
     ];
@@ -114,5 +135,5 @@ function mg_world_delivery_run_list(PDO $pdo, array $user): array
     if (!mg_world_delivery_runs_ready($pdo)) return [];
     $userId = (int)($user['id'] ?? 0);
     $rows = mg_world_canvas_rows($pdo, "SELECT r.*, d.public_id AS drop_public_id, d.drop_name, d.campaign_title FROM merchant_target_drop_delivery_runs r JOIN merchant_target_drops d ON d.id=r.target_drop_id WHERE r.merchant_user_id=? OR (r.run_type='live' AND d.visibility IN ('public','audience') AND r.status IN ('queued','sending','delivered')) ORDER BY r.created_at DESC LIMIT 80", [$userId]);
-    return array_map('mg_world_delivery_run_payload', $rows);
+    return array_map(static fn(array $row): array => mg_world_delivery_run_payload($row, $userId), $rows);
 }
