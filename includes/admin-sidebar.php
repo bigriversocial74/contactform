@@ -21,6 +21,7 @@ $canUsers = $canAdminPage('admin.users');
 $canRoles = mg_admin_permission_user_has($adminMatrixUser, 'admin.roles.manage');
 $canPendingModels = $canAdminPage('admin.pending_models');
 $canMerchantCatalog = $canAdminPage('admin.merchant_catalog');
+$canMerchantPwa = $canAdminPage('admin.merchant_pwa');
 $canCommerce = mg_admin_commerce_user_can_read_any($adminMatrixUser);
 $canSubscriptionRequests = mg_admin_permission_user_has($adminMatrixUser, 'subscriptions.admin');
 $canModeration = $canAdminPage('admin.moderation');
@@ -96,6 +97,12 @@ $adminNav = [
         'detail' => 'Stores, products, media',
         'href' => '/merchant-catalog-operations.php',
         'visible' => $canMerchantCatalog,
+    ],
+    'merchant-pwa' => [
+        'label' => 'Merchant PWA apps',
+        'detail' => 'Branded app oversight',
+        'href' => '/admin/merchant-pwa.php',
+        'visible' => $canMerchantPwa,
     ],
     'commerce' => [
         'label' => 'Commerce operations',
