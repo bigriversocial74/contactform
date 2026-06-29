@@ -40,4 +40,5 @@ window.Microgifter = window.Microgifter || {};
   addScript('/assets/js/world-canvas-zone-scale.js', 'data-world-zone-scale-js');
   addScript('/assets/js/world-canvas-run-hooks.js', 'data-world-run-hooks-js');
   addScript('/assets/js/world-canvas-intercept-tools.js', 'data-world-intercept-tools-js');
+  addScript('/assets/js/world-canvas-panel-guard.js', 'data-world-panel-guard-js');
 })(window, document);
