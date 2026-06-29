@@ -4,9 +4,16 @@ window.Microgifter = window.Microgifter || {};
   var root = document.querySelector('[data-world-canvas]');
   if (!root || !window.Microgifter) return;
   var seen = {};
+  var lastRun = null;
   function csrf(){var m=document.querySelector('meta[name="csrf-token"],meta[name="mg-csrf-token"]');return m?m.getAttribute('content')||'':(window.MG_CSRF_TOKEN||'');}
   function runArc(run){
-    if (!run || !run.id || seen[run.id]) return;
+    if (!run || !run.id) return;
+    lastRun = run;
+    if (window.MicrogifterDropRuns) window.MicrogifterDropRuns.lastRun = run;
+    if (run.intercept_ready && window.MicrogifterInterceptTools && typeof window.MicrogifterInterceptTools.open === 'function') {
+      setTimeout(function(){ window.MicrogifterInterceptTools.open(run); }, 350);
+    }
+    if (seen[run.id]) return;
     if (run.status !== 'sending' && run.status !== 'queued') return;
     seen[run.id] = 1;
     if (window.MicrogifterTargetDropTestLaunch && typeof window.MicrogifterTargetDropTestLaunch.launch === 'function') window.MicrogifterTargetDropTestLaunch.launch(run, {duration:Number(run.duration_ms || 1700)});
@@ -22,7 +29,7 @@ window.Microgifter = window.Microgifter || {};
       var response = await window.Microgifter.post('/api/world-canvas/runs.php', {id:id, csrf_token:c, _csrf:c, csrf:c});
       var payload = response.data || response || {};
       if (payload.delivery_run) runArc(payload.delivery_run);
-      if (msg) msg.textContent = 'Test run started. No users notified.';
+      if (msg) msg.textContent = 'Test run started. Intercept window opened.';
     } catch (error) { if (msg) msg.textContent = error.message || 'Unable to start test run.'; }
   }
   async function poll(){
@@ -37,6 +44,6 @@ window.Microgifter = window.Microgifter || {};
     event.preventDefault(); event.stopPropagation(); if (event.stopImmediatePropagation) event.stopImmediatePropagation();
     createTestRun(form);
   }, true);
-  window.MicrogifterDropRuns = {poll:poll, runArc:runArc};
+  window.MicrogifterDropRuns = {poll:poll, runArc:runArc, lastRun:lastRun};
   setTimeout(poll, 1500); window.setInterval(poll, 9000);
 })(window, document);
