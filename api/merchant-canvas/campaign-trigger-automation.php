@@ -65,43 +65,6 @@ function mg_sc_auto_cooldown_active(PDO $pdo, array $session, array $zone, strin
     } catch (Throwable) { return false; }
 }
 
-function mg_sc_auto_stamp_preview(PDO $pdo, int $merchantUserId): array
-{
-    $preview = ['ready'=>false,'cost'=>1,'balance'=>0,'can_debit'=>false,'error'=>'Stamp ledger unavailable.'];
-    try {
-        foreach (['stamp_debit_actions','account_stamp_balances','stamp_ledger_entries'] as $table) if (!mg_store_canvas_table_exists($pdo, $table)) return $preview;
-        $action = $pdo->query("SELECT stamp_value FROM stamp_debit_actions WHERE action_key='store_canvas_auto_message_send' AND status='active' LIMIT 1")->fetchColumn();
-        $preview['cost'] = max(1, (int)($action ?: 1));
-        $period = date('Y-m');
-        $stmt = $pdo->prepare('SELECT balance FROM account_stamp_balances WHERE account_user_id=? AND current_period_key=? LIMIT 1');
-        $stmt->execute([$merchantUserId, $period]);
-        $preview['balance'] = (int)($stmt->fetchColumn() ?: 0);
-        $preview['ready'] = true;
-        $preview['can_debit'] = $preview['balance'] >= $preview['cost'];
-        $preview['error'] = $preview['can_debit'] ? '' : 'Insufficient Stamps for automated message.';
-    } catch (Throwable) {}
-    return $preview;
-}
-
-function mg_sc_auto_debit_stamp(PDO $pdo, int $merchantUserId, string $eventKey, string $zoneId, string $triggerLabel, array $metadata): array
-{
-    try {
-        require_once dirname(__DIR__) . '/stamps/_stamps.php';
-        $result = mg_stamp_debit_send($pdo, $merchantUserId, $merchantUserId, 'store_canvas_auto_message_send', $eventKey . ':message', [
-            'source_type'=>'store_canvas_trigger_message',
-            'source_id'=>$zoneId,
-            'reference'=>$eventKey,
-            'reason_code'=>'store_canvas_trigger_automated_message',
-            'note'=>'Automated Store Canvas trigger message: ' . $triggerLabel,
-            'metadata'=>$metadata,
-        ]);
-        return ['debited'=>true,'entry_id'=>(string)($result['entry']['entry_id'] ?? ''),'result'=>$result];
-    } catch (Throwable $error) {
-        mg_security_log('warning', 'merchant_canvas.auto_stamp_debit_failed', 'Store Canvas automation stamp debit failed.', ['exception_class'=>$error::class], $merchantUserId);
-        return ['debited'=>false,'error'=>'Stamp debit failed.'];
-    }
-}
-
 function mg_sc_auto_pick_template(array $campaign, array $templates): ?array
 {
     $attachedTemplateId = trim((string)($campaign['reward_template_id'] ?? ''));
@@ -141,28 +104,11 @@ try {
     $notifyOnly = $action === 'notify_only';
     $analyticsOnly = $action === 'analytics_only';
     $fallbackApplied = false;
-    $stampDebit = ['debited'=>false,'error'=>'No automated message configured.'];
+    $stampDebit = ['debited'=>false,'error'=>'Messages are free.'];
     $messageResult = null;
     $rewardResult = null;
     $campaign = null;
     $template = null;
-
-    if ($sendMessage) {
-        $preview = mg_sc_auto_stamp_preview($pdo, $merchantUserId);
-        if (empty($preview['can_debit'])) {
-            $fallbackApplied = true;
-            $fallback = (string)($zone['fallback_action'] ?? 'notify_only');
-            if ($fallback === 'skip') {
-                mg_ok(['triggered'=>false,'skipped'=>true,'fallback_applied'=>true,'stamp_debit_error'=>(string)($preview['error'] ?? 'Insufficient Stamps.')], 'Trigger skipped because automated message Stamps are unavailable.');
-                return;
-            }
-            $sendMessage = false;
-            $sendReward = false;
-            $notifyOnly = $fallback === 'notify_only';
-            $analyticsOnly = $fallback === 'analytics_only';
-            $stampDebit = ['debited'=>false,'error'=>(string)($preview['error'] ?? 'Insufficient Stamps.')];
-        }
-    }
 
     if ($campaignId !== '') {
         $options = mg_store_reward_options($pdo, $merchantUserId);
@@ -176,11 +122,13 @@ try {
         $firstName = preg_split('/\s+/u', $customerName, -1, PREG_SPLIT_NO_EMPTY)[0] ?? $customerName;
         $messageBody = mg_sc_auto_render_message((string)($zone['auto_message_text'] ?? ''), $firstName, $triggerLabel, $campaignTitle);
         $messageResult = mg_store_send_direct_message_via_messaging($pdo, $merchantUserId, $sessionId, $messageBody);
-        $stampDebit = mg_sc_auto_debit_stamp($pdo, $merchantUserId, $eventKey, $zoneId, $triggerLabel, ['trigger_zone_id'=>$zoneId,'trigger_key'=>$triggerKey,'trigger_priority'=>$priority,'store_session_id'=>$sessionId,'campaign_id'=>$campaignId ?: null,'message_id'=>is_array($messageResult) ? ($messageResult['id'] ?? null) : null,'automation_action'=>$action,'source_system'=>'store_canvas']);
     }
 
     if ($sendReward && is_array($campaign) && is_array($template) && !empty($campaign['id']) && !empty($template['id'])) {
         $rewardResult = mg_store_reward_issue($pdo, $user, $sessionId, (string)$campaign['id'], (string)$template['id'], 'Triggered by ' . $triggerLabel . ' on the Merchant Store Canvas.', null, null, 'canvas-trigger-auto:' . hash('sha256', $merchantUserId . '|' . $sessionId . '|' . $zoneId . '|' . (string)$campaign['id'] . '|' . gmdate('YmdHi')));
+        if (is_array($rewardResult) && is_array($rewardResult['stamp_ledger'] ?? null)) {
+            $stampDebit = ['debited'=>true,'entry_id'=>(string)($rewardResult['stamp_ledger']['entry']['entry_id'] ?? ''),'result'=>$rewardResult['stamp_ledger']];
+        }
     }
 
     mg_canvas_trigger_zone_touch($pdo, $merchantUserId, $zoneId);
@@ -204,7 +152,7 @@ try {
         'reward_sent'=>is_array($rewardResult),
         'stamp_debited'=>!empty($stampDebit['debited']),
         'stamp_ledger_entry_id'=>(string)($stampDebit['entry_id'] ?? ''),
-        'stamp_action_key'=>'store_canvas_auto_message_send',
+        'stamp_action_key'=>!empty($stampDebit['debited'])?'direct_reward_send':null,
         'stamp_debit_error'=>(string)($stampDebit['error'] ?? ''),
         'message_id'=>is_array($messageResult) ? ($messageResult['id'] ?? null) : null,
         'wallet_item_id'=>is_array($rewardResult) ? ($rewardResult['wallet_item_id'] ?? null) : null,
