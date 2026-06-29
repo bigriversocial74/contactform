@@ -129,11 +129,25 @@ function mg_payment_save_platform_config(PDO $pdo,array $input,int $actorUserId)
     $feeBps=max(0,min(10000,(int)($input['platform_fee_bps']??1500)));
     $fixedFee=max(0,(int)($input['fixed_fee_cents']??0));
     $enabled=!empty($input['enabled'])?1:0;
+    $prefix=$mode==='live'?'live':'test';
+    if($provider==='stripe'){
+        if($publishable!==''&&!str_starts_with($publishable,'pk_'.$prefix.'_')){
+            throw new InvalidArgumentException('Stripe publishable key must start with pk_'.$prefix.'_ for '.$mode.' mode.');
+        }
+        if($secret!==''&&!str_starts_with($secret,'sk_'.$prefix.'_')){
+            throw new InvalidArgumentException('Stripe secret key must start with sk_'.$prefix.'_ for '.$mode.' mode.');
+        }
+        if($webhook!==''&&!str_starts_with($webhook,'whsec_')){
+            throw new InvalidArgumentException('Stripe webhook signing secret must start with whsec_.');
+        }
+        if($clientId!==''&&!str_starts_with($clientId,'ca_')){
+            throw new InvalidArgumentException('Stripe Connect client ID must start with ca_. If you copied a whsec_ value, paste it into Webhook signing secret instead.');
+        }
+    }
 
     $row=mg_payment_platform_credential_row($pdo,$provider,$mode,true);
     if($row){
         if($publishable==='')$publishable=(string)($row['publishable_key']??'');
-        if($clientId==='')$clientId=(string)($row['connect_client_id']??'');
     }
     $secretCipher=$secret!==''?mg_payment_encrypt_secret($secret):(string)($row['secret_key_ciphertext']??'');
     $webhookCipher=$webhook!==''?mg_payment_encrypt_secret($webhook):(string)($row['webhook_secret_ciphertext']??'');
