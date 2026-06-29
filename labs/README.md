@@ -50,6 +50,8 @@ labs/
   signin.php
   cart.php
   checkout.php
+  success.php
+  receipt.php
 
   app/index.php
   app/campaigns.php
@@ -64,6 +66,7 @@ labs/
   admin/review-queue.php
 
   includes/labs-layout.php
+  includes/labs-components.php
   assets/css/labs.css
   assets/js/labs.js
 
@@ -75,8 +78,10 @@ labs/
 
 ## Current build state
 
-The public, participant app, and admin shell pages exist with static demo content.
+The public, participant app, and backend shell pages exist with static demo content.
 
-The shared layout, public navigation, workspace sidebar, responsive CSS, form styles, table styles, and image asset folder map are in place.
+The shared layout, public navigation, footer navigation, workspace sidebar, responsive CSS, form styles, table styles, reusable component helpers, and image asset folder map are in place.
 
-Next pass: image placement, route cleanup, reusable component extraction, and page-by-page visual polish.
+The checkout flow now reaches a visual success page and a static receipt preview.
+
+Next pass: image placement, route cleanup, page-by-page visual polish, and optional local PHP syntax check.
