@@ -39,6 +39,8 @@ Consistency/streak data updates
 - [Route Map](./route-map.md)
 - [Implementation Tickets](./implementation-tickets.md)
 - [QA Test Script](./qa-test-script.md)
+- [Agent Build Handoff](./agent-build-handoff.md)
+- [Next Build Outline](./next-build-outline.md)
 
 ## Data and security docs
 
@@ -64,6 +66,19 @@ Consistency/streak data updates
 - [Mockup Index](./ui/mockups.md)
 - [Mockup Image Folder](./ui/mockups/)
 
+## Build artifacts
+
+```text
+examples/local-quest-rewards/training-lab.php
+examples/local-quest-rewards/training-campaigns.php
+examples/local-quest-rewards/training-campaign-data.php
+examples/local-quest-rewards/assets/training-lab.css
+examples/local-quest-rewards/assets/training-lab.js
+examples/local-quest-rewards/database/training_campaign_lab.sql
+examples/local-quest-rewards/database/training_campaign_lab_seed.sql
+scripts/validate_training_campaign_lab.php
+```
+
 ## First MVP target
 
 Build one complete vertical slice:
@@ -79,24 +94,32 @@ Microgifter reward is issued
 Wallet displays reward status
 ```
 
-## Recommended first files
+## Recommended next build files
 
 ```text
-examples/local-quest-rewards/training-lab.php
-examples/local-quest-rewards/training-campaigns.php
+examples/local-quest-rewards/training-storage.php
+examples/local-quest-rewards/training-campaign-detail.php
 examples/local-quest-rewards/training-sequence.php
-examples/local-quest-rewards/training-upload.php
+examples/local-quest-rewards/training-proof-upload.php
 examples/local-quest-rewards/admin-training-review.php
+examples/local-quest-rewards/admin-training-receipts.php
 examples/local-quest-rewards/training-rewards.php
-examples/local-quest-rewards/training-consistency.php
-examples/local-quest-rewards/assets/training-lab.css
-examples/local-quest-rewards/assets/training-lab.js
-examples/local-quest-rewards/database/training_campaign_lab.sql
+examples/local-quest-rewards/training-profile-wallet.php
+examples/local-quest-rewards/training-receipt-service.php
+examples/local-quest-rewards/training-reward-service.php
 ```
 
 ## Build principle
 
 Start with manual proof upload and manual review. Add AI-assisted review, computer vision, motion scoring, and agentic coaching after the basic proof/reward loop works.
+
+## Validation
+
+Run after each implementation phase:
+
+```bash
+php scripts/validate_training_campaign_lab.php
+```
 
 ## MVP rule
 
