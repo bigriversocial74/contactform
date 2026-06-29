@@ -44,11 +44,9 @@ try {
     else mg_fail('A valid customer lookup is required.', 422);
 
     $sql = "SELECT cc.*,c.public_id campaign_public_id,c.title campaign_title,c.campaign_type,
-                   COALESCE(cc.user_id,email_user.id) resolved_user_id,
-                   COALESCE(linked_user.email_verified_at,email_user.email_verified_at) email_verified_at
+                   COALESCE(cc.user_id,email_user.id) resolved_user_id
             FROM campaign_contacts cc
             INNER JOIN campaigns c ON c.id=cc.campaign_id
-            LEFT JOIN users linked_user ON linked_user.id=cc.user_id
             LEFT JOIN users email_user ON cc.user_id IS NULL AND LOWER(email_user.email)=LOWER(cc.email)
             WHERE " . implode(' AND ', $where) . "
             ORDER BY cc.updated_at DESC,cc.id DESC
