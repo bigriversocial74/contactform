@@ -33,6 +33,14 @@ Consistency/streak data updates
 - [Demo Script](./demo-script.md)
 - [Acceptance Checklist](./acceptance-checklist.md)
 
+## Build-control docs
+
+- [Branch Strategy](./branch-strategy.md)
+- [Route Map](./route-map.md)
+- [UI Data Map](./ui-data-map.md)
+- [Implementation Tickets](./implementation-tickets.md)
+- [QA Test Script](./qa-test-script.md)
+
 ## UI planning docs
 
 - [UI Page Map](./ui/ui-page-map.md)
