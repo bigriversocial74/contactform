@@ -19,7 +19,7 @@ labs_page_start([
     <label>Name<br><input type="text" placeholder="Full name"></label><br><br>
     <label>Email<br><input type="email" placeholder="billing@example.com"></label><br><br>
     <label>Organization<br><input type="text" placeholder="Organization name"></label><br><br>
-    <button class="labs-btn labs-btn-primary" type="button">Complete Visual Checkout</button>
+    <a class="labs-btn labs-btn-primary" href="/success.php">Complete Visual Checkout</a>
   </form>
   <aside class="labs-card">
     <h2>Summary</h2>
