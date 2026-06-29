@@ -88,18 +88,83 @@ function mg_world_location_select_expr(PDO $pdo, string $column, string $fallbac
     return mg_world_canvas_column($pdo, 'merchant_locations', $column) ? 'ml.' . $column : $fallbackSql . ' AS ' . $column;
 }
 
+function mg_world_location_guess_geo_from_address(array $row): ?array
+{
+    $direct = mg_world_canvas_valid_geo($row['latitude'] ?? null, $row['longitude'] ?? null, $row['geo_accuracy_meters'] ?? null, (string)($row['geo_source'] ?? 'merchant_locations'));
+    if ($direct !== null) return $direct;
+
+    $city = strtolower(trim((string)($row['city'] ?? '')));
+    $region = strtoupper(trim((string)($row['region'] ?? '')));
+    $country = strtoupper(trim((string)($row['country_code'] ?? 'US')));
+    $postal = preg_replace('/[^0-9]/', '', (string)($row['postal_code'] ?? '')) ?? '';
+    if ($country !== '' && $country !== 'US') return null;
+
+    $known = [
+        'az|85020' => [33.5679, -112.0555, 4200],
+        'az|phoenix' => [33.4484, -112.0740, 12000],
+        'az|scottsdale' => [33.4942, -111.9261, 12000],
+        'az|tempe' => [33.4255, -111.9400, 10000],
+        'az|mesa' => [33.4152, -111.8315, 14000],
+        'az|glendale' => [33.5387, -112.1860, 14000],
+        'az|chandler' => [33.3062, -111.8413, 13000],
+        'az|gilbert' => [33.3528, -111.7890, 13000],
+        'az|peoria' => [33.5806, -112.2374, 13000],
+    ];
+
+    $match = null;
+    if ($postal !== '') {
+        $zipKey = strtolower($region . '|' . substr($postal, 0, 5));
+        if (isset($known[$zipKey])) $match = $known[$zipKey];
+        elseif ($region === 'AZ' && str_starts_with($postal, '850')) $match = [33.4484, -112.0740, 16000];
+    }
+    if ($match === null && $city !== '') {
+        $cityKey = strtolower($region . '|' . $city);
+        if (isset($known[$cityKey])) $match = $known[$cityKey];
+    }
+    if ($match === null) return null;
+
+    return mg_world_canvas_valid_geo($match[0], $match[1], $match[2], 'merchant_address_fallback');
+}
+
+function mg_world_location_backfill_merchant_geo(PDO $pdo, array $row): array
+{
+    if (!mg_world_location_columns_ready($pdo)) return $row;
+    $geo = mg_world_location_guess_geo_from_address($row);
+    if ($geo === null) return $row;
+    if (mg_world_canvas_valid_geo($row['latitude'] ?? null, $row['longitude'] ?? null, null, 'existing') !== null) return $row;
+    $sets = ['latitude=?', 'longitude=?'];
+    $params = [$geo['latitude'], $geo['longitude']];
+    if (mg_world_canvas_column($pdo, 'merchant_locations', 'geo_accuracy_meters')) { $sets[] = 'geo_accuracy_meters=?'; $params[] = $geo['accuracy_meters']; }
+    if (mg_world_canvas_column($pdo, 'merchant_locations', 'geo_source')) { $sets[] = 'geo_source=?'; $params[] = $geo['source']; }
+    $sets[] = 'updated_at=NOW()';
+    $params[] = (int)($row['id'] ?? 0);
+    if ((int)($row['id'] ?? 0) > 0) {
+        try { $pdo->prepare('UPDATE merchant_locations SET ' . implode(', ', $sets) . ' WHERE id=?')->execute($params); } catch (Throwable) {}
+    }
+    $row['latitude'] = $geo['latitude'];
+    $row['longitude'] = $geo['longitude'];
+    $row['geo_accuracy_meters'] = $geo['accuracy_meters'];
+    $row['geo_source'] = $geo['source'];
+    return $row;
+}
+
 function mg_world_location_merchant_rows(PDO $pdo, int $merchantUserId, bool $onlyGeo = true): array
 {
     if ($merchantUserId <= 0 || !mg_world_location_columns_ready($pdo)) return [];
-    $geo = $onlyGeo ? ' AND ml.latitude IS NOT NULL AND ml.longitude IS NOT NULL' : '';
     $geoAccuracy = mg_world_location_select_expr($pdo, 'geo_accuracy_meters', 'NULL');
     $geoSource = mg_world_location_select_expr($pdo, 'geo_source', 'NULL');
     $zoneRadius = mg_world_location_select_expr($pdo, 'world_zone_radius_meters', '250');
     $select = "ml.id, ml.public_id, {$merchantUserId} AS merchant_user_id, ml.name, ml.location_code, ml.address_line1, ml.address_line2, ml.city, ml.region, ml.postal_code, ml.country_code, ml.timezone, ml.phone, ml.status, ml.is_primary, ml.latitude, ml.longitude, {$geoAccuracy}, {$geoSource}, {$zoneRadius}, ml.updated_at";
     if (mg_world_canvas_column($pdo, 'merchant_locations', 'merchant_user_id')) {
-        return mg_world_canvas_rows($pdo, "SELECT {$select} FROM merchant_locations ml WHERE ml.merchant_user_id=? AND ml.status='active'{$geo} ORDER BY ml.is_primary DESC, ml.name ASC, ml.id ASC", [$merchantUserId]);
+        $rows = mg_world_canvas_rows($pdo, "SELECT {$select} FROM merchant_locations ml WHERE ml.merchant_user_id=? AND ml.status='active' ORDER BY ml.is_primary DESC, ml.name ASC, ml.id ASC", [$merchantUserId]);
+    } else {
+        $rows = mg_world_canvas_rows($pdo, "SELECT {$select} FROM merchant_locations ml JOIN merchant_workspaces mw ON mw.id=ml.workspace_id WHERE mw.merchant_user_id=? AND ml.status='active' ORDER BY ml.is_primary DESC, ml.name ASC, ml.id ASC", [$merchantUserId]);
     }
-    return mg_world_canvas_rows($pdo, "SELECT {$select} FROM merchant_locations ml JOIN merchant_workspaces mw ON mw.id=ml.workspace_id WHERE mw.merchant_user_id=? AND ml.status='active'{$geo} ORDER BY ml.is_primary DESC, ml.name ASC, ml.id ASC", [$merchantUserId]);
+    $rows = array_map(static fn(array $row): array => mg_world_location_backfill_merchant_geo($pdo, $row), $rows);
+    if ($onlyGeo) {
+        $rows = array_values(array_filter($rows, static fn(array $row): bool => mg_world_canvas_valid_geo($row['latitude'] ?? null, $row['longitude'] ?? null, null, 'merchant_locations') !== null));
+    }
+    return $rows;
 }
 
 function mg_world_location_main_merchant(PDO $pdo, int $merchantUserId): ?array
