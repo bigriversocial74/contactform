@@ -65,7 +65,7 @@ function mg_world_delivery_run_create(PDO $pdo, array $drop, string $runType = '
     $startedAt = date('Y-m-d H:i:s');
     $interceptOpens = date('Y-m-d H:i:s', time() + 1);
     $interceptCloses = date('Y-m-d H:i:s', time() + 2);
-    $stmt = $pdo->prepare("INSERT INTO merchant_target_drop_delivery_runs (public_id,target_drop_id,merchant_user_id,status,run_type,launch_latitude,launch_longitude,target_latitude,target_longitude,launch_x,launch_y,target_x,target_y,control_point_json,animation_duration_ms,animation_started_at,intercept_window_opens_at,intercept_window_closes_at,metadata_json,created_at,updated_at) VALUES (?,?,?,'sending',?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())");
+    $stmt = $pdo->prepare("INSERT INTO merchant_target_drop_delivery_runs (public_id,target_drop_id,merchant_user_id,status,run_type,launch_latitude,launch_longitude,target_latitude,target_longitude,launch_x,launch_y,target_x,target_y,control_point_json,animation_duration_ms,animation_started_at,intercept_window_opens_at,intercept_window_closes_at,metadata_json,created_at,updated_at) VALUES (?,?,?,'sending',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())");
     $stmt->execute([$publicId, $dropId, $merchantId, $runType, $launchLat, $launchLng, $targetLat, $targetLng, $launchPoint['x'], $launchPoint['y'], $targetPoint['x'], $targetPoint['y'], json_encode($control, JSON_UNESCAPED_SLASHES), 1700, $startedAt, $interceptOpens, $interceptCloses, json_encode(['source' => 'world_canvas', 'drop_public_id' => (string)($drop['public_id'] ?? '')], JSON_UNESCAPED_SLASHES)]);
     return mg_world_delivery_run_get($pdo, $publicId);
 }
