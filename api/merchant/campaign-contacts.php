@@ -16,6 +16,43 @@ function mg_campaign_contact_rules(mixed $json): array
     return is_array($decoded) ? $decoded : [];
 }
 
+function mg_campaign_contact_score(array $row): array
+{
+    $score = 20;
+    $score += !empty($row['resolved_user_id']) ? 12 : 0;
+    $score += !empty($row['email_verified_at']) ? 8 : 0;
+    $score += min(18, (int)($row['issued_count'] ?? 0) * 6);
+    $score += min(24, (int)($row['claimed_count'] ?? 0) * 12);
+    $score += min(28, (int)($row['redeemed_count'] ?? 0) * 14);
+    $score += min(16, (int)($row['emails_delivered_count'] ?? 0) * 4);
+    $score += min(10, (int)($row['invite_pending_count'] ?? 0) * 5);
+    if (mg_campaign_contact_no_recent_activity($row['last_activity_at'] ?? $row['updated_at'] ?? null)) $score -= 15;
+    $score = max(0, min(100, $score));
+    $label = $score >= 75 ? 'high_intent' : ($score >= 50 ? 'engaged' : ($score >= 30 ? 'warming' : 'cold'));
+    return ['score' => $score, 'label' => $label];
+}
+
+function mg_campaign_contact_next_action(array $row, array $score): string
+{
+    if ((int)($row['redeemed_count'] ?? 0) > 0) return 'Ask for feedback or referral';
+    if ((int)($row['claimed_count'] ?? 0) > 0) return 'Nudge redemption in-store';
+    if ((int)($row['issued_count'] ?? 0) > 0 || (int)($row['wallet_count'] ?? 0) > 0) return 'Follow up before reward expires';
+    if ((int)($row['invite_pending_count'] ?? 0) > 0) return 'Resend or personalize invite';
+    if (!empty($row['resolved_user_id']) && (int)$score['score'] >= 50) return 'Send direct reward';
+    if (!empty($row['resolved_user_id'])) return 'Send CRM message';
+    return 'Convert to account or email invite';
+}
+
+function mg_campaign_contact_result_status(array $row): string
+{
+    if ((int)($row['redeemed_count'] ?? 0) > 0) return 'redeemed';
+    if ((int)($row['claimed_count'] ?? 0) > 0) return 'claimed';
+    if ((int)($row['issued_count'] ?? 0) > 0 || (int)($row['wallet_count'] ?? 0) > 0) return 'reward_sent';
+    if ((int)($row['invite_pending_count'] ?? 0) > 0) return 'invite_pending';
+    if ((int)($row['emails_delivered_count'] ?? 0) > 0) return 'email_delivered';
+    return 'no_action_yet';
+}
+
 function mg_campaign_contact_row(array $row): array
 {
     $lastActivityAt = $row['last_activity_at'] ?? $row['updated_at'] ?? $row['created_at'] ?? null;
@@ -25,6 +62,8 @@ function mg_campaign_contact_row(array $row): array
     $winnerActionAllowed = (string)($row['campaign_type'] ?? '') === 'contest_giveaway'
         && in_array($ruleMode, ['manual_winner', 'random_draw'], true)
         && (int)($row['winner_count'] ?? 0) <= 0;
+    $score = mg_campaign_contact_score($row);
+    $resultStatus = mg_campaign_contact_result_status($row);
 
     return [
         'id' => (string)$row['public_id'],
@@ -55,6 +94,23 @@ function mg_campaign_contact_row(array $row): array
         'no_recent_activity' => mg_campaign_contact_no_recent_activity($lastActivityAt),
         'created_at' => $row['created_at'] ?? null,
         'updated_at' => $row['updated_at'] ?? null,
+        'crm_score' => $score['score'],
+        'crm_score_label' => $score['label'],
+        'result_status' => $resultStatus,
+        'next_best_action' => mg_campaign_contact_next_action($row, $score),
+        'customer_profile_url' => '/merchant-customer.php?campaign_contact_id=' . rawurlencode((string)$row['public_id']),
+        'crm_stats' => [
+            'score' => $score['score'],
+            'score_label' => $score['label'],
+            'result_status' => $resultStatus,
+            'next_best_action' => mg_campaign_contact_next_action($row, $score),
+            'wallets' => (int)($row['wallet_count'] ?? 0),
+            'issued' => (int)($row['issued_count'] ?? 0),
+            'claimed' => (int)($row['claimed_count'] ?? 0),
+            'redeemed' => (int)($row['redeemed_count'] ?? 0),
+            'messages' => (int)($row['emails_delivered_count'] ?? 0),
+            'invite_pending' => (int)($row['invite_pending_count'] ?? 0),
+        ],
     ];
 }
 
@@ -117,10 +173,12 @@ try {
         'emails_queued' => array_sum(array_column($contacts, 'emails_queued_count')),
         'emails_delivered' => array_sum(array_column($contacts, 'emails_delivered_count')),
         'emails_failed' => array_sum(array_column($contacts, 'emails_failed_count')),
+        'high_intent' => count(array_filter($contacts, fn($c) => (int)($c['crm_score'] ?? 0) >= 75)),
+        'needs_followup' => count(array_filter($contacts, fn($c) => in_array((string)($c['result_status'] ?? ''), ['reward_sent','invite_pending','email_delivered'], true))),
     ];
 
     mg_ok(['contacts' => $contacts, 'totals' => $totals, 'count' => count($contacts), 'schema_ready' => true]);
 } catch (Throwable $error) {
     mg_security_log('warning', 'merchant.campaign_contacts.unavailable', 'Campaign contacts unavailable.', ['exception_class' => $error::class, 'message' => $error->getMessage()], $merchantId);
-    mg_ok(['contacts' => [], 'totals' => ['contacts' => 0, 'accounts' => 0, 'no_accounts' => 0, 'verified' => 0, 'wallets' => 0, 'reward_issued' => 0, 'reward_claimed' => 0, 'winner_rewards' => 0, 'invite_pending' => 0, 'no_recent_activity' => 0, 'emails_queued' => 0, 'emails_delivered' => 0, 'emails_failed' => 0], 'count' => 0, 'schema_ready' => false], 'Campaign contacts unavailable until schemas are installed.');
+    mg_ok(['contacts' => [], 'totals' => ['contacts' => 0, 'accounts' => 0, 'no_accounts' => 0, 'verified' => 0, 'wallets' => 0, 'reward_issued' => 0, 'reward_claimed' => 0, 'winner_rewards' => 0, 'invite_pending' => 0, 'no_recent_activity' => 0, 'emails_queued' => 0, 'emails_delivered' => 0, 'emails_failed' => 0, 'high_intent' => 0, 'needs_followup' => 0], 'count' => 0, 'schema_ready' => false], 'Campaign contacts unavailable until schemas are installed.');
 }
