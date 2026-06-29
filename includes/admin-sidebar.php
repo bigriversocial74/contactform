@@ -157,6 +157,12 @@ $adminNav = [
         'href' => '/admin/system-health.php',
         'visible' => $canHealth,
     ],
+    'store-health-analytics' => [
+        'label' => 'Store Health analytics',
+        'detail' => 'Merchant action completion',
+        'href' => '/admin/store-health-analytics.php',
+        'visible' => $canHealth,
+    ],
     'lifecycle-health' => [
         'label' => 'Lifecycle health',
         'detail' => 'Checkout to redemption',
