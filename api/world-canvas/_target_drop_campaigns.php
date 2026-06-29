@@ -15,9 +15,11 @@ function mg_world_target_drop_campaign_payload_type(string $campaignType): strin
     };
 }
 
-function mg_world_target_drop_campaign_select_expr(PDO $pdo, string $table, string $column, string $alias, string $fallback = 'NULL'): string
+function mg_world_target_drop_campaign_select_expr(PDO $pdo, string $table, string $column, string $alias, string $fallback = 'NULL', string $sqlAlias = ''): string
 {
-    return mg_world_canvas_column($pdo, $table, $column) ? "{$column} AS {$alias}" : "{$fallback} AS {$alias}";
+    if (!mg_world_canvas_column($pdo, $table, $column)) return "{$fallback} AS {$alias}";
+    $prefix = $sqlAlias !== '' ? "{$sqlAlias}." : '';
+    return "{$prefix}{$column} AS {$alias}";
 }
 
 function mg_world_target_drop_remaining(?int $limit, int $issued): ?int
@@ -32,7 +34,7 @@ function mg_world_target_drop_campaign_options(PDO $pdo, array $user): array
     if ($merchantId <= 0 || !mg_world_canvas_table($pdo, 'campaigns')) return [];
     try {
         $hasRewardTemplates = mg_world_canvas_table($pdo, 'reward_templates');
-        $campaignIssued = mg_world_target_drop_campaign_select_expr($pdo, 'campaigns', 'issued_count', 'campaign_issued_count', '0');
+        $campaignIssued = mg_world_target_drop_campaign_select_expr($pdo, 'campaigns', 'issued_count', 'campaign_issued_count', '0', 'c');
         $selectReward = 'NULL AS reward_template_public_id, NULL AS reward_template_title, NULL AS reward_template_status, NULL AS reward_quantity_limit, 0 AS reward_issued_count';
         $joinReward = '';
         if ($hasRewardTemplates) {
@@ -101,12 +103,27 @@ function mg_world_target_drop_campaign_payload(PDO $pdo, int $merchantId, string
     }
 }
 
+function mg_world_target_drop_campaign_payload_by_title(PDO $pdo, int $merchantId, string $campaignTitle): ?array
+{
+    $title = trim($campaignTitle);
+    if ($merchantId <= 0 || $title === '' || !mg_world_canvas_table($pdo, 'campaigns')) return null;
+    try {
+        $rows = mg_world_canvas_rows($pdo, "SELECT public_id FROM campaigns WHERE merchant_user_id=? AND status <> 'archived' AND LOWER(title)=LOWER(?) ORDER BY FIELD(status,'active','draft','paused','ended'), updated_at DESC, id DESC LIMIT 1", [$merchantId, $title]);
+        if (!$rows) return null;
+        return mg_world_target_drop_campaign_payload($pdo, $merchantId, (string)$rows[0]['public_id']);
+    } catch (Throwable) {
+        return null;
+    }
+}
+
 function mg_world_target_drop_enrich_input_with_campaign(PDO $pdo, array $user, array $input): array
 {
     $merchantId = (int)($user['id'] ?? 0);
     $campaignPublicId = trim((string)($input['campaign_public_id'] ?? ''));
-    if ($campaignPublicId === '') return $input;
-    $campaign = mg_world_target_drop_campaign_payload($pdo, $merchantId, $campaignPublicId);
+    $campaign = $campaignPublicId !== '' ? mg_world_target_drop_campaign_payload($pdo, $merchantId, $campaignPublicId) : null;
+    if (!$campaign) {
+        $campaign = mg_world_target_drop_campaign_payload_by_title($pdo, $merchantId, (string)($input['campaign_title'] ?? ''));
+    }
     if (!$campaign) return $input;
     $input['campaign_public_id'] = $campaign['campaign_public_id'];
     $input['campaign_title'] = $campaign['campaign_title'];
