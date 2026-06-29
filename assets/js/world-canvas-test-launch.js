@@ -190,6 +190,7 @@ window.Microgifter = window.Microgifter || {};
   }
 
   window.MicrogifterTargetDropTestLaunch = { launch: launch };
+  try { document.dispatchEvent(new CustomEvent('mg:world-test-launch-ready')); } catch (error) {}
   document.addEventListener('mg:target-drop-test-launch', function(event){
     launch(event.detail && event.detail.drop ? event.detail.drop : null, event.detail || {});
   });
