@@ -10,7 +10,7 @@ window.Microgifter = window.Microgifter || {};
   function esc(value) { return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
   function number(value) { return Number(value || 0) || 0; }
   function pct(value) { return String(value == null ? 0 : value) + '%'; }
-  function time(value) { if (!value) return '—'; try { return new Date(value.replace(' ', 'T')).toLocaleString(); } catch (error) { return value; } }
+  function time(value) { if (!value) return '—'; try { return new Date(String(value).replace(' ', 'T')).toLocaleString(); } catch (error) { return value; } }
 
   async function getJson(url) {
     if (window.Microgifter && window.Microgifter.get) return window.Microgifter.get(url);
@@ -45,6 +45,27 @@ window.Microgifter = window.Microgifter || {};
     }).join('');
   }
 
+  function renderImpactMetrics(impact) {
+    var box = qs('[data-sha-impact-metrics]', root);
+    if (!box) return;
+    impact = impact || {};
+    var rewards = impact.reward_outcomes || {};
+    var invites = impact.invite_impact || {};
+    var cards = [
+      ['Rewards issued', rewards.issued || 0, 'wallet items'],
+      ['Claims created', rewards.claimed || 0, pct(rewards.claim_rate || 0)],
+      ['Redemptions', rewards.redeemed || 0, pct(rewards.redemption_rate || 0)],
+      ['Claim rate', pct(rewards.claim_rate || 0), 'claimed / issued'],
+      ['Redemption rate', pct(rewards.redemption_rate || 0), 'redeemed / claimed'],
+      ['Active invites', invites.active_invites || 0, 'open reward invites'],
+      ['Expired invites', invites.expired_invites || 0, 'missed windows'],
+      ['Impact status', impact.ready ? 'Ready' : 'Limited', impact.ready ? 'commerce tables connected' : 'waiting for commerce tables']
+    ];
+    box.innerHTML = cards.map(function (card) {
+      return '<article><span>' + esc(card[0]) + '</span><strong>' + esc(card[1]) + '</strong><small>' + esc(card[2]) + '</small></article>';
+    }).join('');
+  }
+
   function renderTable(target, headers, rows, emptyCopy) {
     var node = qs(target, root);
     if (!node) return;
@@ -61,10 +82,22 @@ window.Microgifter = window.Microgifter || {};
     }), 'No Store Health action type data yet.');
   }
 
+  function renderImpactTypes(rows) {
+    renderTable('[data-sha-impact-types]', ['Action', 'Actions', 'Rewards', 'Claims', 'Redemptions', 'Claims/action', 'Redeems/action'], rows.map(function (row) {
+      return '<tr><td><strong>' + esc(row.action_type || 'action') + '</strong></td><td>' + esc(row.actions) + '</td><td>' + esc(row.rewards) + '</td><td>' + esc(row.claims) + '</td><td>' + esc(row.redemptions) + '</td><td>' + esc(row.claims_per_action) + '</td><td>' + esc(row.redemptions_per_action) + '</td></tr>';
+    }), 'No attributed business impact yet.');
+  }
+
   function renderMerchants(rows) {
     renderTable('[data-sha-merchants]', ['Merchant', 'Total', 'Started', 'Completed', 'Dismissed', 'Rate', 'Last action'], rows.map(function (row) {
       return '<tr><td><strong>' + esc(row.merchant_name || ('Merchant #' + row.merchant_user_id)) + '</strong><small>ID ' + esc(row.merchant_user_id) + '</small></td><td>' + esc(row.total) + '</td><td>' + esc(row.started) + '</td><td>' + esc(row.completed) + '</td><td>' + esc(row.dismissed) + '</td><td>' + esc(pct(row.completion_rate)) + '</td><td>' + esc(time(row.last_action_at)) + '</td></tr>';
     }), 'No merchant action data yet.');
+  }
+
+  function renderImpactMerchants(rows) {
+    renderTable('[data-sha-impact-merchants]', ['Merchant', 'Actions', 'Rewards', 'Claims', 'Redemptions', 'Last impact'], rows.map(function (row) {
+      return '<tr><td><strong>' + esc(row.merchant_name || ('Merchant #' + row.merchant_user_id)) + '</strong><small>ID ' + esc(row.merchant_user_id) + '</small></td><td>' + esc(row.actions) + '</td><td>' + esc(row.rewards) + '</td><td>' + esc(row.claims) + '</td><td>' + esc(row.redemptions) + '</td><td>' + esc(time(row.last_impact_at)) + '</td></tr>';
+    }), 'No merchant impact data yet.');
   }
 
   function renderDaily(rows) {
@@ -93,8 +126,20 @@ window.Microgifter = window.Microgifter || {};
     }).join('');
   }
 
+  function renderImpactTimeline(rows) {
+    var node = qs('[data-sha-impact-timeline]', root);
+    if (!node) return;
+    if (!rows.length) {
+      node.innerHTML = '<div class="mg-admin-store-health-empty">No attributed action outcomes yet.</div>';
+      return;
+    }
+    node.innerHTML = rows.map(function (row) {
+      return '<article class="is-' + esc(row.status) + '"><div><strong>' + esc(row.title || row.action_type) + '</strong><span>' + esc(row.merchant_name) + ' · ' + esc(row.action_type) + ' → ' + esc(row.rewards) + ' rewards · ' + esc(row.claims) + ' claims · ' + esc(row.redemptions) + ' redemptions</span></div><b>' + esc(row.status) + '</b><small>Action ' + esc(time(row.action_at)) + ' · latest outcome ' + esc(time(row.latest_outcome_at)) + '</small></article>';
+    }).join('');
+  }
+
   async function load() {
-    setBanner('is-loading', 'Loading Store Health analytics', 'Checking merchant action state records and completion behavior.');
+    setBanner('is-loading', 'Loading Store Health analytics', 'Checking merchant action states and business impact attribution.');
     try {
       var data = unwrap(await getJson(endpoint));
       if (!data || data.ok === false) {
@@ -102,12 +147,16 @@ window.Microgifter = window.Microgifter || {};
         return;
       }
       renderMetrics(data.summary || {});
+      renderImpactMetrics(data.impact || {});
       renderTypes(data.top_types || []);
+      renderImpactTypes((data.impact || {}).types || []);
       renderMerchants(data.merchants || []);
+      renderImpactMerchants((data.impact || {}).merchants || []);
       renderDaily(data.daily || []);
+      renderImpactTimeline((data.impact || {}).timeline || []);
       renderRecent(data.recent || []);
       qs('[data-sha-updated]', root).textContent = new Date().toLocaleString();
-      setBanner('is-ready', 'Store Health analytics ready', 'Merchant recommendation engagement and completion history are loaded.');
+      setBanner('is-ready', 'Store Health impact ready', 'Recommendation engagement and downstream commerce outcomes are loaded.');
     } catch (error) {
       setBanner('is-error', 'Store Health analytics failed', error.message || 'Unable to load analytics.');
     }
