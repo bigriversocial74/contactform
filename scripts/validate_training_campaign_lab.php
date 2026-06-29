@@ -4,9 +4,6 @@
 /**
  * Training Campaign Lab validation script.
  *
- * This checks the build package and catches missing docs/routes/assets/schema
- * before agents continue implementation work.
- *
  * Run from repo root:
  * php scripts/validate_training_campaign_lab.php
  */
@@ -74,6 +71,8 @@ $requiredDocs = [
     'docs/training-campaign-lab/implementation-tickets.md',
     'docs/training-campaign-lab/qa-test-script.md',
     'docs/training-campaign-lab/open-questions.md',
+    'docs/training-campaign-lab/agent-build-handoff.md',
+    'docs/training-campaign-lab/next-build-outline.md',
     'docs/training-campaign-lab/ui/ui-page-map.md',
     'docs/training-campaign-lab/ui/ui-layout-spec.md',
     'docs/training-campaign-lab/ui/component-inventory.md',
@@ -84,7 +83,9 @@ $requiredDocs = [
 $requiredRoutes = [
     'examples/local-quest-rewards/training-lab.php',
     'examples/local-quest-rewards/training-campaigns.php',
+    'examples/local-quest-rewards/training-campaign-detail.php',
     'examples/local-quest-rewards/training-campaign-data.php',
+    'examples/local-quest-rewards/training-storage.php',
     'examples/local-quest-rewards/assets/training-lab.css',
     'examples/local-quest-rewards/assets/training-lab.js',
 ];
@@ -105,74 +106,60 @@ $schemaFiles = [
     'examples/local-quest-rewards/database/training_campaign_lab_seed.sql',
 ];
 
-foreach ($requiredDocs as $path) {
-    tclv_required_file($root, $path, $errors, $passed);
-}
-foreach ($requiredRoutes as $path) {
-    tclv_required_file($root, $path, $errors, $passed);
-}
-foreach ($protectedLocalQuestFiles as $path) {
-    tclv_required_file($root, $path, $errors, $passed);
-}
-foreach ($schemaFiles as $path) {
-    tclv_required_file($root, $path, $errors, $passed);
-}
+foreach ($requiredDocs as $path) tclv_required_file($root, $path, $errors, $passed);
+foreach ($requiredRoutes as $path) tclv_required_file($root, $path, $errors, $passed);
+foreach ($protectedLocalQuestFiles as $path) tclv_required_file($root, $path, $errors, $passed);
+foreach ($schemaFiles as $path) tclv_required_file($root, $path, $errors, $passed);
 
 tclv_required_dir($root, 'docs/training-campaign-lab/ui/mockups', $errors, $passed);
 
 $requiredTables = [
-    'training_campaigns',
-    'training_sequences',
-    'training_tasks',
-    'training_participants',
-    'training_files',
-    'training_task_submissions',
-    'training_reviews',
-    'training_action_receipts',
-    'training_reward_rules',
-    'training_reward_issues',
-    'training_streaks',
-    'training_events',
+    'training_campaigns','training_sequences','training_tasks','training_participants','training_files','training_task_submissions','training_reviews','training_action_receipts','training_reward_rules','training_reward_issues','training_streaks','training_events',
 ];
 
 tclv_file_contains($root, 'examples/local-quest-rewards/database/training_campaign_lab.sql', $requiredTables, $errors, $passed);
 
 tclv_file_contains($root, 'examples/local-quest-rewards/database/training_campaign_lab_seed.sql', [
-    '5-Day Movement Challenge',
-    'Coffee Shop Opening Routine',
-    '14-Day Creator Practice Streak',
-    'daily-movement-routine',
-    'training_reward_rules',
+    '5-Day Movement Challenge','Coffee Shop Opening Routine','14-Day Creator Practice Streak','daily-movement-routine','training_reward_rules',
 ], $errors, $passed);
 
-tclv_file_contains($root, 'docs/training-campaign-lab/branch-strategy.md', [
-    'local-quest-workspace',
-    'Do not replace the existing Local Quest files',
+tclv_file_contains($root, 'examples/local-quest-rewards/training-storage.php', [
+    'function tcl_storage_pdo',
+    'function tcl_storage_schema_available',
+    'function tcl_storage_campaigns',
+    'function tcl_storage_campaign_by_slug',
+    'tcl_storage_seed_campaigns',
 ], $errors, $passed);
 
-tclv_file_contains($root, 'docs/training-campaign-lab/qa-test-script.md', [
-    'Final vertical slice QA',
-    'Original Local Quest app still works',
+tclv_file_contains($root, 'examples/local-quest-rewards/training-campaign-detail.php', [
+    'tcl_storage_campaign_by_slug',
+    'training-campaign-detail.php?campaign=',
+    'Reward ladder',
+    'Data Source',
 ], $errors, $passed);
 
-$expectedFutureRoutes = [
-    'training-campaign-detail.php',
-    'training-sequence.php',
-    'training-proof-upload.php',
-    'training-rewards.php',
-    'admin-training-review.php',
-    'admin-training-receipts.php',
-];
+tclv_file_contains($root, 'examples/local-quest-rewards/training-campaigns.php', [
+    'tcl_storage_campaigns',
+    'tcl_storage_summary',
+    'training-campaign-detail.php?campaign=',
+], $errors, $passed);
 
+tclv_file_contains($root, 'examples/local-quest-rewards/training-lab.php', [
+    'tcl_storage_campaigns',
+    'tcl_storage_summary',
+    'SQL read model',
+], $errors, $passed);
+
+tclv_file_contains($root, 'docs/training-campaign-lab/branch-strategy.md', ['local-quest-workspace','Do not replace the existing Local Quest files'], $errors, $passed);
+tclv_file_contains($root, 'docs/training-campaign-lab/qa-test-script.md', ['Final vertical slice QA','Original Local Quest app still works'], $errors, $passed);
+
+$expectedFutureRoutes = ['training-sequence.php','training-proof-upload.php','training-rewards.php','admin-training-review.php','admin-training-receipts.php'];
 $routeMap = tclv_path($root, 'docs/training-campaign-lab/route-map.md');
 if (is_file($routeMap)) {
     $routeMapContent = (string)file_get_contents($routeMap);
     foreach ($expectedFutureRoutes as $route) {
-        if (strpos($routeMapContent, $route) === false) {
-            $warnings[] = "Route map does not mention expected future route: {$route}";
-        } else {
-            $passed[] = "Route map mentions {$route}";
-        }
+        if (strpos($routeMapContent, $route) === false) $warnings[] = "Route map does not mention expected future route: {$route}";
+        else $passed[] = "Route map mentions {$route}";
     }
 }
 
@@ -180,24 +167,18 @@ echo "Training Campaign Lab validation\n";
 echo str_repeat('=', 34) . "\n\n";
 
 echo "Passed checks: " . count($passed) . "\n";
-foreach ($passed as $line) {
-    echo "  [OK] {$line}\n";
-}
+foreach ($passed as $line) echo "  [OK] {$line}\n";
 
 if ($warnings) {
     echo "\nWarnings: " . count($warnings) . "\n";
-    foreach ($warnings as $line) {
-        echo "  [WARN] {$line}\n";
-    }
+    foreach ($warnings as $line) echo "  [WARN] {$line}\n";
 }
 
 if ($errors) {
     echo "\nErrors: " . count($errors) . "\n";
-    foreach ($errors as $line) {
-        echo "  [FAIL] {$line}\n";
-    }
+    foreach ($errors as $line) echo "  [FAIL] {$line}\n";
     exit(1);
 }
 
-echo "\nValidation passed. Training Campaign Lab build package is ready for the next staged implementation phase.\n";
+echo "\nValidation passed. Training Campaign Lab Phase 3 package is ready for participant join and sequence implementation.\n";
 exit(0);
