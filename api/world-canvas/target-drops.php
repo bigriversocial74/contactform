@@ -4,7 +4,7 @@
  */
 declare(strict_types=1);
 
-require_once __DIR__ . '/_target_drop_interests.php';
+require_once __DIR__ . '/_delivery_runs.php';
 
 $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
 $user = $method === 'GET' ? mg_require_api_user() : mg_require_permission('merchant.locations.manage');
@@ -17,7 +17,9 @@ try {
         mg_ok([
             'schema_ready' => mg_world_target_drops_ready($pdo),
             'interest_schema_ready' => mg_world_target_drop_interests_ready($pdo),
+            'delivery_schema_ready' => mg_world_delivery_runs_ready($pdo),
             'drops' => $drops,
+            'delivery_runs' => mg_world_delivery_run_list($pdo, $user),
             'campaigns' => mg_world_target_drop_campaign_options($pdo, $user),
         ]);
     }
@@ -57,7 +59,11 @@ try {
 
     if ($action === 'publish' || $action === 'schedule') {
         $drop = mg_world_target_drop_update($pdo, $user, $input, true);
-        mg_ok(['drop' => $drop], $drop['status'] === 'scheduled' ? 'Target Drop scheduled.' : 'Target Drop launched.');
+        $run = null;
+        if (($drop['status'] ?? '') !== 'scheduled') {
+            $run = mg_world_delivery_run_create($pdo, ['public_id' => $drop['id'], 'merchant_user_id' => (int)($user['id'] ?? 0)], 'live');
+        }
+        mg_ok(['drop' => $drop, 'delivery_run' => $run], $drop['status'] === 'scheduled' ? 'Target Drop scheduled.' : 'Target Drop started.');
     }
 
     $drop = mg_world_target_drop_update($pdo, $user, $input, false);
