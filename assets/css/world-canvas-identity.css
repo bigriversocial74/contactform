@@ -1,0 +1,7 @@
+.mg-world-identity-badge{position:absolute;left:12px;bottom:8px;display:inline-flex;align-items:center;min-height:20px;border-radius:999px;background:#f8fafc;color:#475569;border:1px solid rgba(148,163,184,.26);font-size:9px;font-weight:950;text-transform:uppercase;letter-spacing:.08em;padding:0 7px;max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mg-world-identity-badge.is-my-avatar,.mg-world-identity-badge.is-my-merchant{background:#dcfce7;color:#047857;border-color:rgba(16,185,129,.28)}
+.mg-world-identity-badge.is-public-merchant{background:#eff6ff;color:#1d4ed8;border-color:rgba(37,99,235,.24)}
+.mg-world-identity-badge.is-anonymous-geo{background:#ecfeff;color:#0e7490;border-color:rgba(8,145,178,.24)}
+.mg-world-identity-badge.is-anonymous{background:#f8fafc;color:#64748b}
+.mg-world-node{padding-bottom:34px}
+.mg-world-detail-hero .mg-world-identity-inline{display:inline-flex;margin-top:7px;border-radius:999px;background:#eff6ff;color:#1d4ed8;font-size:10px;font-weight:950;text-transform:uppercase;letter-spacing:.08em;padding:5px 8px}
