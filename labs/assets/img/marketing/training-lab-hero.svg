@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="640" viewBox="0 0 900 640" role="img" aria-labelledby="title desc">
+  <title id="title">Training Lab proof and progress hero illustration</title>
+  <desc id="desc">Minimal green illustration showing tasks, proof, progress, and wallet status.</desc>
+  <rect width="900" height="640" rx="48" fill="#eef8f2"/>
+  <circle cx="170" cy="140" r="82" fill="#d9f4e6"/>
+  <circle cx="735" cy="505" r="110" fill="#dff7e9"/>
+  <rect x="170" y="105" width="560" height="430" rx="38" fill="#fff" stroke="#dfeae4" stroke-width="4"/>
+  <rect x="215" y="155" width="235" height="32" rx="16" fill="#0f3d2e"/>
+  <rect x="215" y="205" width="470" height="18" rx="9" fill="#dfeae4"/>
+  <rect x="215" y="238" width="390" height="18" rx="9" fill="#dfeae4"/>
+  <g fill="none" stroke="#0f3d2e" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M258 338l32 32 66-74"/>
+    <path d="M258 438l32 32 66-74"/>
+  </g>
+  <rect x="395" y="306" width="250" height="62" rx="20" fill="#eef8f2" stroke="#cfeee0" stroke-width="3"/>
+  <rect x="395" y="406" width="250" height="62" rx="20" fill="#eef8f2" stroke="#cfeee0" stroke-width="3"/>
+  <circle cx="680" cy="210" r="42" fill="#0f3d2e"/>
+  <path d="M662 212l13 13 27-34" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="625" y="285" width="85" height="150" rx="28" fill="#163025"/>
+  <rect x="640" y="310" width="55" height="88" rx="14" fill="#cfeee0"/>
+  <rect x="650" y="410" width="36" height="8" rx="4" fill="#eef8f2"/>
+</svg>
