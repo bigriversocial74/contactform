@@ -15,7 +15,6 @@ static UI shell only
 no database writes
 no uploads
 no payments
-no reward issuing
 no separate account system
 no production DNS changes
 ```
@@ -83,8 +82,8 @@ The public, participant app, and backend shell pages exist with static demo cont
 
 The shared layout, public navigation, footer navigation, workspace sidebar, responsive CSS, form styles, table styles, reusable component helpers, route notes, and image asset folder map are in place.
 
-The landing page, pricing page, app dashboard, and backend overview have received the first visual polish pass.
+Polished pages now include the landing page, pricing page, about page, app dashboard, app campaigns, proof upload, progress page, wallet page, and backend overview.
 
 The checkout flow reaches a visual success page and a static receipt preview.
 
-Next pass: image placement, remaining page polish, and optional local PHP syntax check.
+Next pass: polish remaining support pages, add image placement, and run a local PHP syntax check.
