@@ -41,6 +41,6 @@ labs_page_start([
     <h2>This dashboard is a static UI shell.</h2>
     <p class="labs-copy">The data shown here is demo content. Real proof, review, wallet, and reward integration will come after the visual shell is approved.</p>
   </div>
-  <div class="labs-image-slot"><span>App screenshot slot<small>Use final participant app mockup here after image import.</small></span></div>
+  <div class="labs-image-slot"><img src="/assets/img/app/participant-dashboard.svg" alt="Participant dashboard mockup illustration" style="position:relative;width:100%;max-height:330px;object-fit:contain"></div>
 </section>
 <?php labs_page_end(['section' => 'app']); ?>
