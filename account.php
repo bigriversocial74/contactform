@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 require_once __DIR__ . '/includes/app.php';
 $accountView = defined('MG_ACCOUNT_VIEW') ? MG_ACCOUNT_VIEW : 'profile';
 $page_title = match ($accountView) {
@@ -70,60 +71,13 @@ $adminPermissionSet = [
 ];
 $hasAdminAccess = $isSuperAdmin || count(array_intersect($adminPermissionSet, $permissions)) > 0;
 $canShareMarketAdmin = in_array('share_market.admin', $permissions, true) || $isSuperAdmin;
-$accountNav = [
-  'profile' => ['label' => 'Profile', 'href' => '/account.php', 'detail' => 'Public identity', 'visible' => true],
-  'market' => ['label' => 'Market', 'href' => '/account-market.php', 'detail' => 'Ticker, score, funnel, and risk', 'visible' => true],
-  'share_market' => ['label' => 'Share Market', 'href' => '/account-share-market.php', 'detail' => 'Optional artist value program', 'visible' => true],
-  'subscriptions' => ['label' => 'My Subscription', 'href' => '/account-subscriptions.php', 'detail' => 'Plan and upgrade', 'visible' => true],
-  'wallet' => ['label' => 'Wallet', 'href' => '/wallet.php', 'detail' => 'Local rewards', 'visible' => true],
-  'models' => ['label' => 'Models', 'href' => '/account-models.php', 'detail' => 'User model access', 'visible' => true],
-  'security' => ['label' => 'Security', 'href' => '/account-security.php', 'detail' => 'Sessions', 'visible' => true],
-  'access' => ['label' => 'Access', 'href' => '/account-access.php', 'detail' => 'Roles and permissions', 'visible' => true],
-];
-if ($hasAdminAccess) $accountNav['admin'] = ['label' => 'Admin', 'href' => '/account-admin.php', 'detail' => 'Platform controls', 'visible' => true];
-if ($canViewProfileModeration) $accountNav['profile_moderation'] = ['label' => 'Moderation', 'href' => '/account-profile-moderation.php', 'detail' => 'Profile review queue', 'visible' => true];
-$adminSidebarNav = [
-  'admin' => ['label' => 'Admin dashboard', 'href' => '/account-admin.php', 'detail' => 'Platform overview', 'visible' => $hasAdminAccess],
-  'share_market_admin' => ['label' => 'Share Market Admin', 'href' => '/account-share-market-admin.php', 'detail' => 'Pools, credits, series, risk', 'visible' => $canShareMarketAdmin],
-  'marketplace_index' => ['label' => 'Marketplace Index', 'href' => '/account-marketplace.php', 'detail' => 'Aggregate value, scores, movers', 'visible' => $canMarketplaceIndex],
-  'investment_tests' => ['label' => 'Investment Tests', 'href' => '/account-investment-tests.php', 'detail' => 'Market scores and snapshots', 'visible' => $canInvestmentTests],
-  'profile_moderation' => ['label' => 'Moderation', 'href' => '/account-profile-moderation.php', 'detail' => 'Profile review queue', 'visible' => $canViewProfileModeration],
-  'admin_users' => ['label' => 'Users', 'href' => '/admin/users.php', 'detail' => 'Accounts and access', 'visible' => in_array('admin.users.view', $permissions, true) || $isSuperAdmin],
-  'pending_models' => ['label' => 'Pending models', 'href' => '/admin/pending-models.php', 'detail' => 'Model approval queue', 'visible' => in_array('admin.users.view', $permissions, true) || $isSuperAdmin],
-  'merchant_catalog' => ['label' => 'Merchants & catalog', 'href' => '/merchant-catalog-operations.php', 'detail' => 'Stores, products, media', 'visible' => $canMerchantCatalog],
-  'commerce' => ['label' => 'Commerce operations', 'href' => '/commerce-operations.php', 'detail' => 'Orders and lifecycle', 'visible' => $canCommerce],
-  'subscription_requests' => ['label' => 'Subscription requests', 'href' => '/admin/subscription-requests.php', 'detail' => 'Package upgrades', 'visible' => $canSubscriptionRequests],
-  'audit_logs' => ['label' => 'Audit logs', 'href' => '/admin/audit-logs.php', 'detail' => 'Administrative activity', 'visible' => in_array('admin.audit.view', $permissions, true) || $isSuperAdmin],
-  'security_logs' => ['label' => 'Security logs', 'href' => '/admin/security-logs.php', 'detail' => 'Security events', 'visible' => $canViewSecurityLogs],
-  'sessions' => ['label' => 'Sessions', 'href' => '/admin/sessions.php', 'detail' => 'Active user sessions', 'visible' => $canViewAdminSessions],
-  'system_health' => ['label' => 'System health', 'href' => '/admin/system-health.php', 'detail' => 'Runtime and delivery', 'visible' => in_array('admin.health.view', $permissions, true) || $isSuperAdmin],
-  'lifecycle_health' => ['label' => 'Lifecycle health', 'href' => '/admin/lifecycle-health.php', 'detail' => 'Checkout to redemption', 'visible' => in_array('admin.health.view', $permissions, true) || $isSuperAdmin],
-  'ops_queue' => ['label' => 'Ops queue', 'href' => '/admin/ops-queue.php', 'detail' => 'Alerts and incidents', 'visible' => $canOpsQueue],
-  'payments' => ['label' => 'Stripe payments', 'href' => '/admin-payments.php', 'detail' => 'Credentials and readiness', 'visible' => $canAiSettings],
-  'ai_settings' => ['label' => 'AI settings', 'href' => '/admin-ai.php', 'detail' => 'Models and providers', 'visible' => $canAiSettings],
-];
-$sidebarNav = in_array($accountView, ['admin', 'share_market_admin', 'investment_tests', 'marketplace_index'], true) ? $adminSidebarNav : $accountNav;
 $knownViews = ['profile', 'market', 'share_market', 'subscriptions', 'wallet', 'models', 'security', 'access', 'admin', 'share_market_admin', 'investment_tests', 'marketplace_index', 'profile_moderation'];
 if (!in_array($accountView, $knownViews, true)) $accountView = 'profile';
+$agent_tab = $accountView;
 require __DIR__ . '/includes/header.php';
 ?>
 <section class="mg-app-shell mg-account-app">
-  <aside class="mg-app-sidebar mg-account-left">
-    <div class="mg-app-sidebar-brand">
-      <a class="mg-brand mg-sidebar-logo" href="/index.php" aria-label="Microgifter home"><img src="/images/logo_main_drk.png" alt="Microgifter"><span class="mg-sidebar-logo-text">Microgifter</span></a>
-    </div>
-    <?php if ($user): ?>
-      <nav class="mg-app-side-nav mg-account-nav" aria-label="<?= in_array($accountView, ['admin', 'share_market_admin', 'investment_tests', 'marketplace_index'], true) ? 'Admin pages' : 'Account pages' ?>">
-        <?php foreach ($sidebarNav as $key => $item): ?>
-          <?php if (array_key_exists('visible', $item) && !$item['visible']) { continue; } ?>
-          <a class="<?= $accountView === $key ? 'is-active' : '' ?>" href="<?= mg_e($item['href']) ?>"><strong><?= mg_e($item['label']) ?></strong><span><?= mg_e($item['detail']) ?></span></a>
-        <?php endforeach; ?>
-      </nav>
-    <?php else: ?>
-      <div class="mg-app-sidebar-card"><h2>Account access</h2><p>Sign in or create an account to manage your Microgifter workspace.</p></div>
-      <nav class="mg-app-side-nav mg-account-nav" aria-label="Guest account actions"><a href="/signin.php"><strong>Sign in</strong><span>Continue to your account</span></a><a href="/signup.php"><strong>Create account</strong><span>Start a new workspace</span></a></nav>
-    <?php endif; ?>
-  </aside>
+  <?php require __DIR__ . '/includes/agent-sidebar.php'; ?>
 
   <main class="mg-app-workspace mg-account-main">
     <?php if (!$user): ?>
