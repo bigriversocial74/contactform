@@ -20,6 +20,20 @@ no separate account system
 no production DNS changes
 ```
 
+## Local preview
+
+From the repository root:
+
+```bash
+php -S 127.0.0.1:8091 -t labs
+```
+
+Open this local address in a browser:
+
+```text
+http://127.0.0.1:8091/
+```
+
 ## Current files
 
 ```text
@@ -52,10 +66,17 @@ labs/
   includes/labs-layout.php
   assets/css/labs.css
   assets/js/labs.js
+
+  assets/img/marketing/
+  assets/img/app/
+  assets/img/admin/
+  assets/img/icons/
 ```
 
 ## Current build state
 
 The public, participant app, and admin shell pages exist with static demo content.
 
-Next pass: refine visual details, route consistency, shared components, mobile spacing, and image placement.
+The shared layout, public navigation, workspace sidebar, responsive CSS, form styles, table styles, and image asset folder map are in place.
+
+Next pass: image placement, route cleanup, reusable component extraction, and page-by-page visual polish.
