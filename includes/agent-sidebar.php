@@ -29,6 +29,14 @@ $appSidebarNav = [
         'visible' => true,
         'active' => $agentSidebarActive === 'my-feed' || $agentSidebarActive === 'feed',
     ],
+    'world-canvas' => [
+        'section' => 'World',
+        'label' => 'World Canvas',
+        'detail' => 'Avatar map and microgift movement',
+        'href' => '/world-canvas.php',
+        'visible' => true,
+        'active' => $agentSidebarActive === 'world-canvas',
+    ],
     'agent_chat' => [
         'section' => 'Agent',
         'label' => 'Agent Chat',
