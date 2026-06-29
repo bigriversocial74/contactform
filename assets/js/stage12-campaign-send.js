@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded',function(){
   function setText(sel,val){var el=document.querySelector(sel);if(el)el.textContent=val;}
   function count(v){return Number(v||0).toLocaleString();}
   function setStatus(message,type){if(window.Microgifter&&typeof Microgifter.setStatus==='function'){Microgifter.setStatus(status,message,type);return;}if(status)status.textContent=message||'';}
+  function setStatusHtml(message,type){setStatus(message,type);if(status&&String(message||'').indexOf('<')>=0)status.innerHTML=message;}
   function idem(){return 'campaign-send-'+Date.now()+'-'+Math.random().toString(16).slice(2);}
   function rate(){var v=channel?channel.value:'feed';return v==='sms'?3:v==='agent'?2:1;}
   function debit(){return Math.max(1,Number(quantity&&quantity.value||1))*rate();}
@@ -24,7 +25,7 @@ document.addEventListener('DOMContentLoaded',function(){
     var data=Object.fromEntries(new FormData(form).entries());
     data.idempotency_key=idem();
     try{setStatus('Recording Stamp usage...');var r=await Microgifter.post('/api/merchant/campaign-send.php',data);var entry=(r.data&&r.data.stamp_ledger&&r.data.stamp_ledger.entry)||{};if(entry.balance_after!=null){setText('[data-stamp-kpi-available]',count(entry.balance_after));var score=entry.balance_after>1000?'95/100':entry.balance_after>250?'75/100':'45/100';setText('[data-stamp-readiness-score]',score);setText('[data-stamp-ready-secondary]',entry.balance_after>250?'Stamp balance has enough reserve for smaller campaign sends.':'Low balance: buy stamps before scaling campaign distribution.');}setStatus((r.message||'Campaign send recorded.')+' Balance: '+(entry.balance_after==null?'updated':entry.balance_after),'success');}
-    catch(error){setStatus(error.message||'Unable to record campaign send.','error');}
+    catch(error){var msg=error.message||'Unable to record campaign send.';if(/stamp/i.test(msg)){setStatusHtml(esc(msg)+' <a href="/merchant-stamps.php#stamp-purchases">Buy Stamps</a> to continue campaign distribution.','error');}else{setStatus(msg,'error');}}
   });
   updateEstimate();
   loadCampaigns();
