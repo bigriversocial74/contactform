@@ -131,6 +131,23 @@ window.Microgifter = window.Microgifter || {};
     head.parentNode.insertBefore(strip, head.nextSibling);
   }
 
+  function loadIdentityLayer() {
+    if (!document.querySelector('link[data-world-identity-layer-css]')) {
+      var link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = '/assets/css/world-canvas-identity-layer.css';
+      link.dataset.worldIdentityLayerCss = '1';
+      document.head.appendChild(link);
+    }
+    if (!document.querySelector('script[data-world-identity-layer-js]')) {
+      var script = document.createElement('script');
+      script.src = '/assets/js/world-canvas-identity-layer.js';
+      script.defer = true;
+      script.dataset.worldIdentityLayerJs = '1';
+      document.body.appendChild(script);
+    }
+  }
+
   document.addEventListener('click', function (event) {
     if (event.target.closest('[data-world-popover-close]')) { closePopover(); return; }
     if (event.target.closest('[data-world-open-detail]')) {
@@ -164,6 +181,7 @@ window.Microgifter = window.Microgifter || {};
   }, true);
 
   addFocusStrip();
+  loadIdentityLayer();
   renderClusters();
   renderRewardRadius();
   window.setInterval(function () { renderClusters(); renderRewardRadius(); }, 1800);
