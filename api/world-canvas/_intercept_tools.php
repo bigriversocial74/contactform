@@ -65,6 +65,7 @@ function mg_world_intercept_attempt(PDO $pdo, array $user, array $input): array
     if ($runId === '') throw new RuntimeException('Delivery run is required.');
     $run = mg_world_intercept_active_run($pdo, $runId);
     if (!$run) throw new RuntimeException('This delivery is no longer interceptable.');
+    if ((int)($run['merchant_user_id'] ?? 0) === $userId) throw new RuntimeException('This delivery is not eligible.');
     $toolRows = mg_world_canvas_rows($pdo, "SELECT ut.id AS user_tool_id, ut.uses_remaining, ut.cooldown_until, t.id AS tool_id, t.name, t.range_meters, t.speed_bonus_percent, t.success_bonus_percent, t.cooldown_seconds FROM user_campaign_drop_tools ut JOIN campaign_drop_tools t ON t.id=ut.tool_id WHERE ut.user_id=? AND ut.public_id=? AND ut.status IN ('owned','equipped','cooldown') AND t.status='active' LIMIT 1", [$userId, $userToolPublicId]);
     if (!$toolRows) throw new RuntimeException('Select an available tool.');
     $tool = $toolRows[0];
