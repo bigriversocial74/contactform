@@ -1,7 +1,7 @@
 -- Stage 25 PWA Notifications + Microgifter Notification Integration
--- Extends the existing notifications layer with browser push subscriptions and
--- per-subscription PWA delivery tracking. Uses CREATE TABLE IF NOT EXISTS and
--- avoids ADD COLUMN IF NOT EXISTS for older MySQL compatibility.
+-- Extends the existing notifications layer with browser push subscriptions,
+-- per-subscription PWA delivery tracking, and admin-managed PWA branding assets.
+-- Uses CREATE TABLE IF NOT EXISTS and avoids ADD COLUMN IF NOT EXISTS for older MySQL compatibility.
 
 CREATE TABLE IF NOT EXISTS pwa_push_subscriptions (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -61,9 +61,48 @@ CREATE TABLE IF NOT EXISTS pwa_notification_deliveries (
   CONSTRAINT fk_pwa_notification_deliveries_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS pwa_branding_settings (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  setting_key VARCHAR(100) NOT NULL,
+  setting_value TEXT NULL,
+  updated_by_user_id BIGINT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_pwa_branding_settings_key (setting_key),
+  KEY idx_pwa_branding_settings_updated_by (updated_by_user_id),
+  CONSTRAINT fk_pwa_branding_settings_updated_by FOREIGN KEY (updated_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS pwa_branding_assets (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  asset_role ENUM('app_icon_192','app_icon_512','maskable_icon_512','apple_touch_icon','notification_icon','notification_badge','splash_logo','splash_background') NOT NULL,
+  storage_provider VARCHAR(40) NOT NULL DEFAULT 'public_local',
+  storage_key VARCHAR(255) NOT NULL,
+  original_filename VARCHAR(255) NOT NULL,
+  mime_type VARCHAR(100) NOT NULL,
+  byte_size BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  checksum_sha256 CHAR(64) NULL,
+  width_px INT UNSIGNED NULL,
+  height_px INT UNSIGNED NULL,
+  status ENUM('active','archived','deleted') NOT NULL DEFAULT 'active',
+  uploaded_by_user_id BIGINT UNSIGNED NULL,
+  metadata_json TEXT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_pwa_branding_assets_public_id (public_id),
+  KEY idx_pwa_branding_assets_role_status (asset_role,status,updated_at),
+  KEY idx_pwa_branding_assets_uploaded_by (uploaded_by_user_id),
+  CONSTRAINT fk_pwa_branding_assets_uploaded_by FOREIGN KEY (uploaded_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 INSERT IGNORE INTO permissions (slug,name,description,created_at) VALUES
 ('pwa.notifications.manage','Manage PWA notifications','Register and revoke browser push subscriptions for the authenticated account.',NOW()),
-('admin.pwa_notifications.test','Test PWA notifications','Send a safe PWA push test notification to the current admin account.',NOW());
+('admin.pwa_notifications.test','Test PWA notifications','Send a safe PWA push test notification to the current admin account.',NOW()),
+('admin.pwa_branding.view','View PWA branding','View PWA app icons, splash images, dynamic manifest settings, and notification image configuration.',NOW()),
+('admin.pwa_branding.manage','Manage PWA branding','Upload and update PWA icons, splash images, manifest settings, and notification image defaults.',NOW());
 
 INSERT IGNORE INTO role_permissions (role_id,permission_id,created_at)
 SELECT r.id,p.id,NOW()
@@ -77,10 +116,32 @@ FROM roles r
 JOIN permissions p ON p.slug='admin.pwa_notifications.test'
 WHERE r.slug IN ('admin','super_admin');
 
+INSERT IGNORE INTO role_permissions (role_id,permission_id,created_at)
+SELECT r.id,p.id,NOW()
+FROM roles r
+JOIN permissions p ON p.slug IN ('admin.pwa_branding.view','admin.pwa_branding.manage')
+WHERE r.slug IN ('admin','super_admin');
+
+INSERT INTO pwa_branding_settings (setting_key,setting_value,created_at,updated_at) VALUES
+('pwa.app_name','Microgifter',NOW(),NOW()),
+('pwa.short_name','Microgifter',NOW(),NOW()),
+('pwa.description','Microgifter PWA workspace for gifts, claims, campaigns, merchant alerts, and admin operations.',NOW(),NOW()),
+('pwa.start_url','/pwa-splash.php',NOW(),NOW()),
+('pwa.scope','/',NOW(),NOW()),
+('pwa.display','standalone',NOW(),NOW()),
+('pwa.theme_color','#2563eb',NOW(),NOW()),
+('pwa.background_color','#f8fafc',NOW(),NOW()),
+('pwa.splash_title','Microgifter',NOW(),NOW()),
+('pwa.splash_subtitle','Gifts, rewards, campaigns, claims, and merchant alerts in one installable workspace.',NOW(),NOW()),
+('pwa.splash_cta_label','Open notifications',NOW(),NOW()),
+('pwa.splash_cta_url','/notifications.php',NOW(),NOW()),
+('pwa.asset_version','1',NOW(),NOW())
+ON DUPLICATE KEY UPDATE setting_key=VALUES(setting_key);
+
 INSERT INTO schema_migrations (migration_key,description,checksum,applied_at)
 VALUES (
   'stage_25_pwa_notifications',
-  'Adds authenticated PWA push subscriptions and browser delivery tracking bridged to existing Microgifter notifications.',
+  'Adds authenticated PWA push subscriptions, browser delivery tracking, and admin-managed PWA branding assets bridged to existing Microgifter notifications.',
   NULL,
   NOW()
 )
