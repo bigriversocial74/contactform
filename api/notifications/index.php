@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/bootstrap.php';
+require_once dirname(__DIR__, 2) . '/includes/pwa-push.php';
 
 mg_require_method('GET');
 $user = mg_require_permission('notification.view');
@@ -13,6 +14,11 @@ $where = "n.user_id=? AND COALESCE(np.in_app_enabled,1)=1 AND COALESCE(np.digest
 if ($unreadOnly) $where .= ' AND n.read_at IS NULL';
 
 $pdo = mg_db();
+try {
+    mg_pwa_push_queue_recent_for_user($pdo, (int)$user['id'], 20);
+} catch (Throwable $error) {
+    mg_security_log('warning', 'pwa.push.queue_recent_failed', 'Unable to bridge recent notifications into PWA push queue.', ['exception_class' => $error::class], (int)$user['id']);
+}
 $stmt = $pdo->prepare(
     'SELECT n.public_id,n.type,n.title,n.body,n.action_url,n.occurrence_count,n.context_json,
             n.read_at,n.created_at,n.updated_at,n.actor_user_id,
