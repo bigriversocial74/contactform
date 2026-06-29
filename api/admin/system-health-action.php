@@ -12,7 +12,7 @@ mg_require_csrf_for_write($input);
 mg_rate_limit('admin.system_health.action', 'user:' . (int)$user['id'], 12, 300);
 
 $action = strtolower(trim((string)($input['action'] ?? '')));
-if (!in_array($action, ['verify_storage', 'retry_notifications', 'clean_uploads', 'migration_plan', 'admin_ops_sql_plan'], true)) {
+if (!in_array($action, ['verify_storage', 'retry_notifications', 'clean_uploads', 'migration_plan', 'admin_ops_sql_plan', 'test_pwa_notification'], true)) {
     mg_fail('Invalid system health action.', 422);
 }
 
@@ -24,6 +24,7 @@ try {
         'clean_uploads' => mg_admin_system_health_cleanup_uploads($pdo, 24, 100),
         'migration_plan' => mg_admin_system_health_migration_plan($pdo),
         'admin_ops_sql_plan' => mg_admin_ops_installer_plan($pdo),
+        'test_pwa_notification' => mg_admin_system_health_test_pwa_notification($pdo, $user),
     };
 
     $auditResult = $result;
@@ -58,5 +59,6 @@ $message = match ($action) {
     'clean_uploads' => 'Abandoned uploads cleanup completed.',
     'migration_plan' => 'Migration recovery plan prepared.',
     'admin_ops_sql_plan' => 'Admin ops SQL plan prepared.',
+    'test_pwa_notification' => 'PWA test notification queued.',
 };
 mg_ok(['action' => $action, 'result' => $result], $message);
