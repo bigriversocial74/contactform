@@ -24,10 +24,13 @@ labs_page_start([
     </div>
   </div>
 </section>
-<section class="labs-section-band">
-  <span class="labs-eyebrow">Why it matters</span>
-  <h2>Most programs need better follow-through, not more dashboards.</h2>
-  <p class="labs-copy">The product is designed around the participant journey first, then gives managers the clean backend patterns needed to review progress.</p>
+<section class="labs-section-band labs-split-card">
+  <div>
+    <span class="labs-eyebrow">Why it matters</span>
+    <h2>Most programs need better follow-through, not more dashboards.</h2>
+    <p class="labs-copy">The product is designed around the participant journey first, then gives managers the clean backend patterns needed to review progress.</p>
+  </div>
+  <div class="labs-image-slot"><span>About illustration slot<small>Use verified progress or team collaboration asset here.</small></span></div>
 </section>
 <section class="labs-grid">
   <article class="labs-card"><h2>For organizations</h2><p class="labs-muted">Create campaign structure, assign tasks, and review proof from one backend area.</p></article>
