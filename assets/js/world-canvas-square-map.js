@@ -15,6 +15,7 @@ window.Microgifter = window.Microgifter || {};
     if (document.querySelector('script[' + key + ']')) return;
     var script = document.createElement('script');
     script.src = src;
+    script.async = false;
     script.defer = true;
     script.setAttribute(key, '1');
     document.body.appendChild(script);
