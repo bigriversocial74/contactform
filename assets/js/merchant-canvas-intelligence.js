@@ -16,7 +16,7 @@ window.Microgifter = window.Microgifter || {};
   function toast(message, type) { if (MG.toast) MG.toast(message, type || 'info'); }
 
   function removeMiddleRow() {
-    qsa('[data-canvas-mode-bar], .mg-canvas-mode-bar', root).forEach(function (bar) { bar.remove(); });
+    qsa('[data-canvas-mode-bar], .mg-canvas-mode-bar, .mg-canvas-command-strip', root).forEach(function (node) { node.remove(); });
   }
 
   function selectedCustomerOptions() {
@@ -81,6 +81,7 @@ window.Microgifter = window.Microgifter || {};
     } finally {
       state.loading = false;
       removeMiddleRow();
+      addMerchantAnalyticsTab();
     }
   }
 
@@ -124,6 +125,62 @@ window.Microgifter = window.Microgifter || {};
     });
   }
 
+  function merchantAnalytics() {
+    var data = state.data || {};
+    var activity = Array.isArray(data.activity) ? data.activity : [];
+    var journeys = Array.isArray(data.journeys) ? data.journeys : [];
+    var zones = Array.isArray(data.zone_metrics) ? data.zone_metrics : [];
+    var fires = zones.reduce(function (total, zone) { return total + Number(zone.today && zone.today.fires || 0); }, 0);
+    var rewards = zones.reduce(function (total, zone) { return total + Number(zone.today && zone.today.rewards_sent || 0); }, 0);
+    var messages = zones.reduce(function (total, zone) { return total + Number(zone.today && zone.today.messages_sent || 0); }, 0);
+    return { activity: activity, journeys: journeys, zones: zones, fires: fires, rewards: rewards, messages: messages };
+  }
+
+  function addMerchantAnalyticsTab() {
+    var drawer = qs('.mg-merchant-control-drawer.is-open');
+    if (!drawer) return;
+    var tabs = qs('[data-merchant-control-tabs]', drawer);
+    if (!tabs) return;
+    var existing = tabs.querySelector('[data-merchant-analytics-tab]');
+    if (!existing) {
+      existing = document.createElement('button');
+      existing.type = 'button';
+      existing.setAttribute('data-merchant-analytics-tab', '');
+      existing.textContent = 'Analytics';
+      tabs.appendChild(existing);
+    }
+  }
+
+  function renderMerchantAnalytics(drawer) {
+    var body = qs('[data-merchant-settings-body]', drawer);
+    var tabs = qs('[data-merchant-control-tabs]', drawer);
+    if (!body || !tabs) return;
+    qsa('button', tabs).forEach(function (button) { button.classList.remove('is-active'); });
+    var tab = tabs.querySelector('[data-merchant-analytics-tab]');
+    if (tab) tab.classList.add('is-active');
+    var stats = merchantAnalytics();
+    body.innerHTML = '<section class="mg-merchant-analytics-panel">' +
+      '<header><span>Merchant Analytics</span><h3>Avatar Performance</h3><p>Store Canvas activity for the merchant avatar, trigger engagement, and customer movement.</p></header>' +
+      '<div class="mg-merchant-analytics-grid">' +
+        '<article><span>Active Journeys</span><strong>' + esc(stats.journeys.length) + '</strong><small>customer paths</small></article>' +
+        '<article><span>Trigger Fires</span><strong>' + esc(stats.fires) + '</strong><small>today</small></article>' +
+        '<article><span>Messages</span><strong>' + esc(stats.messages) + '</strong><small>sent by automation</small></article>' +
+        '<article><span>Rewards</span><strong>' + esc(stats.rewards) + '</strong><small>delivered</small></article>' +
+      '</div>' +
+      '<section class="mg-merchant-analytics-card"><h4>Recent Store Canvas Activity</h4>' + (stats.activity.length ? stats.activity.slice(0, 8).map(function (event) { return '<article><strong>' + esc(event.label || event.type || 'Canvas event') + '</strong><span>' + esc(event.created_at || '') + '</span></article>'; }).join('') : '<article><strong>No activity yet</strong><span>Merchant analytics will populate as customers enter, trigger zones fire, and messages/rewards are sent.</span></article>') + '</section>' +
+      '<section class="mg-merchant-analytics-card"><h4>What to watch</h4><article><strong>Conversion movement</strong><span>Compare trigger fires against messages, rewards, and claims.</span></article><article><strong>Customer score drivers</strong><span>Use each Customer CRM Movement tab for per-customer scoring and action results.</span></article></section>' +
+    '</section>';
+  }
+
+  document.addEventListener('click', function (event) {
+    var tab = event.target.closest('[data-merchant-analytics-tab]');
+    if (!tab) return;
+    event.preventDefault();
+    event.stopPropagation();
+    var drawer = tab.closest('.mg-merchant-control-drawer');
+    if (drawer) renderMerchantAnalytics(drawer);
+  }, true);
+
   window.Microgifter.storeCanvasIntelligence = {
     refresh: loadIntel,
     getData: function () { return state.data || {}; },
@@ -131,9 +188,10 @@ window.Microgifter = window.Microgifter || {};
     getScore: scoreForSession
   };
 
-  new MutationObserver(function () { window.requestAnimationFrame(function () { removeMiddleRow(); addSimulatorTab(); }); }).observe(root, { childList: true, subtree: true });
+  new MutationObserver(function () { window.requestAnimationFrame(function () { removeMiddleRow(); addSimulatorTab(); addMerchantAnalyticsTab(); }); }).observe(root, { childList: true, subtree: true });
   removeMiddleRow();
   loadIntel();
   addSimulatorTab();
+  addMerchantAnalyticsTab();
   window.setInterval(loadIntel, 15000);
 })(window, document);
