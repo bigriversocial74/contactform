@@ -1,12 +1,7 @@
 <?php
 /**
  * Viewer-specific World Canvas nodes.
- *
- * A merchant account has two independent map anchors:
- * - static merchant MAIN location from merchant_locations
- * - dynamic user/avatar location from user_world_positions
- *
- * Metadata remains as a fallback for older records.
+ * Merchant anchors use the existing merchant_locations system from merchant-locations.php.
  */
 declare(strict_types=1);
 
@@ -16,17 +11,14 @@ function mg_world_canvas_viewer_geo_from_metadata(mixed $raw, string $source): ?
 {
     $data = is_array($raw) ? $raw : mg_world_canvas_json_array($raw);
     if ($data === []) return null;
-
     $direct = mg_world_canvas_geo_from_array($data, $source);
     if ($direct !== null) return $direct;
-
     foreach (['main_location','primary_location','business_location','merchant_location','store_location','storefront_location','default_location','address','profile_location','user_location','current_location'] as $key) {
         if (isset($data[$key]) && is_array($data[$key])) {
             $geo = mg_world_canvas_viewer_geo_from_metadata($data[$key], $source . ':' . $key);
             if ($geo !== null) return $geo;
         }
     }
-
     return null;
 }
 
@@ -52,17 +44,14 @@ function mg_world_canvas_viewer_nodes(PDO $pdo, array $viewer): array
     $nodes = [];
     $profile = mg_world_canvas_viewer_profile($pdo, $userId);
     $storefront = mg_world_canvas_viewer_storefront($pdo, $userId);
-
     $profileTitle = trim((string)($profile['display_name'] ?? '')) ?: 'Your avatar';
     $profilePublicId = trim((string)($profile['public_id'] ?? '')) ?: 'viewer-' . substr(hash('sha256', (string)$userId), 0, 16);
-    $profileGeo = mg_world_location_current_user($pdo, $userId);
-    if ($profileGeo === null && $profile) {
-        $profileGeo = mg_world_canvas_viewer_geo_from_metadata($profile['metadata_json'] ?? '', 'profile_metadata');
-    }
 
+    $profileGeo = mg_world_location_current_user($pdo, $userId);
+    if ($profileGeo === null && $profile) $profileGeo = mg_world_canvas_viewer_geo_from_metadata($profile['metadata_json'] ?? '', 'profile_metadata');
     if ($profileGeo !== null) {
         $position = mg_world_canvas_geo_project($profileGeo, $profilePublicId, 0, 'avatar');
-        $nodes[] = mg_world_canvas_node('avatar', $profilePublicId, 'Your user avatar', $profileTitle, 'Dynamic user location · ' . (string)($profileGeo['source'] ?? 'saved'), 'YOU', $position, [
+        $nodes[] = mg_world_canvas_node('avatar', $profilePublicId, 'Your user avatar', $profileTitle, 'Dynamic user location', 'YOU', $position, [
             'avatar_url' => function_exists('mg_store_avatar_url') ? mg_store_avatar_url($profile['avatar_url'] ?? null) : ($profile['avatar_url'] ?? null),
             'profile_url' => trim((string)($profile['slug'] ?? '')) !== '' ? '/profile.php?slug=' . rawurlencode((string)$profile['slug']) : null,
             'owned' => true,
@@ -78,34 +67,35 @@ function mg_world_canvas_viewer_nodes(PDO $pdo, array $viewer): array
         ]);
     }
 
-    $merchantTitle = trim((string)($storefront['display_name'] ?? '')) ?: $profileTitle;
-    $merchantPublicId = trim((string)($storefront['public_id'] ?? '')) ?: trim((string)($profile['public_id'] ?? '')) ?: 'merchant-' . substr(hash('sha256', (string)$userId), 0, 16);
-    $merchantGeo = mg_world_location_main_merchant($pdo, $userId);
-    if ($merchantGeo === null && $storefront) {
-        $merchantGeo = mg_world_canvas_viewer_geo_from_metadata($storefront['metadata_json'] ?? '', 'storefront_main_location');
-    }
-    if ($merchantGeo === null && $profile) {
-        $merchantGeo = mg_world_canvas_viewer_geo_from_metadata($profile['metadata_json'] ?? '', 'profile_main_location');
-    }
-
     $profileType = strtolower((string)($profile['profile_type'] ?? ''));
     $isMerchant = $storefront !== null || in_array($profileType, ['merchant','business','store','vendor'], true) || mg_world_location_is_merchant($pdo, $viewer);
-    if ($isMerchant && $merchantGeo !== null) {
-        $position = mg_world_canvas_geo_project($merchantGeo, $merchantPublicId . ':merchant', 0, 'merchant');
-        $nodes[] = mg_world_canvas_node('merchant', $merchantPublicId, 'Your merchant avatar', $merchantTitle, 'MAIN location anchor', 'MAIN', $position, [
-            'avatar_url' => function_exists('mg_store_avatar_url') ? mg_store_avatar_url($profile['avatar_url'] ?? null) : ($profile['avatar_url'] ?? null),
-            'store_url' => trim((string)($storefront['slug'] ?? '')) !== '' ? '/store.php?s=' . rawurlencode((string)$storefront['slug']) : null,
-            'profile_url' => trim((string)($profile['slug'] ?? '')) !== '' ? '/profile.php?slug=' . rawurlencode((string)$profile['slug']) : null,
-            'owned' => true,
-            'tone' => 'owned',
-            'affinity_tags' => mg_world_canvas_tags([$merchantTitle, 'merchant', 'main', 'location']),
-            'location_key' => 'merchant:' . $userId,
-            'conversation_key' => 'merchant:' . $userId,
-            'has_geo' => true,
-            'geo_locked' => true,
-            'geo' => $merchantGeo,
-            'placement_reason' => 'static_merchant_main_location',
-        ]);
+    if ($isMerchant) {
+        $merchantTitle = trim((string)($storefront['display_name'] ?? '')) ?: $profileTitle;
+        $locationRows = mg_world_location_merchant_rows($pdo, $userId, true);
+        foreach ($locationRows as $index => $location) {
+            $geo = mg_world_canvas_valid_geo($location['latitude'] ?? null, $location['longitude'] ?? null, $location['geo_accuracy_meters'] ?? null, (string)($location['geo_source'] ?? 'merchant_locations'));
+            if ($geo === null) continue;
+            $publicId = (string)($location['public_id'] ?? ('merchant-location-' . $index));
+            $locationName = trim((string)($location['name'] ?? '')) ?: 'Merchant location';
+            $address = trim(implode(', ', array_filter([(string)($location['address_line1'] ?? ''), (string)($location['city'] ?? ''), (string)($location['region'] ?? '')])));
+            $position = mg_world_canvas_geo_project($geo, $publicId . ':merchant-location', $index, 'merchant');
+            $nodes[] = mg_world_canvas_node('merchant', $publicId, $index === 0 ? 'Your merchant avatar' : 'Merchant location', $locationName, $address !== '' ? $address : 'MERCHANT zone', (int)($location['is_primary'] ?? 0) ? 'MAIN' : 'ZONE', $position, [
+                'avatar_url' => function_exists('mg_store_avatar_url') ? mg_store_avatar_url($profile['avatar_url'] ?? null) : ($profile['avatar_url'] ?? null),
+                'store_url' => trim((string)($storefront['slug'] ?? '')) !== '' ? '/store.php?s=' . rawurlencode((string)$storefront['slug']) : null,
+                'profile_url' => trim((string)($profile['slug'] ?? '')) !== '' ? '/profile.php?slug=' . rawurlencode((string)$profile['slug']) : null,
+                'owned' => true,
+                'tone' => 'owned',
+                'affinity_tags' => mg_world_canvas_tags([$merchantTitle, $locationName, 'merchant', 'zone', 'location']),
+                'location_key' => 'merchant_location:' . $publicId,
+                'conversation_key' => 'merchant:' . $userId,
+                'has_geo' => true,
+                'geo_locked' => true,
+                'geo' => $geo,
+                'placement_reason' => 'merchant_locations_table',
+                'zone_radius_meters' => max(50, min(5000, (int)($location['world_zone_radius_meters'] ?? 250))),
+                'zone_label' => 'MERCHANT zone',
+            ]);
+        }
     }
 
     return $nodes;
@@ -116,15 +106,10 @@ function mg_world_canvas_merge_viewer_nodes(array $payload, array $viewerNodes):
     if ($viewerNodes === []) return $payload;
     $nodes = $payload['nodes'] ?? [];
     $seen = [];
-    foreach ($nodes as $node) {
-        $seen[(string)($node['id'] ?? '')] = true;
-    }
+    foreach ($nodes as $node) $seen[(string)($node['id'] ?? '')] = true;
     foreach ($viewerNodes as $node) {
         $id = (string)($node['id'] ?? '');
-        if ($id !== '' && !isset($seen[$id])) {
-            $nodes[] = $node;
-            $seen[$id] = true;
-        }
+        if ($id !== '' && !isset($seen[$id])) { $nodes[] = $node; $seen[$id] = true; }
     }
     $payload['nodes'] = $nodes;
     return $payload;
