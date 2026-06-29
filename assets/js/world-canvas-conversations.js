@@ -58,10 +58,18 @@ window.Microgifter = window.Microgifter || {};
     return new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(parsed);
   }
 
+  function dispatchConversation(conversation, clusterKey, locationKey) {
+    window.MicrogifterWorldConversation = { conversation: conversation, cluster_key: clusterKey || '', location_key: locationKey || '' };
+    try { document.dispatchEvent(new CustomEvent('mg:world-conversation-opened', { detail: window.MicrogifterWorldConversation })); } catch (error) {}
+  }
+
   function renderConversation(conversation) {
     var d = drawer();
     if (!d) return;
     activeConversationId = conversation.id || '';
+    d.dataset.worldConversationId = activeConversationId;
+    d.dataset.worldConversationClusterKey = activeClusterKey || conversation.cluster_key || '';
+    d.dataset.worldConversationLocationKey = conversation.location_key || '';
     var title = d.querySelector('[data-world-drawer-title]');
     var subtitle = d.querySelector('[data-world-drawer-subtitle]');
     var type = d.querySelector('[data-world-drawer-type]');
@@ -73,6 +81,7 @@ window.Microgifter = window.Microgifter || {};
     var messages = Array.isArray(conversation.messages) ? conversation.messages : [];
     if (body) {
       body.innerHTML = '<section class="mg-world-conversation-summary"><strong>Avatar conversation space</strong><p>This is a temporary World Canvas chat generated from avatar proximity, shared location, campaign, reward, or affinity signals. Private CRM remains inside Merchant Store Canvas.</p><span>Posting as: <b>' + escapeHtml(member.display_label || 'Anonymous avatar') + '</b></span></section>' +
+        '<section class="mg-world-conversation-reward-slot" data-world-reward-drop-slot></section>' +
         '<section class="mg-world-conversation-messages" data-world-conversation-messages>' + (messages.length ? messages.map(renderMessage).join('') : '<p class="mg-world-conversation-empty">No messages yet. Start the conversation.</p>') + '</section>' +
         '<form class="mg-world-conversation-form" data-world-conversation-form><label>Message this cluster<textarea data-world-conversation-input maxlength="700" placeholder="Share a quick note, question, or local reward idea..."></textarea></label><button type="submit">Send Message</button></form>';
     }
@@ -80,6 +89,7 @@ window.Microgifter = window.Microgifter || {};
     d.setAttribute('aria-hidden', 'false');
     var list = d.querySelector('[data-world-conversation-messages]');
     if (list) list.scrollTop = list.scrollHeight;
+    dispatchConversation(conversation, d.dataset.worldConversationClusterKey || '', d.dataset.worldConversationLocationKey || '');
   }
 
   function renderMessage(message) {
@@ -92,6 +102,8 @@ window.Microgifter = window.Microgifter || {};
     var locationKey = nodes.reduce(function (picked, node) { return picked || node.location || ''; }, '');
     var d = drawer();
     if (d) {
+      d.dataset.worldConversationClusterKey = clusterKey || '';
+      d.dataset.worldConversationLocationKey = locationKey || '';
       d.classList.add('is-open');
       d.setAttribute('aria-hidden', 'false');
       var title = d.querySelector('[data-world-drawer-title]');
