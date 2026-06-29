@@ -33,6 +33,15 @@ Consistency/streak data updates
 - [Demo Script](./demo-script.md)
 - [Acceptance Checklist](./acceptance-checklist.md)
 
+## UI planning docs
+
+- [UI Page Map](./ui/ui-page-map.md)
+- [UI Layout Specification](./ui/ui-layout-spec.md)
+- [Component Inventory](./ui/component-inventory.md)
+- [Responsive Rules](./ui/responsive-rules.md)
+- [Mockup Index](./ui/mockups.md)
+- [Mockup Image Folder](./ui/mockups/)
+
 ## First MVP target
 
 Build one complete vertical slice:
