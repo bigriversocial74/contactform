@@ -8,8 +8,8 @@ $page_title = 'Merchant Store Canvas | Microgifter';
 $page_section = 'agent';
 $header_mode = 'agent';
 $agent_tab = 'store-canvas';
-$page_styles = ['/assets/css/merchant-canvas.css','/assets/css/merchant-canvas-rewards.css','/assets/css/merchant-canvas-phase2.css','/assets/css/merchant-canvas-motion.css','/assets/css/merchant-canvas-drawer-layer.css','/assets/css/merchant-canvas-settings-drawers.css','/assets/css/merchant-canvas-drawer-fixes.css'];
-$page_scripts = ['/assets/js/merchant-canvas.js','/assets/js/merchant-canvas-rewards.js','/assets/js/merchant-canvas-motion.js','/assets/js/merchant-canvas-automation-rules.js','/assets/js/merchant-canvas-merchant-settings.js','/assets/js/merchant-canvas-drawer-coordinator.js'];
+$page_styles = ['/assets/css/merchant-canvas.css','/assets/css/merchant-canvas-rewards.css','/assets/css/merchant-canvas-phase2.css','/assets/css/merchant-canvas-motion.css','/assets/css/merchant-canvas-drawer-layer.css','/assets/css/merchant-canvas-settings-drawers.css','/assets/css/merchant-canvas-drawer-fixes.css','/assets/css/merchant-canvas-chat-sidebar.css'];
+$page_scripts = ['/assets/js/merchant-canvas.js','/assets/js/merchant-canvas-rewards.js','/assets/js/merchant-canvas-motion.js','/assets/js/merchant-canvas-automation-rules.js','/assets/js/merchant-canvas-merchant-settings.js','/assets/js/merchant-canvas-drawer-coordinator.js','/assets/js/merchant-canvas-chat-sidebar.js'];
 $page_manifest = [
     'id' => 'merchant-canvas',
     'title' => $page_title,
@@ -68,7 +68,7 @@ require __DIR__ . '/includes/header.php';
             <span class="mg-canvas-eyebrow">Store Canvas</span>
             <strong>Live store session map</strong>
           </div>
-          <div class="mg-canvas-header-stats" aria-label="Store Canvas summary">
+          <div class="mg-canvas-header-stats" aria-label="Store Canvas summary" data-canvas-header-stats>
             <article><span>Inside Now</span><strong data-canvas-active-count>0</strong></article>
             <article><span>Today Entries</span><strong data-canvas-today-entries>0</strong></article>
             <article><span>Canvas Events</span><strong data-canvas-today-events>0</strong></article>
