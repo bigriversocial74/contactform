@@ -52,6 +52,7 @@ labs/
   success.php
   receipt.php
   routes-notes.md
+  syntax-check-report.md
 
   app/index.php
   app/campaigns.php
@@ -82,8 +83,10 @@ The public, participant app, and backend shell pages exist with static demo cont
 
 The shared layout, public navigation, footer navigation, workspace sidebar, responsive CSS, form styles, table styles, reusable component helpers, route notes, and image asset folder map are in place.
 
-Polished pages now include the landing page, pricing page, about page, app dashboard, app campaigns, proof upload, progress page, wallet page, and backend overview.
+Polished pages now include the landing page, pricing page, about page, team page, blog pages, contact page, signup page, signin page, cart page, success page, receipt page, app dashboard, app campaigns, proof upload, progress page, wallet page, and backend overview.
 
 The checkout flow reaches a visual success page and a static receipt preview.
 
-Next pass: polish remaining support pages, add image placement, and run a local PHP syntax check.
+The support page PHP syntax check pass is documented in `syntax-check-report.md`.
+
+Next pass: image placement, remaining fine-detail polish, and full-shell review.
