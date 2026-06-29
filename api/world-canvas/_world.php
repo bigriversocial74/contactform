@@ -2,8 +2,9 @@
 /**
  * World Canvas read-model helpers.
  *
- * The world layer intentionally exposes aggregate/anonymized activity. Merchant
- * CRM details stay inside Merchant Store Canvas.
+ * The world layer exposes aggregate/anonymized activity. Merchant CRM details stay
+ * inside Merchant Store Canvas. Avatar nodes are anonymous world participants that
+ * can visually attract to similar avatars, campaigns, merchants, and locations.
  */
 declare(strict_types=1);
 
@@ -49,24 +50,47 @@ function mg_world_canvas_short_number(int|float $value): string
     return number_format($value);
 }
 
+function mg_world_canvas_slug_tag(mixed $value): string
+{
+    $tag = strtolower(trim((string) $value));
+    $tag = preg_replace('/[^a-z0-9]+/', '-', $tag) ?? '';
+    return trim($tag, '-');
+}
+
+function mg_world_canvas_tags(array $parts): array
+{
+    $tags = [];
+    foreach ($parts as $part) {
+        foreach (preg_split('/[\s,;|\/]+/', strtolower((string) $part), -1, PREG_SPLIT_NO_EMPTY) ?: [] as $word) {
+            $word = mg_world_canvas_slug_tag($word);
+            if ($word !== '' && strlen($word) > 2 && !in_array($word, ['the','and','for','with','from','into','store','canvas','local'], true)) {
+                $tags[] = $word;
+            }
+        }
+    }
+    return array_slice(array_values(array_unique($tags)), 0, 8);
+}
+
 function mg_world_canvas_position(string $seed, int $index, string $type = 'node'): array
 {
     $hash = (int) sprintf('%u', crc32($seed . '|' . $type));
     $typeOffset = match ($type) {
         'merchant' => 0,
+        'avatar' => 11,
         'campaign' => 17,
         'reward' => 31,
         'claim' => 43,
         default => 9,
     };
-    $x = 9 + (($hash + ($index * 19) + $typeOffset) % 78);
-    $y = 13 + (((int) floor($hash / 101) + ($index * 23) + $typeOffset) % 66);
-    return ['x' => $x, 'y' => $y];
+    return [
+        'x' => 9 + (($hash + ($index * 19) + $typeOffset) % 78),
+        'y' => 13 + (((int) floor($hash / 101) + ($index * 23) + $typeOffset) % 66),
+    ];
 }
 
 function mg_world_canvas_node(string $type, string $detailId, string $title, string $subtitle, string $meta, int|string $value, array $position, array $extra = []): array
 {
-    return array_merge([
+    $base = [
         'id' => $type . ':' . $detailId,
         'type' => $type,
         'detail_id' => $detailId,
@@ -77,7 +101,11 @@ function mg_world_canvas_node(string $type, string $detailId, string $title, str
         'raw_value' => is_int($value) ? $value : 0,
         'x' => $position['x'] ?? 50,
         'y' => $position['y'] ?? 50,
-    ], $extra);
+        'affinity_tags' => [],
+        'location_key' => '',
+        'conversation_key' => '',
+    ];
+    return array_merge($base, $extra);
 }
 
 function mg_world_canvas_summary(PDO $pdo): array
@@ -124,6 +152,7 @@ function mg_world_canvas_merchant_nodes(PDO $pdo, int $viewerUserId): array
                pp.display_name merchant_name,
                pp.avatar_url avatar_url,
                pp.slug profile_slug,
+               pp.profile_type profile_type,
                ms.slug store_slug
         FROM mg_store_sessions s
         LEFT JOIN public_profiles pp ON pp.user_id = s.merchant_user_id
@@ -131,7 +160,7 @@ function mg_world_canvas_merchant_nodes(PDO $pdo, int $viewerUserId): array
         WHERE s.active_key IS NOT NULL
           AND s.status IN ('entered','active','idle')
           AND s.exited_at IS NULL
-        GROUP BY s.merchant_user_id, pp.public_id, pp.display_name, pp.avatar_url, pp.slug, ms.slug
+        GROUP BY s.merchant_user_id, pp.public_id, pp.display_name, pp.avatar_url, pp.slug, pp.profile_type, ms.slug
         ORDER BY active_sessions DESC, last_active_at DESC
         LIMIT 24");
 
@@ -144,21 +173,79 @@ function mg_world_canvas_merchant_nodes(PDO $pdo, int $viewerUserId): array
         $active = (int) ($row['active_sessions'] ?? 0);
         $campaigns = mg_world_canvas_table($pdo, 'campaigns') ? mg_world_canvas_count($pdo, "SELECT COUNT(*) FROM campaigns WHERE merchant_user_id=? AND status='active' AND (starts_at IS NULL OR starts_at<=NOW()) AND (ends_at IS NULL OR ends_at>=NOW())", [$merchantUserId]) : 0;
         $events = mg_world_canvas_count($pdo, 'SELECT COUNT(*) FROM mg_store_session_events WHERE merchant_user_id=? AND created_at >= CURDATE()', [$merchantUserId]);
-        $position = mg_world_canvas_position($publicId, $index, 'merchant');
+        $locationKey = 'merchant:' . $merchantUserId;
+        $tags = mg_world_canvas_tags([$title, $row['profile_type'] ?? '', 'merchant', 'store', 'campaign']);
         $nodes[] = mg_world_canvas_node(
             'merchant',
             $publicId,
             $title,
-            $active . ' live session' . ($active === 1 ? '' : 's'),
+            $active . ' live avatar' . ($active === 1 ? '' : 's'),
             $campaigns . ' active campaign' . ($campaigns === 1 ? '' : 's') . ' · ' . $events . ' event' . ($events === 1 ? '' : 's') . ' today',
             $active,
-            $position,
+            mg_world_canvas_position($publicId, $index, 'merchant'),
             [
                 'avatar_url' => mg_store_avatar_url($row['avatar_url'] ?? null),
                 'store_url' => trim((string) ($row['store_slug'] ?? '')) !== '' ? '/store.php?s=' . rawurlencode((string) $row['store_slug']) : null,
                 'profile_url' => trim((string) ($row['profile_slug'] ?? '')) !== '' ? '/profile.php?slug=' . rawurlencode((string) $row['profile_slug']) : null,
                 'owned' => $merchantUserId === $viewerUserId,
                 'tone' => $active >= 5 ? 'hot' : ($active >= 2 ? 'live' : 'soft'),
+                'affinity_tags' => $tags,
+                'location_key' => $locationKey,
+                'conversation_key' => $locationKey,
+            ]
+        );
+    }
+    return $nodes;
+}
+
+function mg_world_canvas_avatar_nodes(PDO $pdo, int $viewerUserId): array
+{
+    if (!mg_world_canvas_store_ready($pdo)) return [];
+    $rows = mg_world_canvas_rows($pdo, "SELECT s.public_id, s.customer_user_id, s.merchant_user_id, s.status, s.entered_at, s.last_active_at,
+               pp.display_name merchant_name, fp.headline source_headline,
+               TIMESTAMPDIFF(SECOND, s.entered_at, NOW()) seconds_inside,
+               (SELECT event_type FROM mg_store_session_events e WHERE e.store_session_id=s.id ORDER BY e.id DESC LIMIT 1) last_event_type,
+               (SELECT event_label FROM mg_store_session_events e WHERE e.store_session_id=s.id ORDER BY e.id DESC LIMIT 1) last_event_label
+        FROM mg_store_sessions s
+        LEFT JOIN public_profiles pp ON pp.user_id = s.merchant_user_id
+        LEFT JOIN feed_posts fp ON fp.id = s.source_feed_post_id
+        WHERE s.active_key IS NOT NULL
+          AND s.status IN ('entered','active','idle')
+          AND s.exited_at IS NULL
+        ORDER BY s.last_active_at DESC, s.id DESC
+        LIMIT 36");
+
+    $labels = ['Local Explorer','Reward Browser','Gift Sender','Claim Ready','Deal Watcher','Community Shopper','Campaign Visitor','Supporter'];
+    $nodes = [];
+    foreach ($rows as $index => $row) {
+        $publicId = (string) ($row['public_id'] ?? '');
+        if ($publicId === '') continue;
+        $eventType = (string) ($row['last_event_type'] ?? 'entered_store');
+        $eventLabel = trim((string) ($row['last_event_label'] ?? '')) ?: ucwords(str_replace('_', ' ', $eventType));
+        $source = trim((string) ($row['source_headline'] ?? ''));
+        $merchant = trim((string) ($row['merchant_name'] ?? '')) ?: 'Merchant location';
+        $locationKey = 'merchant:' . (int) ($row['merchant_user_id'] ?? 0);
+        $conversationKey = $locationKey . ':' . mg_world_canvas_slug_tag($source !== '' ? $source : $eventType);
+        $tags = mg_world_canvas_tags([$source, $eventType, $eventLabel, $merchant, (string) ($row['status'] ?? '')]);
+        if ($tags === []) $tags = ['local', 'reward'];
+        $label = $labels[$index % count($labels)];
+        $owned = (int) ($row['customer_user_id'] ?? 0) === $viewerUserId || (int) ($row['merchant_user_id'] ?? 0) === $viewerUserId;
+        $nodes[] = mg_world_canvas_node(
+            'avatar',
+            $publicId,
+            $owned ? 'Your live avatar' : $label,
+            $eventLabel . ' · ' . $merchant,
+            $source !== '' ? $source : 'Same-location avatars attract into conversation clusters',
+            'AV',
+            mg_world_canvas_position($publicId, $index, 'avatar'),
+            [
+                'tone' => $owned ? 'owned' : ((string) ($row['status'] ?? '') === 'idle' ? 'soft' : 'live'),
+                'owned' => $owned,
+                'seconds_inside' => (int) ($row['seconds_inside'] ?? 0),
+                'affinity_tags' => $tags,
+                'location_key' => $locationKey,
+                'conversation_key' => $conversationKey,
+                'is_anonymous' => true,
             ]
         );
     }
@@ -169,7 +256,7 @@ function mg_world_canvas_campaign_nodes(PDO $pdo): array
 {
     if (!mg_world_canvas_table($pdo, 'campaigns')) return [];
     $hasTemplates = mg_world_canvas_table($pdo, 'reward_templates');
-    $rows = mg_world_canvas_rows($pdo, "SELECT c.public_id, c.title, c.campaign_type, c.issued_count, c.quantity_limit, c.ends_at,
+    $rows = mg_world_canvas_rows($pdo, "SELECT c.public_id, c.title, c.campaign_type, c.issued_count, c.quantity_limit, c.ends_at, c.merchant_user_id,
                pp.display_name merchant_name" . ($hasTemplates ? ', rt.title reward_template_title' : ', NULL reward_template_title') . "
         FROM campaigns c
         LEFT JOIN public_profiles pp ON pp.user_id = c.merchant_user_id
@@ -190,6 +277,8 @@ function mg_world_canvas_campaign_nodes(PDO $pdo): array
         $meta = trim((string) ($row['reward_template_title'] ?? '')) ?: (string) ($row['campaign_type'] ?? 'campaign');
         if ($limit !== null) $meta .= ' · ' . $issued . '/' . $limit . ' issued';
         else $meta .= ' · ' . $issued . ' issued';
+        $locationKey = 'merchant:' . (int) ($row['merchant_user_id'] ?? 0);
+        $tags = mg_world_canvas_tags([$row['title'] ?? '', $row['campaign_type'] ?? '', $row['reward_template_title'] ?? '', $subtitle]);
         $nodes[] = mg_world_canvas_node(
             'campaign',
             $publicId,
@@ -198,7 +287,12 @@ function mg_world_canvas_campaign_nodes(PDO $pdo): array
             $meta,
             $issued,
             mg_world_canvas_position($publicId, $index, 'campaign'),
-            ['tone' => $issued > 25 ? 'hot' : 'live']
+            [
+                'tone' => $issued > 25 ? 'hot' : 'live',
+                'affinity_tags' => $tags,
+                'location_key' => $locationKey,
+                'conversation_key' => $locationKey . ':' . mg_world_canvas_slug_tag((string) ($row['campaign_type'] ?? 'campaign')),
+            ]
         );
     }
     return $nodes;
@@ -208,7 +302,7 @@ function mg_world_canvas_reward_nodes(PDO $pdo, int $viewerUserId): array
 {
     if (!mg_world_canvas_table($pdo, 'wallet_items')) return [];
     $rows = mg_world_canvas_rows($pdo, "SELECT wi.public_id, wi.title_snapshot, wi.status, wi.issued_at, wi.user_id, wi.merchant_user_id,
-               pp.display_name merchant_name, c.title campaign_title
+               pp.display_name merchant_name, c.title campaign_title, c.campaign_type
         FROM wallet_items wi
         LEFT JOIN public_profiles pp ON pp.user_id = wi.merchant_user_id
         LEFT JOIN campaigns c ON c.id = wi.campaign_id
@@ -224,6 +318,8 @@ function mg_world_canvas_reward_nodes(PDO $pdo, int $viewerUserId): array
         $title = trim((string) ($row['title_snapshot'] ?? '')) ?: 'Reward movement';
         $merchant = trim((string) ($row['merchant_name'] ?? '')) ?: 'Microgifter merchant';
         $campaign = trim((string) ($row['campaign_title'] ?? ''));
+        $locationKey = 'merchant:' . (int) ($row['merchant_user_id'] ?? 0);
+        $tags = mg_world_canvas_tags([$title, $merchant, $campaign, $row['campaign_type'] ?? '', $row['status'] ?? '']);
         $nodes[] = mg_world_canvas_node(
             'reward',
             $publicId,
@@ -235,6 +331,9 @@ function mg_world_canvas_reward_nodes(PDO $pdo, int $viewerUserId): array
             [
                 'tone' => ((int) ($row['user_id'] ?? 0) === $viewerUserId || (int) ($row['merchant_user_id'] ?? 0) === $viewerUserId) ? 'owned' : 'soft',
                 'status' => (string) ($row['status'] ?? 'issued'),
+                'affinity_tags' => $tags,
+                'location_key' => $locationKey,
+                'conversation_key' => $locationKey . ':' . mg_world_canvas_slug_tag($campaign !== '' ? $campaign : $title),
             ]
         );
     }
@@ -244,7 +343,7 @@ function mg_world_canvas_reward_nodes(PDO $pdo, int $viewerUserId): array
 function mg_world_canvas_claim_nodes(PDO $pdo): array
 {
     if (!mg_world_canvas_store_ready($pdo)) return [];
-    $rows = mg_world_canvas_rows($pdo, "SELECT e.public_id, e.event_type, e.event_label, e.created_at,
+    $rows = mg_world_canvas_rows($pdo, "SELECT e.public_id, e.event_type, e.event_label, e.created_at, e.merchant_user_id,
                pp.display_name merchant_name, fp.headline source_headline
         FROM mg_store_session_events e
         INNER JOIN mg_store_sessions s ON s.id = e.store_session_id
@@ -261,15 +360,22 @@ function mg_world_canvas_claim_nodes(PDO $pdo): array
         if ($publicId === '') continue;
         $merchant = trim((string) ($row['merchant_name'] ?? '')) ?: 'Merchant location';
         $label = trim((string) ($row['event_label'] ?? '')) ?: 'Claim verified';
+        $source = trim((string) ($row['source_headline'] ?? ''));
+        $locationKey = 'merchant:' . (int) ($row['merchant_user_id'] ?? 0);
         $nodes[] = mg_world_canvas_node(
             'claim',
             $publicId,
             $label,
             'Claim activity · ' . $merchant,
-            trim((string) ($row['source_headline'] ?? '')) ?: 'Store Canvas claim signal',
+            $source !== '' ? $source : 'Store Canvas claim signal',
             'Claim',
             mg_world_canvas_position($publicId, $index, 'claim'),
-            ['tone' => 'hot']
+            [
+                'tone' => 'hot',
+                'affinity_tags' => mg_world_canvas_tags([$label, $source, $merchant, 'claim', 'redeem']),
+                'location_key' => $locationKey,
+                'conversation_key' => $locationKey . ':claim',
+            ]
         );
     }
     return $nodes;
@@ -292,7 +398,7 @@ function mg_world_canvas_events(PDO $pdo): array
             $type = (string) ($row['event_type'] ?? 'event');
             $events[] = [
                 'id' => (string) ($row['public_id'] ?? ''),
-                'type' => str_contains($type, 'claim') ? 'claim' : (str_contains($type, 'reward') || str_contains($type, 'gift') ? 'reward' : 'session'),
+                'type' => str_contains($type, 'claim') ? 'claim' : (str_contains($type, 'reward') || str_contains($type, 'gift') ? 'reward' : 'avatar'),
                 'label' => trim((string) ($row['event_label'] ?? '')) ?: ucwords(str_replace('_', ' ', $type)),
                 'title' => trim((string) ($row['merchant_name'] ?? '')) ?: 'Microgifter activity',
                 'meta' => trim((string) ($row['source_headline'] ?? '')) ?: 'Store Canvas signal',
@@ -333,6 +439,7 @@ function mg_world_canvas_payload(PDO $pdo, array $viewer): array
     $summary = mg_world_canvas_summary($pdo);
     $nodes = array_merge(
         mg_world_canvas_merchant_nodes($pdo, $viewerUserId),
+        mg_world_canvas_avatar_nodes($pdo, $viewerUserId),
         mg_world_canvas_campaign_nodes($pdo),
         mg_world_canvas_reward_nodes($pdo, $viewerUserId),
         mg_world_canvas_claim_nodes($pdo)
@@ -342,9 +449,18 @@ function mg_world_canvas_payload(PDO $pdo, array $viewer): array
         'summary' => $summary,
         'nodes' => $nodes,
         'events' => mg_world_canvas_events($pdo),
+        'attraction_model' => [
+            'enabled' => true,
+            'same_location_weight' => 0.46,
+            'same_conversation_weight' => 0.38,
+            'shared_affinity_weight' => 0.28,
+            'repel_distance' => 11,
+        ],
         'visibility' => [
             'customer_activity_anonymized' => true,
             'merchant_crm_private' => true,
+            'avatar_to_avatar_conversation' => true,
+            'similar_locations_attract' => true,
             'viewer_user_id' => $viewerUserId,
         ],
     ];
