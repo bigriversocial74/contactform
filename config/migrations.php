@@ -136,6 +136,7 @@ return [
         'stage_23_buy_in_final_reviewer_acknowledgements.sql',
         'stage_24_buy_in_handoff_archives.sql',
         'stage_v1_release_trigger_portability.sql',
+        'stage_25_pwa_notifications.sql',
     ],
     'coverage_markers' => [
         'stage_9e4_consolidated_stage1_to_stage9_upgrade' => 'stage_9d_microgift_operations.sql',

@@ -1,0 +1,15 @@
+.mg-pwa-notification-panel{margin-bottom:18px;padding:18px;border:1px solid #dbe3ef;border-radius:18px;background:linear-gradient(135deg,#ffffff,#f8fbff);box-shadow:0 12px 32px rgba(15,23,42,.06)}
+.mg-pwa-notification-panel header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}
+.mg-pwa-notification-panel h2{margin:.25rem 0;color:#0f172a;font-size:1.05rem;letter-spacing:-.02em}
+.mg-pwa-notification-panel p{margin:.55rem 0 0;color:#64748b;font-size:.76rem;line-height:1.5}
+.mg-pwa-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.mg-pwa-status-grid{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px}
+.mg-pwa-status-pill{display:inline-flex;align-items:center;gap:6px;padding:.45rem .6rem;border:1px solid #e2e8f0;border-radius:999px;background:#f8fafc;color:#475569;font-size:.66rem}
+.mg-pwa-status-pill strong{font-weight:900;color:#0f172a}
+.mg-pwa-status-pill em{font-style:normal;color:#64748b}
+.mg-pwa-status-pill.is-good{border-color:#bbf7d0;background:#f0fdf4}
+.mg-pwa-status-pill.is-good em{color:#166534}
+.mg-pwa-status-pill.is-bad{border-color:#fecaca;background:#fff1f2}
+.mg-pwa-status-pill.is-bad em{color:#991b1b}
+.mg-pwa-status-pill.is-neutral{border-color:#dbe3ef;background:#f8fafc}
+@media(max-width:760px){.mg-pwa-notification-panel header{flex-direction:column}.mg-pwa-actions{width:100%;justify-content:stretch}.mg-pwa-actions .mg-btn{flex:1 1 180px;justify-content:center}}
