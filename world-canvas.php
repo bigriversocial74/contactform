@@ -15,8 +15,8 @@ $page_title = 'World Canvas | Microgifter';
 $page_section = 'agent';
 $header_mode = 'agent';
 $agent_tab = 'world-canvas';
-$page_styles = ['/assets/css/world-canvas.css','/assets/css/world-canvas-attraction.css','/assets/css/world-canvas-identity.css','/assets/css/world-canvas-conversations.css','/assets/css/world-canvas-reward-drops.css','/assets/css/world-canvas-insights.css'];
-$page_scripts = ['/assets/js/world-canvas.js','/assets/js/world-canvas-overlays.js','/assets/js/world-canvas-identity.js','/assets/js/world-canvas-conversations.js','/assets/js/world-canvas-reward-drops.js','/assets/js/world-canvas-insights.js'];
+$page_styles = ['/assets/css/world-canvas.css','/assets/css/world-canvas-attraction.css','/assets/css/world-canvas-identity.css','/assets/css/world-canvas-conversations.css','/assets/css/world-canvas-reward-drops.css','/assets/css/world-canvas-insights.css','/assets/css/world-canvas-opportunities.css'];
+$page_scripts = ['/assets/js/world-canvas.js','/assets/js/world-canvas-overlays.js','/assets/js/world-canvas-identity.js','/assets/js/world-canvas-conversations.js','/assets/js/world-canvas-reward-drops.js','/assets/js/world-canvas-insights.js','/assets/js/world-canvas-opportunities.js'];
 $page_manifest = [
     'id' => 'world-canvas',
     'title' => $page_title,
@@ -95,9 +95,9 @@ require __DIR__ . '/includes/header.php';
           </div>
         </article>
         <article class="mg-world-panel">
-          <div class="mg-world-panel-head"><span class="mg-world-eyebrow">Insights</span><strong>Live world readout</strong></div>
-          <div class="mg-world-insights" data-world-insights>
-            <p>World Canvas insights appear as avatars, heat zones, rewards, claims, and conversations form.</p>
+          <div class="mg-world-panel-head"><span class="mg-world-eyebrow">Merchant Opportunities</span><strong>Recommended next actions</strong></div>
+          <div class="mg-world-opportunities" data-world-opportunities>
+            <p>Merchant opportunities appear as avatars, claims, reward drops, and conversations form.</p>
           </div>
         </article>
       </section>
