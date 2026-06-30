@@ -9,7 +9,7 @@ function mg_checkout_column_exists(PDO $pdo,string $table,string $column): bool
         $stmt=$pdo->prepare('SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? AND COLUMN_NAME=?');
         $stmt->execute([$table,$column]);
         return (int)$stmt->fetchColumn()>0;
-    }catch(Throwable){
+    }catch(Throwable $error){
         return false;
     }
 }
