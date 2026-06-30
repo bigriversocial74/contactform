@@ -100,10 +100,12 @@ function mg_action_center_select_sql(): string
                    COALESCE(delivery.resend_count,0) resend_count,delivery.last_delivery_event_at,
                    follow_up.last_follow_up_at,COALESCE(follow_up.follow_up_count,0) follow_up_count,
                    i.public_id instance_id,i.status instance_status,i.face_value_cents,i.currency,i.expires_at,i.metadata_json instance_metadata_json,
-                   CAST(i.owner_user_id AS CHAR) owner_user_id,
+                   CAST(i.owner_user_id AS CHAR) owner_user_id,CAST(i.issuer_user_id AS CHAR) merchant_user_id,
                    t.public_id template_id,t.name template_name,
                    CAST(sender.id AS CHAR) sender_id,COALESCE(sender.display_name,sender.full_name) sender_name,
                    CAST(recipient.id AS CHAR) recipient_id,COALESCE(recipient.display_name,recipient.full_name) recipient_name,
+                   COALESCE(ms.display_name,merchant.display_name,merchant.full_name) merchant_name,
+                   logo.public_id merchant_logo_asset_id,
                    r.public_id redemption_id,r.status redemption_status,r.redeemed_at merchant_redeemed_at,
                    l.public_id location_id,l.name location_name
             FROM microgift_inbox_items ac
@@ -111,6 +113,9 @@ function mg_action_center_select_sql(): string
             INNER JOIN microgift_templates t ON t.id=i.template_id
             LEFT JOIN users sender ON sender.id=ac.sender_user_id
             LEFT JOIN users recipient ON recipient.id=ac.recipient_user_id
+            LEFT JOIN users merchant ON merchant.id=i.issuer_user_id
+            LEFT JOIN merchant_storefronts ms ON ms.merchant_user_id=i.issuer_user_id AND ms.status IN ('published','draft')
+            LEFT JOIN catalog_assets logo ON logo.id=ms.logo_asset_id AND logo.status='ready'
             LEFT JOIN microgift_redemptions r ON r.id=ac.redemption_id
             LEFT JOIN merchant_locations l ON l.id=ac.location_id
             LEFT JOIN (
@@ -144,13 +149,16 @@ function mg_action_center_public_item(array $row): array
     if(!empty($row['delivery_first_sent_at']))$row['sent_at']=$row['delivery_first_sent_at'];
     $row['resend_count']=(int)($row['resend_count']??0);
     $row['follow_up_count']=(int)($row['follow_up_count']??0);
+    $logoId=(string)($row['merchant_logo_asset_id']??'');
+    $row['merchant_avatar_url']=$logoId!==''?('/api/public/media.php?asset='.rawurlencode($logoId)):'';
+    $row['merchant_name']=(string)($row['merchant_name']??'');
     $row['can_follow_up']=(string)($row['folder']??'')==='sent'
         && (string)($row['recipient_id']??'')!==''
         && (string)($row['recipient_id']??'')===(string)($row['owner_user_id']??'')
         && in_array((string)($row['instance_status']??''),['issued','delivered'],true)
         && empty($row['claimed_at'])
         && empty($row['redeemed_at']);
-    unset($row['action_item_internal_id'],$row['instance_metadata_json'],$row['delivery_first_sent_at']);
+    unset($row['action_item_internal_id'],$row['instance_metadata_json'],$row['delivery_first_sent_at'],$row['merchant_logo_asset_id']);
     $row['sandbox_mode']=(string)($metadata['sandbox_mode']??'');
     $row['demo_scenario']=(string)($metadata['demo_scenario']??'');
     $row['is_demo_preview']=false;
@@ -166,9 +174,9 @@ function mg_action_center_page(PDO $pdo,int $userId,string $folder,int $limit=50
     $where=['ac.user_id=?','ac.folder=?','ac.archived_at IS NULL'];
     $params=[$userId,$folder];
     if($search!==''){
-        $where[]="(t.name LIKE ? OR i.public_id LIKE ? OR COALESCE(sender.display_name,sender.full_name,'') LIKE ? OR COALESCE(recipient.display_name,recipient.full_name,'') LIKE ? OR COALESCE(l.name,'') LIKE ? OR ac.state LIKE ?)";
+        $where[]="(t.name LIKE ? OR i.public_id LIKE ? OR COALESCE(sender.display_name,sender.full_name,'') LIKE ? OR COALESCE(recipient.display_name,recipient.full_name,'') LIKE ? OR COALESCE(l.name,'') LIKE ? OR ac.state LIKE ? OR COALESCE(ms.display_name,merchant.display_name,merchant.full_name,'') LIKE ?)";
         $needle='%'.$search.'%';
-        array_push($params,$needle,$needle,$needle,$needle,$needle,$needle);
+        array_push($params,$needle,$needle,$needle,$needle,$needle,$needle,$needle);
     }
     if($cursor!==null){
         $where[]='(ac.updated_at < ? OR (ac.updated_at = ? AND ac.id < ?))';
