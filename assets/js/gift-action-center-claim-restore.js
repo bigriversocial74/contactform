@@ -9,6 +9,67 @@
     })[char]);
   }
 
+  function loadMerchantAvatarStyles() {
+    if (document.querySelector('link[href="/assets/css/gift-merchant-avatar.css"]')) return;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = '/assets/css/gift-merchant-avatar.css';
+    document.head.appendChild(link);
+  }
+
+  function hydrateMerchantAvatars() {
+    const app = document.querySelector('[data-gift-center]');
+    const list = app && app.querySelector('[data-gift-list]');
+    if (!list) return;
+    const cache = Object.create(null);
+    let busy = false;
+
+    function rowIds() {
+      return Array.from(list.querySelectorAll('[data-gift-id]'))
+        .map((row) => row.getAttribute('data-gift-id') || '')
+        .filter(Boolean);
+    }
+
+    function apply() {
+      Array.from(list.querySelectorAll('[data-gift-id]')).forEach((row) => {
+        const item = cache[row.getAttribute('data-gift-id') || ''];
+        if (!item || !item.merchant_avatar_url) return;
+        const box = row.querySelector('.mg-gift-thumb');
+        if (!box || box.dataset.avatarReady === 'true') return;
+        box.textContent = '';
+        const image = document.createElement('img');
+        image.src = item.merchant_avatar_url;
+        image.alt = (item.merchant_name || 'Merchant') + ' profile';
+        box.appendChild(image);
+        box.classList.add('has-merchant-avatar');
+        box.dataset.avatarReady = 'true';
+        box.removeAttribute('aria-hidden');
+      });
+    }
+
+    function run() {
+      if (busy) return;
+      const missing = rowIds().filter((id) => !cache[id]);
+      if (!missing.length) {
+        apply();
+        return;
+      }
+      busy = true;
+      fetch('/api/account/action-center-merchant-avatar.php?ids=' + encodeURIComponent(missing.join(',')), { credentials: 'same-origin' })
+        .then((response) => response.json())
+        .then((payload) => {
+          const data = payload.data || payload;
+          Object.keys(data.items || {}).forEach((id) => { cache[id] = data.items[id] || {}; });
+          apply();
+        })
+        .catch((error) => console.error(error))
+        .finally(() => { busy = false; });
+    }
+
+    new MutationObserver(() => window.requestAnimationFrame(run)).observe(list, { childList: true });
+    run();
+  }
+
   function stepper() {
     const labels = ['Claim', 'Confirm', 'Claimed', 'Actions'];
     return '<ol class="mg-voucher-stepper" aria-label="Claim progress">' + labels.map((label, index) => {
@@ -117,6 +178,8 @@
   });
 
   function boot() {
+    loadMerchantAvatarStyles();
+    hydrateMerchantAvatars();
     const data = restorePayload();
     if (!data) return;
     window.setTimeout(() => openConfirmation(data), 350);
