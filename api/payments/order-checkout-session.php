@@ -9,8 +9,16 @@ function mg_checkout_local_redirect(mixed $value,string $fallback): string
     return mb_substr($path,0,500);
 }
 
+function mg_checkout_provider_choice(mixed $value): string
+{
+    $provider=strtolower(trim((string)$value));
+    if($provider==='card')return 'stripe';
+    if(in_array($provider,['stripe','cash','sandbox'],true))return $provider;
+    return '';
+}
+
 mg_require_method('POST');
-$user=mg_require_permission('commerce.checkout.create');
+$user=mg_require_api_user();
 $input=mg_input();
 mg_require_csrf_for_write($input);
 $pdo=mg_db();
@@ -22,6 +30,7 @@ try{
         trim((string)($input['order_id']??'')),
         trim((string)($input['idempotency_key']??'')),
         [
+            'provider_key'=>mg_checkout_provider_choice($input['provider_key']??''),
             'success_url'=>mg_checkout_local_redirect($input['success_url']??null,'/checkout-success.php'),
             'cancel_url'=>mg_checkout_local_redirect($input['cancel_url']??null,'/cart.php'),
         ]
@@ -38,5 +47,8 @@ try{
     mg_fail($e->getMessage(),$e->httpStatus);
 }catch(Throwable $e){
     if($pdo->inTransaction())$pdo->rollBack();
+    mg_security_log('error','commerce.checkout_session_create_failed','Checkout session creation failed.',[
+        'exception_type'=>get_class($e),
+    ],(int)$user['id']);
     mg_fail('Unable to create checkout session.',500);
 }

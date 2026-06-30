@@ -45,7 +45,7 @@ function mg_checkout_session_select_sql(bool $hasPaymentIntentId): string
 }
 
 mg_require_method('GET');
-$user=mg_require_permission('commerce.checkout.create');
+$user=mg_require_api_user();
 $id=trim((string)($_GET['id']??''));
 if($id==='')mg_fail('Checkout session is required.',422);
 
