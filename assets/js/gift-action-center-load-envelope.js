@@ -73,10 +73,10 @@
 
       return '<div class="mg-gift-drawer-card mg-load-envelope-card" data-load-envelope-card>' +
         '<span class="mg-eyebrow">Protected voucher</span>' +
-        '<section class="mg-gift-card-preview">' +
+        '<section class="mg-gift-card-preview">' + media +
           '<div class="mg-gift-card-hero"><span class="mg-eyebrow">' + esc(merchant) + '</span>' +
             '<h2>' + esc(title) + '</h2><p>' + esc(message) + '</p></div>' +
-          '<div class="mg-gift-card-body">' + media +
+          '<div class="mg-gift-card-body">' +
             '<div class="mg-gift-value">' + esc(value) + '</div>' +
             '<div class="mg-gift-claim-code"><span>Merchant claim</span><strong>Ready</strong>' +
               '<small>Present the gift at the merchant. The authorized location claim code is entered into this voucher and recorded with a timestamp.</small></div>' +
@@ -90,8 +90,8 @@
     }
 
     function openEnvelope(row) {
-      const title = titleFromRow(row);
-      if (drawerTitle) drawerTitle.textContent = title;
+      if (drawerTitle) drawerTitle.textContent = '';
+      drawer.classList.add('mg-load-envelope-drawer');
       drawerContent.innerHTML = cardMarkup(row);
       drawer.classList.add('is-open');
       drawer.setAttribute('aria-hidden', 'false');
