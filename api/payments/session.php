@@ -3,44 +3,54 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_payments.php';
 
-function mg_checkout_table_has_column(PDO $pdo,string $table,string $column): bool
+function mg_checkout_column_exists(PDO $pdo,string $table,string $column): bool
 {
-    $stmt=$pdo->prepare(
-        'SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? AND COLUMN_NAME=?'
-    );
-    $stmt->execute([$table,$column]);
-    return (int)$stmt->fetchColumn()>0;
+    try{
+        $stmt=$pdo->prepare('SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? AND COLUMN_NAME=?');
+        $stmt->execute([$table,$column]);
+        return (int)$stmt->fetchColumn()>0;
+    }catch(Throwable){
+        return false;
+    }
 }
 
-function mg_checkout_session_select_sql(bool $hasPaymentIntentId): string
+function mg_checkout_select_expr(PDO $pdo,string $table,string $column,string $expr,string $fallback): string
 {
+    return mg_checkout_column_exists($pdo,$table,$column)?$expr.' '.$column:$fallback.' '.$column;
+}
+
+function mg_checkout_session_query(PDO $pdo): string
+{
+    $hasPaymentIntentId=mg_checkout_column_exists($pdo,'checkout_sessions','payment_intent_id');
+    $providerSession=mg_checkout_select_expr($pdo,'checkout_sessions','provider_session_reference','cs.provider_session_reference',"''");
+    $expires=mg_checkout_select_expr($pdo,'checkout_sessions','expires_at','cs.expires_at','NULL');
     if($hasPaymentIntentId){
         return "SELECT cs.public_id session_id,cs.status session_status,cs.provider_key,
-                       cs.provider_session_reference,cs.expires_at,
-                       COALESCE(pi_link.public_id,pi_order.public_id) payment_intent_id,
+                       {$providerSession},{$expires},
+                       COALESCE(pi_link.public_id,pi_order.public_id,'') payment_intent_id,
                        COALESCE(pi_link.status,pi_order.status,'created') payment_intent_status,
                        o.public_id order_id,o.currency,o.subtotal_cents,o.tax_cents,o.discount_cents,
                        o.platform_fee_cents,o.total_cents,o.payment_status,o.fulfillment_status,
-                       o.merchant_user_id,NULL merchant_name
+                       o.merchant_user_id,'' merchant_name
                 FROM checkout_sessions cs
                 INNER JOIN commerce_orders o ON o.id=cs.order_id
                 LEFT JOIN payment_intents pi_link ON pi_link.id=cs.payment_intent_id AND pi_link.order_id=cs.order_id
                 LEFT JOIN payment_intents pi_order ON pi_order.order_id=cs.order_id AND pi_order.provider_key=cs.provider_key
                 WHERE cs.public_id=? AND o.buyer_user_id=?
-                ORDER BY COALESCE(pi_link.id,pi_order.id) DESC
+                ORDER BY COALESCE(pi_link.id,pi_order.id,0) DESC
                 LIMIT 1";
     }
     return "SELECT cs.public_id session_id,cs.status session_status,cs.provider_key,
-                   cs.provider_session_reference,cs.expires_at,
-                   pi.public_id payment_intent_id,COALESCE(pi.status,'created') payment_intent_status,
+                   {$providerSession},{$expires},
+                   COALESCE(pi.public_id,'') payment_intent_id,COALESCE(pi.status,'created') payment_intent_status,
                    o.public_id order_id,o.currency,o.subtotal_cents,o.tax_cents,o.discount_cents,
                    o.platform_fee_cents,o.total_cents,o.payment_status,o.fulfillment_status,
-                   o.merchant_user_id,NULL merchant_name
+                   o.merchant_user_id,'' merchant_name
             FROM checkout_sessions cs
             INNER JOIN commerce_orders o ON o.id=cs.order_id
             LEFT JOIN payment_intents pi ON pi.order_id=cs.order_id AND pi.provider_key=cs.provider_key
             WHERE cs.public_id=? AND o.buyer_user_id=?
-            ORDER BY pi.id DESC
+            ORDER BY COALESCE(pi.id,0) DESC
             LIMIT 1";
 }
 
@@ -51,8 +61,7 @@ if($id==='')mg_fail('Checkout session is required.',422);
 
 $pdo=mg_db();
 try{
-    $hasPaymentIntentId=mg_checkout_table_has_column($pdo,'checkout_sessions','payment_intent_id');
-    $stmt=$pdo->prepare(mg_checkout_session_select_sql($hasPaymentIntentId));
+    $stmt=$pdo->prepare(mg_checkout_session_query($pdo));
     $stmt->execute([$id,(int)$user['id']]);
     $session=$stmt->fetch(PDO::FETCH_ASSOC);
     if(!$session)mg_fail('Checkout session not found for this account.',404);
@@ -85,7 +94,6 @@ try{
     mg_security_log('error','commerce.checkout_session_load_failed','Checkout session load failed.',[
         'session_id'=>$id,
         'exception_type'=>get_class($error),
-        'has_payment_intent_id_column'=>isset($hasPaymentIntentId)?$hasPaymentIntentId:null,
     ],(int)$user['id']);
     mg_fail('Unable to load checkout session. Please return to the cart and create a new checkout session.',500);
 }
