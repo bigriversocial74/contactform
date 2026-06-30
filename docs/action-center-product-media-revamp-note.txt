@@ -1,0 +1,1 @@
+Product/reward media is the primary Action Center visual. Merchant profile images are not the main gift row thumbnail.
