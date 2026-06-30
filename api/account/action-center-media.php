@@ -58,9 +58,12 @@ if($ids===[])mg_ok(['items'=>[]]);
 $pdo=mg_db();
 $placeholders=implode(',',array_fill(0,count($ids),'?'));
 $stmt=$pdo->prepare(
-    "SELECT ac.public_id action_item_id,i.product_version_id
+    "SELECT ac.public_id action_item_id,i.product_version_id,i.issuer_user_id,
+            ms.display_name merchant_display_name,logo.public_id merchant_logo_asset_id
      FROM microgift_inbox_items ac
      INNER JOIN microgift_instances i ON i.id=ac.instance_id
+     LEFT JOIN merchant_storefronts ms ON ms.merchant_user_id=i.issuer_user_id AND ms.status='published'
+     LEFT JOIN catalog_assets logo ON logo.id=ms.logo_asset_id AND logo.status='ready'
      WHERE ac.user_id=? AND ac.public_id IN ({$placeholders}) AND ac.archived_at IS NULL"
 );
 $stmt->execute(array_merge([(int)$user['id']],$ids));
@@ -69,36 +72,39 @@ if(!$rows)mg_ok(['items'=>[]]);
 
 $versionIds=[];
 $itemVersions=[];
+$itemMerchants=[];
 foreach($rows as $row){
     $actionId=(string)$row['action_item_id'];
     $versionId=(int)($row['product_version_id']??0);
     $itemVersions[$actionId]=$versionId;
+    $logoId=(string)($row['merchant_logo_asset_id']??'');
+    $itemMerchants[$actionId]=[
+        'merchant_name'=>(string)($row['merchant_display_name']??''),
+        'merchant_avatar_url'=>$logoId!==''?('/api/public/media.php?asset='.rawurlencode($logoId)):'',
+    ];
     if($versionId>0)$versionIds[$versionId]=$versionId;
 }
-if($versionIds===[]){
-    $empty=[];
-    foreach(array_keys($itemVersions) as $actionId)$empty[$actionId]=['media_assets'=>[],'media_by_role'=>[],'cover_url'=>'','media_count'=>0];
-    mg_ok(['items'=>$empty]);
-}
 
-$versionPlaceholders=implode(',',array_fill(0,count($versionIds),'?'));
-$assetsStmt=$pdo->prepare(
-    "SELECT cpva.product_version_id,cpva.role,cpva.sort_order,
-            ca.public_id asset_id,ca.asset_type,ca.mime_type,ca.original_filename,
-            ca.width_px,ca.height_px,ca.duration_ms
-     FROM catalog_product_version_assets cpva
-     INNER JOIN catalog_assets ca ON ca.id=cpva.asset_id AND ca.status='ready'
-     WHERE cpva.product_version_id IN ({$versionPlaceholders})
-     ORDER BY cpva.product_version_id,
-              FIELD(cpva.role,'cover','thumbnail','inside_cover','gallery','carousel','audio','download','back','other'),
-              cpva.sort_order,cpva.id"
-);
-$assetsStmt->execute(array_values($versionIds));
 $assetsByVersion=[];
-foreach($assetsStmt->fetchAll(PDO::FETCH_ASSOC) as $asset){
-    $versionId=(int)$asset['product_version_id'];
-    unset($asset['product_version_id']);
-    $assetsByVersion[$versionId][] = mg_action_center_asset_payload($asset);
+if($versionIds!==[]){
+    $versionPlaceholders=implode(',',array_fill(0,count($versionIds),'?'));
+    $assetsStmt=$pdo->prepare(
+        "SELECT cpva.product_version_id,cpva.role,cpva.sort_order,
+                ca.public_id asset_id,ca.asset_type,ca.mime_type,ca.original_filename,
+                ca.width_px,ca.height_px,ca.duration_ms
+         FROM catalog_product_version_assets cpva
+         INNER JOIN catalog_assets ca ON ca.id=cpva.asset_id AND ca.status='ready'
+         WHERE cpva.product_version_id IN ({$versionPlaceholders})
+         ORDER BY cpva.product_version_id,
+                  FIELD(cpva.role,'cover','thumbnail','inside_cover','gallery','carousel','audio','download','back','other'),
+                  cpva.sort_order,cpva.id"
+    );
+    $assetsStmt->execute(array_values($versionIds));
+    foreach($assetsStmt->fetchAll(PDO::FETCH_ASSOC) as $asset){
+        $versionId=(int)$asset['product_version_id'];
+        unset($asset['product_version_id']);
+        $assetsByVersion[$versionId][] = mg_action_center_asset_payload($asset);
+    }
 }
 
 $items=[];
@@ -114,6 +120,8 @@ foreach($itemVersions as $actionId=>$versionId){
         'media_by_role'=>$byRole,
         'cover_url'=>mg_action_center_cover_url($assets),
         'media_count'=>count($assets),
+        'merchant_name'=>$itemMerchants[$actionId]['merchant_name']??'',
+        'merchant_avatar_url'=>$itemMerchants[$actionId]['merchant_avatar_url']??'',
     ];
 }
 
