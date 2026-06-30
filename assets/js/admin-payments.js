@@ -1,9 +1,11 @@
 document.addEventListener('DOMContentLoaded',function(){
   'use strict';
   var root=document.querySelector('[data-admin-payments]');
-  if(!root||!window.Microgifter)return;
-  var form=root.querySelector('[data-payment-settings-form]'),
-      mode=form.querySelector('[data-payment-mode]'),
+  if(!root)return;
+  var form=root.querySelector('[data-payment-settings-form]');
+  if(!form)return;
+
+  var mode=form.querySelector('[data-payment-mode]'),
       status=root.querySelector('[data-payment-settings-status]'),
       badge=root.querySelector('[data-payment-readiness]'),
       checks=root.querySelector('[data-payment-checks]'),
@@ -15,13 +17,21 @@ document.addEventListener('DOMContentLoaded',function(){
       credentialState=root.querySelector('[data-payment-credential-state]'),
       keyButton=root.querySelector('[data-payment-key-generate]'),
       copyButton=root.querySelector('[data-payment-key-copy]'),
-      keyOutput=root.querySelector('[data-payment-key-output]');
+      keyOutput=root.querySelector('[data-payment-key-output]'),
+      saveButton=root.querySelector('[data-payment-save-button]'),
+      saveLabel=root.querySelector('[data-payment-save-label]'),
+      saveState=root.querySelector('[data-payment-save-state]');
 
   function esc(value){return String(value==null?'':value).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];});}
-  function setMessage(node,text,type){if(!node)return;node.textContent=text||'';node.classList.toggle('is-error',type==='error');node.classList.toggle('is-success',type==='success')}
-  function msg(text,type){setMessage(status,text,type)}
+  function setMessage(node,text,type){if(!node)return;node.textContent=text||'';node.classList.toggle('is-error',type==='error');node.classList.toggle('is-success',type==='success');node.classList.toggle('is-loading',type==='loading')}
+  function msg(text,type){setMessage(status,text,type);setMessage(saveState,text,type)}
   function clearSecrets(){if(form.elements.secret_key)form.elements.secret_key.value='';if(form.elements.webhook_secret)form.elements.webhook_secret.value=''}
-  function expectedPrefix(){return mode.value==='live'?'live':'test'}
+  function expectedPrefix(){return mode&&mode.value==='live'?'live':'test'}
+  function setSaving(isSaving,label){
+    form.classList.toggle('is-saving',!!isSaving);
+    if(saveButton){saveButton.disabled=!!isSaving;saveButton.classList.toggle('is-saving',!!isSaving)}
+    if(saveLabel)saveLabel.textContent=label||(isSaving?'Saving…':'Save Stripe configuration');
+  }
   function validatePayload(payload){
     var prefix=expectedPrefix();
     if(payload.publishable_key&&payload.publishable_key.indexOf('pk_'+prefix+'_')!==0)return 'Publishable key must start with pk_'+prefix+'_ for '+prefix+' mode.';
@@ -59,6 +69,7 @@ document.addEventListener('DOMContentLoaded',function(){
     credentialState.textContent=ok?'Credential encryption is ready. You can save Stripe secret values.':((check&&check.detail)||'MG_PAYMENT_CREDENTIAL_KEY is missing. Add api/config.local.php before saving Stripe secret values.');
   }
   function fill(data){
+    data=data||{};
     var provider=data.provider||{};
     form.elements.enabled.checked=!!provider.enabled;
     form.elements.publishable_key.value=provider.publishable_key||'';
@@ -67,13 +78,15 @@ document.addEventListener('DOMContentLoaded',function(){
     form.elements.fixed_fee_cents.value=Number(provider.fixed_fee_cents||0);
     clearSecrets();
     setCredentialHints(provider);
-    badge.textContent=data.ready?'Ready for '+provider.mode:'Not ready for '+provider.mode;
-    badge.classList.toggle('is-ready',!!data.ready);
-    badge.classList.toggle('is-missing',!data.ready);
-    checks.innerHTML=Object.keys(data.checks||{}).map(function(key){var item=data.checks[key];return '<article class="mg-payment-check '+(item.ok?'is-ready':'is-missing')+'"><span>'+(item.ok?'✓':'!')+'</span><div><strong>'+esc(item.label)+'</strong><p>'+esc(item.detail)+'</p></div></article>'}).join('');
-    webhook.textContent=data.webhook_url||'';
+    if(badge){
+      badge.textContent=data.ready?'Ready for '+provider.mode:'Not ready for '+provider.mode;
+      badge.classList.toggle('is-ready',!!data.ready);
+      badge.classList.toggle('is-missing',!data.ready);
+    }
+    if(checks)checks.innerHTML=Object.keys(data.checks||{}).map(function(key){var item=data.checks[key];return '<article class="mg-payment-check '+(item.ok?'is-ready':'is-missing')+'"><span>'+(item.ok?'✓':'!')+'</span><div><strong>'+esc(item.label)+'</strong><p>'+esc(item.detail)+'</p></div></article>'}).join('');
+    if(webhook)webhook.textContent=data.webhook_url||'';
     var connected=data.connected_accounts||{};
-    accounts.innerHTML='<strong>Connected accounts</strong><span>'+Number(connected.ready||0)+' ready of '+Number(connected.total||0)+' total</span><small>Credential source: '+esc(provider.credential_source||'missing')+' · secret '+(provider.secret_configured?(provider.secret_hint?esc(provider.secret_hint):'configured'):'missing')+' · webhook '+(provider.webhook_configured?(provider.webhook_hint?esc(provider.webhook_hint):'configured'):'missing')+'</small>';
+    if(accounts)accounts.innerHTML='<strong>Connected accounts</strong><span>'+Number(connected.ready||0)+' ready of '+Number(connected.total||0)+' total</span><small>Credential source: '+esc(provider.credential_source||'missing')+' · secret '+(provider.secret_configured?(provider.secret_hint?esc(provider.secret_hint):'configured'):'missing')+' · webhook '+(provider.webhook_configured?(provider.webhook_hint?esc(provider.webhook_hint):'configured'):'missing')+'</small>';
     setCredentialState(data.checks&&data.checks.credential_encryption);
   }
   function base64Key(bytes){
@@ -116,8 +129,8 @@ document.addEventListener('DOMContentLoaded',function(){
     }
   }
   async function loadCash(){
-    if(!cashForm||!cashToggle)return;
-    setMessage(cashStatus,'Loading cash option…');
+    if(!cashForm||!cashToggle||!window.Microgifter)return;
+    setMessage(cashStatus,'Loading cash option…','loading');
     try{
       var response=await Microgifter.get('/api/admin/payment-methods.php');
       var data=response.data||response;
@@ -126,10 +139,10 @@ document.addEventListener('DOMContentLoaded',function(){
     }catch(error){setMessage(cashStatus,error.message||'Unable to load cash payment setting.','error')}
   }
   async function saveCash(button){
-    if(!cashForm||!cashToggle)return;
+    if(!cashForm||!cashToggle||!window.Microgifter)return;
     if(button)button.disabled=true;
     cashToggle.disabled=true;
-    setMessage(cashStatus,'Saving cash option…');
+    setMessage(cashStatus,'Saving cash option…','loading');
     try{
       var response=await Microgifter.post('/api/admin/payment-methods.php',{cash_enabled:cashToggle.checked?1:0});
       var data=response.data||response;
@@ -139,23 +152,38 @@ document.addEventListener('DOMContentLoaded',function(){
     finally{cashToggle.disabled=false;if(button)button.disabled=false}
   }
   async function load(){
-    msg('Loading…');
-    try{var response=await Microgifter.get('/api/admin/payment-settings.php?mode='+encodeURIComponent(mode.value));fill(response.data||response);msg('')}
+    if(!window.Microgifter){
+      msg('Payment client is not loaded. Refresh the page and try again.','error');
+      if(saveButton)saveButton.disabled=true;
+      return;
+    }
+    msg('Loading payment settings…','loading');
+    try{var response=await Microgifter.get('/api/admin/payment-settings.php?mode='+encodeURIComponent(mode.value));fill(response.data||response);msg('Payment settings loaded.','success')}
     catch(error){msg(error.message||'Unable to load payment settings.','error');setCredentialState(null)}
   }
-  mode.addEventListener('change',load);
-  form.addEventListener('submit',async function(event){
-    event.preventDefault();
+  async function saveSettings(){
+    if(!window.Microgifter){msg('Payment client is not loaded. Refresh the page and try again.','error');return;}
+    if(form.reportValidity&&!form.reportValidity()){msg('Please complete the required fields before saving.','error');return;}
     var payload=Object.fromEntries(new FormData(form).entries());
     payload.enabled=form.elements.enabled.checked;
     payload.platform_fee_bps=Number(payload.platform_fee_bps||0);
     payload.fixed_fee_cents=Number(payload.fixed_fee_cents||0);
     var validationError=validatePayload(payload);
     if(validationError){msg(validationError,'error');return;}
-    msg('Saving…');
-    try{var response=await Microgifter.post('/api/admin/payment-settings.php',payload);fill(response.data||response);msg(response.message||'Stripe payment settings saved.','success')}
-    catch(error){msg(error.message||'Unable to save payment settings.','error')}
-  });
+    setSaving(true,'Saving…');
+    msg('Saving Stripe configuration…','loading');
+    try{
+      var response=await Microgifter.post('/api/admin/payment-settings.php',payload);
+      fill(response.data||response);
+      msg(response.message||'Stripe configuration saved successfully.','success');
+    }catch(error){
+      msg(error.message||'Unable to save payment settings.','error');
+    }finally{
+      setSaving(false,'Save Stripe configuration');
+    }
+  }
+  if(mode)mode.addEventListener('change',load);
+  form.addEventListener('submit',function(event){event.preventDefault();saveSettings();});
   if(keyButton)keyButton.addEventListener('click',generateKey);
   if(copyButton)copyButton.addEventListener('click',copyKeyBlock);
   if(cashForm&&cashToggle){cashToggle.addEventListener('change',function(){saveCash(null)});cashForm.addEventListener('submit',function(event){event.preventDefault();saveCash(cashForm.querySelector('button[type="submit"]'))})}
