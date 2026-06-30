@@ -2,14 +2,14 @@
 declare(strict_types=1);
 require_once __DIR__ . '/_checkout_session.php';
 
-function mg_checkout_local_redirect(mixed $value,string $fallback): string
+function mg_checkout_local_redirect($value,string $fallback): string
 {
     $path=trim((string)$value);
     if($path===''||!str_starts_with($path,'/')||str_starts_with($path,'//')||str_contains($path,"\r")||str_contains($path,"\n"))return $fallback;
     return mb_substr($path,0,500);
 }
 
-function mg_checkout_provider_choice(mixed $value): string
+function mg_checkout_provider_choice($value): string
 {
     $provider=strtolower(trim((string)$value));
     if($provider==='card')return 'stripe';
@@ -49,6 +49,7 @@ try{
     if($pdo->inTransaction())$pdo->rollBack();
     mg_security_log('error','commerce.checkout_session_create_failed','Checkout session creation failed.',[
         'exception_type'=>get_class($e),
+        'message'=>$e->getMessage(),
     ],(int)$user['id']);
     mg_fail('Unable to create checkout session.',500);
 }
