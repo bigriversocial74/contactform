@@ -43,31 +43,20 @@ window.Microgifter = window.Microgifter || {};
     return !!(node && node.closest('.mg-canvas-crm-drawer, .mg-canvas-trigger-settings-drawer, .mg-canvas-trigger-drawer, .mg-canvas-settings-drawer, .mg-canvas-drawer, .mg-merchant-avatar-drawer, .mg-customer-avatar-drawer, .mg-avatar-drawer, [data-canvas-drawer], [data-trigger-settings-drawer], [data-merchant-drawer], [data-customer-drawer], [data-avatar-drawer]'));
   }
 
-  function wrapTextNodes(button, label) {
-    if (button.querySelector('.mg-canvas-tab-label')) return;
-    var iconNodes = Array.prototype.slice.call(button.querySelectorAll('svg,i,.icon,.mg-icon,.mg-canvas-tab-icon'));
-    iconNodes.forEach(function (node) { node.setAttribute('aria-hidden', 'true'); });
-    var existing = button.innerHTML;
-    button.innerHTML = '<span class="mg-canvas-tab-icon" aria-hidden="true">' + iconFor(label) + '</span><span class="mg-canvas-tab-label">' + existing + '</span>';
-  }
-
   function decorateButton(button) {
     if (!button || button.dataset.mobileIconReady === '1' || !isTabButton(button) || !inCanvasDrawer(button)) return;
     var label = labelFor(button);
     if (!label) return;
     button.dataset.mobileIconReady = '1';
     button.classList.add('mg-canvas-mobile-icon-tab');
-    if (!button.querySelector('.mg-canvas-tab-icon')) wrapTextNodes(button, label);
-    else if (!button.querySelector('.mg-canvas-tab-label')) {
-      var existing = button.innerHTML;
-      button.innerHTML = '<span class="mg-canvas-tab-label">' + existing + '</span>';
-      button.insertAdjacentHTML('afterbegin', '<span class="mg-canvas-tab-icon" aria-hidden="true">' + iconFor(label) + '</span>');
-    }
+    button.dataset.mobileIcon = iconFor(label);
     if (!button.getAttribute('aria-label')) button.setAttribute('aria-label', label.replace(/\s+/g, ' '));
   }
 
   function decorateAvatars() {
     root.querySelectorAll('.mg-canvas-avatar-card,.mg-canvas-agent-node,.mg-canvas-merchant-node,[data-merchant-avatar-settings],[data-canvas-customer-avatar]').forEach(function (card) {
+      if (card.dataset.mobileAvatarReady === '1') return;
+      card.dataset.mobileAvatarReady = '1';
       card.classList.add('mg-canvas-mobile-simple-avatar');
       if (!card.getAttribute('aria-label')) {
         var name = card.querySelector('strong,[data-canvas-avatar-name]');
@@ -84,5 +73,5 @@ window.Microgifter = window.Microgifter || {};
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', decorate, { once:true });
   decorate();
-  new MutationObserver(decorate).observe(document.body, { childList:true, subtree:true, attributes:true, attributeFilter:['class','aria-hidden','data-active'] });
+  new MutationObserver(decorate).observe(document.body, { childList:true, subtree:true });
 })(window, document);
