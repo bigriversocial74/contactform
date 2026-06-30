@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded',function(){
 // regift, latest-sender Follow Up, merchant claim, message, and tip.
 // Every mutation is idempotent and its backend authority records a timestamp.
 var app=document.querySelector('[data-gift-center]');if(!app)return;
+(function(){if(!document.querySelector('link[href="/assets/css/gift-product-media.css"]')){var link=document.createElement('link');link.rel='stylesheet';link.href='/assets/css/gift-product-media.css';document.head.appendChild(link);}if(!document.querySelector('script[src="/assets/js/gift-product-media-view.js"]')){var script=document.createElement('script');script.src='/assets/js/gift-product-media-view.js';script.defer=true;document.body.appendChild(script);}})();
 var modal=app.querySelector('[data-action-modal]'),modalBody=app.querySelector('[data-action-modal-body]'),list=app.querySelector('[data-gift-list]');
 function esc(value){return String(value==null?'':value).replace(/[&<>"']/g,function(char){return({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'})[char];});}
 function key(type,item){if(window.crypto&&typeof window.crypto.randomUUID==='function')return 'ac-'+type+'-'+window.crypto.randomUUID();return 'ac-'+type+'-'+String(item.instance_id||item.action_item_id||'item')+'-'+Date.now();}
