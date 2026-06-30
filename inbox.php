@@ -20,6 +20,7 @@ $page_styles = [
 $page_scripts = [
     '/assets/js/gift-action-center.js',
     '/assets/js/gift-product-media-view.js',
+    '/assets/js/gift-action-center-load-envelope.js',
     '/assets/js/gift-action-center-claim-modal.js',
     '/assets/js/gift-action-center-claim-click.js',
     '/assets/js/gift-action-center-send-modal.js',

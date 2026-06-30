@@ -6,6 +6,7 @@
 @import url('/assets/css/agent-tools.css');
 @import url('/assets/css/admin-ai.css');
 @import url('/assets/css/header-signals.css');
+@import url('/assets/css/create-menu-fullscreen.css');
 
 /* Remove the legacy M3-style primary links from the shared header. */
 .mg-unified-header .mg-site-nav > a[href="/index.php"],
@@ -72,9 +73,9 @@ body.mg-crm-drawer-open .mg-unified-header{z-index:500!important}
 body:has(.mg-action-modal[aria-hidden="false"]){overflow:hidden!important}
 
 /* Create menu/modal */
-.mg-create-menu{z-index:40020!important}
-.mg-create-menu-backdrop{z-index:40020!important}
-.mg-create-menu-dialog{z-index:40030!important}
+.mg-create-menu{z-index:70000!important}
+.mg-create-menu-backdrop{z-index:70000!important}
+.mg-create-menu-dialog{z-index:70010!important}
 
 /* Cart drawer */
 .mg-cart-drawer{overflow:hidden!important;z-index:60000!important}

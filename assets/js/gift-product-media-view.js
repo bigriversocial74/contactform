@@ -7,18 +7,10 @@
     const app = document.querySelector('[data-gift-center]');
     if (!app) return;
     const list = app.querySelector('[data-gift-list]');
-    const drawer = app.querySelector('[data-gift-drawer-content]');
     if (!list) return;
 
     const cache = Object.create(null);
     let busy = false;
-    let pending = '';
-
-    function esc(value) {
-      return String(value == null ? '' : value).replace(/[&<>"']/g, (char) => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-      })[char]);
-    }
 
     function cleanUrl(value) {
       const url = String(value || '').trim();
@@ -112,46 +104,11 @@
       });
     }
 
-    function assetMarkup(asset) {
-      const url = cleanUrl(asset.url);
-      if (!url) return '';
-      const type = String(asset.asset_type || '').toLowerCase() || kindFromUrl(url, 'download');
-      const mime = String(asset.mime_type || '').toLowerCase();
-      const label = esc(asset.title || (type.charAt(0).toUpperCase() + type.slice(1)));
-      if (type === 'image' || mime.indexOf('image/') === 0) {
-        return '<figure class="mg-product-media-asset"><img src="' + esc(url) + '" alt="' + label + '" loading="lazy"><figcaption>' + label + '</figcaption></figure>';
-      }
-      if (type === 'video' || mime.indexOf('video/') === 0) {
-        return '<figure class="mg-product-media-asset"><video src="' + esc(url) + '" controls preload="metadata"></video><figcaption>' + label + '</figcaption></figure>';
-      }
-      if (type === 'audio' || mime.indexOf('audio/') === 0) {
-        return '<div class="mg-product-media-audio"><strong>' + label + '</strong><audio src="' + esc(url) + '" controls preload="metadata"></audio></div>';
-      }
-      return '<a class="mg-product-media-link" href="' + esc(url) + '" target="_blank" rel="noopener">Open ' + label + '</a>';
-    }
-
-    function inject(id) {
-      if (!drawer || !id || !cache[id]) return;
-      const item = cache[id];
-      const old = drawer.querySelector('[data-product-media-drawer]');
-      if (old) old.remove();
-      if (!hasMedia(item)) return;
-      const assets = item.media_assets && item.media_assets.length ? item.media_assets : (item.cover_url ? [{ role: 'cover', asset_type: 'image', title: 'Product image', url: item.cover_url }] : []);
-      if (!assets.length) return;
-      const panel = document.createElement('section');
-      panel.className = 'mg-product-media-drawer';
-      panel.setAttribute('data-product-media-drawer', '');
-      panel.innerHTML = '<span class="mg-eyebrow">Product media</span><h3>' + esc(item.title || 'Gift media') + '</h3>' +
-        '<div class="mg-product-media-grid">' + assets.map(assetMarkup).join('') + '</div>';
-      drawer.insertBefore(panel, drawer.firstChild);
-    }
-
     function load(wanted) {
       const unique = Array.from(new Set((wanted || []).filter(Boolean)));
       const missing = unique.filter((id) => !cache[id]);
       if (!missing.length) {
         apply();
-        if (pending) inject(pending);
         return Promise.resolve();
       }
       return fetch('/api/account/action-center-product-media.php?ids=' + encodeURIComponent(missing.join(',')), { credentials: 'same-origin' })
@@ -161,7 +118,6 @@
           Object.keys(data.items || {}).forEach((id) => { cache[id] = normalize(data.items[id] || {}); });
           missing.forEach((id) => { if (!cache[id]) cache[id] = normalize({}); });
           apply();
-          if (pending) inject(pending);
         })
         .catch((error) => console.error(error));
     }
@@ -173,21 +129,6 @@
     }
 
     new MutationObserver(() => window.requestAnimationFrame(run)).observe(list, { childList: true, subtree: false });
-
-    app.addEventListener('click', (event) => {
-      const button = event.target.closest('[data-gift-action="load"]');
-      const row = event.target.closest('[data-gift-id]');
-      if (!button || !row) return;
-      pending = row.getAttribute('data-gift-id') || '';
-      window.setTimeout(() => load([pending]).then(() => inject(pending)), 80);
-    }, true);
-
-    document.addEventListener('mg:gift-content:opened', (event) => {
-      pending = (event.detail && event.detail.actionItemId) || '';
-      if (!pending && event.detail && event.detail.item) pending = event.detail.item.action_item_id || '';
-      if (pending) load([pending]).then(() => inject(pending));
-    });
-
     run();
   });
 })();
