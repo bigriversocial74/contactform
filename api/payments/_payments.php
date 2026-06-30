@@ -15,6 +15,18 @@ function mg_payment_is_live(): bool
     return mg_payment_mode()==='live';
 }
 
+function mg_payment_cash_enabled(PDO $pdo): bool
+{
+    $row=mg_payment_platform_credential_row($pdo,'cash','test',false);
+    return $row?(bool)($row['enabled']??false):false;
+}
+
+function mg_payment_checkout_provider_key(PDO $pdo): string
+{
+    if(mg_payment_cash_enabled($pdo))return 'cash';
+    return mg_payment_provider_key();
+}
+
 function mg_payment_webhook_secret(string $provider,?PDO $pdo=null): string
 {
     $provider=strtolower(trim($provider));
@@ -81,7 +93,7 @@ function mg_payment_provider_account(PDO $pdo,int $merchantUserId,string $provid
 
 function mg_payment_assert_checkout_ready(PDO $pdo,array $order,string $provider): ?array
 {
-    if($provider==='sandbox')return null;
+    if($provider==='sandbox'||$provider==='cash')return null;
     if($provider!=='stripe')throw new RuntimeException('Unsupported payment provider: '.$provider);
     $config=mg_payment_platform_config($pdo,'stripe',mg_payment_mode());
     if(!$config['enabled']||trim((string)$config['secret_key'])===''||trim((string)$config['webhook_secret'])===''){
@@ -101,7 +113,7 @@ function mg_payment_provider_create_intent(array $request,?PDO $pdo=null): array
         $pdo??=mg_db();
         return mg_stripe_create_payment_intent($pdo,$request);
     }
-    if(mg_payment_is_live()&&$provider!=='sandbox'){
+    if(mg_payment_is_live()&&!in_array($provider,['sandbox','cash'],true)){
         throw new RuntimeException('Live provider intent creation requires the configured provider adapter.');
     }
     $reference='pi_test_'.str_replace('-','',mg_public_uuid());
@@ -127,7 +139,7 @@ function mg_payment_provider_retrieve_intent(string $provider,string $providerRe
             'status'=>(string)($intent['status']??'created'),
         ];
     }
-    if(mg_payment_is_live()&&$provider!=='sandbox'){
+    if(mg_payment_is_live()&&!in_array($provider,['sandbox','cash'],true)){
         throw new RuntimeException('Live provider intent retrieval requires the configured provider adapter.');
     }
     $secret=(string)(getenv('MG_PAYMENT_SANDBOX_SECRET')?:'microgifter-sandbox');
