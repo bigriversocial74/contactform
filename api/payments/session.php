@@ -14,44 +14,18 @@ function mg_checkout_column_exists(PDO $pdo,string $table,string $column): bool
     }
 }
 
-function mg_checkout_select_expr(PDO $pdo,string $table,string $column,string $expr,string $fallback): string
+function mg_checkout_session_payment_intent(PDO $pdo,array $checkout): ?array
 {
-    return mg_checkout_column_exists($pdo,$table,$column)?$expr.' '.$column:$fallback.' '.$column;
-}
-
-function mg_checkout_session_query(PDO $pdo): string
-{
-    $hasPaymentIntentId=mg_checkout_column_exists($pdo,'checkout_sessions','payment_intent_id');
-    $providerSession=mg_checkout_select_expr($pdo,'checkout_sessions','provider_session_reference','cs.provider_session_reference',"''");
-    $expires=mg_checkout_select_expr($pdo,'checkout_sessions','expires_at','cs.expires_at','NULL');
-    if($hasPaymentIntentId){
-        return "SELECT cs.public_id session_id,cs.status session_status,cs.provider_key,
-                       {$providerSession},{$expires},
-                       COALESCE(pi_link.public_id,pi_order.public_id,'') payment_intent_id,
-                       COALESCE(pi_link.status,pi_order.status,'created') payment_intent_status,
-                       o.public_id order_id,o.currency,o.subtotal_cents,o.tax_cents,o.discount_cents,
-                       o.platform_fee_cents,o.total_cents,o.payment_status,o.fulfillment_status,
-                       o.merchant_user_id,'' merchant_name
-                FROM checkout_sessions cs
-                INNER JOIN commerce_orders o ON o.id=cs.order_id
-                LEFT JOIN payment_intents pi_link ON pi_link.id=cs.payment_intent_id AND pi_link.order_id=cs.order_id
-                LEFT JOIN payment_intents pi_order ON pi_order.order_id=cs.order_id AND pi_order.provider_key=cs.provider_key
-                WHERE cs.public_id=? AND o.buyer_user_id=?
-                ORDER BY COALESCE(pi_link.id,pi_order.id,0) DESC
-                LIMIT 1";
+    if(mg_checkout_column_exists($pdo,'checkout_sessions','payment_intent_id')&&!empty($checkout['payment_intent_id'])){
+        $stmt=$pdo->prepare('SELECT * FROM payment_intents WHERE id=? AND order_id=? LIMIT 1');
+        $stmt->execute([(int)$checkout['payment_intent_id'],(int)$checkout['order_id']]);
+        $row=$stmt->fetch(PDO::FETCH_ASSOC);
+        if($row)return $row;
     }
-    return "SELECT cs.public_id session_id,cs.status session_status,cs.provider_key,
-                   {$providerSession},{$expires},
-                   COALESCE(pi.public_id,'') payment_intent_id,COALESCE(pi.status,'created') payment_intent_status,
-                   o.public_id order_id,o.currency,o.subtotal_cents,o.tax_cents,o.discount_cents,
-                   o.platform_fee_cents,o.total_cents,o.payment_status,o.fulfillment_status,
-                   o.merchant_user_id,'' merchant_name
-            FROM checkout_sessions cs
-            INNER JOIN commerce_orders o ON o.id=cs.order_id
-            LEFT JOIN payment_intents pi ON pi.order_id=cs.order_id AND pi.provider_key=cs.provider_key
-            WHERE cs.public_id=? AND o.buyer_user_id=?
-            ORDER BY COALESCE(pi.id,0) DESC
-            LIMIT 1";
+    $stmt=$pdo->prepare('SELECT * FROM payment_intents WHERE order_id=? AND provider_key=? ORDER BY id DESC LIMIT 1');
+    $stmt->execute([(int)$checkout['order_id'],(string)$checkout['provider_key']]);
+    $row=$stmt->fetch(PDO::FETCH_ASSOC);
+    return $row?:null;
 }
 
 mg_require_method('GET');
@@ -61,39 +35,65 @@ if($id==='')mg_fail('Checkout session is required.',422);
 
 $pdo=mg_db();
 try{
-    $stmt=$pdo->prepare(mg_checkout_session_query($pdo));
-    $stmt->execute([$id,(int)$user['id']]);
-    $session=$stmt->fetch(PDO::FETCH_ASSOC);
-    if(!$session)mg_fail('Checkout session not found for this account.',404);
+    $checkoutStmt=$pdo->prepare('SELECT * FROM checkout_sessions WHERE public_id=? LIMIT 1');
+    $checkoutStmt->execute([$id]);
+    $checkout=$checkoutStmt->fetch(PDO::FETCH_ASSOC);
+    if(!$checkout)mg_fail('Checkout session not found for this account.',404);
 
-    $expired=!empty($session['expires_at'])&&strtotime((string)$session['expires_at'])<=time();
-    if($expired&&in_array((string)$session['session_status'],['created','open'],true)){
-        $session['session_status']='expired';
-    }
-    $localProvider=in_array((string)$session['provider_key'],['sandbox','cash'],true);
-    $session['can_confirm']=(
-        $localProvider
-        &&in_array((string)$session['session_status'],['created','open'],true)
-        &&(string)$session['payment_status']==='unpaid'
-        &&!in_array((string)$session['payment_intent_status'],['failed','cancelled','succeeded'],true)
-    );
-    $session['can_confirm_cash']=$session['provider_key']==='cash'&&$session['can_confirm'];
-    $session['checkout_url']='';
-    $session['can_continue_provider']=false;
+    $orderStmt=$pdo->prepare('SELECT * FROM commerce_orders WHERE id=? AND buyer_user_id=? LIMIT 1');
+    $orderStmt->execute([(int)$checkout['order_id'],(int)$user['id']]);
+    $order=$orderStmt->fetch(PDO::FETCH_ASSOC);
+    if(!$order)mg_fail('Checkout session not found for this account.',404);
 
-    $items=$pdo->prepare(
-        'SELECT title_snapshot,quantity,unit_amount_cents,line_total_cents,currency
-         FROM commerce_order_items coi
-         INNER JOIN commerce_orders o ON o.id=coi.order_id
-         WHERE o.public_id=? AND o.buyer_user_id=?
-         ORDER BY coi.id'
-    );
-    $items->execute([$session['order_id'],(int)$user['id']]);
+    $intent=mg_checkout_session_payment_intent($pdo,$checkout);
+    if(!$intent)mg_fail('Payment intent not found for this checkout session.',404);
+
+    $expires=(string)($checkout['expires_at']??'');
+    $sessionStatus=(string)($checkout['status']??'open');
+    $expired=$expires!==''&&strtotime($expires)!==false&&strtotime($expires)<=time();
+    if($expired&&in_array($sessionStatus,['created','open'],true))$sessionStatus='expired';
+
+    $provider=(string)($checkout['provider_key']??$intent['provider_key']??'');
+    $intentStatus=(string)($intent['status']??'created');
+    $localProvider=in_array($provider,['sandbox','cash'],true);
+    $canConfirm=$localProvider
+        &&in_array($sessionStatus,['created','open'],true)
+        &&(string)$order['payment_status']==='unpaid'
+        &&!in_array($intentStatus,['failed','cancelled','succeeded'],true);
+
+    $session=[
+        'session_id'=>(string)$checkout['public_id'],
+        'session_status'=>$sessionStatus,
+        'provider_key'=>$provider,
+        'provider_session_reference'=>(string)($checkout['provider_session_reference']??''),
+        'expires_at'=>$expires,
+        'payment_intent_id'=>(string)($intent['public_id']??''),
+        'payment_intent_status'=>$intentStatus,
+        'order_id'=>(string)$order['public_id'],
+        'currency'=>(string)$order['currency'],
+        'subtotal_cents'=>(int)$order['subtotal_cents'],
+        'tax_cents'=>(int)$order['tax_cents'],
+        'discount_cents'=>(int)$order['discount_cents'],
+        'platform_fee_cents'=>(int)$order['platform_fee_cents'],
+        'total_cents'=>(int)$order['total_cents'],
+        'payment_status'=>(string)$order['payment_status'],
+        'fulfillment_status'=>(string)$order['fulfillment_status'],
+        'merchant_user_id'=>(int)$order['merchant_user_id'],
+        'merchant_name'=>'',
+        'can_confirm'=>$canConfirm,
+        'can_confirm_cash'=>$provider==='cash'&&$canConfirm,
+        'checkout_url'=>'',
+        'can_continue_provider'=>false,
+    ];
+
+    $items=$pdo->prepare('SELECT title_snapshot,quantity,unit_amount_cents,line_total_cents,currency FROM commerce_order_items WHERE order_id=? ORDER BY id');
+    $items->execute([(int)$order['id']]);
     mg_ok(['session'=>$session,'items'=>$items->fetchAll(PDO::FETCH_ASSOC)]);
 }catch(Throwable $error){
     mg_security_log('error','commerce.checkout_session_load_failed','Checkout session load failed.',[
         'session_id'=>$id,
         'exception_type'=>get_class($error),
+        'message'=>$error->getMessage(),
     ],(int)$user['id']);
     mg_fail('Unable to load checkout session. Please return to the cart and create a new checkout session.',500);
 }
