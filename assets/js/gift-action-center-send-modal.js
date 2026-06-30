@@ -5,9 +5,10 @@ document.addEventListener('DOMContentLoaded', function () {
   if (!app) return;
 
   var modal = app.querySelector('[data-action-modal]');
+  var modalBody = app.querySelector('[data-action-modal-body]');
   var modalTitle = app.querySelector('[data-action-modal-title]');
   var modalEyebrow = app.querySelector('[data-action-modal-eyebrow]');
-  if (!modal) return;
+  if (!modal || !modalBody) return;
 
   function esc(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, function (character) {
@@ -42,74 +43,48 @@ document.addEventListener('DOMContentLoaded', function () {
     return '<span>' + esc(firstLetter(title)) + '</span>';
   }
 
-  function updateLabelText(label, value) {
-    if (!label) return;
-    for (var i = 0; i < label.childNodes.length; i += 1) {
-      if (label.childNodes[i].nodeType === Node.TEXT_NODE && label.childNodes[i].nodeValue.trim()) {
-        label.childNodes[i].nodeValue = value;
-        return;
-      }
-    }
-    label.insertBefore(document.createTextNode(value), label.firstChild);
-  }
-
-  function polishSendModal(row) {
-    var form = modal.querySelector('.mg-action-form[data-action-form="send"]');
-    if (!form) return;
-
-    modal.classList.add('mg-send-product-modal');
-    if (modalTitle) modalTitle.textContent = 'Regift Microgift';
-    if (modalEyebrow) modalEyebrow.textContent = '';
-
-    form.querySelectorAll('.mg-action-form-note').forEach(function (note) { note.remove(); });
-
+  function buildExactSendModal(row) {
     var title = row && row.querySelector('.mg-gift-row-main h3') ? row.querySelector('.mg-gift-row-main h3').textContent.trim() : 'Microgift';
     var merchant = rowMerchant(row);
 
-    if (!form.querySelector('[data-send-product-hero]')) {
-      form.insertAdjacentHTML('afterbegin',
-        '<section class="mg-send-product-hero" data-send-product-hero>' +
-          '<div class="mg-send-product-thumb">' + thumbMarkup(row, title) + '</div>' +
-          '<div class="mg-send-product-copy">' +
-            '<h3>' + esc(title) + '</h3>' +
-            '<p>' + esc(merchant) + '</p>' +
-          '</div>' +
-        '</section>'
-      );
-    }
+    modal.classList.add('mg-send-product-modal');
+    modal.classList.add('mg-send-exact-modal');
+    if (modalTitle) modalTitle.textContent = '';
+    if (modalEyebrow) modalEyebrow.textContent = '';
 
-    var labels = form.querySelectorAll('label');
-    var recipientLabel = labels[0] || null;
-    var messageLabel = labels[1] || null;
-    var recipient = recipientLabel ? recipientLabel.querySelector('input') : null;
-    var message = messageLabel ? messageLabel.querySelector('textarea') : null;
+    modalBody.innerHTML = '<form class="mg-send-exact-form" data-action-form="send">' +
+      '<section class="mg-send-exact-product" aria-label="Selected gift">' +
+        '<div class="mg-send-exact-thumb">' + thumbMarkup(row, title) + '</div>' +
+        '<div class="mg-send-exact-product-copy">' +
+          '<h2>' + esc(title) + '</h2>' +
+          '<p>' + esc(merchant) + '</p>' +
+        '</div>' +
+      '</section>' +
+      '<label class="mg-send-exact-field mg-send-exact-recipient">' +
+        '<span>Regift to</span>' +
+        '<div class="mg-send-exact-input-shell">' +
+          '<span class="mg-send-exact-search" aria-hidden="true"></span>' +
+          '<input type="text" name="recipient" required autocomplete="off" placeholder="Start typing a follower or user">' +
+        '</div>' +
+        '<small>Start typing to find followers and users.</small>' +
+      '</label>' +
+      '<label class="mg-send-exact-field mg-send-exact-message">' +
+        '<span>Message</span>' +
+        '<textarea name="message" maxlength="500" placeholder="Add a note to travel with the gift"></textarea>' +
+        '<em data-send-message-count>0/500</em>' +
+      '</label>' +
+      '<div class="mg-send-exact-actions">' +
+        '<button class="mg-send-exact-cancel" type="button" data-action-modal-close>Cancel</button>' +
+        '<button class="mg-send-exact-primary" type="submit">Regift Microgift</button>' +
+      '</div>' +
+    '</form>';
 
-    if (recipientLabel) {
-      recipientLabel.classList.add('mg-send-recipient-field');
-      updateLabelText(recipientLabel, 'Regift to');
-      if (!recipientLabel.querySelector('.mg-send-recipient-helper')) {
-        recipientLabel.insertAdjacentHTML('afterend', '<p class="mg-send-recipient-helper">Start typing to find followers and users.</p>');
-      }
-    }
-    if (recipient) {
-      recipient.placeholder = 'Start typing a follower or user';
-      recipient.setAttribute('autocomplete', 'off');
-    }
-
-    if (messageLabel) {
-      messageLabel.classList.add('mg-send-message-field');
-      updateLabelText(messageLabel, 'Message');
-    }
-    if (message) {
-      message.placeholder = 'Add a note to travel with the gift';
-      message.maxLength = 500;
-      if (!messageLabel.querySelector('.mg-send-char-count')) {
-        messageLabel.insertAdjacentHTML('beforeend', '<span class="mg-send-char-count">0/500</span>');
-      }
-      var counter = messageLabel.querySelector('.mg-send-char-count');
-      var update = function () { counter.textContent = String(message.value.length) + '/500'; };
-      message.addEventListener('input', update);
-      update();
+    var textarea = modalBody.querySelector('textarea[name="message"]');
+    var counter = modalBody.querySelector('[data-send-message-count]');
+    if (textarea && counter) {
+      textarea.addEventListener('input', function () {
+        counter.textContent = String(textarea.value.length) + '/500';
+      });
     }
   }
 
@@ -118,9 +93,10 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!action) return;
     if (action.dataset.giftAction !== 'send') {
       modal.classList.remove('mg-send-product-modal');
+      modal.classList.remove('mg-send-exact-modal');
       return;
     }
     var row = action.closest('[data-gift-id]');
-    window.requestAnimationFrame(function () { polishSendModal(row); });
+    window.requestAnimationFrame(function () { buildExactSendModal(row); });
   });
 });
