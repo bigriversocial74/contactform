@@ -3,6 +3,17 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_capture.php';
 
+function mg_cash_checkout_column_exists(PDO $pdo,string $table,string $column): bool
+{
+    try{
+        $stmt=$pdo->prepare('SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? AND COLUMN_NAME=?');
+        $stmt->execute([$table,$column]);
+        return (int)$stmt->fetchColumn()>0;
+    }catch(Throwable){
+        return false;
+    }
+}
+
 mg_require_method('POST');
 $user=mg_require_api_user();
 $input=mg_input();
@@ -14,6 +25,10 @@ if($sessionId==='')mg_fail('Checkout session is required.',422);
 $pdo=mg_db();
 $pdo->beginTransaction();
 try{
+    $hasPaymentIntentId=mg_cash_checkout_column_exists($pdo,'checkout_sessions','payment_intent_id');
+    $paymentJoin=$hasPaymentIntentId
+        ? 'INNER JOIN payment_intents pi ON pi.id=cs.payment_intent_id AND pi.order_id=o.id'
+        : 'INNER JOIN payment_intents pi ON pi.order_id=o.id AND pi.provider_key=cs.provider_key';
     $stmt=$pdo->prepare(
         "SELECT cs.id session_db_id,cs.public_id session_id,cs.status session_status,
                 cs.provider_key session_provider,cs.expires_at,
@@ -23,8 +38,9 @@ try{
                 pi.provider_intent_reference
          FROM checkout_sessions cs
          INNER JOIN commerce_orders o ON o.id=cs.order_id
-         INNER JOIN payment_intents pi ON pi.id=cs.payment_intent_id AND pi.order_id=o.id
+         {$paymentJoin}
          WHERE cs.public_id=? AND o.buyer_user_id=?
+         ORDER BY pi.id DESC
          LIMIT 1 FOR UPDATE"
     );
     $stmt->execute([$sessionId,(int)$user['id']]);
