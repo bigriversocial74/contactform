@@ -12,6 +12,7 @@ $header_mode = 'public';
 $page_styles = [
     '/assets/css/public-header-footer-fixes.css',
     '/assets/css/homepage-drm.css',
+    '/assets/css/homepage-hero-search.css',
 ];
 $page_scripts = [
     '/assets/js/homepage-drm.js',
@@ -48,12 +49,19 @@ require __DIR__ . '/includes/header.php';
   <section class="mg-hero" aria-labelledby="mgHeroTitle">
     <div class="mg-hero-grid">
       <div class="mg-hero-copy" data-reveal="left">
-        <span class="mg-hero-pretitle">Build A Network Powered With Predictive Intelligence</span>
-        <h1 class="mg-title" id="mgHeroTitle"><span class="mg-title-line">THE VALUE OF</span><span class="mg-title-line">SOCIAL GIFTING</span><span class="mg-title-line">JUST GOT REAL</span></h1>
-        <p class="mg-note"><strong>Connect &amp; build a loyal customer base:</strong> Microgifter helps local businesses turn support into structured data, use that data to discover what customers value, and earn more from the relationships they already create.</p>
+        <form class="mg-hero-search" data-hero-search action="/discover.php" method="get" role="search" autocomplete="off">
+          <label class="mg-hero-search-label" for="mgHeroSearch">Search businesses or creators</label>
+          <div class="mg-hero-search-control">
+            <input id="mgHeroSearch" name="q" type="search" data-hero-search-input placeholder="Search business name or user name" aria-label="Search business name or user name">
+            <button type="submit">Search</button>
+          </div>
+          <div class="mg-hero-search-results" data-hero-search-results hidden></div>
+        </form>
+        <h1 class="mg-title" id="mgHeroTitle"><span class="mg-title-line">THE ALL-IN-ONE</span><span class="mg-title-line">SOCIAL CRM FOR</span><span class="mg-title-line">BUSINESSES &amp; CREATORS</span></h1>
+        <p class="mg-note"><strong>Save time. Add customers. Increase sales.</strong> One dashboard gives you social tools, customer acquisition resources, and customer messaging designed to help you grow.</p>
         <div class="mg-actions">
-          <a class="mg-btn mg-btn-primary" href="/signup.php">Create Account <span aria-hidden="true">→</span></a>
-          <a class="mg-btn mg-btn-secondary" href="/learn-more.php">Book Demo <span aria-hidden="true">→</span></a>
+          <a class="mg-btn mg-btn-primary" href="/signup.php">Create Your Wallet <span aria-hidden="true">→</span></a>
+          <a class="mg-btn mg-btn-secondary" href="/learn-more.php">Create Merchant Account <span aria-hidden="true">→</span></a>
         </div>
       </div>
 
