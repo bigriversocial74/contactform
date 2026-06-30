@@ -10,6 +10,9 @@ document.addEventListener('DOMContentLoaded', function () {
   var modalEyebrow = app.querySelector('[data-action-modal-eyebrow]');
   if (!modal || !modalBody) return;
 
+  var searchController = null;
+  var searchTimer = null;
+
   function esc(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, function (character) {
       return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character];
@@ -43,6 +46,130 @@ document.addEventListener('DOMContentLoaded', function () {
     return '<span>' + esc(firstLetter(title)) + '</span>';
   }
 
+  function recipientAvatarMarkup(profile) {
+    var name = profile.display_name || profile.name || profile.slug || 'User';
+    var avatar = profile.avatar_url || profile.avatar || profile.profile_image_url || '';
+    if (avatar) {
+      return '<img src="' + esc(avatar) + '" alt="' + esc(name) + ' profile picture" loading="lazy">';
+    }
+    return '<span>' + esc(firstLetter(name)) + '</span>';
+  }
+
+  function resultMarkup(profile, index) {
+    var name = profile.display_name || profile.name || profile.slug || 'Microgifter user';
+    var handle = profile.slug ? '@' + profile.slug : (profile.profile_type || 'profile');
+    var headline = profile.headline || profile.location || profile.profile_type || 'Microgifter profile';
+    var followers = profile.audience && typeof profile.audience.followers === 'number' ? profile.audience.followers : null;
+    var meta = followers !== null ? handle + ' · ' + followers + ' followers' : handle;
+    return '<button class="mg-send-result" type="button" role="option" data-recipient-index="' + String(index) + '">' +
+      '<span class="mg-send-result-avatar">' + recipientAvatarMarkup(profile) + '</span>' +
+      '<span class="mg-send-result-main"><strong>' + esc(name) + '</strong><em>' + esc(headline) + '</em><small>' + esc(meta) + '</small></span>' +
+      '</button>';
+  }
+
+  function renderResults(results, items, message) {
+    if (!results) return;
+    results.hidden = false;
+    results.innerHTML = items && items.length
+      ? '<div class="mg-send-results-list">' + items.map(resultMarkup).join('') + '</div>'
+      : '<div class="mg-send-results-empty">' + esc(message || 'No matching users found.') + '</div>';
+    results.__items = items || [];
+  }
+
+  function clearResults(results) {
+    if (!results) return;
+    results.hidden = true;
+    results.innerHTML = '';
+    results.__items = [];
+  }
+
+  function selectRecipient(form, profile) {
+    var input = form.querySelector('input[name="recipient"]');
+    var id = form.querySelector('input[name="recipient_profile_id"]');
+    var slug = form.querySelector('input[name="recipient_slug"]');
+    var selected = form.querySelector('[data-selected-recipient]');
+    var results = form.querySelector('[data-send-recipient-results]');
+    var name = profile.display_name || profile.name || profile.slug || '';
+    if (input) input.value = name;
+    if (id) id.value = profile.id || profile.public_id || '';
+    if (slug) slug.value = profile.slug || '';
+    if (selected) {
+      selected.hidden = false;
+      selected.innerHTML = '<span class="mg-send-selected-avatar">' + recipientAvatarMarkup(profile) + '</span>' +
+        '<span><strong>' + esc(name || 'Selected user') + '</strong><em>' + esc(profile.slug ? '@' + profile.slug : (profile.profile_type || 'profile')) + '</em></span>' +
+        '<button type="button" data-clear-recipient aria-label="Clear selected recipient">×</button>';
+    }
+    clearResults(results);
+  }
+
+  async function searchRecipients(form, query) {
+    var results = form.querySelector('[data-send-recipient-results]');
+    if (searchController) searchController.abort();
+    if (!query || query.trim().length < 1) {
+      clearResults(results);
+      return;
+    }
+    searchController = new AbortController();
+    renderResults(results, [], 'Searching users…');
+    try {
+      var url = '/api/public/discover.php?q=' + encodeURIComponent(query.trim()) + '&limit=8&sort=trending';
+      var response = await fetch(url, { headers: { 'Accept': 'application/json' }, signal: searchController.signal });
+      if (!response.ok) throw new Error('Search failed');
+      var payload = await response.json();
+      var items = payload && payload.data && payload.data.results && Array.isArray(payload.data.results.items)
+        ? payload.data.results.items
+        : [];
+      renderResults(results, items, 'No matching users found.');
+    } catch (error) {
+      if (error.name === 'AbortError') return;
+      renderResults(results, [], 'Unable to load users. Keep typing or try again.');
+    }
+  }
+
+  function wireRecipientSearch(form) {
+    var input = form.querySelector('input[name="recipient"]');
+    var results = form.querySelector('[data-send-recipient-results]');
+    var selected = form.querySelector('[data-selected-recipient]');
+    var id = form.querySelector('input[name="recipient_profile_id"]');
+    var slug = form.querySelector('input[name="recipient_slug"]');
+    if (!input || !results) return;
+
+    input.addEventListener('input', function () {
+      if (id) id.value = '';
+      if (slug) slug.value = '';
+      if (selected) {
+        selected.hidden = true;
+        selected.innerHTML = '';
+      }
+      if (searchTimer) window.clearTimeout(searchTimer);
+      searchTimer = window.setTimeout(function () { searchRecipients(form, input.value); }, 180);
+    });
+
+    input.addEventListener('focus', function () {
+      if (input.value.trim()) searchRecipients(form, input.value);
+    });
+
+    results.addEventListener('click', function (event) {
+      var button = event.target.closest('[data-recipient-index]');
+      if (!button) return;
+      var items = results.__items || [];
+      var profile = items[Number(button.dataset.recipientIndex)];
+      if (profile) selectRecipient(form, profile);
+    });
+
+    if (selected) {
+      selected.addEventListener('click', function (event) {
+        if (!event.target.closest('[data-clear-recipient]')) return;
+        selected.hidden = true;
+        selected.innerHTML = '';
+        if (id) id.value = '';
+        if (slug) slug.value = '';
+        input.value = '';
+        input.focus();
+      });
+    }
+  }
+
   function buildExactSendModal(row) {
     var title = row && row.querySelector('.mg-gift-row-main h3') ? row.querySelector('.mg-gift-row-main h3').textContent.trim() : 'Microgift';
     var merchant = rowMerchant(row);
@@ -64,9 +191,13 @@ document.addEventListener('DOMContentLoaded', function () {
         '<span>Regift to</span>' +
         '<div class="mg-send-exact-input-shell">' +
           '<span class="mg-send-exact-search" aria-hidden="true"></span>' +
-          '<input type="text" name="recipient" required autocomplete="off" placeholder="Start typing a follower or user">' +
+          '<input type="text" name="recipient" required autocomplete="off" placeholder="Start typing a follower or user" aria-expanded="false" aria-controls="mg-send-recipient-results">' +
+          '<input type="hidden" name="recipient_profile_id">' +
+          '<input type="hidden" name="recipient_slug">' +
         '</div>' +
-        '<small>Start typing to find followers and users.</small>' +
+        '<div class="mg-send-selected" data-selected-recipient hidden></div>' +
+        '<div class="mg-send-results" id="mg-send-recipient-results" data-send-recipient-results role="listbox" hidden></div>' +
+        '<small>Search followers and public Microgifter profiles. Tap a result to add the recipient.</small>' +
       '</label>' +
       '<label class="mg-send-exact-field mg-send-exact-message">' +
         '<span>Message</span>' +
@@ -74,11 +205,11 @@ document.addEventListener('DOMContentLoaded', function () {
         '<em data-send-message-count>0/500</em>' +
       '</label>' +
       '<div class="mg-send-exact-actions">' +
-        '<button class="mg-send-exact-cancel" type="button" data-action-modal-close>Cancel</button>' +
         '<button class="mg-send-exact-primary" type="submit">Regift Microgift</button>' +
       '</div>' +
     '</form>';
 
+    var form = modalBody.querySelector('.mg-send-exact-form');
     var textarea = modalBody.querySelector('textarea[name="message"]');
     var counter = modalBody.querySelector('[data-send-message-count]');
     if (textarea && counter) {
@@ -86,6 +217,7 @@ document.addEventListener('DOMContentLoaded', function () {
         counter.textContent = String(textarea.value.length) + '/500';
       });
     }
+    if (form) wireRecipientSearch(form);
   }
 
   app.addEventListener('click', function (event) {
