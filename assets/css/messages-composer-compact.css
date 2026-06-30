@@ -1,1 +1,2 @@
 /* Messages composer compact layout overrides. */
+body[data-page-id="messages"]{--mg-composer-height:88px}
