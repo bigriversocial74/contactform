@@ -89,3 +89,9 @@ body[data-authenticated="false"] .mg-site-footer a{color:#f1c15a!important}
 @media(max-width:860px){body[data-authenticated="false"] .mg-site-header.mg-market-universal-header .mg-header-inner{grid-template-columns:auto minmax(0,1fr) auto}body[data-authenticated="false"] .mg-header-market-label{display:none}body[data-authenticated="false"] .mg-header-market{grid-template-columns:1fr;padding:7px 8px}body[data-authenticated="false"] .mg-header-ticker-item span,body[data-authenticated="false"] .mg-header-ticker-item b{display:none}}
 @media(max-width:560px){body[data-authenticated="false"] .mg-header-market{display:none}body[data-authenticated="false"] .mg-site-header.mg-market-universal-header .mg-header-inner{grid-template-columns:1fr auto;min-height:62px!important}body[data-authenticated="false"] .mg-site-header.mg-market-universal-header{min-height:62px!important}}
 @media(min-width:761px){body[data-page-id="home"] .mg-v4 .mg-v4-visual{margin-top:200px!important}}
+
+@media(min-width:1101px){
+  .mg-investors-page .inv-hero{min-height:645px!important}
+  .mg-investors-page .inv-hero-chart{margin-top:20px!important;max-width:760px!important;position:relative;z-index:1}
+  .mg-investors-page .inv-metric-strip{margin-top:-46px!important;position:relative;z-index:3}
+}
