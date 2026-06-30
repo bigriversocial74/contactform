@@ -15,7 +15,7 @@ $appSidebarAfterNav = $canMerchantNav ? <<<'HTML'
 <div class="mg-sidebar-mobile-scanner">
   <button class="mg-sidebar-scanner-button" type="button" data-scanner-trigger aria-label="Open merchant scanner">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M7 8h2v2H7V8Zm4 0h2v2h-2V8Zm4 0h2v2h-2V8ZM7 12h2v2H7v-2Zm4 0h6v2h-6v-2ZM7 16h6v2H7v-2Zm8 0h2v2h-2v-2Z" fill="currentColor"/></svg>
-    <span><strong>Scanner</strong><small>Redeem voucher QR codes</small></span>
+    <span><strong>Scanner</strong><small>Redeem PPPM voucher QR codes</small></span>
   </button>
 </div>
 HTML : '';
@@ -97,6 +97,12 @@ require __DIR__ . '/app-sidebar.php';
 .mg-scanner-confirm-row{display:flex!important;justify-content:space-between!important;gap:12px!important;font-size:12px!important;color:#334155!important}
 .mg-scanner-confirm-row strong{color:#0f172a!important;text-align:right!important}
 .mg-scanner-receipt-link{display:inline-flex!important;align-items:center!important;justify-content:center!important;margin-top:10px!important;padding:9px 12px!important;border-radius:999px!important;background:#0f172a!important;color:#fff!important;text-decoration:none!important;font-weight:900!important;font-size:12px!important}
+.mg-scanner-manual-hidden{display:none!important}
+html body.mg-app-page .mg-scanner-modal .mg-scanner-settings{gap:14px!important}
+html body.mg-app-page .mg-scanner-modal .mg-scanner-location-note{margin:0!important}
+html body.mg-app-page .mg-scanner-modal .mg-scanner-actions{position:static!important;bottom:auto!important;display:grid!important;grid-template-columns:1fr!important;padding:0!important;background:transparent!important;box-shadow:none!important}
+html body.mg-app-page .mg-scanner-modal .mg-scanner-actions button{width:100%!important;min-height:54px!important;border-radius:16px!important;font-size:14px!important;font-weight:950!important}
+html body.mg-app-page .mg-scanner-modal .mg-scanner-actions button:disabled{opacity:.55!important;cursor:not-allowed!important;background:#e5e7eb!important;color:#64748b!important;border-color:#cbd5e1!important}
 @media(max-width:980px){
   html body.mg-app-page.mg-section-agent .mg-sidebar-mobile-scanner{display:block!important;margin:16px 0 0!important;padding-top:14px!important;border-top:1px solid #e5edf7!important}
   html body.mg-app-page.mg-section-agent .mg-sidebar-scanner-button{width:100%!important;min-height:60px!important;display:grid!important;grid-template-columns:42px minmax(0,1fr)!important;align-items:center!important;gap:12px!important;padding:12px!important;border:1px solid #bfdbfe!important;border-radius:18px!important;background:#eff6ff!important;color:#1455d9!important;text-align:left!important;box-shadow:0 12px 26px rgba(37,99,235,.08)!important}
@@ -117,20 +123,17 @@ require __DIR__ . '/app-sidebar.php';
       <button type="button" data-scanner-close aria-label="Close scanner">x</button>
     </header>
     <div class="mg-scanner-body">
-      <div class="mg-scanner-viewfinder" data-scanner-camera>
+      <div class="mg-scanner-viewfinder" data-scanner-camera data-camera-facing="user">
         <video data-scanner-video muted playsinline></video>
         <div class="mg-scanner-frame" aria-hidden="true"></div>
-        <p data-scanner-status>Camera is off. Start scanner or enter a voucher manually.</p>
+        <p data-scanner-status>Select a scanner location. Camera starts after permission is approved.</p>
       </div>
       <div class="mg-scanner-settings">
-        <label>Merchant location<select data-scanner-location><option value="">Choose scanner location</option></select></label>
+        <label>Merchant location<select data-scanner-location><option value="">Loading scanner locations…</option></select></label>
         <div class="mg-scanner-location-note" data-scanner-location-note>Choose a location with an active claim code.</div>
-        <label>Voucher, gift ID, or QR value<input data-scanner-scan-value type="text" autocomplete="off" placeholder="Scan QR code or enter GFT-..." inputmode="text"></label>
-        <div class="mg-scanner-auto-claim">
-          <label class="mg-scanner-toggle"><input type="checkbox" data-scanner-auto-claim checked><span>Auto claim after a valid scan</span></label>
-          <label class="mg-scanner-toggle"><input type="checkbox" data-scanner-two-step checked><span>Require final confirmation before redeeming</span></label>
-          <p>Scanner checks the selected merchant location and active claim code before redeeming the voucher.</p>
-        </div>
+        <input class="mg-scanner-manual-hidden" data-scanner-scan-value type="text" autocomplete="off" tabindex="-1" aria-hidden="true">
+        <input class="mg-scanner-manual-hidden" type="checkbox" data-scanner-auto-claim checked tabindex="-1" aria-hidden="true">
+        <input class="mg-scanner-manual-hidden" type="checkbox" data-scanner-two-step checked tabindex="-1" aria-hidden="true">
         <div class="mg-scanner-result" data-scanner-result hidden></div>
         <div class="mg-scanner-confirm" data-scanner-confirm hidden>
           <strong>Confirm redemption</strong>
@@ -142,14 +145,13 @@ require __DIR__ . '/app-sidebar.php';
           </div>
         </div>
         <div class="mg-scanner-actions">
-          <button type="button" data-scanner-start>Start camera</button>
-          <button type="button" data-scanner-stop>Stop</button>
-          <button class="is-primary" type="button" data-scanner-verify>Verify manual entry</button>
+          <button class="is-primary" type="button" data-scanner-start disabled>Scan now</button>
         </div>
       </div>
     </div>
   </div>
 </section>
+<script src="/assets/js/merchant-scanner-cleanup.js"></script>
 <script>
 (function(document){
   'use strict';
