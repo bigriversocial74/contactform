@@ -10,6 +10,10 @@ document.addEventListener('DOMContentLoaded', function () {
   var summary = root.querySelector('[data-agent-chat-summary]');
   var mobileSummary = root.querySelector('[data-agent-chat-summary-mobile]');
 
+  function isMobile() {
+    return window.matchMedia && window.matchMedia('(max-width: 760px)').matches;
+  }
+
   function syncSummary() {
     if (!summary || !mobileSummary) return;
     mobileSummary.textContent = summary.textContent || 'Overview · Last 90 days · Action plan';
@@ -27,11 +31,31 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  function isMenuTrigger(element) {
+    if (!element) return false;
+    var trigger = element.closest('button,a');
+    if (!trigger) return false;
+    if (trigger.matches('[data-agent-chat-drawer-open]')) return true;
+    if (trigger.matches('[data-app-sidebar-toggle],[data-sidebar-toggle],[data-mobile-menu-toggle],[data-menu-toggle],.mg-public-menu-toggle,.mg-app-menu-toggle,.mg-mobile-menu-toggle,.mg-hamburger,.mg-header-menu-toggle')) return true;
+    var label = (trigger.getAttribute('aria-label') || trigger.textContent || '').toLowerCase();
+    return label.indexOf('menu') !== -1 || label.indexOf('navigation') !== -1 || label.indexOf('sidebar') !== -1;
+  }
+
   if (open) {
-    open.addEventListener('click', function () {
+    open.addEventListener('click', function (event) {
+      event.preventDefault();
       setDrawer(true);
     });
   }
+
+  document.addEventListener('click', function (event) {
+    if (!isMobile()) return;
+    if (!isMenuTrigger(event.target)) return;
+    if (drawer && drawer.contains(event.target)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setDrawer(true);
+  }, true);
 
   closeTriggers.forEach(function (trigger) {
     trigger.addEventListener('click', function () {
