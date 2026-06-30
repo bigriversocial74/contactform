@@ -5,6 +5,8 @@ $page_title = 'Notification Preferences | Microgifter';
 $page_section = 'agent';
 $header_mode = 'agent';
 $agent_tab = 'preferences';
+$can_merchant_nav = true;
+$can_create_microgift = true;
 $page_styles = ['/assets/css/agent-workspace-layout.css','/assets/css/account-commerce.css','/assets/css/account-commerce-fixes.css','/assets/css/communications.css','/assets/css/notification-preferences.css','/assets/css/recipient-notifications.css'];
 $page_scripts = ['/assets/js/notification-preferences.js'];
 require __DIR__ . '/includes/header.php';
