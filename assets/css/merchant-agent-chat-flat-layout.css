@@ -1,0 +1,214 @@
+/* Merchant Agent Chat flat layout pass.
+   Removes the mobile header gap, flattens the chat into the main workspace, removes nested chat scrolling,
+   and keeps the composer as the only sticky bottom element. */
+.mg-agent-chat-app-no-nav,
+.mg-agent-chat-app--no-nav{
+  min-height:100dvh!important;
+  padding-top:0!important;
+  margin-top:0!important;
+  background:#f6f8fb!important;
+}
+.mg-agent-chat-app-no-nav .mg-merchant-main,
+.mg-agent-chat-app--no-nav .mg-merchant-main{
+  width:100%!important;
+  max-width:none!important;
+  min-height:100dvh!important;
+  padding:0!important;
+  margin:0!important;
+  background:#f6f8fb!important;
+  overflow:visible!important;
+}
+.mg-agent-chat-app-no-nav .mg-app-sidebar,
+.mg-agent-chat-app--no-nav .mg-app-sidebar{display:none!important}
+.mg-agent-chat-page{
+  min-height:100dvh!important;
+  padding:0 0 104px!important;
+  margin:0!important;
+  background:#f6f8fb!important;
+}
+.mg-agent-chat-layout,
+.mg-agent-chat-grid,
+.mg-agent-chat-main-stack{
+  display:block!important;
+  min-height:auto!important;
+  height:auto!important;
+  margin:0!important;
+  padding:0!important;
+  background:transparent!important;
+}
+.mg-agent-chat-main{
+  min-height:auto!important;
+  max-height:none!important;
+  height:auto!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  overflow:visible!important;
+}
+.mg-agent-chat-feed{
+  min-height:auto!important;
+  max-height:none!important;
+  height:auto!important;
+  overflow:visible!important;
+  padding:18px 18px 118px!important;
+  background:transparent!important;
+  -webkit-overflow-scrolling:auto!important;
+}
+.mg-agent-chat-empty{margin:18px auto!important}
+.mg-agent-chat-composer-shell{
+  position:fixed!important;
+  left:0!important;
+  right:0!important;
+  bottom:0!important;
+  z-index:90000!important;
+  width:100%!important;
+  max-width:none!important;
+  margin:0!important;
+  padding:12px max(14px,env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left))!important;
+  border-width:1px 0 0!important;
+  border-radius:20px 20px 0 0!important;
+  background:rgba(255,255,255,.98)!important;
+  box-shadow:0 -18px 48px rgba(15,23,42,.13)!important;
+}
+.mg-agent-chat-main-stack>.mg-form-status{
+  position:fixed!important;
+  left:14px!important;
+  right:14px!important;
+  bottom:78px!important;
+  z-index:89990!important;
+  margin:0!important;
+  pointer-events:none!important;
+}
+.mg-agent-chat-main-stack>.mg-form-status:not(:empty){
+  padding:7px 10px!important;
+  border:1px solid var(--mg-agent-line,#d9e0ea)!important;
+  border-radius:13px!important;
+  background:rgba(255,255,255,.96)!important;
+  box-shadow:0 10px 28px rgba(15,23,42,.1)!important;
+}
+.mg-agent-chat-page .mg-agent-pane-head,
+.mg-agent-chat-page .mg-agent-drawer-head>div{display:none!important}
+.mg-agent-chat-page .mg-agent-context-card{margin-top:0!important}
+.mg-agent-chat-page .mg-agent-drawer-head{
+  display:flex!important;
+  justify-content:flex-end!important;
+  align-items:center!important;
+  min-height:0!important;
+  padding:0 0 8px!important;
+  margin:0!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+.mg-agent-chat-page .mg-agent-drawer-head button{
+  display:grid!important;
+  place-items:center!important;
+  width:40px!important;
+  height:40px!important;
+  margin:0!important;
+  border:1px solid var(--mg-agent-line,#d9e0ea)!important;
+  border-radius:13px!important;
+  background:#fff!important;
+  color:var(--mg-agent-ink,#0b1220)!important;
+  font:inherit!important;
+  font-size:22px!important;
+  line-height:1!important;
+}
+.mg-agent-chat-right{
+  position:fixed!important;
+  top:0!important;
+  left:0!important;
+  right:auto!important;
+  bottom:0!important;
+  z-index:91000!important;
+  display:block!important;
+  width:min(390px,92vw)!important;
+  max-width:92vw!important;
+  height:100dvh!important;
+  padding:10px 12px calc(18px + env(safe-area-inset-bottom))!important;
+  background:#f8fafc!important;
+  border-right:1px solid var(--mg-agent-line,#d9e0ea)!important;
+  border-left:0!important;
+  box-shadow:24px 0 54px rgba(15,23,42,.2)!important;
+  overflow:auto!important;
+  transform:translateX(-105%)!important;
+  transition:transform .24s ease!important;
+  -webkit-overflow-scrolling:touch!important;
+}
+.mg-agent-chat-page.is-drawer-open .mg-agent-chat-right{transform:translateX(0)!important}
+.mg-agent-chat-drawer-backdrop{
+  position:fixed!important;
+  inset:0!important;
+  z-index:90990!important;
+  display:block!important;
+  background:rgba(15,23,42,.42)!important;
+  backdrop-filter:blur(2px)!important;
+}
+.mg-agent-chat-drawer-backdrop[hidden]{display:none!important}
+@media(min-width:761px){
+  .mg-agent-chat-page{padding-bottom:112px!important}
+  .mg-agent-chat-feed{padding:24px clamp(24px,4vw,56px) 128px!important}
+  .mg-agent-chat-composer-shell{padding-left:clamp(24px,4vw,56px)!important;padding-right:clamp(24px,4vw,56px)!important}
+}
+@media(max-width:760px){
+  html body.mg-app-page .mg-main,
+  html body.mg-app-page.mg-section-merchant .mg-main,
+  html body.mg-app-page.mg-section-agent .mg-main{
+    padding-top:0!important;
+    margin-top:0!important;
+  }
+  html body.mg-app-page .mg-site-header,
+  html body.mg-app-page .mg-unified-header,
+  html body.mg-app-page .mg-site-header.mg-unified-header{
+    margin-bottom:0!important;
+  }
+  .mg-agent-chat-app-no-nav,
+  .mg-agent-chat-app--no-nav{
+    min-height:calc(100dvh - 64px)!important;
+    padding-top:0!important;
+  }
+  .mg-agent-chat-app-no-nav .mg-merchant-main,
+  .mg-agent-chat-app--no-nav .mg-merchant-main{
+    min-height:calc(100dvh - 64px)!important;
+    padding:0!important;
+  }
+  .mg-agent-chat-page{
+    min-height:calc(100dvh - 64px)!important;
+    padding:0 0 98px!important;
+  }
+  .mg-agent-chat-feed{
+    padding:12px 10px 112px!important;
+  }
+  .mg-agent-chat-message,
+  .mg-agent-message,
+  [data-agent-chat-feed] article{
+    max-width:100%!important;
+  }
+  .mg-agent-chat-composer-shell{
+    padding:10px max(10px,env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))!important;
+  }
+  .mg-agent-chat-composer-shell textarea{
+    min-height:44px!important;
+    max-height:118px!important;
+    border-radius:15px!important;
+  }
+  .mg-agent-chat-tool,
+  .mg-agent-chat-send{
+    width:44px!important;
+    height:44px!important;
+    border-radius:15px!important;
+  }
+  .mg-agent-chat-right{
+    width:min(340px,88vw)!important;
+    max-width:88vw!important;
+    padding-top:calc(8px + env(safe-area-inset-top))!important;
+  }
+  .mg-agent-context-card{
+    border-radius:16px!important;
+    padding:12px!important;
+    box-shadow:none!important;
+  }
+}
