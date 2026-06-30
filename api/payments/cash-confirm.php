@@ -4,7 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/_capture.php';
 
 mg_require_method('POST');
-$user=mg_require_permission('commerce.checkout.create');
+$user=mg_require_api_user();
 $input=mg_input();
 mg_require_csrf_for_write($input);
 
