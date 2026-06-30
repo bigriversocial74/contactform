@@ -148,11 +148,23 @@ function mg_payment_save_platform_config(PDO $pdo,array $input,int $actorUserId)
     }
 
     $row=mg_payment_platform_credential_row($pdo,$provider,$mode,true);
-    if($row){
-        if($publishable==='')$publishable=(string)($row['publishable_key']??'');
+    $existingSecretCipher=(string)($row['secret_key_ciphertext']??'');
+    $existingWebhookCipher=(string)($row['webhook_secret_ciphertext']??'');
+
+    if($clearSecret){
+        $secretCipher='';
+    }elseif($secret!==''){
+        $secretCipher=mg_payment_encrypt_secret($secret);
+    }else{
+        $secretCipher=$existingSecretCipher;
+        if($provider==='stripe'&&$secretCipher!==''){
+            $existingSecret=mg_payment_decrypt_secret($secretCipher);
+            if($existingSecret!==''&&!str_starts_with($existingSecret,'sk_'.$prefix.'_')){
+                $secretCipher='';
+            }
+        }
     }
-    $secretCipher=$clearSecret?'':($secret!==''?mg_payment_encrypt_secret($secret):(string)($row['secret_key_ciphertext']??''));
-    $webhookCipher=$clearWebhook?'':($webhook!==''?mg_payment_encrypt_secret($webhook):(string)($row['webhook_secret_ciphertext']??''));
+    $webhookCipher=$clearWebhook?'':($webhook!==''?mg_payment_encrypt_secret($webhook):$existingWebhookCipher);
 
     if($row){
         $pdo->prepare('UPDATE payment_platform_credentials SET publishable_key=?,secret_key_ciphertext=?,webhook_secret_ciphertext=?,connect_client_id=?,platform_fee_bps=?,fixed_fee_cents=?,enabled=?,updated_by_user_id=?,updated_at=NOW() WHERE id=?')
