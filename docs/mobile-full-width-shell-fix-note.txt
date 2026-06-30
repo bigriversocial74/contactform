@@ -1,1 +1,1 @@
-Mobile full-width shell fix placeholder.
+Mobile app pages should use the compact topbar offset by default. Only the Action Center pages (`inbox`, `sent`, and `claimed`) should keep the second mobile tab rail offset.
