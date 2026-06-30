@@ -14,7 +14,6 @@ $page_styles = [
     '/assets/css/gift-action-center-cleanup.css',
     '/assets/css/gift-action-center-send-modal.css',
     '/assets/css/gift-product-media.css',
-    '/assets/css/gift-action-center-load-drawer.css',
     '/assets/css/gift-action-center-claim-modal.css',
 ];
 
