@@ -21,8 +21,16 @@ function mg_payment_cash_enabled(PDO $pdo): bool
     return $row?(bool)($row['enabled']??false):false;
 }
 
-function mg_payment_checkout_provider_key(PDO $pdo): string
+function mg_payment_checkout_provider_key(PDO $pdo,?string $requestedProvider=null): string
 {
+    $requested=strtolower(trim((string)$requestedProvider));
+    if($requested==='card')$requested='stripe';
+    if($requested==='cash'){
+        if(!mg_payment_cash_enabled($pdo))throw new RuntimeException('Cash payment is not enabled.');
+        return 'cash';
+    }
+    if($requested==='stripe')return 'stripe';
+    if($requested==='sandbox')return 'sandbox';
     if(mg_payment_cash_enabled($pdo))return 'cash';
     return mg_payment_provider_key();
 }
