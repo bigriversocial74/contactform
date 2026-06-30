@@ -76,80 +76,77 @@ require __DIR__ . '/includes/header.php';
     <div class="mg-bg-mesh" aria-hidden="true"></div>
     <div class="mg-container">
       <div class="mg-section-head">
-        <span class="mg-story-kicker" data-reveal="left">For growth</span>
-        <h2 class="mg-section-title" id="merchantTitle" data-reveal="left" style="--delay:80ms">Your business already creates value. Microgifter helps you capture it, understand it, and turn it into repeatable growth.</h2>
-        <p class="mg-section-copy" data-reveal="left" style="--delay:160ms">Every offer, reward, gift certificate, campaign, claim, redemption, and customer interaction creates a signal. Microgifter organizes those signals into a practical data layer that helps local businesses make smarter offers, support better customers, and earn more from future demand.</p>
+        <span class="mg-story-kicker" data-reveal="left">Platform modules</span>
+        <h2 class="mg-section-title" id="merchantTitle" data-reveal="left" style="--delay:80ms">One operating layer for selling, rewarding, messaging, networking, and distribution.</h2>
+        <p class="mg-section-copy" data-reveal="left" style="--delay:160ms">Microgifter combines storefront tools, gift certificate management, customer CRM, workplace rewards, social discovery, and API distribution into one connected system for businesses and creators.</p>
       </div>
 
       <div class="mg-feature-panels mg-growth-feature-grid">
         <article class="mg-panel" data-reveal="scale">
           <div class="mg-panel-head">
-            <div class="mg-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5l-5 7 5 7M16 5l5 7-5 7M14 4l-4 16"/></svg></div>
-            <div><h3>Create Value</h3><p>Build offers, rewards, gift certificates, pre-sale products, and local experiences that give customers a clear reason to act.</p></div>
+            <div class="mg-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 7h14l-1.2 10H6.2L5 7Z"/><path d="M8 7a4 4 0 0 1 8 0"/><path d="M8 20h8"/></svg></div>
+            <div><h3>Ecommerce</h3><p>Create sellable offers, reward products, pre-sale packages, event passes, and local experiences that customers can buy, save, send, or redeem.</p></div>
           </div>
-          <div class="mg-codebox" aria-label="Create value data example"><span class="gold">VALUE OBJECT</span><br>{<br>&nbsp;&nbsp;<span class="muted">"offer"</span>: <span class="green">"coffee_for_two"</span>,<br>&nbsp;&nbsp;<span class="muted">"price"</span>: <span class="green">"$18.00"</span>,<br>&nbsp;&nbsp;<span class="muted">"goal"</span>: <span class="green">"bring two humans in"</span>,<br>&nbsp;&nbsp;<span class="muted">"signal"</span>: <span class="green">"visit_intent"</span><br>}</div>
-          <div class="mg-panel-tags"><span>Offer</span><span>Support</span><span>Action</span></div>
+          <div class="mg-codebox" aria-label="Ecommerce module example"><span class="gold">COMMERCE OBJECT</span><br>{<br>&nbsp;&nbsp;<span class="muted">"product"</span>: <span class="green">"local_experience"</span>,<br>&nbsp;&nbsp;<span class="muted">"checkout"</span>: <span class="green">"cash_or_card"</span>,<br>&nbsp;&nbsp;<span class="muted">"fulfillment"</span>: <span class="green">"wallet_item"</span><br>}</div>
+          <div class="mg-panel-tags"><span>Storefront</span><span>Checkout</span><span>Pre-sale</span></div>
         </article>
 
         <article class="mg-panel" data-reveal="scale" style="--delay:80ms">
           <div class="mg-panel-head">
-            <div class="mg-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 13h4l11-6v10L8 11H4v2Z"/><path d="M8 11v7a2 2 0 0 0 2 2h1M21 9c1 2 1 4 0 6"/></svg></div>
-            <div><h3>Capture Data</h3><p>Turn claims, purchases, redemptions, QR scans, shares, saves, and visits into clean customer and campaign data.</p></div>
+            <div class="mg-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M8 14h5"/><path d="M16 14h2"/></svg></div>
+            <div><h3>Gift Certificates</h3><p>Issue digital certificates, claim codes, vouchers, rewards, and redeemable passes that move cleanly through inbox, sent, claimed, and redeemed states.</p></div>
           </div>
-          <div class="mg-signal-list" aria-label="Captured data signals">
-            <div class="mg-signal-row"><span>Claim source</span><span>QR table tent</span></div>
-            <div class="mg-signal-row"><span>Customer action</span><span>Saved reward</span></div>
-            <div class="mg-signal-row"><span>Redemption</span><span>Verified</span></div>
-            <div class="mg-signal-row"><span>Follow-up path</span><span>Ready</span></div>
+          <div class="mg-signal-list" aria-label="Gift certificate flow">
+            <div class="mg-signal-row"><span>Issued</span><span>Wallet ready</span></div>
+            <div class="mg-signal-row"><span>Sent</span><span>Recipient tracked</span></div>
+            <div class="mg-signal-row"><span>Claimed</span><span>Code protected</span></div>
+            <div class="mg-signal-row"><span>Redeemed</span><span>Merchant verified</span></div>
           </div>
-          <div class="mg-panel-tags"><span>Signal</span><span>Profile</span><span>History</span></div>
+          <div class="mg-panel-tags"><span>Voucher</span><span>Claim code</span><span>Redeem</span></div>
         </article>
 
         <article class="mg-panel" data-reveal="scale" style="--delay:160ms">
           <div class="mg-panel-head">
-            <div class="mg-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/><path d="M8 11h6M11 8v6"/></svg></div>
-            <div><h3>Discover Value</h3><p>See which offers, prices, channels, timing, and experiences customers actually respond to — not what you guessed they wanted.</p></div>
+            <div class="mg-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="9" cy="8" r="3"/><path d="M3 20c1-4 3-6 6-6s5 2 6 6"/><path d="M16 7h5M16 11h5M17 15h4"/></svg></div>
+            <div><h3>Customer CRM</h3><p>Turn customer actions into usable profiles: purchases, claims, redemptions, visits, messages, campaign sources, and follow-up opportunities.</p></div>
           </div>
-          <div class="mg-value-score" aria-label="Value discovery score">
-            <strong>87</strong>
-            <span>Value confidence score based on claims, redemption, repeat activity, and customer engagement.</span>
+          <div class="mg-value-score" aria-label="Customer CRM view">
+            <strong>360°</strong>
+            <span>Customer view connecting wallet activity, offers, messages, location behavior, support history, and campaign response.</span>
           </div>
-          <div class="mg-panel-tags"><span>Pattern</span><span>Demand</span><span>Timing</span></div>
+          <div class="mg-panel-tags"><span>Profiles</span><span>Messaging</span><span>Follow-up</span></div>
         </article>
 
         <article class="mg-panel" data-reveal="scale" style="--delay:240ms">
           <div class="mg-panel-head">
-            <div class="mg-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 21s-7-4.2-9-9.5C1.8 8.4 3.7 5 7.1 5c2 0 3.5 1.1 4.9 3 1.4-1.9 2.9-3 4.9-3 3.4 0 5.3 3.4 4.1 6.5C19 16.8 12 21 12 21Z"/></svg></div>
-            <div><h3>Activate Support</h3><p>Give customers a direct way to support real local businesses and real humans while creating measurable demand for the merchant.</p></div>
+            <div class="mg-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="8" width="18" height="11" rx="2"/><path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M12 12v3"/></svg></div>
+            <div><h3>Workplace Rewards</h3><p>Let companies, teams, and organizations distribute local rewards, employee gifts, recognition credits, and sponsored commerce into employee wallets.</p></div>
           </div>
-          <div class="mg-mini-path" aria-label="Support activation path"><span>Find</span><span>Support</span><span>Gift</span><span>Redeem</span></div>
-          <div class="mg-panel-tags"><span>Human</span><span>Local</span><span>Direct</span></div>
+          <div class="mg-mini-path" aria-label="Workplace reward path"><span>Employer</span><span>Team</span><span>Reward</span><span>Redeem</span></div>
+          <div class="mg-panel-tags"><span>Teams</span><span>Recognition</span><span>Bulk rewards</span></div>
         </article>
 
         <article class="mg-panel" data-reveal="scale" style="--delay:320ms">
           <div class="mg-panel-head">
-            <div class="mg-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-5 4.2-8 8-8s6.5 3 8 8"/></svg></div>
-            <div><h3>Utilize Insight</h3><p>Use captured data to personalize follow-up, improve the next campaign, identify valuable customers, and reduce wasted marketing effort.</p></div>
+            <div class="mg-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="7" r="3"/><circle cx="18" cy="17" r="3"/><path d="M9 11l6-3M9 13l6 3"/></svg></div>
+            <div><h3>Social Network</h3><p>Give businesses and creators a public profile, discovery presence, supporter graph, feed, and direct customer relationships that are not trapped inside a rented platform.</p></div>
           </div>
-          <div class="mg-signal-list" aria-label="Utilized data actions">
-            <div class="mg-signal-row"><span>Best audience</span><span>Repeat guests</span></div>
-            <div class="mg-signal-row"><span>Best offer</span><span>Two-person gifts</span></div>
-            <div class="mg-signal-row"><span>Best channel</span><span>In-store QR</span></div>
-            <div class="mg-signal-row"><span>Next action</span><span>Send follow-up</span></div>
+          <div class="mg-signal-list" aria-label="Social network signals">
+            <div class="mg-signal-row"><span>Profile</span><span>Discoverable</span></div>
+            <div class="mg-signal-row"><span>Feed</span><span>Offers + updates</span></div>
+            <div class="mg-signal-row"><span>Audience</span><span>Followers</span></div>
+            <div class="mg-signal-row"><span>Support</span><span>Direct action</span></div>
           </div>
-          <div class="mg-panel-tags"><span>Learn</span><span>Target</span><span>Grow</span></div>
+          <div class="mg-panel-tags"><span>Profiles</span><span>Feed</span><span>Community</span></div>
         </article>
 
         <article class="mg-panel" data-reveal="scale" style="--delay:400ms">
           <div class="mg-panel-head">
-            <div class="mg-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M7 16l4-5 3 3 5-8"/></svg></div>
-            <div><h3>Earn on Value</h3><p>Turn support, customer data, and future demand into repeat revenue — earning more from the relationships the business already owns.</p></div>
+            <div class="mg-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5l-5 7 5 7M16 5l5 7-5 7M14 4l-4 16"/></svg></div>
+            <div><h3>Distribution API</h3><p>Connect Microgifter to partner apps, landing pages, QR campaigns, CRMs, agentic shopping flows, and merchant systems through a structured value API.</p></div>
           </div>
-          <div class="mg-value-score" aria-label="Earned value example">
-            <strong>3.4x</strong>
-            <span>Example repeat-value lift when claims, redemptions, and follow-up campaigns work as one connected loop.</span>
-          </div>
-          <div class="mg-panel-tags"><span>Return</span><span>Repeat</span><span>Revenue</span></div>
+          <div class="mg-codebox" aria-label="Distribution API example"><span class="gold">POST</span> /v1/distribution/send<br>{<br>&nbsp;&nbsp;<span class="muted">"channel"</span>: <span class="green">"qr_campaign"</span>,<br>&nbsp;&nbsp;<span class="muted">"recipient"</span>: <span class="green">"wallet"</span>,<br>&nbsp;&nbsp;<span class="muted">"tracking"</span>: <span class="green">"crm_signal"</span><br>}</div>
+          <div class="mg-panel-tags"><span>API</span><span>Partners</span><span>Automation</span></div>
         </article>
       </div>
     </div>
