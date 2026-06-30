@@ -1,6 +1,14 @@
 (() => {
   'use strict';
 
+  function loadMobileClaimModalFix() {
+    if (document.querySelector('link[href="/assets/css/gift-claim-mobile-modal-fix.css"]')) return;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = '/assets/css/gift-claim-mobile-modal-fix.css';
+    document.head.appendChild(link);
+  }
+
   function portalGiftCenterOverlays() {
     const selectors = [
       '.mg-action-modal-backdrop',
@@ -15,6 +23,28 @@
           document.body.appendChild(element);
         }
       });
+    });
+  }
+
+  function ensureActionModalCloseButtons() {
+    document.querySelectorAll('.mg-action-modal').forEach((modal) => {
+      let header = modal.querySelector('.mg-action-modal-header');
+      const body = modal.querySelector('[data-action-modal-body]');
+      if (!header) {
+        header = document.createElement('header');
+        header.className = 'mg-action-modal-header';
+        header.innerHTML = '<div><span class="mg-account-eyebrow" data-action-modal-eyebrow>Gift action</span><h2 data-action-modal-title>Action</h2></div>';
+        modal.insertBefore(header, body || modal.firstChild);
+      }
+      if (!header.querySelector('[data-action-modal-close]')) {
+        const close = document.createElement('button');
+        close.type = 'button';
+        close.className = 'mg-action-modal-mobile-close';
+        close.setAttribute('data-action-modal-close', '');
+        close.setAttribute('aria-label', 'Close form');
+        close.textContent = '×';
+        header.appendChild(close);
+      }
     });
   }
 
@@ -45,7 +75,11 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    window.setTimeout(portalGiftCenterOverlays, 0);
+    loadMobileClaimModalFix();
+    window.setTimeout(() => {
+      portalGiftCenterOverlays();
+      ensureActionModalCloseButtons();
+    }, 0);
   });
 
   document.addEventListener('click', (event) => {
