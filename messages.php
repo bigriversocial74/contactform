@@ -5,15 +5,11 @@ $page_title='Messages | Microgifter';
 $page_section='agent';
 $header_mode='agent';
 $agent_tab='messages';
-$page_styles=['/assets/css/communications.css','/assets/css/messages-source-metadata.css','/assets/css/message-delivery-proof.css','/assets/css/messages-redesign.css'];
+$page_styles=['/assets/css/communications.css','/assets/css/messages-source-metadata.css','/assets/css/message-delivery-proof.css','/assets/css/messages-redesign.css','/assets/css/messages-composer-compact.css'];
 $page_scripts=['/assets/js/messages-center.js'];
 require __DIR__ . '/includes/header.php';
 ?>
 <section class="mg-app-shell mg-agent-app mg-communications-app mg-messages-layout" data-messages-center>
-  <button class="mg-messages-mobile-toggle" type="button" data-messages-sidebar-toggle aria-expanded="false" aria-controls="mg-messages-sidebar">
-    <span></span><span></span><span></span>
-    <strong>Threads</strong>
-  </button>
   <div class="mg-messages-sidebar-backdrop" data-messages-sidebar-backdrop hidden></div>
   <aside id="mg-messages-sidebar" class="mg-app-sidebar mg-universal-sidebar mg-messages-sidebar is-text-sidebar" data-app-sidebar data-sidebar-variant="messages" aria-label="Message conversations">
     <div class="mg-app-sidebar-brand mg-universal-sidebar-brand">
