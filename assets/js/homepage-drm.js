@@ -108,3 +108,15 @@
     boot();
   }
 })();
+
+(() => {
+  const load = () => {
+    if (document.querySelector('script[src="/assets/js/homepage-polish.js"]')) return;
+    const script = document.createElement('script');
+    script.src = '/assets/js/homepage-polish.js';
+    script.defer = true;
+    document.body.appendChild(script);
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load, { once:true });
+  else load();
+})();
