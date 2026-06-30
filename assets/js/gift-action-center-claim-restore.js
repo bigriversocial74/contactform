@@ -36,6 +36,7 @@
         if (!item || !item.merchant_avatar_url) return;
         const box = row.querySelector('.mg-gift-thumb');
         if (!box || box.dataset.avatarReady === 'true') return;
+        if (box.dataset.productMediaReady === 'true' || box.classList.contains('has-product-media') || box.classList.contains('has-product-media-kind')) return;
         box.textContent = '';
         const image = document.createElement('img');
         image.src = item.merchant_avatar_url;
@@ -133,6 +134,10 @@
   }
 
   function openConfirmation(data) {
+    const isolated = new CustomEvent('mg:gift-claim:restore', { cancelable: true, detail: data || {} });
+    document.dispatchEvent(isolated);
+    if (isolated.defaultPrevented) return true;
+
     const app = document.querySelector('[data-gift-center]');
     const modal = app && app.querySelector('[data-action-modal]');
     const backdrop = app && app.querySelector('[data-action-modal-backdrop]');
