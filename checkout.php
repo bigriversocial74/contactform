@@ -6,6 +6,8 @@ $page_title = 'Secure Checkout | Microgifter';
 $page_section = 'agent';
 $header_mode = 'agent';
 $agent_tab = 'cart';
+$can_merchant_nav = true;
+$can_create_microgift = true;
 $page_styles = [
     '/assets/css/agent-workspace-layout.css',
     '/assets/css/checkout.css',
