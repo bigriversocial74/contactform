@@ -65,7 +65,7 @@ function mg_payment_create_checkout_session(PDO $pdo,int $buyerUserId,string $or
     if(!$order)throw new MgCheckoutSessionException('Order not found.',404);
     if((string)$order['payment_status']!=='unpaid')throw new MgCheckoutSessionException('Order is not awaiting payment.',409);
 
-    $provider=mg_payment_provider_key();
+    $provider=mg_payment_checkout_provider_key($pdo);
     mg_payment_expire_checkout_sessions($pdo,(int)$order['id']);
 
     $idempotent=$pdo->prepare(
