@@ -2,6 +2,16 @@
 declare(strict_types=1);
 ?>
 <section class="mg-agent-chat-page" data-merchant-agent-chat>
+  <div class="mg-agent-chat-mobile-bar" aria-label="Agent chat mobile controls">
+    <div>
+      <strong>Merchant Agent</strong>
+      <span data-agent-chat-summary-mobile>Overview · Last 90 days · Action plan</span>
+    </div>
+    <button class="mg-agent-chat-panel-toggle" type="button" aria-controls="agent-chat-drawer" aria-expanded="false" data-agent-chat-drawer-open>Data + Controls</button>
+  </div>
+
+  <div class="mg-agent-chat-drawer-backdrop" data-agent-chat-drawer-close hidden></div>
+
   <section class="mg-agent-chat-layout" id="agent-chat">
     <section class="mg-agent-chat-main-stack">
       <section class="mg-app-panel mg-agent-chat-main" aria-label="Merchant agent conversation">
@@ -32,7 +42,15 @@ declare(strict_types=1);
       </form>
     </section>
 
-    <aside class="mg-agent-chat-right" aria-label="Agent thread and skill controls">
+    <aside class="mg-agent-chat-right" id="agent-chat-drawer" aria-label="Agent data and controls" data-agent-chat-drawer aria-hidden="false">
+      <div class="mg-agent-drawer-head">
+        <div>
+          <strong>Agent Data</strong>
+          <span>Thread, skills, scope, window, output, and data sources.</span>
+        </div>
+        <button type="button" aria-label="Close agent data panel" data-agent-chat-drawer-close>×</button>
+      </div>
+
       <section class="mg-agent-context-card mg-agent-compact-rail">
         <div class="mg-agent-pane-head">
           <h2>Agent</h2>

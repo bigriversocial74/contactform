@@ -5,13 +5,13 @@ $page_title = 'Merchant Agent Chat | Microgifter';
 $page_section = 'merchant';
 $header_mode = 'account';
 $agent_tab = 'agent_chat';
-$page_styles = ['/assets/css/merchant-workspace.css','/assets/css/merchant-agent-chat.css','/assets/css/merchant-agent-chat-followup.css','/assets/css/merchant-agent-chat-skills.css'];
-$page_scripts = ['/assets/js/merchant-agent-chat.js','/assets/js/merchant-agent-chat-json-format.js'];
+$page_styles = ['/assets/css/merchant-workspace.css','/assets/css/merchant-agent-chat.css','/assets/css/merchant-agent-chat-followup.css','/assets/css/merchant-agent-chat-skills.css','/assets/css/merchant-agent-chat-mobile.css'];
+$page_scripts = ['/assets/js/merchant-agent-chat.js','/assets/js/merchant-agent-chat-json-format.js','/assets/js/merchant-agent-chat-mobile.js'];
 $page_scripts[] = '/assets/js/merchant-agent-chat-admin-mode.js';
 $user = mg_current_user();
 require __DIR__ . '/includes/header.php';
 ?>
-<section class="mg-app-shell mg-merchant-app mg-agent-chat-app" data-merchant-app data-merchant-view="agent_chat" data-sidebar-contract="mg-app-sidebar">
+<section class="mg-app-shell mg-merchant-app mg-agent-chat-app mg-agent-chat-app-no-nav" data-merchant-app data-merchant-view="agent_chat" data-sidebar-contract="mg-app-sidebar">
   <?php require __DIR__ . '/includes/agent-sidebar.php'; ?>
   <main class="mg-app-workspace mg-merchant-main">
     <?php if (!$user): ?>
