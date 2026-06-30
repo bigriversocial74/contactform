@@ -20,9 +20,19 @@ document.addEventListener('DOMContentLoaded', function () {
     return '<div class="mg-checkout-line"><div><strong>' + C.esc(item.title_snapshot || 'Microgift item') + '</strong><p>Quantity ' + C.quantity(item.quantity) + ' × ' + C.money(item.unit_amount_cents, item.currency) + '</p></div><strong>' + C.money(item.line_total_cents, item.currency) + '</strong></div>';
   }
 
+  function canConfirmCash(session) {
+    return session.provider_key === 'cash' &&
+      session.payment_status === 'unpaid' &&
+      ['created','open'].indexOf(String(session.session_status || '')) !== -1 &&
+      ['failed','cancelled','succeeded'].indexOf(String(session.payment_intent_status || '')) === -1;
+  }
+
   function paymentAction(session) {
     if (session.payment_status === 'paid') {
       return '<a class="mg-btn mg-btn-primary" href="/checkout-success.php?order=' + encodeURIComponent(session.order_id || '') + '">View order confirmation</a>';
+    }
+    if (canConfirmCash(session) || session.can_confirm_cash) {
+      return '<button class="mg-btn mg-btn-primary" type="button" data-cash-confirm>Confirm cash payment</button>';
     }
     if (session.provider_key === 'sandbox' && session.can_confirm) {
       return '<button class="mg-btn mg-btn-primary" type="button" data-sandbox-confirm>Complete sandbox payment</button>';
@@ -39,6 +49,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function sessionNotice(session) {
     if (session.payment_status === 'paid') return 'Payment is already recorded for this order. You can open the order confirmation now.';
     if (session.session_status === 'expired') return 'This payment session expired. Your unpaid order is preserved and can be reopened below.';
+    if (session.provider_key === 'cash') return 'Cash payment is enabled. Confirming here records the order and issues the Microgifter items without Stripe.';
     if (session.provider_key === 'sandbox') return 'Sandbox mode is active. No real card will be charged.';
     return 'Stripe hosts the payment form. Microgifter never stores raw card numbers.';
   }
@@ -64,6 +75,23 @@ document.addEventListener('DOMContentLoaded', function () {
     render(session, data.items || []);
 
     var status = root.querySelector('[data-checkout-status]');
+    var cash = root.querySelector('[data-cash-confirm]');
+    if (cash) {
+      cash.onclick = async function () {
+        cash.disabled = true;
+        try {
+          C.status(status, 'Recording cash payment…', 'info');
+          var response = await C.api('POST','/api/payments/cash-confirm.php', { session_id: sessionId });
+          var result = C.data(response);
+          C.status(status, response.message || 'Cash payment recorded.', 'success');
+          location.href = '/checkout-success.php?order=' + encodeURIComponent(result.order_id || session.order_id || '');
+        } catch (error) {
+          C.status(status, error.message || 'Unable to record cash payment.', 'error');
+          cash.disabled = false;
+        }
+      };
+    }
+
     var confirm = root.querySelector('[data-sandbox-confirm]');
     if (confirm) {
       confirm.onclick = async function () {
