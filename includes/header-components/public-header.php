@@ -24,7 +24,7 @@ foreach ($public_nav_links as $public_header_link) {
     }
 
     $href = (string) ($public_header_link['href'] ?? '');
-    if (in_array($href, ['/corporate.php', '/retail.php', '/locations.php', '/campaign.php', '/developer-docs.php', '/merchant.php'], true)) {
+    if (in_array($href, ['/corporate.php', '/retail.php', '/locations.php', '/campaign.php', '/developer-docs.php', '/merchant.php', '/buy-in.php'], true)) {
         continue;
     }
 
@@ -35,7 +35,6 @@ $public_nav_links = $filtered_links;
 if (!$user) {
     $public_nav_links = [
         ['label' => 'Explore', 'href' => '/discover.php'],
-        ['label' => 'Buy In', 'href' => '/buy-in.php'],
         ['label' => 'Pricing', 'href' => '/pricing.php'],
     ];
 }
@@ -57,7 +56,7 @@ if (!$market_ticker_items && !$user) {
     $market_ticker_items = mg_public_market_ticker_fallback_items();
 }
 
-$show_market_ticker = !$user && !empty($market_ticker_items);
+$show_market_ticker = false; // Temporarily hidden; ticker logic and markup stay in place.
 $show_demo_button = !$user;
 ?>
 <header class="mg-site-header mg-unified-header mg-market-universal-header" data-mg-universal-header data-public-header data-header-theme="market-dark" data-header-variant="<?= $user ? 'logged-in' : 'logged-out' ?>">
