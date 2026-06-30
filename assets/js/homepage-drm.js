@@ -9,6 +9,20 @@
     const progressBar = root.querySelector('#mgProgressBar');
     const heroSearch = root.querySelector('[data-hero-search]');
 
+    const ecommerceTitle = Array.from(root.querySelectorAll('.mg-panel h3')).find((title) => title.textContent.trim().toLowerCase() === 'ecommerce');
+    const ecommercePanel = ecommerceTitle ? ecommerceTitle.closest('.mg-panel') : null;
+    const ecommerceGraphic = ecommercePanel ? ecommercePanel.querySelector('.mg-codebox') : null;
+    if (ecommerceGraphic) {
+      ecommerceGraphic.className = 'mg-signal-list';
+      ecommerceGraphic.setAttribute('aria-label', 'Ecommerce storefront preview');
+      ecommerceGraphic.innerHTML = [
+        '<div class="mg-signal-row"><span>Featured product</span><span>Coffee for Two</span></div>',
+        '<div class="mg-signal-row"><span>Checkout option</span><span>Cash or card</span></div>',
+        '<div class="mg-signal-row"><span>Delivery</span><span>Wallet item</span></div>',
+        '<div class="mg-signal-row"><span>Next action</span><span>Buy · Save · Send</span></div>'
+      ].join('');
+    }
+
     if (heroSearch) {
       const input = heroSearch.querySelector('[data-hero-search-input]');
       const results = heroSearch.querySelector('[data-hero-search-results]');
