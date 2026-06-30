@@ -2,6 +2,13 @@
   const root = document.querySelector('.mg-home-page');
   if (!root) return;
 
+  if (!document.querySelector('link[href="/assets/css/homepage-polish.css"]')) {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = '/assets/css/homepage-polish.css';
+    document.head.appendChild(link);
+  }
+
   const money = (value) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value);
 
   document.querySelectorAll('.mg-header-phone, .mg-public-mobile-phone').forEach((phone) => {
