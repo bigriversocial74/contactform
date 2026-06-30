@@ -130,49 +130,41 @@ function mg_payment_microgift_template_version_for_line(PDO $pdo, array $order, 
     $locationIds=array_map('strval',$locationStmt->fetchAll(PDO::FETCH_COLUMN));
 
     $template=mg_microgift_create_template($pdo,(int)$order['merchant_user_id'],[
-        'owner_type'=>'merchant',
-        'name'=>(string)$line['title_snapshot'],
-        'gift_type'=>'product',
-        'visibility'=>'public',
-        'default_currency'=>(string)$line['currency'],
-        'slug'=>(string)($version['product_slug']??('commerce-'.$line['public_id'])),
-        'description'=>'Commerce checkout Microgift template.',
+        'owner_type'=>'merchant','name'=>(string)$line['title_snapshot'],'gift_type'=>'product','visibility'=>'public','default_currency'=>(string)$line['currency'],'slug'=>(string)($version['product_slug']??('commerce-'.$line['public_id'])),'description'=>'Commerce checkout Microgift template.',
     ]);
     $created=mg_microgift_create_version($pdo,(int)$order['merchant_user_id'],(string)$template['template_id'],[
-        'title'=>(string)$line['title_snapshot'],
-        'description'=>(string)($version['description']??'Purchased through commerce checkout.'),
-        'currency'=>(string)$line['currency'],
-        'face_value_cents'=>(int)$line['unit_amount_cents'],
-        'product_id'=>(int)$line['product_id'],
-        'product_version_id'=>(int)$line['product_version_id'],
-        'recipient_policy'=>'purchaser',
-        'claim_policy'=>['mode'=>'purchaser_owned'],
-        'redemption_policy'=>['mode'=>'merchant_location'],
-        'location_policy'=>$locationIds === [] ? ['mode'=>'unrestricted'] : ['mode'=>'selected_locations','location_ids'=>$locationIds],
-        'expiration_policy'=>$version['expiration_policy_json']?json_decode((string)$version['expiration_policy_json'],true):[],
-        'terms_snapshot'=>$version['terms_json']?json_decode((string)$version['terms_json'],true):[],
-        'future_demand_metadata'=>['source'=>'commerce_checkout_legacy_recovery','catalog_product_id'=>(string)($version['product_public_id']??'')],
+        'title'=>(string)$line['title_snapshot'],'description'=>(string)($version['description']??'Purchased through commerce checkout.'),'currency'=>(string)$line['currency'],'face_value_cents'=>(int)$line['unit_amount_cents'],'product_id'=>(int)$line['product_id'],'product_version_id'=>(int)$line['product_version_id'],'recipient_policy'=>'purchaser','claim_policy'=>['mode'=>'purchaser_owned'],'redemption_policy'=>['mode'=>'merchant_location'],'location_policy'=>$locationIds === [] ? ['mode'=>'unrestricted'] : ['mode'=>'selected_locations','location_ids'=>$locationIds],'expiration_policy'=>$version['expiration_policy_json']?json_decode((string)$version['expiration_policy_json'],true):[],'terms_snapshot'=>$version['terms_json']?json_decode((string)$version['terms_json'],true):[],'future_demand_metadata'=>['source'=>'commerce_checkout_legacy_recovery','catalog_product_id'=>(string)($version['product_public_id']??'')],
     ]);
     $published=mg_microgift_publish_version($pdo,(int)$order['merchant_user_id'],(string)$created['version_id']);
     $microgiftVersionStmt=$pdo->prepare('SELECT id FROM microgift_template_versions WHERE public_id=? LIMIT 1');
     $microgiftVersionStmt->execute([(string)$published['version_id']]);
     $microgiftVersionId=(int)$microgiftVersionStmt->fetchColumn();
 
-    $itemType=in_array((string)$version['product_type'],['gift','prize','reward','voucher','entitlement','reservation','credit'],true)
-        ? (string)$version['product_type'] : 'other';
-    $defaults=json_encode([
-        'title'=>(string)$line['title_snapshot'],'description'=>$version['description']??null,
-        'value_cents'=>(int)$line['unit_amount_cents'],'currency'=>(string)$line['currency'],
-        'location_ids'=>$locationIds,'recovered_at_checkout'=>true,
-    ],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR);
-    $pdo->prepare(
-        "INSERT INTO catalog_pppm_templates
-         (public_id,product_version_id,microgift_template_version_id,item_type,default_funding_type,issuance_defaults_json,status,created_at,updated_at)
-         VALUES (?,?,?,?, 'customer_purchase',?,'active',NOW(),NOW())
-         ON DUPLICATE KEY UPDATE microgift_template_version_id=VALUES(microgift_template_version_id),
-           item_type=VALUES(item_type),default_funding_type='customer_purchase',issuance_defaults_json=VALUES(issuance_defaults_json),status='active',updated_at=NOW()"
-    )->execute([mg_microgift_uuid(),(int)$line['product_version_id'],$microgiftVersionId,$itemType,$defaults]);
+    $itemType=in_array((string)$version['product_type'],['gift','prize','reward','voucher','entitlement','reservation','credit'],true) ? (string)$version['product_type'] : 'other';
+    $defaults=json_encode(['title'=>(string)$line['title_snapshot'],'description'=>$version['description']??null,'value_cents'=>(int)$line['unit_amount_cents'],'currency'=>(string)$line['currency'],'location_ids'=>$locationIds,'recovered_at_checkout'=>true],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR);
+    $pdo->prepare("INSERT INTO catalog_pppm_templates (public_id,product_version_id,microgift_template_version_id,item_type,default_funding_type,issuance_defaults_json,status,created_at,updated_at) VALUES (?,?,?,?, 'customer_purchase',?,'active',NOW(),NOW()) ON DUPLICATE KEY UPDATE microgift_template_version_id=VALUES(microgift_template_version_id), item_type=VALUES(item_type),default_funding_type='customer_purchase',issuance_defaults_json=VALUES(issuance_defaults_json),status='active',updated_at=NOW()")
+        ->execute([mg_microgift_uuid(),(int)$line['product_version_id'],$microgiftVersionId,$itemType,$defaults]);
     return (string)$published['version_id'];
+}
+
+function mg_payment_issue_commerce_microgift(PDO $pdo,array $order,array $line,string $templateVersion,int $sequence,int $actorUserId): array
+{
+    $idempotencyKey='commerce-order-item:'.$line['public_id'].':microgift:'.$sequence;
+    $duplicate=mg_microgift_existing_issue($pdo,$idempotencyKey,(int)$order['merchant_user_id'],$templateVersion,'commerce_order_item',(string)$line['public_id']);
+    if($duplicate!==null)return $duplicate;
+    $versionStmt=$pdo->prepare("SELECT v.*,t.owner_user_id,t.id AS resolved_template_id FROM microgift_template_versions v INNER JOIN microgift_templates t ON t.id=v.template_id WHERE v.public_id=? AND v.status='published' AND t.status='active' LIMIT 1 FOR UPDATE");
+    $versionStmt->execute([$templateVersion]);
+    $version=$versionStmt->fetch(PDO::FETCH_ASSOC);
+    if(!$version || (int)$version['owner_user_id']!==(int)$order['merchant_user_id'])throw new RuntimeException('Published commerce Microgift template version not found.');
+    $metadata=mg_microgift_json(['commerce_order_id'=>(string)$order['public_id'],'commerce_order_item_id'=>(string)$line['public_id'],'unit_sequence'=>$sequence]);
+    $instancePublicId=mg_microgift_uuid();
+    $expiresAt=null;
+    $pdo->prepare("INSERT INTO microgift_instances (public_id,template_id,template_version_id,status,source_type,source_reference,idempotency_key,issuer_user_id,owner_user_id,recipient_user_id,recipient_reference,commerce_order_item_id,legacy_gift_id,title_snapshot,description_snapshot,currency,face_value_cents,product_id,product_version_id,recipient_policy,claim_policy_json,redemption_policy_json,location_policy_json,expiration_policy_json,terms_snapshot_json,metadata_json,issued_at,expires_at,created_at,updated_at) VALUES (?,?,?,'issued',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),?,NOW(),NOW())")
+        ->execute([$instancePublicId,(int)$version['resolved_template_id'],(int)$version['id'],'commerce_order_item',(string)$line['public_id'],$idempotencyKey,(int)$order['merchant_user_id'],(int)$order['buyer_user_id'],(int)$order['buyer_user_id'],null,(int)$line['id'],null,(string)$version['title'],$version['description'],(string)$version['currency'],$version['face_value_cents'],$version['product_id'],$version['product_version_id'],(string)$version['recipient_policy'],$version['claim_policy_json'],$version['redemption_policy_json'],$version['location_policy_json'],$version['expiration_policy_json'],$version['terms_snapshot_json'],$metadata,$expiresAt]);
+    $instanceId=(int)$pdo->lastInsertId();
+    $credential=(string)$version['recipient_policy']!=='purchaser'?mg_microgift_create_credential($pdo,$instanceId,'claim',$actorUserId,$expiresAt):null;
+    mg_microgift_event($pdo,'microgift.instance_issued',$instanceId,(int)$version['resolved_template_id'],$actorUserId,'commerce_order_item',(string)$line['public_id'],['template_version_id'=>$templateVersion,'owner_user_id'=>(int)$order['buyer_user_id'],'recipient_user_id'=>(int)$order['buyer_user_id']]);
+    return ['instance_id'=>$instancePublicId,'status'=>'issued','duplicate'=>false,'credential'=>$credential];
 }
 
 function mg_payment_issue_order_microgifts(PDO $pdo, int $orderDbId, ?int $actorUserId = null): array
@@ -198,19 +190,7 @@ function mg_payment_issue_order_microgifts(PDO $pdo, int $orderDbId, ?int $actor
             $pppmItemId=(int)($pppmStmt->fetchColumn()?:0);
             if($pppmItemId<1)throw new RuntimeException('PPPM item not found for commerce Microgift issuance.');
 
-            $result=mg_microgift_issue($pdo,(int)$order['merchant_user_id'],[
-                'template_version_id'=>$templateVersion,
-                'source_type'=>'commerce_order_item',
-                'source_reference'=>(string)$line['public_id'],
-                'idempotency_key'=>'commerce-order-item:'.$line['public_id'].':microgift:'.$sequence,
-                'recipient_user_id'=>(int)$order['buyer_user_id'],
-                'metadata'=>[
-                    'commerce_order_id'=>(string)$order['public_id'],
-                    'commerce_order_item_id'=>(string)$line['public_id'],
-                    'unit_sequence'=>$sequence,
-                    'pppm_item_id'=>$pppmItemId,
-                ],
-            ]);
+            $result=mg_payment_issue_commerce_microgift($pdo,$order,$line,$templateVersion,$sequence,$eventActorUserId);
             if(!empty($result['duplicate']))$duplicates++;else$issued++;
 
             $instanceStmt=$pdo->prepare('SELECT * FROM microgift_instances WHERE public_id=? LIMIT 1 FOR UPDATE');
@@ -218,25 +198,15 @@ function mg_payment_issue_order_microgifts(PDO $pdo, int $orderDbId, ?int $actor
             $instance=$instanceStmt->fetch(PDO::FETCH_ASSOC);
             if(!$instance)throw new RuntimeException('Issued commerce Microgift instance was not found.');
             $existingPppmId=(int)($instance['pppm_item_id']??0);
-            if($existingPppmId>0&&$existingPppmId!==$pppmItemId){
-                throw new RuntimeException('Commerce Microgift is linked to a different PPPM item.');
-            }
+            if($existingPppmId>0&&$existingPppmId!==$pppmItemId){throw new RuntimeException('Commerce Microgift is linked to a different PPPM item.');}
             if($existingPppmId===0){
                 $pdo->prepare('UPDATE microgift_instances SET pppm_item_id=?,updated_at=NOW() WHERE id=?')->execute([$pppmItemId,(int)$instance['id']]);
                 $instance['pppm_item_id']=$pppmItemId;
                 $linked++;
             }
-            $projected[]=mg_action_center_receive(
-                $pdo,
-                (int)$instance['id'],
-                (int)$order['buyer_user_id'],
-                (int)$order['merchant_user_id'],
-                ['occurred_at'=>$instance['issued_at']??date('Y-m-d H:i:s')]
-            );
+            $projected[]=mg_action_center_receive($pdo,(int)$instance['id'],(int)$order['buyer_user_id'],(int)$order['merchant_user_id'],['occurred_at'=>$instance['issued_at']??date('Y-m-d H:i:s')]);
         }
     }
-    if($issued>0){
-        mg_order_event($pdo,$orderDbId,'microgift.issued_from_paid_order',$eventActorUserId,['issued_count'=>$issued,'duplicate_count'=>$duplicates,'linked_count'=>$linked]);
-    }
+    if($issued>0){mg_order_event($pdo,$orderDbId,'microgift.issued_from_paid_order',$eventActorUserId,['issued_count'=>$issued,'duplicate_count'=>$duplicates,'linked_count'=>$linked]);}
     return ['issued_count'=>$issued,'duplicate_count'=>$duplicates,'linked_count'=>$linked,'projected'=>$projected];
 }
