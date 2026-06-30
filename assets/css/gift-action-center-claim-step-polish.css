@@ -1,49 +1,282 @@
-/* Claim-step UI polish: the claim modal starts with the stepper, not the generic action header. */
+/* Claim modal deep layout pass.
+   The voucher claim flow should feel like a clean redemption screen, not a cramped generic action modal. */
+.mg-action-modal:has([data-action-form="claim"]),
+.mg-action-modal:has([data-voucher-flow]),
 body > .mg-action-modal:has([data-action-form="claim"]),
 body > .mg-action-modal:has([data-voucher-flow]){
-  width:min(720px,calc(100vw - 32px))!important;
+  width:min(560px,calc(100vw - 32px))!important;
+  max-width:calc(100vw - 32px)!important;
+  background:#fff!important;
 }
 
+.mg-action-modal:has([data-action-form="claim"]) .mg-action-modal-header,
+.mg-action-modal:has([data-voucher-flow]) .mg-action-modal-header,
 body > .mg-action-modal:has([data-action-form="claim"]) .mg-action-modal-header,
 body > .mg-action-modal:has([data-voucher-flow]) .mg-action-modal-header{
   display:none!important;
 }
 
+.mg-action-modal:has([data-action-form="claim"]) .mg-action-modal-body,
+.mg-action-modal:has([data-voucher-flow]) .mg-action-modal-body,
 body > .mg-action-modal:has([data-action-form="claim"]) .mg-action-modal-body,
 body > .mg-action-modal:has([data-voucher-flow]) .mg-action-modal-body{
-  max-height:calc(100dvh - 48px)!important;
-  padding-top:22px!important;
+  max-height:calc(100dvh - 40px)!important;
+  padding:20px!important;
+  overflow:auto!important;
+  background:#fff!important;
 }
 
+.mg-claim-voucher-qr{
+  width:100%!important;
+  max-width:520px!important;
+  margin:0 auto!important;
+  display:grid!important;
+  gap:14px!important;
+}
+
+.mg-action-modal:has([data-action-form="claim"]) .mg-voucher-stepper,
+.mg-action-modal:has([data-voucher-flow]) .mg-voucher-stepper,
 body > .mg-action-modal:has([data-action-form="claim"]) .mg-voucher-stepper,
 body > .mg-action-modal:has([data-voucher-flow]) .mg-voucher-stepper{
-  margin-top:0!important;
-  padding-top:0!important;
+  margin:0 0 12px!important;
+  padding:0 0 14px!important;
+  border-bottom:1px solid #e5edf8!important;
 }
 
+.mg-action-modal:has([data-action-form="claim"]) .mg-claim-voucher-product,
+.mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-product,
 body > .mg-action-modal:has([data-action-form="claim"]) .mg-claim-voucher-product,
 body > .mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-product{
   justify-items:center!important;
   text-align:center!important;
-  margin:14px auto 4px!important;
-  max-width:520px!important;
+  margin:4px auto 0!important;
+  max-width:480px!important;
 }
 
+.mg-action-modal:has([data-action-form="claim"]) .mg-claim-voucher-product strong,
+.mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-product strong,
 body > .mg-action-modal:has([data-action-form="claim"]) .mg-claim-voucher-product strong,
 body > .mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-product strong{
   text-align:center!important;
+  font-size:clamp(23px,5.2vw,31px)!important;
+  line-height:1.05!important;
+  letter-spacing:-.05em!important;
 }
 
+.mg-action-modal:has([data-action-form="claim"]) .mg-claim-voucher-product span,
+.mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-product span,
 body > .mg-action-modal:has([data-action-form="claim"]) .mg-claim-voucher-product span,
 body > .mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-product span{
   display:block!important;
   text-align:center!important;
+  color:#51627a!important;
+  font-size:14px!important;
+  font-weight:900!important;
+}
+
+.mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-frame,
+body > .mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-frame{
+  width:100%!important;
+  max-width:390px!important;
+  min-height:0!important;
+  margin:0 auto!important;
+  padding:18px!important;
+  border:1px solid #cfe0f7!important;
+  border-radius:22px!important;
+  background:linear-gradient(180deg,#fff,#f8fbff)!important;
+  box-shadow:0 14px 34px rgba(15,23,42,.06)!important;
+}
+
+.mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-frame img,
+body > .mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-frame img{
+  width:min(250px,68vw)!important;
+  max-width:100%!important;
+  height:auto!important;
+  aspect-ratio:1/1!important;
+  border-radius:16px!important;
+  box-shadow:none!important;
+}
+
+.mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-manual,
+body > .mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-manual{
+  width:100%!important;
+  max-width:390px!important;
+  margin:0 auto!important;
+  display:grid!important;
+  gap:12px!important;
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+}
+
+.mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-code-label,
+body > .mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-code-label{
+  display:grid!important;
+  gap:7px!important;
+  margin:0!important;
+  color:#071225!important;
+  font-size:13px!important;
+  font-weight:950!important;
+  letter-spacing:0!important;
+  text-transform:none!important;
+}
+
+.mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-code-label input,
+body > .mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-code-label input{
+  min-height:58px!important;
+  border:1px solid #cbdaf0!important;
+  border-radius:17px!important;
+  background:#fff!important;
+  color:#071225!important;
+  font-size:17px!important;
+  font-weight:950!important;
+  letter-spacing:.02em!important;
+  padding:0 18px!important;
+  text-transform:uppercase!important;
+}
+
+.mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-manual-actions,
+body > .mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-manual-actions{
+  display:grid!important;
+  grid-template-columns:1fr!important;
+  gap:0!important;
+}
+
+.mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-manual-actions .mg-btn,
+body > .mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-manual-actions .mg-btn{
+  width:100%!important;
+  min-height:58px!important;
+  border-radius:18px!important;
+  background:#05070b!important;
+  border-color:#05070b!important;
+  color:#fff!important;
+  font-size:15px!important;
+  font-weight:950!important;
+  box-shadow:0 16px 34px rgba(15,23,42,.18)!important;
 }
 
 @media(max-width:760px){
+  .mg-action-modal:has([data-action-form="claim"]),
+  .mg-action-modal:has([data-voucher-flow]),
+  body > .mg-action-modal:has([data-action-form="claim"]),
+  body > .mg-action-modal:has([data-voucher-flow]){
+    position:fixed!important;
+    inset:0!important;
+    left:0!important;
+    top:0!important;
+    right:0!important;
+    bottom:0!important;
+    width:100vw!important;
+    max-width:100vw!important;
+    height:100dvh!important;
+    max-height:100dvh!important;
+    margin:0!important;
+    border-radius:0!important;
+    transform:none!important;
+    background:#fff!important;
+    overflow:hidden!important;
+  }
+
+  .mg-action-modal:has([data-action-form="claim"]) .mg-action-modal-body,
+  .mg-action-modal:has([data-voucher-flow]) .mg-action-modal-body,
   body > .mg-action-modal:has([data-action-form="claim"]) .mg-action-modal-body,
   body > .mg-action-modal:has([data-voucher-flow]) .mg-action-modal-body{
+    width:100%!important;
+    max-width:100vw!important;
+    height:100dvh!important;
     max-height:100dvh!important;
-    padding-top:18px!important;
+    padding:12px 12px calc(22px + env(safe-area-inset-bottom))!important;
+    overflow:auto!important;
+    background:#fff!important;
+  }
+
+  .mg-claim-voucher-qr{
+    max-width:100%!important;
+    min-height:calc(100dvh - 24px)!important;
+    align-content:start!important;
+    gap:12px!important;
+  }
+
+  .mg-voucher-stepper{
+    gap:5px!important;
+    margin:0 0 10px!important;
+    padding:8px 0 12px!important;
+  }
+
+  .mg-voucher-stepper li:not(:last-child)::after{
+    left:calc(50% + 18px)!important;
+    width:calc(100% - 36px)!important;
+  }
+
+  .mg-voucher-stepper li span{
+    width:26px!important;
+    height:26px!important;
+    font-size:11px!important;
+  }
+
+  .mg-voucher-stepper li strong{
+    font-size:9px!important;
+    line-height:1.05!important;
+  }
+
+  .mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-product,
+  body > .mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-product{
+    margin:0 auto 2px!important;
+    max-width:340px!important;
+  }
+
+  .mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-product strong,
+  body > .mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-product strong{
+    font-size:22px!important;
+    line-height:1.04!important;
+  }
+
+  .mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-product span,
+  body > .mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-product span{
+    font-size:12px!important;
+  }
+
+  .mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-frame,
+  body > .mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-frame{
+    max-width:100%!important;
+    padding:14px!important;
+    border-radius:18px!important;
+  }
+
+  .mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-frame img,
+  body > .mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-frame img{
+    width:min(220px,61vw)!important;
+  }
+
+  .mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-manual,
+  body > .mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-manual{
+    max-width:100%!important;
+  }
+
+  .mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-code-label input,
+  body > .mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-code-label input{
+    min-height:54px!important;
+    border-radius:16px!important;
+  }
+
+  .mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-manual-actions .mg-btn,
+  body > .mg-action-modal:has([data-voucher-flow]) .mg-claim-voucher-manual-actions .mg-btn{
+    min-height:56px!important;
+    border-radius:16px!important;
+  }
+
+  .mg-claim-voucher-review-grid,
+  .mg-claim-voucher-next-actions,
+  .mg-merchant-claim-approval-grid{
+    grid-template-columns:1fr!important;
+  }
+
+  .mg-claim-voucher-step-actions{
+    display:grid!important;
+    grid-template-columns:1fr!important;
+  }
+
+  .mg-claim-voucher-step-actions .mg-btn{
+    width:100%!important;
   }
 }
