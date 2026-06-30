@@ -49,11 +49,6 @@ try {
     }
 
     $pdo->beginTransaction();
-    $existing = mg_payment_platform_credential_row($pdo, 'stripe', $mode, true);
-    if (trim((string)($input['publishable_key'] ?? '')) === '' && $existing) {
-        $input['publishable_key'] = (string)($existing['publishable_key'] ?? '');
-    }
-
     $input['provider_key'] = 'stripe';
     $saved = mg_payment_save_platform_config($pdo, $input, $userId);
     $pdo->commit();
@@ -61,7 +56,7 @@ try {
     $readiness = mg_admin_payment_settings_payload($pdo, (string)$saved['mode']);
     $blockers = mg_admin_payment_readiness_blockers($readiness);
     if ($blockers) {
-        $readiness['save_warning'] = 'Settings were saved, but ' . $saved['mode'] . ' mode is still not ready. ' . implode(' ', $blockers);
+        $readiness['save_warning'] = 'Settings were saved for ' . $saved['mode'] . ' mode, but Stripe is not ready yet. ' . implode(' ', $blockers);
     }
     mg_audit('admin.payment_settings_updated', 'payment_platform_credentials', [
         'provider' => 'stripe',
@@ -80,7 +75,7 @@ try {
 
     header('Cache-Control: private, no-store, max-age=0');
     header('Vary: Cookie, Authorization');
-    mg_ok($readiness, $blockers ? 'Settings saved, but Stripe is still not ready for this mode.' : 'Stripe payment settings saved.');
+    mg_ok($readiness, $blockers ? 'Settings saved for ' . $saved['mode'] . ' mode, but Stripe is not ready yet.' : 'Stripe payment settings saved.');
 } catch (InvalidArgumentException|MgPaymentCredentialException $error) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
