@@ -3,6 +3,7 @@ window.Microgifter = window.Microgifter || {};
   'use strict';
 
   var lastTrigger = null;
+  var checkoutOptions = null;
   function C() { return window.MGCustomerCommerce; }
   function normalizeCart(response) {
     var data = C().data(response);
@@ -15,6 +16,41 @@ window.Microgifter = window.Microgifter || {};
   }
   async function fetchCart() {
     return normalizeCart(await C().api('GET','/api/commerce/cart.php'));
+  }
+  async function loadPaymentOptions() {
+    try {
+      checkoutOptions = C().data(await C().api('GET','/api/payments/checkout-options.php'));
+    } catch (error) {
+      checkoutOptions = {
+        methods: {
+          cash: { available: true, detail: 'Cash checkout is available.' },
+          card: { available: false, detail: 'Card checkout is not ready.' }
+        }
+      };
+    }
+    applyPaymentOptions();
+    return checkoutOptions;
+  }
+  function methodAvailable(name) {
+    var method = checkoutOptions && checkoutOptions.methods ? checkoutOptions.methods[name] : null;
+    return !!(method && method.available);
+  }
+  function applyPaymentOptions() {
+    var root = document.querySelector('[data-cart-page]');
+    if (!root) return;
+    var cardButton = root.querySelector('[data-cart-checkout-provider="stripe"]');
+    var cashButton = root.querySelector('[data-cart-checkout-provider="cash"]');
+    var note = root.querySelector('[data-cart-payment-note]');
+    var cardAvailable = methodAvailable('card');
+    var cashAvailable = checkoutOptions ? methodAvailable('cash') : true;
+    if (cardButton) cardButton.hidden = !cardAvailable;
+    if (cashButton) cashButton.hidden = !cashAvailable;
+    if (note) {
+      if (cardAvailable && cashAvailable) note.textContent = 'Choose card for Stripe checkout or cash for manual checkout.';
+      else if (cashAvailable) note.textContent = 'Cash checkout is enabled. Card checkout is hidden until Stripe is ready.';
+      else if (cardAvailable) note.textContent = 'Stripe card checkout is ready. Cash checkout is disabled.';
+      else note.textContent = 'No payment method is currently available.';
+    }
   }
   function createHeaderButton() {
     var actions = document.querySelector('.mg-header-actions, .nav-actions');
@@ -74,6 +110,7 @@ window.Microgifter = window.Microgifter || {};
     itemHost.innerHTML = cart.items.length ? rows : C().emptyState('Your cart is empty.', 'Add a published product to begin checkout.');
     summaryHost.innerHTML = '<div class="mg-checkout-totals"><div class="mg-checkout-total"><span>Items</span><strong>' + Number(cart.totals.unit_count || 0) + '</strong></div><div class="mg-checkout-total"><span>Subtotal</span><strong>' + C().money(cart.totals.subtotal_cents, cart.totals.currency) + '</strong></div><div class="mg-checkout-total"><span>Tax</span><strong>' + C().money(cart.totals.tax_cents, cart.totals.currency) + '</strong></div><div class="mg-checkout-total"><span>Platform fee</span><strong>' + C().money(cart.totals.platform_fee_cents, cart.totals.currency) + '</strong></div><div class="mg-checkout-total is-grand"><span>Total</span><strong>' + C().money(cart.totals.total_cents, cart.totals.currency) + '</strong></div></div>';
     checkoutButtons.forEach(function(button){button.disabled = cart.items.length === 0;});
+    applyPaymentOptions();
   }
   async function refresh() {
     var cart = await fetchCart();
@@ -154,6 +191,7 @@ window.Microgifter = window.Microgifter || {};
       if (checkout) {
         event.preventDefault();
         var provider = checkout.dataset.cartCheckoutProvider || checkout.dataset.paymentProvider || '';
+        if (checkout.hidden) return;
         disableCheckoutButtons(root, true);
         try {
           pageStatus('Creating checkout draft for ' + paymentLabel(provider) + '…', 'info');
@@ -162,6 +200,7 @@ window.Microgifter = window.Microgifter || {};
           window.location.href = localCheckoutUrl(flow);
         } catch (error) {
           disableCheckoutButtons(root, false);
+          applyPaymentOptions();
           pageStatus(error.message || 'Unable to create checkout.', 'error');
         }
       }
@@ -213,7 +252,7 @@ window.Microgifter = window.Microgifter || {};
     createHeaderButton();
     createDrawer();
     bindPage();
-    refresh().catch(function (error) { pageStatus(error.message || 'Cart unavailable.', 'error'); });
+    loadPaymentOptions().finally(function(){refresh().catch(function (error) { pageStatus(error.message || 'Cart unavailable.', 'error'); });});
   });
   document.addEventListener('click', function (event) {
     if (!C()) return;
