@@ -1,0 +1,113 @@
+/* Store Canvas mobile cleanup: compact avatars and icon-only slideout tabs. */
+@media(max-width:760px){
+  .mg-store-canvas .mg-canvas-avatar-layer{
+    inset:96px 14px 20px!important;
+    gap:14px!important;
+    align-items:flex-start!important;
+  }
+  .mg-store-canvas .mg-canvas-avatar-card{
+    min-width:0!important;
+    width:auto!important;
+    max-width:92px!important;
+    display:inline-flex!important;
+    flex-direction:column!important;
+    align-items:center!important;
+    justify-content:flex-start!important;
+    gap:7px!important;
+    padding:8px!important;
+    border-radius:18px!important;
+    background:rgba(255,255,255,.88)!important;
+    text-align:center!important;
+  }
+  .mg-store-canvas .mg-canvas-avatar-card .mg-canvas-avatar{
+    width:58px!important;
+    height:58px!important;
+    border-radius:999px!important;
+    margin:0!important;
+  }
+  .mg-store-canvas .mg-canvas-avatar-card .mg-canvas-avatar-meta{
+    min-width:0!important;
+    width:100%!important;
+  }
+  .mg-store-canvas .mg-canvas-avatar-card .mg-canvas-avatar-meta strong{
+    display:block!important;
+    max-width:100%!important;
+    font-size:12px!important;
+    line-height:1.15!important;
+    text-align:center!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+  }
+  .mg-store-canvas .mg-canvas-avatar-card .mg-canvas-avatar-meta span,
+  .mg-store-canvas .mg-canvas-avatar-card .mg-canvas-avatar-meta small,
+  .mg-store-canvas .mg-canvas-avatar-card em,
+  .mg-store-canvas .mg-canvas-avatar-card .mg-canvas-avatar-status{
+    display:none!important;
+  }
+
+  .mg-canvas-crm-drawer .mg-canvas-tab-menu,
+  .mg-canvas-crm-drawer .mg-canvas-tabs,
+  .mg-canvas-crm-drawer [role="tablist"],
+  .mg-canvas-trigger-settings-drawer .mg-canvas-tab-menu,
+  .mg-canvas-trigger-settings-drawer .mg-canvas-tabs,
+  .mg-canvas-trigger-settings-drawer [role="tablist"],
+  .mg-canvas-trigger-drawer .mg-canvas-tab-menu,
+  .mg-canvas-trigger-drawer .mg-canvas-tabs,
+  .mg-canvas-trigger-drawer [role="tablist"],
+  .mg-canvas-settings-drawer .mg-canvas-tab-menu,
+  .mg-canvas-settings-drawer .mg-canvas-tabs,
+  .mg-canvas-settings-drawer [role="tablist"],
+  .mg-canvas-drawer .mg-canvas-tab-menu,
+  .mg-canvas-drawer .mg-canvas-tabs,
+  .mg-canvas-drawer [role="tablist"]{
+    display:flex!important;
+    align-items:center!important;
+    gap:8px!important;
+    overflow-x:auto!important;
+    scrollbar-width:none!important;
+  }
+  .mg-canvas-crm-drawer .mg-canvas-tab-menu::-webkit-scrollbar,
+  .mg-canvas-crm-drawer .mg-canvas-tabs::-webkit-scrollbar,
+  .mg-canvas-crm-drawer [role="tablist"]::-webkit-scrollbar,
+  .mg-canvas-trigger-settings-drawer .mg-canvas-tab-menu::-webkit-scrollbar,
+  .mg-canvas-trigger-settings-drawer .mg-canvas-tabs::-webkit-scrollbar,
+  .mg-canvas-trigger-settings-drawer [role="tablist"]::-webkit-scrollbar,
+  .mg-canvas-trigger-drawer .mg-canvas-tab-menu::-webkit-scrollbar,
+  .mg-canvas-trigger-drawer .mg-canvas-tabs::-webkit-scrollbar,
+  .mg-canvas-trigger-drawer [role="tablist"]::-webkit-scrollbar,
+  .mg-canvas-settings-drawer .mg-canvas-tab-menu::-webkit-scrollbar,
+  .mg-canvas-settings-drawer .mg-canvas-tabs::-webkit-scrollbar,
+  .mg-canvas-settings-drawer [role="tablist"]::-webkit-scrollbar,
+  .mg-canvas-drawer .mg-canvas-tab-menu::-webkit-scrollbar,
+  .mg-canvas-drawer .mg-canvas-tabs::-webkit-scrollbar,
+  .mg-canvas-drawer [role="tablist"]::-webkit-scrollbar{display:none!important}
+
+  .mg-canvas-mobile-icon-tab{
+    width:44px!important;
+    min-width:44px!important;
+    height:44px!important;
+    padding:0!important;
+    display:inline-grid!important;
+    place-items:center!important;
+    border-radius:14px!important;
+    overflow:hidden!important;
+  }
+  .mg-canvas-mobile-icon-tab .mg-canvas-tab-icon{
+    display:inline-grid!important;
+    place-items:center!important;
+    width:100%!important;
+    height:100%!important;
+    font-size:18px!important;
+    line-height:1!important;
+  }
+  .mg-canvas-mobile-icon-tab .mg-canvas-tab-label{
+    position:absolute!important;
+    width:1px!important;
+    height:1px!important;
+    overflow:hidden!important;
+    clip:rect(0 0 0 0)!important;
+    clip-path:inset(50%)!important;
+    white-space:nowrap!important;
+  }
+}
