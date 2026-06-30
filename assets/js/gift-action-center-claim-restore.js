@@ -1,6 +1,21 @@
 (() => {
   'use strict';
 
+  function loadGiftFeedMedia() {
+    if (!document.querySelector('link[href="/assets/css/gift-feed-media.css"]')) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = '/assets/css/gift-feed-media.css';
+      document.head.appendChild(link);
+    }
+    if (!document.querySelector('script[src="/assets/js/gift-action-center-media.js"]')) {
+      const script = document.createElement('script');
+      script.src = '/assets/js/gift-action-center-media.js';
+      script.defer = true;
+      document.body.appendChild(script);
+    }
+  }
+
   const KEY = 'mg:action-center:claimed-v1';
 
   function esc(value) {
@@ -117,6 +132,7 @@
   });
 
   function boot() {
+    loadGiftFeedMedia();
     const data = restorePayload();
     if (!data) return;
     window.setTimeout(() => openConfirmation(data), 350);
