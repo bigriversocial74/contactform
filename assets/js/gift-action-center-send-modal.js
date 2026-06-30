@@ -55,10 +55,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function resultMarkup(profile, index) {
     var name = profile.display_name || profile.name || profile.slug || 'Microgifter user';
-    var handle = profile.slug ? '@' + profile.slug : (profile.profile_type || 'profile');
-    var headline = profile.headline || profile.location || profile.profile_type || 'Microgifter profile';
-    var followers = profile.audience && typeof profile.audience.followers === 'number' ? profile.audience.followers : null;
-    var meta = followers !== null ? handle + ' · ' + followers + ' followers' : handle;
+    var handle = profile.slug ? '@' + profile.slug : 'Microgifter user';
+    var headline = profile.headline || profile.location || profile.profile_type || 'Searchable Microgifter profile';
+    var type = profile.profile_type ? String(profile.profile_type).replace(/_/g, ' ') : 'profile';
+    var location = profile.location ? ' · ' + profile.location : '';
+    var meta = handle + ' · ' + type + location;
     return '<button class="mg-send-result" type="button" role="option" data-recipient-index="' + String(index) + '">' +
       '<span class="mg-send-result-avatar">' + recipientAvatarMarkup(profile) + '</span>' +
       '<span class="mg-send-result-main"><strong>' + esc(name) + '</strong><em>' + esc(headline) + '</em><small>' + esc(meta) + '</small></span>' +
@@ -112,7 +113,7 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
     searchController = new AbortController();
-    renderResults(form, [], 'Searching users…');
+    renderResults(form, [], 'Searching Microgifter users…');
     try {
       var url = '/api/public/discover.php?q=' + encodeURIComponent(query.trim()) + '&limit=8&sort=trending';
       var response = await fetch(url, { headers: { 'Accept': 'application/json' }, signal: searchController.signal });
@@ -121,7 +122,7 @@ document.addEventListener('DOMContentLoaded', function () {
       var items = payload && payload.data && payload.data.results && Array.isArray(payload.data.results.items)
         ? payload.data.results.items
         : [];
-      renderResults(form, items, 'No matching users found.');
+      renderResults(form, items, 'No matching Microgifter users found.');
     } catch (error) {
       if (error.name === 'AbortError') return;
       renderResults(form, [], 'Unable to load users. Keep typing or try again.');
@@ -192,13 +193,13 @@ document.addEventListener('DOMContentLoaded', function () {
         '<label for="' + recipientId + '">Regift to</label>' +
         '<div class="mg-send-exact-input-shell">' +
           '<span class="mg-send-exact-search" aria-hidden="true"></span>' +
-          '<input id="' + recipientId + '" type="text" name="recipient" required autocomplete="off" placeholder="Search users" aria-expanded="false" aria-controls="' + resultsId + '">' +
+          '<input id="' + recipientId + '" type="text" name="recipient" required autocomplete="off" placeholder="Search any Microgifter user" aria-expanded="false" aria-controls="' + resultsId + '">' +
           '<input type="hidden" name="recipient_profile_id">' +
           '<input type="hidden" name="recipient_slug">' +
         '</div>' +
         '<div class="mg-send-selected" data-selected-recipient hidden></div>' +
         '<div class="mg-send-results" id="' + resultsId + '" data-send-recipient-results role="listbox" hidden></div>' +
-        '<small>Tap a user result to choose the recipient.</small>' +
+        '<small>Search public Microgifter profiles. Tap a result to choose the recipient.</small>' +
       '</div>' +
       '<div class="mg-send-exact-field mg-send-exact-message">' +
         '<label>Message</label>' +
