@@ -92,7 +92,6 @@ function mg_payment_issue_order_pppm(PDO $pdo, int $orderDbId, ?int $actorUserId
 
 function mg_payment_microgift_template_version_for_line(PDO $pdo, array $order, array $line): string
 {
-    // The canonical published PPPM voucher definition is created when the merchant publishes the product.
     $canonical=$pdo->prepare(
         "SELECT mv.public_id
          FROM catalog_pppm_templates cpt
@@ -106,7 +105,6 @@ function mg_payment_microgift_template_version_for_line(PDO $pdo, array $order, 
     $canonicalPublic=(string)($canonical->fetchColumn()?:'');
     if($canonicalPublic!=='')return $canonicalPublic;
 
-    // Legacy compatibility: recover a pre-existing Microgift definition and backfill the PPPM link.
     $existing=$pdo->prepare("SELECT v.id,v.public_id FROM microgift_template_versions v INNER JOIN microgift_templates t ON t.id=v.template_id WHERE v.product_version_id=? AND v.status='published' AND t.owner_user_id=? AND t.status='active' ORDER BY v.id DESC LIMIT 1 FOR UPDATE");
     $existing->execute([(int)$line['product_version_id'],(int)$order['merchant_user_id']]);
     $existingRow=$existing->fetch(PDO::FETCH_ASSOC);
@@ -179,16 +177,15 @@ function mg_payment_microgift_template_version_for_line(PDO $pdo, array $order, 
 
 function mg_payment_issue_order_microgifts(PDO $pdo, int $orderDbId, ?int $actorUserId = null): array
 {
-    if(!mg_payment_order_items_have_merchant($pdo)){
-        return ['issued_count'=>0,'skipped'=>true,'reason'=>'commerce_order_items.merchant_user_id_missing'];
-    }
     $orderStmt=$pdo->prepare('SELECT * FROM commerce_orders WHERE id=? LIMIT 1 FOR UPDATE');
     $orderStmt->execute([$orderDbId]);
     $order=$orderStmt->fetch(PDO::FETCH_ASSOC);
     if(!$order || (string)$order['payment_status']!=='paid')return ['issued_count'=>0,'skipped'=>true];
 
     $eventActorUserId=$actorUserId ?: (int)$order['buyer_user_id'];
-    $pdo->prepare('UPDATE commerce_order_items SET merchant_user_id=? WHERE order_id=? AND merchant_user_id IS NULL')->execute([(int)$order['merchant_user_id'],$orderDbId]);
+    if(mg_payment_order_items_have_merchant($pdo)){
+        $pdo->prepare('UPDATE commerce_order_items SET merchant_user_id=? WHERE order_id=? AND merchant_user_id IS NULL')->execute([(int)$order['merchant_user_id'],$orderDbId]);
+    }
     $lineStmt=$pdo->prepare('SELECT * FROM commerce_order_items WHERE order_id=? ORDER BY id FOR UPDATE');
     $lineStmt->execute([$orderDbId]);
     $lines=$lineStmt->fetchAll(PDO::FETCH_ASSOC);
