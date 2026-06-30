@@ -62,9 +62,9 @@ function mg_stamp_debit_actions(): array
             'key' => 'regift_send',
             'label' => 'Regift send',
             'channel' => 'Direct',
-            'stamp_value' => 1,
+            'stamp_value' => 0,
             'scope' => 'Microgift',
-            'description' => 'Sending a regifted Microgift or promotional Reward to a new recipient.',
+            'description' => 'Regifting an already-purchased Microgift or promotional Reward to a new recipient. This send is free.',
             'enabled' => true,
         ],
         [
