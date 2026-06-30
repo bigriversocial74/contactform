@@ -105,13 +105,17 @@ document.addEventListener('DOMContentLoaded',function(){
   }
   function generatedConfigBlock(key){
     return "<?php\n"+
-      "// Local Microgifter server secrets. This file is ignored by Git.\n"+
+      "// Local Microgifter server settings. This file is ignored by Git.\n"+
       "// Keep this file private and do not paste this key into chat, GitHub, or email.\n"+
       "$mgPaymentCredentialKey = '"+key+"';\n"+
-      "putenv('MG_PAYMENT_CREDENTIAL_KEY=' . $mgPaymentCredentialKey);\n\n"+
+      "putenv('MG_PAYMENT_CREDENTIAL_KEY=' . $mgPaymentCredentialKey);\n"+
+      "putenv('MG_PAYMENT_PROVIDER=stripe');\n"+
+      "putenv('MG_PAYMENT_MODE=test');\n\n"+
       "return [\n"+
       "    'payments' => [\n"+
       "        'credential_key' => $mgPaymentCredentialKey,\n"+
+      "        'provider' => 'stripe',\n"+
+      "        'mode' => 'test',\n"+
       "    ],\n"+
       "];\n";
   }
