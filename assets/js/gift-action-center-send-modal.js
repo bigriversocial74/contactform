@@ -67,20 +67,26 @@ document.addEventListener('DOMContentLoaded', function () {
       '</button>';
   }
 
-  function renderResults(results, items, message) {
+  function renderResults(form, items, message) {
+    var results = form.querySelector('[data-send-recipient-results]');
+    var input = form.querySelector('input[name="recipient"]');
     if (!results) return;
     results.hidden = false;
+    if (input) input.setAttribute('aria-expanded', 'true');
     results.innerHTML = items && items.length
       ? '<div class="mg-send-results-list">' + items.map(resultMarkup).join('') + '</div>'
       : '<div class="mg-send-results-empty">' + esc(message || 'No matching users found.') + '</div>';
     results.__items = items || [];
   }
 
-  function clearResults(results) {
+  function clearResults(form) {
+    var results = form.querySelector('[data-send-recipient-results]');
+    var input = form.querySelector('input[name="recipient"]');
     if (!results) return;
     results.hidden = true;
     results.innerHTML = '';
     results.__items = [];
+    if (input) input.setAttribute('aria-expanded', 'false');
   }
 
   function selectRecipient(form, profile) {
@@ -88,7 +94,6 @@ document.addEventListener('DOMContentLoaded', function () {
     var id = form.querySelector('input[name="recipient_profile_id"]');
     var slug = form.querySelector('input[name="recipient_slug"]');
     var selected = form.querySelector('[data-selected-recipient]');
-    var results = form.querySelector('[data-send-recipient-results]');
     var name = profile.display_name || profile.name || profile.slug || '';
     if (input) input.value = name;
     if (id) id.value = profile.id || profile.public_id || '';
@@ -99,18 +104,17 @@ document.addEventListener('DOMContentLoaded', function () {
         '<span><strong>' + esc(name || 'Selected user') + '</strong><em>' + esc(profile.slug ? '@' + profile.slug : (profile.profile_type || 'profile')) + '</em></span>' +
         '<button type="button" data-clear-recipient aria-label="Clear selected recipient">×</button>';
     }
-    clearResults(results);
+    clearResults(form);
   }
 
   async function searchRecipients(form, query) {
-    var results = form.querySelector('[data-send-recipient-results]');
     if (searchController) searchController.abort();
     if (!query || query.trim().length < 1) {
-      clearResults(results);
+      clearResults(form);
       return;
     }
     searchController = new AbortController();
-    renderResults(results, [], 'Searching users…');
+    renderResults(form, [], 'Searching users…');
     try {
       var url = '/api/public/discover.php?q=' + encodeURIComponent(query.trim()) + '&limit=8&sort=trending';
       var response = await fetch(url, { headers: { 'Accept': 'application/json' }, signal: searchController.signal });
@@ -119,10 +123,10 @@ document.addEventListener('DOMContentLoaded', function () {
       var items = payload && payload.data && payload.data.results && Array.isArray(payload.data.results.items)
         ? payload.data.results.items
         : [];
-      renderResults(results, items, 'No matching users found.');
+      renderResults(form, items, 'No matching users found.');
     } catch (error) {
       if (error.name === 'AbortError') return;
-      renderResults(results, [], 'Unable to load users. Keep typing or try again.');
+      renderResults(form, [], 'Unable to load users. Keep typing or try again.');
     }
   }
 
