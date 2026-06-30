@@ -1,10 +1,13 @@
 /* Merchant Agent Chat mobile layout overrides.
-   Keeps the desktop right rail, moves the rail into a right slide-out on mobile,
-   removes the legacy left nav from this page, and pins the composer to the screen bottom. */
-.mg-agent-chat-app--no-nav{
+   Keeps the required shared layout contract, visually removes the legacy left nav for this page,
+   moves the desktop right rail into a right slide-out on mobile, and pins the composer to the bottom. */
+.mg-agent-chat-app-no-nav{
   display:block!important;
 }
-.mg-agent-chat-app--no-nav .mg-merchant-main{
+.mg-agent-chat-app-no-nav .mg-app-sidebar{
+  display:none!important;
+}
+.mg-agent-chat-app-no-nav .mg-merchant-main{
   width:100%!important;
   max-width:none!important;
 }
@@ -32,22 +35,22 @@
   outline-offset:2px;
 }
 @media(max-width:1180px){
-  .mg-agent-chat-app--no-nav .mg-agent-chat-layout,
-  .mg-agent-chat-app--no-nav .mg-agent-chat-grid{
+  .mg-agent-chat-app-no-nav .mg-agent-chat-layout,
+  .mg-agent-chat-app-no-nav .mg-agent-chat-grid{
     grid-template-columns:minmax(0,1fr) 320px;
   }
-  .mg-agent-chat-app--no-nav .mg-agent-chat-right{
+  .mg-agent-chat-app-no-nav .mg-agent-chat-right{
     grid-template-columns:1fr;
   }
 }
 @media(max-width:760px){
-  body:has(.mg-agent-chat-app--no-nav){
+  body:has(.mg-agent-chat-app-no-nav){
     overflow-x:hidden;
   }
   body.mg-agent-chat-drawer-open{
     overflow:hidden;
   }
-  .mg-agent-chat-app--no-nav .mg-merchant-main{
+  .mg-agent-chat-app-no-nav .mg-merchant-main{
     min-height:calc(100vh - 64px)!important;
     height:auto!important;
     overflow:visible!important;
