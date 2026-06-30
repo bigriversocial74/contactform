@@ -42,7 +42,7 @@ require __DIR__ . '/includes/header.php';
           <div class="is-active"><span>01</span><strong>Cart</strong><small>Live server totals</small></div>
           <div><span>02</span><strong>Draft</strong><small>Frozen snapshot</small></div>
           <div><span>03</span><strong>Order</strong><small>Idempotent creation</small></div>
-          <div><span>04</span><strong>Payment</strong><small>Choose card or cash</small></div>
+          <div><span>04</span><strong>Payment</strong><small>Choose available method</small></div>
           <div><span>05</span><strong>Issuance</strong><small>Microgifts delivered</small></div>
         </div>
 
@@ -66,13 +66,13 @@ require __DIR__ . '/includes/header.php';
               </div>
             </div>
             <div data-cart-summary><div class="mg-empty-state">Calculating…</div></div>
-            <div class="mg-commerce-actions is-stack">
-              <button class="mg-btn mg-btn-primary" type="button" data-cart-checkout-provider="stripe">Pay with card</button>
+            <div class="mg-commerce-actions is-stack" data-cart-payment-actions>
+              <button class="mg-btn mg-btn-primary" type="button" data-cart-checkout-provider="stripe" hidden>Pay with card</button>
               <button class="mg-btn mg-btn-soft" type="button" data-cart-checkout-provider="cash">Pay with cash</button>
               <button class="mg-btn mg-btn-soft" type="button" data-cart-clear>Clear cart</button>
               <a class="mg-btn mg-btn-soft" href="/discover.php">Continue shopping</a>
             </div>
-            <p class="mg-commerce-note">Choose card for Stripe checkout or cash for the manual checkout workaround.</p>
+            <p class="mg-commerce-note" data-cart-payment-note>Loading available payment methods…</p>
             <div data-cart-status class="mg-commerce-status" role="status" aria-live="polite"></div>
           </aside>
         </div>
