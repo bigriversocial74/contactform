@@ -126,6 +126,8 @@ function mg_payment_save_platform_config(PDO $pdo,array $input,int $actorUserId)
     $secret=trim((string)($input['secret_key']??''));
     $webhook=trim((string)($input['webhook_secret']??''));
     $clientId=trim((string)($input['connect_client_id']??''));
+    $clearSecret=!empty($input['clear_secret_key']);
+    $clearWebhook=!empty($input['clear_webhook_secret']);
     $feeBps=max(0,min(10000,(int)($input['platform_fee_bps']??1500)));
     $fixedFee=max(0,(int)($input['fixed_fee_cents']??0));
     $enabled=!empty($input['enabled'])?1:0;
@@ -149,8 +151,8 @@ function mg_payment_save_platform_config(PDO $pdo,array $input,int $actorUserId)
     if($row){
         if($publishable==='')$publishable=(string)($row['publishable_key']??'');
     }
-    $secretCipher=$secret!==''?mg_payment_encrypt_secret($secret):(string)($row['secret_key_ciphertext']??'');
-    $webhookCipher=$webhook!==''?mg_payment_encrypt_secret($webhook):(string)($row['webhook_secret_ciphertext']??'');
+    $secretCipher=$clearSecret?'':($secret!==''?mg_payment_encrypt_secret($secret):(string)($row['secret_key_ciphertext']??''));
+    $webhookCipher=$clearWebhook?'':($webhook!==''?mg_payment_encrypt_secret($webhook):(string)($row['webhook_secret_ciphertext']??''));
 
     if($row){
         $pdo->prepare('UPDATE payment_platform_credentials SET publishable_key=?,secret_key_ciphertext=?,webhook_secret_ciphertext=?,connect_client_id=?,platform_fee_bps=?,fixed_fee_cents=?,enabled=?,updated_by_user_id=?,updated_at=NOW() WHERE id=?')
