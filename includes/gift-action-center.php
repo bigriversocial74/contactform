@@ -1,7 +1,6 @@
 <?php
 declare(strict_types=1);
 $giftCenterFolder=in_array($giftCenterFolder??'inbox',['inbox','sent','claimed'],true)?$giftCenterFolder:'inbox';
-$giftCenterTitle=['inbox'=>'Inbox','sent'=>'Claimed','claimed'=>'Claimed'][$giftCenterFolder] ?? 'Inbox';
 $giftCenterTitle=['inbox'=>'Inbox','sent'=>'Sent','claimed'=>'Claimed'][$giftCenterFolder];
 $giftCenterDemoEnabled=mg_has_role('super_admin');
 ?>
