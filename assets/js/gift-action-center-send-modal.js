@@ -49,9 +49,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function recipientAvatarMarkup(profile) {
     var name = profile.display_name || profile.name || profile.slug || 'User';
     var avatar = profile.avatar_url || profile.avatar || profile.profile_image_url || '';
-    if (avatar) {
-      return '<img src="' + esc(avatar) + '" alt="' + esc(name) + ' profile picture" loading="lazy">';
-    }
+    if (avatar) return '<img src="' + esc(avatar) + '" alt="" loading="lazy">';
     return '<span>' + esc(firstLetter(name)) + '</span>';
   }
 
@@ -177,6 +175,8 @@ document.addEventListener('DOMContentLoaded', function () {
   function buildExactSendModal(row) {
     var title = row && row.querySelector('.mg-gift-row-main h3') ? row.querySelector('.mg-gift-row-main h3').textContent.trim() : 'Microgift';
     var merchant = rowMerchant(row);
+    var recipientId = 'mg-send-recipient-' + Date.now();
+    var resultsId = recipientId + '-results';
 
     modal.classList.add('mg-send-product-modal');
     modal.classList.add('mg-send-exact-modal');
@@ -186,31 +186,26 @@ document.addEventListener('DOMContentLoaded', function () {
     modalBody.innerHTML = '<form class="mg-send-exact-form" data-action-form="send">' +
       '<section class="mg-send-exact-product" aria-label="Selected gift">' +
         '<div class="mg-send-exact-thumb">' + thumbMarkup(row, title) + '</div>' +
-        '<div class="mg-send-exact-product-copy">' +
-          '<h2>' + esc(title) + '</h2>' +
-          '<p>' + esc(merchant) + '</p>' +
-        '</div>' +
+        '<div class="mg-send-exact-product-copy"><h2>' + esc(title) + '</h2><p>' + esc(merchant) + '</p></div>' +
       '</section>' +
-      '<label class="mg-send-exact-field mg-send-exact-recipient">' +
-        '<span>Regift to</span>' +
+      '<div class="mg-send-exact-field mg-send-exact-recipient">' +
+        '<label for="' + recipientId + '">Regift to</label>' +
         '<div class="mg-send-exact-input-shell">' +
           '<span class="mg-send-exact-search" aria-hidden="true"></span>' +
-          '<input type="text" name="recipient" required autocomplete="off" placeholder="Start typing a follower or user" aria-expanded="false" aria-controls="mg-send-recipient-results">' +
+          '<input id="' + recipientId + '" type="text" name="recipient" required autocomplete="off" placeholder="Search users" aria-expanded="false" aria-controls="' + resultsId + '">' +
           '<input type="hidden" name="recipient_profile_id">' +
           '<input type="hidden" name="recipient_slug">' +
         '</div>' +
         '<div class="mg-send-selected" data-selected-recipient hidden></div>' +
-        '<div class="mg-send-results" id="mg-send-recipient-results" data-send-recipient-results role="listbox" hidden></div>' +
-        '<small>Search followers and public Microgifter profiles. Tap a result to add the recipient.</small>' +
-      '</label>' +
-      '<label class="mg-send-exact-field mg-send-exact-message">' +
-        '<span>Message</span>' +
+        '<div class="mg-send-results" id="' + resultsId + '" data-send-recipient-results role="listbox" hidden></div>' +
+        '<small>Tap a user result to choose the recipient.</small>' +
+      '</div>' +
+      '<div class="mg-send-exact-field mg-send-exact-message">' +
+        '<label>Message</label>' +
         '<textarea name="message" maxlength="500" placeholder="Add a note to travel with the gift"></textarea>' +
         '<em data-send-message-count>0/500</em>' +
-      '</label>' +
-      '<div class="mg-send-exact-actions">' +
-        '<button class="mg-send-exact-primary" type="submit">Regift Microgift</button>' +
       '</div>' +
+      '<div class="mg-send-exact-actions"><button class="mg-send-exact-primary" type="submit">Regift Microgift</button></div>' +
     '</form>';
 
     var form = modalBody.querySelector('.mg-send-exact-form');
