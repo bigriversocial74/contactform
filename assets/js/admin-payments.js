@@ -34,8 +34,8 @@ document.addEventListener('DOMContentLoaded',function(){
   }
   function validatePayload(payload){
     var prefix=expectedPrefix();
-    if(payload.publishable_key&&payload.publishable_key.indexOf('pk_'+prefix+'_')!==0)return 'Publishable key must start with pk_'+prefix+'_ for '+prefix+' mode.';
-    if(payload.secret_key&&payload.secret_key.indexOf('sk_'+prefix+'_')!==0)return 'Secret key must start with sk_'+prefix+'_ for '+prefix+' mode.';
+    if(payload.publishable_key&&payload.publishable_key.indexOf('pk_'+prefix+'_')!==0)return 'This page is in '+prefix+' mode. Publishable key must start with pk_'+prefix+'_. Switch mode or paste the matching key.';
+    if(payload.secret_key&&payload.secret_key.indexOf('sk_'+prefix+'_')!==0)return 'This page is in '+prefix+' mode. Secret key must start with sk_'+prefix+'_. Switch mode or paste the matching key.';
     if(payload.webhook_secret&&payload.webhook_secret.indexOf('whsec_')!==0)return 'Webhook signing secret must start with whsec_.';
     if(payload.connect_client_id&&payload.connect_client_id.indexOf('ca_')!==0)return 'Connect client ID must start with ca_. A whsec_ value belongs in Webhook signing secret, not Connect client ID.';
     return '';
@@ -56,10 +56,10 @@ document.addEventListener('DOMContentLoaded',function(){
     var webhookHint=String(provider.webhook_hint||'');
     var secretNode=ensureHint(secretInput,'data-payment-secret-key-hint');
     var webhookNode=ensureHint(webhookInput,'data-payment-webhook-secret-hint');
-    if(secretInput)secretInput.placeholder=secretHint?'Saved encrypted value: '+secretHint+' — enter new value to replace':'sk_'+expectedPrefix()+'_…';
-    if(webhookInput)webhookInput.placeholder=webhookHint?'Saved encrypted value: '+webhookHint+' — enter new value to replace':'whsec_…';
-    if(secretNode){secretNode.textContent=secretHint?'Saved encrypted secret key: '+secretHint+'. Leave blank to keep it.':'No saved secret key for this mode.';secretNode.classList.toggle('is-missing',!secretHint)}
-    if(webhookNode){webhookNode.textContent=webhookHint?'Saved encrypted webhook secret: '+webhookHint+'. Leave blank to keep it.':'No saved webhook signing secret for this mode.';webhookNode.classList.toggle('is-missing',!webhookHint)}
+    if(secretInput)secretInput.placeholder=secretHint?'Saved encrypted value: '+secretHint+' — paste a new matching value to replace':'sk_'+expectedPrefix()+'_…';
+    if(webhookInput)webhookInput.placeholder=webhookHint?'Saved encrypted value: '+webhookHint+' — paste a new value to replace':'whsec_…';
+    if(secretNode){secretNode.textContent=secretHint?'Saved encrypted secret key: '+secretHint+'. Blank keeps this value.':'No saved secret key for this mode.';secretNode.classList.toggle('is-missing',!secretHint)}
+    if(webhookNode){webhookNode.textContent=webhookHint?'Saved encrypted webhook secret: '+webhookHint+'. Blank keeps this value.':'No saved webhook signing secret for this mode.';webhookNode.classList.toggle('is-missing',!webhookHint)}
   }
   function setCredentialState(check){
     if(!credentialState)return;
@@ -67,6 +67,15 @@ document.addEventListener('DOMContentLoaded',function(){
     credentialState.classList.toggle('is-ready',ok);
     credentialState.classList.toggle('is-missing',!ok);
     credentialState.textContent=ok?'Credential encryption is ready. You can save Stripe secret values.':((check&&check.detail)||'MG_PAYMENT_CREDENTIAL_KEY is missing. Add api/config.local.php before saving Stripe secret values.');
+  }
+  function currentBlockers(data){
+    var out=[];
+    var c=data&&data.checks?data.checks:{};
+    ['publishable_key','secret_key','webhook_secret'].forEach(function(key){
+      var item=c[key];
+      if(item&&!item.ok)out.push(item.label+': '+item.detail);
+    });
+    return out;
   }
   function fill(data){
     data=data||{};
@@ -158,7 +167,13 @@ document.addEventListener('DOMContentLoaded',function(){
       return;
     }
     msg('Loading payment settings…','loading');
-    try{var response=await Microgifter.get('/api/admin/payment-settings.php?mode='+encodeURIComponent(mode.value));fill(response.data||response);msg('Payment settings loaded.','success')}
+    try{
+      var response=await Microgifter.get('/api/admin/payment-settings.php?mode='+encodeURIComponent(mode.value));
+      var data=response.data||response;
+      fill(data);
+      var blockers=currentBlockers(data);
+      msg(blockers.length?'Payment settings loaded, but this mode still has key issues: '+blockers.join(' '):'Payment settings loaded.','success');
+    }
     catch(error){msg(error.message||'Unable to load payment settings.','error');setCredentialState(null)}
   }
   async function saveSettings(){
@@ -174,8 +189,10 @@ document.addEventListener('DOMContentLoaded',function(){
     msg('Saving Stripe configuration…','loading');
     try{
       var response=await Microgifter.post('/api/admin/payment-settings.php',payload);
-      fill(response.data||response);
-      msg(response.message||'Stripe configuration saved successfully.','success');
+      var data=response.data||response;
+      fill(data);
+      if(data.save_warning){msg(data.save_warning,'error');}
+      else{msg(response.message||'Stripe configuration saved successfully.','success');}
     }catch(error){
       msg(error.message||'Unable to save payment settings.','error');
     }finally{
