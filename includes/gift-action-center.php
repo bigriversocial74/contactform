@@ -1,11 +1,13 @@
 <?php
 declare(strict_types=1);
 $giftCenterFolder=in_array($giftCenterFolder??'inbox',['inbox','sent','claimed'],true)?$giftCenterFolder:'inbox';
+$giftCenterTitle=['inbox'=>'Inbox','sent'=>'Claimed','claimed'=>'Claimed'][$giftCenterFolder] ?? 'Inbox';
 $giftCenterTitle=['inbox'=>'Inbox','sent'=>'Sent','claimed'=>'Claimed'][$giftCenterFolder];
 $giftCenterDemoEnabled=mg_has_role('super_admin');
 ?>
 <link rel="stylesheet" href="/assets/css/gift-action-center-modal-fix.css">
 <link rel="stylesheet" href="/assets/css/gift-action-center-claim-step-polish.css">
+<link rel="stylesheet" href="/assets/css/gift-product-media.css">
 <section class="mg-app-shell mg-gift-center-page" data-gift-center data-initial-folder="<?= mg_e($giftCenterFolder) ?>" data-demo-enabled="<?= $giftCenterDemoEnabled?'true':'false' ?>">
   <?php require __DIR__ . '/agent-sidebar.php'; ?>
 
@@ -41,6 +43,7 @@ $giftCenterDemoEnabled=mg_has_role('super_admin');
     <div class="mg-action-modal-body" data-action-modal-body></div>
   </section>
 </section>
+<script src="/assets/js/gift-product-media-view.js" defer></script>
 <script src="/assets/js/gift-action-center-actions.js" defer></script>
 <script src="/assets/js/gift-action-center-claim-qr.js" defer></script>
 <script src="/assets/js/gift-action-center-claim-restore.js" defer></script>
