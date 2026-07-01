@@ -7,7 +7,7 @@ $page_title = 'Build a Product | Microgifter';
 $page_section = 'builder';
 $header_mode = 'builder';
 $page_styles = ['/assets/css/builder-stage4b.css','/assets/css/builder-shell-fixes.css','/assets/css/gift-envelope-presentation.css','/assets/css/builder-desktop-layout.css','/assets/css/builder-card-tabs-canvas.css','/assets/css/builder-greeting-card-presentation.css','/assets/css/builder-card-full-bleed-mobile.css','/assets/css/builder-card-proportions.css'];
-$page_scripts = ['/assets/js/builder-stage4b.js','/assets/js/builder-product-types.js','/assets/js/product-builder-shell.js','/assets/js/gift-envelope-presentation.js','/assets/js/builder-card-tabs-canvas.js','/assets/js/builder-greeting-card-presentation.js','/assets/js/builder-merchant-profile.js'];
+$page_scripts = ['/assets/js/builder-stage4b.js','/assets/js/builder-product-types.js','/assets/js/product-builder-shell.js','/assets/js/gift-envelope-presentation.js','/assets/js/builder-card-tabs-canvas.js','/assets/js/builder-greeting-card-presentation.js','/assets/js/builder-merchant-profile.js','/assets/js/builder-simple-product-post.js'];
 $product_id = trim((string) ($_GET['id'] ?? ''));
 
 require __DIR__ . '/includes/header.php';
@@ -34,7 +34,7 @@ require __DIR__ . '/includes/header.php';
                   <span class="mg-product-profile-copy"><small>Merchant</small><strong data-preview-merchant>Your business</strong></span>
                 </div>
                 <h1 data-preview-title>Coffee for two</h1>
-                <p data-preview-headline>A small gift, already waiting for you.</p>
+                <p data-preview-headline>Add product description.</p>
                 <div class="mg-builder-simple-value" data-preview-value>$25.00</div>
               </div>
               <div class="mg-builder-simple-media" data-cover-media></div>
@@ -62,7 +62,7 @@ require __DIR__ . '/includes/header.php';
                 </div>
                 <span class="mg-eyebrow">Product info</span>
                 <h3 data-preview-title>Coffee for two</h3>
-                <p data-preview-headline>A small gift, already waiting for you.</p>
+                <p data-preview-headline>Add product description.</p>
                 <div class="mg-card-value" data-preview-value>$25.00</div>
               </section>
               <div class="mg-card-controls" aria-label="Greeting card preview controls">
@@ -95,7 +95,7 @@ require __DIR__ . '/includes/header.php';
                 </div>
                 <span class="mg-eyebrow">Product info</span>
                 <h3 data-preview-title>Coffee for two</h3>
-                <p data-preview-headline>A small gift, already waiting for you.</p>
+                <p data-preview-headline>Add product description.</p>
                 <div class="mg-card-value" data-preview-value>$25.00</div>
               </section>
               <div class="mg-card-controls" aria-label="Multimedia card preview controls">
