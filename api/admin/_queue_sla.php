@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/_admin_schema.php';
+
 function mg_queue_sla_policy(string $priority, string $category, string $flagState): array
 {
     $hours = ['critical' => 4, 'high' => 12, 'normal' => 48, 'low' => 96][$priority] ?? 48;
@@ -46,8 +48,30 @@ function mg_queue_sla_status(?string $slaDueAt, string $status): string
     return ($due - $now) <= 7200 ? 'at_risk' : 'compliant';
 }
 
+function mg_queue_sla_required_columns(): array
+{
+    return ['id','public_id','target_user_id','assigned_admin_user_id','category','priority','status','flag_state','created_at','updated_at','routed_lane','sla_due_at','sla_status','sla_policy_json','last_routed_at','auto_escalated_at'];
+}
+
+function mg_queue_sla_schema_result(PDO $pdo): ?array
+{
+    if (!mg_admin_schema_has_table($pdo, 'admin_user_notes')) {
+        return ['schema_required' => ['admin_user_notes']];
+    }
+    $missing = mg_admin_schema_missing_columns($pdo, 'admin_user_notes', mg_queue_sla_required_columns());
+    if (!$missing) {
+        return null;
+    }
+    return ['schema_required' => array_map(static fn(string $column): string => 'admin_user_notes.' . $column, $missing)];
+}
+
 function mg_queue_sla_recalculate(PDO $pdo, int $actorId, int $limit = 250): array
 {
+    $schema = mg_queue_sla_schema_result($pdo);
+    if ($schema !== null) {
+        return ['processed' => 0, 'updated' => 0, 'breached' => 0, 'auto_escalated' => 0, 'auto_routed' => 0] + $schema;
+    }
+
     $stmt = $pdo->prepare(
         'SELECT id, public_id, target_user_id, assigned_admin_user_id, category, priority, status, flag_state, created_at, updated_at, sla_due_at, sla_status, routed_lane
          FROM admin_user_notes
@@ -123,11 +147,37 @@ function mg_queue_sla_recalculate(PDO $pdo, int $actorId, int $limit = 250): arr
         $update->execute($params);
         $updated += $update->rowCount();
     }
-    return ['processed' => count($notes), 'updated' => $updated, 'breached' => $breached, 'auto_escalated' => $autoEscalated, 'auto_routed' => $autoRouted];
+    return ['processed' => count($notes), 'updated' => $updated, 'breached' => $breached, 'auto_escalated' => $autoEscalated, 'auto_routed' => $autoRouted, 'schema_required' => []];
+}
+
+function mg_queue_sla_empty_health(array $schemaRequired): array
+{
+    return [
+        'summary' => [
+            'total' => 0,
+            'active_total' => 0,
+            'compliant_total' => 0,
+            'at_risk_total' => 0,
+            'breached_total' => 0,
+            'unassigned_total' => 0,
+            'stale_waiting_total' => 0,
+            'auto_escalated_total' => 0,
+            'schema_required' => $schemaRequired,
+            'score' => ['section' => 'Queue SLA health', 'score' => 7, 'max' => 10, 'status' => 'schema_required'],
+        ],
+        'lanes' => [],
+        'workload' => [],
+        'schema_required' => $schemaRequired,
+    ];
 }
 
 function mg_queue_sla_health(PDO $pdo): array
 {
+    $schema = mg_queue_sla_schema_result($pdo);
+    if ($schema !== null) {
+        return mg_queue_sla_empty_health($schema['schema_required']);
+    }
+
     $summary = $pdo->query(
         'SELECT
             COUNT(*) total,
@@ -164,9 +214,11 @@ function mg_queue_sla_health(PDO $pdo): array
             'unassigned_total' => (int)($summary['unassigned_total'] ?? 0),
             'stale_waiting_total' => (int)($summary['stale_waiting_total'] ?? 0),
             'auto_escalated_total' => (int)($summary['auto_escalated_total'] ?? 0),
+            'schema_required' => [],
             'score' => ['section' => 'Queue SLA health', 'score' => 10, 'max' => 10, 'status' => 'cleared'],
         ],
         'lanes' => array_map(static fn(array $row): array => ['lane' => (string)$row['lane'], 'total' => (int)$row['total'], 'active_total' => (int)$row['active_total'], 'breached_total' => (int)$row['breached_total']], $lanes),
         'workload' => array_map(static fn(array $row): array => ['admin_id' => $row['admin_id'] !== null ? (int)$row['admin_id'] : null, 'admin_name' => (string)$row['admin_name'], 'active_total' => (int)$row['active_total'], 'critical_total' => (int)$row['critical_total'], 'breached_total' => (int)$row['breached_total'], 'oldest_created_at' => $row['oldest_created_at'] !== null ? (string)$row['oldest_created_at'] : null], $workload),
+        'schema_required' => [],
     ];
 }
