@@ -7,7 +7,7 @@ $page_title = 'Build a Product | Microgifter';
 $page_section = 'builder';
 $header_mode = 'builder';
 $page_styles = ['/assets/css/builder-stage4b.css','/assets/css/builder-shell-fixes.css','/assets/css/gift-envelope-presentation.css','/assets/css/builder-desktop-layout.css','/assets/css/builder-card-tabs-canvas.css','/assets/css/builder-greeting-card-presentation.css','/assets/css/builder-card-full-bleed-mobile.css','/assets/css/builder-card-proportions.css'];
-$page_scripts = ['/assets/js/builder-stage4b.js','/assets/js/builder-card-message-media-preview.js','/assets/js/builder-card-text-style-controls.js','/assets/js/builder-product-types.js','/assets/js/product-builder-shell.js','/assets/js/gift-envelope-presentation.js','/assets/js/builder-card-tabs-canvas.js','/assets/js/builder-greeting-card-presentation.js','/assets/js/builder-merchant-profile.js','/assets/js/builder-simple-product-post.js'];
+$page_scripts = ['/assets/js/builder-stage4b.js','/assets/js/builder-card-message-media-preview.js?v=20260701h','/assets/js/builder-card-text-style-controls.js?v=20260701h','/assets/js/builder-product-types.js','/assets/js/product-builder-shell.js','/assets/js/gift-envelope-presentation.js','/assets/js/builder-card-tabs-canvas.js','/assets/js/builder-greeting-card-presentation.js','/assets/js/builder-merchant-profile.js','/assets/js/builder-simple-product-post.js'];
 $product_id = trim((string) ($_GET['id'] ?? ''));
 
 require __DIR__ . '/includes/header.php';
