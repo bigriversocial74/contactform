@@ -31,7 +31,7 @@ function mg_builder_asset_map(mixed $value): array
 {
     if ($value === null || $value === '') return [];
     if (!is_array($value)) mg_fail('Invalid asset map.',422);
-    $allowed = ['cover','inside_cover','audio','video'];
+    $allowed = ['thumbnail','cover','inside_cover','audio','video'];
     $clean = [];
     foreach ($value as $role => $assetId) {
         if (!in_array((string)$role,$allowed,true)) continue;
@@ -41,10 +41,53 @@ function mg_builder_asset_map(mixed $value): array
     return $clean;
 }
 
+function mg_builder_safe_preview_url(mixed $value): ?string
+{
+    $url = trim((string)$value);
+    if ($url === '' || strlen($url) > 600 || preg_match('/[\x00-\x1F\x7F]/', $url) === 1) return null;
+    if (str_starts_with($url, '/') && !str_starts_with($url, '//')) {
+        $parts = parse_url($url);
+        if ($parts !== false && !isset($parts['scheme']) && !isset($parts['host']) && !isset($parts['user']) && !isset($parts['pass'])) return $url;
+        return null;
+    }
+    if (filter_var($url, FILTER_VALIDATE_URL) === false) return null;
+    $parts = parse_url($url);
+    if (!is_array($parts) || !isset($parts['scheme'], $parts['host'])) return null;
+    if (!in_array(strtolower((string)$parts['scheme']), ['http','https'], true)) return null;
+    if (isset($parts['user']) || isset($parts['pass'])) return null;
+    return $url;
+}
+
+function mg_builder_merchant_preview(PDO $pdo, int $userId): array
+{
+    $stmt = $pdo->prepare(
+        "SELECT u.display_name AS user_display_name,u.full_name,
+                mw.display_name AS workspace_name,
+                pp.display_name AS profile_name,pp.avatar_url AS profile_avatar_url
+         FROM users u
+         LEFT JOIN merchant_workspaces mw ON mw.merchant_user_id=u.id
+         LEFT JOIN public_profiles pp ON pp.user_id=u.id
+         WHERE u.id=? LIMIT 1"
+    );
+    $stmt->execute([$userId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+    $displayName = trim((string)($row['workspace_name'] ?? ''));
+    if ($displayName === '') $displayName = trim((string)($row['profile_name'] ?? ''));
+    if ($displayName === '') $displayName = trim((string)($row['user_display_name'] ?? ''));
+    if ($displayName === '') $displayName = trim((string)($row['full_name'] ?? ''));
+    if ($displayName === '') $displayName = 'Your business';
+    return [
+        'display_name'=>$displayName,
+        'avatar_url'=>mg_builder_safe_preview_url($row['profile_avatar_url'] ?? null),
+        'initial'=>strtoupper(substr($displayName,0,1)),
+    ];
+}
+
 function mg_builder_context(PDO $pdo, int $userId): array
 {
     return [
         'locations'=>mg_catalog_merchant_locations($pdo,$userId),
+        'merchant'=>mg_builder_merchant_preview($pdo,$userId),
         'publish_requires'=>[
             'public_profile'=>true,
             'active_merchant_location'=>true,
