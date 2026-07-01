@@ -91,6 +91,7 @@ $merchant_storefront_href = $account_storefront_url ?: '/merchant-storefront.php
               <a class="mg-account-action" href="/merchant-campaigns.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Campaigns</span></a>
               <a class="mg-account-action" href="/merchant-reward-templates.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Rewards</span></a>
               <a class="mg-account-action" href="/merchant-crm.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Merchant CRM</span></a>
+              <a class="mg-account-action" href="/merchant-memory.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Merchant Memory</span></a>
               <a class="mg-account-action" href="/merchant-claims.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Claims</span></a>
               <a class="mg-account-action" href="/merchant-locations.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Locations</span></a>
               <a class="mg-account-action" href="/merchant-team.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Team</span></a>
