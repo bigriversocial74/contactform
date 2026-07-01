@@ -10,8 +10,8 @@ $page_section = 'feed';
 $header_mode = 'agent';
 $agent_tab = 'feed-' . $feedView;
 $suppress_footer = true;
-$page_styles = ['/assets/css/public-app-header.css','/assets/css/social-feed.css','/assets/css/social-feed-upload.css','/assets/css/feed-centered-layout.css','/assets/css/store-presence-feed.css','/assets/css/avatar-anchor-consent.css','/assets/css/sponsored-campaign-card.css'];
-$page_scripts = ['/assets/js/social-feed.js','/assets/js/social-feed-sidebar-tabs.js','/assets/js/social-feed-post-polish.js','/assets/js/social-feed-upload.js','/assets/js/store-presence-feed.js','/assets/js/avatar-anchor-consent.js','/assets/js/sponsored-campaign-card.js'];
+$page_styles = ['/assets/css/public-app-header.css','/assets/css/social-feed.css','/assets/css/social-feed-upload.css','/assets/css/feed-centered-layout.css','/assets/css/store-presence-feed.css','/assets/css/avatar-anchor-consent.css','/assets/css/sponsored-campaign-card.css','/assets/css/microgifter-stories.css'];
+$page_scripts = ['/assets/js/social-feed.js','/assets/js/social-feed-sidebar-tabs.js','/assets/js/social-feed-post-polish.js','/assets/js/social-feed-upload.js','/assets/js/store-presence-feed.js','/assets/js/avatar-anchor-consent.js','/assets/js/sponsored-campaign-card.js','/assets/js/microgifter-stories.js'];
 $page_manifest = [
     'id' => 'feed',
     'title' => $page_title,
@@ -54,6 +54,17 @@ require __DIR__ . '/includes/header.php';
               </select>
             </label>
           </div>
+
+          <section class="mg-feed-stories-shell" data-feed-stories aria-label="Stories">
+            <div class="mg-feed-stories-header">
+              <div>
+                <span>Stories</span>
+                <h2>24-hour local updates</h2>
+              </div>
+              <div class="mg-stories-status" data-stories-status role="status" aria-live="polite"></div>
+            </div>
+            <div class="mg-feed-stories-tray" data-stories-tray aria-label="Story cards"></div>
+          </section>
 
           <?php
           $post_composer_id_suffix = 'feed';
@@ -98,5 +109,47 @@ require __DIR__ . '/includes/header.php';
       </div>
     </section>
   </div>
+
+  <div class="mg-story-modal" data-story-modal hidden>
+    <div class="mg-story-modal-backdrop" data-story-modal-close></div>
+    <section class="mg-story-modal-panel" role="dialog" aria-modal="true" aria-labelledby="mg-story-modal-title">
+      <header class="mg-story-modal-head">
+        <div>
+          <span>Feed Story</span>
+          <h2 id="mg-story-modal-title">Create a 24-hour story</h2>
+          <p>Share one image or video clip. Videos must be 30 seconds or less.</p>
+        </div>
+        <button type="button" data-story-modal-close aria-label="Close story creator">×</button>
+      </header>
+      <form class="mg-story-form" data-story-form>
+        <label class="mg-story-upload-card">
+          <input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime" data-story-media-input>
+          <span data-story-upload-preview><span>Choose image or video</span></span>
+          <strong>Upload story media</strong>
+          <small>JPG, PNG, WebP, MP4, WebM, or MOV. Video clips max at 30 seconds.</small>
+        </label>
+        <div class="mg-story-upload-status" data-story-upload-status role="status" aria-live="polite"></div>
+        <label>Caption <span>Optional</span>
+          <textarea name="caption" rows="3" maxlength="280" placeholder="Add a short update, offer teaser, or local moment."></textarea>
+        </label>
+        <div class="mg-story-merchant-options" data-story-merchant-options hidden>
+          <label>Attach Product or Campaign
+            <select name="linked_target">
+              <option value="none:">No product or campaign</option>
+            </select>
+          </label>
+          <small>Rewards are distributed through campaigns, so direct reward attachment is excluded.</small>
+        </div>
+        <label>CTA label <span>Optional</span>
+          <input name="cta_label" maxlength="80" placeholder="Auto-fills for products and campaigns">
+        </label>
+        <footer class="mg-story-modal-actions">
+          <button class="mg-btn mg-btn-ghost" type="button" data-story-modal-close>Cancel</button>
+          <button class="mg-btn mg-btn-primary" type="submit" data-story-publish>Publish Story</button>
+        </footer>
+      </form>
+    </section>
+  </div>
+  <div class="mg-story-viewer" data-story-viewer hidden></div>
 </section>
 <?php require __DIR__ . '/includes/footer.php'; ?>

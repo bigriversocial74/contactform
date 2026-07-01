@@ -1,29 +1,24 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . '/includes/app.php';
-$page_title = 'Campaign | Microgifter';
-$page_section = 'campaign';
-$header_mode = 'public';
-$page_styles = ['/assets/css/merchant-workspace.css'];
-$page_scripts = ['/assets/js/public-campaign.js'];
-require __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/api/db.php';
+
+function mg_campaign_table_exists(PDO $pdo,string $table):bool{if(preg_match('/^[A-Za-z0-9_]+$/',$table)!==1)return false;try{$q=$pdo->quote($table);$s=$pdo->query('SHOW TABLES LIKE '.$q);return (bool)($s&&$s->fetchColumn());}catch(Throwable){try{$pdo->query('SELECT 1 FROM `'.str_replace('`','``',$table).'` LIMIT 0');return true;}catch(Throwable){return false;}}}
+function mg_campaign_active(array $c):bool{if(($c['status']??'')!=='active')return false;$now=time();if(!empty($c['starts_at'])&&strtotime((string)$c['starts_at'])>$now)return false;if(!empty($c['ends_at'])&&strtotime((string)$c['ends_at'])<$now)return false;return true;}
+function mg_campaign_money(int $cents,string $currency='USD'):string{return strtoupper($currency).' '.number_format($cents/100,2);} 
+
+$pdo=mg_db();$ref=strtolower(trim((string)($_GET['c']??$_GET['id']??$_GET['slug']??'')));$ref=preg_replace('/[^a-z0-9_-]+/','',$ref)??'';$campaign=null;$error='Campaign link is missing.';
+if($ref!==''&&mg_campaign_table_exists($pdo,'campaigns')){try{$select='c.*';$join='';if(mg_campaign_table_exists($pdo,'reward_templates')){$select.=',rt.title reward_title,rt.description reward_description,rt.value_type,rt.value_amount_cents,rt.value_percent,rt.currency,rt.redemption_instructions,rt.status reward_status';$join.=' LEFT JOIN reward_templates rt ON rt.id=c.reward_template_id';}if(mg_campaign_table_exists($pdo,'public_profiles')){$select.=',pp.display_name merchant_name,pp.avatar_url merchant_avatar';$join.=' LEFT JOIN public_profiles pp ON pp.user_id=c.merchant_user_id';}$stmt=$pdo->prepare("SELECT {$select} FROM campaigns c {$join} WHERE (LOWER(c.public_id)=? OR LOWER(c.public_slug)=?) AND c.status<>'archived' LIMIT 1");$stmt->execute([$ref,$ref]);$row=$stmt->fetch(PDO::FETCH_ASSOC);if(is_array($row))$campaign=$row;else $error='Campaign not found.';}catch(Throwable){$error='Campaign details are temporarily unavailable.';}}elseif($ref!==''){$error='Campaigns are not ready yet.';}
+$user=mg_current_user();$roles=is_array($user['roles']??null)?$user['roles']:[];$viewerId=(int)($user['id']??0);$canPreview=is_array($campaign)&&$viewerId>0&&($viewerId===(int)($campaign['merchant_user_id']??0)||in_array('admin',$roles,true)||in_array('super_admin',$roles,true));$active=is_array($campaign)&&mg_campaign_active($campaign);$show=is_array($campaign)&&($active||$canPreview);
+$page_title=($show?(string)$campaign['title']:'Campaign').' | Microgifter';$page_section='campaign';$header_mode='public';$page_body_class='mg-campaign-landing-page';$page_styles=['/assets/css/merchant-workspace.css'];$page_scripts=['/assets/js/public-campaign.js'];$page_meta=['robots'=>$show&&$active?'index, follow':'noindex, follow'];require __DIR__.'/includes/header.php';
 ?>
-<main class="mg-merchant-main">
-  <section class="mg-app-panel" data-public-campaign>
-    <div class="mg-app-panel-head"><div><span class="mg-eyebrow">Microgifter campaign</span><h1 data-campaign-title>Loading campaign…</h1><p data-campaign-description>Checking reward availability.</p></div></div>
-    <div class="mg-app-panel-body">
-      <div class="mg-empty-state" data-campaign-loading><p>Loading campaign details…</p></div>
-      <form class="mg-merchant-form" data-campaign-form hidden>
-        <input type="hidden" name="campaign_id" data-campaign-id value="">
-        <input type="hidden" name="qr_token" data-campaign-qr-token value="">
-        <label>Name<input name="name" placeholder="Your name" maxlength="180"></label>
-        <label>Email<input name="email" type="email" placeholder="you@example.com" required maxlength="255"></label>
-        <label>Phone<input name="phone" placeholder="Optional" maxlength="60"></label>
-        <div class="mg-form-status" data-campaign-status></div>
-        <button class="mg-btn mg-btn-primary" type="submit">Get reward</button>
-      </form>
-      <div class="mg-empty-state" data-campaign-result hidden></div>
-    </div>
-  </section>
-</main>
-<?php require __DIR__ . '/includes/footer.php'; ?>
+<main class="mg-merchant-main"><section class="mg-app-panel mg-campaign-landing" data-public-campaign-page><div class="mg-app-panel-body">
+<?php if(!$show): ?>
+  <article class="mg-empty-state"><span class="mg-kicker">Campaign</span><h1>This campaign is not available.</h1><p><?= mg_e($error) ?></p><a class="mg-btn mg-btn-primary" href="/feed.php">Back to Feed</a></article>
+<?php else: ?>
+  <?php $type=ucwords(str_replace('_',' ',(string)($campaign['campaign_type']??'Campaign')));$merchant=trim((string)($campaign['merchant_name']??'Microgifter Merchant'))?:'Microgifter Merchant';$reward=trim((string)($campaign['reward_title']??''));$value='';if(($campaign['value_type']??'')==='percent'&&$campaign['value_percent']!==null)$value=rtrim(rtrim(number_format((float)$campaign['value_percent'],2),'0'),'.').'%';elseif(!empty($campaign['value_amount_cents']))$value=mg_campaign_money((int)$campaign['value_amount_cents'],(string)($campaign['currency']??'USD')); ?>
+  <article class="mg-campaign-hero"><div><span class="mg-kicker">Microgifter Campaign</span><h1><?= mg_e((string)$campaign['title']) ?></h1><p><?= mg_e((string)($campaign['description']??$campaign['form_description']??'Join this local merchant campaign.')) ?></p><div class="mg-campaign-meta"><span><?= mg_e($merchant) ?></span><span><?= mg_e($type) ?></span><span><?= $active?'Active':'Preview' ?></span></div></div><aside><span>Campaign Offer</span><h2><?= mg_e($reward!==''?$reward:'Join this campaign') ?></h2><?php if($value!==''): ?><strong><?= mg_e($value) ?></strong><?php endif; ?></aside></article>
+  <div class="mg-campaign-grid"><section class="mg-empty-state"><span class="mg-kicker">Details</span><h2><?= mg_e((string)($campaign['form_headline']??'Enter the campaign')) ?></h2><p><?= mg_e((string)($campaign['form_description']??'Submit your details to participate. Rewards are issued through the campaign workflow.')) ?></p><?php if(!empty($campaign['redemption_instructions'])): ?><p><strong>Redemption:</strong> <?= mg_e((string)$campaign['redemption_instructions']) ?></p><?php endif; ?></section><section class="mg-empty-state"><h2><?= $active?'Join this campaign':'Campaign preview' ?></h2><?php if($active&&!empty($campaign['reward_template_id'])): ?><form data-campaign-form><input type="hidden" name="campaign_id" value="<?= mg_e((string)$campaign['public_id']) ?>"><label>Name<input name="name" maxlength="180" autocomplete="name"></label><label>Email<input name="email" type="email" maxlength="255" autocomplete="email" required></label><label>Phone <span>Optional</span><input name="phone" maxlength="60" autocomplete="tel"></label><button class="mg-btn mg-btn-primary" type="submit">Enter Campaign</button><div data-campaign-status class="mg-form-status" role="status" aria-live="polite"></div></form><?php else: ?><p>This campaign is not accepting public entries right now.</p><a class="mg-btn mg-btn-primary" href="/merchant-campaigns.php">Manage Campaigns</a><?php endif; ?></section></div>
+<?php endif; ?>
+</div></section></main>
+<?php require __DIR__.'/includes/footer.php'; ?>
