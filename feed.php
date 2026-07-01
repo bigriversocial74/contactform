@@ -44,6 +44,17 @@ require __DIR__ . '/includes/header.php';
             <button type="button" class="<?= $feedView === 'mine' ? 'is-active' : '' ?>" data-feed-tab="mine">My posts</button>
           </nav>
 
+          <div class="mg-hidden" data-owner-filter-wrap hidden aria-hidden="true">
+            <label>Status
+              <select data-owner-filter aria-label="Filter my posts by status">
+                <option value="">All posts</option>
+                <option value="draft">Drafts</option>
+                <option value="published">Published</option>
+                <option value="archived">Archived</option>
+              </select>
+            </label>
+          </div>
+
           <?php
           $post_composer_id_suffix = 'feed';
           $post_composer_hidden = true;
