@@ -26,6 +26,7 @@ $page_scripts = [
     '/assets/js/merchant-agent-chat-speech-results.js',
     '/assets/js/merchant-agent-chat-control-panel.js',
     '/assets/js/merchant-agent-memory-menu.js',
+    '/assets/js/merchant-agent-chat-scroll-latest.js',
     '/assets/js/merchant-agent-chat-json-format.js',
     '/assets/js/merchant-agent-chat-mobile.js',
     '/assets/js/sponsored-campaign-card.js',
