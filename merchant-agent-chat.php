@@ -20,6 +20,7 @@ $page_styles = [
 ];
 $page_scripts = [
     '/assets/js/merchant-agent-chat.js',
+    '/assets/js/merchant-agent-chat-voice.js',
     '/assets/js/merchant-agent-chat-json-format.js',
     '/assets/js/merchant-agent-chat-mobile.js',
     '/assets/js/sponsored-campaign-card.js',
