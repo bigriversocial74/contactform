@@ -17,7 +17,7 @@
   display:grid;
   grid-template-columns:54px minmax(0,1fr);
   gap:12px;
-  align-items:center;
+  align-items:start;
   border:1px solid rgba(15,23,42,.08);
   background:#fff;
   border-radius:16px;
@@ -41,6 +41,27 @@
   height:100%;
   object-fit:cover;
 }
+.mg-ads-product-summary-body{min-width:0}
+.mg-ads-product-summary-head{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:7px;
+  margin-bottom:3px;
+}
+.mg-ads-product-summary-head>span{
+  display:inline-flex;
+  align-items:center;
+  border:1px solid rgba(37,99,235,.14);
+  background:#eff6ff;
+  color:#1d4ed8;
+  border-radius:999px;
+  padding:5px 8px;
+  font-size:.68rem;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
 .mg-ads-product-summary strong{
   display:block;
   color:#071334;
@@ -56,6 +77,50 @@
   display:block;
   color:#64748b;
   font-weight:800;
+}
+.mg-ads-product-summary-meta{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:7px;
+  margin-top:10px;
+}
+.mg-ads-product-summary-chip{
+  border:1px solid rgba(15,23,42,.08);
+  background:#f8fafc;
+  border-radius:12px;
+  padding:8px 9px;
+  min-width:0;
+}
+.mg-ads-product-summary-chip b{
+  display:block;
+  color:#64748b;
+  font-size:.66rem;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.07em;
+  margin-bottom:3px;
+}
+.mg-ads-product-summary-chip em{
+  display:block;
+  color:#0f172a;
+  font-style:normal;
+  font-size:.78rem;
+  font-weight:850;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.mg-ads-product-summary-chip.is-cta{
+  background:#ecfdf5;
+  border-color:rgba(4,120,87,.14);
+}
+.mg-ads-product-summary-chip.is-cta em{color:#047857}
+.mg-ads-product-summary-chip.is-wide{
+  grid-column:1/-1;
+}
+.mg-ads-product-summary-chip.is-wide em{
+  white-space:normal;
+  overflow-wrap:anywhere;
 }
 .mg-ads-field-hint{
   display:block;
@@ -203,6 +268,9 @@
   }
   .mg-ads-product-summary{
     grid-template-columns:46px minmax(0,1fr);
+  }
+  .mg-ads-product-summary-meta{
+    grid-template-columns:1fr;
   }
   .mg-ads-product-thumb{
     width:46px;

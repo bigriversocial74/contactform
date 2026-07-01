@@ -75,14 +75,63 @@ window.Microgifter = window.Microgifter || {};
     return {value:String(value || ''), label:String(label || '')};
   }
 
+  function sourceKey(product){
+    var source = String(product && product.source || '').toLowerCase();
+    if (source === 'reward_template') return 'reward_template';
+    if (source === 'campaign') return 'campaign';
+    if (source === 'catalog_product') return 'catalog_product';
+    return 'other';
+  }
+
+  function sourceLabel(product){
+    var key = sourceKey(product);
+    if (product && product.source_label) return String(product.source_label);
+    if (key === 'reward_template') return 'Reward';
+    if (key === 'campaign') return 'Campaign';
+    if (key === 'catalog_product') return 'Product';
+    return 'Item';
+  }
+
+  function pretty(value){
+    return String(value || '').replace(/[_-]+/g, ' ').replace(/\b\w/g, function(letter){return letter.toUpperCase();});
+  }
+
+  function isEventCampaign(product){
+    var value = String(product && (product.reward_type || product.value_type || product.title) || '').toLowerCase();
+    return value.indexOf('event') !== -1 || value.indexOf('contest') !== -1 || value.indexOf('giveaway') !== -1 || value.indexOf('drop') !== -1;
+  }
+
+  function applySummary(product){
+    var key = sourceKey(product);
+    if (key === 'reward_template') return {cta:'Claim Reward', objective:'claim_growth'};
+    if (key === 'campaign') return {cta:(product && product.cta_label) || (isEventCampaign(product) ? 'Enter Campaign' : 'Join Campaign'), objective:isEventCampaign(product) ? 'event_traffic' : 'local_awareness'};
+    if (key === 'catalog_product') return {cta:'View Product', objective:'local_awareness'};
+    return {cta:(product && product.cta_label) || 'View Offer', objective:'local_awareness'};
+  }
+
+  function summaryDetail(product){
+    var label = sourceLabel(product);
+    var value = String(product && product.value_label || '').trim();
+    if (value) value = value.replace(new RegExp('^' + label + '\\s*[·:-]\\s*', 'i'), '').trim();
+    if (!value) value = pretty(product && product.status || '');
+    return value || 'Ready';
+  }
+
+  function summaryMeta(label, value, extraClass){
+    return '<span class="mg-ads-product-summary-chip '+esc(extraClass||'')+'"><b>'+esc(label)+'</b><em>'+esc(value || '—')+'</em></span>';
+  }
+
   function renderProductSummary(product){
     var node=qs('[data-product-summary]');
     var apply=qs('[data-apply-product]');
     if(apply) apply.disabled=!product;
     if(!node)return;
     if(!product){node.hidden=true; node.innerHTML=''; return;}
+    var rules = applySummary(product);
+    var destination = product.destination_url || '/feed.php';
+    var objective = pretty(rules.objective);
     node.hidden=false;
-    node.innerHTML='<div class="mg-ads-product-thumb">'+(product.image_url?'<img src="'+esc(product.image_url)+'" alt="">':'<span>MG</span>')+'</div><div><strong>'+esc(product.title)+'</strong><p>'+esc(product.description||product.value_label||'Merchant product')+'</p><small>'+esc([product.reward_type,product.value_label,product.status].filter(Boolean).join(' · '))+'</small></div>';
+    node.innerHTML='<div class="mg-ads-product-thumb">'+(product.image_url?'<img src="'+esc(product.image_url)+'" alt="">':'<span>'+esc(sourceLabel(product).slice(0,2).toUpperCase())+'</span>')+'</div><div class="mg-ads-product-summary-body"><div class="mg-ads-product-summary-head"><span>'+esc(sourceLabel(product))+'</span><strong>'+esc(product.title)+'</strong></div><p>'+esc(product.description||product.value_label||'Merchant product')+'</p><small>'+esc([product.reward_type,product.value_label,product.status].filter(Boolean).join(' · '))+'</small><div class="mg-ads-product-summary-meta">'+summaryMeta('Source', sourceLabel(product)) + summaryMeta('Value / status', summaryDetail(product)) + summaryMeta('CTA', rules.cta, 'is-cta') + summaryMeta('Objective', objective) + summaryMeta('Destination', destination, 'is-wide')+'</div></div>';
   }
 
   function resolveImageSourceFromField(){
