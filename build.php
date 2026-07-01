@@ -52,8 +52,7 @@ require __DIR__ . '/includes/header.php';
                 </div>
                 <div class="mg-card-inside-page mg-card-inside-right">
                   <div class="mg-card-message-copy">
-                    <h3 class="mg-card-message-title" data-preview-card-headline>A gift, already waiting for you.</h3>
-                    <p data-preview-message>Add a message for the recipient.</p>
+                    <h3 class="mg-card-message-title" data-preview-card-headline>HAPPY BIRTHDAY!</h3>
                   </div>
                 </div>
               </section>
@@ -86,8 +85,7 @@ require __DIR__ . '/includes/header.php';
                 </div>
                 <div class="mg-card-inside-page mg-card-inside-right">
                   <div class="mg-card-message-copy">
-                    <h3 class="mg-card-message-title" data-preview-card-headline>A gift, already waiting for you.</h3>
-                    <p data-preview-message>Add a message for the recipient.</p>
+                    <h3 class="mg-card-message-title" data-preview-card-headline>HAPPY BIRTHDAY!</h3>
                   </div>
                   <div class="mg-card-media-stack" data-card-media-stack>
                     <div class="mg-card-media-sample" data-card-media-choice="audio">
