@@ -9,8 +9,8 @@ $page_title = 'Campaign Ads Review | Microgifter Admin';
 $page_section = 'account';
 $header_mode = 'account';
 $page_body_class = 'mg-admin-ad-review-page';
-$page_styles = ['/assets/css/admin-shell.css','/assets/css/merchant-ad-manager.css','/assets/css/sponsored-campaign-card.css'];
-$page_scripts = ['/assets/js/sponsored-campaign-card.js','/assets/js/admin-ad-review.js'];
+$page_styles = ['/assets/css/admin-shell.css','/assets/css/merchant-ad-manager.css','/assets/css/sponsored-campaign-card.css','/assets/css/ad-health-alerts.css'];
+$page_scripts = ['/assets/js/sponsored-campaign-card.js','/assets/js/ad-health-alerts.js','/assets/js/admin-ad-review.js'];
 $page_manifest = [
     'id' => 'admin-ad-review',
     'title' => $page_title,
@@ -52,6 +52,7 @@ require dirname(__DIR__) . '/includes/header.php';
         <?php if (!$schema['ready']): ?>
           <section class="mg-ads-panel"><div class="mg-ads-alert">SQL migration required: run <strong>database/microgifter_ads_manager_phase1.sql</strong> before reviewing ads.</div></section>
         <?php endif; ?>
+        <section class="mg-ad-health-alerts" data-ad-health-alerts data-health-scope="admin" aria-live="polite"></section>
         <section class="mg-ads-panel" style="margin-bottom:18px">
           <span class="mg-ads-eyebrow">Demo ads</span>
           <h2>Create demo ads about advertising on Microgifter</h2>
