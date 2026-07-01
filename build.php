@@ -6,7 +6,7 @@ require_once __DIR__ . '/includes/app.php';
 $page_title = 'Build a Product | Microgifter';
 $page_section = 'builder';
 $header_mode = 'builder';
-$page_styles = ['/assets/css/builder-stage4b.css','/assets/css/builder-shell-fixes.css'];
+$page_styles = ['/assets/css/builder-stage4b.css','/assets/css/builder-shell-fixes.css','/assets/css/builder-desktop-layout.css'];
 $page_scripts = ['/assets/js/builder-stage4b.js','/assets/js/builder-product-types.js','/assets/js/product-builder-shell.js'];
 $product_id = trim((string) ($_GET['id'] ?? ''));
 
