@@ -47,13 +47,22 @@ document.addEventListener('DOMContentLoaded', function () {
       vertical: ['top', 'center', 'bottom'].includes(vertical) ? vertical : defaults.vertical
     };
   }
+  function headlineNodes() {
+    return root.querySelectorAll('.mg-card-message-copy [data-preview-card-headline]');
+  }
+  function messageNodes() {
+    return root.querySelectorAll('.mg-card-message-copy [data-preview-card-message]');
+  }
+  function signatureNodes() {
+    return root.querySelectorAll('.mg-card-message-copy [data-preview-signature]');
+  }
   function applyTextContent() {
     var headline = value('headline') || 'HAPPY BIRTHDAY!';
     var message = value('message') || 'Add the message the recipient will see inside the card.';
     var signature = value('signature');
-    root.querySelectorAll('[data-preview-card-headline]').forEach(function (node) { setText(node, headline); });
-    root.querySelectorAll('[data-preview-message]').forEach(function (node) { setText(node, message); });
-    root.querySelectorAll('[data-preview-signature]').forEach(function (node) {
+    headlineNodes().forEach(function (node) { setText(node, headline); });
+    messageNodes().forEach(function (node) { setText(node, message); });
+    signatureNodes().forEach(function (node) {
       setText(node, signature);
       node.hidden = !signature;
     });
@@ -74,17 +83,23 @@ document.addEventListener('DOMContentLoaded', function () {
       copy.style.opacity = String(alpha);
       copy.style.color = style.text_color;
     });
-    root.querySelectorAll('[data-preview-card-headline]').forEach(function (node) {
+    headlineNodes().forEach(function (node) {
+      node.style.display = 'block';
       node.style.fontSize = style.headline_size + 'px';
       node.style.color = style.text_color;
       node.style.textAlign = style.align;
+      node.style.fontWeight = '950';
+      node.style.lineHeight = '.96';
     });
-    root.querySelectorAll('[data-preview-message]').forEach(function (node) {
+    messageNodes().forEach(function (node) {
+      node.style.display = 'block';
       node.style.fontSize = style.message_size + 'px';
       node.style.color = style.text_color;
       node.style.textAlign = style.align;
+      node.style.fontWeight = '750';
+      node.style.lineHeight = '1.34';
     });
-    root.querySelectorAll('[data-preview-signature]').forEach(function (node) {
+    signatureNodes().forEach(function (node) {
       node.style.fontSize = Math.max(12, Math.round(style.message_size * 0.72)) + 'px';
       node.style.color = style.text_color;
       node.style.textAlign = style.align;
