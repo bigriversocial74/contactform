@@ -5,6 +5,9 @@ document.addEventListener('DOMContentLoaded', function () {
   if (!root || !window.Microgifter) return;
   var MG = window.Microgifter;
   var refreshButton = root.querySelector('[data-system-health-refresh]');
+  var sqlRefreshButton = root.querySelector('[data-sql-diagnostics-refresh]');
+  var sqlDownloadButton = root.querySelector('[data-sql-diagnostics-download]');
+  var lastSqlDiagnostics = null;
 
   function node(tag, className, text) {
     var item = document.createElement(tag);
@@ -192,6 +195,76 @@ document.addEventListener('DOMContentLoaded', function () {
     renderRecoveryTools(actions || {});
   }
 
+  function renderSqlDiagnostics(data) {
+    lastSqlDiagnostics = data || null;
+    var panel = root.querySelector('[data-system-sql-diagnostics]');
+    var summary = root.querySelector('[data-sql-diagnostics-summary]');
+    var metrics = root.querySelector('[data-sql-diagnostics-metrics]');
+    var modules = root.querySelector('[data-sql-diagnostics-modules]');
+    var findings = root.querySelector('[data-sql-diagnostics-findings]');
+    var status = data && data.status ? data.status : 'warning';
+    if (panel) setTone(panel, status);
+    if (summary) {
+      summary.classList.remove('is-loading', 'is-healthy', 'is-warning', 'is-critical');
+      summary.classList.add('is-' + status);
+      summary.textContent = data && data.summary ? data.summary : 'System SQL diagnostics loaded.';
+    }
+    var counts = data && data.counts ? data.counts : {};
+    if (metrics) {
+      metrics.replaceChildren(
+        metricCard('Modules', Number(counts.modules || 0).toLocaleString(), Number(counts.healthy_modules || 0).toLocaleString() + ' healthy'),
+        metricCard('Critical modules', Number(counts.critical_modules || 0).toLocaleString(), Number(counts.warning_modules || 0).toLocaleString() + ' warning', counts.critical_modules > 0 ? 'critical' : (counts.warning_modules > 0 ? 'warning' : '')),
+        metricCard('Findings', Number(counts.findings || 0).toLocaleString(), Number(counts.critical_findings || 0).toLocaleString() + ' critical', counts.critical_findings > 0 ? 'critical' : (counts.warning_findings > 0 ? 'warning' : '')),
+        metricCard('Recent SQL errors', Number(counts.recent_sql_errors || 0).toLocaleString(), 'Security/ops log scan', counts.recent_sql_errors > 0 ? 'warning' : ''),
+        metricCard('Repairable', Number(counts.repairable_findings || 0).toLocaleString(), 'Auto SQL suggestions', counts.repairable_findings > 0 ? 'warning' : '')
+      );
+    }
+    if (modules) {
+      modules.replaceChildren();
+      var moduleItems = (data && data.modules ? data.modules : []).slice(0, 12);
+      if (!moduleItems.length) {
+        modules.appendChild(node('p', 'mg-muted', 'No module diagnostics are available.'));
+      }
+      moduleItems.forEach(function (item) {
+        var row = node('article', 'mg-system-sql-row is-' + String(item.status || 'warning'));
+        var copy = node('div');
+        copy.append(node('strong', '', item.label || label(item.key)));
+        copy.append(node('p', '', item.summary || 'Module diagnostics loaded.'));
+        var detail = [];
+        if ((item.missing_tables || []).length) detail.push((item.missing_tables || []).length + ' tables');
+        if ((item.missing_columns || []).length) detail.push((item.missing_columns || []).length + ' columns');
+        if ((item.missing_enums || []).length) detail.push((item.missing_enums || []).length + ' enum drift');
+        copy.append(node('small', '', detail.length ? 'Missing: ' + detail.join(', ') : (item.migration_hint || 'Ready')));
+        row.append(copy, node('span', '', label(item.status)));
+        modules.appendChild(row);
+      });
+    }
+    if (findings) {
+      findings.replaceChildren();
+      var findingItems = (data && data.findings ? data.findings : []).slice(0, 14);
+      if (!findingItems.length) {
+        var empty = node('div', 'mg-system-health-empty');
+        empty.append(node('strong', '', 'No SQL findings'), node('p', '', 'The current diagnostics catalog did not find missing dependencies.'));
+        findings.appendChild(empty);
+      }
+      findingItems.forEach(function (item) {
+        var row = node('article', 'mg-system-sql-row is-' + String(item.severity || 'warning'));
+        var copy = node('div');
+        copy.append(node('strong', '', item.item || item.type || 'SQL finding'));
+        copy.append(node('p', '', item.message || 'A SQL dependency needs review.'));
+        copy.append(node('small', '', label(item.module) + ' · ' + (item.repairable ? 'repair SQL available' : (item.migration_hint || 'manual review'))));
+        row.append(copy, node('span', '', label(item.severity)));
+        findings.appendChild(row);
+      });
+    }
+    if (sqlDownloadButton) {
+      var plan = data && data.repair_plan ? data.repair_plan : {};
+      sqlDownloadButton.disabled = !(plan.available && plan.sql);
+      sqlDownloadButton.dataset.sqlDiagnosticsDownloadEnabled = (!sqlDownloadButton.disabled).toString();
+    }
+    if (sqlRefreshButton) sqlRefreshButton.disabled = false;
+  }
+
   function render(data) {
     renderBanner(data);
     renderServices(data.services || {});
@@ -211,6 +284,25 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+  async function loadSqlDiagnostics() {
+    if (sqlRefreshButton) {
+      sqlRefreshButton.disabled = true;
+      sqlRefreshButton.textContent = 'Running…';
+    }
+    try {
+      var response = await MG.get('/api/admin/system-sql-diagnostics.php');
+      renderSqlDiagnostics(response.data || response);
+    } catch (error) {
+      renderSqlDiagnostics({ status: 'critical', summary: error.message || 'Unable to run system SQL diagnostics.', counts: {}, modules: [], findings: [] });
+      if (MG.toast) MG.toast(error.message || 'Unable to run system SQL diagnostics.', 'error');
+    } finally {
+      if (sqlRefreshButton) {
+        sqlRefreshButton.disabled = false;
+        sqlRefreshButton.textContent = 'Run diagnostics';
+      }
+    }
+  }
+
   async function load() {
     if (refreshButton) {
       refreshButton.disabled = true;
@@ -220,10 +312,12 @@ document.addEventListener('DOMContentLoaded', function () {
       var response = await MG.get('/api/admin/system-health.php');
       render(response.data || response);
       await loadReadiness();
+      await loadSqlDiagnostics();
     } catch (error) {
       renderBanner({ status: 'critical', summary: error.message || 'Unable to load system health.' });
       if (MG.toast) MG.toast(error.message || 'Unable to load system health.', 'error');
       await loadReadiness();
+      await loadSqlDiagnostics();
     } finally {
       if (refreshButton) {
         refreshButton.disabled = false;
@@ -282,6 +376,12 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   if (refreshButton) refreshButton.addEventListener('click', load);
+  if (sqlRefreshButton) sqlRefreshButton.addEventListener('click', loadSqlDiagnostics);
+  if (sqlDownloadButton) sqlDownloadButton.addEventListener('click', function () {
+    var plan = lastSqlDiagnostics && lastSqlDiagnostics.repair_plan ? lastSqlDiagnostics.repair_plan : null;
+    if (!plan || !plan.available || !plan.sql) return;
+    downloadText(plan.filename || 'microgifter_system_sql_repair.sql', plan.sql);
+  });
   root.addEventListener('click', function (event) {
     var button = event.target.closest('[data-health-action]');
     if (button) runAction(button);
