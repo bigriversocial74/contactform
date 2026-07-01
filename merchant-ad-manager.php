@@ -74,6 +74,7 @@ require __DIR__ . '/includes/header.php';
                     <select id="ad-product" name="source_product_id" data-product-picker>
                       <option value="">Loading merchant products…</option>
                     </select>
+                    <small class="mg-ads-field-hint">Optional. Applying a product prefills the headline, offer copy, CTA, destination, and product metadata.</small>
                   </div>
                   <button class="mg-btn mg-btn-soft" type="button" data-apply-product disabled>Apply Product</button>
                 </div>
@@ -98,14 +99,19 @@ require __DIR__ . '/includes/header.php';
                   <div class="mg-ads-field"><label for="ad-end">End</label><input id="ad-end" name="ends_at" type="datetime-local"></div>
                 </div>
                 <div class="mg-ads-creative-upload">
+                  <div class="mg-ads-creative-upload-copy">
+                    <strong>Campaign image</strong>
+                    <span data-image-source-label>Manual URL fallback</span>
+                  </div>
                   <div class="mg-ads-field">
                     <label for="ad-image-file">Upload campaign image</label>
                     <input id="ad-image-file" type="file" accept="image/jpeg,image/png,image/gif,image/webp" data-creative-image-file>
+                    <small class="mg-ads-field-hint">JPG, PNG, GIF, or WebP up to 8MB. Uploads override product images while keeping the Image URL field editable.</small>
                   </div>
                   <button class="mg-btn mg-btn-soft" type="button" data-upload-creative>Upload Image</button>
-                  <small data-creative-upload-status></small>
+                  <small data-creative-upload-status aria-live="polite"></small>
                 </div>
-                <div class="mg-ads-field"><label for="ad-image">Image URL</label><input id="ad-image" name="image_url" placeholder="/images/example-offer.png"></div>
+                <div class="mg-ads-field"><label for="ad-image">Image URL</label><input id="ad-image" name="image_url" placeholder="/images/example-offer.png"><small class="mg-ads-field-hint">Use this as a fallback, or paste an existing hosted campaign image.</small></div>
                 <div class="mg-ads-two">
                   <div class="mg-ads-field"><label for="ad-cta">CTA label</label><input id="ad-cta" name="cta_label" maxlength="80" value="Claim Reward"></div>
                   <div class="mg-ads-field"><label for="ad-destination">Destination URL</label><input id="ad-destination" name="destination_url" placeholder="/feed.php"></div>
