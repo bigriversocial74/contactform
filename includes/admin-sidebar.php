@@ -226,7 +226,7 @@ $adminNav = [
     if(!payload||!payload.ok||!payload.data||!payload.data.summary)return;
     var summary=payload.data.summary;
     var counts={notifications:summary.unread_total||0,support_queue:summary.urgent_unread_total||0,ops_command:summary.urgent_unread_total||0};
-    nodes.forEach(function(node){var value=Number(counts[node.getAttribute('data-admin-nav-count]')||0);node.textContent=value>99?'99+':String(value);node.hidden=value<=0;});
+    nodes.forEach(function(node){var value=Number(counts[node.getAttribute('data-admin-nav-count')]||0);node.textContent=value>99?'99+':String(value);node.hidden=value<=0;});
   }).catch(function(){});
 })();
 </script>
