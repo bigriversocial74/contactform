@@ -49,7 +49,16 @@ declare(strict_types=1);
           <label>Agent name
             <input data-agent-name-input type="text" maxlength="80" placeholder="Merchant Agent">
           </label>
-          <button class="mg-btn mg-btn-soft mg-agent-rail-btn" type="button" data-agent-save-profile>Save name</button>
+          <button class="mg-btn mg-btn-soft mg-agent-rail-btn" type="button" data-agent-save-profile>Save Agent</button>
+        </div>
+
+        <div class="mg-agent-speech-settings" aria-label="Speech results">
+          <label class="mg-agent-speech-toggle">
+            <input type="checkbox" data-agent-speak-results>
+            <span>Enable spoken results</span>
+          </label>
+          <button class="mg-btn mg-btn-soft mg-agent-speech-stop" type="button" data-agent-speech-stop hidden>Stop</button>
+          <small data-agent-speech-status>Agent replies will read aloud after each result.</small>
         </div>
 
         <div class="mg-agent-rail-row mg-agent-thread-actions" aria-label="Thread actions">
