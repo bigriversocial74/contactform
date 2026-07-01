@@ -13,6 +13,6 @@ try {
     ];
 }
 header('Content-Type: application/manifest+json; charset=utf-8');
-header('Cache-Control: public, max-age=300, stale-while-revalidate=3600');
+header('Cache-Control: no-cache, max-age=0, must-revalidate');
 header('X-Content-Type-Options: nosniff');
 echo json_encode($manifest, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
