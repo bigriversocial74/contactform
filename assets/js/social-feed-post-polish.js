@@ -95,8 +95,17 @@ window.Microgifter = window.Microgifter || {};
     });
   }
 
+  function hideDuplicateProductHeadline(linkedCard) {
+    var feedCard = linkedCard.closest('.mg-feed-card');
+    if (!feedCard) return;
+    feedCard.classList.add('has-product-linked-card');
+    var heading = feedCard.querySelector(':scope > h3');
+    if (heading) heading.hidden = true;
+  }
+
   function polishProductCards(scope) {
     collect('.mg-feed-linked-card.is-product', scope).forEach(function (card) {
+      hideDuplicateProductHeadline(card);
       var preview = card.querySelector('.mg-feed-linked-preview');
       if (preview && !preview.querySelector('img')) preview.textContent = '';
       qsa('.mg-feed-linked-eyebrow,.mg-feed-linked-status,.mg-feed-linked-access', card).forEach(function (node) {
