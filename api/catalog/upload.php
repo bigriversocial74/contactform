@@ -20,6 +20,7 @@ if (!is_uploaded_file((string)$file['tmp_name'])) {
 
 $role = trim((string)($_POST['role'] ?? 'other'));
 $roleTypes = [
+    'thumbnail' => ['image'],
     'cover' => ['image'],
     'inside_cover' => ['image'],
     'audio' => ['audio'],
