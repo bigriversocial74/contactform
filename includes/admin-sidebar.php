@@ -103,6 +103,12 @@ $adminNav = [
         'href' => '/admin/ad-placements.php',
         'visible' => $canAdReview,
     ],
+    'ad-diagnostics' => [
+        'label' => 'Ad diagnostics',
+        'detail' => 'QA placement delivery',
+        'href' => '/admin/ad-diagnostics.php',
+        'visible' => $canAdReview,
+    ],
     'pending-models' => [
         'label' => 'Pending models',
         'detail' => 'Model approval queue',
