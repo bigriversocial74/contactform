@@ -85,9 +85,9 @@
   }
 
   html body.mg-app-page.mg-section-merchant .mg-agent-chat-right{
-    position:static!important;
+    position:sticky!important;
     align-self:start!important;
-    top:auto!important;
+    top:calc(var(--mg-app-header) + 24px)!important;
     left:auto!important;
     right:auto!important;
     bottom:auto!important;
@@ -116,6 +116,11 @@
     border-radius:0!important;
     background:#fff!important;
     box-shadow:0 22px 60px rgba(15,23,42,.07)!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-agent-super-operator-note,
+  html body.mg-app-page.mg-section-merchant .mg-agent-data-pills{
+    display:none!important;
   }
 
   html body.mg-app-page.mg-section-merchant .mg-agent-chat-drawer-backdrop{
