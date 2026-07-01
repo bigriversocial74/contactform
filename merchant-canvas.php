@@ -8,8 +8,8 @@ $page_title = 'Merchant Store Canvas | Microgifter';
 $page_section = 'agent';
 $header_mode = 'agent';
 $agent_tab = 'store-canvas';
-$page_styles = ['/assets/css/merchant-canvas.css','/assets/css/merchant-canvas-rewards.css','/assets/css/merchant-canvas-phase2.css','/assets/css/merchant-canvas-motion.css','/assets/css/merchant-canvas-drawer-layer.css','/assets/css/merchant-canvas-settings-drawers.css','/assets/css/merchant-canvas-drawer-fixes.css','/assets/css/merchant-canvas-customer-tabs.css','/assets/css/merchant-canvas-intelligence.css','/assets/css/merchant-canvas-store-health.css','/assets/css/merchant-canvas-mobile-icons.css'];
-$page_scripts = ['/assets/js/merchant-canvas.js','/assets/js/merchant-canvas-rewards.js','/assets/js/merchant-canvas-motion.js','/assets/js/merchant-canvas-automation-rules.js','/assets/js/merchant-canvas-merchant-settings.js','/assets/js/merchant-canvas-drawer-coordinator.js','/assets/js/merchant-canvas-customer-tabs.js','/assets/js/merchant-canvas-intelligence.js','/assets/js/merchant-canvas-store-health.js','/assets/js/store-health-completion-events.js','/assets/js/merchant-canvas-mobile-icons.js'];
+$page_styles = ['/assets/css/merchant-canvas.css','/assets/css/merchant-canvas-rewards.css','/assets/css/merchant-canvas-phase2.css','/assets/css/merchant-canvas-motion.css','/assets/css/merchant-canvas-drawer-layer.css','/assets/css/merchant-canvas-settings-drawers.css','/assets/css/merchant-canvas-drawer-fixes.css','/assets/css/merchant-canvas-customer-tabs.css','/assets/css/merchant-canvas-intelligence.css','/assets/css/merchant-canvas-store-health.css','/assets/css/merchant-canvas-mobile-icons.css','/assets/css/sponsored-campaign-card.css'];
+$page_scripts = ['/assets/js/merchant-canvas.js','/assets/js/merchant-canvas-rewards.js','/assets/js/merchant-canvas-motion.js','/assets/js/merchant-canvas-automation-rules.js','/assets/js/merchant-canvas-merchant-settings.js','/assets/js/merchant-canvas-drawer-coordinator.js','/assets/js/merchant-canvas-customer-tabs.js','/assets/js/merchant-canvas-intelligence.js','/assets/js/merchant-canvas-store-health.js','/assets/js/store-health-completion-events.js','/assets/js/merchant-canvas-mobile-icons.js','/assets/js/sponsored-campaign-card.js'];
 $page_manifest = [
     'id' => 'merchant-canvas',
     'title' => $page_title,
@@ -101,6 +101,8 @@ require __DIR__ . '/includes/header.php';
               </div>
               <div class="mg-canvas-avatar-layer" data-canvas-customers></div>
               <div class="mg-canvas-trigger-layer" data-canvas-triggers></div>
+              <div class="mg-sponsored-map-layer" data-mg-ad-placement="world_canvas_sponsored_pin" data-mg-ad-limit="5" aria-label="Sponsored World Canvas pins"></div>
+              <div class="mg-sponsored-map-layer" data-mg-ad-placement="target_zone_sponsored_drop" data-mg-ad-limit="5" aria-label="Sponsored Target Zone drops"></div>
               <article class="mg-canvas-empty-state" data-canvas-empty>
                 <span>No avatars inside yet</span>
                 <p data-canvas-empty-copy>Customer avatars will appear here when shoppers enter from merchant feed posts.</p>
@@ -125,7 +127,7 @@ require __DIR__ . '/includes/header.php';
     </div>
     <form class="mg-canvas-message-form" data-message-form>
       <label for="mg-canvas-message">Direct message</label>
-      <textarea id="mg-canvas-message" name="message" rows="4" maxlength="1000" placeholder="Send a message to this customer's Messages center..." required disabled></textarea>
+      <textarea id="mg-canvas-message" name="message" rows="4" maxlength="1000" placeholder="Send a direct message to this customer..." required disabled></textarea>
       <button class="mg-btn mg-btn-primary" type="submit" disabled data-message-submit>Send Message</button>
       <p class="mg-canvas-form-status" data-message-status role="status"></p>
     </form>

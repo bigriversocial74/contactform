@@ -39,6 +39,11 @@ $canSecurity = $canAdminPage('admin.security_logs');
 $canSessions = $canAdminPage('admin.sessions');
 $canOpsQueue = $canAdminPage('admin.ops_queue');
 $canOpsActivity = $canOperationsCommand || $canAudit;
+$canAdReview = in_array('admin', $adminRoles, true)
+    || in_array('super_admin', $adminRoles, true)
+    || in_array('ads.manage', $adminPermissions, true)
+    || in_array('ads.review', $adminPermissions, true)
+    || in_array('admin.access', $adminPermissions, true);
 
 $adminNav = [
     'dashboard' => [
@@ -85,6 +90,12 @@ $adminNav = [
         'href' => '/admin/support-queue.php',
         'visible' => $canAdminPage('admin.support_queue'),
         'badge' => 'support_queue',
+    ],
+    'ad-review' => [
+        'label' => 'Campaign Ads review',
+        'detail' => 'Approve sponsored placements',
+        'href' => '/admin/ad-review.php',
+        'visible' => $canAdReview,
     ],
     'pending-models' => [
         'label' => 'Pending models',
@@ -222,7 +233,7 @@ $adminNav = [
 (function(){
   var nodes=document.querySelectorAll('[data-admin-nav-count]');
   if(!nodes.length)return;
-  fetch('/api/admin/notifications.php?limit=10',{credentials:'same-origin',headers:{Accept:'application/json'}}).then(function(response){return response.json();}).then(function(payload){
+  window.fetch('/api/admin/notifications.php?limit=10',{credentials:'same-origin',headers:{Accept:'application/json'}}).then(function(response){return response.json();}).then(function(payload){
     if(!payload||!payload.ok||!payload.data||!payload.data.summary)return;
     var summary=payload.data.summary;
     var counts={notifications:summary.unread_total||0,support_queue:summary.urgent_unread_total||0,ops_command:summary.urgent_unread_total||0};
