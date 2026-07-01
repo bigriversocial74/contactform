@@ -9,7 +9,7 @@ $page_title = 'Campaign Ads Review | Microgifter Admin';
 $page_section = 'account';
 $header_mode = 'account';
 $page_body_class = 'mg-admin-ad-review-page';
-$page_styles = ['/assets/css/admin-shell.css','/assets/css/merchant-ad-manager.css','/assets/css/sponsored-campaign-card.css','/assets/css/ad-health-alerts.css'];
+$page_styles = ['/assets/css/admin-shell.css','/assets/css/merchant-ad-manager.css','/assets/css/sponsored-campaign-card.css','/assets/css/ad-admin-qa.css','/assets/css/ad-health-alerts.css'];
 $page_scripts = ['/assets/js/sponsored-campaign-card.js','/assets/js/ad-health-alerts.js','/assets/js/admin-ad-review.js'];
 $page_manifest = [
     'id' => 'admin-ad-review',
@@ -36,7 +36,7 @@ require dirname(__DIR__) . '/includes/header.php';
           <a class="mg-system-health-back" href="/account-admin.php">Back to Admin dashboard</a>
           <br><br><span class="mg-ads-eyebrow">Ad Operations - Phase 1</span>
           <h1>Review sponsored campaigns before they go live.</h1>
-          <p>Approve, reject, pause, or reactivate controlled Campaign Ads Manager placements across the Feed, Sidebar, World Canvas, and Target Zones.</p>
+          <p>Approve, reject, pause, or reactivate controlled Campaign Ads Manager placements across the Feed, Sidebar, World Canvas, Target Zones, Inbox, and Claim Success surfaces.</p>
         </article>
         <aside class="mg-ads-kpi-grid" aria-label="Advertising performance summary">
           <div class="mg-ads-kpi"><span>Impressions</span><strong data-kpi="impressions">0</strong></div>
@@ -56,7 +56,7 @@ require dirname(__DIR__) . '/includes/header.php';
         <section class="mg-ads-panel" style="margin-bottom:18px">
           <span class="mg-ads-eyebrow">Demo ads</span>
           <h2>Create demo ads about advertising on Microgifter</h2>
-          <p class="mg-ads-muted">Create approved sample ads for Feed, Sidebar, World Canvas, and Target Zone placements. The content promotes Campaign Ads Manager so you can test how Microgifter advertising looks and tracks.</p>
+          <p class="mg-ads-muted">Create approved sample ads for Feed, Sidebar, World Canvas, Target Zone, Inbox, and Claim Success placements. The content promotes Campaign Ads Manager so you can test how Microgifter advertising looks and tracks.</p>
           <div class="mg-ads-actions">
             <button class="mg-btn mg-btn-primary" type="button" data-create-demo-ads>Create Demo Ads</button>
             <button class="mg-btn mg-btn-soft" type="button" data-refresh>Refresh</button>
