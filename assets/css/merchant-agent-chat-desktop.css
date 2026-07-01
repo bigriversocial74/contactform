@@ -1,0 +1,163 @@
+/* Desktop-only Merchant Agent Chat layout.
+   Mobile/tablet styles remain owned by merchant-agent-chat-mobile.css and the flat mobile pass. */
+@media (min-width: 981px){
+  html body.mg-app-page.mg-section-merchant .mg-agent-chat-app-no-nav{
+    padding-top:var(--mg-app-header)!important;
+    padding-left:var(--mg-app-sidebar)!important;
+    min-height:100svh!important;
+    background:#edf3f9!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-agent-chat-app-no-nav .mg-app-sidebar{
+    display:flex!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-agent-chat-app-no-nav .mg-merchant-main{
+    min-height:calc(100svh - var(--mg-app-header))!important;
+    padding:24px 28px 112px!important;
+    background:#edf3f9!important;
+    overflow:visible!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-agent-chat-page{
+    width:min(1480px,100%)!important;
+    margin:0 auto!important;
+    padding:0!important;
+    min-height:calc(100svh - var(--mg-app-header) - 136px)!important;
+    background:transparent!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-agent-chat-layout{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) minmax(300px,360px)!important;
+    gap:20px!important;
+    align-items:stretch!important;
+    min-height:calc(100svh - var(--mg-app-header) - 150px)!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-agent-chat-main-stack{
+    display:flex!important;
+    flex-direction:column!important;
+    min-height:0!important;
+    height:auto!important;
+    margin:0!important;
+    padding:0!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-agent-chat-main{
+    display:flex!important;
+    flex:1 1 auto!important;
+    min-height:calc(100svh - var(--mg-app-header) - 210px)!important;
+    height:auto!important;
+    margin:0!important;
+    border:1px solid rgba(203,213,225,.9)!important;
+    border-radius:28px!important;
+    background:#fff!important;
+    box-shadow:0 22px 60px rgba(15,23,42,.08)!important;
+    overflow:hidden!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-agent-chat-feed{
+    flex:1 1 auto!important;
+    min-height:0!important;
+    height:auto!important;
+    overflow:auto!important;
+    padding:28px clamp(24px,3vw,44px) 42px!important;
+    background:radial-gradient(circle at 20% 0%,rgba(37,99,235,.1),transparent 34%),linear-gradient(180deg,#fff,#f8fbff 64%,#f8fafc)!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-agent-chat-empty{
+    min-height:calc(100svh - var(--mg-app-header) - 300px)!important;
+    max-width:760px!important;
+    margin:0 auto!important;
+    padding:52px 24px!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-agent-chat-empty strong{
+    font-size:clamp(34px,3.2vw,56px)!important;
+    line-height:.98!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-agent-chat-empty p{
+    max-width:620px!important;
+    font-size:16px!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-agent-chat-right{
+    position:sticky!important;
+    top:calc(var(--mg-app-header) + 24px)!important;
+    left:auto!important;
+    right:auto!important;
+    bottom:auto!important;
+    z-index:20!important;
+    display:block!important;
+    width:auto!important;
+    max-width:none!important;
+    height:calc(100svh - var(--mg-app-header) - 48px)!important;
+    padding:0!important;
+    background:transparent!important;
+    border:0!important;
+    box-shadow:none!important;
+    overflow:auto!important;
+    transform:none!important;
+    transition:none!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-agent-drawer-head{
+    display:none!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-agent-context-card{
+    margin:0!important;
+    border:1px solid rgba(203,213,225,.9)!important;
+    border-radius:28px!important;
+    background:#fff!important;
+    box-shadow:0 22px 60px rgba(15,23,42,.07)!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-agent-chat-drawer-backdrop{
+    display:none!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-agent-chat-composer-shell{
+    position:fixed!important;
+    left:calc(var(--mg-app-sidebar) + 28px)!important;
+    right:28px!important;
+    bottom:22px!important;
+    z-index:1200!important;
+    width:auto!important;
+    max-width:none!important;
+    margin:0!important;
+    display:grid!important;
+    grid-template-columns:auto minmax(0,1fr) auto!important;
+    gap:12px!important;
+    align-items:end!important;
+    padding:12px!important;
+    border:1px solid rgba(203,213,225,.95)!important;
+    border-radius:24px!important;
+    background:rgba(255,255,255,.98)!important;
+    box-shadow:0 22px 62px rgba(15,23,42,.16)!important;
+    backdrop-filter:blur(16px)!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-agent-chat-composer-shell textarea{
+    min-height:52px!important;
+    max-height:170px!important;
+    border-radius:18px!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-agent-chat-tool,
+  html body.mg-app-page.mg-section-merchant .mg-agent-chat-send{
+    width:52px!important;
+    height:52px!important;
+    border-radius:18px!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-agent-chat-main-stack>.mg-form-status{
+    position:fixed!important;
+    left:calc(var(--mg-app-sidebar) + 44px)!important;
+    right:44px!important;
+    bottom:96px!important;
+    z-index:1190!important;
+  }
+}
