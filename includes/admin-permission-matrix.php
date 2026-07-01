@@ -23,6 +23,7 @@ function mg_admin_permission_matrix(): array
             'admin.notifications' => ['admin.notifications.view', 'admin.support_queue.view', 'admin.user_notes.view', 'admin.users.manage'],
             'admin.operations_command' => ['admin.operations_command.view', 'admin.support_queue.view', 'admin.queue_automation.view', 'admin.queue_reporting.view', 'admin.notifications.view', 'admin.users.manage'],
             'admin.settings' => ['admin.settings.manage'],
+            'admin.pwa_branding' => ['admin.pwa_branding.view', 'admin.pwa_branding.manage', 'admin.settings.manage'],
             'admin.ai' => ['admin.settings.manage'],
         ],
         'commerce_domains' => [
@@ -52,6 +53,9 @@ function mg_admin_permission_matrix(): array
             'admin.notifications.manage' => ['admin.support_queue.manage', 'admin.user_notes.manage', 'admin.users.manage'],
             'admin.operations_command.view' => ['admin.support_queue.view', 'admin.queue_automation.view', 'admin.queue_reporting.view', 'admin.notifications.view', 'admin.users.manage'],
             'admin.operations_command.manage' => ['admin.queue_automation.run', 'admin.support_queue.manage', 'admin.users.manage'],
+            'admin.pwa_branding.view' => ['admin.settings.manage'],
+            'admin.pwa_branding.manage' => ['admin.settings.manage'],
+            'admin.pwa_notifications.test' => ['admin.pwa_branding.manage', 'admin.settings.manage'],
             'admin.commerce.orders.view' => ['admin.commerce.view', 'merchant.payments.view'],
             'admin.commerce.refunds.view' => ['admin.commerce.view', 'merchant.payments.view'],
             'admin.commerce.disputes.view' => ['admin.commerce.view', 'merchant.payments.view'],
