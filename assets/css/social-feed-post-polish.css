@@ -1,4 +1,8 @@
 /* Feed post card polish: media, product cards, and mobile actions */
+.mg-social-feed-page .mg-feed-tabs-proxy{
+  display:none!important;
+}
+
 .mg-social-feed-page .mg-feed-media figure.is-audio,
 .mg-social-feed-page .mg-feed-media figure:has(audio){
   grid-column:1/-1!important;
@@ -113,6 +117,10 @@
   background:linear-gradient(145deg,#eaf2ff,#f7fbff)!important;
 }
 
+.mg-social-feed-page .mg-feed-linked-card.is-product .mg-feed-linked-preview::before{
+  display:none!important;
+}
+
 .mg-social-feed-page .mg-feed-linked-card.is-product .mg-feed-linked-preview img{
   display:block!important;
   width:100%!important;
@@ -156,9 +164,9 @@
     color:#1d4ed8;
   }
 
-  .mg-social-feed-page .mg-feed-action[data-reaction-type="like"]::before{content:"♡";}
-  .mg-social-feed-page .mg-feed-action[data-reaction-type="support"]::before{content:"＋";}
-  .mg-social-feed-page .mg-feed-action[data-post-action="comments"]::before{content:"◌";}
-  .mg-social-feed-page .mg-feed-action[data-post-action="save"]::before{content:"▱";}
-  .mg-social-feed-page .mg-feed-action[data-post-action="share"]::before{content:"↗";}
+  .mg-social-feed-page .mg-feed-action[data-reaction-type="like"]::before{content:"L";}
+  .mg-social-feed-page .mg-feed-action[data-reaction-type="support"]::before{content:"+";}
+  .mg-social-feed-page .mg-feed-action[data-post-action="comments"]::before{content:"C";}
+  .mg-social-feed-page .mg-feed-action[data-post-action="save"]::before{content:"S";}
+  .mg-social-feed-page .mg-feed-action[data-post-action="share"]::before{content:"SH";font-size:12px;}
 }
