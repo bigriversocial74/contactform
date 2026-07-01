@@ -18,12 +18,23 @@ window.Microgifter = window.Microgifter || {};
     return Array.from((scope || root).querySelectorAll(selector));
   }
 
+  function matches(node, selector) {
+    return Boolean(node && node.matches && node.matches(selector));
+  }
+
+  function collect(selector, scope) {
+    var base = scope || root;
+    var items = qsa(selector, base);
+    if (matches(base, selector)) items.unshift(base);
+    return items;
+  }
+
   function normalize(value) {
     return String(value || '').trim().toLowerCase();
   }
 
   function renameStoreButtons(scope) {
-    qsa('[data-store-enter], .mg-store-enter-btn', scope).forEach(function (button) {
+    collect('[data-store-enter], .mg-store-enter-btn', scope).forEach(function (button) {
       var text = normalize(button.textContent);
       if (text === 'merchant canvas' || text === 'enter store' || text === '') {
         button.textContent = 'ENTER STORE';
@@ -33,7 +44,7 @@ window.Microgifter = window.Microgifter || {};
   }
 
   function polishActionButtons(scope) {
-    qsa('.mg-feed-action', scope).forEach(function (button) {
+    collect('.mg-feed-action', scope).forEach(function (button) {
       var label = String(button.textContent || '').trim();
       if (label && !button.getAttribute('aria-label')) button.setAttribute('aria-label', label);
     });
@@ -63,8 +74,10 @@ window.Microgifter = window.Microgifter || {};
   }
 
   function polishMedia(card) {
-    qsa('.mg-feed-media', card).forEach(function (media) {
-      var figures = qsa(':scope > figure', media);
+    collect('.mg-feed-media', card).forEach(function (media) {
+      var figures = Array.from(media.children || []).filter(function (node) {
+        return matches(node, 'figure');
+      });
       var imageFigures = [];
 
       figures.forEach(function (figure) {
@@ -83,7 +96,7 @@ window.Microgifter = window.Microgifter || {};
   }
 
   function polishProductCards(scope) {
-    qsa('.mg-feed-linked-card.is-product', scope).forEach(function (card) {
+    collect('.mg-feed-linked-card.is-product', scope).forEach(function (card) {
       var preview = card.querySelector('.mg-feed-linked-preview');
       if (preview && !preview.querySelector('img')) preview.textContent = '';
       qsa('.mg-feed-linked-eyebrow,.mg-feed-linked-status,.mg-feed-linked-access', card).forEach(function (node) {
@@ -93,12 +106,13 @@ window.Microgifter = window.Microgifter || {};
   }
 
   function polish(scope) {
-    renameStoreButtons(scope || root);
-    polishActionButtons(scope || root);
-    qsa('.mg-feed-card', scope || root).forEach(function (card) {
+    var base = scope || root;
+    renameStoreButtons(base);
+    polishActionButtons(base);
+    collect('.mg-feed-card', base).forEach(function (card) {
       polishMedia(card);
     });
-    polishProductCards(scope || root);
+    polishProductCards(base);
   }
 
   root.addEventListener('click', function (event) {
