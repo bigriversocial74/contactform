@@ -19,6 +19,7 @@ $adminPermissionSet = [
   'security.logs.view', 'admin.security_logs.view', 'admin.sessions.view',
   'operational.alerts.view', 'demand.dashboard.view', 'intelligence.dashboard.view',
   'merchant.payments.view', 'subscriptions.admin', 'microgift.operations.view', 'tips.reverse', 'share_market.admin',
+  'admin.pwa_branding.view', 'admin.pwa_branding.manage', 'admin.pwa_notifications.test',
 ];
 $hasAdminAccess = $isSuperAdmin || count(array_intersect($adminPermissionSet, $permissions)) > 0;
 $adminActive = 'dashboard';
