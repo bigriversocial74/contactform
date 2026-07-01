@@ -108,7 +108,7 @@ require __DIR__ . '/includes/header.php';
         <article class="mg-panel" data-reveal="scale" style="--delay:160ms">
           <div class="mg-panel-head">
             <div class="mg-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M8 14h5"/><path d="M16 14h2"/></svg></div>
-            <div><h3>Gift Certificates</h3><p>Issue digital certificates, claim codes, vouchers, rewards, and redeemable passes that move cleanly through inbox, sent, claimed, and redeemed states.</p></div>
+            <div><h3>Digital Commerce</h3><p>Issue digital certificates, claim codes, vouchers, rewards, and redeemable passes that move cleanly through inbox, sent, claimed, and redeemed states.</p></div>
           </div>
           <div class="mg-signal-list" aria-label="Gift certificate flow">
             <div class="mg-signal-row"><span>Issued</span><span>Wallet ready</span></div>
