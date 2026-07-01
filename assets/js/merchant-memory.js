@@ -11,6 +11,19 @@ document.addEventListener('DOMContentLoaded',function(){
     status.className='mg-memory-status'+(type?' is-'+type:'');
   }
 
+  function activateTab(name){
+    if(!name)return;
+    page.querySelectorAll('[data-memory-tab]').forEach(function(button){
+      button.classList.toggle('is-active',button.dataset.memoryTab===name);
+    });
+    page.querySelectorAll('[data-memory-panel]').forEach(function(panel){
+      var active=panel.dataset.memoryPanel===name;
+      panel.classList.toggle('is-active',active);
+      panel.hidden=!active;
+    });
+    try{window.localStorage.setItem('mg_merchant_memory_tab',name);}catch(error){}
+  }
+
   async function processSource(sourceId,button){
     if(button){button.disabled=true;button.dataset.originalLabel=button.textContent;button.textContent='Processing…';}
     setStatus(sourceId?'Processing selected memory source…':'Processing pending memory sources…','');
@@ -33,9 +46,15 @@ document.addEventListener('DOMContentLoaded',function(){
   }
 
   page.addEventListener('click',function(event){
+    var tabButton=event.target.closest('[data-memory-tab]');
+    if(tabButton){activateTab(tabButton.dataset.memoryTab||'sources');return;}
     var sourceButton=event.target.closest('[data-memory-process-source]');
     if(sourceButton){processSource(sourceButton.dataset.memoryProcessSource||'',sourceButton);return;}
     var pendingButton=event.target.closest('[data-memory-process-pending]');
     if(pendingButton){processSource('',pendingButton);}
   });
+
+  var savedTab='';
+  try{savedTab=window.localStorage.getItem('mg_merchant_memory_tab')||'';}catch(error){}
+  if(savedTab&&page.querySelector('[data-memory-panel="'+savedTab+'"]'))activateTab(savedTab);
 });
