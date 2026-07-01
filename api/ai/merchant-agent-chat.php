@@ -5,6 +5,7 @@ require_once __DIR__ . '/_ai.php';
 require_once dirname(__DIR__) . '/merchant/_merchant.php';
 require_once dirname(__DIR__, 2) . '/includes/merchant-automation-controls.php';
 require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-chat-memory.php';
+require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-admin-limits.php';
 
 function mg_agent_chat_admin_operator(array $user): bool
 {
@@ -23,6 +24,7 @@ if ($method === 'GET') {
     $state['memory'] = mg_agent_memory_summary($pdo, (int)$user['id']);
     $state['agent_autonomy'] = mg_agent_autonomy_for_merchant($pdo, (int)$user['id']);
     $state['admin_operator_available'] = mg_agent_chat_admin_operator($user);
+    $state['admin_ai_limits'] = mg_agent_admin_limit_public($pdo, (int)$user['id']);
     mg_ok($state);
 }
 
@@ -30,7 +32,7 @@ if ($method === 'POST') {
     $input = mg_input();
     mg_require_csrf_for_write($input);
     $action = strtolower(trim((string)($input['action'] ?? 'send_message')));
-    $localActions = ['save_agent_profile','create_thread','save_thread','archive_thread','clear_thread','rename_thread','load_thread'];
+    $localActions = ['save_agent_profile','save_memory_profile','create_thread','save_thread','archive_thread','clear_thread','rename_thread','load_thread'];
 
     if (!in_array($action, array_merge(['send_message'], $localActions), true)) {
         mg_fail('Unknown merchant agent chat action.', 422);
@@ -43,6 +45,11 @@ if ($method === 'POST') {
     if ($action === 'save_agent_profile') {
         $profile = mg_agent_save_profile($pdo, $merchantId, $input);
         mg_ok(['agent_profile' => $profile, 'state' => mg_ai_chat_public_state($pdo, $merchantId)], 'Agent profile saved.');
+    }
+
+    if ($action === 'save_memory_profile') {
+        $memory = mg_agent_memory_profile_save($pdo, $merchantId, $merchantId, $input);
+        mg_ok(['memory' => $memory, 'state' => mg_ai_chat_public_state($pdo, $merchantId) + ['memory' => mg_agent_memory_summary($pdo, $merchantId)]], 'Merchant memory saved.');
     }
 
     if ($action === 'create_thread') {
@@ -90,6 +97,7 @@ if ($method === 'POST') {
     if (!$adminOperator && $agentMode === 'execute_plan') {
         mg_agent_autonomy_require_for_merchant($pdo, $merchantId, 'review_queue', 'plan preparation');
     }
+    mg_agent_admin_limit_enforce_default($pdo, $merchantId);
     mg_ok(mg_ai_chat_send_with_memory($pdo, $user, $input), $adminOperator ? 'Admin operator agent plan created.' : 'Merchant agent reply created.', 201);
 }
 
