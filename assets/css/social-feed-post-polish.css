@@ -138,6 +138,93 @@
   text-transform:uppercase;
 }
 
+.mg-social-feed-page .mg-feed-card.is-greeting-card-post,
+.mg-social-feed-page .mg-feed-card.is-multimedia-card-post{
+  background:linear-gradient(180deg,#fff,#fbfdff)!important;
+}
+
+.mg-social-feed-page .mg-feed-card.is-greeting-card-post .mg-feed-media,
+.mg-social-feed-page .mg-feed-card.is-multimedia-card-post .mg-feed-media{
+  width:min(100%,380px)!important;
+  max-width:380px!important;
+  margin:16px auto 0!important;
+  display:grid!important;
+  grid-template-columns:1fr!important;
+  gap:10px!important;
+}
+
+.mg-social-feed-page .mg-feed-card.is-greeting-card-post .mg-feed-media figure:has(img),
+.mg-social-feed-page .mg-feed-card.is-multimedia-card-post .mg-feed-media figure:has(img),
+.mg-social-feed-page .mg-feed-card.is-greeting-card-post .mg-feed-media figure:has(video),
+.mg-social-feed-page .mg-feed-card.is-multimedia-card-post .mg-feed-media figure:has(video),
+.mg-social-feed-page .mg-feed-card.is-greeting-card-post .mg-feed-media-carousel,
+.mg-social-feed-page .mg-feed-card.is-multimedia-card-post .mg-feed-media-carousel{
+  width:100%!important;
+  aspect-ratio:9/16!important;
+  min-height:0!important;
+  max-height:none!important;
+  border-radius:26px!important;
+  overflow:hidden!important;
+  box-shadow:0 20px 44px rgba(15,23,42,.16)!important;
+  background:#f8fafc!important;
+}
+
+.mg-social-feed-page .mg-feed-card.is-greeting-card-post .mg-feed-media figure:has(img) img,
+.mg-social-feed-page .mg-feed-card.is-multimedia-card-post .mg-feed-media figure:has(img) img,
+.mg-social-feed-page .mg-feed-card.is-greeting-card-post .mg-feed-media figure:has(video) video,
+.mg-social-feed-page .mg-feed-card.is-multimedia-card-post .mg-feed-media figure:has(video) video,
+.mg-social-feed-page .mg-feed-card.is-greeting-card-post .mg-feed-media-carousel-track,
+.mg-social-feed-page .mg-feed-card.is-multimedia-card-post .mg-feed-media-carousel-track,
+.mg-social-feed-page .mg-feed-card.is-greeting-card-post .mg-feed-media-carousel-slide,
+.mg-social-feed-page .mg-feed-card.is-multimedia-card-post .mg-feed-media-carousel-slide,
+.mg-social-feed-page .mg-feed-card.is-greeting-card-post .mg-feed-media-carousel-slide img,
+.mg-social-feed-page .mg-feed-card.is-multimedia-card-post .mg-feed-media-carousel-slide img{
+  width:100%!important;
+  height:100%!important;
+  min-height:0!important;
+  max-height:none!important;
+  object-fit:cover!important;
+}
+
+.mg-social-feed-page .mg-feed-card.is-greeting-card-post .mg-feed-media figure.is-audio,
+.mg-social-feed-page .mg-feed-card.is-multimedia-card-post .mg-feed-media figure.is-audio,
+.mg-social-feed-page .mg-feed-card.is-greeting-card-post .mg-feed-media figure:has(audio),
+.mg-social-feed-page .mg-feed-card.is-multimedia-card-post .mg-feed-media figure:has(audio){
+  width:100%!important;
+  aspect-ratio:auto!important;
+  border-radius:18px!important;
+  box-shadow:none!important;
+}
+
+.mg-social-feed-page .mg-feed-card.is-greeting-card-post .mg-feed-linked-grid,
+.mg-social-feed-page .mg-feed-card.is-multimedia-card-post .mg-feed-linked-grid{
+  width:min(100%,460px)!important;
+  max-width:460px!important;
+  margin:18px auto 0!important;
+}
+
+.mg-social-feed-page .mg-feed-card.is-greeting-card-post .mg-feed-linked-card.is-product,
+.mg-social-feed-page .mg-feed-card.is-multimedia-card-post .mg-feed-linked-card.is-product{
+  min-height:0!important;
+  grid-template-columns:92px minmax(0,1fr)!important;
+  border-radius:18px!important;
+}
+
+.mg-social-feed-page .mg-feed-card.is-greeting-card-post .mg-feed-linked-preview,
+.mg-social-feed-page .mg-feed-card.is-multimedia-card-post .mg-feed-linked-preview{
+  min-height:128px!important;
+}
+
+.mg-social-feed-page .mg-feed-card.is-greeting-card-post .mg-feed-linked-preview img,
+.mg-social-feed-page .mg-feed-card.is-multimedia-card-post .mg-feed-linked-preview img{
+  min-height:128px!important;
+}
+
+.mg-social-feed-page .mg-feed-card.is-greeting-card-post .mg-feed-linked-description,
+.mg-social-feed-page .mg-feed-card.is-multimedia-card-post .mg-feed-linked-description{
+  display:none!important;
+}
+
 @media(max-width:640px){
   .mg-social-feed-page .mg-feed-actions{
     grid-template-columns:repeat(5,minmax(0,1fr))!important;
@@ -169,4 +256,16 @@
   .mg-social-feed-page .mg-feed-action[data-post-action="comments"]::before{content:"C";}
   .mg-social-feed-page .mg-feed-action[data-post-action="save"]::before{content:"S";}
   .mg-social-feed-page .mg-feed-action[data-post-action="share"]::before{content:"SH";font-size:12px;}
+
+  .mg-social-feed-page .mg-feed-card.is-greeting-card-post .mg-feed-media,
+  .mg-social-feed-page .mg-feed-card.is-multimedia-card-post .mg-feed-media{
+    width:min(88vw,360px)!important;
+    max-width:360px!important;
+  }
+
+  .mg-social-feed-page .mg-feed-card.is-greeting-card-post .mg-feed-linked-grid,
+  .mg-social-feed-page .mg-feed-card.is-multimedia-card-post .mg-feed-linked-grid{
+    width:calc(100% - 24px)!important;
+    max-width:420px!important;
+  }
 }

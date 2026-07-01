@@ -140,6 +140,8 @@ function mg_feed_published_attachment_cards(PDO $pdo, array $posts, ?int $viewer
     foreach ($posts as $post) {
         $postId = (string)$post['public_id'];
         $profileSlug = (string)($post['profile_slug'] ?? '');
+        $postType = (string)($post['post_type'] ?? 'simple');
+        $isGreetingProduct = in_array($postType, ['greeting_card', 'multimedia_card'], true);
         $cards = [];
 
         $productId = (int)($post['catalog_product_id'] ?? 0);
@@ -150,12 +152,18 @@ function mg_feed_published_attachment_cards(PDO $pdo, array $posts, ?int $viewer
                 $productImageUrl = $postImageUrls[(int)($post['current_version_id'] ?? 0)] ?? null;
             }
             $cards[] = [
-                'kind'=>'product','eyebrow'=>'Product','title'=>(string)($product['title'] ?: 'Microgifter product'),
+                'kind'=>'product','variant'=>$isGreetingProduct ? $postType : null,
+                'eyebrow'=>$isGreetingProduct ? ($postType === 'multimedia_card' ? 'Multimedia Card' : 'Greeting Card') : 'Product',
+                'title'=>(string)($product['title'] ?: 'Microgifter product'),
                 'description'=>mg_feed_attachment_text($product['description'] ?? null),
                 'value_cents'=>(int)($product['unit_value_cents'] ?? 0),'currency'=>(string)($product['currency'] ?? 'USD'),
                 'status'=>(string)$product['status'],'image_url'=>$productImageUrl,
                 'access'=>['state'=>'public','label'=>'Available to everyone'],
-                'action'=>['state'=>'enabled','label'=>'View product','url'=>'/product.php?p='.rawurlencode((string)$product['slug'])],
+                'action'=>[
+                    'state'=>'enabled',
+                    'label'=>$isGreetingProduct ? ($postType === 'multimedia_card' ? 'Open Multimedia Card' : 'Open Card') : 'View product',
+                    'url'=>'/product.php?p='.rawurlencode((string)$product['slug']),
+                ],
             ];
         }
 
