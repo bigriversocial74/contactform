@@ -15,8 +15,8 @@ $page_title = 'World Canvas | Microgifter';
 $page_section = 'agent';
 $header_mode = 'agent';
 $agent_tab = 'world-canvas';
-$page_styles = ['/assets/css/world-canvas.css','/assets/css/world-canvas-attraction.css','/assets/css/world-canvas-identity.css','/assets/css/world-canvas-conversations.css','/assets/css/world-canvas-reward-drops.css','/assets/css/world-canvas-insights.css','/assets/css/world-canvas-opportunities.css','/assets/css/world-canvas-replay.css','/assets/css/world-canvas-square-map.css','/assets/css/world-canvas-dot-system.css'];
-$page_scripts = ['/assets/js/world-canvas.js','/assets/js/world-canvas-overlays.js','/assets/js/world-canvas-identity.js','/assets/js/world-canvas-conversations.js','/assets/js/world-canvas-reward-drops.js','/assets/js/world-canvas-insights.js','/assets/js/world-canvas-opportunities.js','/assets/js/world-canvas-replay.js','/assets/js/world-canvas-square-map.js','/assets/js/world-canvas-dot-system.js'];
+$page_styles = ['/assets/css/world-canvas.css','/assets/css/world-canvas-attraction.css','/assets/css/world-canvas-identity.css','/assets/css/world-canvas-conversations.css','/assets/css/world-canvas-reward-drops.css','/assets/css/world-canvas-insights.css','/assets/css/world-canvas-opportunities.css','/assets/css/world-canvas-replay.css','/assets/css/world-canvas-square-map.css','/assets/css/world-canvas-dot-system.css','/assets/css/sponsored-campaign-card.css'];
+$page_scripts = ['/assets/js/world-canvas.js','/assets/js/world-canvas-overlays.js','/assets/js/world-canvas-identity.js','/assets/js/world-canvas-conversations.js','/assets/js/world-canvas-reward-drops.js','/assets/js/world-canvas-insights.js','/assets/js/world-canvas-opportunities.js','/assets/js/world-canvas-replay.js','/assets/js/world-canvas-square-map.js','/assets/js/world-canvas-dot-system.js','/assets/js/sponsored-campaign-card.js'];
 $page_manifest = [
     'id' => 'world-canvas',
     'title' => $page_title,
@@ -77,6 +77,8 @@ require __DIR__ . '/includes/header.php';
           <div class="mg-world-grid-label is-north">User avatars · merchant avatars</div>
           <div class="mg-world-grid-label is-south">Zoom in to reveal labels</div>
           <div class="mg-world-node-layer" data-world-nodes></div>
+          <div class="mg-sponsored-map-layer mg-world-sponsored-layer" data-mg-ad-placement="world_canvas_sponsored_pin" data-mg-ad-limit="5" aria-label="Sponsored World Canvas pins"></div>
+          <div class="mg-sponsored-map-layer mg-world-sponsored-layer" data-mg-ad-placement="target_zone_sponsored_drop" data-mg-ad-limit="5" aria-label="Sponsored Target Zone drops"></div>
           <div class="mg-world-empty-state" data-world-empty>
             <span>No world avatars yet</span>
             <p>World Canvas will display user and merchant avatars as dots as stores, rewards, and claims become active.</p>
