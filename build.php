@@ -6,7 +6,7 @@ require_once __DIR__ . '/includes/app.php';
 $page_title = 'Build a Product | Microgifter';
 $page_section = 'builder';
 $header_mode = 'builder';
-$page_styles = ['/assets/css/builder-stage4b.css','/assets/css/builder-shell-fixes.css','/assets/css/gift-envelope-presentation.css','/assets/css/builder-desktop-layout.css','/assets/css/builder-card-tabs-canvas.css','/assets/css/builder-greeting-card-presentation.css'];
+$page_styles = ['/assets/css/builder-stage4b.css','/assets/css/builder-shell-fixes.css','/assets/css/gift-envelope-presentation.css','/assets/css/builder-desktop-layout.css','/assets/css/builder-card-tabs-canvas.css','/assets/css/builder-greeting-card-presentation.css','/assets/css/builder-card-full-bleed-mobile.css'];
 $page_scripts = ['/assets/js/builder-stage4b.js','/assets/js/builder-product-types.js','/assets/js/product-builder-shell.js','/assets/js/gift-envelope-presentation.js','/assets/js/builder-card-tabs-canvas.js','/assets/js/builder-greeting-card-presentation.js'];
 $product_id = trim((string) ($_GET['id'] ?? ''));
 
@@ -42,11 +42,6 @@ require __DIR__ . '/includes/header.php';
             <div class="mg-card-presenter" data-card-presenter data-card-state="closed">
               <section class="mg-card-face mg-card-cover-face" aria-label="Closed greeting card cover">
                 <div class="mg-card-cover-media" data-cover-media></div>
-                <div class="mg-card-cover-copy">
-                  <div class="mg-card-cover-icon">✉</div>
-                  <h2 data-preview-title>Coffee for two</h2>
-                  <p data-preview-headline>A small gift, already waiting for you.</p>
-                </div>
               </section>
               <section class="mg-card-face mg-card-inside-face" aria-label="Open greeting card inside">
                 <div class="mg-card-inside-page mg-card-inside-left">
@@ -54,9 +49,7 @@ require __DIR__ . '/includes/header.php';
                 </div>
                 <div class="mg-card-inside-page mg-card-inside-right">
                   <span class="mg-eyebrow">Gift message</span>
-                  <h3 data-preview-title>Coffee for two</h3>
                   <p data-preview-message>Add a message for the recipient.</p>
-                  <div class="mg-card-value" data-preview-value>$25.00</div>
                 </div>
               </section>
               <section class="mg-card-face mg-card-back-face" aria-label="Card back product information">
@@ -78,11 +71,6 @@ require __DIR__ . '/includes/header.php';
             <div class="mg-card-presenter" data-card-presenter data-card-state="closed">
               <section class="mg-card-face mg-card-cover-face" aria-label="Closed multimedia card cover">
                 <div class="mg-card-cover-media" data-cover-media></div>
-                <div class="mg-card-cover-copy">
-                  <div class="mg-card-cover-icon">🎬</div>
-                  <h2 data-preview-title>Coffee for two</h2>
-                  <p data-preview-headline>A small gift, already waiting for you.</p>
-                </div>
               </section>
               <section class="mg-card-face mg-card-inside-face" aria-label="Open multimedia card inside">
                 <div class="mg-card-inside-page mg-card-inside-left">
@@ -90,7 +78,6 @@ require __DIR__ . '/includes/header.php';
                 </div>
                 <div class="mg-card-inside-page mg-card-inside-right">
                   <span class="mg-eyebrow">Gift message</span>
-                  <h3 data-preview-title>Coffee for two</h3>
                   <p data-preview-message>Add a message for the recipient.</p>
                   <div class="mg-card-media-stack"><audio data-preview-audio controls hidden></audio><video data-preview-video controls playsinline hidden></video></div>
                 </div>
