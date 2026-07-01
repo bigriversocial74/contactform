@@ -78,7 +78,7 @@ require __DIR__ . '/includes/header.php';
       <div class="mg-section-head">
         <span class="mg-story-kicker" data-reveal="left">Platform modules</span>
         <h2 class="mg-section-title" id="merchantTitle" data-reveal="left" style="--delay:80ms">One operating layer for selling, rewarding, messaging, networking, and distribution.</h2>
-        <p class="mg-section-copy" data-reveal="left" style="--delay:160ms">Microgifter combines storefront tools, gift certificate management, customer CRM, workplace rewards, social discovery, and API distribution into one connected system for merchants, teams, and communities.</p>
+        <p class="mg-section-copy" data-reveal="left" style="--delay:160ms">Microgifter combines digital commerce, local advertising, customer CRM, workplace rewards, social discovery, and API distribution into one connected system for merchants, teams, and communities.</p>
       </div>
 
       <div class="mg-feature-panels mg-growth-feature-grid">
@@ -98,11 +98,16 @@ require __DIR__ . '/includes/header.php';
 
         <article class="mg-panel" data-reveal="scale" style="--delay:80ms">
           <div class="mg-panel-head">
-            <div class="mg-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 7h14l-1.2 10H6.2L5 7Z"/><path d="M8 7a4 4 0 0 1 8 0"/><path d="M8 20h8"/></svg></div>
-            <div><h3>Ecommerce</h3><p>Create sellable offers, reward products, pre-sale packages, event passes, and local experiences that customers can buy, save, send, or redeem.</p></div>
+            <div class="mg-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 14h3l10 4V6L7 10H4v4Z"/><path d="M7 14v4h2l1-3"/><path d="M19 9l2-2M20 12h3M19 15l2 2"/></svg></div>
+            <div><h3>Local Advertising</h3><p>Microgifter Advertising turns paid or promoted visibility into tracked campaigns, rewards, redemptions, customer actions, and measurable Pre Sale Revenue.</p></div>
           </div>
-          <div class="mg-codebox" aria-label="Ecommerce module example"><span class="gold">COMMERCE OBJECT</span><br>{<br>&nbsp;&nbsp;<span class="muted">"product"</span>: <span class="green">"local_experience"</span>,<br>&nbsp;&nbsp;<span class="muted">"checkout"</span>: <span class="green">"cash_or_card"</span>,<br>&nbsp;&nbsp;<span class="muted">"fulfillment"</span>: <span class="green">"wallet_item"</span><br>}</div>
-          <div class="mg-panel-tags"><span>Storefront</span><span>Checkout</span><span>Pre-sale</span></div>
+          <div class="mg-signal-list" aria-label="Local advertising signals">
+            <div class="mg-signal-row"><span>Boosts</span><span>Paid visibility</span></div>
+            <div class="mg-signal-row"><span>Campaigns</span><span>Tracked</span></div>
+            <div class="mg-signal-row"><span>Rewards</span><span>Customer action</span></div>
+            <div class="mg-signal-row"><span>PSR</span><span>Measured</span></div>
+          </div>
+          <div class="mg-panel-tags"><span>Sponsored</span><span>Rewards</span><span>PSR</span></div>
         </article>
 
         <article class="mg-panel" data-reveal="scale" style="--delay:160ms">
@@ -110,7 +115,7 @@ require __DIR__ . '/includes/header.php';
             <div class="mg-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M8 14h5"/><path d="M16 14h2"/></svg></div>
             <div><h3>Digital Commerce</h3><p>Issue digital certificates, claim codes, vouchers, rewards, and redeemable passes that move cleanly through inbox, sent, claimed, and redeemed states.</p></div>
           </div>
-          <div class="mg-signal-list" aria-label="Gift certificate flow">
+          <div class="mg-signal-list" aria-label="Digital commerce flow">
             <div class="mg-signal-row"><span>Issued</span><span>Wallet ready</span></div>
             <div class="mg-signal-row"><span>Sent</span><span>Recipient tracked</span></div>
             <div class="mg-signal-row"><span>Claimed</span><span>Code protected</span></div>
