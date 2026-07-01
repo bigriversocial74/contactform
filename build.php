@@ -7,7 +7,7 @@ $page_title = 'Build a Product | Microgifter';
 $page_section = 'builder';
 $header_mode = 'builder';
 $page_styles = ['/assets/css/builder-stage4b.css','/assets/css/builder-shell-fixes.css','/assets/css/gift-envelope-presentation.css','/assets/css/builder-desktop-layout.css','/assets/css/builder-card-tabs-canvas.css','/assets/css/builder-greeting-card-presentation.css','/assets/css/builder-card-full-bleed-mobile.css','/assets/css/builder-card-proportions.css'];
-$page_scripts = ['/assets/js/builder-stage4b.js','/assets/js/builder-product-types.js','/assets/js/product-builder-shell.js','/assets/js/gift-envelope-presentation.js','/assets/js/builder-card-tabs-canvas.js','/assets/js/builder-greeting-card-presentation.js','/assets/js/builder-merchant-profile.js','/assets/js/builder-simple-product-post.js'];
+$page_scripts = ['/assets/js/builder-stage4b.js','/assets/js/builder-card-message-media-preview.js','/assets/js/builder-product-types.js','/assets/js/product-builder-shell.js','/assets/js/gift-envelope-presentation.js','/assets/js/builder-card-tabs-canvas.js','/assets/js/builder-greeting-card-presentation.js','/assets/js/builder-merchant-profile.js','/assets/js/builder-simple-product-post.js'];
 $product_id = trim((string) ($_GET['id'] ?? ''));
 
 require __DIR__ . '/includes/header.php';
@@ -51,8 +51,10 @@ require __DIR__ . '/includes/header.php';
                   <div class="mg-card-inside-image" data-inside-media></div>
                 </div>
                 <div class="mg-card-inside-page mg-card-inside-right">
-                  <span class="mg-eyebrow">Gift message</span>
-                  <p data-preview-message>Add a message for the recipient.</p>
+                  <div class="mg-card-message-copy">
+                    <h3 class="mg-card-message-title" data-preview-card-headline>A gift, already waiting for you.</h3>
+                    <p data-preview-message>Add a message for the recipient.</p>
+                  </div>
                 </div>
               </section>
               <section class="mg-card-face mg-card-back-face" aria-label="Card back product information">
@@ -83,9 +85,22 @@ require __DIR__ . '/includes/header.php';
                   <div class="mg-card-inside-image" data-inside-media></div>
                 </div>
                 <div class="mg-card-inside-page mg-card-inside-right">
-                  <span class="mg-eyebrow">Gift message</span>
-                  <p data-preview-message>Add a message for the recipient.</p>
-                  <div class="mg-card-media-stack"><audio data-preview-audio controls hidden></audio><video data-preview-video controls playsinline hidden></video></div>
+                  <div class="mg-card-message-copy">
+                    <h3 class="mg-card-message-title" data-preview-card-headline>A gift, already waiting for you.</h3>
+                    <p data-preview-message>Add a message for the recipient.</p>
+                  </div>
+                  <div class="mg-card-media-stack" data-card-media-stack>
+                    <div class="mg-card-media-sample" data-card-media-choice="audio">
+                      <span>Audio greeting</span>
+                      <audio data-preview-audio controls hidden></audio>
+                      <small data-preview-audio-label>Sample audio section</small>
+                    </div>
+                    <div class="mg-card-media-sample" data-card-media-choice="video">
+                      <span>Video message</span>
+                      <video data-preview-video controls playsinline hidden></video>
+                      <small data-preview-video-label>Sample video section</small>
+                    </div>
+                  </div>
                 </div>
               </section>
               <section class="mg-card-face mg-card-back-face" aria-label="Card back product information">
