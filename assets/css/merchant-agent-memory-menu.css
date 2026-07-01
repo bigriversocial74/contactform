@@ -7,7 +7,8 @@
   box-shadow:0 18px 42px rgba(15,23,42,.08);
 }
 .mg-agent-memory-menu[hidden],
-.mg-agent-memory-actions[hidden]{
+.mg-agent-memory-actions[hidden],
+.mg-agent-memory-progress[hidden]{
   display:none!important;
 }
 .mg-agent-memory-menu header{
@@ -80,6 +81,138 @@
 .mg-agent-memory-actions .mg-btn{
   min-height:38px;
 }
+.mg-agent-memory-progress{
+  display:grid;
+  grid-template-columns:44px minmax(0,1fr);
+  align-items:center;
+  gap:12px;
+  margin:12px 0;
+  padding:12px;
+  border:1px solid rgba(37,99,235,.18);
+  border-radius:18px;
+  background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(239,246,255,.94));
+  box-shadow:0 16px 36px rgba(15,23,42,.08);
+}
+.mg-agent-memory-progress-orb{
+  width:42px;
+  height:42px;
+  border-radius:16px;
+  background:radial-gradient(circle at 30% 25%,#fff 0 18%,#93c5fd 20%,#2563eb 66%,#1e3a8a 100%);
+  box-shadow:0 12px 24px rgba(37,99,235,.24);
+  position:relative;
+  overflow:hidden;
+}
+.mg-agent-memory-progress-orb:after{
+  content:'';
+  position:absolute;
+  inset:7px;
+  border:2px solid rgba(255,255,255,.72);
+  border-top-color:rgba(255,255,255,.15);
+  border-radius:50%;
+  animation:mgMemorySpin .9s linear infinite;
+}
+.mg-agent-memory-progress[data-state="success"] .mg-agent-memory-progress-orb{
+  background:radial-gradient(circle at 30% 25%,#fff 0 18%,#86efac 20%,#16a34a 70%,#14532d 100%);
+  box-shadow:0 12px 24px rgba(22,163,74,.22);
+}
+.mg-agent-memory-progress[data-state="success"] .mg-agent-memory-progress-orb:after{
+  content:'✓';
+  inset:auto;
+  border:0;
+  color:#fff;
+  font-size:24px;
+  font-weight:950;
+  line-height:42px;
+  text-align:center;
+  animation:none;
+  width:42px;
+  height:42px;
+}
+.mg-agent-memory-progress[data-state="error"]{
+  border-color:rgba(220,38,38,.18);
+  background:linear-gradient(135deg,#fff,#fff5f5);
+}
+.mg-agent-memory-progress[data-state="error"] .mg-agent-memory-progress-orb{
+  background:radial-gradient(circle at 30% 25%,#fff 0 18%,#fca5a5 20%,#dc2626 70%,#7f1d1d 100%);
+  box-shadow:0 12px 24px rgba(220,38,38,.18);
+}
+.mg-agent-memory-progress[data-state="error"] .mg-agent-memory-progress-orb:after{
+  content:'!';
+  inset:auto;
+  border:0;
+  color:#fff;
+  font-size:24px;
+  font-weight:950;
+  line-height:42px;
+  text-align:center;
+  animation:none;
+  width:42px;
+  height:42px;
+}
+.mg-agent-memory-progress-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin:0 0 8px;
+}
+.mg-agent-memory-progress-head strong{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#0f172a;
+  font-size:13px;
+  font-weight:950;
+}
+.mg-agent-memory-progress-head span{
+  color:#2563eb;
+  font-size:12px;
+  font-weight:950;
+  white-space:nowrap;
+}
+.mg-agent-memory-progress-track{
+  height:9px;
+  overflow:hidden;
+  border-radius:999px;
+  background:#dbeafe;
+}
+.mg-agent-memory-progress-track span{
+  display:block;
+  width:0;
+  height:100%;
+  border-radius:999px;
+  background:linear-gradient(90deg,#60a5fa,#2563eb,#1d4ed8);
+  transition:width .18s ease;
+}
+.mg-agent-memory-progress.is-indeterminate .mg-agent-memory-progress-track span{
+  width:45%!important;
+  animation:mgMemoryBar 1.15s ease-in-out infinite;
+}
+.mg-agent-memory-progress[data-state="success"] .mg-agent-memory-progress-track span{
+  background:linear-gradient(90deg,#86efac,#16a34a);
+}
+.mg-agent-memory-progress[data-state="error"] .mg-agent-memory-progress-track{
+  background:#fee2e2;
+}
+.mg-agent-memory-progress[data-state="error"] .mg-agent-memory-progress-track span{
+  background:linear-gradient(90deg,#fca5a5,#dc2626);
+}
+.mg-agent-memory-progress p{
+  margin:7px 0 0;
+  color:#64748b;
+  font-size:12px;
+  font-weight:750;
+  line-height:1.35;
+}
+@keyframes mgMemorySpin{
+  to{transform:rotate(360deg);}
+}
+@keyframes mgMemoryBar{
+  0%{transform:translateX(-115%);}
+  50%{transform:translateX(55%);}
+  100%{transform:translateX(235%);}
+}
 @media(max-width:760px){
   .mg-agent-memory-menu{
     margin-top:14px;
@@ -90,5 +223,16 @@
   .mg-agent-memory-actions{
     display:grid;
     grid-template-columns:1fr;
+  }
+  .mg-agent-memory-progress{
+    grid-template-columns:38px minmax(0,1fr);
+    padding:10px;
+  }
+  .mg-agent-memory-progress-orb,
+  .mg-agent-memory-progress[data-state="success"] .mg-agent-memory-progress-orb:after,
+  .mg-agent-memory-progress[data-state="error"] .mg-agent-memory-progress-orb:after{
+    width:38px;
+    height:38px;
+    line-height:38px;
   }
 }
