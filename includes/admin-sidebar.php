@@ -31,6 +31,7 @@ $canStampHealth = $canCommerce;
 $canHealth = $canAdminPage('admin.system_health');
 $canLifecycleHealth = $canAdminPage('admin.lifecycle_health');
 $canSettings = $canAdminPage('admin.settings');
+$canPwaBranding = $canAdminPage('admin.pwa_branding');
 $canAi = $canAdminPage('admin.ai');
 $canPayments = $canAdminPage('admin.payments');
 $canAudit = $canAdminPage('admin.audit_logs');
@@ -156,6 +157,12 @@ $adminNav = [
         'detail' => 'Runtime and delivery',
         'href' => '/admin/system-health.php',
         'visible' => $canHealth,
+    ],
+    'pwa-branding' => [
+        'label' => 'System PWA',
+        'detail' => 'Icons, splash, push',
+        'href' => '/admin/pwa-branding.php',
+        'visible' => $canPwaBranding,
     ],
     'store-health-analytics' => [
         'label' => 'Store Health analytics',
