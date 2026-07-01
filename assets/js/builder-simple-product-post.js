@@ -19,18 +19,33 @@
       box.innerHTML='<label for="simpleProductInfo">Product info</label><textarea id="simpleProductInfo" maxlength="4000" placeholder="Describe what the customer receives, where it can be used, or why it is valuable."></textarea>';
       after(field('#productTitle'),box);
     }
-    if(!root.querySelector('#simpleProductImageProxy')){
-      var upload=document.createElement('div');
-      upload.className='mg-builder-upload';upload.setAttribute('data-simple-product-control','image');
-      upload.innerHTML='<div class="mg-builder-upload-head"><label class="mg-builder-upload-label" for="simpleProductImageProxy">Upload product image</label><span class="mg-builder-help">Social post image</span></div><input id="simpleProductImageProxy" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><div class="mg-simple-product-proxy-preview" data-simple-product-image-preview></div><div class="mg-builder-upload-meta" data-simple-product-image-meta></div>';
-      after(root.querySelector('.mg-builder-grid-2'),upload);
+    var valueGrid=root.querySelector('.mg-builder-grid-2');
+    if(valueGrid&&!root.querySelector('[data-simple-product-cover-slot]')){
+      var simpleSlot=document.createElement('span');simpleSlot.setAttribute('data-simple-product-cover-slot','true');simpleSlot.hidden=true;after(valueGrid,simpleSlot);
     }
+    var coverField=field('#coverImage');
+    if(coverField&&!root.querySelector('[data-card-cover-slot]')){
+      var cardSlot=document.createElement('span');cardSlot.setAttribute('data-card-cover-slot','true');cardSlot.hidden=true;coverField.parentNode.insertBefore(cardSlot,coverField);
+    }
+  }
+  function moveCoverUpload(simple){
+    var coverField=field('#coverImage');
+    if(!coverField)return;
+    var simpleSlot=root.querySelector('[data-simple-product-cover-slot]');
+    var cardSlot=root.querySelector('[data-card-cover-slot]');
+    if(simple&&simpleSlot){simpleSlot.parentNode.insertBefore(coverField,simpleSlot.nextSibling);coverField.setAttribute('data-simple-product-control','image');}
+    if(!simple&&cardSlot){cardSlot.parentNode.insertBefore(coverField,cardSlot.nextSibling);coverField.removeAttribute('data-simple-product-control');}
+    var label=coverField.querySelector('label[for="coverImage"]');
+    var help=coverField.querySelector('.mg-builder-help');
+    if(label)label.textContent=simple?'Upload product image':'Upload cover image';
+    if(help)help.textContent=simple?'Social post image · JPG, PNG, WebP, GIF':'JPG, PNG, WebP, GIF';
   }
   function sync(){
     if(syncing)return;syncing=true;
     ensure();
     var simple=selectedType()==='simple_product';
-    root.querySelectorAll('[data-simple-product-control]').forEach(function(n){n.hidden=!simple;});
+    moveCoverUpload(simple);
+    root.querySelectorAll('[data-simple-product-control]').forEach(function(n){n.hidden=!simple;n.querySelectorAll('input,textarea,select,button').forEach(function(c){c.disabled=!simple;});});
     var merchant=root.querySelector('#merchantName');
     var name=merchant&&merchant.value?merchant.value:accountName();
     root.querySelectorAll('[data-preview-merchant-initial]').forEach(function(n){n.textContent=initial(name);});
@@ -45,19 +60,6 @@
     ensure();
     var info=root.querySelector('#simpleProductInfo');
     if(info&&!info._mgSimpleBound){info._mgSimpleBound=true;info.addEventListener('input',sync);info.addEventListener('change',sync);}
-    var proxy=root.querySelector('#simpleProductImageProxy');
-    if(proxy&&!proxy._mgSimpleBound){
-      proxy._mgSimpleBound=true;
-      proxy.addEventListener('change',function(){
-        var file=proxy.files&&proxy.files[0];if(!file)return;
-        var url=URL.createObjectURL(file);
-        var preview=root.querySelector('[data-simple-product-image-preview]');
-        var meta=root.querySelector('[data-simple-product-image-meta]');
-        if(preview){preview.style.backgroundImage='url("'+url.replace(/"/g,'%22')+'")';preview.classList.add('is-visible');}
-        if(meta)meta.textContent=file.name;
-        root.querySelectorAll('[data-preview-template="simple_product"] [data-cover-media]').forEach(function(n){n.style.backgroundImage='url("'+url.replace(/"/g,'%22')+'")';});
-      });
-    }
     root.querySelectorAll('input[name="builder_type"]').forEach(function(n){if(!n._mgSimpleBound){n._mgSimpleBound=true;n.addEventListener('change',sync);}});
     root.addEventListener('input',function(){setTimeout(sync,0);});
     root.addEventListener('change',function(){setTimeout(sync,0);});
