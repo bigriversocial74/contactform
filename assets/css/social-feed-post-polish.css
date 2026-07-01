@@ -196,6 +196,7 @@
   box-shadow:none!important;
 }
 
+.mg-social-feed-page .mg-feed-linked-grid,
 .mg-social-feed-page .mg-feed-card.is-greeting-card-post .mg-feed-linked-grid,
 .mg-social-feed-page .mg-feed-card.is-multimedia-card-post .mg-feed-linked-grid{
   width:min(100%,460px)!important;
@@ -203,23 +204,37 @@
   margin:18px auto 0!important;
 }
 
+.mg-social-feed-page .mg-feed-linked-card.is-product,
 .mg-social-feed-page .mg-feed-card.is-greeting-card-post .mg-feed-linked-card.is-product,
 .mg-social-feed-page .mg-feed-card.is-multimedia-card-post .mg-feed-linked-card.is-product{
-  min-height:0!important;
+  min-height:128px!important;
   grid-template-columns:92px minmax(0,1fr)!important;
   border-radius:18px!important;
 }
 
+.mg-social-feed-page .mg-feed-linked-card.is-product .mg-feed-linked-preview,
 .mg-social-feed-page .mg-feed-card.is-greeting-card-post .mg-feed-linked-preview,
 .mg-social-feed-page .mg-feed-card.is-multimedia-card-post .mg-feed-linked-preview{
+  height:128px!important;
   min-height:128px!important;
+  max-height:128px!important;
 }
 
+.mg-social-feed-page .mg-feed-linked-card.is-product .mg-feed-linked-preview img,
 .mg-social-feed-page .mg-feed-card.is-greeting-card-post .mg-feed-linked-preview img,
 .mg-social-feed-page .mg-feed-card.is-multimedia-card-post .mg-feed-linked-preview img{
+  height:128px!important;
   min-height:128px!important;
+  max-height:128px!important;
+  object-fit:cover!important;
 }
 
+.mg-social-feed-page .mg-feed-linked-card.is-product .mg-feed-linked-body{
+  min-height:128px!important;
+  padding:14px 16px 12px!important;
+}
+
+.mg-social-feed-page .mg-feed-linked-card.is-product .mg-feed-linked-description,
 .mg-social-feed-page .mg-feed-card.is-greeting-card-post .mg-feed-linked-description,
 .mg-social-feed-page .mg-feed-card.is-multimedia-card-post .mg-feed-linked-description{
   display:none!important;
@@ -263,6 +278,7 @@
     max-width:360px!important;
   }
 
+  .mg-social-feed-page .mg-feed-linked-grid,
   .mg-social-feed-page .mg-feed-card.is-greeting-card-post .mg-feed-linked-grid,
   .mg-social-feed-page .mg-feed-card.is-multimedia-card-post .mg-feed-linked-grid{
     width:calc(100% - 24px)!important;
