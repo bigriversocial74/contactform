@@ -5,6 +5,7 @@ window.Microgifter = window.Microgifter || {};
 
   var root = document.querySelector('[data-social-feed]');
   if (!root) return;
+  var fallbackLoaded = false;
 
   function ensureStyles() {
     if (document.querySelector('link[href="/assets/css/social-feed-post-polish.css"]')) return;
@@ -31,6 +32,111 @@ window.Microgifter = window.Microgifter || {};
 
   function normalize(value) {
     return String(value || '').trim().toLowerCase();
+  }
+
+  function hideOwnerFilter() {
+    var wrap = root.querySelector('[data-owner-filter-wrap]');
+    if (!wrap) return;
+    wrap.hidden = true;
+    wrap.setAttribute('aria-hidden', 'true');
+    wrap.style.setProperty('display', 'none', 'important');
+  }
+
+  function isMyPostsView() {
+    var current = String(root.dataset.initialFeedView || '').trim();
+    if (current === 'mine') return true;
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('view') === 'mine') return true;
+    var mineTab = root.querySelector('[data-feed-tab="mine"]');
+    return Boolean(mineTab && mineTab.classList.contains('is-active'));
+  }
+
+  function payload(response) {
+    return response && response.data ? response.data : response;
+  }
+
+  function safeText(value, fallback) {
+    var text = String(value || '').trim();
+    return text || fallback || '';
+  }
+
+  function formatCurrency(cents, currency) {
+    var amount = Number(cents || 0) / 100;
+    if (!Number.isFinite(amount) || amount <= 0) return '';
+    try {
+      return new Intl.NumberFormat(undefined, { style: 'currency', currency: currency || 'USD' }).format(amount);
+    } catch (error) {
+      return '$' + amount.toFixed(2);
+    }
+  }
+
+  function legacyPostCard(post) {
+    var article = document.createElement('article');
+    article.className = 'mg-feed-card mg-owner-post-card mg-feed-legacy-post-card';
+    article.dataset.postId = String(post.public_id || '');
+
+    var header = document.createElement('header');
+    header.className = 'mg-feed-card-header';
+    var identity = document.createElement('div');
+    var title = document.createElement('strong');
+    title.textContent = safeText(post.headline || post.title, 'Untitled post');
+    var meta = document.createElement('span');
+    var bits = [safeText(post.status, 'draft'), safeText(post.visibility, '')].filter(Boolean);
+    meta.textContent = bits.join(' · ');
+    identity.append(title, meta);
+    var badge = document.createElement('span');
+    badge.className = 'mg-feed-visibility';
+    badge.textContent = safeText(post.post_type, 'post');
+    header.append(identity, badge);
+    article.appendChild(header);
+
+    var caption = safeText(post.caption, '');
+    if (caption) {
+      var body = document.createElement('p');
+      body.className = 'mg-feed-body';
+      body.textContent = caption;
+      article.appendChild(body);
+    }
+
+    if (post.product_id || post.product_slug || post.title) {
+      var product = document.createElement('a');
+      product.className = 'mg-feed-linked-card is-product';
+      product.href = post.product_slug ? '/product.php?p=' + encodeURIComponent(post.product_slug) : '#';
+      var copy = document.createElement('span');
+      copy.className = 'mg-feed-linked-copy';
+      var name = document.createElement('strong');
+      name.textContent = safeText(post.title, 'Attached product');
+      var value = document.createElement('small');
+      value.textContent = formatCurrency(post.unit_value_cents, post.currency) || 'Product post';
+      copy.append(name, value);
+      product.appendChild(copy);
+      article.appendChild(product);
+    }
+
+    return article;
+  }
+
+  async function loadLegacyMyPostsIfEmpty() {
+    if (fallbackLoaded || !isMyPostsView() || !window.Microgifter || !window.Microgifter.get) return;
+    var list = root.querySelector('[data-feed-list]');
+    var empty = root.querySelector('[data-feed-empty]');
+    var loading = root.querySelector('[data-feed-loading]');
+    if (!list || !empty || list.children.length > 0) return;
+    if (loading && !loading.classList.contains('mg-hidden')) return;
+    if (empty.classList.contains('mg-hidden')) return;
+    fallbackLoaded = true;
+    try {
+      var data = payload(await window.Microgifter.get('/api/feed/posts.php'));
+      var posts = Array.isArray(data && data.posts) ? data.posts : [];
+      if (!posts.length) return;
+      list.replaceChildren();
+      posts.forEach(function (post) { list.appendChild(legacyPostCard(post)); });
+      list.classList.remove('mg-hidden');
+      empty.classList.add('mg-hidden');
+      var status = root.querySelector('[data-feed-status]');
+      if (status) status.textContent = 'Posts loaded.';
+      polish(list);
+    } catch (error) {}
   }
 
   function renameStoreButtons(scope) {
@@ -116,6 +222,7 @@ window.Microgifter = window.Microgifter || {};
 
   function polish(scope) {
     var base = scope || root;
+    hideOwnerFilter();
     renameStoreButtons(base);
     polishActionButtons(base);
     collect('.mg-feed-card', base).forEach(function (card) {
@@ -138,6 +245,9 @@ window.Microgifter = window.Microgifter || {};
 
   ensureStyles();
   polish(root);
+  window.setTimeout(loadLegacyMyPostsIfEmpty, 300);
+  window.setTimeout(loadLegacyMyPostsIfEmpty, 900);
+  window.setTimeout(loadLegacyMyPostsIfEmpty, 1800);
 
   new MutationObserver(function (records) {
     records.forEach(function (record) {
@@ -146,5 +256,7 @@ window.Microgifter = window.Microgifter || {};
         polish(node);
       });
     });
+    hideOwnerFilter();
+    loadLegacyMyPostsIfEmpty();
   }).observe(root, { childList: true, subtree: true });
 })(window, document);
