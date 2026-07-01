@@ -1,1 +1,94 @@
-.mg-agent-memory-menu{margin:0 0 10px;padding:14px;border:1px solid #dbe7f5;border-radius:20px;background:linear-gradient(180deg,#fff,#f8fbff);box-shadow:0 18px 42px rgba(15,23,42,.08)}.mg-agent-memory-menu[hidden],.mg-agent-memory-actions[hidden]{display:none!important}.mg-agent-memory-menu header{display:flex;align-items:start;justify-content:space-between;gap:12px;margin:0 0 12px}.mg-agent-memory-menu header span{display:block;color:#2563eb;font-size:11px;font-weight:950;letter-spacing:.16em}.mg-agent-memory-menu header strong{display:block;color:#0f172a;font-size:16px;font-weight:950}.mg-agent-memory-menu header button{width:34px;height:34px;border:1px solid #dbe7f5;border-radius:12px;background:#fff;color:#334155;font-size:22px;line-height:1;cursor:pointer}.mg-agent-memory-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.mg-agent-memory-options button{min-height:40px;border:1px solid #dbe7f5;border-radius:14px;background:#fff;color:#0f172a;font-size:12px;font-weight:900;cursor:pointer}.mg-agent-memory-options button:disabled{opacity:.5;cursor:not-allowed}.mg-agent-memory-menu p{margin:10px 0 0;color:#64748b;font-size:12px;font-weight:750;line-height:1.4}.mg-agent-memory-actions{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 0;padding:10px;border:1px solid #dbe7f5;border-radius:18px;background:#f8fafc}.mg-agent-memory-actions .mg-btn{min-height:38px}@media(max-width:760px){.mg-agent-memory-options{grid-template-columns:1fr}.mg-agent-memory-actions{display:grid;grid-template-columns:1fr}}
+.mg-agent-memory-menu{
+  margin:18px 0 12px;
+  padding:16px;
+  border:1px solid #dbe7f5;
+  border-radius:20px;
+  background:linear-gradient(180deg,#fff,#f8fbff);
+  box-shadow:0 18px 42px rgba(15,23,42,.08);
+}
+.mg-agent-memory-menu[hidden],
+.mg-agent-memory-actions[hidden]{
+  display:none!important;
+}
+.mg-agent-memory-menu header{
+  display:flex;
+  align-items:start;
+  justify-content:space-between;
+  gap:12px;
+  margin:0 0 12px;
+}
+.mg-agent-memory-menu header span{
+  display:block;
+  color:#2563eb;
+  font-size:11px;
+  font-weight:950;
+  letter-spacing:.16em;
+}
+.mg-agent-memory-menu header strong{
+  display:block;
+  color:#0f172a;
+  font-size:16px;
+  font-weight:950;
+}
+.mg-agent-memory-menu header button{
+  width:34px;
+  height:34px;
+  border:1px solid #dbe7f5;
+  border-radius:12px;
+  background:#fff;
+  color:#334155;
+  font-size:22px;
+  line-height:1;
+  cursor:pointer;
+}
+.mg-agent-memory-options{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+}
+.mg-agent-memory-options button{
+  min-height:40px;
+  border:1px solid #dbe7f5;
+  border-radius:14px;
+  background:#fff;
+  color:#0f172a;
+  font-size:12px;
+  font-weight:900;
+  cursor:pointer;
+}
+.mg-agent-memory-options button:disabled{
+  opacity:.5;
+  cursor:not-allowed;
+}
+.mg-agent-memory-menu p{
+  margin:10px 0 0;
+  color:#64748b;
+  font-size:12px;
+  font-weight:750;
+  line-height:1.4;
+}
+.mg-agent-memory-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:8px 0 0;
+  padding:10px;
+  border:1px solid #dbe7f5;
+  border-radius:18px;
+  background:#f8fafc;
+}
+.mg-agent-memory-actions .mg-btn{
+  min-height:38px;
+}
+@media(max-width:760px){
+  .mg-agent-memory-menu{
+    margin-top:14px;
+  }
+  .mg-agent-memory-options{
+    grid-template-columns:1fr;
+  }
+  .mg-agent-memory-actions{
+    display:grid;
+    grid-template-columns:1fr;
+  }
+}
