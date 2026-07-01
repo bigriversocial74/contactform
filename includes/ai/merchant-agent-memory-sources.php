@@ -173,7 +173,7 @@ function mg_agent_memory_source_upload(PDO $pdo, int $merchantId, int $userId, a
     $status = in_array($sourceType, ['txt','md','csv','json'], true) ? 'ready' : 'uploaded';
     $summary = in_array($sourceType, ['txt','md','csv','json'], true)
         ? 'Text source added to memory.'
-        : 'Document uploaded. Text extraction can be processed by a future memory job.';
+        : 'Document uploaded. Text extraction is pending.';
     $row = mg_agent_memory_source_insert($pdo, $merchantId, $userId, [
         'source_type' => $sourceType,
         'source_status' => $status,
@@ -214,11 +214,14 @@ function mg_agent_memory_source_add_website(PDO $pdo, int $merchantId, int $user
     return mg_agent_memory_source_public($row);
 }
 
+require_once __DIR__ . '/merchant-agent-memory-source-extraction.php';
+
 function mg_agent_memory_source_prompt_context(PDO $pdo, int $merchantId): array
 {
     $sources = mg_agent_memory_sources($pdo, $merchantId, 12);
     return [
         'sources' => $sources,
+        'ready_chunks' => mg_agent_memory_ready_chunks($pdo, $merchantId, 12),
         'guidance' => 'Use ready memory chunks when available. Uploaded PDF/DOC/DOCX sources may be awaiting text extraction, so do not invent document details that are not in chunks or summaries.',
     ];
 }
