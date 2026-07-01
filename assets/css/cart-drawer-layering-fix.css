@@ -1,16 +1,44 @@
-/* Cart drawer overlay contract.
-   Keeps the cart above the shared header even when the drawer is rendered inside the app shell. */
+/* Global app layering contract.
+   Header stays above regular page content, but below true overlays.
+   App main must not create a stacking context that traps fixed modals below the header. */
+:root{--mg-z-sidebar:320;--mg-z-header:900;--mg-z-header-tabs:890;--mg-z-dropdown:1200;--mg-z-drawer:30000;--mg-z-modal-backdrop:40000;--mg-z-modal:40010;--mg-z-toast:50000}
+.mg-app-page .mg-main{z-index:auto!important}
+.mg-app-page .mg-unified-header,
+.mg-app-page .mg-site-header.mg-unified-header,
+html body.mg-app-page .mg-unified-header,
+html body.mg-app-page .mg-site-header.mg-unified-header{z-index:var(--mg-z-header)!important}
+html body.mg-app-page.mg-section-agent .mg-site-nav{z-index:var(--mg-z-header-tabs)!important}
+.mg-account-actions{z-index:var(--mg-z-dropdown)!important}
+
+/* Shared modal layer: every real modal overlays the app header without one-off header lowering. */
+.mg-action-modal-backdrop,
+body > .mg-action-modal-backdrop,
+.mg-post-composer-backdrop,
+.mg-story-modal-backdrop,
+.mg-story-viewer-scrim,
+.mg-modal-backdrop{z-index:var(--mg-z-modal-backdrop)!important}
+.mg-action-modal,
+body > .mg-action-modal,
+.mg-post-composer-modal,
+.mg-post-composer-dialog,
+.mg-story-modal,
+.mg-story-modal-panel,
+.mg-story-viewer,
+.mg-story-viewer-panel,
+.mg-modal,
+[role="dialog"][aria-modal="true"]{z-index:var(--mg-z-modal)!important}
+body.mg-modal-lock,
+body.mg-post-composer-open,
+body.mg-story-viewer-open,
+body:has(.mg-story-modal.is-open),
+body:has(.mg-story-viewer.is-open),
+body:has(.mg-post-composer-modal:not([hidden])),
+body:has(.mg-action-modal[aria-hidden="false"]){overflow:hidden!important}
+
+/* Cart drawer overlay contract. */
 body.mg-cart-open{overflow:hidden!important}
-body.mg-cart-open .mg-unified-header,
-body.mg-cart-open .mg-site-header.mg-unified-header,
-body:has(.mg-cart-drawer.is-open) .mg-unified-header,
-body:has(.mg-cart-drawer.is-open) .mg-site-header.mg-unified-header{z-index:100!important;pointer-events:none!important}
-body.mg-cart-open .mg-main,
-body.mg-cart-open .mg-app-shell,
-body:has(.mg-cart-drawer.is-open) .mg-main,
-body:has(.mg-cart-drawer.is-open) .mg-app-shell{position:relative!important;z-index:95000!important;isolation:isolate!important;overflow:visible!important}
 body.mg-cart-open .mg-cart-drawer,
-body:has(.mg-cart-drawer.is-open) .mg-cart-drawer{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;z-index:95010!important;overflow:hidden!important;pointer-events:auto!important;isolation:isolate!important}
+body:has(.mg-cart-drawer.is-open) .mg-cart-drawer{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;z-index:var(--mg-z-drawer)!important;overflow:hidden!important;pointer-events:auto!important;isolation:isolate!important}
 body.mg-cart-open .mg-cart-drawer .mg-cart-backdrop,
 body:has(.mg-cart-drawer.is-open) .mg-cart-drawer .mg-cart-backdrop{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;background:rgba(15,23,42,.46)!important;backdrop-filter:blur(4px)!important;-webkit-backdrop-filter:blur(4px)!important;z-index:1!important}
 body.mg-cart-open .mg-cart-drawer .mg-cart-drawer-panel,
