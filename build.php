@@ -7,7 +7,7 @@ $page_title = 'Build a Product | Microgifter';
 $page_section = 'builder';
 $header_mode = 'builder';
 $page_styles = ['/assets/css/builder-stage4b.css','/assets/css/builder-shell-fixes.css','/assets/css/gift-envelope-presentation.css','/assets/css/builder-desktop-layout.css','/assets/css/builder-card-tabs-canvas.css','/assets/css/builder-greeting-card-presentation.css','/assets/css/builder-card-full-bleed-mobile.css','/assets/css/builder-card-proportions.css'];
-$page_scripts = ['/assets/js/builder-stage4b.js','/assets/js/builder-card-message-media-preview.js','/assets/js/builder-product-types.js','/assets/js/product-builder-shell.js','/assets/js/gift-envelope-presentation.js','/assets/js/builder-card-tabs-canvas.js','/assets/js/builder-greeting-card-presentation.js','/assets/js/builder-merchant-profile.js','/assets/js/builder-simple-product-post.js'];
+$page_scripts = ['/assets/js/builder-stage4b.js','/assets/js/builder-card-message-media-preview.js','/assets/js/builder-card-text-style-controls.js','/assets/js/builder-product-types.js','/assets/js/product-builder-shell.js','/assets/js/gift-envelope-presentation.js','/assets/js/builder-card-tabs-canvas.js','/assets/js/builder-greeting-card-presentation.js','/assets/js/builder-merchant-profile.js','/assets/js/builder-simple-product-post.js'];
 $product_id = trim((string) ($_GET['id'] ?? ''));
 
 require __DIR__ . '/includes/header.php';
@@ -53,6 +53,8 @@ require __DIR__ . '/includes/header.php';
                 <div class="mg-card-inside-page mg-card-inside-right">
                   <div class="mg-card-message-copy">
                     <h3 class="mg-card-message-title" data-preview-card-headline>HAPPY BIRTHDAY!</h3>
+                    <p data-preview-message>Add the message the recipient will see inside the card.</p>
+                    <small class="mg-card-signature" data-preview-signature hidden></small>
                   </div>
                 </div>
               </section>
@@ -86,6 +88,8 @@ require __DIR__ . '/includes/header.php';
                 <div class="mg-card-inside-page mg-card-inside-right">
                   <div class="mg-card-message-copy">
                     <h3 class="mg-card-message-title" data-preview-card-headline>HAPPY BIRTHDAY!</h3>
+                    <p data-preview-message>Add the message the recipient will see inside the card.</p>
+                    <small class="mg-card-signature" data-preview-signature hidden></small>
                   </div>
                   <div class="mg-card-media-stack" data-card-media-stack>
                     <div class="mg-card-media-sample" data-card-media-choice="audio">
