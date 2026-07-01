@@ -243,6 +243,7 @@ function mg_ads_diag_load(PDO $pdo): array
         $lastAny = mg_ads_diag_last_event($events);
         $lastImpression = mg_ads_diag_last_event($events, 'impression');
         $issues = [];
+        $placementCreativeIssues = 0;
         if (!$isActive) $issues[] = 'Placement disabled';
         if ($maxAds < 1) $issues[] = 'Max ads is below 1';
         if (!$activeRows) $issues[] = 'No approved/active campaign assignments';
@@ -251,6 +252,7 @@ function mg_ads_diag_load(PDO $pdo): array
         foreach ($activeRows as $activeRow) {
             foreach (($activeRow['creative_issues'] ?? []) as $creativeIssue) {
                 $issues[] = $activeRow['title'] . ': ' . $creativeIssue;
+                $placementCreativeIssues++;
                 $creativeIssues++;
             }
         }
@@ -259,7 +261,7 @@ function mg_ads_diag_load(PDO $pdo): array
 
         $status = 'ok';
         if (!$isActive) $status = 'inactive';
-        elseif ($activeRows && count($renderItems) > 0 && $creativeIssues < 1) $status = 'ready';
+        elseif ($activeRows && count($renderItems) > 0 && $placementCreativeIssues < 1) $status = 'ready';
         elseif ($activeRows && count($renderItems) > 0) $status = 'review_creative';
         elseif ($activeRows) $status = 'blocked';
         else $status = 'needs_assignment';
