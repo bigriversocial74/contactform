@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', function () {
     handwritten: "'Comic Sans MS', 'Bradley Hand', cursive",
     display: "Impact, 'Arial Black', sans-serif"
   };
+  var normalizing = false;
 
   function field(id) { return root.querySelector('#' + id); }
   function value(id) { var node = field(id); return node ? String(node.value || '').trim() : ''; }
@@ -47,13 +48,56 @@ document.addEventListener('DOMContentLoaded', function () {
       vertical: ['top', 'center', 'bottom'].includes(vertical) ? vertical : defaults.vertical
     };
   }
+  function normalizeCardSlots() {
+    if (normalizing) return;
+    normalizing = true;
+    root.querySelectorAll('.mg-card-message-copy').forEach(function (copy) {
+      var headline = copy.querySelector('[data-preview-card-headline]');
+      if (!headline) {
+        headline = copy.querySelector('.mg-card-message-title, h1, h2, h3, [data-preview-message]');
+      }
+      if (!headline) {
+        headline = document.createElement('h3');
+        copy.insertBefore(headline, copy.firstChild || null);
+      }
+      headline.classList.add('mg-card-message-title');
+      headline.setAttribute('data-preview-card-headline', '');
+      headline.removeAttribute('data-preview-message');
+      headline.removeAttribute('data-preview-card-message');
+
+      var message = copy.querySelector('[data-preview-card-message]');
+      if (!message || message === headline) {
+        message = Array.from(copy.querySelectorAll('p, .mg-card-inside-message, [data-preview-message]')).find(function (node) { return node !== headline; }) || null;
+      }
+      if (!message || message === headline) {
+        message = document.createElement('p');
+        headline.insertAdjacentElement('afterend', message);
+      }
+      message.classList.add('mg-card-inside-message');
+      message.setAttribute('data-preview-card-message', '');
+      message.removeAttribute('data-preview-message');
+      message.removeAttribute('data-preview-card-headline');
+
+      var signature = copy.querySelector('[data-preview-signature]');
+      if (!signature) {
+        signature = document.createElement('small');
+        copy.appendChild(signature);
+      }
+      signature.classList.add('mg-card-signature');
+      signature.setAttribute('data-preview-signature', '');
+    });
+    normalizing = false;
+  }
   function headlineNodes() {
+    normalizeCardSlots();
     return root.querySelectorAll('.mg-card-message-copy [data-preview-card-headline]');
   }
   function messageNodes() {
+    normalizeCardSlots();
     return root.querySelectorAll('.mg-card-message-copy [data-preview-card-message]');
   }
   function signatureNodes() {
+    normalizeCardSlots();
     return root.querySelectorAll('.mg-card-message-copy [data-preview-signature]');
   }
   function applyTextContent() {
@@ -90,6 +134,7 @@ document.addEventListener('DOMContentLoaded', function () {
       node.style.textAlign = style.align;
       node.style.fontWeight = '950';
       node.style.lineHeight = '.96';
+      node.style.margin = '0 0 12px';
     });
     messageNodes().forEach(function (node) {
       node.style.display = 'block';
@@ -98,6 +143,7 @@ document.addEventListener('DOMContentLoaded', function () {
       node.style.textAlign = style.align;
       node.style.fontWeight = '750';
       node.style.lineHeight = '1.34';
+      node.style.margin = '0';
     });
     signatureNodes().forEach(function (node) {
       node.style.fontSize = Math.max(12, Math.round(style.message_size * 0.72)) + 'px';
@@ -106,6 +152,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
   function renderCardText() {
+    normalizeCardSlots();
     applyTextContent();
     applyStyle();
   }
@@ -175,8 +222,20 @@ document.addEventListener('DOMContentLoaded', function () {
   var reset = root.querySelector('[data-card-style-reset]');
   if (reset) reset.addEventListener('click', resetControls);
 
+  var observer = new MutationObserver(function () {
+    window.requestAnimationFrame(renderCardText);
+  });
+  root.querySelectorAll('.mg-card-message-copy').forEach(function (copy) {
+    observer.observe(copy, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-preview-message', 'data-preview-card-headline', 'data-preview-card-message'] });
+  });
+
   renderCardText();
   window.setTimeout(renderCardText, 50);
+  window.setTimeout(renderCardText, 200);
   window.setTimeout(loadSavedStyle, 500);
-  window.setTimeout(renderCardText, 900);
+  var deadline = Date.now() + 5000;
+  (function watch() {
+    renderCardText();
+    if (Date.now() < deadline) window.requestAnimationFrame(watch);
+  })();
 });
