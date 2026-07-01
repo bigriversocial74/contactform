@@ -1,0 +1,173 @@
+/* Final builder card proportion pass.
+   Greeting cards use clean vertical page proportions on desktop and mobile preview mode.
+   Product cards keep product-forward layout and merchant identity at the top. */
+
+html body.mg-section-builder .mg-product-profile{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin:0 0 24px;
+}
+html body.mg-section-builder .mg-product-profile-avatar{
+  width:46px;
+  height:46px;
+  border-radius:16px;
+  display:grid;
+  place-items:center;
+  flex:0 0 auto;
+  background:linear-gradient(135deg,#eaf2ff,#dbeafe);
+  border:1px solid rgba(37,99,235,.20);
+  color:#1e4fd8;
+  font-size:17px;
+  font-weight:950;
+  letter-spacing:.02em;
+  text-transform:uppercase;
+}
+html body.mg-section-builder .mg-product-profile-copy{display:grid;gap:2px;min-width:0}
+html body.mg-section-builder .mg-product-profile-copy small{
+  color:#415a7e;
+  font-size:11px;
+  font-weight:950;
+  letter-spacing:.11em;
+  text-transform:uppercase;
+}
+html body.mg-section-builder .mg-product-profile-copy strong{
+  color:#071225;
+  font-size:15px;
+  font-weight:950;
+  line-height:1.2;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+html body.mg-section-builder .mg-product-profile-back{margin-bottom:18px}
+
+html body.mg-section-builder .mg-builder-shell[data-active-template="simple_product"] .mg-builder-simple-media:not([style*="url("])::after{
+  content:none!important;
+  display:none!important;
+}
+html body.mg-section-builder .mg-builder-shell[data-active-template="simple_product"] .mg-builder-simple-media:not([style*="url("]){
+  background-image:linear-gradient(145deg,#eef5ff,#dfeaff)!important;
+}
+
+html body.mg-section-builder .mg-builder-shell[data-active-template="greeting_card"] .mg-builder-card,
+html body.mg-section-builder .mg-builder-shell[data-active-template="multimedia_greeting_card"] .mg-builder-card{
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  overflow:visible!important;
+}
+
+html body.mg-section-builder .mg-builder-shell[data-active-template="greeting_card"] .mg-card-presenter,
+html body.mg-section-builder .mg-builder-shell[data-active-template="multimedia_greeting_card"] .mg-card-presenter{
+  width:100%!important;
+  max-width:1100px!important;
+  min-height:0!important;
+  margin:0 auto!important;
+  padding:0!important;
+  display:grid!important;
+  place-items:center!important;
+  background:transparent!important;
+  overflow:visible!important;
+}
+
+html body.mg-section-builder .mg-builder-shell[data-active-template="greeting_card"] .mg-card-face,
+html body.mg-section-builder .mg-builder-shell[data-active-template="multimedia_greeting_card"] .mg-card-face{
+  position:relative!important;
+  inset:auto!important;
+  opacity:1!important;
+  pointer-events:auto!important;
+  transform:none!important;
+  display:none!important;
+  overflow:hidden!important;
+}
+
+html body.mg-section-builder .mg-builder-shell[data-active-template="greeting_card"] .mg-card-presenter[data-card-state="closed"] .mg-card-cover-face,
+html body.mg-section-builder .mg-builder-shell[data-active-template="multimedia_greeting_card"] .mg-card-presenter[data-card-state="closed"] .mg-card-cover-face,
+html body.mg-section-builder .mg-builder-shell[data-active-template="greeting_card"] .mg-card-presenter[data-card-state="open"] .mg-card-inside-face,
+html body.mg-section-builder .mg-builder-shell[data-active-template="multimedia_greeting_card"] .mg-card-presenter[data-card-state="open"] .mg-card-inside-face,
+html body.mg-section-builder .mg-builder-shell[data-active-template="greeting_card"] .mg-card-presenter[data-card-state="back"] .mg-card-back-face,
+html body.mg-section-builder .mg-builder-shell[data-active-template="multimedia_greeting_card"] .mg-card-presenter[data-card-state="back"] .mg-card-back-face{
+  display:grid!important;
+}
+
+html body.mg-section-builder .mg-builder-shell[data-active-template="greeting_card"] .mg-card-cover-face,
+html body.mg-section-builder .mg-builder-shell[data-active-template="multimedia_greeting_card"] .mg-card-cover-face,
+html body.mg-section-builder .mg-builder-shell[data-active-template="greeting_card"] .mg-card-back-face,
+html body.mg-section-builder .mg-builder-shell[data-active-template="multimedia_greeting_card"] .mg-card-back-face{
+  width:min(430px,100%)!important;
+  aspect-ratio:9/16!important;
+  min-height:0!important;
+  height:auto!important;
+  left:auto!important;
+  right:auto!important;
+  border-radius:0!important;
+  box-shadow:0 24px 64px rgba(15,23,42,.16)!important;
+}
+
+html body.mg-section-builder .mg-builder-shell[data-active-template="greeting_card"] .mg-card-inside-face,
+html body.mg-section-builder .mg-builder-shell[data-active-template="multimedia_greeting_card"] .mg-card-inside-face{
+  width:min(940px,100%)!important;
+  aspect-ratio:18/16!important;
+  min-height:0!important;
+  height:auto!important;
+  grid-template-columns:1fr 1fr!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:0 24px 64px rgba(15,23,42,.14)!important;
+}
+
+html body.mg-section-builder .mg-builder-shell[data-active-template="greeting_card"] .mg-card-inside-page,
+html body.mg-section-builder .mg-builder-shell[data-active-template="multimedia_greeting_card"] .mg-card-inside-page{
+  min-height:0!important;
+  height:100%!important;
+  border:0!important;
+  border-radius:0!important;
+}
+
+html body.mg-section-builder .mg-builder-shell[data-active-template="greeting_card"] .mg-card-inside-left,
+html body.mg-section-builder .mg-builder-shell[data-active-template="multimedia_greeting_card"] .mg-card-inside-left{
+  border-right:1px solid rgba(203,213,225,.8)!important;
+}
+
+html body.mg-section-builder .mg-builder-shell[data-active-template="greeting_card"] .mg-card-inside-right,
+html body.mg-section-builder .mg-builder-shell[data-active-template="multimedia_greeting_card"] .mg-card-inside-right,
+html body.mg-section-builder .mg-builder-shell[data-active-template="greeting_card"] .mg-card-back-face,
+html body.mg-section-builder .mg-builder-shell[data-active-template="multimedia_greeting_card"] .mg-card-back-face{
+  padding:clamp(34px,4vw,56px)!important;
+}
+
+html body.mg-section-builder .mg-builder-card.is-mobile .mg-card-presenter[data-card-state="inside-image"] .mg-card-inside-face,
+html body.mg-section-builder .mg-builder-card.is-mobile .mg-card-presenter[data-card-state="open"] .mg-card-inside-face{
+  width:min(360px,100%)!important;
+  aspect-ratio:9/16!important;
+  grid-template-columns:1fr!important;
+  box-shadow:0 22px 54px rgba(15,23,42,.14)!important;
+}
+html body.mg-section-builder .mg-builder-card.is-mobile .mg-card-inside-page{border-right:0!important}
+
+@media(max-width:900px){
+  html body.mg-section-builder .mg-product-profile{margin-bottom:18px}
+  html body.mg-section-builder .mg-builder-shell[data-active-template="greeting_card"] .mg-card-inside-face,
+  html body.mg-section-builder .mg-builder-shell[data-active-template="multimedia_greeting_card"] .mg-card-inside-face{
+    width:min(430px,100%)!important;
+    aspect-ratio:9/16!important;
+    grid-template-columns:1fr!important;
+  }
+  html body.mg-section-builder .mg-builder-shell[data-active-template="greeting_card"] .mg-card-inside-page,
+  html body.mg-section-builder .mg-builder-shell[data-active-template="multimedia_greeting_card"] .mg-card-inside-page{
+    position:absolute!important;
+    inset:0!important;
+    width:100%!important;
+    height:100%!important;
+    display:none!important;
+  }
+  html body.mg-section-builder .mg-builder-shell[data-active-template="greeting_card"] .mg-card-presenter[data-card-state="inside-image"] .mg-card-inside-left,
+  html body.mg-section-builder .mg-builder-shell[data-active-template="multimedia_greeting_card"] .mg-card-presenter[data-card-state="inside-image"] .mg-card-inside-left,
+  html body.mg-section-builder .mg-builder-shell[data-active-template="greeting_card"] .mg-card-presenter[data-card-state="open"] .mg-card-inside-right,
+  html body.mg-section-builder .mg-builder-shell[data-active-template="multimedia_greeting_card"] .mg-card-presenter[data-card-state="open"] .mg-card-inside-right{
+    display:flex!important;
+  }
+}
