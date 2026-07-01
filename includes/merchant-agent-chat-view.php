@@ -30,6 +30,7 @@ declare(strict_types=1);
           </div>
         </div>
         <textarea data-agent-chat-textarea name="message" rows="1" maxlength="2000" placeholder="Ask your merchant agent what to analyze, chart, draft, or prioritize…" aria-label="Ask the merchant agent" required></textarea>
+        <button class="mg-agent-chat-voice" type="button" aria-label="Start voice input" title="Speak to agent" data-agent-chat-voice aria-pressed="false">Mic</button>
         <button class="mg-agent-chat-send" type="submit" data-agent-chat-send aria-label="Send message" disabled>↑</button>
       </form>
     </section>
