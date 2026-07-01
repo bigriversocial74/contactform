@@ -17,6 +17,11 @@ $giftCenterDemoEnabled=mg_has_role('super_admin');
           <button class="mg-btn mg-btn-secondary" type="button" data-gift-refresh>Refresh</button>
         </div>
       </div>
+      <?php if ($giftCenterFolder === 'inbox'): ?>
+        <aside class="mg-gift-inbox-sponsored" aria-label="Sponsored inbox recommendation">
+          <section class="mg-sponsored-placement" data-mg-ad-placement="inbox_recommendation" data-mg-ad-limit="1" aria-label="Sponsored recommendation"></section>
+        </aside>
+      <?php endif; ?>
       <div class="mg-gift-feed-column">
         <div class="mg-gift-list" data-gift-list></div>
       </div>
