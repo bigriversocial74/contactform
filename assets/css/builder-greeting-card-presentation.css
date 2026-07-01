@@ -37,6 +37,9 @@ html body.mg-section-builder .mg-card-inside-right.has-card-media{justify-conten
 html body.mg-section-builder .mg-card-message-copy{width:min(100%,460px);margin:0 auto;display:grid;place-items:center;text-align:center;gap:14px}
 html body.mg-section-builder .mg-card-message-title{font-size:clamp(38px,4.7vw,66px)!important;line-height:.96!important;font-weight:950!important;letter-spacing:-.065em!important;color:#071225;text-align:center}
 html body.mg-section-builder .mg-card-message-copy p{max-width:430px;margin:0!important;font-size:clamp(20px,2vw,28px)!important;line-height:1.34!important;font-weight:850!important;color:#17233a;text-align:center}
+html body.mg-section-builder .mg-card-signature{display:block;max-width:430px;margin:2px 0 0;font-size:14px;font-weight:850;letter-spacing:.02em;opacity:.78;color:inherit;text-align:center}
+html body.mg-section-builder .mg-card-signature[hidden]{display:none!important}
+html body.mg-section-builder .mg-builder-reset-style{width:100%;justify-content:center;margin:4px 0 12px}
 html body.mg-section-builder .mg-card-back-face{width:min(620px,calc(100% - 96px));left:50%;right:auto;border:1px solid rgba(203,213,225,.9);border-radius:28px;box-shadow:0 28px 74px rgba(15,23,42,.14)}
 html body.mg-section-builder .mg-card-presenter[data-card-state="back"] .mg-card-back-face{transform:translate(-50%,0) scale(1)}
 html body.mg-section-builder .mg-card-value{margin-top:8px;font-size:clamp(44px,5vw,72px);line-height:1;font-weight:950;letter-spacing:-.06em;color:#1f5fe0}
