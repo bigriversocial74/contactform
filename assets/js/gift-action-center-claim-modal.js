@@ -46,6 +46,12 @@
     return raw || 'Unable to claim this gift right now.';
   }
 
+  function renderSponsored(scope) {
+    if (window.Microgifter && typeof window.Microgifter.renderSponsoredPlacements === 'function') {
+      window.Microgifter.renderSponsoredPlacements(scope || document);
+    }
+  }
+
   function ensureShell() {
     let backdrop = document.querySelector('[data-claim-modal-backdrop]');
     let modal = document.querySelector('[data-claim-modal]');
@@ -95,13 +101,8 @@
     }
   }
 
-  function stateFor(modal) {
-    return FLOW.get(modal) || {};
-  }
-
-  function setState(modal, next) {
-    FLOW.set(modal, Object.assign({}, stateFor(modal), next));
-  }
+  function stateFor(modal) { return FLOW.get(modal) || {}; }
+  function setState(modal, next) { FLOW.set(modal, Object.assign({}, stateFor(modal), next)); }
 
   function stepper(step) {
     const steps = [['claim', 'Claim'], ['review', 'Review'], ['confirm', 'Confirm'], ['success', 'Success']];
@@ -208,6 +209,10 @@
         <div><span>Status</span><strong>${state.isDemo ? 'Demo preview' : 'Claimed'}</strong></div>
         <div><span>Redemption</span><strong>${esc((payload && (payload.redemption_id || payload.attempt_id)) || 'Recorded')}</strong></div>
       </div>
+      <aside class="mg-claim-success-recommendation" aria-label="Sponsored claim success recommendation">
+        <div class="mg-sponsored-surface-label">Recommended after claim</div>
+        <section class="mg-sponsored-placement" data-mg-ad-placement="claim_success_recommendation" data-mg-ad-limit="1" aria-label="Sponsored recommendation"></section>
+      </aside>
       <div class="mg-claim-actions">
         <button class="mg-btn mg-btn-primary" type="button" data-claim-modal-close>Done</button>
       </div>
@@ -233,6 +238,11 @@
   function render(modal, markup) {
     const body = modal.querySelector('[data-claim-modal-body]');
     if (body) body.innerHTML = markup;
+  }
+
+  function renderSuccess(modal, payload, message) {
+    render(modal, successStep(modal, payload, message));
+    renderSponsored(modal);
   }
 
   async function prepareToken(modal) {
@@ -313,7 +323,7 @@
     if (state.isDemo) {
       const payload = { demo_preview: true, action_item_id: state.actionItemId, location_name: state.merchant, title: state.title };
       setState(modal, { pendingClaimCode: '', claimResponse: payload });
-      render(modal, successStep(modal, payload, 'Demo claim preview complete. No real claim was created.'));
+      renderSuccess(modal, payload, 'Demo claim preview complete. No real claim was created.');
       return;
     }
     if (!window.Microgifter || typeof window.Microgifter.post !== 'function') {
@@ -338,7 +348,7 @@
       const payload = response && response.data ? response.data : response;
       setState(modal, { pendingClaimCode: '', claimResponse: payload });
       modal.dataset.voucherClaimed = 'true';
-      render(modal, successStep(modal, payload, response && response.message ? response.message : 'Gift claimed successfully.'));
+      renderSuccess(modal, payload, response && response.message ? response.message : 'Gift claimed successfully.');
       document.dispatchEvent(new CustomEvent('mg:action-center:voucher-claimed', { detail: payload || {} }));
     } catch (error) {
       setState(modal, { pendingClaimCode: '' });
@@ -365,7 +375,7 @@
       value: money(data.value_cents || 0, data.currency || 'USD'),
       isDemo: false
     });
-    render(shell.modal, successStep(shell.modal, data, 'Gift claimed successfully'));
+    renderSuccess(shell.modal, data, 'Gift claimed successfully');
     setOpen(true);
   }
 
