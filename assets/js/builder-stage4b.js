@@ -12,8 +12,9 @@ document.addEventListener('DOMContentLoaded', function () {
   var saveTimer = null;
   var isSaving = false;
   var pendingSave = false;
-  var assets = { cover: '', inside_cover: '', audio: '', video: '' };
-  var assetUrls = { cover: '', inside_cover: '', audio: '', video: '' };
+  var assets = { thumbnail: '', cover: '', inside_cover: '', audio: '', video: '' };
+  var assetUrls = { thumbnail: '', cover: '', inside_cover: '', audio: '', video: '' };
+  var merchantContext = { display_name: '', avatar_url: '' };
   var pendingLocationIds = [];
 
   var statusNode = root.querySelector('[data-builder-status]');
@@ -84,11 +85,37 @@ document.addEventListener('DOMContentLoaded', function () {
     return Array.from(locationSelect.selectedOptions || []).map(function (option) { return option.value; }).filter(Boolean);
   }
 
+  function accountName() {
+    var node = document.querySelector('.mg-account-name') || document.querySelector('.mg-account-head-name');
+    return node && node.textContent.trim() ? node.textContent.trim() : '';
+  }
+
+  function merchantDisplayName() {
+    return String(merchantContext.display_name || value('merchantName') || accountName() || 'Your business').trim();
+  }
+
+  function initialFrom(valueText) {
+    var clean = String(valueText || '').trim();
+    return clean ? clean.charAt(0).toUpperCase() : 'M';
+  }
+
+  function safeBgUrl(url) {
+    return 'url("' + String(url || '').replace(/"/g, '%22') + '")';
+  }
+
+  function applyMerchantContext(merchant) {
+    if (!merchant || typeof merchant !== 'object') return;
+    merchantContext.display_name = String(merchant.display_name || '').trim();
+    merchantContext.avatar_url = String(merchant.avatar_url || '').trim();
+    if (merchantContext.display_name) setValue('merchantName', merchantContext.display_name);
+  }
+
   function gatherPayload() {
     return {
       title: value('productTitle').trim(),
-      merchant_name: value('merchantName').trim(),
-      product_category: value('productCategory'),
+      merchant_name: merchantDisplayName(),
+      product_category: value('productCategory') || 'Voucher',
+      description: value('productDescription').trim(),
       value_cents: parseMoneyToCents(value('price')),
       currency: value('currency') || 'USD',
       offer: value('discount').trim(),
@@ -112,8 +139,9 @@ document.addEventListener('DOMContentLoaded', function () {
   function fillPayload(payload) {
     if (!payload) return;
     setValue('productTitle', payload.title);
-    setValue('merchantName', payload.merchant_name);
-    setValue('productCategory', payload.product_category);
+    setValue('merchantName', payload.merchant_name || merchantContext.display_name);
+    setValue('productCategory', payload.product_category || 'Voucher');
+    setValue('productDescription', payload.description || payload.headline || '');
     if (payload.value_cents !== undefined && payload.value_cents !== null) {
       setValue('price', Number(payload.value_cents) > 0 ? (Number(payload.value_cents) / 100).toFixed(2) : '');
     }
@@ -157,25 +185,39 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function renderPreview() {
     var type = selectedBuilderType();
+    var productDescription = value('productDescription').trim() || 'Add product description.';
+    var merchantName = merchantDisplayName();
+    var avatarUrl = merchantContext.avatar_url;
+    root.dataset.activeTemplate = type;
+
     root.querySelectorAll('[data-preview-template]').forEach(function (template) {
       template.classList.toggle('is-active', template.dataset.previewTemplate === type);
     });
 
     root.querySelectorAll('[data-preview-title]').forEach(function (node) { node.textContent = value('productTitle') || 'Coffee for two'; });
-    root.querySelectorAll('[data-preview-headline]').forEach(function (node) { node.textContent = value('headline') || 'A small gift, already waiting for you.'; });
+    root.querySelectorAll('[data-preview-headline]').forEach(function (node) { node.textContent = productDescription; });
     root.querySelectorAll('[data-preview-message]').forEach(function (node) { node.textContent = value('message') || 'Add a message for the recipient.'; });
-    root.querySelectorAll('[data-preview-merchant]').forEach(function (node) { node.textContent = value('merchantName') || 'Your business'; });
+    root.querySelectorAll('[data-preview-merchant]').forEach(function (node) { node.textContent = merchantName; });
+    root.querySelectorAll('[data-preview-merchant-initial]').forEach(function (node) { node.textContent = initialFrom(merchantName); });
+    root.querySelectorAll('[data-preview-merchant-avatar]').forEach(function (node) {
+      node.classList.toggle('is-image', Boolean(avatarUrl));
+      node.style.backgroundImage = avatarUrl ? safeBgUrl(avatarUrl) : '';
+    });
     root.querySelectorAll('[data-preview-value]').forEach(function (node) {
       var amount = value('price') || '25.00';
       node.textContent = (value('currency') === 'USD' ? '$' : value('currency') + ' ') + amount.replace(/^\$/, '');
     });
     root.querySelectorAll('[data-preview-collab]').forEach(function (node) { node.textContent = value('collaborationPrompt') || 'Invite people to contribute.'; });
 
+    var productImageUrl = assetUrls.thumbnail || (type === 'simple_product' ? assetUrls.cover : '');
+    root.querySelectorAll('[data-product-media]').forEach(function (node) {
+      node.style.backgroundImage = productImageUrl ? safeBgUrl(productImageUrl) : '';
+    });
     root.querySelectorAll('[data-cover-media]').forEach(function (node) {
-      node.style.backgroundImage = assetUrls.cover ? 'url("' + assetUrls.cover.replace(/"/g, '%22') + '")' : '';
+      node.style.backgroundImage = assetUrls.cover ? safeBgUrl(assetUrls.cover) : '';
     });
     root.querySelectorAll('[data-inside-media]').forEach(function (node) {
-      node.style.backgroundImage = assetUrls.inside_cover ? 'url("' + assetUrls.inside_cover.replace(/"/g, '%22') + '")' : '';
+      node.style.backgroundImage = assetUrls.inside_cover ? safeBgUrl(assetUrls.inside_cover) : '';
     });
 
     root.querySelectorAll('[data-preview-audio]').forEach(function (node) {
@@ -391,10 +433,11 @@ document.addEventListener('DOMContentLoaded', function () {
       var endpoint = '/api/catalog/builder-draft.php' + (productId ? '?id=' + encodeURIComponent(productId) : '');
       var data = await api(endpoint, { credentials: 'same-origin' });
       var draft = data.draft;
+      applyMerchantContext(data.merchant);
       if (draft) {
         fillPayload(draft.payload || {});
         lockVersion = Number(draft.lock_version || 0);
-        assets = Object.assign(assets, draft.assets || {});
+        assets = Object.assign({}, assets, draft.assets || {});
         Object.keys(draft.assets || {}).forEach(function (role) {
           assetUrls[role] = '/api/catalog/asset-file.php?id=' + encodeURIComponent(draft.assets[role]);
           var preview = root.querySelector('[data-media-preview="' + role + '"]');

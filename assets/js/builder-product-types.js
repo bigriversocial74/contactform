@@ -16,6 +16,8 @@ document.addEventListener('DOMContentLoaded',function(){
     return input?input.value:'simple_product';
   }
 
+  function isCardType(type){return type==='greeting_card'||type==='multimedia_greeting_card';}
+
   function supports(node,type){
     var types=String(node.dataset.builderTypes||'').split(/\s+/).filter(Boolean);
     return types.length===0||types.includes(type);
@@ -36,8 +38,8 @@ document.addEventListener('DOMContentLoaded',function(){
     if(label)label.textContent=labels[type]||'Product';
     var headline=root.querySelector('#headline');
     var message=root.querySelector('#message');
-    if(headline)headline.required=type==='greeting_card';
-    if(message)message.required=type==='greeting_card';
+    if(headline)headline.required=false;
+    if(message)message.required=isCardType(type);
   }
 
   root.querySelectorAll('input[name="builder_type"]').forEach(function(input){
@@ -47,16 +49,8 @@ document.addEventListener('DOMContentLoaded',function(){
   var publish=root.querySelector('[data-publish-product]');
   if(publish){
     publish.addEventListener('click',function(event){
-      if(selectedType()!=='greeting_card')return;
-      var headline=root.querySelector('#headline');
+      if(!isCardType(selectedType()))return;
       var message=root.querySelector('#message');
-      if(headline&&!headline.value.trim()){
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        headline.reportValidity();
-        headline.focus();
-        return;
-      }
       if(message&&!message.value.trim()){
         event.preventDefault();
         event.stopImmediatePropagation();

@@ -30,14 +30,14 @@ require __DIR__ . '/includes/header.php';
             <div class="mg-builder-simple">
               <div class="mg-builder-simple-copy">
                 <div class="mg-product-profile">
-                  <span class="mg-product-profile-avatar" data-preview-merchant-initial aria-hidden="true">M</span>
+                  <span class="mg-product-profile-avatar" data-preview-merchant-avatar data-preview-merchant-initial aria-hidden="true">M</span>
                   <span class="mg-product-profile-copy"><small>Merchant</small><strong data-preview-merchant>Your business</strong></span>
                 </div>
                 <h1 data-preview-title>Coffee for two</h1>
                 <p data-preview-headline>Add product description.</p>
                 <div class="mg-builder-simple-value" data-preview-value>$25.00</div>
               </div>
-              <div class="mg-builder-simple-media" data-cover-media></div>
+              <div class="mg-builder-simple-media" data-product-media></div>
             </div>
           </article>
 
@@ -57,7 +57,7 @@ require __DIR__ . '/includes/header.php';
               </section>
               <section class="mg-card-face mg-card-back-face" aria-label="Card back product information">
                 <div class="mg-product-profile mg-product-profile-back">
-                  <span class="mg-product-profile-avatar" data-preview-merchant-initial aria-hidden="true">M</span>
+                  <span class="mg-product-profile-avatar" data-preview-merchant-avatar data-preview-merchant-initial aria-hidden="true">M</span>
                   <span class="mg-product-profile-copy"><small>Merchant</small><strong data-preview-merchant>Your business</strong></span>
                 </div>
                 <span class="mg-eyebrow">Product info</span>
@@ -90,7 +90,7 @@ require __DIR__ . '/includes/header.php';
               </section>
               <section class="mg-card-face mg-card-back-face" aria-label="Card back product information">
                 <div class="mg-product-profile mg-product-profile-back">
-                  <span class="mg-product-profile-avatar" data-preview-merchant-initial aria-hidden="true">M</span>
+                  <span class="mg-product-profile-avatar" data-preview-merchant-avatar data-preview-merchant-initial aria-hidden="true">M</span>
                   <span class="mg-product-profile-copy"><small>Merchant</small><strong data-preview-merchant>Your business</strong></span>
                 </div>
                 <span class="mg-eyebrow">Product info</span>
