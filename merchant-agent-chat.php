@@ -14,6 +14,7 @@ $page_styles = [
     '/assets/css/merchant-agent-chat-cleanup.css',
     '/assets/css/merchant-agent-chat-flat-layout.css',
     '/assets/css/merchant-agent-chat-desktop.css',
+    '/assets/css/merchant-agent-chat-mobile-offset.css',
 ];
 $page_scripts = [
     '/assets/js/merchant-agent-chat.js',
