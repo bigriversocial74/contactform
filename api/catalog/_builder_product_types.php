@@ -39,6 +39,10 @@ function mg_builder_validate_publish_type(string $builderType,array $payload,arr
 {
     mg_builder_validate_asset_roles($builderType,$assetMap);
 
+    if($builderType==='multimedia_greeting_card'&&!empty($assetMap['audio'])&&!empty($assetMap['video'])){
+        throw new InvalidArgumentException('Choose either audio or video for this card, not both.');
+    }
+
     if($builderType==='greeting_card'||$builderType==='multimedia_greeting_card'){
         $message=trim((string)($payload['message']??''));
         if($message==='')throw new InvalidArgumentException('Enter the inside greeting-card message before publishing.');
