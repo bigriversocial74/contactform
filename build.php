@@ -6,8 +6,8 @@ require_once __DIR__ . '/includes/app.php';
 $page_title = 'Build a Product | Microgifter';
 $page_section = 'builder';
 $header_mode = 'builder';
-$page_styles = ['/assets/css/builder-stage4b.css','/assets/css/builder-shell-fixes.css','/assets/css/builder-desktop-layout.css'];
-$page_scripts = ['/assets/js/builder-stage4b.js','/assets/js/builder-product-types.js','/assets/js/product-builder-shell.js'];
+$page_styles = ['/assets/css/builder-stage4b.css','/assets/css/builder-shell-fixes.css','/assets/css/gift-envelope-presentation.css','/assets/css/builder-desktop-layout.css'];
+$page_scripts = ['/assets/js/builder-stage4b.js','/assets/js/builder-product-types.js','/assets/js/product-builder-shell.js','/assets/js/gift-envelope-presentation.js'];
 $product_id = trim((string) ($_GET['id'] ?? ''));
 
 require __DIR__ . '/includes/header.php';
@@ -48,18 +48,64 @@ require __DIR__ . '/includes/header.php';
           </article>
 
           <article class="mg-builder-template" data-preview-template="greeting_card">
-            <div class="mg-builder-greeting-spread">
-              <div class="mg-builder-greeting-page">
-                <div class="mg-builder-cover"><div class="mg-builder-cover-media" data-cover-media></div><div class="mg-builder-cover-inner"><div class="mg-builder-cover-icon">🎁</div><h1 data-preview-title>Coffee for two</h1><p data-preview-headline>A small gift, already waiting for you.</p><span class="mg-builder-open-button">Open Gift</span></div></div>
+            <div class="mg-envelope-card" data-envelope-card data-envelope-state="closed">
+              <section class="mg-envelope-stage" aria-label="Greeting card envelope preview">
+                <div class="mg-envelope-book">
+                  <div class="mg-envelope-page mg-envelope-page-left">
+                    <div class="mg-envelope-media" data-cover-media></div>
+                    <div class="mg-envelope-content mg-envelope-cover-content">
+                      <div class="mg-envelope-icon">✉</div>
+                      <h2 data-preview-title>Coffee for two</h2>
+                      <p data-preview-headline>A small gift, already waiting for you.</p>
+                      <button class="mg-envelope-open-button" type="button" data-envelope-action="show">Open Gift</button>
+                    </div>
+                  </div>
+                  <div class="mg-envelope-page mg-envelope-page-right">
+                    <div class="mg-envelope-inside-media" data-inside-media></div>
+                    <div class="mg-envelope-content mg-envelope-inside">
+                      <span class="mg-eyebrow">Gift message</span>
+                      <h3 data-preview-title>Coffee for two</h3>
+                      <p data-preview-message>Add a message for the recipient.</p>
+                      <div class="mg-envelope-value" data-preview-value>$25.00</div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+              <div class="mg-envelope-controls">
+                <button class="mg-envelope-open-button" type="button" data-envelope-action="show">Open Card</button>
+                <button class="mg-envelope-close-button" type="button" data-envelope-action="hide">Close Card</button>
               </div>
-              <div class="mg-builder-greeting-page"><div class="mg-builder-inside-media" data-inside-media></div><div class="mg-builder-greeting-content"><div class="mg-builder-section-title" data-preview-merchant>Local Coffee House</div><h2 data-preview-title>Coffee for two</h2><p data-preview-message></p><div class="mg-builder-simple-value" data-preview-value>$25.00</div></div></div>
             </div>
           </article>
 
           <article class="mg-builder-template" data-preview-template="multimedia_greeting_card">
-            <div class="mg-builder-greeting-spread">
-              <div class="mg-builder-greeting-page"><div class="mg-builder-cover"><div class="mg-builder-cover-media" data-cover-media></div><div class="mg-builder-cover-inner"><div class="mg-builder-cover-icon">🎬</div><h1 data-preview-title>Coffee for two</h1><p data-preview-headline>A small gift, already waiting for you.</p><span class="mg-builder-open-button">Open Gift</span></div></div></div>
-              <div class="mg-builder-greeting-page"><div class="mg-builder-inside-media" data-inside-media></div><div class="mg-builder-greeting-content"><h2 data-preview-title>Coffee for two</h2><p data-preview-message></p><div class="mg-builder-media-stack"><audio data-preview-audio controls hidden></audio><video data-preview-video controls playsinline hidden></video></div></div></div>
+            <div class="mg-envelope-card" data-envelope-card data-envelope-state="closed">
+              <section class="mg-envelope-stage" aria-label="Multimedia greeting card envelope preview">
+                <div class="mg-envelope-book">
+                  <div class="mg-envelope-page mg-envelope-page-left">
+                    <div class="mg-envelope-media" data-cover-media></div>
+                    <div class="mg-envelope-content mg-envelope-cover-content">
+                      <div class="mg-envelope-icon">🎬</div>
+                      <h2 data-preview-title>Coffee for two</h2>
+                      <p data-preview-headline>A small gift, already waiting for you.</p>
+                      <button class="mg-envelope-open-button" type="button" data-envelope-action="show">Open Gift</button>
+                    </div>
+                  </div>
+                  <div class="mg-envelope-page mg-envelope-page-right">
+                    <div class="mg-envelope-inside-media" data-inside-media></div>
+                    <div class="mg-envelope-content mg-envelope-inside">
+                      <span class="mg-eyebrow">Gift message</span>
+                      <h3 data-preview-title>Coffee for two</h3>
+                      <p data-preview-message>Add a message for the recipient.</p>
+                      <div class="mg-envelope-media-stack"><audio data-preview-audio controls hidden></audio><video data-preview-video controls playsinline hidden></video></div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+              <div class="mg-envelope-controls">
+                <button class="mg-envelope-open-button" type="button" data-envelope-action="show">Open Card</button>
+                <button class="mg-envelope-close-button" type="button" data-envelope-action="hide">Close Card</button>
+              </div>
             </div>
           </article>
 
