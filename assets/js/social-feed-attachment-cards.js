@@ -23,7 +23,7 @@ function ensureStyles(){
 
 function safeUrl(value){
     var raw=String(value||'').trim();
-    if(!raw||/[\u0000-\u001f\u007f]/.test(raw))return null;
+    if(!raw)return null;
     try{
         var parsed=new URL(raw,window.location.origin);
         if(!['http:','https:'].includes(parsed.protocol)||parsed.username||parsed.password)return null;
@@ -37,6 +37,10 @@ function safeUrl(value){
 
 function label(value){
     return String(value||'').replace(/[_-]+/g,' ').replace(/\b\w/g,function(letter){return letter.toUpperCase();});
+}
+
+function safeClass(value){
+    return String(value||'').toLowerCase().replace(/[^a-z0-9_-]/g,'');
 }
 
 function money(card){
@@ -62,18 +66,27 @@ function element(tag,className,text){
     return node;
 }
 
+function fallbackLabel(card){
+    if(card.variant==='greeting_card')return 'Card';
+    if(card.variant==='multimedia_card')return 'Media';
+    return card.kind==='microgift'?'Gift':(card.kind==='plan'?'Member':'Product');
+}
+
 function preview(card){
-    var wrap=element('div','mg-feed-linked-preview is-'+String(card.kind||'item'));
+    var classes='mg-feed-linked-preview is-'+String(card.kind||'item');
+    var variant=safeClass(card.variant||'');
+    if(variant)classes+=' is-'+variant;
+    var wrap=element('div',classes);
     var url=safeUrl(card.image_url);
     if(url){
         var image=document.createElement('img');
         image.src=url;
         image.alt='';
         image.loading='lazy';
-        image.addEventListener('error',function(){image.remove();wrap.textContent=card.kind==='microgift'?'Gift':(card.kind==='plan'?'Member':'Product');},{once:true});
+        image.addEventListener('error',function(){image.remove();wrap.textContent=fallbackLabel(card);},{once:true});
         wrap.appendChild(image);
     }else{
-        wrap.textContent=card.kind==='microgift'?'Gift':(card.kind==='plan'?'Member':'Product');
+        wrap.textContent=fallbackLabel(card);
     }
     return wrap;
 }
@@ -95,6 +108,11 @@ function actionNode(action){
 
 function cardNode(card){
     var article=element('article','mg-feed-linked-card is-'+String(card.kind||'item'));
+    var variant=safeClass(card.variant||'');
+    if(variant){
+        article.classList.add('is-'+variant);
+        article.dataset.cardVariant=variant;
+    }
     article.appendChild(preview(card));
 
     var body=element('div','mg-feed-linked-body');
