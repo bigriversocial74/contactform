@@ -10,8 +10,8 @@ $page_section = 'feed';
 $header_mode = 'agent';
 $agent_tab = 'feed-' . $feedView;
 $suppress_footer = true;
-$page_styles = ['/assets/css/public-app-header.css','/assets/css/social-feed.css','/assets/css/social-feed-upload.css','/assets/css/feed-centered-layout.css','/assets/css/store-presence-feed.css','/assets/css/avatar-anchor-consent.css'];
-$page_scripts = ['/assets/js/social-feed.js','/assets/js/social-feed-sidebar-tabs.js','/assets/js/social-feed-post-polish.js','/assets/js/social-feed-upload.js','/assets/js/store-presence-feed.js','/assets/js/avatar-anchor-consent.js'];
+$page_styles = ['/assets/css/public-app-header.css','/assets/css/social-feed.css','/assets/css/social-feed-upload.css','/assets/css/feed-centered-layout.css','/assets/css/store-presence-feed.css','/assets/css/avatar-anchor-consent.css','/assets/css/sponsored-campaign-card.css'];
+$page_scripts = ['/assets/js/social-feed.js','/assets/js/social-feed-sidebar-tabs.js','/assets/js/social-feed-post-polish.js','/assets/js/social-feed-upload.js','/assets/js/store-presence-feed.js','/assets/js/avatar-anchor-consent.js','/assets/js/sponsored-campaign-card.js'];
 $page_manifest = [
     'id' => 'feed',
     'title' => $page_title,
@@ -36,7 +36,7 @@ require __DIR__ . '/includes/header.php';
 
   <div class="mg-app-workspace mg-feed-workspace">
     <section class="mg-feed-shell">
-      <div class="mg-container mg-feed-layout">
+      <div class="mg-container mg-feed-layout has-sponsored-sidebar">
         <div class="mg-feed-main">
           <nav class="mg-feed-tabs mg-feed-tabs-proxy" aria-label="Feed views" hidden>
             <button type="button" class="<?= $feedView === 'discover' ? 'is-active' : '' ?>" data-feed-tab="discover">Discover</button>
@@ -85,11 +85,16 @@ require __DIR__ . '/includes/header.php';
             <button class="mg-btn mg-btn-primary" type="button" data-feed-retry>Try again</button>
           </section>
 
+          <section class="mg-sponsored-placement" data-mg-ad-placement="feed_sponsored_card" data-mg-ad-limit="2" aria-label="Sponsored local campaigns"></section>
           <section class="mg-feed-list mg-hidden" data-feed-list aria-label="Social posts"></section>
           <div class="mg-feed-pagination mg-hidden" data-feed-pagination>
             <button class="mg-btn mg-btn-soft" type="button" data-feed-more>Load more posts</button>
           </div>
         </div>
+
+        <aside class="mg-feed-ad-sidebar" aria-label="Sponsored local opportunities">
+          <section class="mg-sponsored-placement" data-mg-ad-placement="sidebar_sponsored_card" data-mg-ad-limit="1"></section>
+        </aside>
       </div>
     </section>
   </div>
