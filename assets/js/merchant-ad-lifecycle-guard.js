@@ -32,12 +32,17 @@
     btn.title = selectedId && !config.allowSubmit ? config.note : '';
   }
 
+  function hasLifecycleNote(statusCell){
+    var next = statusCell ? statusCell.nextElementSibling : null;
+    return !!(next && next.classList && next.classList.contains('mg-ads-lifecycle-next'));
+  }
+
   function enhanceRows(){
     root.querySelectorAll('[data-campaign-id]').forEach(function(row){
       var config = stateConfig(rowStatus(row));
       row.setAttribute('data-lifecycle-state', clean(rowStatus(row)));
       var statusCell = row.querySelector('.mg-ads-pill');
-      if (statusCell && !statusCell.nextElementSibling?.classList?.contains('mg-ads-lifecycle-next')) {
+      if (statusCell && !hasLifecycleNote(statusCell)) {
         statusCell.insertAdjacentHTML('afterend', '<small class="mg-ads-lifecycle-next">'+config.note+'</small>');
       }
       var submit = row.querySelector('[data-submit]');
