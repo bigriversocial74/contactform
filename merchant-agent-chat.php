@@ -19,6 +19,7 @@ $page_styles = [
     '/assets/css/merchant-agent-chat-control-panel.css',
     '/assets/css/merchant-agent-memory-menu.css',
     '/assets/css/merchant-agent-creative-presets.css',
+    '/assets/css/merchant-agent-creative-draft-actions.css',
     '/assets/css/sponsored-campaign-card.css',
 ];
 $page_scripts = [
@@ -28,6 +29,7 @@ $page_scripts = [
     '/assets/js/merchant-agent-chat-control-panel.js',
     '/assets/js/merchant-agent-memory-menu.js',
     '/assets/js/merchant-agent-creative-presets.js',
+    '/assets/js/merchant-agent-creative-draft-actions.js',
     '/assets/js/merchant-agent-chat-scroll-latest.js',
     '/assets/js/merchant-agent-chat-json-format.js',
     '/assets/js/merchant-agent-chat-mobile.js',
