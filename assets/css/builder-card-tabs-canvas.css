@@ -1,0 +1,58 @@
+/* Build page follow-up fixes: desktop canvas centering, card-type tab visibility, and sidebar logo offset. */
+@media (min-width: 901px){
+  html body.mg-section-builder .mg-builder-shell{
+    display:block!important;
+    min-height:100svh!important;
+    padding-left:var(--mg-builder-sidebar-width,340px)!important;
+    background:#edf3f9!important;
+  }
+
+  html body.mg-section-builder .mg-builder-canvas{
+    width:100%!important;
+    max-width:none!important;
+    min-width:0!important;
+    margin:0!important;
+    box-sizing:border-box!important;
+    padding:calc(var(--mg-builder-header-height,58px) + 22px) clamp(28px,4vw,64px) 56px!important;
+    align-items:center!important;
+  }
+
+  html body.mg-section-builder .mg-builder-canvas-header,
+  html body.mg-section-builder .mg-builder-preview-frame{
+    width:min(1120px,calc(100vw - var(--mg-builder-sidebar-width,340px) - 96px))!important;
+    max-width:100%!important;
+    margin-left:auto!important;
+    margin-right:auto!important;
+  }
+
+  html body.mg-section-builder .mg-builder-preview-stage{
+    width:100%!important;
+    display:grid!important;
+    place-items:center!important;
+    justify-items:center!important;
+  }
+
+  html body.mg-section-builder .mg-builder-preview-frame{
+    transform:none!important;
+  }
+
+  html body.mg-section-builder .mg-builder-brand-row{
+    padding-top:10px!important;
+  }
+
+  html body.mg-section-builder .mg-builder-brand-row .mg-brand,
+  html body.mg-section-builder .mg-builder-brand-row .mg-sidebar-logo{
+    transform:translateY(7px)!important;
+  }
+}
+
+html body.mg-section-builder .mg-builder-step[hidden],
+html body.mg-section-builder .mg-builder-panel[hidden],
+html body.mg-section-builder .mg-builder-field[hidden],
+html body.mg-section-builder .mg-builder-upload[hidden]{
+  display:none!important;
+}
+
+html body.mg-section-builder [data-builder-auto-slug-field]{
+  display:none!important;
+}
