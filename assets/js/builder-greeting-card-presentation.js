@@ -2,12 +2,38 @@ document.addEventListener('DOMContentLoaded',function(){
   'use strict';
   var root=document.querySelector('[data-builder-app]');
   if(!root)return;
+  var mobileQuery=window.matchMedia('(max-width: 900px)');
+
+  function isMobileCard(){return mobileQuery.matches;}
 
   function setCardState(card,state){
     if(!card)return;
     card.dataset.cardState=state;
-    card.classList.toggle('is-open',state==='open');
+    card.classList.toggle('is-open',state==='open'||state==='inside-image');
     card.classList.toggle('is-back',state==='back');
+    syncButtonLabels(card);
+  }
+
+  function syncButtonLabels(card){
+    if(!card)return;
+    var flip=card.querySelector('[data-card-action="flip"]');
+    if(!flip)return;
+    if(!isMobileCard()){
+      flip.textContent=card.dataset.cardState==='back'?'Inside Card':'Flip Card';
+      return;
+    }
+    if(card.dataset.cardState==='inside-image')flip.textContent='Message Page';
+    else if(card.dataset.cardState==='open')flip.textContent='Product Info';
+    else if(card.dataset.cardState==='back')flip.textContent='Inside Image';
+    else flip.textContent='Next Page';
+  }
+
+  function nextMobileState(card){
+    var state=card.dataset.cardState||'closed';
+    if(state==='inside-image')return 'open';
+    if(state==='open')return 'back';
+    if(state==='back')return 'inside-image';
+    return 'inside-image';
   }
 
   function hasImage(node){
@@ -27,9 +53,12 @@ document.addEventListener('DOMContentLoaded',function(){
     if(!card)return;
     event.preventDefault();
     var action=button.dataset.cardAction;
-    if(action==='open')setCardState(card,'open');
+    if(action==='open')setCardState(card,isMobileCard()?'inside-image':'open');
     if(action==='close')setCardState(card,'closed');
-    if(action==='flip')setCardState(card,card.dataset.cardState==='back'?'open':'back');
+    if(action==='flip'){
+      if(isMobileCard())setCardState(card,nextMobileState(card));
+      else setCardState(card,card.dataset.cardState==='back'?'open':'back');
+    }
   });
 
   root.querySelectorAll('input[name="builder_type"]').forEach(function(input){
@@ -38,6 +67,15 @@ document.addEventListener('DOMContentLoaded',function(){
       window.setTimeout(function(){syncPlaceholders(root);},30);
     });
   });
+
+  if(mobileQuery.addEventListener){
+    mobileQuery.addEventListener('change',function(){
+      root.querySelectorAll('[data-card-presenter]').forEach(function(card){
+        if(card.dataset.cardState==='inside-image'&&!isMobileCard())setCardState(card,'open');
+        else syncButtonLabels(card);
+      });
+    });
+  }
 
   var observer=new MutationObserver(function(records){
     records.forEach(function(record){
@@ -49,6 +87,7 @@ document.addEventListener('DOMContentLoaded',function(){
   });
 
   syncPlaceholders(root);
+  root.querySelectorAll('[data-card-presenter]').forEach(function(card){syncButtonLabels(card);});
   var deadline=Date.now()+5000;
   (function watch(){syncPlaceholders(root);if(Date.now()<deadline)window.requestAnimationFrame(watch);})();
 });
