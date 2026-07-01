@@ -38,6 +38,7 @@ $memoryRows = [];
 $usageRows = [];
 $queryRows = [];
 $modelRows = [];
+$outputReview = [];
 $memoryStats = ['total' => 0, 'ready' => 0, 'pending' => 0, 'failed' => 0, 'chunks' => 0];
 $usageStats = ['total' => 0, 'completed' => 0, 'failed' => 0, 'blocked' => 0, 'input_tokens' => 0, 'output_tokens' => 0];
 $modelPolicy = ['admin_default' => null, 'chat_selected' => null, 'allowed_count' => 0, 'excluded_count' => 0];
@@ -99,6 +100,28 @@ function mg_memory_short_text(string $text, int $max = 160): string
     return mb_strlen($text) > $max ? mb_substr($text, 0, $max - 1) . '…' : $text;
 }
 
+function mg_memory_count_items(mixed $value): int
+{
+    return is_array($value) ? count($value) : 0;
+}
+
+function mg_memory_yes_no(mixed $value): string
+{
+    return !empty($value) ? 'Yes' : 'No';
+}
+
+function mg_memory_infer_preset_label(string $text): string
+{
+    $text = strtolower($text);
+    if (str_contains($text, 'social post set')) return 'Social Post';
+    if (str_contains($text, 'short message drafts') || str_contains($text, 'sms marketing')) return 'SMS';
+    if (str_contains($text, 'customer email campaign')) return 'Email';
+    if (str_contains($text, 'practical local campaign idea')) return 'Campaign Idea';
+    if (str_contains($text, 'reward and offer copy')) return 'Reward Copy';
+    if (str_contains($text, 'local event promotion')) return 'Local Event Promo';
+    return 'Manual prompt';
+}
+
 if ($user) {
     try {
         $pdo = mg_db();
@@ -155,6 +178,70 @@ if ($user) {
             $stmt->execute([$merchantId]);
             $queryRows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
+            $latestUsage = $usageRows[0] ?? [];
+            $latestUsageMeta = mg_memory_json_array($latestUsage['metadata_json'] ?? '');
+            $latestAssistantCtx = [];
+            $latestUserCtx = [];
+            $latestAssistantAt = '';
+            $latestUserAt = '';
+            foreach ($queryRows as $row) {
+                $ctx = mg_memory_json_array($row['event_context_json'] ?? '');
+                $role = (string)($ctx['role'] ?? '');
+                if ($role === 'assistant' && $latestAssistantCtx === []) {
+                    $latestAssistantCtx = $ctx;
+                    $latestAssistantAt = (string)($row['created_at'] ?? '');
+                    continue;
+                }
+                if ($role === 'user' && $latestUserCtx === []) {
+                    $latestUserCtx = $ctx;
+                    $latestUserAt = (string)($row['created_at'] ?? '');
+                }
+                if ($latestAssistantCtx !== [] && $latestUserCtx !== []) break;
+            }
+            $latestPrompt = (string)($latestUserCtx['body'] ?? ($latestUsageMeta['query_preview'] ?? ''));
+            $latestReply = (string)($latestAssistantCtx['body'] ?? '');
+            $latestCards = is_array($latestAssistantCtx['cards'] ?? null) ? $latestAssistantCtx['cards'] : [];
+            $latestBlocks = is_array($latestAssistantCtx['blocks'] ?? null) ? $latestAssistantCtx['blocks'] : [];
+            $reviewReadyCount = 0;
+            foreach ($latestCards as $card) {
+                if (is_array($card) && (!empty($card['review_action_key']) || !empty($card['review_payload']))) $reviewReadyCount++;
+            }
+            $outputReview = [
+                'has_data' => $latestUsage !== [] || $latestAssistantCtx !== [] || $latestUserCtx !== [],
+                'prompt' => $latestPrompt,
+                'reply' => $latestReply,
+                'preset' => mg_memory_infer_preset_label($latestPrompt),
+                'model' => (string)($latestUsage['model_display_name'] ?? $latestAssistantCtx['model'] ?? '—'),
+                'model_key' => (string)($latestUsage['model_key'] ?? $latestAssistantCtx['model'] ?? '—'),
+                'provider' => (string)($latestUsage['provider_display_name'] ?? $latestUsage['provider_key'] ?? '—'),
+                'status' => (string)($latestUsage['request_status'] ?? '—'),
+                'input_tokens' => (int)($latestUsage['input_tokens'] ?? 0),
+                'output_tokens' => (int)($latestUsage['output_tokens'] ?? 0),
+                'scope' => (string)($latestUsageMeta['scope'] ?? $latestAssistantCtx['scope'] ?? '—'),
+                'mode' => (string)($latestUsageMeta['mode'] ?? $latestAssistantCtx['mode'] ?? '—'),
+                'output_type' => (string)($latestUsageMeta['output_type'] ?? $latestAssistantCtx['output_type'] ?? '—'),
+                'approval_mode' => (string)($latestUsageMeta['approval_mode'] ?? $latestAssistantCtx['approval_mode'] ?? '—'),
+                'context_profile' => (string)($latestUsageMeta['context_profile'] ?? $latestAssistantCtx['context_profile'] ?? '—'),
+                'deep_database_context' => !empty($latestUsageMeta['deep_database_context'] ?? $latestAssistantCtx['deep_database_context'] ?? false),
+                'model_policy' => (string)($latestUsageMeta['model_policy'] ?? '—'),
+                'route_task' => (string)($latestUsageMeta['model_route_task'] ?? (($latestAssistantCtx['model_routing']['task'] ?? '') ?: '—')),
+                'preferred_family' => (string)($latestUsageMeta['model_preferred_family'] ?? (($latestAssistantCtx['model_routing']['preferred_family'] ?? '') ?: '—')),
+                'selected_family' => (string)($latestUsageMeta['model_selected_family'] ?? (($latestAssistantCtx['model_routing']['selected_family'] ?? '') ?: '—')),
+                'selected_by' => (string)($latestUsageMeta['model_selected_by'] ?? (($latestAssistantCtx['model_routing']['selected_by'] ?? '') ?: '—')),
+                'route_reason' => (string)($latestUsageMeta['model_route_reason'] ?? (($latestAssistantCtx['model_routing']['reason'] ?? '') ?: '—')),
+                'memory_used' => !empty($latestUsageMeta['memory_used']),
+                'memory_sources_used' => !empty($latestUsageMeta['memory_sources_used']),
+                'feed_posts_used' => !empty($latestUsageMeta['feed_posts_used']),
+                'feed_post_count' => (int)($latestUsageMeta['feed_post_count'] ?? 0),
+                'policy_used' => !empty($latestUsageMeta['policy_used']),
+                'skills' => is_array($latestUsageMeta['skills'] ?? null) ? implode(', ', array_map('strval', $latestUsageMeta['skills'])) : '—',
+                'thread_id' => (string)($latestUsageMeta['thread_id'] ?? $latestAssistantCtx['thread_public_id'] ?? '—'),
+                'card_count' => mg_memory_count_items($latestCards),
+                'block_count' => mg_memory_count_items($latestBlocks),
+                'review_ready_count' => $reviewReadyCount,
+                'created_at' => (string)($latestUsage['created_at'] ?? $latestAssistantAt ?: $latestUserAt),
+            ];
+
             $stmt = $pdo->prepare("SELECT m.*, p.provider_key, p.display_name provider_display_name, p.enabled provider_enabled, p.env_var_name
                 FROM ai_models m
                 INNER JOIN ai_providers p ON p.id=m.provider_id
@@ -193,7 +280,7 @@ require __DIR__ . '/includes/header.php';
           <div>
             <span class="mg-kicker">Agent memory</span>
             <h1>Merchant Memory</h1>
-            <p>Review memory sources, AI usage, and model routing for the merchant agent. The chat agent now favors creative marketing work and uses admin-enabled Sonnet/Haiku-class Claude models only.</p>
+            <p>Review memory sources, AI usage, output review, and model routing for the merchant agent. The chat agent favors creative marketing work and routes between enabled Sonnet/Haiku models by task.</p>
           </div>
           <div class="mg-memory-hero-actions">
             <a class="mg-btn mg-btn-soft" href="/merchant-agent-chat.php">Open Agent Chat</a>
@@ -204,6 +291,7 @@ require __DIR__ . '/includes/header.php';
         <nav class="mg-memory-tabs" aria-label="Merchant memory sections">
           <button class="is-active" type="button" data-memory-tab="sources">Memory Sources</button>
           <button type="button" data-memory-tab="usage">AI Usage</button>
+          <button type="button" data-memory-tab="review">Output Review</button>
           <button type="button" data-memory-tab="models">Models</button>
           <button type="button" data-memory-tab="guide">Guide</button>
         </nav>
@@ -226,14 +314,7 @@ require __DIR__ . '/includes/header.php';
           </section>
 
           <section class="mg-app-panel mg-memory-panel">
-            <div class="mg-app-panel-head">
-              <div>
-                <span class="mg-kicker">Sources</span>
-                <h2>Memory source library</h2>
-                <p>Documents stay private under secure storage. The agent only uses extracted chunks and source summaries.</p>
-              </div>
-              <a class="mg-btn mg-btn-soft" href="/merchant-agent-chat.php#agent-chat">Upload in chat</a>
-            </div>
+            <div class="mg-app-panel-head"><div><span class="mg-kicker">Sources</span><h2>Memory source library</h2><p>Documents stay private under secure storage. The agent only uses extracted chunks and source summaries.</p></div><a class="mg-btn mg-btn-soft" href="/merchant-agent-chat.php#agent-chat">Upload in chat</a></div>
             <div class="mg-memory-source-list">
               <?php if ($memoryRows === []): ?>
                 <div class="mg-memory-empty"><strong>No merchant memory sources yet.</strong><p>Open Agent Chat, type <b>MEMORY</b>, and upload a TXT, Markdown, CSV, JSON, PDF, DOC, or DOCX file.</p></div>
@@ -330,9 +411,42 @@ require __DIR__ . '/includes/header.php';
           </section>
         </section>
 
+        <section class="mg-memory-tab-panel" data-memory-panel="review" hidden>
+          <?php if (empty($outputReview['has_data'])): ?>
+            <section class="mg-app-panel mg-memory-panel"><div class="mg-memory-empty"><strong>No agent output to review yet.</strong><p>Run Merchant Agent Chat, then return here to inspect the prompt, model route, sources, tokens, and generated output structure.</p></div></section>
+          <?php else: ?>
+            <section class="mg-app-panel mg-memory-panel">
+              <div class="mg-app-panel-head"><div><span class="mg-kicker">Latest result</span><h2>Agent Output Review</h2><p>Inspect the latest agent run without reading raw logs.</p></div><a class="mg-btn mg-btn-soft" href="/merchant-agent-chat.php">Open Agent Chat</a></div>
+              <div class="mg-memory-review-grid">
+                <article class="mg-memory-review-card"><span>Preset</span><strong><?= mg_e((string)$outputReview['preset']) ?></strong><p><?= mg_e((string)$outputReview['output_type']) ?></p></article>
+                <article class="mg-memory-review-card"><span>Selected model</span><strong><?= mg_e((string)$outputReview['model']) ?></strong><p><?= mg_e((string)$outputReview['model_key']) ?></p></article>
+                <article class="mg-memory-review-card"><span>Route</span><strong><?= mg_e((string)$outputReview['route_task']) ?></strong><p><?= mg_e((string)$outputReview['route_reason']) ?></p></article>
+                <article class="mg-memory-review-card"><span>Context</span><strong><?= mg_e((string)$outputReview['context_profile']) ?></strong><p>Deep DB: <?= mg_e(mg_memory_yes_no($outputReview['deep_database_context'])) ?></p></article>
+                <article class="mg-memory-review-card"><span>Tokens</span><strong><?= number_format((int)$outputReview['input_tokens']) ?> / <?= number_format((int)$outputReview['output_tokens']) ?></strong><p>Input / output</p></article>
+                <article class="mg-memory-review-card"><span>Cards</span><strong><?= number_format((int)$outputReview['card_count']) ?></strong><p><?= number_format((int)$outputReview['review_ready_count']) ?> review-ready</p></article>
+                <article class="mg-memory-review-card"><span>Blocks</span><strong><?= number_format((int)$outputReview['block_count']) ?></strong><p>Generated rich blocks</p></article>
+                <article class="mg-memory-review-card"><span>Thread</span><strong><?= mg_e((string)$outputReview['thread_id']) ?></strong><p><?= mg_e((string)$outputReview['created_at']) ?></p></article>
+              </div>
+              <div class="mg-memory-review-pill-grid">
+                <span class="mg-memory-review-pill"><b>Memory</b> <?= mg_e(mg_memory_yes_no($outputReview['memory_used'])) ?></span>
+                <span class="mg-memory-review-pill"><b>Docs / website</b> <?= mg_e(mg_memory_yes_no($outputReview['memory_sources_used'])) ?></span>
+                <span class="mg-memory-review-pill"><b>Feed posts</b> <?= mg_e(mg_memory_yes_no($outputReview['feed_posts_used'])) ?> · <?= number_format((int)$outputReview['feed_post_count']) ?></span>
+                <span class="mg-memory-review-pill"><b>Policy</b> <?= mg_e(mg_memory_yes_no($outputReview['policy_used'])) ?></span>
+                <span class="mg-memory-review-pill"><b>Skills</b> <?= mg_e((string)$outputReview['skills']) ?></span>
+                <span class="mg-memory-review-pill"><b>Model family</b> <?= mg_e((string)$outputReview['preferred_family']) ?> → <?= mg_e((string)$outputReview['selected_family']) ?></span>
+                <span class="mg-memory-review-pill"><b>Selected by</b> <?= mg_e((string)$outputReview['selected_by']) ?></span>
+              </div>
+              <div class="mg-memory-review-copy">
+                <article><h3>Prompt used</h3><p><?= mg_e((string)($outputReview['prompt'] !== '' ? $outputReview['prompt'] : 'No prompt preview recorded.')) ?></p></article>
+                <article><h3>Agent response preview</h3><p><?= mg_e((string)($outputReview['reply'] !== '' ? mg_memory_short_text($outputReview['reply'], 1200) : 'No assistant response preview recorded.')) ?></p></article>
+              </div>
+            </section>
+          <?php endif; ?>
+        </section>
+
         <section class="mg-memory-tab-panel" data-memory-panel="models" hidden>
           <section class="mg-app-panel mg-memory-panel">
-            <div class="mg-app-panel-head"><div><span class="mg-kicker">Admin model integration</span><h2>Merchant agent chat model policy</h2><p>The chat agent uses the admin-enabled Anthropic default among Sonnet/Haiku-class models. Opus and Fable stay available for future specialized tools, but are excluded from this merchant chat route.</p></div></div>
+            <div class="mg-app-panel-head"><div><span class="mg-kicker">Admin model integration</span><h2>Merchant agent chat model policy</h2><p>The chat agent uses task routing across admin-enabled Sonnet/Haiku-class models. Opus and Fable stay available for future specialized tools, but are excluded from this merchant chat route.</p></div></div>
             <div class="mg-memory-model-summary">
               <article><span>Admin default</span><strong><?= mg_e((string)($modelPolicy['admin_default']['display_name'] ?? 'Not set')) ?></strong><p><?= mg_e((string)($modelPolicy['admin_default']['model_key'] ?? '')) ?></p></article>
               <article><span>Chat selected</span><strong><?= mg_e((string)($modelPolicy['chat_selected']['display_name'] ?? 'No allowed model')) ?></strong><p><?= mg_e((string)($modelPolicy['chat_selected']['model_key'] ?? '')) ?></p></article>
@@ -355,7 +469,7 @@ require __DIR__ . '/includes/header.php';
           <section class="mg-memory-help-grid">
             <article class="mg-app-panel"><span class="mg-kicker">Creative default</span><h3>What changed</h3><p>The merchant agent now defaults toward creative marketing, campaign copy, offer ideas, and quick drafts. Deep database sections are only used when the request asks for analysis.</p></article>
             <article class="mg-app-panel"><span class="mg-kicker">Ready memory</span><h3>What ready means</h3><p>Ready sources have extracted text chunks. The agent can reference those chunks in replies and should not invent details outside them.</p></article>
-            <article class="mg-app-panel"><span class="mg-kicker">Pending docs</span><h3>What pending means</h3><p>PDF, DOC, and DOCX files are safely stored first, then processed into chunks. If processing fails, the reason appears on this page.</p></article>
+            <article class="mg-app-panel"><span class="mg-kicker">Output review</span><h3>How to QA answers</h3><p>Use Output Review after every test prompt to confirm the selected model, route reason, context profile, source usage, token counts, and review-ready card output.</p></article>
           </section>
         </section>
       </section>
