@@ -8,6 +8,15 @@ document.addEventListener('DOMContentLoaded',function(){
   var triggers=[];
   var lastFocused=null;
 
+  function ensureCreateMenuDesktopCss(){
+    var href='/assets/css/create-menu-desktop-force.css';
+    if(document.querySelector('link[href="'+href+'"]'))return;
+    var link=document.createElement('link');
+    link.rel='stylesheet';
+    link.href=href;
+    document.head.appendChild(link);
+  }
+
   function focusable(){
     return Array.from(modal.querySelectorAll('a[href],button:not([disabled]),[tabindex]:not([tabindex="-1"])')).filter(function(node){
       return !node.hidden&&node.getAttribute('aria-hidden')!=='true';
@@ -45,6 +54,7 @@ document.addEventListener('DOMContentLoaded',function(){
   }
 
   function openMenu(trigger){
+    ensureCreateMenuDesktopCss();
     lastFocused=trigger||document.activeElement;
     modal.hidden=false;
     modal.setAttribute('aria-hidden','false');
@@ -87,6 +97,8 @@ document.addEventListener('DOMContentLoaded',function(){
   function discoverOriginalTriggers(){
     document.querySelectorAll('.mg-unified-header button,.mg-unified-header a').forEach(prepareTrigger);
   }
+
+  ensureCreateMenuDesktopCss();
 
   modal.querySelectorAll('[data-create-menu-close]').forEach(function(node){
     node.addEventListener('click',function(){closeMenu(true);});
