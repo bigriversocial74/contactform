@@ -25,7 +25,7 @@ require dirname(__DIR__) . '/includes/header.php';
           <a class="mg-system-health-back" href="/account-admin.php">← Admin dashboard</a>
           <span class="mg-eyebrow">Platform operations</span>
           <h1>System health</h1>
-          <p>Persistent media, notification delivery, PWA browser push, database migrations, admin ops deployment readiness, and recent operational warnings.</p>
+          <p>Persistent media, notification delivery, PWA browser push, database migrations, admin ops deployment readiness, SQL diagnostics, and recent operational warnings.</p>
         </div>
         <div class="mg-system-health-hero-actions">
           <span class="mg-system-health-updated">Last checked <strong data-system-health-updated>—</strong></span>
@@ -80,6 +80,35 @@ require dirname(__DIR__) . '/includes/header.php';
         <header><div><h2>Admin ops deployment readiness</h2><p>Validates required tables, columns, enum values, permissions, APIs, and command center assets.</p></div><span data-readiness-status>Checking</span></header>
         <div class="mg-system-health-readiness-summary" data-readiness-summary>Loading admin ops readiness…</div>
         <div class="mg-system-health-readiness-grid" data-readiness-grid></div>
+      </section>
+
+      <section class="mg-system-health-section mg-system-sql-diagnostics" data-system-sql-diagnostics>
+        <header>
+          <div>
+            <h2>System SQL diagnostics</h2>
+            <p>Scans core modules for missing tables, columns, enum drift, recent SQL failures, and safe endpoint schema readiness.</p>
+          </div>
+          <div class="mg-system-sql-actions">
+            <button class="mg-btn mg-btn-ghost" type="button" data-sql-diagnostics-refresh disabled>Run diagnostics</button>
+            <button class="mg-btn mg-btn-soft" type="button" data-sql-diagnostics-download disabled>Download repair SQL</button>
+          </div>
+        </header>
+        <div class="mg-system-sql-summary is-loading" data-sql-diagnostics-summary>Loading system SQL diagnostics…</div>
+        <div class="mg-system-sql-metrics" data-sql-diagnostics-metrics>
+          <?php foreach (['Modules','Critical modules','Findings','Recent SQL errors','Repairable'] as $label): ?>
+            <article><span><?= mg_e($label) ?></span><strong>—</strong><small>Waiting for diagnostics</small></article>
+          <?php endforeach; ?>
+        </div>
+        <div class="mg-system-sql-panels">
+          <div>
+            <h3>Module readiness</h3>
+            <div class="mg-system-sql-list" data-sql-diagnostics-modules><p class="mg-muted">Loading module checks…</p></div>
+          </div>
+          <div>
+            <h3>Top findings</h3>
+            <div class="mg-system-sql-list" data-sql-diagnostics-findings><p class="mg-muted">Loading findings…</p></div>
+          </div>
+        </div>
       </section>
 
       <div class="mg-system-health-columns">
