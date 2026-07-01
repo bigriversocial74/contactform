@@ -13,12 +13,26 @@ document.addEventListener('DOMContentLoaded',function(){
     status.className='mg-form-status'+(type?' is-'+type:'');
   }
 
+  function markAdSlot(){
+    var slot=root.querySelector('.mg-agent-chat-sidebar-ad');
+    if(!slot)return;
+    var placement=slot.querySelector('.mg-sponsored-placement');
+    var card=slot.querySelector('.mg-sponsored-card');
+    var hasCard=!!(card&&String(card.textContent||'').trim());
+    var hasPlacementContent=!!(placement&&String(placement.textContent||'').trim());
+    slot.classList.toggle('is-empty',!hasCard&&!hasPlacementContent);
+  }
+
   if(!panel.querySelector('.mg-agent-control-head')){
     var head=document.createElement('header');
     head.className='mg-agent-control-head';
     head.innerHTML='<span>Agent Control Panel</span><strong>Voice, context, and saved chats</strong>';
     panel.insertBefore(head,panel.firstChild);
   }
+
+  markAdSlot();
+  window.setTimeout(markAdSlot,300);
+  window.setTimeout(markAdSlot,1200);
 
   var threadFields=root.querySelector('.mg-agent-thread-fields');
   if(threadFields&&!threadFields.querySelector('[data-agent-delete-thread]')){
