@@ -52,6 +52,63 @@
     return label + (detail ? ' · ' + detail : '') + ' — ' + title;
   }
 
+  function field(name){
+    return root.querySelector('[name="' + name + '"]');
+  }
+
+  function setField(name, value){
+    var node = field(name);
+    if (!node) return;
+    node.value = value == null ? '' : String(value);
+    node.dispatchEvent(new Event('input', {bubbles:true}));
+    node.dispatchEvent(new Event('change', {bubbles:true}));
+  }
+
+  function selectedProduct(){
+    var id = String(picker.value || '');
+    if (!id) return null;
+    for (var i = 0; i < products.length; i++) {
+      if (String(products[i].id || '') === id) return products[i];
+    }
+    return null;
+  }
+
+  function isEventCampaign(product){
+    var type = String(product && (product.reward_type || product.value_type || product.title) || '').toLowerCase();
+    return type.indexOf('event') !== -1 || type.indexOf('contest') !== -1 || type.indexOf('giveaway') !== -1 || type.indexOf('drop') !== -1;
+  }
+
+  function applyRules(product){
+    if (!product) return null;
+    var key = sourceKey(product);
+    if (key === 'reward_template') {
+      return {cta:'Claim Reward', objective:'claim_growth', note:'Reward applied: claim-focused campaign settings were selected.'};
+    }
+    if (key === 'campaign') {
+      return {cta:product.cta_label || (isEventCampaign(product) ? 'Enter Campaign' : 'Join Campaign'), objective:isEventCampaign(product) ? 'event_traffic' : 'local_awareness', note:'Campaign applied: awareness/event settings were selected.'};
+    }
+    if (key === 'catalog_product') {
+      return {cta:'View Product', objective:'local_awareness', note:'Product applied: local awareness settings were selected.'};
+    }
+    return {cta:product.cta_label || 'View Offer', objective:'local_awareness', note:'Picker item applied.'};
+  }
+
+  function status(message){
+    var node = root.querySelector('[data-ads-status]');
+    if (node && message) node.textContent = message;
+  }
+
+  function hardenAppliedProduct(){
+    var product = selectedProduct();
+    if (!product) return;
+    var rules = applyRules(product);
+    if (!rules) return;
+    setField('cta_label', rules.cta);
+    setField('objective', rules.objective);
+    if (product.destination_url) setField('destination_url', product.destination_url);
+    status(rules.note + ' Uploaded creative images are preserved.');
+  }
+
   function render(){
     if (!products.length) return;
     rendering = true;
@@ -102,6 +159,14 @@
     render();
   });
   observer.observe(picker, {childList:true, subtree:true});
+
+  var applyButton = root.querySelector('[data-apply-product]');
+  if (applyButton) {
+    applyButton.addEventListener('click', function(){
+      window.setTimeout(hardenAppliedProduct, 0);
+      window.setTimeout(hardenAppliedProduct, 80);
+    });
+  }
 
   loadGroupedProducts();
 })(window, document);
