@@ -97,6 +97,14 @@ require __DIR__ . '/includes/header.php';
                   <div class="mg-ads-field"><label for="ad-start">Start</label><input id="ad-start" name="starts_at" type="datetime-local"></div>
                   <div class="mg-ads-field"><label for="ad-end">End</label><input id="ad-end" name="ends_at" type="datetime-local"></div>
                 </div>
+                <div class="mg-ads-creative-upload">
+                  <div class="mg-ads-field">
+                    <label for="ad-image-file">Upload campaign image</label>
+                    <input id="ad-image-file" type="file" accept="image/jpeg,image/png,image/gif,image/webp" data-creative-image-file>
+                  </div>
+                  <button class="mg-btn mg-btn-soft" type="button" data-upload-creative>Upload Image</button>
+                  <small data-creative-upload-status></small>
+                </div>
                 <div class="mg-ads-field"><label for="ad-image">Image URL</label><input id="ad-image" name="image_url" placeholder="/images/example-offer.png"></div>
                 <div class="mg-ads-two">
                   <div class="mg-ads-field"><label for="ad-cta">CTA label</label><input id="ad-cta" name="cta_label" maxlength="80" value="Claim Reward"></div>
@@ -129,7 +137,7 @@ require __DIR__ . '/includes/header.php';
               </article>
               <article class="mg-ads-panel mg-ads-help-card">
                 <h2>Need help?</h2>
-                <p class="mg-ads-muted">Choose a product to prefill ad copy, then tighten the headline and CTA for higher claim and redemption rates.</p>
+                <p class="mg-ads-muted">Choose a product or upload campaign media, then tighten the headline and CTA for higher claim and redemption rates.</p>
                 <button class="mg-btn mg-btn-soft" type="button" data-ads-tab-jump="analytics">View best practices →</button>
               </article>
             </aside>
