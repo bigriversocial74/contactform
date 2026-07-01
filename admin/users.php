@@ -7,6 +7,7 @@ require_once dirname(__DIR__) . '/includes/admin-auth.php';
 $user = mg_require_admin_page_permission('admin.users.view');
 $canViewUsers = true;
 $canCreateUsers = mg_admin_page_user_has_permission($user, 'admin.users.manage');
+$canManageAiLimits = mg_admin_page_user_has_permission($user, 'admin.settings.manage');
 $page_title = 'User Center | Microgifter';
 $page_section = 'account';
 $header_mode = 'account';
@@ -17,6 +18,7 @@ $page_scripts = [
     '/assets/js/admin-user-detail-drawer.js',
     '/assets/js/admin-user-ops-detail.js',
     '/assets/js/admin-user-management.js',
+    '/assets/js/admin-ai-user-limits.js',
     '/assets/js/admin-create-user.js',
 ];
 $adminActive = 'users';
@@ -26,7 +28,7 @@ require dirname(__DIR__) . '/includes/header.php';
 <section class="mg-app-shell mg-admin-app">
   <?php require dirname(__DIR__) . '/includes/admin-sidebar.php'; ?>
   <div class="mg-app-workspace mg-admin-workspace">
-    <section class="mg-admin-users-shell" data-admin-users data-admin-users-can-create="<?= $canCreateUsers ? '1' : '0' ?>">
+    <section class="mg-admin-users-shell" data-admin-users data-admin-users-can-create="<?= $canCreateUsers ? '1' : '0' ?>" data-admin-users-can-manage-ai-limits="<?= $canManageAiLimits ? '1' : '0' ?>">
       <header class="mg-admin-users-hero">
         <div>
           <a class="mg-admin-users-back" href="/account-admin.php">← Admin dashboard</a>
