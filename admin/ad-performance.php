@@ -10,7 +10,7 @@ $page_section = 'account';
 $header_mode = 'account';
 $adminActive = 'ad-performance';
 $page_body_class = 'mg-admin-ad-review-page mg-admin-ad-performance-page';
-$page_styles = ['/assets/css/admin-shell.css','/assets/css/merchant-ad-manager.css','/assets/css/sponsored-campaign-card.css','/assets/css/ad-performance-dashboard.css'];
+$page_styles = ['/assets/css/admin-shell.css','/assets/css/merchant-ad-manager.css','/assets/css/sponsored-campaign-card.css','/assets/css/ad-performance-dashboard.css','/assets/css/ad-admin-qa.css'];
 $page_scripts = ['/assets/js/ad-performance-dashboard.js'];
 $page_manifest = [
     'id' => 'admin-ad-performance',
@@ -39,6 +39,7 @@ require dirname(__DIR__) . '/includes/header.php';
           <p>Track ad funnel movement, placement performance, campaign-level conversion, CRM creation, and future Pre Sale Revenue attribution across all merchants.</p>
           <div class="mg-ads-actions">
             <a class="mg-btn mg-btn-soft" href="/admin/ad-placements.php">Placement Controls</a>
+            <a class="mg-btn mg-btn-soft" href="/admin/ad-diagnostics.php">Diagnostics</a>
             <button class="mg-btn mg-btn-primary" type="button" data-performance-refresh>Refresh performance</button>
           </div>
         </article>
