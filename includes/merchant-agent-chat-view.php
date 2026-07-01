@@ -30,6 +30,7 @@ declare(strict_types=1);
           </div>
         </div>
         <textarea data-agent-chat-textarea name="message" rows="1" maxlength="2000" placeholder="Ask your merchant agent what to analyze, chart, draft, or prioritize…" aria-label="Ask the merchant agent" required></textarea>
+        <button class="mg-agent-chat-voice" type="button" aria-label="Start voice input" title="Speak to agent" data-agent-chat-voice aria-pressed="false">Mic</button>
         <button class="mg-agent-chat-send" type="submit" data-agent-chat-send aria-label="Send message" disabled>↑</button>
       </form>
     </section>
@@ -48,7 +49,16 @@ declare(strict_types=1);
           <label>Agent name
             <input data-agent-name-input type="text" maxlength="80" placeholder="Merchant Agent">
           </label>
-          <button class="mg-btn mg-btn-soft mg-agent-rail-btn" type="button" data-agent-save-profile>Save name</button>
+          <button class="mg-btn mg-btn-soft mg-agent-rail-btn" type="button" data-agent-save-profile>Save Agent</button>
+        </div>
+
+        <div class="mg-agent-speech-settings" aria-label="Speech results">
+          <label class="mg-agent-speech-toggle">
+            <input type="checkbox" data-agent-speak-results>
+            <span>Enable spoken results</span>
+          </label>
+          <button class="mg-btn mg-btn-soft mg-agent-speech-stop" type="button" data-agent-speech-stop hidden>Stop</button>
+          <small data-agent-speech-status>Agent replies will read aloud after each result.</small>
         </div>
 
         <div class="mg-agent-rail-row mg-agent-thread-actions" aria-label="Thread actions">
