@@ -97,6 +97,12 @@ $adminNav = [
         'href' => '/admin/ad-review.php',
         'visible' => $canAdReview,
     ],
+    'ad-placements' => [
+        'label' => 'Ad placements',
+        'detail' => 'Control ad surfaces',
+        'href' => '/admin/ad-placements.php',
+        'visible' => $canAdReview,
+    ],
     'pending-models' => [
         'label' => 'Pending models',
         'detail' => 'Model approval queue',
@@ -228,17 +234,3 @@ $adminNav = [
     <a class="mg-btn mg-btn-ghost" href="/inbox.php">Exit admin</a>
   </div>
 </aside>
-<?php if ($canNotifications): ?>
-<script>
-(function(){
-  var nodes=document.querySelectorAll('[data-admin-nav-count]');
-  if(!nodes.length)return;
-  window.fetch('/api/admin/notifications.php?limit=10',{credentials:'same-origin',headers:{Accept:'application/json'}}).then(function(response){return response.json();}).then(function(payload){
-    if(!payload||!payload.ok||!payload.data||!payload.data.summary)return;
-    var summary=payload.data.summary;
-    var counts={notifications:summary.unread_total||0,support_queue:summary.urgent_unread_total||0,ops_command:summary.urgent_unread_total||0};
-    nodes.forEach(function(node){var value=Number(counts[node.getAttribute('data-admin-nav-count')]||0);node.textContent=value>99?'99+':String(value);node.hidden=value<=0;});
-  }).catch(function(){});
-})();
-</script>
-<?php endif; ?>
