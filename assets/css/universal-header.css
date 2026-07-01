@@ -146,21 +146,6 @@
   color:#1455d9;
 }
 
-.mg-unified-header .mg-account-upgrade{
-  background:#071225;
-  color:#fff;
-}
-
-.mg-unified-header .mg-account-upgrade .mg-account-index{
-  background:#fff;
-  color:#071225;
-}
-
-.mg-unified-header .mg-account-upgrade:hover{
-  background:#1455d9;
-  color:#fff;
-}
-
 .mg-unified-header .mg-header-create:hover,
 .mg-unified-header .mg-header-icon:hover,
 .mg-unified-header .mg-cart-header-button:hover{
@@ -272,9 +257,11 @@
 
 .mg-unified-header .mg-account-actions{
   position:absolute;
-  top:calc(100% + 10px);
+  top:calc(100% + 8px);
   right:0;
-  width:292px;
+  width:318px;
+  max-height:calc(100vh - 84px);
+  overflow:auto;
   padding:10px;
   border:1px solid #d8e4f4;
   border-radius:18px;
@@ -298,60 +285,66 @@
   pointer-events:auto;
 }
 
-.mg-unified-header .mg-account-menu-head{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  padding:10px;
+.mg-unified-header .mg-account-tabs{
+  display:block;
+}
+
+.mg-unified-header .mg-account-tab-radio{
+  position:absolute;
+  opacity:0;
+  pointer-events:none;
+}
+
+.mg-unified-header .mg-account-tab-list{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:6px;
+  padding:4px;
+  border:1px solid #e3ebf5;
   border-radius:14px;
   background:#f8fbff;
-  border:1px solid #e3ebf5;
   margin-bottom:8px;
 }
 
-.mg-unified-header .mg-account-status-light{
-  width:9px;
-  height:9px;
-  border-radius:50%;
-  background:#22c55e;
-  box-shadow:0 0 0 4px rgba(34,197,94,.12);
-}
-
-.mg-unified-header .mg-account-head-copy{
+.mg-unified-header .mg-account-tab{
+  min-height:34px;
+  border-radius:11px;
   display:grid;
-  gap:2px;
-  min-width:0;
-}
-
-.mg-unified-header .mg-account-head-name{
-  font-weight:900;
-  color:#071225;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-
-.mg-unified-header .mg-account-head-email{
-  font-size:12px;
+  place-items:center;
   color:#60718a;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
+  font-size:12px;
+  font-weight:950;
+  letter-spacing:.02em;
+  cursor:pointer;
+  user-select:none;
 }
 
-.mg-unified-header .mg-account-session-label{
-  margin-left:auto;
-  font-size:9px;
-  font-weight:950;
-  letter-spacing:.1em;
-  color:#7a8aa3;
+.mg-unified-header #mg-account-tab-customer:checked ~ .mg-account-tab-list label[for="mg-account-tab-customer"],
+.mg-unified-header #mg-account-tab-merchant:checked ~ .mg-account-tab-list label[for="mg-account-tab-merchant"]{
+  background:#071225;
+  color:#fff;
+  box-shadow:0 10px 22px rgba(15,23,42,.12);
+}
+
+.mg-unified-header .mg-account-tab-panels{
+  min-height:0;
+}
+
+.mg-unified-header .mg-account-tab-panel{
+  display:none;
+  gap:2px;
+}
+
+.mg-unified-header #mg-account-tab-customer:checked ~ .mg-account-tab-panels .mg-account-customer-panel,
+.mg-unified-header #mg-account-tab-merchant:checked ~ .mg-account-tab-panels .mg-account-merchant-panel{
+  display:grid;
 }
 
 .mg-unified-header .mg-account-action{
-  min-height:42px;
+  min-height:38px;
   padding:0 10px;
   border:0;
-  border-radius:13px;
+  border-radius:12px;
   background:transparent;
   color:#122039;
   text-decoration:none;
@@ -370,15 +363,82 @@
 }
 
 .mg-unified-header .mg-account-index{
-  width:25px;
-  height:25px;
-  border-radius:9px;
+  width:24px;
+  height:24px;
+  border-radius:8px;
   background:#f1f5fb;
   color:#60718a;
   display:grid;
   place-items:center;
   font-size:10px;
   font-weight:950;
+  flex:0 0 auto;
+}
+
+.mg-unified-header .mg-account-menu-foot{
+  display:grid;
+  gap:2px;
+  margin-top:8px;
+  padding-top:8px;
+  border-top:1px solid #e3ebf5;
+}
+
+.mg-unified-header .mg-account-logout{
+  color:#b42318;
+}
+
+.mg-unified-header .mg-account-merchant-upgrade{
+  padding:14px;
+  border:1px solid #c8d8ff;
+  border-radius:16px;
+  background:linear-gradient(135deg,#f8fbff 0%,#eef5ff 48%,#f7fbff 100%);
+  color:#071225;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.82);
+}
+
+.mg-unified-header .mg-account-upgrade-kicker{
+  display:inline-flex;
+  margin-bottom:7px;
+  color:#1455d9;
+  font-size:10px;
+  font-weight:950;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+}
+
+.mg-unified-header .mg-account-merchant-upgrade strong{
+  display:block;
+  font-size:18px;
+  font-weight:950;
+  letter-spacing:-.04em;
+}
+
+.mg-unified-header .mg-account-merchant-upgrade p{
+  margin:6px 0 12px;
+  color:#60718a;
+  font-size:12px;
+  line-height:1.45;
+  font-weight:750;
+}
+
+.mg-unified-header .mg-account-upgrade-cta{
+  min-height:38px;
+  padding:0 12px;
+  border-radius:12px;
+  background:#071225;
+  color:#fff;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  text-decoration:none;
+  font-size:12px;
+  font-weight:950;
+  width:100%;
+}
+
+.mg-unified-header .mg-account-upgrade-cta:hover{
+  background:#1455d9;
+  color:#fff;
 }
 
 @media(max-width:760px){
