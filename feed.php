@@ -75,7 +75,6 @@ require __DIR__ . '/includes/header.php';
             <button class="mg-btn mg-btn-primary" type="button" data-feed-retry>Try again</button>
           </section>
 
-          <section class="mg-sponsored-placement" data-mg-ad-placement="feed_sponsored_card" data-mg-ad-limit="2" aria-label="Sponsored local campaigns"></section>
           <section class="mg-feed-list mg-hidden" data-feed-list aria-label="Social posts"></section>
           <div class="mg-feed-pagination mg-hidden" data-feed-pagination>
             <button class="mg-btn mg-btn-soft" type="button" data-feed-more>Load more posts</button>
