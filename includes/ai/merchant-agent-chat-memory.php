@@ -2,12 +2,13 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/merchant-agent-chat.php';
+require_once __DIR__ . '/merchant-agent-memory-sources.php';
 require_once dirname(__DIR__) . '/merchant-agent-memory.php';
 require_once dirname(__DIR__) . '/merchant-agent-policy.php';
 
 function mg_ai_chat_memory_system_prompt(): string
 {
-    return mg_ai_chat_system_prompt() . "\n\nMemory, policy, and output-control guidance:\n- Use merchant_agent_memory and merchant_agent_policy when recommending next steps.\n- Prefer saved preferences and approved patterns.\n- Avoid ideas similar to rejected or too-risky feedback.\n- Use only allowed action keys and avoid action keys listed in policy.\n- Cap card risk at the policy max risk level.\n- Respect agent_mode, output_type, and approval_mode exactly.\n- Return cards that match output_type. Action plan needs task-like cards. Message draft needs copy-ready draft cards. Review checklist needs checklist cards. Campaign idea needs campaign cards. Admin-ready recommendation needs review-ready cards with review_action_key and review_payload.\n- If approval_mode is review_queue, make every useful card bridge-ready with review_action_key and review_payload. Do not execute anything directly.\n- If confidence is below the policy threshold, explain uncertainty and use a low-risk review-only card.\n";
+    return mg_ai_chat_system_prompt() . "\n\n" . mg_agent_soul_prompt() . "\n\n" . mg_agent_skill_system_prompt() . "\n\nMemory, policy, creative-mode, and output-control guidance:\n- Use merchant_agent_memory, merchant_agent_memory_sources, and merchant_agent_policy when recommending next steps.\n- This merchant agent chat is optimized for practical merchant marketing creative work, not deep database analysis by default.\n- Prefer saved brand voice, campaign style, customer tone, default offer type, business goals, local market notes, ready memory chunks, products, rewards, and campaign basics.\n- For campaign ideas, social posts, offer copy, SMS/email drafts, loyalty/reward wording, event promos, and local marketing concepts, keep the response creative, ready-to-use, and concise.\n- Do not request or analyze heavy database metrics unless context_profile is data_analysis or the merchant explicitly asks for performance, ROI, claims, redemption, sales, conversion, reports, analytics, trends, or diagnostics.\n- When context_profile is creative_marketing or quick_copy, use the lightweight operating snapshot as background only; do not over-explain metrics.\n- Do not invent details from uploaded documents that are not available in ready chunks or summaries.\n- Avoid ideas similar to rejected or too-risky feedback.\n- Use only allowed action keys and avoid action keys listed in policy.\n- Cap card risk at the policy max risk level.\n- Respect agent_mode, output_type, approval_mode, enabled_skills, active_thread, and context_profile exactly.\n- Return blocks for rich in-chat charts only when context_profile is data_analysis or a selected skill strongly supports it.\n- Return cards that match output_type. Action plan needs task-like cards. Message draft needs copy-ready draft cards. Review checklist needs checklist cards. Campaign idea and social_campaign need campaign cards. Admin-ready recommendation needs review-ready cards with review_action_key and review_payload.\n- If approval_mode is review_queue, make every useful card bridge-ready with review_action_key and review_payload. Do not execute anything directly.\n- If confidence is below the policy threshold, explain uncertainty and use a low-risk review-only card.\n";
 }
 
 function mg_ai_chat_allowed_modes(): array
@@ -17,7 +18,7 @@ function mg_ai_chat_allowed_modes(): array
 
 function mg_ai_chat_allowed_outputs(): array
 {
-    return ['quick_answer','action_plan','message_draft','review_checklist','campaign_idea','admin_recommendation'];
+    return ['quick_answer','action_plan','message_draft','review_checklist','campaign_idea','social_campaign','admin_recommendation'];
 }
 
 function mg_ai_chat_allowed_approval_modes(): array
@@ -31,14 +32,90 @@ function mg_ai_chat_control_value(array $input, string $key, array $allowed, str
     return in_array($value, $allowed, true) ? $value : $fallback;
 }
 
+function mg_ai_chat_creative_model_blocklist_sql(): string
+{
+    return "LOWER(m.model_key) NOT LIKE '%opus%' AND LOWER(m.model_key) NOT LIKE '%fable%'";
+}
+
+function mg_ai_chat_select_merchant_model(PDO $pdo, string $preferredModelKey = ''): array
+{
+    $block = mg_ai_chat_creative_model_blocklist_sql();
+    if ($preferredModelKey !== '') {
+        $stmt = $pdo->prepare("SELECT m.*, p.provider_key, p.display_name provider_name, p.env_var_name, p.enabled provider_enabled
+            FROM ai_models m
+            INNER JOIN ai_providers p ON p.id=m.provider_id
+            WHERE p.provider_key='anthropic' AND p.enabled=1 AND m.enabled=1 AND {$block} AND m.model_key=?
+            LIMIT 1");
+        $stmt->execute([$preferredModelKey]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (is_array($row) && mg_ai_env_configured((string)$row['env_var_name'])) return $row;
+    }
+    $stmt = $pdo->prepare("SELECT m.*, p.provider_key, p.display_name provider_name, p.env_var_name, p.enabled provider_enabled
+        FROM ai_models m
+        INNER JOIN ai_providers p ON p.id=m.provider_id
+        WHERE p.provider_key='anthropic' AND p.enabled=1 AND m.enabled=1 AND {$block}
+        ORDER BY m.is_default DESC, m.sort_order ASC, m.display_name ASC
+        LIMIT 1");
+    $stmt->execute();
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!is_array($row)) mg_fail('No enabled Sonnet/Haiku Claude model is available for merchant agent chat. Opus and Fable are intentionally excluded for this chat agent.', 503);
+    if (!mg_ai_env_configured((string)$row['env_var_name'])) mg_fail('Anthropic is not configured on the server. Set MG_ANTHROPIC_API_KEY.', 503);
+    return $row;
+}
+
+function mg_ai_chat_needs_deep_context(string $message, string $scope, string $outputType): bool
+{
+    if (in_array($scope, ['claims','analytics','developer_api'], true)) return true;
+    if ($outputType === 'admin_recommendation') return true;
+    $haystack = strtolower($message . ' ' . $scope . ' ' . $outputType);
+    foreach (['analytics','analysis','analyze','metric','metrics','performance','roi','conversion','redemption','claim','claims','sales','revenue','report','trend','compare','diagnostic','database','chart','forecast','projection'] as $keyword) {
+        if (str_contains($haystack, $keyword)) return true;
+    }
+    return false;
+}
+
+function mg_ai_chat_context_profile(string $message, string $scope, string $outputType): string
+{
+    if (mg_ai_chat_needs_deep_context($message, $scope, $outputType)) return 'data_analysis';
+    if (in_array($outputType, ['message_draft','quick_answer'], true)) return 'quick_copy';
+    if (in_array($outputType, ['campaign_idea','social_campaign'], true)) return 'creative_marketing';
+    $haystack = strtolower($message);
+    foreach (['caption','copy','headline','subject line','sms','email','post','creative','promo','promotion','campaign','offer','loyalty','reward','event','flyer','ad'] as $keyword) {
+        if (str_contains($haystack, $keyword)) return 'creative_marketing';
+    }
+    return 'creative_marketing';
+}
+
+function mg_ai_chat_lightweight_context(array $context, string $profile): array
+{
+    if ($profile === 'data_analysis') return $context;
+    $sections = is_array($context['sections'] ?? null) ? $context['sections'] : [];
+    $keep = ['workspace','locations','agents','reward_templates','campaigns'];
+    $filtered = [];
+    foreach ($keep as $key) {
+        if (!isset($sections[$key])) continue;
+        $filtered[$key] = $sections[$key];
+        if (isset($filtered[$key]['data']['items']) && is_array($filtered[$key]['data']['items'])) {
+            $filtered[$key]['data']['items'] = array_slice($filtered[$key]['data']['items'], 0, 12);
+        } elseif (isset($filtered[$key]['data']) && is_array($filtered[$key]['data']) && array_is_list($filtered[$key]['data'])) {
+            $filtered[$key]['data'] = array_slice($filtered[$key]['data'], 0, 12);
+        }
+    }
+    $context['sections'] = $filtered;
+    $context['context_profile'] = $profile;
+    $context['context_note'] = 'Lightweight creative context: database-heavy claim, wallet, contact, event, and payment sections were intentionally omitted unless the merchant asks for analysis.';
+    return $context;
+}
+
 function mg_ai_chat_output_instruction(string $mode, string $outputType, string $approvalMode): array
 {
     $instructions = [
-        'quick_answer' => 'Return one concise answer and up to two insight cards.',
-        'action_plan' => 'Return a practical action plan with two to four task cards. Each card should have a clear next step, reason, and review_action_key.',
+        'quick_answer' => 'Return one concise answer and up to two insight cards. Use blocks only if a selected skill makes the answer clearer.',
+        'action_plan' => 'Return a practical action plan with two to four task cards. Include chart or project blocks only when useful.',
         'message_draft' => 'Return a copy-ready customer or merchant message draft. Include a card with the draft text in review_payload.draft_body and action_key create_message_draft.',
         'review_checklist' => 'Return a checklist of items the merchant should review. Each card should be a checklist item with a safe review action.',
-        'campaign_idea' => 'Return one campaign idea and supporting cards for audience, reward, and launch steps.',
+        'campaign_idea' => 'Return one campaign idea and supporting cards for audience, reward, CTA, local angle, and launch steps. Keep it merchant-ready.',
+        'social_campaign' => 'Use the social_campaign_advisor skill. Return a social_campaign or social_posts block with channel-specific copy, audience, CTA, offer angle, and a review-ready campaign card.',
         'admin_recommendation' => 'Return admin-ready recommendation cards with review_action_key, risk_level, and review_payload so they can be added to the Agent Review queue.',
     ];
     $modeText = [
@@ -83,7 +160,7 @@ function mg_ai_chat_fallback_card(string $message, string $scope, string $output
             'risk_level' => 'low',
             'review_payload' => $basePayload + ['checklist' => ['Review campaign status', 'Review reward and claim activity', 'Confirm follow-up opportunities']],
         ],
-        'campaign_idea' => [
+        'campaign_idea', 'social_campaign' => [
             'type' => 'recommendation',
             'title' => 'Create a campaign draft',
             'body' => 'Turn the merchant request into a reviewable campaign draft before launch.',
@@ -135,6 +212,9 @@ function mg_ai_chat_shape_cards(array $cards, string $message, string $scope, st
         if ($outputType === 'message_draft' && empty($card['review_action_key'])) {
             $card['review_action_key'] = 'create_message_draft';
         }
+        if (($outputType === 'campaign_idea' || $outputType === 'social_campaign') && empty($card['review_action_key'])) {
+            $card['review_action_key'] = 'create_campaign_draft';
+        }
         $shaped[] = $card;
         if (count($shaped) >= 4) break;
     }
@@ -164,18 +244,28 @@ function mg_ai_chat_send_with_memory(PDO $pdo, array $user, array $input): array
     $mode = mg_ai_chat_control_value($input, 'mode', mg_ai_chat_allowed_modes(), 'advisor');
     $outputType = mg_ai_chat_control_value($input, 'output_type', mg_ai_chat_allowed_outputs(), 'action_plan');
     $approvalMode = mg_ai_chat_control_value($input, 'approval_mode', mg_ai_chat_allowed_approval_modes(), 'advisory');
+    $contextProfile = mg_ai_chat_context_profile($message, $scope, $outputType);
+    $deepContext = $contextProfile === 'data_analysis';
+    $effectiveDays = $deepContext ? $days : min($days, 45);
     $controlInstructions = mg_ai_chat_output_instruction($mode, $outputType, $approvalMode);
-    $model = mg_ai_merchant_find_anthropic_model($pdo, null);
+    $thread = mg_agent_thread_by_id($pdo, $merchantId, mg_ai_chat_clean($input['thread_id'] ?? '', 80));
+    $threadId = (string)($thread['id'] ?? '');
+    $skillKeys = mg_agent_skill_keys($input['skill_keys'] ?? null);
+    if ($outputType === 'social_campaign' && !in_array('social_campaign_advisor', $skillKeys, true)) $skillKeys[] = 'social_campaign_advisor';
+    $model = mg_ai_chat_select_merchant_model($pdo, mg_ai_chat_clean($input['model_key'] ?? '', 120));
     $provider = mg_ai_merchant_provider($pdo, (int)$model['provider_id']);
     mg_ai_enforce_rate_limits($pdo, $provider, $model, $merchantId, null);
-    $history = array_slice(mg_ai_chat_recent_messages($pdo, $merchantId, 12), -12);
-    $context = mg_ai_merchant_context($pdo, $user, ['scope' => $scope === 'overview' ? 'all' : $scope, 'days' => $days, 'merchant_goal' => $message]);
+    $history = array_slice(mg_ai_chat_recent_messages($pdo, $merchantId, $deepContext ? 12 : 6, $threadId), $deepContext ? -12 : -6);
+    $context = mg_ai_merchant_context($pdo, $user, ['scope' => $scope === 'overview' ? 'all' : $scope, 'days' => $effectiveDays, 'merchant_goal' => $message]);
+    $context = mg_ai_chat_lightweight_context($context, $contextProfile);
     $memory = mg_agent_memory_prompt_context($pdo, $merchantId);
+    $memorySources = mg_agent_memory_source_prompt_context($pdo, $merchantId);
     $policy = mg_agent_policy_prompt_context($pdo, $merchantId);
+    $profile = mg_agent_profile($pdo, $merchantId);
     $request = [
         'model' => (string)$model['model_key'],
-        'max_tokens' => max(512, min(2200, (int)($input['max_tokens'] ?? 1400))),
-        'temperature' => 0.25,
+        'max_tokens' => max(512, min($deepContext ? 2600 : 1800, (int)($input['max_tokens'] ?? ($deepContext ? 1600 : 1200)))),
+        'temperature' => $deepContext ? 0.25 : 0.55,
         'system' => mg_ai_chat_memory_system_prompt(),
         'messages' => [[
             'role' => 'user',
@@ -184,16 +274,23 @@ function mg_ai_chat_send_with_memory(PDO $pdo, array $user, array $input): array
                 'text' => json_encode([
                     'merchant_message' => $message,
                     'scope' => $scope,
-                    'review_window_days' => $days,
+                    'review_window_days' => $effectiveDays,
                     'agent_mode' => $mode,
                     'output_type' => $outputType,
                     'approval_mode' => $approvalMode,
+                    'context_profile' => $contextProfile,
+                    'deep_database_context' => $deepContext,
                     'output_controls' => $controlInstructions,
+                    'model_policy' => 'Merchant agent chat uses the admin-enabled Anthropic default among Sonnet/Haiku-class models. Opus and Fable are intentionally excluded from this chat agent.',
                     'allowed_action_urls' => mg_ai_chat_allowed_links(),
                     'recent_chat_history' => $history,
                     'merchant_operating_snapshot' => $context,
                     'merchant_agent_memory' => $memory,
+                    'merchant_agent_memory_sources' => $memorySources,
                     'merchant_agent_policy' => $policy,
+                    'agent_profile' => $profile,
+                    'active_thread' => $thread,
+                    'enabled_skills' => mg_agent_skill_prompt_context($skillKeys),
                     'bridge_instruction' => 'When useful, include review_action_key and review_payload so the merchant can send a card to the Agent Review Queue. If approval_mode is review_queue, every useful card should be review-ready.',
                 ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
             ]],
@@ -202,28 +299,30 @@ function mg_ai_chat_send_with_memory(PDO $pdo, array $user, array $input): array
     try {
         $rawResponse = mg_anthropic_messages($request);
         $text = mg_anthropic_text_from_response($rawResponse);
-        try { $decoded = mg_anthropic_extract_json_object($text); } catch (Throwable) { $decoded = ['reply' => $text, 'cards' => []]; }
+        try { $decoded = mg_anthropic_extract_json_object($text); } catch (Throwable) { $decoded = ['reply' => $text, 'cards' => [], 'blocks' => []]; }
         $reply = mg_ai_chat_clean($decoded['reply'] ?? $text, 6000);
         if ($reply === '') $reply = 'I reviewed the merchant workspace and created the safest reviewable next step.';
         $cards = mg_ai_chat_shape_cards(mg_ai_chat_normalize_cards($decoded['cards'] ?? []), $message, $scope, $mode, $outputType, $approvalMode);
-        mg_ai_merchant_record_usage_event($pdo, (int)$provider['id'], (int)$model['id'], $merchantId, null, 'completed', $rawResponse, ['source' => 'merchant_agent_chat', 'scope' => $scope, 'mode' => $mode, 'output_type' => $outputType, 'approval_mode' => $approvalMode, 'memory_used' => true, 'policy_used' => true]);
+        $blocks = mg_agent_chat_normalize_blocks($decoded['blocks'] ?? []);
+        if ($blocks === []) $blocks = mg_agent_skill_fallback_blocks($message, $skillKeys, $context);
+        mg_ai_merchant_record_usage_event($pdo, (int)$provider['id'], (int)$model['id'], $merchantId, null, 'completed', $rawResponse, ['source' => 'merchant_agent_chat', 'scope' => $scope, 'mode' => $mode, 'output_type' => $outputType, 'approval_mode' => $approvalMode, 'context_profile' => $contextProfile, 'deep_database_context' => $deepContext, 'effective_days' => $effectiveDays, 'model_policy' => 'admin_default_sonnet_haiku_only', 'memory_used' => true, 'memory_sources_used' => true, 'policy_used' => true, 'skills' => $skillKeys, 'thread_id' => $threadId, 'query_preview' => mg_ai_chat_clean($message, 220)]);
         $pdo->beginTransaction();
-        $meta = ['scope' => $scope, 'mode' => $mode, 'output_type' => $outputType, 'approval_mode' => $approvalMode];
+        $meta = ['scope' => $scope, 'mode' => $mode, 'output_type' => $outputType, 'approval_mode' => $approvalMode, 'context_profile' => $contextProfile, 'deep_database_context' => $deepContext, 'thread_public_id' => $threadId, 'skills' => $skillKeys, 'agent_name' => $profile['agent_name'] ?? 'Merchant Agent'];
         $userId = mg_ai_chat_record_message($pdo, $merchantId, 'user', $message, [], $meta);
-        $assistantId = mg_ai_chat_record_message($pdo, $merchantId, 'assistant', $reply, $cards, $meta + ['model' => (string)$model['model_key'], 'memory_snapshot' => $memory, 'policy_snapshot' => $policy]);
+        $assistantId = mg_ai_chat_record_message($pdo, $merchantId, 'assistant', $reply, $cards, $meta + ['blocks' => $blocks, 'model' => (string)$model['model_key'], 'memory_snapshot' => $memory, 'memory_sources_snapshot' => $memorySources, 'policy_snapshot' => $policy]);
         $pdo->commit();
         if ($approvalMode === 'review_queue') {
             mg_ai_chat_auto_bridge_cards($pdo, $user, $assistantId, $cards);
         }
         return [
-            'user_message' => ['id' => $userId, 'role' => 'user', 'body' => $message, 'cards' => [], 'scope' => $scope, 'mode' => $mode, 'output_type' => $outputType, 'approval_mode' => $approvalMode, 'created_at' => date('c')],
-            'assistant_message' => ['id' => $assistantId, 'role' => 'assistant', 'body' => $reply, 'cards' => mg_ai_chat_recent_messages($pdo, $merchantId, 1)[0]['cards'] ?? $cards, 'scope' => $scope, 'mode' => $mode, 'output_type' => $outputType, 'approval_mode' => $approvalMode, 'model' => (string)$model['model_key'], 'created_at' => date('c')],
-            'state' => mg_ai_chat_public_state($pdo, $merchantId) + ['memory' => mg_agent_memory_summary($pdo, $merchantId), 'policy' => $policy],
+            'user_message' => ['id' => $userId, 'role' => 'user', 'body' => $message, 'cards' => [], 'blocks' => [], 'scope' => $scope, 'mode' => $mode, 'output_type' => $outputType, 'approval_mode' => $approvalMode, 'context_profile' => $contextProfile, 'thread_public_id' => $threadId, 'created_at' => date('c')],
+            'assistant_message' => ['id' => $assistantId, 'role' => 'assistant', 'body' => $reply, 'cards' => mg_ai_chat_recent_messages($pdo, $merchantId, 1, $threadId)[0]['cards'] ?? $cards, 'blocks' => $blocks, 'scope' => $scope, 'mode' => $mode, 'output_type' => $outputType, 'approval_mode' => $approvalMode, 'context_profile' => $contextProfile, 'thread_public_id' => $threadId, 'model' => (string)$model['model_key'], 'created_at' => date('c')],
+            'state' => mg_ai_chat_public_state($pdo, $merchantId) + ['memory' => mg_agent_memory_summary($pdo, $merchantId), 'memory_sources' => mg_agent_memory_sources($pdo, $merchantId, 20), 'policy' => $policy],
         ];
     } catch (Throwable $error) {
         if ($pdo->inTransaction()) $pdo->rollBack();
-        mg_ai_merchant_record_usage_event($pdo, (int)$provider['id'], (int)$model['id'], $merchantId, null, 'failed', [], ['source' => 'merchant_agent_chat', 'scope' => $scope, 'mode' => $mode, 'output_type' => $outputType, 'approval_mode' => $approvalMode, 'error' => $error->getMessage(), 'memory_used' => true, 'policy_used' => true]);
-        mg_security_log('error', 'merchant.agent_chat.failed', 'Merchant agent chat failed.', ['exception_class' => $error::class, 'scope' => $scope, 'mode' => $mode, 'output_type' => $outputType, 'approval_mode' => $approvalMode], $merchantId);
+        mg_ai_merchant_record_usage_event($pdo, (int)$provider['id'], (int)$model['id'], $merchantId, null, 'failed', [], ['source' => 'merchant_agent_chat', 'scope' => $scope, 'mode' => $mode, 'output_type' => $outputType, 'approval_mode' => $approvalMode, 'context_profile' => $contextProfile, 'deep_database_context' => $deepContext, 'error' => $error->getMessage(), 'memory_used' => true, 'memory_sources_used' => true, 'policy_used' => true, 'skills' => $skillKeys, 'thread_id' => $threadId, 'query_preview' => mg_ai_chat_clean($message, 220)]);
+        mg_security_log('error', 'merchant.agent_chat.failed', 'Merchant agent chat failed.', ['exception_class' => $error::class, 'scope' => $scope, 'mode' => $mode, 'output_type' => $outputType, 'approval_mode' => $approvalMode, 'context_profile' => $contextProfile], $merchantId);
         mg_fail('Unable to run merchant agent chat: ' . $error->getMessage(), 500);
     }
 }

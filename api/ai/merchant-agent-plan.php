@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_ai.php';
 require_once dirname(__DIR__) . '/merchant/_merchant.php';
+require_once dirname(__DIR__, 2) . '/includes/merchant-automation-controls.php';
 require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-planner.php';
 
 $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
@@ -39,7 +40,7 @@ if ($method === 'GET') {
             [(int) $plan['id']],
             100
         );
-        mg_ok(['plan' => mg_ai_merchant_public_plan($plan, $items)]);
+        mg_ok(['plan' => mg_ai_merchant_public_plan($plan, $items), 'agent_autonomy' => mg_agent_autonomy_for_merchant($pdo, $merchantId)]);
     }
 
     $limit = max(1, min(50, (int) ($_GET['limit'] ?? 25)));
@@ -55,14 +56,14 @@ if ($method === 'GET') {
          LIMIT {$limit}"
     );
     $stmt->execute([$merchantId]);
-    mg_ok(['plans' => $stmt->fetchAll(PDO::FETCH_ASSOC) ?: []]);
+    mg_ok(['plans' => $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [], 'agent_autonomy' => mg_agent_autonomy_for_merchant($pdo, $merchantId)]);
 }
 
 if ($method === 'POST') {
     $user = mg_merchant_require_permission('merchant.ai.plan');
     $input = mg_input();
     mg_require_csrf_for_write($input);
-
+    mg_agent_autonomy_require_for_merchant($pdo, (int)$user['id'], 'review_queue', 'AI plan creation');
     $plan = mg_ai_merchant_create_plan($pdo, $user, $input);
     mg_ok(['plan' => $plan], 'Merchant AI plan created.', 201);
 }

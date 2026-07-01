@@ -1,0 +1,15 @@
+.mg-world-node .mg-world-avatar-badge{display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:18px;height:18px;border-radius:999px;background:#fff;color:#0f172a;border:1px solid rgba(15,23,42,.12);box-shadow:0 8px 18px rgba(15,23,42,.15);font-size:7px;font-weight:950;line-height:1;place-items:center;text-transform:uppercase;pointer-events:none;z-index:3}
+.mg-world-canvas[data-world-zoom-level="2"] .mg-world-node .mg-world-avatar-badge,.mg-world-canvas[data-world-zoom-level="3"] .mg-world-node .mg-world-avatar-badge{display:grid}
+.mg-world-node.is-merchant .mg-world-avatar-badge{background:#0f172a;color:#fff;border-color:rgba(255,255,255,.22)}
+.mg-world-node.is-avatar .mg-world-avatar-badge{background:#ecfeff;color:#0e7490;border-color:rgba(6,182,212,.28)}
+.mg-world-node.is-reward .mg-world-avatar-badge{background:#fffbeb;color:#b45309;border-color:rgba(245,158,11,.3)}
+.mg-world-node.is-claim .mg-world-avatar-badge{background:#fdf2f8;color:#be185d;border-color:rgba(219,39,119,.28)}
+.mg-world-identity-summary{display:grid;gap:8px;margin-top:10px;border:1px solid rgba(148,163,184,.2);border-radius:14px;background:#f8fafc;padding:10px}
+.mg-world-identity-summary strong{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;letter-spacing:-.02em}
+.mg-world-identity-summary strong span{display:inline-flex;border-radius:999px;background:#0f172a;color:#fff;font-size:9px;font-weight:950;letter-spacing:.08em;text-transform:uppercase;padding:4px 7px;white-space:nowrap}
+.mg-world-identity-summary ul{list-style:none;margin:0;padding:0;display:grid;gap:5px}
+.mg-world-identity-summary li{display:flex;justify-content:space-between;gap:10px;color:#64748b;font-size:11px;font-weight:850;line-height:1.25}
+.mg-world-identity-summary li b{color:#0f172a;text-align:right;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mg-world-identity-legend{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0 0;color:#64748b;font-size:10px;font-weight:950;text-transform:uppercase;letter-spacing:.08em}
+.mg-world-identity-legend span{display:inline-flex;align-items:center;gap:5px;border:1px solid rgba(148,163,184,.22);border-radius:999px;background:#fff;padding:6px 8px}.mg-world-identity-legend i{width:10px;height:10px;border-radius:999px;display:inline-block}.mg-world-identity-legend .is-owned i{background:#0f172a}.mg-world-identity-legend .is-public i{background:#2563eb}.mg-world-identity-legend .is-anon i{background:#06b6d4}.mg-world-identity-legend .is-reward i{background:#f59e0b}
+@media(max-width:760px){.mg-world-identity-legend{overflow:auto;flex-wrap:nowrap;padding-bottom:2px}.mg-world-identity-legend span{white-space:nowrap}}

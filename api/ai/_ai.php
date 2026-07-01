@@ -9,9 +9,46 @@ function mg_ai_public_id(string $prefix = 'ai'): string
     return $prefix . '_' . bin2hex(random_bytes(12));
 }
 
+function mg_ai_env_value(string $envVar): string
+{
+    return trim((string)(getenv($envVar) ?: ''));
+}
+
 function mg_ai_env_configured(string $envVar): bool
 {
-    return trim((string)(getenv($envVar) ?: '')) !== '';
+    return mg_ai_env_value($envVar) !== '';
+}
+
+function mg_ai_key_diagnostic(string $envVar): array
+{
+    $raw = (string)(getenv($envVar) ?: '');
+    $key = trim($raw);
+    $warnings = [];
+    if ($key === '') {
+        return [
+            'configured' => false,
+            'length' => 0,
+            'prefix' => '',
+            'suffix' => '',
+            'fingerprint' => '',
+            'warnings' => ['No key is loaded in this PHP request.'],
+        ];
+    }
+    if ($raw !== $key) $warnings[] = 'The loaded key had leading or trailing whitespace; the app trims it before sending.';
+    if (preg_match('/\s/', $key) === 1) $warnings[] = 'The loaded key contains whitespace inside the value.';
+    if (stripos($key, 'Bearer ') === 0) $warnings[] = 'Remove the Bearer prefix. Anthropic x-api-key expects only the raw key.';
+    if (str_contains($key, 'PASTE_') || str_contains($key, 'YOUR_')) $warnings[] = 'The loaded key still looks like a placeholder.';
+    if (str_contains($key, '<') || str_contains($key, '>') || str_contains($key, '&')) $warnings[] = 'The loaded key may contain copied HTML characters.';
+    if (str_starts_with($key, 'sk-ant-') === false) $warnings[] = 'The loaded key does not start with the expected Anthropic sk-ant- prefix.';
+    if (strlen($key) < 30) $warnings[] = 'The loaded key is unusually short.';
+    return [
+        'configured' => true,
+        'length' => strlen($key),
+        'prefix' => substr($key, 0, 12),
+        'suffix' => substr($key, -4),
+        'fingerprint' => substr(hash('sha256', $key), 0, 12),
+        'warnings' => $warnings,
+    ];
 }
 
 function mg_ai_limit_int(mixed $value, int $fallback, int $max = 1000000): int
@@ -50,12 +87,14 @@ function mg_ai_public_model(array $model): array
 function mg_ai_public_provider(PDO $pdo, array $provider): array
 {
     $models = array_map('mg_ai_public_model', mg_ai_models_for_provider($pdo, (int)$provider['id']));
+    $envVar = (string)$provider['env_var_name'];
     return [
         'id' => (string)$provider['public_id'],
         'provider_key' => (string)$provider['provider_key'],
         'display_name' => (string)$provider['display_name'],
-        'env_var_name' => (string)$provider['env_var_name'],
-        'configured' => mg_ai_env_configured((string)$provider['env_var_name']),
+        'env_var_name' => $envVar,
+        'configured' => mg_ai_env_configured($envVar),
+        'key_diagnostic' => (string)$provider['provider_key'] === 'anthropic' ? mg_ai_key_diagnostic($envVar) : null,
         'enabled' => (bool)$provider['enabled'],
         'rate_limit_per_minute' => (int)$provider['rate_limit_per_minute'],
         'rate_limit_per_hour' => (int)$provider['rate_limit_per_hour'],

@@ -8,8 +8,8 @@ $page_title = 'Merchant Store Canvas | Microgifter';
 $page_section = 'agent';
 $header_mode = 'agent';
 $agent_tab = 'store-canvas';
-$page_styles = ['/assets/css/merchant-canvas.css','/assets/css/merchant-canvas-rewards.css','/assets/css/merchant-canvas-phase2.css','/assets/css/merchant-canvas-motion.css','/assets/css/merchant-canvas-drawer-layer.css','/assets/css/merchant-canvas-settings-drawers.css','/assets/css/merchant-canvas-drawer-fixes.css'];
-$page_scripts = ['/assets/js/merchant-canvas-trigger-persistence.js','/assets/js/merchant-canvas.js','/assets/js/merchant-canvas-rewards.js','/assets/js/merchant-canvas-motion.js','/assets/js/merchant-canvas-automation-rules.js','/assets/js/merchant-canvas-merchant-settings.js','/assets/js/merchant-canvas-drawer-coordinator.js'];
+$page_styles = ['/assets/css/merchant-canvas.css','/assets/css/merchant-canvas-rewards.css','/assets/css/merchant-canvas-phase2.css','/assets/css/merchant-canvas-motion.css','/assets/css/merchant-canvas-drawer-layer.css','/assets/css/merchant-canvas-settings-drawers.css','/assets/css/merchant-canvas-drawer-fixes.css','/assets/css/merchant-canvas-customer-tabs.css','/assets/css/merchant-canvas-intelligence.css','/assets/css/merchant-canvas-store-health.css','/assets/css/merchant-canvas-mobile-icons.css','/assets/css/sponsored-campaign-card.css'];
+$page_scripts = ['/assets/js/merchant-canvas.js','/assets/js/merchant-canvas-rewards.js','/assets/js/merchant-canvas-motion.js','/assets/js/merchant-canvas-automation-rules.js','/assets/js/merchant-canvas-merchant-settings.js','/assets/js/merchant-canvas-drawer-coordinator.js','/assets/js/merchant-canvas-customer-tabs.js','/assets/js/merchant-canvas-intelligence.js','/assets/js/merchant-canvas-store-health.js','/assets/js/store-health-completion-events.js','/assets/js/merchant-canvas-mobile-icons.js','/assets/js/sponsored-campaign-card.js'];
 $page_manifest = [
     'id' => 'merchant-canvas',
     'title' => $page_title,
@@ -63,20 +63,29 @@ require __DIR__ . '/includes/header.php';
       </article>
     <?php else: ?>
       <section class="mg-canvas-shell">
+        <div class="mg-canvas-command-strip" aria-label="Store Canvas summary">
+          <article><span>Inside Now</span><strong data-canvas-active-count>0</strong></article>
+          <article><span>Today Entries</span><strong data-canvas-today-entries>0</strong></article>
+          <article><span>Canvas Events</span><strong data-canvas-today-events>0</strong></article>
+          <article><span>History Rows</span><strong data-canvas-history-rows>0</strong></article>
+        </div>
+
         <div class="mg-canvas-grid mg-canvas-grid-full">
           <section class="mg-canvas-stage" aria-label="Live store canvas">
             <span class="mg-canvas-live-pill mg-canvas-live-pill-hidden" data-canvas-live-pill>Checking database</span>
 
-            <div class="mg-canvas-command-strip" aria-label="Store Canvas summary">
-              <article><span>Inside now</span><strong data-canvas-active-count>0</strong></article>
-              <article><span>Today entries</span><strong data-canvas-today-entries>0</strong></article>
-              <article><span>Canvas events</span><strong data-canvas-today-events>0</strong></article>
-              <article><span>History rows</span><strong data-canvas-history-rows>0</strong></article>
-            </div>
-
             <div class="mg-canvas-state-banner mg-canvas-state-hidden" data-canvas-state>
               Database check pending.
             </div>
+
+            <details class="mg-canvas-diagnostics" data-canvas-diagnostics>
+              <summary>
+                <span>Database diagnostics</span>
+                <strong data-canvas-health-status>Not checked</strong>
+              </summary>
+              <div class="mg-canvas-health-grid" data-canvas-health></div>
+              <button type="button" class="mg-btn mg-btn-secondary" data-canvas-health-refresh>Run diagnostics</button>
+            </details>
 
             <div class="mg-canvas-map" data-canvas-map>
               <div class="mg-canvas-agent-node mg-canvas-merchant-node" data-merchant-avatar-settings>
@@ -92,6 +101,8 @@ require __DIR__ . '/includes/header.php';
               </div>
               <div class="mg-canvas-avatar-layer" data-canvas-customers></div>
               <div class="mg-canvas-trigger-layer" data-canvas-triggers></div>
+              <div class="mg-sponsored-map-layer" data-mg-ad-placement="world_canvas_sponsored_pin" data-mg-ad-limit="5" aria-label="Sponsored World Canvas pins"></div>
+              <div class="mg-sponsored-map-layer" data-mg-ad-placement="target_zone_sponsored_drop" data-mg-ad-limit="5" aria-label="Sponsored Target Zone drops"></div>
               <article class="mg-canvas-empty-state" data-canvas-empty>
                 <span>No avatars inside yet</span>
                 <p data-canvas-empty-copy>Customer avatars will appear here when shoppers enter from merchant feed posts.</p>
@@ -116,7 +127,7 @@ require __DIR__ . '/includes/header.php';
     </div>
     <form class="mg-canvas-message-form" data-message-form>
       <label for="mg-canvas-message">Direct message</label>
-      <textarea id="mg-canvas-message" name="message" rows="4" maxlength="1000" placeholder="Send a message to this customer's Messages center..." required disabled></textarea>
+      <textarea id="mg-canvas-message" name="message" rows="4" maxlength="1000" placeholder="Send a direct message to this customer..." required disabled></textarea>
       <button class="mg-btn mg-btn-primary" type="submit" disabled data-message-submit>Send Message</button>
       <p class="mg-canvas-form-status" data-message-status role="status"></p>
     </form>

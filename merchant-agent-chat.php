@@ -4,32 +4,45 @@ require_once __DIR__ . '/includes/app.php';
 $page_title = 'Merchant Agent Chat | Microgifter';
 $page_section = 'merchant';
 $header_mode = 'account';
-$page_styles = ['/assets/css/merchant-workspace.css','/assets/css/merchant-agent-chat.css','/assets/css/merchant-agent-chat-followup.css'];
-$page_scripts = ['/assets/js/merchant-agent-chat.js'];
-$user = mg_current_user();
-$merchantNav = [
-  'agent_chat' => ['Agent Chat','Merchant agent conversation','/merchant-agent-chat.php','Agents'],
-  'automation' => ['Automation','Agent controls','/merchant-automation.php','Agents'],
-  'agent_monitor' => ['Agent Monitor','Agent activity','/merchant-agent-monitor.php','Agents'],
-  'agent_approvals' => ['Agent Review','Review queue','/merchant-agent-approvals.php','Agents'],
-  'agent_execution' => ['Agent Execution','Approved action queue','/merchant-agent-execution.php','Agents'],
-  'agent_messages' => ['Agent Messages','Message drafts','/merchant-agent-messages.php','Agents'],
+$agent_tab = 'agent_chat';
+$page_styles = [
+    '/assets/css/merchant-workspace.css',
+    '/assets/css/merchant-agent-chat.css',
+    '/assets/css/merchant-agent-chat-followup.css',
+    '/assets/css/merchant-agent-chat-skills.css',
+    '/assets/css/merchant-agent-chat-mobile.css',
+    '/assets/css/merchant-agent-chat-cleanup.css',
+    '/assets/css/merchant-agent-chat-flat-layout.css',
+    '/assets/css/merchant-agent-chat-desktop.css',
+    '/assets/css/merchant-agent-chat-mobile-offset.css',
+    '/assets/css/merchant-agent-chat-voice.css',
+    '/assets/css/merchant-agent-chat-control-panel.css',
+    '/assets/css/merchant-agent-memory-menu.css',
+    '/assets/css/sponsored-campaign-card.css',
 ];
-$appSidebarNav = [];
-foreach ($merchantNav as $key => $item) {
-    $appSidebarNav[$key] = ['section' => $item[3] ?? '', 'label' => $item[0], 'detail' => $item[1], 'href' => $item[2], 'visible' => true, 'active' => $key === 'agent_chat'];
-}
-$appSidebarVariant = 'merchant';
-$appSidebarLabel = 'Agents';
-$appSidebarActive = 'agent_chat';
-$appSidebarCompact = true;
+$page_scripts = [
+    '/assets/js/merchant-agent-chat.js',
+    '/assets/js/merchant-agent-chat-voice.js',
+    '/assets/js/merchant-agent-chat-speech-results.js',
+    '/assets/js/merchant-agent-chat-control-panel.js',
+    '/assets/js/merchant-agent-memory-menu.js',
+    '/assets/js/merchant-agent-chat-scroll-latest.js',
+    '/assets/js/merchant-agent-chat-json-format.js',
+    '/assets/js/merchant-agent-chat-mobile.js',
+    '/assets/js/sponsored-campaign-card.js',
+];
+$page_scripts[] = '/assets/js/merchant-agent-chat-admin-mode.js';
+$user = mg_current_user();
 require __DIR__ . '/includes/header.php';
 ?>
-<section class="mg-app-shell mg-merchant-app mg-agent-chat-app" data-merchant-app data-merchant-view="agent_chat" data-sidebar-contract="mg-app-sidebar">
-  <?php require __DIR__ . '/includes/app-sidebar.php'; ?>
+<section class="mg-app-shell mg-merchant-app mg-agent-chat-app mg-agent-chat-app-no-nav" data-merchant-app data-merchant-view="agent_chat" data-sidebar-contract="mg-app-sidebar">
+  <?php require __DIR__ . '/includes/agent-sidebar.php'; ?>
   <main class="mg-app-workspace mg-merchant-main">
     <?php if (!$user): ?>
-      <section class="mg-app-panel"><div class="mg-app-panel-head"><div><h2>Merchant access</h2><p>Sign in to use merchant agent chat.</p></div></div><div class="mg-app-panel-body"><a class="mg-btn mg-btn-primary" href="/signin.php">Sign in</a></div></section>
+      <section class="mg-app-panel">
+        <div class="mg-app-panel-head"><div><h2>Merchant access</h2><p>Sign in to use merchant agent chat.</p></div></div>
+        <div class="mg-app-panel-body"><a class="mg-btn mg-btn-primary" href="/signin.php">Sign in</a></div>
+      </section>
     <?php else: ?>
       <?php require __DIR__ . '/includes/merchant-agent-chat-view.php'; ?>
     <?php endif; ?>

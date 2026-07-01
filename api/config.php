@@ -54,6 +54,43 @@ if (!function_exists('mg_array_deep_merge')) {
     }
 }
 
+if (!function_exists('mg_local_secret_value')) {
+    function mg_local_secret_value(array $config, array $paths): string
+    {
+        foreach ($paths as $path) {
+            $cursor = $config;
+            foreach ($path as $key) {
+                if (!is_array($cursor) || !array_key_exists($key, $cursor)) {
+                    $cursor = null;
+                    break;
+                }
+                $cursor = $cursor[$key];
+            }
+            if (is_scalar($cursor)) {
+                $value = trim((string) $cursor);
+                if ($value !== '') {
+                    return $value;
+                }
+            }
+        }
+        return '';
+    }
+}
+
+if (!function_exists('mg_apply_local_secret_env')) {
+    function mg_apply_local_secret_env(string $envKey, string $value, array $placeholders = []): void
+    {
+        $value = trim($value);
+        if ($value === '' || in_array($value, $placeholders, true)) {
+            return;
+        }
+        $current = trim((string) (getenv($envKey) ?: ''));
+        if ($current === '' || in_array($current, $placeholders, true)) {
+            putenv($envKey . '=' . $value);
+        }
+    }
+}
+
 $baseUrl = rtrim((string) mg_env('MG_BASE_URL', ''), '/');
 $appEnv = strtolower((string) mg_env('MG_APP_ENV', 'production'));
 $runtimeProfile = strtolower((string) mg_env('MG_RUNTIME_PROFILE', 'hostgator'));
@@ -90,6 +127,9 @@ $config = [
         'public_endpoint' => (string) mg_env('MG_MEDIA_PUBLIC_ENDPOINT', '/api/public/media.php'),
         'require_persistent' => mg_env_bool('MG_REQUIRE_PERSISTENT_MEDIA_STORAGE', $appEnv === 'production'),
         'legacy_root' => $applicationRoot,
+    ],
+    'ai' => [
+        'anthropic_api_key' => (string) mg_env('MG_ANTHROPIC_API_KEY', ''),
     ],
     'features' => [
         'polling_notifications' => mg_env_bool('MG_ENABLE_POLLING_NOTIFICATIONS', true),
@@ -129,11 +169,50 @@ $config = [
 ];
 
 $localConfigFile = __DIR__ . '/config.local.php';
+$localScalarSecrets = [];
 if (is_file($localConfigFile)) {
     $localConfig = require $localConfigFile;
+    if (isset($mgAnthropicCredential) && is_scalar($mgAnthropicCredential)) {
+        $localScalarSecrets['anthropic_api_key'] = trim((string) $mgAnthropicCredential);
+    }
+    if (isset($mgPaymentCredentialKey) && is_scalar($mgPaymentCredentialKey)) {
+        $localScalarSecrets['payment_credential_key'] = trim((string) $mgPaymentCredentialKey);
+    }
     if (is_array($localConfig)) {
         $config = mg_array_deep_merge($config, $localConfig);
     }
 }
+
+$anthropicPlaceholders = [
+    'PASTE_ANTHROPIC_CREDENTIAL_HERE',
+    'PASTE_ANTHROPIC_API_KEY_HERE',
+    'ANTHROPIC_API_KEY_GOES_HERE',
+    'sk-ant-api03-YOUR-REAL-KEY-HERE',
+];
+
+$anthropicKey = mg_local_secret_value($config, [
+    ['ai', 'anthropic_api_key'],
+    ['ai', 'anthropic_credential'],
+    ['anthropic', 'api_key'],
+    ['anthropic', 'credential'],
+]);
+$localAnthropicVariable = $localScalarSecrets['anthropic_api_key'] ?? '';
+if ($localAnthropicVariable !== '' && !in_array($localAnthropicVariable, $anthropicPlaceholders, true)) {
+    $anthropicKey = $localAnthropicVariable;
+}
+mg_apply_local_secret_env('MG_ANTHROPIC_API_KEY', $anthropicKey, $anthropicPlaceholders);
+
+$paymentPlaceholders = [
+    'PASTE_GENERATED_PAYMENT_CREDENTIAL_KEY_HERE',
+];
+$paymentCredentialKey = mg_local_secret_value($config, [
+    ['payments', 'credential_key'],
+    ['security', 'payment_credential_key'],
+]);
+$localPaymentVariable = $localScalarSecrets['payment_credential_key'] ?? '';
+if ($localPaymentVariable !== '' && !in_array($localPaymentVariable, $paymentPlaceholders, true)) {
+    $paymentCredentialKey = $localPaymentVariable;
+}
+mg_apply_local_secret_env('MG_PAYMENT_CREDENTIAL_KEY', $paymentCredentialKey, $paymentPlaceholders);
 
 return $config;

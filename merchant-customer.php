@@ -5,7 +5,7 @@ $page_title='Customer Profile | Microgifter';
 $page_section='merchant';
 $header_mode='account';
 $page_styles=['/assets/css/merchant-workspace.css','/assets/css/merchant-customer-profile.css','/assets/css/merchant-followup-tasks.css','/assets/css/merchant-crm-retention-playbooks.css','/assets/css/merchant-customer-agent-timeline.css'];
-$page_scripts=['/assets/js/merchant-customer-profile.js','/assets/js/merchant-customer-profile-actions-fix.js','/assets/js/merchant-customer-retention-recommendations.js','/assets/js/merchant-customer-agent-timeline.js'];
+$page_scripts=['/assets/js/merchant-customer-profile.js','/assets/js/merchant-customer-profile-fallback.js','/assets/js/merchant-customer-profile-actions-fix.js','/assets/js/merchant-customer-retention-recommendations.js','/assets/js/merchant-customer-agent-timeline.js','/assets/js/merchant-customer-profile-timeout.js','/assets/js/merchant-customer-profile-lite-guard.js','/assets/js/store-health-completion-events.js'];
 $user=mg_current_user();
 $merchantNav=[
  'overview'=>['Overview','Workspace health','/merchant.php','Overview'],
@@ -32,7 +32,7 @@ require __DIR__ . '/includes/header.php';
   <main class="mg-app-workspace mg-merchant-main mg-customer-profile-main">
     <?php if(!$user): ?>
       <section class="mg-app-panel"><div class="mg-app-panel-head"><div><h2>Merchant access</h2><p>Sign in to open this customer profile.</p></div></div><div class="mg-app-panel-body"><a class="mg-btn mg-btn-primary" href="/signin.php">Sign in</a></div></section>
-    <?php else: require __DIR__ . '/includes/merchant-customer-profile-view.php'; endif; ?>
+    <?php else: require __DIR__ . '/includes/merchant-customer-profile-server-fallback.php'; require __DIR__ . '/includes/merchant-customer-profile-view.php'; endif; ?>
   </main>
 </section>
 <?php require __DIR__ . '/includes/footer.php'; ?>

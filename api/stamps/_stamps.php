@@ -124,7 +124,17 @@ function mg_stamp_post_entry(PDO $pdo, int $accountUserId, ?int $actorUserId, st
     $balance = mg_stamp_balance($pdo, $accountUserId, true);
     $current = (int)($balance['balance'] ?? 0);
     $after = $current + $delta;
-    if (($options['allow_negative'] ?? false) !== true && $after < 0) mg_fail('Insufficient Stamps.', 409, ['balance' => $current, 'required' => abs($delta)]);
+    if (($options['allow_negative'] ?? false) !== true && $after < 0) {
+        $required = abs($delta);
+        mg_fail('Insufficient Stamps. Purchase Stamps before sending rewards.', 402, [
+            'code' => 'insufficient_stamps',
+            'balance' => $current,
+            'required' => $required,
+            'shortfall' => max(0, $required - $current),
+            'purchase_url' => '/merchant-stamps.php#stamp-purchases',
+            'action_key' => isset($options['action_key']) ? (string)$options['action_key'] : null,
+        ]);
+    }
 
     $entryType = in_array($entryType, ['credit','debit','void','adjustment'], true) ? $entryType : 'adjustment';
     $stampValue = max(0, (int)($options['stamp_value'] ?? abs($delta)));

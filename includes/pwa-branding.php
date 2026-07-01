@@ -181,12 +181,58 @@ function mg_pwa_branding_upload(PDO $pdo, array $file, string $role, int $userId
     return mg_pwa_branding_payload($pdo);
 }
 
+function mg_pwa_branding_manifest_icon(array $slot, string $sizeOverride = '', string $purposeOverride = ''): ?array
+{
+    if (empty($slot['asset']) || !is_array($slot['asset']) || empty($slot['asset']['url'])) return null;
+    $purpose = $purposeOverride !== '' ? $purposeOverride : ((string)($slot['purpose'] ?? 'any'));
+    if (!in_array($purpose, ['any', 'maskable', 'monochrome'], true)) $purpose = 'any';
+    $sizes = $sizeOverride !== '' ? $sizeOverride : (string)($slot['sizes'] ?? '512x512');
+    return [
+        'src' => (string)$slot['asset']['url'],
+        'sizes' => $sizes,
+        'type' => (string)($slot['asset']['mime_type'] ?? 'image/png') ?: 'image/png',
+        'purpose' => $purpose,
+    ];
+}
+
 function mg_pwa_branding_manifest(PDO $pdo): array
 {
-    $payload = mg_pwa_branding_payload($pdo); $s = $payload['settings']; $a = $payload['assets']; $icons = [];
-    foreach (['app_icon_192','app_icon_512','maskable_icon_512'] as $role) if (!empty($a[$role]['asset'])) $icons[] = ['src'=>$a[$role]['asset']['url'],'sizes'=>$a[$role]['sizes'],'type'=>$a[$role]['asset']['mime_type'] ?: 'image/png','purpose'=>$a[$role]['purpose']==='maskable'?'maskable':'any'];
+    $payload = mg_pwa_branding_payload($pdo);
+    $s = $payload['settings'];
+    $a = $payload['assets'];
+    $icons = [];
+    $seen = [];
+    $addIcon = static function (?array $icon) use (&$icons, &$seen): void {
+        if (!$icon || empty($icon['src'])) return;
+        $key = $icon['src'] . '|' . $icon['sizes'] . '|' . $icon['purpose'];
+        if (isset($seen[$key])) return;
+        $seen[$key] = true;
+        $icons[] = $icon;
+    };
+
+    $addIcon(mg_pwa_branding_manifest_icon($a['app_icon_192'] ?? [], '192x192', 'any'));
+    $addIcon(mg_pwa_branding_manifest_icon($a['app_icon_512'] ?? [], '512x512', 'any'));
+    $addIcon(mg_pwa_branding_manifest_icon($a['maskable_icon_512'] ?? [], '512x512', 'maskable'));
+    $addIcon(mg_pwa_branding_manifest_icon($a['apple_touch_icon'] ?? [], '180x180', 'any'));
+
+    if (!$icons) {
+        $addIcon(mg_pwa_branding_manifest_icon($a['splash_logo'] ?? [], '512x512', 'any'));
+        $addIcon(mg_pwa_branding_manifest_icon($a['notification_icon'] ?? [], '192x192', 'any'));
+    }
+
     if (!$icons) $icons[] = ['src'=>'/images/logo_main_drk.png','sizes'=>'192x192','type'=>'image/png','purpose'=>'any maskable'];
-    return ['name'=>$s['app_name'],'short_name'=>$s['short_name'],'description'=>$s['description'],'start_url'=>$s['start_url'],'scope'=>$s['scope'],'display'=>$s['display'],'background_color'=>$s['background_color'],'theme_color'=>$s['theme_color'],'icons'=>$icons];
+
+    return [
+        'name'=>$s['app_name'],
+        'short_name'=>$s['short_name'],
+        'description'=>$s['description'],
+        'start_url'=>$s['start_url'],
+        'scope'=>$s['scope'],
+        'display'=>$s['display'],
+        'background_color'=>$s['background_color'],
+        'theme_color'=>$s['theme_color'],
+        'icons'=>$icons,
+    ];
 }
 
 function mg_pwa_branding_public_asset(PDO $pdo, string $id): ?array

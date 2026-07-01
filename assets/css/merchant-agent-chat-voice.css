@@ -1,0 +1,129 @@
+.mg-agent-chat-composer-shell{
+  grid-template-columns:auto minmax(0,1fr) auto auto!important;
+}
+.mg-agent-chat-composer-shell .mg-agent-chat-voice{
+  display:grid;
+  place-items:center;
+  flex:0 0 auto;
+  width:52px;
+  height:52px;
+  border:1px solid #dbe3ef;
+  border-radius:999px;
+  background:#fff;
+  color:#0f172a;
+  font-size:12px;
+  font-weight:950;
+  letter-spacing:.03em;
+  text-transform:uppercase;
+  cursor:pointer;
+  box-shadow:0 10px 28px rgba(15,23,42,.055);
+  transition:background .18s ease,border-color .18s ease,color .18s ease,box-shadow .18s ease,transform .18s ease;
+}
+.mg-agent-chat-composer-shell .mg-agent-chat-voice:hover,
+.mg-agent-chat-composer-shell .mg-agent-chat-voice:focus-visible{
+  border-color:#bfdbfe;
+  background:#eff6ff;
+  color:#1d4ed8;
+  outline:none;
+}
+.mg-agent-chat-composer-shell .mg-agent-chat-voice.is-listening{
+  border-color:#fecaca;
+  background:#fff1f2;
+  color:#dc2626;
+  box-shadow:0 0 0 5px rgba(220,38,38,.08),0 12px 30px rgba(220,38,38,.15);
+  animation:mgAgentVoicePulse 1.2s ease-in-out infinite;
+}
+.mg-agent-chat-composer-shell .mg-agent-chat-voice:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+  box-shadow:none;
+  animation:none;
+}
+.mg-agent-chat-composer-shell .mg-agent-chat-voice.is-unsupported{
+  display:none!important;
+}
+.mg-agent-context-card .mg-agent-profile-fields{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto!important;
+  gap:10px!important;
+  align-items:end!important;
+  margin-bottom:12px!important;
+}
+.mg-agent-context-card .mg-agent-profile-fields label{
+  min-width:0!important;
+  margin:0!important;
+}
+.mg-agent-context-card .mg-agent-profile-fields input{
+  width:100%!important;
+  min-height:44px!important;
+  border:1px solid #dbe3ef!important;
+  border-radius:14px!important;
+  background:#fff!important;
+  padding:0 13px!important;
+  color:#0f172a!important;
+  font:inherit!important;
+  font-weight:850!important;
+  box-shadow:none!important;
+}
+.mg-agent-context-card .mg-agent-profile-fields .mg-agent-rail-btn{
+  min-height:44px!important;
+  height:44px!important;
+  margin:0!important;
+  white-space:nowrap!important;
+  border-radius:14px!important;
+}
+.mg-agent-speech-settings{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto!important;
+  gap:8px 10px!important;
+  align-items:center!important;
+  margin:0 0 14px!important;
+  padding:12px!important;
+  border:1px solid #dbe3ef!important;
+  border-radius:16px!important;
+  background:#f8fafc!important;
+}
+.mg-agent-speech-toggle{
+  display:flex!important;
+  align-items:center!important;
+  gap:9px!important;
+  margin:0!important;
+  color:#0f172a!important;
+  font-size:12px!important;
+  font-weight:950!important;
+}
+.mg-agent-speech-toggle input{
+  width:18px!important;
+  height:18px!important;
+  margin:0!important;
+}
+.mg-agent-speech-stop{
+  min-height:34px!important;
+  padding:0 12px!important;
+  border-radius:12px!important;
+}
+.mg-agent-speech-settings small{
+  grid-column:1/-1;
+  color:#64748b;
+  font-size:11px;
+  font-weight:800;
+  line-height:1.35;
+}
+@keyframes mgAgentVoicePulse{
+  0%,100%{transform:scale(1)}
+  50%{transform:scale(1.05)}
+}
+@media(max-width:760px){
+  .mg-agent-chat-composer-shell{grid-template-columns:auto minmax(0,1fr) auto auto!important;gap:8px!important}
+  .mg-agent-chat-composer-shell .mg-agent-chat-voice{width:48px;height:48px;font-size:11px}
+  .mg-agent-context-card .mg-agent-profile-fields{grid-template-columns:1fr!important}
+  .mg-agent-context-card .mg-agent-profile-fields .mg-agent-rail-btn{width:100%!important}
+  .mg-agent-speech-settings{grid-template-columns:1fr!important}
+  .mg-agent-speech-stop{width:100%!important}
+}
+@media(max-width:420px){
+  .mg-agent-chat-composer-shell{grid-template-columns:auto minmax(0,1fr) auto!important}
+  .mg-agent-chat-composer-shell .mg-agent-chat-voice{grid-column:3;grid-row:1}
+  .mg-agent-chat-composer-shell .mg-agent-chat-send{grid-column:3;grid-row:2}
+  .mg-agent-chat-composer-shell textarea{grid-row:1/3}
+}

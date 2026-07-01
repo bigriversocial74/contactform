@@ -93,6 +93,13 @@ function mg_anthropic_extract_json_object(string $text): array
         return $decoded;
     }
 
+    if (preg_match('/```(?:json)?\s*(\{.*\})\s*```/is', $trimmed, $match) === 1) {
+        $decoded = json_decode(trim($match[1]), true);
+        if (is_array($decoded)) {
+            return $decoded;
+        }
+    }
+
     $start = strpos($trimmed, '{');
     $end = strrpos($trimmed, '}');
     if ($start === false || $end === false || $end <= $start) {

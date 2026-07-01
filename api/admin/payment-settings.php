@@ -16,6 +16,18 @@ function mg_admin_payment_settings_payload(PDO $pdo, string $mode): array
     return $payload;
 }
 
+function mg_admin_payment_readiness_blockers(array $readiness): array
+{
+    $blockers = [];
+    foreach (['publishable_key', 'secret_key', 'webhook_secret'] as $key) {
+        $check = $readiness['checks'][$key] ?? null;
+        if (is_array($check) && empty($check['ok'])) {
+            $blockers[] = (string)($check['label'] ?? $key) . ': ' . (string)($check['detail'] ?? 'Not ready.');
+        }
+    }
+    return $blockers;
+}
+
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
     mg_rate_limit('admin.payment_settings.read', 'user:' . $userId, 120, 60);
     $mode = (string)($_GET['mode'] ?? mg_payment_mode()) === 'live' ? 'live' : 'test';
@@ -37,19 +49,15 @@ try {
     }
 
     $pdo->beginTransaction();
-    $existing = mg_payment_platform_credential_row($pdo, 'stripe', $mode, true);
-    if (trim((string)($input['publishable_key'] ?? '')) === '' && $existing) {
-        $input['publishable_key'] = (string)($existing['publishable_key'] ?? '');
-    }
-    if (trim((string)($input['connect_client_id'] ?? '')) === '' && $existing) {
-        $input['connect_client_id'] = (string)($existing['connect_client_id'] ?? '');
-    }
-
     $input['provider_key'] = 'stripe';
     $saved = mg_payment_save_platform_config($pdo, $input, $userId);
     $pdo->commit();
 
     $readiness = mg_admin_payment_settings_payload($pdo, (string)$saved['mode']);
+    $blockers = mg_admin_payment_readiness_blockers($readiness);
+    if ($blockers) {
+        $readiness['save_warning'] = 'Settings were saved for ' . $saved['mode'] . ' mode, but Stripe is not ready yet. ' . implode(' ', $blockers);
+    }
     mg_audit('admin.payment_settings_updated', 'payment_platform_credentials', [
         'provider' => 'stripe',
         'mode' => $saved['mode'],
@@ -67,7 +75,7 @@ try {
 
     header('Cache-Control: private, no-store, max-age=0');
     header('Vary: Cookie, Authorization');
-    mg_ok($readiness, 'Stripe payment settings saved.');
+    mg_ok($readiness, $blockers ? 'Settings saved for ' . $saved['mode'] . ' mode, but Stripe is not ready yet.' : 'Stripe payment settings saved.');
 } catch (InvalidArgumentException|MgPaymentCredentialException $error) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();

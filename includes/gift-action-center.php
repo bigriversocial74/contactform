@@ -5,11 +5,23 @@ $giftCenterTitle=['inbox'=>'Inbox','sent'=>'Sent','claimed'=>'Claimed'][$giftCen
 $giftCenterDemoEnabled=mg_has_role('super_admin');
 ?>
 <link rel="stylesheet" href="/assets/css/gift-action-center-modal-fix.css">
+<link rel="stylesheet" href="/assets/css/gift-envelope-presentation.css">
 <section class="mg-app-shell mg-gift-center-page" data-gift-center data-initial-folder="<?= mg_e($giftCenterFolder) ?>" data-demo-enabled="<?= $giftCenterDemoEnabled?'true':'false' ?>">
   <?php require __DIR__ . '/agent-sidebar.php'; ?>
 
   <div class="mg-app-workspace mg-gift-center-workspace">
     <section class="mg-gift-center-main" aria-label="<?= mg_e($giftCenterTitle) ?> gifts">
+      <div class="mg-gift-toolbar">
+        <div class="mg-gift-toolbar-actions">
+          <input type="search" data-gift-search placeholder="Search gifts, merchants, people, status…" aria-label="Search gifts">
+          <button class="mg-btn mg-btn-secondary" type="button" data-gift-refresh>Refresh</button>
+        </div>
+      </div>
+      <?php if ($giftCenterFolder === 'inbox'): ?>
+        <aside class="mg-gift-inbox-sponsored" aria-label="Sponsored inbox recommendation">
+          <section class="mg-sponsored-placement" data-mg-ad-placement="inbox_recommendation" data-mg-ad-limit="1" aria-label="Sponsored recommendation"></section>
+        </aside>
+      <?php endif; ?>
       <div class="mg-gift-feed-column">
         <div class="mg-gift-list" data-gift-list></div>
       </div>
@@ -35,5 +47,6 @@ $giftCenterDemoEnabled=mg_has_role('super_admin');
   </section>
 </section>
 <script src="/assets/js/gift-action-center-actions.js" defer></script>
-<script src="/assets/js/gift-action-center-claim-qr.js" defer></script>
+<script src="/assets/js/gift-action-center-claim-restore.js" defer></script>
 <script src="/assets/js/gift-action-center-modal-portal.js" defer></script>
+<script src="/assets/js/gift-envelope-presentation.js" defer></script>

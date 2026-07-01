@@ -190,6 +190,17 @@ try {
 
     mg_public_campaign_enforce_reward_limits($pdo, $campaign, $userId, $email);
     $walletPublicId = mg_public_campaign_engage_uuid();
+    $stampLedger = mg_public_campaign_debit_reward_stamp($pdo, $campaign, $walletPublicId, $source, [
+        'contact_id' => (string)($contact['public_id'] ?? ''),
+        'email' => $email,
+        'generic_engagement' => true,
+    ]);
+    $walletMetadata = [
+        'campaign_type' => $campaignType,
+        'reward_template_id' => (string)$campaign['reward_template_public_id'],
+        'generic_engagement' => true,
+        'stamp_ledger_entry_id' => $stampLedger['entry']['entry_id'] ?? null,
+    ];
     $walletStmt = $pdo->prepare('INSERT INTO wallet_items (public_id,user_id,contact_id,merchant_user_id,reward_template_id,campaign_id,source_type,source_id,status,value_cents_snapshot,currency_snapshot,title_snapshot,metadata_json,issued_at,expires_at,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),?,NOW(),NOW())');
     $walletStmt->execute([
         $walletPublicId,
@@ -204,7 +215,7 @@ try {
         (int)($campaign['value_amount_cents'] ?? 0),
         (string)($campaign['currency'] ?? 'USD'),
         (string)$campaign['reward_template_title'],
-        json_encode(['campaign_type' => $campaignType, 'reward_template_id' => (string)$campaign['reward_template_public_id'], 'generic_engagement' => true], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+        json_encode($walletMetadata, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
         $expiresAt,
     ]);
     $walletDbId = (int)$pdo->lastInsertId();
@@ -218,7 +229,7 @@ try {
         $walletDbId,
         $contactId ?: null,
         'wallet_item.issued',
-        json_encode(['wallet_item_id' => $walletPublicId, 'campaign_type' => $campaignType, 'source' => $source, 'pppm_bridge' => $bridge, 'merchant_crm' => $crm, 'merchant_notification' => $merchantNotification], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+        json_encode(['wallet_item_id' => $walletPublicId, 'campaign_type' => $campaignType, 'source' => $source, 'pppm_bridge' => $bridge, 'merchant_crm' => $crm, 'merchant_notification' => $merchantNotification, 'stamp_ledger_entry_id' => $stampLedger['entry']['entry_id'] ?? null], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
     ]);
 
     $pdo->commit();
@@ -235,6 +246,7 @@ try {
         'pppm_bridge' => $bridge,
         'merchant_crm' => $crm,
         'merchant_notification' => $merchantNotification,
+        'stamp_ledger' => $stampLedger,
     ], (string) ($campaign['success_message'] ?? 'Campaign reward issued.'), 201);
 } catch (Throwable $error) {
     if ($pdo->inTransaction()) $pdo->rollBack();

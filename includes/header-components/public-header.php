@@ -6,14 +6,18 @@ require_once dirname(__DIR__) . '/market/public-market-ticker.php';
 $public_header_config = is_array($page_manifest['public_header'] ?? null) ? $page_manifest['public_header'] : [];
 $public_nav_links = is_array($public_header_config['links'] ?? null) ? $public_header_config['links'] : [];
 $public_demo_href = '/learn-more.php';
-$public_phone_number = '1-800-269-7433';
-$public_phone_href = 'tel:18002697433';
-$public_brand_equation = 'DAVE™ — Digital Asset Value Equation';
+$public_phone_number = '(480) 269-7433';
+$public_phone_href = 'tel:14802697433';
+$public_brand_equation = '';
 $public_social_links = is_array($public_header_config['social_links'] ?? null) ? $public_header_config['social_links'] : [
-    ['label' => 'LinkedIn', 'short' => 'IN', 'href' => 'https://www.linkedin.com/company/microgifter/'],
     ['label' => 'X', 'short' => 'X', 'href' => 'https://x.com/microgifter'],
     ['label' => 'Instagram', 'short' => 'IG', 'href' => 'https://www.instagram.com/microgifter/'],
 ];
+$public_social_links = array_values(array_filter($public_social_links, static function (array $public_social_link): bool {
+    $label = strtoupper(trim((string) ($public_social_link['label'] ?? '')));
+    $short = strtoupper(trim((string) ($public_social_link['short'] ?? '')));
+    return $label !== 'LINKEDIN' && $short !== 'IN';
+}));
 
 $filtered_links = [];
 foreach ($public_nav_links as $public_header_link) {
@@ -24,7 +28,7 @@ foreach ($public_nav_links as $public_header_link) {
     }
 
     $href = (string) ($public_header_link['href'] ?? '');
-    if (in_array($href, ['/corporate.php', '/retail.php', '/locations.php', '/campaign.php', '/developer-docs.php', '/merchant.php'], true)) {
+    if (in_array($href, ['/corporate.php', '/retail.php', '/locations.php', '/campaign.php', '/developer-docs.php', '/merchant.php', '/buy-in.php'], true)) {
         continue;
     }
 
@@ -35,7 +39,6 @@ $public_nav_links = $filtered_links;
 if (!$user) {
     $public_nav_links = [
         ['label' => 'Explore', 'href' => '/discover.php'],
-        ['label' => 'Buy In', 'href' => '/buy-in.php'],
         ['label' => 'Pricing', 'href' => '/pricing.php'],
     ];
 }
@@ -57,9 +60,10 @@ if (!$market_ticker_items && !$user) {
     $market_ticker_items = mg_public_market_ticker_fallback_items();
 }
 
-$show_market_ticker = !$user && !empty($market_ticker_items);
+$show_market_ticker = false; // Temporarily hidden; ticker logic and markup stay in place.
 $show_demo_button = !$user;
 ?>
+<?php if (!$user): ?><link rel="stylesheet" href="/assets/css/public-logged-out-header-unified.css"><?php endif; ?>
 <header class="mg-site-header mg-unified-header mg-market-universal-header" data-mg-universal-header data-public-header data-header-theme="market-dark" data-header-variant="<?= $user ? 'logged-in' : 'logged-out' ?>">
   <div class="mg-header-inner nav-inner">
     <div class="mg-header-left">
@@ -69,7 +73,7 @@ $show_demo_button = !$user;
       <?php if (!$user): ?>
         <div class="mg-header-phone-stack">
           <a class="mg-header-phone" href="<?= mg_e($public_phone_href) ?>" aria-label="Call Microgifter at <?= mg_e($public_phone_number) ?>"><?= mg_e($public_phone_number) ?></a>
-          <span class="mg-brand-equation mg-phone-equation"><?= mg_e($public_brand_equation) ?></span>
+          <?php if ($public_brand_equation !== ''): ?><span class="mg-brand-equation mg-phone-equation"><?= mg_e($public_brand_equation) ?></span><?php endif; ?>
         </div>
         <?php if ($public_social_links): ?>
           <nav class="mg-header-socials" aria-label="Microgifter social links">
@@ -176,7 +180,7 @@ $show_demo_button = !$user;
     </div>
     <div class="mg-public-mobile-contact">
       <a class="mg-public-mobile-phone" href="<?= mg_e($public_phone_href) ?>" aria-label="Call Microgifter at <?= mg_e($public_phone_number) ?>"><?= mg_e($public_phone_number) ?></a>
-      <span class="mg-public-mobile-equation"><?= mg_e($public_brand_equation) ?></span>
+      <?php if ($public_brand_equation !== ''): ?><span class="mg-public-mobile-equation"><?= mg_e($public_brand_equation) ?></span><?php endif; ?>
       <?php if ($public_social_links): ?>
         <nav class="mg-public-mobile-socials" aria-label="Microgifter social links">
           <?php foreach ($public_social_links as $public_social_link): ?>

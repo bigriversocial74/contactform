@@ -22,12 +22,22 @@ $countStmt->execute([$merchantId]);
 $counts=$countStmt->fetch(PDO::FETCH_ASSOC)?:[];
 $redeemedStmt=$pdo->prepare("SELECT COUNT(*) FROM microgift_redemptions WHERE merchant_user_id=? AND status='completed'");
 $redeemedStmt->execute([$merchantId]);
-$counts['redeemed']=(int)$redeemedStmt->fetchColumn();
+$microRedeemed=(int)$redeemedStmt->fetchColumn();
+$walletRedeemed=0;
+try{
+    $walletCount=$pdo->prepare("SELECT COUNT(*) FROM wallet_item_redemptions WHERE merchant_user_id=? AND status='completed'");
+    $walletCount->execute([$merchantId]);
+    $walletRedeemed=(int)$walletCount->fetchColumn();
+}catch(Throwable){$walletRedeemed=0;}
+$counts['total']=(int)($counts['total']??0)+$walletRedeemed;
+$counts['approved']=(int)($counts['approved']??0)+$walletRedeemed;
+$counts['redeemed']=$microRedeemed+$walletRedeemed;
 
 $where=['a.merchant_user_id=?'];
 $params=[$merchantId];
 if($resultFilter!==''&&$resultFilter!=='all'){
     if($resultFilter==='failed')$where[]="a.result<>'approved'";
+    elseif($resultFilter==='approved'||$resultFilter==='redeemed'){$where[]='a.result=?';$params[]='approved';}
     else{$where[]='a.result=?';$params[]=$resultFilter;}
 }
 if($locationFilter!==''&&$locationFilter!=='all'){
@@ -46,7 +56,7 @@ $sql="SELECT a.public_id attempt_id,a.result,a.reason_code,a.correlation_id,a.at
         p.public_id pppm_id,l.public_id location_id,l.name location_name,
         r.public_id redemption_id,r.status redemption_status,r.redeemed_at,
         r.amount_cents redemption_amount_cents,r.currency redemption_currency,
-        a.actor_user_id
+        a.actor_user_id,'microgift' source_type
     FROM microgift_claim_attempts a
     LEFT JOIN microgift_instances i ON i.id=a.instance_id
     LEFT JOIN microgift_templates t ON t.id=i.template_id
@@ -58,6 +68,42 @@ $sql="SELECT a.public_id attempt_id,a.result,a.reason_code,a.correlation_id,a.at
 $stmt=$pdo->prepare($sql);
 $stmt->execute($params);
 $attempts=$stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$walletAttempts=[];
+try{
+    $wWhere=["wr.merchant_user_id=?","wr.status='completed'"];
+    $wParams=[$merchantId];
+    if($resultFilter!==''&&$resultFilter!=='all'&&!in_array($resultFilter,['approved','redeemed'],true)){
+        $wWhere[]='1=0';
+    }
+    if($locationFilter!==''&&$locationFilter!=='all'){
+        $wWhere[]='ml.public_id=?';
+        $wParams[]=$locationFilter;
+    }
+    if($q!==''){
+        $needle='%'.$q.'%';
+        $wWhere[]='(wr.public_id LIKE ? OR wi.public_id LIKE ? OR wi.title_snapshot LIKE ?)';
+        array_push($wParams,$needle,$needle,$needle);
+    }
+    $walletSql="SELECT wr.public_id attempt_id,'approved' result,'wallet_redeemed' reason_code,wr.idempotency_key correlation_id,wr.redeemed_at attempted_at,
+            wi.public_id instance_id,wi.status instance_status,wr.amount_cents face_value_cents,wr.currency,COALESCE(wi.title_snapshot,'Wallet reward') title_snapshot,
+            wr.user_id owner_user_id,wr.user_id recipient_user_id,wr.user_id customer_user_id,
+            NULL pppm_id,ml.public_id location_id,ml.name location_name,
+            wr.public_id redemption_id,wr.status redemption_status,wr.redeemed_at,
+            wr.amount_cents redemption_amount_cents,wr.currency redemption_currency,
+            wr.user_id actor_user_id,'wallet' source_type
+        FROM wallet_item_redemptions wr
+        INNER JOIN wallet_items wi ON wi.id=wr.wallet_item_id
+        LEFT JOIN merchant_locations ml ON ml.id=wr.location_id
+        WHERE ".implode(' AND ',$wWhere)."
+        ORDER BY wr.redeemed_at DESC,wr.id DESC LIMIT 500";
+    $walletStmt=$pdo->prepare($walletSql);
+    $walletStmt->execute($wParams);
+    $walletAttempts=$walletStmt->fetchAll(PDO::FETCH_ASSOC)?:[];
+}catch(Throwable){$walletAttempts=[];}
+$attempts=array_merge($attempts,$walletAttempts);
+usort($attempts,static function(array $a,array $b): int{return(strtotime((string)($b['attempted_at']??''))?:0)<=>(strtotime((string)($a['attempted_at']??''))?:0);});
+$attempts=array_slice($attempts,0,500);
 
 $locations=$pdo->prepare("SELECT ml.public_id,ml.name,ml.status,ml.is_primary,
         COUNT(DISTINCT mcc.id) code_count,

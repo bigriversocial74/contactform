@@ -65,7 +65,11 @@ function mg_payment_create_checkout_session(PDO $pdo,int $buyerUserId,string $or
     if(!$order)throw new MgCheckoutSessionException('Order not found.',404);
     if((string)$order['payment_status']!=='unpaid')throw new MgCheckoutSessionException('Order is not awaiting payment.',409);
 
-    $provider=mg_payment_provider_key();
+    try{
+        $provider=mg_payment_checkout_provider_key($pdo,(string)($options['provider_key']??''));
+    }catch(Throwable $error){
+        throw new MgCheckoutSessionException($error->getMessage(),409);
+    }
     mg_payment_expire_checkout_sessions($pdo,(int)$order['id']);
 
     $idempotent=$pdo->prepare(
@@ -96,13 +100,13 @@ function mg_payment_create_checkout_session(PDO $pdo,int $buyerUserId,string $or
                 cs.provider_checkout_url,cs.expires_at,pi.public_id payment_intent_id,pi.idempotency_key
          FROM checkout_sessions cs
          INNER JOIN payment_intents pi ON pi.id=cs.payment_intent_id
-         WHERE cs.order_id=? AND cs.status IN ('created','open')
+         WHERE cs.order_id=? AND cs.provider_key=? AND cs.status IN ('created','open')
            AND cs.expires_at>NOW()
          ORDER BY cs.id DESC LIMIT 1 FOR UPDATE"
     );
-    $active->execute([(int)$order['id']]);
-    if($active->fetch(PDO::FETCH_ASSOC)){
-        throw new MgCheckoutSessionException('An active checkout session already exists for this order.',409);
+    $active->execute([(int)$order['id'],$provider]);
+    if($activeSession=$active->fetch(PDO::FETCH_ASSOC)){
+        return mg_payment_checkout_session_payload($activeSession,$orderPublicId,true);
     }
 
     try{$account=mg_payment_assert_checkout_ready($pdo,$order,$provider);}catch(Throwable $error){

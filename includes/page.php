@@ -76,7 +76,7 @@ function mg_asset_registry(): array
 {
     return [
         'universal-header'=>[
-            'styles'=>['/assets/css/universal-header.css','/assets/css/account-menu.css','/assets/css/cart.css','/assets/css/layout-fixes.css'],
+            'styles'=>['/assets/css/universal-header.css','/assets/css/account-dropdown-tabs.css','/assets/css/account-menu.css','/assets/css/cart.css','/assets/css/layout-fixes.css','/assets/css/public-header-initial-width.css'],
             'scripts'=>['/assets/js/universal-header.js','/assets/js/header-signals.js','/assets/js/cart.js','/assets/js/auth.js','/assets/js/auth-state.js'],
         ],
         'agent-presentation'=>[

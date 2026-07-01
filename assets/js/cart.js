@@ -3,6 +3,7 @@ window.Microgifter = window.Microgifter || {};
   'use strict';
 
   var lastTrigger = null;
+  var checkoutOptions = null;
   function C() { return window.MGCustomerCommerce; }
   function normalizeCart(response) {
     var data = C().data(response);
@@ -15,6 +16,41 @@ window.Microgifter = window.Microgifter || {};
   }
   async function fetchCart() {
     return normalizeCart(await C().api('GET','/api/commerce/cart.php'));
+  }
+  async function loadPaymentOptions() {
+    try {
+      checkoutOptions = C().data(await C().api('GET','/api/payments/checkout-options.php'));
+    } catch (error) {
+      checkoutOptions = {
+        methods: {
+          cash: { available: true, detail: 'Cash checkout is available.' },
+          card: { available: false, detail: 'Card checkout is not ready.' }
+        }
+      };
+    }
+    applyPaymentOptions();
+    return checkoutOptions;
+  }
+  function methodAvailable(name) {
+    var method = checkoutOptions && checkoutOptions.methods ? checkoutOptions.methods[name] : null;
+    return !!(method && method.available);
+  }
+  function applyPaymentOptions() {
+    var root = document.querySelector('[data-cart-page]');
+    if (!root) return;
+    var cardButton = root.querySelector('[data-cart-checkout-provider="stripe"]');
+    var cashButton = root.querySelector('[data-cart-checkout-provider="cash"]');
+    var note = root.querySelector('[data-cart-payment-note]');
+    var cardAvailable = methodAvailable('card');
+    var cashAvailable = checkoutOptions ? methodAvailable('cash') : true;
+    if (cardButton) cardButton.hidden = !cardAvailable;
+    if (cashButton) cashButton.hidden = !cashAvailable;
+    if (note) {
+      if (cardAvailable && cashAvailable) note.textContent = 'Choose card for Stripe checkout or cash for manual checkout.';
+      else if (cashAvailable) note.textContent = 'Cash checkout is enabled. Card checkout is hidden until Stripe is ready.';
+      else if (cardAvailable) note.textContent = 'Stripe card checkout is ready. Cash checkout is disabled.';
+      else note.textContent = 'No payment method is currently available.';
+    }
   }
   function createHeaderButton() {
     var actions = document.querySelector('.mg-header-actions, .nav-actions');
@@ -67,13 +103,14 @@ window.Microgifter = window.Microgifter || {};
     if (!root) return;
     var itemHost = root.querySelector('[data-cart-items]');
     var summaryHost = root.querySelector('[data-cart-summary]');
-    var checkout = root.querySelector('[data-cart-checkout]');
+    var checkoutButtons = root.querySelectorAll('[data-cart-checkout],[data-cart-checkout-provider]');
     var rows = cart.items.map(function (item) {
       return '<div class="mg-cart-line"><div class="mg-cart-line-main"><div class="mg-cart-line-icon">' + C().esc(String(item.title_snapshot || 'G').charAt(0).toUpperCase()) + '</div><div><strong>' + C().esc(item.title_snapshot) + '</strong><p>' + C().money(item.unit_amount_cents, item.currency) + ' each · ' + C().esc(item.currency || 'USD') + '</p></div></div><div class="mg-cart-controls"><label>Qty<input type="number" min="1" max="100" value="' + C().quantity(item.quantity) + '" data-cart-page-quantity="' + C().esc(item.item_id) + '"></label><strong>' + C().money(item.line_total_cents, item.currency) + '</strong><button type="button" class="mg-icon-btn" data-cart-page-remove="' + C().esc(item.item_id) + '" aria-label="Remove item">×</button></div></div>';
     }).join('');
     itemHost.innerHTML = cart.items.length ? rows : C().emptyState('Your cart is empty.', 'Add a published product to begin checkout.');
     summaryHost.innerHTML = '<div class="mg-checkout-totals"><div class="mg-checkout-total"><span>Items</span><strong>' + Number(cart.totals.unit_count || 0) + '</strong></div><div class="mg-checkout-total"><span>Subtotal</span><strong>' + C().money(cart.totals.subtotal_cents, cart.totals.currency) + '</strong></div><div class="mg-checkout-total"><span>Tax</span><strong>' + C().money(cart.totals.tax_cents, cart.totals.currency) + '</strong></div><div class="mg-checkout-total"><span>Platform fee</span><strong>' + C().money(cart.totals.platform_fee_cents, cart.totals.currency) + '</strong></div><div class="mg-checkout-total is-grand"><span>Total</span><strong>' + C().money(cart.totals.total_cents, cart.totals.currency) + '</strong></div></div>';
-    if (checkout) checkout.disabled = cart.items.length === 0;
+    checkoutButtons.forEach(function(button){button.disabled = cart.items.length === 0;});
+    applyPaymentOptions();
   }
   async function refresh() {
     var cart = await fetchCart();
@@ -91,6 +128,15 @@ window.Microgifter = window.Microgifter || {};
     var id = session.checkout_session_id || session.session_id || '';
     if (!id) return session.checkout_url;
     return '/checkout.php?session=' + encodeURIComponent(id);
+  }
+  function disableCheckoutButtons(root, disabled) {
+    root.querySelectorAll('[data-cart-checkout],[data-cart-checkout-provider]').forEach(function(button){button.disabled = !!disabled;});
+  }
+  function paymentLabel(provider) {
+    provider = String(provider || '').toLowerCase();
+    if (provider === 'cash') return 'cash payment';
+    if (provider === 'stripe' || provider === 'card') return 'card payment';
+    return 'payment';
   }
   function bindPage() {
     var root = document.querySelector('[data-cart-page]');
@@ -141,17 +187,20 @@ window.Microgifter = window.Microgifter || {};
         }
         return;
       }
-      var checkout = event.target.closest('[data-cart-checkout]');
+      var checkout = event.target.closest('[data-cart-checkout],[data-cart-checkout-provider]');
       if (checkout) {
         event.preventDefault();
-        checkout.disabled = true;
+        var provider = checkout.dataset.cartCheckoutProvider || checkout.dataset.paymentProvider || '';
+        if (checkout.hidden) return;
+        disableCheckoutButtons(root, true);
         try {
-          pageStatus('Creating frozen checkout draft…', 'info');
-          var flow = await C().createCheckoutFromCart();
-          pageStatus('Opening secure checkout…', 'success');
+          pageStatus('Creating checkout draft for ' + paymentLabel(provider) + '…', 'info');
+          var flow = await C().createCheckoutFromCart(provider);
+          pageStatus('Opening checkout…', 'success');
           window.location.href = localCheckoutUrl(flow);
         } catch (error) {
-          checkout.disabled = false;
+          disableCheckoutButtons(root, false);
+          applyPaymentOptions();
           pageStatus(error.message || 'Unable to create checkout.', 'error');
         }
       }
@@ -203,7 +252,7 @@ window.Microgifter = window.Microgifter || {};
     createHeaderButton();
     createDrawer();
     bindPage();
-    refresh().catch(function (error) { pageStatus(error.message || 'Cart unavailable.', 'error'); });
+    loadPaymentOptions().finally(function(){refresh().catch(function (error) { pageStatus(error.message || 'Cart unavailable.', 'error'); });});
   });
   document.addEventListener('click', function (event) {
     if (!C()) return;

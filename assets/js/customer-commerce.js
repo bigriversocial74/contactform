@@ -10,6 +10,7 @@
   function quantity(value){return Math.max(1,Math.min(100,Number(value||1)));}
   function safePath(path,fallback){var value=String(path||fallback||'/').trim();if(!value.startsWith('/'))return fallback||'/';if(value.startsWith('//'))return fallback||'/';return value;}
   function safeCheckoutUrl(url){var value=String(url||'').trim();if(!value)throw new Error('Checkout URL was not returned.');try{var parsed=new URL(value,window.location.origin);if(parsed.origin!==window.location.origin&&parsed.protocol!=='https:')throw new Error('Checkout URL must be secure.');return parsed.href;}catch(error){throw new Error('Checkout URL was invalid.');}}
+  function normalizePaymentProvider(provider){var value=String(provider||'').toLowerCase().trim();if(value==='card')return 'stripe';if(value==='stripe')return 'stripe';if(value==='cash')return 'cash';return '';}
   async function api(method,url,payload){
     if(!window.Microgifter)throw new Error('Microgifter API helper is not loaded.');
     if(method==='GET')return window.Microgifter.get(url);
@@ -24,16 +25,19 @@
     if(!productVersionId)throw new Error('Product version is missing.');
     return api('POST','/api/commerce/cart-items.php',{product_version_id:productVersionId,quantity:quantity(itemQuantity)});
   }
-  async function createCheckoutFromCart(){
+  async function createCheckoutFromCart(provider){
+    var providerKey=normalizePaymentProvider(provider);
     var draft=await api('POST','/api/commerce/checkout-draft.php',{idempotency_key:'draft:'+uuid()});
     var draftData=data(draft),draftId=draftData.checkout_draft_id;
     if(!draftId)throw new Error('Checkout draft was not returned.');
     var order=await api('POST','/api/commerce/orders.php',{checkout_draft_id:draftId,idempotency_key:'order:'+uuid()});
     var orderData=data(order),orderId=orderData.order_id;
     if(!orderId)throw new Error('Pending order was not returned.');
-    var session=await api('POST','/api/payments/order-checkout-session.php',{order_id:orderId,idempotency_key:'payment:'+uuid(),success_url:safePath('/checkout-success.php','/checkout-success.php'),cancel_url:safePath('/cart.php','/cart.php')});
+    var payload={order_id:orderId,idempotency_key:'payment:'+providerKey+':'+uuid(),success_url:safePath('/checkout-success.php','/checkout-success.php'),cancel_url:safePath('/cart.php','/cart.php')};
+    if(providerKey)payload.provider_key=providerKey;
+    var session=await api('POST','/api/payments/order-checkout-session.php',payload);
     var sessionData=data(session);
     return{draft:draftData,order:orderData,session:Object.assign({},sessionData,{checkout_url:safeCheckoutUrl(sessionData.checkout_url)})};
   }
-  window.MGCustomerCommerce={esc:esc,money:money,uuid:uuid,data:data,status:status,emptyState:emptyState,statusPill:statusPill,quantity:quantity,api:api,addProductVersion:addProductVersion,createCheckoutFromCart:createCheckoutFromCart,safePath:safePath,safeCheckoutUrl:safeCheckoutUrl};
+  window.MGCustomerCommerce={esc:esc,money:money,uuid:uuid,data:data,status:status,emptyState:emptyState,statusPill:statusPill,quantity:quantity,api:api,addProductVersion:addProductVersion,createCheckoutFromCart:createCheckoutFromCart,safePath:safePath,safeCheckoutUrl:safeCheckoutUrl,normalizePaymentProvider:normalizePaymentProvider};
 })(window);

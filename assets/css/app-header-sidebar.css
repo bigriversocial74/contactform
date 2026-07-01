@@ -1,3 +1,5 @@
+@import url('/assets/css/mobile-full-width-shell-fix.css');
+
 /* Shared logged-in header/sidebar consolidation.
    Owns mobile app header behavior, sidebar logo treatment, and sidebar search placement. */
 

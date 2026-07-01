@@ -12,11 +12,16 @@ function mg_feed_attachment_text(mixed $value, int $limit = 220): ?string
     return $text === '' ? null : mb_substr($text, 0, $limit);
 }
 
-function mg_feed_attachment_asset_url(?string $provider, ?string $storageKey): ?string
+function mg_feed_attachment_asset_url(?string $provider, ?string $storageKey, ?string $assetPublicId = null): ?string
 {
     $provider = strtolower(trim((string)$provider));
     $storageKey = trim((string)$storageKey);
-    if ($storageKey === '' || str_contains($storageKey, '..') || str_contains($storageKey, "\\")) return null;
+    $assetPublicId = strtolower(trim((string)$assetPublicId));
+    if ($storageKey !== '' && (str_contains($storageKey, '..') || str_contains($storageKey, "\\"))) return null;
+    if ($provider === 'private_local' && preg_match('/^[a-f0-9-]{36}$/', $assetPublicId) === 1) {
+        return '/api/catalog/asset-file.php?id=' . rawurlencode($assetPublicId);
+    }
+    if ($storageKey === '') return null;
     if ($provider === 'local') return '/' . ltrim($storageKey, '/');
     if (preg_match('#^https://#i', $storageKey) === 1 && filter_var($storageKey, FILTER_VALIDATE_URL)) return $storageKey;
     return null;
@@ -32,6 +37,34 @@ function mg_feed_attachment_rows_by_id(PDO $pdo, string $sql, array $ids): array
     return $rows;
 }
 
+function mg_feed_attachment_post_image_urls(PDO $pdo, array $posts): array
+{
+    $versionIds = [];
+    foreach ($posts as $post) {
+        $versionId = (int)($post['current_version_id'] ?? 0);
+        if ($versionId > 0) $versionIds[$versionId] = $versionId;
+    }
+    if ($versionIds === []) return [];
+
+    $stmt = $pdo->prepare(
+        "SELECT fpe.feed_post_version_id version_id,a.public_id asset_public_id,a.storage_provider,a.storage_key
+         FROM feed_post_elements fpe
+         INNER JOIN catalog_assets a ON a.id=fpe.asset_id AND a.status='ready' AND a.asset_type='image'
+         WHERE fpe.feed_post_version_id IN (" . mg_feed_attachment_placeholders(array_values($versionIds)) . ")
+           AND fpe.element_type='image'
+         ORDER BY fpe.feed_post_version_id,fpe.sort_order,fpe.id"
+    );
+    $stmt->execute(array_values($versionIds));
+    $images = [];
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $versionId = (int)$row['version_id'];
+        if (isset($images[$versionId])) continue;
+        $url = mg_feed_attachment_asset_url($row['storage_provider'] ?? null, $row['storage_key'] ?? null, $row['asset_public_id'] ?? null);
+        if ($url !== null) $images[$versionId] = $url;
+    }
+    return $images;
+}
+
 function mg_feed_published_attachment_cards(PDO $pdo, array $posts, ?int $viewerId): array
 {
     $productIds = [];
@@ -45,7 +78,7 @@ function mg_feed_published_attachment_cards(PDO $pdo, array $posts, ?int $viewer
 
     $products = mg_feed_attachment_rows_by_id($pdo,
         "SELECT p.id,p.public_id,p.slug,p.status,v.title,v.description,v.unit_value_cents,v.currency,
-                a.storage_provider preview_provider,a.storage_key preview_key
+                a.public_id preview_asset_id,a.storage_provider preview_provider,a.storage_key preview_key
          FROM catalog_products p
          LEFT JOIN catalog_product_versions v ON v.id=p.current_version_id
          LEFT JOIN catalog_product_version_assets pva ON pva.id=(
@@ -61,11 +94,13 @@ function mg_feed_published_attachment_cards(PDO $pdo, array $posts, ?int $viewer
         array_values($productIds)
     );
 
+    $postImageUrls = mg_feed_attachment_post_image_urls($pdo, $posts);
+
     $microgifts = mg_feed_attachment_rows_by_id($pdo,
         "SELECT i.id,i.public_id,i.title_snapshot title,i.description_snapshot description,i.status,
                 i.face_value_cents,i.currency,i.source_type,i.owner_user_id,i.issuer_user_id,
                 i.recipient_user_id,i.issued_at,i.expires_at,
-                a.storage_provider preview_provider,a.storage_key preview_key
+                a.public_id preview_asset_id,a.storage_provider preview_provider,a.storage_key preview_key
          FROM microgift_instances i
          LEFT JOIN catalog_product_version_assets pva ON pva.id=(
              SELECT pva2.id FROM catalog_product_version_assets pva2
@@ -105,18 +140,30 @@ function mg_feed_published_attachment_cards(PDO $pdo, array $posts, ?int $viewer
     foreach ($posts as $post) {
         $postId = (string)$post['public_id'];
         $profileSlug = (string)($post['profile_slug'] ?? '');
+        $postType = (string)($post['post_type'] ?? 'simple');
+        $isGreetingProduct = in_array($postType, ['greeting_card', 'multimedia_card'], true);
         $cards = [];
 
         $productId = (int)($post['catalog_product_id'] ?? 0);
         if ($productId > 0 && isset($products[$productId])) {
             $product = $products[$productId];
+            $productImageUrl = mg_feed_attachment_asset_url($product['preview_provider'] ?? null, $product['preview_key'] ?? null, $product['preview_asset_id'] ?? null);
+            if ($productImageUrl === null) {
+                $productImageUrl = $postImageUrls[(int)($post['current_version_id'] ?? 0)] ?? null;
+            }
             $cards[] = [
-                'kind'=>'product','eyebrow'=>'Product','title'=>(string)($product['title'] ?: 'Microgifter product'),
+                'kind'=>'product','variant'=>$isGreetingProduct ? $postType : null,
+                'eyebrow'=>$isGreetingProduct ? ($postType === 'multimedia_card' ? 'Multimedia Card' : 'Greeting Card') : 'Product',
+                'title'=>(string)($product['title'] ?: 'Microgifter product'),
                 'description'=>mg_feed_attachment_text($product['description'] ?? null),
                 'value_cents'=>(int)($product['unit_value_cents'] ?? 0),'currency'=>(string)($product['currency'] ?? 'USD'),
-                'status'=>(string)$product['status'],'image_url'=>mg_feed_attachment_asset_url($product['preview_provider'] ?? null,$product['preview_key'] ?? null),
+                'status'=>(string)$product['status'],'image_url'=>$productImageUrl,
                 'access'=>['state'=>'public','label'=>'Available to everyone'],
-                'action'=>['state'=>'enabled','label'=>'View product','url'=>'/product.php?p='.rawurlencode((string)$product['slug'])],
+                'action'=>[
+                    'state'=>'enabled',
+                    'label'=>$isGreetingProduct ? ($postType === 'multimedia_card' ? 'Open Multimedia Card' : 'Open Card') : 'View product',
+                    'url'=>'/product.php?p='.rawurlencode((string)$product['slug']),
+                ],
             ];
         }
 
@@ -142,7 +189,7 @@ function mg_feed_published_attachment_cards(PDO $pdo, array $posts, ?int $viewer
                 'kind'=>'microgift','eyebrow'=>'Microgift','title'=>(string)($gift['title'] ?: 'Attached Microgift'),
                 'description'=>mg_feed_attachment_text($gift['description'] ?? null),
                 'value_cents'=>(int)($gift['face_value_cents'] ?? 0),'currency'=>(string)($gift['currency'] ?? 'USD'),
-                'status'=>$giftStatus,'image_url'=>mg_feed_attachment_asset_url($gift['preview_provider'] ?? null,$gift['preview_key'] ?? null),
+                'status'=>$giftStatus,'image_url'=>mg_feed_attachment_asset_url($gift['preview_provider'] ?? null,$gift['preview_key'] ?? null,$gift['preview_asset_id'] ?? null),
                 'access'=>$access,'action'=>$action,
             ];
         }

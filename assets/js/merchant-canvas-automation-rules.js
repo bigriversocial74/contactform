@@ -16,16 +16,143 @@ window.Microgifter = window.Microgifter || {};
   var loaded = false;
   var saving = new Set();
   var originalPost = MG.post.bind(MG);
+  var triggerRuntime = new Map();
 
   function payload(r) { return r && r.data ? r.data : r; }
-  function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
+  function esc(v) { return String(v == null ? '' : v).replace(/[&<>"]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); }
   function zoneId(el) { return el ? String(el.dataset.canvasTriggerZone || '') : ''; }
   function toast(m, t) { if (MG.toast) MG.toast(m, t || 'info'); }
   function readNumber(text) { var value = String(text || '').replace(/[^0-9]/g, ''); return value ? parseInt(value, 10) || 0 : 0; }
   function behaviorScore(stats) { return Math.max(0, Math.min(100, Math.round(15 + Number(stats.visits || 0) * 10 + Number(stats.messages || 0) * 7 + Number(stats.rewards || 0) * 11 + Number(stats.claims || 0) * 18 + Number(stats.minutes || 0) / 2))); }
+  function now() { return Date.now(); }
+  function rectsOverlap(a, b, pad) { pad = pad || 0; return a.x < b.x + b.width + pad && a.x + a.width + pad > b.x && a.y < b.y + b.height + pad && a.y + a.height + pad > b.y; }
 
   function defaults(id) {
-    return Object.assign({ id: id, automation_action: 'message_and_reward', cooldown_policy: 'fifteen_minutes', auto_message_text: '', fallback_action: 'notify_only', crm_segment_name: '', notify_merchant: true }, settings[id] || {});
+    return Object.assign({ id: id, automation_action: 'message_and_reward', cooldown_policy: 'fifteen_minutes', cooldown_seconds: 900, auto_message_text: '', fallback_action: 'notify_only', crm_segment_name: '', notify_merchant: true }, settings[id] || {});
+  }
+
+  function stateKey(data) {
+    data = data || {};
+    var sessionId = String(data.session_id || '');
+    var zonePublicId = String(data.trigger_zone_id || data.zone_id || '');
+    return zonePublicId && sessionId ? zonePublicId + ':' + sessionId : '';
+  }
+
+  function stateFor(key) {
+    var state = triggerRuntime.get(key);
+    if (!state) {
+      state = { inside: false, pending: false, mustExit: false, coolingUntil: 0, lastMessageAt: 0 };
+      triggerRuntime.set(key, state);
+    }
+    return state;
+  }
+
+  function nodeForZone(id) {
+    id = String(id || '');
+    if (!id) return null;
+    var nodes = Array.from(root.querySelectorAll('[data-canvas-trigger-zone]'));
+    return nodes.find(function (node) { return String(node.dataset.canvasTriggerZone || '') === id; }) || null;
+  }
+
+  function nodeForSession(id) {
+    id = String(id || '');
+    if (!id) return null;
+    var nodes = Array.from(layer.querySelectorAll('[data-session-id]'));
+    return nodes.find(function (node) { return String(node.dataset.sessionId || '') === id; }) || null;
+  }
+
+  function relRect(node) {
+    var rect = node.getBoundingClientRect();
+    var box = map.getBoundingClientRect();
+    return { x: rect.left - box.left, y: rect.top - box.top, width: rect.width, height: rect.height };
+  }
+
+  function isCurrentlyInside(sessionId, zonePublicId) {
+    var card = nodeForSession(sessionId);
+    var zone = nodeForZone(zonePublicId);
+    if (!card || !zone) return false;
+    return rectsOverlap(relRect(card), relRect(zone), -8);
+  }
+
+  function policyCooldownMs(zonePublicId, responseData) {
+    responseData = responseData || {};
+    var remaining = Number(responseData.cooldown_remaining_seconds || 0);
+    if (remaining > 0) return Math.max(1000, remaining * 1000);
+    if (responseData.cooldown_until) {
+      var until = Date.parse(String(responseData.cooldown_until));
+      if (!Number.isNaN(until)) return Math.max(1000, until - now());
+    }
+    var cfg = defaults(zonePublicId);
+    if (cfg.cooldown_policy === 'five_minutes') return 5 * 60 * 1000;
+    if (cfg.cooldown_policy === 'one_hour') return 60 * 60 * 1000;
+    if (cfg.cooldown_policy === 'once_per_customer_day') {
+      var next = new Date();
+      next.setHours(24, 0, 0, 0);
+      return Math.max(60 * 1000, next.getTime() - now());
+    }
+    if (cfg.cooldown_policy === 'once_per_visit') return 24 * 60 * 60 * 1000;
+    return Math.max(60 * 1000, Number(cfg.cooldown_seconds || 900) * 1000);
+  }
+
+  function runtimeResponse(message, data) {
+    return Promise.resolve({ data: Object.assign({ triggered: false, cooldown: true, client_guard: true, message: message || 'Trigger is cooling down.' }, data || {}) });
+  }
+
+  function syncRuntimePresence() {
+    var ts = now();
+    triggerRuntime.forEach(function (state, key) {
+      var parts = key.split(':');
+      var active = parts.length === 2 && isCurrentlyInside(parts[1], parts[0]);
+      if (!active) {
+        state.inside = false;
+        state.mustExit = false;
+      } else {
+        state.inside = true;
+      }
+      if (!state.inside && !state.pending && ts > Number(state.coolingUntil || 0) + 60000) triggerRuntime.delete(key);
+    });
+  }
+
+  function guardedAutomationPost(url, data, options) {
+    url = String(url || '');
+    data = data || {};
+    var isLegacy = url === '/api/merchant-canvas/campaign-trigger.php';
+    var isAutomation = url === '/api/merchant-canvas/campaign-trigger-automation.php';
+    if (!isLegacy && !isAutomation) return originalPost(url, data, options);
+
+    var key = stateKey(data);
+    if (!key) {
+      if (isLegacy) return runtimeResponse('Legacy trigger ignored because no persistent zone was supplied.', { legacy_trigger_disabled: true });
+      return originalPost(url, data, options);
+    }
+
+    var zonePublicId = String(data.trigger_zone_id || data.zone_id || '');
+    var sessionId = String(data.session_id || '');
+    var state = stateFor(key);
+    syncRuntimePresence();
+
+    if (isLegacy) return runtimeResponse('Legacy trigger route blocked. Persistent trigger automation owns this zone.', { trigger_zone_id: zonePublicId, legacy_trigger_disabled: true });
+    if (state.pending) return runtimeResponse('Trigger already pending.', { trigger_zone_id: zonePublicId, pending: true });
+    if (Number(state.coolingUntil || 0) > now()) return runtimeResponse('Trigger cooldown active.', { trigger_zone_id: zonePublicId, cooldown_remaining_seconds: Math.ceil((state.coolingUntil - now()) / 1000) });
+    if (state.inside && state.mustExit) return runtimeResponse('Trigger already fired for this zone entry. Leave and re-enter after cooldown.', { trigger_zone_id: zonePublicId, entry_locked: true });
+
+    state.inside = isCurrentlyInside(sessionId, zonePublicId);
+    state.pending = true;
+    return originalPost(url, data, options).then(function (response) {
+      var body = payload(response) || {};
+      state.pending = false;
+      state.inside = true;
+      state.mustExit = true;
+      state.coolingUntil = now() + policyCooldownMs(zonePublicId, body);
+      state.lastMessageAt = now();
+      return response;
+    }).catch(function (error) {
+      state.pending = false;
+      state.inside = true;
+      state.mustExit = true;
+      state.coolingUntil = now() + 30000;
+      throw error;
+    });
   }
 
   function actionOptions(selected) {
@@ -94,7 +221,7 @@ window.Microgifter = window.Microgifter || {};
   }
 
   function syncControls() {
-    Array.from(layer.querySelectorAll('[data-canvas-persistent-zone]')).forEach(function (el) { inject(el); hydrate(el); });
+    Array.from(root.querySelectorAll('[data-canvas-persistent-zone]')).forEach(function (el) { inject(el); hydrate(el); });
     tagBehaviorScores();
   }
 
@@ -164,17 +291,14 @@ window.Microgifter = window.Microgifter || {};
     }
   }
 
-  MG.post = function (url, data, options) {
-    if (String(url || '') === '/api/merchant-canvas/campaign-trigger.php') return originalPost('/api/merchant-canvas/campaign-trigger-automation.php', data || {}, options);
-    return originalPost(url, data, options);
-  };
+  MG.post = guardedAutomationPost;
 
-  layer.addEventListener('change', function (event) { if (!event.target.closest('[data-trigger-automation-controls]')) return; var el = event.target.closest('[data-canvas-persistent-zone]'); if (el) save(el); });
-  layer.addEventListener('focusout', function (event) { if (!event.target.matches('[data-trigger-message],[data-trigger-segment]')) return; var el = event.target.closest('[data-canvas-persistent-zone]'); if (el) save(el); });
+  root.addEventListener('change', function (event) { if (!event.target.closest('[data-trigger-automation-controls]')) return; var el = event.target.closest('[data-canvas-persistent-zone]'); if (el) save(el); });
+  root.addEventListener('focusout', function (event) { if (!event.target.matches('[data-trigger-message],[data-trigger-segment]')) return; var el = event.target.closest('[data-canvas-persistent-zone]'); if (el) save(el); });
 
   var observer = new MutationObserver(syncControls);
-  observer.observe(layer, { childList: true, subtree: true });
+  observer.observe(root, { childList: true, subtree: true });
   new MutationObserver(tagBehaviorScores).observe(root, { childList: true, subtree: true });
   loadSettings();
-  window.setInterval(syncControls, 1200);
+  window.setInterval(function () { syncRuntimePresence(); syncControls(); }, 1200);
 })(window, document);

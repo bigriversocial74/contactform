@@ -17,10 +17,10 @@ function mg_builder_type(string $value): string
 function mg_builder_allowed_asset_roles(string $builderType): array
 {
     return match ($builderType) {
-        'simple_product' => ['cover'],
-        'greeting_card' => ['cover','inside_cover'],
-        'multimedia_greeting_card' => ['cover','inside_cover','audio','video'],
-        'simple_collab' => ['cover'],
+        'simple_product' => ['thumbnail','cover'],
+        'greeting_card' => ['thumbnail','cover','inside_cover'],
+        'multimedia_greeting_card' => ['thumbnail','cover','inside_cover','audio','video'],
+        'simple_collab' => ['thumbnail','cover'],
         default => [],
     };
 }
@@ -39,10 +39,12 @@ function mg_builder_validate_publish_type(string $builderType,array $payload,arr
 {
     mg_builder_validate_asset_roles($builderType,$assetMap);
 
-    if($builderType==='greeting_card'){
-        $headline=trim((string)($payload['headline']??''));
+    if($builderType==='multimedia_greeting_card'&&!empty($assetMap['audio'])&&!empty($assetMap['video'])){
+        throw new InvalidArgumentException('Choose either audio or video for this card, not both.');
+    }
+
+    if($builderType==='greeting_card'||$builderType==='multimedia_greeting_card'){
         $message=trim((string)($payload['message']??''));
-        if($headline==='')throw new InvalidArgumentException('Enter a greeting-card headline before publishing.');
         if($message==='')throw new InvalidArgumentException('Enter the inside greeting-card message before publishing.');
     }
 }

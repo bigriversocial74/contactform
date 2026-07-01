@@ -6,8 +6,8 @@ require_once __DIR__ . '/includes/app.php';
 $page_title = 'Build a Product | Microgifter';
 $page_section = 'builder';
 $header_mode = 'builder';
-$page_styles = ['/assets/css/builder-stage4b.css','/assets/css/builder-shell-fixes.css'];
-$page_scripts = ['/assets/js/builder-stage4b.js','/assets/js/builder-product-types.js','/assets/js/product-builder-shell.js'];
+$page_styles = ['/assets/css/builder-stage4b.css','/assets/css/builder-shell-fixes.css','/assets/css/gift-envelope-presentation.css','/assets/css/builder-desktop-layout.css','/assets/css/builder-card-tabs-canvas.css','/assets/css/builder-greeting-card-presentation.css','/assets/css/builder-card-full-bleed-mobile.css','/assets/css/builder-card-proportions.css'];
+$page_scripts = ['/assets/js/builder-stage4b.js','/assets/js/builder-card-message-media-preview.js?v=20260701h','/assets/js/builder-card-text-style-controls.js?v=20260701h','/assets/js/builder-product-types.js','/assets/js/product-builder-shell.js','/assets/js/gift-envelope-presentation.js','/assets/js/builder-card-tabs-canvas.js','/assets/js/builder-greeting-card-presentation.js','/assets/js/builder-merchant-profile.js','/assets/js/builder-simple-product-post.js'];
 $product_id = trim((string) ($_GET['id'] ?? ''));
 
 require __DIR__ . '/includes/header.php';
@@ -16,50 +16,110 @@ require __DIR__ . '/includes/header.php';
   <?php require __DIR__ . '/includes/product-builder-sidebar.php'; ?>
 
   <section class="mg-builder-canvas" aria-label="Live product preview">
-    <div class="mg-builder-canvas-header">
-      <div>
-        <p><span class="mg-builder-status" data-builder-status>New draft</span></p>
-      </div>
-      <div class="mg-builder-preview-toolbar" aria-label="Builder actions">
-        <button class="mg-btn mg-btn-ghost" type="button" data-save-draft>Save draft</button>
-        <a class="mg-btn mg-btn-soft" href="#" data-publish-product-link hidden>View product</a>
-        <a class="mg-btn mg-btn-soft" href="#" data-publish-store-link hidden>View store</a>
-        <a class="mg-btn mg-btn-soft" href="#" data-publish-feed-link hidden>View feed post</a>
-      </div>
-    </div>
-
     <div class="mg-builder-preview-stage">
       <div class="mg-builder-preview-frame">
-        <div class="mg-builder-preview-frame-bar">
-          <span data-preview-template-label>Simple product</span>
-          <span>Live product card</span>
+        <div class="mg-builder-product-actions" aria-label="Builder actions">
+          <span class="mg-builder-status" data-builder-status>New draft</span>
+          <div class="mg-builder-preview-toolbar">
+            <button class="mg-btn mg-btn-ghost" type="button" data-save-draft>Save draft</button>
+            <a class="mg-btn mg-btn-soft" href="#" data-publish-product-link hidden>View product</a>
+          </div>
         </div>
         <div class="mg-builder-card" data-builder-card>
           <article class="mg-builder-template is-active" data-preview-template="simple_product">
             <div class="mg-builder-simple">
               <div class="mg-builder-simple-copy">
-                <div class="mg-builder-section-title" data-preview-merchant>Local Coffee House</div>
+                <div class="mg-product-profile">
+                  <span class="mg-product-profile-avatar" data-preview-merchant-avatar data-preview-merchant-initial aria-hidden="true">M</span>
+                  <span class="mg-product-profile-copy"><small>Merchant</small><strong data-preview-merchant>Your business</strong></span>
+                </div>
                 <h1 data-preview-title>Coffee for two</h1>
-                <p data-preview-headline>A small gift, already waiting for you.</p>
+                <p data-preview-headline>Add product description.</p>
                 <div class="mg-builder-simple-value" data-preview-value>$25.00</div>
               </div>
-              <div class="mg-builder-simple-media" data-cover-media></div>
+              <div class="mg-builder-simple-media" data-product-media></div>
             </div>
           </article>
 
           <article class="mg-builder-template" data-preview-template="greeting_card">
-            <div class="mg-builder-greeting-spread">
-              <div class="mg-builder-greeting-page">
-                <div class="mg-builder-cover"><div class="mg-builder-cover-media" data-cover-media></div><div class="mg-builder-cover-inner"><div class="mg-builder-cover-icon">🎁</div><h1 data-preview-title>Coffee for two</h1><p data-preview-headline>A small gift, already waiting for you.</p><span class="mg-builder-open-button">Open Gift</span></div></div>
+            <div class="mg-card-presenter" data-card-presenter data-card-state="closed">
+              <section class="mg-card-face mg-card-cover-face" aria-label="Closed greeting card cover">
+                <div class="mg-card-cover-media" data-cover-media></div>
+              </section>
+              <section class="mg-card-face mg-card-inside-face" aria-label="Open greeting card inside">
+                <div class="mg-card-inside-page mg-card-inside-left">
+                  <div class="mg-card-inside-image" data-inside-media></div>
+                </div>
+                <div class="mg-card-inside-page mg-card-inside-right">
+                  <div class="mg-card-message-copy">
+                    <h3 class="mg-card-message-title" data-preview-card-headline>HAPPY BIRTHDAY!</h3>
+                    <p class="mg-card-inside-message" data-preview-card-message>Add the message the recipient will see inside the card.</p>
+                    <small class="mg-card-signature" data-preview-signature hidden></small>
+                  </div>
+                </div>
+              </section>
+              <section class="mg-card-face mg-card-back-face" aria-label="Card back product information">
+                <div class="mg-product-profile mg-product-profile-back">
+                  <span class="mg-product-profile-avatar" data-preview-merchant-avatar data-preview-merchant-initial aria-hidden="true">M</span>
+                  <span class="mg-product-profile-copy"><small>Merchant</small><strong data-preview-merchant>Your business</strong></span>
+                </div>
+                <span class="mg-eyebrow">Product info</span>
+                <h3 data-preview-title>Coffee for two</h3>
+                <p data-preview-headline>Add product description.</p>
+                <div class="mg-card-value" data-preview-value>$25.00</div>
+              </section>
+              <div class="mg-card-controls" aria-label="Greeting card preview controls">
+                <button class="mg-btn mg-btn-soft" type="button" data-card-action="open">Open Card</button>
+                <button class="mg-btn mg-btn-soft" type="button" data-card-action="close">Close Card</button>
+                <button class="mg-btn mg-btn-soft" type="button" data-card-action="flip">Flip Card</button>
               </div>
-              <div class="mg-builder-greeting-page"><div class="mg-builder-inside-media" data-inside-media></div><div class="mg-builder-greeting-content"><div class="mg-builder-section-title" data-preview-merchant>Local Coffee House</div><h2 data-preview-title>Coffee for two</h2><p data-preview-message></p><div class="mg-builder-simple-value" data-preview-value>$25.00</div></div></div>
             </div>
           </article>
 
           <article class="mg-builder-template" data-preview-template="multimedia_greeting_card">
-            <div class="mg-builder-greeting-spread">
-              <div class="mg-builder-greeting-page"><div class="mg-builder-cover"><div class="mg-builder-cover-media" data-cover-media></div><div class="mg-builder-cover-inner"><div class="mg-builder-cover-icon">🎬</div><h1 data-preview-title>Coffee for two</h1><p data-preview-headline>A small gift, already waiting for you.</p><span class="mg-builder-open-button">Open Gift</span></div></div></div>
-              <div class="mg-builder-greeting-page"><div class="mg-builder-inside-media" data-inside-media></div><div class="mg-builder-greeting-content"><h2 data-preview-title>Coffee for two</h2><p data-preview-message></p><div class="mg-builder-media-stack"><audio data-preview-audio controls hidden></audio><video data-preview-video controls playsinline hidden></video></div></div></div>
+            <div class="mg-card-presenter" data-card-presenter data-card-state="closed">
+              <section class="mg-card-face mg-card-cover-face" aria-label="Closed multimedia card cover">
+                <div class="mg-card-cover-media" data-cover-media></div>
+              </section>
+              <section class="mg-card-face mg-card-inside-face" aria-label="Open multimedia card inside">
+                <div class="mg-card-inside-page mg-card-inside-left">
+                  <div class="mg-card-inside-image" data-inside-media></div>
+                </div>
+                <div class="mg-card-inside-page mg-card-inside-right">
+                  <div class="mg-card-message-copy">
+                    <h3 class="mg-card-message-title" data-preview-card-headline>HAPPY BIRTHDAY!</h3>
+                    <p class="mg-card-inside-message" data-preview-card-message>Add the message the recipient will see inside the card.</p>
+                    <small class="mg-card-signature" data-preview-signature hidden></small>
+                  </div>
+                  <div class="mg-card-media-stack" data-card-media-stack>
+                    <div class="mg-card-media-sample" data-card-media-choice="audio">
+                      <span>Audio greeting</span>
+                      <audio data-preview-audio controls hidden></audio>
+                      <small data-preview-audio-label>Sample audio section</small>
+                    </div>
+                    <div class="mg-card-media-sample" data-card-media-choice="video">
+                      <span>Video message</span>
+                      <video data-preview-video controls playsinline hidden></video>
+                      <small data-preview-video-label>Sample video section</small>
+                    </div>
+                  </div>
+                </div>
+              </section>
+              <section class="mg-card-face mg-card-back-face" aria-label="Card back product information">
+                <div class="mg-product-profile mg-product-profile-back">
+                  <span class="mg-product-profile-avatar" data-preview-merchant-avatar data-preview-merchant-initial aria-hidden="true">M</span>
+                  <span class="mg-product-profile-copy"><small>Merchant</small><strong data-preview-merchant>Your business</strong></span>
+                </div>
+                <span class="mg-eyebrow">Product info</span>
+                <h3 data-preview-title>Coffee for two</h3>
+                <p data-preview-headline>Add product description.</p>
+                <div class="mg-card-value" data-preview-value>$25.00</div>
+              </section>
+              <div class="mg-card-controls" aria-label="Multimedia card preview controls">
+                <button class="mg-btn mg-btn-soft" type="button" data-card-action="open">Open Card</button>
+                <button class="mg-btn mg-btn-soft" type="button" data-card-action="close">Close Card</button>
+                <button class="mg-btn mg-btn-soft" type="button" data-card-action="flip">Flip Card</button>
+              </div>
             </div>
           </article>
 

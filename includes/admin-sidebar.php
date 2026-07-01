@@ -31,6 +31,7 @@ $canStampHealth = $canCommerce;
 $canHealth = $canAdminPage('admin.system_health');
 $canLifecycleHealth = $canAdminPage('admin.lifecycle_health');
 $canSettings = $canAdminPage('admin.settings');
+$canPwaBranding = $canAdminPage('admin.pwa_branding');
 $canAi = $canAdminPage('admin.ai');
 $canPayments = $canAdminPage('admin.payments');
 $canAudit = $canAdminPage('admin.audit_logs');
@@ -38,6 +39,11 @@ $canSecurity = $canAdminPage('admin.security_logs');
 $canSessions = $canAdminPage('admin.sessions');
 $canOpsQueue = $canAdminPage('admin.ops_queue');
 $canOpsActivity = $canOperationsCommand || $canAudit;
+$canAdReview = in_array('admin', $adminRoles, true)
+    || in_array('super_admin', $adminRoles, true)
+    || in_array('ads.manage', $adminPermissions, true)
+    || in_array('ads.review', $adminPermissions, true)
+    || in_array('admin.access', $adminPermissions, true);
 
 $adminNav = [
     'dashboard' => [
@@ -84,6 +90,24 @@ $adminNav = [
         'href' => '/admin/support-queue.php',
         'visible' => $canAdminPage('admin.support_queue'),
         'badge' => 'support_queue',
+    ],
+    'ad-review' => [
+        'label' => 'Campaign Ads review',
+        'detail' => 'Approve sponsored placements',
+        'href' => '/admin/ad-review.php',
+        'visible' => $canAdReview,
+    ],
+    'ad-placements' => [
+        'label' => 'Ad placements',
+        'detail' => 'Control ad surfaces',
+        'href' => '/admin/ad-placements.php',
+        'visible' => $canAdReview,
+    ],
+    'ad-diagnostics' => [
+        'label' => 'Ad diagnostics',
+        'detail' => 'QA placement delivery',
+        'href' => '/admin/ad-diagnostics.php',
+        'visible' => $canAdReview,
     ],
     'pending-models' => [
         'label' => 'Pending models',
@@ -157,6 +181,18 @@ $adminNav = [
         'href' => '/admin/system-health.php',
         'visible' => $canHealth,
     ],
+    'pwa-branding' => [
+        'label' => 'System PWA',
+        'detail' => 'Icons, splash, push',
+        'href' => '/admin/pwa-branding.php',
+        'visible' => $canPwaBranding,
+    ],
+    'store-health-analytics' => [
+        'label' => 'Store Health analytics',
+        'detail' => 'Merchant action completion',
+        'href' => '/admin/store-health-analytics.php',
+        'visible' => $canHealth,
+    ],
     'lifecycle-health' => [
         'label' => 'Lifecycle health',
         'detail' => 'Checkout to redemption',
@@ -204,17 +240,3 @@ $adminNav = [
     <a class="mg-btn mg-btn-ghost" href="/inbox.php">Exit admin</a>
   </div>
 </aside>
-<?php if ($canNotifications): ?>
-<script>
-(function(){
-  var nodes=document.querySelectorAll('[data-admin-nav-count]');
-  if(!nodes.length)return;
-  fetch('/api/admin/notifications.php?limit=10',{credentials:'same-origin',headers:{Accept:'application/json'}}).then(function(response){return response.json();}).then(function(payload){
-    if(!payload||!payload.ok||!payload.data||!payload.data.summary)return;
-    var summary=payload.data.summary;
-    var counts={notifications:summary.unread_total||0,support_queue:summary.urgent_unread_total||0,ops_command:summary.urgent_unread_total||0};
-    nodes.forEach(function(node){var value=Number(counts[node.getAttribute('data-admin-nav-count')]||0);node.textContent=value>99?'99+':String(value);node.hidden=value<=0;});
-  }).catch(function(){});
-})();
-</script>
-<?php endif; ?>
