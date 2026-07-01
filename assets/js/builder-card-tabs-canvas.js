@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded',function(){
     root.querySelectorAll('[data-builder-step]').forEach(function(button){button.hidden=!stepAllowed(button.dataset.builderStep,type);});
     root.querySelectorAll('[data-builder-panel]').forEach(function(panel){var step=panel.dataset.builderPanel;panel.hidden=!stepAllowed(step,type);});
     root.querySelectorAll('[data-builder-types]').forEach(function(node){var list=String(node.dataset.builderTypes||'').split(/\s+/).filter(Boolean);var visible=!list.length||list.indexOf(type)!==-1;node.hidden=!visible;node.setAttribute('aria-hidden',visible?'false':'true');node.querySelectorAll('input,textarea,select,button').forEach(function(control){control.disabled=!visible;});});
-    var headline=root.querySelector('#headline');var message=root.querySelector('#message');if(headline)headline.required=isCardType(type);if(message)message.required=isCardType(type);
+    var headline=root.querySelector('#headline');var message=root.querySelector('#message');if(headline)headline.required=false;if(message)message.required=isCardType(type);
     var active=root.querySelector('[data-builder-step].is-active');if(active&&active.hidden)activateStep('product');
   }
   root.querySelectorAll('input[name="builder_type"]').forEach(function(input){input.addEventListener('change',function(){syncTypeUI();});});
