@@ -14,6 +14,7 @@ $can_create_microgift = (bool) ($can_create_microgift ?? ($can_merchant_nav && m
 $can_create_campaigns = (bool) ($can_create_campaigns ?? ($can_merchant_nav && mg_package_limit_allows_create($mg_package_context, 'max_active_campaigns', 0)));
 $can_create_rewards = (bool) ($can_create_rewards ?? ($can_merchant_nav && mg_package_limit_allows_create($mg_package_context, 'max_rewards', 0)));
 $can_header_create = $show_header_create && $can_merchant_nav && ($can_create_microgift || $can_create_campaigns || $can_create_rewards || in_array('super_admin', $user_roles, true));
+$merchant_storefront_href = $account_storefront_url ?: '/merchant-storefront.php';
 ?>
 <div class="mg-header-actions" data-header-template="logged-in">
   <?php if ($can_header_create): ?>
@@ -56,10 +57,12 @@ $can_header_create = $show_header_create && $can_merchant_nav && ($can_create_mi
       <div class="mg-account-tabs">
         <input class="mg-account-tab-radio" type="radio" name="mg-account-tab" id="mg-account-tab-customer" checked>
         <input class="mg-account-tab-radio" type="radio" name="mg-account-tab" id="mg-account-tab-merchant">
+        <input class="mg-account-tab-radio" type="radio" name="mg-account-tab" id="mg-account-tab-agent">
 
         <div class="mg-account-tab-list" role="tablist" aria-label="Account menu sections">
           <label class="mg-account-tab" for="mg-account-tab-customer" role="tab">Customer</label>
           <label class="mg-account-tab" for="mg-account-tab-merchant" role="tab">Merchant</label>
+          <label class="mg-account-tab" for="mg-account-tab-agent" role="tab">Agent</label>
         </div>
 
         <div class="mg-account-tab-panels">
@@ -67,7 +70,8 @@ $can_header_create = $show_header_create && $can_merchant_nav && ($can_create_mi
             <?php $customerMenuIndex = 1; ?>
             <a class="mg-account-action" href="/inbox.php"><span class="mg-account-index"><?= str_pad((string) $customerMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>IN/OUT Box</span></a>
             <a class="mg-account-action" href="/feed.php"><span class="mg-account-index"><?= str_pad((string) $customerMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>My Feed</span></a>
-            <a class="mg-account-action" href="/account-commerce.php"><span class="mg-account-index"><?= str_pad((string) $customerMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Commerce center</span></a>
+            <a class="mg-account-action" href="/notifications.php"><span class="mg-account-index"><?= str_pad((string) $customerMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>My Notifications</span></a>
+            <a class="mg-account-action" href="/account-commerce.php"><span class="mg-account-index"><?= str_pad((string) $customerMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>My Orders</span></a>
             <a class="mg-account-action" href="/account-market.php"><span class="mg-account-index"><?= str_pad((string) $customerMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>My Demand</span></a>
             <a class="mg-account-action" href="/wallet.php"><span class="mg-account-index"><?= str_pad((string) $customerMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>My Wallet</span></a>
             <?php if ($account_profile_url): ?><a class="mg-account-action" href="<?= mg_e($account_profile_url) ?>"><span class="mg-account-index"><?= str_pad((string) $customerMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>My Profile</span></a><?php endif; ?>
@@ -78,17 +82,51 @@ $can_header_create = $show_header_create && $can_merchant_nav && ($can_create_mi
           <div class="mg-account-tab-panel mg-account-merchant-panel" role="tabpanel" aria-label="Merchant links">
             <?php if ($can_merchant_nav): ?>
               <?php $merchantMenuIndex = 1; ?>
-              <?php if ($account_storefront_url): ?><a class="mg-account-action" href="<?= mg_e($account_storefront_url) ?>"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>My Storefront</span></a><?php endif; ?>
-              <a class="mg-account-action" href="/merchant-automation.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Agent Settings</span></a>
               <a class="mg-account-action" href="/merchant.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Merchant Dashboard</span></a>
+              <a class="mg-account-action" href="/merchant-notifications.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Merch Notifications</span></a>
+              <a class="mg-account-action" href="/merchant-pppm.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Merchant Orders</span></a>
+              <a class="mg-account-action" href="/merchant-stamps.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Merchant Stamps</span></a>
+              <a class="mg-account-action" href="<?= mg_e($merchant_storefront_href) ?>"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>My Storefront</span></a>
+              <a class="mg-account-action" href="/merchant-products.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Products</span></a>
+              <a class="mg-account-action" href="/merchant-campaigns.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Campaigns</span></a>
+              <a class="mg-account-action" href="/merchant-reward-templates.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Rewards</span></a>
               <a class="mg-account-action" href="/merchant-crm.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Merchant CRM</span></a>
+              <a class="mg-account-action" href="/merchant-claims.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Claims</span></a>
+              <a class="mg-account-action" href="/merchant-locations.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Locations</span></a>
+              <a class="mg-account-action" href="/merchant-team.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Team</span></a>
+              <a class="mg-account-action" href="/merchant-payments.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Payments</span></a>
+              <a class="mg-account-action" href="/merchant-settings.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Settings</span></a>
               <?php if ($can_sales_crm): ?><a class="mg-account-action" href="/sales-crm.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Sales CRM</span></a><?php endif; ?>
             <?php else: ?>
-              <div class="mg-account-merchant-upgrade">
+              <div class="mg-account-upgrade-panel">
                 <span class="mg-account-upgrade-kicker">Merchant access</span>
                 <strong>Upgrade to Merchant</strong>
                 <p>Create a storefront, manage products, launch campaigns, and unlock merchant tools with a Microgifter subscription.</p>
-                <a class="mg-account-upgrade-cta" href="/account-subscriptions.php">View Subscription Options</a>
+                <a class="mg-account-upgrade-cta" href="/account-subscriptions.php">Upgrade Account</a>
+              </div>
+            <?php endif; ?>
+          </div>
+
+          <div class="mg-account-tab-panel mg-account-agent-panel" role="tabpanel" aria-label="Agent links">
+            <?php if ($can_merchant_nav): ?>
+              <?php $agentMenuIndex = 1; ?>
+              <a class="mg-account-action" href="/merchant-agent-chat.php"><span class="mg-account-index"><?= str_pad((string) $agentMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Agent Chat</span></a>
+              <a class="mg-account-action" href="/merchant-automation.php"><span class="mg-account-index"><?= str_pad((string) $agentMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Agent Settings</span></a>
+              <a class="mg-account-action" href="/merchant-agent-monitor.php"><span class="mg-account-index"><?= str_pad((string) $agentMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Agent Monitor</span></a>
+              <a class="mg-account-action" href="/merchant-agent-approvals.php"><span class="mg-account-index"><?= str_pad((string) $agentMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Agent Approvals</span></a>
+              <a class="mg-account-action" href="/merchant-agent-messages.php"><span class="mg-account-index"><?= str_pad((string) $agentMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Agent Messages</span></a>
+              <a class="mg-account-action" href="/merchant-agent-forecast.php"><span class="mg-account-index"><?= str_pad((string) $agentMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Agent Forecast</span></a>
+              <a class="mg-account-action" href="/merchant-agent-analytics.php"><span class="mg-account-index"><?= str_pad((string) $agentMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Agent Analytics</span></a>
+              <a class="mg-account-action" href="/merchant-agent-growth-plan.php"><span class="mg-account-index"><?= str_pad((string) $agentMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Agent Growth Plan</span></a>
+              <a class="mg-account-action" href="/merchant-agent-action-composer.php"><span class="mg-account-index"><?= str_pad((string) $agentMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Agent Action Composer</span></a>
+              <a class="mg-account-action" href="/merchant-agent-qa.php"><span class="mg-account-index"><?= str_pad((string) $agentMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Agent QA</span></a>
+              <a class="mg-account-action" href="/merchant-agent-roi.php"><span class="mg-account-index"><?= str_pad((string) $agentMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Agent ROI</span></a>
+            <?php else: ?>
+              <div class="mg-account-upgrade-panel">
+                <span class="mg-account-upgrade-kicker">Agent access</span>
+                <strong>Unlock Agent Tools</strong>
+                <p>Agent tools are available with a Merchant account. Upgrade to activate merchant automation, approvals, forecasting, CRM intelligence, and managed commerce workflows.</p>
+                <a class="mg-account-upgrade-cta" href="/account-subscriptions.php">Upgrade Account</a>
               </div>
             <?php endif; ?>
           </div>
