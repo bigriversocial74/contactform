@@ -14,7 +14,7 @@ $appSidebarBeforeNav = '';
 $appSidebarAfterNav = $canMerchantNav ? <<<'HTML'
 <div class="mg-sidebar-mobile-scanner">
   <button class="mg-sidebar-scanner-button" type="button" data-scanner-trigger aria-label="Open merchant scanner">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M7 8h2v2H7V8Zm4 0h2v2h-2V8Zm4 0h2v2h-2V8ZM7 12h2v2H7v-2Zm4 0h6v2h-6v-2ZM7 16h6v2H7v-2Zm8 0h2v2h-2v-2Z" fill="currentColor"/></svg>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M7 8h2v2H7V8Zm4 0h2v2h-2V8Zm4 0h2v2h-2ZM7 12h2v2H7v-2Zm4 0h6v2h-6v-2ZM7 16h6v2H7v-2Zm8 0h2v2h-2v-2Z" fill="currentColor"/></svg>
     <span><strong>Scanner</strong><small>Redeem PPPM voucher QR codes</small></span>
   </button>
 </div>
@@ -27,7 +27,21 @@ $appSidebarNav = [
         'detail' => 'Rewards, posts, and gift activity',
         'href' => '/feed.php',
         'visible' => true,
-        'active' => $agentSidebarActive === 'my-feed' || $agentSidebarActive === 'feed',
+        'active' => $agentSidebarActive === 'my-feed' || $agentSidebarActive === 'feed' || $agentSidebarActive === 'feed-discover',
+    ],
+    'feed-following' => [
+        'label' => 'Following',
+        'detail' => 'Posts from profiles you follow',
+        'href' => '/feed.php?view=following',
+        'visible' => true,
+        'active' => $agentSidebarActive === 'feed-following',
+    ],
+    'feed-mine' => [
+        'label' => 'My posts',
+        'detail' => 'Create and manage your posts',
+        'href' => '/feed.php?view=mine',
+        'visible' => true,
+        'active' => $agentSidebarActive === 'feed-mine',
     ],
     'agent_chat' => [
         'section' => 'Agent',
@@ -90,7 +104,7 @@ require __DIR__ . '/app-sidebar.php';
 /* Hidden compatibility markers keep legacy recovery-baseline contracts stable while
    the visible sidebar UI stays simplified and universal. */
 ?>
-<div class="mg-merchant-side-actions" hidden aria-hidden="true"><a href="/inbox.php">Inbox</a><a href="/sent.php">Sent</a><a href="/claimed.php">Claimed</a><a href="/messages.php">Messages</a><a href="/merchant-locations.php">Locations</a><a href="/merchant-products.php">Products &amp; offers</a><a href="/merchant-pppm.php">Orders &amp; redemptions</a><a href="/merchant-settings.php">Merchant settings</a><a class="mg-merchant-side-action is-primary" href="/build.php">Create gift</a></div>
+<div class="mg-merchant-side-actions" hidden aria-hidden="true"><a href="/inbox.php">Inbox</a><a href="/sent.php">Sent</a><a href="/claimed.php">Claimed</a><a href="/feed.php">My Feed</a><a href="/feed.php?view=following">Following</a><a href="/feed.php?view=mine">My posts</a><a href="/messages.php">Messages</a><a href="/merchant-locations.php">Locations</a><a href="/merchant-products.php">Products &amp; offers</a><a href="/merchant-pppm.php">Orders &amp; redemptions</a><a href="/merchant-settings.php">Merchant settings</a><a class="mg-merchant-side-action is-primary" href="/build.php">Create gift</a></div>
 <style>
 .mg-sidebar-mobile-scanner{display:none!important}
 .mg-scanner-confirm-card{display:grid!important;gap:8px!important;margin:10px 0!important;padding:12px!important;border:1px solid #dbeafe!important;border-radius:16px!important;background:#f8fbff!important}
