@@ -9,72 +9,19 @@
   function time(value){if(!value)return 'Never'; try{return new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}).format(new Date(String(value).replace(' ','T')));}catch(e){return String(value);}}
   function kpi(label,value,detail){return '<article class="mg-ad-diagnostics-kpi"><span>'+esc(label)+'</span><strong>'+esc(value)+'</strong><small>'+esc(detail||'')+'</small></article>';}
   function pill(label, ok){return '<span class="mg-ad-diagnostics-pill '+(ok?'is-ok':'is-warn')+'">'+esc(label)+'</span>';}
-  function renderKpis(summary){
-    var target=qs('[data-diagnostics-kpis]'); if(!target)return;
-    target.innerHTML=[
-      kpi('Placements', num(summary.placements_total), num(summary.placements_enabled)+' enabled'),
-      kpi('Returning ads', num(summary.placements_returning_ads), 'Render check'),
-      kpi('Active assignments', num(summary.active_assignments), 'Approved/active ads'),
-      kpi('Warnings', num(summary.warnings), summary.status || 'status'),
-      kpi('Wallet-linked events', num(summary.wallet_linked_events), 'Direct attribution')
-    ].join('');
-  }
-  function renderChecks(data){
-    var target=qs('[data-diagnostics-schema]'); if(!target)return;
-    var html='';
-    html+='<h3>Required tables</h3><div class="mg-ad-diagnostics-check-list">';
-    Object.keys(data.tables||{}).forEach(function(key){html+=pill(key, !!data.tables[key]);});
-    html+='</div><h3>Optional value attribution tables</h3><div class="mg-ad-diagnostics-check-list">';
-    Object.keys(data.optional_tables||{}).forEach(function(key){html+=pill(key, !!data.optional_tables[key]);});
-    html+='</div><h3>Direct attribution columns</h3><div class="mg-ad-diagnostics-check-list">';
-    Object.keys(data.columns||{}).forEach(function(key){html+=pill(key, !!data.columns[key]);});
-    html+='</div>';
-    target.innerHTML=html;
-  }
-  function renderNotes(notes){
-    var target=qs('[data-diagnostics-notes]'); if(!target)return;
-    target.innerHTML=(notes||[]).map(function(note){return '<p>'+esc(note)+'</p>';}).join('') || '<p>No notes.</p>';
-  }
+  function issuePill(text){return '<span class="mg-ad-admin-issue-pill">'+esc(text)+'</span>';}
+  function okPill(text){return '<span class="mg-ad-admin-ok-pill">'+esc(text)+'</span>';}
+  function imageState(image){image=image||{}; return image.issue ? issuePill(image.issue) : okPill((image.source||'image').replace(/_/g,' '));}
+  function renderKpis(summary){var target=qs('[data-diagnostics-kpis]'); if(!target)return; target.innerHTML=[kpi('Placements',num(summary.placements_total),num(summary.placements_enabled)+' enabled'),kpi('Returning ads',num(summary.placements_returning_ads),'Render check'),kpi('Active assignments',num(summary.active_assignments),'Approved/active ads'),kpi('Warnings',num(summary.warnings),summary.status||'status'),kpi('Creative issues',num(summary.creative_issues),'Image, CTA, destination'),kpi('Campaign gaps',num(summary.campaign_gaps),'Approved/active campaigns'),kpi('Wallet-linked events',num(summary.wallet_linked_events),'Direct attribution')].join('');}
+  function renderChecks(data){var target=qs('[data-diagnostics-schema]'); if(!target)return; var html=''; html+='<h3>Required tables</h3><div class="mg-ad-diagnostics-check-list">'; Object.keys(data.tables||{}).forEach(function(key){html+=pill(key,!!data.tables[key]);}); html+='</div><h3>Optional value attribution tables</h3><div class="mg-ad-diagnostics-check-list">'; Object.keys(data.optional_tables||{}).forEach(function(key){html+=pill(key,!!data.optional_tables[key]);}); html+='</div><h3>Direct attribution columns</h3><div class="mg-ad-diagnostics-check-list">'; Object.keys(data.columns||{}).forEach(function(key){html+=pill(key,!!data.columns[key]);}); html+='</div>'; target.innerHTML=html;}
+  function renderNotes(notes){var target=qs('[data-diagnostics-notes]'); if(!target)return; target.innerHTML=(notes||[]).map(function(note){return '<p>'+esc(note)+'</p>';}).join('') || '<p>No notes.</p>';}
+  function renderGaps(rows){var target=qs('[data-diagnostics-gaps]'); if(!target)return; rows=Array.isArray(rows)?rows:[]; if(!rows.length){target.innerHTML='<div class="mg-ads-empty">No approved or active campaign creative/placement gaps detected.</div>';return;} target.innerHTML=rows.map(function(row){return '<article class="mg-ad-admin-gap-card"><div><strong>'+esc(row.title||'Sponsored Campaign')+'</strong><span>'+esc(row.status||'')+' · '+esc(row.merchant_name||'Microgifter Merchant')+' · '+num(row.active_placements)+' active placements</span></div><div class="mg-ad-admin-gap-meta"><span><b>Headline</b>'+esc(row.headline||'Missing')+'</span><span><b>Image</b>'+imageState(row.image)+'</span><span><b>CTA</b>'+esc(row.cta_label||'Missing')+'</span><span><b>Destination</b>'+esc(row.destination_url||'Missing')+'</span></div><div class="mg-ad-admin-issue-list">'+(row.issues||[]).map(issuePill).join('')+'</div></article>';}).join('');}
   function eventMetric(events,type){var row=(events||{})[type]||{}; return '<span><strong>'+num(row.count)+'</strong> '+esc(type.replace(/_/g,' '))+'<small>'+esc(time(row.last_at))+'</small></span>';}
-  function assignmentList(rows){
-    rows=Array.isArray(rows)?rows:[];
-    if(!rows.length)return '<div class="mg-ads-empty">No assignments.</div>';
-    return rows.map(function(row){return '<div class="mg-ad-diagnostics-assignment"><strong>'+esc(row.title)+'</strong><span>'+esc(row.campaign_status)+' · '+esc(row.assignment_status)+' · priority '+esc(row.priority)+' · '+esc(row.merchant_name)+'</span></div>';}).join('');
-  }
-  function sampleList(rows){
-    rows=Array.isArray(rows)?rows:[];
-    if(!rows.length)return '<div class="mg-ads-empty">No render sample.</div>';
-    return rows.map(function(row){return '<div class="mg-ad-diagnostics-sample"><strong>'+esc(row.title||row.headline||'Sponsored ad')+'</strong><span>'+esc(row.headline||row.id||'')+'</span></div>';}).join('');
-  }
-  function placementCard(row){
-    var issues=Array.isArray(row.issues)?row.issues:[];
-    var issueHtml=issues.length?issues.map(function(issue){return '<li>'+esc(issue)+'</li>';}).join(''):'<li>No issues detected.</li>';
-    var statusClass='is-'+esc(row.status||'unknown');
-    return '<article class="mg-ad-diagnostics-card '+statusClass+'">'
-      +'<div class="mg-ads-row-head"><div><span class="mg-ads-eyebrow">'+esc(row.surface||'surface')+'</span><h2>'+esc(row.placement_name||row.placement_key)+'</h2><p class="mg-ads-muted">'+esc(row.placement_key)+'</p></div><span class="mg-ads-pill '+statusClass+'">'+esc(row.status||'unknown').replace(/_/g,' ')+'</span></div>'
-      +'<div class="mg-ad-diagnostics-meta"><span><strong>'+(row.is_active?'Enabled':'Disabled')+'</strong> placement</span><span><strong>'+num(row.max_ads)+'</strong> max ads</span><span><strong>'+num(row.active_assignment_count)+'</strong> active assignments</span><span><strong>'+num(row.render_count)+'</strong> render count</span></div>'
-      +'<div class="mg-ad-diagnostics-events">'+eventMetric(row.events,'impression')+eventMetric(row.events,'click')+eventMetric(row.events,'wallet_save')+eventMetric(row.events,'claim')+eventMetric(row.events,'redeem')+'</div>'
-      +'<section class="mg-ad-diagnostics-detail"><div><h3>Render test</h3><p>'+esc(row.render_message||'')+'</p>'+sampleList(row.render_sample)+'</div><div><h3>Issues</h3><ul>'+issueHtml+'</ul></div></section>'
-      +'<details class="mg-ad-diagnostics-assignments"><summary>Assignments</summary>'+assignmentList(row.assignments)+'</details>'
-      +'</article>';
-  }
-  function renderPlacements(rows){
-    var target=qs('[data-diagnostics-placements]'); if(!target)return;
-    target.innerHTML=(rows||[]).length?(rows||[]).map(placementCard).join(''):'<div class="mg-ads-empty">No placement diagnostics available.</div>';
-  }
-  async function load(){
-    status('Loading diagnostics...');
-    var res=await fetch('/api/ads/admin-diagnostics.php',{credentials:'same-origin',headers:{Accept:'application/json'}});
-    var out=await res.json().catch(function(){return {ok:false,message:'Invalid server response'};});
-    if(!out.ok)throw new Error(out.message||'Unable to load diagnostics.');
-    var data=out.data||{};
-    var summary=data.summary||{};
-    var summaryNode=qs('[data-diagnostics-summary]');
-    if(summaryNode)summaryNode.textContent=data.schema_ready?'Campaign Ads diagnostics loaded.':'Campaign Ads setup is incomplete.';
-    renderKpis(summary); renderChecks(data); renderNotes(data.notes||[]); renderPlacements(data.placements||[]);
-    status('Diagnostics loaded.');
-  }
-  var refresh=qs('[data-diagnostics-refresh]');
-  if(refresh)refresh.addEventListener('click',function(){load().catch(function(error){status(error.message,true);});});
+  function assignmentList(rows){rows=Array.isArray(rows)?rows:[]; if(!rows.length)return '<div class="mg-ads-empty">No assignments.</div>'; return rows.map(function(row){var issues=(row.creative_issues||[]).map(issuePill).join(''); return '<div class="mg-ad-diagnostics-assignment"><strong>'+esc(row.title)+'</strong><span>'+esc(row.campaign_status)+' · '+esc(row.assignment_status)+' · priority '+esc(row.priority)+' · '+esc(row.merchant_name)+'</span><div class="mg-ad-admin-mini-meta"><span>Image: '+esc(row.image&&row.image.source?row.image.source.replace(/_/g,' '):'missing')+'</span><span>CTA: '+esc(row.cta_label||'missing')+'</span><span>Destination: '+esc(row.destination_url||'missing')+'</span></div>'+(issues?'<div class="mg-ad-admin-issue-list">'+issues+'</div>':'')+'</div>';}).join('');}
+  function sampleList(rows){rows=Array.isArray(rows)?rows:[]; if(!rows.length)return '<div class="mg-ads-empty">No render sample.</div>'; return rows.map(function(row){return '<div class="mg-ad-diagnostics-sample"><strong>'+esc(row.title||row.headline||'Sponsored ad')+'</strong><span>'+esc(row.headline||row.id||'')+'</span><div class="mg-ad-admin-mini-meta"><span>Image: '+esc(row.image_url||'missing')+'</span><span>CTA: '+esc(row.cta_label||'missing')+'</span><span>Destination: '+esc(row.destination_url||'missing')+'</span></div></div>';}).join('');}
+  function placementCard(row){var issues=Array.isArray(row.issues)?row.issues:[]; var issueHtml=issues.length?issues.map(function(issue){return '<li>'+esc(issue)+'</li>';}).join(''):'<li>No issues detected.</li>'; var statusClass='is-'+esc(row.status||'unknown'); return '<article class="mg-ad-diagnostics-card '+statusClass+'"><div class="mg-ads-row-head"><div><span class="mg-ads-eyebrow">'+esc(row.surface||'surface')+'</span><h2>'+esc(row.placement_name||row.placement_key)+'</h2><p class="mg-ads-muted">'+esc(row.placement_key)+'</p></div><span class="mg-ads-pill '+statusClass+'">'+esc(row.status||'unknown').replace(/_/g,' ')+'</span></div><div class="mg-ad-diagnostics-meta"><span><strong>'+(row.is_active?'Enabled':'Disabled')+'</strong> placement</span><span><strong>'+num(row.max_ads)+'</strong> max ads</span><span><strong>'+num(row.active_assignment_count)+'</strong> active assignments</span><span><strong>'+num(row.render_count)+'</strong> render count</span></div><div class="mg-ad-diagnostics-events">'+eventMetric(row.events,'impression')+eventMetric(row.events,'click')+eventMetric(row.events,'wallet_save')+eventMetric(row.events,'claim')+eventMetric(row.events,'redeem')+'</div><section class="mg-ad-diagnostics-detail"><div><h3>Render test</h3><p>'+esc(row.render_message||'')+'</p>'+sampleList(row.render_sample)+'</div><div><h3>Issues</h3><ul>'+issueHtml+'</ul></div></section><details class="mg-ad-diagnostics-assignments"><summary>Assignments</summary>'+assignmentList(row.assignments)+'</details></article>';}
+  function renderPlacements(rows){var target=qs('[data-diagnostics-placements]'); if(!target)return; target.innerHTML=(rows||[]).length?(rows||[]).map(placementCard).join(''):'<div class="mg-ads-empty">No placement diagnostics available.</div>';}
+  async function load(){status('Loading diagnostics...'); var res=await fetch('/api/ads/admin-diagnostics.php',{credentials:'same-origin',headers:{Accept:'application/json'}}); var out=await res.json().catch(function(){return {ok:false,message:'Invalid server response'};}); if(!out.ok)throw new Error(out.message||'Unable to load diagnostics.'); var data=out.data||{}; var summary=data.summary||{}; var summaryNode=qs('[data-diagnostics-summary]'); if(summaryNode)summaryNode.textContent=data.schema_ready?'Campaign Ads diagnostics loaded.':'Campaign Ads setup is incomplete.'; renderKpis(summary); renderChecks(data); renderNotes(data.notes||[]); renderGaps(data.campaign_gaps||[]); renderPlacements(data.placements||[]); status('Diagnostics loaded.');}
+  var refresh=qs('[data-diagnostics-refresh]'); if(refresh)refresh.addEventListener('click',function(){load().catch(function(error){status(error.message,true);});});
   load().catch(function(error){status(error.message,true);});
 })(window, document);

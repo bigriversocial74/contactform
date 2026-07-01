@@ -54,6 +54,68 @@ function mg_ads_diag_event_public(array $events): array
     return $out;
 }
 
+function mg_ads_diag_safe_image_status(mixed $value): array
+{
+    $raw = trim((string)$value);
+    $safe = mg_ads_safe_url($raw);
+    $hasUrl = $raw !== '';
+    $looksUploaded = $safe !== null && str_starts_with($safe, '/uploads/ad-creatives/');
+    return [
+        'url' => $safe,
+        'has_url' => $hasUrl,
+        'safe_url' => $safe !== null,
+        'source' => $looksUploaded ? 'uploaded_creative' : ($safe !== null && str_starts_with($safe, '/') ? 'relative_url' : ($safe !== null ? 'external_url' : 'missing')),
+        'issue' => !$hasUrl ? 'Missing creative image URL' : ($safe === null ? 'Creative image URL is not render-safe' : null),
+    ];
+}
+
+function mg_ads_diag_destination_from_meta(mixed $metadataJson): ?string
+{
+    $meta = mg_ads_decode_json($metadataJson);
+    return mg_ads_safe_url($meta['destination_url'] ?? '') ?? null;
+}
+
+function mg_ads_diag_campaign_gaps(PDO $pdo): array
+{
+    $sql = "SELECT c.public_id,c.title,c.status,c.merchant_id,cr.headline,cr.image_url,cr.cta_label,cr.metadata_json,COUNT(CASE WHEN cp.status='active' THEN 1 END) active_placements
+            FROM ad_campaigns c
+            LEFT JOIN ad_creatives cr ON cr.ad_campaign_id=c.id
+            LEFT JOIN ad_campaign_placements cp ON cp.ad_campaign_id=c.id AND cp.status<>'archived'
+            WHERE c.status IN ('approved','active')
+            GROUP BY c.id,cr.id
+            ORDER BY c.updated_at DESC,c.id DESC
+            LIMIT 80";
+    $stmt = $pdo->query($sql);
+    $gaps = [];
+    foreach (($stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : []) as $row) {
+        $issues = [];
+        $headline = trim((string)($row['headline'] ?? ''));
+        $image = mg_ads_diag_safe_image_status($row['image_url'] ?? '');
+        $cta = trim((string)($row['cta_label'] ?? ''));
+        $destination = mg_ads_diag_destination_from_meta($row['metadata_json'] ?? null);
+        if ((int)($row['active_placements'] ?? 0) < 1) $issues[] = 'Approved/active campaign has no active placement assignment';
+        if ($headline === '') $issues[] = 'Campaign is missing creative headline';
+        if ($image['issue'] !== null) $issues[] = $image['issue'];
+        if ($cta === '') $issues[] = 'Campaign is missing CTA label';
+        if ($destination === null) $issues[] = 'Campaign is missing destination URL';
+        if ($issues === []) continue;
+        $profile = mg_ads_merchant_profile($pdo, (int)($row['merchant_id'] ?? 0));
+        $gaps[] = [
+            'campaign_id' => (string)($row['public_id'] ?? ''),
+            'title' => (string)($row['title'] ?? 'Sponsored Campaign'),
+            'status' => (string)($row['status'] ?? ''),
+            'merchant_name' => (string)($profile['merchant_name'] ?? 'Microgifter Merchant'),
+            'active_placements' => (int)($row['active_placements'] ?? 0),
+            'headline' => $headline,
+            'image' => $image,
+            'cta_label' => $cta,
+            'destination_url' => $destination,
+            'issues' => $issues,
+        ];
+    }
+    return $gaps;
+}
+
 function mg_ads_diag_load(PDO $pdo): array
 {
     $schema = mg_ads_schema_status($pdo);
@@ -79,11 +141,14 @@ function mg_ads_diag_load(PDO $pdo): array
                 'placements_returning_ads' => 0,
                 'active_assignments' => 0,
                 'warnings' => count(array_filter($tableChecks, static fn($ready) => !$ready)),
+                'campaign_gaps' => 0,
+                'creative_issues' => 0,
             ],
             'tables' => $tableChecks,
             'optional_tables' => $optionalTables,
             'columns' => $columns,
             'placements' => [],
+            'campaign_gaps' => [],
             'notes' => ['Campaign Ads Manager migration is required before diagnostics can run.'],
         ];
     }
@@ -93,13 +158,25 @@ function mg_ads_diag_load(PDO $pdo): array
     $placementsStmt = $pdo->query('SELECT placement_key, placement_name, surface, description, is_active, max_ads, updated_at FROM ad_placements ORDER BY FIELD(placement_key,\'feed_sponsored_card\',\'sidebar_sponsored_card\',\'world_canvas_sponsored_pin\',\'target_zone_sponsored_drop\',\'inbox_recommendation\',\'claim_success_recommendation\',\'campaign_drops_map\',\'wallet_recommendation\'), placement_key ASC');
     $placements = $placementsStmt ? $placementsStmt->fetchAll(PDO::FETCH_ASSOC) : [];
 
-    $assignSql = "SELECT cp.placement_key, cp.status assignment_status, cp.priority, c.public_id, c.title, c.status campaign_status, c.merchant_id, cr.headline FROM ad_campaign_placements cp INNER JOIN ad_campaigns c ON c.id=cp.ad_campaign_id LEFT JOIN ad_creatives cr ON cr.ad_campaign_id=c.id WHERE c.status<>'archived' AND cp.status<>'archived' ORDER BY cp.placement_key ASC, cp.priority ASC, cp.updated_at DESC";
+    $assignSql = "SELECT cp.placement_key, cp.status assignment_status, cp.priority, c.public_id, c.title, c.status campaign_status, c.merchant_id, cr.headline, cr.image_url, cr.cta_label, cr.metadata_json
+                  FROM ad_campaign_placements cp
+                  INNER JOIN ad_campaigns c ON c.id=cp.ad_campaign_id
+                  LEFT JOIN ad_creatives cr ON cr.ad_campaign_id=c.id
+                  WHERE c.status<>'archived' AND cp.status<>'archived'
+                  ORDER BY cp.placement_key ASC, cp.priority ASC, cp.updated_at DESC";
     $assignStmt = $pdo->query($assignSql);
     $assignmentsByPlacement = [];
     foreach (($assignStmt ? $assignStmt->fetchAll(PDO::FETCH_ASSOC) : []) as $row) {
         $key = (string)($row['placement_key'] ?? '');
         if ($key === '') continue;
         $profile = mg_ads_merchant_profile($pdo, (int)($row['merchant_id'] ?? 0));
+        $image = mg_ads_diag_safe_image_status($row['image_url'] ?? '');
+        $destination = mg_ads_diag_destination_from_meta($row['metadata_json'] ?? null);
+        $creativeIssues = [];
+        if (trim((string)($row['headline'] ?? '')) === '') $creativeIssues[] = 'Missing headline';
+        if ($image['issue'] !== null) $creativeIssues[] = $image['issue'];
+        if (trim((string)($row['cta_label'] ?? '')) === '') $creativeIssues[] = 'Missing CTA label';
+        if ($destination === null) $creativeIssues[] = 'Missing destination URL';
         $assignmentsByPlacement[$key][] = [
             'campaign_id' => (string)($row['public_id'] ?? ''),
             'title' => (string)($row['title'] ?? 'Sponsored Campaign'),
@@ -108,6 +185,10 @@ function mg_ads_diag_load(PDO $pdo): array
             'assignment_status' => (string)($row['assignment_status'] ?? ''),
             'priority' => (int)($row['priority'] ?? 100),
             'merchant_name' => (string)($profile['merchant_name'] ?? 'Microgifter Merchant'),
+            'image' => $image,
+            'cta_label' => (string)($row['cta_label'] ?? ''),
+            'destination_url' => $destination,
+            'creative_issues' => $creativeIssues,
         ];
     }
 
@@ -129,11 +210,13 @@ function mg_ads_diag_load(PDO $pdo): array
         }
     }
 
+    $campaignGaps = mg_ads_diag_campaign_gaps($pdo);
     $diagnostics = [];
     $enabled = 0;
     $returning = 0;
     $activeAssignments = 0;
     $warnings = 0;
+    $creativeIssues = 0;
 
     foreach ($placements as $placement) {
         $key = (string)($placement['placement_key'] ?? '');
@@ -160,17 +243,26 @@ function mg_ads_diag_load(PDO $pdo): array
         $lastAny = mg_ads_diag_last_event($events);
         $lastImpression = mg_ads_diag_last_event($events, 'impression');
         $issues = [];
+        $placementCreativeIssues = 0;
         if (!$isActive) $issues[] = 'Placement disabled';
         if ($maxAds < 1) $issues[] = 'Max ads is below 1';
         if (!$activeRows) $issues[] = 'No approved/active campaign assignments';
         if ($isActive && $activeRows && count($renderItems) < 1) $issues[] = 'Active placement has assignments but render test returned zero ads';
         if ($isActive && count($renderItems) > 0 && $lastImpression === '') $issues[] = 'Ads can render, but no impressions have been tracked yet';
+        foreach ($activeRows as $activeRow) {
+            foreach (($activeRow['creative_issues'] ?? []) as $creativeIssue) {
+                $issues[] = $activeRow['title'] . ': ' . $creativeIssue;
+                $placementCreativeIssues++;
+                $creativeIssues++;
+            }
+        }
         if ($key === 'wallet_recommendation') $issues[] = 'Wallet placement intentionally not active/user-facing yet';
         if ($key === 'campaign_drops_map') $issues[] = 'Campaign Drops Map is reserved; World Canvas currently owns map surfaces';
 
         $status = 'ok';
         if (!$isActive) $status = 'inactive';
-        elseif ($activeRows && count($renderItems) > 0) $status = 'ready';
+        elseif ($activeRows && count($renderItems) > 0 && $placementCreativeIssues < 1) $status = 'ready';
+        elseif ($activeRows && count($renderItems) > 0) $status = 'review_creative';
         elseif ($activeRows) $status = 'blocked';
         else $status = 'needs_assignment';
 
@@ -188,18 +280,27 @@ function mg_ads_diag_load(PDO $pdo): array
             'max_ads' => $maxAds,
             'updated_at' => $placement['updated_at'] ?? null,
             'status' => $status,
-            'issues' => $issues,
+            'issues' => array_values(array_unique($issues)),
             'assignments' => $assignments,
             'active_assignment_count' => count($activeRows),
             'render_ok' => $renderOk,
             'render_count' => count($renderItems),
             'render_message' => $renderMessage,
-            'render_sample' => array_map(static fn($item) => ['id' => (string)($item['public_id'] ?? ''), 'title' => (string)($item['title'] ?? ''), 'headline' => (string)($item['creative']['headline'] ?? '')], $renderItems),
+            'render_sample' => array_map(static fn($item) => [
+                'id' => (string)($item['public_id'] ?? ''),
+                'title' => (string)($item['title'] ?? ''),
+                'headline' => (string)($item['creative']['headline'] ?? ''),
+                'image_url' => (string)($item['creative']['image_url'] ?? ''),
+                'cta_label' => (string)($item['creative']['cta_label'] ?? ''),
+                'destination_url' => (string)($item['creative']['destination_url'] ?? ''),
+            ], $renderItems),
             'events' => $events,
             'last_event_at' => $lastAny,
             'last_impression_at' => $lastImpression,
         ];
     }
+
+    $warnings += count($campaignGaps);
 
     return [
         'schema_ready' => true,
@@ -211,14 +312,18 @@ function mg_ads_diag_load(PDO $pdo): array
             'active_assignments' => $activeAssignments,
             'warnings' => $warnings,
             'wallet_linked_events' => $walletLinked,
+            'campaign_gaps' => count($campaignGaps),
+            'creative_issues' => $creativeIssues,
         ],
         'tables' => $tableChecks,
         'optional_tables' => $optionalTables,
         'columns' => $columns,
         'placements' => $diagnostics,
+        'campaign_gaps' => $campaignGaps,
         'notes' => [
             'Diagnostics are read-only and use existing Campaign Ads tables.',
             'Render checks call the same placement renderer used by public surfaces.',
+            'Creative checks flag missing headlines, images, CTA labels, and destination URLs for approved/active ads.',
             'Wallet recommendation remains excluded from user-facing activation unless a real user-facing wallet surface is created later.',
         ],
     ];

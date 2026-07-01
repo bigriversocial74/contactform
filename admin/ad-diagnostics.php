@@ -10,7 +10,7 @@ $page_section = 'account';
 $header_mode = 'account';
 $adminActive = 'ad-diagnostics';
 $page_body_class = 'mg-admin-ad-review-page mg-admin-ad-diagnostics-page';
-$page_styles = ['/assets/css/admin-shell.css','/assets/css/merchant-ad-manager.css','/assets/css/sponsored-campaign-card.css','/assets/css/ad-diagnostics.css','/assets/css/ad-health-alerts.css'];
+$page_styles = ['/assets/css/admin-shell.css','/assets/css/merchant-ad-manager.css','/assets/css/sponsored-campaign-card.css','/assets/css/ad-diagnostics.css','/assets/css/ad-admin-qa.css','/assets/css/ad-health-alerts.css'];
 $page_scripts = ['/assets/js/ad-health-alerts.js','/assets/js/admin-ad-diagnostics.js'];
 $page_manifest = [
     'id' => 'admin-ad-diagnostics',
@@ -36,12 +36,12 @@ require dirname(__DIR__) . '/includes/header.php';
           <a class="mg-system-health-back" href="/admin/ad-placements.php">Back to Ad placements</a>
           <br><br><span class="mg-ads-eyebrow">Campaign Ads QA</span>
           <h1>Campaign Ads diagnostics.</h1>
-          <p>Review schema readiness, placement setup, assignments, render output, tracking events, and attribution readiness.</p>
+          <p>Review schema readiness, placement setup, assignments, render output, tracking events, creative readiness, and attribution health.</p>
         </article>
         <aside class="mg-ads-hero-card">
           <span class="mg-ads-eyebrow">Read-only</span>
           <h2>Placement health checks</h2>
-          <p class="mg-ads-muted">Use this panel to confirm which ad surfaces are ready and which ones need attention.</p>
+          <p class="mg-ads-muted">Use this panel to confirm which ad surfaces are ready and which campaigns need creative, image, destination, or placement attention.</p>
           <div class="mg-ads-actions"><button class="mg-btn mg-btn-primary" type="button" data-diagnostics-refresh>Refresh diagnostics</button></div>
         </aside>
       </section>
@@ -77,7 +77,14 @@ require dirname(__DIR__) . '/includes/header.php';
 
         <section class="mg-ads-panel">
           <div class="mg-ads-row-head">
-            <div><h2>Placement diagnostics</h2><p class="mg-ads-muted">Each card shows configuration, assignment, render, and tracking health.</p></div>
+            <div><h2>Creative and placement gaps</h2><p class="mg-ads-muted">Approved or active campaigns that need a creative field, image URL, destination URL, CTA label, or active placement assignment.</p></div>
+          </div>
+          <div class="mg-ad-diagnostics-gaps" data-diagnostics-gaps><div class="mg-ads-empty">Loading campaign gaps...</div></div>
+        </section>
+
+        <section class="mg-ads-panel">
+          <div class="mg-ads-row-head">
+            <div><h2>Placement diagnostics</h2><p class="mg-ads-muted">Each card shows configuration, assignment, render, creative, and tracking health.</p></div>
           </div>
         </section>
         <section class="mg-ad-diagnostics-list" data-diagnostics-placements>
