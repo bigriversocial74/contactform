@@ -6,6 +6,8 @@ window.Microgifter = window.Microgifter || {};
   var csrf = root.getAttribute('data-csrf-token') || '';
   var selectedId = '';
   var campaignsCache = [];
+  var productsCache = [];
+  var selectedProduct = null;
   function esc(value){return String(value == null ? '' : value).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function qs(sel, scope){return (scope||root).querySelector(sel);}
   function qsa(sel, scope){return Array.prototype.slice.call((scope||root).querySelectorAll(sel));}
@@ -23,13 +25,59 @@ window.Microgifter = window.Microgifter || {};
     if (name === 'preview') preview();
   }
   function resetDraft(){
-    selectedId='';
+    selectedId=''; selectedProduct=null;
     qs('[data-ad-form]').reset();
     qsa('[name="placements[]"]').forEach(function(i){i.checked=i.value==='feed_sponsored_card'||i.value==='sidebar_sponsored_card';});
+    var picker=qs('[data-product-picker]'); if(picker) picker.value='';
+    renderProductSummary(null);
     status('New draft ready.'); preview(); activateTab('create');
+  }
+  function productById(id){return productsCache.find(function(product){return product.id===id;}) || null;}
+  function renderProductSummary(product){
+    var node=qs('[data-product-summary]');
+    var apply=qs('[data-apply-product]');
+    if(apply) apply.disabled=!product;
+    if(!node)return;
+    if(!product){node.hidden=true; node.innerHTML=''; return;}
+    node.hidden=false;
+    node.innerHTML='<div class="mg-ads-product-thumb">'+(product.image_url?'<img src="'+esc(product.image_url)+'" alt="">':'<span>MG</span>')+'</div><div><strong>'+esc(product.title)+'</strong><p>'+esc(product.description||product.value_label||'Merchant product')+'</p><small>'+esc([product.reward_type,product.value_label,product.status].filter(Boolean).join(' · '))+'</small></div>';
+  }
+  function applyProduct(product){
+    if(!product)return;
+    selectedProduct=product;
+    qs('[name="title"]').value = 'Promote ' + (product.title || 'Local Reward');
+    qs('[name="headline"]').value = product.headline || product.title || 'Featured Local Reward';
+    qs('[name="description"]').value = product.ad_description || product.description || 'Claim this local reward, save it to your wallet, and redeem it with the merchant.';
+    if(product.image_url) qs('[name="image_url"]').value = product.image_url;
+    qs('[name="cta_label"]').value = product.cta_label || 'Claim Reward';
+    qs('[name="destination_url"]').value = product.destination_url || '/feed.php';
+    qs('[name="objective"]').value = product.agent_add_to_wallet_allowed ? 'claim_growth' : 'local_awareness';
+    renderProductSummary(product);
+    status('Product applied to ad draft.');
+    preview();
+  }
+  async function loadProducts(){
+    var picker=qs('[data-product-picker]');
+    if(!picker)return;
+    picker.innerHTML='<option value="">Loading products…</option>';
+    try{
+      var data=await api('/api/ads/merchant-products.php?status=active');
+      productsCache=data.products||[];
+      if(!data.schema_ready){picker.innerHTML='<option value="">Product catalog unavailable</option>';return;}
+      if(!productsCache.length){picker.innerHTML='<option value="">No active products found</option>';return;}
+      picker.innerHTML='<option value="">Choose an existing product…</option>'+productsCache.map(function(product){return '<option value="'+esc(product.id)+'">'+esc(product.title+(product.value_label?' · '+product.value_label:''))+'</option>';}).join('');
+    }catch(error){picker.innerHTML='<option value="">Unable to load products</option>';}
   }
   function checkedPlacements(){return qsa('[name="placements[]"]:checked').map(function(input){return input.value;});}
   function formPayload(){
+    var productId = qs('[name="source_product_id"]') ? qs('[name="source_product_id"]').value : '';
+    var targeting = {phase:'phase1', controlled:true};
+    if (productId) {
+      var product = productById(productId);
+      targeting.source_product_id = productId;
+      targeting.source_product_type = product && product.source || 'reward_template';
+      targeting.source_product_title = product && product.title || '';
+    }
     return {
       csrf_token: csrf,
       title: qs('[name="title"]').value,
@@ -45,9 +93,10 @@ window.Microgifter = window.Microgifter || {};
       image_url: qs('[name="image_url"]').value,
       cta_label: qs('[name="cta_label"]').value,
       destination_url: qs('[name="destination_url"]').value,
+      destination_type: productId ? 'reward_template' : '',
       target_zone_id: qs('[name="target_zone_id"]').value,
       placements: checkedPlacements(),
-      targeting: {phase:'phase1', controlled:true}
+      targeting: targeting
     };
   }
   function preview(){
@@ -87,6 +136,11 @@ window.Microgifter = window.Microgifter || {};
     qs('[name="destination_url"]').value = creative.destination_url || '';
     qs('[name="target_zone_id"]').value = c.target_zone_id || '';
     qsa('[name="placements[]"]').forEach(function(input){input.checked=(c.placements||[]).indexOf(input.value)!==-1;});
+    var sourceProductId = c.targeting && c.targeting.source_product_id || '';
+    var picker=qs('[data-product-picker]');
+    if(picker) picker.value=sourceProductId;
+    selectedProduct=productById(sourceProductId);
+    renderProductSummary(selectedProduct);
     status('Loaded campaign '+selectedId+'.'); preview(); activateTab('create');
   }
   function filterCampaigns(){
@@ -132,9 +186,13 @@ window.Microgifter = window.Microgifter || {};
   qsa('input,textarea,select').forEach(function(el){el.addEventListener('input',preview); el.addEventListener('change',preview);});
   qsa('[data-ads-tab-button]').forEach(function(btn){btn.addEventListener('click',function(){activateTab(btn.getAttribute('data-ads-tab-button'));});});
   qsa('[data-ads-tab-jump]').forEach(function(btn){btn.addEventListener('click',function(e){e.preventDefault(); if (btn.textContent.indexOf('New Campaign') !== -1) resetDraft(); else activateTab(btn.getAttribute('data-ads-tab-jump'));});});
+  var picker=qs('[data-product-picker]');
+  if(picker) picker.addEventListener('change',function(){selectedProduct=productById(picker.value); renderProductSummary(selectedProduct); preview();});
+  var apply=qs('[data-apply-product]');
+  if(apply) apply.addEventListener('click',function(){applyProduct(selectedProduct || productById(picker && picker.value || ''));});
   var search=qs('[data-ads-search]'); if(search) search.addEventListener('input', renderList);
   qs('[data-save-draft]').addEventListener('click',function(){saveDraft().catch(function(e){status(e.message,true);});});
   qs('[data-submit-current]').addEventListener('click',function(){submitCampaign('').catch(function(e){status(e.message,true);});});
   qs('[data-new-draft]').addEventListener('click',function(){saveDraft().catch(function(e){status(e.message,true);});});
-  preview(); loadList().catch(function(e){status(e.message,true);}); loadPerformance().catch(function(){});
+  preview(); loadProducts().catch(function(){}); loadList().catch(function(e){status(e.message,true);}); loadPerformance().catch(function(){});
 })(window, document);
