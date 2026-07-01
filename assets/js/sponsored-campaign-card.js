@@ -2,6 +2,7 @@ window.Microgifter = window.Microgifter || {};
 (function(window, document){
   'use strict';
   var MG = window.Microgifter;
+  var ATTR_KEY = 'mg_ad_attribution_v1';
   function esc(value){return String(value == null ? '' : value).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function safeUrl(value){
     var raw = String(value || '').trim();
@@ -17,9 +18,50 @@ window.Microgifter = window.Microgifter || {};
     if (item && item.public_id) return '/feed.php?ad=' + encodeURIComponent(item.public_id);
     return '/feed.php';
   }
+  function attribution(item, source){
+    if (!item || !item.tracking || !item.tracking.ad_campaign_id) return null;
+    return {
+      ad_campaign_id: item.tracking.ad_campaign_id,
+      placement_key: item.tracking.placement_key || item.placement_key || 'sidebar_sponsored_card',
+      surface: item.tracking.surface || item.surface || '',
+      source: source || 'sponsored_campaign',
+      captured_at: new Date().toISOString()
+    };
+  }
+  function remember(item, source){
+    var attr = attribution(item, source);
+    if (!attr) return null;
+    try {
+      var payload = {ad_attribution: attr, expires_at: Date.now() + (1000 * 60 * 60 * 24 * 14)};
+      window.sessionStorage && window.sessionStorage.setItem(ATTR_KEY, JSON.stringify(payload));
+      window.localStorage && window.localStorage.setItem(ATTR_KEY, JSON.stringify(payload));
+    } catch(e) {}
+    MG.currentAdAttribution = attr;
+    return attr;
+  }
+  function readStored(){
+    var raw = '';
+    try { raw = (window.sessionStorage && window.sessionStorage.getItem(ATTR_KEY)) || (window.localStorage && window.localStorage.getItem(ATTR_KEY)) || ''; } catch(e) { raw = ''; }
+    if (!raw) return null;
+    try {
+      var parsed = JSON.parse(raw);
+      if (!parsed || !parsed.ad_attribution || (parsed.expires_at && Date.now() > Number(parsed.expires_at))) return null;
+      return parsed.ad_attribution;
+    } catch(e) { return null; }
+  }
+  MG.getAdAttribution = function(){ return MG.currentAdAttribution || readStored(); };
+  MG.applyAdAttribution = function(payload){
+    payload = payload && typeof payload === 'object' ? payload : {};
+    var attr = MG.getAdAttribution();
+    if (attr && attr.ad_campaign_id && attr.placement_key) payload.ad_attribution = attr;
+    return payload;
+  };
   function track(item, eventType, extra){
     if (!item || !item.tracking || !item.tracking.ad_campaign_id) return Promise.resolve();
-    var payload = Object.assign({}, item.tracking, {event_type:eventType, metadata: extra || {}});
+    var attr = eventType === 'click' || eventType === 'wallet_save' ? remember(item, eventType) : attribution(item, eventType);
+    var meta = Object.assign({}, extra || {});
+    if (attr) meta.ad_attribution = attr;
+    var payload = Object.assign({}, item.tracking, {event_type:eventType, metadata: meta});
     return fetch('/api/ads/track.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),credentials:'same-origin'}).catch(function(){});
   }
   function cardHtml(item, options){
@@ -67,7 +109,7 @@ window.Microgifter = window.Microgifter || {};
       container.innerHTML = items.map(function(item){return isMap ? mapHtml(item) : cardHtml(item,{compact:placement==='sidebar_sponsored_card'});}).join('');
       container.querySelectorAll('[data-sponsored-click]').forEach(function(link){link.addEventListener('click',function(){var id=link.closest('[data-ad-campaign-id]').getAttribute('data-ad-campaign-id'); var item=items.find(function(i){return i.public_id===id;}); track(item,'click',{cta:true});});});
       container.querySelectorAll('[data-sponsored-save]').forEach(function(btn){btn.addEventListener('click',function(){var id=btn.closest('[data-ad-campaign-id]').getAttribute('data-ad-campaign-id'); var item=items.find(function(i){return i.public_id===id;}); track(item,'wallet_save',{local_preview:true}); btn.textContent='Saved'; btn.disabled=true;});});
-      container.querySelectorAll('[data-sponsored-map-item]').forEach(function(btn){btn.addEventListener('click',function(){var id=btn.getAttribute('data-ad-campaign-id'); var item=items.find(function(i){return i.public_id===id;}); track(item,'click',{map:true}); alert(((item.creative&&item.creative.headline)||item.title||'Sponsored Local Drop') + '\n\n' + ((item.creative&&item.creative.description)||'Open this sponsored local opportunity from the feed or merchant campaign page.'));});});
+      container.querySelectorAll('[data-sponsored-map-item]').forEach(function(btn){btn.addEventListener('click',function(){var id=btn.getAttribute('data-ad-campaign-id'); var item=items.find(function(i){return i.public_id===id;}); remember(item,'map_click'); track(item,'click',{map:true}); alert(((item.creative&&item.creative.headline)||item.title||'Sponsored Local Drop') + '\n\n' + ((item.creative&&item.creative.description)||'Open this sponsored local opportunity from the feed or merchant campaign page.'));});});
       observeImpressions(container, items);
     }).catch(function(){container.classList.add('mg-sponsored-empty');});
   }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/_merchant.php';
 require_once dirname(__DIR__) . '/rewards/_identity_gate.php';
 require_once dirname(__DIR__) . '/rewards/_wallet_lifecycle_automation.php';
+require_once dirname(__DIR__) . '/ads/_direct_attribution.php';
 
 function mg_wr_uuid(): string
 {
@@ -37,6 +38,7 @@ mg_require_csrf_for_write($input);
 
 $walletId = strtolower(trim((string)($input['wallet_item_id'] ?? '')));
 $locationCode = trim((string)($input['location_code'] ?? ''));
+$adAttribution = mg_ads_direct_attribution_from_input($input);
 if ($walletId === '' || strlen($walletId) !== 36 || !preg_match('/^[a-f0-9-]{36}$/', $walletId)) {
     mg_fail('Invalid wallet item.', 422);
 }
@@ -60,6 +62,7 @@ try {
 
     if ((string)$item['status'] === 'redeemed') {
         $pdo->commit();
+        mg_ads_track_direct_wallet_event($pdo, 'redeem', $item, ['ad_attribution' => $adAttribution], ['id' => (int)($item['user_id'] ?? 0)], ['already_redeemed' => true, 'location_code' => $locationCode !== '' ? $locationCode : null]);
         mg_ok(['wallet_item_id' => $walletId, 'wallet_status' => 'redeemed', 'already_redeemed' => true], 'Wallet item already redeemed.');
     }
     if ((string)$item['status'] !== 'claimed') {
@@ -74,10 +77,19 @@ try {
     }
     mg_reward_require_verified_email($pdo, $claimantUserId, 'redeem this reward');
 
-    $pdo->prepare("UPDATE wallet_items SET status = 'redeemed', redeemed_at = NOW(), updated_at = NOW() WHERE id = ?")->execute([(int)$item['id']]);
+    $metadata = mg_ads_decode_json($item['metadata_json'] ?? null);
+    $metadata = mg_ads_wallet_metadata_with_attribution($metadata, $adAttribution);
+    $metadataJson = json_encode($metadata, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    $item['metadata_json'] = $metadataJson;
+
+    $pdo->prepare("UPDATE wallet_items SET status = 'redeemed', redeemed_at = NOW(), metadata_json = ?, updated_at = NOW() WHERE id = ?")->execute([$metadataJson, (int)$item['id']]);
+    $walletAfter = $item;
+    $walletAfter['status'] = 'redeemed';
+    $walletAfter['metadata_json'] = $metadataJson;
     $automation = mg_wallet_lifecycle_automation($pdo, $item, 'wallet_item.redeemed', $claimantUserId, [], ['location_code' => $locationCode !== '' ? $locationCode : null]);
-    mg_wr_event($pdo, $item, 'wallet_item.redeemed', ['location_code' => $locationCode !== '' ? $locationCode : null, 'lifecycle_automation' => $automation]);
+    mg_wr_event($pdo, $walletAfter, 'wallet_item.redeemed', ['location_code' => $locationCode !== '' ? $locationCode : null, 'lifecycle_automation' => $automation, 'ad_attribution' => $adAttribution ?: null]);
     $pdo->commit();
+    mg_ads_track_direct_wallet_event($pdo, 'redeem', $walletAfter, ['ad_attribution' => $adAttribution], ['id' => $claimantUserId], ['already_redeemed' => false, 'location_code' => $locationCode !== '' ? $locationCode : null]);
     mg_ok(['wallet_item_id' => $walletId, 'wallet_status' => 'redeemed', 'already_redeemed' => false, 'lifecycle_automation' => $automation], 'Wallet item redeemed.');
 } catch (Throwable $error) {
     if ($pdo->inTransaction()) $pdo->rollBack();
