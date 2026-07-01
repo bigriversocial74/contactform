@@ -57,6 +57,18 @@
 .mg-memory-query-row b{display:block;color:#0f172a;font-size:13px;font-weight:950;}
 .mg-memory-query-row p{margin:6px 0;color:#475569;font-size:13px;font-weight:750;line-height:1.45;}
 .mg-memory-query-row span{color:#94a3b8;font-size:12px;font-weight:850;}
+.mg-memory-review-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:0 18px 18px;}
+.mg-memory-review-card{padding:16px;border:1px solid #dbe7f5;border-radius:18px;background:#fbfdff;box-shadow:0 12px 26px rgba(15,23,42,.04);}
+.mg-memory-review-card span{display:block;color:#64748b;font-size:11px;font-weight:950;letter-spacing:.08em;text-transform:uppercase;}
+.mg-memory-review-card strong{display:block;margin-top:7px;color:#0f172a;font-size:17px;font-weight:950;line-height:1.2;word-break:break-word;}
+.mg-memory-review-card p{margin:6px 0 0;color:#64748b;font-size:12px;font-weight:850;line-height:1.4;word-break:break-word;}
+.mg-memory-review-copy{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 18px 18px;}
+.mg-memory-review-copy article{padding:16px;border:1px solid #dbe7f5;border-radius:18px;background:#fff;}
+.mg-memory-review-copy h3{margin:0 0 8px;color:#0f172a;font-size:15px;font-weight:950;}
+.mg-memory-review-copy p{margin:0;color:#475569;font-size:13px;font-weight:750;line-height:1.5;white-space:pre-wrap;}
+.mg-memory-review-pill-grid{display:flex;gap:8px;flex-wrap:wrap;padding:0 18px 18px;}
+.mg-memory-review-pill{padding:9px 11px;border:1px solid #dbe7f5;border-radius:999px;background:#fff;color:#475569;font-size:12px;font-weight:900;}
+.mg-memory-review-pill b{color:#0f172a;}
 .mg-memory-model-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:0 18px 18px;}
 .mg-memory-model-summary article{padding:16px;border:1px solid #dbe7f5;border-radius:18px;background:#fbfdff;}
 .mg-memory-model-summary span{display:block;color:#64748b;font-size:11px;font-weight:950;letter-spacing:.08em;text-transform:uppercase;}
@@ -72,5 +84,5 @@
 .mg-memory-help-grid .mg-app-panel{padding:16px!important;border-radius:20px!important;}
 .mg-memory-help-grid h3{margin:4px 0 6px;color:#0f172a;font-size:16px;font-weight:950;}
 .mg-memory-help-grid p{margin:0;color:#64748b;font-size:13px;font-weight:750;line-height:1.5;}
-@media(max-width:980px){.mg-memory-kpis,.mg-memory-model-summary{grid-template-columns:repeat(3,minmax(0,1fr));}.mg-memory-usage-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.mg-memory-help-grid{grid-template-columns:1fr;}.mg-memory-hero{flex-direction:column;}.mg-memory-hero-actions{justify-content:flex-start;}}
-@media(max-width:680px){.mg-merchant-memory-app .mg-merchant-main{padding:14px;}.mg-memory-kpis,.mg-memory-model-summary{grid-template-columns:repeat(2,minmax(0,1fr));}.mg-memory-source-card{grid-template-columns:48px minmax(0,1fr);}.mg-memory-source-card>.mg-btn{grid-column:1/-1;width:100%;}.mg-memory-source-icon{width:48px;height:48px;border-radius:15px;}.mg-memory-source-meta{white-space:normal;}.mg-memory-hero-actions .mg-btn{width:100%;justify-content:center;}.mg-memory-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));}.mg-memory-usage-grid{grid-template-columns:1fr;}.mg-memory-usage-card header time{margin-left:0;width:100%;}.mg-memory-model-card{align-items:flex-start;flex-direction:column;}}
+@media(max-width:980px){.mg-memory-kpis,.mg-memory-model-summary,.mg-memory-review-grid{grid-template-columns:repeat(3,minmax(0,1fr));}.mg-memory-usage-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.mg-memory-review-copy{grid-template-columns:1fr;}.mg-memory-help-grid{grid-template-columns:1fr;}.mg-memory-hero{flex-direction:column;}.mg-memory-hero-actions{justify-content:flex-start;}}
+@media(max-width:680px){.mg-merchant-memory-app .mg-merchant-main{padding:14px;}.mg-memory-kpis,.mg-memory-model-summary,.mg-memory-review-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.mg-memory-source-card{grid-template-columns:48px minmax(0,1fr);}.mg-memory-source-card>.mg-btn{grid-column:1/-1;width:100%;}.mg-memory-source-icon{width:48px;height:48px;border-radius:15px;}.mg-memory-source-meta{white-space:normal;}.mg-memory-hero-actions .mg-btn{width:100%;justify-content:center;}.mg-memory-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));}.mg-memory-usage-grid{grid-template-columns:1fr;}.mg-memory-usage-card header time{margin-left:0;width:100%;}.mg-memory-model-card{align-items:flex-start;flex-direction:column;}}
