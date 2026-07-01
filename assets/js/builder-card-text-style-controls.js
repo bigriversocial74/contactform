@@ -30,6 +30,9 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!Number.isFinite(parsed)) parsed = fallback;
     return Math.max(min, Math.min(max, parsed));
   }
+  function setText(node, next) {
+    if (node && node.textContent !== next) node.textContent = next;
+  }
   function cardStyle() {
     var align = value('cardTextAlign') || defaults.align;
     var vertical = value('cardTextVertical') || defaults.vertical;
@@ -48,10 +51,10 @@ document.addEventListener('DOMContentLoaded', function () {
     var headline = value('headline') || 'HAPPY BIRTHDAY!';
     var message = value('message') || 'Add the message the recipient will see inside the card.';
     var signature = value('signature');
-    root.querySelectorAll('[data-preview-card-headline]').forEach(function (node) { node.textContent = headline; });
-    root.querySelectorAll('[data-preview-message]').forEach(function (node) { node.textContent = message; });
+    root.querySelectorAll('[data-preview-card-headline]').forEach(function (node) { setText(node, headline); });
+    root.querySelectorAll('[data-preview-message]').forEach(function (node) { setText(node, message); });
     root.querySelectorAll('[data-preview-signature]').forEach(function (node) {
-      node.textContent = signature;
+      setText(node, signature);
       node.hidden = !signature;
     });
   }
@@ -157,10 +160,8 @@ document.addEventListener('DOMContentLoaded', function () {
   var reset = root.querySelector('[data-card-style-reset]');
   if (reset) reset.addEventListener('click', resetControls);
 
-  var observer = new MutationObserver(renderCardText);
-  root.querySelectorAll('[data-preview-card-headline],[data-preview-message],[data-preview-signature]').forEach(function (node) {
-    observer.observe(node, { childList: true, characterData: true, subtree: true });
-  });
   renderCardText();
+  window.setTimeout(renderCardText, 50);
   window.setTimeout(loadSavedStyle, 500);
+  window.setTimeout(renderCardText, 900);
 });
