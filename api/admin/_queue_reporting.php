@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/_admin_schema.php';
+
 function mg_queue_reporting_outcomes(): array
 {
     return ['resolved_successfully','escalated_externally','merchant_action_required','customer_action_required','billing_adjustment','risk_restriction','catalog_correction','no_action_needed'];
@@ -27,9 +29,57 @@ function mg_queue_reporting_note_id(mixed $value): string
     return $id;
 }
 
+function mg_queue_reporting_required_columns(): array
+{
+    return [
+        'public_id','status','priority','category','flag_state','created_at','updated_at','resolved_at','due_at',
+        'routed_lane','sla_status','sla_due_at','playbook_slug','resolution_template_slug','resolution_outcome',
+        'resolution_confidence','followup_required','reopened_after_resolution','notes_incomplete','resolution_reviewed_at',
+    ];
+}
+
+function mg_queue_reporting_schema_payload(int $days, array $missing): array
+{
+    return [
+        'summary' => [
+            'total' => 0,
+            'active_total' => 0,
+            'resolved_total' => 0,
+            'resolved_window_total' => 0,
+            'avg_resolution_hours' => 0.0,
+            'sla_breach_rate' => 0.0,
+            'reopen_rate' => 0.0,
+            'followup_required_total' => 0,
+            'notes_incomplete_total' => 0,
+            'confidence_high_total' => 0,
+            'confidence_medium_total' => 0,
+            'confidence_low_total' => 0,
+            'aging_7_total' => 0,
+            'aging_14_total' => 0,
+            'aging_30_total' => 0,
+            'schema_required' => $missing,
+            'score' => ['section' => 'Resolution reporting', 'score' => 7, 'max' => 10, 'status' => 'schema_required'],
+        ],
+        'outcomes' => [],
+        'playbooks' => [],
+        'aging' => ['age_0_3' => 0, 'age_4_7' => 0, 'age_8_14' => 0, 'age_15_30' => 0, 'age_30_plus' => 0],
+        'export' => [],
+        'schema_required' => $missing,
+        'filters' => ['outcomes' => mg_queue_reporting_outcomes(), 'confidences' => mg_queue_reporting_confidences(), 'window_days' => $days],
+    ];
+}
+
 function mg_queue_reporting_read(PDO $pdo, int $days = 30): array
 {
     $days = max(7, min(180, $days));
+    if (!mg_admin_schema_has_table($pdo, 'admin_user_notes')) {
+        return mg_queue_reporting_schema_payload($days, ['admin_user_notes']);
+    }
+    $missing = mg_admin_schema_missing_columns($pdo, 'admin_user_notes', mg_queue_reporting_required_columns());
+    if ($missing) {
+        return mg_queue_reporting_schema_payload($days, array_map(static fn(string $column): string => 'admin_user_notes.' . $column, $missing));
+    }
+
     $cutoff = gmdate('Y-m-d H:i:s', time() - ($days * 86400));
     $summary = $pdo->prepare('SELECT
         COUNT(*) total,
@@ -84,6 +134,7 @@ function mg_queue_reporting_read(PDO $pdo, int $days = 30): array
             'aging_7_total' => (int)($row['aging_7_total'] ?? 0),
             'aging_14_total' => (int)($row['aging_14_total'] ?? 0),
             'aging_30_total' => (int)($row['aging_30_total'] ?? 0),
+            'schema_required' => [],
             'score' => ['section' => 'Resolution reporting', 'score' => 10, 'max' => 10, 'status' => 'cleared'],
         ],
         'outcomes' => array_map(static fn(array $r): array => ['outcome' => (string)$r['outcome'], 'total' => (int)$r['total']], $outcomes),
@@ -110,12 +161,17 @@ function mg_queue_reporting_read(PDO $pdo, int $days = 30): array
             'resolved_at' => $r['resolved_at'] !== null ? (string)$r['resolved_at'] : null,
             'updated_at' => (string)$r['updated_at'],
         ], $export->fetchAll(PDO::FETCH_ASSOC)),
+        'schema_required' => [],
         'filters' => ['outcomes' => mg_queue_reporting_outcomes(), 'confidences' => mg_queue_reporting_confidences(), 'window_days' => $days],
     ];
 }
 
 function mg_queue_reporting_update(PDO $pdo, string $notePublicId, array $input): array
 {
+    $missing = mg_admin_schema_missing_columns($pdo, 'admin_user_notes', ['public_id','resolution_outcome','resolution_confidence','followup_required','reopened_after_resolution','notes_incomplete','resolution_reviewed_at']);
+    if ($missing) {
+        throw new MgAdminAccountException('Queue reporting SQL migration required before updating resolution fields.', 503);
+    }
     $stmt = $pdo->prepare('SELECT * FROM admin_user_notes WHERE public_id = ? LIMIT 1 FOR UPDATE');
     $stmt->execute([$notePublicId]);
     $note = $stmt->fetch(PDO::FETCH_ASSOC);
