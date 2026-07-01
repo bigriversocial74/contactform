@@ -12,6 +12,7 @@ window.Microgifter = window.Microgifter || {};
   function qs(sel, scope){return (scope||root).querySelector(sel);}
   function qsa(sel, scope){return Array.prototype.slice.call((scope||root).querySelectorAll(sel));}
   function status(message, error){var node=qs('[data-ads-status]'); if(node){node.textContent=message||''; node.style.color=error?'#b91c1c':'#64748b';}}
+  function uploadStatus(message, error){var node=qs('[data-creative-upload-status]'); if(node){node.textContent=message||''; node.style.color=error?'#b91c1c':'#64748b';}}
   async function api(path, options){
     var res = await fetch(path, Object.assign({credentials:'same-origin'}, options||{}));
     var out = await res.json().catch(function(){return {ok:false,message:'Invalid server response'};});
@@ -29,7 +30,9 @@ window.Microgifter = window.Microgifter || {};
     qs('[data-ad-form]').reset();
     qsa('[name="placements[]"]').forEach(function(i){i.checked=i.value==='feed_sponsored_card'||i.value==='sidebar_sponsored_card';});
     var picker=qs('[data-product-picker]'); if(picker) picker.value='';
+    var file=qs('[data-creative-image-file]'); if(file) file.value='';
     renderProductSummary(null);
+    uploadStatus('');
     status('New draft ready.'); preview(); activateTab('create');
   }
   function productById(id){return productsCache.find(function(product){return product.id===id;}) || null;}
@@ -67,6 +70,29 @@ window.Microgifter = window.Microgifter || {};
       if(!productsCache.length){picker.innerHTML='<option value="">No active products found</option>';return;}
       picker.innerHTML='<option value="">Choose an existing product…</option>'+productsCache.map(function(product){return '<option value="'+esc(product.id)+'">'+esc(product.title+(product.value_label?' · '+product.value_label:''))+'</option>';}).join('');
     }catch(error){picker.innerHTML='<option value="">Unable to load products</option>';}
+  }
+  async function uploadCreative(){
+    var input=qs('[data-creative-image-file]');
+    var button=qs('[data-upload-creative]');
+    if(!input || !input.files || !input.files[0]){uploadStatus('Choose an image file first.', true);return;}
+    var file=input.files[0];
+    if(file.size > 8 * 1024 * 1024){uploadStatus('Image must be 8MB or smaller.', true);return;}
+    var form=new FormData();
+    form.append('csrf_token', csrf);
+    form.append('creative_image', file);
+    if(button){button.disabled=true;button.textContent='Uploading…';}
+    uploadStatus('Uploading creative image…');
+    try{
+      var res=await fetch('/api/ads/upload-creative.php',{method:'POST',credentials:'same-origin',headers:{'X-CSRF-TOKEN':csrf},body:form});
+      var out=await res.json().catch(function(){return {ok:false,message:'Invalid upload response'};});
+      if(!out.ok)throw new Error(out.message||'Unable to upload creative image.');
+      var data=out.data||{};
+      if(!data.url)throw new Error('Upload did not return an image URL.');
+      qs('[name="image_url"]').value=data.url;
+      uploadStatus('Image uploaded and applied to preview.');
+      preview();
+    }catch(error){uploadStatus(error.message||'Upload failed.', true);}
+    finally{if(button){button.disabled=false;button.textContent='Upload Image';}}
   }
   function checkedPlacements(){return qsa('[name="placements[]"]:checked').map(function(input){return input.value;});}
   function formPayload(){
@@ -141,6 +167,7 @@ window.Microgifter = window.Microgifter || {};
     if(picker) picker.value=sourceProductId;
     selectedProduct=productById(sourceProductId);
     renderProductSummary(selectedProduct);
+    uploadStatus('');
     status('Loaded campaign '+selectedId+'.'); preview(); activateTab('create');
   }
   function filterCampaigns(){
@@ -190,6 +217,10 @@ window.Microgifter = window.Microgifter || {};
   if(picker) picker.addEventListener('change',function(){selectedProduct=productById(picker.value); renderProductSummary(selectedProduct); preview();});
   var apply=qs('[data-apply-product]');
   if(apply) apply.addEventListener('click',function(){applyProduct(selectedProduct || productById(picker && picker.value || ''));});
+  var uploadButton=qs('[data-upload-creative]');
+  if(uploadButton) uploadButton.addEventListener('click',function(){uploadCreative();});
+  var fileInput=qs('[data-creative-image-file]');
+  if(fileInput) fileInput.addEventListener('change',function(){uploadStatus(fileInput.files && fileInput.files[0] ? 'Ready to upload: '+fileInput.files[0].name : '');});
   var search=qs('[data-ads-search]'); if(search) search.addEventListener('input', renderList);
   qs('[data-save-draft]').addEventListener('click',function(){saveDraft().catch(function(e){status(e.message,true);});});
   qs('[data-submit-current]').addEventListener('click',function(){submitCampaign('').catch(function(e){status(e.message,true);});});
