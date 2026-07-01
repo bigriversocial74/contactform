@@ -50,14 +50,14 @@ require __DIR__ . '/includes/header.php';
     <div class="mg-hero-grid">
       <div class="mg-hero-copy" data-reveal="left">
         <form class="mg-hero-search" data-hero-search action="/discover.php" method="get" role="search" autocomplete="off">
-          <label class="mg-hero-search-label" for="mgHeroSearch">Search businesses or creators</label>
+          <label class="mg-hero-search-label" for="mgHeroSearch">Search the Microgifter network</label>
           <div class="mg-hero-search-control">
-            <input id="mgHeroSearch" name="q" type="search" data-hero-search-input placeholder="Search business name or user name" aria-label="Search business name or user name">
+            <input id="mgHeroSearch" name="q" type="search" data-hero-search-input placeholder="Search merchants or users" aria-label="Search merchants or users">
             <button type="submit">Search</button>
           </div>
           <div class="mg-hero-search-results" data-hero-search-results hidden></div>
         </form>
-        <h1 class="mg-title" id="mgHeroTitle"><span class="mg-title-line">THE ALL-IN-ONE</span><span class="mg-title-line">SOCIAL CRM FOR</span><span class="mg-title-line">BUSINESSES &amp; CREATORS</span></h1>
+        <h1 class="mg-title" id="mgHeroTitle"><span class="mg-title-line">THE ALL-IN-ONE</span><span class="mg-title-line">NETWORK</span></h1>
         <p class="mg-note"><strong>Save time. Add customers. Increase sales.</strong> One dashboard gives you social tools, customer acquisition resources, and customer messaging designed to help you grow.</p>
         <div class="mg-actions">
           <a class="mg-btn mg-btn-primary" href="/signup.php">Create Your Wallet <span aria-hidden="true">→</span></a>
@@ -78,11 +78,25 @@ require __DIR__ . '/includes/header.php';
       <div class="mg-section-head">
         <span class="mg-story-kicker" data-reveal="left">Platform modules</span>
         <h2 class="mg-section-title" id="merchantTitle" data-reveal="left" style="--delay:80ms">One operating layer for selling, rewarding, messaging, networking, and distribution.</h2>
-        <p class="mg-section-copy" data-reveal="left" style="--delay:160ms">Microgifter combines storefront tools, gift certificate management, customer CRM, workplace rewards, social discovery, and API distribution into one connected system for businesses and creators.</p>
+        <p class="mg-section-copy" data-reveal="left" style="--delay:160ms">Microgifter combines storefront tools, gift certificate management, customer CRM, workplace rewards, social discovery, and API distribution into one connected system for merchants, teams, and communities.</p>
       </div>
 
       <div class="mg-feature-panels mg-growth-feature-grid">
         <article class="mg-panel" data-reveal="scale">
+          <div class="mg-panel-head">
+            <div class="mg-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="7" r="3"/><circle cx="18" cy="17" r="3"/><path d="M9 11l6-3M9 13l6 3"/></svg></div>
+            <div><h3>Social Networking</h3><p>Give merchants and members a public profile, discovery presence, supporter graph, feed, and direct customer relationships that are not trapped inside a rented platform.</p></div>
+          </div>
+          <div class="mg-signal-list" aria-label="Social network signals">
+            <div class="mg-signal-row"><span>Profile</span><span>Discoverable</span></div>
+            <div class="mg-signal-row"><span>Feed</span><span>Offers + updates</span></div>
+            <div class="mg-signal-row"><span>Audience</span><span>Followers</span></div>
+            <div class="mg-signal-row"><span>Support</span><span>Direct action</span></div>
+          </div>
+          <div class="mg-panel-tags"><span>Profiles</span><span>Feed</span><span>Community</span></div>
+        </article>
+
+        <article class="mg-panel" data-reveal="scale" style="--delay:80ms">
           <div class="mg-panel-head">
             <div class="mg-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 7h14l-1.2 10H6.2L5 7Z"/><path d="M8 7a4 4 0 0 1 8 0"/><path d="M8 20h8"/></svg></div>
             <div><h3>Ecommerce</h3><p>Create sellable offers, reward products, pre-sale packages, event passes, and local experiences that customers can buy, save, send, or redeem.</p></div>
@@ -91,7 +105,7 @@ require __DIR__ . '/includes/header.php';
           <div class="mg-panel-tags"><span>Storefront</span><span>Checkout</span><span>Pre-sale</span></div>
         </article>
 
-        <article class="mg-panel" data-reveal="scale" style="--delay:80ms">
+        <article class="mg-panel" data-reveal="scale" style="--delay:160ms">
           <div class="mg-panel-head">
             <div class="mg-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M8 14h5"/><path d="M16 14h2"/></svg></div>
             <div><h3>Gift Certificates</h3><p>Issue digital certificates, claim codes, vouchers, rewards, and redeemable passes that move cleanly through inbox, sent, claimed, and redeemed states.</p></div>
@@ -105,7 +119,7 @@ require __DIR__ . '/includes/header.php';
           <div class="mg-panel-tags"><span>Voucher</span><span>Claim code</span><span>Redeem</span></div>
         </article>
 
-        <article class="mg-panel" data-reveal="scale" style="--delay:160ms">
+        <article class="mg-panel" data-reveal="scale" style="--delay:240ms">
           <div class="mg-panel-head">
             <div class="mg-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="9" cy="8" r="3"/><path d="M3 20c1-4 3-6 6-6s5 2 6 6"/><path d="M16 7h5M16 11h5M17 15h4"/></svg></div>
             <div><h3>Customer CRM</h3><p>Turn customer actions into usable profiles: purchases, claims, redemptions, visits, messages, campaign sources, and follow-up opportunities.</p></div>
@@ -117,27 +131,13 @@ require __DIR__ . '/includes/header.php';
           <div class="mg-panel-tags"><span>Profiles</span><span>Messaging</span><span>Follow-up</span></div>
         </article>
 
-        <article class="mg-panel" data-reveal="scale" style="--delay:240ms">
+        <article class="mg-panel" data-reveal="scale" style="--delay:320ms">
           <div class="mg-panel-head">
             <div class="mg-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="8" width="18" height="11" rx="2"/><path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M12 12v3"/></svg></div>
             <div><h3>Workplace Rewards</h3><p>Let companies, teams, and organizations distribute local rewards, employee gifts, recognition credits, and sponsored commerce into employee wallets.</p></div>
           </div>
           <div class="mg-mini-path" aria-label="Workplace reward path"><span>Employer</span><span>Team</span><span>Reward</span><span>Redeem</span></div>
           <div class="mg-panel-tags"><span>Teams</span><span>Recognition</span><span>Bulk rewards</span></div>
-        </article>
-
-        <article class="mg-panel" data-reveal="scale" style="--delay:320ms">
-          <div class="mg-panel-head">
-            <div class="mg-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="7" r="3"/><circle cx="18" cy="17" r="3"/><path d="M9 11l6-3M9 13l6 3"/></svg></div>
-            <div><h3>Social Network</h3><p>Give businesses and creators a public profile, discovery presence, supporter graph, feed, and direct customer relationships that are not trapped inside a rented platform.</p></div>
-          </div>
-          <div class="mg-signal-list" aria-label="Social network signals">
-            <div class="mg-signal-row"><span>Profile</span><span>Discoverable</span></div>
-            <div class="mg-signal-row"><span>Feed</span><span>Offers + updates</span></div>
-            <div class="mg-signal-row"><span>Audience</span><span>Followers</span></div>
-            <div class="mg-signal-row"><span>Support</span><span>Direct action</span></div>
-          </div>
-          <div class="mg-panel-tags"><span>Profiles</span><span>Feed</span><span>Community</span></div>
         </article>
 
         <article class="mg-panel" data-reveal="scale" style="--delay:400ms">
