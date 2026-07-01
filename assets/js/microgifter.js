@@ -81,9 +81,23 @@ window.Microgifter = window.Microgifter || {};
     }
   };
 
+  MG.ensurePwaInstallSupport = function () {
+    if (!document.querySelector('link[rel="manifest"]')) {
+      var link = document.createElement('link');
+      link.rel = 'manifest';
+      link.href = '/manifest.php';
+      document.head.appendChild(link);
+    }
+    if (!('serviceWorker' in navigator)) return;
+    var local = ['localhost', '127.0.0.1', '::1'].indexOf(window.location.hostname) !== -1;
+    if (!window.isSecureContext && !local) return;
+    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function () {});
+  };
+
   document.addEventListener('DOMContentLoaded', function () {
     document.documentElement.classList.add('mg-js-ready');
     document.documentElement.classList.toggle('mg-is-authenticated', MG.isAuthenticated());
     document.documentElement.classList.toggle('mg-is-guest', !MG.isAuthenticated());
+    MG.ensurePwaInstallSupport();
   });
 })(window, document);

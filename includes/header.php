@@ -149,6 +149,9 @@ $admin_navigation_permissions = [
     'subscriptions.admin',
     'microgift.operations.view',
     'tips.reverse',
+    'admin.pwa_branding.view',
+    'admin.pwa_branding.manage',
+    'admin.pwa_notifications.test',
 ];
 $can_admin_dashboard = $user && (
     in_array('super_admin', $user_roles, true)
@@ -174,6 +177,7 @@ $can_admin_dashboard = $user && (
 <?php if ($page_og_title !== ''): ?><meta name="twitter:title" content="<?= mg_e($page_og_title) ?>"><?php endif; ?>
 <?php if ($page_og_description !== ''): ?><meta name="twitter:description" content="<?= mg_e($page_og_description) ?>"><?php endif; ?>
 <?php if ($page_og_image !== ''): ?><meta name="twitter:image" content="<?= mg_e($page_og_image) ?>"><?php endif; ?>
+<?php require __DIR__ . '/pwa-head.php'; ?>
 <link rel="stylesheet" href="/assets/css/microgifter.css">
 <?php if (!$is_profile_page): ?>
 <link rel="stylesheet" href="/assets/css/public-program-pages.css">
