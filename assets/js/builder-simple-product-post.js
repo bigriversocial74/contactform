@@ -2,6 +2,7 @@
   'use strict';
   var root=document.querySelector('[data-builder-app]');
   if(!root)return;
+  var syncing=false;
   function selectedType(){var n=root.querySelector('input[name="builder_type"]:checked');return n?n.value:'simple_product';}
   function field(selector){var n=root.querySelector(selector);return n?n.closest('.mg-builder-field'):null;}
   function after(target,node){if(target&&target.parentNode)target.parentNode.insertBefore(node,target.nextSibling);}
@@ -26,6 +27,7 @@
     }
   }
   function sync(){
+    if(syncing)return;syncing=true;
     ensure();
     var simple=selectedType()==='simple_product';
     root.querySelectorAll('[data-simple-product-control]').forEach(function(n){n.hidden=!simple;});
@@ -37,6 +39,7 @@
     if(info&&headline&&simple)headline.value=info.value;
     var text=info&&info.value.trim()?info.value.trim():'Add product description.';
     root.querySelectorAll('[data-preview-template="simple_product"] [data-preview-headline]').forEach(function(n){n.textContent=text;});
+    syncing=false;
   }
   function bind(){
     ensure();
@@ -56,8 +59,12 @@
       });
     }
     root.querySelectorAll('input[name="builder_type"]').forEach(function(n){if(!n._mgSimpleBound){n._mgSimpleBound=true;n.addEventListener('change',sync);}});
+    root.addEventListener('input',function(){setTimeout(sync,0);});
+    root.addEventListener('change',function(){setTimeout(sync,0);});
     sync();
   }
   bind();
+  var observer=new MutationObserver(function(){setTimeout(sync,0);});
+  observer.observe(root,{childList:true,subtree:true,characterData:true});
   document.addEventListener('DOMContentLoaded',function(){bind();var end=Date.now()+5000;(function watch(){sync();if(Date.now()<end)requestAnimationFrame(watch);})();});
 })();
