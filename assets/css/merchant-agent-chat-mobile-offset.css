@@ -1,0 +1,7 @@
+@media (max-width: 760px){
+  .mg-agent-chat-right{
+    top:20px!important;
+    height:calc(100dvh - 20px)!important;
+    padding-top:calc(20px + env(safe-area-inset-top))!important;
+  }
+}
