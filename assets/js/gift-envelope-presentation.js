@@ -75,4 +75,17 @@
     event.preventDefault();
     setCardOpen(card, button.dataset.envelopeAction === 'show');
   });
+
+  document.addEventListener('click', (event) => {
+    if (event.target.closest('button,a,input,textarea,select,audio,video')) return;
+    const stage = event.target.closest('.mg-envelope-stage');
+    if (!stage) return;
+    const card = stage.closest('[data-envelope-card]');
+    if (!card) return;
+    const rect = stage.getBoundingClientRect();
+    const isLeftSide = (event.clientX - rect.left) < rect.width / 2;
+    const open = card.classList.contains('is-open');
+    if (!open) setCardOpen(card, true);
+    else setCardOpen(card, !isLeftSide);
+  });
 })();
