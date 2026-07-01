@@ -1,0 +1,120 @@
+/* Greeting-card builder correction: remove mobile gap and make card images full bleed. */
+html body.mg-section-builder .mg-card-cover-copy,
+html body.mg-section-builder .mg-card-cover-icon,
+html body.mg-section-builder .mg-card-cover-face h2,
+html body.mg-section-builder .mg-card-cover-face p,
+html body.mg-section-builder .mg-card-inside-right h3,
+html body.mg-section-builder .mg-card-inside-right .mg-card-value{
+  display:none!important;
+}
+
+html body.mg-section-builder .mg-card-cover-face,
+html body.mg-section-builder .mg-card-inside-left,
+html body.mg-section-builder .mg-card-inside-image{
+  background-color:#eef4ff!important;
+}
+
+html body.mg-section-builder .mg-card-cover-media,
+html body.mg-section-builder .mg-card-inside-image{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  background-position:center!important;
+  background-repeat:no-repeat!important;
+  background-size:cover!important;
+  opacity:1!important;
+}
+
+html body.mg-section-builder .mg-card-cover-media.is-empty,
+html body.mg-section-builder .mg-card-inside-image.is-empty{
+  background:linear-gradient(135deg,#eef4ff,#dce8ff)!important;
+}
+
+html body.mg-section-builder .mg-card-cover-media.is-empty:after,
+html body.mg-section-builder .mg-card-inside-image.is-empty:after{
+  content:'Upload full-bleed image';
+  position:absolute;
+  inset:28px;
+  display:grid;
+  place-items:center;
+  border:1px dashed rgba(31,95,224,.32);
+  border-radius:22px;
+  background:rgba(255,255,255,.54);
+  color:#416084;
+  font-size:12px;
+  font-weight:950;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+
+html body.mg-section-builder .mg-card-inside-image.is-empty:after{
+  content:'Upload inside image';
+}
+
+html body.mg-section-builder .mg-card-cover-face,
+html body.mg-section-builder .mg-card-inside-page{
+  overflow:hidden!important;
+}
+
+html body.mg-section-builder .mg-card-inside-right{
+  gap:12px!important;
+}
+
+html body.mg-section-builder .mg-card-inside-right .mg-eyebrow,
+html body.mg-section-builder .mg-card-inside-right [data-preview-message],
+html body.mg-section-builder .mg-card-media-stack{
+  display:block!important;
+}
+
+html body.mg-section-builder .mg-card-back-face h3,
+html body.mg-section-builder .mg-card-back-face .mg-card-value{
+  display:block!important;
+}
+
+@media(max-width:900px){
+  html body.mg-section-builder .mg-main{
+    padding-top:0!important;
+  }
+
+  html body.mg-section-builder .mg-builder-shell{
+    min-height:calc(100dvh - 90px)!important;
+  }
+
+  html body.mg-section-builder .mg-builder-canvas{
+    padding-top:10px!important;
+  }
+
+  html body.mg-section-builder .mg-builder-preview-stage{
+    padding-top:0!important;
+  }
+
+  html body.mg-section-builder .mg-builder-product-actions{
+    margin-top:0!important;
+    margin-bottom:14px!important;
+    padding-top:0!important;
+  }
+
+  html body.mg-section-builder .mg-builder-card{
+    margin-top:0!important;
+  }
+
+  html body.mg-section-builder .mg-card-presenter{
+    min-height:560px!important;
+    padding:12px 12px 78px!important;
+  }
+
+  html body.mg-section-builder .mg-card-face{
+    inset:12px 12px 78px!important;
+  }
+
+  html body.mg-section-builder .mg-card-cover-face{
+    border-radius:24px!important;
+  }
+
+  html body.mg-section-builder .mg-card-cover-media.is-empty:after,
+  html body.mg-section-builder .mg-card-inside-image.is-empty:after{
+    inset:20px!important;
+    border-radius:18px!important;
+  }
+}
