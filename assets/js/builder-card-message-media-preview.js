@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded',function(){
   function field(id){return root.querySelector('#'+id);}
   function textValue(id){var node=field(id);return node?String(node.value||'').trim():'';}
   function hasPlayableMedia(node){return !!(node&&node.getAttribute('src')&&!node.hidden);}
+  function cardHeadline(){return textValue('headline')||'HAPPY BIRTHDAY!';}
   function activeMediaRole(){
     if(root.dataset.cardMediaMode==='audio'||root.dataset.cardMediaMode==='video')return root.dataset.cardMediaMode;
     var audio=root.querySelector('[data-preview-audio]');
@@ -24,11 +25,21 @@ document.addEventListener('DOMContentLoaded',function(){
     if(meta)meta.textContent='';
     if(preview)preview.classList.remove('is-visible');
   }
+  function replaceStaticGiftMessageLabels(headline){
+    root.querySelectorAll('.mg-card-inside-right .mg-eyebrow').forEach(function(node){
+      if(String(node.textContent||'').trim().toLowerCase()==='gift message'){
+        node.textContent=headline;
+        node.classList.add('mg-card-message-title');
+        node.setAttribute('data-preview-card-headline','');
+      }
+    });
+  }
   function syncCardMessage(){
-    var headline=textValue('headline')||'A gift, already waiting for you.';
+    var headline=cardHeadline();
     var audioLabel=textValue('audioLabel')||'Sample audio section';
     var videoLabel=textValue('videoLabel')||'Sample video section';
     var mode=activeMediaRole();
+    replaceStaticGiftMessageLabels(headline);
     root.querySelectorAll('[data-preview-card-headline]').forEach(function(node){node.textContent=headline;});
     root.querySelectorAll('[data-preview-audio-label]').forEach(function(node){node.textContent=audioLabel;});
     root.querySelectorAll('[data-preview-video-label]').forEach(function(node){node.textContent=videoLabel;});
