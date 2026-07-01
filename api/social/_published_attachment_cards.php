@@ -32,6 +32,34 @@ function mg_feed_attachment_rows_by_id(PDO $pdo, string $sql, array $ids): array
     return $rows;
 }
 
+function mg_feed_attachment_post_image_urls(PDO $pdo, array $posts): array
+{
+    $versionIds = [];
+    foreach ($posts as $post) {
+        $versionId = (int)($post['current_version_id'] ?? 0);
+        if ($versionId > 0) $versionIds[$versionId] = $versionId;
+    }
+    if ($versionIds === []) return [];
+
+    $stmt = $pdo->prepare(
+        "SELECT fpe.feed_post_version_id version_id,a.storage_provider,a.storage_key
+         FROM feed_post_elements fpe
+         INNER JOIN catalog_assets a ON a.id=fpe.asset_id AND a.status='ready' AND a.asset_type='image'
+         WHERE fpe.feed_post_version_id IN (" . mg_feed_attachment_placeholders(array_values($versionIds)) . ")
+           AND fpe.element_type='image'
+         ORDER BY fpe.feed_post_version_id,fpe.sort_order,fpe.id"
+    );
+    $stmt->execute(array_values($versionIds));
+    $images = [];
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $versionId = (int)$row['version_id'];
+        if (isset($images[$versionId])) continue;
+        $url = mg_feed_attachment_asset_url($row['storage_provider'] ?? null, $row['storage_key'] ?? null);
+        if ($url !== null) $images[$versionId] = $url;
+    }
+    return $images;
+}
+
 function mg_feed_published_attachment_cards(PDO $pdo, array $posts, ?int $viewerId): array
 {
     $productIds = [];
@@ -60,6 +88,8 @@ function mg_feed_published_attachment_cards(PDO $pdo, array $posts, ?int $viewer
          WHERE p.id IN (:ids) AND p.status='published'",
         array_values($productIds)
     );
+
+    $postImageUrls = mg_feed_attachment_post_image_urls($pdo, $posts);
 
     $microgifts = mg_feed_attachment_rows_by_id($pdo,
         "SELECT i.id,i.public_id,i.title_snapshot title,i.description_snapshot description,i.status,
@@ -110,11 +140,15 @@ function mg_feed_published_attachment_cards(PDO $pdo, array $posts, ?int $viewer
         $productId = (int)($post['catalog_product_id'] ?? 0);
         if ($productId > 0 && isset($products[$productId])) {
             $product = $products[$productId];
+            $productImageUrl = mg_feed_attachment_asset_url($product['preview_provider'] ?? null, $product['preview_key'] ?? null);
+            if ($productImageUrl === null) {
+                $productImageUrl = $postImageUrls[(int)($post['current_version_id'] ?? 0)] ?? null;
+            }
             $cards[] = [
                 'kind'=>'product','eyebrow'=>'Product','title'=>(string)($product['title'] ?: 'Microgifter product'),
                 'description'=>mg_feed_attachment_text($product['description'] ?? null),
                 'value_cents'=>(int)($product['unit_value_cents'] ?? 0),'currency'=>(string)($product['currency'] ?? 'USD'),
-                'status'=>(string)$product['status'],'image_url'=>mg_feed_attachment_asset_url($product['preview_provider'] ?? null,$product['preview_key'] ?? null),
+                'status'=>(string)$product['status'],'image_url'=>$productImageUrl,
                 'access'=>['state'=>'public','label'=>'Available to everyone'],
                 'action'=>['state'=>'enabled','label'=>'View product','url'=>'/product.php?p='.rawurlencode((string)$product['slug'])],
             ];
