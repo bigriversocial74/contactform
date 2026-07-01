@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/bootstrap.php';
+require_once __DIR__ . '/_admin_schema.php';
 require_once __DIR__ . '/_dashboard_queries.php';
 
 const MG_ADMIN_DASHBOARD_DEFAULT_WINDOW_DAYS = 30;
@@ -69,18 +70,43 @@ function mg_admin_dashboard_shortcuts(array $access): array
 function mg_admin_dashboard_notifications(PDO $pdo,array $tables,int $actorId): ?array
 {
     if(empty($tables['admin_queue_notifications'])||empty($tables['admin_user_notes']))return null;
+
+    $noteColumns=mg_admin_schema_columns($pdo,'admin_user_notes');
+    $notificationColumns=mg_admin_schema_columns($pdo,'admin_queue_notifications');
+    if(empty($notificationColumns['read_at'])||empty($notificationColumns['severity'])||empty($notificationColumns['notification_type'])){
+        return [
+            'total'=>0,
+            'unread_total'=>0,
+            'critical_unread_total'=>0,
+            'overdue_unread_total'=>0,
+            'escalated_unread_total'=>0,
+            'overdue_queue_total'=>0,
+            'escalated_queue_total'=>0,
+            'assigned_to_me_total'=>0,
+            'review_total'=>0,
+            'schema_required'=>['admin_queue_notifications.read_at','admin_queue_notifications.severity','admin_queue_notifications.notification_type'],
+        ];
+    }
+
+    $overdueQueue=!empty($noteColumns['due_at'])&&!empty($noteColumns['status'])?'(SELECT COUNT(*) FROM admin_user_notes WHERE status<>"resolved" AND due_at IS NOT NULL AND due_at<NOW())':'0';
+    $escalatedQueue=!empty($noteColumns['status'])?'(SELECT COUNT(*) FROM admin_user_notes WHERE status="escalated")':'0';
+    $assignedToMe=!empty($noteColumns['assigned_admin_user_id'])&&!empty($noteColumns['status'])?'(SELECT COUNT(*) FROM admin_user_notes WHERE assigned_admin_user_id=? AND status<>"resolved")':'0';
+    $reviewTotal=!empty($noteColumns['flag_state'])&&!empty($noteColumns['status'])?'(SELECT COUNT(*) FROM admin_user_notes WHERE flag_state IN ("flagged","review") AND status<>"resolved")':'0';
+
     $stmt=$pdo->prepare('SELECT COUNT(*) total,
         SUM(n.read_at IS NULL) unread_total,
         SUM(n.read_at IS NULL AND n.severity="critical") critical_unread_total,
         SUM(n.read_at IS NULL AND n.notification_type="overdue") overdue_unread_total,
         SUM(n.read_at IS NULL AND n.notification_type="escalated") escalated_unread_total,
-        (SELECT COUNT(*) FROM admin_user_notes WHERE status<>"resolved" AND due_at IS NOT NULL AND due_at<NOW()) overdue_queue_total,
-        (SELECT COUNT(*) FROM admin_user_notes WHERE status="escalated") escalated_queue_total,
-        (SELECT COUNT(*) FROM admin_user_notes WHERE assigned_admin_user_id=? AND status<>"resolved") assigned_to_me_total,
-        (SELECT COUNT(*) FROM admin_user_notes WHERE flag_state IN ("flagged","review") AND status<>"resolved") review_total
+        '.$overdueQueue.' overdue_queue_total,
+        '.$escalatedQueue.' escalated_queue_total,
+        '.$assignedToMe.' assigned_to_me_total,
+        '.$reviewTotal.' review_total
         FROM admin_queue_notifications n');
-    $stmt->execute([$actorId]);
-    return array_map('intval',$stmt->fetch(PDO::FETCH_ASSOC)?:[]);
+    $stmt->execute(!empty($noteColumns['assigned_admin_user_id'])&&!empty($noteColumns['status'])?[$actorId]:[]);
+    $payload=array_map('intval',$stmt->fetch(PDO::FETCH_ASSOC)?:[]);
+    $payload['schema_required']=[];
+    return $payload;
 }
 
 function mg_admin_dashboard_read(PDO $pdo,array $user,array $options=[]): array
