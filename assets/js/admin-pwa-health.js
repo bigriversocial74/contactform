@@ -63,3 +63,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
   load();
 });
+
+document.addEventListener('DOMContentLoaded', function () {
+  'use strict';
+  var root = document.querySelector('[data-admin-system-health]');
+  if (!root || !window.Microgifter) return;
+  var MG = window.Microgifter;
+  var run = root.querySelector('[data-sql-diagnostics-refresh]');
+  var download = root.querySelector('[data-sql-diagnostics-download]');
+  var plan = null;
+  function setSummary(text) { var summary = root.querySelector('[data-sql-diagnostics-summary]'); if (summary) summary.textContent = text; }
+  function save(name, text) { var blob = new Blob([text || ''], { type: 'text/plain;charset=utf-8' }); var url = URL.createObjectURL(blob); var link = document.createElement('a'); link.href = url; link.download = name || 'microgifter_system_sql_diagnostics.sql'; document.body.appendChild(link); link.click(); link.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 800); }
+  function apply(data) { data = data || {}; plan = data.repair_plan || null; if (run) { run.disabled = false; run.textContent = 'Run diagnostics'; } if (download) { download.disabled = !(plan && plan.sql); download.textContent = plan && plan.sql ? 'Download diagnostics SQL' : 'Download repair SQL'; } if (data.summary) setSummary(data.summary); }
+  async function refresh(event) { if (event) { event.preventDefault(); event.stopImmediatePropagation(); } if (run) { run.disabled = true; run.textContent = 'Running…'; } setSummary('Running fresh SQL diagnostics…'); try { var response = await MG.get('/api/admin/system-sql-diagnostics.php?_=' + Date.now()); apply(response.data || response); if (MG.toast) MG.toast('System SQL diagnostics refreshed.', 'success'); } catch (error) { if (run) { run.disabled = false; run.textContent = 'Run diagnostics'; } setSummary(error.message || 'Unable to run system SQL diagnostics.'); if (MG.toast) MG.toast(error.message || 'Unable to run system SQL diagnostics.', 'error'); } }
+  if (run) run.addEventListener('click', refresh, true);
+  if (download) download.addEventListener('click', function (event) { event.preventDefault(); event.stopImmediatePropagation(); if (plan && plan.sql) save(plan.filename, plan.sql); }, true);
+  setTimeout(refresh, 500);
+});
