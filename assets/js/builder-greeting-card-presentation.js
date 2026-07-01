@@ -6,6 +6,8 @@ document.addEventListener('DOMContentLoaded',function(){
 
   function isMobileCard(){return mobileQuery.matches;}
 
+  function states(){return isMobileCard()?['closed','inside-image','open','back']:['closed','open','back'];}
+
   function setCardState(card,state){
     if(!card)return;
     card.dataset.cardState=state;
@@ -26,6 +28,16 @@ document.addEventListener('DOMContentLoaded',function(){
     else if(card.dataset.cardState==='open')flip.textContent='Product Info';
     else if(card.dataset.cardState==='back')flip.textContent='Inside Image';
     else flip.textContent='Next Page';
+  }
+
+  function stepCard(card,direction){
+    var list=states();
+    var state=card.dataset.cardState||'closed';
+    var index=list.indexOf(state);
+    if(index<0)index=0;
+    if(state==='closed'&&direction<0){setCardState(card,list[1]);return;}
+    var next=(index+direction+list.length)%list.length;
+    setCardState(card,list[next]);
   }
 
   function nextMobileState(card){
@@ -59,6 +71,15 @@ document.addEventListener('DOMContentLoaded',function(){
       if(isMobileCard())setCardState(card,nextMobileState(card));
       else setCardState(card,card.dataset.cardState==='back'?'open':'back');
     }
+  });
+
+  root.addEventListener('click',function(event){
+    if(event.target.closest('button,a,input,textarea,select,audio,video'))return;
+    var card=event.target.closest('[data-card-presenter]');
+    if(!card||!root.contains(card))return;
+    var rect=card.getBoundingClientRect();
+    var x=event.clientX-rect.left;
+    stepCard(card,x<rect.width/2?-1:1);
   });
 
   root.querySelectorAll('input[name="builder_type"]').forEach(function(input){
