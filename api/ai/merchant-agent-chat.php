@@ -22,6 +22,7 @@ if ($method === 'GET') {
     mg_merchant_ensure_workspace($pdo, $user);
     $state = mg_ai_chat_public_state($pdo, (int)$user['id']);
     $state['memory'] = mg_agent_memory_summary($pdo, (int)$user['id']);
+    $state['memory_sources'] = mg_agent_memory_sources($pdo, (int)$user['id'], 30);
     $state['agent_autonomy'] = mg_agent_autonomy_for_merchant($pdo, (int)$user['id']);
     $state['admin_operator_available'] = mg_agent_chat_admin_operator($user);
     $state['admin_ai_limits'] = mg_agent_admin_limit_public($pdo, (int)$user['id']);
@@ -49,7 +50,7 @@ if ($method === 'POST') {
 
     if ($action === 'save_memory_profile') {
         $memory = mg_agent_memory_profile_save($pdo, $merchantId, $merchantId, $input);
-        mg_ok(['memory' => $memory, 'state' => mg_ai_chat_public_state($pdo, $merchantId) + ['memory' => mg_agent_memory_summary($pdo, $merchantId)]], 'Merchant memory saved.');
+        mg_ok(['memory' => $memory, 'state' => mg_ai_chat_public_state($pdo, $merchantId) + ['memory' => mg_agent_memory_summary($pdo, $merchantId), 'memory_sources' => mg_agent_memory_sources($pdo, $merchantId, 30)]], 'Merchant memory saved.');
     }
 
     if ($action === 'create_thread') {
