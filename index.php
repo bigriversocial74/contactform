@@ -57,7 +57,7 @@ require __DIR__ . '/includes/header.php';
           </div>
           <div class="mg-hero-search-results" data-hero-search-results hidden></div>
         </form>
-        <h1 class="mg-title" id="mgHeroTitle"><span class="mg-title-line">THE ALL-IN-ONE</span><span class="mg-title-line">NETWORK</span></h1>
+        <h1 class="mg-title" id="mgHeroTitle"><span class="mg-title-line">THE ALL-IN-ONE</span><span class="mg-title-line">SOCIAL NETWORK</span></h1>
         <p class="mg-note"><strong>Save time. Add customers. Increase sales.</strong> One dashboard gives you social tools, customer acquisition resources, and customer messaging designed to help you grow.</p>
         <div class="mg-actions">
           <a class="mg-btn mg-btn-primary" href="/signup.php">Create Your Wallet <span aria-hidden="true">→</span></a>
