@@ -10,7 +10,7 @@ $page_section = 'account';
 $header_mode = 'account';
 $adminActive = 'ad-placements';
 $page_body_class = 'mg-admin-ad-review-page mg-admin-ad-placements-page';
-$page_styles = ['/assets/css/admin-shell.css','/assets/css/merchant-ad-manager.css','/assets/css/sponsored-campaign-card.css','/assets/css/ad-health-alerts.css'];
+$page_styles = ['/assets/css/admin-shell.css','/assets/css/merchant-ad-manager.css','/assets/css/sponsored-campaign-card.css','/assets/css/ad-admin-qa.css','/assets/css/ad-health-alerts.css'];
 $page_scripts = ['/assets/js/ad-health-alerts.js','/assets/js/admin-ad-placements.js'];
 $page_manifest = [
     'id' => 'admin-ad-placements',
@@ -37,7 +37,7 @@ require dirname(__DIR__) . '/includes/header.php';
           <a class="mg-system-health-back" href="/admin/ad-review.php">Back to Campaign Ads review</a>
           <br><br><span class="mg-ads-eyebrow">Placement Controls</span>
           <h1>Choose where approved ads appear.</h1>
-          <p>Manage the active ad surfaces, max visible ad inventory, campaign assignments, placement priority, and pause/remove behavior across Feed, Sidebar, Agent Chat, World Canvas, and Target Zones.</p>
+          <p>Manage the active ad surfaces, max visible ad inventory, campaign assignments, placement priority, and pause/remove behavior across Feed, Sidebar, Agent Chat, World Canvas, Target Zones, Inbox, and Claim Success.</p>
         </article>
         <aside class="mg-ads-hero-card">
           <span class="mg-ads-eyebrow">Phase 1 surfaces</span>
@@ -59,6 +59,7 @@ require dirname(__DIR__) . '/includes/header.php';
             <div>
               <h2>Placement assignment board</h2>
               <p class="mg-ads-muted" data-placement-summary>Loading placement assignments...</p>
+              <span class="mg-ad-admin-placement-note">Controlled placement only · no billing or auction logic</span>
             </div>
             <p class="mg-ads-status" data-placement-status role="status"></p>
           </div>
