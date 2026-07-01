@@ -115,3 +115,11 @@ function mg_agent_admin_limit_enforce(PDO $pdo, array $provider, ?array $model, 
         }
     }
 }
+
+function mg_agent_admin_limit_enforce_default(PDO $pdo, int $merchantId): void
+{
+    if (!function_exists('mg_ai_merchant_find_anthropic_model') || !function_exists('mg_ai_merchant_provider')) return;
+    $model = mg_ai_merchant_find_anthropic_model($pdo, null);
+    $provider = mg_ai_merchant_provider($pdo, (int)$model['provider_id']);
+    mg_agent_admin_limit_enforce($pdo, $provider, $model, $merchantId);
+}
