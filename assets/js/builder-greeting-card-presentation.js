@@ -4,9 +4,11 @@ document.addEventListener('DOMContentLoaded',function(){
   if(!root)return;
   var mobileQuery=window.matchMedia('(max-width: 900px)');
 
-  function isMobileCard(){return mobileQuery.matches;}
+  function isMobileCard(card){
+    return mobileQuery.matches || !!(card && card.closest('.mg-builder-card.is-mobile'));
+  }
 
-  function states(){return isMobileCard()?['closed','inside-image','open','back']:['closed','open','back'];}
+  function states(card){return isMobileCard(card)?['closed','inside-image','open','back']:['closed','open','back'];}
 
   function setCardState(card,state){
     if(!card)return;
@@ -20,7 +22,7 @@ document.addEventListener('DOMContentLoaded',function(){
     if(!card)return;
     var flip=card.querySelector('[data-card-action="flip"]');
     if(!flip)return;
-    if(!isMobileCard()){
+    if(!isMobileCard(card)){
       flip.textContent=card.dataset.cardState==='back'?'Inside Card':'Flip Card';
       return;
     }
@@ -31,7 +33,7 @@ document.addEventListener('DOMContentLoaded',function(){
   }
 
   function stepCard(card,direction){
-    var list=states();
+    var list=states(card);
     var state=card.dataset.cardState||'closed';
     var index=list.indexOf(state);
     if(index<0)index=0;
@@ -65,10 +67,10 @@ document.addEventListener('DOMContentLoaded',function(){
     if(!card)return;
     event.preventDefault();
     var action=button.dataset.cardAction;
-    if(action==='open')setCardState(card,isMobileCard()?'inside-image':'open');
+    if(action==='open')setCardState(card,isMobileCard(card)?'inside-image':'open');
     if(action==='close')setCardState(card,'closed');
     if(action==='flip'){
-      if(isMobileCard())setCardState(card,nextMobileState(card));
+      if(isMobileCard(card))setCardState(card,nextMobileState(card));
       else setCardState(card,card.dataset.cardState==='back'?'open':'back');
     }
   });
@@ -92,7 +94,7 @@ document.addEventListener('DOMContentLoaded',function(){
   if(mobileQuery.addEventListener){
     mobileQuery.addEventListener('change',function(){
       root.querySelectorAll('[data-card-presenter]').forEach(function(card){
-        if(card.dataset.cardState==='inside-image'&&!isMobileCard())setCardState(card,'open');
+        if(card.dataset.cardState==='inside-image'&&!isMobileCard(card))setCardState(card,'open');
         else syncButtonLabels(card);
       });
     });
