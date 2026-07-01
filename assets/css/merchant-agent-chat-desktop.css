@@ -31,11 +31,12 @@
     display:grid!important;
     grid-template-columns:minmax(0,1fr) minmax(300px,360px)!important;
     gap:20px!important;
-    align-items:stretch!important;
+    align-items:start!important;
     min-height:calc(100svh - var(--mg-app-header) - 150px)!important;
   }
 
   html body.mg-app-page.mg-section-merchant .mg-agent-chat-main-stack{
+    position:relative!important;
     display:flex!important;
     flex-direction:column!important;
     min-height:0!important;
@@ -84,8 +85,9 @@
   }
 
   html body.mg-app-page.mg-section-merchant .mg-agent-chat-right{
-    position:sticky!important;
-    top:calc(var(--mg-app-header) + 24px)!important;
+    position:static!important;
+    align-self:start!important;
+    top:auto!important;
     left:auto!important;
     right:auto!important;
     bottom:auto!important;
@@ -93,7 +95,8 @@
     display:block!important;
     width:auto!important;
     max-width:none!important;
-    height:calc(100svh - var(--mg-app-header) - 48px)!important;
+    height:auto!important;
+    max-height:calc(100svh - var(--mg-app-header) - 48px)!important;
     padding:0!important;
     background:transparent!important;
     border:0!important;
@@ -110,7 +113,7 @@
   html body.mg-app-page.mg-section-merchant .mg-agent-context-card{
     margin:0!important;
     border:1px solid rgba(203,213,225,.9)!important;
-    border-radius:28px!important;
+    border-radius:0!important;
     background:#fff!important;
     box-shadow:0 22px 60px rgba(15,23,42,.07)!important;
   }
@@ -120,14 +123,14 @@
   }
 
   html body.mg-app-page.mg-section-merchant .mg-agent-chat-composer-shell{
-    position:fixed!important;
-    left:calc(var(--mg-app-sidebar) + 28px)!important;
-    right:28px!important;
+    position:sticky!important;
+    left:auto!important;
+    right:auto!important;
     bottom:22px!important;
     z-index:1200!important;
-    width:auto!important;
-    max-width:none!important;
-    margin:0!important;
+    width:100%!important;
+    max-width:100%!important;
+    margin:12px 0 0!important;
     display:grid!important;
     grid-template-columns:auto minmax(0,1fr) auto!important;
     gap:12px!important;
@@ -154,10 +157,12 @@
   }
 
   html body.mg-app-page.mg-section-merchant .mg-agent-chat-main-stack>.mg-form-status{
-    position:fixed!important;
-    left:calc(var(--mg-app-sidebar) + 44px)!important;
-    right:44px!important;
-    bottom:96px!important;
-    z-index:1190!important;
+    position:static!important;
+    left:auto!important;
+    right:auto!important;
+    bottom:auto!important;
+    z-index:auto!important;
+    width:100%!important;
+    margin:8px 0 0!important;
   }
 }
