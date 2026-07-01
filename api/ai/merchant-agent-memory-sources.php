@@ -34,4 +34,13 @@ if ($action === 'website') {
     mg_ok(['source' => $source, 'sources' => mg_agent_memory_sources($pdo, $merchantId, 50)], 'Website queued for memory scan.', 201);
 }
 
+if ($action === 'process') {
+    $sourcePublicId = mg_agent_memory_source_clean($_POST['source_id'] ?? $_POST['id'] ?? '', 80);
+    $limit = max(1, min(10, (int)($_POST['limit'] ?? 1)));
+    $force = in_array(strtolower((string)($_POST['force'] ?? '')), ['1','true','yes'], true);
+    $result = mg_agent_memory_source_process_pending($pdo, $merchantId, $sourcePublicId !== '' ? $sourcePublicId : null, $limit, $force);
+    mg_audit('merchant.agent_memory_sources_processed', 'merchant_agent_memory_source', ['processed_count' => count($result['processed'] ?? []), 'source_id' => $sourcePublicId ?: null], $merchantId);
+    mg_ok(['processed' => $result['processed'], 'remaining' => $result['remaining'], 'sources' => mg_agent_memory_sources($pdo, $merchantId, 50)], 'Memory source processing complete.');
+}
+
 mg_fail('Unknown memory source action.', 422);
