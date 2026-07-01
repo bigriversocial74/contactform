@@ -74,6 +74,8 @@ window.Microgifter = window.Microgifter || {};
     var article = document.createElement('article');
     article.className = 'mg-feed-card mg-owner-post-card mg-feed-legacy-post-card';
     article.dataset.postId = String(post.public_id || '');
+    if (post.post_type === 'greeting_card') article.classList.add('is-greeting-card-post');
+    if (post.post_type === 'multimedia_card') article.classList.add('is-multimedia-card-post');
 
     var header = document.createElement('header');
     header.className = 'mg-feed-card-header';
@@ -101,6 +103,8 @@ window.Microgifter = window.Microgifter || {};
     if (post.product_id || post.product_slug || post.title) {
       var product = document.createElement('a');
       product.className = 'mg-feed-linked-card is-product';
+      if (post.post_type === 'greeting_card') product.classList.add('is-greeting_card');
+      if (post.post_type === 'multimedia_card') product.classList.add('is-multimedia_card');
       product.href = post.product_slug ? '/product.php?p=' + encodeURIComponent(post.product_slug) : '#';
       var copy = document.createElement('span');
       copy.className = 'mg-feed-linked-copy';
@@ -201,6 +205,18 @@ window.Microgifter = window.Microgifter || {};
     });
   }
 
+  function markGreetingCardPost(linkedCard) {
+    var feedCard = linkedCard.closest('.mg-feed-card');
+    if (!feedCard) return;
+    var variant = linkedCard.dataset.cardVariant || '';
+    if (variant === 'greeting_card' || linkedCard.classList.contains('is-greeting_card')) {
+      feedCard.classList.add('is-greeting-card-post');
+    }
+    if (variant === 'multimedia_card' || linkedCard.classList.contains('is-multimedia_card')) {
+      feedCard.classList.add('is-multimedia-card-post');
+    }
+  }
+
   function hideDuplicateProductHeadline(linkedCard) {
     var feedCard = linkedCard.closest('.mg-feed-card');
     if (!feedCard) return;
@@ -211,6 +227,7 @@ window.Microgifter = window.Microgifter || {};
 
   function polishProductCards(scope) {
     collect('.mg-feed-linked-card.is-product', scope).forEach(function (card) {
+      markGreetingCardPost(card);
       hideDuplicateProductHeadline(card);
       var preview = card.querySelector('.mg-feed-linked-preview');
       if (preview && !preview.querySelector('img')) preview.textContent = '';
