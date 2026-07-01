@@ -30,7 +30,9 @@ function mg_ads_product_public_row(array $row): array
     $pack = is_array($meta['media_pack'] ?? null) ? $meta['media_pack'] : [];
     $cover = mg_ads_safe_url($pack['cover_image_url'] ?? '');
     $title = mg_ads_text($row['title'] ?? 'Reward product', 190, 'Reward product');
-    $description = mg_ads_text($row['description'] ?? $row['agent_summary'] ?? '', 360, '');
+    $rawDescription = trim((string)($row['description'] ?? ''));
+    if ($rawDescription === '') $rawDescription = trim((string)($row['agent_summary'] ?? ''));
+    $description = mg_ads_text($rawDescription, 360, '');
     $value = mg_ads_product_value($row);
     $headline = $title;
     $summaryParts = array_values(array_filter([$description, $value !== '' ? 'Value: ' . $value : '']));
@@ -58,6 +60,7 @@ function mg_ads_product_public_row(array $row): array
 try {
     if (!mg_ads_table_exists($pdo, 'reward_templates')) {
         mg_ok(['schema_ready' => false, 'products' => [], 'source' => 'reward_templates'], 'Reward template products are not available yet.');
+        return;
     }
     $merchantId = (int)($user['id'] ?? 0);
     $status = trim((string)($_GET['status'] ?? 'active'));
