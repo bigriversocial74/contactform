@@ -10,8 +10,8 @@ $page_section = 'account';
 $header_mode = 'account';
 $adminActive = 'ad-placements';
 $page_body_class = 'mg-admin-ad-review-page mg-admin-ad-placements-page';
-$page_styles = ['/assets/css/admin-shell.css','/assets/css/merchant-ad-manager.css','/assets/css/sponsored-campaign-card.css'];
-$page_scripts = ['/assets/js/admin-ad-placements.js'];
+$page_styles = ['/assets/css/admin-shell.css','/assets/css/merchant-ad-manager.css','/assets/css/sponsored-campaign-card.css','/assets/css/ad-health-alerts.css'];
+$page_scripts = ['/assets/js/ad-health-alerts.js','/assets/js/admin-ad-placements.js'];
 $page_manifest = [
     'id' => 'admin-ad-placements',
     'title' => $page_title,
@@ -53,6 +53,7 @@ require dirname(__DIR__) . '/includes/header.php';
         <?php if (!$schema['ready']): ?>
           <section class="mg-ads-panel"><div class="mg-ads-alert">SQL migration required: run <strong>database/microgifter_ads_manager_phase1.sql</strong> before managing placements.</div></section>
         <?php endif; ?>
+        <section class="mg-ad-health-alerts" data-ad-health-alerts data-health-scope="admin" aria-live="polite"></section>
         <section class="mg-ads-panel" style="margin-bottom:18px">
           <div class="mg-ads-row-head">
             <div>
