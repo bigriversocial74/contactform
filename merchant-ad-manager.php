@@ -10,7 +10,7 @@ $page_section = 'agent';
 $header_mode = 'agent';
 $agent_tab = 'ads-manager';
 $page_body_class = 'mg-ad-manager-page mg-ad-manager-redesign-page';
-$page_styles = ['/assets/css/merchant-ad-manager.css','/assets/css/sponsored-campaign-card.css','/assets/css/ad-health-alerts.css'];
+$page_styles = ['/assets/css/merchant-ad-manager.css','/assets/css/sponsored-campaign-card.css','/assets/css/ad-health-alerts.css','/assets/css/merchant-ad-product-picker.css'];
 $page_scripts = ['/assets/js/sponsored-campaign-card.js','/assets/js/ad-health-alerts.js','/assets/js/merchant-ad-manager.js'];
 $page_manifest = [
     'id' => 'merchant-ad-manager',
@@ -68,6 +68,16 @@ require __DIR__ . '/includes/header.php';
             <article class="mg-ads-panel mg-ads-create-panel">
               <h2>Create Campaign Boost / Sponsored Local Drop</h2>
               <form class="mg-ads-form" data-ad-form onsubmit="return false;">
+                <div class="mg-ads-product-picker">
+                  <div class="mg-ads-field">
+                    <label for="ad-product">Choose product / reward to advertise</label>
+                    <select id="ad-product" name="source_product_id" data-product-picker>
+                      <option value="">Loading merchant products…</option>
+                    </select>
+                  </div>
+                  <button class="mg-btn mg-btn-soft" type="button" data-apply-product disabled>Apply Product</button>
+                </div>
+                <div class="mg-ads-product-summary" data-product-summary hidden></div>
                 <div class="mg-ads-field"><label for="ad-title">Campaign title</label><input id="ad-title" name="title" maxlength="190" value="Sponsored Local Drop" required></div>
                 <div class="mg-ads-field"><label for="ad-headline">Sponsored card headline</label><input id="ad-headline" name="headline" maxlength="190" value="Featured Local Reward" required></div>
                 <div class="mg-ads-field"><label for="ad-description">Short offer description</label><textarea id="ad-description" name="description" maxlength="2000" placeholder="Describe the reward, campaign, or local opportunity.">Claim this local reward, save it to your wallet, and redeem it with the merchant.</textarea></div>
@@ -119,7 +129,7 @@ require __DIR__ . '/includes/header.php';
               </article>
               <article class="mg-ads-panel mg-ads-help-card">
                 <h2>Need help?</h2>
-                <p class="mg-ads-muted">Write a clear headline and valuable offer to increase claim and redemption rates.</p>
+                <p class="mg-ads-muted">Choose a product to prefill ad copy, then tighten the headline and CTA for higher claim and redemption rates.</p>
                 <button class="mg-btn mg-btn-soft" type="button" data-ads-tab-jump="analytics">View best practices →</button>
               </article>
             </aside>
