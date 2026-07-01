@@ -29,6 +29,13 @@ $appSidebarNav = [
         'visible' => true,
         'active' => $agentSidebarActive === 'my-feed' || $agentSidebarActive === 'feed' || $agentSidebarActive === 'feed-discover',
     ],
+    'my-inbox' => [
+        'label' => 'My Inbox',
+        'detail' => 'Received gifts and claim activity',
+        'href' => '/inbox.php',
+        'visible' => true,
+        'active' => $agentSidebarActive === 'my-inbox' || $agentSidebarActive === 'inbox',
+    ],
     'feed-following' => [
         'label' => 'Following',
         'detail' => 'Posts from profiles you follow',
@@ -50,14 +57,6 @@ $appSidebarNav = [
         'href' => '/merchant-agent-chat.php',
         'visible' => $canMerchantNav,
         'active' => $agentSidebarActive === 'agent_chat' || $agentSidebarActive === 'merchant-agent-chat',
-    ],
-    'merchant_crm' => [
-        'section' => 'Merchant',
-        'label' => 'Merchant CRM',
-        'detail' => 'Customers and campaign history',
-        'href' => '/merchant-crm.php',
-        'visible' => $canMerchantNav,
-        'active' => $agentSidebarActive === 'merchant_crm' || $agentSidebarActive === 'merchant-crm',
     ],
     'messages' => [
         'section' => 'Account',
