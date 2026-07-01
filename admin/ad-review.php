@@ -33,8 +33,8 @@ require dirname(__DIR__) . '/includes/header.php';
     <main class="mg-ads-shell" data-admin-ad-review data-csrf-token="<?php echo mg_e($csrfToken); ?>">
       <section class="mg-ads-hero">
         <article class="mg-ads-hero-card">
-          <a class="mg-system-health-back" href="/account-admin.php">← Admin dashboard</a>
-          <br><br><span class="mg-ads-eyebrow">Ad Operations · Phase 1</span>
+          <a class="mg-system-health-back" href="/account-admin.php">Back to Admin dashboard</a>
+          <br><br><span class="mg-ads-eyebrow">Ad Operations - Phase 1</span>
           <h1>Review sponsored campaigns before they go live.</h1>
           <p>Approve, reject, pause, or reactivate controlled Campaign Ads Manager placements across the Feed, Sidebar, World Canvas, and Target Zones.</p>
         </article>
@@ -53,16 +53,24 @@ require dirname(__DIR__) . '/includes/header.php';
           <section class="mg-ads-panel"><div class="mg-ads-alert">SQL migration required: run <strong>database/microgifter_ads_manager_phase1.sql</strong> before reviewing ads.</div></section>
         <?php endif; ?>
         <section class="mg-ads-panel" style="margin-bottom:18px">
+          <span class="mg-ads-eyebrow">Demo ads</span>
+          <h2>Create demo ads about advertising on Microgifter</h2>
+          <p class="mg-ads-muted">Create approved sample ads for Feed, Sidebar, World Canvas, and Target Zone placements. The content promotes Campaign Ads Manager so you can test how Microgifter advertising looks and tracks.</p>
+          <div class="mg-ads-actions">
+            <button class="mg-btn mg-btn-primary" type="button" data-create-demo-ads>Create Demo Ads</button>
+            <button class="mg-btn mg-btn-soft" type="button" data-refresh>Refresh</button>
+          </div>
+        </section>
+        <section class="mg-ads-panel" style="margin-bottom:18px">
           <div class="mg-ads-actions">
             <label class="mg-ads-field" style="max-width:260px"><span>Status filter</span><select data-status-filter><option value="pending_review">Pending Review</option><option value="approved">Approved</option><option value="active">Active</option><option value="paused">Paused</option><option value="rejected">Rejected</option><option value="">All statuses</option></select></label>
-            <button class="mg-btn mg-btn-soft" type="button" data-refresh>Refresh</button>
           </div>
           <p class="mg-ads-status" data-admin-ad-status role="status"></p>
         </section>
         <section class="mg-ads-admin-layout">
           <article class="mg-ads-panel">
             <h2>Review queue</h2>
-            <div class="mg-ads-list" data-admin-ad-list><div class="mg-ads-empty">Loading campaigns…</div></div>
+            <div class="mg-ads-list" data-admin-ad-list><div class="mg-ads-empty">Loading campaigns...</div></div>
           </article>
           <aside data-admin-ad-detail><div class="mg-ads-empty">Select an ad campaign to review.</div></aside>
         </section>
