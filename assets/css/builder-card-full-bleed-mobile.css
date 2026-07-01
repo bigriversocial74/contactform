@@ -72,6 +72,14 @@ html body.mg-section-builder .mg-card-back-face .mg-card-value{
   display:block!important;
 }
 
+html body.mg-section-builder .mg-card-presenter{
+  cursor:pointer!important;
+}
+
+html body.mg-section-builder .mg-card-controls{
+  display:none!important;
+}
+
 @media(max-width:900px){
   html body.mg-section-builder .mg-main{
     padding-top:0!important;
@@ -205,33 +213,5 @@ html body.mg-section-builder .mg-card-back-face .mg-card-value{
 
   html body.mg-section-builder .mg-card-inside-image.is-empty:after{
     content:'Upload inside image';
-  }
-
-  html body.mg-section-builder .mg-card-controls{
-    position:static!important;
-    left:auto!important;
-    right:auto!important;
-    bottom:auto!important;
-    display:grid!important;
-    grid-template-columns:1fr!important;
-    gap:10px!important;
-    width:100%!important;
-  }
-
-  html body.mg-section-builder .mg-card-controls .mg-btn{
-    width:100%!important;
-    min-height:48px!important;
-    border-radius:999px!important;
-  }
-
-  html body.mg-section-builder .mg-card-presenter[data-card-state="closed"] [data-card-action="close"],
-  html body.mg-section-builder .mg-card-presenter[data-card-state="closed"] [data-card-action="flip"]{
-    display:none!important;
-  }
-
-  html body.mg-section-builder .mg-card-presenter[data-card-state="inside-image"] [data-card-action="open"],
-  html body.mg-section-builder .mg-card-presenter[data-card-state="open"] [data-card-action="open"],
-  html body.mg-section-builder .mg-card-presenter[data-card-state="back"] [data-card-action="open"]{
-    display:none!important;
   }
 }
