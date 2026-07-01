@@ -22,6 +22,12 @@ window.Microgifter = window.Microgifter || {};
     qsa('[data-ads-tab-panel]').forEach(function(panel){panel.classList.toggle('is-active', panel.getAttribute('data-ads-tab-panel') === name);});
     if (name === 'preview') preview();
   }
+  function resetDraft(){
+    selectedId='';
+    qs('[data-ad-form]').reset();
+    qsa('[name="placements[]"]').forEach(function(i){i.checked=i.value==='feed_sponsored_card'||i.value==='sidebar_sponsored_card';});
+    status('New draft ready.'); preview(); activateTab('create');
+  }
   function checkedPlacements(){return qsa('[name="placements[]"]:checked').map(function(input){return input.value;});}
   function formPayload(){
     return {
@@ -125,10 +131,10 @@ window.Microgifter = window.Microgifter || {};
   }
   qsa('input,textarea,select').forEach(function(el){el.addEventListener('input',preview); el.addEventListener('change',preview);});
   qsa('[data-ads-tab-button]').forEach(function(btn){btn.addEventListener('click',function(){activateTab(btn.getAttribute('data-ads-tab-button'));});});
-  qsa('[data-ads-tab-jump]').forEach(function(btn){btn.addEventListener('click',function(e){e.preventDefault(); activateTab(btn.getAttribute('data-ads-tab-jump'));});});
+  qsa('[data-ads-tab-jump]').forEach(function(btn){btn.addEventListener('click',function(e){e.preventDefault(); if (btn.textContent.indexOf('New Campaign') !== -1) resetDraft(); else activateTab(btn.getAttribute('data-ads-tab-jump'));});});
   var search=qs('[data-ads-search]'); if(search) search.addEventListener('input', renderList);
   qs('[data-save-draft]').addEventListener('click',function(){saveDraft().catch(function(e){status(e.message,true);});});
   qs('[data-submit-current]').addEventListener('click',function(){submitCampaign('').catch(function(e){status(e.message,true);});});
-  qs('[data-new-draft]').addEventListener('click',function(){selectedId=''; qs('[data-ad-form]').reset(); qsa('[name="placements[]"]').forEach(function(i){i.checked=i.value==='feed_sponsored_card'||i.value==='sidebar_sponsored_card';}); status('New draft ready.'); preview(); activateTab('create');});
+  qs('[data-new-draft]').addEventListener('click',function(){saveDraft().catch(function(e){status(e.message,true);});});
   preview(); loadList().catch(function(e){status(e.message,true);}); loadPerformance().catch(function(){});
 })(window, document);
