@@ -5,6 +5,7 @@ $giftCenterTitle=['inbox'=>'Inbox','sent'=>'Sent','claimed'=>'Claimed'][$giftCen
 $giftCenterDemoEnabled=mg_has_role('super_admin');
 ?>
 <link rel="stylesheet" href="/assets/css/gift-action-center-modal-fix.css">
+<link rel="stylesheet" href="/assets/css/gift-envelope-presentation.css">
 <section class="mg-app-shell mg-gift-center-page" data-gift-center data-initial-folder="<?= mg_e($giftCenterFolder) ?>" data-demo-enabled="<?= $giftCenterDemoEnabled?'true':'false' ?>">
   <?php require __DIR__ . '/agent-sidebar.php'; ?>
 
@@ -43,3 +44,4 @@ $giftCenterDemoEnabled=mg_has_role('super_admin');
 <script src="/assets/js/gift-action-center-actions.js" defer></script>
 <script src="/assets/js/gift-action-center-claim-restore.js" defer></script>
 <script src="/assets/js/gift-action-center-modal-portal.js" defer></script>
+<script src="/assets/js/gift-envelope-presentation.js" defer></script>
