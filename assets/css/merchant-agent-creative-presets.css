@@ -1,0 +1,8 @@
+.mg-agent-creative-presets{margin:0 0 12px;padding:12px;border:1px solid #dbe7f5;border-radius:20px;background:linear-gradient(135deg,#fff,#f8fbff);box-shadow:0 14px 32px rgba(15,23,42,.06)}
+.mg-agent-creative-presets-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.mg-agent-creative-presets-head span{color:#2563eb;font-size:11px;font-weight:950;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap}
+.mg-agent-creative-presets-head strong{color:#64748b;font-size:12px;font-weight:850;line-height:1.35;text-align:right}
+.mg-agent-creative-presets-list{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:thin}
+.mg-agent-creative-presets-list button{flex:0 0 auto;min-height:36px;padding:0 12px;border:1px solid #dbe7f5;border-radius:999px;background:#fff;color:#0f172a;font-size:12px;font-weight:950;cursor:pointer;box-shadow:0 8px 18px rgba(15,23,42,.045)}
+.mg-agent-creative-presets-list button:hover{border-color:#bfdbfe;background:#eff6ff;color:#1d4ed8}
+@media(max-width:680px){.mg-agent-creative-presets{margin:0 0 10px;padding:10px;border-radius:16px}.mg-agent-creative-presets-head{display:block}.mg-agent-creative-presets-head strong{display:block;margin-top:4px;text-align:left}.mg-agent-creative-presets-list button{min-height:34px}}
