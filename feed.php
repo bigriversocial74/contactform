@@ -56,16 +56,6 @@ require __DIR__ . '/includes/header.php';
             <span data-feed-description>Public and unlisted posts from active profiles.</span>
           </div>
 
-          <label class="mg-feed-owner-filter mg-hidden" data-owner-filter-wrap>Post status
-            <select data-owner-filter>
-              <option value="">All posts</option>
-              <option value="draft">Drafts</option>
-              <option value="published">Published</option>
-              <option value="archived">Archived</option>
-              <option value="retired">Retired</option>
-            </select>
-          </label>
-
           <div class="mg-feed-status" data-feed-status role="status" aria-live="polite"></div>
           <section class="mg-feed-loading" data-feed-loading aria-busy="true">
             <?php for ($i=0; $i<3; $i++): ?><article class="mg-feed-card is-skeleton" aria-hidden="true"></article><?php endfor; ?>
