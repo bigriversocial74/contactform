@@ -1,0 +1,8 @@
+:root{--mg-z-header:900;--mg-z-dropdown:1200;--mg-z-drawer:30000;--mg-z-modal-backdrop:40000;--mg-z-modal:40010}
+.mg-app-page .mg-main{z-index:auto!important}
+.mg-app-page .mg-unified-header,html body.mg-app-page .mg-unified-header{z-index:var(--mg-z-header)!important}
+html body.mg-app-page.mg-section-agent .mg-site-nav{z-index:890!important}
+.mg-account-actions{z-index:var(--mg-z-dropdown)!important}
+.mg-action-modal-backdrop,.mg-post-composer-backdrop,.mg-story-modal-backdrop,.mg-story-viewer-scrim,.mg-modal-backdrop{z-index:var(--mg-z-modal-backdrop)!important}
+.mg-action-modal,.mg-post-composer-modal,.mg-post-composer-dialog,.mg-story-modal,.mg-story-modal-panel,.mg-story-viewer,.mg-story-viewer-panel,.mg-modal{z-index:var(--mg-z-modal)!important}
+.mg-cart-drawer,.mg-cart-drawer.is-contained,.mg-gift-drawer{z-index:var(--mg-z-drawer)!important}
