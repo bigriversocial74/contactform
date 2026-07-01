@@ -1,6 +1,6 @@
-# Campaign Ads Merchant Manager Redesign and Health Alerts
+# Campaign Ads Merchant Manager Redesign, Product Picker, and Health Alerts
 
-This stage refreshes the merchant Campaign Ads Manager page and adds read-only Campaign Ads health alerts.
+This stage refreshes the merchant Campaign Ads Manager page, adds read-only Campaign Ads health alerts, and adds a product/reward picker to the ad builder.
 
 ## Merchant page
 
@@ -8,7 +8,7 @@ This stage refreshes the merchant Campaign Ads Manager page and adds read-only C
 /merchant-ad-manager.php
 ```
 
-The merchant page now follows a lighter dashboard layout:
+The merchant page follows a lighter dashboard layout:
 
 - page header
 - KPI card row
@@ -20,6 +20,40 @@ The merchant page now follows a lighter dashboard layout:
 - right-side sponsored preview/help card
 - campaign search/table view
 - merchant health alert banner
+- product/reward picker in the ad builder
+
+## Product picker
+
+New read-only API:
+
+```txt
+/api/ads/merchant-products.php
+```
+
+The first product source is the existing merchant-owned `reward_templates` table. This is currently the closest existing product/reward catalog source in the codebase.
+
+The dropdown lets the merchant choose an active reward/product and apply it to the ad draft.
+
+Applying a product can prefill:
+
+- campaign title
+- sponsored card headline
+- short offer description
+- image URL from reward media cover image
+- CTA label
+- destination URL
+- objective
+- targeting metadata
+
+Product source metadata is saved into ad targeting rules:
+
+```txt
+source_product_id
+source_product_type
+source_product_title
+```
+
+No new product table is created.
 
 ## Tabs
 
@@ -57,13 +91,13 @@ claim_success_recommendation
 
 ## Health alerts
 
-New read-only API:
+Read-only API:
 
 ```txt
 /api/ads/health-alerts.php
 ```
 
-New shared assets:
+Shared assets:
 
 ```txt
 /assets/js/ad-health-alerts.js
@@ -119,9 +153,13 @@ No SQL required.
 1. Open `/merchant-ad-manager.php`.
 2. Confirm KPI cards load across the top.
 3. Confirm tabs switch between Create, Sponsored Preview, Merchant Campaigns, and Analytics.
-4. Create or load a campaign and confirm the sponsored preview updates.
-5. Confirm the Merchant Campaigns tab displays the campaign table and search.
-6. Open `/api/ads/health-alerts.php?scope=merchant` while signed in as a merchant.
-7. Open `/admin/ad-review.php`, `/admin/ad-placements.php`, and `/admin/ad-diagnostics.php` as an ads admin.
-8. Confirm the health alert banner loads on each page.
-9. Use `/admin/ad-placements.php` to activate/assign placements and confirm the health alert count changes.
+4. Confirm the product dropdown loads active merchant reward templates.
+5. Select a product and click Apply Product.
+6. Confirm title, headline, description, image URL, CTA, destination URL, and preview update.
+7. Save the campaign and load it again from Merchant Campaigns.
+8. Confirm the selected product metadata is preserved when available.
+9. Open `/api/ads/merchant-products.php` while signed in as a merchant.
+10. Open `/api/ads/health-alerts.php?scope=merchant` while signed in as a merchant.
+11. Open `/admin/ad-review.php`, `/admin/ad-placements.php`, and `/admin/ad-diagnostics.php` as an ads admin.
+12. Confirm the health alert banner loads on each page.
+13. Use `/admin/ad-placements.php` to activate/assign placements and confirm the health alert count changes.
