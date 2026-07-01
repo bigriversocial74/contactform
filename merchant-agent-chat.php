@@ -16,12 +16,14 @@ $page_styles = [
     '/assets/css/merchant-agent-chat-desktop.css',
     '/assets/css/merchant-agent-chat-mobile-offset.css',
     '/assets/css/merchant-agent-chat-voice.css',
+    '/assets/css/merchant-agent-chat-control-panel.css',
     '/assets/css/sponsored-campaign-card.css',
 ];
 $page_scripts = [
     '/assets/js/merchant-agent-chat.js',
     '/assets/js/merchant-agent-chat-voice.js',
     '/assets/js/merchant-agent-chat-speech-results.js',
+    '/assets/js/merchant-agent-chat-control-panel.js',
     '/assets/js/merchant-agent-chat-json-format.js',
     '/assets/js/merchant-agent-chat-mobile.js',
     '/assets/js/sponsored-campaign-card.js',
