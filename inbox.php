@@ -27,6 +27,7 @@ $page_scripts = [
     '/assets/js/gift-action-center-claim-click.js',
     '/assets/js/gift-action-center-send-modal.js',
     '/assets/js/gift-action-center-regift-submit.js',
+    '/assets/js/gift-action-center-message-lock.js',
     '/assets/js/gift-source-metadata.js',
 ];
 
