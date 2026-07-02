@@ -21,6 +21,7 @@ window.Microgifter = window.Microgifter || {};
   function hide(node, value) { if (node) node.classList.toggle('mg-hidden', Boolean(value)); }
   function clear(node) { if (node) node.replaceChildren(); }
   function payload(response) { return response && response.data ? response.data : response; }
+  function hasOwn(object, key) { return Object.prototype.hasOwnProperty.call(object || {}, key); }
   function uuid(prefix) {
     var value = window.crypto && window.crypto.randomUUID ? window.crypto.randomUUID() : String(Date.now()) + '-' + Math.random().toString(16).slice(2);
     return String(prefix || 'request') + ':' + value;
@@ -31,6 +32,7 @@ window.Microgifter = window.Microgifter || {};
     if (value) button.dataset.originalLabel = button.textContent;
     button.disabled = value;
     button.textContent = value ? (label || 'Working…') : (button.dataset.originalLabel || button.textContent);
+    if (!value) delete button.dataset.originalLabel;
   }
   function toast(message, type) {
     if (MG.toast) MG.toast(message, type || 'info');
@@ -148,6 +150,7 @@ window.Microgifter = window.Microgifter || {};
     var panel = document.createElement('section');
     panel.className = 'mg-feed-comments mg-hidden';
     panel.dataset.commentsPanel = '1';
+    panel.id = 'feed-comments-' + String(item.id || '').replace(/[^a-z0-9_-]/gi, '');
     var status = document.createElement('div');
     status.className = 'mg-feed-comments-status';
     status.dataset.commentsStatus = '1';
@@ -242,6 +245,7 @@ window.Microgifter = window.Microgifter || {};
     var stats = document.createElement('div');
     stats.className = 'mg-feed-stats';
     stats.append(metric('comments', item.engagement && item.engagement.comments), metric('reactions', item.engagement && item.engagement.reactions), metric('shares', item.engagement && item.engagement.shares));
+    if (item.engagement && Number(item.engagement.saves || 0) > 0) stats.append(metric('saves', item.engagement.saves));
     card.appendChild(stats);
 
     var actions = document.createElement('div');
@@ -254,9 +258,13 @@ window.Microgifter = window.Microgifter || {};
       button.setAttribute('aria-pressed', active ? 'true' : 'false');
       actions.appendChild(button);
     });
-    actions.appendChild(actionButton('Comments', 'comments'));
+    var comments = actionButton('Comments', 'comments');
+    comments.setAttribute('aria-expanded', 'false');
+    comments.setAttribute('aria-controls', 'feed-comments-' + String(item.id || '').replace(/[^a-z0-9_-]/gi, ''));
+    actions.appendChild(comments);
     var save = actionButton(card.dataset.saved === '1' ? 'Saved' : 'Save', 'save');
     save.classList.toggle('is-active', card.dataset.saved === '1');
+    save.setAttribute('aria-pressed', card.dataset.saved === '1' ? 'true' : 'false');
     actions.appendChild(save);
     actions.appendChild(actionButton('Share', 'share'));
     if (item.permissions && item.permissions.can_report) actions.appendChild(actionButton('Report', 'report'));
@@ -321,21 +329,40 @@ window.Microgifter = window.Microgifter || {};
     return article;
   }
 
+  function syncSaveButton(card, button, saved) {
+    if (!card || !button) return;
+    card.dataset.saved = saved ? '1' : '0';
+    button.textContent = saved ? 'Saved' : 'Save';
+    button.classList.toggle('is-active', Boolean(saved));
+    button.setAttribute('aria-pressed', saved ? 'true' : 'false');
+  }
+
+  function syncCommentsButton(card, button, open) {
+    if (!button) button = qs('[data-post-action="comments"]', card);
+    if (!button) return;
+    button.classList.toggle('is-active', Boolean(open));
+    button.setAttribute('aria-expanded', open ? 'true' : 'false');
+    button.textContent = open ? 'Hide comments' : 'Comments';
+  }
+
   function updateEngagement(card, engagement) {
     if (!card || !engagement) return;
-    ['comments','reactions','shares'].forEach(function (name) {
+    ['comments','reactions','shares','saves'].forEach(function (name) {
+      if (!hasOwn(engagement, name)) return;
       var node = qs('[data-post-stat="' + name + '"]', card);
       if (node) node.textContent = Number(engagement[name] || 0).toLocaleString() + ' ' + name;
     });
-    card.dataset.viewerReaction = String(engagement.viewer_reaction || '');
-    card.dataset.saved = engagement.saved ? '1' : '0';
-    qsa('[data-post-action="reaction"]', card).forEach(function (button) {
-      var active = button.dataset.reactionType === card.dataset.viewerReaction;
-      button.classList.toggle('is-active', active);
-      button.setAttribute('aria-pressed', active ? 'true' : 'false');
-    });
-    var save = qs('[data-post-action="save"]', card);
-    if (save) { save.textContent = card.dataset.saved === '1' ? 'Saved' : 'Save'; save.classList.toggle('is-active', card.dataset.saved === '1'); }
+    if (hasOwn(engagement, 'viewer_reaction')) {
+      card.dataset.viewerReaction = String(engagement.viewer_reaction || '');
+      qsa('[data-post-action="reaction"]', card).forEach(function (button) {
+        var active = button.dataset.reactionType === card.dataset.viewerReaction;
+        button.classList.toggle('is-active', active);
+        button.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+    }
+    if (hasOwn(engagement, 'saved')) {
+      syncSaveButton(card, qs('[data-post-action="save"]', card), Boolean(engagement.saved));
+    }
   }
 
   function resetStates() {
@@ -501,11 +528,10 @@ window.Microgifter = window.Microgifter || {};
     busy(button, true, 'Saving…');
     try {
       var data = payload(await MG.post('/api/social/engage.php', { action: action, post_id: card.dataset.postId, idempotency_key: uuid('feed-save') }));
-      card.dataset.saved = data.saved ? '1' : '0';
-      button.textContent = data.saved ? 'Saved' : 'Save';
-      button.classList.toggle('is-active', Boolean(data.saved));
+      if (data.engagement) updateEngagement(card, data.engagement);
+      else syncSaveButton(card, button, Boolean(data.saved));
     } catch (error) { toast(error.message || 'Unable to save post.', 'error'); }
-    finally { busy(button, false); }
+    finally { busy(button, false); syncSaveButton(card, button, card.dataset.saved === '1'); }
   }
 
   async function share(card, button) {
@@ -614,7 +640,12 @@ window.Microgifter = window.Microgifter || {};
     if (action === 'report') return void report(card, button);
     if (action === 'mute' || action === 'block') return void relationship(card, action, button);
     if (action === 'comments') {
-      var panel = qs('[data-comments-panel]', card); var opening = panel.classList.contains('mg-hidden'); hide(panel, !opening); if (opening && card.dataset.commentsLoaded !== '1') loadComments(card, false); return;
+      var panel = qs('[data-comments-panel]', card);
+      var opening = panel.classList.contains('mg-hidden');
+      hide(panel, !opening);
+      syncCommentsButton(card, button, opening);
+      if (opening && card.dataset.commentsLoaded !== '1') loadComments(card, false);
+      return;
     }
     if (action === 'comments_more') return void loadComments(card, true);
     if (action === 'comment_hide' || action === 'comment_delete') return void moderateComment(card, button.closest('[data-comment-id]'), action, button);
