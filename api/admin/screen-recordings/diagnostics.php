@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/bootstrap.php';
-require_once dirname(__DIR__, 3) . '/includes/admin-screen-recordings.php';
+require_once dirname(__DIR__, 3) . '/includes/admin-screen-recording-stage3.php';
 
 mg_require_method('GET');
 $user = mg_screen_recordings_require_api(true);
@@ -107,9 +107,10 @@ function mg_admin_recording_diag_find_binary(string $binary, array $absoluteCand
 }
 
 $schema = mg_screen_recordings_schema_ready($pdo);
+$stage3Schema = mg_screen_recording_stage3_schema_ready($pdo);
 $baseDir = mg_screen_recordings_base_dir();
 $storageParent = dirname($baseDir);
-$buckets = ['originals', 'edited', 'thumbnails', 'temp'];
+$buckets = ['originals', 'edited', 'thumbnails', 'temp', 'audio', 'logs'];
 $storageBuckets = [];
 $storageReady = true;
 
@@ -139,16 +140,17 @@ $functions = [
 ];
 $ffmpeg = mg_admin_recording_diag_find_binary('ffmpeg', ['/usr/bin/ffmpeg', '/usr/local/bin/ffmpeg', '/opt/ffmpeg/bin/ffmpeg', '/opt/cpanel/ea-ffmpeg/bin/ffmpeg']);
 $ffprobe = mg_admin_recording_diag_find_binary('ffprobe', ['/usr/bin/ffprobe', '/usr/local/bin/ffprobe', '/opt/ffmpeg/bin/ffprobe', '/opt/cpanel/ea-ffmpeg/bin/ffprobe']);
-$rendererReady = $ffmpeg['available'] && $ffprobe['available'] && $functions['shell_exec'] && $functions['escapeshellarg'];
+$rendererReady = $ffmpeg['available'] && $functions['exec'] && $functions['escapeshellarg'];
 $warnings = [];
 
-if (!$schema['ready']) $warnings[] = 'SQL migration is not ready. Run database/admin_screen_recordings.sql before using recordings.';
-if (!$functions['shell_exec'] || !$functions['escapeshellarg']) $warnings[] = 'PHP shell execution is disabled or restricted. Server-side FFmpeg rendering cannot run from PHP until this is enabled or moved to a worker/server.';
-if (!$ffmpeg['available']) $warnings[] = 'FFmpeg was not detected. Use browser-render fallback now, or upgrade to a server with FFmpeg for rendered exports.';
+if (!$schema['ready']) $warnings[] = 'Base SQL migration is not ready. Run database/admin_screen_recordings.sql before using recordings.';
+if (!$stage3Schema['ready']) $warnings[] = 'Stage 3 SQL migration is not ready. Run database/admin_screen_recording_renderer_tutorials.sql before rendering, voiceover, or publishing tutorials.';
+if (!$functions['exec'] || !$functions['escapeshellarg']) $warnings[] = 'PHP exec or escapeshellarg is disabled. Server-side FFmpeg rendering cannot run from PHP until this is enabled or moved to a worker/server.';
+if (!$ffmpeg['available']) $warnings[] = 'FFmpeg was not detected. Rendered exports will fail until FFmpeg is available.';
 if (!$ffprobe['available']) $warnings[] = 'FFprobe was not detected. Duration/metadata probing for rendered exports will be limited.';
 if (!$storageReady) $warnings[] = 'One or more recording storage folders are missing or not writable.';
 if (!filter_var((string)ini_get('file_uploads'), FILTER_VALIDATE_BOOLEAN)) $warnings[] = 'PHP file uploads are disabled.';
-if ($uploadMaxBytes !== null && $uploadMaxBytes < 100 * 1024 * 1024) $warnings[] = 'upload_max_filesize is below 100MB. Longer screen recordings may fail on shared hosting.';
+if ($uploadMaxBytes !== null && $uploadMaxBytes < 100 * 1024 * 1024) $warnings[] = 'upload_max_filesize is below 100MB. Longer screen recordings or audio uploads may fail on shared hosting.';
 if ($postMaxBytes !== null && $uploadMaxBytes !== null && $postMaxBytes < $uploadMaxBytes) $warnings[] = 'post_max_size is smaller than upload_max_filesize. Uploads may fail before reaching the configured file limit.';
 
 $extensions = [];
@@ -159,9 +161,10 @@ foreach (['fileinfo', 'json', 'pdo', 'mbstring', 'openssl', 'curl', 'zip'] as $e
 mg_ok([
     'checked_at' => gmdate('c'),
     'schema' => $schema,
+    'stage3_schema' => $stage3Schema,
     'renderer_ready' => $rendererReady,
-    'recommended_renderer' => $rendererReady ? 'ffmpeg' : 'browser_fallback',
-    'recommended_renderer_label' => $rendererReady ? 'FFmpeg server renderer ready' : 'Browser fallback / server upgrade recommended',
+    'recommended_renderer' => $rendererReady ? 'ffmpeg' : 'server_upgrade_required',
+    'recommended_renderer_label' => $rendererReady ? 'FFmpeg server renderer ready' : 'Server upgrade / FFmpeg required for rendered exports',
     'ffmpeg' => $ffmpeg,
     'ffprobe' => $ffprobe,
     'php' => [
