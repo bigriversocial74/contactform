@@ -1,25 +1,222 @@
-document.addEventListener('DOMContentLoaded',function(){
-'use strict';
-// Canonical Action Center mutation boundaries:
-// regift, latest-sender Follow Up, merchant claim, message, and tip.
-// Every mutation is idempotent and its backend authority records a timestamp.
-var app=document.querySelector('[data-gift-center]');if(!app)return;
-(function(){if(!document.querySelector('link[href="/assets/css/gift-product-media.css"]')){var link=document.createElement('link');link.rel='stylesheet';link.href='/assets/css/gift-product-media.css';document.head.appendChild(link);}if(!document.querySelector('script[src="/assets/js/gift-product-media-view.js"]')){var script=document.createElement('script');script.src='/assets/js/gift-product-media-view.js';script.defer=true;document.body.appendChild(script);}})();
-var modal=app.querySelector('[data-action-modal]'),modalBody=app.querySelector('[data-action-modal-body]'),list=app.querySelector('[data-gift-list]');
-function esc(value){return String(value==null?'':value).replace(/[&<>"']/g,function(char){return({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'})[char];});}
-function key(type,item){if(window.crypto&&typeof window.crypto.randomUUID==='function')return 'ac-'+type+'-'+window.crypto.randomUUID();return 'ac-'+type+'-'+String(item.instance_id||item.action_item_id||'item')+'-'+Date.now();}
-function endpoint(type){return '/api/account/action-center-'+type+'.php';}
-function payload(type,item,data){var request={action_item_id:item.action_item_id,idempotency_key:key(type,item)};if(type==='send'){request.recipient_user_id=data.recipient_user_id||'';request.recipient=data.recipient_user_id||data.recipient||'';request.message=data.message||'';}else if(type==='follow-up'||type==='message'){request.message=data.message||'';}else if(type==='claim'){request.code=data.claim_code;}else if(type==='redeem'){request.location_id=data.location_id;}else if(type==='tip'){request.amount_cents=Math.round(Number(data.amount||0)*100);request.currency=item.currency||'USD';request.funding_type='wallet';request.message=data.message||'';}return request;}
-function result(title,message){modalBody.innerHTML='<div class="mg-action-success"><strong>'+esc(title)+'</strong><p>'+esc(message)+'</p><button class="mg-btn mg-btn-primary" type="button" data-action-modal-close>Done</button></div>';}
-function actionItemFromRow(row){return {action_item_id:row&&row.dataset?row.dataset.giftId:'',instance_id:'',currency:'USD'};}
-function enhanceSendAutocomplete(){var form=modalBody.querySelector('[data-action-form="send"]');if(!form||form.querySelector('[data-recipient-autocomplete]'))return;var input=form.querySelector('input[name="recipient"]');if(!input)return;var label=input.closest('label');if(!label)return;label.innerHTML='Regift to<div class="mg-recipient-autocomplete" data-recipient-autocomplete><input type="search" name="recipient" data-recipient-search autocomplete="off" placeholder="Start typing a follower or user" required><input type="hidden" name="recipient_user_id"><div class="mg-recipient-results" data-recipient-results><div class="mg-recipient-empty">Start typing to find followers and users.</div></div></div>';}
-function enhanceClaimForm(){var form=modalBody.querySelector('[data-action-form="claim"]');if(!form||form.dataset.claimEnhanced==='true')return;form.dataset.claimEnhanced='true';var merchant=form.querySelector('input[name="merchant"]');var merchantLabel=merchant&&merchant.closest('label');if(merchantLabel)merchantLabel.remove();form.querySelectorAll('.mg-action-form-note').forEach(function(note){note.remove();});}
-function enhanceTipForm(){var form=modalBody.querySelector('[data-action-form="tip"]');if(!form||form.dataset.tipEnhanced==='true')return;form.dataset.tipEnhanced='true';var amount=form.querySelector('input[name="amount"]');if(amount&&!amount.value)amount.value='5.00';var submit=form.querySelector('button[type="submit"]');if(submit)submit.textContent='Send tip';var note=form.querySelector('.mg-action-form-note');if(note&&!/demo content/i.test(note.textContent||''))note.textContent='Sends a wallet-funded tip and creates user + merchant notifications.';}
-if(modalBody)new MutationObserver(function(){enhanceSendAutocomplete();enhanceClaimForm();enhanceTipForm();}).observe(modalBody,{childList:true,subtree:true});
-async function loadRecipientOptions(input){var wrap=input.closest('[data-recipient-autocomplete]'),results=wrap&&wrap.querySelector('[data-recipient-results]'),hidden=wrap&&wrap.querySelector('input[name="recipient_user_id"]');if(!results||!hidden||!window.Microgifter)return;hidden.value='';var q=input.value.trim();if(q.length<2){results.innerHTML='<div class="mg-recipient-empty">Type at least 2 characters.</div>';return;}try{var response=await Microgifter.get('/api/account/action-center-recipient-search.php?q='+encodeURIComponent(q)),data=response.data||response,items=data.recipients||[];results.innerHTML=items.length?items.map(function(x){return '<button type="button" data-recipient-option data-recipient-id="'+esc(x.recipient_user_id)+'" data-recipient-label="'+esc(x.display_name)+'"><strong>'+esc(x.display_name)+'</strong><span>'+esc(x.email_hint||x.source||'Microgifter member')+'</span></button>';}).join(''):'<div class="mg-recipient-empty">No matching followers and users.</div>';}catch(error){results.innerHTML='<div class="mg-recipient-empty">Unable to search recipients.</div>';}}
-modalBody.addEventListener('input',function(event){var input=event.target.closest('[data-recipient-search]');if(!input)return;clearTimeout(input._recipientTimer);input._recipientTimer=setTimeout(function(){loadRecipientOptions(input);},180);});
-modalBody.addEventListener('click',function(event){var option=event.target.closest('[data-recipient-option]');if(!option)return;var wrap=option.closest('[data-recipient-autocomplete]'),input=wrap&&wrap.querySelector('[data-recipient-search]'),hidden=wrap&&wrap.querySelector('input[name="recipient_user_id"]');if(input)input.value=option.dataset.recipientLabel||'';if(hidden)hidden.value=option.dataset.recipientId||'';option.parentNode.innerHTML='<div class="mg-recipient-selected">Selected: '+esc(option.dataset.recipientLabel||'recipient')+'</div>';});
-function dispatchActionSubmit(type,item,data){app.dispatchEvent(new CustomEvent('mg:gift-action:submit',{bubbles:true,detail:{type:type,item:item,data:data}}));}
-modalBody.addEventListener('submit',function(event){var form=event.target.closest('[data-action-form]');if(!form||form.dataset.actionForm==='redeem')return;event.preventDefault();event.stopImmediatePropagation();if(!window.Microgifter)return;var row=list&&list.querySelector('.mg-gift-row.is-active[data-gift-id]'),item=actionItemFromRow(row),data=Object.fromEntries(new FormData(form).entries()),type=form.dataset.actionForm;dispatchActionSubmit(type,item,data);},true);
-app.addEventListener('mg:gift-action:submit',async function(event){var detail=event.detail||{},type=detail.type,item=detail.item||{},data=detail.data||{};if(!['send','follow-up','claim','message','tip'].includes(type)||!window.Microgifter)return;if(type==='send'&&!data.recipient_user_id){result('Select a recipient','Start typing and choose a follower or user from the recipient list.');return;}if((type==='follow-up'||type==='message')&&!String(data.message||'').trim()){result(type==='follow-up'?'Write a Follow Up':'Write a message','Add a message for the current recipient or merchant.');return;}if(type==='tip'&&Number(data.amount||0)<1){result('Enter a tip amount','Tip amount must be at least $1.00.');return;}result(type==='send'?'Processing regift…':'Processing '+type+'…','Please keep this window open.');try{var response=await Microgifter.post(endpoint(type),payload(type,item,data)),responseData=response&&response.data?response.data:response;var timestamp=responseData&&responseData.delivery_event&&responseData.delivery_event.occurred_at?responseData.delivery_event.occurred_at:'';var message=(response&&response.message)||'The Action Center has been updated.';if(timestamp)message+=' Recorded at '+new Date(timestamp).toLocaleString()+'.';if(responseData&&responseData.notification_id)message+=' Notification queued.';if(responseData&&responseData.merchant_alert_id)message+=' Merchant alert queued.';var title=type==='send'?'Regift complete':type==='follow-up'?'Follow Up sent':type==='message'?'Message sent':type==='tip'?'Tip sent':type.charAt(0).toUpperCase()+type.slice(1)+' complete';result(title,message);var refresh=app.querySelector('[data-gift-refresh]');if(refresh)refresh.click();}catch(error){result('Action failed',(error&&error.message)||'Unable to complete this action.');}});
+document.addEventListener('DOMContentLoaded', function () {
+  'use strict';
+
+  // Canonical Action Center mutation boundaries:
+  // regift, latest-sender Follow Up, merchant claim, message, and tip.
+  // Every mutation is idempotent and its backend authority records a timestamp.
+  var app = document.querySelector('[data-gift-center]');
+  if (!app) return;
+
+  (function ensureMediaAssets() {
+    if (!document.querySelector('link[href="/assets/css/gift-product-media.css"]')) {
+      var link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = '/assets/css/gift-product-media.css';
+      document.head.appendChild(link);
+    }
+    if (!document.querySelector('script[src="/assets/js/gift-product-media-view.js"]')) {
+      var script = document.createElement('script');
+      script.src = '/assets/js/gift-product-media-view.js';
+      script.defer = true;
+      document.body.appendChild(script);
+    }
+  })();
+
+  var modalBody = app.querySelector('[data-action-modal-body]');
+  var list = app.querySelector('[data-gift-list]');
+
+  function esc(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, function (char) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char];
+    });
+  }
+
+  function key(type, item) {
+    if (window.crypto && typeof window.crypto.randomUUID === 'function') return 'ac-' + type + '-' + window.crypto.randomUUID();
+    return 'ac-' + type + '-' + String(item.instance_id || item.action_item_id || 'item') + '-' + Date.now();
+  }
+
+  function endpoint(type) {
+    return '/api/account/action-center-' + type + '.php';
+  }
+
+  function payload(type, item, data) {
+    var request = { action_item_id: item.action_item_id, idempotency_key: key(type, item) };
+    if (type === 'send') {
+      request.recipient_user_id = data.recipient_user_id || data.recipient_profile_id || data.recipient_slug || '';
+      request.recipient = request.recipient_user_id || data.recipient || '';
+      request.recipient_slug = data.recipient_slug || '';
+      request.message = data.message || '';
+    } else if (type === 'follow-up' || type === 'message') {
+      request.message = data.message || '';
+    } else if (type === 'claim') {
+      request.code = data.claim_code;
+    } else if (type === 'redeem') {
+      request.location_id = data.location_id;
+    } else if (type === 'tip') {
+      request.amount_cents = Math.round(Number(data.amount || 0) * 100);
+      request.currency = item.currency || 'USD';
+      request.funding_type = 'wallet';
+      request.message = data.message || '';
+    }
+    return request;
+  }
+
+  function formatTimestamp(value) {
+    var date = value ? new Date(value) : new Date();
+    if (Number.isNaN(date.getTime())) date = new Date();
+    return date.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit' });
+  }
+
+  function timestampFrom(type, responseData) {
+    return (responseData && responseData.delivery_event && responseData.delivery_event.occurred_at) ||
+      (responseData && responseData.delivery_summary && responseData.delivery_summary.sent_at) ||
+      (responseData && responseData.created_at) ||
+      (responseData && responseData.sent_at) ||
+      (type === 'message' || type === 'tip' ? new Date().toISOString() : '');
+  }
+
+  function result(title, message, timestamp) {
+    var time = timestamp ? '<p><strong>Timestamp:</strong> ' + esc(formatTimestamp(timestamp)) + '</p>' : '';
+    modalBody.innerHTML = '<div class="mg-action-success"><strong>' + esc(title) + '</strong><p>' + esc(message) + '</p>' + time + '<button class="mg-btn mg-btn-primary" type="button" data-action-modal-close>Done</button></div>';
+  }
+
+  function actionItemFromRow(row) {
+    return { action_item_id: row && row.dataset ? row.dataset.giftId : '', instance_id: '', currency: 'USD' };
+  }
+
+  function enhanceSendAutocomplete() {
+    var form = modalBody.querySelector('[data-action-form="send"]');
+    if (!form || form.classList.contains('mg-send-exact-form') || form.querySelector('[data-recipient-autocomplete]')) return;
+    var input = form.querySelector('input[name="recipient"]');
+    if (!input) return;
+    var label = input.closest('label');
+    if (!label) return;
+    label.innerHTML = 'Regift to<div class="mg-recipient-autocomplete" data-recipient-autocomplete><input type="search" name="recipient" data-recipient-search autocomplete="off" placeholder="Start typing a follower or user" required><input type="hidden" name="recipient_user_id"><div class="mg-recipient-results" data-recipient-results><div class="mg-recipient-empty">Start typing to find followers and users.</div></div></div>';
+  }
+
+  function enhanceClaimForm() {
+    var form = modalBody.querySelector('[data-action-form="claim"]');
+    if (!form || form.dataset.claimEnhanced === 'true') return;
+    form.dataset.claimEnhanced = 'true';
+    var merchant = form.querySelector('input[name="merchant"]');
+    var merchantLabel = merchant && merchant.closest('label');
+    if (merchantLabel) merchantLabel.remove();
+    form.querySelectorAll('.mg-action-form-note').forEach(function (note) { note.remove(); });
+  }
+
+  function enhanceTipForm() {
+    var form = modalBody.querySelector('[data-action-form="tip"]');
+    if (!form || form.dataset.tipEnhanced === 'true') return;
+    form.dataset.tipEnhanced = 'true';
+    var amount = form.querySelector('input[name="amount"]');
+    if (amount && !amount.value) amount.value = '5.00';
+    var submit = form.querySelector('button[type="submit"]');
+    if (submit) submit.textContent = 'Send tip';
+    var note = form.querySelector('.mg-action-form-note');
+    if (note && !/demo content/i.test(note.textContent || '')) note.textContent = 'Sends a wallet-funded tip and creates user + merchant notifications.';
+  }
+
+  if (modalBody) {
+    new MutationObserver(function () {
+      enhanceSendAutocomplete();
+      enhanceClaimForm();
+      enhanceTipForm();
+    }).observe(modalBody, { childList: true, subtree: true });
+  }
+
+  async function loadRecipientOptions(input) {
+    var wrap = input.closest('[data-recipient-autocomplete]');
+    var results = wrap && wrap.querySelector('[data-recipient-results]');
+    var hidden = wrap && wrap.querySelector('input[name="recipient_user_id"]');
+    if (!results || !hidden || !window.Microgifter) return;
+    hidden.value = '';
+    var q = input.value.trim();
+    if (q.length < 2) {
+      results.innerHTML = '<div class="mg-recipient-empty">Type at least 2 characters.</div>';
+      return;
+    }
+    try {
+      var response = await Microgifter.get('/api/account/action-center-recipient-search.php?q=' + encodeURIComponent(q));
+      var data = response.data || response;
+      var items = data.recipients || [];
+      results.innerHTML = items.length ? items.map(function (x) {
+        return '<button type="button" data-recipient-option data-recipient-id="' + esc(x.recipient_user_id) + '" data-recipient-label="' + esc(x.display_name) + '"><strong>' + esc(x.display_name) + '</strong><span>' + esc(x.email_hint || x.source || 'Microgifter member') + '</span></button>';
+      }).join('') : '<div class="mg-recipient-empty">No matching followers and users.</div>';
+    } catch (error) {
+      results.innerHTML = '<div class="mg-recipient-empty">Unable to search recipients.</div>';
+    }
+  }
+
+  modalBody.addEventListener('input', function (event) {
+    var input = event.target.closest('[data-recipient-search]');
+    if (!input) return;
+    clearTimeout(input._recipientTimer);
+    input._recipientTimer = setTimeout(function () { loadRecipientOptions(input); }, 180);
+  });
+
+  modalBody.addEventListener('click', function (event) {
+    var option = event.target.closest('[data-recipient-option]');
+    if (!option) return;
+    var wrap = option.closest('[data-recipient-autocomplete]');
+    var input = wrap && wrap.querySelector('[data-recipient-search]');
+    var hidden = wrap && wrap.querySelector('input[name="recipient_user_id"]');
+    if (input) input.value = option.dataset.recipientLabel || '';
+    if (hidden) hidden.value = option.dataset.recipientId || '';
+    option.parentNode.innerHTML = '<div class="mg-recipient-selected">Selected: ' + esc(option.dataset.recipientLabel || 'recipient') + '</div>';
+  });
+
+  function dispatchActionSubmit(type, item, data) {
+    app.dispatchEvent(new CustomEvent('mg:gift-action:submit', { bubbles: true, detail: { type: type, item: item, data: data } }));
+  }
+
+  modalBody.addEventListener('submit', function (event) {
+    var form = event.target.closest('[data-action-form]');
+    if (!form || form.dataset.actionForm === 'redeem') return;
+    if (form.dataset.actionForm === 'send' && form.classList.contains('mg-send-exact-form')) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    if (!window.Microgifter) return;
+    var row = list && list.querySelector('.mg-gift-row.is-active[data-gift-id]');
+    var item = actionItemFromRow(row);
+    var data = Object.fromEntries(new FormData(form).entries());
+    var type = form.dataset.actionForm;
+    dispatchActionSubmit(type, item, data);
+  }, true);
+
+  app.addEventListener('mg:gift-action:submit', async function (event) {
+    var detail = event.detail || {};
+    var type = detail.type;
+    var item = detail.item || {};
+    var data = detail.data || {};
+    if (!['send', 'follow-up', 'claim', 'message', 'tip'].includes(type) || !window.Microgifter) return;
+    if (type === 'send' && !(data.recipient_user_id || data.recipient_profile_id || data.recipient_slug)) {
+      result('Select a recipient', 'Start typing and choose a follower or user from the recipient list.');
+      return;
+    }
+    if ((type === 'follow-up' || type === 'message') && !String(data.message || '').trim()) {
+      result(type === 'follow-up' ? 'Write a Follow Up' : 'Write a message', 'Add a message for the current recipient or merchant.');
+      return;
+    }
+    if (type === 'tip' && Number(data.amount || 0) < 1) {
+      result('Enter a tip amount', 'Tip amount must be at least $1.00.');
+      return;
+    }
+    result(type === 'send' ? 'Processing regift…' : 'Processing ' + type + '…', 'Please keep this window open.');
+    try {
+      var response = await Microgifter.post(endpoint(type), payload(type, item, data));
+      var responseData = response && response.data ? response.data : response;
+      var timestamp = timestampFrom(type, responseData);
+      var message = (response && response.message) || 'The Action Center has been updated.';
+      if (timestamp) message += ' Recorded at ' + formatTimestamp(timestamp) + '.';
+      if (responseData && responseData.notification_id) message += ' Notification queued.';
+      if (responseData && responseData.merchant_alert_id) message += ' Merchant alert queued.';
+      var title = type === 'send' ? 'Regift complete' : type === 'follow-up' ? 'Follow Up sent' : type === 'message' ? 'Message sent' : type === 'tip' ? 'Tip sent' : type.charAt(0).toUpperCase() + type.slice(1) + ' complete';
+      result(title, message, timestamp);
+      var refresh = app.querySelector('[data-gift-refresh]');
+      if (refresh) refresh.click();
+    } catch (error) {
+      result('Action failed', (error && error.message) || 'Unable to complete this action.');
+    }
+  });
 });

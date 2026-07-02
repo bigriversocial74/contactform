@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var activeGiftId = '';
   var confirmed = false;
   var confirmKey = '';
+  var confirmIdempotencyKey = '';
 
   function esc(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, function (ch) {
@@ -35,6 +36,21 @@ document.addEventListener('DOMContentLoaded', function () {
     node.textContent = message || '';
     node.dataset.statusType = type || '';
   }
+  function formatTimestamp(value) {
+    var date = value ? new Date(value) : new Date();
+    if (Number.isNaN(date.getTime())) date = new Date();
+    return date.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit' });
+  }
+  function responseData(response) {
+    return response && response.data ? response.data : (response || {});
+  }
+  function responseTimestamp(data) {
+    return (data && data.delivery_event && data.delivery_event.occurred_at) ||
+      (data && data.delivery_summary && data.delivery_summary.sent_at) ||
+      (data && data.sent_at) ||
+      (data && data.created_at) ||
+      new Date().toISOString();
+  }
   function installConfirm(form) {
     if (!form.querySelector('[data-regift-confirm]')) {
       var box = document.createElement('div');
@@ -53,20 +69,44 @@ document.addEventListener('DOMContentLoaded', function () {
   function reset(form) {
     confirmed = false;
     confirmKey = '';
+    confirmIdempotencyKey = '';
     var box = form && form.querySelector('[data-regift-confirm]');
     if (box) box.hidden = true;
     var button = form && form.querySelector('button[type="submit"]');
     if (button) button.textContent = button.dataset.originalText || 'Review Regift';
   }
+  function fieldValue(form, selector) {
+    var node = form.querySelector(selector);
+    return String((node && node.value) || '').trim();
+  }
   function recipient(form) {
-    var id = form.querySelector('input[name="recipient_profile_id"]');
-    var slug = form.querySelector('input[name="recipient_slug"]');
     var typed = form.querySelector('input[name="recipient"]');
+    var selected = form.querySelector('[data-selected-recipient]');
+    var userRef = fieldValue(form, 'input[name="recipient_user_id"]');
+    var profileRef = fieldValue(form, 'input[name="recipient_profile_id"]');
+    var slugRef = fieldValue(form, 'input[name="recipient_slug"]');
+    var selectedRef = String((selected && selected.dataset && selected.dataset.recipientProfileId) || '').trim();
+    var selectedSlug = String((selected && selected.dataset && selected.dataset.recipientSlug) || '').trim();
+    var formRef = String((form.dataset && form.dataset.recipientProfileId) || '').trim();
+    var formSlug = String((form.dataset && form.dataset.recipientSlug) || '').trim();
+    var inputRef = String((typed && typed.dataset && typed.dataset.recipientProfileId) || '').trim();
+    var inputSlug = String((typed && typed.dataset && typed.dataset.recipientSlug) || '').trim();
+    var ref = userRef || profileRef || selectedRef || formRef || inputRef || slugRef || selectedSlug || formSlug || inputSlug;
+    var slug = slugRef || selectedSlug || formSlug || inputSlug;
+    var label = String(
+      (selected && selected.dataset && selected.dataset.recipientLabel) ||
+      (form.dataset && form.dataset.recipientLabel) ||
+      (typed && typed.dataset && typed.dataset.recipientLabel) ||
+      (typed && typed.value) ||
+      slug ||
+      'this recipient'
+    ).trim();
+    var hasSelectedPill = !!(selected && !selected.hidden && (selected.dataset.recipientProfileId || selected.dataset.recipientSlug || selected.textContent.trim()));
     return {
-      ref: String((id && id.value) || (slug && slug.value) || (typed && typed.value) || '').trim(),
-      slug: String((slug && slug.value) || '').trim(),
-      label: String((typed && typed.value) || (slug && slug.value) || 'this recipient').trim(),
-      selected: !!((id && id.value) || (slug && slug.value))
+      ref: ref,
+      slug: slug,
+      label: label,
+      selected: !!ref && (hasSelectedPill || !!profileRef || !!userRef || !!slugRef || !!formRef || !!inputRef)
     };
   }
 
@@ -77,6 +117,7 @@ document.addEventListener('DOMContentLoaded', function () {
     activeGiftId = row ? String(row.getAttribute('data-gift-id') || '') : '';
     confirmed = false;
     confirmKey = '';
+    confirmIdempotencyKey = '';
     window.setTimeout(function () {
       var form = modalBody.querySelector('[data-action-form="send"]');
       if (form) installConfirm(form);
@@ -106,25 +147,36 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!confirmed || confirmKey !== key) {
       confirmed = true;
       confirmKey = key;
+      confirmIdempotencyKey = 'regift:' + giftId + ':' + rec.ref + ':' + Date.now();
       var box = form.querySelector('[data-regift-confirm]');
       var text = form.querySelector('[data-regift-confirm-text]');
-      if (text) text.textContent = 'Send this Microgift to ' + rec.label + '? This transfers ownership to the recipient.';
+      if (text) text.textContent = 'Send this Microgift to ' + rec.label + '? This transfers ownership to the recipient and creates the received gift in their Inbox.';
       if (box) box.hidden = false;
-      if (button) button.textContent = 'Confirm & Regift';
-      return status(form, 'Review and click Confirm & Regift to send.', '');
+      if (button) button.textContent = 'Yes, Send Gift';
+      return status(form, 'Review the recipient, then click Yes, Send Gift to confirm.', '');
     }
     busy(button, true, 'Sending...');
     status(form, 'Sending Microgift...', '');
     try {
-      await Microgifter.post('/api/account/action-center-send.php', {
+      var response = await Microgifter.post('/api/account/action-center-send.php', {
         action_item_id: giftId,
         recipient_user_id: rec.ref,
         recipient_slug: rec.slug,
+        recipient: rec.ref,
         message: message,
-        idempotency_key: 'regift:' + giftId + ':' + rec.ref + ':' + Date.now()
+        idempotency_key: confirmIdempotencyKey || ('regift:' + giftId + ':' + rec.ref + ':' + Date.now())
       });
-      toast('Microgift regifted.');
-      modalBody.innerHTML = '<div class="mg-action-success"><strong>Microgift regifted</strong><p>The gift was sent to ' + esc(rec.label) + '.</p><button class="mg-btn mg-btn-primary" type="button" data-action-modal-close>Done</button></div>';
+      var data = responseData(response);
+      var sentAt = responseTimestamp(data);
+      var timestampLabel = formatTimestamp(sentAt);
+      toast('Microgift sent to ' + rec.label + '.');
+      modalBody.innerHTML = '<div class="mg-action-success">' +
+        '<strong>Gift sent successfully</strong>' +
+        '<p>The Microgift was sent to ' + esc(rec.label) + ' and should now appear in their Inbox.</p>' +
+        '<p><strong>Timestamp:</strong> ' + esc(timestampLabel) + '</p>' +
+        '<button class="mg-btn mg-btn-primary" type="button" data-action-modal-close>Done</button>' +
+        '</div>';
+      document.dispatchEvent(new CustomEvent('mg:action-center:regift-sent', { detail: { gift_id: giftId, recipient: rec, sent_at: sentAt, response: data } }));
       var refresh = app.querySelector('[data-gift-refresh]');
       if (refresh) window.setTimeout(function () { refresh.click(); }, 350);
     } catch (error) {

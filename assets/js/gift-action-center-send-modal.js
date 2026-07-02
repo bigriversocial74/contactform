@@ -53,6 +53,10 @@ document.addEventListener('DOMContentLoaded', function () {
     return '<span>' + esc(firstLetter(name)) + '</span>';
   }
 
+  function recipientPublicId(profile) {
+    return String(profile.id || profile.public_id || profile.profile_id || '').trim();
+  }
+
   function resultMarkup(profile, index) {
     var name = profile.display_name || profile.name || profile.slug || 'Microgifter user';
     var handle = profile.slug ? '@' + profile.slug : 'Microgifter user';
@@ -88,19 +92,63 @@ document.addEventListener('DOMContentLoaded', function () {
     if (input) input.setAttribute('aria-expanded', 'false');
   }
 
+  function clearSelectedRecipient(form) {
+    var input = form.querySelector('input[name="recipient"]');
+    var selected = form.querySelector('[data-selected-recipient]');
+    var fields = [
+      form.querySelector('input[name="recipient_profile_id"]'),
+      form.querySelector('input[name="recipient_slug"]'),
+      form.querySelector('input[name="recipient_user_id"]')
+    ];
+    fields.forEach(function (field) { if (field) field.value = ''; });
+    delete form.dataset.recipientProfileId;
+    delete form.dataset.recipientSlug;
+    delete form.dataset.recipientLabel;
+    if (input) {
+      delete input.dataset.recipientProfileId;
+      delete input.dataset.recipientSlug;
+      delete input.dataset.recipientLabel;
+    }
+    if (selected) {
+      selected.hidden = true;
+      selected.innerHTML = '';
+      delete selected.dataset.recipientProfileId;
+      delete selected.dataset.recipientSlug;
+      delete selected.dataset.recipientLabel;
+    }
+  }
+
   function selectRecipient(form, profile) {
     var input = form.querySelector('input[name="recipient"]');
     var id = form.querySelector('input[name="recipient_profile_id"]');
+    var userRef = form.querySelector('input[name="recipient_user_id"]');
     var slug = form.querySelector('input[name="recipient_slug"]');
     var selected = form.querySelector('[data-selected-recipient]');
     var name = profile.display_name || profile.name || profile.slug || '';
-    if (input) input.value = name;
-    if (id) id.value = profile.id || profile.public_id || '';
-    if (slug) slug.value = profile.slug || '';
+    var publicId = recipientPublicId(profile);
+    var slugValue = String(profile.slug || '').trim();
+    var label = name || (slugValue ? '@' + slugValue : 'Selected user');
+
+    if (input) {
+      input.value = name;
+      input.dataset.recipientProfileId = publicId;
+      input.dataset.recipientSlug = slugValue;
+      input.dataset.recipientLabel = label;
+    }
+    if (id) id.value = publicId;
+    if (userRef) userRef.value = publicId;
+    if (slug) slug.value = slugValue;
+    form.dataset.recipientProfileId = publicId;
+    form.dataset.recipientSlug = slugValue;
+    form.dataset.recipientLabel = label;
+
     if (selected) {
       selected.hidden = false;
+      selected.dataset.recipientProfileId = publicId;
+      selected.dataset.recipientSlug = slugValue;
+      selected.dataset.recipientLabel = label;
       selected.innerHTML = '<span class="mg-send-selected-avatar">' + recipientAvatarMarkup(profile) + '</span>' +
-        '<span><strong>' + esc(name || 'Selected user') + '</strong><em>' + esc(profile.slug ? '@' + profile.slug : (profile.profile_type || 'profile')) + '</em></span>' +
+        '<span><strong>' + esc(label) + '</strong><em>' + esc(slugValue ? '@' + slugValue : (profile.profile_type || 'profile')) + '</em></span>' +
         '<button type="button" data-clear-recipient aria-label="Clear selected recipient">×</button>';
     }
     clearResults(form);
@@ -133,23 +181,16 @@ document.addEventListener('DOMContentLoaded', function () {
     var input = form.querySelector('input[name="recipient"]');
     var results = form.querySelector('[data-send-recipient-results]');
     var selected = form.querySelector('[data-selected-recipient]');
-    var id = form.querySelector('input[name="recipient_profile_id"]');
-    var slug = form.querySelector('input[name="recipient_slug"]');
     if (!input || !results) return;
 
     input.addEventListener('input', function () {
-      if (id) id.value = '';
-      if (slug) slug.value = '';
-      if (selected) {
-        selected.hidden = true;
-        selected.innerHTML = '';
-      }
+      clearSelectedRecipient(form);
       if (searchTimer) window.clearTimeout(searchTimer);
       searchTimer = window.setTimeout(function () { searchRecipients(form, input.value); }, 180);
     });
 
     input.addEventListener('focus', function () {
-      if (input.value.trim()) searchRecipients(form, input.value);
+      if (input.value.trim() && !form.dataset.recipientProfileId) searchRecipients(form, input.value);
     });
 
     results.addEventListener('click', function (event) {
@@ -163,10 +204,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (selected) {
       selected.addEventListener('click', function (event) {
         if (!event.target.closest('[data-clear-recipient]')) return;
-        selected.hidden = true;
-        selected.innerHTML = '';
-        if (id) id.value = '';
-        if (slug) slug.value = '';
+        clearSelectedRecipient(form);
         input.value = '';
         input.focus();
       });
@@ -195,6 +233,7 @@ document.addEventListener('DOMContentLoaded', function () {
           '<span class="mg-send-exact-search" aria-hidden="true"></span>' +
           '<input id="' + recipientId + '" type="text" name="recipient" required autocomplete="off" placeholder="Search any Microgifter user" aria-expanded="false" aria-controls="' + resultsId + '">' +
           '<input type="hidden" name="recipient_profile_id">' +
+          '<input type="hidden" name="recipient_user_id">' +
           '<input type="hidden" name="recipient_slug">' +
         '</div>' +
         '<div class="mg-send-selected" data-selected-recipient hidden></div>' +
@@ -206,7 +245,7 @@ document.addEventListener('DOMContentLoaded', function () {
         '<textarea name="message" maxlength="500" placeholder="Add a note to travel with the gift"></textarea>' +
         '<em data-send-message-count>0/500</em>' +
       '</div>' +
-      '<div class="mg-send-exact-actions"><button class="mg-send-exact-primary" type="submit">Regift Microgift</button></div>' +
+      '<div class="mg-send-exact-actions"><button class="mg-send-exact-primary" type="submit">Review Regift</button></div>' +
     '</form>';
 
     var form = modalBody.querySelector('.mg-send-exact-form');
