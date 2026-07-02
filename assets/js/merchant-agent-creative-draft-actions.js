@@ -6,7 +6,13 @@ document.addEventListener('DOMContentLoaded',function(){
     ['social','Save Social Draft'],
     ['sms','Save SMS Draft'],
     ['email','Save Email Draft'],
+    ['newsletter','Save Newsletter'],
+    ['contest','Save Contest'],
+    ['qr_drop','Save QR Drop'],
+    ['flash_drop','Save Flash Drop'],
+    ['social_engagement','Save Social Engagement'],
     ['campaign','Save Campaign Draft'],
+    ['campaign_package','Save Campaign Package'],
     ['reward','Save Reward Copy']
   ];
   function payload(response){return response&&response.data?response.data:response;}
@@ -27,7 +33,7 @@ document.addEventListener('DOMContentLoaded',function(){
       var wrap=document.createElement('div');
       wrap.className='mg-agent-creative-draft-actions';
       wrap.setAttribute('data-agent-creative-draft-actions','');
-      wrap.innerHTML=draftTypes.map(function(item){return '<button class="mg-btn mg-btn-soft" type="button" data-agent-save-creative-draft="'+item[0]+'" data-message-id="'+messageId.replace(/"/g,'&quot;')+'" data-card-index="'+cardIndex+'">'+item[1]+'</button>';}).join('');
+      wrap.innerHTML='<div class="mg-agent-creative-draft-actions-label">Save as draft</div>'+draftTypes.map(function(item){return '<button class="mg-btn mg-btn-soft" type="button" data-agent-save-creative-draft="'+item[0]+'" data-message-id="'+messageId.replace(/"/g,'&quot;')+'" data-card-index="'+cardIndex+'">'+item[1]+'</button>';}).join('');
       actions.appendChild(wrap);
     });
   }
@@ -45,11 +51,13 @@ document.addEventListener('DOMContentLoaded',function(){
       button.textContent=(data&&data.already_saved)?'Already saved':'Saved';
       button.classList.add('is-saved');
       setStatus('Creative draft saved to Agent Review queue.','success');
-      var reviewLink=document.createElement('a');
-      reviewLink.className='mg-btn mg-btn-soft mg-agent-creative-draft-review-link';
-      reviewLink.href='/merchant-agent-approvals.php';
-      reviewLink.textContent='Open Review Queue';
-      button.parentNode.appendChild(reviewLink);
+      if(!button.parentNode.querySelector('.mg-agent-creative-draft-review-link')){
+        var reviewLink=document.createElement('a');
+        reviewLink.className='mg-btn mg-btn-soft mg-agent-creative-draft-review-link';
+        reviewLink.href='/merchant-agent-approvals.php';
+        reviewLink.textContent='Open Review Queue';
+        button.parentNode.appendChild(reviewLink);
+      }
     }catch(error){
       button.disabled=false;
       button.textContent=original;
