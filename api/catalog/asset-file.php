@@ -10,11 +10,21 @@ if (strlen($assetId) !== 36 || !preg_match('/^[a-f0-9-]{36}$/', $assetId)) {
     mg_fail('Invalid asset identifier.', 422);
 }
 
-$stmt = mg_db()->prepare(
+function mg_catalog_asset_file_column_exists(PDO $pdo, string $tableName, string $columnName): bool
+{
+    if (!preg_match('/^[A-Za-z0-9_]+$/', $tableName) || !preg_match('/^[A-Za-z0-9_]+$/', $columnName)) return false;
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?');
+    $stmt->execute([$tableName, $columnName]);
+    return (int) $stmt->fetchColumn() > 0;
+}
+
+$pdo = mg_db();
+$deletedFilter = mg_catalog_asset_file_column_exists($pdo, 'catalog_assets', 'deleted_at') ? ' AND deleted_at IS NULL' : '';
+$stmt = $pdo->prepare(
     "SELECT storage_provider, storage_key, original_filename, mime_type, byte_size, checksum_sha256
-     FROM catalog_assets
-     WHERE public_id = ? AND owner_user_id = ? AND status = 'ready'
-     LIMIT 1"
+      FROM catalog_assets
+      WHERE public_id = ? AND owner_user_id = ? AND status = 'ready'$deletedFilter
+      LIMIT 1"
 );
 $stmt->execute([$assetId, (int) $user['id']]);
 $asset = $stmt->fetch();
