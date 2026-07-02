@@ -131,72 +131,145 @@ function mg_ads_campaign_product_public_row(array $row): array
     ];
 }
 
+function mg_ads_ad_campaign_picker_row(array $campaign): array
+{
+    $creative = is_array($campaign['creative'] ?? null) ? $campaign['creative'] : [];
+    $title = mg_ads_text($campaign['title'] ?? 'Campaign Ad', 190, 'Campaign Ad');
+    $headline = mg_ads_text($creative['headline'] ?? $title, 190, $title);
+    $description = mg_ads_text($creative['description'] ?? '', 360, '');
+    return [
+        'id' => (string)($campaign['public_id'] ?? $campaign['id'] ?? ''),
+        'source' => 'ad_campaign',
+        'source_label' => 'Ad Campaign',
+        'title' => $title,
+        'headline' => $headline,
+        'description' => $description !== '' ? $description : 'Promote this existing Campaign Ads draft or sponsored local drop.',
+        'ad_description' => $description !== '' ? $description : 'Promote this existing Campaign Ads draft or sponsored local drop.',
+        'image_url' => mg_ads_safe_url($creative['image_url'] ?? '') ?: null,
+        'cta_label' => mg_ads_text($creative['cta_label'] ?? 'Claim Reward', 80, 'Claim Reward'),
+        'destination_url' => mg_ads_safe_url($creative['destination_url'] ?? '') ?: '/merchant-ad-manager.php',
+        'reward_type' => (string)($campaign['objective'] ?? 'ad_campaign'),
+        'value_type' => 'ad_campaign',
+        'value_amount_cents' => 0,
+        'value_label' => 'Ad Campaign · ' . (string)($campaign['status'] ?? ''),
+        'currency' => 'USD',
+        'status' => (string)($campaign['status'] ?? ''),
+        'agent_add_to_wallet_allowed' => false,
+        'updated_at' => $campaign['updated_at'] ?? null,
+    ];
+}
+
 try {
     $merchantId = (int)($user['id'] ?? 0);
     $status = trim((string)($_GET['status'] ?? 'active'));
-    $allowed = ['active','draft','paused','published','all'];
+    $allowed = ['active','draft','paused','published','ended','all'];
     if (!in_array($status, $allowed, true)) $status = 'active';
     $products = [];
     $sources = [];
+    $sourceErrors = [];
+
+    if (mg_ads_schema_status($pdo)['ready']) {
+        try {
+            $adCampaigns = mg_ads_list_campaigns($pdo, $merchantId, false, '', 100);
+            $products = array_merge($products, array_map('mg_ads_ad_campaign_picker_row', $adCampaigns));
+            $sources['ad_campaigns'] = count($adCampaigns);
+        } catch (Throwable $error) {
+            $sources['ad_campaigns'] = 0;
+            $sourceErrors['ad_campaigns'] = $error::class;
+            mg_security_log('warning', 'ads.picker_ad_campaigns_failed', 'Campaign Ads picker ad campaign source failed.', ['exception_class' => $error::class, 'message' => $error->getMessage()], $merchantId);
+        }
+    } else {
+        $sources['ad_campaigns'] = 0;
+    }
 
     if (mg_ads_table_exists($pdo, 'reward_templates')) {
-        $sql = "SELECT public_id,title,description,reward_type,value_type,value_amount_cents,currency,agent_summary,agent_add_to_wallet_allowed,metadata_json,status,updated_at FROM reward_templates WHERE merchant_user_id=? AND status<>'archived'";
-        $params = [$merchantId];
-        if ($status !== 'all') {
-            $rewardStatus = $status === 'published' ? 'active' : $status;
-            $sql .= ' AND status=?';
-            $params[] = $rewardStatus;
+        try {
+            $sql = "SELECT public_id,title,description,reward_type,value_type,value_amount_cents,currency,agent_summary,agent_add_to_wallet_allowed,metadata_json,status,updated_at FROM reward_templates WHERE merchant_user_id=? AND status<>'archived'";
+            $params = [$merchantId];
+            if ($status !== 'all') {
+                $rewardStatus = $status === 'published' ? 'active' : $status;
+                if (in_array($rewardStatus, ['draft','active','paused'], true)) {
+                    $sql .= ' AND status=?';
+                    $params[] = $rewardStatus;
+                }
+            }
+            $sql .= ' ORDER BY updated_at DESC,id DESC LIMIT 100';
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+            $products = array_merge($products, array_map('mg_ads_product_public_row', $rows));
+            $sources['reward_templates'] = count($rows);
+        } catch (Throwable $error) {
+            $sources['reward_templates'] = 0;
+            $sourceErrors['reward_templates'] = $error::class;
+            mg_security_log('warning', 'ads.picker_reward_templates_failed', 'Campaign Ads picker reward template source failed.', ['exception_class' => $error::class, 'message' => $error->getMessage()], $merchantId);
         }
-        $sql .= ' ORDER BY updated_at DESC,id DESC LIMIT 100';
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($params);
-        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
-        $products = array_merge($products, array_map('mg_ads_product_public_row', $rows));
-        $sources['reward_templates'] = count($rows);
+    } else {
+        $sources['reward_templates'] = 0;
     }
 
     if (mg_ads_table_exists($pdo, 'campaigns')) {
-        $sql = "SELECT public_id,public_slug,campaign_type,title,description,form_headline,form_description,status,updated_at FROM campaigns WHERE merchant_user_id=? AND status<>'archived'";
-        $params = [$merchantId];
-        if ($status !== 'all') {
-            $campaignStatus = $status === 'published' ? 'active' : $status;
-            $sql .= ' AND status=?';
-            $params[] = $campaignStatus;
+        try {
+            $sql = "SELECT public_id,public_slug,campaign_type,title,description,form_headline,form_description,status,updated_at FROM campaigns WHERE merchant_user_id=? AND status<>'archived'";
+            $params = [$merchantId];
+            if ($status !== 'all') {
+                $campaignStatus = $status === 'published' ? 'active' : $status;
+                if (in_array($campaignStatus, ['draft','active','paused','ended'], true)) {
+                    $sql .= ' AND status=?';
+                    $params[] = $campaignStatus;
+                }
+            }
+            $sql .= ' ORDER BY updated_at DESC,id DESC LIMIT 100';
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+            $products = array_merge($products, array_map('mg_ads_campaign_product_public_row', $rows));
+            $sources['campaigns'] = count($rows);
+        } catch (Throwable $error) {
+            $sources['campaigns'] = 0;
+            $sourceErrors['campaigns'] = $error::class;
+            mg_security_log('warning', 'ads.picker_campaigns_failed', 'Campaign Ads picker campaign source failed.', ['exception_class' => $error::class, 'message' => $error->getMessage()], $merchantId);
         }
-        $sql .= ' ORDER BY updated_at DESC,id DESC LIMIT 100';
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($params);
-        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
-        $products = array_merge($products, array_map('mg_ads_campaign_product_public_row', $rows));
-        $sources['campaigns'] = count($rows);
+    } else {
+        $sources['campaigns'] = 0;
     }
 
     if (mg_ads_table_exists($pdo, 'catalog_products') && mg_ads_table_exists($pdo, 'catalog_product_versions')) {
-        $sql = "SELECT p.public_id,p.product_type,p.slug,p.status,p.updated_at,v.title,v.description,v.unit_value_cents,v.currency,a.public_id asset_public_id,a.storage_provider,a.storage_key
-                FROM catalog_products p
-                LEFT JOIN catalog_product_versions v ON v.id=p.current_version_id
-                LEFT JOIN catalog_product_version_assets pva ON pva.product_version_id=p.current_version_id AND pva.role IN ('cover','thumbnail','gallery')
-                LEFT JOIN catalog_assets a ON a.id=pva.asset_id AND a.asset_type='image' AND a.status='ready'
-                WHERE p.merchant_user_id=? AND p.status<>'archived'";
-        $params = [$merchantId];
-        if ($status !== 'all') {
-            $catalogStatus = in_array($status, ['active','published'], true) ? 'published' : $status;
-            $sql .= ' AND p.status=?';
-            $params[] = $catalogStatus;
+        try {
+            $sql = "SELECT p.public_id,p.product_type,p.slug,p.status,p.updated_at,v.title,v.description,v.unit_value_cents,v.currency,a.public_id asset_public_id,a.storage_provider,a.storage_key
+                    FROM catalog_products p
+                    LEFT JOIN catalog_product_versions v ON v.id=p.current_version_id
+                    LEFT JOIN catalog_product_version_assets pva ON pva.product_version_id=p.current_version_id AND pva.role IN ('cover','thumbnail','gallery')
+                    LEFT JOIN catalog_assets a ON a.id=pva.asset_id AND a.asset_type='image' AND a.status='ready'
+                    WHERE p.merchant_user_id=? AND p.status<>'archived'";
+            $params = [$merchantId];
+            if ($status !== 'all') {
+                $catalogStatus = in_array($status, ['active','published'], true) ? 'published' : $status;
+                if (in_array($catalogStatus, ['draft','published','paused'], true)) {
+                    $sql .= ' AND p.status=?';
+                    $params[] = $catalogStatus;
+                }
+            }
+            $sql .= ' GROUP BY p.id ORDER BY p.updated_at DESC,p.id DESC LIMIT 100';
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+            $products = array_merge($products, array_map('mg_ads_catalog_product_public_row', $rows));
+            $sources['catalog_products'] = count($rows);
+        } catch (Throwable $error) {
+            $sources['catalog_products'] = 0;
+            $sourceErrors['catalog_products'] = $error::class;
+            mg_security_log('warning', 'ads.picker_catalog_products_failed', 'Campaign Ads picker catalog product source failed.', ['exception_class' => $error::class, 'message' => $error->getMessage()], $merchantId);
         }
-        $sql .= ' GROUP BY p.id ORDER BY p.updated_at DESC,p.id DESC LIMIT 100';
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($params);
-        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
-        $products = array_merge($products, array_map('mg_ads_catalog_product_public_row', $rows));
-        $sources['catalog_products'] = count($rows);
+    } else {
+        $sources['catalog_products'] = 0;
     }
 
     usort($products, static function (array $a, array $b): int {
         return strcmp((string)($b['updated_at'] ?? ''), (string)($a['updated_at'] ?? ''));
     });
 
-    mg_ok(['schema_ready' => true, 'source' => 'combined', 'sources' => $sources, 'products' => array_values($products)], 'Merchant ad products loaded.');
+    mg_ok(['schema_ready' => true, 'source' => 'combined', 'sources' => $sources, 'source_errors' => $sourceErrors, 'products' => array_values($products)], 'Merchant ad products loaded.');
 } catch (Throwable $error) {
     mg_security_log('warning', 'ads.merchant_products_failed', 'Campaign Ads merchant product picker failed.', ['exception_class' => $error::class, 'message' => $error->getMessage()], (int)($user['id'] ?? 0));
     mg_fail('Unable to load merchant products.', 422);
