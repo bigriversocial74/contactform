@@ -464,6 +464,7 @@
 }
 
 .mg-story-viewer-cta,
+.mg-story-promote,
 .mg-story-delete{
   border:0;
   text-decoration:none;
@@ -477,6 +478,17 @@
   color:#0f172a;
   font-weight:950;
   cursor:pointer;
+}
+
+.mg-story-promote{
+  background:linear-gradient(135deg,#2563eb,#7c3aed);
+  color:#fff;
+  box-shadow:0 16px 40px rgba(37,99,235,.34);
+}
+
+.mg-story-promote:disabled{
+  opacity:.72;
+  cursor:wait;
 }
 
 .mg-story-delete{
@@ -516,9 +528,5 @@
 
   .mg-story-upload-card [data-story-upload-preview]{
     height:180px;
-  }
-
-  .mg-story-viewer-panel{
-    width:100%;
   }
 }
