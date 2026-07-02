@@ -24,7 +24,8 @@ try {
     }
 
     $targetUserId = mg_admin_user_detail_id($input['user_id'] ?? null);
-    $reason = mg_admin_account_reason($input['reason'] ?? null);
+    $reasonInput = trim((string)($input['reason'] ?? ''));
+    $reason = mg_admin_account_reason($reasonInput !== '' ? $reasonInput : 'User Center admin action: ' . $action);
     $pdo->beginTransaction();
 
     $result = match ($action) {
