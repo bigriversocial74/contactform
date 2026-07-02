@@ -217,6 +217,10 @@ window.Microgifter = window.Microgifter || {};
     }
   }
 
+  function isGreetingProductCard(card) {
+    return card.classList.contains('is-greeting_card') || card.classList.contains('is-multimedia_card') || card.dataset.cardVariant === 'greeting_card' || card.dataset.cardVariant === 'multimedia_card';
+  }
+
   function hideDuplicateProductHeadline(linkedCard) {
     var feedCard = linkedCard.closest('.mg-feed-card');
     if (!feedCard) return;
@@ -231,8 +235,12 @@ window.Microgifter = window.Microgifter || {};
       hideDuplicateProductHeadline(card);
       var preview = card.querySelector('.mg-feed-linked-preview');
       if (preview && !preview.querySelector('img')) preview.textContent = '';
-      qsa('.mg-feed-linked-eyebrow,.mg-feed-linked-status,.mg-feed-linked-access', card).forEach(function (node) {
+      qsa('.mg-feed-linked-status,.mg-feed-linked-access', card).forEach(function (node) {
         node.setAttribute('aria-hidden', 'true');
+      });
+      qsa('.mg-feed-linked-eyebrow', card).forEach(function (node) {
+        if (isGreetingProductCard(card)) node.removeAttribute('aria-hidden');
+        else node.setAttribute('aria-hidden', 'true');
       });
     });
   }
