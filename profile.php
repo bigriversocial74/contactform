@@ -210,6 +210,7 @@ require __DIR__ . '/includes/header.php';
       <nav class="mg-invest-tabs" aria-label="Profile content tabs">
         <button type="button" class="is-active" data-invest-tab="overview">Overview</button>
         <button type="button" data-invest-tab="products">Products</button>
+        <button type="button" data-invest-tab="stories">Stories</button>
         <button type="button" data-invest-tab="posts">Posts</button>
         <button type="button" data-invest-tab="campaigns">Campaigns</button>
         <button type="button" data-invest-tab="analytics">Analytics</button>
@@ -247,6 +248,16 @@ require __DIR__ . '/includes/header.php';
                 <a class="mg-invest-link" href="/discover.php">Open marketplace</a>
               </div>
               <div class="mg-profile-product-grid" data-profile-products-grid-clone></div>
+            </article>
+          </section>
+
+          <section class="mg-invest-tab-panel" data-invest-panel="stories" hidden>
+            <article class="mg-invest-card">
+              <div class="mg-invest-section-head">
+                <h2>Stories</h2>
+                <span>Story highlights will appear here.</span>
+              </div>
+              <div class="mg-invest-empty-state">No stories available yet.</div>
             </article>
           </section>
 
