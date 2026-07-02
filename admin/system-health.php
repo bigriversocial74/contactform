@@ -11,7 +11,7 @@ $page_section = 'account';
 $header_mode = 'account';
 $page_body_class = 'mg-admin-system-health-page';
 $page_styles = ['/assets/css/admin-shell.css','/assets/css/admin-system-health.css','/assets/css/admin-pwa-health.css'];
-$page_scripts = ['/assets/js/admin-system-health.js','/assets/js/admin-pwa-health.js','/assets/js/admin-health-warning-filter.js'];
+$page_scripts = ['/assets/js/admin-system-health.js','/assets/js/admin-pwa-health.js','/assets/js/admin-health-warning-filter.js','/assets/js/admin-security-hardening-audit.js'];
 $adminActive = 'system-health';
 
 require dirname(__DIR__) . '/includes/header.php';
@@ -25,7 +25,7 @@ require dirname(__DIR__) . '/includes/header.php';
           <a class="mg-system-health-back" href="/account-admin.php">← Admin dashboard</a>
           <span class="mg-eyebrow">Platform operations</span>
           <h1>System health</h1>
-          <p>Persistent media, notification delivery, PWA browser push, database migrations, admin ops deployment readiness, SQL diagnostics, and recent operational warnings.</p>
+          <p>Persistent media, notification delivery, PWA browser push, database migrations, admin ops deployment readiness, SQL diagnostics, security hardening, and recent operational warnings.</p>
         </div>
         <div class="mg-system-health-hero-actions">
           <span class="mg-system-health-updated">Last checked <strong data-system-health-updated>—</strong></span>
@@ -107,6 +107,34 @@ require dirname(__DIR__) . '/includes/header.php';
           <div>
             <h3>Top findings</h3>
             <div class="mg-system-sql-list" data-sql-diagnostics-findings><p class="mg-muted">Loading findings…</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="mg-system-health-section mg-system-sql-diagnostics" data-security-hardening-audit>
+        <header>
+          <div>
+            <h2>Security hardening audit</h2>
+            <p>Checks runtime settings, session cookies, API security headers, audit tables, database privileges, config exposure, and recent security events.</p>
+          </div>
+          <div class="mg-system-sql-actions">
+            <button class="mg-btn mg-btn-ghost" type="button" data-security-audit-refresh disabled>Run audit</button>
+          </div>
+        </header>
+        <div class="mg-system-sql-summary is-loading" data-security-audit-summary>Loading security hardening audit…</div>
+        <div class="mg-system-sql-metrics" data-security-audit-metrics>
+          <?php foreach (['Checks','Healthy','Warnings','Critical','Categories'] as $label): ?>
+            <article><span><?= mg_e($label) ?></span><strong>—</strong><small>Waiting for audit</small></article>
+          <?php endforeach; ?>
+        </div>
+        <div class="mg-system-sql-panels">
+          <div>
+            <h3>Security categories</h3>
+            <div class="mg-system-sql-list" data-security-audit-categories><p class="mg-muted">Loading category checks…</p></div>
+          </div>
+          <div>
+            <h3>Top hardening items</h3>
+            <div class="mg-system-sql-list" data-security-audit-checks><p class="mg-muted">Loading hardening checks…</p></div>
           </div>
         </div>
       </section>
