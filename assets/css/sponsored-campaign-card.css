@@ -311,3 +311,16 @@
     flex-wrap:wrap;
   }
 }
+.mg-social-feed-page .mg-story-modal .mg-story-upload-card{padding:8px!important;border-radius:18px!important;gap:4px!important}
+.mg-social-feed-page .mg-story-modal .mg-story-upload-card [data-story-upload-preview]{height:118px!important;border-radius:14px!important}
+.mg-social-feed-page .mg-story-modal .mg-story-upload-card strong{font-size:.88rem!important}
+.mg-social-feed-page .mg-story-modal .mg-story-upload-card small{font-size:.72rem!important;line-height:1.25!important}
+.mg-social-feed-page .mg-story-modal .mg-story-form{gap:8px!important}
+.mg-social-feed-page .mg-story-modal .mg-story-form textarea{min-height:58px!important;max-height:74px!important}
+.mg-social-feed-page .mg-story-modal .mg-story-modal-head{margin-bottom:10px!important}
+.mg-social-feed-page .mg-story-modal .mg-story-modal-head h2{font-size:1.25rem!important}
+.mg-social-feed-page .mg-story-modal .mg-story-modal-head p{font-size:.88rem!important;line-height:1.35!important}
+.mg-social-feed-page .mg-feed-ad-sidebar{margin-top:0!important;padding-top:0!important;top:72px!important}
+.mg-social-feed-page .mg-feed-ad-sidebar .mg-sponsored-placement{margin:0!important;min-height:96px}
+.mg-social-feed-page .mg-feed-ad-sidebar .mg-sponsored-placement:empty{display:grid!important;place-items:center;min-height:96px;border:1px dashed rgba(148,163,184,.55);border-radius:18px;background:rgba(255,255,255,.46);color:#64748b;font-size:.72rem;font-weight:950;letter-spacing:.12em;text-transform:uppercase}
+.mg-social-feed-page .mg-feed-ad-sidebar .mg-sponsored-placement:empty:before{content:'Ad space'}
