@@ -27,8 +27,8 @@ function mg_feed_chat_profile(PDO $pdo, int $viewerId, string $profileId): array
     $peerId = (int)$peer['user_id'];
     if ($peerId === $viewerId) throw new InvalidArgumentException('Choose another profile.');
     if (mg_social_is_blocked($pdo, $viewerId, $peerId)) throw new RuntimeException('Profile is not available.');
-    $rel = $pdo->prepare("SELECT 1 FROM social_follows WHERE status='active' AND ((follower_user_id=? AND followed_user_id=?) OR (follower_user_id=? AND followed_user_id=?)) LIMIT 1");
-    $rel->execute([$viewerId, $peerId, $peerId, $viewerId]);
+    $rel = $pdo->prepare("SELECT 1 FROM social_follows WHERE status='active' AND follower_user_id=? AND followed_user_id=? LIMIT 1");
+    $rel->execute([$viewerId, $peerId]);
     if (!$rel->fetchColumn()) throw new RuntimeException('Connected profile required.');
     return $peer;
 }
@@ -41,7 +41,7 @@ function mg_feed_chat_project_profile(array $row): array
         'slug'=>(string)$row['slug'],
         'avatar_url'=>mg_feed_chat_avatar($row['avatar_url'] ?? null),
         'profile_type'=>(string)($row['profile_type'] ?? 'profile'),
-        'online'=>true,
+        'online'=>(bool)($row['is_online'] ?? false),
         'last_seen_at'=>(string)($row['last_seen_at'] ?? ''),
         'unread'=>(int)($row['unread'] ?? 0),
     ];
@@ -88,17 +88,17 @@ $pdo = mg_db();
 
 try {
     if ($method === 'GET') {
-        mg_rate_limit('social.online_chat.read', 'user:' . $viewerId, 180, 60);
+        mg_rate_limit('social.online_chat.read', 'user:' . $viewerId, 300, 60);
         $profileId = trim((string)($_GET['profile_id'] ?? ''));
         if ($profileId !== '') {
             $peer = mg_feed_chat_profile($pdo, $viewerId, $profileId);
             $thread = mg_feed_chat_thread($pdo, $viewerId, (int)$peer['user_id'], false);
             $messages = $thread ? mg_feed_chat_messages($pdo, $thread, $viewerId) : [];
             if ($thread) $pdo->prepare('UPDATE message_thread_participants SET last_read_at=NOW() WHERE thread_id=? AND user_id=?')->execute([(int)$thread['id'], $viewerId]);
-            mg_ok(['profile'=>mg_feed_chat_project_profile($peer),'thread'=>$thread ? ['id'=>(string)$thread['public_id'],'subject'=>(string)$thread['subject'],'unread'=>0] : null,'messages'=>$messages]);
+            mg_ok(['profile'=>mg_feed_chat_project_profile($peer + ['is_online'=>true, 'last_seen_at'=>'']),'thread'=>$thread ? ['id'=>(string)$thread['public_id'],'subject'=>(string)$thread['subject'],'unread'=>0] : null,'messages'=>$messages]);
             return;
         }
-        $stmt = $pdo->prepare("SELECT pp.public_id,pp.user_id,pp.slug,pp.display_name,pp.avatar_url,pp.profile_type,MAX(us.last_seen_at) last_seen_at FROM social_follows sf INNER JOIN public_profiles pp ON pp.user_id=sf.follower_user_id INNER JOIN users u ON u.id=pp.user_id AND u.status='active' INNER JOIN user_sessions us ON us.user_id=pp.user_id AND us.revoked_at IS NULL AND us.expires_at>NOW() AND us.last_seen_at>=DATE_SUB(NOW(), INTERVAL 15 MINUTE) WHERE sf.followed_user_id=? AND sf.status='active' AND pp.status='active' AND pp.visibility IN ('public','unlisted') AND NOT EXISTS (SELECT 1 FROM social_blocks b WHERE (b.blocking_user_id=? AND b.blocked_user_id=pp.user_id) OR (b.blocking_user_id=pp.user_id AND b.blocked_user_id=?)) GROUP BY pp.id ORDER BY last_seen_at DESC LIMIT 18");
+        $stmt = $pdo->prepare("SELECT pp.public_id,pp.user_id,pp.slug,pp.display_name,pp.avatar_url,pp.profile_type,MAX(us.last_seen_at) last_seen_at,CASE WHEN MAX(us.last_seen_at)>=DATE_SUB(NOW(), INTERVAL 2 MINUTE) THEN 1 ELSE 0 END is_online FROM social_follows sf INNER JOIN public_profiles pp ON pp.user_id=sf.followed_user_id INNER JOIN users u ON u.id=pp.user_id AND u.status='active' LEFT JOIN user_sessions us ON us.user_id=pp.user_id AND us.revoked_at IS NULL AND us.expires_at>NOW() WHERE sf.follower_user_id=? AND sf.status='active' AND pp.status='active' AND pp.visibility IN ('public','unlisted') AND NOT EXISTS (SELECT 1 FROM social_blocks b WHERE (b.blocking_user_id=? AND b.blocked_user_id=pp.user_id) OR (b.blocking_user_id=pp.user_id AND b.blocked_user_id=?)) GROUP BY pp.id ORDER BY is_online DESC,last_seen_at DESC,pp.updated_at DESC LIMIT 10");
         $stmt->execute([$viewerId, $viewerId, $viewerId]);
         $profiles = [];
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
@@ -106,7 +106,7 @@ try {
             $row['unread'] = $thread ? mg_feed_chat_unread($pdo, $viewerId, $thread) : 0;
             $profiles[] = mg_feed_chat_project_profile($row);
         }
-        mg_ok(['profiles'=>$profiles,'checked_at'=>date('Y-m-d H:i:s')]);
+        mg_ok(['profiles'=>$profiles,'checked_at'=>date('Y-m-d H:i:s'),'poll_after_ms'=>15000]);
         return;
     }
 
