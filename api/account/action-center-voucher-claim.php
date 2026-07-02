@@ -29,6 +29,39 @@ function mg_ac_voucher_claim_code(string $value): string
     return $code;
 }
 
+function mg_ac_voucher_table_exists(PDO $pdo, string $table): bool
+{
+    if (preg_match('/^[A-Za-z0-9_]+$/', $table) !== 1) return false;
+    static $cache = [];
+    $key = spl_object_id($pdo) . '|' . strtolower($table);
+    if (array_key_exists($key, $cache)) return $cache[$key];
+    try {
+        $stmt = $pdo->prepare('SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? LIMIT 1');
+        $stmt->execute([$table]);
+        if ($stmt->fetchColumn()) return $cache[$key] = true;
+    } catch (Throwable) {}
+    try {
+        $pdo->query('SELECT 1 FROM `' . str_replace('`', '``', $table) . '` LIMIT 0');
+        return $cache[$key] = true;
+    } catch (Throwable) {
+        return $cache[$key] = false;
+    }
+}
+
+function mg_ac_voucher_require_tables(PDO $pdo, array $tables): void
+{
+    $missing = [];
+    foreach (array_values(array_unique($tables)) as $table) {
+        if (!mg_ac_voucher_table_exists($pdo, (string)$table)) $missing[] = (string)$table;
+    }
+    if ($missing !== []) {
+        mg_ac_voucher_fail(
+            'Claim database setup is incomplete. Missing table(s): ' . implode(', ', $missing) . '. Import database/stage_18ah_wallet_claim_integrity.sql on the active database, then retry.',
+            409
+        );
+    }
+}
+
 function mg_ac_voucher_hashes(): array
 {
     $pepper = mg_claim_code_pepper();
@@ -262,8 +295,12 @@ $voucherToken = trim((string)($input['voucher_token'] ?? $input['token'] ?? ''))
 $pdo = mg_db();
 
 try {
-    $pdo->beginTransaction();
     $walletId = mg_ac_wallet_action_id($actionItemId);
+    mg_ac_voucher_require_tables($pdo, $walletId !== null
+        ? ['action_center_voucher_claim_attempts','merchant_claim_codes','merchant_locations','wallet_item_redemptions']
+        : ['action_center_voucher_claim_attempts','merchant_claim_codes','merchant_locations','microgift_redemptions']
+    );
+    $pdo->beginTransaction();
     if ($walletId !== null) mg_ac_voucher_claim_wallet($pdo, $actionItemId, $walletId, $merchantCode, $voucherToken, $userId, $userEmail);
     mg_ac_voucher_claim_microgift($pdo, $actionItemId, $merchantCode, $voucherToken, $userId);
 } catch (MgAcVoucherClaimError $error) {
@@ -272,6 +309,10 @@ try {
     mg_fail($error->getMessage(), $error->status);
 } catch (Throwable $error) {
     if ($pdo->inTransaction()) $pdo->rollBack();
-    mg_security_log('error', 'action_center.voucher_manual_claim_failed', 'Unable to process manual merchant claim code.', ['action_item_id'=>$actionItemId,'exception_class'=>$error::class], $userId);
+    $rawError = $error->getMessage();
+    mg_security_log('error', 'action_center.voucher_manual_claim_failed', 'Unable to process manual merchant claim code.', ['action_item_id'=>$actionItemId,'exception_class'=>$error::class,'exception_message'=>$rawError], $userId);
+    if (stripos($rawError, 'Base table or view not found') !== false || stripos($rawError, 'Unknown column') !== false) {
+        mg_fail('Claim database setup is incomplete. Import database/stage_18ah_wallet_claim_integrity.sql on the active database, then retry.', 409);
+    }
     mg_fail('Unable to claim this gift right now.', 500);
 }
