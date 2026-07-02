@@ -6,22 +6,38 @@ var MG=window.Microgifter;
 var rail=document.querySelector('[data-online-chat-rail]');
 var dock=document.querySelector('[data-feed-chat-dock]');
 if(!rail||!dock||!MG.get||!MG.post)return;
-if(!window.matchMedia||!window.matchMedia('(min-width:1024px)').matches)return;
 
+var desktopQuery=window.matchMedia?window.matchMedia('(min-width:1024px)'):null;
+var RAIL_POLL_MS=15000;
+var CHAT_POLL_MS=5000;
 var activeProfile=null;
 var profiles=[];
 var railTimer=null;
 var chatTimer=null;
 var railLoading=false;
 var chatLoading=false;
+var railSignature='';
+var messageSignature='';
 
 function payload(response){return response&&response.data?response.data:response;}
 function qs(selector,scope){return(scope||document).querySelector(selector);}
 function clear(node){if(node)node.replaceChildren();}
 function initials(name){return String(name||'M').split(/\s+/).filter(Boolean).slice(0,2).map(function(part){return part[0];}).join('').toUpperCase()||'M';}
 function safeText(value){return String(value==null?'':value);}
+function isDesktop(){return !desktopQuery||desktopQuery.matches;}
 function busy(button,value,label){if(!button)return;if(MG.setBusy)return MG.setBusy(button,value,label);if(value)button.dataset.originalLabel=button.textContent;button.disabled=value;button.textContent=value?(label||'Working…'):(button.dataset.originalLabel||button.textContent);if(!value)delete button.dataset.originalLabel;}
 function profileById(id){return profiles.find(function(item){return item.id===id;})||null;}
+
+function setHeaderOffset(){
+  var header=document.querySelector('.mg-site-header[data-public-header],.mg-site-header,header[role="banner"]');
+  var fallback=64;
+  var offset=fallback;
+  if(header){
+    var rect=header.getBoundingClientRect();
+    if(rect&&Number.isFinite(rect.bottom))offset=Math.max(56,Math.ceil(rect.bottom));
+  }
+  document.documentElement.style.setProperty('--mg-online-chat-header-offset',offset+'px');
+}
 
 function avatar(profile){
   var name=safeText(profile&&profile.name)||'Microgifter member';
@@ -38,8 +54,26 @@ function avatar(profile){
   return span;
 }
 
-function renderRail(){
+function profileSignature(list){
+  return JSON.stringify((Array.isArray(list)?list:[]).map(function(profile){
+    return [profile.id,profile.name,profile.avatar_url,profile.online?1:0,Number(profile.unread||0),profile.last_seen_at||''];
+  }));
+}
+
+function messagesSignature(messages){
+  return JSON.stringify((Array.isArray(messages)?messages:[]).map(function(message){
+    return [message.id,message.mine?1:0,message.created_at||'',message.body||''];
+  }));
+}
+
+function renderRail(force){
+  if(!isDesktop()){rail.hidden=true;return;}
+  setHeaderOffset();
+  var nextSignature=profileSignature(profiles)+(activeProfile?':active:'+activeProfile.id:'');
+  if(!force&&nextSignature===railSignature)return;
+  railSignature=nextSignature;
   clear(rail);
+  if(!profiles.length){rail.hidden=true;return;}
   var list=document.createElement('div');
   list.className='mg-online-chat-list';
   list.dataset.onlineChatList='1';
@@ -48,7 +82,7 @@ function renderRail(){
     btn.type='button';
     btn.className='mg-online-chat-avatar'+(profile.online?' is-online':'')+(activeProfile&&activeProfile.id===profile.id?' is-active':'');
     btn.dataset.profileId=profile.id;
-    btn.title='Chat with '+safeText(profile.name)+(profile.online?' · online':'');
+    btn.title='Chat with '+safeText(profile.name)+(profile.online?' · online':' · recently active');
     btn.setAttribute('aria-label','Chat with '+safeText(profile.name)+(profile.online?' online':' recently active'));
     btn.appendChild(avatar(profile));
     if(Number(profile.unread||0)>0){
@@ -74,17 +108,20 @@ function messageNode(message){
   return row;
 }
 
-function renderMessages(messages){
+function renderMessages(messages,force){
   var win=qs('.mg-feed-chat-window',dock);
   if(!win)return;
   var box=qs('[data-chat-messages]',win);
   if(!box)return;
-  var nearBottom=box.scrollHeight-box.scrollTop-box.clientHeight<48;
-  clear(box);
   messages=Array.isArray(messages)?messages:[];
+  var nextSignature=messagesSignature(messages);
+  if(!force&&nextSignature===messageSignature)return;
+  messageSignature=nextSignature;
+  var nearBottom=box.scrollHeight-box.scrollTop-box.clientHeight<56;
+  clear(box);
   if(messages.length){messages.forEach(function(message){box.appendChild(messageNode(message));});}
   else{var empty=document.createElement('div');empty.className='mg-feed-chat-empty';empty.textContent='Start a quick chat. Messages notify the other user.';box.appendChild(empty);}
-  if(nearBottom)box.scrollTop=box.scrollHeight;
+  if(nearBottom||force)box.scrollTop=box.scrollHeight;
 }
 
 function updateChatPresence(profile){
@@ -96,6 +133,7 @@ function updateChatPresence(profile){
 
 function renderChat(profile,data){
   activeProfile=profile;
+  messageSignature='';
   clear(dock);
   var win=document.createElement('section');
   win.className='mg-feed-chat-window';
@@ -141,9 +179,8 @@ function renderChat(profile,data){
 
   win.append(head,body,form);
   dock.appendChild(win);
-  renderMessages(data&&data.messages);
-  renderRail();
-  body.scrollTop=body.scrollHeight;
+  renderMessages(data&&data.messages,true);
+  renderRail(true);
   startChatPolling();
   window.setTimeout(function(){input.focus();},40);
 }
@@ -166,26 +203,26 @@ async function openChat(profileId){
     var liveProfile=data.profile||profile;
     renderChat(liveProfile,data);
     profile.unread=0;
-    renderRail();
+    renderRail(true);
   }catch(error){errorInChat(error.message||'Unable to open chat.');}
 }
 
 async function pollActiveChat(){
-  if(chatLoading||!activeProfile)return;
+  if(chatLoading||!activeProfile||!isDesktop())return;
   chatLoading=true;
   try{
     var data=payload(await MG.get('/api/social/online-chat.php?profile_id='+encodeURIComponent(activeProfile.id)));
     if(data.profile){activeProfile=data.profile;updateChatPresence(activeProfile);}
-    renderMessages(data.messages||[]);
+    renderMessages(data.messages||[],false);
     var local=profileById(activeProfile.id);if(local)local.unread=0;
-    renderRail();
+    renderRail(false);
   }catch(error){}
   finally{chatLoading=false;}
 }
 
 function startChatPolling(){
-  if(chatTimer)window.clearInterval(chatTimer);
-  chatTimer=window.setInterval(pollActiveChat,5000);
+  stopChatPolling();
+  if(isDesktop())chatTimer=window.setInterval(pollActiveChat,CHAT_POLL_MS);
 }
 
 function stopChatPolling(){
@@ -203,20 +240,15 @@ async function sendMessage(form){
   var button=qs('button[type="submit"]',form);
   busy(button,true,'Sending…');
   try{
-    var data=payload(await MG.post('/api/social/online-chat.php',{profile_id:profileId,body:body}));
+    await MG.post('/api/social/online-chat.php',{profile_id:profileId,body:body});
     input.value='';
     await pollActiveChat();
-    if(data.message&&!qs('[data-message-id="'+data.message.id+'"]',win)){
-      var box=qs('[data-chat-messages]',win);
-      var empty=qs('.mg-feed-chat-empty',box);if(empty)empty.remove();
-      box.appendChild(messageNode(data.message));box.scrollTop=box.scrollHeight;
-    }
   }catch(error){errorInChat(error.message||'Unable to send message.');}
   finally{busy(button,false);}
 }
 
-async function loadProfiles(){
-  if(railLoading)return;
+async function loadProfiles(force){
+  if(railLoading||!isDesktop())return;
   railLoading=true;
   try{
     var data=payload(await MG.get('/api/social/online-chat.php'));
@@ -225,9 +257,36 @@ async function loadProfiles(){
       var updated=profileById(activeProfile.id);
       if(updated){activeProfile=Object.assign({},activeProfile,updated);updateChatPresence(activeProfile);}
     }
-    renderRail();
+    renderRail(Boolean(force));
   }catch(error){rail.hidden=true;}
   finally{railLoading=false;}
+}
+
+function startRailPolling(){
+  stopRailPolling();
+  if(!isDesktop()){rail.hidden=true;clear(dock);activeProfile=null;return;}
+  setHeaderOffset();
+  loadProfiles(true);
+  railTimer=window.setInterval(function(){loadProfiles(false);},RAIL_POLL_MS);
+}
+
+function stopRailPolling(){
+  if(railTimer)window.clearInterval(railTimer);
+  railTimer=null;
+}
+
+function handleViewportChange(){
+  setHeaderOffset();
+  if(isDesktop()){
+    startRailPolling();
+    if(activeProfile)startChatPolling();
+  }else{
+    stopRailPolling();
+    stopChatPolling();
+    rail.hidden=true;
+    clear(dock);
+    activeProfile=null;
+  }
 }
 
 rail.addEventListener('click',function(event){
@@ -238,7 +297,7 @@ rail.addEventListener('click',function(event){
 
 dock.addEventListener('click',function(event){
   if(event.target.closest('[data-chat-close]')){
-    clear(dock);activeProfile=null;stopChatPolling();renderRail();
+    clear(dock);activeProfile=null;stopChatPolling();renderRail(true);
   }
 });
 
@@ -249,7 +308,12 @@ dock.addEventListener('submit',function(event){
   sendMessage(form);
 });
 
-loadProfiles();
-railTimer=window.setInterval(loadProfiles,15000);
-window.addEventListener('beforeunload',function(){if(railTimer)window.clearInterval(railTimer);stopChatPolling();});
+window.addEventListener('resize',setHeaderOffset,{passive:true});
+window.addEventListener('orientationchange',setHeaderOffset,{passive:true});
+if(desktopQuery){
+  if(desktopQuery.addEventListener)desktopQuery.addEventListener('change',handleViewportChange);
+  else if(desktopQuery.addListener)desktopQuery.addListener(handleViewportChange);
+}
+handleViewportChange();
+window.addEventListener('beforeunload',function(){stopRailPolling();stopChatPolling();});
 })(window,document);
