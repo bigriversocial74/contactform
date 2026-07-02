@@ -105,6 +105,7 @@ $can_intelligence = $user && (in_array('intelligence.dashboard.view', $user_perm
         <h2>Workspace</h2>
         <a href="/build.php">Build</a>
         <a href="/agent.php">Agent</a>
+        <?php if (!$user && (string) ($page_manifest['id'] ?? '') === 'index'): ?><a href="https://labs.microgifter.com">Training Labs</a><?php endif; ?>
         <?php if ($can_intelligence): ?><a href="/intelligence.php">Intelligence</a><?php endif; ?>
         <?php if ($can_sales_crm): ?><a href="/sales-crm.php">CRM</a><?php endif; ?>
         <a href="/account-commerce.php">Commerce Center</a>
