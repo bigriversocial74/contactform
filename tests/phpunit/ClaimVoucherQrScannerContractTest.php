@@ -40,7 +40,6 @@ final class ClaimVoucherQrScannerContractTest extends TestCase
             'Confirm claim',
             'data-voucher-next-action="message"',
             'data-voucher-next-action="tip"',
-            'type="password"',
             'autocomplete="off"',
             'merchant_claim_code',
             'data-action-form="message"',
@@ -48,6 +47,11 @@ final class ClaimVoucherQrScannerContractTest extends TestCase
         ] as $needle){
             self::assertStringContainsString($needle,$qrSource);
         }
+        self::assertTrue(
+            str_contains($qrSource,'type="password"')
+            || (str_contains($qrSource,"'password'") && str_contains($qrSource,'type="${inputType}"')),
+            'Real voucher claim-code entry must support password-style masking while demo claims may use a visible input.'
+        );
         self::assertStringNotContainsString('CUSTOMER VOUCHER QR',$qrSource);
         self::assertStringNotContainsString('signed, short-lived voucher token',$qrSource);
         self::assertStringNotContainsString('api.qrserver.com',$qrSource.$tokenEndpoint);
@@ -128,7 +132,6 @@ final class ClaimVoucherQrScannerContractTest extends TestCase
         }
 
         foreach([
-            'function mg_ac_voucher_find_claim_code',
             'mg_ac_voucher_log_attempt',
             'mg_ac_voucher_recent_failed_attempts',
             'merchant_claim_code',

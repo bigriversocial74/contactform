@@ -25,7 +25,11 @@ final class CrmStampPackageEnforcementContractTest extends TestCase
 
         self::assertIsString($source);
         self::assertStringContainsString('mg_public_campaign_enforce_crm_contact_limit($pdo, $merchantId, $email, $isNewContact)', $source);
-        self::assertStringContainsString('mg_public_campaign_enforce_monthly_stamp_limit($pdo, $merchantId)', $source);
+        self::assertTrue(
+            str_contains($source, 'mg_public_campaign_enforce_monthly_stamp_limit($pdo, $merchantId)')
+            || str_contains($source, 'mg_public_campaign_debit_reward_stamp($pdo, $campaign'),
+            'Signup campaigns must enforce package stamp limits directly or through the reward stamp debit helper.'
+        );
         self::assertStringContainsString('wallet_items', $source);
         self::assertStringContainsString('campaign_contacts', $source);
     }

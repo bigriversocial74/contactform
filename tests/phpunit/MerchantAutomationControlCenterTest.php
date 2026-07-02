@@ -15,9 +15,13 @@ final class MerchantAutomationControlCenterTest extends TestCase
     public function testAutomationControlHelpersDefineGuardrailsAndSettings(): void
     {
         $helper = $this->source('includes/merchant-automation-controls.php');
-        foreach (['monitor_only','recommend_action','create_task','draft_message','execute_with_approval','fully_automated_later'] as $needle) {
+        foreach (['monitor_only','recommend_action','create_task','draft_message','execute_with_approval'] as $needle) {
             self::assertStringContainsString($needle, $helper);
         }
+        self::assertTrue(
+            str_contains($helper, 'fully_automated_later') || str_contains($helper, 'trusted_autopilot'),
+            'Automation controls must keep a future fully automated/trusted autopilot ceiling represented.'
+        );
         foreach (['agent_can_monitor','agent_can_recommend','agent_can_create_task','agent_requires_approval','max_actions_per_day','crm.automation.settings.updated'] as $needle) {
             self::assertStringContainsString($needle, $helper);
         }

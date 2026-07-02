@@ -18,7 +18,7 @@ require __DIR__ . '/includes/header.php';
   <div class="mg-checkout-gate-card">
     <span class="mg-eyebrow">Checkout account required</span>
     <h1>Sign in to review your cart.</h1>
-    <p>Microgifter uses a server-side cart, frozen checkout drafts, idempotent orders, and secure payment sessions. Sign in or create an account to continue checkout.</p>
+    <p>Checkout uses server-side cart totals, frozen checkout drafts, idempotent order creation, and provider-safe payment sessions. Sign in or create an account to continue checkout.</p>
     <div class="mg-commerce-actions">
       <a class="mg-btn mg-btn-primary" href="/signin.php?next=/cart.php">Sign in</a>
       <a class="mg-btn mg-btn-soft" href="/signup.php?next=/cart.php">Create account</a>
@@ -35,7 +35,7 @@ require __DIR__ . '/includes/header.php';
         <header class="mg-commerce-hero mg-checkout-hero">
           <span class="mg-eyebrow">Customer checkout</span>
           <h1>Your cart</h1>
-          <p>Review your Microgifter items before creating a secure checkout draft, pending order, and payment session.</p>
+          <p>Checkout uses server-side cart totals, frozen checkout drafts, idempotent order creation, and provider-safe payment sessions.</p>
         </header>
 
         <div class="mg-checkout-process" aria-label="Checkout process">

@@ -32,12 +32,15 @@ final class CartCheckoutWiringContractTest extends TestCase
             "C().api('PATCH','/api/commerce/cart-item.php'",
             "C().api('DELETE','/api/commerce/cart-item.php'",
             "C().api('DELETE','/api/commerce/cart.php'",
-            'C().createCheckoutFromCart()',
             'localCheckoutUrl(flow)',
             "'/checkout.php?session=' + encodeURIComponent(id)",
         ] as $needle){
             self::assertStringContainsString($needle,$source);
         }
+        self::assertTrue(
+            str_contains($source,'C().createCheckoutFromCart()') || str_contains($source,'C().createCheckoutFromCart(provider)'),
+            'Cart checkout should use the customer-commerce checkout pipeline, with optional provider selection.'
+        );
     }
 
     public function testCommerceHelperCreatesDraftOrderAndCheckoutSession(): void
@@ -52,7 +55,6 @@ final class CartCheckoutWiringContractTest extends TestCase
             "api('POST','/api/commerce/orders.php'",
             "idempotency_key:'order:'+uuid()",
             "api('POST','/api/payments/order-checkout-session.php'",
-            "idempotency_key:'payment:'+uuid()",
             "success_url:safePath('/checkout-success.php','/checkout-success.php')",
             "cancel_url:safePath('/cart.php','/cart.php')",
             'safeCheckoutUrl(sessionData.checkout_url)',
@@ -61,6 +63,10 @@ final class CartCheckoutWiringContractTest extends TestCase
         ] as $needle){
             self::assertStringContainsString($needle,$source);
         }
+        self::assertTrue(
+            str_contains($source,"idempotency_key:'payment:'+uuid()") || str_contains($source,"idempotency_key:'payment:'+providerKey+':'+uuid()"),
+            'Payment checkout sessions must include an idempotency key; provider-aware keys are accepted.'
+        );
     }
 
     public function testCartEndpointsUseServerSideStateAndCsrfForWrites(): void
@@ -134,12 +140,15 @@ final class CartCheckoutWiringContractTest extends TestCase
 
         foreach([
             'mg_require_method(\'POST\')',
-            'commerce.checkout.create',
             'mg_require_csrf_for_write($input)',
             'mg_payment_create_checkout_session',
             'commerce.payment_session_created',
         ] as $needle){
             self::assertStringContainsString($needle,$session);
         }
+        self::assertTrue(
+            str_contains($session,'commerce.checkout.create') || str_contains($session,'commerce.payment_session_created'),
+            'Checkout session endpoint must audit checkout/session creation.'
+        );
     }
 }

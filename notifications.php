@@ -2,8 +2,8 @@
 declare(strict_types=1);
 require_once __DIR__ . '/includes/app.php';
 $page_title = 'Notifications | Microgifter';
-$page_section = 'agent';
-$header_mode = 'agent';
+$page_section = 'account';
+$header_mode = 'account';
 $agent_tab = 'notifications';
 $can_merchant_nav = true;
 $can_create_microgift = true;

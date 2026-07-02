@@ -22,7 +22,7 @@ require __DIR__ . '/includes/header.php';
           <span class="mg-builder-status" data-builder-status>New draft</span>
           <div class="mg-builder-preview-toolbar">
             <button class="mg-btn mg-btn-ghost" type="button" data-save-draft>Save draft</button>
-            <a class="mg-btn mg-btn-soft" href="#" data-publish-product-link data-publish-store-link hidden>View product</a>
+            <a class="mg-btn mg-btn-soft" href="#" data-publish-product-link data-publish-store-link data-publish-feed-link hidden>View product</a>
           </div>
         </div>
         <div class="mg-builder-card" data-builder-card>

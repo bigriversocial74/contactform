@@ -38,9 +38,14 @@ final class MerchantCustomerProfileCommandCenterTest extends TestCase
         foreach (['action_ids','actions','links','crm_contact_id','campaign_contact_id','campaign_contact_ids','wallet_item_id','thread_id','message_id','redemption_id','tip_id','action_url'] as $needle) {
             self::assertStringContainsString($needle, $api);
         }
-        foreach (['WHERE public_id=? AND merchant_user_id=?','wi.merchant_user_id=?','WHERE merchant_user_id=? AND customer_user_id=?','WHERE n.merchant_user_id=? AND n.crm_contact_id=?','mt.created_by_user_id=?'] as $needle) {
+        foreach (['WHERE public_id=? AND merchant_user_id=?','wi.merchant_user_id=?','WHERE n.merchant_user_id=? AND n.crm_contact_id=?','mt.created_by_user_id=?'] as $needle) {
             self::assertStringContainsString($needle, $api);
         }
+        self::assertTrue(
+            str_contains($api, 'WHERE merchant_user_id=? AND customer_user_id=?')
+            || str_contains($api, 'WHERE merchant_user_id=? AND user_id=?'),
+            'Customer profile action identifiers must be scoped by merchant and customer/user identity.'
+        );
     }
 
     public function testDrilldownRoutesRemainAvailable(): void

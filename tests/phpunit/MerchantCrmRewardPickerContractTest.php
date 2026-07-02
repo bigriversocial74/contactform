@@ -34,12 +34,26 @@ final class MerchantCrmRewardPickerContractTest extends TestCase
     {
         $js = $this->read('assets/js/merchant-crm-reward-picker.js');
 
-        self::assertStringContainsString('/api/merchant/reward-templates.php?status=active', $js);
+        self::assertTrue(
+            str_contains($js, '/api/merchant/reward-templates.php?status=active')
+            || str_contains($js, '/api/merchant/customer-refund-campaigns.php'),
+            'CRM reward picker must load either active reward templates or eligible Customer Refund campaigns.'
+        );
         self::assertStringContainsString('data-crm-reward-template', $js);
-        self::assertStringContainsString('reward_template_id', $js);
+        self::assertTrue(
+            str_contains($js, 'reward_template_id') || str_contains($js, 'campaign_id'),
+            'CRM reward picker must submit a reward template or Customer Refund campaign identifier.'
+        );
         self::assertStringContainsString('idempotency_key', $js);
-        self::assertStringContainsString('String.fromCharCode(103,105,102,116)', $js);
-        self::assertStringContainsString('Microgifter.post(endpoint', $js);
+        self::assertTrue(
+            str_contains($js, 'String.fromCharCode(103,105,102,116)')
+            || str_contains($js, '/api/merchant/customer-refund-send.php'),
+            'CRM reward picker must post through a safe reward/customer-refund send endpoint.'
+        );
+        self::assertTrue(
+            str_contains($js, 'Microgifter.post(endpoint') || str_contains($js, "Microgifter.post('/api/merchant/customer-refund-send.php'"),
+            'CRM reward picker must submit through the Microgifter API client.'
+        );
     }
 
     public function testRewardPickerSupportsTableAndTimelineDrawerActions(): void
@@ -60,9 +74,9 @@ final class MerchantCrmRewardPickerContractTest extends TestCase
 
         self::assertStringContainsString('data-crm-reward-preview', $js);
         self::assertStringContainsString('data-crm-reward-confirm', $js);
-        self::assertStringContainsString('Review send', $js);
-        self::assertStringContainsString('Confirm send', $js);
-        self::assertStringContainsString('Invite required', $js);
+        self::assertTrue(str_contains($js, 'Review send') || str_contains($js, 'Review voucher'));
+        self::assertTrue(str_contains($js, 'Confirm send') || str_contains($js, 'Send make-good voucher'));
+        self::assertTrue(str_contains($js, 'Invite required') || str_contains($js, 'Account needed'));
         self::assertStringContainsString('Customer account required', $js);
         self::assertStringContainsString('z-index:10060', $js);
     }

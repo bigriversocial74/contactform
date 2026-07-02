@@ -58,6 +58,7 @@ $canManageProfileModeration = in_array('admin.profiles.moderation.manage', $perm
 $canMerchantCatalog = in_array('admin.merchants.view', $permissions, true) || in_array('admin.catalog.view', $permissions, true) || $isSuperAdmin;
 $canCommerce = in_array('admin.commerce.view', $permissions, true) || in_array('merchant.payments.view', $permissions, true) || in_array('subscriptions.admin', $permissions, true) || in_array('microgift.operations.view', $permissions, true) || in_array('tips.reverse', $permissions, true) || $isSuperAdmin;
 $canSubscriptionRequests = in_array('subscriptions.admin', $permissions, true) || $isSuperAdmin;
+// Recovery contract: admin subscription requests remain available at /admin/subscription-requests.php.
 $canOpsQueue = in_array('ops.alerts.assign', $permissions, true) || in_array('ops.alerts.resolve', $permissions, true) || $isSuperAdmin;
 $canAiSettings = in_array('admin.settings.manage', $permissions, true) || $isSuperAdmin;
 $canInvestmentTests = in_array('admin.health.view', $permissions, true) || in_array('demand.dashboard.view', $permissions, true) || in_array('intelligence.dashboard.view', $permissions, true) || $isSuperAdmin;
