@@ -1,0 +1,72 @@
+.mg-public-campaign.is-merchant-preview {
+  padding-top: clamp(92px, 9vw, 128px);
+}
+
+.mg-public-campaign-preview-banner {
+  width: min(760px, 100%);
+  margin: 0 auto 22px;
+  padding: 16px 18px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 14px;
+  align-items: center;
+  border: 1px solid rgba(37, 99, 235, .22);
+  border-radius: 22px;
+  background: rgba(239, 246, 255, .92);
+  color: #0f172a;
+  box-shadow: 0 18px 48px rgba(37, 99, 235, .12);
+  backdrop-filter: blur(14px);
+}
+
+.mg-public-campaign-preview-banner span {
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+
+.mg-public-campaign-preview-banner strong {
+  justify-self: end;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #fff;
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: .08em;
+}
+
+.mg-public-campaign-preview-banner p {
+  margin: 0;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.45;
+  font-weight: 800;
+}
+
+.mg-public-campaign-preview-banner .mg-btn {
+  justify-self: end;
+  min-height: 38px;
+  border-radius: 999px;
+  background: #fff;
+  color: #1d4ed8;
+  white-space: nowrap;
+}
+
+.mg-public-campaign.is-merchant-preview .mg-public-campaign-primary-action[disabled] {
+  cursor: not-allowed;
+  opacity: .72;
+  background: #475569 !important;
+}
+
+@media (max-width: 680px) {
+  .mg-public-campaign-preview-banner {
+    grid-template-columns: 1fr;
+  }
+
+  .mg-public-campaign-preview-banner strong,
+  .mg-public-campaign-preview-banner .mg-btn {
+    justify-self: start;
+  }
+}
