@@ -31,6 +31,7 @@ $page_scripts = [
     '/assets/js/public-profile-engagement.js',
     '/assets/js/public-profile-investment.js',
     '/assets/js/public-profile-posts-fix.js',
+    '/assets/js/profile-story-action-dock.js',
 ];
 $page_manifest = [
     'id' => 'public-profile',
