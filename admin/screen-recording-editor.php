@@ -32,7 +32,7 @@ require dirname(__DIR__) . '/includes/header.php';
         <div class="mg-recording-editor-actions">
           <button class="mg-btn mg-btn-soft" type="button" data-editor-download-original>Download original</button>
           <button class="mg-btn mg-btn-ghost" type="button" data-editor-save-draft <?= $canManageRecordings ? '' : 'disabled' ?>>Save draft</button>
-          <button class="mg-btn mg-btn-primary" type="button" data-editor-export <?= $canManageRecordings ? '' : 'disabled' ?>>Export edited video</button>
+          <button class="mg-btn mg-btn-primary" type="button" data-editor-export <?= $canManageRecordings ? '' : 'disabled' ?>>Save export request</button>
         </div>
       </header>
 
@@ -87,7 +87,7 @@ require dirname(__DIR__) . '/includes/header.php';
             <h2>Export settings</h2>
             <label>Format <select data-export-format><option value="webm">WebM</option><option value="mp4">MP4 when FFmpeg is available</option></select></label>
             <label><input type="checkbox" data-export-burn-overlays checked> Burn text overlays into exported video</label>
-            <p class="mg-editor-note">This stage saves a complete edit manifest and queues export metadata. Server-side rendered MP4/WebM export should be completed with FFmpeg in a follow-up pass if FFmpeg is available on production.</p>
+            <p class="mg-editor-note">This stage saves a complete edit manifest and export request. Server-side rendered MP4/WebM export should be completed with FFmpeg in a follow-up pass if FFmpeg is available on production.</p>
           </section>
         </aside>
       </main>
