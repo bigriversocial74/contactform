@@ -2,15 +2,22 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/merchant-agent-chat.php';
+require_once __DIR__ . '/merchant-agent-campaign-recipes.php';
 
 function mg_ai_chat_creative_draft_types(): array
 {
     return [
-        'social' => ['label' => 'Social Draft', 'action_key' => 'create_campaign_draft', 'action_url' => '/merchant-campaigns.php', 'target_type' => 'agent_social_draft'],
-        'sms' => ['label' => 'SMS Draft', 'action_key' => 'create_message_draft', 'action_url' => '/merchant-agent-messages.php', 'target_type' => 'agent_sms_draft'],
-        'email' => ['label' => 'Email Draft', 'action_key' => 'create_message_draft', 'action_url' => '/merchant-agent-messages.php', 'target_type' => 'agent_email_draft'],
-        'campaign' => ['label' => 'Campaign Draft', 'action_key' => 'create_campaign_draft', 'action_url' => '/merchant-campaigns.php', 'target_type' => 'agent_campaign_draft'],
-        'reward' => ['label' => 'Reward Copy Draft', 'action_key' => 'create_reward_template_draft', 'action_url' => '/merchant-reward-templates.php', 'target_type' => 'agent_reward_copy_draft'],
+        'social' => ['label' => 'Social Draft', 'action_key' => 'create_campaign_draft', 'action_url' => '/merchant-campaigns.php', 'target_type' => 'agent_social_draft', 'artifact_family' => 'channel_copy'],
+        'sms' => ['label' => 'SMS Draft', 'action_key' => 'create_message_draft', 'action_url' => '/merchant-agent-messages.php', 'target_type' => 'agent_sms_draft', 'artifact_family' => 'message_copy'],
+        'email' => ['label' => 'Email Draft', 'action_key' => 'create_message_draft', 'action_url' => '/merchant-agent-messages.php', 'target_type' => 'agent_email_draft', 'artifact_family' => 'message_copy'],
+        'newsletter' => ['label' => 'Newsletter Draft', 'action_key' => 'create_message_draft', 'action_url' => '/merchant-agent-messages.php', 'target_type' => 'agent_newsletter_draft', 'artifact_family' => 'newsletter'],
+        'contest' => ['label' => 'Contest Draft', 'action_key' => 'create_campaign_draft', 'action_url' => '/merchant-campaigns.php', 'target_type' => 'agent_contest_draft', 'artifact_family' => 'contest'],
+        'qr_drop' => ['label' => 'QR Drop Draft', 'action_key' => 'create_campaign_draft', 'action_url' => '/merchant-campaigns.php', 'target_type' => 'agent_qr_drop_draft', 'artifact_family' => 'qr_drop'],
+        'flash_drop' => ['label' => 'Flash Drop Draft', 'action_key' => 'create_campaign_draft', 'action_url' => '/merchant-campaigns.php', 'target_type' => 'agent_flash_drop_draft', 'artifact_family' => 'flash_drop'],
+        'social_engagement' => ['label' => 'Social Engagement Draft', 'action_key' => 'create_campaign_draft', 'action_url' => '/merchant-campaigns.php', 'target_type' => 'agent_social_engagement_draft', 'artifact_family' => 'social_interaction'],
+        'campaign' => ['label' => 'Campaign Draft', 'action_key' => 'create_campaign_draft', 'action_url' => '/merchant-campaigns.php', 'target_type' => 'agent_campaign_draft', 'artifact_family' => 'campaign'],
+        'campaign_package' => ['label' => 'Full Campaign Package', 'action_key' => 'create_campaign_draft', 'action_url' => '/merchant-campaigns.php', 'target_type' => 'agent_campaign_package_draft', 'artifact_family' => 'campaign_package'],
+        'reward' => ['label' => 'Reward Copy Draft', 'action_key' => 'create_reward_template_draft', 'action_url' => '/merchant-reward-templates.php', 'target_type' => 'agent_reward_copy_draft', 'artifact_family' => 'reward_copy'],
     ];
 }
 
@@ -62,13 +69,28 @@ function mg_ai_chat_save_creative_draft(PDO $pdo, array $user, array $input): ar
         $draftBody = mg_ai_chat_clean(implode("\n\n", array_filter($parts)), 6000);
     }
 
+    $recipeCatalog = mg_ai_chat_campaign_recipe_prompt_context();
+    $cardPayload = mg_ai_chat_json($card['review_payload'] ?? []);
+    $messageChannel = in_array($draftType, ['sms','email','newsletter','social'], true) ? $draftType : '';
     $payload = [
         'source' => 'merchant_agent_chat_creative_draft',
         'draft_type' => $draftType,
         'draft_label' => (string)$typeInfo['label'],
+        'artifact_family' => (string)($typeInfo['artifact_family'] ?? 'creative'),
         'draft_title' => $draftTitle,
         'draft_body' => $draftBody,
-        'message_channel' => in_array($draftType, ['sms','email','social'], true) ? $draftType : '',
+        'message_channel' => $messageChannel,
+        'recommended_campaign_type' => (string)($cardPayload['recommended_campaign_type'] ?? $card['recommended_campaign_type'] ?? ''),
+        'recommended_reward_type' => (string)($cardPayload['recommended_reward_type'] ?? $card['recommended_reward_type'] ?? ''),
+        'recipe_key' => (string)($cardPayload['recipe_key'] ?? $card['recipe_key'] ?? ''),
+        'channel_package' => $cardPayload['channel_package'] ?? $card['channel_package'] ?? [],
+        'draft_artifacts' => $cardPayload['draft_artifacts'] ?? $card['draft_artifacts'] ?? [],
+        'recipe_catalog_snapshot' => [
+            'current_campaign_types' => $recipeCatalog['current_campaign_types'] ?? [],
+            'current_reward_types' => $recipeCatalog['current_reward_types'] ?? [],
+            'suggested_campaign_types' => $recipeCatalog['suggested_campaign_types'] ?? [],
+            'suggested_reward_types' => $recipeCatalog['suggested_reward_types'] ?? [],
+        ],
         'source_chat_message_id' => $messageId,
         'source_card_index' => $cardIndex,
         'source_agent_reply' => $assistantBody,
@@ -88,7 +110,7 @@ function mg_ai_chat_save_creative_draft(PDO $pdo, array $user, array $input): ar
         $pdo->beginTransaction();
         $planPublicId = mg_ai_chat_uuid();
         $itemPublicId = mg_ai_chat_uuid();
-        $contextJson = json_encode(['source' => 'merchant_agent_chat_creative_draft', 'chat_message_id' => $messageId, 'card_index' => $cardIndex, 'draft_type' => $draftType], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        $contextJson = json_encode(['source' => 'merchant_agent_chat_creative_draft', 'chat_message_id' => $messageId, 'card_index' => $cardIndex, 'draft_type' => $draftType, 'artifact_family' => (string)($typeInfo['artifact_family'] ?? 'creative')], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
         $fingerprint = hash('sha256', $messageId . '|' . $cardIndex . '|' . $draftType . '|' . $title);
         $stmt = $pdo->prepare('INSERT INTO ai_merchant_plans (public_id,merchant_user_id,agent_id,provider_id,model_id,scope,merchant_goal,status,priority,summary,prompt_fingerprint,input_context_json,raw_response_json,input_tokens,output_tokens,created_by_user_id,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())');
         $stmt->execute([$planPublicId, $merchantId, null, (int)$model['provider_id'], (int)$model['id'], $scope === 'overview' ? 'all' : $scope, $title, 'review_ready', 'medium', $reason, $fingerprint, $contextJson, json_encode(['source' => 'merchant_agent_chat_creative_draft'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), 0, 0, $merchantId]);
@@ -96,7 +118,7 @@ function mg_ai_chat_save_creative_draft(PDO $pdo, array $user, array $input): ar
         $sql = "INSERT INTO ai_merchant_plan_items (public_id,plan_id,sequence_no,action_key,target_type,target_reference,risk_level,requires_approval,confidence,title,reason,suggested_payload_json,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$itemPublicId, $planId, 1, (string)$typeInfo['action_key'], (string)$typeInfo['target_type'], $messageId, 'low', 1, 0.85, $title, $reason, json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), 'recommended']);
-        $draftRecord = ['draft_type' => $draftType, 'label' => (string)$typeInfo['label'], 'plan_id' => $planPublicId, 'item_id' => $itemPublicId, 'action_key' => (string)$typeInfo['action_key'], 'created_at' => date('c')];
+        $draftRecord = ['draft_type' => $draftType, 'label' => (string)$typeInfo['label'], 'artifact_family' => (string)($typeInfo['artifact_family'] ?? 'creative'), 'plan_id' => $planPublicId, 'item_id' => $itemPublicId, 'action_key' => (string)$typeInfo['action_key'], 'created_at' => date('c')];
         $existing[$draftKey] = $draftRecord;
         $ctx['creative_drafts'] = $existing;
         $pdo->prepare('UPDATE campaign_events SET event_context_json=? WHERE id=? LIMIT 1')->execute([json_encode($ctx, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), (int)$event['id']]);
