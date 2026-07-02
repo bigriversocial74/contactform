@@ -4,6 +4,9 @@ document.addEventListener('DOMContentLoaded', function () {
   if (!window.Microgifter) return;
 
   var claimList = document.querySelector('[data-claim-list]');
+  var redeemedClaimList = document.querySelector('[data-redeemed-claim-list]');
+  var failedClaimList = document.querySelector('[data-failed-claim-list]');
+  var locationActivityList = document.querySelector('[data-location-activity-list]');
   var claimForm = document.querySelector('[data-claim-verify-form]');
   var lookupButton = document.querySelector('[data-claim-lookup]');
   var claimStatus = document.querySelector('[data-claim-verify-status]');
@@ -11,9 +14,11 @@ document.addEventListener('DOMContentLoaded', function () {
   var searchInput = document.querySelector('[data-claim-search]');
   var resultFilter = document.querySelector('[data-claim-status]');
   var locationFilter = document.querySelector('[data-claim-filter-location]');
+  var locationActivityFilter = document.querySelector('[data-location-activity-filter]');
   var claimLocation = document.querySelector('[data-claim-location]');
   var codeLocation = document.querySelector('[data-code-location]');
   var loadedPreview = null;
+  var latestDashboard = null;
 
   function esc(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, function (character) {
@@ -70,24 +75,49 @@ document.addEventListener('DOMContentLoaded', function () {
     }).join('');
   }
 
+  function renderAttemptRow(attempt) {
+    var approved = attempt.result === 'approved';
+    var title = attempt.title_snapshot || 'Microgift redemption attempt';
+    var value = attempt.redemption_amount_cents != null ? attempt.redemption_amount_cents : attempt.face_value_cents;
+    var currency = attempt.redemption_currency || attempt.currency;
+    return '<article class="mg-claim-row">' +
+      '<div><h3>' + esc(title) + '</h3>' +
+      '<p>' + esc(attempt.instance_id || 'Unknown Microgift') + (attempt.pppm_id ? ' · ' + esc(attempt.pppm_id) : '') + '</p>' +
+      '<div class="mg-claim-meta"><span>' + esc(attempt.location_name || 'Unassigned location') + '</span>' +
+      '<span>' + esc(attempt.reason_code || attempt.result) + '</span>' +
+      '<span>' + esc(attempt.attempted_at || '') + '</span></div></div>' +
+      '<div><span class="mg-claim-state is-' + esc(approved ? 'redeemed' : 'locked') + '">' + esc(attempt.result) + '</span></div>' +
+      '<div><strong>' + money(value, currency) + '</strong><p>' + esc(attempt.redemption_id || attempt.attempt_id) + '</p></div>' +
+      '<div class="mg-claim-actions">' + (attempt.redemption_id ? '<span>Confirmed</span>' : '<span>Recorded</span>') + '</div>' +
+      '</article>';
+  }
+
+  function renderAttemptsInto(root, attempts, emptyText) {
+    if (!root) return;
+    root.innerHTML = rows(attempts, renderAttemptRow, emptyText);
+  }
+
   function renderAttempts(attempts) {
-    if (!claimList) return;
-    claimList.innerHTML = rows(attempts, function (attempt) {
-      var approved = attempt.result === 'approved';
-      var title = attempt.title_snapshot || 'Microgift redemption attempt';
-      var value = attempt.redemption_amount_cents != null ? attempt.redemption_amount_cents : attempt.face_value_cents;
-      var currency = attempt.redemption_currency || attempt.currency;
-      return '<article class="mg-claim-row">' +
-        '<div><h3>' + esc(title) + '</h3>' +
-        '<p>' + esc(attempt.instance_id || 'Unknown Microgift') + (attempt.pppm_id ? ' · ' + esc(attempt.pppm_id) : '') + '</p>' +
-        '<div class="mg-claim-meta"><span>' + esc(attempt.location_name || 'Unassigned location') + '</span>' +
-        '<span>' + esc(attempt.reason_code || attempt.result) + '</span>' +
-        '<span>' + esc(attempt.attempted_at || '') + '</span></div></div>' +
-        '<div><span class="mg-claim-state is-' + esc(approved ? 'redeemed' : 'locked') + '">' + esc(attempt.result) + '</span></div>' +
-        '<div><strong>' + money(value, currency) + '</strong><p>' + esc(attempt.redemption_id || attempt.attempt_id) + '</p></div>' +
-        '<div class="mg-claim-actions">' + (attempt.redemption_id ? '<span>Confirmed</span>' : '<span>Recorded</span>') + '</div>' +
-        '</article>';
-    }, 'No canonical redemption attempts match the filters.');
+    renderAttemptsInto(claimList, attempts, 'No canonical redemption attempts match the filters.');
+  }
+
+  function renderSupplementalAttemptLists(attempts) {
+    var redeemed = (attempts || []).filter(function (attempt) { return attempt.result === 'approved'; });
+    var failed = (attempts || []).filter(function (attempt) { return attempt.result !== 'approved'; });
+    renderAttemptsInto(redeemedClaimList, redeemed, 'No redeemed claim activity yet.');
+    renderAttemptsInto(failedClaimList, failed, 'No failed, invalid-code, or rate-limited claim activity yet.');
+  }
+
+  function renderLocationActivity(data) {
+    if (!locationActivityList) return;
+    data = data || latestDashboard || {};
+    var selected = locationActivityFilter ? locationActivityFilter.value : 'all';
+    var attempts = (data.attempts || []).filter(function (attempt) {
+      return selected === 'all' || String(attempt.location_id || '') === selected;
+    });
+    renderAttemptsInto(locationActivityList, attempts, selected === 'all'
+      ? 'No location-based claim activity yet.'
+      : 'No claim activity found for this location.');
   }
 
   function renderCodes(codes) {
@@ -151,13 +181,17 @@ document.addEventListener('DOMContentLoaded', function () {
       '&location=' + encodeURIComponent(location)
     );
     var data = response.data || response;
+    latestDashboard = data;
     renderKpis(data.counts || {});
     renderAttempts(data.attempts || []);
+    renderSupplementalAttemptLists(data.attempts || []);
     renderCodes(data.claim_codes || []);
     renderExceptions(data.exceptions || []);
     replaceLocationOptions(locationFilter, data.locations || [], true);
+    replaceLocationOptions(locationActivityFilter, data.locations || [], true);
     replaceLocationOptions(claimLocation, data.locations || [], false);
     replaceLocationOptions(codeLocation, data.locations || [], false);
+    renderLocationActivity(data);
     bindCodeActions();
   }
 
@@ -266,14 +300,25 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  function activateTab(tab) {
+    document.querySelectorAll('[data-claim-tab]').forEach(function (candidate) {
+      candidate.classList.toggle('is-active', candidate.dataset.claimTab === tab);
+    });
+    document.querySelectorAll('[data-claim-panel]').forEach(function (panel) {
+      panel.hidden = panel.dataset.claimPanel !== tab;
+    });
+    if (tab === 'locations') renderLocationActivity(latestDashboard);
+  }
+
   document.querySelectorAll('[data-claim-tab]').forEach(function (button) {
     button.addEventListener('click', function () {
-      document.querySelectorAll('[data-claim-tab]').forEach(function (candidate) {
-        candidate.classList.toggle('is-active', candidate === button);
-      });
-      document.querySelectorAll('[data-claim-panel]').forEach(function (panel) {
-        panel.hidden = panel.dataset.claimPanel !== button.dataset.claimTab;
-      });
+      activateTab(button.dataset.claimTab);
+    });
+  });
+
+  document.querySelectorAll('[data-claim-jump]').forEach(function (link) {
+    link.addEventListener('click', function () {
+      activateTab(link.dataset.claimJump);
     });
   });
 
@@ -285,6 +330,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   if (resultFilter) resultFilter.addEventListener('change', function () { loadDashboard().catch(console.error); });
   if (locationFilter) locationFilter.addEventListener('change', function () { loadDashboard().catch(console.error); });
+  if (locationActivityFilter) locationActivityFilter.addEventListener('change', function () { renderLocationActivity(latestDashboard); });
 
   loadDashboard().catch(console.error);
 });

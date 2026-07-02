@@ -15,34 +15,34 @@
     <a class="mg-btn mg-btn-primary" href="#claim-review-panel" data-claim-jump="pending">Review Claims</a>
   </div>
 
-  <section class="mg-claims-priority" id="claim-history-panel">
-    <section class="mg-app-panel mg-claims-panel">
-      <div class="mg-app-panel-head mg-claims-panel-head">
-        <div>
-          <span class="mg-eyebrow">Redemption History</span>
-          <h2>Claim activity</h2>
-          <p>Search attempts by Microgift, PPPM, location, status, redemption ID, or staff action.</p>
-        </div>
-      </div>
-      <div class="mg-app-panel-body">
-        <div class="mg-claim-toolbar">
-          <input type="search" data-claim-search placeholder="Search attempt, Microgift, PPPM, or redemption">
-          <select data-claim-status>
-            <option value="all">All results</option>
-            <option value="approved">Approved</option>
-            <option value="failed">Failed</option>
-            <option value="invalid_claim_code">Invalid code</option>
-            <option value="rate_limited">Rate limited</option>
-          </select>
-          <select data-claim-filter-location><option value="all">All locations</option></select>
-        </div>
-        <div class="mg-claim-list" data-claim-list></div>
-      </div>
-    </section>
-  </section>
-
   <section data-claim-panel="overview">
     <section class="mg-claim-kpi-strip" data-claim-kpis></section>
+
+    <section class="mg-claims-priority" id="claim-history-panel">
+      <section class="mg-app-panel mg-claims-panel">
+        <div class="mg-app-panel-head mg-claims-panel-head">
+          <div>
+            <span class="mg-eyebrow">Redemption History</span>
+            <h2>Claim activity</h2>
+            <p>Search attempts by Microgift, PPPM, location, status, redemption ID, or staff action.</p>
+          </div>
+        </div>
+        <div class="mg-app-panel-body">
+          <div class="mg-claim-toolbar">
+            <input type="search" data-claim-search placeholder="Search attempt, Microgift, PPPM, or redemption">
+            <select data-claim-status>
+              <option value="all">All results</option>
+              <option value="approved">Approved</option>
+              <option value="failed">Failed</option>
+              <option value="invalid_claim_code">Invalid code</option>
+              <option value="rate_limited">Rate limited</option>
+            </select>
+            <select data-claim-filter-location><option value="all">All locations</option></select>
+          </div>
+          <div class="mg-claim-list" data-claim-list></div>
+        </div>
+      </section>
+    </section>
 
     <div class="mg-claims-layout is-overview-layout">
       <section class="mg-app-panel mg-claims-panel mg-claims-readiness-card">
@@ -115,22 +115,27 @@
 
   <section data-claim-panel="redeemed" hidden>
     <section class="mg-app-panel mg-claims-panel">
-      <div class="mg-app-panel-head mg-claims-panel-head"><div><span class="mg-eyebrow">Redeemed</span><h2>Redeemed claim activity</h2><p>Use the Claim activity section above with the Approved filter for the full redeemed list.</p></div></div>
-      <div class="mg-app-panel-body"><div class="mg-empty-state">Redeemed claims are prioritized in the Claim activity panel above.</div></div>
+      <div class="mg-app-panel-head mg-claims-panel-head"><div><span class="mg-eyebrow">Redeemed</span><h2>Redeemed claim activity</h2><p>Approved and completed redemption activity.</p></div></div>
+      <div class="mg-app-panel-body"><div class="mg-claim-list" data-redeemed-claim-list></div></div>
     </section>
   </section>
 
   <section data-claim-panel="failed" hidden>
     <section class="mg-app-panel mg-claims-panel">
-      <div class="mg-app-panel-head mg-claims-panel-head"><div><span class="mg-eyebrow">Failed Claims</span><h2>Failed and invalid attempts</h2><p>Use the Claim activity section above with Failed, Invalid code, or Rate limited filters for the full exception list.</p></div></div>
-      <div class="mg-app-panel-body"><div class="mg-empty-state">Failed claim attempts are filtered from Claim activity above and reviewed in Disputes / Reviews.</div></div>
+      <div class="mg-app-panel-head mg-claims-panel-head"><div><span class="mg-eyebrow">Failed Claims</span><h2>Failed and invalid attempts</h2><p>Invalid-code, rate-limited, and failed in-store claim activity.</p></div></div>
+      <div class="mg-app-panel-body"><div class="mg-claim-list" data-failed-claim-list></div></div>
     </section>
   </section>
 
   <section data-claim-panel="locations" hidden>
     <section class="mg-app-panel mg-claims-panel">
-      <div class="mg-app-panel-head mg-claims-panel-head"><div><span class="mg-eyebrow">Location Activity</span><h2>Location-based claim activity</h2><p>Filter Claim activity by location to review authorized in-store redemptions.</p></div></div>
-      <div class="mg-app-panel-body"><div class="mg-empty-state">Choose a location in the Claim activity filter above to review location activity.</div></div>
+      <div class="mg-app-panel-head mg-claims-panel-head"><div><span class="mg-eyebrow">Location Activity</span><h2>Location-based claim activity</h2><p>Review authorized in-store redemptions and attempts by location.</p></div></div>
+      <div class="mg-app-panel-body">
+        <div class="mg-claim-toolbar mg-claim-toolbar-single">
+          <select data-location-activity-filter><option value="all">All locations</option></select>
+        </div>
+        <div class="mg-claim-list" data-location-activity-list></div>
+      </div>
     </section>
   </section>
 
