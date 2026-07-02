@@ -98,6 +98,19 @@ require __DIR__ . '/includes/header.php';
                   <div class="mg-ads-field"><label for="ad-start">Start</label><input id="ad-start" name="starts_at" type="datetime-local"></div>
                   <div class="mg-ads-field"><label for="ad-end">End</label><input id="ad-end" name="ends_at" type="datetime-local"></div>
                 </div>
+                <div class="mg-ads-creative-upload" data-creative-upload-wrap>
+                  <div class="mg-ads-creative-upload-copy">
+                    <strong>Upload campaign image</strong>
+                    <span>Image only</span>
+                  </div>
+                  <div class="mg-ads-field">
+                    <label for="ad-creative-image">Creative image file</label>
+                    <input id="ad-creative-image" name="creative_image" type="file" accept="image/jpeg,image/png,image/gif,image/webp" data-creative-upload-input>
+                    <small class="mg-ads-field-hint">Optional. JPG, PNG, GIF, or WebP up to 8MB. Upload fills the Image URL field and refreshes the preview.</small>
+                  </div>
+                  <button class="mg-btn mg-btn-soft" type="button" data-upload-creative-image>Upload Image</button>
+                  <small data-creative-upload-status aria-live="polite"></small>
+                </div>
                 <div class="mg-ads-field"><label for="ad-image">Image URL</label><input id="ad-image" name="image_url" placeholder="/images/example-offer.png"></div>
                 <div class="mg-ads-two">
                   <div class="mg-ads-field"><label for="ad-cta">CTA label</label><input id="ad-cta" name="cta_label" maxlength="80" value="Claim Reward"></div>
