@@ -1,0 +1,18 @@
+.mg-agent-chat-card.is-recipe-card{border-color:#bfdbfe;background:linear-gradient(180deg,#fff,#f8fbff)}
+.mg-agent-chat-recipe{display:grid;gap:12px;margin:12px 0;padding:14px;border:1px solid #bfdbfe;border-radius:18px;background:#fff;box-shadow:0 12px 28px rgba(15,23,42,.045)}
+.mg-agent-chat-recipe.is-compact{margin:10px 0 4px;padding:12px;border-radius:16px}
+.mg-agent-chat-recipe-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.mg-agent-chat-recipe-head span{display:block;color:#2563eb;font-size:10px;font-weight:950;letter-spacing:.1em;text-transform:uppercase}
+.mg-agent-chat-recipe-head strong{display:block;margin-top:3px;color:#0f172a;font-size:17px;font-weight:950;line-height:1.15;letter-spacing:-.02em}
+.mg-agent-chat-recipe-head p{margin:5px 0 0;color:#64748b;font-size:12px;font-weight:750;line-height:1.45}
+.mg-agent-chat-recipe-badges{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:44%}
+.mg-agent-chat-recipe-badges b{display:inline-flex;padding:6px 8px;border-radius:999px;background:#eff6ff;color:#1d4ed8;font-size:10px;font-weight:950;white-space:nowrap}
+.mg-agent-chat-recipe-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.mg-agent-chat-recipe-grid article,.mg-agent-chat-recipe-copy,.mg-agent-chat-recipe-artifacts article{padding:10px;border:1px solid #e5edf8;border-radius:14px;background:#f8fafc}
+.mg-agent-chat-recipe-grid span,.mg-agent-chat-recipe-copy span{display:block;margin-bottom:5px;color:#64748b;font-size:10px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}
+.mg-agent-chat-recipe-grid strong{display:block;color:#0f172a;font-size:12px;font-weight:950;line-height:1.25}
+.mg-agent-chat-recipe-copy p,.mg-agent-chat-recipe-artifacts p{margin:0;color:#475569;font-size:12px;font-weight:750;line-height:1.5;white-space:pre-wrap}
+.mg-agent-chat-recipe-artifacts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.mg-agent-chat-recipe-artifacts strong{display:block;margin-bottom:5px;color:#334155;font-size:10px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}
+.mg-agent-recipe-block{background:transparent;border:0;padding:0;box-shadow:none}
+@media(max-width:900px){.mg-agent-chat-recipe-head{display:grid}.mg-agent-chat-recipe-badges{justify-content:flex-start;max-width:none}.mg-agent-chat-recipe-grid,.mg-agent-chat-recipe-artifacts{grid-template-columns:1fr}}
