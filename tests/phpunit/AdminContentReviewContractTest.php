@@ -104,7 +104,11 @@ final class AdminContentReviewContractTest extends TestCase
         self::assertStringContainsString("mg_require_user_not_restricted(\$pdo, \$actorId, 'posting')",$posts);
         self::assertStringContainsString("mg_require_user_not_restricted(\$pdo,\$userId,'uploading')",$upload);
         self::assertStringContainsString("mg_require_user_not_restricted(\$pdo, (int)\$user['id'], 'messaging')",$messages);
-        self::assertStringContainsString("m.moderation_status NOT IN ('hidden','removed')",$thread);
+        self::assertTrue(
+            str_contains($thread,"m.moderation_status NOT IN ('hidden','removed')")
+            || str_contains($thread,"COALESCE(m.moderation_status,'clear') NOT IN ('hidden','removed')"),
+            'Thread reads must exclude hidden and removed messages while preserving clear/null moderation states.'
+        );
     }
 
     public function testAdminInterfaceLoadsQueueEvidenceAndConfirmedActions(): void
