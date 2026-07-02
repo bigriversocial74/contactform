@@ -15,7 +15,7 @@ if (!mg_stories_user_can_merchant($user, $pdo)) {
 
 $products = [];
 if (mg_stories_table_exists($pdo, 'catalog_products') && mg_stories_table_exists($pdo, 'catalog_product_versions')) {
-    $stmt = $pdo->prepare("SELECT p.public_id,p.slug,p.status,p.product_type,v.title,v.description,v.unit_value_cents,v.currency FROM catalog_products p LEFT JOIN catalog_product_versions v ON v.id=p.current_version_id WHERE p.merchant_user_id=? AND p.status<>'archived' ORDER BY p.updated_at DESC,p.id DESC LIMIT 100");
+    $stmt = $pdo->prepare("SELECT p.public_id,p.slug,p.status,p.product_type,v.title,v.description,v.unit_value_cents,v.currency FROM catalog_products p LEFT JOIN catalog_product_versions v ON v.id=p.current_version_id WHERE p.merchant_user_id=? AND p.status='published' AND v.version_status='published' ORDER BY p.updated_at DESC,p.id DESC LIMIT 100");
     $stmt->execute([$userId]);
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $title = mg_stories_text($row['title'] ?? $row['slug'] ?? 'Product', 160, 'Product');
