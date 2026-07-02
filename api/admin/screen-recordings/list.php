@@ -12,7 +12,7 @@ if (function_exists('mg_rate_limit')) mg_rate_limit('admin.screen_recordings.lis
 
 $query = trim((string)($_GET['q'] ?? ''));
 $status = trim((string)($_GET['status'] ?? ''));
-$items = mg_screen_recordings_list($pdo, $query, $status);
+$items = mg_screen_recordings_list($pdo, $query, $status, $user);
 mg_ok([
     'items' => $items,
     'count' => count($items),
