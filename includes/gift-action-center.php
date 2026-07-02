@@ -1,7 +1,8 @@
 <?php
 declare(strict_types=1);
 $giftCenterFolder=in_array($giftCenterFolder??'inbox',['inbox','sent','claimed'],true)?$giftCenterFolder:'inbox';
-$giftCenterTitle=['inbox'=>'Inbox','sent'=>'Claimed'][$giftCenterFolder] ?? ['inbox'=>'Inbox','sent'=>'Sent','claimed'=>'Claimed'][$giftCenterFolder];
+$giftCenterTitles=['inbox'=>'Inbox','sent'=>'Sent','claimed'=>'Claimed'];
+$giftCenterTitle=$giftCenterTitles[$giftCenterFolder];
 $giftCenterDemoEnabled=mg_has_role('super_admin');
 ?>
 <link rel="stylesheet" href="/assets/css/gift-action-center-modal-fix.css">
