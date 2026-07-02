@@ -3,9 +3,13 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/includes/app.php';
 require_once dirname(__DIR__) . '/includes/admin-auth.php';
+require_once dirname(__DIR__) . '/api/admin/_system_health_security.php';
 
 $user = mg_require_admin_page_key('admin.system_health');
+mg_admin_system_health_apply_admin_page_headers();
 $canViewSystemHealth = true;
+$canViewSecurityAudit = mg_admin_system_health_can_view_security_audit($user);
+$sensitiveActionToken = mg_admin_system_health_is_super_admin($user) ? mg_admin_system_health_sensitive_token((int)$user['id']) : '';
 $page_title = 'System Health | Microgifter';
 $page_section = 'account';
 $header_mode = 'account';
@@ -19,7 +23,7 @@ require dirname(__DIR__) . '/includes/header.php';
 <section class="mg-app-shell mg-admin-app">
   <?php require dirname(__DIR__) . '/includes/admin-sidebar.php'; ?>
   <div class="mg-app-workspace mg-admin-workspace">
-    <section class="mg-system-health-shell" data-admin-system-health>
+    <section class="mg-system-health-shell" data-admin-system-health data-can-security-audit="<?= $canViewSecurityAudit ? 'true' : 'false' ?>" data-sensitive-confirm-token="<?= mg_e($sensitiveActionToken) ?>">
       <header class="mg-system-health-hero">
         <div>
           <a class="mg-system-health-back" href="/account-admin.php">← Admin dashboard</a>
@@ -44,7 +48,7 @@ require dirname(__DIR__) . '/includes/header.php';
         <button type="button" data-health-tab="pwa" aria-selected="false">PWA push</button>
         <button type="button" data-health-tab="admin-ops" aria-selected="false">Admin ops</button>
         <button type="button" data-health-tab="sql" aria-selected="false">SQL diagnostics</button>
-        <button type="button" data-health-tab="security" aria-selected="false">Security audit</button>
+        <?php if ($canViewSecurityAudit): ?><button type="button" data-health-tab="security" aria-selected="false">Security audit</button><?php endif; ?>
         <button type="button" data-health-tab="warnings" aria-selected="false">Warnings & tools</button>
       </nav>
 
@@ -129,6 +133,7 @@ require dirname(__DIR__) . '/includes/header.php';
           </section>
         </section>
 
+        <?php if ($canViewSecurityAudit): ?>
         <section class="mg-health-tab-panel" data-health-tab-panel="security" hidden>
           <section class="mg-system-health-section mg-system-sql-diagnostics" data-security-hardening-audit>
             <header>
@@ -158,11 +163,12 @@ require dirname(__DIR__) . '/includes/header.php';
             </div>
           </section>
         </section>
+        <?php endif; ?>
 
         <section class="mg-health-tab-panel" data-health-tab-panel="warnings" hidden>
           <div class="mg-system-health-columns">
             <section class="mg-system-health-section"><header><div><h2>Recent warnings</h2><p>Operational and security events that may require attention.</p></div></header><div class="mg-system-health-list" data-system-health-warnings><p class="mg-muted">Loading recent warnings…</p></div></section>
-            <section class="mg-system-health-section"><header><div><h2>Recovery tools</h2><p>Protected actions for safe operational recovery.</p></div></header><div class="mg-system-health-list" data-system-health-recovery><p class="mg-muted">Loading recovery tools…</p></div></section>
+            <section class="mg-system-health-section"><header><div><h2>Recovery tools</h2><p>Protected actions for safe operational recovery.</p></div></header><div class="mg-system-health-list" data-system-health-recovery><p class="mg-muted">Loading recovery tools</p></div></section>
           </div>
         </section>
       </div>
