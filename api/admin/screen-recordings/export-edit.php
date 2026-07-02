@@ -22,16 +22,19 @@ if (is_string($manifest)) {
 }
 if (!is_array($manifest)) $manifest = mg_screen_recordings_decode_manifest($row['edit_manifest_json'] ?? null);
 $format = in_array((string)($input['format'] ?? 'webm'), ['webm', 'mp4'], true) ? (string)$input['format'] : 'webm';
-$manifest['export'] = [
-    'format' => $format,
-    'burn_overlays' => !empty($input['burn_overlays']),
-    'requested_at' => gmdate('c'),
-    'renderer' => 'ffmpeg_required',
-    'status' => 'queued_metadata_only',
-];
-$json = json_encode(array_replace_recursive(mg_screen_recordings_manifest_default(), $manifest), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
 try {
+    $saved = mg_screen_recordings_save_manifest($pdo, $recordingId, $manifest);
+    $manifest = mg_screen_recordings_decode_manifest($saved['edit_manifest_json'] ?? null);
+    $manifest['export'] = [
+        'format' => $format,
+        'burn_overlays' => !empty($input['burn_overlays']),
+        'requested_at' => gmdate('c'),
+        'renderer' => 'ffmpeg_required',
+        'status' => 'queued_metadata_only',
+    ];
+    $json = json_encode(array_replace_recursive(mg_screen_recordings_manifest_default(), $manifest), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
     $pdo->beginTransaction();
     $pdo->prepare("UPDATE admin_screen_recordings SET edit_manifest_json = ?, status = 'export_pending', updated_at = NOW() WHERE id = ? LIMIT 1")->execute([$json, $recordingId]);
     $version = $pdo->prepare("INSERT INTO admin_screen_recording_versions (recording_id, admin_user_id, version_label, edit_manifest_json, status, created_at) VALUES (?, ?, ?, ?, 'export_pending', NOW())");
