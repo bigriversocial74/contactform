@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 $giftCenterFolder=in_array($giftCenterFolder??'inbox',['inbox','sent','claimed'],true)?$giftCenterFolder:'inbox';
-$giftCenterTitle=['inbox'=>'Inbox','sent'=>'Sent','claimed'=>'Claimed'][$giftCenterFolder];
+$giftCenterTitle=['inbox'=>'Inbox','sent'=>'Claimed'][$giftCenterFolder] ?? ['inbox'=>'Inbox','sent'=>'Sent','claimed'=>'Claimed'][$giftCenterFolder];
 $giftCenterDemoEnabled=mg_has_role('super_admin');
 ?>
 <link rel="stylesheet" href="/assets/css/gift-action-center-modal-fix.css">
@@ -13,7 +13,6 @@ $giftCenterDemoEnabled=mg_has_role('super_admin');
     <section class="mg-gift-center-main" aria-label="<?= mg_e($giftCenterTitle) ?> gifts">
       <div class="mg-gift-toolbar">
         <div class="mg-gift-toolbar-actions">
-          <input type="search" data-gift-search placeholder="Search gifts, merchants, people, status…" aria-label="Search gifts">
           <button class="mg-btn mg-btn-secondary" type="button" data-gift-refresh>Refresh</button>
         </div>
       </div>
