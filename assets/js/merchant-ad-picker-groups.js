@@ -103,6 +103,7 @@
     if (!node || !message) return;
     node.textContent = message;
     node.style.color = error ? '#b91c1c' : '#64748b';
+    node.classList.toggle('is-error', !!error);
   }
 
   function hardenAppliedProduct(){
@@ -116,8 +117,12 @@
     status(rules.note + ' Uploaded creative images are preserved.');
   }
 
+  function pickerHasGroupedOptions(){
+    return !!picker.querySelector('optgroup[data-picker-group="true"]');
+  }
+
   function render(){
-    if (!products.length) return;
+    if (!products.length || rendering) return;
     rendering = true;
     var selected = picker.value || '';
     picker.innerHTML = '';
@@ -132,6 +137,7 @@
       if (!items.length) return;
       var group = document.createElement('optgroup');
       group.label = groupLabels[key] + ' (' + items.length + ')';
+      group.dataset.pickerGroup = 'true';
       items.forEach(function(product){
         var option = document.createElement('option');
         option.value = String(product.id || '');
@@ -146,7 +152,7 @@
     if (selected && Array.prototype.some.call(picker.options, function(option){ return option.value === selected; })) {
       picker.value = selected;
     }
-    rendering = false;
+    window.setTimeout(function(){ rendering = false; }, 0);
   }
 
   function loadGroupedProducts(){
@@ -257,7 +263,7 @@
   }
 
   var observer = new MutationObserver(function(){
-    if (rendering || !products.length) return;
+    if (rendering || !products.length || pickerHasGroupedOptions()) return;
     render();
   });
   observer.observe(picker, {childList:true, subtree:true});
