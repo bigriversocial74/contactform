@@ -119,6 +119,13 @@ function mg_customer_refund_select_sql(): string
         WHERE c.merchant_user_id=? AND c.campaign_type=\'customer_refund\'';
 }
 
+function mg_customer_refund_active_usage(PDO $pdo, int $merchantId, string $excludePublicId = ''): int
+{
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM campaigns WHERE merchant_user_id=? AND status='active' AND public_id<>?");
+    $stmt->execute([$merchantId, $excludePublicId]);
+    return (int)$stmt->fetchColumn();
+}
+
 $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
 $user = $method === 'GET' ? mg_merchant_require_permission('merchant.campaigns.view') : mg_merchant_require_permission('merchant.campaigns.manage');
 $merchantId = (int)$user['id'];
@@ -178,7 +185,7 @@ if (($campaignId !== '' && (strlen($campaignId) !== 36 || !preg_match('/^[a-f0-9
 }
 if ($startsAt !== null && $endsAt !== null && strtotime($startsAt) >= strtotime($endsAt)) mg_fail('Campaign end date must be after the start date.', 422);
 if ($status === 'active' && $rewardTemplateId === null) mg_fail('Active Customer Refund campaigns require an attached reward template.', 422);
-if ($status === 'active') mg_package_require_limit_available($pdo, $user, 'max_active_campaigns', (int)$pdo->query('SELECT 0')->fetchColumn(), 'Active campaign limit reached.');
+if ($status === 'active') mg_package_require_limit_available($pdo, $user, 'max_active_campaigns', mg_customer_refund_active_usage($pdo, $merchantId, $campaignId), 'Active campaign limit reached.');
 
 try {
     $isNew = $campaignId === '';
