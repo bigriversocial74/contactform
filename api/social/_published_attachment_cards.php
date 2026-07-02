@@ -65,6 +65,38 @@ function mg_feed_attachment_post_image_urls(PDO $pdo, array $posts): array
     return $images;
 }
 
+function mg_feed_attachment_product_assets_by_id(PDO $pdo, array $productIds): array
+{
+    $productIds = array_values(array_unique(array_filter(array_map('intval', $productIds), static fn(int $id): bool => $id > 0)));
+    if ($productIds === []) return [];
+
+    $stmt = $pdo->prepare(
+        "SELECT p.id AS product_id,pva.role,pva.sort_order,
+                a.public_id AS asset_public_id,a.asset_type,a.mime_type,a.storage_provider,a.storage_key
+         FROM catalog_products p
+         INNER JOIN catalog_product_version_assets pva ON pva.product_version_id=p.current_version_id
+         INNER JOIN catalog_assets a ON a.id=pva.asset_id AND a.status='ready'
+         WHERE p.id IN (" . mg_feed_attachment_placeholders($productIds) . ")
+           AND pva.role IN ('cover','inside_cover','audio','video')
+         ORDER BY p.id,FIELD(pva.role,'cover','inside_cover','audio','video'),pva.sort_order,pva.id"
+    );
+    $stmt->execute($productIds);
+    $assets = [];
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $productId = (int)$row['product_id'];
+        $role = (string)($row['role'] ?? '');
+        if ($role === '' || isset($assets[$productId][$role])) continue;
+        $url = mg_feed_attachment_asset_url($row['storage_provider'] ?? null, $row['storage_key'] ?? null, $row['asset_public_id'] ?? null);
+        if ($url === null) continue;
+        $assets[$productId][$role] = [
+            'url'=>$url,
+            'type'=>(string)($row['asset_type'] ?? ''),
+            'mime'=>(string)($row['mime_type'] ?? ''),
+        ];
+    }
+    return $assets;
+}
+
 function mg_feed_published_attachment_cards(PDO $pdo, array $posts, ?int $viewerId): array
 {
     $productIds = [];
@@ -77,7 +109,7 @@ function mg_feed_published_attachment_cards(PDO $pdo, array $posts, ?int $viewer
     }
 
     $products = mg_feed_attachment_rows_by_id($pdo,
-        "SELECT p.id,p.public_id,p.slug,p.status,v.title,v.description,v.unit_value_cents,v.currency,
+        "SELECT p.id,p.public_id,p.slug,p.status,p.current_version_id,v.title,v.description,v.unit_value_cents,v.currency,
                 a.public_id preview_asset_id,a.storage_provider preview_provider,a.storage_key preview_key
          FROM catalog_products p
          LEFT JOIN catalog_product_versions v ON v.id=p.current_version_id
@@ -94,6 +126,7 @@ function mg_feed_published_attachment_cards(PDO $pdo, array $posts, ?int $viewer
         array_values($productIds)
     );
 
+    $productAssets = mg_feed_attachment_product_assets_by_id($pdo, array_values($productIds));
     $postImageUrls = mg_feed_attachment_post_image_urls($pdo, $posts);
 
     $microgifts = mg_feed_attachment_rows_by_id($pdo,
@@ -147,7 +180,8 @@ function mg_feed_published_attachment_cards(PDO $pdo, array $posts, ?int $viewer
         $productId = (int)($post['catalog_product_id'] ?? 0);
         if ($productId > 0 && isset($products[$productId])) {
             $product = $products[$productId];
-            $productImageUrl = mg_feed_attachment_asset_url($product['preview_provider'] ?? null, $product['preview_key'] ?? null, $product['preview_asset_id'] ?? null);
+            $assets = $productAssets[$productId] ?? [];
+            $productImageUrl = $assets['cover']['url'] ?? mg_feed_attachment_asset_url($product['preview_provider'] ?? null, $product['preview_key'] ?? null, $product['preview_asset_id'] ?? null);
             if ($productImageUrl === null) {
                 $productImageUrl = $postImageUrls[(int)($post['current_version_id'] ?? 0)] ?? null;
             }
@@ -158,6 +192,12 @@ function mg_feed_published_attachment_cards(PDO $pdo, array $posts, ?int $viewer
                 'description'=>mg_feed_attachment_text($product['description'] ?? null),
                 'value_cents'=>(int)($product['unit_value_cents'] ?? 0),'currency'=>(string)($product['currency'] ?? 'USD'),
                 'status'=>(string)$product['status'],'image_url'=>$productImageUrl,
+                'cover_url'=>$assets['cover']['url'] ?? $productImageUrl,
+                'inside_url'=>$assets['inside_cover']['url'] ?? null,
+                'audio_url'=>$assets['audio']['url'] ?? null,
+                'audio_mime'=>$assets['audio']['mime'] ?? null,
+                'video_url'=>$assets['video']['url'] ?? null,
+                'video_mime'=>$assets['video']['mime'] ?? null,
                 'access'=>['state'=>'public','label'=>'Available to everyone'],
                 'action'=>[
                     'state'=>'enabled',
