@@ -27,9 +27,9 @@ require __DIR__ . '/includes/header.php';
   </div>
 </section>
 <?php else: ?>
-<section class="mg-app-shell mg-account-commerce-shell" data-cart-page>
+<section class="mg-app-shell mg-account-commerce-shell">
   <?php require __DIR__ . '/includes/agent-sidebar.php'; ?>
-  <main class="mg-app-workspace mg-account-shell">
+  <main class="mg-app-workspace mg-account-shell" data-cart-page>
     <section class="mg-commerce-page">
       <section class="mg-commerce-shell">
         <header class="mg-commerce-hero mg-checkout-hero">
