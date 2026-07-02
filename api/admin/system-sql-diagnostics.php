@@ -27,6 +27,12 @@ function mg_admin_sql_diag_false_positive_columns(): array
         'notification_preferences.channel',
         'notification_preferences.enabled',
         'commerce_orders.status',
+        'subscriptions.user_id',
+        'subscriptions.plan_key',
+        'tips.from_user_id',
+        'tips.to_user_id',
+        'microgift_instances.sender_user_id',
+        'microgift_instances.merchant_user_id',
         'microgift_claims.microgift_instance_id',
         'microgift_redemptions.microgift_instance_id',
     ], true);
@@ -123,7 +129,7 @@ function mg_admin_sql_diag_normalize(array $data): array
     unset($endpoint);
     mg_admin_sql_diag_recount($data);
     $data['repair_plan'] = mg_admin_sql_diag_plan($data);
-    $data['catalog_version'] = '2026-07-01.2-normalized';
+    $data['catalog_version'] = '2026-07-02.remaining-sql-normalized';
     return $data;
 }
 
