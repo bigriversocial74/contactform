@@ -10,6 +10,7 @@ require_once __DIR__ . '/_delivery_validation.php';
 function mg_messages_reply_source_label(string $sourceType): string
 {
     return match ($sourceType) {
+        'social_chat' => 'Feed Chat',
         'store_canvas_reply' => 'Store Canvas Reply',
         'store_canvas_direct' => 'Store Canvas',
         'merchant_crm_message', 'merchant_crm' => 'Merchant CRM',
@@ -21,6 +22,7 @@ function mg_messages_reply_source_label(string $sourceType): string
 
 function mg_messages_reply_source_system(string $sourceType): string
 {
+    if ($sourceType === 'social_chat') return 'social_feed';
     if (str_starts_with($sourceType, 'store_canvas')) return 'store_canvas';
     if ($sourceType === 'merchant_crm_message' || $sourceType === 'merchant_crm') return 'merchant_crm';
     if ($sourceType === 'pppm_message') return 'in_out_box';
@@ -30,6 +32,13 @@ function mg_messages_reply_source_system(string $sourceType): string
 function mg_messages_reply_source(array $thread, ?array $pppm = null): array
 {
     $conversationKey = trim((string)($thread['conversation_key'] ?? ''));
+    if ($conversationKey !== '' && str_starts_with($conversationKey, 'social_direct:')) {
+        return [
+            'type' => 'social_chat',
+            'reference' => $conversationKey,
+            'conversation_key' => $conversationKey,
+        ];
+    }
     if ($conversationKey !== '' && str_starts_with($conversationKey, 'store_canvas:')) {
         return [
             'type' => 'store_canvas_reply',
@@ -199,6 +208,7 @@ try {
 
     $senderName = mg_notification_user_label($pdo, (int)$user['id']);
     $notificationTitle = match ($sourceType) {
+        'social_chat' => 'New Feed Chat message',
         'merchant_crm_message' => 'New Merchant CRM reply',
         'store_canvas_reply' => 'New Store Canvas message',
         'pppm_message' => 'New item message',
