@@ -45,6 +45,37 @@ document.addEventListener('DOMContentLoaded', function () {
     return String(value || '').replace(/_/g, ' ').replace(/\b\w/g, function (char) { return char.toUpperCase(); });
   }
 
+  function shortText(value, max) {
+    value = String(value || '').trim();
+    max = max || 900;
+    return value.length > max ? value.slice(0, max - 1) + '…' : value;
+  }
+
+  function parseJsonMaybe(value) {
+    if (!value || typeof value !== 'string') return value;
+    var text = value.trim();
+    if (!text || (text.charAt(0) !== '{' && text.charAt(0) !== '[')) return value;
+    try {
+      return JSON.parse(text);
+    } catch (error) {
+      return value;
+    }
+  }
+
+  function arrayish(value) {
+    value = parseJsonMaybe(value);
+    if (Array.isArray(value)) return value;
+    if (value && typeof value === 'object') {
+      return Object.keys(value).map(function (key) {
+        var item = value[key];
+        if (item && typeof item === 'object' && !item.key) item.key = key;
+        return item;
+      });
+    }
+    if (typeof value === 'string' && value.trim()) return [value.trim()];
+    return [];
+  }
+
   function agentName() {
     return (state.agent_profile && state.agent_profile.agent_name) || 'Merchant Agent';
   }
@@ -225,6 +256,73 @@ document.addEventListener('DOMContentLoaded', function () {
       '<span>Approval required</span></div></div>';
   }
 
+  function recipeData(source) {
+    if (!source || typeof source !== 'object') return null;
+    var reviewPayload = parseJsonMaybe(source.review_payload || source.reviewPayload || {});
+    if (!reviewPayload || typeof reviewPayload !== 'object' || Array.isArray(reviewPayload)) reviewPayload = {};
+    var merged = Object.assign({}, reviewPayload, source || {});
+    var hasRecipe = merged.recipe_engine_used ||
+      merged.recommended_campaign_type ||
+      merged.recommended_reward_type ||
+      merged.recipe_key ||
+      merged.channel_package ||
+      merged.draft_artifacts ||
+      merged.draft_type ||
+      merged.draft_label ||
+      merged.draft_title ||
+      merged.draft_body;
+    return hasRecipe ? merged : null;
+  }
+
+  function recipeChannels(value) {
+    var items = arrayish(value);
+    return items.map(function (channel) {
+      if (typeof channel === 'string') return channel;
+      return channel.label || channel.channel || channel.type || channel.name || channel.key || '';
+    }).filter(Boolean);
+  }
+
+  function recipeArtifactsHtml(items) {
+    items = arrayish(items).slice(0, 8);
+    if (!items.length) return '';
+    return '<div class="mg-agent-chat-recipe-artifacts">' + items.map(function (item) {
+      if (typeof item === 'string') {
+        return '<article><strong>Draft artifact</strong><p>' + esc(shortText(item, 520)) + '</p></article>';
+      }
+      item = item && typeof item === 'object' ? item : {};
+      var title = item.title || item.label || item.type || item.channel || item.key || 'Draft artifact';
+      var body = item.body || item.copy || item.text || item.content || item.instructions || item.description || '';
+      return '<article><strong>' + esc(human(title)) + '</strong><p>' + esc(shortText(body || JSON.stringify(item), 520)) + '</p></article>';
+    }).join('') + '</div>';
+  }
+
+  function recipePanelHtml(recipe, compact) {
+    if (!recipe) return '';
+    var campaignType = recipe.recommended_campaign_type || recipe.campaign_type || '';
+    var rewardType = recipe.recommended_reward_type || recipe.reward_type || '';
+    var channels = recipeChannels(recipe.channel_package);
+    var title = recipe.draft_label || recipe.title || recipe.package_title || recipe.draft_type || 'Campaign Recipe';
+    var subtitle = recipe.draft_title || recipe.campaign_title || recipe.why_this_recipe || recipe.body || '';
+    var body = recipe.draft_body || recipe.copy || recipe.instructions || recipe.body || recipe.why_this_recipe || '';
+
+    return '<section class="mg-agent-chat-recipe ' + (compact ? 'is-compact' : '') + '">' +
+      '<div class="mg-agent-chat-recipe-head"><div><span>Recipe card</span><strong>' + esc(title) + '</strong><p>' + esc(shortText(subtitle, 240)) + '</p></div>' +
+      '<div class="mg-agent-chat-recipe-badges"><b>' + esc(human(campaignType || 'Campaign')) + '</b><b>' + esc(human(rewardType || 'Reward')) + '</b><b>' + esc(recipe.recipe_key || 'custom') + '</b></div></div>' +
+      '<div class="mg-agent-chat-recipe-grid">' +
+      '<article><span>Campaign Type</span><strong>' + esc(human(campaignType || 'Not specified')) + '</strong></article>' +
+      '<article><span>Reward Type</span><strong>' + esc(human(rewardType || 'Not specified')) + '</strong></article>' +
+      '<article><span>Channel Package</span><strong>' + esc(channels.length ? channels.map(human).join(', ') : 'Not specified') + '</strong></article>' +
+      '<article><span>Recipe Key</span><strong>' + esc(recipe.recipe_key || 'Custom') + '</strong></article>' +
+      '</div>' +
+      (body ? '<div class="mg-agent-chat-recipe-copy"><span>Draft copy / instructions</span><p>' + esc(shortText(body, compact ? 700 : 1300)) + '</p></div>' : '') +
+      recipeArtifactsHtml(recipe.draft_artifacts || recipe.artifacts) +
+      '</section>';
+  }
+
+  function recipeBlockHtml(block) {
+    return '<div class="mg-agent-block mg-agent-recipe-block">' + recipePanelHtml(recipeData(block) || block, false) + '</div>';
+  }
+
   function blocksHtml(blocks) {
     blocks = Array.isArray(blocks) ? blocks : [];
     if (!blocks.length) return '';
@@ -233,6 +331,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (type === 'chart' || type === 'forecast') return chartBlockHtml(block);
       if (type === 'metric_grid') return metricGridHtml(block);
       if (type === 'social_campaign' || type === 'social_posts') return socialBlockHtml(block);
+      if (type === 'campaign_recipe' || type === 'campaign_package' || type === 'recipe_package' || recipeData(block)) return recipeBlockHtml(block);
       if (type === 'project' || type === 'product_opportunity') return projectBlockHtml(block);
       return '<div class="mg-agent-block"><div class="mg-agent-block-head"><strong>' + esc(block.title || human(type || 'Insight')) + '</strong><span>' + esc(block.body || '') + '</span></div></div>';
     }).join('') + '</div>';
@@ -248,9 +347,10 @@ document.addEventListener('DOMContentLoaded', function () {
         bridge = '<button class="mg-btn mg-btn-secondary" type="button" data-agent-chat-review data-message-id="' + esc(message.id) + '" data-card-index="' + esc(index) + '">Send to Review Queue</button>';
       }
     }
+    var recipe = recipeData(card);
     var save = '<button class="mg-btn mg-btn-soft" type="button" data-agent-card-status>Save draft</button>';
     var dismiss = '<button class="mg-btn mg-btn-soft" type="button" data-agent-card-status>Dismiss</button>';
-    return '<article class="mg-agent-chat-card"><span>' + esc(card.type || 'recommendation') + '</span><strong>' + esc(card.title || 'Agent note') + '</strong><p>' + esc(card.body || '') + '</p><div class="mg-agent-chat-card-actions">' + link + bridge + save + dismiss + '</div></article>';
+    return '<article class="mg-agent-chat-card' + (recipe ? ' is-recipe-card' : '') + '"><span>' + esc(card.type || 'recommendation') + '</span><strong>' + esc(card.title || 'Agent note') + '</strong><p>' + esc(card.body || '') + '</p>' + recipePanelHtml(recipe, true) + '<div class="mg-agent-chat-card-actions">' + link + bridge + save + dismiss + '</div></article>';
   }
 
   function messageHtml(message) {
