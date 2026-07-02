@@ -26,13 +26,14 @@ if (!$path || !is_file($path) || !is_readable($path)) mg_fail('Recording file is
 $mime = (string)($row['mime_type'] ?? 'video/webm');
 if ($mime === '') $mime = 'video/webm';
 $filename = basename((string)($row[$nameKey] ?? ('screen-recording-' . $recordingId . '.webm')));
+$filename = str_replace(['"', "\r", "\n"], '', $filename);
 $disposition = $inline ? 'inline' : 'attachment';
 $size = filesize($path);
 if ($size === false || $size < 1) mg_fail('Recording file is unavailable.', 404);
 
 mg_audit('admin_screen_recording.download', 'admin_screen_recording', ['recording_id' => $recordingId, 'type' => $type, 'stream' => $inline], (int)$user['id']);
 header('Content-Type: ' . $mime);
-header('Content-Disposition: ' . $disposition . '; filename="' . str_replace('"', '', $filename) . '"');
+header('Content-Disposition: ' . $disposition . '; filename="' . $filename . '"');
 header('Cache-Control: private, no-store, max-age=0');
 header('Accept-Ranges: bytes');
 
@@ -72,9 +73,7 @@ while ($remaining > 0 && !feof($handle)) {
     if ($chunk === false || $chunk === '') break;
     echo $chunk;
     $remaining -= strlen($chunk);
-    if (function_exists('fastcgi_finish_request')) {
-        flush();
-    }
+    flush();
 }
 fclose($handle);
 exit;
