@@ -67,7 +67,7 @@ require __DIR__ . '/includes/header.php';
             </div>
             <div data-cart-summary><div class="mg-empty-state">Calculating…</div></div>
             <div class="mg-commerce-actions is-stack" data-cart-payment-actions>
-              <button class="mg-btn mg-btn-primary" type="button" data-cart-checkout-provider="cash">Pay with cash</button>
+              <button class="mg-btn mg-btn-primary" type="button" data-cart-checkout data-cart-checkout-provider="cash">Pay with cash</button>
               <button class="mg-btn mg-btn-soft" type="button" data-cart-clear>Clear cart</button>
               <a class="mg-btn mg-btn-soft" href="/discover.php">Continue shopping</a>
             </div>
