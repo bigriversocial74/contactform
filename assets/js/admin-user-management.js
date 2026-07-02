@@ -129,21 +129,33 @@
 
   function renderPassword(container) {
     if (!capabilities().change_password) return;
-    const item = actionRow('Change password', 'Set a new password and revoke active sessions for this user.');
+    const block = element('div', 'mg-admin-management-block');
+    block.append(
+      element('h4', '', 'Change password'),
+      element('p', '', 'Set a new password and revoke active sessions for this user.')
+    );
+
+    const grid = element('div', 'mg-admin-user-create-grid');
+    const passwordLabel = element('label', '', 'New password');
     const password = element('input');
     password.type = 'password';
     password.minLength = 12;
     password.maxLength = 120;
     password.autocomplete = 'new-password';
     password.placeholder = 'New password';
+    passwordLabel.appendChild(password);
 
+    const confirmLabel = element('label', '', 'Confirm password');
     const confirm = element('input');
     confirm.type = 'password';
     confirm.minLength = 12;
     confirm.maxLength = 120;
     confirm.autocomplete = 'new-password';
     confirm.placeholder = 'Confirm password';
+    confirmLabel.appendChild(confirm);
+    grid.append(passwordLabel, confirmLabel);
 
+    const actions = element('div', 'mg-admin-management-controls');
     const button = element('button', 'mg-btn mg-btn-danger', 'Change password');
     button.type = 'button';
     button.addEventListener('click', () => {
@@ -165,9 +177,9 @@
         'Change this user password and revoke their active sessions?'
       );
     });
-
-    item.controls.append(password, confirm, button);
-    container.appendChild(item.row);
+    actions.appendChild(button);
+    block.append(grid, actions);
+    container.appendChild(block);
   }
 
   function roleSlugs() {
