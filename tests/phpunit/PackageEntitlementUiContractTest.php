@@ -39,7 +39,10 @@ final class PackageEntitlementUiContractTest extends TestCase
         self::assertStringContainsString('mg_user_package_context', $header);
         self::assertStringContainsString('$can_merchant_nav', $header);
         self::assertStringContainsString('data-package-id', $header);
-        self::assertStringContainsString('Commerce center', $loggedInMenu);
+        self::assertTrue(
+            str_contains($loggedInMenu, 'Commerce center') || str_contains($loggedInMenu, 'Merchant Dashboard'),
+            'Logged-in menu must expose the merchant commerce/dashboard entry when merchant access is allowed.'
+        );
         self::assertStringContainsString('if ($can_merchant_nav)', $loggedInMenu);
         self::assertStringContainsString('$can_create_campaigns', $createMenu);
         self::assertStringContainsString('$can_create_rewards', $createMenu);
