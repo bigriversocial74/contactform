@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/bootstrap.php';
-require_once dirname(__DIR__, 3) . '/includes/admin-screen-recordings.php';
+require_once dirname(__DIR__, 3) . '/includes/admin-screen-recording-stage3.php';
 
 mg_require_method('POST');
 $user = mg_screen_recordings_require_api(true);
@@ -10,6 +10,7 @@ $input = mg_input();
 mg_require_csrf_for_write($input);
 $pdo = mg_db();
 mg_screen_recordings_require_schema($pdo);
+mg_screen_recording_stage3_require_schema($pdo);
 if (function_exists('mg_rate_limit')) mg_rate_limit('admin.screen_recordings.export_edit', 'user:' . (int)$user['id'], 20, 300);
 
 $recordingId = max(0, (int)($input['recording_id'] ?? $input['id'] ?? 0));
@@ -21,35 +22,30 @@ if (is_string($manifest)) {
     $manifest = is_array($decoded) ? $decoded : [];
 }
 if (!is_array($manifest)) $manifest = mg_screen_recordings_decode_manifest($row['edit_manifest_json'] ?? null);
-$format = in_array((string)($input['format'] ?? 'webm'), ['webm', 'mp4'], true) ? (string)$input['format'] : 'webm';
 
 try {
-    $saved = mg_screen_recordings_save_manifest($pdo, $recordingId, $manifest);
-    $manifest = mg_screen_recordings_decode_manifest($saved['edit_manifest_json'] ?? null);
-    $manifest['export'] = [
-        'format' => $format,
+    $job = mg_screen_recording_stage3_create_export_job($pdo, $recordingId, $user, $manifest, [
+        'format' => $input['format'] ?? 'webm',
         'burn_overlays' => !empty($input['burn_overlays']),
-        'requested_at' => gmdate('c'),
-        'renderer' => 'ffmpeg_required',
-        'status' => 'queued_metadata_only',
-    ];
-    $json = json_encode(array_replace_recursive(mg_screen_recordings_manifest_default(), $manifest), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        'include_audio' => array_key_exists('include_audio', $input) ? !empty($input['include_audio']) : true,
+        'mute_original_audio' => !empty($input['mute_original_audio']),
+        'original_audio_volume' => $input['original_audio_volume'] ?? 1,
+        'voiceover_volume' => $input['voiceover_volume'] ?? 1,
+    ]);
 
-    $pdo->beginTransaction();
-    $pdo->prepare("UPDATE admin_screen_recordings SET edit_manifest_json = ?, status = 'export_pending', updated_at = NOW() WHERE id = ? LIMIT 1")->execute([$json, $recordingId]);
-    $version = $pdo->prepare("INSERT INTO admin_screen_recording_versions (recording_id, admin_user_id, version_label, edit_manifest_json, status, created_at) VALUES (?, ?, ?, ?, 'export_pending', NOW())");
-    $version->execute([$recordingId, (int)$user['id'], strtoupper($format) . ' export request', $json]);
-    $pdo->commit();
+    if (!empty($input['process_now'])) {
+        $job = mg_screen_recording_stage3_process_export_job($pdo, (int)$job['id'], $user);
+    }
 } catch (Throwable $error) {
-    if ($pdo->inTransaction()) $pdo->rollBack();
     mg_security_log('warning', 'admin.screen_recordings.export_edit_failed', 'Unable to queue screen recording export.', ['recording_id' => $recordingId, 'message' => $error->getMessage()], (int)$user['id']);
     mg_fail('Unable to queue export request. Check diagnostics or server logs.', 422);
 }
 
-mg_audit('admin_screen_recording.export_request', 'admin_screen_recording', ['recording_id' => $recordingId, 'format' => $format], (int)$user['id']);
+mg_audit('admin_screen_recording.export_request', 'admin_screen_recording', ['recording_id' => $recordingId, 'format' => (string)$job['requested_format'], 'job_id' => (int)$job['id']], (int)$user['id']);
 $row = mg_screen_recordings_fetch_for_user($pdo, $recordingId, $user, true);
 mg_ok([
     'recording' => mg_screen_recordings_public_record($row),
-    'export_rendering' => 'deferred_ffmpeg_required',
-    'message_detail' => 'Edit manifest was saved and export was queued as metadata. Server-side FFmpeg rendering is required to burn trims and text overlays into a new video file.',
-], 'Export request saved.');
+    'export_job' => $job,
+    'export_jobs' => mg_screen_recording_stage3_list_jobs($pdo, $recordingId, $user),
+    'message_detail' => $job['status'] === 'exported' ? 'Export rendered successfully.' : 'Export job was queued. Use status polling or Process export to finish rendering.',
+], 'Export job queued.');
