@@ -28,7 +28,6 @@ final class MerchantCustomerProfileDataTest extends TestCase
             'wallet_items',
             'message_threads',
             'messages',
-            'scanner_redemption_receipts',
             'mg_cp_wallet_stats',
             'mg_cp_messages',
             'mg_cp_notes',
@@ -37,6 +36,10 @@ final class MerchantCustomerProfileDataTest extends TestCase
             'mg_cp_events',
             'mg_cp_activity_chart',
         ] as $needle) self::assertStringContainsString($needle,$api);
+        self::assertTrue(
+            str_contains($api,'scanner_redemption_receipts') || str_contains($api,'wallet_item_redemptions'),
+            'Customer profile redemptions must use scanner receipts or wallet-item redemption records.'
+        );
     }
 
     public function testCustomerProfileNoteContract(): void
