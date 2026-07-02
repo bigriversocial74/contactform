@@ -12,11 +12,24 @@ document.addEventListener('DOMContentLoaded', function () {
 
   var searchController = null;
   var searchTimer = null;
+  var regiftConfirmed = false;
+  var regiftRecipientKey = '';
 
   function esc(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, function (character) {
       return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character];
     });
+  }
+
+  function toast(message) {
+    if (window.Microgifter && Microgifter.toast) Microgifter.toast(message);
+  }
+
+  function busy(button, on, text) {
+    if (!button) return;
+    if (!button.dataset.originalText) button.dataset.originalText = button.textContent;
+    button.disabled = !!on;
+    button.textContent = on ? (text || 'Working…') : button.dataset.originalText;
   }
 
   function firstLetter(value) {
@@ -66,6 +79,25 @@ document.addEventListener('DOMContentLoaded', function () {
       '</button>';
   }
 
+  function setStatus(form, message, kind) {
+    var status = form.querySelector('[data-regift-status]');
+    if (!status) return;
+    status.textContent = message || '';
+    status.dataset.statusType = kind || '';
+  }
+
+  function resetConfirm(form) {
+    regiftConfirmed = false;
+    regiftRecipientKey = '';
+    var confirm = form && form.querySelector('[data-regift-confirm]');
+    if (confirm) confirm.hidden = true;
+    var button = form && form.querySelector('[data-regift-submit]');
+    if (button) {
+      button.dataset.originalText = 'Review Regift';
+      button.textContent = 'Review Regift';
+    }
+  }
+
   function renderResults(form, items, message) {
     var results = form.querySelector('[data-send-recipient-results]');
     var input = form.querySelector('input[name="recipient"]');
@@ -103,6 +135,7 @@ document.addEventListener('DOMContentLoaded', function () {
         '<span><strong>' + esc(name || 'Selected user') + '</strong><em>' + esc(profile.slug ? '@' + profile.slug : (profile.profile_type || 'profile')) + '</em></span>' +
         '<button type="button" data-clear-recipient aria-label="Clear selected recipient">×</button>';
     }
+    resetConfirm(form);
     clearResults(form);
   }
 
@@ -144,6 +177,7 @@ document.addEventListener('DOMContentLoaded', function () {
         selected.hidden = true;
         selected.innerHTML = '';
       }
+      resetConfirm(form);
       if (searchTimer) window.clearTimeout(searchTimer);
       searchTimer = window.setTimeout(function () { searchRecipients(form, input.value); }, 180);
     });
@@ -168,6 +202,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (id) id.value = '';
         if (slug) slug.value = '';
         input.value = '';
+        resetConfirm(form);
         input.focus();
       });
     }
@@ -178,13 +213,15 @@ document.addEventListener('DOMContentLoaded', function () {
     var merchant = rowMerchant(row);
     var recipientId = 'mg-send-recipient-' + Date.now();
     var resultsId = recipientId + '-results';
+    var actionItemId = row ? (row.getAttribute('data-gift-id') || '') : '';
 
     modal.classList.add('mg-send-product-modal');
     modal.classList.add('mg-send-exact-modal');
     if (modalTitle) modalTitle.textContent = '';
     if (modalEyebrow) modalEyebrow.textContent = '';
 
-    modalBody.innerHTML = '<form class="mg-send-exact-form" data-action-form="send">' +
+    modalBody.innerHTML = '<form class="mg-send-exact-form" data-action-form="send" data-exact-regift-form>' +
+      '<input type="hidden" name="action_item_id" value="' + esc(actionItemId) + '">' +
       '<section class="mg-send-exact-product" aria-label="Selected gift">' +
         '<div class="mg-send-exact-thumb">' + thumbMarkup(row, title) + '</div>' +
         '<div class="mg-send-exact-product-copy"><h2>' + esc(title) + '</h2><p>' + esc(merchant) + '</p></div>' +
@@ -206,7 +243,9 @@ document.addEventListener('DOMContentLoaded', function () {
         '<textarea name="message" maxlength="500" placeholder="Add a note to travel with the gift"></textarea>' +
         '<em data-send-message-count>0/500</em>' +
       '</div>' +
-      '<div class="mg-send-exact-actions"><button class="mg-send-exact-primary" type="submit">Regift Microgift</button></div>' +
+      '<div class="mg-send-confirm" data-regift-confirm hidden><strong>Confirm regift</strong><p data-regift-confirm-text></p></div>' +
+      '<p class="mg-form-status" data-regift-status></p>' +
+      '<div class="mg-send-exact-actions"><button class="mg-send-exact-primary" type="submit" data-regift-submit>Review Regift</button></div>' +
     '</form>';
 
     var form = modalBody.querySelector('.mg-send-exact-form');
@@ -215,9 +254,72 @@ document.addEventListener('DOMContentLoaded', function () {
     if (textarea && counter) {
       textarea.addEventListener('input', function () {
         counter.textContent = String(textarea.value.length) + '/500';
+        if (form) resetConfirm(form);
       });
     }
     if (form) wireRecipientSearch(form);
+  }
+
+  async function submitRegift(form) {
+    var actionItemId = String((form.elements.action_item_id || {}).value || '').trim();
+    var recipientId = String((form.elements.recipient_profile_id || {}).value || '').trim();
+    var slug = String((form.elements.recipient_slug || {}).value || '').trim();
+    var recipientTyped = String((form.elements.recipient || {}).value || '').trim();
+    var recipient = recipientId || slug || recipientTyped;
+    var message = String((form.elements.message || {}).value || '').trim();
+    var recipientLabel = recipientTyped || slug || 'this recipient';
+    var key = recipient + '|' + message;
+    var confirmBox = form.querySelector('[data-regift-confirm]');
+    var confirmText = form.querySelector('[data-regift-confirm-text]');
+    var submit = form.querySelector('[data-regift-submit]');
+
+    if (!actionItemId) {
+      setStatus(form, 'This gift is missing an Action Center item id.', 'error');
+      return;
+    }
+    if (!recipient) {
+      setStatus(form, 'Choose a recipient from the search results before sending.', 'error');
+      return;
+    }
+    if (!recipientId && !slug) {
+      setStatus(form, 'Tap a search result to confirm the recipient before sending.', 'error');
+      return;
+    }
+
+    if (!regiftConfirmed || regiftRecipientKey !== key) {
+      regiftConfirmed = true;
+      regiftRecipientKey = key;
+      if (confirmText) confirmText.textContent = 'Send this Microgift to ' + recipientLabel + '? This transfers gift ownership to the recipient.';
+      if (confirmBox) confirmBox.hidden = false;
+      if (submit) submit.textContent = 'Confirm & Regift';
+      setStatus(form, 'Review and click Confirm & Regift to send.', '');
+      return;
+    }
+
+    busy(submit, true, 'Sending…');
+    setStatus(form, 'Sending Microgift…', '');
+    try {
+      var payload = {
+        action_item_id: actionItemId,
+        recipient_user_id: recipient,
+        recipient_slug: slug,
+        message: message,
+        idempotency_key: 'regift:' + actionItemId + ':' + recipient + ':' + Date.now()
+      };
+      var response = await Microgifter.post('/api/account/action-center-send.php', payload);
+      var data = response.data || response;
+      toast('Microgift regifted.');
+      modalBody.innerHTML = '<div class="mg-action-success"><strong>Microgift regifted</strong>' +
+        '<p>The gift was sent and ownership was transferred to ' + esc(recipientLabel) + '.</p>' +
+        '<button class="mg-btn mg-btn-primary" type="button" data-action-modal-close>Done</button></div>';
+      var refresh = app.querySelector('[data-gift-refresh]');
+      if (refresh) setTimeout(function () { refresh.click(); }, 350);
+    } catch (error) {
+      setStatus(form, error && error.message ? error.message : 'Unable to regift this Microgift.', 'error');
+      resetConfirm(form);
+    } finally {
+      busy(submit, false);
+    }
   }
 
   app.addEventListener('click', function (event) {
@@ -229,6 +331,17 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
     var row = action.closest('[data-gift-id]');
+    regiftConfirmed = false;
+    regiftRecipientKey = '';
     window.requestAnimationFrame(function () { buildExactSendModal(row); });
   });
+
+  modalBody.addEventListener('submit', function (event) {
+    var form = event.target.closest('[data-exact-regift-form]');
+    if (!form) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+    submitRegift(form);
+  }, true);
 });
