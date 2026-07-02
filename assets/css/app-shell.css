@@ -69,8 +69,8 @@ body.mg-mobile-sidebar-open{overflow:hidden}
   .mg-app-tabs{width:100%}
 }
 @media(max-width:640px){
-  :root{--mg-app-header:106px}
-  .mg-section-account,.mg-section-sales{--mg-app-header:58px}
+  :root{--mg-app-header:58px}
+  body.mg-app-page[data-page-id="inbox"],body.mg-app-page[data-page-id="sent"],body.mg-app-page[data-page-id="claimed"]{--mg-app-header:106px}
   .mg-app-workspace{padding:8px}
   .mg-app-panel-head{padding:14px}
   .mg-app-panel-body{padding:14px}
