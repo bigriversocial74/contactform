@@ -11,7 +11,7 @@ $header_mode = 'agent';
 $agent_tab = 'ads-manager';
 $page_body_class = 'mg-ad-manager-page mg-ad-manager-redesign-page';
 $page_styles = ['/assets/css/merchant-ad-manager.css','/assets/css/sponsored-campaign-card.css','/assets/css/ad-health-alerts.css','/assets/css/merchant-ad-product-picker.css'];
-$page_scripts = ['/assets/js/sponsored-campaign-card.js','/assets/js/ad-health-alerts.js','/assets/js/merchant-ad-manager.js'];
+$page_scripts = ['/assets/js/sponsored-campaign-card.js','/assets/js/ad-health-alerts.js','/assets/js/merchant-ad-manager.js','/assets/js/merchant-ad-manager-deeplink.js'];
 $page_manifest = [
     'id' => 'merchant-ad-manager',
     'title' => $page_title,
@@ -172,15 +172,15 @@ require __DIR__ . '/includes/header.php';
 
         <section class="mg-ads-tab-panel" data-ads-tab-panel="campaigns">
           <article class="mg-ads-panel">
-            <div class="mg-ads-table-head"><h2>Merchant Campaigns</h2><div class="mg-ads-table-tools"><input type="search" data-ads-search placeholder="Search campaigns…"><button class="mg-btn mg-btn-primary" type="button" data-ads-tab-jump="create">+ New Campaign</button></div></div>
-            <div class="mg-ads-list mg-ads-list-table" data-ads-list><div class="mg-ads-empty">Loading campaigns…</div></div>
+            <div class="mg-ads-table-head"><h2>Merchant Campaigns</h2><div class="mg-ads-table-tools"><input type="search" placeholder="Search campaigns" data-ads-search><button class="mg-btn mg-btn-soft" type="button" data-ads-tab-jump="create">New Campaign</button></div></div>
+            <div data-ads-list class="mg-ads-list"><div class="mg-ads-empty">Loading campaigns…</div></div>
           </article>
         </section>
 
         <section class="mg-ads-tab-panel" data-ads-tab-panel="analytics">
-          <div class="mg-ads-analytics-layout">
-            <article class="mg-ads-panel"><h2>Campaign performance</h2><p class="mg-ads-muted">Performance totals are loaded from the existing Campaign Ads reporting API.</p><div class="mg-ads-analytics-grid"><span><strong data-kpi="impressions">0</strong> impressions</span><span><strong data-kpi="clicks">0</strong> clicks</span><span><strong data-kpi="claims">0</strong> claims</span><span><strong data-kpi="redemptions">0</strong> redemptions</span></div><a class="mg-btn mg-btn-soft" href="/merchant-ad-performance.php">Open full analytics</a></article>
-            <article class="mg-ads-panel"><h2>Best practices</h2><p class="mg-ads-muted">Use clear local value, connect the CTA to a real reward, assign only the surfaces where the ad makes sense, and review health alerts after publishing.</p></article>
+          <div class="mg-ads-analytics-grid">
+            <article class="mg-ads-panel"><h2>Performance Snapshot</h2><p class="mg-ads-muted">Campaign Ads values are reserved for live wallet, claim, redemption, and CRM attribution. Phase 1 shows interaction counts.</p><div class="mg-ads-mini-kpis"><span><strong data-kpi="impressions">0</strong> impressions</span><span><strong data-kpi="clicks">0</strong> clicks</span><span><strong data-kpi="claims">0</strong> claims</span><span><strong data-kpi="redemptions">0</strong> redemptions</span></div></article>
+            <article class="mg-ads-panel"><h2>Next Attribution Layer</h2><p class="mg-ads-muted">Upcoming phases connect sponsored exposure to PPPM, wallet actions, CRM contacts, and merchant redemption events.</p></article>
           </div>
         </section>
       <?php endif; ?>
