@@ -43,15 +43,6 @@ window.Microgifter = window.Microgifter || {};
     if (state === 'inside_other') return 'mg-store-enter-btn is-switch';
     return 'mg-store-enter-btn';
   }
-  function rowClass(state) {
-    if (state === 'inside_this') return 'mg-store-presence-row is-inside';
-    if (state === 'inside_other') return 'mg-store-presence-row is-other';
-    return 'mg-store-presence-row';
-  }
-  function noticeText(state) {
-    if (!state) return 'Enter this merchant store with your customer avatar.';
-    return state.notice || 'Enter this merchant store with your customer avatar.';
-  }
   function normalizeLabel(value) {
     var text = String(value || '').trim();
     var normalized = text.toLowerCase();
@@ -139,21 +130,8 @@ window.Microgifter = window.Microgifter || {};
   function renderCard(card, state) {
     if (!card || !state || !state.entry_enabled) return;
     renderHeaderStoreButton(card, state);
-
     var row = card.querySelector('[data-store-presence-row]');
-    if (!row) {
-      row = document.createElement('div');
-      row.dataset.storePresenceRow = '1';
-      var stats = card.querySelector('.mg-feed-stats');
-      if (stats && stats.parentNode) stats.parentNode.insertBefore(row, stats.nextSibling);
-      else card.appendChild(row);
-    }
-    row.className = rowClass(state.state);
-    var secondary = '';
-    if (state.state === 'inside_this') {
-      secondary = '<div class="mg-store-presence-actions"><button class="mg-store-exit-btn" type="button" data-store-exit>Exit Store</button><button class="mg-store-exit-btn" type="button" data-avatar-anchor-prompt>Map Avatar</button></div>';
-    }
-    row.innerHTML = '<div class="mg-store-presence-copy"><span class="mg-store-presence-dot" aria-hidden="true"></span><span>' + escapeHtml(noticeText(state)) + '</span></div>' + secondary;
+    if (row) row.remove();
   }
 
   async function loadPostState(card) {
