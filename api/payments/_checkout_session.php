@@ -105,8 +105,8 @@ function mg_payment_create_checkout_session(PDO $pdo,int $buyerUserId,string $or
          ORDER BY cs.id DESC LIMIT 1 FOR UPDATE"
     );
     $active->execute([(int)$order['id'],$provider]);
-    if($activeSession=$active->fetch(PDO::FETCH_ASSOC)){
-        return mg_payment_checkout_session_payload($activeSession,$orderPublicId,true);
+    if($active->fetch(PDO::FETCH_ASSOC)){
+        throw new MgCheckoutSessionException('An active checkout session already exists for this order. Reuse the original idempotency key or wait for the session to expire.',409);
     }
 
     try{$account=mg_payment_assert_checkout_ready($pdo,$order,$provider);}catch(Throwable $error){
