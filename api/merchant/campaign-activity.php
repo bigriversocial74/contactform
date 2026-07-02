@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 require_once __DIR__ . '/_merchant.php';
@@ -12,6 +13,7 @@ function mg_activity_public_path(string $type): string
         'referral_reward' => '/referral-reward.php',
         'birthday_vip' => '/birthday-vip.php',
         'agent_offer' => '/agent-offer.php',
+        'customer_refund' => '',
         default => '/campaign.php',
     };
 }
@@ -26,7 +28,9 @@ function mg_activity_rules(mixed $json): array
 function mg_activity_public_url(array $row): string
 {
     $type = (string)$row['campaign_type'];
+    if ($type === 'customer_refund') return '';
     $path = mg_activity_public_path($type);
+    if ($path === '') return '';
     if ($type === 'qr_reward_drop' && !empty($row['qr_code_token'])) return $path . '?token=' . rawurlencode((string)$row['qr_code_token']);
     $ref = trim((string)($row['public_slug'] ?? '')) !== '' ? (string)$row['public_slug'] : (string)$row['public_id'];
     return $path . '?campaign=' . rawurlencode($ref);
