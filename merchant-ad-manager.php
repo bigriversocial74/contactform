@@ -35,7 +35,7 @@ require __DIR__ . '/includes/header.php';
       <header class="mg-ads-page-head">
         <div>
           <h1>Campaign Ads <span aria-hidden="true">ⓘ</span></h1>
-          <p>Create and manage campaign boosts and sponsored local drops.</p>
+          <p>Create campaign posts, campaign boosts, and sponsored local drops.</p>
         </div>
         <a class="mg-btn mg-btn-primary" href="#create" data-ads-tab-jump="create">+ New Campaign</a>
       </header>
@@ -58,7 +58,7 @@ require __DIR__ . '/includes/header.php';
 
         <nav class="mg-ads-tabbar" aria-label="Campaign Ads sections">
           <button class="is-active" type="button" data-ads-tab-button="create">Create Campaign</button>
-          <button type="button" data-ads-tab-button="preview">Sponsored Preview</button>
+          <button type="button" data-ads-tab-button="preview">Campaign Preview</button>
           <button type="button" data-ads-tab-button="campaigns">Merchant Campaigns</button>
           <button type="button" data-ads-tab-button="analytics">Analytics</button>
         </nav>
@@ -66,7 +66,7 @@ require __DIR__ . '/includes/header.php';
         <section class="mg-ads-tab-panel is-active" data-ads-tab-panel="create" id="create">
           <div class="mg-ads-create-layout">
             <article class="mg-ads-panel mg-ads-create-panel">
-              <h2>Create Campaign Boost / Sponsored Local Drop</h2>
+              <h2>Create Campaign Post / Sponsored Local Drop</h2>
               <form class="mg-ads-form" data-ad-form onsubmit="return false;">
                 <div class="mg-ads-product-picker">
                   <div class="mg-ads-field">
@@ -79,9 +79,16 @@ require __DIR__ . '/includes/header.php';
                   <button class="mg-btn mg-btn-soft" type="button" data-apply-product disabled>Apply Product</button>
                 </div>
                 <div class="mg-ads-product-summary" data-product-summary hidden></div>
+                <div class="mg-ads-campaign-post-toggle">
+                  <div>
+                    <strong>Campaign post</strong>
+                    <small>Create a feed-style campaign post from the cover image, headline, description, and CTA.</small>
+                  </div>
+                  <label class="mg-ads-check"><input type="checkbox" name="campaign_post_enabled" value="1" checked data-campaign-post-toggle> Create campaign post</label>
+                </div>
                 <div class="mg-ads-field"><label for="ad-title">Campaign title</label><input id="ad-title" name="title" maxlength="190" value="Sponsored Local Drop" required></div>
-                <div class="mg-ads-field"><label for="ad-headline">Sponsored card headline</label><input id="ad-headline" name="headline" maxlength="190" value="Featured Local Reward" required></div>
-                <div class="mg-ads-field"><label for="ad-description">Short offer description</label><textarea id="ad-description" name="description" maxlength="2000" placeholder="Describe the reward, campaign, or local opportunity.">Claim this local reward, save it to your wallet, and redeem it with the merchant.</textarea></div>
+                <div class="mg-ads-field"><label for="ad-headline">Campaign post headline</label><input id="ad-headline" name="headline" maxlength="190" value="Featured Local Reward" required></div>
+                <div class="mg-ads-field"><label for="ad-description">Campaign post description</label><textarea id="ad-description" name="description" maxlength="2000" placeholder="Describe the reward, campaign, or local opportunity.">Claim this local reward, save it to your wallet, and redeem it with the merchant.</textarea></div>
                 <div class="mg-ads-two">
                   <div class="mg-ads-field"><label for="ad-objective">Objective</label><select id="ad-objective" name="objective"><option value="claim_growth">Claim Growth</option><option value="redemption_growth">Redemption Growth</option><option value="gift_sales">Gift Sales</option><option value="loyalty_growth">Loyalty Growth</option><option value="referral_growth">Referral Growth</option><option value="event_traffic">Event Traffic</option><option value="reengagement">Re-Engagement</option><option value="local_awareness">Local Awareness</option><option value="local_drop">Local Drop</option><option value="target_zone_activation">Target Zone Activation</option></select></div>
                   <div class="mg-ads-field"><label for="ad-budget-type">Budget / limit type</label><select id="ad-budget-type" name="budget_type"><option value="none">No billing in Phase 1</option><option value="flat_boost">Flat Boost</option><option value="claim_cap">Claim Cap</option><option value="redemption_cap">Redemption Cap</option><option value="sponsored_reward_budget">Sponsored Reward Budget</option></select></div>
@@ -100,18 +107,18 @@ require __DIR__ . '/includes/header.php';
                 </div>
                 <div class="mg-ads-creative-upload">
                   <div class="mg-ads-creative-upload-copy">
-                    <strong>Campaign image</strong>
-                    <span data-image-source-label>Manual URL fallback</span>
+                    <strong>Campaign cover image</strong>
+                    <span data-image-source-label>Manual cover URL fallback</span>
                   </div>
                   <div class="mg-ads-field">
-                    <label for="ad-image-file">Upload campaign image</label>
+                    <label for="ad-image-file">Upload campaign cover image</label>
                     <input id="ad-image-file" type="file" accept="image/jpeg,image/png,image/gif,image/webp" data-creative-image-file>
-                    <small class="mg-ads-field-hint">JPG, PNG, GIF, or WebP up to 8MB. Uploads override product images while keeping the Image URL field editable.</small>
+                    <small class="mg-ads-field-hint">JPG, PNG, GIF, or WebP up to 8MB. This becomes the campaign post cover and sponsored card image.</small>
                   </div>
-                  <button class="mg-btn mg-btn-soft" type="button" data-upload-creative>Upload Image</button>
+                  <button class="mg-btn mg-btn-soft" type="button" data-upload-creative>Upload Cover</button>
                   <small data-creative-upload-status aria-live="polite"></small>
                 </div>
-                <div class="mg-ads-field"><label for="ad-image">Image URL</label><input id="ad-image" name="image_url" placeholder="/images/example-offer.png"><small class="mg-ads-field-hint">Use this as a fallback, or paste an existing hosted campaign image.</small></div>
+                <div class="mg-ads-field"><label for="ad-image">Campaign cover image URL</label><input id="ad-image" name="image_url" placeholder="/images/example-offer.png"><small class="mg-ads-field-hint">Use this as a fallback, or paste an existing hosted campaign cover image.</small></div>
                 <div class="mg-ads-two">
                   <div class="mg-ads-field"><label for="ad-cta">CTA label</label><input id="ad-cta" name="cta_label" maxlength="80" value="Claim Reward"></div>
                   <div class="mg-ads-field"><label for="ad-destination">Destination URL</label><input id="ad-destination" name="destination_url" placeholder="/feed.php"></div>
@@ -138,12 +145,16 @@ require __DIR__ . '/includes/header.php';
 
             <aside class="mg-ads-side-stack">
               <article class="mg-ads-panel">
+                <h2>Campaign post preview <span aria-hidden="true">ⓘ</span></h2>
+                <div class="mg-campaign-post-preview" data-campaign-post-preview></div>
+              </article>
+              <article class="mg-ads-panel">
                 <h2>Sponsored card preview <span aria-hidden="true">ⓘ</span></h2>
                 <div class="mg-sponsored-placement" data-ads-preview></div>
               </article>
               <article class="mg-ads-panel mg-ads-help-card">
                 <h2>Need help?</h2>
-                <p class="mg-ads-muted">Choose a product or upload campaign media, then tighten the headline and CTA for higher claim and redemption rates.</p>
+                <p class="mg-ads-muted">Choose a product, add a campaign cover image, then tighten the headline and CTA for higher claim and redemption rates.</p>
                 <button class="mg-btn mg-btn-soft" type="button" data-ads-tab-jump="analytics">View best practices →</button>
               </article>
             </aside>
@@ -152,8 +163,8 @@ require __DIR__ . '/includes/header.php';
 
         <section class="mg-ads-tab-panel" data-ads-tab-panel="preview">
           <div class="mg-ads-preview-layout">
-            <article class="mg-ads-panel"><h2>Sponsored preview</h2><p class="mg-ads-muted">Use the Create Campaign tab to edit the preview in real time.</p><div class="mg-sponsored-placement" data-ads-preview-secondary></div></article>
-            <article class="mg-ads-panel"><h2>Preview notes</h2><p class="mg-ads-muted">Preview cards use the same sponsored renderer as Feed, Sidebar, World Canvas, Inbox, and Claim Success placements.</p></article>
+            <article class="mg-ads-panel"><h2>Campaign post preview</h2><p class="mg-ads-muted">This is the feed-style campaign post that uses the cover image, headline, description, and CTA.</p><div class="mg-campaign-post-preview" data-campaign-post-preview-secondary></div></article>
+            <article class="mg-ads-panel"><h2>Sponsored preview</h2><p class="mg-ads-muted">Sponsored cards use the same campaign cover image and campaign copy.</p><div class="mg-sponsored-placement" data-ads-preview-secondary></div></article>
           </div>
         </section>
 

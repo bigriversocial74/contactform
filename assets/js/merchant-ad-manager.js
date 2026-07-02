@@ -19,9 +19,9 @@ window.Microgifter = window.Microgifter || {};
   function field(name){return qs('[name="'+name+'"]');}
   function fieldValue(name){var node=field(name); return node ? node.value : '';}
   function setFieldValue(name, value){var node=field(name); if(node) node.value = value == null ? '' : String(value);}
-  function status(message, error){var node=qs('[data-ads-status]'); if(node){node.textContent=message||''; node.style.color=error?'#b91c1c':'#64748b';}}
+  function status(message, error){var node=qs('[data-ads-status]'); if(node){node.textContent=message||''; node.style.color=error?'#b91c1c':'#64748b'; node.classList.toggle('is-error', !!error);}}
   function uploadStatus(message, error){var node=qs('[data-creative-upload-status]'); if(node){node.textContent=message||''; node.style.color=error?'#b91c1c':'#64748b';}}
-  function updateImageSourceLabel(){var node=qs('[data-image-source-label]'); if(!node)return; node.textContent = imageSource === 'upload' ? 'Uploaded creative applied' : (imageSource === 'product' ? 'Product image applied' : 'Manual URL fallback');}
+  function updateImageSourceLabel(){var node=qs('[data-image-source-label]'); if(!node)return; node.textContent = imageSource === 'upload' ? 'Uploaded cover applied' : (imageSource === 'product' ? 'Product image used as cover' : 'Manual cover URL fallback');}
   function looksUploadedImage(url){return /^\/uploads\/ad-creatives\//.test(String(url||''));}
   function setImageUrl(url, source){setFieldValue('image_url', url || ''); imageSource = source || (looksUploadedImage(url) ? 'upload' : 'manual'); updateImageSourceLabel();}
   function fileSizeLabel(bytes){var size=Number(bytes||0); if(!size)return ''; if(size >= 1024*1024)return (size/(1024*1024)).toFixed(size >= 10*1024*1024 ? 0 : 1)+'MB'; if(size >= 1024)return Math.round(size/1024)+'KB'; return size+'B';}
@@ -41,16 +41,22 @@ window.Microgifter = window.Microgifter || {};
     if (name === 'preview') preview();
   }
 
+  function campaignPostEnabled(){
+    var node = field('campaign_post_enabled');
+    return node ? !!node.checked : true;
+  }
+
   function resetDraft(){
     selectedId=''; selectedProduct=null; imageSource='manual'; lastProductImageUrl='';
     var form=qs('[data-ad-form]'); if(form) form.reset();
     qsa('[name="placements[]"]').forEach(function(i){i.checked=i.value==='feed_sponsored_card'||i.value==='sidebar_sponsored_card';});
+    var postToggle=field('campaign_post_enabled'); if(postToggle) postToggle.checked=true;
     var picker=qs('[data-product-picker]'); if(picker) picker.value='';
     var file=qs('[data-creative-image-file]'); if(file) file.value='';
     renderProductSummary(null);
     updateImageSourceLabel();
     uploadStatus('');
-    status('New draft ready.'); preview(); activateTab('create');
+    status('New campaign post draft ready.'); preview(); activateTab('create');
   }
 
   function productById(id){
@@ -152,18 +158,18 @@ window.Microgifter = window.Microgifter || {};
     var shouldUseProductImage = product.image_url && (!currentImage || imageSource === 'product' || currentImage === lastProductImageUrl);
     if (keepUploadedImage) {
       imageSource = 'upload';
-      uploadStatus('Product applied. Uploaded creative image was preserved.');
+      uploadStatus('Product applied. Uploaded campaign cover image was preserved.');
     } else if (shouldUseProductImage) {
       setImageUrl(product.image_url, 'product');
       lastProductImageUrl = product.image_url;
-      uploadStatus('Product image applied. Upload a creative image to override it.');
+      uploadStatus('Product image applied as the campaign cover. Upload a cover image to override it.');
     }
     setFieldValue('cta_label', product.cta_label || 'Claim Reward');
     setFieldValue('destination_url', product.destination_url || '/feed.php');
     setFieldValue('objective', product.agent_add_to_wallet_allowed ? 'claim_growth' : 'local_awareness');
     renderProductSummary(product);
     updateImageSourceLabel();
-    status('Product applied to ad draft.');
+    status('Product applied to campaign post draft.');
     preview();
   }
 
@@ -187,28 +193,28 @@ window.Microgifter = window.Microgifter || {};
   async function uploadCreative(){
     var input=qs('[data-creative-image-file]');
     var button=qs('[data-upload-creative]');
-    if(!input || !input.files || !input.files[0]){uploadStatus('Choose an image file first.', true);return;}
+    if(!input || !input.files || !input.files[0]){uploadStatus('Choose a campaign cover image first.', true);return;}
     var file=input.files[0];
     var allowed=/\.(jpe?g|png|gif|webp)$/i;
-    if(!allowed.test(file.name || '')){uploadStatus('Use JPG, PNG, GIF, or WebP for campaign images.', true);return;}
-    if(file.size > 8 * 1024 * 1024){uploadStatus('Image must be 8MB or smaller.', true);return;}
+    if(!allowed.test(file.name || '')){uploadStatus('Use JPG, PNG, GIF, or WebP for campaign cover images.', true);return;}
+    if(file.size > 8 * 1024 * 1024){uploadStatus('Campaign cover image must be 8MB or smaller.', true);return;}
     var form=new FormData();
     form.append('csrf_token', csrf);
     form.append('creative_image', file);
     setButtonBusy(button, true, 'Uploading…');
-    uploadStatus('Uploading creative image…');
+    uploadStatus('Uploading campaign cover image…');
     try{
       var res=await fetch('/api/ads/upload-creative.php',{method:'POST',credentials:'same-origin',headers:{'X-CSRF-TOKEN':csrf},body:form});
       var out=await res.json().catch(function(){return {ok:false,message:'Invalid upload response'};});
-      if(!res.ok || !out.ok)throw new Error(out.message||'Unable to upload creative image.');
+      if(!res.ok || !out.ok)throw new Error(out.message||'Unable to upload campaign cover image.');
       var data=out.data||{};
-      if(!data.url)throw new Error('Upload did not return an image URL.');
+      if(!data.url)throw new Error('Upload did not return a cover image URL.');
       setImageUrl(data.url, 'upload');
       var details=[data.width && data.height ? data.width+'×'+data.height : '', fileSizeLabel(data.size_bytes || file.size)].filter(Boolean).join(' · ');
-      uploadStatus('Image uploaded and applied to preview'+(details ? ' ('+details+').' : '.'));
+      uploadStatus('Campaign cover image uploaded and applied to the post preview'+(details ? ' ('+details+').' : '.'));
       preview();
     }catch(error){uploadStatus(error.message||'Upload failed.', true);}
-    finally{setButtonBusy(button, false, 'Upload Image');}
+    finally{setButtonBusy(button, false, 'Upload Cover');}
   }
 
   function checkedPlacements(){return qsa('[name="placements[]"]:checked').map(function(input){return input.value;});}
@@ -217,6 +223,7 @@ window.Microgifter = window.Microgifter || {};
     var productId = qs('[name="source_product_id"]') ? qs('[name="source_product_id"]').value : '';
     var product = productById(productId);
     var currentImage = fieldValue('image_url');
+    var postEnabled = campaignPostEnabled();
     imageSource = resolveImageSourceFromField();
     var targeting = {phase:'phase1', controlled:true};
     if (productId) {
@@ -224,9 +231,15 @@ window.Microgifter = window.Microgifter || {};
       targeting.source_product_type = targetingMeta(product && product.source || 'reward_template', 'Product source');
       targeting.source_product_title = targetingMeta(product && product.title || '', 'Product title');
     }
+    targeting.campaign_post_enabled = targetingMeta(postEnabled ? '1' : '0', 'Campaign post enabled');
+    targeting.campaign_post_format = targetingMeta('feed_cover_card', 'Campaign post format');
+    targeting.campaign_post_headline = targetingMeta(fieldValue('headline'), 'Campaign post headline');
+    targeting.campaign_post_description = targetingMeta(fieldValue('description'), 'Campaign post description');
     if (currentImage) {
       targeting.creative_image_source = targetingMeta(imageSource, 'Creative image source');
       targeting.creative_image_url = targetingMeta(currentImage, 'Creative image URL');
+      targeting.campaign_cover_image_source = targetingMeta(imageSource, 'Campaign cover image source');
+      targeting.campaign_cover_image_url = targetingMeta(currentImage, 'Campaign cover image URL');
     }
     return {
       csrf_token: csrf,
@@ -243,7 +256,7 @@ window.Microgifter = window.Microgifter || {};
       image_url: currentImage,
       cta_label: fieldValue('cta_label'),
       destination_url: fieldValue('destination_url'),
-      destination_type: productId ? 'reward_template' : '',
+      destination_type: productId && product ? (product.source || 'reward_template') : '',
       target_zone_id: fieldValue('target_zone_id'),
       placements: checkedPlacements(),
       targeting: targeting
@@ -255,10 +268,22 @@ window.Microgifter = window.Microgifter || {};
     return '<article class="mg-sponsored-card mg-sponsored-card-preview"><div class="mg-sponsored-card-media">'+(creative.image_url?'<img src="'+esc(creative.image_url)+'" alt="">':'<span>Sponsored</span>')+'</div><div class="mg-sponsored-card-body"><small>Sponsored</small><h3>'+esc(creative.headline||item.title||'Sponsored Campaign')+'</h3><p>'+esc(creative.description||'Claim this local reward, save it to your wallet, and redeem it with the merchant.')+'</p><strong>'+esc(creative.cta_label||'View Offer')+'</strong></div></article>';
   }
 
+  function renderCampaignPostPreview(payload){
+    var enabled = campaignPostEnabled();
+    var merchant = root.getAttribute('data-merchant-name') || 'Microgifter Merchant';
+    var headline = payload.headline || payload.title || 'Featured Local Reward';
+    var description = payload.description || 'Claim this local reward, save it to your wallet, and redeem it with the merchant.';
+    var image = payload.image_url || '';
+    var cta = payload.cta_label || 'View Offer';
+    var destination = payload.destination_url || '/feed.php';
+    return '<article class="mg-campaign-post-card '+(enabled?'':'is-disabled')+'"><div class="mg-campaign-post-cover">'+(image?'<img src="'+esc(image)+'" alt="">':'<span>Campaign cover image</span>')+'</div><div class="mg-campaign-post-body"><div class="mg-campaign-post-meta"><span>'+(enabled?'Campaign Post':'Campaign Post Disabled')+'</span><em>'+esc(merchant)+'</em></div><h3>'+esc(headline)+'</h3><p>'+esc(description)+'</p><div class="mg-campaign-post-foot"><strong>'+esc(cta)+'</strong><small>'+esc(destination)+'</small></div></div></article>';
+  }
+
   function preview(){
     var payload = formPayload();
     var item = {public_id:selectedId||'preview', title:payload.title, objective:payload.objective, placement_key:payload.placements[0]||'feed_sponsored_card', merchant:{merchant_name:root.getAttribute('data-merchant-name')||'Microgifter Merchant'}, creative:{headline:payload.headline||payload.title, description:payload.description, image_url:payload.image_url, cta_label:payload.cta_label||'View Offer', destination_url:payload.destination_url, sponsored_label:'Sponsored'}};
     qsa('[data-ads-preview],[data-ads-preview-secondary]').forEach(function(target){target.innerHTML = window.Microgifter.renderSponsoredCampaignCard ? window.Microgifter.renderSponsoredCampaignCard(item,{compact:false}) : previewFallback(item);});
+    qsa('[data-campaign-post-preview],[data-campaign-post-preview-secondary]').forEach(function(target){target.innerHTML = renderCampaignPostPreview(payload);});
     updateImageSourceLabel();
   }
 
@@ -297,6 +322,11 @@ window.Microgifter = window.Microgifter || {};
     setFieldValue('destination_url', creative.destination_url || '');
     setFieldValue('target_zone_id', c.target_zone_id || '');
     qsa('[name="placements[]"]').forEach(function(input){input.checked=(c.placements||[]).indexOf(input.value)!==-1;});
+    var postToggle = field('campaign_post_enabled');
+    if (postToggle) {
+      var postValue = targetingValue(c.targeting, 'campaign_post_enabled');
+      postToggle.checked = postValue === '' || postValue === '1' || postValue === 'true';
+    }
     var sourceProductId = targetingValue(c.targeting, 'source_product_id');
     var picker=qs('[data-product-picker]');
     if(picker) picker.value=sourceProductId;
@@ -375,7 +405,7 @@ window.Microgifter = window.Microgifter || {};
   var uploadButton=qs('[data-upload-creative]');
   if(uploadButton) uploadButton.addEventListener('click',function(){uploadCreative();});
   var fileInput=qs('[data-creative-image-file]');
-  if(fileInput) fileInput.addEventListener('change',function(){uploadStatus(fileInput.files && fileInput.files[0] ? 'Ready to upload: '+fileInput.files[0].name+' ('+fileSizeLabel(fileInput.files[0].size)+')' : '');});
+  if(fileInput) fileInput.addEventListener('change',function(){uploadStatus(fileInput.files && fileInput.files[0] ? 'Ready to upload campaign cover: '+fileInput.files[0].name+' ('+fileSizeLabel(fileInput.files[0].size)+')' : '');});
   var imageInput=field('image_url');
   if(imageInput) imageInput.addEventListener('input',function(){imageSource=resolveImageSourceFromField(); updateImageSourceLabel();});
   var search=qs('[data-ads-search]'); if(search) search.addEventListener('input', renderList);
