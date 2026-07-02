@@ -12,6 +12,19 @@ window.Microgifter = window.Microgifter || {};
   function qsa(sel, scope){return Array.prototype.slice.call((scope||root).querySelectorAll(sel));}
   function status(message, error){var node=qs('[data-ads-status]'); if(node){node.textContent=message||''; node.style.color=error?'#b91c1c':'#64748b';}}
   function uploadStatus(message, error){var node=qs('[data-creative-upload-status]'); if(node){node.textContent=message||''; node.style.color=error?'#b91c1c':'#64748b';}}
+  function previewImageUrl(value){
+    var raw = String(value || '').trim();
+    if (!raw || /[\u0000-\u001f\u007f]/.test(raw)) return '';
+    try {
+      var parsed = new URL(raw, window.location.origin);
+      if (['http:','https:'].indexOf(parsed.protocol) === -1 || parsed.username || parsed.password) return '';
+      return raw.charAt(0) === '/' ? parsed.pathname + parsed.search + parsed.hash : parsed.href;
+    } catch (error) {
+      return '';
+    }
+  }
+  function initials(value){return String(value || 'MG').split(/\s+/).filter(Boolean).slice(0,2).map(function(part){return part.charAt(0);}).join('').toUpperCase() || 'MG';}
+  function setNodeText(selector, value, scope){var node=qs(selector, scope); if(node) node.textContent=value || '';}
   async function api(path, options){
     var res = await fetch(path, Object.assign({credentials:'same-origin'}, options||{}));
     var out = await res.json().catch(function(){return {ok:false,message:'Invalid server response'};});
@@ -61,9 +74,43 @@ window.Microgifter = window.Microgifter || {};
       targeting: {phase:'phase1', controlled:true}
     };
   }
+  function coverPreview(payload){
+    var card = qs('[data-cover-preview]');
+    if (!card) return;
+    payload = payload || formPayload();
+    var merchantName = root.getAttribute('data-merchant-name') || 'Microgifter Merchant';
+    var media = qs('[data-cover-preview-media]', card);
+    var headline = payload.headline || payload.title || 'Featured Local Reward';
+    var description = payload.description || 'Claim this local reward, save it to your wallet, and redeem it with the merchant.';
+    var cta = payload.cta_label || 'View Offer';
+    var destination = payload.destination_url || '/feed.php';
+    var image = previewImageUrl(payload.image_url);
+    setNodeText('[data-cover-preview-merchant]', merchantName, card);
+    setNodeText('[data-cover-preview-headline]', headline, card);
+    setNodeText('[data-cover-preview-description]', description, card);
+    setNodeText('[data-cover-preview-cta]', cta, card);
+    setNodeText('[data-cover-preview-destination]', destination, card);
+    if (!media) return;
+    if (!image) {
+      media.classList.add('is-empty');
+      media.classList.remove('is-image-missing');
+      media.innerHTML = '<span>'+esc(initials(headline || merchantName))+'</span>';
+      return;
+    }
+    media.classList.remove('is-empty','is-image-missing');
+    media.innerHTML = '<img src="'+esc(image)+'" alt="" loading="lazy" data-cover-preview-image>';
+    var img = qs('[data-cover-preview-image]', media);
+    if (img) {
+      img.addEventListener('error', function(){
+        media.classList.add('is-image-missing');
+        media.innerHTML = '<span>Image unavailable</span>';
+      }, {once:true});
+    }
+  }
   function preview(){
     var payload = formPayload();
     var item = {public_id:selectedId||'preview', title:payload.title, objective:payload.objective, placement_key:payload.placements[0]||'feed_sponsored_card', merchant:{merchant_name:root.getAttribute('data-merchant-name')||'Microgifter Merchant'}, creative:{headline:payload.headline||payload.title, description:payload.description, image_url:payload.image_url, cta_label:payload.cta_label||'View Offer', destination_url:payload.destination_url, sponsored_label:'Sponsored'}};
+    coverPreview(payload);
     qsa('[data-ads-preview],[data-ads-preview-secondary]').forEach(function(target){if (window.Microgifter.renderSponsoredCampaignCard) target.innerHTML = window.Microgifter.renderSponsoredCampaignCard(item,{compact:false});});
   }
   function productLabel(product){

@@ -138,6 +138,19 @@ require __DIR__ . '/includes/header.php';
 
             <aside class="mg-ads-side-stack">
               <article class="mg-ads-panel">
+                <h2>Cover image preview <span aria-hidden="true">ⓘ</span></h2>
+                <p class="mg-ads-muted">Post-style preview for the uploaded or pasted campaign image.</p>
+                <div class="mg-campaign-post-card" data-cover-preview>
+                  <div class="mg-campaign-post-cover" data-cover-preview-media><span>Upload or paste an image URL</span></div>
+                  <div class="mg-campaign-post-body">
+                    <div class="mg-campaign-post-meta"><span data-cover-preview-merchant><?php echo mg_e($merchantName); ?></span><em>Sponsored cover</em></div>
+                    <h3 data-cover-preview-headline>Featured Local Reward</h3>
+                    <p data-cover-preview-description>Claim this local reward, save it to your wallet, and redeem it with the merchant.</p>
+                    <div class="mg-campaign-post-foot"><strong data-cover-preview-cta>Claim Reward</strong><small data-cover-preview-destination>/feed.php</small></div>
+                  </div>
+                </div>
+              </article>
+              <article class="mg-ads-panel">
                 <h2>Sponsored card preview <span aria-hidden="true">ⓘ</span></h2>
                 <div class="mg-sponsored-placement" data-ads-preview></div>
               </article>
