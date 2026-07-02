@@ -9,7 +9,7 @@
       <p>Here’s what’s happening with your merchant account today.</p>
       <div class="mg-merchant-hero-meta"><span data-merchant-company>Merchant workspace</span><span data-merchant-location>Local operating center</span><span data-merchant-local-time>Local time syncing</span></div>
     </div>
-    <div class="mg-merchant-hero-cards"><article><span>Account status</span><strong data-merchant-eligibility>Checking</strong></article><article><span>Plan and Tier</span><strong data-merchant-plan-name>Current</strong><a href="/account-subscriptions.php">Manage Plan</a></article></div>
+    <div class="mg-merchant-hero-cards"><article><span>Account standing</span><strong class="is-positive" data-merchant-eligibility>Checking</strong></article><article><span>Plan and Tier</span><strong data-merchant-plan-name>Current</strong><a href="/account-subscriptions.php">Manage Plan</a></article></div>
   </section>
 
   <div class="mg-merchant-actions-bar"><div class="mg-merchant-primary-actions"><a class="mg-btn mg-btn-primary" href="/build.php">Create Product</a><a class="mg-btn mg-btn-primary" href="/merchant-campaigns.php#campaign-create">Create Campaign</a><a class="mg-btn mg-btn-ghost" href="/merchant-crm.php">Open CRM</a><a class="mg-btn mg-btn-ghost" href="/merchant-reward-templates.php">Send Rewards</a><a class="mg-btn mg-btn-ghost" href="/merchant-distribution.php">More Actions</a></div></div>
@@ -34,3 +34,6 @@
 
   <div hidden><div data-merchant-step-list></div><div data-payment-readiness></div></div>
 </section>
+<style>
+.mg-merchant-overview-dashboard .mg-package-limit-card>div:first-child{display:block!important}.mg-merchant-overview-dashboard .mg-package-limit-card span{display:block}.mg-merchant-overview-dashboard .mg-package-limit-card strong{display:block!important;margin-top:7px;font-size:14px!important;line-height:1.25!important;white-space:normal!important;font-weight:850!important;letter-spacing:-.01em}.mg-merchant-overview-dashboard .mg-package-limit-card small{font-size:10px!important;line-height:1.35}.mg-merchant-overview-dashboard .mg-package-limit-card{min-width:0}.mg-merchant-overview-dashboard [data-merchant-eligibility].is-positive{color:#159447!important}
+</style>
