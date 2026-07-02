@@ -17,6 +17,7 @@ $page_styles = [
     '/assets/css/merchant-agent-chat-mobile-offset.css',
     '/assets/css/merchant-agent-chat-voice.css',
     '/assets/css/merchant-agent-chat-control-panel.css',
+    '/assets/css/merchant-agent-chat-mobile-footer-reset.css',
     '/assets/css/merchant-agent-memory-menu.css',
     '/assets/css/merchant-agent-creative-presets.css',
     '/assets/css/merchant-agent-creative-draft-actions.css',
