@@ -60,6 +60,25 @@ require dirname(__DIR__) . '/includes/header.php';
         <div class="mg-recorder-status" data-recorder-status role="status" aria-live="polite">Ready to record.</div>
       </section>
 
+      <?php if ($canManageRecordings): ?>
+        <section class="mg-screen-recordings-diagnostics" data-recordings-diagnostics>
+          <header>
+            <div>
+              <span class="mg-eyebrow">Shared hosting readiness</span>
+              <h2>Renderer diagnostics</h2>
+              <p>Check whether this server can run FFmpeg exports now, or whether the editor should use browser rendering until the hosting upgrade.</p>
+            </div>
+            <div class="mg-diagnostics-actions">
+              <span>System check <strong data-diagnostics-updated>Not checked</strong></span>
+              <button class="mg-btn mg-btn-soft" type="button" data-diagnostics-run>Run system check</button>
+            </div>
+          </header>
+          <div class="mg-diagnostics-status" data-diagnostics-status role="status" aria-live="polite">Ready to check FFmpeg, FFprobe, PHP execution, upload limits, and recording storage.</div>
+          <div class="mg-diagnostics-grid" data-diagnostics-grid></div>
+          <div class="mg-diagnostics-warning-list" data-diagnostics-warnings hidden></div>
+        </section>
+      <?php endif; ?>
+
       <section class="mg-screen-recordings-filters">
         <label class="is-search">Search
           <input type="search" data-recordings-search maxlength="120" placeholder="Title, notes, or filename">
