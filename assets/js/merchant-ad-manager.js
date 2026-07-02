@@ -209,10 +209,16 @@ window.Microgifter = window.Microgifter || {};
   function placementText(c){return (c.placements||[]).join(', ').replace(/_/g,' ') || 'None selected';}
   function money(value){var n=Number(value||0); return n ? '$'+n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';}
   function dateShort(value){if(!value)return '—'; try{return new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric',year:'numeric'}).format(new Date(String(value).replace(' ','T')));}catch(e){return String(value).slice(0,10);}}
+  function campaignThumbHtml(c){
+    var creative = c.creative || {};
+    var label = initials(creative.headline || c.title || 'Ad');
+    var image = previewImageUrl(creative.image_url || '');
+    return '<span class="mg-ads-row-thumb">' + (image ? '<img src="'+esc(image)+'" alt="" loading="lazy">' : esc(label)) + '</span>';
+  }
   function campaignRow(c){
     var creative = c.creative || {};
     return '<article class="mg-ads-row mg-ads-campaign-table-row" data-campaign-id="'+esc(c.public_id)+'">'
-      + '<div><strong>'+esc(c.title)+'</strong><span>'+esc(creative.headline||placementText(c))+'</span></div>'
+      + '<div class="mg-ads-campaign-name">'+campaignThumbHtml(c)+'<div><strong>'+esc(c.title)+'</strong><span>'+esc(creative.headline||placementText(c))+'</span></div></div>'
       + '<span class="mg-ads-pill is-'+esc(c.status)+'">'+esc(c.status).replace(/_/g,' ')+'</span>'
       + '<span>'+esc(money(c.budget_amount))+'</span>'
       + '<span>'+esc((c.objective||'').replace(/_/g,' '))+'</span>'
