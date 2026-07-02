@@ -40,15 +40,32 @@ $profileMediaUrl='/api/public/media.php?asset='.$assetId;
 $storyReferenceSql='0 public_story_reference';
 $params=[$profileMediaUrl,$assetId,$profileMediaUrl,$assetId];
 if(mg_public_media_table_exists($pdo,'microgifter_stories')){
-    $storyReferenceSql="EXISTS (
+    $storyExistsSql="EXISTS (
               SELECT 1 FROM microgifter_stories stories
               WHERE stories.status='active' AND stories.expires_at>NOW()
                 AND (stories.media_url=? OR stories.thumbnail_url=? OR stories.media_url=? OR stories.thumbnail_url=?)
-            ) public_story_reference";
+            )";
+    $storyReferenceParts=[$storyExistsSql];
     $params[]=$profileMediaUrl;
     $params[]=$profileMediaUrl;
     $params[]=$assetId;
     $params[]=$assetId;
+    if(mg_public_media_table_exists($pdo,'microgifter_story_highlights')){
+        $storyReferenceParts[]="EXISTS (
+              SELECT 1 FROM microgifter_story_highlights h
+              INNER JOIN microgifter_stories hs ON hs.id=h.story_id
+              INNER JOIN public_profiles hp ON hp.user_id=h.profile_user_id
+              INNER JOIN users hu ON hu.id=hp.user_id
+              WHERE h.status='active' AND hs.status IN ('active','expired')
+                AND hp.status='active' AND hp.visibility IN ('public','unlisted') AND hu.status='active'
+                AND (hs.media_url=? OR hs.thumbnail_url=? OR hs.media_url=? OR hs.thumbnail_url=?)
+            )";
+        $params[]=$profileMediaUrl;
+        $params[]=$profileMediaUrl;
+        $params[]=$assetId;
+        $params[]=$assetId;
+    }
+    $storyReferenceSql='(' . implode(' OR ', $storyReferenceParts) . ') public_story_reference';
 }
 $params[]=$assetId;
 $stmt=$pdo->prepare(
