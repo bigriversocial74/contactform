@@ -8,11 +8,18 @@ window.Microgifter = window.Microgifter || {};
   var fallbackLoaded = false;
 
   function ensureStyles() {
-    if (document.querySelector('link[href="/assets/css/social-feed-post-polish.css"]')) return;
-    var link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = '/assets/css/social-feed-post-polish.css';
-    document.head.appendChild(link);
+    if (!document.querySelector('link[href="/assets/css/social-feed-post-polish.css"]')) {
+      var link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = '/assets/css/social-feed-post-polish.css';
+      document.head.appendChild(link);
+    }
+    if (!document.querySelector('[data-feed-card-type-label-style]')) {
+      var style = document.createElement('style');
+      style.dataset.feedCardTypeLabelStyle = '1';
+      style.textContent = '.mg-social-feed-page .mg-feed-linked-card.is-product.is-greeting_card .mg-feed-linked-topline,.mg-social-feed-page .mg-feed-linked-card.is-product.is-multimedia_card .mg-feed-linked-topline{display:flex!important;justify-content:flex-start!important;margin:0 0 -2px!important}.mg-social-feed-page .mg-feed-linked-card.is-product.is-greeting_card .mg-feed-linked-eyebrow,.mg-social-feed-page .mg-feed-linked-card.is-product.is-multimedia_card .mg-feed-linked-eyebrow{display:inline-flex!important;align-items:center!important;width:max-content!important;padding:5px 8px!important;border-radius:999px!important;background:#eef5ff!important;color:#1d4ed8!important;font-size:.64rem!important;font-weight:950!important;letter-spacing:.09em!important;line-height:1!important;text-transform:uppercase!important}.mg-social-feed-page .mg-feed-linked-card.is-product.is-greeting_card .mg-feed-linked-status,.mg-social-feed-page .mg-feed-linked-card.is-product.is-multimedia_card .mg-feed-linked-status{display:none!important}';
+      document.head.appendChild(style);
+    }
   }
 
   function qsa(selector, scope) {
@@ -217,6 +224,10 @@ window.Microgifter = window.Microgifter || {};
     }
   }
 
+  function isGreetingProductCard(card) {
+    return card.classList.contains('is-greeting_card') || card.classList.contains('is-multimedia_card') || card.dataset.cardVariant === 'greeting_card' || card.dataset.cardVariant === 'multimedia_card';
+  }
+
   function hideDuplicateProductHeadline(linkedCard) {
     var feedCard = linkedCard.closest('.mg-feed-card');
     if (!feedCard) return;
@@ -231,8 +242,12 @@ window.Microgifter = window.Microgifter || {};
       hideDuplicateProductHeadline(card);
       var preview = card.querySelector('.mg-feed-linked-preview');
       if (preview && !preview.querySelector('img')) preview.textContent = '';
-      qsa('.mg-feed-linked-eyebrow,.mg-feed-linked-status,.mg-feed-linked-access', card).forEach(function (node) {
+      qsa('.mg-feed-linked-status,.mg-feed-linked-access', card).forEach(function (node) {
         node.setAttribute('aria-hidden', 'true');
+      });
+      qsa('.mg-feed-linked-eyebrow', card).forEach(function (node) {
+        if (isGreetingProductCard(card)) node.removeAttribute('aria-hidden');
+        else node.setAttribute('aria-hidden', 'true');
       });
     });
   }
