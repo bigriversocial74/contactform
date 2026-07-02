@@ -17,7 +17,7 @@
     var scope = root.getAttribute('data-health-scope') || 'merchant';
     var res = await fetch('/api/ads/health-alerts.php?scope=' + encodeURIComponent(scope), {credentials:'same-origin', headers:{Accept:'application/json'}});
     var out = await res.json().catch(function(){return {ok:false,message:'Invalid health response'};});
-    if (!out.ok) throw new Error(out.message || 'Unable to load health alerts.');
+    if (!res.ok || !out.ok) throw new Error(out.message || 'Unable to load health alerts.');
     render(root, out.data || {});
   }
   document.addEventListener('DOMContentLoaded', function(){
