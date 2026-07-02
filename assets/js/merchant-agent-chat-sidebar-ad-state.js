@@ -5,12 +5,14 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!placement) return;
     function sync() {
       var hasAd = !!placement.querySelector('[data-sponsored-card],[data-ad-campaign-id],.mg-sponsored-card');
-      var isEmpty = placement.classList.contains('mg-sponsored-empty') || !hasAd;
+      var isLoading = placement.getAttribute('aria-busy') === 'true';
+      var isEmpty = hasAd ? false : (placement.classList.contains('mg-sponsored-empty') || !isLoading);
       shell.classList.toggle('is-empty', isEmpty);
+      shell.toggleAttribute('data-has-active-ad', hasAd);
     }
     sync();
     if ('MutationObserver' in window) {
-      new MutationObserver(sync).observe(placement, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'data-sponsored-empty-reason'] });
+      new MutationObserver(sync).observe(placement, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'aria-busy', 'data-sponsored-empty-reason'] });
     }
     window.setTimeout(sync, 800);
     window.setTimeout(sync, 2200);
