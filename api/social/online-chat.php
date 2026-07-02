@@ -18,6 +18,22 @@ function mg_feed_chat_avatar(?string $url): ?string
     return preg_match('#^https://#i', $url) === 1 && filter_var($url, FILTER_VALIDATE_URL) ? $url : null;
 }
 
+function mg_feed_chat_profile_for_user(PDO $pdo, int $userId): ?array
+{
+    $stmt = $pdo->prepare("SELECT pp.public_id,pp.user_id,pp.slug,pp.display_name,pp.avatar_url,pp.profile_type,MAX(us.last_seen_at) last_seen_at,CASE WHEN MAX(us.last_seen_at)>=DATE_SUB(NOW(), INTERVAL 2 MINUTE) THEN 1 ELSE 0 END is_online FROM public_profiles pp INNER JOIN users u ON u.id=pp.user_id LEFT JOIN user_sessions us ON us.user_id=pp.user_id AND us.revoked_at IS NULL AND us.expires_at>NOW() WHERE pp.user_id=? AND pp.status='active' AND pp.visibility IN ('public','unlisted') AND u.status='active' GROUP BY pp.id LIMIT 1");
+    $stmt->execute([$userId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return is_array($row) ? $row : null;
+}
+
+function mg_feed_chat_existing_thread_exists(PDO $pdo, int $viewerId, int $peerId): bool
+{
+    $key = mg_feed_chat_key($viewerId, $peerId);
+    $stmt = $pdo->prepare('SELECT 1 FROM message_threads mt INNER JOIN message_thread_participants a ON a.thread_id=mt.id AND a.user_id=? INNER JOIN message_thread_participants b ON b.thread_id=mt.id AND b.user_id=? WHERE mt.conversation_key=? LIMIT 1');
+    $stmt->execute([$viewerId, $peerId, $key]);
+    return (bool)$stmt->fetchColumn();
+}
+
 function mg_feed_chat_profile(PDO $pdo, int $viewerId, string $profileId): array
 {
     $stmt = $pdo->prepare(
@@ -39,7 +55,7 @@ function mg_feed_chat_profile(PDO $pdo, int $viewerId, string $profileId): array
     if (mg_social_is_blocked($pdo, $viewerId, $peerId)) throw new RuntimeException('Profile is not available.');
     $rel = $pdo->prepare("SELECT 1 FROM social_follows WHERE status='active' AND follower_user_id=? AND followed_user_id=? LIMIT 1");
     $rel->execute([$viewerId, $peerId]);
-    if (!$rel->fetchColumn()) throw new RuntimeException('Connected profile required.');
+    if (!$rel->fetchColumn() && !mg_feed_chat_existing_thread_exists($pdo, $viewerId, $peerId)) throw new RuntimeException('Connected profile required.');
     return $peer;
 }
 
@@ -104,8 +120,10 @@ try {
             $peer = mg_feed_chat_profile($pdo, $viewerId, $profileId);
             $thread = mg_feed_chat_thread($pdo, $viewerId, (int)$peer['user_id'], false);
             $messages = $thread ? mg_feed_chat_messages($pdo, $thread, $viewerId) : [];
-            if ($thread) $pdo->prepare('UPDATE message_thread_participants SET last_read_at=NOW() WHERE thread_id=? AND user_id=?')->execute([(int)$thread['id'], $viewerId]);
-            mg_ok(['profile'=>mg_feed_chat_project_profile($peer),'thread'=>$thread ? ['id'=>(string)$thread['public_id'],'subject'=>(string)$thread['subject'],'unread'=>0] : null,'messages'=>$messages,'poll_after_ms'=>5000]);
+            $markRead = (string)($_GET['mark_read'] ?? '') === '1';
+            if ($thread && $markRead) $pdo->prepare('UPDATE message_thread_participants SET last_read_at=NOW() WHERE thread_id=? AND user_id=?')->execute([(int)$thread['id'], $viewerId]);
+            $unread = $thread && !$markRead ? mg_feed_chat_unread($pdo, $viewerId, $thread) : 0;
+            mg_ok(['profile'=>mg_feed_chat_project_profile($peer),'thread'=>$thread ? ['id'=>(string)$thread['public_id'],'subject'=>(string)$thread['subject'],'unread'=>$unread] : null,'messages'=>$messages,'poll_after_ms'=>5000]);
             return;
         }
         $stmt = $pdo->prepare("SELECT pp.public_id,pp.user_id,pp.slug,pp.display_name,pp.avatar_url,pp.profile_type,MAX(us.last_seen_at) last_seen_at,CASE WHEN MAX(us.last_seen_at)>=DATE_SUB(NOW(), INTERVAL 2 MINUTE) THEN 1 ELSE 0 END is_online FROM social_follows sf INNER JOIN public_profiles pp ON pp.user_id=sf.followed_user_id INNER JOIN users u ON u.id=pp.user_id AND u.status='active' LEFT JOIN user_sessions us ON us.user_id=pp.user_id AND us.revoked_at IS NULL AND us.expires_at>NOW() WHERE sf.follower_user_id=? AND sf.status='active' AND pp.status='active' AND pp.visibility IN ('public','unlisted') AND NOT EXISTS (SELECT 1 FROM social_blocks b WHERE (b.blocking_user_id=? AND b.blocked_user_id=pp.user_id) OR (b.blocking_user_id=pp.user_id AND b.blocked_user_id=?)) GROUP BY pp.id ORDER BY is_online DESC,last_seen_at DESC,pp.updated_at DESC LIMIT 10");
@@ -134,7 +152,11 @@ try {
         $pdo->prepare('UPDATE message_threads SET updated_at=NOW() WHERE id=?')->execute([(int)$thread['id']]);
         $pdo->prepare('UPDATE message_thread_participants SET last_read_at=NOW() WHERE thread_id=? AND user_id=?')->execute([(int)$thread['id'],$viewerId]);
         $senderName = mg_notification_user_label($pdo, $viewerId);
-        $notificationId = mg_create_notification($pdo, $peerId, 'message', 'New chat message', $senderName . ': ' . mb_substr($body, 0, 500), '/feed.php?chat=' . rawurlencode((string)$peer['public_id']), ['actor_user_id'=>$viewerId,'event_key'=>'message.social_chat.' . strtolower((string)$thread['public_id']),'aggregate'=>true,'message_id'=>$messageId,'thread_id'=>(int)$thread['id'],'thread_public_id'=>(string)$thread['public_id'],'recipient_profile_id'=>(string)$peer['public_id'],'source_type'=>'social_chat','source_reference'=>(string)$thread['conversation_key'],'source_system'=>'messages','source_label'=>'Feed Chat']);
+        $senderProfile = mg_feed_chat_profile_for_user($pdo, $viewerId);
+        $senderProfileId = is_array($senderProfile) ? (string)$senderProfile['public_id'] : '';
+        $messageFallbackUrl = '/messages.php?thread=' . rawurlencode((string)$thread['public_id']);
+        $actionUrl = $senderProfileId !== '' ? '/feed.php?chat=' . rawurlencode($senderProfileId) . '&thread=' . rawurlencode((string)$thread['public_id']) : $messageFallbackUrl;
+        $notificationId = mg_create_notification($pdo, $peerId, 'message', 'New Feed Chat message', $senderName . ': ' . mb_substr($body, 0, 500), $actionUrl, ['actor_user_id'=>$viewerId,'event_key'=>'message.social_chat.' . strtolower((string)$thread['public_id']),'aggregate'=>true,'message_id'=>$messageId,'thread_id'=>(int)$thread['id'],'thread_public_id'=>(string)$thread['public_id'],'sender_profile_id'=>$senderProfileId ?: null,'recipient_profile_id'=>(string)$peer['public_id'],'fallback_url'=>$messageFallbackUrl,'source_type'=>'social_chat','source_reference'=>(string)$thread['conversation_key'],'source_system'=>'social_feed','source_label'=>'Feed Chat']);
         $delivery = mg_message_delivery_validate($pdo, ['thread_id'=>(int)$thread['id'],'thread_public_id'=>(string)$thread['public_id'],'message_id'=>$messageId,'sender_user_id'=>$viewerId,'recipient_user_ids'=>[$peerId],'notification_ids'=>$notificationId !== '' ? [$notificationId] : [],'source_type'=>'social_chat','source_reference'=>(string)$thread['conversation_key'],'conversation_key'=>(string)$thread['conversation_key']]);
         mg_message_delivery_throw_if_failed($delivery);
         $pdo->commit();

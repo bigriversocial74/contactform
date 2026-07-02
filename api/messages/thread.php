@@ -9,6 +9,7 @@ function mg_messages_source_type(?string $sourceType, ?string $conversationKey =
     $sourceType = trim((string)$sourceType);
     $conversationKey = trim((string)$conversationKey);
     if ($sourceType !== '' && $sourceType !== 'messaging') return $sourceType;
+    if ($conversationKey !== '' && str_starts_with($conversationKey, 'social_direct:')) return 'social_chat';
     if ($conversationKey !== '' && str_starts_with($conversationKey, 'store_canvas:')) return 'store_canvas_direct';
     if ($conversationKey !== '' && str_starts_with($conversationKey, 'crm:')) return 'merchant_crm_message';
     if (trim((string)$pppmId) !== '') return 'pppm_message';
@@ -18,6 +19,7 @@ function mg_messages_source_type(?string $sourceType, ?string $conversationKey =
 function mg_messages_source_label(string $sourceType): string
 {
     return match ($sourceType) {
+        'social_chat' => 'Feed Chat',
         'store_canvas_direct' => 'Store Canvas',
         'store_canvas_reply' => 'Store Canvas Reply',
         'merchant_crm_message', 'merchant_crm' => 'Merchant CRM',
@@ -31,6 +33,7 @@ function mg_messages_source_label(string $sourceType): string
 
 function mg_messages_source_system(string $sourceType): string
 {
+    if ($sourceType === 'social_chat') return 'social_feed';
     if (str_starts_with($sourceType, 'store_canvas')) return 'store_canvas';
     if ($sourceType === 'merchant_crm_message' || $sourceType === 'merchant_crm') return 'merchant_crm';
     if (str_starts_with($sourceType, 'action_center') || $sourceType === 'pppm_message') return 'in_out_box';
@@ -39,6 +42,9 @@ function mg_messages_source_system(string $sourceType): string
 
 function mg_messages_source_context(PDO $pdo, string $sourceType, string $sourceReference): array
 {
+    if ($sourceType === 'social_chat' && $sourceReference !== '') {
+        return ['conversation_key' => $sourceReference, 'source_label' => 'Feed Chat'];
+    }
     if (!in_array($sourceType, ['merchant_crm_message','merchant_crm'], true) || $sourceReference === '') return [];
     $stmt = $pdo->prepare(
         "SELECT cc.public_id contact_public_id,cc.email,cc.name,cc.source contact_source,
@@ -94,7 +100,7 @@ if ($method === 'GET') {
                 u.display_name AS sender_name,u.full_name AS sender_full_name
          FROM messages m
          INNER JOIN users u ON u.id = m.sender_user_id
-         WHERE m.thread_id = ? AND m.moderation_status NOT IN ('hidden','removed')
+         WHERE m.thread_id = ? AND COALESCE(m.moderation_status,'clear') NOT IN ('hidden','removed')
          ORDER BY m.created_at ASC,m.id ASC"
     );
     $messagesStmt->execute([(int)$thread['id']]);
@@ -123,6 +129,7 @@ if ($method === 'GET') {
     $latest = $messages !== [] ? $messages[array_key_last($messages)] : null;
     $latestSourceType = $latest ? (string)($latest['source']['type'] ?? 'messaging') : mg_messages_source_type(null, (string)($thread['conversation_key'] ?? ''), (string)($thread['pppm_public_id'] ?? ''));
     $latestReference = $latest ? (string)($latest['source']['reference'] ?? '') : '';
+    if ($latestReference === '' && $latestSourceType === 'social_chat') $latestReference = (string)($thread['conversation_key'] ?? '');
     $sourceContext = mg_messages_source_context($pdo, $latestSourceType, $latestReference);
     $crmOps = mg_message_crm_ops_get($pdo, (int)$thread['id'], (int)$user['id']);
     $pdo->prepare('UPDATE message_thread_participants SET last_read_at = NOW() WHERE thread_id = ? AND user_id = ?')->execute([(int)$thread['id'], (int)$user['id']]);
