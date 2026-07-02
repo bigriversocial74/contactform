@@ -26,7 +26,7 @@ function safeUrl(value){
     if(!raw)return null;
     try{
         var parsed=new URL(raw,window.location.origin);
-        if(!['http:','https:'].includes(parsed.protocol)||parsed.username||parsed.password)return null;
+        if(!['http:','https:'].includes(parsed.protocol))return null;
         if(raw.startsWith('/')){
             if(raw.startsWith('//')||parsed.origin!==window.location.origin)return null;
             return parsed.pathname+parsed.search+parsed.hash;
@@ -106,7 +106,43 @@ function actionNode(action){
     return button;
 }
 
+function isCardProduct(card){
+    return card&&card.kind==='product'&&(card.variant==='greeting_card'||card.variant==='multimedia_card');
+}
+
+function cardCoverNode(card){
+    var variant=safeClass(card.variant||'greeting_card');
+    var article=element('article','mg-feed-linked-card mg-feed-card-cover-preview is-product is-'+variant);
+    article.dataset.cardVariant=variant;
+
+    var art=element('div','mg-feed-card-cover-art');
+    var imageUrl=safeUrl(card.image_url);
+    if(imageUrl){
+        var image=document.createElement('img');
+        image.src=imageUrl;
+        image.alt='';
+        image.loading='lazy';
+        image.addEventListener('error',function(){image.remove();art.appendChild(element('div','mg-feed-card-cover-fallback',fallbackLabel(card)));},{once:true});
+        art.appendChild(image);
+    }else{
+        art.appendChild(element('div','mg-feed-card-cover-fallback',fallbackLabel(card)));
+    }
+    art.appendChild(element('span','mg-feed-card-cover-badge',card.variant==='multimedia_card'?'Multimedia Card':'Greeting Card'));
+
+    var body=element('div','mg-feed-card-cover-body');
+    body.appendChild(element('h4','',String(card.title||'Greeting card')));
+    body.appendChild(element('strong','mg-feed-card-cover-value',valueLabel(card)));
+    var footer=element('footer','mg-feed-card-cover-footer');
+    footer.appendChild(actionNode(card.action));
+    body.appendChild(footer);
+
+    article.append(art,body);
+    return article;
+}
+
 function cardNode(card){
+    if(isCardProduct(card))return cardCoverNode(card);
+
     var article=element('article','mg-feed-linked-card is-'+String(card.kind||'item'));
     var variant=safeClass(card.variant||'');
     if(variant){
