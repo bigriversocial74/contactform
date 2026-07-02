@@ -183,6 +183,13 @@ document.addEventListener('DOMContentLoaded', function () {
     locationSelect.disabled = Boolean(allLocations && allLocations.checked);
   }
 
+  function setActionState(isPublished) {
+    root.dataset.builderActionState = isPublished ? 'published' : 'draft';
+    if (saveButton) saveButton.hidden = isPublished;
+    if (publishButton) publishButton.hidden = isPublished;
+    if (destinationLinks.product) destinationLinks.product.hidden = !isPublished;
+  }
+
   function renderPreview() {
     var type = selectedBuilderType();
     var productDescription = value('productDescription').trim() || 'Add product description.';
@@ -242,8 +249,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function hidePublishDestinations() {
     Object.keys(destinationLinks).forEach(function (key) {
-      if (destinationLinks[key]) destinationLinks[key].hidden = true;
+      var link = destinationLinks[key];
+      if (!link) return;
+      link.hidden = true;
+      if (key === 'product') link.href = '#';
     });
+    setActionState(false);
   }
 
   function showPublishDestinations(data) {
@@ -254,6 +265,7 @@ document.addEventListener('DOMContentLoaded', function () {
       link.hidden = !urls[key];
       if (urls[key]) link.href = urls[key];
     });
+    setActionState(Boolean(urls.product));
   }
 
   function markDirty() {
@@ -414,7 +426,7 @@ document.addEventListener('DOMContentLoaded', function () {
       lockVersion = Number(data.lock_version || lockVersion);
       showPublishDestinations(data);
       setStatus('Published to store, feed, and locations');
-      toast('Voucher published. Use the links above to view its public distribution.');
+      toast('Voucher published. View Product is now available.');
     } catch (error) {
       setStatus('Publish failed', 'is-error');
       toast(error.message);
@@ -426,6 +438,7 @@ document.addEventListener('DOMContentLoaded', function () {
   async function loadDraft() {
     if (!authenticated) {
       renderPreview();
+      setActionState(false);
       return;
     }
     setStatus('Loading…', 'is-saving');
@@ -456,9 +469,11 @@ document.addEventListener('DOMContentLoaded', function () {
       renderLocations(data.locations || []);
       setStatus(draft ? 'Draft loaded' : 'New draft');
       renderPreview();
+      setActionState(false);
     } catch (error) {
       setStatus('Load failed', 'is-error');
       toast(error.message);
+      setActionState(false);
     }
   }
 
