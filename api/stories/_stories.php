@@ -46,7 +46,12 @@ function mg_stories_safe_url(mixed $value, bool $allowRelative = true): ?string
 {
     $url = trim((string)$value);
     if ($url === '' || strlen($url) > 700 || preg_match('/[\x00-\x1F\x7F]/', $url) === 1) return null;
-    if ($allowRelative && str_starts_with($url, '/') && !str_starts_with($url, '//')) return $url;
+    if ($allowRelative) {
+        if (str_starts_with($url, '/') && !str_starts_with($url, '//')) return $url;
+        if (preg_match('#^[A-Za-z0-9][A-Za-z0-9._/-]*(?:\?[A-Za-z0-9._~:/?#[\]@!$&\'()*+,;=%-]*)?$#', $url) === 1 && preg_match('#^[A-Za-z][A-Za-z0-9+.-]*:#', $url) !== 1) {
+            return '/' . ltrim($url, '/');
+        }
+    }
     return filter_var($url, FILTER_VALIDATE_URL) !== false && preg_match('#^https?://#i', $url) === 1 ? $url : null;
 }
 
@@ -103,7 +108,7 @@ function mg_stories_profile(PDO $pdo, int $userId): array
                 $profile['avatar_url'] = mg_stories_safe_url($row['avatar_url'] ?? null, true);
                 $profile['profile_type'] = mg_stories_text($row['profile_type'] ?? 'profile', 40, 'profile');
                 $slug = trim((string)($row['slug'] ?? ''));
-                $profile['url'] = $slug !== '' ? '/profile.php?slug=' . rawurlencode($slug) : '#';
+                $profile['url'] = $slug !== '' ? '/profile.php?slug=' . rawurlencode($slug) : '/profile.php?id=' . rawurlencode((string)$profile['id']);
                 return $profile;
             }
         } catch (Throwable) {}
@@ -159,6 +164,8 @@ function mg_stories_project(PDO $pdo, array $row, ?int $viewerId, string $viewer
     $ownerId = (int)$row['owner_user_id']; $owner = mg_stories_profile($pdo, $ownerId);
     $isOwner = $viewerId !== null && $viewerId === $ownerId;
     $isMerchantStory = (int)($row['merchant_user_id'] ?? 0) > 0;
+    $mediaUrl = mg_stories_safe_url($row['media_url'] ?? '', true);
+    $thumbnailUrl = mg_stories_safe_url($row['thumbnail_url'] ?? '', true);
     $linked = ['type' => (string)$row['linked_type'], 'id' => null, 'title' => null, 'url' => $row['cta_url'] ?: null];
     if ((string)$row['linked_type'] === 'product' && !empty($row['linked_product_id']) && mg_stories_table_exists($pdo, 'catalog_products')) {
         try { $stmt = $pdo->prepare('SELECT p.public_id,p.slug,p.status,p.product_type,v.title FROM catalog_products p LEFT JOIN catalog_product_versions v ON v.id=p.current_version_id WHERE p.id=? LIMIT 1'); $stmt->execute([(int)$row['linked_product_id']]); $product = $stmt->fetch(PDO::FETCH_ASSOC); if (is_array($product)) $linked = ['type' => 'product', 'id' => (string)$product['public_id'], 'title' => (string)($product['title'] ?? 'Product'), 'url' => mg_stories_product_url($product)]; } catch (Throwable) {}
@@ -166,7 +173,7 @@ function mg_stories_project(PDO $pdo, array $row, ?int $viewerId, string $viewer
         try { $stmt = $pdo->prepare('SELECT public_id,public_slug,title,status,campaign_type FROM campaigns WHERE id=? LIMIT 1'); $stmt->execute([(int)$row['linked_campaign_id']]); $campaign = $stmt->fetch(PDO::FETCH_ASSOC); if (is_array($campaign)) $linked = ['type' => 'campaign', 'id' => (string)$campaign['public_id'], 'title' => (string)($campaign['title'] ?? 'Campaign'), 'url' => mg_stories_campaign_url($campaign)]; } catch (Throwable) {}
     }
     $ctaUrl = mg_stories_safe_url($row['cta_url'] ?? '', true) ?? ($linked['url'] ?? null);
-    return ['id' => (string)$row['public_id'], 'story_type' => (string)$row['story_type'], 'media_type' => (string)$row['media_type'], 'media_url' => mg_stories_safe_url($row['media_url'] ?? '', true), 'thumbnail_url' => mg_stories_safe_url($row['thumbnail_url'] ?? '', true), 'caption' => $row['caption'] !== null ? (string)$row['caption'] : '', 'cta_label' => $row['cta_label'] !== null ? (string)$row['cta_label'] : '', 'cta_url' => $ctaUrl, 'linked' => $linked, 'owner' => $owner, 'created_at' => (string)$row['created_at'], 'expires_at' => (string)$row['expires_at'], 'viewed' => $viewed, 'view_count' => $views, 'permissions' => ['is_owner' => $isOwner, 'can_delete' => $isOwner, 'can_promote' => $isOwner && $isMerchantStory]];
+    return ['id' => (string)$row['public_id'], 'story_type' => (string)$row['story_type'], 'media_type' => (string)$row['media_type'], 'media_url' => $mediaUrl, 'thumbnail_url' => $thumbnailUrl ?: $mediaUrl, 'caption' => $row['caption'] !== null ? (string)$row['caption'] : '', 'cta_label' => $row['cta_label'] !== null ? (string)$row['cta_label'] : '', 'cta_url' => $ctaUrl, 'linked' => $linked, 'owner' => $owner, 'created_at' => (string)$row['created_at'], 'expires_at' => (string)$row['expires_at'], 'viewed' => $viewed, 'view_count' => $views, 'permissions' => ['is_owner' => $isOwner, 'can_delete' => $isOwner, 'can_promote' => $isOwner && $isMerchantStory]];
 }
 
 function mg_stories_list(PDO $pdo, ?int $viewerId, string $viewerSessionKey, int $limit = MG_STORIES_DEFAULT_LIMIT): array
