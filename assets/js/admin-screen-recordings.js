@@ -13,6 +13,12 @@
   const statusInput=root.querySelector('[data-recordings-status]');
   const applyBtn=root.querySelector('[data-recordings-apply]');
   const resetBtn=root.querySelector('[data-recordings-reset]');
+  const diagnosticsPanel=root.querySelector('[data-recordings-diagnostics]');
+  const diagnosticsBtn=root.querySelector('[data-diagnostics-run]');
+  const diagnosticsStatus=root.querySelector('[data-diagnostics-status]');
+  const diagnosticsGrid=root.querySelector('[data-diagnostics-grid]');
+  const diagnosticsWarnings=root.querySelector('[data-diagnostics-warnings]');
+  const diagnosticsUpdated=root.querySelector('[data-diagnostics-updated]');
   const csrf=root.getAttribute('data-csrf-token')||'';
   const canManage=root.getAttribute('data-can-manage')==='1';
 
@@ -20,6 +26,8 @@
   function fmtDate(value){if(!value)return '—';const d=new Date(String(value).replace(' ','T'));return Number.isNaN(d.getTime())?value:d.toLocaleString();}
   function fmtBytes(bytes){bytes=Number(bytes||0);if(bytes<1)return '—';const units=['B','KB','MB','GB'];let i=0;while(bytes>=1024&&i<units.length-1){bytes/=1024;i++;}return bytes.toFixed(bytes>=10||i===0?0:1)+' '+units[i];}
   function fmtDuration(sec){sec=Number(sec||0);if(!sec)return '—';const m=Math.floor(sec/60),s=Math.round(sec%60);return m+':'+String(s).padStart(2,'0');}
+  function yesNo(value){return value?'Yes':'No';}
+  function readyClass(value){return value?' is-ready':' is-warning';}
   function setState(state,message){
     if(loading)loading.hidden=state!=='loading';
     if(errorBox){errorBox.hidden=state!=='error';errorBox.textContent=message||'';}
@@ -63,6 +71,68 @@
     }).join('');
     setState('ready');
   }
+  function diagnosticsCard(label,value,detail,ready){
+    return `<article class="mg-diagnostics-card${readyClass(ready)}">
+      <span>${esc(label)}</span>
+      <strong>${esc(value)}</strong>
+      <p>${esc(detail||'')}</p>
+    </article>`;
+  }
+  function renderDiagnostics(data){
+    if(!diagnosticsGrid)return;
+    const php=data.php||{};
+    const storage=data.storage||{};
+    const ffmpeg=data.ffmpeg||{};
+    const ffprobe=data.ffprobe||{};
+    const functions=php.functions||{};
+    const schema=data.schema||{};
+    const storageBuckets=storage.buckets||{};
+    const bucketSummary=Object.keys(storageBuckets).map(key=>{
+      const item=storageBuckets[key]||{};
+      return key+': '+(item.writable?'ready':(item.can_create?'can create':'check permissions'));
+    }).join(' · ');
+    diagnosticsGrid.innerHTML=[
+      diagnosticsCard('Renderer',data.recommended_renderer_label||'Unknown',data.renderer_ready?'Server-side exports can run.':'Use browser fallback now or upgrade hosting for FFmpeg.',!!data.renderer_ready),
+      diagnosticsCard('FFmpeg',ffmpeg.available?'Detected':'Not detected',ffmpeg.version||ffmpeg.detail||'',!!ffmpeg.available),
+      diagnosticsCard('FFprobe',ffprobe.available?'Detected':'Not detected',ffprobe.version||ffprobe.detail||'',!!ffprobe.available),
+      diagnosticsCard('PHP execution','shell_exec: '+yesNo(functions.shell_exec)+' · exec: '+yesNo(functions.exec),'proc_open: '+yesNo(functions.proc_open)+' · escapeshellarg: '+yesNo(functions.escapeshellarg),!!(functions.shell_exec&&functions.escapeshellarg)),
+      diagnosticsCard('Upload limits',(php.upload_max_filesize_human||php.upload_max_filesize||'Unknown')+' upload','POST '+(php.post_max_size_human||php.post_max_size||'Unknown')+' · Memory '+(php.memory_limit_human||php.memory_limit||'Unknown'),!!php.file_uploads),
+      diagnosticsCard('Storage',storage.ready?'Ready':'Needs review',bucketSummary||storage.base_dir||'',!!storage.ready),
+      diagnosticsCard('SQL schema',schema.ready?'Ready':'Migration required',schema.migration||'database/admin_screen_recordings.sql',!!schema.ready),
+      diagnosticsCard('PHP runtime','PHP '+(php.version||'unknown'),(php.sapi||'')+' · max execution '+(php.max_execution_time||0)+'s',true)
+    ].join('');
+    const warnings=Array.isArray(data.warnings)?data.warnings:[];
+    if(diagnosticsWarnings){
+      diagnosticsWarnings.hidden=!warnings.length;
+      diagnosticsWarnings.innerHTML=warnings.length?'<strong>Warnings / next actions</strong><ul>'+warnings.map(w=>`<li>${esc(w)}</li>`).join('')+'</ul>':'';
+    }
+    if(diagnosticsStatus){
+      diagnosticsStatus.textContent=data.renderer_ready?'FFmpeg rendering looks available on this server.':'FFmpeg rendering is not fully available yet. Browser fallback or server upgrade is recommended.';
+      diagnosticsStatus.classList.toggle('is-ready',!!data.renderer_ready);
+      diagnosticsStatus.classList.toggle('is-warning',!data.renderer_ready);
+    }
+    if(diagnosticsUpdated)diagnosticsUpdated.textContent=new Date().toLocaleTimeString();
+  }
+  async function runDiagnostics(){
+    if(!diagnosticsPanel||!canManage)return;
+    if(diagnosticsBtn)diagnosticsBtn.disabled=true;
+    if(diagnosticsStatus){
+      diagnosticsStatus.textContent='Checking server renderer, PHP limits, and storage…';
+      diagnosticsStatus.classList.remove('is-ready','is-warning','is-error');
+    }
+    try{
+      const res=await fetch('/api/admin/screen-recordings/diagnostics.php',{headers:{'Accept':'application/json'}});
+      const json=await res.json();
+      if(!res.ok||!json.ok)throw new Error(json.message||'Unable to run diagnostics.');
+      renderDiagnostics(json.data||{});
+    }catch(e){
+      if(diagnosticsStatus){
+        diagnosticsStatus.textContent=e.message||'Unable to run diagnostics.';
+        diagnosticsStatus.classList.add('is-error');
+      }
+    }
+    if(diagnosticsBtn)diagnosticsBtn.disabled=false;
+  }
   async function archive(id){
     if(!canManage||!id)return;
     if(!confirm('Archive this recording?'))return;
@@ -77,6 +147,8 @@
   if(refreshBtn)refreshBtn.addEventListener('click',load);
   if(applyBtn)applyBtn.addEventListener('click',load);
   if(resetBtn)resetBtn.addEventListener('click',()=>{if(searchInput)searchInput.value='';if(statusInput)statusInput.value='';load();});
+  if(diagnosticsBtn)diagnosticsBtn.addEventListener('click',runDiagnostics);
   window.addEventListener('mg-screen-recording-saved',load);
   load();
+  if(canManage&&diagnosticsPanel)window.setTimeout(runDiagnostics,350);
 })();
