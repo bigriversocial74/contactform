@@ -67,6 +67,12 @@ window.Microgifter = window.Microgifter || {};
     var value = product.value_label ? ' · ' + product.value_label : '';
     return source + ': ' + (product.title || product.headline || 'Untitled') + value;
   }
+  function pickerSourceSummary(sources){
+    if (!sources || typeof sources !== 'object') return '';
+    var labels = [];
+    Object.keys(sources).forEach(function(key){labels.push(key.replace(/_/g,' ') + ': ' + Number(sources[key] || 0));});
+    return labels.length ? ' Sources checked — ' + labels.join(', ') + '.' : '';
+  }
   function selectedProduct(){
     var picker = qs('[data-product-picker]');
     if (!picker || !picker.value) return null;
@@ -93,19 +99,22 @@ window.Microgifter = window.Microgifter || {};
     var apply = qs('[data-apply-product]');
     if (!picker) return;
     try {
-      var data = await api('/api/ads/merchant-products.php?status=active');
+      var data = await api('/api/ads/merchant-products.php?status=all');
       productsCache = Array.isArray(data.products) ? data.products : [];
       if (!productsCache.length) {
-        picker.innerHTML = '<option value="">No active products or rewards found</option>';
+        picker.innerHTML = '<option value="">No products, rewards, or campaigns found</option>';
         if (apply) apply.disabled = true;
+        status('No picker items were returned.' + pickerSourceSummary(data.sources), true);
         return;
       }
-      picker.innerHTML = '<option value="">Select product / reward…</option>' + productsCache.map(function(product){return '<option value="'+esc(product.id || '')+'">'+esc(productLabel(product))+'</option>';}).join('');
+      picker.innerHTML = '<option value="">Select product / reward / campaign…</option>' + productsCache.map(function(product){return '<option value="'+esc(product.id || '')+'">'+esc(productLabel(product))+'</option>';}).join('');
+      status('Loaded '+productsCache.length+' picker item'+(productsCache.length === 1 ? '' : 's')+'.');
       setProductPickerState();
     } catch (error) {
       productsCache = [];
       picker.innerHTML = '<option value="">Products unavailable — build manually</option>';
       if (apply) apply.disabled = true;
+      status('Product picker source failed: '+(error && error.message ? error.message : 'Unable to load merchant products.'), true);
     }
   }
   function applySelectedProduct(){
