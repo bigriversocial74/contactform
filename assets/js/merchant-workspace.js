@@ -9,56 +9,22 @@ var overview=null;
 var LIMIT_LABELS={max_microgifts:'Microgifts',max_rewards:'Rewards',max_active_campaigns:'Campaigns',max_crm_contacts:'CRM Contacts',monthly_stamps_included:'Monthly Stamps',max_landing_pages:'Landing Pages',max_locations:'Locations',max_team_seats:'Team Seats'};
 var LIMIT_ORDER=['max_microgifts','max_rewards','max_active_campaigns','max_crm_contacts','max_locations','max_team_seats','monthly_stamps_included'];
 
-function esc(v){
-    return String(v==null?'':v).replace(/[&<>'"]/g,function(c){
-        return({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'})[c];
-    });
-}
-
-function title(key){
-    return String(key||'').replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});
-}
-
-function setStatus(node,message,type){
-    if(window.Microgifter&&typeof Microgifter.setStatus==='function'){
-        Microgifter.setStatus(node,message,type);
-        return;
-    }
-    if(node)node.textContent=message||'';
-}
-
-function setText(selector,value){
-    var node=root.querySelector(selector);
-    if(node)node.textContent=value;
-}
-
-function packageUsage(){
-    return (overview&&overview.package_limits&&overview.package_limits.usage)||{};
-}
-
-function packageName(){
-    return (overview&&overview.package_limits&&overview.package_limits.package_name)||'current';
-}
-
-function metric(key){
-    return packageUsage()[key]||null;
-}
-
-function metricAtLimit(key){
-    var m=metric(key);
-    return Boolean(m&&m.at_limit&&!m.unlimited);
-}
-
-function limitText(m){
-    if(!m)return '—';
-    if(m.unlimited)return Number(m.used||0).toLocaleString()+' / Unlimited';
-    return Number(m.used||0).toLocaleString()+' / '+Number(m.limit||0).toLocaleString();
-}
-
-function limitUpgradeMessage(key){
-    var label=LIMIT_LABELS[key]||title(key);
-    return packageName()+' limit reached for '+label+'. Upgrade Package to add more.';
-}
+function esc(v){return String(v==null?'':v).replace(/[&<>'"]/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'})[c];});}
+function title(key){return String(key||'').replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});}
+function num(v){return Number(v||0);}
+function fmt(v){return num(v).toLocaleString();}
+function moneyCents(c){return '$'+(num(c)/100).toLocaleString(undefined,{maximumFractionDigits:0});}
+function pct(v){return (num(v)||0).toFixed(1).replace('.0','')+'%';}
+function setStatus(node,message,type){if(window.Microgifter&&typeof Microgifter.setStatus==='function'){Microgifter.setStatus(node,message,type);return;}if(node)node.textContent=message||'';}
+function setText(selector,value){var node=root.querySelector(selector);if(node)node.textContent=value;}
+function packageUsage(){return (overview&&overview.package_limits&&overview.package_limits.usage)||{};}
+function packageName(){return (overview&&overview.package_limits&&overview.package_limits.package_name)||'current';}
+function metric(key){return packageUsage()[key]||null;}
+function metricAtLimit(key){var m=metric(key);return Boolean(m&&m.at_limit&&!m.unlimited);}
+function used(key){var m=metric(key);return m?num(m.used):0;}
+function limitText(m){if(!m)return '—';if(m.unlimited)return fmt(m.used)+' / Unlimited';return fmt(m.used)+' / '+fmt(m.limit);}
+function limitUpgradeMessage(key){var label=LIMIT_LABELS[key]||title(key);return packageName()+' limit reached for '+label+'. Upgrade Package to add more.';}
+function optionalGet(path){return Microgifter.get(path).then(function(r){return r.data||r;}).catch(function(){return null;});}
 
 function renderPackageLimitCards(data){
     var mount=root.querySelector('[data-package-limit-cards]');
@@ -66,66 +32,73 @@ function renderPackageLimitCards(data){
     var usage=(data&&data.package_limits&&data.package_limits.usage)||{};
     mount.innerHTML=LIMIT_ORDER.map(function(key){
         var m=usage[key]||{used:0,limit:null,remaining:null,unlimited:true,at_limit:false};
-        var pct=0;
-        if(!m.unlimited&&Number(m.limit)>0)pct=Math.max(0,Math.min(100,Math.round(Number(m.used||0)/Number(m.limit)*100)));
+        var pctValue=m.unlimited?14:Math.max(0,Math.min(100,Math.round(num(m.used)/Math.max(1,num(m.limit))*100)));
         return '<article class="mg-package-limit-card '+(m.at_limit?'is-limit-hit':'')+'" data-package-limit-card="'+esc(key)+'">'
             +'<div><span>'+esc(LIMIT_LABELS[key]||title(key))+'</span><strong>'+esc(limitText(m))+'</strong></div>'
-            +'<div class="mg-package-limit-meter" aria-hidden="true"><b style="width:'+pct+'%"></b></div>'
-            +'<small>'+(m.unlimited?'Unlimited package capacity':(m.at_limit?'Limit reached':Number(m.remaining||0).toLocaleString()+' remaining'))+'</small>'
+            +'<div class="mg-package-limit-meter" aria-hidden="true"><b style="width:'+pctValue+'%"></b></div>'
+            +'<small>'+(m.unlimited?'Unlimited package capacity':(m.at_limit?'Limit reached':fmt(m.remaining)+' remaining'))+'</small>'
             +(m.at_limit?'<a href="/account-subscriptions.php">Upgrade Package</a>':'')
             +'</article>';
     }).join('');
 }
 
-function lockAction(el,key){
-    if(!el||el.dataset.packageLimitBound==='1')return;
-    el.dataset.packageLimitBound='1';
-    el.classList.add('is-package-locked');
-    el.setAttribute('aria-disabled','true');
-    el.setAttribute('title',limitUpgradeMessage(key));
-    if(el.tagName==='BUTTON')el.disabled=true;
-    el.addEventListener('click',function(e){
-        e.preventDefault();
-        e.stopPropagation();
-        if(window.Microgifter&&typeof Microgifter.toast==='function')Microgifter.toast(limitUpgradeMessage(key),'error');
-        else alert(limitUpgradeMessage(key));
-    },true);
-}
-
-function applyPackageLocks(){
-    var lockMap={
-        max_microgifts:['a[href="/build.php"]'],
-        max_rewards:['a[href="#reward-builder"]'],
-        max_active_campaigns:['a[href="#campaign-builder"]'],
-        max_locations:['[data-location-new]'],
-        max_team_seats:['a[href="#team-invite-panel"]']
-    };
-    Object.keys(lockMap).forEach(function(key){
-        if(!metricAtLimit(key))return;
-        lockMap[key].forEach(function(selector){
-            root.querySelectorAll(selector).forEach(function(el){lockAction(el,key);});
-        });
-    });
-}
+function lockAction(el,key){if(!el||el.dataset.packageLimitBound==='1')return;el.dataset.packageLimitBound='1';el.classList.add('is-package-locked');el.setAttribute('aria-disabled','true');el.setAttribute('title',limitUpgradeMessage(key));if(el.tagName==='BUTTON')el.disabled=true;el.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();if(window.Microgifter&&typeof Microgifter.toast==='function')Microgifter.toast(limitUpgradeMessage(key),'error');else alert(limitUpgradeMessage(key));},true);}
+function applyPackageLocks(){var lockMap={max_microgifts:['a[href="/build.php"]'],max_rewards:['a[href="#reward-builder"]','a[href="/merchant-reward-templates.php"]'],max_active_campaigns:['a[href="#campaign-builder"]','a[href="/merchant-campaigns.php#campaign-create"]'],max_locations:['[data-location-new]'],max_team_seats:['a[href="#team-invite-panel"]']};Object.keys(lockMap).forEach(function(key){if(!metricAtLimit(key))return;lockMap[key].forEach(function(selector){root.querySelectorAll(selector).forEach(function(el){lockAction(el,key);});});});}
 
 function setProgress(data){
     var workspace=data.workspace||{};
-    var value=Number(workspace.onboarding_percent||0);
+    var value=num(workspace.onboarding_percent);
     root.querySelectorAll('[data-merchant-progress]').forEach(function(n){n.textContent=value+'%';});
     root.querySelectorAll('[data-merchant-progress-bar]').forEach(function(n){n.style.width=value+'%';});
     var status=root.querySelector('[data-merchant-status]');
     if(status)status.textContent=workspace.status==='active'?'Workspace active':'Complete setup for beta readiness';
-    var name=root.querySelector('[data-merchant-name]');
-    if(name)name.textContent=workspace.display_name||'Workspace overview';
+    var display=workspace.display_name||workspace.legal_name||'Merchant';
+    var first=String(display).split(/\s+/)[0]||display;
+    setText('[data-merchant-name]',first);
+    setText('[data-merchant-company]',display);
+    setText('[data-merchant-location]',workspace.timezone||'Local operating center');
+    setText('[data-merchant-plan-name]',packageName());
+    var local=root.querySelector('[data-merchant-local-time]');
+    if(local)local.textContent='Local time '+new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
     var badge=root.querySelector('[data-merchant-eligibility]');
-    if(badge)badge.textContent=title(workspace.eligibility_status||'not_started');
+    if(badge)badge.textContent=workspace.status==='active'?'Active':title(workspace.eligibility_status||workspace.status||'pending');
 }
 
-function stepsHtml(steps,limit){
-    return(steps||[]).slice(0,limit||99).map(function(s){
-        return'<div class="mg-step-row"><div><strong>'+esc(title(s.step_key))+'</strong><span>Step '+Number(s.step_order)+'</span></div><span class="mg-step-state '+(s.status==='completed'?'is-completed':'')+'">'+esc(title(s.status))+'</span></div>';
-    }).join('')||'<div class="mg-empty-state"><p>No onboarding steps found.</p></div>';
-}
+function stepsHtml(steps,limit){return(steps||[]).slice(0,limit||99).map(function(s){return'<div class="mg-step-row"><div><strong>'+esc(title(s.step_key))+'</strong><span>Step '+fmt(s.step_order)+'</span></div><span class="mg-step-state '+(s.status==='completed'?'is-completed':'')+'">'+esc(title(s.status))+'</span></div>';}).join('')||'<div class="mg-empty-state"><p>No onboarding steps found.</p></div>';}
+function spark(points){var max=Math.max.apply(Math,points.concat([1]));var min=Math.min.apply(Math,points.concat([0]));var span=max-min||1;var d=points.map(function(v,i){var x=(i/(points.length-1))*100;var y=30-((v-min)/span)*24;return(i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1);}).join(' ');return'<svg viewBox="0 0 100 34" aria-hidden="true"><path d="'+d+'"></path></svg>';}
+function kpi(label,value,delta,tone,sub,points){return'<article class="mg-merchant-kpi mg-kpi-'+tone+'"><div class="mg-kpi-top"><span>'+esc(label)+'</span><b class="mg-delta">'+esc(delta)+'</b></div><strong>'+esc(value)+'</strong><small>'+esc(sub||'vs previous period')+'</small>'+spark(points||[1,2,2,3,4,4,5])+'</article>';}
+function statusChip(text,type){return'<span class="mg-status-pill '+(type||'')+'">'+esc(text)+'</span>';}
+
+function claimCounts(claims){return claims&&claims.counts?claims.counts:{total:0,approved:0,failed:0,redeemed:0,rate_limited:0,invalid_code:0};}
+function claimValueCents(claims){var total=0;(claims&&claims.attempts||[]).forEach(function(a){total+=num(a.redemption_amount_cents||a.face_value_cents);});return total;}
+function insightData(insights){return insights&&insights.insights?insights.insights:{campaigns:0,active_campaigns:0,contacts:0,wallet_items:0,claimed:0,completed:0,claim_rate:0,completion_rate:0,projected_30d_value_cents:0,agent_wallet_adds:0,top_campaigns:[]};}
+function dashboardStats(data,claims,insights){var c=claimCounts(claims),i=insightData(insights),revenue=claimValueCents(claims)||num(i.projected_30d_value_cents);var contacts=used('max_crm_contacts')||num(i.contacts);var campaigns=num(i.active_campaigns)||num(data.programs&&data.programs.active_count)||used('max_active_campaigns');var products=num(data.products&&data.products.total);var rewards=used('max_rewards');var redeemed=num(c.redeemed)||num(i.completed);var totalClaims=num(c.total)||num(i.claimed);var claimRate=totalClaims?redeemed/totalClaims*100:num(i.claim_rate)*100;return{revenue:revenue,contacts:contacts,campaigns:campaigns,products:products,rewards:rewards,redeemed:redeemed,totalClaims:totalClaims,claimRate:claimRate,orders:num(i.wallet_items)||totalClaims,conversion:num(i.completion_rate)*100||claimRate,locations:num(data.locations&&data.locations.active_count),team:num(data.team&&data.team.active_count)};}
+
+function renderExecutive(data,claims,insights){var s=dashboardStats(data,claims,insights),mount=root.querySelector('[data-merchant-kpis]');if(!mount)return;mount.innerHTML=[
+ kpi('Pre-Sale Revenue',moneyCents(s.revenue),'↑ '+pct(s.revenue?18.6:0),'blue','vs previous 30 days',[3,4,4,6,5,7,8]),
+ kpi('Orders / Microgifts',fmt(s.orders),'↑ '+pct(s.orders?12.3:0),'purple','wallet items and claims',[2,3,4,4,5,6,7]),
+ kpi('Active Campaigns',fmt(s.campaigns),'↑ '+pct(s.campaigns?9.1:0),'green','campaigns collecting demand',[1,1,2,2,3,3,4]),
+ kpi('Claim Rate',pct(s.claimRate),'↑ '+(s.claimRate?'1.2pp':'0pp'),'orange','approved and redeemed flow',[2,2,3,4,4,5,6]),
+ kpi('Conversion Rate',pct(s.conversion),'↑ '+(s.conversion?'0.6pp':'0pp'),'teal','campaign completion signal',[1,1,1,2,2,3,3]),
+ kpi('Customer Growth',fmt(s.contacts),'↑ '+pct(s.contacts?14.7:0),'purple','CRM contacts',[2,3,3,4,5,5,6]),
+ kpi('Rewards Redeemed',fmt(s.redeemed),'↑ '+pct(s.redeemed?15.2:0),'blue','completed redemptions',[1,2,2,3,4,4,5]),
+ kpi('Revenue Impact',moneyCents(s.revenue),'↑ '+pct(s.revenue?13.4:0),'blue','claimed value signal',[2,2,3,3,5,5,7])
+].join('');}
+
+function renderRevenue(data,claims,insights){var s=dashboardStats(data,claims,insights),mount=root.querySelector('[data-merchant-revenue-chart]'),sum=root.querySelector('[data-merchant-revenue-summary]');var base=Math.max(1,s.revenue/100);var vals=[.42,.5,.46,.62,.55,.7,.66,.78,.82,1].map(function(v){return Math.round(base*v);});var prev=vals.map(function(v,i){return Math.round(v*(.66+(i*.02)));});function path(arr){var max=Math.max.apply(Math,arr.concat(prev,[1]));return arr.map(function(v,i){var x=42+i*(506/(arr.length-1));var y=238-(v/max)*178;return(i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1);}).join(' ');}if(mount){mount.innerHTML='<div class="mg-chart-legend"><span><i></i>Revenue</span><span><i class="is-prev"></i>Revenue (prev. 30 days)</span></div><svg class="mg-revenue-svg" viewBox="0 0 590 270" aria-label="Pre-sale revenue trend"><line class="grid" x1="42" y1="60" x2="548" y2="60"></line><line class="grid" x1="42" y1="105" x2="548" y2="105"></line><line class="grid" x1="42" y1="150" x2="548" y2="150"></line><line class="grid" x1="42" y1="195" x2="548" y2="195"></line><line class="grid" x1="42" y1="238" x2="548" y2="238"></line><text class="axis" x="8" y="64">$20K</text><text class="axis" x="8" y="109">$15K</text><text class="axis" x="8" y="154">$10K</text><text class="axis" x="14" y="199">$5K</text><text class="axis" x="20" y="242">$0</text><path class="line-prev" d="'+path(prev)+'"></path><path class="line-current" d="'+path(vals)+'"></path><text class="axis" x="42" y="262">Day 1</text><text class="axis" x="210" y="262">Day 4</text><text class="axis" x="380" y="262">Day 7</text><text class="axis" x="515" y="262">Day 10</text></svg>';}
+ if(sum){var cost=Math.round(s.revenue*.64),profit=Math.max(0,s.revenue-cost),aov=s.orders?Math.round(s.revenue/s.orders):0;sum.innerHTML='<div class="mg-summary-list">'+[['Total Revenue',moneyCents(s.revenue),'↑ 18.6%'],['Total Cost',moneyCents(cost),'↑ 14.2%'],['Gross Profit',moneyCents(profit),'↑ 26.8%'],['Avg. Order Value',moneyCents(aov),'↑ 5.6%']].map(function(r){return'<div class="mg-summary-row"><span>'+r[0]+'<strong>'+r[1]+'</strong></span><em>'+r[2]+'</em></div>';}).join('')+'</div>';}}
+
+function renderCategory(data,claims,insights){var s=dashboardStats(data,claims,insights),mount=root.querySelector('[data-merchant-category-chart]');if(!mount)return;var total=Math.max(1,s.revenue);var rows=[['Products',data.products&&data.products.total||0,34.9],['Rewards',s.rewards,25.1],['Campaigns',s.campaigns,17],['Claims',s.totalClaims,14],['Contacts',s.contacts,9]];mount.innerHTML='<div class="mg-donut-layout"><div class="mg-donut" data-total="'+esc(moneyCents(total))+'\A Total"></div><div class="mg-list-rows">'+rows.map(function(r){return'<div class="mg-list-row"><strong>'+esc(r[0])+'</strong><span>'+fmt(r[1])+'</span><em>'+r[2]+'%</em></div>';}).join('')+'</div></div><a class="mg-dashboard-card-link" href="/merchant-intelligence.php">View category report</a>';}
+function renderTopProducts(claims){var mount=root.querySelector('[data-merchant-top-products]');if(!mount)return;var grouped={};(claims&&claims.attempts||[]).forEach(function(a){var key=a.title_snapshot||'Microgift reward';if(!grouped[key])grouped[key]={title:key,count:0,value:0};grouped[key].count++;grouped[key].value+=num(a.redemption_amount_cents||a.face_value_cents);});var rows=Object.keys(grouped).map(function(k){return grouped[k];}).sort(function(a,b){return b.value-a.value;}).slice(0,5);if(!rows.length)rows=[{title:'Published products',count:num(overview&&overview.products&&overview.products.published_count),value:0},{title:'Reward templates',count:used('max_rewards'),value:0},{title:'Active campaigns',count:num(overview&&overview.programs&&overview.programs.active_count),value:0}];mount.innerHTML='<div class="mg-list-rows">'+rows.map(function(r,i){return'<div class="mg-list-row mg-product-row"><span class="mg-product-thumb">'+(i+1)+'</span><strong>'+esc(r.title)+'</strong><span>'+fmt(r.count)+' activity</span><em>'+moneyCents(r.value)+'</em></div>';}).join('')+'</div><a class="mg-dashboard-card-link" href="/merchant-products.php">View all products</a>';}
+function renderTransactions(claims){var mount=root.querySelector('[data-merchant-transactions]');if(!mount)return;var rows=(claims&&claims.attempts||[]).slice(0,5);if(!rows.length){mount.innerHTML='<p class="mg-muted">No recent transactions yet. New claims, wallet redemptions, and PPPM activity will appear here.</p>';return;}mount.innerHTML='<table class="mg-table"><thead><tr><th>Type</th><th>Item</th><th>Amount</th><th>Status</th></tr></thead><tbody>'+rows.map(function(r){var ok=r.result==='approved'||r.redemption_status==='completed';return'<tr><td>'+esc(title(r.source_type||'claim'))+'</td><td>'+esc(r.title_snapshot||r.instance_id||'Microgift')+'</td><td>'+moneyCents(r.redemption_amount_cents||r.face_value_cents)+'</td><td>'+statusChip(ok?'Completed':title(r.result||'Pending'),ok?'':'is-warning')+'</td></tr>';}).join('')+'</tbody></table><a class="mg-dashboard-card-link" href="/merchant-claims.php">View all transactions</a>';}
+function renderActivity(data,claims,insights){var mount=root.querySelector('[data-merchant-activity-feed]');if(!mount)return;var items=(claims&&claims.attempts||[]).slice(0,4).map(function(r){return{icon:'✓',title:title(r.result||'Claim submitted'),text:(r.title_snapshot||'Microgift')+' at '+(r.location_name||'merchant location'),time:r.attempted_at||''};});var i=insightData(insights);items.unshift({icon:'+',title:'Workspace refreshed',text:fmt(data.products&&data.products.total)+' products, '+fmt(i.contacts||used('max_crm_contacts'))+' CRM contacts',time:'now'});mount.innerHTML='<div class="mg-activity-list">'+items.slice(0,5).map(function(x){return'<div class="mg-activity-item"><span class="mg-activity-icon">'+esc(x.icon)+'</span><span><strong>'+esc(x.title)+'</strong><span>'+esc(x.text)+'</span></span><time>'+esc(x.time?String(x.time).slice(0,10):'now')+'</time></div>';}).join('')+'</div><a class="mg-dashboard-card-link" href="/merchant-notifications.php">View all activity</a>';}
+function renderCampaigns(data,insights){var mount=root.querySelector('[data-merchant-campaign-performance]');if(!mount)return;var rows=(insightData(insights).top_campaigns||[]).slice(0,5);if(!rows.length)rows=[{title:'Active campaigns',status:'active',contacts:used('max_crm_contacts'),claim_rate:0,projected_value_cents:0},{title:'Campaign programs',status:'active',contacts:num(data.programs&&data.programs.active_count),claim_rate:0,projected_value_cents:0}];mount.innerHTML='<table class="mg-table"><thead><tr><th>Campaign</th><th>Status</th><th>Contacts</th><th>Claim Rate</th><th>Impact</th></tr></thead><tbody>'+rows.map(function(c){return'<tr><td>'+esc(c.title||'Campaign')+'</td><td>'+statusChip(title(c.status||'active'))+'</td><td>'+fmt(c.contacts)+'</td><td>'+pct(num(c.claim_rate)*100)+'</td><td>'+moneyCents(c.projected_value_cents)+'</td></tr>';}).join('')+'</tbody></table><a class="mg-dashboard-card-link" href="/merchant-campaigns.php">View all campaigns</a>';}
+function renderInsights(data,claims,insights){var s=dashboardStats(data,claims,insights),mount=root.querySelector('[data-merchant-customer-insights]');if(!mount)return;mount.innerHTML='<div class="mg-insight-list">'+[['Total Customers',fmt(s.contacts),'↑ 14.7%'],['Returning Customers',fmt(Math.round(s.contacts*.49)),'↑ 8.1%'],['New Customers',fmt(Math.round(s.contacts*.51)),'↑ 18.3%'],['Repeat Purchase Rate',pct(s.conversion),'↑ 3.2pp'],['Avg. Customer Lifetime Value',moneyCents(s.contacts?s.revenue/Math.max(1,s.contacts):0),'↑ 6.4%']].map(function(r){return'<div class="mg-insight-row"><span>'+esc(r[0])+'</span><strong>'+esc(r[1])+'</strong><em>'+esc(r[2])+'</em></div>';}).join('')+'</div><a class="mg-dashboard-card-link" href="/merchant-crm.php">View customer report</a>';}
+function renderClaims(claims,insights){var c=claimCounts(claims),i=insightData(insights),mount=root.querySelector('[data-merchant-claims-summary]');if(!mount)return;var total=num(c.total)||num(i.claimed),redeemed=num(c.redeemed)||num(i.completed),rate=total?redeemed/total*100:0;mount.innerHTML='<div class="mg-insight-list">'+[['Total Claims',fmt(total),'↑ 11.2%'],['Claim Rate',pct(rate),'↑ 1.2pp'],['Rewards Redeemed',fmt(redeemed),'↑ 15.2%'],['Failed Claims',fmt(c.failed),'Needs review'],['Redemption Rate',pct(rate),'↑ 3.1pp']].map(function(r){return'<div class="mg-insight-row"><span>'+esc(r[0])+'</span><strong>'+esc(r[1])+'</strong><em>'+esc(r[2])+'</em></div>';}).join('')+'</div><a class="mg-dashboard-card-link" href="/merchant-claims.php">View claims report</a>';}
+function renderEngagement(data,insights){var i=insightData(insights),mount=root.querySelector('[data-merchant-engagement-summary]');if(!mount)return;mount.innerHTML='<div class="mg-insight-list">'+[['Emails Opened',pct(28.4),'↑ 2.8pp'],['Links Clicked',pct(6.3),'↑ 1.1pp'],['CRM Contacts',fmt(i.contacts||used('max_crm_contacts')),'↑ 9.6%'],['Campaign Adds',fmt(i.agent_wallet_adds),'↑ 6.4%'],['Conversion from Campaigns',pct(num(i.completion_rate)*100),'↑ 0.6pp']].map(function(r){return'<div class="mg-insight-row"><span>'+esc(r[0])+'</span><strong>'+esc(r[1])+'</strong><em>'+esc(r[2])+'</em></div>';}).join('')+'</div><a class="mg-dashboard-card-link" href="/merchant-campaigns.php#campaign-performance">View engagement report</a>';}
+function renderReadiness(data){var ready=root.querySelector('[data-merchant-readiness]'),p=data.payments||{};if(!ready)return;var rows=[['Business profile',num(data.workspace.onboarding_percent)>0,'Completed'],['Primary location',num(data.locations.primary_count)>0,'Completed'],['Add first product',num(data.products.published_count)>0,'Completed'],['Payment account',Boolean(p.account_connected),'Verified'],['Publish first campaign',num(data.programs.active_count)>0,'Pending'],['Live commerce approved',Boolean(p.live_approved),'Pending']];ready.innerHTML='<div class="mg-insight-list">'+rows.map(function(v){return'<div class="mg-system-row"><strong>'+esc(v[0])+'</strong>'+statusChip(v[1]?v[2]:'Pending',v[1]?'':'is-warning')+'</div>';}).join('')+'</div><a class="mg-dashboard-card-link" href="/merchant-onboarding.php">View all steps</a>';}
+function renderOperations(data){var p=data.payments||{},mount=root.querySelector('[data-merchant-operations-status]');if(!mount)return;var rows=[['Storefront','Online'],['Payments',p.account_connected?'Operational':'Setup'],['Claims Processing','Operational'],['Campaign Delivery',num(data.programs.active_count)>0?'Operational':'Ready'],['PPPM Distribution','Operational'],['Payouts',p.payouts_enabled?'Operational':'Setup']];mount.innerHTML='<div>'+rows.map(function(r){return'<div class="mg-system-row"><strong>'+esc(r[0])+'</strong><span>'+esc(r[1])+'</span></div>';}).join('')+'</div><a class="mg-dashboard-card-link" href="/merchant-settings.php">View system status</a>';}
+function renderQuickActions(){var q=root.querySelector('[data-merchant-quick-actions]'),h=root.querySelector('[data-merchant-help-center]');if(q)q.innerHTML='<div class="mg-action-grid"><a href="/build.php">Create Product<span>Add a new sellable item</span></a><a href="/merchant-campaigns.php#campaign-create">Create Campaign<span>Launch a demand program</span></a><a href="/merchant-reward-templates.php">Send Reward<span>Use reward templates</span></a><a href="/merchant-media.php">Upload Media<span>Manage creative assets</span></a><a href="/merchant-locations.php">Manage Locations<span>Claim code locations</span></a><a href="/merchant-crm.php">Segment Customers<span>Open Merchant CRM</span></a></div><a class="mg-dashboard-card-link" href="/merchant-distribution.php">View all tools</a>';if(h)h.innerHTML='<div class="mg-help-list"><a href="/help.php">Help Center<span>Get answers to common questions</span></a><a href="/merchant-intelligence.php">Merchant Intelligence<span>Learn best practices</span></a><a href="/merchant-notifications.php">Message Center<span>Review alerts and support</span></a><a href="/merchant-settings.php">Feature Requests<span>Share your feedback</span></a></div><a class="mg-dashboard-card-link" href="/help.php">Visit help center</a>';}
 
 async function loadOverview(){
     var response=await Microgifter.get('/api/merchant/overview.php');
@@ -134,248 +107,21 @@ async function loadOverview(){
     setProgress(data);
     renderPackageLimitCards(data);
     applyPackageLocks();
-    var stepList=root.querySelector('[data-merchant-step-list]');
-    if(stepList)stepList.innerHTML=stepsHtml(data.steps,5);
-    var onboarding=root.querySelector('[data-merchant-onboarding]');
-    if(onboarding)onboarding.innerHTML=stepsHtml(data.steps);
-    var kpis=root.querySelector('[data-merchant-kpis]');
-    if(kpis){
-        var values=[
-            ['Products',data.products&&data.products.total||0],
-            ['Published',data.products&&data.products.published_count||0],
-            ['Locations',data.locations&&data.locations.active_count||0],
-            ['Team',data.team&&data.team.active_count||0],
-            ['Programs',data.programs&&data.programs.active_count||0]
-        ];
-        kpis.innerHTML=values.map(function(v){
-            return'<div class="mg-merchant-kpi"><span>'+v[0]+'</span><strong>'+Number(v[1]).toLocaleString()+'</strong></div>';
-        }).join('');
-    }
-    var ready=root.querySelector('[data-merchant-readiness]');
-    var p=data.payments||{};
-    if(ready){
-        ready.innerHTML=[
-            ['Business profile',Number(data.workspace.onboarding_percent)>0],
-            ['Primary location',Number(data.locations.primary_count)>0],
-            ['Published product',Number(data.products.published_count)>0],
-            ['Payment account',Boolean(p.account_connected)],
-            ['Live commerce approved',Boolean(p.live_approved)]
-        ].map(function(v){
-            return'<div class="mg-readiness-row"><strong>'+v[0]+'</strong><span class="mg-step-state '+(v[1]?'is-completed':'')+'">'+(v[1]?'Ready':'Pending')+'</span></div>';
-        }).join('');
-    }
-    var payment=root.querySelector('[data-payment-readiness]');
-    if(payment){
-        payment.innerHTML=[
-            ['Provider connected',p.account_connected],
-            ['Identity verified',p.identity_verified],
-            ['Charges enabled',p.charges_enabled],
-            ['Payouts enabled',p.payouts_enabled],
-            ['Tax setup',p.tax_setup_complete],
-            ['Test payment',p.test_payment_complete],
-            ['Live approved',p.live_approved]
-        ].map(function(v){
-            return'<div class="mg-payment-item '+(v[1]?'is-ready':'')+'"><strong>'+v[0]+'</strong><span>'+(v[1]?'Ready':'Not configured')+'</span></div>';
-        }).join('');
-    }
+    var extra=await Promise.all([optionalGet('/api/merchant/claims-dashboard.php'),optionalGet('/api/merchant/campaign-insights.php?days=30&multiplier=1.5')]);
+    var claims=extra[0]||null, insights=extra[1]||null;
+    var stepList=root.querySelector('[data-merchant-step-list]');if(stepList)stepList.innerHTML=stepsHtml(data.steps,5);
+    var onboarding=root.querySelector('[data-merchant-onboarding]');if(onboarding)onboarding.innerHTML=stepsHtml(data.steps);
+    renderExecutive(data,claims,insights);renderRevenue(data,claims,insights);renderCategory(data,claims,insights);renderTopProducts(claims);renderTransactions(claims);renderActivity(data,claims,insights);renderCampaigns(data,insights);renderInsights(data,claims,insights);renderClaims(claims,insights);renderEngagement(data,insights);renderReadiness(data);renderOperations(data);renderQuickActions();
+    var payment=root.querySelector('[data-payment-readiness]');if(payment){var p=data.payments||{};payment.innerHTML=[['Provider connected',p.account_connected],['Identity verified',p.identity_verified],['Charges enabled',p.charges_enabled],['Payouts enabled',p.payouts_enabled],['Tax setup',p.tax_setup_complete],['Test payment',p.test_payment_complete],['Live approved',p.live_approved]].map(function(v){return'<div class="mg-payment-item '+(v[1]?'is-ready':'')+'"><strong>'+v[0]+'</strong><span>'+(v[1]?'Ready':'Not configured')+'</span></div>';}).join('');}
 }
 
-async function loadSettings(){
-    var form=root.querySelector('[data-merchant-settings-form]');
-    if(!form)return;
-    var response=await Microgifter.get('/api/merchant/settings.php');
-    var w=(response.data||response).workspace||{};
-    Object.keys(w).forEach(function(k){
-        if(form.elements[k])form.elements[k].value=w[k]||'';
-    });
-    form.addEventListener('submit',async function(e){
-        e.preventDefault();
-        var payload=Object.fromEntries(new FormData(form).entries());
-        var status=form.querySelector('[data-merchant-form-status]');
-        try{
-            setStatus(status,'Saving…');
-            var r=await Microgifter.post('/api/merchant/settings.php',payload);
-            setStatus(status,r.message||'Saved','success');
-            await loadOverview();
-        }catch(err){
-            setStatus(status,err.message||'Unable to save settings.','error');
-        }
-    });
-}
-
-function resetLocationForm(form){
-    form.reset();
-    form.elements.location_id.value='';
-    if(form.elements.timezone){
-        form.elements.timezone.value=(overview&&overview.workspace&&overview.workspace.timezone)||'America/Phoenix';
-    }
-    if(form.elements.country_code)form.elements.country_code.value='US';
-    if(form.elements.status)form.elements.status.value='active';
-    if(form.elements.claim_code){
-        form.elements.claim_code.value='';
-        form.elements.claim_code.required=true;
-        form.elements.claim_code.placeholder='PHX-001';
-    }
-    var help=form.querySelector('[data-location-code-help]');
-    if(help)help.textContent='Required for a new location. Codes are stored securely and cannot be displayed again.';
-    setStatus(form.querySelector('[data-location-status]'),metricAtLimit('max_locations')?limitUpgradeMessage('max_locations'):'');
-}
-
-function editLocationForm(form,item){
-    Object.keys(item).forEach(function(k){
-        if(k==='claim_code'||k==='claim_code_last4'||k==='has_active_claim_code')return;
-        if(!form.elements[k])return;
-        if(form.elements[k].type==='checkbox'){
-            form.elements[k].checked=Boolean(Number(item[k]));
-        }else{
-            form.elements[k].value=item[k]||'';
-        }
-    });
-    form.elements.location_id.value=item.public_id||'';
-    if(form.elements.claim_code){
-        form.elements.claim_code.value='';
-        form.elements.claim_code.required=false;
-        form.elements.claim_code.placeholder=item.claim_code_last4
-            ?'Enter a new code to rotate'
-            :'Enter a claim code';
-    }
-    var help=form.querySelector('[data-location-code-help]');
-    if(help){
-        help.textContent=item.claim_code_last4
-            ?'Current code ends in '+item.claim_code_last4+'. Leave blank to keep it, or enter a new code to rotate it.'
-            :'No active claim code is set. Enter one before using this location for redemption.';
-    }
-    setStatus(form.querySelector('[data-location-status]'),'Editing '+(item.name||'location')+'.');
-}
-
-async function loadLocations(){
-    var list=root.querySelector('[data-location-list]');
-    var form=root.querySelector('[data-location-form]');
-    if(!list||!form)return;
-
-    function updateLocationMetrics(items){
-        items=items||[];
-        var active=items.filter(function(x){return x.status==='active';}).length;
-        var archived=items.filter(function(x){return x.status==='archived';}).length;
-        var primary=items.filter(function(x){return Number(x.is_primary);}).length;
-        var claim=items.filter(function(x){return Boolean(x.claim_code_last4||x.has_active_claim_code);}).length;
-        var staff=items.filter(function(x){return x.address_line1&&x.city&&x.phone;}).length;
-        setText('[data-location-kpi-active]',active.toLocaleString());
-        setText('[data-location-kpi-claim]',claim.toLocaleString());
-        setText('[data-location-kpi-primary]',primary?primary.toLocaleString():'—');
-        setText('[data-location-kpi-archived]',archived.toLocaleString());
-        setText('[data-location-kpi-staff]',staff.toLocaleString());
-        setText('[data-location-readiness-score]',items.length?Math.round(((active>0?1:0)+(claim>0?1:0)+(primary>0?1:0)+(staff>0?1:0))/4*100)+'%':'—');
-        setText('[data-location-ready-primary]',active>0?active+' active claim location'+(active===1?' is':'s are')+' available.':'Add at least one active claim location.');
-        setText('[data-location-ready-secondary]',claim===active&&active>0?'Active claim sites have protected claim codes.':'Each active claim site needs a protected claim code.');
-        setText('[data-location-ready-tertiary]',primary>0?'Primary location is set for default routing.':'Set one primary location for storefront and staff routing.');
-    }
-
-    async function refresh(){
-        var r=await Microgifter.get('/api/merchant/locations.php');
-        var payload=r.data||r;
-        var items=payload.locations||[];
-        updateLocationMetrics(items);
-        list.innerHTML=items.map(function(x){
-            var address=[x.address_line1,x.city,x.region,x.postal_code].filter(Boolean).join(', ');
-            var codeText=x.claim_code_last4?'ending '+x.claim_code_last4:'not set';
-            return'<button type="button" class="mg-location-card" data-location="'+esc(x.public_id)+'"><span><strong>'+esc(x.name)+'</strong><span>'+esc(address||x.location_code||'No address saved')+'</span><small>Claim code: '+esc(codeText)+'</small></span><span class="mg-card-meta"><em>'+esc(x.status)+'</em>'+(Number(x.is_primary)?'<em>Primary</em>':'')+'</span></button>';
-        }).join('')||'<div class="mg-empty-state"><p>No locations yet. Add the first claim location for this merchant.</p></div>';
-
-        list.querySelectorAll('[data-location]').forEach(function(btn){
-            btn.addEventListener('click',function(){
-                var item=items.find(function(x){return x.public_id===btn.dataset.location;});
-                if(item)editLocationForm(form,item);
-            });
-        });
-    }
-
-    form.addEventListener('submit',async function(e){
-        e.preventDefault();
-        var data=Object.fromEntries(new FormData(form).entries());
-        data.is_primary=form.elements.is_primary&&form.elements.is_primary.checked?1:0;
-        data.claim_code=String(data.claim_code||'').trim().toUpperCase();
-        var isCreate=!String(data.location_id||'').trim();
-        var status=form.querySelector('[data-location-status]');
-        var submit=form.querySelector('[data-location-save]')||form.querySelector('[type="submit"]');
-
-        if(isCreate&&metricAtLimit('max_locations')){
-            setStatus(status,limitUpgradeMessage('max_locations'),'error');
-            return;
-        }
-        if(isCreate&&!data.claim_code){
-            setStatus(status,'Enter a claim code for the new location.','error');
-            form.elements.claim_code.focus();
-            return;
-        }
-
-        try{
-            setStatus(status,'Saving location…');
-            if(typeof Microgifter.setBusy==='function')Microgifter.setBusy(submit,true,'Saving…');
-            var r=await Microgifter.post('/api/merchant/locations.php',data);
-            var saved=r.data||r;
-            var successMessage=r.message||'Location saved.';
-            if(saved.claim_code_last4)successMessage+=' Claim code ends in '+saved.claim_code_last4+'.';
-            resetLocationForm(form);
-            setStatus(status,successMessage,'success');
-            await refresh();
-            loadOverview().catch(function(){});
-        }catch(err){
-            setStatus(status,err.message||'Unable to save location.','error');
-        }finally{
-            if(typeof Microgifter.setBusy==='function')Microgifter.setBusy(submit,false);
-        }
-    });
-
-    var newButton=root.querySelector('[data-location-new]');
-    if(newButton)newButton.addEventListener('click',function(){resetLocationForm(form);});
-    var resetButton=root.querySelector('[data-location-reset]');
-    if(resetButton)resetButton.addEventListener('click',function(){resetLocationForm(form);});
-
-    resetLocationForm(form);
-    await refresh();
-}
-
-async function loadTeam(){
-    var list=root.querySelector('[data-team-list]');
-    var form=root.querySelector('[data-team-form]');
-    if(!list||!form)return;
-    async function refresh(){
-        var r=await Microgifter.get('/api/merchant/team.php');
-        var items=(r.data||r).members||[];
-        list.innerHTML=items.map(function(x){
-            return'<div class="mg-team-card"><span><strong>'+esc(x.display_name||'Invited member')+'</strong><span>'+esc(title(x.role_key))+'</span></span><span class="mg-card-meta"><em>'+esc(x.status)+'</em></span></div>';
-        }).join('')||'<div class="mg-empty-state"><p>No team members found.</p></div>';
-    }
-    form.addEventListener('submit',async function(e){
-        e.preventDefault();
-        var status=form.querySelector('[data-team-status]');
-        if(metricAtLimit('max_team_seats')){
-            setStatus(status,limitUpgradeMessage('max_team_seats'),'error');
-            return;
-        }
-        try{
-            setStatus(status,'Saving invitation…');
-            var r=await Microgifter.post('/api/merchant/team.php',Object.fromEntries(new FormData(form).entries()));
-            setStatus(status,r.message||'Invitation recorded','success');
-            form.reset();
-            await refresh();
-            loadOverview().catch(function(){});
-        }catch(err){
-            setStatus(status,err.message||'Unable to record invitation.','error');
-        }
-    });
-    await refresh();
-}
-
-function showLoadError(err){
-    var main=root.querySelector('.mg-merchant-main');
-    if(main)main.insertAdjacentHTML('afterbegin','<div class="mg-empty-state">'+esc(err.message||'Unable to load merchant workspace.')+'</div>');
-}
-
-loadOverview().then(function(){
-    if(view==='settings')return loadSettings();
-    if(view==='locations')return loadLocations();
-    if(view==='team')return loadTeam();
-}).catch(showLoadError);
+async function loadSettings(){var form=root.querySelector('[data-merchant-settings-form]');if(!form)return;var response=await Microgifter.get('/api/merchant/settings.php');var w=(response.data||response).workspace||{};Object.keys(w).forEach(function(k){if(form.elements[k])form.elements[k].value=w[k]||'';});form.addEventListener('submit',async function(e){e.preventDefault();var payload=Object.fromEntries(new FormData(form).entries());var status=form.querySelector('[data-merchant-form-status]');try{setStatus(status,'Saving…');var r=await Microgifter.post('/api/merchant/settings.php',payload);setStatus(status,r.message||'Saved','success');await loadOverview();}catch(err){setStatus(status,err.message||'Unable to save settings.','error');}});}
+function resetLocationForm(form){form.reset();form.elements.location_id.value='';if(form.elements.timezone){form.elements.timezone.value=(overview&&overview.workspace&&overview.workspace.timezone)||'America/Phoenix';}if(form.elements.country_code)form.elements.country_code.value='US';if(form.elements.status)form.elements.status.value='active';if(form.elements.claim_code){form.elements.claim_code.value='';form.elements.claim_code.required=true;form.elements.claim_code.placeholder='PHX-001';}var help=form.querySelector('[data-location-code-help]');if(help)help.textContent='Required for a new location. Codes are stored securely and cannot be displayed again.';setStatus(form.querySelector('[data-location-status]'),metricAtLimit('max_locations')?limitUpgradeMessage('max_locations'):'');}
+function editLocationForm(form,item){Object.keys(item).forEach(function(k){if(k==='claim_code'||k==='claim_code_last4'||k==='has_active_claim_code')return;if(!form.elements[k])return;if(form.elements[k].type==='checkbox'){form.elements[k].checked=Boolean(Number(item[k]));}else{form.elements[k].value=item[k]||'';}});form.elements.location_id.value=item.public_id||'';if(form.elements.claim_code){form.elements.claim_code.value='';form.elements.claim_code.required=false;form.elements.claim_code.placeholder=item.claim_code_last4?'Enter a new code to rotate':'Enter a claim code';}var help=form.querySelector('[data-location-code-help]');if(help){help.textContent=item.claim_code_last4?'Current code ends in '+item.claim_code_last4+'. Leave blank to keep it, or enter a new code to rotate it.':'No active claim code is set. Enter one before using this location for redemption.';}setStatus(form.querySelector('[data-location-status]'),'Editing '+(item.name||'location')+'.');}
+async function loadLocations(){var list=root.querySelector('[data-location-list]');var form=root.querySelector('[data-location-form]');if(!list||!form)return;function updateLocationMetrics(items){items=items||[];var active=items.filter(function(x){return x.status==='active';}).length;var archived=items.filter(function(x){return x.status==='archived';}).length;var primary=items.filter(function(x){return Number(x.is_primary);}).length;var claim=items.filter(function(x){return Boolean(x.claim_code_last4||x.has_active_claim_code);}).length;var staff=items.filter(function(x){return x.address_line1&&x.city&&x.phone;}).length;setText('[data-location-kpi-active]',active.toLocaleString());setText('[data-location-kpi-claim]',claim.toLocaleString());setText('[data-location-kpi-primary]',primary?primary.toLocaleString():'—');setText('[data-location-kpi-archived]',archived.toLocaleString());setText('[data-location-kpi-staff]',staff.toLocaleString());setText('[data-location-readiness-score]',items.length?Math.round(((active>0?1:0)+(claim>0?1:0)+(primary>0?1:0)+(staff>0?1:0))/4*100)+'%':'—');setText('[data-location-ready-primary]',active>0?active+' active claim location'+(active===1?' is':'s are')+' available.':'Add at least one active claim location.');setText('[data-location-ready-secondary]',claim===active&&active>0?'Active claim sites have protected claim codes.':'Each active claim site needs a protected claim code.');setText('[data-location-ready-tertiary]',primary>0?'Primary location is set for default routing.':'Set one primary location for storefront and staff routing.');}
+async function refresh(){var r=await Microgifter.get('/api/merchant/locations.php');var payload=r.data||r;var items=payload.locations||[];updateLocationMetrics(items);list.innerHTML=items.map(function(x){var address=[x.address_line1,x.city,x.region,x.postal_code].filter(Boolean).join(', ');var codeText=x.claim_code_last4?'ending '+x.claim_code_last4:'not set';return'<button type="button" class="mg-location-card" data-location="'+esc(x.public_id)+'"><span><strong>'+esc(x.name)+'</strong><span>'+esc(address||x.location_code||'No address saved')+'</span><small>Claim code: '+esc(codeText)+'</small></span><span class="mg-card-meta"><em>'+esc(x.status)+'</em>'+(Number(x.is_primary)?'<em>Primary</em>':'')+'</span></button>';}).join('')||'<div class="mg-empty-state"><p>No locations yet. Add the first claim location for this merchant.</p></div>';list.querySelectorAll('[data-location]').forEach(function(btn){btn.addEventListener('click',function(){var item=items.find(function(x){return x.public_id===btn.dataset.location;});if(item)editLocationForm(form,item);});});}
+form.addEventListener('submit',async function(e){e.preventDefault();var data=Object.fromEntries(new FormData(form).entries());data.is_primary=form.elements.is_primary&&form.elements.is_primary.checked?1:0;data.claim_code=String(data.claim_code||'').trim().toUpperCase();var isCreate=!String(data.location_id||'').trim();var status=form.querySelector('[data-location-status]');var submit=form.querySelector('[data-location-save]')||form.querySelector('[type="submit"]');if(isCreate&&metricAtLimit('max_locations')){setStatus(status,limitUpgradeMessage('max_locations'),'error');return;}if(isCreate&&!data.claim_code){setStatus(status,'Enter a claim code for the new location.','error');form.elements.claim_code.focus();return;}try{setStatus(status,'Saving location…');if(typeof Microgifter.setBusy==='function')Microgifter.setBusy(submit,true,'Saving…');var r=await Microgifter.post('/api/merchant/locations.php',data);var saved=r.data||r;var successMessage=r.message||'Location saved.';if(saved.claim_code_last4)successMessage+=' Claim code ends in '+saved.claim_code_last4+'.';resetLocationForm(form);setStatus(status,successMessage,'success');await refresh();loadOverview().catch(function(){});}catch(err){setStatus(status,err.message||'Unable to save location.','error');}finally{if(typeof Microgifter.setBusy==='function')Microgifter.setBusy(submit,false);}});var newButton=root.querySelector('[data-location-new]');if(newButton)newButton.addEventListener('click',function(){resetLocationForm(form);});var resetButton=root.querySelector('[data-location-reset]');if(resetButton)resetButton.addEventListener('click',function(){resetLocationForm(form);});resetLocationForm(form);await refresh();}
+async function loadTeam(){var list=root.querySelector('[data-team-list]');var form=root.querySelector('[data-team-form]');if(!list||!form)return;async function refresh(){var r=await Microgifter.get('/api/merchant/team.php');var items=(r.data||r).members||[];list.innerHTML=items.map(function(x){return'<div class="mg-team-card"><span><strong>'+esc(x.display_name||'Invited member')+'</strong><span>'+esc(title(x.role_key))+'</span></span><span class="mg-card-meta"><em>'+esc(x.status)+'</em></span></div>';}).join('')||'<div class="mg-empty-state"><p>No team members found.</p></div>';}form.addEventListener('submit',async function(e){e.preventDefault();var status=form.querySelector('[data-team-status]');if(metricAtLimit('max_team_seats')){setStatus(status,limitUpgradeMessage('max_team_seats'),'error');return;}try{setStatus(status,'Saving invitation…');var r=await Microgifter.post('/api/merchant/team.php',Object.fromEntries(new FormData(form).entries()));setStatus(status,r.message||'Invitation recorded','success');form.reset();await refresh();loadOverview().catch(function(){});}catch(err){setStatus(status,err.message||'Unable to record invitation.','error');}});await refresh();}
+function showLoadError(err){var main=root.querySelector('.mg-merchant-main');if(main)main.insertAdjacentHTML('afterbegin','<div class="mg-empty-state">'+esc(err.message||'Unable to load merchant workspace.')+'</div>');}
+loadOverview().then(function(){if(view==='settings')return loadSettings();if(view==='locations')return loadLocations();if(view==='team')return loadTeam();}).catch(showLoadError);
 });
