@@ -1,7 +1,62 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . '/includes/app.php';
-require_once __DIR__ . '/api/ads/_ads.php';
+
+if (!function_exists('mg_ad_manager_table_exists')) {
+    function mg_ad_manager_table_exists(PDO $pdo, string $table): bool
+    {
+        if (preg_match('/^[A-Za-z0-9_]+$/', $table) !== 1) {
+            return false;
+        }
+        try {
+            $pdo->query('SELECT 1 FROM `' . str_replace('`', '``', $table) . '` LIMIT 0');
+            return true;
+        } catch (Throwable) {
+            return false;
+        }
+    }
+}
+
+if (!function_exists('mg_ad_manager_schema_status')) {
+    function mg_ad_manager_schema_status(PDO $pdo): array
+    {
+        $required = ['ad_campaigns','ad_creatives','ad_placements','ad_campaign_placements','ad_targeting_rules','ad_events','ad_reviews'];
+        $tables = [];
+        foreach ($required as $table) {
+            $tables[$table] = mg_ad_manager_table_exists($pdo, $table);
+        }
+        return ['ready' => !in_array(false, $tables, true), 'tables' => $tables];
+    }
+}
+
+if (!function_exists('mg_ad_manager_user_can_merchant')) {
+    function mg_ad_manager_user_can_merchant(array $user, PDO $pdo): bool
+    {
+        try {
+            if (function_exists('mg_user_has_merchant_access') && mg_user_has_merchant_access($user, $pdo)) {
+                return true;
+            }
+        } catch (Throwable) {
+            // Keep the page renderable even if entitlement lookup has a runtime issue.
+        }
+
+        $roles = is_array($user['roles'] ?? null) ? $user['roles'] : [];
+        if (in_array('admin', $roles, true) || in_array('super_admin', $roles, true) || in_array('merchant', $roles, true)) {
+            return true;
+        }
+
+        if (function_exists('mg_api_user_has_permission')) {
+            try {
+                return mg_api_user_has_permission($user, 'merchant.manage') || mg_api_user_has_permission($user, 'campaigns.manage') || mg_api_user_has_permission($user, 'ads.manage') || mg_api_user_has_permission($user, 'admin.access');
+            } catch (Throwable) {
+                return false;
+            }
+        }
+
+        $permissions = is_array($user['permissions'] ?? null) ? $user['permissions'] : [];
+        return in_array('merchant.manage', $permissions, true) || in_array('campaigns.manage', $permissions, true) || in_array('ads.manage', $permissions, true) || in_array('admin.access', $permissions, true);
+    }
+}
 
 $user = mg_require_auth('/signin.php', '/merchant-ad-manager.php');
 $pdo = mg_db();
@@ -24,7 +79,7 @@ $page_manifest = [
 ];
 $merchantName = trim((string)($user['display_name'] ?? $user['full_name'] ?? 'Microgifter Merchant')) ?: 'Microgifter Merchant';
 $csrfToken = mg_csrf_token();
-$schema = mg_ads_schema_status($pdo);
+$schema = mg_ad_manager_schema_status($pdo);
 
 require __DIR__ . '/includes/header.php';
 ?>
@@ -40,7 +95,7 @@ require __DIR__ . '/includes/header.php';
         <a class="mg-btn mg-btn-primary" href="#create" data-ads-tab-jump="create">+ New Campaign</a>
       </header>
 
-      <?php if (!mg_ads_user_can_merchant($user, $pdo)): ?>
+      <?php if (!mg_ad_manager_user_can_merchant($user, $pdo)): ?>
         <section class="mg-ads-panel"><div class="mg-ads-alert">Merchant access is required to use Campaign Ads Manager.</div></section>
       <?php else: ?>
         <?php if (!$schema['ready']): ?>
