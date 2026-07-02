@@ -10,15 +10,20 @@ if(!rail||!dock||!MG.get||!MG.post)return;
 var desktopQuery=window.matchMedia?window.matchMedia('(min-width:1024px)'):null;
 var RAIL_POLL_MS=15000;
 var CHAT_POLL_MS=5000;
+var HEARTBEAT_MS=60000;
 var activeProfile=null;
 var profiles=[];
 var railTimer=null;
 var chatTimer=null;
+var heartbeatTimer=null;
 var railLoading=false;
 var chatLoading=false;
+var heartbeatLoading=false;
 var railSignature='';
 var messageSignature='';
-var deepLinkProfileId=(new URLSearchParams(window.location.search||'')).get('chat')||'';
+var params=new URLSearchParams(window.location.search||'');
+var deepLinkProfileId=params.get('chat')||'';
+var deepLinkThreadId=params.get('thread')||'';
 var deepLinkAttempted=false;
 
 function payload(response){return response&&response.data?response.data:response;}
@@ -265,6 +270,24 @@ async function sendMessage(form){
   finally{busy(button,false);}
 }
 
+async function heartbeat(){
+  if(heartbeatLoading||!isVisible())return;
+  heartbeatLoading=true;
+  try{await MG.post('/api/social/presence-heartbeat.php',{});}catch(error){}
+  finally{heartbeatLoading=false;}
+}
+
+function startHeartbeat(){
+  stopHeartbeat();
+  heartbeat();
+  heartbeatTimer=window.setInterval(heartbeat,HEARTBEAT_MS);
+}
+
+function stopHeartbeat(){
+  if(heartbeatTimer)window.clearInterval(heartbeatTimer);
+  heartbeatTimer=null;
+}
+
 async function loadProfiles(force){
   if(railLoading||!isDesktop())return;
   railLoading=true;
@@ -282,14 +305,18 @@ async function loadProfiles(force){
 }
 
 function maybeOpenDeepLink(){
-  if(deepLinkAttempted||!deepLinkProfileId||!isDesktop())return;
+  if(deepLinkAttempted||!deepLinkProfileId)return;
+  if(!isDesktop()){
+    if(deepLinkThreadId)window.location.href='/messages.php?thread='+encodeURIComponent(deepLinkThreadId);
+    return;
+  }
   deepLinkAttempted=true;
   openChat(deepLinkProfileId,{markRead:true});
 }
 
 function startRailPolling(){
   stopRailPolling();
-  if(!isDesktop()){rail.hidden=true;clear(dock);activeProfile=null;return;}
+  if(!isDesktop()){rail.hidden=true;clear(dock);activeProfile=null;maybeOpenDeepLink();return;}
   setHeaderOffset();
   loadProfiles(true);
   railTimer=window.setInterval(function(){loadProfiles(false);},RAIL_POLL_MS);
@@ -311,6 +338,7 @@ function handleViewportChange(){
     rail.hidden=true;
     clear(dock);
     activeProfile=null;
+    maybeOpenDeepLink();
   }
 }
 
@@ -335,11 +363,12 @@ dock.addEventListener('submit',function(event){
 
 window.addEventListener('resize',setHeaderOffset,{passive:true});
 window.addEventListener('orientationchange',setHeaderOffset,{passive:true});
-document.addEventListener('visibilitychange',function(){if(isVisible()&&activeProfile)pollActiveChat({markRead:true});});
+document.addEventListener('visibilitychange',function(){if(isVisible()){heartbeat();if(activeProfile)pollActiveChat({markRead:true});}});
 if(desktopQuery){
   if(desktopQuery.addEventListener)desktopQuery.addEventListener('change',handleViewportChange);
   else if(desktopQuery.addListener)desktopQuery.addListener(handleViewportChange);
 }
+startHeartbeat();
 handleViewportChange();
-window.addEventListener('beforeunload',function(){stopRailPolling();stopChatPolling();});
+window.addEventListener('beforeunload',function(){stopRailPolling();stopChatPolling();stopHeartbeat();});
 })(window,document);
