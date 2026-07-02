@@ -55,7 +55,7 @@
 
   function setBusy(busy) {
     state.busy = busy;
-    state.section?.querySelectorAll('button,select,textarea').forEach((control) => {
+    state.section?.querySelectorAll('button,select,textarea,input').forEach((control) => {
       control.disabled = busy;
     });
   }
@@ -127,6 +127,49 @@
     container.appendChild(item.row);
   }
 
+  function renderPassword(container) {
+    if (!capabilities().change_password) return;
+    const item = actionRow('Change password', 'Set a new password and revoke active sessions for this user.');
+    const password = element('input');
+    password.type = 'password';
+    password.minLength = 12;
+    password.maxLength = 120;
+    password.autocomplete = 'new-password';
+    password.placeholder = 'New password';
+
+    const confirm = element('input');
+    confirm.type = 'password';
+    confirm.minLength = 12;
+    confirm.maxLength = 120;
+    confirm.autocomplete = 'new-password';
+    confirm.placeholder = 'Confirm password';
+
+    const button = element('button', 'mg-btn mg-btn-danger', 'Change password');
+    button.type = 'button';
+    button.addEventListener('click', () => {
+      const next = String(password.value || '');
+      const check = String(confirm.value || '');
+      if (next.length < 12 || next.length > 120) {
+        setNotice('New password must be between 12 and 120 characters.', 'error');
+        password.focus();
+        return;
+      }
+      if (next !== check) {
+        setNotice('Password confirmation does not match.', 'error');
+        confirm.focus();
+        return;
+      }
+      perform(
+        'set_password',
+        { password: next },
+        'Change this user password and revoke their active sessions?'
+      );
+    });
+
+    item.controls.append(password, confirm, button);
+    container.appendChild(item.row);
+  }
+
   function roleSlugs() {
     return new Set((state.user.roles || []).map((role) => role.slug));
   }
@@ -135,7 +178,7 @@
     if (!capabilities().manage_roles) return;
     const assigned = roleSlugs();
     const block = element('div', 'mg-admin-management-block');
-    block.append(element('h4', '', 'Role management'), element('p', '', 'Add or remove permitted platform roles. Elevated roles remain super-admin protected.'));
+    block.append(element('h4', '', 'Role / permission management'), element('p', '', 'Roles determine effective permissions. Add or remove permitted platform roles. Elevated roles remain super-admin protected.'));
 
     const current = element('div', 'mg-admin-management-items');
     (state.user.roles || []).forEach((role) => {
@@ -267,12 +310,12 @@
     state.section?.remove();
 
     const caps = capabilities();
-    const hasControls = caps.manage_status || caps.manage_roles || caps.manage_models || caps.view_sessions;
+    const hasControls = caps.manage_status || caps.change_password || caps.manage_roles || caps.manage_models || caps.view_sessions;
     const section = element('section', 'mg-admin-user-detail-section mg-admin-user-management-section');
     state.section = section;
     const header = element('header');
     const copy = element('div');
-    copy.append(element('h3', '', 'Account management'), element('p', '', 'Protected account, access, model, and session operations.'));
+    copy.append(element('h3', '', 'Account management'), element('p', '', 'Protected account, access, password, model, and session operations.'));
     header.append(copy, element('span', 'mg-admin-users-readonly', hasControls ? 'Permission gated' : 'View only'));
     section.appendChild(header);
 
@@ -301,6 +344,7 @@
 
     const controls = element('div', 'mg-admin-management-stack');
     renderStatus(controls);
+    renderPassword(controls);
     renderRoles(controls);
     renderModels(controls);
     renderSessions(controls);
