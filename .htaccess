@@ -44,11 +44,15 @@ DirectoryIndex index.php
   RewriteRule ^includes/ - [F,L]
   RewriteRule ^scripts/ - [F,L]
 
-  # Block common local environment files if accidentally uploaded.
+  # Block common local environment, backup, log, and dependency files if accidentally uploaded.
   RewriteRule (^|/)\.env$ - [F,L]
   RewriteRule (^|/)\.env\..*$ - [F,L]
+  RewriteRule (^|/)\.git(/|$) - [F,L]
+  RewriteRule (^|/)\.svn(/|$) - [F,L]
+  RewriteRule (^|/)(composer\.(json|lock)|package(-lock)?\.json|yarn\.lock)$ - [F,L]
+  RewriteRule \.(sql|bak|backup|old|orig|save|swp|log|ini|env)$ - [F,L]
 </IfModule>
 
-<FilesMatch "(^\.env|composer\.(json|lock)|package(-lock)?\.json|.*\.sql)$">
+<FilesMatch "(^\.env|composer\.(json|lock)|package(-lock)?\.json|yarn\.lock|.*\.(sql|bak|backup|old|orig|save|swp|log|ini|env))$">
   Require all denied
 </FilesMatch>
