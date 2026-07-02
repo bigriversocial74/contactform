@@ -7,11 +7,12 @@
   function esc(value){return String(value == null ? '' : value).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function qs(sel, scope){return (scope||root).querySelector(sel);}
   function qsa(sel, scope){return Array.prototype.slice.call((scope||root).querySelectorAll(sel));}
+  function on(node,event,handler){if(node)node.addEventListener(event,handler);}
   function status(message,error){var node=qs('[data-placement-status]'); if(node){node.textContent=message||''; node.style.color=error?'#b91c1c':'#64748b';}}
   async function api(options){
     var res = await fetch('/api/ads/admin-placement-control.php', Object.assign({credentials:'same-origin'}, options || {}));
     var out = await res.json().catch(function(){return {ok:false,message:'Invalid server response'};});
-    if (!out.ok) throw new Error(out.message || 'Request failed');
+    if (!res.ok || !out.ok) throw new Error(out.message || 'Request failed');
     return out.data || {};
   }
   function metric(key, type){return Number((state.metrics[key] && state.metrics[key][type]) || 0).toLocaleString();}
@@ -40,6 +41,7 @@
   }
   function render(){
     var list = qs('[data-placement-list]');
+    if (!list) { status('Placement list container is missing.', true); return; }
     list.innerHTML = state.placements.length ? state.placements.map(placementCard).join('') : '<div class="mg-ads-empty">No placements available. Run the Campaign Ads Manager SQL migration.</div>';
     bindControls(list);
     var summary = qs('[data-placement-summary]');
@@ -47,30 +49,34 @@
   }
   function bindControls(scope){
     qsa('[data-placement-settings]', scope).forEach(function(form){
-      form.addEventListener('submit', function(e){
+      on(form,'submit', function(e){
         e.preventDefault();
         var card = form.closest('[data-placement-key]');
-        save({action:'update_placement', placement_key:card.getAttribute('data-placement-key'), is_active:form.elements.is_active.checked ? 1 : 0, max_ads:form.elements.max_ads.value});
+        if (!card || !form.elements.is_active || !form.elements.max_ads) { status('Placement settings form is incomplete.', true); return; }
+        save({action:'update_placement', placement_key:card.getAttribute('data-placement-key'), is_active:form.elements.is_active.checked ? 1 : 0, max_ads:form.elements.max_ads.value}).catch(function(error){status(error.message,true);});
       });
     });
     qsa('[data-placement-assign]', scope).forEach(function(form){
-      form.addEventListener('submit', function(e){
+      on(form,'submit', function(e){
         e.preventDefault();
         var card = form.closest('[data-placement-key]');
+        if (!card || !form.elements.campaign_id || !form.elements.priority) { status('Placement assignment form is incomplete.', true); return; }
         if (!form.elements.campaign_id.value) { status('Select a campaign first.', true); return; }
-        save({action:'assign_campaign', placement_key:card.getAttribute('data-placement-key'), campaign_id:form.elements.campaign_id.value, priority:form.elements.priority.value});
+        save({action:'assign_campaign', placement_key:card.getAttribute('data-placement-key'), campaign_id:form.elements.campaign_id.value, priority:form.elements.priority.value}).catch(function(error){status(error.message,true);});
       });
     });
     qsa('[data-save-assignment]', scope).forEach(function(btn){
-      btn.addEventListener('click', function(){
+      on(btn,'click', function(){
         var row = btn.closest('[data-assignment-id]');
-        save({action:'update_assignment', assignment_id:row.getAttribute('data-assignment-id'), priority:qs('[name="priority"]', row).value, status:qs('[name="status"]', row).value});
+        if (!row || !qs('[name="priority"]', row) || !qs('[name="status"]', row)) { status('Assignment row is incomplete.', true); return; }
+        save({action:'update_assignment', assignment_id:row.getAttribute('data-assignment-id'), priority:qs('[name="priority"]', row).value, status:qs('[name="status"]', row).value}).catch(function(error){status(error.message,true);});
       });
     });
     qsa('[data-archive-assignment]', scope).forEach(function(btn){
-      btn.addEventListener('click', function(){
+      on(btn,'click', function(){
         var row = btn.closest('[data-assignment-id]');
-        save({action:'archive_assignment', assignment_id:row.getAttribute('data-assignment-id')});
+        if (!row) { status('Assignment row is missing.', true); return; }
+        save({action:'archive_assignment', assignment_id:row.getAttribute('data-assignment-id')}).catch(function(error){status(error.message,true);});
       });
     });
   }
@@ -86,14 +92,15 @@
     status('Loading placement controls...');
     var data = await api({method:'GET'});
     if (!data.schema_ready) {
-      qs('[data-placement-list]').innerHTML = '<div class="mg-ads-alert">Campaign Ads Manager migration is required before placement controls can load.</div>';
+      var list = qs('[data-placement-list]');
+      if (list) list.innerHTML = '<div class="mg-ads-alert">Campaign Ads Manager migration is required before placement controls can load.</div>';
+      status('Campaign Ads Manager migration is required.', true);
       return;
     }
     state = data;
     status('Placement controls loaded.');
     render();
   }
-  var refresh = qs('[data-placement-refresh]');
-  if (refresh) refresh.addEventListener('click', function(){load().catch(function(e){status(e.message,true);});});
+  on(qs('[data-placement-refresh]'),'click', function(){load().catch(function(e){status(e.message,true);});});
   load().catch(function(e){status(e.message,true);});
 })(window, document);
