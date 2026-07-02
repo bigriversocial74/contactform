@@ -204,6 +204,18 @@
   margin:18px auto 0!important;
 }
 
+.mg-social-feed-page .mg-feed-card.has-product-linked-card .mg-feed-linked-grid,
+.mg-social-feed-page .mg-feed-card.is-greeting-card-post.has-product-linked-card .mg-feed-linked-grid,
+.mg-social-feed-page .mg-feed-card.is-multimedia-card-post.has-product-linked-card .mg-feed-linked-grid{
+  width:100%!important;
+  max-width:none!important;
+  margin:18px 0 0!important;
+}
+
+.mg-social-feed-page .mg-feed-card:not(.mg-owner-post-card)>.mg-feed-card-header>.mg-feed-visibility{
+  display:none!important;
+}
+
 .mg-social-feed-page .mg-feed-linked-card.is-product,
 .mg-social-feed-page .mg-feed-card.is-greeting-card-post .mg-feed-linked-card.is-product,
 .mg-social-feed-page .mg-feed-card.is-multimedia-card-post .mg-feed-linked-card.is-product{
@@ -283,5 +295,13 @@
   .mg-social-feed-page .mg-feed-card.is-multimedia-card-post .mg-feed-linked-grid{
     width:calc(100% - 24px)!important;
     max-width:420px!important;
+  }
+
+  .mg-social-feed-page .mg-feed-card.has-product-linked-card .mg-feed-linked-grid,
+  .mg-social-feed-page .mg-feed-card.is-greeting-card-post.has-product-linked-card .mg-feed-linked-grid,
+  .mg-social-feed-page .mg-feed-card.is-multimedia-card-post.has-product-linked-card .mg-feed-linked-grid{
+    width:100%!important;
+    max-width:none!important;
+    margin:18px 0 0!important;
   }
 }
