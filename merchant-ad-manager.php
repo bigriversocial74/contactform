@@ -1,62 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . '/includes/app.php';
-
-if (!function_exists('mg_ad_manager_table_exists')) {
-    function mg_ad_manager_table_exists(PDO $pdo, string $table): bool
-    {
-        if (preg_match('/^[A-Za-z0-9_]+$/', $table) !== 1) {
-            return false;
-        }
-        try {
-            $pdo->query('SELECT 1 FROM `' . str_replace('`', '``', $table) . '` LIMIT 0');
-            return true;
-        } catch (Throwable) {
-            return false;
-        }
-    }
-}
-
-if (!function_exists('mg_ad_manager_schema_status')) {
-    function mg_ad_manager_schema_status(PDO $pdo): array
-    {
-        $required = ['ad_campaigns','ad_creatives','ad_placements','ad_campaign_placements','ad_targeting_rules','ad_events','ad_reviews'];
-        $tables = [];
-        foreach ($required as $table) {
-            $tables[$table] = mg_ad_manager_table_exists($pdo, $table);
-        }
-        return ['ready' => !in_array(false, $tables, true), 'tables' => $tables];
-    }
-}
-
-if (!function_exists('mg_ad_manager_user_can_merchant')) {
-    function mg_ad_manager_user_can_merchant(array $user, PDO $pdo): bool
-    {
-        try {
-            if (function_exists('mg_user_has_merchant_access') && mg_user_has_merchant_access($user, $pdo)) {
-                return true;
-            }
-        } catch (Throwable) {
-            // Keep the page renderable even if entitlement lookup has a runtime issue.
-        }
-
-        $roles = is_array($user['roles'] ?? null) ? $user['roles'] : [];
-        if (in_array('admin', $roles, true) || in_array('super_admin', $roles, true) || in_array('merchant', $roles, true)) {
-            return true;
-        }
-
-        if (function_exists('mg_api_user_has_permission')) {
-            try {
-                return mg_api_user_has_permission($user, 'merchant.manage') || mg_api_user_has_permission($user, 'campaigns.manage') || mg_api_user_has_permission($user, 'ads.manage') || mg_api_user_has_permission($user, 'admin.access');
-            } catch (Throwable) {
-                return false;
-            }
-        }
-
-        $permissions = is_array($user['permissions'] ?? null) ? $user['permissions'] : [];
-        return in_array('merchant.manage', $permissions, true) || in_array('campaigns.manage', $permissions, true) || in_array('ads.manage', $permissions, true) || in_array('admin.access', $permissions, true);
-    }
-}
+require_once __DIR__ . '/api/ads/_ads.php';
 
 $user = mg_require_auth('/signin.php', '/merchant-ad-manager.php');
 $pdo = mg_db();
@@ -65,8 +10,8 @@ $page_section = 'agent';
 $header_mode = 'agent';
 $agent_tab = 'ads-manager';
 $page_body_class = 'mg-ad-manager-page mg-ad-manager-redesign-page';
-$page_styles = ['/assets/css/merchant-ad-manager.css','/assets/css/sponsored-campaign-card.css','/assets/css/ad-health-alerts.css','/assets/css/merchant-ad-product-picker.css'];
-$page_scripts = ['/assets/js/sponsored-campaign-card.js','/assets/js/ad-health-alerts.js','/assets/js/merchant-ad-manager.js','/assets/js/merchant-ad-lifecycle-guard.js'];
+$page_styles = ['/assets/css/merchant-ad-manager.css','/assets/css/sponsored-campaign-card.css','/assets/css/ad-health-alerts.css'];
+$page_scripts = ['/assets/js/sponsored-campaign-card.js','/assets/js/ad-health-alerts.js','/assets/js/merchant-ad-manager.js'];
 $page_manifest = [
     'id' => 'merchant-ad-manager',
     'title' => $page_title,
@@ -79,7 +24,7 @@ $page_manifest = [
 ];
 $merchantName = trim((string)($user['display_name'] ?? $user['full_name'] ?? 'Microgifter Merchant')) ?: 'Microgifter Merchant';
 $csrfToken = mg_csrf_token();
-$schema = mg_ad_manager_schema_status($pdo);
+$schema = mg_ads_schema_status($pdo);
 
 require __DIR__ . '/includes/header.php';
 ?>
@@ -95,7 +40,7 @@ require __DIR__ . '/includes/header.php';
         <a class="mg-btn mg-btn-primary" href="#create" data-ads-tab-jump="create">+ New Campaign</a>
       </header>
 
-      <?php if (!mg_ad_manager_user_can_merchant($user, $pdo)): ?>
+      <?php if (!mg_ads_user_can_merchant($user, $pdo)): ?>
         <section class="mg-ads-panel"><div class="mg-ads-alert">Merchant access is required to use Campaign Ads Manager.</div></section>
       <?php else: ?>
         <?php if (!$schema['ready']): ?>
@@ -123,17 +68,6 @@ require __DIR__ . '/includes/header.php';
             <article class="mg-ads-panel mg-ads-create-panel">
               <h2>Create Campaign Boost / Sponsored Local Drop</h2>
               <form class="mg-ads-form" data-ad-form onsubmit="return false;">
-                <div class="mg-ads-product-picker">
-                  <div class="mg-ads-field">
-                    <label for="ad-product">Choose product / reward to advertise</label>
-                    <select id="ad-product" name="source_product_id" data-product-picker>
-                      <option value="">Loading merchant products…</option>
-                    </select>
-                    <small class="mg-ads-field-hint">Optional. Applying a product prefills the headline, offer copy, CTA, destination, and product metadata.</small>
-                  </div>
-                  <button class="mg-btn mg-btn-soft" type="button" data-apply-product disabled>Apply Product</button>
-                </div>
-                <div class="mg-ads-product-summary" data-product-summary hidden></div>
                 <div class="mg-ads-field"><label for="ad-title">Campaign title</label><input id="ad-title" name="title" maxlength="190" value="Sponsored Local Drop" required></div>
                 <div class="mg-ads-field"><label for="ad-headline">Sponsored card headline</label><input id="ad-headline" name="headline" maxlength="190" value="Featured Local Reward" required></div>
                 <div class="mg-ads-field"><label for="ad-description">Short offer description</label><textarea id="ad-description" name="description" maxlength="2000" placeholder="Describe the reward, campaign, or local opportunity.">Claim this local reward, save it to your wallet, and redeem it with the merchant.</textarea></div>
@@ -153,20 +87,7 @@ require __DIR__ . '/includes/header.php';
                   <div class="mg-ads-field"><label for="ad-start">Start</label><input id="ad-start" name="starts_at" type="datetime-local"></div>
                   <div class="mg-ads-field"><label for="ad-end">End</label><input id="ad-end" name="ends_at" type="datetime-local"></div>
                 </div>
-                <div class="mg-ads-creative-upload">
-                  <div class="mg-ads-creative-upload-copy">
-                    <strong>Campaign image</strong>
-                    <span data-image-source-label>Manual URL fallback</span>
-                  </div>
-                  <div class="mg-ads-field">
-                    <label for="ad-image-file">Upload campaign image</label>
-                    <input id="ad-image-file" type="file" accept="image/jpeg,image/png,image/gif,image/webp" data-creative-image-file>
-                    <small class="mg-ads-field-hint">JPG, PNG, GIF, or WebP up to 8MB. Uploads override product images while keeping the Image URL field editable.</small>
-                  </div>
-                  <button class="mg-btn mg-btn-soft" type="button" data-upload-creative>Upload Image</button>
-                  <small data-creative-upload-status aria-live="polite"></small>
-                </div>
-                <div class="mg-ads-field"><label for="ad-image">Image URL</label><input id="ad-image" name="image_url" placeholder="/images/example-offer.png"><small class="mg-ads-field-hint">Use this as a fallback, or paste an existing hosted campaign image.</small></div>
+                <div class="mg-ads-field"><label for="ad-image">Image URL</label><input id="ad-image" name="image_url" placeholder="/images/example-offer.png"></div>
                 <div class="mg-ads-two">
                   <div class="mg-ads-field"><label for="ad-cta">CTA label</label><input id="ad-cta" name="cta_label" maxlength="80" value="Claim Reward"></div>
                   <div class="mg-ads-field"><label for="ad-destination">Destination URL</label><input id="ad-destination" name="destination_url" placeholder="/feed.php"></div>
@@ -198,7 +119,7 @@ require __DIR__ . '/includes/header.php';
               </article>
               <article class="mg-ads-panel mg-ads-help-card">
                 <h2>Need help?</h2>
-                <p class="mg-ads-muted">Choose a product or upload campaign media, then tighten the headline and CTA for higher claim and redemption rates.</p>
+                <p class="mg-ads-muted">Write a clear headline and valuable offer to increase claim and redemption rates.</p>
                 <button class="mg-btn mg-btn-soft" type="button" data-ads-tab-jump="analytics">View best practices →</button>
               </article>
             </aside>
