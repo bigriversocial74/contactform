@@ -19,6 +19,8 @@ window.Microgifter = window.Microgifter || {};
   function cleanText(value, fallback){var text = String(value == null ? '' : value).trim(); return text || fallback || '';}
   function normalizePlacement(value, fallback){return cleanText(value, fallback || 'sidebar_sponsored_card').replace(/[^a-z0-9_-]/gi,'').toLowerCase() || fallback || 'sidebar_sponsored_card';}
   function labelForPlacement(placement){return placement.replace(/[_-]+/g,' ');}
+  function placementShell(container){return container && container.closest ? container.closest('.mg-agent-chat-sidebar-ad') : null;}
+  function markShellEmpty(container, empty){var shell=placementShell(container); if(shell)shell.classList.toggle('is-empty', !!empty);}
 
   function normalizeItem(item, placement){
     item = item && typeof item === 'object' ? item : {};
@@ -189,6 +191,7 @@ window.Microgifter = window.Microgifter || {};
     container.removeAttribute('aria-busy');
     container.setAttribute('data-sponsored-empty-reason', reason || 'empty');
     container.innerHTML='';
+    markShellEmpty(container, true);
   }
 
   function renderContainer(container){
@@ -197,6 +200,7 @@ window.Microgifter = window.Microgifter || {};
     var isMap = placement === 'world_canvas_sponsored_pin' || placement === 'target_zone_sponsored_drop';
     var url = '/api/ads/render-placement.php?placement_key=' + encodeURIComponent(placement) + '&limit=' + encodeURIComponent(limit);
     container.setAttribute('aria-busy','true');
+    markShellEmpty(container, true);
     fetch(url,{credentials:'same-origin'}).then(function(res){return res.json();}).then(function(out){
       var data = out && out.data || {};
       var rawItems = Array.isArray(data.items) ? data.items : [];
@@ -205,6 +209,7 @@ window.Microgifter = window.Microgifter || {};
       container.classList.remove('mg-sponsored-empty');
       container.removeAttribute('aria-busy');
       container.removeAttribute('data-sponsored-empty-reason');
+      markShellEmpty(container, false);
       container.innerHTML = items.map(function(item){return isMap ? mapHtml(item) : cardHtml(item,{compact:placement==='sidebar_sponsored_card'});}).join('');
       attachImageFallbacks(container);
       container.querySelectorAll('[data-sponsored-click]').forEach(function(link){link.addEventListener('click',function(){var card=link.closest('[data-ad-campaign-id]'); var id=card && card.getAttribute('data-ad-campaign-id'); var item=items.find(function(i){return i.public_id===id;}); track(item,'click',{cta:true});});});
