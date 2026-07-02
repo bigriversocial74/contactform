@@ -14,6 +14,7 @@ if (function_exists('mg_rate_limit')) mg_rate_limit('admin.screen_recordings.sav
 
 $recordingId = max(0, (int)($input['recording_id'] ?? $input['id'] ?? 0));
 if ($recordingId < 1) mg_fail('Recording id is required.', 422);
+mg_screen_recordings_fetch_for_user($pdo, $recordingId, $user, true);
 $manifest = $input['edit_manifest'] ?? $input['manifest'] ?? [];
 if (is_string($manifest)) {
     $decoded = json_decode($manifest, true);
@@ -27,5 +28,5 @@ try {
     mg_ok(['recording' => mg_screen_recordings_public_record($row)], 'Edit draft saved.');
 } catch (Throwable $error) {
     mg_security_log('warning', 'admin.screen_recordings.save_edit_failed', 'Unable to save screen recording edit manifest.', ['recording_id' => $recordingId, 'message' => $error->getMessage()], (int)$user['id']);
-    mg_fail($error->getMessage(), 422);
+    mg_fail('Unable to save edit draft. Check diagnostics or server logs.', 422);
 }
