@@ -12,5 +12,5 @@ if (function_exists('mg_rate_limit')) mg_rate_limit('admin.screen_recordings.rea
 
 $recordingId = max(0, (int)($_GET['id'] ?? 0));
 if ($recordingId < 1) mg_fail('Recording id is required.', 422);
-$row = mg_screen_recordings_fetch($pdo, $recordingId);
+$row = mg_screen_recordings_fetch_for_user($pdo, $recordingId, $user, false);
 mg_ok(['recording' => mg_screen_recordings_public_record($row)], 'Recording loaded.');
