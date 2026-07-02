@@ -107,7 +107,8 @@ try {
             'unread' => $unread,
         ] : null,
         'messages' => $messages,
-        'can_reply' => $thread !== null,
+        'can_reply' => true,
+        'can_start_thread' => $thread === null,
         'checked_at' => date('Y-m-d H:i:s'),
     ]);
 } catch (Throwable $error) {
