@@ -11,11 +11,18 @@ $canManageAiLimits = mg_admin_page_user_has_permission($user, 'admin.settings.ma
 $page_title = 'User Center | Microgifter';
 $page_section = 'account';
 $header_mode = 'account';
-$page_body_class = 'mg-admin-users-page';
-$page_styles = ['/assets/css/admin-shell.css','/assets/css/admin-users.css'];
+$page_body_class = 'mg-admin-users-page mg-admin-users-page-v2';
+$page_styles = [
+    '/assets/css/admin-shell.css',
+    '/assets/css/admin-users.css',
+    '/assets/css/admin-user-detail-drawer.css?v=20260702-user-actions',
+    '/assets/css/admin-user-management.css?v=20260702-user-actions',
+];
 $page_scripts = [
     '/assets/js/admin-users.js',
+    '/assets/js/admin-user-detail-drawer.js?v=20260702-user-actions',
     '/assets/js/admin-user-ops-detail.js',
+    '/assets/js/admin-user-management.js?v=20260702-user-actions',
     '/assets/js/admin-ai-user-limits.js',
     '/assets/js/admin-create-user.js',
 ];
