@@ -5,7 +5,6 @@
     user: null,
     drawer: null,
     section: null,
-    reason: null,
     notice: null,
     busy: false,
   };
@@ -39,14 +38,6 @@
     return management().capabilities || {};
   }
 
-  function reasonValue() {
-    const value = String(state.reason?.value || '').trim();
-    if (value.length < 8 || value.length > 240) {
-      throw new Error('Enter an action reason between 8 and 240 characters.');
-    }
-    return value;
-  }
-
   function setNotice(message, type = 'info') {
     if (!state.notice) return;
     state.notice.textContent = message;
@@ -62,14 +53,6 @@
 
   async function perform(action, data, confirmation) {
     if (state.busy || !state.user) return;
-    let reason;
-    try {
-      reason = reasonValue();
-    } catch (error) {
-      setNotice(error.message, 'error');
-      state.reason?.focus();
-      return;
-    }
     if (!window.confirm(confirmation)) return;
 
     setBusy(true);
@@ -78,7 +61,7 @@
       const payload = await Microgifter.post('/api/admin/user-management.php', {
         action,
         user_id: state.user.id,
-        reason,
+        reason: `User Center admin action: ${action}`,
         ...data,
       });
       if (!payload?.ok) throw new Error(payload?.message || 'Account action failed.');
@@ -339,20 +322,11 @@
       return;
     }
 
-    const reasonLabel = element('label', 'mg-admin-management-reason');
-    reasonLabel.append(element('span', '', 'Required action reason'));
-    const reason = element('textarea');
-    reason.rows = 3;
-    reason.maxLength = 240;
-    reason.placeholder = 'Explain why this administrative action is required.';
-    reasonLabel.appendChild(reason);
-    state.reason = reason;
-
     const notice = element('div', 'mg-admin-management-notice');
     notice.setAttribute('role', 'status');
     notice.setAttribute('aria-live', 'polite');
     state.notice = notice;
-    section.append(reasonLabel, notice);
+    section.appendChild(notice);
 
     const controls = element('div', 'mg-admin-management-stack');
     renderStatus(controls);
@@ -374,7 +348,6 @@
     state.user = null;
     state.drawer = null;
     state.section = null;
-    state.reason = null;
     state.notice = null;
     state.busy = false;
   });
