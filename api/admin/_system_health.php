@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/bootstrap.php';
 require_once dirname(__DIR__, 2) . '/includes/migrations.php';
 require_once __DIR__ . '/_system_health_metrics.php';
+require_once __DIR__ . '/_system_health_security.php';
 
 function mg_admin_system_health_require_user(): array
 {
