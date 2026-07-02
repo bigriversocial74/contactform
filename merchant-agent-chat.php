@@ -28,6 +28,7 @@ $page_scripts = [
     '/assets/js/merchant-agent-chat-voice.js',
     '/assets/js/merchant-agent-chat-speech-results.js',
     '/assets/js/merchant-agent-chat-control-panel.js',
+    '/assets/js/merchant-agent-thread-picker-sync.js',
     '/assets/js/merchant-agent-memory-menu.js',
     '/assets/js/merchant-agent-creative-presets.js',
     '/assets/js/merchant-agent-creative-draft-actions.js',
