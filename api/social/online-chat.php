@@ -20,7 +20,17 @@ function mg_feed_chat_avatar(?string $url): ?string
 
 function mg_feed_chat_profile(PDO $pdo, int $viewerId, string $profileId): array
 {
-    $stmt = $pdo->prepare("SELECT pp.public_id,pp.user_id,pp.slug,pp.display_name,pp.avatar_url,pp.profile_type FROM public_profiles pp INNER JOIN users u ON u.id=pp.user_id WHERE pp.public_id=? AND pp.status='active' AND pp.visibility IN ('public','unlisted') AND u.status='active' LIMIT 1");
+    $stmt = $pdo->prepare(
+        "SELECT pp.public_id,pp.user_id,pp.slug,pp.display_name,pp.avatar_url,pp.profile_type,
+                MAX(us.last_seen_at) last_seen_at,
+                CASE WHEN MAX(us.last_seen_at)>=DATE_SUB(NOW(), INTERVAL 2 MINUTE) THEN 1 ELSE 0 END is_online
+         FROM public_profiles pp
+         INNER JOIN users u ON u.id=pp.user_id
+         LEFT JOIN user_sessions us ON us.user_id=pp.user_id AND us.revoked_at IS NULL AND us.expires_at>NOW()
+         WHERE pp.public_id=? AND pp.status='active' AND pp.visibility IN ('public','unlisted') AND u.status='active'
+         GROUP BY pp.id
+         LIMIT 1"
+    );
     $stmt->execute([trim($profileId)]);
     $peer = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$peer) throw new RuntimeException('Profile is not available.');
@@ -65,7 +75,7 @@ function mg_feed_chat_thread(PDO $pdo, int $viewerId, int $peerId, bool $create)
 
 function mg_feed_chat_messages(PDO $pdo, array $thread, int $viewerId): array
 {
-    $stmt = $pdo->prepare("SELECT m.public_id,m.body,m.created_at,m.sender_user_id,u.display_name,u.full_name,u.email FROM messages m INNER JOIN users u ON u.id=m.sender_user_id WHERE m.thread_id=? AND m.moderation_status NOT IN ('hidden','removed') ORDER BY m.created_at DESC,m.id DESC LIMIT 20");
+    $stmt = $pdo->prepare("SELECT m.public_id,m.body,m.created_at,m.sender_user_id,u.display_name,u.full_name,u.email FROM messages m INNER JOIN users u ON u.id=m.sender_user_id WHERE m.thread_id=? AND COALESCE(m.moderation_status,'clear') NOT IN ('hidden','removed') ORDER BY m.created_at DESC,m.id DESC LIMIT 20");
     $stmt->execute([(int)$thread['id']]);
     return array_map(static function(array $row) use ($viewerId): array {
         $name = trim((string)($row['display_name'] ?? $row['full_name'] ?? $row['email'] ?? 'Microgifter member'));
@@ -76,7 +86,7 @@ function mg_feed_chat_messages(PDO $pdo, array $thread, int $viewerId): array
 function mg_feed_chat_unread(PDO $pdo, int $viewerId, array $thread): int
 {
     $last = trim((string)($thread['last_read_at'] ?? ''));
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM messages WHERE thread_id=? AND sender_user_id<>? AND moderation_status NOT IN ('hidden','removed') AND (?='' OR created_at>?)");
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM messages WHERE thread_id=? AND sender_user_id<>? AND COALESCE(moderation_status,'clear') NOT IN ('hidden','removed') AND (?='' OR created_at>?)");
     $stmt->execute([(int)$thread['id'], $viewerId, $last, $last]);
     return (int)$stmt->fetchColumn();
 }
@@ -95,7 +105,7 @@ try {
             $thread = mg_feed_chat_thread($pdo, $viewerId, (int)$peer['user_id'], false);
             $messages = $thread ? mg_feed_chat_messages($pdo, $thread, $viewerId) : [];
             if ($thread) $pdo->prepare('UPDATE message_thread_participants SET last_read_at=NOW() WHERE thread_id=? AND user_id=?')->execute([(int)$thread['id'], $viewerId]);
-            mg_ok(['profile'=>mg_feed_chat_project_profile($peer + ['is_online'=>true, 'last_seen_at'=>'']),'thread'=>$thread ? ['id'=>(string)$thread['public_id'],'subject'=>(string)$thread['subject'],'unread'=>0] : null,'messages'=>$messages]);
+            mg_ok(['profile'=>mg_feed_chat_project_profile($peer),'thread'=>$thread ? ['id'=>(string)$thread['public_id'],'subject'=>(string)$thread['subject'],'unread'=>0] : null,'messages'=>$messages,'poll_after_ms'=>5000]);
             return;
         }
         $stmt = $pdo->prepare("SELECT pp.public_id,pp.user_id,pp.slug,pp.display_name,pp.avatar_url,pp.profile_type,MAX(us.last_seen_at) last_seen_at,CASE WHEN MAX(us.last_seen_at)>=DATE_SUB(NOW(), INTERVAL 2 MINUTE) THEN 1 ELSE 0 END is_online FROM social_follows sf INNER JOIN public_profiles pp ON pp.user_id=sf.followed_user_id INNER JOIN users u ON u.id=pp.user_id AND u.status='active' LEFT JOIN user_sessions us ON us.user_id=pp.user_id AND us.revoked_at IS NULL AND us.expires_at>NOW() WHERE sf.follower_user_id=? AND sf.status='active' AND pp.status='active' AND pp.visibility IN ('public','unlisted') AND NOT EXISTS (SELECT 1 FROM social_blocks b WHERE (b.blocking_user_id=? AND b.blocked_user_id=pp.user_id) OR (b.blocking_user_id=pp.user_id AND b.blocked_user_id=?)) GROUP BY pp.id ORDER BY is_online DESC,last_seen_at DESC,pp.updated_at DESC LIMIT 10");
