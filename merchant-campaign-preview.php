@@ -4,7 +4,7 @@ require_once __DIR__ . '/includes/app.php';
 
 $page_title = 'Campaign Preview | Microgifter';
 $page_section = 'merchant';
-$header_mode = 'account';
+$header_mode = 'public';
 $page_styles = [
     '/assets/css/public-campaign-pages.css',
     '/assets/css/merchant-campaign-preview.css',
