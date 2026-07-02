@@ -17,6 +17,7 @@ function mg_admin_permission_matrix(): array
             'admin.audit_logs' => ['admin.audit.view'],
             'admin.security_logs' => ['security.logs.view', 'admin.security_logs.view'],
             'admin.system_health' => ['admin.health.view'],
+            'admin.screen_recordings' => ['admin.screen_recordings.view', 'admin.screen_recordings.manage'],
             'admin.lifecycle_health' => ['admin.health.view'],
             'admin.ops_queue' => ['ops.alerts.assign', 'ops.alerts.resolve'],
             'admin.support_queue' => ['admin.support_queue.view', 'admin.user_notes.view', 'admin.users.manage'],
