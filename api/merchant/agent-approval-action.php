@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/_merchant.php';
 require_once dirname(__DIR__, 2) . '/includes/merchant-agent-approvals.php';
 require_once dirname(__DIR__, 2) . '/includes/ai/merchant-plan-actions.php';
+require_once dirname(__DIR__, 2) . '/includes/ai/merchant-recipe-draft-actions.php';
 
 mg_require_method('POST');
 $user = mg_require_permission('merchant.campaigns.manage');
@@ -20,6 +21,14 @@ try {
     $item = mg_agent_approval_find_item($pdo, $merchantId, $approvalId);
     if (!$item) mg_fail('Approval item not found or no longer available.', 404);
     if ((string)($item['source_type'] ?? '') === 'ai_plan') {
+        $aiItem = is_array($item['_ai_plan_item'] ?? null) ? $item['_ai_plan_item'] : mg_ai_plan_item_owned($pdo, $merchantId, (string)$item['source_id'], false);
+        $payload = mg_ai_plan_json($aiItem['suggested_payload_json'] ?? null);
+        if ($action === 'approve' && mg_recipe_draft_is_payload($payload)) {
+            $result = mg_recipe_draft_review_item($pdo, $user, $aiItem, [
+                'note' => trim((string)($input['note'] ?? '')),
+            ]);
+            mg_ok(['result' => ['status' => $result['status'] ?? 'executed', 'ai_plan_result' => $result], 'item' => array_diff_key($item, ['_ai_plan_item' => true])], 'Recipe draft approval executed.');
+        }
         $decision = match ($action) {
             'reject' => 'reject',
             'defer' => 'defer',
