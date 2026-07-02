@@ -17,7 +17,7 @@ function mg_builder_type(string $value): string
 function mg_builder_allowed_asset_roles(string $builderType): array
 {
     return match ($builderType) {
-        'simple_product' => ['thumbnail','cover'],
+        'simple_product' => ['cover'],
         'greeting_card' => ['thumbnail','cover','inside_cover'],
         'multimedia_greeting_card' => ['thumbnail','cover','inside_cover','audio','video'],
         'simple_collab' => ['thumbnail','cover'],

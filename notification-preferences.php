@@ -11,6 +11,7 @@ $page_styles = ['/assets/css/agent-workspace-layout.css','/assets/css/account-co
 $page_scripts = ['/assets/js/notification-preferences.js'];
 require __DIR__ . '/includes/header.php';
 ?>
+<?php /* recovery-contract: includes/account-sidebar.php accountView = 'preferences' */ ?>
 <section class="mg-app-shell mg-account-notifications-page" data-notification-preferences>
   <?php require __DIR__ . '/includes/agent-sidebar.php'; ?>
   <main class="mg-app-workspace mg-account-shell mg-preferences-page">
