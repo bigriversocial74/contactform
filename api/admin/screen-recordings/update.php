@@ -23,8 +23,8 @@ $allowedStatus = ['recording','processing','saved','edited','export_pending','ex
 if ($title === '') mg_fail('Title is required.', 422);
 if ($status !== '' && !in_array($status, $allowedStatus, true)) mg_fail('Invalid recording status.', 422);
 
-$stmt = $pdo->prepare('UPDATE admin_screen_recordings SET title = ?, description = ?, status = COALESCE(NULLIF(?, \"\"), status), updated_at = NOW() WHERE id = ? LIMIT 1');
-$stmt->execute([substr($title, 0, 180), $description !== '' ? $description : null, $status, $recordingId]);
+$stmt = $pdo->prepare('UPDATE admin_screen_recordings SET title = ?, description = ?, status = CASE WHEN ? = ? THEN status ELSE ? END, updated_at = NOW() WHERE id = ? LIMIT 1');
+$stmt->execute([substr($title, 0, 180), $description !== '' ? $description : null, $status, '', $status, $recordingId]);
 $row = mg_screen_recordings_fetch($pdo, $recordingId);
 mg_audit('admin_screen_recording.update', 'admin_screen_recording', ['recording_id' => $recordingId], (int)$user['id']);
 mg_ok(['recording' => mg_screen_recordings_public_record($row)], 'Recording updated.');
