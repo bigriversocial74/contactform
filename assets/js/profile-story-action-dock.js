@@ -1,7 +1,7 @@
-// PR #716 action dock remains intentionally disabled.
-// This file carries safe story layers only:
+// Safe story layers:
 // - prevent the static Stories empty state from showing on rendered highlights
 // - launch highlighted stories in an isolated viewer instead of navigating to the attached product
+// - show story viewer actions as a compact circular dock
 (function(){
   'use strict';
 
@@ -16,6 +16,7 @@
   var storyMap = new Map();
   var activeIndex = -1;
   var viewer = null;
+  var canManageHighlights = false;
 
   function storyPanel(){
     return document.querySelector('[data-invest-panel="stories"]');
@@ -78,7 +79,7 @@
     if(document.getElementById('mg-profile-story-viewer-style'))return;
     var style = document.createElement('style');
     style.id = 'mg-profile-story-viewer-style';
-    style.textContent = '.mg-profile-story-viewer{position:fixed;inset:0;z-index:10050;display:flex;align-items:center;justify-content:center;padding:22px;background:rgba(2,6,23,.74);backdrop-filter:blur(12px)}.mg-profile-story-viewer[hidden]{display:none}.mg-profile-story-viewer-shell{position:relative;width:min(440px,94vw);max-height:92vh;border-radius:30px;overflow:hidden;background:#0f172a;color:#fff;box-shadow:0 30px 90px rgba(2,6,23,.42)}.mg-profile-story-viewer-media{position:relative;min-height:560px;background:#020617}.mg-profile-story-viewer-media img,.mg-profile-story-viewer-media video{display:block;width:100%;height:min(72vh,640px);min-height:440px;object-fit:cover;background:#020617}.mg-profile-story-viewer-close,.mg-profile-story-viewer-nav{position:absolute;z-index:4;border:0;border-radius:999px;background:rgba(15,23,42,.68);color:#fff;box-shadow:0 10px 24px rgba(2,6,23,.24);cursor:pointer}.mg-profile-story-viewer-close{top:14px;right:14px;width:42px;height:42px;font-size:24px;line-height:1}.mg-profile-story-viewer-nav{top:48%;width:42px;height:42px;font-size:26px}.mg-profile-story-viewer-prev{left:12px}.mg-profile-story-viewer-next{right:12px}.mg-profile-story-viewer-copy{position:absolute;z-index:3;left:0;right:0;bottom:0;padding:80px 20px 20px;background:linear-gradient(180deg,rgba(15,23,42,0),rgba(15,23,42,.92) 58%,#0f172a)}.mg-profile-story-viewer-copy span{display:inline-flex;margin-bottom:8px;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.16);font-size:.72rem;font-weight:900;text-transform:uppercase;letter-spacing:.08em}.mg-profile-story-viewer-copy h3{margin:0;font-size:1.35rem;line-height:1.08}.mg-profile-story-viewer-copy p{margin:8px 0 0;color:rgba(255,255,255,.82);font-weight:750;line-height:1.38}.mg-profile-story-viewer-copy small{display:block;margin-top:8px;color:rgba(255,255,255,.6);font-weight:800}.mg-profile-story-viewer-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}.mg-profile-story-viewer-actions a{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:10px 14px;background:#fff;color:#0f172a;text-decoration:none;font-weight:950}.mg-profile-story-highlight-card{cursor:pointer}@media(max-width:560px){.mg-profile-story-viewer{padding:0}.mg-profile-story-viewer-shell{width:100vw;max-height:100vh;height:100vh;border-radius:0}.mg-profile-story-viewer-media img,.mg-profile-story-viewer-media video{height:100vh;min-height:100vh}.mg-profile-story-viewer-nav{display:none}}';
+    style.textContent = '.mg-profile-story-viewer{position:fixed;inset:0;z-index:10050;display:flex;align-items:center;justify-content:center;padding:22px;background:rgba(2,6,23,.74);backdrop-filter:blur(12px)}.mg-profile-story-viewer[hidden]{display:none}.mg-profile-story-viewer-shell{position:relative;width:min(440px,94vw);max-height:92vh;border-radius:30px;overflow:hidden;background:#0f172a;color:#fff;box-shadow:0 30px 90px rgba(2,6,23,.42)}.mg-profile-story-viewer-media{position:relative;min-height:560px;background:#020617}.mg-profile-story-viewer-media img,.mg-profile-story-viewer-media video{display:block;width:100%;height:min(72vh,640px);min-height:440px;object-fit:cover;background:#020617}.mg-profile-story-viewer-close,.mg-profile-story-viewer-nav{position:absolute;z-index:4;border:0;border-radius:999px;background:rgba(15,23,42,.68);color:#fff;box-shadow:0 10px 24px rgba(2,6,23,.24);cursor:pointer}.mg-profile-story-viewer-close{top:14px;right:14px;width:42px;height:42px;font-size:24px;line-height:1}.mg-profile-story-viewer-nav{top:48%;width:42px;height:42px;font-size:26px}.mg-profile-story-viewer-prev{left:12px}.mg-profile-story-viewer-next{right:12px}.mg-profile-story-viewer-copy{position:absolute;z-index:3;left:0;right:0;bottom:0;padding:80px 20px 92px;background:linear-gradient(180deg,rgba(15,23,42,0),rgba(15,23,42,.92) 58%,#0f172a)}.mg-profile-story-viewer-copy span{display:inline-flex;margin-bottom:8px;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.16);font-size:.72rem;font-weight:900;text-transform:uppercase;letter-spacing:.08em}.mg-profile-story-viewer-copy h3{margin:0;font-size:1.35rem;line-height:1.08}.mg-profile-story-viewer-copy p{margin:8px 0 0;color:rgba(255,255,255,.82);font-weight:750;line-height:1.38}.mg-profile-story-viewer-copy small{display:block;margin-top:8px;color:rgba(255,255,255,.6);font-weight:800}.mg-profile-story-viewer-actions{position:absolute;z-index:6;left:0;right:0;bottom:20px;display:flex;align-items:center;justify-content:center;gap:12px;padding:0 18px;pointer-events:none}.mg-profile-story-action{display:inline-flex;align-items:center;justify-content:center;width:50px;height:50px;border:1px solid rgba(255,255,255,.24);border-radius:999px;background:rgba(255,255,255,.92);color:#0f172a;text-decoration:none;font-size:20px;font-weight:950;box-shadow:0 16px 34px rgba(2,6,23,.3);cursor:pointer;pointer-events:auto}.mg-profile-story-action:hover,.mg-profile-story-action:focus-visible{background:#fff;transform:translateY(-1px);outline:2px solid rgba(255,255,255,.72);outline-offset:2px}.mg-profile-story-action.is-muted{background:rgba(15,23,42,.68);color:#fff}.mg-profile-story-action span{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.mg-profile-story-highlight-card{cursor:pointer}@media(max-width:560px){.mg-profile-story-viewer{padding:0}.mg-profile-story-viewer-shell{width:100vw;max-height:100vh;height:100vh;border-radius:0}.mg-profile-story-viewer-media img,.mg-profile-story-viewer-media video{height:100vh;min-height:100vh}.mg-profile-story-viewer-nav{display:none}.mg-profile-story-viewer-actions{bottom:24px}.mg-profile-story-viewer-copy{padding-bottom:104px}}';
     document.head.appendChild(style);
   }
 
@@ -91,12 +92,14 @@
     viewer.setAttribute('role', 'dialog');
     viewer.setAttribute('aria-modal', 'true');
     viewer.setAttribute('aria-label', 'Story viewer');
-    viewer.innerHTML = '<div class="mg-profile-story-viewer-shell"><div class="mg-profile-story-viewer-media" data-story-viewer-media></div><button type="button" class="mg-profile-story-viewer-close" data-story-viewer-close aria-label="Close story">×</button><button type="button" class="mg-profile-story-viewer-nav mg-profile-story-viewer-prev" data-story-viewer-prev aria-label="Previous story">‹</button><button type="button" class="mg-profile-story-viewer-nav mg-profile-story-viewer-next" data-story-viewer-next aria-label="Next story">›</button><div class="mg-profile-story-viewer-copy"><span data-story-viewer-type></span><h3 data-story-viewer-title></h3><p data-story-viewer-caption></p><small data-story-viewer-date></small><div class="mg-profile-story-viewer-actions" data-story-viewer-actions></div></div></div>';
+    viewer.innerHTML = '<div class="mg-profile-story-viewer-shell"><div class="mg-profile-story-viewer-media" data-story-viewer-media></div><button type="button" class="mg-profile-story-viewer-close" data-story-viewer-close aria-label="Close story">×</button><button type="button" class="mg-profile-story-viewer-nav mg-profile-story-viewer-prev" data-story-viewer-prev aria-label="Previous story">‹</button><button type="button" class="mg-profile-story-viewer-nav mg-profile-story-viewer-next" data-story-viewer-next aria-label="Next story">›</button><div class="mg-profile-story-viewer-copy"><span data-story-viewer-type></span><h3 data-story-viewer-title></h3><p data-story-viewer-caption></p><small data-story-viewer-date></small></div><div class="mg-profile-story-viewer-actions" data-story-viewer-actions></div></div>';
     document.body.appendChild(viewer);
     viewer.addEventListener('click', function(event){
       if(event.target === viewer || event.target.closest('[data-story-viewer-close]'))closeViewer();
       if(event.target.closest('[data-story-viewer-prev]'))showStory(activeIndex - 1);
       if(event.target.closest('[data-story-viewer-next]'))showStory(activeIndex + 1);
+      if(event.target.closest('[data-story-viewer-analytics]'))openProfileTab('analytics');
+      if(event.target.closest('[data-story-viewer-stories]'))openProfileTab('stories');
     });
     document.addEventListener('keydown', function(event){
       if(!viewer || viewer.hidden)return;
@@ -105,6 +108,28 @@
       if(event.key === 'ArrowRight')showStory(activeIndex + 1);
     });
     return viewer;
+  }
+
+  function makeAction(tag, icon, labelText, attrs){
+    var el = document.createElement(tag || 'button');
+    el.className = 'mg-profile-story-action';
+    if(tag !== 'a')el.type = 'button';
+    el.setAttribute('aria-label', labelText);
+    el.title = labelText;
+    el.innerHTML = icon + '<span>' + labelText + '</span>';
+    Object.keys(attrs || {}).forEach(function(name){
+      if(attrs[name] === false || attrs[name] === null || typeof attrs[name] === 'undefined')return;
+      el.setAttribute(name, String(attrs[name]));
+    });
+    return el;
+  }
+
+  function openProfileTab(tab){
+    closeViewer();
+    var button = document.querySelector('[data-invest-tab="' + tab + '"]');
+    if(button)button.click();
+    var panel = document.querySelector('[data-invest-panel="' + tab + '"]');
+    if(panel)panel.scrollIntoView({behavior:'smooth', block:'start'});
   }
 
   function closeViewer(){
@@ -146,10 +171,12 @@
     actions.replaceChildren();
     var cta = safeUrl(item.cta_url);
     if(cta){
-      var link = document.createElement('a');
-      link.href = cta;
-      link.textContent = text(item.cta_label, 'View Product');
-      actions.appendChild(link);
+      actions.appendChild(makeAction('a', '🛍️', text(item.cta_label, 'View Product'), {href:cta}));
+    }
+    actions.appendChild(makeAction('button', '📊', 'Analytics', {'data-story-viewer-analytics':'1', 'class':'mg-profile-story-action is-muted'}));
+    actions.appendChild(makeAction('button', '◎', 'Stories', {'data-story-viewer-stories':'1', 'class':'mg-profile-story-action is-muted'}));
+    if(canManageHighlights && item.story_id){
+      actions.appendChild(makeAction('a', '📣', 'Promote Story', {href:'/merchant-ad-manager.php?story_id=' + encodeURIComponent(String(item.story_id))}));
     }
     modal.querySelector('[data-story-viewer-prev]').hidden = stories.length < 2;
     modal.querySelector('[data-story-viewer-next]').hidden = stories.length < 2;
@@ -193,6 +220,7 @@
       .then(function(response){return response.ok ? response.json() : null;})
       .then(function(response){
         var data = payload(response) || {};
+        canManageHighlights = !!(data.permissions && data.permissions.can_manage);
         indexStories(Array.isArray(data.highlights) ? data.highlights : []);
         storiesLoaded = true;
         return stories;
@@ -218,7 +246,7 @@
       renderViewer(fromMap);
       return;
     }
-    loadStories(false).then(function(items){
+    loadStories(false).then(function(){
       var item = storyMap.get(highlightId);
       if(item){
         activeIndex = Number.isFinite(item.__index) ? item.__index : Math.max(0, Number(card.dataset.highlightIndex || 0));
