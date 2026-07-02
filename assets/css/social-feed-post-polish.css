@@ -252,6 +252,34 @@
   display:none!important;
 }
 
+.mg-social-feed-page .mg-feed-linked-card.is-product.is-greeting_card .mg-feed-linked-topline,
+.mg-social-feed-page .mg-feed-linked-card.is-product.is-multimedia_card .mg-feed-linked-topline{
+  display:flex!important;
+  justify-content:flex-start!important;
+  margin:0 0 -2px!important;
+}
+
+.mg-social-feed-page .mg-feed-linked-card.is-product.is-greeting_card .mg-feed-linked-eyebrow,
+.mg-social-feed-page .mg-feed-linked-card.is-product.is-multimedia_card .mg-feed-linked-eyebrow{
+  display:inline-flex!important;
+  align-items:center!important;
+  width:max-content!important;
+  padding:5px 8px!important;
+  border-radius:999px!important;
+  background:#eef5ff!important;
+  color:#1d4ed8!important;
+  font-size:.64rem!important;
+  font-weight:950!important;
+  letter-spacing:.09em!important;
+  line-height:1!important;
+  text-transform:uppercase!important;
+}
+
+.mg-social-feed-page .mg-feed-linked-card.is-product.is-greeting_card .mg-feed-linked-status,
+.mg-social-feed-page .mg-feed-linked-card.is-product.is-multimedia_card .mg-feed-linked-status{
+  display:none!important;
+}
+
 @media(max-width:640px){
   .mg-social-feed-page .mg-feed-actions{
     grid-template-columns:repeat(5,minmax(0,1fr))!important;
