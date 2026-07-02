@@ -6,6 +6,7 @@ window.Microgifter = window.Microgifter || {};
   var csrf = root.getAttribute('data-csrf-token') || '';
   var selectedId = '';
   var campaignsCache = [];
+  var productsCache = [];
   function esc(value){return String(value == null ? '' : value).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function qs(sel, scope){return (scope||root).querySelector(sel);}
   function qsa(sel, scope){return Array.prototype.slice.call((scope||root).querySelectorAll(sel));}
@@ -26,6 +27,12 @@ window.Microgifter = window.Microgifter || {};
     selectedId='';
     qs('[data-ad-form]').reset();
     qsa('[name="placements[]"]').forEach(function(i){i.checked=i.value==='feed_sponsored_card'||i.value==='sidebar_sponsored_card';});
+    var picker = qs('[data-product-picker]');
+    var apply = qs('[data-apply-product]');
+    var summary = qs('[data-product-summary]');
+    if (picker) picker.value = '';
+    if (apply) apply.disabled = true;
+    if (summary) { summary.hidden = true; summary.innerHTML = ''; }
     status('New draft ready.'); preview(); activateTab('create');
   }
   function checkedPlacements(){return qsa('[name="placements[]"]:checked').map(function(input){return input.value;});}
@@ -54,6 +61,64 @@ window.Microgifter = window.Microgifter || {};
     var payload = formPayload();
     var item = {public_id:selectedId||'preview', title:payload.title, objective:payload.objective, placement_key:payload.placements[0]||'feed_sponsored_card', merchant:{merchant_name:root.getAttribute('data-merchant-name')||'Microgifter Merchant'}, creative:{headline:payload.headline||payload.title, description:payload.description, image_url:payload.image_url, cta_label:payload.cta_label||'View Offer', destination_url:payload.destination_url, sponsored_label:'Sponsored'}};
     qsa('[data-ads-preview],[data-ads-preview-secondary]').forEach(function(target){if (window.Microgifter.renderSponsoredCampaignCard) target.innerHTML = window.Microgifter.renderSponsoredCampaignCard(item,{compact:false});});
+  }
+  function productLabel(product){
+    var source = product.source_label || product.source || 'Product';
+    var value = product.value_label ? ' · ' + product.value_label : '';
+    return source + ': ' + (product.title || product.headline || 'Untitled') + value;
+  }
+  function selectedProduct(){
+    var picker = qs('[data-product-picker]');
+    if (!picker || !picker.value) return null;
+    return productsCache.find(function(product){return String(product.id || '') === String(picker.value);}) || null;
+  }
+  function renderProductSummary(product){
+    var summary = qs('[data-product-summary]');
+    if (!summary) return;
+    if (!product) { summary.hidden = true; summary.innerHTML = ''; return; }
+    summary.hidden = false;
+    summary.innerHTML = '<strong>'+esc(product.title || product.headline || 'Selected product')+'</strong>'
+      + '<span>'+esc(product.source_label || product.source || 'Product')+'</span>'
+      + (product.ad_description || product.description ? '<p>'+esc(product.ad_description || product.description)+'</p>' : '')
+      + (product.value_label ? '<small>'+esc(product.value_label)+'</small>' : '');
+  }
+  function setProductPickerState(){
+    var apply = qs('[data-apply-product]');
+    var product = selectedProduct();
+    if (apply) apply.disabled = !product;
+    renderProductSummary(product);
+  }
+  async function loadProducts(){
+    var picker = qs('[data-product-picker]');
+    var apply = qs('[data-apply-product]');
+    if (!picker) return;
+    try {
+      var data = await api('/api/ads/merchant-products.php?status=active');
+      productsCache = Array.isArray(data.products) ? data.products : [];
+      if (!productsCache.length) {
+        picker.innerHTML = '<option value="">No active products or rewards found</option>';
+        if (apply) apply.disabled = true;
+        return;
+      }
+      picker.innerHTML = '<option value="">Select product / reward…</option>' + productsCache.map(function(product){return '<option value="'+esc(product.id || '')+'">'+esc(productLabel(product))+'</option>';}).join('');
+      setProductPickerState();
+    } catch (error) {
+      productsCache = [];
+      picker.innerHTML = '<option value="">Products unavailable — build manually</option>';
+      if (apply) apply.disabled = true;
+    }
+  }
+  function applySelectedProduct(){
+    var product = selectedProduct();
+    if (!product) return;
+    qs('[name="title"]').value = product.title || product.headline || qs('[name="title"]').value;
+    qs('[name="headline"]').value = product.headline || product.title || qs('[name="headline"]').value;
+    qs('[name="description"]').value = product.ad_description || product.description || qs('[name="description"]').value;
+    if (product.image_url) qs('[name="image_url"]').value = product.image_url;
+    if (product.cta_label) qs('[name="cta_label"]').value = product.cta_label;
+    if (product.destination_url) qs('[name="destination_url"]').value = product.destination_url;
+    status('Applied '+(product.source_label || product.source || 'product')+' to campaign draft.');
+    preview();
   }
   function placementText(c){return (c.placements||[]).join(', ').replace(/_/g,' ') || 'None selected';}
   function money(value){var n=Number(value||0); return n ? '$'+n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';}
@@ -87,6 +152,9 @@ window.Microgifter = window.Microgifter || {};
     qs('[name="destination_url"]').value = creative.destination_url || '';
     qs('[name="target_zone_id"]').value = c.target_zone_id || '';
     qsa('[name="placements[]"]').forEach(function(input){input.checked=(c.placements||[]).indexOf(input.value)!==-1;});
+    var picker = qs('[data-product-picker]');
+    if (picker) picker.value = '';
+    setProductPickerState();
     status('Loaded campaign '+selectedId+'.'); preview(); activateTab('create');
   }
   function filterCampaigns(){
@@ -133,8 +201,10 @@ window.Microgifter = window.Microgifter || {};
   qsa('[data-ads-tab-button]').forEach(function(btn){btn.addEventListener('click',function(){activateTab(btn.getAttribute('data-ads-tab-button'));});});
   qsa('[data-ads-tab-jump]').forEach(function(btn){btn.addEventListener('click',function(e){e.preventDefault(); if (btn.textContent.indexOf('New Campaign') !== -1) resetDraft(); else activateTab(btn.getAttribute('data-ads-tab-jump'));});});
   var search=qs('[data-ads-search]'); if(search) search.addEventListener('input', renderList);
+  var picker=qs('[data-product-picker]'); if(picker) picker.addEventListener('change', setProductPickerState);
+  var apply=qs('[data-apply-product]'); if(apply) apply.addEventListener('click', applySelectedProduct);
   qs('[data-save-draft]').addEventListener('click',function(){saveDraft().catch(function(e){status(e.message,true);});});
   qs('[data-submit-current]').addEventListener('click',function(){submitCampaign('').catch(function(e){status(e.message,true);});});
   qs('[data-new-draft]').addEventListener('click',function(){saveDraft().catch(function(e){status(e.message,true);});});
-  preview(); loadList().catch(function(e){status(e.message,true);}); loadPerformance().catch(function(){});
+  preview(); loadProducts().catch(function(){}); loadList().catch(function(e){status(e.message,true);}); loadPerformance().catch(function(){});
 })(window, document);
