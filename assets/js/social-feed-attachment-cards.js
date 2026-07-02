@@ -72,6 +72,41 @@ function fallbackLabel(card){
     return card.kind==='microgift'?'Gift':(card.kind==='plan'?'Member':'Product');
 }
 
+function imageNode(url,className,alt){
+    url=safeUrl(url);
+    if(!url)return null;
+    var image=document.createElement('img');
+    image.className=className||'';
+    image.src=url;
+    image.alt=alt||'';
+    image.loading='lazy';
+    return image;
+}
+
+function mediaNode(card){
+    var videoUrl=safeUrl(card.video_url);
+    var audioUrl=safeUrl(card.audio_url);
+    if(videoUrl){
+        var video=document.createElement('video');
+        video.className='mg-feed-card-media-control';
+        video.controls=true;
+        video.playsInline=true;
+        video.preload='metadata';
+        video.src=videoUrl;
+        if(card.video_mime)video.type=String(card.video_mime);
+        return video;
+    }
+    if(audioUrl){
+        var audio=document.createElement('audio');
+        audio.className='mg-feed-card-media-control';
+        audio.controls=true;
+        audio.preload='metadata';
+        audio.src=audioUrl;
+        return audio;
+    }
+    return null;
+}
+
 function preview(card){
     var classes='mg-feed-linked-preview is-'+String(card.kind||'item');
     var variant=safeClass(card.variant||'');
@@ -106,7 +141,116 @@ function actionNode(action){
     return button;
 }
 
+function isCardProduct(card){
+    return card&&card.kind==='product'&&(card.variant==='greeting_card'||card.variant==='multimedia_card');
+}
+
+function cardUrl(card){
+    return safeUrl(card&&card.action&&card.action.url)||'#';
+}
+
+function buildCardPage(name,extraClass){
+    var page=element('section','mg-feed-card-page '+(extraClass||''));
+    page.dataset.feedCardPage=name;
+    page.hidden=name!=='cover';
+    return page;
+}
+
+function cardExperienceNode(card){
+    var variant=safeClass(card.variant||'greeting_card');
+    var article=element('article','mg-feed-card-experience is-'+variant);
+    article.dataset.cardVariant=variant;
+    article.dataset.cardPage='cover';
+    article.setAttribute('aria-label',card.variant==='multimedia_card'?'Multimedia greeting card preview':'Greeting card preview');
+
+    var frame=element('div','mg-feed-card-frame');
+
+    var cover=buildCardPage('cover','is-cover');
+    var coverImage=imageNode(card.cover_url||card.image_url,'mg-feed-card-cover-image','');
+    if(coverImage)cover.appendChild(coverImage);
+    else cover.appendChild(element('div','mg-feed-card-fallback','Gift Card'));
+    var coverOverlay=element('div','mg-feed-card-cover-overlay');
+    coverOverlay.appendChild(element('span','mg-feed-card-kicker',card.variant==='multimedia_card'?'Multimedia Gift':'Greeting Card'));
+    coverOverlay.appendChild(element('h4','',String(card.title||'Open your gift')));
+    if(card.description)coverOverlay.appendChild(element('p','',String(card.description)));
+    var openButton=element('button','mg-feed-card-open',card.variant==='multimedia_card'?'Open Multimedia Gift':'Open Gift');
+    openButton.type='button';
+    openButton.dataset.feedCardOpen='1';
+    coverOverlay.appendChild(openButton);
+    cover.appendChild(coverOverlay);
+
+    var inside=buildCardPage('inside','is-inside');
+    var insideArt=element('div','mg-feed-card-inside-art');
+    var insideImage=imageNode(card.inside_url,'mg-feed-card-inside-image','');
+    if(insideImage)insideArt.appendChild(insideImage);
+    else insideArt.appendChild(element('div','mg-feed-card-inside-fallback','✦'));
+    inside.appendChild(insideArt);
+    var insideCopy=element('div','mg-feed-card-inside-copy');
+    insideCopy.appendChild(element('span','mg-feed-card-kicker','Inside Message'));
+    insideCopy.appendChild(element('h4','',String(card.title||'Gift Card')));
+    insideCopy.appendChild(element('p','mg-feed-card-message',String(card.description||'Open the full card to view the complete gift.')));
+    insideCopy.appendChild(element('strong','mg-feed-card-value',valueLabel(card)));
+    var insideActions=element('div','mg-feed-card-actions');
+    var hasMedia=Boolean(safeUrl(card.video_url)||safeUrl(card.audio_url));
+    if(hasMedia){
+        var mediaButton=element('button','mg-feed-card-secondary','View Media');
+        mediaButton.type='button';
+        mediaButton.dataset.feedCardPageTarget='media';
+        insideActions.appendChild(mediaButton);
+    }
+    var fullLink=element('a','mg-feed-card-primary','Open Full Card');
+    fullLink.href=cardUrl(card);
+    insideActions.appendChild(fullLink);
+    insideCopy.appendChild(insideActions);
+    inside.appendChild(insideCopy);
+
+    frame.appendChild(cover);
+    frame.appendChild(inside);
+
+    if(hasMedia){
+        var media=buildCardPage('media','is-media');
+        var mediaWrap=element('div','mg-feed-card-media-wrap');
+        mediaWrap.appendChild(element('span','mg-feed-card-kicker',safeUrl(card.video_url)?'Video Message':'Audio Message'));
+        var mediaControl=mediaNode(card);
+        if(mediaControl)mediaWrap.appendChild(mediaControl);
+        var mediaActions=element('div','mg-feed-card-actions');
+        var backInside=element('button','mg-feed-card-secondary','Back to Card');
+        backInside.type='button';
+        backInside.dataset.feedCardPageTarget='inside';
+        var mediaFull=element('a','mg-feed-card-primary','Open Full Card');
+        mediaFull.href=cardUrl(card);
+        mediaActions.append(backInside,mediaFull);
+        mediaWrap.appendChild(mediaActions);
+        media.appendChild(mediaWrap);
+        frame.appendChild(media);
+    }
+
+    var nav=element('div','mg-feed-card-nav');
+    var close=element('button','mg-feed-card-nav-btn','Cover');
+    close.type='button';
+    close.dataset.feedCardPageTarget='cover';
+    var next=element('button','mg-feed-card-nav-btn',hasMedia?'Media':'Inside');
+    next.type='button';
+    next.dataset.feedCardPageTarget=hasMedia?'media':'inside';
+    var external=element('a','mg-feed-card-nav-link','Full');
+    external.href=cardUrl(card);
+    nav.append(close,next,external);
+
+    article.append(frame,nav);
+    return article;
+}
+
+function setCardPage(card,pageName){
+    if(!card)return;
+    pageName=String(pageName||'cover');
+    card.dataset.cardPage=pageName;
+    card.querySelectorAll('[data-feed-card-page]').forEach(function(page){
+        page.hidden=page.dataset.feedCardPage!==pageName;
+    });
+}
+
 function cardNode(card){
+    if(isCardProduct(card))return cardExperienceNode(card);
     var article=element('article','mg-feed-linked-card is-'+String(card.kind||'item'));
     var variant=safeClass(card.variant||'');
     if(variant){
@@ -200,6 +344,16 @@ function scan(scope){
     });
     if(pending.size)schedule();
 }
+
+root.addEventListener('click',function(event){
+    var open=event.target.closest('[data-feed-card-open]');
+    var target=event.target.closest('[data-feed-card-page-target]');
+    if(!open&&!target)return;
+    var card=event.target.closest('.mg-feed-card-experience');
+    if(!card)return;
+    event.preventDefault();
+    setCardPage(card,open?'inside':target.dataset.feedCardPageTarget);
+});
 
 ensureStyles();
 scan(list);
