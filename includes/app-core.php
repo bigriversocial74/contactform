@@ -1,7 +1,74 @@
 <?php
 declare(strict_types=1);
 
-if(session_status()!==PHP_SESSION_ACTIVE){session_start();}
+if (!function_exists('mg_detect_https_for_session')) {
+function mg_detect_https_for_session(): bool
+{
+    if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') return true;
+    if (strtolower((string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https') return true;
+    if (strtolower((string)($_SERVER['HTTP_X_FORWARDED_SSL'] ?? '')) === 'on') return true;
+    if ((string)($_SERVER['SERVER_PORT'] ?? '') === '443') return true;
+    return false;
+}
+}
+
+if (!function_exists('mg_harden_session_start')) {
+function mg_harden_session_start(): void
+{
+    $secure = mg_detect_https_for_session();
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        return;
+    }
+
+    @ini_set('session.use_strict_mode', '1');
+    @ini_set('session.use_only_cookies', '1');
+    @ini_set('session.cookie_httponly', '1');
+    @ini_set('session.cookie_secure', $secure ? '1' : '0');
+    @ini_set('session.cookie_samesite', 'Lax');
+
+    $params = session_get_cookie_params();
+    $cookieParams = [
+        'lifetime' => (int)($params['lifetime'] ?? 0),
+        'path' => (string)($params['path'] ?? '/'),
+        'domain' => (string)($params['domain'] ?? ''),
+        'secure' => $secure,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ];
+
+    if (PHP_VERSION_ID >= 70300) {
+        session_set_cookie_params($cookieParams);
+    } else {
+        session_set_cookie_params(
+            $cookieParams['lifetime'],
+            $cookieParams['path'] . '; samesite=Lax',
+            $cookieParams['domain'],
+            $cookieParams['secure'],
+            $cookieParams['httponly']
+        );
+    }
+
+    session_start();
+
+    if (session_id() !== '' && !headers_sent()) {
+        if (PHP_VERSION_ID >= 70300) {
+            setcookie(session_name(), session_id(), $cookieParams);
+        } else {
+            setcookie(
+                session_name(),
+                session_id(),
+                $cookieParams['lifetime'] > 0 ? time() + $cookieParams['lifetime'] : 0,
+                $cookieParams['path'] . '; samesite=Lax',
+                $cookieParams['domain'],
+                $cookieParams['secure'],
+                $cookieParams['httponly']
+            );
+        }
+    }
+}
+}
+
+mg_harden_session_start();
 require_once __DIR__.'/csrf.php';
 require_once __DIR__.'/auth.php';
 require_once __DIR__.'/permissions.php';
