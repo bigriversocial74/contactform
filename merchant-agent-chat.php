@@ -35,6 +35,7 @@ $page_scripts = [
     '/assets/js/merchant-agent-chat-json-format.js',
     '/assets/js/merchant-agent-chat-mobile.js',
     '/assets/js/sponsored-campaign-card.js',
+    '/assets/js/merchant-agent-chat-sidebar-ad-state.js',
 ];
 $page_scripts[] = '/assets/js/merchant-agent-chat-admin-mode.js';
 $user = mg_current_user();
