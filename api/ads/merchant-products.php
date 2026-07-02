@@ -140,7 +140,7 @@ try {
     $sources = [];
 
     if (mg_ads_table_exists($pdo, 'reward_templates')) {
-        $sql = 'SELECT public_id,title,description,reward_type,value_type,value_amount_cents,currency,agent_summary,agent_add_to_wallet_allowed,metadata_json,status,updated_at FROM reward_templates WHERE merchant_user_id=? AND status<>'archived'';
+        $sql = "SELECT public_id,title,description,reward_type,value_type,value_amount_cents,currency,agent_summary,agent_add_to_wallet_allowed,metadata_json,status,updated_at FROM reward_templates WHERE merchant_user_id=? AND status<>'archived'";
         $params = [$merchantId];
         if ($status !== 'all') {
             $rewardStatus = $status === 'published' ? 'active' : $status;
@@ -156,7 +156,7 @@ try {
     }
 
     if (mg_ads_table_exists($pdo, 'campaigns')) {
-        $sql = 'SELECT public_id,public_slug,campaign_type,title,description,form_headline,form_description,status,updated_at FROM campaigns WHERE merchant_user_id=? AND status<>'archived'';
+        $sql = "SELECT public_id,public_slug,campaign_type,title,description,form_headline,form_description,status,updated_at FROM campaigns WHERE merchant_user_id=? AND status<>'archived'";
         $params = [$merchantId];
         if ($status !== 'all') {
             $campaignStatus = $status === 'published' ? 'active' : $status;
