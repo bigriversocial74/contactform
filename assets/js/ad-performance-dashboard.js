@@ -6,6 +6,7 @@
   var endpoint = '/api/ads/performance.php' + (scope === 'admin' ? '?scope=admin' : '');
   function esc(value){return String(value == null ? '' : value).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function qs(sel, base){return (base||root).querySelector(sel);}
+  function on(node,event,handler){if(node)node.addEventListener(event,handler);}
   function num(value){return Number(value || 0).toLocaleString();}
   function pct(value){return Number(value || 0).toFixed(2).replace(/\.00$/,'') + '%';}
   function money(value){return value == null ? '—' : '$' + Number(value || 0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});}
@@ -14,6 +15,7 @@
   function renderSummary(summary){
     var target = qs('[data-performance-kpis]');
     if (!target) return;
+    summary = summary || {};
     target.innerHTML = [
       kpi('Impressions', num(summary.impressions), 'Total sponsored views'),
       kpi('Clicks', num(summary.clicks), 'CTR '+pct(summary.ctr)),
@@ -50,18 +52,25 @@
   function renderValue(summary, notes, attribution){
     var target = qs('[data-performance-value]');
     if (!target) return;
+    summary = summary || {};
     var source = attribution && attribution.source_breakdown ? attribution.source_breakdown : {};
     var direct = source.direct || {};
     var assisted = source.campaign_assisted || {};
     target.innerHTML = '<div class="mg-ads-mini-grid"><span><strong>'+money(summary.claimed_value)+'</strong> claimed value</span><span><strong>'+money(summary.redeemed_value)+'</strong> redeemed value</span><span><strong>'+money(summary.unredeemed_future_demand)+'</strong> future demand</span><span><strong>'+money(summary.pre_sale_revenue_impact)+'</strong> PSR impact</span><span><strong>'+num(summary.direct_wallet_items)+'</strong> direct wallet items</span><span><strong>'+num(summary.campaign_assisted_wallet_items)+'</strong> campaign-assisted items</span><span><strong>'+money(direct.pre_sale_revenue_impact)+'</strong> direct PSR</span><span><strong>'+money(assisted.pre_sale_revenue_impact)+'</strong> assisted PSR</span></div><p class="mg-ads-muted">'+esc(notes||'Read-only value attribution is active when wallet and campaign links are available.')+'</p>';
   }
+  function renderSchemaNotice(){
+    ['[data-performance-kpis]','[data-performance-funnel]','[data-performance-placements]','[data-performance-campaigns]','[data-performance-value]'].forEach(function(selector){
+      var node = qs(selector);
+      if (node) node.innerHTML = '<div class="mg-ads-alert">Campaign Ads Manager migration is required.</div>';
+    });
+  }
   async function load(){
     setStatus('Loading Campaign Ads performance...');
     var res = await fetch(endpoint,{credentials:'same-origin',headers:{Accept:'application/json'}});
     var out = await res.json().catch(function(){return {ok:false,message:'Invalid server response'};});
-    if (!out.ok) throw new Error(out.message||'Unable to load performance.');
+    if (!res.ok || !out.ok) throw new Error(out.message||'Unable to load performance.');
     var data = out.data || {};
-    if (!data.schema_ready) { setStatus('Campaign Ads Manager migration is required.', true); return; }
+    if (!data.schema_ready) { renderSchemaNotice(); setStatus('Campaign Ads Manager migration is required.', true); return; }
     var performance = data.performance || {};
     var summary = performance.summary || {};
     renderSummary(summary);
@@ -71,7 +80,6 @@
     renderValue(summary, performance.notes||'', performance.attribution||{});
     setStatus('Performance loaded.');
   }
-  var refresh = qs('[data-performance-refresh]');
-  if (refresh) refresh.addEventListener('click', function(){load().catch(function(error){setStatus(error.message,true);});});
+  on(qs('[data-performance-refresh]'),'click', function(){load().catch(function(error){setStatus(error.message,true);});});
   load().catch(function(error){setStatus(error.message,true);});
 })(window, document);
