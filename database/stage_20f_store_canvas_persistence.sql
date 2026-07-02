@@ -7,10 +7,9 @@
 -- - Optional customer journey snapshots
 --
 -- Safe to re-run.
--- cPanel/phpMyAdmin fix: this file forces the app database before CREATE TABLE.
+-- Run this migration against the selected Microgifter app database.
+-- Do not hard-code a database name so CI and production installs both work.
 -- ------------------------------------------------------------
-
-USE `ywzyeite_gifter2026`;
 
 CREATE TABLE IF NOT EXISTS schema_migrations (
   migration_key VARCHAR(190) NOT NULL,
