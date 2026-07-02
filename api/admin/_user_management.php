@@ -32,7 +32,7 @@ function mg_admin_account_reason(mixed $value): string
 function mg_admin_account_action(mixed $value): string
 {
     $action = strtolower(trim((string)$value));
-    $allowed = ['set_status', 'add_role', 'remove_role', 'set_model_status', 'revoke_session', 'revoke_sessions'];
+    $allowed = ['set_status', 'set_password', 'add_role', 'remove_role', 'set_model_status', 'revoke_session', 'revoke_sessions'];
     if (!in_array($action, $allowed, true)) {
         throw new MgAdminAccountException('Invalid account management action.', 422);
     }
@@ -42,8 +42,7 @@ function mg_admin_account_action(mixed $value): string
 function mg_admin_account_permission(string $action): string
 {
     return match ($action) {
-        'set_status' => 'admin.users.manage',
-        'add_role', 'remove_role' => 'admin.roles.manage',
+        'set_status', 'set_password', 'add_role', 'remove_role' => 'admin.users.manage',
         'set_model_status' => 'admin.user_models.manage',
         'revoke_session', 'revoke_sessions' => 'admin.sessions.revoke',
         default => 'admin.users.manage',
@@ -58,6 +57,16 @@ function mg_admin_account_actor_is_super(array $actor): bool
 function mg_admin_account_actor_has(array $actor, string $permission): bool
 {
     return mg_api_user_has_permission($actor, $permission);
+}
+
+function mg_admin_account_actor_has_any(array $actor, array $permissions): bool
+{
+    foreach ($permissions as $permission) {
+        if (is_string($permission) && $permission !== '' && mg_admin_account_actor_has($actor, $permission)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 function mg_admin_account_target(PDO $pdo, int $userId, bool $lock = false): array
@@ -135,6 +144,34 @@ function mg_admin_account_set_status(PDO $pdo, array $actor, int $targetUserId, 
     }
 
     return ['from_status' => $fromStatus, 'to_status' => $status, 'sessions_revoked' => $revoked];
+}
+
+function mg_admin_account_set_password(PDO $pdo, array $actor, int $targetUserId, string $password): array
+{
+    $target = mg_admin_account_target($pdo, $targetUserId, true);
+    mg_admin_account_assert_target_access($actor, $target);
+
+    $password = trim($password);
+    $length = strlen($password);
+    if ($length < 12 || $length > 120) {
+        throw new MgAdminAccountException('New password must be between 12 and 120 characters.', 422);
+    }
+
+    $hash = password_hash($password, PASSWORD_DEFAULT);
+    if (!is_string($hash) || $hash === '') {
+        throw new MgAdminAccountException('Unable to secure password.', 500);
+    }
+
+    $stmt = $pdo->prepare('UPDATE users SET password_hash = ?, updated_at = NOW() WHERE id = ?');
+    $stmt->execute([$hash, $targetUserId]);
+    if ($stmt->rowCount() < 1) {
+        throw new MgAdminAccountException('The password could not be changed.', 409);
+    }
+
+    $sessions = $pdo->prepare('UPDATE user_sessions SET revoked_at = NOW() WHERE user_id = ? AND revoked_at IS NULL');
+    $sessions->execute([$targetUserId]);
+
+    return ['password_changed' => 1, 'sessions_revoked' => $sessions->rowCount()];
 }
 
 function mg_admin_account_role(PDO $pdo, string $slug): array
@@ -279,13 +316,16 @@ function mg_admin_account_capabilities(array $actor, array $target): array
     $self = (int)$actor['id'] === (int)$target['id'];
     $elevated = mg_admin_account_target_is_elevated($target);
     $targetAllowed = $super || !$elevated;
+    $canManageUsers = mg_admin_account_actor_has($actor, 'admin.users.manage');
+    $canManageRoles = mg_admin_account_actor_has_any($actor, ['admin.roles.manage', 'admin.users.manage']);
 
     return [
         'is_self' => $self,
         'actor_is_super_admin' => $super,
         'target_is_elevated' => $elevated,
-        'manage_status' => mg_admin_account_actor_has($actor, 'admin.users.manage') && !$self && $targetAllowed,
-        'manage_roles' => mg_admin_account_actor_has($actor, 'admin.roles.manage') && !$self && $targetAllowed,
+        'manage_status' => $canManageUsers && !$self && $targetAllowed,
+        'change_password' => $canManageUsers && !$self && $targetAllowed,
+        'manage_roles' => $canManageRoles && !$self && $targetAllowed,
         'manage_models' => mg_admin_account_actor_has($actor, 'admin.user_models.manage') && !$self && $targetAllowed,
         'view_sessions' => mg_admin_account_actor_has($actor, 'admin.sessions.view') && $targetAllowed,
         'revoke_sessions' => mg_admin_account_actor_has($actor, 'admin.sessions.revoke') && !$self && $targetAllowed,
