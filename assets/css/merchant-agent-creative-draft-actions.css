@@ -1,4 +1,5 @@
 .mg-agent-creative-draft-actions{display:flex;gap:6px;flex-wrap:wrap;width:100%;padding-top:8px;border-top:1px solid rgba(148,163,184,.22)}
+.mg-agent-creative-draft-actions-label{flex:0 0 100%;color:#64748b;font-size:10px;font-weight:950;letter-spacing:.09em;text-transform:uppercase}
 .mg-agent-creative-draft-actions .mg-btn{min-height:30px;padding:0 9px;font-size:11px;font-weight:900;border-radius:999px}
 .mg-agent-creative-draft-actions .mg-btn.is-saved{background:#ecfdf5!important;border-color:#bbf7d0!important;color:#15803d!important}
 .mg-agent-creative-draft-review-link{background:#eff6ff!important;border-color:#bfdbfe!important;color:#1d4ed8!important}
