@@ -9,7 +9,7 @@ window.Microgifter = window.Microgifter || {};
   var widget = null;
   var open = false;
   var pollTimer = null;
-  var state = { active: false, merchant: null, session: null, thread: null, messages: [], can_reply: false };
+  var state = { active: false, merchant: null, session: null, thread: null, messages: [], can_reply: false, can_start_thread: false };
 
   function payload(response) { return response && response.data ? response.data : response; }
   function escapeHtml(value) {
@@ -58,7 +58,7 @@ window.Microgifter = window.Microgifter || {};
       '<article class="mg-store-chat-panel" data-store-chat-panel aria-label="Merchant store chat">' +
         '<header class="mg-store-chat-head"><div class="mg-store-chat-head-main"><span data-store-chat-head-avatar></span><div><h2 data-store-chat-head-title>Merchant Store</h2><p data-store-chat-head-subtitle>Active Store Canvas session</p></div></div><button class="mg-store-chat-close" type="button" data-store-chat-close aria-label="Close store chat">×</button></header>' +
         '<div class="mg-store-chat-body" data-store-chat-body></div>' +
-        '<form class="mg-store-chat-form" data-store-chat-form><textarea name="message" rows="1" maxlength="1000" placeholder="Reply to merchant..." required></textarea><button class="mg-store-chat-send" type="submit" data-store-chat-send>Send</button></form>' +
+        '<form class="mg-store-chat-form" data-store-chat-form><textarea name="message" rows="1" maxlength="1000" placeholder="Message merchant..." required></textarea><button class="mg-store-chat-send" type="submit" data-store-chat-send>Send</button></form>' +
         '<p class="mg-store-chat-status" data-store-chat-status role="status"></p>' +
         '<footer class="mg-store-chat-actions"><a href="/messages.php" data-store-chat-messages>Messages</a><button class="mg-store-chat-exit" type="button" data-store-chat-exit>Leave Store</button></footer>' +
       '</article>';
@@ -79,7 +79,7 @@ window.Microgifter = window.Microgifter || {};
     if (!body) return;
     var messages = Array.isArray(state.messages) ? state.messages : [];
     if (!messages.length) {
-      body.innerHTML = '<p class="mg-store-chat-empty">You are inside this merchant store. When the merchant sends a chat, it will appear here.</p>';
+      body.innerHTML = '<p class="mg-store-chat-empty">Start a quick chat. The merchant will be notified even if they are offline.</p>';
       return;
     }
     body.innerHTML = messages.map(function (message) {
@@ -105,12 +105,13 @@ window.Microgifter = window.Microgifter || {};
     var merchant = state.merchant || {};
     var latest = latestMessage();
     var unread = state.thread ? Number(state.thread.unread || 0) : 0;
+    var canMessage = Boolean(state.can_reply || state.can_start_thread || state.active);
     widget.querySelector('[data-store-chat-avatar]').innerHTML = avatarHtml(merchant);
     widget.querySelector('[data-store-chat-head-avatar]').innerHTML = avatarHtml(merchant);
     widget.querySelector('[data-store-chat-title]').textContent = merchant.name || 'Merchant Store';
     widget.querySelector('[data-store-chat-head-title]').textContent = merchant.name || 'Merchant Store';
-    widget.querySelector('[data-store-chat-head-subtitle]').textContent = state.thread ? 'Merchant chat is active' : 'Inside merchant store';
-    widget.querySelector('[data-store-chat-preview]').textContent = latest ? (latest.mine ? 'You: ' : '') + latest.body : 'You are shopping inside this store';
+    widget.querySelector('[data-store-chat-head-subtitle]').textContent = state.thread ? 'Merchant chat is active' : 'Message now — merchant can reply later';
+    widget.querySelector('[data-store-chat-preview]').textContent = latest ? (latest.mine ? 'You: ' : '') + latest.body : 'Messages notify the merchant';
     var badge = widget.querySelector('[data-store-chat-badge]');
     badge.textContent = String(unread > 99 ? '99+' : unread);
     badge.hidden = unread < 1;
@@ -118,9 +119,9 @@ window.Microgifter = window.Microgifter || {};
     link.href = state.thread && state.thread.id ? '/messages.php?thread=' + encodeURIComponent(state.thread.id) : '/messages.php';
     var textarea = widget.querySelector('textarea[name="message"]');
     var send = widget.querySelector('[data-store-chat-send]');
-    textarea.disabled = !state.can_reply;
-    send.disabled = !state.can_reply;
-    textarea.placeholder = state.can_reply ? 'Reply to merchant...' : 'Waiting for merchant chat...';
+    textarea.disabled = !canMessage;
+    send.disabled = !canMessage;
+    textarea.placeholder = canMessage ? 'Message merchant...' : 'Chat is temporarily unavailable...';
     renderMessages();
   }
 
@@ -143,14 +144,18 @@ window.Microgifter = window.Microgifter || {};
     button.disabled = true;
     setStatus('Sending...', '');
     try {
-      await MG.post('/api/store/chat-reply.php', { message: body });
+      var response = payload(await MG.post('/api/store/chat-reply.php', { message: body })) || {};
+      if (response.thread_id) {
+        state.thread = state.thread || {};
+        state.thread.id = response.thread_id;
+      }
       textarea.value = '';
-      setStatus('Reply sent to merchant.', 'success');
+      setStatus(response.sent_while_offline ? 'Message saved. The merchant will see it when they return.' : 'Message sent to merchant.', 'success');
       await loadStatus(true);
     } catch (error) {
       setStatus(error.message || 'Unable to send reply.', 'error');
     } finally {
-      button.disabled = !state.can_reply;
+      button.disabled = false;
     }
   }
 
@@ -160,7 +165,7 @@ window.Microgifter = window.Microgifter || {};
     setStatus('Leaving store...', '');
     try {
       await MG.post('/api/store/exit.php', {});
-      state = { active: false, merchant: null, session: null, thread: null, messages: [], can_reply: false };
+      state = { active: false, merchant: null, session: null, thread: null, messages: [], can_reply: false, can_start_thread: false };
       render();
     } catch (error) {
       setStatus(error.message || 'Unable to leave store.', 'error');

@@ -11,6 +11,18 @@ mg_require_csrf_for_write($input);
 $user = mg_require_api_user();
 $pdo = mg_db();
 
+function mg_store_chat_merchant_label(PDO $pdo, int $merchantUserId): string
+{
+    try {
+        $stmt = $pdo->prepare('SELECT display_name FROM public_profiles WHERE user_id=? LIMIT 1');
+        $stmt->execute([$merchantUserId]);
+        $label = trim((string)($stmt->fetchColumn() ?: ''));
+        return $label !== '' ? $label : 'Merchant';
+    } catch (Throwable) {
+        return 'Merchant';
+    }
+}
+
 try {
     mg_rate_limit('store.chat_reply', 'user:' . (int)$user['id'], 90, 60);
     mg_store_runtime_require_schema($pdo);
@@ -24,6 +36,8 @@ try {
         throw new RuntimeException('Active merchant conversation is not available.');
     }
     $conversationKey = mg_store_canvas_conversation_key($merchantUserId, $customerUserId);
+    $merchantLabel = mg_store_chat_merchant_label($pdo, $merchantUserId);
+    $threadCreated = false;
 
     $pdo->beginTransaction();
     try {
@@ -38,7 +52,8 @@ try {
         $threadStmt->execute([$customerUserId, $merchantUserId, $conversationKey]);
         $thread = $threadStmt->fetch(PDO::FETCH_ASSOC);
         if (!$thread) {
-            throw new RuntimeException('The merchant has not started a Store Canvas chat yet.');
+            $thread = mg_store_canvas_thread($pdo, $session, $merchantUserId, $merchantLabel);
+            $threadCreated = true;
         }
 
         $messagePublicId = mg_public_uuid();
@@ -65,9 +80,9 @@ try {
             $pdo,
             $merchantUserId,
             'message',
-            'New Store Canvas reply',
+            $threadCreated ? 'New Store Canvas message' : 'New Store Canvas reply',
             $customerName . ': ' . mb_substr($body, 0, 500),
-            '/merchant-canvas.php',
+            '/messages.php?thread=' . rawurlencode((string)$thread['public_id']),
             [
                 'actor_user_id' => $customerUserId,
                 'event_key' => 'message.store_canvas.reply.' . strtolower($messagePublicId),
@@ -82,6 +97,7 @@ try {
                 'source_reference' => $sourceReference,
                 'source_system' => 'store_canvas',
                 'source_label' => 'Store Canvas Reply',
+                'thread_created' => $threadCreated,
             ]
         );
 
@@ -97,21 +113,23 @@ try {
             'conversation_key' => $conversationKey,
         ]);
         mg_message_delivery_throw_if_failed($deliveryValidation);
-        mg_store_log_event($pdo, $session, 'customer_chat_reply', 'Customer replied to merchant chat', ['thread_id'=>(string)$thread['public_id'],'message_id'=>$messagePublicId,'source_system'=>'store_canvas']);
+        mg_store_log_event($pdo, $session, 'customer_chat_reply', 'Customer replied to merchant chat', ['thread_id'=>(string)$thread['public_id'],'message_id'=>$messagePublicId,'source_system'=>'store_canvas','thread_created'=>$threadCreated]);
         $pdo->commit();
     } catch (Throwable $error) {
         if ($pdo->inTransaction()) $pdo->rollBack();
         throw $error;
     }
 
-    mg_event('store_canvas.customer_chat_reply', ['thread_id'=>(string)$thread['public_id'],'message_id'=>$messagePublicId,'merchant_user_id'=>$merchantUserId], $customerUserId);
+    mg_event('store_canvas.customer_chat_reply', ['thread_id'=>(string)$thread['public_id'],'message_id'=>$messagePublicId,'merchant_user_id'=>$merchantUserId,'thread_created'=>$threadCreated], $customerUserId);
     mg_ok([
         'thread_id' => (string)$thread['public_id'],
         'message_id' => $messagePublicId,
         'source_type' => $sourceType,
         'notification_id' => $notificationId ?: null,
+        'thread_created' => $threadCreated,
+        'sent_while_offline' => $threadCreated,
         'delivery_validation' => $deliveryValidation,
-    ], 'Reply sent to merchant.');
+    ], $threadCreated ? 'Message saved. The merchant will be notified.' : 'Reply sent to merchant.');
 } catch (InvalidArgumentException $error) {
     mg_fail($error->getMessage(), 422);
 } catch (RuntimeException $error) {
