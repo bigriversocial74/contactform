@@ -14,7 +14,7 @@ if (function_exists('mg_rate_limit')) mg_rate_limit('admin.screen_recordings.del
 
 $recordingId = max(0, (int)($input['recording_id'] ?? $input['id'] ?? 0));
 if ($recordingId < 1) mg_fail('Recording id is required.', 422);
-mg_screen_recordings_fetch($pdo, $recordingId);
+mg_screen_recordings_fetch_for_user($pdo, $recordingId, $user, true);
 mg_screen_recordings_soft_delete($pdo, $recordingId);
 mg_audit('admin_screen_recording.archive', 'admin_screen_recording', ['recording_id' => $recordingId], (int)$user['id']);
 mg_ok(['recording_id' => $recordingId], 'Recording archived.');
