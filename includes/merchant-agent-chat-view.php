@@ -40,7 +40,7 @@ declare(strict_types=1);
         <button type="button" aria-label="Close agent data panel" data-agent-chat-drawer-close>×</button>
       </div>
 
-      <section class="mg-agent-chat-sidebar-ad" aria-label="Sponsored campaign">
+      <section class="mg-agent-chat-sidebar-ad is-empty" aria-label="Sponsored campaign">
         <section class="mg-sponsored-placement" data-mg-ad-placement="sidebar_sponsored_card" data-mg-ad-limit="1"></section>
       </section>
 
