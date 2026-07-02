@@ -20,6 +20,20 @@ function mg_action_center_users_have_public_id(PDO $pdo): bool
     return $hasColumn;
 }
 
+function mg_action_center_public_profiles_available(PDO $pdo): bool
+{
+    static $available=null;
+    if($available!==null)return $available;
+    try{
+        $stmt=$pdo->prepare('SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? LIMIT 1');
+        $stmt->execute(['public_profiles']);
+        $available=(bool)$stmt->fetchColumn();
+    }catch(Throwable){
+        $available=false;
+    }
+    return $available;
+}
+
 function mg_action_center_resolve_recipient(PDO $pdo,string $reference): int
 {
     $reference=trim($reference);
@@ -31,6 +45,12 @@ function mg_action_center_resolve_recipient(PDO $pdo,string $reference): int
         $stmt=$pdo->prepare("SELECT id FROM users WHERE email=? AND status='active' LIMIT 1");
         $stmt->execute([$reference]);
     }
+    $userId=(int)($stmt->fetchColumn()?:0);
+    if($userId>0)return $userId;
+    if(!mg_action_center_public_profiles_available($pdo))return 0;
+    $slug=ltrim($reference,'@');
+    $stmt=$pdo->prepare("SELECT u.id FROM public_profiles pp INNER JOIN users u ON u.id=pp.user_id WHERE (pp.public_id=? OR pp.slug=?) AND pp.status='active' AND pp.visibility IN ('public','unlisted') AND u.status='active' LIMIT 1");
+    $stmt->execute([$reference,$slug]);
     return (int)($stmt->fetchColumn()?:0);
 }
 
@@ -145,7 +165,7 @@ $pdo=mg_db();
 
 $actionItemId=trim((string)($input['action_item_id']??$input['id']??''));
 $idempotencyKey=trim((string)($input['idempotency_key']??''));
-$recipientReference=trim((string)($input['recipient_user_id']??$input['recipient']??''));
+$recipientReference=trim((string)($input['recipient_user_id']??$input['recipient']??$input['recipient_slug']??''));
 $message=trim((string)($input['message']??''));
 if($actionItemId===''||$idempotencyKey===''||$recipientReference===''){
     mg_fail('Action Center item, recipient, and idempotency key are required.',422);
