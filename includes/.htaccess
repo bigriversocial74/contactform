@@ -1,6 +1,5 @@
 # Microgifter internal include protection
 Options -Indexes
-Require all denied
 
 <IfModule mod_authz_core.c>
   Require all denied
