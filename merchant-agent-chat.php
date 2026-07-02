@@ -17,7 +17,6 @@ $page_styles = [
     '/assets/css/merchant-agent-chat-mobile-offset.css',
     '/assets/css/merchant-agent-chat-voice.css',
     '/assets/css/merchant-agent-chat-control-panel.css',
-    '/assets/css/merchant-agent-chat-mobile-footer-reset.css',
     '/assets/css/merchant-agent-memory-menu.css',
     '/assets/css/merchant-agent-creative-presets.css',
     '/assets/css/merchant-agent-creative-draft-actions.css',
@@ -29,7 +28,6 @@ $page_scripts = [
     '/assets/js/merchant-agent-chat-voice.js',
     '/assets/js/merchant-agent-chat-speech-results.js',
     '/assets/js/merchant-agent-chat-control-panel.js',
-    '/assets/js/merchant-agent-thread-picker-sync.js',
     '/assets/js/merchant-agent-memory-menu.js',
     '/assets/js/merchant-agent-creative-presets.js',
     '/assets/js/merchant-agent-creative-draft-actions.js',
@@ -37,7 +35,6 @@ $page_scripts = [
     '/assets/js/merchant-agent-chat-json-format.js',
     '/assets/js/merchant-agent-chat-mobile.js',
     '/assets/js/sponsored-campaign-card.js',
-    '/assets/js/merchant-agent-chat-sidebar-ad-state.js',
 ];
 $page_scripts[] = '/assets/js/merchant-agent-chat-admin-mode.js';
 $user = mg_current_user();
