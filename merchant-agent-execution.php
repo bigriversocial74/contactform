@@ -4,7 +4,7 @@ require_once __DIR__ . '/includes/app.php';
 $page_title='Agent Execution Center | Microgifter';
 $page_section='merchant';
 $header_mode='account';
-$page_styles=['/assets/css/merchant-workspace.css','/assets/css/merchant-agent-execution.css'];
+$page_styles=['/assets/css/merchant-workspace.css','/assets/css/merchant-agent-execution.css','/assets/css/merchant-agent-execution-results.css'];
 $page_scripts=['/assets/js/merchant-agent-execution.js'];
 $user=mg_current_user();
 $merchantNav=[
