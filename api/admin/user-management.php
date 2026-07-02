@@ -29,6 +29,7 @@ try {
 
     $result = match ($action) {
         'set_status' => mg_admin_account_set_status($pdo, $actor, $targetUserId, strtolower(trim((string)($input['status'] ?? '')))),
+        'set_password' => mg_admin_account_set_password($pdo, $actor, $targetUserId, (string)($input['password'] ?? '')),
         'add_role' => mg_admin_account_change_role($pdo, $actor, $targetUserId, strtolower(trim((string)($input['role'] ?? ''))), true),
         'remove_role' => mg_admin_account_change_role($pdo, $actor, $targetUserId, strtolower(trim((string)($input['role'] ?? ''))), false),
         'set_model_status' => mg_admin_account_set_model_status(
