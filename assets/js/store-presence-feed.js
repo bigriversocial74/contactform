@@ -52,6 +52,12 @@ window.Microgifter = window.Microgifter || {};
     if (!state) return 'Enter this merchant store with your customer avatar.';
     return state.notice || 'Enter this merchant store with your customer avatar.';
   }
+  function normalizeLabel(value) {
+    var text = String(value || '').trim();
+    var normalized = text.toLowerCase();
+    if (!text || normalized === 'merchant canvas') return 'Enter Store';
+    return text;
+  }
 
   function ensurePill() {
     var pill = document.querySelector('[data-store-active-pill]');
@@ -100,8 +106,40 @@ window.Microgifter = window.Microgifter || {};
     modal.hidden = true;
   }
 
+  function ensureHeaderActions(card) {
+    var header = card && card.querySelector ? card.querySelector('.mg-feed-card-header') : null;
+    if (!header) return null;
+    var visibility = header.querySelector(':scope > .mg-feed-visibility');
+    if (visibility) visibility.remove();
+    var actions = header.querySelector(':scope > .mg-feed-card-header-actions');
+    if (!actions) {
+      actions = document.createElement('div');
+      actions.className = 'mg-feed-card-header-actions';
+      header.appendChild(actions);
+    }
+    return actions;
+  }
+
+  function renderHeaderStoreButton(card, state) {
+    var actions = ensureHeaderActions(card);
+    if (!actions || !state || !state.entry_enabled) return;
+    var button = actions.querySelector('[data-store-enter]');
+    if (!button) {
+      button = document.createElement('button');
+      button.type = 'button';
+      button.dataset.storeEnter = '1';
+      actions.appendChild(button);
+    }
+    var primaryLabel = normalizeLabel(state.label || 'Enter Store');
+    button.className = buttonClass(state.state);
+    button.textContent = primaryLabel;
+    button.setAttribute('aria-label', primaryLabel);
+  }
+
   function renderCard(card, state) {
     if (!card || !state || !state.entry_enabled) return;
+    renderHeaderStoreButton(card, state);
+
     var row = card.querySelector('[data-store-presence-row]');
     if (!row) {
       row = document.createElement('div');
@@ -111,12 +149,11 @@ window.Microgifter = window.Microgifter || {};
       else card.appendChild(row);
     }
     row.className = rowClass(state.state);
-    var primaryLabel = state.label || 'Enter Store';
     var secondary = '';
     if (state.state === 'inside_this') {
-      secondary = '<button class="mg-store-exit-btn" type="button" data-store-exit>Exit Store</button><button class="mg-store-exit-btn" type="button" data-avatar-anchor-prompt>Map Avatar</button>';
+      secondary = '<div class="mg-store-presence-actions"><button class="mg-store-exit-btn" type="button" data-store-exit>Exit Store</button><button class="mg-store-exit-btn" type="button" data-avatar-anchor-prompt>Map Avatar</button></div>';
     }
-    row.innerHTML = '<div class="mg-store-presence-copy"><span class="mg-store-presence-dot" aria-hidden="true"></span><span>' + escapeHtml(noticeText(state)) + '</span></div><div class="mg-store-presence-actions"><button class="' + buttonClass(state.state) + '" type="button" data-store-enter>' + escapeHtml(primaryLabel) + '</button>' + secondary + '</div>';
+    row.innerHTML = '<div class="mg-store-presence-copy"><span class="mg-store-presence-dot" aria-hidden="true"></span><span>' + escapeHtml(noticeText(state)) + '</span></div>' + secondary;
   }
 
   async function loadPostState(card) {
