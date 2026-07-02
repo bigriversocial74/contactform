@@ -6,7 +6,7 @@ require_once __DIR__ . '/includes/app.php';
 $page_title = 'Build a Product | Microgifter';
 $page_section = 'builder';
 $header_mode = 'builder';
-$page_styles = ['/assets/css/builder-stage4b.css','/assets/css/builder-shell-fixes.css','/assets/css/gift-envelope-presentation.css','/assets/css/builder-desktop-layout.css','/assets/css/builder-card-tabs-canvas.css','/assets/css/builder-greeting-card-presentation.css','/assets/css/builder-card-full-bleed-mobile.css','/assets/css/builder-card-proportions.css'];
+$page_styles = ['/assets/css/builder-stage4b.css','/assets/css/builder-shell-fixes.css','/assets/css/gift-envelope-presentation.css','/assets/css/builder-desktop-layout.css','/assets/css/builder-card-tabs-canvas.css','/assets/css/builder-greeting-card-presentation.css','/assets/css/builder-card-full-bleed-mobile.css','/assets/css/builder-card-proportions.css','/assets/css/builder-mobile-preview-actions.css'];
 $page_scripts = ['/assets/js/builder-stage4b.js','/assets/js/builder-card-message-media-preview.js?v=20260701h','/assets/js/builder-card-text-style-controls.js?v=20260701h','/assets/js/builder-product-types.js','/assets/js/product-builder-shell.js','/assets/js/gift-envelope-presentation.js','/assets/js/builder-card-tabs-canvas.js','/assets/js/builder-greeting-card-presentation.js','/assets/js/builder-merchant-profile.js','/assets/js/builder-simple-product-post.js'];
 $product_id = trim((string) ($_GET['id'] ?? ''));
 
@@ -19,7 +19,6 @@ require __DIR__ . '/includes/header.php';
     <div class="mg-builder-preview-stage">
       <div class="mg-builder-preview-frame">
         <div class="mg-builder-product-actions" aria-label="Builder actions">
-          <span class="mg-builder-status" data-builder-status>New draft</span>
           <div class="mg-builder-preview-toolbar">
             <button class="mg-btn mg-btn-ghost" type="button" data-save-draft>Save draft</button>
             <a class="mg-btn mg-btn-soft" href="#" data-publish-product-link data-publish-store-link data-publish-feed-link hidden>View product</a>
