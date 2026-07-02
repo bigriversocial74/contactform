@@ -11,6 +11,7 @@ window.Microgifter = window.Microgifter || {};
   function qs(sel, scope){return (scope||root).querySelector(sel);}
   function qsa(sel, scope){return Array.prototype.slice.call((scope||root).querySelectorAll(sel));}
   function status(message, error){var node=qs('[data-ads-status]'); if(node){node.textContent=message||''; node.style.color=error?'#b91c1c':'#64748b';}}
+  function uploadStatus(message, error){var node=qs('[data-creative-upload-status]'); if(node){node.textContent=message||''; node.style.color=error?'#b91c1c':'#64748b';}}
   async function api(path, options){
     var res = await fetch(path, Object.assign({credentials:'same-origin'}, options||{}));
     var out = await res.json().catch(function(){return {ok:false,message:'Invalid server response'};});
@@ -30,9 +31,12 @@ window.Microgifter = window.Microgifter || {};
     var picker = qs('[data-product-picker]');
     var apply = qs('[data-apply-product]');
     var summary = qs('[data-product-summary]');
+    var uploadInput = qs('[data-creative-upload-input]');
     if (picker) picker.value = '';
     if (apply) apply.disabled = true;
     if (summary) { summary.hidden = true; summary.innerHTML = ''; }
+    if (uploadInput) uploadInput.value = '';
+    uploadStatus('');
     status('New draft ready.'); preview(); activateTab('create');
   }
   function checkedPlacements(){return qsa('[name="placements[]"]:checked').map(function(input){return input.value;});}
@@ -129,6 +133,32 @@ window.Microgifter = window.Microgifter || {};
     status('Applied '+(product.source_label || product.source || 'product')+' to campaign draft.');
     preview();
   }
+  async function uploadCreativeImage(){
+    var input = qs('[data-creative-upload-input]');
+    var button = qs('[data-upload-creative-image]');
+    if (!input || !input.files || !input.files.length) { uploadStatus('Choose an image before uploading.', true); return; }
+    var file = input.files[0];
+    var allowed = ['image/jpeg','image/png','image/gif','image/webp'];
+    if (file.type && allowed.indexOf(file.type) === -1) { uploadStatus('Use JPG, PNG, GIF, or WebP image files.', true); return; }
+    if (file.size > 8 * 1024 * 1024) { uploadStatus('Creative image must be 8MB or smaller.', true); return; }
+    var body = new FormData();
+    body.append('csrf_token', csrf);
+    body.append('creative_image', file);
+    if (button) button.disabled = true;
+    uploadStatus('Uploading creative image…');
+    try {
+      var data = await api('/api/ads/upload-creative.php', {method:'POST', headers:{'X-CSRF-TOKEN':csrf}, body:body});
+      if (!data.url) throw new Error('Upload succeeded but no image URL was returned.');
+      qs('[name="image_url"]').value = data.url;
+      uploadStatus('Image uploaded and added to campaign preview.');
+      status('Creative image uploaded. Save the campaign to persist it.');
+      preview();
+    } catch (error) {
+      uploadStatus(error && error.message ? error.message : 'Unable to upload creative image.', true);
+    } finally {
+      if (button) button.disabled = false;
+    }
+  }
   function placementText(c){return (c.placements||[]).join(', ').replace(/_/g,' ') || 'None selected';}
   function money(value){var n=Number(value||0); return n ? '$'+n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';}
   function dateShort(value){if(!value)return '—'; try{return new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric',year:'numeric'}).format(new Date(String(value).replace(' ','T')));}catch(e){return String(value).slice(0,10);}}
@@ -162,7 +192,10 @@ window.Microgifter = window.Microgifter || {};
     qs('[name="target_zone_id"]').value = c.target_zone_id || '';
     qsa('[name="placements[]"]').forEach(function(input){input.checked=(c.placements||[]).indexOf(input.value)!==-1;});
     var picker = qs('[data-product-picker]');
+    var uploadInput = qs('[data-creative-upload-input]');
     if (picker) picker.value = '';
+    if (uploadInput) uploadInput.value = '';
+    uploadStatus('');
     setProductPickerState();
     status('Loaded campaign '+selectedId+'.'); preview(); activateTab('create');
   }
@@ -212,6 +245,8 @@ window.Microgifter = window.Microgifter || {};
   var search=qs('[data-ads-search]'); if(search) search.addEventListener('input', renderList);
   var picker=qs('[data-product-picker]'); if(picker) picker.addEventListener('change', setProductPickerState);
   var apply=qs('[data-apply-product]'); if(apply) apply.addEventListener('click', applySelectedProduct);
+  var uploadInput=qs('[data-creative-upload-input]'); if(uploadInput) uploadInput.addEventListener('change',function(){uploadStatus(uploadInput.files && uploadInput.files.length ? 'Ready to upload '+uploadInput.files[0].name+'.' : '');});
+  var uploadButton=qs('[data-upload-creative-image]'); if(uploadButton) uploadButton.addEventListener('click',function(){uploadCreativeImage().catch(function(e){uploadStatus(e.message,true);});});
   qs('[data-save-draft]').addEventListener('click',function(){saveDraft().catch(function(e){status(e.message,true);});});
   qs('[data-submit-current]').addEventListener('click',function(){submitCampaign('').catch(function(e){status(e.message,true);});});
   qs('[data-new-draft]').addEventListener('click',function(){saveDraft().catch(function(e){status(e.message,true);});});
