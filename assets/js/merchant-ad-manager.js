@@ -107,11 +107,27 @@ window.Microgifter = window.Microgifter || {};
       }, {once:true});
     }
   }
+  function renderPlacementPreviews(item){
+    var secondary = qs('[data-ads-preview-secondary]');
+    if (secondary) {
+      secondary.innerHTML = '<div class="mg-ads-placement-board mg-ads-live-preview-board">'
+        + '<article class="mg-ads-placement-card"><span class="mg-ads-eyebrow">Feed Surface</span><h2>Feed sponsored card</h2><p class="mg-ads-muted">Main customer feed preview using the current campaign draft.</p><div class="mg-sponsored-placement" data-placement-preview="feed_sponsored_card"></div></article>'
+        + '<article class="mg-ads-placement-card"><span class="mg-ads-eyebrow">Sidebar Surface</span><h2>Sidebar sponsored card</h2><p class="mg-ads-muted">Compact right-column preview using the same creative.</p><div class="mg-sponsored-placement mg-placement-preview-sidebar" data-placement-preview="sidebar_sponsored_card"></div></article>'
+        + '</div>';
+    }
+    qsa('[data-placement-preview]').forEach(function(target){
+      if (!window.Microgifter.renderSponsoredCampaignCard) return;
+      var placement = target.getAttribute('data-placement-preview') || 'feed_sponsored_card';
+      var previewItem = Object.assign({}, item, {placement_key: placement});
+      target.innerHTML = window.Microgifter.renderSponsoredCampaignCard(previewItem, {compact: placement === 'sidebar_sponsored_card'});
+    });
+  }
   function preview(){
     var payload = formPayload();
     var item = {public_id:selectedId||'preview', title:payload.title, objective:payload.objective, placement_key:payload.placements[0]||'feed_sponsored_card', merchant:{merchant_name:root.getAttribute('data-merchant-name')||'Microgifter Merchant'}, creative:{headline:payload.headline||payload.title, description:payload.description, image_url:payload.image_url, cta_label:payload.cta_label||'View Offer', destination_url:payload.destination_url, sponsored_label:'Sponsored'}};
     coverPreview(payload);
-    qsa('[data-ads-preview],[data-ads-preview-secondary]').forEach(function(target){if (window.Microgifter.renderSponsoredCampaignCard) target.innerHTML = window.Microgifter.renderSponsoredCampaignCard(item,{compact:false});});
+    qsa('[data-ads-preview]').forEach(function(target){if (window.Microgifter.renderSponsoredCampaignCard) target.innerHTML = window.Microgifter.renderSponsoredCampaignCard(item,{compact:false});});
+    renderPlacementPreviews(item);
   }
   function productLabel(product){
     var source = product.source_label || product.source || 'Product';
