@@ -66,7 +66,7 @@ $canMarketplaceIndex = $canInvestmentTests;
 $adminPermissionSet = [
   'admin.users.view', 'admin.users.manage', 'admin.audit.view', 'admin.health.view',
   'admin.profiles.moderation.view', 'admin.profiles.moderation.manage',
-  'security.logs.view', 'admin_security_logs.view', 'admin.sessions.view',
+  'security.logs.view', 'admin.security_logs.view', 'admin.sessions.view',
   'operational.alerts.view', 'demand.dashboard.view', 'intelligence.dashboard.view',
   'merchant.payments.view', 'subscriptions.admin', 'microgift.operations.view', 'tips.reverse', 'share_market.admin',
 ];
