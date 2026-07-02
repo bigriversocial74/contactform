@@ -10,8 +10,8 @@ $page_section = 'feed';
 $header_mode = 'agent';
 $agent_tab = 'feed-' . $feedView;
 $suppress_footer = true;
-$page_styles = ['/assets/css/public-app-header.css','/assets/css/social-feed.css','/assets/css/social-feed-upload.css','/assets/css/feed-centered-layout.css','/assets/css/store-presence-feed.css','/assets/css/avatar-anchor-consent.css','/assets/css/sponsored-campaign-card.css','/assets/css/microgifter-stories.css'];
-$page_scripts = ['/assets/js/social-feed.js','/assets/js/social-feed-sidebar-tabs.js','/assets/js/social-feed-post-polish.js','/assets/js/social-feed-upload.js','/assets/js/store-presence-feed.js','/assets/js/avatar-anchor-consent.js','/assets/js/sponsored-campaign-card.js','/assets/js/microgifter-stories.js'];
+$page_styles = ['/assets/css/public-app-header.css','/assets/css/social-feed.css','/assets/css/social-feed-upload.css','/assets/css/feed-centered-layout.css','/assets/css/store-presence-feed.css','/assets/css/avatar-anchor-consent.css','/assets/css/sponsored-campaign-card.css','/assets/css/microgifter-stories.css','/assets/css/feed-online-chat.css'];
+$page_scripts = ['/assets/js/social-feed.js','/assets/js/social-feed-sidebar-tabs.js','/assets/js/social-feed-post-polish.js','/assets/js/social-feed-upload.js','/assets/js/store-presence-feed.js','/assets/js/avatar-anchor-consent.js','/assets/js/sponsored-campaign-card.js','/assets/js/microgifter-stories.js','/assets/js/feed-online-chat.js'];
 $page_manifest = [
     'id' => 'feed',
     'title' => $page_title,
@@ -109,6 +109,9 @@ require __DIR__ . '/includes/header.php';
       </div>
     </section>
   </div>
+
+  <aside class="mg-online-chat-rail" data-online-chat-rail hidden aria-label="Online followers"></aside>
+  <div class="mg-feed-chat-dock" data-feed-chat-dock aria-live="polite"></div>
 
   <div class="mg-story-modal" data-story-modal hidden>
     <div class="mg-story-modal-backdrop" data-story-modal-close></div>
