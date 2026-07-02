@@ -5,6 +5,28 @@ require_once dirname(__DIR__) . '/feed/_feed.php';
 require_once dirname(__DIR__) . '/social/_publishing.php';
 require_once dirname(__DIR__) . '/social/_media_assets.php';
 
+function mg_public_media_table_exists(PDO $pdo,string $table): bool
+{
+    if(preg_match('/^[A-Za-z0-9_]+$/',$table)!==1)return false;
+    static $cache=[];
+    $key=spl_object_id($pdo).'|'.strtolower($table);
+    if(array_key_exists($key,$cache))return $cache[$key];
+    try{
+        $database=(string)($pdo->query('SELECT DATABASE()')->fetchColumn()?:'');
+        if($database!==''){
+            $stmt=$pdo->prepare('SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA=? AND TABLE_NAME=? LIMIT 1');
+            $stmt->execute([$database,$table]);
+            if($stmt->fetchColumn())return $cache[$key]=true;
+        }
+    }catch(Throwable){}
+    try{
+        $pdo->query('SELECT 1 FROM `'.str_replace('`','``',$table).'` LIMIT 0');
+        return $cache[$key]=true;
+    }catch(Throwable){
+        return $cache[$key]=false;
+    }
+}
+
 $method=strtoupper((string)($_SERVER['REQUEST_METHOD']??'GET'));
 if(!in_array($method,['GET','HEAD'],true))mg_fail('Method not allowed.',405);
 
@@ -15,6 +37,20 @@ $pdo=mg_db();
 $viewer=mg_public_profile_session_viewer($pdo);
 $viewerId=isset($viewer['id'])?(int)$viewer['id']:null;
 $profileMediaUrl='/api/public/media.php?asset='.$assetId;
+$storyReferenceSql='0 public_story_reference';
+$params=[$profileMediaUrl,$assetId,$profileMediaUrl,$assetId];
+if(mg_public_media_table_exists($pdo,'microgifter_stories')){
+    $storyReferenceSql="EXISTS (
+              SELECT 1 FROM microgifter_stories stories
+              WHERE stories.status='active' AND stories.expires_at>NOW()
+                AND (stories.media_url=? OR stories.thumbnail_url=? OR stories.media_url=? OR stories.thumbnail_url=?)
+            ) public_story_reference";
+    $params[]=$profileMediaUrl;
+    $params[]=$profileMediaUrl;
+    $params[]=$assetId;
+    $params[]=$assetId;
+}
+$params[]=$assetId;
 $stmt=$pdo->prepare(
     "SELECT ca.id,ca.public_id,ca.owner_user_id,ca.asset_type,ca.storage_provider,ca.storage_key,
             ca.original_filename,ca.mime_type,ca.byte_size,ca.checksum_sha256,ca.status,ca.metadata_json,
@@ -23,7 +59,7 @@ $stmt=$pdo->prepare(
               SELECT 1 FROM public_profiles pp
               INNER JOIN users pu ON pu.id=pp.user_id
               WHERE pp.status='active' AND pp.visibility IN ('public','unlisted') AND pu.status='active'
-                AND (pp.avatar_url=? OR pp.cover_url=?)
+                AND (pp.avatar_url=? OR pp.avatar_url=? OR pp.cover_url=? OR pp.cover_url=?)
             ) public_profile_reference,
             EXISTS (
               SELECT 1 FROM merchant_storefronts ms
@@ -41,12 +77,13 @@ $stmt=$pdo->prepare(
               INNER JOIN feed_posts fp ON fp.id=fpv.feed_post_id
               WHERE fpe.asset_id=ca.id AND fp.visibility IN ('public','unlisted')
                 AND fp.status IN ('published','promoted') AND fpv.version_status='published'
-            ) public_legacy_post_reference
+            ) public_legacy_post_reference,
+            {$storyReferenceSql}
      FROM catalog_assets ca
      WHERE ca.public_id=? AND ca.status='ready'
      LIMIT 1"
 );
-$stmt->execute([$profileMediaUrl,$profileMediaUrl,$assetId]);
+$stmt->execute($params);
 $asset=$stmt->fetch(PDO::FETCH_ASSOC);
 if(!$asset)mg_fail('Media not found.',404);
 
@@ -54,7 +91,8 @@ $allowed=$viewerId!==null&&$viewerId===(int)$asset['owner_user_id'];
 $publiclyCacheable=!empty($asset['public_profile_reference'])
     ||!empty($asset['public_storefront_reference'])
     ||!empty($asset['public_product_reference'])
-    ||!empty($asset['public_legacy_post_reference']);
+    ||!empty($asset['public_legacy_post_reference'])
+    ||!empty($asset['public_story_reference']);
 if($publiclyCacheable)$allowed=true;
 
 if(!$allowed||!$publiclyCacheable){
