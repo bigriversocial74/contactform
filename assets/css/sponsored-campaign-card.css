@@ -259,55 +259,29 @@
 .mg-gift-inbox-sponsored .mg-sponsored-card{border-radius:22px}
 .mg-claim-success-recommendation{
   margin:18px 0 0;
-  padding-top:16px;
-  border-top:1px solid rgba(15,23,42,.08);
 }
-.mg-claim-success-recommendation .mg-sponsored-placement{margin:10px 0 0}
-.mg-claim-success-recommendation .mg-sponsored-card{
-  border-radius:20px;
-  padding:14px;
-  box-shadow:0 12px 30px rgba(15,23,42,.08);
+.mg-feed-ad-sidebar{
+  margin-top:0!important;
+  padding-top:0!important;
+  top:72px!important;
 }
-.mg-claim-success-recommendation .mg-sponsored-media{min-height:110px}
-.mg-sponsored-surface-label{
-  display:inline-flex;
-  align-items:center;
-  border:1px solid rgba(37,99,235,.16);
-  background:#eff6ff;
-  color:#1d4ed8;
-  border-radius:999px;
-  padding:6px 9px;
-  font-size:.68rem;
-  font-weight:900;
+.mg-feed-ad-sidebar .mg-sponsored-placement{
+  margin:0!important;
+  min-height:96px;
+}
+.mg-feed-ad-sidebar .mg-sponsored-placement:empty{
+  display:grid!important;
+  place-items:center;
+  min-height:96px;
+  border:1px dashed rgba(148,163,184,.55);
+  border-radius:18px;
+  background:rgba(255,255,255,.46);
+  color:#64748b;
+  font-size:.72rem;
+  font-weight:950;
+  letter-spacing:.12em;
   text-transform:uppercase;
-  letter-spacing:.08em;
 }
-@media(min-width:981px){
-  .mg-agent-chat-right{align-self:start}
-  .mg-agent-chat-sidebar-ad{
-    display:block;
-    position:sticky;
-    top:88px;
-    z-index:3;
-    margin:0 0 14px;
-  }
-  .mg-agent-chat-sidebar-ad .mg-sponsored-placement{margin:0}
-  .mg-agent-chat-sidebar-ad .mg-sponsored-card{box-shadow:0 14px 36px rgba(15,23,42,.1)}
-}
-@media(max-width:980px){
-  .mg-feed-layout.has-sponsored-sidebar{display:block}
-  .mg-feed-ad-sidebar{
-    position:static;
-    width:100%;
-    margin-top:18px;
-  }
-  .mg-sponsored-card{
-    border-radius:20px;
-    padding:15px;
-  }
-  .mg-sponsored-label{margin-left:0}
-  .mg-sponsored-top{
-    align-items:flex-start;
-    flex-wrap:wrap;
-  }
+.mg-feed-ad-sidebar .mg-sponsored-placement:empty:before{
+  content:'Ad space';
 }
