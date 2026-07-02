@@ -6,6 +6,8 @@
 .mg-store-presence-copy span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mg-store-presence-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
 .mg-store-presence-actions button,.mg-store-presence-actions a{appearance:none;border:0;border-radius:999px;padding:9px 13px;font-size:12px;font-weight:950;text-decoration:none;cursor:pointer;white-space:nowrap}
+.mg-feed-card-header>.mg-feed-card-header-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-left:auto;flex:0 0 auto;min-width:max-content}
+.mg-feed-card-header>.mg-feed-card-header-actions .mg-store-enter-btn{appearance:none;border:0;border-radius:999px;padding:9px 13px;font-size:12px;font-weight:950;text-decoration:none;cursor:pointer;white-space:nowrap;text-transform:uppercase}
 .mg-store-enter-btn{background:#0f172a;color:#fff;box-shadow:0 10px 20px rgba(15,23,42,.12)}
 .mg-store-enter-btn.is-active{background:#16a34a;color:#fff}
 .mg-store-enter-btn.is-switch{background:#f59e0b;color:#111827}
