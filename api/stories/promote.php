@@ -12,7 +12,7 @@ function mg_story_ad_text(string $value, int $max, string $fallback = ''): strin
 
 function mg_story_ad_load(PDO $pdo, int $merchantId, string $storyPublicId): array
 {
-    $stmt = $pdo->prepare("SELECT * FROM microgifter_stories WHERE public_id=? AND owner_user_id=? AND status='active' LIMIT 1");
+    $stmt = $pdo->prepare("SELECT * FROM microgifter_stories WHERE public_id=? AND owner_user_id=? AND status='active' AND expires_at>NOW() LIMIT 1");
     $stmt->execute([$storyPublicId, $merchantId]);
     $story = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!is_array($story)) throw new RuntimeException('Story is not available to promote.');
