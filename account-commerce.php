@@ -4,8 +4,8 @@ require_once __DIR__.'/includes/app.php';
 $user=mg_current_user();
 if(!$user){header('Location: /signin.php?return=%2Faccount-commerce.php');exit;}
 $page_title='Commerce Account | Microgifter';
-$page_section='agent';
-$header_mode='agent';
+$page_section='account';
+$header_mode='account';
 $agent_tab='commerce';
 $can_merchant_nav=true;
 $can_create_microgift=true;
