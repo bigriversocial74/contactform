@@ -12,7 +12,7 @@ try {
         mg_fail('Invalid profile.', 422);
     }
     if (!mg_stories_table_exists($pdo, 'microgifter_story_highlights')) {
-        mg_ok(['schema_ready' => false, 'highlights' => []]);
+        mg_ok(['schema_ready' => false, 'highlights' => [], 'permissions' => ['can_manage' => false]]);
         return;
     }
     mg_stories_require_schema($pdo);
@@ -23,6 +23,8 @@ try {
     if (!is_array($profile) || (string)$profile['status'] !== 'active' || (string)$profile['user_status'] !== 'active' || !in_array((string)$profile['visibility'], ['public','unlisted'], true)) {
         throw new RuntimeException('Profile not found.');
     }
+    $viewer = mg_stories_viewer_user();
+    $canManage = is_array($viewer) && ((int)$viewer['id'] === (int)$profile['user_id'] || mg_stories_user_can_admin($viewer));
 
     $stmt = $pdo->prepare(
         "SELECT h.public_id highlight_id,h.title,h.display_order,h.created_at highlighted_at,
@@ -54,11 +56,13 @@ try {
             'created_at' => (string)$row['story_created_at'],
             'expires_at' => (string)$row['expires_at'],
             'story_status' => (string)$row['story_status'],
+            'display_order' => (int)$row['display_order'],
         ];
     }
 
     mg_ok([
         'schema_ready' => true,
+        'permissions' => ['can_manage' => $canManage],
         'profile' => [
             'id' => (string)$profile['public_id'],
             'slug' => (string)$profile['slug'],
