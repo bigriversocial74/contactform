@@ -128,7 +128,7 @@ function mg_stories_campaign_url(array $campaign): string
 function mg_stories_product_for_merchant(PDO $pdo, int $merchantId, string $publicId): ?array
 {
     if (!mg_stories_table_exists($pdo, 'catalog_products') || !mg_stories_table_exists($pdo, 'catalog_product_versions')) return null;
-    $stmt = $pdo->prepare("SELECT p.id,p.public_id,p.slug,p.status,p.product_type,v.title,v.description,v.unit_value_cents,v.currency FROM catalog_products p LEFT JOIN catalog_product_versions v ON v.id=p.current_version_id WHERE p.public_id=? AND p.merchant_user_id=? AND p.status<>'archived' LIMIT 1");
+    $stmt = $pdo->prepare("SELECT p.id,p.public_id,p.slug,p.status,p.product_type,v.title,v.description,v.unit_value_cents,v.currency FROM catalog_products p LEFT JOIN catalog_product_versions v ON v.id=p.current_version_id WHERE p.public_id=? AND p.merchant_user_id=? AND p.status='published' AND v.version_status='published' LIMIT 1");
     $stmt->execute([$publicId, $merchantId]); $row = $stmt->fetch(PDO::FETCH_ASSOC);
     return is_array($row) ? $row : null;
 }
