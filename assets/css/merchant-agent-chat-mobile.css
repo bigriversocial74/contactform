@@ -135,12 +135,18 @@
   }
   .mg-agent-chat-composer-shell{
     position:fixed!important;
-    left:0;
-    right:0;
-    bottom:0;
-    z-index:90;
+    left:0!important;
+    right:0!important;
+    bottom:0!important;
+    z-index:90!important;
     width:100%!important;
+    max-width:100%!important;
     margin:0!important;
+    box-sizing:border-box!important;
+    display:grid!important;
+    grid-template-columns:auto minmax(0,1fr) auto auto!important;
+    align-items:end!important;
+    gap:8px!important;
     padding:10px max(10px,env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))!important;
     border-width:1px 0 0!important;
     border-radius:18px 18px 0 0!important;
@@ -148,6 +154,8 @@
     box-shadow:0 -14px 40px rgba(15,23,42,.14)!important;
   }
   .mg-agent-chat-composer-shell textarea{
+    min-width:0!important;
+    width:100%!important;
     min-height:44px!important;
     max-height:118px!important;
     border-radius:15px!important;
@@ -155,8 +163,10 @@
     font-size:13px!important;
   }
   .mg-agent-chat-tool,
+  .mg-agent-chat-voice,
   .mg-agent-chat-send{
     width:44px!important;
+    min-width:44px!important;
     height:44px!important;
     border-radius:15px!important;
   }
@@ -258,12 +268,7 @@
     gap:7px;
   }
   .mg-agent-data-pills span{
-    border:1px solid #e0e6ef;
-    border-radius:999px;
-    background:#f7f9fc;
+    font-size:10px;
     padding:5px 8px;
-    color:#475569;
-    font-size:9px;
-    font-weight:850;
   }
 }
