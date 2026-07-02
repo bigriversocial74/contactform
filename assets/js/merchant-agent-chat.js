@@ -45,6 +45,18 @@ document.addEventListener('DOMContentLoaded', function () {
     return String(value || '').replace(/_/g, ' ').replace(/\b\w/g, function (char) { return char.toUpperCase(); });
   }
 
+  function shortText(value, max) {
+    value = String(value || '').trim();
+    max = max || 900;
+    return value.length > max ? value.slice(0, max - 1) + '…' : value;
+  }
+
+  function arrayish(value) {
+    if (Array.isArray(value)) return value;
+    if (value && typeof value === 'object') return Object.keys(value).map(function (key) { return value[key]; });
+    return [];
+  }
+
   function agentName() {
     return (state.agent_profile && state.agent_profile.agent_name) || 'Merchant Agent';
   }
@@ -150,7 +162,6 @@ document.addEventListener('DOMContentLoaded', function () {
     if (nameInput && state.agent_profile && document.activeElement !== nameInput) {
       nameInput.value = state.agent_profile.agent_name || 'Merchant Agent';
     }
-
     var select = root.querySelector('[data-agent-thread-select]');
     if (select) {
       var current = activeThreadId();
@@ -163,7 +174,6 @@ document.addEventListener('DOMContentLoaded', function () {
         return '<option value="' + esc(thread.id || '') + '"' + ((thread.id || '') === current ? ' selected' : '') + '>' + esc(label) + '</option>';
       }).join('');
     }
-
     if (Array.isArray(state.skills) && state.skills.length) {
       state.skills.forEach(function (skill) {
         var box = root.querySelector('[data-agent-skill][value="' + skill.key + '"]');
@@ -195,8 +205,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     return '<div class="mg-agent-block mg-agent-chart-block"><div class="mg-agent-block-head"><strong>' + esc(block.title || 'Chart') + '</strong><span>' + esc(block.body || '') + '</span></div><div class="mg-agent-bars">' + data.map(function (row) {
       var value = Number(row.value) || 0;
-      var width = Math.max(6, Math.round((Math.abs(value) / max) * 100));
-      return '<div class="mg-agent-bar-row"><span>' + esc(row.label) + '</span><div><i style="width:' + width + '%"></i></div><b>' + esc(prefix + value.toLocaleString() + suffix) + '</b></div>';
+      var barWidth = Math.max(6, Math.round((Math.abs(value) / max) * 100));
+      return '<div class="mg-agent-bar-row"><span>' + esc(row.label) + '</span><div><i style="width:' + barWidth + '%"></i></div><b>' + esc(prefix + value.toLocaleString() + suffix) + '</b></div>';
     }).join('') + '</div></div>';
   }
 
@@ -225,6 +235,40 @@ document.addEventListener('DOMContentLoaded', function () {
       '<span>Approval required</span></div></div>';
   }
 
+  function recipeData(source) {
+    var payload = source && typeof source.review_payload === 'object' && source.review_payload ? source.review_payload : {};
+    var merged = Object.assign({}, payload, source || {});
+    var hasRecipe = merged.recipe_engine_used || merged.recommended_campaign_type || merged.recommended_reward_type || merged.recipe_key || merged.channel_package || merged.draft_artifacts || merged.draft_type;
+    return hasRecipe ? merged : null;
+  }
+
+  function recipeArtifactsHtml(items) {
+    items = arrayish(items).slice(0, 8);
+    if (!items.length) return '';
+    return '<div class="mg-agent-chat-recipe-artifacts">' + items.map(function (item) {
+      if (typeof item === 'string') return '<article><strong>Draft artifact</strong><p>' + esc(shortText(item, 520)) + '</p></article>';
+      var title = item.title || item.label || item.type || item.channel || 'Draft artifact';
+      var body = item.body || item.copy || item.text || item.content || item.instructions || item.description || '';
+      return '<article><strong>' + esc(human(title)) + '</strong><p>' + esc(shortText(body || JSON.stringify(item), 520)) + '</p></article>';
+    }).join('') + '</div>';
+  }
+
+  function recipePanelHtml(recipe, compact) {
+    if (!recipe) return '';
+    var channels = arrayish(recipe.channel_package).map(function (channel) {
+      if (typeof channel === 'string') return channel;
+      return channel.label || channel.channel || channel.type || channel.name || '';
+    }).filter(Boolean);
+    var title = recipe.draft_label || recipe.title || recipe.package_title || 'Campaign Recipe';
+    var subtitle = recipe.draft_title || recipe.campaign_title || recipe.why_this_recipe || recipe.body || '';
+    var body = recipe.draft_body || recipe.copy || recipe.instructions || recipe.body || recipe.why_this_recipe || '';
+    return '<section class="mg-agent-chat-recipe ' + (compact ? 'is-compact' : '') + '"><div class="mg-agent-chat-recipe-head"><div><span>Recipe card</span><strong>' + esc(title) + '</strong><p>' + esc(shortText(subtitle, 240)) + '</p></div><div class="mg-agent-chat-recipe-badges"><b>' + esc(human(recipe.recommended_campaign_type || recipe.campaign_type || 'campaign')) + '</b><b>' + esc(human(recipe.recommended_reward_type || recipe.reward_type || 'reward')) + '</b><b>' + esc(recipe.recipe_key || 'custom') + '</b></div></div><div class="mg-agent-chat-recipe-grid"><article><span>Campaign</span><strong>' + esc(human(recipe.recommended_campaign_type || recipe.campaign_type || 'Not specified')) + '</strong></article><article><span>Reward</span><strong>' + esc(human(recipe.recommended_reward_type || recipe.reward_type || 'Not specified')) + '</strong></article><article><span>Channels</span><strong>' + esc(channels.length ? channels.map(human).join(', ') : 'Not specified') + '</strong></article><article><span>Recipe</span><strong>' + esc(recipe.recipe_key || 'Custom') + '</strong></article></div>' + (body ? '<div class="mg-agent-chat-recipe-copy"><span>Draft copy / instructions</span><p>' + esc(shortText(body, compact ? 700 : 1300)) + '</p></div>' : '') + recipeArtifactsHtml(recipe.draft_artifacts || recipe.artifacts) + '</section>';
+  }
+
+  function recipeBlockHtml(block) {
+    return '<div class="mg-agent-block mg-agent-recipe-block">' + recipePanelHtml(block, false) + '</div>';
+  }
+
   function blocksHtml(blocks) {
     blocks = Array.isArray(blocks) ? blocks : [];
     if (!blocks.length) return '';
@@ -233,6 +277,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (type === 'chart' || type === 'forecast') return chartBlockHtml(block);
       if (type === 'metric_grid') return metricGridHtml(block);
       if (type === 'social_campaign' || type === 'social_posts') return socialBlockHtml(block);
+      if (type === 'campaign_recipe' || type === 'campaign_package' || type === 'recipe_package' || recipeData(block)) return recipeBlockHtml(block);
       if (type === 'project' || type === 'product_opportunity') return projectBlockHtml(block);
       return '<div class="mg-agent-block"><div class="mg-agent-block-head"><strong>' + esc(block.title || human(type || 'Insight')) + '</strong><span>' + esc(block.body || '') + '</span></div></div>';
     }).join('') + '</div>';
@@ -248,9 +293,10 @@ document.addEventListener('DOMContentLoaded', function () {
         bridge = '<button class="mg-btn mg-btn-secondary" type="button" data-agent-chat-review data-message-id="' + esc(message.id) + '" data-card-index="' + esc(index) + '">Send to Review Queue</button>';
       }
     }
+    var recipe = recipeData(card);
     var save = '<button class="mg-btn mg-btn-soft" type="button" data-agent-card-status>Save draft</button>';
     var dismiss = '<button class="mg-btn mg-btn-soft" type="button" data-agent-card-status>Dismiss</button>';
-    return '<article class="mg-agent-chat-card"><span>' + esc(card.type || 'recommendation') + '</span><strong>' + esc(card.title || 'Agent note') + '</strong><p>' + esc(card.body || '') + '</p><div class="mg-agent-chat-card-actions">' + link + bridge + save + dismiss + '</div></article>';
+    return '<article class="mg-agent-chat-card ' + (recipe ? 'is-recipe-card' : '') + '"><span>' + esc(card.type || 'recommendation') + '</span><strong>' + esc(card.title || 'Agent note') + '</strong><p>' + esc(card.body || '') + '</p>' + recipePanelHtml(recipe, true) + '<div class="mg-agent-chat-card-actions">' + link + bridge + save + dismiss + '</div></article>';
   }
 
   function messageHtml(message) {
@@ -317,15 +363,7 @@ document.addEventListener('DOMContentLoaded', function () {
     } catch (error) {
       setStatus(cleanErrorMessage(error), 'error');
       if (!state.messages.length) {
-        state.messages = [{
-          id: 'load-error-' + Date.now(),
-          role: 'assistant',
-          body: cleanErrorMessage(error),
-          cards: [],
-          blocks: [],
-          created_at: nowIso(),
-          error: true
-        }];
+        state.messages = [{ id: 'load-error-' + Date.now(), role: 'assistant', body: cleanErrorMessage(error), cards: [], blocks: [], created_at: nowIso(), error: true }];
         render();
       }
     }
@@ -334,7 +372,6 @@ document.addEventListener('DOMContentLoaded', function () {
   async function submit(message) {
     message = String(message || '').trim();
     if (!message || inFlight) return;
-
     var scope = contextValue('[data-agent-chat-scope]', 'overview');
     var days = parseInt(contextValue('[data-agent-chat-days]', '90'), 10) || 90;
     var mode = contextValue('[data-agent-chat-mode]', 'advisor');
@@ -344,81 +381,23 @@ document.addEventListener('DOMContentLoaded', function () {
     var stamp = Date.now();
     var tempUserId = 'local-user-' + stamp;
     var tempAssistantId = 'local-agent-' + stamp;
-    var tempUser = {
-      id: tempUserId,
-      role: 'user',
-      body: message,
-      cards: [],
-      blocks: [],
-      scope: scope,
-      mode: mode,
-      output_type: output,
-      approval_mode: approval,
-      created_at: nowIso()
-    };
-    var tempAssistant = {
-      id: tempAssistantId,
-      role: 'assistant',
-      body: 'Reviewing merchant data with ' + skillKeys.map(function (key) { return key === 'merchant_analysis_charts' ? 'Analysis + Charts' : 'Social Campaigns'; }).join(' + ') + '…',
-      cards: [],
-      blocks: [],
-      scope: scope,
-      mode: mode,
-      output_type: output,
-      approval_mode: approval,
-      created_at: nowIso(),
-      pending: true
-    };
-
+    var tempUser = { id: tempUserId, role: 'user', body: message, cards: [], blocks: [], scope: scope, mode: mode, output_type: output, approval_mode: approval, created_at: nowIso() };
+    var tempAssistant = { id: tempAssistantId, role: 'assistant', body: 'Reviewing merchant data with ' + skillKeys.map(function (key) { return key === 'merchant_analysis_charts' ? 'Analysis + Charts' : 'Social Campaigns'; }).join(' + ') + '…', cards: [], blocks: [], scope: scope, mode: mode, output_type: output, approval_mode: approval, created_at: nowIso(), pending: true };
     state.messages = state.messages.concat([tempUser, tempAssistant]);
     render();
     resetComposer();
     busy(true);
     closeMenu();
-
     try {
-      var data = payload(await Microgifter.post('/api/ai/merchant-agent-chat.php', {
-        action: 'send_message',
-        message: message,
-        scope: scope,
-        days: days,
-        mode: mode,
-        output_type: output,
-        approval_mode: approval,
-        skill_keys: skillKeys,
-        thread_id: activeThreadId()
-      }));
-
+      var data = payload(await Microgifter.post('/api/ai/merchant-agent-chat.php', { action: 'send_message', message: message, scope: scope, days: days, mode: mode, output_type: output, approval_mode: approval, skill_keys: skillKeys, thread_id: activeThreadId() }));
       replacePendingMessages(tempUserId, tempAssistantId, data.user_message || tempUser, data.assistant_message);
-      if (data.state) {
-        applyState(data.state, { preserveMessages: true });
-      } else {
-        render();
-      }
+      if (data.state) applyState(data.state, { preserveMessages: true }); else render();
       setStatus('Agent reply created.', 'success');
     } catch (error) {
       var clean = cleanErrorMessage(error);
       state.messages = state.messages.map(function (item) {
         if (item.id !== tempAssistantId) return item;
-        return {
-          id: tempAssistantId,
-          role: 'assistant',
-          body: clean,
-          cards: [{
-            type: 'diagnostic',
-            title: 'Agent response did not complete',
-            body: 'The message was submitted, but the server did not return a usable agent reply. Check the note above, then retry after fixing the server/API issue.',
-            action_label: 'AI settings',
-            action_url: '/admin-ai.php'
-          }],
-          blocks: [],
-          scope: scope,
-          mode: mode,
-          output_type: output,
-          approval_mode: approval,
-          created_at: nowIso(),
-          error: true
-        };
+        return { id: tempAssistantId, role: 'assistant', body: clean, cards: [{ type: 'diagnostic', title: 'Agent response did not complete', body: 'The message was submitted, but the server did not return a usable agent reply. Check the note above, then retry after fixing the server/API issue.', action_label: 'AI settings', action_url: '/admin-ai.php' }], blocks: [], scope: scope, mode: mode, output_type: output, approval_mode: approval, created_at: nowIso(), error: true };
       });
       render();
       setStatus(clean, 'error');
@@ -481,19 +460,10 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   if (form && textarea) {
-    form.addEventListener('submit', function (event) {
-      event.preventDefault();
-      submit(textarea.value);
-    });
-    textarea.addEventListener('input', function () {
-      growTextarea();
-      updateSendState();
-    });
+    form.addEventListener('submit', function (event) { event.preventDefault(); submit(textarea.value); });
+    textarea.addEventListener('input', function () { growTextarea(); updateSendState(); });
     textarea.addEventListener('keydown', function (event) {
-      if (event.key === 'Enter' && !event.shiftKey) {
-        event.preventDefault();
-        form.requestSubmit();
-      }
+      if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); form.requestSubmit(); }
     });
     growTextarea();
     updateSendState();
@@ -510,38 +480,21 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   var saveProfile = root.querySelector('[data-agent-save-profile]');
-  if (saveProfile) {
-    saveProfile.addEventListener('click', function () {
-      saveAgentProfile(saveProfile);
-    });
-  }
-
+  if (saveProfile) saveProfile.addEventListener('click', function () { saveAgentProfile(saveProfile); });
   var threadSelect = root.querySelector('[data-agent-thread-select]');
-  if (threadSelect) {
-    threadSelect.addEventListener('change', function () {
-      postAction('load_thread', { thread_id: threadSelect.value }, 'Thread loaded.');
-    });
-  }
-
+  if (threadSelect) threadSelect.addEventListener('change', function () { postAction('load_thread', { thread_id: threadSelect.value }, 'Thread loaded.'); });
   var newThread = root.querySelector('[data-agent-new-thread]');
   if (newThread) newThread.addEventListener('click', function () { postAction('create_thread', { title: 'Current chat' }, 'New chat started.'); });
-
   var saveThread = root.querySelector('[data-agent-save-thread]');
   if (saveThread) saveThread.addEventListener('click', function () { postAction('save_thread', { thread_id: activeThreadId() }, 'Thread saved.'); });
-
   var archiveThread = root.querySelector('[data-agent-archive-thread]');
   if (archiveThread) archiveThread.addEventListener('click', function () { postAction('archive_thread', { thread_id: activeThreadId() }, 'Thread archived.'); });
-
   var clearThread = root.querySelector('[data-agent-clear-thread]');
   if (clearThread) clearThread.addEventListener('click', function () { postAction('clear_thread', { thread_id: activeThreadId() }, 'Chat history cleared.'); });
 
   if (menuToggle) {
-    menuToggle.addEventListener('click', function (event) {
-      event.preventDefault();
-      toggleMenu();
-    });
+    menuToggle.addEventListener('click', function (event) { event.preventDefault(); toggleMenu(); });
   }
-
   document.addEventListener('click', function (event) {
     if (menu && !menu.hidden && !event.target.closest('[data-agent-context-menu]') && !event.target.closest('[data-agent-context-toggle]')) closeMenu();
   });
@@ -554,7 +507,6 @@ document.addEventListener('DOMContentLoaded', function () {
       growTextarea();
       updateSendState();
     }
-
     var insert = event.target.closest && event.target.closest('[data-agent-context-insert]');
     if (insert && textarea) {
       var text = insert.getAttribute('data-agent-context-insert') || insert.textContent.trim();
@@ -564,13 +516,10 @@ document.addEventListener('DOMContentLoaded', function () {
       updateSendState();
       closeMenu();
     }
-
     var refresh = event.target.closest && event.target.closest('[data-agent-chat-refresh]');
     if (refresh) load();
-
     var review = event.target.closest && event.target.closest('[data-agent-chat-review]');
     if (review) sendCardToReview(review);
-
     var cardStatus = event.target.closest && event.target.closest('[data-agent-card-status]');
     if (cardStatus) {
       cardStatus.textContent = 'Saved';
