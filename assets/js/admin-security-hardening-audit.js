@@ -3,8 +3,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
   var root = document.querySelector('[data-admin-system-health]');
   if (!root || !window.Microgifter) return;
-  var MG = window.Microgifter;
+  var panel = root.querySelector('[data-security-hardening-audit]');
   var button = root.querySelector('[data-security-audit-refresh]');
+  if (!panel || !button || root.dataset.canSecurityAudit !== 'true') return;
+  var MG = window.Microgifter;
 
   function node(tag, className, text) {
     var item = document.createElement(tag);
@@ -31,7 +33,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function render(data) {
     data = data || {};
-    var panel = root.querySelector('[data-security-hardening-audit]');
     var summary = root.querySelector('[data-security-audit-summary]');
     var metrics = root.querySelector('[data-security-audit-metrics]');
     var categories = root.querySelector('[data-security-audit-categories]');
@@ -91,18 +92,14 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }
 
-    if (button) {
-      button.disabled = false;
-      button.textContent = 'Run audit';
-    }
+    button.disabled = false;
+    button.textContent = 'Run audit';
   }
 
   async function load(event) {
     if (event) event.preventDefault();
-    if (button) {
-      button.disabled = true;
-      button.textContent = 'Running…';
-    }
+    button.disabled = true;
+    button.textContent = 'Running…';
     var summary = root.querySelector('[data-security-audit-summary]');
     if (summary) {
       summary.classList.remove('is-healthy', 'is-warning', 'is-critical', 'is-info');
@@ -118,6 +115,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  if (button) button.addEventListener('click', load);
+  button.addEventListener('click', load);
   setTimeout(load, 700);
 });
