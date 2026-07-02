@@ -4,21 +4,73 @@
 
   <div class="mg-claims-commandbar">
     <nav class="mg-claims-tabs" aria-label="Claim operation sections">
-      <button class="is-active" type="button" data-claim-tab="claims">Overview</button>
-      <button type="button" data-claim-tab="claims">Pending Claims</button>
-      <button type="button" data-claim-tab="claims">Redeemed</button>
-      <button type="button" data-claim-tab="exceptions">Failed Claims</button>
-      <button type="button" data-claim-tab="claims">Location Activity</button>
+      <button class="is-active" type="button" data-claim-tab="overview">Overview</button>
+      <button type="button" data-claim-tab="pending">Pending Claims</button>
+      <button type="button" data-claim-tab="redeemed">Redeemed</button>
+      <button type="button" data-claim-tab="failed">Failed Claims</button>
+      <button type="button" data-claim-tab="locations">Location Activity</button>
       <button type="button" data-claim-tab="codes">Claim Codes</button>
-      <button type="button" data-claim-tab="exceptions">Disputes / Reviews</button>
+      <button type="button" data-claim-tab="disputes">Disputes / Reviews</button>
     </nav>
-    <a class="mg-btn mg-btn-primary" href="#claim-review-panel">Review Claims</a>
+    <a class="mg-btn mg-btn-primary" href="#claim-review-panel" data-claim-jump="pending">Review Claims</a>
   </div>
 
-  <section class="mg-claim-kpi-strip" data-claim-kpis></section>
+  <section class="mg-claims-priority" id="claim-history-panel">
+    <section class="mg-app-panel mg-claims-panel">
+      <div class="mg-app-panel-head mg-claims-panel-head">
+        <div>
+          <span class="mg-eyebrow">Redemption History</span>
+          <h2>Claim activity</h2>
+          <p>Search attempts by Microgift, PPPM, location, status, redemption ID, or staff action.</p>
+        </div>
+      </div>
+      <div class="mg-app-panel-body">
+        <div class="mg-claim-toolbar">
+          <input type="search" data-claim-search placeholder="Search attempt, Microgift, PPPM, or redemption">
+          <select data-claim-status>
+            <option value="all">All results</option>
+            <option value="approved">Approved</option>
+            <option value="failed">Failed</option>
+            <option value="invalid_claim_code">Invalid code</option>
+            <option value="rate_limited">Rate limited</option>
+          </select>
+          <select data-claim-filter-location><option value="all">All locations</option></select>
+        </div>
+        <div class="mg-claim-list" data-claim-list></div>
+      </div>
+    </section>
+  </section>
 
-  <div class="mg-claims-layout">
-    <section class="mg-app-panel mg-claims-panel" id="claim-review-panel">
+  <section data-claim-panel="overview">
+    <section class="mg-claim-kpi-strip" data-claim-kpis></section>
+
+    <div class="mg-claims-layout is-overview-layout">
+      <section class="mg-app-panel mg-claims-panel mg-claims-readiness-card">
+        <div class="mg-app-panel-head mg-claims-panel-head is-compact"><div><h2>Claim Readiness</h2><p>Operational checks before approving in-store redemption.</p></div></div>
+        <div class="mg-app-panel-body">
+          <div class="mg-claims-readiness-score"><span>Claim signal</span><strong>Live</strong></div>
+          <div class="mg-claims-readiness-list">
+            <p><b></b><span>Location claim codes are required for staff redemption.</span></p>
+            <p><b></b><span>Failed attempts should be reviewed for invalid-code or rate-limit patterns.</span></p>
+            <p><b></b><span>Approved claims should reconcile to PPPM and redemption history.</span></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="mg-app-panel mg-claims-panel mg-claims-actions-card">
+        <div class="mg-app-panel-head mg-claims-panel-head is-compact"><div><h2>Quick actions</h2><p>Redemption operations.</p></div></div>
+        <div class="mg-app-panel-body">
+          <a href="/merchant-locations.php">Manage locations</a>
+          <a href="/merchant-products.php">Product catalog</a>
+          <a href="#claim-codes-panel" data-claim-jump="codes">Claim codes</a>
+          <a href="#claim-exceptions-panel" data-claim-jump="disputes">Review exceptions</a>
+        </div>
+      </section>
+    </div>
+  </section>
+
+  <section data-claim-panel="pending" id="claim-review-panel" hidden>
+    <section class="mg-app-panel mg-claims-panel">
       <div class="mg-app-panel-head mg-claims-panel-head">
         <div>
           <span class="mg-eyebrow">Claim Operations</span>
@@ -59,55 +111,26 @@
         </div>
       </div>
     </section>
+  </section>
 
-    <aside class="mg-claims-side">
-      <section class="mg-app-panel mg-claims-panel mg-claims-readiness-card">
-        <div class="mg-app-panel-head mg-claims-panel-head is-compact"><div><h2>Claim Readiness</h2><p>Operational checks before approving in-store redemption.</p></div></div>
-        <div class="mg-app-panel-body">
-          <div class="mg-claims-readiness-score"><span>Claim signal</span><strong>Live</strong></div>
-          <div class="mg-claims-readiness-list">
-            <p><b></b><span>Location claim codes are required for staff redemption.</span></p>
-            <p><b></b><span>Failed attempts should be reviewed for invalid-code or rate-limit patterns.</span></p>
-            <p><b></b><span>Approved claims should reconcile to PPPM and redemption history.</span></p>
-          </div>
-        </div>
-      </section>
-
-      <section class="mg-app-panel mg-claims-panel mg-claims-actions-card">
-        <div class="mg-app-panel-head mg-claims-panel-head is-compact"><div><h2>Quick actions</h2><p>Redemption operations.</p></div></div>
-        <div class="mg-app-panel-body">
-          <a href="/merchant-locations.php">Manage locations</a>
-          <a href="/merchant-products.php">Product catalog</a>
-          <a href="#claim-codes-panel">Claim codes</a>
-          <a href="#claim-exceptions-panel">Review exceptions</a>
-        </div>
-      </section>
-    </aside>
-  </div>
-
-  <section data-claim-panel="claims" id="claim-history-panel">
+  <section data-claim-panel="redeemed" hidden>
     <section class="mg-app-panel mg-claims-panel">
-      <div class="mg-app-panel-head mg-claims-panel-head">
-        <div>
-          <span class="mg-eyebrow">Redemption History</span>
-          <h2>Claim activity</h2>
-          <p>Search attempts by Microgift, PPPM, location, status, redemption ID, or staff action.</p>
-        </div>
-      </div>
-      <div class="mg-app-panel-body">
-        <div class="mg-claim-toolbar">
-          <input type="search" data-claim-search placeholder="Search attempt, Microgift, PPPM, or redemption">
-          <select data-claim-status>
-            <option value="all">All results</option>
-            <option value="approved">Approved</option>
-            <option value="failed">Failed</option>
-            <option value="invalid_claim_code">Invalid code</option>
-            <option value="rate_limited">Rate limited</option>
-          </select>
-          <select data-claim-filter-location><option value="all">All locations</option></select>
-        </div>
-        <div class="mg-claim-list" data-claim-list></div>
-      </div>
+      <div class="mg-app-panel-head mg-claims-panel-head"><div><span class="mg-eyebrow">Redeemed</span><h2>Redeemed claim activity</h2><p>Use the Claim activity section above with the Approved filter for the full redeemed list.</p></div></div>
+      <div class="mg-app-panel-body"><div class="mg-empty-state">Redeemed claims are prioritized in the Claim activity panel above.</div></div>
+    </section>
+  </section>
+
+  <section data-claim-panel="failed" hidden>
+    <section class="mg-app-panel mg-claims-panel">
+      <div class="mg-app-panel-head mg-claims-panel-head"><div><span class="mg-eyebrow">Failed Claims</span><h2>Failed and invalid attempts</h2><p>Use the Claim activity section above with Failed, Invalid code, or Rate limited filters for the full exception list.</p></div></div>
+      <div class="mg-app-panel-body"><div class="mg-empty-state">Failed claim attempts are filtered from Claim activity above and reviewed in Disputes / Reviews.</div></div>
+    </section>
+  </section>
+
+  <section data-claim-panel="locations" hidden>
+    <section class="mg-app-panel mg-claims-panel">
+      <div class="mg-app-panel-head mg-claims-panel-head"><div><span class="mg-eyebrow">Location Activity</span><h2>Location-based claim activity</h2><p>Filter Claim activity by location to review authorized in-store redemptions.</p></div></div>
+      <div class="mg-app-panel-body"><div class="mg-empty-state">Choose a location in the Claim activity filter above to review location activity.</div></div>
     </section>
   </section>
 
@@ -136,7 +159,7 @@
     </div>
   </section>
 
-  <section data-claim-panel="exceptions" id="claim-exceptions-panel" hidden>
+  <section data-claim-panel="disputes" id="claim-exceptions-panel" hidden>
     <section class="mg-app-panel mg-claims-panel">
       <div class="mg-app-panel-head mg-claims-panel-head"><div><span class="mg-eyebrow">Exceptions</span><h2>Open exceptions</h2><p>Rate limits, merchant mismatches, invalid locations, and repeated invalid-code attempts.</p></div></div>
       <div class="mg-app-panel-body"><div data-claim-exception-list></div></div>
