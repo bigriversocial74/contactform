@@ -39,6 +39,26 @@ document.addEventListener('DOMContentLoaded', function () {
     return '<img class="' + escapeHtml(className || '') + '" src="' + escapeHtml(asset.url) + '" alt="' + escapeHtml(alt || '') + '">';
   }
 
+  function mediaMarkup(asset, className) {
+    if (!asset || !asset.url) return '';
+    var type = String(asset.asset_type || '').toLowerCase();
+    if (type === 'audio') {
+      return '<div class="' + escapeHtml(className || 'mg-greeting-media') + '"><strong>Audio message</strong><audio controls preload="metadata" src="' + escapeHtml(asset.url) + '"></audio></div>';
+    }
+    if (type === 'video') {
+      return '<div class="' + escapeHtml(className || 'mg-greeting-media') + '"><strong>Video message</strong><video controls playsinline preload="metadata" src="' + escapeHtml(asset.url) + '"></video></div>';
+    }
+    return '';
+  }
+
+  function ensureGreetingCardStyles() {
+    if (document.querySelector('[data-public-greeting-card-style]')) return;
+    var style = document.createElement('style');
+    style.dataset.publicGreetingCardStyle = '1';
+    style.textContent = '.mg-greeting-product.is-multimedia-card .mg-greeting-cover-overlay span{display:inline-flex;margin-bottom:2px}.mg-greeting-media{margin:18px 0 4px;padding:12px;border:1px solid #dbe4f0;border-radius:18px;background:#f8fafc}.mg-greeting-media strong{display:block;margin:0 0 8px;color:#475569;font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.mg-greeting-media audio,.mg-greeting-media video{display:block;width:100%;max-height:260px;border-radius:12px}.mg-greeting-product.is-multimedia-card .mg-greeting-message{margin-bottom:0}';
+    document.head.appendChild(style);
+  }
+
   function addToCartButton(versionId, label) {
     if (!versionId) return '';
     return '<button class="is-primary" type="button" data-cart-add data-product-version-id="' + escapeHtml(versionId) + '" data-cart-quantity="1">' + escapeHtml(label || 'Add to cart') + '</button>';
@@ -77,28 +97,35 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function renderGreetingCard(product) {
+    ensureGreetingCardStyles();
     var metadata = product.metadata || {};
     var cover = assetByRole(product, 'cover');
     var inside = assetByRole(product, 'inside_cover');
+    var audio = assetByRole(product, 'audio');
+    var video = assetByRole(product, 'video');
+    var isMultimedia = product.builder_type === 'multimedia_greeting_card';
     var headline = metadata.headline || product.headline || product.title;
     var message = metadata.message || product.description || '';
     var recipient = metadata.recipient_note || '';
     var merchant = metadata.merchant_name || product.merchant_name || 'Local merchant';
     var insideId = 'greeting-card-inside-' + String(product.version_id || 'product').replace(/[^a-z0-9_-]/gi, '');
+    var media = isMultimedia ? (mediaMarkup(video, 'mg-greeting-media') || mediaMarkup(audio, 'mg-greeting-media')) : '';
+    var cardLabel = isMultimedia ? 'Multimedia greeting card' : 'Digital greeting card';
+    var openLabel = isMultimedia ? 'Open multimedia gift' : 'Open gift';
 
-    productRoot.innerHTML = '<article class="mg-greeting-product" data-greeting-card>' +
-      '<header class="mg-greeting-header"><div><div class="mg-product-eyebrow">Digital greeting card · ' + escapeHtml(merchant) + '</div><h1>' + escapeHtml(product.title) + '</h1></div>' +
+    productRoot.innerHTML = '<article class="mg-greeting-product' + (isMultimedia ? ' is-multimedia-card' : '') + '" data-greeting-card>' +
+      '<header class="mg-greeting-header"><div><div class="mg-product-eyebrow">' + escapeHtml(cardLabel) + ' · ' + escapeHtml(merchant) + '</div><h1>' + escapeHtml(product.title) + '</h1></div>' +
       '<div class="mg-greeting-value">' + escapeHtml(money(product.unit_value_cents, product.currency)) + '</div></header>' +
       '<div class="mg-greeting-stage">' +
       '<section class="mg-greeting-cover" data-greeting-card-cover>' +
       (cover ? imageMarkup(cover, '', 'mg-greeting-cover-image') : '<div class="mg-greeting-cover-fallback" aria-hidden="true">🎁</div>') +
-      '<div class="mg-greeting-cover-overlay"><span>For someone special</span><h2>' + escapeHtml(headline) + '</h2>' +
+      '<div class="mg-greeting-cover-overlay"><span>' + escapeHtml(isMultimedia ? 'Includes media' : 'For someone special') + '</span><h2>' + escapeHtml(headline) + '</h2>' +
       (recipient ? '<p>' + escapeHtml(recipient) + '</p>' : '') +
-      '<button type="button" class="mg-greeting-open" data-greeting-card-open aria-expanded="false" aria-controls="' + escapeHtml(insideId) + '">Open gift</button></div></section>' +
+      '<button type="button" class="mg-greeting-open" data-greeting-card-open aria-expanded="false" aria-controls="' + escapeHtml(insideId) + '">' + escapeHtml(openLabel) + '</button></div></section>' +
       '<section class="mg-greeting-inside" id="' + escapeHtml(insideId) + '" data-greeting-card-inside aria-hidden="true" tabindex="-1">' +
       '<div class="mg-greeting-inside-art">' + (inside ? imageMarkup(inside, '', 'mg-greeting-inside-image') : '<div class="mg-greeting-inside-fallback" aria-hidden="true">✦</div>') + '</div>' +
       '<div class="mg-greeting-inside-copy"><div class="mg-product-eyebrow">A gift from ' + escapeHtml(merchant) + '</div><h2>' + escapeHtml(headline) + '</h2>' +
-      '<p class="mg-greeting-message">' + escapeHtml(message) + '</p>' +
+      '<p class="mg-greeting-message">' + escapeHtml(message) + '</p>' + media +
       '<div class="mg-product-price">' + escapeHtml(money(product.unit_value_cents, product.currency)) + '</div>' +
       '<div class="mg-product-actions">' + addToCartButton(product.version_id, 'Purchase this gift') + storefrontLink(product) + '<button type="button" data-greeting-card-close>Close card</button></div></div></section>' +
       '</div></article>' + detailCards(product);
@@ -151,7 +178,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var data = await getJson('/api/public/product.php?slug=' + encodeURIComponent(slug));
     var product = data.product;
     var builderType = product.builder_type || 'simple_product';
-    if (builderType === 'greeting_card') renderGreetingCard(product);
+    if (builderType === 'greeting_card' || builderType === 'multimedia_greeting_card') renderGreetingCard(product);
     else renderSimpleProduct(product);
     document.title = product.title + ' | Microgifter';
   }
