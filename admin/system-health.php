@@ -11,7 +11,7 @@ $page_section = 'account';
 $header_mode = 'account';
 $page_body_class = 'mg-admin-system-health-page';
 $page_styles = ['/assets/css/admin-shell.css','/assets/css/admin-system-health.css','/assets/css/admin-pwa-health.css'];
-$page_scripts = ['/assets/js/admin-system-health.js','/assets/js/admin-pwa-health.js','/assets/js/admin-health-warning-filter.js','/assets/js/admin-security-hardening-audit.js'];
+$page_scripts = ['/assets/js/admin-system-health.js','/assets/js/admin-pwa-health.js','/assets/js/admin-health-warning-filter.js','/assets/js/admin-security-hardening-audit.js','/assets/js/admin-system-health-tabs.js'];
 $adminActive = 'system-health';
 
 require dirname(__DIR__) . '/includes/header.php';
@@ -39,109 +39,132 @@ require dirname(__DIR__) . '/includes/header.php';
         <div><strong>Checking system health</strong><p>Preparing the current operational snapshot.</p></div>
       </section>
 
-      <div class="mg-system-health-grid" data-system-health-services>
-        <?php foreach ([
-          ['storage','Persistent media','Storage location, write access, capacity, and file integrity.'],
-          ['notifications','Notification delivery','Queued, delivered, failed, and retrying delivery jobs.'],
-          ['pwa_notifications','PWA notifications','Browser service worker, permission support, subscriptions, provider, and test delivery status.'],
-          ['migrations','Database migrations','Canonical migration status and the latest applied schema change.'],
-          ['runtime','Application runtime','Database connectivity, environment, and release readiness.'],
-        ] as [$key,$label,$description]): ?>
-          <article class="mg-system-health-card is-loading" data-health-service="<?= mg_e($key) ?>">
-            <header><span class="mg-system-health-dot" aria-hidden="true"></span><strong><?= mg_e($label) ?></strong><span data-health-status>Checking</span></header>
-            <p><?= mg_e($description) ?></p>
-            <dl data-health-details><div><dt>Status</dt><dd>Loading…</dd></div></dl>
-          </article>
-        <?php endforeach; ?>
-      </div>
+      <nav class="mg-system-health-tabs" aria-label="System health tests" data-system-health-tabs>
+        <button type="button" class="is-active" data-health-tab="overview" aria-selected="true">Overview</button>
+        <button type="button" data-health-tab="pwa" aria-selected="false">PWA push</button>
+        <button type="button" data-health-tab="admin-ops" aria-selected="false">Admin ops</button>
+        <button type="button" data-health-tab="sql" aria-selected="false">SQL diagnostics</button>
+        <button type="button" data-health-tab="security" aria-selected="false">Security audit</button>
+        <button type="button" data-health-tab="warnings" aria-selected="false">Warnings & tools</button>
+      </nav>
 
-      <section class="mg-system-health-section mg-pwa-health-section" data-pwa-notification-health>
-        <header>
-          <div><h2>PWA notification health</h2><p>Browser push is a permission-gated delivery channel for existing Microgifter notification events.</p></div>
-          <button class="mg-btn mg-btn-soft" type="button" data-health-action="test_pwa_notification" data-health-action-enabled="false" disabled>Send test notification to myself</button>
-        </header>
-        <div class="mg-system-health-pwa-grid" data-pwa-health-grid>
-          <?php foreach (['Service worker','Permission support','Push endpoint','Active subscriptions','Failed delivery','Last test'] as $label): ?>
-            <article><span><?= mg_e($label) ?></span><strong>—</strong><small>Waiting for health data</small></article>
-          <?php endforeach; ?>
-        </div>
-      </section>
+      <div class="mg-system-health-tab-panels" data-system-health-tab-panels>
+        <section class="mg-health-tab-panel is-active" data-health-tab-panel="overview">
+          <div class="mg-system-health-grid" data-system-health-services>
+            <?php foreach ([
+              ['storage','Persistent media','Storage location, write access, capacity, and file integrity.'],
+              ['notifications','Notification delivery','Queued, delivered, failed, and retrying delivery jobs.'],
+              ['pwa_notifications','PWA notifications','Browser service worker, permission support, subscriptions, provider, and test delivery status.'],
+              ['migrations','Database migrations','Canonical migration status and the latest applied schema change.'],
+              ['runtime','Application runtime','Database connectivity, environment, and release readiness.'],
+            ] as [$key,$label,$description]): ?>
+              <article class="mg-system-health-card is-loading" data-health-service="<?= mg_e($key) ?>">
+                <header><span class="mg-system-health-dot" aria-hidden="true"></span><strong><?= mg_e($label) ?></strong><span data-health-status>Checking</span></header>
+                <p><?= mg_e($description) ?></p>
+                <dl data-health-details><div><dt>Status</dt><dd>Loading…</dd></div></dl>
+              </article>
+            <?php endforeach; ?>
+          </div>
 
-      <section class="mg-system-health-section">
-        <header><div><h2>Operational totals</h2><p>Current storage and notification workload.</p></div></header>
-        <div class="mg-system-health-metrics" data-system-health-metrics>
-          <?php foreach (['Media files','Storage used','Unattached uploads','Missing files','Queued notifications','Failed notifications'] as $label): ?>
-            <article><span><?= mg_e($label) ?></span><strong>—</strong><small>Waiting for health data</small></article>
-          <?php endforeach; ?>
-        </div>
-      </section>
+          <section class="mg-system-health-section">
+            <header><div><h2>Operational totals</h2><p>Current storage and notification workload.</p></div></header>
+            <div class="mg-system-health-metrics" data-system-health-metrics>
+              <?php foreach (['Media files','Storage used','Unattached uploads','Missing files','Queued notifications','Failed notifications'] as $label): ?>
+                <article><span><?= mg_e($label) ?></span><strong>—</strong><small>Waiting for health data</small></article>
+              <?php endforeach; ?>
+            </div>
+          </section>
+        </section>
 
-      <section class="mg-system-health-section mg-system-health-readiness" data-system-health-readiness>
-        <header><div><h2>Admin ops deployment readiness</h2><p>Validates required tables, columns, enum values, permissions, APIs, and command center assets.</p></div><span data-readiness-status>Checking</span></header>
-        <div class="mg-system-health-readiness-summary" data-readiness-summary>Loading admin ops readiness…</div>
-        <div class="mg-system-health-readiness-grid" data-readiness-grid></div>
-      </section>
+        <section class="mg-health-tab-panel" data-health-tab-panel="pwa" hidden>
+          <section class="mg-system-health-section mg-pwa-health-section" data-pwa-notification-health>
+            <header>
+              <div><h2>PWA notification health</h2><p>Browser push is a permission-gated delivery channel for existing Microgifter notification events.</p></div>
+              <button class="mg-btn mg-btn-soft" type="button" data-health-action="test_pwa_notification" data-health-action-enabled="false" disabled>Send test notification to myself</button>
+            </header>
+            <div class="mg-system-health-pwa-grid" data-pwa-health-grid>
+              <?php foreach (['Service worker','Permission support','Push endpoint','Active subscriptions','Failed delivery','Last test'] as $label): ?>
+                <article><span><?= mg_e($label) ?></span><strong>—</strong><small>Waiting for health data</small></article>
+              <?php endforeach; ?>
+            </div>
+          </section>
+        </section>
 
-      <section class="mg-system-health-section mg-system-sql-diagnostics" data-system-sql-diagnostics>
-        <header>
-          <div>
-            <h2>System SQL diagnostics</h2>
-            <p>Scans core modules for missing tables, columns, enum drift, recent SQL failures, and safe endpoint schema readiness.</p>
-          </div>
-          <div class="mg-system-sql-actions">
-            <button class="mg-btn mg-btn-ghost" type="button" data-sql-diagnostics-refresh disabled>Run diagnostics</button>
-            <button class="mg-btn mg-btn-soft" type="button" data-sql-diagnostics-download disabled>Download repair SQL</button>
-          </div>
-        </header>
-        <div class="mg-system-sql-summary is-loading" data-sql-diagnostics-summary>Loading system SQL diagnostics…</div>
-        <div class="mg-system-sql-metrics" data-sql-diagnostics-metrics>
-          <?php foreach (['Modules','Critical modules','Findings','Recent SQL errors','Repairable'] as $label): ?>
-            <article><span><?= mg_e($label) ?></span><strong>—</strong><small>Waiting for diagnostics</small></article>
-          <?php endforeach; ?>
-        </div>
-        <div class="mg-system-sql-panels">
-          <div>
-            <h3>Module readiness</h3>
-            <div class="mg-system-sql-list" data-sql-diagnostics-modules><p class="mg-muted">Loading module checks…</p></div>
-          </div>
-          <div>
-            <h3>Top findings</h3>
-            <div class="mg-system-sql-list" data-sql-diagnostics-findings><p class="mg-muted">Loading findings…</p></div>
-          </div>
-        </div>
-      </section>
+        <section class="mg-health-tab-panel" data-health-tab-panel="admin-ops" hidden>
+          <section class="mg-system-health-section mg-system-health-readiness" data-system-health-readiness>
+            <header><div><h2>Admin ops deployment readiness</h2><p>Validates required tables, columns, enum values, permissions, APIs, and command center assets.</p></div><span data-readiness-status>Checking</span></header>
+            <div class="mg-system-health-readiness-summary" data-readiness-summary>Loading admin ops readiness…</div>
+            <div class="mg-system-health-readiness-grid" data-readiness-grid></div>
+          </section>
+        </section>
 
-      <section class="mg-system-health-section mg-system-sql-diagnostics" data-security-hardening-audit>
-        <header>
-          <div>
-            <h2>Security hardening audit</h2>
-            <p>Checks runtime settings, session cookies, API security headers, audit tables, database privileges, config exposure, and recent security events.</p>
-          </div>
-          <div class="mg-system-sql-actions">
-            <button class="mg-btn mg-btn-ghost" type="button" data-security-audit-refresh disabled>Run audit</button>
-          </div>
-        </header>
-        <div class="mg-system-sql-summary is-loading" data-security-audit-summary>Loading security hardening audit…</div>
-        <div class="mg-system-sql-metrics" data-security-audit-metrics>
-          <?php foreach (['Checks','Healthy','Warnings','Critical','Categories'] as $label): ?>
-            <article><span><?= mg_e($label) ?></span><strong>—</strong><small>Waiting for audit</small></article>
-          <?php endforeach; ?>
-        </div>
-        <div class="mg-system-sql-panels">
-          <div>
-            <h3>Security categories</h3>
-            <div class="mg-system-sql-list" data-security-audit-categories><p class="mg-muted">Loading category checks…</p></div>
-          </div>
-          <div>
-            <h3>Top hardening items</h3>
-            <div class="mg-system-sql-list" data-security-audit-checks><p class="mg-muted">Loading hardening checks…</p></div>
-          </div>
-        </div>
-      </section>
+        <section class="mg-health-tab-panel" data-health-tab-panel="sql" hidden>
+          <section class="mg-system-health-section mg-system-sql-diagnostics" data-system-sql-diagnostics>
+            <header>
+              <div>
+                <h2>System SQL diagnostics</h2>
+                <p>Scans core modules for missing tables, columns, enum drift, recent SQL failures, and safe endpoint schema readiness.</p>
+              </div>
+              <div class="mg-system-sql-actions">
+                <button class="mg-btn mg-btn-ghost" type="button" data-sql-diagnostics-refresh disabled>Run diagnostics</button>
+                <button class="mg-btn mg-btn-soft" type="button" data-sql-diagnostics-download disabled>Download repair SQL</button>
+              </div>
+            </header>
+            <div class="mg-system-sql-summary is-loading" data-sql-diagnostics-summary>Loading system SQL diagnostics…</div>
+            <div class="mg-system-sql-metrics" data-sql-diagnostics-metrics>
+              <?php foreach (['Modules','Critical modules','Findings','Recent SQL errors','Repairable'] as $label): ?>
+                <article><span><?= mg_e($label) ?></span><strong>—</strong><small>Waiting for diagnostics</small></article>
+              <?php endforeach; ?>
+            </div>
+            <div class="mg-system-sql-panels">
+              <div>
+                <h3>Module readiness</h3>
+                <div class="mg-system-sql-list" data-sql-diagnostics-modules><p class="mg-muted">Loading module checks…</p></div>
+              </div>
+              <div>
+                <h3>Top findings</h3>
+                <div class="mg-system-sql-list" data-sql-diagnostics-findings><p class="mg-muted">Loading findings…</p></div>
+              </div>
+            </div>
+          </section>
+        </section>
 
-      <div class="mg-system-health-columns">
-        <section class="mg-system-health-section"><header><div><h2>Recent warnings</h2><p>Operational and security events that may require attention.</p></div></header><div class="mg-system-health-list" data-system-health-warnings><p class="mg-muted">Loading recent warnings…</p></div></section>
-        <section class="mg-system-health-section"><header><div><h2>Recovery tools</h2><p>Protected actions for safe operational recovery.</p></div></header><div class="mg-system-health-list" data-system-health-recovery><p class="mg-muted">Loading recovery tools…</p></div></section>
+        <section class="mg-health-tab-panel" data-health-tab-panel="security" hidden>
+          <section class="mg-system-health-section mg-system-sql-diagnostics" data-security-hardening-audit>
+            <header>
+              <div>
+                <h2>Security hardening audit</h2>
+                <p>Checks runtime settings, session cookies, API security headers, audit tables, database privileges, config exposure, and recent security events.</p>
+              </div>
+              <div class="mg-system-sql-actions">
+                <button class="mg-btn mg-btn-ghost" type="button" data-security-audit-refresh disabled>Run audit</button>
+              </div>
+            </header>
+            <div class="mg-system-sql-summary is-loading" data-security-audit-summary>Loading security hardening audit…</div>
+            <div class="mg-system-sql-metrics" data-security-audit-metrics>
+              <?php foreach (['Checks','Healthy','Warnings','Critical','Categories'] as $label): ?>
+                <article><span><?= mg_e($label) ?></span><strong>—</strong><small>Waiting for audit</small></article>
+              <?php endforeach; ?>
+            </div>
+            <div class="mg-system-sql-panels">
+              <div>
+                <h3>Security categories</h3>
+                <div class="mg-system-sql-list" data-security-audit-categories><p class="mg-muted">Loading category checks…</p></div>
+              </div>
+              <div>
+                <h3>Top hardening items</h3>
+                <div class="mg-system-sql-list" data-security-audit-checks><p class="mg-muted">Loading hardening checks…</p></div>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section class="mg-health-tab-panel" data-health-tab-panel="warnings" hidden>
+          <div class="mg-system-health-columns">
+            <section class="mg-system-health-section"><header><div><h2>Recent warnings</h2><p>Operational and security events that may require attention.</p></div></header><div class="mg-system-health-list" data-system-health-warnings><p class="mg-muted">Loading recent warnings…</p></div></section>
+            <section class="mg-system-health-section"><header><div><h2>Recovery tools</h2><p>Protected actions for safe operational recovery.</p></div></header><div class="mg-system-health-list" data-system-health-recovery><p class="mg-muted">Loading recovery tools…</p></div></section>
+          </div>
+        </section>
       </div>
     </section>
   </div>
