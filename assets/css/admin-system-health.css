@@ -11,6 +11,14 @@
 .mg-system-health-banner{display:flex;align-items:center;gap:14px;margin-bottom:18px;padding:16px 18px;border:1px solid #dbe3ef;border-radius:16px;background:#fff;box-shadow:0 10px 28px rgba(15,23,42,.05)}
 .mg-system-health-banner strong{display:block;color:#0f172a;font-size:.9rem}
 .mg-system-health-banner p{margin:.25rem 0 0;color:#64748b;font-size:.76rem}
+.mg-system-health-tabs{position:sticky;top:12px;z-index:4;display:flex;gap:8px;overflow:auto;margin:0 0 18px;padding:8px;border:1px solid #dbe3ef;border-radius:18px;background:rgba(255,255,255,.92);box-shadow:0 12px 32px rgba(15,23,42,.08);backdrop-filter:blur(14px)}
+.mg-system-health-tabs button{appearance:none;border:1px solid transparent;border-radius:13px;background:transparent;color:#64748b;cursor:pointer;flex:0 0 auto;font-size:.72rem;font-weight:900;letter-spacing:.01em;padding:.72rem .9rem;transition:background .18s ease,border-color .18s ease,color .18s ease,box-shadow .18s ease}
+.mg-system-health-tabs button:hover{background:#f8fafc;border-color:#e2e8f0;color:#0f172a}
+.mg-system-health-tabs button.is-active{background:#0f172a;border-color:#0f172a;color:#fff;box-shadow:0 10px 24px rgba(15,23,42,.18)}
+.mg-system-health-tab-panels{min-height:420px}
+.mg-health-tab-panel[hidden]{display:none!important}
+.mg-health-tab-panel{animation:mgHealthTabFade .16s ease-out}
+@keyframes mgHealthTabFade{from{opacity:.55;transform:translateY(4px)}to{opacity:1;transform:none}}
 .mg-system-health-indicator,.mg-system-health-dot{display:block;flex:0 0 auto;border-radius:999px;background:#94a3b8}
 .mg-system-health-indicator{width:14px;height:14px;box-shadow:0 0 0 6px rgba(148,163,184,.14)}
 .mg-system-health-dot{width:9px;height:9px}
@@ -97,5 +105,5 @@
 .mg-system-health-access h2{margin:0 0 .5rem;color:#0f172a}
 .mg-system-health-access p{margin:0 0 1rem;color:#64748b}
 @media(max-width:1040px){.mg-system-health-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.mg-system-health-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.mg-system-health-readiness-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.mg-system-sql-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.mg-system-sql-panels{grid-template-columns:1fr}}
-@media(max-width:720px){.mg-system-health-shell{width:min(100% - 20px,1220px);padding-top:22px}.mg-system-health-hero{align-items:flex-start;flex-direction:column}.mg-system-health-hero-actions,.mg-system-sql-actions{justify-content:flex-start}.mg-system-health-grid,.mg-system-health-columns,.mg-system-health-readiness-grid{grid-template-columns:1fr}.mg-system-health-metrics,.mg-system-sql-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.mg-system-health-warning,.mg-system-sql-row{flex-direction:column}.mg-system-sql-list{max-height:none}}
+@media(max-width:720px){.mg-system-health-shell{width:min(100% - 20px,1220px);padding-top:22px}.mg-system-health-hero{align-items:flex-start;flex-direction:column}.mg-system-health-hero-actions,.mg-system-sql-actions{justify-content:flex-start}.mg-system-health-tabs{top:8px;margin-inline:-2px}.mg-system-health-tabs button{padding:.65rem .75rem}.mg-system-health-grid,.mg-system-health-columns,.mg-system-health-readiness-grid{grid-template-columns:1fr}.mg-system-health-metrics,.mg-system-sql-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.mg-system-health-warning,.mg-system-sql-row{flex-direction:column}.mg-system-sql-list{max-height:none}}
 @media(max-width:460px){.mg-system-health-metrics,.mg-system-sql-metrics{grid-template-columns:1fr}.mg-system-health-card>p{min-height:0}}
