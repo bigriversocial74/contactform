@@ -7,36 +7,38 @@ declare(strict_types=1);
 require_once __DIR__ . '/app.php';
 require_once __DIR__ . '/admin-permission-matrix.php';
 
-function mg_screen_recordings_user_can_view(array $user): bool
+function mg_screen_recordings_user_is_super_admin(array $user): bool
 {
     $roles = is_array($user['roles'] ?? null) ? $user['roles'] : [];
-    if (in_array('super_admin', $roles, true)) return true;
+    return in_array('super_admin', $roles, true);
+}
 
-    if (function_exists('mg_api_user_has_permission')) {
-        return mg_api_user_has_permission($user, 'admin.screen_recordings.view')
-            || mg_api_user_has_permission($user, 'admin.screen_recordings.manage')
-            || mg_api_user_has_permission($user, 'admin.health.view')
-            || mg_api_user_has_permission($user, 'admin.access');
+function mg_screen_recordings_user_has_permission(array $user, string $permission): bool
+{
+    if (mg_screen_recordings_user_is_super_admin($user)) return true;
+
+    if (function_exists('mg_api_user_has_permission') && mg_api_user_has_permission($user, $permission)) {
+        return true;
     }
 
-    return mg_admin_permission_user_has($user, 'admin.screen_recordings.view')
-        || mg_admin_permission_user_has($user, 'admin.screen_recordings.manage')
-        || mg_admin_permission_user_has($user, 'admin.health.view');
+    return mg_admin_permission_user_has($user, $permission);
+}
+
+function mg_screen_recordings_user_can_view(array $user): bool
+{
+    return mg_screen_recordings_user_has_permission($user, 'admin.screen_recordings.view')
+        || mg_screen_recordings_user_has_permission($user, 'admin.screen_recordings.manage');
 }
 
 function mg_screen_recordings_user_can_manage(array $user): bool
 {
-    $roles = is_array($user['roles'] ?? null) ? $user['roles'] : [];
-    if (in_array('super_admin', $roles, true)) return true;
+    return mg_screen_recordings_user_has_permission($user, 'admin.screen_recordings.manage');
+}
 
-    if (function_exists('mg_api_user_has_permission')) {
-        return mg_api_user_has_permission($user, 'admin.screen_recordings.manage')
-            || mg_api_user_has_permission($user, 'admin.health.view')
-            || mg_api_user_has_permission($user, 'admin.access');
-    }
-
-    return mg_admin_permission_user_has($user, 'admin.screen_recordings.manage')
-        || mg_admin_permission_user_has($user, 'admin.health.view');
+function mg_screen_recordings_user_can_manage_all(array $user): bool
+{
+    return mg_screen_recordings_user_is_super_admin($user)
+        || mg_screen_recordings_user_has_permission($user, 'admin.screen_recordings.manage_all');
 }
 
 function mg_screen_recordings_require_api(bool $manage = false): array
@@ -83,6 +85,16 @@ function mg_screen_recordings_require_schema(PDO $pdo): void
 function mg_screen_recordings_base_dir(): string
 {
     return dirname(__DIR__) . '/uploads/admin-recordings';
+}
+
+function mg_screen_recordings_max_file_bytes(): int
+{
+    return 700 * 1024 * 1024;
+}
+
+function mg_screen_recordings_max_chunk_bytes(): int
+{
+    return 40 * 1024 * 1024;
 }
 
 function mg_screen_recordings_prepare_storage(): void
@@ -153,6 +165,11 @@ function mg_screen_recordings_allowed_mime(string $mime): bool
     return in_array($mime, ['video/webm', 'video/mp4', 'video/quicktime', 'video/x-matroska', 'application/octet-stream', ''], true);
 }
 
+function mg_screen_recordings_allowed_extension(string $extension): bool
+{
+    return in_array(strtolower($extension), ['webm', 'mp4', 'mov', 'mkv'], true);
+}
+
 function mg_screen_recordings_manifest_default(): array
 {
     return [
@@ -171,6 +188,34 @@ function mg_screen_recordings_decode_manifest(?string $json): array
     $decoded = json_decode($json, true);
     if (!is_array($decoded)) return mg_screen_recordings_manifest_default();
     return array_replace_recursive(mg_screen_recordings_manifest_default(), $decoded);
+}
+
+function mg_screen_recordings_normalize_hex_color(string $value, string $fallback): string
+{
+    $value = trim($value);
+    if (preg_match('/^#[0-9a-f]{6}$/i', $value) === 1) return strtolower($value);
+    return $fallback;
+}
+
+function mg_screen_recordings_normalize_background(?string $value): ?string
+{
+    $value = trim((string)$value);
+    if ($value === '') return null;
+    if (preg_match('/^#[0-9a-f]{6}$/i', $value) === 1) return strtolower($value);
+    if (preg_match('/^rgba\((\d{1,3}),\s*(\d{1,3}),\s*(\d{1,3}),\s*(0|0?\.\d+|1(?:\.0+)?)\)$/i', $value, $matches) === 1) {
+        $r = min(255, max(0, (int)$matches[1]));
+        $g = min(255, max(0, (int)$matches[2]));
+        $b = min(255, max(0, (int)$matches[3]));
+        $a = min(1, max(0, (float)$matches[4]));
+        return 'rgba(' . $r . ', ' . $g . ', ' . $b . ', ' . rtrim(rtrim(number_format($a, 3, '.', ''), '0'), '.') . ')';
+    }
+    return null;
+}
+
+function mg_screen_recordings_normalize_font_weight(string $value): string
+{
+    $value = trim($value);
+    return in_array($value, ['400', '500', '600', '700', '800', '900'], true) ? $value : '700';
 }
 
 function mg_screen_recordings_public_record(array $row): array
@@ -209,10 +254,30 @@ function mg_screen_recordings_fetch(PDO $pdo, int $id): array
     return $row;
 }
 
-function mg_screen_recordings_list(PDO $pdo, string $query = '', string $status = ''): array
+function mg_screen_recordings_fetch_for_user(PDO $pdo, int $id, array $user, bool $manage = false): array
+{
+    if ($manage && !mg_screen_recordings_user_can_manage($user)) mg_fail('Admin screen recording manage permission is required.', 403);
+    if (!$manage && !mg_screen_recordings_user_can_view($user)) mg_fail('Admin screen recording permission is required.', 403);
+
+    if (mg_screen_recordings_user_can_manage_all($user)) {
+        return mg_screen_recordings_fetch($pdo, $id);
+    }
+
+    $stmt = $pdo->prepare('SELECT * FROM admin_screen_recordings WHERE id = ? AND admin_user_id = ? AND deleted_at IS NULL LIMIT 1');
+    $stmt->execute([$id, (int)$user['id']]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row) mg_fail('Recording not found.', 404);
+    return $row;
+}
+
+function mg_screen_recordings_list(PDO $pdo, string $query = '', string $status = '', ?array $user = null): array
 {
     $where = ['deleted_at IS NULL'];
     $args = [];
+    if ($user !== null && !mg_screen_recordings_user_can_manage_all($user)) {
+        $where[] = 'admin_user_id = ?';
+        $args[] = (int)$user['id'];
+    }
     if ($query !== '') {
         $where[] = '(title LIKE ? OR description LIKE ? OR original_filename LIKE ?)';
         $like = '%' . $query . '%';
@@ -266,14 +331,18 @@ function mg_screen_recordings_store_original(PDO $pdo, int $recordingId, array $
     $size = (int)($file['size'] ?? 0);
     if ($tmp === '' || !is_uploaded_file($tmp)) mg_fail('Recording upload is invalid.', 422);
     if ($size < 1) mg_fail('Recording file is empty.', 422);
-    if ($size > 700 * 1024 * 1024) mg_fail('Recording file is too large for this upload endpoint.', 422);
-
-    $mime = mg_screen_recordings_detect_mime($tmp);
-    if (!mg_screen_recordings_allowed_mime($mime)) mg_fail('Unsupported recording file type.', 422);
+    if ($size > mg_screen_recordings_max_file_bytes()) mg_fail('Recording file is too large for this upload endpoint.', 422);
 
     $originalName = trim((string)($file['name'] ?? 'recording.webm')) ?: 'recording.webm';
     $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
-    if (!in_array($extension, ['webm','mp4','mov','mkv'], true)) $extension = 'webm';
+    if (!mg_screen_recordings_allowed_extension($extension)) $extension = 'webm';
+
+    $mime = mg_screen_recordings_detect_mime($tmp);
+    if (!mg_screen_recordings_allowed_mime($mime)) mg_fail('Unsupported recording file type.', 422);
+    if (($mime === 'application/octet-stream' || $mime === '') && !mg_screen_recordings_allowed_extension($extension)) {
+        mg_fail('Unsupported recording file type.', 422);
+    }
+
     $filename = mg_screen_recordings_safe_slug((string)$row['title']) . '-' . date('Ymd-His') . '-' . bin2hex(random_bytes(5)) . '.' . $extension;
     $relative = mg_screen_recordings_relative_path('originals', $filename);
     $target = mg_screen_recordings_abs_path($relative);
@@ -290,12 +359,145 @@ function mg_screen_recordings_store_original(PDO $pdo, int $recordingId, array $
     return mg_screen_recordings_fetch($pdo, $recordingId);
 }
 
+function mg_screen_recordings_chunk_dir(int $recordingId): string
+{
+    return mg_screen_recordings_base_dir() . '/temp/' . $recordingId;
+}
+
+function mg_screen_recordings_chunk_path(int $recordingId, int $chunkIndex): string
+{
+    return mg_screen_recordings_chunk_dir($recordingId) . '/chunk-' . str_pad((string)$chunkIndex, 6, '0', STR_PAD_LEFT) . '.webm';
+}
+
+function mg_screen_recordings_delete_tree(string $dir): void
+{
+    $base = realpath(mg_screen_recordings_base_dir() . '/temp');
+    $real = realpath($dir);
+    if (!$base || !$real || !str_starts_with($real, $base)) return;
+    $items = scandir($real);
+    if (!is_array($items)) return;
+    foreach ($items as $item) {
+        if ($item === '.' || $item === '..') continue;
+        $path = $real . '/' . $item;
+        if (is_dir($path)) mg_screen_recordings_delete_tree($path);
+        else @unlink($path);
+    }
+    @rmdir($real);
+}
+
+function mg_screen_recordings_store_chunk(PDO $pdo, int $recordingId, array $file, int $chunkIndex): void
+{
+    mg_screen_recordings_prepare_storage();
+    if ($recordingId < 1 || $chunkIndex < 0 || $chunkIndex > 2000) mg_fail('Invalid recording chunk.', 422);
+    $error = (int)($file['error'] ?? UPLOAD_ERR_NO_FILE);
+    if ($error !== UPLOAD_ERR_OK) mg_fail('Unable to upload recording chunk.', 422);
+    $tmp = (string)($file['tmp_name'] ?? '');
+    $size = (int)($file['size'] ?? 0);
+    if ($tmp === '' || !is_uploaded_file($tmp)) mg_fail('Recording chunk upload is invalid.', 422);
+    if ($size < 1) mg_fail('Recording chunk is empty.', 422);
+    if ($size > mg_screen_recordings_max_chunk_bytes()) mg_fail('Recording chunk is too large.', 422);
+
+    $mime = mg_screen_recordings_detect_mime($tmp);
+    if (!mg_screen_recordings_allowed_mime($mime)) mg_fail('Unsupported recording chunk type.', 422);
+
+    $dir = mg_screen_recordings_chunk_dir($recordingId);
+    if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) mg_fail('Unable to prepare chunk storage.', 500);
+    $target = mg_screen_recordings_chunk_path($recordingId, $chunkIndex);
+    if (!move_uploaded_file($tmp, $target)) mg_fail('Unable to store recording chunk.', 500);
+    @chmod($target, 0640);
+    $pdo->prepare("UPDATE admin_screen_recordings SET status = 'processing', updated_at = NOW() WHERE id = ? LIMIT 1")->execute([$recordingId]);
+}
+
+function mg_screen_recordings_assemble_chunks(PDO $pdo, int $recordingId, int $chunkCount, array $metadata = []): array
+{
+    mg_screen_recordings_prepare_storage();
+    $row = mg_screen_recordings_fetch($pdo, $recordingId);
+    if ($chunkCount < 1 || $chunkCount > 2000) mg_fail('Invalid recording chunk count.', 422);
+
+    $dir = mg_screen_recordings_chunk_dir($recordingId);
+    if (!is_dir($dir)) mg_fail('Recording chunks are unavailable.', 422);
+
+    $extension = 'webm';
+    $filename = mg_screen_recordings_safe_slug((string)$row['title']) . '-' . date('Ymd-His') . '-' . bin2hex(random_bytes(5)) . '.' . $extension;
+    $relative = mg_screen_recordings_relative_path('originals', $filename);
+    $target = mg_screen_recordings_abs_path($relative);
+    if (!$target) mg_fail('Unable to prepare recording output.', 500);
+    $partial = $target . '.part';
+    $out = @fopen($partial, 'wb');
+    if (!$out) mg_fail('Unable to prepare recording output.', 500);
+
+    $total = 0;
+    try {
+        for ($i = 0; $i < $chunkCount; $i++) {
+            $chunk = mg_screen_recordings_chunk_path($recordingId, $i);
+            if (!is_file($chunk) || !is_readable($chunk)) {
+                throw new RuntimeException('Missing recording chunk.');
+            }
+            $size = filesize($chunk) ?: 0;
+            $total += (int)$size;
+            if ($total > mg_screen_recordings_max_file_bytes()) {
+                throw new RuntimeException('Recording file is too large for this upload endpoint.');
+            }
+            $in = @fopen($chunk, 'rb');
+            if (!$in) throw new RuntimeException('Unable to read recording chunk.');
+            stream_copy_to_stream($in, $out);
+            fclose($in);
+        }
+        fflush($out);
+        fclose($out);
+        $out = null;
+        if (!rename($partial, $target)) throw new RuntimeException('Unable to save assembled recording.');
+        @chmod($target, 0640);
+    } catch (Throwable $error) {
+        if (is_resource($out)) fclose($out);
+        @unlink($partial);
+        throw $error;
+    }
+
+    $mime = mg_screen_recordings_detect_mime($target) ?: 'video/webm';
+    if (!mg_screen_recordings_allowed_mime($mime)) {
+        @unlink($target);
+        mg_fail('Unsupported assembled recording file type.', 422);
+    }
+
+    $duration = isset($metadata['duration_seconds']) ? max(0, (float)$metadata['duration_seconds']) : ($row['duration_seconds'] !== null ? (float)$row['duration_seconds'] : null);
+    $width = isset($metadata['width']) ? max(0, (int)$metadata['width']) : ($row['width'] !== null ? (int)$row['width'] : null);
+    $height = isset($metadata['height']) ? max(0, (int)$metadata['height']) : ($row['height'] !== null ? (int)$row['height'] : null);
+
+    $stmt = $pdo->prepare('UPDATE admin_screen_recordings SET original_filename = ?, original_path = ?, mime_type = ?, file_size = ?, duration_seconds = ?, width = ?, height = ?, status = ?, error_message = NULL, updated_at = NOW() WHERE id = ? LIMIT 1');
+    $stmt->execute([$filename, $relative, $mime, $total, $duration, $width, $height, 'saved', $recordingId]);
+    mg_screen_recordings_delete_tree($dir);
+
+    return mg_screen_recordings_fetch($pdo, $recordingId);
+}
+
 function mg_screen_recordings_save_manifest(PDO $pdo, int $recordingId, array $manifest): array
 {
     $row = mg_screen_recordings_fetch($pdo, $recordingId);
     $manifest = array_replace_recursive(mg_screen_recordings_manifest_default(), $manifest);
     $overlays = is_array($manifest['text_overlays'] ?? null) ? array_values($manifest['text_overlays']) : [];
-    $manifest['text_overlays'] = $overlays;
+    $cleanOverlays = [];
+    foreach ($overlays as $index => $overlay) {
+        if (!is_array($overlay)) continue;
+        $text = trim((string)($overlay['text'] ?? ''));
+        if ($text === '') continue;
+        $start = max(0, (float)($overlay['start'] ?? 0));
+        $end = max($start, (float)($overlay['end'] ?? ($start + 5)));
+        $cleanOverlays[] = [
+            'id' => preg_replace('/[^a-z0-9._-]+/i', '-', trim((string)($overlay['id'] ?? 'overlay-' . ($index + 1)))) ?: ('overlay-' . ($index + 1)),
+            'text' => substr($text, 0, 500),
+            'start' => $start,
+            'end' => $end,
+            'x' => min(100, max(0, (float)($overlay['x'] ?? 50))),
+            'y' => min(100, max(0, (float)($overlay['y'] ?? 50))),
+            'fontSize' => min(120, max(10, (int)($overlay['fontSize'] ?? 28))),
+            'color' => mg_screen_recordings_normalize_hex_color((string)($overlay['color'] ?? '#ffffff'), '#ffffff'),
+            'background' => mg_screen_recordings_normalize_background($overlay['background'] ?? '') ?? 'rgba(17, 24, 39, 0.72)',
+            'fontWeight' => mg_screen_recordings_normalize_font_weight((string)($overlay['fontWeight'] ?? '700')),
+            'align' => in_array((string)($overlay['align'] ?? 'center'), ['left','center','right'], true) ? (string)$overlay['align'] : 'center',
+        ];
+    }
+    $manifest['text_overlays'] = $cleanOverlays;
     $json = json_encode($manifest, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
     $pdo->beginTransaction();
@@ -306,22 +508,8 @@ function mg_screen_recordings_save_manifest(PDO $pdo, int $recordingId, array $m
 
         $pdo->prepare('DELETE FROM admin_screen_recording_text_overlays WHERE recording_id = ?')->execute([$recordingId]);
         $insert = $pdo->prepare('INSERT INTO admin_screen_recording_text_overlays (recording_id, overlay_key, overlay_text, start_seconds, end_seconds, x_percent, y_percent, font_size, text_color, background_color, font_weight, text_align, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())');
-        foreach ($overlays as $index => $overlay) {
-            if (!is_array($overlay)) continue;
-            $text = trim((string)($overlay['text'] ?? ''));
-            if ($text === '') continue;
-            $key = trim((string)($overlay['id'] ?? 'overlay-' . ($index + 1)));
-            $key = preg_replace('/[^a-z0-9._-]+/i', '-', $key) ?: ('overlay-' . ($index + 1));
-            $start = max(0, (float)($overlay['start'] ?? 0));
-            $end = max($start, (float)($overlay['end'] ?? ($start + 5)));
-            $x = min(100, max(0, (float)($overlay['x'] ?? 50)));
-            $y = min(100, max(0, (float)($overlay['y'] ?? 50)));
-            $size = min(120, max(10, (int)($overlay['fontSize'] ?? 28)));
-            $color = substr((string)($overlay['color'] ?? '#ffffff'), 0, 24);
-            $bg = trim((string)($overlay['background'] ?? ''));
-            $weight = substr((string)($overlay['fontWeight'] ?? '700'), 0, 24);
-            $align = in_array((string)($overlay['align'] ?? 'center'), ['left','center','right'], true) ? (string)$overlay['align'] : 'center';
-            $insert->execute([$recordingId, substr($key, 0, 80), substr($text, 0, 500), $start, $end, $x, $y, $size, $color, $bg !== '' ? substr($bg, 0, 32) : null, $weight, $align]);
+        foreach ($cleanOverlays as $overlay) {
+            $insert->execute([$recordingId, substr((string)$overlay['id'], 0, 80), (string)$overlay['text'], (float)$overlay['start'], (float)$overlay['end'], (float)$overlay['x'], (float)$overlay['y'], (int)$overlay['fontSize'], (string)$overlay['color'], (string)$overlay['background'], (string)$overlay['fontWeight'], (string)$overlay['align']]);
         }
 
         $version = $pdo->prepare('INSERT INTO admin_screen_recording_versions (recording_id, admin_user_id, version_label, edit_manifest_json, status, created_at) VALUES (?, ?, ?, ?, ?, NOW())');
