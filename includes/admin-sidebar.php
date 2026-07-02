@@ -29,6 +29,7 @@ $canOperationsCommand = $canAdminPage('admin.operations_command');
 $canPackageModeration = $canCommerce;
 $canStampHealth = $canCommerce;
 $canHealth = $canAdminPage('admin.system_health');
+$canScreenRecordings = $canAdminPage('admin.screen_recordings');
 $canLifecycleHealth = $canAdminPage('admin.lifecycle_health');
 $canSettings = $canAdminPage('admin.settings');
 $canPwaBranding = $canAdminPage('admin.pwa_branding');
@@ -174,6 +175,12 @@ $adminNav = [
         'detail' => 'Active user sessions',
         'href' => '/admin/sessions.php',
         'visible' => $canSessions,
+    ],
+    'screen-recordings' => [
+        'label' => 'Screen recordings',
+        'detail' => 'Recordings & editor',
+        'href' => '/admin/screen-recordings.php',
+        'visible' => $canScreenRecordings,
     ],
     'system-health' => [
         'label' => 'System health',
