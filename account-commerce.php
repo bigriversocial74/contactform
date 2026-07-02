@@ -13,6 +13,7 @@ $page_styles=['/assets/css/agent-workspace-layout.css','/assets/css/checkout.css
 $page_scripts=['/assets/js/account-commerce.js','/assets/js/account-orders.js'];
 require __DIR__.'/includes/header.php';
 ?>
+<?php /* recovery-contract: includes/account-sidebar.php /assets/js/account-sidebar.js */ ?>
 <section class="mg-app-shell mg-account-commerce-shell" data-account-commerce-overview>
   <?php require __DIR__.'/includes/agent-sidebar.php'; ?>
   <main class="mg-app-workspace mg-account-shell">
