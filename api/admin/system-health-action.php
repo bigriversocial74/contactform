@@ -15,6 +15,7 @@ $action = strtolower(trim((string)($input['action'] ?? '')));
 if (!in_array($action, ['verify_storage', 'retry_notifications', 'clean_uploads', 'migration_plan', 'admin_ops_sql_plan', 'test_pwa_notification'], true)) {
     mg_fail('Invalid system health action.', 422);
 }
+mg_admin_system_health_require_sensitive_action($user, $input, $action);
 
 try {
     $pdo = mg_db();
@@ -34,12 +35,12 @@ try {
     mg_audit(
         'admin.system_health.' . $action,
         'system_health',
-        ['result' => $auditResult],
+        ['result' => $auditResult, 'sensitive_confirmed' => true],
         (int)$user['id']
     );
     mg_event(
         'admin.system_health.' . $action,
-        ['result' => $auditResult],
+        ['result' => $auditResult, 'sensitive_confirmed' => true],
         (int)$user['id']
     );
 } catch (Throwable $error) {
