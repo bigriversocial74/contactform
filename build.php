@@ -47,7 +47,7 @@ require __DIR__ . '/includes/header.php';
           </div>
         </div>
         <div class="mg-builder-card" data-builder-card>
-          <article class="mg-builder-template is-active" data-preview-template="simple_product">
+          <article class="mg-builder-template mg-simple-product-template is-active" data-preview-template="simple_product">
             <div class="mg-builder-simple">
               <div class="mg-builder-simple-copy">
                 <div class="mg-product-profile">
