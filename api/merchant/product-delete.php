@@ -22,6 +22,11 @@ function mg_product_delete_table_exists(PDO $pdo, string $tableName): bool
     return (int) $stmt->fetchColumn() > 0;
 }
 
+function mg_product_delete_placeholders(array $ids): string
+{
+    return implode(',', array_fill(0, count($ids), '?'));
+}
+
 try {
     $pdo->beginTransaction();
 
@@ -45,6 +50,42 @@ try {
     if (mg_product_delete_table_exists($pdo, 'merchant_storefront_revision_products')) {
         $pdo->prepare('DELETE FROM merchant_storefront_revision_products WHERE catalog_product_id = ?')
             ->execute([(int) $product['id']]);
+    }
+
+    if (mg_product_delete_table_exists($pdo, 'feed_posts') && mg_product_delete_table_exists($pdo, 'feed_post_versions')) {
+        $feedPostStmt = $pdo->prepare('SELECT id FROM feed_posts WHERE catalog_product_id = ?');
+        $feedPostStmt->execute([(int) $product['id']]);
+        $feedPostIds = array_map('intval', $feedPostStmt->fetchAll(PDO::FETCH_COLUMN));
+
+        if ($feedPostIds) {
+            $feedPostPlaceholders = mg_product_delete_placeholders($feedPostIds);
+            $feedVersionStmt = $pdo->prepare('SELECT id FROM feed_post_versions WHERE feed_post_id IN (' . $feedPostPlaceholders . ')');
+            $feedVersionStmt->execute($feedPostIds);
+            $feedVersionIds = array_map('intval', $feedVersionStmt->fetchAll(PDO::FETCH_COLUMN));
+
+            if ($feedVersionIds) {
+                $feedVersionPlaceholders = mg_product_delete_placeholders($feedVersionIds);
+                if (mg_product_delete_table_exists($pdo, 'content_engagement_events')) {
+                    $pdo->prepare('DELETE FROM content_engagement_events WHERE feed_post_version_id IN (' . $feedVersionPlaceholders . ')')
+                        ->execute($feedVersionIds);
+                }
+                if (mg_product_delete_table_exists($pdo, 'pppm_feed_bindings')) {
+                    $pdo->prepare('DELETE FROM pppm_feed_bindings WHERE feed_post_version_id IN (' . $feedVersionPlaceholders . ')')
+                        ->execute($feedVersionIds);
+                }
+                if (mg_product_delete_table_exists($pdo, 'feed_post_elements')) {
+                    $pdo->prepare('DELETE FROM feed_post_elements WHERE feed_post_version_id IN (' . $feedVersionPlaceholders . ')')
+                        ->execute($feedVersionIds);
+                }
+                $pdo->prepare('UPDATE feed_posts SET current_version_id = NULL WHERE id IN (' . $feedPostPlaceholders . ')')
+                    ->execute($feedPostIds);
+                $pdo->prepare('DELETE FROM feed_post_versions WHERE id IN (' . $feedVersionPlaceholders . ')')
+                    ->execute($feedVersionIds);
+            }
+
+            $pdo->prepare('DELETE FROM feed_posts WHERE id IN (' . $feedPostPlaceholders . ')')
+                ->execute($feedPostIds);
+        }
     }
 
     if (mg_product_delete_table_exists($pdo, 'catalog_pppm_templates')) {
