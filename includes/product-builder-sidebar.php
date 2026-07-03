@@ -36,7 +36,7 @@
 
     <section class="mg-builder-panel" data-builder-panel="gift">
       <div class="mg-builder-section-title">Gift experience</div>
-      <div class="mg-builder-field" data-builder-types="greeting_card multimedia_greeting_card"><label for="headline">Card headline</label><input id="headline" value="" placeholder="HAPPY BIRTHDAY!" maxlength="180"></div>
+      <div class="mg-builder-field" data-builder-types="greeting_card multimedia_greeting_card"><label for="headline">Card headline</label><input id="headline" value="HAPPY BIRTHDAY!" placeholder="HAPPY BIRTHDAY!" maxlength="180"></div>
       <div class="mg-builder-field" data-builder-types="greeting_card multimedia_greeting_card"><label for="message">Inside message</label><textarea id="message" maxlength="4000" placeholder="Add the message the recipient will see inside the card."></textarea></div>
       <div class="mg-builder-field" data-builder-types="greeting_card multimedia_greeting_card"><label for="signature">Sent from signature</label><input id="signature" value="" placeholder="Sent from Tom" maxlength="160"></div>
       <div class="mg-builder-field" data-builder-types="greeting_card multimedia_greeting_card"><label for="recipient">Recipient note</label><input id="recipient" value="" placeholder="For friends, family, co-workers, or customers" maxlength="200"></div>
