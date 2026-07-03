@@ -36,13 +36,6 @@ $appSidebarNav = [
         'visible' => true,
         'active' => $agentSidebarActive === 'feed-following',
     ],
-    'feed-mine' => [
-        'label' => 'My posts',
-        'detail' => 'Create and manage your posts',
-        'href' => '/feed.php?view=mine',
-        'visible' => true,
-        'active' => $agentSidebarActive === 'feed-mine',
-    ],
     'agent_chat' => [
         'section' => 'Agent',
         'label' => 'Agent Chat',
@@ -95,14 +88,6 @@ $appSidebarNav = [
         'href' => '/build.php',
         'visible' => $canCreateGift,
         'active' => $agentSidebarActive === 'build',
-    ],
-    'upgrade' => [
-        'section' => $canMerchantNav ? '' : 'Merchant',
-        'label' => 'Upgrade',
-        'detail' => 'Unlock merchant tools',
-        'href' => '/pricing.php',
-        'visible' => !$canMerchantNav,
-        'active' => $agentSidebarActive === 'upgrade',
     ],
 ];
 
