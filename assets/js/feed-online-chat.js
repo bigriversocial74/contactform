@@ -21,6 +21,12 @@ var chatLoading=false;
 var heartbeatLoading=false;
 var railSignature='';
 var messageSignature='';
+var audioContext=null;
+var audioUnlocked=false;
+var lastSoundAt=0;
+var knownIncomingMessages={};
+var railUnreadSnapshot={};
+var railSoundPrimed=false;
 var params=new URLSearchParams(window.location.search||'');
 var deepLinkProfileId=params.get('chat')||'';
 var deepLinkThreadId=params.get('thread')||'';
@@ -35,6 +41,70 @@ function isDesktop(){return !desktopQuery||desktopQuery.matches;}
 function isVisible(){return document.visibilityState!=='hidden';}
 function busy(button,value,label){if(!button)return;if(MG.setBusy)return MG.setBusy(button,value,label);if(value)button.dataset.originalLabel=button.textContent;button.disabled=value;button.textContent=value?(label||'Working…'):(button.dataset.originalLabel||button.textContent);if(!value)delete button.dataset.originalLabel;}
 function profileById(id){return profiles.find(function(item){return item.id===id;})||null;}
+
+function unlockChatAudio(){
+  if(audioUnlocked)return;
+  try{
+    var AudioCtor=window.AudioContext||window.webkitAudioContext;
+    if(!AudioCtor)return;
+    audioContext=audioContext||new AudioCtor();
+    if(audioContext.state==='suspended'&&audioContext.resume)audioContext.resume().catch(function(){});
+    audioUnlocked=true;
+  }catch(error){}
+}
+
+function playChatSound(){
+  var now=Date.now();
+  if(now-lastSoundAt<1800)return;
+  lastSoundAt=now;
+  unlockChatAudio();
+  if(!audioContext||audioContext.state==='suspended')return;
+  try{
+    var start=audioContext.currentTime;
+    var gain=audioContext.createGain();
+    gain.gain.setValueAtTime(0.0001,start);
+    gain.gain.exponentialRampToValueAtTime(0.055,start+0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001,start+0.22);
+    gain.connect(audioContext.destination);
+    [880,1175].forEach(function(freq,index){
+      var osc=audioContext.createOscillator();
+      osc.type='sine';
+      osc.frequency.setValueAtTime(freq,start+(index*0.09));
+      osc.connect(gain);
+      osc.start(start+(index*0.09));
+      osc.stop(start+(index*0.09)+0.09);
+    });
+    window.setTimeout(function(){try{gain.disconnect();}catch(error){}},360);
+  }catch(error){}
+}
+
+function rememberIncomingMessages(messages){
+  (Array.isArray(messages)?messages:[]).forEach(function(message){
+    if(!message||message.mine||!message.id)return;
+    knownIncomingMessages[message.id]=true;
+  });
+}
+
+function hasNewIncomingMessage(messages){
+  return (Array.isArray(messages)?messages:[]).some(function(message){
+    return message&&!message.mine&&message.id&&!knownIncomingMessages[message.id];
+  });
+}
+
+function hasUnreadIncrease(list){
+  return (Array.isArray(list)?list:[]).some(function(profile){
+    if(!profile||!profile.id)return false;
+    return Number(profile.unread||0)>Number(railUnreadSnapshot[profile.id]||0);
+  });
+}
+
+function rememberRailUnread(list){
+  railUnreadSnapshot={};
+  (Array.isArray(list)?list:[]).forEach(function(profile){
+    if(profile&&profile.id)railUnreadSnapshot[profile.id]=Number(profile.unread||0);
+  });
+  railSoundPrimed=true;
+}
 
 function setHeaderOffset(){
   var header=document.querySelector('.mg-site-header[data-public-header],.mg-site-header,header[role="banner"]');
@@ -133,12 +203,15 @@ function renderMessages(messages,force){
   if(!box)return;
   messages=Array.isArray(messages)?messages:[];
   var nextSignature=messagesSignature(messages);
-  if(!force&&nextSignature===messageSignature)return;
+  if(!force&&nextSignature===messageSignature){rememberIncomingMessages(messages);return;}
+  var shouldSound=!force&&hasNewIncomingMessage(messages);
   messageSignature=nextSignature;
   var nearBottom=box.scrollHeight-box.scrollTop-box.clientHeight<56;
   clear(box);
   if(messages.length){messages.forEach(function(message){box.appendChild(messageNode(message));});}
   else{var empty=document.createElement('div');empty.className='mg-feed-chat-empty';empty.textContent='Start a quick chat. Messages notify the other user.';box.appendChild(empty);}
+  rememberIncomingMessages(messages);
+  if(shouldSound)playChatSound();
   if(nearBottom||force)box.scrollTop=box.scrollHeight;
 }
 
@@ -214,6 +287,7 @@ function errorInChat(message){
 }
 
 async function openChat(profileId,options){
+  unlockChatAudio();
   var profile=profileById(profileId)||{id:profileId,name:'Chat',online:false};
   var markRead=shouldMarkRead(Boolean(options&&options.markRead));
   try{
@@ -224,7 +298,7 @@ async function openChat(profileId,options){
     if(!existing){profiles.unshift(liveProfile);profiles=profiles.slice(0,10);}
     else Object.assign(existing,liveProfile);
     renderChat(liveProfile,data);
-    if(markRead){var local=profileById(liveProfile.id);if(local)local.unread=0;}
+    if(markRead){var local=profileById(liveProfile.id);if(local)local.unread=0;rememberRailUnread(profiles);}
     renderRail(true);
   }catch(error){errorInChat(error.message||'Unable to open chat.');}
 }
@@ -237,7 +311,7 @@ async function pollActiveChat(options){
     var data=payload(await MG.get('/api/social/online-chat.php?profile_id='+encodeURIComponent(activeProfile.id)+(markRead?'&mark_read=1':'')));
     if(data.profile){activeProfile=data.profile;updateChatPresence(activeProfile);}
     renderMessages(data.messages||[],false);
-    if(markRead){var local=profileById(activeProfile.id);if(local)local.unread=0;}
+    if(markRead){var local=profileById(activeProfile.id);if(local)local.unread=0;rememberRailUnread(profiles);}
     renderRail(false);
   }catch(error){}
   finally{chatLoading=false;}
@@ -254,6 +328,7 @@ function stopChatPolling(){
 }
 
 async function sendMessage(form){
+  unlockChatAudio();
   var win=form.closest('[data-chat-profile-id]');
   if(!win)return;
   var profileId=win.dataset.chatProfileId;
@@ -293,12 +368,15 @@ async function loadProfiles(force){
   railLoading=true;
   try{
     var data=payload(await MG.get('/api/social/online-chat.php'));
-    profiles=Array.isArray(data&&data.profiles)?data.profiles:[];
+    var nextProfiles=Array.isArray(data&&data.profiles)?data.profiles:[];
+    if(railSoundPrimed&&!force&&hasUnreadIncrease(nextProfiles))playChatSound();
+    profiles=nextProfiles;
     if(activeProfile){
       var updated=profileById(activeProfile.id);
       if(updated){activeProfile=Object.assign({},activeProfile,updated);updateChatPresence(activeProfile);}
     }
     renderRail(Boolean(force));
+    rememberRailUnread(profiles);
     maybeOpenDeepLink();
   }catch(error){rail.hidden=true;}
   finally{railLoading=false;}
@@ -343,12 +421,14 @@ function handleViewportChange(){
 }
 
 rail.addEventListener('click',function(event){
+  unlockChatAudio();
   var btn=event.target.closest('[data-profile-id]');
   if(!btn)return;
   openChat(btn.dataset.profileId,{markRead:true});
 });
 
 dock.addEventListener('click',function(event){
+  unlockChatAudio();
   if(event.target.closest('[data-chat-close]')){
     clear(dock);activeProfile=null;stopChatPolling();renderRail(true);
   }
@@ -361,6 +441,8 @@ dock.addEventListener('submit',function(event){
   sendMessage(form);
 });
 
+document.addEventListener('pointerdown',unlockChatAudio,{once:true,capture:true,passive:true});
+document.addEventListener('keydown',unlockChatAudio,{once:true,capture:true});
 window.addEventListener('resize',setHeaderOffset,{passive:true});
 window.addEventListener('orientationchange',setHeaderOffset,{passive:true});
 document.addEventListener('visibilitychange',function(){if(isVisible()){heartbeat();if(activeProfile)pollActiveChat({markRead:true});}});
