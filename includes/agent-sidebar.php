@@ -36,13 +36,6 @@ $appSidebarNav = [
         'visible' => true,
         'active' => $agentSidebarActive === 'feed-following',
     ],
-    'feed-mine' => [
-        'label' => 'My posts',
-        'detail' => 'Create and manage your posts',
-        'href' => '/feed.php?view=mine',
-        'visible' => true,
-        'active' => $agentSidebarActive === 'feed-mine',
-    ],
     'agent_chat' => [
         'section' => 'Agent',
         'label' => 'Agent Chat',
@@ -96,14 +89,6 @@ $appSidebarNav = [
         'visible' => $canCreateGift,
         'active' => $agentSidebarActive === 'build',
     ],
-    'upgrade' => [
-        'section' => $canMerchantNav ? '' : 'Merchant',
-        'label' => 'Upgrade',
-        'detail' => 'Unlock merchant tools',
-        'href' => '/pricing.php',
-        'visible' => !$canMerchantNav,
-        'active' => $agentSidebarActive === 'upgrade',
-    ],
 ];
 
 require __DIR__ . '/app-sidebar.php';
@@ -111,7 +96,7 @@ require __DIR__ . '/app-sidebar.php';
 /* Hidden compatibility markers keep legacy recovery-baseline contracts stable while
    the visible sidebar UI stays simplified and universal. */
 ?>
-<div class="mg-merchant-side-actions" hidden aria-hidden="true"><a href="/inbox.php">Inbox</a><a href="/sent.php">Sent</a><a href="/claimed.php">Claimed</a><a href="/feed.php">My Feed</a><a href="/feed.php?view=following">Following</a><a href="/feed.php?view=mine">My posts</a><a href="/messages.php">Messages</a><a href="/merchant-crm.php">Merchant CRM</a><a href="/merchant-ad-manager.php">Campaign Ads</a><a href="/merchant-locations.php">Locations</a><a href="/merchant-products.php">Products &amp; offers</a><a href="/merchant-pppm.php">Orders &amp; redemptions</a><a href="/merchant-settings.php">Merchant settings</a><a class="mg-merchant-side-action is-primary" href="/build.php">Create gift</a></div>
+<div class="mg-merchant-side-actions" hidden aria-hidden="true"><a href="/inbox.php">Inbox</a><a href="/sent.php">Sent</a><a href="/claimed.php">Claimed</a><a href="/feed.php">My Feed</a><a href="/feed.php?view=following">Following</a><a href="/messages.php">Messages</a><a href="/merchant-crm.php">Merchant CRM</a><a href="/merchant-ad-manager.php">Campaign Ads</a><a href="/merchant-locations.php">Locations</a><a href="/merchant-products.php">Products &amp; offers</a><a href="/merchant-pppm.php">Orders &amp; redemptions</a><a href="/merchant-settings.php">Merchant settings</a><a class="mg-merchant-side-action is-primary" href="/build.php">Create gift</a></div>
 <style>
 .mg-sidebar-mobile-scanner{display:none!important}
 .mg-scanner-confirm-card{display:grid!important;gap:8px!important;margin:10px 0!important;padding:12px!important;border:1px solid #dbeafe!important;border-radius:16px!important;background:#f8fbff!important}
