@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', function () {
     root.querySelectorAll('.mg-card-message-copy').forEach(function (copy) {
       var headline = copy.querySelector('[data-preview-card-headline]');
       if (!headline) {
-        headline = copy.querySelector('.mg-card-message-title, h1, h2, h3, [data-preview-message]');
+        headline = copy.querySelector('.mg-card-message-title, h1, h2, h3');
       }
       if (!headline) {
         headline = document.createElement('h3');
@@ -71,6 +71,8 @@ document.addEventListener('DOMContentLoaded', function () {
       }
       if (!message || message === headline) {
         message = document.createElement('p');
+      }
+      if (message.previousElementSibling !== headline) {
         headline.insertAdjacentElement('afterend', message);
       }
       message.classList.add('mg-card-inside-message');
@@ -141,8 +143,8 @@ document.addEventListener('DOMContentLoaded', function () {
       node.style.fontSize = style.message_size + 'px';
       node.style.color = style.text_color;
       node.style.textAlign = style.align;
-      node.style.fontWeight = '750';
-      node.style.lineHeight = '1.34';
+      node.style.fontWeight = '400';
+      node.style.lineHeight = '1.45';
       node.style.margin = '0';
     });
     signatureNodes().forEach(function (node) {
