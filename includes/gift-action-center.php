@@ -14,6 +14,12 @@ $giftCenterDemoEnabled=mg_has_role('super_admin');
     <section class="mg-gift-center-main" aria-label="<?= mg_e($giftCenterTitle) ?> gifts">
       <div class="mg-gift-toolbar">
         <div class="mg-gift-toolbar-actions">
+          <label class="mg-gift-search-shell" aria-label="Search gifts">
+            <span class="mg-gift-search-icon" aria-hidden="true"></span>
+            <input type="search" data-gift-search placeholder="Search gifts" autocomplete="off" aria-expanded="false" aria-controls="mg-gift-search-results">
+            <button type="button" data-gift-search-clear aria-label="Clear search" hidden>×</button>
+            <div class="mg-gift-search-results" id="mg-gift-search-results" data-gift-search-results role="listbox" hidden></div>
+          </label>
           <button class="mg-btn mg-btn-secondary" type="button" data-gift-refresh>Refresh</button>
         </div>
       </div>
