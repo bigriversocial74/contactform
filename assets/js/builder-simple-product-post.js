@@ -2,7 +2,6 @@
   'use strict';
   var root=document.querySelector('[data-builder-app]');
   if(!root)return;
-  var lastProductImageUrl='';
 
   function selectedType(){var n=root.querySelector('input[name="builder_type"]:checked');return n?n.value:'simple_product';}
   function accountName(){var n=document.querySelector('.mg-account-name')||document.querySelector('.mg-account-head-name');return n&&n.textContent.trim()?n.textContent.trim():'Your business';}
@@ -12,14 +11,11 @@
   function thumbnailUrl(){
     var img=root.querySelector('[data-media-preview="thumbnail"] img');
     var src=img&&(img.currentSrc||img.getAttribute('src'));
-    if(src){lastProductImageUrl=src;return src;}
+    if(src)return src;
     var media=root.querySelector('[data-product-media]');
     var inline=media&&media.style&&media.style.backgroundImage;
-    if(inline&&inline!=='none'){
-      lastProductImageUrl=inline.replace(/^url\(["']?/,'').replace(/["']?\)$/,'');
-      return lastProductImageUrl;
-    }
-    return lastProductImageUrl;
+    if(inline&&inline!=='none')return inline.replace(/^url\(["']?/,'').replace(/["']?\)$/,'');
+    return '';
   }
 
   function syncProductImage(){
@@ -49,9 +45,9 @@
 
   function bind(){
     root.querySelectorAll('input[name="builder_type"]').forEach(function(n){if(!n._mgSimplePostBound){n._mgSimplePostBound=true;n.addEventListener('change',sync);}});
-    root.addEventListener('input',function(event){if(event.target&&/^(productDescription|merchantName|price|currency)$/.test(event.target.id))setTimeout(sync,0);});
+    root.addEventListener('input',function(event){if(event.target&&/^(productDescription|merchantName)$/.test(event.target.id))setTimeout(sync,0);});
     root.addEventListener('change',function(event){
-      if(event.target&&(/^(productDescription|merchantName|price|currency)$/.test(event.target.id)||event.target.matches('[data-asset-role="thumbnail"]')))setTimeout(sync,0);
+      if(event.target&&(/^(productDescription|merchantName)$/.test(event.target.id)||event.target.matches('[data-asset-role="thumbnail"]')))setTimeout(sync,0);
     });
     var preview=root.querySelector('[data-media-preview="thumbnail"]');
     if(preview)new MutationObserver(sync).observe(preview,{childList:true,subtree:true,attributes:true,attributeFilter:['src','class']});
