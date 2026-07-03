@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var pendingSave = false;
   var assets = { thumbnail: '', cover: '', inside_cover: '', audio: '', video: '' };
   var assetUrls = { thumbnail: '', cover: '', inside_cover: '', audio: '', video: '' };
+  var lastProductImageUrl = '';
   var merchantContext = { display_name: '', avatar_url: '' };
   var pendingLocationIds = [];
 
@@ -101,6 +102,46 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function safeBgUrl(url) {
     return 'url("' + String(url || '').replace(/"/g, '%22') + '")';
+  }
+
+  function readInlineBgUrl(node) {
+    var value = node && node.style ? String(node.style.backgroundImage || '') : '';
+    if (!value || value === 'none') return '';
+    return value.replace(/^url\(["']?/, '').replace(/["']?\)$/, '');
+  }
+
+  function rememberProductImageUrl(url) {
+    var clean = String(url || '').trim();
+    if (clean) lastProductImageUrl = clean;
+    return clean;
+  }
+
+  function currentProductImageUrl(type) {
+    var directUrl = assetUrls.thumbnail || (type === 'simple_product' ? assetUrls.cover : '');
+    if (directUrl) return rememberProductImageUrl(directUrl);
+
+    var mediaPreview = root.querySelector('[data-media-preview="thumbnail"] img');
+    var previewUrl = mediaPreview && !mediaPreview.hidden ? (mediaPreview.currentSrc || mediaPreview.getAttribute('src') || '') : '';
+    if (previewUrl) return rememberProductImageUrl(previewUrl);
+
+    Array.from(root.querySelectorAll('[data-product-media]')).some(function (node) {
+      var inlineUrl = readInlineBgUrl(node);
+      if (inlineUrl) {
+        rememberProductImageUrl(inlineUrl);
+        return true;
+      }
+      return false;
+    });
+
+    return lastProductImageUrl;
+  }
+
+  function applyPreviewBackground(selector, url, imageClass) {
+    root.querySelectorAll(selector).forEach(function (node) {
+      if (imageClass) node.classList.toggle(imageClass, Boolean(url));
+      if (url) node.style.backgroundImage = safeBgUrl(url);
+      else node.style.removeProperty('background-image');
+    });
   }
 
   function applyMerchantContext(merchant) {
@@ -216,16 +257,9 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     root.querySelectorAll('[data-preview-collab]').forEach(function (node) { node.textContent = value('collaborationPrompt') || 'Invite people to contribute.'; });
 
-    var productImageUrl = assetUrls.thumbnail || (type === 'simple_product' ? assetUrls.cover : '');
-    root.querySelectorAll('[data-product-media]').forEach(function (node) {
-      node.style.backgroundImage = productImageUrl ? safeBgUrl(productImageUrl) : '';
-    });
-    root.querySelectorAll('[data-cover-media]').forEach(function (node) {
-      node.style.backgroundImage = assetUrls.cover ? safeBgUrl(assetUrls.cover) : '';
-    });
-    root.querySelectorAll('[data-inside-media]').forEach(function (node) {
-      node.style.backgroundImage = assetUrls.inside_cover ? safeBgUrl(assetUrls.inside_cover) : '';
-    });
+    applyPreviewBackground('[data-product-media]', currentProductImageUrl(type), 'has-product-image');
+    applyPreviewBackground('[data-cover-media]', assetUrls.cover, 'has-cover-image');
+    applyPreviewBackground('[data-inside-media]', assetUrls.inside_cover, 'has-inside-image');
 
     root.querySelectorAll('[data-preview-audio]').forEach(function (node) {
       if (assetUrls.audio) {
