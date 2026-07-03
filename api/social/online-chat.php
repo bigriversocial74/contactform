@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/_engagement.php';
 require_once __DIR__ . '/_account_restrictions.php';
 require_once dirname(__DIR__) . '/communications/_communications.php';
+require_once dirname(__DIR__) . '/messages/_messaging.php';
 require_once dirname(__DIR__) . '/messages/_delivery_validation.php';
 
 function mg_feed_chat_key(int $a, int $b): string
