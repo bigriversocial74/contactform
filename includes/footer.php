@@ -75,6 +75,7 @@ $can_intelligence = $user && (in_array('intelligence.dashboard.view', $user_perm
         <h2>Platform</h2>
         <a href="/discover.php">Explore</a>
         <a href="/pricing.php">Pricing</a>
+        <a href="/about-team.php">About Team</a>
         <a href="/investors.php">Investors</a>
         <a href="/developer-docs.php">Developer Docs</a>
         <a href="/learn-more.php">Book A Demo</a>
