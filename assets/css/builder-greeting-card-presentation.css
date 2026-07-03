@@ -37,7 +37,9 @@ html body.mg-section-builder .mg-card-back-face{display:flex;flex-direction:colu
 html body.mg-section-builder .mg-card-inside-right{align-items:center;text-align:center;gap:20px}
 html body.mg-section-builder .mg-card-inside-right.has-card-media{justify-content:flex-start;padding-top:44px}
 html body.mg-section-builder .mg-card-message-copy{width:min(100%,460px);margin:0 auto;display:grid;place-items:center;text-align:center;gap:14px}
-html body.mg-section-builder .mg-card-message-title{font-size:clamp(38px,4.7vw,66px)!important;line-height:.96!important;font-weight:950!important;letter-spacing:-.065em!important;color:#071225;text-align:center}
+html body.mg-section-builder .mg-card-message-title,
+html body.mg-section-builder .mg-card-message-copy [data-preview-card-headline]{display:block!important;visibility:visible!important;opacity:1!important;min-height:1em!important;font-size:clamp(38px,4.7vw,66px)!important;line-height:.96!important;font-weight:950!important;letter-spacing:-.065em!important;color:#071225;text-align:center;margin:0 0 12px!important}
+html body.mg-section-builder .mg-card-message-copy [data-preview-card-headline]:empty:before{content:'HAPPY BIRTHDAY!'}
 html body.mg-section-builder .mg-card-inside-message,
 html body.mg-section-builder .mg-card-message-copy [data-preview-card-message]{max-width:430px;margin:0!important;font-size:clamp(20px,2vw,28px)!important;line-height:1.45!important;font-weight:400!important;color:#17233a;text-align:center;letter-spacing:normal!important}
 html body.mg-section-builder .mg-card-signature{display:block;max-width:430px;margin:2px 0 0;font-size:14px;font-weight:850;letter-spacing:.02em;opacity:.78;color:inherit;text-align:center}
@@ -77,7 +79,8 @@ html body.mg-section-builder .mg-card-presenter[data-card-state="back"] [data-ca
   html body.mg-section-builder .mg-card-inside-left{min-height:230px;border-right:0;border-bottom:1px solid rgba(203,213,225,.8)}
   html body.mg-section-builder .mg-card-inside-right,html body.mg-section-builder .mg-card-back-face{padding:28px}
   html body.mg-section-builder .mg-card-inside-right.has-card-media{padding-top:24px}
-  html body.mg-section-builder .mg-card-message-title{font-size:clamp(32px,10vw,46px)!important}
+  html body.mg-section-builder .mg-card-message-title,
+  html body.mg-section-builder .mg-card-message-copy [data-preview-card-headline]{font-size:clamp(32px,10vw,46px)!important}
   html body.mg-section-builder .mg-card-inside-message,
   html body.mg-section-builder .mg-card-message-copy [data-preview-card-message]{font-size:clamp(18px,5vw,24px)!important;font-weight:400!important;line-height:1.45!important}
   html body.mg-section-builder .mg-card-controls{left:14px;right:14px;bottom:22px;flex-wrap:wrap}
