@@ -49,6 +49,10 @@
     if(event.target&&event.target.matches('[data-asset-role="thumbnail"], input[name="builder_type"]'))schedule();
   });
 
+  root.addEventListener('input',function(event){
+    if(event.target&&/^(productTitle|productDescription|price|currency)$/.test(event.target.id))schedule();
+  });
+
   var preview=root.querySelector('[data-media-preview="thumbnail"]');
   if(preview)new MutationObserver(schedule).observe(preview,{childList:true,subtree:true,attributes:true,attributeFilter:['src','hidden','class']});
 
