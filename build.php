@@ -6,7 +6,7 @@ require_once __DIR__ . '/includes/app.php';
 $page_title = 'Build a Product | Microgifter';
 $page_section = 'builder';
 $header_mode = 'builder';
-$builder_asset_version = '20260702-card-headline-visible';
+$builder_asset_version = '20260703-price-keeps-product-photo';
 $page_styles = [
   '/assets/css/builder-stage4b.css?v=' . $builder_asset_version,
   '/assets/css/builder-shell-fixes.css?v=' . $builder_asset_version,
