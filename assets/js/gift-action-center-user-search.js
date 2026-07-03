@@ -36,6 +36,14 @@ document.addEventListener('DOMContentLoaded', function () {
     return text(profile.profile_id || profile.recipient_profile_id || profile.profile_slug || profile.recipient_slug);
   }
 
+  function safeUserId(profile) {
+    return text(profile.recipient_user_id || profile.user_id);
+  }
+
+  function safeTargetId(profile) {
+    return safeProfileId(profile) || safeUserId(profile);
+  }
+
   function safeAvatarUrl(profile) {
     var url = text(profile.avatar_url);
     if (!url) return '';
@@ -90,10 +98,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function renderProfile(profile) {
     var row = document.createElement('div');
+    var profileId = safeProfileId(profile);
+    var userId = safeUserId(profile);
+    var targetId = profileId || userId;
+
     row.className = 'mg-user-search-result';
     row.setAttribute('role', 'option');
-    row.dataset.userSearchResult = safeProfileId(profile);
-    row.dataset.recipientUserId = text(profile.recipient_user_id);
+    row.dataset.userSearchResult = targetId;
+    row.dataset.recipientUserId = userId;
+    row.dataset.profileId = profileId;
     row.dataset.profileName = text(profile.display_name || 'Microgifter member');
 
     row.appendChild(avatarNode(profile));
@@ -109,12 +122,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var actions = document.createElement('div');
     actions.className = 'mg-user-search-actions';
-    var profileId = safeProfileId(profile);
-    var follow = button(profile.is_following ? 'Following' : 'Follow', 'mg-user-search-action', !profileId);
-    follow.dataset.userSearchFollow = profileId;
+    var follow = button(profile.is_following ? 'Following' : 'Follow', 'mg-user-search-action', !targetId);
+    follow.dataset.userSearchFollow = targetId;
+    follow.dataset.userSearchProfile = profileId;
+    follow.dataset.userSearchUser = userId;
     follow.dataset.following = profile.is_following ? 'true' : 'false';
-    var message = button('Message', 'mg-user-search-action is-primary', !profileId);
-    message.dataset.userSearchMessage = profileId;
+    var message = button('Message', 'mg-user-search-action is-primary', !targetId);
+    message.dataset.userSearchMessage = targetId;
+    message.dataset.userSearchProfile = profileId;
+    message.dataset.userSearchUser = userId;
     actions.append(follow, message);
     row.appendChild(actions);
 
@@ -179,26 +195,30 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   async function toggleFollow(buttonNode) {
-    var profileId = text(buttonNode.dataset.userSearchFollow);
-    if (!profileId) return;
+    var profileId = text(buttonNode.dataset.userSearchProfile || buttonNode.dataset.userSearchFollow);
+    var userId = text(buttonNode.dataset.userSearchUser);
+    var targetId = profileId || userId;
+    if (!targetId) return;
     var following = buttonNode.dataset.following === 'true';
     var nextAction = following ? 'unfollow' : 'follow';
     var oldText = buttonNode.textContent;
+    var payload = {
+      action: nextAction,
+      idempotency_key: 'action-center-user-search:' + nextAction + ':' + targetId + ':' + Date.now()
+    };
+    if (profileId) payload.profile_id = profileId;
+    else payload.user_id = userId;
     buttonNode.disabled = true;
     buttonNode.textContent = following ? 'Unfollowing…' : 'Following…';
     try {
-      var response = await Microgifter.post('/api/social/relationship.php', {
-        profile_id: profileId,
-        action: nextAction,
-        idempotency_key: 'action-center-user-search:' + nextAction + ':' + profileId + ':' + Date.now()
-      });
+      var response = await Microgifter.post('/api/social/relationship.php', payload);
       var data = responseData(response);
       var relationship = data.relationship || {};
       var isFollowing = !!relationship.following;
       buttonNode.dataset.following = isFollowing ? 'true' : 'false';
       buttonNode.textContent = isFollowing ? 'Following' : 'Follow';
       recipients.forEach(function (profile) {
-        if (safeProfileId(profile) === profileId) profile.is_following = isFollowing;
+        if (safeProfileId(profile) === profileId || safeUserId(profile) === userId || safeTargetId(profile) === targetId) profile.is_following = isFollowing;
       });
       if (window.Microgifter.toast) window.Microgifter.toast(isFollowing ? 'Profile followed.' : 'Profile unfollowed.');
     } catch (error) {
@@ -209,9 +229,12 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  function openMessage(profileId) {
-    if (!profileId) return;
-    window.location.href = '/feed.php?chat=' + encodeURIComponent(profileId);
+  function openMessage(buttonNode) {
+    var profileId = text(buttonNode.dataset.userSearchProfile || buttonNode.dataset.userSearchMessage);
+    var userId = text(buttonNode.dataset.userSearchUser);
+    var targetId = profileId || userId;
+    if (!targetId) return;
+    window.location.href = '/feed.php?chat=' + encodeURIComponent(targetId);
   }
 
   function blockOriginalGiftSearch(event) {
@@ -268,7 +291,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (messageButton) {
       event.preventDefault();
       event.stopImmediatePropagation();
-      openMessage(messageButton.dataset.userSearchMessage);
+      openMessage(messageButton);
       return;
     }
 
