@@ -17,6 +17,9 @@ document.addEventListener('DOMContentLoaded', function () {
   var folderLabel = app.querySelector('[data-gift-folder-label]');
   var folderSubtitle = app.querySelector('[data-gift-folder-subtitle]');
   var folderDescription = app.querySelector('[data-gift-folder-description]');
+  var searchInput = app.querySelector('[data-gift-search]');
+  var searchResults = app.querySelector('[data-gift-search-results]');
+  var searchClear = app.querySelector('[data-gift-search-clear]');
 
   var folderCopy = {
     inbox: {
@@ -218,13 +221,63 @@ document.addEventListener('DOMContentLoaded', function () {
     return state.folders[state.folder] || [];
   }
 
+  function searchQuery() {
+    return String((searchInput && searchInput.value) || '').trim().toLowerCase();
+  }
+
+  function searchText(item) {
+    return [item.template_name, item.merchant_name, item.recipient_name, item.sender_name, item.instance_id, item.product_type, item.state, item.message, item.location_name]
+      .join(' ')
+      .toLowerCase();
+  }
+
   function filtered() {
-    var input = app.querySelector('[data-gift-search]');
-    var query = (input && input.value || '').toLowerCase();
+    var query = searchQuery();
+    if (!query) return currentItems();
     return currentItems().filter(function (item) {
-      return [item.template_name, item.merchant_name, item.recipient_name, item.sender_name, item.instance_id, item.product_type, item.state]
-        .join(' ').toLowerCase().includes(query);
+      return searchText(item).includes(query);
     });
+  }
+
+  function closeSearchResults() {
+    if (searchResults) {
+      searchResults.hidden = true;
+      searchResults.innerHTML = '';
+    }
+    if (searchInput) searchInput.setAttribute('aria-expanded', 'false');
+  }
+
+  function renderSearchResults() {
+    if (!searchInput || !searchResults) return;
+    var query = searchQuery();
+    if (searchClear) searchClear.hidden = !query;
+    if (!query) {
+      closeSearchResults();
+      return;
+    }
+    var matches = filtered().slice(0, 8);
+    searchInput.setAttribute('aria-expanded', 'true');
+    searchResults.hidden = false;
+    searchResults.innerHTML = matches.length ? matches.map(function (item) {
+      return '<button type="button" role="option" data-gift-search-result="' + esc(item.action_item_id) + '">' +
+        '<span>' + esc(String(item.template_name || 'M').charAt(0).toUpperCase()) + '</span>' +
+        '<strong>' + esc(item.template_name || 'Microgift') + '</strong>' +
+        '<small>' + esc((item.merchant_name || item.sender_name || 'Microgifter') + ' · ' + money(item.face_value_cents, item.currency)) + '</small>' +
+      '</button>';
+    }).join('') : '<div class="mg-gift-search-empty">No matching gifts found.</div>';
+  }
+
+  function selectSearchResult(id) {
+    var item = currentItems().find(function (candidate) { return candidate.action_item_id === id; });
+    if (!item) return;
+    state.selected = item;
+    if (searchInput) searchInput.value = item.template_name || '';
+    closeSearchResults();
+    renderList();
+    window.setTimeout(function () {
+      var row = list.querySelector('[data-gift-id="' + CSS.escape(id) + '"]');
+      if (row) row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }, 40);
   }
 
   function updateFolderText() {
@@ -290,6 +343,7 @@ document.addEventListener('DOMContentLoaded', function () {
         '<p>' + esc(item.message || item.location_name || 'Gift ready to open') + '</p><div class="mg-gift-row-meta">' + meta + '</div></div>' +
         '<div class="mg-gift-row-actions">' + rowActions(item) + '</div></article>';
     }).join('') : '<div class="mg-gift-empty-list"><strong>No ' + esc(state.folder) + ' gifts</strong><p>Items matching this folder will appear here.</p></div>';
+    renderSearchResults();
   }
 
   function claimBlock(item) {
@@ -466,6 +520,21 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   app.addEventListener('click', function (event) {
+    var searchResult = event.target.closest('[data-gift-search-result]');
+    if (searchResult) {
+      event.preventDefault();
+      selectSearchResult(searchResult.dataset.giftSearchResult);
+      return;
+    }
+    if (event.target.closest('[data-gift-search-clear]')) {
+      event.preventDefault();
+      if (searchInput) searchInput.value = '';
+      closeSearchResults();
+      renderList();
+      if (searchInput) searchInput.focus();
+      return;
+    }
+    if (searchInput && searchResults && !event.target.closest('.mg-gift-search-shell')) closeSearchResults();
     var action = event.target.closest('[data-gift-action]');
     if (action) {
       var row = action.closest('[data-gift-id]');
@@ -493,16 +562,29 @@ document.addEventListener('DOMContentLoaded', function () {
     app.dispatchEvent(new CustomEvent('mg:gift-action:submit', { bubbles: true, detail: { type: type, item: state.selected, data: data } }));
   });
 
-  var search = app.querySelector('[data-gift-search]');
+  var search = searchInput;
   var refresh = app.querySelector('[data-gift-refresh]');
   var drawerClose = app.querySelector('[data-gift-drawer-close]');
-  if (search) search.addEventListener('input', renderList);
+  if (search) {
+    search.addEventListener('input', renderList);
+    search.addEventListener('focus', renderSearchResults);
+    search.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') closeSearchResults();
+      if (event.key === 'Enter') {
+        var first = searchResults && searchResults.querySelector('[data-gift-search-result]');
+        if (first) {
+          event.preventDefault();
+          selectSearchResult(first.dataset.giftSearchResult);
+        }
+      }
+    });
+  }
   if (refresh) refresh.addEventListener('click', function () { state.folders[state.folder] = []; loadFolder(state.folder, true); });
   if (drawerClose) drawerClose.addEventListener('click', closeDrawer);
   backdrop.addEventListener('click', closeDrawer);
   modalBackdrop.addEventListener('click', closeModal);
   document.addEventListener('keydown', function (event) {
-    if (event.key === 'Escape') { closeDrawer(); closeModal(); }
+    if (event.key === 'Escape') { closeDrawer(); closeModal(); closeSearchResults(); }
   });
 
   loadFolder(state.folder, true);
