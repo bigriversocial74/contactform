@@ -30,51 +30,12 @@
     });
   }
 
-  function fieldValue(id,fallback){var n=root.querySelector('#'+id);var v=n?String(n.value||'').trim():'';return v||fallback;}
-
-  function syncCardText(){
-    var headline=fieldValue('headline','HAPPY BIRTHDAY!');
-    var message=fieldValue('message','Add the message the recipient will see inside the card.');
-    root.querySelectorAll('.mg-card-message-copy').forEach(function(copy){
-      var headlineNode=copy.querySelector('[data-preview-card-headline], .mg-card-message-title, h1, h2, h3');
-      var messageNode=copy.querySelector('[data-preview-card-message]');
-      if(!messageNode||messageNode===headlineNode){
-        messageNode=Array.from(copy.querySelectorAll('[data-preview-message], p, .mg-card-inside-message')).find(function(node){return node!==headlineNode;})||null;
-      }
-      if(!headlineNode){
-        headlineNode=document.createElement('h3');
-        copy.insertBefore(headlineNode,copy.firstChild||null);
-      }
-      if(!messageNode||messageNode===headlineNode){
-        messageNode=document.createElement('p');
-        headlineNode.insertAdjacentElement('afterend',messageNode);
-      }
-      headlineNode.classList.add('mg-card-message-title');
-      if(!headlineNode.hasAttribute('data-preview-card-headline'))headlineNode.setAttribute('data-preview-card-headline','');
-      headlineNode.removeAttribute('data-preview-message');
-      headlineNode.removeAttribute('data-preview-card-message');
-      if(headlineNode.textContent!==headline)headlineNode.textContent=headline;
-      headlineNode.style.fontWeight='950';
-      headlineNode.style.lineHeight='.96';
-      headlineNode.style.margin='0 0 12px';
-      messageNode.classList.add('mg-card-inside-message');
-      if(!messageNode.hasAttribute('data-preview-card-message'))messageNode.setAttribute('data-preview-card-message','');
-      messageNode.removeAttribute('data-preview-message');
-      messageNode.removeAttribute('data-preview-card-headline');
-      if(messageNode.textContent!==message)messageNode.textContent=message;
-      messageNode.style.fontWeight='400';
-      messageNode.style.lineHeight='1.45';
-      messageNode.style.margin='0';
-    });
-  }
-
   function sync(){
     var merchant=root.querySelector('#merchantName');
     if(merchant&&!merchant.value.trim())merchant.value=accountName();
     var name=merchant&&merchant.value?merchant.value:accountName();
     root.querySelectorAll('[data-preview-merchant-initial]').forEach(function(n){n.textContent=initial(name);});
 
-    syncCardText();
     if(selectedType()!=='simple_product')return;
     var description=root.querySelector('#productDescription');
     var text=description&&description.value.trim()?description.value.trim():'Add product description.';
@@ -84,9 +45,9 @@
 
   function bind(){
     root.querySelectorAll('input[name="builder_type"]').forEach(function(n){if(!n._mgSimplePostBound){n._mgSimplePostBound=true;n.addEventListener('change',sync);}});
-    root.addEventListener('input',function(event){if(event.target&&/^(productDescription|merchantName|headline|message)$/.test(event.target.id))setTimeout(sync,0);});
+    root.addEventListener('input',function(event){if(event.target&&/^(productDescription|merchantName)$/.test(event.target.id))setTimeout(sync,0);});
     root.addEventListener('change',function(event){
-      if(event.target&&(/^(productDescription|merchantName|headline|message)$/.test(event.target.id)||event.target.matches('[data-asset-role="thumbnail"]')))setTimeout(sync,0);
+      if(event.target&&(/^(productDescription|merchantName)$/.test(event.target.id)||event.target.matches('[data-asset-role="thumbnail"]')))setTimeout(sync,0);
     });
     var preview=root.querySelector('[data-media-preview="thumbnail"]');
     if(preview)new MutationObserver(sync).observe(preview,{childList:true,subtree:true,attributes:true,attributeFilter:['src','class']});
