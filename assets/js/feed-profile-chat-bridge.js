@@ -269,7 +269,7 @@ window.Microgifter = window.Microgifter || {};
   }, true);
 
   dock.addEventListener('submit', function (event) {
-    var form = event.target.closest('[data-feedBridgeChatForm], [data-feed-bridge-chat-form]');
+    var form = event.target.closest('[data-feed-bridge-chat-form]');
     if (!form) return;
     event.preventDefault();
     sendMessage(form);
