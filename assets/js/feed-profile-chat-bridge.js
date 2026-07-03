@@ -98,6 +98,7 @@ window.Microgifter = window.Microgifter || {};
     close.type = 'button';
     close.className = 'mg-feed-chat-close';
     close.dataset.feedBridgeClose = '1';
+    close.dataset.chatClose = '1';
     close.setAttribute('aria-label', 'Close chat');
     close.textContent = '×';
     head.append(user, close);
@@ -133,6 +134,7 @@ window.Microgifter = window.Microgifter || {};
     close.type = 'button';
     close.className = 'mg-feed-chat-close';
     close.dataset.feedBridgeClose = '1';
+    close.dataset.chatClose = '1';
     close.setAttribute('aria-label', 'Close chat');
     close.textContent = '×';
     head.append(user, close);
@@ -229,7 +231,8 @@ window.Microgifter = window.Microgifter || {};
   }
 
   function shouldIgnore(target) {
-    return Boolean(target.closest('[data-post-action], [data-story-create], [data-story-close], [data-story-next], [data-story-prev], [data-story-analytics], [data-story-highlight], [data-story-promote], [data-story-delete], form, input, textarea, select'));
+    if (target.closest('[data-feed-chat-dock], .mg-feed-chat-window, .mg-feed-chat-close, [data-chat-close], [data-feed-bridge-close]')) return true;
+    return Boolean(target.closest('[data-post-action], [data-story-create], [data-story-close], [data-story-next], [data-story-prev], [data-story-analytics], [data-story-highlight], [data-story-promote], [data-story-delete], form, input, textarea, select, button:not(.mg-story-viewer-profile):not(.mg-feed-avatar)'));
   }
 
   function handleProfileClick(event) {
@@ -237,7 +240,7 @@ window.Microgifter = window.Microgifter || {};
     var target = event.target;
     if (shouldIgnore(target)) return;
     var trigger = target.closest('[data-feed-chat-profile], [data-chat-profile-id], .mg-feed-avatar, .mg-feed-card-header a, .mg-story-viewer-profile');
-    if (!trigger || !root.contains(trigger)) return;
+    if (!trigger || !root.contains(trigger) || dock.contains(trigger)) return;
     var profileId = profileIdFromTrigger(trigger);
     if (!profileId) return;
     event.preventDefault();
@@ -260,13 +263,13 @@ window.Microgifter = window.Microgifter || {};
   if (rail) rail.addEventListener('click', handleRailClick, true);
 
   dock.addEventListener('click', function (event) {
-    if (!event.target.closest('[data-feed-bridge-close]')) return;
+    if (!event.target.closest('[data-feed-bridge-close], [data-chat-close], .mg-feed-chat-close')) return;
     clear(dock);
     activeProfile = null;
-  });
+  }, true);
 
   dock.addEventListener('submit', function (event) {
-    var form = event.target.closest('[data-feed-bridge-chat-form]');
+    var form = event.target.closest('[data-feedBridgeChatForm], [data-feed-bridge-chat-form]');
     if (!form) return;
     event.preventDefault();
     sendMessage(form);
