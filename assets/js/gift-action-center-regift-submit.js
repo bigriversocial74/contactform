@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function () {
       box.className = 'mg-send-confirm';
       box.setAttribute('data-regift-confirm', '');
       box.hidden = true;
-      box.innerHTML = '<strong>Confirm regift</strong><p data-regift-confirm-text></p>';
+      box.innerHTML = '<strong>Confirm regift</strong>';
       var actions = form.querySelector('.mg-send-exact-actions,.mg-action-form-footer');
       if (actions) actions.parentNode.insertBefore(box, actions);
       else form.appendChild(box);
@@ -149,8 +149,6 @@ document.addEventListener('DOMContentLoaded', function () {
       confirmKey = key;
       confirmIdempotencyKey = 'regift:' + giftId + ':' + rec.ref + ':' + Date.now();
       var box = form.querySelector('[data-regift-confirm]');
-      var text = form.querySelector('[data-regift-confirm-text]');
-      if (text) text.textContent = 'Send this Microgift to ' + rec.label + '? This transfers ownership to the recipient and creates the received gift in their Inbox.';
       if (box) box.hidden = false;
       if (button) button.textContent = 'Yes, Send Gift';
       return status(form, 'Review the recipient, then click Yes, Send Gift to confirm.', '');
