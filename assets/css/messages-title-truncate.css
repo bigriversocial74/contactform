@@ -1,0 +1,55 @@
+body[data-page-id="messages"] .mg-thread-title-bar{
+  min-width:0!important;
+}
+
+body[data-page-id="messages"] .mg-thread-title-block{
+  flex:1 1 auto!important;
+  min-width:0!important;
+  max-width:100%!important;
+  overflow:hidden!important;
+}
+
+body[data-page-id="messages"] .mg-thread-title-line{
+  min-width:0!important;
+  max-width:100%!important;
+  overflow:hidden!important;
+}
+
+body[data-page-id="messages"] .mg-thread-title-line h2{
+  display:block!important;
+  flex:1 1 auto!important;
+  min-width:0!important;
+  max-width:100%!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+
+body[data-page-id="messages"] .mg-thread-live-dot,
+body[data-page-id="messages"] .mg-thread-title-actions{
+  flex:0 0 auto!important;
+}
+
+@media(max-width:980px){
+  body[data-page-id="messages"] .mg-thread-title-bar{
+    gap:8px!important;
+  }
+
+  body[data-page-id="messages"] .mg-thread-title-block{
+    max-width:calc(100vw - 124px)!important;
+  }
+
+  body[data-page-id="messages"] .mg-thread-title-line h2{
+    font-size:16px!important;
+  }
+}
+
+@media(max-width:420px){
+  body[data-page-id="messages"] .mg-thread-title-block{
+    max-width:calc(100vw - 104px)!important;
+  }
+
+  body[data-page-id="messages"] .mg-thread-live-dot{
+    display:none!important;
+  }
+}
