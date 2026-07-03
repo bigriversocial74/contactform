@@ -38,8 +38,10 @@ function mg_feed_chat_existing_thread_exists(PDO $pdo, int $viewerId, int $peerI
 
 function mg_feed_chat_profile(PDO $pdo, int $viewerId, string $profileId): array
 {
-    $stmt = $pdo->prepare("SELECT pp.public_id,pp.user_id,pp.slug,pp.display_name,pp.avatar_url,pp.profile_type,MAX(us.last_seen_at) last_seen_at,CASE WHEN MAX(us.last_seen_at)>=DATE_SUB(NOW(), INTERVAL 2 MINUTE) THEN 1 ELSE 0 END is_online FROM public_profiles pp INNER JOIN users u ON u.id=pp.user_id LEFT JOIN user_sessions us ON us.user_id=pp.user_id AND us.revoked_at IS NULL AND us.expires_at>NOW() WHERE pp.public_id=? AND pp.status='active' AND pp.visibility IN ('public','unlisted') AND u.status='active' GROUP BY pp.id LIMIT 1");
-    $stmt->execute([trim($profileId)]);
+    $reference = trim($profileId);
+    if ($reference === '') throw new InvalidArgumentException('Choose another profile.');
+    $stmt = $pdo->prepare("SELECT COALESCE(pp.public_id,u.public_id) public_id,u.id user_id,COALESCE(pp.slug,'') slug,COALESCE(pp.display_name,u.display_name,u.full_name,u.email) display_name,pp.avatar_url,COALESCE(pp.profile_type,'user') profile_type,MAX(us.last_seen_at) last_seen_at,CASE WHEN MAX(us.last_seen_at)>=DATE_SUB(NOW(), INTERVAL 2 MINUTE) THEN 1 ELSE 0 END is_online FROM users u LEFT JOIN public_profiles pp ON pp.user_id=u.id AND pp.status='active' AND pp.visibility IN ('public','unlisted') LEFT JOIN user_sessions us ON us.user_id=u.id AND us.revoked_at IS NULL AND us.expires_at>NOW() WHERE (pp.public_id=? OR pp.slug=? OR u.public_id=? OR u.email=?) AND u.status='active' GROUP BY u.id,pp.id LIMIT 1");
+    $stmt->execute([$reference, strtolower($reference), $reference, $reference]);
     $peer = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$peer) throw new RuntimeException('Profile is not available.');
     $peerId = (int)$peer['user_id'];
