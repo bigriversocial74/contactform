@@ -6,7 +6,7 @@ require_once __DIR__ . '/includes/app.php';
 $page_title = 'Build a Product | Microgifter';
 $page_section = 'builder';
 $header_mode = 'builder';
-$builder_asset_version = '20260703-simple-product-slug-mobile-actions';
+$builder_asset_version = '20260703-simple-product-internal-slug';
 $page_styles = [
   '/assets/css/builder-stage4b.css?v=' . $builder_asset_version,
   '/assets/css/builder-shell-fixes.css?v=' . $builder_asset_version,
@@ -17,6 +17,7 @@ $page_scripts = [
   '/assets/js/product-builder-shell.js?v=' . $builder_asset_version,
   '/assets/js/builder-merchant-profile.js?v=' . $builder_asset_version,
   '/assets/js/builder-simple-product-post.js?v=' . $builder_asset_version,
+  '/assets/js/builder-internal-slug.js?v=' . $builder_asset_version,
 ];
 $product_id = trim((string) ($_GET['id'] ?? ''));
 
