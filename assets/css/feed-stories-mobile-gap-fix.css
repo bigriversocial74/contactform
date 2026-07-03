@@ -1,0 +1,26 @@
+@media(max-width:640px){
+  .mg-feed-app-shell{
+    padding-top:0!important;
+  }
+
+  .mg-feed-workspace,
+  .mg-app-workspace.mg-feed-workspace{
+    padding-top:0!important;
+    margin-top:0!important;
+  }
+
+  .mg-feed-shell,
+  .mg-feed-layout.has-sponsored-sidebar,
+  .mg-feed-main{
+    padding-top:0!important;
+    margin-top:0!important;
+  }
+
+  .mg-feed-stories-shell{
+    margin-top:0!important;
+  }
+
+  .mg-feed-stories-header{
+    display:none!important;
+  }
+}
