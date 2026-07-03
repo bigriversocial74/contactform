@@ -58,7 +58,6 @@ require __DIR__ . '/includes/header.php';
           <section class="mg-feed-stories-shell" data-feed-stories aria-label="Stories">
             <div class="mg-feed-stories-header">
               <div>
-                <span>Stories</span>
                 <h2>24-hour local updates</h2>
               </div>
               <div class="mg-stories-status" data-stories-status role="status" aria-live="polite"></div>
