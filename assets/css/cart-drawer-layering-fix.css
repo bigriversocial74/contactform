@@ -20,6 +20,14 @@ body:not(.mg-cart-open) .mg-cart-drawer:not(.is-open){pointer-events:none!import
 /* Builder mobile preview final ordering.
    This file loads after the shared mobile app shell, so these scoped rules win on real phones. */
 @media(max-width:900px){
+  html body.mg-section-builder .mg-builder-shell[data-active-template="simple_product"] .mg-simple-product-mobile-info,
+  html body.mg-section-builder .mg-builder-shell[data-active-template="simple_product"] .mg-builder-card{
+    width:min(540px,calc(100% - 56px))!important;
+    margin-left:auto!important;
+    margin-right:auto!important;
+    box-sizing:border-box!important;
+  }
+
   html body.mg-section-builder .mg-simple-product-template .mg-builder-simple{
     display:flex!important;
     flex-direction:column!important;
