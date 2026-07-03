@@ -9,11 +9,13 @@ window.Microgifter = window.Microgifter || {};
   var active = null;
 
   function esc(v){return String(v == null ? '' : v).replace(/[&<>"']/g,function(c){return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];});}
+  function text(v){return String(v == null ? '' : v).trim();}
   function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
   function num(v,f){var n = Number(v); return Number.isFinite(n) ? n : f;}
   function csrf(){var m=document.querySelector('meta[name="csrf-token"],meta[name="mg-csrf-token"]');return m ? (m.getAttribute('content') || '') : (window.MG_CSRF_TOKEN || '');}
   function money(cents){return '$' + (Math.round(cents) / 100).toFixed(2);}
   function hash(v){var s=String(v||'x'),h=0;for(var i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}return Math.abs(h);}
+  function fieldValue(f,n){return text(f&&f.elements&&f.elements[n] ? f.elements[n].value : '');}
 
   function ensureStyle(){
     if (document.querySelector('[data-world-drop-acceptance-style]')) return;
@@ -24,17 +26,19 @@ window.Microgifter = window.Microgifter || {};
   }
 
   function form(){return document.querySelector('[data-target-zone-form]');}
+  function selectedCampaign(f){var s=f&&f.querySelector('[data-campaign-select]');var o=s?s.options[s.selectedIndex]:null;return {select:s,option:o,id:text(fieldValue(f,'campaign_public_id') || (s&&s.value) || (o&&o.value)),title:text(fieldValue(f,'campaign_title') || (o&&o.dataset.title)),payload:text(fieldValue(f,'payload_type') || (o&&o.dataset.payload)),quantity:text(fieldValue(f,'quantity_limit') || (o&&o.dataset.available) || (o&&o.dataset.quantity)),limit:text(fieldValue(f,'claim_limit_per_user') || (o&&o.dataset.limit))};}
   function dropFromForm(f){
     if(!f || !f.elements.id) return null;
+    var c=selectedCampaign(f);
     return {
       id:String(f.elements.id.value || ''),
-      title:String((f.elements.campaign_title && f.elements.campaign_title.value) || 'Dropped media pack'),
-      campaign_id:String((f.elements.campaign_public_id && f.elements.campaign_public_id.value) || ''),
-      payload:String((f.elements.payload_type && f.elements.payload_type.value) || 'audio_pack'),
+      title:c.title || 'Dropped media pack',
+      campaign_id:c.id,
+      payload:c.payload || 'audio_pack',
       radius:num(f.elements.radius_meters && f.elements.radius_meters.value,2500),
       lat:num(f.elements.target_latitude && f.elements.target_latitude.value,0),
       lng:num(f.elements.target_longitude && f.elements.target_longitude.value,0),
-      form_quantity:num(f.elements.quantity_limit && f.elements.quantity_limit.value,0)
+      form_quantity:num(c.quantity,0)
     };
   }
   function estimate(d){
@@ -71,7 +75,7 @@ window.Microgifter = window.Microgifter || {};
     if(!active) return 'Target Drop';
     var inv=active.inventory || {};
     if(inv.campaign_found && inv.campaign) return 'Campaign: '+(inv.campaign.campaign_title || active.drop.title);
-    if(active.drop.campaign_id) return 'Attached campaign not found';
+    if(active.drop.campaign_id) return active.drop.form_quantity > 0 ? 'Selected campaign' : 'Attached campaign not found';
     return 'Target Drop form quantity';
   }
   function hasEnoughRewards(){return active && availableQty() >= active.est.reservedRewards;}
