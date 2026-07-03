@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var saveTimer = null;
   var isSaving = false;
   var pendingSave = false;
+  var isPublishing = false;
   var assets = { thumbnail: '', cover: '', inside_cover: '', audio: '', video: '' };
   var assetUrls = { thumbnail: '', cover: '', inside_cover: '', audio: '', video: '' };
   var lastProductImageUrl = '';
@@ -22,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var toastNode = root.querySelector('[data-builder-toast]');
   var card = root.querySelector('[data-builder-card]');
   var saveButton = root.querySelector('[data-save-draft]');
-  var publishButton = root.querySelector('[data-publish-product]');
+  var publishButtons = Array.from(root.querySelectorAll('[data-publish-product]'));
   var locationSelect = root.querySelector('[data-location-select]');
   var allLocations = root.querySelector('#allLocations');
   var destinationLinks = {
@@ -144,6 +145,10 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  function setPublishButtonsDisabled(disabled) {
+    publishButtons.forEach(function (button) { button.disabled = disabled; });
+  }
+
   function applyMerchantContext(merchant) {
     if (!merchant || typeof merchant !== 'object') return;
     merchantContext.display_name = String(merchant.display_name || '').trim();
@@ -227,7 +232,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function setActionState(isPublished) {
     root.dataset.builderActionState = isPublished ? 'published' : 'draft';
     if (saveButton) saveButton.hidden = isPublished;
-    if (publishButton) publishButton.hidden = isPublished;
+    publishButtons.forEach(function (button) { button.hidden = isPublished; });
     if (destinationLinks.product) destinationLinks.product.hidden = !isPublished;
   }
 
@@ -321,6 +326,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var media = preview && preview.querySelector('img, audio, video');
     var localUrl = URL.createObjectURL(file);
     assetUrls[role] = localUrl;
+    rememberProductImageUrl(role === 'thumbnail' ? localUrl : '');
     if (media) {
       media.src = localUrl;
       media.hidden = false;
@@ -349,6 +355,7 @@ document.addEventListener('DOMContentLoaded', function () {
       });
       assets[role] = data.asset_id;
       assetUrls[role] = data.preview_url || localUrl;
+      if (role === 'thumbnail') rememberProductImageUrl(assetUrls[role]);
       if (media && data.preview_url) media.src = data.preview_url;
       if (meta) meta.textContent = data.filename + ' · uploaded';
       setStatus('Media uploaded');
@@ -424,22 +431,32 @@ document.addEventListener('DOMContentLoaded', function () {
     return '';
   }
 
-  async function publishProduct() {
+  async function publishProduct(event) {
+    if (event) event.preventDefault();
+    if (isPublishing) return;
     if (!authenticated) {
       toast('Sign in to publish this product.');
       return;
     }
+    window.clearTimeout(saveTimer);
     var validationError = validatePublish();
     if (validationError) {
       toast(validationError);
       setStatus('Publish needs attention', 'is-error');
       return;
     }
+    if (isSaving) {
+      pendingSave = true;
+      setStatus('Waiting for current save…', 'is-saving');
+      window.setTimeout(function () { publishProduct(); }, 450);
+      return;
+    }
     if (!productId) {
       var saved = await saveDraft(true);
       if (!saved || !productId) return;
     }
-    if (publishButton) publishButton.disabled = true;
+    isPublishing = true;
+    setPublishButtonsDisabled(true);
     setStatus('Publishing…', 'is-saving');
 
     try {
@@ -465,7 +482,8 @@ document.addEventListener('DOMContentLoaded', function () {
       setStatus('Publish failed', 'is-error');
       toast(error.message);
     } finally {
-      if (publishButton) publishButton.disabled = false;
+      isPublishing = false;
+      setPublishButtonsDisabled(false);
     }
   }
 
@@ -487,6 +505,7 @@ document.addEventListener('DOMContentLoaded', function () {
         assets = Object.assign({}, assets, draft.assets || {});
         Object.keys(draft.assets || {}).forEach(function (role) {
           assetUrls[role] = '/api/catalog/asset-file.php?id=' + encodeURIComponent(draft.assets[role]);
+          if (role === 'thumbnail') rememberProductImageUrl(assetUrls[role]);
           var preview = root.querySelector('[data-media-preview="' + role + '"]');
           var media = preview && preview.querySelector('img, audio, video');
           var meta = preview && preview.querySelector('[data-media-meta]');
@@ -542,7 +561,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
   if (saveButton) saveButton.addEventListener('click', function () { saveDraft(false); });
-  if (publishButton) publishButton.addEventListener('click', publishProduct);
+  publishButtons.forEach(function (button) { button.addEventListener('click', publishProduct); });
 
   hidePublishDestinations();
   loadDraft();
