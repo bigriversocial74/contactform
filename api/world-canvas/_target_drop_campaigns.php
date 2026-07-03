@@ -84,41 +84,17 @@ function mg_world_target_drop_campaign_payload(PDO $pdo, int $merchantId, string
     $campaignPublicId = strtolower(trim($campaignPublicId));
     if ($merchantId <= 0 || $campaignPublicId === '' || !mg_world_canvas_table($pdo, 'campaigns')) return null;
     try {
-        $hasRewardTemplates = mg_world_canvas_table($pdo, 'reward_templates');
-        $campaignIssued = mg_world_canvas_column($pdo, 'campaigns', 'issued_count') ? 'c.issued_count AS campaign_issued_count' : '0 AS campaign_issued_count';
-        $selectReward = 'NULL AS reward_template_public_id, NULL AS reward_template_title, NULL AS reward_template_status, NULL AS reward_quantity_limit, 0 AS reward_issued_count';
-        $joinReward = '';
-        if ($hasRewardTemplates) {
-            $rewardQuantity = mg_world_canvas_column($pdo, 'reward_templates', 'quantity_limit') ? 'rt.quantity_limit AS reward_quantity_limit' : 'NULL AS reward_quantity_limit';
-            $rewardIssued = mg_world_canvas_column($pdo, 'reward_templates', 'issued_count') ? 'rt.issued_count AS reward_issued_count' : '0 AS reward_issued_count';
-            $selectReward = "rt.public_id AS reward_template_public_id, rt.title AS reward_template_title, rt.status AS reward_template_status, {$rewardQuantity}, {$rewardIssued}";
-            $joinReward = ' LEFT JOIN reward_templates rt ON rt.id = c.reward_template_id';
-        }
-        $rows = mg_world_canvas_rows($pdo, "SELECT c.id, c.public_id, c.title, c.campaign_type, c.status, c.starts_at, c.ends_at, c.quantity_limit AS campaign_quantity_limit, {$campaignIssued}, c.per_user_limit, {$selectReward} FROM campaigns c{$joinReward} WHERE c.merchant_user_id=? AND c.public_id=? AND c.status <> 'archived' LIMIT 1", [$merchantId, $campaignPublicId]);
+        $rows = mg_world_canvas_rows($pdo, "SELECT id, public_id, title, campaign_type, status, starts_at, ends_at, quantity_limit, per_user_limit FROM campaigns WHERE merchant_user_id=? AND public_id=? AND status <> 'archived' LIMIT 1", [$merchantId, $campaignPublicId]);
         if (!$rows) return null;
         $row = $rows[0];
         $type = (string)($row['campaign_type'] ?? 'newsletter_signup');
-        $campaignLimit = $row['campaign_quantity_limit'] === null ? null : (int)$row['campaign_quantity_limit'];
-        $campaignIssuedCount = (int)($row['campaign_issued_count'] ?? 0);
-        $rewardLimit = $row['reward_quantity_limit'] === null ? null : (int)$row['reward_quantity_limit'];
-        $rewardIssuedCount = (int)($row['reward_issued_count'] ?? 0);
-        $campaignAvailable = mg_world_target_drop_remaining($campaignLimit, $campaignIssuedCount);
-        $rewardAvailable = mg_world_target_drop_remaining($rewardLimit, $rewardIssuedCount);
         return [
             'campaign_id' => (int)$row['id'],
             'campaign_public_id' => (string)$row['public_id'],
             'campaign_title' => (string)$row['title'],
             'payload_type' => mg_world_target_drop_campaign_payload_type($type),
-            'quantity_limit' => $rewardLimit !== null ? $rewardLimit : $campaignLimit,
-            'available_quantity' => $rewardAvailable !== null ? $rewardAvailable : $campaignAvailable,
-            'campaign_quantity_limit' => $campaignLimit,
-            'campaign_available_quantity' => $campaignAvailable,
-            'reward_quantity_limit' => $rewardLimit,
-            'reward_available_quantity' => $rewardAvailable,
+            'quantity_limit' => $row['quantity_limit'] === null ? null : (int)$row['quantity_limit'],
             'claim_limit_per_user' => (int)($row['per_user_limit'] ?? 1),
-            'reward_template_id' => $row['reward_template_public_id'] ?? null,
-            'reward_template_title' => $row['reward_template_title'] ?? null,
-            'reward_template_status' => $row['reward_template_status'] ?? null,
         ];
     } catch (Throwable) {
         return null;
@@ -129,17 +105,13 @@ function mg_world_target_drop_enrich_input_with_campaign(PDO $pdo, array $user, 
 {
     $merchantId = (int)($user['id'] ?? 0);
     $campaignPublicId = trim((string)($input['campaign_public_id'] ?? ''));
-    if ($campaignPublicId === '') {
-        $input['campaign_id'] = null;
-        return $input;
-    }
+    if ($campaignPublicId === '') return $input;
     $campaign = mg_world_target_drop_campaign_payload($pdo, $merchantId, $campaignPublicId);
     if (!$campaign) return $input;
-    $input['campaign_id'] = $campaign['campaign_id'];
     $input['campaign_public_id'] = $campaign['campaign_public_id'];
     $input['campaign_title'] = $campaign['campaign_title'];
     $input['payload_type'] = $campaign['payload_type'];
-    $input['quantity_limit'] = $campaign['available_quantity'] ?? $campaign['quantity_limit'];
+    if (!isset($input['quantity_limit']) || $input['quantity_limit'] === '') $input['quantity_limit'] = $campaign['quantity_limit'];
     if (!isset($input['claim_limit_per_user']) || $input['claim_limit_per_user'] === '') $input['claim_limit_per_user'] = $campaign['claim_limit_per_user'];
     return $input;
 }
