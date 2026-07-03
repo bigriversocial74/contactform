@@ -20,7 +20,7 @@ body:not(.mg-cart-open) .mg-cart-drawer:not(.is-open){pointer-events:none!import
 /* Builder mobile preview final ordering.
    This file loads after the shared mobile app shell, so these scoped rules win on real phones. */
 @media(max-width:900px){
-  html body.mg-section-builder .mg-builder-template[data-preview-template="simple_product"].is-active .mg-builder-simple{
+  html body.mg-section-builder .mg-simple-product-template .mg-builder-simple{
     display:flex!important;
     flex-direction:column!important;
     min-height:0!important;
@@ -29,7 +29,7 @@ body:not(.mg-cart-open) .mg-cart-drawer:not(.is-open){pointer-events:none!import
     overflow:hidden!important;
   }
 
-  html body.mg-section-builder .mg-builder-template[data-preview-template="simple_product"].is-active .mg-builder-simple-copy{
+  html body.mg-section-builder .mg-simple-product-template .mg-builder-simple-copy{
     display:flex!important;
     flex-direction:column!important;
     justify-content:flex-start!important;
@@ -45,10 +45,10 @@ body:not(.mg-cart-open) .mg-cart-drawer:not(.is-open){pointer-events:none!import
     border-bottom:1px solid rgba(226,232,240,.8)!important;
   }
 
-  html body.mg-section-builder .mg-builder-template[data-preview-template="simple_product"].is-active .mg-product-profile,
-  html body.mg-section-builder .mg-builder-template[data-preview-template="simple_product"].is-active .mg-builder-simple h1,
-  html body.mg-section-builder .mg-builder-template[data-preview-template="simple_product"].is-active .mg-builder-simple p,
-  html body.mg-section-builder .mg-builder-template[data-preview-template="simple_product"].is-active .mg-builder-simple-value{
+  html body.mg-section-builder .mg-simple-product-template .mg-product-profile,
+  html body.mg-section-builder .mg-simple-product-template .mg-builder-simple h1,
+  html body.mg-section-builder .mg-simple-product-template .mg-builder-simple p,
+  html body.mg-section-builder .mg-simple-product-template .mg-builder-simple-value{
     display:block!important;
     visibility:visible!important;
     opacity:1!important;
@@ -56,14 +56,14 @@ body:not(.mg-cart-open) .mg-cart-drawer:not(.is-open){pointer-events:none!import
     transform:none!important;
   }
 
-  html body.mg-section-builder .mg-builder-template[data-preview-template="simple_product"].is-active .mg-product-profile{
+  html body.mg-section-builder .mg-simple-product-template .mg-product-profile{
     display:flex!important;
     margin:0 0 16px!important;
     padding:0!important;
     border-bottom:0!important;
   }
 
-  html body.mg-section-builder .mg-builder-template[data-preview-template="simple_product"].is-active .mg-builder-simple-media{
+  html body.mg-section-builder .mg-simple-product-template .mg-builder-simple-media{
     display:block!important;
     order:2!important;
     width:100%!important;
