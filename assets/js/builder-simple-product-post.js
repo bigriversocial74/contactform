@@ -50,18 +50,18 @@
         headlineNode.insertAdjacentElement('afterend',messageNode);
       }
       headlineNode.classList.add('mg-card-message-title');
-      headlineNode.setAttribute('data-preview-card-headline','');
+      if(!headlineNode.hasAttribute('data-preview-card-headline'))headlineNode.setAttribute('data-preview-card-headline','');
       headlineNode.removeAttribute('data-preview-message');
       headlineNode.removeAttribute('data-preview-card-message');
-      headlineNode.textContent=headline;
+      if(headlineNode.textContent!==headline)headlineNode.textContent=headline;
       headlineNode.style.fontWeight='950';
       headlineNode.style.lineHeight='.96';
       headlineNode.style.margin='0 0 12px';
       messageNode.classList.add('mg-card-inside-message');
-      messageNode.setAttribute('data-preview-card-message','');
+      if(!messageNode.hasAttribute('data-preview-card-message'))messageNode.setAttribute('data-preview-card-message','');
       messageNode.removeAttribute('data-preview-message');
       messageNode.removeAttribute('data-preview-card-headline');
-      messageNode.textContent=message;
+      if(messageNode.textContent!==message)messageNode.textContent=message;
       messageNode.style.fontWeight='400';
       messageNode.style.lineHeight='1.45';
       messageNode.style.margin='0';
@@ -90,7 +90,6 @@
     });
     var preview=root.querySelector('[data-media-preview="thumbnail"]');
     if(preview)new MutationObserver(sync).observe(preview,{childList:true,subtree:true,attributes:true,attributeFilter:['src','class']});
-    root.querySelectorAll('.mg-card-message-copy').forEach(function(copy){new MutationObserver(sync).observe(copy,{childList:true,subtree:true,attributes:true,attributeFilter:['data-preview-message','data-preview-card-headline','data-preview-card-message']});});
     sync();
   }
 
