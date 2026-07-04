@@ -6,7 +6,7 @@ declare(strict_types=1);
  * The universal header/footer owns the logged-out phone number and market ticker.
  */
 
-$page_title = 'Microgifter | Purchase & Sell Prepaid Gifts';
+$page_title = 'Microgifter | Social Gifting CRM for Local Commerce';
 $page_section = 'public';
 $header_mode = 'public';
 $page_styles = [
@@ -57,8 +57,8 @@ require __DIR__ . '/includes/header.php';
           </div>
           <div class="mg-hero-search-results" data-hero-search-results hidden></div>
         </form>
-        <h1 class="mg-title" id="mgHeroTitle"><span class="mg-title-line">PURCHASE &amp; SELL</span><span class="mg-title-line">PREPAID GIFTS</span></h1>
-        <p class="mg-note">Microgifter makes social gifting simple, fast, and effortless. Buy now, send later, and deliver meaningful gifts anytime, anywhere. The perfect gift for family &amp; friends.</p>
+        <h1 class="mg-title" id="mgHeroTitle"><span class="mg-title-line">The social gifting CRM</span><span class="mg-title-line">for local commerce.</span></h1>
+        <p class="mg-note">Microgifter gives merchants the tools to pre-sell products, track claims, reward loyalty, and predict customer engagement. Promote your best products, offer better deals, and turn social gifting into measurable revenue. Create your free wallet and get started today!</p>
         <div class="mg-actions">
           <a class="mg-btn mg-btn-primary" href="/signup.php">Create Your Wallet <span aria-hidden="true">→</span></a>
           <a class="mg-btn mg-btn-secondary" href="/learn-more.php">Create Merchant Account <span aria-hidden="true">→</span></a>
