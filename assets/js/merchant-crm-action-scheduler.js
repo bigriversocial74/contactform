@@ -11,22 +11,46 @@ document.addEventListener('DOMContentLoaded', function () {
   function isFuture(value) { var ts = Date.parse(String(value || '').replace(' ', 'T')); return Number.isFinite(ts) && ts > Date.now() - 60000; }
   function actionCenterContactId() { var row = qs('tr[data-contact-id] [data-crm-gift]:focus'); row = row && row.closest('tr[data-contact-id]'); if (row) return row.getAttribute('data-contact-id'); var title = qs('[data-crm-action-subtitle]'); var email = title ? String(title.textContent || '').split(' · ')[1] || '' : ''; if (!email) return ''; var match = qsa('tr[data-contact-id]').find(function (tr) { return String(tr.getAttribute('data-contact-email') || '').toLowerCase() === String(email).toLowerCase(); }); return match ? match.getAttribute('data-contact-id') : ''; }
   function selectedCampaignId() { var selected = qs('[data-crm-campaign-select].is-selected, .mg-crm-campaign-card.is-selected'); return selected ? selected.getAttribute('data-crm-campaign-select') : ''; }
+  function normalActionLabel() {
+    var summary = qs('[data-crm-action-footer-summary]');
+    var text = summary ? String(summary.textContent || '').toLowerCase() : '';
+    return text.indexOf('invite fallback') >= 0 ? 'Send wallet invite' : 'Send to customer';
+  }
+  function syncActionScheduleButton() {
+    var send = qs('[data-crm-action-send]');
+    var schedule = qs('[data-crm-action-schedule]');
+    var scheduledAt = (qs('[data-crm-action-scheduled-at]') || {}).value || '';
+    var help = qs('[data-crm-action-schedule-help]');
+    if (!send || !schedule) return;
+    if (schedule.checked) {
+      send.textContent = 'Schedule Send Gift';
+      send.setAttribute('aria-label', 'Schedule send gift');
+      if (help) help.textContent = isFuture(scheduledAt) ? 'Schedule settings are applied to this action. Click Schedule Send Gift to save it.' : 'Choose a future date and time, then click Schedule Send Gift.';
+    } else if (/schedule/i.test(send.textContent || '')) {
+      send.textContent = normalActionLabel();
+      send.removeAttribute('aria-label');
+      if (help) help.textContent = 'No separate save needed. These settings apply to this send and are saved when you send or schedule it.';
+    } else if (help) {
+      help.textContent = 'No separate save needed. These settings apply to this send and are saved when you send or schedule it.';
+    }
+  }
 
   function ensureActionScheduleControls() {
     var notes = qs('[data-crm-action-section="notes"] .mg-crm-action-note');
     if (!notes || qs('[data-crm-action-schedule]', notes)) return;
-    notes.insertAdjacentHTML('beforeend', '<label class="mg-crm-action-toggle"><input type="checkbox" data-crm-action-schedule> Schedule this send</label><label data-crm-action-schedule-wrap hidden>Scheduled send time<input class="mg-input" type="datetime-local" data-crm-action-scheduled-at></label>');
+    notes.insertAdjacentHTML('beforeend', '<label class="mg-crm-action-toggle"><input type="checkbox" data-crm-action-schedule> Schedule this send</label><label data-crm-action-schedule-wrap hidden>Scheduled send time<input class="mg-input" type="datetime-local" data-crm-action-scheduled-at></label><p class="mg-crm-action-helper" data-crm-action-schedule-help>No separate save needed. These settings apply to this send and are saved when you send or schedule it.</p>');
+    syncActionScheduleButton();
   }
 
   function ensureBulkScheduleControls() {
     var form = qs('[data-crm-bulk-form]');
     if (!form || qs('[data-crm-bulk-schedule]', form)) return;
     var results = qs('[data-crm-bulk-results]', form);
-    var html = '<label class="mg-crm-field" data-crm-bulk-schedule-field><span>Delivery timing</span><label class="mg-crm-inline-check"><input type="checkbox" data-crm-bulk-schedule> Schedule this bulk action</label><input class="mg-input" type="datetime-local" data-crm-bulk-scheduled-at hidden></label>';
+    var html = '<label class="mg-crm-field" data-crm-bulk-schedule-field><span>Delivery timing</span><label class="mg-crm-inline-check"><input type="checkbox" data-crm-bulk-schedule> Schedule this bulk action</label><input class="mg-input" type="datetime-local" data-crm-bulk-scheduled-at hidden><small data-crm-bulk-schedule-help>No separate save needed. The batch is saved when you run or schedule the action.</small></label>';
     if (results) results.insertAdjacentHTML('beforebegin', html); else form.insertAdjacentHTML('beforeend', html);
   }
 
-  function patchControls() { ensureActionScheduleControls(); ensureBulkScheduleControls(); }
+  function patchControls() { ensureActionScheduleControls(); ensureBulkScheduleControls(); syncActionScheduleButton(); }
   patchControls();
   new MutationObserver(patchControls).observe(document.body, { childList: true, subtree: true });
 
@@ -36,11 +60,16 @@ document.addEventListener('DOMContentLoaded', function () {
     if (target.matches('[data-crm-action-schedule]')) {
       var wrap = qs('[data-crm-action-schedule-wrap]');
       if (wrap) wrap.hidden = !target.checked;
+      syncActionScheduleButton();
     }
+    if (target.matches('[data-crm-action-scheduled-at]')) syncActionScheduleButton();
     if (target.matches('[data-crm-bulk-schedule]')) {
       var input = qs('[data-crm-bulk-scheduled-at]');
       if (input) input.hidden = !target.checked;
     }
+  });
+  document.addEventListener('input', function (event) {
+    if (event.target && event.target.matches('[data-crm-action-scheduled-at]')) syncActionScheduleButton();
   });
 
   window.addEventListener('click', async function (event) {
@@ -51,10 +80,10 @@ document.addEventListener('DOMContentLoaded', function () {
     var scheduledAt = (qs('[data-crm-action-scheduled-at]') || {}).value || '';
     event.preventDefault();
     event.stopImmediatePropagation();
-    if (!isFuture(scheduledAt)) { setStatus('[data-crm-action-status]', 'Choose a valid future scheduled send time.', 'error'); return; }
+    if (!isFuture(scheduledAt)) { setStatus('[data-crm-action-status]', 'Choose a valid future scheduled send time.', 'error'); syncActionScheduleButton(); return; }
     var contactId = actionCenterContactId();
     var campaignId = selectedCampaignId();
-    if (!contactId || !campaignId) { setStatus('[data-crm-action-status]', 'Choose a contact and campaign before scheduling.', 'error'); return; }
+    if (!contactId || !campaignId) { setStatus('[data-crm-action-status]', 'Choose a contact and campaign before scheduling.', 'error'); syncActionScheduleButton(); return; }
     var note = ((qs('[data-crm-action-note]') || {}).value || '').trim();
     var reason = ((qs('[data-crm-action-reason]') || {}).value || 'manual_promo').replace(/_/g, ' ');
     var sendMessage = !!((qs('[data-crm-action-send-message]') || {}).checked);
@@ -78,12 +107,14 @@ document.addEventListener('DOMContentLoaded', function () {
       });
       var data = response.data || response;
       setStatus('[data-crm-action-status]', 'Scheduled for ' + scheduledAt + '. Batch: ' + (data.batch_id || ''), 'success');
+      send.textContent = 'Scheduled Send Gift';
       toast('CRM action scheduled.');
     } catch (error) {
       setStatus('[data-crm-action-status]', error.message || 'Unable to schedule CRM action.', 'error');
+      send.textContent = original;
     } finally {
       send.disabled = false;
-      send.textContent = original;
+      if (schedule.checked && !/^Scheduled Send Gift$/i.test(send.textContent || '')) syncActionScheduleButton();
     }
   }, true);
 
