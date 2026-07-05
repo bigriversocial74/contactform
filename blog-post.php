@@ -4,11 +4,13 @@ declare(strict_types=1);
 require_once __DIR__ . '/includes/app.php';
 require_once __DIR__ . '/includes/blog/blog-functions.php';
 require_once __DIR__ . '/includes/blog/blog-settings.php';
+require_once __DIR__ . '/includes/blog/blog-showcase.php';
 
 $pdo = mg_db();
 $schema = mg_blog_schema_ready($pdo);
 $slug = mg_blog_slugify((string) ($_GET['slug'] ?? ''), '');
-$post = $schema['ready'] && $slug !== '' ? mg_blog_get_public_post($pdo, $slug) : null;
+$post = $schema['ready'] && $slug !== '' ? mg_blog_get_showcase_post($pdo, $slug) : null;
+$isSeedPreview = $post && (string) ($post['status'] ?? '') === 'draft' && in_array((string) ($post['slug'] ?? ''), mg_blog_seed_post_slugs(), true);
 if (!$post) {
     http_response_code(404);
 }
@@ -17,7 +19,7 @@ $related = [];
 $tags = [];
 if ($post) {
     $tags = mg_blog_tag_names($pdo, (int) $post['id']);
-    if (!empty($post['category_slug'])) {
+    if (!$isSeedPreview && !empty($post['category_slug'])) {
         $related = array_values(array_filter(
             mg_blog_list_public_posts($pdo, ['category_slug' => (string) $post['category_slug'], 'limit' => 4]),
             static fn(array $candidate): bool => (int) $candidate['id'] !== (int) $post['id']
@@ -41,14 +43,14 @@ $page_title = $title;
 $page_section = 'blog';
 $header_mode = 'public';
 $page_body_class = 'mg-blog-page mg-blog-article-page';
-$page_styles = ['/assets/css/blog.css', '/assets/css/blog-share.css'];
+$page_styles = ['/assets/css/blog.css', '/assets/css/blog-share.css', '/assets/css/blog-db-polish.css'];
 $page_meta = [
     'description' => $description,
     'canonical' => $canonical,
     'og_title' => $post ? (string) $post['title'] : 'Microgifter Blog',
     'og_description' => $description,
     'og_image' => $post ? (string) ($post['featured_image'] ?: $settings['default_social_image']) : (string) $settings['default_social_image'],
-    'robots' => $post ? '' : 'noindex',
+    'robots' => $post && !$isSeedPreview ? '' : 'noindex',
 ];
 $page_manifest = [
     'id' => 'blog-post',
@@ -81,6 +83,9 @@ require __DIR__ . '/includes/header.php';
       <a class="mg-blog-primary-link" href="/blog.php">Back to blog</a>
     </section>
   <?php else: ?>
+    <?php if ($isSeedPreview): ?>
+      <section class="mg-blog-wrap mg-blog-data-note"><span>Database seed draft preview. Publish this post in Content Studio when ready for public launch.</span></section>
+    <?php endif; ?>
     <article class="mg-blog-article">
       <header class="mg-blog-wrap mg-blog-post-hero">
         <div class="mg-blog-post-kicker-row">
@@ -96,7 +101,7 @@ require __DIR__ . '/includes/header.php';
             <p><?= mg_e((string) $post['excerpt']) ?></p>
             <div class="mg-blog-meta mg-blog-post-meta">
               <span><?= mg_e(mg_blog_author_name($post)) ?></span>
-              <span><?= mg_e(mg_blog_format_date($post['published_at'] ?? null)) ?></span>
+              <span><?= $isSeedPreview ? 'Draft sample' : mg_e(mg_blog_format_date($post['published_at'] ?? null)) ?></span>
               <span><?= mg_blog_reading_time((string) $post['body']) ?> min read</span>
             </div>
           </div>
@@ -127,7 +132,7 @@ require __DIR__ . '/includes/header.php';
             <h2>Article details</h2>
             <dl>
               <div><dt>Author</dt><dd><?= mg_e(mg_blog_author_name($post)) ?></dd></div>
-              <div><dt>Published</dt><dd><?= mg_e(mg_blog_format_date($post['published_at'] ?? null)) ?></dd></div>
+              <div><dt>Status</dt><dd><?= $isSeedPreview ? 'Draft sample' : 'Published' ?></dd></div>
               <div><dt>Reading time</dt><dd><?= mg_blog_reading_time((string) $post['body']) ?> min</dd></div>
             </dl>
           </section>
@@ -189,7 +194,7 @@ require __DIR__ . '/includes/header.php';
       </section>
     <?php endif; ?>
 
-    <script type="application/ld+json"><?= json_encode([
+    <?php if (!$isSeedPreview): ?><script type="application/ld+json"><?= json_encode([
       '@context' => 'https://schema.org',
       '@type' => 'Article',
       'headline' => (string) $post['title'],
@@ -200,7 +205,7 @@ require __DIR__ . '/includes/header.php';
       'datePublished' => (string) ($post['published_at'] ?? $post['created_at'] ?? ''),
       'dateModified' => (string) ($post['updated_at'] ?? ''),
       'mainEntityOfPage' => $canonical,
-    ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?></script>
+    ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?></script><?php endif; ?>
   <?php endif; ?>
 </main>
 <?php require __DIR__ . '/includes/footer.php'; ?>
