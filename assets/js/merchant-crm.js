@@ -14,6 +14,13 @@ document.addEventListener('DOMContentLoaded', function () {
     entryActionHandled: false
   };
 
+  var SVG = {
+    view: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.7"/></svg>',
+    timeline: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v5l3 2"/><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>',
+    message: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6.5h14v10H8.5L5 19.5v-13Z"/></svg>',
+    gift: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10h16v10H4V10Z"/><path d="M12 10v10"/><path d="M4 14h16"/><path d="M7.5 6.5c0-1.4 1-2.5 2.3-2.5 1.7 0 2.2 2 2.2 3.5H9c-.8 0-1.5-.2-1.5-1Z"/><path d="M16.5 6.5c0-1.4-1-2.5-2.3-2.5-1.7 0-2.2 2-2.2 3.5h3c.8 0 1.5-.2 1.5-1Z"/></svg>'
+  };
+
   function qs(selector, root) { return (root || document).querySelector(selector); }
   function qsa(selector, root) { return Array.prototype.slice.call((root || document).querySelectorAll(selector)); }
   function esc(value) {
@@ -58,8 +65,11 @@ document.addEventListener('DOMContentLoaded', function () {
     var stats = contact.crm_stats || {};
     return Number(contact.crm_score || stats.score || 0);
   }
-  function metric(value, text) {
-    return '<span><strong>' + esc(value || 0) + '</strong>' + esc(text) + '</span>';
+  function actionButton(kind, tag, attrs, labelText) {
+    return '<' + tag + ' class="mg-crm-icon-btn" ' + attrs + ' title="' + esc(labelText) + '" aria-label="' + esc(labelText) + '">' + SVG[kind] + '<span>' + esc(labelText) + '</span></' + tag + '>';
+  }
+  function stat(value, text) {
+    return '<span><em>' + esc(text) + '</em><strong>' + esc(value || 0) + '</strong></span>';
   }
   function contactMatchesSegment(contact) {
     if (state.segment === 'accounts') return !!contact.has_account;
@@ -72,9 +82,7 @@ document.addEventListener('DOMContentLoaded', function () {
     return true;
   }
   function visibleContacts() { return state.contacts.filter(contactMatchesSegment); }
-  function selectedContacts() {
-    return state.contacts.filter(function (contact) { return !!state.selected[String(contact.id)]; });
-  }
+  function selectedContacts() { return state.contacts.filter(function (contact) { return !!state.selected[String(contact.id)]; }); }
   function rewardState(contact) {
     return Number(contact.redeemed_count || 0) > 0 ? 'redeemed' : (Number(contact.claimed_count || 0) > 0 ? 'claimed' : (Number(contact.issued_count || 0) > 0 ? 'issued' : 'none'));
   }
@@ -98,33 +106,30 @@ document.addEventListener('DOMContentLoaded', function () {
     var accountText = contact.has_account ? (contact.account_resolved_by_email ? 'Account/email' : 'Account') : 'No account';
     var stats = contact.crm_stats || {};
     var score = contactScore(contact);
-    var result = contact.result_status || stats.result_status || 'no_action_yet';
-    var next = contact.next_best_action || stats.next_best_action || 'Review contact';
     var scoreLabel = contact.crm_score_label || stats.score_label || 'score';
-    var emailStatus = contact.emails_delivered_count > 0 ? 'delivered' : (contact.emails_queued_count > 0 ? 'queued' : 'none');
-    return '<tr class="mg-crm-contact-card-row" data-contact-id="' + id + '" data-contact-email="' + esc(contact.email || '') + '" data-crm-stats-ready="1">' +
+    var result = contact.result_status || stats.result_status || 'no_action_yet';
+    var giftText = contact.has_account ? 'Send reward' : 'Send invite';
+    var inboxCount = stats.inbox || contact.inbox_count || contact.wallet_count || 0;
+    var sentCount = stats.sent || stats.issued || contact.issued_count || 0;
+    var claimedCount = stats.claimed || contact.claimed_count || contact.redeemed_count || 0;
+    var messageCount = stats.messages || contact.message_count || contact.emails_delivered_count || 0;
+    return '<tr class="mg-crm-contact-row" data-contact-id="' + id + '" data-contact-email="' + esc(contact.email || '') + '" data-crm-stats-ready="1">' +
       '<td class="mg-crm-select-cell"><input type="checkbox" data-crm-contact-check aria-label="Select contact"' + checked + '></td>' +
-      '<td><div class="mg-crm-contact-main"><div class="mg-crm-contact-avatar" aria-hidden="true">' + esc(initials(contact)) + '</div><div class="mg-crm-contact-copy"><strong>' + esc(contact.name || 'Unnamed') + '</strong><small>' + esc(contact.email || '') + '</small>' + (contact.no_recent_activity ? '<small class="mg-crm-segment-note">No recent activity</small>' : '') + '</div></div></td>' +
-      '<td class="mg-crm-score-cell"><div class="mg-crm-contact-score ' + scoreClass(score) + '"><b>' + esc(score) + '</b><span>' + esc(label(scoreLabel)) + '</span><small>' + esc(label(result)) + '</small></div></td>' +
-      '<td>' + esc(contact.campaign_title || '—') + '<br><small>' + esc(contact.campaign_type || contact.source || '') + '</small></td>' +
-      '<td>' + badge(accountText, !!contact.has_account) + ' ' + badge(contact.email_verified ? 'Verified' : 'Unverified', !!contact.email_verified) + '</td>' +
-      '<td>' + badge(reward, reward === 'claimed' || reward === 'redeemed') + (Number(contact.invite_pending_count || 0) > 0 ? ' ' + badge('Invite pending', true) : '') + '</td>' +
-      '<td class="mg-crm-activity-cell"><div class="mg-crm-contact-insights"><div>' +
-        metric(stats.issued || contact.issued_count || 0, 'Issued') +
-        metric(stats.claimed || contact.claimed_count || 0, 'Claimed') +
-        metric(stats.redeemed || contact.redeemed_count || 0, 'Redeemed') +
-        metric(stats.messages || contact.emails_delivered_count || contact.message_count || 0, 'Messages') +
-        '</div><p><strong>Next:</strong> ' + esc(next) + '</p><p><strong>Email:</strong> ' + esc(emailStatus) + '</p></div></td>' +
-      '<td><div class="mg-crm-row-actions"><a class="mg-btn mg-btn-soft" href="' + esc(profileUrl(contact)) + '" data-crm-view-customer>View Customer</a><button class="mg-btn mg-btn-soft" type="button" data-view-timeline>Timeline</button><button class="mg-btn mg-btn-soft" type="button" data-crm-message>Message</button><button class="mg-btn mg-btn-soft" type="button" data-crm-gift>Send reward</button></div></td>' +
-      '</tr>';
+      '<td class="mg-crm-contact-cell"><div class="mg-crm-contact-main"><div class="mg-crm-contact-avatar" aria-hidden="true">' + esc(initials(contact)) + '</div><div class="mg-crm-contact-copy"><strong>' + esc(contact.name || 'Unnamed') + '</strong><small>' + esc(contact.email || '') + '</small><div class="mg-crm-score-line"><span class="mg-crm-contact-score ' + scoreClass(score) + '"><b>' + esc(score) + '</b><em>' + esc(label(scoreLabel)) + '</em><small>' + esc(label(result)) + '</small></span></div></div></div></td>' +
+      '<td class="mg-crm-campaign-cell"><strong>' + esc(contact.campaign_title || '—') + '</strong><small>' + esc(contact.campaign_type || contact.source || '') + '</small><div class="mg-crm-campaign-rewards">' + badge(reward, reward === 'claimed' || reward === 'redeemed') + (Number(contact.invite_pending_count || 0) > 0 ? badge('Invite pending', true) : '') + '</div></td>' +
+      '<td class="mg-crm-account-cell">' + badge(accountText, !!contact.has_account) + badge(contact.email_verified ? 'Verified' : 'Unverified', !!contact.email_verified) + '</td>' +
+      '<td class="mg-crm-engagement-cell"><div class="mg-crm-engagement-stats">' + stat(inboxCount, 'Inbox') + stat(sentCount, 'Sent') + stat(claimedCount, 'Claimed') + stat(messageCount, 'Msg') + '</div><div class="mg-crm-row-actions">' +
+        actionButton('view', 'a', 'href="' + esc(profileUrl(contact)) + '" data-crm-view-customer', 'View customer') +
+        actionButton('timeline', 'button', 'type="button" data-view-timeline', 'Timeline') +
+        actionButton('message', 'button', 'type="button" data-crm-message', 'Messages') +
+        actionButton('gift', 'button', 'type="button" data-crm-gift', giftText) +
+      '</div></td></tr>';
   }
   function renderContacts() {
     var wrapper = qs('[data-merchant-crm-table]');
     var rows = visibleContacts();
     if (!wrapper) return;
-    qsa('[data-crm-segment]').forEach(function (button) {
-      button.classList.toggle('is-active', button.getAttribute('data-crm-segment') === state.segment);
-    });
+    qsa('[data-crm-segment]').forEach(function (button) { button.classList.toggle('is-active', button.getAttribute('data-crm-segment') === state.segment); });
     if (!state.contacts.length) {
       wrapper.innerHTML = '<div class="mg-empty-state"><strong>No contacts yet</strong><p>Campaign signups will appear here.</p></div>';
       updateBulkState();
@@ -135,23 +140,15 @@ document.addEventListener('DOMContentLoaded', function () {
       updateBulkState();
       return;
     }
-    wrapper.innerHTML = '<table class="mg-crm-table"><thead><tr><th class="mg-crm-select-cell">Select</th><th>Contact</th><th>Score</th><th>Campaign</th><th>Account</th><th>Reward Status</th><th>Activity Summary</th><th>Actions</th></tr></thead><tbody>' + rows.map(contactRow).join('') + '</tbody></table>';
+    wrapper.innerHTML = '<table class="mg-crm-table mg-crm-contacts-table"><thead><tr><th class="mg-crm-select-cell">Select</th><th>Contact</th><th>Campaign</th><th>Account</th><th>Engagement</th></tr></thead><tbody>' + rows.map(contactRow).join('') + '</tbody></table>';
     updateBulkState();
     document.dispatchEvent(new CustomEvent('mg:crm-contacts:rendered', { detail: { contacts: state.contacts, visible: rows } }));
-    maybeRunEntryAction();
   }
   async function loadCampaigns() {
     try {
       var response = await Microgifter.get('/api/merchant/campaign-activity.php');
       var data = response.data || response;
-      var select = qs('[data-crm-campaign-filter]');
       state.campaigns = data.campaigns || [];
-      if (select) {
-        select.innerHTML = '<option value="">All campaigns</option>' + state.campaigns.map(function (campaign) {
-          return '<option value="' + esc(campaign.id) + '">' + esc(campaign.title || campaign.id) + '</option>';
-        }).join('');
-        select.value = state.selectedCampaign;
-      }
     } catch (error) {
       state.campaigns = [];
     }
@@ -167,6 +164,7 @@ document.addEventListener('DOMContentLoaded', function () {
     set('[data-merchant-crm-verified]', Number(totals.verified || 0).toLocaleString());
     set('[data-merchant-crm-wallets]', Number(totals.wallets || 0).toLocaleString());
     renderContacts();
+    maybeRunEntryAction();
   }
   function titleForEvent(event) {
     var type = String(event.type || '');
@@ -183,9 +181,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function detailForEvent(event) {
     var context = event.context || {};
     var parts = [];
-    ['reward_template_id', 'invite_id', 'wallet_item_id', 'thread_id', 'message_id', 'due_at'].forEach(function (key) {
-      if (context[key]) parts.push(key.replace(/_/g, ' ') + ' ' + context[key]);
-    });
+    ['reward_template_id', 'invite_id', 'wallet_item_id', 'thread_id', 'message_id', 'due_at'].forEach(function (key) { if (context[key]) parts.push(key.replace(/_/g, ' ') + ' ' + context[key]); });
     return parts.length ? '<p>' + parts.map(esc).join(' · ') + '</p>' : '';
   }
   function eventRow(event) {
@@ -229,10 +225,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var body = ((bodyElement || {}).value || '').trim();
     var button = qs('[data-crm-message-submit]', event.target);
     if (!state.activeContact || !body) return;
-    if (status) {
-      status.textContent = 'Sending message...';
-      status.dataset.statusType = '';
-    }
+    if (status) { status.textContent = 'Sending message...'; status.dataset.statusType = ''; }
     busy(button, true, 'Sending...');
     try {
       var response = await Microgifter.post('/api/merchant/crm-message.php', { contact_id: state.activeContact.id, message: body, idempotency_key: 'crm-message-ui:' + state.activeContact.id + ':' + Date.now() });
@@ -241,27 +234,18 @@ document.addEventListener('DOMContentLoaded', function () {
       var sent = message.delivered_via === 'microgifter_thread';
       var text = sent ? 'Message delivered to customer Messages.' : 'Message queued for email fallback.';
       if (bodyElement) bodyElement.value = '';
-      if (status) {
-        status.textContent = text + ' Thread: ' + (data.thread_id || message.thread_id || '');
-        status.dataset.statusType = 'success';
-      }
+      if (status) { status.textContent = text + ' Thread: ' + (data.thread_id || message.thread_id || ''); status.dataset.statusType = 'success'; }
       document.dispatchEvent(new CustomEvent('mg:crm-messages:refresh', { detail: { thread_id: data.thread_id || '' } }));
       document.dispatchEvent(new CustomEvent('mg:notifications:refresh'));
       await loadContacts();
       toast(text);
     } catch (error) {
-      if (status) {
-        status.textContent = error.message || 'Unable to send CRM message.';
-        status.dataset.statusType = 'error';
-      }
+      if (status) { status.textContent = error.message || 'Unable to send CRM message.'; status.dataset.statusType = 'error'; }
     } finally {
       busy(button, false);
     }
   }
-  function bulkModal(on) {
-    var modal = qs('[data-crm-bulk-modal]');
-    if (modal) modal.hidden = !on;
-  }
+  function bulkModal(on) { var modal = qs('[data-crm-bulk-modal]'); if (modal) modal.hidden = !on; }
   function renderBulkPreview() {
     var contacts = selectedContacts();
     var accounts = contacts.filter(function (contact) { return !!contact.has_account; }).length;
@@ -275,15 +259,10 @@ document.addEventListener('DOMContentLoaded', function () {
     var response = await Microgifter.get('/api/merchant/reward-templates.php?status=active');
     var data = response.data || response;
     var items = data.templates || [];
-    if (select) select.innerHTML = '<option value="">Choose reward</option>' + items.map(function (template) {
-      return '<option value="' + esc(template.id) + '">' + esc(template.title || 'Reward') + '</option>';
-    }).join('');
+    if (select) select.innerHTML = '<option value="">Choose reward</option>' + items.map(function (template) { return '<option value="' + esc(template.id) + '">' + esc(template.title || 'Reward') + '</option>'; }).join('');
   }
   async function openBulkAction(mode) {
-    if (!selectedContacts().length) {
-      toast('Select CRM contacts first.');
-      return;
-    }
+    if (!selectedContacts().length) { toast('Select CRM contacts first.'); return; }
     state.bulkMode = mode;
     set('[data-crm-bulk-title]', mode === 'message' ? 'Message selected contacts' : (mode === 'reward' ? 'Send or invite selected rewards' : 'Create selected follow-ups'));
     set('[data-crm-bulk-subtitle]', mode === 'reward' ? 'Account contacts receive direct rewards. No-account contacts receive reward invite links.' : 'Preview the selected contacts before processing.');
@@ -298,10 +277,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function renderBulkResults(data) {
     var summary = (data && data.summary) || {};
     var element = qs('[data-crm-bulk-results]');
-    if (element) {
-      element.hidden = false;
-      element.innerHTML = '<strong>Result summary</strong><p>Sent: ' + Number(summary.sent || 0) + ' · Issued: ' + Number(summary.issued || 0) + ' · Invited: ' + Number(summary.invited || 0) + ' · Skipped: ' + Number(summary.skipped || 0) + ' · Failed: ' + Number(summary.failed || 0) + ' · Duplicates: ' + Number(summary.duplicates || 0) + '</p>';
-    }
+    if (element) { element.hidden = false; element.innerHTML = '<strong>Result summary</strong><p>Sent: ' + Number(summary.sent || 0) + ' · Issued: ' + Number(summary.issued || 0) + ' · Invited: ' + Number(summary.invited || 0) + ' · Skipped: ' + Number(summary.skipped || 0) + ' · Failed: ' + Number(summary.failed || 0) + ' · Duplicates: ' + Number(summary.duplicates || 0) + '</p>'; }
   }
   async function submitBulkForm(event) {
     event.preventDefault();
@@ -309,41 +285,20 @@ document.addEventListener('DOMContentLoaded', function () {
     var payload = { contact_ids: ids, idempotency_key: 'crm-bulk-' + state.bulkMode + '-ui:' + Date.now() };
     var endpoint = '/api/merchant/crm-followup.php';
     var button = qs('[data-crm-bulk-submit]');
-    if (state.bulkMode === 'message') {
-      endpoint = '/api/merchant/crm-bulk-message.php';
-      payload.message = ((qs('[data-crm-bulk-message]') || {}).value || '').trim();
-    } else if (state.bulkMode === 'reward') {
-      endpoint = '/api/merchant/crm-bulk-reward.php';
-      payload.reward_template_id = (qs('[data-crm-bulk-template]') || {}).value || '';
-      payload.note = ((qs('[data-crm-bulk-note]') || {}).value || '').trim();
-    } else {
-      payload.note = ((qs('[data-crm-bulk-note]') || {}).value || '').trim();
-      payload.due_at = ((qs('[data-crm-bulk-due]') || {}).value || '').trim();
-    }
+    if (state.bulkMode === 'message') { endpoint = '/api/merchant/crm-bulk-message.php'; payload.message = ((qs('[data-crm-bulk-message]') || {}).value || '').trim(); }
+    else if (state.bulkMode === 'reward') { endpoint = '/api/merchant/crm-bulk-reward.php'; payload.reward_template_id = (qs('[data-crm-bulk-template]') || {}).value || ''; payload.note = ((qs('[data-crm-bulk-note]') || {}).value || '').trim(); }
+    else { payload.note = ((qs('[data-crm-bulk-note]') || {}).value || '').trim(); payload.due_at = ((qs('[data-crm-bulk-due]') || {}).value || '').trim(); }
     busy(button, true, 'Processing...');
-    try {
-      var response = await Microgifter.post(endpoint, payload);
-      var data = response.data || response;
-      renderBulkResults(data);
-      await loadContacts();
-      toast('Bulk CRM action complete.');
-    } catch (error) {
-      set('[data-crm-bulk-status]', error.message || 'Unable to process bulk action.');
-    } finally {
-      busy(button, false);
-    }
+    try { var response = await Microgifter.post(endpoint, payload); var data = response.data || response; renderBulkResults(data); await loadContacts(); toast('Bulk CRM action complete.'); }
+    catch (error) { set('[data-crm-bulk-status]', error.message || 'Unable to process bulk action.'); }
+    finally { busy(button, false); }
   }
-  function csv(value) {
-    value = String(value == null ? '' : value);
-    return /[",\n\r]/.test(value) ? '"' + value.replace(/"/g, '""') + '"' : value;
-  }
+  function csv(value) { value = String(value == null ? '' : value); return /[",\n\r]/.test(value) ? '"' + value.replace(/"/g, '""') + '"' : value; }
   function exportSelected() {
     var rows = selectedContacts();
     var head = ['Name', 'Email', 'Campaign', 'Campaign type', 'Account', 'Email verified', 'Reward issued', 'Reward claimed', 'Reward redeemed', 'Invite pending', 'Last activity'];
     if (!rows.length) return toast('Select CRM contacts first.');
-    var body = rows.map(function (contact) {
-      return [contact.name, contact.email, contact.campaign_title, contact.campaign_type, contact.has_account ? 'yes' : 'no', contact.email_verified ? 'yes' : 'no', contact.issued_count || 0, contact.claimed_count || 0, contact.redeemed_count || 0, contact.invite_pending_count || 0, contact.last_activity_at || ''].map(csv).join(',');
-    });
+    var body = rows.map(function (contact) { return [contact.name, contact.email, contact.campaign_title, contact.campaign_type, contact.has_account ? 'yes' : 'no', contact.email_verified ? 'yes' : 'no', contact.issued_count || 0, contact.claimed_count || 0, contact.redeemed_count || 0, contact.invite_pending_count || 0, contact.last_activity_at || ''].map(csv).join(','); });
     var blob = new Blob([[head.map(csv).join(',')].concat(body).join('\n')], { type: 'text/csv' });
     var url = URL.createObjectURL(blob);
     var anchor = document.createElement('a');
@@ -358,10 +313,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var params = new URLSearchParams(location.search || '');
     var id = params.get('campaign_contact_id') || params.get('contact_id') || params.get('contact') || '';
     var email = String(params.get('email') || '').toLowerCase();
-    if (id) {
-      var byId = state.contacts.find(function (contact) { return String(contact.id) === String(id); });
-      if (byId) return byId;
-    }
+    if (id) { var byId = state.contacts.find(function (contact) { return String(contact.id) === String(id); }); if (byId) return byId; }
     if (email) return state.contacts.find(function (contact) { return String(contact.email || '').toLowerCase() === email; }) || null;
     return null;
   }
@@ -378,13 +330,8 @@ document.addEventListener('DOMContentLoaded', function () {
     if (action === 'timeline') openTimeline(contact);
   }
   async function refresh() {
-    try {
-      await loadCampaigns();
-      await loadContacts();
-    } catch (error) {
-      var wrapper = qs('[data-merchant-crm-table]');
-      if (wrapper) wrapper.innerHTML = '<div class="mg-empty-state"><strong>Unable to load contacts</strong></div>';
-    }
+    try { await loadCampaigns(); await loadContacts(); }
+    catch (error) { var wrapper = qs('[data-merchant-crm-table]'); if (wrapper) wrapper.innerHTML = '<div class="mg-empty-state"><strong>Unable to load contacts</strong></div>'; }
   }
 
   document.addEventListener('click', function (event) {
@@ -394,22 +341,13 @@ document.addEventListener('DOMContentLoaded', function () {
     var contact = id && state.contacts.find(function (item) { return String(item.id) === String(id); });
     if (target.closest && target.closest('[data-view-timeline]') && contact) openTimeline(contact);
     if (target.closest && target.closest('[data-crm-message]') && contact) messageModal(true, contact);
-    if (target.closest && target.closest('[data-crm-drawer-close]')) {
-      var drawer = qs('[data-crm-drawer]');
-      if (drawer) drawer.hidden = true;
-    }
+    if (target.closest && target.closest('[data-crm-drawer-close]')) { var drawer = qs('[data-crm-drawer]'); if (drawer) drawer.hidden = true; }
     if (target.closest && target.closest('[data-crm-message-close]')) messageModal(false);
     if (target.closest && target.closest('[data-crm-bulk-close]')) bulkModal(false);
     var segment = target.closest && target.closest('[data-crm-segment]');
-    if (segment) {
-      state.segment = segment.getAttribute('data-crm-segment') || 'all';
-      renderContacts();
-    }
+    if (segment) { state.segment = segment.getAttribute('data-crm-segment') || 'all'; renderContacts(); }
     var bulk = target.closest && target.closest('[data-crm-bulk-action]');
-    if (bulk) {
-      var mode = bulk.getAttribute('data-crm-bulk-action');
-      mode === 'export' ? exportSelected() : openBulkAction(mode);
-    }
+    if (bulk) { var mode = bulk.getAttribute('data-crm-bulk-action'); mode === 'export' ? exportSelected() : openBulkAction(mode); }
     if (target.closest && target.closest('[data-crm-refresh]')) refresh();
   });
 
@@ -418,16 +356,12 @@ document.addEventListener('DOMContentLoaded', function () {
     if (target && target.matches && target.matches('[data-crm-contact-check]')) {
       var row = target.closest('tr[data-contact-id]');
       var id = row && row.getAttribute('data-contact-id');
-      if (target.checked) state.selected[id] = true;
-      else delete state.selected[id];
+      if (target.checked) state.selected[id] = true; else delete state.selected[id];
       updateBulkState();
     }
     if (target && target.matches && target.matches('[data-crm-select-visible]')) {
       var on = !!target.checked;
-      visibleContacts().forEach(function (contact) {
-        if (on) state.selected[String(contact.id)] = true;
-        else delete state.selected[String(contact.id)];
-      });
+      visibleContacts().forEach(function (contact) { if (on) state.selected[String(contact.id)] = true; else delete state.selected[String(contact.id)]; });
       renderContacts();
     }
   });
@@ -435,14 +369,6 @@ document.addEventListener('DOMContentLoaded', function () {
   document.addEventListener('submit', function (event) {
     if (event.target && event.target.matches('[data-crm-message-form]')) submitMessageForm(event);
     if (event.target && event.target.matches('[data-crm-bulk-form]')) submitBulkForm(event);
-  });
-
-  var filter = qs('[data-crm-campaign-filter]');
-  if (filter) filter.addEventListener('change', function () {
-    state.selectedCampaign = this.value;
-    state.selected = {};
-    state.entryActionHandled = true;
-    loadContacts();
   });
 
   refresh();
