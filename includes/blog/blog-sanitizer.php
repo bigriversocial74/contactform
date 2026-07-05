@@ -41,13 +41,38 @@ function mg_blog_sanitize_url(?string $url): ?string
     return null;
 }
 
+function mg_blog_sanitize_attr_value(string $value): string
+{
+    return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
+
 function mg_blog_sanitize_fallback(string $html): string
 {
     $allowed = '<p><br><strong><b><em><i><u><h2><h3><h4><ul><ol><li><blockquote><a><figure><figcaption><code><pre><hr>';
     $html = strip_tags($html, $allowed);
     $html = preg_replace('/<(script|style|iframe|object|embed|svg|math|form|input|button|textarea|select|option)[^>]*>.*?<\/\1>/is', '', $html) ?? $html;
-    $html = preg_replace('/\s+on[a-z]+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $html) ?? $html;
-    $html = preg_replace('/\s+(href|src)\s*=\s*("|\')\s*(javascript|vbscript|data):[^"\']*("|\')/i', '', $html) ?? $html;
+
+    $html = preg_replace_callback('/<([a-z0-9]+)\b([^>]*)>/i', static function (array $match): string {
+        $tag = strtolower($match[1]);
+        $attrs = (string)($match[2] ?? '');
+        if ($tag !== 'a') {
+            return '<' . $tag . '>';
+        }
+        $href = null;
+        if (preg_match('/\shref\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', ' ' . $attrs, $hrefMatch) === 1) {
+            $href = trim((string)$hrefMatch[1], " \t\n\r\0\x0B\"'");
+        }
+        $safeHref = mg_blog_sanitize_url($href);
+        if ($safeHref === null) {
+            return '<a>';
+        }
+        $safe = '<a href="' . mg_blog_sanitize_attr_value($safeHref) . '"';
+        if (preg_match('#^https?://#i', $safeHref) === 1) {
+            $safe .= ' target="_blank" rel="noopener noreferrer nofollow"';
+        }
+        return $safe . '>';
+    }, $html) ?? $html;
+
     return trim($html);
 }
 
