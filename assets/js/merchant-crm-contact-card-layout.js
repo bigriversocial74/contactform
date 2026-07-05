@@ -28,17 +28,29 @@ document.addEventListener('DOMContentLoaded', function () {
     var email = contact.email || '';
     var note = contact.no_recent_activity ? '<small class="mg-crm-segment-note">No recent activity</small>' : '';
     cell.innerHTML = '<div class="mg-crm-contact-main"><div class="mg-crm-contact-avatar" aria-hidden="true">' + esc(initials(contact)) + '</div><div class="mg-crm-contact-copy"><strong>' + esc(name) + '</strong><small>' + esc(email) + '</small>' + note + '</div></div>';
-    if (scoreHtml) row.children[2].insertAdjacentHTML('beforebegin', '<td class="mg-crm-score-cell">' + scoreHtml + '</td>');
+    if (scoreHtml && !row.querySelector('.mg-crm-score-cell')) row.children[2].insertAdjacentHTML('beforebegin', '<td class="mg-crm-score-cell">' + scoreHtml + '</td>');
+    var insights = row.querySelector('.mg-crm-contact-insights');
+    var activityCell = row.children[6];
+    if (insights && activityCell) {
+      activityCell.innerHTML = '';
+      activityCell.classList.add('mg-crm-activity-cell');
+      activityCell.appendChild(insights);
+    }
   }
 
   function ensureTableHeader(table) {
     if (!table || table.dataset.crmCardsHeaderReady === '1') return;
     table.dataset.crmCardsHeaderReady = '1';
     var headRow = table.querySelector('thead tr');
-    if (!headRow || headRow.children.length >= 8) return;
-    var scoreTh = document.createElement('th');
-    scoreTh.textContent = 'Score';
-    headRow.insertBefore(scoreTh, headRow.children[2] || null);
+    if (!headRow) return;
+    if (headRow.children.length < 8) {
+      var scoreTh = document.createElement('th');
+      scoreTh.textContent = 'Score';
+      headRow.insertBefore(scoreTh, headRow.children[2] || null);
+    }
+    ['','Contact','Score','Campaign','Account','Reward Status','Activity Summary','Actions'].forEach(function (label, index) {
+      if (headRow.children[index]) headRow.children[index].textContent = label;
+    });
   }
 
   function footer(count, total) {
