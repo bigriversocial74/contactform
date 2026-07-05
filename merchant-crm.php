@@ -8,7 +8,7 @@ $page_styles = ['/assets/css/merchant-workspace.css','/assets/css/merchant-crm.c
 $page_scripts = [
     '/assets/js/merchant-workspace.js',
     '/assets/js/store-health-completion-events.js',
-    '/assets/js/merchant-crm-reward-picker.js?v=20260704-click-fix',
+    '/assets/js/merchant-crm-contact-action-modal.js',
 ];
 $merchantView = 'merchant_crm';
 require __DIR__ . '/includes/header.php';
