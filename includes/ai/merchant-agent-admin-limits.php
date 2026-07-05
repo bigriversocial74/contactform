@@ -7,7 +7,7 @@ function mg_agent_admin_limit_clean(mixed $value, int $max = 240): string
     return mb_substr($text, 0, $max);
 }
 
-function mg_agent_admin_limit_int(mixed $value, ?int $fallback = null, int $max = 1000000): ?int
+function mg_agent_admin_limit_int(mixed $value, ?int $fallback = 0, int $max = 1000000): ?int
 {
     if ($value === null || $value === '') return $fallback;
     $n = filter_var($value, FILTER_VALIDATE_INT);
@@ -45,8 +45,8 @@ function mg_agent_admin_limit_public(PDO $pdo, int $merchantId, string $provider
     return [
         'provider_key' => $providerKey,
         'enabled' => array_key_exists('enabled', $ctx) ? (bool)$ctx['enabled'] : true,
-        'requests_per_hour' => mg_agent_admin_limit_int($ctx['requests_per_hour'] ?? null, null),
-        'requests_per_day' => mg_agent_admin_limit_int($ctx['requests_per_day'] ?? null, null),
+        'requests_per_hour' => mg_agent_admin_limit_int($ctx['requests_per_hour'] ?? null, 0),
+        'requests_per_day' => mg_agent_admin_limit_int($ctx['requests_per_day'] ?? null, 0),
         'note' => mg_agent_admin_limit_clean($ctx['note'] ?? '', 240),
         'updated_at' => (string)($ctx['updated_at'] ?? ''),
         'updated_by_user_id' => isset($ctx['updated_by_user_id']) ? (int)$ctx['updated_by_user_id'] : null,
@@ -60,8 +60,8 @@ function mg_agent_admin_limit_save(PDO $pdo, int $merchantId, string $providerKe
         'provider_key' => (string)$provider['provider_key'],
         'provider_id' => (int)$provider['id'],
         'enabled' => !array_key_exists('enabled', $input) || !empty($input['enabled']),
-        'requests_per_hour' => mg_agent_admin_limit_int($input['requests_per_hour'] ?? null, null),
-        'requests_per_day' => mg_agent_admin_limit_int($input['requests_per_day'] ?? null, null),
+        'requests_per_hour' => mg_agent_admin_limit_int($input['requests_per_hour'] ?? null, 0),
+        'requests_per_day' => mg_agent_admin_limit_int($input['requests_per_day'] ?? null, 0),
         'note' => mg_agent_admin_limit_clean($input['note'] ?? '', 240),
         'updated_by_user_id' => $adminUserId,
         'updated_at' => date('c'),
@@ -99,20 +99,20 @@ function mg_agent_admin_limit_enforce(PDO $pdo, array $provider, ?array $model, 
     }
     $now = new DateTimeImmutable('now');
     $hourLimit = (int)($limits['requests_per_hour'] ?? 0);
-    if ($hourLimit > 0) {
-        $used = mg_agent_admin_limit_count($pdo, $providerId, $merchantId, $now->modify('-1 hour'));
-        if ($used >= $hourLimit) {
-            mg_agent_admin_limit_block($pdo, $providerId, $modelId, $merchantId, 'user_admin_hour', ['used' => $used, 'limit' => $hourLimit]);
-            mg_fail('AI request limit reached for this merchant.', 429, ['scope' => 'user_admin_hour', 'limit' => $hourLimit, 'used' => $used]);
-        }
-    }
     $dayLimit = (int)($limits['requests_per_day'] ?? 0);
-    if ($dayLimit > 0) {
-        $used = mg_agent_admin_limit_count($pdo, $providerId, $merchantId, $now->modify('-1 day'));
-        if ($used >= $dayLimit) {
-            mg_agent_admin_limit_block($pdo, $providerId, $modelId, $merchantId, 'user_admin_day', ['used' => $used, 'limit' => $dayLimit]);
-            mg_fail('AI request limit reached for this merchant.', 429, ['scope' => 'user_admin_day', 'limit' => $dayLimit, 'used' => $used]);
-        }
+    if ($hourLimit < 1 || $dayLimit < 1) {
+        mg_agent_admin_limit_block($pdo, $providerId, $modelId, $merchantId, 'user_admin_no_credits', ['hour_limit' => $hourLimit, 'day_limit' => $dayLimit, 'source' => 'admin_merchant_ai_limits']);
+        mg_fail('No AI credits are available for this account. Ask an administrator to set AI limits above 0.', 429, ['scope' => 'user_admin_no_credits', 'hour_limit' => $hourLimit, 'day_limit' => $dayLimit]);
+    }
+    $used = mg_agent_admin_limit_count($pdo, $providerId, $merchantId, $now->modify('-1 hour'));
+    if ($used >= $hourLimit) {
+        mg_agent_admin_limit_block($pdo, $providerId, $modelId, $merchantId, 'user_admin_hour', ['used' => $used, 'limit' => $hourLimit]);
+        mg_fail('AI request limit reached for this merchant.', 429, ['scope' => 'user_admin_hour', 'limit' => $hourLimit, 'used' => $used]);
+    }
+    $used = mg_agent_admin_limit_count($pdo, $providerId, $merchantId, $now->modify('-1 day'));
+    if ($used >= $dayLimit) {
+        mg_agent_admin_limit_block($pdo, $providerId, $modelId, $merchantId, 'user_admin_day', ['used' => $used, 'limit' => $dayLimit]);
+        mg_fail('AI request limit reached for this merchant.', 429, ['scope' => 'user_admin_day', 'limit' => $dayLimit, 'used' => $used]);
     }
 }
 
