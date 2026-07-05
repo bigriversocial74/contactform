@@ -4,7 +4,6 @@ declare(strict_types=1);
 require_once __DIR__ . '/includes/app.php';
 require_once __DIR__ . '/includes/blog/blog-functions.php';
 require_once __DIR__ . '/includes/blog/blog-settings.php';
-require_once __DIR__ . '/includes/blog/blog-showcase.php';
 
 $pdo = mg_db();
 $schema = mg_blog_schema_ready($pdo);
@@ -16,14 +15,11 @@ $categories = [];
 $posts = [];
 $totalPosts = 0;
 $totalPages = 1;
-$showcaseMode = 'published';
 
 if ($schema['ready']) {
     $categories = mg_blog_categories($pdo, true);
-    $showcase = mg_blog_showcase_posts($pdo, ['limit' => $limit, 'offset' => $offset]);
-    $posts = $showcase['posts'];
-    $totalPosts = (int) $showcase['total'];
-    $showcaseMode = (string) $showcase['mode'];
+    $posts = mg_blog_list_public_posts($pdo, ['limit' => $limit, 'offset' => $offset]);
+    $totalPosts = mg_blog_count_public_posts($pdo, []);
     $totalPages = max(1, (int) ceil($totalPosts / $limit));
 }
 
@@ -36,7 +32,7 @@ $page_title = $settings['blog_title'] . ' | Local Commerce, Loyalty CRM & Pre Sa
 $page_section = 'blog';
 $header_mode = 'public';
 $page_body_class = 'mg-blog-page';
-$page_styles = ['/assets/css/blog.css', '/assets/css/blog-launch.css', '/assets/css/blog-db-polish.css'];
+$page_styles = ['/assets/css/blog.css', '/assets/css/blog-launch.css'];
 $page_meta = [
     'description' => $settings['blog_description'],
     'canonical' => 'https://microgifter.com/blog.php',
@@ -84,10 +80,6 @@ require __DIR__ . '/includes/header.php';
   <?php else: ?>
     <section class="mg-blog-wrap mg-blog-layout">
       <div class="mg-blog-content-column">
-        <?php if ($showcaseMode === 'seed_drafts'): ?>
-          <div class="mg-blog-data-note"><span>Showing database seed posts from Content Studio. Publish posts in admin when ready for launch.</span></div>
-        <?php endif; ?>
-
         <?php if ($posts): ?>
           <div class="mg-blog-grid">
             <?php foreach ($posts as $index => $post): ?>
@@ -103,7 +95,7 @@ require __DIR__ . '/includes/header.php';
                   <h2><a href="<?= mg_e(mg_blog_public_post_url($post)) ?>"><?= mg_e((string) $post['title']) ?></a></h2>
                   <p><?= mg_e((string) $post['excerpt']) ?></p>
                   <div class="mg-blog-meta">
-                    <span><?= $showcaseMode === 'seed_drafts' ? 'Draft sample' : mg_e(mg_blog_format_date($post['published_at'] ?? null)) ?></span>
+                    <span><?= mg_e(mg_blog_format_date($post['published_at'] ?? null)) ?></span>
                     <span><?= mg_blog_reading_time((string) $post['body']) ?> min read</span>
                   </div>
                 </div>
@@ -112,8 +104,8 @@ require __DIR__ . '/includes/header.php';
           </div>
         <?php else: ?>
           <div class="mg-blog-empty-panel">
-            <h3>No blog posts found.</h3>
-            <p>Create or publish posts from Content Studio to populate this page.</p>
+            <h3>No published blog posts found.</h3>
+            <p>Publish posts from Content Studio to populate this page.</p>
           </div>
         <?php endif; ?>
 
