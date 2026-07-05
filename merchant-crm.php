@@ -11,6 +11,7 @@ require __DIR__ . '/includes/header.php';
 require __DIR__ . '/includes/merchant-workspace.php';
 echo '<scr' . 'ipt src="/assets/js/merchant-crm.js" defer></scr' . 'ipt>';
 echo '<scr' . 'ipt src="/assets/js/merchant-crm-contact-stats.js" defer></scr' . 'ipt>';
+echo '<scr' . 'ipt src="/assets/js/merchant-crm-row-actions.js" defer></scr' . 'ipt>';
 echo '<scr' . 'ipt src="/assets/js/merchant-crm-messages.js" defer></scr' . 'ipt>';
 echo '<scr' . 'ipt src="/assets/js/merchant-crm-retention-playbooks.js" defer></scr' . 'ipt>';
 require __DIR__ . '/includes/footer.php';
