@@ -1,8 +1,35 @@
 <?php
 declare(strict_types=1);
-require_once dirname(__DIR__).'/includes/app.php';
-require_once dirname(__DIR__).'/includes/admin-auth.php';
-require_once dirname(__DIR__).'/includes/blog/blog-functions.php';
-$user=mg_require_admin_page_any(['admin.blog.view','admin.blog.manage']);$pdo=mg_db();$schema=mg_blog_schema_ready($pdo);$postId=max(0,(int)($_GET['id']??0));$post=$schema['ready']&&$postId>0?mg_blog_get_admin_post($pdo,$postId):null;if(!$post){http_response_code(404);} $tags=$post?mg_blog_tag_names($pdo,(int)$post['id']):[];$page_title=$post?'Preview: '.(string)$post['title']:'Blog Preview';$page_section='blog';$header_mode='account';$page_body_class='mg-blog-page mg-blog-preview-page';$page_styles=['/assets/css/blog.css'];$page_meta=['robots'=>'noindex'];require dirname(__DIR__).'/includes/header.php';
+require_once dirname(__DIR__) . '/includes/app.php';
+require_once dirname(__DIR__) . '/includes/admin-auth.php';
+require_once dirname(__DIR__) . '/includes/blog/blog-functions.php';
+$user = mg_require_admin_page_any(['admin.blog.view', 'admin.blog.manage']);
+$pdo = mg_db();
+$schema = mg_blog_schema_ready($pdo);
+$postId = max(0, (int)($_GET['id'] ?? 0));
+$post = $schema['ready'] && $postId > 0 ? mg_blog_get_admin_post($pdo, $postId) : null;
+if (!$post) { http_response_code(404); }
+$tags = $post ? mg_blog_tag_names($pdo, (int)$post['id']) : [];
+$page_title = $post ? 'Preview: ' . (string)$post['title'] : 'Blog Preview';
+$page_section = 'account';
+$header_mode = 'account';
+$page_body_class = 'mg-admin-blog-page mg-blog-page mg-blog-preview-page';
+$page_styles = ['/assets/css/admin-shell.css', '/assets/css/admin-blog.css', '/assets/css/blog.css'];
+$page_meta = ['robots' => 'noindex'];
+$adminActive = 'blog';
+require dirname(__DIR__) . '/includes/header.php';
 ?>
-<main class="mg-blog-main"><div class="mg-blog-preview-bar"><div class="mg-blog-wrap"><strong>Preview mode</strong><span>This protected preview can show draft, scheduled, or archived content.</span><?php if($post): ?><a href="/admin/blog-editor.php?id=<?= (int)$post['id'] ?>">Edit post</a><?php endif; ?></div></div><?php if(!$post): ?><section class="mg-blog-wrap mg-blog-empty-panel"><h1>Preview unavailable.</h1><p>The post was not found or the blog migration has not been installed.</p></section><?php else: ?><article class="mg-blog-article"><header class="mg-blog-article-hero"><div class="mg-blog-wrap mg-blog-article-head"><span class="mg-blog-eyebrow"><?= mg_e((string)$post['status']) ?> preview</span><h1><?= mg_e((string)$post['title']) ?></h1><p><?= mg_e((string)$post['excerpt']) ?></p><div class="mg-blog-meta"><span><?= mg_e(mg_blog_author_name($post)) ?></span><span><?= mg_e(mg_blog_format_date($post['published_at']??null)) ?></span><span><?= mg_blog_reading_time((string)$post['body']) ?> min read</span></div></div></header><?php if(!empty($post['featured_image'])): ?><figure class="mg-blog-wrap mg-blog-article-image"><img src="<?= mg_e((string)$post['featured_image']) ?>" alt="<?= mg_e((string)($post['featured_image_alt']?:$post['title'])) ?>"></figure><?php endif; ?><div class="mg-blog-wrap mg-blog-article-layout"><div class="mg-blog-article-body"><?= (string)$post['body'] ?><?= mg_blog_render_cta((string)($post['cta_type']??'none')) ?></div><aside class="mg-blog-article-aside"><section><h2>Preview details</h2><dl><div><dt>Status</dt><dd><?= mg_e((string)$post['status']) ?></dd></div><div><dt>Slug</dt><dd><?= mg_e((string)$post['slug']) ?></dd></div><div><dt>Category</dt><dd><?= mg_e((string)($post['category_name']??'Uncategorized')) ?></dd></div></dl></section><?php if($tags): ?><section><h2>Tags</h2><div class="mg-blog-tag-list"><?php foreach($tags as $tag): ?><span><?= mg_e($tag) ?></span><?php endforeach; ?></div></section><?php endif; ?></aside></div></article><?php endif; ?></main><?php require dirname(__DIR__).'/includes/footer.php'; ?>
+<section class="mg-app-shell mg-admin-app">
+  <?php require dirname(__DIR__) . '/includes/admin-sidebar.php'; ?>
+  <div class="mg-app-workspace mg-admin-workspace">
+    <main class="mg-admin-blog-shell mg-blog-main">
+      <div class="mg-blog-preview-bar"><div class="mg-blog-wrap"><strong>Preview mode</strong><span>This protected preview can show draft, scheduled, or archived content.</span><?php if ($post): ?><a href="/admin/blog-editor.php?id=<?= (int)$post['id'] ?>">Edit post</a><?php endif; ?></div></div>
+      <?php if (!$post): ?>
+        <section class="mg-blog-wrap mg-blog-empty-panel"><h1>Preview unavailable.</h1><p>The post was not found or the blog migration has not been installed.</p></section>
+      <?php else: ?>
+        <article class="mg-blog-article"><header class="mg-blog-article-hero"><div class="mg-blog-wrap mg-blog-article-head"><span class="mg-blog-eyebrow"><?= mg_e((string)$post['status']) ?> preview</span><h1><?= mg_e((string)$post['title']) ?></h1><p><?= mg_e((string)$post['excerpt']) ?></p><div class="mg-blog-meta"><span><?= mg_e(mg_blog_author_name($post)) ?></span><span><?= mg_e(mg_blog_format_date($post['published_at'] ?? null)) ?></span><span><?= mg_blog_reading_time((string)$post['body']) ?> min read</span></div></div></header><?php if (!empty($post['featured_image'])): ?><figure class="mg-blog-wrap mg-blog-article-image"><img src="<?= mg_e((string)$post['featured_image']) ?>" alt="<?= mg_e((string)($post['featured_image_alt'] ?: $post['title'])) ?>"></figure><?php endif; ?><div class="mg-blog-wrap mg-blog-article-layout"><div class="mg-blog-article-body"><?= (string)$post['body'] ?><?= mg_blog_render_cta((string)($post['cta_type'] ?? 'none')) ?></div><aside class="mg-blog-article-aside"><section><h2>Preview details</h2><dl><div><dt>Status</dt><dd><?= mg_e((string)$post['status']) ?></dd></div><div><dt>Slug</dt><dd><?= mg_e((string)$post['slug']) ?></dd></div><div><dt>Category</dt><dd><?= mg_e((string)($post['category_name'] ?? 'Uncategorized')) ?></dd></div></dl></section><?php if ($tags): ?><section><h2>Tags</h2><div class="mg-blog-tag-list"><?php foreach ($tags as $tag): ?><span><?= mg_e($tag) ?></span><?php endforeach; ?></div></section><?php endif; ?></aside></div></article>
+      <?php endif; ?>
+    </main>
+  </div>
+</section>
+<?php require dirname(__DIR__) . '/includes/footer.php'; ?>
