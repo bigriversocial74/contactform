@@ -9,6 +9,8 @@ function mg_crm_reward_campaign_label(string $type): string
     return match ($type) {
         'customer_refund' => 'Customer Refund',
         'referral_reward' => 'Referral Reward',
+        'newsletter_signup' => 'Newsletter Signup',
+        'contest_giveaway' => 'Contest / Giveaway',
         default => ucwords(str_replace('_', ' ', $type)),
     };
 }
@@ -69,22 +71,20 @@ $pdo = mg_db();
 mg_merchant_ensure_workspace($pdo, $user);
 
 try {
-    $allowedTypes = ['customer_refund', 'referral_reward'];
-    $placeholders = implode(',', array_fill(0, count($allowedTypes), '?'));
     $sql = "SELECT c.*, rt.public_id reward_template_public_id, rt.title reward_template_title, rt.status reward_template_status,
             rt.quantity_limit reward_template_quantity_limit, rt.issued_count reward_template_issued_count
         FROM campaigns c
         LEFT JOIN reward_templates rt ON rt.id=c.reward_template_id
-        WHERE c.merchant_user_id=? AND c.campaign_type IN ($placeholders) AND c.status='active'
+        WHERE c.merchant_user_id=? AND c.status='active'
         ORDER BY c.updated_at DESC, c.id DESC
         LIMIT 100";
     $stmt = $pdo->prepare($sql);
-    $stmt->execute(array_merge([$merchantId], $allowedTypes));
+    $stmt->execute([$merchantId]);
     $campaigns = array_map('mg_crm_reward_campaign_row', $stmt->fetchAll(PDO::FETCH_ASSOC));
     mg_ok([
         'campaigns' => $campaigns,
         'eligible_count' => count(array_filter($campaigns, fn($campaign) => !empty($campaign['eligible']))),
-        'allowed_types' => $allowedTypes,
+        'allowed_types' => ['all_active_merchant_campaigns'],
         'schema_ready' => true,
     ]);
 } catch (Throwable $error) {

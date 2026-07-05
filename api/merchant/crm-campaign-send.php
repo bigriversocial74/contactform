@@ -16,16 +16,13 @@ function mg_crm_campaign_send_uuid(): string
     return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
 }
 
-function mg_crm_campaign_send_allowed_types(): array
-{
-    return ['customer_refund', 'referral_reward'];
-}
-
 function mg_crm_campaign_send_type_label(string $type): string
 {
     return match ($type) {
         'customer_refund' => 'Customer Refund',
         'referral_reward' => 'Referral Reward',
+        'newsletter_signup' => 'Newsletter Signup',
+        'contest_giveaway' => 'Contest / Giveaway',
         default => ucwords(str_replace('_', ' ', $type)),
     };
 }
@@ -119,20 +116,18 @@ try {
         mg_fail('Customer account required before this reward can be placed into wallet.php.', 409);
     }
 
-    $allowedTypes = mg_crm_campaign_send_allowed_types();
-    $placeholders = implode(',', array_fill(0, count($allowedTypes), '?'));
     $campaignSql = "SELECT c.*, rt.id reward_template_db_id, rt.public_id reward_template_public_id, rt.title reward_template_title,
             rt.description reward_template_description, rt.redemption_instructions,
             rt.value_amount_cents, rt.currency, rt.expiration_rule, rt.expiration_days, rt.expires_at,
             rt.quantity_limit reward_template_quantity_limit, rt.issued_count reward_template_issued_count, rt.per_user_limit reward_template_per_user_limit, rt.status reward_template_status
         FROM campaigns c INNER JOIN reward_templates rt ON rt.id=c.reward_template_id
-        WHERE c.public_id=? AND c.merchant_user_id=? AND c.campaign_type IN ($placeholders) LIMIT 1 FOR UPDATE";
+        WHERE c.public_id=? AND c.merchant_user_id=? LIMIT 1 FOR UPDATE";
     $campaignStmt = $pdo->prepare($campaignSql);
-    $campaignStmt->execute(array_merge([$campaignRef, $merchantId], $allowedTypes));
+    $campaignStmt->execute([$campaignRef, $merchantId]);
     $campaign = $campaignStmt->fetch(PDO::FETCH_ASSOC);
     if (!$campaign) {
         $pdo->rollBack();
-        mg_fail('Eligible reward campaign not found.', 404);
+        mg_fail('Eligible reward-backed campaign not found.', 404);
     }
 
     $campaignType = (string)$campaign['campaign_type'];
