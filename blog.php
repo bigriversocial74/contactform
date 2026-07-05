@@ -28,103 +28,6 @@ function mg_blog_page_url(int $page): string
     return '/blog.php' . ($page > 1 ? '?page=' . $page : '');
 }
 
-$placeholderPosts = [
-    [
-        'category' => 'Pre Sale Revenue',
-        'title' => 'How to Grow Pre Sale Revenue in Your Community',
-        'excerpt' => 'Turn early interest into real revenue with proven pre-sale strategies for local businesses.',
-        'date' => 'May 14, 2026',
-        'read' => '6 min read',
-        'tone' => 'gift',
-        'icon' => '□',
-    ],
-    [
-        'category' => 'Loyalty CRM',
-        'title' => 'Build Loyalty That Lasts With Smart CRM',
-        'excerpt' => 'Use data and personalization to strengthen customer loyalty and drive repeat business.',
-        'date' => 'May 7, 2026',
-        'read' => '7 min read',
-        'tone' => 'chat',
-        'icon' => '♥',
-    ],
-    [
-        'category' => 'Agentic Commerce',
-        'title' => 'What Is Agentic Commerce and Why It Matters',
-        'excerpt' => 'Explore how AI agents are shaping the future of commerce for local merchants.',
-        'date' => 'Apr 30, 2026',
-        'read' => '5 min read',
-        'tone' => 'growth',
-        'icon' => '↗',
-    ],
-    [
-        'category' => 'Hospitality Marketing',
-        'title' => 'Hospitality Marketing That Drives Direct Bookings',
-        'excerpt' => 'Attract more guests and build direct relationships with hospitality marketing that converts.',
-        'date' => 'Apr 23, 2026',
-        'read' => '6 min read',
-        'tone' => 'megaphone',
-        'icon' => '◖',
-    ],
-    [
-        'category' => 'Product Updates',
-        'title' => "What's New in Microgifter",
-        'excerpt' => 'A roundup of the latest features and improvements to help merchants work smarter.',
-        'date' => 'Apr 16, 2026',
-        'read' => '4 min read',
-        'tone' => 'dashboard',
-        'icon' => '▤',
-    ],
-    [
-        'category' => 'Founder Notes',
-        'title' => 'Founder Note: Building for Local Commerce',
-        'excerpt' => 'A note from our founder on the mission, progress, and what is ahead for Microgifter.',
-        'date' => 'Apr 9, 2026',
-        'read' => '3 min read',
-        'tone' => 'folder',
-        'icon' => '▣',
-    ],
-    [
-        'category' => 'Loyalty CRM',
-        'title' => 'Automated Rewards That Keep Customers Coming Back',
-        'excerpt' => 'Design reward programs that run on autopilot and keep customers engaged.',
-        'date' => 'Apr 2, 2026',
-        'read' => '6 min read',
-        'tone' => 'mail',
-        'icon' => '✉',
-    ],
-    [
-        'category' => 'Pre Sale Revenue',
-        'title' => 'Launching a Pre Sale Campaign That Works',
-        'excerpt' => 'A step-by-step guide to creating pre-sale campaigns that build momentum.',
-        'date' => 'Mar 26, 2026',
-        'read' => '5 min read',
-        'tone' => 'map',
-        'icon' => '⌖',
-    ],
-    [
-        'category' => 'Agentic Commerce',
-        'title' => 'The Next Wave of AI-Powered Shopping',
-        'excerpt' => 'How autonomous agents will discover, recommend, and buy on behalf of customers.',
-        'date' => 'Mar 19, 2026',
-        'read' => '5 min read',
-        'tone' => 'bag',
-        'icon' => '◧',
-    ],
-];
-
-$defaultCategories = [
-    ['name' => 'Pre Sale Revenue', 'slug' => 'pre-sale-revenue'],
-    ['name' => 'Hospitality Marketing', 'slug' => 'hospitality-marketing'],
-    ['name' => 'Loyalty CRM', 'slug' => 'loyalty-crm'],
-    ['name' => 'Agentic Commerce', 'slug' => 'agentic-commerce'],
-    ['name' => 'Product Updates', 'slug' => 'product-updates'],
-    ['name' => 'Founder Notes', 'slug' => 'founder-notes'],
-];
-
-if (!$categories) {
-    $categories = $defaultCategories;
-}
-
 $page_title = $settings['blog_title'] . ' | Local Commerce, Loyalty CRM & Pre Sale Revenue';
 $page_section = 'blog';
 $header_mode = 'public';
@@ -200,18 +103,9 @@ require __DIR__ . '/includes/header.php';
             <?php endforeach; ?>
           </div>
         <?php else: ?>
-          <div class="mg-blog-grid is-preview-grid">
-            <?php foreach ($placeholderPosts as $topic): ?>
-              <article class="mg-blog-card is-preview-card">
-                <div class="mg-blog-card-media is-<?= mg_e($topic['tone']) ?>"><span><?= mg_e($topic['icon']) ?></span></div>
-                <div class="mg-blog-card-body">
-                  <div class="mg-blog-card-top"><span><?= mg_e($topic['category']) ?></span></div>
-                  <h2><?= mg_e($topic['title']) ?></h2>
-                  <p><?= mg_e($topic['excerpt']) ?></p>
-                  <div class="mg-blog-meta"><span><?= mg_e($topic['date']) ?></span><span><?= mg_e($topic['read']) ?></span></div>
-                </div>
-              </article>
-            <?php endforeach; ?>
+          <div class="mg-blog-empty-panel">
+            <h3>No published blog posts found.</h3>
+            <p>Publish posts from Content Studio to populate this page.</p>
           </div>
         <?php endif; ?>
 
