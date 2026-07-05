@@ -77,7 +77,7 @@ function mg_data_integrity_blog_checks(PDO $pdo): array
 {
     $checks = [];
 
-    if (!mg_data_integrity_can_check($pdo, ['blog_posts', 'blog_categories'], ['blog_posts' => ['id', 'title', 'slug', 'category_id', 'status', 'deleted_at'], 'blog_categories' => ['id']])) {
+    if (!mg_data_integrity_can_check($pdo, ['blog_posts', 'blog_categories'], ['blog_posts' => ['id', 'title', 'slug', 'category_id', 'status', 'deleted_at', 'updated_at'], 'blog_categories' => ['id']])) {
         return [mg_data_integrity_unavailable('blog_posts_orphan_category', 'Blog posts with missing category', ['blog_posts', 'blog_categories'])];
     }
 
@@ -85,7 +85,7 @@ function mg_data_integrity_blog_checks(PDO $pdo): array
     $sample = $count > 0 ? mg_data_integrity_sample($pdo, "SELECT p.id,p.slug,p.title,p.category_id,p.status FROM blog_posts p LEFT JOIN blog_categories c ON c.id = p.category_id WHERE p.deleted_at IS NULL AND p.category_id IS NOT NULL AND c.id IS NULL ORDER BY p.updated_at DESC,p.id DESC LIMIT 8") : [];
     $checks[] = mg_data_integrity_check('blog_posts_orphan_category', 'Blog posts with missing category', 'warning', true, $count, 'Published or draft posts should not point at deleted or missing categories.', $sample);
 
-    if (mg_data_integrity_can_check($pdo, ['blog_posts'], ['blog_posts' => ['id', 'title', 'slug', 'status', 'published_at', 'deleted_at']])) {
+    if (mg_data_integrity_can_check($pdo, ['blog_posts'], ['blog_posts' => ['id', 'title', 'slug', 'status', 'published_at', 'deleted_at', 'updated_at']])) {
         $count = mg_data_integrity_count($pdo, "SELECT COUNT(*) FROM blog_posts WHERE deleted_at IS NULL AND status = 'published' AND published_at IS NULL");
         $sample = $count > 0 ? mg_data_integrity_sample($pdo, "SELECT id,slug,title,status,published_at FROM blog_posts WHERE deleted_at IS NULL AND status = 'published' AND published_at IS NULL ORDER BY updated_at DESC,id DESC LIMIT 8") : [];
         $checks[] = mg_data_integrity_check('published_blog_missing_date', 'Published Blog posts missing date', 'warning', true, $count, 'Published posts should have a publish timestamp for ordering, RSS, sitemap, and SEO metadata.', $sample);
@@ -105,11 +105,9 @@ function mg_data_integrity_media_checks(PDO $pdo): array
     $sample = $count > 0 ? mg_data_integrity_sample($pdo, "SELECT id,public_id,asset_type,storage_provider,storage_key,status,created_at FROM catalog_assets WHERE status = 'ready' AND (storage_provider IS NULL OR storage_provider = '' OR storage_key IS NULL OR storage_key = '') ORDER BY id DESC LIMIT 8") : [];
     $checks[] = mg_data_integrity_check('catalog_assets_missing_storage', 'Ready catalog assets missing storage keys', 'critical', true, $count, 'Ready media assets must resolve to a storage provider and key before public or private rendering.', $sample);
 
-    if (mg_data_integrity_can_check($pdo, ['catalog_assets'], ['catalog_assets' => ['public_id']])) {
-        $count = mg_data_integrity_count($pdo, "SELECT COUNT(*) FROM catalog_assets WHERE public_id IS NULL OR public_id = ''");
-        $sample = $count > 0 ? mg_data_integrity_sample($pdo, "SELECT id,asset_type,status,created_at FROM catalog_assets WHERE public_id IS NULL OR public_id = '' ORDER BY id DESC LIMIT 8") : [];
-        $checks[] = mg_data_integrity_check('catalog_assets_missing_public_id', 'Catalog assets missing public ID', 'critical', true, $count, 'Catalog assets need stable public identifiers for controlled media URLs.', $sample);
-    }
+    $count = mg_data_integrity_count($pdo, "SELECT COUNT(*) FROM catalog_assets WHERE public_id IS NULL OR public_id = ''");
+    $sample = $count > 0 ? mg_data_integrity_sample($pdo, "SELECT id,asset_type,status,created_at FROM catalog_assets WHERE public_id IS NULL OR public_id = '' ORDER BY id DESC LIMIT 8") : [];
+    $checks[] = mg_data_integrity_check('catalog_assets_missing_public_id', 'Catalog assets missing public ID', 'critical', true, $count, 'Catalog assets need stable public identifiers for controlled media URLs.', $sample);
 
     return $checks;
 }
@@ -118,7 +116,7 @@ function mg_data_integrity_pppm_checks(PDO $pdo): array
 {
     $checks = [];
 
-    if (mg_data_integrity_can_check($pdo, ['pppm_items', 'pppm_issuance_requests'], ['pppm_items' => ['id', 'public_id', 'issuance_request_id'], 'pppm_issuance_requests' => ['id']])) {
+    if (mg_data_integrity_can_check($pdo, ['pppm_items', 'pppm_issuance_requests'], ['pppm_items' => ['id', 'public_id', 'issuance_request_id', 'status', 'created_at'], 'pppm_issuance_requests' => ['id']])) {
         $count = mg_data_integrity_count($pdo, "SELECT COUNT(*) FROM pppm_items i LEFT JOIN pppm_issuance_requests r ON r.id = i.issuance_request_id WHERE r.id IS NULL");
         $sample = $count > 0 ? mg_data_integrity_sample($pdo, "SELECT i.id,i.public_id,i.issuance_request_id,i.status,i.created_at FROM pppm_items i LEFT JOIN pppm_issuance_requests r ON r.id = i.issuance_request_id WHERE r.id IS NULL ORDER BY i.id DESC LIMIT 8") : [];
         $checks[] = mg_data_integrity_check('pppm_items_missing_request', 'PPPM items missing issuance request', 'critical', true, $count, 'Every PPPM item should map back to an issuance request.', $sample);
@@ -126,7 +124,7 @@ function mg_data_integrity_pppm_checks(PDO $pdo): array
         $checks[] = mg_data_integrity_unavailable('pppm_items_missing_request', 'PPPM items missing issuance request', ['pppm_items', 'pppm_issuance_requests']);
     }
 
-    if (mg_data_integrity_can_check($pdo, ['pppm_issuance_requests', 'pppm_items'], ['pppm_issuance_requests' => ['id', 'public_id', 'quantity', 'issued_count'], 'pppm_items' => ['issuance_request_id']])) {
+    if (mg_data_integrity_can_check($pdo, ['pppm_issuance_requests', 'pppm_items'], ['pppm_issuance_requests' => ['id', 'public_id', 'quantity', 'issued_count', 'status', 'created_at'], 'pppm_items' => ['issuance_request_id']])) {
         $count = mg_data_integrity_count($pdo, "SELECT COUNT(*) FROM pppm_issuance_requests r LEFT JOIN (SELECT issuance_request_id, COUNT(*) actual_items FROM pppm_items GROUP BY issuance_request_id) x ON x.issuance_request_id = r.id WHERE r.issued_count <> COALESCE(x.actual_items,0) OR r.issued_count > r.quantity");
         $sample = $count > 0 ? mg_data_integrity_sample($pdo, "SELECT r.id,r.public_id,r.quantity,r.issued_count,COALESCE(x.actual_items,0) actual_items,r.status,r.created_at FROM pppm_issuance_requests r LEFT JOIN (SELECT issuance_request_id, COUNT(*) actual_items FROM pppm_items GROUP BY issuance_request_id) x ON x.issuance_request_id = r.id WHERE r.issued_count <> COALESCE(x.actual_items,0) OR r.issued_count > r.quantity ORDER BY r.id DESC LIMIT 8") : [];
         $checks[] = mg_data_integrity_check('pppm_issued_count_mismatch', 'PPPM issued count mismatches', 'warning', true, $count, 'Issuance request issued_count should match created PPPM items and should not exceed quantity.', $sample);
@@ -134,7 +132,7 @@ function mg_data_integrity_pppm_checks(PDO $pdo): array
         $checks[] = mg_data_integrity_unavailable('pppm_issued_count_mismatch', 'PPPM issued count mismatches', ['pppm_issuance_requests', 'pppm_items']);
     }
 
-    if (mg_data_integrity_can_check($pdo, ['pppm_items'], ['pppm_items' => ['id', 'public_id', 'owner_user_id', 'recipient_user_id', 'status']])) {
+    if (mg_data_integrity_can_check($pdo, ['pppm_items'], ['pppm_items' => ['id', 'public_id', 'owner_user_id', 'recipient_user_id', 'status', 'updated_at']])) {
         $count = mg_data_integrity_count($pdo, "SELECT COUNT(*) FROM pppm_items WHERE status IN ('sent','delivered','viewed','claim_pending','verified','redeemed') AND owner_user_id IS NULL AND recipient_user_id IS NULL");
         $sample = $count > 0 ? mg_data_integrity_sample($pdo, "SELECT id,public_id,status,owner_user_id,recipient_user_id,updated_at FROM pppm_items WHERE status IN ('sent','delivered','viewed','claim_pending','verified','redeemed') AND owner_user_id IS NULL AND recipient_user_id IS NULL ORDER BY updated_at DESC,id DESC LIMIT 8") : [];
         $checks[] = mg_data_integrity_check('pppm_active_items_without_owner', 'Active PPPM items without owner or recipient', 'critical', true, $count, 'Active PPPM lifecycle records should not be detached from both owner and recipient.', $sample);
@@ -145,24 +143,13 @@ function mg_data_integrity_pppm_checks(PDO $pdo): array
 
 function mg_data_integrity_finance_checks(PDO $pdo): array
 {
-    $checks = [];
-
-    if (!mg_data_integrity_table_exists($pdo, 'finance_ledger_entries')) {
-        return [mg_data_integrity_unavailable('finance_unbalanced_ledger_groups', 'Unbalanced ledger entry groups', ['finance_ledger_entries'])];
+    if (!mg_data_integrity_can_check($pdo, ['ledger_entries'], ['ledger_entries' => ['id', 'transaction_group_id', 'entry_type', 'amount_cents']])) {
+        return [mg_data_integrity_unavailable('ledger_unbalanced_transaction_groups', 'Unbalanced ledger transaction groups', ['ledger_entries'])];
     }
 
-    $columns = ['entry_group_id', 'direction', 'amount_cents'];
-    foreach ($columns as $column) {
-        if (!mg_data_integrity_column_exists($pdo, 'finance_ledger_entries', $column)) {
-            return [mg_data_integrity_unavailable('finance_unbalanced_ledger_groups', 'Unbalanced ledger entry groups', ['finance_ledger_entries.' . $column])];
-        }
-    }
-
-    $count = mg_data_integrity_count($pdo, "SELECT COUNT(*) FROM (SELECT entry_group_id, SUM(CASE WHEN direction = 'debit' THEN amount_cents ELSE -amount_cents END) balance_cents FROM finance_ledger_entries GROUP BY entry_group_id HAVING balance_cents <> 0) x");
-    $sample = $count > 0 ? mg_data_integrity_sample($pdo, "SELECT entry_group_id, SUM(CASE WHEN direction = 'debit' THEN amount_cents ELSE -amount_cents END) balance_cents, COUNT(*) entries FROM finance_ledger_entries GROUP BY entry_group_id HAVING balance_cents <> 0 ORDER BY MAX(id) DESC LIMIT 8") : [];
-    $checks[] = mg_data_integrity_check('finance_unbalanced_ledger_groups', 'Unbalanced ledger entry groups', 'critical', true, $count, 'Ledger entry groups must balance debits and credits to zero.', $sample);
-
-    return $checks;
+    $count = mg_data_integrity_count($pdo, "SELECT COUNT(*) FROM (SELECT transaction_group_id, SUM(CASE WHEN entry_type = 'debit' THEN amount_cents ELSE -amount_cents END) balance_cents FROM ledger_entries GROUP BY transaction_group_id HAVING balance_cents <> 0) x");
+    $sample = $count > 0 ? mg_data_integrity_sample($pdo, "SELECT transaction_group_id, SUM(CASE WHEN entry_type = 'debit' THEN amount_cents ELSE -amount_cents END) balance_cents, COUNT(*) entries FROM ledger_entries GROUP BY transaction_group_id HAVING balance_cents <> 0 ORDER BY MAX(id) DESC LIMIT 8") : [];
+    return [mg_data_integrity_check('ledger_unbalanced_transaction_groups', 'Unbalanced ledger transaction groups', 'critical', true, $count, 'Ledger transaction groups must balance debits and credits to zero.', $sample)];
 }
 
 function mg_data_integrity_run(PDO $pdo): array
