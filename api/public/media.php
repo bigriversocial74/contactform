@@ -38,6 +38,7 @@ $viewer=mg_public_profile_session_viewer($pdo);
 $viewerId=isset($viewer['id'])?(int)$viewer['id']:null;
 $profileMediaUrl='/api/public/media.php?asset='.$assetId;
 $storyReferenceSql='0 public_story_reference';
+$blogReferenceSql='0 public_blog_reference';
 $params=[$profileMediaUrl,$assetId,$profileMediaUrl,$assetId];
 if(mg_public_media_table_exists($pdo,'microgifter_stories')){
     $storyExistsSql="EXISTS (
@@ -67,6 +68,16 @@ if(mg_public_media_table_exists($pdo,'microgifter_stories')){
     }
     $storyReferenceSql='(' . implode(' OR ', $storyReferenceParts) . ') public_story_reference';
 }
+if(mg_public_media_table_exists($pdo,'blog_posts')){
+    $blogReferenceSql="EXISTS (
+              SELECT 1 FROM blog_posts bp
+              WHERE bp.status='published' AND bp.deleted_at IS NULL
+                AND (bp.published_at IS NULL OR bp.published_at<=NOW())
+                AND (bp.featured_image=? OR bp.featured_image=?)
+            ) public_blog_reference";
+    $params[]=$profileMediaUrl;
+    $params[]=$assetId;
+}
 $params[]=$assetId;
 $stmt=$pdo->prepare(
     "SELECT ca.id,ca.public_id,ca.owner_user_id,ca.asset_type,ca.storage_provider,ca.storage_key,
@@ -95,6 +106,7 @@ $stmt=$pdo->prepare(
               WHERE fpe.asset_id=ca.id AND fp.visibility IN ('public','unlisted')
                 AND fp.status IN ('published','promoted') AND fpv.version_status='published'
             ) public_legacy_post_reference,
+            {$blogReferenceSql},
             {$storyReferenceSql}
      FROM catalog_assets ca
      WHERE ca.public_id=? AND ca.status='ready'
@@ -109,6 +121,7 @@ $publiclyCacheable=!empty($asset['public_profile_reference'])
     ||!empty($asset['public_storefront_reference'])
     ||!empty($asset['public_product_reference'])
     ||!empty($asset['public_legacy_post_reference'])
+    ||!empty($asset['public_blog_reference'])
     ||!empty($asset['public_story_reference']);
 if($publiclyCacheable)$allowed=true;
 
