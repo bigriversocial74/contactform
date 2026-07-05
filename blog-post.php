@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/app.php';
 require_once __DIR__ . '/includes/blog/blog-functions.php';
+require_once __DIR__ . '/includes/blog/blog-sanitizer.php';
 require_once __DIR__ . '/includes/blog/blog-settings.php';
 
 $pdo = mg_db();
@@ -117,7 +118,7 @@ require __DIR__ . '/includes/header.php';
       <div class="mg-blog-wrap mg-blog-article-layout">
         <div class="mg-blog-article-card">
           <div class="mg-blog-article-body">
-            <?= (string) $post['body'] ?>
+            <?= mg_blog_render_body((string) $post['body']) ?>
             <?= mg_blog_render_cta($effectiveCta) ?>
           </div>
         </div>
