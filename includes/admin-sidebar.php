@@ -40,6 +40,7 @@ $canSecurity = $canAdminPage('admin.security_logs');
 $canSessions = $canAdminPage('admin.sessions');
 $canOpsQueue = $canAdminPage('admin.ops_queue');
 $canOpsActivity = $canOperationsCommand || $canAudit;
+$canBlog = mg_admin_permission_user_has($adminMatrixUser, 'admin.blog.view') || mg_admin_permission_user_has($adminMatrixUser, 'admin.blog.manage');
 $canAdReview = in_array('admin', $adminRoles, true)
     || in_array('super_admin', $adminRoles, true)
     || in_array('ads.manage', $adminPermissions, true)
@@ -52,6 +53,12 @@ $adminNav = [
         'detail' => 'Platform overview',
         'href' => '/account-admin.php',
         'visible' => true,
+    ],
+    'blog' => [
+        'label' => 'Content Studio',
+        'detail' => 'Blog posts and SEO',
+        'href' => '/admin/blog-posts.php',
+        'visible' => $canBlog,
     ],
     'operations-command' => [
         'label' => 'Command center',
