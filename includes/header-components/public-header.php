@@ -39,6 +39,7 @@ $public_nav_links = $filtered_links;
 if (!$user) {
     $public_nav_links = [
         ['label' => 'Explore', 'href' => '/discover.php'],
+        ['label' => 'Blog', 'href' => '/blog.php'],
         ['label' => 'Pricing', 'href' => '/pricing.php'],
     ];
 }
@@ -219,7 +220,7 @@ $show_demo_button = !$user;
   const setOpen = (open) => {
     const menu = getMenu();
     if (!menu) return;
-    getTriggers().forEach((trigger) => trigger.setAttribute('aria-expanded', open ? 'true' : 'false'));
+    getTriggers().forEach((button) => button.setAttribute('aria-expanded', open ? 'true' : 'false'));
     document.body.classList.toggle('mg-public-mobile-menu-open', open);
     if (open) {
       menu.hidden = false;
