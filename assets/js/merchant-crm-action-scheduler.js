@@ -49,9 +49,9 @@ document.addEventListener('DOMContentLoaded', function () {
     var schedule = qs('[data-crm-action-schedule]');
     if (!schedule || !schedule.checked) return;
     var scheduledAt = (qs('[data-crm-action-scheduled-at]') || {}).value || '';
-    if (!isFuture(scheduledAt)) return;
     event.preventDefault();
     event.stopImmediatePropagation();
+    if (!isFuture(scheduledAt)) { setStatus('[data-crm-action-status]', 'Choose a valid future scheduled send time.', 'error'); return; }
     var contactId = actionCenterContactId();
     var campaignId = selectedCampaignId();
     if (!contactId || !campaignId) { setStatus('[data-crm-action-status]', 'Choose a contact and campaign before scheduling.', 'error'); return; }
@@ -93,9 +93,9 @@ document.addEventListener('DOMContentLoaded', function () {
     var schedule = qs('[data-crm-bulk-schedule]', form);
     if (!schedule || !schedule.checked) return;
     var scheduledAt = (qs('[data-crm-bulk-scheduled-at]', form) || {}).value || '';
-    if (!isFuture(scheduledAt)) return;
     event.preventDefault();
     event.stopImmediatePropagation();
+    if (!isFuture(scheduledAt)) { setStatus('[data-crm-bulk-status]', 'Choose a valid future scheduled send time.', 'error'); return; }
     var ids = selectedContactIds();
     if (!ids.length) { setStatus('[data-crm-bulk-status]', 'Select contacts before scheduling.', 'error'); return; }
     var title = qs('[data-crm-bulk-title]', form);
