@@ -134,7 +134,7 @@ $userId = (int) ($user['id'] ?? 0);
 $deletedFilter = mg_catalog_asset_file_column_exists($pdo, 'catalog_assets', 'deleted_at') ? ' AND ca.deleted_at IS NULL' : '';
 $stmt = $pdo->prepare(
     "SELECT ca.storage_provider, ca.storage_key, ca.original_filename, ca.mime_type, ca.byte_size, ca.checksum_sha256,
-            CASE WHEN ca.owner_user_id = ? THEN 1 ELSE 0 END is_owner,
+            CASE WHEN ? > 0 AND ca.owner_user_id = ? THEN 1 ELSE 0 END is_owner,
             CASE WHEN EXISTS (
               SELECT 1
               FROM catalog_product_version_assets pva
@@ -147,7 +147,7 @@ $stmt = $pdo->prepare(
      FROM catalog_assets ca
      WHERE ca.public_id = ? AND ca.status = 'ready'$deletedFilter
        AND (
-         ca.owner_user_id = ?
+         (? > 0 AND ca.owner_user_id = ?)
          OR EXISTS (
            SELECT 1
            FROM catalog_product_version_assets pva
@@ -160,7 +160,7 @@ $stmt = $pdo->prepare(
        )
      LIMIT 1"
 );
-$stmt->execute([$userId, $assetId, $userId]);
+$stmt->execute([$userId, $userId, $assetId, $userId, $userId]);
 $asset = $stmt->fetch();
 if (!$asset || (string) $asset['storage_provider'] !== 'private_local') {
     mg_fail('Asset not found.', 404);
