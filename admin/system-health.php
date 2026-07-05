@@ -15,7 +15,7 @@ $page_section = 'account';
 $header_mode = 'account';
 $page_body_class = 'mg-admin-system-health-page';
 $page_styles = ['/assets/css/admin-shell.css','/assets/css/admin-system-health.css','/assets/css/admin-pwa-health.css'];
-$page_scripts = ['/assets/js/admin-system-health.js','/assets/js/admin-pwa-health.js','/assets/js/admin-health-warning-filter.js','/assets/js/admin-security-hardening-audit.js','/assets/js/admin-system-health-tabs.js'];
+$page_scripts = ['/assets/js/admin-system-health.js','/assets/js/admin-data-integrity-diagnostics.js','/assets/js/admin-pwa-health.js','/assets/js/admin-health-warning-filter.js','/assets/js/admin-security-hardening-audit.js','/assets/js/admin-system-health-tabs.js'];
 $adminActive = 'system-health';
 
 require dirname(__DIR__) . '/includes/header.php';
@@ -29,7 +29,7 @@ require dirname(__DIR__) . '/includes/header.php';
           <a class="mg-system-health-back" href="/account-admin.php">← Admin dashboard</a>
           <span class="mg-eyebrow">Platform operations</span>
           <h1>System health</h1>
-          <p>Persistent media, notification delivery, PWA browser push, database migrations, admin ops deployment readiness, SQL diagnostics, security hardening, and recent operational warnings.</p>
+          <p>Persistent media, notification delivery, PWA browser push, database migrations, admin ops deployment readiness, SQL diagnostics, data integrity diagnostics, security hardening, and recent operational warnings.</p>
         </div>
         <div class="mg-system-health-hero-actions">
           <span class="mg-system-health-updated">Last checked <strong data-system-health-updated>—</strong></span>
@@ -48,6 +48,7 @@ require dirname(__DIR__) . '/includes/header.php';
         <button type="button" data-health-tab="pwa" aria-selected="false">PWA push</button>
         <button type="button" data-health-tab="admin-ops" aria-selected="false">Admin ops</button>
         <button type="button" data-health-tab="sql" aria-selected="false">SQL diagnostics</button>
+        <button type="button" data-health-tab="data-integrity" aria-selected="false">Data integrity</button>
         <?php if ($canViewSecurityAudit): ?><button type="button" data-health-tab="security" aria-selected="false">Security audit</button><?php endif; ?>
         <button type="button" data-health-tab="warnings" aria-selected="false">Warnings & tools</button>
       </nav>
@@ -128,6 +129,36 @@ require dirname(__DIR__) . '/includes/header.php';
               <div>
                 <h3>Top findings</h3>
                 <div class="mg-system-sql-list" data-sql-diagnostics-findings><p class="mg-muted">Loading findings…</p></div>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section class="mg-health-tab-panel" data-health-tab-panel="data-integrity" hidden>
+          <section class="mg-system-health-section mg-system-sql-diagnostics" data-data-integrity-diagnostics>
+            <header>
+              <div>
+                <h2>Data integrity diagnostics</h2>
+                <p>Runs read-only drift checks across Blog content, catalog assets, PPPM ownership, and ledger balance data.</p>
+              </div>
+              <div class="mg-system-sql-actions">
+                <button class="mg-btn mg-btn-ghost" type="button" data-data-integrity-refresh disabled>Run integrity checks</button>
+              </div>
+            </header>
+            <div class="mg-system-sql-summary is-loading" data-data-integrity-summary>Loading data integrity diagnostics…</div>
+            <div class="mg-system-sql-metrics" data-data-integrity-metrics>
+              <?php foreach (['Groups','Checks','Critical','Warnings','Unavailable'] as $label): ?>
+                <article><span><?= mg_e($label) ?></span><strong>—</strong><small>Waiting for diagnostics</small></article>
+              <?php endforeach; ?>
+            </div>
+            <div class="mg-system-sql-panels">
+              <div>
+                <h3>Integrity groups</h3>
+                <div class="mg-system-sql-list" data-data-integrity-groups><p class="mg-muted">Loading integrity groups…</p></div>
+              </div>
+              <div>
+                <h3>Top findings</h3>
+                <div class="mg-system-sql-list" data-data-integrity-checks><p class="mg-muted">Loading integrity findings…</p></div>
               </div>
             </div>
           </section>
