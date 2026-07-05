@@ -13,7 +13,6 @@ document.addEventListener('DOMContentLoaded', function () {
   };
 
   function qs(selector, root) { return (root || document).querySelector(selector); }
-  function qsa(selector, root) { return Array.prototype.slice.call((root || document).querySelectorAll(selector)); }
   function esc(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, function (char) {
       return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char];
@@ -39,6 +38,12 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!button.dataset.originalText) button.dataset.originalText = button.textContent;
     button.disabled = !!on;
     button.textContent = on ? (label || 'Working...') : button.dataset.originalText;
+  }
+  function threadMessageCount(contact, thread) {
+    return Number((thread && thread.message_count) || contact.message_count || (thread ? 1 : 0) || 0);
+  }
+  function threadActiveCount(contact, thread) {
+    return Number((thread && thread.unread_count) || contact.active_message_count || (thread && thread.unread ? 1 : 0) || 0);
   }
 
   function ensureDrawer() {
@@ -93,7 +98,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var metaNode = qs('[data-crm-contact-thread-meta]');
     if (titleNode) titleNode.textContent = title;
     if (subtitleNode) subtitleNode.textContent = (contact.email || '') + ' · ' + (contact.campaign_title || 'Campaign contact');
-    if (metaNode) metaNode.innerHTML = '<span><strong>' + esc(thread ? 1 : 0) + '</strong> active thread</span><span><strong>' + esc(contact.message_count || 0) + '</strong> messages</span><span><strong>' + esc(contact.active_message_count || (thread && thread.unread ? 1 : 0) || 0) + '</strong> active messages</span><span>' + esc(account) + '</span><span>' + esc(meta) + '</span>';
+    if (metaNode) metaNode.innerHTML = '<span><strong>' + esc(thread ? 1 : 0) + '</strong> active thread</span><span><strong>' + esc(threadMessageCount(contact, thread)) + '</strong> messages</span><span><strong>' + esc(threadActiveCount(contact, thread)) + '</strong> active messages</span><span>' + esc(account) + '</span><span>' + esc(meta) + '</span>';
   }
 
   async function loadThreads() {
@@ -170,8 +175,8 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function buildCountChip(contact, thread) {
-    var count = Number(contact.message_count || 0);
-    var active = Number(contact.active_message_count || 0) || (thread && thread.unread ? 1 : 0);
+    var count = threadMessageCount(contact, thread);
+    var active = threadActiveCount(contact, thread);
     var latest = thread && thread.latest_at ? fmt(thread.latest_at) : 'No thread yet';
     return '<button class="mg-crm-message-chip' + (active ? ' is-active' : '') + '" type="button" data-crm-contact-thread-open="' + esc(contact.id) + '"><strong>' + esc(count) + '</strong><span>messages</span><em>' + esc(active) + ' active</em><small>' + esc(latest) + '</small></button>';
   }
@@ -195,11 +200,20 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function syncSummary() {
-    var totalMessages = state.contacts.reduce(function (sum, contact) { return sum + Number(contact.message_count || 0); }, 0);
-    var activeMessages = state.contacts.reduce(function (sum, contact) { return sum + Number(contact.active_message_count || 0); }, 0);
+    var totalMessages = state.threads.reduce(function (sum, thread) { return sum + Number(thread.message_count || 0); }, 0);
+    var activeMessages = state.threads.reduce(function (sum, thread) { return sum + Number(thread.unread_count || (thread.unread ? 1 : 0) || 0); }, 0);
     var strip = qs('.mg-crm-contact-stat-strip');
-    if (!strip || qs('[data-crm-contact-message-total]', strip)) return;
-    strip.insertAdjacentHTML('beforeend', '<article data-crm-contact-message-total><span>Messages</span><strong>' + esc(totalMessages) + '</strong></article><article data-crm-contact-active-message-total><span>Active Messages</span><strong>' + esc(activeMessages) + '</strong></article>');
+    if (!strip) return;
+    var totalNode = qs('[data-crm-contact-message-total]', strip);
+    var activeNode = qs('[data-crm-contact-active-message-total]', strip);
+    if (!totalNode || !activeNode) {
+      strip.insertAdjacentHTML('beforeend', '<article data-crm-contact-message-total><span>Messages</span><strong>' + esc(totalMessages) + '</strong></article><article data-crm-contact-active-message-total><span>Active Messages</span><strong>' + esc(activeMessages) + '</strong></article>');
+      return;
+    }
+    var totalStrong = totalNode.querySelector('strong');
+    var activeStrong = activeNode.querySelector('strong');
+    if (totalStrong) totalStrong.textContent = String(totalMessages);
+    if (activeStrong) activeStrong.textContent = String(activeMessages);
   }
 
   function syncRows() {
