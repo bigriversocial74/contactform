@@ -174,50 +174,33 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  function buildCountChip(contact, thread) {
-    var count = threadMessageCount(contact, thread);
-    var active = threadActiveCount(contact, thread);
-    var latest = thread && thread.latest_at ? fmt(thread.latest_at) : 'No thread yet';
-    return '<button class="mg-crm-message-chip' + (active ? ' is-active' : '') + '" type="button" data-crm-contact-thread-open="' + esc(contact.id) + '"><strong>' + esc(count) + '</strong><span>messages</span><em>' + esc(active) + ' active</em><small>' + esc(latest) + '</small></button>';
-  }
-
-  function enhanceRow(contact) {
+  function syncEngagement(contact, thread) {
     var row = qs(contactSelector(contact.id));
     if (!row) return;
-    var thread = state.threadByContact[String(contact.id || '')] || null;
-    var actionCell = row.children[row.children.length - 1];
-    if (!actionCell) return;
-    var existing = qs('[data-crm-contact-thread-open]', row);
-    if (existing) existing.remove();
-    actionCell.insertAdjacentHTML('afterbegin', buildCountChip(contact, thread));
+    var metrics = row.querySelectorAll('.mg-crm-engagement-stats span strong');
+    if (metrics[3]) metrics[3].textContent = String(threadMessageCount(contact, thread));
     var messageButton = qs('[data-crm-message]', row);
     if (messageButton) {
-      messageButton.textContent = thread ? 'Open messages' : 'Send message';
       messageButton.classList.add('mg-crm-message-open-btn');
       messageButton.setAttribute('data-crm-contact-thread-open', String(contact.id || ''));
       messageButton.title = thread ? 'Open customer message history' : 'Start a customer message thread';
+      messageButton.setAttribute('aria-label', messageButton.title);
     }
   }
 
   function syncSummary() {
     var totalMessages = state.threads.reduce(function (sum, thread) { return sum + Number(thread.message_count || 0); }, 0);
     var activeMessages = state.threads.reduce(function (sum, thread) { return sum + Number(thread.unread_count || (thread.unread ? 1 : 0) || 0); }, 0);
-    var strip = qs('.mg-crm-contact-stat-strip');
-    if (!strip) return;
-    var totalNode = qs('[data-crm-contact-message-total]', strip);
-    var activeNode = qs('[data-crm-contact-active-message-total]', strip);
-    if (!totalNode || !activeNode) {
-      strip.insertAdjacentHTML('beforeend', '<article data-crm-contact-message-total><span>Messages</span><strong>' + esc(totalMessages) + '</strong></article><article data-crm-contact-active-message-total><span>Active Messages</span><strong>' + esc(activeMessages) + '</strong></article>');
-      return;
-    }
-    var totalStrong = totalNode.querySelector('strong');
-    var activeStrong = activeNode.querySelector('strong');
-    if (totalStrong) totalStrong.textContent = String(totalMessages);
-    if (activeStrong) activeStrong.textContent = String(activeMessages);
+    var totalNode = qs('[data-crm-contact-message-total] strong');
+    var activeNode = qs('[data-crm-contact-active-message-total] strong');
+    if (totalNode) totalNode.textContent = String(totalMessages);
+    if (activeNode) activeNode.textContent = String(activeMessages);
   }
 
   function syncRows() {
-    state.contacts.forEach(enhanceRow);
+    state.contacts.forEach(function (contact) {
+      syncEngagement(contact, state.threadByContact[String(contact.id || '')] || null);
+    });
     syncSummary();
   }
 
