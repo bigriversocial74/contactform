@@ -67,3 +67,20 @@ function mg_blog_showcase_posts(PDO $pdo, array $filters = []): array
         'mode' => 'seed_drafts',
     ];
 }
+
+function mg_blog_get_showcase_post(PDO $pdo, string $slug): ?array
+{
+    $post = mg_blog_get_public_post($pdo, $slug);
+    if ($post) {
+        return $post;
+    }
+
+    if (!in_array($slug, mg_blog_seed_post_slugs(), true)) {
+        return null;
+    }
+
+    $stmt = $pdo->prepare("SELECT p.*, c.name AS category_name, c.slug AS category_slug, u.display_name AS author_display_name, u.full_name AS author_full_name, u.email AS author_email FROM blog_posts p LEFT JOIN blog_categories c ON c.id=p.category_id LEFT JOIN users u ON u.id=p.author_id WHERE p.slug=? AND p.status='draft' AND p.deleted_at IS NULL LIMIT 1");
+    $stmt->execute([$slug]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $row ?: null;
+}
