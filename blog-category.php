@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/app.php';
 require_once __DIR__ . '/includes/blog/blog-functions.php';
-require_once __DIR__ . '/includes/blog/blog-showcase.php';
 
 $pdo = mg_db();
 $schema = mg_blog_schema_ready($pdo);
@@ -19,18 +18,16 @@ $offset = ($page - 1) * $limit;
 $posts = [];
 $totalPosts = 0;
 $totalPages = 1;
-$showcaseMode = 'published';
 $categories = $schema['ready'] ? mg_blog_categories($pdo, true) : [];
 
 if ($category) {
-    $showcase = mg_blog_showcase_posts($pdo, [
+    $filters = [
         'category_slug' => (string) $category['slug'],
         'limit' => $limit,
         'offset' => $offset,
-    ]);
-    $posts = $showcase['posts'];
-    $totalPosts = (int) $showcase['total'];
-    $showcaseMode = (string) $showcase['mode'];
+    ];
+    $posts = mg_blog_list_public_posts($pdo, $filters);
+    $totalPosts = mg_blog_count_public_posts($pdo, ['category_slug' => (string) $category['slug']]);
     $totalPages = max(1, (int) ceil($totalPosts / $limit));
 }
 
@@ -47,7 +44,7 @@ $page_title = $category ? (string) $category['name'] . ' | Microgifter Blog' : '
 $page_section = 'blog';
 $header_mode = 'public';
 $page_body_class = 'mg-blog-page';
-$page_styles = ['/assets/css/blog.css', '/assets/css/blog-launch.css', '/assets/css/blog-db-polish.css'];
+$page_styles = ['/assets/css/blog.css', '/assets/css/blog-launch.css'];
 $page_meta = [
     'description' => $category ? ((string) ($category['description'] ?: 'Microgifter articles in ' . $category['name'] . '.')) : 'Microgifter blog category not found.',
     'canonical' => 'https://microgifter.com/blog-category.php?slug=' . rawurlencode($slug),
@@ -98,14 +95,10 @@ require __DIR__ . '/includes/header.php';
 
     <section class="mg-blog-wrap mg-blog-layout">
       <div class="mg-blog-content-column">
-        <?php if ($showcaseMode === 'seed_drafts'): ?>
-          <div class="mg-blog-data-note"><span>Showing database seed posts from Content Studio. Publish posts in admin when ready for launch.</span></div>
-        <?php endif; ?>
-
         <?php if (!$posts): ?>
           <div class="mg-blog-empty-panel">
-            <h3>No posts in this category yet.</h3>
-            <p>Create or publish posts in Content Studio to populate this category page.</p>
+            <h3>No published posts in this category yet.</h3>
+            <p>Publish posts in Content Studio to populate this category page.</p>
           </div>
         <?php else: ?>
           <div class="mg-blog-grid">
@@ -120,7 +113,7 @@ require __DIR__ . '/includes/header.php';
                   <h2><a href="<?= mg_e(mg_blog_public_post_url($post)) ?>"><?= mg_e((string) $post['title']) ?></a></h2>
                   <p><?= mg_e((string) $post['excerpt']) ?></p>
                   <div class="mg-blog-meta">
-                    <span><?= $showcaseMode === 'seed_drafts' ? 'Draft sample' : mg_e(mg_blog_format_date($post['published_at'] ?? null)) ?></span>
+                    <span><?= mg_e(mg_blog_format_date($post['published_at'] ?? null)) ?></span>
                     <span><?= mg_blog_reading_time((string) $post['body']) ?> min read</span>
                   </div>
                 </div>
