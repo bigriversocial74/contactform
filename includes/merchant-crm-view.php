@@ -74,16 +74,14 @@
 
   <section class="mg-crm-tab-panel" data-crm-tab-panel="contacts" role="tabpanel" hidden>
     <section class="mg-app-panel mg-crm-card mg-crm-contacts-card mg-crm-contacts-redesign" id="campaign-contacts" data-merchant-crm-app>
-      <div class="mg-app-panel-head mg-crm-card-head">
-        <div>
-          <h2>Contacts CRM</h2>
-        </div>
-        <div class="mg-heading-actions mg-crm-card-actions">
-          <select class="mg-input" data-crm-campaign-filter aria-label="Campaign filter"><option value="">All campaigns</option></select>
-          <button class="mg-btn mg-btn-soft" type="button" data-crm-refresh>Refresh</button>
-        </div>
-      </div>
       <div class="mg-app-panel-body">
+        <section class="mg-crm-contact-stat-strip" data-crm-contact-stat-strip aria-label="Contact analytics">
+          <article><span>High Intent</span><strong data-crm-stat-high>0</strong></article>
+          <article><span>Needs Follow-Up</span><strong data-crm-stat-followup>0</strong></article>
+          <article><span>Claims / Redeems</span><strong data-crm-stat-claimed>0</strong></article>
+          <article data-crm-contact-message-total><span>Messages</span><strong>0</strong></article>
+          <article data-crm-contact-active-message-total><span>Active Messages</span><strong>0</strong></article>
+        </section>
         <div class="mg-crm-segment-bar" data-crm-segments aria-label="CRM smart segments">
           <button class="is-active" type="button" data-crm-segment="all">All</button>
           <button type="button" data-crm-segment="accounts">Account contacts</button>
