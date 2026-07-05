@@ -50,9 +50,18 @@ document.addEventListener('DOMContentLoaded', function () {
     if (results) results.insertAdjacentHTML('beforebegin', html); else form.insertAdjacentHTML('beforeend', html);
   }
 
+  var patchTimer = null;
   function patchControls() { ensureActionScheduleControls(); ensureBulkScheduleControls(); syncActionScheduleButton(); }
+  function schedulePatch(delay) {
+    window.clearTimeout(patchTimer);
+    patchTimer = window.setTimeout(patchControls, delay || 0);
+  }
   patchControls();
-  new MutationObserver(patchControls).observe(document.body, { childList: true, subtree: true });
+
+  document.addEventListener('click', function (event) {
+    if (!event.target || !event.target.closest) return;
+    if (event.target.closest('[data-crm-gift],[data-crm-reward],[data-crm-action-tab],[data-crm-campaign-select],[data-crm-bulk-action]')) schedulePatch(150);
+  }, false);
 
   document.addEventListener('change', function (event) {
     var target = event.target;
