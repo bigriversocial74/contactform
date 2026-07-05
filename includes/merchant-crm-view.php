@@ -73,11 +73,10 @@
   </section>
 
   <section class="mg-crm-tab-panel" data-crm-tab-panel="contacts" role="tabpanel" hidden>
-    <section class="mg-app-panel mg-crm-card mg-crm-contacts-card" id="campaign-contacts" data-merchant-crm-app>
+    <section class="mg-app-panel mg-crm-card mg-crm-contacts-card mg-crm-contacts-redesign" id="campaign-contacts" data-merchant-crm-app>
       <div class="mg-app-panel-head mg-crm-card-head">
         <div>
-          <h2>Campaign Contacts</h2>
-          <p>Operational contact list with campaign type, account status, reward status, email status, timeline, message, compact reward actions, and bulk campaign execution.</p>
+          <h2>Contacts CRM</h2>
         </div>
         <div class="mg-heading-actions mg-crm-card-actions">
           <select class="mg-input" data-crm-campaign-filter aria-label="Campaign filter"><option value="">All campaigns</option></select>
