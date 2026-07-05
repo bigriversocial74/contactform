@@ -11,6 +11,9 @@ if ($isDeveloperApi) {
     $page_styles[] = '/assets/css/merchant-developer-api-redesign.css';
 }
 $page_scripts=['/assets/js/merchant-workspace.js','/assets/js/merchant-distribution.js'];
+if (!$isDeveloperApi) {
+    $page_scripts[] = '/assets/js/merchant-distribution-tabs.js';
+}
 if ($isDeveloperApi) {
     $page_scripts[] = '/assets/js/merchant-developer-api-tabs.js';
 }
