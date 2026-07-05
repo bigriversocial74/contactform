@@ -32,9 +32,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var element = qs(selector);
     if (element) element.textContent = String(value == null ? '—' : value);
   }
-  function badge(text, good) {
-    return '<span class="mg-crm-badge ' + (good ? 'is-good' : '') + '">' + esc(text) + '</span>';
-  }
+  function badge(text, good) { return '<span class="mg-crm-badge ' + (good ? 'is-good' : '') + '">' + esc(text) + '</span>'; }
   function toast(message) { Microgifter.toast ? Microgifter.toast(message) : alert(message); }
   function busy(button, on, text) {
     if (!button) return;
@@ -42,12 +40,8 @@ document.addEventListener('DOMContentLoaded', function () {
     button.disabled = !!on;
     button.textContent = on ? (text || 'Working…') : button.dataset.originalText;
   }
-  function profileUrl(contact) {
-    return '/merchant-customer.php?campaign_contact_id=' + encodeURIComponent(contact.id || '');
-  }
-  function label(value) {
-    return String(value || '').replace(/_/g, ' ').replace(/\b\w/g, function (match) { return match.toUpperCase(); });
-  }
+  function profileUrl(contact) { return '/merchant-customer.php?campaign_contact_id=' + encodeURIComponent(contact.id || ''); }
+  function label(value) { return String(value || '').replace(/_/g, ' ').replace(/\b\w/g, function (match) { return match.toUpperCase(); }); }
   function initials(contact) {
     var name = String(contact.name || contact.email || 'C').trim();
     var parts = name.split(/\s+/).filter(Boolean);
@@ -68,9 +62,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function actionButton(kind, tag, attrs, labelText) {
     return '<' + tag + ' class="mg-crm-icon-btn" ' + attrs + ' title="' + esc(labelText) + '" aria-label="' + esc(labelText) + '">' + SVG[kind] + '<span>' + esc(labelText) + '</span></' + tag + '>';
   }
-  function stat(value, text) {
-    return '<span><em>' + esc(text) + '</em><strong>' + esc(value || 0) + '</strong></span>';
-  }
+  function stat(value, text) { return '<span><em>' + esc(text) + '</em><strong>' + esc(value || 0) + '</strong></span>'; }
   function contactMatchesSegment(contact) {
     if (state.segment === 'accounts') return !!contact.has_account;
     if (state.segment === 'no_accounts') return !contact.has_account;
@@ -106,7 +98,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var accountText = contact.has_account ? (contact.account_resolved_by_email ? 'Account/email' : 'Account') : 'No account';
     var stats = contact.crm_stats || {};
     var score = contactScore(contact);
-    var scoreLabel = contact.crm_score_label || stats.score_label || 'score';
+    var scoreLabel = String(contact.crm_score_label || stats.score_label || 'score').replace(/reward\s*sent/ig, '').replace(/\s+/g, ' ').trim() || 'score';
     var result = contact.result_status || stats.result_status || 'no_action_yet';
     var giftText = contact.has_account ? 'Send reward' : 'Send invite';
     var inboxCount = stats.inbox || contact.inbox_count || contact.wallet_count || 0;
@@ -118,7 +110,8 @@ document.addEventListener('DOMContentLoaded', function () {
       '<td class="mg-crm-contact-cell"><div class="mg-crm-contact-main"><div class="mg-crm-contact-avatar" aria-hidden="true">' + esc(initials(contact)) + '</div><div class="mg-crm-contact-copy"><strong>' + esc(contact.name || 'Unnamed') + '</strong><small>' + esc(contact.email || '') + '</small><div class="mg-crm-score-line"><span class="mg-crm-contact-score ' + scoreClass(score) + '"><b>' + esc(score) + '</b><em>' + esc(label(scoreLabel)) + '</em><small>' + esc(label(result)) + '</small></span></div></div></div></td>' +
       '<td class="mg-crm-campaign-cell"><strong>' + esc(contact.campaign_title || '—') + '</strong><small>' + esc(contact.campaign_type || contact.source || '') + '</small><div class="mg-crm-campaign-rewards">' + badge(reward, reward === 'claimed' || reward === 'redeemed') + (Number(contact.invite_pending_count || 0) > 0 ? badge('Invite pending', true) : '') + '</div></td>' +
       '<td class="mg-crm-account-cell">' + badge(accountText, !!contact.has_account) + badge(contact.email_verified ? 'Verified' : 'Unverified', !!contact.email_verified) + '</td>' +
-      '<td class="mg-crm-engagement-cell"><div class="mg-crm-engagement-stats">' + stat(inboxCount, 'Inbox') + stat(sentCount, 'Sent') + stat(claimedCount, 'Claimed') + stat(messageCount, 'Msg') + '</div><div class="mg-crm-row-actions">' +
+      '<td class="mg-crm-engagement-cell"><div class="mg-crm-engagement-stats">' + stat(inboxCount, 'Inbox') + stat(sentCount, 'Sent') + stat(claimedCount, 'Claimed') + stat(messageCount, 'Msg') + '</div></td>' +
+      '<td class="mg-crm-actions-cell"><div class="mg-crm-row-actions">' +
         actionButton('view', 'a', 'href="' + esc(profileUrl(contact)) + '" data-crm-view-customer', 'View customer') +
         actionButton('timeline', 'button', 'type="button" data-view-timeline', 'Timeline') +
         actionButton('message', 'button', 'type="button" data-crm-message', 'Messages') +
@@ -140,7 +133,7 @@ document.addEventListener('DOMContentLoaded', function () {
       updateBulkState();
       return;
     }
-    wrapper.innerHTML = '<table class="mg-crm-table mg-crm-contacts-table"><thead><tr><th class="mg-crm-select-cell">Select</th><th>Contact</th><th>Campaign</th><th>Account</th><th>Engagement</th></tr></thead><tbody>' + rows.map(contactRow).join('') + '</tbody></table>';
+    wrapper.innerHTML = '<table class="mg-crm-table mg-crm-contacts-table"><thead><tr><th class="mg-crm-select-cell">Select</th><th>Contact</th><th>Campaign</th><th>Account</th><th>Engagement</th><th>Actions</th></tr></thead><tbody>' + rows.map(contactRow).join('') + '</tbody></table>';
     updateBulkState();
     document.dispatchEvent(new CustomEvent('mg:crm-contacts:rendered', { detail: { contacts: state.contacts, visible: rows } }));
   }
