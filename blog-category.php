@@ -47,7 +47,7 @@ $page_title = $category ? (string) $category['name'] . ' | Microgifter Blog' : '
 $page_section = 'blog';
 $header_mode = 'public';
 $page_body_class = 'mg-blog-page';
-$page_styles = ['/assets/css/blog.css', '/assets/css/blog-launch.css'];
+$page_styles = ['/assets/css/blog.css', '/assets/css/blog-launch.css', '/assets/css/blog-db-polish.css'];
 $page_meta = [
     'description' => $category ? ((string) ($category['description'] ?: 'Microgifter articles in ' . $category['name'] . '.')) : 'Microgifter blog category not found.',
     'canonical' => 'https://microgifter.com/blog-category.php?slug=' . rawurlencode($slug),
