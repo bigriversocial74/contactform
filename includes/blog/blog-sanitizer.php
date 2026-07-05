@@ -87,15 +87,16 @@ function mg_blog_sanitize_dom_node(DOMDocument $doc, DOMNode $node): void
         return;
     }
 
+    $href = $tag === 'a' ? $node->getAttribute('href') : null;
     foreach (iterator_to_array($node->attributes ?? []) as $attribute) {
         $node->removeAttribute($attribute->name);
     }
 
     if ($tag === 'a') {
-        $href = mg_blog_sanitize_url($node->getAttribute('href'));
-        if ($href !== null) {
-            $node->setAttribute('href', $href);
-            if (preg_match('#^https?://#i', $href) === 1) {
+        $safeHref = mg_blog_sanitize_url($href);
+        if ($safeHref !== null) {
+            $node->setAttribute('href', $safeHref);
+            if (preg_match('#^https?://#i', $safeHref) === 1) {
                 $node->setAttribute('target', '_blank');
                 $node->setAttribute('rel', 'noopener noreferrer nofollow');
             }
