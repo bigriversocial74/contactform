@@ -55,6 +55,16 @@ function mg_mf_diag_column_exists(PDO $pdo, string $table, string $column): bool
     }
 }
 
+function mg_mf_diag_columns_available(PDO $pdo, array $columns): bool
+{
+    foreach ($columns as $table => $items) {
+        foreach ((array)$items as $column) {
+            if (!mg_mf_diag_column_exists($pdo, (string)$table, (string)$column)) return false;
+        }
+    }
+    return true;
+}
+
 function mg_mf_diag_schema_check(PDO $pdo, string $key, string $label, array $tables, array $columns = []): array
 {
     $missingTables = [];
@@ -127,7 +137,7 @@ function mg_mf_diag_endpoint_contracts(): array
             "mg_require_method('POST')",
             "mg_require_permission('merchant.campaigns.manage')",
             'mg_require_csrf_for_write',
-            "campaign_type=\'customer_refund\'",
+            'customer_refund',
             'FOR UPDATE',
             'mg_public_campaign_enforce_reward_limits',
             'crm_idempotency_key',
@@ -152,7 +162,7 @@ function mg_mf_diag_endpoint_contracts(): array
             'function mg_zero_reward_issue_from_wallet',
             'wallet_item_public_id',
             'source_reference',
-            "INSERT INTO gifts",
+            'INSERT INTO gifts',
         ]),
     ];
 }
@@ -184,33 +194,46 @@ function mg_mf_diag_runtime_data(PDO $pdo): array
 {
     $checks = [];
 
-    if (mg_mf_diag_table_exists($pdo, 'campaigns') && mg_mf_diag_table_exists($pdo, 'reward_templates')) {
-        $count = mg_mf_diag_count($pdo, "SELECT COUNT(*) FROM campaigns c LEFT JOIN reward_templates rt ON rt.id = c.reward_template_id WHERE c.deleted_at IS NULL AND c.status = 'active' AND c.reward_template_id IS NOT NULL AND (rt.id IS NULL OR rt.status <> 'active')");
-        $sample = $count > 0 ? mg_mf_diag_sample($pdo, "SELECT c.id,c.public_id,c.title,c.campaign_type,c.status,c.reward_template_id,rt.status reward_status FROM campaigns c LEFT JOIN reward_templates rt ON rt.id = c.reward_template_id WHERE c.deleted_at IS NULL AND c.status = 'active' AND c.reward_template_id IS NOT NULL AND (rt.id IS NULL OR rt.status <> 'active') ORDER BY c.updated_at DESC,c.id DESC LIMIT 8") : [];
+    $campaignReady = mg_mf_diag_table_exists($pdo, 'campaigns') && mg_mf_diag_table_exists($pdo, 'reward_templates') && mg_mf_diag_columns_available($pdo, [
+        'campaigns' => ['id', 'public_id', 'title', 'campaign_type', 'reward_template_id', 'status', 'issued_count', 'quantity_limit'],
+        'reward_templates' => ['id', 'status', 'issued_count', 'quantity_limit'],
+    ]);
+
+    if ($campaignReady) {
+        $campaignDeleted = mg_mf_diag_column_exists($pdo, 'campaigns', 'deleted_at') ? 'c.deleted_at IS NULL AND ' : '';
+        $campaignOrder = mg_mf_diag_column_exists($pdo, 'campaigns', 'updated_at') ? 'c.updated_at DESC,c.id DESC' : 'c.id DESC';
+        $count = mg_mf_diag_count($pdo, "SELECT COUNT(*) FROM campaigns c LEFT JOIN reward_templates rt ON rt.id = c.reward_template_id WHERE {$campaignDeleted}c.status = 'active' AND c.reward_template_id IS NOT NULL AND (rt.id IS NULL OR rt.status <> 'active')");
+        $sample = $count > 0 ? mg_mf_diag_sample($pdo, "SELECT c.id,c.public_id,c.title,c.campaign_type,c.status,c.reward_template_id,rt.status reward_status FROM campaigns c LEFT JOIN reward_templates rt ON rt.id = c.reward_template_id WHERE {$campaignDeleted}c.status = 'active' AND c.reward_template_id IS NOT NULL AND (rt.id IS NULL OR rt.status <> 'active') ORDER BY {$campaignOrder} LIMIT 8") : [];
         $checks[] = mg_mf_diag_data_check('active_campaign_inactive_reward', 'Active campaigns with inactive/missing reward', 'critical', true, $count, 'Active reward-backed campaigns should point to active reward templates.', $sample);
 
-        $count = mg_mf_diag_count($pdo, "SELECT COUNT(*) FROM campaigns c INNER JOIN reward_templates rt ON rt.id = c.reward_template_id WHERE c.deleted_at IS NULL AND c.status = 'active' AND rt.status = 'active' AND ((c.quantity_limit IS NOT NULL AND c.issued_count > c.quantity_limit) OR (rt.quantity_limit IS NOT NULL AND rt.issued_count > rt.quantity_limit))");
-        $sample = $count > 0 ? mg_mf_diag_sample($pdo, "SELECT c.id,c.public_id,c.title,c.campaign_type,c.issued_count,c.quantity_limit,rt.issued_count reward_issued_count,rt.quantity_limit reward_quantity_limit FROM campaigns c INNER JOIN reward_templates rt ON rt.id = c.reward_template_id WHERE c.deleted_at IS NULL AND c.status = 'active' AND rt.status = 'active' AND ((c.quantity_limit IS NOT NULL AND c.issued_count > c.quantity_limit) OR (rt.quantity_limit IS NOT NULL AND rt.issued_count > rt.quantity_limit)) ORDER BY c.updated_at DESC,c.id DESC LIMIT 8") : [];
+        $count = mg_mf_diag_count($pdo, "SELECT COUNT(*) FROM campaigns c INNER JOIN reward_templates rt ON rt.id = c.reward_template_id WHERE {$campaignDeleted}c.status = 'active' AND rt.status = 'active' AND ((c.quantity_limit IS NOT NULL AND c.issued_count > c.quantity_limit) OR (rt.quantity_limit IS NOT NULL AND rt.issued_count > rt.quantity_limit))");
+        $sample = $count > 0 ? mg_mf_diag_sample($pdo, "SELECT c.id,c.public_id,c.title,c.campaign_type,c.issued_count,c.quantity_limit,rt.issued_count reward_issued_count,rt.quantity_limit reward_quantity_limit FROM campaigns c INNER JOIN reward_templates rt ON rt.id = c.reward_template_id WHERE {$campaignDeleted}c.status = 'active' AND rt.status = 'active' AND ((c.quantity_limit IS NOT NULL AND c.issued_count > c.quantity_limit) OR (rt.quantity_limit IS NOT NULL AND rt.issued_count > rt.quantity_limit)) ORDER BY {$campaignOrder} LIMIT 8") : [];
         $checks[] = mg_mf_diag_data_check('campaign_inventory_over_issued', 'Campaign or reward inventory over-issued', 'critical', true, $count, 'Issued counts should not exceed campaign or reward inventory limits.', $sample);
     } else {
-        $checks[] = mg_mf_diag_data_check('active_campaign_inactive_reward', 'Active campaigns with inactive/missing reward', 'warning', false, 0, 'Campaign or reward tables are unavailable.');
+        $checks[] = mg_mf_diag_data_check('active_campaign_inactive_reward', 'Active campaigns with inactive/missing reward', 'warning', false, 0, 'Campaign or reward tables/columns are unavailable.');
+        $checks[] = mg_mf_diag_data_check('campaign_inventory_over_issued', 'Campaign or reward inventory over-issued', 'warning', false, 0, 'Campaign or reward tables/columns are unavailable.');
     }
 
-    if (mg_mf_diag_table_exists($pdo, 'campaign_contacts')) {
-        $count = mg_mf_diag_count($pdo, "SELECT COUNT(*) FROM campaign_contacts WHERE deleted_at IS NULL AND (email IS NULL OR email = '' OR email NOT LIKE '%@%')");
-        $sample = $count > 0 ? mg_mf_diag_sample($pdo, "SELECT id,public_id,campaign_id,email,name,updated_at FROM campaign_contacts WHERE deleted_at IS NULL AND (email IS NULL OR email = '' OR email NOT LIKE '%@%') ORDER BY updated_at DESC,id DESC LIMIT 8") : [];
+    $contactsReady = mg_mf_diag_table_exists($pdo, 'campaign_contacts') && mg_mf_diag_columns_available($pdo, ['campaign_contacts' => ['id', 'public_id', 'campaign_id', 'email']]);
+    if ($contactsReady) {
+        $contactDeleted = mg_mf_diag_column_exists($pdo, 'campaign_contacts', 'deleted_at') ? 'deleted_at IS NULL AND ' : '';
+        $contactName = mg_mf_diag_column_exists($pdo, 'campaign_contacts', 'name') ? 'name' : 'NULL name';
+        $contactUpdated = mg_mf_diag_column_exists($pdo, 'campaign_contacts', 'updated_at') ? 'updated_at' : 'NULL updated_at';
+        $contactOrder = mg_mf_diag_column_exists($pdo, 'campaign_contacts', 'updated_at') ? 'updated_at DESC,id DESC' : 'id DESC';
+        $count = mg_mf_diag_count($pdo, "SELECT COUNT(*) FROM campaign_contacts WHERE {$contactDeleted}(email IS NULL OR email = '' OR email NOT LIKE '%@%')");
+        $sample = $count > 0 ? mg_mf_diag_sample($pdo, "SELECT id,public_id,campaign_id,email,{$contactName},{$contactUpdated} FROM campaign_contacts WHERE {$contactDeleted}(email IS NULL OR email = '' OR email NOT LIKE '%@%') ORDER BY {$contactOrder} LIMIT 8") : [];
         $checks[] = mg_mf_diag_data_check('campaign_contacts_invalid_email', 'Campaign contacts missing valid email', 'warning', true, $count, 'CRM send flows require a valid customer email before wallet placement.', $sample);
     } else {
-        $checks[] = mg_mf_diag_data_check('campaign_contacts_invalid_email', 'Campaign contacts missing valid email', 'warning', false, 0, 'Campaign contacts table is unavailable.');
+        $checks[] = mg_mf_diag_data_check('campaign_contacts_invalid_email', 'Campaign contacts missing valid email', 'warning', false, 0, 'Campaign contacts table or required columns are unavailable.');
     }
 
-    if (mg_mf_diag_table_exists($pdo, 'wallet_items') && mg_mf_diag_table_exists($pdo, 'campaigns')) {
-        $count = mg_mf_diag_count($pdo, "SELECT COUNT(*) FROM wallet_items wi LEFT JOIN campaigns c ON c.id = wi.campaign_id WHERE wi.campaign_id IS NOT NULL AND c.id IS NULL");
-        $sample = $count > 0 ? mg_mf_diag_sample($pdo, "SELECT wi.id,wi.public_id,wi.campaign_id,wi.status,wi.created_at FROM wallet_items wi LEFT JOIN campaigns c ON c.id = wi.campaign_id WHERE wi.campaign_id IS NOT NULL AND c.id IS NULL ORDER BY wi.id DESC LIMIT 8") : [];
+    if (mg_mf_diag_table_exists($pdo, 'wallet_items') && mg_mf_diag_table_exists($pdo, 'campaigns') && mg_mf_diag_columns_available($pdo, ['wallet_items' => ['id', 'public_id', 'campaign_id', 'status', 'created_at'], 'campaigns' => ['id']])) {
+        $count = mg_mf_diag_count($pdo, 'SELECT COUNT(*) FROM wallet_items wi LEFT JOIN campaigns c ON c.id = wi.campaign_id WHERE wi.campaign_id IS NOT NULL AND c.id IS NULL');
+        $sample = $count > 0 ? mg_mf_diag_sample($pdo, 'SELECT wi.id,wi.public_id,wi.campaign_id,wi.status,wi.created_at FROM wallet_items wi LEFT JOIN campaigns c ON c.id = wi.campaign_id WHERE wi.campaign_id IS NOT NULL AND c.id IS NULL ORDER BY wi.id DESC LIMIT 8') : [];
         $checks[] = mg_mf_diag_data_check('wallet_items_missing_campaign', 'Wallet items pointing to missing campaign', 'critical', true, $count, 'Campaign-issued wallet items should keep their campaign reference intact.', $sample);
     }
 
-    if (mg_mf_diag_table_exists($pdo, 'campaign_events') && mg_mf_diag_table_exists($pdo, 'wallet_items')) {
+    if (mg_mf_diag_table_exists($pdo, 'campaign_events') && mg_mf_diag_table_exists($pdo, 'wallet_items') && mg_mf_diag_columns_available($pdo, ['campaign_events' => ['wallet_item_id'], 'wallet_items' => ['id', 'public_id', 'campaign_id', 'status', 'created_at']])) {
         $count = mg_mf_diag_count($pdo, "SELECT COUNT(*) FROM wallet_items wi WHERE wi.campaign_id IS NOT NULL AND wi.status IN ('issued','sent','claimed','redeemed') AND NOT EXISTS (SELECT 1 FROM campaign_events ce WHERE ce.wallet_item_id = wi.id)");
         $sample = $count > 0 ? mg_mf_diag_sample($pdo, "SELECT wi.id,wi.public_id,wi.campaign_id,wi.status,wi.created_at FROM wallet_items wi WHERE wi.campaign_id IS NOT NULL AND wi.status IN ('issued','sent','claimed','redeemed') AND NOT EXISTS (SELECT 1 FROM campaign_events ce WHERE ce.wallet_item_id = wi.id) ORDER BY wi.id DESC LIMIT 8") : [];
         $checks[] = mg_mf_diag_data_check('campaign_wallet_items_missing_events', 'Campaign wallet items missing events', 'warning', true, $count, 'Campaign-issued wallet items should have at least one campaign event for attribution and follow-up tracking.', $sample);
