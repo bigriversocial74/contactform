@@ -28,6 +28,7 @@ $canNotifications = $canAdminPage('admin.notifications');
 $canOperationsCommand = $canAdminPage('admin.operations_command');
 $canPackageModeration = $canCommerce;
 $canStampHealth = $canCommerce;
+$canStampEnforcement = $canCommerce;
 $canHealth = $canAdminPage('admin.system_health');
 $canScreenRecordings = $canAdminPage('admin.screen_recordings');
 $canLifecycleHealth = $canAdminPage('admin.lifecycle_health');
@@ -152,6 +153,12 @@ $adminNav = [
         'detail' => 'Usage economy checks',
         'href' => '/admin/stamp-health.php',
         'visible' => $canStampHealth,
+    ],
+    'stamp-enforcement' => [
+        'label' => 'Stamp enforcement',
+        'detail' => 'Service Gate audit',
+        'href' => '/admin/stamp-enforcement.php',
+        'visible' => $canStampEnforcement,
     ],
     'payments' => [
         'label' => 'Stripe payments',
