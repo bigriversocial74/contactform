@@ -90,6 +90,29 @@ document.addEventListener('DOMContentLoaded', function () {
     } catch (error) {}
   }
 
+  function closeRewardModal() {
+    var modal = first('[data-crm-reward-modal]');
+    if (modal) modal.hidden = true;
+    document.body.classList.remove('mg-crm-modal-open');
+  }
+
+  function openTimelineFromProof(detail) {
+    detail = detail || {};
+    var contact = detail.contact || {};
+    var contactId = detail.contact_id || contact.id || '';
+    if (!contactId) return;
+    closeRewardModal();
+    window.setTimeout(function () {
+      var row = first('tr[data-contact-id="' + String(contactId).replace(/"/g, '') + '"]');
+      var button = row && first('[data-view-timeline]', row);
+      if (button) {
+        button.click();
+      } else {
+        window.location.href = '/merchant-crm.php?campaign_contact_id=' + encodeURIComponent(contactId) + '&action=timeline';
+      }
+    }, 80);
+  }
+
   document.addEventListener('click', function (event) {
     if (event.target && event.target.closest && event.target.closest('[data-crm-message-submit]')) rememberComposerBody();
   }, true);
@@ -107,5 +130,9 @@ document.addEventListener('DOMContentLoaded', function () {
       pendingBody = '';
     }
     window.setTimeout(function () { refreshThread(threadId); }, 250);
+  });
+
+  document.addEventListener('mg:crm:open-timeline', function (event) {
+    openTimelineFromProof(event.detail || {});
   });
 });

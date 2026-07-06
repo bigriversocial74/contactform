@@ -27,6 +27,11 @@ function mg_crm_campaign_send_type_label(string $type): string
     };
 }
 
+function mg_crm_campaign_send_event_type(string $campaignType): string
+{
+    return $campaignType === 'customer_refund' ? 'crm.customer_refund.sent' : 'crm.campaign_reward.sent';
+}
+
 function mg_crm_campaign_send_expiry(array $campaign): ?string
 {
     $rule = (string)($campaign['expiration_rule'] ?? 'none');
@@ -86,11 +91,15 @@ mg_require_csrf_for_write($input);
 
 $sourceContactRef = strtolower(trim((string)($input['contact_id'] ?? $input['contact'] ?? '')));
 $campaignRef = strtolower(trim((string)($input['campaign_id'] ?? $input['campaign'] ?? '')));
+$requiredCampaignType = strtolower(trim((string)($input['required_campaign_type'] ?? '')));
 $note = trim((string)($input['note'] ?? ''));
 $idem = trim((string)($input['idempotency_key'] ?? ''));
 
 if ($sourceContactRef === '' || strlen($sourceContactRef) !== 36 || !preg_match('/^[a-f0-9-]{36}$/', $sourceContactRef) || $campaignRef === '' || strlen($campaignRef) !== 36 || !preg_match('/^[a-f0-9-]{36}$/', $campaignRef) || mb_strlen($note) > 1000) {
     mg_fail('Invalid CRM campaign reward send request.', 422);
+}
+if ($requiredCampaignType !== '' && !in_array($requiredCampaignType, ['customer_refund', 'referral_reward', 'newsletter_signup', 'contest_giveaway', 'qr_reward_drop', 'birthday_vip', 'agent_offer'], true)) {
+    mg_fail('Unsupported required campaign type.', 422);
 }
 if ($idem === '') $idem = substr('crm-campaign-reward:' . hash('sha256', $merchantId . '|' . $sourceContactRef . '|' . $campaignRef . '|' . $note . '|' . microtime(true)), 0, 190);
 
@@ -132,6 +141,11 @@ try {
 
     $campaignType = (string)$campaign['campaign_type'];
     $campaignTypeLabel = mg_crm_campaign_send_type_label($campaignType);
+    $crmEventType = mg_crm_campaign_send_event_type($campaignType);
+    if ($requiredCampaignType !== '' && $campaignType !== $requiredCampaignType) {
+        $pdo->rollBack();
+        mg_fail('Choose an active ' . mg_crm_campaign_send_type_label($requiredCampaignType) . ' campaign for this action.', 409);
+    }
     if ((string)$campaign['status'] !== 'active' || (string)$campaign['reward_template_status'] !== 'active') {
         $pdo->rollBack();
         mg_fail($campaignTypeLabel . ' campaign must be active with an active reward assigned.', 409);
@@ -159,7 +173,21 @@ try {
     $existingWallet = (string)($existing->fetchColumn() ?: '');
     if ($existingWallet !== '') {
         $pdo->commit();
-        mg_ok(['wallet_item_id' => $existingWallet, 'duplicate' => true], 'Campaign reward already issued.');
+        mg_ok([
+            'wallet_item_id' => $existingWallet,
+            'duplicate' => true,
+            'campaign_id' => (string)$campaign['public_id'],
+            'campaign_title' => (string)$campaign['title'],
+            'campaign_type' => $campaignType,
+            'campaign_type_label' => $campaignTypeLabel,
+            'reward_template_id' => (string)$campaign['reward_template_public_id'],
+            'reward_template_title' => (string)$campaign['reward_template_title'],
+            'customer_email' => $email,
+            'customer_name' => (string)($sourceContact['name'] ?? ''),
+            'wallet_status' => 'Already issued to wallet / Inbox PPPM',
+            'sent_at' => date('c'),
+            'crm_event_type' => $crmEventType,
+        ], 'Campaign reward already issued.');
     }
 
     $targetContactLookup = $pdo->prepare('SELECT * FROM campaign_contacts WHERE campaign_id=? AND email=? LIMIT 1 FOR UPDATE');
@@ -197,8 +225,11 @@ try {
         'source_contact_id' => (string)$sourceContact['public_id'],
         'email' => $email,
     ]);
+    $sentAt = date('c');
+    $walletStatus = 'Issued to wallet / Inbox PPPM';
     $walletMetadata = [
         'campaign_type' => $campaignType,
+        'crm_event_type' => $crmEventType,
         'crm_send_campaign_id' => (string)$campaign['public_id'],
         'crm_source_contact_id' => (string)$sourceContact['public_id'],
         'source_campaign_id' => (string)$sourceContact['source_campaign_public_id'],
@@ -217,37 +248,45 @@ try {
     $bridge = mg_crm_campaign_send_bridge($pdo, $campaign, $targetContact, $walletDbId, $walletPublicId, $userId, $expiresAt, $note);
     $eventContext = [
         'wallet_item_id' => $walletPublicId,
+        'wallet_status' => $walletStatus,
         'campaign_type' => $campaignType,
         'campaign_type_label' => $campaignTypeLabel,
+        'campaign_title' => (string)$campaign['title'],
+        'reward_template_id' => (string)$campaign['reward_template_public_id'],
+        'reward_template_title' => (string)$campaign['reward_template_title'],
+        'customer_email' => $email,
+        'customer_name' => (string)($targetContact['name'] ?? $sourceContact['name'] ?? ''),
+        'sent_at' => $sentAt,
+        'timeline_label' => $campaignType === 'customer_refund' ? 'Customer Refund sent' : $campaignTypeLabel . ' reward sent',
+        'crm_event_type' => $crmEventType,
         'target_campaign_id' => (string)$campaign['public_id'],
         'target_contact_id' => (string)$targetContact['public_id'],
         'source_contact_id' => (string)$sourceContact['public_id'],
-        'reward_template_id' => (string)$campaign['reward_template_public_id'],
         'pppm_bridge' => $bridge,
         'stamp_ledger_entry_id' => $stampLedger['entry']['entry_id'] ?? null,
         'note' => $note,
     ];
     mg_crm_campaign_send_event($pdo, $campaign, $walletDbId, (int)$targetContact['id'], 'wallet_item.issued', $eventContext);
-    mg_crm_campaign_send_event($pdo, $campaign, $walletDbId, (int)$targetContact['id'], 'crm.campaign_reward.sent', $eventContext);
+    mg_crm_campaign_send_event($pdo, $campaign, $walletDbId, (int)$targetContact['id'], $crmEventType, $eventContext);
 
     $sourceCampaign = [
         'id' => (int)$sourceContact['campaign_id'],
         'merchant_user_id' => $merchantId,
     ];
-    mg_crm_campaign_send_event($pdo, $sourceCampaign, $walletDbId, (int)$sourceContact['id'], 'crm.campaign_reward.sent', $eventContext);
+    mg_crm_campaign_send_event($pdo, $sourceCampaign, $walletDbId, (int)$sourceContact['id'], $crmEventType, $eventContext);
 
     mg_merchant_crm_record_event($pdo, [
         'merchant_user_id' => $merchantId,
         'campaign_id' => (int)$campaign['id'],
         'campaign_type' => $campaignType,
-        'event_type' => 'crm.campaign_reward.sent',
+        'event_type' => $crmEventType,
         'source_type' => 'crm_campaign_reward',
         'source_public_id' => (string)$targetContact['public_id'],
         'user_id' => $userId,
         'email' => $email,
         'name' => (string)($targetContact['name'] ?? ''),
         'value_cents' => (int)$campaign['value_amount_cents'],
-        'metadata' => ['wallet_item_id' => $walletPublicId, 'source_contact_id' => (string)$sourceContact['public_id'], 'reward_template_id' => (string)$campaign['reward_template_public_id'], 'campaign_type_label' => $campaignTypeLabel],
+        'metadata' => ['wallet_item_id' => $walletPublicId, 'wallet_status' => $walletStatus, 'campaign_title' => (string)$campaign['title'], 'reward_template_title' => (string)$campaign['reward_template_title'], 'source_contact_id' => (string)$sourceContact['public_id'], 'reward_template_id' => (string)$campaign['reward_template_public_id'], 'campaign_type_label' => $campaignTypeLabel, 'crm_event_type' => $crmEventType],
     ]);
 
     $pdo->commit();
@@ -255,9 +294,17 @@ try {
         'contact_id' => (string)$targetContact['public_id'],
         'source_contact_id' => (string)$sourceContact['public_id'],
         'campaign_id' => (string)$campaign['public_id'],
+        'campaign_title' => (string)$campaign['title'],
         'campaign_type' => $campaignType,
         'campaign_type_label' => $campaignTypeLabel,
+        'reward_template_id' => (string)$campaign['reward_template_public_id'],
+        'reward_template_title' => (string)$campaign['reward_template_title'],
+        'customer_email' => $email,
+        'customer_name' => (string)($targetContact['name'] ?? $sourceContact['name'] ?? ''),
         'wallet_item_id' => $walletPublicId,
+        'wallet_status' => $walletStatus,
+        'sent_at' => $sentAt,
+        'crm_event_type' => $crmEventType,
         'expires_at' => $expiresAt,
         'pppm_bridge' => $bridge,
         'stamp_ledger' => $stampLedger,
