@@ -4,6 +4,14 @@ document.addEventListener('DOMContentLoaded', function () {
   var shell = document.querySelector('[data-merchant-crm-shell]');
   if (!shell || !window.Microgifter) return;
 
+  if (!document.querySelector('script[data-crm-customer-refund-script]')) {
+    var refundScript = document.createElement('script');
+    refundScript.src = '/assets/js/merchant-crm-customer-refund.js';
+    refundScript.defer = true;
+    refundScript.setAttribute('data-crm-customer-refund-script', '1');
+    document.head.appendChild(refundScript);
+  }
+
   var pendingBody = '';
 
   function esc(value) {
