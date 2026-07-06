@@ -54,7 +54,8 @@ final class AgenticIndexOnboardingTest extends TestCase
 
         self::assertStringContainsString("'protected_active'", $endpoint);
         self::assertStringContainsString("'legacy_candidate'", $endpoint);
-        self::assertStringContainsString("'delete_ready' => count($, $endpoint);
+        self::assertStringContainsString('$deleteReady = array_values(array_filter', $endpoint);
+        self::assertStringContainsString("'delete_ready' => $deleteReady", $endpoint);
         self::assertStringContainsString("'read_only' => true", $endpoint);
     }
 
