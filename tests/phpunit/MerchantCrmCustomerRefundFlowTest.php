@@ -46,7 +46,7 @@ final class MerchantCrmCustomerRefundFlowTest extends TestCase
         $endpoint = $this->read('api/merchant/crm-reward-campaigns.php');
 
         foreach ([
-            '$_GET[\'type\']',
+            'type',
             'customer_refund',
             'filter_type',
             'c.campaign_type=?',
