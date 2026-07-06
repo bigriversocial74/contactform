@@ -3,16 +3,35 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_stamps.php';
 
+function mg_stamp_health_quote_identifier(string $identifier): string
+{
+    if (!preg_match('/^[A-Za-z0-9_]+$/', $identifier)) {
+        throw new InvalidArgumentException('Invalid database identifier.');
+    }
+    return '`' . str_replace('`', '``', $identifier) . '`';
+}
+
+function mg_stamp_health_table_exists(PDO $pdo, string $table): bool
+{
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table_name');
+    $stmt->execute([':table_name' => $table]);
+    return ((int)$stmt->fetchColumn()) > 0;
+}
+
+function mg_stamp_health_table_columns(PDO $pdo, string $table): array
+{
+    $colStmt = $pdo->query('SHOW COLUMNS FROM ' . mg_stamp_health_quote_identifier($table));
+    if (!$colStmt) return [];
+    return array_map(static fn(array $row): string => (string)$row['Field'], $colStmt->fetchAll(PDO::FETCH_ASSOC));
+}
+
 function mg_stamp_health_check_table(PDO $pdo, string $table, array $columns = []): array
 {
     try {
-        $stmt = $pdo->prepare('SHOW TABLES LIKE ?');
-        $stmt->execute([$table]);
-        $exists = (bool)$stmt->fetchColumn();
+        $exists = mg_stamp_health_table_exists($pdo, $table);
         $missingColumns = [];
         if ($exists && $columns) {
-            $colStmt = $pdo->query('SHOW COLUMNS FROM ' . $table);
-            $found = array_map(static fn(array $row): string => (string)$row['Field'], $colStmt->fetchAll());
+            $found = mg_stamp_health_table_columns($pdo, $table);
             $missingColumns = array_values(array_diff($columns, $found));
         }
         return ['name'=>$table,'ok'=>$exists && !$missingColumns,'exists'=>$exists,'missing_columns'=>$missingColumns];
