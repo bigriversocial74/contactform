@@ -44,14 +44,15 @@ final class AgenticIndexOnboardingTest extends TestCase
         self::assertStringContainsString('initDirectPresentation', $script);
     }
 
-    public function testFileReferenceDiagnosticsTracksLandingCandidatesReadOnly(): void
+    public function testFileReferenceDiagnosticsTracksCurrentLandingCandidatesReadOnly(): void
     {
         $endpoint = self::readProjectFile('api/admin/legacy-file-diagnostics.php');
 
-        foreach (['index-content.php', 'microgifter-main/index.php', 'microgifter-main/index-content.php', 'includes/landing/index-v3', 'index.php'] as $candidate) {
+        foreach (['index-content.php', 'includes/landing/index-v3', 'index.php', 'tests/phpunit/AgenticIndexOnboardingTest.php'] as $candidate) {
             self::assertStringContainsString($candidate, $endpoint);
         }
 
+        self::assertStringNotContainsString('microgifter-main', $endpoint);
         self::assertStringContainsString("'protected_active'", $endpoint);
         self::assertStringContainsString("'legacy_candidate'", $endpoint);
         self::assertStringContainsString("'read_only' => true", $endpoint);
