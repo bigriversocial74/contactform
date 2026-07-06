@@ -25,7 +25,6 @@ final class V1ReleasePackagingContractTest extends TestCase
             'migration_manifest_sha256',
             'vendor/autoload.php',
             'api/config.local.php',
-            'microgifter-main',
             'sha256sum --check',
         ] as $needle) {
             self::assertStringContainsString($needle, $script);

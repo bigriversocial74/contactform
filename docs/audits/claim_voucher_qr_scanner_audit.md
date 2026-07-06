@@ -24,17 +24,16 @@ The prior flow was directionally correct, but the first pass still had two major
 ## Fixes applied
 
 1. Added `claim_voucher_tokens` ledger migration.
-2. Mirrored the token ledger migration under `microgifter-main/database`.
-3. Reworked claim voucher tokens into database-backed one-time scan credentials.
-4. Added a first-party QR SVG endpoint at `/api/account/action-center-voucher-qr.php`.
-5. Removed the external QR image provider from the voucher flow.
-6. Updated the Claim modal to request a server-issued token and first-party QR image URL.
-7. Updated the scanner to validate `MGFT-CLAIM-TOKEN|...` payloads through the token ledger.
-8. Added scanner state transitions for issued, scanned, redeemed, expired, and revoked QR tokens.
-9. Tied token scan records to scanner user and scanner location.
-10. Preserved legacy support for gift IDs, Microgift instance IDs, Action Center item IDs, and PPPM IDs.
-11. Fixed Microgift scanner redemption currency handling.
-12. Expanded contract coverage for the first-party QR and token ledger.
+2. Reworked claim voucher tokens into database-backed one-time scan credentials.
+3. Added a first-party QR SVG endpoint at `/api/account/action-center-voucher-qr.php`.
+4. Removed the external QR image provider from the voucher flow.
+5. Updated the Claim modal to request a server-issued token and first-party QR image URL.
+6. Updated the scanner to validate `MGFT-CLAIM-TOKEN|...` payloads through the token ledger.
+7. Added scanner state transitions for issued, scanned, redeemed, expired, and revoked QR tokens.
+8. Tied token scan records to scanner user and scanner location.
+9. Preserved legacy support for gift IDs, Microgift instance IDs, Action Center item IDs, and PPPM IDs.
+10. Fixed Microgift scanner redemption currency handling.
+11. Expanded contract coverage for the first-party QR and token ledger.
 
 ## Final score: 10 / 10 for this subsystem
 

@@ -90,7 +90,7 @@ required_paths() {
       return 1
     }
   done
-  if grep -Eq '(^|/)(\.env|config\.local\.php)$|^\./(\.github|build|docs|microgifter-main|node_modules|tests)/' "${listing}"; then
+  if grep -Eq '(^|/)(\.env|config\.local\.php)$|^\./(\.github|build|docs|node_modules|tests)/' "${listing}"; then
     echo "Artifact contains a forbidden development or secret path." >&2
     return 1
   fi

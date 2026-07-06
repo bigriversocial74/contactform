@@ -90,7 +90,6 @@ rm -rf \
   "${STAGE_DIR}/.github" \
   "${STAGE_DIR}/build" \
   "${STAGE_DIR}/docs" \
-  "${STAGE_DIR}/microgifter-main" \
   "${STAGE_DIR}/node_modules" \
   "${STAGE_DIR}/tests"
 rm -f \
@@ -162,7 +161,7 @@ $payload = [
     "migration_manifest_sha256" => $argv[7],
     "file_count" => (int) $argv[8],
     "excluded" => [
-        ".github", "build", "docs", "microgifter-main", "node_modules", "tests",
+        ".github", "build", "docs", "node_modules", "tests",
         ".env", "api/config.local.php", "docker-compose.yml", "package.json",
         "package-lock.json", "phpunit.xml.dist", "playwright.config.js"
     ],
@@ -185,7 +184,7 @@ for required in \
   }
 done
 
-if grep -Eq '(^|/)(\.env|config\.local\.php)$|^\./(\.github|build|docs|microgifter-main|node_modules|tests)/' "${LISTING}"; then
+if grep -Eq '(^|/)(\.env|config\.local\.php)$|^\./(\.github|build|docs|node_modules|tests)/' "${LISTING}"; then
   echo "Release artifact contains a forbidden development or secret path." >&2
   exit 1
 fi

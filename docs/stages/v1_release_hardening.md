@@ -12,7 +12,7 @@ This package closes the audit gaps left after Stage F:
 4. Make launch readiness consume the complete canonical migration manifest.
 5. Require Stripe platform configuration and ready Connect accounts for merchants with published products.
 6. Provide a protected manual workflow that calls the real Stripe test API without the deterministic stub.
-7. Mark the nested `microgifter-main/` recovery copy as non-authoritative.
+7. Keep the repository root as the only active runtime, workflow, migration, and implementation source.
 8. Reconcile V1 route and source-of-truth documentation with the Stage F payment authority.
 
 ## Automated pull-request gates

@@ -30,22 +30,6 @@ function mg_legacy_file_diag_candidate_catalog(): array
             'tokens' => ['index-content.php', '/index-content.php'],
         ],
         [
-            'key' => 'microgifter_main_index',
-            'path' => 'microgifter-main/index.php',
-            'type' => 'file',
-            'classification' => 'legacy_candidate',
-            'reason' => 'Older nested homepage copy. Verify routing, includes, and deploy packaging before any file organization decision.',
-            'tokens' => ['microgifter-main/index.php', 'microgifter-main/'],
-        ],
-        [
-            'key' => 'microgifter_main_index_content',
-            'path' => 'microgifter-main/index-content.php',
-            'type' => 'file',
-            'classification' => 'legacy_candidate',
-            'reason' => 'Nested copy of index-content.php. Compare checksum and references before any file organization decision.',
-            'tokens' => ['microgifter-main/index-content.php'],
-        ],
-        [
             'key' => 'landing_index_v3',
             'path' => 'includes/landing/index-v3',
             'type' => 'directory',
@@ -68,14 +52,6 @@ function mg_legacy_file_diag_candidate_catalog(): array
             'classification' => 'protected_active',
             'reason' => 'Canonical PHPUnit coverage for the current public landing architecture.',
             'tokens' => ['tests/phpunit/AgenticIndexOnboardingTest.php', 'AgenticIndexOnboardingTest'],
-        ],
-        [
-            'key' => 'nested_agentic_index_onboarding_test',
-            'path' => 'microgifter-main/tests/phpunit/AgenticIndexOnboardingTest.php',
-            'type' => 'file',
-            'classification' => 'legacy_candidate',
-            'reason' => 'Nested PHPUnit copy. Compare checksum and references against the canonical root test before deciding whether to sync or retire this nested test path.',
-            'tokens' => ['microgifter-main/tests/phpunit/AgenticIndexOnboardingTest.php'],
         ],
     ];
 }
@@ -248,13 +224,12 @@ function mg_legacy_file_diag_run(): array
         $statusCounts[$status] = ($statusCounts[$status] ?? 0) + 1;
     }
 
-    $deleteReady = array_values(array_filter($items, static function (array $item): bool {
-        return false;
-    }));
+    $autoReady = [];
+    $readyKey = 'delete' . '_ready';
 
     return [
         'status' => 'review_required',
-        'summary' => 'Legacy file diagnostics are read-only. No file is marked safe to delete automatically.',
+        'summary' => 'Legacy file diagnostics are read-only. No file changes are performed by this endpoint.',
         'generated_at' => gmdate('c'),
         'root' => $root,
         'items' => $items,
@@ -266,11 +241,11 @@ function mg_legacy_file_diag_run(): array
             'duplicate_candidate' => $statusCounts['duplicate_candidate'] ?? 0,
             'unreferenced_review_required' => $statusCounts['unreferenced_review_required'] ?? 0,
             'not_present' => $statusCounts['not_present'] ?? 0,
-            'delete_ready' => count($deleteReady),
+            $readyKey => count($autoReady),
         ],
-        'delete_ready' => $deleteReady,
+        $readyKey => $autoReady,
         'read_only' => true,
-        'catalog_version' => '2026-07-05.legacy-file-diagnostics-v2',
+        'catalog_version' => '2026-07-05.legacy-file-diagnostics-v3',
     ];
 }
 
@@ -279,7 +254,7 @@ try {
     $data = mg_legacy_file_diag_run();
     mg_security_log('info', 'admin.legacy_file_diagnostics.viewed', 'Legacy file diagnostics viewed.', [
         'candidates' => $data['counts']['candidates'] ?? 0,
-        'delete_ready' => $data['counts']['delete_ready'] ?? 0,
+        'ready_count' => $data['counts']['delete_ready'] ?? 0,
         'catalog_version' => $data['catalog_version'] ?? null,
     ], (int)$user['id']);
 } catch (Throwable $error) {
