@@ -3,6 +3,13 @@
 
   const root = document.querySelector('[data-admin-users]');
   if (!root) return;
+  if (!document.querySelector('[data-admin-user-stamps-script]')) {
+    const stampsScript = document.createElement('script');
+    stampsScript.src = '/assets/js/admin-user-stamps.js?v=20260706-user-stamps';
+    stampsScript.defer = true;
+    stampsScript.dataset.adminUserStampsScript = '1';
+    document.head.appendChild(stampsScript);
+  }
 
   const form = root.querySelector('[data-users-filters]');
   if (!form) return;
@@ -258,8 +265,7 @@
       show(content, state.shown > 0);
       show(empty, state.shown === 0);
       show(pagination, Boolean(data.has_more && state.cursor));
-      pageLabel.textContent = `${state.shown} account${state.shown === 1 ? '' : 's'} shown`;
-      summary.textContent = data.has_more
+      pageLabel.textContent = data.has_more
         ? `${state.shown} accounts shown. More accounts are available.`
         : `${state.shown} account${state.shown === 1 ? '' : 's'} shown.`;
       updated.textContent = new Intl.DateTimeFormat(undefined, {
