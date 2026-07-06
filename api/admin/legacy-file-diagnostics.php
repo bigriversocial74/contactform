@@ -26,7 +26,7 @@ function mg_legacy_file_diag_candidate_catalog(): array
             'path' => 'index-content.php',
             'type' => 'file',
             'classification' => 'protected_active',
-            'reason' => 'Current logged-out homepage presentation content. Do not remove unless index/auth-state tests and public landing routing are replaced.',
+            'reason' => 'Current logged-out homepage presentation content. Preserve until index/auth-state tests and public landing routing are replaced.',
             'tokens' => ['index-content.php', '/index-content.php'],
         ],
         [
@@ -34,7 +34,7 @@ function mg_legacy_file_diag_candidate_catalog(): array
             'path' => 'microgifter-main/index.php',
             'type' => 'file',
             'classification' => 'legacy_candidate',
-            'reason' => 'Older nested homepage copy. Verify routing, includes, and deploy packaging before any cleanup.',
+            'reason' => 'Older nested homepage copy. Verify routing, includes, and deploy packaging before any file organization decision.',
             'tokens' => ['microgifter-main/index.php', 'microgifter-main/'],
         ],
         [
@@ -42,7 +42,7 @@ function mg_legacy_file_diag_candidate_catalog(): array
             'path' => 'microgifter-main/index-content.php',
             'type' => 'file',
             'classification' => 'legacy_candidate',
-            'reason' => 'Nested copy of index-content.php. Compare checksum and references before considering cleanup.',
+            'reason' => 'Nested copy of index-content.php. Compare checksum and references before any file organization decision.',
             'tokens' => ['microgifter-main/index-content.php'],
         ],
         [
@@ -50,7 +50,7 @@ function mg_legacy_file_diag_candidate_catalog(): array
             'path' => 'includes/landing/index-v3',
             'type' => 'directory',
             'classification' => 'legacy_candidate',
-            'reason' => 'Previously preserved landing variant. Confirm no include/deploy references before any cleanup.',
+            'reason' => 'Previously preserved landing variant. Confirm no include/deploy references before any file organization decision.',
             'tokens' => ['includes/landing/index-v3', 'landing/index-v3', 'index-v3'],
         ],
         [
@@ -60,6 +60,22 @@ function mg_legacy_file_diag_candidate_catalog(): array
             'classification' => 'protected_active',
             'reason' => 'Canonical public entry point. Used as comparison anchor only.',
             'tokens' => ['index.php'],
+        ],
+        [
+            'key' => 'root_agentic_index_onboarding_test',
+            'path' => 'tests/phpunit/AgenticIndexOnboardingTest.php',
+            'type' => 'file',
+            'classification' => 'protected_active',
+            'reason' => 'Canonical PHPUnit coverage for the current public landing architecture.',
+            'tokens' => ['tests/phpunit/AgenticIndexOnboardingTest.php', 'AgenticIndexOnboardingTest'],
+        ],
+        [
+            'key' => 'nested_agentic_index_onboarding_test',
+            'path' => 'microgifter-main/tests/phpunit/AgenticIndexOnboardingTest.php',
+            'type' => 'file',
+            'classification' => 'legacy_candidate',
+            'reason' => 'Nested PHPUnit copy. Compare checksum and references against the canonical root test before deciding whether to sync or retire this nested test path.',
+            'tokens' => ['microgifter-main/tests/phpunit/AgenticIndexOnboardingTest.php'],
         ],
     ];
 }
@@ -254,7 +270,7 @@ function mg_legacy_file_diag_run(): array
         ],
         'delete_ready' => $deleteReady,
         'read_only' => true,
-        'catalog_version' => '2026-07-05.legacy-file-diagnostics-v1',
+        'catalog_version' => '2026-07-05.legacy-file-diagnostics-v2',
     ];
 }
 
