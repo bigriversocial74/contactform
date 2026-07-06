@@ -30,6 +30,18 @@ final class StampHealthContractTest extends TestCase
         self::assertStringContainsString('admin.commerce.view', $api);
     }
 
+    public function testStampHealthTableCheckerDoesNotUseUnsupportedShowPlaceholder(): void
+    {
+        $service = $this->read('api/stamps/_health.php');
+
+        self::assertStringNotContainsString('SHOW TABLES LIKE ?', $service);
+        self::assertStringContainsString('information_schema.TABLES', $service);
+        self::assertStringContainsString('TABLE_SCHEMA = DATABASE()', $service);
+        self::assertStringContainsString('TABLE_NAME = :table_name', $service);
+        self::assertStringContainsString('mg_stamp_health_quote_identifier', $service);
+        self::assertStringContainsString('SHOW COLUMNS FROM ' . "' . mg_stamp_health_quote_identifier", $service);
+    }
+
     public function testStampHealthAdminPageExists(): void
     {
         $page = $this->read('admin/stamp-health.php');
