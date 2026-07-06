@@ -73,6 +73,39 @@ function renderAction(action){var summary=action.summary||{},campaigns=action.ca
 function renderHistory(data){var box=qs('[data-crm-action-history]',shell),actions=(data&&data.actions)||[];renderTotals((data&&data.totals)||{});if(!box)return;if(!actions.length){box.innerHTML='<div class="mg-empty-state"><strong>No campaign actions yet</strong><p>Run a bulk message, reward/invite, or follow-up from the Contacts tab to build history.</p></div>';return}box.innerHTML='<div class="mg-crm-history-list">'+actions.map(renderAction).join('')+'</div>'}
 async function loadActionHistory(force){if(historyLoaded&&!force)return;if(!window.Microgifter)return;var box=qs('[data-crm-action-history]',shell);if(box)box.innerHTML='<div class="mg-empty-state"><strong>Loading campaign actions</strong></div>';try{var r=await Microgifter.get(historyUrl()),d=r.data||r;historyLoaded=true;renderHistory(d)}catch(e){if(box)box.innerHTML='<div class="mg-empty-state"><strong>Unable to load campaign actions</strong><p>'+esc(e.message||'Try again.')+'</p></div>'}}
 function selectRetryable(ids){ids=(ids||[]).filter(Boolean);if(!ids.length)return;var contactTab=qs('[data-crm-tab-target="contacts"]',shell);if(contactTab)contactTab.click();setTimeout(function(){var found=0;ids.forEach(function(id){var cb=qs('tr[data-contact-id="'+safeSel(id)+'"] [data-crm-contact-check]');if(cb&&!cb.checked){cb.checked=true;cb.dispatchEvent(new Event('change',{bubbles:true}));found++;}});toast(found?found+' retryable contacts selected.':'Retry contacts are not visible in the current contact filter.');},250)}
+function installDirectMessageSubmitGuard(){
+  var activeContactId='';
+  function rememberFromTarget(target){var row=target&&target.closest&&target.closest('tr[data-contact-id]');if(row)activeContactId=String(row.getAttribute('data-contact-id')||activeContactId||'').trim();}
+  function modal(){return qs('[data-crm-message-modal]',shell)}
+  function form(){var m=modal();return m?qs('[data-crm-message-form]',m):null}
+  function body(){var f=form();return f?qs('[data-crm-message-body]',f):null}
+  function status(){var f=form();return f?qs('[data-crm-message-status]',f):null}
+  function setStatus(type,html){var s=status();if(!s)return;s.dataset.statusType=type||'';s.style.display='block';s.style.visibility='visible';s.innerHTML=html}
+  function button(){var f=form();return f?qs('[data-crm-message-submit]',f):null}
+  async function send(ev){
+    var f=form(),b=body(),contactId=activeContactId,bodyText=b?String(b.value||'').trim():'';
+    if(ev){ev.preventDefault();ev.stopPropagation();if(ev.stopImmediatePropagation)ev.stopImmediatePropagation();}
+    if(!f)return;
+    if(!contactId){setStatus('error','<strong>Message not sent.</strong><br>Open the contact row again so the CRM can bind the contact ID.');return;}
+    if(!bodyText){setStatus('error','<strong>Message not sent.</strong><br>Write a message before sending.');if(b)b.focus();return;}
+    var btn=button();if(btn){btn.disabled=true;btn.textContent='Sending...'}
+    setStatus('loading','<strong>Sending message...</strong><br>Posting to /api/merchant/crm-message.php.');
+    try{
+      var r=await Microgifter.post('/api/merchant/crm-message.php',{contact_id:contactId,message:bodyText,idempotency_key:'crm-direct-guard:'+contactId+':'+Date.now()});
+      var d=r.data||r,msg=d.message||{},thread=d.thread_id||msg.thread_id||'',messageId=d.message_id||msg.message_id||'';
+      if(!thread||!messageId)throw new Error('Message endpoint returned without thread/message proof.');
+      if(b)b.value='';
+      setStatus('success','<strong>'+(msg.delivered_via==='microgifter_thread'?'Message delivered to customer Messages.':'Message queued for email fallback.')+'</strong><br><small>Thread: '+esc(thread)+' · Message: '+esc(messageId)+'</small>');
+      document.dispatchEvent(new CustomEvent('mg:crm-messages:refresh',{detail:{thread_id:thread}}));
+      document.dispatchEvent(new CustomEvent('mg:notifications:refresh'));
+      toast('Message sent.');
+    }catch(e){setStatus('error','<strong>Message failed.</strong><br>'+esc(e.message||'Unable to send CRM message.'))}
+    finally{if(btn){btn.disabled=false;btn.textContent=btn.dataset.originalText||'Send message'}}
+  }
+  document.addEventListener('click',function(ev){rememberFromTarget(ev.target);var submit=ev.target&&ev.target.closest&&ev.target.closest('[data-crm-message-submit]');if(submit&&modal()&&!modal().hidden)send(ev)},true);
+  document.addEventListener('submit',function(ev){if(ev.target&&ev.target.matches&&ev.target.matches('[data-crm-message-form]')&&modal()&&!modal().hidden)send(ev)},true);
+}
+installDirectMessageSubmitGuard();
 tabs.forEach(function(tab){tab.addEventListener('click',function(ev){ev.preventDefault();activate(tab.getAttribute('data-crm-tab-target'),true);});});
 document.addEventListener('click',function(ev){var refresh=ev.target&&ev.target.closest&&ev.target.closest('[data-crm-history-refresh]');if(refresh){historyLoaded=false;loadActionHistory(true)}var retry=ev.target&&ev.target.closest&&ev.target.closest('[data-crm-history-retry]');if(retry)selectRetryable(String(retry.getAttribute('data-crm-history-retry')||'').split(','));});
 document.addEventListener('change',function(ev){if(ev.target&&ev.target.matches&&ev.target.matches('[data-crm-history-type],[data-crm-history-status]')){historyLoaded=false;loadActionHistory(true)}});
