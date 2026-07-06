@@ -3,6 +3,7 @@
 <link rel="stylesheet" href="/assets/css/merchant-crm-command-center.css">
 <link rel="stylesheet" href="/assets/css/merchant-crm-drawer-stack.css">
 <script src="/assets/js/merchant-crm-command-center.js" defer></script>
+<script src="/assets/js/merchant-crm-realtime-message.js" defer></script>
 <script src="/assets/js/merchant-crm.js" defer></script>
 <script src="/assets/js/merchant-crm-messages.js" defer></script>
 <script src="/assets/js/merchant-crm-reward-picker.js" defer></script>
