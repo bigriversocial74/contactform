@@ -15,7 +15,7 @@ $page_section = 'account';
 $header_mode = 'account';
 $page_body_class = 'mg-admin-system-health-page';
 $page_styles = ['/assets/css/admin-shell.css','/assets/css/admin-system-health.css','/assets/css/admin-pwa-health.css'];
-$page_scripts = ['/assets/js/admin-system-health.js','/assets/js/admin-data-integrity-diagnostics.js','/assets/js/admin-merchant-flow-diagnostics.js','/assets/js/admin-pwa-health.js','/assets/js/admin-health-warning-filter.js','/assets/js/admin-security-hardening-audit.js','/assets/js/admin-system-health-tabs.js'];
+$page_scripts = ['/assets/js/admin-system-health.js','/assets/js/admin-data-integrity-diagnostics.js','/assets/js/admin-merchant-flow-diagnostics.js','/assets/js/admin-file-reference-diagnostics.js','/assets/js/admin-pwa-health.js','/assets/js/admin-health-warning-filter.js','/assets/js/admin-security-hardening-audit.js','/assets/js/admin-system-health-tabs.js'];
 $adminActive = 'system-health';
 
 require dirname(__DIR__) . '/includes/header.php';
@@ -29,7 +29,7 @@ require dirname(__DIR__) . '/includes/header.php';
           <a class="mg-system-health-back" href="/account-admin.php">← Admin dashboard</a>
           <span class="mg-eyebrow">Platform operations</span>
           <h1>System health</h1>
-          <p>Persistent media, notification delivery, PWA browser push, database migrations, admin ops deployment readiness, SQL diagnostics, data integrity, merchant flow contracts, security hardening, and recent operational warnings.</p>
+          <p>Persistent media, notification delivery, PWA browser push, database migrations, admin ops deployment readiness, SQL diagnostics, data integrity, merchant flow contracts, file references, security hardening, and recent operational warnings.</p>
         </div>
         <div class="mg-system-health-hero-actions">
           <span class="mg-system-health-updated">Last checked <strong data-system-health-updated>—</strong></span>
@@ -50,6 +50,7 @@ require dirname(__DIR__) . '/includes/header.php';
         <button type="button" data-health-tab="sql" aria-selected="false">SQL diagnostics</button>
         <button type="button" data-health-tab="data-integrity" aria-selected="false">Data integrity</button>
         <button type="button" data-health-tab="merchant-flow" aria-selected="false">Merchant flow</button>
+        <button type="button" data-health-tab="file-reference" aria-selected="false">File references</button>
         <?php if ($canViewSecurityAudit): ?><button type="button" data-health-tab="security" aria-selected="false">Security audit</button><?php endif; ?>
         <button type="button" data-health-tab="warnings" aria-selected="false">Warnings & tools</button>
       </nav>
@@ -190,6 +191,36 @@ require dirname(__DIR__) . '/includes/header.php';
               <div>
                 <h3>Top findings</h3>
                 <div class="mg-system-sql-list" data-merchant-flow-checks><p class="mg-muted">Loading contract findings…</p></div>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section class="mg-health-tab-panel" data-health-tab-panel="file-reference" hidden>
+          <section class="mg-system-health-section mg-system-sql-diagnostics" data-file-reference-diagnostics>
+            <header>
+              <div>
+                <h2>File reference diagnostics</h2>
+                <p>Runs read-only checks for review-sensitive public entry files, nested copies, directory candidates, checksums, and code references.</p>
+              </div>
+              <div class="mg-system-sql-actions">
+                <button class="mg-btn mg-btn-ghost" type="button" data-file-reference-refresh disabled>Run file checks</button>
+              </div>
+            </header>
+            <div class="mg-system-sql-summary is-loading" data-file-reference-summary>Loading file reference diagnostics…</div>
+            <div class="mg-system-sql-metrics" data-file-reference-metrics>
+              <?php foreach (['Candidates','Protected','Referenced','Duplicates','Action-ready'] as $label): ?>
+                <article><span><?= mg_e($label) ?></span><strong>—</strong><small>Waiting for diagnostics</small></article>
+              <?php endforeach; ?>
+            </div>
+            <div class="mg-system-sql-panels">
+              <div>
+                <h3>Review-sensitive paths</h3>
+                <div class="mg-system-sql-list" data-file-reference-items><p class="mg-muted">Loading file checks…</p></div>
+              </div>
+              <div>
+                <h3>Reference findings</h3>
+                <div class="mg-system-sql-list" data-file-reference-findings><p class="mg-muted">Loading reference findings…</p></div>
               </div>
             </div>
           </section>
