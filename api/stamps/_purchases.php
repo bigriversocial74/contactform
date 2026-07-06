@@ -19,7 +19,7 @@ function mg_stamp_purchase_payload(PDO $pdo, array $purchase, ?array $credited =
             'credited_ledger_entry_id' => (string)($purchase['credited_ledger_entry_public_id'] ?? ''),
             'paid_at' => $purchase['paid_at'] ?? null,
             'credited_at' => $purchase['credited_at'] ?? null,
-            'checkout_url' => '',
+            'checkout_url' => '/stamp-checkout.php?purchase=' . rawurlencode((string)$purchase['public_id']),
             'requires_verified_payment' => (string)$purchase['status'] !== 'credited',
         ],
         'payment_intent' => $intent,
