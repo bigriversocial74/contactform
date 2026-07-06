@@ -86,7 +86,7 @@ function mg_public_campaign_debit_reward_stamp(PDO $pdo, array $campaign, string
     $merchantId = (int)($campaign['merchant_user_id'] ?? 0);
     if ($merchantId < 1) mg_fail('Campaign merchant is unavailable.', 409);
 
-    return mg_stamp_debit_send($pdo, $merchantId, $merchantId, 'direct_reward_send', 'campaign-reward:' . $walletPublicId, [
+    return mg_stamp_require_service($pdo, $merchantId, $merchantId, 'direct_reward_send', 1, 'campaign-reward:' . $walletPublicId, [
         'source_type' => 'public_campaign_reward',
         'source_id' => $walletPublicId,
         'reference' => (string)($campaign['public_id'] ?? $sourceType),
