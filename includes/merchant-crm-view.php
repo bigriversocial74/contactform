@@ -1,6 +1,7 @@
 <?php declare(strict_types=1); ?>
 <link rel="stylesheet" href="/assets/css/merchant-crm.css">
 <link rel="stylesheet" href="/assets/css/merchant-crm-command-center.css">
+<link rel="stylesheet" href="/assets/css/merchant-crm-drawer-stack.css">
 <script src="/assets/js/merchant-crm-command-center.js" defer></script>
 <script src="/assets/js/merchant-crm.js" defer></script>
 <script src="/assets/js/merchant-crm-messages.js" defer></script>

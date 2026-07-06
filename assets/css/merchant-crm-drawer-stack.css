@@ -1,0 +1,29 @@
+/* Merchant CRM drawer stacking guard.
+   Keeps slide-out drawers and modals above the fixed app header/topbar. */
+.mg-crm-drawer,
+.mg-crm-modal {
+  z-index: 12000 !important;
+}
+
+.mg-crm-drawer-backdrop {
+  z-index: 0;
+}
+
+.mg-crm-drawer-panel,
+.mg-crm-modal-panel {
+  z-index: 1;
+}
+
+body.mg-crm-drawer-open,
+body.mg-crm-modal-open {
+  overflow: hidden;
+}
+
+@media (max-width: 760px) {
+  .mg-crm-drawer-panel {
+    top: 0;
+    bottom: 0;
+    width: 100%;
+    border-left: 0;
+  }
+}
