@@ -18,27 +18,27 @@ final class MerchantCrmCustomerRefundFlowTest extends TestCase
         return $source;
     }
 
-    public function testCustomerRefundFrontendContract(): void
+    public function testSendGiftSlideOutIsSimplifiedForCustomerRefundCampaigns(): void
     {
-        $loader = $this->read('assets/js/merchant-crm-realtime-message.js');
-        $script = $this->read('assets/js/merchant-crm-customer-refund.js');
-
-        self::assertStringContainsString('/assets/js/merchant-crm-customer-refund.js', $loader);
+        $script = $this->read('assets/js/merchant-crm-reward-picker.js');
 
         foreach ([
-            'data-crm-customer-refund-modal',
-            'data-crm-customer-refund-form',
-            'data-crm-customer-refund-campaign',
-            'data-crm-customer-refund-submit',
-            'data-crm-customer-refund',
+            'function ensureGiftUi',
+            'Customer Refund campaign',
+            'Send gift',
+            'Choose Customer Refund campaign',
             '/api/merchant/crm-reward-campaigns.php?type=customer_refund',
             '/api/merchant/crm-campaign-send.php',
-            "required_campaign_type: 'customer_refund'",
-            'Customer Refund voucher sent.',
+            "required_campaign_type:'customer_refund'",
+            'crm-customer-refund-send-gift:',
             'wallet / Inbox PPPM',
+            'Customer Refund gift sent.',
         ] as $marker) {
             self::assertStringContainsString($marker, $script);
         }
+
+        self::assertStringNotContainsString('merchant-crm-customer-refund.js', $script);
+        self::assertStringNotContainsString('data-crm-customer-refund-modal', $script);
     }
 
     public function testCampaignPickerSupportsCustomerRefundFilter(): void
