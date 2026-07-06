@@ -70,24 +70,36 @@ $merchantId = (int)$user['id'];
 $pdo = mg_db();
 mg_merchant_ensure_workspace($pdo, $user);
 
+$type = strtolower(trim((string)($_GET['type'] ?? $_GET['campaign_type'] ?? '')));
+$allowedTypes = ['customer_refund', 'referral_reward', 'newsletter_signup', 'contest_giveaway', 'qr_reward_drop', 'birthday_vip', 'agent_offer'];
+if ($type !== '' && !in_array($type, $allowedTypes, true)) mg_fail('Unsupported reward campaign type.', 422);
+
 try {
+    $where = "c.merchant_user_id=? AND c.status='active'";
+    $params = [$merchantId];
+    if ($type !== '') {
+        $where .= ' AND c.campaign_type=?';
+        $params[] = $type;
+    }
+
     $sql = "SELECT c.*, rt.public_id reward_template_public_id, rt.title reward_template_title, rt.status reward_template_status,
             rt.quantity_limit reward_template_quantity_limit, rt.issued_count reward_template_issued_count
         FROM campaigns c
         LEFT JOIN reward_templates rt ON rt.id=c.reward_template_id
-        WHERE c.merchant_user_id=? AND c.status='active'
+        WHERE {$where}
         ORDER BY c.updated_at DESC, c.id DESC
         LIMIT 100";
     $stmt = $pdo->prepare($sql);
-    $stmt->execute([$merchantId]);
+    $stmt->execute($params);
     $campaigns = array_map('mg_crm_reward_campaign_row', $stmt->fetchAll(PDO::FETCH_ASSOC));
     mg_ok([
         'campaigns' => $campaigns,
         'eligible_count' => count(array_filter($campaigns, fn($campaign) => !empty($campaign['eligible']))),
-        'allowed_types' => ['all_active_merchant_campaigns'],
+        'allowed_types' => $type === '' ? ['all_active_merchant_campaigns'] : [$type],
+        'filter_type' => $type,
         'schema_ready' => true,
     ]);
 } catch (Throwable $error) {
     mg_security_log('warning', 'merchant.crm_reward_campaigns.unavailable', 'CRM reward campaigns are unavailable.', ['exception_class' => $error::class, 'message' => $error->getMessage()], $merchantId);
-    mg_ok(['campaigns' => [], 'eligible_count' => 0, 'schema_ready' => false], 'Reward campaigns unavailable until the campaign schema is installed.');
+    mg_ok(['campaigns' => [], 'eligible_count' => 0, 'schema_ready' => false, 'filter_type' => $type], 'Reward campaigns unavailable until the campaign schema is installed.');
 }
