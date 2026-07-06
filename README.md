@@ -10,7 +10,7 @@ The platform includes identity and security, products and storefronts, commerce 
 
 ## Canonical repository root
 
-The active application is the repository root of `bigriversocial74/contactform`. The nested `microgifter-main/` directory is an archived recovery copy and is not a deployment, workflow, migration, or implementation source.
+The active application is the repository root of `bigriversocial74/contactform`. No nested recovery tree is part of the active deployment, workflow, migration, or implementation source.
 
 See `docs/architecture/current_active_file_map.md`.
 
