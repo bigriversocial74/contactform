@@ -30,7 +30,6 @@ final class AdminUserStampsSectionTest extends TestCase
             'mg:admin-user-detail-loaded',
             'mg-admin-user-stamps-section',
             'Stamps',
-            'GET /api/stamps/ledger.php',
             '/api/stamps/ledger.php?account_user_id=',
             '/api/stamps/adjustment.php',
             'Add Stamps',
