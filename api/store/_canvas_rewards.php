@@ -162,7 +162,7 @@ function mg_store_reward_issue(PDO $pdo, array $merchantUser, string $sessionPub
 
         $expires = mg_store_reward_expiry($template, $expirationDays, $expiresAt);
         $walletPublicId = mg_store_reward_uuid();
-        $stampLedger = mg_stamp_debit_send($pdo, $merchantId, $merchantId, 'direct_reward_send', $idempotencyKey, [
+        $stampLedger = mg_stamp_require_service($pdo, $merchantId, $merchantId, 'direct_reward_send', 1, $idempotencyKey, [
             'source_type' => 'store_canvas_reward',
             'source_id' => $walletPublicId,
             'reference' => (string)$campaign['public_id'],
@@ -197,6 +197,7 @@ function mg_store_reward_issue(PDO $pdo, array $merchantUser, string $sessionPub
             'campaign_type' => (string)$campaign['campaign_type'],
             'reward_template_id' => (string)$template['public_id'],
             'reward_template_title' => (string)$template['title'],
+            'stamp_service_gate' => 'stamp_service_gate_v1',
             'stamp_ledger_entry_id' => $stampLedger['entry']['entry_id'] ?? null,
             'note' => $note,
             'store_canvas_idempotency_key' => $idempotencyKey,
@@ -213,14 +214,14 @@ function mg_store_reward_issue(PDO $pdo, array $merchantUser, string $sessionPub
         $eventContext = $metadata + ['wallet_item_id'=>$walletPublicId,'wallet_item_db_id'=>$walletDbId];
         $event = $pdo->prepare('INSERT INTO campaign_events (public_id,merchant_user_id,campaign_id,wallet_item_id,contact_id,event_type,event_context_json,created_at) VALUES (?,?,?,?,NULL,?,?,NOW())');
         $event->execute([mg_store_reward_uuid(), $merchantId, (int)$campaign['id'], $walletDbId, 'store_canvas.reward_issued', json_encode($eventContext, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)]);
-        mg_store_log_event($pdo, $session, 'reward_sent', 'Merchant sent reward', ['wallet_item_id'=>$walletPublicId,'campaign_id'=>(string)$campaign['public_id'],'reward_template_id'=>(string)$template['public_id'],'stamp_ledger_entry_id'=>$stampLedger['entry']['entry_id']??null,'source_system'=>'store_canvas']);
-        mg_store_log_event($pdo, $session, 'received_reward', 'Customer received Store Canvas reward', ['wallet_item_id'=>$walletPublicId,'campaign_id'=>(string)$campaign['public_id'],'reward_template_id'=>(string)$template['public_id'],'stamp_ledger_entry_id'=>$stampLedger['entry']['entry_id']??null,'source_system'=>'store_canvas']);
-        $notificationId = mg_create_notification($pdo, $customerUserId, 'campaign_reward', 'You received a reward from ' . $merchantLabel, (string)$template['title'], '/inbox.php?item=' . rawurlencode('wallet-' . $walletPublicId), ['actor_user_id'=>$merchantId,'event_key'=>'reward.store_canvas.' . strtolower($walletPublicId),'merchant_user_id'=>$merchantId,'store_session_id'=>$sessionPublicId,'wallet_item_id'=>$walletPublicId,'campaign_id'=>(string)$campaign['public_id'],'reward_template_id'=>(string)$template['public_id'],'stamp_ledger_entry_id'=>$stampLedger['entry']['entry_id']??null,'source_system'=>'store_canvas','source_channel'=>'merchant_canvas_reward','source_label'=>'Store Canvas Reward']);
+        mg_store_log_event($pdo, $session, 'reward_sent', 'Merchant sent reward', ['wallet_item_id'=>$walletPublicId,'campaign_id'=>(string)$campaign['public_id'],'reward_template_id'=>(string)$template['public_id'],'stamp_service_gate'=>'stamp_service_gate_v1','stamp_ledger_entry_id'=>$stampLedger['entry']['entry_id']??null,'source_system'=>'store_canvas']);
+        mg_store_log_event($pdo, $session, 'received_reward', 'Customer received Store Canvas reward', ['wallet_item_id'=>$walletPublicId,'campaign_id'=>(string)$campaign['public_id'],'reward_template_id'=>(string)$template['public_id'],'stamp_service_gate'=>'stamp_service_gate_v1','stamp_ledger_entry_id'=>$stampLedger['entry']['entry_id']??null,'source_system'=>'store_canvas']);
+        $notificationId = mg_create_notification($pdo, $customerUserId, 'campaign_reward', 'You received a reward from ' . $merchantLabel, (string)$template['title'], '/inbox.php?item=' . rawurlencode('wallet-' . $walletPublicId), ['actor_user_id'=>$merchantId,'event_key'=>'reward.store_canvas.' . strtolower($walletPublicId),'merchant_user_id'=>$merchantId,'store_session_id'=>$sessionPublicId,'wallet_item_id'=>$walletPublicId,'campaign_id'=>(string)$campaign['public_id'],'reward_template_id'=>(string)$template['public_id'],'stamp_service_gate'=>'stamp_service_gate_v1','stamp_ledger_entry_id'=>$stampLedger['entry']['entry_id']??null,'source_system'=>'store_canvas','source_channel'=>'merchant_canvas_reward','source_label'=>'Store Canvas Reward']);
         $pdo->commit();
     } catch (Throwable $error) {
         if ($pdo->inTransaction()) $pdo->rollBack();
         throw $error;
     }
-    mg_event('store_canvas.reward_sent', ['wallet_item_id'=>$walletPublicId,'session_id'=>$sessionPublicId,'campaign_id'=>(string)$campaign['public_id'],'reward_template_id'=>(string)$template['public_id'],'stamp_ledger_entry_id'=>$stampLedger['entry']['entry_id']??null], $merchantId);
-    return ['wallet_item_id'=>$walletPublicId,'campaign_id'=>(string)$campaign['public_id'],'reward_template_id'=>(string)$template['public_id'],'title'=>(string)$template['title'],'expires_at'=>$expires,'notification_id'=>$notificationId ?: null,'stamp_ledger'=>$stampLedger,'duplicate'=>false,'source_system'=>'store_canvas','source_channel'=>'merchant_canvas_reward'];
+    mg_event('store_canvas.reward_sent', ['wallet_item_id'=>$walletPublicId,'session_id'=>$sessionPublicId,'campaign_id'=>(string)$campaign['public_id'],'reward_template_id'=>(string)$template['public_id'],'stamp_service_gate'=>'stamp_service_gate_v1','stamp_ledger_entry_id'=>$stampLedger['entry']['entry_id']??null], $merchantId);
+    return ['wallet_item_id'=>$walletPublicId,'campaign_id'=>(string)$campaign['public_id'],'reward_template_id'=>(string)$template['public_id'],'title'=>(string)$template['title'],'expires_at'=>$expires,'notification_id'=>$notificationId ?: null,'stamp_service_gate'=>'stamp_service_gate_v1','stamp_ledger'=>$stampLedger,'duplicate'=>false,'source_system'=>'store_canvas','source_channel'=>'merchant_canvas_reward'];
 }

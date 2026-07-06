@@ -70,11 +70,12 @@ try {
     }
 
     $sendPublicId = mg_merchant_uuid();
-    $stampLedger = mg_stamp_debit_send($pdo, $merchantId, $merchantId, $actionKey, $idempotencyKey, [
-        'quantity' => $quantity,
+    $stampLedger = mg_stamp_require_service($pdo, $merchantId, $merchantId, $actionKey, $quantity, $idempotencyKey, [
         'source_type' => 'merchant_campaign_send',
         'source_id' => $sendPublicId,
         'reference' => $reference !== '' ? $reference : ($campaignPublicId !== '' ? $campaignPublicId : $channel),
+        'reason_code' => 'campaign_distribution',
+        'note' => mg_campaign_send_label($channel),
         'metadata' => [
             'campaign_id' => $campaignPublicId !== '' ? $campaignPublicId : null,
             'channel' => $channel,
@@ -98,6 +99,7 @@ try {
                 'recipient_count' => $quantity,
                 'stamp_ledger_entry_id' => $stampLedger['entry']['entry_id'] ?? null,
                 'stamp_delta' => $stampLedger['entry']['delta'] ?? null,
+                'stamp_service_gate' => 'stamp_service_gate_v1',
                 'reference' => $reference !== '' ? $reference : null,
                 'note' => $note !== '' ? $note : null,
             ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
@@ -111,6 +113,7 @@ try {
         'channel' => $channel,
         'action_key' => $actionKey,
         'recipient_count' => $quantity,
+        'stamp_service_gate' => 'stamp_service_gate_v1',
         'stamp_ledger_entry_id' => $stampLedger['entry']['entry_id'] ?? null,
     ], $merchantId);
 
@@ -120,6 +123,7 @@ try {
         'channel' => $channel,
         'action_key' => $actionKey,
         'recipient_count' => $quantity,
+        'stamp_service_gate' => 'stamp_service_gate_v1',
         'stamp_ledger' => $stampLedger,
     ], 'Campaign send Stamps debited.', 201);
 } catch (RuntimeException $error) {

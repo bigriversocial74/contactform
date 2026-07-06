@@ -176,6 +176,118 @@ function mg_stamp_debit_send(PDO $pdo, int $accountUserId, int $actorUserId, str
     return mg_stamp_debit($pdo, $accountUserId, $actorUserId, $actionKey, max(1, (int)($options['quantity'] ?? 1)), 'stamp:send:' . $sendIdempotencyKey, array_merge($options, ['source_type' => (string)($options['source_type'] ?? 'send'), 'source_id' => (string)($options['source_id'] ?? $sendIdempotencyKey), 'reference' => (string)($options['reference'] ?? $actionKey), 'actor_type' => (string)($options['actor_type'] ?? 'merchant')]));
 }
 
+function mg_stamp_service_catalog(): array
+{
+    return [
+        ['service_key'=>'direct_reward_send','label'=>'Direct reward send','category'=>'Rewards','action_key'=>'direct_reward_send','owner'=>'merchant','status'=>'enforced','enforced_in'=>['api/merchant/crm-send-gift.php','api/public/campaigns/_limits.php','api/store/_canvas_rewards.php'],'markers'=>['mg_stamp_require_service','direct_reward_send'],'notes'=>'Merchant reward issue paths use the central Service Gate and resolve cost from Stamp actions.'],
+        ['service_key'=>'regift_send','label'=>'Customer regift send','category'=>'PPPM / Regift','action_key'=>'regift_send','owner'=>'merchant_sponsored','status'=>'enforced','enforced_in'=>['api/account/action-center-send.php'],'markers'=>['mg_action_center_merchant_sponsored_regift_stamp','regift_send'],'notes'=>'Customer action remains free; merchant/issuer sponsors the configured regift_send cost.'],
+        ['service_key'=>'campaign_feed_send','label'=>'Campaign feed send','category'=>'Campaign distribution','action_key'=>'campaign_feed_send','owner'=>'merchant','status'=>'enforced','enforced_in'=>['api/merchant/campaign-send.php'],'markers'=>['mg_stamp_require_service','campaign_feed_send'],'notes'=>'Campaign distribution debits configured action cost per recipient/batch quantity.'],
+        ['service_key'=>'email_list_send','label'=>'Email list send','category'=>'Campaign distribution','action_key'=>'email_list_send','owner'=>'merchant','status'=>'enforced','enforced_in'=>['api/merchant/campaign-send.php'],'markers'=>['mg_stamp_require_service','email_list_send'],'notes'=>'Campaign email send cost is configured in Stamp actions.'],
+        ['service_key'=>'sms_send','label'=>'SMS send','category'=>'Campaign distribution','action_key'=>'sms_send','owner'=>'merchant','status'=>'enforced','enforced_in'=>['api/merchant/campaign-send.php'],'markers'=>['mg_stamp_require_service','sms_send'],'notes'=>'SMS cost can be higher than other sends and remains admin-configured.'],
+        ['service_key'=>'qr_claim_prompt_send','label'=>'QR claim prompt send','category'=>'Campaign distribution','action_key'=>'qr_claim_prompt_send','owner'=>'merchant','status'=>'enforced','enforced_in'=>['api/merchant/campaign-send.php'],'markers'=>['mg_stamp_require_service','qr_claim_prompt_send'],'notes'=>'QR prompt sends use the same Service Gate.'],
+        ['service_key'=>'agentic_discovery_send','label'=>'Agentic discovery send','category'=>'Agent commerce','action_key'=>'agentic_discovery_send','owner'=>'merchant','status'=>'enforced','enforced_in'=>['api/merchant/campaign-send.php'],'markers'=>['mg_stamp_require_service','agentic_discovery_send'],'notes'=>'Agentic campaign distribution uses configured action cost.'],
+        ['service_key'=>'story_promotion','label'=>'Story promotion / boost','category'=>'Stories','action_key'=>'story_promotion','owner'=>'merchant','status'=>'needs_review','enforced_in'=>['feed.php','api/stories/*'],'markers'=>[],'notes'=>'No configured Stamp action found yet. Add action + gate when paid story boosts go live.'],
+        ['service_key'=>'campaign_ad_placement','label'=>'Campaign Ad placement','category'=>'Ads','action_key'=>'campaign_ad_placement','owner'=>'merchant','status'=>'needs_review','enforced_in'=>['api/ads/*','merchant-ad-manager.php'],'markers'=>[],'notes'=>'Campaign Ads have their own workflow; decide whether placements consume Stamps or a separate ad budget.'],
+        ['service_key'=>'product_boost_publish','label'=>'Product boost / publish','category'=>'Storefront','action_key'=>'product_boost_publish','owner'=>'merchant','status'=>'needs_review','enforced_in'=>['build.php','api/store/*'],'markers'=>[],'notes'=>'Publishing should remain free if package-gated; paid boosts can become Stamp-gated later.'],
+        ['service_key'=>'bulk_crm_action','label'=>'Bulk CRM action','category'=>'CRM','action_key'=>'bulk_crm_action','owner'=>'merchant','status'=>'needs_review','enforced_in'=>['assets/js/merchant-crm-*','api/merchant/*crm*'],'markers'=>[],'notes'=>'Bulk operations need a per-recipient policy before enabling a paid Stamp debit.'],
+    ];
+}
+
+function mg_stamp_action_map(PDO $pdo): array
+{
+    $map = [];
+    foreach (mg_stamp_action_rows($pdo) as $action) {
+        $key = (string)($action['key'] ?? '');
+        if ($key !== '') $map[$key] = $action;
+    }
+    return $map;
+}
+
+function mg_stamp_service_action_key(string $serviceKey): string
+{
+    $serviceKey = trim($serviceKey);
+    foreach (mg_stamp_service_catalog() as $service) {
+        if (($service['service_key'] ?? '') === $serviceKey) return (string)($service['action_key'] ?? $serviceKey);
+    }
+    return $serviceKey;
+}
+
+function mg_stamp_require_service(PDO $pdo, int $accountUserId, int $actorUserId, string $serviceKey, int $quantity, string $serviceIdempotencyKey, array $options = []): array
+{
+    $serviceKey = trim($serviceKey);
+    if ($serviceKey === '') mg_fail('Stamp service key is required.', 422);
+    $actionKey = mg_stamp_service_action_key($serviceKey);
+    $action = mg_stamp_action($pdo, $actionKey);
+    $quantity = max(1, $quantity);
+    $metadata = is_array($options['metadata'] ?? null) ? $options['metadata'] : [];
+    $options['metadata'] = $metadata + [
+        'service_gate' => 'stamp_service_gate_v1',
+        'service_key' => $serviceKey,
+        'action_key' => $actionKey,
+        'configured_stamp_value' => (int)($action['stamp_value'] ?? 0),
+        'configured_action' => $action,
+    ];
+    $options['quantity'] = $quantity;
+    $options['reason_code'] = (string)($options['reason_code'] ?? 'service_gate_debit');
+    return mg_stamp_debit_send($pdo, $accountUserId, $actorUserId, $actionKey, $serviceIdempotencyKey, $options);
+}
+
+function mg_stamp_file_contains_markers(string $root, string $path, array $markers): array
+{
+    $full = rtrim($root, '/\\') . '/' . ltrim($path, '/\\');
+    if (!is_file($full)) return ['exists'=>false,'missing_markers'=>$markers];
+    $source = (string)file_get_contents($full);
+    $missing = [];
+    foreach ($markers as $marker) {
+        if ($marker !== '' && !str_contains($source, (string)$marker)) $missing[] = (string)$marker;
+    }
+    return ['exists'=>true,'missing_markers'=>$missing];
+}
+
+function mg_stamp_enforcement_report(PDO $pdo, ?string $root = null): array
+{
+    $root = $root ?: dirname(__DIR__, 2);
+    $actions = mg_stamp_action_map($pdo);
+    $services = [];
+    foreach (mg_stamp_service_catalog() as $service) {
+        $actionKey = (string)($service['action_key'] ?? '');
+        $action = $actions[$actionKey] ?? null;
+        $markerResults = [];
+        $hasMissingMarkers = false;
+        foreach ((array)($service['enforced_in'] ?? []) as $path) {
+            $check = mg_stamp_file_contains_markers($root, (string)$path, (array)($service['markers'] ?? []));
+            $markerResults[] = ['path'=>(string)$path] + $check;
+            if (!empty($check['missing_markers'])) $hasMissingMarkers = true;
+        }
+        $configured = is_array($action);
+        $enabled = $configured && !empty($action['enabled']);
+        $declaredStatus = (string)($service['status'] ?? 'needs_review');
+        $status = $declaredStatus;
+        if ($declaredStatus === 'enforced' && (!$configured || !$enabled || $hasMissingMarkers)) $status = 'needs_attention';
+        $services[] = $service + [
+            'action_configured' => $configured,
+            'action_enabled' => $enabled,
+            'stamp_value' => $configured ? (int)($action['stamp_value'] ?? 0) : null,
+            'action_label' => $configured ? (string)($action['label'] ?? '') : null,
+            'action_channel' => $configured ? (string)($action['channel'] ?? '') : null,
+            'action_scope' => $configured ? (string)($action['scope'] ?? '') : null,
+            'resolved_status' => $status,
+            'marker_results' => $markerResults,
+        ];
+    }
+    return [
+        'services' => $services,
+        'actions' => array_values($actions),
+        'summary' => [
+            'total_services' => count($services),
+            'enforced' => count(array_filter($services, static fn(array $service): bool => ($service['resolved_status'] ?? '') === 'enforced')),
+            'needs_attention' => count(array_filter($services, static fn(array $service): bool => ($service['resolved_status'] ?? '') === 'needs_attention')),
+            'needs_review' => count(array_filter($services, static fn(array $service): bool => ($service['resolved_status'] ?? '') === 'needs_review')),
+            'configured_actions' => count($actions),
+        ],
+    ];
+}
+
 function mg_stamp_credit(PDO $pdo, int $accountUserId, ?int $actorUserId, int $stamps, string $idempotencyKey, array $options = []): array
 {
     $stamps = max(1, $stamps);
