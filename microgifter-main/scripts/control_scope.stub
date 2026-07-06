@@ -1,1 +1,0 @@
-Runtime scope covered in tests: permission boundary, user state change, replay, conflict rejection, audit write, and transaction schema guard.

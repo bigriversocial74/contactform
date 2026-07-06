@@ -1,2 +1,0 @@
--- Stage 18AF Redemption Finance and Disputes
--- Mirror pointer: import the canonical SQL at database/stage_18af_redemption_finance_disputes.sql

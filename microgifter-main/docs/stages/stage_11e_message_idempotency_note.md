@@ -1,1 +1,0 @@
-Stage 11E message requests bind the submitted idempotency key to the sender, recipient, Microgift instance, and message body before accepting a duplicate replay.
