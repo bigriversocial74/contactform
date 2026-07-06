@@ -12,7 +12,7 @@ bigriversocial74/contactform
 
 The repository root is the only active runtime source. Root PHP pages, `api/`, `includes/`, `assets/`, `database/`, `scripts/`, `tests/`, and `.github/workflows/` are canonical.
 
-The nested `microgifter-main/` directory is an archived recovery copy. It must not be deployed, imported, used as a workflow source, or treated as current implementation evidence.
+No nested recovery tree is part of the active deployment, workflow, migration, or implementation source.
 
 ## Focused V1 public and customer pages
 
