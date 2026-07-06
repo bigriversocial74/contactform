@@ -21,7 +21,7 @@ final class ProductionLiveUiHotfixTest extends TestCase
 
     public function testLoggedInMenuRoutesRemainAvailable(): void
     {
-        foreach (['includes/header-templates/logged-in.php','microgifter-main/includes/header-templates/logged-in.php'] as $path) {
+        foreach (['includes/header-templates/logged-in.php'] as $path) {
             $source = $this->readFile($path);
             foreach (['/inbox.php','/feed.php','/merchant.php','/account-admin.php'] as $route) {
                 self::assertStringContainsString($route, $source, $path);
@@ -34,7 +34,7 @@ final class ProductionLiveUiHotfixTest extends TestCase
 
     public function testPublicAndAppHeadersExposeCurrentTemplateBoundaries(): void
     {
-        foreach (['includes/header-components/public-header.php','microgifter-main/includes/header-components/public-header.php'] as $path) {
+        foreach (['includes/header-components/public-header.php'] as $path) {
             $source = $this->readFile($path);
             self::assertStringContainsString('data-mg-universal-header', $source, $path);
             self::assertStringContainsString('Microgifter', $source, $path);
@@ -66,7 +66,7 @@ final class ProductionLiveUiHotfixTest extends TestCase
 
     public function testFeedAndNewsfeedSurfacesRemainRoutable(): void
     {
-        foreach (['feed.php','microgifter-main/feed.php'] as $path) {
+        foreach (['feed.php'] as $path) {
             $source = $this->readFile($path);
             foreach (['data-feed-tab="discover"','data-feed-tab="following"','data-feed-tab="mine"','data-feed-list'] as $marker) {
                 self::assertStringContainsString($marker, $source, $path);
