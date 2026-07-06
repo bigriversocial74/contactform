@@ -109,8 +109,7 @@ final class V1ReleaseHardeningContractTest extends TestCase
         $map=$this->source('docs/architecture/current_active_file_map.md');
         self::assertStringContainsString('bigriversocial74/contactform',$map);
         self::assertStringContainsString('repository root is the only active runtime source',$map);
+        self::assertStringContainsString('removed from the active branch',$map);
         self::assertStringContainsString('V1 Release Hardening',$map);
-        $archive=$this->source('microgifter-main/ARCHIVED_COPY_DO_NOT_USE.md');
-        self::assertStringContainsString('not an active runtime source',$archive);
     }
 }
