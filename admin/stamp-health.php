@@ -20,7 +20,7 @@ require dirname(__DIR__) . '/includes/header.php';
     <section class="mg-admin-package-shell" data-stamp-health-page>
       <header class="mg-admin-package-hero">
         <div><a class="mg-admin-package-back" href="/admin/package-moderation.php">← Package moderation</a><span class="mg-eyebrow">Verification</span><h1>Stamp system health</h1><p>Verify Stamp migrations, required tables, API files, debit actions, bundles, provider webhook readiness, and production launch blockers.</p></div>
-        <div class="mg-admin-package-hero-actions"><span>Status</span><strong data-stamp-health-status>Loading</strong><a class="mg-btn mg-btn-soft" href="/admin/stamp-enforcement.php">Enforcement audit</a><a class="mg-btn mg-btn-soft" href="/admin/stamp-shortfalls.php">Shortfall report</a></div>
+        <div class="mg-admin-package-hero-actions"><span>Status</span><strong data-stamp-health-status>Loading</strong><a class="mg-btn mg-btn-soft" href="/stamp-payment-reconciliation.php">Stamp payments</a><a class="mg-btn mg-btn-soft" href="/admin/stamp-enforcement.php">Enforcement audit</a><a class="mg-btn mg-btn-soft" href="/admin/stamp-shortfalls.php">Shortfall report</a></div>
       </header>
       <section class="mg-admin-package-summary" aria-label="Stamp health summary">
         <article><span>System</span><strong data-health-overall>—</strong><small>Overall readiness</small></article>
