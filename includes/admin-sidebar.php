@@ -27,6 +27,7 @@ $canModeration = $canAdminPage('admin.moderation');
 $canNotifications = $canAdminPage('admin.notifications');
 $canOperationsCommand = $canAdminPage('admin.operations_command');
 $canPackageModeration = $canCommerce;
+$canStampOperations = $canCommerce;
 $canStampHealth = $canCommerce;
 $canStampEnforcement = $canCommerce;
 $canHealth = $canAdminPage('admin.system_health');
@@ -147,6 +148,12 @@ $adminNav = [
         'detail' => 'Review and implementation',
         'href' => '/admin/package-moderation.php',
         'visible' => $canPackageModeration,
+    ],
+    'stamp-operations' => [
+        'label' => 'Stamp operations',
+        'detail' => 'Risk and recovery queues',
+        'href' => '/admin/stamp-operations.php',
+        'visible' => $canStampOperations,
     ],
     'stamp-health' => [
         'label' => 'Stamp health',
