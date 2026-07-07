@@ -130,7 +130,6 @@ function mg_stamp_purchase_create_provider_checkout_session(PDO $pdo, array $pur
         'success_url' => $successUrl,
         'cancel_url' => mg_payment_absolute_url($cancel),
         'client_reference_id' => $purchaseId,
-        'expires_at' => time() + 1800,
         'metadata' => $metadata,
         'payment_intent_data' => [
             'metadata' => $metadata,
