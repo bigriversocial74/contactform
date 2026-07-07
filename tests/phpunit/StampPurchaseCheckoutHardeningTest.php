@@ -94,6 +94,10 @@ final class StampPurchaseCheckoutHardeningTest extends TestCase
             self::assertStringContainsString($marker, $page);
         }
 
+        foreach (['data-sidebar-contract="mg-app-sidebar"', "'/includes/app-sidebar.php'", 'mg-app-workspace'] as $marker) {
+            self::assertStringContainsString($marker, $page);
+        }
+
         foreach (['/api/stamps/purchase-status.php?purchase_id=','verified payment','Ledger entry'] as $marker) {
             self::assertStringContainsString($marker, $js);
         }
