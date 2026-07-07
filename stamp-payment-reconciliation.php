@@ -1,3 +1,50 @@
 <?php
 declare(strict_types=1);
-echo 'Stamp reconciliation';
+
+require_once __DIR__ . '/includes/app.php';
+require_once __DIR__ . '/includes/admin-auth.php';
+
+$user = mg_require_admin_page_permission('admin.commerce.view');
+$page_title = 'Stamp Payment Reconciliation | Microgifter';
+$page_section = 'account';
+$header_mode = 'account';
+$page_body_class = 'mg-admin-package-page';
+$page_styles = ['/assets/css/admin-shell.css','/assets/css/admin-package-moderation.css','/assets/css/stamp-ledger.css'];
+$adminActive = 'stamp-payment-reconciliation';
+
+require __DIR__ . '/includes/header.php';
+?>
+<section class="mg-app-shell mg-admin-app">
+  <?php require __DIR__ . '/includes/admin-sidebar.php'; ?>
+  <div class="mg-app-workspace mg-admin-workspace">
+    <section class="mg-admin-package-shell" data-stamp-payment-reconciliation-page>
+      <header class="mg-admin-package-hero">
+        <div>
+          <a class="mg-admin-package-back" href="/admin/package-moderation.php">Back to Package moderation</a>
+          <span class="mg-eyebrow">Stamp payments</span>
+          <h1>Stamp payment reconciliation</h1>
+          <p>Run live checkout QA checks, review Stamp purchases against payment intents, webhook state, and credited ledger entries, and keep merchant credit locked behind verified payment or admin-only completion.</p>
+        </div>
+        <div class="mg-admin-package-hero-actions"><span>Reconciliation</span><strong data-stamp-reconciliation-overall>Loading</strong><a class="mg-btn mg-btn-soft" href="/admin/stamp-health.php">Stamp health</a><a class="mg-btn mg-btn-soft" href="/merchant-stamps.php">Merchant view</a></div>
+      </header>
+      <section class="mg-admin-package-summary" aria-label="Stamp payment reconciliation summary">
+        <article><span>Reconciled</span><strong data-stamp-reconciled-count>0</strong><small>Paid and credited</small></article>
+        <article><span>Awaiting webhook</span><strong data-stamp-awaiting-count>0</strong><small>Payment pending</small></article>
+        <article><span>Review</span><strong data-stamp-review-count>0</strong><small>Failed or mismatched</small></article>
+        <article><span>QA checks</span><strong data-stamp-qa-count>0</strong><small>Runtime readiness</small></article>
+      </section>
+      <section class="mg-stamp-panel" data-stamp-checkout-qa-panel>
+        <header><div><span class="mg-eyebrow">Option 1</span><h2>Live checkout QA stabilization</h2><p>Checks required files, owner-scope, CSRF, provider metadata, webhook completion, admin-only manual completion, and Stripe configuration readiness.</p></div><button class="mg-btn mg-btn-primary" type="button" data-run-stamp-checkout-qa>Run checkout QA</button></header>
+        <div class="mg-form-status" data-stamp-qa-message>Loading checkout QA checks...</div>
+        <div class="mg-stamp-action-table-wrap" style="margin-top:16px"><table class="mg-stamp-table"><thead><tr><th>Check</th><th>Status</th><th>Details</th></tr></thead><tbody data-stamp-qa-list><tr><td colspan="3">Loading...</td></tr></tbody></table></div>
+      </section>
+      <section class="mg-stamp-panel" data-stamp-reconciliation-panel style="margin-top:16px">
+        <header><div><span class="mg-eyebrow">Option 2</span><h2>Reconciliation queue</h2><p>Matches each Stamp purchase to its payment intent, provider reference, webhook event, and credited ledger entry.</p></div><button class="mg-btn mg-btn-soft" type="button" data-refresh-stamp-reconciliation>Refresh reconciliation</button></header>
+        <div class="mg-form-status" data-stamp-reconciliation-message>Loading Stamp purchase reconciliation...</div>
+        <div class="mg-stamp-action-table-wrap" style="margin-top:16px"><table class="mg-stamp-table"><thead><tr><th>Purchase</th><th>Account</th><th>Bundle / total</th><th>Purchase</th><th>Provider intent</th><th>Webhook</th><th>Reconciliation</th><th>Ledger</th></tr></thead><tbody data-stamp-reconciliation-list><tr><td colspan="8">Loading...</td></tr></tbody></table></div>
+      </section>
+    </section>
+  </div>
+</section>
+<script src="/assets/js/admin-stamp-payment-reconciliation.js?v=20260706-stamp-reconciliation" defer></script>
+<?php require __DIR__ . '/includes/footer.php'; ?>
