@@ -57,7 +57,14 @@ function mg_stamp_receipt_notification_body(array $purchase, string $event): str
 
 function mg_stamp_receipt_notification_type(string $event): string
 {
-    return 'stamp_purchase_' . preg_replace('/[^a-z0-9_]/', '_', strtolower($event));
+    return match ($event) {
+        'created' => 'stamp_purchase_created',
+        'credited' => 'stamp_purchase_credited',
+        'failed' => 'stamp_purchase_failed',
+        'cancelled' => 'stamp_purchase_cancelled',
+        'receipt_sent' => 'stamp_purchase_receipt_sent',
+        default => 'stamp_purchase_update',
+    };
 }
 
 function mg_stamp_receipt_notify_merchant(PDO $pdo, array $purchase, string $event, int $actorUserId = 0, array $extra = []): array
