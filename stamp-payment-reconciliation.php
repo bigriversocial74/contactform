@@ -23,7 +23,7 @@ require __DIR__ . '/includes/header.php';
           <a class="mg-admin-package-back" href="/admin/package-moderation.php">Back to Package moderation</a>
           <span class="mg-eyebrow">Stamp payments</span>
           <h1>Stamp payment reconciliation</h1>
-          <p>Run live checkout QA checks, review Stamp purchases against payment intents, webhook state, and credited ledger entries, and keep merchant credit locked behind verified payment or admin-only completion.</p>
+          <p>Run live checkout QA checks, review Stamp purchases against payment intents, webhook state, credited ledger entries, and admin cleanup actions.</p>
         </div>
         <div class="mg-admin-package-hero-actions"><span>Reconciliation</span><strong data-stamp-reconciliation-overall>Loading</strong><a class="mg-btn mg-btn-soft" href="/admin/stamp-health.php">Stamp health</a><a class="mg-btn mg-btn-soft" href="/merchant-stamps.php">Merchant view</a></div>
       </header>
@@ -39,12 +39,16 @@ require __DIR__ . '/includes/header.php';
         <div class="mg-stamp-action-table-wrap" style="margin-top:16px"><table class="mg-stamp-table"><thead><tr><th>Check</th><th>Status</th><th>Details</th></tr></thead><tbody data-stamp-qa-list><tr><td colspan="3">Loading...</td></tr></tbody></table></div>
       </section>
       <section class="mg-stamp-panel" data-stamp-reconciliation-panel style="margin-top:16px">
-        <header><div><span class="mg-eyebrow">Option 2</span><h2>Reconciliation queue</h2><p>Matches each Stamp purchase to its payment intent, provider reference, webhook event, and credited ledger entry.</p></div><button class="mg-btn mg-btn-soft" type="button" data-refresh-stamp-reconciliation>Refresh reconciliation</button></header>
+        <header><div><span class="mg-eyebrow">Option 2</span><h2>Reconciliation queue</h2><p>Filter purchases, retry hosted provider checkout, mark stale records failed/cancelled, export CSV, and preserve verified-payment-only Stamp crediting.</p></div><div class="mg-heading-actions"><button class="mg-btn mg-btn-soft" type="button" data-export-stamp-reconciliation>Export CSV</button><button class="mg-btn mg-btn-soft" type="button" data-refresh-stamp-reconciliation>Refresh reconciliation</button></div></header>
+        <div class="mg-admin-package-review-grid" style="margin-top:14px">
+          <article><h3>Filter queue</h3><div class="mg-heading-actions" data-stamp-reconciliation-filters><button class="mg-btn mg-btn-primary" type="button" data-filter="all">All</button><button class="mg-btn mg-btn-soft" type="button" data-filter="review">Review needed</button><button class="mg-btn mg-btn-soft" type="button" data-filter="awaiting_webhook">Awaiting webhook</button><button class="mg-btn mg-btn-soft" type="button" data-filter="reconciled">Reconciled</button><button class="mg-btn mg-btn-soft" type="button" data-filter="failed_payment">Failed/cancelled</button></div></article>
+          <article><h3>Search</h3><label>Purchase, account, provider, ledger<input data-stamp-reconciliation-search placeholder="Search reconciliation records"></label></article>
+        </div>
         <div class="mg-form-status" data-stamp-reconciliation-message>Loading Stamp purchase reconciliation...</div>
-        <div class="mg-stamp-action-table-wrap" style="margin-top:16px"><table class="mg-stamp-table"><thead><tr><th>Purchase</th><th>Account</th><th>Bundle / total</th><th>Purchase</th><th>Provider intent</th><th>Webhook</th><th>Reconciliation</th><th>Ledger</th></tr></thead><tbody data-stamp-reconciliation-list><tr><td colspan="8">Loading...</td></tr></tbody></table></div>
+        <div class="mg-stamp-action-table-wrap" style="margin-top:16px"><table class="mg-stamp-table"><thead><tr><th>Purchase</th><th>Account</th><th>Bundle / total</th><th>Purchase</th><th>Provider intent</th><th>Webhook</th><th>Reconciliation</th><th>Actions</th></tr></thead><tbody data-stamp-reconciliation-list><tr><td colspan="8">Loading...</td></tr></tbody></table></div>
       </section>
     </section>
   </div>
 </section>
-<script src="/assets/js/admin-stamp-payment-reconciliation.js?v=20260706-stamp-reconciliation" defer></script>
+<script src="/assets/js/admin-stamp-payment-reconciliation.js?v=20260706-stamp-reconciliation-actions" defer></script>
 <?php require __DIR__ . '/includes/footer.php'; ?>
