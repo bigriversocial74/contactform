@@ -6,8 +6,8 @@ $user = mg_require_api_user();
 mg_require_method('POST');
 $input = mg_input();
 mg_require_csrf_for_write($input);
-if (mg_payment_is_live() || mg_payment_provider_key() !== 'sandbox') {
-    mg_fail('Sandbox Stamp checkout confirmation is unavailable.', 403);
+if (mg_payment_is_live()) {
+    mg_fail('Sandbox Stamp checkout confirmation is unavailable in live mode.', 403);
 }
 $purchaseId = trim((string)($input['purchase_id'] ?? $input['id'] ?? ''));
 if ($purchaseId === '') mg_fail('purchase_id is required.', 422);
