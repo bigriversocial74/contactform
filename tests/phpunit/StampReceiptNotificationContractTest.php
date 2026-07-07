@@ -89,7 +89,7 @@ final class StampReceiptNotificationContractTest extends TestCase
             self::assertStringContainsString($marker, $merchantJs);
         }
 
-        foreach (['Stamp receipts', 'Stamp receipt links open the receipt page from notifications only', 'merchant notification center'] as $marker) {
+        foreach (['Stamp receipts', 'Stamp receipt links open the receipt page from notifications only', 'Merchant notification center'] as $marker) {
             self::assertStringContainsString($marker, $notificationsView);
         }
 
