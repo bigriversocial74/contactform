@@ -23,7 +23,7 @@ require __DIR__ . '/includes/header.php';
           <a class="mg-admin-package-back" href="/admin/package-moderation.php">Back to Package moderation</a>
           <span class="mg-eyebrow">Stamp payments</span>
           <h1>Stamp payment reconciliation</h1>
-          <p>Run live checkout QA, review provider/webhook state, sync provider status, reprocess signed webhooks, and flag paid-but-uncredited Stamp purchases without adding a merchant self-credit path.</p>
+          <p>Run checkout QA, review provider/webhook state, recover paid-but-uncredited purchases, and keep Stamp crediting locked behind verified provider status or admin-only review.</p>
         </div>
         <div class="mg-admin-package-hero-actions"><span>Reconciliation</span><strong data-stamp-reconciliation-overall>Loading</strong><a class="mg-btn mg-btn-soft" href="/admin/stamp-health.php">Stamp health</a><a class="mg-btn mg-btn-soft" href="/merchant-stamps.php">Merchant view</a></div>
       </header>
@@ -39,7 +39,7 @@ require __DIR__ . '/includes/header.php';
         <div class="mg-stamp-action-table-wrap" style="margin-top:16px"><table class="mg-stamp-table"><thead><tr><th>Check</th><th>Status</th><th>Details</th></tr></thead><tbody data-stamp-qa-list><tr><td colspan="3">Loading...</td></tr></tbody></table></div>
       </section>
       <section class="mg-stamp-panel" data-stamp-reconciliation-panel style="margin-top:16px">
-        <header><div><span class="mg-eyebrow">Option 2</span><h2>Webhook recovery + provider sync</h2><p>Filter purchases, sync provider status, view/reprocess signed webhook events, flag paid-uncredited records, retry hosted checkout, and export CSV.</p></div><div class="mg-heading-actions"><button class="mg-btn mg-btn-soft" type="button" data-export-stamp-reconciliation>Export CSV</button><button class="mg-btn mg-btn-soft" type="button" data-refresh-stamp-reconciliation>Refresh reconciliation</button></div></header>
+        <header><div><span class="mg-eyebrow">Option 2</span><h2>Admin completion review</h2><p>Filter purchases, sync provider status, view/reprocess signed webhook events, review paid-uncredited records, apply verified admin recovery credit, retry hosted checkout, and export CSV.</p></div><div class="mg-heading-actions"><button class="mg-btn mg-btn-soft" type="button" data-export-stamp-reconciliation>Export CSV</button><button class="mg-btn mg-btn-soft" type="button" data-refresh-stamp-reconciliation>Refresh reconciliation</button></div></header>
         <div class="mg-admin-package-review-grid" style="margin-top:14px">
           <article><h3>Filter queue</h3><div class="mg-heading-actions" data-stamp-reconciliation-filters><button class="mg-btn mg-btn-primary" type="button" data-filter="all">All</button><button class="mg-btn mg-btn-soft" type="button" data-filter="review">Review needed</button><button class="mg-btn mg-btn-soft" type="button" data-filter="paid_uncredited">Paid/uncredited</button><button class="mg-btn mg-btn-soft" type="button" data-filter="awaiting_webhook">Awaiting webhook</button><button class="mg-btn mg-btn-soft" type="button" data-filter="reconciled">Reconciled</button><button class="mg-btn mg-btn-soft" type="button" data-filter="failed_payment">Failed/cancelled</button></div></article>
           <article><h3>Search</h3><label>Purchase, account, provider, webhook, ledger<input data-stamp-reconciliation-search placeholder="Search reconciliation records"></label></article>
@@ -50,5 +50,5 @@ require __DIR__ . '/includes/header.php';
     </section>
   </div>
 </section>
-<script src="/assets/js/admin-stamp-payment-reconciliation.js?v=20260706-stamp-webhook-recovery" defer></script>
+<script src="/assets/js/admin-stamp-payment-reconciliation.js?v=20260707-stamp-admin-completion-review" defer></script>
 <?php require __DIR__ . '/includes/footer.php'; ?>
