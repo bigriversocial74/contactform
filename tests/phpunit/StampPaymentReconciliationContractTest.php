@@ -57,8 +57,11 @@ final class StampPaymentReconciliationContractTest extends TestCase
             'payment_intent_status',
             'webhook_event',
             'payment_webhook_events',
+            'provider_event_id',
             'awaiting_webhook',
             'failed_payment',
+            'paid_uncredited',
+            'Paid provider intent, not credited',
             'missing_intent',
             'amount_review',
             'ledger_review',
@@ -77,10 +80,11 @@ final class StampPaymentReconciliationContractTest extends TestCase
             'data-stamp-payment-reconciliation-page',
             'Live checkout QA stabilization',
             'Run checkout QA',
-            'Reconciliation queue',
+            'Webhook recovery + provider sync',
             'data-stamp-qa-list',
             'data-stamp-reconciliation-list',
             'data-stamp-reconciliation-filters',
+            'paid_uncredited',
             'data-export-stamp-reconciliation',
             '/assets/js/admin-stamp-payment-reconciliation.js',
         ] as $marker) {
@@ -91,17 +95,25 @@ final class StampPaymentReconciliationContractTest extends TestCase
             '/api/stamps/checkout-qa.php',
             '/api/stamps/purchase-report.php',
             '/api/stamps/reconciliation-action.php',
+            '/api/stamps/webhook-recovery.php',
             'data-stamp-qa-list',
             'data-stamp-reconciliation-list',
             'data-stamp-action',
+            'data-stamp-recovery',
             'retry_checkout',
             'mark_failed',
             'mark_cancelled',
             'mark_reviewed',
+            'sync_provider_status',
+            'webhook_detail',
+            'reprocess_webhook',
+            'flag_paid_uncredited',
             'Export CSV',
             'awaiting_webhook',
             'failed_payment',
+            'paid_uncredited',
             'provider_intent_reference',
+            'provider_event_id',
             'credited_ledger_entry_id',
         ] as $marker) {
             self::assertStringContainsString($marker, $js);
@@ -132,6 +144,38 @@ final class StampPaymentReconciliationContractTest extends TestCase
         ] as $marker) {
             self::assertStringContainsString($marker, $endpoint);
         }
+    }
+
+    public function testWebhookRecoveryEndpointIsAdminOnlyAndUsesExistingProviderWebhookPaths(): void
+    {
+        $endpoint = $this->read('api/stamps/webhook-recovery.php');
+
+        foreach ([
+            'mg_require_api_user',
+            'admin.stamps.manage',
+            'mg_require_method(\'POST\')',
+            'mg_require_csrf_for_write',
+            'webhook_detail',
+            'reprocess_webhook',
+            'sync_provider_status',
+            'flag_paid_uncredited',
+            'payment_webhook_events',
+            'mg_payment_webhook_identifiers',
+            'mg_payment_process_webhook_event',
+            'mg_payment_provider_retrieve_intent',
+            'mg_payment_normalize_intent_status',
+            'paid_uncredited',
+            'Only signed webhook events can be reprocessed',
+            'Processed webhook events are already complete',
+            'Provider reports paid; Stamp purchase still needs verified webhook or admin-only credit review.',
+            'stamps.webhook_reprocessed',
+            'stamps.provider_status_sync',
+            'stamps.paid_uncredited_review_flagged',
+        ] as $marker) {
+            self::assertStringContainsString($marker, $endpoint);
+        }
+
+        self::assertStringNotContainsString('mg_stamp_purchase_complete_verified($pdo', $endpoint, 'Recovery endpoint must not directly credit Stamps during provider sync.');
     }
 
     public function testExistingAdminStampSurfacesLinkToReconciliation(): void

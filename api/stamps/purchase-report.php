@@ -27,6 +27,7 @@ function mg_stamp_purchase_report_state(array $row): array
         if ($intentStatus !== 'succeeded') return ['state' => 'payment_review', 'severity' => 'warning', 'label' => 'Ledger credited, payment not succeeded'];
         return ['state' => 'reconciled', 'severity' => 'success', 'label' => 'Reconciled'];
     }
+    if ($intentStatus === 'succeeded') return ['state' => 'paid_uncredited', 'severity' => 'warning', 'label' => 'Paid provider intent, not credited'];
     if (in_array($purchaseStatus, ['failed', 'cancelled'], true) || in_array($intentStatus, ['failed', 'cancelled'], true)) return ['state' => 'failed_payment', 'severity' => 'error', 'label' => 'Failed/cancelled payment'];
     if (in_array($intentStatus, ['requires_action', 'processing', 'created', 'requires_payment_method'], true) || in_array($purchaseStatus, ['pending', 'checkout_created'], true)) return ['state' => 'awaiting_webhook', 'severity' => 'info', 'label' => 'Awaiting payment/webhook'];
     return ['state' => 'review', 'severity' => 'warning', 'label' => 'Needs review'];
@@ -37,12 +38,13 @@ function mg_stamp_purchase_report_webhook(PDO $pdo, bool $hasWebhooks, string $p
     if (!$hasWebhooks) return ['available' => false, 'status' => '', 'event_type' => '', 'provider_event_id' => '', 'received_at' => null, 'processed_at' => null, 'failure_message' => ''];
     $likePurchase = '%' . $purchaseId . '%';
     $likeIntent = $providerIntent !== '' ? '%' . $providerIntent . '%' : $likePurchase;
-    $stmt = $pdo->prepare('SELECT provider_event_id,event_type,status,received_at,processed_at,failure_message FROM payment_webhook_events WHERE payload_json LIKE ? OR payload_json LIKE ? ORDER BY received_at DESC,id DESC LIMIT 1');
+    $stmt = $pdo->prepare('SELECT provider_key,provider_event_id,event_type,status,received_at,processed_at,failure_message FROM payment_webhook_events WHERE payload_json LIKE ? OR payload_json LIKE ? ORDER BY received_at DESC,id DESC LIMIT 1');
     $stmt->execute([$likePurchase, $likeIntent]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    if (!$row) return ['available' => true, 'status' => 'none', 'event_type' => '', 'provider_event_id' => '', 'received_at' => null, 'processed_at' => null, 'failure_message' => ''];
+    if (!$row) return ['available' => true, 'provider_key'=>'', 'status' => 'none', 'event_type' => '', 'provider_event_id' => '', 'received_at' => null, 'processed_at' => null, 'failure_message' => ''];
     return [
         'available' => true,
+        'provider_key'=>(string)$row['provider_key'],
         'status' => (string)$row['status'],
         'event_type' => (string)$row['event_type'],
         'provider_event_id' => (string)$row['provider_event_id'],
@@ -62,7 +64,7 @@ try {
         ORDER BY sp.created_at DESC,sp.id DESC
         LIMIT 100");
     $rows = [];
-    $summary = ['total'=>0,'reconciled'=>0,'awaiting_webhook'=>0,'failed_payment'=>0,'missing_intent'=>0,'amount_review'=>0,'ledger_review'=>0,'payment_review'=>0,'review'=>0];
+    $summary = ['total'=>0,'reconciled'=>0,'awaiting_webhook'=>0,'failed_payment'=>0,'missing_intent'=>0,'amount_review'=>0,'ledger_review'=>0,'payment_review'=>0,'paid_uncredited'=>0,'review'=>0];
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $state = mg_stamp_purchase_report_state($row);
         $key = (string)$state['state'];
