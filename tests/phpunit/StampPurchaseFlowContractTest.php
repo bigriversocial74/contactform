@@ -67,7 +67,7 @@ final class StampPurchaseFlowContractTest extends TestCase
             self::assertStringContainsString($needle, $receiptJs);
         }
 
-        foreach(['mg_require_api_user','mg_require_method(\'GET\')','mg_stamp_purchase_load($pdo, $accountUserId','mg_stamp_purchase_find_intent','stamp_ledger_entries','bulk_stamp_purchase','receipt_url','owner_scoped','admin_links'=>[],'Print / Save PDF'] as $needle){
+        foreach(['mg_require_api_user','mg_require_method(\'GET\')','mg_stamp_purchase_load($pdo, $accountUserId','mg_stamp_purchase_find_intent','stamp_ledger_entries','bulk_stamp_purchase','receipt_url','owner_scoped',"'admin_links'=>[]",'Print / Save PDF'] as $needle){
             self::assertStringContainsString($needle, $receiptApi);
         }
 
