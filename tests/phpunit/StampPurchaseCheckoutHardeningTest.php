@@ -84,6 +84,45 @@ final class StampPurchaseCheckoutHardeningTest extends TestCase
         }
     }
 
+    public function testStampProviderCheckoutEndpointExistsAndUsesOwnerScope(): void
+    {
+        $endpoint = $this->read('api/stamps/checkout-session.php');
+        $purchases = $this->read('api/stamps/_purchases.php');
+
+        foreach ([
+            'mg_require_api_user',
+            'mg_require_method(\'POST\')',
+            'mg_require_csrf_for_write',
+            'mg_stamp_purchase_load($pdo, (int)$user[\'id\']',
+            'mg_stamp_purchase_find_intent',
+            'mg_stamp_purchase_create_provider_checkout_session',
+            'stamps.purchase_provider_checkout_created',
+            'source_type',
+            'stamp_purchase',
+            'checkout_url',
+        ] as $marker) {
+            self::assertStringContainsString($marker, $endpoint);
+        }
+
+        foreach ([
+            'mg_stamp_purchase_provider_metadata',
+            'source_reference',
+            'stamp_purchase_id',
+            'payment_intent_id',
+            'account_user_id',
+            'bundle_key',
+            'stamps',
+            'price_cents',
+            'currency',
+            'client_reference_id',
+            'payment_intent_data',
+            '/v1/checkout/sessions',
+            'stamp_checkout:',
+        ] as $marker) {
+            self::assertStringContainsString($marker, $purchases);
+        }
+    }
+
     public function testStampCheckoutPageAndStatusApiExist(): void
     {
         $page = $this->read('stamp-checkout.php');
@@ -98,9 +137,21 @@ final class StampPurchaseCheckoutHardeningTest extends TestCase
             self::assertStringContainsString($marker, $page);
         }
 
-        foreach (['/api/stamps/purchase-status.php?purchase_id=','verified payment','Ledger entry'] as $marker) {
+        foreach ([
+            '/api/stamps/purchase-status.php?purchase_id=',
+            '/api/stamps/checkout-session.php',
+            'Continue to secure payment',
+            'Provider checkout not configured',
+            'Redirecting to secure payment',
+            'verified webhook',
+            'Ledger entry',
+        ] as $marker) {
             self::assertStringContainsString($marker, $js);
         }
+
+        self::assertStringNotContainsString('/api/stamps/purchase-complete.php', $js);
+        self::assertStringNotContainsString('sandbox-confirm', $js);
+        self::assertStringNotContainsString('Complete sandbox payment', $js);
 
         foreach (['mg_stamp_purchase_load','mg_stamp_purchase_find_intent','mg_stamp_purchase_payload'] as $marker) {
             self::assertStringContainsString($marker, $api);
