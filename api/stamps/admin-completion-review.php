@@ -34,13 +34,22 @@ function mg_stamp_admin_review_latest_webhook(PDO $pdo, string $purchaseId, stri
     ];
 }
 
+function mg_stamp_admin_review_provider_paid(?array $providerIntent): bool
+{
+    $raw = strtolower(trim((string)($providerIntent['status'] ?? '')));
+    $normalized = $providerIntent ? mg_payment_normalize_intent_status($raw) : '';
+    return $normalized === 'succeeded' || in_array($raw, ['paid','complete','completed'], true);
+}
+
 function mg_stamp_admin_review_build(PDO $pdo, array $purchase, ?array $intent, ?array $providerIntent = null): array
 {
     $providerReference = trim((string)($intent['provider_intent_reference'] ?? ''));
-    $providerStatus = $providerIntent ? mg_payment_normalize_intent_status((string)($providerIntent['status'] ?? 'created')) : '';
+    $providerRawStatus = strtolower(trim((string)($providerIntent['status'] ?? '')));
+    $providerStatus = $providerIntent ? mg_payment_normalize_intent_status($providerRawStatus) : '';
+    $providerPaid = mg_stamp_admin_review_provider_paid($providerIntent);
     $amountMatch = $intent && (int)$intent['amount_cents'] === (int)$purchase['price_cents_snapshot'] && hash_equals((string)$intent['currency'], (string)$purchase['currency_snapshot']);
     $isCredited = (string)$purchase['status'] === 'credited' || trim((string)($purchase['credited_ledger_entry_public_id'] ?? '')) !== '';
-    $eligible = $intent && !$isCredited && $amountMatch && $providerReference !== '' && $providerStatus === 'succeeded';
+    $eligible = $intent && !$isCredited && $amountMatch && $providerReference !== '' && $providerPaid;
     return [
         'purchase'=>[
             'id'=>(string)$purchase['public_id'],
@@ -62,7 +71,9 @@ function mg_stamp_admin_review_build(PDO $pdo, array $purchase, ?array $intent, 
             'not_already_credited'=>!$isCredited,
             'payment_intent_present'=>(bool)$intent,
             'provider_reference_present'=>$providerReference !== '',
-            'provider_status_succeeded'=>$providerStatus === 'succeeded',
+            'provider_status_succeeded'=>$providerPaid,
+            'provider_status_raw'=>$providerRawStatus,
+            'provider_status_normalized'=>$providerStatus,
             'amount_currency_match'=>$amountMatch,
         ],
         'eligible_to_credit'=>$eligible,
