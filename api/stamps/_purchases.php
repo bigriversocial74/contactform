@@ -53,13 +53,25 @@ function mg_stamp_purchase_find_intent(PDO $pdo, string $purchaseId, bool $lock 
     return $row ?: null;
 }
 
+function mg_stamp_purchase_provider_key(PDO $pdo): string
+{
+    $configured = mg_payment_provider_key();
+    $configured = in_array($configured, ['stripe','sandbox'], true) ? $configured : 'sandbox';
+    if ($configured === 'stripe') {
+        $config = mg_payment_platform_config($pdo, 'stripe', mg_payment_mode());
+        if (!empty($config['enabled']) && trim((string)$config['secret_key']) !== '' && trim((string)$config['publishable_key']) !== '') return 'stripe';
+    }
+    if (mg_payment_is_live()) throw new RuntimeException('Live Stamp purchases require Stripe platform checkout credentials.');
+    return 'sandbox';
+}
+
 function mg_stamp_purchase_create_intent(PDO $pdo, array $purchase, string $idempotencyKey): array
 {
     $purchaseId = (string)$purchase['public_id'];
     $existing = mg_stamp_purchase_find_intent($pdo, $purchaseId, true);
     if ($existing) return $existing + ['duplicate' => true];
     return mg_payment_create_source_intent($pdo, [
-        'provider_key' => mg_payment_checkout_provider_key($pdo, null),
+        'provider_key' => mg_stamp_purchase_provider_key($pdo),
         'source_type' => 'stamp_purchase',
         'source_reference' => $purchaseId,
         'idempotency_key' => 'stamp:payment:' . $idempotencyKey,
@@ -73,6 +85,41 @@ function mg_stamp_purchase_create_intent(PDO $pdo, array $purchase, string $idem
             'stamps' => (int)$purchase['stamps_snapshot'],
         ],
     ]);
+}
+
+function mg_stamp_purchase_provider_checkout_payload(PDO $pdo, array $purchase, ?array $intent = null): array
+{
+    $intent = $intent ?: mg_stamp_purchase_find_intent($pdo, (string)$purchase['public_id']);
+    if (!$intent) throw new RuntimeException('Stamp purchase payment intent is missing.');
+    $provider = (string)($intent['provider_key'] ?? 'sandbox');
+    $clientSecret = null;
+    $publishableKey = '';
+    $providerStatus = (string)($intent['status'] ?? 'created');
+    if ($provider === 'stripe') {
+        $config = mg_payment_platform_config($pdo, 'stripe', mg_payment_mode());
+        $publishableKey = (string)($config['publishable_key'] ?? '');
+        if ($publishableKey === '') throw new RuntimeException('Stripe publishable key is not configured.');
+        $providerIntent = mg_payment_provider_retrieve_intent('stripe', (string)$intent['provider_intent_reference'], $pdo);
+        $clientSecret = $providerIntent['client_secret'] ?? null;
+        $providerStatus = mg_payment_normalize_intent_status((string)($providerIntent['status'] ?? $providerStatus));
+        if ($providerStatus !== (string)$intent['status']) {
+            $pdo->prepare('UPDATE payment_intents SET status=?,updated_at=NOW() WHERE id=?')->execute([$providerStatus, (int)$intent['id']]);
+            $intent['status'] = $providerStatus;
+        }
+    }
+    return [
+        'provider_key' => $provider,
+        'mode' => mg_payment_mode(),
+        'is_live' => mg_payment_is_live(),
+        'publishable_key' => $publishableKey,
+        'client_secret' => $clientSecret,
+        'provider_intent_reference' => (string)($intent['provider_intent_reference'] ?? ''),
+        'payment_intent_id' => (string)($intent['public_id'] ?? ''),
+        'payment_intent_status' => $providerStatus,
+        'can_pay_with_stripe' => $provider === 'stripe' && $publishableKey !== '' && is_string($clientSecret) && $clientSecret !== '' && !in_array($providerStatus, ['succeeded','failed','cancelled'], true) && (string)$purchase['status'] !== 'credited',
+        'can_confirm_sandbox' => $provider === 'sandbox' && !mg_payment_is_live() && !in_array($providerStatus, ['succeeded','failed','cancelled'], true) && (string)$purchase['status'] !== 'credited',
+        'return_url' => mg_app_base_url() . '/stamp-checkout.php?purchase=' . rawurlencode((string)$purchase['public_id']),
+    ];
 }
 
 function mg_stamp_purchase_load_any(PDO $pdo, string $purchaseId, bool $lock = false): array
