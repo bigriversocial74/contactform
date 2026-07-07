@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_stamps.php';
+require_once __DIR__ . '/_receipt_notifications.php';
 require_once dirname(__DIR__) . '/payments/_payments.php';
 
 function mg_stamp_purchase_payload(PDO $pdo, array $purchase, ?array $credited = null, ?array $intent = null): array
@@ -20,6 +21,7 @@ function mg_stamp_purchase_payload(PDO $pdo, array $purchase, ?array $credited =
             'paid_at' => $purchase['paid_at'] ?? null,
             'credited_at' => $purchase['credited_at'] ?? null,
             'checkout_url' => '/stamp-checkout.php?purchase=' . rawurlencode((string)$purchase['public_id']),
+            'receipt_url' => '/stamp-receipt.php?purchase=' . rawurlencode((string)$purchase['public_id']),
             'requires_verified_payment' => (string)$purchase['status'] !== 'credited',
         ],
         'payment_intent' => $intent,
@@ -218,7 +220,8 @@ function mg_stamp_purchase_complete_verified(PDO $pdo, array $purchase, int $act
     $purchase['credited_ledger_entry_public_id'] = (string)($credit['entry']['entry_id'] ?? '');
     $purchase['paid_at'] = $purchase['paid_at'] ?? date('Y-m-d H:i:s');
     $purchase['credited_at'] = date('Y-m-d H:i:s');
-    return mg_stamp_purchase_payload($pdo, $purchase, $credit, $intent) + ['idempotent' => !empty($credit['idempotent'])];
+    $notification = mg_stamp_receipt_notify_merchant($pdo, $purchase, 'credited', $actorUserId, ['provider_reference'=>$providerReference,'ledger_entry_id'=>(string)($credit['entry']['entry_id'] ?? '')]);
+    return mg_stamp_purchase_payload($pdo, $purchase, $credit, $intent) + ['idempotent' => !empty($credit['idempotent']), 'receipt_notification' => $notification];
 }
 
 function mg_stamp_purchase_complete(PDO $pdo, array $purchase, int $actorUserId, string $providerStatus = 'paid', string $idempotencySuffix = ''): array

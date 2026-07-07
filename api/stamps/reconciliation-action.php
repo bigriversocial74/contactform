@@ -40,6 +40,7 @@ try {
         }
         $pdo->prepare("UPDATE stamp_purchases SET status='failed',updated_at=NOW() WHERE id=? AND status<>'credited'")
             ->execute([(int)$purchase['id']]);
+        $payload['receipt_notification'] = mg_stamp_receipt_notify_merchant($pdo, $purchase, 'failed', (int)$user['id'], ['payment_intent_id'=>(string)($intent['public_id'] ?? ''),'note'=>$note]);
         $message = 'Stamp purchase marked failed for reconciliation cleanup.';
     } elseif ($action === 'mark_cancelled') {
         if ((string)$purchase['status'] === 'credited') throw new RuntimeException('Credited Stamp purchases cannot be cancelled.', 409);
@@ -50,6 +51,7 @@ try {
         }
         $pdo->prepare("UPDATE stamp_purchases SET status='cancelled',updated_at=NOW() WHERE id=? AND status<>'credited'")
             ->execute([(int)$purchase['id']]);
+        $payload['receipt_notification'] = mg_stamp_receipt_notify_merchant($pdo, $purchase, 'cancelled', (int)$user['id'], ['payment_intent_id'=>(string)($intent['public_id'] ?? ''),'note'=>$note]);
         $message = 'Stamp purchase marked cancelled for reconciliation cleanup.';
     } else {
         $message = 'Stamp purchase marked reviewed in the audit trail.';
@@ -60,6 +62,7 @@ try {
         'account_user_id'=>(int)$purchase['account_user_id'],
         'payment_intent_id'=>(string)($intent['public_id'] ?? ''),
         'provider_intent_reference'=>(string)($intent['provider_intent_reference'] ?? ''),
+        'receipt_notification'=>$payload['receipt_notification'] ?? null,
         'note'=>$note,
     ], (int)$user['id']);
 
