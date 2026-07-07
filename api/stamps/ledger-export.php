@@ -86,7 +86,6 @@ try {
                 (string)$row['created_at'],
             ];
         }
-        mg_audit('stamps.ledger_export_downloaded', 'stamp_ledger', ['period'=>$period,'type'=>'ledger','rows'=>count($rows)], (int)$user['id']);
         mg_stamp_export_csv('stamp-ledger-' . $period . '.csv', ['entry_id','account_user_id','actor_user_id','actor_type','entry_type','action_key','stamp_value','quantity','delta','balance_after','source_type','source_id','reference','reason_code','note','idempotency_key','created_at'], $rows);
         return;
     }
@@ -128,7 +127,6 @@ try {
             (string)($row['credited_at'] ?? ''),
         ];
     }
-    mg_audit('stamps.ledger_export_downloaded', 'stamp_purchase', ['period'=>$period,'type'=>'reconciliation','rows'=>count($rows)], (int)$user['id']);
     mg_stamp_export_csv('stamp-reconciliation-' . $period . '.csv', ['purchase_id','account_user_id','bundle_key','label','stamps','price_cents','currency','purchase_status','payment_intent_id','provider_key','provider_intent_reference','payment_amount_cents','payment_currency','payment_intent_status','failure_code','failure_message','credited_ledger_entry_id','reconciliation_state','created_at','paid_at','credited_at'], $rows);
 } catch (RuntimeException $error) {
     $status = (int)$error->getCode();
