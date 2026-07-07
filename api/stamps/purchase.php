@@ -12,6 +12,7 @@ $bundleKey = trim((string)($input['bundle_key'] ?? ''));
 $idempotencyKey = trim((string)($input['idempotency_key'] ?? ''));
 if (($bundleId === '' && $bundleKey === '') || $idempotencyKey === '') mg_fail('Stamp bundle and idempotency key are required.', 422);
 try {
+    $created = false;
     $pdo->beginTransaction();
     $existing = $pdo->prepare('SELECT sp.* FROM stamp_purchases sp WHERE sp.account_user_id=? AND sp.idempotency_key=? LIMIT 1 FOR UPDATE');
     $existing->execute([$accountUserId, $idempotencyKey]);
@@ -32,11 +33,13 @@ try {
             ->execute([$purchasePublicId,$accountUserId,(int)$bundle['id'],(string)$bundle['bundle_key'],(string)$bundle['label'],(int)$bundle['stamps'],(int)$bundle['price_cents'],(string)$bundle['currency'],'checkout_created',$checkoutReference,$idempotencyKey]);
         $existing->execute([$accountUserId, $idempotencyKey]);
         $purchase = $existing->fetch();
+        $created = true;
     }
     $intent = mg_stamp_purchase_create_intent($pdo, $purchase, $idempotencyKey);
-    $result = mg_stamp_purchase_payload($pdo, $purchase, null, $intent);
+    $notification = $created ? mg_stamp_receipt_notify_merchant($pdo, $purchase, 'created', $accountUserId, ['payment_intent_id'=>(string)($intent['public_id'] ?? '')]) : ['created'=>false,'reason'=>'existing_purchase'];
+    $result = mg_stamp_purchase_payload($pdo, $purchase, null, $intent) + ['receipt_notification'=>$notification];
     $pdo->commit();
-    mg_audit('stamps.purchase_checkout_created', 'stamp_purchase', ['purchase_type'=>'bulk_stamp_purchase','purchase_id'=>(string)$purchase['public_id'],'bundle_key'=>(string)$purchase['bundle_key'],'status'=>(string)$purchase['status'],'payment_intent_id'=>(string)($intent['public_id'] ?? '')], $accountUserId);
+    mg_audit('stamps.purchase_checkout_created', 'stamp_purchase', ['purchase_type'=>'bulk_stamp_purchase','purchase_id'=>(string)$purchase['public_id'],'bundle_key'=>(string)$purchase['bundle_key'],'status'=>(string)$purchase['status'],'payment_intent_id'=>(string)($intent['public_id'] ?? ''),'receipt_notification'=>$notification], $accountUserId);
     mg_ok($result, 'Stamp bundle checkout created. Complete payment before ledger credit.', 202);
 } catch (RuntimeException $error) {
     if ($pdo->inTransaction()) $pdo->rollBack();
