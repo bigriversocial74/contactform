@@ -80,7 +80,8 @@ final class StampPaymentReconciliationContractTest extends TestCase
             'data-stamp-payment-reconciliation-page',
             'Live checkout QA stabilization',
             'Run checkout QA',
-            'Webhook recovery + provider sync',
+            'Admin completion review',
+            'verified admin recovery credit',
             'data-stamp-qa-list',
             'data-stamp-reconciliation-list',
             'data-stamp-reconciliation-filters',
@@ -96,10 +97,12 @@ final class StampPaymentReconciliationContractTest extends TestCase
             '/api/stamps/purchase-report.php',
             '/api/stamps/reconciliation-action.php',
             '/api/stamps/webhook-recovery.php',
+            '/api/stamps/admin-completion-review.php',
             'data-stamp-qa-list',
             'data-stamp-reconciliation-list',
             'data-stamp-action',
             'data-stamp-recovery',
+            'data-stamp-admin-completion',
             'retry_checkout',
             'mark_failed',
             'mark_cancelled',
@@ -108,6 +111,10 @@ final class StampPaymentReconciliationContractTest extends TestCase
             'webhook_detail',
             'reprocess_webhook',
             'flag_paid_uncredited',
+            'review_detail',
+            'credit_after_verified_review',
+            'Review completion',
+            'Credit verified',
             'Export CSV',
             'awaiting_webhook',
             'failed_payment',
@@ -176,6 +183,35 @@ final class StampPaymentReconciliationContractTest extends TestCase
         }
 
         self::assertStringNotContainsString('mg_stamp_purchase_complete_verified($pdo', $endpoint, 'Recovery endpoint must not directly credit Stamps during provider sync.');
+    }
+
+    public function testAdminCompletionReviewEndpointRequiresVerifiedProviderStateBeforeCredit(): void
+    {
+        $endpoint = $this->read('api/stamps/admin-completion-review.php');
+
+        foreach ([
+            'mg_require_api_user',
+            'admin.stamps.manage',
+            'mg_require_method(\'POST\')',
+            'mg_require_csrf_for_write',
+            'review_detail',
+            'credit_after_verified_review',
+            'mg_stamp_purchase_load_any',
+            'mg_stamp_purchase_find_intent',
+            'mg_payment_provider_retrieve_intent',
+            'mg_payment_normalize_intent_status',
+            'provider_status_succeeded',
+            'amount_currency_match',
+            'not_already_credited',
+            'eligible_to_credit',
+            'Stamp purchase is not eligible for verified admin recovery credit.',
+            'Payment amount or currency does not match the Stamp purchase snapshot.',
+            'mg_stamp_purchase_complete_verified',
+            'stamps.admin_completion_review_detail',
+            'stamps.admin_verified_recovery_credit',
+        ] as $marker) {
+            self::assertStringContainsString($marker, $endpoint);
+        }
     }
 
     public function testExistingAdminStampSurfacesLinkToReconciliation(): void
