@@ -50,5 +50,5 @@ require dirname(__DIR__) . '/includes/header.php';
     </section>
   </div>
 </section>
-<script src="/assets/js/admin-stamp-operations.js?v=20260707-stamp-ops-v1" defer></script>
+<script src="/assets/js/admin-stamp-operations-dashboard.js?v=20260707-stamp-ops-v1" defer></script>
 <?php require dirname(__DIR__) . '/includes/footer.php'; ?>
