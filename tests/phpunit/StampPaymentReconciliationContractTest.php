@@ -80,7 +80,8 @@ final class StampPaymentReconciliationContractTest extends TestCase
             'data-stamp-payment-reconciliation-page',
             'Live checkout QA stabilization',
             'Run checkout QA',
-            'Admin completion review',
+            'Audit timeline + completion review',
+            'read-only audit timelines',
             'verified admin recovery credit',
             'data-stamp-qa-list',
             'data-stamp-reconciliation-list',
@@ -98,11 +99,15 @@ final class StampPaymentReconciliationContractTest extends TestCase
             '/api/stamps/reconciliation-action.php',
             '/api/stamps/webhook-recovery.php',
             '/api/stamps/admin-completion-review.php',
+            '/api/stamps/audit-timeline.php',
             'data-stamp-qa-list',
             'data-stamp-reconciliation-list',
             'data-stamp-action',
             'data-stamp-recovery',
             'data-stamp-admin-completion',
+            'data-stamp-timeline',
+            'Read-only audit timeline',
+            'View timeline',
             'retry_checkout',
             'mark_failed',
             'mark_cancelled',
@@ -212,6 +217,39 @@ final class StampPaymentReconciliationContractTest extends TestCase
         ] as $marker) {
             self::assertStringContainsString($marker, $endpoint);
         }
+    }
+
+    public function testAuditTimelineEndpointIsReadOnlyAndUsesExistingAuditSources(): void
+    {
+        $endpoint = $this->read('api/stamps/audit-timeline.php');
+
+        foreach ([
+            'mg_require_api_user',
+            'admin.stamps.view',
+            'admin.stamps.manage',
+            'mg_require_method(\'GET\')',
+            'mg_stamp_purchase_load_any',
+            'mg_stamp_purchase_find_intent',
+            'payment_webhook_events',
+            'checkout_sessions',
+            'stamp_ledger_entries',
+            'audit_logs',
+            'purchase_created',
+            'payment_intent_created',
+            'checkout_session_created',
+            'webhook_received',
+            'audit_log',
+            'ledger_entry',
+            'read_only',
+            'timeline',
+        ] as $marker) {
+            self::assertStringContainsString($marker, $endpoint);
+        }
+
+        self::assertStringNotContainsString('mg_require_csrf_for_write', $endpoint, 'Read-only timeline endpoint should not require CSRF.');
+        self::assertStringNotContainsString('mg_stamp_purchase_complete_verified', $endpoint, 'Read-only timeline endpoint must not credit Stamps.');
+        self::assertStringNotContainsString('UPDATE ', $endpoint, 'Read-only timeline endpoint must not update records.');
+        self::assertStringNotContainsString('INSERT ', $endpoint, 'Read-only timeline endpoint must not insert records.');
     }
 
     public function testExistingAdminStampSurfacesLinkToReconciliation(): void
