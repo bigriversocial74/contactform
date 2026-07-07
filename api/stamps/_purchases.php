@@ -75,6 +75,114 @@ function mg_stamp_purchase_create_intent(PDO $pdo, array $purchase, string $idem
     ]);
 }
 
+function mg_stamp_purchase_provider_metadata(array $purchase, array $intent): array
+{
+    return [
+        'source_type' => 'stamp_purchase',
+        'source_reference' => (string)$purchase['public_id'],
+        'stamp_purchase_id' => (string)$purchase['public_id'],
+        'payment_intent_id' => (string)($intent['public_id'] ?? ''),
+        'account_user_id' => (string)(int)$purchase['account_user_id'],
+        'bundle_key' => (string)$purchase['bundle_key'],
+        'stamps' => (string)(int)$purchase['stamps_snapshot'],
+        'price_cents' => (string)(int)$purchase['price_cents_snapshot'],
+        'currency' => strtolower((string)$purchase['currency_snapshot']),
+    ];
+}
+
+function mg_stamp_purchase_assert_provider_checkout_ready(PDO $pdo, array $intent): void
+{
+    $provider = strtolower(trim((string)($intent['provider_key'] ?? '')));
+    if ($provider !== 'stripe') {
+        throw new RuntimeException('Provider checkout is not configured for this Stamp purchase. Configure Stripe as the active payment provider before accepting Stamp bundle payments.');
+    }
+    $config = mg_payment_platform_config($pdo, 'stripe', mg_payment_mode());
+    if (!mg_stripe_stub_enabled() && (!$config['enabled'] || trim((string)$config['secret_key']) === '' || trim((string)$config['webhook_secret']) === '')) {
+        throw new RuntimeException('Stripe is not configured for Stamp purchase checkout. Configure the Stripe secret key and webhook signing secret first.');
+    }
+}
+
+function mg_stamp_purchase_create_provider_checkout_session(PDO $pdo, array $purchase, array $intent): array
+{
+    $purchaseId = (string)$purchase['public_id'];
+    if ((string)$purchase['status'] === 'credited') {
+        throw new RuntimeException('This Stamp purchase has already been credited.');
+    }
+    if (in_array((string)$purchase['status'], ['cancelled', 'failed'], true)) {
+        throw new RuntimeException('This Stamp purchase is no longer awaiting payment.');
+    }
+    if ((string)($intent['source_type'] ?? '') !== 'stamp_purchase' || (string)($intent['source_reference'] ?? '') !== $purchaseId) {
+        throw new RuntimeException('Stamp purchase payment intent is not linked to this purchase.');
+    }
+    if ((int)$intent['amount_cents'] !== (int)$purchase['price_cents_snapshot'] || !hash_equals((string)$intent['currency'], (string)$purchase['currency_snapshot'])) {
+        throw new RuntimeException('Stamp purchase payment intent does not match purchase snapshot.');
+    }
+
+    mg_stamp_purchase_assert_provider_checkout_ready($pdo, $intent);
+
+    $metadata = mg_stamp_purchase_provider_metadata($purchase, $intent);
+    $success = '/stamp-checkout.php?purchase=' . rawurlencode($purchaseId) . '&provider_checkout=success';
+    $cancel = '/stamp-checkout.php?purchase=' . rawurlencode($purchaseId) . '&provider_checkout=cancelled';
+    $successUrl = mg_payment_absolute_url($success) . '&stripe_session_id={CHECKOUT_SESSION_ID}';
+
+    $params = [
+        'mode' => 'payment',
+        'success_url' => $successUrl,
+        'cancel_url' => mg_payment_absolute_url($cancel),
+        'client_reference_id' => $purchaseId,
+        'metadata' => $metadata,
+        'payment_intent_data' => [
+            'metadata' => $metadata,
+        ],
+        'line_items' => [[
+            'quantity' => 1,
+            'price_data' => [
+                'currency' => strtolower((string)$purchase['currency_snapshot']),
+                'unit_amount' => (int)$purchase['price_cents_snapshot'],
+                'product_data' => [
+                    'name' => mb_substr((string)$purchase['label_snapshot'] . ' Stamp bundle', 0, 240),
+                    'description' => (int)$purchase['stamps_snapshot'] . ' Microgifter Stamps',
+                ],
+            ],
+        ]],
+    ];
+
+    try {
+        $session = mg_stripe_api_request($pdo, 'POST', '/v1/checkout/sessions', $params, 'stamp_checkout:' . $purchaseId . ':' . (string)($intent['public_id'] ?? $intent['id']));
+    } catch (MgStripeProviderException $error) {
+        throw new RuntimeException($error->getMessage(), $error->httpStatus, $error);
+    }
+
+    $providerSession = trim((string)($session['id'] ?? ''));
+    $checkoutUrl = trim((string)($session['url'] ?? ''));
+    if ($providerSession === '' || $checkoutUrl === '') {
+        throw new RuntimeException('The payment provider did not return a hosted checkout URL.');
+    }
+
+    $providerIntent = trim((string)($session['payment_intent'] ?? ''));
+    if ($providerIntent !== '') {
+        $pdo->prepare("UPDATE payment_intents SET provider_intent_reference=?,status='requires_action',updated_at=NOW() WHERE id=? AND status<>'succeeded'")
+            ->execute([$providerIntent, (int)$intent['id']]);
+    } else {
+        $pdo->prepare("UPDATE payment_intents SET status='requires_action',updated_at=NOW() WHERE id=? AND status<>'succeeded'")
+            ->execute([(int)$intent['id']]);
+    }
+    $pdo->prepare("UPDATE stamp_purchases SET status='checkout_created',updated_at=NOW() WHERE id=? AND status IN ('pending','checkout_created')")
+        ->execute([(int)$purchase['id']]);
+
+    return [
+        'purchase_id' => $purchaseId,
+        'payment_intent_id' => (string)($intent['public_id'] ?? ''),
+        'provider' => 'stripe',
+        'mode' => mg_payment_is_live() ? 'live' : 'test',
+        'checkout_url' => $checkoutUrl,
+        'provider_session_reference' => $providerSession,
+        'provider_intent_reference' => $providerIntent,
+        'expires_at' => date('Y-m-d H:i:s', (int)($session['expires_at'] ?? time() + 1800)),
+        'metadata' => $metadata,
+    ];
+}
+
 function mg_stamp_purchase_load_any(PDO $pdo, string $purchaseId, bool $lock = false): array
 {
     $stmt = $pdo->prepare('SELECT * FROM stamp_purchases WHERE public_id=? LIMIT 1' . ($lock ? ' FOR UPDATE' : ''));
