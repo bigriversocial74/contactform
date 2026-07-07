@@ -16,6 +16,7 @@ $used = is_numeric($included) ? max(0, (int)$included - 9720) : 280;
     <nav class="mg-stamp-ledger-tabs" aria-label="Stamp ledger sections">
       <a class="is-active" href="#stamp-ledger">Ledger</a>
       <a href="#stamp-purchases">Purchases</a>
+      <a href="#stamp-purchase-history">History & Receipts</a>
       <a href="#stamp-ledger">Sends</a>
       <a href="#stamp-rules">Adjustments</a>
       <a href="#stamp-rules">Failed Sends</a>
@@ -68,6 +69,7 @@ $used = is_numeric($included) ? max(0, (int)$included - 9720) : 280;
         <div class="mg-app-panel-head mg-stamp-ledger-panel-head is-compact"><div><h2>Quick actions</h2><p>Ledger operations.</p></div></div>
         <div class="mg-app-panel-body">
           <a href="#stamp-purchases">Buy stamps</a>
+          <a href="#stamp-purchase-history">Purchase receipts</a>
           <a href="/merchant-campaign-stamps.php">Campaign credits</a>
           <a href="#stamp-ledger">Review sends</a>
           <a href="#stamp-ledger">Export CSV</a>
@@ -91,9 +93,9 @@ $used = is_numeric($included) ? max(0, (int)$included - 9720) : 280;
     <div class="mg-app-panel-body"><div class="mg-stamp-actions-list" data-stamp-action-list><?php foreach ($stampActions as $action): ?><article><div><strong><?= mg_e((string)$action['label']) ?></strong><span><?= mg_e((string)$action['channel']) ?> · <?= mg_e((string)$action['scope']) ?></span></div><b><?= (int)$action['stamp_value'] ?> Stamp<?= (int)$action['stamp_value'] === 1 ? '' : 's' ?></b></article><?php endforeach; ?></div></div>
   </section>
 
-  <section class="mg-app-panel mg-stamp-ledger-panel">
-    <div class="mg-app-panel-head mg-stamp-ledger-panel-head"><div><span class="mg-eyebrow">Purchase history</span><h2>Stamp purchases</h2><p>Track pending, checkout-created, and credited Stamp bundle purchases.</p></div></div>
-    <div class="mg-app-panel-body"><div class="mg-stamp-action-table-wrap"><table class="mg-stamp-table"><thead><tr><th>Purchase</th><th>Bundle</th><th>Stamps</th><th>Price</th><th>Status</th><th>Created</th></tr></thead><tbody data-stamp-purchase-history><tr><td colspan="6">Loading purchases…</td></tr></tbody></table></div></div>
+  <section class="mg-app-panel mg-stamp-ledger-panel" id="stamp-purchase-history">
+    <div class="mg-app-panel-head mg-stamp-ledger-panel-head"><div><span class="mg-eyebrow">Purchase history</span><h2>Stamp purchases & receipts</h2><p>Track paid, pending, failed, cancelled, and credited Stamp bundle purchases. Open receipts for provider references and ledger credit proof.</p></div><div class="mg-heading-actions"><a class="mg-btn mg-btn-soft" href="#stamp-purchases">Buy Stamps</a></div></div>
+    <div class="mg-app-panel-body"><div class="mg-stamp-action-table-wrap"><table class="mg-stamp-table"><thead><tr><th>Purchase</th><th>Bundle</th><th>Stamps</th><th>Price</th><th>Status</th><th>Payment</th><th>Receipt</th></tr></thead><tbody data-stamp-purchase-history><tr><td colspan="7">Loading purchases…</td></tr></tbody></table></div></div>
   </section>
 </section>
-<script src="/assets/js/merchant-stamps.js" defer></script>
+<script src="/assets/js/merchant-stamps.js?v=20260707-stamp-merchant-receipts" defer></script>
