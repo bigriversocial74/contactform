@@ -5,7 +5,7 @@ $page_title = 'Stamp Checkout | Microgifter';
 $page_section = 'merchant';
 $header_mode = 'account';
 $page_styles = ['/assets/css/merchant-workspace.css','/assets/css/stamp-ledger.css','/assets/css/merchant-stamps-ledger.css'];
-$page_scripts = ['/assets/js/stamp-checkout.js?v=20260706-stamp-checkout'];
+$page_scripts = ['/assets/js/stamp-checkout.js?v=20260707-provider-checkout'];
 $purchase_id = trim((string)($_GET['purchase'] ?? ''));
 $user = mg_current_user();
 $mg_package_context = is_array($mg_package_context ?? null) ? $mg_package_context : mg_user_package_context(null, $user);
@@ -37,7 +37,7 @@ require __DIR__ . '/includes/header.php';
             <a class="mg-admin-package-back" href="/merchant-stamps.php#stamp-purchases">← Back to Stamp ledger</a>
             <span class="mg-eyebrow">Secure Stamp checkout</span>
             <h1>Complete Stamp purchase</h1>
-            <p>Your Stamp bundle is registered. Stamps are credited only after verified payment or admin review.</p>
+            <p>Pay through the configured provider. Stamps are credited only after verified payment/webhook confirmation.</p>
           </div>
         </div>
         <div class="mg-app-panel-body" data-stamp-checkout-content>
