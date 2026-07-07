@@ -80,6 +80,8 @@ final class StampPaymentReconciliationContractTest extends TestCase
             'Reconciliation queue',
             'data-stamp-qa-list',
             'data-stamp-reconciliation-list',
+            'data-stamp-reconciliation-filters',
+            'data-export-stamp-reconciliation',
             '/assets/js/admin-stamp-payment-reconciliation.js',
         ] as $marker) {
             self::assertStringContainsString($marker, $page);
@@ -88,14 +90,47 @@ final class StampPaymentReconciliationContractTest extends TestCase
         foreach ([
             '/api/stamps/checkout-qa.php',
             '/api/stamps/purchase-report.php',
+            '/api/stamps/reconciliation-action.php',
             'data-stamp-qa-list',
             'data-stamp-reconciliation-list',
+            'data-stamp-action',
+            'retry_checkout',
+            'mark_failed',
+            'mark_cancelled',
+            'mark_reviewed',
+            'Export CSV',
             'awaiting_webhook',
             'failed_payment',
             'provider_intent_reference',
             'credited_ledger_entry_id',
         ] as $marker) {
             self::assertStringContainsString($marker, $js);
+        }
+    }
+
+    public function testReconciliationActionEndpointIsAdminOnlyAndFailClosed(): void
+    {
+        $endpoint = $this->read('api/stamps/reconciliation-action.php');
+
+        foreach ([
+            'mg_require_api_user',
+            'admin.stamps.manage',
+            'mg_require_method(\'POST\')',
+            'mg_require_csrf_for_write',
+            'retry_checkout',
+            'mark_failed',
+            'mark_cancelled',
+            'mark_reviewed',
+            'mg_stamp_purchase_load_any',
+            'mg_stamp_purchase_find_intent',
+            'mg_stamp_purchase_create_provider_checkout_session',
+            'Credited Stamp purchases cannot be retried',
+            'Succeeded provider payments cannot be marked failed',
+            'Succeeded provider payments cannot be cancelled',
+            'stamps.purchase_reconciliation_',
+            'mg_stamp_purchase_payload',
+        ] as $marker) {
+            self::assertStringContainsString($marker, $endpoint);
         }
     }
 
