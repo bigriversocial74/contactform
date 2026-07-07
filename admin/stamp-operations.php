@@ -25,7 +25,7 @@ require dirname(__DIR__) . '/includes/header.php';
           <h1>Stamp operations dashboard</h1>
           <p>A read-only command view for Stamp purchase risk, reconciliation state, recovery actions, and quick triage. The Stamp purchase ledger remains the source of truth.</p>
         </div>
-        <div class="mg-admin-package-hero-actions"><span>Ops status</span><strong data-stamp-ops-status>Loading</strong><a class="mg-btn mg-btn-soft" href="/stamp-payment-reconciliation.php">Reconciliation</a><a class="mg-btn mg-btn-soft" href="/admin/stamp-health.php">Stamp health</a></div>
+        <div class="mg-admin-package-hero-actions"><span>Ops status</span><strong data-stamp-ops-status>Loading</strong><a class="mg-btn mg-btn-soft" href="/admin/stamp-monthly-close.php">Monthly close</a><a class="mg-btn mg-btn-soft" href="/stamp-payment-reconciliation.php">Reconciliation</a><a class="mg-btn mg-btn-soft" href="/admin/stamp-health.php">Stamp health</a></div>
       </header>
       <section class="mg-admin-package-summary" aria-label="Stamp operations summary">
         <article><span>Needs attention</span><strong data-stamp-ops-count="needs_attention">0</strong><small>Open risk queue</small></article>
