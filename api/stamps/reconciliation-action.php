@@ -19,12 +19,13 @@ try {
     $pdo->beginTransaction();
     $purchase = mg_stamp_purchase_load_any($pdo, $purchaseId, true);
     $intent = mg_stamp_purchase_find_intent($pdo, (string)$purchase['public_id'], true);
+    $intentStatus = (string)($intent['status'] ?? '');
     $payload = ['purchase_id'=>(string)$purchase['public_id'], 'action'=>$action, 'note'=>$note];
 
     if ($action === 'retry_checkout') {
         if (!$intent) throw new RuntimeException('Stamp purchase payment intent is missing.', 409);
         if ((string)$purchase['status'] === 'credited') throw new RuntimeException('Credited Stamp purchases cannot be retried.', 409);
-        if (in_array((string)$purchase['status'], ['failed','cancelled'], true) || in_array((string)($intent['status'] ?? ''), ['failed','cancelled'], true)) {
+        if (in_array((string)$purchase['status'], ['failed','cancelled'], true) || in_array($intentStatus, ['failed','cancelled'], true)) {
             throw new RuntimeException('Failed or cancelled Stamp purchases must be reviewed before creating a new merchant checkout.', 409);
         }
         $checkout = mg_stamp_purchase_create_provider_checkout_session($pdo, $purchase, $intent);
@@ -32,7 +33,8 @@ try {
         $message = 'Provider checkout retry session created.';
     } elseif ($action === 'mark_failed') {
         if ((string)$purchase['status'] === 'credited') throw new RuntimeException('Credited Stamp purchases cannot be marked failed.', 409);
-        if ($intent && (string)($intent['status'] ?? '') !== 'succeeded') {
+        if ($intentStatus === 'succeeded') throw new RuntimeException('Succeeded provider payments cannot be marked failed. Review the webhook or ledger credit path instead.', 409);
+        if ($intent) {
             $pdo->prepare("UPDATE payment_intents SET status='failed',failure_message=COALESCE(NULLIF(?,''),failure_message,'Admin reconciliation marked failed.'),updated_at=NOW() WHERE id=? AND status<>'succeeded'")
                 ->execute([$note, (int)$intent['id']]);
         }
@@ -41,7 +43,8 @@ try {
         $message = 'Stamp purchase marked failed for reconciliation cleanup.';
     } elseif ($action === 'mark_cancelled') {
         if ((string)$purchase['status'] === 'credited') throw new RuntimeException('Credited Stamp purchases cannot be cancelled.', 409);
-        if ($intent && !in_array((string)($intent['status'] ?? ''), ['succeeded','failed'], true)) {
+        if ($intentStatus === 'succeeded') throw new RuntimeException('Succeeded provider payments cannot be cancelled. Review the webhook or ledger credit path instead.', 409);
+        if ($intent && (string)($intent['status'] ?? '') !== 'failed') {
             $pdo->prepare("UPDATE payment_intents SET status='cancelled',failure_message=COALESCE(NULLIF(?,''),failure_message,'Admin reconciliation cancelled checkout.'),updated_at=NOW() WHERE id=? AND status NOT IN ('succeeded','failed')")
                 ->execute([$note, (int)$intent['id']]);
         }
