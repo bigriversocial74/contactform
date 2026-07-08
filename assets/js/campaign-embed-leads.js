@@ -63,6 +63,20 @@ document.addEventListener('DOMContentLoaded', function () {
     node.innerHTML = cards.map(function (card) { return '<article><b>' + esc(card[1]) + '</b><span>' + esc(card[0]) + '</span></article>'; }).join('');
   }
 
+  function renderNotificationBadge(rows) {
+    var node = root.querySelector('[data-embed-leads-notification-badge]');
+    if (!node) return;
+    var since = Date.now() - (24 * 60 * 60 * 1000);
+    var recent = (rows || []).filter(function (row) {
+      var time = Date.parse(row.created_at || '');
+      return !Number.isNaN(time) && time >= since;
+    });
+    if (!recent.length) { node.hidden = true; node.innerHTML = ''; return; }
+    var latest = recent[0] || {};
+    node.hidden = false;
+    node.innerHTML = '<strong>New attributed leads</strong><span>' + count(recent.length) + ' website embed lead' + (recent.length === 1 ? '' : 's') + ' in the last 24 hours.</span><a href="/merchant-notifications.php">Open Notifications</a>' + (latest.origin_host ? '<em>Latest source: ' + esc(latest.origin_host) + '</em>' : '');
+  }
+
   function renderDomains(rows) {
     var node = root.querySelector('[data-embed-leads-domains]');
     if (!node) return;
@@ -196,8 +210,9 @@ document.addEventListener('DOMContentLoaded', function () {
       renderPages((data.totals || {}).top_pages || []);
       renderDomains((data.totals || {}).top_domains || []);
       renderRows(data.rows || []);
+      renderNotificationBadge(data.rows || []);
       renderFilterSummary(data, (data.rows || []).length);
-      if (data.schema_ready === false) setAlert('<strong>Embed leads data is not ready.</strong> No new SQL is required by v4.2; this view uses existing CRM/campaign tables when present.', 'warn');
+      if (data.schema_ready === false) setAlert('<strong>Embed leads data is not ready.</strong> No new SQL is required by v4.3; this view uses existing CRM/campaign tables when present.', 'warn');
       else if (!(data.rows || []).length) setAlert('<strong>No embed leads found for these filters.</strong> Run Embed QA or submit a public website embed to create an attributed row.', 'info');
       else setAlert('', '');
       if (pushState && window.history) window.history.replaceState({}, '', '/merchant-campaign-embed-leads.php?' + queryParams().toString());
