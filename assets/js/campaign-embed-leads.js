@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var selectedOrigin = root.getAttribute('data-selected-origin') || '';
   var selectedSource = root.getAttribute('data-selected-source') || '';
   var lastRows = [];
+  var lastPayload = {};
 
   function esc(value) { return String(value == null ? '' : value).replace(/[&<>'"]/g, function (char) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]; }); }
   function count(value) { return new Intl.NumberFormat().format(Number(value || 0)); }
@@ -18,6 +19,14 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!node) return;
     node.hidden = !message;
     node.className = 'mg-embed-leads-alert' + (tone ? ' is-' + tone : '');
+    node.innerHTML = message || '';
+  }
+
+  function setActionStatus(message, tone) {
+    var node = root.querySelector('[data-embed-action-status]');
+    if (!node) return;
+    node.hidden = !message;
+    node.className = 'mg-embed-action-status' + (tone ? ' is-' + tone : '');
     node.innerHTML = message || '';
   }
 
@@ -38,6 +47,54 @@ document.addEventListener('DOMContentLoaded', function () {
     var params = queryParams();
     Object.keys(extra || {}).forEach(function (key) { params.set(key, extra[key]); });
     return '/api/merchant/campaign-embed-leads.php?' + params.toString();
+  }
+
+  function leadViewUrl(extra) {
+    var params = queryParams();
+    Object.keys(extra || {}).forEach(function (key) {
+      if (extra[key] === null || extra[key] === '') params.delete(key);
+      else params.set(key, extra[key]);
+    });
+    return new URL('/merchant-campaign-embed-leads.php?' + params.toString(), window.location.origin).toString();
+  }
+
+  function campaignRef(campaign) { return (campaign && (campaign.slug || campaign.id)) ? String(campaign.slug || campaign.id) : ''; }
+  function campaignSetupUrl(campaign) { return new URL((campaign && campaign.url ? campaign.url : '/merchant-campaigns.php') + '#embed', window.location.origin).toString(); }
+  function testKey(campaign) { return 'mg_embed_test_started_' + (campaignRef(campaign) || 'all'); }
+  function testStartedAt(campaign) { try { return window.localStorage.getItem(testKey(campaign)) || ''; } catch (error) { return ''; } }
+
+  function copyText(text, successMessage) {
+    var value = String(text || '');
+    if (!value) return Promise.resolve(false);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(value).then(function () {
+        setActionStatus('<strong>Copied.</strong> ' + esc(successMessage || 'Action link copied.'), 'success');
+        return true;
+      }).catch(function () { return fallbackCopy(value, successMessage); });
+    }
+    return fallbackCopy(value, successMessage);
+  }
+
+  function fallbackCopy(value, successMessage) {
+    var input = document.createElement('textarea');
+    input.value = value;
+    input.setAttribute('readonly', 'readonly');
+    input.style.position = 'fixed';
+    input.style.left = '-9999px';
+    document.body.appendChild(input);
+    input.select();
+    var copied = false;
+    try { copied = document.execCommand('copy'); } catch (error) { copied = false; }
+    document.body.removeChild(input);
+    setActionStatus(copied ? '<strong>Copied.</strong> ' + esc(successMessage || 'Action link copied.') : '<strong>Copy failed.</strong> Select and copy manually: ' + esc(value), copied ? 'success' : 'warn');
+    return Promise.resolve(copied);
+  }
+
+  function markTestStarted(campaign, actionLabel) {
+    var stamp = new Date().toISOString();
+    try { window.localStorage.setItem(testKey(campaign), stamp); } catch (error) {}
+    setActionStatus('<strong>Placement test marked started.</strong> ' + esc(actionLabel || 'Track results for seven days, then compare readiness and quality.'), 'success');
+    renderActionCenter(lastPayload);
   }
 
   function qualityBadge(quality) {
@@ -74,6 +131,39 @@ document.addEventListener('DOMContentLoaded', function () {
       ['Avg Quality', count(totals.average_quality_score) + '/100']
     ];
     node.innerHTML = cards.map(function (card) { return '<article><b>' + esc(card[1]) + '</b><span>' + esc(card[0]) + '</span></article>'; }).join('');
+  }
+
+  function renderActionCenter(data) {
+    data = data || {};
+    var placement = data.placement_intelligence || {};
+    var campaignActions = placement.campaign_actions || [];
+    var primaryNode = root.querySelector('[data-embed-action-primary]');
+    var campaignNode = root.querySelector('[data-embed-action-campaigns]');
+    var followNode = root.querySelector('[data-embed-action-followups]');
+    var filteredUrl = leadViewUrl();
+    if (primaryNode) {
+      primaryNode.innerHTML = [
+        '<button type="button" data-embed-action-copy-url="' + esc(filteredUrl) + '" data-embed-action-copy-message="Filtered Embed Leads view copied.">Copy filtered lead view</button>',
+        '<button type="button" data-embed-action-export>Export placement report</button>',
+        '<a href="/merchant-campaigns.php">Open campaigns</a>',
+        '<a href="/merchant-campaign-embed-qa.php">Run Embed QA</a>',
+        '<a href="/merchant-notifications.php">Open notifications</a>'
+      ].join('');
+    }
+    if (campaignNode) {
+      campaignNode.innerHTML = campaignActions.length ? campaignActions.map(function (action) {
+        var campaign = action.campaign || {};
+        var ref = campaignRef(campaign);
+        var leadsUrl = leadViewUrl({ campaign: ref || null });
+        var setupUrl = campaignSetupUrl(campaign);
+        var started = testStartedAt(campaign);
+        return '<article class="mg-action-campaign-card"><div>' + priorityPill(action.priority) + '<strong>' + esc(campaign.title || 'Campaign') + '</strong></div><p>' + esc(action.recommended_action || 'Review this campaign placement.') + '</p><div class="mg-action-button-row">' + (campaign.url ? '<a href="' + esc(campaign.url) + '">Open campaign</a>' : '<a href="/merchant-campaigns.php">Open campaigns</a>') + '<a href="' + esc(leadsUrl) + '">View filtered leads</a><button type="button" data-embed-action-copy-url="' + esc(setupUrl) + '" data-embed-action-copy-message="Campaign embed setup link copied.">Copy embed setup link</button><button type="button" data-embed-action-mark-test="' + esc(ref || 'all') + '" data-embed-action-campaign-title="' + esc(campaign.title || 'Campaign') + '">Mark test started</button></div><small>' + (started ? 'Test started: ' + esc(started) : 'No placement test marked yet.') + '</small></article>';
+      }).join('') : '<p class="mg-empty-copy">Campaign action buttons appear after placement intelligence has campaign-level data.</p>';
+    }
+    if (followNode) {
+      var rec = placement.recommended_next_action || 'Review placement intelligence and start a campaign follow-up workflow.';
+      followNode.innerHTML = '<article class="mg-action-followup-card"><strong>Recommended workflow</strong><p>' + esc(rec) + '</p><div class="mg-action-button-row"><a href="/merchant-campaigns.php?intent=follow_up&source=campaign_embed">Create follow-up campaign</a><a href="/merchant-crm.php">Open Merchant CRM</a><button type="button" data-embed-action-copy-url="' + esc(filteredUrl) + '" data-embed-action-copy-message="Lead follow-up view copied.">Copy follow-up view</button></div></article><article class="mg-action-followup-card"><strong>Report handoff</strong><p>Export current filters as CSV, then share the placement report with your team.</p><div class="mg-action-button-row"><button type="button" data-embed-action-export>Export CSV report</button><a href="/merchant-campaign-embed-analytics.php">Open analytics</a></div></article>';
+    }
   }
 
   function renderPlacementIntelligence(placement) {
@@ -275,8 +365,10 @@ document.addEventListener('DOMContentLoaded', function () {
     try {
       var response = await Microgifter.get(apiUrl());
       var data = response.data || response;
+      lastPayload = data;
       renderCampaignPicker(data.campaigns || []);
       renderStats(data.totals || {});
+      renderActionCenter(data);
       renderPlacementIntelligence(data.placement_intelligence || {});
       renderPerformance(data.performance || {});
       renderCampaignSummaries(data.campaign_summaries || []);
@@ -285,7 +377,7 @@ document.addEventListener('DOMContentLoaded', function () {
       renderRows(data.rows || []);
       renderNotificationBadge(data.rows || []);
       renderFilterSummary(data, (data.rows || []).length);
-      if (data.schema_ready === false) setAlert('<strong>Embed leads data is not ready.</strong> No new SQL is required by v4.5; this view uses existing CRM/campaign tables when present.', 'warn');
+      if (data.schema_ready === false) setAlert('<strong>Embed leads data is not ready.</strong> No new SQL is required by v4.6; this view uses existing CRM/campaign tables when present.', 'warn');
       else if (!(data.rows || []).length) setAlert('<strong>No embed leads found for these filters.</strong> Run Embed QA or submit a public website embed to create an attributed row.', 'info');
       else setAlert('', '');
       if (pushState && window.history) window.history.replaceState({}, '', '/merchant-campaign-embed-leads.php?' + queryParams().toString());
@@ -301,9 +393,13 @@ document.addEventListener('DOMContentLoaded', function () {
     var reset = event.target && event.target.closest ? event.target.closest('[data-embed-leads-reset]') : null;
     var detail = event.target && event.target.closest ? event.target.closest('[data-lead-detail]') : null;
     var close = event.target && event.target.closest ? event.target.closest('[data-embed-leads-close]') : null;
-    var exportButton = event.target && event.target.closest ? event.target.closest('[data-embed-leads-export]') : null;
+    var exportButton = event.target && event.target.closest ? event.target.closest('[data-embed-leads-export], [data-embed-action-export]') : null;
+    var copyButton = event.target && event.target.closest ? event.target.closest('[data-embed-action-copy-url]') : null;
+    var markButton = event.target && event.target.closest ? event.target.closest('[data-embed-action-mark-test]') : null;
     if (close) { closeDrawer(); return; }
     if (exportButton) { event.preventDefault(); exportCsv(); return; }
+    if (copyButton) { event.preventDefault(); copyText(copyButton.getAttribute('data-embed-action-copy-url') || '', copyButton.getAttribute('data-embed-action-copy-message') || 'Copied.'); return; }
+    if (markButton) { event.preventDefault(); markTestStarted({ id: markButton.getAttribute('data-embed-action-mark-test') || '', title: markButton.getAttribute('data-embed-action-campaign-title') || 'Campaign' }, 'Track this placement test for seven days.'); return; }
     if (detail) { openDrawer(findRow(detail.getAttribute('data-lead-detail'))); return; }
     if (reset) { resetFilters(); closeDrawer(); loadLeads(true); return; }
     if (!button) return;
