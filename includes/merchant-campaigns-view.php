@@ -1,5 +1,8 @@
 <?php
 declare(strict_types=1);
+require_once __DIR__ . '/campaign-types.php';
+$mgCampaignTypeOptions = mg_campaign_type_options(false);
+$mgCampaignTypeClientRegistry = mg_campaign_type_client_registry(false);
 ?>
 <section class="mg-campaign-command" data-campaign-command-center>
   <div class="mg-campaign-toolbar">
@@ -115,7 +118,7 @@ declare(strict_types=1);
     <section class="mg-campaign-tab-panel" id="campaign-forms" data-campaign-tab-panel="forms" aria-label="Form campaigns" hidden>
       <section class="mg-app-panel mg-campaign-panel">
         <div class="mg-app-panel-head mg-campaign-panel-head">
-          <div><span class="mg-eyebrow">Forms</span><h2>Signup and capture campaigns</h2><p>Newsletter, referral, birthday, VIP, and agent-offer campaigns that collect customer intent.</p></div>
+          <div><span class="mg-eyebrow">Forms</span><h2>Signup and capture campaigns</h2><p>Signup reward, referral, birthday/VIP, and agent-offer campaigns that collect customer intent.</p></div>
           <div class="mg-heading-actions"><a class="mg-btn mg-btn-primary" href="#campaign-create" data-campaign-tab-trigger="create" data-campaign-type-preset="newsletter_signup">Create Signup Form</a></div>
         </div>
         <div class="mg-app-panel-body"><div class="mg-campaign-list" data-stage12-campaign-list data-campaign-list-filter="forms"></div></div>
@@ -145,7 +148,7 @@ declare(strict_types=1);
           <form class="mg-merchant-form mg-campaign-builder-form" data-stage12-campaign-builder>
             <input type="hidden" name="campaign_id" value="">
             <div class="mg-grid-2">
-              <label>Campaign type<select name="campaign_type" data-campaign-type-select><option value="newsletter_signup">Newsletter Signup</option><option value="contest_giveaway">Contest / Giveaway</option><option value="qr_reward_drop">QR Reward Drop</option><option value="referral_reward">Referral Reward</option><option value="birthday_vip">Birthday / VIP</option><option value="agent_offer">Agent Offer</option></select></label>
+              <label>Campaign type<select name="campaign_type" data-campaign-type-select><?php foreach ($mgCampaignTypeOptions as $typeOption): ?><option value="<?= htmlspecialchars((string)$typeOption['key'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars((string)$typeOption['label'], ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></label>
               <label>Status<select name="status"><option value="draft">Draft</option><option value="active">Active</option><option value="paused">Paused</option><option value="ended">Ended</option><option value="archived">Archived</option></select></label>
             </div>
             <label>Campaign title<input name="title" placeholder="Join the list and get a reward" required maxlength="180"></label>
@@ -225,6 +228,7 @@ declare(strict_types=1);
     </section>
   </div>
 </section>
+<script>window.MicrogifterCampaignTypes = <?= json_encode($mgCampaignTypeClientRegistry, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?: '[]' ?>;</script>
 <script src="/assets/js/stage12-campaigns.js" defer></script>
 <script src="/assets/js/stage12-campaign-followups.js" defer></script>
 <script src="/assets/js/stage12-campaign-contacts.js" defer></script>
