@@ -52,6 +52,8 @@
     return data.data || data;
   }
 
+  function embedMode(container) { return container.getAttribute('data-microgifter-effective-display') || container.getAttribute('data-microgifter-display') || container.getAttribute('data-microgifter-mode') || ''; }
+
   function track(container, payload, eventType, metadata) {
     if (!payload || !payload.campaign) return;
     var body = JSON.stringify({
@@ -61,7 +63,7 @@
       event_type: eventType,
       embed_origin: window.location.origin || '',
       page_url: window.location.href || '',
-      embed_mode: container.getAttribute('data-microgifter-effective-display') || container.getAttribute('data-microgifter-display') || '',
+      embed_mode: embedMode(container),
       embed_source: container.getAttribute('data-microgifter-source') || 'website_embed',
       debug: isDebug(container),
       metadata: metadata || {}
@@ -103,6 +105,8 @@
     payload.campaign_type = payload.campaign_type || campaign.campaign_type || '';
     payload.embed_source = container.getAttribute('data-microgifter-source') || 'website_embed';
     payload.embed_origin = window.location.origin || '';
+    payload.page_url = window.location.href || '';
+    payload.embed_mode = embedMode(container);
     return payload;
   }
   function setResult(mount, message, isError) { var result = mount.querySelector('[data-microgifter-embed-result]'); if (!result) return; result.classList.add('is-visible'); result.classList.toggle('is-error', !!isError); result.textContent = message || (isError ? 'Unable to submit campaign response.' : 'Campaign response submitted.'); result.setAttribute('role', isError ? 'alert' : 'status'); }
