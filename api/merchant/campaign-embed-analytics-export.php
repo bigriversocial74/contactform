@@ -67,7 +67,11 @@ function mg_embed_export_domain_allowed(?string $origin, array $allowedDomains):
 
 function mg_embed_export_filename(string $dataset, int $days, ?array $campaign): string
 {
-    $campaignRef = $campaign ? ((string)($campaign['public_slug'] ?: $campaign['public_id'])) : 'all';
+    $campaignRef = 'all';
+    if ($campaign) {
+        $slug = trim((string)($campaign['public_slug'] ?? ''));
+        $campaignRef = $slug !== '' ? $slug : (string)($campaign['public_id'] ?? 'campaign');
+    }
     $name = 'campaign-embed-' . $dataset . '-' . $campaignRef . '-' . $days . 'd-' . date('Ymd-His') . '.csv';
     return preg_replace('/[^a-zA-Z0-9_.-]/', '-', $name) ?: 'campaign-embed-export.csv';
 }
