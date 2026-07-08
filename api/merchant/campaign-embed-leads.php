@@ -92,17 +92,71 @@ function mg_embed_leads_pick_top(array $counts): array
     return $top;
 }
 
+function mg_embed_leads_quality(array $input): array
+{
+    $score = 0;
+    $signals = [];
+    $missing = [];
+    $add = static function (bool $condition, int $points, string $signal, string $gap) use (&$score, &$signals, &$missing): void {
+        if ($condition) { $score += $points; $signals[] = $signal; }
+        else { $missing[] = $gap; }
+    };
+    $add(!empty($input['is_new_contact']), 20, 'New contact', 'New contact');
+    $add(trim((string)($input['email'] ?? '')) !== '', 20, 'Email captured', 'Email');
+    $add(trim((string)($input['phone'] ?? '')) !== '', 10, 'Phone captured', 'Phone');
+    $add(trim((string)($input['campaign_id'] ?? '')) !== '', 15, 'Campaign context', 'Campaign context');
+    $add(trim((string)($input['origin_host'] ?? '')) !== '' || trim((string)($input['page_url'] ?? '')) !== '', 20, 'Website attribution', 'Website attribution');
+    $add(trim((string)($input['crm_contact_id'] ?? '')) !== '', 15, 'CRM follow-up link', 'CRM link');
+    $ready = trim((string)($input['crm_contact_id'] ?? '')) !== ''
+        && trim((string)($input['campaign_id'] ?? '')) !== ''
+        && trim((string)($input['source'] ?? '')) !== ''
+        && (trim((string)($input['origin_host'] ?? '')) !== '' || trim((string)($input['page_url'] ?? '')) !== '');
+    $label = $score >= 85 ? 'High quality' : ($score >= 65 ? 'Ready' : ($score >= 45 ? 'Needs follow-up' : 'Needs context'));
+    return [
+        'score' => min(100, $score),
+        'label' => $label,
+        'ready_for_follow_up' => $ready,
+        'signals' => array_values($signals),
+        'missing' => array_values($missing),
+    ];
+}
+
+function mg_embed_leads_performance_recommendations(array $context): array
+{
+    $total = (int)($context['total'] ?? 0);
+    if ($total < 1) return ['Run Embed QA or publish a campaign embed to start measuring conversion quality.'];
+    $recommendations = [];
+    $topPage = (string)($context['top_page']['page_path'] ?? $context['top_page']['page_url'] ?? '');
+    $topDomain = (string)($context['top_domain']['origin_host'] ?? '');
+    $topSource = (string)($context['top_source']['value'] ?? '');
+    $topMode = (string)($context['top_mode']['value'] ?? '');
+    $readyRate = (int)($context['ready_rate'] ?? 0);
+    $newRate = (int)($context['new_rate'] ?? 0);
+    if ($topPage !== '' && (trim($topPage, '/') === '' || str_contains($topPage, 'home') || $topPage === '/')) {
+        $recommendations[] = 'Homepage embeds are producing demand. Test this campaign on your specials, menu, booking, or event page too.';
+    }
+    if ($topDomain !== '') $recommendations[] = 'Keep the embed visible on ' . $topDomain . ' because it is currently the strongest lead domain.';
+    if ($topSource !== '') $recommendations[] = ucfirst(str_replace('_', ' ', $topSource)) . ' is the strongest conversion source. Consider reusing that campaign format in your next promotion.';
+    if ($topMode !== '') $recommendations[] = ucfirst(str_replace('_', ' ', $topMode)) . ' mode is producing the most leads. Keep that placement style consistent while testing one alternate placement.';
+    if ($readyRate < 60) $recommendations[] = 'Improve follow-up readiness by making sure embed forms collect email and keep campaign/contact links connected.';
+    if ($newRate >= 50) $recommendations[] = 'New-contact rate is strong. Route these leads into a first-time customer follow-up campaign.';
+    return array_values(array_slice(array_unique($recommendations), 0, 5));
+}
+
 function mg_embed_leads_csv(array $rows, array $totals): void
 {
     header('Content-Type: text/csv; charset=utf-8');
     header('Content-Disposition: attachment; filename="campaign-embed-leads-' . date('Ymd-His') . '.csv"');
     $out = fopen('php://output', 'w');
-    fputcsv($out, ['Created', 'Lead Name', 'Lead Email', 'Campaign', 'Campaign Type', 'Source', 'Origin Host', 'Page URL', 'Embed Mode', 'CRM Contact URL', 'Campaign Contact URL', 'Campaign URL']);
+    fputcsv($out, ['Created', 'Lead Name', 'Lead Email', 'Lead Quality', 'Quality Score', 'Ready For Follow-Up', 'Campaign', 'Campaign Type', 'Source', 'Origin Host', 'Page URL', 'Embed Mode', 'CRM Contact URL', 'Campaign Contact URL', 'Campaign URL']);
     foreach ($rows as $row) {
         fputcsv($out, [
             $row['created_at'] ?? '',
             $row['crm_contact']['name'] ?? '',
             $row['crm_contact']['email'] ?? '',
+            $row['lead_quality']['label'] ?? '',
+            $row['lead_quality']['score'] ?? '',
+            !empty($row['lead_quality']['ready_for_follow_up']) ? 'yes' : 'no',
             $row['campaign']['title'] ?? '',
             $row['campaign']['campaign_type'] ?? '',
             $row['source'] ?? '',
@@ -116,6 +170,8 @@ function mg_embed_leads_csv(array $rows, array $totals): void
     }
     fputcsv($out, []);
     fputcsv($out, ['Total Embed Leads', (string)($totals['total_embed_leads'] ?? 0)]);
+    fputcsv($out, ['Ready For Follow-Up', (string)($totals['ready_for_follow_up'] ?? 0)]);
+    fputcsv($out, ['Average Quality Score', (string)($totals['average_quality_score'] ?? 0)]);
     fputcsv($out, ['New Contacts', (string)($totals['new_contacts'] ?? 0)]);
     fputcsv($out, ['Returning Contacts', (string)($totals['returning_contacts'] ?? 0)]);
     fclose($out);
@@ -135,8 +191,8 @@ $campaign = mg_embed_leads_campaign($pdo, $merchantId, $campaignRef);
 $cutoff = date('Y-m-d H:i:s', time() - ($days * 86400));
 
 $ready = mg_embed_leads_table_ready($pdo, 'merchant_crm_contact_events', ['id','public_id','merchant_user_id','crm_contact_id','campaign_id','source_type','source_public_id','metadata_json','created_at'])
-    && mg_embed_leads_table_ready($pdo, 'merchant_crm_contacts', ['id','public_id','merchant_user_id','primary_email','display_name','first_seen_at'])
-    && mg_embed_leads_table_ready($pdo, 'campaign_contacts', ['id','public_id','merchant_user_id','campaign_id','email','name','metadata_json'])
+    && mg_embed_leads_table_ready($pdo, 'merchant_crm_contacts', ['id','public_id','merchant_user_id','primary_email','primary_phone','display_name','first_seen_at'])
+    && mg_embed_leads_table_ready($pdo, 'campaign_contacts', ['id','public_id','merchant_user_id','campaign_id','email','phone','name','metadata_json'])
     && mg_embed_leads_table_ready($pdo, 'campaigns', ['id','public_id','public_slug','merchant_user_id','title','campaign_type']);
 
 if (!$ready) {
@@ -145,7 +201,8 @@ if (!$ready) {
         'sql_required' => null,
         'filters' => ['days' => $days, 'campaign' => null, 'origin_host' => $originFilter, 'source' => $sourceFilter],
         'campaigns' => [],
-        'totals' => ['total_embed_leads' => 0, 'new_contacts' => 0, 'returning_contacts' => 0, 'campaigns' => 0, 'top_domains' => [], 'top_pages' => []],
+        'totals' => ['total_embed_leads' => 0, 'new_contacts' => 0, 'returning_contacts' => 0, 'campaigns' => 0, 'ready_for_follow_up' => 0, 'average_quality_score' => 0, 'top_domains' => [], 'top_pages' => []],
+        'performance' => ['insight_cards' => [], 'quality_breakdown' => [], 'recommendations' => []],
         'campaign_summaries' => [],
         'rows' => [],
     ], 'Campaign embed leads tables are not available yet.');
@@ -157,8 +214,8 @@ if ($campaign) { $where[] = 'e.campaign_id = ?'; $params[] = (int)$campaign['id'
 if ($sourceFilter !== '') { $where[] = 'e.source_type = ?'; $params[] = $sourceFilter; }
 
 $sql = 'SELECT e.public_id event_public_id, e.event_type, e.source_type, e.source_public_id, e.metadata_json event_metadata_json, e.created_at,
-               mcc.public_id crm_public_id, mcc.primary_email, mcc.display_name, mcc.first_seen_at,
-               cc.public_id campaign_contact_public_id, cc.email campaign_contact_email, cc.name campaign_contact_name, cc.metadata_json contact_metadata_json,
+               mcc.public_id crm_public_id, mcc.primary_email, mcc.primary_phone, mcc.display_name, mcc.first_seen_at,
+               cc.public_id campaign_contact_public_id, cc.email campaign_contact_email, cc.phone campaign_contact_phone, cc.name campaign_contact_name, cc.metadata_json contact_metadata_json,
                c.public_id campaign_public_id, c.public_slug, c.title campaign_title, c.campaign_type
         FROM merchant_crm_contact_events e
         LEFT JOIN merchant_crm_contacts mcc ON mcc.id = e.crm_contact_id AND mcc.merchant_user_id = e.merchant_user_id
@@ -170,11 +227,16 @@ $sql = 'SELECT e.public_id event_public_id, e.event_type, e.source_type, e.sourc
 $rows = [];
 $domainCounts = [];
 $pageCounts = [];
+$sourceCounts = [];
+$modeCounts = [];
+$qualityBuckets = ['High quality' => 0, 'Ready' => 0, 'Needs follow-up' => 0, 'Needs context' => 0];
 $contactIds = [];
 $newContactIds = [];
 $campaignIds = [];
 $campaignSummaries = [];
 $totalLeads = 0;
+$readyForFollowUp = 0;
+$qualityScoreTotal = 0;
 try {
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
@@ -194,36 +256,61 @@ try {
         $campaignRefOut = (string)($row['public_slug'] ?: $row['campaign_public_id']);
         $campaignUrl = '/merchant-campaigns.php' . ($campaignRefOut !== '' ? '?campaign=' . rawurlencode($campaignRefOut) : '');
         $campaignKey = $campaignId !== '' ? $campaignId : 'unknown';
+        $source = (string)($row['source_type'] ?? '');
+        $embedMode = (string)($attr['embed_mode'] ?? '');
+        $contactEmail = (string)($row['primary_email'] ?: $row['campaign_contact_email'] ?: '');
+        $contactPhone = (string)($row['primary_phone'] ?: $row['campaign_contact_phone'] ?: '');
+        $contactName = (string)($row['display_name'] ?: $row['campaign_contact_name'] ?: 'Lead');
+        $isNewContact = false;
 
         if ($crmId !== '') {
             $contactIds[$crmId] = true;
-            if (!empty($row['first_seen_at']) && strtotime((string)$row['first_seen_at']) >= strtotime($cutoff)) $newContactIds[$crmId] = true;
+            $isNewContact = !empty($row['first_seen_at']) && strtotime((string)$row['first_seen_at']) >= strtotime($cutoff);
+            if ($isNewContact) $newContactIds[$crmId] = true;
         }
         if ($campaignId !== '') $campaignIds[$campaignId] = true;
         if ($originHost !== '') $domainCounts[$originHost] = ($domainCounts[$originHost] ?? 0) + 1;
         if ($pageUrl !== '') $pageCounts[$pageUrl] = ($pageCounts[$pageUrl] ?? 0) + 1;
+        if ($source !== '') $sourceCounts[$source] = ($sourceCounts[$source] ?? 0) + 1;
+        if ($embedMode !== '') $modeCounts[$embedMode] = ($modeCounts[$embedMode] ?? 0) + 1;
+
+        $campaignContactPublicId = (string)($row['campaign_contact_public_id'] ?: $row['source_public_id']);
+        $quality = mg_embed_leads_quality([
+            'is_new_contact' => $isNewContact,
+            'email' => $contactEmail,
+            'phone' => $contactPhone,
+            'campaign_id' => $campaignId,
+            'origin_host' => $originHost,
+            'page_url' => $pageUrl,
+            'crm_contact_id' => $crmId,
+            'source' => $source,
+        ]);
+        $qualityBuckets[$quality['label']] = ($qualityBuckets[$quality['label']] ?? 0) + 1;
+        $qualityScoreTotal += (int)$quality['score'];
+        if (!empty($quality['ready_for_follow_up'])) $readyForFollowUp++;
 
         if (!isset($campaignSummaries[$campaignKey])) {
             $campaignSummaries[$campaignKey] = [
                 'campaign' => ['id' => $campaignId, 'slug' => $row['public_slug'] ?? null, 'title' => (string)($row['campaign_title'] ?? 'Campaign'), 'campaign_type' => (string)($row['campaign_type'] ?? ''), 'url' => $campaignUrl],
                 'total_embed_leads' => 0,
+                'ready_for_follow_up' => 0,
+                'quality_score_total' => 0,
                 'latest_lead_at' => null,
                 'domains' => [],
                 'pages' => [],
+                'sources' => [],
             ];
         }
         $campaignSummaries[$campaignKey]['total_embed_leads']++;
+        $campaignSummaries[$campaignKey]['quality_score_total'] += (int)$quality['score'];
+        if (!empty($quality['ready_for_follow_up'])) $campaignSummaries[$campaignKey]['ready_for_follow_up']++;
         if ($campaignSummaries[$campaignKey]['latest_lead_at'] === null) $campaignSummaries[$campaignKey]['latest_lead_at'] = $row['created_at'] ?? null;
         if ($originHost !== '') $campaignSummaries[$campaignKey]['domains'][$originHost] = ($campaignSummaries[$campaignKey]['domains'][$originHost] ?? 0) + 1;
         if ($pageUrl !== '') $campaignSummaries[$campaignKey]['pages'][$pageUrl] = ($campaignSummaries[$campaignKey]['pages'][$pageUrl] ?? 0) + 1;
+        if ($source !== '') $campaignSummaries[$campaignKey]['sources'][$source] = ($campaignSummaries[$campaignKey]['sources'][$source] ?? 0) + 1;
 
         if ($format !== 'csv' && count($rows) >= 300) continue;
         $contactPublicId = $crmId;
-        $campaignContactPublicId = (string)($row['campaign_contact_public_id'] ?: $row['source_public_id']);
-        $contactName = (string)($row['display_name'] ?: $row['campaign_contact_name'] ?: 'Lead');
-        $contactEmail = (string)($row['primary_email'] ?: $row['campaign_contact_email'] ?: '');
-        $source = (string)($row['source_type'] ?? '');
-        $embedMode = (string)($attr['embed_mode'] ?? '');
         $rowOut = [
             'lead_event_id' => (string)$row['event_public_id'],
             'created_at' => $row['created_at'] ?? null,
@@ -235,11 +322,13 @@ try {
             'embed_mode' => $embedMode,
             'embed_source' => (string)($attr['embed_source'] ?? 'website_embed'),
             'value_summary' => trim(($originHost !== '' ? $originHost : 'Website embed') . ($pagePath !== '' ? ' · ' . $pagePath : '') . ($embedMode !== '' ? ' · ' . $embedMode : '')),
+            'lead_quality' => $quality,
             'campaign' => ['id' => $campaignId, 'slug' => $row['public_slug'] ?? null, 'title' => (string)($row['campaign_title'] ?? 'Campaign'), 'campaign_type' => (string)($row['campaign_type'] ?? ''), 'url' => $campaignUrl],
-            'crm_contact' => ['id' => $contactPublicId, 'name' => $contactName, 'email' => $contactEmail, 'url' => $contactPublicId !== '' ? '/merchant-customer.php?contact_id=' . rawurlencode($contactPublicId) : ''],
+            'crm_contact' => ['id' => $contactPublicId, 'name' => $contactName, 'email' => $contactEmail, 'phone' => $contactPhone, 'url' => $contactPublicId !== '' ? '/merchant-customer.php?contact_id=' . rawurlencode($contactPublicId) : ''],
             'campaign_contact' => ['id' => $campaignContactPublicId, 'url' => $campaignContactPublicId !== '' ? '/merchant-customer.php?campaign_contact_id=' . rawurlencode($campaignContactPublicId) : ''],
             'timeline' => [
                 ['label' => 'Lead captured', 'value' => (string)($row['created_at'] ?? '')],
+                ['label' => 'Lead quality', 'value' => $quality['label'] . ' · ' . $quality['score'] . '/100'],
                 ['label' => 'Source', 'value' => $source !== '' ? $source : 'website_embed'],
                 ['label' => 'Host domain', 'value' => $originHost !== '' ? $originHost : 'Unknown domain'],
                 ['label' => 'Page', 'value' => $pageUrl !== '' ? $pageUrl : 'No page URL captured'],
@@ -259,30 +348,66 @@ $topDomains = [];
 foreach (array_slice($domainCounts, 0, 8, true) as $host => $count) $topDomains[] = ['origin_host' => (string)$host, 'total' => (int)$count];
 $topPages = [];
 foreach (array_slice($pageCounts, 0, 8, true) as $page => $count) $topPages[] = ['page_url' => (string)$page, 'page_path' => mg_embed_leads_page_path((string)$page), 'total' => (int)$count];
+$topSources = mg_embed_leads_pick_top($sourceCounts);
+$topModes = mg_embed_leads_pick_top($modeCounts);
 
 $campaignSummaryRows = [];
 foreach ($campaignSummaries as $summary) {
     $topDomain = mg_embed_leads_pick_top($summary['domains']);
     $topPage = mg_embed_leads_pick_top($summary['pages']);
+    $topSource = mg_embed_leads_pick_top($summary['sources']);
+    $total = max(1, (int)$summary['total_embed_leads']);
     $campaignSummaryRows[] = [
         'campaign' => $summary['campaign'],
         'total_embed_leads' => (int)$summary['total_embed_leads'],
+        'ready_for_follow_up' => (int)$summary['ready_for_follow_up'],
+        'ready_rate' => (int)round(((int)$summary['ready_for_follow_up'] / $total) * 100),
+        'average_quality_score' => (int)round(((int)$summary['quality_score_total']) / $total),
         'latest_lead_at' => $summary['latest_lead_at'],
         'top_domain' => $topDomain[0] ?? null,
         'top_page' => $topPage[0] ?? null,
+        'top_source' => $topSource[0] ?? null,
     ];
 }
 usort($campaignSummaryRows, static fn(array $a, array $b): int => ($b['total_embed_leads'] <=> $a['total_embed_leads']));
 
 $totalContacts = count($contactIds);
 $newContacts = count($newContactIds);
+$readyRate = $totalLeads > 0 ? (int)round(($readyForFollowUp / $totalLeads) * 100) : 0;
+$newRate = $totalLeads > 0 ? (int)round(($newContacts / $totalLeads) * 100) : 0;
+$averageQuality = $totalLeads > 0 ? (int)round($qualityScoreTotal / $totalLeads) : 0;
 $totals = [
     'total_embed_leads' => $totalLeads,
     'new_contacts' => $newContacts,
     'returning_contacts' => max(0, $totalContacts - $newContacts),
     'campaigns' => count($campaignIds),
+    'ready_for_follow_up' => $readyForFollowUp,
+    'ready_rate' => $readyRate,
+    'new_contact_rate' => $newRate,
+    'average_quality_score' => $averageQuality,
     'top_domains' => $topDomains,
     'top_pages' => $topPages,
+    'top_sources' => $topSources,
+    'top_modes' => $topModes,
+];
+$performance = [
+    'insight_cards' => [
+        ['label' => 'Ready for follow-up', 'value' => (string)$readyForFollowUp, 'detail' => $readyRate . '% of attributed leads have CRM, campaign, source, and page/domain context.'],
+        ['label' => 'Avg lead quality', 'value' => $averageQuality . '/100', 'detail' => 'Quality blends new contact, email, phone, campaign context, attribution, and CRM follow-up link.'],
+        ['label' => 'Best domain', 'value' => (string)($topDomains[0]['origin_host'] ?? '—'), 'detail' => isset($topDomains[0]) ? $topDomains[0]['total'] . ' attributed leads' : 'No domain winner yet.'],
+        ['label' => 'Best source', 'value' => (string)($topSources[0]['value'] ?? '—'), 'detail' => isset($topSources[0]) ? $topSources[0]['total'] . ' attributed leads' : 'No source winner yet.'],
+        ['label' => 'Best mode', 'value' => (string)($topModes[0]['value'] ?? '—'), 'detail' => isset($topModes[0]) ? $topModes[0]['total'] . ' attributed leads' : 'No embed-mode winner yet.'],
+    ],
+    'quality_breakdown' => array_map(static fn(string $label, int $count): array => ['label' => $label, 'total' => $count], array_keys($qualityBuckets), array_values($qualityBuckets)),
+    'recommendations' => mg_embed_leads_performance_recommendations([
+        'total' => $totalLeads,
+        'top_page' => $topPages[0] ?? null,
+        'top_domain' => $topDomains[0] ?? null,
+        'top_source' => $topSources[0] ?? null,
+        'top_mode' => $topModes[0] ?? null,
+        'ready_rate' => $readyRate,
+        'new_rate' => $newRate,
+    ]),
 ];
 
 if ($format === 'csv') mg_embed_leads_csv($rows, $totals);
@@ -293,6 +418,7 @@ mg_ok([
     'filters' => ['days' => $days, 'campaign' => $campaign ? ['id' => (string)$campaign['public_id'], 'slug' => $campaign['public_slug'] ?? null, 'title' => (string)$campaign['title']] : null, 'origin_host' => $originFilter, 'source' => $sourceFilter],
     'campaigns' => mg_embed_leads_campaigns($pdo, $merchantId),
     'totals' => $totals,
+    'performance' => $performance,
     'campaign_summaries' => array_slice($campaignSummaryRows, 0, 12),
     'rows' => $rows,
 ], 'Campaign embed leads loaded.');
