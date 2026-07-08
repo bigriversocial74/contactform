@@ -48,12 +48,13 @@ require __DIR__ . '/includes/header.php';
       <?php else: ?>
         <section class="mg-embed-leads-hero">
           <div>
-            <span class="mg-eyebrow">Campaign Embed Leads v4.2</span>
-            <h1>Merchant Value Layer</h1>
-            <p>Turn website embed attribution into merchant-ready follow-up: export filtered leads, inspect lead details, and see which campaigns, pages, and domains are producing demand.</p>
+            <span class="mg-eyebrow">Campaign Embed Notifications v4.3</span>
+            <h1>Merchant Follow-Up Signals</h1>
+            <p>Turn website embed attribution into merchant-ready alerts: new website embed leads now deep-link directly into this filtered follow-up view.</p>
             <div class="mg-embed-leads-hero-actions">
               <a class="mg-btn mg-btn-soft" href="/merchant-campaign-embed-qa.php">Run Embed QA</a>
               <a class="mg-btn mg-btn-ghost" href="/merchant-campaign-embed-analytics.php">Embed Analytics</a>
+              <a class="mg-btn mg-btn-ghost" href="/merchant-notifications.php">Notifications</a>
             </div>
           </div>
           <form class="mg-embed-leads-filters" data-embed-leads-filters>
@@ -84,6 +85,7 @@ require __DIR__ . '/includes/header.php';
         </section>
 
         <section class="mg-embed-leads-alert" data-embed-leads-alert hidden></section>
+        <section class="mg-embed-leads-notification-badge" data-embed-leads-notification-badge hidden></section>
         <section class="mg-embed-leads-stats" data-embed-leads-stats>
           <article><b>—</b><span>Total Embed Leads</span></article>
           <article><b>—</b><span>New Contacts</span></article>
