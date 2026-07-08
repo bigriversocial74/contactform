@@ -88,7 +88,7 @@ $cutoff = date('Y-m-d H:i:s', time() - ($days * 86400));
 
 $ready = mg_embed_leads_table_ready($pdo, 'merchant_crm_contact_events', ['id','public_id','merchant_user_id','crm_contact_id','campaign_id','source_type','source_public_id','metadata_json','created_at'])
     && mg_embed_leads_table_ready($pdo, 'merchant_crm_contacts', ['id','public_id','merchant_user_id','primary_email','display_name','first_seen_at'])
-    && mg_embed_leads_table_ready($pdo, 'campaign_contacts', ['id','public_id','merchant_user_id','campaign_id','email','metadata_json'])
+    && mg_embed_leads_table_ready($pdo, 'campaign_contacts', ['id','public_id','merchant_user_id','campaign_id','email','name','metadata_json'])
     && mg_embed_leads_table_ready($pdo, 'campaigns', ['id','public_id','public_slug','merchant_user_id','title','campaign_type']);
 
 if (!$ready) {
@@ -123,6 +123,7 @@ $domainCounts = [];
 $contactIds = [];
 $newContactIds = [];
 $campaignIds = [];
+$totalLeads = 0;
 try {
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
@@ -133,6 +134,7 @@ try {
         if (!$attr) continue;
         $originHost = mg_embed_leads_token($attr['origin_host'] ?? '', 190);
         if ($originFilter !== '' && $originHost !== $originFilter) continue;
+        $totalLeads++;
         $crmId = (string)($row['crm_public_id'] ?? '');
         $campaignId = (string)($row['campaign_public_id'] ?? '');
         if ($crmId !== '') {
@@ -153,23 +155,9 @@ try {
             'page_url' => (string)($attr['page_url'] ?? ''),
             'embed_mode' => (string)($attr['embed_mode'] ?? ''),
             'embed_source' => (string)($attr['embed_source'] ?? 'website_embed'),
-            'campaign' => [
-                'id' => $campaignId,
-                'slug' => $row['public_slug'] ?? null,
-                'title' => (string)($row['campaign_title'] ?? 'Campaign'),
-                'campaign_type' => (string)($row['campaign_type'] ?? ''),
-                'url' => '/merchant-campaigns.php' . ($campaignRefOut !== '' ? '?campaign=' . rawurlencode($campaignRefOut) : ''),
-            ],
-            'crm_contact' => [
-                'id' => $contactPublicId,
-                'name' => (string)($row['display_name'] ?: $row['campaign_contact_name'] ?: 'Lead'),
-                'email' => (string)($row['primary_email'] ?: $row['campaign_contact_email'] ?: ''),
-                'url' => $contactPublicId !== '' ? '/merchant-customer.php?contact_id=' . rawurlencode($contactPublicId) : '',
-            ],
-            'campaign_contact' => [
-                'id' => $campaignContactPublicId,
-                'url' => $campaignContactPublicId !== '' ? '/merchant-customer.php?campaign_contact_id=' . rawurlencode($campaignContactPublicId) : '',
-            ],
+            'campaign' => ['id' => $campaignId, 'slug' => $row['public_slug'] ?? null, 'title' => (string)($row['campaign_title'] ?? 'Campaign'), 'campaign_type' => (string)($row['campaign_type'] ?? ''), 'url' => '/merchant-campaigns.php' . ($campaignRefOut !== '' ? '?campaign=' . rawurlencode($campaignRefOut) : '')],
+            'crm_contact' => ['id' => $contactPublicId, 'name' => (string)($row['display_name'] ?: $row['campaign_contact_name'] ?: 'Lead'), 'email' => (string)($row['primary_email'] ?: $row['campaign_contact_email'] ?: ''), 'url' => $contactPublicId !== '' ? '/merchant-customer.php?contact_id=' . rawurlencode($contactPublicId) : ''],
+            'campaign_contact' => ['id' => $campaignContactPublicId, 'url' => $campaignContactPublicId !== '' ? '/merchant-customer.php?campaign_contact_id=' . rawurlencode($campaignContactPublicId) : ''],
         ];
     }
 } catch (Throwable $error) {
@@ -188,12 +176,6 @@ mg_ok([
     'sql_required' => null,
     'filters' => ['days' => $days, 'campaign' => $campaign ? ['id' => (string)$campaign['public_id'], 'slug' => $campaign['public_slug'] ?? null, 'title' => (string)$campaign['title']] : null, 'origin_host' => $originFilter, 'source' => $sourceFilter],
     'campaigns' => mg_embed_leads_campaigns($pdo, $merchantId),
-    'totals' => [
-        'total_embed_leads' => count($rows),
-        'new_contacts' => $newContacts,
-        'returning_contacts' => max(0, $totalContacts - $newContacts),
-        'campaigns' => count($campaignIds),
-        'top_domains' => $topDomains,
-    ],
+    'totals' => ['total_embed_leads' => $totalLeads, 'new_contacts' => $newContacts, 'returning_contacts' => max(0, $totalContacts - $newContacts), 'campaigns' => count($campaignIds), 'top_domains' => $topDomains],
     'rows' => $rows,
 ], 'Campaign embed leads loaded.');
