@@ -37,10 +37,17 @@ document.addEventListener('DOMContentLoaded', function () {
     return absoluteUrl('/assets/js/microgifter-campaign-embed.js');
   }
 
+  function debugEnabled() {
+    var checkbox = modal ? modal.querySelector('[data-campaign-embed-debug]') : null;
+    return !!(checkbox && checkbox.checked);
+  }
+
   function buildInlineCode(campaign, displayMode) {
     var ref = embedReference(campaign);
     var mode = displayMode || 'inline';
-    return '<div class="microgifter-campaign-embed" data-microgifter-campaign="' + esc(ref) + '" data-microgifter-display="' + esc(mode) + '"></div>\n<script async src="' + esc(embedScriptUrl()) + '"></script>';
+    var attrs = 'class="microgifter-campaign-embed" data-microgifter-campaign="' + esc(ref) + '" data-microgifter-display="' + esc(mode) + '" data-microgifter-source="merchant_embed"';
+    if (debugEnabled()) attrs += ' data-microgifter-debug="1"';
+    return '<div ' + attrs + '></div>\n<script async src="' + esc(embedScriptUrl()) + '"></script>';
   }
 
   function buildIframeCode(campaign) {
@@ -59,8 +66,8 @@ document.addEventListener('DOMContentLoaded', function () {
       '<div class="mg-campaign-embed-dialog" role="dialog" aria-modal="true" aria-labelledby="mg-campaign-embed-title">' +
         '<div class="mg-campaign-embed-head"><div><span class="mg-eyebrow">Website embed</span><h2 id="mg-campaign-embed-title">Embed campaign</h2><p data-campaign-embed-summary>Select the format, copy the code, and paste it into the merchant website. The script uses minimal structure so the host page CSS can control typography and buttons.</p></div><button class="mg-campaign-embed-close" type="button" aria-label="Close embed options" data-campaign-embed-close>&times;</button></div>' +
         '<div class="mg-campaign-embed-grid">' +
-          '<section class="mg-campaign-embed-card"><h3>Copy website code</h3><p>Use the script embed for the best fit. It renders inline on the host page and inherits the page font, colors, and form styles where possible.</p><div class="mg-campaign-embed-options" aria-label="Embed display mode"><label><input type="radio" name="mg_campaign_embed_mode" value="inline" checked> Inline form card</label><label><input type="radio" name="mg_campaign_embed_mode" value="button"> Button / popup launcher</label></div><div class="mg-campaign-embed-code-row"><label>Script embed<textarea readonly data-campaign-embed-code></textarea></label><label>Iframe fallback<textarea readonly data-campaign-iframe-code></textarea></label></div><div class="mg-campaign-embed-actions"><button class="mg-btn mg-btn-primary" type="button" data-copy-campaign-embed>Copy script code</button><button class="mg-btn mg-btn-soft" type="button" data-copy-campaign-iframe>Copy iframe fallback</button><a class="mg-btn mg-btn-ghost" href="#" target="_blank" rel="noopener" data-campaign-public-link>Open public page</a></div><p class="mg-campaign-embed-status" data-campaign-embed-status>Ready.</p></section>' +
-          '<aside class="mg-campaign-embed-card mg-campaign-embed-preview"><h3>Preview</h3><div class="mg-campaign-embed-preview-box" data-campaign-embed-preview><strong>Campaign preview</strong><p>Select a campaign embed to preview the public-safe copy.</p></div><p class="mg-campaign-embed-note">The script does not use an iframe. It places semantic HTML into the merchant page so the website CSS can style fonts, inputs, spacing, and buttons. A small fallback style only protects the structure.</p></aside>' +
+          '<section class="mg-campaign-embed-card"><h3>Copy website code</h3><p>Use the script embed for the best fit. It renders inline on the host page and inherits the page font, colors, and form styles where possible.</p><div class="mg-campaign-embed-options" aria-label="Embed display mode"><label><input type="radio" name="mg_campaign_embed_mode" value="inline" checked> Inline form card</label><label><input type="radio" name="mg_campaign_embed_mode" value="button"> Button / popup launcher</label><label><input type="checkbox" data-campaign-embed-debug value="1"> Add debug mode attribute</label></div><div class="mg-campaign-embed-code-row"><label>Script embed<textarea readonly data-campaign-embed-code></textarea></label><label>Iframe fallback<textarea readonly data-campaign-iframe-code></textarea></label></div><div class="mg-campaign-embed-actions"><button class="mg-btn mg-btn-primary" type="button" data-copy-campaign-embed>Copy script code</button><button class="mg-btn mg-btn-soft" type="button" data-copy-campaign-iframe>Copy iframe fallback</button><a class="mg-btn mg-btn-ghost" href="#" target="_blank" rel="noopener" data-campaign-public-link>Open public page</a></div><p class="mg-campaign-embed-status" data-campaign-embed-status>Ready.</p></section>' +
+          '<aside class="mg-campaign-embed-card mg-campaign-embed-preview"><h3>Preview</h3><div class="mg-campaign-embed-preview-box" data-campaign-embed-preview><strong>Campaign preview</strong><p>Select a campaign embed to preview the public-safe copy.</p></div><div class="mg-campaign-embed-health" data-campaign-embed-health><span class="mg-eyebrow">Embed health</span><p>Load a campaign to review embed readiness.</p></div><p class="mg-campaign-embed-note">The script does not use an iframe. It places semantic HTML into the merchant page so the website CSS can style fonts, inputs, spacing, and buttons. A small fallback style only protects the structure.</p></aside>' +
         '</div>' +
       '</div>';
     document.body.appendChild(modal);
@@ -70,7 +77,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (event.target && event.target.matches('[data-copy-campaign-iframe]')) copyFrom('[data-campaign-iframe-code]', 'Iframe fallback code copied.');
     });
     modal.addEventListener('change', function (event) {
-      if (event.target && event.target.name === 'mg_campaign_embed_mode') refreshCodes();
+      if (event.target && (event.target.name === 'mg_campaign_embed_mode' || event.target.matches('[data-campaign-embed-debug]'))) refreshCodes();
     });
     document.addEventListener('keydown', function (event) {
       if (event.key === 'Escape' && modal && !modal.hasAttribute('hidden')) closeModal();
@@ -107,6 +114,26 @@ document.addEventListener('DOMContentLoaded', function () {
       (tools.public_url ? '<p><a href="' + esc(tools.public_url) + '" target="_blank" rel="noopener">Public campaign page</a></p>' : '');
   }
 
+  function healthItem(ok, label) {
+    return '<li class="' + (ok ? 'is-ready' : 'is-warn') + '"><b></b><span>' + esc(label) + '</span></li>';
+  }
+
+  function renderHealth(campaign) {
+    var health = modal.querySelector('[data-campaign-embed-health]');
+    if (!health || !campaign) return;
+    var tools = campaign.public_tools || {};
+    var active = String(campaign.status || '') === 'active';
+    var hasRef = !!embedReference(campaign);
+    var hasPublicUrl = !!tools.public_url;
+    var hasScript = !!embedScriptUrl();
+    health.innerHTML = '<span class="mg-eyebrow">Embed health</span><ul>' +
+      healthItem(active, active ? 'Campaign is active for public submissions.' : 'Campaign is not active; public embed submissions stay unavailable until activation.') +
+      healthItem(hasRef, hasRef ? 'Embed reference is available.' : 'Embed reference is missing.') +
+      healthItem(hasPublicUrl, hasPublicUrl ? 'Public page fallback is available.' : 'Public page fallback is unavailable.') +
+      healthItem(hasScript, 'Host CSS adoption script is available.') +
+      '</ul>';
+  }
+
   async function copyFrom(selector, successMessage) {
     var node = modal ? modal.querySelector(selector) : null;
     if (!node) return;
@@ -141,12 +168,15 @@ document.addEventListener('DOMContentLoaded', function () {
         publicLink.hidden = !activeCampaign.public_tools || !activeCampaign.public_tools.public_url;
       }
       renderPreview(activeCampaign);
+      renderHealth(activeCampaign);
       refreshCodes();
       status('Embed code ready.');
     } catch (error) {
       status(error.message || 'Unable to load embed code.');
       var preview = modal.querySelector('[data-campaign-embed-preview]');
+      var health = modal.querySelector('[data-campaign-embed-health]');
       if (preview) preview.innerHTML = '<div class="mg-empty-state"><p>Unable to load campaign embed details.</p></div>';
+      if (health) health.innerHTML = '<span class="mg-eyebrow">Embed health</span><p>Embed details could not be loaded.</p>';
     }
   }
 
