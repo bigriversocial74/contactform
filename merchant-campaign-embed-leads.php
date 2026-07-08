@@ -48,9 +48,9 @@ require __DIR__ . '/includes/header.php';
       <?php else: ?>
         <section class="mg-embed-leads-hero">
           <div>
-            <span class="mg-eyebrow">Campaign Embed Optimization v4.5</span>
-            <h1>Placement Intelligence</h1>
-            <p>Use conversion quality and attribution signals to decide where each campaign embed should stay, scale, or be tested next.</p>
+            <span class="mg-eyebrow">Campaign Embed v4.6</span>
+            <h1>Merchant Action Center</h1>
+            <p>Turn placement intelligence into action: open campaigns, copy filtered lead views, export reports, start tests, and move directly into follow-up.</p>
             <div class="mg-embed-leads-hero-actions">
               <a class="mg-btn mg-btn-soft" href="/merchant-campaign-embed-qa.php">Run Embed QA</a>
               <a class="mg-btn mg-btn-ghost" href="/merchant-campaign-embed-analytics.php">Embed Analytics</a>
@@ -91,6 +91,17 @@ require __DIR__ . '/includes/header.php';
           <article><b>—</b><span>New Contacts</span></article>
           <article><b>—</b><span>Ready Follow-Up</span></article>
           <article><b>—</b><span>Avg Quality</span></article>
+        </section>
+
+        <section class="mg-embed-action-center-panel mg-embed-leads-panel">
+          <div class="mg-panel-head"><div><span class="mg-eyebrow">Action Center</span><h2>Merchant action center</h2></div></div>
+          <p class="mg-embed-action-intro">Use these shortcuts to act on the current filters and placement recommendations without leaving the workflow.</p>
+          <div class="mg-embed-action-status" data-embed-action-status hidden></div>
+          <div class="mg-embed-action-primary" data-embed-action-primary></div>
+          <div class="mg-embed-action-split">
+            <div><h3>Campaign action buttons</h3><div class="mg-embed-action-campaigns" data-embed-action-campaigns></div></div>
+            <div><h3>Follow-up shortcuts</h3><div class="mg-embed-action-followups" data-embed-action-followups></div></div>
+          </div>
         </section>
 
         <section class="mg-embed-placement-panel mg-embed-leads-panel">
