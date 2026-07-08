@@ -48,9 +48,9 @@ require __DIR__ . '/includes/header.php';
       <?php else: ?>
         <section class="mg-embed-leads-hero">
           <div>
-            <span class="mg-eyebrow">Campaign Embed Notifications v4.3</span>
-            <h1>Merchant Follow-Up Signals</h1>
-            <p>Turn website embed attribution into merchant-ready alerts: new website embed leads now deep-link directly into this filtered follow-up view.</p>
+            <span class="mg-eyebrow">Campaign Embed Performance v4.4</span>
+            <h1>Conversion Quality Layer</h1>
+            <p>See which embeds are actually working: lead quality, follow-up readiness, top conversion sources, and merchant recommendations from existing attribution data.</p>
             <div class="mg-embed-leads-hero-actions">
               <a class="mg-btn mg-btn-soft" href="/merchant-campaign-embed-qa.php">Run Embed QA</a>
               <a class="mg-btn mg-btn-ghost" href="/merchant-campaign-embed-analytics.php">Embed Analytics</a>
@@ -89,8 +89,17 @@ require __DIR__ . '/includes/header.php';
         <section class="mg-embed-leads-stats" data-embed-leads-stats>
           <article><b>—</b><span>Total Embed Leads</span></article>
           <article><b>—</b><span>New Contacts</span></article>
-          <article><b>—</b><span>Returning Contacts</span></article>
-          <article><b>—</b><span>Campaigns</span></article>
+          <article><b>—</b><span>Ready Follow-Up</span></article>
+          <article><b>—</b><span>Avg Quality</span></article>
+        </section>
+
+        <section class="mg-embed-performance-panel mg-embed-leads-panel">
+          <div class="mg-panel-head"><div><span class="mg-eyebrow">Performance</span><h2>Conversion quality insights</h2></div></div>
+          <div class="mg-embed-performance-cards" data-embed-performance-insights></div>
+          <div class="mg-embed-performance-split">
+            <div><h3>Lead quality mix</h3><div class="mg-embed-quality-breakdown" data-embed-quality-breakdown></div></div>
+            <div><h3>Merchant recommendations</h3><div class="mg-embed-recommendations" data-embed-recommendations></div></div>
+          </div>
         </section>
 
         <section class="mg-embed-leads-value-grid">
