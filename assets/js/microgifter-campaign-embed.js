@@ -12,6 +12,7 @@
   }
 
   var apiBase = (script && script.getAttribute('data-microgifter-api-base')) || scriptOrigin();
+  var scriptDebug = !!(script && script.getAttribute('data-microgifter-debug') === '1');
 
   function esc(value) {
     return String(value == null ? '' : value).replace(/[&<>'"]/g, function (char) {
@@ -22,6 +23,21 @@
   function url(path) {
     try { return new URL(path, apiBase).toString(); }
     catch (error) { return String(apiBase).replace(/\/$/, '') + '/' + String(path || '').replace(/^\//, ''); }
+  }
+
+  function isDebug(container) {
+    return scriptDebug || !!(container && container.getAttribute('data-microgifter-debug') === '1');
+  }
+
+  function log(container, message, detail) {
+    if (!isDebug(container) || !window.console || !console.info) return;
+    console.info('[Microgifter Campaign Embed] ' + message, detail || '');
+  }
+
+  function emit(container, name, detail) {
+    try {
+      container.dispatchEvent(new CustomEvent(name, { bubbles: true, detail: detail || {} }));
+    } catch (error) {}
   }
 
   function injectBaseStyles() {
@@ -36,10 +52,12 @@
       '.microgifter-campaign-widget label{display:grid;gap:.35rem;font:inherit;}' +
       '.microgifter-campaign-widget input,.microgifter-campaign-widget textarea,.microgifter-campaign-widget select{font:inherit;width:100%;padding:.75rem;border:1px solid rgba(120,130,150,.35);border-radius:.75rem;background:transparent;color:inherit;}' +
       '.microgifter-campaign-widget button{font:inherit;cursor:pointer;border-radius:999px;padding:.8rem 1rem;border:1px solid currentColor;background:currentColor;color:Canvas;}' +
+      '.microgifter-campaign-widget button:disabled{opacity:.62;cursor:wait;}' +
       '.microgifter-campaign-widget .mg-embed-meta{display:flex;flex-wrap:wrap;gap:.5rem;margin:.85rem 0;}' +
       '.microgifter-campaign-widget .mg-embed-meta span{border:1px solid rgba(120,130,150,.32);border-radius:999px;padding:.3rem .55rem;font-size:.82em;}' +
       '.microgifter-campaign-widget .mg-embed-result{display:none;margin-top:.75rem;padding:.75rem;border-radius:.75rem;border:1px solid rgba(120,130,150,.28);}' +
       '.microgifter-campaign-widget .mg-embed-result.is-visible{display:block;}' +
+      '.microgifter-campaign-widget .mg-embed-result.is-error{border-color:rgba(190,18,60,.35);}' +
       '.microgifter-campaign-widget .mg-embed-launcher-panel[hidden]{display:none!important;}' +
       '.microgifter-campaign-widget .mg-embed-launcher-panel{margin-top:1rem;}' +
       '.microgifter-campaign-widget .mg-embed-muted{opacity:.74;}' +
@@ -49,9 +67,16 @@
 
   async function fetchJson(fetchUrl, options) {
     var response = await fetch(fetchUrl, options || {});
+    var requestId = response.headers.get('x-request-id') || '';
     var data = await response.json().catch(function () { return {}; });
     if (!response.ok || data.ok === false) {
-      throw new Error(data.message || data.error || 'Microgifter campaign request failed.');
+      var message = data.message || data.error || 'Microgifter campaign request failed.';
+      if (requestId) message += ' Reference: ' + requestId;
+      var error = new Error(message);
+      error.status = response.status;
+      error.requestId = requestId;
+      error.payload = data;
+      throw error;
     }
     return data.data || data;
   }
@@ -101,7 +126,11 @@
     '</article>';
   }
 
-  function payloadFromForm(form, campaign) {
+  function validEmail(value) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
+  }
+
+  function payloadFromForm(form, campaign, container) {
     var formData = new FormData(form);
     var payload = {};
     formData.forEach(function (value, key) { payload[key] = String(value || '').trim(); });
@@ -112,6 +141,8 @@
     delete payload.birthday_month;
     if (Object.keys(entry).length) payload.entry = entry;
     payload.campaign_type = payload.campaign_type || campaign.campaign_type || '';
+    payload.embed_source = container.getAttribute('data-microgifter-source') || 'website_embed';
+    payload.embed_origin = window.location.origin || '';
     return payload;
   }
 
@@ -119,6 +150,7 @@
     var result = mount.querySelector('[data-microgifter-embed-result]');
     if (!result) return;
     result.classList.add('is-visible');
+    result.classList.toggle('is-error', !!isError);
     result.textContent = message || (isError ? 'Unable to submit campaign response.' : 'Campaign response submitted.');
     result.setAttribute('role', isError ? 'alert' : 'status');
   }
@@ -128,20 +160,30 @@
     if (!form) return;
     form.addEventListener('submit', async function (event) {
       event.preventDefault();
+      var campaign = payload.campaign || {};
+      var prepared = payloadFromForm(form, campaign, mount);
+      if (!validEmail(prepared.email)) {
+        setResult(mount, 'Enter a valid email address to continue.', true);
+        emit(mount, 'microgifter:campaignEmbedInvalid', { reason: 'email' });
+        return;
+      }
       var button = form.querySelector('button[type="submit"]');
       if (button) { button.disabled = true; button.textContent = 'Sending...'; }
       try {
-        var campaign = payload.campaign || {};
+        log(mount, 'Submitting campaign embed form.', { campaign: campaign.id, type: campaign.campaign_type });
         var result = await fetchJson(campaign.submit_endpoint || url('/api/public/campaigns/embed-submit.php'), {
           method: 'POST',
           mode: 'cors',
           headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-          body: JSON.stringify(payloadFromForm(form, campaign))
+          body: JSON.stringify(prepared)
         });
         setResult(mount, (result && result.message) || campaign.success_message || 'Campaign response submitted.', false);
+        emit(mount, 'microgifter:campaignEmbedSubmitted', { campaign: campaign.id, response: result });
         form.reset();
       } catch (error) {
         setResult(mount, error.message || 'Unable to submit campaign response.', true);
+        emit(mount, 'microgifter:campaignEmbedError', { stage: 'submit', error: error });
+        log(mount, 'Submit failed.', error);
       } finally {
         if (button) { button.disabled = false; button.textContent = (payload.campaign && payload.campaign.submit_label) || 'Submit'; }
       }
@@ -151,12 +193,19 @@
   async function renderEmbed(container) {
     if (!container || container.getAttribute('data-microgifter-rendered') === '1') return;
     var campaignRef = container.getAttribute('data-microgifter-campaign') || container.getAttribute('data-campaign') || '';
-    if (!campaignRef) return;
+    if (!campaignRef) {
+      injectBaseStyles();
+      container.classList.add('microgifter-campaign-widget');
+      container.innerHTML = '<article><h3>Campaign unavailable</h3><p>Missing Microgifter campaign reference.</p></article>';
+      emit(container, 'microgifter:campaignEmbedError', { stage: 'boot', message: 'missing_campaign_reference' });
+      return;
+    }
     container.setAttribute('data-microgifter-rendered', '1');
     injectBaseStyles();
     container.classList.add('microgifter-campaign-widget');
     container.innerHTML = '<article><p>Loading Microgifter campaign...</p></article>';
     try {
+      log(container, 'Loading campaign embed payload.', { campaign: campaignRef, base: apiBase });
       var payload = await fetchJson(url('/api/public/campaigns/embed.php?campaign=' + encodeURIComponent(campaignRef)), { mode: 'cors', headers: { 'Accept': 'application/json' } });
       var display = container.getAttribute('data-microgifter-display') || container.getAttribute('data-microgifter-mode') || 'inline';
       if (display === 'button' || display === 'popup') {
@@ -169,8 +218,12 @@
         container.innerHTML = formHtml(payload);
       }
       bindSubmit(container, payload);
+      emit(container, 'microgifter:campaignEmbedLoaded', { campaign: payload.campaign, merchant: payload.merchant, reward: payload.reward });
+      log(container, 'Campaign embed loaded.', payload.campaign || {});
     } catch (error) {
       container.innerHTML = '<article><h3>Campaign unavailable</h3><p>' + esc(error.message || 'This Microgifter campaign could not be loaded.') + '</p></article>';
+      emit(container, 'microgifter:campaignEmbedError', { stage: 'load', error: error });
+      log(container, 'Load failed.', error);
     }
   }
 
