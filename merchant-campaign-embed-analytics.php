@@ -47,7 +47,7 @@ require __DIR__ . '/includes/header.php';
       <?php else: ?>
         <section class="mg-embed-analytics-hero">
           <div>
-            <span class="mg-eyebrow">Campaign Embed Analytics v3</span>
+            <span class="mg-eyebrow">Campaign Embed Analytics v3.1</span>
             <h1>Website Embed Performance</h1>
             <p>Track embed loads, button opens, submissions, invalid attempts, errors, conversion rate, top domains, and recent website activity.</p>
           </div>
@@ -66,7 +66,13 @@ require __DIR__ . '/includes/header.php';
             </label>
             <div class="mg-embed-analytics-actions">
               <button class="mg-btn mg-btn-primary" type="submit">Refresh analytics</button>
+              <button class="mg-btn mg-btn-soft" type="button" data-copy-analytics-link>Copy analytics link</button>
               <a class="mg-btn mg-btn-ghost" href="/merchant-campaigns.php">Campaigns</a>
+            </div>
+            <div class="mg-embed-export-actions" data-embed-export-actions>
+              <a class="mg-btn mg-btn-soft" href="#" data-export-analytics="campaigns">Export campaign CSV</a>
+              <a class="mg-btn mg-btn-soft" href="#" data-export-analytics="domains">Export domains CSV</a>
+              <a class="mg-btn mg-btn-soft" href="#" data-export-analytics="events">Export events CSV</a>
             </div>
           </form>
         </section>
