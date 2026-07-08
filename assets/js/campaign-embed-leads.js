@@ -68,6 +68,19 @@ document.addEventListener('DOMContentLoaded', function () {
     }).join('');
   }
 
+  function renderFilterSummary(data, rowCount) {
+    var node = root.querySelector('[data-embed-leads-filter-summary]');
+    if (!node) return;
+    var params = queryParams();
+    var filters = [];
+    filters.push('Window: last ' + esc(params.get('days') || '30') + ' days');
+    if (params.get('campaign')) filters.push('Campaign: ' + esc(params.get('campaign')));
+    if (params.get('origin_host')) filters.push('Domain: ' + esc(params.get('origin_host')));
+    if (params.get('source')) filters.push('Source: ' + esc(label(params.get('source'))));
+    var total = data && data.totals ? data.totals.total_embed_leads : rowCount;
+    node.innerHTML = '<strong>' + count(total) + '</strong> attributed embed lead' + (Number(total || 0) === 1 ? '' : 's') + ' · ' + filters.join(' · ');
+  }
+
   function renderRows(rows) {
     var table = root.querySelector('[data-embed-leads-table]');
     if (!table) return;
@@ -82,8 +95,28 @@ document.addEventListener('DOMContentLoaded', function () {
       var campaignContact = row.campaign_contact || {};
       var contactName = contact.name || contact.email || 'Lead';
       var page = row.page_url ? '<a href="' + esc(row.page_url) + '" target="_blank" rel="noopener">Open page</a>' : '<small>No page URL</small>';
-      return '<tr><td><strong>' + esc(contactName) + '</strong><small>' + esc(contact.email || '') + '</small></td><td><strong>' + esc(campaign.title || 'Campaign') + '</strong><small>' + esc(label(campaign.campaign_type || '')) + '</small></td><td>' + esc(label(row.source || row.embed_source || 'website_embed')) + '</td><td><strong>' + esc(row.origin_host || 'Unknown') + '</strong>' + page + '</td><td>' + esc(row.embed_mode || '—') + '</td><td>' + esc(row.created_at || '—') + '</td><td>' + (contact.url ? '<a href="' + esc(contact.url) + '">CRM Profile</a>' : '') + (campaignContact.url ? '<a href="' + esc(campaignContact.url) + '">Campaign Contact</a>' : '') + (campaign.url ? '<a href="' + esc(campaign.url) + '">Campaign</a>' : '') + '</td></tr>';
+      var actions = '';
+      if (contact.url) actions += '<a href="' + esc(contact.url) + '">CRM Profile</a>';
+      if (campaignContact.url) actions += '<a href="' + esc(campaignContact.url) + '">Campaign Contact</a>';
+      if (campaign.url) actions += '<a href="' + esc(campaign.url) + '">Campaign</a>';
+      if (!actions) actions = '<small>No linked records</small>';
+      return '<tr><td><strong>' + esc(contactName) + '</strong><small>' + esc(contact.email || '') + '</small></td><td><strong>' + esc(campaign.title || 'Campaign') + '</strong><small>' + esc(label(campaign.campaign_type || '')) + '</small></td><td>' + esc(label(row.source || row.embed_source || 'website_embed')) + '</td><td><strong>' + esc(row.origin_host || 'Unknown') + '</strong>' + page + '</td><td>' + esc(row.embed_mode || '—') + '</td><td>' + esc(row.created_at || '—') + '</td><td>' + actions + '</td></tr>';
     }).join('') + '</tbody>';
+  }
+
+  function resetFilters() {
+    var campaign = root.querySelector('[data-embed-leads-campaign]');
+    var days = root.querySelector('[data-embed-leads-days]');
+    var origin = root.querySelector('[data-embed-leads-origin]');
+    var source = root.querySelector('[data-embed-leads-source]');
+    if (campaign) campaign.value = '';
+    if (days) days.value = '30';
+    if (origin) origin.value = '';
+    if (source) source.value = '';
+    selectedCampaign = '';
+    selectedDays = '30';
+    selectedOrigin = '';
+    selectedSource = '';
   }
 
   async function loadLeads(pushState) {
@@ -95,8 +128,9 @@ document.addEventListener('DOMContentLoaded', function () {
       renderStats(data.totals || {});
       renderDomains((data.totals || {}).top_domains || []);
       renderRows(data.rows || []);
-      if (data.schema_ready === false) setAlert('<strong>Embed leads data is not ready.</strong> No new SQL is required by v4; this view uses existing CRM/campaign tables when present.', 'warn');
-      else if (!(data.rows || []).length) setAlert('<strong>No embed leads found for these filters.</strong>', 'info');
+      renderFilterSummary(data, (data.rows || []).length);
+      if (data.schema_ready === false) setAlert('<strong>Embed leads data is not ready.</strong> No new SQL is required by v4.1; this view uses existing CRM/campaign tables when present.', 'warn');
+      else if (!(data.rows || []).length) setAlert('<strong>No embed leads found for these filters.</strong> Run Embed QA or submit a public website embed to create an attributed row.', 'info');
       else setAlert('', '');
       if (pushState && window.history) window.history.replaceState({}, '', '/merchant-campaign-embed-leads.php?' + queryParams().toString());
     } catch (error) {
@@ -108,6 +142,8 @@ document.addEventListener('DOMContentLoaded', function () {
   if (form) form.addEventListener('submit', function (event) { event.preventDefault(); loadLeads(true); });
   root.addEventListener('click', function (event) {
     var button = event.target && event.target.closest ? event.target.closest('[data-filter-domain]') : null;
+    var reset = event.target && event.target.closest ? event.target.closest('[data-embed-leads-reset]') : null;
+    if (reset) { resetFilters(); loadLeads(true); return; }
     if (!button) return;
     var input = root.querySelector('[data-embed-leads-origin]');
     if (input) input.value = button.getAttribute('data-filter-domain') || '';

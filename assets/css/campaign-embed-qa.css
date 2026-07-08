@@ -3,6 +3,7 @@
 .mg-embed-qa-hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,.45fr);gap:24px;align-items:start;}
 .mg-embed-qa-hero h1{font-size:clamp(30px,5vw,56px);line-height:.96;margin:8px 0 12px;letter-spacing:-.05em;}
 .mg-embed-qa-hero p,.mg-embed-qa-panel p,.mg-embed-qa-card p,.mg-embed-qa-host p{color:#60708f;line-height:1.6;margin:0 0 14px;}
+.mg-embed-qa-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;}
 .mg-embed-qa-form{display:grid;gap:12px;border:1px solid rgba(124,145,184,.22);border-radius:22px;background:#fff;padding:16px;}
 .mg-embed-qa-form label{display:grid;gap:8px;font-weight:800;color:#233554;}
 .mg-embed-qa-form input{border:1px solid rgba(124,145,184,.35);border-radius:16px;padding:12px 14px;font:inherit;}
@@ -18,4 +19,4 @@
 .mg-embed-qa-host .microgifter-campaign-widget button{background:#17233c;color:#fff;border-color:#17233c;}
 .mg-embed-qa-host.is-button-mode{background:linear-gradient(135deg,#fff,#f7fbff);}
 .mg-embed-qa-host.is-compact-mode .microgifter-campaign-widget article{max-width:520px;}
-@media(max-width:840px){.mg-embed-qa-shell{padding:20px 12px 56px}.mg-embed-qa-hero,.mg-embed-qa-grid{grid-template-columns:1fr}.mg-embed-qa-hero,.mg-embed-qa-panel,.mg-embed-qa-card,.mg-embed-qa-host{border-radius:22px;padding:18px}}
+@media(max-width:840px){.mg-embed-qa-shell{padding:20px 12px 56px}.mg-embed-qa-hero,.mg-embed-qa-grid{grid-template-columns:1fr}.mg-embed-qa-hero,.mg-embed-qa-panel,.mg-embed-qa-card,.mg-embed-qa-host{border-radius:22px;padding:18px}.mg-embed-qa-actions .mg-btn{width:100%;justify-content:center}}
