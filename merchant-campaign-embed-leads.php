@@ -48,9 +48,9 @@ require __DIR__ . '/includes/header.php';
       <?php else: ?>
         <section class="mg-embed-leads-hero">
           <div>
-            <span class="mg-eyebrow">Campaign Embed QA v4.1</span>
-            <h1>Website Embed Leads</h1>
-            <p>Confirm which website pages, domains, campaigns, sources, and embed modes are generating CRM contacts from public campaign embeds.</p>
+            <span class="mg-eyebrow">Campaign Embed Leads v4.2</span>
+            <h1>Merchant Value Layer</h1>
+            <p>Turn website embed attribution into merchant-ready follow-up: export filtered leads, inspect lead details, and see which campaigns, pages, and domains are producing demand.</p>
             <div class="mg-embed-leads-hero-actions">
               <a class="mg-btn mg-btn-soft" href="/merchant-campaign-embed-qa.php">Run Embed QA</a>
               <a class="mg-btn mg-btn-ghost" href="/merchant-campaign-embed-analytics.php">Embed Analytics</a>
@@ -77,6 +77,7 @@ require __DIR__ . '/includes/header.php';
               <button class="mg-btn mg-btn-primary" type="submit">Refresh leads</button>
               <button class="mg-btn mg-btn-soft" type="button" data-embed-leads-reset>Clear filters</button>
               <a class="mg-btn mg-btn-ghost" href="/merchant-campaigns.php">Campaigns</a>
+              <a class="mg-btn mg-btn-ghost" href="#" data-embed-leads-export>Export CSV</a>
             </div>
             <p class="mg-embed-leads-filter-note" data-embed-leads-filter-summary>Loading lead attribution filters…</p>
           </form>
@@ -90,6 +91,17 @@ require __DIR__ . '/includes/header.php';
           <article><b>—</b><span>Campaigns</span></article>
         </section>
 
+        <section class="mg-embed-leads-value-grid">
+          <article class="mg-embed-leads-panel">
+            <div class="mg-panel-head"><div><span class="mg-eyebrow">Campaign Value</span><h2>Campaign attribution summary</h2></div></div>
+            <div class="mg-embed-leads-campaigns" data-embed-leads-campaign-summaries></div>
+          </article>
+          <aside class="mg-embed-leads-panel">
+            <div class="mg-panel-head"><div><span class="mg-eyebrow">Pages</span><h2>Top lead pages</h2></div></div>
+            <div class="mg-embed-leads-pages" data-embed-leads-pages></div>
+          </aside>
+        </section>
+
         <section class="mg-embed-leads-grid">
           <article class="mg-embed-leads-panel">
             <div class="mg-panel-head"><div><span class="mg-eyebrow">Leads</span><h2>Recent website embed leads</h2></div></div>
@@ -100,6 +112,14 @@ require __DIR__ . '/includes/header.php';
             <div class="mg-embed-leads-domains" data-embed-leads-domains></div>
           </aside>
         </section>
+
+        <aside class="mg-embed-leads-drawer" data-embed-leads-drawer hidden>
+          <div class="mg-embed-leads-drawer-backdrop" data-embed-leads-close></div>
+          <article class="mg-embed-leads-drawer-panel">
+            <button class="mg-embed-leads-drawer-close" type="button" data-embed-leads-close aria-label="Close lead detail">×</button>
+            <div data-embed-leads-drawer-content></div>
+          </article>
+        </aside>
       <?php endif; ?>
     </div>
   </main>
