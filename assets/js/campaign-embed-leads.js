@@ -9,10 +9,13 @@ document.addEventListener('DOMContentLoaded', function () {
   var selectedSource = root.getAttribute('data-selected-source') || '';
   var lastRows = [];
   var lastPayload = {};
+  var lastPlacementTests = { counts: {}, tests: [] };
+  var campaignActionMap = {};
 
   function esc(value) { return String(value == null ? '' : value).replace(/[&<>'"]/g, function (char) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]; }); }
   function count(value) { return new Intl.NumberFormat().format(Number(value || 0)); }
   function label(value) { return String(value || '—').replace(/[_-]/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); }); }
+  function data(response) { return (response && response.data) || response || {}; }
 
   function setAlert(message, tone) {
     var node = root.querySelector('[data-embed-leads-alert]');
@@ -49,6 +52,14 @@ document.addEventListener('DOMContentLoaded', function () {
     return '/api/merchant/campaign-embed-leads.php?' + params.toString();
   }
 
+  function testsApiUrl(extra) {
+    var params = new URLSearchParams();
+    var campaign = root.querySelector('[data-embed-leads-campaign]');
+    if (campaign && campaign.value) params.set('campaign', campaign.value);
+    Object.keys(extra || {}).forEach(function (key) { if (extra[key]) params.set(key, extra[key]); });
+    return '/api/merchant/campaign-embed-placement-tests.php' + (params.toString() ? '?' + params.toString() : '');
+  }
+
   function leadViewUrl(extra) {
     var params = queryParams();
     Object.keys(extra || {}).forEach(function (key) {
@@ -60,8 +71,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function campaignRef(campaign) { return (campaign && (campaign.slug || campaign.id)) ? String(campaign.slug || campaign.id) : ''; }
   function campaignSetupUrl(campaign) { return new URL((campaign && campaign.url ? campaign.url : '/merchant-campaigns.php') + '#embed', window.location.origin).toString(); }
-  function testKey(campaign) { return 'mg_embed_test_started_' + (campaignRef(campaign) || 'all'); }
-  function testStartedAt(campaign) { try { return window.localStorage.getItem(testKey(campaign)) || ''; } catch (error) { return ''; } }
 
   function copyText(text, successMessage) {
     var value = String(text || '');
@@ -90,13 +99,6 @@ document.addEventListener('DOMContentLoaded', function () {
     return Promise.resolve(copied);
   }
 
-  function markTestStarted(campaign, actionLabel) {
-    var stamp = new Date().toISOString();
-    try { window.localStorage.setItem(testKey(campaign), stamp); } catch (error) {}
-    setActionStatus('<strong>Placement test marked started.</strong> ' + esc(actionLabel || 'Track results for seven days, then compare readiness and quality.'), 'success');
-    renderActionCenter(lastPayload);
-  }
-
   function qualityBadge(quality) {
     quality = quality || {};
     var score = Number(quality.score || 0);
@@ -108,6 +110,11 @@ document.addEventListener('DOMContentLoaded', function () {
     var value = String(priority || 'Monitor');
     var state = value.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     return '<span class="mg-placement-priority is-' + esc(state) + '">' + esc(value) + '</span>';
+  }
+
+  function statusPill(status) {
+    var value = String(status || 'planned').toLowerCase();
+    return '<span class="mg-test-status is-' + esc(value) + '">' + esc(label(value)) + '</span>';
   }
 
   function renderCampaignPicker(campaigns) {
@@ -133,14 +140,124 @@ document.addEventListener('DOMContentLoaded', function () {
     node.innerHTML = cards.map(function (card) { return '<article><b>' + esc(card[1]) + '</b><span>' + esc(card[0]) + '</span></article>'; }).join('');
   }
 
-  function renderActionCenter(data) {
-    data = data || {};
-    var placement = data.placement_intelligence || {};
+  function summaryForCampaign(data, campaign) {
+    var ref = campaignRef(campaign);
+    var summaries = (data && data.campaign_summaries) || [];
+    return summaries.find(function (summary) {
+      var item = summary.campaign || {};
+      return ref && (item.slug === ref || item.id === ref);
+    }) || {};
+  }
+
+  function topMode(data) {
+    var modes = (((data || {}).totals || {}).top_modes) || [];
+    return modes[0] ? String(modes[0].value || '') : '';
+  }
+
+  function buildStartPayload(ref) {
+    var stored = campaignActionMap[ref] || {};
+    var action = stored.action || {};
+    var campaign = action.campaign || {};
+    var summary = stored.summary || {};
+    var topDomain = summary.top_domain || {};
+    var topPage = summary.top_page || {};
+    var topSource = summary.top_source || {};
+    return {
+      action: 'start',
+      campaign_ref: campaignRef(campaign) || ref,
+      origin_host: topDomain.value || topDomain.origin_host || '',
+      page_url: topPage.value || topPage.page_url || '',
+      page_path: topPage.page_path || '',
+      source: topSource.value || action.source_signal || '',
+      embed_mode: stored.embed_mode || '',
+      placement_label: action.current_winner || '',
+      next_test: action.next_test || '',
+      ready_rate: action.ready_rate || summary.ready_rate || 0,
+      average_quality_score: action.average_quality_score || summary.average_quality_score || 0,
+      recommended_action: action.recommended_action || '',
+      notes: 'Started from Campaign Embed v4.7 Merchant Action Center'
+    };
+  }
+
+  async function postPlacementTest(payload) {
+    if (!window.Microgifter || !window.Microgifter.post) throw new Error('Microgifter POST helper is not loaded.');
+    var response = await window.Microgifter.post('/api/merchant/campaign-embed-placement-tests.php', payload || {});
+    var result = data(response);
+    renderPlacementTests(result);
+    return result;
+  }
+
+  async function startPersistentTest(ref) {
+    try {
+      var result = await postPlacementTest(buildStartPayload(ref));
+      setActionStatus('<strong>Placement test started.</strong> Status is now persisted in the database.', 'success');
+      await loadPlacementTests();
+      return result;
+    } catch (error) {
+      setActionStatus('<strong>Unable to start persistent test.</strong> ' + esc(error.message || 'Import database/campaign_embed_placement_tests_v4_7.sql and try again.'), 'warn');
+    }
+  }
+
+  async function updatePersistentTest(testId, action) {
+    try {
+      var result = await postPlacementTest({ action: action, test_id: testId });
+      setActionStatus('<strong>Placement test updated.</strong> ' + esc(label(action)) + ' saved.', 'success');
+      if (action === 'compare' && result.compare_url) window.location.href = result.compare_url;
+      else await loadPlacementTests();
+    } catch (error) {
+      setActionStatus('<strong>Unable to update placement test.</strong> ' + esc(error.message || 'Try again after confirming the v4.7 SQL migration is installed.'), 'warn');
+    }
+  }
+
+  function renderPlacementTests(payload) {
+    payload = payload || {};
+    lastPlacementTests = payload;
+    var summaryNode = root.querySelector('[data-embed-test-summary]');
+    var historyNode = root.querySelector('[data-embed-test-history]');
+    var counts = payload.counts || {};
+    var tests = payload.tests || [];
+    if (summaryNode) {
+      summaryNode.innerHTML = ['running', 'planned', 'paused', 'completed'].map(function (key) {
+        return '<article><b>' + count(counts[key] || 0) + '</b><span>' + esc(label(key)) + '</span></article>';
+      }).join('');
+    }
+    if (!historyNode) return;
+    if (!tests.length) {
+      historyNode.innerHTML = '<p class="mg-empty-copy">No persistent placement tests yet. Use <strong>Start persistent test</strong> from a campaign action card after attribution data appears.</p>';
+      return;
+    }
+    historyNode.innerHTML = tests.map(function (test) {
+      var campaign = test.campaign || {};
+      var compareUrl = leadViewUrl({ campaign: campaign.slug || campaign.id || null, origin_host: test.origin_host || null, source: test.source || null, days: '30' });
+      var actions = '<div class="mg-action-button-row">';
+      if (test.status === 'running') actions += '<button type="button" data-embed-test-action="pause" data-embed-test-id="' + esc(test.id) + '">Pause</button><button type="button" data-embed-test-action="complete" data-embed-test-id="' + esc(test.id) + '">End test</button>';
+      if (test.status === 'paused') actions += '<button type="button" data-embed-test-action="resume" data-embed-test-id="' + esc(test.id) + '">Resume</button><button type="button" data-embed-test-action="complete" data-embed-test-id="' + esc(test.id) + '">End test</button>';
+      if (test.status === 'planned') actions += '<button type="button" data-embed-test-action="resume" data-embed-test-id="' + esc(test.id) + '">Start</button>';
+      actions += '<button type="button" data-embed-test-action="compare" data-embed-test-id="' + esc(test.id) + '">Compare results</button><a href="' + esc(compareUrl) + '">View filtered leads</a></div>';
+      return '<article class="mg-embed-test-card"><div>' + statusPill(test.status) + '<strong>' + esc(campaign.title || 'Campaign') + '</strong></div><p>' + esc(test.placement_label || test.origin_host || 'Website embed placement') + '</p><dl><dt>Domain</dt><dd>' + esc(test.origin_host || '—') + '</dd><dt>Page</dt><dd>' + esc(test.page_path || test.page_url || '—') + '</dd><dt>Source</dt><dd>' + esc(label(test.source || 'website_embed')) + '</dd><dt>Mode</dt><dd>' + esc(test.embed_mode || '—') + '</dd><dt>Started</dt><dd>' + esc(test.started_at || '—') + '</dd><dt>Ended</dt><dd>' + esc(test.ended_at || '—') + '</dd></dl>' + actions + '</article>';
+    }).join('');
+  }
+
+  async function loadPlacementTests() {
+    try {
+      var response = await window.Microgifter.get(testsApiUrl());
+      renderPlacementTests(data(response));
+    } catch (error) {
+      renderPlacementTests({ counts: {}, tests: [] });
+      var historyNode = root.querySelector('[data-embed-test-history]');
+      if (historyNode) historyNode.innerHTML = '<p class="mg-empty-copy"><strong>Placement test tracking needs SQL.</strong> Import <code>database/campaign_embed_placement_tests_v4_7.sql</code>, then refresh this page.</p>';
+    }
+  }
+
+  function renderActionCenter(dataPayload) {
+    dataPayload = dataPayload || {};
+    var placement = dataPayload.placement_intelligence || {};
     var campaignActions = placement.campaign_actions || [];
     var primaryNode = root.querySelector('[data-embed-action-primary]');
     var campaignNode = root.querySelector('[data-embed-action-campaigns]');
     var followNode = root.querySelector('[data-embed-action-followups]');
     var filteredUrl = leadViewUrl();
+    campaignActionMap = {};
     if (primaryNode) {
       primaryNode.innerHTML = [
         '<button type="button" data-embed-action-copy-url="' + esc(filteredUrl) + '" data-embed-action-copy-message="Filtered Embed Leads view copied.">Copy filtered lead view</button>',
@@ -154,10 +271,11 @@ document.addEventListener('DOMContentLoaded', function () {
       campaignNode.innerHTML = campaignActions.length ? campaignActions.map(function (action) {
         var campaign = action.campaign || {};
         var ref = campaignRef(campaign);
+        var summary = summaryForCampaign(dataPayload, campaign);
+        campaignActionMap[ref || 'all'] = { action: action, summary: summary, embed_mode: topMode(dataPayload) };
         var leadsUrl = leadViewUrl({ campaign: ref || null });
         var setupUrl = campaignSetupUrl(campaign);
-        var started = testStartedAt(campaign);
-        return '<article class="mg-action-campaign-card"><div>' + priorityPill(action.priority) + '<strong>' + esc(campaign.title || 'Campaign') + '</strong></div><p>' + esc(action.recommended_action || 'Review this campaign placement.') + '</p><div class="mg-action-button-row">' + (campaign.url ? '<a href="' + esc(campaign.url) + '">Open campaign</a>' : '<a href="/merchant-campaigns.php">Open campaigns</a>') + '<a href="' + esc(leadsUrl) + '">View filtered leads</a><button type="button" data-embed-action-copy-url="' + esc(setupUrl) + '" data-embed-action-copy-message="Campaign embed setup link copied.">Copy embed setup link</button><button type="button" data-embed-action-mark-test="' + esc(ref || 'all') + '" data-embed-action-campaign-title="' + esc(campaign.title || 'Campaign') + '">Mark test started</button></div><small>' + (started ? 'Test started: ' + esc(started) : 'No placement test marked yet.') + '</small></article>';
+        return '<article class="mg-action-campaign-card"><div>' + priorityPill(action.priority) + '<strong>' + esc(campaign.title || 'Campaign') + '</strong></div><p>' + esc(action.recommended_action || 'Review this campaign placement.') + '</p><div class="mg-action-button-row">' + (campaign.url ? '<a href="' + esc(campaign.url) + '">Open campaign</a>' : '<a href="/merchant-campaigns.php">Open campaigns</a>') + '<a href="' + esc(leadsUrl) + '">View filtered leads</a><button type="button" data-embed-action-copy-url="' + esc(setupUrl) + '" data-embed-action-copy-message="Campaign embed setup link copied.">Copy embed setup link</button><button type="button" data-embed-action-start-test="' + esc(ref || 'all') + '">Start persistent test</button></div><small>Persistent tracking stores campaign, domain, page, source, mode, status, start/end dates, and comparison metadata.</small></article>';
       }).join('') : '<p class="mg-empty-copy">Campaign action buttons appear after placement intelligence has campaign-level data.</p>';
     }
     if (followNode) {
@@ -172,14 +290,10 @@ document.addEventListener('DOMContentLoaded', function () {
     var cardsNode = root.querySelector('[data-embed-placement-cards]');
     var actionsNode = root.querySelector('[data-embed-placement-actions]');
     var experimentsNode = root.querySelector('[data-embed-placement-experiments]');
-    if (nextNode) {
-      nextNode.innerHTML = placement.recommended_next_action ? '<strong>Recommended Next Action</strong><p>' + esc(placement.recommended_next_action) + '</p>' : '<p class="mg-empty-copy">Placement recommendations appear after attributed embed leads are captured.</p>';
-    }
+    if (nextNode) nextNode.innerHTML = placement.recommended_next_action ? '<strong>Recommended Next Action</strong><p>' + esc(placement.recommended_next_action) + '</p>' : '<p class="mg-empty-copy">Placement recommendations appear after attributed embed leads are captured.</p>';
     if (cardsNode) {
       var cards = placement.summary_cards || [];
-      cardsNode.innerHTML = cards.length ? cards.map(function (card) {
-        return '<article><strong>' + esc(card.value || '—') + '</strong><span>' + esc(card.label || '') + '</span><p>' + esc(card.detail || '') + '</p></article>';
-      }).join('') : '<p class="mg-empty-copy">No placement cards yet.</p>';
+      cardsNode.innerHTML = cards.length ? cards.map(function (card) { return '<article><strong>' + esc(card.value || '—') + '</strong><span>' + esc(card.label || '') + '</span><p>' + esc(card.detail || '') + '</p></article>'; }).join('') : '<p class="mg-empty-copy">No placement cards yet.</p>';
     }
     if (actionsNode) {
       var actions = placement.campaign_actions || [];
@@ -190,9 +304,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     if (experimentsNode) {
       var experiments = placement.experiments || [];
-      experimentsNode.innerHTML = experiments.length ? experiments.map(function (item) {
-        return '<article class="mg-placement-experiment"><div>' + priorityPill(item.priority) + '<strong>' + esc(item.title || 'Experiment') + '</strong></div><p>' + esc(item.detail || '') + '</p></article>';
-      }).join('') : '<p class="mg-empty-copy">No placement experiments queued yet.</p>';
+      experimentsNode.innerHTML = experiments.length ? experiments.map(function (item) { return '<article class="mg-placement-experiment"><div>' + priorityPill(item.priority) + '<strong>' + esc(item.title || 'Experiment') + '</strong></div><p>' + esc(item.detail || '') + '</p></article>'; }).join('') : '<p class="mg-empty-copy">No placement experiments queued yet.</p>';
     }
   }
 
@@ -203,15 +315,11 @@ document.addEventListener('DOMContentLoaded', function () {
     var recNode = root.querySelector('[data-embed-recommendations]');
     if (insightNode) {
       var cards = performance.insight_cards || [];
-      insightNode.innerHTML = cards.length ? cards.map(function (card) {
-        return '<article><strong>' + esc(card.value || '—') + '</strong><span>' + esc(card.label || '') + '</span><p>' + esc(card.detail || '') + '</p></article>';
-      }).join('') : '<p class="mg-empty-copy">Performance insights appear after attributed embed leads are captured.</p>';
+      insightNode.innerHTML = cards.length ? cards.map(function (card) { return '<article><strong>' + esc(card.value || '—') + '</strong><span>' + esc(card.label || '') + '</span><p>' + esc(card.detail || '') + '</p></article>'; }).join('') : '<p class="mg-empty-copy">Performance insights appear after attributed embed leads are captured.</p>';
     }
     if (qualityNode) {
       var quality = performance.quality_breakdown || [];
-      qualityNode.innerHTML = quality.length ? quality.map(function (item) {
-        return '<article><b>' + count(item.total) + '</b><span>' + esc(item.label || 'Quality') + '</span></article>';
-      }).join('') : '<p class="mg-empty-copy">No lead quality mix yet.</p>';
+      qualityNode.innerHTML = quality.length ? quality.map(function (item) { return '<article><b>' + count(item.total) + '</b><span>' + esc(item.label || 'Quality') + '</span></article>'; }).join('') : '<p class="mg-empty-copy">No lead quality mix yet.</p>';
     }
     if (recNode) {
       var recs = performance.recommendations || [];
@@ -223,10 +331,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var node = root.querySelector('[data-embed-leads-notification-badge]');
     if (!node) return;
     var since = Date.now() - (24 * 60 * 60 * 1000);
-    var recent = (rows || []).filter(function (row) {
-      var time = Date.parse(row.created_at || '');
-      return !Number.isNaN(time) && time >= since;
-    });
+    var recent = (rows || []).filter(function (row) { var time = Date.parse(row.created_at || ''); return !Number.isNaN(time) && time >= since; });
     if (!recent.length) { node.hidden = true; node.innerHTML = ''; return; }
     var latest = recent[0] || {};
     node.hidden = false;
@@ -238,9 +343,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!node) return;
     rows = rows || [];
     if (!rows.length) { node.innerHTML = '<p class="mg-empty-copy">No lead domains have been attributed yet.</p>'; return; }
-    node.innerHTML = rows.map(function (row) {
-      return '<button type="button" data-filter-domain="' + esc(row.origin_host || '') + '"><strong>' + esc(row.origin_host || 'Unknown domain') + '</strong><b>' + count(row.total) + '</b><span>embed leads</span></button>';
-    }).join('');
+    node.innerHTML = rows.map(function (row) { return '<button type="button" data-filter-domain="' + esc(row.origin_host || '') + '"><strong>' + esc(row.origin_host || 'Unknown domain') + '</strong><b>' + count(row.total) + '</b><span>embed leads</span></button>'; }).join('');
   }
 
   function renderPages(rows) {
@@ -269,7 +372,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }).join('');
   }
 
-  function renderFilterSummary(data, rowCount) {
+  function renderFilterSummary(dataPayload, rowCount) {
     var node = root.querySelector('[data-embed-leads-filter-summary]');
     if (!node) return;
     var params = queryParams();
@@ -278,8 +381,8 @@ document.addEventListener('DOMContentLoaded', function () {
     if (params.get('campaign')) filters.push('Campaign: ' + esc(params.get('campaign')));
     if (params.get('origin_host')) filters.push('Domain: ' + esc(params.get('origin_host')));
     if (params.get('source')) filters.push('Source: ' + esc(label(params.get('source'))));
-    var total = data && data.totals ? data.totals.total_embed_leads : rowCount;
-    var ready = data && data.totals ? data.totals.ready_for_follow_up : 0;
+    var total = dataPayload && dataPayload.totals ? dataPayload.totals.total_embed_leads : rowCount;
+    var ready = dataPayload && dataPayload.totals ? dataPayload.totals.ready_for_follow_up : 0;
     node.innerHTML = '<strong>' + count(total) + '</strong> attributed embed lead' + (Number(total || 0) === 1 ? '' : 's') + ' · <strong>' + count(ready) + '</strong> ready for follow-up · ' + filters.join(' · ');
   }
 
@@ -327,14 +430,8 @@ document.addEventListener('DOMContentLoaded', function () {
     selectedSource = '';
   }
 
-  function findRow(id) {
-    return (lastRows || []).find(function (row) { return String(row.lead_event_id || '') === String(id || ''); }) || null;
-  }
-
-  function closeDrawer() {
-    var drawer = root.querySelector('[data-embed-leads-drawer]');
-    if (drawer) drawer.hidden = true;
-  }
+  function findRow(id) { return (lastRows || []).find(function (row) { return String(row.lead_event_id || '') === String(id || ''); }) || null; }
+  function closeDrawer() { var drawer = root.querySelector('[data-embed-leads-drawer]'); if (drawer) drawer.hidden = true; }
 
   function openDrawer(row) {
     var drawer = root.querySelector('[data-embed-leads-drawer]');
@@ -343,9 +440,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var contact = row.crm_contact || {};
     var campaign = row.campaign || {};
     var quality = row.lead_quality || {};
-    var timeline = (row.timeline || []).map(function (item) {
-      return '<li><span>' + esc(item.label || '') + '</span><strong>' + esc(item.value || '—') + '</strong></li>';
-    }).join('');
+    var timeline = (row.timeline || []).map(function (item) { return '<li><span>' + esc(item.label || '') + '</span><strong>' + esc(item.value || '—') + '</strong></li>'; }).join('');
     var signals = (quality.signals || []).map(function (item) { return '<li>' + esc(item) + '</li>'; }).join('');
     var missing = (quality.missing || []).map(function (item) { return '<li>' + esc(item) + '</li>'; }).join('');
     var links = '';
@@ -356,29 +451,28 @@ document.addEventListener('DOMContentLoaded', function () {
     drawer.hidden = false;
   }
 
-  function exportCsv() {
-    window.location.href = apiUrl({ format: 'csv' });
-  }
+  function exportCsv() { window.location.href = apiUrl({ format: 'csv' }); }
 
   async function loadLeads(pushState) {
     setAlert('<strong>Loading website embed leads...</strong>', 'info');
     try {
       var response = await Microgifter.get(apiUrl());
-      var data = response.data || response;
-      lastPayload = data;
-      renderCampaignPicker(data.campaigns || []);
-      renderStats(data.totals || {});
-      renderActionCenter(data);
-      renderPlacementIntelligence(data.placement_intelligence || {});
-      renderPerformance(data.performance || {});
-      renderCampaignSummaries(data.campaign_summaries || []);
-      renderPages((data.totals || {}).top_pages || []);
-      renderDomains((data.totals || {}).top_domains || []);
-      renderRows(data.rows || []);
-      renderNotificationBadge(data.rows || []);
-      renderFilterSummary(data, (data.rows || []).length);
-      if (data.schema_ready === false) setAlert('<strong>Embed leads data is not ready.</strong> No new SQL is required by v4.6; this view uses existing CRM/campaign tables when present.', 'warn');
-      else if (!(data.rows || []).length) setAlert('<strong>No embed leads found for these filters.</strong> Run Embed QA or submit a public website embed to create an attributed row.', 'info');
+      var payload = data(response);
+      lastPayload = payload;
+      renderCampaignPicker(payload.campaigns || []);
+      renderStats(payload.totals || {});
+      renderActionCenter(payload);
+      renderPlacementIntelligence(payload.placement_intelligence || {});
+      renderPerformance(payload.performance || {});
+      renderCampaignSummaries(payload.campaign_summaries || []);
+      renderPages((payload.totals || {}).top_pages || []);
+      renderDomains((payload.totals || {}).top_domains || []);
+      renderRows(payload.rows || []);
+      renderNotificationBadge(payload.rows || []);
+      renderFilterSummary(payload, (payload.rows || []).length);
+      await loadPlacementTests();
+      if (payload.schema_ready === false) setAlert('<strong>Embed leads data is not ready.</strong> Import the existing CRM/campaign tables before using this view.', 'warn');
+      else if (!(payload.rows || []).length) setAlert('<strong>No embed leads found for these filters.</strong> Run Embed QA or submit a public website embed to create an attributed row.', 'info');
       else setAlert('', '');
       if (pushState && window.history) window.history.replaceState({}, '', '/merchant-campaign-embed-leads.php?' + queryParams().toString());
     } catch (error) {
@@ -395,11 +489,13 @@ document.addEventListener('DOMContentLoaded', function () {
     var close = event.target && event.target.closest ? event.target.closest('[data-embed-leads-close]') : null;
     var exportButton = event.target && event.target.closest ? event.target.closest('[data-embed-leads-export], [data-embed-action-export]') : null;
     var copyButton = event.target && event.target.closest ? event.target.closest('[data-embed-action-copy-url]') : null;
-    var markButton = event.target && event.target.closest ? event.target.closest('[data-embed-action-mark-test]') : null;
+    var startButton = event.target && event.target.closest ? event.target.closest('[data-embed-action-start-test]') : null;
+    var testButton = event.target && event.target.closest ? event.target.closest('[data-embed-test-action]') : null;
     if (close) { closeDrawer(); return; }
     if (exportButton) { event.preventDefault(); exportCsv(); return; }
     if (copyButton) { event.preventDefault(); copyText(copyButton.getAttribute('data-embed-action-copy-url') || '', copyButton.getAttribute('data-embed-action-copy-message') || 'Copied.'); return; }
-    if (markButton) { event.preventDefault(); markTestStarted({ id: markButton.getAttribute('data-embed-action-mark-test') || '', title: markButton.getAttribute('data-embed-action-campaign-title') || 'Campaign' }, 'Track this placement test for seven days.'); return; }
+    if (startButton) { event.preventDefault(); startPersistentTest(startButton.getAttribute('data-embed-action-start-test') || 'all'); return; }
+    if (testButton) { event.preventDefault(); updatePersistentTest(testButton.getAttribute('data-embed-test-id') || '', testButton.getAttribute('data-embed-test-action') || 'compare'); return; }
     if (detail) { openDrawer(findRow(detail.getAttribute('data-lead-detail'))); return; }
     if (reset) { resetFilters(); closeDrawer(); loadLeads(true); return; }
     if (!button) return;
