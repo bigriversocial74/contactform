@@ -82,6 +82,29 @@ function mg_embed_leads_page_path(string $pageUrl): string
     return is_string($path) && $path !== '' ? $path : $pageUrl;
 }
 
+function mg_embed_leads_page_label(string $pagePath): string
+{
+    $path = strtolower(trim($pagePath));
+    if ($path === '' || $path === '/' || str_contains($path, 'home')) return 'homepage';
+    if (str_contains($path, 'menu')) return 'menu page';
+    if (str_contains($path, 'special') || str_contains($path, 'deal') || str_contains($path, 'offer')) return 'specials page';
+    if (str_contains($path, 'book') || str_contains($path, 'reservation')) return 'booking page';
+    if (str_contains($path, 'event')) return 'events page';
+    if (str_contains($path, 'gift')) return 'gift page';
+    return trim($pagePath) !== '' ? trim($pagePath) : 'website page';
+}
+
+function mg_embed_leads_next_page_suggestion(string $topPage): string
+{
+    $path = strtolower(trim($topPage));
+    if ($path === '' || $path === '/' || str_contains($path, 'home')) return 'specials, menu, booking, or events page';
+    if (str_contains($path, 'menu')) return 'homepage or specials page';
+    if (str_contains($path, 'special') || str_contains($path, 'deal') || str_contains($path, 'offer')) return 'homepage or menu page';
+    if (str_contains($path, 'book') || str_contains($path, 'reservation')) return 'homepage or specials page';
+    if (str_contains($path, 'event')) return 'homepage or booking page';
+    return 'homepage or specials page';
+}
+
 function mg_embed_leads_pick_top(array $counts): array
 {
     arsort($counts);
@@ -141,6 +164,90 @@ function mg_embed_leads_performance_recommendations(array $context): array
     if ($readyRate < 60) $recommendations[] = 'Improve follow-up readiness by making sure embed forms collect email and keep campaign/contact links connected.';
     if ($newRate >= 50) $recommendations[] = 'New-contact rate is strong. Route these leads into a first-time customer follow-up campaign.';
     return array_values(array_slice(array_unique($recommendations), 0, 5));
+}
+
+function mg_embed_leads_placement_action(array $summary): array
+{
+    $campaign = $summary['campaign'] ?? [];
+    $topPage = (string)($summary['top_page']['page_path'] ?? $summary['top_page']['page_url'] ?? '');
+    $topDomain = (string)($summary['top_domain']['value'] ?? $summary['top_domain']['origin_host'] ?? '');
+    $topSource = (string)($summary['top_source']['value'] ?? '');
+    $readyRate = (int)($summary['ready_rate'] ?? 0);
+    $qualityScore = (int)($summary['average_quality_score'] ?? 0);
+    $leadCount = (int)($summary['total_embed_leads'] ?? 0);
+    $currentLabel = mg_embed_leads_page_label($topPage);
+    $nextPlacement = mg_embed_leads_next_page_suggestion($topPage);
+    $priority = 'Monitor';
+    $action = 'Keep collecting embed data before changing placement.';
+    $reason = 'This campaign needs more attributed leads before placement recommendations become reliable.';
+    if ($leadCount >= 3 && $qualityScore >= 70 && $readyRate >= 60) {
+        $priority = 'Scale';
+        $action = 'Scale the winning embed placement and test one adjacent page.';
+        $reason = 'The current placement is producing ready, higher-quality leads.';
+    } elseif ($leadCount >= 2 && $readyRate < 60) {
+        $priority = 'Fix follow-up';
+        $action = 'Keep placement steady, but improve the form or CRM follow-up path before expanding.';
+        $reason = 'Traffic is converting, but too few leads are ready for merchant follow-up.';
+    } elseif ($leadCount >= 1) {
+        $priority = 'Test';
+        $action = 'A/B test this embed on the ' . $nextPlacement . '.';
+        $reason = 'You have an early winning placement. Test a nearby purchase-intent page next.';
+    }
+    return [
+        'campaign' => $campaign,
+        'priority' => $priority,
+        'recommended_action' => $action,
+        'reason' => $reason,
+        'current_winner' => trim(($topDomain !== '' ? $topDomain : 'website') . ($currentLabel !== '' ? ' · ' . $currentLabel : '')),
+        'next_test' => $nextPlacement,
+        'source_signal' => $topSource !== '' ? $topSource : 'website_embed',
+        'ready_rate' => $readyRate,
+        'average_quality_score' => $qualityScore,
+        'total_embed_leads' => $leadCount,
+    ];
+}
+
+function mg_embed_leads_placement_intelligence(array $context): array
+{
+    $total = (int)($context['total'] ?? 0);
+    $topDomain = $context['top_domain'] ?? null;
+    $topPage = $context['top_page'] ?? null;
+    $topSource = $context['top_source'] ?? null;
+    $topMode = $context['top_mode'] ?? null;
+    $campaignActions = $context['campaign_actions'] ?? [];
+    if ($total < 1) {
+        return [
+            'recommended_next_action' => 'Publish or QA a website embed, then return here after the first attributed lead.',
+            'summary_cards' => [],
+            'campaign_actions' => [],
+            'experiments' => [['title' => 'First attribution test', 'detail' => 'Run Embed QA or submit a live website embed to create the first placement signal.', 'priority' => 'Start']],
+        ];
+    }
+    $topPagePath = (string)($topPage['page_path'] ?? $topPage['page_url'] ?? '');
+    $nextPlacement = mg_embed_leads_next_page_suggestion($topPagePath);
+    $domain = (string)($topDomain['origin_host'] ?? 'website');
+    $pageLabel = mg_embed_leads_page_label($topPagePath);
+    $mode = (string)($topMode['value'] ?? 'embed');
+    $source = (string)($topSource['value'] ?? 'website_embed');
+    $recommended = 'Keep the best current placement on ' . $domain . ' and test the same campaign on the ' . $nextPlacement . '.';
+    $cards = [
+        ['label' => 'Recommended next action', 'value' => 'Test adjacent page', 'detail' => $recommended],
+        ['label' => 'Best current placement', 'value' => $pageLabel, 'detail' => isset($topPage['total']) ? $topPage['total'] . ' attributed leads from this page.' : 'No page winner yet.'],
+        ['label' => 'Winning domain', 'value' => $domain, 'detail' => isset($topDomain['total']) ? $topDomain['total'] . ' attributed leads from this domain.' : 'No domain winner yet.'],
+        ['label' => 'Winning mode', 'value' => $mode, 'detail' => isset($topMode['total']) ? $topMode['total'] . ' attributed leads from this embed mode.' : 'No embed-mode winner yet.'],
+        ['label' => 'Winning source', 'value' => $source, 'detail' => isset($topSource['total']) ? $topSource['total'] . ' attributed leads from this source.' : 'No source winner yet.'],
+    ];
+    $experiments = [
+        ['title' => 'Placement A/B test', 'detail' => 'Keep the current winning page live and add the same campaign embed to the ' . $nextPlacement . '.', 'priority' => 'High'],
+        ['title' => 'Mode test', 'detail' => 'Use ' . $mode . ' as the control placement and test one alternate embed mode for seven days.', 'priority' => 'Medium'],
+        ['title' => 'Source test', 'detail' => 'Reuse the ' . str_replace('_', ' ', $source) . ' campaign format for the next merchant promotion.', 'priority' => 'Medium'],
+    ];
+    return [
+        'recommended_next_action' => $recommended,
+        'summary_cards' => $cards,
+        'campaign_actions' => array_values(array_slice($campaignActions, 0, 8)),
+        'experiments' => $experiments,
+    ];
 }
 
 function mg_embed_leads_csv(array $rows, array $totals): void
@@ -203,6 +310,7 @@ if (!$ready) {
         'campaigns' => [],
         'totals' => ['total_embed_leads' => 0, 'new_contacts' => 0, 'returning_contacts' => 0, 'campaigns' => 0, 'ready_for_follow_up' => 0, 'average_quality_score' => 0, 'top_domains' => [], 'top_pages' => []],
         'performance' => ['insight_cards' => [], 'quality_breakdown' => [], 'recommendations' => []],
+        'placement_intelligence' => ['recommended_next_action' => '', 'summary_cards' => [], 'campaign_actions' => [], 'experiments' => []],
         'campaign_summaries' => [],
         'rows' => [],
     ], 'Campaign embed leads tables are not available yet.');
@@ -352,12 +460,13 @@ $topSources = mg_embed_leads_pick_top($sourceCounts);
 $topModes = mg_embed_leads_pick_top($modeCounts);
 
 $campaignSummaryRows = [];
+$placementCampaignActions = [];
 foreach ($campaignSummaries as $summary) {
     $topDomain = mg_embed_leads_pick_top($summary['domains']);
     $topPage = mg_embed_leads_pick_top($summary['pages']);
     $topSource = mg_embed_leads_pick_top($summary['sources']);
     $total = max(1, (int)$summary['total_embed_leads']);
-    $campaignSummaryRows[] = [
+    $summaryRow = [
         'campaign' => $summary['campaign'],
         'total_embed_leads' => (int)$summary['total_embed_leads'],
         'ready_for_follow_up' => (int)$summary['ready_for_follow_up'],
@@ -368,8 +477,12 @@ foreach ($campaignSummaries as $summary) {
         'top_page' => $topPage[0] ?? null,
         'top_source' => $topSource[0] ?? null,
     ];
+    $summaryRow['placement_action'] = mg_embed_leads_placement_action($summaryRow);
+    $campaignSummaryRows[] = $summaryRow;
+    $placementCampaignActions[] = $summaryRow['placement_action'];
 }
 usort($campaignSummaryRows, static fn(array $a, array $b): int => ($b['total_embed_leads'] <=> $a['total_embed_leads']));
+usort($placementCampaignActions, static fn(array $a, array $b): int => ($b['total_embed_leads'] <=> $a['total_embed_leads']));
 
 $totalContacts = count($contactIds);
 $newContacts = count($newContactIds);
@@ -409,6 +522,14 @@ $performance = [
         'new_rate' => $newRate,
     ]),
 ];
+$placementIntelligence = mg_embed_leads_placement_intelligence([
+    'total' => $totalLeads,
+    'top_page' => $topPages[0] ?? null,
+    'top_domain' => $topDomains[0] ?? null,
+    'top_source' => $topSources[0] ?? null,
+    'top_mode' => $topModes[0] ?? null,
+    'campaign_actions' => $placementCampaignActions,
+]);
 
 if ($format === 'csv') mg_embed_leads_csv($rows, $totals);
 
@@ -419,6 +540,7 @@ mg_ok([
     'campaigns' => mg_embed_leads_campaigns($pdo, $merchantId),
     'totals' => $totals,
     'performance' => $performance,
+    'placement_intelligence' => $placementIntelligence,
     'campaign_summaries' => array_slice($campaignSummaryRows, 0, 12),
     'rows' => $rows,
 ], 'Campaign embed leads loaded.');

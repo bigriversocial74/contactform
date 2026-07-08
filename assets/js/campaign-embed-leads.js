@@ -47,6 +47,12 @@ document.addEventListener('DOMContentLoaded', function () {
     return '<span class="mg-lead-quality-badge is-' + state + '"><b>' + esc(quality.label || 'Needs context') + '</b><em>' + esc(score) + '/100</em></span>';
   }
 
+  function priorityPill(priority) {
+    var value = String(priority || 'Monitor');
+    var state = value.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    return '<span class="mg-placement-priority is-' + esc(state) + '">' + esc(value) + '</span>';
+  }
+
   function renderCampaignPicker(campaigns) {
     var select = root.querySelector('[data-embed-leads-campaign]');
     if (!select) return;
@@ -68,6 +74,36 @@ document.addEventListener('DOMContentLoaded', function () {
       ['Avg Quality', count(totals.average_quality_score) + '/100']
     ];
     node.innerHTML = cards.map(function (card) { return '<article><b>' + esc(card[1]) + '</b><span>' + esc(card[0]) + '</span></article>'; }).join('');
+  }
+
+  function renderPlacementIntelligence(placement) {
+    placement = placement || {};
+    var nextNode = root.querySelector('[data-embed-placement-next]');
+    var cardsNode = root.querySelector('[data-embed-placement-cards]');
+    var actionsNode = root.querySelector('[data-embed-placement-actions]');
+    var experimentsNode = root.querySelector('[data-embed-placement-experiments]');
+    if (nextNode) {
+      nextNode.innerHTML = placement.recommended_next_action ? '<strong>Recommended Next Action</strong><p>' + esc(placement.recommended_next_action) + '</p>' : '<p class="mg-empty-copy">Placement recommendations appear after attributed embed leads are captured.</p>';
+    }
+    if (cardsNode) {
+      var cards = placement.summary_cards || [];
+      cardsNode.innerHTML = cards.length ? cards.map(function (card) {
+        return '<article><strong>' + esc(card.value || '—') + '</strong><span>' + esc(card.label || '') + '</span><p>' + esc(card.detail || '') + '</p></article>';
+      }).join('') : '<p class="mg-empty-copy">No placement cards yet.</p>';
+    }
+    if (actionsNode) {
+      var actions = placement.campaign_actions || [];
+      actionsNode.innerHTML = actions.length ? actions.map(function (action) {
+        var campaign = action.campaign || {};
+        return '<article class="mg-placement-action-card"><div>' + priorityPill(action.priority) + '<strong>' + esc(campaign.title || 'Campaign') + '</strong></div><p>' + esc(action.recommended_action || '') + '</p><small>' + esc(action.reason || '') + '</small><dl><dt>Current winner</dt><dd>' + esc(action.current_winner || '—') + '</dd><dt>Next test</dt><dd>' + esc(action.next_test || '—') + '</dd><dt>Ready / Quality</dt><dd>' + esc(action.ready_rate || 0) + '% · ' + esc(action.average_quality_score || 0) + '/100</dd></dl>' + (campaign.url ? '<a href="' + esc(campaign.url) + '">Open campaign</a>' : '') + '</article>';
+      }).join('') : '<p class="mg-empty-copy">Campaign placement actions appear after a campaign has attributed leads.</p>';
+    }
+    if (experimentsNode) {
+      var experiments = placement.experiments || [];
+      experimentsNode.innerHTML = experiments.length ? experiments.map(function (item) {
+        return '<article class="mg-placement-experiment"><div>' + priorityPill(item.priority) + '<strong>' + esc(item.title || 'Experiment') + '</strong></div><p>' + esc(item.detail || '') + '</p></article>';
+      }).join('') : '<p class="mg-empty-copy">No placement experiments queued yet.</p>';
+    }
   }
 
   function renderPerformance(performance) {
@@ -138,7 +174,8 @@ document.addEventListener('DOMContentLoaded', function () {
       var campaign = summary.campaign || {};
       var domain = summary.top_domain ? summary.top_domain.value + ' · ' + count(summary.top_domain.total) : 'No domain yet';
       var source = summary.top_source ? summary.top_source.value + ' · ' + count(summary.top_source.total) : 'No source yet';
-      return '<article class="mg-embed-leads-campaign-card"><div><strong>' + esc(campaign.title || 'Campaign') + '</strong><small>' + esc(label(campaign.campaign_type || '')) + '</small></div><b>' + count(summary.total_embed_leads) + '</b><span>Total embed leads</span><p><em>Ready:</em> ' + esc(summary.ready_for_follow_up || 0) + ' · ' + esc(summary.ready_rate || 0) + '%</p><p><em>Avg quality:</em> ' + esc(summary.average_quality_score || 0) + '/100</p><p><em>Top domain:</em> ' + esc(domain) + '</p><p><em>Top source:</em> ' + esc(source) + '</p>' + (campaign.url ? '<a href="' + esc(campaign.url) + '">Open campaign</a>' : '') + '</article>';
+      var placement = summary.placement_action || {};
+      return '<article class="mg-embed-leads-campaign-card"><div><strong>' + esc(campaign.title || 'Campaign') + '</strong><small>' + esc(label(campaign.campaign_type || '')) + '</small></div><b>' + count(summary.total_embed_leads) + '</b><span>Total embed leads</span><p><em>Ready:</em> ' + esc(summary.ready_for_follow_up || 0) + ' · ' + esc(summary.ready_rate || 0) + '%</p><p><em>Avg quality:</em> ' + esc(summary.average_quality_score || 0) + '/100</p><p><em>Top domain:</em> ' + esc(domain) + '</p><p><em>Top source:</em> ' + esc(source) + '</p>' + (placement.recommended_action ? '<p><em>Next action:</em> ' + esc(placement.recommended_action) + '</p>' : '') + (campaign.url ? '<a href="' + esc(campaign.url) + '">Open campaign</a>' : '') + '</article>';
     }).join('');
   }
 
@@ -240,6 +277,7 @@ document.addEventListener('DOMContentLoaded', function () {
       var data = response.data || response;
       renderCampaignPicker(data.campaigns || []);
       renderStats(data.totals || {});
+      renderPlacementIntelligence(data.placement_intelligence || {});
       renderPerformance(data.performance || {});
       renderCampaignSummaries(data.campaign_summaries || []);
       renderPages((data.totals || {}).top_pages || []);
@@ -247,7 +285,7 @@ document.addEventListener('DOMContentLoaded', function () {
       renderRows(data.rows || []);
       renderNotificationBadge(data.rows || []);
       renderFilterSummary(data, (data.rows || []).length);
-      if (data.schema_ready === false) setAlert('<strong>Embed leads data is not ready.</strong> No new SQL is required by v4.4; this view uses existing CRM/campaign tables when present.', 'warn');
+      if (data.schema_ready === false) setAlert('<strong>Embed leads data is not ready.</strong> No new SQL is required by v4.5; this view uses existing CRM/campaign tables when present.', 'warn');
       else if (!(data.rows || []).length) setAlert('<strong>No embed leads found for these filters.</strong> Run Embed QA or submit a public website embed to create an attributed row.', 'info');
       else setAlert('', '');
       if (pushState && window.history) window.history.replaceState({}, '', '/merchant-campaign-embed-leads.php?' + queryParams().toString());

@@ -48,9 +48,9 @@ require __DIR__ . '/includes/header.php';
       <?php else: ?>
         <section class="mg-embed-leads-hero">
           <div>
-            <span class="mg-eyebrow">Campaign Embed Performance v4.4</span>
-            <h1>Conversion Quality Layer</h1>
-            <p>See which embeds are actually working: lead quality, follow-up readiness, top conversion sources, and merchant recommendations from existing attribution data.</p>
+            <span class="mg-eyebrow">Campaign Embed Optimization v4.5</span>
+            <h1>Placement Intelligence</h1>
+            <p>Use conversion quality and attribution signals to decide where each campaign embed should stay, scale, or be tested next.</p>
             <div class="mg-embed-leads-hero-actions">
               <a class="mg-btn mg-btn-soft" href="/merchant-campaign-embed-qa.php">Run Embed QA</a>
               <a class="mg-btn mg-btn-ghost" href="/merchant-campaign-embed-analytics.php">Embed Analytics</a>
@@ -91,6 +91,16 @@ require __DIR__ . '/includes/header.php';
           <article><b>—</b><span>New Contacts</span></article>
           <article><b>—</b><span>Ready Follow-Up</span></article>
           <article><b>—</b><span>Avg Quality</span></article>
+        </section>
+
+        <section class="mg-embed-placement-panel mg-embed-leads-panel">
+          <div class="mg-panel-head"><div><span class="mg-eyebrow">Placement Intelligence</span><h2>Recommended next action</h2></div></div>
+          <div class="mg-embed-placement-next" data-embed-placement-next></div>
+          <div class="mg-embed-placement-cards" data-embed-placement-cards></div>
+          <div class="mg-embed-placement-split">
+            <div><h3>Campaign placement actions</h3><div class="mg-embed-placement-actions" data-embed-placement-actions></div></div>
+            <div><h3>Experiment queue</h3><div class="mg-embed-placement-experiments" data-embed-placement-experiments></div></div>
+          </div>
         </section>
 
         <section class="mg-embed-performance-panel mg-embed-leads-panel">
