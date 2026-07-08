@@ -1,44 +1,16 @@
 (function () {
   'use strict';
 
-  var script = document.currentScript || (function () {
-    var scripts = document.getElementsByTagName('script');
-    return scripts[scripts.length - 1];
-  })();
-
-  function scriptOrigin() {
-    try { return new URL(script && script.src ? script.src : '', document.baseURI).origin; }
-    catch (error) { return 'https://microgifter.com'; }
-  }
-
+  var script = document.currentScript || (function () { var scripts = document.getElementsByTagName('script'); return scripts[scripts.length - 1]; })();
+  function scriptOrigin() { try { return new URL(script && script.src ? script.src : '', document.baseURI).origin; } catch (error) { return 'https://microgifter.com'; } }
   var apiBase = (script && script.getAttribute('data-microgifter-api-base')) || scriptOrigin();
   var scriptDebug = !!(script && script.getAttribute('data-microgifter-debug') === '1');
 
-  function esc(value) {
-    return String(value == null ? '' : value).replace(/[&<>'"]/g, function (char) {
-      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char];
-    });
-  }
-
-  function url(path) {
-    try { return new URL(path, apiBase).toString(); }
-    catch (error) { return String(apiBase).replace(/\/$/, '') + '/' + String(path || '').replace(/^\//, ''); }
-  }
-
-  function isDebug(container) {
-    return scriptDebug || !!(container && container.getAttribute('data-microgifter-debug') === '1');
-  }
-
-  function log(container, message, detail) {
-    if (!isDebug(container) || !window.console || !console.info) return;
-    console.info('[Microgifter Campaign Embed] ' + message, detail || '');
-  }
-
-  function emit(container, name, detail) {
-    try {
-      container.dispatchEvent(new CustomEvent(name, { bubbles: true, detail: detail || {} }));
-    } catch (error) {}
-  }
+  function esc(value) { return String(value == null ? '' : value).replace(/[&<>'"]/g, function (char) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]; }); }
+  function url(path) { try { return new URL(path, apiBase).toString(); } catch (error) { return String(apiBase).replace(/\/$/, '') + '/' + String(path || '').replace(/^\//, ''); } }
+  function isDebug(container) { return scriptDebug || !!(container && container.getAttribute('data-microgifter-debug') === '1'); }
+  function log(container, message, detail) { if (!isDebug(container) || !window.console || !console.info) return; console.info('[Microgifter Campaign Embed] ' + message, detail || ''); }
+  function emit(container, name, detail) { try { container.dispatchEvent(new CustomEvent(name, { bubbles: true, detail: detail || {} })); } catch (error) {} }
 
   function injectBaseStyles() {
     if (document.getElementById('microgifter-campaign-embed-style')) return;
@@ -61,7 +33,10 @@
       '.microgifter-campaign-widget .mg-embed-launcher-panel[hidden]{display:none!important;}' +
       '.microgifter-campaign-widget .mg-embed-launcher-panel{margin-top:1rem;}' +
       '.microgifter-campaign-widget .mg-embed-muted{opacity:.74;}' +
-      '.microgifter-campaign-widget .mg-embed-brand{font-size:.82em;opacity:.7;margin-top:.75rem;}';
+      '.microgifter-campaign-widget .mg-embed-brand{font-size:.82em;opacity:.7;margin-top:.75rem;}' +
+      '.microgifter-campaign-widget.is-compact article{padding:1rem;border-radius:.85rem;}' +
+      '.microgifter-campaign-widget.is-compact .mg-embed-meta{display:none;}' +
+      '.microgifter-campaign-widget.is-compact form{gap:.55rem;}';
     document.head.appendChild(style);
   }
 
@@ -72,153 +47,117 @@
     if (!response.ok || data.ok === false) {
       var message = data.message || data.error || 'Microgifter campaign request failed.';
       if (requestId) message += ' Reference: ' + requestId;
-      var error = new Error(message);
-      error.status = response.status;
-      error.requestId = requestId;
-      error.payload = data;
-      throw error;
+      var error = new Error(message); error.status = response.status; error.requestId = requestId; error.payload = data; throw error;
     }
     return data.data || data;
   }
 
+  function track(container, payload, eventType, metadata) {
+    if (!payload || !payload.campaign) return;
+    var body = JSON.stringify({
+      campaign_id: payload.campaign.id,
+      campaign: payload.campaign.slug || payload.campaign.id,
+      campaign_type: payload.campaign.campaign_type || '',
+      event_type: eventType,
+      embed_origin: window.location.origin || '',
+      page_url: window.location.href || '',
+      embed_mode: container.getAttribute('data-microgifter-effective-display') || container.getAttribute('data-microgifter-display') || '',
+      embed_source: container.getAttribute('data-microgifter-source') || 'website_embed',
+      debug: isDebug(container),
+      metadata: metadata || {}
+    });
+    var endpoint = url('/api/public/campaigns/embed-event.php');
+    try {
+      if (navigator.sendBeacon) {
+        var blob = new Blob([body], { type: 'application/json' });
+        if (navigator.sendBeacon(endpoint, blob)) return;
+      }
+    } catch (error) {}
+    fetch(endpoint, { method: 'POST', mode: 'cors', keepalive: true, headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }, body: body }).catch(function () {});
+  }
+
   function extraFields(campaign) {
     var type = campaign.campaign_type || '';
-    if (type === 'contest_giveaway') {
-      return '<label>Entry note<textarea name="entry_note" rows="3" placeholder="Add a short note for this contest"></textarea></label>';
-    }
-    if (type === 'referral_reward') {
-      return '<label>Referral note<textarea name="entry_note" rows="3" placeholder="Who referred you or who should we contact?"></textarea></label>';
-    }
-    if (type === 'birthday_vip') {
-      return '<label>Birthday month<select name="birthday_month"><option value="">Select month</option><option>January</option><option>February</option><option>March</option><option>April</option><option>May</option><option>June</option><option>July</option><option>August</option><option>September</option><option>October</option><option>November</option><option>December</option></select></label>';
-    }
-    if (type === 'agent_offer') {
-      return '<label>Offer interest<textarea name="entry_note" rows="3" placeholder="What kind of local offer are you interested in?"></textarea></label>';
-    }
+    if (type === 'contest_giveaway') return '<label>Entry note<textarea name="entry_note" rows="3" placeholder="Add a short note for this contest"></textarea></label>';
+    if (type === 'referral_reward') return '<label>Referral note<textarea name="entry_note" rows="3" placeholder="Who referred you or who should we contact?"></textarea></label>';
+    if (type === 'birthday_vip') return '<label>Birthday month<select name="birthday_month"><option value="">Select month</option><option>January</option><option>February</option><option>March</option><option>April</option><option>May</option><option>June</option><option>July</option><option>August</option><option>September</option><option>October</option><option>November</option><option>December</option></select></label>';
+    if (type === 'agent_offer') return '<label>Offer interest<textarea name="entry_note" rows="3" placeholder="What kind of local offer are you interested in?"></textarea></label>';
     return '';
   }
 
   function formHtml(payload) {
-    var campaign = payload.campaign || {};
-    var merchant = payload.merchant || {};
-    var reward = payload.reward || {};
-    if (!campaign.available) {
-      return '<article><p class="mg-embed-muted">' + esc(merchant.name || 'Microgifter merchant') + '</p><h3>' + esc(campaign.headline || campaign.title || 'Campaign') + '</h3><p>' + esc(campaign.availability_message || 'This campaign is not available.') + '</p><p class="mg-embed-brand">Powered by Microgifter</p></article>';
-    }
-    return '<article>' +
-      '<p class="mg-embed-muted">' + esc(merchant.name || 'Microgifter merchant') + '</p>' +
-      '<h3>' + esc(campaign.headline || campaign.title || 'Microgifter campaign') + '</h3>' +
-      '<p>' + esc(campaign.description || 'Enter your information below to join this campaign.') + '</p>' +
-      '<div class="mg-embed-meta"><span>' + esc(campaign.type_label || 'Campaign') + '</span><span>' + esc(reward.title || 'Reward') + '</span><span>' + esc(reward.value_label || 'Reward') + '</span></div>' +
-      '<form data-microgifter-embed-form novalidate>' +
-        '<input type="hidden" name="campaign_id" value="' + esc(campaign.id || '') + '">' +
-        '<input type="hidden" name="campaign" value="' + esc(campaign.slug || campaign.id || '') + '">' +
-        '<input type="hidden" name="campaign_type" value="' + esc(campaign.campaign_type || '') + '">' +
-        (campaign.qr_token ? '<input type="hidden" name="qr_token" value="' + esc(campaign.qr_token) + '">' : '') +
-        '<label>Name<input name="name" autocomplete="name" maxlength="180" placeholder="Your name"></label>' +
-        '<label>Email<input name="email" type="email" autocomplete="email" maxlength="255" required placeholder="you@example.com"></label>' +
-        '<label>Phone<input name="phone" type="tel" autocomplete="tel" maxlength="60" placeholder="Optional"></label>' +
-        extraFields(campaign) +
-        '<button type="submit">' + esc(campaign.submit_label || 'Submit') + '</button>' +
-      '</form>' +
-      '<div class="mg-embed-result" data-microgifter-embed-result></div>' +
-      '<p class="mg-embed-brand">Powered by Microgifter</p>' +
-    '</article>';
+    var campaign = payload.campaign || {}, merchant = payload.merchant || {}, reward = payload.reward || {};
+    if (!campaign.available) return '<article><p class="mg-embed-muted">' + esc(merchant.name || 'Microgifter merchant') + '</p><h3>' + esc(campaign.headline || campaign.title || 'Campaign') + '</h3><p>' + esc(campaign.availability_message || 'This campaign is not available.') + '</p><p class="mg-embed-brand">Powered by Microgifter</p></article>';
+    return '<article><p class="mg-embed-muted">' + esc(merchant.name || 'Microgifter merchant') + '</p><h3>' + esc(campaign.headline || campaign.title || 'Microgifter campaign') + '</h3><p>' + esc(campaign.description || 'Enter your information below to join this campaign.') + '</p><div class="mg-embed-meta"><span>' + esc(campaign.type_label || 'Campaign') + '</span><span>' + esc(reward.title || 'Reward') + '</span><span>' + esc(reward.value_label || 'Reward') + '</span></div><form data-microgifter-embed-form novalidate><input type="hidden" name="campaign_id" value="' + esc(campaign.id || '') + '"><input type="hidden" name="campaign" value="' + esc(campaign.slug || campaign.id || '') + '"><input type="hidden" name="campaign_type" value="' + esc(campaign.campaign_type || '') + '">' + (campaign.qr_token ? '<input type="hidden" name="qr_token" value="' + esc(campaign.qr_token) + '">' : '') + '<label>Name<input name="name" autocomplete="name" maxlength="180" placeholder="Your name"></label><label>Email<input name="email" type="email" autocomplete="email" maxlength="255" required placeholder="you@example.com"></label><label>Phone<input name="phone" type="tel" autocomplete="tel" maxlength="60" placeholder="Optional"></label>' + extraFields(campaign) + '<button type="submit">' + esc(campaign.submit_label || 'Submit') + '</button></form><div class="mg-embed-result" data-microgifter-embed-result></div><p class="mg-embed-brand">Powered by Microgifter</p></article>';
   }
 
-  function validEmail(value) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
-  }
-
+  function validEmail(value) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim()); }
   function payloadFromForm(form, campaign, container) {
-    var formData = new FormData(form);
-    var payload = {};
+    var formData = new FormData(form), payload = {};
     formData.forEach(function (value, key) { payload[key] = String(value || '').trim(); });
     var entry = {};
     if (payload.entry_note) entry.note = payload.entry_note;
     if (payload.birthday_month) entry.birthday_month = payload.birthday_month;
-    delete payload.entry_note;
-    delete payload.birthday_month;
+    delete payload.entry_note; delete payload.birthday_month;
     if (Object.keys(entry).length) payload.entry = entry;
     payload.campaign_type = payload.campaign_type || campaign.campaign_type || '';
     payload.embed_source = container.getAttribute('data-microgifter-source') || 'website_embed';
     payload.embed_origin = window.location.origin || '';
     return payload;
   }
-
-  function setResult(mount, message, isError) {
-    var result = mount.querySelector('[data-microgifter-embed-result]');
-    if (!result) return;
-    result.classList.add('is-visible');
-    result.classList.toggle('is-error', !!isError);
-    result.textContent = message || (isError ? 'Unable to submit campaign response.' : 'Campaign response submitted.');
-    result.setAttribute('role', isError ? 'alert' : 'status');
-  }
+  function setResult(mount, message, isError) { var result = mount.querySelector('[data-microgifter-embed-result]'); if (!result) return; result.classList.add('is-visible'); result.classList.toggle('is-error', !!isError); result.textContent = message || (isError ? 'Unable to submit campaign response.' : 'Campaign response submitted.'); result.setAttribute('role', isError ? 'alert' : 'status'); }
 
   function bindSubmit(mount, payload) {
-    var form = mount.querySelector('[data-microgifter-embed-form]');
-    if (!form) return;
+    var form = mount.querySelector('[data-microgifter-embed-form]'); if (!form) return;
     form.addEventListener('submit', async function (event) {
       event.preventDefault();
-      var campaign = payload.campaign || {};
-      var prepared = payloadFromForm(form, campaign, mount);
-      if (!validEmail(prepared.email)) {
-        setResult(mount, 'Enter a valid email address to continue.', true);
-        emit(mount, 'microgifter:campaignEmbedInvalid', { reason: 'email' });
-        return;
-      }
-      var button = form.querySelector('button[type="submit"]');
-      if (button) { button.disabled = true; button.textContent = 'Sending...'; }
+      var campaign = payload.campaign || {}, prepared = payloadFromForm(form, campaign, mount);
+      if (!validEmail(prepared.email)) { setResult(mount, 'Enter a valid email address to continue.', true); emit(mount, 'microgifter:campaignEmbedInvalid', { reason: 'email' }); track(mount, payload, 'invalid', { reason: 'email' }); return; }
+      var button = form.querySelector('button[type="submit"]'); if (button) { button.disabled = true; button.textContent = 'Sending...'; }
       try {
         log(mount, 'Submitting campaign embed form.', { campaign: campaign.id, type: campaign.campaign_type });
-        var result = await fetchJson(campaign.submit_endpoint || url('/api/public/campaigns/embed-submit.php'), {
-          method: 'POST',
-          mode: 'cors',
-          headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-          body: JSON.stringify(prepared)
-        });
+        var result = await fetchJson(campaign.submit_endpoint || url('/api/public/campaigns/embed-submit.php'), { method: 'POST', mode: 'cors', headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }, body: JSON.stringify(prepared) });
         setResult(mount, (result && result.message) || campaign.success_message || 'Campaign response submitted.', false);
         emit(mount, 'microgifter:campaignEmbedSubmitted', { campaign: campaign.id, response: result });
+        track(mount, payload, 'submitted', { ok: true });
         form.reset();
       } catch (error) {
         setResult(mount, error.message || 'Unable to submit campaign response.', true);
         emit(mount, 'microgifter:campaignEmbedError', { stage: 'submit', error: error });
+        track(mount, payload, 'error', { stage: 'submit', status: error.status || null });
         log(mount, 'Submit failed.', error);
-      } finally {
-        if (button) { button.disabled = false; button.textContent = (payload.campaign && payload.campaign.submit_label) || 'Submit'; }
-      }
+      } finally { if (button) { button.disabled = false; button.textContent = (payload.campaign && payload.campaign.submit_label) || 'Submit'; } }
     });
+  }
+
+  function effectiveDisplay(container, payload) {
+    var settings = payload && payload.embed && payload.embed.settings ? payload.embed.settings : {};
+    return container.getAttribute('data-microgifter-display') || container.getAttribute('data-microgifter-mode') || settings.default_layout || 'inline';
   }
 
   async function renderEmbed(container) {
     if (!container || container.getAttribute('data-microgifter-rendered') === '1') return;
     var campaignRef = container.getAttribute('data-microgifter-campaign') || container.getAttribute('data-campaign') || '';
-    if (!campaignRef) {
-      injectBaseStyles();
-      container.classList.add('microgifter-campaign-widget');
-      container.innerHTML = '<article><h3>Campaign unavailable</h3><p>Missing Microgifter campaign reference.</p></article>';
-      emit(container, 'microgifter:campaignEmbedError', { stage: 'boot', message: 'missing_campaign_reference' });
-      return;
-    }
-    container.setAttribute('data-microgifter-rendered', '1');
-    injectBaseStyles();
-    container.classList.add('microgifter-campaign-widget');
-    container.innerHTML = '<article><p>Loading Microgifter campaign...</p></article>';
+    if (!campaignRef) { injectBaseStyles(); container.classList.add('microgifter-campaign-widget'); container.innerHTML = '<article><h3>Campaign unavailable</h3><p>Missing Microgifter campaign reference.</p></article>'; emit(container, 'microgifter:campaignEmbedError', { stage: 'boot', message: 'missing_campaign_reference' }); return; }
+    container.setAttribute('data-microgifter-rendered', '1'); injectBaseStyles(); container.classList.add('microgifter-campaign-widget'); container.innerHTML = '<article><p>Loading Microgifter campaign...</p></article>';
     try {
       log(container, 'Loading campaign embed payload.', { campaign: campaignRef, base: apiBase });
       var payload = await fetchJson(url('/api/public/campaigns/embed.php?campaign=' + encodeURIComponent(campaignRef)), { mode: 'cors', headers: { 'Accept': 'application/json' } });
-      var display = container.getAttribute('data-microgifter-display') || container.getAttribute('data-microgifter-mode') || 'inline';
+      var display = effectiveDisplay(container, payload);
+      container.setAttribute('data-microgifter-effective-display', display);
+      container.classList.toggle('is-compact', display === 'compact');
       if (display === 'button' || display === 'popup') {
         var buttonText = container.getAttribute('data-microgifter-button-label') || ((payload.campaign && payload.campaign.submit_label) || 'Open campaign');
         container.innerHTML = '<button type="button" data-microgifter-embed-launcher>' + esc(buttonText) + '</button><div class="mg-embed-launcher-panel" data-microgifter-embed-panel hidden>' + formHtml(payload) + '</div>';
         var launcher = container.querySelector('[data-microgifter-embed-launcher]');
         var panel = container.querySelector('[data-microgifter-embed-panel]');
-        if (launcher && panel) launcher.addEventListener('click', function () { panel.hidden = !panel.hidden; });
+        if (launcher && panel) launcher.addEventListener('click', function () { panel.hidden = !panel.hidden; if (!panel.hidden) track(container, payload, 'opened', { mode: display }); });
       } else {
         container.innerHTML = formHtml(payload);
       }
       bindSubmit(container, payload);
       emit(container, 'microgifter:campaignEmbedLoaded', { campaign: payload.campaign, merchant: payload.merchant, reward: payload.reward });
+      track(container, payload, 'loaded', { mode: display });
       log(container, 'Campaign embed loaded.', payload.campaign || {});
     } catch (error) {
       container.innerHTML = '<article><h3>Campaign unavailable</h3><p>' + esc(error.message || 'This Microgifter campaign could not be loaded.') + '</p></article>';
@@ -227,13 +166,6 @@
     }
   }
 
-  function boot() {
-    Array.prototype.slice.call(document.querySelectorAll('[data-microgifter-campaign]')).forEach(renderEmbed);
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', boot, { once: true });
-  } else {
-    boot();
-  }
+  function boot() { Array.prototype.slice.call(document.querySelectorAll('[data-microgifter-campaign]')).forEach(renderEmbed); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true }); else boot();
 })();
