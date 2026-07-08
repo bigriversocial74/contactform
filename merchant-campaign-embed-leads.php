@@ -48,9 +48,9 @@ require __DIR__ . '/includes/header.php';
       <?php else: ?>
         <section class="mg-embed-leads-hero">
           <div>
-            <span class="mg-eyebrow">Campaign Embed v4.6</span>
-            <h1>Merchant Action Center</h1>
-            <p>Turn placement intelligence into action: open campaigns, copy filtered lead views, export reports, start tests, and move directly into follow-up.</p>
+            <span class="mg-eyebrow">Campaign Embed v4.7</span>
+            <h1>Persistent Test Tracking</h1>
+            <p>Track placement tests in the database with campaign, domain, page, source, embed mode, status, start/end dates, and comparison links.</p>
             <div class="mg-embed-leads-hero-actions">
               <a class="mg-btn mg-btn-soft" href="/merchant-campaign-embed-qa.php">Run Embed QA</a>
               <a class="mg-btn mg-btn-ghost" href="/merchant-campaign-embed-analytics.php">Embed Analytics</a>
@@ -95,13 +95,19 @@ require __DIR__ . '/includes/header.php';
 
         <section class="mg-embed-action-center-panel mg-embed-leads-panel">
           <div class="mg-panel-head"><div><span class="mg-eyebrow">Action Center</span><h2>Merchant action center</h2></div></div>
-          <p class="mg-embed-action-intro">Use these shortcuts to act on the current filters and placement recommendations without leaving the workflow.</p>
+          <p class="mg-embed-action-intro">Start, pause, complete, and compare persistent placement tests from the current campaign intelligence.</p>
           <div class="mg-embed-action-status" data-embed-action-status hidden></div>
           <div class="mg-embed-action-primary" data-embed-action-primary></div>
           <div class="mg-embed-action-split">
             <div><h3>Campaign action buttons</h3><div class="mg-embed-action-campaigns" data-embed-action-campaigns></div></div>
             <div><h3>Follow-up shortcuts</h3><div class="mg-embed-action-followups" data-embed-action-followups></div></div>
           </div>
+        </section>
+
+        <section class="mg-embed-test-history-panel mg-embed-leads-panel">
+          <div class="mg-panel-head"><div><span class="mg-eyebrow">Persistent Tests</span><h2>Placement test history</h2></div></div>
+          <div class="mg-embed-test-summary" data-embed-test-summary></div>
+          <div class="mg-embed-test-history" data-embed-test-history></div>
         </section>
 
         <section class="mg-embed-placement-panel mg-embed-leads-panel">
