@@ -8,7 +8,7 @@ $checks = [
     'merchant settings API' => ['api/merchant/campaign-embed-settings.php', 'campaign_embed_settings'],
     'merchant stats API' => ['api/merchant/campaign-embed-settings.php', 'campaign_embed_events'],
     'public event API' => ['api/public/campaigns/embed-event.php', 'Campaign embed event recorded'],
-    'public payload settings' => ['api/public/campaigns/embed.php', "'settings' => $settings"],
+    'public payload settings' => ['api/public/campaigns/embed.php', "'settings' => \\$settings"],
     'public payload domain guard' => ['api/public/campaigns/embed.php', 'mg_campaign_embed_domain_allowed'],
     'public widget event tracking' => ['assets/js/microgifter-campaign-embed.js', 'embed-event.php'],
     'public widget compact mode' => ['assets/js/microgifter-campaign-embed.js', 'is-compact'],
