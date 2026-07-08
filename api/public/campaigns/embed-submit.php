@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/_embed_cors.php';
 mg_public_campaign_embed_cors();
 require_once dirname(__DIR__, 2) . '/bootstrap.php';
+mg_public_campaign_embed_cors();
 
 mg_require_method('POST');
 $input = mg_input();
