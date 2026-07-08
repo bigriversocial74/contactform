@@ -40,6 +40,13 @@ document.addEventListener('DOMContentLoaded', function () {
     return '/api/merchant/campaign-embed-leads.php?' + params.toString();
   }
 
+  function qualityBadge(quality) {
+    quality = quality || {};
+    var score = Number(quality.score || 0);
+    var state = score >= 85 ? 'high' : (score >= 65 ? 'ready' : (score >= 45 ? 'medium' : 'low'));
+    return '<span class="mg-lead-quality-badge is-' + state + '"><b>' + esc(quality.label || 'Needs context') + '</b><em>' + esc(score) + '/100</em></span>';
+  }
+
   function renderCampaignPicker(campaigns) {
     var select = root.querySelector('[data-embed-leads-campaign]');
     if (!select) return;
@@ -57,10 +64,33 @@ document.addEventListener('DOMContentLoaded', function () {
     var cards = [
       ['Total Embed Leads', count(totals.total_embed_leads)],
       ['New Contacts', count(totals.new_contacts)],
-      ['Returning Contacts', count(totals.returning_contacts)],
-      ['Campaigns', count(totals.campaigns)]
+      ['Ready Follow-Up', count(totals.ready_for_follow_up)],
+      ['Avg Quality', count(totals.average_quality_score) + '/100']
     ];
     node.innerHTML = cards.map(function (card) { return '<article><b>' + esc(card[1]) + '</b><span>' + esc(card[0]) + '</span></article>'; }).join('');
+  }
+
+  function renderPerformance(performance) {
+    performance = performance || {};
+    var insightNode = root.querySelector('[data-embed-performance-insights]');
+    var qualityNode = root.querySelector('[data-embed-quality-breakdown]');
+    var recNode = root.querySelector('[data-embed-recommendations]');
+    if (insightNode) {
+      var cards = performance.insight_cards || [];
+      insightNode.innerHTML = cards.length ? cards.map(function (card) {
+        return '<article><strong>' + esc(card.value || '—') + '</strong><span>' + esc(card.label || '') + '</span><p>' + esc(card.detail || '') + '</p></article>';
+      }).join('') : '<p class="mg-empty-copy">Performance insights appear after attributed embed leads are captured.</p>';
+    }
+    if (qualityNode) {
+      var quality = performance.quality_breakdown || [];
+      qualityNode.innerHTML = quality.length ? quality.map(function (item) {
+        return '<article><b>' + count(item.total) + '</b><span>' + esc(item.label || 'Quality') + '</span></article>';
+      }).join('') : '<p class="mg-empty-copy">No lead quality mix yet.</p>';
+    }
+    if (recNode) {
+      var recs = performance.recommendations || [];
+      recNode.innerHTML = recs.length ? '<ul>' + recs.map(function (item) { return '<li>' + esc(item) + '</li>'; }).join('') + '</ul>' : '<p class="mg-empty-copy">Recommendations appear after campaign embeds generate attribution data.</p>';
+    }
   }
 
   function renderNotificationBadge(rows) {
@@ -107,8 +137,8 @@ document.addEventListener('DOMContentLoaded', function () {
     node.innerHTML = rows.map(function (summary) {
       var campaign = summary.campaign || {};
       var domain = summary.top_domain ? summary.top_domain.value + ' · ' + count(summary.top_domain.total) : 'No domain yet';
-      var page = summary.top_page ? (summary.top_page.value || '') : 'No page yet';
-      return '<article class="mg-embed-leads-campaign-card"><div><strong>' + esc(campaign.title || 'Campaign') + '</strong><small>' + esc(label(campaign.campaign_type || '')) + '</small></div><b>' + count(summary.total_embed_leads) + '</b><span>Total embed leads</span><p><em>Top domain:</em> ' + esc(domain) + '</p><p><em>Top page:</em> ' + esc(page) + '</p>' + (campaign.url ? '<a href="' + esc(campaign.url) + '">Open campaign</a>' : '') + '</article>';
+      var source = summary.top_source ? summary.top_source.value + ' · ' + count(summary.top_source.total) : 'No source yet';
+      return '<article class="mg-embed-leads-campaign-card"><div><strong>' + esc(campaign.title || 'Campaign') + '</strong><small>' + esc(label(campaign.campaign_type || '')) + '</small></div><b>' + count(summary.total_embed_leads) + '</b><span>Total embed leads</span><p><em>Ready:</em> ' + esc(summary.ready_for_follow_up || 0) + ' · ' + esc(summary.ready_rate || 0) + '%</p><p><em>Avg quality:</em> ' + esc(summary.average_quality_score || 0) + '/100</p><p><em>Top domain:</em> ' + esc(domain) + '</p><p><em>Top source:</em> ' + esc(source) + '</p>' + (campaign.url ? '<a href="' + esc(campaign.url) + '">Open campaign</a>' : '') + '</article>';
     }).join('');
   }
 
@@ -122,7 +152,8 @@ document.addEventListener('DOMContentLoaded', function () {
     if (params.get('origin_host')) filters.push('Domain: ' + esc(params.get('origin_host')));
     if (params.get('source')) filters.push('Source: ' + esc(label(params.get('source'))));
     var total = data && data.totals ? data.totals.total_embed_leads : rowCount;
-    node.innerHTML = '<strong>' + count(total) + '</strong> attributed embed lead' + (Number(total || 0) === 1 ? '' : 's') + ' · ' + filters.join(' · ');
+    var ready = data && data.totals ? data.totals.ready_for_follow_up : 0;
+    node.innerHTML = '<strong>' + count(total) + '</strong> attributed embed lead' + (Number(total || 0) === 1 ? '' : 's') + ' · <strong>' + count(ready) + '</strong> ready for follow-up · ' + filters.join(' · ');
   }
 
   function rowActions(row) {
@@ -145,12 +176,12 @@ document.addEventListener('DOMContentLoaded', function () {
       table.innerHTML = '<tbody><tr><td><div class="mg-empty-actions"><strong>No website embed leads yet.</strong><p>Embed leads appear after a public campaign form submits with website attribution.</p><a href="/merchant-campaigns.php">Open Campaigns</a><a href="/merchant-campaign-embed-qa.php">Run Embed QA</a><a href="/merchant-campaign-embed-analytics.php">View Embed Analytics</a></div></td></tr></tbody>';
       return;
     }
-    table.innerHTML = '<thead><tr><th>Lead</th><th>Campaign</th><th>Source</th><th>Domain / Page</th><th>Mode</th><th>Created</th><th>Actions</th></tr></thead><tbody>' + rows.map(function (row) {
+    table.innerHTML = '<thead><tr><th>Lead</th><th>Quality</th><th>Campaign</th><th>Source</th><th>Domain / Page</th><th>Mode</th><th>Created</th><th>Actions</th></tr></thead><tbody>' + rows.map(function (row) {
       var contact = row.crm_contact || {};
       var campaign = row.campaign || {};
       var contactName = contact.name || contact.email || 'Lead';
       var page = row.page_url ? '<a href="' + esc(row.page_url) + '" target="_blank" rel="noopener">Open page</a>' : '<small>No page URL</small>';
-      return '<tr><td><strong>' + esc(contactName) + '</strong><small>' + esc(contact.email || '') + '</small></td><td><strong>' + esc(campaign.title || 'Campaign') + '</strong><small>' + esc(label(campaign.campaign_type || '')) + '</small></td><td>' + esc(label(row.source || row.embed_source || 'website_embed')) + '</td><td><strong>' + esc(row.origin_host || 'Unknown') + '</strong>' + page + '</td><td>' + esc(row.embed_mode || '—') + '</td><td>' + esc(row.created_at || '—') + '</td><td>' + rowActions(row) + '</td></tr>';
+      return '<tr><td><strong>' + esc(contactName) + '</strong><small>' + esc(contact.email || '') + '</small></td><td>' + qualityBadge(row.lead_quality) + '</td><td><strong>' + esc(campaign.title || 'Campaign') + '</strong><small>' + esc(label(campaign.campaign_type || '')) + '</small></td><td>' + esc(label(row.source || row.embed_source || 'website_embed')) + '</td><td><strong>' + esc(row.origin_host || 'Unknown') + '</strong>' + page + '</td><td>' + esc(row.embed_mode || '—') + '</td><td>' + esc(row.created_at || '—') + '</td><td>' + rowActions(row) + '</td></tr>';
     }).join('') + '</tbody>';
   }
 
@@ -184,14 +215,17 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!drawer || !content || !row) return;
     var contact = row.crm_contact || {};
     var campaign = row.campaign || {};
+    var quality = row.lead_quality || {};
     var timeline = (row.timeline || []).map(function (item) {
       return '<li><span>' + esc(item.label || '') + '</span><strong>' + esc(item.value || '—') + '</strong></li>';
     }).join('');
+    var signals = (quality.signals || []).map(function (item) { return '<li>' + esc(item) + '</li>'; }).join('');
+    var missing = (quality.missing || []).map(function (item) { return '<li>' + esc(item) + '</li>'; }).join('');
     var links = '';
     if (contact.url) links += '<a class="mg-btn mg-btn-primary" href="' + esc(contact.url) + '">Open CRM Profile</a>';
     if ((row.campaign_contact || {}).url) links += '<a class="mg-btn mg-btn-soft" href="' + esc(row.campaign_contact.url) + '">Campaign Contact</a>';
     if (campaign.url) links += '<a class="mg-btn mg-btn-ghost" href="' + esc(campaign.url) + '">Campaign</a>';
-    content.innerHTML = '<span class="mg-eyebrow">Lead detail</span><h2>' + esc(contact.name || contact.email || 'Website embed lead') + '</h2><p>' + esc(row.value_summary || 'Attributed website embed lead') + '</p><div class="mg-embed-leads-detail-grid"><article><b>Campaign</b><span>' + esc(campaign.title || 'Campaign') + '</span></article><article><b>Source</b><span>' + esc(label(row.source || row.embed_source || 'website_embed')) + '</span></article><article><b>Origin Host</b><span>' + esc(row.origin_host || 'Unknown') + '</span></article><article><b>Embed Mode</b><span>' + esc(row.embed_mode || '—') + '</span></article></div><h3>Timeline</h3><ul class="mg-embed-leads-timeline">' + timeline + '</ul><h3>Follow-up links</h3><div class="mg-embed-leads-drawer-actions">' + (links || '<small>No linked CRM records found.</small>') + '</div>';
+    content.innerHTML = '<span class="mg-eyebrow">Lead detail</span><h2>' + esc(contact.name || contact.email || 'Website embed lead') + '</h2><p>' + esc(row.value_summary || 'Attributed website embed lead') + '</p><div class="mg-embed-leads-detail-quality">' + qualityBadge(quality) + '<span>' + (quality.ready_for_follow_up ? 'Ready for merchant follow-up' : 'Needs more follow-up context') + '</span></div><div class="mg-embed-leads-detail-grid"><article><b>Campaign</b><span>' + esc(campaign.title || 'Campaign') + '</span></article><article><b>Source</b><span>' + esc(label(row.source || row.embed_source || 'website_embed')) + '</span></article><article><b>Origin Host</b><span>' + esc(row.origin_host || 'Unknown') + '</span></article><article><b>Embed Mode</b><span>' + esc(row.embed_mode || '—') + '</span></article></div><h3>Quality signals</h3><div class="mg-embed-quality-lists"><ul>' + (signals || '<li>No positive signals yet.</li>') + '</ul><ul>' + (missing || '<li>No major gaps.</li>') + '</ul></div><h3>Timeline</h3><ul class="mg-embed-leads-timeline">' + timeline + '</ul><h3>Follow-up links</h3><div class="mg-embed-leads-drawer-actions">' + (links || '<small>No linked CRM records found.</small>') + '</div>';
     drawer.hidden = false;
   }
 
@@ -206,13 +240,14 @@ document.addEventListener('DOMContentLoaded', function () {
       var data = response.data || response;
       renderCampaignPicker(data.campaigns || []);
       renderStats(data.totals || {});
+      renderPerformance(data.performance || {});
       renderCampaignSummaries(data.campaign_summaries || []);
       renderPages((data.totals || {}).top_pages || []);
       renderDomains((data.totals || {}).top_domains || []);
       renderRows(data.rows || []);
       renderNotificationBadge(data.rows || []);
       renderFilterSummary(data, (data.rows || []).length);
-      if (data.schema_ready === false) setAlert('<strong>Embed leads data is not ready.</strong> No new SQL is required by v4.3; this view uses existing CRM/campaign tables when present.', 'warn');
+      if (data.schema_ready === false) setAlert('<strong>Embed leads data is not ready.</strong> No new SQL is required by v4.4; this view uses existing CRM/campaign tables when present.', 'warn');
       else if (!(data.rows || []).length) setAlert('<strong>No embed leads found for these filters.</strong> Run Embed QA or submit a public website embed to create an attributed row.', 'info');
       else setAlert('', '');
       if (pushState && window.history) window.history.replaceState({}, '', '/merchant-campaign-embed-leads.php?' + queryParams().toString());
