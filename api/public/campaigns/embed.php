@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/_embed_cors.php';
 mg_public_campaign_embed_cors();
 require_once dirname(__DIR__, 2) . '/bootstrap.php';
+mg_public_campaign_embed_cors();
 
 function mg_campaign_embed_base_url(): string
 {
@@ -91,12 +92,23 @@ function mg_campaign_embed_public_url(array $campaign): string
     return $base . $path . '?campaign=' . rawurlencode($ref);
 }
 
+function mg_campaign_embed_origin(): ?string
+{
+    $origin = trim((string)($_SERVER['HTTP_ORIGIN'] ?? ''));
+    if ($origin === '' || filter_var($origin, FILTER_VALIDATE_URL) === false) return null;
+    $parts = parse_url($origin);
+    return is_array($parts) && in_array(strtolower((string)($parts['scheme'] ?? '')), ['http', 'https'], true) && !empty($parts['host']) ? $origin : null;
+}
+
 mg_require_method('GET');
 $ref = strtolower(trim((string)($_GET['campaign'] ?? $_GET['c'] ?? $_GET['slug'] ?? $_GET['id'] ?? '')));
 $token = trim((string)($_GET['token'] ?? $_GET['qr_token'] ?? ''));
 
 if ($ref === '' && $token === '') {
     mg_fail('Campaign is required.', 422);
+}
+if (($ref !== '' && strlen($ref) > 180) || ($token !== '' && strlen($token) > 180)) {
+    mg_fail('Campaign reference is invalid.', 422);
 }
 
 try {
@@ -137,6 +149,9 @@ try {
     $merchantName = trim((string)($campaign['merchant_profile_display_name'] ?? '')) ?: (trim((string)($campaign['merchant_user_display_name'] ?? '')) ?: (trim((string)($campaign['merchant_user_full_name'] ?? '')) ?: 'Microgifter merchant'));
     $merchantSlug = trim((string)($campaign['merchant_profile_slug'] ?? ''));
     $base = mg_campaign_embed_base_url();
+    $publicUrl = mg_campaign_embed_public_url($campaign);
+    $submitEndpoint = $base . mg_campaign_embed_endpoint($campaignType);
+    $origin = mg_campaign_embed_origin();
 
     mg_ok([
         'campaign' => [
@@ -153,8 +168,8 @@ try {
             'availability_message' => $availabilityMessage,
             'qr_token' => $campaignType === 'qr_reward_drop' ? ($campaign['qr_code_token'] ?? null) : null,
             'rules' => json_decode((string)($campaign['rules_json'] ?? ''), true) ?: [],
-            'public_url' => mg_campaign_embed_public_url($campaign),
-            'submit_endpoint' => $base . mg_campaign_embed_endpoint($campaignType),
+            'public_url' => $publicUrl,
+            'submit_endpoint' => $submitEndpoint,
             'submit_label' => mg_campaign_embed_submit_label($campaignType),
         ],
         'merchant' => [
@@ -174,9 +189,18 @@ try {
             'expires_at' => $campaign['reward_expires_at'] ?? null,
         ],
         'embed' => [
-            'version' => 1,
+            'version' => 2,
             'adopts_host_css' => true,
             'render_modes' => ['inline', 'button'],
+            'request_origin' => $origin,
+            'cors_mode' => 'public_no_credentials',
+            'health' => [
+                'active' => (string)$campaign['status'] === 'active',
+                'available' => $available,
+                'has_public_url' => $publicUrl !== '',
+                'has_submit_endpoint' => $submitEndpoint !== '',
+                'host_css_adoption' => true,
+            ],
         ],
     ], 'Campaign embed loaded.');
 } catch (Throwable $error) {
