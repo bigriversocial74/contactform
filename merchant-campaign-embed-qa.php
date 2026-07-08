@@ -14,6 +14,8 @@ $debug = !empty($_GET['debug']) ? '1' : '1';
 $merchantNav = [
   'overview' => ['Overview','Workspace health','/merchant.php','Overview'],
   'campaigns' => ['Campaigns','Offers, embeds, followups','/merchant-campaigns.php','Engage'],
+  'campaign_embed_leads' => ['Embed Leads','Website embed contacts','/merchant-campaign-embed-leads.php','Engage'],
+  'campaign_embed_analytics' => ['Embed Analytics','Website embed performance','/merchant-campaign-embed-analytics.php','Engage'],
   'campaign_embed_qa' => ['Embed QA','Runtime smoke checks','/merchant-campaign-embed-qa.php','Engage'],
   'notifications' => ['Notifications','Tips, voucher messages, alerts','/merchant-notifications.php','Overview'],
   'agent_chat' => ['Agent Chat','Merchant agent feed','/merchant-agent-chat.php','Engage'],
@@ -45,9 +47,13 @@ require __DIR__ . '/includes/header.php';
       <?php else: ?>
         <section class="mg-embed-qa-hero">
           <div>
-            <span class="mg-eyebrow">Campaign Embed Runtime QA</span>
+            <span class="mg-eyebrow">Campaign Embed QA v4.1</span>
             <h1>Embed Runtime Smoke Test</h1>
-            <p>Use this page after importing <code>database/campaign_embed_settings_v2.sql</code> to test inline, button, compact, debug, and event ingestion behavior from a controlled host page.</p>
+            <p>Use this controlled host page to test inline, button, compact, debug, event ingestion, and lead attribution behavior. v4.1 does not require a new SQL import.</p>
+            <div class="mg-embed-qa-actions">
+              <a class="mg-btn mg-btn-soft" href="/merchant-campaign-embed-leads.php<?= $campaignRef !== '' ? '?campaign=' . rawurlencode($campaignRef) : '' ?>">View Embed Leads</a>
+              <a class="mg-btn mg-btn-ghost" href="/merchant-campaign-embed-analytics.php<?= $campaignRef !== '' ? '?campaign=' . rawurlencode($campaignRef) : '' ?>">Embed Analytics</a>
+            </div>
           </div>
           <form class="mg-embed-qa-form" method="get">
             <label>Campaign slug or public ID
@@ -62,12 +68,25 @@ require __DIR__ . '/includes/header.php';
           <article class="mg-embed-qa-card">
             <h2>Runtime checklist</h2>
             <ul>
-              <li>Open the merchant campaign Embed modal and confirm SQL health is ready.</li>
-              <li>Use this page to trigger <code>loaded</code>, <code>opened</code>, <code>invalid</code>, <code>submitted</code>, and <code>error</code> events.</li>
+              <li>Open the merchant campaign Embed modal and confirm runtime health is ready.</li>
+              <li>Load this QA page with an active campaign slug or public ID.</li>
+              <li>Trigger <code>loaded</code>, <code>opened</code>, <code>invalid</code>, <code>submitted</code>, and <code>error</code> events.</li>
               <li>Return to the modal and click <strong>Refresh activity</strong>.</li>
-              <li>Confirm allowed domains by saving a domain list and loading this page from the allowed host.</li>
+              <li>Open <strong>Embed Leads</strong> and confirm domain, page URL, source, and embed mode attribution.</li>
             </ul>
           </article>
+          <article class="mg-embed-qa-card">
+            <h2>Lead attribution checklist</h2>
+            <ul>
+              <li>Submit at least one inline or compact QA form.</li>
+              <li>Confirm the lead appears in <code>/merchant-campaign-embed-leads.php</code>.</li>
+              <li>Confirm the row links to CRM Profile, Campaign Contact, and Campaign when IDs are available.</li>
+              <li>Use the domain pill or Domain filter to confirm host attribution filters correctly.</li>
+            </ul>
+          </article>
+        </section>
+
+        <section class="mg-embed-qa-grid">
           <article class="mg-embed-qa-card">
             <h2>Health endpoint</h2>
             <p>Merchant runtime health is served by:</p>
@@ -75,6 +94,16 @@ require __DIR__ . '/includes/header.php';
             <?php if ($campaignRef !== ''): ?>
               <p><a href="/api/merchant/campaign-embed-runtime-health.php?campaign=<?= rawurlencode($campaignRef) ?>" target="_blank" rel="noopener">Open health JSON for this campaign</a></p>
             <?php endif; ?>
+          </article>
+          <article class="mg-embed-qa-card">
+            <h2>Expected lead fields</h2>
+            <p>Each attributed public campaign submission should carry:</p>
+            <ul>
+              <li><code>embed_source</code></li>
+              <li><code>origin_host</code></li>
+              <li><code>page_url</code></li>
+              <li><code>embed_mode</code></li>
+            </ul>
           </article>
         </section>
 
