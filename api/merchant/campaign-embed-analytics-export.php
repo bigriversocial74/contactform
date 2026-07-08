@@ -65,16 +65,44 @@ function mg_embed_export_domain_allowed(?string $origin, array $allowedDomains):
     return false;
 }
 
+function mg_embed_export_filename(string $dataset, int $days, ?array $campaign): string
+{
+    $campaignRef = 'all';
+    if ($campaign) {
+        $slug = trim((string)($campaign['public_slug'] ?? ''));
+        $campaignRef = $slug !== '' ? $slug : (string)($campaign['public_id'] ?? 'campaign');
+    }
+    $name = 'campaign-embed-' . $dataset . '-' . $campaignRef . '-' . $days . 'd-' . date('Ymd-His') . '.csv';
+    return preg_replace('/[^a-zA-Z0-9_.-]/', '-', $name) ?: 'campaign-embed-export.csv';
+}
+
+function mg_embed_export_cell(mixed $value): string
+{
+    $cell = trim(preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', ' ', (string)$value) ?? '');
+    if ($cell !== '' && preg_match('/^[=+\-@]/', $cell) === 1) $cell = "'" . $cell;
+    return $cell;
+}
+
+function mg_embed_export_rows(array $rows): array
+{
+    return array_map(static function (array $row): array {
+        return array_map('mg_embed_export_cell', $row);
+    }, $rows);
+}
+
 function mg_embed_export_stream(string $filename, array $headers, array $rows): void
 {
+    $safeRows = mg_embed_export_rows($rows);
     while (ob_get_level() > 0) @ob_end_clean();
     header('Content-Type: text/csv; charset=utf-8');
     header('Content-Disposition: attachment; filename="' . preg_replace('/[^a-zA-Z0-9_.-]/', '-', $filename) . '"');
     header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    header('X-Content-Type-Options: nosniff');
+    header('X-Microgifter-Export-Rows: ' . count($safeRows));
     $out = fopen('php://output', 'w');
     if ($out === false) exit;
-    fputcsv($out, $headers);
-    foreach ($rows as $row) fputcsv($out, $row);
+    fputcsv($out, array_map('mg_embed_export_cell', $headers));
+    foreach ($safeRows as $row) fputcsv($out, $row);
     fclose($out);
     exit;
 }
@@ -126,7 +154,7 @@ try {
             $submitted = (int)($row['submitted'] ?? 0);
             $rows[] = [(string)$row['public_id'], (string)($row['public_slug'] ?? ''), (string)$row['title'], (string)$row['campaign_type'], (string)$row['status'], $loaded, $opened, $submitted, (int)($row['invalid_count'] ?? 0), (int)($row['error_count'] ?? 0), mg_embed_export_rate($opened, $loaded), mg_embed_export_rate($submitted, $loaded), (string)($row['last_event_at'] ?? '')];
         }
-        mg_embed_export_stream('campaign-embed-campaigns-' . $days . 'd.csv', ['public_id','slug','title','campaign_type','status','loads','opens','submissions','invalid','errors','open_rate_percent','conversion_rate_percent','last_event_at'], $rows);
+        mg_embed_export_stream(mg_embed_export_filename('campaigns', $days, $campaign), ['public_id','slug','title','campaign_type','status','loads','opens','submissions','invalid','errors','open_rate_percent','conversion_rate_percent','last_event_at'], $rows);
     }
 
     if ($dataset === 'domains') {
@@ -139,7 +167,7 @@ try {
             $approved = mg_embed_export_domain_allowed((string)($row['origin_host'] ?? ''), mg_embed_export_domains($row['allowed_domains_json'] ?? null));
             $rows[] = [(string)$row['origin_host'], (string)$row['title'], (string)$row['public_id'], (string)($row['public_slug'] ?? ''), (int)$row['total'], (int)$row['submitted'], $approved ? 'allowed_or_unrestricted' : 'review_domain', (string)($row['last_seen'] ?? '')];
         }
-        mg_embed_export_stream('campaign-embed-domains-' . $days . 'd.csv', ['origin_host','campaign_title','campaign_public_id','campaign_slug','events','submissions','domain_status','last_seen'], $rows);
+        mg_embed_export_stream(mg_embed_export_filename('domains', $days, $campaign), ['origin_host','campaign_title','campaign_public_id','campaign_slug','events','submissions','domain_status','last_seen'], $rows);
     }
 
     $sql = 'SELECT e.created_at, e.event_type, e.origin_host, e.page_url, e.embed_mode, c.title, c.public_id, c.public_slug FROM campaign_embed_events e JOIN campaigns c ON c.id = e.campaign_id WHERE ' . $where . ' ORDER BY e.id DESC LIMIT 1000';
@@ -149,7 +177,7 @@ try {
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
         $rows[] = [(string)($row['created_at'] ?? ''), (string)$row['event_type'], (string)($row['origin_host'] ?? ''), (string)($row['page_url'] ?? ''), (string)($row['embed_mode'] ?? ''), (string)$row['title'], (string)$row['public_id'], (string)($row['public_slug'] ?? '')];
     }
-    mg_embed_export_stream('campaign-embed-events-' . $days . 'd.csv', ['created_at','event_type','origin_host','page_url','embed_mode','campaign_title','campaign_public_id','campaign_slug'], $rows);
+    mg_embed_export_stream(mg_embed_export_filename('events', $days, $campaign), ['created_at','event_type','origin_host','page_url','embed_mode','campaign_title','campaign_public_id','campaign_slug'], $rows);
 } catch (Throwable $error) {
     mg_security_log('warning', 'merchant.campaign_embed_export.failed', 'Unable to export campaign embed analytics.', ['exception_class' => $error::class, 'message' => $error->getMessage()], $merchantId);
     mg_fail('Unable to export campaign embed analytics.', 500);
