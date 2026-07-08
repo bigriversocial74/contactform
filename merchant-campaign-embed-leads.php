@@ -48,9 +48,13 @@ require __DIR__ . '/includes/header.php';
       <?php else: ?>
         <section class="mg-embed-leads-hero">
           <div>
-            <span class="mg-eyebrow">Campaign Embed Lead Attribution v4</span>
+            <span class="mg-eyebrow">Campaign Embed QA v4.1</span>
             <h1>Website Embed Leads</h1>
-            <p>See which website pages, domains, campaigns, and embed modes generated leads in Merchant CRM.</p>
+            <p>Confirm which website pages, domains, campaigns, sources, and embed modes are generating CRM contacts from public campaign embeds.</p>
+            <div class="mg-embed-leads-hero-actions">
+              <a class="mg-btn mg-btn-soft" href="/merchant-campaign-embed-qa.php">Run Embed QA</a>
+              <a class="mg-btn mg-btn-ghost" href="/merchant-campaign-embed-analytics.php">Embed Analytics</a>
+            </div>
           </div>
           <form class="mg-embed-leads-filters" data-embed-leads-filters>
             <label>Campaign
@@ -71,9 +75,10 @@ require __DIR__ . '/includes/header.php';
             </label>
             <div class="mg-embed-leads-actions">
               <button class="mg-btn mg-btn-primary" type="submit">Refresh leads</button>
-              <a class="mg-btn mg-btn-soft" href="/merchant-campaigns.php">Campaigns</a>
-              <a class="mg-btn mg-btn-ghost" href="/merchant-campaign-embed-analytics.php">Embed Analytics</a>
+              <button class="mg-btn mg-btn-soft" type="button" data-embed-leads-reset>Clear filters</button>
+              <a class="mg-btn mg-btn-ghost" href="/merchant-campaigns.php">Campaigns</a>
             </div>
+            <p class="mg-embed-leads-filter-note" data-embed-leads-filter-summary>Loading lead attribution filters…</p>
           </form>
         </section>
 
