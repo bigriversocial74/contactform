@@ -1,4 +1,4 @@
-/* Watch / Listen campaign media-detail and fixed form rail polish. */
+/* Watch / Listen campaign media-detail and bounded sticky form rail polish. */
 .mg-rl-page {
   overflow-x: hidden;
   overflow-y: visible;
@@ -130,14 +130,18 @@
 }
 
 @media (min-width: 1181px) {
+  .mg-rl-wrap {
+    overflow: visible;
+  }
+
   .mg-rl-join-desktop {
-    position: fixed !important;
+    position: sticky !important;
     top: 92px !important;
-    right: max(36px, calc((100vw - 1260px) / 2));
-    width: 360px;
-    max-height: calc(100vh - 112px);
-    overflow-y: auto;
-    z-index: 40;
+    right: auto;
+    width: auto;
+    max-height: none;
+    overflow: visible;
+    z-index: 3;
   }
 
   .mg-rl-join-desktop .mg-rl-sidebar-stack {
@@ -177,13 +181,6 @@
 
   .mg-rl-join-mobile .mg-rl-sidebar-stack .mg-rl-card:first-child {
     grid-column: auto;
-  }
-}
-
-@media (min-width: 1501px) {
-  .mg-rl-join-desktop {
-    right: max(46px, calc((100vw - 1620px) / 2));
-    width: 390px;
   }
 }
 
