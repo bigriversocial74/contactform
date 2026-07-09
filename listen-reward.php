@@ -139,6 +139,7 @@ $description = trim((string)($campaign['form_description'] ?? '')) ?: (trim((str
             </div>
             <button class="mg-btn mg-btn-primary mg-public-campaign-primary-action" type="submit">Next Step <span aria-hidden="true">→</span></button>
           </form>
+          <div class="mg-public-campaign-status mg-listen-join-status" data-listen-reward-status>Enter your info to continue.</div>
 
           <div class="mg-public-campaign-step-grid mg-listen-form-steps" aria-label="How listen rewards work">
             <div class="mg-public-campaign-mini-step"><span>1</span><strong>Add your info</strong><small>Use the email you want tied to your Microgifter Inbox.</small></div>
