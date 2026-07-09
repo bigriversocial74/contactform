@@ -1,0 +1,111 @@
+/* Watch / Listen campaign right-column reward stack polish. */
+.mg-rl-join-desktop {
+  align-self: start;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.mg-rl-join-desktop::-webkit-scrollbar {
+  width: 6px;
+}
+
+.mg-rl-join-desktop::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(18, 96, 255, .22);
+}
+
+.mg-rl-sidebar-stack {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.mg-rl-sidebar-stack .mg-rl-card {
+  box-shadow: none;
+  background: rgba(255, 255, 255, .74);
+  border-color: rgba(15, 23, 42, .07);
+  padding: 14px;
+}
+
+.mg-rl-sidebar-stack .mg-rl-card h3 {
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.mg-rl-sidebar-stack .mg-rl-reward-carousel {
+  margin: 9px 0 10px;
+}
+
+.mg-rl-sidebar-stack .mg-rl-reward-stack {
+  padding-bottom: 6px;
+}
+
+.mg-rl-sidebar-stack .mg-rl-reward-item {
+  min-width: 100%;
+  grid-template-columns: 52px minmax(0, 1fr);
+  padding: 9px;
+}
+
+.mg-rl-sidebar-stack .mg-rl-reward-image {
+  width: 52px;
+  height: 52px;
+}
+
+.mg-rl-sidebar-stack .mg-rl-reward-info > p {
+  font-size: 11px;
+  line-height: 1.36;
+}
+
+.mg-rl-sidebar-stack .mg-rl-progress-row {
+  grid-template-columns: repeat(auto-fit, minmax(58px, 1fr));
+  gap: 7px;
+  margin: 12px 0;
+}
+
+.mg-rl-sidebar-stack .mg-rl-dot {
+  width: 36px;
+  height: 36px;
+  font-size: 13px;
+  margin-bottom: 5px;
+}
+
+.mg-rl-sidebar-stack .mg-rl-list {
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.mg-rl-sidebar-stack .mg-rl-list + .mg-rl-list {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(15, 23, 42, .07);
+}
+
+.mg-rl-watch .mg-rl-player {
+  padding: 14px;
+}
+
+@media (min-width: 1181px) {
+  .mg-rl-join-desktop {
+    position: sticky;
+    top: 92px;
+  }
+}
+
+@media (max-width: 1180px) {
+  .mg-rl-join-desktop {
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 720px) {
+  .mg-rl-join-mobile .mg-rl-sidebar-stack {
+    margin-top: 14px;
+  }
+
+  .mg-rl-sidebar-stack .mg-rl-card {
+    padding: 13px;
+  }
+}

@@ -6,7 +6,7 @@ require_once __DIR__ . '/includes/campaign-types.php';
 $page_title = 'Listen Music Reward | Microgifter';
 $page_section = 'campaign';
 $header_mode = 'public';
-$page_styles = ['/assets/css/watch-listen-standalone-page.css', '/assets/css/listen-wave-reward-polish-v1.css'];
+$page_styles = ['/assets/css/watch-listen-standalone-page.css', '/assets/css/listen-wave-reward-polish-v1.css', '/assets/css/watch-listen-sidebar-rewards-v1.css'];
 $page_scripts = ['/assets/js/public-listen-music-reward.js'];
 
 function mg_listen_reward_safe_url(mixed $value, bool $allowRelative = true): ?string
@@ -80,6 +80,45 @@ function mg_listen_reward_allocations(array $milestones, array $defaults): array
         $groups[] = ['title' => (string)$defaults['title'], 'value' => (string)$defaults['value'], 'image' => $defaults['image'] ?? null, 'levels' => $defaults['levels'] ?? [(int)$defaults['required_percent']]];
     }
     return array_values($groups);
+}
+function mg_listen_reward_sidebar_cards(array $rewardAllocations, string $merchantName, string $rewardDescription, array $levelPercents, int $requiredPercent, string $initialStatus): void
+{
+    ?>
+    <div class="mg-rl-sidebar-stack" data-listen-reward-sidebar>
+      <article class="mg-rl-card mg-rl-reward-info">
+        <span class="mg-rl-eyebrow">Campaign Reward</span>
+        <div class="mg-rl-reward-carousel">
+          <div class="mg-rl-reward-stack <?= count($rewardAllocations) > 1 ? 'has-multiple' : '' ?>">
+            <?php foreach ($rewardAllocations as $allocation): ?>
+              <div class="mg-rl-reward-item <?= !empty($allocation['image']) ? 'has-image' : 'is-text-only' ?>">
+                <?php if (!empty($allocation['image'])): ?><img class="mg-rl-reward-image" src="<?= mg_e((string)$allocation['image']) ?>" alt="<?= mg_e((string)$allocation['title']) ?> reward image"><?php endif; ?>
+                <span class="mg-rl-reward-copy">
+                  <strong class="mg-rl-reward-business"><?= mg_e($merchantName) ?></strong>
+                  <b class="mg-rl-reward-name"><?= mg_e((string)$allocation['title']) ?></b>
+                  <small class="mg-rl-reward-value"><?= mg_e((string)$allocation['value']) ?></small>
+                  <small class="mg-rl-reward-levels">Reward level<?= count($allocation['levels']) > 1 ? 's' : '' ?>: <?= mg_e(mg_listen_reward_level_label($allocation['levels'])) ?></small>
+                </span>
+              </div>
+            <?php endforeach; ?>
+          </div>
+          <small class="mg-rl-carousel-hint">Scroll to view all rewards</small>
+        </div>
+        <p><?= mg_e($rewardDescription) ?></p>
+      </article>
+      <article class="mg-rl-card mg-rl-levels">
+        <span class="mg-rl-eyebrow">Reward Levels</span>
+        <h3>Listen progress unlocks reward milestones.</h3>
+        <div class="mg-rl-progress-row"><?php foreach ($levelPercents as $percent): ?><div class="mg-rl-step <?= $percent <= $requiredPercent ? 'is-active' : '' ?>"><span class="mg-rl-dot"><?= mg_e((string)$percent) ?>%</span><b><?= mg_e((string)$percent) ?>%</b></div><?php endforeach; ?></div>
+        <div class="mg-rl-bar"><span style="width:<?= mg_e((string)$requiredPercent) ?>%"></span></div>
+      </article>
+      <article class="mg-rl-card mg-rl-status-card">
+        <span class="mg-rl-eyebrow">Campaign Status</span>
+        <h3 data-listen-reward-status><?= mg_e($initialStatus) ?></h3>
+        <ul class="mg-rl-list" data-listen-reward-history><li>No listening activity yet.</li></ul>
+        <ul class="mg-rl-list" data-listen-reward-issue-history><li>No rewards issued yet.</li></ul>
+      </article>
+    </div>
+    <?php
 }
 function mg_listen_reward_load(string $ref): ?array
 {
@@ -165,18 +204,15 @@ $rewardAllocations = mg_listen_reward_allocations($milestones, [
         <div class="mg-rl-profile"><div class="mg-rl-avatar"><?php if ($avatarUrl): ?><img src="<?= mg_e($avatarUrl) ?>" alt="<?= mg_e($merchantName) ?> profile image"><?php else: ?><span><?= mg_e(mg_listen_reward_initials($merchantName)) ?></span><?php endif; ?></div><div><h2><?= mg_e($merchantName) ?></h2><?php if (!empty($campaign['merchant_profile_headline'])): ?><p><?= mg_e((string)$campaign['merchant_profile_headline']) ?></p><?php endif; ?></div></div>
         <form class="mg-rl-form" data-listen-reward-form novalidate><input type="hidden" name="campaign_id" value="<?= mg_e((string)$campaign['public_id']) ?>"><h3>Join this campaign</h3><p>Enter your details to get started.</p><label>Name<input name="name" placeholder="Full Name" maxlength="180" value="<?= mg_e($prefillName) ?>"></label><label>Email<input name="email" type="email" required placeholder="Email Address" maxlength="255" value="<?= mg_e($prefillEmail) ?>"></label><label>Phone <span>(optional)</span><input name="phone" maxlength="60" placeholder="Optional"></label><button class="mg-rl-btn mg-rl-btn-dark" type="submit">Start Listening &amp; Join Campaign</button></form>
         <div class="mg-public-campaign-result" data-listen-reward-result></div>
+        <?php mg_listen_reward_sidebar_cards($rewardAllocations, $merchantName, $rewardDescription, $levelPercents, $requiredPercent, $initialStatus); ?>
       </aside>
-      <section class="mg-rl-bottom">
-        <article class="mg-rl-card mg-rl-reward-info"><span class="mg-rl-eyebrow">Campaign Reward</span><div class="mg-rl-reward-stack"><?php foreach ($rewardAllocations as $allocation): ?><div class="mg-rl-reward-item <?= !empty($allocation['image']) ? 'has-image' : 'is-text-only' ?>"><?php if (!empty($allocation['image'])): ?><img class="mg-rl-reward-image" src="<?= mg_e((string)$allocation['image']) ?>" alt="<?= mg_e((string)$allocation['title']) ?> reward image"><?php endif; ?><span class="mg-rl-reward-copy"><strong class="mg-rl-reward-business"><?= mg_e($merchantName) ?></strong><b class="mg-rl-reward-name"><?= mg_e((string)$allocation['title']) ?></b><small class="mg-rl-reward-value"><?= mg_e((string)$allocation['value']) ?></small><small class="mg-rl-reward-levels">Reward level<?= count($allocation['levels']) > 1 ? 's' : '' ?>: <?= mg_e(mg_listen_reward_level_label($allocation['levels'])) ?></small></span></div><?php endforeach; ?></div><p><?= mg_e($rewardDescription) ?></p></article>
-        <article class="mg-rl-card mg-rl-levels"><span class="mg-rl-eyebrow">Reward Levels</span><h3>Listen progress unlocks reward milestones.</h3><div class="mg-rl-progress-row"><?php foreach ($levelPercents as $percent): ?><div class="mg-rl-step <?= $percent <= $requiredPercent ? 'is-active' : '' ?>"><span class="mg-rl-dot"><?= mg_e((string)$percent) ?>%</span><b><?= mg_e((string)$percent) ?>%</b></div><?php endforeach; ?></div><div class="mg-rl-bar"><span style="width:<?= mg_e((string)$requiredPercent) ?>%"></span></div></article>
-        <article class="mg-rl-card mg-rl-status-card"><span class="mg-rl-eyebrow">Campaign Status</span><h3 data-listen-reward-status><?= mg_e($initialStatus) ?></h3><ul class="mg-rl-list" data-listen-reward-history><li>No listening activity yet.</li></ul><ul class="mg-rl-list" data-listen-reward-issue-history><li>No rewards issued yet.</li></ul></article>
-      </section>
       <?php endif; ?>
     </div>
     <aside class="mg-rl-join mg-rl-join-desktop">
       <div class="mg-rl-profile"><div class="mg-rl-avatar"><?php if ($avatarUrl): ?><img src="<?= mg_e($avatarUrl) ?>" alt="<?= mg_e($merchantName) ?> profile image"><?php else: ?><span><?= mg_e(mg_listen_reward_initials($merchantName)) ?></span><?php endif; ?></div><div><h2><?= mg_e($merchantName) ?></h2><?php if (!empty($campaign['merchant_profile_headline'])): ?><p><?= mg_e((string)$campaign['merchant_profile_headline']) ?></p><?php endif; ?></div></div>
       <form class="mg-rl-form" data-listen-reward-form novalidate><input type="hidden" name="campaign_id" value="<?= mg_e((string)$campaign['public_id']) ?>"><h3>Join this campaign</h3><p>Enter your details to get started.</p><label>Name<input name="name" placeholder="Full Name" maxlength="180" value="<?= mg_e($prefillName) ?>"></label><label>Email<input name="email" type="email" required placeholder="Email Address" maxlength="255" value="<?= mg_e($prefillEmail) ?>"></label><label>Phone <span>(optional)</span><input name="phone" maxlength="60" placeholder="Optional"></label><button class="mg-rl-btn mg-rl-btn-dark" type="submit">Start Listening &amp; Join Campaign</button></form>
       <div class="mg-public-campaign-result" data-listen-reward-result></div>
+      <?php if ($hasAudio) mg_listen_reward_sidebar_cards($rewardAllocations, $merchantName, $rewardDescription, $levelPercents, $requiredPercent, $initialStatus); ?>
     </aside>
   </div>
   <div class="mg-rl-mobile-dock" data-rl-mobile-dock><button class="mg-rl-mobile-toggle" type="button" data-rl-mobile-toggle aria-expanded="false"><i></i><span><strong>Participant Status</strong><small data-listen-reward-status><?= mg_e($initialStatus) ?></small></span><b>Details</b></button><div class="mg-rl-mobile-drawer" data-rl-mobile-drawer hidden><h3>Reward Activity</h3><div class="mg-rl-mobile-drawer-section"><strong>Current status</strong><p data-listen-reward-status><?= mg_e($initialStatus) ?></p></div><div class="mg-rl-mobile-drawer-section"><strong>Listening activity</strong><ul class="mg-rl-list" data-listen-reward-history><li>No listening activity yet.</li></ul></div><div class="mg-rl-mobile-drawer-section"><strong>Issued rewards</strong><ul class="mg-rl-list" data-listen-reward-issue-history><li>No rewards issued yet.</li></ul></div><a class="mg-rl-btn mg-rl-btn-soft" href="/inbox.php">Open Microgifter Inbox</a></div></div>
