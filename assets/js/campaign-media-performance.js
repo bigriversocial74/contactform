@@ -6,6 +6,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
   var selectedCampaign = root.getAttribute('data-selected-campaign') || '';
   var selectedDays = root.getAttribute('data-selected-days') || '30';
+  var currentData = null;
+  var visibleContacts = [];
 
   function esc(value) { return String(value == null ? '' : value).replace(/[&<>'"]/g, function (char) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]; }); }
   function count(value) { return new Intl.NumberFormat().format(Number(value || 0)); }
@@ -26,6 +28,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function apiUrl() { return '/api/merchant/campaign-media-performance.php?' + queryParams().toString(); }
   function pageUrl() { return '/merchant-campaign-media-performance.php?' + queryParams().toString(); }
+  function selectedSegment() { var node = root.querySelector('[data-media-segment]'); return node && node.value ? node.value : 'all'; }
+  function searchTerm() { var node = root.querySelector('[data-media-search]'); return node && node.value ? node.value.trim().toLowerCase() : ''; }
+  function exportUrl(segment) {
+    var params = queryParams();
+    params.set('segment', segment || selectedSegment());
+    return '/api/merchant/campaign-media-performance-export.php?' + params.toString();
+  }
 
   function renderStats(totals) {
     var node = root.querySelector('[data-media-stats]');
@@ -50,12 +59,14 @@ document.addEventListener('DOMContentLoaded', function () {
     var title = root.querySelector('[data-media-title]');
     var desc = root.querySelector('[data-media-description]');
     var analyticsLink = root.querySelector('[data-media-embed-analytics-link]');
+    var crmLink = root.querySelector('[data-media-crm-campaign]');
     if (title) title.textContent = campaign.title || 'Watch / Listen Performance';
     if (desc) desc.textContent = [campaign.campaign_type_label, campaign.provider_label, campaign.status].filter(Boolean).join(' · ') || 'Review campaign media performance.';
     if (analyticsLink && campaign.embed_analytics_url) analyticsLink.href = campaign.embed_analytics_url;
+    if (crmLink && campaign.crm_campaign_url) crmLink.href = campaign.crm_campaign_url;
     node.innerHTML = '<article><b>' + esc(campaign.campaign_type_label || 'Media Reward') + '</b><span>' + esc(campaign.provider_label || '') + '</span><small>' + esc(campaign.track_label || '') + '</small></article>' +
       '<article><b>Reward</b><span>' + esc(campaign.reward_template_title || 'Attached reward') + '</span><small>Status: ' + esc(campaign.status || '—') + '</small></article>' +
-      '<article><b>Links</b><span><a href="' + esc(campaign.public_url || '#') + '" target="_blank" rel="noopener">Open public page</a> · <a href="' + esc(campaign.embed_qa_url || '#') + '">Embed QA</a> · <a href="' + esc(campaign.embed_analytics_url || '#') + '">Embed analytics</a></span><small>ID: ' + esc(campaign.id || '') + '</small></article>';
+      '<article><b>Links</b><span><a href="' + esc(campaign.public_url || '#') + '" target="_blank" rel="noopener">Open public page</a> · <a href="' + esc(campaign.embed_qa_url || '#') + '">Embed QA</a> · <a href="' + esc(campaign.embed_analytics_url || '#') + '">Embed analytics</a> · <a href="' + esc(campaign.crm_campaign_url || '#') + '">CRM campaign</a></span><small>ID: ' + esc(campaign.id || '') + '</small></article>';
   }
 
   function renderOrigins(rows, ready) {
@@ -75,26 +86,59 @@ document.addEventListener('DOMContentLoaded', function () {
     return rewards.slice(0, 3).map(function (reward) { return (reward.milestone_percent ? reward.milestone_percent + '% · ' : '') + (reward.title || 'Reward') + ' · ' + (reward.status || 'issued'); }).join('\n');
   }
 
+  function segmentMatches(row, segment) { return !segment || segment === 'all' || row.behavior_bucket === segment; }
+  function textMatches(row, term) {
+    if (!term) return true;
+    var attr = row.attribution || {};
+    return [row.name, row.email, row.phone, row.behavior_label, attr.source, attr.origin_host, attr.embed_mode].join(' ').toLowerCase().indexOf(term) !== -1;
+  }
+  function getFilteredContacts() {
+    var contacts = currentData && Array.isArray(currentData.contacts) ? currentData.contacts : [];
+    var segment = selectedSegment();
+    var term = searchTerm();
+    return contacts.filter(function (row) { return segmentMatches(row, segment) && textMatches(row, term); });
+  }
+
+  function renderSegmentSummary() {
+    var node = root.querySelector('[data-media-segment-summary]');
+    if (!node || !currentData) return;
+    var totals = currentData.totals || {};
+    var buckets = totals.behavior_buckets || {};
+    var segment = selectedSegment();
+    var label = segment === 'all' ? 'All contacts' : (visibleContacts[0] && visibleContacts[0].behavior_label ? visibleContacts[0].behavior_label : segment.replace(/_/g, ' '));
+    var exportNode = root.querySelector('[data-media-export]');
+    var exportAllNode = root.querySelector('[data-media-export-all]');
+    if (exportNode) exportNode.href = exportUrl(segment);
+    if (exportAllNode) exportAllNode.href = exportUrl('all');
+    node.innerHTML = '<article><b>' + esc(label) + '</b><span>' + count(visibleContacts.length) + ' visible contacts</span><small>All ' + count(buckets.all || 0) + ' · Started incomplete ' + count(buckets.started_incomplete || 0) + ' · Milestone unclaimed ' + count(buckets.milestone_unclaimed || 0) + ' · Claimed unredeemed ' + count(buckets.claimed_unredeemed || 0) + ' · Redeemed ' + count(buckets.redeemed || 0) + '</small></article>';
+  }
+
   function renderContacts(rows) {
     var table = root.querySelector('[data-media-contact-table]');
     if (!table) return;
     rows = rows || [];
+    visibleContacts = rows;
+    renderSegmentSummary();
     if (!rows.length) {
-      table.innerHTML = '<tbody><tr><td><div class="mg-empty-actions"><strong>No contacts yet.</strong><p>Customer progress will appear after someone starts this Watch or Listen campaign.</p><a href="/merchant-campaigns.php">Open Campaigns</a></div></td></tr></tbody>';
+      table.innerHTML = '<tbody><tr><td><div class="mg-empty-actions"><strong>No contacts match this filter.</strong><p>Change the behavior filter or search field to review more contacts.</p><a href="/merchant-campaigns.php">Open Campaigns</a></div></td></tr></tbody>';
       return;
     }
-    table.innerHTML = '<thead><tr><th>Contact</th><th>Progress</th><th>Milestones</th><th>Rewards / Inbox</th><th>Attribution</th><th>Last Activity</th></tr></thead><tbody>' + rows.map(function (row) {
+    table.innerHTML = '<thead><tr><th>Contact</th><th>Progress</th><th>Milestones</th><th>Rewards / Inbox</th><th>Attribution</th><th>Follow-Up Actions</th><th>Last Activity</th></tr></thead><tbody>' + rows.map(function (row) {
       var attribution = row.attribution || {};
+      var actions = row.action_urls || {};
       var source = attribution.origin_host || attribution.label || attribution.source || 'Public page';
       var rewardTitle = rewardSummary(row.rewards || []);
-      return '<tr><td><strong>' + esc(row.name || 'Customer') + '</strong><small>' + esc(row.email || '') + (row.phone ? ' · ' + esc(row.phone) : '') + '</small></td>' +
+      return '<tr><td><strong>' + esc(row.name || 'Customer') + '</strong><small>' + esc(row.email || '') + (row.phone ? ' · ' + esc(row.phone) : '') + '</small><small>' + esc(row.behavior_label || '') + '</small></td>' +
         '<td>' + pct(row.max_progress_percent) + '<small>' + count(row.starts) + ' starts · ' + count(row.progress_events) + ' progress events</small></td>' +
         '<td>' + esc(milestones(row.milestones_reached)) + '<small>' + count(row.wallet_items) + ' issued</small></td>' +
         '<td><strong>' + esc(row.inbox_status || '—') + '</strong><small>' + esc(rewardTitle).replace(/\n/g, '<br>') + '</small><small>' + (row.pppm_handoff ? 'PPPM handoff ready' : 'No PPPM handoff yet') + '</small></td>' +
         '<td>' + statusBadge(source) + '<small>' + esc(attribution.embed_mode || attribution.source || 'public_page') + '</small></td>' +
+        '<td><a href="' + esc(actions.crm_profile || '#') + '">CRM profile</a><a href="' + esc(actions.message || actions.mailto || '#') + '">Message</a><a href="' + esc(actions.send_bonus_reward || '#') + '">Bonus reward</a><a href="' + esc(actions.add_to_segment || '#') + '">Segment</a></td>' +
         '<td>' + esc(compactDate(row.last_activity_at)) + '</td></tr>';
     }).join('') + '</tbody>';
   }
+
+  function applyFilters() { renderContacts(getFilteredContacts()); }
 
   function renderEvents(rows) {
     var node = root.querySelector('[data-media-events]');
@@ -107,11 +151,12 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function render(data) {
-    renderSummary(data.campaign || {});
-    renderStats(data.totals || {});
-    renderOrigins(data.embed_origins || [], data.embed_analytics_ready !== false);
-    renderContacts(data.contacts || []);
-    renderEvents(data.recent_events || []);
+    currentData = data || {};
+    renderSummary(currentData.campaign || {});
+    renderStats(currentData.totals || {});
+    renderOrigins(currentData.embed_origins || [], currentData.embed_analytics_ready !== false);
+    renderContacts(getFilteredContacts());
+    renderEvents(currentData.recent_events || []);
     setAlert('', '');
     if (window.history) window.history.replaceState({}, '', pageUrl());
   }
@@ -131,6 +176,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
   var form = root.querySelector('[data-media-performance-filters]');
   if (form) form.addEventListener('submit', function (event) { event.preventDefault(); load(); });
-  root.addEventListener('change', function (event) { if (event.target && event.target.matches('[data-media-days]')) load(); });
+  root.addEventListener('change', function (event) { if (event.target && event.target.matches('[data-media-days]')) load(); if (event.target && event.target.matches('[data-media-segment]')) applyFilters(); });
+  root.addEventListener('input', function (event) { if (event.target && event.target.matches('[data-media-search]')) applyFilters(); });
+  root.addEventListener('click', function (event) {
+    if (event.target && event.target.matches('[data-media-export],[data-media-export-all],[data-media-crm-campaign]') && event.target.getAttribute('href') === '#') {
+      event.preventDefault();
+      setAlert('<strong>Load a campaign first.</strong>', 'warn');
+    }
+  });
   load();
 });
