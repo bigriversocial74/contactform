@@ -10,6 +10,10 @@ mg_require_method('POST');
 $input = mg_input();
 $campaignType = trim((string)($input['campaign_type'] ?? ''));
 
+if (in_array($campaignType, ['watch_video_reward', 'listen_music_reward'], true)) {
+    mg_fail('Media reward embeds open the full Microgifter media reward page so watch/listen progress, milestone rewards, Inbox delivery, and PPPM handoff stay accurate.', 409);
+}
+
 $target = match ($campaignType) {
     'newsletter_signup' => 'signup.php',
     'contest_giveaway' => 'contest-entry.php',
