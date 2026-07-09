@@ -13,6 +13,7 @@ $mgCampaignTypeClientRegistry = mg_campaign_type_client_registry(false);
       <a href="#campaign-qr-drops" data-campaign-tab-link data-campaign-tab="qr_drops">QR Drops</a>
       <a href="#campaign-contests" data-campaign-tab-link data-campaign-tab="contests">Contests</a>
       <a href="#campaign-forms" data-campaign-tab-link data-campaign-tab="forms">Forms</a>
+      <a href="#campaign-landing-qa" data-campaign-tab-link data-campaign-tab="landing_qa">Landing QA</a>
       <a href="#campaign-performance" data-campaign-tab-link data-campaign-tab="performance">Performance</a>
       <a href="#campaign-followups" data-campaign-tab-link data-campaign-tab="followups">Follow-ups</a>
       <a href="#campaign-queue" data-campaign-tab-link data-campaign-tab="queue">Queue</a>
@@ -68,6 +69,7 @@ $mgCampaignTypeClientRegistry = mg_campaign_type_client_registry(false);
               <a href="#campaign-create" data-campaign-tab-trigger="create" data-campaign-type-preset="qr_reward_drop">Create QR drop</a>
               <a href="#campaign-create" data-campaign-tab-trigger="create" data-campaign-type-preset="contest_giveaway">Create contest</a>
               <a href="#campaign-create" data-campaign-tab-trigger="create" data-campaign-type-preset="newsletter_signup">Create signup form</a>
+              <a href="#campaign-landing-qa" data-campaign-tab-trigger="landing_qa">Run landing page QA</a>
               <a href="/merchant-campaign-stamps.php">Review campaign stamps</a>
             </div>
           </section>
@@ -122,6 +124,23 @@ $mgCampaignTypeClientRegistry = mg_campaign_type_client_registry(false);
           <div class="mg-heading-actions"><a class="mg-btn mg-btn-primary" href="#campaign-create" data-campaign-tab-trigger="create" data-campaign-type-preset="newsletter_signup">Create Signup Form</a></div>
         </div>
         <div class="mg-app-panel-body"><div class="mg-campaign-list" data-stage12-campaign-list data-campaign-list-filter="forms"></div></div>
+      </section>
+    </section>
+
+    <section class="mg-campaign-tab-panel" id="campaign-landing-qa" data-campaign-tab-panel="landing_qa" aria-label="Public landing page QA" hidden>
+      <section class="mg-app-panel mg-campaign-panel">
+        <div class="mg-app-panel-head mg-campaign-panel-head">
+          <div>
+            <span class="mg-eyebrow">Campaign Types v1.2</span>
+            <h2>Public landing page QA</h2>
+            <p>Verify every public campaign type has an active campaign, attached active reward, registry route, submit endpoint, QR token when required, and copy/open actions.</p>
+          </div>
+          <div class="mg-heading-actions"><button class="mg-btn mg-btn-soft" type="button" data-campaign-landing-qa-refresh>Refresh QA</button></div>
+        </div>
+        <div class="mg-app-panel-body">
+          <div class="mg-campaign-kpis" data-campaign-landing-qa-summary></div>
+          <div class="mg-product-list" data-campaign-landing-page-qa><div class="mg-empty-state"><p>Loading public landing page QA…</p></div></div>
+        </div>
       </section>
     </section>
 
@@ -233,5 +252,6 @@ $mgCampaignTypeClientRegistry = mg_campaign_type_client_registry(false);
 <script src="/assets/js/stage12-campaign-followups.js" defer></script>
 <script src="/assets/js/stage12-campaign-contacts.js" defer></script>
 <script src="/assets/js/stage12-campaign-tools.js" defer></script>
+<script src="/assets/js/stage12-campaign-landing-qa.js" defer></script>
 <script src="/assets/js/stage12-campaign-insights.js" defer></script>
 <script src="/assets/js/stage12-agent-action-center.js" defer></script>
