@@ -1,0 +1,5 @@
+.mg-gift-thumb.has-image{overflow:hidden;background:#fff;color:transparent;border-radius:14px;box-shadow:inset 0 0 0 1px rgba(15,23,42,.07)}
+.mg-gift-thumb.has-image img{display:block;width:100%;height:100%;object-fit:cover;border:0}
+.mg-gift-search-results [data-gift-search-result] span.has-image{overflow:hidden;background:#fff;color:transparent;border-radius:10px;box-shadow:inset 0 0 0 1px rgba(15,23,42,.08)}
+.mg-gift-search-results [data-gift-search-result] span.has-image img{display:block;width:100%;height:100%;object-fit:cover;border:0}
+@media(max-width:760px){.mg-gift-thumb.has-image{border-radius:12px}}
