@@ -19,6 +19,16 @@ function mg_campaign_timeline_sort(array &$events): void
 {
     usort($events, fn($a,$b)=>strcmp((string)($a['created_at']??''),(string)($b['created_at']??'')) ?: strcmp((string)($a['type']??''),(string)($b['type']??'')));
 }
+function mg_campaign_timeline_table_ready(PDO $pdo, string $table, array $columns): bool
+{
+    try {
+        $stmt=$pdo->prepare('SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=?');
+        $stmt->execute([$table]);
+        $found=array_map('strval',$stmt->fetchAll(PDO::FETCH_COLUMN)?:[]);
+        foreach($columns as $column){if(!in_array($column,$found,true))return false;}
+        return true;
+    } catch(Throwable) { return false; }
+}
 
 mg_require_method('GET');
 $user=mg_require_permission('merchant.campaigns.view');$merchantId=(int)$user['id'];$pdo=mg_db();mg_merchant_ensure_workspace($pdo,$user);
@@ -42,13 +52,23 @@ try{
     $params=[$merchantId,$campaignId]; if($contactId){$sql.=' AND ce.contact_id=?';$params[]=$contactId;} $sql.=' ORDER BY ce.created_at ASC,ce.id ASC LIMIT '.$limit;
     $stmt=$pdo->prepare($sql);$stmt->execute($params);
     foreach($stmt->fetchAll(PDO::FETCH_ASSOC) as $r){$ctx=mg_campaign_timeline_json($r['event_context_json']??null);$events[]=mg_campaign_timeline_event('campaign_event',(string)$r['event_type'],$r['contact_public_id']??null,$r['wallet_public_id']??null,null,null,(string)$r['event_type'],(string)$r['created_at'],$ctx);}
+
+    if(mg_campaign_timeline_table_ready($pdo,'merchant_crm_contact_events',['merchant_user_id','campaign_id','event_type','source_public_id','metadata_json','created_at'])){
+        $crmSql='SELECT mce.*,mcc.public_id crm_contact_public_id FROM merchant_crm_contact_events mce LEFT JOIN merchant_crm_contacts mcc ON mcc.id=mce.crm_contact_id WHERE mce.merchant_user_id=? AND mce.campaign_id=?';
+        $crmParams=[$merchantId,$campaignId];
+        if($contact){$crmSql.=' AND (mce.source_public_id=? OR mce.email=?)';$crmParams[]=(string)$contact['public_id'];$crmParams[]=(string)$contact['email'];}
+        $crmSql.=' ORDER BY mce.created_at ASC,mce.id ASC LIMIT '.$limit;
+        $crmStmt=$pdo->prepare($crmSql);$crmStmt->execute($crmParams);
+        foreach($crmStmt->fetchAll(PDO::FETCH_ASSOC) as $r){$ctx=mg_campaign_timeline_json($r['metadata_json']??null);$ctx['crm_contact_id']=$r['crm_contact_public_id']??null;$events[]=mg_campaign_timeline_event('merchant_crm',(string)$r['event_type'],(string)($r['source_public_id']??''),null,null,null,(string)$r['event_type'],(string)$r['created_at'],$ctx);}
+    }
+
     $wsql='SELECT wi.*,cc.public_id contact_public_id FROM wallet_items wi LEFT JOIN campaign_contacts cc ON cc.id=wi.contact_id WHERE wi.merchant_user_id=? AND wi.campaign_id=?';$wparams=[$merchantId,$campaignId]; if($contactId){$wsql.=' AND wi.contact_id=?';$wparams[]=$contactId;} $wsql.=' ORDER BY wi.created_at ASC LIMIT '.$limit;
     $ws=$pdo->prepare($wsql);$ws->execute($wparams);
-    foreach($ws->fetchAll(PDO::FETCH_ASSOC) as $w){$cid=$w['contact_public_id']??null;$wid=(string)$w['public_id'];if(!empty($w['issued_at']))$events[]=mg_campaign_timeline_event('wallet','wallet_item.issued',$cid,$wid,null,(string)$w['status'],(string)$w['title_snapshot'],(string)$w['issued_at'],['value_cents'=>(int)$w['value_cents_snapshot'],'currency'=>(string)$w['currency_snapshot']]);if(!empty($w['viewed_at']))$events[]=mg_campaign_timeline_event('wallet','wallet_item.viewed',$cid,$wid,null,(string)$w['status'],'Reward viewed',(string)$w['viewed_at']);if(!empty($w['claimed_at']))$events[]=mg_campaign_timeline_event('wallet','wallet_item.claimed',$cid,$wid,null,(string)$w['status'],'Reward claimed',(string)$w['claimed_at']);if(!empty($w['redeemed_at']))$events[]=mg_campaign_timeline_event('wallet','wallet_item.redeemed',$cid,$wid,null,(string)$w['status'],'Reward redeemed',(string)$w['redeemed_at']);}
+    foreach($ws->fetchAll(PDO::FETCH_ASSOC) as $w){$cid=$w['contact_public_id']??null;$wid=(string)$w['public_id'];$meta=mg_campaign_timeline_json($w['metadata_json']??null);if(!empty($w['issued_at']))$events[]=mg_campaign_timeline_event('wallet','wallet_item.issued',$cid,$wid,null,(string)$w['status'],(string)$w['title_snapshot'],(string)$w['issued_at'],['value_cents'=>(int)$w['value_cents_snapshot'],'currency'=>(string)$w['currency_snapshot']]+$meta);if(!empty($w['viewed_at']))$events[]=mg_campaign_timeline_event('wallet','wallet_item.viewed',$cid,$wid,null,(string)$w['status'],'Reward viewed',(string)$w['viewed_at'],$meta);if(!empty($w['claimed_at']))$events[]=mg_campaign_timeline_event('wallet','wallet_item.claimed',$cid,$wid,null,(string)$w['status'],'Reward claimed',(string)$w['claimed_at'],$meta);if(!empty($w['redeemed_at']))$events[]=mg_campaign_timeline_event('wallet','wallet_item.redeemed',$cid,$wid,null,(string)$w['status'],'Reward redeemed',(string)$w['redeemed_at'],$meta);}
     $esql="SELECT me.public_id event_public_id,me.event_type,me.payload_json,me.created_at event_created_at,mdj.public_id job_public_id,mdj.status job_status,mdj.template_key,mdj.attempt_count,mdj.delivered_at,mdj.failed_at,mdj.created_at job_created_at FROM message_events me LEFT JOIN message_delivery_jobs mdj ON mdj.message_event_id=me.id WHERE me.event_type='campaign.outbound_email' AND JSON_UNQUOTE(JSON_EXTRACT(me.payload_json,'$.campaign_public_id'))=?";$eparams=[(string)$campaign['public_id']]; if($contact){$esql.=" AND JSON_UNQUOTE(JSON_EXTRACT(me.payload_json,'$.contact_public_id'))=?";$eparams[]=(string)$contact['public_id'];}$esql.=' ORDER BY me.created_at ASC LIMIT '.$limit;
     $ms=$pdo->prepare($esql);$ms->execute($eparams);
     foreach($ms->fetchAll(PDO::FETCH_ASSOC) as $m){$payload=mg_campaign_timeline_json($m['payload_json']??null);$cid=(string)($payload['contact_public_id']??'')?:null;$events[]=mg_campaign_timeline_event('email_delivery','email.queued',$cid,null,$m['job_public_id']??null,(string)($m['job_status']??'queued'),(string)($payload['subject']??$m['template_key']??'Email queued'),(string)($m['job_created_at']??$m['event_created_at']),['template_key'=>$m['template_key']??null,'message_type'=>$payload['message_type']??null]);if(!empty($m['delivered_at']))$events[]=mg_campaign_timeline_event('email_delivery','email.delivered',$cid,null,$m['job_public_id']??null,'delivered','Email delivered',(string)$m['delivered_at']);if(!empty($m['failed_at']))$events[]=mg_campaign_timeline_event('email_delivery','email.failed',$cid,null,$m['job_public_id']??null,(string)$m['job_status'],'Email failed',(string)$m['failed_at']);}
     mg_campaign_timeline_sort($events); if(count($events)>$limit)$events=array_slice($events,-$limit);
-    $summary=['events'=>count($events),'contacts'=>0,'wallets'=>0,'emails'=>0]; foreach($events as $e){if(($e['source']??'')==='campaign_event')$summary['contacts']++; if(($e['source']??'')==='wallet')$summary['wallets']++; if(($e['source']??'')==='email_delivery')$summary['emails']++;}
+    $summary=['events'=>count($events),'contacts'=>0,'wallets'=>0,'emails'=>0,'crm'=>0]; foreach($events as $e){if(($e['source']??'')==='campaign_event')$summary['contacts']++; if(($e['source']??'')==='wallet')$summary['wallets']++; if(($e['source']??'')==='email_delivery')$summary['emails']++; if(($e['source']??'')==='merchant_crm')$summary['crm']++;}
     mg_ok(['campaign'=>['id'=>(string)$campaign['public_id'],'slug'=>$campaign['public_slug']??null,'title'=>(string)$campaign['title'],'campaign_type'=>(string)$campaign['campaign_type'],'reward_template_title'=>$campaign['reward_template_title']??null],'contact'=>$contact?['id'=>(string)$contact['public_id'],'email'=>(string)$contact['email'],'name'=>$contact['name']??null,'user_id'=>$contact['user_id']? (int)$contact['user_id']:null]:null,'timeline'=>$events,'summary'=>$summary,'schema_ready'=>true]);
-}catch(Throwable $error){mg_security_log('warning','merchant.campaign_timeline.failed','Unable to load campaign timeline.',['exception_class'=>$error::class,'message'=>$error->getMessage()],$merchantId);mg_ok(['campaign'=>null,'contact'=>null,'timeline'=>[],'summary'=>['events'=>0,'contacts'=>0,'wallets'=>0,'emails'=>0],'schema_ready'=>false],'Campaign timeline unavailable until schemas are installed.');}
+}catch(Throwable $error){mg_security_log('warning','merchant.campaign_timeline.failed','Unable to load campaign timeline.',['exception_class'=>$error::class,'message'=>$error->getMessage()],$merchantId);mg_ok(['campaign'=>null,'contact'=>null,'timeline'=>[],'summary'=>['events'=>0,'contacts'=>0,'wallets'=>0,'emails'=>0,'crm'=>0],'schema_ready'=>false],'Campaign timeline unavailable until schemas are installed.');}

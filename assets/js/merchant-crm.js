@@ -2,16 +2,19 @@ document.addEventListener('DOMContentLoaded', function () {
   'use strict';
 
   if (!window.Microgifter || !document.querySelector('[data-merchant-crm-app]')) return;
+  var entryParams = new URLSearchParams(location.search || '');
 
   var state = {
     campaigns: [],
     contacts: [],
-    selectedCampaign: '',
+    selectedCampaign: entryParams.get('campaign') || entryParams.get('campaign_id') || '',
     selected: {},
     segment: 'all',
     activeContact: null,
     bulkMode: 'message',
-    entryActionHandled: false
+    entryActionHandled: false,
+    entryContactId: entryParams.get('campaign_contact_id') || entryParams.get('contact_id') || entryParams.get('contact') || '',
+    entryEmail: String(entryParams.get('email') || '').toLowerCase()
   };
 
   var SVG = {
@@ -40,7 +43,6 @@ document.addEventListener('DOMContentLoaded', function () {
     button.disabled = !!on;
     button.textContent = on ? (text || 'Working…') : button.dataset.originalText;
   }
-  function profileUrl(contact) { return '/merchant-customer.php?campaign_contact_id=' + encodeURIComponent(contact.id || ''); }
   function label(value) { return String(value || '').replace(/_/g, ' ').replace(/\b\w/g, function (match) { return match.toUpperCase(); }); }
   function initials(contact) {
     var name = String(contact.name || contact.email || 'C').trim();
@@ -48,6 +50,9 @@ document.addEventListener('DOMContentLoaded', function () {
     if (parts.length > 1) return (parts[0][0] + parts[1][0]).toUpperCase();
     return name.slice(0, 1).toUpperCase();
   }
+  function compactDate(value) { return value ? String(value).replace('T', ' ').replace(/\.\d+Z$/, '') : '—'; }
+  function pct(value) { return (Number(value || 0)).toFixed(Number(value || 0) % 1 === 0 ? 0 : 1) + '%'; }
+  function profileUrl(contact) { return contact.crm_timeline_url || contact.crm_contact_url || ('/merchant-crm.php?campaign=' + encodeURIComponent(contact.campaign_id || '') + '&contact=' + encodeURIComponent(contact.id || '') + '&action=timeline'); }
   function scoreClass(score) {
     score = Number(score || 0);
     if (score >= 75) return 'is-high';
@@ -78,6 +83,17 @@ document.addEventListener('DOMContentLoaded', function () {
   function rewardState(contact) {
     return Number(contact.redeemed_count || 0) > 0 ? 'redeemed' : (Number(contact.claimed_count || 0) > 0 ? 'claimed' : (Number(contact.issued_count || 0) > 0 ? 'issued' : 'none'));
   }
+  function mediaLine(contact) {
+    var media = contact.media_context || {};
+    if (!media.is_media_campaign) return '';
+    var milestones = Array.isArray(media.milestones_reached) && media.milestones_reached.length ? ' · milestones ' + media.milestones_reached.join('% / ') + '%' : '';
+    return '<small class="mg-crm-media-line">' + esc(media.type_label || contact.campaign_type) + ' · ' + esc(media.provider_label || '') + ' · progress ' + esc(pct(media.progress_percent)) + milestones + '</small><small class="mg-crm-media-line">' + esc(media.inbox_status || 'Not issued') + (media.pppm_handoff ? ' · PPPM Inbox handoff' : '') + (media.origin_host ? ' · ' + esc(media.origin_host) : '') + '</small>';
+  }
+  function mediaBadges(contact) {
+    var media = contact.media_context || {};
+    if (!media.is_media_campaign) return '';
+    return badge(media.type_label || 'Media Reward', true) + badge('Progress ' + pct(media.progress_percent), Number(media.progress_percent || 0) > 0) + badge(media.inbox_status || 'Not issued', ['Inbox issued', 'Claimed', 'Redeemed'].indexOf(media.inbox_status) >= 0);
+  }
   function updateBulkState() {
     var selected = selectedContacts();
     var visible = visibleContacts();
@@ -95,6 +111,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var id = esc(contact.id);
     var reward = rewardState(contact);
     var checked = state.selected[String(contact.id)] ? ' checked' : '';
+    var entryClass = String(contact.id) === String(state.entryContactId) || String(contact.email || '').toLowerCase() === state.entryEmail ? ' is-entry-contact' : '';
     var accountText = contact.has_account ? (contact.account_resolved_by_email ? 'Account/email' : 'Account') : 'No account';
     var stats = contact.crm_stats || {};
     var score = contactScore(contact);
@@ -105,12 +122,12 @@ document.addEventListener('DOMContentLoaded', function () {
     var sentCount = stats.sent || stats.issued || contact.issued_count || 0;
     var claimedCount = stats.claimed || contact.claimed_count || contact.redeemed_count || 0;
     var messageCount = stats.messages || contact.message_count || contact.emails_delivered_count || 0;
-    return '<tr class="mg-crm-contact-row" data-contact-id="' + id + '" data-contact-email="' + esc(contact.email || '') + '" data-crm-stats-ready="1">' +
+    return '<tr class="mg-crm-contact-row' + entryClass + '" data-contact-id="' + id + '" data-contact-email="' + esc(contact.email || '') + '" data-crm-stats-ready="1">' +
       '<td class="mg-crm-select-cell"><input type="checkbox" data-crm-contact-check aria-label="Select contact"' + checked + '></td>' +
-      '<td class="mg-crm-contact-cell"><div class="mg-crm-contact-main"><div class="mg-crm-contact-avatar" aria-hidden="true">' + esc(initials(contact)) + '</div><div class="mg-crm-contact-copy"><strong>' + esc(contact.name || 'Unnamed') + '</strong><small>' + esc(contact.email || '') + '</small><div class="mg-crm-score-line"><span class="mg-crm-contact-score ' + scoreClass(score) + '"><b>' + esc(score) + '</b><em>' + esc(label(scoreLabel)) + '</em><small>' + esc(label(result)) + '</small></span></div></div></div></td>' +
-      '<td class="mg-crm-campaign-cell"><strong>' + esc(contact.campaign_title || '—') + '</strong><small>' + esc(contact.campaign_type || contact.source || '') + '</small><div class="mg-crm-campaign-rewards">' + badge(reward, reward === 'claimed' || reward === 'redeemed') + (Number(contact.invite_pending_count || 0) > 0 ? badge('Invite pending', true) : '') + '</div></td>' +
+      '<td class="mg-crm-contact-cell"><div class="mg-crm-contact-main"><div class="mg-crm-contact-avatar" aria-hidden="true">' + esc(initials(contact)) + '</div><div class="mg-crm-contact-copy"><strong>' + esc(contact.name || 'Unnamed') + '</strong><small>' + esc(contact.email || '') + '</small>' + mediaLine(contact) + '<div class="mg-crm-score-line"><span class="mg-crm-contact-score ' + scoreClass(score) + '"><b>' + esc(score) + '</b><em>' + esc(label(scoreLabel)) + '</em><small>' + esc(label(result)) + '</small></span></div></div></div></td>' +
+      '<td class="mg-crm-campaign-cell"><strong>' + esc(contact.campaign_title || '—') + '</strong><small>' + esc(contact.campaign_type || contact.source || '') + '</small><div class="mg-crm-campaign-rewards">' + badge(reward, reward === 'claimed' || reward === 'redeemed') + (Number(contact.invite_pending_count || 0) > 0 ? badge('Invite pending', true) : '') + mediaBadges(contact) + '</div></td>' +
       '<td class="mg-crm-account-cell">' + badge(accountText, !!contact.has_account) + badge(contact.email_verified ? 'Verified' : 'Unverified', !!contact.email_verified) + '</td>' +
-      '<td class="mg-crm-engagement-cell"><div class="mg-crm-engagement-stats">' + stat(inboxCount, 'Inbox') + stat(sentCount, 'Sent') + stat(claimedCount, 'Claimed') + stat(messageCount, 'Msg') + '</div></td>' +
+      '<td class="mg-crm-engagement-cell"><div class="mg-crm-engagement-stats">' + stat(inboxCount, 'Inbox') + stat(sentCount, 'Sent') + stat(claimedCount, 'Claimed') + stat(messageCount, 'Msg') + (contact.media_context && contact.media_context.is_media_campaign ? stat(pct(contact.media_context.progress_percent), 'Media') : '') + '</div></td>' +
       '<td class="mg-crm-actions-cell"><div class="mg-crm-row-actions">' +
         actionButton('view', 'a', 'href="' + esc(profileUrl(contact)) + '" data-crm-view-customer', 'View customer') +
         actionButton('timeline', 'button', 'type="button" data-view-timeline', 'Timeline') +
@@ -135,6 +152,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     wrapper.innerHTML = '<table class="mg-crm-table mg-crm-contacts-table"><thead><tr><th class="mg-crm-select-cell">Select</th><th>Contact</th><th>Campaign</th><th>Account</th><th>Engagement</th><th>Actions</th></tr></thead><tbody>' + rows.map(contactRow).join('') + '</tbody></table>';
     updateBulkState();
+    highlightEntryContact();
     document.dispatchEvent(new CustomEvent('mg:crm-contacts:rendered', { detail: { contacts: state.contacts, visible: rows } }));
   }
   async function loadCampaigns() {
@@ -159,8 +177,20 @@ document.addEventListener('DOMContentLoaded', function () {
     renderContacts();
     maybeRunEntryAction();
   }
+  function mediaEventTitle(type) {
+    return ({
+      'watch_reward.started': 'Watch Video Reward started',
+      'watch_reward.progress': 'Watch Video Reward progress',
+      'watch_reward.issued': 'Watch Video milestone reward issued',
+      'listen_reward.started': 'Listen Music Reward started',
+      'listen_reward.progress': 'Listen Music Reward progress',
+      'listen_reward.issued': 'Listen Music milestone reward issued'
+    })[type] || '';
+  }
   function titleForEvent(event) {
     var type = String(event.type || '');
+    var mediaTitle = mediaEventTitle(type);
+    if (mediaTitle) return mediaTitle;
     if (type === 'crm.reward_invite.sent') return 'Reward invite sent';
     if (type === 'crm.reward_invite.resent') return 'Reward invite resent';
     if (type === 'crm.reward_invite.delivered') return 'Invite converted to wallet reward';
@@ -169,18 +199,35 @@ document.addEventListener('DOMContentLoaded', function () {
     if (type === 'crm.customer_refund.sent') return 'Customer Refund voucher sent';
     if (type === 'crm.message.sent') return 'CRM message sent';
     if (type === 'crm.followup.created') return 'CRM follow-up created';
+    if (type === 'wallet_item.issued') return 'Reward sent to Inbox';
+    if (type === 'wallet_item.viewed') return 'Inbox reward viewed';
+    if (type === 'wallet_item.claimed') return 'Inbox reward claimed';
+    if (type === 'wallet_item.redeemed') return 'Reward redeemed';
+    if (type === 'email.queued') return 'Email queued';
+    if (type === 'email.delivered') return 'Email delivered';
+    if (type === 'email.failed') return 'Email failed';
     return event.title || type;
   }
   function detailForEvent(event) {
     var context = event.context || {};
     var parts = [];
-    ['reward_template_id', 'invite_id', 'wallet_item_id', 'thread_id', 'message_id', 'due_at'].forEach(function (key) { if (context[key]) parts.push(key.replace(/_/g, ' ') + ' ' + context[key]); });
+    var progress = context.progress_percent || context.watch_percent || context.listen_percent || context.max_progress_percent;
+    if (progress !== undefined && progress !== null && progress !== '') parts.push('Progress ' + pct(progress));
+    if (context.milestone_percent) parts.push('Milestone ' + context.milestone_percent + '%');
+    if (context.video_provider) parts.push('Video ' + context.video_provider);
+    if (context.audio_provider) parts.push('Audio ' + context.audio_provider);
+    if (context.pppm_destination) parts.push('PPPM ' + context.pppm_destination);
+    if (context.pppm_bridge) parts.push('Inbox handoff ready');
+    ['reward_template_id', 'invite_id', 'wallet_item_id', 'thread_id', 'message_id', 'due_at', 'crm_contact_id'].forEach(function (key) { if (context[key]) parts.push(key.replace(/_/g, ' ') + ' ' + context[key]); });
+    if (context.origin_host) parts.push('Origin ' + context.origin_host);
+    if (context.embed_mode) parts.push('Embed ' + context.embed_mode);
     return parts.length ? '<p>' + parts.map(esc).join(' · ') + '</p>' : '';
   }
   function eventRow(event) {
     var type = String(event.type || '');
-    var highlight = type.indexOf('crm.reward_invite') === 0 || ['crm.gift.issued', 'crm.customer_refund.sent', 'crm.message.sent', 'crm.followup.created'].indexOf(type) >= 0;
-    return '<article class="mg-crm-timeline-item ' + (highlight ? 'is-highlight' : '') + '"><span></span><div><strong>' + esc(titleForEvent(event)) + '</strong><small>' + esc(type) + '</small>' + (event.status ? '<em>' + esc(event.status) + '</em>' : '') + detailForEvent(event) + '</div></article>';
+    var isMedia = !!mediaEventTitle(type) || ['watch_video_reward', 'listen_music_reward'].indexOf(String((event.context || {}).campaign_type || '')) >= 0;
+    var highlight = isMedia || type.indexOf('crm.reward_invite') === 0 || ['crm.gift.issued', 'crm.customer_refund.sent', 'crm.message.sent', 'crm.followup.created', 'wallet_item.issued', 'wallet_item.claimed', 'wallet_item.redeemed'].indexOf(type) >= 0;
+    return '<article class="mg-crm-timeline-item ' + (highlight ? 'is-highlight' : '') + (isMedia ? ' is-media-event' : '') + '"><span></span><div><strong>' + esc(titleForEvent(event)) + '</strong><small>' + esc(type) + ' · ' + esc(event.source || 'timeline') + '</small>' + (event.status ? '<em>' + esc(event.status) + '</em>' : '') + detailForEvent(event) + '</div></article>';
   }
   async function openTimeline(contact) {
     state.activeContact = contact;
@@ -188,7 +235,8 @@ document.addEventListener('DOMContentLoaded', function () {
     var list = qs('[data-crm-timeline-list]');
     if (drawer) drawer.hidden = false;
     set('[data-crm-drawer-title]', contact.name || contact.email || 'Contact timeline');
-    set('[data-crm-drawer-subtitle]', (contact.email || '') + ' · ' + (contact.campaign_title || 'Campaign'));
+    var media = contact.media_context || {};
+    set('[data-crm-drawer-subtitle]', (contact.email || '') + ' · ' + (contact.campaign_title || 'Campaign') + (media.is_media_campaign ? ' · ' + media.type_label + ' · ' + pct(media.progress_percent) : ''));
     if (list) list.innerHTML = '<div class="mg-empty-state"><strong>Loading timeline</strong></div>';
     try {
       var response = await Microgifter.get('/api/merchant/campaign-timeline.php?campaign=' + encodeURIComponent(contact.campaign_id) + '&contact=' + encodeURIComponent(contact.id));
@@ -289,9 +337,9 @@ document.addEventListener('DOMContentLoaded', function () {
   function csv(value) { value = String(value == null ? '' : value); return /[",\n\r]/.test(value) ? '"' + value.replace(/"/g, '""') + '"' : value; }
   function exportSelected() {
     var rows = selectedContacts();
-    var head = ['Name', 'Email', 'Campaign', 'Campaign type', 'Account', 'Email verified', 'Reward issued', 'Reward claimed', 'Reward redeemed', 'Invite pending', 'Last activity'];
+    var head = ['Name', 'Email', 'Campaign', 'Campaign type', 'Account', 'Email verified', 'Reward issued', 'Reward claimed', 'Reward redeemed', 'Media progress', 'Media inbox status', 'Invite pending', 'Last activity'];
     if (!rows.length) return toast('Select CRM contacts first.');
-    var body = rows.map(function (contact) { return [contact.name, contact.email, contact.campaign_title, contact.campaign_type, contact.has_account ? 'yes' : 'no', contact.email_verified ? 'yes' : 'no', contact.issued_count || 0, contact.claimed_count || 0, contact.redeemed_count || 0, contact.invite_pending_count || 0, contact.last_activity_at || ''].map(csv).join(','); });
+    var body = rows.map(function (contact) { var media = contact.media_context || {}; return [contact.name, contact.email, contact.campaign_title, contact.campaign_type, contact.has_account ? 'yes' : 'no', contact.email_verified ? 'yes' : 'no', contact.issued_count || 0, contact.claimed_count || 0, contact.redeemed_count || 0, media.progress_percent || 0, media.inbox_status || '', contact.invite_pending_count || 0, contact.last_activity_at || ''].map(csv).join(','); });
     var blob = new Blob([[head.map(csv).join(',')].concat(body).join('\n')], { type: 'text/csv' });
     var url = URL.createObjectURL(blob);
     var anchor = document.createElement('a');
@@ -303,24 +351,32 @@ document.addEventListener('DOMContentLoaded', function () {
     setTimeout(function () { URL.revokeObjectURL(url); }, 500);
   }
   function findEntryContact() {
-    var params = new URLSearchParams(location.search || '');
-    var id = params.get('campaign_contact_id') || params.get('contact_id') || params.get('contact') || '';
-    var email = String(params.get('email') || '').toLowerCase();
+    var id = state.entryContactId;
+    var email = state.entryEmail;
     if (id) { var byId = state.contacts.find(function (contact) { return String(contact.id) === String(id); }); if (byId) return byId; }
     if (email) return state.contacts.find(function (contact) { return String(contact.email || '').toLowerCase() === email; }) || null;
     return null;
   }
+  function highlightEntryContact() {
+    var contact = findEntryContact();
+    if (!contact) return;
+    state.selected[String(contact.id)] = true;
+    var row = qs('tr[data-contact-id="' + CSS.escape(String(contact.id)) + '"]');
+    if (row && !state.entryActionHandled) row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    updateBulkState();
+  }
   function maybeRunEntryAction() {
     if (state.entryActionHandled) return;
-    var params = new URLSearchParams(location.search || '');
-    var action = String(params.get('action') || '').toLowerCase();
-    if (!action) return;
+    var action = String(entryParams.get('action') || '').toLowerCase();
     var contact = findEntryContact();
     if (!contact) return;
     state.entryActionHandled = true;
+    state.selected[String(contact.id)] = true;
+    renderContacts();
     if (action === 'message') messageModal(true, contact);
-    if (action === 'reward' || action === 'gift') document.dispatchEvent(new CustomEvent('mg:crm:open-reward', { detail: { contact: contact } }));
-    if (action === 'timeline') openTimeline(contact);
+    else if (action === 'reward' || action === 'gift' || action === 'send_reward') document.dispatchEvent(new CustomEvent('mg:crm:open-reward', { detail: { contact: contact } }));
+    else if (action === 'timeline' || !action) openTimeline(contact);
+    toast('CRM contact loaded: ' + (contact.name || contact.email || 'contact'));
   }
   async function refresh() {
     try { await loadCampaigns(); await loadContacts(); }
@@ -332,6 +388,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var row = target.closest && target.closest('tr[data-contact-id]');
     var id = row && row.getAttribute('data-contact-id');
     var contact = id && state.contacts.find(function (item) { return String(item.id) === String(id); });
+    if (target.closest && target.closest('[data-crm-view-customer]') && contact && String((target.closest('[data-crm-view-customer]') || {}).getAttribute('href') || '').indexOf('/merchant-crm.php') === 0) { event.preventDefault(); openTimeline(contact); }
     if (target.closest && target.closest('[data-view-timeline]') && contact) openTimeline(contact);
     if (target.closest && target.closest('[data-crm-message]') && contact) messageModal(true, contact);
     if (target.closest && target.closest('[data-crm-drawer-close]')) { var drawer = qs('[data-crm-drawer]'); if (drawer) drawer.hidden = true; }
