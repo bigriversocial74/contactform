@@ -70,7 +70,79 @@ function mg_customer_refund_remaining(?int $limit, int $issued): ?int
     return max(0, $limit - $issued);
 }
 
-function mg_customer_refund_row(array $row): array
+function mg_customer_refund_default_customer_status(): array
+{
+    return [
+        'sent_count' => 0,
+        'open_count' => 0,
+        'claimed_count' => 0,
+        'redeemed_count' => 0,
+        'last_sent_at' => null,
+        'notice' => 'No previous Customer Refund vouchers from this campaign for this customer.',
+        'multiple_allowed' => true,
+    ];
+}
+
+function mg_customer_refund_contact_status_map(PDO $pdo, int $merchantId, string $sourceContactRef): array
+{
+    $sourceContactRef = strtolower(trim($sourceContactRef));
+    if ($sourceContactRef === '' || strlen($sourceContactRef) !== 36 || !preg_match('/^[a-f0-9-]{36}$/', $sourceContactRef)) {
+        return ['contact' => null, 'by_campaign' => []];
+    }
+    $contactStmt = $pdo->prepare('SELECT public_id,email,user_id,name FROM campaign_contacts WHERE public_id=? AND merchant_user_id=? LIMIT 1');
+    $contactStmt->execute([$sourceContactRef, $merchantId]);
+    $contact = $contactStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    if (!$contact) return ['contact' => null, 'by_campaign' => []];
+
+    $email = strtolower(trim((string)($contact['email'] ?? '')));
+    $userId = (int)($contact['user_id'] ?? 0);
+    if ($userId <= 0 && $email !== '') {
+        $userStmt = $pdo->prepare("SELECT id FROM users WHERE email=? AND status='active' LIMIT 1");
+        $userStmt->execute([$email]);
+        $userId = (int)($userStmt->fetchColumn() ?: 0);
+    }
+
+    $params = [$merchantId];
+    $where = [];
+    if ($userId > 0) { $where[] = 'wi.user_id=?'; $params[] = $userId; }
+    if ($email !== '') { $where[] = 'LOWER(cc.email)=?'; $params[] = $email; }
+    if (!$where) {
+        return ['contact' => ['id' => (string)$contact['public_id'], 'email' => $email, 'name' => (string)($contact['name'] ?? ''), 'user_id' => $userId, 'has_customer_account' => false], 'by_campaign' => []];
+    }
+
+    $sql = "SELECT c.public_id campaign_public_id,
+            COUNT(wi.id) sent_count,
+            COUNT(CASE WHEN wi.status IN ('issued','viewed') THEN 1 END) open_count,
+            COUNT(CASE WHEN wi.status='claimed' THEN 1 END) claimed_count,
+            COUNT(CASE WHEN wi.status='redeemed' THEN 1 END) redeemed_count,
+            MAX(wi.issued_at) last_sent_at
+        FROM wallet_items wi
+        INNER JOIN campaigns c ON c.id=wi.campaign_id
+        LEFT JOIN campaign_contacts cc ON cc.id=wi.contact_id
+        WHERE wi.merchant_user_id=? AND c.campaign_type='customer_refund' AND wi.source_type='customer_refund' AND (" . implode(' OR ', $where) . ")
+        GROUP BY c.public_id";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $map = [];
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
+        $sent = (int)($row['sent_count'] ?? 0);
+        $claimed = (int)($row['claimed_count'] ?? 0);
+        $redeemed = (int)($row['redeemed_count'] ?? 0);
+        $open = (int)($row['open_count'] ?? 0);
+        $map[(string)$row['campaign_public_id']] = [
+            'sent_count' => $sent,
+            'open_count' => $open,
+            'claimed_count' => $claimed,
+            'redeemed_count' => $redeemed,
+            'last_sent_at' => $row['last_sent_at'] ?? null,
+            'notice' => $sent > 0 ? 'This customer has already received ' . $sent . ' Customer Refund voucher' . ($sent === 1 ? '' : 's') . ' from this campaign. Multiple make-good vouchers are allowed.' : 'No previous Customer Refund vouchers from this campaign for this customer.',
+            'multiple_allowed' => true,
+        ];
+    }
+    return ['contact' => ['id' => (string)$contact['public_id'], 'email' => $email, 'name' => (string)($contact['name'] ?? ''), 'user_id' => $userId, 'has_customer_account' => $userId > 0], 'by_campaign' => $map];
+}
+
+function mg_customer_refund_row(array $row, ?array $customerStatus = null): array
 {
     $campaignRemaining = mg_customer_refund_remaining($row['quantity_limit'] === null ? null : (int)$row['quantity_limit'], (int)($row['issued_count'] ?? 0));
     $rewardRemaining = mg_customer_refund_remaining($row['reward_template_quantity_limit'] === null ? null : (int)$row['reward_template_quantity_limit'], (int)($row['reward_template_issued_count'] ?? 0));
@@ -105,6 +177,7 @@ function mg_customer_refund_row(array $row): array
         'ends_at' => $row['ends_at'] ?? null,
         'eligible' => $eligible,
         'reason' => $reason,
+        'customer_status' => $customerStatus ?? mg_customer_refund_default_customer_status(),
         'rules' => mg_customer_refund_decode_rules($row['rules_json'] ?? null),
         'updated_at' => $row['updated_at'] ?? null,
     ];
@@ -135,6 +208,7 @@ mg_merchant_ensure_workspace($pdo, $user);
 if ($method === 'GET') {
     try {
         $status = trim((string)($_GET['status'] ?? 'all'));
+        $contactStatus = mg_customer_refund_contact_status_map($pdo, $merchantId, (string)($_GET['contact_id'] ?? ''));
         $sql = mg_customer_refund_select_sql();
         $params = [$merchantId];
         if (in_array($status, ['draft', 'active', 'paused', 'ended', 'archived'], true)) {
@@ -146,11 +220,14 @@ if ($method === 'GET') {
         $sql .= ' ORDER BY c.status=\'active\' DESC, c.updated_at DESC, c.id DESC LIMIT 100';
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
-        $campaigns = array_map('mg_customer_refund_row', $stmt->fetchAll(PDO::FETCH_ASSOC));
-        mg_ok(['campaigns' => $campaigns, 'eligible_count' => count(array_filter($campaigns, fn($c) => !empty($c['eligible']))), 'schema_ready' => true]);
+        $campaigns = array_map(static function (array $row) use ($contactStatus): array {
+            $status = $contactStatus['by_campaign'][(string)$row['public_id']] ?? mg_customer_refund_default_customer_status();
+            return mg_customer_refund_row($row, $status);
+        }, $stmt->fetchAll(PDO::FETCH_ASSOC));
+        mg_ok(['campaigns' => $campaigns, 'eligible_count' => count(array_filter($campaigns, fn($c) => !empty($c['eligible']))), 'customer' => $contactStatus['contact'], 'multiple_vouchers_allowed' => true, 'schema_ready' => true]);
     } catch (Throwable $error) {
         mg_security_log('warning', 'merchant.customer_refund_campaigns.unavailable', 'Customer Refund campaigns are unavailable.', ['exception_class' => $error::class, 'message' => $error->getMessage()], $merchantId);
-        mg_ok(['campaigns' => [], 'eligible_count' => 0, 'schema_ready' => false], 'Customer Refund campaigns unavailable until the campaign type migration is installed.');
+        mg_ok(['campaigns' => [], 'eligible_count' => 0, 'customer' => null, 'multiple_vouchers_allowed' => true, 'schema_ready' => false], 'Customer Refund campaigns unavailable until the campaign type migration is installed.');
     }
 }
 
