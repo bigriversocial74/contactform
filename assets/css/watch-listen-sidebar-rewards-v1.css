@@ -1,4 +1,4 @@
-/* Watch / Listen campaign media-detail and sticky form polish. */
+/* Watch / Listen campaign media-detail and fixed form rail polish. */
 .mg-rl-page {
   overflow-x: hidden;
   overflow-y: visible;
@@ -91,11 +91,53 @@
   padding: 14px;
 }
 
+.mg-rl-join-desktop .mg-public-campaign-result.is-visible {
+  display: block;
+  margin-top: 14px;
+  padding: 18px;
+  border: 1px solid rgba(34, 197, 94, .2);
+  border-radius: 18px;
+  background: rgba(240, 253, 244, .9);
+  color: #0f3b1e;
+  font-size: 12px;
+  line-height: 1.45;
+  font-weight: 720;
+  text-align: left;
+}
+
+.mg-rl-join-desktop .mg-public-campaign-result.is-visible strong {
+  display: block;
+  margin-bottom: 10px;
+  color: #06121f;
+  font-size: 13px;
+  font-weight: 850;
+  letter-spacing: -.015em;
+}
+
+.mg-rl-join-desktop .mg-public-campaign-result.is-visible p {
+  margin: 0 0 12px;
+  color: #12351c;
+  font-size: 12px;
+  line-height: 1.45;
+  font-weight: 680;
+}
+
+.mg-rl-join-desktop .mg-public-campaign-result.is-visible .mg-rl-btn {
+  width: max-content;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+}
+
 @media (min-width: 1181px) {
   .mg-rl-join-desktop {
-    position: sticky !important;
+    position: fixed !important;
     top: 92px !important;
-    z-index: 3;
+    right: max(36px, calc((100vw - 1260px) / 2));
+    width: 360px;
+    max-height: calc(100vh - 112px);
+    overflow-y: auto;
+    z-index: 40;
   }
 
   .mg-rl-join-desktop .mg-rl-sidebar-stack {
@@ -135,6 +177,13 @@
 
   .mg-rl-join-mobile .mg-rl-sidebar-stack .mg-rl-card:first-child {
     grid-column: auto;
+  }
+}
+
+@media (min-width: 1501px) {
+  .mg-rl-join-desktop {
+    right: max(46px, calc((100vw - 1620px) / 2));
+    width: 390px;
   }
 }
 
