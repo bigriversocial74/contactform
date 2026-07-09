@@ -20,7 +20,7 @@ $workflow = $read('.github/workflows/stage12-campaigns-validation.yml');
 $sql = $read('database/customer_refund_v1_2_multiple_vouchers.sql');
 
 $assert('Campaign picker returns customer status', str_contains($campaignsApi, 'mg_customer_refund_contact_status_map') && str_contains($campaignsApi, 'customer_status'));
-$assert('Campaign picker supports contact_id lookup', str_contains($campaignsApi, "$_GET['contact_id']") || str_contains($campaignsApi, 'contact_id'));
+$assert('Campaign picker supports contact_id lookup', str_contains($campaignsApi, 'contact_id'));
 $assert('Campaign picker states multiple vouchers are allowed', str_contains($campaignsApi, 'multiple_vouchers_allowed') && str_contains($campaignsApi, 'Multiple make-good vouchers are allowed'));
 $assert('Campaign picker returns sent/open/claimed/redeemed counts', str_contains($campaignsApi, 'sent_count') && str_contains($campaignsApi, 'open_count') && str_contains($campaignsApi, 'claimed_count') && str_contains($campaignsApi, 'redeemed_count'));
 
