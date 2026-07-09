@@ -21,6 +21,7 @@ $target = match ($campaignType) {
     'survey_feedback_reward' => 'survey-feedback.php',
     'check_in_reward' => 'check-in.php',
     'instant_win_reward' => 'instant-win.php',
+    'stamp_card_reward' => 'stamp-card.php',
     'referral_reward', 'birthday_vip', 'agent_offer' => 'engage.php',
     default => 'engage.php',
 };
