@@ -6,9 +6,11 @@ on:
       - 'database/stage_12_campaigns_reward_templates.sql'
       - 'database/stage_12b_campaign_events_agent_context.sql'
       - 'database/watch_video_reward_v1_4.sql'
+      - 'database/listen_music_reward_v1_5.sql'
       - 'campaign.php'
       - 'wallet.php'
       - 'watch-reward.php'
+      - 'listen-reward.php'
       - 'merchant-wallet-redemptions.php'
       - 'merchant-campaigns.php'
       - 'merchant-reward-templates.php'
@@ -23,10 +25,12 @@ on:
       - 'assets/js/stage12-*.js'
       - 'assets/js/public-campaign.js'
       - 'assets/js/public-watch-video-reward.js'
+      - 'assets/js/public-listen-music-reward.js'
       - 'scripts/validate_stage12*.php'
       - 'scripts/validate_campaign_types_*.php'
       - 'scripts/validate_customer_refund_*.php'
       - 'scripts/validate_watch_video_reward_*.php'
+      - 'scripts/validate_listen_music_reward_*.php'
       - '.github/workflows/stage12-campaigns-validation.yml'
   push:
     branches:
@@ -38,9 +42,11 @@ on:
       - 'database/stage_12_campaigns_reward_templates.sql'
       - 'database/stage_12b_campaign_events_agent_context.sql'
       - 'database/watch_video_reward_v1_4.sql'
+      - 'database/listen_music_reward_v1_5.sql'
       - 'campaign.php'
       - 'wallet.php'
       - 'watch-reward.php'
+      - 'listen-reward.php'
       - 'merchant-wallet-redemptions.php'
       - 'merchant-campaigns.php'
       - 'merchant-reward-templates.php'
@@ -55,16 +61,16 @@ on:
       - 'assets/js/stage12-*.js'
       - 'assets/js/public-campaign.js'
       - 'assets/js/public-watch-video-reward.js'
+      - 'assets/js/public-listen-music-reward.js'
       - 'scripts/validate_stage12*.php'
       - 'scripts/validate_campaign_types_*.php'
       - 'scripts/validate_customer_refund_*.php'
       - 'scripts/validate_watch_video_reward_*.php'
+      - 'scripts/validate_listen_music_reward_*.php'
       - '.github/workflows/stage12-campaigns-validation.yml'
   workflow_dispatch:
-
 permissions:
   contents: read
-
 jobs:
   stage12-campaigns-validation:
     name: Stage 12 campaigns validation
@@ -84,6 +90,7 @@ jobs:
           php -l campaign.php
           php -l wallet.php
           php -l watch-reward.php
+          php -l listen-reward.php
           php -l merchant-wallet-redemptions.php
           php -l merchant-campaigns.php
           php -l merchant-reward-templates.php
@@ -103,6 +110,7 @@ jobs:
           php -l api/merchant/customer-refund-send.php
           php -l api/merchant/customer-refund-qa.php
           php -l api/merchant/watch-video-upload.php
+          php -l api/merchant/listen-audio-upload.php
           php -l api/merchant/campaign-winner.php
           php -l api/merchant/wallet-redeem.php
           php -l api/public/campaigns/detail.php
@@ -110,6 +118,7 @@ jobs:
           php -l api/public/campaigns/qr-pickup.php
           php -l api/public/campaigns/contest-entry.php
           php -l api/public/campaigns/watch-progress.php
+          php -l api/public/campaigns/listen-progress.php
           php -l api/public/offers/search.php
           php -l api/public/wallet/add.php
           php -l scripts/validate_stage12_campaigns_reward_templates.php
@@ -121,6 +130,7 @@ jobs:
           php -l scripts/validate_customer_refund_v1_2_multiple_vouchers.php
           php -l scripts/validate_customer_refund_v1_3_status_language.php
           php -l scripts/validate_watch_video_reward_v1_4.php
+          php -l scripts/validate_listen_music_reward_v1_5.php
       - name: Validate Stage 12 campaigns foundation
         shell: bash
         run: php scripts/validate_stage12_campaigns_reward_templates.php
@@ -148,3 +158,6 @@ jobs:
       - name: Validate Watch Video Reward v1.4
         shell: bash
         run: php scripts/validate_watch_video_reward_v1_4.php
+      - name: Validate Listen Music Reward v1.5
+        shell: bash
+        run: php scripts/validate_listen_music_reward_v1_5.php
