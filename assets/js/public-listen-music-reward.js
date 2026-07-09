@@ -32,9 +32,10 @@
     });
   }
 
-  function setStatus(message) {
+  function setStatus(message, options) {
+    options = options || {};
     statusNodes.forEach(function (node) { node.textContent = message || ''; });
-    if (message) addNotification(message);
+    if (message) updateNotification(message, options.key || 'current');
   }
 
   function setResult(html) {
@@ -52,13 +53,31 @@
     try { return new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); } catch (error) { return ''; }
   }
 
-  function addNotification(message) {
-    if (!notifications || !message) return;
-    clearPlaceholder(notifications);
-    var item = document.createElement('li');
-    item.innerHTML = '<span>' + esc(timeLabel()) + '</span><strong>' + esc(message) + '</strong>';
-    notifications.insertBefore(item, notifications.firstChild || null);
-    while (notifications.children.length > 8) notifications.removeChild(notifications.lastChild);
+  function keyedRow(list, key) {
+    if (!list) return null;
+    clearPlaceholder(list);
+    var selector = '[data-listen-row-key="' + String(key || 'current').replace(/[^a-z0-9_-]/gi, '') + '"]';
+    var item = list.querySelector(selector);
+    if (!item) {
+      item = document.createElement('li');
+      item.setAttribute('data-listen-row-key', String(key || 'current').replace(/[^a-z0-9_-]/gi, ''));
+      item.innerHTML = '<span></span><strong></strong>';
+      list.insertBefore(item, list.firstChild || null);
+    }
+    return item;
+  }
+
+  function updateListRow(list, key, message) {
+    var item = keyedRow(list, key);
+    if (!item || !message) return;
+    var time = item.querySelector('span');
+    var body = item.querySelector('strong');
+    if (time) time.textContent = timeLabel();
+    if (body) body.textContent = message;
+  }
+
+  function updateNotification(message, key) {
+    updateListRow(notifications, key || 'current', message);
   }
 
   function addHistory(message) {
@@ -67,7 +86,11 @@
     var item = document.createElement('li');
     item.innerHTML = '<span>' + esc(timeLabel()) + '</span><strong>' + esc(message) + '</strong>';
     history.insertBefore(item, history.firstChild || null);
-    while (history.children.length > 10) history.removeChild(history.lastChild);
+    while (history.children.length > 8) history.removeChild(history.lastChild);
+  }
+
+  function updateProgressHistory(percent) {
+    updateListRow(history, 'progress', 'Progress recorded at ' + Math.round(percent) + '%');
   }
 
   function addRewardHistory(message) {
@@ -176,10 +199,10 @@
         showTab('rewards', true);
       }
       var message = data.message || ('Listen progress recorded: ' + Math.round(percent) + '%');
-      setStatus(message);
-      addHistory('Progress recorded at ' + Math.round(percent) + '%');
+      setStatus(message, { key: 'progress' });
+      updateProgressHistory(percent);
     } catch (error) {
-      setStatus(error.message || 'Unable to record listen progress.');
+      setStatus(error.message || 'Unable to record listen progress.', { key: 'error' });
     }
   }
 
@@ -187,7 +210,7 @@
     var p = progress();
     if (p.duration > 0) {
       maxPercent = Math.min(100, p.percent);
-      setStatus('Listening… ' + Math.round(maxPercent) + '% complete');
+      setStatus('Listening… ' + Math.round(maxPercent) + '% complete', { key: 'progress' });
       postProgress(maxPercent, false);
     }
   }
@@ -207,17 +230,17 @@
     player.addEventListener('pause', function () {
       tick();
       clearInterval(timer);
-      addHistory('Listening paused at ' + Math.round(maxPercent) + '%.');
+      updateProgressHistory(maxPercent);
     });
     player.addEventListener('timeupdate', tick);
     player.addEventListener('ended', function () {
       maxPercent = 100;
       postProgress(100, true);
       clearInterval(timer);
-      setStatus('Audio complete. Final rewards checked.');
+      setStatus('Audio complete. Final rewards checked.', { key: 'complete' });
       addHistory('Audio completed.');
     });
-    setStatus('Audio ready. Press play to start earning rewards.');
+    setStatus('Audio ready. Press play to start earning rewards.', { key: 'ready' });
   }
 
   function readForm() {
@@ -247,7 +270,7 @@
         postProgress(0, true);
         return;
       }
-      setStatus('Spotify track loaded. Listen in the embedded player, then confirm to unlock the reward.');
+      setStatus('Spotify track loaded. Listen in the embedded player, then confirm to unlock the reward.', { key: 'ready' });
       postProgress(0, true);
     });
   }
