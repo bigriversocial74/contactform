@@ -6,7 +6,7 @@ require_once __DIR__ . '/includes/campaign-types.php';
 $page_title = 'Listen Music Reward | Microgifter';
 $page_section = 'campaign';
 $header_mode = 'public';
-$page_styles = ['/assets/css/public-campaign-pages.css', '/assets/css/public-campaign-polish-v1.css'];
+$page_styles = ['/assets/css/public-campaign-pages.css', '/assets/css/public-campaign-polish-v1.css', '/assets/css/listen-watch-media-flow-v1.css'];
 $page_scripts = ['/assets/js/public-listen-music-reward.js'];
 
 function mg_listen_reward_safe_url(mixed $value, bool $allowRelative = true): ?string
@@ -82,6 +82,7 @@ $milestones = is_array($rules['milestones'] ?? null) ? $rules['milestones'] : []
 $requiredPercent = (int)($rules['required_percent'] ?? 80);
 $trackTitle = trim((string)($rules['track_title'] ?? '')) ?: (string)($campaign['title'] ?? 'Listen reward');
 $artistName = trim((string)($rules['artist_name'] ?? ''));
+$mediaImageUrl = mg_listen_reward_safe_url($rules['media_image_url'] ?? null, true);
 $merchantName = trim((string)($campaign['merchant_profile_display_name'] ?? '')) ?: (trim((string)($campaign['merchant_user_display_name'] ?? '')) ?: (trim((string)($campaign['merchant_user_full_name'] ?? '')) ?: 'Microgifter merchant'));
 $avatarUrl = mg_listen_reward_safe_url($campaign['merchant_profile_avatar_url'] ?? null);
 $coverUrl = mg_listen_reward_safe_url($campaign['merchant_profile_cover_url'] ?? null);
@@ -92,14 +93,11 @@ $prefillEmail = is_array($currentUser) ? strtolower(trim((string)($currentUser['
 $hasAudio = $provider === 'uploaded' ? $uploadedUrl !== '' : $spotifyEmbed !== '';
 $headline = trim((string)($campaign['form_headline'] ?? '')) ?: (string)$campaign['title'];
 $description = trim((string)($campaign['form_description'] ?? '')) ?: (trim((string)($campaign['description'] ?? '')) ?: 'Listen to this track and unlock rewards as you reach the milestones.');
-$milestoneSummary = count($milestones) ? implode(' · ', array_map(static fn($m): string => (string)($m['percent'] ?? '') . '% gift', $milestones)) : 'Listen progress unlocks the attached reward.';
 ?>
 <section class="mg-public-campaign mg-public-campaign-v2 mg-listen-reward-page" data-listen-music-reward data-campaign-id="<?= mg_e((string)$campaign['public_id']) ?>" data-audio-provider="<?= mg_e($provider) ?>" data-spotify-track-id="<?= mg_e($spotifyId) ?>" data-uploaded-audio-url="<?= mg_e((string)$uploadedUrl) ?>" data-uploaded-asset-id="<?= mg_e($uploadedAssetId) ?>" data-required-percent="<?= mg_e((string)$requiredPercent) ?>">
   <div class="mg-public-campaign-cover"<?= $coverUrl ? ' style="background-image:linear-gradient(180deg,rgba(6,15,32,.12),rgba(248,247,242,.94) 82%,#fbfaf6),url(' . mg_e($coverUrl) . ')"' : '' ?>></div>
   <div class="mg-public-campaign-shell">
     <div class="mg-public-campaign-heading mg-listen-clean-heading">
-      <span class="mg-public-campaign-kicker">Microgifter Campaign</span>
-      <span class="mg-public-campaign-eyebrow">Listen Music Reward</span>
       <h1><?= mg_e($headline) ?></h1>
       <p><?= mg_e($description) ?></p>
     </div>
@@ -110,10 +108,8 @@ $milestoneSummary = count($milestones) ? implode(' · ', array_map(static fn($m)
           <?php if ($avatarUrl): ?><img src="<?= mg_e($avatarUrl) ?>" alt="<?= mg_e($merchantName) ?> profile image"><?php else: ?><span><?= mg_e(mg_listen_reward_initials($merchantName)) ?></span><?php endif; ?>
         </div>
         <div class="mg-public-campaign-profile-copy">
-          <span class="mg-public-campaign-eyebrow">Music rewards</span>
           <h2><?= mg_e($merchantName) ?></h2>
           <?php if (!empty($campaign['merchant_profile_headline'])): ?><p><?= mg_e((string)$campaign['merchant_profile_headline']) ?></p><?php endif; ?>
-          <div class="mg-public-campaign-profile-stats"><span><?= mg_e($provider === 'spotify' ? 'Spotify listen intent' : ($requiredPercent . '% target')) ?></span><span>Inbox + PPPM</span></div>
         </div>
       </div>
 
@@ -122,15 +118,15 @@ $milestoneSummary = count($milestones) ? implode(' · ', array_map(static fn($m)
       <?php else: ?>
         <nav class="mg-listen-tabs" aria-label="Listen reward sections">
           <button type="button" class="is-active" data-listen-tab-trigger="join" aria-selected="true">1. Join</button>
-          <button type="button" data-listen-tab-trigger="media" aria-selected="false">2. Listen</button>
-          <button type="button" data-listen-tab-trigger="rewards" aria-selected="false">3. Rewards</button>
+          <button type="button" data-listen-tab-trigger="media" aria-selected="false" aria-disabled="true">2. Listen</button>
+          <button type="button" data-listen-tab-trigger="rewards" aria-selected="false" aria-disabled="true">3. Rewards</button>
         </nav>
 
         <div class="mg-listen-tab-panel is-active" data-listen-tab-panel="join">
           <?php if (!$isLoggedIn): ?>
             <div class="mg-listen-account-gate">
               <strong>Account recommended for campaign participation</strong>
-              <p>Most Microgifter campaigns should require a signed-in account so rewards, Inbox delivery, PPPM tracking, and listening history stay tied to the right customer. For now, you can enter an email below while we finish the account-gated flow.</p>
+              <p>Most reward campaigns should connect to a signed-in account so Inbox delivery, PPPM tracking, reward history, and campaign history stay tied to the right customer. For now, this page still supports email-based participation while the account-gated flow is finalized.</p>
               <div><a class="mg-btn mg-btn-soft" href="/signin.php">Sign in</a><a class="mg-btn mg-btn-primary" href="/signup.php">Create account</a></div>
             </div>
           <?php endif; ?>
@@ -141,7 +137,7 @@ $milestoneSummary = count($milestones) ? implode(' · ', array_map(static fn($m)
               <label>Email<input name="email" type="email" required placeholder="you@example.com" maxlength="255" value="<?= mg_e($prefillEmail) ?>"></label>
               <label class="mg-public-campaign-field-wide">Phone <span>(optional)</span><input name="phone" maxlength="60" placeholder="Optional"></label>
             </div>
-            <button class="mg-btn mg-btn-primary mg-public-campaign-primary-action" type="submit">Start music rewards <span aria-hidden="true">→</span></button>
+            <button class="mg-btn mg-btn-primary mg-public-campaign-primary-action" type="submit">Next Step <span aria-hidden="true">→</span></button>
           </form>
 
           <div class="mg-public-campaign-step-grid mg-listen-form-steps" aria-label="How listen rewards work">
@@ -152,12 +148,13 @@ $milestoneSummary = count($milestones) ? implode(' · ', array_map(static fn($m)
         </div>
 
         <div class="mg-listen-tab-panel" data-listen-tab-panel="media" hidden>
-          <div class="mg-public-campaign-reward mg-public-campaign-reward-tab mg-listen-track-card">
-            <span><?= mg_e($artistName ?: 'Track') ?></span>
-            <strong><?= mg_e($trackTitle) ?></strong>
-            <em><?= mg_e($provider === 'spotify' ? 'Spotify listen-intent reward' : ($requiredPercent . '% listen target')) ?></em>
-            <p><?= mg_e($milestoneSummary) ?></p>
-            <div class="mg-public-campaign-reward-meta"><span>Listening session</span><span>Reward check</span></div>
+          <div class="mg-public-campaign-reward mg-public-campaign-reward-tab mg-listen-track-card mg-listen-track-row">
+            <div class="mg-media-art-thumb"><?php if ($mediaImageUrl): ?><img src="<?= mg_e($mediaImageUrl) ?>" alt="<?= mg_e($trackTitle) ?> artwork"><?php else: ?><div class="mg-media-art-placeholder">Audio</div><?php endif; ?></div>
+            <div>
+              <span><?= mg_e($artistName ?: 'Track') ?></span>
+              <strong><?= mg_e($trackTitle) ?></strong>
+              <em><?= mg_e($artistName ?: $merchantName) ?></em>
+            </div>
           </div>
 
           <div class="mg-public-campaign-video" data-listen-audio-shell hidden>
@@ -181,15 +178,10 @@ $milestoneSummary = count($milestones) ? implode(' · ', array_map(static fn($m)
         </div>
 
         <div class="mg-listen-tab-panel" data-listen-tab-panel="rewards" hidden>
-          <div class="mg-campaign-checklist">
-            <span class="mg-eyebrow">Awards / rewards</span>
-            <ul data-listen-reward-milestones>
-              <?php if ($milestones): foreach ($milestones as $m): ?>
-                <li class="is-warn" data-listen-milestone="<?= mg_e((string)($m['percent'] ?? '')) ?>"><b></b><span><?= mg_e((string)($m['percent'] ?? '')) ?>% — <?= mg_e((string)($m['label'] ?? 'Gift milestone')) ?></span></li>
-              <?php endforeach; else: ?>
-                <li class="is-warn" data-listen-milestone="<?= mg_e((string)$requiredPercent) ?>"><b></b><span><?= mg_e((string)$requiredPercent) ?>% — Attached reward milestone</span></li>
-              <?php endif; ?>
-            </ul>
+          <div class="mg-listen-reward-inbox-panel">
+            <strong>Reward and Inbox status</strong>
+            <p>Gift activity appears here when a milestone reward is sent. Open the Microgifter Inbox to view, manage, claim, redeem, or continue PPPM tracking.</p>
+            <a class="mg-btn mg-btn-primary" href="/inbox.php">Open Microgifter Inbox</a>
           </div>
           <div class="mg-listen-history-panel">
             <div class="mg-listen-panel-head"><span class="mg-eyebrow">Reward history</span><strong>Issued rewards and Inbox status</strong></div>
