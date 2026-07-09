@@ -109,6 +109,7 @@
     if (type === 'referral_reward') return '<label>Referral note<textarea name="entry_note" rows="3" placeholder="Who referred you or who should we contact?"></textarea></label>';
     if (type === 'birthday_vip') return '<label>Birthday month<select name="birthday_month"><option value="">Select month</option><option>January</option><option>February</option><option>March</option><option>April</option><option>May</option><option>June</option><option>July</option><option>August</option><option>September</option><option>October</option><option>November</option><option>December</option></select></label>';
     if (type === 'agent_offer') return '<label>Offer interest<textarea name="entry_note" rows="3" placeholder="What kind of local offer are you interested in?"></textarea></label>';
+    if (type === 'survey_feedback_reward') return '<label>Rating<select name="entry_rating" required><option value="">Choose rating</option><option value="5">5 - Excellent</option><option value="4">4 - Good</option><option value="3">3 - Okay</option><option value="2">2 - Needs work</option><option value="1">1 - Poor</option></select></label><label>Feedback<textarea name="entry_feedback" rows="4" required minlength="3" maxlength="1200" placeholder="Share a short note with the merchant."></textarea></label>';
     return '';
   }
 
@@ -124,6 +125,11 @@
     var formData = new FormData(form), payload = {};
     formData.forEach(function (value, key) { payload[key] = String(value || '').trim(); });
     var entry = {};
+    Object.keys(payload).forEach(function (key) {
+      if (key.indexOf('entry_') !== 0) return;
+      entry[key.replace(/^entry_/, '')] = payload[key];
+      delete payload[key];
+    });
     if (payload.entry_note) entry.note = payload.entry_note;
     if (payload.birthday_month) entry.birthday_month = payload.birthday_month;
     delete payload.entry_note; delete payload.birthday_month;
@@ -156,6 +162,8 @@
       var campaign = payload.campaign || {}, prepared = payloadFromForm(form, campaign, mount);
       if (isMediaCampaign(campaign)) { setResult(mount, 'Open the full media reward page to continue.', true); return; }
       if (!validEmail(prepared.email)) { setResult(mount, 'Enter a valid email address to continue.', true); emit(mount, 'microgifter:campaignEmbedInvalid', { reason: 'email' }); track(mount, payload, 'invalid', { reason: 'email' }); return; }
+      var invalid = Array.prototype.slice.call(form.elements || []).find(function (field) { return field && typeof field.checkValidity === 'function' && !field.checkValidity(); });
+      if (invalid) { if (typeof invalid.reportValidity === 'function') invalid.reportValidity(); setResult(mount, 'Complete the required fields to continue.', true); return; }
       var button = form.querySelector('button[type="submit"]'); if (button) { button.disabled = true; button.textContent = 'Sending...'; }
       try {
         log(mount, 'Submitting campaign embed form.', { campaign: campaign.id, type: campaign.campaign_type });
