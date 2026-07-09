@@ -53,11 +53,9 @@ $hasCreateMenu = str_contains($headerCreateMenuSurface, 'data-create-menu-option
 $hasNav = str_contains($nav, "'campaigns'=>") && str_contains($nav, "'reward_templates'=>");
 $hasViewRoutes = str_contains($view, 'merchant-campaigns-view.php') && str_contains($view, 'merchant-reward-templates-view.php');
 $hasCampaignTypeRegistry = str_contains($registry, 'function mg_campaign_type_registry') && str_contains($registry, "'newsletter_signup'") && str_contains($registry, "'contest_giveaway'") && str_contains($registry, "'qr_reward_drop'");
-$hasCampaignShell = (
-    (str_contains($campaignView, 'Newsletter Signup') || str_contains($campaignView, 'Signup Reward') || str_contains($campaignView, 'mg_campaign_type_options'))
-    && str_contains($campaignView, 'Contest / Giveaway')
-    && str_contains($campaignView, 'QR Reward Drop')
-);
+$hasLegacyCampaignShell = str_contains($campaignView, 'Newsletter Signup') && str_contains($campaignView, 'Contest / Giveaway') && str_contains($campaignView, 'QR Reward Drop');
+$hasRegistryCampaignShell = str_contains($campaignView, 'mg_campaign_type_options') && str_contains($campaignView, 'foreach ($mgCampaignTypeOptions as $typeOption)') && str_contains($campaignView, 'data-campaign-type-select') && str_contains($registry, 'Signup Reward') && str_contains($registry, 'Contest / Giveaway') && str_contains($registry, 'QR Reward Drop');
+$hasCampaignShell = $hasLegacyCampaignShell || $hasRegistryCampaignShell;
 $hasTemplateShell = str_contains($templateView, 'Reward type') && str_contains($templateView, 'agent_discoverable') && str_contains($templateView, 'Redemption instructions');
 $hasTemplateApi = str_contains($templateApi, 'merchant.reward_templates.view') && str_contains($templateApi, 'merchant.reward_templates.manage') && str_contains($templateApi, 'INSERT INTO reward_templates') && str_contains($templateApi, 'UPDATE reward_templates') && str_contains($templateApi, 'mg_require_csrf_for_write');
 $hasTemplateApiOutput = str_contains($templateApi, "'templates'") && str_contains($templateApi, "'template'") && str_contains($templateApi, "'schema_ready'");
@@ -81,6 +79,8 @@ echo json_encode([
     'has_nav' => $hasNav,
     'has_view_routes' => $hasViewRoutes,
     'has_campaign_type_registry' => $hasCampaignTypeRegistry,
+    'has_legacy_campaign_shell' => $hasLegacyCampaignShell,
+    'has_registry_campaign_shell' => $hasRegistryCampaignShell,
     'has_campaign_shell' => $hasCampaignShell,
     'has_template_shell' => $hasTemplateShell,
     'has_template_api' => $hasTemplateApi,
