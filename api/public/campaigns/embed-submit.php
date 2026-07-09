@@ -18,6 +18,7 @@ $target = match ($campaignType) {
     'newsletter_signup' => 'signup.php',
     'contest_giveaway' => 'contest-entry.php',
     'qr_reward_drop' => 'qr-pickup.php',
+    'survey_feedback_reward' => 'survey-feedback.php',
     'referral_reward', 'birthday_vip', 'agent_offer' => 'engage.php',
     default => 'engage.php',
 };
