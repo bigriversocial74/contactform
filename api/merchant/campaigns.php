@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_merchant.php';
 require_once dirname(__DIR__) . '/public/campaigns/_merchant_notifications.php';
+require_once dirname(__DIR__, 2) . '/includes/campaign-types.php';
 
 function mg_campaign_slug(string $title): string
 {
@@ -45,7 +46,8 @@ function mg_campaign_datetime(?string $value): ?string
 
 function mg_campaign_build_rules(string $campaignType, array $input, ?int $quantityLimit): ?string
 {
-    $rules = ['campaign_type' => $campaignType, 'version' => 1];
+    $definition = mg_campaign_type_get($campaignType) ?? [];
+    $rules = ['campaign_type' => $campaignType, 'version' => 1, 'registry' => 'campaign_types_v1_1'];
     if ($campaignType === 'contest_giveaway') {
         $mode = trim((string)($input['contest_mode'] ?? 'first_x'));
         $allowed = ['first_x', 'instant_reward', 'random_draw', 'manual_winner'];
@@ -69,14 +71,18 @@ function mg_campaign_build_rules(string $campaignType, array $input, ?int $quant
         $rules += ['mode' => 'birthday_capture', 'instructions' => trim((string)($input['vip_instructions'] ?? '')) ?: null];
     } elseif ($campaignType === 'agent_offer') {
         $rules += ['mode' => 'agent_interest', 'instructions' => trim((string)($input['agent_offer_instructions'] ?? '')) ?: null];
+    } elseif ($campaignType === 'customer_refund') {
+        $rules += ['mode' => 'merchant_initiated', 'internal_only' => true, 'entry_reward_enabled' => true];
     } else {
-        $rules += ['mode' => 'instant_reward', 'entry_reward_enabled' => true];
+        $rules += ['mode' => (string)($definition['rules_schema']['mode'] ?? 'instant_reward'), 'entry_reward_enabled' => true];
     }
     return json_encode($rules, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 }
 
 function mg_campaign_row(array $row): array
 {
+    $type = (string) $row['campaign_type'];
+    $typeDefinition = mg_campaign_type_get($type) ?? [];
     $rules = mg_campaign_decode_rules($row['rules_json'] ?? null);
     return [
         'id' => (string) $row['public_id'],
@@ -84,7 +90,11 @@ function mg_campaign_row(array $row): array
         'reward_template_title' => $row['reward_template_title'] ?? null,
         'reward_template_status' => $row['reward_template_status'] ?? null,
         'reward_attached' => !empty($row['reward_template_public_id']),
-        'campaign_type' => (string) $row['campaign_type'],
+        'campaign_type' => $type,
+        'campaign_type_label' => (string)($typeDefinition['label'] ?? mg_campaign_type_label($type)),
+        'campaign_type_category' => (string)($typeDefinition['category'] ?? 'campaign'),
+        'public_enabled' => !empty($typeDefinition['public_enabled']),
+        'internal_only' => !empty($typeDefinition['internal_only']),
         'title' => (string) $row['title'],
         'description' => (string) ($row['description'] ?? ''),
         'form_headline' => (string) ($row['form_headline'] ?? ''),
@@ -128,7 +138,7 @@ function mg_campaign_reward_template_id(PDO $pdo, int $merchantId, string $publi
 
 function mg_campaign_requires_reward_template(string $campaignType, string $status): bool
 {
-    return $status === 'active' && in_array($campaignType, ['newsletter_signup', 'contest_giveaway', 'qr_reward_drop', 'referral_reward', 'birthday_vip', 'agent_offer'], true);
+    return mg_campaign_type_requires_reward_template($campaignType, $status);
 }
 
 function mg_campaign_active_usage(PDO $pdo, int $merchantId, string $excludePublicId = ''): int
@@ -165,10 +175,10 @@ if ($method === 'GET') {
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
         $campaigns = array_map('mg_campaign_row', $stmt->fetchAll());
-        mg_ok(['campaigns' => $campaigns, 'schema_ready' => true, 'package' => mg_merchant_package_context($pdo, $user)]);
+        mg_ok(['campaigns' => $campaigns, 'campaign_types' => mg_campaign_type_options(true), 'schema_ready' => true, 'package' => mg_merchant_package_context($pdo, $user)]);
     } catch (Throwable $error) {
         mg_security_log('warning', 'merchant.campaigns.schema_unavailable', 'Campaign schema is unavailable.', ['exception_class' => $error::class], $merchantId);
-        mg_ok(['campaigns' => [], 'schema_ready' => false], 'Campaigns unavailable until the Stage 12 schema is installed.');
+        mg_ok(['campaigns' => [], 'campaign_types' => mg_campaign_type_options(true), 'schema_ready' => false], 'Campaigns unavailable until the Stage 12 schema is installed.');
     }
 }
 
@@ -194,7 +204,7 @@ $agentDiscoverable = !empty($input['agent_discoverable']) ? 1 : 0;
 if (
     ($campaignId !== '' && (strlen($campaignId) !== 36 || !preg_match('/^[a-f0-9-]{36}$/', $campaignId)))
     || $title === '' || mb_strlen($title) > 180
-    || !in_array($campaignType, ['newsletter_signup', 'contest_giveaway', 'qr_reward_drop', 'referral_reward', 'birthday_vip', 'agent_offer'], true)
+    || !mg_campaign_type_is_valid($campaignType, true)
     || !in_array($status, ['draft', 'active', 'paused', 'ended', 'archived'], true)
 ) {
     mg_fail('Invalid campaign.', 422);
@@ -220,7 +230,7 @@ try {
     $isNew = $campaignId === '';
     if ($isNew) {
         $campaignId = mg_merchant_uuid();
-        $slug = mg_campaign_unique_slug($pdo, $merchantId, $title);
+        $slug = mg_campaign_type_public_enabled($campaignType) ? mg_campaign_unique_slug($pdo, $merchantId, $title) : null;
         $qrToken = $campaignType === 'qr_reward_drop' ? bin2hex(random_bytes(16)) : null;
         $stmt = $pdo->prepare('INSERT INTO campaigns
             (public_id,merchant_user_id,reward_template_id,campaign_type,title,description,form_headline,form_description,success_message,status,starts_at,ends_at,quantity_limit,per_user_limit,agent_discoverable,public_slug,qr_code_token,rules_json,created_at,updated_at)
@@ -235,7 +245,7 @@ try {
         $dbId = (int) ($existing['id'] ?? 0);
         if ($dbId <= 0) mg_fail('Campaign not found.', 404);
         $previousStatus = (string)($existing['status'] ?? '');
-        $slug = mg_campaign_unique_slug($pdo, $merchantId, $title, $campaignId);
+        $slug = mg_campaign_type_public_enabled($campaignType) ? mg_campaign_unique_slug($pdo, $merchantId, $title, $campaignId) : null;
         $qrToken = $campaignType === 'qr_reward_drop' ? ((string)($existing['qr_code_token'] ?? '') ?: bin2hex(random_bytes(16))) : null;
         $stmt = $pdo->prepare('UPDATE campaigns
             SET reward_template_id=?,campaign_type=?,title=?,description=?,form_headline=?,form_description=?,success_message=?,status=?,starts_at=?,ends_at=?,quantity_limit=?,per_user_limit=?,agent_discoverable=?,public_slug=?,qr_code_token=?,rules_json=?,updated_at=NOW()
@@ -262,6 +272,7 @@ try {
     mg_audit('merchant.campaign_saved', 'campaign', [
         'campaign_id' => $campaignId,
         'campaign_type' => $campaignType,
+        'campaign_type_label' => mg_campaign_type_label($campaignType),
         'status' => $status,
         'reward_attached' => $rewardTemplateId !== null,
         'rules' => mg_campaign_decode_rules($rulesJson),

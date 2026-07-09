@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS campaigns (
   public_id CHAR(36) NOT NULL,
   merchant_user_id BIGINT UNSIGNED NOT NULL,
   reward_template_id BIGINT UNSIGNED NULL,
-  campaign_type ENUM('newsletter_signup','contest_giveaway','qr_reward_drop','referral_reward','birthday_vip','agent_offer') NOT NULL,
+  campaign_type ENUM('newsletter_signup','contest_giveaway','qr_reward_drop','referral_reward','birthday_vip','agent_offer','customer_refund') NOT NULL,
   title VARCHAR(180) NOT NULL,
   description TEXT NULL,
   form_headline VARCHAR(180) NULL,
@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS campaign_contacts (
   email VARCHAR(255) NOT NULL,
   phone VARCHAR(60) NULL,
   name VARCHAR(180) NULL,
-  source ENUM('newsletter_signup','contest_entry','qr_scan','referral','birthday_vip','agent_discovery','manual','api_issue') NOT NULL DEFAULT 'newsletter_signup',
+  source ENUM('newsletter_signup','contest_entry','qr_scan','referral','birthday_vip','agent_discovery','customer_refund','manual','api_issue') NOT NULL DEFAULT 'newsletter_signup',
   opt_in_status ENUM('unknown','opted_in','opted_out','bounced','complained') NOT NULL DEFAULT 'unknown',
   metadata_json JSON NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS wallet_items (
   reward_template_id BIGINT UNSIGNED NOT NULL,
   campaign_id BIGINT UNSIGNED NULL,
   pppm_item_id BIGINT UNSIGNED NULL,
-  source_type ENUM('purchase','manual_send','newsletter_signup','contest_entry','contest_winner','qr_scan','agent_discovery','api_issue') NOT NULL,
+  source_type ENUM('purchase','manual_send','newsletter_signup','contest_entry','contest_winner','qr_scan','referral','birthday_vip','agent_discovery','customer_refund','api_issue') NOT NULL,
   source_id VARCHAR(190) NULL,
   status ENUM('issued','viewed','claimed','redeemed','expired','cancelled') NOT NULL DEFAULT 'issued',
   value_cents_snapshot INT UNSIGNED NOT NULL DEFAULT 0,
@@ -158,17 +158,6 @@ CREATE TABLE IF NOT EXISTS campaign_events (
   KEY idx_campaign_events_contact (contact_id),
   CONSTRAINT fk_campaign_events_merchant FOREIGN KEY (merchant_user_id) REFERENCES users(id) ON DELETE RESTRICT,
   CONSTRAINT fk_campaign_events_campaign FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE,
-  CONSTRAINT fk_campaign_events_wallet_item FOREIGN KEY (wallet_item_id) REFERENCES wallet_items(id) ON DELETE SET NULL,
+  CONSTRAINT fk_campaign_events_wallet FOREIGN KEY (wallet_item_id) REFERENCES wallet_items(id) ON DELETE SET NULL,
   CONSTRAINT fk_campaign_events_contact FOREIGN KEY (contact_id) REFERENCES campaign_contacts(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-INSERT IGNORE INTO permissions (slug,name,description,created_at) VALUES
-('merchant.reward_templates.view','View reward templates','View wallet-ready merchant reward templates.',NOW()),
-('merchant.reward_templates.manage','Manage reward templates','Create and manage reusable local reward templates.',NOW()),
-('merchant.campaigns.view','View merchant campaigns','View CRM campaign and reward automation activity.',NOW()),
-('merchant.campaigns.manage','Manage merchant campaigns','Create and operate signup, contest, QR drop, and agent-discoverable campaigns.',NOW());
-
-INSERT IGNORE INTO role_permissions (role_id,permission_id,created_at)
-SELECT r.id,p.id,NOW() FROM roles r JOIN permissions p
-ON p.slug IN ('merchant.reward_templates.view','merchant.reward_templates.manage','merchant.campaigns.view','merchant.campaigns.manage')
-WHERE r.slug IN ('merchant','admin','super_admin');

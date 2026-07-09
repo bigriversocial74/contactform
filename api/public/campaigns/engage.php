@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/bootstrap.php';
 require_once dirname(__DIR__, 2) . '/rewards/_zero_value_bridge.php';
 require_once dirname(__DIR__, 3) . '/includes/merchant-crm.php';
+require_once dirname(__DIR__, 3) . '/includes/campaign-types.php';
 require_once __DIR__ . '/_limits.php';
 require_once __DIR__ . '/_merchant_notifications.php';
 require_once __DIR__ . '/_embed_attribution.php';
@@ -18,14 +19,7 @@ function mg_public_campaign_engage_uuid(): string
 
 function mg_public_campaign_engage_source(string $campaignType): string
 {
-    return match ($campaignType) {
-        'contest_giveaway' => 'contest_entry',
-        'qr_reward_drop' => 'qr_scan',
-        'referral_reward' => 'referral',
-        'birthday_vip' => 'birthday_vip',
-        'agent_offer' => 'agent_discovery',
-        default => 'newsletter_signup',
-    };
+    return mg_campaign_type_source($campaignType);
 }
 
 function mg_public_campaign_engage_expiry(array $template): ?string
@@ -94,6 +88,12 @@ try {
         mg_fail('Campaign is not available.', 404);
     }
 
+    $campaignType = (string) $campaign['campaign_type'];
+    if (!mg_campaign_type_public_enabled($campaignType)) {
+        $pdo->rollBack();
+        mg_fail('Campaign is not available.', 404);
+    }
+
     $now = time();
     if (!empty($campaign['starts_at']) && strtotime((string) $campaign['starts_at']) > $now) {
         $pdo->rollBack();
@@ -114,7 +114,6 @@ try {
 
     $merchantId = (int) $campaign['merchant_user_id'];
     $campaignId = (int) $campaign['id'];
-    $campaignType = (string) $campaign['campaign_type'];
     $rewardTemplateId = (int) $campaign['reward_template_db_id'];
     $source = mg_public_campaign_engage_source($campaignType);
     $userId = mg_public_campaign_engage_find_user($pdo, $email);
@@ -131,6 +130,7 @@ try {
         'ip' => mg_client_ip(),
         'user_agent' => substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255),
         'generic_engagement' => true,
+        'registry' => 'campaign_types_v1_1',
     ], $embedAttribution);
 
     $contactStmt = $pdo->prepare('INSERT INTO campaign_contacts (public_id,merchant_user_id,campaign_id,user_id,email,phone,name,source,opt_in_status,metadata_json,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,NOW(),NOW()) ON DUPLICATE KEY UPDATE user_id=VALUES(user_id), phone=VALUES(phone), name=VALUES(name), source=VALUES(source), metadata_json=VALUES(metadata_json), updated_at=NOW()');
@@ -145,7 +145,7 @@ try {
         'merchant_user_id' => $merchantId,
         'campaign_id' => $campaignId,
         'campaign_type' => $campaignType,
-        'event_type' => 'campaign.engaged',
+        'event_type' => mg_campaign_type_event_type($campaignType),
         'source_type' => $source,
         'source_public_id' => (string) ($contact['public_id'] ?? ''),
         'user_id' => $userId,
@@ -163,8 +163,8 @@ try {
         $campaignId,
         null,
         $contactId ?: null,
-        'campaign.engaged',
-        json_encode(['campaign_type' => $campaignType, 'source' => $source, 'email' => $email, 'crm_entry' => true, 'embed_attribution' => $embedAttribution, 'merchant_crm' => $crm, 'merchant_notification' => $merchantNotification], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+        mg_campaign_type_event_type($campaignType),
+        json_encode(['campaign_type' => $campaignType, 'source' => $source, 'email' => $email, 'crm_entry' => true, 'embed_attribution' => $embedAttribution, 'merchant_crm' => $crm, 'merchant_notification' => $merchantNotification, 'registry' => 'campaign_types_v1_1'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
     ]);
 
     $expiresAt = mg_public_campaign_engage_expiry($campaign);
@@ -203,6 +203,7 @@ try {
         'campaign_type' => $campaignType,
         'reward_template_id' => (string)$campaign['reward_template_public_id'],
         'generic_engagement' => true,
+        'registry' => 'campaign_types_v1_1',
         'stamp_ledger_entry_id' => $stampLedger['entry']['entry_id'] ?? null,
     ], $embedAttribution);
     $walletStmt = $pdo->prepare('INSERT INTO wallet_items (public_id,user_id,contact_id,merchant_user_id,reward_template_id,campaign_id,source_type,source_id,status,value_cents_snapshot,currency_snapshot,title_snapshot,metadata_json,issued_at,expires_at,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),?,NOW(),NOW())');
@@ -233,7 +234,7 @@ try {
         $walletDbId,
         $contactId ?: null,
         'wallet_item.issued',
-        json_encode(['wallet_item_id' => $walletPublicId, 'campaign_type' => $campaignType, 'source' => $source, 'embed_attribution' => $embedAttribution, 'pppm_bridge' => $bridge, 'merchant_crm' => $crm, 'merchant_notification' => $merchantNotification, 'stamp_ledger_entry_id' => $stampLedger['entry']['entry_id'] ?? null], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+        json_encode(['wallet_item_id' => $walletPublicId, 'campaign_type' => $campaignType, 'source' => $source, 'embed_attribution' => $embedAttribution, 'pppm_bridge' => $bridge, 'merchant_crm' => $crm, 'merchant_notification' => $merchantNotification, 'stamp_ledger_entry_id' => $stampLedger['entry']['entry_id'] ?? null, 'registry' => 'campaign_types_v1_1'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
     ]);
 
     $pdo->commit();

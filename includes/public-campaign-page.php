@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+require_once __DIR__ . '/campaign-types.php';
 
 $mgCampaignExpectedType = $mgCampaignExpectedType ?? null;
 $mgCampaignPageLabel = $mgCampaignPageLabel ?? 'Microgifter campaign';
@@ -10,25 +11,13 @@ $mgCampaignToken = trim((string)($_GET['token'] ?? $_GET['qr_token'] ?? ''));
 
 function mg_public_campaign_type_label(string $type): string
 {
-    return match ($type) {
-        'newsletter_signup' => 'Newsletter signup',
-        'contest_giveaway' => 'Contest / giveaway',
-        'qr_reward_drop' => 'QR reward drop',
-        'referral_reward' => 'Referral reward',
-        'birthday_vip' => 'Birthday / VIP reward',
-        'agent_offer' => 'Agent offer',
-        default => 'Campaign',
-    };
+    return mg_campaign_type_label($type);
 }
 
 function mg_public_campaign_endpoint(string $type): string
 {
-    return match ($type) {
-        'newsletter_signup' => '/api/public/campaigns/signup.php',
-        'contest_giveaway' => '/api/public/campaigns/contest-entry.php',
-        'qr_reward_drop' => '/api/public/campaigns/qr-pickup.php',
-        default => '/api/public/campaigns/engage.php',
-    };
+    $endpoint = mg_campaign_type_submit_endpoint($type);
+    return $endpoint !== '' ? $endpoint : '/api/public/campaigns/engage.php';
 }
 
 function mg_public_campaign_submit_label(string $type): string
@@ -140,7 +129,7 @@ function mg_public_campaign_unavailable(string $label, string $intro): void
 try { $mgCampaign = mg_public_campaign_load($mgCampaignExpectedType, $mgCampaignRef, $mgCampaignToken, $mgCampaignPreviewMode); }
 catch (Throwable $error) { mg_security_log('warning', 'public.campaign_page.unavailable', 'Unable to load public campaign page.', ['exception_class' => $error::class]); $mgCampaign = null; }
 
-if (!$mgCampaign) { mg_public_campaign_unavailable((string)$mgCampaignPageLabel, (string)$mgCampaignPageIntro); return; }
+if (!$mgCampaign || !mg_campaign_type_public_enabled((string)($mgCampaign['campaign_type'] ?? ''))) { mg_public_campaign_unavailable((string)$mgCampaignPageLabel, (string)$mgCampaignPageIntro); return; }
 
 $campaignType = (string)$mgCampaign['campaign_type'];
 $typeLabel = mg_public_campaign_type_label($campaignType);
