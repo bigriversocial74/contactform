@@ -4,7 +4,7 @@ require_once __DIR__ . '/includes/app.php';
 $page_title = 'Contest | Microgifter';
 $page_section = 'campaign';
 $header_mode = 'public';
-$page_styles = ['/assets/css/public-campaign-pages.css'];
+$page_styles = ['/assets/css/public-campaign-pages.css', '/assets/css/public-campaign-polish-v1.css'];
 $page_scripts = ['/assets/js/public-campaign.js'];
 $mgCampaignExpectedType = 'contest_giveaway';
 $mgCampaignPageLabel = 'Contest giveaway';

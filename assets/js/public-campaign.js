@@ -111,14 +111,19 @@ document.querySelectorAll('[data-campaign-form]').forEach(function(form){
   }
   function showResult(message,payload){
     var data=(payload&&payload.data)||payload||{};
+    var hasInboxItem=!!(data.wallet_item_id||data.pppm_bridge||data.inbox_url);
+    var inboxUrl=String(data.inbox_url||'/inbox.php');
     var details=[];
+    var title=hasInboxItem?'Reward sent to your Microgifter Inbox':(message||'Campaign response submitted.');
+    var copy=hasInboxItem?'Open your Microgifter Inbox to view, manage, claim, redeem, or continue the PPPM flow for this reward.':'Your campaign response was submitted to the merchant.';
     if(data.reward_title)details.push('<span>Reward: '+esc(data.reward_title)+'</span>');
-    if(data.wallet_item_id)details.push('<span>Wallet item: '+esc(data.wallet_item_id)+'</span>');
+    if(data.wallet_item_id)details.push('<span>Inbox item: '+esc(data.wallet_item_id)+'</span>');
     if(data.wallet_status)details.push('<span>Status: '+esc(data.already_issued?'already issued':data.wallet_status)+'</span>');
+    if(data.pppm_bridge)details.push('<span>PPPM handoff: ready</span>');
     if(data.expires_at)details.push('<span>Expires: '+esc(data.expires_at)+'</span>');
     if(result){
       result.classList.add('is-visible');
-      result.innerHTML='<strong>'+esc(message||'Submitted.')+'</strong>'+(details.length?'<div class="mg-public-campaign-result-details">'+details.join('')+'</div>':'');
+      result.innerHTML='<strong>'+esc(title)+'</strong><p>'+esc(copy)+'</p>'+(details.length?'<div class="mg-public-campaign-result-details">'+details.join('')+'</div>':'')+(hasInboxItem?'<div class="mg-public-campaign-result-actions"><a class="mg-btn mg-btn-primary" href="'+esc(inboxUrl)+'">Open Microgifter Inbox</a></div>':'');
     }
     form.hidden=true;
   }
