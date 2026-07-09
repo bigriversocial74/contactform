@@ -138,7 +138,7 @@ try {
         mg_fail('Assigned reward inventory is unavailable.', 409);
     }
 
-    $existing = $pdo->prepare("SELECT public_id FROM wallet_items WHERE merchant_user_id=? AND campaign_id=? AND source_type='manual_send' AND JSON_UNQUOTE(JSON_EXTRACT(metadata_json,'$.crm_idempotency_key'))=? LIMIT 1");
+    $existing = $pdo->prepare("SELECT public_id FROM wallet_items WHERE merchant_user_id=? AND campaign_id=? AND source_type='customer_refund' AND JSON_UNQUOTE(JSON_EXTRACT(metadata_json,'$.crm_idempotency_key'))=? LIMIT 1");
     $existing->execute([$merchantId, (int)$campaign['id'], $idem]);
     $existingWallet = (string)($existing->fetchColumn() ?: '');
     if ($existingWallet !== '') {
@@ -153,8 +153,8 @@ try {
         'source_campaign_id' => (string)$sourceContact['source_campaign_public_id'],
         'source_campaign_type' => (string)$sourceContact['source_campaign_type'],
     ];
-    $contactStmt = $pdo->prepare("INSERT INTO campaign_contacts (public_id,merchant_user_id,campaign_id,user_id,email,phone,name,source,opt_in_status,metadata_json,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,NOW(),NOW()) ON DUPLICATE KEY UPDATE user_id=VALUES(user_id), phone=VALUES(phone), name=VALUES(name), opt_in_status=VALUES(opt_in_status), metadata_json=VALUES(metadata_json), updated_at=NOW()");
-    $contactStmt->execute([$contactPublicId, $merchantId, (int)$campaign['id'], $userId, $email, $sourceContact['phone'] ?? null, $sourceContact['name'] ?? null, 'manual', 'opted_in', json_encode($contactMetadata, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)]);
+    $contactStmt = $pdo->prepare("INSERT INTO campaign_contacts (public_id,merchant_user_id,campaign_id,user_id,email,phone,name,source,opt_in_status,metadata_json,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,NOW(),NOW()) ON DUPLICATE KEY UPDATE user_id=VALUES(user_id), phone=VALUES(phone), name=VALUES(name), source=VALUES(source), opt_in_status=VALUES(opt_in_status), metadata_json=VALUES(metadata_json), updated_at=NOW()");
+    $contactStmt->execute([$contactPublicId, $merchantId, (int)$campaign['id'], $userId, $email, $sourceContact['phone'] ?? null, $sourceContact['name'] ?? null, 'customer_refund', 'opted_in', json_encode($contactMetadata, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)]);
     $refundContactLookup = $pdo->prepare('SELECT * FROM campaign_contacts WHERE campaign_id=? AND email=? LIMIT 1 FOR UPDATE');
     $refundContactLookup->execute([(int)$campaign['id'], $email]);
     $refundContact = $refundContactLookup->fetch(PDO::FETCH_ASSOC);
@@ -182,14 +182,14 @@ try {
         'stamp_ledger_entry_id' => $stampLedger['entry']['entry_id'] ?? null,
     ];
     $walletStmt = $pdo->prepare('INSERT INTO wallet_items (public_id,user_id,contact_id,merchant_user_id,reward_template_id,campaign_id,source_type,source_id,status,value_cents_snapshot,currency_snapshot,title_snapshot,metadata_json,issued_at,expires_at,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),?,NOW(),NOW())');
-    $walletStmt->execute([$walletPublicId, $userId, (int)$refundContact['id'], $merchantId, (int)$campaign['reward_template_db_id'], (int)$campaign['id'], 'manual_send', (string)$refundContact['public_id'], 'issued', (int)$campaign['value_amount_cents'], (string)$campaign['currency'], (string)$campaign['reward_template_title'], json_encode($walletMetadata, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), $expiresAt]);
+    $walletStmt->execute([$walletPublicId, $userId, (int)$refundContact['id'], $merchantId, (int)$campaign['reward_template_db_id'], (int)$campaign['id'], 'customer_refund', (string)$refundContact['public_id'], 'issued', (int)$campaign['value_amount_cents'], (string)$campaign['currency'], (string)$campaign['reward_template_title'], json_encode($walletMetadata, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), $expiresAt]);
     $walletDbId = (int)$pdo->lastInsertId();
     $pdo->prepare('UPDATE campaigns SET issued_count=issued_count+1, updated_at=NOW() WHERE id=?')->execute([(int)$campaign['id']]);
     $pdo->prepare('UPDATE reward_templates SET issued_count=issued_count+1, updated_at=NOW() WHERE id=?')->execute([(int)$campaign['reward_template_db_id']]);
 
     $bridge = mg_customer_refund_send_bridge($pdo, $campaign, $refundContact, $walletDbId, $walletPublicId, $userId, $expiresAt, $note);
-    mg_customer_refund_send_event($pdo, $campaign, $walletDbId, (int)$refundContact['id'], 'wallet_item.issued', ['wallet_item_id' => $walletPublicId, 'campaign_type' => 'customer_refund', 'source_contact_id' => (string)$sourceContact['public_id'], 'pppm_bridge' => $bridge, 'stamp_ledger_entry_id' => $stampLedger['entry']['entry_id'] ?? null]);
-    mg_customer_refund_send_event($pdo, $campaign, $walletDbId, (int)$refundContact['id'], 'crm.customer_refund.sent', ['wallet_item_id' => $walletPublicId, 'source_contact_id' => (string)$sourceContact['public_id'], 'note' => $note]);
+    mg_customer_refund_send_event($pdo, $campaign, $walletDbId, (int)$refundContact['id'], 'wallet_item.issued', ['wallet_item_id' => $walletPublicId, 'campaign_type' => 'customer_refund', 'source_type' => 'customer_refund', 'source_contact_id' => (string)$sourceContact['public_id'], 'pppm_bridge' => $bridge, 'stamp_ledger_entry_id' => $stampLedger['entry']['entry_id'] ?? null]);
+    mg_customer_refund_send_event($pdo, $campaign, $walletDbId, (int)$refundContact['id'], 'crm.customer_refund.sent', ['wallet_item_id' => $walletPublicId, 'source_type' => 'customer_refund', 'source_contact_id' => (string)$sourceContact['public_id'], 'note' => $note]);
     mg_merchant_crm_record_event($pdo, [
         'merchant_user_id' => $merchantId,
         'campaign_id' => (int)$campaign['id'],
@@ -201,11 +201,17 @@ try {
         'email' => $email,
         'name' => (string)($refundContact['name'] ?? ''),
         'value_cents' => (int)$campaign['value_amount_cents'],
-        'metadata' => ['wallet_item_id' => $walletPublicId, 'source_contact_id' => (string)$sourceContact['public_id'], 'reward_template_id' => (string)$campaign['reward_template_public_id']],
+        'metadata' => [
+            'wallet_item_id' => $walletPublicId,
+            'customer_refund_campaign_id' => (string)$campaign['public_id'],
+            'source_contact_id' => (string)$sourceContact['public_id'],
+            'reward_template_id' => (string)$campaign['reward_template_public_id'],
+            'stamp_ledger_entry_id' => $stampLedger['entry']['entry_id'] ?? null,
+        ],
     ]);
 
     $pdo->commit();
-    mg_ok(['contact_id' => (string)$refundContact['public_id'], 'source_contact_id' => (string)$sourceContact['public_id'], 'campaign_id' => (string)$campaign['public_id'], 'campaign_type' => 'customer_refund', 'wallet_item_id' => $walletPublicId, 'expires_at' => $expiresAt, 'pppm_bridge' => $bridge, 'stamp_ledger' => $stampLedger, 'duplicate' => false], 'Customer Refund voucher issued.', 201);
+    mg_ok(['contact_id' => (string)$refundContact['public_id'], 'source_contact_id' => (string)$sourceContact['public_id'], 'campaign_id' => (string)$campaign['public_id'], 'campaign_type' => 'customer_refund', 'source_type' => 'customer_refund', 'wallet_item_id' => $walletPublicId, 'expires_at' => $expiresAt, 'pppm_bridge' => $bridge, 'stamp_ledger' => $stampLedger, 'duplicate' => false], 'Customer Refund voucher issued.', 201);
 } catch (Throwable $error) {
     if ($pdo->inTransaction()) $pdo->rollBack();
     mg_security_log('error', 'merchant.customer_refund_send.failed', 'Unable to send Customer Refund voucher.', ['exception_class' => $error::class, 'message' => $error->getMessage()], $merchantId);
