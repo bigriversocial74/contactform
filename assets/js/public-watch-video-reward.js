@@ -4,14 +4,13 @@
   if (!root) return;
 
   var forms = Array.prototype.slice.call(root.querySelectorAll('[data-watch-reward-form]'));
-  var result = root.querySelector('[data-watch-reward-result]');
+  var results = Array.prototype.slice.call(root.querySelectorAll('[data-watch-reward-result]'));
   var provider = root.getAttribute('data-video-provider') || 'youtube';
   var videoId = root.getAttribute('data-video-id') || '';
   var uploadedUrl = root.getAttribute('data-uploaded-video-url') || '';
   var uploadedAssetId = root.getAttribute('data-uploaded-asset-id') || '';
   var campaignId = root.getAttribute('data-campaign-id') || '';
   var statusNodes = Array.prototype.slice.call(root.querySelectorAll('[data-watch-reward-status]'));
-  var notificationLists = Array.prototype.slice.call(root.querySelectorAll('[data-watch-reward-notifications]'));
   var historyLists = Array.prototype.slice.call(root.querySelectorAll('[data-watch-reward-history]'));
   var rewardHistoryLists = Array.prototype.slice.call(root.querySelectorAll('[data-watch-reward-issue-history]'));
   var uploadedPlayer = root.querySelector('[data-watch-uploaded-player]');
@@ -33,43 +32,40 @@
   function timeLabel() {
     try { return new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); } catch (error) { return ''; }
   }
-  function listArray(lists) {
-    return Array.isArray(lists) ? lists : (lists ? [lists] : []);
-  }
   function setSingleLine(lists, message) {
-    listArray(lists).forEach(function (list) {
+    lists.forEach(function (list) {
       if (!list) return;
       list.innerHTML = '<li><span>' + esc(timeLabel()) + '</span><strong>' + esc(message || '') + '</strong></li>';
     });
   }
-  function appendRow(lists, message) {
-    listArray(lists).forEach(function (list) {
+  function appendReward(message) {
+    rewardHistoryLists.forEach(function (list) {
       if (!list || !message) return;
-      if (list.children.length === 1 && /waiting|no watch|no rewards/i.test(list.children[0].textContent || '')) list.innerHTML = '';
+      if (list.children.length === 1 && /no rewards/i.test(list.children[0].textContent || '')) list.innerHTML = '';
       var row = document.createElement('li');
       row.innerHTML = '<span>' + esc(timeLabel()) + '</span><strong>' + esc(message) + '</strong>';
       list.insertBefore(row, list.firstChild || null);
-      while (list.children.length > 5) list.removeChild(list.lastChild);
+      while (list.children.length > 4) list.removeChild(list.lastChild);
     });
   }
   function setStatus(message) {
     statusNodes.forEach(function (node) { node.textContent = message || ''; });
-    setSingleLine(notificationLists, message);
   }
   function setActivity(message) {
     setSingleLine(historyLists, message);
   }
   function setResult(html) {
-    if (!result) return;
-    result.innerHTML = html || '';
-    result.classList.toggle('is-visible', Boolean(html));
+    results.forEach(function (node) {
+      node.innerHTML = html || '';
+      node.classList.toggle('is-visible', Boolean(html));
+    });
   }
   function rewardCard(item) {
     var image = item.reward_image_url ? '<img class="mg-campaign-issued-reward-image" src="' + esc(item.reward_image_url) + '" alt="">' : '';
-    return '<div class="mg-campaign-issued-reward-card ' + (image ? 'has-image' : 'is-text-only') + '">' + image + '<span>' + esc((item.percent || '') + '% — ' + (item.reward_title || 'Video reward')) + '</span></div>';
+    return '<div class="mg-campaign-issued-reward-card ' + (image ? 'has-image' : 'is-text-only') + '">' + image + '<span><strong>Reward sent</strong><b>' + esc(item.reward_title || 'Video reward') + '</b><small>' + esc((item.percent || '') + '% milestone') + '</small></span></div>';
   }
   function inboxResult(issued) {
-    return '<strong>Reward sent to your Microgifter Inbox</strong><div class="mg-campaign-issued-reward-list">' + issued.map(rewardCard).join('') + '</div><p class="mg-public-campaign-note">Open your Microgifter Inbox to view, manage, or redeem the reward.</p><a class="mg-rl-btn mg-rl-btn-soft" href="/inbox.php">Open Microgifter Inbox</a>';
+    return '<strong>Reward sent to your Microgifter Inbox</strong><div class="mg-campaign-issued-reward-list">' + issued.map(rewardCard).join('') + '</div><a class="mg-rl-btn mg-rl-btn-soft" href="/inbox.php">Open Microgifter Inbox</a>';
   }
   function campaignNotice(message) {
     blocked = true;
@@ -77,12 +73,10 @@
     var text = message || 'You have already participated in this campaign.';
     setStatus(text);
     setActivity(text);
-    setResult('<strong>Campaign notice</strong><p>' + esc(text) + '</p><a class="mg-rl-btn mg-rl-btn-soft" href="/inbox.php">Open Microgifter Inbox</a>');
+    setResult('<strong>Campaign status</strong><p>' + esc(text) + '</p><a class="mg-rl-btn mg-rl-btn-soft" href="/inbox.php">Open Microgifter Inbox</a>');
   }
   function visibleForm() {
-    for (var i = 0; i < forms.length; i += 1) {
-      if (forms[i].offsetParent !== null) return forms[i];
-    }
+    for (var i = 0; i < forms.length; i += 1) if (forms[i].offsetParent !== null) return forms[i];
     return forms[0] || null;
   }
   function readForm(sourceForm) {
@@ -100,11 +94,7 @@
     if (eligibilityCache[email] != null) return eligibilityCache[email];
     if (!window.Microgifter || typeof Microgifter.post !== 'function') return true;
     try {
-      var response = await Microgifter.post('/api/public/campaigns/participation-status.php', {
-        campaign_id: campaignId,
-        campaign_type: 'watch_video_reward',
-        email: email
-      });
+      var response = await Microgifter.post('/api/public/campaigns/participation-status.php', { campaign_id: campaignId, campaign_type: 'watch_video_reward', email: email });
       var data = response.data || response;
       if (data.participated || data.available === false) {
         eligibilityCache[email] = false;
@@ -112,11 +102,9 @@
         return false;
       }
       eligibilityCache[email] = true;
-      if (!silent) setStatus('Campaign available. Press play to start reward tracking.');
+      if (!silent) { setStatus('Eligible. Press play to start reward tracking.'); setActivity('Eligible for this campaign.'); }
       return true;
-    } catch (error) {
-      return true;
-    }
+    } catch (error) { return true; }
   }
   async function joinFromForm(sourceForm, silent) {
     var nextCustomer = readForm(sourceForm);
@@ -163,10 +151,7 @@
   }
   async function postProgress(percent, force) {
     if (blocked || !customer.email) return;
-    if (!window.Microgifter || typeof Microgifter.post !== 'function') {
-      setStatus('Microgifter reward tracking is still loading.');
-      return;
-    }
+    if (!window.Microgifter || typeof Microgifter.post !== 'function') { setStatus('Microgifter reward tracking is still loading.'); return; }
     var now = Date.now();
     if (!force && now - lastPost < 4500) return;
     lastPost = now;
@@ -174,7 +159,7 @@
       var response = await Microgifter.post('/api/public/campaigns/watch-progress-v2.php', payload(percent));
       var data = response.data || response;
       var issued = data.issued_rewards || [];
-      issued.forEach(function (item) { appendRow(rewardHistoryLists, (item.percent || '') + '% reward issued — ' + (item.reward_title || 'Video reward')); });
+      issued.forEach(function (item) { appendReward((item.percent || '') + '% reward issued — ' + (item.reward_title || 'Video reward')); });
       if (issued.length) setResult(inboxResult(issued));
       setStatus(data.message || ('Watching… ' + Math.round(percent) + '% complete'));
       setActivity('Watch progress: ' + Math.round(percent) + '% complete.');
@@ -199,11 +184,7 @@
       try { if (uploadedPlayer) uploadedPlayer.pause(); } catch (error2) {}
       return;
     }
-    if (!started) {
-      started = true;
-      setActivity('Watch session started.');
-      postProgress(1, true);
-    }
+    if (!started) { started = true; setActivity('Watch session started.'); postProgress(1, true); }
     clearInterval(timer);
     timer = setInterval(tick, 3000);
   }
@@ -259,12 +240,7 @@
     form.addEventListener('submit', async function (event) {
       event.preventDefault();
       if (!(await joinFromForm(form, false))) return;
-      if (provider === 'uploaded') {
-        bindUpload();
-        setStatus('Joined. Press play on the video player to start reward tracking.');
-        postProgress(0, true);
-        return;
-      }
+      if (provider === 'uploaded') { bindUpload(); setStatus('Joined. Press play on the video player to start reward tracking.'); postProgress(0, true); return; }
       setStatus('Joined. Press play on the video player to start reward tracking.');
       if (window.YT && window.YT.Player && !player) window.onYouTubeIframeAPIReady();
       postProgress(0, true);
