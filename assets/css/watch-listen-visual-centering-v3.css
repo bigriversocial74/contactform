@@ -1,138 +1,641 @@
-/* Watch / Listen visual centering v3
-   Fixes the composition shown in desktop screenshots: the shell was contained but visually shifted right.
-   This override centers the whole composition by controlling shell math, column ratio, and page gutters. */
+/* Watch / Listen public landing layout — consolidated owner
+   This file intentionally owns the public Watch and Listen reward landing composition.
+   Older centering patch files are neutralized so layout rules are not fighting across sheets. */
+
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden !important;
+}
+
+.mg-media-reward-landing,
+.mg-media-reward-landing * {
+  box-sizing: border-box;
+}
 
 .mg-media-reward-landing {
-  --mg-media-shell-max: 1120px;
-  --mg-media-left-col: 760px;
-  --mg-media-right-col: 300px;
-  --mg-media-gap: 20px;
-  --mg-media-gutter: 40px;
+  position: relative;
+  width: 100%;
+  max-width: 100vw;
+  min-height: calc(100vh - 84px);
   overflow-x: hidden !important;
+  background: #f7fafc;
+  color: #08142d;
+  --shell-max: 1180px;
+  --shell-gutter: 52px;
+  --left-col: 820px;
+  --right-col: 320px;
+  --shell-gap: 28px;
+}
+
+.mg-media-reward-landing .mg-public-campaign-cover {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  max-width: 100vw !important;
+  background-size: cover !important;
+  background-position: center !important;
+  opacity: .96;
+}
+
+.mg-media-reward-landing .mg-public-campaign-cover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 38% 8%, rgba(255,255,255,.86), rgba(255,255,255,.26) 36%, rgba(241,245,249,.84) 100%),
+    linear-gradient(180deg, rgba(248,250,252,.22), rgba(248,250,252,.96));
 }
 
 .mg-media-reward-landing .mg-public-campaign-shell.mg-media-reward-shell,
 .mg-media-reward-shell {
-  width: min(var(--mg-media-shell-max), calc(100vw - (var(--mg-media-gutter) * 2))) !important;
-  max-width: calc(100vw - (var(--mg-media-gutter) * 2)) !important;
-  margin-left: auto !important;
-  margin-right: auto !important;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-  grid-template-columns: minmax(0, var(--mg-media-left-col)) minmax(280px, var(--mg-media-right-col)) !important;
-  gap: var(--mg-media-gap) !important;
+  position: relative !important;
+  z-index: 1;
+  display: grid !important;
+  grid-template-columns: minmax(0, var(--left-col)) minmax(0, var(--right-col)) !important;
+  grid-template-areas:
+    "hero join"
+    "left join" !important;
+  gap: var(--shell-gap) !important;
   justify-content: center !important;
+  align-items: start !important;
+  width: min(var(--shell-max), calc(100vw - (var(--shell-gutter) * 2))) !important;
+  max-width: calc(100vw - (var(--shell-gutter) * 2)) !important;
+  margin: 0 auto !important;
+  padding: 54px 0 64px !important;
+  left: auto !important;
+  right: auto !important;
+  transform: none !important;
 }
 
-.mg-media-reward-hero,
-.mg-media-reward-left-column {
+.mg-media-reward-hero {
+  grid-area: hero;
   width: 100% !important;
-  max-width: var(--mg-media-left-col) !important;
+  max-width: var(--left-col) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-align: left !important;
   justify-self: stretch !important;
 }
 
-.mg-media-join-card {
-  width: 100% !important;
-  max-width: var(--mg-media-right-col) !important;
-  justify-self: stretch !important;
-  padding: 22px !important;
+.mg-media-reward-mode {
+  display: inline-flex;
+  align-items: center;
+  min-width: min(100%, 720px);
+  min-height: 28px;
+  margin: 0 0 20px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.82);
+  color: #1358ff;
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  box-shadow: inset 0 0 0 1px rgba(37,99,235,.08), 0 10px 28px rgba(15,23,42,.05);
 }
 
 .mg-media-reward-hero h1 {
-  max-width: 650px !important;
-  font-size: clamp(44px, 4.2vw, 66px) !important;
+  max-width: 680px !important;
+  margin: 0 !important;
+  color: #06102c !important;
+  font-size: clamp(48px, 5vw, 76px) !important;
+  line-height: .92 !important;
+  letter-spacing: -.075em !important;
+  font-weight: 950 !important;
 }
 
 .mg-media-reward-hero p {
-  max-width: 500px !important;
+  max-width: 540px !important;
+  margin: 22px 0 0 !important;
+  color: #263851 !important;
+  font-size: clamp(16px, 1.45vw, 21px) !important;
+  line-height: 1.38 !important;
+  font-weight: 850 !important;
+}
+
+.mg-media-reward-left-column {
+  grid-area: left;
+  display: grid;
+  gap: 18px;
+  width: 100% !important;
+  max-width: var(--left-col) !important;
+  min-width: 0 !important;
+  justify-self: stretch !important;
+}
+
+.mg-media-stage-card {
+  position: relative;
+  width: 100% !important;
+  min-width: 0 !important;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.78);
+  border-radius: 28px;
+  background: rgba(255,255,255,.80);
+  box-shadow: 0 28px 70px rgba(15,23,42,.13);
+  backdrop-filter: blur(16px);
 }
 
 .mg-media-stage-card-listen {
   padding: 16px !important;
 }
 
-.mg-media-reward-bottom-grid {
-  grid-template-columns: minmax(0, 1.08fr) minmax(0, .78fr) minmax(0, .78fr) !important;
-  gap: 14px !important;
+.mg-media-stage-card-watch {
+  padding: 8px !important;
 }
 
-.mg-media-dashboard-card {
-  padding: 18px !important;
-}
-
+.mg-listen-track-card.mg-listen-track-row,
+.mg-watch-track-row,
 .mg-media-stage-summary {
-  margin-left: 0 !important;
-  margin-right: 0 !important;
+  display: grid !important;
+  grid-template-columns: 112px minmax(0, 1fr) !important;
+  gap: 18px !important;
+  align-items: center !important;
+  width: 100% !important;
+  margin: 0 0 18px !important;
+  padding: 16px !important;
+  border: 1px solid rgba(15,23,42,.08) !important;
+  border-radius: 24px !important;
+  background: rgba(255,255,255,.92) !important;
+  color: #08142d !important;
+  box-shadow: none !important;
+  text-align: left !important;
+}
+
+.mg-media-art-thumb {
+  width: 112px !important;
+  height: 112px !important;
+  border-radius: 18px !important;
+  overflow: hidden;
+  background: linear-gradient(135deg,#f1f5f9,#fff);
+  border: 1px solid rgba(15,23,42,.08);
+}
+
+.mg-media-art-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mg-media-art-placeholder {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.mg-media-stage-summary span,
+.mg-listen-track-row span,
+.mg-watch-track-row span {
+  display: block;
+  margin: 0 0 4px;
+  color: #1358ff !important;
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+
+.mg-media-stage-summary strong,
+.mg-listen-track-row strong,
+.mg-watch-track-row strong {
+  display: block;
+  color: #06102c !important;
+  font-size: clamp(24px, 2.5vw, 34px) !important;
+  line-height: 1.02 !important;
+  letter-spacing: -.05em !important;
+  font-weight: 950 !important;
+}
+
+.mg-media-stage-summary em,
+.mg-listen-track-row em,
+.mg-watch-track-row em {
+  display: block;
+  margin-top: 6px;
+  color: #334155 !important;
+  font-style: normal;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.mg-media-stage-player {
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 20px !important;
+  background: transparent !important;
+  overflow: hidden;
+  box-shadow: none !important;
+}
+
+.mg-media-stage-player audio {
+  display: block;
+  width: 100%;
+  min-height: 58px;
+  padding: 10px 12px;
+  border-radius: 18px;
+  background: #071121;
+}
+
+.mg-media-stage-player iframe,
+.mg-media-stage-player video,
+.mg-media-stage-player #mg-watch-video-player {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-radius: 20px;
+  background: #030712;
 }
 
 .mg-media-stage-player video,
 .mg-media-stage-player #mg-watch-video-player,
 .mg-media-stage-player iframe[src*="youtube"] {
+  aspect-ratio: 16 / 9;
   min-height: 0 !important;
+}
+
+.mg-media-confirm-button {
+  margin-top: 12px !important;
+}
+
+.mg-media-wave {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 50px;
+  margin: 14px 8px 0;
+  overflow: hidden;
+}
+
+.mg-media-wave span {
+  flex: 1;
+  min-width: 6px;
+  height: 24px;
+  border-radius: 999px;
+  background: linear-gradient(180deg,#2563eb,#60a5fa);
+}
+
+.mg-media-wave span:nth-child(2n) { height: 34px; }
+.mg-media-wave span:nth-child(3n) { height: 22px; }
+.mg-media-wave span:nth-child(4n) { height: 42px; }
+.mg-media-wave span:nth-child(5n) { height: 30px; }
+
+.mg-media-reward-bottom-grid {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.26fr) minmax(0, .78fr) minmax(0, .78fr) !important;
+  gap: 18px !important;
+  align-items: stretch;
+  width: 100% !important;
+}
+
+.mg-media-dashboard-card {
+  min-width: 0 !important;
+  padding: 18px !important;
+  border: 1px solid rgba(255,255,255,.78);
+  border-radius: 22px;
+  background: rgba(255,255,255,.84);
+  box-shadow: 0 20px 52px rgba(15,23,42,.10);
+  backdrop-filter: blur(14px);
+}
+
+.mg-media-card-head,
+.mg-listen-panel-head {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 12px !important;
+  margin-bottom: 12px !important;
+}
+
+.mg-media-card-head h2,
+.mg-listen-panel-head strong {
+  margin: 0 !important;
+  color: #06102c !important;
+  font-size: 17px !important;
+  line-height: 1.15 !important;
+  font-weight: 950 !important;
+  letter-spacing: -.03em !important;
+}
+
+.mg-eyebrow {
+  color: #1358ff !important;
+  font-size: 11px !important;
+  font-weight: 950 !important;
+  letter-spacing: .13em !important;
+  text-transform: uppercase !important;
+}
+
+.mg-media-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  border-radius: 14px;
+  background: rgba(37,99,235,.10);
+}
+
+.mg-media-reward-offer-body {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+}
+
+.mg-media-reward-image {
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid rgba(15,23,42,.08);
+  background: linear-gradient(135deg,#eff6ff,#fff);
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.mg-media-reward-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mg-media-reward-offer-body strong {
+  display: block;
+  margin: 0 0 6px;
+  color: #06102c;
+  font-size: 24px;
+  font-weight: 950;
+  letter-spacing: -.045em;
+}
+
+.mg-media-reward-offer-body p {
+  margin: 0;
+  color: #334155;
+  font-size: 13px;
+  line-height: 1.4;
+  font-weight: 780;
+}
+
+.mg-media-reward-offer-body small {
+  display: inline-flex;
+  margin-top: 10px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(22,163,74,.12);
+  color: #15803d;
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.mg-media-dashboard-card ul,
+.mg-media-notification-panel ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mg-media-dashboard-card li,
+.mg-media-notification-panel li {
+  color: #334155;
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 760;
+}
+
+.mg-media-join-card {
+  grid-area: join;
+  position: sticky;
+  top: 104px;
+  width: 100% !important;
+  max-width: var(--right-col) !important;
+  min-width: 0 !important;
+  justify-self: stretch !important;
+  display: grid;
+  gap: 18px;
+  padding: 24px !important;
+  border: 1px solid rgba(255,255,255,.82) !important;
+  border-radius: 28px !important;
+  background: rgba(255,255,255,.90) !important;
+  box-shadow: 0 28px 74px rgba(15,23,42,.13) !important;
+  backdrop-filter: blur(20px);
+  overflow: hidden !important;
+}
+
+.mg-media-join-card .mg-public-campaign-profile-card {
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.mg-media-join-card .mg-public-campaign-profile-copy,
+.mg-media-join-card .mg-public-campaign-profile-copy h2,
+.mg-media-join-card .mg-public-campaign-profile-copy p {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.mg-media-join-form {
+  display: grid;
+  gap: 14px;
+  margin: 0 !important;
+}
+
+.mg-media-join-form h3 {
+  margin: 0;
+  color: #06102c;
+  font-size: 23px;
+  line-height: 1.08;
+  font-weight: 950;
+  letter-spacing: -.04em;
+}
+
+.mg-media-join-form p {
+  margin: -4px 0 2px;
+  color: #334155;
+  font-size: 13px;
+  line-height: 1.38;
+  font-weight: 780;
+}
+
+.mg-media-join-form .mg-public-campaign-field-grid {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 12px !important;
+}
+
+.mg-media-join-form label {
+  display: grid;
+  gap: 6px;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.mg-media-join-form input {
+  width: 100% !important;
+  min-height: 50px;
+  border: 1px solid rgba(15,23,42,.10);
+  border-radius: 15px;
+  padding: 0 15px;
+  background: rgba(255,255,255,.94);
+  color: #0f172a;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 850;
+  text-transform: none;
+  letter-spacing: 0;
+  box-shadow: 0 10px 24px rgba(15,23,42,.04);
+}
+
+.mg-media-join-form .mg-public-campaign-primary-action,
+.mg-media-join-card .mg-btn {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-height: 52px;
+  border-radius: 15px !important;
+  font-size: 14px !important;
+  font-weight: 950 !important;
+}
+
+.mg-media-account-note,
+.mg-media-notification-panel,
+.mg-media-reward-landing .mg-public-campaign-status {
+  width: 100%;
+  max-width: 100%;
+  border-radius: 18px;
+}
+
+.mg-media-account-note,
+.mg-media-notification-panel {
+  padding: 15px;
+  border: 1px solid rgba(37,99,235,.14);
+  background: linear-gradient(180deg,rgba(239,246,255,.94),rgba(255,255,255,.76));
+}
+
+.mg-media-account-note strong,
+.mg-media-notification-panel strong {
+  display: block;
+  color: #06102c;
+  font-size: 14px;
+  line-height: 1.2;
+  font-weight: 950;
+}
+
+.mg-media-account-note p,
+.mg-media-notification-panel p {
+  margin: 6px 0 12px;
+  color: #334155;
+  font-size: 12px;
+  line-height: 1.38;
+  font-weight: 760;
+}
+
+.mg-media-reward-landing .mg-public-campaign-status {
+  padding: 11px 13px;
+  border: 1px solid rgba(15,23,42,.08);
+  background: #fff;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 850;
+  box-shadow: 0 10px 26px rgba(15,23,42,.05);
+}
+
+.mg-campaign-issued-reward-list {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.mg-campaign-issued-reward-card {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid rgba(15,23,42,.08);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.mg-campaign-issued-reward-card.is-text-only {
+  grid-template-columns: 1fr;
+}
+
+.mg-campaign-issued-reward-image {
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  object-fit: cover;
 }
 
 @media (min-width: 1500px) {
   .mg-media-reward-landing {
-    --mg-media-shell-max: 1240px;
-    --mg-media-left-col: 860px;
-    --mg-media-right-col: 340px;
-    --mg-media-gap: 24px;
-    --mg-media-gutter: 52px;
+    --shell-max: 1340px;
+    --shell-gutter: 70px;
+    --left-col: 940px;
+    --right-col: 360px;
+    --shell-gap: 32px;
   }
 
   .mg-media-reward-hero h1 {
-    max-width: 740px !important;
-    font-size: clamp(52px, 4.8vw, 82px) !important;
+    max-width: 760px !important;
+    font-size: clamp(56px, 4.8vw, 88px) !important;
   }
 }
 
-@media (min-width: 1760px) {
+@media (max-width: 1280px) {
   .mg-media-reward-landing {
-    --mg-media-shell-max: 1360px;
-    --mg-media-left-col: 940px;
-    --mg-media-right-col: 380px;
-    --mg-media-gap: 28px;
-    --mg-media-gutter: 64px;
-  }
-}
-
-@media (max-width: 1320px) {
-  .mg-media-reward-landing {
-    --mg-media-shell-max: 1040px;
-    --mg-media-left-col: 700px;
-    --mg-media-right-col: 300px;
-    --mg-media-gap: 18px;
-    --mg-media-gutter: 28px;
+    --shell-max: 1120px;
+    --shell-gutter: 36px;
+    --left-col: 770px;
+    --right-col: 320px;
+    --shell-gap: 24px;
   }
 
   .mg-media-reward-hero h1 {
-    font-size: clamp(40px, 4.6vw, 60px) !important;
-  }
-
-  .mg-media-reward-bottom-grid {
-    grid-template-columns: minmax(0, 1.05fr) minmax(0, .74fr) minmax(0, .74fr) !important;
+    font-size: clamp(42px, 5vw, 66px) !important;
   }
 }
 
 @media (max-width: 1120px) {
   .mg-media-reward-landing {
-    --mg-media-shell-max: 900px;
-    --mg-media-left-col: 900px;
-    --mg-media-right-col: 900px;
-    --mg-media-gap: 18px;
-    --mg-media-gutter: 20px;
+    --shell-max: 920px;
+    --shell-gutter: 22px;
+    --left-col: 920px;
+    --right-col: 920px;
+    --shell-gap: 18px;
   }
 
   .mg-media-reward-landing .mg-public-campaign-shell.mg-media-reward-shell,
   .mg-media-reward-shell {
     grid-template-columns: 1fr !important;
-    grid-template-areas: "hero" "join" "left" !important;
+    grid-template-areas:
+      "hero"
+      "join"
+      "left" !important;
   }
 
   .mg-media-join-card {
-    max-width: 100% !important;
     position: relative !important;
     top: auto !important;
+    max-width: 100% !important;
   }
 
   .mg-media-reward-bottom-grid {
@@ -140,20 +643,46 @@
   }
 
   .mg-media-reward-offer-card {
-    grid-column: 1 / -1 !important;
+    grid-column: 1 / -1;
   }
 }
 
 @media (max-width: 720px) {
   .mg-media-reward-landing {
-    --mg-media-gutter: 12px;
+    --shell-gutter: 12px;
+  }
+
+  .mg-media-reward-landing .mg-public-campaign-shell.mg-media-reward-shell,
+  .mg-media-reward-shell {
+    padding-top: 28px !important;
+  }
+
+  .mg-media-reward-hero h1 {
+    font-size: clamp(38px, 12vw, 52px) !important;
+  }
+
+  .mg-media-stage-summary,
+  .mg-listen-track-card.mg-listen-track-row,
+  .mg-watch-track-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .mg-media-art-thumb {
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 1.25 / 1;
   }
 
   .mg-media-reward-bottom-grid {
     grid-template-columns: 1fr !important;
   }
 
-  .mg-media-reward-hero h1 {
-    font-size: clamp(36px, 11vw, 50px) !important;
+  .mg-media-reward-offer-body {
+    grid-template-columns: 74px minmax(0, 1fr);
+  }
+
+  .mg-media-reward-image {
+    width: 74px;
+    height: 74px;
   }
 }
