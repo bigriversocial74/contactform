@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/bootstrap.php';
+require_once dirname(__DIR__, 3) . '/includes/campaign-types.php';
 
 mg_require_method('GET');
 $pdo = mg_db();
@@ -30,10 +31,8 @@ try {
     if (!empty($row['ends_at']) && strtotime((string) $row['ends_at']) < $now) mg_fail('Campaign has ended.', 409);
     if ($row['quantity_limit'] !== null && (int) $row['issued_count'] >= (int) $row['quantity_limit']) mg_fail('Campaign reward limit has been reached.', 409);
 
-    $submitEndpoint = '/api/public/campaigns/engage.php';
-    if ($row['campaign_type'] === 'newsletter_signup') $submitEndpoint = '/api/public/campaigns/signup.php';
-    if ($row['campaign_type'] === 'qr_reward_drop') $submitEndpoint = '/api/public/campaigns/qr-pickup.php';
-    if ($row['campaign_type'] === 'contest_giveaway') $submitEndpoint = '/api/public/campaigns/contest-entry.php';
+    $submitEndpoint = mg_campaign_type_submit_endpoint((string)$row['campaign_type']);
+    if ($submitEndpoint === '') $submitEndpoint = '/api/public/campaigns/engage.php';
 
     mg_ok(['campaign' => [
         'id' => (string) $row['public_id'],
