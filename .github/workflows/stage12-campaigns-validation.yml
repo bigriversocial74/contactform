@@ -7,6 +7,7 @@ on:
       - 'database/stage_12b_campaign_events_agent_context.sql'
       - 'database/watch_video_reward_v1_4.sql'
       - 'database/listen_music_reward_v1_5.sql'
+      - 'database/campaign_type_enum_foundation_20260709.sql'
       - 'campaign.php'
       - 'wallet.php'
       - 'watch-reward.php'
@@ -37,6 +38,7 @@ on:
       - 'assets/js/public-rsvp-event.js'
       - 'scripts/validate_stage12*.php'
       - 'scripts/validate_campaign_types_*.php'
+      - 'scripts/validate_campaign_type_enum_foundation.php'
       - 'scripts/validate_customer_refund_*.php'
       - 'scripts/validate_watch_video_reward_*.php'
       - 'scripts/validate_listen_music_reward_*.php'
@@ -52,6 +54,7 @@ on:
       - 'database/stage_12b_campaign_events_agent_context.sql'
       - 'database/watch_video_reward_v1_4.sql'
       - 'database/listen_music_reward_v1_5.sql'
+      - 'database/campaign_type_enum_foundation_20260709.sql'
       - 'campaign.php'
       - 'wallet.php'
       - 'watch-reward.php'
@@ -82,6 +85,7 @@ on:
       - 'assets/js/public-rsvp-event.js'
       - 'scripts/validate_stage12*.php'
       - 'scripts/validate_campaign_types_*.php'
+      - 'scripts/validate_campaign_type_enum_foundation.php'
       - 'scripts/validate_customer_refund_*.php'
       - 'scripts/validate_watch_video_reward_*.php'
       - 'scripts/validate_listen_music_reward_*.php'
@@ -154,6 +158,7 @@ jobs:
           php -l scripts/validate_stage12b_runtime_fixes.php
           php -l scripts/validate_stage12c_wallet_campaign_pages.php
           php -l scripts/validate_campaign_types_public_landing_page_qa_v1_2.php
+          php -l scripts/validate_campaign_type_enum_foundation.php
           php -l scripts/validate_customer_refund_v1_crm_make_good.php
           php -l scripts/validate_customer_refund_v1_1_qa_send_history.php
           php -l scripts/validate_customer_refund_v1_2_multiple_vouchers.php
@@ -172,6 +177,9 @@ jobs:
       - name: Validate Campaign Types public landing QA
         shell: bash
         run: php scripts/validate_campaign_types_public_landing_page_qa_v1_2.php
+      - name: Validate Campaign Type enum foundation
+        shell: bash
+        run: php scripts/validate_campaign_type_enum_foundation.php
       - name: Validate Customer Refund make-good
         shell: bash
         run: php scripts/validate_customer_refund_v1_crm_make_good.php
