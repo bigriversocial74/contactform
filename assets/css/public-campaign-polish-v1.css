@@ -1,6 +1,5 @@
 /* Campaign Landing Page Polish v1
-   Shared upgrade layer for public campaign landing pages.
-   Loaded only when public-campaign-pages.css is present. */
+   Shared upgrade layer for public campaign landing pages. */
 .mg-public-campaign-v2{
   --mg-campaign-ink:#07080b;
   --mg-campaign-muted:#4b5563;
@@ -223,6 +222,85 @@
 .mg-campaign-checklist li.is-warn b{
   background:#f59e0b;
 }
+.mg-listen-clean-heading .mg-public-campaign-trust-row{display:none!important;}
+.mg-listen-tab-card{overflow:hidden;}
+.mg-listen-tabs{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+  padding:0 20px 18px;
+}
+.mg-listen-tabs button{
+  min-height:46px;
+  border:1px solid rgba(15,23,42,.1);
+  border-radius:16px;
+  background:rgba(255,255,255,.76);
+  color:#334155;
+  font:inherit;
+  font-size:13px;
+  font-weight:950;
+  cursor:pointer;
+  box-shadow:0 12px 28px rgba(15,23,42,.06);
+}
+.mg-listen-tabs button.is-active{
+  background:#07080b;
+  color:#fff;
+  border-color:#07080b;
+}
+.mg-listen-tab-panel{display:grid;gap:16px;}
+.mg-listen-tab-panel[hidden]{display:none!important;}
+.mg-listen-account-gate,
+.mg-listen-notification-panel,
+.mg-listen-history-panel{
+  margin:0 20px;
+  padding:16px;
+  border:1px solid rgba(15,23,42,.08);
+  border-radius:22px;
+  background:rgba(255,255,255,.76);
+  box-shadow:0 14px 34px rgba(15,23,42,.07);
+}
+.mg-listen-account-gate strong{display:block;color:#0b0f18;font-size:16px;font-weight:950;letter-spacing:-.02em;}
+.mg-listen-account-gate p{margin:8px 0 12px;color:#526071;font-size:13px;line-height:1.45;font-weight:760;}
+.mg-listen-account-gate div{display:flex;flex-wrap:wrap;gap:8px;}
+.mg-listen-form-steps{margin-top:0;}
+.mg-listen-track-card{margin:0 20px;}
+.mg-listen-panel-head{display:grid;gap:4px;margin-bottom:10px;}
+.mg-listen-panel-head .mg-eyebrow{color:#0b53d7;font-size:11px;font-weight:950;letter-spacing:.12em;text-transform:uppercase;}
+.mg-listen-panel-head strong{color:#0b0f18;font-size:15px;font-weight:950;letter-spacing:-.02em;}
+.mg-listen-notification-panel ul,
+.mg-listen-history-panel ul{
+  display:grid;
+  gap:8px;
+  margin:0;
+  padding:0;
+  list-style:none;
+}
+.mg-listen-notification-panel li,
+.mg-listen-history-panel li{
+  display:grid;
+  grid-template-columns:auto 1fr;
+  align-items:start;
+  gap:9px;
+  padding:10px 12px;
+  border-radius:14px;
+  background:#fff;
+  color:#334155;
+  font-size:13px;
+  font-weight:820;
+}
+.mg-listen-notification-panel li span,
+.mg-listen-history-panel li span{
+  color:#64748b;
+  font-size:11px;
+  font-weight:900;
+  text-transform:uppercase;
+}
+.mg-listen-notification-panel li strong,
+.mg-listen-history-panel li strong{font-size:13px;line-height:1.35;}
+.mg-public-campaign-form.is-complete{
+  border-color:rgba(22,101,52,.16);
+  background:linear-gradient(180deg,rgba(240,253,244,.65),rgba(255,255,255,.84));
+}
 @media(max-width:680px){
   .mg-public-campaign-step-grid{
     grid-template-columns:1fr;
@@ -235,24 +313,22 @@
     column-gap:10px;
     align-items:start;
   }
-  .mg-public-campaign-mini-step span{
-    margin:0;
-  }
+  .mg-public-campaign-mini-step span{margin:0;}
   .mg-public-campaign-mini-step strong,
-  .mg-public-campaign-mini-step small{
-    grid-column:2;
-  }
-  .mg-public-campaign-trust-row{
-    gap:6px;
-  }
+  .mg-public-campaign-mini-step small{grid-column:2;}
+  .mg-public-campaign-trust-row{gap:6px;}
   .mg-public-campaign-video,
-  .mg-campaign-checklist{
+  .mg-campaign-checklist,
+  .mg-listen-tabs,
+  .mg-listen-account-gate,
+  .mg-listen-notification-panel,
+  .mg-listen-history-panel,
+  .mg-listen-track-card{
     margin-left:14px;
     margin-right:14px;
   }
+  .mg-listen-tabs{grid-template-columns:1fr;padding-left:14px;padding-right:14px;}
   .mg-public-campaign-video video,
   .mg-public-campaign-video iframe,
-  #mg-watch-video-player{
-    min-height:210px;
-  }
+  #mg-watch-video-player{min-height:210px;}
 }
