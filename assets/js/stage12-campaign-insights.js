@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded',function(){
   function count(v){return Number(v||0).toLocaleString();}
   function pct(v){return Math.round(Number(v||0)*100)+'%';}
   function pctValue(v){return Math.round(Number(v||0))+'%';}
+  function mediaRef(row){return encodeURIComponent(row.slug||row.id||'');}
   function note(message){if(status){status.textContent=message||'';}}
   function mediaNote(message,type){if(mediaStatus){mediaStatus.textContent=message||'';mediaStatus.classList.toggle('is-error',type==='error');}}
   function renderDemand(data){
@@ -48,10 +49,11 @@ document.addEventListener('DOMContentLoaded',function(){
       return;
     }
     mediaList.innerHTML=rows.map(function(row){
+      var ref=mediaRef(row);
       var progress='Max progress '+pctValue(row.max_progress_percent)+' · '+count(row.issued_milestones)+'/'+count(row.configured_milestones)+' milestones issued';
       var conversion=count(row.wallet_items)+' issued · '+count(row.claimed)+' claimed · '+count(row.redeemed)+' redeemed · '+pct(row.claim_rate)+' claim rate';
       var embed='Embed '+count(row.embed_loaded)+' loaded / '+count(row.embed_opened)+' opened';
-      return '<div class="mg-product-card mg-campaign-card"><span><strong>'+safe(row.title)+'</strong><span>'+safe(row.campaign_type_label)+' · '+safe(row.provider_label)+' · '+safe(row.status)+'</span><small>'+count(row.contacts)+' contacts · '+count(row.starts)+' starts · '+count(row.progress_events)+' progress events</small><small>'+safe(progress)+'</small><small>'+safe(conversion)+'</small><small>'+safe(embed)+'</small></span><span class="mg-card-meta"><em>'+safe(row.track_label||row.campaign_type_label)+'</em><a class="mg-btn mg-btn-ghost" href="'+safe(row.media_page_url)+'" target="_blank" rel="noopener">Open page</a><a class="mg-btn mg-btn-soft" href="'+safe(row.embed_qa_url)+'">Embed QA</a></span></div>';
+      return '<div class="mg-product-card mg-campaign-card"><span><strong>'+safe(row.title)+'</strong><span>'+safe(row.campaign_type_label)+' · '+safe(row.provider_label)+' · '+safe(row.status)+'</span><small>'+count(row.contacts)+' contacts · '+count(row.starts)+' starts · '+count(row.progress_events)+' progress events</small><small>'+safe(progress)+'</small><small>'+safe(conversion)+'</small><small>'+safe(embed)+'</small></span><span class="mg-card-meta"><em>'+safe(row.track_label||row.campaign_type_label)+'</em><a class="mg-btn mg-btn-primary" href="/merchant-campaign-media-performance.php?campaign='+ref+'&days='+(mediaDays?encodeURIComponent(mediaDays.value):'30')+'">View details</a><a class="mg-btn mg-btn-ghost" href="'+safe(row.media_page_url)+'" target="_blank" rel="noopener">Open page</a><a class="mg-btn mg-btn-soft" href="'+safe(row.embed_qa_url)+'">Embed QA</a></span></div>';
     }).join('');
     var best=totals.best_campaign;
     mediaNote(best?'Top media campaign: '+best.title+' with '+count(best.wallet_items)+' issued rewards.':(media.embed_analytics_ready===false?'Media performance loaded. Embed analytics SQL is not ready, so embed loads/opens are hidden.':'Media performance refreshed.'));
