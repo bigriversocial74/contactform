@@ -125,14 +125,36 @@ jobs:
 
       - name: Validate Stage 12 campaigns foundation
         shell: bash
-        run: |
-          set -euo pipefail
-          php scripts/validate_stage12_campaigns_reward_templates.php
-          php scripts/validate_stage12b_runtime_fixes.php
-          php scripts/validate_stage12c_wallet_campaign_pages.php
-          php scripts/validate_campaign_types_public_landing_page_qa_v1_2.php
-          php scripts/validate_customer_refund_v1_crm_make_good.php
-          php scripts/validate_customer_refund_v1_1_qa_send_history.php
-          php scripts/validate_customer_refund_v1_2_multiple_vouchers.php
-          php scripts/validate_customer_refund_v1_3_status_language.php
-          php scripts/validate_watch_video_reward_v1_4.php
+        run: php scripts/validate_stage12_campaigns_reward_templates.php
+
+      - name: Validate Stage 12B runtime fixes
+        shell: bash
+        run: php scripts/validate_stage12b_runtime_fixes.php
+
+      - name: Validate Stage 12C wallet campaign pages
+        shell: bash
+        run: php scripts/validate_stage12c_wallet_campaign_pages.php
+
+      - name: Validate Campaign Types public landing QA
+        shell: bash
+        run: php scripts/validate_campaign_types_public_landing_page_qa_v1_2.php
+
+      - name: Validate Customer Refund make-good
+        shell: bash
+        run: php scripts/validate_customer_refund_v1_crm_make_good.php
+
+      - name: Validate Customer Refund QA history
+        shell: bash
+        run: php scripts/validate_customer_refund_v1_1_qa_send_history.php
+
+      - name: Validate Customer Refund multiple vouchers
+        shell: bash
+        run: php scripts/validate_customer_refund_v1_2_multiple_vouchers.php
+
+      - name: Validate Customer Refund status language
+        shell: bash
+        run: php scripts/validate_customer_refund_v1_3_status_language.php
+
+      - name: Validate Watch Video Reward v1.4
+        shell: bash
+        run: php scripts/validate_watch_video_reward_v1_4.php
