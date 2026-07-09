@@ -74,7 +74,6 @@ $merchantName = trim((string)($campaign['merchant_profile_display_name'] ?? ''))
 $avatarUrl = mg_watch_reward_safe_url($campaign['merchant_profile_avatar_url'] ?? null);
 $coverUrl = mg_watch_reward_safe_url($campaign['merchant_profile_cover_url'] ?? null) ?: $mediaImageUrl;
 $currentUser = function_exists('mg_current_user') ? mg_current_user() : null;
-$isLoggedIn = is_array($currentUser) && !empty($currentUser['id']);
 $prefillName = is_array($currentUser) ? trim((string)($currentUser['display_name'] ?? $currentUser['full_name'] ?? '')) : '';
 $prefillEmail = is_array($currentUser) ? strtolower(trim((string)($currentUser['email'] ?? ''))) : '';
 $hasVideo = $provider === 'uploaded' ? $uploadedUrl !== '' : $videoId !== '';
@@ -82,11 +81,8 @@ $headline = trim((string)($campaign['form_headline'] ?? '')) ?: 'Watch to unlock
 $description = trim((string)($campaign['form_description'] ?? '')) ?: 'Enter your info, watch the video, and unlock rewards based on watch progress.';
 $videoTitle = trim((string)($campaign['title'] ?? 'Video reward')) ?: 'Video reward';
 $rewardTitle = trim((string)($campaign['reward_template_title'] ?? '')) ?: 'Campaign reward';
-$rewardDescription = trim((string)($campaign['reward_template_description'] ?? '')) ?: 'Complete the watch milestone to unlock this reward in your Microgifter Inbox.';
-$rewardValueCents = max(0, (int)($campaign['value_amount_cents'] ?? 0));
-$rewardCurrency = strtoupper(trim((string)($campaign['currency'] ?? 'USD')) ?: 'USD');
-$rewardValue = $rewardValueCents > 0 ? '$' . number_format($rewardValueCents / 100, 2) . ' ' . $rewardCurrency : 'Reward';
 $firstMilestone = $milestones[0]['percent'] ?? $requiredPercent;
+$initialStatus = 'Enter your info to start watching.';
 ?>
 <section class="mg-rl-page mg-rl-watch" data-watch-video-reward data-campaign-id="<?= mg_e((string)$campaign['public_id']) ?>" data-video-provider="<?= mg_e($provider) ?>" data-video-id="<?= mg_e($videoId) ?>" data-uploaded-video-url="<?= mg_e((string)$uploadedUrl) ?>" data-uploaded-asset-id="<?= mg_e($uploadedAssetId) ?>" data-required-percent="<?= mg_e((string)$requiredPercent) ?>">
   <div class="mg-rl-bg"<?= $coverUrl ? ' style="background-image:url(' . mg_e($coverUrl) . ')"' : '' ?>></div>
@@ -98,6 +94,12 @@ $firstMilestone = $milestones[0]['percent'] ?? $requiredPercent;
         <div class="mg-rl-video-shell"><?php if ($provider === 'uploaded'): ?><video data-watch-uploaded-player controls playsinline preload="metadata" src="<?= mg_e((string)$uploadedUrl) ?>"></video><?php else: ?><div id="mg-watch-video-player"></div><?php endif; ?><div class="mg-rl-video-overlay"><span class="mg-rl-play">▶</span></div></div>
         <div class="mg-rl-track" style="margin-top:16px"><div class="mg-rl-art"><?php if ($mediaImageUrl): ?><img src="<?= mg_e($mediaImageUrl) ?>" alt="<?= mg_e($videoTitle) ?> artwork"><span>Now Playing</span><?php else: ?><div class="mg-rl-art-placeholder">Video</div><?php endif; ?></div><div class="mg-rl-track-copy"><small>Now Playing</small><strong><?= mg_e($videoTitle) ?></strong><em><?= mg_e((string)($campaign['reward_template_title'] ?? 'Watch reward')) ?></em></div></div>
       </section>
+      <aside class="mg-rl-join mg-rl-join-mobile">
+        <div class="mg-rl-profile"><div class="mg-rl-avatar"><?php if ($avatarUrl): ?><img src="<?= mg_e($avatarUrl) ?>" alt="<?= mg_e($merchantName) ?> profile image"><?php else: ?><span><?= mg_e(mg_watch_reward_initials($merchantName)) ?></span><?php endif; ?></div><div><h2><?= mg_e($merchantName) ?></h2><?php if (!empty($campaign['merchant_profile_headline'])): ?><p><?= mg_e((string)$campaign['merchant_profile_headline']) ?></p><?php endif; ?></div></div>
+        <div class="mg-rl-tabs" aria-label="Campaign steps"><span>1. Join</span><span>2. Watch</span><span>3. Rewards</span></div>
+        <form class="mg-rl-form" data-watch-reward-form novalidate><input type="hidden" name="campaign_id" value="<?= mg_e((string)$campaign['public_id']) ?>"><h3>Join this campaign</h3><p>Enter your details to get started.</p><label>Name<input name="name" placeholder="Full Name" maxlength="180" value="<?= mg_e($prefillName) ?>"></label><label>Email<input name="email" type="email" required placeholder="Email Address" maxlength="255" value="<?= mg_e($prefillEmail) ?>"></label><label>Phone <span>(optional)</span><input name="phone" maxlength="60" placeholder="Optional"></label><button class="mg-rl-btn mg-rl-btn-dark" type="submit">Start Watching &amp; Join Campaign</button></form>
+        <div class="mg-public-campaign-status" data-watch-reward-status><?= mg_e($initialStatus) ?></div>
+      </aside>
       <section class="mg-rl-bottom">
         <article class="mg-rl-card"><div class="mg-rl-card-head"><span class="mg-rl-icon">📈</span><h2>Your Stats</h2></div><span class="mg-rl-big">0</span><p>Points Earned <span class="mg-rl-pill">Start watching</span></p><div class="mg-rl-stat-grid"><div class="mg-rl-stat"><b>0</b><span>Videos</span></div><div class="mg-rl-stat"><b>0</b><span>Rewards</span></div><div class="mg-rl-stat"><b><?= mg_e((string)$requiredPercent) ?>%</b><span>Target</span></div></div></article>
         <article class="mg-rl-card"><div class="mg-rl-card-head"><span class="mg-rl-icon">🎁</span><div><span class="mg-rl-eyebrow">Reward History</span><h3>Issued rewards and Inbox status</h3></div></div><ul class="mg-rl-list" data-watch-reward-issue-history><li>No rewards issued yet.</li></ul><div class="mg-public-campaign-result" data-watch-reward-result></div></article>
@@ -105,15 +107,16 @@ $firstMilestone = $milestones[0]['percent'] ?? $requiredPercent;
       </section>
       <?php endif; ?>
     </div>
-    <aside class="mg-rl-join">
+    <aside class="mg-rl-join mg-rl-join-desktop">
       <div class="mg-rl-profile"><div class="mg-rl-avatar"><?php if ($avatarUrl): ?><img src="<?= mg_e($avatarUrl) ?>" alt="<?= mg_e($merchantName) ?> profile image"><?php else: ?><span><?= mg_e(mg_watch_reward_initials($merchantName)) ?></span><?php endif; ?></div><div><h2><?= mg_e($merchantName) ?></h2><?php if (!empty($campaign['merchant_profile_headline'])): ?><p><?= mg_e((string)$campaign['merchant_profile_headline']) ?></p><?php endif; ?></div></div>
       <div class="mg-rl-tabs" aria-label="Campaign steps"><span>1. Join</span><span>2. Watch</span><span>3. Rewards</span></div>
       <form class="mg-rl-form" data-watch-reward-form novalidate><input type="hidden" name="campaign_id" value="<?= mg_e((string)$campaign['public_id']) ?>"><h3>Join this campaign</h3><p>Enter your details to get started.</p><label>Name<input name="name" placeholder="Full Name" maxlength="180" value="<?= mg_e($prefillName) ?>"></label><label>Email<input name="email" type="email" required placeholder="Email Address" maxlength="255" value="<?= mg_e($prefillEmail) ?>"></label><label>Phone <span>(optional)</span><input name="phone" maxlength="60" placeholder="Optional"></label><button class="mg-rl-btn mg-rl-btn-dark" type="submit">Start Watching &amp; Join Campaign</button></form>
-      <div class="mg-public-campaign-status" data-watch-reward-status>Enter your info to start watching.</div>
+      <div class="mg-public-campaign-status" data-watch-reward-status><?= mg_e($initialStatus) ?></div>
       <div class="mg-rl-inbox"><span class="mg-rl-inbox-icon">✉</span><div><h3>Reward &amp; Inbox Access</h3><p>Gift activity appears here when a milestone reward is sent. Open the Microgifter Inbox to view, manage, claim, redeem, or continue PPPM tracking.</p><a class="mg-rl-btn mg-rl-btn-soft" href="/inbox.php">Open Microgifter Inbox</a></div></div>
       <div class="mg-rl-notice"><div><strong>Campaign Notice</strong><ul data-watch-reward-notifications><li>Waiting for watcher session.</li></ul></div><a class="mg-rl-btn mg-rl-btn-soft" href="/inbox.php">View Inbox</a></div>
     </aside>
   </div>
+  <div class="mg-rl-mobile-dock" data-rl-mobile-dock><button class="mg-rl-mobile-toggle" type="button" data-rl-mobile-toggle aria-expanded="false"><i></i><span><strong>Participant Status</strong><small data-watch-reward-status><?= mg_e($initialStatus) ?></small></span><b>Details</b></button><div class="mg-rl-mobile-drawer" data-rl-mobile-drawer hidden><h3>Reward Activity</h3><div class="mg-rl-mobile-drawer-section"><strong>Current status</strong><p data-watch-reward-status><?= mg_e($initialStatus) ?></p></div><div class="mg-rl-mobile-drawer-section"><strong>Campaign notice</strong><ul class="mg-rl-list" data-watch-reward-notifications><li>Waiting for watcher session.</li></ul></div><div class="mg-rl-mobile-drawer-section"><strong>Watch activity</strong><ul class="mg-rl-list" data-watch-reward-history><li>No watch activity yet.</li></ul></div><div class="mg-rl-mobile-drawer-section"><strong>Issued rewards</strong><ul class="mg-rl-list" data-watch-reward-issue-history><li>No rewards issued yet.</li></ul></div><a class="mg-rl-btn mg-rl-btn-soft" href="/inbox.php">Open Microgifter Inbox</a></div></div>
 </section>
 <?php if ($provider === 'youtube'): ?><script src="https://www.youtube.com/iframe_api" async></script><?php endif; ?>
 <?php endif; require __DIR__ . '/includes/footer.php'; ?>
