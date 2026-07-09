@@ -13,4 +13,5 @@ echo '<scr' . 'ipt src="/assets/js/merchant-crm.js" defer></scr' . 'ipt>';
 echo '<scr' . 'ipt src="/assets/js/merchant-crm-contact-stats.js" defer></scr' . 'ipt>';
 echo '<scr' . 'ipt src="/assets/js/merchant-crm-messages.js" defer></scr' . 'ipt>';
 echo '<scr' . 'ipt src="/assets/js/merchant-crm-retention-playbooks.js" defer></scr' . 'ipt>';
-require __DIR__ . '/includes/footer.php';
+echo '<scr' . 'ipt src="/assets/js/crm-media-segments.js" defer></scr' . 'ipt>';
+require __DIR__ . '/includes/footer.php'; ?>
