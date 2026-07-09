@@ -20,6 +20,7 @@ $target = match ($campaignType) {
     'qr_reward_drop' => 'qr-pickup.php',
     'survey_feedback_reward' => 'survey-feedback.php',
     'check_in_reward' => 'check-in.php',
+    'instant_win_reward' => 'instant-win.php',
     'referral_reward', 'birthday_vip', 'agent_offer' => 'engage.php',
     default => 'engage.php',
 };
