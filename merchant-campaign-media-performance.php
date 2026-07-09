@@ -48,9 +48,9 @@ require __DIR__ . '/includes/header.php';
       <?php else: ?>
         <section class="mg-embed-analytics-hero">
           <div>
-            <span class="mg-eyebrow">Campaign Media Follow-Up Actions v1</span>
+            <span class="mg-eyebrow">Saved CRM Media Segments v1</span>
             <h1 data-media-title>Watch / Listen Performance</h1>
-            <p data-media-description>Review customer-level starts, progress, milestone rewards, Inbox / PPPM handoff, claims, redemptions, and attribution for a media reward campaign.</p>
+            <p data-media-description>Review, save, reopen, export, and act on reusable dynamic Watch/Listen CRM audience segments.</p>
           </div>
           <form class="mg-embed-analytics-filters" data-media-performance-filters>
             <label>Campaign
@@ -101,12 +101,21 @@ require __DIR__ . '/includes/header.php';
               <input data-media-search placeholder="Name, email, phone, source">
             </label>
             <div class="mg-embed-analytics-actions">
-              <a class="mg-btn mg-btn-primary" href="#" data-media-export>Export visible CSV</a>
+              <button class="mg-btn mg-btn-primary" type="button" data-media-save-segment>Save Segment</button>
+              <a class="mg-btn mg-btn-soft" href="#" data-media-export>Export visible CSV</a>
               <a class="mg-btn mg-btn-soft" href="#" data-media-export-all>Export all CSV</a>
               <a class="mg-btn mg-btn-ghost" href="#" data-media-crm-campaign>Open CRM Campaign</a>
             </div>
           </div>
           <div class="mg-embed-analytics-events" data-media-segment-summary></div>
+        </section>
+
+        <section class="mg-embed-analytics-panel" data-media-saved-segment-panel>
+          <div class="mg-panel-head">
+            <div><span class="mg-eyebrow">Saved Segments</span><h2>Reusable media CRM audiences</h2><p>Dynamic segments refresh from the current campaign rules, not static snapshots.</p></div>
+            <div class="mg-heading-actions"><button class="mg-btn mg-btn-soft" type="button" data-media-refresh-segments>Refresh segments</button></div>
+          </div>
+          <div class="mg-embed-analytics-events" data-media-saved-segments><article><b>Loading saved segments...</b><span>Import the SQL migration if this stays empty.</span></article></div>
         </section>
 
         <section class="mg-embed-analytics-grid">
