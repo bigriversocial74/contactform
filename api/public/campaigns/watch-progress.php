@@ -50,7 +50,7 @@ function mg_watch_reward_issue(PDO $pdo, array $campaign, array $contact, ?int $
     $walletDbId = (int)$pdo->lastInsertId(); $pdo->prepare('UPDATE campaigns SET issued_count=issued_count+1, updated_at=NOW() WHERE id=?')->execute([(int)$campaign['id']]); $pdo->prepare('UPDATE reward_templates SET issued_count=issued_count+1, updated_at=NOW() WHERE id=?')->execute([(int)$template['id']]);
     $bridge = mg_watch_reward_bridge($pdo, $campaign, $template, $contact, $walletDbId, $walletPublicId, $userId, $expiresAt, $percent);
     mg_watch_reward_event($pdo, $campaign, $walletDbId, (int)$contact['id'], 'watch_reward.issued', ['wallet_item_id'=>$walletPublicId,'milestone_percent'=>$percent,'reward_template_id'=>(string)$template['public_id'],'watch_percent'=>$watchPercent,'pppm_bridge'=>$bridge,'stamp_ledger_entry_id'=>$stampLedger['entry']['entry_id'] ?? null]);
-    return ['wallet_item_id'=>$walletPublicId,'reward_title'=>(string)$template['title'],'percent'=>$percent,'expires_at'=>$expiresAt,'pppm_bridge'=>$bridge,'inbox_url'=>'/wallet.php'];
+    return ['wallet_item_id'=>$walletPublicId,'reward_title'=>(string)$template['title'],'percent'=>$percent,'expires_at'=>$expiresAt,'pppm_bridge'=>$bridge,'inbox_url'=>'/inbox.php'];
 }
 
 mg_require_method('POST'); $input = mg_input(); $pdo = mg_db();
