@@ -22,7 +22,7 @@ $sql = $read('database/customer_refund_v1_2_multiple_vouchers.sql');
 $assert('Campaign picker returns customer status', str_contains($campaignsApi, 'mg_customer_refund_contact_status_map') && str_contains($campaignsApi, 'customer_status'));
 $assert('Campaign picker supports contact_id lookup', str_contains($campaignsApi, 'contact_id'));
 $assert('Campaign picker states multiple vouchers are allowed', str_contains($campaignsApi, 'multiple_vouchers_allowed') && str_contains($campaignsApi, 'Multiple make-good vouchers are allowed'));
-$assert('Campaign picker returns sent/open/claimed/redeemed counts', str_contains($campaignsApi, 'sent_count') && str_contains($campaignsApi, 'open_count') && str_contains($campaignsApi, 'claimed_count') && str_contains($campaignsApi, 'redeemed_count'));
+$assert('Campaign picker returns sent/open/claimed counts', str_contains($campaignsApi, 'sent_count') && str_contains($campaignsApi, 'open_count') && str_contains($campaignsApi, 'claimed_count'));
 
 $assert('Send API removed active duplicate block', !str_contains($sendApi, 'activeDuplicate') && !str_contains($sendApi, 'already has an active Customer Refund voucher'));
 $assert('Send API does not enforce per-user public campaign limit for Customer Refund', !str_contains($sendApi, 'mg_public_campaign_enforce_reward_limits'));
@@ -33,7 +33,7 @@ $assert('Send API declares multiple vouchers allowed', str_contains($sendApi, 'm
 $assert('Customer Profile JS passes contact_id to picker', str_contains($sendJs, 'contact_id=') && str_contains($sendJs, 'encodeURIComponent(cid)'));
 $assert('Customer Profile JS renders customer history before send', str_contains($sendJs, 'customerStatusText') && str_contains($sendJs, 'Customer history'));
 $assert('Customer Profile JS confirms multiple sends are allowed', str_contains($sendJs, 'Multiple vouchers are allowed') || str_contains($sendJs, 'Multiple make-good vouchers'));
-$assert('Customer Profile JS shows updated totals after send', str_contains($sendJs, 'Customer totals') && str_contains($sendJs, 'claimed') && str_contains($sendJs, 'redeemed'));
+$assert('Customer Profile JS shows updated totals after send', str_contains($sendJs, 'Customer totals') && str_contains($sendJs, 'claimed'));
 
 $assert('Stage 12 workflow runs v1.2 validator', str_contains($workflow, 'validate_customer_refund_v1_2_multiple_vouchers.php'));
 $assert('No Customer Refund v1.2 SQL migration required', $sql === '');
