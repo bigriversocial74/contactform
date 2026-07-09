@@ -6,7 +6,7 @@ require_once __DIR__ . '/includes/campaign-types.php';
 $page_title = 'Watch Video Reward | Microgifter';
 $page_section = 'campaign';
 $header_mode = 'public';
-$page_styles = ['/assets/css/public-campaign-pages.css', '/assets/css/public-campaign-polish-v1.css'];
+$page_styles = ['/assets/css/public-campaign-pages.css', '/assets/css/public-campaign-polish-v1.css', '/assets/css/listen-watch-media-flow-v1.css'];
 $page_scripts = ['/assets/js/public-watch-video-reward.js'];
 
 function mg_watch_reward_safe_url(mixed $value, bool $allowRelative = true): ?string
@@ -40,6 +40,7 @@ $provider = in_array((string)($rules['video_provider'] ?? 'youtube'), ['youtube'
 $videoId = trim((string)($rules['youtube_video_id'] ?? ''));
 $uploadedUrl = mg_watch_reward_safe_url($rules['uploaded_video_url'] ?? null, true);
 $uploadedAssetId = trim((string)($rules['uploaded_asset_id'] ?? ''));
+$mediaImageUrl = mg_watch_reward_safe_url($rules['media_image_url'] ?? null, true);
 $milestones = is_array($rules['milestones'] ?? null) ? $rules['milestones'] : [];
 $requiredPercent = (int)($rules['required_percent'] ?? 80);
 $merchantName = trim((string)($campaign['merchant_profile_display_name'] ?? '')) ?: (trim((string)($campaign['merchant_user_display_name'] ?? '')) ?: (trim((string)($campaign['merchant_user_full_name'] ?? '')) ?: 'Microgifter merchant'));
@@ -58,7 +59,7 @@ $hasVideo = $provider === 'uploaded' ? $uploadedUrl !== '' : $videoId !== '';
       <div class="mg-public-campaign-profile-card mg-public-campaign-form-profile"><div class="mg-public-campaign-avatar"><?php if ($avatarUrl): ?><img src="<?= mg_e($avatarUrl) ?>" alt="<?= mg_e($merchantName) ?> profile image"><?php else: ?><span><?= mg_e(mg_watch_reward_initials($merchantName)) ?></span><?php endif; ?></div><div class="mg-public-campaign-profile-copy"><span class="mg-public-campaign-eyebrow">Video rewards</span><h2><?= mg_e($merchantName) ?></h2><?php if (!empty($campaign['merchant_profile_headline'])): ?><p><?= mg_e((string)$campaign['merchant_profile_headline']) ?></p><?php endif; ?><div class="mg-public-campaign-profile-stats"><span>Inbox delivery</span><span><?= mg_e($requiredPercent) ?>% target</span></div></div></div>
       <?php if (!$hasVideo): ?><div class="mg-public-campaign-result is-visible"><strong>This Watch Video Reward campaign needs a valid YouTube or uploaded video before it can be viewed.</strong></div><?php else: ?>
       <form class="mg-public-campaign-form" data-watch-reward-form novalidate><input type="hidden" name="campaign_id" value="<?= mg_e((string)$campaign['public_id']) ?>"><div class="mg-public-campaign-field-grid"><label>Name<input name="name" placeholder="Your name" maxlength="180" value="<?= mg_e($prefillName) ?>"></label><label>Email<input name="email" type="email" required placeholder="you@example.com" maxlength="255" value="<?= mg_e($prefillEmail) ?>"></label><label class="mg-public-campaign-field-wide">Phone <span>(optional)</span><input name="phone" maxlength="60" placeholder="Optional"></label></div><button class="mg-btn mg-btn-primary mg-public-campaign-primary-action" type="submit">Start video rewards <span aria-hidden="true">→</span></button></form>
-      <div class="mg-public-campaign-reward mg-public-campaign-reward-tab"><span>Gift milestones</span><strong><?= mg_e((string)($campaign['reward_template_title'] ?? 'Video reward')) ?></strong><em><?= mg_e($requiredPercent) ?>% watch target</em><p><?= mg_e(count($milestones) ? implode(' · ', array_map(static fn($m): string => (string)($m['percent'] ?? '') . '% gift', $milestones)) : 'Watch progress unlocks the attached reward.') ?></p><div class="mg-public-campaign-reward-meta"><span>Delivered to Inbox</span><span>PPPM flow</span></div></div>
+      <div class="mg-public-campaign-reward mg-public-campaign-reward-tab mg-watch-track-row"><div class="mg-media-art-thumb"><?php if ($mediaImageUrl): ?><img src="<?= mg_e($mediaImageUrl) ?>" alt="<?= mg_e((string)($campaign['title'] ?? 'Video reward')) ?> artwork"><?php else: ?><div class="mg-media-art-placeholder">Video</div><?php endif; ?></div><div><span>Video reward</span><strong><?= mg_e((string)($campaign['title'] ?? 'Video reward')) ?></strong><em><?= mg_e((string)($campaign['reward_template_title'] ?? 'Watch reward')) ?></em></div></div>
       <div class="mg-public-campaign-video" data-watch-video-shell hidden><?php if ($provider === 'uploaded'): ?><video data-watch-uploaded-player controls playsinline preload="metadata" src="<?= mg_e((string)$uploadedUrl) ?>"></video><?php else: ?><div id="mg-watch-video-player"></div><?php endif; ?></div>
       <div class="mg-public-campaign-status" data-watch-reward-status>Enter your info to start watching.</div>
       <div class="mg-campaign-checklist"><span class="mg-eyebrow">Progress</span><ul data-watch-reward-milestones><?php foreach ($milestones as $m): ?><li class="is-warn" data-watch-milestone="<?= mg_e((string)($m['percent'] ?? '')) ?>"><b></b><span><?= mg_e((string)($m['percent'] ?? '')) ?>% — <?= mg_e((string)($m['label'] ?? 'Gift milestone')) ?></span></li><?php endforeach; ?></ul></div><div class="mg-public-campaign-result" data-watch-reward-result></div>
@@ -67,4 +68,4 @@ $hasVideo = $provider === 'uploaded' ? $uploadedUrl !== '' : $videoId !== '';
   </div>
 </section>
 <?php if ($provider === 'youtube'): ?><script src="https://www.youtube.com/iframe_api" async></script><?php endif; ?>
-<?php endif; require __DIR__ . '/includes/footer.php';
+<?php endif; require __DIR__ . '/includes/footer.php'; ?>
