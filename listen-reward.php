@@ -6,7 +6,7 @@ require_once __DIR__ . '/includes/campaign-types.php';
 $page_title = 'Listen Music Reward | Microgifter';
 $page_section = 'campaign';
 $header_mode = 'public';
-$page_styles = ['/assets/css/public-campaign-pages.css', '/assets/css/public-campaign-polish-v1.css', '/assets/css/listen-watch-media-flow-v1.css'];
+$page_styles = ['/assets/css/public-campaign-pages.css', '/assets/css/public-campaign-polish-v1.css', '/assets/css/listen-watch-media-flow-v1.css', '/assets/css/watch-listen-centering-fix-v1.css'];
 $page_scripts = ['/assets/js/public-listen-music-reward.js'];
 
 function mg_listen_reward_safe_url(mixed $value, bool $allowRelative = true): ?string
