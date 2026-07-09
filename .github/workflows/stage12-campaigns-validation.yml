@@ -13,6 +13,7 @@ on:
       - 'listen-reward.php'
       - 'check-in-reward.php'
       - 'instant-win.php'
+      - 'stamp-card.php'
       - 'merchant-wallet-redemptions.php'
       - 'merchant-campaigns.php'
       - 'merchant-reward-templates.php'
@@ -30,6 +31,7 @@ on:
       - 'assets/js/public-listen-music-reward.js'
       - 'assets/js/public-check-in-reward.js'
       - 'assets/js/public-instant-win.js'
+      - 'assets/js/public-stamp-card.js'
       - 'scripts/validate_stage12*.php'
       - 'scripts/validate_campaign_types_*.php'
       - 'scripts/validate_customer_refund_*.php'
@@ -53,6 +55,7 @@ on:
       - 'listen-reward.php'
       - 'check-in-reward.php'
       - 'instant-win.php'
+      - 'stamp-card.php'
       - 'merchant-wallet-redemptions.php'
       - 'merchant-campaigns.php'
       - 'merchant-reward-templates.php'
@@ -70,6 +73,7 @@ on:
       - 'assets/js/public-listen-music-reward.js'
       - 'assets/js/public-check-in-reward.js'
       - 'assets/js/public-instant-win.js'
+      - 'assets/js/public-stamp-card.js'
       - 'scripts/validate_stage12*.php'
       - 'scripts/validate_campaign_types_*.php'
       - 'scripts/validate_customer_refund_*.php'
@@ -101,6 +105,7 @@ jobs:
           php -l listen-reward.php
           php -l check-in-reward.php
           php -l instant-win.php
+          php -l stamp-card.php
           php -l merchant-wallet-redemptions.php
           php -l merchant-campaigns.php
           php -l merchant-reward-templates.php
@@ -131,6 +136,7 @@ jobs:
           php -l api/public/campaigns/survey-feedback.php
           php -l api/public/campaigns/check-in.php
           php -l api/public/campaigns/instant-win.php
+          php -l api/public/campaigns/stamp-card.php
           php -l api/public/campaigns/watch-progress.php
           php -l api/public/campaigns/listen-progress.php
           php -l api/public/offers/search.php
