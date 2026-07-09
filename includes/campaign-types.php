@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * Microgifter Campaign Type Registry v1.1
+ * Microgifter Campaign Type Registry v1.4
  *
  * Central source of truth for merchant campaign type behavior, labels,
  * public routes, CRM sources, defaults, and internal-only flags.
@@ -12,306 +12,47 @@ function mg_campaign_type_registry(): array
 {
     return [
         'newsletter_signup' => [
-            'key' => 'newsletter_signup',
-            'label' => 'Signup Reward',
-            'legacy_label' => 'Newsletter Signup',
-            'category' => 'customer_acquisition',
-            'description' => 'Capture customer contact information and issue a welcome reward.',
-            'merchant_use_case' => 'List growth, website forms, first-time customer incentives, and general lead capture.',
-            'public_path' => '/newsletter-signup.php',
-            'submit_endpoint' => '/api/public/campaigns/signup.php',
-            'source_type' => 'newsletter_signup',
-            'event_type' => 'form.submitted',
-            'requires_reward_template' => true,
-            'public_enabled' => true,
-            'crm_enabled' => true,
-            'embed_allowed' => true,
-            'internal_only' => false,
-            'wallet_issue_mode' => 'instant_reward',
-            'default_status' => 'draft',
-            'analytics_bucket' => 'signup_reward',
-            'default_copy' => [
-                'title' => 'Join the list and get a reward',
-                'form_headline' => 'Join our rewards list',
-                'description' => 'Sign up for merchant updates and receive a wallet-ready reward.',
-                'form_description' => 'Enter your info to join the list and unlock your reward.',
-                'success_message' => 'Signup reward issued.',
-                'quantity_limit' => '',
-                'per_user_limit' => '1',
-            ],
-            'rules_schema' => ['mode' => 'instant_reward', 'entry_reward_enabled' => true],
+            'key' => 'newsletter_signup','label' => 'Signup Reward','legacy_label' => 'Newsletter Signup','category' => 'customer_acquisition','description' => 'Capture customer contact information and issue a welcome reward.','merchant_use_case' => 'List growth, website forms, first-time customer incentives, and general lead capture.','public_path' => '/newsletter-signup.php','submit_endpoint' => '/api/public/campaigns/signup.php','source_type' => 'newsletter_signup','event_type' => 'form.submitted','requires_reward_template' => true,'public_enabled' => true,'crm_enabled' => true,'embed_allowed' => true,'internal_only' => false,'wallet_issue_mode' => 'instant_reward','default_status' => 'draft','analytics_bucket' => 'signup_reward','default_copy' => ['title' => 'Join the list and get a reward','form_headline' => 'Join our rewards list','description' => 'Sign up for merchant updates and receive a wallet-ready reward.','form_description' => 'Enter your info to join the list and unlock your reward.','success_message' => 'Signup reward issued.','quantity_limit' => '','per_user_limit' => '1'],'rules_schema' => ['mode' => 'instant_reward', 'entry_reward_enabled' => true],
         ],
         'contest_giveaway' => [
-            'key' => 'contest_giveaway',
-            'label' => 'Contest / Giveaway',
-            'category' => 'growth_loop',
-            'description' => 'Collect contest entries and issue prizes by first-X, instant, manual, or random draw rules.',
-            'merchant_use_case' => 'Giveaways, prize drawings, social contests, launch promos, and event entries.',
-            'public_path' => '/contest.php',
-            'submit_endpoint' => '/api/public/campaigns/contest-entry.php',
-            'source_type' => 'contest_entry',
-            'event_type' => 'contest.entered',
-            'requires_reward_template' => true,
-            'public_enabled' => true,
-            'crm_enabled' => true,
-            'embed_allowed' => true,
-            'internal_only' => false,
-            'wallet_issue_mode' => 'rules_based',
-            'default_status' => 'draft',
-            'analytics_bucket' => 'contest',
-            'default_copy' => [
-                'title' => 'Enter to win a local reward',
-                'form_headline' => 'Enter the giveaway',
-                'description' => 'Enter the campaign for a chance to win a merchant reward.',
-                'form_description' => 'Enter your info below to join the giveaway.',
-                'success_message' => 'Contest entry recorded.',
-                'quantity_limit' => '100',
-                'per_user_limit' => '1',
-                'contest_mode' => 'first_x',
-                'contest_winner_limit' => '100',
-                'contest_rules' => 'No purchase necessary. One entry per person.',
-            ],
-            'rules_schema' => [
-                'mode' => ['first_x', 'instant_reward', 'random_draw', 'manual_winner'],
-                'winner_limit' => true,
-                'draw_at' => true,
-                'entry_reward_enabled' => true,
-                'official_rules' => true,
-            ],
+            'key' => 'contest_giveaway','label' => 'Contest / Giveaway','category' => 'growth_loop','description' => 'Collect contest entries and issue prizes by first-X, instant, manual, or random draw rules.','merchant_use_case' => 'Giveaways, prize drawings, social contests, launch promos, and event entries.','public_path' => '/contest.php','submit_endpoint' => '/api/public/campaigns/contest-entry.php','source_type' => 'contest_entry','event_type' => 'contest.entered','requires_reward_template' => true,'public_enabled' => true,'crm_enabled' => true,'embed_allowed' => true,'internal_only' => false,'wallet_issue_mode' => 'rules_based','default_status' => 'draft','analytics_bucket' => 'contest','default_copy' => ['title' => 'Enter to win a local reward','form_headline' => 'Enter the giveaway','description' => 'Enter the campaign for a chance to win a merchant reward.','form_description' => 'Enter your info below to join the giveaway.','success_message' => 'Contest entry recorded.','quantity_limit' => '100','per_user_limit' => '1','contest_mode' => 'first_x','contest_winner_limit' => '100','contest_rules' => 'No purchase necessary. One entry per person.'],'rules_schema' => ['mode' => ['first_x', 'instant_reward', 'random_draw', 'manual_winner'],'winner_limit' => true,'draw_at' => true,'entry_reward_enabled' => true,'official_rules' => true],
         ],
         'qr_reward_drop' => [
-            'key' => 'qr_reward_drop',
-            'label' => 'QR Reward Drop',
-            'category' => 'customer_acquisition',
-            'description' => 'Turn physical QR placements into wallet-ready reward claims.',
-            'merchant_use_case' => 'Table tents, flyers, events, in-store posters, hospitality promotions, and local discovery.',
-            'public_path' => '/qr-reward.php',
-            'submit_endpoint' => '/api/public/campaigns/qr-pickup.php',
-            'source_type' => 'qr_scan',
-            'event_type' => 'qr.scanned',
-            'requires_reward_template' => true,
-            'public_enabled' => true,
-            'crm_enabled' => true,
-            'embed_allowed' => true,
-            'internal_only' => false,
-            'wallet_issue_mode' => 'instant_reward',
-            'default_status' => 'draft',
-            'analytics_bucket' => 'qr_drop',
-            'default_copy' => [
-                'title' => 'Scan and claim this reward',
-                'form_headline' => 'Claim your QR reward',
-                'description' => 'Scan or open this QR reward drop to add the reward to your wallet.',
-                'form_description' => 'Enter your info to claim this QR reward.',
-                'success_message' => 'QR reward added to wallet.',
-                'quantity_limit' => '100',
-                'per_user_limit' => '1',
-            ],
-            'rules_schema' => ['mode' => 'qr_claim', 'entry_reward_enabled' => true],
+            'key' => 'qr_reward_drop','label' => 'QR Reward Drop','category' => 'customer_acquisition','description' => 'Turn physical QR placements into wallet-ready reward claims.','merchant_use_case' => 'Table tents, flyers, events, in-store posters, hospitality promotions, and local discovery.','public_path' => '/qr-reward.php','submit_endpoint' => '/api/public/campaigns/qr-pickup.php','source_type' => 'qr_scan','event_type' => 'qr.scanned','requires_reward_template' => true,'public_enabled' => true,'crm_enabled' => true,'embed_allowed' => true,'internal_only' => false,'wallet_issue_mode' => 'instant_reward','default_status' => 'draft','analytics_bucket' => 'qr_drop','default_copy' => ['title' => 'Scan and claim this reward','form_headline' => 'Claim your QR reward','description' => 'Scan or open this QR reward drop to add the reward to your wallet.','form_description' => 'Enter your info to claim this QR reward.','success_message' => 'QR reward added to wallet.','quantity_limit' => '100','per_user_limit' => '1'],'rules_schema' => ['mode' => 'qr_claim', 'entry_reward_enabled' => true],
         ],
         'referral_reward' => [
-            'key' => 'referral_reward',
-            'label' => 'Referral Reward',
-            'category' => 'growth_loop',
-            'description' => 'Capture referral intent and issue a reward through the campaign wallet flow.',
-            'merchant_use_case' => 'Bring-a-friend offers, invite campaigns, community referrals, and word-of-mouth loops.',
-            'public_path' => '/referral-reward.php',
-            'submit_endpoint' => '/api/public/campaigns/engage.php',
-            'source_type' => 'referral',
-            'event_type' => 'campaign.engaged',
-            'requires_reward_template' => true,
-            'public_enabled' => true,
-            'crm_enabled' => true,
-            'embed_allowed' => true,
-            'internal_only' => false,
-            'wallet_issue_mode' => 'instant_reward',
-            'default_status' => 'draft',
-            'analytics_bucket' => 'referral',
-            'default_copy' => [
-                'title' => 'Refer a friend and get rewarded',
-                'form_headline' => 'Join the referral reward',
-                'description' => 'Capture referral interest and connect the customer to a merchant reward.',
-                'form_description' => 'Tell us who referred you or who you want to invite.',
-                'success_message' => 'Referral response recorded.',
-                'quantity_limit' => '',
-                'per_user_limit' => '1',
-                'referral_instructions' => 'Tell us who referred you or who you want to invite.',
-            ],
-            'rules_schema' => ['mode' => 'referral_capture', 'instructions' => true],
+            'key' => 'referral_reward','label' => 'Referral Reward','category' => 'growth_loop','description' => 'Capture referral intent and issue a reward through the campaign wallet flow.','merchant_use_case' => 'Bring-a-friend offers, invite campaigns, community referrals, and word-of-mouth loops.','public_path' => '/referral-reward.php','submit_endpoint' => '/api/public/campaigns/engage.php','source_type' => 'referral','event_type' => 'campaign.engaged','requires_reward_template' => true,'public_enabled' => true,'crm_enabled' => true,'embed_allowed' => true,'internal_only' => false,'wallet_issue_mode' => 'instant_reward','default_status' => 'draft','analytics_bucket' => 'referral','default_copy' => ['title' => 'Refer a friend and get rewarded','form_headline' => 'Join the referral reward','description' => 'Capture referral interest and connect the customer to a merchant reward.','form_description' => 'Tell us who referred you or who you want to invite.','success_message' => 'Referral response recorded.','quantity_limit' => '','per_user_limit' => '1','referral_instructions' => 'Tell us who referred you or who you want to invite.'],'rules_schema' => ['mode' => 'referral_capture', 'instructions' => true],
         ],
         'birthday_vip' => [
-            'key' => 'birthday_vip',
-            'label' => 'Birthday / VIP Club',
-            'legacy_label' => 'Birthday / VIP',
-            'category' => 'loyalty_retention',
-            'description' => 'Build a birthday or VIP list for retention rewards and loyalty follow-up.',
-            'merchant_use_case' => 'Birthday clubs, VIP enrollment, loyalty lists, and recurring customer retention.',
-            'public_path' => '/birthday-vip.php',
-            'submit_endpoint' => '/api/public/campaigns/engage.php',
-            'source_type' => 'birthday_vip',
-            'event_type' => 'campaign.engaged',
-            'requires_reward_template' => true,
-            'public_enabled' => true,
-            'crm_enabled' => true,
-            'embed_allowed' => true,
-            'internal_only' => false,
-            'wallet_issue_mode' => 'instant_reward',
-            'default_status' => 'draft',
-            'analytics_bucket' => 'birthday_vip',
-            'default_copy' => [
-                'title' => 'Join the birthday VIP list',
-                'form_headline' => 'Join our birthday club',
-                'description' => 'Collect birthday month and VIP interest for future merchant rewards.',
-                'form_description' => 'Enter your info and birthday month to join the VIP list.',
-                'success_message' => 'Birthday VIP signup recorded.',
-                'quantity_limit' => '',
-                'per_user_limit' => '1',
-                'vip_instructions' => 'Join our birthday club and receive a reward during your birthday month.',
-            ],
-            'rules_schema' => ['mode' => 'birthday_capture', 'instructions' => true],
+            'key' => 'birthday_vip','label' => 'Birthday / VIP Club','legacy_label' => 'Birthday / VIP','category' => 'loyalty_retention','description' => 'Build a birthday or VIP list for retention rewards and loyalty follow-up.','merchant_use_case' => 'Birthday clubs, VIP enrollment, loyalty lists, and recurring customer retention.','public_path' => '/birthday-vip.php','submit_endpoint' => '/api/public/campaigns/engage.php','source_type' => 'birthday_vip','event_type' => 'campaign.engaged','requires_reward_template' => true,'public_enabled' => true,'crm_enabled' => true,'embed_allowed' => true,'internal_only' => false,'wallet_issue_mode' => 'instant_reward','default_status' => 'draft','analytics_bucket' => 'birthday_vip','default_copy' => ['title' => 'Join the birthday VIP list','form_headline' => 'Join our birthday club','description' => 'Collect birthday month and VIP interest for future merchant rewards.','form_description' => 'Enter your info and birthday month to join the VIP list.','success_message' => 'Birthday VIP signup recorded.','quantity_limit' => '','per_user_limit' => '1','vip_instructions' => 'Join our birthday club and receive a reward during your birthday month.'],'rules_schema' => ['mode' => 'birthday_capture', 'instructions' => true],
         ],
         'agent_offer' => [
-            'key' => 'agent_offer',
-            'label' => 'Agent Offer / Intent Capture',
-            'legacy_label' => 'Agent Offer',
-            'category' => 'agentic_commerce',
-            'description' => 'Capture customer intent for agent-discoverable merchant offers.',
-            'merchant_use_case' => 'AI-assisted local offer discovery, intent capture, and future agent-managed commerce.',
-            'public_path' => '/agent-offer.php',
-            'submit_endpoint' => '/api/public/campaigns/engage.php',
-            'source_type' => 'agent_discovery',
-            'event_type' => 'campaign.engaged',
-            'requires_reward_template' => true,
-            'public_enabled' => true,
-            'crm_enabled' => true,
-            'embed_allowed' => true,
-            'internal_only' => false,
-            'wallet_issue_mode' => 'instant_reward',
-            'default_status' => 'draft',
-            'analytics_bucket' => 'agent_offer',
-            'default_copy' => [
-                'title' => 'Tell us what local reward you want',
-                'form_headline' => 'Request a local offer',
-                'description' => 'Capture customer interest for agent-discoverable merchant offers.',
-                'form_description' => 'Tell the merchant what kind of offer interests you.',
-                'success_message' => 'Offer interest recorded.',
-                'quantity_limit' => '',
-                'per_user_limit' => '1',
-                'agent_offer_instructions' => 'Tell us what you are looking for and we will recommend a local reward.',
-            ],
-            'rules_schema' => ['mode' => 'agent_interest', 'instructions' => true],
+            'key' => 'agent_offer','label' => 'Agent Offer / Intent Capture','legacy_label' => 'Agent Offer','category' => 'agentic_commerce','description' => 'Capture customer intent for agent-discoverable merchant offers.','merchant_use_case' => 'AI-assisted local offer discovery, intent capture, and future agent-managed commerce.','public_path' => '/agent-offer.php','submit_endpoint' => '/api/public/campaigns/engage.php','source_type' => 'agent_discovery','event_type' => 'campaign.engaged','requires_reward_template' => true,'public_enabled' => true,'crm_enabled' => true,'embed_allowed' => true,'internal_only' => false,'wallet_issue_mode' => 'instant_reward','default_status' => 'draft','analytics_bucket' => 'agent_offer','default_copy' => ['title' => 'Tell us what local reward you want','form_headline' => 'Request a local offer','description' => 'Capture customer interest for agent-discoverable merchant offers.','form_description' => 'Tell the merchant what kind of reward or offer interests you.','success_message' => 'Offer interest recorded.','quantity_limit' => '','per_user_limit' => '1','agent_offer_instructions' => 'Tell us what you are looking for and we will recommend a local reward.'],'rules_schema' => ['mode' => 'agent_interest', 'instructions' => true],
+        ],
+        'watch_video_reward' => [
+            'key' => 'watch_video_reward','label' => 'Watch Video Reward','category' => 'engagement_rewards','description' => 'Reward customers for watching a YouTube video, with optional gift milestones by watch percentage.','merchant_use_case' => 'Product demos, artist videos, sponsor videos, training clips, hospitality promos, and watch-to-earn campaigns.','public_path' => '/watch-reward.php','submit_endpoint' => '/api/public/campaigns/watch-progress.php','source_type' => 'watch_video_reward','event_type' => 'watch_reward.started','requires_reward_template' => true,'public_enabled' => true,'crm_enabled' => true,'embed_allowed' => true,'internal_only' => false,'wallet_issue_mode' => 'video_milestone_reward','default_status' => 'draft','analytics_bucket' => 'watch_video_reward','default_copy' => ['title' => 'Watch the video and unlock rewards','form_headline' => 'Watch to unlock rewards','description' => 'Watch this YouTube video and Microgifter will send rewards to your wallet as you reach the milestones.','form_description' => 'Enter your info, watch the video, and unlock rewards based on watch progress.','success_message' => 'Video reward progress recorded.','quantity_limit' => '','per_user_limit' => '3','watch_video_url' => '','watch_video_required_percent' => '80','watch_video_milestone_1_percent' => '25','watch_video_milestone_2_percent' => '50','watch_video_milestone_3_percent' => '80'],'rules_schema' => ['mode' => 'youtube_watch_milestones','video_provider' => 'youtube','youtube_video_id' => true,'required_percent' => true,'milestones' => true],
         ],
         'customer_refund' => [
-            'key' => 'customer_refund',
-            'label' => 'Customer Refund / Make-Good',
-            'category' => 'loyalty_retention',
-            'description' => 'Merchant-only service recovery campaign for make-good vouchers and refund alternatives.',
-            'merchant_use_case' => 'Apology vouchers, service recovery, make-good sends, and customer-save workflows.',
-            'public_path' => '',
-            'submit_endpoint' => '',
-            'source_type' => 'customer_refund',
-            'event_type' => 'customer_refund.issued',
-            'requires_reward_template' => true,
-            'public_enabled' => false,
-            'crm_enabled' => true,
-            'embed_allowed' => false,
-            'internal_only' => true,
-            'wallet_issue_mode' => 'merchant_initiated',
-            'default_status' => 'draft',
-            'analytics_bucket' => 'customer_refund',
-            'default_copy' => [
-                'title' => 'Customer make-good voucher',
-                'form_headline' => 'Customer make-good voucher',
-                'description' => 'Merchant-only campaign for issuing a service recovery voucher to a known customer.',
-                'form_description' => 'Internal campaign. Customer submission page is disabled.',
-                'success_message' => 'Customer make-good voucher issued.',
-                'quantity_limit' => '',
-                'per_user_limit' => '1',
-            ],
-            'rules_schema' => ['mode' => 'merchant_initiated', 'internal_only' => true],
+            'key' => 'customer_refund','label' => 'Customer Refund / Make-Good','category' => 'loyalty_retention','description' => 'Merchant-only service recovery campaign for make-good vouchers and refund alternatives.','merchant_use_case' => 'Apology vouchers, service recovery, make-good sends, and customer-save workflows.','public_path' => '','submit_endpoint' => '','source_type' => 'customer_refund','event_type' => 'customer_refund.issued','requires_reward_template' => true,'public_enabled' => false,'crm_enabled' => true,'embed_allowed' => false,'internal_only' => true,'wallet_issue_mode' => 'merchant_initiated','default_status' => 'draft','analytics_bucket' => 'customer_refund','default_copy' => ['title' => 'Customer make-good voucher','form_headline' => 'Customer make-good voucher','description' => 'Merchant-only campaign for issuing a service recovery voucher to a known customer.','form_description' => 'Internal campaign. Customer submission page is disabled.','success_message' => 'Customer make-good voucher issued.','quantity_limit' => '','per_user_limit' => '1'],'rules_schema' => ['mode' => 'merchant_initiated', 'internal_only' => true],
         ],
     ];
 }
 
-function mg_campaign_type_get(string $type): ?array
-{
-    $registry = mg_campaign_type_registry();
-    return $registry[$type] ?? null;
-}
-
-function mg_campaign_type_keys(bool $includeInternal = true): array
-{
-    return array_keys(array_filter(mg_campaign_type_registry(), static fn(array $definition): bool => $includeInternal || empty($definition['internal_only'])));
-}
-
-function mg_campaign_type_is_valid(string $type, bool $includeInternal = true): bool
-{
-    return in_array($type, mg_campaign_type_keys($includeInternal), true);
-}
-
-function mg_campaign_type_label(string $type): string
-{
-    return (string)(mg_campaign_type_get($type)['label'] ?? 'Campaign');
-}
-
-function mg_campaign_type_public_path(string $type): string
-{
-    return (string)(mg_campaign_type_get($type)['public_path'] ?? '/campaign.php');
-}
-
-function mg_campaign_type_public_enabled(string $type): bool
-{
-    return !empty(mg_campaign_type_get($type)['public_enabled']);
-}
-
-function mg_campaign_type_submit_endpoint(string $type): string
-{
-    return (string)(mg_campaign_type_get($type)['submit_endpoint'] ?? '/api/public/campaigns/engage.php');
-}
-
-function mg_campaign_type_source(string $type): string
-{
-    return (string)(mg_campaign_type_get($type)['source_type'] ?? 'newsletter_signup');
-}
-
-function mg_campaign_type_event_type(string $type): string
-{
-    return (string)(mg_campaign_type_get($type)['event_type'] ?? 'campaign.engaged');
-}
-
-function mg_campaign_type_requires_reward_template(string $type, string $status = 'draft'): bool
-{
-    if ($status !== 'active') return false;
-    return !empty(mg_campaign_type_get($type)['requires_reward_template']);
-}
-
+function mg_campaign_type_get(string $type): ?array { $registry = mg_campaign_type_registry(); return $registry[$type] ?? null; }
+function mg_campaign_type_keys(bool $includeInternal = true): array { return array_keys(array_filter(mg_campaign_type_registry(), static fn(array $definition): bool => $includeInternal || empty($definition['internal_only']))); }
+function mg_campaign_type_is_valid(string $type, bool $includeInternal = true): bool { return in_array($type, mg_campaign_type_keys($includeInternal), true); }
+function mg_campaign_type_label(string $type): string { return (string)(mg_campaign_type_get($type)['label'] ?? 'Campaign'); }
+function mg_campaign_type_public_path(string $type): string { return (string)(mg_campaign_type_get($type)['public_path'] ?? '/campaign.php'); }
+function mg_campaign_type_public_enabled(string $type): bool { return !empty(mg_campaign_type_get($type)['public_enabled']); }
+function mg_campaign_type_submit_endpoint(string $type): string { return (string)(mg_campaign_type_get($type)['submit_endpoint'] ?? '/api/public/campaigns/engage.php'); }
+function mg_campaign_type_source(string $type): string { return (string)(mg_campaign_type_get($type)['source_type'] ?? 'newsletter_signup'); }
+function mg_campaign_type_event_type(string $type): string { return (string)(mg_campaign_type_get($type)['event_type'] ?? 'campaign.engaged'); }
+function mg_campaign_type_requires_reward_template(string $type, string $status = 'draft'): bool { if ($status !== 'active') return false; return !empty(mg_campaign_type_get($type)['requires_reward_template']); }
 function mg_campaign_type_options(bool $includeInternal = false): array
 {
-    return array_values(array_map(static function (array $definition): array {
-        return [
-            'key' => $definition['key'],
-            'label' => $definition['label'],
-            'category' => $definition['category'],
-            'description' => $definition['description'],
-            'internal_only' => !empty($definition['internal_only']),
-            'public_enabled' => !empty($definition['public_enabled']),
-        ];
-    }, array_filter(mg_campaign_type_registry(), static fn(array $definition): bool => $includeInternal || empty($definition['internal_only']))));
+    return array_values(array_map(static fn(array $definition): array => ['key' => $definition['key'],'label' => $definition['label'],'category' => $definition['category'],'description' => $definition['description'],'internal_only' => !empty($definition['internal_only']),'public_enabled' => !empty($definition['public_enabled'])], array_filter(mg_campaign_type_registry(), static fn(array $definition): bool => $includeInternal || empty($definition['internal_only']))));
 }
-
 function mg_campaign_type_client_registry(bool $includeInternal = false): array
 {
-    return array_values(array_map(static function (array $definition): array {
-        return [
-            'key' => $definition['key'],
-            'label' => $definition['label'],
-            'category' => $definition['category'],
-            'description' => $definition['description'],
-            'public_path' => $definition['public_path'],
-            'source_type' => $definition['source_type'],
-            'wallet_issue_mode' => $definition['wallet_issue_mode'],
-            'default_copy' => $definition['default_copy'],
-            'internal_only' => !empty($definition['internal_only']),
-            'public_enabled' => !empty($definition['public_enabled']),
-        ];
-    }, array_filter(mg_campaign_type_registry(), static fn(array $definition): bool => $includeInternal || empty($definition['internal_only']))));
+    return array_values(array_map(static fn(array $definition): array => ['key' => $definition['key'],'label' => $definition['label'],'category' => $definition['category'],'description' => $definition['description'],'public_path' => $definition['public_path'],'source_type' => $definition['source_type'],'wallet_issue_mode' => $definition['wallet_issue_mode'],'default_copy' => $definition['default_copy'],'internal_only' => !empty($definition['internal_only']),'public_enabled' => !empty($definition['public_enabled'])], array_filter(mg_campaign_type_registry(), static fn(array $definition): bool => $includeInternal || empty($definition['internal_only']))));
 }
