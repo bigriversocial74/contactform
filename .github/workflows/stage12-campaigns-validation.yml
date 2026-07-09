@@ -107,6 +107,7 @@ jobs:
           php -l scripts/validate_customer_refund_v1_crm_make_good.php
           php -l scripts/validate_customer_refund_v1_1_qa_send_history.php
           php -l scripts/validate_customer_refund_v1_2_multiple_vouchers.php
+          php -l scripts/validate_customer_refund_v1_3_status_language.php
 
       - name: Validate Stage 12 campaigns foundation
         shell: bash
@@ -119,3 +120,4 @@ jobs:
           php scripts/validate_customer_refund_v1_crm_make_good.php
           php scripts/validate_customer_refund_v1_1_qa_send_history.php
           php scripts/validate_customer_refund_v1_2_multiple_vouchers.php
+          php scripts/validate_customer_refund_v1_3_status_language.php
