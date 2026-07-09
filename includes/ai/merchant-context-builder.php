@@ -43,6 +43,17 @@ function mg_ai_context_rows(PDO $pdo, string $sql, array $params = [], int $limi
     return $rows;
 }
 
+function mg_ai_context_table_exists(PDO $pdo, string $table): bool
+{
+    try {
+        $stmt = $pdo->prepare('SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?');
+        $stmt->execute([$table]);
+        return (int)$stmt->fetchColumn() > 0;
+    } catch (Throwable) {
+        return false;
+    }
+}
+
 function mg_ai_context_counts(PDO $pdo, string $table, string $merchantColumn, int $merchantId, string $groupColumn, string $where = ''): array
 {
     $whereSql = $where !== '' ? (' AND ' . $where) : '';
@@ -52,6 +63,64 @@ function mg_ai_context_counts(PDO $pdo, string $table, string $merchantColumn, i
         [$merchantId],
         30
     );
+}
+
+function mg_ai_context_media_behavior_label(string $segment): string
+{
+    return match ($segment) {
+        'started_incomplete' => 'Started, did not finish',
+        'milestone_unclaimed' => 'Milestone hit, not claimed',
+        'claimed_unredeemed' => 'Claimed, not redeemed',
+        'redeemed' => 'Redeemed / completed',
+        'no_activity' => 'No tracked activity',
+        default => 'All contacts',
+    };
+}
+
+function mg_ai_context_saved_media_segments(PDO $pdo, int $merchantId, int $limit = 25): array
+{
+    if (!mg_ai_context_table_exists($pdo, 'merchant_crm_segments')) return ['schema_ready' => false, 'items' => []];
+    $rows = mg_ai_context_rows(
+        $pdo,
+        "SELECT s.public_id,s.name,s.description,s.rules_json,s.last_count,s.last_refreshed_at,s.updated_at,c.public_id campaign_public_id,c.public_slug campaign_slug,c.title campaign_title,c.campaign_type
+         FROM merchant_crm_segments s
+         LEFT JOIN campaigns c ON c.id=s.campaign_id
+         WHERE s.merchant_user_id=? AND s.segment_scope='media' AND s.status='active'
+         ORDER BY s.updated_at DESC,s.id DESC LIMIT {$limit}",
+        [$merchantId],
+        $limit
+    );
+    $items = [];
+    foreach ($rows as $row) {
+        $rules = [];
+        if (is_string($row['rules_json'] ?? null) && trim((string)$row['rules_json']) !== '') {
+            $decoded = json_decode((string)$row['rules_json'], true);
+            $rules = is_array($decoded) ? $decoded : [];
+        }
+        $campaignRef = (string)($rules['campaign_ref'] ?? $row['campaign_slug'] ?? $row['campaign_public_id'] ?? '');
+        $segment = (string)($rules['behavior_segment'] ?? 'all');
+        $days = (int)($rules['days'] ?? 30);
+        $search = mb_substr((string)($rules['search'] ?? ''), 0, 80);
+        $items[] = [
+            'id' => (string)$row['public_id'],
+            'name' => (string)$row['name'],
+            'campaign_id' => (string)($row['campaign_public_id'] ?? ''),
+            'campaign_title' => (string)($row['campaign_title'] ?? 'Media campaign'),
+            'campaign_type' => (string)($row['campaign_type'] ?? ''),
+            'behavior_segment' => $segment,
+            'behavior_label' => mg_ai_context_media_behavior_label($segment),
+            'search' => $search,
+            'window_days' => $days,
+            'last_count' => (int)($row['last_count'] ?? 0),
+            'last_refreshed_at' => $row['last_refreshed_at'] ?? null,
+            'action_center_url' => '/merchant-crm-segment-action-center.php?segment=' . rawurlencode((string)$row['public_id']),
+            'crm_url' => '/merchant-crm.php?campaign=' . rawurlencode($campaignRef) . '&saved_segment=' . rawurlencode((string)$row['public_id']),
+            'message_segment_url' => '/merchant-crm.php?campaign=' . rawurlencode($campaignRef) . '&saved_segment=' . rawurlencode((string)$row['public_id']) . '&action=message_segment',
+            'reward_segment_url' => '/merchant-crm.php?campaign=' . rawurlencode($campaignRef) . '&saved_segment=' . rawurlencode((string)$row['public_id']) . '&action=reward_segment',
+            'followup_segment_url' => '/merchant-crm.php?campaign=' . rawurlencode($campaignRef) . '&saved_segment=' . rawurlencode((string)$row['public_id']) . '&action=followup_segment',
+        ];
+    }
+    return ['schema_ready' => true, 'items' => $items];
 }
 
 function mg_ai_merchant_context(PDO $pdo, array $user, array $input = []): array
@@ -135,6 +204,52 @@ function mg_ai_merchant_context(PDO $pdo, array $user, array $input = []): array
         ];
     });
 
+    $sections['crm_media_campaigns'] = mg_ai_context_section('crm_media_campaigns', static function () use ($pdo, $merchantId, $days): array {
+        $rows = mg_ai_context_rows(
+            $pdo,
+            "SELECT c.public_id,c.public_slug,c.title,c.campaign_type,c.status,c.updated_at,
+                    COUNT(DISTINCT cc.id) contacts,
+                    COUNT(DISTINCT CASE WHEN ce.event_type IN ('watch_reward.started','listen_reward.started') AND ce.created_at >= DATE_SUB(NOW(), INTERVAL {$days} DAY) THEN ce.id END) starts,
+                    COUNT(DISTINCT CASE WHEN ce.event_type IN ('watch_reward.progress','listen_reward.progress') AND ce.created_at >= DATE_SUB(NOW(), INTERVAL {$days} DAY) THEN ce.id END) progress_events,
+                    COUNT(DISTINCT CASE WHEN ce.event_type IN ('watch_reward.issued','listen_reward.issued') AND ce.created_at >= DATE_SUB(NOW(), INTERVAL {$days} DAY) THEN ce.id END) milestone_rewards_issued,
+                    COUNT(DISTINCT wi.id) wallet_items,
+                    COUNT(DISTINCT CASE WHEN wi.status='claimed' THEN wi.id END) claimed,
+                    COUNT(DISTINCT CASE WHEN wi.status='redeemed' THEN wi.id END) redeemed,
+                    MAX(ce.created_at) last_media_event_at
+             FROM campaigns c
+             LEFT JOIN campaign_contacts cc ON cc.campaign_id=c.id
+             LEFT JOIN campaign_events ce ON ce.campaign_id=c.id
+             LEFT JOIN wallet_items wi ON wi.campaign_id=c.id AND wi.status <> 'cancelled'
+             WHERE c.merchant_user_id=? AND c.campaign_type IN ('watch_video_reward','listen_music_reward') AND c.status <> 'archived'
+             GROUP BY c.id,c.public_id,c.public_slug,c.title,c.campaign_type,c.status,c.updated_at
+             ORDER BY last_media_event_at DESC,c.updated_at DESC LIMIT 25",
+            [$merchantId],
+            25
+        );
+        $items = [];
+        foreach ($rows as $row) {
+            $ref = (string)($row['public_slug'] ?: $row['public_id']);
+            $wallets = max(0, (int)($row['wallet_items'] ?? 0));
+            $claimed = max(0, (int)($row['claimed'] ?? 0));
+            $redeemed = max(0, (int)($row['redeemed'] ?? 0));
+            $items[] = $row + [
+                'media_performance_url' => '/merchant-campaign-media-performance.php?campaign=' . rawurlencode($ref),
+                'crm_campaign_url' => '/merchant-crm.php?campaign=' . rawurlencode($ref),
+                'claim_gap' => max(0, $wallets - $claimed - $redeemed),
+                'redeem_gap' => max(0, $claimed - $redeemed),
+            ];
+        }
+        return [
+            'window_days' => $days,
+            'counts_by_media_type' => mg_ai_context_counts($pdo, 'campaigns', 'merchant_user_id', $merchantId, 'campaign_type', "campaign_type IN ('watch_video_reward','listen_music_reward')"),
+            'items' => $items,
+        ];
+    });
+
+    $sections['saved_crm_media_segments'] = mg_ai_context_section('saved_crm_media_segments', static function () use ($pdo, $merchantId): array {
+        return mg_ai_context_saved_media_segments($pdo, $merchantId, 25);
+    });
+
     $sections['wallet_items'] = mg_ai_context_section('wallet_items', static function () use ($pdo, $merchantId, $days): array {
         return [
             'by_status' => mg_ai_context_counts($pdo, 'wallet_items', 'merchant_user_id', $merchantId, 'status', "created_at >= DATE_SUB(NOW(), INTERVAL {$days} DAY)"),
@@ -199,6 +314,14 @@ function mg_ai_merchant_context(PDO $pdo, array $user, array $input = []): array
             'raw_payment_data' => false,
             'claim_codes' => false,
             'message_bodies' => false,
+        ],
+        'available_crm_media_workflows' => [
+            'watch_listen_media_performance' => '/merchant-campaign-media-performance.php?campaign=<campaign-slug-or-id>',
+            'crm_campaign' => '/merchant-crm.php?campaign=<campaign-slug-or-id>',
+            'saved_segment_action_center' => '/merchant-crm-segment-action-center.php?segment=<saved-segment-id>',
+            'message_segment' => '/merchant-crm.php?campaign=<campaign-slug-or-id>&saved_segment=<saved-segment-id>&action=message_segment',
+            'reward_segment' => '/merchant-crm.php?campaign=<campaign-slug-or-id>&saved_segment=<saved-segment-id>&action=reward_segment',
+            'followup_segment' => '/merchant-crm.php?campaign=<campaign-slug-or-id>&saved_segment=<saved-segment-id>&action=followup_segment',
         ],
         'sections' => $sections,
     ];
