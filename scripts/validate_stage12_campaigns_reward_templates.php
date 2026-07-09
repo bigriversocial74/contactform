@@ -7,6 +7,7 @@ $required = [
     'docs/stage-12-campaigns-reward-templates-build-plan.md',
     'merchant-campaigns.php',
     'merchant-reward-templates.php',
+    'includes/campaign-types.php',
     'includes/merchant-campaigns-view.php',
     'includes/merchant-reward-templates-view.php',
     'includes/merchant-workspace.php',
@@ -33,6 +34,7 @@ $createMenu = is_file($root . '/includes/header-templates/create-menu.php') ? (s
 $headerCreateMenuSurface = $header . "\n" . $createMenu;
 $nav = is_file($root . '/includes/merchant-workspace.php') ? (string)file_get_contents($root . '/includes/merchant-workspace.php') : '';
 $view = is_file($root . '/includes/merchant-view.php') ? (string)file_get_contents($root . '/includes/merchant-view.php') : '';
+$registry = is_file($root . '/includes/campaign-types.php') ? (string)file_get_contents($root . '/includes/campaign-types.php') : '';
 $campaignView = is_file($root . '/includes/merchant-campaigns-view.php') ? (string)file_get_contents($root . '/includes/merchant-campaigns-view.php') : '';
 $templateView = is_file($root . '/includes/merchant-reward-templates-view.php') ? (string)file_get_contents($root . '/includes/merchant-reward-templates-view.php') : '';
 $templateApi = is_file($root . '/api/merchant/reward-templates.php') ? (string)file_get_contents($root . '/api/merchant/reward-templates.php') : '';
@@ -50,7 +52,12 @@ $hasManifest = str_contains($manifest, 'stage_12_campaigns_reward_templates.sql'
 $hasCreateMenu = str_contains($headerCreateMenuSurface, 'data-create-menu-option="campaign"') && str_contains($headerCreateMenuSurface, 'data-create-menu-option="agent_offer"') && str_contains($headerCreateMenuSurface, '/merchant-campaigns.php') && str_contains($headerCreateMenuSurface, '/merchant-reward-templates.php');
 $hasNav = str_contains($nav, "'campaigns'=>") && str_contains($nav, "'reward_templates'=>");
 $hasViewRoutes = str_contains($view, 'merchant-campaigns-view.php') && str_contains($view, 'merchant-reward-templates-view.php');
-$hasCampaignShell = str_contains($campaignView, 'Newsletter Signup') && str_contains($campaignView, 'Contest / Giveaway') && str_contains($campaignView, 'QR Reward Drop');
+$hasCampaignTypeRegistry = str_contains($registry, 'function mg_campaign_type_registry') && str_contains($registry, "'newsletter_signup'") && str_contains($registry, "'contest_giveaway'") && str_contains($registry, "'qr_reward_drop'");
+$hasCampaignShell = (
+    (str_contains($campaignView, 'Newsletter Signup') || str_contains($campaignView, 'Signup Reward') || str_contains($campaignView, 'mg_campaign_type_options'))
+    && str_contains($campaignView, 'Contest / Giveaway')
+    && str_contains($campaignView, 'QR Reward Drop')
+);
 $hasTemplateShell = str_contains($templateView, 'Reward type') && str_contains($templateView, 'agent_discoverable') && str_contains($templateView, 'Redemption instructions');
 $hasTemplateApi = str_contains($templateApi, 'merchant.reward_templates.view') && str_contains($templateApi, 'merchant.reward_templates.manage') && str_contains($templateApi, 'INSERT INTO reward_templates') && str_contains($templateApi, 'UPDATE reward_templates') && str_contains($templateApi, 'mg_require_csrf_for_write');
 $hasTemplateApiOutput = str_contains($templateApi, "'templates'") && str_contains($templateApi, "'template'") && str_contains($templateApi, "'schema_ready'");
@@ -61,7 +68,7 @@ $hasSignupLimits = str_contains($signupApi, 'quantity_limit') && str_contains($s
 $hasQrApi = str_contains($qrApi, 'qr_reward_drop') && str_contains($qrApi, 'qr.scanned') && str_contains($qrApi, 'wallet_item.issued') && str_contains($qrApi, 'qr_code_token');
 $hasQrLimits = str_contains($qrApi, 'QR reward drop limit has been reached') && str_contains($qrApi, 'Reward template limit has been reached');
 
-$ok = $ok && $hasTables && $hasAgentFields && $hasSourceTracking && $hasManifest && $hasCreateMenu && $hasNav && $hasViewRoutes && $hasCampaignShell && $hasTemplateShell && $hasTemplateApi && $hasTemplateApiOutput && $hasCampaignApi && $hasCampaignApiOutput && $hasSignupApi && $hasSignupLimits && $hasQrApi && $hasQrLimits;
+$ok = $ok && $hasTables && $hasAgentFields && $hasSourceTracking && $hasManifest && $hasCreateMenu && $hasNav && $hasViewRoutes && $hasCampaignTypeRegistry && $hasCampaignShell && $hasTemplateShell && $hasTemplateApi && $hasTemplateApiOutput && $hasCampaignApi && $hasCampaignApiOutput && $hasSignupApi && $hasSignupLimits && $hasQrApi && $hasQrLimits;
 
 echo json_encode([
     'ok' => $ok,
@@ -73,6 +80,7 @@ echo json_encode([
     'has_create_menu' => $hasCreateMenu,
     'has_nav' => $hasNav,
     'has_view_routes' => $hasViewRoutes,
+    'has_campaign_type_registry' => $hasCampaignTypeRegistry,
     'has_campaign_shell' => $hasCampaignShell,
     'has_template_shell' => $hasTemplateShell,
     'has_template_api' => $hasTemplateApi,
