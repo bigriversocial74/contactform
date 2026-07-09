@@ -62,10 +62,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  function levelBlock(number, percent) {
-    return '<div class="mg-media-static-level-card" data-listen-static-level="' + number + '"><div class="mg-media-static-level-head"><strong>Fallback reward level ' + number + '</strong><span>' + percent + '%</span></div><div class="mg-grid-2"><label>Milestone ' + number + ' %<input name="listen_milestone_' + number + '_percent" type="number" min="1" max="100" value="' + percent + '"></label><label>Milestone ' + number + ' gift<select name="listen_milestone_' + number + '_reward_template_id" data-listen-reward-template-select><option value="">Use attached primary reward</option></select></label></div></div>';
-  }
-
   function inject() {
     if (qs('[data-campaign-type-fields="listen_music_reward"]')) return;
 
@@ -73,28 +69,13 @@ document.addEventListener('DOMContentLoaded', function () {
     card.className = 'mg-campaign-rule-card';
     card.setAttribute('data-campaign-type-fields', 'listen_music_reward');
     card.hidden = true;
-    card.innerHTML = '<span class="mg-eyebrow">Listen Music Reward</span><h3>Reward customers for listening to a Spotify song or uploaded audio.</h3><p>Spotify links are embedded as listen-intent rewards. Uploaded audio uses the native player for true percent-listened milestone gifts.</p><div class="mg-grid-2"><label>Music source<select name="listen_music_provider" data-listen-provider><option value="spotify">Spotify song link</option><option value="uploaded">Uploaded audio</option></select></label><label>Required listen percent<input name="listen_required_percent" type="number" min="1" max="100" value="80"></label></div><div class="mg-grid-2"><label>Track title<input name="listen_track_title" placeholder="Song title"></label><label>Artist name<input name="listen_artist_name" placeholder="Artist"></label></div><label data-listen-spotify-row>Spotify song link<input name="listen_spotify_url" placeholder="https://open.spotify.com/track/..."></label><div class="mg-listen-upload-box" data-listen-upload-row hidden><input type="hidden" name="listen_audio_upload_asset_id"><input type="hidden" name="listen_audio_uploaded_url"><div class="mg-listen-current-audio" data-listen-current-audio hidden></div><label>Upload MP3/audio file<input type="file" accept="audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/ogg,audio/mp4,audio/x-m4a" data-listen-audio-upload-input></label><button class="mg-btn mg-btn-soft" type="button" data-listen-audio-upload-button>Upload audio</button><div class="mg-form-status" data-listen-upload-status>Upload MP3, WAV, OGG, or M4A up to 50MB.</div></div><div class="mg-media-static-levels" aria-label="Fallback listen milestone fields"><span class="mg-eyebrow">Fallback milestone fields</span><p>Dynamic reward levels below are the primary setup. These fallback fields stay available for older campaign records.</p>' + levelBlock(1, 25) + levelBlock(2, 50) + levelBlock(3, 80) + '</div>';
+    card.innerHTML = '<span class="mg-eyebrow">Listen Music Reward</span><h3>Reward customers for listening to a Spotify song or uploaded audio.</h3><p>Spotify links are embedded as listen-intent rewards. Uploaded audio uses the native player for true percent-listened milestone gifts.</p><div class="mg-grid-2"><label>Music source<select name="listen_music_provider" data-listen-provider><option value="spotify">Spotify song link</option><option value="uploaded">Uploaded audio</option></select></label><label>Required listen percent<input name="listen_required_percent" type="number" min="1" max="100" value="80"></label></div><div class="mg-grid-2"><label>Track title<input name="listen_track_title" placeholder="Song title"></label><label>Artist name<input name="listen_artist_name" placeholder="Artist"></label></div><label data-listen-spotify-row>Spotify song link<input name="listen_spotify_url" placeholder="https://open.spotify.com/track/..."></label><div class="mg-listen-upload-box" data-listen-upload-row hidden><input type="hidden" name="listen_audio_upload_asset_id"><input type="hidden" name="listen_audio_uploaded_url"><div class="mg-listen-current-audio" data-listen-current-audio hidden></div><label>Upload MP3/audio file<input type="file" accept="audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/ogg,audio/mp4,audio/x-m4a" data-listen-audio-upload-input></label><button class="mg-btn mg-btn-soft" type="button" data-listen-audio-upload-button>Upload audio</button><div class="mg-form-status" data-listen-upload-status>Upload MP3, WAV, OGG, or M4A up to 50MB.</div></div>';
 
     var before = qs('[data-campaign-type-fields="customer_refund"]');
     if (before && before.parentNode) before.parentNode.insertBefore(card, before);
     else qs('[data-stage12-campaign-status]', form).insertAdjacentElement('beforebegin', card);
 
-    populateRewards();
     toggle();
-  }
-
-  function populateRewards() {
-    var primary = form.elements.reward_template_id;
-    if (!primary) return;
-    var html = '<option value="">Use attached primary reward</option>';
-    Array.prototype.slice.call(primary.options).forEach(function (option) {
-      if (option.value) html += '<option value="' + esc(option.value) + '">' + esc(option.textContent) + '</option>';
-    });
-    root.querySelectorAll('[data-listen-reward-template-select]').forEach(function (select) {
-      var value = select.value;
-      select.innerHTML = html;
-      if (value) select.value = value;
-    });
   }
 
   function currentAudioLabel(url, snapshot) {
@@ -177,12 +158,6 @@ document.addEventListener('DOMContentLoaded', function () {
     setField('listen_track_title', normalized.trackTitle, true);
     setField('listen_artist_name', normalized.artistName, true);
 
-    normalized.milestones.slice(0, 3).forEach(function (milestone, index) {
-      var number = index + 1;
-      setField('listen_milestone_' + number + '_percent', milestone.percent || '', true);
-      setField('listen_milestone_' + number + '_reward_template_id', milestone.reward_template_id || '', true);
-    });
-
     toggle();
     setSavedAudioNotice(normalized.snapshot);
   }
@@ -246,7 +221,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
   form.addEventListener('change', function (event) {
     if (event.target && event.target.name === 'listen_music_provider') toggle();
-    if (event.target && event.target.name === 'reward_template_id') populateRewards();
     setTimeout(function () { hydrateExisting(false); }, 80);
   });
 
@@ -273,11 +247,6 @@ document.addEventListener('DOMContentLoaded', function () {
       setTimeout(function () { hydrateExisting(true); }, 520);
     }
   });
-
-  var primary = form.elements.reward_template_id;
-  if (primary && window.MutationObserver) {
-    new MutationObserver(populateRewards).observe(primary, { childList: true });
-  }
 
   var attempts = 0;
   var timer = setInterval(function () {
