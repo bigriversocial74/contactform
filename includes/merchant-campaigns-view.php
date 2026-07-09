@@ -1,8 +1,8 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . '/campaign-types.php';
-$mgCampaignTypeOptions = mg_campaign_type_options(false);
-$mgCampaignTypeClientRegistry = mg_campaign_type_client_registry(false);
+$mgCampaignTypeOptions = mg_campaign_type_options(true);
+$mgCampaignTypeClientRegistry = mg_campaign_type_client_registry(true);
 ?>
 <section class="mg-campaign-command" data-campaign-command-center>
   <div class="mg-campaign-toolbar">
@@ -69,6 +69,7 @@ $mgCampaignTypeClientRegistry = mg_campaign_type_client_registry(false);
               <a href="#campaign-create" data-campaign-tab-trigger="create" data-campaign-type-preset="qr_reward_drop">Create QR drop</a>
               <a href="#campaign-create" data-campaign-tab-trigger="create" data-campaign-type-preset="contest_giveaway">Create contest</a>
               <a href="#campaign-create" data-campaign-tab-trigger="create" data-campaign-type-preset="newsletter_signup">Create signup form</a>
+              <a href="#campaign-create" data-campaign-tab-trigger="create" data-campaign-type-preset="customer_refund">Create Customer Refund</a>
               <a href="#campaign-landing-qa" data-campaign-tab-trigger="landing_qa">Run landing page QA</a>
               <a href="/merchant-campaign-stamps.php">Review campaign stamps</a>
             </div>
@@ -167,7 +168,7 @@ $mgCampaignTypeClientRegistry = mg_campaign_type_client_registry(false);
           <form class="mg-merchant-form mg-campaign-builder-form" data-stage12-campaign-builder>
             <input type="hidden" name="campaign_id" value="">
             <div class="mg-grid-2">
-              <label>Campaign type<select name="campaign_type" data-campaign-type-select><?php foreach ($mgCampaignTypeOptions as $typeOption): ?><option value="<?= htmlspecialchars((string)$typeOption['key'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars((string)$typeOption['label'], ENT_QUOTES, 'UTF-8') ?></option><?php endforeach; ?></select></label>
+              <label>Campaign type<select name="campaign_type" data-campaign-type-select><?php foreach ($mgCampaignTypeOptions as $typeOption): ?><option value="<?= htmlspecialchars((string)$typeOption['key'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars((string)$typeOption['label'], ENT_QUOTES, 'UTF-8') ?><?= !empty($typeOption['internal_only']) ? ' — Internal' : '' ?></option><?php endforeach; ?></select></label>
               <label>Status<select name="status"><option value="draft">Draft</option><option value="active">Active</option><option value="paused">Paused</option><option value="ended">Ended</option><option value="archived">Archived</option></select></label>
             </div>
             <label>Campaign title<input name="title" placeholder="Join the list and get a reward" required maxlength="180"></label>
@@ -221,6 +222,12 @@ $mgCampaignTypeClientRegistry = mg_campaign_type_client_registry(false);
               <h3>Capture agent-discoverable customer interest.</h3>
               <p>Customers can tell the merchant what kind of reward or offer interests them. Mark the campaign as agent-discoverable below when ready.</p>
               <label>Agent offer instructions<textarea name="agent_offer_instructions" placeholder="Example: Tell us what you are looking for and we will recommend a local reward."></textarea></label>
+            </div>
+
+            <div class="mg-campaign-rule-card" data-campaign-type-fields="customer_refund" hidden>
+              <span class="mg-eyebrow">Internal campaign</span>
+              <h3>Customer Refund / Make-Good vouchers</h3>
+              <p>This campaign is merchant-only. It does not create a public landing page. Use it from a Customer Profile to send a service-recovery voucher through Merchant CRM.</p>
             </div>
 
             <div class="mg-grid-2"><label>Quantity limit<input name="quantity_limit" type="number" min="1" placeholder="Unlimited"></label><label>Per-user limit<input name="per_user_limit" type="number" min="1" value="1"></label></div>

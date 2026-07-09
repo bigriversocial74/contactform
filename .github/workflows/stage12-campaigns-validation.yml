@@ -21,6 +21,7 @@ on:
       - 'assets/js/public-campaign.js'
       - 'scripts/validate_stage12*.php'
       - 'scripts/validate_campaign_types_*.php'
+      - 'scripts/validate_customer_refund_*.php'
       - '.github/workflows/stage12-campaigns-validation.yml'
   push:
     branches:
@@ -47,6 +48,7 @@ on:
       - 'assets/js/public-campaign.js'
       - 'scripts/validate_stage12*.php'
       - 'scripts/validate_campaign_types_*.php'
+      - 'scripts/validate_customer_refund_*.php'
       - '.github/workflows/stage12-campaigns-validation.yml'
   workflow_dispatch:
 
@@ -87,6 +89,8 @@ jobs:
           php -l api/merchant/campaign-detail.php
           php -l api/merchant/campaign-public-tools.php
           php -l api/merchant/campaign-landing-page-qa.php
+          php -l api/merchant/customer-refund-campaigns.php
+          php -l api/merchant/customer-refund-send.php
           php -l api/merchant/campaign-winner.php
           php -l api/merchant/wallet-redeem.php
           php -l api/public/campaigns/detail.php
@@ -99,6 +103,7 @@ jobs:
           php -l scripts/validate_stage12b_runtime_fixes.php
           php -l scripts/validate_stage12c_wallet_campaign_pages.php
           php -l scripts/validate_campaign_types_public_landing_page_qa_v1_2.php
+          php -l scripts/validate_customer_refund_v1_crm_make_good.php
 
       - name: Validate Stage 12 campaigns foundation
         shell: bash
@@ -108,3 +113,4 @@ jobs:
           php scripts/validate_stage12b_runtime_fixes.php
           php scripts/validate_stage12c_wallet_campaign_pages.php
           php scripts/validate_campaign_types_public_landing_page_qa_v1_2.php
+          php scripts/validate_customer_refund_v1_crm_make_good.php
