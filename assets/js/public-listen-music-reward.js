@@ -158,6 +158,12 @@
     return '<strong>Reward sent to your Microgifter Inbox</strong><p>' + details + '</p><p class="mg-public-campaign-note">Open your Microgifter Inbox to view, manage, or redeem the reward.</p><a class="mg-btn mg-btn-primary" href="/inbox.php">Open Microgifter Inbox</a>';
   }
 
+  function campaignNotice(message) {
+    unlockStep(2);
+    setResult('<strong>Campaign notice</strong><p>' + esc(message || 'This campaign is not available for another participation.') + '</p><a class="mg-btn mg-btn-primary" href="/inbox.php">Open Microgifter Inbox</a>');
+    showTab('rewards', true);
+  }
+
   function progress() {
     if (provider === 'uploaded' && player) {
       var duration = Number(player.duration || 0);
@@ -206,7 +212,9 @@
       setStatus(message, { key: 'progress' });
       updateProgressHistory(percent);
     } catch (error) {
-      setStatus(error.message || 'Unable to record listen progress.', { key: 'error' });
+      var message = error.message || 'Unable to record listen progress.';
+      setStatus(message, { key: 'error' });
+      if (/already participated|limit reached/i.test(message)) campaignNotice(message);
     }
   }
 
