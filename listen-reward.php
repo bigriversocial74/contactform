@@ -77,7 +77,6 @@ $merchantName = trim((string)($campaign['merchant_profile_display_name'] ?? ''))
 $avatarUrl = mg_listen_reward_safe_url($campaign['merchant_profile_avatar_url'] ?? null);
 $coverUrl = mg_listen_reward_safe_url($campaign['merchant_profile_cover_url'] ?? null) ?: $mediaImageUrl;
 $currentUser = function_exists('mg_current_user') ? mg_current_user() : null;
-$isLoggedIn = is_array($currentUser) && !empty($currentUser['id']);
 $prefillName = is_array($currentUser) ? trim((string)($currentUser['display_name'] ?? $currentUser['full_name'] ?? '')) : '';
 $prefillEmail = is_array($currentUser) ? strtolower(trim((string)($currentUser['email'] ?? ''))) : '';
 $headline = trim((string)($campaign['form_headline'] ?? '')) ?: 'Listen to unlock rewards';
@@ -90,6 +89,7 @@ $rewardValue = $rewardValueCents > 0 ? '$' . number_format($rewardValueCents / 1
 $firstMilestone = $milestones[0]['percent'] ?? $requiredPercent;
 $hasAudio = $provider === 'uploaded' ? $uploadedUrl !== '' : $spotifyEmbed !== '';
 $waveBars = str_repeat('<i></i>', 42);
+$initialStatus = 'Enter your info to start listening.';
 ?>
 <section class="mg-rl-page mg-rl-listen" data-listen-music-reward data-campaign-id="<?= mg_e((string)$campaign['public_id']) ?>" data-audio-provider="<?= mg_e($provider) ?>" data-spotify-track-id="<?= mg_e($spotifyId) ?>" data-uploaded-audio-url="<?= mg_e((string)$uploadedUrl) ?>" data-uploaded-asset-id="<?= mg_e($uploadedAssetId) ?>" data-required-percent="<?= mg_e((string)$requiredPercent) ?>">
   <div class="mg-rl-bg"<?= $coverUrl ? ' style="background-image:url(' . mg_e($coverUrl) . ')"' : '' ?>></div>
@@ -101,6 +101,12 @@ $waveBars = str_repeat('<i></i>', 42);
         <div class="mg-rl-track"><div class="mg-rl-art"><?php if ($mediaImageUrl): ?><img src="<?= mg_e($mediaImageUrl) ?>" alt="<?= mg_e($trackTitle) ?> artwork"><span>Now Playing</span><?php else: ?><div class="mg-rl-art-placeholder">Audio</div><?php endif; ?></div><div class="mg-rl-track-copy"><small>Now Playing</small><strong><?= mg_e($trackTitle) ?></strong><em><?= mg_e($artistName ?: $merchantName) ?></em><div class="mg-rl-wave" aria-hidden="true"><?= $waveBars ?></div></div></div>
         <div class="mg-rl-controls"><?php if ($provider === 'uploaded'): ?><audio data-listen-uploaded-player controls preload="metadata" src="<?= mg_e((string)$uploadedUrl) ?>"></audio><?php else: ?><iframe data-listen-spotify-player src="<?= mg_e($spotifyEmbed) ?>" height="152" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe><button class="mg-rl-btn" type="button" data-listen-spotify-confirm>I listened — check rewards</button><?php endif; ?></div>
       </section>
+      <aside class="mg-rl-join mg-rl-join-mobile">
+        <div class="mg-rl-profile"><div class="mg-rl-avatar"><?php if ($avatarUrl): ?><img src="<?= mg_e($avatarUrl) ?>" alt="<?= mg_e($merchantName) ?> profile image"><?php else: ?><span><?= mg_e(mg_listen_reward_initials($merchantName)) ?></span><?php endif; ?></div><div><h2><?= mg_e($merchantName) ?></h2><?php if (!empty($campaign['merchant_profile_headline'])): ?><p><?= mg_e((string)$campaign['merchant_profile_headline']) ?></p><?php endif; ?></div></div>
+        <div class="mg-rl-tabs" aria-label="Campaign steps"><span>1. Join</span><span>2. Listen</span><span>3. Rewards</span></div>
+        <form class="mg-rl-form" data-listen-reward-form novalidate><input type="hidden" name="campaign_id" value="<?= mg_e((string)$campaign['public_id']) ?>"><h3>Join this campaign</h3><p>Enter your details to get started.</p><label>Name<input name="name" placeholder="Full Name" maxlength="180" value="<?= mg_e($prefillName) ?>"></label><label>Email<input name="email" type="email" required placeholder="Email Address" maxlength="255" value="<?= mg_e($prefillEmail) ?>"></label><label>Phone <span>(optional)</span><input name="phone" maxlength="60" placeholder="Optional"></label><button class="mg-rl-btn mg-rl-btn-dark" type="submit">Start Listening &amp; Join Campaign</button></form>
+        <div class="mg-public-campaign-status" data-listen-reward-status><?= mg_e($initialStatus) ?></div>
+      </aside>
       <section class="mg-rl-bottom">
         <article class="mg-rl-card"><div class="mg-rl-card-head"><span class="mg-rl-icon">📈</span><h2>Your Stats</h2></div><span class="mg-rl-big">0</span><p>Points Earned <span class="mg-rl-pill">Start listening</span></p><div class="mg-rl-stat-grid"><div class="mg-rl-stat"><b>0</b><span>Tracks</span></div><div class="mg-rl-stat"><b>0</b><span>Rewards</span></div><div class="mg-rl-stat"><b><?= mg_e((string)$requiredPercent) ?>%</b><span>Target</span></div></div></article>
         <article class="mg-rl-card"><div class="mg-rl-card-head"><span class="mg-rl-icon">🎁</span><div><span class="mg-rl-eyebrow">Reward History</span><h3>Issued rewards and Inbox status</h3></div></div><ul class="mg-rl-list" data-listen-reward-issue-history><li>No rewards issued yet.</li></ul><div class="mg-public-campaign-result" data-listen-reward-result></div></article>
@@ -108,14 +114,15 @@ $waveBars = str_repeat('<i></i>', 42);
       </section>
       <?php endif; ?>
     </div>
-    <aside class="mg-rl-join">
+    <aside class="mg-rl-join mg-rl-join-desktop">
       <div class="mg-rl-profile"><div class="mg-rl-avatar"><?php if ($avatarUrl): ?><img src="<?= mg_e($avatarUrl) ?>" alt="<?= mg_e($merchantName) ?> profile image"><?php else: ?><span><?= mg_e(mg_listen_reward_initials($merchantName)) ?></span><?php endif; ?></div><div><h2><?= mg_e($merchantName) ?></h2><?php if (!empty($campaign['merchant_profile_headline'])): ?><p><?= mg_e((string)$campaign['merchant_profile_headline']) ?></p><?php endif; ?></div></div>
       <div class="mg-rl-tabs" aria-label="Campaign steps"><span>1. Join</span><span>2. Listen</span><span>3. Rewards</span></div>
       <form class="mg-rl-form" data-listen-reward-form novalidate><input type="hidden" name="campaign_id" value="<?= mg_e((string)$campaign['public_id']) ?>"><h3>Join this campaign</h3><p>Enter your details to get started.</p><label>Name<input name="name" placeholder="Full Name" maxlength="180" value="<?= mg_e($prefillName) ?>"></label><label>Email<input name="email" type="email" required placeholder="Email Address" maxlength="255" value="<?= mg_e($prefillEmail) ?>"></label><label>Phone <span>(optional)</span><input name="phone" maxlength="60" placeholder="Optional"></label><button class="mg-rl-btn mg-rl-btn-dark" type="submit">Start Listening &amp; Join Campaign</button></form>
-      <div class="mg-public-campaign-status" data-listen-reward-status>Enter your info to start listening.</div>
+      <div class="mg-public-campaign-status" data-listen-reward-status><?= mg_e($initialStatus) ?></div>
       <div class="mg-rl-inbox"><span class="mg-rl-inbox-icon">✉</span><div><h3>Reward &amp; Inbox Access</h3><p>Gift activity appears here when a milestone reward is sent. Open the Microgifter Inbox to view, manage, claim, redeem, or continue PPPM tracking.</p><a class="mg-rl-btn mg-rl-btn-soft" href="/inbox.php">Open Microgifter Inbox</a></div></div>
       <div class="mg-rl-notice"><div><strong>Campaign Notice</strong><ul data-listen-reward-notifications><li>Waiting for listener session.</li></ul></div><a class="mg-rl-btn mg-rl-btn-soft" href="/inbox.php">View Inbox</a></div>
     </aside>
   </div>
+  <div class="mg-rl-mobile-dock" data-rl-mobile-dock><button class="mg-rl-mobile-toggle" type="button" data-rl-mobile-toggle aria-expanded="false"><i></i><span><strong>Participant Status</strong><small data-listen-reward-status><?= mg_e($initialStatus) ?></small></span><b>Details</b></button><div class="mg-rl-mobile-drawer" data-rl-mobile-drawer hidden><h3>Reward Activity</h3><div class="mg-rl-mobile-drawer-section"><strong>Current status</strong><p data-listen-reward-status><?= mg_e($initialStatus) ?></p></div><div class="mg-rl-mobile-drawer-section"><strong>Campaign notice</strong><ul class="mg-rl-list" data-listen-reward-notifications><li>Waiting for listener session.</li></ul></div><div class="mg-rl-mobile-drawer-section"><strong>Listening activity</strong><ul class="mg-rl-list" data-listen-reward-history><li>No listening activity yet.</li></ul></div><div class="mg-rl-mobile-drawer-section"><strong>Issued rewards</strong><ul class="mg-rl-list" data-listen-reward-issue-history><li>No rewards issued yet.</li></ul></div><a class="mg-rl-btn mg-rl-btn-soft" href="/inbox.php">Open Microgifter Inbox</a></div></div>
 </section>
 <?php endif; require __DIR__ . '/includes/footer.php'; ?>
