@@ -28,7 +28,6 @@ $assert('QA API returns send history', str_contains($qaApi, 'send_history') && s
 $assert('QA API returns wallet/customer/campaign fields', str_contains($qaApi, 'wallet_item_id') && str_contains($qaApi, 'customer_email') && str_contains($qaApi, 'campaign_title') && str_contains($qaApi, 'wallet_status'));
 $assert('QA API documents email invite as future-only TODO', str_contains($qaApi, 'customer_refund_invite_by_email') && str_contains($qaApi, 'not enabled because outbound email sending is not active yet'));
 
-$assert('Send API has duplicate active voucher guard', str_contains($sendApi, 'activeDuplicate') && str_contains($sendApi, 'already has an active Customer Refund voucher'));
 $assert('Send API keeps account-required no-email boundary', str_contains($sendApi, 'Invite-by-email is planned for a future release') && str_contains($sendApi, 'email sending is not enabled yet'));
 
 $assert('Campaign QA JS injects Refund QA tab', str_contains($landingJs, 'data-customer-refund-qa-tab') && str_contains($landingJs, 'Refund QA'));
