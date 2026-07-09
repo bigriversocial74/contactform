@@ -2,25 +2,13 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_merchant.php';
+require_once dirname(__DIR__, 2) . '/includes/campaign-types.php';
 
 function mg_s12d_decode_json(?string $json): array
 {
     if ($json === null || $json === '') return [];
     $decoded = json_decode($json, true);
     return is_array($decoded) ? $decoded : [];
-}
-
-function mg_s12d_public_path(string $type): string
-{
-    return match ($type) {
-        'newsletter_signup' => '/newsletter-signup.php',
-        'contest_giveaway' => '/contest.php',
-        'qr_reward_drop' => '/qr-reward.php',
-        'referral_reward' => '/referral-reward.php',
-        'birthday_vip' => '/birthday-vip.php',
-        'agent_offer' => '/agent-offer.php',
-        default => '/campaign.php',
-    };
 }
 
 function mg_s12d_campaign_tool_urls(array $campaign): array
@@ -32,12 +20,17 @@ function mg_s12d_campaign_tool_urls(array $campaign): array
         $base = $scheme . '://' . $host;
     }
     $type = (string)($campaign['campaign_type'] ?? '');
-    $path = mg_s12d_public_path($type);
+    $definition = mg_campaign_type_get($type) ?? [];
+    $publicPath = (string)($definition['public_path'] ?? '');
+    $publicEnabled = !empty($definition['public_enabled']) && $publicPath !== '';
     $slugOrId = $campaign['public_slug'] ?: $campaign['public_id'];
     return [
-        'public_url' => $base . $path . '?campaign=' . rawurlencode((string) $slugOrId),
-        'qr_url' => !empty($campaign['qr_code_token']) ? $base . '/qr-reward.php?token=' . rawurlencode((string) $campaign['qr_code_token']) : null,
+        'public_enabled' => $publicEnabled,
+        'internal_only' => !empty($definition['internal_only']),
+        'public_url' => $publicEnabled ? $base . $publicPath . '?campaign=' . rawurlencode((string) $slugOrId) : '',
+        'qr_url' => $publicEnabled && !empty($campaign['qr_code_token']) ? $base . $publicPath . '?token=' . rawurlencode((string) $campaign['qr_code_token']) : null,
         'qr_token' => $campaign['qr_code_token'] ?? null,
+        'submit_endpoint' => (string)($definition['submit_endpoint'] ?? ''),
     ];
 }
 
@@ -113,11 +106,13 @@ try {
     foreach ($walletStmt->fetchAll() as $row) {
         $walletStatus[(string) $row['status']] = (int) $row['total'];
     }
+    $definition = mg_campaign_type_get((string)$campaign['campaign_type']) ?? [];
 
     mg_ok(['campaign' => [
         'id' => (string) $campaign['public_id'],
         'slug' => $campaign['public_slug'] ?? null,
         'campaign_type' => (string) $campaign['campaign_type'],
+        'campaign_type_label' => (string)($definition['label'] ?? mg_campaign_type_label((string)$campaign['campaign_type'])),
         'status' => (string) $campaign['status'],
         'title' => (string) $campaign['title'],
         'description' => (string) ($campaign['description'] ?? ''),
