@@ -41,7 +41,8 @@ $assert('Customer profile page loads refund send JS', str_contains($profilePage,
 $assert('Customer profile has reward action panel', str_contains($profileView, 'data-cp-action-panel="reward"') && str_contains($profileView, 'data-cp-reward-form'));
 $assert('Customer refund JS loads campaigns API', str_contains($refundJs, '/api/merchant/customer-refund-campaigns.php'));
 $assert('Customer refund JS sends through refund API', str_contains($refundJs, '/api/merchant/customer-refund-send.php'));
-$assert('Customer refund JS previews campaign readiness and requires confirmation', str_contains($refundJs, 'data-cp-refund-preview') && str_contains($refundJs, 'data-cp-refund-confirm') && str_contains($refundJs, 'Review gift'));
+$assert('Customer refund JS previews campaign readiness and requires confirmation', str_contains($refundJs, 'data-cp-refund-preview') && str_contains($refundJs, 'data-cp-refund-confirm') && str_contains($refundJs, 'Review make-good'));
+$assert('Customer refund JS uses make-good wording', str_contains($refundJs, 'Send Make-Good') && str_contains($refundJs, 'make-good voucher'));
 
 $assert('Merchant campaign builder includes internal campaign types', str_contains($campaignView, 'mg_campaign_type_options(true)') && str_contains($campaignView, 'mg_campaign_type_client_registry(true)'));
 $assert('Merchant campaign builder exposes Customer Refund quick action', str_contains($campaignView, 'data-campaign-type-preset="customer_refund"') && str_contains($campaignView, 'Create Customer Refund'));
