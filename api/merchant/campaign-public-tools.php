@@ -2,6 +2,16 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_merchant.php';
+require_once dirname(__DIR__, 2) . '/includes/campaign-types.php';
+
+function mg_campaign_public_tools_base(): string
+{
+    $base = rtrim((string)(defined('MG_APP_URL') ? MG_APP_URL : ''), '/');
+    if ($base !== '') return $base;
+    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    return $scheme . '://' . $host;
+}
 
 mg_require_method('GET');
 $user = mg_require_permission('merchant.campaigns.view');
@@ -20,24 +30,24 @@ try {
     $campaign = $stmt->fetch();
     if (!$campaign) mg_fail('Campaign not found.', 404);
 
-    $base = rtrim((string) (defined('MG_APP_URL') ? MG_APP_URL : ''), '/');
-    if ($base === '') {
-        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-        $base = $scheme . '://' . $host;
-    }
+    $base = mg_campaign_public_tools_base();
+    $type = (string)$campaign['campaign_type'];
+    $definition = mg_campaign_type_get($type) ?? [];
+    $publicEnabled = !empty($definition['public_enabled']);
+    $publicPath = (string)($definition['public_path'] ?? '');
     $slugOrId = $campaign['public_slug'] ?: $campaign['public_id'];
-    $publicUrl = $base . '/campaign.php?c=' . rawurlencode((string) $slugOrId);
-    $qrUrl = $campaign['qr_code_token'] ? $base . '/campaign.php?token=' . rawurlencode((string) $campaign['qr_code_token']) : null;
-    $submitEndpoint = '/api/public/campaigns/signup.php';
-    if ($campaign['campaign_type'] === 'qr_reward_drop') $submitEndpoint = '/api/public/campaigns/qr-pickup.php';
-    if ($campaign['campaign_type'] === 'contest_giveaway') $submitEndpoint = '/api/public/campaigns/contest-entry.php';
+    $publicUrl = $publicEnabled && $publicPath !== '' ? $base . $publicPath . '?campaign=' . rawurlencode((string)$slugOrId) : '';
+    $qrUrl = $publicEnabled && $type === 'qr_reward_drop' && !empty($campaign['qr_code_token']) ? $base . $publicPath . '?token=' . rawurlencode((string)$campaign['qr_code_token']) : null;
+    $submitEndpoint = (string)($definition['submit_endpoint'] ?? '');
 
     mg_ok(['tools' => [
         'campaign_id' => (string) $campaign['public_id'],
         'title' => (string) $campaign['title'],
-        'campaign_type' => (string) $campaign['campaign_type'],
+        'campaign_type' => $type,
+        'campaign_type_label' => (string)($definition['label'] ?? mg_campaign_type_label($type)),
         'status' => (string) $campaign['status'],
+        'public_enabled' => $publicEnabled,
+        'internal_only' => !empty($definition['internal_only']),
         'public_url' => $publicUrl,
         'qr_url' => $qrUrl,
         'qr_token' => $campaign['qr_code_token'] ?? null,
