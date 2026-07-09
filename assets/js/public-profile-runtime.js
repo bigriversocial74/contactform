@@ -9,6 +9,57 @@ window.Microgifter = window.Microgifter || {};
   MG.publicProfileRuntimeReady = true;
   MG.publicProfileData = null;
   var originalGet = MG.get;
+  var originalFetch = window.fetch;
+
+  function profileCampaignUrl(item) {
+    if (!item || typeof item !== 'object') return '';
+    var ref = String(item.public_slug || item.slug || item.id || item.public_id || '').trim();
+    if (!ref) return String(item.url || '');
+    var page = '';
+    switch (String(item.type || item.campaign_type || '')) {
+      case 'watch_video_reward':
+        page = '/watch-reward.php';
+        break;
+      case 'listen_music_reward':
+        page = '/listen-reward.php';
+        break;
+      default:
+        return String(item.url || '');
+    }
+    return page + '?campaign=' + encodeURIComponent(ref);
+  }
+
+  function normalizeProfileInvestmentCampaignLinks(data) {
+    var items = data && data.data && data.data.campaigns && Array.isArray(data.data.campaigns.items)
+      ? data.data.campaigns.items
+      : (data && data.campaigns && Array.isArray(data.campaigns.items) ? data.campaigns.items : []);
+    items.forEach(function (item) {
+      var nextUrl = profileCampaignUrl(item);
+      if (nextUrl) item.url = nextUrl;
+    });
+    return data;
+  }
+
+  if (typeof originalFetch === 'function' && !MG.publicProfileInvestmentFetchReady) {
+    MG.publicProfileInvestmentFetchReady = true;
+    window.fetch = function (input, init) {
+      var requestUrl = '';
+      try { requestUrl = String(input && input.url ? input.url : input || ''); } catch (error) { requestUrl = ''; }
+      var isInvestmentRead = requestUrl.indexOf('/api/public/profile-investment.php?') === 0 || requestUrl.indexOf(location.origin + '/api/public/profile-investment.php?') === 0;
+      return originalFetch.apply(this, arguments).then(function (response) {
+        if (!isInvestmentRead || !response || !response.ok || typeof response.clone !== 'function') return response;
+        return response.clone().json().then(function (json) {
+          var headers = new Headers(response.headers);
+          headers.set('content-type', 'application/json; charset=utf-8');
+          return new Response(JSON.stringify(normalizeProfileInvestmentCampaignLinks(json)), {
+            status: response.status,
+            statusText: response.statusText,
+            headers: headers,
+          });
+        }).catch(function () { return response; });
+      });
+    };
+  }
 
   MG.get = async function (path, options) {
     var requestPath = String(path || '');
