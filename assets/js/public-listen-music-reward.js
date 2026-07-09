@@ -23,6 +23,8 @@
   var lastPost = 0;
   var started = false;
   var audioBound = false;
+  var unlockedStep = 0;
+  var stepMap = { join: 0, media: 1, rewards: 2 };
 
   function esc(value) {
     return String(value == null ? '' : value).replace(/[&<>'"]/g, function (char) {
@@ -77,7 +79,22 @@
     while (rewardHistory.children.length > 10) rewardHistory.removeChild(rewardHistory.lastChild);
   }
 
-  function showTab(name) {
+  function syncTabs() {
+    root.querySelectorAll('[data-listen-tab-trigger]').forEach(function (button) {
+      var name = button.getAttribute('data-listen-tab-trigger') || 'join';
+      var index = stepMap[name] || 0;
+      var disabled = index > unlockedStep;
+      button.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+      button.classList.toggle('is-complete', index < unlockedStep);
+    });
+  }
+
+  function showTab(name, force) {
+    name = stepMap[name] == null ? 'join' : name;
+    if (!force && (stepMap[name] || 0) > unlockedStep) {
+      setStatus('Complete the current step before moving forward.');
+      return;
+    }
     root.querySelectorAll('[data-listen-tab-trigger]').forEach(function (button) {
       var active = button.getAttribute('data-listen-tab-trigger') === name;
       button.classList.toggle('is-active', active);
@@ -88,20 +105,21 @@
       panel.classList.toggle('is-active', active);
       panel.hidden = !active;
     });
+    syncTabs();
+  }
+
+  function unlockStep(index) {
+    unlockedStep = Math.max(unlockedStep, index);
+    syncTabs();
   }
 
   root.querySelectorAll('[data-listen-tab-trigger]').forEach(function (button) {
-    button.addEventListener('click', function () { showTab(button.getAttribute('data-listen-tab-trigger') || 'join'); });
+    button.addEventListener('click', function () { showTab(button.getAttribute('data-listen-tab-trigger') || 'join', false); });
   });
+  syncTabs();
 
   function updateMilestones(issued) {
     (issued || []).forEach(function (item) {
-      var percent = String(item.percent || '').replace(/[^0-9]/g, '');
-      var row = root.querySelector('[data-listen-milestone="' + percent + '"]');
-      if (row) {
-        row.classList.remove('is-warn');
-        row.classList.add('is-ready');
-      }
       addRewardHistory((item.percent || '') + '% reward issued — ' + (item.reward_title || 'Music reward'));
     });
   }
@@ -153,8 +171,9 @@
       var issued = data.issued_rewards || [];
       updateMilestones(issued);
       if (issued.length) {
+        unlockStep(2);
         setResult(inboxResult(issued));
-        showTab('rewards');
+        showTab('rewards', true);
       }
       var message = data.message || ('Listen progress recorded: ' + Math.round(percent) + '%');
       setStatus(message);
@@ -220,7 +239,8 @@
       }
       form.classList.add('is-complete');
       if (shell) shell.hidden = false;
-      showTab('media');
+      unlockStep(1);
+      showTab('media', true);
       addHistory('Campaign joined for ' + customer.email + '.');
       if (provider === 'uploaded') {
         bindAudio();
@@ -236,7 +256,7 @@
   if (confirm) confirm.addEventListener('click', function () {
     if (!customer.email) {
       setStatus('Enter your info first.');
-      showTab('join');
+      showTab('join', true);
       return;
     }
     maxPercent = 100;
