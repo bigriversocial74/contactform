@@ -65,6 +65,10 @@ function mg_public_campaign_engage_bridge(PDO $pdo, array $campaign, array $cont
 mg_require_method('POST');
 $input = mg_input();
 $pdo = mg_db();
+if (function_exists('mg_public_campaign_engage_preprocess_input')) {
+    $processedInput = mg_public_campaign_engage_preprocess_input($pdo, $input);
+    if (is_array($processedInput)) $input = $processedInput;
+}
 
 $campaignRef = strtolower(trim((string) ($input['campaign_id'] ?? $input['campaign'] ?? $input['slug'] ?? '')));
 $email = strtolower(trim((string) ($input['email'] ?? '')));
@@ -164,7 +168,7 @@ try {
         null,
         $contactId ?: null,
         mg_campaign_type_event_type($campaignType),
-        json_encode(['campaign_type' => $campaignType, 'source' => $source, 'email' => $email, 'crm_entry' => true, 'embed_attribution' => $embedAttribution, 'merchant_crm' => $crm, 'merchant_notification' => $merchantNotification, 'registry' => 'campaign_types_v1_1'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+        json_encode(['campaign_type' => $campaignType, 'source' => $source, 'email' => $email, 'entry' => $entry, 'crm_entry' => true, 'embed_attribution' => $embedAttribution, 'merchant_crm' => $crm, 'merchant_notification' => $merchantNotification, 'registry' => 'campaign_types_v1_1'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
     ]);
 
     $expiresAt = mg_public_campaign_engage_expiry($campaign);
@@ -187,6 +191,7 @@ try {
             'pppm_bridge' => $bridge,
             'merchant_crm' => $crm,
             'merchant_notification' => $merchantNotification,
+            'entry' => $entry,
             'embed_attribution' => $embedAttribution,
         ], 'Campaign reward already issued.');
     }
@@ -203,6 +208,7 @@ try {
         'campaign_type' => $campaignType,
         'reward_template_id' => (string)$campaign['reward_template_public_id'],
         'generic_engagement' => true,
+        'entry' => $entry,
         'registry' => 'campaign_types_v1_1',
         'stamp_ledger_entry_id' => $stampLedger['entry']['entry_id'] ?? null,
     ], $embedAttribution);
@@ -234,7 +240,7 @@ try {
         $walletDbId,
         $contactId ?: null,
         'wallet_item.issued',
-        json_encode(['wallet_item_id' => $walletPublicId, 'campaign_type' => $campaignType, 'source' => $source, 'embed_attribution' => $embedAttribution, 'pppm_bridge' => $bridge, 'merchant_crm' => $crm, 'merchant_notification' => $merchantNotification, 'stamp_ledger_entry_id' => $stampLedger['entry']['entry_id'] ?? null, 'registry' => 'campaign_types_v1_1'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+        json_encode(['wallet_item_id' => $walletPublicId, 'campaign_type' => $campaignType, 'source' => $source, 'entry' => $entry, 'embed_attribution' => $embedAttribution, 'pppm_bridge' => $bridge, 'merchant_crm' => $crm, 'merchant_notification' => $merchantNotification, 'stamp_ledger_entry_id' => $stampLedger['entry']['entry_id'] ?? null, 'registry' => 'campaign_types_v1_1'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
     ]);
 
     $pdo->commit();
@@ -252,6 +258,7 @@ try {
         'merchant_crm' => $crm,
         'merchant_notification' => $merchantNotification,
         'stamp_ledger' => $stampLedger,
+        'entry' => $entry,
         'embed_attribution' => $embedAttribution,
     ], (string) ($campaign['success_message'] ?? 'Campaign reward issued.'), 201);
 } catch (Throwable $error) {
