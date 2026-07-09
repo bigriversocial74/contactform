@@ -11,6 +11,7 @@
   var uploadedUrl = root.getAttribute('data-uploaded-audio-url') || '';
   var uploadedAssetId = root.getAttribute('data-uploaded-asset-id') || '';
   var player = root.querySelector('[data-listen-uploaded-player]');
+  var waveform = root.querySelector('.mg-rl-wave');
   var statusNodes = Array.prototype.slice.call(root.querySelectorAll('[data-listen-reward-status]'));
   var historyLists = Array.prototype.slice.call(root.querySelectorAll('[data-listen-reward-history]'));
   var rewardHistoryLists = Array.prototype.slice.call(root.querySelectorAll('[data-listen-reward-issue-history]'));
@@ -23,6 +24,7 @@
   var blocked = false;
   var audioBound = false;
   var eligibilityCache = {};
+  var waveformBars = [];
 
   function esc(value) {
     return String(value == null ? '' : value).replace(/[&<>'"]/g, function (char) {
@@ -31,6 +33,102 @@
   }
   function timeLabel() {
     try { return new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); } catch (error) { return ''; }
+  }
+  function seededValue(seed) {
+    var value = seed || 2147483647;
+    return function () {
+      value = (value * 48271) % 2147483647;
+      return (value & 2147483647) / 2147483647;
+    };
+  }
+  function seedFromString(text) {
+    var seed = 0;
+    String(text || 'microgifter-waveform').split('').forEach(function (char) { seed = ((seed << 5) - seed + char.charCodeAt(0)) | 0; });
+    return Math.abs(seed) || 81421;
+  }
+  function demoWaveform(count) {
+    var random = seededValue(seedFromString(campaignId + spotifyTrackId + uploadedUrl));
+    var values = [];
+    for (var i = 0; i < count; i += 1) {
+      var t = i / Math.max(1, count - 1);
+      var envelope = Math.sin(Math.PI * Math.min(1, Math.max(0, t * 1.04))) * 0.42 + 0.28;
+      var groove = Math.abs(Math.sin(i * 0.72)) * 0.28 + Math.abs(Math.sin(i * 1.83 + 1.7)) * 0.18;
+      var jitter = (random() - 0.5) * 0.22;
+      values.push(Math.max(0.10, Math.min(1, envelope + groove + jitter)));
+    }
+    return values;
+  }
+  function waveformFromBuffer(buffer, count) {
+    var channels = [];
+    for (var channelIndex = 0; channelIndex < Math.min(2, buffer.numberOfChannels); channelIndex += 1) {
+      channels.push(buffer.getChannelData(channelIndex));
+    }
+    if (!channels.length) return demoWaveform(count);
+    var length = channels[0].length;
+    var block = Math.max(1, Math.floor(length / count));
+    var values = [];
+    var max = 0;
+    for (var i = 0; i < count; i += 1) {
+      var start = i * block;
+      var end = Math.min(length, start + block);
+      var peak = 0;
+      var sum = 0;
+      var samples = 0;
+      for (var j = start; j < end; j += Math.max(1, Math.floor(block / 220))) {
+        var sample = 0;
+        channels.forEach(function (data) { sample += Math.abs(data[j] || 0); });
+        sample = sample / channels.length;
+        peak = Math.max(peak, sample);
+        sum += sample * sample;
+        samples += 1;
+      }
+      var rms = Math.sqrt(sum / Math.max(1, samples));
+      var value = Math.min(1, peak * 0.72 + rms * 1.65);
+      values.push(value);
+      max = Math.max(max, value);
+    }
+    max = max || 1;
+    return values.map(function (value) { return Math.max(0.08, Math.min(1, value / max)); });
+  }
+  function renderWaveform(values, activePercent) {
+    if (!waveform) return;
+    waveform.innerHTML = '';
+    waveformBars = values.map(function (value) {
+      var bar = document.createElement('i');
+      bar.style.height = Math.round(12 + value * 52) + 'px';
+      bar.style.background = '#dbe4ee';
+      bar.style.transition = 'height .24s ease, background .18s ease, opacity .18s ease';
+      waveform.appendChild(bar);
+      return bar;
+    });
+    setWaveProgress(activePercent == null ? 42 : activePercent);
+  }
+  function setWaveProgress(percent) {
+    if (!waveformBars.length) return;
+    var active = Math.max(0, Math.min(100, Number(percent || 0)));
+    var cutoff = Math.round((active / 100) * waveformBars.length);
+    waveformBars.forEach(function (bar, index) {
+      var isActive = index < cutoff;
+      bar.style.background = isActive ? 'linear-gradient(180deg, #1f7bff, #1260ff)' : '#dbe4ee';
+      bar.style.opacity = isActive ? '1' : '.86';
+    });
+  }
+  async function initWaveform() {
+    if (!waveform) return;
+    renderWaveform(demoWaveform(72), provider === 'uploaded' ? 0 : 42);
+    if (provider !== 'uploaded' || !uploadedUrl || !window.fetch || !window.AudioContext && !window.webkitAudioContext) return;
+    try {
+      var response = await fetch(uploadedUrl, { credentials: 'same-origin', cache: 'force-cache' });
+      if (!response.ok) throw new Error('Unable to load audio waveform.');
+      var buffer = await response.arrayBuffer();
+      var AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      var context = new AudioContextClass();
+      var decoded = await context.decodeAudioData(buffer.slice(0));
+      renderWaveform(waveformFromBuffer(decoded, 72), 0);
+      if (context.close) context.close();
+    } catch (error) {
+      renderWaveform(demoWaveform(72), provider === 'uploaded' ? 0 : 42);
+    }
   }
   function setSingleLine(lists, message) {
     lists.forEach(function (list) {
@@ -158,6 +256,7 @@
       if (issued.length) setResult(inboxResult(issued));
       setStatus(data.message || ('Listening… ' + Math.round(percent) + '% complete'));
       setActivity('Listening progress: ' + Math.round(percent) + '% complete.');
+      setWaveProgress(percent);
     } catch (error) {
       var message = error.message || 'Unable to record listen progress.';
       if (/already participated|limit reached|account required|required to participate|signed-in|signed in|sign in/i.test(message)) campaignNotice(message);
@@ -168,6 +267,7 @@
     var p = progress();
     if (p.duration > 0 && customer.email && !blocked) {
       maxPercent = Math.min(100, p.percent);
+      setWaveProgress(maxPercent);
       setStatus('Listening… ' + Math.round(maxPercent) + '% complete');
       setActivity('Listening progress: ' + Math.round(maxPercent) + '% complete.');
       postProgress(maxPercent, false);
@@ -187,6 +287,7 @@
     player.addEventListener('ended', function () {
       if (!customer.email || blocked) return;
       maxPercent = 100;
+      setWaveProgress(100);
       postProgress(100, true);
       clearInterval(timer);
       setStatus('Audio complete. Final rewards checked.');
@@ -213,15 +314,18 @@
       if (!(await joinFromForm(form, false))) return;
       if (provider === 'uploaded') { bindAudio(); setStatus('Joined. Press play on the audio player to start reward tracking.'); postProgress(0, true); return; }
       setStatus('Spotify track loaded. Listen in the embedded player, then confirm to unlock the reward.');
+      setWaveProgress(100);
       postProgress(0, true);
     });
   });
   if (confirmButton) confirmButton.addEventListener('click', async function () {
     if (!(await joinFromForm(null, false))) return;
     maxPercent = 100;
+    setWaveProgress(100);
     setActivity('Spotify listen confirmation submitted.');
     postProgress(100, true);
   });
+  initWaveform();
   bindAudio();
   bindMobileDrawer();
   var initial = readForm();
