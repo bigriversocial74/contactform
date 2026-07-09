@@ -17,8 +17,8 @@ var registryMap={};
 registry.forEach(function(type){if(type&&type.key){registryMap[type.key]=type;}});
 
 var tabMap={
-  'campaign-overview':'overview','campaign-active':'active','campaign-drafts':'drafts','campaign-qr-drops':'qr_drops','campaign-contests':'contests','campaign-forms':'forms','campaign-performance':'performance','campaign-builder':'create','campaign-create':'create','campaign-followups':'followups','campaign-queue':'queue','campaign-contacts':'contacts',
-  overview:'overview',active:'active',drafts:'drafts',qr_drops:'qr_drops',contests:'contests',forms:'forms',performance:'performance',create:'create',followups:'followups',queue:'queue',contacts:'contacts'
+  'campaign-overview':'overview','campaign-active':'active','campaign-drafts':'drafts','campaign-qr-drops':'qr_drops','campaign-contests':'contests','campaign-forms':'forms','campaign-landing-qa':'landing_qa','campaign-performance':'performance','campaign-builder':'create','campaign-create':'create','campaign-followups':'followups','campaign-queue':'queue','campaign-contacts':'contacts',
+  overview:'overview',active:'active',drafts:'drafts',qr_drops:'qr_drops',contests:'contests',forms:'forms',landing_qa:'landing_qa',performance:'performance',create:'create',followups:'followups',queue:'queue',contacts:'contacts'
 };
 
 var campaignDefaults={
