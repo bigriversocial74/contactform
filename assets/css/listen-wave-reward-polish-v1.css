@@ -21,15 +21,15 @@
 }
 
 .mg-rl-wave-idle {
-  fill: rgba(203, 213, 225, .78);
+  fill: rgba(203, 213, 225, .72);
 }
 
 .mg-rl-wave-active {
-  fill: #1260ff;
+  fill: url(#mg-rl-wave-active-gradient);
 }
 
 .mg-rl-wave-centerline {
-  stroke: rgba(100, 116, 139, .22);
+  stroke: rgba(100, 116, 139, .20);
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
 }
@@ -42,10 +42,29 @@
   vector-effect: non-scaling-stroke;
 }
 
-.mg-rl-reward-stack {
-  display: grid;
-  gap: 10px;
+.mg-rl-reward-carousel {
+  position: relative;
   margin: 10px 0 12px;
+}
+
+.mg-rl-reward-stack {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  padding: 1px 0 8px;
+}
+
+.mg-rl-reward-stack::-webkit-scrollbar {
+  height: 6px;
+}
+
+.mg-rl-reward-stack::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(18, 96, 255, .24);
 }
 
 .mg-rl-reward-item {
@@ -53,6 +72,8 @@
   grid-template-columns: 58px minmax(0, 1fr);
   gap: 11px;
   align-items: center;
+  min-width: 100%;
+  scroll-snap-align: start;
   padding: 10px;
   border: 1px solid rgba(15, 23, 42, .08);
   border-radius: 15px;
@@ -117,6 +138,18 @@
   font-size: 10px;
   font-weight: 800;
   line-height: 1.1;
+}
+
+.mg-rl-carousel-hint {
+  display: none;
+  margin-top: -2px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.mg-rl-reward-stack.has-multiple + .mg-rl-carousel-hint {
+  display: block;
 }
 
 .mg-rl-reward-info > p {
