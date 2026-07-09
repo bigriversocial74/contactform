@@ -11,6 +11,7 @@ on:
       - 'wallet.php'
       - 'watch-reward.php'
       - 'listen-reward.php'
+      - 'check-in-reward.php'
       - 'merchant-wallet-redemptions.php'
       - 'merchant-campaigns.php'
       - 'merchant-reward-templates.php'
@@ -26,6 +27,7 @@ on:
       - 'assets/js/public-campaign.js'
       - 'assets/js/public-watch-video-reward.js'
       - 'assets/js/public-listen-music-reward.js'
+      - 'assets/js/public-check-in-reward.js'
       - 'scripts/validate_stage12*.php'
       - 'scripts/validate_campaign_types_*.php'
       - 'scripts/validate_customer_refund_*.php'
@@ -47,6 +49,7 @@ on:
       - 'wallet.php'
       - 'watch-reward.php'
       - 'listen-reward.php'
+      - 'check-in-reward.php'
       - 'merchant-wallet-redemptions.php'
       - 'merchant-campaigns.php'
       - 'merchant-reward-templates.php'
@@ -62,6 +65,7 @@ on:
       - 'assets/js/public-campaign.js'
       - 'assets/js/public-watch-video-reward.js'
       - 'assets/js/public-listen-music-reward.js'
+      - 'assets/js/public-check-in-reward.js'
       - 'scripts/validate_stage12*.php'
       - 'scripts/validate_campaign_types_*.php'
       - 'scripts/validate_customer_refund_*.php'
@@ -91,6 +95,7 @@ jobs:
           php -l wallet.php
           php -l watch-reward.php
           php -l listen-reward.php
+          php -l check-in-reward.php
           php -l merchant-wallet-redemptions.php
           php -l merchant-campaigns.php
           php -l merchant-reward-templates.php
@@ -113,10 +118,13 @@ jobs:
           php -l api/merchant/listen-audio-upload.php
           php -l api/merchant/campaign-winner.php
           php -l api/merchant/wallet-redeem.php
+          php -l api/merchant/locations.php
           php -l api/public/campaigns/detail.php
           php -l api/public/campaigns/signup.php
           php -l api/public/campaigns/qr-pickup.php
           php -l api/public/campaigns/contest-entry.php
+          php -l api/public/campaigns/survey-feedback.php
+          php -l api/public/campaigns/check-in.php
           php -l api/public/campaigns/watch-progress.php
           php -l api/public/campaigns/listen-progress.php
           php -l api/public/offers/search.php
