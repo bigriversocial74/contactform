@@ -5,7 +5,7 @@
   if (!root) return;
 
   var form = root.querySelector('[data-listen-reward-form]');
-  var status = root.querySelector('[data-listen-reward-status]');
+  var statusNodes = Array.prototype.slice.call(root.querySelectorAll('[data-listen-reward-status]'));
   var result = root.querySelector('[data-listen-reward-result]');
   var shell = root.querySelector('[data-listen-audio-shell]');
   var provider = root.getAttribute('data-audio-provider') || 'spotify';
@@ -33,7 +33,7 @@
   }
 
   function setStatus(message) {
-    if (status) status.textContent = message || '';
+    statusNodes.forEach(function (node) { node.textContent = message || ''; });
     if (message) addNotification(message);
   }
 
