@@ -29,24 +29,25 @@ try {
     $stmt = $pdo->prepare("SELECT public_id, public_slug, campaign_type, rules_json FROM campaigns WHERE status = 'active' AND (public_id = ? OR public_slug = ?) LIMIT 1");
     $stmt->execute([$campaignRef, $campaignRef]);
     $campaign = $stmt->fetch(PDO::FETCH_ASSOC);
-    if (!$campaign || (string)$campaign['campaign_type'] !== 'survey_feedback_reward') {
-        mg_fail('Survey feedback campaign is not available.', 404);
-    }
-    $rules = [];
-    if (is_string($campaign['rules_json'] ?? null) && trim((string)$campaign['rules_json']) !== '') {
-        $decoded = json_decode((string)$campaign['rules_json'], true);
-        $rules = is_array($decoded) ? $decoded : [];
-    }
-    if (!empty($rules['rating_required']) && $ratingRaw === '') {
-        mg_fail('Please choose a feedback rating before claiming the reward.', 422);
-    }
-    if (!empty($rules['feedback_required']) && $feedback === '') {
-        mg_fail('Please share a feedback response before claiming the reward.', 422);
-    }
 } catch (Throwable $error) {
-    if ($error instanceof RuntimeException) throw $error;
-    if (function_exists('mg_security_log')) mg_security_log('warning', 'public.survey_feedback.validation_failed', 'Survey feedback validation failed.', ['exception_class' => $error::class]);
+    if (function_exists('mg_security_log')) mg_security_log('warning', 'public.survey_feedback.lookup_failed', 'Survey feedback campaign lookup failed.', ['exception_class' => $error::class]);
     mg_fail('Survey feedback campaign is not available.', 404);
+}
+
+if (!$campaign || (string)$campaign['campaign_type'] !== 'survey_feedback_reward') {
+    mg_fail('Survey feedback campaign is not available.', 404);
+}
+
+$rules = [];
+if (is_string($campaign['rules_json'] ?? null) && trim((string)$campaign['rules_json']) !== '') {
+    $decoded = json_decode((string)$campaign['rules_json'], true);
+    $rules = is_array($decoded) ? $decoded : [];
+}
+if (!empty($rules['rating_required']) && $ratingRaw === '') {
+    mg_fail('Please choose a feedback rating before claiming the reward.', 422);
+}
+if (!empty($rules['feedback_required']) && $feedback === '') {
+    mg_fail('Please share a feedback response before claiming the reward.', 422);
 }
 
 require __DIR__ . '/engage.php';
