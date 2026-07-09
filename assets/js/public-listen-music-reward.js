@@ -3,9 +3,8 @@
   var root = document.querySelector('[data-listen-music-reward]');
   if (!root) return;
 
-  var form = root.querySelector('[data-listen-reward-form]');
+  var forms = Array.prototype.slice.call(root.querySelectorAll('[data-listen-reward-form]'));
   var result = root.querySelector('[data-listen-reward-result]');
-  var shell = root.querySelector('[data-listen-audio-shell]');
   var provider = root.getAttribute('data-audio-provider') || 'spotify';
   var campaignId = root.getAttribute('data-campaign-id') || '';
   var spotifyTrackId = root.getAttribute('data-spotify-track-id') || '';
@@ -13,9 +12,9 @@
   var uploadedAssetId = root.getAttribute('data-uploaded-asset-id') || '';
   var player = root.querySelector('[data-listen-uploaded-player]');
   var statusNodes = Array.prototype.slice.call(root.querySelectorAll('[data-listen-reward-status]'));
-  var notifications = root.querySelector('[data-listen-reward-notifications]');
-  var history = root.querySelector('[data-listen-reward-history]');
-  var rewardHistory = root.querySelector('[data-listen-reward-issue-history]');
+  var notificationLists = Array.prototype.slice.call(root.querySelectorAll('[data-listen-reward-notifications]'));
+  var historyLists = Array.prototype.slice.call(root.querySelectorAll('[data-listen-reward-history]'));
+  var rewardHistoryLists = Array.prototype.slice.call(root.querySelectorAll('[data-listen-reward-issue-history]'));
   var confirmButton = root.querySelector('[data-listen-spotify-confirm]');
   var customer = {};
   var timer = null;
@@ -23,9 +22,9 @@
   var lastPost = 0;
   var started = false;
   var joined = false;
+  var blocked = false;
   var audioBound = false;
-  var unlockedStep = 0;
-  var steps = { join: 0, media: 1, rewards: 2 };
+  var eligibilityCache = {};
 
   function esc(value) {
     return String(value == null ? '' : value).replace(/[&<>'"]/g, function (char) {
@@ -35,72 +34,60 @@
   function timeLabel() {
     try { return new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); } catch (error) { return ''; }
   }
-  function clearPlaceholder(list) {
-    if (!list) return;
-    if (list.children.length === 1 && /waiting|no listening|no rewards/i.test(list.children[0].textContent || '')) list.innerHTML = '';
+  function listArray(lists) {
+    return Array.isArray(lists) ? lists : (lists ? [lists] : []);
   }
-  function addRow(list, message) {
-    if (!list || !message) return;
-    clearPlaceholder(list);
-    var row = document.createElement('li');
-    row.innerHTML = '<span>' + esc(timeLabel()) + '</span><strong>' + esc(message) + '</strong>';
-    list.insertBefore(row, list.firstChild || null);
-    while (list.children.length > 8) list.removeChild(list.lastChild);
+  function setSingleLine(lists, message) {
+    listArray(lists).forEach(function (list) {
+      if (!list) return;
+      list.innerHTML = '<li><span>' + esc(timeLabel()) + '</span><strong>' + esc(message || '') + '</strong></li>';
+    });
+  }
+  function appendRow(lists, message) {
+    listArray(lists).forEach(function (list) {
+      if (!list || !message) return;
+      if (list.children.length === 1 && /waiting|no listening|no rewards/i.test(list.children[0].textContent || '')) list.innerHTML = '';
+      var row = document.createElement('li');
+      row.innerHTML = '<span>' + esc(timeLabel()) + '</span><strong>' + esc(message) + '</strong>';
+      list.insertBefore(row, list.firstChild || null);
+      while (list.children.length > 5) list.removeChild(list.lastChild);
+    });
   }
   function setStatus(message) {
     statusNodes.forEach(function (node) { node.textContent = message || ''; });
-    addRow(notifications, message);
+    setSingleLine(notificationLists, message);
+  }
+  function setActivity(message) {
+    setSingleLine(historyLists, message);
   }
   function setResult(html) {
     if (!result) return;
     result.innerHTML = html || '';
     result.classList.toggle('is-visible', Boolean(html));
   }
-  function syncTabs() {
-    root.querySelectorAll('[data-listen-tab-trigger]').forEach(function (button) {
-      var name = button.getAttribute('data-listen-tab-trigger') || 'join';
-      var index = steps[name] || 0;
-      button.setAttribute('aria-disabled', index > unlockedStep ? 'true' : 'false');
-      button.classList.toggle('is-complete', index < unlockedStep);
-    });
-  }
-  function showTab(name, force) {
-    if (steps[name] == null) name = 'join';
-    if (!force && (steps[name] || 0) > unlockedStep) {
-      setStatus('Complete the current step before moving forward.');
-      return;
-    }
-    root.querySelectorAll('[data-listen-tab-trigger]').forEach(function (button) {
-      var active = button.getAttribute('data-listen-tab-trigger') === name;
-      button.classList.toggle('is-active', active);
-      button.setAttribute('aria-selected', active ? 'true' : 'false');
-    });
-    root.querySelectorAll('[data-listen-tab-panel]').forEach(function (panel) {
-      var active = panel.getAttribute('data-listen-tab-panel') === name;
-      panel.classList.toggle('is-active', active);
-      panel.hidden = !active;
-    });
-    syncTabs();
-  }
-  function unlockStep(index) {
-    unlockedStep = Math.max(unlockedStep, index);
-    syncTabs();
-  }
   function rewardCard(item) {
     var image = item.reward_image_url ? '<img class="mg-campaign-issued-reward-image" src="' + esc(item.reward_image_url) + '" alt="">' : '';
     return '<div class="mg-campaign-issued-reward-card ' + (image ? 'has-image' : 'is-text-only') + '">' + image + '<span>' + esc((item.percent || '') + '% — ' + (item.reward_title || 'Music reward')) + '</span></div>';
   }
   function inboxResult(issued) {
-    return '<strong>Reward sent to your Microgifter Inbox</strong><div class="mg-campaign-issued-reward-list">' + issued.map(rewardCard).join('') + '</div><p class="mg-public-campaign-note">Open your Microgifter Inbox to view, manage, or redeem the reward.</p><a class="mg-btn mg-btn-primary" href="/inbox.php">Open Microgifter Inbox</a>';
+    return '<strong>Reward sent to your Microgifter Inbox</strong><div class="mg-campaign-issued-reward-list">' + issued.map(rewardCard).join('') + '</div><p class="mg-public-campaign-note">Open your Microgifter Inbox to view, manage, or redeem the reward.</p><a class="mg-rl-btn mg-rl-btn-soft" href="/inbox.php">Open Microgifter Inbox</a>';
   }
   function campaignNotice(message) {
-    var account = /account|required|signed-in|sign in|signed in/i.test(message || '');
-    var actions = account ? '<a class="mg-btn mg-btn-primary" href="/signin.php">Sign in</a><a class="mg-btn mg-btn-soft" href="/signup.php">Create account</a>' : '<a class="mg-btn mg-btn-primary" href="/inbox.php">Open Microgifter Inbox</a>';
-    unlockStep(2);
-    setResult('<strong>Campaign notice</strong><p>' + esc(message || 'This campaign is not available for another participation.') + '</p><div class="mg-heading-actions">' + actions + '</div>');
-    showTab('rewards', true);
+    blocked = true;
+    root.classList.add('is-participation-blocked');
+    var text = message || 'You have already participated in this campaign.';
+    setStatus(text);
+    setActivity(text);
+    setResult('<strong>Campaign notice</strong><p>' + esc(text) + '</p><a class="mg-rl-btn mg-rl-btn-soft" href="/inbox.php">Open Microgifter Inbox</a>');
   }
-  function readForm() {
+  function visibleForm() {
+    for (var i = 0; i < forms.length; i += 1) {
+      if (forms[i].offsetParent !== null) return forms[i];
+    }
+    return forms[0] || null;
+  }
+  function readForm(sourceForm) {
+    var form = sourceForm || visibleForm();
     if (!form) return { name: '', email: '', phone: '' };
     var fd = new FormData(form);
     return {
@@ -109,21 +96,42 @@
       phone: String(fd.get('phone') || '').trim()
     };
   }
-  function joinFromForm() {
-    var nextCustomer = readForm();
+  async function checkParticipation(email, silent) {
+    if (!email || email.indexOf('@') < 1) return true;
+    if (eligibilityCache[email] != null) return eligibilityCache[email];
+    if (!window.Microgifter || typeof Microgifter.post !== 'function') return true;
+    try {
+      var response = await Microgifter.post('/api/public/campaigns/participation-status.php', {
+        campaign_id: campaignId,
+        campaign_type: 'listen_music_reward',
+        email: email
+      });
+      var data = response.data || response;
+      if (data.participated || data.available === false) {
+        eligibilityCache[email] = false;
+        campaignNotice(data.message || response.message || 'You have already participated in this campaign.');
+        return false;
+      }
+      eligibilityCache[email] = true;
+      if (!silent) setStatus('Campaign available. Press play to start reward tracking.');
+      return true;
+    } catch (error) {
+      return true;
+    }
+  }
+  async function joinFromForm(sourceForm, silent) {
+    var nextCustomer = readForm(sourceForm);
     if (!nextCustomer.email || nextCustomer.email.indexOf('@') < 1) {
       setStatus('Enter a valid email before listening.');
-      showTab('join', true);
       return false;
     }
+    if (blocked && customer.email === nextCustomer.email) return false;
+    if (customer.email === nextCustomer.email && joined) return true;
+    var allowed = await checkParticipation(nextCustomer.email, silent);
+    if (!allowed) return false;
     customer = nextCustomer;
-    if (shell) shell.hidden = false;
-    unlockStep(1);
-    showTab('media', true);
-    if (!joined) {
-      joined = true;
-      addRow(history, 'Campaign joined for ' + customer.email + '.');
-    }
+    joined = true;
+    setActivity('Campaign joined for ' + customer.email + '.');
     return true;
   }
   function progress() {
@@ -151,6 +159,7 @@
     };
   }
   async function postProgress(percent, force) {
+    if (blocked || !customer.email) return;
     if (!window.Microgifter || typeof Microgifter.post !== 'function') {
       setStatus('Microgifter reward tracking is still loading.');
       return;
@@ -162,39 +171,36 @@
       var response = await Microgifter.post('/api/public/campaigns/listen-progress.php', payload(percent));
       var data = response.data || response;
       var issued = data.issued_rewards || [];
-      issued.forEach(function (item) { addRow(rewardHistory, (item.percent || '') + '% reward issued — ' + (item.reward_title || 'Music reward')); });
-      if (issued.length) {
-        unlockStep(2);
-        setResult(inboxResult(issued));
-        showTab('rewards', true);
-      }
-      setStatus(data.message || ('Listen progress recorded: ' + Math.round(percent) + '%'));
-      addRow(history, 'Progress recorded at ' + Math.round(percent) + '%.');
+      issued.forEach(function (item) { appendRow(rewardHistoryLists, (item.percent || '') + '% reward issued — ' + (item.reward_title || 'Music reward')); });
+      if (issued.length) setResult(inboxResult(issued));
+      setStatus(data.message || ('Listening… ' + Math.round(percent) + '% complete'));
+      setActivity('Listening progress: ' + Math.round(percent) + '% complete.');
     } catch (error) {
       var message = error.message || 'Unable to record listen progress.';
-      setStatus(message);
       if (/already participated|limit reached|account required|required to participate|signed-in|signed in|sign in/i.test(message)) campaignNotice(message);
+      else setStatus(message);
     }
   }
   function tick() {
     var p = progress();
-    if (p.duration > 0 && customer.email) {
+    if (p.duration > 0 && customer.email && !blocked) {
       maxPercent = Math.min(100, p.percent);
       setStatus('Listening… ' + Math.round(maxPercent) + '% complete');
+      setActivity('Listening progress: ' + Math.round(maxPercent) + '% complete.');
       postProgress(maxPercent, false);
     }
   }
   function bindAudio() {
     if (provider !== 'uploaded' || !player || audioBound) return;
     audioBound = true;
-    player.addEventListener('play', function () {
-      if (!joinFromForm()) {
+    player.addEventListener('play', async function () {
+      if (!(await joinFromForm(null, true))) {
         try { player.pause(); } catch (error) {}
         return;
       }
       if (!started) {
         started = true;
-        addRow(history, 'Listening session started.');
+        setActivity('Listening session started.');
         postProgress(1, true);
       }
       clearInterval(timer);
@@ -203,38 +209,51 @@
     player.addEventListener('pause', function () { tick(); clearInterval(timer); });
     player.addEventListener('timeupdate', tick);
     player.addEventListener('ended', function () {
-      if (!customer.email) return;
+      if (!customer.email || blocked) return;
       maxPercent = 100;
       postProgress(100, true);
       clearInterval(timer);
       setStatus('Audio complete. Final rewards checked.');
-      addRow(history, 'Audio completed.');
+      setActivity('Audio completed. Final rewards checked.');
     });
     setStatus('Enter your info, then press play to start reward tracking.');
   }
+  function bindMobileDrawer() {
+    var button = root.querySelector('[data-rl-mobile-toggle]');
+    var drawer = root.querySelector('[data-rl-mobile-drawer]');
+    var dock = root.querySelector('[data-rl-mobile-dock]');
+    if (!button || !drawer) return;
+    button.addEventListener('click', function () {
+      var open = drawer.hasAttribute('hidden');
+      if (open) drawer.removeAttribute('hidden'); else drawer.setAttribute('hidden', 'hidden');
+      button.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (dock) dock.classList.toggle('is-open', open);
+    });
+  }
 
-  root.querySelectorAll('[data-listen-tab-trigger]').forEach(function (button) {
-    button.addEventListener('click', function () { showTab(button.getAttribute('data-listen-tab-trigger') || 'join', false); });
+  forms.forEach(function (form) {
+    form.addEventListener('submit', async function (event) {
+      event.preventDefault();
+      if (!(await joinFromForm(form, false))) return;
+      if (provider === 'uploaded') {
+        bindAudio();
+        setStatus('Joined. Press play on the audio player to start reward tracking.');
+        postProgress(0, true);
+        return;
+      }
+      setStatus('Spotify track loaded. Listen in the embedded player, then confirm to unlock the reward.');
+      postProgress(0, true);
+    });
   });
-  syncTabs();
-  bindAudio();
-
-  if (form) form.addEventListener('submit', function (event) {
-    event.preventDefault();
-    if (!joinFromForm()) return;
-    if (provider === 'uploaded') {
-      bindAudio();
-      setStatus('Joined. Press play on the audio player to start reward tracking.');
-      return;
-    }
-    setStatus('Spotify track loaded. Listen in the embedded player, then confirm to unlock the reward.');
-    postProgress(0, true);
-  });
-
-  if (confirmButton) confirmButton.addEventListener('click', function () {
-    if (!joinFromForm()) return;
+  if (confirmButton) confirmButton.addEventListener('click', async function () {
+    if (!(await joinFromForm(null, false))) return;
     maxPercent = 100;
-    addRow(history, 'Spotify listen confirmation submitted.');
+    setActivity('Spotify listen confirmation submitted.');
     postProgress(100, true);
   });
+
+  bindAudio();
+  bindMobileDrawer();
+  var initial = readForm();
+  if (initial.email) setTimeout(function () { checkParticipation(initial.email, true); }, 600);
 })();
