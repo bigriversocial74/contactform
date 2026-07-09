@@ -35,6 +35,19 @@ function setCampaignTab(form,name,validate){
   });
   return true;
 }
+function collectCampaignFormData(form){
+  var data=Object.fromEntries(new FormData(form).entries());
+  var entry={};
+  Object.keys(data).forEach(function(key){
+    if(key.indexOf('entry_')!==0)return;
+    var entryKey=key.replace(/^entry_/,'');
+    entry[entryKey]=data[key];
+    delete data[key];
+  });
+  if(data.entry_note){entry.note=data.entry_note;delete data.entry_note;}
+  if(Object.keys(entry).length)data.entry=entry;
+  return data;
+}
 
 document.querySelectorAll('[data-public-campaign-tabs]').forEach(function(form){
   form.querySelectorAll('[data-campaign-tab]').forEach(function(tab){
@@ -139,8 +152,7 @@ document.querySelectorAll('[data-campaign-form]').forEach(function(form){
       return;
     }
     var endpoint=form.dataset.submitEndpoint||form.dataset.endpoint||'/api/public/campaigns/engage.php';
-    var data=Object.fromEntries(new FormData(form).entries());
-    if(data.entry_note){data.entry={note:data.entry_note};delete data.entry_note;}
+    var data=collectCampaignFormData(form);
     try{
       setStatus('Submitting…');
       var response=await Microgifter.post(endpoint,data);
