@@ -11,6 +11,21 @@ function mg_merchant_location_slug(string $name): string
     return substr($slug,0,80);
 }
 
+function mg_merchant_location_json(mixed $value): array
+{
+    if(is_array($value))return $value;
+    if(!is_string($value)||trim($value)==='')return [];
+    $decoded=json_decode($value,true);
+    return is_array($decoded)?$decoded:[];
+}
+
+function mg_merchant_location_float_or_null(mixed $value): ?float
+{
+    if($value===null||$value==='')return null;
+    if(!is_numeric($value))return null;
+    return (float)$value;
+}
+
 function mg_merchant_unique_location_code(
     PDO $pdo,
     int $workspaceId,
@@ -120,7 +135,10 @@ if($method==='GET'){
         $stmt=$pdo->prepare(
             "SELECT ml.public_id,ml.name,ml.location_code,ml.address_line1,ml.address_line2,ml.city,ml.region,
                     ml.postal_code,ml.country_code,ml.timezone,ml.phone,ml.status,ml.is_primary,
-                    ml.created_at,ml.updated_at,
+                    ml.metadata_json,ml.created_at,ml.updated_at,
+                    JSON_UNQUOTE(JSON_EXTRACT(ml.metadata_json,'$.latitude')) AS latitude,
+                    JSON_UNQUOTE(JSON_EXTRACT(ml.metadata_json,'$.longitude')) AS longitude,
+                    JSON_UNQUOTE(JSON_EXTRACT(ml.metadata_json,'$.check_in_radius_meters')) AS check_in_radius_meters,
                     EXISTS(
                         SELECT 1 FROM merchant_claim_codes mcc
                         WHERE mcc.merchant_user_id=ml.merchant_user_id
@@ -142,7 +160,15 @@ if($method==='GET'){
              ORDER BY ml.is_primary DESC,ml.name,ml.id"
         );
         $stmt->execute([$workspaceId,$merchantId]);
-        mg_ok(['locations'=>$stmt->fetchAll(),'schema_ready'=>true]);
+        $rows=$stmt->fetchAll() ?: [];
+        foreach($rows as &$row){
+            $row['latitude']=$row['latitude']!==null&&$row['latitude']!==''?(float)$row['latitude']:null;
+            $row['longitude']=$row['longitude']!==null&&$row['longitude']!==''?(float)$row['longitude']:null;
+            $row['check_in_radius_meters']=$row['check_in_radius_meters']!==null&&$row['check_in_radius_meters']!==''?(int)$row['check_in_radius_meters']:150;
+            $row['geo_enabled']=$row['latitude']!==null&&$row['longitude']!==null;
+        }
+        unset($row);
+        mg_ok(['locations'=>$rows,'schema_ready'=>true]);
     }catch(Throwable $error){
         mg_security_log('warning','merchant.locations.schema_unavailable','Merchant location schema is unavailable.',[
             'exception_class'=>$error::class,
@@ -168,6 +194,10 @@ $timezone=trim((string)($input['timezone']??$workspace['timezone']));
 $status=trim((string)($input['status']??'active'));
 $primary=!empty($input['is_primary'])?1:0;
 $countryCode=strtoupper(trim((string)($input['country_code']??'US')));
+$latitude=mg_merchant_location_float_or_null($input['latitude']??null);
+$longitude=mg_merchant_location_float_or_null($input['longitude']??null);
+$radius=(int)($input['check_in_radius_meters']??150);
+$radius=max(25,min(5000,$radius));
 $isCreate=$locationId==='';
 
 if($address1===''||mb_strlen($address1)>190){
@@ -182,6 +212,9 @@ if(
     ||!in_array($status,['active','inactive','archived'],true)
     ||!in_array($timezone,timezone_identifiers_list(),true)
     ||!preg_match('/^[A-Z]{2}$/',$countryCode)
+    ||($latitude!==null&&($latitude<-90||$latitude>90))
+    ||($longitude!==null&&($longitude<-180||$longitude>180))
+    ||(($latitude===null)!==($longitude===null))
     ||($primary&&$status!=='active')
 ){
     mg_fail('Invalid location.',422);
@@ -199,12 +232,13 @@ $pdo->beginTransaction();
 try{
     $locationDbId=0;
     $locationCode='';
+    $existingMetadata=[];
     if($isCreate){
         $locationId=mg_merchant_uuid();
         $locationCode=mg_merchant_unique_location_code($pdo,$workspaceId,$merchantId,$name);
     }else{
         $existing=$pdo->prepare(
-            'SELECT id,location_code FROM merchant_locations
+            'SELECT id,location_code,metadata_json FROM merchant_locations
              WHERE public_id=? AND workspace_id=? AND merchant_user_id=?
              LIMIT 1 FOR UPDATE'
         );
@@ -213,6 +247,7 @@ try{
         if(!$row)mg_fail('Location not found.',404);
         $locationDbId=(int)$row['id'];
         $locationCode=(string)$row['location_code'];
+        $existingMetadata=mg_merchant_location_json($row['metadata_json']??null);
         if($locationCode===''){
             $locationCode=mg_merchant_unique_location_code($pdo,$workspaceId,$merchantId,$name,$locationId);
         }
@@ -225,27 +260,38 @@ try{
         )->execute([$workspaceId,$merchantId]);
     }
 
+    $metadata=$existingMetadata;
+    if($latitude!==null&&$longitude!==null){
+        $metadata['latitude']=$latitude;
+        $metadata['longitude']=$longitude;
+        $metadata['check_in_radius_meters']=$radius;
+        $metadata['geo_source']='merchant_registered_location';
+    }else{
+        unset($metadata['latitude'],$metadata['longitude'],$metadata['check_in_radius_meters'],$metadata['geo_source']);
+    }
+    $metadataJson=$metadata!==[]?json_encode($metadata,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE):null;
+
     if($isCreate){
         $pdo->prepare(
             'INSERT INTO merchant_locations
              (public_id,workspace_id,merchant_user_id,name,location_code,address_line1,address_line2,
-              city,region,postal_code,country_code,timezone,phone,status,is_primary,created_at,updated_at)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())'
+              city,region,postal_code,country_code,timezone,phone,status,is_primary,metadata_json,created_at,updated_at)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())'
         )->execute([
             $locationId,$workspaceId,$merchantId,$name,$locationCode,$address1,$address2,
-            $city,$region,$postalCode,$countryCode,$timezone,$phone,$status,$primary,
+            $city,$region,$postalCode,$countryCode,$timezone,$phone,$status,$primary,$metadataJson,
         ]);
         $locationDbId=(int)$pdo->lastInsertId();
     }else{
         $stmt=$pdo->prepare(
             'UPDATE merchant_locations
              SET name=?,location_code=?,address_line1=?,address_line2=?,city=?,region=?,postal_code=?,
-                 country_code=?,timezone=?,phone=?,status=?,is_primary=?,updated_at=NOW()
+                 country_code=?,timezone=?,phone=?,status=?,is_primary=?,metadata_json=?,updated_at=NOW()
              WHERE id=? AND public_id=? AND workspace_id=? AND merchant_user_id=?'
         );
         $stmt->execute([
             $name,$locationCode,$address1,$address2,$city,$region,$postalCode,
-            $countryCode,$timezone,$phone,$status,$primary,
+            $countryCode,$timezone,$phone,$status,$primary,$metadataJson,
             $locationDbId,$locationId,$workspaceId,$merchantId,
         ]);
     }
@@ -272,6 +318,7 @@ try{
         'location_id'=>$locationId,
         'claim_code_changed'=>$claimResult!==null,
         'claim_code_last4'=>$claimResult['code_last4']??null,
+        'geo_enabled'=>$latitude!==null&&$longitude!==null,
     ],$merchantId);
     mg_ok([
         'location_id'=>$locationId,
@@ -279,6 +326,9 @@ try{
         'has_active_claim_code'=>$claimResult!==null,
         'claim_code_last4'=>$claimResult['code_last4']??null,
         'claim_code_rotated'=>$claimResult['rotated']??false,
+        'latitude'=>$latitude,
+        'longitude'=>$longitude,
+        'check_in_radius_meters'=>$latitude!==null?$radius:null,
         'schema_ready'=>true,
         'onboarding_percent'=>$percent,
     ],'Location saved.',201);

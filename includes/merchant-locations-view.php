@@ -32,14 +32,14 @@ declare(strict_types=1);
           <div>
             <span class="mg-eyebrow">Location Network</span>
             <h2 id="mg-location-list-title">Redemption sites</h2>
-            <p>Review saved merchant locations, claim-code status, staff routing, address details, and redemption readiness.</p>
+            <p>Review saved merchant locations, claim-code status, staff routing, address details, geo check-in readiness, and redemption readiness.</p>
           </div>
           <a class="mg-btn mg-btn-soft" href="#location-editor-panel" data-location-open-add>Add Location</a>
         </div>
         <div class="mg-app-panel-body">
           <div class="mg-empty-state" data-location-empty>
             <strong>No locations loaded yet</strong>
-            <p>Add a claim location to anchor voucher claims to the right merchant workspace.</p>
+            <p>Add a claim location to anchor voucher claims and check-in campaigns to the right merchant workspace.</p>
           </div>
           <div class="mg-location-list" data-location-list aria-live="polite"></div>
         </div>
@@ -47,7 +47,7 @@ declare(strict_types=1);
 
       <aside class="mg-locations-side" id="locations-readiness">
         <section class="mg-app-panel mg-locations-panel mg-locations-readiness-card">
-          <div class="mg-app-panel-head mg-locations-panel-head is-compact"><div><h2>Location Readiness</h2><p>Redemption-site issues to review before sending traffic to a location.</p></div></div>
+          <div class="mg-app-panel-head mg-locations-panel-head is-compact"><div><h2>Location Readiness</h2><p>Redemption and check-in issues to review before sending traffic to a location.</p></div></div>
           <div class="mg-app-panel-body">
             <div class="mg-locations-readiness-score"><span>Network signal</span><strong data-location-readiness-score>—</strong></div>
             <div class="mg-locations-readiness-list">
@@ -76,7 +76,7 @@ declare(strict_types=1);
       <div>
         <span class="mg-eyebrow">Claim Site Setup</span>
         <h2 id="mg-location-form-title">Add Location</h2>
-        <p>Save a new redemption location with its title, address, phone, staff routing status, primary flag, and one protected claim code.</p>
+        <p>Save a new redemption and check-in location with address, protected claim code, optional GPS coordinates, and primary routing.</p>
       </div>
       <a class="mg-btn mg-btn-soft" href="#locations-overview" data-location-tab="overview">Back to locations</a>
     </div>
@@ -92,7 +92,7 @@ declare(strict_types=1);
           <label>
             Location claim code
             <input name="claim_code" maxlength="64" pattern="[A-Za-z0-9_-]{4,64}" autocomplete="new-password" placeholder="PHX-001">
-            <small data-location-code-help>Required for a new location. Leave blank to keep an existing code. Codes are stored securely and cannot be displayed again.</small>
+            <small data-location-code-help>Required for a new location. Codes are stored securely and cannot be displayed again.</small>
           </label>
         </div>
 
@@ -149,10 +149,32 @@ declare(strict_types=1);
           </label>
         </div>
 
-        <label class="mg-check">
-          <input name="is_primary" type="checkbox" value="1">
-          Primary location
-        </label>
+        <div class="mg-location-instruction-box">
+          <strong>Geo check-in matching</strong>
+          <p>Optional GPS coordinates let Check-In Reward campaigns match a customer’s browser location to this registered merchant location. Use a reasonable radius for malls, event venues, or larger properties.</p>
+        </div>
+
+        <div class="mg-grid-2">
+          <label>
+            Latitude
+            <input name="latitude" inputmode="decimal" maxlength="32" placeholder="33.4484">
+          </label>
+          <label>
+            Longitude
+            <input name="longitude" inputmode="decimal" maxlength="32" placeholder="-112.0740">
+          </label>
+        </div>
+
+        <div class="mg-grid-2">
+          <label>
+            Check-in radius meters
+            <input name="check_in_radius_meters" inputmode="numeric" maxlength="6" placeholder="150" value="150">
+          </label>
+          <label class="mg-check" style="align-self:end;">
+            <input name="is_primary" type="checkbox" value="1">
+            Primary location
+          </label>
+        </div>
 
         <div class="mg-location-instruction-box">
           <strong>Staff redemption note</strong>
