@@ -114,6 +114,46 @@ function mg_media_detail_event_progress(array $context): float
     )));
 }
 
+function mg_media_detail_behavior_bucket(array $row): string
+{
+    if ((int)($row['redeemed'] ?? 0) > 0) return 'redeemed';
+    if ((int)($row['claimed'] ?? 0) > 0) return 'claimed_unredeemed';
+    if ((int)($row['wallet_items'] ?? 0) > 0) return 'milestone_unclaimed';
+    if ((float)($row['max_progress_percent'] ?? 0) > 0 || (int)($row['starts'] ?? 0) > 0 || (int)($row['progress_events'] ?? 0) > 0) return 'started_incomplete';
+    return 'no_activity';
+}
+
+function mg_media_detail_behavior_label(string $bucket): string
+{
+    return match ($bucket) {
+        'redeemed' => 'Redeemed / completed',
+        'claimed_unredeemed' => 'Claimed, not redeemed',
+        'milestone_unclaimed' => 'Milestone hit, not claimed',
+        'started_incomplete' => 'Started, did not finish',
+        'no_activity' => 'No tracked activity',
+        default => 'All contacts',
+    };
+}
+
+function mg_media_detail_action_urls(array $campaign, string $contactPublicId, string $email): array
+{
+    $campaignRef = rawurlencode(mg_media_detail_public_ref($campaign));
+    $contactRef = rawurlencode($contactPublicId);
+    $crmBase = '/merchant-crm.php?campaign=' . $campaignRef . '&contact=' . $contactRef;
+    return [
+        'crm_profile' => $crmBase,
+        'message' => $crmBase . '&action=message',
+        'send_bonus_reward' => $crmBase . '&action=reward',
+        'add_to_segment' => $crmBase,
+        'mailto' => $email !== '' ? 'mailto:' . rawurlencode($email) . '?subject=' . rawurlencode('Your Microgifter reward') : null,
+    ];
+}
+
+function mg_media_detail_export_url(array $campaign, int $days, string $segment = 'all'): string
+{
+    return '/api/merchant/campaign-media-performance-export.php?campaign=' . rawurlencode(mg_media_detail_public_ref($campaign)) . '&days=' . $days . '&segment=' . rawurlencode($segment);
+}
+
 try {
     $campaign = mg_media_detail_campaign($pdo, $merchantId, $campaignRef);
     $campaignId = (int)$campaign['id'];
@@ -224,9 +264,10 @@ try {
         }
     }
 
-    $contactRows = array_values(array_map(static function (array $row): array {
+    $contactRows = array_values(array_map(static function (array $row) use ($campaign, $days): array {
         $milestones = array_values($row['milestones_reached']);
         sort($milestones);
+        $bucket = mg_media_detail_behavior_bucket($row);
         return [
             'id' => $row['id'],
             'name' => $row['name'] ?: 'Customer',
@@ -244,9 +285,19 @@ try {
             'attribution' => $row['attribution'],
             'last_activity_at' => $row['last_activity_at'],
             'rewards' => $row['rewards'],
+            'behavior_bucket' => $bucket,
+            'behavior_label' => mg_media_detail_behavior_label($bucket),
+            'action_urls' => mg_media_detail_action_urls($campaign, (string)$row['id'], (string)$row['email']),
         ];
     }, $contacts));
     usort($contactRows, static fn(array $a, array $b): int => strcmp((string)($b['last_activity_at'] ?? ''), (string)($a['last_activity_at'] ?? '')));
+
+    $bucketCounts = ['all' => count($contactRows), 'started_incomplete' => 0, 'milestone_unclaimed' => 0, 'claimed_unredeemed' => 0, 'redeemed' => 0, 'no_activity' => 0];
+    foreach ($contactRows as $row) {
+        $bucket = (string)($row['behavior_bucket'] ?? 'no_activity');
+        if (!isset($bucketCounts[$bucket])) $bucketCounts[$bucket] = 0;
+        $bucketCounts[$bucket]++;
+    }
 
     $totals = [
         'contacts' => count($contactRows),
@@ -258,6 +309,7 @@ try {
         'max_progress_percent' => $contactRows ? max(array_column($contactRows, 'max_progress_percent')) : 0,
         'avg_progress_percent' => $contactRows ? round(array_sum(array_column($contactRows, 'max_progress_percent')) / max(1, count($contactRows)), 2) : 0,
         'embed' => $embedTotals,
+        'behavior_buckets' => $bucketCounts,
     ];
 
     mg_ok([
@@ -277,11 +329,19 @@ try {
             'public_url' => mg_media_detail_public_url($campaign),
             'embed_qa_url' => '/merchant-campaign-embed-qa.php?campaign=' . rawurlencode(mg_media_detail_public_ref($campaign)),
             'embed_analytics_url' => '/merchant-campaign-embed-analytics.php?campaign=' . rawurlencode(mg_media_detail_public_ref($campaign)),
+            'crm_campaign_url' => '/merchant-crm.php?campaign=' . rawurlencode(mg_media_detail_public_ref($campaign)),
         ],
         'totals' => $totals,
         'contacts' => $contactRows,
         'embed_origins' => array_values($embedOrigins),
         'recent_events' => array_slice($recentEvents, 0, 50),
+        'action_exports' => [
+            'all' => mg_media_detail_export_url($campaign, $days, 'all'),
+            'started_incomplete' => mg_media_detail_export_url($campaign, $days, 'started_incomplete'),
+            'milestone_unclaimed' => mg_media_detail_export_url($campaign, $days, 'milestone_unclaimed'),
+            'claimed_unredeemed' => mg_media_detail_export_url($campaign, $days, 'claimed_unredeemed'),
+            'redeemed' => mg_media_detail_export_url($campaign, $days, 'redeemed'),
+        ],
     ], 'Campaign media performance loaded.');
 } catch (Throwable $error) {
     mg_security_log('warning', 'merchant.campaign_media_performance.unavailable', 'Campaign media performance unavailable.', ['exception_class' => $error::class, 'message' => $error->getMessage()], $merchantId);

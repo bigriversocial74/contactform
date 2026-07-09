@@ -48,7 +48,7 @@ require __DIR__ . '/includes/header.php';
       <?php else: ?>
         <section class="mg-embed-analytics-hero">
           <div>
-            <span class="mg-eyebrow">Campaign Media Detail Drilldown v1</span>
+            <span class="mg-eyebrow">Campaign Media Follow-Up Actions v1</span>
             <h1 data-media-title>Watch / Listen Performance</h1>
             <p data-media-description>Review customer-level starts, progress, milestone rewards, Inbox / PPPM handoff, claims, redemptions, and attribution for a media reward campaign.</p>
           </div>
@@ -80,6 +80,33 @@ require __DIR__ . '/includes/header.php';
           <article><b>—</b><span>Progress</span></article>
           <article><b>—</b><span>Rewards</span></article>
           <article><b>—</b><span>Claims</span></article>
+        </section>
+
+        <section class="mg-embed-analytics-panel">
+          <div class="mg-panel-head">
+            <div><span class="mg-eyebrow">Follow-Up Actions</span><h2>Segment and act on media engagement</h2></div>
+          </div>
+          <div class="mg-embed-analytics-filters" data-media-action-controls>
+            <label>Behavior
+              <select data-media-segment>
+                <option value="all">All contacts</option>
+                <option value="started_incomplete">Started, did not finish</option>
+                <option value="milestone_unclaimed">Milestone hit, not claimed</option>
+                <option value="claimed_unredeemed">Claimed, not redeemed</option>
+                <option value="redeemed">Redeemed / completed</option>
+                <option value="no_activity">No tracked activity</option>
+              </select>
+            </label>
+            <label>Search
+              <input data-media-search placeholder="Name, email, phone, source">
+            </label>
+            <div class="mg-embed-analytics-actions">
+              <a class="mg-btn mg-btn-primary" href="#" data-media-export>Export visible CSV</a>
+              <a class="mg-btn mg-btn-soft" href="#" data-media-export-all>Export all CSV</a>
+              <a class="mg-btn mg-btn-ghost" href="#" data-media-crm-campaign>Open CRM Campaign</a>
+            </div>
+          </div>
+          <div class="mg-embed-analytics-events" data-media-segment-summary></div>
         </section>
 
         <section class="mg-embed-analytics-grid">
