@@ -27,9 +27,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function listNode() { return document.querySelector('[data-crm-media-segments-list]'); }
 
+  function actionCenterUrl(segment) { return segment.action_center_url || (segment.urls && segment.urls.action_center) || '/merchant-crm-segment-action-center.php?segment=' + encodeURIComponent(segment.id || ''); }
+
   function segmentRow(segment) {
     var active = activeSegmentId && segment.id === activeSegmentId;
-    return '<article class="' + (active ? 'is-highlight' : '') + '" data-crm-media-segment-row="' + esc(segment.id) + '"><div><strong>' + esc(segment.name) + '</strong><small>' + esc(segment.campaign_title || 'Media campaign') + ' · ' + esc(segment.behavior_label || 'All contacts') + ' · ' + count(segment.last_count) + ' contacts</small><small>' + esc(segment.days || 30) + ' days' + (segment.search ? ' · search: ' + esc(segment.search) : '') + ' · refreshed ' + esc(compactDate(segment.last_refreshed_at || segment.updated_at)) + '</small><div class="mg-crm-card-actions" style="justify-content:flex-start;margin-top:8px"><a class="mg-btn mg-btn-soft" href="' + esc(segment.crm_url || '#') + '">Open in CRM</a><a class="mg-btn mg-btn-soft" href="' + esc(segment.open_url || '#') + '">Open rules</a><a class="mg-btn mg-btn-soft" href="' + esc(segment.export_url || '#') + '">Export</a><a class="mg-btn mg-btn-ghost" href="' + esc(segment.message_url || '#') + '">Message segment</a><a class="mg-btn mg-btn-ghost" href="' + esc(segment.reward_url || '#') + '">Reward segment</a></div></div><span class="mg-crm-badge ' + (active ? 'is-good' : '') + '">' + (active ? 'active' : 'saved') + '</span></article>';
+    return '<article class="' + (active ? 'is-highlight' : '') + '" data-crm-media-segment-row="' + esc(segment.id) + '"><div><strong>' + esc(segment.name) + '</strong><small>' + esc(segment.campaign_title || 'Media campaign') + ' · ' + esc(segment.behavior_label || 'All contacts') + ' · ' + count(segment.last_count || segment.current_count) + ' contacts</small><small>' + esc(segment.days || 30) + ' days' + (segment.search ? ' · search: ' + esc(segment.search) : '') + ' · refreshed ' + esc(compactDate(segment.last_refreshed_at || segment.updated_at)) + '</small><div class="mg-crm-card-actions" style="justify-content:flex-start;margin-top:8px"><a class="mg-btn mg-btn-primary" href="' + esc(actionCenterUrl(segment)) + '">Action Center</a><a class="mg-btn mg-btn-soft" href="' + esc(segment.crm_url || '#') + '">Open in CRM</a><a class="mg-btn mg-btn-soft" href="' + esc(segment.open_url || '#') + '">Open rules</a><a class="mg-btn mg-btn-soft" href="' + esc(segment.export_url || '#') + '">Export</a><a class="mg-btn mg-btn-ghost" href="' + esc(segment.message_url || '#') + '">Message segment</a><a class="mg-btn mg-btn-ghost" href="' + esc(segment.reward_url || '#') + '">Reward segment</a></div></div><span class="mg-crm-badge ' + (active ? 'is-good' : '') + '">' + (active ? 'active' : 'saved') + '</span></article>';
   }
 
   function renderSegments() {
@@ -90,6 +92,10 @@ document.addEventListener('DOMContentLoaded', function () {
         if (activeAction === 'reward_segment') {
           var reward = document.querySelector('[data-crm-bulk-action="reward"]');
           if (reward && !reward.disabled) reward.click();
+        }
+        if (activeAction === 'followup_segment') {
+          var followup = document.querySelector('[data-crm-bulk-action="followup"]');
+          if (followup && !followup.disabled) followup.click();
         }
       }, 250);
     }
