@@ -163,6 +163,7 @@ return [
         'stage_32_world_canvas_geo_schema_repair.sql',
         'remaining_sql_diagnostics_repair_20260702.sql',
         'add_customer_refund_campaign_type.sql',
+        'campaign_type_enum_foundation_20260709.sql',
     ],
     'coverage_markers' => [
         'stage_9e4_consolidated_stage1_to_stage9_upgrade' => 'stage_9d_microgift_operations.sql',
