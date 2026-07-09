@@ -84,7 +84,8 @@ if ($campaign && is_string($campaign['rules_json'] ?? null) && trim((string)$cam
     $decoded = json_decode((string)$campaign['rules_json'], true);
     if (is_array($decoded)) $rules = $decoded;
 }
-$surveyPrompt = trim((string)($rules['prompt'] ?? $campaign['survey_prompt'] ?? 'How was your experience?')) ?: 'How was your experience?';
+$surveyPrompt = trim((string)($rules['prompt'] ?? ''));
+if ($surveyPrompt === '') $surveyPrompt = trim((string)($campaign['form_description'] ?? '')) ?: 'How was your experience?';
 $rewardTitle = $campaign ? (trim((string)($campaign['reward_template_title'] ?? '')) ?: 'Microgifter reward') : 'Microgifter reward';
 $rewardValue = $campaign ? mg_survey_feedback_value($campaign) : 'Reward';
 
