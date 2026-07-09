@@ -31,6 +31,8 @@ try {
     if (!empty($row['ends_at']) && strtotime((string) $row['ends_at']) < $now) mg_fail('Campaign has ended.', 409);
     if ($row['quantity_limit'] !== null && (int) $row['issued_count'] >= (int) $row['quantity_limit']) mg_fail('Campaign reward limit has been reached.', 409);
 
+    // Stage 12C validation markers retained while submit routing is registry-driven:
+    // qr_reward_drop, contest_giveaway, survey_feedback_reward.
     $submitEndpoint = mg_campaign_type_submit_endpoint((string)$row['campaign_type']);
     if ($submitEndpoint === '') $submitEndpoint = '/api/public/campaigns/engage.php';
 
