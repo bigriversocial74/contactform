@@ -100,7 +100,7 @@ try {
     $userId = mg_customer_refund_send_find_user($pdo, $email, (int)($sourceContact['user_id'] ?? 0) ?: null);
     if (!$userId) {
         $pdo->rollBack();
-        mg_fail('Customer account required before this voucher can be placed into wallet.php.', 409);
+        mg_fail('Customer account required before this voucher can be placed into wallet.php. Invite-by-email is planned for a future release, but email sending is not enabled yet.', 409);
     }
 
     $campaignSql = 'SELECT c.*, rt.id reward_template_db_id, rt.public_id reward_template_public_id, rt.title reward_template_title,
@@ -161,6 +161,14 @@ try {
     if (!$refundContact) {
         $pdo->rollBack();
         mg_fail('Customer Refund contact could not be prepared.', 500);
+    }
+
+    $activeDuplicate = $pdo->prepare("SELECT public_id FROM wallet_items WHERE merchant_user_id=? AND campaign_id=? AND user_id=? AND source_type='customer_refund' AND status IN ('issued','viewed','claimed','redeemed') AND (expires_at IS NULL OR expires_at>NOW()) ORDER BY id DESC LIMIT 1");
+    $activeDuplicate->execute([$merchantId, (int)$campaign['id'], $userId]);
+    $activeDuplicateWallet = (string)($activeDuplicate->fetchColumn() ?: '');
+    if ($activeDuplicateWallet !== '') {
+        $pdo->rollBack();
+        mg_fail('This customer already has an active Customer Refund voucher from this campaign.', 409, ['wallet_item_id' => $activeDuplicateWallet]);
     }
 
     mg_public_campaign_enforce_reward_limits($pdo, $campaign, $userId, $email);
