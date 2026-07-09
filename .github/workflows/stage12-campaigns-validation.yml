@@ -26,6 +26,7 @@ on:
       - 'api/public/campaigns/*.php'
       - 'api/public/offers/*.php'
       - 'api/public/wallet/*.php'
+      - 'assets/css/listen-watch-media-flow-v1.css'
       - 'assets/js/stage12-*.js'
       - 'assets/js/public-campaign.js'
       - 'assets/js/public-watch-video-reward.js'
@@ -70,6 +71,7 @@ on:
       - 'api/public/campaigns/*.php'
       - 'api/public/offers/*.php'
       - 'api/public/wallet/*.php'
+      - 'assets/css/listen-watch-media-flow-v1.css'
       - 'assets/js/stage12-*.js'
       - 'assets/js/public-campaign.js'
       - 'assets/js/public-watch-video-reward.js'
@@ -131,6 +133,7 @@ jobs:
           php -l api/merchant/customer-refund-qa.php
           php -l api/merchant/watch-video-upload.php
           php -l api/merchant/listen-audio-upload.php
+          php -l api/merchant/campaign-media-image-upload.php
           php -l api/merchant/campaign-winner.php
           php -l api/merchant/wallet-redeem.php
           php -l api/merchant/locations.php
