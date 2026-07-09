@@ -38,6 +38,13 @@ function mg_stamp_card_required_count(array $campaign): int
     return max(1, min(100, $required));
 }
 
+function mg_stamp_card_cooldown_hours(array $campaign): int
+{
+    $rules = mg_stamp_card_json($campaign['rules_json'] ?? null);
+    $hours = (int)($rules['cooldown_hours'] ?? $rules['stamp_cooldown_hours'] ?? 0);
+    return max(0, min(8760, $hours));
+}
+
 function mg_stamp_card_label(array $campaign): string
 {
     $rules = mg_stamp_card_json($campaign['rules_json'] ?? null);
@@ -128,15 +135,22 @@ if (!empty($campaign['ends_at']) && strtotime((string)$campaign['ends_at']) < $n
 if ($campaign['quantity_limit'] !== null && (int)$campaign['issued_count'] >= (int)$campaign['quantity_limit']) mg_fail('Stamp card reward limit has been reached.', 409);
 
 $requiredCount = mg_stamp_card_required_count($campaign);
+$cooldownHours = mg_stamp_card_cooldown_hours($campaign);
 $stampLabel = mg_stamp_card_label($campaign);
 $contactStmt = $pdo->prepare('SELECT id,public_id FROM campaign_contacts WHERE campaign_id=? AND email=? LIMIT 1');
 $contactStmt->execute([(int)$campaign['id'], $email]);
 $existingContact = $contactStmt->fetch(PDO::FETCH_ASSOC) ?: null;
 $previousStamps = 0;
+$lastStampAt = null;
 if ($existingContact) {
-    $countStmt = $pdo->prepare("SELECT COUNT(*) FROM campaign_events WHERE campaign_id=? AND contact_id=? AND event_type='stamp_card.stamped'");
+    $countStmt = $pdo->prepare("SELECT COUNT(*), MAX(created_at) FROM campaign_events WHERE campaign_id=? AND contact_id=? AND event_type='stamp_card.stamped'");
     $countStmt->execute([(int)$campaign['id'], (int)$existingContact['id']]);
-    $previousStamps = (int)$countStmt->fetchColumn();
+    $row = $countStmt->fetch(PDO::FETCH_NUM) ?: [0, null];
+    $previousStamps = (int)($row[0] ?? 0);
+    $lastStampAt = $row[1] ?? null;
+}
+if ($cooldownHours > 0 && is_string($lastStampAt) && strtotime($lastStampAt) > (time() - ($cooldownHours * 3600))) {
+    mg_fail('This stamp card has a cooldown before the next stamp can be recorded.', 409);
 }
 $stampCount = $previousStamps + 1;
 $unlocked = $stampCount >= $requiredCount;
@@ -146,6 +160,7 @@ $entry['previous_stamp_count'] = $previousStamps;
 $entry['required_count'] = $requiredCount;
 $entry['stamps_remaining'] = max(0, $requiredCount - $stampCount);
 $entry['stamp_result'] = $unlocked ? 'unlocked' : 'recorded';
+$entry['stamp_cooldown_hours'] = $cooldownHours;
 $entry['stamped_at'] = gmdate('c');
 $input['entry'] = $entry;
 $input['campaign_type'] = 'stamp_card_reward';
