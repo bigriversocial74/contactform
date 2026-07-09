@@ -2,7 +2,7 @@
   'use strict';
 
   var root = document.querySelector('[data-listen-music-reward]');
-  if (!root || !window.Microgifter) return;
+  if (!root) return;
 
   var form = root.querySelector('[data-listen-reward-form]');
   var status = root.querySelector('[data-listen-reward-status]');
@@ -22,6 +22,7 @@
   var maxPercent = 0;
   var lastPost = 0;
   var started = false;
+  var audioBound = false;
 
   function esc(value) {
     return String(value == null ? '' : value).replace(/[&<>'"]/g, function (char) {
@@ -139,6 +140,10 @@
   }
 
   async function postProgress(percent, force) {
+    if (!window.Microgifter || typeof Microgifter.post !== 'function') {
+      setStatus('Microgifter reward tracking is still loading. Try again in a moment.');
+      return;
+    }
     var now = Date.now();
     if (!force && now - lastPost < 4500) return;
     lastPost = now;
@@ -169,7 +174,8 @@
   }
 
   function bindAudio() {
-    if (provider !== 'uploaded' || !player) return;
+    if (provider !== 'uploaded' || !player || audioBound) return;
+    audioBound = true;
     player.addEventListener('play', function () {
       if (!started) {
         started = true;
