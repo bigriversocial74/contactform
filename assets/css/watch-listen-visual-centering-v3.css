@@ -1,0 +1,159 @@
+/* Watch / Listen visual centering v3
+   Fixes the composition shown in desktop screenshots: the shell was contained but visually shifted right.
+   This override centers the whole composition by controlling shell math, column ratio, and page gutters. */
+
+.mg-media-reward-landing {
+  --mg-media-shell-max: 1120px;
+  --mg-media-left-col: 760px;
+  --mg-media-right-col: 300px;
+  --mg-media-gap: 20px;
+  --mg-media-gutter: 40px;
+  overflow-x: hidden !important;
+}
+
+.mg-media-reward-landing .mg-public-campaign-shell.mg-media-reward-shell,
+.mg-media-reward-shell {
+  width: min(var(--mg-media-shell-max), calc(100vw - (var(--mg-media-gutter) * 2))) !important;
+  max-width: calc(100vw - (var(--mg-media-gutter) * 2)) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  grid-template-columns: minmax(0, var(--mg-media-left-col)) minmax(280px, var(--mg-media-right-col)) !important;
+  gap: var(--mg-media-gap) !important;
+  justify-content: center !important;
+}
+
+.mg-media-reward-hero,
+.mg-media-reward-left-column {
+  width: 100% !important;
+  max-width: var(--mg-media-left-col) !important;
+  justify-self: stretch !important;
+}
+
+.mg-media-join-card {
+  width: 100% !important;
+  max-width: var(--mg-media-right-col) !important;
+  justify-self: stretch !important;
+  padding: 22px !important;
+}
+
+.mg-media-reward-hero h1 {
+  max-width: 650px !important;
+  font-size: clamp(44px, 4.2vw, 66px) !important;
+}
+
+.mg-media-reward-hero p {
+  max-width: 500px !important;
+}
+
+.mg-media-stage-card-listen {
+  padding: 16px !important;
+}
+
+.mg-media-reward-bottom-grid {
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, .78fr) minmax(0, .78fr) !important;
+  gap: 14px !important;
+}
+
+.mg-media-dashboard-card {
+  padding: 18px !important;
+}
+
+.mg-media-stage-summary {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.mg-media-stage-player video,
+.mg-media-stage-player #mg-watch-video-player,
+.mg-media-stage-player iframe[src*="youtube"] {
+  min-height: 0 !important;
+}
+
+@media (min-width: 1500px) {
+  .mg-media-reward-landing {
+    --mg-media-shell-max: 1240px;
+    --mg-media-left-col: 860px;
+    --mg-media-right-col: 340px;
+    --mg-media-gap: 24px;
+    --mg-media-gutter: 52px;
+  }
+
+  .mg-media-reward-hero h1 {
+    max-width: 740px !important;
+    font-size: clamp(52px, 4.8vw, 82px) !important;
+  }
+}
+
+@media (min-width: 1760px) {
+  .mg-media-reward-landing {
+    --mg-media-shell-max: 1360px;
+    --mg-media-left-col: 940px;
+    --mg-media-right-col: 380px;
+    --mg-media-gap: 28px;
+    --mg-media-gutter: 64px;
+  }
+}
+
+@media (max-width: 1320px) {
+  .mg-media-reward-landing {
+    --mg-media-shell-max: 1040px;
+    --mg-media-left-col: 700px;
+    --mg-media-right-col: 300px;
+    --mg-media-gap: 18px;
+    --mg-media-gutter: 28px;
+  }
+
+  .mg-media-reward-hero h1 {
+    font-size: clamp(40px, 4.6vw, 60px) !important;
+  }
+
+  .mg-media-reward-bottom-grid {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, .74fr) minmax(0, .74fr) !important;
+  }
+}
+
+@media (max-width: 1120px) {
+  .mg-media-reward-landing {
+    --mg-media-shell-max: 900px;
+    --mg-media-left-col: 900px;
+    --mg-media-right-col: 900px;
+    --mg-media-gap: 18px;
+    --mg-media-gutter: 20px;
+  }
+
+  .mg-media-reward-landing .mg-public-campaign-shell.mg-media-reward-shell,
+  .mg-media-reward-shell {
+    grid-template-columns: 1fr !important;
+    grid-template-areas: "hero" "join" "left" !important;
+  }
+
+  .mg-media-join-card {
+    max-width: 100% !important;
+    position: relative !important;
+    top: auto !important;
+  }
+
+  .mg-media-reward-bottom-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .mg-media-reward-offer-card {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .mg-media-reward-landing {
+    --mg-media-gutter: 12px;
+  }
+
+  .mg-media-reward-bottom-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .mg-media-reward-hero h1 {
+    font-size: clamp(36px, 11vw, 50px) !important;
+  }
+}
