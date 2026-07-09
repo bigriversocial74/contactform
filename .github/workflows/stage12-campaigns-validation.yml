@@ -91,6 +91,7 @@ jobs:
           php -l api/merchant/campaign-landing-page-qa.php
           php -l api/merchant/customer-refund-campaigns.php
           php -l api/merchant/customer-refund-send.php
+          php -l api/merchant/customer-refund-qa.php
           php -l api/merchant/campaign-winner.php
           php -l api/merchant/wallet-redeem.php
           php -l api/public/campaigns/detail.php
@@ -104,6 +105,7 @@ jobs:
           php -l scripts/validate_stage12c_wallet_campaign_pages.php
           php -l scripts/validate_campaign_types_public_landing_page_qa_v1_2.php
           php -l scripts/validate_customer_refund_v1_crm_make_good.php
+          php -l scripts/validate_customer_refund_v1_1_qa_send_history.php
 
       - name: Validate Stage 12 campaigns foundation
         shell: bash
@@ -114,3 +116,4 @@ jobs:
           php scripts/validate_stage12c_wallet_campaign_pages.php
           php scripts/validate_campaign_types_public_landing_page_qa_v1_2.php
           php scripts/validate_customer_refund_v1_crm_make_good.php
+          php scripts/validate_customer_refund_v1_1_qa_send_history.php
