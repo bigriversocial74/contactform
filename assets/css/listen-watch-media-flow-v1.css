@@ -36,53 +36,22 @@
 .mg-watch-track-row strong{display:block;font-size:clamp(22px,3vw,34px)!important;line-height:1.05!important;letter-spacing:-.045em!important;}
 .mg-listen-track-card.mg-listen-track-row em,
 .mg-watch-track-row em{display:block;margin-top:6px;font-style:normal;font-size:14px;font-weight:850;color:#334155!important;}
-.mg-media-art-thumb{
-  width:126px;
-  height:126px;
-  border-radius:22px;
-  overflow:hidden;
-  background:linear-gradient(135deg,#f1f5f9,#fff);
-  border:1px solid rgba(15,23,42,.08);
-  box-shadow:0 14px 34px rgba(15,23,42,.1);
-}
+.mg-media-art-thumb{width:126px;height:126px;border-radius:22px;overflow:hidden;background:linear-gradient(135deg,#f1f5f9,#fff);border:1px solid rgba(15,23,42,.08);box-shadow:0 14px 34px rgba(15,23,42,.1);}
 .mg-media-art-thumb img{display:block;width:100%;height:100%;object-fit:cover;}
 .mg-media-art-placeholder{display:grid;place-items:center;width:100%;height:100%;color:#64748b;font-size:12px;font-weight:950;letter-spacing:.1em;text-transform:uppercase;}
-.mg-listen-reward-inbox-panel{
-  margin:0 20px 18px;
-  padding:18px;
-  border:1px solid rgba(15,23,42,.08);
-  border-radius:22px;
-  background:linear-gradient(180deg,rgba(240,253,244,.92),rgba(255,255,255,.86));
-  box-shadow:0 14px 34px rgba(15,23,42,.07);
-}
+.mg-listen-reward-inbox-panel{margin:0 20px 18px;padding:18px;border:1px solid rgba(15,23,42,.08);border-radius:22px;background:linear-gradient(180deg,rgba(240,253,244,.92),rgba(255,255,255,.86));box-shadow:0 14px 34px rgba(15,23,42,.07);}
 .mg-listen-reward-inbox-panel strong{display:block;color:#0b0f18;font-size:18px;font-weight:950;letter-spacing:-.025em;}
 .mg-listen-reward-inbox-panel p{margin:8px 0 14px;color:#475569;font-size:13px;line-height:1.45;font-weight:780;}
+.mg-campaign-issued-reward-list{display:grid;gap:10px;margin:12px 0;}
+.mg-campaign-issued-reward-card{display:grid;grid-template-columns:72px minmax(0,1fr);gap:12px;align-items:center;padding:10px;border:1px solid rgba(15,23,42,.08);border-radius:16px;background:#fff;box-shadow:0 10px 24px rgba(15,23,42,.06);}
+.mg-campaign-issued-reward-card.is-text-only{grid-template-columns:1fr;}
+.mg-campaign-issued-reward-card span{font-weight:900;color:#0b0f18;line-height:1.25;}
+.mg-campaign-issued-reward-image{display:block;width:72px;height:72px;object-fit:cover;border-radius:14px;border:1px solid rgba(15,23,42,.08);background:#f8fafc;}
 .mg-campaign-media-artwork-card,.mg-media-reward-gates-card{margin-top:16px;}
-.mg-campaign-media-art-preview{
-  display:grid;
-  place-items:center;
-  min-height:142px;
-  margin:12px 0;
-  overflow:hidden;
-  border:1px dashed rgba(15,23,42,.18);
-  border-radius:18px;
-  background:rgba(248,250,252,.88);
-  color:#64748b;
-  font-size:12px;
-  font-weight:900;
-}
+.mg-campaign-media-art-preview{display:grid;place-items:center;min-height:142px;margin:12px 0;overflow:hidden;border:1px dashed rgba(15,23,42,.18);border-radius:18px;background:rgba(248,250,252,.88);color:#64748b;font-size:12px;font-weight:900;}
 .mg-campaign-media-art-preview img{display:block;width:100%;max-height:220px;object-fit:cover;}
 .mg-media-reward-gates-list{display:grid;gap:10px;margin:12px 0;}
-.mg-media-reward-gate-row{
-  display:grid;
-  grid-template-columns:minmax(88px,.7fr) minmax(150px,1fr) minmax(160px,1fr) auto;
-  gap:10px;
-  align-items:end;
-  padding:12px;
-  border:1px solid rgba(15,23,42,.08);
-  border-radius:18px;
-  background:rgba(255,255,255,.78);
-}
+.mg-media-reward-gate-row{display:grid;grid-template-columns:minmax(88px,.7fr) minmax(150px,1fr) minmax(160px,1fr) auto;gap:10px;align-items:end;padding:12px;border:1px solid rgba(15,23,42,.08);border-radius:18px;background:rgba(255,255,255,.78);}
 .mg-media-reward-gate-row label{display:grid;gap:6px;font-size:12px;font-weight:900;color:#334155;}
 .mg-media-reward-gate-row input,
 .mg-media-reward-gate-row select{width:100%;min-height:40px;border:1px solid rgba(15,23,42,.12);border-radius:12px;padding:0 10px;background:#fff;color:#0b0f18;font:inherit;font-size:13px;font-weight:800;}
@@ -93,4 +62,7 @@
   .mg-listen-reward-inbox-panel,
   .mg-listen-join-status{margin-left:14px;margin-right:14px;}
   .mg-media-reward-gate-row{grid-template-columns:1fr;}
+  .mg-campaign-issued-reward-card{grid-template-columns:60px minmax(0,1fr);}
+  .mg-campaign-issued-reward-card.is-text-only{grid-template-columns:1fr;}
+  .mg-campaign-issued-reward-image{width:60px;height:60px;}
 }
