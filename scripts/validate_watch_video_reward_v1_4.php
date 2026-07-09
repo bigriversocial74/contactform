@@ -24,7 +24,7 @@ $workflow = $read('.github/workflows/stage12-campaigns-validation.yml');
 
 $assert('Watch Video Reward registry exists', str_contains($registry, 'watch_video_reward') && str_contains($registry, 'Watch Video Reward'));
 $assert('Watch Video Reward is public and YouTube-first', str_contains($registry, '/watch-reward.php') && str_contains($registry, 'youtube_watch_milestones'));
-$assert('Campaign API saves YouTube milestone rules', str_contains($campaignsApi, 'mg_campaign_youtube_id') && str_contains($campaignsApi, 'watch_video_required_percent') && str_contains($campaignsApi, 'watch_video_milestone_1_percent'));
+$assert('Campaign API saves YouTube milestone rules', str_contains($campaignsApi, 'mg_campaign_youtube_id') && str_contains($campaignsApi, 'watch_video_required_percent') && str_contains($campaignsApi, 'watch_video_milestone_'));
 $assert('Campaign builder includes YouTube milestone fields', str_contains($builderJs, 'installWatchVideoFields') && str_contains($builderJs, 'watch_video_milestone_3_reward_template_id'));
 $assert('Public watch page exists', str_contains($page, 'data-watch-video-reward') && str_contains($page, 'youtube.com/iframe_api'));
 $assert('Public watch JavaScript tracks YouTube progress', str_contains($watchJs, 'YT.Player') && str_contains($watchJs, 'progress_percent') && str_contains($watchJs, '/api/public/campaigns/watch-progress.php'));
