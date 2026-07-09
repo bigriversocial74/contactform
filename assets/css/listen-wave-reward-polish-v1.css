@@ -1,0 +1,176 @@
+/* Listen Reward card + waveform detail polish. Loaded after the standalone landing stylesheet. */
+.mg-rl-listen .mg-rl-wave {
+  display: block;
+  position: relative;
+  height: 84px;
+  margin-top: 14px;
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+}
+
+.mg-rl-listen .mg-rl-wave.is-svg-wave i {
+  display: none;
+}
+
+.mg-rl-wave-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.mg-rl-wave-idle {
+  fill: rgba(203, 213, 225, .72);
+}
+
+.mg-rl-wave-active {
+  fill: url(#mg-rl-wave-active-gradient);
+}
+
+.mg-rl-wave-centerline {
+  stroke: rgba(100, 116, 139, .20);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.mg-rl-wave-progress-line {
+  stroke: #1260ff;
+  stroke-width: 2;
+  stroke-linecap: round;
+  opacity: .86;
+  vector-effect: non-scaling-stroke;
+}
+
+.mg-rl-reward-carousel {
+  position: relative;
+  margin: 10px 0 12px;
+}
+
+.mg-rl-reward-stack {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  padding: 1px 0 8px;
+}
+
+.mg-rl-reward-stack::-webkit-scrollbar {
+  height: 6px;
+}
+
+.mg-rl-reward-stack::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(18, 96, 255, .24);
+}
+
+.mg-rl-reward-item {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 11px;
+  align-items: center;
+  min-width: 100%;
+  scroll-snap-align: start;
+  padding: 10px;
+  border: 1px solid rgba(15, 23, 42, .08);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, .94);
+}
+
+.mg-rl-reward-item.is-text-only {
+  grid-template-columns: 1fr;
+}
+
+.mg-rl-reward-image {
+  width: 58px;
+  height: 58px;
+  border-radius: 13px;
+  object-fit: cover;
+  background: #eef4ff;
+}
+
+.mg-rl-reward-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.mg-rl-reward-business,
+.mg-rl-reward-name,
+.mg-rl-reward-value,
+.mg-rl-reward-levels {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.mg-rl-reward-business {
+  color: #071129;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.mg-rl-reward-name {
+  color: #1f314b;
+  font-size: 12px;
+  font-weight: 720;
+  line-height: 1.18;
+}
+
+.mg-rl-reward-value {
+  color: #344860;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.18;
+}
+
+.mg-rl-reward-levels {
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 5px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: rgba(18, 96, 255, .08);
+  color: #1260ff;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.mg-rl-carousel-hint {
+  display: none;
+  margin-top: -2px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.mg-rl-reward-stack.has-multiple + .mg-rl-carousel-hint {
+  display: block;
+}
+
+.mg-rl-reward-info > p {
+  margin: 8px 0 0;
+  color: #344860;
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 620;
+}
+
+@media (max-width: 720px) {
+  .mg-rl-listen .mg-rl-wave {
+    height: 68px;
+  }
+
+  .mg-rl-reward-item {
+    grid-template-columns: 52px minmax(0, 1fr);
+  }
+
+  .mg-rl-reward-image {
+    width: 52px;
+    height: 52px;
+  }
+}
