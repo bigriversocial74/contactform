@@ -1,9 +1,14 @@
-/* Watch / Listen campaign right-column reward stack polish. */
+/* Watch / Listen campaign media-detail and sticky form polish. */
+.mg-rl-page {
+  overflow-x: hidden;
+  overflow-y: visible;
+}
+
 .mg-rl-join-desktop {
   align-self: start;
-  max-height: calc(100vh - 120px);
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  max-height: none;
+  overflow: visible;
+  overscroll-behavior: auto;
   scrollbar-width: thin;
 }
 
@@ -88,8 +93,48 @@
 
 @media (min-width: 1181px) {
   .mg-rl-join-desktop {
-    position: sticky;
-    top: 92px;
+    position: sticky !important;
+    top: 92px !important;
+    z-index: 3;
+  }
+
+  .mg-rl-join-desktop .mg-rl-sidebar-stack {
+    display: none;
+  }
+
+  .mg-rl-join-mobile {
+    display: block !important;
+    position: relative;
+    top: auto;
+    margin: 18px 0 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+
+  .mg-rl-join-mobile > .mg-rl-profile,
+  .mg-rl-join-mobile > .mg-rl-form,
+  .mg-rl-join-mobile > .mg-public-campaign-result {
+    display: none !important;
+  }
+
+  .mg-rl-join-mobile .mg-rl-sidebar-stack {
+    display: grid;
+    grid-template-columns: .82fr 1fr 1fr;
+    gap: 14px;
+    margin-top: 18px;
+  }
+
+  .mg-rl-join-mobile .mg-rl-sidebar-stack .mg-rl-card {
+    box-shadow: 0 16px 42px rgba(15, 23, 42, .095);
+    background: rgba(255, 255, 255, .88);
+  }
+
+  .mg-rl-join-mobile .mg-rl-sidebar-stack .mg-rl-card:first-child {
+    grid-column: auto;
   }
 }
 
