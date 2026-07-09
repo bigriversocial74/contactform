@@ -6,6 +6,7 @@ require_once dirname(__DIR__, 2) . '/rewards/_zero_value_bridge.php';
 require_once dirname(__DIR__, 3) . '/includes/merchant-crm.php';
 require_once dirname(__DIR__, 3) . '/includes/campaign-types.php';
 require_once __DIR__ . '/_limits.php';
+require_once __DIR__ . '/_merchant_notifications.php';
 
 function mg_watch_reward_uuid(): string { $bytes = random_bytes(16); $bytes[6] = chr((ord($bytes[6]) & 15) | 64); $bytes[8] = chr((ord($bytes[8]) & 63) | 128); return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4)); }
 function mg_watch_reward_rules(mixed $json): array { $decoded = is_string($json) && trim($json) !== '' ? json_decode($json, true) : null; return is_array($decoded) ? $decoded : []; }
@@ -16,6 +17,28 @@ function mg_watch_reward_bridge(PDO $pdo, array $campaign, array $template, arra
 function mg_watch_reward_template(PDO $pdo, int $merchantId, int $fallbackTemplateId, string $publicId): array { if ($publicId !== '' && strlen($publicId) === 36 && preg_match('/^[a-f0-9-]{36}$/', $publicId) === 1) { $stmt = $pdo->prepare("SELECT * FROM reward_templates WHERE public_id=? AND merchant_user_id=? AND status='active' LIMIT 1 FOR UPDATE"); $stmt->execute([$publicId, $merchantId]); $template = $stmt->fetch(PDO::FETCH_ASSOC); if ($template) return $template; } $stmt = $pdo->prepare("SELECT * FROM reward_templates WHERE id=? AND merchant_user_id=? AND status='active' LIMIT 1 FOR UPDATE"); $stmt->execute([$fallbackTemplateId, $merchantId]); $template = $stmt->fetch(PDO::FETCH_ASSOC); if (!$template) mg_fail('Milestone reward is unavailable.', 409); return $template; }
 function mg_watch_reward_milestones(array $rules): array { $milestones = is_array($rules['milestones'] ?? null) ? $rules['milestones'] : []; if (!$milestones) $milestones = [['percent' => max(1, min(100, (int)($rules['required_percent'] ?? 80))), 'reward_template_id' => '', 'label' => 'Video completion gift']]; $out = []; foreach ($milestones as $item) { $percent = max(1, min(100, (int)($item['percent'] ?? 0))); if ($percent < 1) continue; $out[$percent] = ['percent' => $percent, 'reward_template_id' => strtolower(trim((string)($item['reward_template_id'] ?? ''))), 'label' => trim((string)($item['label'] ?? '')) ?: ($percent . '% watched gift')]; } ksort($out); return array_values($out); }
 function mg_watch_reward_already_issued(PDO $pdo, int $campaignId, int $contactId, int $percent): bool { $stmt = $pdo->prepare("SELECT id FROM wallet_items WHERE campaign_id=? AND contact_id=? AND source_type='watch_video_reward' AND JSON_UNQUOTE(JSON_EXTRACT(metadata_json,'$.milestone_percent'))=? AND status<>'cancelled' LIMIT 1"); $stmt->execute([$campaignId, $contactId, (string)$percent]); return (bool)$stmt->fetchColumn(); }
+function mg_watch_reward_notify_merchant(PDO $pdo, array $campaign, array $contact, string $email, string $name, string $phone, array $crm, bool $isNewContact): array
+{
+    if (!$isNewContact || !function_exists('mg_public_campaign_create_notification')) return ['created' => false, 'reason' => $isNewContact ? 'notifications_unavailable' : 'existing_contact'];
+    $merchantId = (int)($campaign['merchant_user_id'] ?? 0);
+    if ($merchantId < 1) return ['created' => false, 'reason' => 'missing_merchant'];
+    $displayName = trim($name) !== '' ? trim($name) : $email;
+    $campaignTitle = trim((string)($campaign['title'] ?? '')) ?: 'Watch Video Reward campaign';
+    $campaignPublicId = (string)($campaign['public_id'] ?? '');
+    $contactPublicId = (string)($contact['public_id'] ?? '');
+    return mg_public_campaign_create_notification($pdo, $merchantId, 'merchant_campaign_watch_video_reward', 'New watch video reward engagement', $displayName . ' started ' . $campaignTitle . '.', '/merchant-crm.php?campaign=' . rawurlencode($campaignPublicId) . '&contact=' . rawurlencode($contactPublicId), [
+        'campaign_type' => 'watch_video_reward',
+        'campaign_id' => $campaignPublicId,
+        'campaign_title' => $campaignTitle,
+        'campaign_contact_id' => $contactPublicId,
+        'crm_contact_id' => (string)($crm['contact_id'] ?? ''),
+        'crm_event_id' => (string)($crm['event_id'] ?? ''),
+        'lead_email' => $email,
+        'lead_name' => $name,
+        'lead_phone' => $phone,
+        'source' => 'watch_video_reward',
+    ]);
+}
 function mg_watch_reward_issue(PDO $pdo, array $campaign, array $contact, ?int $userId, array $template, int $percent, float $watchPercent, array $watchContext): array
 {
     if ($template['quantity_limit'] !== null && (int)$template['issued_count'] >= (int)$template['quantity_limit']) mg_fail('A milestone reward has reached its inventory limit.', 409);
@@ -27,7 +50,7 @@ function mg_watch_reward_issue(PDO $pdo, array $campaign, array $contact, ?int $
     $walletDbId = (int)$pdo->lastInsertId(); $pdo->prepare('UPDATE campaigns SET issued_count=issued_count+1, updated_at=NOW() WHERE id=?')->execute([(int)$campaign['id']]); $pdo->prepare('UPDATE reward_templates SET issued_count=issued_count+1, updated_at=NOW() WHERE id=?')->execute([(int)$template['id']]);
     $bridge = mg_watch_reward_bridge($pdo, $campaign, $template, $contact, $walletDbId, $walletPublicId, $userId, $expiresAt, $percent);
     mg_watch_reward_event($pdo, $campaign, $walletDbId, (int)$contact['id'], 'watch_reward.issued', ['wallet_item_id'=>$walletPublicId,'milestone_percent'=>$percent,'reward_template_id'=>(string)$template['public_id'],'watch_percent'=>$watchPercent,'pppm_bridge'=>$bridge,'stamp_ledger_entry_id'=>$stampLedger['entry']['entry_id'] ?? null]);
-    return ['wallet_item_id'=>$walletPublicId,'reward_title'=>(string)$template['title'],'percent'=>$percent,'expires_at'=>$expiresAt,'pppm_bridge'=>$bridge];
+    return ['wallet_item_id'=>$walletPublicId,'reward_title'=>(string)$template['title'],'percent'=>$percent,'expires_at'=>$expiresAt,'pppm_bridge'=>$bridge,'inbox_url'=>'/wallet.php'];
 }
 
 mg_require_method('POST'); $input = mg_input(); $pdo = mg_db();
@@ -40,13 +63,14 @@ try {
     $expectedVideoId = trim((string)($rules['youtube_video_id'] ?? '')); $expectedUploadedAssetId = strtolower(trim((string)($rules['uploaded_asset_id'] ?? ''))); if ($expectedProvider === 'youtube' && $expectedVideoId !== '' && $videoId !== '' && $videoId !== $expectedVideoId) { $pdo->rollBack(); mg_fail('Video does not match this campaign.', 422); } if ($expectedProvider === 'uploaded' && $expectedUploadedAssetId !== '' && $uploadedAssetId !== '' && $uploadedAssetId !== $expectedUploadedAssetId) { $pdo->rollBack(); mg_fail('Uploaded video does not match this campaign.', 422); }
     $now = time(); if (!empty($campaign['starts_at']) && strtotime((string)$campaign['starts_at']) > $now) { $pdo->rollBack(); mg_fail('Campaign has not started yet.', 409); } if (!empty($campaign['ends_at']) && strtotime((string)$campaign['ends_at']) < $now) { $pdo->rollBack(); mg_fail('Campaign has ended.', 409); } if ($campaign['quantity_limit'] !== null && (int)$campaign['issued_count'] >= (int)$campaign['quantity_limit']) { $pdo->rollBack(); mg_fail('Campaign reward limit has been reached.', 409); }
     $merchantId = (int)$campaign['merchant_user_id']; $campaignId = (int)$campaign['id']; $userId = mg_watch_reward_find_user($pdo, $email);
-    $existingContactStmt = $pdo->prepare('SELECT id, public_id FROM campaign_contacts WHERE campaign_id=? AND email=? LIMIT 1 FOR UPDATE'); $existingContactStmt->execute([$campaignId, $email]); $existing = $existingContactStmt->fetch(PDO::FETCH_ASSOC); $publicId = $existing ? (string)$existing['public_id'] : mg_watch_reward_uuid();
+    $existingContactStmt = $pdo->prepare('SELECT id, public_id FROM campaign_contacts WHERE campaign_id=? AND email=? LIMIT 1 FOR UPDATE'); $existingContactStmt->execute([$campaignId, $email]); $existing = $existingContactStmt->fetch(PDO::FETCH_ASSOC); $isNewContact = !$existing; $publicId = $existing ? (string)$existing['public_id'] : mg_watch_reward_uuid();
     $metadata = ['campaign_type'=>'watch_video_reward','video_provider'=>$expectedProvider,'video_id'=>$videoId ?: $expectedVideoId,'uploaded_asset_id'=>$uploadedAssetId ?: $expectedUploadedAssetId,'uploaded_video_url'=>$uploadedUrl ?: (string)($rules['uploaded_video_url'] ?? ''),'max_progress_percent'=>$progress,'duration_seconds'=>$duration,'current_time_seconds'=>$currentTime,'user_agent'=>substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''),0,255),'ip'=>mg_client_ip()];
     $contactStmt = $pdo->prepare("INSERT INTO campaign_contacts (public_id,merchant_user_id,campaign_id,user_id,email,phone,name,source,opt_in_status,metadata_json,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,NOW(),NOW()) ON DUPLICATE KEY UPDATE user_id=VALUES(user_id), phone=VALUES(phone), name=VALUES(name), source=VALUES(source), metadata_json=VALUES(metadata_json), updated_at=NOW()");
     $contactStmt->execute([$publicId,$merchantId,$campaignId,$userId,$email,$phone!==''?$phone:null,$name!==''?$name:null,'watch_video_reward','opted_in',json_encode($metadata, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)]);
     $contactLookup = $pdo->prepare('SELECT id, public_id FROM campaign_contacts WHERE campaign_id=? AND email=? LIMIT 1 FOR UPDATE'); $contactLookup->execute([$campaignId, $email]); $contact = $contactLookup->fetch(PDO::FETCH_ASSOC); if (!$contact) { $pdo->rollBack(); mg_fail('Watch reward contact could not be prepared.', 500); }
-    mg_merchant_crm_record_event($pdo, ['merchant_user_id'=>$merchantId,'campaign_id'=>$campaignId,'campaign_type'=>'watch_video_reward','event_type'=>'watch_reward.progress','source_type'=>'watch_video_reward','source_public_id'=>(string)$contact['public_id'],'user_id'=>$userId,'email'=>$email,'phone'=>$phone,'name'=>$name,'metadata'=>$metadata]);
-    mg_watch_reward_event($pdo, $campaign, null, (int)$contact['id'], $progress <= 1 ? 'watch_reward.started' : 'watch_reward.progress', $metadata + ['progress_percent'=>$progress]);
+    $crm = mg_merchant_crm_record_event($pdo, ['merchant_user_id'=>$merchantId,'campaign_id'=>$campaignId,'campaign_type'=>'watch_video_reward','event_type'=>'watch_reward.progress','source_type'=>'watch_video_reward','source_public_id'=>(string)$contact['public_id'],'user_id'=>$userId,'email'=>$email,'phone'=>$phone,'name'=>$name,'metadata'=>$metadata]);
+    $merchantNotification = mg_watch_reward_notify_merchant($pdo, $campaign, $contact, $email, $name, $phone, is_array($crm) ? $crm : [], $isNewContact);
+    mg_watch_reward_event($pdo, $campaign, null, (int)$contact['id'], $progress <= 1 ? 'watch_reward.started' : 'watch_reward.progress', $metadata + ['progress_percent'=>$progress,'merchant_crm'=>$crm,'merchant_notification'=>$merchantNotification]);
     $issued = []; foreach (mg_watch_reward_milestones($rules) as $milestone) { $percent = (int)$milestone['percent']; if ($progress + 0.0001 < $percent) continue; if (mg_watch_reward_already_issued($pdo, $campaignId, (int)$contact['id'], $percent)) continue; $template = mg_watch_reward_template($pdo, $merchantId, (int)$campaign['reward_template_db_id'], (string)$milestone['reward_template_id']); $issued[] = mg_watch_reward_issue($pdo, $campaign, $contact, $userId, $template, $percent, $progress, $metadata); }
-    $pdo->commit(); mg_ok(['campaign_id'=>(string)$campaign['public_id'],'contact_id'=>(string)$contact['public_id'],'progress_percent'=>$progress,'video_provider'=>$expectedProvider,'issued_rewards'=>$issued,'milestones'=>mg_watch_reward_milestones($rules)], $issued ? 'Video reward unlocked.' : 'Watch progress recorded.');
+    $pdo->commit(); mg_ok(['campaign_id'=>(string)$campaign['public_id'],'contact_id'=>(string)$contact['public_id'],'progress_percent'=>$progress,'video_provider'=>$expectedProvider,'issued_rewards'=>$issued,'milestones'=>mg_watch_reward_milestones($rules),'merchant_crm'=>$crm,'merchant_notification'=>$merchantNotification], $issued ? 'Video reward unlocked and sent to your Microgifter Inbox.' : 'Watch progress recorded.');
 } catch (Throwable $error) { if ($pdo->inTransaction()) $pdo->rollBack(); mg_security_log('error', 'watch_reward.progress.failed', 'Unable to record watch reward progress.', ['exception_class'=>$error::class,'message'=>$error->getMessage()]); mg_fail('Unable to record watch reward progress.', 500); }
