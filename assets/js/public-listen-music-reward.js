@@ -24,7 +24,7 @@
   var blocked = false;
   var audioBound = false;
   var eligibilityCache = {};
-  var waveformBars = [];
+  var waveformState = { clipRect: null, progressLine: null, width: 1000, height: 100 };
 
   function esc(value) {
     return String(value == null ? '' : value).replace(/[&<>'"]/g, function (char) {
@@ -51,18 +51,30 @@
     var values = [];
     for (var i = 0; i < count; i += 1) {
       var t = i / Math.max(1, count - 1);
-      var envelope = Math.sin(Math.PI * Math.min(1, Math.max(0, t * 1.04))) * 0.42 + 0.28;
-      var groove = Math.abs(Math.sin(i * 0.72)) * 0.28 + Math.abs(Math.sin(i * 1.83 + 1.7)) * 0.18;
-      var jitter = (random() - 0.5) * 0.22;
-      values.push(Math.max(0.10, Math.min(1, envelope + groove + jitter)));
+      var intro = Math.min(1, t * 4.2);
+      var tail = Math.max(0.26, 1 - Math.max(0, t - 0.78) * 1.3);
+      var envelope = (0.20 + Math.sin(Math.PI * t) * 0.42) * intro * tail;
+      var transient = Math.pow(Math.abs(Math.sin(i * 0.94 + random())), 1.6) * 0.28;
+      var harmonic = Math.abs(Math.sin(i * 2.77 + 0.6)) * 0.18 + Math.abs(Math.sin(i * 5.41)) * 0.08;
+      var jitter = (random() - 0.5) * 0.18;
+      values.push(Math.max(0.06, Math.min(1, envelope + transient + harmonic + jitter)));
     }
-    return values;
+    return smoothWave(values, 1);
+  }
+  function smoothWave(values, passes) {
+    var output = values.slice();
+    for (var pass = 0; pass < passes; pass += 1) {
+      output = output.map(function (value, index) {
+        var left = output[Math.max(0, index - 1)];
+        var right = output[Math.min(output.length - 1, index + 1)];
+        return value * 0.58 + left * 0.21 + right * 0.21;
+      });
+    }
+    return output;
   }
   function waveformFromBuffer(buffer, count) {
     var channels = [];
-    for (var channelIndex = 0; channelIndex < Math.min(2, buffer.numberOfChannels); channelIndex += 1) {
-      channels.push(buffer.getChannelData(channelIndex));
-    }
+    for (var channelIndex = 0; channelIndex < Math.min(2, buffer.numberOfChannels); channelIndex += 1) channels.push(buffer.getChannelData(channelIndex));
     if (!channels.length) return demoWaveform(count);
     var length = channels[0].length;
     var block = Math.max(1, Math.floor(length / count));
@@ -74,7 +86,8 @@
       var peak = 0;
       var sum = 0;
       var samples = 0;
-      for (var j = start; j < end; j += Math.max(1, Math.floor(block / 220))) {
+      var stride = Math.max(1, Math.floor(block / 420));
+      for (var j = start; j < end; j += stride) {
         var sample = 0;
         channels.forEach(function (data) { sample += Math.abs(data[j] || 0); });
         sample = sample / channels.length;
@@ -83,40 +96,67 @@
         samples += 1;
       }
       var rms = Math.sqrt(sum / Math.max(1, samples));
-      var value = Math.min(1, peak * 0.72 + rms * 1.65);
+      var value = Math.min(1, peak * 0.62 + rms * 1.9);
       values.push(value);
       max = Math.max(max, value);
     }
     max = max || 1;
-    return values.map(function (value) { return Math.max(0.08, Math.min(1, value / max)); });
+    return smoothWave(values.map(function (value) { return Math.max(0.045, Math.min(1, value / max)); }), 1);
+  }
+  function wavePath(values, width, height) {
+    var center = height / 2;
+    var minAmp = 5;
+    var maxAmp = height * 0.48;
+    var step = width / Math.max(1, values.length - 1);
+    var top = [];
+    var bottom = [];
+    values.forEach(function (value, index) {
+      var x = Math.round(index * step * 100) / 100;
+      var amp = minAmp + Math.max(0, Math.min(1, value)) * maxAmp;
+      var shape = 0.72 + Math.abs(Math.sin(index * 0.41)) * 0.28;
+      top.push([x, Math.round((center - amp * shape) * 100) / 100]);
+      bottom.push([x, Math.round((center + amp * shape) * 100) / 100]);
+    });
+    var d = 'M ' + top[0][0] + ' ' + top[0][1];
+    for (var i = 1; i < top.length; i += 1) d += ' L ' + top[i][0] + ' ' + top[i][1];
+    for (var j = bottom.length - 1; j >= 0; j -= 1) d += ' L ' + bottom[j][0] + ' ' + bottom[j][1];
+    return d + ' Z';
   }
   function renderWaveform(values, activePercent) {
     if (!waveform) return;
-    waveform.innerHTML = '';
-    waveformBars = values.map(function (value) {
-      var bar = document.createElement('i');
-      bar.style.height = Math.round(12 + value * 52) + 'px';
-      bar.style.background = '#dbe4ee';
-      bar.style.transition = 'height .24s ease, background .18s ease, opacity .18s ease';
-      waveform.appendChild(bar);
-      return bar;
-    });
+    var width = 1000;
+    var height = 100;
+    var clipId = 'mg-rl-wave-progress-clip-' + Math.abs(seedFromString(campaignId + uploadedUrl + Date.now()));
+    var path = wavePath(values, width, height);
+    waveform.classList.add('is-svg-wave');
+    waveform.innerHTML = '<svg class="mg-rl-wave-svg" viewBox="0 0 ' + width + ' ' + height + '" preserveAspectRatio="none" role="img" aria-label="Audio waveform">'
+      + '<defs><linearGradient id="mg-rl-wave-active-gradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#35a2ff"/><stop offset="1" stop-color="#1260ff"/></linearGradient><clipPath id="' + clipId + '"><rect data-wave-clip x="0" y="0" width="0" height="' + height + '"></rect></clipPath></defs>'
+      + '<line class="mg-rl-wave-centerline" x1="0" y1="50" x2="1000" y2="50"></line>'
+      + '<path class="mg-rl-wave-idle" d="' + path + '"></path>'
+      + '<path class="mg-rl-wave-active" clip-path="url(#' + clipId + ')" d="' + path + '"></path>'
+      + '<line class="mg-rl-wave-progress-line" data-wave-line x1="0" y1="13" x2="0" y2="87"></line>'
+      + '</svg>';
+    waveformState.clipRect = waveform.querySelector('[data-wave-clip]');
+    waveformState.progressLine = waveform.querySelector('[data-wave-line]');
+    waveformState.width = width;
+    waveformState.height = height;
     setWaveProgress(activePercent == null ? 42 : activePercent);
   }
   function setWaveProgress(percent) {
-    if (!waveformBars.length) return;
+    if (!waveformState.clipRect) return;
     var active = Math.max(0, Math.min(100, Number(percent || 0)));
-    var cutoff = Math.round((active / 100) * waveformBars.length);
-    waveformBars.forEach(function (bar, index) {
-      var isActive = index < cutoff;
-      bar.style.background = isActive ? 'linear-gradient(180deg, #1f7bff, #1260ff)' : '#dbe4ee';
-      bar.style.opacity = isActive ? '1' : '.86';
-    });
+    var x = Math.round((active / 100) * waveformState.width * 100) / 100;
+    waveformState.clipRect.setAttribute('width', String(x));
+    if (waveformState.progressLine) {
+      waveformState.progressLine.setAttribute('x1', String(x));
+      waveformState.progressLine.setAttribute('x2', String(x));
+      waveformState.progressLine.style.opacity = active > 0 && active < 100 ? '.86' : '0';
+    }
   }
   async function initWaveform() {
     if (!waveform) return;
-    renderWaveform(demoWaveform(72), provider === 'uploaded' ? 0 : 42);
-    if (provider !== 'uploaded' || !uploadedUrl || !window.fetch || !window.AudioContext && !window.webkitAudioContext) return;
+    renderWaveform(demoWaveform(240), provider === 'uploaded' ? 0 : 42);
+    if (provider !== 'uploaded' || !uploadedUrl || !window.fetch || !(window.AudioContext || window.webkitAudioContext)) return;
     try {
       var response = await fetch(uploadedUrl, { credentials: 'same-origin', cache: 'force-cache' });
       if (!response.ok) throw new Error('Unable to load audio waveform.');
@@ -124,10 +164,10 @@
       var AudioContextClass = window.AudioContext || window.webkitAudioContext;
       var context = new AudioContextClass();
       var decoded = await context.decodeAudioData(buffer.slice(0));
-      renderWaveform(waveformFromBuffer(decoded, 72), 0);
+      renderWaveform(waveformFromBuffer(decoded, 260), 0);
       if (context.close) context.close();
     } catch (error) {
-      renderWaveform(demoWaveform(72), provider === 'uploaded' ? 0 : 42);
+      renderWaveform(demoWaveform(240), provider === 'uploaded' ? 0 : 42);
     }
   }
   function setSingleLine(lists, message) {
