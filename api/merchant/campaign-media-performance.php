@@ -143,8 +143,8 @@ function mg_media_detail_action_urls(array $campaign, string $contactPublicId, s
     return [
         'crm_profile' => $crmBase,
         'message' => $crmBase . '&action=message',
-        'send_bonus_reward' => $crmBase . '&action=send_reward',
-        'add_to_segment' => $crmBase . '&action=segment',
+        'send_bonus_reward' => $crmBase . '&action=reward',
+        'add_to_segment' => $crmBase,
         'mailto' => $email !== '' ? 'mailto:' . rawurlencode($email) . '?subject=' . rawurlencode('Your Microgifter reward') : null,
     ];
 }
