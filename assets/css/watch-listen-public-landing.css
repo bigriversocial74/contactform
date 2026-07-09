@@ -1,5 +1,5 @@
-/* Watch / Listen public reward landing
-   Single page-owned stylesheet. Do not stack the old shared media-flow layout or centering patch files on these public pages. */
+/* Watch / Listen public reward landing — standalone layout owner.
+   This file intentionally replaces the previous patch stack and does not depend on the public campaign shell layout. */
 
 html,
 body {
@@ -20,11 +20,6 @@ body {
   overflow: hidden;
   background: #f7fafc;
   color: #071226;
-  --mg-public-shell: 1120px;
-  --mg-public-gutter: 64px;
-  --mg-left-column: 760px;
-  --mg-right-column: 320px;
-  --mg-column-gap: 32px;
 }
 
 .mg-media-reward-landing .mg-public-campaign-cover {
@@ -42,26 +37,26 @@ body {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 38% 6%, rgba(255,255,255,.86), rgba(255,255,255,.26) 36%, rgba(241,245,249,.84) 100%),
-    linear-gradient(180deg, rgba(248,250,252,.20), rgba(248,250,252,.96));
+    radial-gradient(circle at 38% 6%, rgba(255,255,255,.86), rgba(255,255,255,.28) 36%, rgba(241,245,249,.86) 100%),
+    linear-gradient(180deg, rgba(248,250,252,.18), rgba(248,250,252,.96));
 }
 
-/* Own the shell completely. This overrides the public-campaign base shell behavior. */
+/* Hard-own the composition. Left aligned on desktop to remove the large empty gutter. */
 .mg-media-reward-landing > .mg-public-campaign-shell.mg-media-reward-shell,
 .mg-public-campaign.mg-media-reward-landing > .mg-public-campaign-shell.mg-media-reward-shell {
   position: relative !important;
   z-index: 1;
   display: grid !important;
-  grid-template-columns: minmax(0, var(--mg-left-column)) minmax(0, var(--mg-right-column)) !important;
+  grid-template-columns: minmax(0, min(760px, calc(100vw - 470px))) 318px !important;
   grid-template-areas:
     "hero join"
     "left join" !important;
-  gap: var(--mg-column-gap) !important;
-  justify-content: center !important;
+  gap: 28px !important;
   align-items: start !important;
-  width: min(var(--mg-public-shell), calc(100vw - (var(--mg-public-gutter) * 2))) !important;
-  max-width: calc(100vw - (var(--mg-public-gutter) * 2)) !important;
-  margin: 0 auto !important;
+  justify-content: start !important;
+  width: auto !important;
+  max-width: none !important;
+  margin: 0 clamp(26px, 4vw, 64px) 0 clamp(44px, 5vw, 84px) !important;
   padding: 56px 0 72px !important;
   left: auto !important;
   right: auto !important;
@@ -71,11 +66,10 @@ body {
 .mg-media-reward-hero {
   grid-area: hero;
   width: 100% !important;
-  max-width: var(--mg-left-column) !important;
+  max-width: 760px !important;
   margin: 0 !important;
   padding: 0 !important;
   text-align: left !important;
-  justify-self: stretch !important;
 }
 
 .mg-media-reward-mode {
@@ -96,20 +90,20 @@ body {
 }
 
 .mg-media-reward-hero h1 {
-  max-width: 720px !important;
+  max-width: 760px !important;
   margin: 0 !important;
   color: #06102c !important;
-  font-size: clamp(46px, 5.2vw, 78px) !important;
+  font-size: clamp(44px, 5.1vw, 76px) !important;
   line-height: .94 !important;
   letter-spacing: -.075em !important;
   font-weight: 950 !important;
 }
 
 .mg-media-reward-hero p {
-  max-width: 550px !important;
+  max-width: 560px !important;
   margin: 22px 0 0 !important;
   color: #263851 !important;
-  font-size: clamp(16px, 1.45vw, 21px) !important;
+  font-size: clamp(16px, 1.4vw, 21px) !important;
   line-height: 1.38 !important;
   font-weight: 850 !important;
 }
@@ -119,9 +113,7 @@ body {
   display: grid;
   gap: 18px;
   width: 100% !important;
-  max-width: var(--mg-left-column) !important;
   min-width: 0 !important;
-  justify-self: stretch !important;
 }
 
 .mg-media-stage-card {
@@ -136,13 +128,8 @@ body {
   backdrop-filter: blur(16px);
 }
 
-.mg-media-stage-card-listen {
-  padding: 16px !important;
-}
-
-.mg-media-stage-card-watch {
-  padding: 8px !important;
-}
+.mg-media-stage-card-listen { padding: 16px !important; }
+.mg-media-stage-card-watch { padding: 8px !important; }
 
 .mg-listen-track-card.mg-listen-track-row,
 .mg-watch-track-row,
@@ -194,14 +181,20 @@ body {
 
 .mg-media-stage-summary span,
 .mg-listen-track-row span,
+.mg-watch-track-row span,
+.mg-eyebrow {
+  color: #1358ff !important;
+  font-size: 11px !important;
+  font-weight: 950 !important;
+  letter-spacing: .13em !important;
+  text-transform: uppercase !important;
+}
+
+.mg-media-stage-summary span,
+.mg-listen-track-row span,
 .mg-watch-track-row span {
   display: block;
   margin: 0 0 4px;
-  color: #1358ff !important;
-  font-size: 11px;
-  font-weight: 950;
-  letter-spacing: .13em;
-  text-transform: uppercase;
 }
 
 .mg-media-stage-summary strong,
@@ -263,9 +256,7 @@ body {
   min-height: 0 !important;
 }
 
-.mg-media-confirm-button {
-  margin-top: 12px !important;
-}
+.mg-media-confirm-button { margin-top: 12px !important; }
 
 .mg-media-wave {
   display: flex;
@@ -325,14 +316,6 @@ body {
   letter-spacing: -.03em !important;
 }
 
-.mg-eyebrow {
-  color: #1358ff !important;
-  font-size: 11px !important;
-  font-weight: 950 !important;
-  letter-spacing: .13em !important;
-  text-transform: uppercase !important;
-}
-
 .mg-media-icon {
   display: grid;
   place-items: center;
@@ -381,12 +364,13 @@ body {
   letter-spacing: -.045em;
 }
 
-.mg-media-reward-offer-body p {
-  margin: 0;
+.mg-media-reward-offer-body p,
+.mg-media-dashboard-card li,
+.mg-media-notification-panel li {
   color: #334155;
-  font-size: 13px;
-  line-height: 1.4;
-  font-weight: 780;
+  font-size: 12px;
+  line-height: 1.38;
+  font-weight: 760;
 }
 
 .mg-media-reward-offer-body small {
@@ -409,22 +393,13 @@ body {
   list-style: none;
 }
 
-.mg-media-dashboard-card li,
-.mg-media-notification-panel li {
-  color: #334155;
-  font-size: 12px;
-  line-height: 1.35;
-  font-weight: 760;
-}
-
 .mg-media-join-card {
   grid-area: join;
   position: sticky;
   top: 104px;
   width: 100% !important;
-  max-width: var(--mg-right-column) !important;
+  max-width: 318px !important;
   min-width: 0 !important;
-  justify-self: stretch !important;
   display: grid;
   gap: 18px;
   padding: 24px !important;
@@ -466,12 +441,14 @@ body {
   letter-spacing: -.04em;
 }
 
-.mg-media-join-form p {
-  margin: -4px 0 2px;
+.mg-media-join-form p,
+.mg-media-account-note p,
+.mg-media-notification-panel p {
+  margin: 0 0 8px;
   color: #334155;
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.38;
-  font-weight: 780;
+  font-weight: 760;
 }
 
 .mg-media-join-form .mg-public-campaign-field-grid {
@@ -521,12 +498,8 @@ body {
 .mg-media-reward-landing .mg-public-campaign-status {
   width: 100%;
   max-width: 100%;
+  padding: 14px;
   border-radius: 18px;
-}
-
-.mg-media-account-note,
-.mg-media-notification-panel {
-  padding: 15px;
   border: 1px solid rgba(37,99,235,.14);
   background: linear-gradient(180deg,rgba(239,246,255,.94),rgba(255,255,255,.76));
 }
@@ -540,18 +513,8 @@ body {
   font-weight: 950;
 }
 
-.mg-media-account-note p,
-.mg-media-notification-panel p {
-  margin: 6px 0 12px;
-  color: #334155;
-  font-size: 12px;
-  line-height: 1.38;
-  font-weight: 760;
-}
-
 .mg-media-reward-landing .mg-public-campaign-status {
-  padding: 11px 13px;
-  border: 1px solid rgba(15,23,42,.08);
+  border-color: rgba(15,23,42,.08);
   background: #fff;
   color: #334155;
   font-size: 12px;
@@ -576,55 +539,37 @@ body {
   background: #fff;
 }
 
-.mg-campaign-issued-reward-card.is-text-only {
-  grid-template-columns: 1fr;
-}
-
-.mg-campaign-issued-reward-image {
-  width: 64px;
-  height: 64px;
-  border-radius: 14px;
-  object-fit: cover;
-}
+.mg-campaign-issued-reward-card.is-text-only { grid-template-columns: 1fr; }
+.mg-campaign-issued-reward-image { width: 64px; height: 64px; border-radius: 14px; object-fit: cover; }
 
 @media (min-width: 1500px) {
-  .mg-media-reward-landing {
-    --mg-public-shell: 1340px;
-    --mg-public-gutter: 78px;
-    --mg-left-column: 940px;
-    --mg-right-column: 360px;
-    --mg-column-gap: 32px;
+  .mg-media-reward-landing > .mg-public-campaign-shell.mg-media-reward-shell,
+  .mg-public-campaign.mg-media-reward-landing > .mg-public-campaign-shell.mg-media-reward-shell {
+    grid-template-columns: minmax(0, 900px) 350px !important;
+    gap: 34px !important;
+    margin-left: clamp(62px, 5vw, 110px) !important;
+    margin-right: clamp(42px, 5vw, 90px) !important;
   }
 
-  .mg-media-reward-hero h1 {
-    max-width: 780px !important;
-    font-size: clamp(56px, 4.8vw, 88px) !important;
-  }
+  .mg-media-reward-join-card,
+  .mg-media-join-card { max-width: 350px !important; }
+  .mg-media-reward-hero h1 { max-width: 850px !important; font-size: clamp(56px, 4.8vw, 88px) !important; }
 }
 
 @media (max-width: 1280px) {
-  .mg-media-reward-landing {
-    --mg-public-shell: 1060px;
-    --mg-public-gutter: 58px;
-    --mg-left-column: 720px;
-    --mg-right-column: 310px;
-    --mg-column-gap: 28px;
+  .mg-media-reward-landing > .mg-public-campaign-shell.mg-media-reward-shell,
+  .mg-public-campaign.mg-media-reward-landing > .mg-public-campaign-shell.mg-media-reward-shell {
+    grid-template-columns: minmax(0, calc(100vw - 430px)) 300px !important;
+    gap: 24px !important;
+    margin-left: clamp(32px, 4vw, 56px) !important;
+    margin-right: 24px !important;
   }
 
-  .mg-media-reward-hero h1 {
-    font-size: clamp(42px, 5vw, 66px) !important;
-  }
+  .mg-media-join-card { max-width: 300px !important; }
+  .mg-media-reward-hero h1 { font-size: clamp(40px, 5vw, 64px) !important; }
 }
 
-@media (max-width: 1120px) {
-  .mg-media-reward-landing {
-    --mg-public-shell: 920px;
-    --mg-public-gutter: 22px;
-    --mg-left-column: 920px;
-    --mg-right-column: 920px;
-    --mg-column-gap: 18px;
-  }
-
+@media (max-width: 1080px) {
   .mg-media-reward-landing > .mg-public-campaign-shell.mg-media-reward-shell,
   .mg-public-campaign.mg-media-reward-landing > .mg-public-campaign-shell.mg-media-reward-shell {
     grid-template-columns: 1fr !important;
@@ -632,6 +577,8 @@ body {
       "hero"
       "join"
       "left" !important;
+    margin: 0 18px !important;
+    padding-top: 34px !important;
   }
 
   .mg-media-join-card {
@@ -640,51 +587,23 @@ body {
     max-width: 100% !important;
   }
 
-  .mg-media-reward-bottom-grid {
-    grid-template-columns: 1fr 1fr !important;
-  }
-
-  .mg-media-reward-offer-card {
-    grid-column: 1 / -1;
-  }
+  .mg-media-reward-bottom-grid { grid-template-columns: 1fr 1fr !important; }
+  .mg-media-reward-offer-card { grid-column: 1 / -1; }
 }
 
 @media (max-width: 720px) {
-  .mg-media-reward-landing {
-    --mg-public-gutter: 12px;
-  }
-
   .mg-media-reward-landing > .mg-public-campaign-shell.mg-media-reward-shell,
   .mg-public-campaign.mg-media-reward-landing > .mg-public-campaign-shell.mg-media-reward-shell {
+    margin: 0 12px !important;
     padding-top: 28px !important;
   }
 
-  .mg-media-reward-hero h1 {
-    font-size: clamp(38px, 12vw, 52px) !important;
-  }
-
+  .mg-media-reward-hero h1 { font-size: clamp(38px, 12vw, 52px) !important; }
   .mg-media-stage-summary,
   .mg-listen-track-card.mg-listen-track-row,
-  .mg-watch-track-row {
-    grid-template-columns: 1fr !important;
-  }
-
-  .mg-media-art-thumb {
-    width: 100% !important;
-    height: auto !important;
-    aspect-ratio: 1.25 / 1;
-  }
-
-  .mg-media-reward-bottom-grid {
-    grid-template-columns: 1fr !important;
-  }
-
-  .mg-media-reward-offer-body {
-    grid-template-columns: 74px minmax(0, 1fr);
-  }
-
-  .mg-media-reward-image {
-    width: 74px;
-    height: 74px;
-  }
+  .mg-watch-track-row { grid-template-columns: 1fr !important; }
+  .mg-media-art-thumb { width: 100% !important; height: auto !important; aspect-ratio: 1.25 / 1; }
+  .mg-media-reward-bottom-grid { grid-template-columns: 1fr !important; }
+  .mg-media-reward-offer-body { grid-template-columns: 74px minmax(0, 1fr); }
+  .mg-media-reward-image { width: 74px; height: 74px; }
 }
