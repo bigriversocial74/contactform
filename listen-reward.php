@@ -6,7 +6,7 @@ require_once __DIR__ . '/includes/campaign-types.php';
 $page_title = 'Listen Music Reward | Microgifter';
 $page_section = 'campaign';
 $header_mode = 'public';
-$page_styles = ['/assets/css/watch-listen-standalone-page.css'];
+$page_styles = ['/assets/css/watch-listen-standalone-page.css', '/assets/css/listen-wave-reward-polish-v1.css'];
 $page_scripts = ['/assets/js/public-listen-music-reward.js'];
 
 function mg_listen_reward_safe_url(mixed $value, bool $allowRelative = true): ?string
@@ -33,7 +33,53 @@ function mg_listen_reward_template_image(mixed $json): ?string
     $metadata = is_string($json) && trim($json) !== '' ? json_decode($json, true) : null;
     if (!is_array($metadata)) return null;
     $pack = is_array($metadata['media_pack'] ?? null) ? $metadata['media_pack'] : [];
-    return mg_listen_reward_safe_url($metadata['reward_image_url'] ?? $pack['cover_image_url'] ?? null, true);
+    return mg_listen_reward_safe_url($metadata['reward_image_url'] ?? $pack['reward_image_url'] ?? null, true);
+}
+function mg_listen_reward_pick(array $source, array $keys): string
+{
+    foreach ($keys as $key) {
+        if (!array_key_exists($key, $source)) continue;
+        $value = trim((string)$source[$key]);
+        if ($value !== '') return $value;
+    }
+    return '';
+}
+function mg_listen_reward_money(mixed $cents, string $currency): string
+{
+    if (!is_numeric($cents)) return '';
+    $amount = (int)$cents;
+    return $amount > 0 ? '$' . number_format($amount / 100, 2) . ' ' . $currency : '';
+}
+function mg_listen_reward_level_label(array $percents): string
+{
+    $clean = [];
+    foreach ($percents as $percent) {
+        $percent = max(1, min(100, (int)$percent));
+        $clean[$percent] = $percent . '%';
+    }
+    ksort($clean, SORT_NUMERIC);
+    return implode(', ', array_values($clean));
+}
+function mg_listen_reward_allocations(array $milestones, array $defaults): array
+{
+    $groups = [];
+    foreach ($milestones as $milestone) {
+        if (!is_array($milestone)) continue;
+        $percent = max(1, min(100, (int)($milestone['percent'] ?? $defaults['required_percent'] ?? 100)));
+        $title = mg_listen_reward_pick($milestone, ['reward_title', 'reward_name', 'reward_template_title', 'product_name', 'gift_name', 'title']) ?: (string)$defaults['title'];
+        $value = mg_listen_reward_money($milestone['value_amount_cents'] ?? $milestone['reward_value_amount_cents'] ?? $milestone['value_cents'] ?? null, (string)$defaults['currency']);
+        $value = $value ?: (mg_listen_reward_pick($milestone, ['reward_value', 'value_label', 'display_value', 'value']) ?: (string)$defaults['value']);
+        $image = mg_listen_reward_safe_url($milestone['reward_image_url'] ?? $milestone['reward_image'] ?? $milestone['gift_image_url'] ?? null, true) ?: ($defaults['image'] ?? null);
+        $key = sha1($title . '|' . $value . '|' . (string)$image);
+        if (!isset($groups[$key])) {
+            $groups[$key] = ['title' => $title, 'value' => $value, 'image' => $image, 'levels' => []];
+        }
+        $groups[$key]['levels'][] = $percent;
+    }
+    if (!$groups) {
+        $groups[] = ['title' => (string)$defaults['title'], 'value' => (string)$defaults['value'], 'image' => $defaults['image'] ?? null, 'levels' => $defaults['levels'] ?? [(int)$defaults['required_percent']]];
+    }
+    return array_values($groups);
 }
 function mg_listen_reward_load(string $ref): ?array
 {
@@ -72,7 +118,7 @@ $requiredPercent = max(1, min(100, (int)($rules['required_percent'] ?? 80)));
 $trackTitle = trim((string)($rules['track_title'] ?? '')) ?: (string)($campaign['title'] ?? 'Listen reward');
 $artistName = trim((string)($rules['artist_name'] ?? ''));
 $mediaImageUrl = mg_listen_reward_safe_url($rules['media_image_url'] ?? null, true);
-$rewardImageUrl = mg_listen_reward_template_image($campaign['reward_template_metadata_json'] ?? null) ?: $mediaImageUrl;
+$rewardImageUrl = mg_listen_reward_template_image($campaign['reward_template_metadata_json'] ?? null);
 $merchantName = trim((string)($campaign['merchant_profile_display_name'] ?? '')) ?: (trim((string)($campaign['merchant_user_display_name'] ?? '')) ?: (trim((string)($campaign['merchant_user_full_name'] ?? '')) ?: 'Microgifter merchant'));
 $avatarUrl = mg_listen_reward_safe_url($campaign['merchant_profile_avatar_url'] ?? null);
 $coverUrl = mg_listen_reward_safe_url($campaign['merchant_profile_cover_url'] ?? null) ?: $mediaImageUrl;
@@ -88,7 +134,7 @@ $rewardCurrency = strtoupper(trim((string)($campaign['currency'] ?? 'USD')) ?: '
 $rewardValue = $rewardValueCents > 0 ? '$' . number_format($rewardValueCents / 100, 2) . ' ' . $rewardCurrency : 'Reward';
 $firstMilestone = $milestones[0]['percent'] ?? $requiredPercent;
 $hasAudio = $provider === 'uploaded' ? $uploadedUrl !== '' : $spotifyEmbed !== '';
-$waveBars = str_repeat('<i></i>', 42);
+$waveBars = str_repeat('<i></i>', 96);
 $initialStatus = 'Enter your info to start listening.';
 $levelPercents = [];
 foreach ($milestones as $milestone) {
@@ -96,6 +142,14 @@ foreach ($milestones as $milestone) {
 }
 if (!$levelPercents) $levelPercents[] = $requiredPercent;
 $levelPercents = array_slice(array_values(array_unique($levelPercents)), 0, 4);
+$rewardAllocations = mg_listen_reward_allocations($milestones, [
+    'title' => $rewardTitle,
+    'value' => $rewardValue,
+    'image' => $rewardImageUrl,
+    'levels' => $levelPercents,
+    'required_percent' => $requiredPercent,
+    'currency' => $rewardCurrency,
+]);
 ?>
 <section class="mg-rl-page mg-rl-listen" data-listen-music-reward data-campaign-id="<?= mg_e((string)$campaign['public_id']) ?>" data-audio-provider="<?= mg_e($provider) ?>" data-spotify-track-id="<?= mg_e($spotifyId) ?>" data-uploaded-audio-url="<?= mg_e((string)$uploadedUrl) ?>" data-uploaded-asset-id="<?= mg_e($uploadedAssetId) ?>" data-required-percent="<?= mg_e((string)$requiredPercent) ?>">
   <div class="mg-rl-bg"<?= $coverUrl ? ' style="background-image:url(' . mg_e($coverUrl) . ')"' : '' ?>></div>
@@ -113,7 +167,7 @@ $levelPercents = array_slice(array_values(array_unique($levelPercents)), 0, 4);
         <div class="mg-public-campaign-result" data-listen-reward-result></div>
       </aside>
       <section class="mg-rl-bottom">
-        <article class="mg-rl-card mg-rl-reward-info"><span class="mg-rl-eyebrow">Campaign Reward</span><div class="mg-campaign-issued-reward-card <?= $rewardImageUrl ? 'has-image' : 'is-text-only' ?>"><?php if ($rewardImageUrl): ?><img class="mg-campaign-issued-reward-image" src="<?= mg_e($rewardImageUrl) ?>" alt="<?= mg_e($rewardTitle) ?> image"><?php endif; ?><span><strong><?= mg_e($merchantName) ?></strong><b><?= mg_e($rewardTitle) ?></b><small><?= mg_e($rewardValue) ?> · <?= mg_e($trackTitle) ?></small></span></div><p><?= mg_e($rewardDescription) ?></p></article>
+        <article class="mg-rl-card mg-rl-reward-info"><span class="mg-rl-eyebrow">Campaign Reward</span><div class="mg-rl-reward-stack"><?php foreach ($rewardAllocations as $allocation): ?><div class="mg-rl-reward-item <?= !empty($allocation['image']) ? 'has-image' : 'is-text-only' ?>"><?php if (!empty($allocation['image'])): ?><img class="mg-rl-reward-image" src="<?= mg_e((string)$allocation['image']) ?>" alt="<?= mg_e((string)$allocation['title']) ?> reward image"><?php endif; ?><span class="mg-rl-reward-copy"><strong class="mg-rl-reward-business"><?= mg_e($merchantName) ?></strong><b class="mg-rl-reward-name"><?= mg_e((string)$allocation['title']) ?></b><small class="mg-rl-reward-value"><?= mg_e((string)$allocation['value']) ?></small><small class="mg-rl-reward-levels">Reward level<?= count($allocation['levels']) > 1 ? 's' : '' ?>: <?= mg_e(mg_listen_reward_level_label($allocation['levels'])) ?></small></span></div><?php endforeach; ?></div><p><?= mg_e($rewardDescription) ?></p></article>
         <article class="mg-rl-card mg-rl-levels"><span class="mg-rl-eyebrow">Reward Levels</span><h3>Listen progress unlocks reward milestones.</h3><div class="mg-rl-progress-row"><?php foreach ($levelPercents as $percent): ?><div class="mg-rl-step <?= $percent <= $requiredPercent ? 'is-active' : '' ?>"><span class="mg-rl-dot"><?= mg_e((string)$percent) ?>%</span><b><?= mg_e((string)$percent) ?>%</b></div><?php endforeach; ?></div><div class="mg-rl-bar"><span style="width:<?= mg_e((string)$requiredPercent) ?>%"></span></div></article>
         <article class="mg-rl-card mg-rl-status-card"><span class="mg-rl-eyebrow">Campaign Status</span><h3 data-listen-reward-status><?= mg_e($initialStatus) ?></h3><ul class="mg-rl-list" data-listen-reward-history><li>No listening activity yet.</li></ul><ul class="mg-rl-list" data-listen-reward-issue-history><li>No rewards issued yet.</li></ul></article>
       </section>
