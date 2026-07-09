@@ -6,8 +6,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
   var selectedCampaign = root.getAttribute('data-selected-campaign') || '';
   var selectedDays = root.getAttribute('data-selected-days') || '30';
+  var urlParams = new URLSearchParams(location.search || '');
   var currentData = null;
   var visibleContacts = [];
+  var savedSegments = [];
 
   function esc(value) { return String(value == null ? '' : value).replace(/[&<>'"]/g, function (char) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]; }); }
   function count(value) { return new Intl.NumberFormat().format(Number(value || 0)); }
@@ -16,6 +18,16 @@ document.addEventListener('DOMContentLoaded', function () {
   function milestones(values) { values = Array.isArray(values) ? values : []; return values.length ? values.map(function (v) { return esc(v) + '%'; }).join(', ') : '—'; }
   function statusBadge(value) { return '<span>' + esc(value || '—') + '</span>'; }
   function setAlert(message, tone) { var node = root.querySelector('[data-media-alert]'); if (!node) return; node.hidden = !message; node.className = 'mg-embed-analytics-alert' + (tone ? ' is-' + tone : ''); node.innerHTML = message || ''; }
+  function toast(message) { if (window.Microgifter && Microgifter.toast) Microgifter.toast(message); else setAlert('<strong>' + esc(message) + '</strong>', 'info'); }
+
+  function applyInitialParams() {
+    var segment = urlParams.get('segment');
+    var q = urlParams.get('q');
+    var segmentNode = root.querySelector('[data-media-segment]');
+    var searchNode = root.querySelector('[data-media-search]');
+    if (segment && segmentNode) segmentNode.value = segment;
+    if (q && searchNode) searchNode.value = q;
+  }
 
   function queryParams() {
     var campaign = root.querySelector('[data-media-campaign-input]');
@@ -30,10 +42,17 @@ document.addEventListener('DOMContentLoaded', function () {
   function pageUrl() { return '/merchant-campaign-media-performance.php?' + queryParams().toString(); }
   function selectedSegment() { var node = root.querySelector('[data-media-segment]'); return node && node.value ? node.value : 'all'; }
   function searchTerm() { var node = root.querySelector('[data-media-search]'); return node && node.value ? node.value.trim().toLowerCase() : ''; }
+  function rawSearchTerm() { var node = root.querySelector('[data-media-search]'); return node && node.value ? node.value.trim() : ''; }
   function exportUrl(segment) {
     var params = queryParams();
     params.set('segment', segment || selectedSegment());
     return '/api/merchant/campaign-media-performance-export.php?' + params.toString();
+  }
+  function savedSegmentsUrl(includeCampaign) {
+    var params = new URLSearchParams();
+    var campaign = queryParams().get('campaign');
+    if (includeCampaign && campaign) params.set('campaign', campaign);
+    return '/api/merchant/crm-media-segments.php' + (params.toString() ? '?' + params.toString() : '');
   }
 
   function renderStats(totals) {
@@ -150,6 +169,67 @@ document.addEventListener('DOMContentLoaded', function () {
     }).join('');
   }
 
+  function renderSavedSegments() {
+    var node = root.querySelector('[data-media-saved-segments]');
+    if (!node) return;
+    if (!savedSegments.length) {
+      node.innerHTML = '<article><b>No saved media segments yet.</b><span>Choose a behavior/search filter and click Save Segment.</span><small>Segments are dynamic and refresh from campaign activity.</small></article>';
+      return;
+    }
+    node.innerHTML = savedSegments.map(function (segment) {
+      return '<article data-media-saved-segment="' + esc(segment.id) + '"><b>' + esc(segment.name) + '</b><span>' + esc(segment.campaign_title || 'Media campaign') + ' · ' + esc(segment.behavior_label || 'All contacts') + ' · ' + count(segment.last_count) + ' contacts</span><small>' + esc(segment.days || 30) + ' days' + (segment.search ? ' · search: ' + esc(segment.search) : '') + ' · refreshed ' + esc(compactDate(segment.last_refreshed_at || segment.updated_at)) + '</small><div class="mg-embed-analytics-actions"><a class="mg-btn mg-btn-primary" href="' + esc(segment.open_url || '#') + '">Open segment</a><a class="mg-btn mg-btn-soft" href="' + esc(segment.export_url || '#') + '">Export CSV</a><a class="mg-btn mg-btn-soft" href="' + esc(segment.crm_url || '#') + '">CRM</a><a class="mg-btn mg-btn-ghost" href="' + esc(segment.message_url || '#') + '">Message</a><a class="mg-btn mg-btn-ghost" href="' + esc(segment.reward_url || '#') + '">Reward</a><button class="mg-btn mg-btn-soft" type="button" data-media-delete-segment="' + esc(segment.id) + '">Delete</button></div></article>';
+    }).join('');
+  }
+
+  async function loadSavedSegments() {
+    var node = root.querySelector('[data-media-saved-segments]');
+    if (node) node.innerHTML = '<article><b>Loading saved segments...</b><span>Refreshing dynamic counts.</span></article>';
+    try {
+      var response = await Microgifter.get(savedSegmentsUrl(false));
+      var data = response.data || response;
+      savedSegments = data.segments || [];
+      if (data.schema_ready === false && node) node.innerHTML = '<article><b>Saved segments SQL is not installed.</b><span>Import database/merchant_crm_media_segments_v1.sql to enable this panel.</span></article>';
+      else renderSavedSegments();
+    } catch (error) {
+      if (node) node.innerHTML = '<article><b>Unable to load saved segments.</b><span>' + esc(error.message || 'Try again after SQL import.') + '</span></article>';
+    }
+  }
+
+  async function saveCurrentSegment() {
+    var params = queryParams();
+    if (!params.get('campaign')) return setAlert('<strong>Load a campaign first.</strong>', 'warn');
+    var defaultName = (currentData && currentData.campaign && currentData.campaign.title ? currentData.campaign.title + ' · ' : '') + (selectedSegment() === 'all' ? 'All media contacts' : selectedSegment().replace(/_/g, ' '));
+    var name = window.prompt('Name this saved CRM media segment:', defaultName);
+    if (!name) return;
+    setAlert('<strong>Saving segment...</strong>', 'info');
+    try {
+      await Microgifter.post('/api/merchant/crm-media-segments.php', {
+        action: 'save',
+        name: name.trim(),
+        campaign: params.get('campaign'),
+        days: params.get('days') || selectedDays,
+        behavior_segment: selectedSegment(),
+        search: rawSearchTerm()
+      });
+      toast('Saved CRM media segment.');
+      await loadSavedSegments();
+      setAlert('', '');
+    } catch (error) {
+      setAlert('<strong>' + esc(error.message || 'Unable to save segment.') + '</strong>', 'warn');
+    }
+  }
+
+  async function deleteSavedSegment(id) {
+    if (!id || !window.confirm('Delete this saved segment?')) return;
+    try {
+      await Microgifter.post('/api/merchant/crm-media-segments.php', { action: 'delete', segment_id: id });
+      toast('Saved segment deleted.');
+      await loadSavedSegments();
+    } catch (error) {
+      setAlert('<strong>' + esc(error.message || 'Unable to delete segment.') + '</strong>', 'warn');
+    }
+  }
+
   function render(data) {
     currentData = data || {};
     renderSummary(currentData.campaign || {});
@@ -158,22 +238,32 @@ document.addEventListener('DOMContentLoaded', function () {
     renderContacts(getFilteredContacts());
     renderEvents(currentData.recent_events || []);
     setAlert('', '');
-    if (window.history) window.history.replaceState({}, '', pageUrl());
+    if (window.history) {
+      var params = queryParams();
+      if (selectedSegment() !== 'all') params.set('segment', selectedSegment());
+      if (rawSearchTerm()) params.set('q', rawSearchTerm());
+      var saved = urlParams.get('saved_segment');
+      if (saved) params.set('saved_segment', saved);
+      window.history.replaceState({}, '', '/merchant-campaign-media-performance.php?' + params.toString());
+    }
   }
 
   async function load() {
     var params = queryParams();
-    if (!params.get('campaign')) { setAlert('<strong>Choose a campaign.</strong> Open this page from the Watch / Listen performance panel or paste a campaign slug/id.', 'warn'); return; }
+    if (!params.get('campaign')) { setAlert('<strong>Choose a campaign.</strong> Open this page from the Watch / Listen performance panel or paste a campaign slug/id.', 'warn'); loadSavedSegments(); return; }
     setAlert('<strong>Loading media performance...</strong>', 'info');
     try {
       var response = await Microgifter.get(apiUrl());
       var data = response.data || response;
       render(data);
+      loadSavedSegments();
     } catch (error) {
       setAlert('<strong>' + esc(error.message || 'Unable to load media performance.') + '</strong>', 'warn');
+      loadSavedSegments();
     }
   }
 
+  applyInitialParams();
   var form = root.querySelector('[data-media-performance-filters]');
   if (form) form.addEventListener('submit', function (event) { event.preventDefault(); load(); });
   root.addEventListener('change', function (event) { if (event.target && event.target.matches('[data-media-days]')) load(); if (event.target && event.target.matches('[data-media-segment]')) applyFilters(); });
@@ -183,6 +273,9 @@ document.addEventListener('DOMContentLoaded', function () {
       event.preventDefault();
       setAlert('<strong>Load a campaign first.</strong>', 'warn');
     }
+    if (event.target && event.target.matches('[data-media-save-segment]')) { event.preventDefault(); saveCurrentSegment(); }
+    if (event.target && event.target.matches('[data-media-refresh-segments]')) { event.preventDefault(); loadSavedSegments(); }
+    if (event.target && event.target.matches('[data-media-delete-segment]')) { event.preventDefault(); deleteSavedSegment(event.target.getAttribute('data-media-delete-segment')); }
   });
   load();
 });
