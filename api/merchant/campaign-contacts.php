@@ -16,6 +16,94 @@ function mg_campaign_contact_rules(mixed $json): array
     return is_array($decoded) ? $decoded : [];
 }
 
+function mg_campaign_contact_metadata(mixed $json): array
+{
+    if (!is_string($json) || trim($json) === '') return [];
+    $decoded = json_decode($json, true);
+    return is_array($decoded) ? $decoded : [];
+}
+
+function mg_campaign_contact_is_media(string $type): bool
+{
+    return in_array($type, ['watch_video_reward', 'listen_music_reward'], true);
+}
+
+function mg_campaign_contact_media_label(string $type): string
+{
+    return $type === 'listen_music_reward' ? 'Listen Music Reward' : 'Watch Video Reward';
+}
+
+function mg_campaign_contact_media_provider(string $type, array $metadata, array $rules): string
+{
+    if ($type === 'listen_music_reward') {
+        $provider = (string)($metadata['audio_provider'] ?? $rules['audio_provider'] ?? 'spotify');
+        return $provider === 'uploaded' ? 'Uploaded audio' : 'Spotify listen intent';
+    }
+    $provider = (string)($metadata['video_provider'] ?? $rules['video_provider'] ?? 'youtube');
+    return $provider === 'uploaded' ? 'Uploaded video' : 'YouTube video';
+}
+
+function mg_campaign_contact_media_track(string $type, array $metadata, array $rules): string
+{
+    if ($type === 'listen_music_reward') {
+        $track = trim((string)($rules['track_title'] ?? $metadata['track_title'] ?? ''));
+        $artist = trim((string)($rules['artist_name'] ?? $metadata['artist_name'] ?? ''));
+        return trim($track . ($artist !== '' ? ' · ' . $artist : '')) ?: mg_campaign_contact_media_provider($type, $metadata, $rules);
+    }
+    if ((string)($metadata['video_provider'] ?? $rules['video_provider'] ?? 'youtube') === 'uploaded') {
+        return trim((string)($metadata['uploaded_asset_id'] ?? $rules['uploaded_asset_id'] ?? 'Uploaded video')) ?: 'Uploaded video';
+    }
+    return trim((string)($metadata['video_id'] ?? $rules['youtube_video_id'] ?? 'YouTube video')) ?: 'YouTube video';
+}
+
+function mg_campaign_contact_media_milestones(mixed $value): array
+{
+    $raw = array_filter(array_map('trim', explode(',', (string)$value)), static fn($item) => $item !== '' && $item !== 'null');
+    $out = [];
+    foreach ($raw as $item) {
+        $percent = max(0, min(100, (int)$item));
+        if ($percent > 0) $out[$percent] = $percent;
+    }
+    $items = array_values($out);
+    sort($items);
+    return $items;
+}
+
+function mg_campaign_contact_media_context(array $row, array $rules): array
+{
+    $type = (string)($row['campaign_type'] ?? '');
+    $metadata = mg_campaign_contact_metadata($row['metadata_json'] ?? null);
+    $progress = max(
+        (float)($metadata['max_progress_percent'] ?? 0),
+        (float)($metadata['progress_percent'] ?? 0),
+        (float)($metadata['watch_percent'] ?? 0),
+        (float)($metadata['listen_percent'] ?? 0),
+        (float)($row['media_max_event_progress'] ?? 0)
+    );
+    $progress = round(min(100, max(0, $progress)), 2);
+    $milestones = mg_campaign_contact_media_milestones($row['media_milestones_reached'] ?? '');
+    $issued = (int)($row['issued_count'] ?? 0) + (int)($row['claimed_count'] ?? 0) + (int)($row['redeemed_count'] ?? 0);
+    $claimed = (int)($row['claimed_count'] ?? 0);
+    $redeemed = (int)($row['redeemed_count'] ?? 0);
+    $inboxStatus = $redeemed > 0 ? 'Redeemed' : ($claimed > 0 ? 'Claimed' : ($issued > 0 || (int)($row['wallet_count'] ?? 0) > 0 ? 'Inbox issued' : 'Not issued'));
+    return [
+        'is_media_campaign' => mg_campaign_contact_is_media($type),
+        'type_label' => mg_campaign_contact_is_media($type) ? mg_campaign_contact_media_label($type) : '',
+        'provider_label' => mg_campaign_contact_is_media($type) ? mg_campaign_contact_media_provider($type, $metadata, $rules) : '',
+        'track_label' => mg_campaign_contact_is_media($type) ? mg_campaign_contact_media_track($type, $metadata, $rules) : '',
+        'progress_percent' => $progress,
+        'starts' => (int)($row['media_start_count'] ?? 0),
+        'progress_events' => (int)($row['media_progress_count'] ?? 0),
+        'issued_events' => (int)($row['media_issued_count'] ?? 0),
+        'milestones_reached' => $milestones,
+        'inbox_status' => $inboxStatus,
+        'pppm_handoff' => (bool)((int)($row['media_pppm_handoff_count'] ?? 0) > 0 || strtolower((string)($metadata['pppm_destination'] ?? '')) === 'inbox'),
+        'source_label' => !empty($metadata['origin_host']) ? 'Website embed' : 'Public page',
+        'origin_host' => $metadata['origin_host'] ?? null,
+        'embed_mode' => $metadata['embed_mode'] ?? null,
+    ];
+}
+
 function mg_campaign_contact_score(array $row): array
 {
     $score = 20;
@@ -26,6 +114,10 @@ function mg_campaign_contact_score(array $row): array
     $score += min(28, (int)($row['redeemed_count'] ?? 0) * 14);
     $score += min(16, (int)($row['emails_delivered_count'] ?? 0) * 4);
     $score += min(10, (int)($row['invite_pending_count'] ?? 0) * 5);
+    if (mg_campaign_contact_is_media((string)($row['campaign_type'] ?? ''))) {
+        $score += min(12, (int)floor((float)($row['media_max_event_progress'] ?? 0) / 10));
+        $score += min(12, (int)($row['media_progress_count'] ?? 0) * 2);
+    }
     if (mg_campaign_contact_no_recent_activity($row['last_activity_at'] ?? $row['updated_at'] ?? null)) $score -= 15;
     $score = max(0, min(100, $score));
     $label = $score >= 75 ? 'high_intent' : ($score >= 50 ? 'engaged' : ($score >= 30 ? 'warming' : 'cold'));
@@ -34,6 +126,14 @@ function mg_campaign_contact_score(array $row): array
 
 function mg_campaign_contact_next_action(array $row, array $score): string
 {
+    if (mg_campaign_contact_is_media((string)($row['campaign_type'] ?? ''))) {
+        $progress = (float)($row['media_max_event_progress'] ?? 0);
+        if ((int)($row['redeemed_count'] ?? 0) > 0) return 'Ask for feedback or referral';
+        if ((int)($row['claimed_count'] ?? 0) > 0) return 'Nudge redemption in-store';
+        if ((int)($row['issued_count'] ?? 0) > 0 || (int)($row['wallet_count'] ?? 0) > 0) return 'Remind them to claim the media reward';
+        if ($progress > 0) return 'Follow up to finish the media reward';
+        return 'Invite them to start the media reward';
+    }
     if ((int)($row['redeemed_count'] ?? 0) > 0) return 'Ask for feedback or referral';
     if ((int)($row['claimed_count'] ?? 0) > 0) return 'Nudge redemption in-store';
     if ((int)($row['issued_count'] ?? 0) > 0 || (int)($row['wallet_count'] ?? 0) > 0) return 'Follow up before reward expires';
@@ -50,6 +150,7 @@ function mg_campaign_contact_result_status(array $row): string
     if ((int)($row['issued_count'] ?? 0) > 0 || (int)($row['wallet_count'] ?? 0) > 0) return 'reward_sent';
     if ((int)($row['invite_pending_count'] ?? 0) > 0) return 'invite_pending';
     if ((int)($row['emails_delivered_count'] ?? 0) > 0) return 'email_delivered';
+    if (mg_campaign_contact_is_media((string)($row['campaign_type'] ?? '')) && (float)($row['media_max_event_progress'] ?? 0) > 0) return 'media_engaged';
     return 'no_action_yet';
 }
 
@@ -64,6 +165,8 @@ function mg_campaign_contact_row(array $row): array
         && (int)($row['winner_count'] ?? 0) <= 0;
     $score = mg_campaign_contact_score($row);
     $resultStatus = mg_campaign_contact_result_status($row);
+    $mediaContext = mg_campaign_contact_media_context($row, $rules);
+    $crmContactUrl = '/merchant-crm.php?campaign=' . rawurlencode((string)($row['campaign_public_id'] ?? '')) . '&contact=' . rawurlencode((string)$row['public_id']);
 
     return [
         'id' => (string)$row['public_id'],
@@ -99,6 +202,11 @@ function mg_campaign_contact_row(array $row): array
         'result_status' => $resultStatus,
         'next_best_action' => mg_campaign_contact_next_action($row, $score),
         'customer_profile_url' => '/merchant-customer.php?campaign_contact_id=' . rawurlencode((string)$row['public_id']),
+        'crm_contact_url' => $crmContactUrl,
+        'crm_message_url' => $crmContactUrl . '&action=message',
+        'crm_reward_url' => $crmContactUrl . '&action=reward',
+        'crm_timeline_url' => $crmContactUrl . '&action=timeline',
+        'media_context' => $mediaContext,
         'crm_stats' => [
             'score' => $score['score'],
             'score_label' => $score['label'],
@@ -110,6 +218,10 @@ function mg_campaign_contact_row(array $row): array
             'redeemed' => (int)($row['redeemed_count'] ?? 0),
             'messages' => (int)($row['emails_delivered_count'] ?? 0),
             'invite_pending' => (int)($row['invite_pending_count'] ?? 0),
+            'media_progress' => $mediaContext['progress_percent'],
+            'media_starts' => $mediaContext['starts'],
+            'media_progress_events' => $mediaContext['progress_events'],
+            'media_inbox_status' => $mediaContext['inbox_status'],
         ],
     ];
 }
@@ -131,6 +243,12 @@ try {
                    COUNT(DISTINCT CASE WHEN wi.status='claimed' THEN wi.id END) claimed_count,
                    COUNT(DISTINCT CASE WHEN wi.status='redeemed' THEN wi.id END) redeemed_count,
                    COUNT(DISTINCT CASE WHEN wi.source_type='contest_winner' AND wi.status<>'cancelled' THEN wi.id END) winner_count,
+                   GROUP_CONCAT(DISTINCT CASE WHEN wi.source_type IN ('watch_video_reward','listen_music_reward') THEN JSON_UNQUOTE(JSON_EXTRACT(wi.metadata_json,'$.milestone_percent')) END SEPARATOR ',') media_milestones_reached,
+                   COUNT(DISTINCT CASE WHEN ce.event_type IN ('watch_reward.started','listen_reward.started') THEN ce.id END) media_start_count,
+                   COUNT(DISTINCT CASE WHEN ce.event_type IN ('watch_reward.progress','listen_reward.progress') THEN ce.id END) media_progress_count,
+                   COUNT(DISTINCT CASE WHEN ce.event_type IN ('watch_reward.issued','listen_reward.issued') THEN ce.id END) media_issued_count,
+                   COUNT(DISTINCT CASE WHEN JSON_UNQUOTE(JSON_EXTRACT(ce.event_context_json,'$.pppm_destination'))='inbox' OR JSON_EXTRACT(ce.event_context_json,'$.pppm_bridge') IS NOT NULL THEN ce.id END) media_pppm_handoff_count,
+                   MAX(CASE WHEN ce.event_type IN ('watch_reward.started','watch_reward.progress','listen_reward.started','listen_reward.progress') THEN CAST(JSON_UNQUOTE(JSON_EXTRACT(ce.event_context_json,'$.progress_percent')) AS DECIMAL(6,2)) ELSE 0 END) media_max_event_progress,
                    COUNT(DISTINCT cri.id) invite_pending_count,
                    COUNT(DISTINCT CASE WHEN ce.event_type='outbound_email.queued' THEN ce.id END) emails_queued_count,
                    COUNT(DISTINCT CASE WHEN mdj.status='delivered' THEN mdj.id END) emails_delivered_count,
@@ -174,11 +292,14 @@ try {
         'emails_delivered' => array_sum(array_column($contacts, 'emails_delivered_count')),
         'emails_failed' => array_sum(array_column($contacts, 'emails_failed_count')),
         'high_intent' => count(array_filter($contacts, fn($c) => (int)($c['crm_score'] ?? 0) >= 75)),
-        'needs_followup' => count(array_filter($contacts, fn($c) => in_array((string)($c['result_status'] ?? ''), ['reward_sent','invite_pending','email_delivered'], true))),
+        'needs_followup' => count(array_filter($contacts, fn($c) => in_array((string)($c['result_status'] ?? ''), ['reward_sent','invite_pending','email_delivered','media_engaged'], true))),
+        'media_contacts' => count(array_filter($contacts, fn($c) => (bool)($c['media_context']['is_media_campaign'] ?? false))),
+        'media_started' => count(array_filter($contacts, fn($c) => (float)($c['media_context']['progress_percent'] ?? 0) > 0)),
+        'media_reward_ready' => count(array_filter($contacts, fn($c) => in_array((string)($c['media_context']['inbox_status'] ?? ''), ['Inbox issued','Claimed','Redeemed'], true))),
     ];
 
     mg_ok(['contacts' => $contacts, 'totals' => $totals, 'count' => count($contacts), 'schema_ready' => true]);
 } catch (Throwable $error) {
     mg_security_log('warning', 'merchant.campaign_contacts.unavailable', 'Campaign contacts unavailable.', ['exception_class' => $error::class, 'message' => $error->getMessage()], $merchantId);
-    mg_ok(['contacts' => [], 'totals' => ['contacts' => 0, 'accounts' => 0, 'no_accounts' => 0, 'verified' => 0, 'wallets' => 0, 'reward_issued' => 0, 'reward_claimed' => 0, 'winner_rewards' => 0, 'invite_pending' => 0, 'no_recent_activity' => 0, 'emails_queued' => 0, 'emails_delivered' => 0, 'emails_failed' => 0, 'high_intent' => 0, 'needs_followup' => 0], 'count' => 0, 'schema_ready' => false], 'Campaign contacts unavailable until schemas are installed.');
+    mg_ok(['contacts' => [], 'totals' => ['contacts' => 0, 'accounts' => 0, 'no_accounts' => 0, 'verified' => 0, 'wallets' => 0, 'reward_issued' => 0, 'reward_claimed' => 0, 'winner_rewards' => 0, 'invite_pending' => 0, 'no_recent_activity' => 0, 'emails_queued' => 0, 'emails_delivered' => 0, 'emails_failed' => 0, 'high_intent' => 0, 'needs_followup' => 0, 'media_contacts' => 0, 'media_started' => 0, 'media_reward_ready' => 0], 'count' => 0, 'schema_ready' => false], 'Campaign contacts unavailable until schemas are installed.');
 }
