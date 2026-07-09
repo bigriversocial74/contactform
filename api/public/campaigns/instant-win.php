@@ -159,15 +159,17 @@ if (!$won) {
     ], $message, 200);
 }
 
+$GLOBALS['mg_instant_win_entry'] = $entry;
 function mg_public_campaign_engage_preprocess_input(PDO $pdo, array $input): array
 {
     $entry = $input['entry'] ?? [];
     if (!is_array($entry)) $entry = [];
+    $entry = array_merge($entry, is_array($GLOBALS['mg_instant_win_entry'] ?? null) ? $GLOBALS['mg_instant_win_entry'] : []);
     $entry['instant_win_result'] = 'won';
     $entry['instant_win_verified'] = true;
     $input['entry'] = $entry;
+    $input['campaign_type'] = 'instant_win_reward';
     return $input;
 }
 
-$GLOBALS['mg_input_override'] = $input;
 require __DIR__ . '/engage.php';
