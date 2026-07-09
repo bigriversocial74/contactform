@@ -3,19 +3,11 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_merchant.php';
+require_once dirname(__DIR__, 2) . '/includes/campaign-types.php';
 
 function mg_activity_public_path(string $type): string
 {
-    return match ($type) {
-        'newsletter_signup' => '/newsletter-signup.php',
-        'contest_giveaway' => '/contest.php',
-        'qr_reward_drop' => '/qr-reward.php',
-        'referral_reward' => '/referral-reward.php',
-        'birthday_vip' => '/birthday-vip.php',
-        'agent_offer' => '/agent-offer.php',
-        'customer_refund' => '',
-        default => '/campaign.php',
-    };
+    return mg_campaign_type_public_enabled($type) ? mg_campaign_type_public_path($type) : '';
 }
 
 function mg_activity_rules(mixed $json): array
@@ -28,7 +20,6 @@ function mg_activity_rules(mixed $json): array
 function mg_activity_public_url(array $row): string
 {
     $type = (string)$row['campaign_type'];
-    if ($type === 'customer_refund') return '';
     $path = mg_activity_public_path($type);
     if ($path === '') return '';
     if ($type === 'qr_reward_drop' && !empty($row['qr_code_token'])) return $path . '?token=' . rawurlencode((string)$row['qr_code_token']);
@@ -38,10 +29,16 @@ function mg_activity_public_url(array $row): string
 
 function mg_activity_row(array $row): array
 {
+    $type = (string)$row['campaign_type'];
+    $definition = mg_campaign_type_get($type) ?? [];
     return [
         'id' => (string)$row['public_id'],
         'title' => (string)$row['title'],
-        'campaign_type' => (string)$row['campaign_type'],
+        'campaign_type' => $type,
+        'campaign_type_label' => (string)($definition['label'] ?? mg_campaign_type_label($type)),
+        'campaign_type_category' => (string)($definition['category'] ?? 'campaign'),
+        'public_enabled' => !empty($definition['public_enabled']),
+        'internal_only' => !empty($definition['internal_only']),
         'status' => (string)$row['status'],
         'public_slug' => $row['public_slug'] ?? null,
         'qr_code_token' => $row['qr_code_token'] ?? null,
@@ -102,8 +99,8 @@ try {
         'emails_failed' => array_sum(array_column($campaigns, 'emails_failed_count')),
         'events' => array_sum(array_column($campaigns, 'events_count')),
     ];
-    mg_ok(['campaigns' => $campaigns, 'totals' => $totals, 'schema_ready' => true]);
+    mg_ok(['campaigns' => $campaigns, 'campaign_types' => mg_campaign_type_options(true), 'totals' => $totals, 'schema_ready' => true]);
 } catch (Throwable $error) {
     mg_security_log('warning', 'merchant.campaign_activity.schema_unavailable', 'Campaign activity schema is unavailable.', ['exception_class' => $error::class], $merchantId);
-    mg_ok(['campaigns' => [], 'totals' => ['campaigns'=>0,'contacts'=>0,'wallet_issued'=>0,'wallet_claimed'=>0,'wallet_redeemed'=>0,'emails_queued'=>0,'emails_delivered'=>0,'emails_failed'=>0,'events'=>0], 'schema_ready' => false], 'Campaign activity unavailable until the Stage 12 schema is installed.');
+    mg_ok(['campaigns' => [], 'campaign_types' => mg_campaign_type_options(true), 'totals' => ['campaigns'=>0,'contacts'=>0,'wallet_issued'=>0,'wallet_claimed'=>0,'wallet_redeemed'=>0,'emails_queued'=>0,'emails_delivered'=>0,'emails_failed'=>0,'events'=>0], 'schema_ready' => false], 'Campaign activity unavailable until the Stage 12 schema is installed.');
 }
