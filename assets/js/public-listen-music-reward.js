@@ -22,6 +22,8 @@
   var maxPercent = 0;
   var lastPost = 0;
   var started = false;
+  var joined = false;
+  var audioBound = false;
   var unlockedStep = 0;
   var steps = { join: 0, media: 1, rewards: 2 };
 
@@ -99,12 +101,30 @@
     showTab('rewards', true);
   }
   function readForm() {
+    if (!form) return { name: '', email: '', phone: '' };
     var fd = new FormData(form);
     return {
       name: String(fd.get('name') || '').trim(),
       email: String(fd.get('email') || '').trim().toLowerCase(),
       phone: String(fd.get('phone') || '').trim()
     };
+  }
+  function joinFromForm() {
+    var nextCustomer = readForm();
+    if (!nextCustomer.email || nextCustomer.email.indexOf('@') < 1) {
+      setStatus('Enter a valid email before listening.');
+      showTab('join', true);
+      return false;
+    }
+    customer = nextCustomer;
+    if (shell) shell.hidden = false;
+    unlockStep(1);
+    showTab('media', true);
+    if (!joined) {
+      joined = true;
+      addRow(history, 'Campaign joined for ' + customer.email + '.');
+    }
+    return true;
   }
   function progress() {
     if (provider === 'uploaded' && player) {
@@ -158,15 +178,20 @@
   }
   function tick() {
     var p = progress();
-    if (p.duration > 0) {
+    if (p.duration > 0 && customer.email) {
       maxPercent = Math.min(100, p.percent);
       setStatus('Listening… ' + Math.round(maxPercent) + '% complete');
       postProgress(maxPercent, false);
     }
   }
   function bindAudio() {
-    if (provider !== 'uploaded' || !player) return;
+    if (provider !== 'uploaded' || !player || audioBound) return;
+    audioBound = true;
     player.addEventListener('play', function () {
+      if (!joinFromForm()) {
+        try { player.pause(); } catch (error) {}
+        return;
+      }
       if (!started) {
         started = true;
         addRow(history, 'Listening session started.');
@@ -178,34 +203,28 @@
     player.addEventListener('pause', function () { tick(); clearInterval(timer); });
     player.addEventListener('timeupdate', tick);
     player.addEventListener('ended', function () {
+      if (!customer.email) return;
       maxPercent = 100;
       postProgress(100, true);
       clearInterval(timer);
       setStatus('Audio complete. Final rewards checked.');
       addRow(history, 'Audio completed.');
     });
-    setStatus('Audio ready. Press play to start earning rewards.');
+    setStatus('Enter your info, then press play to start reward tracking.');
   }
 
   root.querySelectorAll('[data-listen-tab-trigger]').forEach(function (button) {
     button.addEventListener('click', function () { showTab(button.getAttribute('data-listen-tab-trigger') || 'join', false); });
   });
   syncTabs();
+  bindAudio();
 
   if (form) form.addEventListener('submit', function (event) {
     event.preventDefault();
-    customer = readForm();
-    if (!customer.email || customer.email.indexOf('@') < 1) {
-      setStatus('Enter a valid email before listening.');
-      return;
-    }
-    if (shell) shell.hidden = false;
-    unlockStep(1);
-    showTab('media', true);
-    addRow(history, 'Campaign joined for ' + customer.email + '.');
+    if (!joinFromForm()) return;
     if (provider === 'uploaded') {
       bindAudio();
-      postProgress(0, true);
+      setStatus('Joined. Press play on the audio player to start reward tracking.');
       return;
     }
     setStatus('Spotify track loaded. Listen in the embedded player, then confirm to unlock the reward.');
@@ -213,11 +232,7 @@
   });
 
   if (confirmButton) confirmButton.addEventListener('click', function () {
-    if (!customer.email) {
-      setStatus('Enter your info first.');
-      showTab('join', true);
-      return;
-    }
+    if (!joinFromForm()) return;
     maxPercent = 100;
     addRow(history, 'Spotify listen confirmation submitted.');
     postProgress(100, true);
