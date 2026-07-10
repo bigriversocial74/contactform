@@ -6,16 +6,26 @@ on:
       - integration-from-repair-20260628
     paths:
       - 'world-canvas.php'
+      - 'includes/footer.php'
       - 'api/world-canvas/_target_drop_campaigns.php'
       - 'api/world-canvas/_target_drops.php'
       - 'api/world-canvas/target-drops.php'
       - 'api/store/avatar-anchor.php'
       - 'api/store/exit.php'
+      - 'assets/css/world-canvas-progressive-zoom.css'
+      - 'assets/css/world-canvas-icon-zoom-stability.css'
+      - 'assets/css/store-world-transition.css'
       - 'assets/js/avatar-anchor-consent.js'
       - 'assets/js/world-canvas-square-map.js'
+      - 'assets/js/world-canvas-geo-zoom.js'
+      - 'assets/js/world-canvas-dot-system.js'
+      - 'assets/js/world-canvas-zone-scale.js'
+      - 'assets/js/world-canvas-icon-zoom-stability.js'
       - 'assets/js/world-canvas-target-drops.js'
       - 'assets/js/world-canvas-merchant-settings.js'
+      - 'assets/js/store-world-transition.js'
       - 'scripts/validate_world_canvas_campaign_drop_zone_sync_v1.php'
+      - 'scripts/validate_world_canvas_progressive_zoom_v1.php'
       - '.github/workflows/world-canvas-campaign-drop-zone-sync-v1-validation.yml'
   workflow_dispatch:
 
@@ -44,22 +54,32 @@ jobs:
       - name: PHP syntax
         run: |
           php -l world-canvas.php
+          php -l includes/footer.php
           php -l api/world-canvas/_target_drop_campaigns.php
           php -l api/world-canvas/_target_drops.php
           php -l api/world-canvas/target-drops.php
           php -l api/store/avatar-anchor.php
           php -l api/store/exit.php
           php -l scripts/validate_world_canvas_campaign_drop_zone_sync_v1.php
+          php -l scripts/validate_world_canvas_progressive_zoom_v1.php
 
       - name: JavaScript syntax
         run: |
           node --check assets/js/avatar-anchor-consent.js
           node --check assets/js/world-canvas-square-map.js
+          node --check assets/js/world-canvas-geo-zoom.js
+          node --check assets/js/world-canvas-dot-system.js
+          node --check assets/js/world-canvas-zone-scale.js
+          node --check assets/js/world-canvas-icon-zoom-stability.js
           node --check assets/js/world-canvas-target-drops.js
           node --check assets/js/world-canvas-merchant-settings.js
+          node --check assets/js/store-world-transition.js
 
       - name: Campaign Drop Zone authority contract
         run: php scripts/validate_world_canvas_campaign_drop_zone_sync_v1.php
+
+      - name: Progressive zoom and Store-to-World contract
+        run: php scripts/validate_world_canvas_progressive_zoom_v1.php
 
       - name: Stage 12 campaigns and rewards regression
         run: php scripts/validate_stage12_campaigns_reward_templates.php
