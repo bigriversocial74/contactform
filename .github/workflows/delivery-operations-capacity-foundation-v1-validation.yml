@@ -14,10 +14,14 @@ on:
       - 'assets/js/gift-action-center-modal-portal.js'
       - 'assets/js/gift-action-center-send-modal.js'
       - 'assets/js/gift-action-center-claim-modal.js'
+      - 'assets/js/create-menu.js'
       - 'assets/css/delivery-operations.css'
       - 'assets/css/modal-foundation.css'
       - 'assets/css/gift-action-center-modals.css'
+      - 'assets/css/create-menu.css'
+      - 'assets/css/layout-fixes.css'
       - 'includes/gift-action-center.php'
+      - 'includes/header-templates/create-menu.php'
       - 'inbox.php'
       - 'claimed.php'
       - 'database/delivery_operations_capacity_foundation_v1.sql'
@@ -27,6 +31,7 @@ on:
       - 'scripts/validate_delivery_communications_regression_v1.php'
       - 'scripts/validate_delivery_microgift_authority_regression_v1.php'
       - 'scripts/validate_action_center_modal_ui_consistency_v1.php'
+      - 'scripts/validate_create_menu_ui_v1.php'
       - 'docs/delivery-operations-capacity-foundation-v1.md'
       - 'docs/audits/delivery-operations-capacity-foundation-v1-scorecard.md'
       - '.github/workflows/delivery-operations-capacity-foundation-v1-validation.yml'
@@ -66,6 +71,7 @@ jobs:
           php -l admin/delivery-operations.php
           php -l bin/delivery-worker.php
           php -l includes/gift-action-center.php
+          php -l includes/header-templates/create-menu.php
           php -l inbox.php
           php -l claimed.php
           php -l config/migrations.php
@@ -74,6 +80,7 @@ jobs:
           php -l scripts/validate_delivery_communications_regression_v1.php
           php -l scripts/validate_delivery_microgift_authority_regression_v1.php
           php -l scripts/validate_action_center_modal_ui_consistency_v1.php
+          php -l scripts/validate_create_menu_ui_v1.php
 
       - name: JavaScript syntax
         run: |
@@ -81,6 +88,7 @@ jobs:
           node --check assets/js/gift-action-center-modal-portal.js
           node --check assets/js/gift-action-center-send-modal.js
           node --check assets/js/gift-action-center-claim-modal.js
+          node --check assets/js/create-menu.js
 
       - name: Delivery operations ten-point contract
         run: php scripts/validate_delivery_operations_capacity_foundation_v1.php
@@ -90,6 +98,9 @@ jobs:
 
       - name: Action Center modal UI consistency contract
         run: php scripts/validate_action_center_modal_ui_consistency_v1.php
+
+      - name: Create menu UI consistency contract
+        run: php scripts/validate_create_menu_ui_v1.php
 
       - name: Purchase-to-Microgift issuance regression
         run: php scripts/validate_purchase_microgift_issuance_v1.php
