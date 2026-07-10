@@ -23,7 +23,7 @@ function mg_stamp_card_cashier_required(array $campaign): bool { $rules = mg_sta
 function mg_stamp_card_claim_code_normalize(string $code): string { $code = strtoupper(trim($code)); if (mb_strlen($code) < 4 || mb_strlen($code) > 64 || !preg_match('/^[A-Z0-9_-]{4,64}$/', $code)) mg_fail('Cashier claim code must be 4 to 64 letters, numbers, dashes, or underscores.', 422); return $code; }
 function mg_stamp_card_claim_code_pepper(): string
 {
-    $config = require dirname(__DIR__) . '/config.php';
+    $config = require dirname(__DIR__, 2) . '/config.php';
     $configured = trim((string)($config['security']['claim_code_pepper'] ?? ''));
     if ($configured !== '') return $configured;
     $root = trim((string)($config['storage']['root'] ?? ''));
