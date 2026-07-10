@@ -1,0 +1,64 @@
+name: Watch Listen Media Alignment Validation
+
+on:
+  pull_request:
+    paths:
+      - 'watch-reward.php'
+      - 'listen-reward.php'
+      - 'includes/campaign-media-landing.php'
+      - 'includes/campaign-landing-foundation.php'
+      - 'assets/css/campaign-media-alignment-v1.css'
+      - 'assets/js/public-watch-video-reward.js'
+      - 'assets/js/public-listen-music-reward.js'
+      - 'api/public/campaigns/watch-progress-v2.php'
+      - 'api/public/campaigns/_media_progress_v2.php'
+      - 'api/public/campaigns/listen-progress.php'
+      - 'scripts/validate_watch_listen_media_alignment_v1.php'
+      - 'scripts/validate_campaign_landing_foundation_repair_v1.php'
+      - 'scripts/validate_watch_video_reward_v1_4.php'
+      - 'scripts/validate_listen_music_reward_v1_5.php'
+      - '.github/workflows/watch-listen-media-alignment-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Watch and Listen media alignment validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+      - name: PHP syntax check
+        run: |
+          set -euo pipefail
+          php -l watch-reward.php
+          php -l listen-reward.php
+          php -l includes/campaign-media-landing.php
+          php -l includes/campaign-landing-foundation.php
+          php -l api/public/campaigns/watch-progress-v2.php
+          php -l api/public/campaigns/_media_progress_v2.php
+          php -l api/public/campaigns/listen-progress.php
+          php -l scripts/validate_watch_listen_media_alignment_v1.php
+          php -l scripts/validate_campaign_landing_foundation_repair_v1.php
+          php -l scripts/validate_watch_video_reward_v1_4.php
+          php -l scripts/validate_listen_music_reward_v1_5.php
+      - name: JavaScript syntax check
+        run: |
+          set -euo pipefail
+          node --check assets/js/public-watch-video-reward.js
+          node --check assets/js/public-listen-music-reward.js
+      - name: Validate media alignment
+        run: php scripts/validate_watch_listen_media_alignment_v1.php
+      - name: Validate campaign landing foundation
+        run: php scripts/validate_campaign_landing_foundation_repair_v1.php
+      - name: Validate Watch Video Reward
+        run: php scripts/validate_watch_video_reward_v1_4.php
+      - name: Validate Listen Music Reward
+        run: php scripts/validate_listen_music_reward_v1_5.php
