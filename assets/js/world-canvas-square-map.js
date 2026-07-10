@@ -33,6 +33,7 @@ window.Microgifter = window.Microgifter || {};
   addCss('/assets/css/world-canvas-test-launch.css', 'data-world-test-launch-css');
   addCss('/assets/css/world-canvas-intercept-tools.css', 'data-world-intercept-tools-css');
   addCss('/assets/css/world-canvas-icon-zoom-stability.css', 'data-world-icon-zoom-stability-css');
+  addCss('/assets/css/world-canvas-progressive-zoom.css', 'data-world-progressive-zoom-css');
   addScript('/assets/js/world-canvas-reference-map.js', 'data-world-reference-map-js');
   addScript('/assets/js/world-canvas-geo-zoom.js', 'data-world-geo-zoom-js');
   addScript('/assets/js/world-canvas-merchant-settings.js', 'data-world-merchant-js');
