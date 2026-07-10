@@ -33,17 +33,22 @@ window.Microgifter = window.Microgifter || {};
   function transitionMarkup(options) {
     options = options || {};
     var mode = options.mode || 'world';
+    var eligible = options.eligible !== false;
     var fromName = escapeHtml(options.fromName || 'Merchant Store');
     var toName = escapeHtml(options.toName || 'World Canvas');
     var heading = mode === 'switch' ? 'Moving to the next store' : options.reason === 'timeout' ? 'Store session completed' : 'Returning to the world';
     var copy = mode === 'switch'
       ? 'Your avatar is leaving <strong>' + fromName + '</strong> and entering <strong>' + toName + '</strong>.'
-      : 'Your avatar is leaving <strong>' + fromName + '</strong> and entering World Canvas at this merchant location.';
-    var kicker = mode === 'switch' ? 'Store Canvas → Store Canvas' : 'Store Canvas → World Canvas';
-    var destination = mode === 'switch' ? 'STORE' : 'WORLD';
+      : eligible
+        ? 'Your avatar is leaving <strong>' + fromName + '</strong> and entering World Canvas at this merchant location.'
+        : 'Your session at <strong>' + fromName + '</strong> has ended.';
+    var kicker = mode === 'switch' ? 'Store Canvas → Store Canvas' : eligible ? 'Store Canvas → World Canvas' : 'Store Canvas Session';
+    var destination = mode === 'switch' ? 'STORE' : eligible ? 'WORLD' : 'EXIT';
     var note = mode === 'switch'
       ? 'The new active Store Canvas session remains the location authority.'
-      : 'Location authority remains the merchant’s saved latitude and longitude.';
+      : eligible
+        ? 'Location authority remains the merchant’s saved latitude and longitude.'
+        : 'No World Canvas location was created because merchant-location sharing was not enabled.';
 
     return '<article class="mg-store-world-transition-card is-' + escapeHtml(mode) + '">' +
       '<span class="mg-store-world-transition-kicker">' + kicker + '</span>' +
@@ -91,7 +96,7 @@ window.Microgifter = window.Microgifter || {};
         document.dispatchEvent(new CustomEvent('mg:store-exited', { detail: data }));
       } catch (eventError) {}
       if (data.world_transition) {
-        await playTransition({ mode: 'world', fromName: merchantName(), reason: 'manual' });
+        await playTransition({ mode: 'world', fromName: merchantName(), reason: 'manual', eligible: true });
         window.location.assign('/world-canvas.php?entry=store-exit');
         return;
       }
@@ -111,6 +116,7 @@ window.Microgifter = window.Microgifter || {};
   async function automaticSessionEnded(detail) {
     detail = detail || {};
     var session = detail.session || {};
+    var eligible = session.world_transition_eligible === true;
     var key = String(session.id || detail.merchant_name || 'store') + ':' + String(detail.reason || 'expired');
     if (busy || key === lastAutomaticKey) return;
     lastAutomaticKey = key;
@@ -118,14 +124,15 @@ window.Microgifter = window.Microgifter || {};
     await playTransition({
       mode: 'world',
       fromName: detail.merchant_name || (session.merchant && session.merchant.name) || 'Merchant Store',
-      reason: detail.reason || 'expired'
+      reason: detail.reason || 'expired',
+      eligible: eligible
     });
-    if (detail.world_transition && safeAutoRedirectPage()) {
+    if (eligible && safeAutoRedirectPage()) {
       window.location.assign('/world-canvas.php?entry=store-exit');
       return;
     }
     busy = false;
-    toast('Your Store Canvas session ended. Your avatar returned to World Canvas.', 'info');
+    toast(eligible ? 'Your Store Canvas session ended. Your avatar returned to World Canvas.' : 'Your Store Canvas session ended.', 'info');
   }
 
   async function automaticStoreSwitch(detail) {
@@ -140,7 +147,8 @@ window.Microgifter = window.Microgifter || {};
       mode: 'switch',
       fromName: detail.from_name || (fromSession.merchant && fromSession.merchant.name) || 'Current Store',
       toName: detail.to_name || (toSession.merchant && toSession.merchant.name) || 'Next Store',
-      reason: 'switch_store'
+      reason: 'switch_store',
+      eligible: false
     });
     busy = false;
   }
