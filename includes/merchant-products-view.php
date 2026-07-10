@@ -3,14 +3,13 @@ declare(strict_types=1);
 ?>
 <section class="mg-products-catalog" data-products-catalog-manager>
   <div class="mg-products-commandbar">
-    <nav class="mg-products-tabs" aria-label="Product catalog sections">
-      <a class="is-active" href="#products-overview">Overview</a>
-      <a href="#products-list-panel">Active Products</a>
-      <a href="#products-list-panel">Drafts</a>
-      <a href="#products-list-panel">Gift Cards</a>
-      <a href="#products-list-panel">Rewards</a>
-      <a href="#products-list-panel">Archived</a>
-      <a href="#products-readiness">Inventory</a>
+    <nav class="mg-products-tabs" aria-label="Product catalog filters" data-product-catalog-tabs>
+      <button class="is-active" type="button" data-product-catalog-tab="all" aria-pressed="true">Overview</button>
+      <button type="button" data-product-catalog-tab="published" aria-pressed="false">Published</button>
+      <button type="button" data-product-catalog-tab="draft" aria-pressed="false">Drafts</button>
+      <button type="button" data-product-catalog-tab="gift" aria-pressed="false">Gift Cards</button>
+      <button type="button" data-product-catalog-tab="reward" aria-pressed="false">Rewards</button>
+      <button type="button" data-product-catalog-tab="archived" aria-pressed="false">Archived</button>
     </nav>
     <div class="mg-heading-actions">
       <a class="mg-btn mg-btn-soft" href="/merchant-storefront.php">Storefront</a>
@@ -27,7 +26,7 @@ declare(strict_types=1);
         <div>
           <span class="mg-eyebrow">Product Catalog</span>
           <h2>Reward inventory manager</h2>
-          <p>Review active products, reward drafts, gift card offers, storefront visibility, value, media, and product history.</p>
+          <p>Review published products, drafts, gift offers, storefront visibility, value, media, and immutable version history.</p>
         </div>
         <a class="mg-btn mg-btn-soft" href="/build.php">Create Product</a>
       </div>
@@ -69,10 +68,10 @@ declare(strict_types=1);
           <button class="mg-btn mg-btn-ghost" type="button" data-product-filters-reset>Reset filters</button>
         </form>
 
-        <section class="mg-products-loading" data-products-loading>
-          <div class="mg-product-row-skeleton"></div>
-          <div class="mg-product-row-skeleton"></div>
-          <div class="mg-product-row-skeleton"></div>
+        <div class="mg-form-status" data-products-status role="status" aria-live="polite"></div>
+
+        <section class="mg-products-loading" data-products-loading aria-label="Loading products">
+          <div class="mg-product-row-skeleton"></div><div class="mg-product-row-skeleton"></div><div class="mg-product-row-skeleton"></div>
         </section>
 
         <section class="mg-app-panel mg-products-inline-error mg-hidden" data-products-error role="alert">
@@ -85,13 +84,11 @@ declare(strict_types=1);
         <section class="mg-products-content mg-hidden" data-products-content>
           <div class="mg-product-list-header">
             <div><strong data-products-result-count>0 products</strong><span data-products-page-summary></span></div>
-            <span>Published versions are immutable. Editing creates a new draft.</span>
+            <span>Published versions are immutable. Editing creates a replacement draft.</span>
           </div>
           <div class="mg-product-list" data-product-list></div>
           <div class="mg-product-empty mg-hidden" data-products-empty>
-            <strong>No products match these filters.</strong>
-            <p>Change the filters or create a new product.</p>
-            <a class="mg-btn mg-btn-primary" href="/build.php">Create product</a>
+            <strong>No products match these filters.</strong><p>Change the filters or create a new product.</p><a class="mg-btn mg-btn-primary" href="/build.php">Create product</a>
           </div>
           <nav class="mg-product-pagination" data-product-pagination aria-label="Product pages">
             <button class="mg-btn mg-btn-ghost" type="button" data-product-page="previous">Previous</button>
@@ -104,13 +101,13 @@ declare(strict_types=1);
 
     <aside class="mg-products-side" id="products-readiness">
       <section class="mg-app-panel mg-products-panel mg-products-readiness-card">
-        <div class="mg-app-panel-head mg-products-panel-head is-compact"><div><h2>Product Readiness</h2><p>Catalog issues to check before products go public.</p></div></div>
+        <div class="mg-app-panel-head mg-products-panel-head is-compact"><div><h2>Product Readiness</h2><p>Live catalog health from the current product records.</p></div></div>
         <div class="mg-app-panel-body">
-          <div class="mg-products-readiness-score"><span>Catalog signal</span><strong>Live</strong></div>
+          <div class="mg-products-readiness-score"><span>Catalog signal</span><strong data-catalog-health-label>Loading</strong></div>
           <div class="mg-products-readiness-list">
-            <p><b></b><span>Published products are ready for storefront placement.</span></p>
-            <p><b></b><span>Draft products should be completed before promotion.</span></p>
-            <p><b></b><span>Products without media or value need review.</span></p>
+            <p><b></b><span><strong data-catalog-published-count>0</strong> published products are available for storefront placement.</span></p>
+            <p><b></b><span><strong data-catalog-draft-count>0</strong> drafts still require publication.</span></p>
+            <p><b></b><span><strong data-catalog-review-count>0</strong> products need a value, current version, or draft review.</span></p>
           </div>
         </div>
       </section>
@@ -118,10 +115,7 @@ declare(strict_types=1);
       <section class="mg-app-panel mg-products-panel mg-products-actions-card">
         <div class="mg-app-panel-head mg-products-panel-head is-compact"><div><h2>Quick actions</h2><p>Catalog operations.</p></div></div>
         <div class="mg-app-panel-body">
-          <a href="/build.php">Create product</a>
-          <a href="/merchant-storefront.php">Manage storefront</a>
-          <a href="/merchant-reward-templates.php">Reward templates</a>
-          <a href="/merchant-media.php">Open media library</a>
+          <a href="/build.php">Create product</a><a href="/merchant-storefront.php">Manage storefront</a><a href="/merchant-reward-templates.php">Reward templates</a><a href="/merchant-media.php">Open media library</a>
         </div>
       </section>
     </aside>
