@@ -1,6 +1,18 @@
 <?php
 declare(strict_types=1);
 
+function lqr_require_application_installation(): void
+{
+    if (PHP_SAPI === 'cli') return;
+    if (is_file(__DIR__ . '/config.php')) return;
+    $script = basename((string)($_SERVER['SCRIPT_NAME'] ?? ''));
+    if ($script === 'install.php') return;
+    header('Location: install.php');
+    exit;
+}
+
+lqr_require_application_installation();
+
 function lqr_security_config(): array
 {
     $path = __DIR__ . '/config.php';
@@ -61,8 +73,7 @@ function lqr_session_enforce_timeout(): void
 
 function lqr_csrf_field(): string
 {
-    $security = lqr_security_config();
-    return (string)$security['csrf_field'];
+    return (string)lqr_security_config()['csrf_field'];
 }
 
 function lqr_csrf_token(): string
@@ -109,9 +120,9 @@ function lqr_auto_csrf_output(): void
     ob_start(static function(string $html): string {
         if (stripos($html, '<form') === false) return $html;
         $input = lqr_csrf_input();
-        return preg_replace_callback('/<form\b([^>]*)>/i', static function(array $m) use ($input): string {
-            $tag = $m[0];
-            $attrs = $m[1] ?? '';
+        return preg_replace_callback('/<form\b([^>]*)>/i', static function(array $matches) use ($input): string {
+            $tag = $matches[0];
+            $attrs = $matches[1] ?? '';
             if (stripos($attrs, 'method="post"') === false && stripos($attrs, "method='post'") === false && stripos($attrs, 'method=post') === false) return $tag;
             if (stripos($tag, 'data-lqr-no-csrf') !== false) return $tag;
             return $tag . $input;
@@ -135,17 +146,17 @@ function lqr_signed_payload(array $config, array $payload): string
     $json = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     if (!is_string($json)) throw new RuntimeException('Unable to encode signed payload.');
     $body = rtrim(strtr(base64_encode($json), '+/', '-_'), '=');
-    $sig = hash_hmac('sha256', $body, lqr_security_secret($config));
-    return 'lqr1.' . $body . '.' . $sig;
+    $signature = hash_hmac('sha256', $body, lqr_security_secret($config));
+    return 'lqr1.' . $body . '.' . $signature;
 }
 
 function lqr_verify_signed_payload(array $config, string $code, string $expectedType = ''): array
 {
     $parts = explode('.', trim($code));
     if (count($parts) !== 3 || $parts[0] !== 'lqr1') throw new RuntimeException('Invalid signed code format.');
-    [$version, $body, $sig] = $parts;
+    [, $body, $signature] = $parts;
     $expected = hash_hmac('sha256', $body, lqr_security_secret($config));
-    if (!hash_equals($expected, $sig)) throw new RuntimeException('Signed code verification failed.');
+    if (!hash_equals($expected, $signature)) throw new RuntimeException('Signed code verification failed.');
     $json = base64_decode(strtr($body, '-_', '+/'), true);
     $payload = json_decode((string)$json, true);
     if (!is_array($payload)) throw new RuntimeException('Signed code payload is invalid.');
@@ -162,8 +173,7 @@ function lqr_replay_key(array $payload): string
 
 function lqr_replay_seen(array $state, array $payload): bool
 {
-    $key = lqr_replay_key($payload);
-    return !empty($state['security_replay'][$key]);
+    return !empty($state['security_replay'][lqr_replay_key($payload)]);
 }
 
 function lqr_mark_replay(array &$state, array $payload): void
