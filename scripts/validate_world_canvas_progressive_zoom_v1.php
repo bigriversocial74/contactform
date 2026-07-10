@@ -41,6 +41,8 @@ try {
     $runtime = mg_world_zoom_read($root, 'api/store/_canvas_runtime.php');
     $worldTransition = mg_world_zoom_read($root, 'api/store/_world_transition.php');
     $heartbeat = mg_world_zoom_read($root, 'api/store/heartbeat.php');
+    $sessionStatus = mg_world_zoom_read($root, 'api/store/session-status.php');
+    $chatApi = mg_world_zoom_read($root, 'api/store/chat-widget.php');
     $footer = mg_world_zoom_read($root, 'includes/footer.php');
     $drops = mg_world_zoom_read($root, 'assets/js/world-canvas-target-drops.js');
 
@@ -104,8 +106,9 @@ try {
         str_contains($detail, 'applyViewportBudget')
         && str_contains($detail, 'data-world-in-viewport')
         && str_contains($detail, 'is-detail-lite')
-        && str_contains($detailCss, 'content-visibility:auto'),
-        'Detailed cards are viewport-budgeted while lightweight map signals remain available',
+        && str_contains($detailCss, 'content-visibility:auto')
+        && !str_contains($detailCss, '.mg-world-viewport{position:relative'),
+        'Detailed cards are viewport-budgeted without replacing the map viewport positioning contract',
         $failures,
         $passes
     );
@@ -170,9 +173,9 @@ try {
     mg_world_zoom_expect(
         str_contains($presence, "emit('mg:store-session-ended'")
         && str_contains($presence, "emit('mg:store-switched'")
-        && str_contains($chat, "mg:store-session-ended")
-        && str_contains($transition, "mg:store-session-ended")
-        && str_contains($transition, "mg:store-switched"),
+        && str_contains($chat, 'mg:store-session-ended')
+        && str_contains($transition, 'mg:store-session-ended')
+        && str_contains($transition, 'mg:store-switched'),
         'Timed-out sessions and merchant switches use shared automatic transition events',
         $failures,
         $passes
@@ -185,6 +188,20 @@ try {
         && str_contains($worldTransition, 'mg_world_location_save_user')
         && str_contains($heartbeat, 'mg_store_runtime_heartbeat'),
         'Timed-out sessions return opted-in avatars to World Canvas through server location authority',
+        $failures,
+        $passes
+    );
+
+    mg_world_zoom_expect(
+        str_contains($worldTransition, 'function mg_store_world_transition_eligible')
+        && str_contains($runtime, 'function mg_store_runtime_project_session')
+        && str_contains($runtime, "['world_transition_eligible']")
+        && str_contains($sessionStatus, 'mg_store_runtime_project_session')
+        && str_contains($heartbeat, 'mg_store_runtime_project_session')
+        && str_contains($chatApi, 'mg_store_runtime_project_session')
+        && str_contains($transition, 'session.world_transition_eligible === true')
+        && !str_contains($transition, 'if (detail.world_transition &&'),
+        'Automatic redirects require server-projected merchant-location transition eligibility',
         $failures,
         $passes
     );
