@@ -23,6 +23,30 @@ $appSidebarTools = (string) ($appSidebarTools ?? '');
 $appSidebarCompact = (bool) ($appSidebarCompact ?? true);
 $appSidebarAgentBadges = $appSidebarVariant === 'merchant';
 
+if ($appSidebarVariant === 'utility' && !isset($appSidebarNav['loyalty-cards'])) {
+    $loyaltyItem = [
+        'section' => 'Customer',
+        'label' => 'Loyalty Cards',
+        'detail' => 'Saved stamp and visit cards',
+        'href' => '/loyalty-cards.php',
+        'visible' => true,
+        'active' => $appSidebarActive === 'loyalty-cards',
+    ];
+    $withLoyalty = [];
+    $inserted = false;
+    foreach ($appSidebarNav as $key => $item) {
+        $withLoyalty[$key] = $item;
+        if ($key === 'feed-following') {
+            $withLoyalty['loyalty-cards'] = $loyaltyItem;
+            $inserted = true;
+        }
+    }
+    if (!$inserted) {
+        $withLoyalty = ['loyalty-cards' => $loyaltyItem] + $withLoyalty;
+    }
+    $appSidebarNav = $withLoyalty;
+}
+
 if (!$appSidebarNav) {
     $appSidebarNav = [
         'account' => ['section' => 'Overview', 'label' => 'Account', 'detail' => 'Profile and access', 'href' => '/account.php', 'visible' => true],
