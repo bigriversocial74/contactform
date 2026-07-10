@@ -45,11 +45,11 @@ $check(
 );
 
 $check(
-    str_contains($helper, "mg_predictive_campaign_table_exists($pdo, 'mg_merchant_customer_behavior_profiles')")
-    && str_contains($helper, "mg_predictive_campaign_table_exists($pdo, 'wallet_items')")
-    && str_contains($helper, "mg_predictive_campaign_table_exists($pdo, 'campaigns')")
-    && str_contains($helper, "mg_predictive_campaign_table_exists($pdo, 'reward_templates')")
-    && str_contains($helper, "mg_predictive_campaign_table_exists($pdo, 'mg_store_sessions')"),
+    str_contains($helper, 'mg_predictive_campaign_table_exists($pdo, \'mg_merchant_customer_behavior_profiles\')')
+    && str_contains($helper, 'mg_predictive_campaign_table_exists($pdo, \'wallet_items\')')
+    && str_contains($helper, 'mg_predictive_campaign_table_exists($pdo, \'campaigns\')')
+    && str_contains($helper, 'mg_predictive_campaign_table_exists($pdo, \'reward_templates\')')
+    && str_contains($helper, 'mg_predictive_campaign_table_exists($pdo, \'mg_store_sessions\')'),
     '4. Recommendations derive from current behavior, Wallet, Campaigns, Rewards, and Store Canvas history'
 );
 
@@ -94,7 +94,7 @@ $check(
 );
 
 $check(
-    str_contains($endpoint, "mg_merchant_require_permission($method === 'GET' ? 'merchant.campaigns.view' : 'merchant.campaigns.manage')")
+    str_contains($endpoint, 'mg_merchant_require_permission($method === \'GET\' ? \'merchant.campaigns.view\' : \'merchant.campaigns.manage\')')
     && str_contains($endpoint, "mg_rate_limit('merchant.predictive_campaign_studio.read'")
     && str_contains($endpoint, "mg_rate_limit('merchant.predictive_campaign_studio.write'")
     && str_contains($endpoint, 'mg_require_csrf_for_write($input)'),
@@ -102,9 +102,9 @@ $check(
 );
 
 $check(
-    str_contains($endpoint, "$action === 'generate'")
-    && str_contains($endpoint, "$action === 'materialize'")
-    && str_contains($endpoint, "$action === 'dismiss'")
+    str_contains($endpoint, '$action === \'generate\'')
+    && str_contains($endpoint, '$action === \'materialize\'')
+    && str_contains($endpoint, '$action === \'dismiss\'')
     && str_contains($endpoint, 'mg_predictive_campaign_materialize'),
     '11. The endpoint supports generate, merchant-approved materialize, and dismiss actions'
 );
