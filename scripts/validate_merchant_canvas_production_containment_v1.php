@@ -41,7 +41,10 @@ mustContain('merchant-canvas.php', $page, '$hasMerchantAccess = mg_user_has_merc
 mustContainOneOf('merchant-canvas.php', $page, [
     'Production containment active',
     'Visual live canvas · guarded manual actions',
+    'Server validation required',
 ], $failures);
+mustContain('merchant-canvas.php', $page, 'data-canvas-live-pill', $failures);
+mustContain('merchant-canvas.php', $page, 'data-canvas-open-control', $failures);
 mustContain('merchant-canvas.php', $page, '/assets/js/merchant-canvas-manual-operations.js', $failures);
 mustNotContain('merchant-canvas.php', $page, "'/assets/js/merchant-canvas.js'", $failures);
 mustContain('merchant-canvas.php', $page, '/assets/css/merchant-canvas-containment.css', $failures);
