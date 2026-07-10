@@ -4,12 +4,13 @@ require_once __DIR__ . '/includes/app.php';
 
 $user = mg_require_auth('/signin.php', '/merchant-canvas.php');
 $pdo = mg_db();
+$hasMerchantAccess = mg_user_has_merchant_access($user, $pdo);
 $page_title = 'Merchant Store Canvas | Microgifter';
 $page_section = 'agent';
 $header_mode = 'agent';
 $agent_tab = 'store-canvas';
-$page_styles = ['/assets/css/merchant-canvas.css','/assets/css/merchant-canvas-rewards.css','/assets/css/merchant-canvas-phase2.css','/assets/css/merchant-canvas-motion.css','/assets/css/merchant-canvas-drawer-layer.css','/assets/css/merchant-canvas-settings-drawers.css','/assets/css/merchant-canvas-drawer-fixes.css','/assets/css/merchant-canvas-customer-tabs.css','/assets/css/merchant-canvas-intelligence.css','/assets/css/merchant-canvas-store-health.css','/assets/css/merchant-canvas-mobile-icons.css','/assets/css/sponsored-campaign-card.css'];
-$page_scripts = ['/assets/js/merchant-canvas.js','/assets/js/merchant-canvas-rewards.js','/assets/js/merchant-canvas-motion.js','/assets/js/merchant-canvas-automation-rules.js','/assets/js/merchant-canvas-merchant-settings.js','/assets/js/merchant-canvas-drawer-coordinator.js','/assets/js/merchant-canvas-customer-tabs.js','/assets/js/merchant-canvas-intelligence.js','/assets/js/merchant-canvas-store-health.js','/assets/js/store-health-completion-events.js','/assets/js/merchant-canvas-mobile-icons.js','/assets/js/sponsored-campaign-card.js'];
+$page_styles = ['/assets/css/merchant-canvas.css','/assets/css/merchant-canvas-rewards.css','/assets/css/merchant-canvas-phase2.css','/assets/css/merchant-canvas-motion.css','/assets/css/merchant-canvas-drawer-layer.css','/assets/css/merchant-canvas-settings-drawers.css','/assets/css/merchant-canvas-drawer-fixes.css','/assets/css/merchant-canvas-customer-tabs.css','/assets/css/merchant-canvas-intelligence.css','/assets/css/merchant-canvas-store-health.css','/assets/css/merchant-canvas-mobile-icons.css','/assets/css/merchant-canvas-containment.css','/assets/css/sponsored-campaign-card.css'];
+$page_scripts = $hasMerchantAccess ? ['/assets/js/merchant-canvas.js','/assets/js/merchant-canvas-drawer-coordinator.js','/assets/js/merchant-canvas-mobile-icons.js','/assets/js/sponsored-campaign-card.js'] : [];
 $page_manifest = [
     'id' => 'merchant-canvas',
     'title' => $page_title,
@@ -54,7 +55,7 @@ require __DIR__ . '/includes/header.php';
 <section class="mg-app-shell mg-agent-app mg-store-canvas" data-merchant-canvas>
   <?php require __DIR__ . '/includes/agent-sidebar.php'; ?>
   <div class="mg-app-workspace mg-canvas-workspace">
-    <?php if (!mg_user_has_merchant_access($user, $pdo)): ?>
+    <?php if (!$hasMerchantAccess): ?>
       <article class="mg-canvas-empty-card">
         <span class="mg-canvas-eyebrow">Merchant access required</span>
         <h1>Store Canvas is for merchant accounts.</h1>
@@ -63,6 +64,15 @@ require __DIR__ . '/includes/header.php';
       </article>
     <?php else: ?>
       <section class="mg-canvas-shell">
+        <div class="mg-canvas-containment-banner" role="status" data-canvas-containment-banner>
+          <div>
+            <span class="mg-canvas-eyebrow">Production containment active</span>
+            <strong>Automatic movement, proximity chat, and overlap-triggered campaigns are paused.</strong>
+            <p>Manual customer messaging and manual campaign rewards remain available. Trigger zones and simulated behavior cannot send customer communications.</p>
+          </div>
+          <span class="mg-canvas-containment-state">Manual actions only</span>
+        </div>
+
         <div class="mg-canvas-command-strip" aria-label="Store Canvas summary">
           <article><span>Inside Now</span><strong data-canvas-active-count>0</strong></article>
           <article><span>Today Entries</span><strong data-canvas-today-entries>0</strong></article>
@@ -88,7 +98,7 @@ require __DIR__ . '/includes/header.php';
             </details>
 
             <div class="mg-canvas-map" data-canvas-map>
-              <div class="mg-canvas-agent-node mg-canvas-merchant-node" data-merchant-avatar-settings>
+              <div class="mg-canvas-agent-node mg-canvas-merchant-node" aria-label="Merchant agent">
                 <span class="mg-canvas-agent-icon">
                   <?php if ($merchantAvatarUrl !== ''): ?>
                     <img src="<?php echo mg_e($merchantAvatarUrl); ?>" alt="">
@@ -97,10 +107,9 @@ require __DIR__ . '/includes/header.php';
                   <?php endif; ?>
                 </span>
                 <strong><?php echo mg_e($merchantDisplayName); ?></strong>
-                <small>Merchant Agent · campaigns · rewards · CRM</small>
+                <small>Merchant Agent · manual messaging · manual rewards</small>
               </div>
               <div class="mg-canvas-avatar-layer" data-canvas-customers></div>
-              <div class="mg-canvas-trigger-layer" data-canvas-triggers></div>
               <div class="mg-sponsored-map-layer" data-mg-ad-placement="world_canvas_sponsored_pin" data-mg-ad-limit="5" aria-label="Sponsored World Canvas pins"></div>
               <div class="mg-sponsored-map-layer" data-mg-ad-placement="target_zone_sponsored_drop" data-mg-ad-limit="5" aria-label="Sponsored Target Zone drops"></div>
               <article class="mg-canvas-empty-state" data-canvas-empty>
@@ -114,23 +123,25 @@ require __DIR__ . '/includes/header.php';
     <?php endif; ?>
   </div>
 
-  <aside class="mg-canvas-crm-drawer" data-canvas-drawer aria-hidden="true">
-    <div class="mg-canvas-drawer-head">
-      <div>
-        <span class="mg-canvas-eyebrow">Customer CRM</span>
-        <h2 data-drawer-name>Select an avatar</h2>
+  <?php if ($hasMerchantAccess): ?>
+    <aside class="mg-canvas-crm-drawer" data-canvas-drawer aria-hidden="true">
+      <div class="mg-canvas-drawer-head">
+        <div>
+          <span class="mg-canvas-eyebrow">Customer CRM</span>
+          <h2 data-drawer-name>Select an avatar</h2>
+        </div>
+        <button type="button" data-drawer-close aria-label="Close customer CRM drawer">x</button>
       </div>
-      <button type="button" data-drawer-close aria-label="Close customer CRM drawer">x</button>
-    </div>
-    <div class="mg-canvas-drawer-body" data-drawer-body>
-      <p>Click a customer avatar on the Store Canvas to load CRM details.</p>
-    </div>
-    <form class="mg-canvas-message-form" data-message-form>
-      <label for="mg-canvas-message">Direct message</label>
-      <textarea id="mg-canvas-message" name="message" rows="4" maxlength="1000" placeholder="Send a direct message to this customer..." required disabled></textarea>
-      <button class="mg-btn mg-btn-primary" type="submit" disabled data-message-submit>Send Message</button>
-      <p class="mg-canvas-form-status" data-message-status role="status"></p>
-    </form>
-  </aside>
+      <div class="mg-canvas-drawer-body" data-drawer-body>
+        <p>Click a customer avatar on the Store Canvas to load CRM details.</p>
+      </div>
+      <form class="mg-canvas-message-form" data-message-form>
+        <label for="mg-canvas-message">Direct message</label>
+        <textarea id="mg-canvas-message" name="message" rows="4" maxlength="1000" placeholder="Send a direct message to this customer..." required disabled></textarea>
+        <button class="mg-btn mg-btn-primary" type="submit" disabled data-message-submit>Send Message</button>
+        <p class="mg-canvas-form-status" data-message-status role="status"></p>
+      </form>
+    </aside>
+  <?php endif; ?>
 </section>
 <?php require __DIR__ . '/includes/footer.php'; ?>
