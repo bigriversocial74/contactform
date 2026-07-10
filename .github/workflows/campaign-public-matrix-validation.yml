@@ -92,12 +92,14 @@ jobs:
           php -l scripts/validate_campaign_public_matrix_v1.php
 
       - name: Validate campaign public matrix
+        id: campaign_matrix
+        continue-on-error: true
         run: |
-          set -o pipefail
-          php scripts/validate_campaign_public_matrix_v1.php 2>&1 | tail -n 100
+          mkdir -p build
+          php scripts/validate_campaign_public_matrix_v1.php > build/campaign-public-matrix-output.txt 2>&1
 
       - name: Validate campaign landing foundation
-        run: php scripts/validate_campaign_landing_foundation_repair_v1.php
+        run: php scripts/validate_campaign_landing-foundation-repair_v1.php
 
       - name: Validate specialized landing migration
         run: php scripts/validate_campaign_specialized_foundation_v1.php
@@ -109,8 +111,17 @@ jobs:
         run: php scripts/validate_watch_listen_media_alignment_v1.php
 
       - name: Upload campaign matrix report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: campaign-public-matrix-v1
-          path: build/campaign-public-matrix-v1.md
+          path: |
+            build/campaign-public-matrix-v1.md
+            build/campaign-public-matrix-output.txt
           if-no-files-found: error
+
+      - name: Enforce campaign matrix result
+        if: always() && steps.campaign_matrix.outcome == 'failure'
+        run: |
+          cat build/campaign-public-matrix-output.txt
+          exit 1
