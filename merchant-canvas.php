@@ -30,6 +30,7 @@ $page_styles = [
 ];
 $page_scripts = $hasMerchantAccess ? [
     '/assets/js/merchant-canvas-manual-operations.js',
+    '/assets/js/merchant-canvas-movement-continuity.js',
     '/assets/js/merchant-canvas-customer-analytics.js',
     '/assets/js/merchant-canvas-drawer-coordinator.js',
     '/assets/js/merchant-canvas-mobile-icons.js',
