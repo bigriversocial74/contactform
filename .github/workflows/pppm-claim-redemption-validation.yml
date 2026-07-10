@@ -15,6 +15,7 @@ on:
       - 'assets/js/merchant-claims.js'
       - 'tests/phpunit/Stage9CClaimRedemptionLifecycleTest.php'
       - 'scripts/validate_pppm_claim_redemption_v1.php'
+      - 'config/migrations.php'
       - '.github/workflows/pppm-claim-redemption-validation.yml'
   workflow_dispatch:
 
@@ -47,6 +48,7 @@ jobs:
           php -l api/merchant/microgift-redemption-reconcile.php
           php -l tests/phpunit/Stage9CClaimRedemptionLifecycleTest.php
           php -l scripts/validate_pppm_claim_redemption_v1.php
+          php -l config/migrations.php
 
       - name: JavaScript syntax check
         run: node --check assets/js/merchant-claims.js
@@ -58,18 +60,31 @@ jobs:
           mkdir -p build
           php scripts/validate_pppm_claim_redemption_v1.php > build/pppm-claim-redemption-score.txt 2>&1
 
-      - name: Upload claim redemption score
+      - name: Validate migration manifest
+        id: manifest
+        continue-on-error: true
+        run: php scripts/validate_migration_manifest.php > build/migration-manifest-output.txt 2>&1
+
+      - name: Upload validation outputs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pppm-claim-redemption-score
-          path: build/pppm-claim-redemption-score.txt
+          name: pppm-claim-redemption-validation
+          path: |
+            build/pppm-claim-redemption-score.txt
+            build/migration-manifest-output.txt
           if-no-files-found: error
 
       - name: Enforce ten-point score
         if: always() && steps.score.outcome == 'failure'
         run: |
           cat build/pppm-claim-redemption-score.txt
+          exit 1
+
+      - name: Enforce migration manifest
+        if: always() && steps.manifest.outcome == 'failure'
+        run: |
+          cat build/migration-manifest-output.txt
           exit 1
 
       - name: Run focused lifecycle contracts
