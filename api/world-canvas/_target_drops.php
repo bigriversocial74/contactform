@@ -1,6 +1,6 @@
 <?php
 /**
- * Campaign Drops / Target Zones helpers.
+ * Campaign Drop Zones helpers.
  */
 declare(strict_types=1);
 
@@ -63,12 +63,14 @@ function mg_world_target_drop_row_to_payload(array $row, bool $owned): array
     $launchGeo = mg_world_canvas_valid_geo($row['launch_latitude'] ?? null, $row['launch_longitude'] ?? null, null, 'merchant_launch');
     $launch = $launchGeo ? mg_world_canvas_geo_project($launchGeo, (string)$row['public_id'] . ':launch', 0, 'merchant') : null;
     $status = mg_world_target_drop_status($row);
+
     return [
         'id' => (string)$row['public_id'],
         'owned' => $owned,
         'merchant_user_id' => (int)($row['merchant_user_id'] ?? 0),
         'merchant_location_id' => $row['merchant_location_id'] === null ? null : (int)$row['merchant_location_id'],
-        'drop_name' => (string)($row['drop_name'] ?? 'Target Drop'),
+        'campaign_id' => $row['campaign_id'] === null ? null : (int)$row['campaign_id'],
+        'drop_name' => (string)($row['drop_name'] ?? 'Campaign Drop Zone'),
         'campaign_title' => (string)($row['campaign_title'] ?? ''),
         'campaign_public_id' => (string)($row['campaign_public_id'] ?? ''),
         'payload_type' => (string)($row['payload_type'] ?? 'reward'),
@@ -113,6 +115,7 @@ function mg_world_target_drop_launch_location(PDO $pdo, int $merchantUserId, ?in
         }
         if ($rows) return mg_world_location_backfill_merchant_geo($pdo, $rows[0]);
     }
+
     $rows = mg_world_location_merchant_rows($pdo, $merchantUserId, true);
     return $rows[0] ?? ['id' => null, 'latitude' => null, 'longitude' => null];
 }
@@ -134,7 +137,7 @@ function mg_world_target_drop_get_owned(PDO $pdo, int $merchantUserId, string $p
 
 function mg_world_target_drop_create(PDO $pdo, array $user, array $input): array
 {
-    if (!mg_world_target_drops_ready($pdo)) throw new RuntimeException('Campaign Drops table is not installed.');
+    if (!mg_world_target_drops_ready($pdo)) throw new RuntimeException('Campaign Drop Zones table is not installed.');
     $merchantId = (int)($user['id'] ?? 0);
     if ($merchantId <= 0 || !mg_world_location_is_merchant($pdo, $user)) throw new RuntimeException('Merchant account required.');
     $geo = mg_world_location_validate($input['target_latitude'] ?? $input['latitude'] ?? null, $input['target_longitude'] ?? $input['longitude'] ?? null, null, 'target_drop');
@@ -143,9 +146,26 @@ function mg_world_target_drop_create(PDO $pdo, array $user, array $input): array
     $launch = mg_world_target_drop_launch_location($pdo, $merchantId, $locationId);
     $publicId = mg_world_target_drop_public_id();
     $stmt = $pdo->prepare("INSERT INTO merchant_target_drops (public_id,merchant_user_id,merchant_location_id,drop_name,payload_type,status,visibility,launch_latitude,launch_longitude,target_latitude,target_longitude,radius_meters,teaser_enabled,signup_required,claim_limit_per_user,animation_type,created_by_user_id,metadata_json,created_at,updated_at) VALUES (?,?,?,?,?,'draft','public',?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())");
-    $stmt->execute([$publicId, $merchantId, $launch['id'] ?? $locationId, trim((string)($input['drop_name'] ?? 'New Target Drop')) ?: 'New Target Drop', 'reward', $launch['latitude'] ?? null, $launch['longitude'] ?? null, $geo['latitude'], $geo['longitude'], $radius, 1, 1, 1, 'gift_arc', $merchantId, json_encode(['created_from' => 'world_canvas_click'], JSON_UNESCAPED_SLASHES)]);
+    $stmt->execute([
+        $publicId,
+        $merchantId,
+        $launch['id'] ?? $locationId,
+        trim((string)($input['drop_name'] ?? 'New Campaign Drop Zone')) ?: 'New Campaign Drop Zone',
+        'reward',
+        $launch['latitude'] ?? null,
+        $launch['longitude'] ?? null,
+        $geo['latitude'],
+        $geo['longitude'],
+        $radius,
+        1,
+        1,
+        1,
+        'gift_arc',
+        $merchantId,
+        json_encode(['created_from' => 'world_canvas_click'], JSON_UNESCAPED_SLASHES),
+    ]);
     $row = mg_world_target_drop_get_owned($pdo, $merchantId, $publicId);
-    if (!$row) throw new RuntimeException('Unable to create target drop.');
+    if (!$row) throw new RuntimeException('Unable to create Campaign Drop Zone.');
     return mg_world_target_drop_row_to_payload($row, true);
 }
 
@@ -154,20 +174,76 @@ function mg_world_target_drop_update(PDO $pdo, array $user, array $input, bool $
     $merchantId = (int)($user['id'] ?? 0);
     $publicId = trim((string)($input['id'] ?? $input['public_id'] ?? ''));
     $row = mg_world_target_drop_get_owned($pdo, $merchantId, $publicId);
-    if (!$row) throw new RuntimeException('Target Drop not found.');
-    $geo = mg_world_location_validate($input['target_latitude'] ?? $input['latitude'] ?? $row['target_latitude'], $input['target_longitude'] ?? $input['longitude'] ?? $row['target_longitude'], null, 'target_drop');
+    if (!$row) throw new RuntimeException('Campaign Drop Zone not found.');
+
+    $geo = mg_world_location_validate(
+        $input['target_latitude'] ?? $input['latitude'] ?? $row['target_latitude'],
+        $input['target_longitude'] ?? $input['longitude'] ?? $row['target_longitude'],
+        null,
+        'target_drop'
+    );
     $locationId = mg_world_target_drop_int_or_null($input['merchant_location_id'] ?? $row['merchant_location_id'] ?? null, 1);
     $launch = mg_world_target_drop_launch_location($pdo, $merchantId, $locationId);
-    $visibility = in_array((string)($input['visibility'] ?? $row['visibility']), ['public','private','invite_only','audience'], true) ? (string)($input['visibility'] ?? $row['visibility']) : 'public';
-    $payload = in_array((string)($input['payload_type'] ?? $row['payload_type']), ['gift','reward','audio_pack','contest','offer','announcement'], true) ? (string)($input['payload_type'] ?? $row['payload_type']) : 'reward';
+    $visibility = in_array((string)($input['visibility'] ?? $row['visibility']), ['public','private','invite_only','audience'], true)
+        ? (string)($input['visibility'] ?? $row['visibility'])
+        : 'public';
     $launchAt = mg_world_target_drop_datetime_or_null($input['launch_at'] ?? $row['launch_at'] ?? null);
     $expiresAt = mg_world_target_drop_datetime_or_null($input['expires_at'] ?? $row['expires_at'] ?? null);
+    $campaignPublicId = trim((string)($input['campaign_public_id'] ?? ''));
+    $campaignId = $campaignPublicId === '' ? null : mg_world_target_drop_int_or_null($input['campaign_id'] ?? null, 1);
+    $campaignTitle = $campaignPublicId === '' ? null : (trim((string)($input['campaign_title'] ?? '')) ?: null);
+    $payload = $campaignPublicId === '' ? 'reward' : (string)($input['payload_type'] ?? 'reward');
+    if (!in_array($payload, ['reward','contest','offer'], true)) $payload = 'reward';
+
+    if ($publish && ($campaignPublicId === '' || $campaignId === null || $campaignTitle === null)) {
+        throw new RuntimeException('Attach an active campaign with an active available reward before publishing this Campaign Drop Zone.');
+    }
+    if ($publish && (empty($launch['latitude']) || empty($launch['longitude']))) {
+        throw new RuntimeException('Set an active merchant location before publishing this Campaign Drop Zone.');
+    }
+
     $status = $publish ? ($launchAt && strtotime($launchAt) > time() ? 'scheduled' : 'launching') : (string)($row['status'] ?? 'draft');
-    if (!$publish && isset($input['status']) && in_array((string)$input['status'], ['draft','scheduled','active','paused','completed','expired','cancelled'], true)) $status = (string)$input['status'];
-    $stmt = $pdo->prepare("UPDATE merchant_target_drops SET merchant_location_id=?, campaign_public_id=?, campaign_title=?, drop_name=?, payload_type=?, status=?, visibility=?, launch_latitude=?, launch_longitude=?, target_latitude=?, target_longitude=?, radius_meters=?, launch_at=?, expires_at=?, timezone=?, quantity_limit=?, claim_limit_per_user=?, teaser_enabled=?, signup_required=?, animation_type=?, published_at=IF(?=1 AND published_at IS NULL,NOW(),published_at), updated_at=NOW() WHERE id=? AND merchant_user_id=?");
-    $stmt->execute([$launch['id'] ?? $locationId, trim((string)($input['campaign_public_id'] ?? $row['campaign_public_id'] ?? '')) ?: null, trim((string)($input['campaign_title'] ?? $row['campaign_title'] ?? '')) ?: null, trim((string)($input['drop_name'] ?? $row['drop_name'] ?? 'Target Drop')) ?: 'Target Drop', $payload, $status, $visibility, $launch['latitude'] ?? null, $launch['longitude'] ?? null, $geo['latitude'], $geo['longitude'], max(250, min(5000000, (int)($input['radius_meters'] ?? $row['radius_meters'] ?? 2500))), $launchAt, $expiresAt, trim((string)($input['timezone'] ?? $row['timezone'] ?? '')) ?: null, mg_world_target_drop_int_or_null($input['quantity_limit'] ?? $row['quantity_limit'] ?? null, 1), max(1, min(1000, (int)($input['claim_limit_per_user'] ?? $row['claim_limit_per_user'] ?? 1))), mg_world_target_drop_bool($input['teaser_enabled'] ?? $row['teaser_enabled'] ?? 1, true), mg_world_target_drop_bool($input['signup_required'] ?? $row['signup_required'] ?? 1, true), trim((string)($input['animation_type'] ?? $row['animation_type'] ?? 'gift_arc')) ?: 'gift_arc', $publish ? 1 : 0, (int)$row['id'], $merchantId]);
+    if (!$publish && isset($input['status']) && in_array((string)$input['status'], ['draft','scheduled','active','paused','completed','expired','cancelled'], true)) {
+        $status = (string)$input['status'];
+    }
+
+    $stmt = $pdo->prepare(
+        "UPDATE merchant_target_drops
+         SET merchant_location_id=?,campaign_id=?,campaign_public_id=?,campaign_title=?,drop_name=?,payload_type=?,status=?,visibility=?,
+             launch_latitude=?,launch_longitude=?,target_latitude=?,target_longitude=?,radius_meters=?,launch_at=?,expires_at=?,timezone=?,
+             quantity_limit=?,claim_limit_per_user=?,teaser_enabled=?,signup_required=?,animation_type=?,
+             published_at=IF(?=1 AND published_at IS NULL,NOW(),published_at),updated_at=NOW()
+         WHERE id=? AND merchant_user_id=?"
+    );
+    $stmt->execute([
+        $launch['id'] ?? $locationId,
+        $campaignId,
+        $campaignPublicId !== '' ? $campaignPublicId : null,
+        $campaignTitle,
+        trim((string)($input['drop_name'] ?? $row['drop_name'] ?? 'Campaign Drop Zone')) ?: 'Campaign Drop Zone',
+        $payload,
+        $status,
+        $visibility,
+        $launch['latitude'] ?? null,
+        $launch['longitude'] ?? null,
+        $geo['latitude'],
+        $geo['longitude'],
+        max(250, min(5000000, (int)($input['radius_meters'] ?? $row['radius_meters'] ?? 2500))),
+        $launchAt,
+        $expiresAt,
+        trim((string)($input['timezone'] ?? $row['timezone'] ?? '')) ?: null,
+        $campaignPublicId === '' ? null : mg_world_target_drop_int_or_null($input['quantity_limit'] ?? null, 1),
+        $campaignPublicId === '' ? 1 : max(1, min(1000, (int)($input['claim_limit_per_user'] ?? 1))),
+        mg_world_target_drop_bool($input['teaser_enabled'] ?? $row['teaser_enabled'] ?? 1, true),
+        mg_world_target_drop_bool($input['signup_required'] ?? $row['signup_required'] ?? 1, true),
+        trim((string)($input['animation_type'] ?? $row['animation_type'] ?? 'gift_arc')) ?: 'gift_arc',
+        $publish ? 1 : 0,
+        (int)$row['id'],
+        $merchantId,
+    ]);
+
     $fresh = mg_world_target_drop_get_owned($pdo, $merchantId, $publicId);
-    if (!$fresh) throw new RuntimeException('Unable to update target drop.');
+    if (!$fresh) throw new RuntimeException('Unable to update Campaign Drop Zone.');
     return mg_world_target_drop_row_to_payload($fresh, true);
 }
 
@@ -176,11 +252,11 @@ function mg_world_target_drop_set_status(PDO $pdo, array $user, array $input, st
     $merchantId = (int)($user['id'] ?? 0);
     $publicId = trim((string)($input['id'] ?? $input['public_id'] ?? ''));
     $row = mg_world_target_drop_get_owned($pdo, $merchantId, $publicId);
-    if (!$row) throw new RuntimeException('Target Drop not found.');
-    if (!in_array($status, ['draft','scheduled','active','paused','completed','expired','cancelled'], true)) throw new RuntimeException('Unsupported Target Drop status.');
+    if (!$row) throw new RuntimeException('Campaign Drop Zone not found.');
+    if (!in_array($status, ['draft','scheduled','active','paused','completed','expired','cancelled'], true)) throw new RuntimeException('Unsupported Campaign Drop Zone status.');
     $pdo->prepare('UPDATE merchant_target_drops SET status=?, updated_at=NOW() WHERE id=? AND merchant_user_id=?')->execute([$status, (int)$row['id'], $merchantId]);
     $fresh = mg_world_target_drop_get_owned($pdo, $merchantId, $publicId);
-    if (!$fresh) throw new RuntimeException('Unable to update target drop.');
+    if (!$fresh) throw new RuntimeException('Unable to update Campaign Drop Zone.');
     return mg_world_target_drop_row_to_payload($fresh, true);
 }
 
@@ -189,7 +265,7 @@ function mg_world_target_drop_delete(PDO $pdo, array $user, array $input): array
     $merchantId = (int)($user['id'] ?? 0);
     $publicId = trim((string)($input['id'] ?? $input['public_id'] ?? ''));
     $row = mg_world_target_drop_get_owned($pdo, $merchantId, $publicId);
-    if (!$row) throw new RuntimeException('Target Drop not found.');
+    if (!$row) throw new RuntimeException('Campaign Drop Zone not found.');
     $pdo->prepare('DELETE FROM merchant_target_drops WHERE id=? AND merchant_user_id=?')->execute([(int)$row['id'], $merchantId]);
     return ['id' => $publicId, 'deleted' => true];
 }
