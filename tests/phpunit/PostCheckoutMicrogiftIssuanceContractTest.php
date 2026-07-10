@@ -4,17 +4,26 @@ use PHPUnit\Framework\TestCase;
 
 final class PostCheckoutMicrogiftIssuanceContractTest extends TestCase
 {
-    public function testPaidOrderCaptureTriggersPppmAndMicrogiftIssuance(): void
+    public function testPaidOrderCaptureUsesCanonicalIssuanceReconciler(): void
     {
-        $source=file_get_contents(dirname(__DIR__,2).'/api/payments/_capture.php');
-        self::assertIsString($source);
+        $root=dirname(__DIR__,2);
+        $capture=file_get_contents($root.'/api/payments/_capture.php');
+        $reconciliation=file_get_contents($root.'/api/payments/_issuance_reconciliation.php');
+        self::assertIsString($capture);self::assertIsString($reconciliation);
         foreach([
-            "require_once __DIR__ . '/_fulfillment.php'",
-            '$issued=mg_payment_issue_order_pppm($pdo,$orderDbId,$actorUserId ?: (int)$order[\'buyer_user_id\'])',
-            '$microgifts=mg_payment_issue_order_microgifts($pdo,$orderDbId,$actorUserId ?: (int)$order[\'buyer_user_id\'])',
-            "'after_fulfillment',['order'=>\$order,'intent'=>\$intent,'issued'=>\$issued,'microgifts'=>\$microgifts]",
-            "'microgift_issued_count'=>(int)(\$microgifts['issued_count']??0)",
-        ] as $needle)self::assertStringContainsString($needle,$source);
+            "require_once __DIR__ . '/_issuance_reconciliation.php'",
+            'mg_payment_reconcile_paid_order($pdo,$orderDbId',
+            "'after_fulfillment',['order'=>\$order,'intent'=>\$intent,'reconciliation'=>\$reconciliation",
+            "'issuance_complete'=>(bool)(\$reconciliation['complete']??false)",
+        ] as $needle)self::assertStringContainsString($needle,$capture);
+        foreach([
+            'function mg_payment_reconcile_paid_order(',
+            'mg_payment_issue_order_pppm(',
+            'mg_payment_issue_order_microgifts(',
+            'mg_order_issuance_summary(',
+            "'fulfillment.reconciled'",
+            "'microgift_delivery_ready'",
+        ] as $needle)self::assertStringContainsString($needle,$reconciliation);
     }
 
     public function testCheckoutOrderItemsPersistMerchantWhenSchemaSupportsIt(): void
@@ -25,26 +34,19 @@ final class PostCheckoutMicrogiftIssuanceContractTest extends TestCase
         self::assertStringContainsString("SHOW COLUMNS FROM commerce_order_items LIKE 'merchant_user_id'",$source);
         self::assertStringContainsString('if(mg_checkout_order_items_have_merchant($pdo))',$source);
         self::assertStringContainsString('product_version_id,merchant_user_id,title_snapshot',$source);
-        self::assertStringContainsString('product_version_id,title_snapshot',$source);
     }
 
-    public function testFulfillmentUsesMerchantIssuerAndBuyerOnlyProjection(): void
+    public function testFulfillmentUsesMerchantIssuerAndBuyerProjection(): void
     {
         $source=file_get_contents(dirname(__DIR__,2).'/api/payments/_fulfillment.php');
         self::assertIsString($source);
         foreach([
-            "require_once dirname(__DIR__) . '/commerce/_foundation.php'",
             "require_once dirname(__DIR__) . '/microgifts/_engine.php'",
             "require_once dirname(__DIR__) . '/microgifts/_action_center_projection.php'",
-            'function mg_payment_order_items_have_merchant(PDO $pdo): bool',
-            "SHOW COLUMNS FROM commerce_order_items LIKE 'merchant_user_id'",
-            'function mg_payment_issue_order_microgifts(PDO $pdo, int $orderDbId, ?int $actorUserId = null): array',
-            "return ['issued_count'=>0,'skipped'=>true,'reason'=>'commerce_order_items.merchant_user_id_missing']",
             '$issuerUserId=(int)$order[\'merchant_user_id\']',
-            '$requestStmt->execute([$requestPublicId,(int)$source[\'id\'],$sourceEventId,$issuerUserId,$issuerUserId',
             "'recipient_user_id'=>(int)\$order['buyer_user_id']",
             'mg_action_center_receive(',
-            'mg_order_event($pdo,$orderDbId,\'microgift.issued_from_paid_order\'',
+            "mg_order_event(\$pdo,\$orderDbId,'microgift.issued_from_paid_order'",
         ] as $needle)self::assertStringContainsString($needle,$source);
         self::assertStringNotContainsString('mg_action_center_project_lifecycle($pdo,$instance)',$source);
     }
@@ -77,7 +79,7 @@ final class PostCheckoutMicrogiftIssuanceContractTest extends TestCase
         self::assertIsString($source);
         foreach([
             'function mg_payment_microgift_template_version_for_line(PDO $pdo, array $order, array $line): string',
-            'FROM microgift_template_versions v INNER JOIN microgift_templates t ON t.id=v.template_id WHERE v.product_version_id=?',
+            'catalog_pppm_templates cpt',
             'mg_microgift_create_template($pdo,(int)$order[\'merchant_user_id\']',
             "'owner_type'=>'merchant'","'gift_type'=>'product'",
             'mg_microgift_create_version($pdo,(int)$order[\'merchant_user_id\']',
@@ -93,16 +95,24 @@ final class PostCheckoutMicrogiftIssuanceContractTest extends TestCase
         self::assertIsString($source);
         foreach([
             'for($sequence=1;$sequence<=(int)$line[\'quantity\'];$sequence++)',
-            'mg_microgift_issue($pdo,(int)$order[\'merchant_user_id\']',
-            "'source_type'=>'commerce_order_item'","'source_reference'=>(string)\$line['public_id']",
-            "'idempotency_key'=>'commerce-order-item:'.\$line['public_id'].':microgift:'.\$sequence",
+            "\$idempotencyKey='commerce-order-item:'.\$line['public_id'].':microgift:'.\$sequence",
+            'mg_microgift_existing_issue(',
+            "'commerce_order_item'",
             "'recipient_user_id'=>(int)\$order['buyer_user_id']",
-            "'commerce_order_id'=>(string)\$order['public_id']","'commerce_order_item_id'=>(string)\$line['public_id']",
             "if(!empty(\$result['duplicate']))\$duplicates++;else\$issued++;",
             'SELECT * FROM microgift_instances WHERE public_id=? LIMIT 1 FOR UPDATE',
             'UPDATE microgift_instances SET pppm_item_id=?,updated_at=NOW() WHERE id=?',
             'mg_action_center_receive(',
         ] as $needle)self::assertStringContainsString($needle,$source);
-        self::assertStringNotContainsString("if(!empty(\$result['duplicate'])){\$duplicates++;continue;}",$source);
+    }
+
+    public function testIssuanceSummaryCountsBuyerProjectionAcrossFolders(): void
+    {
+        $source=file_get_contents(dirname(__DIR__,2).'/api/commerce/_order_issuance_summary.php');
+        self::assertIsString($source);
+        self::assertStringContainsString('COUNT(DISTINCT inbox.instance_id)',$source);
+        self::assertStringContainsString('inbox.user_id=?',$source);
+        self::assertStringNotContainsString("inbox.folder='inbox'",$source);
+        self::assertStringContainsString("'action_center_items'=>\$projectionItems",$source);
     }
 }
