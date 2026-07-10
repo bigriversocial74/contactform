@@ -177,6 +177,7 @@ return [
         'campaign_embed_settings_v2.sql',
         'campaign_embed_placement_tests_v4_7.sql',
         'customer_saved_campaign_cards_20260709.sql',
+        'delivery_operations_capacity_foundation_v1.sql',
     ],
     'coverage_markers' => [
         'stage_9e4_consolidated_stage1_to_stage9_upgrade' => 'stage_9d_microgift_operations.sql',
