@@ -5,6 +5,7 @@ require_once dirname(__DIR__) . '/pppm/_pppm.php';
 require_once dirname(__DIR__) . '/entitlements/_entitlements.php';
 require_once dirname(__DIR__) . '/microgifts/_engine.php';
 require_once dirname(__DIR__) . '/microgifts/_action_center_projection.php';
+require_once dirname(__DIR__, 2) . '/includes/merchant-crm-value-events.php';
 
 function mg_payment_order_items_have_merchant(PDO $pdo): bool
 {
@@ -87,7 +88,8 @@ function mg_payment_issue_order_pppm(PDO $pdo, int $orderDbId, ?int $actorUserId
     $remaining->execute([$orderDbId]);
     $fulfillment = ((int)$remaining->fetchColumn() === 0) ? 'issued' : 'partial';
     $pdo->prepare('UPDATE commerce_orders SET fulfillment_status=?,updated_at=NOW() WHERE id=?')->execute([$fulfillment,$orderDbId]);
-    return ['issued_count'=>$issuedTotal,'fulfillment_status'=>$fulfillment,'entitlements'=>$entitlementTotals];
+    $crm = $issuedTotal > 0 ? mg_merchant_crm_record_purchase_value_event($pdo, $order, ['issued_count'=>$issuedTotal,'fulfillment_status'=>$fulfillment,'value_path'=>'pppm_purchase']) : ['skipped'=>true,'reason'=>'no_pppm_items_issued'];
+    return ['issued_count'=>$issuedTotal,'fulfillment_status'=>$fulfillment,'entitlements'=>$entitlementTotals,'merchant_crm'=>$crm];
 }
 
 function mg_payment_microgift_template_version_for_line(PDO $pdo, array $order, array $line): string
@@ -207,6 +209,10 @@ function mg_payment_issue_order_microgifts(PDO $pdo, int $orderDbId, ?int $actor
             $projected[]=mg_action_center_receive($pdo,(int)$instance['id'],(int)$order['buyer_user_id'],(int)$order['merchant_user_id'],['occurred_at'=>$instance['issued_at']??date('Y-m-d H:i:s')]);
         }
     }
-    if($issued>0){mg_order_event($pdo,$orderDbId,'microgift.issued_from_paid_order',$eventActorUserId,['issued_count'=>$issued,'duplicate_count'=>$duplicates,'linked_count'=>$linked]);}
-    return ['issued_count'=>$issued,'duplicate_count'=>$duplicates,'linked_count'=>$linked,'projected'=>$projected];
+    $crm = ['skipped'=>true,'reason'=>'no_microgifts_issued'];
+    if($issued>0){
+        mg_order_event($pdo,$orderDbId,'microgift.issued_from_paid_order',$eventActorUserId,['issued_count'=>$issued,'duplicate_count'=>$duplicates,'linked_count'=>$linked]);
+        $crm = mg_merchant_crm_record_purchase_value_event($pdo, $order, ['issued_count'=>$issued,'duplicate_count'=>$duplicates,'linked_count'=>$linked,'value_path'=>'microgift_purchase']);
+    }
+    return ['issued_count'=>$issued,'duplicate_count'=>$duplicates,'linked_count'=>$linked,'projected'=>$projected,'merchant_crm'=>$crm];
 }
