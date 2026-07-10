@@ -9,6 +9,7 @@ declare(strict_types=1);
  * active database but SHOW TABLES prepared probes are unreliable.
  */
 require_once __DIR__ . '/_canvas_schema.php';
+require_once __DIR__ . '/_world_transition.php';
 
 function mg_store_runtime_core_tables(): array
 {
@@ -38,7 +39,12 @@ function mg_store_runtime_expire_stale_sessions(PDO $pdo, ?int $merchantUserId =
         $stmt = $pdo->prepare("SELECT * FROM mg_store_sessions WHERE {$where} LIMIT 200");
         $stmt->execute($params);
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $session) {
-            mg_store_close_session_row($pdo, $session, 'timeout');
+            $closed = mg_store_close_session_row($pdo, $session, 'timeout');
+            try {
+                mg_store_world_transition_from_session($pdo, $closed, (int)($closed['customer_user_id'] ?? 0), 'timeout');
+            } catch (Throwable $transitionError) {
+                mg_security_log('warning', 'store_canvas.timeout_world_transition_failed', 'Timed-out Store Canvas session closed but World Canvas placement failed.', ['exception_class'=>$transitionError::class], (int)($closed['customer_user_id'] ?? 0));
+            }
         }
 
         $idleWhere = "active_key IS NOT NULL AND status='active' AND last_active_at < DATE_SUB(NOW(), INTERVAL " . MG_STORE_IDLE_MINUTES . " MINUTE)";
@@ -149,9 +155,12 @@ function mg_store_runtime_enter_post(PDO $pdo, int $customerUserId, string $post
             $active['last_active_at'] = date('Y-m-d H:i:s');
             mg_store_log_event($pdo, $active, 'store_session_resumed', 'Store session resumed', ['post_id'=>(string)$target['post_public_id']]);
             $pdo->commit();
-            return ['requires_confirmation'=>false,'session'=>mg_store_project_session($active)];
+            return ['requires_confirmation'=>false,'session'=>mg_store_project_session($active),'switched_from'=>null];
         }
+
+        $switchedFrom = null;
         if ($active) {
+            $switchedFrom = mg_store_project_session($active);
             mg_store_close_session_row($pdo, $active, 'switch_store');
         }
 
@@ -191,7 +200,7 @@ function mg_store_runtime_enter_post(PDO $pdo, int $customerUserId, string $post
         mg_store_log_event($pdo, $session, 'entered_store', 'Entered store from feed post', ['post_id'=>(string)$target['post_public_id'],'entry_runtime'=>'store_canvas_runtime_v2']);
         $pdo->commit();
         mg_event('store_canvas.customer_entered', ['session_id'=>$publicId,'post_id'=>(string)$target['post_public_id'],'merchant_user_id'=>(int)$target['merchant_user_id']], $customerUserId);
-        return ['requires_confirmation'=>false,'session'=>mg_store_project_session($session)];
+        return ['requires_confirmation'=>false,'session'=>mg_store_project_session($session),'switched_from'=>$switchedFrom];
     } catch (Throwable $error) {
         if ($pdo->inTransaction()) $pdo->rollBack();
         throw $error;
