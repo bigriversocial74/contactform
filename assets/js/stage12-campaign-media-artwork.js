@@ -32,6 +32,15 @@ document.addEventListener('DOMContentLoaded', function () {
       status: 'instant-win-scratch-image-upload-status',
       input: 'instant-win-scratch-image-upload-input',
       button: 'instant-win-scratch-image-upload-button'
+    },
+    stamp_card_reward: {
+      label: 'Loyalty card campaign image',
+      hint: 'Upload the main image shown when customers save this Stamp Card on the Loyalty Cards page.',
+      assetField: 'stamp_card_image_asset_id',
+      urlField: 'stamp_card_image_url',
+      status: 'stamp-card-image-upload-status',
+      input: 'stamp-card-image-upload-input',
+      button: 'stamp-card-image-upload-button'
     }
   };
 
@@ -111,6 +120,7 @@ document.addEventListener('DOMContentLoaded', function () {
     injectFor('watch_video_reward');
     injectFor('listen_music_reward');
     injectFor('instant_win_reward');
+    injectFor('stamp_card_reward');
     syncExistingArtwork();
   }
 
