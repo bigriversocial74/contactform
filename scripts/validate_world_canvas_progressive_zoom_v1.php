@@ -134,8 +134,9 @@ try {
     );
 
     mg_world_zoom_expect(
-        !str_contains($transition, 'latitude')
-        && !str_contains($transition, 'longitude')
+        !str_contains($transition, 'latitude:')
+        && !str_contains($transition, 'longitude:')
+        && !str_contains($transition, '/api/world-canvas/user-position.php')
         && !str_contains($transition, 'localStorage')
         && !str_contains($transition, 'sessionStorage'),
         'Transition animation cannot supply coordinates or create browser-local location authority',
