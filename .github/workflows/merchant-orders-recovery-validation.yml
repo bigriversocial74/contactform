@@ -1,0 +1,56 @@
+name: Merchant Orders Recovery v1 Validation
+
+on:
+  pull_request:
+    paths:
+      - 'merchant-orders.php'
+      - 'includes/merchant-orders-view.php'
+      - 'includes/merchant-workspace.php'
+      - 'includes/merchant-view.php'
+      - 'api/merchant/_orders.php'
+      - 'api/merchant/commerce-orders.php'
+      - 'api/merchant/commerce-order.php'
+      - 'api/merchant/commerce-order-reconcile.php'
+      - 'assets/js/merchant-orders.js'
+      - 'assets/css/merchant-orders.css'
+      - 'scripts/validate_merchant_orders_recovery_v1.php'
+      - '.github/workflows/merchant-orders-recovery-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - name: PHP syntax
+        run: |
+          php -l merchant-orders.php
+          php -l includes/merchant-orders-view.php
+          php -l includes/merchant-workspace.php
+          php -l includes/merchant-view.php
+          php -l api/merchant/_orders.php
+          php -l api/merchant/commerce-orders.php
+          php -l api/merchant/commerce-order.php
+          php -l api/merchant/commerce-order-reconcile.php
+          php -l scripts/validate_merchant_orders_recovery_v1.php
+      - name: JavaScript syntax
+        run: node --check assets/js/merchant-orders.js
+      - name: Merchant orders recovery contract
+        run: php scripts/validate_merchant_orders_recovery_v1.php
+      - name: Purchase issuance regression
+        run: php scripts/validate_purchase_microgift_issuance_v1.php
+      - name: Claim and redemption regression
+        run: php scripts/validate_pppm_claim_redemption_v1.php
+      - name: Merchant catalog regression
+        run: php scripts/validate_merchant_catalog_management_v1.php
