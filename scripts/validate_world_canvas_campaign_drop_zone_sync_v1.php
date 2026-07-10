@@ -137,7 +137,7 @@ try {
     mg_wc_sync_expect(
         str_contains($endpoint, 'mg_require_api_user')
         && str_contains($endpoint, 'mg_require_csrf_for_write')
-        && str_contains($endpoint, 'mg_user_has_merchant_access')
+        && str_contains($endpoint, "mg_require_permission('merchant.locations.manage')")
         && str_contains($endpoint, 'mg_rate_limit'),
         'Campaign Drop Zone endpoint retains authentication, merchant access, CSRF, and rate limits',
         $failures,
