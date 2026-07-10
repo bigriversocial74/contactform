@@ -21,6 +21,15 @@ return [
         'signed_code_secret' => 'replace_with_random_64_character_secret',
     ],
 
+    'auth' => [
+        'mail_enabled' => false,
+        'mail_from' => 'no-reply@example.com',
+        'password_reset_ttl_minutes' => 30,
+        'email_verification_ttl_minutes' => 1440,
+        'max_login_attempts' => 5,
+        'login_window_minutes' => 15,
+    ],
+
     // The installer creates the first owner directly in SQL.
     // Bootstrap credentials remain disabled in production configuration.
     'admin' => [
@@ -42,7 +51,7 @@ return [
     ],
 
     'installation' => [
-        'schema_version' => '2026.07.10-production-foundation-v1',
+        'schema_version' => '2026.07.10-participant-auth-v1',
         'installed_at' => '',
     ],
 ];
