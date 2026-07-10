@@ -1,0 +1,77 @@
+/* Canonical public campaign landing primitives.
+   Page-specific campaign CSS owns the interaction; this file owns shared state/profile/trust UI. */
+.mg-rl-campaign-foundation .mg-public-campaign-trust-row,
+.mg-rl-watch .mg-public-campaign-trust-row,
+.mg-rl-listen .mg-public-campaign-trust-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.mg-rl-campaign-foundation .mg-public-campaign-trust-row span,
+.mg-rl-watch .mg-public-campaign-trust-row span,
+.mg-rl-listen .mg-public-campaign-trust-row span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 12px;
+  border: 1px solid rgba(15, 23, 42, .08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .84);
+  color: #263a54;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .05);
+  font-size: 11px;
+  font-weight: 760;
+}
+
+.mg-rl-campaign-foundation .mg-rl-profile-link {
+  width: max-content;
+  min-height: 34px;
+  margin-top: 10px;
+  padding: 0 12px;
+  font-size: 11px;
+}
+
+.mg-rl-campaign-foundation .mg-rl-state-card {
+  width: min(720px, 100%);
+}
+
+.mg-rl-campaign-foundation .mg-rl-state-card p {
+  margin: 10px 0 0;
+  color: #344860;
+  font-size: 13px;
+  line-height: 1.48;
+  font-weight: 620;
+}
+
+.mg-rl-campaign-foundation .mg-rl-state-card .mg-rl-btn {
+  width: max-content;
+  margin-top: 16px;
+  padding: 0 16px;
+}
+
+.mg-rl-campaign-foundation [data-campaign-closed-state] {
+  margin-top: 0;
+  padding: 14px;
+  border-color: rgba(245, 158, 11, .22);
+  background: rgba(255, 251, 235, .92);
+}
+
+.mg-rl-campaign-foundation[data-campaign-state="ended"] [data-campaign-closed-state],
+.mg-rl-campaign-foundation[data-campaign-state="limit_reached"] [data-campaign-closed-state] {
+  border-color: rgba(239, 68, 68, .16);
+  background: rgba(254, 242, 242, .9);
+}
+
+@media (max-width: 720px) {
+  .mg-rl-campaign-foundation .mg-public-campaign-trust-row span,
+  .mg-rl-watch .mg-public-campaign-trust-row span,
+  .mg-rl-listen .mg-public-campaign-trust-row span {
+    font-size: 10px;
+  }
+
+  .mg-rl-campaign-foundation .mg-rl-state-card .mg-rl-btn {
+    width: 100%;
+  }
+}
