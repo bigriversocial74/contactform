@@ -21,6 +21,7 @@ $css = $read('assets/css/campaign-media-alignment-v1.css');
 $watchJs = $read('assets/js/public-watch-video-reward.js');
 $listenJs = $read('assets/js/public-listen-music-reward.js');
 $watchApi = $read('api/public/campaigns/watch-progress-v2.php');
+$sharedMediaApi = $read('api/public/campaigns/_media_progress_v2.php');
 $listenApi = $read('api/public/campaigns/listen-progress.php');
 
 $assert('Watch page uses shared media landing helper',
@@ -64,11 +65,13 @@ $assert('Listen page preserves Spotify and uploaded audio providers',
 $assert('Watch progress runtime and milestone issuance remain connected',
     str_contains($watchJs, 'watch-progress-v2.php')
     && str_contains($watchJs, 'progress_percent')
-    && str_contains($watchApi, 'issued_rewards'));
+    && str_contains($watchApi, "mg_media_reward_progress_v2('watch_video_reward'")
+    && str_contains($sharedMediaApi, "'issued_rewards'=>$issued"));
 $assert('Listen progress runtime and milestone issuance remain connected',
     str_contains($listenJs, 'listen-progress.php')
     && str_contains($listenJs, 'progress_percent')
-    && str_contains($listenApi, 'issued_rewards'));
+    && str_contains($listenApi, 'mg_listen_reward_issue')
+    && str_contains($listenApi, "'issued_rewards'"));
 $assert('Pages load one scoped media stylesheet instead of two legacy polish files',
     str_contains($watch, 'campaign-media-alignment-v1.css')
     && str_contains($listen, 'campaign-media-alignment-v1.css')
