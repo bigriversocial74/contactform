@@ -1,0 +1,10 @@
+.mg-canvas-containment-banner{display:flex;align-items:center;justify-content:space-between;gap:18px;border:1px solid rgba(180,83,9,.2);border-radius:20px;background:linear-gradient(135deg,#fffaf0,#fff7ed);padding:14px 16px;box-shadow:0 12px 34px rgba(120,53,15,.06)}
+.mg-canvas-containment-banner>div{min-width:0}
+.mg-canvas-containment-banner strong{display:block;margin-top:5px;color:#7c2d12;font-size:15px;line-height:1.35}
+.mg-canvas-containment-banner p{margin:5px 0 0;color:#9a3412;font-size:13px;line-height:1.5}
+.mg-canvas-containment-state{flex:0 0 auto;display:inline-flex;align-items:center;border-radius:999px;background:#7c2d12;color:#fff;padding:8px 12px;font-size:11px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}
+.mg-canvas-containment-reward-summary{margin:0;border:1px solid rgba(37,99,235,.18);border-radius:14px;background:#eff6ff;color:#1e40af;padding:10px 12px;font-size:12px;font-weight:800;line-height:1.45}
+.mg-canvas-containment-reward-summary.is-error{border-color:rgba(220,38,38,.2);background:#fef2f2;color:#b91c1c}
+.mg-store-canvas.is-production-contained .mg-canvas-merchant-node{cursor:default}
+.mg-store-canvas.is-production-contained .mg-canvas-merchant-node small{color:#9a3412}
+@media(max-width:760px){.mg-canvas-containment-banner{align-items:flex-start;flex-direction:column}.mg-canvas-containment-state{align-self:flex-start}.mg-canvas-workspace{padding:10px}.mg-canvas-command-strip{grid-template-columns:repeat(2,minmax(0,1fr))}}
