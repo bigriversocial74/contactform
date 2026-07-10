@@ -22,7 +22,8 @@ window.Microgifter = window.Microgifter || {};
     activeController: null,
     selectedController: null,
     pollTimer: null,
-    observer: null,
+    customerObserver: null,
+    drawerObserver: null,
     adjustmentLocks: new WeakSet()
   };
 
@@ -66,7 +67,7 @@ window.Microgifter = window.Microgifter || {};
     card.dataset.followState = movement.follow_state || 'observe';
     card.dataset.releaseState = movement.release_state || 'hold';
 
-    var confidenceValue = String(Math.max(0, Math.min(100, Number(profile.confidence || 0)))) + '%';
+    var confidenceValue = String(clamp(Number(profile.confidence || 0), 0, 100)) + '%';
     if (card.style.getPropertyValue('--mg-behavior-confidence') !== confidenceValue) {
       card.style.setProperty('--mg-behavior-confidence', confidenceValue);
     }
@@ -200,6 +201,12 @@ window.Microgifter = window.Microgifter || {};
       '<p class="mg-canvas-behavior-policy">Predictions use this merchant’s direct behavioral records only. Protected traits are excluded. Scores are estimates, not facts, and cannot trigger browser-side customer actions.</p></section>';
   }
 
+  function behaviorPanelMissing() {
+    var shell = drawer.querySelector('[data-canvas-analytics-shell]');
+    if (!shell) return false;
+    return !shell.querySelector('[data-analytics-tab="behavior"]') || !shell.querySelector('[data-analytics-panel="behavior"]');
+  }
+
   function ensureBehaviorPanel() {
     var shell = drawer.querySelector('[data-canvas-analytics-shell]');
     if (!shell) return false;
@@ -294,23 +301,22 @@ window.Microgifter = window.Microgifter || {};
     loadActiveProfiles();
   });
 
-  state.observer = new MutationObserver(function (records) {
-    var needsPanels = false;
-    var needsApply = false;
+  state.customerObserver = new MutationObserver(function (records) {
+    var cardsChanged = false;
     records.forEach(function (record) {
-      if (record.type === 'childList') {
-        needsPanels = true;
-        needsApply = true;
-      }
+      if (record.type === 'childList') cardsChanged = true;
       if (record.type === 'attributes' && record.target && record.target.matches && record.target.matches('[data-session-id]')) {
         adviseMovement(record.target);
       }
     });
-    if (needsApply) applyAllProfiles();
-    if (needsPanels) ensureBehaviorPanel();
+    if (cardsChanged) applyAllProfiles();
   });
-  state.observer.observe(customerLayer, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
-  state.observer.observe(drawer, { childList: true, subtree: true });
+  state.customerObserver.observe(customerLayer, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
+
+  state.drawerObserver = new MutationObserver(function () {
+    if (behaviorPanelMissing()) ensureBehaviorPanel();
+  });
+  state.drawerObserver.observe(drawer, { childList: true, subtree: true });
 
   loadActiveProfiles();
   ensureBehaviorPanel();
@@ -319,6 +325,7 @@ window.Microgifter = window.Microgifter || {};
     if (state.pollTimer) window.clearTimeout(state.pollTimer);
     if (state.activeController) state.activeController.abort();
     if (state.selectedController) state.selectedController.abort();
-    if (state.observer) state.observer.disconnect();
+    if (state.customerObserver) state.customerObserver.disconnect();
+    if (state.drawerObserver) state.drawerObserver.disconnect();
   }, { once: true });
 })(window, document);
