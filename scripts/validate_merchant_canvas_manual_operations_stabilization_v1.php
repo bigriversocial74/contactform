@@ -41,7 +41,7 @@ require_contract(str_contains($runtime, 'trapDrawerFocus'), 'Runtime must trap f
 require_contract(str_contains($runtime, 'requestId !== state.selectedRequest'), 'Runtime must reject stale CRM responses.');
 require_contract(str_contains($activeUsers, 'mg_merchant_canvas_expire_sessions'), 'Active users endpoint must expire stale sessions.');
 require_contract(str_contains($activeUsers, 'mg_store_close_session_row'), 'Session expiry must use the canonical close helper.');
-require_contract(str_contains($customerCrm, "'crm' => $crm"), 'Customer CRM response must include durable CRM safeguards.');
+require_contract(str_contains($customerCrm, "'crm' => \$crm"), 'Customer CRM response must include durable CRM safeguards.');
 require_contract(str_contains($customerCrmUpdate, 'mg_store_manual_ops_crm_save'), 'Customer CRM update endpoint must persist safeguards.');
 require_contract(str_contains($sendMessage, 'idempotency_key'), 'Manual messaging endpoint must require an idempotency key.');
 require_contract(str_contains($messaging, 'mg_store_manual_ops_receipt_claim'), 'Canonical messaging must claim a transactional action receipt.');
