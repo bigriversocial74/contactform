@@ -118,10 +118,11 @@ function mg_merchant_crm_record_purchase_value_event(PDO $pdo, array $order, arr
         'value_event_type' => 'product_purchase',
         'commerce_order_id' => (string)($order['public_id'] ?? ''),
         'payment_status' => (string)($order['payment_status'] ?? ''),
-        'fulfillment_status' => (string)($order['fulfillment_status'] ?? ''),
+        'fulfillment_status' => (string)($context['fulfillment_status'] ?? $order['fulfillment_status'] ?? ''),
         'issued_count' => $context['issued_count'] ?? null,
         'duplicate_count' => $context['duplicate_count'] ?? null,
         'linked_count' => $context['linked_count'] ?? null,
+        'value_path' => $context['value_path'] ?? null,
     ], static fn($value) => $value !== null && $value !== '');
 
     return mg_merchant_crm_record_value_event($pdo, [
