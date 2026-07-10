@@ -7,10 +7,11 @@ function mg_lqv_safe_proof_url(mixed $value): ?string
     if ($url === '') return null;
     if (strlen($url) > 700 || filter_var($url, FILTER_VALIDATE_URL) === false) mg_fail('Invalid proof URL.', 422);
     $parts = parse_url($url);
+    if (!is_array($parts)) mg_fail('Invalid proof URL.', 422);
     $scheme = strtolower((string)($parts['scheme'] ?? ''));
     $host = strtolower((string)($parts['host'] ?? ''));
     $local = in_array($host, ['localhost','127.0.0.1','::1'], true);
-    if (!is_array($parts) || $host === '' || ($scheme !== 'https' && !($local && $scheme === 'http'))) mg_fail('Proof links must use HTTPS.', 422);
+    if ($host === '' || ($scheme !== 'https' && !($local && $scheme === 'http')) || !empty($parts['user']) || !empty($parts['pass'])) mg_fail('Proof links must use a safe HTTPS URL.', 422);
     return $url;
 }
 
@@ -58,8 +59,10 @@ function mg_lqv_use_signed_code(PDO $pdo, array $campaign, array $user, array $s
     try {
         $stmt = $pdo->prepare('INSERT INTO loyalty_quest_code_uses (campaign_id,participant_user_id,code_hash,nonce_hash,used_at) VALUES (?,?,?,?,NOW())');
         $stmt->execute([(int)$campaign['id'], (int)$user['id'], (string)$signed['code_hash'], (string)$signed['nonce_hash']]);
-    } catch (PDOException) {
-        mg_fail('This signed quest QR code has already been used.', 409);
+    } catch (PDOException $error) {
+        $sqlState = (string)($error->errorInfo[0] ?? $error->getCode());
+        if ($sqlState === '23000') mg_fail('This signed quest QR code has already been used.', 409);
+        throw $error;
     }
 }
 
@@ -101,8 +104,7 @@ function mg_lqv_resolve(PDO $pdo, array $campaign, array $participation, array $
         if ($code === '') mg_fail('Scan the quest QR code or enter its completion code.', 422);
         $codeHash = hash('sha256', strtoupper($code));
         $expectedHash = strtolower(trim((string)($rules['completion_code_hash'] ?? '')));
-        $legacyToken = (string)($campaign['qr_code_token'] ?? '');
-        if (!(($expectedHash !== '' && hash_equals($expectedHash, $codeHash)) || ($legacyToken !== '' && hash_equals($legacyToken, $code)))) mg_fail('The quest completion code is invalid.', 422);
+        if ($expectedHash === '' || !hash_equals($expectedHash, $codeHash)) mg_fail('The quest completion code is invalid.', 422);
         $result['evidence_type'] = 'manual_code';
         $result['verified'] = true;
         $result['code_hash'] = $codeHash;
