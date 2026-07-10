@@ -1,0 +1,38 @@
+name: Shared Microgifter Identity Validation
+
+on:
+  pull_request:
+    paths:
+      - 'database/shared_microgifter_identity_v1.sql'
+      - 'identity-authorize.php'
+      - 'api/public/v1/identity-*.php'
+      - 'scripts/validate_shared_microgifter_identity_v1.php'
+      - '.github/workflows/shared-microgifter-identity-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  identity-validation:
+    name: Shared identity v1 (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ['8.2','8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - name: PHP syntax
+        run: |
+          php -l identity-authorize.php
+          php -l api/public/v1/identity-authorize-start.php
+          php -l api/public/v1/identity-authorize-complete.php
+          php -l api/public/v1/identity-token.php
+          php -l api/public/v1/identity-link.php
+          php -l scripts/validate_shared_microgifter_identity_v1.php
+      - name: Shared identity 10/10 contract
+        run: php scripts/validate_shared_microgifter_identity_v1.php
