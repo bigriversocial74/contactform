@@ -5,7 +5,7 @@ on:
     branches:
       - integration-from-repair-20260628
     paths:
-      - 'includes/delivery-operations.php'
+      - 'includes/delivery-operations*.php'
       - 'api/communications/_communications.php'
       - 'api/admin/delivery-operations.php'
       - 'admin/delivery-operations.php'
@@ -51,6 +51,10 @@ jobs:
       - name: PHP syntax
         run: |
           php -l includes/delivery-operations.php
+          php -l includes/delivery-operations-config.php
+          php -l includes/delivery-operations-adapters.php
+          php -l includes/delivery-operations-worker.php
+          php -l includes/delivery-operations-admin.php
           php -l api/communications/_communications.php
           php -l api/admin/delivery-operations.php
           php -l admin/delivery-operations.php
