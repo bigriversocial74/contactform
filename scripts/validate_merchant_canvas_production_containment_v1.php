@@ -31,7 +31,8 @@ function mustNotContain(string $path, string $source, string $needle, array &$fa
 $page = source($root, 'merchant-canvas.php', $failures);
 mustContain('merchant-canvas.php', $page, '$hasMerchantAccess = mg_user_has_merchant_access', $failures);
 mustContain('merchant-canvas.php', $page, 'Production containment active', $failures);
-mustContain('merchant-canvas.php', $page, '/assets/js/merchant-canvas.js', $failures);
+mustContain('merchant-canvas.php', $page, '/assets/js/merchant-canvas-manual-operations.js', $failures);
+mustNotContain('merchant-canvas.php', $page, "'/assets/js/merchant-canvas.js'", $failures);
 mustContain('merchant-canvas.php', $page, '/assets/css/merchant-canvas-containment.css', $failures);
 foreach ([
     '/assets/js/merchant-canvas-rewards.js',
@@ -57,11 +58,11 @@ foreach ([
     '/api/merchant-canvas/campaign-trigger.php',
     '/api/merchant-canvas/campaign-trigger-automation.php',
     'merchant_canvas_automatic_actions_disabled',
-    'reward_template_id',
     'data-canvas-add-trigger',
 ] as $marker) {
     mustContain('assets/js/merchant-canvas-containment.js', $containment, $marker, $failures);
 }
+mustNotContain('assets/js/merchant-canvas-containment.js', $containment, 'loadRewardOptions', $failures);
 
 foreach ([
     'api/merchant-canvas/auto-chat.php',
@@ -76,9 +77,9 @@ foreach ([
 }
 
 $sendReward = source($root, 'api/merchant-canvas/send-reward.php', $failures);
-mustContain('api/merchant-canvas/send-reward.php', $sendReward, 'attached_reward_template_required', $failures);
 mustContain('api/merchant-canvas/send-reward.php', $sendReward, 'INNER JOIN reward_templates', $failures);
 mustContain('api/merchant-canvas/send-reward.php', $sendReward, '$templateId = $attachedTemplateId;', $failures);
+mustContain('api/merchant-canvas/send-reward.php', $sendReward, 'Store Canvas must use the reward template attached to the selected campaign.', $failures);
 
 if ($failures !== []) {
     fwrite(STDERR, "Merchant Canvas Production Containment v1 validation failed:\n- " . implode("\n- ", $failures) . "\n");

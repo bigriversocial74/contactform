@@ -39,21 +39,44 @@ function mg_merchant_canvas_count(PDO $pdo, string $sql, array $params = []): in
     }
 }
 
-function mg_merchant_canvas_active_customers(PDO $pdo, int $merchantUserId): array
+function mg_merchant_canvas_expire_sessions(PDO $pdo, int $merchantUserId): void
 {
+    $pdo->beginTransaction();
     try {
-        $pdo->prepare(
+        $expired = $pdo->prepare(
+            "SELECT * FROM mg_store_sessions
+             WHERE merchant_user_id=?
+               AND active_key IS NOT NULL
+               AND status IN ('entered','active','idle')
+               AND last_active_at < DATE_SUB(NOW(), INTERVAL " . MG_STORE_EXPIRE_MINUTES . " MINUTE)
+             ORDER BY id ASC
+             LIMIT 200
+             FOR UPDATE"
+        );
+        $expired->execute([$merchantUserId]);
+        foreach ($expired->fetchAll(PDO::FETCH_ASSOC) as $session) {
+            mg_store_close_session_row($pdo, $session, 'timeout');
+        }
+
+        $idle = $pdo->prepare(
             "UPDATE mg_store_sessions
              SET status='idle',updated_at=NOW()
              WHERE merchant_user_id=?
                AND active_key IS NOT NULL
-               AND status='active'
-               AND last_active_at < DATE_SUB(NOW(), INTERVAL 10 MINUTE)"
-        )->execute([$merchantUserId]);
+               AND status IN ('entered','active')
+               AND last_active_at < DATE_SUB(NOW(), INTERVAL " . MG_STORE_IDLE_MINUTES . " MINUTE)"
+        );
+        $idle->execute([$merchantUserId]);
+        $pdo->commit();
     } catch (Throwable $error) {
-        mg_security_log('error', 'merchant_canvas.idle_update_failed', 'Store Canvas idle update failed.', ['exception_class'=>$error::class], $merchantUserId);
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        mg_security_log('error', 'merchant_canvas.session_expiry_failed', 'Store Canvas session expiry failed.', ['exception_class'=>$error::class], $merchantUserId);
+        throw $error;
     }
+}
 
+function mg_merchant_canvas_active_customers(PDO $pdo, int $merchantUserId): array
+{
     $stmt = $pdo->prepare(
         "SELECT s.*,cp.display_name customer_name,cp.avatar_url customer_avatar_url,cp.slug customer_slug,cp.profile_type customer_profile_type,
                 fp.public_id source_post_public_id,fp.headline source_post_headline,
@@ -64,7 +87,11 @@ function mg_merchant_canvas_active_customers(PDO $pdo, int $merchantUserId): arr
          FROM mg_store_sessions s
          LEFT JOIN public_profiles cp ON cp.user_id=s.customer_user_id
          LEFT JOIN feed_posts fp ON fp.id=s.source_feed_post_id
-         WHERE s.merchant_user_id=? AND s.active_key IS NOT NULL AND s.status IN ('entered','active','idle') AND s.exited_at IS NULL
+         WHERE s.merchant_user_id=?
+           AND s.active_key IS NOT NULL
+           AND s.status IN ('entered','active','idle')
+           AND s.exited_at IS NULL
+           AND s.last_active_at >= DATE_SUB(NOW(), INTERVAL " . MG_STORE_EXPIRE_MINUTES . " MINUTE)
          ORDER BY s.last_active_at DESC,s.id DESC"
     );
     $stmt->execute([$merchantUserId]);
@@ -81,10 +108,14 @@ function mg_merchant_canvas_active_customers(PDO $pdo, int $merchantUserId): arr
         if ($sourceHeadline === null && isset($metadata['source_label'])) {
             $sourceHeadline = (string)$metadata['source_label'];
         }
+        $status = (string)$row['status'];
+        $secondsSinceActive = max(0, (int)($row['seconds_since_active'] ?? 0));
 
         $items[] = [
             'session_id' => (string)$row['public_id'],
-            'status' => (string)$row['status'],
+            'status' => $status,
+            'connection_state' => $status === 'idle' ? 'idle' : 'online',
+            'is_messageable' => !$isTest && $status !== 'idle',
             'is_test' => $isTest,
             'customer' => [
                 'name' => $profileName !== '' ? $profileName : ($metadataName !== '' ? $metadataName : 'Customer'),
@@ -96,8 +127,10 @@ function mg_merchant_canvas_active_customers(PDO $pdo, int $merchantUserId): arr
                 'id' => $row['source_post_public_id'] !== null ? (string)$row['source_post_public_id'] : null,
                 'headline' => $sourceHeadline,
             ],
-            'seconds_inside' => (int)$row['seconds_inside'],
-            'seconds_since_active' => (int)$row['seconds_since_active'],
+            'entered_at' => (string)$row['entered_at'],
+            'last_active_at' => (string)$row['last_active_at'],
+            'seconds_inside' => max(0, (int)$row['seconds_inside']),
+            'seconds_since_active' => $secondsSinceActive,
             'last_event' => [
                 'type' => $row['last_event_type'] !== null ? (string)$row['last_event_type'] : null,
                 'label' => $row['last_event_label'] !== null ? (string)$row['last_event_label'] : null,
@@ -116,6 +149,7 @@ try {
     }
 
     $merchantUserId = (int)$user['id'];
+    mg_merchant_canvas_expire_sessions($pdo, $merchantUserId);
     $customers = mg_merchant_canvas_active_customers($pdo, $merchantUserId);
     $todayEntries = mg_merchant_canvas_count($pdo, 'SELECT COUNT(*) FROM mg_store_sessions WHERE merchant_user_id=? AND entered_at >= CURDATE()', [$merchantUserId]);
     $todayEvents = mg_merchant_canvas_count($pdo, 'SELECT COUNT(*) FROM mg_store_session_events WHERE merchant_user_id=? AND created_at >= CURDATE()', [$merchantUserId]);
@@ -124,6 +158,8 @@ try {
 
     mg_ok([
         'customers' => $customers,
+        'server_time' => gmdate('c'),
+        'poll_after_ms' => 7000,
         'summary' => [
             'active_customers' => count($customers),
             'today_entries' => $todayEntries,
@@ -131,7 +167,8 @@ try {
             'history_rows' => $historyRows,
             'test_avatars' => $testAvatars,
             'agent_status' => count($customers) ? 'Canvas live' : 'Database connected, waiting for customers',
-            'message_enabled' => true,
+            'message_enabled' => mg_store_canvas_table_exists($pdo, 'mg_merchant_customer_crm'),
+            'manual_operations_ready' => mg_store_canvas_missing_tables($pdo, ['mg_merchant_customer_crm','mg_merchant_canvas_action_receipts']) === [],
             'audit_mirror_enabled' => mg_store_canvas_table_exists($pdo, 'mg_agent_messages'),
             'schema_ready' => true,
         ],

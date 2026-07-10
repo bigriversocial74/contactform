@@ -6,10 +6,9 @@ declare(strict_types=1);
  *
  * Merchant Canvas messages use the existing message_threads/messages and
  * notifications system as the canonical delivery path. The Stage 20
- * mg_agent_messages table remains an optional Store Canvas audit mirror that
- * points back to the canonical thread/message IDs.
+ * mg_agent_messages table remains an optional Store Canvas audit mirror.
  */
-require_once __DIR__ . '/_canvas_schema.php';
+require_once __DIR__ . '/_canvas_manual_operations.php';
 require_once dirname(__DIR__) . '/messages/_messaging.php';
 require_once dirname(__DIR__) . '/messages/_delivery_validation.php';
 
@@ -86,11 +85,18 @@ function mg_store_canvas_thread(PDO $pdo, array $session, int $merchantUserId, s
     return $thread;
 }
 
-function mg_store_send_direct_message_via_messaging(PDO $pdo, int $merchantUserId, string $sessionPublicId, string $body): array
+function mg_store_send_direct_message_via_messaging(PDO $pdo, int $merchantUserId, string $sessionPublicId, string $body, string $clientIdempotencyKey = ''): array
 {
     mg_store_canvas_core_schema_require($pdo);
+    mg_store_manual_ops_require_schema($pdo);
     $sessionPublicId = mg_store_safe_public_id($sessionPublicId, 'Store session');
     $body = mg_message_validate_body($body);
+    $clientIdempotencyKey = mg_store_manual_ops_idempotency_key($clientIdempotencyKey);
+    $requestHash = mg_store_manual_ops_request_hash([
+        'merchant_user_id' => $merchantUserId,
+        'session_id' => $sessionPublicId,
+        'message' => $body,
+    ]);
 
     $merchantLabel = 'Merchant';
     try {
@@ -101,6 +107,13 @@ function mg_store_send_direct_message_via_messaging(PDO $pdo, int $merchantUserI
         $merchantLabel = 'Merchant';
     }
 
+    $messagePublicId = '';
+    $thread = [];
+    $notificationPublicId = '';
+    $deliveryValidation = [];
+    $customerUserId = 0;
+    $result = [];
+
     $pdo->beginTransaction();
     try {
         $stmt = $pdo->prepare(
@@ -110,12 +123,14 @@ function mg_store_send_direct_message_via_messaging(PDO $pdo, int $merchantUserI
                AND merchant_user_id=?
                AND active_key IS NOT NULL
                AND status IN ('entered','active','idle')
+               AND exited_at IS NULL
              LIMIT 1 FOR UPDATE"
         );
         $stmt->execute([$sessionPublicId, $merchantUserId]);
         $session = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$session) {
-            throw new RuntimeException('Active customer session is not available.');
+        if (!$session) throw new RuntimeException('Active customer session is not available.');
+        if (strtotime((string)$session['last_active_at']) < (time() - (MG_STORE_EXPIRE_MINUTES * 60))) {
+            throw new RuntimeException('Customer session has expired. Refresh the Store Canvas.');
         }
 
         $customerUserId = (int)$session['customer_user_id'];
@@ -123,12 +138,31 @@ function mg_store_send_direct_message_via_messaging(PDO $pdo, int $merchantUserI
             throw new RuntimeException('Active customer session is not messageable.');
         }
 
+        $receipt = mg_store_manual_ops_receipt_claim(
+            $pdo,
+            $merchantUserId,
+            $customerUserId,
+            (int)$session['id'],
+            $merchantUserId,
+            'manual_message',
+            $clientIdempotencyKey,
+            $requestHash
+        );
+        if (!empty($receipt['duplicate'])) {
+            $result = is_array($receipt['response']) ? $receipt['response'] : [];
+            $result['duplicate'] = true;
+            $pdo->commit();
+            return $result;
+        }
+
+        mg_store_manual_ops_assert_message_allowed($pdo, $merchantUserId, $customerUserId, true);
+
         $thread = mg_store_canvas_thread($pdo, $session, $merchantUserId, $merchantLabel);
         $conversationKey = (string)$thread['conversation_key'];
         $messagePublicId = mg_public_uuid();
         $sourceType = 'store_canvas_direct';
         $sourceReference = 'store_session:' . $sessionPublicId;
-        $idempotencyKey = 'store_canvas:' . $messagePublicId;
+        $canonicalIdempotencyKey = substr('store_canvas_manual:' . $merchantUserId . ':' . hash('sha256', $clientIdempotencyKey), 0, 190);
 
         $messageInsert = $pdo->prepare(
             'INSERT INTO messages
@@ -141,7 +175,7 @@ function mg_store_send_direct_message_via_messaging(PDO $pdo, int $merchantUserI
             $merchantUserId,
             $customerUserId,
             $body,
-            $idempotencyKey,
+            $canonicalIdempotencyKey,
             $sourceType,
             $sourceReference,
         ]);
@@ -174,6 +208,8 @@ function mg_store_send_direct_message_via_messaging(PDO $pdo, int $merchantUserI
                         'message_id' => $messagePublicId,
                         'conversation_key' => $conversationKey,
                         'store_session_id' => $sessionPublicId,
+                        'initiated_by_user_id' => $merchantUserId,
+                        'action_receipt_id' => (string)$receipt['public_id'],
                     ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
                 ]);
             } catch (Throwable $auditError) {
@@ -187,6 +223,8 @@ function mg_store_send_direct_message_via_messaging(PDO $pdo, int $merchantUserI
             'thread_id' => (string)$thread['public_id'],
             'message_id' => $messagePublicId,
             'agent_message_id' => $auditPublicId ?: null,
+            'initiated_by_user_id' => $merchantUserId,
+            'action_receipt_id' => (string)$receipt['public_id'],
         ]);
 
         $notificationPublicId = mg_create_notification(
@@ -208,6 +246,7 @@ function mg_store_send_direct_message_via_messaging(PDO $pdo, int $merchantUserI
                 'source_system' => 'store_canvas',
                 'source_channel' => 'merchant_canvas',
                 'source_label' => 'Merchant Store Canvas',
+                'action_receipt_id' => (string)$receipt['public_id'],
             ]
         );
 
@@ -224,32 +263,34 @@ function mg_store_send_direct_message_via_messaging(PDO $pdo, int $merchantUserI
         ]);
         mg_message_delivery_throw_if_failed($deliveryValidation);
 
+        $result = [
+            'id' => $messagePublicId,
+            'thread_id' => (string)$thread['public_id'],
+            'notification_id' => $notificationPublicId ?: null,
+            'source_system' => 'messages',
+            'source_type' => 'store_canvas_direct',
+            'source_label' => 'Store Canvas',
+            'body' => $body,
+            'created_at' => date('Y-m-d H:i:s'),
+            'delivery_validation' => $deliveryValidation,
+            'duplicate' => false,
+            'action_receipt_id' => (string)$receipt['public_id'],
+        ];
+        mg_store_manual_ops_receipt_complete($pdo, (int)$receipt['id'], $messagePublicId, $result);
         $pdo->commit();
     } catch (Throwable $error) {
-        if ($pdo->inTransaction()) {
-            $pdo->rollBack();
-        }
+        if ($pdo->inTransaction()) $pdo->rollBack();
         throw $error;
     }
 
     mg_event('store_canvas.direct_message_sent', [
         'message_id' => $messagePublicId,
-        'thread_id' => (string)$thread['public_id'],
+        'thread_id' => (string)($thread['public_id'] ?? ''),
         'session_id' => $sessionPublicId,
         'customer_user_id' => $customerUserId,
         'source_system' => 'messages',
         'delivery_validation' => $deliveryValidation['status'] ?? 'unknown',
     ], $merchantUserId);
 
-    return [
-        'id' => $messagePublicId,
-        'thread_id' => (string)$thread['public_id'],
-        'notification_id' => $notificationPublicId ?: null,
-        'source_system' => 'messages',
-        'source_type' => 'store_canvas_direct',
-        'source_label' => 'Store Canvas',
-        'body' => $body,
-        'created_at' => date('Y-m-d H:i:s'),
-        'delivery_validation' => $deliveryValidation,
-    ];
+    return $result;
 }

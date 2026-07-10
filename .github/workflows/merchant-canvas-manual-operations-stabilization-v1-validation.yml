@@ -1,0 +1,55 @@
+name: Merchant Canvas Manual Operations Stabilization v1 Validation
+
+on:
+  pull_request:
+    paths:
+      - 'merchant-canvas.php'
+      - 'assets/js/merchant-canvas-manual-operations.js'
+      - 'assets/js/merchant-canvas-containment.js'
+      - 'assets/css/merchant-canvas-manual-operations.css'
+      - 'api/merchant-canvas/active-users.php'
+      - 'api/merchant-canvas/customer-crm.php'
+      - 'api/merchant-canvas/customer-crm-update.php'
+      - 'api/merchant-canvas/send-message.php'
+      - 'api/merchant-canvas/send-reward.php'
+      - 'api/merchant-canvas/health.php'
+      - 'api/store/_canvas_messaging.php'
+      - 'api/store/_canvas_manual_operations.php'
+      - 'database/merchant_canvas_manual_operations_stabilization_v1.sql'
+      - 'scripts/validate_merchant_canvas_manual_operations_stabilization_v1.php'
+      - '.github/workflows/merchant-canvas-manual-operations-stabilization-v1-validation.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+
+      - name: PHP syntax
+        run: |
+          php -l merchant-canvas.php
+          php -l api/merchant-canvas/active-users.php
+          php -l api/merchant-canvas/customer-crm.php
+          php -l api/merchant-canvas/customer-crm-update.php
+          php -l api/merchant-canvas/send-message.php
+          php -l api/merchant-canvas/send-reward.php
+          php -l api/merchant-canvas/health.php
+          php -l api/store/_canvas_messaging.php
+          php -l api/store/_canvas_manual_operations.php
+          php -l scripts/validate_merchant_canvas_manual_operations_stabilization_v1.php
+
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/merchant-canvas-manual-operations.js
+          node --check assets/js/merchant-canvas-containment.js
+
+      - name: Contract validation
+        run: php scripts/validate_merchant_canvas_manual_operations_stabilization_v1.php
