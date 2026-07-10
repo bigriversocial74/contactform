@@ -1,0 +1,68 @@
+name: Store Canvas Visual Restoration v1 Validation
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'merchant-canvas.php'
+      - 'campaign-recommendation.php'
+      - 'assets/css/merchant-canvas-restoration.css'
+      - 'assets/js/merchant-canvas-visual-restoration.js'
+      - 'assets/js/merchant-canvas-campaign-recommendations.js'
+      - 'api/merchant-canvas/control-center.php'
+      - 'api/merchant-canvas/send-campaign-recommendation.php'
+      - 'api/store/_canvas_campaign_recommendations.php'
+      - 'scripts/validate_store_canvas_visual_restoration_v1.php'
+      - '.github/workflows/store-canvas-visual-restoration-v1-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: PHP syntax
+        run: |
+          php -l merchant-canvas.php
+          php -l campaign-recommendation.php
+          php -l api/merchant-canvas/control-center.php
+          php -l api/merchant-canvas/send-campaign-recommendation.php
+          php -l api/store/_canvas_campaign_recommendations.php
+          php -l scripts/validate_store_canvas_visual_restoration_v1.php
+
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/merchant-canvas-visual-restoration.js
+          node --check assets/js/merchant-canvas-campaign-recommendations.js
+
+      - name: Visual restoration contract
+        run: php scripts/validate_store_canvas_visual_restoration_v1.php
+
+      - name: Production containment regression
+        run: php scripts/validate_merchant_canvas_production_containment_v1.php
+
+      - name: Manual operations regression
+        run: php scripts/validate_merchant_canvas_manual_operations_stabilization_v1.php
+
+      - name: Customer journey regression
+        run: php scripts/validate_merchant_canvas_real_customer_analytics_journey_v1.php
+
+      - name: Campaign public matrix regression
+        run: php scripts/validate_campaign_public_matrix_v1.php
