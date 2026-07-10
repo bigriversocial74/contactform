@@ -21,6 +21,7 @@ on:
       - 'config/migrations.php'
       - 'scripts/validate_delivery_operations_capacity_foundation_v1.php'
       - 'scripts/audit_delivery_operations_capacity_foundation_v1.php'
+      - 'scripts/validate_delivery_communications_regression_v1.php'
       - 'docs/delivery-operations-capacity-foundation-v1.md'
       - 'docs/audits/delivery-operations-capacity-foundation-v1-scorecard.md'
       - '.github/workflows/delivery-operations-capacity-foundation-v1-validation.yml'
@@ -65,6 +66,7 @@ jobs:
           php -l config/migrations.php
           php -l scripts/validate_delivery_operations_capacity_foundation_v1.php
           php -l scripts/audit_delivery_operations_capacity_foundation_v1.php
+          php -l scripts/validate_delivery_communications_regression_v1.php
 
       - name: JavaScript syntax
         run: node --check assets/js/delivery-operations.js
@@ -81,8 +83,8 @@ jobs:
       - name: Merchant order delivery recovery regression
         run: php scripts/validate_merchant_orders_recovery_v1.php
 
-      - name: Communication delivery bridge regression
-        run: php scripts/validate_message_delivery_bridges.php
+      - name: Communication delivery compatibility regression
+        run: php scripts/validate_delivery_communications_regression_v1.php
 
       - name: Microgift behavior regression
         run: php scripts/validate_microgift_behavior.php
