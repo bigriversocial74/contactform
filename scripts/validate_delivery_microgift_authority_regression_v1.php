@@ -12,7 +12,7 @@ $delivery = implode("\n", [
     $read('includes/delivery-operations-admin.php'),
     $read('api/communications/_communications.php'),
 ]);
-$lifecycle = $read('api/microgifts/_lifecycle.php');
+$issue = $read('api/microgifts/_engine.php');
 $claim = $read('api/microgifts/_claim_authority.php') . $read('api/microgifts/_lifecycle.php');
 $redemption = $read('api/microgifts/_atomic_merchant_redemption.php');
 $liveBehavior = $read('scripts/validate_microgift_behavior.php');
@@ -20,7 +20,7 @@ $liveBehavior = $read('scripts/validate_microgift_behavior.php');
 $checks = [
     'delivery layer does not issue Microgifts' => !str_contains($delivery, 'mg_microgift_issue(') && !str_contains($delivery, 'INSERT INTO microgift_instances'),
     'delivery layer does not claim or redeem value' => !str_contains($delivery, 'mg_microgift_claim(') && !str_contains($delivery, 'mg_microgift_atomic_merchant_redeem('),
-    'canonical issue authority remains present' => str_contains($lifecycle, 'function mg_microgift_issue('),
+    'canonical issue authority remains present' => str_contains($issue, 'function mg_microgift_issue('),
     'canonical claim authority remains present' => str_contains($claim, 'function mg_microgift_claim('),
     'canonical merchant redemption remains present' => str_contains($redemption, 'function mg_microgift_atomic_merchant_redeem('),
     'live behavior suite retains transactional fixture boundary' => str_contains($liveBehavior, '$pdo->beginTransaction()') && str_contains($liveBehavior, '$pdo->rollBack()'),
