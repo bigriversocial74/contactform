@@ -33,7 +33,7 @@ $checks[] = ['name'=>'responsive layout','ok'=>str_contains($css,'@media(max-wid
 $checks[] = ['name'=>'accessible mobile nav','ok'=>str_contains($cover,'aria-expanded="false"') && str_contains($cover,'aria-controls="primary-nav"') && str_contains($js,"setAttribute('aria-expanded'")];
 $checks[] = ['name'=>'motion preference','ok'=>str_contains($css,'prefers-reduced-motion')];
 $checks[] = ['name'=>'install-state routing','ok'=>str_contains($cover,"header('Location: install.php')") && str_contains($how,"header('Location: install.php')") && str_contains($business,"header('Location: install.php')")];
-$checks[] = ['name'=>'participant routing','ok'=>str_contains($cover,"$isAuthed?'index.php':'signin.php?mode=signup'") && str_contains($cover,'wallet.php')];
+$checks[] = ['name'=>'participant routing','ok'=>str_contains($cover, '$isAuthed?\'index.php\':\'signin.php?mode=signup\'') && str_contains($cover,'wallet.php')];
 $failed = array_values(array_filter($checks, static fn(array $c): bool => !$c['ok']));
 $result = ['ok'=>$failed===[],'score'=>$failed===[]?'10/10':sprintf('%.1f/10',10-(count($failed)*.5)),'checks'=>$checks,'failed'=>$failed,'generated_at'=>gmdate('c')];
 echo json_encode($result, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES).PHP_EOL;
