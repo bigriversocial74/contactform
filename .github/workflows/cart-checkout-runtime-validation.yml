@@ -1,0 +1,71 @@
+name: Cart Checkout Runtime v1 Validation
+
+on:
+  pull_request:
+    paths:
+      - 'cart.php'
+      - 'checkout.php'
+      - 'api/commerce/_foundation.php'
+      - 'api/commerce/_cart_checkout.php'
+      - 'api/commerce/cart.php'
+      - 'api/commerce/checkout-draft.php'
+      - 'api/commerce/cart-checkout.php'
+      - 'api/payments/_checkout_session.php'
+      - 'api/payments/session.php'
+      - 'assets/js/customer-commerce.js'
+      - 'assets/js/cart.js'
+      - 'assets/js/checkout.js'
+      - 'assets/js/public-product-v1.js'
+      - 'assets/css/cart-checkout-runtime-v1.css'
+      - 'scripts/validate_cart_checkout_runtime_v1.php'
+      - '.github/workflows/cart-checkout-runtime-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate resumable cart checkout
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+
+      - name: PHP syntax check
+        run: |
+          set -euo pipefail
+          php -l cart.php
+          php -l checkout.php
+          php -l api/commerce/_foundation.php
+          php -l api/commerce/_cart_checkout.php
+          php -l api/commerce/cart.php
+          php -l api/commerce/checkout-draft.php
+          php -l api/commerce/cart-checkout.php
+          php -l api/payments/_checkout_session.php
+          php -l api/payments/session.php
+          php -l scripts/validate_cart_checkout_runtime_v1.php
+
+      - name: JavaScript syntax check
+        run: |
+          node --check assets/js/customer-commerce.js
+          node --check assets/js/cart.js
+          node --check assets/js/checkout.js
+          node --check assets/js/public-product-v1.js
+
+      - name: Validate ten-point cart checkout contract
+        run: php scripts/validate_cart_checkout_runtime_v1.php
+
+      - name: Run available commerce contracts
+        run: |
+          if [ -x vendor/bin/phpunit ]; then
+            vendor/bin/phpunit --testsuite unit --filter 'Cart|Checkout|Payment|ProductPurchase'
+          else
+            echo 'vendor/bin/phpunit not installed; static contracts completed.'
+          fi
