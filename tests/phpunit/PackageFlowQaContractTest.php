@@ -14,13 +14,7 @@ final class PackageFlowQaContractTest extends TestCase
         $entitlements = file_get_contents(dirname(__DIR__, 2) . '/includes/package-entitlements.php');
         $status = file_get_contents(dirname(__DIR__, 2) . '/api/subscriptions/package-change-status.php');
 
-        self::assertIsString($request);
-        self::assertIsString($changes);
-        self::assertIsString($webhook);
-        self::assertIsString($billing);
-        self::assertIsString($entitlements);
-        self::assertIsString($status);
-
+        foreach ([$request,$changes,$webhook,$billing,$entitlements,$status] as $source) self::assertIsString($source);
         self::assertStringContainsString('mg_subscription_checkout_try_start', $request);
         self::assertStringContainsString('pending_payment', $changes);
         self::assertStringContainsString('checkout.session.completed', $webhook);
@@ -35,7 +29,6 @@ final class PackageFlowQaContractTest extends TestCase
     public function testPackageUsageEndpointCoversAllEnforcedLimits(): void
     {
         $source = file_get_contents(dirname(__DIR__, 2) . '/api/account/package-limits.php');
-
         self::assertIsString($source);
         foreach ([
             'max_microgifts' => 'catalog_products',
@@ -56,19 +49,21 @@ final class PackageFlowQaContractTest extends TestCase
 
     public function testBackendLimitEnforcementContractsRemainConnected(): void
     {
-        $products = file_get_contents(dirname(__DIR__, 2) . '/api/catalog/products.php');
-        $locations = file_get_contents(dirname(__DIR__, 2) . '/api/merchant/locations.php');
-        $team = file_get_contents(dirname(__DIR__, 2) . '/api/merchant/team.php');
-        $campaigns = file_get_contents(dirname(__DIR__, 2) . '/api/merchant/campaigns.php');
-        $rewards = file_get_contents(dirname(__DIR__, 2) . '/api/merchant/reward-templates.php');
-        $campaignLimits = file_get_contents(dirname(__DIR__, 2) . '/api/public/campaigns/_limits.php');
-        $crmGift = file_get_contents(dirname(__DIR__, 2) . '/api/merchant/crm-send-gift.php');
-        $crmInvite = file_get_contents(dirname(__DIR__, 2) . '/api/merchant/crm-send-reward-invite.php');
+        $root = dirname(__DIR__, 2);
+        $products = file_get_contents($root . '/api/catalog/products.php');
+        $locations = file_get_contents($root . '/api/merchant/locations.php');
+        $team = file_get_contents($root . '/api/merchant/team.php');
+        $campaignRoute = file_get_contents($root . '/api/merchant/campaigns.php');
+        $campaignCore = file_get_contents($root . '/api/merchant/campaigns-core.php');
+        $campaigns = (string)$campaignRoute . "\n" . (string)$campaignCore;
+        $rewards = file_get_contents($root . '/api/merchant/reward-templates.php');
+        $campaignLimits = file_get_contents($root . '/api/public/campaigns/_limits.php');
+        $crmGift = file_get_contents($root . '/api/merchant/crm-send-gift.php');
+        $crmInvite = file_get_contents($root . '/api/merchant/crm-send-reward-invite.php');
 
-        foreach ([$products,$locations,$team,$campaigns,$rewards,$campaignLimits,$crmGift,$crmInvite] as $source) {
+        foreach ([$products,$locations,$team,$campaignRoute,$campaignCore,$rewards,$campaignLimits,$crmGift,$crmInvite] as $source) {
             self::assertIsString($source);
         }
-
         self::assertStringContainsString('max_microgifts', $products);
         self::assertStringContainsString('max_locations', $locations);
         self::assertStringContainsString('max_team_seats', $team);
@@ -88,11 +83,7 @@ final class PackageFlowQaContractTest extends TestCase
         $activation = file_get_contents(dirname(__DIR__, 2) . '/assets/js/subscription-activation-status.js');
         $merchantView = file_get_contents(dirname(__DIR__, 2) . '/includes/merchant-view.php');
 
-        self::assertIsString($overview);
-        self::assertIsString($module);
-        self::assertIsString($activation);
-        self::assertIsString($merchantView);
-
+        foreach ([$overview,$module,$activation,$merchantView] as $source) self::assertIsString($source);
         self::assertStringContainsString('data-package-limit-cards', $merchantView);
         self::assertStringContainsString('applyPackageLocks', $overview);
         self::assertStringContainsString('MutationObserver', $module);
