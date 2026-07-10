@@ -18,11 +18,17 @@ document.addEventListener('DOMContentLoaded', function () {
     if (field) field.value = value == null ? '' : String(value);
   }
 
+  function locationRequired(form) {
+    return form.getAttribute('data-location-required') !== '0';
+  }
+
   function setGeoButton(form, busy) {
     var button = form.querySelector('[data-check-in-geolocate]');
     if (!button) return;
     button.disabled = !!busy;
-    button.textContent = busy ? 'Finding your location…' : (form.getAttribute('data-geo-ready') === '1' ? 'Location captured' : 'Use my location');
+    if (busy) button.textContent = 'Finding your location…';
+    else if (form.getAttribute('data-geo-ready') === '1') button.textContent = 'Location captured';
+    else button.textContent = locationRequired(form) ? 'Use my location' : 'Add location (optional)';
   }
 
   function capture(form) {
@@ -47,8 +53,9 @@ document.addEventListener('DOMContentLoaded', function () {
         setField(form, 'entry_location_permission', 'denied');
         form.setAttribute('data-geo-ready', '0');
         setGeoButton(form, false);
-        var message = error && error.code === 1 ? 'Location permission is required for this check-in reward.' : 'Unable to capture your location. Move closer and try again.';
-        setStatus(form, message, 'error');
+        var message = error && error.code === 1 ? 'Location permission was not granted.' : 'Unable to capture your location. Move closer and try again.';
+        if (!locationRequired(form)) message += ' You can still submit this campaign without location.';
+        setStatus(form, message, locationRequired(form) ? 'error' : '');
         reject(new Error(message));
       }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 });
     });
@@ -58,7 +65,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var button = form.querySelector('[data-check-in-geolocate]');
     if (button) button.addEventListener('click', function (event) { event.preventDefault(); capture(form).catch(function () {}); });
     form.addEventListener('submit', function (event) {
-      if (form.getAttribute('data-geo-ready') === '1') return;
+      if (!locationRequired(form) || form.getAttribute('data-geo-ready') === '1') return;
       event.preventDefault();
       capture(form).then(function () {
         if (typeof form.requestSubmit === 'function') form.requestSubmit();
