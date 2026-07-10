@@ -22,8 +22,8 @@ $js=$read('assets/js/merchant-claims.js');
 $checks=[
     'canonical_claim_authority'=>str_contains($claimRoute,'mg_microgift_claim_canonical(')&&str_contains($actionClaim,'mg_microgift_claim_canonical(')&&str_contains($claimAuthority,'function mg_microgift_claim_canonical('),
     'claim_idempotency_conflict'=>str_contains($claimAuthority,'mg_microgift_assert_claim_replay(')&&str_contains($claimAuthority,'idempotency_key')&&str_contains($claimAuthority,'invalid instance'),
-    'pppm_ownership_sync'=>str_contains($claimAuthority,'PPPM ownership is not synchronized')&&str_contains($claimAuthority,"owner_user_id']??0)!==$claimantUserId"),
-    'claim_action_center_projection'=>str_contains($claimAuthority,'mg_action_center_project_lifecycle(')&&str_contains($claimAuthority,"'recipient_user_id'=>$claimantUserId"),
+    'pppm_ownership_sync'=>str_contains($claimAuthority,'PPPM ownership is not synchronized')&&str_contains($claimAuthority,"owner_user_id']??0)!==\$claimantUserId"),
+    'claim_action_center_projection'=>str_contains($claimAuthority,'mg_action_center_project_lifecycle(')&&str_contains($claimAuthority,"'recipient_user_id'=>\$claimantUserId"),
     'customer_redemption_retired'=>str_contains($customerRedeem,'Direct customer redemption has been retired.')&&str_contains($customerRedeem,"'canonical_endpoint'=>'/api/merchant/microgift-claim.php'")&&!str_contains($customerRedeem,'mg_microgift_redeem('),
     'merchant_location_code_authority'=>str_contains($atomic,'mg_location_claim_resolve_authority(')&&str_contains($location,'password_verify($claimCode')&&str_contains($location,'mg_location_claim_actor_authorized('),
     'atomic_redemption'=>str_contains($atomic,'mg_claim_operation_begin($pdo')&&str_contains($atomic,'mg_pppm_redeem(')&&str_contains($atomic,'mg_location_claim_increment_usage('),
