@@ -23,6 +23,22 @@ $appSidebarTools = (string) ($appSidebarTools ?? '');
 $appSidebarCompact = (bool) ($appSidebarCompact ?? true);
 $appSidebarAgentBadges = $appSidebarVariant === 'merchant';
 
+if (!$appSidebarNav) {
+    $appSidebarNav = [
+        'account' => ['section' => 'Overview', 'label' => 'Account', 'detail' => 'Profile and access', 'href' => '/account.php', 'visible' => true],
+        'wallet' => ['label' => 'Wallet', 'detail' => 'Rewards and balance', 'href' => '/wallet.php', 'visible' => true],
+        'merchant' => ['section' => 'Commerce', 'label' => 'Merchant', 'detail' => 'Business workspace', 'href' => '/merchant.php', 'visible' => true],
+        'messages' => ['label' => 'Messages', 'detail' => 'Gift conversations', 'href' => '/messages.php', 'visible' => true],
+        'feed' => ['section' => 'Community', 'label' => 'Feed', 'detail' => 'Public activity', 'href' => '/feed.php', 'visible' => true],
+    ];
+    if (($can_sales_crm ?? false) === true) {
+        $appSidebarNav['sales-crm'] = ['section' => 'CRM', 'label' => 'Sales CRM', 'detail' => 'Leads and pipeline', 'href' => '/sales-crm.php', 'visible' => true];
+    }
+    if (($can_admin_dashboard ?? false) === true) {
+        $appSidebarNav['admin'] = ['section' => 'Admin', 'label' => 'Admin', 'detail' => 'Platform controls', 'href' => '/account-admin.php', 'visible' => true];
+    }
+}
+
 if ($appSidebarVariant === 'utility' && !isset($appSidebarNav['loyalty-cards'])) {
     $loyaltyItem = [
         'section' => 'Customer',
@@ -42,25 +58,9 @@ if ($appSidebarVariant === 'utility' && !isset($appSidebarNav['loyalty-cards']))
         }
     }
     if (!$inserted) {
-        $withLoyalty = ['loyalty-cards' => $loyaltyItem] + $withLoyalty;
+        $withLoyalty['loyalty-cards'] = $loyaltyItem;
     }
     $appSidebarNav = $withLoyalty;
-}
-
-if (!$appSidebarNav) {
-    $appSidebarNav = [
-        'account' => ['section' => 'Overview', 'label' => 'Account', 'detail' => 'Profile and access', 'href' => '/account.php', 'visible' => true],
-        'wallet' => ['label' => 'Wallet', 'detail' => 'Rewards and balance', 'href' => '/wallet.php', 'visible' => true],
-        'merchant' => ['section' => 'Commerce', 'label' => 'Merchant', 'detail' => 'Business workspace', 'href' => '/merchant.php', 'visible' => true],
-        'messages' => ['label' => 'Messages', 'detail' => 'Gift conversations', 'href' => '/messages.php', 'visible' => true],
-        'feed' => ['section' => 'Community', 'label' => 'Feed', 'detail' => 'Public activity', 'href' => '/feed.php', 'visible' => true],
-    ];
-    if (($can_sales_crm ?? false) === true) {
-        $appSidebarNav['sales-crm'] = ['section' => 'CRM', 'label' => 'Sales CRM', 'detail' => 'Leads and pipeline', 'href' => '/sales-crm.php', 'visible' => true];
-    }
-    if (($can_admin_dashboard ?? false) === true) {
-        $appSidebarNav['admin'] = ['section' => 'Admin', 'label' => 'Admin', 'detail' => 'Platform controls', 'href' => '/account-admin.php', 'visible' => true];
-    }
 }
 
 $currentPath = '/' . ltrim((string) ($_SERVER['SCRIPT_NAME'] ?? ''), '/');
