@@ -99,7 +99,7 @@ jobs:
           php scripts/validate_campaign_public_matrix_v1.php > build/campaign-public-matrix-output.txt 2>&1
 
       - name: Validate campaign landing foundation
-        run: php scripts/validate_campaign_landing-foundation-repair_v1.php
+        run: php scripts/validate_campaign_landing_foundation_repair_v1.php
 
       - name: Validate specialized landing migration
         run: php scripts/validate_campaign_specialized_foundation_v1.php
