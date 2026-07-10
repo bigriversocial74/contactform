@@ -54,12 +54,14 @@ final class ProductionStorefrontProductManagementUiFoundationTest extends TestCa
 
         $products = $this->read('merchant-products.php');
         self::assertStringContainsString('/assets/css/merchant-products.css', $products);
-        self::assertStringContainsString('/assets/js/merchant-products.js', $products);
+        self::assertStringContainsString('/assets/js/merchant-catalog-management-v1.js', $products);
+        self::assertStringNotContainsString('/assets/js/merchant-products.js', $products);
         self::assertStringContainsString("\$merchantView='products'", $products);
 
         $detail = $this->read('merchant-product.php');
         self::assertStringContainsString('/assets/css/merchant-products.css', $detail);
-        self::assertStringContainsString('/assets/js/merchant-products.js', $detail);
+        self::assertStringContainsString('/assets/js/merchant-catalog-management-v1.js', $detail);
+        self::assertStringNotContainsString('/assets/js/merchant-products.js', $detail);
         self::assertStringContainsString("\$merchantView='product_detail'", $detail);
     }
 
@@ -82,6 +84,8 @@ final class ProductionStorefrontProductManagementUiFoundationTest extends TestCa
         foreach ([
             'data-product-search', 'data-product-status', 'data-product-type', 'data-builder-type',
             'data-product-sort', 'data-product-list', 'data-product-pagination', 'data-products-error',
+            'data-product-catalog-tab="published"', 'data-product-catalog-tab="draft"',
+            'data-product-catalog-tab="archived"', 'data-catalog-review-count',
         ] as $marker) {
             self::assertStringContainsString($marker, $list);
         }
@@ -131,7 +135,7 @@ final class ProductionStorefrontProductManagementUiFoundationTest extends TestCa
             "min(50,(int)(\$_GET['limit'] ?? 20))",
             "ESCAPE '='", "str_replace(['=','%','_']",
             'LIMIT {$limit} OFFSET {$offset}',
-            'storefront_placement_count', 'has_draft_changes',
+            'storefront_placement_count', 'has_draft_changes', 'needs_review',
             "catalog.products.view", "catalog.products.manage", "catalog.products.publish",
         ] as $needle) {
             self::assertStringContainsString($needle, $endpoint);
@@ -170,14 +174,34 @@ final class ProductionStorefrontProductManagementUiFoundationTest extends TestCa
 
     public function testManagementControllersUseSafeDomProjection(): void
     {
-        foreach (['assets/js/merchant-storefront.js', 'assets/js/merchant-products.js'] as $path) {
-            $source = $this->read($path);
-            self::assertStringContainsString('textContent', $source, $path);
-            self::assertStringContainsString('replaceChildren', $source, $path);
-            self::assertStringContainsString('safeUrl(', $source, $path);
+        $storefront = $this->read('assets/js/merchant-storefront.js');
+        self::assertStringContainsString('textContent', $storefront);
+        self::assertStringContainsString('replaceChildren', $storefront);
+        self::assertStringContainsString('safeUrl(', $storefront);
+
+        $catalog = $this->read('assets/js/merchant-catalog-management-v1.js');
+        self::assertStringContainsString('textContent', $catalog);
+        self::assertStringContainsString('replaceChildren', $catalog);
+        self::assertStringContainsString('safeRelativeUrl(', $catalog);
+        self::assertStringContainsString('pendingUploads', $catalog);
+
+        foreach ([$storefront, $catalog] as $source) {
             foreach (['.innerHTML =', 'insertAdjacentHTML(', 'document.write(', 'eval('] as $unsafe) {
-                self::assertStringNotContainsString($unsafe, $source, $path);
+                self::assertStringNotContainsString($unsafe, $source);
             }
+        }
+    }
+
+    public function testArchiveAuthorityReconcilesPublicDistribution(): void
+    {
+        $archive = $this->read('api/merchant/product-archive.php');
+        foreach ([
+            "mg_require_permission('catalog.products.manage')", 'mg_require_csrf_for_write(',
+            'merchant_storefront_revision_products', "revision_status='retired'",
+            'catalog_pppm_templates', "feed_posts SET status='archived'",
+            "catalog_products SET status='archived'", 'catalog.product_archived',
+        ] as $needle) {
+            self::assertStringContainsString($needle, $archive);
         }
     }
 
@@ -200,20 +224,19 @@ final class ProductionStorefrontProductManagementUiFoundationTest extends TestCa
         ] as $needle) {
             self::assertStringContainsString($needle, $products);
         }
+
+        $catalog = $this->read('assets/css/products-catalog-extra.css');
+        self::assertStringContainsString('.mg-products-tabs button:focus-visible', $catalog);
     }
 
     public function testFocusedValidationIsRegistered(): void
     {
-        $composer = $this->read('composer.json');
-        $workflow = $this->read('.github/workflows/storefront-product-management-validation.yml');
-        self::assertStringContainsString('test-storefront-product-management-behavior', $composer);
+        $workflow = $this->read('.github/workflows/merchant-catalog-management-v1-validation.yml');
         foreach ([
-            'MG_RUN_STOREFRONT_PRODUCT_BEHAVIOR',
-            'composer test-storefront-product-management-behavior',
-            'ProductionStorefrontProductManagementUiFoundationTest',
-            'storefront-product-management-foundation.spec.js',
-            'build_full_upgrade_sql.php', 'composer test-frontend-contracts',
-            'composer test', 'npm run test:browser',
+            'validate_merchant_catalog_management_v1.php',
+            'merchant-catalog-management-v1.js',
+            'audit_app_layout.php',
+            'recovery-baseline.yml',
         ] as $needle) {
             self::assertStringContainsString($needle, $workflow);
         }
