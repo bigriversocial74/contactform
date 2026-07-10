@@ -7,7 +7,7 @@ if (PHP_SAPI !== 'cli') {
 }
 
 require_once dirname(__DIR__) . '/includes/app.php';
-require_once dirname(__DIR__) . '/api/store/_canvas_trigger_engine.php';
+require_once dirname(__DIR__) . '/api/store/_canvas_trigger_engine_runner.php';
 
 $pdo = mg_db();
 if (!mg_store_trigger_engine_schema_ready($pdo)) {
@@ -39,7 +39,7 @@ foreach ($merchantIds as $merchantUserId) {
         $merchant['display_name'] = (string)$merchant['profile_display_name'];
     }
     try {
-        $result = mg_store_trigger_engine_run($pdo, $merchant, false);
+        $result = mg_store_trigger_engine_run_authorized($pdo, $merchant, false);
         $summary = $result['summary'] ?? [];
         $totals['merchants']++;
         $totals['evaluations'] += (int)($summary['evaluations'] ?? 0);
