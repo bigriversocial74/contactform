@@ -16,7 +16,13 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function toast(message, type) {
-    if (window.Microgifter && typeof Microgifter.toast === 'function') Microgifter.toast(message, type || '');
+    if (window.Microgifter && typeof Microgifter.toast === 'function') {
+      Microgifter.toast(message, type || '');
+    }
+  }
+
+  function responseData(response) {
+    return (response && response.data) || response || {};
   }
 
   function setButtonState(button, saved) {
@@ -30,56 +36,42 @@ document.addEventListener('DOMContentLoaded', function () {
     if (label) label.textContent = saved ? 'Saved Card' : 'Save Card';
   }
 
-  function injectSidebarLink() {
-    var nav = document.querySelector('.mg-universal-side-nav');
-    if (!nav || nav.querySelector('a[href="/loyalty-cards.php"]')) return;
-    var link = document.createElement('a');
-    link.href = '/loyalty-cards.php';
-    if (window.location.pathname === '/loyalty-cards.php') link.className = 'is-active';
-    link.setAttribute('data-loyalty-sidebar-link', '1');
-    link.innerHTML = '<strong>Loyalty Cards</strong><span>Saved stamp cards</span>';
-    var anchors = Array.prototype.slice.call(nav.querySelectorAll('a'));
-    var myFeed = anchors.find(function (item) { return item.getAttribute('href') === '/feed.php'; });
-    var following = anchors.find(function (item) { return item.getAttribute('href') === '/feed.php?view=following'; });
-    if (following && following.parentNode === nav) following.insertAdjacentElement('afterend', link);
-    else if (myFeed && myFeed.parentNode === nav) myFeed.insertAdjacentElement('afterend', link);
-    else nav.insertBefore(link, nav.firstChild);
-  }
-
   function initStampSaveButton() {
-    var page = document.querySelector('[data-stamp-card-experience]');
-    if (!page || page.querySelector('[data-loyalty-save-toggle]')) return;
-    var campaignInput = page.querySelector('input[name="campaign_id"]');
-    var campaignId = campaignInput ? String(campaignInput.value || '').trim() : '';
+    var button = document.querySelector('[data-loyalty-save-toggle]');
+    if (!button) return;
+    var campaignId = String(button.getAttribute('data-campaign-id') || '').trim();
     if (!campaignId) return;
-    var trustRow = page.querySelector('.mg-rl-hero .mg-public-campaign-trust-row');
-    if (!trustRow) return;
-    var button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'mg-loyalty-save-toggle';
-    button.setAttribute('data-loyalty-save-toggle', '1');
-    button.setAttribute('data-campaign-id', campaignId);
-    button.setAttribute('aria-pressed', 'false');
-    button.innerHTML = '<span data-loyalty-save-icon aria-hidden="true">☆</span><strong data-loyalty-save-label>Save Card</strong>';
-    trustRow.appendChild(button);
 
     if (isAuthed() && window.Microgifter && typeof Microgifter.get === 'function') {
+      button.disabled = true;
       Microgifter.get('/api/account/loyalty-cards.php?campaign=' + encodeURIComponent(campaignId)).then(function (response) {
-        var data = (response && response.data) || response || {};
-        setButtonState(button, !!data.saved);
-      }).catch(function () {});
+        setButtonState(button, !!responseData(response).saved);
+      }).catch(function () {
+        setButtonState(button, false);
+      }).finally(function () {
+        button.disabled = false;
+      });
     }
 
     button.addEventListener('click', function () {
-      if (!isAuthed()) { redirectToSignin(); return; }
+      if (!isAuthed()) {
+        redirectToSignin();
+        return;
+      }
       if (!window.Microgifter || typeof Microgifter.post !== 'function') return;
       button.disabled = true;
-      Microgifter.post('/api/account/loyalty-cards.php', { campaign_id: campaignId, action: 'toggle' }).then(function (response) {
-        var data = (response && response.data) || response || {};
+      Microgifter.post('/api/account/loyalty-cards.php', {
+        campaign_id: campaignId,
+        action: 'toggle'
+      }).then(function (response) {
+        var data = responseData(response);
         setButtonState(button, !!data.saved);
         toast(data.saved ? 'Loyalty card saved.' : 'Loyalty card removed.', data.saved ? 'success' : '');
       }).catch(function (error) {
-        if (error && error.status === 401) { redirectToSignin(); return; }
+        if (error && error.status === 401) {
+          redirectToSignin();
+          return;
+        }
         toast((error && error.message) || 'Unable to update saved card.', 'error');
       }).finally(function () {
         button.disabled = false;
@@ -93,11 +85,16 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function renderCard(card) {
-    var image = card.image_url ? '<img src="' + esc(card.image_url) + '" alt="' + esc(card.title) + ' campaign image">' : '<span>Stamp Card</span>';
+    var image = card.image_url
+      ? '<img src="' + esc(card.image_url) + '" alt="' + esc(card.title) + ' campaign image">'
+      : '<span>Stamp Card</span>';
+    var status = card.campaign_status && card.campaign_status !== 'active'
+      ? '<span class="mg-loyalty-card-status">' + esc(card.campaign_status) + '</span>'
+      : '';
     return '<article class="mg-loyalty-card" data-loyalty-card="' + esc(card.id) + '">' +
       '<a class="mg-loyalty-card-image" href="' + esc(card.public_url) + '">' + image + '</a>' +
       '<div class="mg-loyalty-card-body"><div class="mg-loyalty-card-top"><span>Saved Loyalty Card</span><button type="button" data-loyalty-remove="' + esc(card.campaign_id) + '" aria-label="Remove saved card">★</button></div>' +
-      '<h2>' + esc(card.title) + '</h2><p>' + esc(card.merchant_name) + '</p>' + progressBar(card) +
+      '<h2>' + esc(card.title) + '</h2><p>' + esc(card.merchant_name) + '</p>' + status + progressBar(card) +
       '<div class="mg-loyalty-card-meta"><span>' + esc(card.stamps_remaining) + ' remaining</span><span>' + esc(card.reward_title) + '</span></div>' +
       '<a class="mg-btn mg-btn-primary" href="' + esc(card.public_url) + '">Open card</a></div></article>';
   }
@@ -108,23 +105,29 @@ document.addEventListener('DOMContentLoaded', function () {
     var list = page.querySelector('[data-loyalty-cards-list]');
     var status = page.querySelector('[data-loyalty-cards-status]');
     var empty = page.querySelector('[data-loyalty-cards-empty]');
+
     function setStatus(message, type) {
       if (!status) return;
       status.textContent = message || '';
       status.classList.toggle('is-error', type === 'error');
       status.hidden = !message;
     }
+
     function loadCards() {
       if (!isAuthed()) {
         if (list) list.innerHTML = '';
-        if (empty) { empty.hidden = false; empty.querySelector('h2').textContent = 'Sign in to view saved loyalty cards.'; }
+        if (empty) {
+          empty.hidden = false;
+          var heading = empty.querySelector('h2');
+          if (heading) heading.textContent = 'Sign in to view saved loyalty cards.';
+        }
         setStatus('');
         return;
       }
       setStatus('Loading saved loyalty cards…');
       Microgifter.get('/api/account/loyalty-cards.php').then(function (response) {
-        var data = (response && response.data) || response || {};
-        var cards = data.cards || [];
+        var data = responseData(response);
+        var cards = Array.isArray(data.cards) ? data.cards : [];
         if (list) list.innerHTML = cards.map(renderCard).join('');
         if (empty) empty.hidden = cards.length > 0;
         setStatus(cards.length ? '' : (data.schema_ready === false ? 'Saved cards schema is not installed yet.' : ''));
@@ -132,23 +135,27 @@ document.addEventListener('DOMContentLoaded', function () {
         setStatus((error && error.message) || 'Unable to load saved cards.', 'error');
       });
     }
+
     page.addEventListener('click', function (event) {
       var remove = event.target.closest('[data-loyalty-remove]');
       if (!remove) return;
       var campaignId = remove.getAttribute('data-loyalty-remove') || '';
       if (!campaignId) return;
       remove.disabled = true;
-      Microgifter.post('/api/account/loyalty-cards.php', { campaign_id: campaignId, action: 'unsave' }).then(function () {
+      Microgifter.post('/api/account/loyalty-cards.php', {
+        campaign_id: campaignId,
+        action: 'unsave'
+      }).then(function () {
         loadCards();
       }).catch(function (error) {
         remove.disabled = false;
         setStatus((error && error.message) || 'Unable to remove saved card.', 'error');
       });
     });
+
     loadCards();
   }
 
-  injectSidebarLink();
   initStampSaveButton();
   initLoyaltyCardsPage();
 });
