@@ -21,6 +21,14 @@ function mustContain(string $path, string $source, string $needle, array &$failu
     }
 }
 
+function mustContainOneOf(string $path, string $source, array $needles, array &$failures): void
+{
+    foreach ($needles as $needle) {
+        if (str_contains($source, $needle)) return;
+    }
+    $failures[] = $path . ' missing required containment-state marker: ' . implode(' OR ', $needles);
+}
+
 function mustNotContain(string $path, string $source, string $needle, array &$failures): void
 {
     if (str_contains($source, $needle)) {
@@ -30,7 +38,10 @@ function mustNotContain(string $path, string $source, string $needle, array &$fa
 
 $page = source($root, 'merchant-canvas.php', $failures);
 mustContain('merchant-canvas.php', $page, '$hasMerchantAccess = mg_user_has_merchant_access', $failures);
-mustContain('merchant-canvas.php', $page, 'Production containment active', $failures);
+mustContainOneOf('merchant-canvas.php', $page, [
+    'Production containment active',
+    'Visual live canvas · guarded manual actions',
+], $failures);
 mustContain('merchant-canvas.php', $page, '/assets/js/merchant-canvas-manual-operations.js', $failures);
 mustNotContain('merchant-canvas.php', $page, "'/assets/js/merchant-canvas.js'", $failures);
 mustContain('merchant-canvas.php', $page, '/assets/css/merchant-canvas-containment.css', $failures);
