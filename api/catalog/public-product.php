@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_catalog.php';
+require_once dirname(__DIR__) . '/store/_canvas.php';
 mg_require_method('GET');
 
 $identifier=trim((string)($_GET['id']??$_GET['slug']??''));
@@ -20,6 +21,33 @@ $stmt=$pdo->prepare("SELECT p.public_id product_id,p.slug,p.product_type,p.statu
 $stmt->execute([$identifier,$identifier]);
 $product=$stmt->fetch(PDO::FETCH_ASSOC);
 if(!$product)mg_fail('Product not found.',404);
+
+try {
+    $viewer=function_exists('mg_current_user')?mg_current_user():null;
+    $viewerId=(int)($viewer['id']??0);
+    $merchantId=(int)($product['merchant_user_id']??0);
+    if($viewerId>0&&$merchantId>0&&$viewerId!==$merchantId&&mg_store_canvas_schema_ready($pdo)){
+        $session=mg_store_active_session_for_customer($pdo,$viewerId);
+        if($session&&(int)$session['merchant_user_id']===$merchantId){
+            $duplicate=$pdo->prepare("SELECT 1 FROM mg_store_session_events WHERE store_session_id=? AND event_type='viewed_product' AND created_at>=DATE_SUB(NOW(),INTERVAL 15 MINUTE) AND JSON_UNQUOTE(JSON_EXTRACT(event_data_json,'$.product_id'))=? LIMIT 1");
+            $duplicate->execute([(int)$session['id'],(string)$product['product_id']]);
+            if(!$duplicate->fetchColumn()){
+                mg_store_log_event($pdo,$session,'viewed_product','Viewed product',[
+                    'product_id'=>(string)$product['product_id'],
+                    'product_slug'=>(string)$product['slug'],
+                    'product_version_id'=>(string)$product['version_id'],
+                    'source_system'=>'catalog_public_product',
+                    'server_authoritative'=>true,
+                    'browser_overlap_used'=>false,
+                ]);
+            }
+        }
+    }
+}catch(Throwable $error){
+    mg_security_log('warning','catalog.product_view_event_failed','Unable to record Store Canvas product-view event.',[
+        'product_id'=>(string)($product['product_id']??''),'exception_class'=>$error::class,
+    ],isset($viewerId)&&$viewerId>0?$viewerId:null);
+}
 
 $assets=$pdo->prepare('SELECT a.public_id,a.asset_type,a.original_filename,a.mime_type,a.width_px,a.height_px,a.duration_ms,pva.role,pva.sort_order FROM catalog_product_version_assets pva INNER JOIN catalog_assets a ON a.id=pva.asset_id WHERE pva.product_version_id=(SELECT id FROM catalog_product_versions WHERE public_id=? LIMIT 1) AND a.status=\'ready\' ORDER BY pva.sort_order,pva.id');
 $assets->execute([(string)$product['version_id']]);
