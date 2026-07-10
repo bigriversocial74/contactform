@@ -30,16 +30,25 @@ try {
     $zoom = mg_world_zoom_read($root, 'assets/js/world-canvas-geo-zoom.js');
     $dots = mg_world_zoom_read($root, 'assets/js/world-canvas-dot-system.js');
     $zoneScale = mg_world_zoom_read($root, 'assets/js/world-canvas-zone-scale.js');
+    $detail = mg_world_zoom_read($root, 'assets/js/world-canvas-detail-orchestration.js');
     $progressiveCss = mg_world_zoom_read($root, 'assets/css/world-canvas-progressive-zoom.css');
+    $detailCss = mg_world_zoom_read($root, 'assets/css/world-canvas-detail-orchestration.css');
     $arrivalCss = mg_world_zoom_read($root, 'assets/css/world-canvas-icon-zoom-stability.css');
     $transition = mg_world_zoom_read($root, 'assets/js/store-world-transition.js');
     $transitionCss = mg_world_zoom_read($root, 'assets/css/store-world-transition.css');
+    $presence = mg_world_zoom_read($root, 'assets/js/store-presence-feed.js');
+    $chat = mg_world_zoom_read($root, 'assets/js/store-chat-widget.js');
+    $runtime = mg_world_zoom_read($root, 'api/store/_canvas_runtime.php');
+    $worldTransition = mg_world_zoom_read($root, 'api/store/_world_transition.php');
+    $heartbeat = mg_world_zoom_read($root, 'api/store/heartbeat.php');
     $footer = mg_world_zoom_read($root, 'includes/footer.php');
     $drops = mg_world_zoom_read($root, 'assets/js/world-canvas-target-drops.js');
 
     mg_world_zoom_expect(
-        str_contains($loader, '/assets/css/world-canvas-progressive-zoom.css'),
-        'World Canvas loader includes the progressive zoom stylesheet',
+        str_contains($loader, '/assets/css/world-canvas-progressive-zoom.css')
+        && str_contains($loader, '/assets/css/world-canvas-detail-orchestration.css')
+        && str_contains($loader, '/assets/js/world-canvas-detail-orchestration.js'),
+        'World Canvas loader includes progressive zoom and detail orchestration assets',
         $failures,
         $passes
     );
@@ -47,14 +56,16 @@ try {
     $tiers = ['world','region','city','store','detail'];
     $hasAllTiers = true;
     foreach ($tiers as $tier) {
-        if (!str_contains($zoom, "return '{$tier}'") && !str_contains($zoom, "'{$tier}'")) {
+        if (!str_contains($zoom, "'{$tier}'")) {
             $hasAllTiers = false;
             break;
         }
     }
     mg_world_zoom_expect(
-        $hasAllTiers && str_contains($zoom, 'root.dataset.worldZoomTier = tier'),
-        'Zoom controller exposes five progressive detail tiers',
+        $hasAllTiers
+        && str_contains($zoom, 'root.dataset.worldZoomTier = currentTier')
+        && str_contains($zoom, 'zoomProgress(state.zoom)'),
+        'Zoom controller exposes five progressive detail tiers and continuous progress',
         $failures,
         $passes
     );
@@ -74,6 +85,47 @@ try {
         && str_contains($progressiveCss, '[data-world-zoom-tier="detail"] .mg-world-node')
         && str_contains($progressiveCss, 'scale(var(--mg-world-inverse-zoom,1))'),
         'Users and merchants progress from dots to detailed cards without viewport double-scaling',
+        $failures,
+        $passes
+    );
+
+    mg_world_zoom_expect(
+        str_contains($zoom, '--mg-world-region-progress')
+        && str_contains($zoom, '--mg-world-city-progress')
+        && str_contains($zoom, '--mg-world-store-progress')
+        && str_contains($zoom, '--mg-world-detail-progress')
+        && str_contains($detailCss, 'transition:opacity .22s ease'),
+        'Zoom tiers crossfade detail through continuous progress variables',
+        $failures,
+        $passes
+    );
+
+    mg_world_zoom_expect(
+        str_contains($detail, 'applyViewportBudget')
+        && str_contains($detail, 'data-world-in-viewport')
+        && str_contains($detail, 'is-detail-lite')
+        && str_contains($detailCss, 'content-visibility:auto'),
+        'Detailed cards are viewport-budgeted while lightweight map signals remain available',
+        $failures,
+        $passes
+    );
+
+    mg_world_zoom_expect(
+        str_contains($detail, 'applyCollisionLayout')
+        && str_contains($detail, '--mg-world-collision-x')
+        && str_contains($detail, '--mg-world-label-shift-x')
+        && str_contains($detailCss, 'is-world-collision-shifted:after'),
+        'Screen-space collision management offsets labels while preserving coordinate anchors',
+        $failures,
+        $passes
+    );
+
+    mg_world_zoom_expect(
+        str_contains($detail, 'renderDensity')
+        && str_contains($detail, 'spot.count >= 2')
+        && str_contains($detailCss, '.mg-world-density-layer')
+        && !str_contains($detail, 'is-cluster-hidden'),
+        'Density illumination summarizes activity without replacing individual dots',
         $failures,
         $passes
     );
@@ -101,22 +153,53 @@ try {
         str_contains($footer, '/assets/js/store-world-transition.js')
         && str_contains($footer, '/assets/css/store-world-transition.css')
         && str_contains($footer, 'if ($user)'),
-        'Signed-in pages load one shared Store-to-World transition controller',
+        'Signed-in pages load one shared Store transition controller',
         $failures,
         $passes
     );
 
     mg_world_zoom_expect(
-        str_contains($transition, "[data-store-global-exit], [data-store-exit], [data-store-chat-exit]")
+        str_contains($transition, '[data-store-global-exit], [data-store-exit], [data-store-chat-exit]')
         && str_contains($transition, "MG.post('/api/store/exit.php', {})")
         && str_contains($transition, 'data.world_transition'),
-        'All existing Store Canvas exit surfaces use the server-backed world transition response',
+        'All manual Store Canvas exit surfaces use the server-backed world transition response',
         $failures,
         $passes
     );
 
     mg_world_zoom_expect(
-        str_contains($transition, "/world-canvas.php?entry=store-exit")
+        str_contains($presence, "emit('mg:store-session-ended'")
+        && str_contains($presence, "emit('mg:store-switched'")
+        && str_contains($chat, "mg:store-session-ended")
+        && str_contains($transition, "mg:store-session-ended")
+        && str_contains($transition, "mg:store-switched"),
+        'Timed-out sessions and merchant switches use shared automatic transition events',
+        $failures,
+        $passes
+    );
+
+    mg_world_zoom_expect(
+        str_contains($runtime, 'mg_store_world_transition_from_session')
+        && str_contains($runtime, "'timeout'")
+        && str_contains($worldTransition, "'merchant_location_opt_in'")
+        && str_contains($worldTransition, 'mg_world_location_save_user')
+        && str_contains($heartbeat, 'mg_store_runtime_heartbeat'),
+        'Timed-out sessions return opted-in avatars to World Canvas through server location authority',
+        $failures,
+        $passes
+    );
+
+    mg_world_zoom_expect(
+        str_contains($runtime, "'switched_from'=>\$switchedFrom")
+        && str_contains($transition, "mode: 'switch'")
+        && !str_contains($transition, "mode: 'switch', world_transition"),
+        'Store switching animates between active stores without creating false World Canvas authority',
+        $failures,
+        $passes
+    );
+
+    mg_world_zoom_expect(
+        str_contains($transition, '/world-canvas.php?entry=store-exit')
         && str_contains($zoom, "get('entry') === 'store-exit'")
         && str_contains($zoom, "viewer.classList.add('is-store-arrival')")
         && str_contains($arrivalCss, 'mgWorldStoreArrival'),
@@ -127,8 +210,9 @@ try {
 
     mg_world_zoom_expect(
         str_contains($transitionCss, 'mgStoreWorldAvatar')
+        && str_contains($transitionCss, 'mgStoreSwitchPulse')
         && str_contains($transitionCss, 'prefers-reduced-motion'),
-        'Store-to-World transition has responsive and reduced-motion presentation',
+        'Store-to-World and Store-to-Store transitions are responsive and reduced-motion safe',
         $failures,
         $passes
     );
@@ -147,8 +231,9 @@ try {
     mg_world_zoom_expect(
         str_contains($zoom, 'window.MicrogifterWorldZoom')
         && str_contains($zoom, 'geoToPoint: geoToPoint')
-        && str_contains($zoom, "document.dispatchEvent(new CustomEvent('mg:world-zoom-change'"),
-        'One zoom controller publishes a shared zoom state for nodes and Campaign Drop Zones',
+        && str_contains($zoom, "document.dispatchEvent(new CustomEvent('mg:world-zoom-change'")
+        && str_contains($detail, 'window.MicrogifterWorldDetail'),
+        'One zoom controller publishes shared state to the detail orchestrator and Campaign Drop Zones',
         $failures,
         $passes
     );
