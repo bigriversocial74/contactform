@@ -13,8 +13,10 @@ on:
       - 'api/store/_canvas_runtime.php'
       - 'api/store/_world_transition.php'
       - 'api/store/avatar-anchor.php'
+      - 'api/store/chat-widget.php'
       - 'api/store/exit.php'
       - 'api/store/heartbeat.php'
+      - 'api/store/session-status.php'
       - 'assets/css/world-canvas-progressive-zoom.css'
       - 'assets/css/world-canvas-detail-orchestration.css'
       - 'assets/css/world-canvas-icon-zoom-stability.css'
@@ -68,8 +70,10 @@ jobs:
           php -l api/store/_canvas_runtime.php
           php -l api/store/_world_transition.php
           php -l api/store/avatar-anchor.php
+          php -l api/store/chat-widget.php
           php -l api/store/exit.php
           php -l api/store/heartbeat.php
+          php -l api/store/session-status.php
           php -l scripts/validate_world_canvas_campaign_drop_zone_sync_v1.php
           php -l scripts/validate_world_canvas_progressive_zoom_v1.php
 
