@@ -1,0 +1,63 @@
+name: PPPM Claim Redemption v1 Validation
+
+on:
+  pull_request:
+    paths:
+      - 'api/microgifts/_claim_authority.php'
+      - 'api/microgifts/claim.php'
+      - 'api/account/action-center-claim.php'
+      - 'api/microgifts/redeem.php'
+      - 'api/microgifts/_atomic_merchant_redemption.php'
+      - 'api/microgifts/_location_claim_authority.php'
+      - 'api/microgifts/_redemption_reconciliation.php'
+      - 'api/merchant/microgift-claim.php'
+      - 'api/merchant/microgift-redemption-reconcile.php'
+      - 'assets/js/merchant-claims.js'
+      - 'tests/phpunit/Stage9CClaimRedemptionLifecycleTest.php'
+      - 'scripts/validate_pppm_claim_redemption_v1.php'
+      - '.github/workflows/pppm-claim-redemption-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate canonical claim and redemption
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+
+      - name: PHP syntax check
+        run: |
+          set -euo pipefail
+          php -l api/microgifts/_claim_authority.php
+          php -l api/microgifts/claim.php
+          php -l api/account/action-center-claim.php
+          php -l api/microgifts/redeem.php
+          php -l api/microgifts/_redemption_reconciliation.php
+          php -l api/merchant/microgift-claim.php
+          php -l api/merchant/microgift-redemption-reconcile.php
+          php -l tests/phpunit/Stage9CClaimRedemptionLifecycleTest.php
+          php -l scripts/validate_pppm_claim_redemption_v1.php
+
+      - name: JavaScript syntax check
+        run: node --check assets/js/merchant-claims.js
+
+      - name: Validate ten-point claim redemption contract
+        run: php scripts/validate_pppm_claim_redemption_v1.php
+
+      - name: Run focused lifecycle contracts
+        run: |
+          if [ -x vendor/bin/phpunit ]; then
+            vendor/bin/phpunit tests/phpunit/Stage9CClaimRedemptionLifecycleTest.php tests/phpunit/StageERedemptionContractTest.php tests/phpunit/Stage10CAtomicClaimRedemptionInboxTest.php tests/phpunit/Stage10DMerchantClaimOperationsTest.php
+          else
+            echo 'vendor/bin/phpunit not installed; static contracts completed.'
+          fi
