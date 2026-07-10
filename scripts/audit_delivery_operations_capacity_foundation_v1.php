@@ -3,7 +3,11 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__);
 $read = static fn(string $path): string => is_file($root . '/' . $path) ? (file_get_contents($root . '/' . $path) ?: '') : '';
-$core = $read('includes/delivery-operations.php');
+$core = $read('includes/delivery-operations.php')
+    . $read('includes/delivery-operations-config.php')
+    . $read('includes/delivery-operations-adapters.php')
+    . $read('includes/delivery-operations-worker.php')
+    . $read('includes/delivery-operations-admin.php');
 $sql = $read('database/delivery_operations_capacity_foundation_v1.sql');
 $communications = $read('api/communications/_communications.php');
 $js = $read('assets/js/delivery-operations.js');
