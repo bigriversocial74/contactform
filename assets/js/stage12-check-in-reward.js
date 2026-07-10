@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', function () {
     card.className = 'mg-campaign-rule-card';
     card.setAttribute('data-campaign-type-fields', 'check_in_reward');
     card.hidden = true;
-    card.innerHTML = '<span class="mg-eyebrow">Check-In Reward</span><h3>Reward customers who are physically near a registered merchant location.</h3><p>This campaign uses browser geolocation and matches customers to `merchant_locations` with latitude, longitude, and radius metadata.</p><div class="mg-grid-2"><label>Default radius meters<input name="check_in_radius_meters" inputmode="numeric" placeholder="150"></label><label class="mg-campaign-check"><input type="checkbox" name="check_in_location_required" value="1" checked> <span>Require geo match before reward issue</span></label></div><p class="mg-form-hint">Set GPS coordinates on Merchant Locations before launching this campaign.</p>';
+    card.innerHTML = '<span class="mg-eyebrow">Check-In Reward</span><h3>Configure the campaign check-in range.</h3><p>The public page can verify the customer against an active merchant location.</p><div class="mg-grid-2"><label>Campaign radius meters<input name="check_in_radius_meters" type="number" min="25" max="5000" inputmode="numeric" placeholder="150"></label><label class="mg-campaign-check"><input type="hidden" name="check_in_location_required" value="0"><input type="checkbox" name="check_in_location_required" value="1" checked> <span>Require a location match before reward issue</span></label></div><p class="mg-form-hint">Add coordinates to Merchant Locations before launching a required check-in campaign.</p>';
     var before = root.querySelector('[data-campaign-type-fields="watch_video_reward"]') || root.querySelector('[data-campaign-type-fields="customer_refund"]');
     if (before && before.parentNode) before.parentNode.insertBefore(card, before);
     else {
@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', function () {
     setIfEmpty('per_user_limit', '1');
     setIfEmpty('check_in_radius_meters', '150');
     if (force) {
-      var required = field('check_in_location_required');
+      var required = form.querySelector('input[type="checkbox"][name="check_in_location_required"]');
       if (required) required.checked = true;
     }
   }
