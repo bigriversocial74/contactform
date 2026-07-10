@@ -1,0 +1,55 @@
+name: Campaign Interactive Alignment Validation
+
+on:
+  pull_request:
+    paths:
+      - 'instant-win.php'
+      - 'stamp-card.php'
+      - 'includes/campaign-landing-foundation.php'
+      - 'includes/campaign-types.php'
+      - 'api/merchant/campaigns.php'
+      - 'api/merchant/campaigns-core.php'
+      - 'assets/css/public-campaign-experience-v1.css'
+      - 'assets/js/public-instant-win.js'
+      - 'assets/js/public-stamp-card.js'
+      - 'assets/js/loyalty-cards.js'
+      - 'scripts/validate_interactive_campaign_alignment_v1.php'
+      - '.github/workflows/campaign-interactive-alignment-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Instant Win and Stamp Card alignment validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+      - name: PHP syntax check
+        run: |
+          set -euo pipefail
+          php -l instant-win.php
+          php -l stamp-card.php
+          php -l includes/campaign-landing-foundation.php
+          php -l api/merchant/campaigns.php
+          php -l api/merchant/campaigns-core.php
+          php -l scripts/validate_interactive_campaign_alignment_v1.php
+      - name: JavaScript syntax check
+        run: |
+          set -euo pipefail
+          node --check assets/js/public-instant-win.js
+          node --check assets/js/public-stamp-card.js
+          node --check assets/js/loyalty-cards.js
+      - name: Validate interactive campaign alignment
+        run: php scripts/validate_interactive_campaign_alignment_v1.php
+      - name: Validate campaign landing foundation
+        run: php scripts/validate_campaign_landing_foundation_repair_v1.php
+      - name: Validate Stage 12 campaign contracts
+        run: php scripts/validate_stage12_campaigns_reward_templates.php
