@@ -1,0 +1,50 @@
+name: Loyalty Saved Cards Validation
+
+on:
+  pull_request:
+    paths:
+      - 'loyalty-cards.php'
+      - 'stamp-card.php'
+      - 'api/account/loyalty-cards.php'
+      - 'api/merchant/campaigns.php'
+      - 'assets/css/loyalty-cards.css'
+      - 'assets/js/loyalty-cards.js'
+      - 'assets/js/stage12-campaign-media-artwork.js'
+      - 'database/customer_saved_campaign_cards_20260709.sql'
+      - 'includes/app-sidebar.php'
+      - 'includes/footer.php'
+      - 'scripts/validate_loyalty_saved_cards_v1.php'
+      - 'tests/phpunit/LoyaltySavedCardsFoundationTest.php'
+      - '.github/workflows/loyalty-saved-cards-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Loyalty saved cards validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+      - name: PHP syntax check
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -l loyalty-cards.php
+          php -l stamp-card.php
+          php -l api/account/loyalty-cards.php
+          php -l api/merchant/campaigns.php
+          php -l includes/app-sidebar.php
+          php -l includes/footer.php
+          php -l scripts/validate_loyalty_saved_cards_v1.php
+          php -l tests/phpunit/LoyaltySavedCardsFoundationTest.php
+      - name: Validate Loyalty Saved Cards v1
+        shell: bash
+        run: php scripts/validate_loyalty_saved_cards_v1.php
