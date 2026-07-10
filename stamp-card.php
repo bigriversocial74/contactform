@@ -101,15 +101,15 @@ if (!$campaign || $errorMessage !== ''): ?>
       <header class="mg-rl-hero"><h1><?= mg_e($headline) ?></h1><p><?= mg_e($description) ?></p></header>
       <section class="mg-rl-player mg-stamp-card-canvas" aria-label="Stamp card progress">
         <section class="mg-stamp-card-visual" data-stamp-card-visual aria-live="polite">
-          <div class="mg-stamp-card-visual-head"><span>Your punch card</span><strong data-stamp-progress-copy>0 of <?= mg_e((string)$requiredCount) ?> <?= mg_e(strtolower($stampLabel)) ?> stamps</strong></div>
+          <div class="mg-stamp-card-visual-head"><span>Your punch card</span><strong data-stamp-progress-copy>0 of <?= mg_e((string)$requiredCount) ?> <?= mg_e(strtolower($stampLabel)) ?> punches</strong></div>
           <div class="mg-stamp-card-punch-grid" data-stamp-punch-grid><?php for ($i=1; $i <= $requiredCount; $i++): ?><span class="mg-stamp-punch" data-stamp-index="<?= mg_e((string)$i) ?>"><b><?= mg_e((string)$i) ?></b></span><?php endfor; ?></div>
           <div class="mg-stamp-card-meter"><span data-stamp-meter-fill style="width:0%"></span></div>
-          <p data-stamp-progress-message>Submit after each eligible visit. Your progress is tracked for this campaign.</p>
+          <p data-stamp-progress-message><?= mg_e((string)$requiredCount) ?> <?= mg_e(strtolower($stampLabel)) ?> punch<?= $requiredCount === 1 ? '' : 'es' ?> required before reward issuance is honored.</p>
         </section>
       </section>
       <div class="mg-rl-sidebar-stack mg-stamp-card-detail-stack">
         <article class="mg-rl-card"><span class="mg-rl-eyebrow">Campaign Reward</span><h3><?= mg_e($rewardTitle) ?></h3><p><?= mg_e($rewardDescription) ?></p><small><?= mg_e($rewardValue) ?></small></article>
-        <article class="mg-rl-card"><span class="mg-rl-eyebrow">Campaign Status</span><h3 data-stamp-card-status><?= mg_e($initialStatus) ?></h3><ul class="mg-rl-list"><li>Unique card per campaign + customer email/contact.</li></ul></article>
+        <article class="mg-rl-card"><span class="mg-rl-eyebrow">Campaign Status</span><h3 data-stamp-card-status><?= mg_e($initialStatus) ?></h3><ul class="mg-rl-list"><li>Required punches: <?= mg_e((string)$requiredCount) ?></li><li>Unique card per campaign + customer email/contact.</li></ul></article>
       </div>
     </div>
     <aside class="mg-rl-join mg-rl-join-desktop">
