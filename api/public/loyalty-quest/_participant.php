@@ -36,11 +36,11 @@ function mg_lqp_campaign(PDO $pdo, string $ref, bool $forUpdate = false, bool $e
         JSON_UNQUOTE(JSON_EXTRACT(ml.metadata_json,'$.longitude')) location_longitude,
         JSON_UNQUOTE(JSON_EXTRACT(ml.metadata_json,'$.check_in_radius_meters')) location_radius
         FROM campaigns c
-        INNER JOIN users u ON u.id=c.merchant_user_id
+        INNER JOIN users u ON u.id=c.merchant_user_id AND u.status='active'
         LEFT JOIN reward_templates rt ON rt.id=c.reward_template_id
-        LEFT JOIN public_profiles pp ON pp.user_id=c.merchant_user_id
+        LEFT JOIN public_profiles pp ON pp.user_id=c.merchant_user_id AND pp.status='active' AND pp.visibility IN ('public','unlisted')
         LEFT JOIN merchant_workspaces mw ON mw.merchant_user_id=c.merchant_user_id
-        LEFT JOIN merchant_locations ml ON ml.merchant_user_id=c.merchant_user_id AND ml.public_id=JSON_UNQUOTE(JSON_EXTRACT(c.rules_json,'$.location_id'))
+        LEFT JOIN merchant_locations ml ON ml.merchant_user_id=c.merchant_user_id AND ml.status='active' AND ml.public_id=JSON_UNQUOTE(JSON_EXTRACT(c.rules_json,'$.location_id'))
         WHERE c.campaign_type='loyalty_quest' AND (c.public_id=? OR c.public_slug=?) LIMIT 1" . ($forUpdate ? ' FOR UPDATE' : '');
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$ref, $ref]);
@@ -49,9 +49,7 @@ function mg_lqp_campaign(PDO $pdo, string $ref, bool $forUpdate = false, bool $e
     $campaign['rules'] = mg_lqp_json($campaign['rules_json'] ?? null);
     if (!$enforceAvailability) return $campaign;
 
-    if ((string)$campaign['status'] !== 'active' || (string)($campaign['reward_template_status'] ?? '') !== 'active') {
-        mg_fail('Loyalty Quest is not available.', 409);
-    }
+    if ((string)$campaign['status'] !== 'active' || (string)($campaign['reward_template_status'] ?? '') !== 'active') mg_fail('Loyalty Quest is not available.', 409);
     $now = time();
     if (!empty($campaign['starts_at']) && strtotime((string)$campaign['starts_at']) > $now) mg_fail('Loyalty Quest has not started yet.', 409);
     if (!empty($campaign['ends_at']) && strtotime((string)$campaign['ends_at']) <= $now) mg_fail('Loyalty Quest has ended.', 409);
@@ -194,7 +192,7 @@ function mg_lqp_expiry(array $campaign): ?string
     return null;
 }
 
-function mg_lqp_issue_reward(PDO $pdo, array $campaign, array $contact, array $participation, array $user): array
+function mg_lqp_issue_reward(PDO $pdo, array $campaign, array $contact, array $participation, array $user, ?string $walletPublicId = null): array
 {
     $existing = $pdo->prepare("SELECT id,public_id,status FROM wallet_items WHERE campaign_id=? AND user_id=? AND source_type='loyalty_quest' AND status<>'cancelled' ORDER BY id DESC LIMIT 1 FOR UPDATE");
     $existing->execute([(int)$campaign['id'], (int)$user['id']]);
@@ -203,7 +201,7 @@ function mg_lqp_issue_reward(PDO $pdo, array $campaign, array $contact, array $p
     if (empty($campaign['reward_template_db_id']) || (string)($campaign['reward_template_status'] ?? '') !== 'active') mg_fail('The quest reward is temporarily unavailable. The merchant has been asked to review it.', 409);
     mg_lqp_enforce_budget($pdo, $campaign);
     mg_public_campaign_enforce_reward_limits($pdo, $campaign, (int)$user['id'], (string)$user['email']);
-    $walletPublicId = mg_lqp_uuid();
+    $walletPublicId = $walletPublicId !== null && $walletPublicId !== '' ? $walletPublicId : mg_lqp_uuid();
     $expiresAt = mg_lqp_expiry($campaign);
     $metadata = ['campaign_type'=>'loyalty_quest','participation_id'=>(string)$participation['public_id'],'verification_type'=>(string)($campaign['rules']['verification_type']??''),'reward_template_id'=>(string)$campaign['reward_template_public_id']];
     $pdo->prepare("INSERT INTO wallet_items (public_id,user_id,contact_id,merchant_user_id,reward_template_id,campaign_id,source_type,source_id,status,value_cents_snapshot,currency_snapshot,title_snapshot,metadata_json,issued_at,expires_at,created_at,updated_at) VALUES (?,?,?,?,?,?,'loyalty_quest',?,'issued',?,?,?,?,NOW(),?,NOW(),NOW())")
