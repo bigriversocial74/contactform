@@ -5,14 +5,15 @@ $user=mg_require_api_user();
 $method=strtoupper($_SERVER['REQUEST_METHOD']??'GET');
 $pdo=mg_db();
 if($method==='GET'){
-    $cart=mg_cart_active($pdo,(int)$user['id']);
+    $cart=mg_cart_active($pdo,(int)$user['id'],false,false);
     mg_ok(mg_cart_payload($pdo,$cart));
 }
 if($method==='DELETE'){
     $input=mg_input();mg_require_csrf_for_write($input);
     $pdo->beginTransaction();
     try{
-        $cart=mg_cart_active($pdo,(int)$user['id'],true);
+        $cart=mg_cart_active($pdo,(int)$user['id'],true,false);
+        if(!$cart){$pdo->commit();mg_ok(['cart_id'=>'','status'=>'empty','items'=>[],'totals'=>mg_cart_empty_totals()],'Cart is already empty.');}
         $pdo->prepare('DELETE FROM cart_items WHERE cart_id=?')->execute([(int)$cart['id']]);
         mg_cart_recalculate($pdo,(int)$cart['id']);
         $pdo->commit();

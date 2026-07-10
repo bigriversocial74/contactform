@@ -13,10 +13,9 @@ $page_styles = [
     '/assets/css/checkout.css',
     '/assets/css/account-commerce.css',
     '/assets/css/account-commerce-fixes.css',
+    '/assets/css/cart-checkout-runtime-v1.css',
 ];
-$page_scripts = [
-    '/assets/js/checkout.js',
-];
+$page_scripts = ['/assets/js/checkout.js'];
 $session_id = trim((string) ($_GET['session'] ?? ''));
 
 require __DIR__ . '/includes/header.php';
@@ -29,18 +28,18 @@ require __DIR__ . '/includes/header.php';
         <header class="mg-commerce-hero mg-checkout-hero">
           <span class="mg-eyebrow">Secure checkout</span>
           <h1>Complete your purchase</h1>
-          <p>Confirm the frozen order snapshot, continue to the active payment session, then receive Microgifter issuance when payment completes.</p>
+          <p>Your frozen order snapshot and payment session can be safely refreshed or resumed without creating duplicate orders.</p>
         </header>
 
         <div class="mg-checkout-process" aria-label="Checkout process">
           <div><span>01</span><strong>Cart</strong><small>Reviewed</small></div>
-          <div><span>02</span><strong>Draft</strong><small>Snapshot locked</small></div>
-          <div><span>03</span><strong>Order</strong><small>Created</small></div>
-          <div class="is-active"><span>04</span><strong>Payment</strong><small>Action required</small></div>
-          <div><span>05</span><strong>Issuance</strong><small>After payment</small></div>
+          <div><span>02</span><strong>Snapshot</strong><small>Terms frozen</small></div>
+          <div><span>03</span><strong>Order</strong><small>Created once</small></div>
+          <div class="is-active"><span>04</span><strong>Payment</strong><small>Recoverable session</small></div>
+          <div><span>05</span><strong>Delivery</strong><small>After payment</small></div>
         </div>
 
-        <div class="mg-checkout-card" data-checkout-content>
+        <div class="mg-checkout-card" data-checkout-content aria-live="polite" aria-busy="true">
           <div class="mg-empty-state">Loading secure checkout…</div>
         </div>
       </div>

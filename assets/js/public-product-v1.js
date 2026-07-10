@@ -91,4 +91,9 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!pendingCart) return;
     resetCartButton('Added to cart. Your shopping cart is open.');
   });
+  document.addEventListener('mg:cart:error', function (event) {
+    if (!pendingCart) return;
+    var detail = event.detail || {};
+    resetCartButton(detail.message || 'Unable to add this product to your cart.');
+  });
 });
