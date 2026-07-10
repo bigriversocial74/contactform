@@ -27,13 +27,23 @@ document.addEventListener('DOMContentLoaded', function () {
     card.className = 'mg-campaign-rule-card';
     card.setAttribute('data-campaign-type-fields', 'check_in_reward');
     card.hidden = true;
-    card.innerHTML = '<span class="mg-eyebrow">Check-In Reward</span><h3>Configure the campaign check-in range.</h3><p>The public page can verify the customer against an active merchant location.</p><div class="mg-grid-2"><label>Campaign radius meters<input name="check_in_radius_meters" type="number" min="25" max="5000" inputmode="numeric" placeholder="150"></label><label class="mg-campaign-check"><input type="hidden" name="check_in_location_required" value="0"><input type="checkbox" name="check_in_location_required" value="1" checked> <span>Require a location match before reward issue</span></label></div><p class="mg-form-hint">Add coordinates to Merchant Locations before launching a required check-in campaign.</p>';
+    card.innerHTML = '<span class="mg-eyebrow">Check-In Reward</span><h3>Configure the campaign check-in range.</h3><p>The public page can verify the customer against an active merchant location.</p><div class="mg-grid-2"><label>Campaign radius meters<input name="check_in_radius_meters" type="number" min="25" max="5000" inputmode="numeric" placeholder="150"></label><label class="mg-campaign-check"><input type="hidden" data-rule-mirror="check_in_location_required" value="1"><input type="checkbox" name="check_in_location_required" value="1" checked> <span>Require a location match before reward issue</span></label></div><p class="mg-form-hint">Add coordinates to Merchant Locations before launching a required check-in campaign.</p>';
     var before = root.querySelector('[data-campaign-type-fields="watch_video_reward"]') || root.querySelector('[data-campaign-type-fields="customer_refund"]');
     if (before && before.parentNode) before.parentNode.insertBefore(card, before);
     else {
       var status = root.querySelector('[data-stage12-campaign-status]');
       if (status && status.parentNode) status.parentNode.insertBefore(card, status);
     }
+  }
+
+  function syncBoolean() {
+    var checkbox = form.querySelector('input[type="checkbox"][name="check_in_location_required"]');
+    var mirror = form.querySelector('[data-rule-mirror="check_in_location_required"]');
+    if (!checkbox || !mirror) return;
+    mirror.name = 'check_in_location_required';
+    mirror.value = checkbox.checked ? '1' : '0';
+    checkbox.disabled = true;
+    window.setTimeout(function () { checkbox.disabled = false; mirror.removeAttribute('name'); }, 0);
   }
 
   function applyDefaults(force) {
@@ -63,6 +73,9 @@ document.addEventListener('DOMContentLoaded', function () {
   form.addEventListener('change', function (event) {
     if (event.target && event.target.name === 'campaign_type') syncVisibility();
   });
+  form.addEventListener('submit', function () {
+    if (activeType() === 'check_in_reward') syncBoolean();
+  }, true);
   root.addEventListener('click', function (event) {
     var preset = event.target && event.target.getAttribute && event.target.getAttribute('data-campaign-type-preset');
     if (preset === 'check_in_reward') window.setTimeout(function () { applyDefaults(true); syncVisibility(); }, 50);
