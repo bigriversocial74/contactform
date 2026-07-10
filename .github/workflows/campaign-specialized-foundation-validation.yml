@@ -21,6 +21,9 @@ on:
       - 'api/public/campaigns/rsvp-event.php'
       - 'scripts/validate_campaign_specialized_foundation_v1.php'
       - 'scripts/validate_stage12_campaigns_reward_templates.php'
+      - 'tests/phpunit/CampaignStampDistributionContractTest.php'
+      - 'tests/phpunit/PackageEntitlementUiContractTest.php'
+      - 'tests/phpunit/PackageFlowQaContractTest.php'
       - '.github/workflows/campaign-specialized-foundation-validation.yml'
   workflow_dispatch:
 
@@ -54,6 +57,17 @@ jobs:
           php -l api/public/campaigns/rsvp-event.php
           php -l scripts/validate_campaign_specialized_foundation_v1.php
           php -l scripts/validate_stage12_campaigns_reward_templates.php
+          php -l tests/phpunit/CampaignStampDistributionContractTest.php
+          php -l tests/phpunit/PackageEntitlementUiContractTest.php
+          php -l tests/phpunit/PackageFlowQaContractTest.php
+      - name: JavaScript syntax check
+        run: |
+          set -euo pipefail
+          node --check assets/js/public-check-in-reward.js
+          node --check assets/js/public-rsvp-event.js
+          node --check assets/js/stage12-survey-feedback-reward.js
+          node --check assets/js/stage12-check-in-reward.js
+          node --check assets/js/stage12-rsvp-event-reward.js
       - name: Validate specialized campaign foundation
         run: php scripts/validate_campaign_specialized_foundation_v1.php
       - name: Validate Stage 12 campaign controller
