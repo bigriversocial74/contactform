@@ -157,6 +157,7 @@ return [
         'merchant_canvas_behavior_memory_predictive_v1.sql',
         'predictive_campaign_studio_foundation_v1.sql',
         'store_canvas_server_trigger_engine_v1.sql',
+        'trigger_event_ingestion_orchestration_v1.sql',
         'stage_21_world_canvas_avatar_coordinates.sql',
         'stage_22_world_conversations.sql',
         'stage_23_world_reward_drops.sql',
