@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', function () {
     link.href = '#campaign-create';
     link.setAttribute('data-campaign-tab-trigger', 'create');
     link.setAttribute('data-campaign-type-preset', 'stamp_card_reward');
-    link.textContent = 'Create Stamp Card Reward';
+    link.textContent = 'Create Verified Stamp Card';
     quick.insertBefore(link, quick.firstChild);
   }
 
@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', function () {
     card.className = 'mg-campaign-rule-card';
     card.setAttribute('data-campaign-type-fields', 'stamp_card_reward');
     card.hidden = true;
-    card.innerHTML = '<span class="mg-eyebrow">Stamp Card / Visit Tracker</span><h3>Track repeat visits until a reward unlocks.</h3><p>Each submission records a stamp in campaign events and the merchant CRM. When the required stamp count is reached, the normal wallet, Inbox, PPPM, and notification flow issues the reward.</p><div class="mg-grid-2"><label>Required stamps<input name="stamp_required_count" inputmode="numeric" placeholder="5"></label><label>Stamp label<input name="stamp_label" maxlength="40" placeholder="Visit"></label></div><div class="mg-grid-2"><label>Cooldown hours<input name="stamp_cooldown_hours" inputmode="numeric" placeholder="0"></label><label class="mg-campaign-check"><input type="checkbox" name="stamp_card_reward_enabled" value="1" checked> <span>Issue reward when card is full</span></label></div><p class="mg-form-hint">v1 defaults to 5 stamps unless rules_json is populated by an integration. No new SQL is required.</p>';
+    card.innerHTML = '<span class="mg-eyebrow">Stamp Card / Visit Tracker</span><h3>Track verified repeat visits until a reward unlocks.</h3><p>The public page uses a large dynamic punch-card canvas. Each customer has unique progress per campaign. Cashier verification is required before a stamp becomes official.</p><div class="mg-grid-2"><label>Required stamps<input name="stamp_required_count" inputmode="numeric" placeholder="5"></label><label>Stamp label<input name="stamp_label" maxlength="40" placeholder="Visit"></label></div><div class="mg-grid-2"><label>Cooldown hours<input name="stamp_cooldown_hours" inputmode="numeric" placeholder="0"></label><label class="mg-campaign-check"><input type="checkbox" name="stamp_cashier_verification_required" value="1" checked> <span>Require cashier claim code</span></label></div><label class="mg-campaign-check"><input type="checkbox" name="stamp_card_reward_enabled" value="1" checked> <span>Issue reward when the verified card is full</span></label><p class="mg-form-hint">Partial verified stamps track campaign progress only. The merchant CRM contact is created/promoted when the first reward/value is issued.</p>';
     var before = root.querySelector('[data-campaign-type-fields="watch_video_reward"]') || root.querySelector('[data-campaign-type-fields="customer_refund"]');
     if (before && before.parentNode) before.parentNode.insertBefore(card, before);
     else {
@@ -38,11 +38,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function applyDefaults(force) {
     if (activeType() !== 'stamp_card_reward') return;
-    setIfEmpty('title', 'Collect stamps and unlock a reward');
-    setIfEmpty('form_headline', 'Add a stamp to your visit card');
-    setIfEmpty('description', 'Check in after each visit or purchase. When your stamp card is full, Microgifter sends the reward to your Inbox.');
-    setIfEmpty('form_description', 'Enter your info to add today’s stamp. Your progress is tracked in the merchant CRM.');
-    setIfEmpty('success_message', 'Stamp recorded. Reward unlock checked.');
+    setIfEmpty('title', 'Collect verified stamps and unlock a reward');
+    setIfEmpty('form_headline', 'Add a verified stamp to your card');
+    setIfEmpty('description', 'Ask the cashier to verify your visit or purchase. When your stamp card is full, Microgifter sends the reward to your Inbox.');
+    setIfEmpty('form_description', 'Enter your info and have the cashier enter the merchant claim code to make today’s stamp official.');
+    setIfEmpty('success_message', 'Verified stamp recorded. Reward unlock checked.');
     setIfEmpty('per_user_limit', '1');
     setIfEmpty('stamp_required_count', '5');
     setIfEmpty('stamp_label', 'Visit');
@@ -50,6 +50,8 @@ document.addEventListener('DOMContentLoaded', function () {
     if (force) {
       var enabled = field('stamp_card_reward_enabled');
       if (enabled) enabled.checked = true;
+      var cashier = field('stamp_cashier_verification_required');
+      if (cashier) cashier.checked = true;
     }
   }
 
