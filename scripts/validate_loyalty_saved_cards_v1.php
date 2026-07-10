@@ -17,7 +17,7 @@ $assert = static function (string $label, bool $passed) use (&$checks, &$failure
 $page = $read('loyalty-cards.php');
 $stamp = $read('stamp-card.php');
 $api = $read('api/account/loyalty-cards.php');
-$campaigns = $read('api/merchant/campaigns.php');
+$campaigns = $read('api/merchant/campaigns.php') . "\n" . $read('api/merchant/campaigns-core.php');
 $artwork = $read('assets/js/stage12-campaign-media-artwork.js');
 $client = $read('assets/js/loyalty-cards.js');
 $sidebar = $read('includes/app-sidebar.php');
@@ -62,9 +62,7 @@ $assert('Saved cards migration is unique per user and campaign',
     && str_contains($sql, 'UNIQUE KEY uq_customer_saved_campaign_cards_user_campaign (user_id,campaign_id)')
 );
 
-foreach ($checks as [$label, $passed]) {
-    echo ($passed ? '[OK] ' : '[FAIL] ') . $label . PHP_EOL;
-}
+foreach ($checks as [$label, $passed]) echo ($passed ? '[OK] ' : '[FAIL] ') . $label . PHP_EOL;
 if ($failures) {
     echo PHP_EOL . 'Loyalty Saved Cards v1 validation failed:' . PHP_EOL;
     foreach ($failures as $failure) echo ' - ' . $failure . PHP_EOL;
