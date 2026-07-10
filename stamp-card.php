@@ -85,7 +85,7 @@ $description = $campaign ? (trim((string)($campaign['form_description'] ?? '')) 
 $rewardTitle = $campaign ? (trim((string)($campaign['reward_template_title'] ?? '')) ?: 'Microgifter reward') : 'Microgifter reward';
 $rewardDescription = $campaign ? (trim((string)($campaign['reward_template_description'] ?? '')) ?: 'Complete the card to unlock this reward in your Microgifter Inbox.') : 'Complete the card to unlock this reward in your Microgifter Inbox.';
 $rewardValue = $campaign ? mg_stamp_card_page_value($campaign) : 'Reward';
-$initialStatus = 'Enter your info, then add your stamp.';
+$initialStatus = 'Enter your info, then ask the cashier to verify your punch.';
 
 require __DIR__ . '/includes/header.php';
 if (!$campaign || $errorMessage !== ''): ?>
@@ -109,14 +109,14 @@ if (!$campaign || $errorMessage !== ''): ?>
       </section>
       <div class="mg-rl-sidebar-stack mg-stamp-card-detail-stack">
         <article class="mg-rl-card"><span class="mg-rl-eyebrow">Campaign Reward</span><h3><?= mg_e($rewardTitle) ?></h3><p><?= mg_e($rewardDescription) ?></p><small><?= mg_e($rewardValue) ?></small></article>
-        <article class="mg-rl-card"><span class="mg-rl-eyebrow">Campaign Status</span><h3 data-stamp-card-status><?= mg_e($initialStatus) ?></h3><ul class="mg-rl-list"><li>Required punches: <?= mg_e((string)$requiredCount) ?></li><li>Unique card per campaign + customer email/contact.</li></ul></article>
+        <article class="mg-rl-card"><span class="mg-rl-eyebrow">Campaign Status</span><h3 data-stamp-card-status><?= mg_e($initialStatus) ?></h3><ul class="mg-rl-list"><li>Required punches: <?= mg_e((string)$requiredCount) ?></li><li>Cashier claim code required for every official punch.</li><li>Each verified punch is traced to the merchant location.</li></ul></article>
       </div>
     </div>
     <aside class="mg-rl-join mg-rl-join-desktop">
       <div class="mg-rl-profile"><div class="mg-rl-avatar"><?php if ($avatarUrl): ?><img src="<?= mg_e($avatarUrl) ?>" alt="<?= mg_e($merchantName) ?> profile image"><?php else: ?><span><?= mg_e(mg_stamp_card_page_initials($merchantName)) ?></span><?php endif; ?></div><div><h2><?= mg_e($merchantName) ?></h2><?php if ($merchantHeadline !== ''): ?><p><?= mg_e($merchantHeadline) ?></p><?php endif; ?></div></div>
-      <div class="mg-rl-form"><h3>Join this campaign</h3><p>Enter your details, then add a stamp to this card.</p><label>Name<input name="name" placeholder="Full Name" maxlength="180" value="<?= mg_e($prefillName) ?>"></label><label>Email<input name="email" type="email" required placeholder="Email Address" maxlength="255" value="<?= mg_e($prefillEmail) ?>"></label><label>Phone <span>(optional)</span><input name="phone" maxlength="60" placeholder="Optional"></label><button class="mg-rl-btn mg-rl-btn-dark" type="submit" data-stamp-card-submit>Add Stamp / Check Reward</button></div>
+      <div class="mg-rl-form"><h3>Join this campaign</h3><p>Enter your details, then have the cashier enter the active location claim code to verify this punch.</p><label>Name<input name="name" placeholder="Full Name" maxlength="180" value="<?= mg_e($prefillName) ?>"></label><label>Email<input name="email" type="email" required placeholder="Email Address" maxlength="255" value="<?= mg_e($prefillEmail) ?>"></label><label>Phone <span>(optional)</span><input name="phone" maxlength="60" placeholder="Optional"></label><label>Cashier claim code<input name="cashier_claim_code" required autocomplete="off" inputmode="text" maxlength="64" placeholder="Ask cashier to enter code"></label><button class="mg-rl-btn mg-rl-btn-dark" type="submit" data-stamp-card-submit>Verify Punch / Check Reward</button></div>
       <div class="mg-public-campaign-result" data-campaign-result></div>
-      <p class="mg-public-campaign-privacy">Stamp progress is created when this form is submitted, not when the page loads.</p>
+      <p class="mg-public-campaign-privacy">Punch progress is created only after cashier code verification. Verified punches are traced to the claim-code location.</p>
     </aside>
   </form>
 </section>
