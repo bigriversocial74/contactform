@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/store/_canvas_trigger_orchestration_rules.php';
+require_once dirname(__DIR__) . '/store/_canvas_trigger_orchestration_runner.php';
 
 $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 $user = mg_require_api_user();
@@ -84,9 +85,10 @@ try {
 
     if ($action === 'preview_queue') {
         mg_rate_limit('merchant_canvas.trigger_orchestration.preview', 'user:' . $merchantUserId, 12, 300);
-        $summary = mg_trigger_orchestration_process_queue($pdo, $user, true, max(1,min(500,(int)($input['limit'] ?? 100))));
+        $summary = mg_trigger_orchestration_process_queue_authorized($pdo, $user, true, max(1,min(500,(int)($input['limit'] ?? 100))));
         mg_audit('merchant.trigger_orchestration_previewed', 'trigger_orchestration', [
             'summary'=>$summary,'mode'=>'dry_run','notification_delivery'=>false,'reward_issue'=>false,
+            'preview_consumes_notification'=>false,
         ], $merchantUserId);
         mg_ok(['orchestration'=>$summary,'payload'=>mg_trigger_orchestration_merchant_payload($pdo,$merchantUserId)], 'Queue dry preview completed.');
     }
@@ -97,7 +99,7 @@ try {
         if ($settings['execution_mode'] === 'notification' && empty($input['confirm_notification_delivery'])) {
             mg_fail('Confirm notification delivery before processing the orchestration queue in Notification mode.', 422);
         }
-        $summary = mg_trigger_orchestration_process_queue($pdo, $user, false, max(1,min(500,(int)($input['limit'] ?? 100))));
+        $summary = mg_trigger_orchestration_process_queue_authorized($pdo, $user, false, max(1,min(500,(int)($input['limit'] ?? 100))));
         mg_audit('merchant.trigger_orchestration_ran', 'trigger_orchestration', [
             'summary'=>$summary,
             'mode'=>$summary['mode'] ?? $settings['execution_mode'],
@@ -116,12 +118,13 @@ try {
         $ingestion = mg_trigger_ingestion_run($pdo, $user, max(1,min(1000,(int)($input['limit_per_source'] ?? 250))));
         $orchestration = null;
         if ($settings['execution_mode'] !== 'paused') {
-            $orchestration = mg_trigger_orchestration_process_queue($pdo, $user, false, max(1,min(500,(int)($input['limit'] ?? 100))));
+            $orchestration = mg_trigger_orchestration_process_queue_authorized($pdo, $user, false, max(1,min(500,(int)($input['limit'] ?? 100))));
         }
         mg_audit('merchant.trigger_orchestration_full_run', 'trigger_orchestration', [
             'ingestion'=>$ingestion,'orchestration'=>$orchestration,
             'notification_delivery'=>is_array($orchestration) && (($orchestration['mode'] ?? '') === 'notification'),
             'reward_issue'=>false,
+            'preview_consumes_notification'=>false,
         ], $merchantUserId);
         mg_ok(['ingestion'=>$ingestion,'orchestration'=>$orchestration,'payload'=>mg_trigger_orchestration_merchant_payload($pdo,$merchantUserId)], 'Trigger ingestion and orchestration run completed.');
     }
