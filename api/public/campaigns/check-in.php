@@ -32,24 +32,41 @@ function mg_public_campaign_engage_preprocess_input(PDO $pdo, array $input): arr
     $campaignRef = strtolower(trim((string)($input['campaign_id'] ?? $input['campaign'] ?? $input['slug'] ?? '')));
     $entry = $input['entry'] ?? [];
     if (!is_array($entry)) $entry = [];
-
-    $lat = mg_check_in_number($entry['latitude'] ?? $input['latitude'] ?? null);
-    $lng = mg_check_in_number($entry['longitude'] ?? $input['longitude'] ?? null);
-    $accuracy = mg_check_in_number($entry['accuracy_meters'] ?? $input['accuracy_meters'] ?? null);
-
     if ($campaignRef === '') mg_fail('Check-in campaign is required.', 422);
-    if ($lat === null || $lng === null || $lat < -90 || $lat > 90 || $lng < -180 || $lng > 180) {
-        mg_fail('Allow location access so Microgifter can match you to a registered merchant location.', 422);
-    }
-    if ($accuracy !== null && $accuracy > 2500) {
-        mg_fail('Your location accuracy is too broad for check-in. Move closer to the location and try again.', 422);
-    }
 
-    $stmt = $pdo->prepare("SELECT id, public_id, public_slug, merchant_user_id, campaign_type, title FROM campaigns WHERE status='active' AND (public_id=? OR public_slug=?) LIMIT 1");
+    $stmt = $pdo->prepare("SELECT id,public_id,public_slug,merchant_user_id,campaign_type,title,rules_json FROM campaigns WHERE status='active' AND (public_id=? OR public_slug=?) LIMIT 1");
     $stmt->execute([$campaignRef, $campaignRef]);
     $campaign = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$campaign || (string)$campaign['campaign_type'] !== 'check_in_reward') {
         mg_fail('Check-in reward campaign is not available.', 404);
+    }
+
+    $rules = mg_check_in_json($campaign['rules_json'] ?? null);
+    $locationRequired = !array_key_exists('location_required', $rules) || !empty($rules['location_required']);
+    $campaignRadius = max(25, min(5000, (int)($rules['radius_meters'] ?? 150)));
+    $lat = mg_check_in_number($entry['latitude'] ?? $input['latitude'] ?? null);
+    $lng = mg_check_in_number($entry['longitude'] ?? $input['longitude'] ?? null);
+    $accuracy = mg_check_in_number($entry['accuracy_meters'] ?? $input['accuracy_meters'] ?? null);
+
+    if ($lat === null || $lng === null) {
+        if ($locationRequired) {
+            mg_fail('Allow location access so Microgifter can match you to a registered merchant location.', 422);
+        }
+        $entry['check_in_verified'] = false;
+        $entry['location_required'] = false;
+        $entry['configured_radius_meters'] = $campaignRadius;
+        $entry['geo_match_method'] = 'campaign_location_optional';
+        $entry['checked_in_at'] = gmdate('c');
+        $input['entry'] = $entry;
+        $input['campaign_type'] = 'check_in_reward';
+        return $input;
+    }
+
+    if ($lat < -90 || $lat > 90 || $lng < -180 || $lng > 180) {
+        mg_fail('The submitted location is invalid.', 422);
+    }
+    if ($accuracy !== null && $accuracy > 2500) {
+        mg_fail('Your location accuracy is too broad for check-in. Move closer to the location and try again.', 422);
     }
 
     $locations = $pdo->prepare("SELECT public_id,name,location_code,address_line1,city,region,postal_code,is_primary,metadata_json FROM merchant_locations WHERE merchant_user_id=? AND status='active' ORDER BY is_primary DESC,name ASC,id ASC");
@@ -62,8 +79,8 @@ function mg_public_campaign_engage_preprocess_input(PDO $pdo, array $input): arr
         $locLng = mg_check_in_number($metadata['longitude'] ?? null);
         if ($locLat === null || $locLng === null) continue;
         $geoEnabledCount++;
-        $radius = (int)($metadata['check_in_radius_meters'] ?? 150);
-        $radius = max(25, min(5000, $radius));
+        $locationRadius = max(25, min(5000, (int)($metadata['check_in_radius_meters'] ?? $campaignRadius)));
+        $radius = array_key_exists('radius_meters', $rules) ? $campaignRadius : $locationRadius;
         $distance = mg_check_in_distance_meters($lat, $lng, $locLat, $locLng);
         $candidate = [
             'id' => (string)$location['public_id'],
@@ -89,11 +106,14 @@ function mg_public_campaign_engage_preprocess_input(PDO $pdo, array $input): arr
     if ($accuracy !== null) $entry['accuracy_meters'] = round($accuracy, 2);
     $entry['matched_location'] = $nearest;
     $entry['check_in_verified'] = true;
+    $entry['location_required'] = $locationRequired;
+    $entry['configured_radius_meters'] = $campaignRadius;
     $entry['checked_in_at'] = gmdate('c');
     $entry['geo_match_method'] = 'browser_geolocation_haversine';
     $input['entry'] = $entry;
     $input['matched_location_id'] = $nearest['id'];
     $input['matched_location_name'] = $nearest['name'];
+    $input['campaign_type'] = 'check_in_reward';
     return $input;
 }
 
