@@ -67,6 +67,7 @@ document.querySelectorAll('[data-public-campaign-tabs]').forEach(function(form){
 if(!window.Microgifter)return;
 
 var detailEndpoint='/api/public/campaigns/detail.php';
+var openEndpoint='/api/public/campaigns/open.php';
 
 function followerCountDelta(delta){
   document.querySelectorAll('[data-follower-count]').forEach(function(node){
@@ -80,10 +81,11 @@ function loadLegacyCampaignDetail(){
   var root=document.querySelector('[data-public-campaign-page]');
   if(!root)return;
   var params=new URLSearchParams(window.location.search);
-  var ref=params.get('c')||params.get('campaign')||params.get('slug')||'';
+  var ref=params.get('c')||params.get('campaign')||params.get('slug')||params.get('id')||'';
   var token=params.get('token')||params.get('qr_token')||'';
   if(!ref&&!token)return;
   Microgifter.get(detailEndpoint+'?campaign='+encodeURIComponent(ref)+'&token='+encodeURIComponent(token)).catch(function(){});
+  Microgifter.post(openEndpoint,{campaign:ref,token:token,idempotency_key:idKey('campaign-open')}).catch(function(){});
 }
 loadLegacyCampaignDetail();
 
