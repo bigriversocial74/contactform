@@ -41,6 +41,7 @@ $page_scripts = $hasMerchantAccess ? [
     '/assets/js/merchant-canvas-campaign-recommendations.js',
     '/assets/js/merchant-canvas-header-hud.js',
     '/assets/js/merchant-canvas-behavior-memory.js',
+    '/assets/js/merchant-canvas-trigger-engine.js',
 ] : [];
 $page_manifest = [
     'id' => 'merchant-canvas',
