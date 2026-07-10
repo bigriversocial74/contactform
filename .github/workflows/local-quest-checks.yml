@@ -76,6 +76,9 @@ jobs:
       - name: Public experience 10/10 contract
         run: php scripts/validate_local_quest_public_experience_v1.php
 
+      - name: Participant auth 10/10 contract
+        run: php scripts/validate_local_quest_participant_auth_v1.php
+
       - name: Assert SQL-only runtime
         shell: bash
         run: |
