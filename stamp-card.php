@@ -6,7 +6,7 @@ require_once __DIR__ . '/includes/campaign-types.php';
 $page_title = 'Stamp Card Reward | Microgifter';
 $page_section = 'campaign';
 $header_mode = 'public';
-$page_styles = ['/assets/css/public-campaign-pages.css', '/assets/css/public-campaign-polish-v1.css'];
+$page_styles = ['/assets/css/public-campaign-pages.css', '/assets/css/public-campaign-polish-v1.css', '/assets/css/public-campaign-experience-v1.css'];
 $page_scripts = ['/assets/js/public-campaign.js', '/assets/js/public-stamp-card.js'];
 
 $campaignRef = strtolower(trim((string)($_GET['campaign'] ?? $_GET['c'] ?? $_GET['slug'] ?? $_GET['id'] ?? '')));
@@ -85,43 +85,68 @@ $merchantProfileUrl = $merchantProfileSlug !== '' ? '/profile.php?slug=' . rawur
 $coverUrl = $campaign ? mg_stamp_card_page_safe_url($campaign['merchant_profile_cover_url'] ?? null) : null;
 $avatarUrl = $campaign ? mg_stamp_card_page_safe_url($campaign['merchant_profile_avatar_url'] ?? null) : null;
 $headline = $campaign ? (trim((string)($campaign['form_headline'] ?? '')) ?: (string)$campaign['title']) : 'Stamp Card Reward';
-$description = $campaign ? (trim((string)($campaign['form_description'] ?? '')) ?: (trim((string)($campaign['description'] ?? '')) ?: 'Add visits to your stamp card and unlock a reward.')) : 'Add visits to your stamp card and unlock a reward.';
+$description = $campaign ? (trim((string)($campaign['form_description'] ?? '')) ?: (trim((string)($campaign['description'] ?? '')) ?: 'Add verified visits to your stamp card and unlock a reward.')) : 'Add verified visits to your stamp card and unlock a reward.';
 $rules = $campaign ? mg_stamp_card_page_rules($campaign) : [];
 $requiredCount = max(1, min(100, (int)($rules['required_count'] ?? $rules['stamp_required_count'] ?? 5)));
 $stampLabel = trim((string)($rules['stamp_label'] ?? 'Visit')) ?: 'Visit';
+$cooldownHours = max(0, min(8760, (int)($rules['cooldown_hours'] ?? $rules['stamp_cooldown_hours'] ?? 0)));
+$cashierRequired = array_key_exists('cashier_verification_required', $rules) ? !empty($rules['cashier_verification_required']) : true;
 $rewardTitle = $campaign ? (trim((string)($campaign['reward_template_title'] ?? '')) ?: 'Microgifter reward') : 'Microgifter reward';
 $rewardValue = $campaign ? mg_stamp_card_page_value($campaign) : 'Reward';
+$columns = min(5, max(3, $requiredCount));
 
 require __DIR__ . '/includes/header.php';
 ?>
-<section class="mg-public-campaign mg-public-campaign-v2" data-public-campaign-page>
+<section class="mg-public-campaign mg-public-campaign-v2 mg-campaign-experience" data-public-campaign-page data-stamp-card-experience>
   <div class="mg-public-campaign-cover"<?= $coverUrl ? ' style="background-image:linear-gradient(180deg,rgba(6,15,32,.08),rgba(248,247,242,.92) 82%,#fbfaf6),url(' . mg_e($coverUrl) . ')"' : '' ?>></div>
-  <div class="mg-public-campaign-shell">
-    <div class="mg-public-campaign-heading">
-      <span class="mg-public-campaign-kicker">Microgifter Campaign</span>
-      <span class="mg-public-campaign-eyebrow">Stamp Card / Visit Tracker</span>
-      <h1><?= mg_e($headline) ?></h1>
-      <p><?= mg_e($description) ?></p>
-      <div class="mg-public-campaign-trust-row"><span><?= mg_e((string)$requiredCount) ?> stamps to unlock</span><span>CRM progress tracked</span><span>Reward sent to Inbox</span></div>
-    </div>
-    <aside class="mg-public-campaign-card mg-public-campaign-flow-card">
-      <?php if ($errorMessage !== ''): ?>
-        <div class="mg-public-campaign-result is-visible"><strong><?= mg_e($errorMessage) ?></strong></div>
-      <?php else: ?>
-        <form class="mg-public-campaign-form" data-campaign-form data-stamp-card-form data-submit-endpoint="/api/public/campaigns/stamp-card.php" data-campaign-type="stamp_card_reward" novalidate>
-          <input type="hidden" name="campaign_id" value="<?= mg_e((string)$campaign['public_id']) ?>">
-          <input type="hidden" name="campaign" value="<?= mg_e((string)($campaign['public_slug'] ?? $campaign['public_id'])) ?>">
-          <input type="hidden" name="campaign_type" value="stamp_card_reward">
-          <div class="mg-public-campaign-profile-card mg-public-campaign-form-profile"><div class="mg-public-campaign-avatar"><?php if ($avatarUrl): ?><img src="<?= mg_e($avatarUrl) ?>" alt="<?= mg_e($merchantName) ?> profile image"><?php else: ?><span><?= mg_e(mg_stamp_card_page_initials($merchantName)) ?></span><?php endif; ?></div><div class="mg-public-campaign-profile-copy"><span class="mg-public-campaign-eyebrow">Stamp Card</span><h2><?= mg_e($merchantName) ?></h2><?php if ($merchantHeadline !== ''): ?><p><?= mg_e($merchantHeadline) ?></p><?php endif; ?><div class="mg-public-campaign-profile-stats"><?php if ($merchantLocation !== ''): ?><span><?= mg_e($merchantLocation) ?></span><?php endif; ?><span><?= mg_e($stampLabel) ?> stamps</span><span>Inbox unlock</span></div></div><?php if ($merchantProfileUrl): ?><div class="mg-public-campaign-profile-actions"><a class="mg-btn mg-btn-soft" href="<?= mg_e($merchantProfileUrl) ?>">View profile</a></div><?php endif; ?></div>
-          <div class="mg-public-campaign-step-grid" aria-label="How stamp card rewards work"><div class="mg-public-campaign-mini-step"><span>1</span><strong>Add a stamp</strong><small>Submit after each eligible visit or purchase.</small></div><div class="mg-public-campaign-mini-step"><span>2</span><strong>Track progress</strong><small>Microgifter records each stamp in the campaign and CRM timeline.</small></div><div class="mg-public-campaign-mini-step"><span>3</span><strong>Unlock reward</strong><small>When your card reaches <?= mg_e((string)$requiredCount) ?>, the reward goes to Inbox.</small></div></div>
-          <div class="mg-public-campaign-reward mg-public-campaign-reward-tab"><span>Stamp goal</span><strong><?= mg_e((string)$requiredCount) ?> <?= mg_e(strtolower($stampLabel)) ?> stamps</strong><em><?= mg_e($rewardTitle) ?> · <?= mg_e($rewardValue) ?></em><div class="mg-public-campaign-reward-meta"><span>Progress tracked</span><span>Reward unlock checked</span></div></div>
-          <div class="mg-public-campaign-field-grid"><label>Name<input name="name" placeholder="Your name" maxlength="180" value="<?= mg_e($prefillName) ?>"></label><label>Email<input name="email" type="email" placeholder="you@example.com" required maxlength="255" value="<?= mg_e($prefillEmail) ?>"></label><label class="mg-public-campaign-field-wide">Phone <span>(optional)</span><input name="phone" placeholder="Optional" maxlength="60"></label></div>
-          <button class="mg-btn mg-btn-primary mg-public-campaign-primary-action" type="submit" data-stamp-card-submit>Add stamp / check reward <span aria-hidden="true">→</span></button>
-          <div class="mg-public-campaign-status" data-campaign-status data-stamp-card-status></div><p class="mg-public-campaign-privacy">Your stamp progress is recorded for this merchant campaign and used to determine reward eligibility.</p>
-        </form>
-        <div class="mg-public-campaign-result" data-campaign-result></div>
-      <?php endif; ?>
-    </aside>
+  <div class="mg-campaign-experience-shell">
+    <?php if ($errorMessage !== ''): ?>
+      <div class="mg-public-campaign-result is-visible"><strong><?= mg_e($errorMessage) ?></strong></div>
+    <?php else: ?>
+      <div class="mg-campaign-experience-grid">
+        <main class="mg-campaign-experience-main">
+          <div class="mg-campaign-experience-hero">
+            <span class="mg-public-campaign-kicker">Microgifter Campaign</span>
+            <span class="mg-public-campaign-eyebrow">Stamp Card / Visit Tracker</span>
+            <h1><?= mg_e($headline) ?></h1>
+            <p><?= mg_e($description) ?></p>
+            <div class="mg-public-campaign-trust-row"><span><?= mg_e((string)$requiredCount) ?> stamps to unlock</span><span><?= $cashierRequired ? 'Cashier verified' : 'Self check-in' ?></span><span>Reward sent to Inbox</span></div>
+          </div>
+          <section class="mg-campaign-canvas" aria-label="Stamp card interaction canvas">
+            <div class="mg-campaign-canvas-head"><div><span>Dynamic punch card</span><strong><?= mg_e((string)$requiredCount) ?> <?= mg_e(strtolower($stampLabel)) ?> stamps</strong><p>Each customer has unique progress for this campaign. A cashier claim code verifies the official stamp before progress updates.</p></div><em class="mg-campaign-canvas-badge">Verified stamp</em></div>
+            <div class="mg-stamp-stage" data-stamp-stage data-required-count="<?= mg_e((string)$requiredCount) ?>" data-stamp-label="<?= mg_e($stampLabel) ?>">
+              <div class="mg-stamp-card-visual" style="--stamp-columns:<?= mg_e((string)$columns) ?>;--stamp-progress:0%" data-stamp-card-visual>
+                <div class="mg-stamp-card-header"><div><span>Current card</span><strong><span data-stamp-count>0</span> / <span data-stamp-required><?= mg_e((string)$requiredCount) ?></span></strong></div><em class="mg-campaign-canvas-badge" data-stamp-remaining><?= mg_e((string)$requiredCount) ?> remaining</em></div>
+                <div class="mg-stamp-grid" data-stamp-grid>
+                  <?php for ($i = 1; $i <= $requiredCount; $i++): ?><span class="mg-stamp-slot" data-stamp-slot="<?= mg_e((string)$i) ?>"><?= mg_e((string)$i) ?></span><?php endfor; ?>
+                </div>
+                <div class="mg-stamp-progress"><div class="mg-stamp-progress-top"><span>Verified progress</span><strong data-stamp-progress-copy>0% complete</strong></div><div class="mg-stamp-bar"><span data-stamp-progress-bar></span></div></div>
+              </div>
+            </div>
+          </section>
+          <div class="mg-campaign-experience-panels">
+            <div class="mg-campaign-experience-panel"><span>Reward</span><strong><?= mg_e($rewardTitle) ?></strong><p><?= mg_e($rewardValue) ?></p></div>
+            <div class="mg-campaign-experience-panel"><span>Verification</span><strong><?= $cashierRequired ? 'Cashier code required' : 'Check-in enabled' ?></strong><p>Official stamps are traceable to the merchant/location verification context.</p></div>
+            <div class="mg-campaign-experience-panel"><span>CRM rule</span><strong>First reward creates CRM</strong><p>Partial stamps track campaign progress but do not create a merchant CRM contact by themselves.</p></div>
+          </div>
+        </main>
+        <aside class="mg-campaign-experience-side">
+          <div class="mg-public-campaign-card mg-public-campaign-flow-card">
+            <form class="mg-public-campaign-form" data-campaign-form data-campaign-keep-visible="1" data-stamp-card-form data-submit-endpoint="/api/public/campaigns/stamp-card.php" data-campaign-type="stamp_card_reward" novalidate>
+              <input type="hidden" name="campaign_id" value="<?= mg_e((string)$campaign['public_id']) ?>">
+              <input type="hidden" name="campaign" value="<?= mg_e((string)($campaign['public_slug'] ?? $campaign['public_id'])) ?>">
+              <input type="hidden" name="campaign_type" value="stamp_card_reward">
+              <div class="mg-public-campaign-profile-card mg-public-campaign-form-profile"><div class="mg-public-campaign-avatar"><?php if ($avatarUrl): ?><img src="<?= mg_e($avatarUrl) ?>" alt="<?= mg_e($merchantName) ?> profile image"><?php else: ?><span><?= mg_e(mg_stamp_card_page_initials($merchantName)) ?></span><?php endif; ?></div><div class="mg-public-campaign-profile-copy"><span class="mg-public-campaign-eyebrow">Stamp Card</span><h2><?= mg_e($merchantName) ?></h2><?php if ($merchantHeadline !== ''): ?><p><?= mg_e($merchantHeadline) ?></p><?php endif; ?><div class="mg-public-campaign-profile-stats"><?php if ($merchantLocation !== ''): ?><span><?= mg_e($merchantLocation) ?></span><?php endif; ?><span><?= mg_e($stampLabel) ?> stamps</span><span>Inbox unlock</span></div></div><?php if ($merchantProfileUrl): ?><div class="mg-public-campaign-profile-actions"><a class="mg-btn mg-btn-soft" href="<?= mg_e($merchantProfileUrl) ?>">View profile</a></div><?php endif; ?></div>
+              <div class="mg-public-campaign-field-grid"><label>Name<input name="name" placeholder="Your name" maxlength="180" value="<?= mg_e($prefillName) ?>"></label><label>Email<input name="email" type="email" placeholder="you@example.com" required maxlength="255" value="<?= mg_e($prefillEmail) ?>"></label><label class="mg-public-campaign-field-wide">Phone <span>(optional)</span><input name="phone" placeholder="Optional" maxlength="60"></label><?php if ($cashierRequired): ?><label class="mg-public-campaign-field-wide">Cashier claim code<input name="cashier_code" autocomplete="one-time-code" placeholder="Cashier enters code" maxlength="64" required></label><?php endif; ?></div>
+              <?php if ($cashierRequired): ?><p class="mg-cashier-code-note">Ask the cashier to enter the merchant claim code before submitting. The stamp is not official until this code verifies.</p><?php endif; ?>
+              <button class="mg-btn mg-btn-primary mg-public-campaign-primary-action" type="submit" data-stamp-card-submit>Add verified stamp <span aria-hidden="true">→</span></button>
+              <div class="mg-public-campaign-status" data-campaign-status data-stamp-card-status></div><p class="mg-public-campaign-privacy">Your card progress is unique to your email for this campaign. Rewards unlock when verified progress reaches <?= mg_e((string)$requiredCount) ?>.</p>
+            </form>
+            <div class="mg-public-campaign-result" data-campaign-result></div>
+          </div>
+        </aside>
+      </div>
+    <?php endif; ?>
   </div>
 </section>
 <?php require __DIR__ . '/includes/footer.php'; ?>

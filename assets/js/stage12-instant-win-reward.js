@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', function () {
     link.href = '#campaign-create';
     link.setAttribute('data-campaign-tab-trigger', 'create');
     link.setAttribute('data-campaign-type-preset', 'instant_win_reward');
-    link.textContent = 'Create Instant Win Reward';
+    link.textContent = 'Create Scratch / Spin Instant Win';
     quick.insertBefore(link, quick.firstChild);
   }
 
@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', function () {
     card.className = 'mg-campaign-rule-card';
     card.setAttribute('data-campaign-type-fields', 'instant_win_reward');
     card.hidden = true;
-    card.innerHTML = '<span class="mg-eyebrow">Spin / Scratch Instant Win</span><h3>Run a scratch-reveal game that can issue a reward instantly.</h3><p>v1 uses a scratch-card reveal. Winners reuse the standard wallet, Inbox, PPPM, CRM, and merchant notification flow. No-win plays are still recorded as CRM events.</p><div class="mg-grid-2"><label>Win odds percent<input name="instant_win_odds_percent" inputmode="numeric" placeholder="100"></label><label>No-win message<input name="instant_win_no_win_message" maxlength="240" placeholder="Not a winner this time — thanks for playing."></label></div><p class="mg-form-hint">Until custom rules persistence is expanded, v1 defaults to 100% win unless rules_json is populated by an integration.</p>';
+    card.innerHTML = '<span class="mg-eyebrow">Scratch / Spin Instant Win</span><h3>Run a mobile-friendly instant win experience.</h3><p>The public page uses the Watch/Listen style layout: interaction canvas on the left and merchant profile + form on the right. No-win plays do not create a merchant CRM contact until value is issued.</p><div class="mg-grid-2"><label>Instant win mode<select name="instant_win_mode"><option value="scratch_card">Scratch card</option><option value="spin_wheel">Spin wheel</option></select></label><label>Win odds percent<input name="instant_win_odds_percent" inputmode="numeric" placeholder="100"></label></div><div class="mg-grid-2"><label>No-win message<input name="instant_win_no_win_message" maxlength="240" placeholder="Not a winner this time — thanks for playing."></label><label class="mg-campaign-check"><input type="checkbox" name="instant_win_online_play" value="1" checked> <span>Online play, no cashier code</span></label></div><p class="mg-form-hint">Scratch-card artwork can be uploaded in the Media artwork panel. Spin Wheel mode uses the wheel canvas.</p>';
     var before = root.querySelector('[data-campaign-type-fields="watch_video_reward"]') || root.querySelector('[data-campaign-type-fields="customer_refund"]');
     if (before && before.parentNode) before.parentNode.insertBefore(card, before);
     else {
@@ -38,15 +38,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function applyDefaults(force) {
     if (activeType() !== 'instant_win_reward') return;
-    setIfEmpty('title', 'Scratch to win a local reward');
-    setIfEmpty('form_headline', 'Scratch and reveal your instant win');
-    setIfEmpty('description', 'Enter your info, reveal the scratch card, and see if you unlocked a Microgifter reward.');
-    setIfEmpty('form_description', 'Every play is tracked in the merchant CRM. Winners receive a reward in their Microgifter Inbox.');
+    setIfEmpty('title', 'Scratch or spin to win a local reward');
+    setIfEmpty('form_headline', 'Reveal your instant win');
+    setIfEmpty('description', 'Enter your info, interact with the game, and see if you unlocked a Microgifter reward.');
+    setIfEmpty('form_description', 'Complete the scratch or spin interaction before submitting. Winners receive a reward in their Microgifter Inbox.');
     setIfEmpty('success_message', 'Instant win result recorded.');
     setIfEmpty('quantity_limit', '100');
     setIfEmpty('per_user_limit', '1');
+    setIfEmpty('instant_win_mode', 'scratch_card');
     setIfEmpty('instant_win_odds_percent', '100');
     setIfEmpty('instant_win_no_win_message', 'Not a winner this time — thanks for playing.');
+    if (force) {
+      var online = field('instant_win_online_play');
+      if (online) online.checked = true;
+    }
   }
 
   function syncVisibility() {

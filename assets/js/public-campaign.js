@@ -132,13 +132,16 @@ document.querySelectorAll('[data-campaign-form]').forEach(function(form){
     if(data.reward_title)details.push('<span>Reward: '+esc(data.reward_title)+'</span>');
     if(data.wallet_item_id)details.push('<span>Inbox item: '+esc(data.wallet_item_id)+'</span>');
     if(data.wallet_status)details.push('<span>Status: '+esc(data.already_issued?'already issued':data.wallet_status)+'</span>');
+    if(data.stamp_count&&data.required_count)details.push('<span>Progress: '+esc(data.stamp_count)+' / '+esc(data.required_count)+'</span>');
+    if(data.stamps_remaining!=null)details.push('<span>Remaining: '+esc(data.stamps_remaining)+'</span>');
+    if(data.instant_win_result)details.push('<span>Result: '+esc(data.instant_win_result)+'</span>');
     if(data.pppm_bridge)details.push('<span>PPPM handoff: ready</span>');
     if(data.expires_at)details.push('<span>Expires: '+esc(data.expires_at)+'</span>');
     if(result){
       result.classList.add('is-visible');
       result.innerHTML='<strong>'+esc(title)+'</strong><p>'+esc(copy)+'</p>'+(details.length?'<div class="mg-public-campaign-result-details">'+details.join('')+'</div>':'')+(hasInboxItem?'<div class="mg-public-campaign-result-actions"><a class="mg-btn mg-btn-primary" href="'+esc(inboxUrl)+'">Open Microgifter Inbox</a></div>':'');
     }
-    form.hidden=true;
+    if(form.getAttribute('data-campaign-keep-visible')!=='1')form.hidden=true;
   }
   form.addEventListener('submit',async function(event){
     event.preventDefault();
@@ -156,9 +159,11 @@ document.querySelectorAll('[data-campaign-form]').forEach(function(form){
     try{
       setStatus('Submitting…');
       var response=await Microgifter.post(endpoint,data);
+      form.dispatchEvent(new CustomEvent('microgifter:campaign-submitted',{bubbles:true,detail:{response:response,payload:(response&&response.data)||response||{},message:response&&response.message||'Campaign response submitted.'}}));
       showResult(response.message||'Campaign response submitted.',response);
     }catch(error){
       setStatus(error.message||'Unable to submit campaign form.','error');
+      form.dispatchEvent(new CustomEvent('microgifter:campaign-submit-failed',{bubbles:true,detail:{error:error}}));
     }
   });
 });
