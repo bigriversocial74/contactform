@@ -26,32 +26,21 @@ window.Microgifter = window.Microgifter || {};
     adjustmentLocks: new WeakSet()
   };
 
-  function payload(response) {
-    return response && response.data ? response.data : response;
-  }
-
+  function payload(response) { return response && response.data ? response.data : response; }
   function escapeHtml(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, function (character) {
       return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character];
     });
   }
-
-  function formatPercent(value) {
-    var number = Number(value || 0);
-    return Math.max(0, Math.min(100, number)).toFixed(1) + '%';
-  }
-
-  function label(value) {
-    return String(value || '').replace(/_/g, ' ').replace(/\b\w/g, function (letter) { return letter.toUpperCase(); });
-  }
-
+  function formatPercent(value) { return Math.max(0, Math.min(100, Number(value || 0))).toFixed(1) + '%'; }
+  function label(value) { return String(value || '').replace(/_/g, ' ').replace(/\b\w/g, function (letter) { return letter.toUpperCase(); }); }
+  function clamp(value, minimum, maximum) { return Math.max(minimum, Math.min(maximum, value)); }
+  function profileFor(sessionId) { return state.profiles.get(String(sessionId || '')) || null; }
   function cardBySession(sessionId) {
     if (!sessionId) return null;
-    return customerLayer.querySelector('[data-session-id="' + String(sessionId).replace(/["\\]/g, '\\$&') + '"]');
-  }
-
-  function profileFor(sessionId) {
-    return state.profiles.get(String(sessionId || '')) || null;
+    return Array.from(customerLayer.querySelectorAll('[data-session-id]')).find(function (card) {
+      return String(card.dataset.sessionId || '') === String(sessionId);
+    }) || null;
   }
 
   function ensureCue(card) {
@@ -76,10 +65,16 @@ window.Microgifter = window.Microgifter || {};
     card.dataset.behaviorMode = movement.mode || 'explore';
     card.dataset.followState = movement.follow_state || 'observe';
     card.dataset.releaseState = movement.release_state || 'hold';
-    card.style.setProperty('--mg-behavior-confidence', String(Math.max(0, Math.min(100, Number(profile.confidence || 0)))) + '%');
+
+    var confidenceValue = String(Math.max(0, Math.min(100, Number(profile.confidence || 0)))) + '%';
+    if (card.style.getPropertyValue('--mg-behavior-confidence') !== confidenceValue) {
+      card.style.setProperty('--mg-behavior-confidence', confidenceValue);
+    }
     var cue = ensureCue(card);
-    if (cue) cue.textContent = greeting.label || 'Welcome';
-    card.title = (profile.memory_summary || greeting.label || 'Customer behavior profile') + ' Confidence ' + formatPercent(profile.confidence || 0) + '.';
+    var cueText = greeting.label || 'Welcome';
+    if (cue && cue.textContent !== cueText) cue.textContent = cueText;
+    var title = (profile.memory_summary || cueText) + ' Confidence ' + formatPercent(profile.confidence || 0) + '.';
+    if (card.title !== title) card.title = title;
   }
 
   function applyAllProfiles() {
@@ -94,10 +89,6 @@ window.Microgifter = window.Microgifter || {};
     if (!text) return 0;
     if (text.endsWith('%')) return (parseFloat(text) / 100) * total;
     return parseFloat(text) || 0;
-  }
-
-  function clamp(value, minimum, maximum) {
-    return Math.max(minimum, Math.min(maximum, value));
   }
 
   function targetForProfile(card, profile) {
@@ -142,35 +133,30 @@ window.Microgifter = window.Microgifter || {};
 
   function adviseMovement(card) {
     if (!card || state.adjustmentLocks.has(card)) return;
-    var profile = profileFor(card.dataset.sessionId);
-    var target = targetForProfile(card, profile);
+    var target = targetForProfile(card, profileFor(card.dataset.sessionId));
     if (!target) return;
     state.adjustmentLocks.add(card);
     card.dataset.visualMovement = 'presentation-only';
     card.dataset.behaviorGuidance = 'server-profile';
     card.style.left = Math.round(target.left) + 'px';
     card.style.top = Math.round(target.top) + 'px';
-    window.requestAnimationFrame(function () {
-      state.adjustmentLocks.delete(card);
-    });
+    window.requestAnimationFrame(function () { state.adjustmentLocks.delete(card); });
   }
 
   function probabilityCard(key, title, value, detail) {
-    var percent = Math.max(0, Math.min(100, Number(value || 0)));
+    var percent = clamp(Number(value || 0), 0, 100);
     return '<article class="mg-canvas-behavior-probability" data-probability="' + escapeHtml(key) + '">' +
       '<div><span>' + escapeHtml(title) + '</span><strong>' + escapeHtml(formatPercent(percent)) + '</strong></div>' +
       '<div class="mg-canvas-behavior-meter" aria-hidden="true"><i style="width:' + percent.toFixed(1) + '%"></i></div>' +
-      '<small>' + escapeHtml(detail) + '</small>' +
-      '</article>';
+      '<small>' + escapeHtml(detail) + '</small></article>';
   }
 
   function renderEvidence(items) {
     items = Array.isArray(items) ? items : [];
     if (!items.length) return '<p class="mg-canvas-behavior-empty">More interaction history is needed before evidence factors can be shown.</p>';
     return '<div class="mg-canvas-behavior-evidence-list">' + items.map(function (item) {
-      var direction = item.direction || 'neutral';
       var impact = Number(item.impact || 0);
-      return '<article data-direction="' + escapeHtml(direction) + '"><div><strong>' + escapeHtml(item.label || item.key || 'Evidence') + '</strong><p>' + escapeHtml(item.reason || '') + '</p></div><span>' + (impact > 0 ? '+' : '') + escapeHtml(impact.toFixed(1)) + '</span></article>';
+      return '<article data-direction="' + escapeHtml(item.direction || 'neutral') + '"><div><strong>' + escapeHtml(item.label || item.key || 'Evidence') + '</strong><p>' + escapeHtml(item.reason || '') + '</p></div><span>' + (impact > 0 ? '+' : '') + escapeHtml(impact.toFixed(1)) + '</span></article>';
     }).join('') + '</div>';
   }
 
@@ -211,8 +197,7 @@ window.Microgifter = window.Microgifter || {};
       '<section class="mg-canvas-behavior-card"><h4>Why these projections</h4>' + renderEvidence(profile.evidence) + '</section>' +
       '<section class="mg-canvas-behavior-card"><h4>Connected systems</h4><div class="mg-canvas-behavior-links"><a href="/merchant-crm.php">Merchant CRM & Contacts</a><a href="/merchant-campaigns.php">Campaigns</a><a href="/merchant-memory.php">Merchant Memory</a><a href="/merchant-reward-templates.php">Reward Inventory</a></div><p>Campaign recommendations remain merchant-approved. Campaign completion remains the only authority that can issue a reward to Wallet, Inbox, and PPPM.</p></section>' +
       '<section class="mg-canvas-behavior-card is-future"><h4>Future peer commerce</h4><p>Customer-to-customer chat, peer matching, and item sending are intentionally gated. Current behavior memory prepares the authority and safety context but does not activate these features.</p><div class="mg-canvas-behavior-future"><span>Peer chat: ' + (future.customer_to_customer_chat ? 'enabled' : 'planned') + '</span><span>Item sending: ' + (future.customer_item_sending ? 'enabled' : 'planned') + '</span><span>Policy: server gated</span></div></section>' +
-      '<p class="mg-canvas-behavior-policy">Predictions use this merchant’s direct behavioral records only. Protected traits are excluded. Scores are estimates, not facts, and cannot trigger browser-side customer actions.</p>' +
-      '</section>';
+      '<p class="mg-canvas-behavior-policy">Predictions use this merchant’s direct behavioral records only. Protected traits are excluded. Scores are estimates, not facts, and cannot trigger browser-side customer actions.</p></section>';
   }
 
   function ensureBehaviorPanel() {
@@ -254,7 +239,6 @@ window.Microgifter = window.Microgifter || {};
       var response = payload(await MG.get('/api/merchant-canvas/customer-behavior.php?session_id=' + encodeURIComponent(sessionId), { signal: controller.signal })) || {};
       if (sessionId !== state.selectedSessionId) return;
       state.selectedPayload = response;
-      state.selectedError = '';
       if (response.profile) {
         state.profiles.set(sessionId, response.profile);
         var card = cardBySession(sessionId);
@@ -263,7 +247,6 @@ window.Microgifter = window.Microgifter || {};
     } catch (error) {
       if (error && error.name === 'AbortError') return;
       if (sessionId !== state.selectedSessionId) return;
-      state.selectedPayload = null;
       state.selectedError = error.message || 'Behavior memory is unavailable. Import database/merchant_canvas_behavior_memory_predictive_v1.sql.';
     } finally {
       if (state.selectedController === controller) state.selectedController = null;
@@ -285,9 +268,7 @@ window.Microgifter = window.Microgifter || {};
     try {
       var response = payload(await MG.get('/api/merchant-canvas/active-behavior.php', { signal: controller.signal })) || {};
       var profiles = response.profiles && typeof response.profiles === 'object' ? response.profiles : {};
-      Object.keys(profiles).forEach(function (sessionId) {
-        state.profiles.set(String(sessionId), profiles[sessionId]);
-      });
+      Object.keys(profiles).forEach(function (sessionId) { state.profiles.set(String(sessionId), profiles[sessionId]); });
       applyAllProfiles();
       document.dispatchEvent(new CustomEvent('mg:canvasBehaviorProfiles', { detail: { profiles: profiles, generated_at: response.generated_at || null } }));
     } catch (error) {
@@ -315,13 +296,17 @@ window.Microgifter = window.Microgifter || {};
 
   state.observer = new MutationObserver(function (records) {
     var needsPanels = false;
+    var needsApply = false;
     records.forEach(function (record) {
-      if (record.type === 'childList') needsPanels = true;
+      if (record.type === 'childList') {
+        needsPanels = true;
+        needsApply = true;
+      }
       if (record.type === 'attributes' && record.target && record.target.matches && record.target.matches('[data-session-id]')) {
         adviseMovement(record.target);
       }
     });
-    applyAllProfiles();
+    if (needsApply) applyAllProfiles();
     if (needsPanels) ensureBehaviorPanel();
   });
   state.observer.observe(customerLayer, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
