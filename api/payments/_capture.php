@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . '/_payments.php';
-require_once __DIR__ . '/_fulfillment.php';
+require_once __DIR__ . '/_issuance_reconciliation.php';
 require_once dirname(__DIR__) . '/finance/_posting.php';
 
 final class MgCaptureWorkflowException extends RuntimeException
@@ -52,16 +52,28 @@ function mg_finance_record_paid_order(PDO $pdo,int $orderDbId,int $intentDbId,st
         $paymentTransitioned=true;
     }
 
-    $issued=mg_payment_issue_order_pppm($pdo,$orderDbId,$actorUserId ?: (int)$order['buyer_user_id']);
-    $microgifts=mg_payment_issue_order_microgifts($pdo,$orderDbId,$actorUserId ?: (int)$order['buyer_user_id']);
-    if($failureHook)$failureHook('after_fulfillment',['order'=>$order,'intent'=>$intent,'issued'=>$issued,'microgifts'=>$microgifts]);
+    $reconciliation=mg_payment_reconcile_paid_order($pdo,$orderDbId,$actorUserId ?: (int)$order['buyer_user_id'],$paymentTransitioned?'payment_capture':'capture_replay');
+    $issued=$reconciliation['pppm']??[];
+    $microgifts=$reconciliation['microgifts']??[];
+    if($failureHook)$failureHook('after_fulfillment',['order'=>$order,'intent'=>$intent,'reconciliation'=>$reconciliation,'issued'=>$issued,'microgifts'=>$microgifts]);
 
     if($paymentTransitioned){
+        $ready=!empty($reconciliation['complete']);
         $pdo->prepare('INSERT INTO notifications (public_id,user_id,type,title,body,action_url,created_at) VALUES (?,?,?,?,?,?,NOW())')
-            ->execute([mg_public_uuid(),(int)$order['buyer_user_id'],'payment_succeeded','Payment received','Your order was paid and gift items are being issued.','/checkout-success.php?order='.rawurlencode((string)$order['public_id'])]);
+            ->execute([mg_public_uuid(),(int)$order['buyer_user_id'],'payment_succeeded','Payment received',$ready?'Your order was paid and your Microgifts are ready.':'Your order was paid and delivery is being reconciled.','/checkout-success.php?order='.rawurlencode((string)$order['public_id'])]);
         $pdo->prepare('INSERT INTO notifications (public_id,user_id,type,title,body,action_url,created_at) VALUES (?,?,?,?,?,?,NOW())')
-            ->execute([mg_public_uuid(),(int)$order['merchant_user_id'],'merchant_payment_received','Payment received','A customer payment was captured and PPPM issuance was started.','/merchant-payments.php']);
+            ->execute([mg_public_uuid(),(int)$order['merchant_user_id'],'merchant_payment_received','Payment received',$ready?'A customer payment was captured and delivery completed.':'A customer payment was captured and delivery reconciliation started.','/merchant-payments.php']);
     }
 
-    return ['order_id'=>(string)$order['public_id'],'issued_count'=>(int)($issued['issued_count']??0),'microgift_issued_count'=>(int)($microgifts['issued_count']??0),'fulfillment_status'=>$issued['fulfillment_status']??null,'payment_transitioned'=>$paymentTransitioned,'provider_reference'=>$providerReference];
+    return [
+        'order_id'=>(string)$order['public_id'],
+        'issued_count'=>(int)($issued['issued_count']??0),
+        'microgift_issued_count'=>(int)($microgifts['issued_count']??0),
+        'expected_units'=>(int)($reconciliation['issuance']['expected_units']??0),
+        'delivered_units'=>(int)($reconciliation['issuance']['issued_units']??0),
+        'issuance_complete'=>(bool)($reconciliation['complete']??false),
+        'fulfillment_status'=>$reconciliation['fulfillment_status']??null,
+        'payment_transitioned'=>$paymentTransitioned,
+        'provider_reference'=>$providerReference,
+    ];
 }
