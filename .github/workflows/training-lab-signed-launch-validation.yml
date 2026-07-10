@@ -1,0 +1,43 @@
+name: Training Lab Signed Launch Validation
+
+on:
+  pull_request:
+    paths:
+      - 'includes/training-lab-launch.php'
+      - 'includes/app-sidebar.php'
+      - 'training-lab.php'
+      - 'api/training-lab/launch.php'
+      - 'scripts/validate_training_lab_signed_launch_v1.php'
+      - 'docs/STAGE-887-TRAINING-LAB-SIGNED-LAUNCH-V1.md'
+      - '.github/workflows/training-lab-signed-launch-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Training Lab signed launch validation
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: ['8.2', '8.3']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          coverage: none
+          extensions: mbstring, pdo, pdo_mysql
+      - name: PHP syntax check
+        run: |
+          set -euo pipefail
+          php -l includes/training-lab-launch.php
+          php -l includes/app-sidebar.php
+          php -l training-lab.php
+          php -l api/training-lab/launch.php
+          php -l scripts/validate_training_lab_signed_launch_v1.php
+      - name: Validate signed launch contracts
+        run: php scripts/validate_training_lab_signed_launch_v1.php
