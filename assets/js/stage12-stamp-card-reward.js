@@ -39,11 +39,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function applyDefaults(force) {
     if (activeType() !== 'stamp_card_reward') return;
-    setIfEmpty('title', 'Collect stamps and unlock a reward');
-    setIfEmpty('form_headline', 'Add a stamp to your visit card');
-    setIfEmpty('description', 'Check in after each visit or purchase. When your stamp card is full, Microgifter sends the reward to your Inbox.');
-    setIfEmpty('form_description', 'Enter your info to add today’s stamp. Your progress is tracked in the merchant CRM.');
-    setIfEmpty('success_message', 'Stamp recorded. Reward unlock checked.');
+    setIfEmpty('title', 'Collect punches and unlock a reward');
+    setIfEmpty('form_headline', 'Add a punch to your card');
+    setIfEmpty('description', 'Check in after each visit or purchase. When your punch card is full, Microgifter sends the reward to your Inbox.');
+    setIfEmpty('form_description', 'Enter your info to add today’s punch. Your progress is tracked in the merchant CRM.');
+    setIfEmpty('success_message', 'Punch recorded. Reward unlock checked.');
     setIfEmpty('per_user_limit', '1');
     setIfEmpty('stamp_required_count', '5');
     setIfEmpty('stamp_label', 'Visit');
