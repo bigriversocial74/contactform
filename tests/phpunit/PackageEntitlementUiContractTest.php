@@ -56,12 +56,15 @@ final class PackageEntitlementUiContractTest extends TestCase
     {
         $root = dirname(__DIR__, 2);
         $merchantCore = file_get_contents($root . '/api/merchant/_merchant.php');
-        $campaigns = file_get_contents($root . '/api/merchant/campaigns.php');
+        $campaignRoute = file_get_contents($root . '/api/merchant/campaigns.php');
+        $campaignCore = file_get_contents($root . '/api/merchant/campaigns-core.php');
+        $campaigns = (string)$campaignRoute . "\n" . (string)$campaignCore;
         $rewards = file_get_contents($root . '/api/merchant/reward-templates.php');
         $billing = file_get_contents($root . '/api/subscriptions/_package_billing.php');
 
         self::assertIsString($merchantCore);
-        self::assertIsString($campaigns);
+        self::assertIsString($campaignRoute);
+        self::assertIsString($campaignCore);
         self::assertIsString($rewards);
         self::assertIsString($billing);
 
