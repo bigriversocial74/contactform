@@ -1,225 +1,203 @@
 # Local Quest Rewards
 
-Local Quest Rewards is a starter-app foundation for the Microgifter Public Distribution API.
+Local Quest Rewards is a production-oriented starter application for local loyalty, check-in, challenge, event, passport, and sponsored-reward experiences on the Microgifter Public Distribution API.
 
-It behaves like a third-party local experience app:
+The application owns participant accounts, quest progress, QR/geolocation evidence, local wallet presentation, administration, and operational reporting. Microgifter remains the system of record for Distribution Program permissions, reward issuance, item status, claim reporting, redemption lifecycle, signed webhooks, and audit history.
 
-1. A participant lands on a cover page.
+## Product flow
+
+1. A participant visits the public landing page.
 2. The participant creates or signs into a Local Quest account.
-3. The app assigns a stable `external_user_id` for that Local Quest user.
-4. The participant connects a Microgifter account through Microgifter account-link consent.
-5. The participant completes a local quest using QR and optional geolocation context.
-6. The app checks its local reward permission rule.
-7. The app issues the mapped Microgift through the Public Distribution API.
-8. The app shows the reward in a Quest wallet.
-9. The participant can claim the reward inside the Quest app with QR/geolocation evidence.
-10. Claim activity reports back to Microgifter.
+3. The participant connects a Microgifter account through explicit consent.
+4. The participant completes a public quest using the required verification method.
+5. Local Quest checks schedule, visibility, caps, completion, linking, and reward rules.
+6. The approved reward request is sent through the Microgifter Distribution API.
+7. The participant follows the reward in the Local Quest wallet.
+8. Claim activity reports back to Microgifter.
+9. Signed webhooks reconcile lifecycle changes into Local Quest SQL storage.
 
-Sandbox linking is only a developer shortcut. It is not the primary user flow.
+## Runtime requirements
 
-## Platform model
+- PHP 8.2 or newer
+- PDO MySQL extension
+- MySQL or MariaDB
+- cURL or `allow_url_fopen` for Microgifter API requests
+- HTTPS for live mode
+- A Microgifter Developer API credential
+- An approved Distribution Program and reward template
 
-One Microgifter merchant can approve products/templates for a Distribution Program. Multiple third-party Quest-style apps can be allowed to distribute those approved rewards.
+Local Quest is SQL-only. JSON or file-backed application state is not supported.
 
-Microgifter remains the system of record for reward ownership, item status, claim state, redemption, webhooks, and audit history. The starter app owns app login, quest progress, QR/geolocation task context, local action completion, wallet UX, admin controls, and SQL runtime storage for the third-party experience.
+## Installation
 
-## Files
-
-```text
-examples/local-quest-rewards/
-  README.md
-  app.php
-  install.php
-  security.php
-  storage-sql.php
-  admin-auth.php
-  admin-credentials.php
-  config.example.php
-  cover.php
-  signin.php
-  index.php
-  link-callback.php
-  wallet.php
-  wallet-actions.php
-  admin.php
-  admin-portal.php
-  admin-quest-controls.php
-  quest-controls.php
-  quests.php
-  webhook.php
-  assets/portal.css
-  assets/portal.js
-  database/local_quest_rewards.sql
-  database/local_quest_admin_auth.sql
-```
-
-## Runtime requirement
-
-The starter foundation is now SQL-only. It requires MySQL or MariaDB through PDO.
-
-There is no file-backed JSON runtime, no JSON demo mode, and no JSON-to-SQL migration path in the starter foundation. SQL `JSON` columns are still used where they make sense for metadata, API responses, webhook payloads, QR/geolocation context, and audit context.
-
-## Install wizard
-
-Start PHP:
-
-```bash
-php -S 127.0.0.1:8090 -t examples/local-quest-rewards
-```
-
-Open:
+Upload this folder so `install.php` is reachable from the intended application host, then open:
 
 ```text
-http://127.0.0.1:8090/install.php
+https://quest.example.com/install.php
 ```
 
-The installer wizard collects:
+The production installer uses `install-functions.php` and:
 
-- database host
-- database name
-- database user
-- database secret
-- app name
-- app public URL
-- Microgifter base URL
-- Microgifter Developer API key
-- default Distribution Program ID
-- default reward template ID
-- webhook signing value
-- local signed-code secret
-- first owner admin username/email/secret
+- checks PHP, PDO, HTTP-client, and folder readiness
+- validates the Microgifter Developer API credential before finalizing setup
+- creates the database when permitted or uses an existing database
+- safely parses and applies all required SQL schemas
+- verifies all 14 required tables
+- creates the first owner account
+- generates a signed-code secret when one is not supplied
+- writes `config.php` atomically and backs up an existing configuration
+- records the schema version
+- writes `.installed.lock`
+- blocks public reruns unless `.install-unlock` is intentionally created
 
-The installer then:
-
-1. creates the database when the database user has permission
-2. runs `database/local_quest_rewards.sql`
-3. runs `database/local_quest_admin_auth.sql`
-4. creates or updates `config.php`
-5. seeds the first owner admin in `lqr_admin_users`
-6. shows setup diagnostics
-
-Remove or protect `install.php` after deployment.
-
-## Manual SQL setup
-
-If you do not use the installer, copy config manually:
-
-```bash
-cp examples/local-quest-rewards/config.example.php examples/local-quest-rewards/config.php
-```
-
-Create the database and run schema:
-
-```bash
-mysql local_quest_rewards < examples/local-quest-rewards/database/local_quest_rewards.sql
-mysql local_quest_rewards < examples/local-quest-rewards/database/local_quest_admin_auth.sql
-```
-
-Then edit `config.php` with the database DSN/user/secret, Microgifter test key, program ID, template ID, app public URL, webhook secret, security signing secret, and admin bootstrap values.
-
-## App URLs
-
-Open the participant app:
-
-```text
-http://127.0.0.1:8090/cover.php
-```
-
-Open the admin tools:
-
-```text
-http://127.0.0.1:8090/admin.php
-http://127.0.0.1:8090/admin-portal.php
-http://127.0.0.1:8090/admin-quest-controls.php
-http://127.0.0.1:8090/admin-credentials.php
-```
-
-## SQL runtime storage
-
-The Quest app runtime is handled through:
-
-```text
-storage-sql.php
-```
-
-`app.php` exposes `lqr_load_state()` and `lqr_save_state()` for the current app layer, but both are SQL-backed. They read/write the Quest SQL tables through PDO.
-
-The schema files are:
+Schema order:
 
 ```text
 database/local_quest_rewards.sql
 database/local_quest_admin_auth.sql
+database/local_quest_production_foundation_v1.sql
 ```
 
-They define tables for admin users, participant users, link states, quests, completions, rewards, reward claims, admin password recovery tokens, admin audit events, event logs, and app state.
+After installation:
 
-## Admin backend
+1. Confirm `.installed.lock` exists.
+2. Confirm `.install-unlock` does not exist.
+3. Remove or server-protect `install.php` on live deployments.
+4. Open `runtime-diagnostics.php`.
+5. Sign into `admin-credentials.php` with the owner account.
+6. Configure the webhook callback as `<app_public_url>/webhook.php`.
+7. Run the launch console at `start.php`.
 
-`admin.php` is the original Quest app control center. It includes dashboard KPIs, quest catalog/editor, user account list, wallet/reward records, claim status management, integration event log, and storage/settings view.
+## Configuration
 
-`admin-portal.php` is the styled dashboard layer based on the requested portal layout. It includes the expanding left rail, KPI cards, quick actions, user/customer views, wallet views, claim QR scan forms, geolocation capture, and links back to `admin.php` for existing write flows.
+`config.example.php` documents the SQL-only configuration contract. The installer creates `config.php` with:
 
-`admin-quest-controls.php` controls active/inactive state, featured state, visibility, sponsor/group, start/end dates, max total completions, and max total rewards.
+- application name and public URL
+- Microgifter base URL and Developer API key
+- default Distribution Program and reward template IDs
+- webhook signing value
+- test/live mode
+- sandbox-shortcut policy
+- session, CSRF, and signed-code settings
+- SQL driver, DSN, username, and password
+- installation schema version
 
-`admin-credentials.php` manages admin users, admin sign-in, admin password changes, account status, and one-time recovery links.
-
-The admin backend manages the third-party app layer only. It does not replace Microgifter merchant controls, Distribution Program approval, reward ownership, redemption truth, or Microgifter audit history.
-
-## Security layer
-
-`security.php` boots hardened sessions, applies idle timeout behavior, injects CSRF tokens into POST forms, blocks expired/missing CSRF tokens, and provides signed QR/code helpers with replay-key foundations.
-
-Manual QR/code input still exists for usability. Protected production quests should move to signed-code-only verification.
-
-## QR scanning and geolocation
-
-`assets/portal.js` supports camera QR scanning through `BarcodeDetector` when available, manual QR/promo/prize code fallback, browser geolocation capture, and hidden form fields for QR/geolocation evidence.
-
-User quest completion captures QR/geolocation context into app state. Wallet claim reporting sends QR/geolocation evidence in the Microgifter claim metadata.
-
-## Real app flow
-
-1. Open the cover page.
-2. Create a Local Quest account.
-3. Open the quest board.
-4. Click **Connect Microgifter account**.
-5. Sign in or create a Microgifter account on Microgifter if prompted.
-6. Approve the account-link request.
-7. Return to `link-callback.php`.
-8. Scan or paste a quest QR/task code.
-9. Capture geolocation if the quest requires location proof.
-10. Complete a quest.
-11. Issue the reward.
-12. Check status.
-13. Open `wallet.php`.
-14. Refresh reward status from Microgifter.
-15. Scan/paste claim QR or prize code.
-16. Capture claim geolocation.
-17. Claim the reward inside the Quest app.
-18. Confirm claim report status changes to `reported_to_microgifter`.
-
-## Reward mapping
-
-Reward rules live in `quests.php`. The admin backend can publish changes to that file. Each quest maps to event type, program ID, template ID, reward label, controls, and local permission rules.
-
-## Wallet and claim flow
-
-`wallet.php` displays issued rewards from the Local Quest user state. It pulls item IDs from reward issue/status responses when available.
-
-The app-side claim button calls:
+Runtime configuration files are ignored by Git:
 
 ```text
-POST /api/public/v1/rewards/claim.php
+config.php
+config.php.bak-*
+.installed.lock
+.install-unlock
 ```
 
-The wallet action records `claimed_in_quest_app`, `reported_to_microgifter`, the claim endpoint, the returned Microgifter event ID when available, the QR payload, and claim geolocation metadata.
+## Public participant experience
 
-## Permission model
+Primary public pages:
 
-The Quest app checks that the participant is signed in, completed the quest, connected a Microgifter account, has not already received the quest reward, app mode is allowed, quest controls permit play, and reward IDs are configured.
+```text
+cover.php          Professional public landing page
+signin.php         Participant registration and sign-in
+index.php          Authenticated quest board
+wallet.php         Connected reward wallet
+history.php        Participant quest and reward history
+link-callback.php  Microgifter account-link callback
+```
 
-Microgifter still makes the final authorization decision: credential scope, app environment, program access, template membership, linked account validity, capacity, limits, and idempotency.
+The landing page includes responsive navigation, product positioning, dynamic featured public quests, lifecycle explanation, wallet preview, partner positioning, SEO metadata, structured data, and automatic installation routing when `config.php` is missing.
 
-## Purpose
+## Quest controls
 
-This app is the ecosystem proof and starter foundation. If this app needs hidden knowledge to work, the Public Distribution API docs, installer, or Microgifter permission system needs another pass.
+Quest definitions currently live in `quests.php`. Controls include:
+
+- active/inactive status
+- public, hidden, or invite-only visibility
+- featured status
+- sponsor and location
+- start and end dates
+- maximum completions and rewards
+- signed-code requirement and code type
+- linked-account and per-user reward rules
+
+Only public quests appear in participant-facing lists. Hidden and invite-only quests are excluded until an explicit access model is implemented.
+
+## Administration
+
+Administrative pages include:
+
+```text
+admin.php
+admin-portal.php
+admin-quest-controls.php
+admin-credentials.php
+admin-password-reset.php
+admin-signed-codes.php
+admin-programs.php
+admin-ledger.php
+app-console-admin.php
+admin-demo-tools.php
+admin-developer-readiness.php
+```
+
+Roles are Owner, Admin, Quest Manager, Support, and Sponsor Viewer. Owner-only controls include administrator creation, status changes, recovery-link creation, and owner-level access management. The final active owner cannot be disabled.
+
+Administrative and participant sessions are separate. Successful authentication regenerates the session identifier, and repeated failed administrator sign-ins trigger a temporary session-level lockout.
+
+## Webhooks
+
+`webhook.php` accepts signed Microgifter POST deliveries and provides an authenticated administrative status page for GET requests.
+
+Webhook behavior:
+
+- validates signature version `v1`
+- validates HMAC SHA-256 over `<timestamp>.<raw body>`
+- enforces a five-minute timestamp window
+- uses `X-Microgifter-Delivery` as the idempotency key
+- prevents duplicate delivery reconciliation
+- stores verified and rejected deliveries in `lqr_webhook_deliveries`
+- reconciles matching reward and item lifecycle changes into the local wallet
+- does not expose a public raw log file
+
+Reusable SQL webhook helpers live in `webhook-storage.php`.
+
+## Security foundation
+
+The application includes HTTP-only and SameSite cookies, HTTPS-aware secure cookies, session idle timeout, session-ID regeneration, automatic CSRF protection, signed QR/code payloads, SQL-backed replay protection, installer lockdown, atomic configuration writes, owner-only credential management, and private database-backed webhook evidence.
+
+## Developer and QA tools
+
+```text
+start.php                       Guided launch console
+runtime-diagnostics.php         Read-only production diagnostics
+developer-starter.php           API setup and integration portal
+api-examples.php                Copy-ready API examples
+webhook-tools.php               Signed local webhook test generator
+admin-demo-tools.php            Admin-only deterministic demo seed/reset
+admin-developer-readiness.php   Operational launch evidence
+```
+
+## Validation
+
+The repository workflow `.github/workflows/local-quest-checks.yml` runs PHP 8.2 and 8.3 syntax checks, existing Local Quest regressions, signed QR and replay validation, and the production installer/landing/access/webhook/visibility contract.
+
+The production contract validator is:
+
+```text
+scripts/validate_local_quest_production_foundation_v1.php
+```
+
+Static validation does not replace browser, database, API, webhook, or end-to-end deployment testing.
+
+## Existing installation upgrade
+
+For an existing Local Quest database, import:
+
+```text
+database/local_quest_production_foundation_v1.sql
+```
+
+Then update the application files, confirm `config.php` uses `storage.driver => mysql`, and create `.installed.lock` through an intentional maintenance window after verifying configuration.
+
+## Deployment boundary
+
+Microgifter still decides Developer API scope, Distribution Program access, template approval, linked-account validity, reward capacity, idempotency, ownership, item state, claims, redemption truth, webhook authority, and audit history. Local Quest must never issue rewards by directly writing Microgifter platform tables.
