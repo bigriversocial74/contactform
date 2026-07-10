@@ -1,0 +1,40 @@
+name: Merchant Onboarding Validation
+
+on:
+  pull_request:
+    paths:
+      - 'merchant-onboarding.php'
+      - 'signup.php'
+      - 'api/auth/register.php'
+      - 'api/merchant/onboarding-*.php'
+      - 'assets/js/merchant-onboarding.js'
+      - 'scripts/validate_merchant_onboarding_v1.php'
+      - '.github/workflows/merchant-onboarding-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  onboarding-validation:
+    name: Merchant onboarding v1 (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ['8.2','8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - name: PHP syntax
+        run: |
+          php -l merchant-onboarding.php
+          php -l signup.php
+          php -l api/auth/register.php
+          php -l api/merchant/onboarding-status.php
+          php -l api/merchant/onboarding-complete.php
+          php -l scripts/validate_merchant_onboarding_v1.php
+      - name: Merchant onboarding 10/10 contract
+        run: php scripts/validate_merchant_onboarding_v1.php
