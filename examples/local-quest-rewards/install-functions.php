@@ -14,10 +14,10 @@ function lqi_check_token(): void {
     if ($known === '' || $sent === '' || !hash_equals($known, $sent)) throw new RuntimeException('The install session expired. Refresh and try again.');
 }
 function lqi_schema_paths(): array {
-    return [__DIR__.'/database/local_quest_rewards.sql',__DIR__.'/database/local_quest_admin_auth.sql',__DIR__.'/database/local_quest_production_foundation_v1.sql'];
+    return [__DIR__.'/database/local_quest_rewards.sql',__DIR__.'/database/local_quest_admin_auth.sql',__DIR__.'/database/local_quest_production_foundation_v1.sql',__DIR__.'/database/local_quest_participant_auth_v1.sql'];
 }
 function lqi_required_tables(): array {
-    return ['lqr_admin_users','lqr_users','lqr_link_states','lqr_quests','lqr_quest_completions','lqr_rewards','lqr_reward_claims','lqr_signed_code_replays','lqr_webhook_deliveries','lqr_admin_audit_events','lqr_events','lqr_app_state','lqr_admin_password_resets','lqr_schema_versions'];
+    return ['lqr_admin_users','lqr_users','lqr_link_states','lqr_quests','lqr_quest_completions','lqr_rewards','lqr_reward_claims','lqr_signed_code_replays','lqr_webhook_deliveries','lqr_admin_audit_events','lqr_events','lqr_app_state','lqr_admin_password_resets','lqr_schema_versions','lqr_participant_auth_tokens','lqr_participant_login_attempts'];
 }
 function lqi_pdo(string $host, string $database, string $user, string $password, bool $withDatabase): PDO {
     $dsn = $withDatabase ? "mysql:host={$host};dbname={$database};charset=utf8mb4" : "mysql:host={$host};charset=utf8mb4";
@@ -48,6 +48,7 @@ function lqi_write_config(array $v): ?string {
         'default_program_id'=>$v['default_program_id'],'default_template_id'=>$v['default_template_id'],'webhook_secret'=>$v['webhook_secret'],
         'mode'=>$v['mode'],'allow_sandbox_shortcut'=>$v['allow_sandbox_shortcut'],
         'security'=>['session_name'=>'LQRSESSID','session_timeout_minutes'=>60,'csrf_field'=>'_lqr_csrf','csrf_ttl_minutes'=>120,'signed_code_ttl_minutes'=>15,'signed_code_secret'=>$v['signed_code_secret']],
+        'auth'=>['mail_enabled'=>false,'mail_from'=>'no-reply@localhost','password_reset_ttl_minutes'=>30,'email_verification_ttl_minutes'=>1440,'max_login_attempts'=>5,'login_window_minutes'=>15],
         'admin'=>['username'=>$v['owner_username'],'email'=>$v['owner_email'],'password'=>'','password_hash'=>$v['owner_hash'],'bootstrap_enabled'=>false,'reset_token_ttl_minutes'=>30],
         'storage'=>['driver'=>'mysql','dsn'=>"mysql:host={$v['db_host']};dbname={$v['db_name']};charset=utf8mb4",'username'=>$v['db_user'],'password'=>$v['db_secret'],'options'=>[]],
         'installation'=>['schema_version'=>LQI_SCHEMA_VERSION,'installed_at'=>gmdate('c')],
@@ -79,6 +80,6 @@ function lqi_diagnostics(?array $db=null): array {
         lqi_check('HTTP client',function_exists('curl_init')||(bool)ini_get('allow_url_fopen'),'cURL or stream access is required.'),
         lqi_check('Application folder',is_writable(__DIR__),is_writable(__DIR__)?'Writable for config and lock.':'Not writable.'),
     ];
-    if($db){try{$pdo=lqi_pdo($db['host'],$db['name'],$db['user'],$db['password'],true);$missing=lqi_missing_tables($pdo);$checks[]=lqi_check('Database connection',true,'Connected successfully.');$checks[]=lqi_check('Required schema',$missing===[],$missing===[]?'All 14 required tables are present.':'Missing: '.implode(', ',$missing));}catch(Throwable $e){$checks[]=lqi_check('Database connection',false,$e->getMessage());}}
+    if($db){try{$pdo=lqi_pdo($db['host'],$db['name'],$db['user'],$db['password'],true);$missing=lqi_missing_tables($pdo);$checks[]=lqi_check('Database connection',true,'Connected successfully.');$checks[]=lqi_check('Required schema',$missing===[],$missing===[]?'All 16 required tables are present.':'Missing: '.implode(', ',$missing));}catch(Throwable $e){$checks[]=lqi_check('Database connection',false,$e->getMessage());}}
     return $checks;
 }
