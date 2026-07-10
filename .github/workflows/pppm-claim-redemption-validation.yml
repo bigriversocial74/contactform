@@ -52,7 +52,25 @@ jobs:
         run: node --check assets/js/merchant-claims.js
 
       - name: Validate ten-point claim redemption contract
-        run: php scripts/validate_pppm_claim_redemption_v1.php
+        id: score
+        continue-on-error: true
+        run: |
+          mkdir -p build
+          php scripts/validate_pppm_claim_redemption_v1.php > build/pppm-claim-redemption-score.txt 2>&1
+
+      - name: Upload claim redemption score
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pppm-claim-redemption-score
+          path: build/pppm-claim-redemption-score.txt
+          if-no-files-found: error
+
+      - name: Enforce ten-point score
+        if: always() && steps.score.outcome == 'failure'
+        run: |
+          cat build/pppm-claim-redemption-score.txt
+          exit 1
 
       - name: Run focused lifecycle contracts
         run: |
