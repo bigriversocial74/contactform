@@ -63,6 +63,30 @@ if ($appSidebarVariant === 'utility' && !isset($appSidebarNav['loyalty-cards']))
     $appSidebarNav = $withLoyalty;
 }
 
+if ($appSidebarVariant === 'utility' && !isset($appSidebarNav['training-lab'])) {
+    $trainingLabItem = [
+        'section' => 'Account',
+        'label' => 'Training Lab',
+        'detail' => 'Proof-based training and rewards',
+        'href' => '/training-lab.php',
+        'visible' => $user !== null,
+        'active' => $appSidebarActive === 'training-lab',
+    ];
+    $withTrainingLab = [];
+    $inserted = false;
+    foreach ($appSidebarNav as $key => $item) {
+        $withTrainingLab[$key] = $item;
+        if ($key === 'messages') {
+            $withTrainingLab['training-lab'] = $trainingLabItem;
+            $inserted = true;
+        }
+    }
+    if (!$inserted) {
+        $withTrainingLab['training-lab'] = $trainingLabItem;
+    }
+    $appSidebarNav = $withTrainingLab;
+}
+
 $currentPath = '/' . ltrim((string) ($_SERVER['SCRIPT_NAME'] ?? ''), '/');
 $lastSection = null;
 ?>
