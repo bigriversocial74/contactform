@@ -9,8 +9,33 @@ $page_title = 'Merchant Store Canvas | Microgifter';
 $page_section = 'agent';
 $header_mode = 'agent';
 $agent_tab = 'store-canvas';
-$page_styles = ['/assets/css/merchant-canvas.css','/assets/css/merchant-canvas-rewards.css','/assets/css/merchant-canvas-phase2.css','/assets/css/merchant-canvas-motion.css','/assets/css/merchant-canvas-drawer-layer.css','/assets/css/merchant-canvas-settings-drawers.css','/assets/css/merchant-canvas-drawer-fixes.css','/assets/css/merchant-canvas-customer-tabs.css','/assets/css/merchant-canvas-intelligence.css','/assets/css/merchant-canvas-store-health.css','/assets/css/merchant-canvas-mobile-icons.css','/assets/css/merchant-canvas-containment.css','/assets/css/merchant-canvas-manual-operations.css','/assets/css/merchant-canvas-customer-analytics.css','/assets/css/sponsored-campaign-card.css'];
-$page_scripts = $hasMerchantAccess ? ['/assets/js/merchant-canvas-manual-operations.js','/assets/js/merchant-canvas-customer-analytics.js','/assets/js/merchant-canvas-drawer-coordinator.js','/assets/js/merchant-canvas-mobile-icons.js','/assets/js/sponsored-campaign-card.js'] : [];
+$page_styles = [
+    '/assets/css/merchant-canvas.css',
+    '/assets/css/merchant-canvas-rewards.css',
+    '/assets/css/merchant-canvas-phase2.css',
+    '/assets/css/merchant-canvas-motion.css',
+    '/assets/css/merchant-canvas-drawer-layer.css',
+    '/assets/css/merchant-canvas-settings-drawers.css',
+    '/assets/css/merchant-canvas-drawer-fixes.css',
+    '/assets/css/merchant-canvas-customer-tabs.css',
+    '/assets/css/merchant-canvas-intelligence.css',
+    '/assets/css/merchant-canvas-store-health.css',
+    '/assets/css/merchant-canvas-mobile-icons.css',
+    '/assets/css/merchant-canvas-containment.css',
+    '/assets/css/merchant-canvas-manual-operations.css',
+    '/assets/css/merchant-canvas-customer-analytics.css',
+    '/assets/css/sponsored-campaign-card.css',
+    '/assets/css/merchant-canvas-restoration.css',
+];
+$page_scripts = $hasMerchantAccess ? [
+    '/assets/js/merchant-canvas-manual-operations.js',
+    '/assets/js/merchant-canvas-customer-analytics.js',
+    '/assets/js/merchant-canvas-drawer-coordinator.js',
+    '/assets/js/merchant-canvas-mobile-icons.js',
+    '/assets/js/sponsored-campaign-card.js',
+    '/assets/js/merchant-canvas-visual-restoration.js',
+    '/assets/js/merchant-canvas-campaign-recommendations.js',
+] : [];
 $page_manifest = [
     'id' => 'merchant-canvas',
     'title' => $page_title,
@@ -50,76 +75,66 @@ if ($merchantNameParts !== []) {
 
 require __DIR__ . '/includes/header.php';
 ?>
-<section class="mg-app-shell mg-agent-app mg-store-canvas" data-merchant-canvas>
+<section class="mg-app-shell mg-agent-app mg-store-canvas mg-store-canvas-restored" data-merchant-canvas>
   <?php require __DIR__ . '/includes/agent-sidebar.php'; ?>
   <div class="mg-app-workspace mg-canvas-workspace">
     <?php if (!$hasMerchantAccess): ?>
       <article class="mg-canvas-empty-card">
         <span class="mg-canvas-eyebrow">Merchant access required</span>
         <h1>Store Canvas is for merchant accounts.</h1>
-        <p>Upgrade or sign into a merchant account to view customer avatars, campaign agents, direct store-session messages, and Store Canvas rewards.</p>
+        <p>Upgrade or sign into a merchant account to view customer avatars, campaign recommendations, direct store-session messages, and merchant CRM intelligence.</p>
         <a class="mg-btn mg-btn-primary" href="/pricing.php">View merchant packages</a>
       </article>
     <?php else: ?>
-      <section class="mg-canvas-shell">
-        <div class="mg-canvas-containment-banner" role="status" data-canvas-containment-banner>
-          <div>
-            <span class="mg-canvas-eyebrow">Production containment active</span>
-            <strong>Automatic movement, proximity chat, and overlap-triggered campaigns are paused.</strong>
-            <p>Manual customer actions now use server-backed CRM safeguards, session validation, protected request keys, and merchant-scoped customer journey analytics.</p>
-          </div>
-          <div>
-            <span class="mg-canvas-containment-state">Manual operations</span>
-            <button type="button" class="mg-btn mg-btn-secondary" data-canvas-refresh>Refresh live customers</button>
-          </div>
-        </div>
-
-        <div class="mg-canvas-command-strip" aria-label="Store Canvas summary">
-          <article><span>Inside Now</span><strong data-canvas-active-count>0</strong></article>
-          <article><span>Today Entries</span><strong data-canvas-today-entries>0</strong></article>
-          <article><span>Canvas Events</span><strong data-canvas-today-events>0</strong></article>
-          <article><span>History Rows</span><strong data-canvas-history-rows>0</strong></article>
-        </div>
-
-        <div class="mg-canvas-grid mg-canvas-grid-full">
-          <section class="mg-canvas-stage" aria-label="Live store canvas">
-            <span class="mg-canvas-live-pill mg-canvas-live-pill-hidden" data-canvas-live-pill aria-live="polite">Checking database</span>
-
-            <div class="mg-canvas-state-banner mg-canvas-state-hidden" data-canvas-state role="status" aria-live="polite">
-              Database check pending.
-            </div>
-
-            <details class="mg-canvas-diagnostics" data-canvas-diagnostics>
-              <summary>
-                <span>Database diagnostics</span>
-                <strong data-canvas-health-status>Not checked</strong>
-              </summary>
-              <div class="mg-canvas-health-grid" data-canvas-health></div>
-              <button type="button" class="mg-btn mg-btn-secondary" data-canvas-health-refresh>Run diagnostics</button>
-            </details>
-
-            <div class="mg-canvas-map" data-canvas-map>
-              <div class="mg-canvas-agent-node mg-canvas-merchant-node" aria-label="Merchant agent">
-                <span class="mg-canvas-agent-icon">
-                  <?php if ($merchantAvatarUrl !== ''): ?>
-                    <img src="<?php echo mg_e($merchantAvatarUrl); ?>" alt="">
-                  <?php else: ?>
-                    <?php echo mg_e($merchantInitials); ?>
-                  <?php endif; ?>
-                </span>
-                <strong><?php echo mg_e($merchantDisplayName); ?></strong>
-                <small>Merchant Agent · protected manual messaging · protected manual rewards · real customer journey</small>
+      <section class="mg-canvas-shell mg-canvas-shell-restored" aria-label="Merchant Store Canvas">
+        <section class="mg-canvas-stage mg-canvas-stage-restored" aria-label="Live store canvas">
+          <div class="mg-canvas-map mg-canvas-map-restored" data-canvas-map>
+            <header class="mg-canvas-hud" aria-label="Store Canvas controls and live summary">
+              <div class="mg-canvas-hud-status">
+                <span class="mg-canvas-live-pill" data-canvas-live-pill aria-live="polite">Checking database</span>
+                <span class="mg-canvas-hud-mode">Visual live canvas · guarded manual actions</span>
               </div>
-              <div class="mg-canvas-avatar-layer" data-canvas-customers aria-live="polite"></div>
-              <div class="mg-sponsored-map-layer" data-mg-ad-placement="world_canvas_sponsored_pin" data-mg-ad-limit="5" aria-label="Sponsored World Canvas pins"></div>
-              <div class="mg-sponsored-map-layer" data-mg-ad-placement="target_zone_sponsored_drop" data-mg-ad-limit="5" aria-label="Sponsored Target Zone drops"></div>
-              <article class="mg-canvas-empty-state" data-canvas-empty>
-                <span>No avatars inside yet</span>
-                <p data-canvas-empty-copy>Customer avatars will appear here when shoppers enter from merchant feed posts.</p>
-              </article>
+              <div class="mg-canvas-hud-stats" aria-label="Store Canvas summary">
+                <article><span>Inside</span><strong data-canvas-active-count>0</strong></article>
+                <article><span>Entries</span><strong data-canvas-today-entries>0</strong></article>
+                <article><span>Events</span><strong data-canvas-today-events>0</strong></article>
+                <article><span>History</span><strong data-canvas-history-rows>0</strong></article>
+              </div>
+              <div class="mg-canvas-hud-actions">
+                <button type="button" class="mg-canvas-hud-button" data-canvas-refresh>Refresh</button>
+                <button type="button" class="mg-canvas-hud-button is-primary" data-canvas-open-control>Control Center</button>
+              </div>
+            </header>
+
+            <div class="mg-canvas-agent-node mg-canvas-merchant-node" data-canvas-control-center role="button" tabindex="0" aria-label="Open Merchant Control Center">
+              <span class="mg-canvas-agent-icon">
+                <?php if ($merchantAvatarUrl !== ''): ?>
+                  <img src="<?php echo mg_e($merchantAvatarUrl); ?>" alt="">
+                <?php else: ?>
+                  <?php echo mg_e($merchantInitials); ?>
+                <?php endif; ?>
+              </span>
+              <strong><?php echo mg_e($merchantDisplayName); ?></strong>
+              <small data-canvas-agent-status>Merchant Agent · campaigns · CRM · intelligence</small>
             </div>
-          </section>
-        </div>
+
+            <div class="mg-canvas-server-zone-layer" data-canvas-server-zones aria-label="Campaign trigger zones"></div>
+            <div class="mg-canvas-avatar-layer" data-canvas-customers aria-live="polite"></div>
+            <div class="mg-sponsored-map-layer" data-mg-ad-placement="world_canvas_sponsored_pin" data-mg-ad-limit="5" aria-label="Sponsored World Canvas pins"></div>
+            <div class="mg-sponsored-map-layer" data-mg-ad-placement="target_zone_sponsored_drop" data-mg-ad-limit="5" aria-label="Sponsored Target Zone drops"></div>
+
+            <article class="mg-canvas-empty-state" data-canvas-empty>
+              <span>No customers inside yet</span>
+              <p data-canvas-empty-copy>Customer avatars will appear and move across the Store Canvas when shoppers enter from merchant feed posts.</p>
+            </article>
+
+            <div class="mg-canvas-legend" aria-label="Canvas legend">
+              <span><i class="is-customer"></i> Live customer</span>
+              <span><i class="is-zone"></i> Campaign zone</span>
+              <span><i class="is-guarded"></i> Server validation required</span>
+            </div>
+          </div>
+        </section>
       </section>
     <?php endif; ?>
   </div>
@@ -134,7 +149,7 @@ require __DIR__ . '/includes/header.php';
         <button type="button" data-drawer-close aria-label="Close customer CRM drawer">&times;</button>
       </div>
       <div class="mg-canvas-drawer-body" data-drawer-body aria-live="polite">
-        <p>Click a customer avatar on the Store Canvas to load CRM details.</p>
+        <p>Click a customer avatar on the Store Canvas to load the complete customer timeline, analytics, CRM, messages, and campaign actions.</p>
       </div>
       <form class="mg-canvas-message-form" data-message-form>
         <label for="mg-canvas-message">Direct message</label>
