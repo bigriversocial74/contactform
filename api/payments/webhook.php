@@ -41,7 +41,7 @@ if(in_array($type,$disputeTypes,true)){
     }catch(MgDisputeWorkflowException $error){
         if($pdo->inTransaction())$pdo->rollBack();
         mg_fail($error->getMessage(),$error->httpStatus);
-    }catch(Throwable $error){
+    }catch(Throwable){
         if($pdo->inTransaction())$pdo->rollBack();
         mg_fail('Unable to process dispute webhook.',500);
     }
@@ -50,8 +50,17 @@ if(in_array($type,$disputeTypes,true)){
 $pdo->beginTransaction();
 try{
     $result=mg_payment_process_webhook_event($pdo,$provider,$event,$payload);
+    $successTypes=['payment.succeeded','payment_intent.succeeded','checkout.session.completed','checkout.session.async_payment_succeeded'];
+    if(!empty($result['duplicate'])&&in_array($type,$successTypes,true)){
+        $ids=mg_payment_webhook_identifiers($provider,$event);
+        $row=mg_payment_webhook_find_order($pdo,$provider,$ids);
+        if($row&&(string)$row['payment_status']==='paid'){
+            $result['reconciliation']=mg_payment_reconcile_paid_order($pdo,(int)$row['order_db_id'],null,'successful_webhook_replay');
+            $result['order_id']=(string)$row['order_id'];
+        }
+    }
     $pdo->commit();
-    mg_ok(['received'=>true]+$result,!empty($result['duplicate'])?'Webhook already processed.':'Webhook processed.');
+    mg_ok(['received'=>true]+$result,!empty($result['duplicate'])?'Webhook replay verified.':'Webhook processed.');
 }catch(MgPaymentWebhookException|MgCaptureWorkflowException $error){
     if($pdo->inTransaction())$pdo->rollBack();
     mg_security_log('warning','payment.webhook_rejected','Signed payment webhook was rejected.',[
