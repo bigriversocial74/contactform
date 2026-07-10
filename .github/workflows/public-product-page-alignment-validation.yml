@@ -1,0 +1,57 @@
+name: Public Product Page Alignment v1 Validation
+
+on:
+  pull_request:
+    paths:
+      - 'product.php'
+      - 'includes/public-product-foundation.php'
+      - 'includes/public-product-view.php'
+      - 'api/public/product.php'
+      - 'assets/js/public-product-v1.js'
+      - 'assets/js/public-catalog.js'
+      - 'assets/css/public-product-v1.css'
+      - 'scripts/validate_public_product_page_alignment_v1.php'
+      - '.github/workflows/public-product-page-alignment-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate public product lifecycle entry
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+
+      - name: PHP syntax check
+        run: |
+          set -euo pipefail
+          php -l product.php
+          php -l includes/public-product-foundation.php
+          php -l includes/public-product-view.php
+          php -l api/public/product.php
+          php -l scripts/validate_public_product_page_alignment_v1.php
+
+      - name: JavaScript syntax check
+        run: |
+          node --check assets/js/public-product-v1.js
+          node --check assets/js/public-catalog.js
+
+      - name: Validate ten-point product page contract
+        run: php scripts/validate_public_product_page_alignment_v1.php
+
+      - name: Run available catalog contracts
+        run: |
+          if [ -x vendor/bin/phpunit ]; then
+            vendor/bin/phpunit tests/phpunit/PublicProductStorefrontCartContractTest.php tests/phpunit/BuilderAddToCartIntegrationContractTest.php
+          else
+            echo 'vendor/bin/phpunit not installed; static contracts completed.'
+          fi
