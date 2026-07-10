@@ -5,7 +5,7 @@ $giftCenterTitles=['inbox'=>'Inbox','sent'=>'Sent','claimed'=>'Claimed'];
 $giftCenterTitle=$giftCenterTitles[$giftCenterFolder];
 $giftCenterDemoEnabled=mg_has_role('super_admin');
 ?>
-<link rel="stylesheet" href="/assets/css/gift-action-center-modal-fix.css">
+<link rel="stylesheet" href="/assets/css/gift-action-center-modals.css">
 <link rel="stylesheet" href="/assets/css/gift-envelope-presentation.css">
 <link rel="stylesheet" href="/assets/css/gift-action-center-search.css">
 <section class="mg-app-shell mg-gift-center-page" data-gift-center data-initial-folder="<?= mg_e($giftCenterFolder) ?>" data-demo-enabled="<?= $giftCenterDemoEnabled?'true':'false' ?>">

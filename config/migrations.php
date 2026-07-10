@@ -154,6 +154,10 @@ return [
         'stage_20g_store_health_action_states.sql',
         'merchant_canvas_manual_operations_stabilization_v1.sql',
         'merchant_canvas_real_customer_analytics_journey_v1.sql',
+        'merchant_canvas_behavior_memory_predictive_v1.sql',
+        'predictive_campaign_studio_foundation_v1.sql',
+        'store_canvas_server_trigger_engine_v1.sql',
+        'trigger_event_ingestion_orchestration_v1.sql',
         'stage_21_world_canvas_avatar_coordinates.sql',
         'stage_22_world_conversations.sql',
         'stage_23_world_reward_drops.sql',
@@ -177,6 +181,7 @@ return [
         'campaign_embed_settings_v2.sql',
         'campaign_embed_placement_tests_v4_7.sql',
         'customer_saved_campaign_cards_20260709.sql',
+        'delivery_operations_capacity_foundation_v1.sql',
     ],
     'coverage_markers' => [
         'stage_9e4_consolidated_stage1_to_stage9_upgrade' => 'stage_9d_microgift_operations.sql',

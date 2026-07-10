@@ -31,6 +31,9 @@ $canStampOperations = $canCommerce;
 $canStampHealth = $canCommerce;
 $canStampEnforcement = $canCommerce;
 $canHealth = $canAdminPage('admin.system_health');
+$canDeliveryOperations = $canHealth
+    || mg_admin_permission_user_has($adminMatrixUser, 'delivery.operations.view')
+    || mg_admin_permission_user_has($adminMatrixUser, 'delivery.operations.manage');
 $canScreenRecordings = $canAdminPage('admin.screen_recordings');
 $canLifecycleHealth = $canAdminPage('admin.lifecycle_health');
 $canSettings = $canAdminPage('admin.settings');
@@ -93,6 +96,12 @@ $adminNav = [
         'href' => '/admin/notifications.php',
         'visible' => $canNotifications,
         'badge' => 'notifications',
+    ],
+    'delivery-operations' => [
+        'label' => 'Delivery operations',
+        'detail' => 'Queue, channels, recovery',
+        'href' => '/admin/delivery-operations.php',
+        'visible' => $canDeliveryOperations,
     ],
     'support-queue' => [
         'label' => 'Follow-up queue',
@@ -262,9 +271,4 @@ $adminNav = [
       </a>
     <?php endforeach; ?>
   </nav>
-
-  <div class="mg-admin-side-actions">
-    <a class="mg-btn mg-btn-soft" href="/account.php">Account</a>
-    <a class="mg-btn mg-btn-ghost" href="/inbox.php">Exit admin</a>
-  </div>
 </aside>
