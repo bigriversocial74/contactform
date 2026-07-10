@@ -45,6 +45,6 @@ composer test-demand-orchestration-operations
 composer test-demand-orchestration-recovery
 composer test-checkout-fulfillment
 composer test-lifecycle-completion
-composer test
+composer test-active-recovery
 
 echo "Recovery baseline passed."
