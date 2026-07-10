@@ -73,7 +73,7 @@ function mg_microgift_reconcile_completed_redemption(PDO $pdo,string $redemption
         );
     }
 
-    $pdo->prepare('UPDATE microgift_redemptions SET can_tip=1,location_reference=?,updated_at=NOW() WHERE id=?')
+    $pdo->prepare('UPDATE microgift_redemptions SET can_tip=1,location_reference=? WHERE id=?')
         ->execute([$locationPublicId,(int)$redemption['id']]);
     $projection=mg_action_center_project_lifecycle($pdo,$instance,[
         'sender_user_id'=>(int)($instance['issuer_user_id']??0),
@@ -85,9 +85,7 @@ function mg_microgift_reconcile_completed_redemption(PDO $pdo,string $redemption
         'occurred_at'=>(string)($redemption['redeemed_at']??date('Y-m-d H:i:s')),
     ]);
     $recipientItemId=(string)($projection['recipient_item_id']??'');
-    if($recipientItemId===''){
-        throw new MgMicrogiftRedemptionReconciliationException('Buyer Action Center redemption projection is unavailable.',409);
-    }
+    if($recipientItemId==='')throw new MgMicrogiftRedemptionReconciliationException('Buyer Action Center redemption projection is unavailable.',409);
 
     $authority=[
         'merchant_user_id'=>$merchantUserId,
@@ -96,14 +94,8 @@ function mg_microgift_reconcile_completed_redemption(PDO $pdo,string $redemption
         'location_name'=>(string)($redemption['location_name']??'merchant location'),
     ];
     $notifications=mg_microgift_redemption_confirmations(
-        $pdo,
-        $instance,
-        $claimantUserId,
-        $merchantUserId,
-        $actorUserId?:$merchantUserId,
-        $redemptionPublicId,
-        $recipientItemId,
-        $authority
+        $pdo,$instance,$claimantUserId,$merchantUserId,$actorUserId?:$merchantUserId,
+        $redemptionPublicId,$recipientItemId,$authority
     );
 
     return [
