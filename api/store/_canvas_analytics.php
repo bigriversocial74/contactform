@@ -57,8 +57,7 @@ function mg_store_analytics_public_metadata(array $metadata): array
     $public = [];
     foreach ($allowed as $key) {
         if (!array_key_exists($key, $metadata) || $metadata[$key] === null || $metadata[$key] === '') continue;
-        $value = $metadata[$key];
-        if (is_scalar($value)) $public[$key] = mb_substr((string)$value, 0, 500);
+        if (is_scalar($metadata[$key])) $public[$key] = mb_substr((string)$metadata[$key], 0, 500);
     }
     return $public;
 }
@@ -130,12 +129,21 @@ function mg_store_analytics_normalize_store_event(string $type): ?string
     };
 }
 
+function mg_store_analytics_session_db_id(PDO $pdo, int $merchantUserId, int $customerUserId, string $sessionPublicId): ?int
+{
+    if ($sessionPublicId === '') return null;
+    $stmt = $pdo->prepare('SELECT id FROM mg_store_sessions WHERE public_id=? AND merchant_user_id=? AND customer_user_id=? LIMIT 1');
+    $stmt->execute([$sessionPublicId, $merchantUserId, $customerUserId]);
+    $value = $stmt->fetchColumn();
+    return $value === false ? null : (int)$value;
+}
+
 function mg_store_analytics_sync_customer(PDO $pdo, int $merchantUserId, int $customerUserId): void
 {
     mg_store_analytics_require_schema($pdo);
-
     $hasFeedPosts = mg_store_canvas_table_exists($pdo, 'feed_posts');
     $hasCampaigns = mg_store_canvas_table_exists($pdo, 'campaigns');
+
     $sessionSql = 'SELECT s.*';
     $sessionSql .= $hasFeedPosts ? ',fp.public_id source_post_public_id,fp.headline source_post_headline' : ',NULL source_post_public_id,NULL source_post_headline';
     $sessionSql .= $hasCampaigns ? ',c.public_id source_campaign_public_id,c.title source_campaign_title' : ',NULL source_campaign_public_id,NULL source_campaign_title';
@@ -183,16 +191,14 @@ function mg_store_analytics_sync_customer(PDO $pdo, int $merchantUserId, int $cu
     }
 
     $eventsStmt = $pdo->prepare(
-        'SELECT e.public_id,e.store_session_id,e.event_type,e.event_label,e.event_data_json,e.created_at,s.public_id session_public_id
+        'SELECT e.public_id,e.store_session_id,e.event_type,e.event_label,e.event_data_json,e.created_at
          FROM mg_store_session_events e
-         LEFT JOIN mg_store_sessions s ON s.id=e.store_session_id
          WHERE e.merchant_user_id=? AND e.customer_user_id=? ORDER BY e.id ASC'
     );
     $eventsStmt->execute([$merchantUserId, $customerUserId]);
     foreach ($eventsStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $eventType = mg_store_analytics_normalize_store_event(strtolower((string)$row['event_type']));
         if ($eventType === null) continue;
-        $metadata = mg_store_analytics_json($row['event_data_json'] ?? null);
         mg_store_analytics_record($pdo, [
             'event_key' => 'store-event:' . (string)$row['public_id'],
             'merchant_user_id' => $merchantUserId,
@@ -203,15 +209,14 @@ function mg_store_analytics_sync_customer(PDO $pdo, int $merchantUserId, int $cu
             'source_kind' => 'store_event',
             'source_public_id' => (string)$row['public_id'],
             'event_at' => (string)$row['created_at'],
-            'metadata' => $metadata,
+            'metadata' => mg_store_analytics_json($row['event_data_json'] ?? null),
         ]);
     }
 
     if (mg_store_canvas_table_exists($pdo, 'messages') && mg_store_canvas_table_exists($pdo, 'message_threads')) {
         $messageStmt = $pdo->prepare(
-            "SELECT m.public_id,m.body,m.source_type,m.source_reference,m.created_at,mt.public_id thread_public_id
-             FROM messages m
-             INNER JOIN message_threads mt ON mt.id=m.thread_id
+            "SELECT m.public_id,m.source_type,m.source_reference,m.created_at,mt.public_id thread_public_id
+             FROM messages m INNER JOIN message_threads mt ON mt.id=m.thread_id
              WHERE m.sender_user_id=? AND m.recipient_user_id=?
                AND (m.source_type='store_canvas_direct' OR m.source_reference LIKE 'store_session:%')
              ORDER BY m.id ASC"
@@ -219,17 +224,11 @@ function mg_store_analytics_sync_customer(PDO $pdo, int $merchantUserId, int $cu
         $messageStmt->execute([$merchantUserId, $customerUserId]);
         foreach ($messageStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
             $sessionPublicId = str_starts_with((string)$row['source_reference'], 'store_session:') ? substr((string)$row['source_reference'], 14) : '';
-            $sessionDbId = null;
-            if ($sessionPublicId !== '') {
-                $sessionIdStmt = $pdo->prepare('SELECT id FROM mg_store_sessions WHERE public_id=? AND merchant_user_id=? AND customer_user_id=? LIMIT 1');
-                $sessionIdStmt->execute([$sessionPublicId, $merchantUserId, $customerUserId]);
-                $sessionDbId = $sessionIdStmt->fetchColumn();
-            }
             mg_store_analytics_record($pdo, [
                 'event_key' => 'message:' . (string)$row['public_id'],
                 'merchant_user_id' => $merchantUserId,
                 'customer_user_id' => $customerUserId,
-                'store_session_id' => $sessionDbId !== false ? (int)$sessionDbId : null,
+                'store_session_id' => mg_store_analytics_session_db_id($pdo, $merchantUserId, $customerUserId, $sessionPublicId),
                 'event_type' => 'message_sent',
                 'event_label' => 'Merchant sent a direct message',
                 'source_kind' => 'message',
@@ -241,9 +240,9 @@ function mg_store_analytics_sync_customer(PDO $pdo, int $merchantUserId, int $cu
     }
 
     if (mg_store_canvas_table_exists($pdo, 'wallet_items')) {
-        $rewardSql = 'SELECT wi.public_id,wi.store_session_id,wi.status,wi.title_snapshot,wi.value_cents_snapshot,wi.currency_snapshot,wi.issued_at,wi.viewed_at,wi.claimed_at,wi.redeemed_at,wi.metadata_json';
-        $rewardSql .= $hasCampaigns ? ',c.public_id campaign_public_id,c.title campaign_title' : ',NULL campaign_public_id,NULL campaign_title';
         $hasTemplates = mg_store_canvas_table_exists($pdo, 'reward_templates');
+        $rewardSql = 'SELECT wi.public_id,wi.status,wi.title_snapshot,wi.value_cents_snapshot,wi.currency_snapshot,wi.issued_at,wi.viewed_at,wi.claimed_at,wi.redeemed_at,wi.metadata_json';
+        $rewardSql .= $hasCampaigns ? ',c.public_id campaign_public_id,c.title campaign_title' : ',NULL campaign_public_id,NULL campaign_title';
         $rewardSql .= $hasTemplates ? ',rt.public_id reward_template_public_id,rt.title reward_template_title' : ',NULL reward_template_public_id,NULL reward_template_title';
         $rewardSql .= ' FROM wallet_items wi';
         if ($hasCampaigns) $rewardSql .= ' LEFT JOIN campaigns c ON c.id=wi.campaign_id AND c.merchant_user_id=wi.merchant_user_id';
@@ -254,12 +253,6 @@ function mg_store_analytics_sync_customer(PDO $pdo, int $merchantUserId, int $cu
         foreach ($rewardStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
             $metadata = mg_store_analytics_json($row['metadata_json'] ?? null);
             $sessionPublicId = trim((string)($metadata['store_session_id'] ?? ''));
-            $sessionDbId = null;
-            if ($sessionPublicId !== '') {
-                $sessionIdStmt = $pdo->prepare('SELECT id FROM mg_store_sessions WHERE public_id=? AND merchant_user_id=? AND customer_user_id=? LIMIT 1');
-                $sessionIdStmt->execute([$sessionPublicId, $merchantUserId, $customerUserId]);
-                $sessionDbId = $sessionIdStmt->fetchColumn();
-            }
             $baseMetadata = [
                 'wallet_item_id' => (string)$row['public_id'],
                 'campaign_id' => $row['campaign_public_id'] ?? ($metadata['campaign_id'] ?? null),
@@ -280,7 +273,7 @@ function mg_store_analytics_sync_customer(PDO $pdo, int $merchantUserId, int $cu
                     'event_key' => 'wallet:' . (string)$row['public_id'] . ':' . $suffix,
                     'merchant_user_id' => $merchantUserId,
                     'customer_user_id' => $customerUserId,
-                    'store_session_id' => $sessionDbId !== false ? (int)$sessionDbId : null,
+                    'store_session_id' => mg_store_analytics_session_db_id($pdo, $merchantUserId, $customerUserId, $sessionPublicId),
                     'event_type' => $eventType,
                     'event_label' => $label . ': ' . (string)$row['title_snapshot'],
                     'source_kind' => 'wallet_item',
@@ -296,10 +289,7 @@ function mg_store_analytics_sync_customer(PDO $pdo, int $merchantUserId, int $cu
 function mg_store_analytics_counts(PDO $pdo, int $merchantUserId, int $customerUserId): array
 {
     $counts = array_fill_keys(MG_STORE_ANALYTICS_EVENT_TYPES, 0);
-    $stmt = $pdo->prepare(
-        'SELECT event_type,COUNT(*) total FROM mg_merchant_canvas_journey_events
-         WHERE merchant_user_id=? AND customer_user_id=? GROUP BY event_type'
-    );
+    $stmt = $pdo->prepare('SELECT event_type,COUNT(*) total FROM mg_merchant_canvas_journey_events WHERE merchant_user_id=? AND customer_user_id=? GROUP BY event_type');
     $stmt->execute([$merchantUserId, $customerUserId]);
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $type = (string)$row['event_type'];
@@ -323,7 +313,6 @@ function mg_store_analytics_summary(PDO $pdo, int $merchantUserId, int $customer
     $issued = (int)($counts['reward_issued'] ?? 0);
     $claimed = (int)($counts['reward_claimed'] ?? 0);
     $redeemed = (int)($counts['reward_redeemed'] ?? 0);
-
     return [
         'visit_count' => (int)($visits['visit_count'] ?? 0),
         'return_visit_count' => max(0, (int)($visits['visit_count'] ?? 0) - 1),
@@ -387,12 +376,7 @@ function mg_store_analytics_segments(array $summary, array $crm): array
 
 function mg_store_analytics_journey(PDO $pdo, int $merchantUserId, int $customerUserId): array
 {
-    $stmt = $pdo->prepare(
-        'SELECT event_type,event_label,source_kind,source_public_id,event_at,metadata_json
-         FROM mg_merchant_canvas_journey_events
-         WHERE merchant_user_id=? AND customer_user_id=?
-         ORDER BY event_at DESC,id DESC LIMIT 100'
-    );
+    $stmt = $pdo->prepare('SELECT event_type,event_label,source_kind,source_public_id,event_at,metadata_json FROM mg_merchant_canvas_journey_events WHERE merchant_user_id=? AND customer_user_id=? ORDER BY event_at DESC,id DESC LIMIT 100');
     $stmt->execute([$merchantUserId, $customerUserId]);
     $items = [];
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
@@ -412,8 +396,7 @@ function mg_store_analytics_visits(PDO $pdo, int $merchantUserId, int $customerU
 {
     $hasFeedPosts = mg_store_canvas_table_exists($pdo, 'feed_posts');
     $hasCampaigns = mg_store_canvas_table_exists($pdo, 'campaigns');
-    $sql = "SELECT s.public_id,s.status,s.entered_at,s.last_active_at,s.exited_at,s.exit_reason,
-                   GREATEST(0,TIMESTAMPDIFF(SECOND,s.entered_at,COALESCE(s.exited_at,IF(s.active_key IS NOT NULL,NOW(),s.last_active_at)))) duration_seconds";
+    $sql = "SELECT s.public_id,s.status,s.entered_at,s.last_active_at,s.exited_at,s.exit_reason,GREATEST(0,TIMESTAMPDIFF(SECOND,s.entered_at,COALESCE(s.exited_at,IF(s.active_key IS NOT NULL,NOW(),s.last_active_at)))) duration_seconds";
     $sql .= $hasFeedPosts ? ',fp.public_id post_public_id,fp.headline post_headline' : ',NULL post_public_id,NULL post_headline';
     $sql .= $hasCampaigns ? ',c.public_id campaign_public_id,c.title campaign_title' : ',NULL campaign_public_id,NULL campaign_title';
     $sql .= ' FROM mg_store_sessions s';
@@ -441,13 +424,7 @@ function mg_store_analytics_visits(PDO $pdo, int $merchantUserId, int $customerU
 function mg_store_analytics_messages(PDO $pdo, int $merchantUserId, int $customerUserId): array
 {
     if (!mg_store_canvas_table_exists($pdo, 'messages') || !mg_store_canvas_table_exists($pdo, 'message_threads')) return [];
-    $stmt = $pdo->prepare(
-        "SELECT m.public_id,m.body,m.source_type,m.created_at,mt.public_id thread_public_id
-         FROM messages m INNER JOIN message_threads mt ON mt.id=m.thread_id
-         WHERE m.sender_user_id=? AND m.recipient_user_id=?
-           AND (m.source_type='store_canvas_direct' OR m.source_reference LIKE 'store_session:%')
-         ORDER BY m.created_at DESC,m.id DESC LIMIT 25"
-    );
+    $stmt = $pdo->prepare("SELECT m.public_id,m.body,m.source_type,m.created_at,mt.public_id thread_public_id FROM messages m INNER JOIN message_threads mt ON mt.id=m.thread_id WHERE m.sender_user_id=? AND m.recipient_user_id=? AND (m.source_type='store_canvas_direct' OR m.source_reference LIKE 'store_session:%') ORDER BY m.created_at DESC,m.id DESC LIMIT 25");
     $stmt->execute([$merchantUserId, $customerUserId]);
     $items = [];
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
@@ -504,7 +481,6 @@ function mg_store_analytics_customer_payload(PDO $pdo, int $merchantUserId, stri
     mg_store_analytics_sync_customer($pdo, $merchantUserId, $customerUserId);
     $crm = mg_store_manual_ops_crm_get($pdo, $merchantUserId, $customerUserId, false);
     $summary = mg_store_analytics_summary($pdo, $merchantUserId, $customerUserId);
-
     return [
         'schema_ready' => true,
         'analytics' => $summary,
