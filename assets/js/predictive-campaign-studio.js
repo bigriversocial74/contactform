@@ -106,16 +106,20 @@ window.Microgifter = window.Microgifter || {};
       if (!state.loaded && !state.loading) load();
     }
 
+    function deactivate() {
+      link.classList.remove('is-active');
+      link.removeAttribute('aria-current');
+      panel.classList.remove('is-active');
+      panel.hidden = true;
+    }
+
     link.addEventListener('click', function (event) {
       event.preventDefault();
       activate();
     });
 
     root.querySelectorAll('[data-campaign-tab-link]').forEach(function (item) {
-      item.addEventListener('click', function () {
-        link.classList.remove('is-active');
-        link.removeAttribute('aria-current');
-      });
+      item.addEventListener('click', deactivate);
     });
 
     function renderKpis(snapshot) {
