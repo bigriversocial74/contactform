@@ -1,2 +1,135 @@
 /* Loyalty Cards / Saved Stamp Cards v1 */
-.mg-loyalty-save-toggle{display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:0 12px;border:1px solid rgba(15,23,42,.08);border-radius:999px;background:rgba(255,255,255,.92);color:#263a54;font-size:11px;font-weight:850;box-shadow:0 8px 24px rgba(15,23,42,.05);cursor:pointer}.mg-loyalty-save-toggle span{font-size:14px;line-height:1;color:#94a3b8}.mg-loyalty-save-toggle.is-saved{background:#06102c;color:#fff;border-color:#06102c}.mg-loyalty-save-toggle.is-saved span{color:#f8c84b}.mg-loyalty-save-toggle:disabled{opacity:.64;cursor:wait}.mg-rl-stamp .mg-rl-profile a.mg-rl-btn-soft{display:inline-grid;place-items:center;min-height:34px;padding:0 14px;margin-top:9px;border-radius:999px;font-size:11px;font-weight:850;line-height:1.1;white-space:nowrap}.mg-loyalty-cards-page{min-height:calc(100vh - 72px);background:#edf5fb}.mg-loyalty-workspace{padding:34px clamp(20px,4vw,54px) 64px}.mg-loyalty-shell{max-width:1180px;margin:0 auto}.mg-loyalty-hero{margin:0 0 22px}.mg-loyalty-hero span,.mg-loyalty-card-top span{display:block;color:#1260ff;font-size:11px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}.mg-loyalty-hero h1{margin:7px 0 8px;color:#071129;font-size:clamp(42px,5vw,72px);line-height:.95;letter-spacing:-.06em;font-weight:850}.mg-loyalty-hero p{max-width:660px;margin:0;color:#344860;font-size:15px;line-height:1.45;font-weight:650}.mg-loyalty-status{margin:0 0 14px;color:#344860;font-weight:750}.mg-loyalty-status.is-error{color:#b42318}.mg-loyalty-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:18px}.mg-loyalty-card{overflow:hidden;border:1px solid rgba(255,255,255,.76);border-radius:26px;background:rgba(255,255,255,.9);box-shadow:0 22px 58px rgba(15,23,42,.12);backdrop-filter:blur(18px)}.mg-loyalty-card-image{display:grid;place-items:center;aspect-ratio:1/1;margin:14px 14px 0;overflow:hidden;border-radius:20px;background:#f8fafc;text-decoration:none;color:#64748b;font-weight:900;letter-spacing:.12em;text-transform:uppercase}.mg-loyalty-card-image img{width:100%;height:100%;object-fit:cover;display:block}.mg-loyalty-card-body{padding:16px}.mg-loyalty-card-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:9px}.mg-loyalty-card-top button{display:grid;place-items:center;width:34px;height:34px;border:0;border-radius:50%;background:#06102c;color:#f8c84b;font-size:16px;cursor:pointer}.mg-loyalty-card h2{margin:0;color:#071129;font-size:24px;line-height:1.02;letter-spacing:-.04em;font-weight:850}.mg-loyalty-card p{margin:7px 0 0;color:#344860;font-size:13px;font-weight:700}.mg-loyalty-progress{margin:16px 0}.mg-loyalty-progress div{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;color:#344860;font-size:12px;font-weight:800}.mg-loyalty-progress strong{color:#071129}.mg-loyalty-progress i{display:block;height:9px;border-radius:999px;overflow:hidden;background:#e5e7eb}.mg-loyalty-progress b{display:block;height:100%;border-radius:999px;background:#1260ff}.mg-loyalty-card-meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}.mg-loyalty-card-meta span{display:inline-flex;min-height:26px;align-items:center;padding:0 10px;border-radius:999px;background:#eef4ff;color:#194fc7;font-size:11px;font-weight:850}.mg-loyalty-card .mg-btn{width:100%;justify-content:center}.mg-loyalty-empty{border:1px solid rgba(255,255,255,.76);border-radius:24px;background:rgba(255,255,255,.88);box-shadow:0 18px 48px rgba(15,23,42,.1);padding:28px}.mg-loyalty-empty h2{margin:0;color:#071129;font-size:28px;letter-spacing:-.04em}.mg-loyalty-empty p{max-width:520px;color:#344860;font-weight:650}.mg-loyalty-empty .mg-btn{width:max-content;padding:0 18px}@media(max-width:780px){.mg-loyalty-workspace{padding:22px 14px 44px}.mg-loyalty-grid{grid-template-columns:1fr}.mg-loyalty-hero h1{font-size:42px}.mg-loyalty-save-toggle strong{display:none}.mg-loyalty-save-toggle{width:34px;min-height:28px;justify-content:center;padding:0}}
+.mg-loyalty-save-toggle{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  min-height:30px;
+  padding:0 13px;
+  border:1px solid rgba(15,23,42,.10);
+  border-radius:999px;
+  background:rgba(255,255,255,.92);
+  color:#263a54;
+  font-size:11px;
+  font-weight:850;
+  line-height:1;
+  box-shadow:0 8px 24px rgba(15,23,42,.05);
+  cursor:pointer;
+}
+.mg-loyalty-save-toggle span{font-size:15px;line-height:1;color:#94a3b8}
+.mg-loyalty-save-toggle.is-saved{background:#06102c;color:#fff;border-color:#06102c}
+.mg-loyalty-save-toggle.is-saved span{color:#f8c84b}
+.mg-loyalty-save-toggle:disabled{opacity:.64;cursor:wait}
+
+.mg-rl-stamp .mg-rl-profile a.mg-rl-btn-soft{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:max-content;
+  min-height:38px;
+  margin-top:10px;
+  padding:8px 15px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:850;
+  line-height:1;
+  white-space:nowrap;
+}
+
+.mg-loyalty-cards-page{min-height:calc(100vh - 72px);background:#edf5fb}
+.mg-loyalty-workspace{padding:34px clamp(20px,4vw,54px) 64px}
+.mg-loyalty-shell{max-width:1180px;margin:0 auto}
+.mg-loyalty-hero{margin:0 0 22px}
+.mg-loyalty-hero span,.mg-loyalty-card-top span{
+  display:block;
+  color:#1260ff;
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+.mg-loyalty-hero h1{
+  margin:7px 0 8px;
+  color:#071129;
+  font-size:clamp(42px,5vw,72px);
+  line-height:.95;
+  letter-spacing:-.06em;
+  font-weight:850;
+}
+.mg-loyalty-hero p{max-width:660px;margin:0;color:#344860;font-size:15px;line-height:1.45;font-weight:650}
+.mg-loyalty-status{margin:0 0 14px;color:#344860;font-weight:750}
+.mg-loyalty-status.is-error{color:#b42318}
+.mg-loyalty-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:18px}
+.mg-loyalty-card{
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.76);
+  border-radius:26px;
+  background:rgba(255,255,255,.9);
+  box-shadow:0 22px 58px rgba(15,23,42,.12);
+  backdrop-filter:blur(18px);
+}
+.mg-loyalty-card-image{
+  display:grid;
+  place-items:center;
+  aspect-ratio:1/1;
+  margin:14px 14px 0;
+  overflow:hidden;
+  border-radius:20px;
+  background:#f8fafc;
+  color:#64748b;
+  text-decoration:none;
+  font-weight:900;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+.mg-loyalty-card-image img{display:block;width:100%;height:100%;object-fit:cover}
+.mg-loyalty-card-body{padding:16px}
+.mg-loyalty-card-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:9px}
+.mg-loyalty-card-top button{
+  display:grid;
+  place-items:center;
+  width:34px;
+  height:34px;
+  border:0;
+  border-radius:50%;
+  background:#06102c;
+  color:#f8c84b;
+  font-size:16px;
+  cursor:pointer;
+}
+.mg-loyalty-card h2{margin:0;color:#071129;font-size:24px;line-height:1.02;letter-spacing:-.04em;font-weight:850}
+.mg-loyalty-card p{margin:7px 0 0;color:#344860;font-size:13px;font-weight:700}
+.mg-loyalty-card-status{
+  display:inline-flex;
+  align-items:center;
+  min-height:24px;
+  margin-top:10px;
+  padding:0 9px;
+  border-radius:999px;
+  background:#fff4e5;
+  color:#9a4b00;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.mg-loyalty-progress{margin:16px 0}
+.mg-loyalty-progress div{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;color:#344860;font-size:12px;font-weight:800}
+.mg-loyalty-progress strong{color:#071129}
+.mg-loyalty-progress i{display:block;height:9px;border-radius:999px;overflow:hidden;background:#e5e7eb}
+.mg-loyalty-progress b{display:block;height:100%;border-radius:999px;background:#1260ff}
+.mg-loyalty-card-meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.mg-loyalty-card-meta span{display:inline-flex;min-height:26px;align-items:center;padding:0 10px;border-radius:999px;background:#eef4ff;color:#194fc7;font-size:11px;font-weight:850}
+.mg-loyalty-card .mg-btn{width:100%;justify-content:center}
+.mg-loyalty-empty{border:1px solid rgba(255,255,255,.76);border-radius:24px;background:rgba(255,255,255,.88);box-shadow:0 18px 48px rgba(15,23,42,.1);padding:28px}
+.mg-loyalty-empty h2{margin:0;color:#071129;font-size:28px;letter-spacing:-.04em}
+.mg-loyalty-empty p{max-width:520px;color:#344860;font-weight:650}
+.mg-loyalty-empty .mg-btn{width:max-content;padding:0 18px}
+
+@media(max-width:780px){
+  .mg-loyalty-workspace{padding:22px 14px 44px}
+  .mg-loyalty-grid{grid-template-columns:1fr}
+  .mg-loyalty-hero h1{font-size:42px}
+  .mg-loyalty-save-toggle strong{display:none}
+  .mg-loyalty-save-toggle{width:36px;min-height:30px;padding:0}
+}
