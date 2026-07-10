@@ -6,7 +6,7 @@ require_once __DIR__ . '/includes/campaign-types.php';
 $page_title = 'Instant Win Reward | Microgifter';
 $page_section = 'campaign';
 $header_mode = 'public';
-$page_styles = ['/assets/css/public-campaign-pages.css', '/assets/css/public-campaign-polish-v1.css'];
+$page_styles = ['/assets/css/public-campaign-pages.css', '/assets/css/public-campaign-polish-v1.css', '/assets/css/public-instant-win.css'];
 $page_scripts = ['/assets/js/public-campaign.js', '/assets/js/public-instant-win.js'];
 
 $campaignRef = strtolower(trim((string)($_GET['campaign'] ?? $_GET['c'] ?? $_GET['slug'] ?? $_GET['id'] ?? '')));
@@ -21,6 +21,13 @@ function mg_instant_win_page_safe_url(mixed $value): ?string
     if (filter_var($url, FILTER_VALIDATE_URL) === false) return null;
     $parts = parse_url($url);
     return is_array($parts) && in_array(strtolower((string)($parts['scheme'] ?? '')), ['http', 'https'], true) && !empty($parts['host']) && !isset($parts['user'], $parts['pass']) ? $url : null;
+}
+
+function mg_instant_win_page_rules(mixed $json): array
+{
+    if (!is_string($json) || trim($json) === '') return [];
+    $decoded = json_decode($json, true);
+    return is_array($decoded) ? $decoded : [];
 }
 
 function mg_instant_win_page_initials(string $name): string
@@ -77,6 +84,8 @@ $merchantProfileSlug = $campaign ? trim((string)($campaign['merchant_profile_slu
 $merchantProfileUrl = $merchantProfileSlug !== '' ? '/profile.php?slug=' . rawurlencode($merchantProfileSlug) : null;
 $coverUrl = $campaign ? mg_instant_win_page_safe_url($campaign['merchant_profile_cover_url'] ?? null) : null;
 $avatarUrl = $campaign ? mg_instant_win_page_safe_url($campaign['merchant_profile_avatar_url'] ?? null) : null;
+$rules = $campaign ? mg_instant_win_page_rules($campaign['rules_json'] ?? null) : [];
+$scratchImageUrl = mg_instant_win_page_safe_url($rules['scratch_image_url'] ?? $rules['media_image_url'] ?? '');
 $headline = $campaign ? (trim((string)($campaign['form_headline'] ?? '')) ?: (string)$campaign['title']) : 'Instant Win Reward';
 $description = $campaign ? (trim((string)($campaign['form_description'] ?? '')) ?: (trim((string)($campaign['description'] ?? '')) ?: 'Scratch the card and reveal your instant win result.')) : 'Scratch the card and reveal your instant win result.';
 $rewardTitle = $campaign ? (trim((string)($campaign['reward_template_title'] ?? '')) ?: 'Microgifter reward') : 'Microgifter reward';
@@ -104,7 +113,7 @@ require __DIR__ . '/includes/header.php';
           <input type="hidden" name="campaign_type" value="instant_win_reward">
           <input type="hidden" name="entry_reveal_confirmed" value="0">
           <div class="mg-public-campaign-profile-card mg-public-campaign-form-profile"><div class="mg-public-campaign-avatar"><?php if ($avatarUrl): ?><img src="<?= mg_e($avatarUrl) ?>" alt="<?= mg_e($merchantName) ?> profile image"><?php else: ?><span><?= mg_e(mg_instant_win_page_initials($merchantName)) ?></span><?php endif; ?></div><div class="mg-public-campaign-profile-copy"><span class="mg-public-campaign-eyebrow">Instant Win</span><h2><?= mg_e($merchantName) ?></h2><?php if ($merchantHeadline !== ''): ?><p><?= mg_e($merchantHeadline) ?></p><?php endif; ?><div class="mg-public-campaign-profile-stats"><?php if ($merchantLocation !== ''): ?><span><?= mg_e($merchantLocation) ?></span><?php endif; ?><span>Scratch reveal</span><span>Inbox delivery</span></div></div><?php if ($merchantProfileUrl): ?><div class="mg-public-campaign-profile-actions"><a class="mg-btn mg-btn-soft" href="<?= mg_e($merchantProfileUrl) ?>">View profile</a></div><?php endif; ?></div>
-          <button class="mg-public-campaign-reward mg-public-campaign-reward-tab mg-instant-win-card" type="button" data-instant-win-card><span>Scratch card</span><strong>Tap to reveal</strong><em><?= mg_e($rewardTitle) ?> · <?= mg_e($rewardValue) ?></em><div class="mg-public-campaign-reward-meta"><span>Play tracked</span><span>Winner reward to Inbox</span></div></button>
+          <button class="mg-public-campaign-reward mg-public-campaign-reward-tab mg-instant-win-card" type="button" data-instant-win-card data-scratch-image="<?= mg_e($scratchImageUrl ?? '') ?>"><span data-instant-win-prompt>Scratch card</span><strong data-instant-win-title>Swipe or tap to reveal</strong><em><?= mg_e($rewardTitle) ?> · <?= mg_e($rewardValue) ?></em><div class="mg-public-campaign-reward-meta"><span>Play tracked</span><span>Winner reward to Inbox</span></div><small class="mg-instant-win-mobile-hint">Mobile friendly: swipe your finger over the image.</small></button>
           <div class="mg-public-campaign-field-grid"><label>Name<input name="name" placeholder="Your name" maxlength="180" value="<?= mg_e($prefillName) ?>"></label><label>Email<input name="email" type="email" placeholder="you@example.com" required maxlength="255" value="<?= mg_e($prefillEmail) ?>"></label><label class="mg-public-campaign-field-wide">Phone <span>(optional)</span><input name="phone" placeholder="Optional" maxlength="60"></label></div>
           <div class="mg-action-row"><button class="mg-btn mg-btn-soft" type="button" data-instant-win-reveal>Reveal card</button><button class="mg-btn mg-btn-primary mg-public-campaign-primary-action" type="submit">Submit instant-win play <span aria-hidden="true">→</span></button></div>
           <div class="mg-public-campaign-status" data-campaign-status data-instant-win-status></div><p class="mg-public-campaign-privacy">Every play is recorded for merchant campaign analytics. Winners receive the reward through Microgifter Inbox.</p>
