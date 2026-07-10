@@ -8,6 +8,7 @@ on:
       - 'merchant-quest-reviews.php'
       - 'api/public/loyalty-quest/**'
       - 'api/account/loyalty-quests.php'
+      - 'api/merchant/loyalty-quest-campaigns.php'
       - 'api/merchant/loyalty-quest-reviews.php'
       - 'api/merchant/loyalty-quest-signed-code.php'
       - 'includes/loyalty-quest-campaign-type.php'
@@ -52,10 +53,12 @@ jobs:
           php -l merchant-quest-reviews.php
           php -l api/public/loyalty-quest/_participant.php
           php -l api/public/loyalty-quest/_verification.php
+          php -l api/public/loyalty-quest/_reward.php
           php -l api/public/loyalty-quest/detail.php
           php -l api/public/loyalty-quest/start.php
           php -l api/public/loyalty-quest/submit.php
           php -l api/account/loyalty-quests.php
+          php -l api/merchant/loyalty-quest-campaigns.php
           php -l api/merchant/loyalty-quest-reviews.php
           php -l api/merchant/loyalty-quest-signed-code.php
           php -l includes/loyalty-quest-campaign-type.php
