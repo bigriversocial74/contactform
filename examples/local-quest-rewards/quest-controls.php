@@ -30,8 +30,7 @@ function lqr_quest_completion_count(array $state, string $questId): int
 {
     $count = 0;
     foreach ((array)($state['users'] ?? []) as $user) {
-        if (!is_array($user)) continue;
-        if (!empty($user['completed_quests'][$questId])) $count++;
+        if (is_array($user) && !empty($user['completed_quests'][$questId])) $count++;
     }
     return $count;
 }
@@ -40,8 +39,7 @@ function lqr_quest_reward_count(array $state, string $questId): int
 {
     $count = 0;
     foreach ((array)($state['users'] ?? []) as $user) {
-        if (!is_array($user)) continue;
-        if (!empty($user['rewards'][$questId])) $count++;
+        if (is_array($user) && !empty($user['rewards'][$questId])) $count++;
     }
     return $count;
 }
@@ -71,22 +69,33 @@ function lqr_quest_availability(array $quest, array $state, string $questId, ?in
     $now = $now ?? time();
     $controls = lqr_quest_controls($quest);
     if (empty($controls['is_active'])) return [false, 'Inactive'];
+
     $startsAt = lqr_parse_time((string)$controls['starts_at']);
     $endsAt = lqr_parse_time((string)$controls['ends_at']);
     if ($startsAt !== null && $now < $startsAt) return [false, 'Scheduled'];
     if ($endsAt !== null && $now > $endsAt) return [false, 'Ended'];
+
     $maxCompletions = (int)$controls['max_total_completions'];
     if ($maxCompletions > 0 && lqr_quest_completion_count($state, $questId) >= $maxCompletions) return [false, 'Completion cap reached'];
+
     $maxRewards = (int)$controls['max_total_rewards'];
     if ($maxRewards > 0 && lqr_quest_reward_count($state, $questId) >= $maxRewards) return [false, 'Reward cap reached'];
+
     return [true, 'Live'];
 }
 
-function lqr_visible_quests(array $quests, array $state): array
+function lqr_quest_is_public(array $quest): bool
+{
+    $visibility = strtolower(trim((string)lqr_quest_controls($quest)['visibility']));
+    return $visibility === '' || $visibility === 'public';
+}
+
+function lqr_visible_quests(array $quests, array $state, bool $includeRestricted = false): array
 {
     $visible = [];
     foreach ($quests as $questId => $quest) {
         if (!is_array($quest)) continue;
+        if (!$includeRestricted && !lqr_quest_is_public($quest)) continue;
         [$ok] = lqr_quest_availability($quest, $state, (string)$questId);
         if ($ok) $visible[$questId] = $quest;
     }
@@ -120,6 +129,16 @@ function lqr_update_quest_controls_file(string $questId, array $controls): void
     if (!isset($quests[$questId]) || !is_array($quests[$questId])) throw new RuntimeException('Quest not found.');
     $quests[$questId]['controls'] = array_replace(lqr_quest_controls($quests[$questId]), $controls);
     ksort($quests);
-    $content = "<?php\nreturn " . var_export($quests, true) . ";\n";
-    file_put_contents(__DIR__ . '/quests.php', $content, LOCK_EX);
+    $content = "<?php\ndeclare(strict_types=1);\n\nreturn " . var_export($quests, true) . ";\n";
+
+    $path = __DIR__ . '/quests.php';
+    $temporary = tempnam(__DIR__, '.lqr-quests-');
+    if (!is_string($temporary)) throw new RuntimeException('Unable to create a temporary quest configuration file.');
+    try {
+        if (file_put_contents($temporary, $content, LOCK_EX) === false || !@rename($temporary, $path)) {
+            throw new RuntimeException('Unable to publish quest controls. Check application folder permissions.');
+        }
+    } finally {
+        if (is_file($temporary)) @unlink($temporary);
+    }
 }
