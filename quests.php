@@ -9,9 +9,18 @@ $page_scripts = ['/assets/js/loyalty-quest-marketplace.js'];
 $page_meta = [
     'description' => 'Discover verified local Loyalty Quests from Microgifter merchants and earn rewards for visits, purchases, events, referrals, and community actions.',
     'robots' => 'index, follow',
+    'og_title' => 'Explore Microgifter Loyalty Quests',
+    'og_description' => 'Find local quests, complete verified actions, and earn merchant rewards through Microgifter.',
 ];
 require __DIR__ . '/includes/header.php';
 ?>
+<script type="application/ld+json"><?= json_encode([
+    '@context' => 'https://schema.org',
+    '@type' => 'CollectionPage',
+    'name' => 'Microgifter Loyalty Quest Marketplace',
+    'description' => $page_meta['description'],
+    'mainEntity' => ['@type' => 'ItemList', 'name' => 'Available Loyalty Quests'],
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?></script>
 <main class="mg-quest-marketplace" data-quest-marketplace>
   <section class="mg-quest-marketplace-hero">
     <div class="mg-quest-marketplace-copy">
@@ -39,8 +48,12 @@ require __DIR__ . '/includes/header.php';
   </section>
 
   <section class="mg-quest-results-shell">
-    <div class="mg-quest-results-head"><div><span class="mg-quest-kicker">Quest marketplace</span><h2 data-quest-results-title>Available near you</h2></div><p data-quest-status role="status" aria-live="polite">Loading quests…</p></div>
+    <div class="mg-quest-results-head">
+      <div><span class="mg-quest-kicker">Quest marketplace</span><h2 data-quest-results-title>Available near you</h2></div>
+      <div class="mg-quest-results-controls"><p data-quest-status role="status" aria-live="polite">Loading quests…</p><div class="mg-quest-view-switch" role="group" aria-label="Quest view"><button class="is-active" type="button" data-quest-view="list" aria-pressed="true">List</button><button type="button" data-quest-view="map" aria-pressed="false">Map</button></div></div>
+    </div>
     <div class="mg-quest-grid" data-quest-results></div>
+    <div class="mg-quest-map" data-quest-map hidden aria-label="Quest location map"><div class="mg-quest-map-surface" data-quest-map-surface></div><p data-quest-map-note>Use your location or search a city to compare quest locations.</p></div>
     <button class="mg-quest-load-more" type="button" data-quest-load-more hidden>Load more quests</button>
   </section>
 
