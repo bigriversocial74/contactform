@@ -1,0 +1,21 @@
+<?php
+declare(strict_types=1);
+$root=dirname(__DIR__);
+$files=['merchant-loyalty-quests.php','includes/merchant-loyalty-quests-view.php','assets/css/merchant-loyalty-quests.css','assets/js/merchant-loyalty-quests.js','api/merchant/loyalty-quest-management.php','includes/merchant-workspace.php','includes/merchant-view.php','.github/workflows/merchant-quest-management-validation.yml'];
+$read=static fn(string $path):string=>is_file($root.'/'.$path)?(string)file_get_contents($root.'/'.$path):'';
+$checks=[];foreach($files as $file)$checks[]=['name'=>'file:'.$file,'ok'=>is_file($root.'/'.$file)];
+$page=$read('merchant-loyalty-quests.php');$view=$read('includes/merchant-loyalty-quests-view.php');$css=$read('assets/css/merchant-loyalty-quests.css');$js=$read('assets/js/merchant-loyalty-quests.js');$api=$read('api/merchant/loyalty-quest-management.php');$nav=$read('includes/merchant-workspace.php');$router=$read('includes/merchant-view.php');
+$checks[]=['name'=>'authenticated merchant workspace','ok'=>str_contains($page,"$merchantView = 'loyalty_quests'")&&str_contains($page,'includes/merchant-workspace.php')&&str_contains($router,'merchant-loyalty-quests-view.php')];
+$checks[]=['name'=>'complete lifecycle portfolio UX','ok'=>str_contains($view,'Draft')&&str_contains($view,'Active')&&str_contains($view,'Paused')&&str_contains($view,'Completed')&&str_contains($view,'Archived')&&str_contains($js,"data-lq-action")];
+$checks[]=['name'=>'merchant navigation','ok'=>str_contains($nav,"'loyalty_quests'")&&str_contains($nav,'/merchant-loyalty-quests.php')];
+$checks[]=['name'=>'merchant isolation','ok'=>substr_count($api,'merchant_user_id')>=12&&str_contains($api,"campaign_type='loyalty_quest'")&&str_contains($api,'merchant.campaigns.manage')];
+$checks[]=['name'=>'guarded lifecycle transitions','ok'=>str_contains($api,"'publish'=>['from'=>['draft','paused']")&&str_contains($api,"'pause'=>['from'=>['active']")&&str_contains($api,"'complete'=>['from'=>['active','paused']")&&str_contains($api,"'archive'=>['from'=>['draft','paused','ended']")];
+$checks[]=['name'=>'publish readiness gates','ok'=>str_contains($api,'Publishing requires an active reward template.')&&str_contains($api,'Publishing requires participant instructions.')&&str_contains($api,'Location-based Loyalty Quests require a merchant location.')&&str_contains($api,'max_active_campaigns')];
+$checks[]=['name'=>'quest duplication','ok'=>str_contains($api,"$action==='duplicate'")&&str_contains($api,"'draft'")&&str_contains($api,'duplicated_from')&&str_contains($api,'random_bytes(16)')];
+$checks[]=['name'=>'participant reward analytics','ok'=>str_contains($api,'participant_count')&&str_contains($api,'issued_count_live')&&str_contains($api,'claimed_count')&&str_contains($api,'redeemed_count')&&str_contains($view,'Rewards issued')];
+$checks[]=['name'=>'csrf audit and events','ok'=>str_contains($api,'mg_require_csrf_for_write')&&str_contains($api,'mg_audit')&&str_contains($api,"mg_event('campaign.'")];
+$checks[]=['name'=>'responsive accessible UI','ok'=>str_contains($view,'aria-live="polite"')&&str_contains($view,'<dialog')&&str_contains($css,'@media(max-width:760px)')&&str_contains($js,'dialog.showModal()')];
+$failed=array_values(array_filter($checks,static fn(array $check):bool=>!$check['ok']));
+$score=max(0,10-count($failed)*0.4);
+echo json_encode(['ok'=>$failed===[],'score'=>number_format($score,1).'/10','checks'=>$checks,'failed'=>$failed],JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES).PHP_EOL;
+exit($failed===[]?0:1);
