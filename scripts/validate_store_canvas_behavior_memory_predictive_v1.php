@@ -101,7 +101,7 @@ $check(
     $insertStart !== false
     && substr_count('?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?', '?') === 20
     && str_contains($executeBlock, 'mg_public_uuid(), $merchantUserId, $customerUserId')
-    && str_contains($executeBlock, "$profile['last_calculated_at']"),
+    && str_contains($executeBlock, '$profile[\'last_calculated_at\']'),
     '8. Behavior profile upsert has the required twenty bound values before server timestamps'
 );
 
