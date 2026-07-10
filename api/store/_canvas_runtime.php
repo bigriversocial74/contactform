@@ -26,6 +26,14 @@ function mg_store_runtime_require_schema(PDO $pdo): void
     mg_store_canvas_require_tables($pdo, mg_store_runtime_core_tables(), 'Store Canvas customer entry');
 }
 
+function mg_store_runtime_project_session(?array $session): ?array
+{
+    $projected = mg_store_project_session($session);
+    if ($projected === null || $session === null) return $projected;
+    $projected['world_transition_eligible'] = mg_store_world_transition_eligible($session);
+    return $projected;
+}
+
 function mg_store_runtime_expire_stale_sessions(PDO $pdo, ?int $merchantUserId = null): void
 {
     if (!mg_store_runtime_schema_ready($pdo)) return;
@@ -115,7 +123,7 @@ function mg_store_runtime_feed_status_for_post(PDO $pdo, ?int $viewerId, string 
     }
 
     $active = mg_store_runtime_active_session_for_customer($pdo, $viewerId);
-    $base['active_session'] = mg_store_project_session($active);
+    $base['active_session'] = mg_store_runtime_project_session($active);
     if (!$active) return $base;
     if ((int)$active['merchant_user_id'] === (int)$target['merchant_user_id']) {
         $base['state'] = 'inside_this';
@@ -142,7 +150,7 @@ function mg_store_runtime_enter_post(PDO $pdo, int $customerUserId, string $post
             $pdo->commit();
             return [
                 'requires_confirmation' => true,
-                'current' => mg_store_project_session($active),
+                'current' => mg_store_runtime_project_session($active),
                 'target_merchant' => [
                     'name' => (string)($target['merchant_name'] ?: 'Merchant Store'),
                     'slug' => (string)$target['merchant_slug'],
@@ -155,12 +163,12 @@ function mg_store_runtime_enter_post(PDO $pdo, int $customerUserId, string $post
             $active['last_active_at'] = date('Y-m-d H:i:s');
             mg_store_log_event($pdo, $active, 'store_session_resumed', 'Store session resumed', ['post_id'=>(string)$target['post_public_id']]);
             $pdo->commit();
-            return ['requires_confirmation'=>false,'session'=>mg_store_project_session($active),'switched_from'=>null];
+            return ['requires_confirmation'=>false,'session'=>mg_store_runtime_project_session($active),'switched_from'=>null];
         }
 
         $switchedFrom = null;
         if ($active) {
-            $switchedFrom = mg_store_project_session($active);
+            $switchedFrom = mg_store_runtime_project_session($active);
             mg_store_close_session_row($pdo, $active, 'switch_store');
         }
 
@@ -200,7 +208,7 @@ function mg_store_runtime_enter_post(PDO $pdo, int $customerUserId, string $post
         mg_store_log_event($pdo, $session, 'entered_store', 'Entered store from feed post', ['post_id'=>(string)$target['post_public_id'],'entry_runtime'=>'store_canvas_runtime_v2']);
         $pdo->commit();
         mg_event('store_canvas.customer_entered', ['session_id'=>$publicId,'post_id'=>(string)$target['post_public_id'],'merchant_user_id'=>(int)$target['merchant_user_id']], $customerUserId);
-        return ['requires_confirmation'=>false,'session'=>mg_store_project_session($session),'switched_from'=>$switchedFrom];
+        return ['requires_confirmation'=>false,'session'=>mg_store_runtime_project_session($session),'switched_from'=>$switchedFrom];
     } catch (Throwable $error) {
         if ($pdo->inTransaction()) $pdo->rollBack();
         throw $error;
