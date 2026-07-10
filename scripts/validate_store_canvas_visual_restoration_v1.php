@@ -15,6 +15,7 @@ $check = static function (bool $passed, string $label) use (&$failures, &$checks
 
 $page = $read('merchant-canvas.php');
 $css = $read('assets/css/merchant-canvas-restoration.css');
+$mobileStats = $read('assets/css/merchant-canvas-mobile-stats.css');
 $visual = $read('assets/js/merchant-canvas-visual-restoration.js');
 $recommendations = $read('assets/js/merchant-canvas-campaign-recommendations.js');
 $control = $read('api/merchant-canvas/control-center.php');
@@ -130,6 +131,17 @@ $check(
     && str_contains($containment, '/api/merchant-canvas/campaign-trigger.php')
     && str_contains($containment, '/api/merchant-canvas/campaign-trigger-automation.php'),
     '12. Production containment still blocks legacy automatic chat and campaign trigger routes'
+);
+
+$check(
+    str_contains($page, '/assets/css/merchant-canvas-mobile-stats.css')
+    && str_contains($mobileStats, '@media (max-width:760px)')
+    && str_contains($mobileStats, '.mg-canvas-hud-stats')
+    && str_contains($mobileStats, 'position:fixed')
+    && str_contains($mobileStats, 'env(safe-area-inset-bottom)')
+    && str_contains($mobileStats, '.mg-canvas-legend')
+    && str_contains($mobileStats, 'display:none'),
+    '13. Mobile Store Canvas moves live stats into a safe-area sticky footer and removes the duplicate legend bar'
 );
 
 if ($failures !== []) {
