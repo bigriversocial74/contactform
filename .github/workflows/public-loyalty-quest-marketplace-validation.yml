@@ -1,0 +1,44 @@
+name: Public Loyalty Quest Marketplace Validation
+
+on:
+  pull_request:
+    paths:
+      - 'quests.php'
+      - 'quest-merchant.php'
+      - 'loyalty-quest.php'
+      - 'api/public/loyalty-quests.php'
+      - 'assets/js/loyalty-quest-marketplace.js'
+      - 'assets/css/loyalty-quest-marketplace.css'
+      - 'assets/css/loyalty-quest-map.css'
+      - 'assets/images/loyalty-quest-placeholder.svg'
+      - 'assets/images/microgifter-mark.svg'
+      - 'scripts/validate_public_loyalty_quest_marketplace_v1.php'
+      - '.github/workflows/public-loyalty-quest-marketplace-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Public Loyalty Quest Marketplace v1 (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2','8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - name: PHP syntax
+        run: |
+          php -l quests.php
+          php -l quest-merchant.php
+          php -l loyalty-quest.php
+          php -l api/public/loyalty-quests.php
+          php -l scripts/validate_public_loyalty_quest_marketplace_v1.php
+      - name: Public marketplace 10/10 contract
+        run: php scripts/validate_public_loyalty_quest_marketplace_v1.php
