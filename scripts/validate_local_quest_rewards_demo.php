@@ -7,6 +7,7 @@ $required = [
     'examples/local-quest-rewards/.gitignore',
     'examples/local-quest-rewards/app.php',
     'examples/local-quest-rewards/install.php',
+    'examples/local-quest-rewards/install-functions.php',
     'examples/local-quest-rewards/install-lock.php',
     'examples/local-quest-rewards/security.php',
     'examples/local-quest-rewards/storage-sql.php',
@@ -27,12 +28,15 @@ $required = [
     'examples/local-quest-rewards/quest-controls.php',
     'examples/local-quest-rewards/assets/portal.css',
     'examples/local-quest-rewards/assets/portal.js',
+    'examples/local-quest-rewards/assets/public-site.css',
     'examples/local-quest-rewards/assets/form-review.js',
     'examples/local-quest-rewards/quests.php',
     'examples/local-quest-rewards/webhook.php',
+    'examples/local-quest-rewards/webhook-storage.php',
     'examples/local-quest-rewards/webhook-reconcile.php',
     'examples/local-quest-rewards/database/local_quest_rewards.sql',
     'examples/local-quest-rewards/database/local_quest_admin_auth.sql',
+    'examples/local-quest-rewards/database/local_quest_production_foundation_v1.sql',
     'docs/microgift-permission-system-plan.md',
     'docs/public-api-third-party-wallet-claim.md',
     'docs/local-quest-admin-roles.md',
@@ -70,6 +74,8 @@ $index = lqr_validate_read($root, 'examples/local-quest-rewards/index.php');
 $app = lqr_validate_read($root, 'examples/local-quest-rewards/app.php');
 $developerStarter = lqr_validate_read($root, 'examples/local-quest-rewards/developer-starter.php');
 $install = lqr_validate_read($root, 'examples/local-quest-rewards/install.php');
+$installFunctions = lqr_validate_read($root, 'examples/local-quest-rewards/install-functions.php');
+$installerBundle = $install . "\n" . $installFunctions;
 $installLock = lqr_validate_read($root, 'examples/local-quest-rewards/install-lock.php');
 $gitignore = lqr_validate_read($root, 'examples/local-quest-rewards/.gitignore');
 $reviewJs = lqr_validate_read($root, 'examples/local-quest-rewards/assets/form-review.js');
@@ -79,6 +85,7 @@ $storage = lqr_validate_read($root, 'examples/local-quest-rewards/storage-sql.ph
 $wallet = lqr_validate_read($root, 'examples/local-quest-rewards/wallet.php');
 $walletActions = lqr_validate_read($root, 'examples/local-quest-rewards/wallet-actions.php');
 $webhook = lqr_validate_read($root, 'examples/local-quest-rewards/webhook.php');
+$webhookStorage = lqr_validate_read($root, 'examples/local-quest-rewards/webhook-storage.php');
 $webhookReconcile = lqr_validate_read($root, 'examples/local-quest-rewards/webhook-reconcile.php');
 $admin = lqr_validate_read($root, 'examples/local-quest-rewards/admin.php');
 $adminPortal = lqr_validate_read($root, 'examples/local-quest-rewards/admin-portal.php');
@@ -110,10 +117,10 @@ $hasAdminRoles = str_contains($adminRoles, 'lqr_admin_role_map') && str_contains
 $hasSqlRuntime = str_contains($app, "require_once __DIR__ . '/storage-sql.php'") && str_contains($app, 'lqr_sql_load_state(lqr_config())') && str_contains($app, 'lqr_sql_save_state(lqr_config(), $state)') && str_contains($storage, 'lqr_sql_load_state') && str_contains($storage, 'lqr_sql_save_state');
 $noJsonRuntime = !str_contains($app, 'state.json') && !str_contains($app, 'lqr_state_path') && !str_contains($app, 'file_put_contents(lqr_state_path');
 $hasSecurity = str_contains($app, "require_once __DIR__ . '/security.php'") && str_contains($app, 'lqr_require_csrf') && str_contains($security, 'lqr_auto_csrf_output') && str_contains($security, 'lqr_signed_payload') && str_contains($security, 'lqr_mark_replay');
-$hasWebhookCsrfBypass = str_contains($app, 'LQR_SKIP_CSRF') && str_contains($webhook, "define('LQR_SKIP_CSRF', true)") && str_contains($webhook, 'Signed webhook status');
-$hasWebhookReconciliation = str_contains($webhook, 'lqr_reconcile_microgifter_webhook') && str_contains($webhookReconcile, 'reward.delivered') && str_contains($webhookReconcile, 'confirmed_by_microgifter_webhook');
+$hasWebhookCsrfBypass = str_contains($app, 'LQR_SKIP_CSRF') && str_contains($webhook, "define('LQR_SKIP_CSRF', true)") && str_contains($webhook, 'Signed webhook deliveries');
+$hasWebhookReconciliation = str_contains($webhook, 'lqr_reconcile_microgifter_webhook') && str_contains($webhookReconcile, 'reward.delivered') && str_contains($webhookReconcile, 'confirmed_by_microgifter_webhook') && str_contains($webhookStorage, 'lqr_webhook_deliveries');
 $hasDeveloperStarterPortal = str_contains($developerStarter, 'Developer Starter Portal') && str_contains($developerStarter, 'lq-tab-setup') && str_contains($developerStarter, '/api/public/v1/rewards/issue.php') && str_contains($developerStarter, '/api/public/v1/rewards/claim.php') && str_contains($index, 'developer-starter.php') && str_contains($wallet, 'developer-starter.php');
-$hasInstaller = str_contains($install, 'Local Quest Installer') && str_contains($install, 'lqi_pdo') && str_contains($install, 'lqi_write_config') && str_contains($install, 'lqi_seed_owner');
+$hasInstaller = str_contains($install, 'Install Local Quest Rewards') && str_contains($installerBundle, 'lqi_pdo') && str_contains($installerBundle, 'lqi_write_config') && str_contains($installerBundle, 'lqi_seed_owner') && str_contains($installerBundle, 'lqi_sql_statements');
 $hasInstallerLock = str_contains($installLock, 'lqi_guard_installer') && str_contains($installLock, '.installed.lock') && str_contains($installLock, '.install-unlock') && str_contains($gitignore, '.installed.lock') && str_contains($gitignore, 'config.php');
 $hasInstallReview = str_contains($reviewJs, 'Review setup before install') && str_contains($reviewJs, 'Confirm and install') && str_contains($reviewJs, 'protected value');
 $hasInstallerDoc = str_contains($installerDoc, 'Local Quest installer hardening') && str_contains($installerDoc, '.installed.lock') && str_contains($installerDoc, '.install-unlock');
