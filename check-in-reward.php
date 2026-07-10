@@ -1,119 +1,124 @@
 <?php
 declare(strict_types=1);
+
 require_once __DIR__ . '/includes/app.php';
-require_once __DIR__ . '/includes/campaign-types.php';
+require_once __DIR__ . '/includes/campaign-landing-foundation.php';
 
 $page_title = 'Check-In Reward | Microgifter';
 $page_section = 'campaign';
 $header_mode = 'public';
-$page_styles = ['/assets/css/public-campaign-pages.css', '/assets/css/public-campaign-polish-v1.css'];
+$page_styles = [
+    '/assets/css/watch-listen-standalone-page.css',
+    '/assets/css/campaign-landing-specialized.css',
+];
 $page_scripts = ['/assets/js/public-campaign.js', '/assets/js/public-check-in-reward.js'];
 
-$campaignRef = strtolower(trim((string)($_GET['campaign'] ?? $_GET['c'] ?? $_GET['slug'] ?? $_GET['id'] ?? '')));
-$campaign = null;
-$errorMessage = '';
+$bootstrap = mg_campaign_landing_bootstrap('check_in_reward', $page_title);
+$campaign = is_array($bootstrap['campaign'] ?? null) ? $bootstrap['campaign'] : null;
+$previewMode = (bool)($bootstrap['preview'] ?? false);
+$page_title = (string)($bootstrap['page_title'] ?? $page_title);
+$page_meta = is_array($bootstrap['page_meta'] ?? null) ? $bootstrap['page_meta'] : [];
+$state = mg_campaign_landing_state($campaign, $previewMode);
 
-function mg_check_in_page_safe_url(mixed $value): ?string
+function mg_check_in_render_join(array $context): void
 {
-    $url = trim((string)$value);
-    if ($url === '' || strlen($url) > 700 || preg_match('/[\x00-\x1F\x7F]/', $url) === 1) return null;
-    if (str_starts_with($url, '/') && !str_starts_with($url, '//')) return $url;
-    if (filter_var($url, FILTER_VALIDATE_URL) === false) return null;
-    $parts = parse_url($url);
-    return is_array($parts) && in_array(strtolower((string)($parts['scheme'] ?? '')), ['http', 'https'], true) && !empty($parts['host']) && !isset($parts['user'], $parts['pass']) ? $url : null;
+    $campaign = $context['campaign'];
+    $profile = $context['profile'];
+    $state = $context['state'];
+    $preview = (bool)$context['preview'];
+    $locationRequired = (bool)$context['location_required'];
+    $prefill = $context['prefill'];
+    $radius = (int)$context['radius'];
+    ?>
+    <?php mg_campaign_landing_render_profile($profile); ?>
+    <?php if (!empty($state['closed'])): ?>
+      <div class="mg-public-campaign-result is-visible" data-campaign-closed-state><strong><?= mg_e((string)$state['message']) ?></strong></div>
+    <?php else: ?>
+      <form class="mg-rl-form mg-specialized-form" data-campaign-form data-check-in-reward-form data-location-required="<?= $locationRequired ? '1' : '0' ?>" data-submit-endpoint="/api/public/campaigns/check-in.php" data-campaign-type="check_in_reward"<?= $preview ? ' data-campaign-preview="merchant" onsubmit="return false"' : '' ?> novalidate>
+        <input type="hidden" name="campaign_id" value="<?= mg_e((string)$campaign['public_id']) ?>">
+        <input type="hidden" name="campaign" value="<?= mg_e((string)($campaign['public_slug'] ?? $campaign['public_id'])) ?>">
+        <input type="hidden" name="campaign_type" value="check_in_reward">
+        <input type="hidden" name="entry_latitude">
+        <input type="hidden" name="entry_longitude">
+        <input type="hidden" name="entry_accuracy_meters">
+        <input type="hidden" name="entry_location_permission" value="pending">
+        <h3>Check in at this location</h3>
+        <p><?= $locationRequired ? 'Capture your location, then submit within the merchant check-in radius.' : 'Location capture is optional for this campaign.' ?></p>
+        <label>Name<input name="name" placeholder="Your name" maxlength="180" value="<?= mg_e((string)$prefill['name']) ?>"></label>
+        <label>Email<input name="email" type="email" placeholder="you@example.com" required maxlength="255" value="<?= mg_e((string)$prefill['email']) ?>"></label>
+        <label>Phone <span>(optional)</span><input name="phone" placeholder="Optional" maxlength="60"></label>
+        <div class="mg-specialized-action-row">
+          <button class="mg-rl-btn mg-rl-btn-soft" type="button" data-check-in-geolocate><?= $locationRequired ? 'Use my location' : 'Add location (optional)' ?></button>
+          <button class="mg-rl-btn mg-rl-btn-dark" type="<?= $preview ? 'button' : 'submit' ?>"<?= $preview ? ' disabled aria-disabled="true"' : '' ?>><?= mg_e($preview ? 'Preview only - activate to publish' : 'Check in and claim reward') ?></button>
+        </div>
+        <div class="mg-public-campaign-status" data-campaign-status data-check-in-status><?= $preview ? 'Preview mode: customer submissions are disabled.' : 'Configured radius: ' . mg_e((string)$radius) . ' meters.' ?></div>
+        <p class="mg-public-campaign-privacy">Location is used only for this campaign check-in and nearest-location verification.</p>
+      </form>
+      <div class="mg-public-campaign-result" data-campaign-result></div>
+    <?php endif;
 }
-
-function mg_check_in_page_initials(string $name): string
-{
-    $name = trim($name);
-    if ($name === '') return 'MG';
-    $parts = preg_split('/\s+/u', $name) ?: [];
-    return mb_strtoupper(mb_substr((string)($parts[0] ?? 'M'), 0, 1) . (count($parts) > 1 ? mb_substr((string)$parts[count($parts) - 1], 0, 1) : ''));
-}
-
-function mg_check_in_page_value(array $campaign): string
-{
-    $type = (string)($campaign['value_type'] ?? '');
-    $rewardType = (string)($campaign['reward_type'] ?? '');
-    if ($type === 'percent' && ($campaign['value_percent'] ?? null) !== null) return rtrim(rtrim(number_format((float)$campaign['value_percent'], 2), '0'), '.') . '% reward';
-    if (in_array($type, ['free_item', 'custom'], true) || in_array($rewardType, ['free_item', 'perk_upgrade', 'event_reward', 'custom'], true)) return (string)($campaign['reward_template_title'] ?? 'Reward');
-    $cents = (int)($campaign['value_amount_cents'] ?? 0);
-    return $cents > 0 ? ((string)($campaign['currency'] ?? 'USD') . ' ' . number_format($cents / 100, 2) . ' value') : 'Reward';
-}
-
-try {
-    if ($campaignRef !== '') {
-        $pdo = mg_db();
-        $stmt = $pdo->prepare("SELECT c.*, u.display_name merchant_user_display_name, u.full_name merchant_user_full_name,
-                   pp.slug merchant_profile_slug, pp.display_name merchant_profile_display_name, pp.headline merchant_profile_headline, pp.avatar_url merchant_profile_avatar_url, pp.cover_url merchant_profile_cover_url, pp.location_label merchant_profile_location,
-                   rt.public_id reward_template_public_id, rt.title reward_template_title, rt.description reward_template_description, rt.reward_type, rt.value_type, rt.value_amount_cents, rt.value_percent, rt.currency, rt.redemption_instructions, rt.metadata_json reward_metadata_json
-            FROM campaigns c
-            LEFT JOIN reward_templates rt ON rt.id = c.reward_template_id
-            LEFT JOIN users u ON u.id = c.merchant_user_id
-            LEFT JOIN public_profiles pp ON pp.user_id = c.merchant_user_id AND pp.status = 'active' AND pp.visibility IN ('public','unlisted')
-            WHERE c.status = 'active' AND c.campaign_type = 'check_in_reward' AND (c.public_id = ? OR c.public_slug = ?)
-            LIMIT 1");
-        $stmt->execute([$campaignRef, $campaignRef]);
-        $campaign = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
-    }
-} catch (Throwable $error) {
-    if (function_exists('mg_security_log')) mg_security_log('warning', 'public.check_in_reward.unavailable', 'Unable to load check-in campaign.', ['exception_class' => $error::class]);
-    $campaign = null;
-}
-
-if (!$campaign) $errorMessage = 'Use the check-in link from the merchant to open this reward.';
-$now = time();
-if ($campaign && !empty($campaign['starts_at']) && strtotime((string)$campaign['starts_at']) > $now) $errorMessage = 'This check-in campaign has not started yet.';
-if ($campaign && !empty($campaign['ends_at']) && strtotime((string)$campaign['ends_at']) < $now) $errorMessage = 'This check-in campaign has ended.';
-if ($campaign && ($campaign['quantity_limit'] ?? null) !== null && (int)($campaign['issued_count'] ?? 0) >= (int)$campaign['quantity_limit']) $errorMessage = 'This check-in reward limit has been reached.';
-
-$currentUser = function_exists('mg_current_user') ? mg_current_user() : null;
-$prefillName = is_array($currentUser) ? trim((string)($currentUser['display_name'] ?? $currentUser['full_name'] ?? '')) : '';
-$prefillEmail = is_array($currentUser) ? strtolower(trim((string)($currentUser['email'] ?? ''))) : '';
-$merchantName = $campaign ? (trim((string)($campaign['merchant_profile_display_name'] ?? '')) ?: (trim((string)($campaign['merchant_user_display_name'] ?? '')) ?: (trim((string)($campaign['merchant_user_full_name'] ?? '')) ?: 'Microgifter merchant'))) : 'Microgifter merchant';
-$merchantHeadline = $campaign ? trim((string)($campaign['merchant_profile_headline'] ?? '')) : '';
-$merchantLocation = $campaign ? trim((string)($campaign['merchant_profile_location'] ?? '')) : '';
-$merchantProfileSlug = $campaign ? trim((string)($campaign['merchant_profile_slug'] ?? '')) : '';
-$merchantProfileUrl = $merchantProfileSlug !== '' ? '/profile.php?slug=' . rawurlencode($merchantProfileSlug) : null;
-$coverUrl = $campaign ? mg_check_in_page_safe_url($campaign['merchant_profile_cover_url'] ?? null) : null;
-$avatarUrl = $campaign ? mg_check_in_page_safe_url($campaign['merchant_profile_avatar_url'] ?? null) : null;
-$headline = $campaign ? (trim((string)($campaign['form_headline'] ?? '')) ?: (string)$campaign['title']) : 'Check-In Reward';
-$description = $campaign ? (trim((string)($campaign['form_description'] ?? '')) ?: (trim((string)($campaign['description'] ?? '')) ?: 'Check in near a registered merchant location and unlock a Microgifter reward.')) : 'Check in near a registered merchant location and unlock a Microgifter reward.';
-$rewardTitle = $campaign ? (trim((string)($campaign['reward_template_title'] ?? '')) ?: 'Microgifter reward') : 'Microgifter reward';
-$rewardValue = $campaign ? mg_check_in_page_value($campaign) : 'Reward';
 
 require __DIR__ . '/includes/header.php';
+
+if (!$campaign || empty($state['available'])) {
+    mg_campaign_landing_render_unavailable(
+        'Check-In Reward',
+        'Check in near a merchant location and unlock a reward powered by Microgifter.',
+        (string)($state['message'] ?? '')
+    );
+    require __DIR__ . '/includes/footer.php';
+    return;
+}
+
+$rules = mg_campaign_landing_rules($campaign);
+$profile = mg_campaign_landing_profile($campaign);
+$prefill = mg_campaign_landing_prefill();
+$headline = trim((string)($campaign['form_headline'] ?? '')) ?: (trim((string)($campaign['title'] ?? '')) ?: 'Check in and get a reward');
+$description = trim((string)($campaign['form_description'] ?? '')) ?: (trim((string)($campaign['description'] ?? '')) ?: 'Use your browser location to verify you are near a registered merchant location.');
+$radius = max(25, min(5000, (int)($rules['radius_meters'] ?? 150)));
+$locationRequired = !array_key_exists('location_required', $rules) || !empty($rules['location_required']);
+$rewardTitle = trim((string)($campaign['reward_template_title'] ?? '')) ?: 'Microgifter reward';
+$rewardDescription = trim((string)($campaign['reward_template_description'] ?? '')) ?: 'Complete the location check-in to unlock this merchant reward.';
+$rewardValue = mg_campaign_landing_value($campaign);
+$primaryImage = mg_campaign_landing_primary_image($campaign);
+$backgroundImage = mg_campaign_landing_background_image($campaign);
+$joinContext = [
+    'campaign' => $campaign,
+    'profile' => $profile,
+    'state' => $state,
+    'preview' => $previewMode,
+    'location_required' => $locationRequired,
+    'prefill' => $prefill,
+    'radius' => $radius,
+];
 ?>
-<section class="mg-public-campaign mg-public-campaign-v2" data-public-campaign-page>
-  <div class="mg-public-campaign-cover"<?= $coverUrl ? ' style="background-image:linear-gradient(180deg,rgba(6,15,32,.08),rgba(248,247,242,.92) 82%,#fbfaf6),url(' . mg_e($coverUrl) . ')"' : '' ?>></div>
-  <div class="mg-public-campaign-shell">
-    <div class="mg-public-campaign-heading">
-      <span class="mg-public-campaign-kicker">Microgifter Campaign</span>
-      <span class="mg-public-campaign-eyebrow">Check-In Reward</span>
-      <h1><?= mg_e($headline) ?></h1>
-      <p><?= mg_e($description) ?></p>
-      <div class="mg-public-campaign-trust-row"><span>Browser location match</span><span>Merchant location verified</span><span>Reward sent to Inbox</span></div>
+<section class="mg-rl-page mg-rl-campaign-foundation mg-rl-specialized mg-rl-specialized-checkin<?= $previewMode ? ' is-merchant-preview' : '' ?>" data-public-campaign-page data-campaign-state="<?= mg_e((string)$state['code']) ?>">
+  <div class="mg-rl-bg"<?= $backgroundImage ? ' style="background-image:url(' . mg_e($backgroundImage) . ')"' : '' ?>></div>
+  <div class="mg-rl-wrap">
+    <div class="mg-rl-left">
+      <?php if ($previewMode): ?><article class="mg-rl-card mg-specialized-preview"><span class="mg-rl-eyebrow">Merchant preview</span><h3><?= mg_e((string)$state['status_label']) ?></h3><p>Customer check-ins are disabled until this campaign is active.</p></article><?php endif; ?>
+      <header class="mg-rl-hero">
+        <h1><?= mg_e($headline) ?></h1>
+        <p><?= mg_e($description) ?></p>
+        <div class="mg-public-campaign-trust-row"><span>Browser location match</span><span><?= mg_e((string)$radius) ?>m campaign radius</span><span>Reward sent to Inbox</span></div>
+      </header>
+      <section class="mg-rl-player mg-specialized-canvas" aria-label="Check-in reward details">
+        <div class="mg-specialized-layout">
+          <div class="mg-specialized-media"><?php if ($primaryImage): ?><img src="<?= mg_e($primaryImage) ?>" alt="<?= mg_e($rewardTitle) ?> campaign image"><?php else: ?><div class="mg-specialized-placeholder"><span>Location</span><strong>Check-In Reward</strong></div><?php endif; ?></div>
+          <div class="mg-specialized-copy"><span class="mg-rl-eyebrow">Location verification</span><h2><?= mg_e((string)$radius) ?> meter campaign radius</h2><p><?= mg_e($rewardDescription) ?></p><div class="mg-specialized-metrics"><span><strong><?= $locationRequired ? 'Required' : 'Optional' ?></strong>Browser location</span><span><strong>Nearest match</strong>Merchant location</span><span><strong><?= mg_e($rewardValue) ?></strong><?= mg_e($rewardTitle) ?></span></div></div>
+        </div>
+      </section>
+      <aside class="mg-rl-join mg-rl-join-mobile"><?php mg_check_in_render_join($joinContext); ?></aside>
+      <?php mg_campaign_landing_render_bottom_cards([
+          'campaign' => $campaign,
+          'state' => $state,
+          'reward_title' => $rewardTitle,
+          'reward_value' => $rewardValue,
+          'outcome_title' => 'Verified check-in reward',
+          'outcome_copy' => $locationRequired ? 'A browser location match within the configured campaign radius unlocks the eligible reward.' : 'This campaign allows participation without a required location match.',
+      ]); ?>
     </div>
-    <aside class="mg-public-campaign-card mg-public-campaign-flow-card">
-      <?php if ($errorMessage !== ''): ?>
-        <div class="mg-public-campaign-result is-visible"><strong><?= mg_e($errorMessage) ?></strong></div>
-      <?php else: ?>
-        <form class="mg-public-campaign-form" data-campaign-form data-check-in-reward-form data-public-campaign-tabs data-submit-endpoint="/api/public/campaigns/check-in.php" data-campaign-type="check_in_reward" novalidate>
-          <input type="hidden" name="campaign_id" value="<?= mg_e((string)$campaign['public_id']) ?>">
-          <input type="hidden" name="campaign" value="<?= mg_e((string)($campaign['public_slug'] ?? $campaign['public_id'])) ?>">
-          <input type="hidden" name="campaign_type" value="check_in_reward">
-          <input type="hidden" name="entry_latitude">
-          <input type="hidden" name="entry_longitude">
-          <input type="hidden" name="entry_accuracy_meters">
-          <input type="hidden" name="entry_location_permission" value="pending">
-          <div class="mg-public-campaign-profile-card mg-public-campaign-form-profile"><div class="mg-public-campaign-avatar"><?php if ($avatarUrl): ?><img src="<?= mg_e($avatarUrl) ?>" alt="<?= mg_e($merchantName) ?> profile image"><?php else: ?><span><?= mg_e(mg_check_in_page_initials($merchantName)) ?></span><?php endif; ?></div><div class="mg-public-campaign-profile-copy"><span class="mg-public-campaign-eyebrow">Check-In Reward</span><h2><?= mg_e($merchantName) ?></h2><?php if ($merchantHeadline !== ''): ?><p><?= mg_e($merchantHeadline) ?></p><?php endif; ?><div class="mg-public-campaign-profile-stats"><?php if ($merchantLocation !== ''): ?><span><?= mg_e($merchantLocation) ?></span><?php endif; ?><span>Location check-in</span><span>Inbox delivery</span></div></div><?php if ($merchantProfileUrl): ?><div class="mg-public-campaign-profile-actions"><a class="mg-btn mg-btn-soft" href="<?= mg_e($merchantProfileUrl) ?>">View profile</a></div><?php endif; ?></div>
-          <div class="mg-public-campaign-step-grid" aria-label="How check-in reward works"><div class="mg-public-campaign-mini-step"><span>1</span><strong>Allow location</strong><small>Your browser location is used to match the nearest registered merchant location.</small></div><div class="mg-public-campaign-mini-step"><span>2</span><strong>Add your info</strong><small>Use the email tied to your Microgifter Inbox.</small></div><div class="mg-public-campaign-mini-step"><span>3</span><strong>Open Inbox</strong><small>Eligible rewards continue through Inbox and PPPM tracking.</small></div></div>
-          <div class="mg-public-campaign-panel is-active"><div class="mg-public-campaign-field-grid"><label>Name<input name="name" placeholder="Your name" maxlength="180" value="<?= mg_e($prefillName) ?>"></label><label>Email<input name="email" type="email" placeholder="you@example.com" required maxlength="255" value="<?= mg_e($prefillEmail) ?>"></label><label class="mg-public-campaign-field-wide">Phone <span>(optional)</span><input name="phone" placeholder="Optional" maxlength="60"></label></div><div class="mg-public-campaign-reward mg-public-campaign-reward-tab"><span>Attached reward</span><strong><?= mg_e($rewardTitle) ?></strong><em><?= mg_e($rewardValue) ?></em><div class="mg-public-campaign-reward-meta"><span>Geo match required</span><span>Delivered to Inbox</span></div></div><div class="mg-action-row"><button class="mg-btn mg-btn-soft" type="button" data-check-in-geolocate>Use my location</button><button class="mg-btn mg-btn-primary mg-public-campaign-primary-action" type="submit">Check in and claim reward <span aria-hidden="true">→</span></button></div></div>
-          <div class="mg-public-campaign-status" data-campaign-status data-check-in-status></div><p class="mg-public-campaign-privacy">Location is used only to match you to a registered merchant check-in location for this reward.</p>
-        </form>
-        <div class="mg-public-campaign-result" data-campaign-result></div>
-      <?php endif; ?>
-    </aside>
+    <aside class="mg-rl-join mg-rl-join-desktop"><?php mg_check_in_render_join($joinContext); ?></aside>
   </div>
 </section>
 <?php require __DIR__ . '/includes/footer.php'; ?>
