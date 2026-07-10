@@ -36,6 +36,7 @@ try {
     $anchorApi = mg_wc_sync_read($root, 'api/store/avatar-anchor.php');
     $anchorUi = mg_wc_sync_read($root, 'assets/js/avatar-anchor-consent.js');
     $exitApi = mg_wc_sync_read($root, 'api/store/exit.php');
+    $worldTransition = mg_wc_sync_read($root, 'api/store/_world_transition.php');
 
     mg_wc_sync_expect(
         !str_contains($page, 'world-canvas-reward-drops.css')
@@ -164,9 +165,9 @@ try {
     );
 
     mg_wc_sync_expect(
-        str_contains($exitApi, "if (\$source !== 'merchant_location_opt_in') return null;")
-        && str_contains($exitApi, 'mg_world_location_save_user')
-        && str_contains($exitApi, "'store_session'")
+        str_contains($worldTransition, "if (\$source !== 'merchant_location_opt_in') return null;")
+        && str_contains($worldTransition, 'mg_world_location_save_user')
+        && str_contains($worldTransition, "'store_session'")
         && str_contains($exitApi, "'world_transition' => \$worldTransition"),
         'Consented Store Canvas exit places the avatar into World Canvas at the merchant anchor',
         $failures,
