@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/bootstrap.php';
 require_once dirname(__DIR__, 3) . '/includes/campaign-types.php';
-require_once dirname(__DIR__, 3) . '/includes/merchant-crm.php';
+require_once dirname(__DIR__, 3) . '/includes/merchant-crm-value-events.php';
 require_once __DIR__ . '/_merchant_notifications.php';
 require_once __DIR__ . '/_embed_attribution.php';
 
@@ -70,6 +70,8 @@ function mg_stamp_card_record_stamp(PDO $pdo, array $campaign, array $input, arr
         'required_count' => $requiredCount,
         'stamps_remaining' => max(0, $requiredCount - $stampCount),
         'stamp_result' => 'recorded',
+        'crm_creation_boundary' => 'deferred_until_first_value_event',
+        'value_event' => false,
         'ip' => mg_client_ip(),
         'user_agent' => substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255),
     ], $embedAttribution);
@@ -82,7 +84,7 @@ function mg_stamp_card_record_stamp(PDO $pdo, array $campaign, array $input, arr
     $contact = $lookup->fetch(PDO::FETCH_ASSOC) ?: [];
     $contactId = (int)($contact['id'] ?? 0);
 
-    $crm = mg_merchant_crm_record_event($pdo, [
+    $crm = mg_merchant_crm_record_existing_contact_event($pdo, [
         'merchant_user_id' => $merchantId,
         'campaign_id' => $campaignId,
         'campaign_type' => 'stamp_card_reward',
@@ -104,7 +106,7 @@ function mg_stamp_card_record_stamp(PDO $pdo, array $campaign, array $input, arr
         null,
         $contactId ?: null,
         'stamp_card.stamped',
-        json_encode(['campaign_type' => 'stamp_card_reward', 'source' => $source, 'email' => $email, 'entry' => $entry, 'stamp_count' => $stampCount, 'required_count' => $requiredCount, 'stamps_remaining' => max(0, $requiredCount - $stampCount), 'embed_attribution' => $embedAttribution, 'merchant_crm' => $crm, 'merchant_notification' => $merchantNotification], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+        json_encode(['campaign_type' => 'stamp_card_reward', 'source' => $source, 'email' => $email, 'entry' => $entry, 'stamp_count' => $stampCount, 'required_count' => $requiredCount, 'stamps_remaining' => max(0, $requiredCount - $stampCount), 'embed_attribution' => $embedAttribution, 'merchant_crm' => $crm, 'merchant_notification' => $merchantNotification, 'crm_creation_boundary' => 'deferred_until_first_value_event'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
     ]);
 
     return ['contact' => $contact, 'crm' => $crm, 'merchant_notification' => $merchantNotification];
@@ -188,6 +190,7 @@ if (!$unlocked) {
         'contact_id' => (string)($record['contact']['public_id'] ?? ''),
         'merchant_crm' => $record['crm'] ?? null,
         'merchant_notification' => $record['merchant_notification'] ?? null,
+        'crm_creation_boundary' => 'deferred_until_first_value_event',
         'entry' => $entry,
         'embed_attribution' => $embedAttribution,
     ], $stampLabel . ' stamp recorded. ' . $remaining . ' more to unlock your reward.', 200);
