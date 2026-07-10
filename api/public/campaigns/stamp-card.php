@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/bootstrap.php';
 require_once dirname(__DIR__, 3) . '/includes/campaign-types.php';
 require_once dirname(__DIR__, 3) . '/includes/merchant-crm.php';
+require_once dirname(__DIR__, 2) . '/merchant/_claims.php';
 require_once __DIR__ . '/_merchant_notifications.php';
 require_once __DIR__ . '/_embed_attribution.php';
 
@@ -52,7 +53,100 @@ function mg_stamp_card_label(array $campaign): string
     return $label !== '' ? mb_substr($label, 0, 40) : 'Visit';
 }
 
-function mg_stamp_card_record_stamp(PDO $pdo, array $campaign, array $input, array $entry, array $embedAttribution, int $stampCount, int $requiredCount): array
+function mg_stamp_card_cashier_code(array $input): string
+{
+    return mg_claim_code_require(
+        (string)($input['cashier_claim_code'] ?? $input['merchant_claim_code'] ?? $input['claim_code'] ?? $input['code'] ?? ''),
+        'Cashier verification code is required before this punch can be recorded.'
+    );
+}
+
+function mg_stamp_card_verify_cashier_code(PDO $pdo, array $campaign, string $claimCode): array
+{
+    $merchantId = (int)$campaign['merchant_user_id'];
+    $candidateHash = mg_claim_code_hash($claimCode, mg_claim_code_pepper());
+    $stmt = $pdo->prepare(
+        "SELECT mcc.id claim_code_db_id,mcc.public_id claim_code_id,mcc.label claim_code_label,mcc.code_last4,
+                mcc.usage_limit,mcc.usage_count,
+                ml.id location_db_id,ml.public_id location_id,ml.name location_name,ml.address_line1,ml.city,ml.region,ml.postal_code,ml.country_code
+         FROM merchant_claim_codes mcc
+         INNER JOIN merchant_locations ml ON ml.id=mcc.location_id
+         WHERE mcc.merchant_user_id=?
+           AND mcc.status='active'
+           AND ml.status='active'
+           AND (mcc.valid_from IS NULL OR mcc.valid_from<=NOW())
+           AND (mcc.valid_until IS NULL OR mcc.valid_until>=NOW())
+           AND (mcc.usage_limit IS NULL OR mcc.usage_count<mcc.usage_limit)
+         FOR UPDATE"
+    );
+    $stmt->execute([$merchantId]);
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $candidate) {
+        if (!hash_equals((string)$candidate['code_hash'] ?? '', $candidateHash)) {
+            // The SELECT does not expose code_hash intentionally in the result shape below.
+        }
+    }
+
+    $stmt = $pdo->prepare(
+        "SELECT mcc.id claim_code_db_id,mcc.public_id claim_code_id,mcc.label claim_code_label,mcc.code_hash,mcc.code_last4,
+                mcc.usage_limit,mcc.usage_count,
+                ml.id location_db_id,ml.public_id location_id,ml.name location_name,ml.address_line1,ml.city,ml.region,ml.postal_code,ml.country_code
+         FROM merchant_claim_codes mcc
+         INNER JOIN merchant_locations ml ON ml.id=mcc.location_id
+         WHERE mcc.merchant_user_id=?
+           AND mcc.status='active'
+           AND ml.status='active'
+           AND (mcc.valid_from IS NULL OR mcc.valid_from<=NOW())
+           AND (mcc.valid_until IS NULL OR mcc.valid_until>=NOW())
+           AND (mcc.usage_limit IS NULL OR mcc.usage_count<mcc.usage_limit)
+         FOR UPDATE"
+    );
+    $stmt->execute([$merchantId]);
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $candidate) {
+        if (!hash_equals((string)$candidate['code_hash'], $candidateHash)) continue;
+        return [
+            'verified' => true,
+            'claim_code_db_id' => (int)$candidate['claim_code_db_id'],
+            'claim_code_id' => (string)$candidate['claim_code_id'],
+            'claim_code_label' => (string)$candidate['claim_code_label'],
+            'code_last4' => (string)$candidate['code_last4'],
+            'location_db_id' => (int)$candidate['location_db_id'],
+            'location_id' => (string)$candidate['location_id'],
+            'location_name' => (string)$candidate['location_name'],
+            'location_label' => trim(implode(', ', array_filter([(string)($candidate['city'] ?? ''), (string)($candidate['region'] ?? '')]))),
+            'verified_at' => gmdate('c'),
+            'verification_method' => 'cashier_claim_code',
+        ];
+    }
+    mg_fail('Invalid cashier verification code. Ask the merchant or cashier to enter the active location claim code.', 422);
+}
+
+function mg_stamp_card_punch_notification(PDO $pdo, array $campaign, array $contact, string $email, string $name, int $stampCount, int $requiredCount, array $verification, bool $unlocked, array $crm = []): array
+{
+    $merchantId = (int)($campaign['merchant_user_id'] ?? 0);
+    if ($merchantId < 1) return ['created' => false, 'reason' => 'missing_merchant'];
+    $displayName = trim($name) !== '' ? trim($name) : $email;
+    $campaignTitle = trim((string)($campaign['title'] ?? '')) ?: 'stamp card campaign';
+    $locationName = trim((string)($verification['location_name'] ?? '')) ?: 'merchant location';
+    $type = $unlocked ? 'merchant_stamp_card_reward_unlocked' : 'merchant_stamp_card_punch_verified';
+    $title = $unlocked ? 'Stamp card reward unlocked' : 'Verified stamp card punch';
+    $body = $displayName . ' received punch ' . $stampCount . ' of ' . $requiredCount . ' for ' . $campaignTitle . ' at ' . $locationName . '.';
+    $actionUrl = '/merchant-crm.php?campaign=' . rawurlencode((string)($campaign['public_id'] ?? '')) . '&contact=' . rawurlencode((string)($contact['public_id'] ?? ''));
+    return mg_public_campaign_create_notification($pdo, $merchantId, $type, $title, $body, $actionUrl, [
+        'campaign_id' => (string)($campaign['public_id'] ?? ''),
+        'campaign_type' => 'stamp_card_reward',
+        'campaign_contact_id' => (string)($contact['public_id'] ?? ''),
+        'crm_contact_id' => (string)($crm['contact_id'] ?? ''),
+        'crm_event_id' => (string)($crm['event_id'] ?? ''),
+        'lead_email' => $email,
+        'lead_name' => $name,
+        'stamp_count' => $stampCount,
+        'required_count' => $requiredCount,
+        'reward_unlocked' => $unlocked,
+        'verification' => $verification,
+    ]);
+}
+
+function mg_stamp_card_record_stamp(PDO $pdo, array $campaign, array $input, array $entry, array $embedAttribution, int $stampCount, int $requiredCount, array $verification, bool $unlocked): array
 {
     $merchantId = (int)$campaign['merchant_user_id'];
     $campaignId = (int)$campaign['id'];
@@ -69,7 +163,9 @@ function mg_stamp_card_record_stamp(PDO $pdo, array $campaign, array $input, arr
         'stamp_count' => $stampCount,
         'required_count' => $requiredCount,
         'stamps_remaining' => max(0, $requiredCount - $stampCount),
-        'stamp_result' => 'recorded',
+        'stamp_result' => $unlocked ? 'unlocked' : 'recorded',
+        'cashier_verified' => true,
+        'stamp_verification' => $verification,
         'ip' => mg_client_ip(),
         'user_agent' => substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255),
     ], $embedAttribution);
@@ -86,7 +182,7 @@ function mg_stamp_card_record_stamp(PDO $pdo, array $campaign, array $input, arr
         'merchant_user_id' => $merchantId,
         'campaign_id' => $campaignId,
         'campaign_type' => 'stamp_card_reward',
-        'event_type' => 'stamp_card.stamped',
+        'event_type' => 'stamp_card.verified_punch',
         'source_type' => $source,
         'source_public_id' => (string)($contact['public_id'] ?? ''),
         'user_id' => $userId,
@@ -95,7 +191,7 @@ function mg_stamp_card_record_stamp(PDO $pdo, array $campaign, array $input, arr
         'name' => $name,
         'metadata' => $metadata,
     ]);
-    $merchantNotification = mg_public_campaign_notify_merchant_contact($pdo, $campaign, $contact, $email, $name, $phone, $source, $crm, false);
+    $punchNotification = mg_stamp_card_punch_notification($pdo, $campaign, $contact, $email, $name, $stampCount, $requiredCount, $verification, $unlocked, $crm);
     $event = $pdo->prepare('INSERT INTO campaign_events (public_id,merchant_user_id,campaign_id,wallet_item_id,contact_id,event_type,event_context_json,created_at) VALUES (?,?,?,?,?,?,?,NOW())');
     $event->execute([
         mg_stamp_card_uuid(),
@@ -104,10 +200,23 @@ function mg_stamp_card_record_stamp(PDO $pdo, array $campaign, array $input, arr
         null,
         $contactId ?: null,
         'stamp_card.stamped',
-        json_encode(['campaign_type' => 'stamp_card_reward', 'source' => $source, 'email' => $email, 'entry' => $entry, 'stamp_count' => $stampCount, 'required_count' => $requiredCount, 'stamps_remaining' => max(0, $requiredCount - $stampCount), 'embed_attribution' => $embedAttribution, 'merchant_crm' => $crm, 'merchant_notification' => $merchantNotification], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+        json_encode(['campaign_type' => 'stamp_card_reward', 'source' => $source, 'email' => $email, 'entry' => $entry, 'stamp_count' => $stampCount, 'required_count' => $requiredCount, 'stamps_remaining' => max(0, $requiredCount - $stampCount), 'reward_unlocked' => $unlocked, 'verification' => $verification, 'embed_attribution' => $embedAttribution, 'merchant_crm' => $crm, 'punch_notification' => $punchNotification], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
     ]);
+    if (!empty($verification['claim_code_db_id'])) {
+        $pdo->prepare('UPDATE merchant_claim_codes SET usage_count=usage_count+1, updated_at=NOW() WHERE id=?')->execute([(int)$verification['claim_code_db_id']]);
+        if (function_exists('mg_claim_code_event')) {
+            mg_claim_code_event($pdo, $merchantId, (int)$verification['claim_code_db_id'], (int)$verification['location_db_id'], 'stamp_card.punch_verified', null, [
+                'campaign_id' => (string)$campaign['public_id'],
+                'campaign_title' => (string)$campaign['title'],
+                'contact_id' => (string)($contact['public_id'] ?? ''),
+                'stamp_count' => $stampCount,
+                'required_count' => $requiredCount,
+                'reward_unlocked' => $unlocked,
+            ], $merchantId);
+        }
+    }
 
-    return ['contact' => $contact, 'crm' => $crm, 'merchant_notification' => $merchantNotification];
+    return ['contact' => $contact, 'crm' => $crm, 'punch_notification' => $punchNotification, 'verification' => $verification];
 }
 
 mg_require_method('POST');
@@ -122,59 +231,64 @@ $embedAttribution = mg_public_campaign_embed_attribution($input);
 if ($campaignRef === '' || $email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
     mg_fail('Invalid stamp card visit.', 422);
 }
+$claimCode = mg_stamp_card_cashier_code($input);
 
-$stmt = $pdo->prepare("SELECT c.*, rt.public_id reward_template_public_id, rt.title reward_template_title FROM campaigns c INNER JOIN reward_templates rt ON rt.id=c.reward_template_id WHERE c.status='active' AND rt.status='active' AND (c.public_id=? OR c.public_slug=?) LIMIT 1");
-$stmt->execute([$campaignRef, $campaignRef]);
-$campaign = $stmt->fetch(PDO::FETCH_ASSOC);
-if (!$campaign || (string)$campaign['campaign_type'] !== 'stamp_card_reward') {
-    mg_fail('Stamp card campaign is not available.', 404);
-}
-$now = time();
-if (!empty($campaign['starts_at']) && strtotime((string)$campaign['starts_at']) > $now) mg_fail('Stamp card campaign has not started yet.', 409);
-if (!empty($campaign['ends_at']) && strtotime((string)$campaign['ends_at']) < $now) mg_fail('Stamp card campaign has ended.', 409);
-if ($campaign['quantity_limit'] !== null && (int)$campaign['issued_count'] >= (int)$campaign['quantity_limit']) mg_fail('Stamp card reward limit has been reached.', 409);
+try {
+    $pdo->beginTransaction();
+    $stmt = $pdo->prepare("SELECT c.*, rt.public_id reward_template_public_id, rt.title reward_template_title FROM campaigns c INNER JOIN reward_templates rt ON rt.id=c.reward_template_id WHERE c.status='active' AND rt.status='active' AND (c.public_id=? OR c.public_slug=?) LIMIT 1 FOR UPDATE");
+    $stmt->execute([$campaignRef, $campaignRef]);
+    $campaign = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$campaign || (string)$campaign['campaign_type'] !== 'stamp_card_reward') {
+        mg_fail('Stamp card campaign is not available.', 404);
+    }
+    $now = time();
+    if (!empty($campaign['starts_at']) && strtotime((string)$campaign['starts_at']) > $now) mg_fail('Stamp card campaign has not started yet.', 409);
+    if (!empty($campaign['ends_at']) && strtotime((string)$campaign['ends_at']) < $now) mg_fail('Stamp card campaign has ended.', 409);
+    if ($campaign['quantity_limit'] !== null && (int)$campaign['issued_count'] >= (int)$campaign['quantity_limit']) mg_fail('Stamp card reward limit has been reached.', 409);
 
-$requiredCount = mg_stamp_card_required_count($campaign);
-$cooldownHours = mg_stamp_card_cooldown_hours($campaign);
-$stampLabel = mg_stamp_card_label($campaign);
-$contactStmt = $pdo->prepare('SELECT id,public_id FROM campaign_contacts WHERE campaign_id=? AND email=? LIMIT 1');
-$contactStmt->execute([(int)$campaign['id'], $email]);
-$existingContact = $contactStmt->fetch(PDO::FETCH_ASSOC) ?: null;
-$previousStamps = 0;
-$lastStampAt = null;
-if ($existingContact) {
-    $countStmt = $pdo->prepare("SELECT COUNT(*), MAX(created_at) FROM campaign_events WHERE campaign_id=? AND contact_id=? AND event_type='stamp_card.stamped'");
-    $countStmt->execute([(int)$campaign['id'], (int)$existingContact['id']]);
-    $row = $countStmt->fetch(PDO::FETCH_NUM) ?: [0, null];
-    $previousStamps = (int)($row[0] ?? 0);
-    $lastStampAt = $row[1] ?? null;
+    $verification = mg_stamp_card_verify_cashier_code($pdo, $campaign, $claimCode);
+    $requiredCount = mg_stamp_card_required_count($campaign);
+    $cooldownHours = mg_stamp_card_cooldown_hours($campaign);
+    $stampLabel = mg_stamp_card_label($campaign);
+    $contactStmt = $pdo->prepare('SELECT id,public_id FROM campaign_contacts WHERE campaign_id=? AND email=? LIMIT 1 FOR UPDATE');
+    $contactStmt->execute([(int)$campaign['id'], $email]);
+    $existingContact = $contactStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    $previousStamps = 0;
+    $lastStampAt = null;
+    if ($existingContact) {
+        $countStmt = $pdo->prepare("SELECT COUNT(*), MAX(created_at) FROM campaign_events WHERE campaign_id=? AND contact_id=? AND event_type='stamp_card.stamped'");
+        $countStmt->execute([(int)$campaign['id'], (int)$existingContact['id']]);
+        $row = $countStmt->fetch(PDO::FETCH_NUM) ?: [0, null];
+        $previousStamps = (int)($row[0] ?? 0);
+        $lastStampAt = $row[1] ?? null;
+    }
+    if ($cooldownHours > 0 && is_string($lastStampAt) && strtotime($lastStampAt) > (time() - ($cooldownHours * 3600))) {
+        mg_fail('This stamp card has a cooldown before the next stamp can be recorded.', 409);
+    }
+    $stampCount = $previousStamps + 1;
+    $unlocked = $stampCount >= $requiredCount;
+    $entry['stamp_label'] = $stampLabel;
+    $entry['stamp_count'] = $stampCount;
+    $entry['previous_stamp_count'] = $previousStamps;
+    $entry['required_count'] = $requiredCount;
+    $entry['stamps_remaining'] = max(0, $requiredCount - $stampCount);
+    $entry['stamp_result'] = $unlocked ? 'unlocked' : 'recorded';
+    $entry['stamp_cooldown_hours'] = $cooldownHours;
+    $entry['cashier_verified'] = true;
+    $entry['stamp_verification'] = $verification;
+    $entry['stamped_at'] = gmdate('c');
+    $input['entry'] = $entry;
+    $input['campaign_type'] = 'stamp_card_reward';
+    $record = mg_stamp_card_record_stamp($pdo, $campaign, $input, $entry, $embedAttribution, $stampCount, $requiredCount, $verification, $unlocked);
+    $pdo->commit();
+} catch (Throwable $error) {
+    if ($pdo->inTransaction()) $pdo->rollBack();
+    if (method_exists($error, 'getCode') && in_array((int)$error->getCode(), [404, 409, 422, 423], true)) throw $error;
+    mg_security_log('error', 'public.stamp_card.record_failed', 'Unable to record verified stamp card visit.', ['exception_class' => $error::class, 'message' => $error->getMessage()]);
+    mg_fail('Unable to record verified stamp card visit.', 500);
 }
-if ($cooldownHours > 0 && is_string($lastStampAt) && strtotime($lastStampAt) > (time() - ($cooldownHours * 3600))) {
-    mg_fail('This stamp card has a cooldown before the next stamp can be recorded.', 409);
-}
-$stampCount = $previousStamps + 1;
-$unlocked = $stampCount >= $requiredCount;
-$entry['stamp_label'] = $stampLabel;
-$entry['stamp_count'] = $stampCount;
-$entry['previous_stamp_count'] = $previousStamps;
-$entry['required_count'] = $requiredCount;
-$entry['stamps_remaining'] = max(0, $requiredCount - $stampCount);
-$entry['stamp_result'] = $unlocked ? 'unlocked' : 'recorded';
-$entry['stamp_cooldown_hours'] = $cooldownHours;
-$entry['stamped_at'] = gmdate('c');
-$input['entry'] = $entry;
-$input['campaign_type'] = 'stamp_card_reward';
 
 if (!$unlocked) {
-    try {
-        $pdo->beginTransaction();
-        $record = mg_stamp_card_record_stamp($pdo, $campaign, $input, $entry, $embedAttribution, $stampCount, $requiredCount);
-        $pdo->commit();
-    } catch (Throwable $error) {
-        if ($pdo->inTransaction()) $pdo->rollBack();
-        mg_security_log('error', 'public.stamp_card.record_failed', 'Unable to record stamp card visit.', ['exception_class' => $error::class, 'message' => $error->getMessage()]);
-        mg_fail('Unable to record stamp card visit.', 500);
-    }
     $remaining = max(0, $requiredCount - $stampCount);
     mg_ok([
         'campaign_id' => (string)$campaign['public_id'],
@@ -187,10 +301,11 @@ if (!$unlocked) {
         'reward_unlocked' => false,
         'contact_id' => (string)($record['contact']['public_id'] ?? ''),
         'merchant_crm' => $record['crm'] ?? null,
-        'merchant_notification' => $record['merchant_notification'] ?? null,
+        'punch_notification' => $record['punch_notification'] ?? null,
+        'verification' => $verification,
         'entry' => $entry,
         'embed_attribution' => $embedAttribution,
-    ], $stampLabel . ' stamp recorded. ' . $remaining . ' more to unlock your reward.', 200);
+    ], $stampLabel . ' punch verified at ' . ($verification['location_name'] ?? 'merchant location') . '. ' . $remaining . ' more to unlock your reward.', 200);
 }
 
 $GLOBALS['mg_stamp_card_entry'] = $entry;
