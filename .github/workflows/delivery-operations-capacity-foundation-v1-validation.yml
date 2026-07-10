@@ -22,6 +22,7 @@ on:
       - 'scripts/validate_delivery_operations_capacity_foundation_v1.php'
       - 'scripts/audit_delivery_operations_capacity_foundation_v1.php'
       - 'scripts/validate_delivery_communications_regression_v1.php'
+      - 'scripts/validate_delivery_microgift_authority_regression_v1.php'
       - 'docs/delivery-operations-capacity-foundation-v1.md'
       - 'docs/audits/delivery-operations-capacity-foundation-v1-scorecard.md'
       - '.github/workflows/delivery-operations-capacity-foundation-v1-validation.yml'
@@ -67,6 +68,7 @@ jobs:
           php -l scripts/validate_delivery_operations_capacity_foundation_v1.php
           php -l scripts/audit_delivery_operations_capacity_foundation_v1.php
           php -l scripts/validate_delivery_communications_regression_v1.php
+          php -l scripts/validate_delivery_microgift_authority_regression_v1.php
 
       - name: JavaScript syntax
         run: node --check assets/js/delivery-operations.js
@@ -86,5 +88,5 @@ jobs:
       - name: Communication delivery compatibility regression
         run: php scripts/validate_delivery_communications_regression_v1.php
 
-      - name: Microgift behavior regression
-        run: php scripts/validate_microgift_behavior.php
+      - name: Microgift authority compatibility regression
+        run: php scripts/validate_delivery_microgift_authority_regression_v1.php
