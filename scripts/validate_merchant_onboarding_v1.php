@@ -5,7 +5,7 @@ $files=['merchant-onboarding.php','includes/merchant-onboarding-view.php','asset
 $read=static fn(string $p):string=>is_file($root.'/'.$p)?(string)file_get_contents($root.'/'.$p):'';
 $checks=[];foreach($files as $file)$checks[]=['name'=>'file:'.$file,'ok'=>is_file($root.'/'.$file)];
 $page=$read('merchant-onboarding.php');$view=$read('includes/merchant-onboarding-view.php');$js=$read('assets/js/merchant-onboarding.js');$status=$read('api/merchant/onboarding-status.php');$complete=$read('api/merchant/onboarding-complete.php');$signup=$read('signup.php');$register=$read('api/auth/register.php');
-$checks[]=['name'=>'authenticated merchant shell','ok'=>str_contains($page,"$merchantView='onboarding'")&&str_contains($page,"includes/merchant-workspace.php")&&str_contains($page,'merchant-onboarding.js')];
+$checks[]=['name'=>'authenticated merchant shell','ok'=>str_contains($page,"\$merchantView='onboarding'")&&str_contains($page,'includes/merchant-workspace.php')&&str_contains($page,'merchant-onboarding.js')];
 $checks[]=['name'=>'guided merchant UX','ok'=>str_contains($view,'Launch your first Loyalty Quest')&&str_contains($view,'data-onboarding-checklist')&&str_contains($js,'Continue:')];
 $checks[]=['name'=>'merchant signup path','ok'=>str_contains($signup,"'merchant'")&&str_contains($signup,'business_name')&&str_contains($register,"\$accountType==='merchant'")];
 $checks[]=['name'=>'merchant role and workspace creation','ok'=>str_contains($register,"slug='merchant'")&&str_contains($register,'merchant_workspaces')&&str_contains($register,'merchant_team_members')];
