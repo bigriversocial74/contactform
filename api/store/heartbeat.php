@@ -12,7 +12,7 @@ $pdo = mg_db();
 try {
     mg_rate_limit('store.heartbeat', 'user:' . (int)$user['id'], 180, 60);
     $session = mg_store_runtime_heartbeat($pdo, (int)$user['id']);
-    mg_ok(['active_session' => mg_store_project_session($session)], $session ? 'Store session active.' : 'No active store session.');
+    mg_ok(['active_session' => mg_store_runtime_project_session($session)], $session ? 'Store session active.' : 'No active store session.');
 } catch (RuntimeException $error) {
     mg_fail($error->getMessage(), 400);
 } catch (Throwable $error) {
