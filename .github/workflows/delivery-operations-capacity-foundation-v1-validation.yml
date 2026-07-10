@@ -11,6 +11,9 @@ on:
       - 'admin/delivery-operations.php'
       - 'bin/delivery-worker.php'
       - 'assets/js/delivery-operations.js'
+      - 'assets/js/gift-action-center-modal-portal.js'
+      - 'assets/js/gift-action-center-send-modal.js'
+      - 'assets/js/gift-action-center-claim-modal.js'
       - 'assets/css/delivery-operations.css'
       - 'assets/css/modal-foundation.css'
       - 'assets/css/gift-action-center-modals.css'
@@ -23,6 +26,7 @@ on:
       - 'scripts/audit_delivery_operations_capacity_foundation_v1.php'
       - 'scripts/validate_delivery_communications_regression_v1.php'
       - 'scripts/validate_delivery_microgift_authority_regression_v1.php'
+      - 'scripts/validate_action_center_modal_ui_consistency_v1.php'
       - 'docs/delivery-operations-capacity-foundation-v1.md'
       - 'docs/audits/delivery-operations-capacity-foundation-v1-scorecard.md'
       - '.github/workflows/delivery-operations-capacity-foundation-v1-validation.yml'
@@ -69,15 +73,23 @@ jobs:
           php -l scripts/audit_delivery_operations_capacity_foundation_v1.php
           php -l scripts/validate_delivery_communications_regression_v1.php
           php -l scripts/validate_delivery_microgift_authority_regression_v1.php
+          php -l scripts/validate_action_center_modal_ui_consistency_v1.php
 
       - name: JavaScript syntax
-        run: node --check assets/js/delivery-operations.js
+        run: |
+          node --check assets/js/delivery-operations.js
+          node --check assets/js/gift-action-center-modal-portal.js
+          node --check assets/js/gift-action-center-send-modal.js
+          node --check assets/js/gift-action-center-claim-modal.js
 
       - name: Delivery operations ten-point contract
         run: php scripts/validate_delivery_operations_capacity_foundation_v1.php
 
       - name: Delivery operations scored quality audit
         run: php scripts/audit_delivery_operations_capacity_foundation_v1.php
+
+      - name: Action Center modal UI consistency contract
+        run: php scripts/validate_action_center_modal_ui_consistency_v1.php
 
       - name: Purchase-to-Microgift issuance regression
         run: php scripts/validate_purchase_microgift_issuance_v1.php
