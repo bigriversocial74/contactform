@@ -9,7 +9,7 @@ final class Stage9CClaimRedemptionLifecycleTest extends TestCase
     {
         $sql=file_get_contents(dirname(__DIR__,2).'/database/stage_9c_microgift_lifecycle.sql');
         self::assertIsString($sql);
-        foreach(['microgift_claims','microgift_redemptions','microgift_lifecycle_actions'] as $table){self::assertStringContainsString('CREATE TABLE IF NOT EXISTS '.$table,$sql);}
+        foreach(['microgift_claims','microgift_redemptions','microgift_lifecycle_actions'] as $table)self::assertStringContainsString('CREATE TABLE IF NOT EXISTS '.$table,$sql);
         self::assertStringContainsString('uq_microgift_claims_idempotency',$sql);
         self::assertStringContainsString('uq_microgift_redemptions_idempotency',$sql);
         self::assertStringContainsString('uq_microgift_lifecycle_idempotency',$sql);
@@ -24,38 +24,58 @@ final class Stage9CClaimRedemptionLifecycleTest extends TestCase
         self::assertStringContainsString('max_attempts',$source);
     }
 
-    public function testClaimIsIdempotentAndSynchronizesPppmEntitlements(): void
+    public function testClaimUsesCanonicalAuthorityAndSynchronizesPppmOwnership(): void
     {
-        $source=file_get_contents(dirname(__DIR__,2).'/api/microgifts/_lifecycle.php');
-        $ownership=file_get_contents(dirname(__DIR__,2).'/api/pppm/_ownership.php');
-        self::assertStringContainsString('SELECT public_id,status FROM microgift_claims WHERE idempotency_key=?',$source);
-        self::assertStringContainsString('mg_pppm_transfer_owner_canonical',$source);
+        $root=dirname(__DIR__,2);
+        $authority=file_get_contents($root.'/api/microgifts/_claim_authority.php');
+        $endpoint=file_get_contents($root.'/api/microgifts/claim.php');
+        $actionCenter=file_get_contents($root.'/api/account/action-center-claim.php');
+        $lifecycle=file_get_contents($root.'/api/microgifts/_lifecycle.php');
+        $ownership=file_get_contents($root.'/api/pppm/_ownership.php');
+        foreach([$authority,$endpoint,$actionCenter,$lifecycle,$ownership] as $source)self::assertIsString($source);
+        self::assertStringContainsString('mg_microgift_assert_claim_replay(',$authority);
+        self::assertStringContainsString('mg_microgift_assert_claim_result(',$authority);
+        self::assertStringContainsString('PPPM ownership is not synchronized with the Microgift claimant.',$authority);
+        self::assertStringContainsString('mg_action_center_project_lifecycle(',$authority);
+        self::assertStringContainsString('mg_microgift_claim_canonical(',$endpoint);
+        self::assertStringContainsString('mg_microgift_claim_canonical(',$actionCenter);
+        self::assertStringContainsString('mg_pppm_transfer_owner_canonical',$lifecycle);
         self::assertStringContainsString('mg_entitlements_sync_pppm_owner',$ownership);
-        self::assertStringContainsString("status='redeemable'",$source);
-        self::assertStringContainsString("status='consumed'",$source);
     }
 
-    public function testRedemptionIsTransactionalRequestBoundAndLocationAware(): void
+    public function testCustomerRedemptionRouteIsRetiredInFavorOfMerchantAuthority(): void
     {
-        $source=file_get_contents(dirname(__DIR__,2).'/api/microgifts/_lifecycle.php');
         $endpoint=file_get_contents(dirname(__DIR__,2).'/api/microgifts/redeem.php');
-        self::assertStringContainsString('SELECT r.*,mi.public_id instance_public_id FROM microgift_redemptions r',$source);
-        self::assertStringContainsString('mg_microgift_assert_redemption_replay',$source);
-        self::assertStringContainsString('Redemption idempotency key is already bound to a different request.',$source);
-        self::assertStringContainsString('mg_microgift_canonical_merchant',$source);
-        self::assertStringContainsString('Microgift is not redeemable by this merchant.',$source);
-        self::assertStringContainsString('mg_microgift_location_allowed',$source);
-        self::assertStringContainsString("status='redeemed'",$source);
-        self::assertStringContainsString('merchant_wallet_precredited_at_payment',$source);
-        self::assertStringContainsString("\$failureHook('after_redemption'",$source);
-        self::assertStringContainsString('beginTransaction',$endpoint);
+        self::assertIsString($endpoint);
+        self::assertStringContainsString('Direct customer redemption has been retired.',$endpoint);
+        self::assertStringContainsString("'canonical_endpoint'=>'/api/merchant/microgift-claim.php'",$endpoint);
+        self::assertStringContainsString('410,',$endpoint);
+        self::assertStringNotContainsString('mg_microgift_redeem(',$endpoint);
+    }
+
+    public function testMerchantRedemptionReconcilesPppmActionCenterAndConfirmations(): void
+    {
+        $root=dirname(__DIR__,2);
+        $atomic=file_get_contents($root.'/api/microgifts/_atomic_merchant_redemption.php');
+        $reconcile=file_get_contents($root.'/api/microgifts/_redemption_reconciliation.php');
+        $endpoint=file_get_contents($root.'/api/merchant/microgift-claim.php');
+        $repair=file_get_contents($root.'/api/merchant/microgift-redemption-reconcile.php');
+        foreach([$atomic,$reconcile,$endpoint,$repair] as $source)self::assertIsString($source);
+        self::assertStringContainsString('mg_location_claim_resolve_authority(',$atomic);
+        self::assertStringContainsString('mg_pppm_redeem(',$atomic);
+        self::assertStringContainsString('mg_microgift_reconcile_completed_redemption(',$reconcile);
+        self::assertStringContainsString('mg_action_center_project_lifecycle(',$reconcile);
+        self::assertStringContainsString('mg_microgift_redemption_confirmations(',$reconcile);
+        self::assertStringContainsString('mg_microgift_reconcile_completed_redemption(',$endpoint);
+        self::assertStringContainsString("mg_require_permission('merchant.location_claim.execute')",$repair);
+        self::assertStringContainsString('mg_location_claim_actor_authorized(',$repair);
     }
 
     public function testLifecycleSupportsCancellationRevocationExpirationAndPaymentPolicy(): void
     {
         $source=file_get_contents(dirname(__DIR__,2).'/api/microgifts/_lifecycle.php');
         $policy=file_get_contents(dirname(__DIR__,2).'/api/microgifts/payment-policy.php');
-        foreach(['cancel','revoke','expire','refund','dispute_opened','dispute_won','dispute_lost'] as $action){self::assertStringContainsString("'{$action}'",$source.$policy);}
+        foreach(['cancel','revoke','expire','refund','dispute_opened','dispute_won','dispute_lost'] as $action)self::assertStringContainsString("'{$action}'",$source.$policy);
         self::assertStringContainsString('microgift_lifecycle_actions',$source);
     }
 
@@ -70,12 +90,15 @@ final class Stage9CClaimRedemptionLifecycleTest extends TestCase
 
     public function testEndpointsRequireAuthenticationPermissionAndCsrf(): void
     {
-        $claim=file_get_contents(dirname(__DIR__,2).'/api/microgifts/claim.php');
-        $redeem=file_get_contents(dirname(__DIR__,2).'/api/microgifts/redeem.php');
-        $admin=file_get_contents(dirname(__DIR__,2).'/api/admin/microgift-lifecycle.php');
-        self::assertStringContainsString('mg_require_api_user()',$claim);
-        self::assertStringContainsString('mg_require_api_user()',$redeem);
-        self::assertStringContainsString('mg_require_csrf_for_write',$claim.$redeem.$admin);
+        $root=dirname(__DIR__,2);
+        $claim=file_get_contents($root.'/api/microgifts/claim.php');
+        $redeem=file_get_contents($root.'/api/microgifts/redeem.php');
+        $merchant=file_get_contents($root.'/api/merchant/microgift-claim.php');
+        $repair=file_get_contents($root.'/api/merchant/microgift-redemption-reconcile.php');
+        $admin=file_get_contents($root.'/api/admin/microgift-lifecycle.php');
+        self::assertStringContainsString('mg_require_api_user()',$claim.$redeem);
+        self::assertStringContainsString('mg_require_csrf_for_write',$claim.$redeem.$merchant.$repair.$admin);
+        self::assertStringContainsString("mg_require_permission('merchant.location_claim.execute')",$merchant.$repair);
         self::assertStringContainsString("mg_require_permission('microgift.lifecycle.manage')",$admin);
     }
 

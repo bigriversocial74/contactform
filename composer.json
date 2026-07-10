@@ -15,6 +15,7 @@
   },
   "scripts": {
     "test": "phpunit --configuration phpunit.xml.dist",
+    "test-active-recovery": "phpunit --configuration phpunit.recovery.xml.dist",
     "test-security": "phpunit --configuration phpunit.xml.dist --filter SecurityFoundationTest",
     "test-frontend-contracts": "php scripts/validate_frontend_contracts.php",
     "test-money-behavior": "php scripts/validate_money_behavior.php",

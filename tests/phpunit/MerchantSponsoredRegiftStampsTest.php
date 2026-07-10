@@ -39,7 +39,6 @@ final class MerchantSponsoredRegiftStampsTest extends TestCase
         }
 
         self::assertStringNotContainsString("mg_stamp_debit_send(\$pdo,(int)\$user['id'],(int)\$user['id'],'regift_send'", $source);
-        self::assertStringNotContainsString("mg_stamp_debit_send($pdo,(int)$user['id'],(int)$user['id'],'regift_send'", $source);
     }
 
     public function testMerchantShortfallDoesNotBlockCustomerRegift(): void
