@@ -2,7 +2,6 @@
 declare(strict_types=1);
 require_once __DIR__ . '/_checkout.php';
 require_once __DIR__ . '/_order_issuance_summary.php';
-require_once dirname(__DIR__) . '/payments/_fulfillment.php';
 
 mg_require_method('GET');
 $user=mg_require_api_user();
@@ -15,25 +14,6 @@ $order=$stmt->fetch(PDO::FETCH_ASSOC);
 if(!$order)mg_fail('Order not found.',404);
 
 $issuance=mg_order_issuance_summary($pdo,$order,(int)$user['id']);
-if((string)$order['payment_status']==='paid'&&empty($issuance['complete'])){
-    $pdo->beginTransaction();
-    try{
-        mg_payment_issue_order_pppm($pdo,(int)$order['id'],(int)$user['id']);
-        mg_payment_issue_order_microgifts($pdo,(int)$order['id'],(int)$user['id']);
-        $pdo->commit();
-    }catch(Throwable $error){
-        if($pdo->inTransaction())$pdo->rollBack();
-        mg_security_log('error','commerce.order_confirmation_issuance_repair_failed','Order confirmation issuance repair failed.',[
-            'order_id'=>(string)$order['public_id'],
-            'exception_type'=>get_class($error),
-            'message'=>$error->getMessage(),
-        ],(int)$user['id']);
-    }
-    $stmt->execute([$orderId,(int)$user['id']]);
-    $order=$stmt->fetch(PDO::FETCH_ASSOC);
-    $issuance=mg_order_issuance_summary($pdo,$order,(int)$user['id']);
-}
-
 $orderPayload=mg_order_payload($pdo,$order);
 $receiptStmt=$pdo->prepare('SELECT public_id receipt_id,receipt_number,status,currency,subtotal_cents,discount_cents,tax_cents,platform_fee_cents,total_cents,items_snapshot_json,finalized_at,created_at,updated_at FROM receipts WHERE order_id=? LIMIT 1');
 $receiptStmt->execute([(int)$order['id']]);
@@ -47,6 +27,7 @@ mg_ok([
     'order'=>$orderPayload,
     'receipt'=>$receipt,
     'issuance'=>$issuance,
+    'can_reconcile'=>(string)$order['payment_status']==='paid'&&empty($issuance['complete']),
     'events'=>$events->fetchAll(PDO::FETCH_ASSOC),
     'history'=>$history->fetchAll(PDO::FETCH_ASSOC),
     'links'=>[
