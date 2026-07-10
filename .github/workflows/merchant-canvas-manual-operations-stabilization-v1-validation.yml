@@ -13,7 +13,7 @@ on:
       - 'api/merchant-canvas/send-message.php'
       - 'api/merchant-canvas/send-reward.php'
       - 'api/merchant-canvas/health.php'
-      - 'api/store/_canvas-messaging.php'
+      - 'api/store/_canvas_messaging.php'
       - 'api/store/_canvas_manual_operations.php'
       - 'database/merchant_canvas_manual_operations_stabilization_v1.sql'
       - 'scripts/validate_merchant_canvas_manual_operations_stabilization_v1.php'
