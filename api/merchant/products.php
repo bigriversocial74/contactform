@@ -23,10 +23,10 @@ $allowedBuilderTypes = ['simple_product','greeting_card','multimedia_greeting_ca
 $allowedSorts = [
     'updated_desc'=>'p.updated_at DESC,p.id DESC',
     'updated_asc'=>'p.updated_at ASC,p.id ASC',
-    'title_asc'=>'v.title ASC,p.id ASC',
-    'title_desc'=>'v.title DESC,p.id DESC',
-    'value_desc'=>'v.unit_value_cents DESC,p.id DESC',
-    'value_asc'=>'v.unit_value_cents ASC,p.id ASC',
+    'title_asc'=>'COALESCE(v.title,p.slug) ASC,p.id ASC',
+    'title_desc'=>'COALESCE(v.title,p.slug) DESC,p.id DESC',
+    'value_desc'=>'COALESCE(v.unit_value_cents,0) DESC,p.id DESC',
+    'value_asc'=>'COALESCE(v.unit_value_cents,0) ASC,p.id ASC',
 ];
 if (!isset($allowedSorts[$sort])) $sort = 'updated_desc';
 if (mb_strlen($q) > 120) mg_fail('Search query is too long.',422);
@@ -39,8 +39,8 @@ if (in_array($builderType,$allowedBuilderTypes,true)) { $where[] = 'd.builder_ty
 if ($q !== '') {
     $escaped = str_replace(['=','%','_'],['==','=%','=_'],$q);
     $like = '%' . $escaped . '%';
-    $where[] = "(v.title LIKE ? ESCAPE '=' OR p.slug LIKE ? ESCAPE '=' OR p.public_id=?)";
-    array_push($params,$like,$like,$q);
+    $where[] = "(COALESCE(v.title,'') LIKE ? ESCAPE '=' OR p.slug LIKE ? ESCAPE '=' OR p.public_id LIKE ? ESCAPE '=')";
+    array_push($params,$like,$like,$like);
 }
 $whereSql = ' WHERE ' . implode(' AND ',$where);
 
@@ -66,22 +66,29 @@ $sql = "SELECT p.public_id,p.product_type,p.slug,p.status,p.published_at,p.archi
                   FROM merchant_storefront_revision_products rp
                   INNER JOIN merchant_storefront_revisions sr ON sr.id=rp.storefront_revision_id
                   WHERE rp.catalog_product_id=p.id AND sr.revision_status IN ('draft','published') AND rp.visibility='visible') storefront_placement_count,
-               CASE WHEN d.id IS NOT NULL AND (v.id IS NULL OR d.updated_at>COALESCE(v.published_at,v.created_at)) THEN 1 ELSE 0 END has_draft_changes
+               CASE WHEN d.id IS NOT NULL AND (v.id IS NULL OR d.updated_at>COALESCE(v.published_at,v.created_at)) THEN 1 ELSE 0 END has_draft_changes,
+               CASE WHEN p.status='draft' OR p.current_version_id IS NULL OR COALESCE(v.unit_value_cents,0)<1
+                    OR (d.id IS NOT NULL AND (v.id IS NULL OR d.updated_at>COALESCE(v.published_at,v.created_at))) THEN 1 ELSE 0 END needs_review
         FROM catalog_products p
         LEFT JOIN catalog_product_versions v ON v.id=p.current_version_id
         LEFT JOIN catalog_builder_drafts d ON d.product_id=p.id" . $whereSql .
        ' ORDER BY ' . $allowedSorts[$sort] . " LIMIT {$limit} OFFSET {$offset}";
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
-$products = $stmt->fetchAll();
+$products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $counts = $pdo->prepare(
     "SELECT COUNT(*) total,
-            SUM(status='draft') drafts,
-            SUM(status='published') published,
-            SUM(status='archived') archived,
-            SUM(status='published' AND current_version_id IS NOT NULL) sellable
-     FROM catalog_products WHERE merchant_user_id=?"
+            SUM(p.status='draft') drafts,
+            SUM(p.status='published') published,
+            SUM(p.status='archived') archived,
+            SUM(p.status='published' AND p.current_version_id IS NOT NULL AND COALESCE(v.unit_value_cents,0)>0) sellable,
+            SUM(p.status<>'archived' AND (p.status='draft' OR p.current_version_id IS NULL OR COALESCE(v.unit_value_cents,0)<1
+                OR (d.id IS NOT NULL AND (v.id IS NULL OR d.updated_at>COALESCE(v.published_at,v.created_at))))) needs_review
+     FROM catalog_products p
+     LEFT JOIN catalog_product_versions v ON v.id=p.current_version_id
+     LEFT JOIN catalog_builder_drafts d ON d.product_id=p.id
+     WHERE p.merchant_user_id=?"
 );
 $counts->execute([$userId]);
 
@@ -94,8 +101,8 @@ $isSuper = in_array('super_admin',$roles,true);
 
 mg_ok([
     'products'=>$products,
-    'counts'=>$counts->fetch() ?: [],
-    'product_type_counts'=>$typeCounts->fetchAll(),
+    'counts'=>$counts->fetch(PDO::FETCH_ASSOC) ?: [],
+    'product_type_counts'=>$typeCounts->fetchAll(PDO::FETCH_ASSOC),
     'pagination'=>[
         'page'=>$page,
         'limit'=>$limit,
