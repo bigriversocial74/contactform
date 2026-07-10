@@ -1,0 +1,223 @@
+/* Public Campaign Unified Layout v2
+   Aligns public campaign pages with the Watch/Listen full-width experience shell. */
+html,body{max-width:100%;overflow-x:hidden;}
+.mg-public-campaign-v2,
+.mg-campaign-experience,
+.mg-public-campaign-v2 *{box-sizing:border-box;}
+.mg-public-campaign-v2,
+.mg-campaign-experience{
+  position:relative;
+  min-height:calc(100vh - 84px);
+  overflow:hidden;
+  background:#edf5fb;
+  color:#081225;
+  font-family:Inter,"SF Pro Display","Segoe UI Variable","Segoe UI",Roboto,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:geometricPrecision;
+}
+.mg-public-campaign-v2 .mg-public-campaign-cover,
+.mg-campaign-experience .mg-public-campaign-cover{
+  position:absolute;
+  inset:-5%;
+  background-size:cover;
+  background-position:center 42%;
+  opacity:1;
+  filter:saturate(1.06) contrast(1.02);
+  transform:scale(1.13);
+  transform-origin:center top;
+  z-index:0;
+}
+.mg-public-campaign-v2 .mg-public-campaign-cover::after,
+.mg-campaign-experience .mg-public-campaign-cover::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(90deg,rgba(232,244,255,.66),rgba(255,255,255,.35) 47%,rgba(231,243,255,.58)),linear-gradient(180deg,rgba(255,255,255,.04),rgba(247,250,252,.84) 80%);
+  backdrop-filter:blur(.35px);
+}
+.mg-public-campaign-v2 .mg-public-campaign-shell,
+.mg-campaign-experience-shell{
+  position:relative;
+  z-index:1;
+  width:min(1620px,calc(100vw - 92px));
+  margin:0 auto;
+  padding:52px 0 66px;
+}
+/* Generic campaign pages use the same two-column shell as Watch/Listen. */
+.mg-public-campaign-v2:not(.mg-campaign-experience) .mg-public-campaign-shell{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(340px,390px);
+  gap:clamp(34px,4.2vw,64px);
+  align-items:start;
+}
+.mg-public-campaign-v2:not(.mg-campaign-experience) .mg-public-campaign-heading{
+  min-width:0;
+  max-width:760px;
+  margin:0;
+  display:grid;
+  gap:12px;
+  text-align:left;
+  justify-items:start;
+}
+.mg-public-campaign-v2 .mg-public-campaign-heading h1,
+.mg-campaign-experience-hero h1{
+  margin:0;
+  color:#071129;
+  font-size:clamp(54px,5vw,86px);
+  line-height:.94;
+  letter-spacing:-.068em;
+  font-weight:820;
+}
+.mg-public-campaign-v2 .mg-public-campaign-heading p,
+.mg-campaign-experience-hero p{
+  max-width:560px;
+  margin:6px 0 0;
+  color:#29405e;
+  font-size:clamp(15px,1.25vw,18px);
+  line-height:1.46;
+  font-weight:650;
+}
+.mg-public-campaign-v2 .mg-public-campaign-kicker,
+.mg-public-campaign-v2 .mg-public-campaign-eyebrow,
+.mg-campaign-experience-hero .mg-public-campaign-kicker,
+.mg-campaign-experience-hero .mg-public-campaign-eyebrow{
+  margin:0;
+  width:max-content;
+  max-width:100%;
+  border:1px solid rgba(255,255,255,.72);
+  background:rgba(255,255,255,.82);
+  box-shadow:0 12px 28px rgba(15,23,42,.07);
+}
+.mg-public-campaign-v2 .mg-public-campaign-trust-row{justify-content:flex-start;margin:8px 0 0;}
+.mg-public-campaign-v2 .mg-public-campaign-card,
+.mg-campaign-experience-side{
+  position:sticky;
+  top:98px;
+  border:1px solid rgba(255,255,255,.78);
+  border-radius:24px;
+  background:rgba(255,255,255,.91);
+  box-shadow:0 24px 68px rgba(15,23,42,.14);
+  backdrop-filter:blur(20px);
+  padding:24px;
+}
+.mg-public-campaign-v2 .mg-public-campaign-flow-card{align-self:start;}
+.mg-public-campaign-v2 .mg-public-campaign-form{display:grid;gap:12px;}
+.mg-public-campaign-v2 .mg-public-campaign-form-profile{margin-bottom:10px;}
+.mg-public-campaign-v2 .mg-public-campaign-step-grid{margin:0 0 14px;}
+.mg-public-campaign-v2 .mg-public-campaign-tabs{margin-top:0;}
+.mg-public-campaign-v2 .mg-public-campaign-result.is-visible{margin-top:12px;}
+/* Interactive pages: full-width left canvas with no extra outer card. */
+.mg-campaign-experience-grid{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(340px,390px);
+  gap:clamp(34px,4.2vw,64px);
+  align-items:start;
+}
+.mg-campaign-experience-main{
+  min-width:0;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  overflow:visible!important;
+}
+.mg-campaign-experience-side{padding:24px!important;}
+.mg-campaign-experience-side .mg-public-campaign-card,
+.mg-campaign-experience-side .mg-public-campaign-flow-card{
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+}
+.mg-campaign-experience-hero{
+  max-width:760px;
+  margin:0 0 24px;
+  padding:0!important;
+  display:grid;
+  gap:12px;
+}
+.mg-campaign-canvas{
+  width:100%;
+  margin:0 0 18px!important;
+  padding:14px!important;
+  border:1px solid rgba(255,255,255,.72)!important;
+  border-radius:24px!important;
+  background:rgba(255,255,255,.82)!important;
+  box-shadow:0 22px 58px rgba(15,23,42,.13)!important;
+  backdrop-filter:blur(18px);
+}
+.mg-campaign-canvas-head{
+  padding:10px 10px 2px;
+  margin-bottom:14px!important;
+}
+.mg-campaign-canvas-head strong{font-size:clamp(22px,2vw,34px)!important;}
+.mg-campaign-canvas-head p{max-width:560px;color:#344860!important;font-weight:650!important;}
+.mg-campaign-canvas-badge{background:#050608!important;}
+.mg-instant-stage{min-height:clamp(420px,46vw,690px)!important;}
+.mg-instant-card{
+  width:min(760px,100%)!important;
+  min-height:clamp(360px,42vw,580px)!important;
+  border-radius:20px!important;
+}
+.mg-stamp-stage{padding:8px;}
+.mg-stamp-card-visual{
+  width:min(860px,100%);
+  margin:0 auto;
+  border-radius:20px!important;
+  background:linear-gradient(135deg,#fff,#f8fafc)!important;
+  box-shadow:0 16px 42px rgba(15,23,42,.095)!important;
+}
+.mg-campaign-experience-panels{
+  margin:18px 0 0!important;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:14px;
+}
+.mg-campaign-experience-panel{
+  border:1px solid rgba(255,255,255,.72)!important;
+  border-radius:20px!important;
+  background:rgba(255,255,255,.88)!important;
+  box-shadow:0 16px 42px rgba(15,23,42,.095);
+  backdrop-filter:blur(14px);
+}
+.mg-campaign-experience-side .mg-public-campaign-field-grid,
+.mg-public-campaign-v2 .mg-public-campaign-field-grid{gap:12px;}
+.mg-campaign-experience-side .mg-public-campaign-primary-action,
+.mg-public-campaign-v2 .mg-public-campaign-primary-action{min-height:52px;border-radius:999px;}
+.mg-cashier-code-note{font-size:13px;line-height:1.45;color:#344860;}
+@media(max-width:1500px){
+  .mg-public-campaign-v2 .mg-public-campaign-shell,
+  .mg-campaign-experience-shell{width:min(1260px,calc(100vw - 72px));}
+  .mg-public-campaign-v2:not(.mg-campaign-experience) .mg-public-campaign-shell,
+  .mg-campaign-experience-grid{grid-template-columns:minmax(0,1fr) 360px;gap:36px;}
+  .mg-public-campaign-v2 .mg-public-campaign-heading h1,
+  .mg-campaign-experience-hero h1{font-size:clamp(50px,4.7vw,76px);}
+}
+@media(max-width:1180px){
+  .mg-public-campaign-v2 .mg-public-campaign-shell,
+  .mg-campaign-experience-shell{width:min(900px,calc(100vw - 36px));padding-top:34px;}
+  .mg-public-campaign-v2:not(.mg-campaign-experience) .mg-public-campaign-shell,
+  .mg-campaign-experience-grid{grid-template-columns:1fr;gap:22px;}
+  .mg-public-campaign-v2 .mg-public-campaign-card,
+  .mg-campaign-experience-side{position:relative;top:auto;}
+  .mg-campaign-experience-panels{grid-template-columns:1fr 1fr;}
+}
+@media(max-width:720px){
+  .mg-public-campaign-v2,
+  .mg-campaign-experience{padding-bottom:40px;}
+  .mg-public-campaign-v2 .mg-public-campaign-shell,
+  .mg-campaign-experience-shell{width:calc(100vw - 24px);padding:34px 0 44px;}
+  .mg-public-campaign-v2 .mg-public-campaign-heading h1,
+  .mg-campaign-experience-hero h1{font-size:clamp(40px,11vw,56px);}
+  .mg-public-campaign-v2 .mg-public-campaign-heading p,
+  .mg-campaign-experience-hero p{font-size:14px;}
+  .mg-public-campaign-v2 .mg-public-campaign-card,
+  .mg-campaign-experience-side{padding:18px!important;border-radius:22px;}
+  .mg-campaign-experience-panels{grid-template-columns:1fr;}
+  .mg-instant-stage{min-height:330px!important;}
+  .mg-instant-card{min-height:320px!important;border-radius:20px!important;}
+  .mg-stamp-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+  .mg-stamp-slot{border-radius:18px;}
+}
