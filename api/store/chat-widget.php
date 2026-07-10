@@ -98,7 +98,7 @@ try {
     mg_ok([
         'active' => true,
         'schema_ready' => true,
-        'session' => mg_store_project_session($active),
+        'session' => mg_store_runtime_project_session($active),
         'merchant' => mg_store_chat_profile($pdo, $merchantUserId),
         'thread' => $thread ? [
             'id' => (string)$thread['public_id'],
