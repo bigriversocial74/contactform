@@ -36,12 +36,12 @@ function mg_public_campaign_submit_label(string $type): string
 function mg_public_campaign_outcome_copy(string $type): array
 {
     return match ($type) {
-        'newsletter_signup' => ['Join list', 'Get merchant updates and receive your reward in Microgifter Inbox.'],
-        'contest_giveaway' => ['Enter once', 'Your entry is tracked and any reward is routed through Microgifter Inbox.'],
-        'qr_reward_drop' => ['Scan and claim', 'This QR reward is verified and managed through the Microgifter Inbox flow.'],
-        'referral_reward' => ['Share locally', 'Referral activity and rewards stay connected to the Inbox / PPPM system.'],
-        'birthday_vip' => ['Birthday rewards', 'Join the VIP list and receive future merchant rewards in your Inbox.'],
-        'agent_offer' => ['Offer interest', 'Your request is captured for the merchant and connected to campaign follow-up.'],
+        'newsletter_signup' => ['Signup reward', 'Join the merchant list and receive your reward in Microgifter Inbox.'],
+        'contest_giveaway' => ['Contest entry', 'Your entry is tracked and eligible rewards route through Microgifter Inbox.'],
+        'qr_reward_drop' => ['QR claim', 'This QR reward is verified and managed through the Microgifter Inbox flow.'],
+        'referral_reward' => ['Referral reward', 'Referral activity and rewards stay connected to the Inbox / PPPM system.'],
+        'birthday_vip' => ['Birthday VIP', 'Join the VIP list and receive future merchant rewards in your Inbox.'],
+        'agent_offer' => ['Offer interest', 'Your request is captured for merchant follow-up and reward routing.'],
         default => ['Campaign reward', 'Submit once and Microgifter routes eligible rewards into the Inbox flow.'],
     };
 }
@@ -58,7 +58,7 @@ function mg_public_campaign_steps(string $type): array
     };
     return [
         ['title' => 'Add your info', 'copy' => 'Use the email you want tied to your Microgifter Inbox.'],
-        ['title' => $verb . ' the campaign', 'copy' => 'Microgifter records the campaign source and reward status.'],
+        ['title' => $verb . ' campaign', 'copy' => 'Microgifter records the campaign source and reward status.'],
         ['title' => 'Open Inbox', 'copy' => 'Eligible rewards continue through Inbox and PPPM tracking.'],
     ];
 }
@@ -152,8 +152,42 @@ function mg_public_campaign_load(?string $expectedType, string $campaignRef, str
 function mg_public_campaign_unavailable(string $label, string $intro): void
 {
     ?>
-    <section class="mg-public-campaign mg-public-campaign-empty"><div class="mg-public-campaign-shell"><div class="mg-public-campaign-card"><span class="mg-public-campaign-eyebrow"><?= mg_e($label) ?></span><h1>Campaign not available</h1><p><?= mg_e($intro) ?></p><p class="mg-public-campaign-note">Use the campaign link or QR code from the merchant to open the correct page.</p><a class="mg-btn mg-btn-primary" href="/discover.php">Explore Microgifter</a></div></div></section>
+    <section class="mg-rl-page mg-rl-simple-campaign"><div class="mg-rl-bg"></div><div class="mg-rl-wrap"><div class="mg-rl-left"><article class="mg-rl-card"><span class="mg-rl-eyebrow"><?= mg_e($label) ?></span><h2>Campaign not available</h2><p><?= mg_e($intro) ?></p><p>Use the campaign link or QR code from the merchant to open the correct page.</p><a class="mg-rl-btn mg-rl-btn-soft" href="/discover.php">Explore Microgifter</a></article></div></div></section>
     <?php
+}
+
+function mg_public_campaign_render_join_form(array $ctx): void
+{
+    $campaignType = (string)$ctx['campaign_type'];
+    $mgCampaign = $ctx['campaign'];
+    $isPreview = (bool)$ctx['preview'];
+    $isClosed = (bool)$ctx['closed'];
+    $closedMessage = (string)$ctx['closed_message'];
+    $merchantName = (string)$ctx['merchant_name'];
+    $merchantHeadline = (string)$ctx['merchant_headline'];
+    $merchantLocation = (string)$ctx['merchant_location'];
+    $merchantProfileUrl = $ctx['merchant_profile_url'];
+    $avatarUrl = $ctx['avatar_url'];
+    $typeLabel = (string)$ctx['type_label'];
+    $outcomeTitle = (string)$ctx['outcome_title'];
+    $submitEndpoint = (string)$ctx['submit_endpoint'];
+    $submitLabel = (string)$ctx['submit_label'];
+    $prefillName = (string)$ctx['prefill_name'];
+    $prefillEmail = (string)$ctx['prefill_email'];
+    $campaignToken = (string)$ctx['campaign_token'];
+    ?>
+    <div class="mg-rl-profile"><div class="mg-rl-avatar"><?php if ($avatarUrl): ?><img src="<?= mg_e($avatarUrl) ?>" alt="<?= mg_e($merchantName) ?> profile image"><?php else: ?><span><?= mg_e(mg_public_campaign_initials($merchantName)) ?></span><?php endif; ?></div><div><h2><?= mg_e($merchantName) ?></h2><?php if ($merchantHeadline !== ''): ?><p><?= mg_e($merchantHeadline) ?></p><?php endif; ?><?php if ($merchantLocation !== ''): ?><p><?= mg_e($merchantLocation) ?></p><?php endif; ?><?php if ($merchantProfileUrl): ?><a class="mg-rl-btn mg-rl-btn-soft mg-rl-profile-link" href="<?= mg_e($merchantProfileUrl) ?>">View profile</a><?php endif; ?></div></div>
+    <?php if ($isClosed): ?>
+      <div class="mg-public-campaign-result is-visible"><strong><?= mg_e($closedMessage) ?></strong></div>
+    <?php else: ?>
+      <form class="mg-rl-form" data-campaign-form data-submit-endpoint="<?= mg_e($submitEndpoint) ?>" data-campaign-type="<?= mg_e($campaignType) ?>"<?= $isPreview ? ' data-campaign-preview="merchant" onsubmit="return false"' : '' ?> novalidate>
+        <input type="hidden" name="campaign_id" value="<?= mg_e((string)$mgCampaign['public_id']) ?>"><input type="hidden" name="campaign" value="<?= mg_e((string)($mgCampaign['public_slug'] ?? $mgCampaign['public_id'])) ?>"><input type="hidden" name="campaign_type" value="<?= mg_e($campaignType) ?>"><?php if ($campaignType === 'qr_reward_drop'): ?><input type="hidden" name="qr_token" value="<?= mg_e($campaignToken !== '' ? $campaignToken : (string)($mgCampaign['qr_code_token'] ?? '')) ?>"><?php endif; ?>
+        <h3><?= mg_e($typeLabel) ?></h3><p><?= mg_e($outcomeTitle) ?> · delivered through Microgifter Inbox.</p>
+        <label>Name<input name="name" placeholder="Your name" maxlength="180" value="<?= mg_e($prefillName) ?>"></label><label>Email<input name="email" type="email" placeholder="you@example.com" required maxlength="255" value="<?= mg_e($prefillEmail) ?>"></label><label>Phone <span>(optional)</span><input name="phone" placeholder="Optional" maxlength="60"></label>
+        <?php if ($campaignType === 'contest_giveaway'): ?><label>Entry note <span>(optional)</span><textarea name="entry_note" placeholder="Optional note for this contest"></textarea></label><?php endif; ?><?php if ($campaignType === 'referral_reward'): ?><label>Referral note <span>(optional)</span><textarea name="entry_note" placeholder="Who referred you or who should we contact?"></textarea></label><?php endif; ?><?php if ($campaignType === 'birthday_vip'): ?><label>Birthday month<input name="entry_note" placeholder="Example: March"></label><?php endif; ?><?php if ($campaignType === 'agent_offer'): ?><label>What are you looking for?<textarea name="entry_note" placeholder="Tell the merchant what kind of reward or offer interests you."></textarea></label><?php endif; ?>
+        <button class="mg-rl-btn mg-rl-btn-dark" type="<?= $isPreview ? 'button' : 'submit' ?>"<?= $isPreview ? ' disabled aria-disabled="true"' : '' ?>><?= mg_e($isPreview ? 'Preview only - activate to publish' : $submitLabel) ?></button><div class="mg-public-campaign-status" data-campaign-status><?= $isPreview ? 'Preview mode: customer submissions are disabled.' : '' ?></div><p class="mg-public-campaign-privacy">We respect your privacy. Unsubscribe anytime.</p>
+      </form><div class="mg-public-campaign-result" data-campaign-result></div>
+    <?php endif;
 }
 
 try { $mgCampaign = mg_public_campaign_load($mgCampaignExpectedType, $mgCampaignRef, $mgCampaignToken, $mgCampaignPreviewMode); }
@@ -166,7 +200,7 @@ $typeLabel = mg_public_campaign_type_label($campaignType);
 [$outcomeTitle, $outcomeCopy] = mg_public_campaign_outcome_copy($campaignType);
 $campaignSteps = mg_public_campaign_steps($campaignType);
 $headline = trim((string)($mgCampaign['form_headline'] ?? '')) ?: (string)$mgCampaign['title'];
-$description = trim((string)($mgCampaign['form_description'] ?? '')) ?: (trim((string)($mgCampaign['description'] ?? '')) ?: 'Enter your information below to engage with this Microgifter campaign.');
+$description = trim((string)($mgCampaign['form_description'] ?? '')) ?: (trim((string)($mgCampaign['description'] ?? '')) ?: 'Enter your information to engage with this Microgifter campaign.');
 $rewardTitle = trim((string)($mgCampaign['reward_template_title'] ?? '')) ?: 'Microgifter reward';
 $rewardDescription = trim((string)($mgCampaign['reward_template_description'] ?? '')) ?: trim((string)($mgCampaign['description'] ?? ''));
 $rewardValue = mg_public_campaign_value($mgCampaign);
@@ -192,31 +226,20 @@ if (!$mgCampaignPreviewMode) {
     if (($mgCampaign['quantity_limit'] ?? null) !== null && (int)($mgCampaign['issued_count'] ?? 0) >= (int)$mgCampaign['quantity_limit']) { $isClosed = true; $closedMessage = 'This campaign reward limit has been reached.'; }
 }
 $statusLabel = strtoupper(str_replace('_', ' ', (string)($mgCampaign['status'] ?? 'draft')));
+$activeStatus = $isClosed ? $closedMessage : ($mgCampaignPreviewMode ? 'Merchant preview' : 'Active and ready');
+$joinContext = ['campaign_type' => $campaignType, 'campaign' => $mgCampaign, 'preview' => $mgCampaignPreviewMode, 'closed' => $isClosed, 'closed_message' => $closedMessage, 'merchant_name' => $merchantName, 'merchant_headline' => $merchantHeadline, 'merchant_location' => $merchantLocation, 'merchant_profile_url' => $merchantProfileUrl, 'avatar_url' => $avatarUrl, 'type_label' => $typeLabel, 'outcome_title' => $outcomeTitle, 'submit_endpoint' => $submitEndpoint, 'submit_label' => $submitLabel, 'prefill_name' => $prefillName, 'prefill_email' => $prefillEmail, 'campaign_token' => $mgCampaignToken];
+$campaignClass = 'mg-rl-simple-' . preg_replace('/[^a-z0-9_-]+/', '-', strtolower($campaignType));
 ?>
-<section class="mg-public-campaign mg-public-campaign-v2<?= $mgCampaignPreviewMode ? ' is-merchant-preview' : '' ?>" data-public-campaign-page<?= $mgCampaignPreviewMode ? ' data-merchant-campaign-preview' : '' ?>>
-  <div class="mg-public-campaign-cover"<?= $coverUrl ? ' style="background-image:linear-gradient(180deg,rgba(6,15,32,.08),rgba(248,247,242,.92) 82%,#fbfaf6),url(' . mg_e($coverUrl) . ')"' : '' ?>></div>
-  <div class="mg-public-campaign-shell">
-    <?php if ($mgCampaignPreviewMode): ?>
-      <div class="mg-public-campaign-preview-banner"><span>Merchant preview</span><strong><?= mg_e($statusLabel) ?></strong><p>This draft is only visible to the merchant owner. Customer submissions are disabled until the campaign is active.</p><a class="mg-btn mg-btn-soft" href="/merchant-ad-manager.php">Open campaign manager</a></div>
-    <?php endif; ?>
-    <div class="mg-public-campaign-heading"><span class="mg-public-campaign-kicker">Microgifter Campaign</span><span class="mg-public-campaign-eyebrow"><?= mg_e($typeLabel) ?></span><h1><?= mg_e($headline) ?></h1><p><?= mg_e($description) ?></p><div class="mg-public-campaign-trust-row"><span>Local merchant reward</span><span>Sent to Inbox</span><span>PPPM tracked</span></div></div>
-    <aside class="mg-public-campaign-card mg-public-campaign-flow-card">
-      <?php if ($isClosed): ?>
-        <div class="mg-public-campaign-profile-card mg-public-campaign-form-profile"><div class="mg-public-campaign-avatar"><?php if ($avatarUrl): ?><img src="<?= mg_e($avatarUrl) ?>" alt="<?= mg_e($merchantName) ?> profile image"><?php else: ?><span><?= mg_e(mg_public_campaign_initials($merchantName)) ?></span><?php endif; ?></div><div class="mg-public-campaign-profile-copy"><span class="mg-public-campaign-eyebrow"><?= mg_e($typeLabel) ?></span><h2><?= mg_e($merchantName) ?></h2><?php if ($merchantHeadline !== ''): ?><p><?= mg_e($merchantHeadline) ?></p><?php endif; ?></div><?php if ($merchantProfileUrl): ?><div class="mg-public-campaign-profile-actions"><a class="mg-btn mg-btn-soft" href="<?= mg_e($merchantProfileUrl) ?>">View profile</a></div><?php endif; ?></div>
-        <div class="mg-public-campaign-result is-visible"><strong><?= mg_e($closedMessage) ?></strong></div>
-      <?php else: ?>
-        <form class="mg-public-campaign-form" data-campaign-form data-public-campaign-tabs data-submit-endpoint="<?= mg_e($submitEndpoint) ?>" data-campaign-type="<?= mg_e($campaignType) ?>"<?= $mgCampaignPreviewMode ? ' data-campaign-preview="merchant" onsubmit="return false"' : '' ?> novalidate>
-          <input type="hidden" name="campaign_id" value="<?= mg_e((string)$mgCampaign['public_id']) ?>"><input type="hidden" name="campaign" value="<?= mg_e((string)($mgCampaign['public_slug'] ?? $mgCampaign['public_id'])) ?>"><input type="hidden" name="campaign_type" value="<?= mg_e($campaignType) ?>">
-          <?php if ($campaignType === 'qr_reward_drop'): ?><input type="hidden" name="qr_token" value="<?= mg_e($mgCampaignToken !== '' ? $mgCampaignToken : (string)($mgCampaign['qr_code_token'] ?? '')) ?>"><?php endif; ?>
-          <div class="mg-public-campaign-profile-card mg-public-campaign-form-profile"><div class="mg-public-campaign-avatar"><?php if ($avatarUrl): ?><img src="<?= mg_e($avatarUrl) ?>" alt="<?= mg_e($merchantName) ?> profile image"><?php else: ?><span><?= mg_e(mg_public_campaign_initials($merchantName)) ?></span><?php endif; ?></div><div class="mg-public-campaign-profile-copy"><span class="mg-public-campaign-eyebrow"><?= mg_e($typeLabel) ?></span><h2><?= mg_e($merchantName) ?></h2><?php if ($merchantHeadline !== ''): ?><p><?= mg_e($merchantHeadline) ?></p><?php endif; ?><div class="mg-public-campaign-profile-stats"><?php if ($merchantLocation !== ''): ?><span><?= mg_e($merchantLocation) ?></span><?php endif; ?><span><?= mg_e($outcomeTitle) ?></span><span>Inbox delivery</span></div></div><?php if ($merchantProfileUrl): ?><div class="mg-public-campaign-profile-actions"><a class="mg-btn mg-btn-soft" href="<?= mg_e($merchantProfileUrl) ?>">View profile</a></div><?php endif; ?></div>
-          <div class="mg-public-campaign-step-grid" aria-label="How this campaign works"><?php foreach ($campaignSteps as $index => $step): ?><div class="mg-public-campaign-mini-step"><span><?= mg_e((string)($index + 1)) ?></span><strong><?= mg_e($step['title']) ?></strong><small><?= mg_e($step['copy']) ?></small></div><?php endforeach; ?></div>
-          <div class="mg-public-campaign-tabs" role="tablist" aria-label="<?= mg_e($typeLabel) ?> steps"><button type="button" class="mg-public-campaign-tab is-active" id="mg-campaign-tab-info" role="tab" aria-selected="true" aria-controls="mg-campaign-panel-info" data-campaign-tab="info"><span>1</span>Your Info</button><button type="button" class="mg-public-campaign-tab" id="mg-campaign-tab-reward" role="tab" aria-selected="false" aria-controls="mg-campaign-panel-reward" data-campaign-tab="reward"><span>2</span>Reward Preview</button></div>
-          <div class="mg-public-campaign-panel is-active" id="mg-campaign-panel-info" role="tabpanel" aria-labelledby="mg-campaign-tab-info" data-campaign-panel="info"><div class="mg-public-campaign-field-grid"><label>Name<input name="name" placeholder="Your name" maxlength="180" value="<?= mg_e($prefillName) ?>"></label><label>Email<input name="email" type="email" placeholder="you@example.com" required maxlength="255" value="<?= mg_e($prefillEmail) ?>"></label><label class="mg-public-campaign-field-wide">Phone <span>(optional)</span><input name="phone" placeholder="Optional" maxlength="60"></label><?php if ($campaignType === 'contest_giveaway'): ?><label class="mg-public-campaign-field-wide">Entry note<textarea name="entry_note" placeholder="Optional note for this contest"></textarea></label><?php endif; ?><?php if ($campaignType === 'referral_reward'): ?><label class="mg-public-campaign-field-wide">Referral note<textarea name="entry_note" placeholder="Who referred you or who should we contact?"></textarea></label><?php endif; ?><?php if ($campaignType === 'birthday_vip'): ?><label class="mg-public-campaign-field-wide">Birthday month<input name="entry_note" placeholder="Example: March"></label><?php endif; ?><?php if ($campaignType === 'agent_offer'): ?><label class="mg-public-campaign-field-wide">What are you looking for?<textarea name="entry_note" placeholder="Tell the merchant what kind of reward or offer interests you."></textarea></label><?php endif; ?></div><button class="mg-btn mg-btn-primary mg-public-campaign-primary-action" type="button" data-campaign-next-tab="reward">Continue to reward <span aria-hidden="true">→</span></button></div>
-          <div class="mg-public-campaign-panel" id="mg-campaign-panel-reward" role="tabpanel" aria-labelledby="mg-campaign-tab-reward" data-campaign-panel="reward" hidden><div class="mg-public-campaign-reward mg-public-campaign-reward-tab"><?php if ($rewardCoverUrl): ?><img class="mg-public-campaign-reward-cover" src="<?= mg_e($rewardCoverUrl) ?>" alt="<?= mg_e($rewardTitle) ?> cover image"><?php endif; ?><span>Attached reward</span><strong><?= mg_e($rewardTitle) ?></strong><em><?= mg_e($rewardValue) ?></em><?php if (!$rewardCoverUrl && $rewardDescription !== ''): ?><p><?= mg_e($rewardDescription) ?></p><?php endif; ?><?php if (!$rewardCoverUrl && !empty($mgCampaign['redemption_instructions'])): ?><small><?= mg_e((string)$mgCampaign['redemption_instructions']) ?></small><?php endif; ?><?php if (!empty($mgCampaign['ends_at'])): ?><small>Ends <?= mg_e(date('M j, Y', strtotime((string)$mgCampaign['ends_at']))) ?></small><?php endif; ?><div class="mg-public-campaign-reward-meta"><span>Delivered to Inbox</span><span>PPPM source tracked</span></div></div><p class="mg-public-campaign-note"><?= mg_e($outcomeCopy) ?></p><button class="mg-btn mg-btn-primary mg-public-campaign-primary-action" type="<?= $mgCampaignPreviewMode ? 'button' : 'submit' ?>"<?= $mgCampaignPreviewMode ? ' disabled aria-disabled="true"' : '' ?>><?= mg_e($mgCampaignPreviewMode ? 'Preview only - activate to publish' : $submitLabel) ?> <span aria-hidden="true">→</span></button><button class="mg-public-campaign-back" type="button" data-campaign-next-tab="info">Back to info</button></div>
-          <div class="mg-public-campaign-status" data-campaign-status><?= $mgCampaignPreviewMode ? 'Preview mode: customer submissions are disabled.' : '' ?></div><p class="mg-public-campaign-privacy">We respect your privacy. Unsubscribe anytime.</p>
-        </form>
-        <div class="mg-public-campaign-result" data-campaign-result></div>
-      <?php endif; ?>
-    </aside>
+<section class="mg-rl-page mg-rl-simple-campaign <?= mg_e($campaignClass) ?><?= $mgCampaignPreviewMode ? ' is-merchant-preview' : '' ?>" data-public-campaign-page<?= $mgCampaignPreviewMode ? ' data-merchant-campaign-preview' : '' ?>>
+  <div class="mg-rl-bg"<?= $coverUrl ? ' style="background-image:url(' . mg_e($coverUrl) . ')"' : '' ?>></div>
+  <div class="mg-rl-wrap">
+    <div class="mg-rl-left">
+      <?php if ($mgCampaignPreviewMode): ?><article class="mg-rl-card mg-rl-preview-banner"><span class="mg-rl-eyebrow">Merchant preview</span><h3><?= mg_e($statusLabel) ?></h3><p>This draft is only visible to the merchant owner. Customer submissions are disabled until the campaign is active.</p><a class="mg-rl-btn mg-rl-btn-soft" href="/merchant-ad-manager.php">Open campaign manager</a></article><?php endif; ?>
+      <header class="mg-rl-hero"><h1><?= mg_e($headline) ?></h1><p><?= mg_e($description) ?></p><div class="mg-public-campaign-trust-row"><span><?= mg_e($typeLabel) ?></span><span>Reward sent to Inbox</span><span>PPPM tracked</span></div></header>
+      <section class="mg-rl-player mg-rl-simple-reward-canvas" aria-label="<?= mg_e($typeLabel) ?> reward canvas"><div class="mg-rl-track"><div class="mg-rl-art"><?php if ($rewardCoverUrl): ?><img src="<?= mg_e($rewardCoverUrl) ?>" alt="<?= mg_e($rewardTitle) ?> cover image"><?php else: ?><div class="mg-rl-art-placeholder">Reward</div><?php endif; ?><span><?= mg_e($outcomeTitle) ?></span></div><div class="mg-rl-track-copy"><small>Attached reward</small><strong><?= mg_e($rewardTitle) ?></strong><em><?= mg_e($rewardValue) ?></em><?php if ($rewardDescription !== ''): ?><p class="mg-rl-reward-copy"><?= mg_e($rewardDescription) ?></p><?php endif; ?><ul class="mg-rl-list mg-rl-simple-steps"><?php foreach ($campaignSteps as $step): ?><li><strong><?= mg_e((string)$step['title']) ?></strong><?= mg_e((string)$step['copy']) ?></li><?php endforeach; ?></ul></div></div></section>
+      <aside class="mg-rl-join mg-rl-join-mobile"><?php mg_public_campaign_render_join_form($joinContext); ?></aside>
+      <div class="mg-rl-bottom"><article class="mg-rl-card"><span class="mg-rl-eyebrow">Reward Info</span><h3><?= mg_e($rewardTitle) ?></h3><p><?= mg_e($rewardValue) ?></p><?php if (!empty($mgCampaign['redemption_instructions'])): ?><p><?= mg_e((string)$mgCampaign['redemption_instructions']) ?></p><?php endif; ?><?php if (!empty($mgCampaign['ends_at'])): ?><span class="mg-rl-pill">Ends <?= mg_e(date('M j, Y', strtotime((string)$mgCampaign['ends_at']))) ?></span><?php endif; ?></article><article class="mg-rl-card"><span class="mg-rl-eyebrow">Reward Levels</span><h3><?= mg_e($outcomeTitle) ?></h3><ul class="mg-rl-list"><li><strong>Level 1</strong><?= mg_e($outcomeCopy) ?></li><li><strong>Inbox delivery</strong>Eligible rewards are issued into the customer Microgifter Inbox.</li><li><strong>PPPM tracked</strong>Campaign source and reward lifecycle stay connected.</li></ul></article><article class="mg-rl-card"><span class="mg-rl-eyebrow">Active Status &amp; Updates</span><h3><?= mg_e($activeStatus) ?></h3><ul class="mg-rl-list"><li><strong>Campaign status</strong><?= mg_e($statusLabel) ?></li><li><strong>Updates</strong>Submit the form to record the campaign action and show reward status.</li><li><strong>CRM rule</strong>First issued reward or purchased value creates/promotes the merchant CRM contact.</li></ul></article></div>
+    </div>
+    <aside class="mg-rl-join mg-rl-join-desktop"><?php mg_public_campaign_render_join_form($joinContext); ?></aside>
   </div>
 </section>
