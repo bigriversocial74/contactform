@@ -93,6 +93,7 @@ $can_intelligence = $user && (in_array('intelligence.dashboard.view', $user_perm
         <?php if ($user): ?>
           <a href="/inbox.php">IN/OUT Box</a>
           <a href="/feed.php">My Feed</a>
+          <a href="/loyalty-cards.php">Loyalty Cards</a>
           <a href="/account.php">Profile Settings</a>
           <a href="/commitments.php">Commitments</a>
         <?php else: ?>
