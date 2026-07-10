@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/_merchant.php';
 require_once dirname(__DIR__) . '/public/loyalty-quest/_participant.php';
+require_once dirname(__DIR__) . '/public/loyalty-quest/_reward.php';
 
 $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 $user = mg_merchant_require_permission($method === 'GET' ? 'merchant.campaigns.view' : 'merchant.campaigns.manage');
@@ -150,7 +151,7 @@ try {
     $reward = null;
     $participationStatus = 'in_progress';
     if ($newProgress >= (int)$participation['required_count']) {
-        $reward = mg_lqp_issue_reward($pdo, $campaign, $contact, $participation, $participant);
+        $reward = mg_lqr_issue_reward($pdo, $campaign, $contact, $participation, $participant);
         $participationStatus = 'completed';
     } else {
         mg_lqp_event($pdo, $campaign, null, (int)$contact['id'], 'quest.evidence_approved', ['participation_id'=>(string)$participation['public_id'],'evidence_id'=>$evidenceId,'progress_count'=>$newProgress]);
