@@ -1,0 +1,1 @@
+Public image assets are stored as optimized WebP files for the Microgifter Local Quest landing pages.

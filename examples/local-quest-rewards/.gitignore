@@ -1,4 +1,5 @@
 config.php
+config.php.bak-*
 .installed.lock
 .install-unlock
 webhook-events.log

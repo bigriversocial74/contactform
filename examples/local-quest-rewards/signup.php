@@ -1,0 +1,8 @@
+<?php
+declare(strict_types=1);
+if(!is_file(__DIR__.'/config.php')){header('Location: install.php');exit;}
+require __DIR__.'/participant-auth.php';require __DIR__.'/auth-view.php';$error=null;
+try{if(($_POST['action']??'')==='register'){lqr_auth_register((string)($_POST['display_name']??''),(string)($_POST['email']??''),(string)($_POST['password']??''),(string)($_POST['password_confirmation']??''));header('Location: profile.php?welcome=1');exit;}}catch(Throwable $e){$error=$e->getMessage();}
+lqr_auth_header('Create account','Create a secure Microgifter Local Quest participant account.');?>
+<div class="auth-tabs"><a href="signin.php">Sign in</a><a class="active" href="signup.php">Create account</a></div><h2>Create your account</h2><p>Start exploring local quests and connect Microgifter for reward delivery.</p><?php lqr_auth_notice($error,true);?>
+<form method="post"><label>Full name<input name="display_name" autocomplete="name" required></label><label>Email address<input name="email" type="email" autocomplete="email" required></label><div class="field-row"><label>Password<input name="password" type="password" autocomplete="new-password" minlength="12" required></label><label>Confirm password<input name="password_confirmation" type="password" autocomplete="new-password" minlength="12" required></label></div><button class="button" name="action" value="register">Create account</button></form><p style="font-size:12px">Use 12+ characters with uppercase, lowercase, and a number.</p><?php lqr_auth_preview_link();lqr_auth_footer();

@@ -1,51 +1,36 @@
 <?php
 declare(strict_types=1);
+if (!is_file(__DIR__ . '/config.php')) { header('Location: install.php'); exit; }
 require __DIR__ . '/app.php';
+require __DIR__ . '/quest-controls.php';
 $config = lqr_config();
-$state = lqr_load_state();
-$userId = lqr_current_user_id($config);
-$user = lqr_get_user($state, $config, $userId);
-$isAuthed = lqr_is_authenticated() && !empty($user['email']);
+$appUrl = rtrim((string)($config['app_public_url'] ?? ''), '/');
+$isAuthed = lqr_is_authenticated();
+$quests = lqr_visible_quests(lqr_quests(), lqr_default_state());
+uasort($quests, static fn(array $a, array $b): int => (int)!empty(lqr_quest_controls($b)['featured']) <=> (int)!empty(lqr_quest_controls($a)['featured']));
+$featured = array_slice($quests, 0, 4, true);
+function lq_public_image(array $quest): string {
+    $text = strtolower(implode(' ', [(string)($quest['title'] ?? ''),(string)($quest['description'] ?? ''),(string)($quest['location'] ?? ''),(string)($quest['merchant'] ?? '')]));
+    return match (true) {
+        str_contains($text,'coffee'), str_contains($text,'cafe'), str_contains($text,'latte') => 'assets/public/quest-coffee.svg',
+        str_contains($text,'river'), str_contains($text,'park'), str_contains($text,'walk') => 'assets/public/quest-riverwalk.svg',
+        str_contains($text,'book') => 'assets/public/quest-bookstore.svg',
+        str_contains($text,'burger'), str_contains($text,'food'), str_contains($text,'dining') => 'assets/public/quest-burger.svg',
+        str_contains($text,'city'), str_contains($text,'view'), str_contains($text,'trail') => 'assets/public/quest-city.svg',
+        default => 'assets/public/quest-placeholder.svg',
+    };
+}
+$description = 'Explore local experiences, complete verified quests, send meaningful gifts, and earn real rewards powered by Microgifter.';
+$canonical = $appUrl !== '' ? $appUrl . '/cover.php' : '';
+$structured = ['@context'=>'https://schema.org','@type'=>'WebApplication','name'=>'Microgifter Local Quest','applicationCategory'=>'LifestyleApplication','operatingSystem'=>'Web','description'=>$description,'url'=>$canonical ?: null];
 ?>
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title><?= lqr_h((string)($config['app_name'] ?? 'Local Quest Rewards')) ?></title>
-<style>
-:root{--bg:#06111f;--panel:#0c1c31;--line:#22405f;--text:#f7fbff;--muted:#9eb5cf;--blue:#58a6ff;--green:#4ade80;--amber:#fbbf24}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 20% 12%,rgba(88,166,255,.28),transparent 30%),radial-gradient(circle at 80% 4%,rgba(74,222,128,.16),transparent 30%),linear-gradient(180deg,#08182b,#050a12);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.wrap{width:min(1180px,92%);margin:0 auto;min-height:100vh;display:grid;align-items:center;padding:54px 0}.hero{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(320px,.9fr);gap:24px;align-items:center}.eyebrow{display:inline-flex;padding:8px 12px;border-radius:999px;border:1px solid rgba(88,166,255,.38);background:rgba(88,166,255,.12);color:#cfe7ff;font-size:12px;font-weight:950;text-transform:uppercase;letter-spacing:.08em}h1{margin:18px 0 0;font-size:clamp(46px,7vw,86px);line-height:.9;letter-spacing:-.08em}p{color:var(--muted);line-height:1.65;font-size:17px}.actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 18px;border-radius:14px;text-decoration:none;font-weight:950}.primary{background:var(--green);color:#05140a}.secondary{background:rgba(255,255,255,.08);border:1px solid var(--line);color:var(--text)}.panel{border:1px solid rgba(148,180,213,.22);background:rgba(12,28,49,.9);box-shadow:0 24px 80px rgba(0,0,0,.28);border-radius:28px;padding:24px}.quest{display:grid;gap:14px}.card{padding:18px;border-radius:20px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.08)}.card strong{display:block}.card span{display:inline-flex;margin-top:8px;padding:5px 9px;border-radius:999px;background:rgba(251,191,36,.14);color:#ffe6a6;font-size:12px;font-weight:850}.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:28px}.step{padding:16px;border-radius:18px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.08)}.step b{display:block;color:#fff}.step small{display:block;margin-top:6px;color:var(--muted);line-height:1.5}@media(max-width:900px){.hero,.steps{grid-template-columns:1fr}h1{font-size:46px}}
-</style>
-</head>
-<body>
-<div class="wrap">
-  <main>
-    <section class="hero">
-      <div>
-        <span class="eyebrow">Local rewards challenge app</span>
-        <h1>Complete local quests. Earn real Microgift rewards.</h1>
-        <p>Local Quest Rewards is a working third-party app demo. Create a Local Quest account, connect your Microgifter account, complete a quest, and receive a merchant-approved Microgift.</p>
-        <div class="actions">
-          <?php if ($isAuthed): ?>
-            <a class="btn primary" href="index.php">Open quest board</a>
-          <?php else: ?>
-            <a class="btn primary" href="signin.php?mode=signup">Create Local Quest account</a>
-            <a class="btn secondary" href="signin.php">Sign in</a>
-          <?php endif; ?>
-        </div>
-      </div>
-      <aside class="panel quest">
-        <div class="card"><strong>Downtown Coffee Quest</strong><p>Check in at a participating coffee shop.</p><span>$5 Coffee Microgift</span></div>
-        <div class="card"><strong>Live Music Night</strong><p>Complete a venue or show-night quest.</p><span>Free Appetizer Microgift</span></div>
-        <div class="card"><strong>Food Crawl: Three Stops</strong><p>Finish a local food crawl milestone.</p><span>$10 Dining Microgift</span></div>
-      </aside>
-    </section>
-    <section class="steps">
-      <div class="step"><b>1. Create app account</b><small>The Quest app has its own user login and participant state.</small></div>
-      <div class="step"><b>2. Connect Microgifter</b><small>Microgifter account linking handles consent and reward delivery identity.</small></div>
-      <div class="step"><b>3. Earn reward</b><small>Quest completion triggers the approved Microgift reward request.</small></div>
-    </section>
-  </main>
-</div>
-</body>
-</html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Microgifter Local Quest | Explore. Gift. Earn Rewards.</title><meta name="description" content="<?=lqr_h($description)?>"><meta name="theme-color" content="#ffffff"><meta property="og:type" content="website"><meta property="og:title" content="Microgifter Local Quest"><meta property="og:description" content="<?=lqr_h($description)?>"><?php if($canonical):?><meta property="og:url" content="<?=lqr_h($canonical)?>"><link rel="canonical" href="<?=lqr_h($canonical)?>"><?php endif;?><link rel="stylesheet" href="assets/public-site.css"><script type="application/ld+json"><?=json_encode($structured,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE)?></script></head><body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header"><div class="site-width header-inner"><a class="brand" href="cover.php"><img src="assets/public/brand-mark.svg" alt=""><strong>MICROGIFTER</strong></a><button class="menu-toggle" type="button" aria-expanded="false" aria-controls="primary-nav">Menu</button><nav id="primary-nav" class="desktop-nav"><a href="how-it-works.php">How It Works</a><a href="#quests">Find Quests</a><a href="#wallet">Rewards</a><a href="for-businesses.php">For Businesses</a><a href="#about">About</a></nav><div class="header-actions"><?php if($isAuthed):?><a class="text-button" href="wallet.php">My Wallet</a><a class="button button-primary" href="index.php">Open App</a><?php else:?><a class="text-button" href="signin.php">Sign In</a><a class="button button-primary" href="signin.php?mode=signup">Create Account</a><?php endif;?></div></div></header>
+<main id="main"><section class="hero site-width"><div class="hero-copy"><span class="eyebrow">MICROGIFTER LOCAL QUEST</span><h1>Explore. Gift.<br><em>Earn Rewards.</em></h1><p>Discover local experiences, complete verified quests, or send something meaningful—and earn real rewards from businesses you love.</p><div class="hero-actions"><a class="button button-primary button-large" href="<?=$isAuthed?'index.php':'signin.php?mode=signup'?>">Start Earning Rewards</a><a class="button button-outline-dark button-large" href="#quests">Find Quests Near You</a></div><div class="trust-row"><span>✓ Free to join</span><span>✓ Local businesses</span><span>✓ Real rewards</span></div></div><div class="hero-media"><img class="phone-asset" src="assets/public/hero-phone.svg" alt="Microgifter wallet and Local Quest app preview" width="520" height="980"><span class="orbit-bubble coffee"><img src="assets/public/quest-coffee.svg" alt="Coffee quest"></span><span class="orbit-bubble city"><img src="assets/public/quest-city.svg" alt="City exploration quest"></span><span class="orbit-bubble food"><img src="assets/public/quest-burger.svg" alt="Dining quest"></span></div></section>
+<section class="feature-strip"><div class="site-width feature-strip-grid"><article><b>1</b><div><strong>Find Local Quests or Gifts</strong><span>Explore experiences and opportunities nearby.</span></div></article><article><b>2</b><div><strong>Complete Actions</strong><span>Check in, scan, visit, share, or gift.</span></div></article><article><b>3</b><div><strong>Build Your Wallet</strong><span>Earn verified rewards through Microgifter.</span></div></article><article><b>4</b><div><strong>Spend Rewards Locally</strong><span>Redeem with participating businesses.</span></div></article></div></section>
+<section class="section site-width" id="quests"><div class="section-heading centered"><span class="eyebrow">DISCOVER WHAT IS NEARBY</span><h2>Featured Gifts &amp; Quests</h2><p>Explore handpicked local experiences. Complete them, earn rewards, and support your community.</p></div><div class="quest-grid"><?php if(!$featured):?><article class="quest-card"><img src="assets/public/quest-placeholder.svg" alt="New quest coming soon"><div class="quest-card-body"><span class="quest-type">COMING SOON</span><h3>New Quest Coming Soon</h3><p>Your first merchant-sponsored quest will appear here after setup.</p><a class="button button-primary" href="<?=$isAuthed?'index.php':'signin.php?mode=signup'?>">Get Ready</a></div></article><?php endif;?><?php foreach($featured as $id=>$quest):$controls=lqr_quest_controls($quest);?><article class="quest-card"><img src="<?=lqr_h(lq_public_image($quest))?>" alt=""><div class="quest-card-body"><span class="quest-type"><?=!empty($controls['featured'])?'FEATURED QUEST':'LOCAL QUEST'?></span><h3><?=lqr_h((string)($quest['title']??$id))?></h3><p><?=lqr_h((string)($quest['description']??'Complete this local action and unlock a reward.'))?></p><div class="quest-value"><span><?=lqr_h((string)($quest['difficulty']??'Open'))?></span><strong><?=lqr_h((string)($quest['reward_label']??'Microgift reward'))?></strong></div><a class="button button-primary" href="<?=$isAuthed?'index.php':'signin.php?mode=signup'?>">View Quest</a></div></article><?php endforeach;?></div></section>
+<section class="section how-preview" id="about"><div class="site-width"><div class="section-heading centered"><span class="eyebrow">SIMPLE PARTICIPANT FLOW</span><h2>How It Works</h2><p>Three straightforward steps connect local participation to real reward value.</p></div><div class="steps-grid"><article><span>1</span><div class="step-icon">⌖</div><h3>Find local gifts or quests</h3><p>Discover nearby experiences, offers, and community challenges.</p></article><article><span>2</span><div class="step-icon">✓</div><h3>Complete actions or send gifts</h3><p>Check in, scan a QR code, complete a challenge, or send a Microgift.</p></article><article><span>3</span><div class="step-icon">◇</div><h3>Earn rewards and spend locally</h3><p>Receive verified rewards in your connected wallet and use them locally.</p></article></div><div class="center-action"><a class="button button-primary button-large" href="how-it-works.php">See How It Works</a></div></div></section>
+<section class="section wallet-section site-width" id="wallet"><div><span class="eyebrow">CONNECTED REWARD WALLET</span><h2>Everything you earn stays organized.</h2><p>Track each quest, reward, status, claim, and merchant instruction through one connected Microgifter experience.</p><ul class="check-list"><li>Quest-to-reward history</li><li>Clear claim and redemption status</li><li>Merchant-approved reward details</li></ul><a class="button button-primary" href="<?=$isAuthed?'wallet.php':'signin.php?mode=signup'?>">Open Your Wallet</a></div><div class="wallet-image-wrap"><img src="assets/public/hero-phone.svg" alt="Microgifter wallet interface"></div></section>
+<section class="business-preview"><div class="site-width business-grid"><div><span class="eyebrow light">FOR LOCAL BUSINESSES</span><h2>Drive Traffic. Build Loyalty. <em>Reward Customers.</em></h2><p>Turn everyday customer interactions into measurable local engagement, repeat visits, and real reward relationships.</p><a class="button button-light" href="for-businesses.php">For Businesses</a></div><img src="assets/public/quest-coffee.svg" alt="Local café participating in Microgifter Local Quest"></div></section></main>
+<footer class="site-footer"><div class="site-width footer-grid"><a class="brand footer-brand" href="cover.php"><img src="assets/public/brand-mark.svg" alt=""><strong>MICROGIFTER</strong></a><nav><a href="how-it-works.php">How It Works</a><a href="#quests">Find Quests</a><a href="for-businesses.php">For Businesses</a><a href="signin.php">Sign In</a></nav><p>Local Quest rewards powered by Microgifter.</p></div></footer><script src="assets/public-site.js"></script></body></html>

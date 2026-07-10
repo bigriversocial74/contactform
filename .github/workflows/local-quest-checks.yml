@@ -2,30 +2,40 @@ name: Local Quest Checks
 
 on:
   pull_request:
+    branches:
+      - integration-from-repair-20260628
     paths:
       - 'examples/local-quest-rewards/**'
       - 'docs/local-quest-*.md'
       - 'docs/public-api-third-party-wallet-claim.md'
-      - 'docs/microgift-permission-system-plan.md'
       - 'scripts/validate_local_quest_*.php'
       - '.github/workflows/local-quest-checks.yml'
   push:
     branches:
       - main
+      - integration-from-repair-20260628
       - 'lq-*'
       - 'saf-*'
+      - 'feature/local-quest-*'
     paths:
       - 'examples/local-quest-rewards/**'
       - 'docs/local-quest-*.md'
       - 'docs/public-api-third-party-wallet-claim.md'
-      - 'docs/microgift-permission-system-plan.md'
       - 'scripts/validate_local_quest_*.php'
       - '.github/workflows/local-quest-checks.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   local-quest-validation:
-    name: Local Quest validation
+    name: Local Quest validation (PHP ${{ matrix.php }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
 
     steps:
       - name: Checkout
@@ -34,7 +44,7 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
+          php-version: ${{ matrix.php }}
           coverage: none
 
       - name: PHP syntax check
@@ -45,25 +55,29 @@ jobs:
             php -l "$file"
           done < <(find examples/local-quest-rewards scripts -name '*.php' -type f | sort)
 
-      - name: Validate Local Quest foundation
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo '::group::validate_local_quest_rewards_demo'
-          php scripts/validate_local_quest_rewards_demo.php
-          echo '::endgroup::'
-          echo '::group::validate_local_quest_demo_v2'
-          php scripts/validate_local_quest_demo_v2.php
-          echo '::endgroup::'
-          echo '::group::validate_local_quest_signed_qr_enforcement'
-          php scripts/validate_local_quest_signed_qr_enforcement.php
-          echo '::endgroup::'
-          echo '::group::validate_local_quest_replay_storage'
-          php scripts/validate_local_quest_replay_storage.php
-          echo '::endgroup::'
-          echo '::group::validate_local_quest_replay_admin'
-          php scripts/validate_local_quest_replay_admin.php
-          echo '::endgroup::'
+      - name: Foundation contract
+        run: php scripts/validate_local_quest_rewards_demo.php
+
+      - name: Demo v2 contract
+        run: php scripts/validate_local_quest_demo_v2.php
+
+      - name: Signed QR contract
+        run: php scripts/validate_local_quest_signed_qr_enforcement.php
+
+      - name: Replay storage contract
+        run: php scripts/validate_local_quest_replay_storage.php
+
+      - name: Replay admin contract
+        run: php scripts/validate_local_quest_replay_admin.php
+
+      - name: Production foundation contract
+        run: php scripts/validate_local_quest_production_foundation_v1.php
+
+      - name: Public experience 10/10 contract
+        run: php scripts/validate_local_quest_public_experience_v1.php
+
+      - name: Participant auth 10/10 contract
+        run: php scripts/validate_local_quest_participant_auth_v1.php
 
       - name: Assert SQL-only runtime
         shell: bash
@@ -73,5 +87,9 @@ jobs:
           test ! -f examples/local-quest-rewards/data/README.md
           if find examples/local-quest-rewards -maxdepth 2 -name '*.php' -type f -print0 | xargs -0 grep -nE 'lqr_state_path|file_put_contents\(lqr_state_path'; then
             echo 'JSON runtime reference found in Quest PHP files.' >&2
+            exit 1
+          fi
+          if grep -RInE --include='*.php' 'file_put_contents\([^)]*webhook-events\.log|href=[^>]*webhook-events\.log' examples/local-quest-rewards; then
+            echo 'Public file-backed webhook logging returned to Local Quest.' >&2
             exit 1
           fi
