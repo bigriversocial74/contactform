@@ -198,7 +198,7 @@ function mg_world_target_drop_update(PDO $pdo, array $user, array $input, bool $
     if ($publish && ($campaignPublicId === '' || $campaignId === null || $campaignTitle === null)) {
         throw new RuntimeException('Attach an active campaign with an active available reward before publishing this Campaign Drop Zone.');
     }
-    if ($publish && (empty($launch['latitude']) || empty($launch['longitude']))) {
+    if ($publish && (($launch['latitude'] ?? null) === null || ($launch['longitude'] ?? null) === null)) {
         throw new RuntimeException('Set an active merchant location before publishing this Campaign Drop Zone.');
     }
 
