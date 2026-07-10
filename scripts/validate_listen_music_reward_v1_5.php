@@ -4,21 +4,17 @@ declare(strict_types=1);
 $root = dirname(__DIR__);
 $checks = [];
 $failures = [];
-
 $read = static function (string $path) use ($root): string {
     $full = $root . '/' . ltrim($path, '/');
     return is_file($full) ? (string) file_get_contents($full) : '';
 };
-
 $assert = static function (string $label, bool $passed) use (&$checks, &$failures): void {
     $checks[] = [$label, $passed];
-    if (!$passed) {
-        $failures[] = $label;
-    }
+    if (!$passed) $failures[] = $label;
 };
 
 $registry = $read('includes/campaign-types.php');
-$campaignsApi = $read('api/merchant/campaigns.php');
+$campaignsApi = $read('api/merchant/campaigns.php') . "\n" . $read('api/merchant/campaigns-core.php');
 $uploadApi = $read('api/merchant/listen-audio-upload.php');
 $builderJs = $read('assets/js/stage12-listen-music-reward.js');
 $view = $read('includes/merchant-campaigns-view.php');
@@ -29,8 +25,7 @@ $progressApi = $read('api/public/campaigns/listen-progress.php');
 $sql = $read('database/listen_music_reward_v1_5.sql');
 $workflow = $read('.github/workflows/stage12-campaigns-validation.yml');
 
-$builderLoadsScript = str_contains($view, 'stage12-listen-music-reward.js')
-    || str_contains($campaignPage, 'stage12-listen-music-reward.js');
+$builderLoadsScript = str_contains($view, 'stage12-listen-music-reward.js') || str_contains($campaignPage, 'stage12-listen-music-reward.js');
 $builderHasUploadControl = str_contains($builderJs, 'data-listen-audio-upload-input');
 $builderHasMilestoneRewardSelects = str_contains($builderJs, 'listen_milestone_3_reward_template_id')
     || str_contains($builderJs, "listen_milestone_'+n+'_reward_template_id")
@@ -48,16 +43,10 @@ $assert('Progress API prevents duplicate milestone rewards', str_contains($progr
 $assert('SQL migration adds listen_music_reward enum values', str_contains($sql, 'listen_music_reward') && str_contains($sql, 'ALTER TABLE campaigns') && str_contains($sql, 'ALTER TABLE campaign_contacts') && str_contains($sql, 'ALTER TABLE wallet_items'));
 $assert('Workflow covers Listen Music Reward files', str_contains($workflow, 'listen-reward.php') && str_contains($workflow, 'listen-progress.php') && str_contains($workflow, 'listen-audio-upload.php') && str_contains($workflow, 'validate_listen_music_reward_v1_5.php'));
 
-foreach ($checks as [$label, $passed]) {
-    echo ($passed ? '[OK] ' : '[FAIL] ') . $label . PHP_EOL;
-}
-
+foreach ($checks as [$label, $passed]) echo ($passed ? '[OK] ' : '[FAIL] ') . $label . PHP_EOL;
 if ($failures) {
     echo PHP_EOL . 'Listen Music Reward v1.5 validation failed:' . PHP_EOL;
-    foreach ($failures as $failure) {
-        echo ' - ' . $failure . PHP_EOL;
-    }
+    foreach ($failures as $failure) echo ' - ' . $failure . PHP_EOL;
     exit(1);
 }
-
 echo PHP_EOL . 'Listen Music Reward v1.5 validation passed.' . PHP_EOL;
