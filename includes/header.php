@@ -56,8 +56,6 @@ $public_header_fix_style = '/assets/css/public-header-footer-fixes.css';
 $public_dark_shell_style = '/assets/css/public-dark-shell.css';
 $public_header_cleanup_style = '/assets/css/public-header-cleanup.css';
 $campaign_landing_foundation_style = '/assets/css/campaign-landing-foundation.css';
-$legacy_campaign_layout_style = '/assets/css/public-campaign-unified-layout-v2.css';
-$legacy_campaign_layout_pages = ['survey-feedback', 'check-in-reward', 'rsvp-event'];
 if (!$is_app_page && !in_array($public_header_fix_style, $page_styles, true)) {
     $page_styles[] = $public_header_fix_style;
 }
@@ -69,12 +67,6 @@ if (!$is_app_page && !in_array($public_header_cleanup_style, $page_styles, true)
 }
 if (!$is_app_page && $page_section === 'campaign' && !in_array($campaign_landing_foundation_style, $page_styles, true)) {
     $page_styles[] = $campaign_landing_foundation_style;
-}
-if (!$is_app_page
-    && $page_section === 'campaign'
-    && in_array((string)($page_manifest['id'] ?? ''), $legacy_campaign_layout_pages, true)
-    && !in_array($legacy_campaign_layout_style, $page_styles, true)) {
-    $page_styles[] = $legacy_campaign_layout_style;
 }
 $user = $is_app_page ? mg_require_auth() : mg_current_user();
 

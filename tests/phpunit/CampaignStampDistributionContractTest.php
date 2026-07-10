@@ -19,19 +19,17 @@ final class CampaignStampDistributionContractTest extends TestCase
         return $source;
     }
 
+    private function readCampaignController(): string
+    {
+        return $this->read('api/merchant/campaigns.php') . "\n" . $this->read('api/merchant/campaigns-core.php');
+    }
+
     public function testMerchantCampaignStampEndpointExists(): void
     {
         $source = $this->read('api/merchant/campaign-send.php');
         foreach([
-            'mg_campaign_send_action_key',
-            'campaign_feed_send',
-            'email_list_send',
-            'sms_send',
-            'qr_claim_prompt_send',
-            'agentic_discovery_send',
-            'mg_stamp_debit_send',
-            'merchant_campaign_send',
-            'stamp_ledger',
+            'mg_campaign_send_action_key','campaign_feed_send','email_list_send','sms_send','qr_claim_prompt_send',
+            'agentic_discovery_send','mg_stamp_debit_send','merchant_campaign_send','stamp_ledger',
         ] as $needle){
             self::assertStringContainsString($needle, $source);
         }
@@ -51,7 +49,7 @@ final class CampaignStampDistributionContractTest extends TestCase
 
     public function testActiveCampaignsRequireAttachedRewardTemplates(): void
     {
-        $source = $this->read('api/merchant/campaigns.php');
+        $source = $this->readCampaignController();
         self::assertStringContainsString('mg_campaign_requires_reward_template', $source);
         self::assertStringContainsString("\$status === 'active'", $source);
         self::assertStringContainsString('Active campaigns require an attached reward template.', $source);
@@ -62,7 +60,7 @@ final class CampaignStampDistributionContractTest extends TestCase
     public function testGenericCampaignEngagementIssuesWalletRewards(): void
     {
         $source = $this->read('api/public/campaigns/engage.php');
-        self::assertStringContainsString("INNER JOIN reward_templates rt ON rt.id = c.reward_template_id", $source);
+        self::assertStringContainsString('INNER JOIN reward_templates rt ON rt.id = c.reward_template_id', $source);
         self::assertStringContainsString("rt.status = 'active'", str_replace("\\'", "'", $source));
         self::assertStringContainsString('mg_public_campaign_enforce_reward_limits', $source);
         self::assertStringContainsString('INSERT INTO wallet_items', $source);
@@ -83,12 +81,8 @@ final class CampaignStampDistributionContractTest extends TestCase
         $qr = $this->read('api/public/campaigns/qr-pickup.php');
 
         foreach([
-            'merchant_campaign_newsletter_signup',
-            'merchant_campaign_contest_entry',
-            'merchant_campaign_qr_pickup',
-            'merchant_campaign_referral_signup',
-            'merchant_campaign_birthday_signup',
-            'merchant_campaign_agent_offer',
+            'merchant_campaign_newsletter_signup','merchant_campaign_contest_entry','merchant_campaign_qr_pickup',
+            'merchant_campaign_referral_signup','merchant_campaign_birthday_signup','merchant_campaign_agent_offer',
             'merchant_campaign_engagement',
         ] as $type){
             self::assertStringContainsString($type, $helper);
@@ -96,7 +90,7 @@ final class CampaignStampDistributionContractTest extends TestCase
         self::assertStringContainsString('existing_contact', $helper);
 
         foreach([$signup, $engage, $contest, $qr] as $source){
-            self::assertStringContainsString("_merchant_notifications.php", $source);
+            self::assertStringContainsString('_merchant_notifications.php', $source);
             self::assertStringContainsString('mg_public_campaign_notify_merchant_contact', $source);
             self::assertStringContainsString('merchant_notification', $source);
         }
@@ -112,7 +106,6 @@ final class CampaignStampDistributionContractTest extends TestCase
         self::assertStringContainsString("newsletter_signup') \$submitEndpoint = '/api/public/campaigns/signup.php'", $detail);
         self::assertStringContainsString("qr_reward_drop') \$submitEndpoint = '/api/public/campaigns/qr-pickup.php'", $detail);
         self::assertStringContainsString("contest_giveaway') \$submitEndpoint = '/api/public/campaigns/contest-entry.php'", $detail);
-
         self::assertStringContainsString('data.reward_title', $js);
         self::assertStringContainsString('data.wallet_item_id', $js);
         self::assertStringContainsString('data.wallet_status', $js);
@@ -126,7 +119,7 @@ final class CampaignStampDistributionContractTest extends TestCase
 
     public function testMerchantCampaignListReturnsActivitySummary(): void
     {
-        $source = $this->read('api/merchant/campaigns.php');
+        $source = $this->readCampaignController();
         self::assertStringContainsString("'activity' => [", $source);
         self::assertStringContainsString("'contacts' => (int) (\$row['contact_count'] ?? 0)", $source);
         self::assertStringContainsString("'wallet_items' => (int) (\$row['wallet_item_count'] ?? 0)", $source);

@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', function () {
     card.className = 'mg-campaign-rule-card';
     card.setAttribute('data-campaign-type-fields', 'survey_feedback_reward');
     card.hidden = true;
-    card.innerHTML = '<span class="mg-eyebrow">Survey / Feedback Reward</span><h3>Collect structured feedback before issuing the reward.</h3><p>Customers rate their experience, answer the prompt, and the response is attached to the campaign contact, CRM timeline, and reward issue trail.</p><label>Survey prompt<textarea name="survey_prompt" placeholder="Example: How was your experience?"></textarea></label><p class="mg-form-hint">Saved through the campaign form description so no new SQL is required.</p><div class="mg-grid-2"><label class="mg-campaign-check"><input type="checkbox" name="survey_rating_required" value="1" checked> <span>Require a 1-5 rating</span></label><label class="mg-campaign-check"><input type="checkbox" name="survey_feedback_required" value="1" checked> <span>Require written feedback</span></label></div>';
+    card.innerHTML = '<span class="mg-eyebrow">Survey / Feedback Reward</span><h3>Collect structured feedback before issuing the reward.</h3><p>Customers rate their experience, answer the prompt, and the response is attached to the campaign contact, CRM timeline, and reward issue trail.</p><label>Survey prompt<textarea name="survey_prompt" placeholder="Example: How was your experience?"></textarea></label><div class="mg-grid-2"><label class="mg-campaign-check"><input type="hidden" data-rule-mirror="survey_rating_required" value="1"><input type="checkbox" name="survey_rating_required" value="1" checked> <span>Require a 1-5 rating</span></label><label class="mg-campaign-check"><input type="hidden" data-rule-mirror="survey_feedback_required" value="1"><input type="checkbox" name="survey_feedback_required" value="1" checked> <span>Require written feedback</span></label></div>';
     var before = root.querySelector('[data-campaign-type-fields="watch_video_reward"]') || root.querySelector('[data-campaign-type-fields="customer_refund"]');
     if (before && before.parentNode) before.parentNode.insertBefore(card, before);
     else {
@@ -43,6 +43,16 @@ document.addEventListener('DOMContentLoaded', function () {
     if (prompt && desc) desc.value = prompt;
   }
 
+  function syncBoolean(name) {
+    var checkbox = form.querySelector('input[type="checkbox"][name="' + name + '"]');
+    var mirror = form.querySelector('[data-rule-mirror="' + name + '"]');
+    if (!checkbox || !mirror) return;
+    mirror.name = name;
+    mirror.value = checkbox.checked ? '1' : '0';
+    checkbox.disabled = true;
+    window.setTimeout(function () { checkbox.disabled = false; mirror.removeAttribute('name'); }, 0);
+  }
+
   function applySurveyDefaults(force) {
     if (activeType() !== 'survey_feedback_reward') return;
     setIfEmpty('title', 'Share feedback and get a reward');
@@ -53,8 +63,8 @@ document.addEventListener('DOMContentLoaded', function () {
     setIfEmpty('per_user_limit', '1');
     setIfEmpty('survey_prompt', value('form_description') || 'How was your experience?');
     if (force) {
-      var rating = field('survey_rating_required');
-      var feedback = field('survey_feedback_required');
+      var rating = form.querySelector('input[type="checkbox"][name="survey_rating_required"]');
+      var feedback = form.querySelector('input[type="checkbox"][name="survey_feedback_required"]');
       if (rating) rating.checked = true;
       if (feedback) feedback.checked = true;
     }
@@ -72,7 +82,13 @@ document.addEventListener('DOMContentLoaded', function () {
   form.addEventListener('change', function (event) {
     if (event.target && event.target.name === 'campaign_type') syncVisibility();
   });
-  form.addEventListener('submit', syncPromptToCampaignCopy, true);
+  form.addEventListener('submit', function () {
+    syncPromptToCampaignCopy();
+    if (activeType() === 'survey_feedback_reward') {
+      syncBoolean('survey_rating_required');
+      syncBoolean('survey_feedback_required');
+    }
+  }, true);
   root.addEventListener('input', function (event) {
     if (event.target && event.target.name === 'survey_prompt') syncPromptToCampaignCopy();
   });

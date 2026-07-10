@@ -43,9 +43,9 @@ foreach ([
     $assert('Foundation defines ' . $function, str_contains($foundation, 'function ' . $function));
 }
 
-$assert('Header loads the scoped campaign foundation stylesheet', str_contains($header, "campaign-landing-foundation.css"));
+$assert('Header loads the scoped campaign foundation stylesheet', str_contains($header, 'campaign-landing-foundation.css'));
 $assert('Header no longer injects the broad campaign override for every campaign page', !str_contains($header, "<?php if (!\$is_app_page && \$page_section === 'campaign'): ?><link rel=\"stylesheet\" href=\"/assets/css/public-campaign-unified-layout-v2.css\""));
-$assert('Legacy campaign layout is restricted to an explicit transition allowlist', str_contains($header, "['survey-feedback', 'check-in-reward', 'rsvp-event']") && str_contains($header, '$legacy_campaign_layout_pages'));
+$assert('Legacy campaign layout allowlist has been retired', !str_contains($header, 'legacy_campaign_layout_pages') && !str_contains($header, 'public-campaign-unified-layout-v2.css'));
 $assert('Foundation CSS owns shared trust and state UI', str_contains($foundationCss, '.mg-rl-campaign-foundation') && str_contains($foundationCss, '[data-campaign-closed-state]'));
 
 $simplePages = [
