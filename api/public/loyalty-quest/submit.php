@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/_participant.php';
 require_once __DIR__ . '/_verification.php';
+require_once __DIR__ . '/_reward.php';
 
 mg_require_method('POST');
 $user = mg_require_api_user();
@@ -23,7 +24,7 @@ try {
     if (!$participation) mg_fail('Start this Loyalty Quest before submitting completion evidence.', 409);
     if ($participationRef !== '' && !hash_equals((string)$participation['public_id'], $participationRef)) mg_fail('Participation does not match this account.', 403);
     if ((string)$participation['status'] === 'completed') {
-        $reward = mg_lqp_issue_reward($pdo, $campaign, $contact, $participation, $user);
+        $reward = mg_lqr_issue_reward($pdo, $campaign, $contact, $participation, $user);
         $pdo->commit();
         mg_ok(['participation_id'=>(string)$participation['public_id'],'status'=>'completed','reward'=>$reward], 'Loyalty Quest was already completed.');
     }
@@ -75,7 +76,7 @@ try {
         mg_ok(['participation_id'=>(string)$participation['public_id'],'status'=>'in_progress','progress_count'=>$newProgress,'required_count'=>(int)$participation['required_count'],'completion_percent'=>$percent,'reward'=>null], 'Quest progress verified.');
     }
 
-    $reward = mg_lqp_issue_reward($pdo, $campaign, $contact, $participation, $user);
+    $reward = mg_lqr_issue_reward($pdo, $campaign, $contact, $participation, $user);
     $pdo->commit();
     mg_ok(['participation_id'=>(string)$participation['public_id'],'status'=>'completed','progress_count'=>$newProgress,'required_count'=>(int)$participation['required_count'],'completion_percent'=>100,'evidence_id'=>$evidenceId,'reward'=>$reward], 'Loyalty Quest completed and reward issued.', 201);
 } catch (Throwable $error) {
