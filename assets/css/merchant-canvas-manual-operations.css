@@ -1,0 +1,182 @@
+.mg-canvas-live-pill-hidden,
+.mg-canvas-state-hidden {
+  display: block !important;
+}
+
+.mg-canvas-live-pill,
+.mg-canvas-state-banner {
+  transition: opacity .18s ease, transform .18s ease;
+}
+
+.mg-canvas-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9997;
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: rgba(15, 23, 42, .32);
+  cursor: default;
+}
+
+.mg-canvas-drawer-backdrop[hidden] {
+  display: none;
+}
+
+body.mg-canvas-drawer-open {
+  overflow: hidden;
+}
+
+.mg-canvas-crm-drawer {
+  z-index: 9998;
+}
+
+.mg-canvas-crm-drawer:focus,
+.mg-canvas-crm-drawer :focus-visible,
+.mg-canvas-avatar-card:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 3px;
+}
+
+.mg-canvas-loading,
+.mg-canvas-disconnected {
+  padding: 20px;
+  border: 1px solid rgba(15, 23, 42, .12);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.mg-canvas-disconnected strong,
+.mg-canvas-disconnected p {
+  display: block;
+  margin: 0;
+}
+
+.mg-canvas-disconnected p {
+  margin-top: 8px;
+  color: #64748b;
+}
+
+.mg-canvas-crm-editor {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid rgba(15, 23, 42, .12);
+  border-radius: 18px;
+  background: #fff;
+}
+
+.mg-canvas-crm-editor > label:not(.mg-canvas-dnm) {
+  display: grid;
+  gap: 7px;
+  font-weight: 700;
+}
+
+.mg-canvas-crm-editor textarea {
+  width: 100%;
+  min-height: 108px;
+  resize: vertical;
+}
+
+.mg-canvas-crm-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mg-canvas-crm-tag {
+  position: relative;
+}
+
+.mg-canvas-crm-tag input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mg-canvas-crm-tag span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 7px 12px;
+  border: 1px solid rgba(15, 23, 42, .16);
+  border-radius: 999px;
+  background: #fff;
+  font-size: .82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.mg-canvas-crm-tag input:checked + span {
+  border-color: #111827;
+  background: #111827;
+  color: #fff;
+}
+
+.mg-canvas-crm-tag input:focus-visible + span {
+  outline: 3px solid currentColor;
+  outline-offset: 2px;
+}
+
+.mg-canvas-dnm {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 13px;
+  border: 1px solid rgba(185, 28, 28, .22);
+  border-radius: 14px;
+  background: rgba(254, 242, 242, .9);
+}
+
+.mg-canvas-dnm input {
+  margin-top: 3px;
+}
+
+.mg-canvas-dnm span,
+.mg-canvas-dnm strong,
+.mg-canvas-dnm small {
+  display: block;
+}
+
+.mg-canvas-dnm small {
+  margin-top: 3px;
+  color: #7f1d1d;
+  font-weight: 500;
+}
+
+.mg-canvas-reward-note[data-reward-eligibility] {
+  display: grid;
+  gap: 3px;
+  padding: 12px;
+  border: 1px solid rgba(15, 23, 42, .12);
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.mg-canvas-reward-note[data-reward-eligibility] strong,
+.mg-canvas-reward-note[data-reward-eligibility] span {
+  display: block;
+}
+
+.mg-canvas-reward-note[data-reward-eligibility] span {
+  color: #64748b;
+  font-size: .82rem;
+}
+
+.mg-canvas-avatar-card[aria-pressed="true"] {
+  box-shadow: 0 0 0 3px rgba(15, 23, 42, .18);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mg-canvas-live-pill,
+  .mg-canvas-state-banner,
+  .mg-canvas-crm-drawer,
+  .mg-canvas-avatar-card,
+  .mg-canvas-drawer-backdrop {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}
