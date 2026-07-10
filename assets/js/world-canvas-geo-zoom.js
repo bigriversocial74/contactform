@@ -19,6 +19,7 @@ window.Microgifter = window.Microgifter || {};
   function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
   function rect() { return map.getBoundingClientRect(); }
   function ease(value) { return 1 - Math.pow(1 - value, 3); }
+  function progress(value, start, end) { return clamp((value - start) / (end - start), 0, 1); }
 
   function zoomTier(zoom) {
     if (zoom < 1.45) return 'world';
@@ -26,6 +27,15 @@ window.Microgifter = window.Microgifter || {};
     if (zoom < 3.2) return 'city';
     if (zoom < 4.2) return 'store';
     return 'detail';
+  }
+
+  function zoomProgress(zoom) {
+    return {
+      region: progress(zoom, 1.38, 2.08),
+      city: progress(zoom, 2.18, 3.02),
+      store: progress(zoom, 3.14, 4.08),
+      detail: progress(zoom, 4.14, 5)
+    };
   }
 
   function geoToPoint(latitude, longitude) {
@@ -176,20 +186,28 @@ window.Microgifter = window.Microgifter || {};
 
   function applyViewport() {
     var viewport = ensureViewport();
-    var tier = zoomTier(state.zoom);
+    var currentTier = zoomTier(state.zoom);
     var inverse = 1 / state.zoom;
+    var detail = zoomProgress(state.zoom);
     viewport.style.transform = 'translate3d(' + state.panX + 'px,' + state.panY + 'px,0) scale(' + state.zoom + ')';
     root.style.setProperty('--mg-world-zoom', String(state.zoom));
     root.style.setProperty('--mg-world-inverse-zoom', inverse.toFixed(6));
+    root.style.setProperty('--mg-world-region-progress', detail.region.toFixed(4));
+    root.style.setProperty('--mg-world-city-progress', detail.city.toFixed(4));
+    root.style.setProperty('--mg-world-store-progress', detail.store.toFixed(4));
+    root.style.setProperty('--mg-world-detail-progress', detail.detail.toFixed(4));
     root.dataset.worldZoomLevel = String(Math.round(state.zoom));
-    root.dataset.worldZoomTier = tier;
+    root.dataset.worldZoomTier = currentTier;
+    root.dataset.worldProgressiveSmooth = '1';
     root.dataset.worldLiveAvatarMotion = state.zoom >= 3.2 ? 'on' : 'off';
     root.dataset.worldAvatarVisibility = 'show';
     clearLegacyClusters();
     markCurrentViewer();
-    renderLabel(tier);
+    renderLabel(currentTier);
     try {
-      document.dispatchEvent(new CustomEvent('mg:world-zoom-change', { detail: { zoom: state.zoom, inverse: inverse, tier: tier } }));
+      document.dispatchEvent(new CustomEvent('mg:world-zoom-change', {
+        detail: { zoom: state.zoom, inverse: inverse, tier: currentTier, progress: detail }
+      }));
     } catch (error) {}
     maybePlayArrival();
   }
@@ -211,14 +229,20 @@ window.Microgifter = window.Microgifter || {};
     window.cancelAnimationFrame(state.anim);
     var start = { zoom: state.zoom, panX: state.panX, panY: state.panY };
     var started = performance.now();
+    root.dataset.worldZoomMotion = 'animating';
     function frame(now) {
-      var progress = clamp((now - started) / (duration || 280), 0, 1);
-      var eased = ease(progress);
+      var animationProgress = clamp((now - started) / (duration || 280), 0, 1);
+      var eased = ease(animationProgress);
       state.zoom = start.zoom + (target.zoom - start.zoom) * eased;
       state.panX = start.panX + (target.panX - start.panX) * eased;
       state.panY = start.panY + (target.panY - start.panY) * eased;
       applyViewport();
-      if (progress < 1) state.anim = window.requestAnimationFrame(frame);
+      if (animationProgress < 1) {
+        state.anim = window.requestAnimationFrame(frame);
+      } else {
+        state.anim = 0;
+        root.dataset.worldZoomMotion = 'idle';
+      }
     }
     state.anim = window.requestAnimationFrame(frame);
   }
@@ -260,7 +284,7 @@ window.Microgifter = window.Microgifter || {};
     }, function () {}, { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 });
   }
 
-  function renderLabel(tier) {
+  function renderLabel(currentTier) {
     var label = qs('[data-world-zoom-label]', map);
     if (!label) {
       label = document.createElement('div');
@@ -275,7 +299,7 @@ window.Microgifter = window.Microgifter || {};
       store: 'Store view · live identity and campaign context',
       detail: 'Detail view · full World Canvas information'
     };
-    label.innerHTML = '<i></i>' + messages[tier];
+    label.innerHTML = '<i></i>' + messages[currentTier];
   }
 
   function maybePlayArrival() {
@@ -332,7 +356,15 @@ window.Microgifter = window.Microgifter || {};
   window.addEventListener('resize', applyViewport);
 
   window.MicrogifterWorldZoom = {
-    getState: function () { return { zoom: state.zoom, panX: state.panX, panY: state.panY, tier: zoomTier(state.zoom) }; },
+    getState: function () {
+      return {
+        zoom: state.zoom,
+        panX: state.panX,
+        panY: state.panY,
+        tier: zoomTier(state.zoom),
+        progress: zoomProgress(state.zoom)
+      };
+    },
     setZoom: setZoom,
     centerOn: centerOn,
     geoToPoint: geoToPoint
