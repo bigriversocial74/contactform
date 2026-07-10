@@ -1,6 +1,6 @@
 <?php
 $page_scripts = $page_scripts ?? [];
-$late_styles = ['/assets/css/universal-footer.css', '/assets/css/market-alerts.css'];
+$late_styles = ['/assets/css/universal-footer.css', '/assets/css/market-alerts.css', '/assets/css/loyalty-cards.css'];
 if (($page_manifest['id'] ?? '') === 'developer-docs') {
     $late_styles[] = '/assets/css/docs-polish.css';
 }
@@ -44,7 +44,7 @@ $core_scripts = [
     '/assets/js/agent-global-search.js','/assets/js/customer-commerce.js','/assets/js/cart.js','/assets/js/auth.js',
     '/assets/js/auth-state.js','/assets/js/onboarding.js','/assets/js/agent-tabs.js','/assets/js/agent-controls.js',
     '/assets/js/agent-toolbar-state.js','/assets/js/agent-sidebar.js','/assets/js/agent-items.js','/assets/js/media-delivery.js',
-    '/assets/js/gift-stream-launch.js','/assets/js/merchant-claim.js','/assets/js/agent-tools.js','/assets/js/scanner-device-session.js','/assets/js/market-alerts.js','/assets/js/public-market-ticker.js','/assets/js/subscription-checkout.js',
+    '/assets/js/gift-stream-launch.js','/assets/js/merchant-claim.js','/assets/js/agent-tools.js','/assets/js/scanner-device-session.js','/assets/js/market-alerts.js','/assets/js/public-market-ticker.js','/assets/js/subscription-checkout.js','/assets/js/loyalty-cards.js',
 ];
 $scripts = array_values(array_unique(array_merge($core_scripts, $page_scripts)));
 $user = mg_current_user();
@@ -93,6 +93,7 @@ $can_intelligence = $user && (in_array('intelligence.dashboard.view', $user_perm
         <?php if ($user): ?>
           <a href="/inbox.php">IN/OUT Box</a>
           <a href="/feed.php">My Feed</a>
+          <a href="/loyalty-cards.php">Loyalty Cards</a>
           <a href="/account.php">Profile Settings</a>
           <a href="/commitments.php">Commitments</a>
         <?php else: ?>
