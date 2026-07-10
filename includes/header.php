@@ -198,6 +198,7 @@ $can_admin_dashboard = $user && (
 <?php endif; ?>
 <?php if ($section_css): ?><link rel="stylesheet" href="<?= mg_e($section_css) ?>"><?php endif; ?>
 <?php foreach ($page_styles as $style): ?><link rel="stylesheet" href="<?= mg_e($style) ?>"><?php endforeach; ?>
+<?php if (!$is_app_page && $page_section === 'campaign'): ?><link rel="stylesheet" href="/assets/css/public-campaign-unified-layout-v2.css"><?php endif; ?>
 <?php if ($is_app_page): ?>
 <link rel="stylesheet" href="/assets/css/mobile-app.css">
 <link rel="stylesheet" href="/assets/css/app-header-sidebar.css">
