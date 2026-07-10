@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', function () {
     buildPunches(grid, required);
     form.setAttribute('data-stamp-count', String(count));
     form.setAttribute('data-stamp-required-count', String(required));
-    if (copy) copy.textContent = count + ' of ' + required + ' ' + label.toLowerCase() + ' stamps';
+    if (copy) copy.textContent = count + ' of ' + required + ' ' + label.toLowerCase() + ' punches';
     if (grid) {
       grid.querySelectorAll('[data-stamp-index]').forEach(function (node) {
         var index = number(node.getAttribute('data-stamp-index'), 0);
@@ -79,11 +79,11 @@ document.addEventListener('DOMContentLoaded', function () {
     visual.classList.toggle('is-unlocked', !!progress.unlocked);
     if (progressMessage) {
       if (progress.unlocked) {
-        progressMessage.textContent = 'Reward unlocked. Your completed stamp card has been sent to Microgifter Inbox.';
+        progressMessage.textContent = 'Reward unlocked. Your completed punch card has been sent to Microgifter Inbox.';
       } else if (message) {
         progressMessage.textContent = message;
       } else {
-        progressMessage.textContent = progress.remaining + ' more stamp' + (progress.remaining === 1 ? '' : 's') + ' to unlock your reward.';
+        progressMessage.textContent = progress.remaining + ' more punch' + (progress.remaining === 1 ? '' : 'es') + ' to unlock your reward.';
       }
     }
   }
@@ -106,10 +106,10 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!button) return;
       button.disabled = !!busy;
       button.setAttribute('aria-busy', busy ? 'true' : 'false');
-      button.innerHTML = busy ? 'Recording stamp…' : 'Add stamp / check reward <span aria-hidden="true">→</span>';
+      button.innerHTML = busy ? 'Recording punch…' : 'Add Stamp / Check Reward';
     }
 
-    renderProgress(form, { required: fallbackRequired, count: 0, remaining: fallbackRequired, unlocked: false }, 'Submit after each eligible visit.');
+    renderProgress(form, { required: fallbackRequired, count: 0, remaining: fallbackRequired, unlocked: false }, fallbackRequired + ' punches required before reward issuance is honored.');
 
     form.addEventListener('submit', async function (event) {
       event.preventDefault();
@@ -124,19 +124,19 @@ document.addEventListener('DOMContentLoaded', function () {
       }
       var endpoint = form.dataset.submitEndpoint || '/api/public/campaigns/stamp-card.php';
       setButtonBusy(true);
-      setStatus('Recording your stamp and checking reward progress…');
+      setStatus('Recording your punch and checking reward progress…');
       try {
         var response = await Microgifter.post(endpoint, formData(form));
         var progress = getProgress(response, fallbackRequired);
-        var message = response.message || (progress.unlocked ? 'Reward unlocked.' : 'Stamp recorded.');
+        var message = response.message || (progress.unlocked ? 'Reward unlocked.' : 'Punch recorded.');
         renderProgress(form, progress, message);
         setStatus(message, progress.unlocked ? 'success' : '');
         if (result) {
           result.classList.add('is-visible');
           if (progress.unlocked) {
-            result.innerHTML = '<strong>Stamp card complete</strong><p>Your reward was sent to Microgifter Inbox.</p>' + (progress.data.inbox_url || progress.data.wallet_item_id ? '<div class="mg-public-campaign-result-actions"><a class="mg-btn mg-btn-primary" href="' + esc(progress.data.inbox_url || '/inbox.php') + '">Open Microgifter Inbox</a></div>' : '');
+            result.innerHTML = '<strong>Punch card complete</strong><p>Your reward was sent to Microgifter Inbox.</p>' + (progress.data.inbox_url || progress.data.wallet_item_id ? '<div class="mg-public-campaign-result-actions"><a class="mg-btn mg-btn-primary" href="' + esc(progress.data.inbox_url || '/inbox.php') + '">Open Microgifter Inbox</a></div>' : '');
           } else {
-            result.innerHTML = '<strong>Stamp recorded</strong><p>' + esc(message) + '</p><div class="mg-public-campaign-result-details"><span>' + esc(progress.count + ' of ' + progress.required + ' stamps complete') + '</span><span>' + esc(progress.remaining + ' remaining') + '</span></div>';
+            result.innerHTML = '<strong>Punch recorded</strong><p>' + esc(message) + '</p><div class="mg-public-campaign-result-details"><span>' + esc(progress.count + ' of ' + progress.required + ' punches complete') + '</span><span>' + esc(progress.remaining + ' remaining') + '</span></div>';
           }
         }
       } catch (error) {
