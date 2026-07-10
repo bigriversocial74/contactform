@@ -106,9 +106,9 @@ mg_merchant_ensure_workspace($pdo, $user);
 $input = mg_input();
 mg_require_csrf_for_write($input);
 
-$campaignId = strtolower(trim((string)($input['campaign_id'] ?? ''));
+$campaignId = strtolower(trim((string)($input['campaign_id'] ?? '')));
 $title = trim((string)($input['title'] ?? ''));
-$status = strtolower(trim((string)($input['status'] ?? 'draft'));
+$status = strtolower(trim((string)($input['status'] ?? 'draft')));
 if ($campaignId !== '' && (strlen($campaignId) !== 36 || preg_match('/^[a-f0-9-]{36}$/', $campaignId) !== 1)) mg_fail('Invalid campaign.', 422);
 if ($title === '' || mb_strlen($title) > 180) mg_fail('Enter a campaign title up to 180 characters.', 422);
 if (!in_array($status, ['draft','active','paused','ended','archived'], true)) mg_fail('Invalid campaign status.', 422);
