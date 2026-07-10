@@ -9,7 +9,7 @@ function mg_checkout_column_exists(PDO $pdo,string $table,string $column): bool
         $stmt=$pdo->prepare('SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? AND COLUMN_NAME=?');
         $stmt->execute([$table,$column]);
         return (int)$stmt->fetchColumn()>0;
-    }catch(Throwable $error){
+    }catch(Throwable){
         return false;
     }
 }
@@ -28,6 +28,19 @@ function mg_checkout_session_payment_intent(PDO $pdo,array $checkout): ?array
     return $row?:null;
 }
 
+function mg_checkout_session_safe_provider_url(mixed $value,string $provider): string
+{
+    $url=trim((string)$value);
+    if($url==='')return '';
+    if(str_starts_with($url,'/')&&!str_starts_with($url,'//'))return $url;
+    if(filter_var($url,FILTER_VALIDATE_URL)===false)return '';
+    $parts=parse_url($url);
+    if(!is_array($parts)||strtolower((string)($parts['scheme']??''))!=='https')return '';
+    $host=strtolower((string)($parts['host']??''));
+    if($provider==='stripe'&&($host==='checkout.stripe.com'||str_ends_with($host,'.checkout.stripe.com')))return $url;
+    return '';
+}
+
 mg_require_method('GET');
 $user=mg_require_api_user();
 $id=trim((string)($_GET['id']??''));
@@ -40,7 +53,15 @@ try{
     $checkout=$checkoutStmt->fetch(PDO::FETCH_ASSOC);
     if(!$checkout)mg_fail('Checkout session not found for this account.',404);
 
-    $orderStmt=$pdo->prepare('SELECT * FROM commerce_orders WHERE id=? AND buyer_user_id=? LIMIT 1');
+    $orderStmt=$pdo->prepare(
+        "SELECT co.*,
+                COALESCE(NULLIF(mw.display_name,''),NULLIF(pp.display_name,''),NULLIF(u.display_name,''),NULLIF(u.full_name,''),'Merchant') merchant_name
+         FROM commerce_orders co
+         INNER JOIN users u ON u.id=co.merchant_user_id
+         LEFT JOIN merchant_workspaces mw ON mw.merchant_user_id=u.id
+         LEFT JOIN public_profiles pp ON pp.user_id=u.id
+         WHERE co.id=? AND co.buyer_user_id=? LIMIT 1"
+    );
     $orderStmt->execute([(int)$checkout['order_id'],(int)$user['id']]);
     $order=$orderStmt->fetch(PDO::FETCH_ASSOC);
     if(!$order)mg_fail('Checkout session not found for this account.',404);
@@ -60,6 +81,10 @@ try{
         &&in_array($sessionStatus,['created','open'],true)
         &&(string)$order['payment_status']==='unpaid'
         &&!in_array($intentStatus,['failed','cancelled','succeeded'],true);
+    $providerUrl=mg_checkout_session_safe_provider_url($checkout['provider_checkout_url']??'', $provider);
+    $canContinue=$providerUrl!==''
+        &&in_array($sessionStatus,['created','open'],true)
+        &&(string)$order['payment_status']==='unpaid';
 
     $session=[
         'session_id'=>(string)$checkout['public_id'],
@@ -78,12 +103,12 @@ try{
         'total_cents'=>(int)$order['total_cents'],
         'payment_status'=>(string)$order['payment_status'],
         'fulfillment_status'=>(string)$order['fulfillment_status'],
-        'merchant_user_id'=>(int)$order['merchant_user_id'],
-        'merchant_name'=>'',
+        'merchant_name'=>(string)$order['merchant_name'],
         'can_confirm'=>$canConfirm,
         'can_confirm_cash'=>$provider==='cash'&&$canConfirm,
-        'checkout_url'=>'',
-        'can_continue_provider'=>false,
+        'checkout_url'=>$providerUrl,
+        'can_continue_provider'=>$canContinue,
+        'refresh_after_ms'=>(string)$order['payment_status']==='unpaid'&&in_array($sessionStatus,['created','open'],true)?5000:0,
     ];
 
     $items=$pdo->prepare('SELECT title_snapshot,quantity,unit_amount_cents,line_total_cents,currency FROM commerce_order_items WHERE order_id=? ORDER BY id');
@@ -93,7 +118,6 @@ try{
     mg_security_log('error','commerce.checkout_session_load_failed','Checkout session load failed.',[
         'session_id'=>$id,
         'exception_type'=>get_class($error),
-        'message'=>$error->getMessage(),
     ],(int)$user['id']);
-    mg_fail('Unable to load checkout session. Please return to the cart and create a new checkout session.',500);
+    mg_fail('Unable to load checkout session. Please return to the cart and resume checkout.',500);
 }
