@@ -36,7 +36,7 @@ $check(
 
 $check(
     str_contains($headerJs, "document.querySelector('.mg-unified-header .mg-header-inner')")
-    && str_contains($headerJs, "headerInner.insertBefore(slot, actions || null)")
+    && str_contains($headerJs, 'headerInner.insertBefore(slot, actions || null)')
     && str_contains($headerJs, "className = 'mg-canvas-header-stats'")
     && str_contains($headerJs, "className = 'mg-canvas-header-live-pill'")
     && str_contains($headerJs, 'MutationObserver'),
@@ -100,7 +100,7 @@ $executeBlock = ($executeStart !== false && $executeEnd !== false) ? substr($hel
 $check(
     $insertStart !== false
     && substr_count('?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?', '?') === 20
-    && str_contains($executeBlock, "mg_public_uuid(), $merchantUserId, $customerUserId")
+    && str_contains($executeBlock, 'mg_public_uuid(), $merchantUserId, $customerUserId')
     && str_contains($executeBlock, "$profile['last_calculated_at']"),
     '8. Behavior profile upsert has the required twenty bound values before server timestamps'
 );
