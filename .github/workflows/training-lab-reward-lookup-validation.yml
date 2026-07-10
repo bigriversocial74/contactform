@@ -1,0 +1,38 @@
+name: Training Lab Reward Lookup Validation
+
+on:
+  pull_request:
+    paths:
+      - 'api/integrations/_training_lab_reward_lookup.php'
+      - 'api/integrations/training-lab-reward-lookup.php'
+      - 'scripts/validate_training_lab_reward_lookup_adapter_v1.php'
+      - 'docs/STAGE-894-TRAINING-LAB-REWARD-LOOKUP-ADAPTER-V1.md'
+      - '.github/workflows/training-lab-reward-lookup-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }} Stage 894
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - name: Check PHP syntax
+        run: |
+          php -l api/integrations/_training_lab_reward_lookup.php
+          php -l api/integrations/training-lab-reward-lookup.php
+          php -l scripts/validate_training_lab_reward_lookup_adapter_v1.php
+      - name: Run Stage 894 contract
+        run: php scripts/validate_training_lab_reward_lookup_adapter_v1.php
