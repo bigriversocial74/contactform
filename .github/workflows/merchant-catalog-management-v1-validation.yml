@@ -54,7 +54,7 @@ jobs:
         run: php scripts/validate_merchant_catalog_management_v1.php
 
       - name: Validate application layout
-        run: php scripts/validate_app_layout.php
+        run: php scripts/audit_app_layout.php --json
 
   recovery:
     name: Validate clean database and commerce recovery
