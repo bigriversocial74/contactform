@@ -11,6 +11,7 @@ on:
       - 'assets/js/public-watch-video-reward.js'
       - 'assets/js/public-listen-music-reward.js'
       - 'api/public/campaigns/watch-progress-v2.php'
+      - 'api/public/campaigns/_media_progress_v2.php'
       - 'api/public/campaigns/listen-progress.php'
       - 'scripts/validate_watch_listen_media_alignment_v1.php'
       - 'scripts/validate_campaign_landing_foundation_repair_v1.php'
@@ -42,6 +43,7 @@ jobs:
           php -l includes/campaign-media-landing.php
           php -l includes/campaign-landing-foundation.php
           php -l api/public/campaigns/watch-progress-v2.php
+          php -l api/public/campaigns/_media_progress_v2.php
           php -l api/public/campaigns/listen-progress.php
           php -l scripts/validate_watch_listen_media_alignment_v1.php
           php -l scripts/validate_campaign_landing_foundation_repair_v1.php
