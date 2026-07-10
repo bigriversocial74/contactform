@@ -18,8 +18,8 @@ $checks[]=['name'=>'allowed origin enforcement','ok'=>str_contains($start,'allow
 $checks[]=['name'=>'short-lived authorization','ok'=>str_contains($start,'time() + 900')&&str_contains($complete,"status='approved'")];
 $checks[]=['name'=>'continue and create account UX','ok'=>str_contains($page,'Continue with Microgifter')&&str_contains($page,'Create Microgifter account')&&str_contains($page,'Sign in with Microgifter')];
 $checks[]=['name'=>'csrf and authenticated approval','ok'=>str_contains($complete,'mg_require_api_user')&&str_contains($complete,'mg_require_csrf_for_write')];
-$checks[]=['name'=>'merchant role gate','ok'=>str_contains($complete,'A Microgifter merchant account is required.')&&str_contains($complete,"$requestedRole==='merchant'")];
-$checks[]=['name'=>'one-time hashed code','ok'=>str_contains($complete,"hash('sha256',$code)")&&str_contains($token,'authorization_code_hash=NULL')&&str_contains($token,"status='exchanged'")];
+$checks[]=['name'=>'merchant role gate','ok'=>str_contains($complete,'A Microgifter merchant account is required.')&&str_contains($complete,"\$requestedRole==='merchant'")];
+$checks[]=['name'=>'one-time hashed code','ok'=>str_contains($complete,"hash('sha256',\$code)")&&str_contains($token,'authorization_code_hash=NULL')&&str_contains($token,"status='exchanged'")];
 $checks[]=['name'=>'transactional exchange','ok'=>str_contains($token,'beginTransaction')&&str_contains($token,'FOR UPDATE')&&str_contains($token,'commit()')&&str_contains($token,'rollBack()')];
 $checks[]=['name'=>'link conflict prevention','ok'=>str_contains($sql,'uq_developer_identity_links_external')&&str_contains($token,'ON DUPLICATE KEY UPDATE')];
 $checks[]=['name'=>'unlink and relink lifecycle','ok'=>str_contains($link,"status='revoked'")&&str_contains($token,"status='active'")&&str_contains($token,'revoked_at=NULL')];
