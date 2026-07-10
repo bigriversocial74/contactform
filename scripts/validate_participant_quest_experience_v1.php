@@ -5,9 +5,9 @@ $root = dirname(__DIR__);
 $read = static fn(string $path): string => is_file($root . '/' . $path) ? (string)file_get_contents($root . '/' . $path) : '';
 $files = [
     'loyalty-quest.php','my-quests.php','merchant-quest-reviews.php',
-    'api/public/loyalty-quest/_participant.php','api/public/loyalty-quest/_verification.php',
+    'api/public/loyalty-quest/_participant.php','api/public/loyalty-quest/_verification.php','api/public/loyalty-quest/_reward.php',
     'api/public/loyalty-quest/detail.php','api/public/loyalty-quest/start.php','api/public/loyalty-quest/submit.php',
-    'api/account/loyalty-quests.php','api/merchant/loyalty-quest-reviews.php','api/merchant/loyalty-quest-signed-code.php',
+    'api/account/loyalty-quests.php','api/merchant/loyalty-quest-campaigns.php','api/merchant/loyalty-quest-reviews.php','api/merchant/loyalty-quest-signed-code.php',
     'includes/loyalty-quest-campaign-type.php','includes/merchant-quest-reviews-view.php',
     'assets/js/loyalty-quest-participant.js','assets/js/my-loyalty-quests.js','assets/js/merchant-quest-reviews.js',
     'assets/css/loyalty-quest-participant.css','assets/css/my-loyalty-quests.css','assets/css/merchant-quest-reviews.css',
@@ -19,10 +19,12 @@ foreach ($files as $file) $checks[] = ['name'=>'file:' . $file,'ok'=>is_file($ro
 
 $participant = $read('api/public/loyalty-quest/_participant.php');
 $verification = $read('api/public/loyalty-quest/_verification.php');
+$reward = $read('api/public/loyalty-quest/_reward.php');
 $detail = $read('api/public/loyalty-quest/detail.php');
 $start = $read('api/public/loyalty-quest/start.php');
 $submit = $read('api/public/loyalty-quest/submit.php');
 $portfolioApi = $read('api/account/loyalty-quests.php');
+$campaignApi = $read('api/merchant/loyalty-quest-campaigns.php');
 $reviewApi = $read('api/merchant/loyalty-quest-reviews.php');
 $signedApi = $read('api/merchant/loyalty-quest-signed-code.php');
 $rules = $read('includes/loyalty-quest-campaign-type.php');
@@ -52,7 +54,8 @@ $checks[] = ['name'=>'verification method completeness','ok'=>str_contains($veri
 $checks[] = ['name'=>'geolocation trust controls','ok'=>str_contains($verification,'maximum_accuracy_meters')&&str_contains($verification,'mg_lqp_distance_meters')&&str_contains($verification,'outside the allowed quest location')&&str_contains($participantJs,'enableHighAccuracy:true')];
 $checks[] = ['name'=>'proof and duplicate-reference controls','ok'=>str_contains($verification,'Proof links must use HTTPS.')&&str_contains($verification,'mg_lqv_reference_unique')&&str_contains($verification,'has already been submitted')&&str_contains($submit,'ip_hash')];
 $checks[] = ['name'=>'daily cooldown and budget controls','ok'=>str_contains($participant,'mg_lqp_enforce_daily_limit')&&str_contains($participant,'mg_lqp_enforce_cooldown')&&str_contains($participant,'mg_lqp_enforce_budget')&&str_contains($submit,'mg_lqp_enforce_cooldown')&&str_contains($reviewApi,'mg_lqp_enforce_daily_limit')];
-$checks[] = ['name'=>'idempotent wallet issuance','ok'=>str_contains($participant,"source_type='loyalty_quest'")&&str_contains($participant,'already_issued')&&str_contains($participant,'mg_public_campaign_enforce_reward_limits')&&str_contains($participant,'mg_zero_reward_issue_from_wallet')&&str_contains($participant,"'wallet_item.issued'")];
+$checks[] = ['name'=>'stamp-backed idempotent reward issuance','ok'=>str_contains($reward,'mg_public_campaign_debit_reward_stamp')&&str_contains($reward,'mg_lqp_issue_reward')&&str_contains($reward,"source_type='loyalty_quest'")&&str_contains($participant,'mg_public_campaign_enforce_reward_limits')&&str_contains($participant,'mg_zero_reward_issue_from_wallet')&&str_contains($submit,'mg_lqr_issue_reward')&&str_contains($reviewApi,'mg_lqr_issue_reward')];
+$checks[] = ['name'=>'guarded merchant activation','ok'=>str_contains($campaignApi,'mg_lq_status_transition_allowed')&&str_contains($campaignApi,"'archived' => []")&&str_contains($campaignApi,"'max_active_campaigns'")&&str_contains($campaignApi,'Active campaign limit reached.')&&str_contains($campaignApi,'Active Loyalty Quests require a future end date.')];
 $checks[] = ['name'=>'participant guided UX','ok'=>str_contains($page,'data-lqp-invite-field')&&str_contains($page,'data-lqp-start-location-field')&&str_contains($page,'data-lqp-camera')&&str_contains($page,'data-lqp-evidence-list')&&str_contains($participantJs,'BarcodeDetector')&&str_contains($participantJs,'availabilityMessage')];
 $checks[] = ['name'=>'participant progress portfolio','ok'=>str_contains($myPage,'data-my-loyalty-quests')&&str_contains($portfolioApi,'latest_review_note')&&str_contains($portfolioApi,'latest_evidence_status')&&str_contains($myJs,'Correct and resubmit')&&str_contains($myJs,'Merchant review')];
 $checks[] = ['name'=>'merchant-scoped evidence review','ok'=>substr_count($reviewApi,'merchant_user_id')>=12&&str_contains($reviewApi,"mg_merchant_require_permission(\$method === 'GET' ? 'merchant.campaigns.view' : 'merchant.campaigns.manage')")&&str_contains($reviewApi,'Add a reason so the participant knows what to correct.')&&str_contains($reviewApi,'mg_audit')];
