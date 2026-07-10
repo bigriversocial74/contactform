@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require_once dirname(__DIR__) . '/store/_canvas_schema.php';
+require_once dirname(__DIR__) . '/store/_canvas_manual_operations.php';
 
 mg_require_method('GET');
 $user = mg_require_api_user();
@@ -28,18 +28,19 @@ function mg_merchant_canvas_customer_crm_core(PDO $pdo, int $merchantUserId, str
     mg_store_canvas_require_tables($pdo, ['mg_store_sessions','mg_store_session_events','mg_customer_store_history'], 'Store Canvas');
 
     $stmt = $pdo->prepare(
-        "SELECT s.*,cp.display_name customer_name,cp.avatar_url customer_avatar_url,cp.slug customer_slug,cp.profile_type customer_profile_type,
+        "SELECT s.*,
+                cp.display_name customer_name,cp.avatar_url customer_avatar_url,cp.slug customer_slug,cp.profile_type customer_profile_type,
+                mp.display_name merchant_name,mp.avatar_url merchant_avatar_url,mp.slug merchant_slug,mp.profile_type merchant_profile_type,
                 fp.public_id source_post_public_id,fp.headline source_post_headline
          FROM mg_store_sessions s
          LEFT JOIN public_profiles cp ON cp.user_id=s.customer_user_id
+         LEFT JOIN public_profiles mp ON mp.user_id=s.merchant_user_id
          LEFT JOIN feed_posts fp ON fp.id=s.source_feed_post_id
          WHERE s.public_id=? AND s.merchant_user_id=? LIMIT 1"
     );
     $stmt->execute([$sessionPublicId, $merchantUserId]);
     $session = $stmt->fetch(PDO::FETCH_ASSOC);
-    if (!$session) {
-        throw new RuntimeException('Customer session is not available.');
-    }
+    if (!$session) throw new RuntimeException('Customer session is not available.');
 
     $metadata = mg_merchant_canvas_crm_metadata($session);
     $isTest = !empty($metadata['test_canvas_avatar']) || (($metadata['source'] ?? '') === 'merchant_canvas_test_seed');
@@ -54,25 +55,32 @@ function mg_merchant_canvas_customer_crm_core(PDO $pdo, int $merchantUserId, str
         $sessionProjection['source_post']['headline'] = (string)$metadata['source_label'];
     }
 
+    $customerUserId = (int)$session['customer_user_id'];
+    $crm = $customerUserId > 0
+        ? mg_store_manual_ops_crm_get($pdo, $merchantUserId, $customerUserId, false)
+        : mg_store_manual_ops_crm_defaults();
+
     $stats = ['visit_count'=>0,'messages_sent'=>0,'rewards_received'=>0,'rewards_claimed'=>0,'gifts_sent'=>0];
-    $visit = $pdo->prepare('SELECT COUNT(*) FROM mg_store_sessions WHERE customer_user_id=? AND merchant_user_id=?');
-    $visit->execute([(int)$session['customer_user_id'], $merchantUserId]);
-    $stats['visit_count'] = (int)$visit->fetchColumn();
+    if ($customerUserId > 0) {
+        $visit = $pdo->prepare('SELECT COUNT(*) FROM mg_store_sessions WHERE customer_user_id=? AND merchant_user_id=?');
+        $visit->execute([$customerUserId, $merchantUserId]);
+        $stats['visit_count'] = (int)$visit->fetchColumn();
 
-    if (mg_store_canvas_table_exists($pdo, 'mg_agent_messages')) {
-        $messages = $pdo->prepare('SELECT COUNT(*) FROM mg_agent_messages WHERE recipient_user_id=? AND merchant_user_id=?');
-        $messages->execute([(int)$session['customer_user_id'], $merchantUserId]);
-        $stats['messages_sent'] = (int)$messages->fetchColumn();
-    }
+        if (mg_store_canvas_table_exists($pdo, 'mg_agent_messages')) {
+            $messages = $pdo->prepare('SELECT COUNT(*) FROM mg_agent_messages WHERE recipient_user_id=? AND merchant_user_id=?');
+            $messages->execute([$customerUserId, $merchantUserId]);
+            $stats['messages_sent'] = (int)$messages->fetchColumn();
+        }
 
-    $eventStats = $pdo->prepare('SELECT event_type,COUNT(*) total FROM mg_store_session_events WHERE customer_user_id=? AND merchant_user_id=? GROUP BY event_type');
-    $eventStats->execute([(int)$session['customer_user_id'], $merchantUserId]);
-    foreach ($eventStats->fetchAll(PDO::FETCH_ASSOC) as $row) {
-        $type = (string)$row['event_type'];
-        if ($type === 'message_received') $stats['messages_sent'] = max($stats['messages_sent'], (int)$row['total']);
-        if ($type === 'received_reward') $stats['rewards_received'] = (int)$row['total'];
-        if ($type === 'claimed_reward') $stats['rewards_claimed'] = (int)$row['total'];
-        if ($type === 'sent_gift') $stats['gifts_sent'] = (int)$row['total'];
+        $eventStats = $pdo->prepare('SELECT event_type,COUNT(*) total FROM mg_store_session_events WHERE customer_user_id=? AND merchant_user_id=? GROUP BY event_type');
+        $eventStats->execute([$customerUserId, $merchantUserId]);
+        foreach ($eventStats->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $type = (string)$row['event_type'];
+            if ($type === 'message_received') $stats['messages_sent'] = max($stats['messages_sent'], (int)$row['total']);
+            if ($type === 'received_reward') $stats['rewards_received'] = (int)$row['total'];
+            if ($type === 'claimed_reward') $stats['rewards_claimed'] = (int)$row['total'];
+            if ($type === 'sent_gift') $stats['gifts_sent'] = (int)$row['total'];
+        }
     }
 
     $events = [];
@@ -86,6 +94,13 @@ function mg_merchant_canvas_customer_crm_core(PDO $pdo, int $merchantUserId, str
         ];
     }
 
+    $isActive = !empty($session['active_key'])
+        && in_array((string)$session['status'], MG_STORE_ACTIVE_STATUSES, true)
+        && empty($session['exited_at'])
+        && strtotime((string)$session['last_active_at']) >= (time() - (MG_STORE_EXPIRE_MINUTES * 60));
+    $canMessage = $isActive && !$isTest && $customerUserId > 0 && !empty($crm['schema_ready']) && empty($crm['do_not_message']);
+    $canReward = $isActive && !$isTest && $customerUserId > 0;
+
     return [
         'session' => $sessionProjection,
         'customer' => [
@@ -95,9 +110,16 @@ function mg_merchant_canvas_customer_crm_core(PDO $pdo, int $merchantUserId, str
             'profile_type' => $customerProfileType,
             'account_status' => $isTest ? 'Test avatar' : 'In system',
         ],
+        'crm' => $crm,
         'stats' => $stats,
         'events' => $events,
-        'actions' => ['send_direct_message'=>true,'send_reward'=>false,'invite_campaign'=>false,'remove_from_store'=>false],
+        'actions' => [
+            'send_direct_message' => $canMessage,
+            'send_reward' => $canReward,
+            'save_crm' => !$isTest && $customerUserId > 0 && !empty($crm['schema_ready']),
+            'invite_campaign' => false,
+            'remove_from_store' => false,
+        ],
     ];
 }
 
