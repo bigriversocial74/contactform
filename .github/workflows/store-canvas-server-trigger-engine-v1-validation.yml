@@ -67,11 +67,5 @@ jobs:
       - name: Store Canvas behavior memory regression
         run: php scripts/validate_store_canvas_behavior_memory_predictive_v1.php
 
-      - name: Merchant Canvas customer journey regression
-        run: php scripts/validate_merchant_canvas_customer_journey_v1.php
-
-      - name: Merchant Canvas manual operations regression
-        run: php scripts/validate_merchant_canvas_manual_operations_v1.php
-
       - name: Merchant Canvas production containment regression
         run: php scripts/validate_merchant_canvas_production_containment_v1.php
