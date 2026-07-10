@@ -35,7 +35,7 @@ permissions:
 jobs:
   validate:
     name: Participant Quest Experience v1 (PHP ${{ matrix.php }})
-    runs-on: ubuntu-22.04
+    runs-on: macos-14
     strategy:
       fail-fast: false
       matrix:
