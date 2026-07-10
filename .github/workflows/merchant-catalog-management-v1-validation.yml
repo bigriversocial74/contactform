@@ -1,0 +1,62 @@
+name: Merchant Catalog Management v1 Validation
+
+on:
+  pull_request:
+    paths:
+      - 'merchant-products.php'
+      - 'merchant-product.php'
+      - 'includes/merchant-products-view.php'
+      - 'includes/merchant-product-detail-view.php'
+      - 'api/merchant/products.php'
+      - 'api/merchant/product.php'
+      - 'api/merchant/product-archive.php'
+      - 'api/catalog/builder-draft.php'
+      - 'assets/js/merchant-catalog-management-v1.js'
+      - 'assets/css/products-catalog-extra.css'
+      - 'scripts/validate_merchant_catalog_management_v1.php'
+      - '.github/workflows/merchant-catalog-management-v1-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    name: Validate ten-point merchant catalog contract
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+
+      - name: PHP syntax check
+        run: |
+          set -euo pipefail
+          php -l merchant-products.php
+          php -l merchant-product.php
+          php -l includes/merchant-products-view.php
+          php -l includes/merchant-product-detail-view.php
+          php -l api/merchant/products.php
+          php -l api/merchant/product.php
+          php -l api/merchant/product-archive.php
+          php -l api/catalog/builder-draft.php
+          php -l scripts/validate_merchant_catalog_management_v1.php
+
+      - name: JavaScript syntax check
+        run: node --check assets/js/merchant-catalog-management-v1.js
+
+      - name: Validate ten-point score
+        run: php scripts/validate_merchant_catalog_management_v1.php
+
+      - name: Validate application layout
+        run: php scripts/audit_app_layout.php --json
+
+  recovery:
+    name: Validate clean database and commerce recovery
+    needs: contract
+    uses: ./.github/workflows/recovery-baseline.yml
