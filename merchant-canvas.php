@@ -27,6 +27,8 @@ $page_styles = [
     '/assets/css/sponsored-campaign-card.css',
     '/assets/css/merchant-canvas-restoration.css',
     '/assets/css/merchant-canvas-mobile-stats.css',
+    '/assets/css/merchant-canvas-header-hud.css',
+    '/assets/css/merchant-canvas-behavior-memory.css',
 ];
 $page_scripts = $hasMerchantAccess ? [
     '/assets/js/merchant-canvas-manual-operations.js',
@@ -37,6 +39,8 @@ $page_scripts = $hasMerchantAccess ? [
     '/assets/js/sponsored-campaign-card.js',
     '/assets/js/merchant-canvas-visual-restoration.js',
     '/assets/js/merchant-canvas-campaign-recommendations.js',
+    '/assets/js/merchant-canvas-header-hud.js',
+    '/assets/js/merchant-canvas-behavior-memory.js',
 ] : [];
 $page_manifest = [
     'id' => 'merchant-canvas',
@@ -94,7 +98,6 @@ require __DIR__ . '/includes/header.php';
             <header class="mg-canvas-hud" aria-label="Store Canvas controls and live summary">
               <div class="mg-canvas-hud-status">
                 <span class="mg-canvas-live-pill" data-canvas-live-pill aria-live="polite">Checking database</span>
-                <span class="mg-canvas-hud-mode">Visual live canvas · guarded manual actions</span>
               </div>
               <div class="mg-canvas-hud-stats" aria-label="Store Canvas summary">
                 <article><span>Inside</span><strong data-canvas-active-count>0</strong></article>
@@ -127,7 +130,7 @@ require __DIR__ . '/includes/header.php';
 
             <article class="mg-canvas-empty-state" data-canvas-empty>
               <span>No customers inside yet</span>
-              <p data-canvas-empty-copy>Customer avatars will appear and move across the Store Canvas when shoppers enter from merchant feed posts.</p>
+              <p data-canvas-empty-copy>Customer avatars will appear and develop merchant-scoped behavior memory as shoppers return, explore products, join campaigns, claim rewards, and redeem.</p>
             </article>
 
             <div class="mg-canvas-legend" aria-label="Canvas legend">
@@ -151,7 +154,7 @@ require __DIR__ . '/includes/header.php';
         <button type="button" data-drawer-close aria-label="Close customer CRM drawer">&times;</button>
       </div>
       <div class="mg-canvas-drawer-body" data-drawer-body aria-live="polite">
-        <p>Click a customer avatar on the Store Canvas to load the complete customer timeline, analytics, CRM, messages, and campaign actions.</p>
+        <p>Click a customer avatar to load the complete CRM timeline, merchant-customer memory, probability projections, messages, campaigns, and reward history.</p>
       </div>
       <form class="mg-canvas-message-form" data-message-form>
         <label for="mg-canvas-message">Direct message</label>

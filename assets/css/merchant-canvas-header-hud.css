@@ -1,0 +1,131 @@
+/* Store Canvas Main Header HUD v1 */
+.mg-canvas-header-hud{display:none}
+
+@media(min-width:981px){
+  body.mg-merchant-canvas-page .mg-unified-header .mg-header-inner{
+    gap:14px;
+  }
+
+  body.mg-merchant-canvas-page .mg-unified-header .mg-header-left{
+    flex:0 1 auto;
+    min-width:0;
+  }
+
+  body.mg-merchant-canvas-page .mg-canvas-header-hud{
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    gap:12px;
+    min-width:0;
+    flex:1 1 auto;
+    margin-left:4px;
+    overflow:hidden;
+  }
+
+  body.mg-merchant-canvas-page .mg-canvas-header-stats{
+    display:grid;
+    grid-template-columns:repeat(4,minmax(62px,76px));
+    gap:6px;
+    flex:0 0 auto;
+  }
+
+  body.mg-merchant-canvas-page .mg-canvas-header-stats article{
+    min-width:62px;
+    padding:6px 9px;
+    border:1px solid rgba(148,163,184,.24);
+    border-radius:13px;
+    background:rgba(248,250,252,.92);
+    text-align:center;
+  }
+
+  body.mg-merchant-canvas-page .mg-canvas-header-stats span{
+    display:block;
+    color:#64748b;
+    font-size:8px;
+    font-weight:950;
+    letter-spacing:.08em;
+    line-height:1.1;
+    text-transform:uppercase;
+  }
+
+  body.mg-merchant-canvas-page .mg-canvas-header-stats strong{
+    display:block;
+    margin-top:2px;
+    color:#0f172a;
+    font-size:16px;
+    font-weight:950;
+    line-height:1;
+    letter-spacing:-.04em;
+  }
+
+  body.mg-merchant-canvas-page .mg-canvas-header-live-pill{
+    display:inline-flex;
+    align-items:center;
+    min-width:0;
+    max-width:220px;
+    min-height:36px;
+    padding:0 12px;
+    border:1px solid rgba(16,185,129,.18);
+    border-radius:999px;
+    background:#ecfdf5;
+    color:#047857;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    font-size:11px;
+    font-weight:950;
+    box-shadow:0 8px 22px rgba(15,23,42,.04);
+  }
+
+  body.mg-merchant-canvas-page .mg-canvas-header-live-pill:before{
+    content:"";
+    width:8px;
+    height:8px;
+    margin-right:7px;
+    border-radius:999px;
+    background:#10b981;
+    box-shadow:0 0 0 4px rgba(16,185,129,.12);
+    flex:0 0 auto;
+  }
+
+  body.mg-merchant-canvas-page .mg-canvas-header-live-pill.is-warn{
+    border-color:rgba(245,158,11,.2);
+    background:#fffbeb;
+    color:#b45309;
+  }
+
+  body.mg-merchant-canvas-page .mg-canvas-header-live-pill.is-warn:before{background:#f59e0b;box-shadow:0 0 0 4px rgba(245,158,11,.12)}
+  body.mg-merchant-canvas-page .mg-canvas-header-live-pill.is-error{
+    border-color:rgba(239,68,68,.2);
+    background:#fef2f2;
+    color:#b91c1c;
+  }
+  body.mg-merchant-canvas-page .mg-canvas-header-live-pill.is-error:before{background:#ef4444;box-shadow:0 0 0 4px rgba(239,68,68,.12)}
+
+  body.mg-merchant-canvas-page .mg-canvas-map-restored .mg-canvas-hud{
+    left:auto;
+    right:18px;
+    top:16px;
+    width:auto;
+    grid-template-columns:auto;
+    padding:8px;
+    border-radius:17px;
+  }
+
+  body.mg-merchant-canvas-page .mg-canvas-map-restored .mg-canvas-hud-status,
+  body.mg-merchant-canvas-page .mg-canvas-map-restored .mg-canvas-hud-stats{
+    display:none!important;
+  }
+}
+
+@media(min-width:981px) and (max-width:1260px){
+  body.mg-merchant-canvas-page .mg-canvas-header-stats{
+    grid-template-columns:repeat(4,minmax(54px,64px));
+  }
+  body.mg-merchant-canvas-page .mg-canvas-header-stats article{min-width:54px;padding:6px 6px}
+  body.mg-merchant-canvas-page .mg-canvas-header-live-pill{max-width:170px;padding:0 10px;font-size:10px}
+}
+
+@media(max-width:980px){
+  body.mg-merchant-canvas-page .mg-canvas-header-hud{display:none!important}
+}

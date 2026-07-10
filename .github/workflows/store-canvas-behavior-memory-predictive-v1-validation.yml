@@ -1,0 +1,74 @@
+name: Store Canvas Behavior Memory & Predictive v1 Validation
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'merchant-canvas.php'
+      - 'assets/css/merchant-canvas-header-hud.css'
+      - 'assets/css/merchant-canvas-behavior-memory.css'
+      - 'assets/js/merchant-canvas-header-hud.js'
+      - 'assets/js/merchant-canvas-behavior-memory.js'
+      - 'api/store/_canvas_behavior_memory.php'
+      - 'api/merchant-canvas/customer-behavior.php'
+      - 'api/merchant-canvas/active-behavior.php'
+      - 'database/merchant_canvas_behavior_memory_predictive_v1.sql'
+      - 'scripts/validate_store_canvas_behavior_memory_predictive_v1.php'
+      - '.github/workflows/store-canvas-behavior-memory-predictive-v1-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: PHP syntax
+        run: |
+          php -l merchant-canvas.php
+          php -l api/store/_canvas_behavior_memory.php
+          php -l api/merchant-canvas/customer-behavior.php
+          php -l api/merchant-canvas/active-behavior.php
+          php -l scripts/validate_store_canvas_behavior_memory_predictive_v1.php
+
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/merchant-canvas-header-hud.js
+          node --check assets/js/merchant-canvas-behavior-memory.js
+
+      - name: Header and predictive behavior contract
+        run: php scripts/validate_store_canvas_behavior_memory_predictive_v1.php
+
+      - name: Store Canvas restoration regression
+        run: php scripts/validate_store_canvas_visual_restoration_v1.php
+
+      - name: Movement continuity regression
+        run: php scripts/validate_store_canvas_movement_continuity_v1.php
+
+      - name: Customer journey regression
+        run: php scripts/validate_merchant_canvas_real_customer_analytics_journey_v1.php
+
+      - name: Manual operations regression
+        run: php scripts/validate_merchant_canvas_manual_operations_stabilization_v1.php
+
+      - name: Production containment regression
+        run: php scripts/validate_merchant_canvas_production_containment_v1.php
+
+      - name: Campaign public matrix regression
+        run: php scripts/validate_campaign_public_matrix_v1.php
