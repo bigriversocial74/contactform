@@ -8,6 +8,7 @@ on:
       - 'merchant-canvas.php'
       - 'campaign-recommendation.php'
       - 'assets/css/merchant-canvas-restoration.css'
+      - 'assets/css/merchant-canvas-mobile-stats.css'
       - 'assets/js/merchant-canvas-visual-restoration.js'
       - 'assets/js/merchant-canvas-campaign-recommendations.js'
       - 'api/merchant-canvas/control-center.php'
