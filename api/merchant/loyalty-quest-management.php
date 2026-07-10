@@ -35,6 +35,17 @@ function mg_lqm_public_url(array $row): string
     return '/loyalty-quest.php?campaign=' . rawurlencode($ref);
 }
 
+function mg_lqm_lifecycle_state(array $row): string
+{
+    $status = (string)($row['status'] ?? 'draft');
+    $startsAt = !empty($row['starts_at']) ? strtotime((string)$row['starts_at']) : false;
+    $endsAt = !empty($row['ends_at']) ? strtotime((string)$row['ends_at']) : false;
+    $now = time();
+    if ($status === 'active' && $startsAt !== false && $startsAt > $now) return 'scheduled';
+    if ($status === 'active' && $endsAt !== false && $endsAt <= $now) return 'ended';
+    return $status;
+}
+
 $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 $user = $method === 'GET'
     ? mg_merchant_require_permission('merchant.campaigns.view')
@@ -58,12 +69,15 @@ if ($method === 'GET') {
         (SELECT MAX(ce.created_at) FROM campaign_events ce WHERE ce.campaign_id=c.id AND ce.merchant_user_id=c.merchant_user_id) last_event_at
         FROM campaigns c LEFT JOIN reward_templates rt ON rt.id=c.reward_template_id WHERE {$where}
         ORDER BY c.updated_at DESC,c.id DESC LIMIT 100";
-    $stmt = $pdo->prepare($sql); $stmt->execute($params); $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     $quests = array_map(static function(array $row): array {
         $rules = mg_lqm_rules($row['rules_json'] ?? null);
         return [
             'id'=>(string)$row['public_id'],'slug'=>$row['public_slug'] ?? null,'title'=>(string)$row['title'],
             'description'=>(string)($row['description'] ?? ''),'status'=>(string)$row['status'],
+            'lifecycle_state'=>mg_lqm_lifecycle_state($row),
             'starts_at'=>$row['starts_at'] ?? null,'ends_at'=>$row['ends_at'] ?? null,
             'quantity_limit'=>$row['quantity_limit'] === null ? null : (int)$row['quantity_limit'],
             'per_user_limit'=>(int)($row['per_user_limit'] ?? 1),'rules'=>$rules,
@@ -76,8 +90,12 @@ if ($method === 'GET') {
             'created_at'=>$row['created_at'] ?? null,'updated_at'=>$row['updated_at'] ?? null,
         ];
     }, $rows);
-    $totals=['total'=>count($quests),'active'=>0,'participants'=>0,'issued'=>0,'claimed'=>0,'redeemed'=>0];
-    foreach($quests as $quest){if($quest['status']==='active')$totals['active']++;foreach(['participants','issued','claimed','redeemed'] as $key)$totals[$key]+=(int)$quest[$key];}
+    $totals=['total'=>count($quests),'active'=>0,'scheduled'=>0,'participants'=>0,'issued'=>0,'claimed'=>0,'redeemed'=>0];
+    foreach($quests as $quest){
+        if($quest['lifecycle_state']==='active')$totals['active']++;
+        if($quest['lifecycle_state']==='scheduled')$totals['scheduled']++;
+        foreach(['participants','issued','claimed','redeemed'] as $key)$totals[$key]+=(int)$quest[$key];
+    }
     mg_ok(['quests'=>$quests,'totals'=>$totals,'schema_ready'=>true]);
 }
 
@@ -91,19 +109,25 @@ if (!mg_lqm_uuid_valid($campaignId) || !in_array($action,['publish','pause','res
 $pdo->beginTransaction();
 try {
     $stmt=$pdo->prepare("SELECT c.*,rt.status reward_template_status FROM campaigns c LEFT JOIN reward_templates rt ON rt.id=c.reward_template_id WHERE c.public_id=? AND c.merchant_user_id=? AND c.campaign_type='loyalty_quest' LIMIT 1 FOR UPDATE");
-    $stmt->execute([$campaignId,$merchantId]); $quest=$stmt->fetch(PDO::FETCH_ASSOC);
+    $stmt->execute([$campaignId,$merchantId]);
+    $quest=$stmt->fetch(PDO::FETCH_ASSOC);
     if(!$quest) mg_fail('Loyalty Quest not found.',404);
-    $previous=(string)$quest['status']; $rules=mg_lqm_rules($quest['rules_json'] ?? null);
+    $previous=(string)$quest['status'];
+    $rules=mg_lqm_rules($quest['rules_json'] ?? null);
 
     if($action==='duplicate'){
-        $newId=mg_merchant_uuid(); $newTitle=mb_substr((string)$quest['title'].' Copy',0,180); $newSlug=mg_lqm_slug($pdo,$merchantId,$newTitle);
+        $newId=mg_merchant_uuid();
+        $newTitle=mb_substr((string)$quest['title'].' Copy',0,180);
+        $newSlug=mg_lqm_slug($pdo,$merchantId,$newTitle);
         if(isset($rules['qr_code_token']))$rules['qr_code_token']=bin2hex(random_bytes(16));
-        $rules['duplicated_from']=$campaignId; $rules['duplicated_at']=gmdate('c');
+        $rules['duplicated_from']=$campaignId;
+        $rules['duplicated_at']=gmdate('c');
         $rulesJson=json_encode($rules,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR);
         $insert=$pdo->prepare('INSERT INTO campaigns (public_id,merchant_user_id,reward_template_id,campaign_type,title,description,form_headline,form_description,success_message,status,starts_at,ends_at,quantity_limit,per_user_limit,agent_discoverable,public_slug,qr_code_token,rules_json,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,\'draft\',NULL,NULL,?,?,?,?,?,?,NOW(),NOW())');
         $insert->execute([$newId,$merchantId,$quest['reward_template_id'],'loyalty_quest',$newTitle,$quest['description'],$quest['form_headline'],$quest['form_description'],$quest['success_message'],$quest['quantity_limit'],$quest['per_user_limit'],$quest['agent_discoverable'],$newSlug,null,$rulesJson]);
         mg_audit('merchant.loyalty_quest_duplicated','campaign',['source_campaign_id'=>$campaignId,'campaign_id'=>$newId],$merchantId);
-        $pdo->commit(); mg_ok(['campaign_id'=>$newId,'status'=>'draft'],'Loyalty Quest duplicated.');
+        $pdo->commit();
+        mg_ok(['campaign_id'=>$newId,'status'=>'draft'],'Loyalty Quest duplicated.');
     }
 
     $transitions=[
@@ -131,10 +155,10 @@ try {
     $eventType='merchant.loyalty_quest_'.$action;
     mg_audit($eventType,'campaign',['campaign_id'=>$campaignId,'from'=>$previous,'to'=>$next],$merchantId);
     if(function_exists('mg_event'))mg_event('campaign.'.$action,['campaign_id'=>$campaignId,'campaign_type'=>'loyalty_quest','from'=>$previous,'to'=>$next],$merchantId);
-    $pdo->commit(); mg_ok(['campaign_id'=>$campaignId,'status'=>$next],'Loyalty Quest updated.');
+    $pdo->commit();
+    mg_ok(['campaign_id'=>$campaignId,'status'=>$next],'Loyalty Quest updated.');
 } catch(Throwable $error) {
     if($pdo->inTransaction())$pdo->rollBack();
-    if($error instanceof RuntimeException) throw $error;
     mg_security_log('error','merchant.loyalty_quest_management_failed','Unable to update Loyalty Quest.',['exception_class'=>$error::class],$merchantId);
     mg_fail('Unable to update Loyalty Quest.',500);
 }
