@@ -1,0 +1,51 @@
+name: Campaign Landing Foundation Validation
+
+on:
+  pull_request:
+    paths:
+      - 'includes/campaign-landing-foundation.php'
+      - 'includes/public-campaign-page.php'
+      - 'includes/header.php'
+      - 'includes/campaign-types.php'
+      - 'assets/css/campaign-landing-foundation.css'
+      - 'assets/css/public-campaign-rl-landing-v1.css'
+      - 'newsletter-signup.php'
+      - 'contest.php'
+      - 'qr-reward.php'
+      - 'referral-reward.php'
+      - 'birthday-vip.php'
+      - 'agent-offer.php'
+      - 'scripts/validate_campaign_landing_foundation_repair_v1.php'
+      - '.github/workflows/campaign-landing-foundation-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Campaign landing foundation validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+      - name: PHP syntax check
+        run: |
+          set -euo pipefail
+          php -l includes/campaign-landing-foundation.php
+          php -l includes/public-campaign-page.php
+          php -l includes/header.php
+          php -l newsletter-signup.php
+          php -l contest.php
+          php -l qr-reward.php
+          php -l referral-reward.php
+          php -l birthday-vip.php
+          php -l agent-offer.php
+          php -l scripts/validate_campaign_landing_foundation_repair_v1.php
+      - name: Validate campaign landing foundation
+        run: php scripts/validate_campaign_landing_foundation_repair_v1.php
