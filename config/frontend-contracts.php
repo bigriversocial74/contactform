@@ -9,7 +9,8 @@ return [
                 '/api/commerce/cart.php',
                 '/api/commerce/cart-item.php',
                 '[data-cart-add],[data-add-to-cart]',
-                'window.Microgifter.cart=',
+                'createCheckoutFromCart',
+                'window.Microgifter.cart =',
             ],
             'forbidden_tokens' => [
                 '/assets/js/cart-core.js',
@@ -19,6 +20,12 @@ return [
             'path' => 'assets/js/customer-commerce.js',
             'required_tokens' => [
                 '/api/commerce/cart-items.php',
+                '/api/commerce/cart-checkout.php',
+                'checkoutWorkflowKey',
+                'safeCheckoutUrl',
+                'window.MGCustomerCommerce =',
+            ],
+            'forbidden_tokens' => [
                 '/api/commerce/checkout-draft.php',
                 '/api/commerce/orders.php',
                 '/api/payments/order-checkout-session.php',
