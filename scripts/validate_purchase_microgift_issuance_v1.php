@@ -21,15 +21,15 @@ $webhook=$read('api/payments/webhook.php');
 $successJs=$read('assets/js/order-success.js');
 
 $checks=[
-    'atomic_capture_authority'=>str_contains($capture,'mg_payment_reconcile_paid_order(')&&str_contains($capture,"$failureHook('after_fulfillment'")&&str_contains($capture,"'issuance_complete'"),
+    'atomic_capture_authority'=>str_contains($capture,'mg_payment_reconcile_paid_order(')&&str_contains($capture,"\$failureHook('after_fulfillment'")&&str_contains($capture,"'issuance_complete'"),
     'canonical_reconciler'=>str_contains($reconcile,'mg_payment_issue_order_pppm(')&&str_contains($reconcile,'mg_payment_issue_order_microgifts(')&&str_contains($reconcile,"'fulfillment.reconciled'"),
     'pppm_unit_issuance'=>str_contains($fulfillment,'for ($sequence=1; $sequence <= (int)$line[\'quantity\']; $sequence++)')&&str_contains($fulfillment,'pppm_issuance_request_id')&&str_contains($fulfillment,"'customer_purchase'"),
-    'microgift_unit_idempotency'=>str_contains($fulfillment,"$idempotencyKey='commerce-order-item:'")&&str_contains($fulfillment,'mg_microgift_existing_issue(')&&str_contains($fulfillment,'UPDATE microgift_instances SET pppm_item_id='),
+    'microgift_unit_idempotency'=>str_contains($fulfillment,"\$idempotencyKey='commerce-order-item:'")&&str_contains($fulfillment,'mg_microgift_existing_issue(')&&str_contains($fulfillment,'UPDATE microgift_instances SET pppm_item_id='),
     'action_center_delivery'=>str_contains($fulfillment,'mg_action_center_receive(')&&str_contains($summary,'COUNT(DISTINCT inbox.instance_id)')&&!str_contains($summary,"inbox.folder='inbox'"),
     'read_only_confirmation'=>!str_contains($confirmation,'beginTransaction')&&!str_contains($confirmation,'mg_payment_issue_order_')&&str_contains($confirmation,"'can_reconcile'"),
     'explicit_reconciliation'=>str_contains($reconcileRoute,"mg_require_method('POST')")&&str_contains($reconcileRoute,'mg_require_csrf_for_write')&&str_contains($reconcileRoute,'mg_payment_reconcile_paid_order('),
     'local_payment_replay_repair'=>str_contains($local,"payment_status']==='paid'")&&str_contains($local,'mg_finance_record_paid_order(')&&str_contains($cash,'mg_payment_confirm_local_session')&&str_contains($sandbox,'mg_payment_confirm_local_session'),
-    'webhook_replay_repair'=>str_contains($webhook,"successful_webhook_replay")&&str_contains($webhook,'mg_payment_reconcile_paid_order(')&&str_contains($webhook,"!empty($result['duplicate'])"),
+    'webhook_replay_repair'=>str_contains($webhook,'successful_webhook_replay')&&str_contains($webhook,'mg_payment_reconcile_paid_order(')&&str_contains($webhook,"!empty(\$result['duplicate'])"),
     'customer_delivery_status'=>str_contains($successJs,'data-order-reconcile')&&str_contains($successJs,'/api/commerce/order-issuance-reconcile.php')&&str_contains($successJs,'visibilitychange')&&str_contains($reconcile,"'microgift_delivery_ready'"),
 ];
 
