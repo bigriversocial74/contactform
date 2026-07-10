@@ -1,0 +1,80 @@
+name: World Canvas Campaign Drop Zone Sync v1 Validation
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'world-canvas.php'
+      - 'api/world-canvas/_target_drop_campaigns.php'
+      - 'api/world-canvas/_target_drops.php'
+      - 'api/world-canvas/target-drops.php'
+      - 'api/store/avatar-anchor.php'
+      - 'api/store/exit.php'
+      - 'assets/js/avatar-anchor-consent.js'
+      - 'assets/js/world-canvas-square-map.js'
+      - 'assets/js/world-canvas-target-drops.js'
+      - 'assets/js/world-canvas-merchant-settings.js'
+      - 'scripts/validate_world_canvas_campaign_drop_zone_sync_v1.php'
+      - '.github/workflows/world-canvas-campaign-drop-zone-sync-v1-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: PHP syntax
+        run: |
+          php -l world-canvas.php
+          php -l api/world-canvas/_target_drop_campaigns.php
+          php -l api/world-canvas/_target_drops.php
+          php -l api/world-canvas/target-drops.php
+          php -l api/store/avatar-anchor.php
+          php -l api/store/exit.php
+          php -l scripts/validate_world_canvas_campaign_drop_zone_sync_v1.php
+
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/avatar-anchor-consent.js
+          node --check assets/js/world-canvas-square-map.js
+          node --check assets/js/world-canvas-target-drops.js
+          node --check assets/js/world-canvas-merchant-settings.js
+
+      - name: Campaign Drop Zone authority contract
+        run: php scripts/validate_world_canvas_campaign_drop_zone_sync_v1.php
+
+      - name: Stage 12 campaigns and rewards regression
+        run: php scripts/validate_stage12_campaigns_reward_templates.php
+
+      - name: Campaign public matrix regression
+        run: php scripts/validate_campaign_public_matrix_v1.php
+
+      - name: Store Canvas trigger engine regression
+        run: php scripts/validate_store_canvas_server_trigger_engine_v1.php
+
+      - name: Trigger event orchestration regression
+        run: php scripts/validate_trigger_event_ingestion_orchestration_v1.php
+
+      - name: Store Canvas movement continuity regression
+        run: php scripts/validate_store_canvas_movement_continuity_v1.php
+
+      - name: Merchant Canvas production containment regression
+        run: php scripts/validate_merchant_canvas_production_containment_v1.php
