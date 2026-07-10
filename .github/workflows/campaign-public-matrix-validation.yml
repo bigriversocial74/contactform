@@ -92,7 +92,9 @@ jobs:
           php -l scripts/validate_campaign_public_matrix_v1.php
 
       - name: Validate campaign public matrix
-        run: php scripts/validate_campaign_public_matrix_v1.php
+        run: |
+          set -o pipefail
+          php scripts/validate_campaign_public_matrix_v1.php 2>&1 | tail -n 100
 
       - name: Validate campaign landing foundation
         run: php scripts/validate_campaign_landing_foundation_repair_v1.php
