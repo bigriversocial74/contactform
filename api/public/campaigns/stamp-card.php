@@ -55,37 +55,13 @@ function mg_stamp_card_label(array $campaign): string
 
 function mg_stamp_card_cashier_code(array $input): string
 {
-    return mg_claim_code_require(
-        (string)($input['cashier_claim_code'] ?? $input['merchant_claim_code'] ?? $input['claim_code'] ?? $input['code'] ?? ''),
-        'Cashier verification code is required before this punch can be recorded.'
-    );
+    return mg_claim_code_require((string)($input['cashier_claim_code'] ?? $input['merchant_claim_code'] ?? $input['claim_code'] ?? $input['code'] ?? ''), 'Cashier verification code is required before this punch can be recorded.');
 }
 
 function mg_stamp_card_verify_cashier_code(PDO $pdo, array $campaign, string $claimCode): array
 {
     $merchantId = (int)$campaign['merchant_user_id'];
     $candidateHash = mg_claim_code_hash($claimCode, mg_claim_code_pepper());
-    $stmt = $pdo->prepare(
-        "SELECT mcc.id claim_code_db_id,mcc.public_id claim_code_id,mcc.label claim_code_label,mcc.code_last4,
-                mcc.usage_limit,mcc.usage_count,
-                ml.id location_db_id,ml.public_id location_id,ml.name location_name,ml.address_line1,ml.city,ml.region,ml.postal_code,ml.country_code
-         FROM merchant_claim_codes mcc
-         INNER JOIN merchant_locations ml ON ml.id=mcc.location_id
-         WHERE mcc.merchant_user_id=?
-           AND mcc.status='active'
-           AND ml.status='active'
-           AND (mcc.valid_from IS NULL OR mcc.valid_from<=NOW())
-           AND (mcc.valid_until IS NULL OR mcc.valid_until>=NOW())
-           AND (mcc.usage_limit IS NULL OR mcc.usage_count<mcc.usage_limit)
-         FOR UPDATE"
-    );
-    $stmt->execute([$merchantId]);
-    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $candidate) {
-        if (!hash_equals((string)$candidate['code_hash'] ?? '', $candidateHash)) {
-            // The SELECT does not expose code_hash intentionally in the result shape below.
-        }
-    }
-
     $stmt = $pdo->prepare(
         "SELECT mcc.id claim_code_db_id,mcc.public_id claim_code_id,mcc.label claim_code_label,mcc.code_hash,mcc.code_last4,
                 mcc.usage_limit,mcc.usage_count,
@@ -169,7 +145,6 @@ function mg_stamp_card_record_stamp(PDO $pdo, array $campaign, array $input, arr
         'ip' => mg_client_ip(),
         'user_agent' => substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255),
     ], $embedAttribution);
-
     $contactPublicId = mg_stamp_card_uuid();
     $stmt = $pdo->prepare("INSERT INTO campaign_contacts (public_id,merchant_user_id,campaign_id,user_id,email,phone,name,source,opt_in_status,metadata_json,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,NOW(),NOW()) ON DUPLICATE KEY UPDATE user_id=VALUES(user_id), phone=VALUES(phone), name=VALUES(name), source=VALUES(source), metadata_json=VALUES(metadata_json), updated_at=NOW()");
     $stmt->execute([$contactPublicId, $merchantId, $campaignId, $userId, $email, $phone !== '' ? $phone : null, $name !== '' ? $name : null, $source, 'opted_in', json_encode($metadata, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)]);
@@ -177,7 +152,6 @@ function mg_stamp_card_record_stamp(PDO $pdo, array $campaign, array $input, arr
     $lookup->execute([$campaignId, $email]);
     $contact = $lookup->fetch(PDO::FETCH_ASSOC) ?: [];
     $contactId = (int)($contact['id'] ?? 0);
-
     $crm = mg_merchant_crm_record_event($pdo, [
         'merchant_user_id' => $merchantId,
         'campaign_id' => $campaignId,
@@ -215,7 +189,6 @@ function mg_stamp_card_record_stamp(PDO $pdo, array $campaign, array $input, arr
             ], $merchantId);
         }
     }
-
     return ['contact' => $contact, 'crm' => $crm, 'punch_notification' => $punchNotification, 'verification' => $verification];
 }
 
@@ -227,7 +200,6 @@ $email = strtolower(trim((string)($input['email'] ?? '')));
 $entry = $input['entry'] ?? [];
 if (!is_array($entry)) $entry = [];
 $embedAttribution = mg_public_campaign_embed_attribution($input);
-
 if ($campaignRef === '' || $email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
     mg_fail('Invalid stamp card visit.', 422);
 }
@@ -238,14 +210,11 @@ try {
     $stmt = $pdo->prepare("SELECT c.*, rt.public_id reward_template_public_id, rt.title reward_template_title FROM campaigns c INNER JOIN reward_templates rt ON rt.id=c.reward_template_id WHERE c.status='active' AND rt.status='active' AND (c.public_id=? OR c.public_slug=?) LIMIT 1 FOR UPDATE");
     $stmt->execute([$campaignRef, $campaignRef]);
     $campaign = $stmt->fetch(PDO::FETCH_ASSOC);
-    if (!$campaign || (string)$campaign['campaign_type'] !== 'stamp_card_reward') {
-        mg_fail('Stamp card campaign is not available.', 404);
-    }
+    if (!$campaign || (string)$campaign['campaign_type'] !== 'stamp_card_reward') mg_fail('Stamp card campaign is not available.', 404);
     $now = time();
     if (!empty($campaign['starts_at']) && strtotime((string)$campaign['starts_at']) > $now) mg_fail('Stamp card campaign has not started yet.', 409);
     if (!empty($campaign['ends_at']) && strtotime((string)$campaign['ends_at']) < $now) mg_fail('Stamp card campaign has ended.', 409);
     if ($campaign['quantity_limit'] !== null && (int)$campaign['issued_count'] >= (int)$campaign['quantity_limit']) mg_fail('Stamp card reward limit has been reached.', 409);
-
     $verification = mg_stamp_card_verify_cashier_code($pdo, $campaign, $claimCode);
     $requiredCount = mg_stamp_card_required_count($campaign);
     $cooldownHours = mg_stamp_card_cooldown_hours($campaign);
@@ -283,7 +252,6 @@ try {
     $pdo->commit();
 } catch (Throwable $error) {
     if ($pdo->inTransaction()) $pdo->rollBack();
-    if (method_exists($error, 'getCode') && in_array((int)$error->getCode(), [404, 409, 422, 423], true)) throw $error;
     mg_security_log('error', 'public.stamp_card.record_failed', 'Unable to record verified stamp card visit.', ['exception_class' => $error::class, 'message' => $error->getMessage()]);
     mg_fail('Unable to record verified stamp card visit.', 500);
 }
