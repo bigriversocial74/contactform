@@ -10,7 +10,7 @@ function esc(value){return String(value==null?'':value).replace(/[&<>'"]/g,funct
 function statusClass(value){return String(value||'').toLowerCase().replace(/[^a-z0-9_-]/g,'')}
 function label(value){return String(value||'—').replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase()})}
 function money(cents,currency){if(currency==='MIXED')return (Number(cents||0)/100).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+' mixed';try{return new Intl.NumberFormat(undefined,{style:'currency',currency:currency||'USD'}).format(Number(cents||0)/100)}catch(e){return (Number(cents||0)/100).toFixed(2)+' '+(currency||'USD')}}
-function dateTime(value){if(!value)return'—';var date=new Date(String(value).replace(' ','T')+'Z');if(Number.isNaN(date.getTime()))return String(value);return new Intl.DateTimeFormat(undefined,{dateStyle:'medium',timeStyle:'short'}).format(date)}
+function dateTime(value){if(!value)return'—';var raw=String(value),normalized=raw;if(!(/[zZ]$|[+-]\d{2}:?\d{2}$/.test(raw))){normalized=raw.indexOf('T')>=0?raw:raw.replace(' ','T');normalized+='Z'}var date=new Date(normalized);if(Number.isNaN(date.getTime()))return raw;return new Intl.DateTimeFormat(undefined,{dateStyle:'medium',timeStyle:'short'}).format(date)}
 function setLive(node,message,type){if(!node)return;node.textContent=message||'';node.classList.toggle('is-error',type==='error');node.classList.toggle('is-success',type==='success')}
 function show(node,visible){if(node)node.hidden=!visible}
 function status(value){return '<span class="mg-orders-status is-'+esc(statusClass(value))+'">'+esc(label(value))+'</span>'}
