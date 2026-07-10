@@ -4,7 +4,7 @@ require_once __DIR__ . '/includes/app.php';
 $page_title = 'Explore Loyalty Quests | Microgifter';
 $page_section = 'quests';
 $header_mode = 'public';
-$page_styles = ['/assets/css/loyalty-quest-marketplace.css'];
+$page_styles = ['/assets/css/loyalty-quest-marketplace.css','/assets/css/loyalty-quest-map.css'];
 $page_scripts = ['/assets/js/loyalty-quest-marketplace.js'];
 $page_meta = [
     'description' => 'Discover verified local Loyalty Quests from Microgifter merchants and earn rewards for visits, purchases, events, referrals, and community actions.',
