@@ -11,12 +11,8 @@ declare(strict_types=1);
 
 function mg_campaign_specialized_bool(array $input, string $inputKey, array $existing, string $ruleKey, bool $default): bool
 {
-    if (array_key_exists($inputKey, $input)) {
-        return !empty($input[$inputKey]);
-    }
-    if (array_key_exists($ruleKey, $existing)) {
-        return !empty($existing[$ruleKey]);
-    }
+    if (array_key_exists($inputKey, $input)) return !empty($input[$inputKey]);
+    if (array_key_exists($ruleKey, $existing)) return !empty($existing[$ruleKey]);
     return $default;
 }
 
@@ -36,12 +32,13 @@ function mg_campaign_specialized_rules(string $campaignType, array $input, array
     if ($campaignType === 'check_in_reward') {
         $radius = (int)($input['check_in_radius_meters'] ?? $existing['radius_meters'] ?? 150);
         $radius = max(25, min(5000, $radius > 0 ? $radius : 150));
+        $locationRequired = mg_campaign_specialized_bool($input, 'check_in_location_required', $existing, 'location_required', true);
         return [
             'mode' => 'geo_check_in',
-            'browser_location_required' => true,
-            'merchant_location_match' => true,
+            'browser_location_required' => $locationRequired,
+            'merchant_location_match' => $locationRequired,
             'radius_meters' => $radius,
-            'location_required' => mg_campaign_specialized_bool($input, 'check_in_location_required', $existing, 'location_required', true),
+            'location_required' => $locationRequired,
             'entry_reward_enabled' => true,
         ];
     }
@@ -49,15 +46,13 @@ function mg_campaign_specialized_rules(string $campaignType, array $input, array
     if ($campaignType === 'rsvp_event_reward') {
         $eventName = trim((string)($input['rsvp_event_name'] ?? $existing['event_name'] ?? $existing['rsvp_event_name'] ?? $input['title'] ?? ''));
         $eventDateInput = trim((string)($input['rsvp_event_date'] ?? $existing['event_date'] ?? $existing['rsvp_event_date'] ?? ''));
-        $eventDate = $eventDateInput !== '' && function_exists('mg_campaign_datetime')
-            ? mg_campaign_datetime($eventDateInput)
-            : ($eventDateInput !== '' ? $eventDateInput : null);
-        $attendanceCode = strtoupper(trim((string)($input['rsvp_attendance_code'] ?? $existing['attendance_code'] ?? $existing['rsvp_attendance_code'] ?? '')));
-        $attendanceCode = mb_substr($attendanceCode, 0, 64);
+        $eventDate = $eventDateInput !== '' ? mb_substr($eventDateInput, 0, 80) : null;
+        $attendanceCode = mb_substr(strtoupper(trim((string)($input['rsvp_attendance_code'] ?? $existing['attendance_code'] ?? $existing['rsvp_attendance_code'] ?? ''))), 0, 64);
+        $safeName = mb_substr($eventName !== '' ? $eventName : 'Merchant event', 0, 160);
         return [
             'mode' => 'rsvp_attendance',
-            'event_name' => mb_substr($eventName !== '' ? $eventName : 'Merchant event', 0, 160),
-            'rsvp_event_name' => mb_substr($eventName !== '' ? $eventName : 'Merchant event', 0, 160),
+            'event_name' => $safeName,
+            'rsvp_event_name' => $safeName,
             'event_date' => $eventDate,
             'rsvp_event_date' => $eventDate,
             'attendance_code' => $attendanceCode,
@@ -99,10 +94,7 @@ function mg_campaign_specialized_prepare_response(array $data): array
         $data['campaigns'] = array_map('mg_campaign_specialized_enrich_row', $data['campaigns']);
         return $data;
     }
-
-    if ($method !== 'POST' || !is_array($data['campaign'] ?? null)) {
-        return $data;
-    }
+    if ($method !== 'POST' || !is_array($data['campaign'] ?? null)) return $data;
 
     $input = is_array($GLOBALS['input'] ?? null) ? $GLOBALS['input'] : [];
     $campaignType = (string)($GLOBALS['campaignType'] ?? $data['campaign']['campaign_type'] ?? '');
@@ -126,18 +118,14 @@ function mg_campaign_specialized_prepare_response(array $data): array
     $rules['registry'] = 'campaign_types_v2_specialized_landing';
 
     $rulesJson = json_encode($rules, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-    if (!is_string($rulesJson)) {
-        throw new RuntimeException('Unable to encode specialized campaign rules.');
-    }
+    if (!is_string($rulesJson)) throw new RuntimeException('Unable to encode specialized campaign rules.');
 
     $stmt = $pdo->prepare('UPDATE campaigns SET rules_json=?, updated_at=NOW() WHERE public_id=? AND merchant_user_id=?');
     $stmt->execute([$rulesJson, $campaignId, $merchantId]);
     if ($stmt->rowCount() < 1) {
         $verify = $pdo->prepare('SELECT COUNT(*) FROM campaigns WHERE public_id=? AND merchant_user_id=? AND rules_json=?');
         $verify->execute([$campaignId, $merchantId, $rulesJson]);
-        if ((int)$verify->fetchColumn() < 1) {
-            throw new RuntimeException('Specialized campaign rules were not persisted.');
-        }
+        if ((int)$verify->fetchColumn() < 1) throw new RuntimeException('Specialized campaign rules were not persisted.');
     }
 
     $data['campaign']['rules'] = $rules;
