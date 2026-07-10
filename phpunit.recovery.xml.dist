@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit bootstrap="tests/phpunit/bootstrap.php" colors="true" cacheDirectory=".phpunit.cache">
+  <testsuites>
+    <testsuite name="Microgifter Active Recovery Contracts">
+      <directory>tests/phpunit</directory>
+      <exclude>tests/phpunit/ActionCenterFrontendSubmitContractTest.php</exclude>
+      <exclude>tests/phpunit/ActionCenterMutationEndpointContractTest.php</exclude>
+      <exclude>tests/phpunit/ActionCenterRedeemLocationSelectorContractTest.php</exclude>
+      <exclude>tests/phpunit/ActionCenterSendRecipientAutocompleteContractTest.php</exclude>
+      <exclude>tests/phpunit/AdminAccountManagementContractTest.php</exclude>
+      <exclude>tests/phpunit/AdminAccountManagementUiContractTest.php</exclude>
+      <exclude>tests/phpunit/AgentBadgeBuilderBrandTest.php</exclude>
+      <exclude>tests/phpunit/AgenticIndexOnboardingTest.php</exclude>
+      <exclude>tests/phpunit/BuilderAddToCartIntegrationContractTest.php</exclude>
+      <exclude>tests/phpunit/CampaignStampDistributionContractTest.php</exclude>
+      <exclude>tests/phpunit/CartCheckoutWiringContractTest.php</exclude>
+      <exclude>tests/phpunit/CheckoutSuccessOrderConfirmationContractTest.php</exclude>
+      <exclude>tests/phpunit/LoyaltySavedCardsFoundationTest.php</exclude>
+      <exclude>tests/phpunit/MerchantCrmDirectMessageSubmitTest.php</exclude>
+      <exclude>tests/phpunit/MerchantCrmRewardPickerContractTest.php</exclude>
+      <exclude>tests/phpunit/MerchantCustomerProfileEntryActionsTest.php</exclude>
+      <exclude>tests/phpunit/MerchantCustomerProfileLoadFallbackTest.php</exclude>
+      <exclude>tests/phpunit/MerchantCustomerServerFallbackTest.php</exclude>
+      <exclude>tests/phpunit/MerchantLocationsPageContractTest.php</exclude>
+      <exclude>tests/phpunit/PackageFlowQaContractTest.php</exclude>
+      <exclude>tests/phpunit/PackageLimitsUiContractTest.php</exclude>
+      <exclude>tests/phpunit/PppmPublishDistributionContractTest.php</exclude>
+      <exclude>tests/phpunit/PppmSentResendTimelineContractTest.php</exclude>
+      <exclude>tests/phpunit/ProductBuilderSharedShellTest.php</exclude>
+      <exclude>tests/phpunit/ProductPppmGoldenPathAuditContractTest.php</exclude>
+      <exclude>tests/phpunit/ProductionCheckoutCaptureBehaviorTest.php</exclude>
+      <exclude>tests/phpunit/ProductionCommerceBehaviorTest.php</exclude>
+      <exclude>tests/phpunit/ProductionEngagementMutationsFoundationTest.php</exclude>
+      <exclude>tests/phpunit/ProductionProfileModerationUiFoundationTest.php</exclude>
+      <exclude>tests/phpunit/ProductionStageDRegiftBehaviorTest.php</exclude>
+      <exclude>tests/phpunit/PublicProductStorefrontCartContractTest.php</exclude>
+      <exclude>tests/phpunit/SimpleGreetingProductTypeContractTest.php</exclude>
+      <exclude>tests/phpunit/Stage11DActionCenterLifecycleProjectionTest.php</exclude>
+      <exclude>tests/phpunit/Stage11EActionCenterActionWiringTest.php</exclude>
+      <exclude>tests/phpunit/Stage12UniversalTipsTest.php</exclude>
+      <exclude>tests/phpunit/Stage1To18ForensicAuditTest.php</exclude>
+      <exclude>tests/phpunit/Stage4BBuilderPersistenceTest.php</exclude>
+      <exclude>tests/phpunit/Stage4CFeedStreamStorefrontTest.php</exclude>
+      <exclude>tests/phpunit/Stage5BProductManagementTest.php</exclude>
+      <exclude>tests/phpunit/Stage5CheckoutDraftIdempotencyBindingTest.php</exclude>
+      <exclude>tests/phpunit/Stage5IFinancialOperationsTest.php</exclude>
+      <exclude>tests/phpunit/Stage5JFoundationReconciliationTest.php</exclude>
+      <exclude>tests/phpunit/Stage6ACustomerPurchaseFlowTest.php</exclude>
+      <exclude>tests/phpunit/Stage6CloseoutReconciliationTest.php</exclude>
+      <exclude>tests/phpunit/Stage9ClaimIdempotencyBindingTest.php</exclude>
+      <exclude>tests/phpunit/Stage9RedemptionIdempotencyBindingTest.php</exclude>
+      <exclude>tests/phpunit/StageFStripeContractTest.php</exclude>
+      <exclude>tests/phpunit/StampEnforcementGateV1Test.php</exclude>
+      <exclude>tests/phpunit/StampPurchaseCheckoutHardeningTest.php</exclude>
+      <exclude>tests/phpunit/StampPurchaseCompletionContractTest.php</exclude>
+      <exclude>tests/phpunit/StampPurchaseFlowContractTest.php</exclude>
+      <exclude>tests/phpunit/SubscriptionActivationVerificationContractTest.php</exclude>
+      <exclude>tests/phpunit/V1ProductPurchasePathTest.php</exclude>
+      <exclude>tests/phpunit/V1ReleaseHardeningContractTest.php</exclude>
+      <exclude>tests/phpunit/V1StageCPurchaseIssuanceContractTest.php</exclude>
+    </testsuite>
+  </testsuites>
+  <php>
+    <env name="MG_TEST_BASE_URL" value="http://localhost:8000"/>
+  </php>
+</phpunit>
