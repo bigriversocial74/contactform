@@ -6,7 +6,7 @@ require_once __DIR__ . '/includes/campaign-types.php';
 $page_title = 'Instant Win Reward | Microgifter';
 $page_section = 'campaign';
 $header_mode = 'public';
-$page_styles = ['/assets/css/public-campaign-pages.css', '/assets/css/public-campaign-polish-v1.css', '/assets/css/public-campaign-experience-v1.css'];
+$page_styles = ['/assets/css/watch-listen-standalone-page.css', '/assets/css/public-campaign-experience-v1.css'];
 $page_scripts = ['/assets/js/public-campaign.js', '/assets/js/public-instant-win.js'];
 
 $campaignRef = strtolower(trim((string)($_GET['campaign'] ?? $_GET['c'] ?? $_GET['slug'] ?? $_GET['id'] ?? '')));
@@ -96,57 +96,46 @@ $modeLabel = $playMode === 'spin_wheel' ? 'Spin Wheel' : 'Scratch Card';
 
 require __DIR__ . '/includes/header.php';
 ?>
-<section class="mg-public-campaign mg-public-campaign-v2 mg-campaign-experience" data-public-campaign-page data-instant-win-experience>
-  <div class="mg-public-campaign-cover"<?= $coverUrl ? ' style="background-image:linear-gradient(180deg,rgba(6,15,32,.08),rgba(248,247,242,.92) 82%,#fbfaf6),url(' . mg_e($coverUrl) . ')"' : '' ?>></div>
-  <div class="mg-campaign-experience-shell">
+<section class="mg-rl-page mg-rl-instant" data-public-campaign-page data-instant-win-experience>
+  <div class="mg-rl-bg"<?= $coverUrl ? ' style="background-image:url(' . mg_e($coverUrl) . ')"' : '' ?>></div>
+  <div class="mg-rl-wrap">
     <?php if ($errorMessage !== ''): ?>
-      <div class="mg-public-campaign-result is-visible"><strong><?= mg_e($errorMessage) ?></strong></div>
+      <div class="mg-rl-left"><article class="mg-rl-card"><span class="mg-rl-eyebrow">Instant Win</span><h2>Campaign not available</h2><p><?= mg_e($errorMessage) ?></p><a class="mg-rl-btn mg-rl-btn-soft" href="/discover.php">Explore Microgifter</a></article></div>
     <?php else: ?>
-      <div class="mg-campaign-experience-grid">
-        <main class="mg-campaign-experience-main">
-          <div class="mg-campaign-experience-hero">
-            <span class="mg-public-campaign-kicker">Microgifter Campaign</span>
-            <span class="mg-public-campaign-eyebrow">Spin / Scratch Instant Win</span>
-            <h1><?= mg_e($headline) ?></h1>
-            <p><?= mg_e($description) ?></p>
-            <div class="mg-public-campaign-trust-row"><span><?= mg_e($modeLabel) ?></span><span><?= mg_e((string)$oddsPercent) ?>% configured odds</span><span>Winner reward to Inbox</span></div>
+      <div class="mg-rl-left">
+        <header class="mg-rl-hero"><h1><?= mg_e($headline) ?></h1><p><?= mg_e($description) ?></p><div class="mg-public-campaign-trust-row"><span><?= mg_e($modeLabel) ?></span><span><?= mg_e((string)$oddsPercent) ?>% configured odds</span><span>Winner reward to Inbox</span></div></header>
+        <section class="mg-rl-player" aria-label="Instant win interaction canvas">
+          <div class="mg-instant-stage" data-instant-stage data-mode="<?= mg_e($playMode) ?>">
+            <button class="mg-instant-card<?= $playMode === 'spin_wheel' ? ' is-wheel-mode' : ' is-scratch-mode' ?>" type="button" data-instant-win-card data-mode="<?= mg_e($playMode) ?>">
+              <span class="mg-instant-result-under"><span>Instant result</span><strong><?= mg_e($rewardTitle) ?></strong><em><?= mg_e($rewardValue) ?> · submit to record your play</em></span>
+              <?php if ($playMode === 'spin_wheel'): ?>
+                <span class="mg-instant-wheel-layer"><span class="mg-instant-wheel-pointer"></span><span class="mg-instant-wheel" aria-hidden="true"></span><span class="mg-instant-wheel-copy"><span>Tap to spin</span><strong>Spin for your reward</strong></span></span>
+              <?php else: ?>
+                <span class="mg-instant-scratch-layer" data-scratch-image="<?= mg_e($scratchImageUrl ?? '') ?>"><?php if ($scratchImageUrl): ?><img src="<?= mg_e($scratchImageUrl) ?>" alt="Scratch-off artwork"><?php endif; ?><canvas data-instant-scratch-canvas aria-hidden="true"></canvas><span class="mg-instant-scratch-copy"><span>Scratch to reveal</span><strong>Swipe the card</strong></span></span>
+              <?php endif; ?>
+            </button>
           </div>
-          <section class="mg-campaign-canvas" aria-label="Instant win interaction canvas">
-            <div class="mg-campaign-canvas-head"><div><span>Interaction canvas</span><strong><?= mg_e($modeLabel) ?></strong><p>Interact first, then submit the form on the right to record the play and issue the reward if the result wins.</p></div><em class="mg-campaign-canvas-badge">Large canvas</em></div>
-            <div class="mg-instant-stage" data-instant-stage data-mode="<?= mg_e($playMode) ?>">
-              <button class="mg-instant-card<?= $playMode === 'spin_wheel' ? ' is-wheel-mode' : ' is-scratch-mode' ?>" type="button" data-instant-win-card data-mode="<?= mg_e($playMode) ?>">
-                <span class="mg-instant-result-under"><span>Instant result</span><strong><?= mg_e($rewardTitle) ?></strong><em><?= mg_e($rewardValue) ?> · submit to record your play</em></span>
-                <?php if ($playMode === 'spin_wheel'): ?>
-                  <span class="mg-instant-wheel-layer"><span class="mg-instant-wheel-pointer"></span><span class="mg-instant-wheel" aria-hidden="true"></span><span class="mg-instant-wheel-copy"><span>Tap to spin</span><strong>Spin for your reward</strong></span></span>
-                <?php else: ?>
-                  <span class="mg-instant-scratch-layer" data-scratch-image="<?= mg_e($scratchImageUrl ?? '') ?>"><?php if ($scratchImageUrl): ?><img src="<?= mg_e($scratchImageUrl) ?>" alt="Scratch-off artwork"><?php endif; ?><canvas data-instant-scratch-canvas aria-hidden="true"></canvas><span class="mg-instant-scratch-copy"><span>Scratch to reveal</span><strong>Swipe the card</strong></span></span>
-                <?php endif; ?>
-              </button>
-            </div>
-          </section>
-          <div class="mg-campaign-experience-panels">
-            <div class="mg-campaign-experience-panel"><span>Reward</span><strong><?= mg_e($rewardTitle) ?></strong><p><?= mg_e($rewardValue) ?></p></div>
-            <div class="mg-campaign-experience-panel"><span>Status</span><strong data-instant-experience-state>Ready to play</strong><p>No CRM contact is created for no-win plays unless a contact already exists.</p></div>
-            <div class="mg-campaign-experience-panel"><span>History</span><strong>Play tracked</strong><p>Winning value events create or promote the merchant CRM contact.</p></div>
-          </div>
-        </main>
-        <aside class="mg-campaign-experience-side">
-          <div class="mg-public-campaign-card mg-public-campaign-flow-card">
-            <form class="mg-public-campaign-form" data-campaign-form data-campaign-keep-visible="1" data-instant-win-form data-submit-endpoint="/api/public/campaigns/instant-win.php" data-campaign-type="instant_win_reward" novalidate>
-              <input type="hidden" name="campaign_id" value="<?= mg_e((string)$campaign['public_id']) ?>">
-              <input type="hidden" name="campaign" value="<?= mg_e((string)($campaign['public_slug'] ?? $campaign['public_id'])) ?>">
-              <input type="hidden" name="campaign_type" value="instant_win_reward">
-              <input type="hidden" name="entry_reveal_confirmed" value="0">
-              <input type="hidden" name="entry_instant_win_mode" value="<?= mg_e($playMode) ?>">
-              <div class="mg-public-campaign-profile-card mg-public-campaign-form-profile"><div class="mg-public-campaign-avatar"><?php if ($avatarUrl): ?><img src="<?= mg_e($avatarUrl) ?>" alt="<?= mg_e($merchantName) ?> profile image"><?php else: ?><span><?= mg_e(mg_instant_win_page_initials($merchantName)) ?></span><?php endif; ?></div><div class="mg-public-campaign-profile-copy"><span class="mg-public-campaign-eyebrow">Instant Win</span><h2><?= mg_e($merchantName) ?></h2><?php if ($merchantHeadline !== ''): ?><p><?= mg_e($merchantHeadline) ?></p><?php endif; ?><div class="mg-public-campaign-profile-stats"><?php if ($merchantLocation !== ''): ?><span><?= mg_e($merchantLocation) ?></span><?php endif; ?><span><?= mg_e($modeLabel) ?></span><span>Inbox delivery</span></div></div><?php if ($merchantProfileUrl): ?><div class="mg-public-campaign-profile-actions"><a class="mg-btn mg-btn-soft" href="<?= mg_e($merchantProfileUrl) ?>">View profile</a></div><?php endif; ?></div>
-              <div class="mg-public-campaign-field-grid"><label>Name<input name="name" placeholder="Your name" maxlength="180" value="<?= mg_e($prefillName) ?>"></label><label>Email<input name="email" type="email" placeholder="you@example.com" required maxlength="255" value="<?= mg_e($prefillEmail) ?>"></label><label class="mg-public-campaign-field-wide">Phone <span>(optional)</span><input name="phone" placeholder="Optional" maxlength="60"></label></div>
-              <div class="mg-action-row"><button class="mg-btn mg-btn-soft" type="button" data-instant-win-reveal><?= $playMode === 'spin_wheel' ? 'Spin wheel' : 'Reveal card' ?></button><button class="mg-btn mg-btn-primary mg-public-campaign-primary-action" type="submit">Submit instant-win play <span aria-hidden="true">→</span></button></div>
-              <div class="mg-public-campaign-status" data-campaign-status data-instant-win-status></div><p class="mg-public-campaign-privacy">The interaction must be completed before submitting. Winning reward issuance creates the merchant CRM contact.</p>
-            </form>
-            <div class="mg-public-campaign-result" data-campaign-result></div>
-          </div>
+        </section>
+        <aside class="mg-rl-join mg-rl-join-mobile">
+          <div class="mg-rl-profile"><div class="mg-rl-avatar"><?php if ($avatarUrl): ?><img src="<?= mg_e($avatarUrl) ?>" alt="<?= mg_e($merchantName) ?> profile image"><?php else: ?><span><?= mg_e(mg_instant_win_page_initials($merchantName)) ?></span><?php endif; ?></div><div><h2><?= mg_e($merchantName) ?></h2><?php if ($merchantHeadline !== ''): ?><p><?= mg_e($merchantHeadline) ?></p><?php endif; ?></div></div>
+          <form class="mg-rl-form" data-campaign-form data-campaign-keep-visible="1" data-instant-win-form data-submit-endpoint="/api/public/campaigns/instant-win.php" data-campaign-type="instant_win_reward" novalidate>
+            <input type="hidden" name="campaign_id" value="<?= mg_e((string)$campaign['public_id']) ?>"><input type="hidden" name="campaign" value="<?= mg_e((string)($campaign['public_slug'] ?? $campaign['public_id'])) ?>"><input type="hidden" name="campaign_type" value="instant_win_reward"><input type="hidden" name="entry_reveal_confirmed" value="0"><input type="hidden" name="entry_instant_win_mode" value="<?= mg_e($playMode) ?>">
+            <h3>Submit your play</h3><p>Complete the interaction first, then submit your result.</p>
+            <label>Name<input name="name" placeholder="Your name" maxlength="180" value="<?= mg_e($prefillName) ?>"></label><label>Email<input name="email" type="email" placeholder="you@example.com" required maxlength="255" value="<?= mg_e($prefillEmail) ?>"></label><label>Phone <span>(optional)</span><input name="phone" placeholder="Optional" maxlength="60"></label>
+            <button class="mg-rl-btn mg-rl-btn-soft" type="button" data-instant-win-reveal><?= $playMode === 'spin_wheel' ? 'Spin wheel' : 'Reveal card' ?></button><button class="mg-rl-btn mg-rl-btn-dark" type="submit">Submit instant-win play</button><div class="mg-public-campaign-status" data-campaign-status data-instant-win-status></div>
+          </form><div class="mg-public-campaign-result" data-campaign-result></div>
         </aside>
+        <div class="mg-rl-bottom"><article class="mg-rl-card"><span class="mg-rl-eyebrow">Reward</span><h3><?= mg_e($rewardTitle) ?></h3><p><?= mg_e($rewardValue) ?></p></article><article class="mg-rl-card"><span class="mg-rl-eyebrow">Status</span><h3 data-instant-experience-state>Ready to play</h3><p>No CRM contact is created for no-win plays unless a contact already exists.</p></article><article class="mg-rl-card"><span class="mg-rl-eyebrow">History</span><h3>Play tracked</h3><p>Winning value events create or promote the merchant CRM contact.</p></article></div>
       </div>
+      <aside class="mg-rl-join mg-rl-join-desktop">
+        <div class="mg-rl-profile"><div class="mg-rl-avatar"><?php if ($avatarUrl): ?><img src="<?= mg_e($avatarUrl) ?>" alt="<?= mg_e($merchantName) ?> profile image"><?php else: ?><span><?= mg_e(mg_instant_win_page_initials($merchantName)) ?></span><?php endif; ?></div><div><h2><?= mg_e($merchantName) ?></h2><?php if ($merchantHeadline !== ''): ?><p><?= mg_e($merchantHeadline) ?></p><?php endif; ?><?php if ($merchantProfileUrl): ?><a class="mg-rl-btn mg-rl-btn-soft" href="<?= mg_e($merchantProfileUrl) ?>">View profile</a><?php endif; ?></div></div>
+        <form class="mg-rl-form" data-campaign-form data-campaign-keep-visible="1" data-instant-win-form data-submit-endpoint="/api/public/campaigns/instant-win.php" data-campaign-type="instant_win_reward" novalidate>
+          <input type="hidden" name="campaign_id" value="<?= mg_e((string)$campaign['public_id']) ?>"><input type="hidden" name="campaign" value="<?= mg_e((string)($campaign['public_slug'] ?? $campaign['public_id'])) ?>"><input type="hidden" name="campaign_type" value="instant_win_reward"><input type="hidden" name="entry_reveal_confirmed" value="0"><input type="hidden" name="entry_instant_win_mode" value="<?= mg_e($playMode) ?>">
+          <h3>Submit your play</h3><p>Complete the interaction first, then submit your result.</p>
+          <label>Name<input name="name" placeholder="Your name" maxlength="180" value="<?= mg_e($prefillName) ?>"></label><label>Email<input name="email" type="email" placeholder="you@example.com" required maxlength="255" value="<?= mg_e($prefillEmail) ?>"></label><label>Phone <span>(optional)</span><input name="phone" placeholder="Optional" maxlength="60"></label>
+          <button class="mg-rl-btn mg-rl-btn-soft" type="button" data-instant-win-reveal><?= $playMode === 'spin_wheel' ? 'Spin wheel' : 'Reveal card' ?></button><button class="mg-rl-btn mg-rl-btn-dark" type="submit">Submit instant-win play</button><div class="mg-public-campaign-status" data-campaign-status data-instant-win-status></div><p class="mg-public-campaign-privacy">Winning reward issuance creates the merchant CRM contact.</p>
+        </form><div class="mg-public-campaign-result" data-campaign-result></div>
+      </aside>
     <?php endif; ?>
   </div>
 </section>
