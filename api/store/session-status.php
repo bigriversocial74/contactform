@@ -19,7 +19,7 @@ try {
     ];
 
     if ($viewerId !== null && $schemaReady) {
-        $data['active_session'] = mg_store_project_session(mg_store_runtime_active_session_for_customer($pdo, $viewerId));
+        $data['active_session'] = mg_store_runtime_project_session(mg_store_runtime_active_session_for_customer($pdo, $viewerId));
     }
 
     if ($postId !== '') {
