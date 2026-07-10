@@ -1,0 +1,39 @@
+name: Training Lab Pilot Issue Validation
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+  push:
+    branches:
+      - integration-from-repair-20260628
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }} pilot issue contract
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php:
+          - '8.2'
+          - '8.3'
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          extensions: mbstring, pdo, pdo_mysql
+      - name: PHP syntax
+        run: |
+          php -l api/integrations/_training_lab_reward_pilot_issue.php
+          php -l api/integrations/training-lab-reward-pilot-issue.php
+          php -l scripts/validate_training_lab_pilot_issue_v1.php
+      - name: Stage 896 pilot issue contract
+        run: php scripts/validate_training_lab_pilot_issue_v1.php
