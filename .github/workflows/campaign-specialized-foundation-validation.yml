@@ -1,0 +1,60 @@
+name: Campaign Specialized Foundation Validation
+
+on:
+  pull_request:
+    paths:
+      - 'survey-feedback.php'
+      - 'check-in-reward.php'
+      - 'rsvp-event.php'
+      - 'includes/campaign-landing-foundation.php'
+      - 'includes/header.php'
+      - 'assets/css/campaign-landing-specialized.css'
+      - 'assets/js/public-check-in-reward.js'
+      - 'assets/js/public-rsvp-event.js'
+      - 'assets/js/stage12-survey-feedback-reward.js'
+      - 'assets/js/stage12-check-in-reward.js'
+      - 'assets/js/stage12-rsvp-event-reward.js'
+      - 'api/merchant/campaigns.php'
+      - 'api/merchant/campaigns-core.php'
+      - 'api/public/campaigns/survey-feedback.php'
+      - 'api/public/campaigns/check-in.php'
+      - 'api/public/campaigns/rsvp-event.php'
+      - 'scripts/validate_campaign_specialized_foundation_v1.php'
+      - 'scripts/validate_stage12_campaigns_reward_templates.php'
+      - '.github/workflows/campaign-specialized-foundation-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Survey Check-In RSVP foundation validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+      - name: PHP syntax check
+        run: |
+          set -euo pipefail
+          php -l survey-feedback.php
+          php -l check-in-reward.php
+          php -l rsvp-event.php
+          php -l includes/header.php
+          php -l includes/campaign-landing-foundation.php
+          php -l api/merchant/campaigns.php
+          php -l api/merchant/campaigns-core.php
+          php -l api/public/campaigns/survey-feedback.php
+          php -l api/public/campaigns/check-in.php
+          php -l api/public/campaigns/rsvp-event.php
+          php -l scripts/validate_campaign_specialized_foundation_v1.php
+          php -l scripts/validate_stage12_campaigns_reward_templates.php
+      - name: Validate specialized campaign foundation
+        run: php scripts/validate_campaign_specialized_foundation_v1.php
+      - name: Validate Stage 12 campaign controller
+        run: php scripts/validate_stage12_campaigns_reward_templates.php
