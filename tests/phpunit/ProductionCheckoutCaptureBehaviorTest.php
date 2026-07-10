@@ -27,7 +27,7 @@ final class ProductionCheckoutCaptureBehaviorTest extends TestCase
         foreach($required as $key)self::assertTrue((bool)($result[$key]??false),$key.' failed: '.$raw);
     }
 
-    public function testEndpointsUseCanonicalCheckoutAndCaptureAuthorities(): void
+    public function testEndpointsUseCanonicalCheckoutCaptureAndReconciliationAuthorities(): void
     {
         $root=dirname(__DIR__,2);
         $orders=file_get_contents($root.'/api/commerce/orders.php');
@@ -35,18 +35,21 @@ final class ProductionCheckoutCaptureBehaviorTest extends TestCase
         $sessionEndpoint=file_get_contents($root.'/api/payments/order-checkout-session.php');
         $sessionService=file_get_contents($root.'/api/payments/_checkout_session.php');
         $capture=file_get_contents($root.'/api/payments/_capture.php');
+        $reconciliation=file_get_contents($root.'/api/payments/_issuance_reconciliation.php');
         $fulfillment=file_get_contents($root.'/api/payments/_fulfillment.php');
-        foreach([$orders,$checkout,$sessionEndpoint,$sessionService,$capture,$fulfillment] as $source)self::assertIsString($source);
+        foreach([$orders,$checkout,$sessionEndpoint,$sessionService,$capture,$reconciliation,$fulfillment] as $source)self::assertIsString($source);
         self::assertStringContainsString('mg_checkout_create_order(',$orders);
         self::assertStringContainsString('Order idempotency key is already bound to a different checkout draft.',$checkout);
         self::assertStringContainsString('mg_payment_create_checkout_session(',$sessionEndpoint);
         self::assertStringContainsString('cs.payment_intent_id=pi.id',$sessionService);
         self::assertStringContainsString('payment_intent_id,provider_key,status',$sessionService);
-        self::assertStringContainsString('An active checkout session already exists for this order.',$sessionService);
+        self::assertStringContainsString('mg_payment_checkout_session_payload($activeSession',$sessionService);
         self::assertStringContainsString('Capture replay conflicts with the recorded provider payment.',$capture);
         self::assertStringContainsString("\$failureHook('after_ledger'",$capture);
         self::assertStringContainsString("\$failureHook('after_fulfillment'",$capture);
-        self::assertStringContainsString('mg_payment_issue_order_microgifts(',$capture);
+        self::assertStringContainsString('mg_payment_reconcile_paid_order(',$capture);
+        self::assertStringContainsString('mg_payment_issue_order_pppm(',$reconciliation);
+        self::assertStringContainsString('mg_payment_issue_order_microgifts(',$reconciliation);
         self::assertStringContainsString('PPPM item not found for commerce Microgift issuance.',$fulfillment);
         self::assertStringContainsString('mg_action_center_receive(',$fulfillment);
     }
