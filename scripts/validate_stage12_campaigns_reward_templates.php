@@ -15,6 +15,7 @@ $required = [
     'includes/header-components/app-header.php',
     'api/merchant/reward-templates.php',
     'api/merchant/campaigns.php',
+    'api/merchant/campaigns-core.php',
     'api/public/campaigns/signup.php',
     'api/public/campaigns/qr-pickup.php',
 ];
@@ -38,7 +39,9 @@ $registry = is_file($root . '/includes/campaign-types.php') ? (string)file_get_c
 $campaignView = is_file($root . '/includes/merchant-campaigns-view.php') ? (string)file_get_contents($root . '/includes/merchant-campaigns-view.php') : '';
 $templateView = is_file($root . '/includes/merchant-reward-templates-view.php') ? (string)file_get_contents($root . '/includes/merchant-reward-templates-view.php') : '';
 $templateApi = is_file($root . '/api/merchant/reward-templates.php') ? (string)file_get_contents($root . '/api/merchant/reward-templates.php') : '';
-$campaignApi = is_file($root . '/api/merchant/campaigns.php') ? (string)file_get_contents($root . '/api/merchant/campaigns.php') : '';
+$campaignApiRoute = is_file($root . '/api/merchant/campaigns.php') ? (string)file_get_contents($root . '/api/merchant/campaigns.php') : '';
+$campaignApiCore = is_file($root . '/api/merchant/campaigns-core.php') ? (string)file_get_contents($root . '/api/merchant/campaigns-core.php') : '';
+$campaignApi = $campaignApiRoute . "\n" . $campaignApiCore;
 $signupApi = is_file($root . '/api/public/campaigns/signup.php') ? (string)file_get_contents($root . '/api/public/campaigns/signup.php') : '';
 $qrApi = is_file($root . '/api/public/campaigns/qr-pickup.php') ? (string)file_get_contents($root . '/api/public/campaigns/qr-pickup.php') : '';
 
@@ -59,7 +62,7 @@ $hasCampaignShell = $hasLegacyCampaignShell || $hasRegistryCampaignShell;
 $hasTemplateShell = str_contains($templateView, 'Reward type') && str_contains($templateView, 'agent_discoverable') && str_contains($templateView, 'Redemption instructions');
 $hasTemplateApi = str_contains($templateApi, 'merchant.reward_templates.view') && str_contains($templateApi, 'merchant.reward_templates.manage') && str_contains($templateApi, 'INSERT INTO reward_templates') && str_contains($templateApi, 'UPDATE reward_templates') && str_contains($templateApi, 'mg_require_csrf_for_write');
 $hasTemplateApiOutput = str_contains($templateApi, "'templates'") && str_contains($templateApi, "'template'") && str_contains($templateApi, "'schema_ready'");
-$hasCampaignApi = str_contains($campaignApi, 'merchant.campaigns.view') && str_contains($campaignApi, 'merchant.campaigns.manage') && str_contains($campaignApi, 'INSERT INTO campaigns') && str_contains($campaignApi, 'UPDATE campaigns') && str_contains($campaignApi, 'mg_require_csrf_for_write');
+$hasCampaignApi = str_contains($campaignApi, 'merchant.campaigns.view') && str_contains($campaignApi, 'merchant.campaigns.manage') && str_contains($campaignApi, 'INSERT INTO campaigns') && str_contains($campaignApi, 'UPDATE campaigns') && str_contains($campaignApi, 'mg_require_csrf_for_write') && str_contains($campaignApiRoute, "require __DIR__ . '/campaigns-core.php'");
 $hasCampaignApiOutput = str_contains($campaignApi, "'campaigns'") && str_contains($campaignApi, "'campaign'") && str_contains($campaignApi, "'schema_ready'");
 $hasSignupApi = str_contains($signupApi, 'campaign_contacts') && str_contains($signupApi, 'wallet_items') && str_contains($signupApi, 'campaign_events') && str_contains($signupApi, 'wallet_item.issued') && str_contains($signupApi, 'form.submitted');
 $hasSignupLimits = str_contains($signupApi, 'quantity_limit') && str_contains($signupApi, 'issued_count') && str_contains($signupApi, 'Reward template limit has been reached');
