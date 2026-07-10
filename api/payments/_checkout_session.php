@@ -107,7 +107,7 @@ function mg_payment_create_checkout_session(PDO $pdo,int $buyerUserId,string $or
     );
     $active->execute([(int)$order['id'],$provider]);
     if($activeSession=$active->fetch(PDO::FETCH_ASSOC)){
-        return mg_payment_checkout_session_payload($activeSession,$orderPublicId,true);
+        throw new MgCheckoutSessionException('An active checkout session already exists for this order and provider.',409);
     }
 
     try{$account=mg_payment_assert_checkout_ready($pdo,$order,$provider);}catch(Throwable $error){
