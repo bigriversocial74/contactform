@@ -57,12 +57,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
     form.addEventListener('microgifter:campaign-submitted', function (event) {
       var payload = event.detail && event.detail.payload || {};
-      updateProgress(payload.stamp_count || 0, payload.required_count || required);
+      var entry = payload.entry || {};
+      var count = payload.stamp_count || entry.stamp_count || (payload.wallet_item_id ? required : 0);
+      var total = payload.required_count || entry.required_count || required;
+      var remaining = payload.stamps_remaining;
+      if (remaining == null && entry.stamps_remaining != null) remaining = entry.stamps_remaining;
+      updateProgress(count, total);
       setButtonBusy(false);
-      if (payload.reward_unlocked || payload.wallet_item_id) {
+      if (payload.reward_unlocked || payload.wallet_item_id || entry.stamp_result === 'unlocked') {
         setStatus('Stamp card complete. Reward sent to Microgifter Inbox.', 'success');
-      } else if (payload.stamps_remaining != null) {
-        setStatus('Verified stamp recorded. ' + payload.stamps_remaining + ' more to unlock your reward.', 'success');
+      } else if (remaining != null) {
+        setStatus('Verified stamp recorded. ' + remaining + ' more to unlock your reward.', 'success');
       } else {
         setStatus('Verified stamp recorded.', 'success');
       }
