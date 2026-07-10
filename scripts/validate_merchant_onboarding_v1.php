@@ -6,7 +6,7 @@ $read=static fn(string $p):string=>is_file($root.'/'.$p)?(string)file_get_conten
 $checks=[];foreach($files as $file)$checks[]=['name'=>'file:'.$file,'ok'=>is_file($root.'/'.$file)];
 $page=$read('merchant-onboarding.php');$js=$read('assets/js/merchant-onboarding.js');$status=$read('api/merchant/onboarding-status.php');$complete=$read('api/merchant/onboarding-complete.php');$signup=$read('signup.php');$register=$read('api/auth/register.php');
 $checks[]=['name'=>'guided merchant UX','ok'=>str_contains($page,'Launch your first Loyalty Quest')&&str_contains($page,'data-onboarding-checklist')&&str_contains($js,'Continue:')];
-$checks[]=['name'=>'merchant signup path','ok'=>str_contains($signup,"'merchant'")&&str_contains($signup,'business_name')&&str_contains($register,"$accountType==='merchant'")];
+$checks[]=['name'=>'merchant signup path','ok'=>str_contains($signup,"'merchant'")&&str_contains($signup,'business_name')&&str_contains($register,"\$accountType==='merchant'")];
 $checks[]=['name'=>'merchant role and workspace creation','ok'=>str_contains($register,"slug='merchant'")&&str_contains($register,'merchant_workspaces')&&str_contains($register,'merchant_team_members')];
 $checks[]=['name'=>'merchant-scoped readiness','ok'=>substr_count($status,'merchant_user_id')>=4&&str_contains($status,"campaign_type='loyalty_quest'")];
 $checks[]=['name'=>'required onboarding gates','ok'=>str_contains($status,'business_profile')&&str_contains($status,'first_location')&&str_contains($status,'reward_template')&&str_contains($status,'loyalty_quest')&&str_contains($status,'launch')];
