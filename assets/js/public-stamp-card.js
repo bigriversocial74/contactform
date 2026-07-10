@@ -31,14 +31,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var count = number(data.stamp_count || entry.stamp_count, 0);
     var remaining = number(data.stamps_remaining || entry.stamps_remaining, Math.max(0, required - count));
     var unlocked = !!(data.reward_unlocked || data.wallet_item_id || entry.stamp_result === 'unlocked' || count >= required);
-    return {
-      data: data,
-      entry: entry,
-      required: Math.max(1, required),
-      count: Math.max(0, count),
-      remaining: Math.max(0, remaining),
-      unlocked: unlocked
-    };
+    return { data: data, entry: entry, required: Math.max(1, required), count: Math.max(0, count), remaining: Math.max(0, remaining), unlocked: unlocked };
   }
 
   function buildPunches(grid, required) {
@@ -78,13 +71,9 @@ document.addEventListener('DOMContentLoaded', function () {
     if (fill) fill.style.width = Math.min(100, Math.round((count / required) * 100)) + '%';
     visual.classList.toggle('is-unlocked', !!progress.unlocked);
     if (progressMessage) {
-      if (progress.unlocked) {
-        progressMessage.textContent = 'Reward unlocked. Your completed punch card has been sent to Microgifter Inbox.';
-      } else if (message) {
-        progressMessage.textContent = message;
-      } else {
-        progressMessage.textContent = progress.remaining + ' more punch' + (progress.remaining === 1 ? '' : 'es') + ' to unlock your reward.';
-      }
+      if (progress.unlocked) progressMessage.textContent = 'Reward unlocked. Your verified punch card has been sent to Microgifter Inbox.';
+      else if (message) progressMessage.textContent = message;
+      else progressMessage.textContent = progress.remaining + ' more verified punch' + (progress.remaining === 1 ? '' : 'es') + ' to unlock your reward.';
     }
   }
 
@@ -106,10 +95,10 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!button) return;
       button.disabled = !!busy;
       button.setAttribute('aria-busy', busy ? 'true' : 'false');
-      button.innerHTML = busy ? 'Recording punch…' : 'Add Stamp / Check Reward';
+      button.innerHTML = busy ? 'Verifying punch…' : 'Verify Punch / Check Reward';
     }
 
-    renderProgress(form, { required: fallbackRequired, count: 0, remaining: fallbackRequired, unlocked: false }, fallbackRequired + ' punches required before reward issuance is honored.');
+    renderProgress(form, { required: fallbackRequired, count: 0, remaining: fallbackRequired, unlocked: false }, fallbackRequired + ' verified punches required before reward issuance is honored.');
 
     form.addEventListener('submit', async function (event) {
       event.preventDefault();
@@ -124,23 +113,24 @@ document.addEventListener('DOMContentLoaded', function () {
       }
       var endpoint = form.dataset.submitEndpoint || '/api/public/campaigns/stamp-card.php';
       setButtonBusy(true);
-      setStatus('Recording your punch and checking reward progress…');
+      setStatus('Verifying cashier code, recording punch, and checking reward progress…');
       try {
         var response = await Microgifter.post(endpoint, formData(form));
         var progress = getProgress(response, fallbackRequired);
-        var message = response.message || (progress.unlocked ? 'Reward unlocked.' : 'Punch recorded.');
+        var message = response.message || (progress.unlocked ? 'Reward unlocked.' : 'Verified punch recorded.');
         renderProgress(form, progress, message);
         setStatus(message, progress.unlocked ? 'success' : '');
         if (result) {
           result.classList.add('is-visible');
           if (progress.unlocked) {
-            result.innerHTML = '<strong>Punch card complete</strong><p>Your reward was sent to Microgifter Inbox.</p>' + (progress.data.inbox_url || progress.data.wallet_item_id ? '<div class="mg-public-campaign-result-actions"><a class="mg-btn mg-btn-primary" href="' + esc(progress.data.inbox_url || '/inbox.php') + '">Open Microgifter Inbox</a></div>' : '');
+            result.innerHTML = '<strong>Punch card complete</strong><p>Your verified reward was sent to Microgifter Inbox.</p>' + (progress.data.inbox_url || progress.data.wallet_item_id ? '<div class="mg-public-campaign-result-actions"><a class="mg-btn mg-btn-primary" href="' + esc(progress.data.inbox_url || '/inbox.php') + '">Open Microgifter Inbox</a></div>' : '');
           } else {
-            result.innerHTML = '<strong>Punch recorded</strong><p>' + esc(message) + '</p><div class="mg-public-campaign-result-details"><span>' + esc(progress.count + ' of ' + progress.required + ' punches complete') + '</span><span>' + esc(progress.remaining + ' remaining') + '</span></div>';
+            var location = progress.data && progress.data.verification && progress.data.verification.location_name ? '<span>Location: ' + esc(progress.data.verification.location_name) + '</span>' : '';
+            result.innerHTML = '<strong>Verified punch recorded</strong><p>' + esc(message) + '</p><div class="mg-public-campaign-result-details"><span>' + esc(progress.count + ' of ' + progress.required + ' punches complete') + '</span><span>' + esc(progress.remaining + ' remaining') + '</span>' + location + '</div>';
           }
         }
       } catch (error) {
-        setStatus(error.message || 'Unable to record stamp card visit.', 'error');
+        setStatus(error.message || 'Unable to verify and record stamp card punch.', 'error');
       } finally {
         setButtonBusy(false);
       }
