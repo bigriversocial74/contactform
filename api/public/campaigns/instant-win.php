@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/bootstrap.php';
 require_once dirname(__DIR__, 3) . '/includes/campaign-types.php';
-require_once dirname(__DIR__, 3) . '/includes/merchant-crm.php';
+require_once dirname(__DIR__, 3) . '/includes/merchant-crm-value-events.php';
 require_once __DIR__ . '/_merchant_notifications.php';
 require_once __DIR__ . '/_embed_attribution.php';
 
@@ -60,6 +60,8 @@ function mg_instant_win_record_no_win(PDO $pdo, array $campaign, array $input, a
         'crm_source' => $source,
         'entry' => $entry,
         'instant_win_result' => 'not_won',
+        'crm_creation_boundary' => 'deferred_until_first_value_event',
+        'value_event' => false,
         'ip' => mg_client_ip(),
         'user_agent' => substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255),
     ], $embedAttribution);
@@ -72,7 +74,7 @@ function mg_instant_win_record_no_win(PDO $pdo, array $campaign, array $input, a
     $contact = $lookup->fetch(PDO::FETCH_ASSOC) ?: [];
     $contactId = (int)($contact['id'] ?? 0);
 
-    $crm = mg_merchant_crm_record_event($pdo, [
+    $crm = mg_merchant_crm_record_existing_contact_event($pdo, [
         'merchant_user_id' => $merchantId,
         'campaign_id' => $campaignId,
         'campaign_type' => 'instant_win_reward',
@@ -94,7 +96,7 @@ function mg_instant_win_record_no_win(PDO $pdo, array $campaign, array $input, a
         null,
         $contactId ?: null,
         'instant_win.not_won',
-        json_encode(['campaign_type' => 'instant_win_reward', 'source' => $source, 'email' => $email, 'entry' => $entry, 'instant_win_result' => 'not_won', 'message' => $message, 'embed_attribution' => $embedAttribution, 'merchant_crm' => $crm, 'merchant_notification' => $merchantNotification], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+        json_encode(['campaign_type' => 'instant_win_reward', 'source' => $source, 'email' => $email, 'entry' => $entry, 'instant_win_result' => 'not_won', 'message' => $message, 'embed_attribution' => $embedAttribution, 'merchant_crm' => $crm, 'merchant_notification' => $merchantNotification, 'crm_creation_boundary' => 'deferred_until_first_value_event'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
     ]);
 }
 
