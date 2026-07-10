@@ -7,8 +7,16 @@
   }
 
   body.mg-merchant-canvas-page .mg-unified-header .mg-header-left{
-    flex:0 1 auto;
+    flex:0 0 0;
+    width:0;
+    max-width:0;
     min-width:0;
+    gap:0;
+    overflow:hidden;
+  }
+
+  body.mg-merchant-canvas-page .mg-unified-header .mg-header-left .mg-site-nav{
+    display:none;
   }
 
   body.mg-merchant-canvas-page .mg-canvas-header-hud{
@@ -18,7 +26,8 @@
     gap:12px;
     min-width:0;
     flex:1 1 auto;
-    margin-left:4px;
+    margin-left:0;
+    margin-right:auto;
     overflow:hidden;
   }
 

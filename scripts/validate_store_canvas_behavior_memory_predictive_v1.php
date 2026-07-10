@@ -45,11 +45,15 @@ $check(
 
 $check(
     str_contains($headerCss, '@media(min-width:981px)')
+    && str_contains($headerCss, '.mg-unified-header .mg-header-left')
+    && str_contains($headerCss, 'flex:0 0 0;')
+    && str_contains($headerCss, 'width:0;')
+    && str_contains($headerCss, 'margin-left:0;')
     && str_contains($headerCss, '.mg-canvas-header-stats')
     && str_contains($headerCss, '.mg-canvas-header-live-pill')
     && str_contains($headerCss, '.mg-canvas-map-restored .mg-canvas-hud-stats')
     && str_contains($headerCss, '@media(max-width:980px)'),
-    '3. Header HUD is desktop-scoped while the existing mobile sticky-stat source remains available'
+    '3. Desktop header stats float left while the existing mobile sticky-stat source remains unchanged'
 );
 
 $check(
