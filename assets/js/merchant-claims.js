@@ -1,6 +1,5 @@
 document.addEventListener('DOMContentLoaded', function () {
   'use strict';
-
   if (!window.Microgifter) return;
 
   var claimList = document.querySelector('[data-claim-list]');
@@ -19,167 +18,129 @@ document.addEventListener('DOMContentLoaded', function () {
   var codeLocation = document.querySelector('[data-code-location]');
   var loadedPreview = null;
   var latestDashboard = null;
+  var submitting = false;
 
   function esc(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, function (character) {
       return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character];
     });
   }
-
   function money(cents, currency) {
-    return new Intl.NumberFormat(undefined, {
-      style: 'currency',
-      currency: currency || 'USD'
-    }).format(Number(cents || 0) / 100);
+    try { return new Intl.NumberFormat(undefined, { style: 'currency', currency: currency || 'USD' }).format(Number(cents || 0) / 100); }
+    catch (error) { return String(currency || 'USD') + ' ' + (Number(cents || 0) / 100).toFixed(2); }
   }
-
-  function idempotencyKey() {
-    if (window.crypto && typeof window.crypto.randomUUID === 'function') {
-      return 'merchant-redemption-' + window.crypto.randomUUID();
+  function uuid() {
+    return window.crypto && typeof window.crypto.randomUUID === 'function'
+      ? window.crypto.randomUUID()
+      : String(Date.now()) + '-' + Math.random().toString(16).slice(2);
+  }
+  function workflowStorageKey(instanceId, locationId) {
+    return 'mg:merchant-redemption:v1:' + String(instanceId || '').toLowerCase() + ':' + String(locationId || '').toLowerCase();
+  }
+  function redemptionWorkflowKey(instanceId, locationId) {
+    var storageKey = workflowStorageKey(instanceId, locationId);
+    var value = '';
+    try { value = window.sessionStorage.getItem(storageKey) || ''; } catch (error) { value = ''; }
+    if (!value) {
+      value = 'merchant-redemption-' + uuid();
+      try { window.sessionStorage.setItem(storageKey, value); } catch (error) { /* optional */ }
     }
-    return 'merchant-redemption-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+    return value;
   }
-
   function rows(items, renderer, emptyText) {
-    return items && items.length
-      ? items.map(renderer).join('')
-      : '<div class="mg-empty-state">' + esc(emptyText) + '</div>';
+    return items && items.length ? items.map(renderer).join('') : '<div class="mg-empty-state">' + esc(emptyText) + '</div>';
   }
-
   function replaceLocationOptions(select, locations, includeAll) {
     if (!select) return;
     var current = select.value;
     select.innerHTML = includeAll ? '<option value="all">All locations</option>' : '<option value="">Select a location</option>';
-    (locations || []).filter(function (location) {
-      return includeAll || location.status === 'active';
-    }).forEach(function (location) {
+    (locations || []).filter(function (location) { return includeAll || location.status === 'active'; }).forEach(function (location) {
       select.add(new Option(location.name, location.public_id));
     });
-    if ([].some.call(select.options, function (option) { return option.value === current; })) {
-      select.value = current;
-    }
+    if ([].some.call(select.options, function (option) { return option.value === current; })) select.value = current;
   }
-
   function renderKpis(counts) {
     var root = document.querySelector('[data-claim-kpis]');
     if (!root) return;
     root.innerHTML = [
-      ['Attempts', counts.total],
-      ['Approved', counts.approved],
-      ['Failed', counts.failed],
-      ['Redeemed', counts.redeemed],
-      ['Rate limited', counts.rate_limited],
-      ['Invalid codes', counts.invalid_code]
+      ['Attempts', counts.total], ['Approved', counts.approved], ['Failed', counts.failed],
+      ['Redeemed', counts.redeemed], ['Rate limited', counts.rate_limited], ['Invalid codes', counts.invalid_code]
     ].map(function (item) {
       return '<div class="mg-merchant-kpi"><span>' + esc(item[0]) + '</span><strong>' + Number(item[1] || 0).toLocaleString() + '</strong></div>';
     }).join('');
   }
-
   function renderAttemptRow(attempt) {
     var approved = attempt.result === 'approved';
     var title = attempt.title_snapshot || 'Microgift redemption attempt';
     var value = attempt.redemption_amount_cents != null ? attempt.redemption_amount_cents : attempt.face_value_cents;
     var currency = attempt.redemption_currency || attempt.currency;
-    return '<article class="mg-claim-row">' +
-      '<div><h3>' + esc(title) + '</h3>' +
-      '<p>' + esc(attempt.instance_id || 'Unknown Microgift') + (attempt.pppm_id ? ' · ' + esc(attempt.pppm_id) : '') + '</p>' +
-      '<div class="mg-claim-meta"><span>' + esc(attempt.location_name || 'Unassigned location') + '</span>' +
-      '<span>' + esc(attempt.reason_code || attempt.result) + '</span>' +
-      '<span>' + esc(attempt.attempted_at || '') + '</span></div></div>' +
-      '<div><span class="mg-claim-state is-' + esc(approved ? 'redeemed' : 'locked') + '">' + esc(attempt.result) + '</span></div>' +
-      '<div><strong>' + money(value, currency) + '</strong><p>' + esc(attempt.redemption_id || attempt.attempt_id) + '</p></div>' +
-      '<div class="mg-claim-actions">' + (attempt.redemption_id ? '<span>Confirmed</span>' : '<span>Recorded</span>') + '</div>' +
-      '</article>';
+    return '<article class="mg-claim-row"><div><h3>' + esc(title) + '</h3><p>' + esc(attempt.instance_id || 'Unknown Microgift') +
+      (attempt.pppm_id ? ' · ' + esc(attempt.pppm_id) : '') + '</p><div class="mg-claim-meta"><span>' + esc(attempt.location_name || 'Unassigned location') +
+      '</span><span>' + esc(attempt.reason_code || attempt.result) + '</span><span>' + esc(attempt.attempted_at || '') + '</span></div></div><div><span class="mg-claim-state is-' +
+      esc(approved ? 'redeemed' : 'locked') + '">' + esc(attempt.result) + '</span></div><div><strong>' + money(value, currency) + '</strong><p>' +
+      esc(attempt.redemption_id || attempt.attempt_id) + '</p></div><div class="mg-claim-actions">' + (attempt.redemption_id
+        ? '<button type="button" data-redemption-reconcile="' + esc(attempt.redemption_id) + '">Verify</button>'
+        : '<span>Recorded</span>') + '</div></article>';
   }
-
-  function renderAttemptsInto(root, attempts, emptyText) {
-    if (!root) return;
-    root.innerHTML = rows(attempts, renderAttemptRow, emptyText);
-  }
-
-  function renderAttempts(attempts) {
-    renderAttemptsInto(claimList, attempts, 'No canonical redemption attempts match the filters.');
-  }
-
+  function renderAttemptsInto(root, attempts, emptyText) { if (root) root.innerHTML = rows(attempts, renderAttemptRow, emptyText); }
+  function renderAttempts(attempts) { renderAttemptsInto(claimList, attempts, 'No canonical redemption attempts match the filters.'); }
   function renderSupplementalAttemptLists(attempts) {
-    var redeemed = (attempts || []).filter(function (attempt) { return attempt.result === 'approved'; });
-    var failed = (attempts || []).filter(function (attempt) { return attempt.result !== 'approved'; });
-    renderAttemptsInto(redeemedClaimList, redeemed, 'No redeemed claim activity yet.');
-    renderAttemptsInto(failedClaimList, failed, 'No failed, invalid-code, or rate-limited claim activity yet.');
+    renderAttemptsInto(redeemedClaimList, (attempts || []).filter(function (item) { return item.result === 'approved'; }), 'No redeemed claim activity yet.');
+    renderAttemptsInto(failedClaimList, (attempts || []).filter(function (item) { return item.result !== 'approved'; }), 'No failed, invalid-code, or rate-limited claim activity yet.');
   }
-
   function renderLocationActivity(data) {
     if (!locationActivityList) return;
     data = data || latestDashboard || {};
     var selected = locationActivityFilter ? locationActivityFilter.value : 'all';
-    var attempts = (data.attempts || []).filter(function (attempt) {
+    renderAttemptsInto(locationActivityList, (data.attempts || []).filter(function (attempt) {
       return selected === 'all' || String(attempt.location_id || '') === selected;
-    });
-    renderAttemptsInto(locationActivityList, attempts, selected === 'all'
-      ? 'No location-based claim activity yet.'
-      : 'No claim activity found for this location.');
+    }), selected === 'all' ? 'No location-based claim activity yet.' : 'No claim activity found for this location.');
   }
-
   function renderCodes(codes) {
     var root = document.querySelector('[data-claim-code-list]');
     if (!root) return;
     root.innerHTML = rows(codes, function (code) {
       var usage = Number(code.usage_count || 0) + (code.usage_limit ? '/' + Number(code.usage_limit) : '');
-      return '<div class="mg-code-row"><span><strong>' + esc(code.label) + '</strong><br>' +
-        '<small>' + esc(code.location_name) + ' · ••••' + esc(code.code_last4) + ' · ' + usage + ' uses</small></span>' +
-        '<div class="mg-code-actions">' +
-        '<button type="button" data-code-status="' + esc(code.public_id) + '" data-status="' + (code.status === 'active' ? 'inactive' : 'active') + '">' + (code.status === 'active' ? 'Disable' : 'Activate') + '</button>' +
-        '<button type="button" data-code-rotate="' + esc(code.public_id) + '">Rotate</button>' +
-        '<button type="button" data-code-status="' + esc(code.public_id) + '" data-status="revoked">Revoke</button>' +
-        '</div></div>';
+      return '<div class="mg-code-row"><span><strong>' + esc(code.label) + '</strong><br><small>' + esc(code.location_name) + ' · ••••' + esc(code.code_last4) +
+        ' · ' + usage + ' uses</small></span><div class="mg-code-actions"><button type="button" data-code-status="' + esc(code.public_id) + '" data-status="' +
+        (code.status === 'active' ? 'inactive' : 'active') + '">' + (code.status === 'active' ? 'Disable' : 'Activate') + '</button><button type="button" data-code-rotate="' +
+        esc(code.public_id) + '">Rotate</button><button type="button" data-code-status="' + esc(code.public_id) + '" data-status="revoked">Revoke</button></div></div>';
     }, 'No location claim codes are configured.');
   }
-
   function renderExceptions(exceptions) {
     var root = document.querySelector('[data-claim-exception-list]');
     if (!root) return;
-    root.innerHTML = rows(exceptions, function (exception) {
-      return '<div class="mg-exception-row"><span><strong>' + esc(exception.summary) + '</strong><br>' +
-        '<small>' + esc(exception.exception_type) + ' · ' + esc(exception.instance_id || 'No Microgift') + ' · ' + esc(exception.created_at) + '</small></span>' +
-        '<span class="mg-claim-state">' + esc(exception.priority) + ' / ' + esc(exception.status) + '</span></div>';
+    root.innerHTML = rows(exceptions, function (item) {
+      return '<div class="mg-exception-row"><span><strong>' + esc(item.summary) + '</strong><br><small>' + esc(item.exception_type) + ' · ' +
+        esc(item.instance_id || 'No Microgift') + ' · ' + esc(item.created_at) + '</small></span><span class="mg-claim-state">' + esc(item.priority) + ' / ' + esc(item.status) + '</span></div>';
     }, 'No open canonical redemption exceptions.');
   }
-
   function bindCodeActions() {
     document.querySelectorAll('[data-code-status]').forEach(function (button) {
       button.onclick = async function () {
-        await Microgifter.post('/api/merchant/claim-code-action.php', {
-          action: 'status',
-          claim_code_id: button.dataset.codeStatus,
-          status: button.dataset.status
-        });
-        await loadDashboard();
+        button.disabled = true;
+        try {
+          await Microgifter.post('/api/merchant/claim-code-action.php', { action: 'status', claim_code_id: button.dataset.codeStatus, status: button.dataset.status });
+          await loadDashboard();
+        } finally { button.disabled = false; }
       };
     });
     document.querySelectorAll('[data-code-rotate]').forEach(function (button) {
       button.onclick = async function () {
         var code = window.prompt('Enter the replacement location claim code. The old code will be revoked.');
         if (!code) return;
-        await Microgifter.post('/api/merchant/claim-code-action.php', {
-          action: 'rotate',
-          claim_code_id: button.dataset.codeRotate,
-          code: code
-        });
-        await loadDashboard();
+        button.disabled = true;
+        try {
+          await Microgifter.post('/api/merchant/claim-code-action.php', { action: 'rotate', claim_code_id: button.dataset.codeRotate, code: code });
+          await loadDashboard();
+        } finally { button.disabled = false; }
       };
     });
   }
-
   async function loadDashboard() {
     if (!claimList) return;
-    var query = searchInput ? searchInput.value : '';
-    var result = resultFilter ? resultFilter.value : 'all';
-    var location = locationFilter ? locationFilter.value : 'all';
-    var response = await Microgifter.get(
-      '/api/merchant/claims-dashboard.php?q=' + encodeURIComponent(query) +
-      '&result=' + encodeURIComponent(result) +
-      '&location=' + encodeURIComponent(location)
-    );
+    var response = await Microgifter.get('/api/merchant/claims-dashboard.php?q=' + encodeURIComponent(searchInput ? searchInput.value : '') +
+      '&result=' + encodeURIComponent(resultFilter ? resultFilter.value : 'all') + '&location=' + encodeURIComponent(locationFilter ? locationFilter.value : 'all'));
     var data = response.data || response;
     latestDashboard = data;
     renderKpis(data.counts || {});
@@ -194,7 +155,6 @@ document.addEventListener('DOMContentLoaded', function () {
     renderLocationActivity(data);
     bindCodeActions();
   }
-
   function renderPreview(data) {
     loadedPreview = data;
     if (!loadedClaim) return;
@@ -202,135 +162,129 @@ document.addEventListener('DOMContentLoaded', function () {
     var location = data.location || {};
     var redemption = data.redemption || null;
     loadedClaim.innerHTML = '<div class="mg-claim-facts">' + [
-      ['Microgift ID', gift.instance_id],
-      ['PPPM ID', gift.pppm_id || 'Not linked'],
-      ['Title', gift.title],
-      ['Status', gift.status],
-      ['Value', money(gift.value_cents, gift.currency)],
-      ['Location', location.name],
-      ['Expires', gift.expires_at || 'No expiration'],
-      ['Eligible now', gift.redeemable ? 'Yes' : 'No'],
-      ['Prior redemption', redemption ? redemption.public_id : 'None']
-    ].map(function (fact) {
-      return '<div><span>' + esc(fact[0]) + '</span><strong>' + esc(fact[1]) + '</strong></div>';
-    }).join('') + '</div>';
+      ['Microgift ID', gift.instance_id], ['PPPM ID', gift.pppm_id || 'Not linked'], ['Title', gift.title], ['Status', gift.status],
+      ['Value', money(gift.value_cents, gift.currency)], ['Location', location.name], ['Expires', gift.expires_at || 'No expiration'],
+      ['Eligible now', gift.redeemable ? 'Yes' : 'No'], ['Prior redemption', redemption ? redemption.public_id : 'None']
+    ].map(function (fact) { return '<div><span>' + esc(fact[0]) + '</span><strong>' + esc(fact[1]) + '</strong></div>'; }).join('') + '</div>' +
+      (redemption ? '<button class="mg-btn mg-btn-soft" type="button" data-redemption-reconcile="' + esc(redemption.public_id) + '">Verify prior redemption</button>' : '');
   }
-
   function renderConfirmation(result) {
     if (!loadedClaim) return;
-    loadedClaim.innerHTML = '<div class="mg-action-success"><strong>Redemption confirmed</strong>' +
-      '<p>' + esc(result.location_name || 'Merchant location') + ' redeemed ' + esc(result.instance_id || '') + ' for ' + money(result.amount_cents, result.currency) + '.</p>' +
-      '<div class="mg-claim-facts">' + [
-        ['Redemption ID', result.redemption_id],
-        ['Attempt ID', result.attempt_id || 'Existing attempt'],
-        ['Customer confirmation', result.customer_notification_id || 'Recorded'],
-        ['Merchant confirmation', result.merchant_notification_id || 'Recorded'],
-        ['Status', result.status],
+    var sync = result.reconciliation || result;
+    loadedClaim.innerHTML = '<div class="mg-action-success"><strong>' + (result.reconciliation_pending ? 'Redemption recorded' : 'Redemption confirmed') + '</strong><p>' +
+      esc(result.location_name || sync.location_name || 'Merchant location') + ' redeemed ' + esc(result.instance_id || sync.instance_id || '') + ' for ' + money(result.amount_cents, result.currency) + '.</p><div class="mg-claim-facts">' + [
+        ['Redemption ID', result.redemption_id], ['Attempt ID', result.attempt_id || 'Existing attempt'],
+        ['Customer confirmation', result.customer_notification_id || sync.customer_notification_id || 'Recorded'],
+        ['Merchant confirmation', result.merchant_notification_id || sync.merchant_notification_id || 'Recorded'],
+        ['Action Center', sync.action_center && sync.action_center.recipient_item_id ? 'Verified' : 'Pending'],
+        ['PPPM', sync.pppm_redemption && sync.pppm_redemption.status ? sync.pppm_redemption.status : 'Verified'],
         ['Replay', result.duplicate ? 'Existing result' : 'New redemption']
-      ].map(function (fact) {
-        return '<div><span>' + esc(fact[0]) + '</span><strong>' + esc(fact[1]) + '</strong></div>';
-      }).join('') + '</div></div>';
+      ].map(function (fact) { return '<div><span>' + esc(fact[0]) + '</span><strong>' + esc(fact[1]) + '</strong></div>'; }).join('') + '</div>' +
+      (result.reconciliation_pending ? '<button class="mg-btn mg-btn-primary" type="button" data-redemption-reconcile="' + esc(result.redemption_id) + '">Retry confirmation sync</button>' : '') + '</div>';
   }
-
   async function lookupMicrogift() {
     if (!claimForm) return null;
     var instanceId = claimForm.elements.instance_id.value.trim();
     var locationId = claimForm.elements.location_id.value;
     if (!instanceId || !locationId) throw new Error('Enter a Microgift ID and select a location.');
-    var response = await Microgifter.get(
-      '/api/merchant/microgift-claim-lookup.php?instance_id=' + encodeURIComponent(instanceId) +
-      '&location_id=' + encodeURIComponent(locationId)
-    );
+    var response = await Microgifter.get('/api/merchant/microgift-claim-lookup.php?instance_id=' + encodeURIComponent(instanceId) + '&location_id=' + encodeURIComponent(locationId));
     var data = response.data || response;
     renderPreview(data);
     return data;
   }
-
-  if (lookupButton) {
-    lookupButton.addEventListener('click', function () {
-      claimStatus.textContent = 'Loading…';
-      lookupMicrogift().then(function () {
-        claimStatus.textContent = loadedPreview && loadedPreview.microgift && loadedPreview.microgift.redeemable
-          ? 'Microgift is eligible for redemption.'
-          : 'Microgift is not currently eligible for redemption.';
-      }).catch(function (error) {
-        claimStatus.textContent = error.message;
-      });
-    });
+  async function reconcileRedemption(redemptionId, button) {
+    if (!redemptionId) throw new Error('Redemption ID is missing.');
+    if (button) button.disabled = true;
+    if (claimStatus) claimStatus.textContent = 'Verifying redemption state…';
+    try {
+      var response = await Microgifter.post('/api/merchant/microgift-redemption-reconcile.php', { redemption_id: redemptionId });
+      var result = response.data || response;
+      if (claimStatus) claimStatus.textContent = response.message || 'Redemption verified.';
+      renderConfirmation(result);
+      await loadDashboard();
+      return result;
+    } finally { if (button) button.disabled = false; }
   }
 
-  if (claimForm) {
-    claimForm.addEventListener('submit', async function (event) {
-      event.preventDefault();
-      claimStatus.textContent = 'Redeeming…';
-      try {
-        var preview = await lookupMicrogift();
-        if (!preview.microgift || !preview.microgift.redeemable) throw new Error('This Microgift is not eligible for redemption.');
-        var payload = Object.fromEntries(new FormData(claimForm).entries());
-        payload.idempotency_key = idempotencyKey();
-        var response = await Microgifter.post('/api/merchant/microgift-claim.php', payload);
-        var result = response.data || response;
-        claimStatus.textContent = response.message || 'Microgift redeemed.';
-        claimForm.elements.claim_code.value = '';
-        renderConfirmation(result);
-        await loadDashboard();
-      } catch (error) {
-        claimStatus.textContent = error.message || 'Unable to redeem this Microgift.';
+  if (lookupButton) lookupButton.addEventListener('click', function () {
+    if (claimStatus) claimStatus.textContent = 'Loading…';
+    lookupMicrogift().then(function () {
+      var gift = loadedPreview && loadedPreview.microgift;
+      var redemption = loadedPreview && loadedPreview.redemption;
+      if (claimStatus) claimStatus.textContent = gift && gift.redeemable ? 'Microgift is eligible for redemption.' : (redemption ? 'Prior redemption found and available for verification.' : 'Microgift is not currently eligible for redemption.');
+    }).catch(function (error) { if (claimStatus) claimStatus.textContent = error.message; });
+  });
+
+  if (claimForm) claimForm.addEventListener('submit', async function (event) {
+    event.preventDefault();
+    if (submitting) return;
+    submitting = true;
+    var submit = claimForm.querySelector('[type="submit"]');
+    if (submit) submit.disabled = true;
+    if (claimStatus) claimStatus.textContent = 'Redeeming…';
+    try {
+      var preview = await lookupMicrogift();
+      if (!preview.microgift || !preview.microgift.redeemable) {
+        if (preview.redemption && preview.redemption.public_id) {
+          await reconcileRedemption(preview.redemption.public_id, submit);
+          return;
+        }
+        throw new Error('This Microgift is not eligible for redemption.');
       }
+      var payload = Object.fromEntries(new FormData(claimForm).entries());
+      payload.idempotency_key = redemptionWorkflowKey(payload.instance_id, payload.location_id);
+      var response = await Microgifter.post('/api/merchant/microgift-claim.php', payload);
+      var result = response.data || response;
+      if (claimStatus) claimStatus.textContent = response.message || 'Microgift redeemed.';
+      claimForm.elements.claim_code.value = '';
+      renderConfirmation(result);
+      await loadDashboard();
+    } catch (error) {
+      if (claimStatus) claimStatus.textContent = error.message || 'Unable to redeem this Microgift.';
+    } finally {
+      submitting = false;
+      if (submit) submit.disabled = false;
+    }
+  });
+
+  document.addEventListener('click', function (event) {
+    var button = event.target.closest('[data-redemption-reconcile]');
+    if (!button) return;
+    event.preventDefault();
+    reconcileRedemption(button.dataset.redemptionReconcile, button).catch(function (error) {
+      if (claimStatus) claimStatus.textContent = error.message || 'Unable to verify redemption.';
     });
-  }
+  });
 
   var codeForm = document.querySelector('[data-claim-code-form]');
-  if (codeForm) {
-    codeForm.addEventListener('submit', async function (event) {
-      event.preventDefault();
-      var status = document.querySelector('[data-claim-code-status]');
-      var payload = Object.fromEntries(new FormData(codeForm).entries());
-      payload.valid_until = payload.valid_until ? payload.valid_until.replace('T', ' ') : null;
-      payload.usage_limit = payload.usage_limit === '' ? null : Number(payload.usage_limit);
-      try {
-        status.textContent = 'Creating…';
-        var response = await Microgifter.post('/api/merchant/claim-codes.php', payload);
-        status.textContent = response.message || 'Claim code created.';
-        codeForm.reset();
-        await loadDashboard();
-      } catch (error) {
-        status.textContent = error.message;
-      }
-    });
-  }
+  if (codeForm) codeForm.addEventListener('submit', async function (event) {
+    event.preventDefault();
+    var status = document.querySelector('[data-claim-code-status]');
+    var payload = Object.fromEntries(new FormData(codeForm).entries());
+    payload.valid_until = payload.valid_until ? payload.valid_until.replace('T', ' ') : null;
+    payload.usage_limit = payload.usage_limit === '' ? null : Number(payload.usage_limit);
+    try {
+      if (status) status.textContent = 'Creating…';
+      var response = await Microgifter.post('/api/merchant/claim-codes.php', payload);
+      if (status) status.textContent = response.message || 'Claim code created.';
+      codeForm.reset();
+      await loadDashboard();
+    } catch (error) { if (status) status.textContent = error.message; }
+  });
 
   function activateTab(tab) {
-    document.querySelectorAll('[data-claim-tab]').forEach(function (candidate) {
-      candidate.classList.toggle('is-active', candidate.dataset.claimTab === tab);
-    });
-    document.querySelectorAll('[data-claim-panel]').forEach(function (panel) {
-      panel.hidden = panel.dataset.claimPanel !== tab;
-    });
+    document.querySelectorAll('[data-claim-tab]').forEach(function (candidate) { candidate.classList.toggle('is-active', candidate.dataset.claimTab === tab); });
+    document.querySelectorAll('[data-claim-panel]').forEach(function (panel) { panel.hidden = panel.dataset.claimPanel !== tab; });
     if (tab === 'locations') renderLocationActivity(latestDashboard);
   }
-
-  document.querySelectorAll('[data-claim-tab]').forEach(function (button) {
-    button.addEventListener('click', function () {
-      activateTab(button.dataset.claimTab);
-    });
+  document.querySelectorAll('[data-claim-tab]').forEach(function (button) { button.addEventListener('click', function () { activateTab(button.dataset.claimTab); }); });
+  document.querySelectorAll('[data-claim-jump]').forEach(function (link) { link.addEventListener('click', function () { activateTab(link.dataset.claimJump); }); });
+  if (searchInput) searchInput.addEventListener('input', function () {
+    window.clearTimeout(searchInput._claimTimer);
+    searchInput._claimTimer = window.setTimeout(function () { loadDashboard().catch(console.error); }, 220);
   });
-
-  document.querySelectorAll('[data-claim-jump]').forEach(function (link) {
-    link.addEventListener('click', function () {
-      activateTab(link.dataset.claimJump);
-    });
-  });
-
-  if (searchInput) {
-    searchInput.addEventListener('input', function () {
-      window.clearTimeout(searchInput._claimTimer);
-      searchInput._claimTimer = window.setTimeout(function () { loadDashboard().catch(console.error); }, 220);
-    });
-  }
   if (resultFilter) resultFilter.addEventListener('change', function () { loadDashboard().catch(console.error); });
   if (locationFilter) locationFilter.addEventListener('change', function () { loadDashboard().catch(console.error); });
   if (locationActivityFilter) locationActivityFilter.addEventListener('change', function () { renderLocationActivity(latestDashboard); });
-
   loadDashboard().catch(console.error);
 });
