@@ -1,0 +1,44 @@
+name: Builder Process Stabilization v1 Validation
+
+on:
+  pull_request:
+    paths:
+      - 'build.php'
+      - 'includes/product-builder-sidebar.php'
+      - 'assets/js/builder-process-stabilization-v1.js'
+      - 'assets/css/builder-process-stabilization-v1.css'
+      - 'api/catalog/builder-draft.php'
+      - 'scripts/validate_builder_process_stabilization_v1.php'
+      - '.github/workflows/builder-process-stabilization-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate stabilized product builder
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+
+      - name: PHP syntax check
+        run: |
+          set -euo pipefail
+          php -l build.php
+          php -l includes/product-builder-sidebar.php
+          php -l api/catalog/builder-draft.php
+          php -l scripts/validate_builder_process_stabilization_v1.php
+
+      - name: JavaScript syntax check
+        run: node --check assets/js/builder-process-stabilization-v1.js
+
+      - name: Validate builder process contracts
+        run: php scripts/validate_builder_process_stabilization_v1.php
