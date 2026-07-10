@@ -8,6 +8,7 @@ if (PHP_SAPI !== 'cli') {
 
 require_once dirname(__DIR__) . '/includes/app.php';
 require_once dirname(__DIR__) . '/api/store/_canvas_trigger_orchestration_rules.php';
+require_once dirname(__DIR__) . '/api/store/_canvas_trigger_orchestration_runner.php';
 
 $pdo = mg_db();
 if (!mg_trigger_orchestration_schema_ready($pdo)) {
@@ -53,7 +54,7 @@ foreach ($merchantIds as $merchantUserId) {
         $ingestion = mg_trigger_ingestion_run($pdo,$merchant,$sourceLimit);
         $orchestration = null;
         if ($settings['execution_mode'] !== 'paused') {
-            $orchestration = mg_trigger_orchestration_process_queue($pdo,$merchant,false,$queueLimit);
+            $orchestration = mg_trigger_orchestration_process_queue_authorized($pdo,$merchant,false,$queueLimit);
         } else {
             $totals['paused']++;
         }
