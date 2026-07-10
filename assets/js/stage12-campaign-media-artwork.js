@@ -6,6 +6,15 @@ document.addEventListener('DOMContentLoaded', function () {
   if (!root || !form || !window.Microgifter) return;
 
   var configs = {
+    instant_win_reward: {
+      label: 'Scratch-off image',
+      hint: 'Upload the JPG, PNG, or WebP image customers will scratch off to reveal the result underneath. Square or 4:3 artwork works best on mobile.',
+      assetField: 'instant_win_scratch_image_asset_id',
+      urlField: 'instant_win_scratch_image_url',
+      status: 'instant-win-scratch-image-upload-status',
+      input: 'instant-win-scratch-image-upload-input',
+      button: 'instant-win-scratch-image-upload-button'
+    },
     watch_video_reward: {
       label: 'Watch campaign artwork',
       hint: 'Upload a JPG, PNG, or WebP poster/thumbnail for the public Watch page.',
@@ -92,13 +101,16 @@ document.addEventListener('DOMContentLoaded', function () {
       var cfg = configs[type];
       if (!cfg) return;
       injectFor(type);
-      setField(cfg.assetField, campaign.rules.media_image_asset_id || '');
-      setField(cfg.urlField, campaign.rules.media_image_url || '');
-      setPreview(cfg, campaign.rules.media_image_url || '');
+      var asset = type === 'instant_win_reward' ? (campaign.rules.scratch_image_asset_id || campaign.rules.media_image_asset_id || '') : (campaign.rules.media_image_asset_id || '');
+      var url = type === 'instant_win_reward' ? (campaign.rules.scratch_image_url || campaign.rules.media_image_url || '') : (campaign.rules.media_image_url || '');
+      setField(cfg.assetField, asset);
+      setField(cfg.urlField, url);
+      setPreview(cfg, url);
     } catch (error) {}
   }
 
   function ensure() {
+    injectFor('instant_win_reward');
     injectFor('watch_video_reward');
     injectFor('listen_music_reward');
     syncExistingArtwork();
