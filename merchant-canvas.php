@@ -26,6 +26,7 @@ $page_styles = [
     '/assets/css/merchant-canvas-customer-analytics.css',
     '/assets/css/sponsored-campaign-card.css',
     '/assets/css/merchant-canvas-restoration.css',
+    '/assets/css/merchant-canvas-mobile-stats.css',
 ];
 $page_scripts = $hasMerchantAccess ? [
     '/assets/js/merchant-canvas-manual-operations.js',
