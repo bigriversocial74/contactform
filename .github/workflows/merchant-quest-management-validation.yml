@@ -1,0 +1,41 @@
+name: Merchant Quest Management Validation
+
+on:
+  pull_request:
+    paths:
+      - 'merchant-loyalty-quests.php'
+      - 'includes/merchant-loyalty-quests-view.php'
+      - 'includes/merchant-workspace.php'
+      - 'includes/merchant-view.php'
+      - 'assets/css/merchant-loyalty-quests.css'
+      - 'assets/js/merchant-loyalty-quests.js'
+      - 'api/merchant/loyalty-quest-management.php'
+      - 'scripts/validate_merchant_quest_management_v1.php'
+      - '.github/workflows/merchant-quest-management-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Merchant Quest Management v1 (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2','8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - name: PHP syntax
+        run: |
+          php -l merchant-loyalty-quests.php
+          php -l includes/merchant-loyalty-quests-view.php
+          php -l api/merchant/loyalty-quest-management.php
+          php -l scripts/validate_merchant_quest_management_v1.php
+      - name: Merchant Quest Management 10/10 contract
+        run: php scripts/validate_merchant_quest_management_v1.php
