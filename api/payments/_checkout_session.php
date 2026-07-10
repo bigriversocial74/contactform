@@ -97,7 +97,8 @@ function mg_payment_create_checkout_session(PDO $pdo,int $buyerUserId,string $or
 
     $active=$pdo->prepare(
         "SELECT cs.public_id checkout_session_id,cs.provider_key,cs.provider_session_reference,
-                cs.provider_checkout_url,cs.expires_at,pi.public_id payment_intent_id,pi.idempotency_key
+                cs.provider_checkout_url,cs.status session_status,cs.expires_at,
+                pi.public_id payment_intent_id,pi.idempotency_key
          FROM checkout_sessions cs
          INNER JOIN payment_intents pi ON pi.id=cs.payment_intent_id
          WHERE cs.order_id=? AND cs.provider_key=? AND cs.status IN ('created','open')
@@ -105,8 +106,8 @@ function mg_payment_create_checkout_session(PDO $pdo,int $buyerUserId,string $or
          ORDER BY cs.id DESC LIMIT 1 FOR UPDATE"
     );
     $active->execute([(int)$order['id'],$provider]);
-    if($active->fetch(PDO::FETCH_ASSOC)){
-        throw new MgCheckoutSessionException('An active checkout session already exists for this order. Reuse the original idempotency key or wait for the session to expire.',409);
+    if($activeSession=$active->fetch(PDO::FETCH_ASSOC)){
+        return mg_payment_checkout_session_payload($activeSession,$orderPublicId,true);
     }
 
     try{$account=mg_payment_assert_checkout_ready($pdo,$order,$provider);}catch(Throwable $error){
