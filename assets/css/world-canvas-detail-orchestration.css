@@ -1,6 +1,6 @@
 .mg-world-canvas{--mg-world-region-progress:0;--mg-world-city-progress:0;--mg-world-store-progress:0;--mg-world-detail-progress:0}
 .mg-world-map{isolation:isolate}
-.mg-world-map .mg-world-viewport{position:relative;z-index:2}
+.mg-world-map .mg-world-viewport{z-index:2}
 .mg-world-density-layer{position:absolute;z-index:1;inset:0;pointer-events:none;overflow:hidden;opacity:.96;transition:opacity .22s ease}
 .mg-world-density-spot{position:absolute;width:var(--mg-density-size,72px);height:var(--mg-density-size,72px);border-radius:999px;transform:translate(-50%,-50%);opacity:var(--mg-density-opacity,.12);background:radial-gradient(circle,rgba(14,165,233,.56) 0%,rgba(37,99,235,.2) 38%,rgba(99,102,241,.08) 62%,rgba(99,102,241,0) 74%);filter:blur(calc(4px + var(--mg-density-merchant,0) * 4px));mix-blend-mode:multiply;transition:left .18s linear,top .18s linear,width .22s ease,height .22s ease,opacity .22s ease}
 .mg-world-canvas .mg-world-node{transform:translate(calc(-50% + var(--mg-world-collision-x,0px)),calc(-50% + var(--mg-world-collision-y,0px))) scale(var(--mg-world-inverse-zoom,1))!important;transition:width .24s ease,height .24s ease,padding .24s ease,border-radius .24s ease,background .24s ease,box-shadow .24s ease,border-color .24s ease,opacity .18s ease,filter .18s ease,transform .2s ease!important}
