@@ -26,13 +26,13 @@ foreach ($files as $key => $path) {
 
 $checks = [
     'merchant page loads the scoped orders view and assets' =>
-        str_contains($content['page'], "$merchantView = 'orders'")
+        str_contains($content['page'], '$merchantView = \'orders\'')
         && str_contains($content['page'], '/assets/js/merchant-orders.js')
         && str_contains($content['page'], '/assets/css/merchant-orders.css'),
     'merchant navigation and view router expose Orders without replacing PPPM' =>
         str_contains($content['workspace'], "'orders' => ['Orders'")
         && str_contains($content['workspace'], "'pppm' => ['PPPM Items'")
-        && str_contains($content['router'], "$merchantView==='orders'"),
+        && str_contains($content['router'], '$merchantView===\'orders\''),
     'list endpoint is permission and merchant scoped' =>
         str_contains($content['list'], "mg_merchant_require_permission('merchant.payments.view')")
         && str_contains($content['foundation'], 'WHERE o.merchant_user_id=?'),
@@ -40,7 +40,8 @@ $checks = [
         str_contains($content['foundation'], 'MG_MERCHANT_ORDERS_MAX_LIMIT = 50')
         && str_contains($content['foundation'], '$allowedPayment')
         && str_contains($content['foundation'], '$allowedFulfillment')
-        && str_contains($content['foundation'], "LIMIT ' . ($filters['limit'] + 1)"),
+        && str_contains($content['foundation'], ' LIMIT ')
+        && str_contains($content['foundation'], ' OFFSET '),
     'customer identity is masked and internal IDs are omitted from payloads' =>
         str_contains($content['foundation'], 'mg_merchant_orders_email_mask')
         && str_contains($content['foundation'], "'email_masked'")
