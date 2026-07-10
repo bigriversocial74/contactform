@@ -55,23 +55,23 @@ jobs:
             php -l "$file"
           done < <(find examples/local-quest-rewards scripts -name '*.php' -type f | sort)
 
-      - name: Validate Local Quest foundation
-        shell: bash
-        run: |
-          set -euo pipefail
-          validators=(
-            scripts/validate_local_quest_rewards_demo.php
-            scripts/validate_local_quest_demo_v2.php
-            scripts/validate_local_quest_signed_qr_enforcement.php
-            scripts/validate_local_quest_replay_storage.php
-            scripts/validate_local_quest_replay_admin.php
-            scripts/validate_local_quest_production_foundation_v1.php
-          )
-          for validator in "${validators[@]}"; do
-            echo "::group::$(basename "$validator" .php)"
-            php "$validator"
-            echo '::endgroup::'
-          done
+      - name: Foundation contract
+        run: php scripts/validate_local_quest_rewards_demo.php
+
+      - name: Demo v2 contract
+        run: php scripts/validate_local_quest_demo_v2.php
+
+      - name: Signed QR contract
+        run: php scripts/validate_local_quest_signed_qr_enforcement.php
+
+      - name: Replay storage contract
+        run: php scripts/validate_local_quest_replay_storage.php
+
+      - name: Replay admin contract
+        run: php scripts/validate_local_quest_replay_admin.php
+
+      - name: Production foundation contract
+        run: php scripts/validate_local_quest_production_foundation_v1.php
 
       - name: Assert SQL-only runtime
         shell: bash
