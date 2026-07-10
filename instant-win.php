@@ -101,24 +101,19 @@ require __DIR__ . '/includes/header.php';
       <span class="mg-public-campaign-eyebrow">Spin / Scratch Instant Win</span>
       <h1><?= mg_e($headline) ?></h1>
       <p><?= mg_e($description) ?></p>
-      <div class="mg-public-campaign-trust-row"><span>Scratch reveal</span><span>CRM play tracked</span><span>Winners sent to Inbox</span></div>
+      <div class="mg-public-campaign-trust-row"><span>Scratch to play</span><span>Interaction creates CRM contact</span><span>Winners sent to Inbox</span></div>
     </div>
     <aside class="mg-public-campaign-card mg-public-campaign-flow-card">
       <?php if ($errorMessage !== ''): ?>
         <div class="mg-public-campaign-result is-visible"><strong><?= mg_e($errorMessage) ?></strong></div>
       <?php else: ?>
-        <form class="mg-public-campaign-form" data-campaign-form data-instant-win-form data-submit-endpoint="/api/public/campaigns/instant-win.php" data-campaign-type="instant_win_reward" novalidate>
-          <input type="hidden" name="campaign_id" value="<?= mg_e((string)$campaign['public_id']) ?>">
-          <input type="hidden" name="campaign" value="<?= mg_e((string)($campaign['public_slug'] ?? $campaign['public_id'])) ?>">
-          <input type="hidden" name="campaign_type" value="instant_win_reward">
-          <input type="hidden" name="entry_reveal_confirmed" value="0">
+        <section class="mg-instant-win-experience" data-instant-win-experience data-endpoint="/api/public/campaigns/instant-win.php" data-campaign-id="<?= mg_e((string)$campaign['public_id']) ?>" data-campaign="<?= mg_e((string)($campaign['public_slug'] ?? $campaign['public_id'])) ?>" data-prefill-email="<?= mg_e($prefillEmail) ?>" data-prefill-name="<?= mg_e($prefillName) ?>">
           <div class="mg-public-campaign-profile-card mg-public-campaign-form-profile"><div class="mg-public-campaign-avatar"><?php if ($avatarUrl): ?><img src="<?= mg_e($avatarUrl) ?>" alt="<?= mg_e($merchantName) ?> profile image"><?php else: ?><span><?= mg_e(mg_instant_win_page_initials($merchantName)) ?></span><?php endif; ?></div><div class="mg-public-campaign-profile-copy"><span class="mg-public-campaign-eyebrow">Instant Win</span><h2><?= mg_e($merchantName) ?></h2><?php if ($merchantHeadline !== ''): ?><p><?= mg_e($merchantHeadline) ?></p><?php endif; ?><div class="mg-public-campaign-profile-stats"><?php if ($merchantLocation !== ''): ?><span><?= mg_e($merchantLocation) ?></span><?php endif; ?><span>Scratch reveal</span><span>Inbox delivery</span></div></div><?php if ($merchantProfileUrl): ?><div class="mg-public-campaign-profile-actions"><a class="mg-btn mg-btn-soft" href="<?= mg_e($merchantProfileUrl) ?>">View profile</a></div><?php endif; ?></div>
-          <button class="mg-public-campaign-reward mg-public-campaign-reward-tab mg-instant-win-card" type="button" data-instant-win-card data-scratch-image="<?= mg_e($scratchImageUrl ?? '') ?>"><span data-instant-win-prompt>Scratch card</span><strong data-instant-win-title>Swipe or tap to reveal</strong><em><?= mg_e($rewardTitle) ?> · <?= mg_e($rewardValue) ?></em><div class="mg-public-campaign-reward-meta"><span>Play tracked</span><span>Winner reward to Inbox</span></div><small class="mg-instant-win-mobile-hint">Mobile friendly: swipe your finger over the image.</small></button>
-          <div class="mg-public-campaign-field-grid"><label>Name<input name="name" placeholder="Your name" maxlength="180" value="<?= mg_e($prefillName) ?>"></label><label>Email<input name="email" type="email" placeholder="you@example.com" required maxlength="255" value="<?= mg_e($prefillEmail) ?>"></label><label class="mg-public-campaign-field-wide">Phone <span>(optional)</span><input name="phone" placeholder="Optional" maxlength="60"></label></div>
-          <div class="mg-action-row"><button class="mg-btn mg-btn-soft" type="button" data-instant-win-reveal>Reveal card</button><button class="mg-btn mg-btn-primary mg-public-campaign-primary-action" type="submit">Submit instant-win play <span aria-hidden="true">→</span></button></div>
-          <div class="mg-public-campaign-status" data-campaign-status data-instant-win-status></div><p class="mg-public-campaign-privacy">Every play is recorded for merchant campaign analytics. Winners receive the reward through Microgifter Inbox.</p>
-        </form>
-        <div class="mg-public-campaign-result" data-campaign-result></div>
+          <button class="mg-public-campaign-reward mg-public-campaign-reward-tab mg-instant-win-card" type="button" data-instant-win-card data-scratch-image="<?= mg_e($scratchImageUrl ?? '') ?>"><span data-instant-win-prompt>Scratch card</span><strong data-instant-win-title>Swipe or tap to reveal</strong><em><?= mg_e($rewardTitle) ?> · <?= mg_e($rewardValue) ?></em><div class="mg-public-campaign-reward-meta"><span>Play tracked after interaction</span><span>Winner reward to Inbox</span></div><small class="mg-instant-win-mobile-hint">Mobile friendly: swipe your finger over the image.</small></button>
+          <div class="mg-interaction-identity" data-interaction-identity<?= $prefillEmail !== '' ? ' hidden' : '' ?>><strong>Save this play</strong><p>Enter your email so Microgifter can record the play and attach the result to your CRM/contact record.</p><label>Email<input data-interaction-email type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" value="<?= mg_e($prefillEmail) ?>"></label><label>Name <span>(optional)</span><input data-interaction-name autocomplete="name" maxlength="180" placeholder="Your name" value="<?= mg_e($prefillName) ?>"></label><button class="mg-btn mg-btn-primary" type="button" data-instant-win-save>Record play</button></div>
+          <div class="mg-public-campaign-status" data-campaign-status data-instant-win-status></div><p class="mg-public-campaign-privacy">This campaign records a CRM contact only after you scratch/reveal the card.</p>
+          <div class="mg-public-campaign-result" data-campaign-result></div>
+        </section>
       <?php endif; ?>
     </aside>
   </div>
