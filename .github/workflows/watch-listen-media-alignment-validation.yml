@@ -13,7 +13,7 @@ on:
       - 'api/public/campaigns/watch-progress-v2.php'
       - 'api/public/campaigns/listen-progress.php'
       - 'scripts/validate_watch_listen_media_alignment_v1.php'
-      - 'scripts/validate_campaign_landing_foundation_v1.php'
+      - 'scripts/validate_campaign_landing_foundation_repair_v1.php'
       - 'scripts/validate_watch_video_reward_v1_4.php'
       - 'scripts/validate_listen_music_reward_v1_5.php'
       - '.github/workflows/watch-listen-media-alignment-validation.yml'
@@ -44,7 +44,7 @@ jobs:
           php -l api/public/campaigns/watch-progress-v2.php
           php -l api/public/campaigns/listen-progress.php
           php -l scripts/validate_watch_listen_media_alignment_v1.php
-          php -l scripts/validate_campaign_landing_foundation_v1.php
+          php -l scripts/validate_campaign_landing_foundation_repair_v1.php
           php -l scripts/validate_watch_video_reward_v1_4.php
           php -l scripts/validate_listen_music_reward_v1_5.php
       - name: JavaScript syntax check
@@ -55,7 +55,7 @@ jobs:
       - name: Validate media alignment
         run: php scripts/validate_watch_listen_media_alignment_v1.php
       - name: Validate campaign landing foundation
-        run: php scripts/validate_campaign_landing_foundation_v1.php
+        run: php scripts/validate_campaign_landing_foundation_repair_v1.php
       - name: Validate Watch Video Reward
         run: php scripts/validate_watch_video_reward_v1_4.php
       - name: Validate Listen Music Reward
