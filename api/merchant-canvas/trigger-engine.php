@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require_once dirname(__DIR__) . '/store/_canvas_trigger_engine.php';
+require_once dirname(__DIR__) . '/store/_canvas_trigger_engine_runner.php';
 
 $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 $user = mg_require_api_user();
@@ -60,9 +60,10 @@ try {
     }
 
     if ($action === 'preview') {
-        $run = mg_store_trigger_engine_run($pdo, $user, true);
+        $run = mg_store_trigger_engine_run_authorized($pdo, $user, true);
         mg_audit('merchant.store_trigger_engine_previewed', 'store_trigger_engine', [
             'mode'=>'dry_run','summary'=>$run['summary'],'notification_delivery'=>false,'reward_issue'=>false,
+            'preview_consumes_notification'=>false,
         ], $merchantUserId);
         mg_ok(['run'=>$run,'payload'=>mg_store_trigger_engine_payload($pdo,$merchantUserId)], 'Dry-run evaluation completed.');
     }
@@ -72,10 +73,11 @@ try {
         if ($settings['execution_mode'] === 'notification' && empty($input['confirm_notification_delivery'])) {
             mg_fail('Confirm notification delivery before running the engine in Notification mode.', 422);
         }
-        $run = mg_store_trigger_engine_run($pdo, $user, false);
+        $run = mg_store_trigger_engine_run_authorized($pdo, $user, false);
         mg_audit('merchant.store_trigger_engine_ran', 'store_trigger_engine', [
             'mode'=>$run['summary']['mode'] ?? $settings['execution_mode'],'summary'=>$run['summary'],
             'notification_delivery'=>($run['summary']['mode'] ?? '') === 'notification','reward_issue'=>false,
+            'preview_consumes_notification'=>false,
         ], $merchantUserId);
         mg_ok(['run'=>$run,'payload'=>mg_store_trigger_engine_payload($pdo,$merchantUserId)], 'Server trigger evaluation completed.');
     }
