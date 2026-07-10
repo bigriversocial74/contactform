@@ -1,0 +1,48 @@
+name: Merchant Canvas Real Customer Analytics & Journey Data v1 Validation
+
+on:
+  pull_request:
+    paths:
+      - 'merchant-canvas.php'
+      - 'assets/js/merchant-canvas-customer-analytics.js'
+      - 'assets/css/merchant-canvas-customer-analytics.css'
+      - 'api/merchant-canvas/customer-analytics.php'
+      - 'api/merchant-canvas/health.php'
+      - 'api/store/_canvas_analytics.php'
+      - 'database/merchant_canvas_real_customer_analytics_journey_v1.sql'
+      - 'scripts/validate_merchant_canvas_real_customer_analytics_journey_v1.php'
+      - '.github/workflows/merchant-canvas-real-customer-analytics-journey-v1-validation.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+
+      - name: PHP syntax
+        run: |
+          php -l merchant-canvas.php
+          php -l api/merchant-canvas/customer-analytics.php
+          php -l api/merchant-canvas/health.php
+          php -l api/store/_canvas_analytics.php
+          php -l scripts/validate_merchant_canvas_real_customer_analytics_journey_v1.php
+
+      - name: JavaScript syntax
+        run: node --check assets/js/merchant-canvas-customer-analytics.js
+
+      - name: Analytics contract validation
+        run: php scripts/validate_merchant_canvas_real_customer_analytics_journey_v1.php
+
+      - name: Manual operations regression validation
+        run: php scripts/validate_merchant_canvas_manual_operations_stabilization_v1.php
+
+      - name: Production containment regression validation
+        run: php scripts/validate_merchant_canvas_production_containment_v1.php

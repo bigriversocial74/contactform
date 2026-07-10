@@ -36,6 +36,7 @@ try {
         'mg_customer_store_history',
         'mg_merchant_customer_crm',
         'mg_merchant_canvas_action_receipts',
+        'mg_merchant_canvas_journey_events',
     ];
     $deliveryTables = ['message_threads','messages','notifications','reward_templates','campaigns','wallet_items'];
     $optionalTables = ['mg_agent_messages'];
@@ -53,6 +54,7 @@ try {
         'history_rows' => mg_canvas_health_count($pdo, 'mg_customer_store_history', 'merchant_user_id=?', [$merchantUserId]),
         'crm_records' => mg_canvas_health_count($pdo, 'mg_merchant_customer_crm', 'merchant_user_id=?', [$merchantUserId]),
         'protected_actions' => mg_canvas_health_count($pdo, 'mg_merchant_canvas_action_receipts', 'merchant_user_id=?', [$merchantUserId]),
+        'journey_events' => mg_canvas_health_count($pdo, 'mg_merchant_canvas_journey_events', 'merchant_user_id=?', [$merchantUserId]),
     ];
 
     mg_ok([

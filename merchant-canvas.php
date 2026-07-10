@@ -9,8 +9,8 @@ $page_title = 'Merchant Store Canvas | Microgifter';
 $page_section = 'agent';
 $header_mode = 'agent';
 $agent_tab = 'store-canvas';
-$page_styles = ['/assets/css/merchant-canvas.css','/assets/css/merchant-canvas-rewards.css','/assets/css/merchant-canvas-phase2.css','/assets/css/merchant-canvas-motion.css','/assets/css/merchant-canvas-drawer-layer.css','/assets/css/merchant-canvas-settings-drawers.css','/assets/css/merchant-canvas-drawer-fixes.css','/assets/css/merchant-canvas-customer-tabs.css','/assets/css/merchant-canvas-intelligence.css','/assets/css/merchant-canvas-store-health.css','/assets/css/merchant-canvas-mobile-icons.css','/assets/css/merchant-canvas-containment.css','/assets/css/merchant-canvas-manual-operations.css','/assets/css/sponsored-campaign-card.css'];
-$page_scripts = $hasMerchantAccess ? ['/assets/js/merchant-canvas-manual-operations.js','/assets/js/merchant-canvas-drawer-coordinator.js','/assets/js/merchant-canvas-mobile-icons.js','/assets/js/sponsored-campaign-card.js'] : [];
+$page_styles = ['/assets/css/merchant-canvas.css','/assets/css/merchant-canvas-rewards.css','/assets/css/merchant-canvas-phase2.css','/assets/css/merchant-canvas-motion.css','/assets/css/merchant-canvas-drawer-layer.css','/assets/css/merchant-canvas-settings-drawers.css','/assets/css/merchant-canvas-drawer-fixes.css','/assets/css/merchant-canvas-customer-tabs.css','/assets/css/merchant-canvas-intelligence.css','/assets/css/merchant-canvas-store-health.css','/assets/css/merchant-canvas-mobile-icons.css','/assets/css/merchant-canvas-containment.css','/assets/css/merchant-canvas-manual-operations.css','/assets/css/merchant-canvas-customer-analytics.css','/assets/css/sponsored-campaign-card.css'];
+$page_scripts = $hasMerchantAccess ? ['/assets/js/merchant-canvas-manual-operations.js','/assets/js/merchant-canvas-customer-analytics.js','/assets/js/merchant-canvas-drawer-coordinator.js','/assets/js/merchant-canvas-mobile-icons.js','/assets/js/sponsored-campaign-card.js'] : [];
 $page_manifest = [
     'id' => 'merchant-canvas',
     'title' => $page_title,
@@ -66,7 +66,7 @@ require __DIR__ . '/includes/header.php';
           <div>
             <span class="mg-canvas-eyebrow">Production containment active</span>
             <strong>Automatic movement, proximity chat, and overlap-triggered campaigns are paused.</strong>
-            <p>Manual customer actions now use server-backed CRM safeguards, session validation, and protected request keys.</p>
+            <p>Manual customer actions now use server-backed CRM safeguards, session validation, protected request keys, and merchant-scoped customer journey analytics.</p>
           </div>
           <div>
             <span class="mg-canvas-containment-state">Manual operations</span>
@@ -108,7 +108,7 @@ require __DIR__ . '/includes/header.php';
                   <?php endif; ?>
                 </span>
                 <strong><?php echo mg_e($merchantDisplayName); ?></strong>
-                <small>Merchant Agent · protected manual messaging · protected manual rewards</small>
+                <small>Merchant Agent · protected manual messaging · protected manual rewards · real customer journey</small>
               </div>
               <div class="mg-canvas-avatar-layer" data-canvas-customers aria-live="polite"></div>
               <div class="mg-sponsored-map-layer" data-mg-ad-placement="world_canvas_sponsored_pin" data-mg-ad-limit="5" aria-label="Sponsored World Canvas pins"></div>
