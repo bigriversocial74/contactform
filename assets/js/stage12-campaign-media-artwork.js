@@ -23,6 +23,15 @@ document.addEventListener('DOMContentLoaded', function () {
       status: 'listen-media-image-upload-status',
       input: 'listen-media-image-upload-input',
       button: 'listen-media-image-upload-button'
+    },
+    instant_win_reward: {
+      label: 'Scratch-card artwork',
+      hint: 'Upload the image used as the scratch-off layer on the public Instant Win page. Spin Wheel mode ignores this artwork.',
+      assetField: 'instant_win_scratch_image_asset_id',
+      urlField: 'instant_win_scratch_image_url',
+      status: 'instant-win-scratch-image-upload-status',
+      input: 'instant-win-scratch-image-upload-input',
+      button: 'instant-win-scratch-image-upload-button'
     }
   };
 
@@ -101,6 +110,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function ensure() {
     injectFor('watch_video_reward');
     injectFor('listen_music_reward');
+    injectFor('instant_win_reward');
     syncExistingArtwork();
   }
 
