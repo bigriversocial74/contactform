@@ -50,8 +50,8 @@ try {
 
     $expect(
         str_contains($controller, 'followingFromResponse(response, requestedFollowing)')
-        && str_contains($controller, "candidate.dataset.following = following ? 'true' : 'false'")
-        && str_contains($controller, "candidate.setAttribute('aria-pressed'"),
+        && str_contains($controller, "button.dataset.following = following ? 'true' : 'false'")
+        && str_contains($controller, "button.setAttribute('aria-pressed'"),
         'Follow buttons reconcile visible and accessible state after the relationship request'
     );
 
