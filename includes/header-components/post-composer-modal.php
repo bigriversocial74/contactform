@@ -14,4 +14,5 @@ declare(strict_types=1);
   </section>
 </div>
 <script src="/assets/js/create-center-inline.js" defer></script>
+<script src="/assets/js/create-center-storefront-preserve.js" defer></script>
 <script src="/assets/js/create-center-post-success.js" defer></script>
