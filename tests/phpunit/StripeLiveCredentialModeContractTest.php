@@ -54,15 +54,12 @@ final class StripeLiveCredentialModeContractTest extends TestCase
             'function mg_admin_payment_key_mode',
             "\$_GET['mode']??'auto'",
             "in_array(\$requested,['test','live'],true)",
-            "'configured_modes'=>(",
+            "\$payload['configured_modes']=mg_admin_payment_configured_modes(\$pdo)",
+            'Test credentials are not required for this ',
+            'mode_storage_warning',
         ] as $needle){
-            if($needle==="'configured_modes'=>(")continue;
             self::assertStringContainsString($needle,$source);
         }
-
-        self::assertStringContainsString("\$payload['configured_modes']=mg_admin_payment_configured_modes(\$pdo)",$source);
-        self::assertStringContainsString("Test credentials are not required for this ", $source);
-        self::assertStringContainsString('mode_storage_warning',$source);
     }
 
     public function testAdminBrowserDefaultsToAutoAndDoesNotHardcodeTestRuntime(): void
@@ -70,10 +67,10 @@ final class StripeLiveCredentialModeContractTest extends TestCase
         $source=$this->source('assets/js/admin-payments.js');
 
         self::assertStringContainsString("requestedMode = 'auto'",$source);
-        self::assertStringContainsString("load(requestedMode)",$source);
+        self::assertStringContainsString('load(requestedMode)',$source);
         self::assertStringContainsString("sk_' + selected + '_… or rk_' + selected + '_…",$source);
-        self::assertStringContainsString("putenv('MG_PAYMENT_MODE=" ,$source);
-        self::assertStringContainsString("putenv('MG_APP_URL=" ,$source);
+        self::assertStringContainsString("putenv('MG_PAYMENT_MODE=",$source);
+        self::assertStringContainsString("putenv('MG_APP_URL=",$source);
         self::assertStringNotContainsString("putenv('MG_PAYMENT_MODE=test')",$source);
         self::assertStringContainsString('Test credentials are not required when saving Live.',$source);
     }
