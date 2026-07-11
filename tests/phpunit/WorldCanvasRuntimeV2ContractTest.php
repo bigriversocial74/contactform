@@ -19,10 +19,14 @@ final class WorldCanvasRuntimeV2ContractTest extends TestCase
     {
         $activity=file_get_contents(dirname(__DIR__,2).'/api/world-canvas/activity.php');
         $normalizer=file_get_contents(dirname(__DIR__,2).'/api/world-canvas/_runtime_v2.php');
-        self::assertIsString($activity);self::assertIsString($normalizer);
+        $sharedUsers=file_get_contents(dirname(__DIR__,2).'/api/world-canvas/_shared_users_v2.php');
+        self::assertIsString($activity);self::assertIsString($normalizer);self::assertIsString($sharedUsers);
         self::assertStringContainsString("require_once __DIR__ . '/_runtime_v2.php'",$activity);
+        self::assertStringContainsString("require_once __DIR__ . '/_shared_users_v2.php'",$activity);
         self::assertStringContainsString('mg_world_canvas_runtime_v2($pdo, $user, $payload)',$activity);
+        self::assertStringContainsString('mg_world_canvas_merge_shared_users_v2($pdo, $user, $payload)',$activity);
         foreach(["'merchant_location_source' => 'merchant_locations'","'user_location_source' => 'user_world_positions'","'random_geo_fallback' => false",'entered_registered_merchant_location','entity_key'] as $needle)self::assertStringContainsString($needle,$normalizer);
+        foreach(['user_world_positions','shared_user_world_position',"'entity_key' => 'user:' . $userId",'current_user_position_is_world_share'] as $needle)self::assertStringContainsString($needle,$sharedUsers);
     }
 
     public function testMerchantPresencePolicyBlocksOrAllowsUnattendedEntry(): void
