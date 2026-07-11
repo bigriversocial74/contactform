@@ -6,6 +6,7 @@ $files=[
     'page'=>$root.'/merchant-locations.php',
     'view'=>$root.'/includes/merchant-locations-view.php',
     'api'=>$root.'/api/merchant/locations.php',
+    'builder'=>$root.'/api/catalog/_publish_distribution.php',
     'css'=>$root.'/assets/css/merchant-locations-redemption.css',
     'js'=>$root.'/assets/js/merchant-locations-tabs.js',
     'navigation'=>$root.'/includes/merchant-navigation.php',
@@ -44,19 +45,24 @@ $checks=[
         && str_contains($content['view'],'data-location-list')
         && str_contains($content['view'],'data-location-form')
         && str_contains($content['view'],'data-location-open-add'),
-    'merchant-owned locations load even when legacy workspace_id is null' =>
-        str_contains($content['api'],'WHERE ml.merchant_user_id=?')
-        && str_contains($content['api'],'$stmt->execute([$merchantId])')
-        && !str_contains($content['api'],'WHERE ml.workspace_id=? AND ml.merchant_user_id=?'),
-    'legacy location edits repair the workspace link without weakening ownership' =>
-        str_contains($content['api'],'SET workspace_id=?,name=?,location_code=?')
-        && str_contains($content['api'],'WHERE id=? AND public_id=? AND merchant_user_id=?')
-        && !str_contains($content['api'],'WHERE id=? AND public_id=? AND workspace_id=? AND merchant_user_id=?'),
-    'location codes and primary state remain merchant scoped' =>
-        str_contains($content['api'],'WHERE merchant_user_id=? AND location_code=? AND public_id<>?')
-        && str_contains($content['api'],'UPDATE merchant_locations SET is_primary=0,updated_at=NOW()')
-        && str_contains($content['api'],'WHERE merchant_user_id=?')
-        && str_contains($content['api'],"SELECT COUNT(*) FROM merchant_locations WHERE merchant_user_id=? AND status<>'archived'"),
+    'location page reads the same workspace-owned rows shown by product builder' =>
+        str_contains($content['builder'],'INNER JOIN merchant_workspaces mw ON mw.id=ml.workspace_id')
+        && str_contains($content['builder'],"WHERE mw.merchant_user_id=? AND ml.status='active'")
+        && str_contains($content['api'],'LEFT JOIN merchant_workspaces scope_mw ON scope_mw.id=ml.workspace_id')
+        && str_contains($content['api'],'WHERE (ml.merchant_user_id=? OR scope_mw.merchant_user_id=?)')
+        && str_contains($content['api'],'$stmt->execute([$merchantId,$merchantId])'),
+    'legacy location edits normalize both merchant and workspace ownership' =>
+        str_contains($content['api'],'AND (ml.merchant_user_id=? OR scope_mw.merchant_user_id=?)')
+        && str_contains($content['api'],'SET workspace_id=?,merchant_user_id=?,name=?,location_code=?')
+        && str_contains($content['api'],'$existing->execute([$locationId,$merchantId,$merchantId])'),
+    'location codes limits and primary state use the dual merchant scope' =>
+        str_contains($content['api'],'$stmt->execute([$merchantId,$merchantId,$candidate,$excludePublicId])')
+        && str_contains($content['api'],"AND ml.status<>'archived'")
+        && str_contains($content['api'],'WHERE merchant_user_id=? OR workspace_id=?'),
+    'claim code readiness follows the owned location row' =>
+        str_contains($content['api'],'WHERE mcc.location_id=ml.id')
+        && str_contains($content['api'],"WHERE location_id=? AND status='active'")
+        && !str_contains($content['api'],'WHERE mcc.merchant_user_id=ml.merchant_user_id'),
     'add and edit interactions scroll to the always-visible editor' =>
         str_contains($content['js'],"closest('[data-location-open-add]')")
         && str_contains($content['js'],"closest('[data-location]')")
@@ -77,4 +83,4 @@ if($failed!==[]){
     exit(1);
 }
 
-echo "\nMerchant locations display/layout contract: 10/10.".PHP_EOL;
+echo "\nMerchant locations display/layout contract: 11/11.".PHP_EOL;
