@@ -26,7 +26,7 @@ $appSidebarAgentBadges = $appSidebarVariant === 'merchant';
 if (!$appSidebarNav) {
     $appSidebarNav = [
         'account' => ['section' => 'Overview', 'label' => 'Account', 'detail' => 'Profile and access', 'href' => '/account.php', 'visible' => true],
-        'wallet' => ['label' => 'Wallet', 'detail' => 'Rewards and balance', 'href' => '/wallet.php', 'visible' => true],
+        'inbox' => ['label' => 'Inbox', 'detail' => 'Gifts, rewards, and ownership', 'href' => '/inbox.php', 'visible' => true],
         'merchant' => ['section' => 'Commerce', 'label' => 'Merchant', 'detail' => 'Business workspace', 'href' => '/merchant.php', 'visible' => true],
         'messages' => ['label' => 'Messages', 'detail' => 'Gift conversations', 'href' => '/messages.php', 'visible' => true],
         'feed' => ['section' => 'Community', 'label' => 'Feed', 'detail' => 'Public activity', 'href' => '/feed.php', 'visible' => true],
