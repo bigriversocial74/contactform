@@ -7,6 +7,7 @@ declare(strict_types=1);
       <button class="is-active" type="button" role="tab" aria-selected="true" data-crm-tab-target="overview">Overview</button>
       <button type="button" role="tab" aria-selected="false" data-crm-tab-target="contacts">Contacts</button>
       <button type="button" role="tab" aria-selected="false" data-crm-tab-target="campaigns">Campaigns</button>
+      <button type="button" role="tab" aria-selected="false" data-crm-tab-target="performance">Performance</button>
       <button type="button" role="tab" aria-selected="false" data-crm-tab-target="rewards">Rewards</button>
       <button type="button" role="tab" aria-selected="false" data-crm-tab-target="segments">Media Segments</button>
       <button type="button" role="tab" aria-selected="false" data-crm-tab-target="retention">Retention</button>
@@ -112,6 +113,56 @@ declare(strict_types=1);
       <article class="mg-crm-command-card"><span>A</span><h3>Activity feed</h3><p>Timeline cards show message, invite, direct reward, claim, and redemption events.</p></article>
       <article class="mg-crm-command-card"><span>P</span><h3>Performance</h3><p>Measure contacts, accounts, delivered invites, rewards issued, and redemption momentum.</p></article>
     </div>
+
+    <section class="mg-app-panel mg-crm-card mg-crm-builder-card" data-crm-campaign-builder>
+      <div class="mg-app-panel-head mg-crm-card-head">
+        <div><span class="mg-eyebrow">Campaign builder</span><h2>Build reusable CRM campaigns</h2><p>Save smart segments, build a message/reward/follow-up sequence, save drafts, and launch to the matched audience.</p></div>
+        <span class="mg-crm-selected-pill" data-crm-builder-audience-count>0 contacts</span>
+      </div>
+      <div class="mg-app-panel-body mg-crm-builder-layout">
+        <section class="mg-crm-builder-main">
+          <div class="mg-crm-builder-preview" data-crm-builder-preview></div>
+          <div class="mg-crm-builder-fields">
+            <label class="mg-crm-field"><span>Campaign name</span><input class="mg-input" type="text" data-crm-builder-name maxlength="180" placeholder="Weekend VIP reward push"></label>
+            <label class="mg-crm-field"><span>Audience</span><select class="mg-input" data-crm-builder-segment><option value="all">All contacts</option></select></label>
+            <label class="mg-crm-field is-full"><span>Message</span><textarea data-crm-builder-message maxlength="4000" placeholder="Write the campaign message..."></textarea></label>
+            <label class="mg-crm-field"><span>Optional reward</span><select class="mg-input" data-crm-builder-reward><option value="">No reward</option></select></label>
+            <label class="mg-crm-field"><span>Reward note</span><textarea data-crm-builder-note maxlength="1000" placeholder="Short reward note..."></textarea></label>
+            <label class="mg-crm-field"><span>Follow-up due date</span><input class="mg-input" type="date" data-crm-builder-followup-due></label>
+            <label class="mg-crm-field"><span>Follow-up note</span><textarea data-crm-builder-followup-note maxlength="1000" placeholder="Follow-up task note..."></textarea></label>
+          </div>
+          <p class="mg-form-status" data-crm-builder-status></p>
+          <div class="mg-heading-actions"><button class="mg-btn mg-btn-soft" type="button" data-crm-save-draft>Save draft</button><button class="mg-btn" type="button" data-crm-launch-campaign>Launch campaign</button></div>
+        </section>
+        <aside class="mg-crm-builder-side">
+          <section class="mg-crm-builder-box">
+            <h3>Save segment</h3><p>Save the current smart audience so it can be reused by this builder.</p>
+            <label class="mg-crm-field"><span>Segment name</span><input class="mg-input" type="text" data-crm-save-segment-name maxlength="140" placeholder="Inactive reward leads"></label>
+            <label class="mg-crm-field"><span>Based on</span><select class="mg-input" data-crm-save-segment-key><option value="all">All contacts</option></select></label>
+            <button class="mg-btn mg-btn-soft" type="button" data-crm-save-segment>Save segment</button>
+          </section>
+          <section class="mg-crm-builder-box"><h3>Drafts</h3><div class="mg-crm-builder-list" data-crm-builder-drafts></div></section>
+          <section class="mg-crm-builder-box"><h3>Recent launches</h3><div class="mg-crm-builder-list" data-crm-builder-launches></div></section>
+        </aside>
+      </div>
+    </section>
+  </section>
+
+  <section class="mg-crm-tab-panel mg-crm-performance-panel" data-crm-tab-panel="performance" role="tabpanel" hidden>
+    <div class="mg-crm-tab-title">
+      <div><h2>Campaign Performance</h2><p>Measure builder runs, audience reach, reward conversion, follow-ups, failed delivery, and segment performance.</p></div>
+      <div class="mg-crm-tab-actions">
+        <select class="mg-input" data-crm-performance-days aria-label="Performance window"><option value="30">Last 30 days</option><option value="90" selected>Last 90 days</option><option value="180">Last 180 days</option><option value="365">Last year</option></select>
+        <button class="mg-btn mg-btn-soft" type="button" data-crm-performance-refresh>Refresh</button>
+      </div>
+    </div>
+    <div class="mg-crm-performance-kpis" data-crm-performance-kpis></div>
+    <div class="mg-crm-performance-grid">
+      <section class="mg-app-panel mg-crm-card mg-crm-performance-card"><div class="mg-app-panel-head mg-crm-card-head"><div><h3>Builder runs</h3><p>Recent CRM campaign builder runs and their immediate action results.</p></div></div><div class="mg-crm-performance-list" data-crm-performance-runs></div></section>
+      <section class="mg-app-panel mg-crm-card mg-crm-performance-card"><div class="mg-app-panel-head mg-crm-card-head"><div><h3>Saved segment performance</h3><p>Which audience buckets are turning into reward activity.</p></div></div><div class="mg-crm-performance-list" data-crm-performance-segments></div></section>
+      <section class="mg-app-panel mg-crm-card mg-crm-performance-card"><div class="mg-app-panel-head mg-crm-card-head"><div><h3>Campaign conversion</h3><p>Claim and redemption momentum by campaign.</p></div></div><div class="mg-crm-performance-table" data-crm-performance-campaigns></div></section>
+      <section class="mg-app-panel mg-crm-card mg-crm-performance-card"><div class="mg-app-panel-head mg-crm-card-head"><div><h3>Recent activity</h3><p>Latest CRM campaign events from the reporting window.</p></div></div><div class="mg-crm-performance-feed" data-crm-performance-activity></div></section>
+    </div>
   </section>
 
   <section class="mg-crm-tab-panel" data-crm-tab-panel="rewards" role="tabpanel" hidden>
@@ -160,18 +211,12 @@ declare(strict_types=1);
 
     <section class="mg-retention-grid">
       <article class="mg-app-panel mg-crm-card">
-        <div class="mg-app-panel-head">
-          <div><h3>Automation Levels</h3><p>Rules are deterministic so agents can monitor, explain, and execute within merchant guardrails.</p></div>
-        </div>
-        <div class="mg-retention-playbooks" data-retention-playbooks>
-          <div class="mg-empty-state"><strong>Open Retention to load playbooks</strong></div>
-        </div>
+        <div class="mg-app-panel-head"><div><h3>Automation Levels</h3><p>Rules are deterministic so agents can monitor, explain, and execute within merchant guardrails.</p></div></div>
+        <div class="mg-retention-playbooks" data-retention-playbooks><div class="mg-empty-state"><strong>Open Retention to load playbooks</strong></div></div>
       </article>
       <article class="mg-app-panel mg-crm-card">
         <div class="mg-app-panel-head"><div><h3>Recommended Next Actions</h3><p>Customers currently matching playbook triggers.</p></div></div>
-        <div class="mg-retention-recommendations" data-retention-recommendations>
-          <div class="mg-empty-state"><strong>Open Retention to load recommendations</strong></div>
-        </div>
+        <div class="mg-retention-recommendations" data-retention-recommendations><div class="mg-empty-state"><strong>Open Retention to load recommendations</strong></div></div>
       </article>
     </section>
   </section>
@@ -180,15 +225,8 @@ declare(strict_types=1);
 <div class="mg-crm-drawer" data-crm-drawer hidden>
   <div class="mg-crm-drawer-backdrop" data-crm-drawer-close></div>
   <aside class="mg-crm-drawer-panel" role="dialog" aria-labelledby="crmTimelineTitle">
-    <header class="mg-crm-drawer-head">
-      <div><span class="mg-eyebrow" data-crm-drawer-kicker>Campaign timeline</span><h2 id="crmTimelineTitle" data-crm-drawer-title>Contact timeline</h2><p data-crm-drawer-subtitle>Loading...</p></div>
-      <button class="mg-btn mg-btn-soft" type="button" data-crm-drawer-close>Close</button>
-    </header>
-    <div class="mg-crm-action-row">
-      <button class="mg-btn mg-btn-soft" type="button" data-crm-action="message">Direct message</button>
-      <button class="mg-btn mg-btn-soft" type="button" data-crm-action="reward">Send reward</button>
-      <button class="mg-btn mg-btn-soft" type="button" data-crm-action="copy">Copy contact ID</button>
-    </div>
+    <header class="mg-crm-drawer-head"><div><span class="mg-eyebrow" data-crm-drawer-kicker>Campaign timeline</span><h2 id="crmTimelineTitle" data-crm-drawer-title>Contact timeline</h2><p data-crm-drawer-subtitle>Loading...</p></div><button class="mg-btn mg-btn-soft" type="button" data-crm-drawer-close>Close</button></header>
+    <div class="mg-crm-action-row"><button class="mg-btn mg-btn-soft" type="button" data-crm-action="message">Direct message</button><button class="mg-btn mg-btn-soft" type="button" data-crm-action="reward">Send reward</button><button class="mg-btn mg-btn-soft" type="button" data-crm-action="copy">Copy contact ID</button></div>
     <div class="mg-crm-drawer-body" data-crm-timeline-list></div>
   </aside>
 </div>
@@ -196,10 +234,7 @@ declare(strict_types=1);
 <div class="mg-crm-modal" data-crm-message-modal hidden>
   <div class="mg-crm-drawer-backdrop" data-crm-message-close></div>
   <form class="mg-crm-modal-panel" data-crm-message-form>
-    <header class="mg-crm-drawer-head">
-      <div><span class="mg-eyebrow">Direct message</span><h2 data-crm-message-title>Message contact</h2><p data-crm-message-subtitle>Send through Microgifter if the contact has an account; otherwise queue email fallback.</p></div>
-      <button class="mg-btn mg-btn-soft" type="button" data-crm-message-close>Close</button>
-    </header>
+    <header class="mg-crm-drawer-head"><div><span class="mg-eyebrow">Direct message</span><h2 data-crm-message-title>Message contact</h2><p data-crm-message-subtitle>Send through Microgifter if the contact has an account; otherwise queue email fallback.</p></div><button class="mg-btn mg-btn-soft" type="button" data-crm-message-close>Close</button></header>
     <label class="mg-crm-field"><span>Message</span><textarea data-crm-message-body maxlength="4000" required placeholder="Write a short, helpful message..."></textarea></label>
     <p class="mg-form-status" data-crm-message-status></p>
     <div class="mg-heading-actions"><button class="mg-btn mg-btn-soft" type="button" data-crm-message-close>Cancel</button><button class="mg-btn" type="submit" data-crm-message-submit>Send message</button></div>
@@ -209,10 +244,7 @@ declare(strict_types=1);
 <div class="mg-crm-modal" data-crm-reward-modal hidden>
   <div class="mg-crm-drawer-backdrop" data-crm-reward-close></div>
   <form class="mg-crm-modal-panel" data-crm-reward-form>
-    <header class="mg-crm-drawer-head">
-      <div><span class="mg-eyebrow">Send reward</span><h2 data-crm-reward-title>Choose a reward</h2><p data-crm-reward-subtitle>Select an active reward template for this customer.</p></div>
-      <button class="mg-btn mg-btn-soft" type="button" data-crm-reward-close>Close</button>
-    </header>
+    <header class="mg-crm-drawer-head"><div><span class="mg-eyebrow">Send reward</span><h2 data-crm-reward-title>Choose a reward</h2><p data-crm-reward-subtitle>Select an active reward template for this customer.</p></div><button class="mg-btn mg-btn-soft" type="button" data-crm-reward-close>Close</button></header>
     <label class="mg-crm-field"><span>Reward template</span><select data-crm-reward-template required><option value="">Loading rewards...</option></select></label>
     <label class="mg-crm-field"><span>Optional note</span><textarea data-crm-reward-note maxlength="1000" placeholder="Add a short merchant note..."></textarea></label>
     <p class="mg-form-status" data-crm-reward-status></p>
@@ -223,10 +255,7 @@ declare(strict_types=1);
 <div class="mg-crm-modal" data-crm-bulk-modal hidden>
   <div class="mg-crm-drawer-backdrop" data-crm-bulk-close></div>
   <form class="mg-crm-modal-panel mg-crm-bulk-modal-panel" data-crm-bulk-form>
-    <header class="mg-crm-drawer-head">
-      <div><span class="mg-eyebrow">Bulk campaign action</span><h2 data-crm-bulk-title>Bulk action</h2><p data-crm-bulk-subtitle>Preview recipients before processing.</p></div>
-      <button class="mg-btn mg-btn-soft" type="button" data-crm-bulk-close>Close</button>
-    </header>
+    <header class="mg-crm-drawer-head"><div><span class="mg-eyebrow">Bulk campaign action</span><h2 data-crm-bulk-title>Bulk action</h2><p data-crm-bulk-subtitle>Preview recipients before processing.</p></div><button class="mg-btn mg-btn-soft" type="button" data-crm-bulk-close>Close</button></header>
     <div class="mg-crm-bulk-preview" data-crm-bulk-preview></div>
     <label class="mg-crm-field" data-crm-bulk-message-field><span>Message</span><textarea data-crm-bulk-message maxlength="4000" placeholder="Write one message for the selected contacts..."></textarea></label>
     <label class="mg-crm-field" data-crm-bulk-reward-field hidden><span>Reward template</span><select data-crm-bulk-template><option value="">Loading rewards...</option></select></label>
