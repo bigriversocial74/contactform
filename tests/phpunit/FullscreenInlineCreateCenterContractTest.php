@@ -21,11 +21,12 @@ final class FullscreenInlineCreateCenterContractTest extends TestCase
             self::assertStringContainsString('data-create-inline-form="'.$type.'"',$source);
             self::assertStringContainsString('data-create-inline-success="'.$type.'"',$source);
             self::assertStringContainsString('data-create-inline-reset="'.$type.'"',$source);
+            self::assertStringContainsString("'key' => '".$type."'",$source);
         }
 
         self::assertStringContainsString('data-create-menu-close aria-label="Close create center">×</button>',$source);
-        self::assertStringContainsString('data-create-inline-target="product"',$source);
-        self::assertStringContainsString('data-create-inline-target="location"',$source);
+        self::assertStringContainsString('data-create-inline-target="',$source);
+        self::assertStringContainsString('mg_e($target)',$source);
     }
 
     public function testInlineControllerUsesExistingProductionEndpoints(): void
