@@ -47,6 +47,7 @@ foreach ($contactRefs as $ref) if (strlen($ref)!==36 || preg_match('/^[a-f0-9-]{
 
 $packageContext = mg_user_package_context($pdo,$user);
 if (!mg_package_limit_value($packageContext,'email_stamps_enabled')) mg_fail('Email Stamps are not enabled for this package.',402);
+mg_delivery_install_schema($pdo);
 
 $pdo->beginTransaction();
 try {
