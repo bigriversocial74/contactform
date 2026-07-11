@@ -8,6 +8,7 @@ $giftCenterDemoEnabled=mg_has_role('super_admin');
 <link rel="stylesheet" href="/assets/css/gift-action-center-modals.css">
 <link rel="stylesheet" href="/assets/css/gift-envelope-presentation.css">
 <link rel="stylesheet" href="/assets/css/gift-action-center-search.css">
+<link rel="stylesheet" href="/assets/css/gift-action-center-user-search-fix.css?v=1.0.0">
 <link rel="stylesheet" href="/assets/css/gift-action-center-feed-v3.css?v=3.2.0">
 <section class="mg-app-shell mg-gift-center-page" data-gift-center data-feed-version="3" data-initial-folder="<?= mg_e($giftCenterFolder) ?>" data-demo-enabled="<?= $giftCenterDemoEnabled?'true':'false' ?>">
   <?php require __DIR__ . '/agent-sidebar.php'; ?>
@@ -60,3 +61,4 @@ $giftCenterDemoEnabled=mg_has_role('super_admin');
 <script src="/assets/js/gift-envelope-presentation.js" defer></script>
 <script src="/assets/js/gift-action-center-feed-v3.js?v=3.1.0" defer></script>
 <script src="/assets/js/gift-action-center-user-search.js" defer></script>
+<script src="/assets/js/gift-action-center-user-search-fix.js?v=1.0.0" defer></script>
