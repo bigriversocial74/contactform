@@ -13,8 +13,26 @@ $pdo = mg_db();
 
 try {
     mg_rate_limit('world_canvas.activity', 'user:' . (int) $user['id'], 180, 60);
+
     $payload = mg_world_canvas_payload($pdo, $user);
-    $payload = mg_world_canvas_merge_viewer_nodes($payload, mg_world_canvas_viewer_nodes($pdo, $user));
+    $viewerNodes = mg_world_canvas_viewer_nodes($pdo, $user);
+
+    $hasViewerMerchantAnchor = false;
+    foreach ($viewerNodes as $viewerNode) {
+        if (($viewerNode['type'] ?? '') === 'merchant' && !empty($viewerNode['owned'])) {
+            $hasViewerMerchantAnchor = true;
+            break;
+        }
+    }
+
+    if ($hasViewerMerchantAnchor && isset($payload['nodes']) && is_array($payload['nodes'])) {
+        $payload['nodes'] = array_values(array_filter(
+            $payload['nodes'],
+            static fn(array $node): bool => !(($node['type'] ?? '') === 'merchant' && !empty($node['owned']))
+        ));
+    }
+
+    $payload = mg_world_canvas_merge_viewer_nodes($payload, $viewerNodes);
     mg_ok($payload);
 } catch (RuntimeException $error) {
     mg_fail($error->getMessage(), 400);

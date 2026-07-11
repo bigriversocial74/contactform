@@ -39,7 +39,7 @@ $page_scripts = [
     '/assets/js/merchant-crm-contact-stats.js',
     '/assets/js/merchant-crm-retention-playbooks.js?v=2.0.0',
     '/assets/js/crm-media-segments.js?v=2.0.0',
-    '/assets/js/merchant-crm-contact-link-polish.js',
+    '/assets/js/merchant-crm-contact-link-polish.js?v=2.0.0',
 ];
 
 require __DIR__ . '/includes/header.php';
