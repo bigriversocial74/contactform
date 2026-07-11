@@ -22,7 +22,8 @@ $header = $read('includes/header.php');
 $foundationCss = $read('assets/css/campaign-landing-foundation.css');
 $simpleCss = $read('assets/css/public-campaign-rl-landing-v1.css');
 
-$assert('Campaign registry exposes 13 public campaign types', count($publicTypes) === 13);
+$assert('Campaign registry exposes 14 public campaign types', count($publicTypes) === 14);
+$assert('Loyalty Quest is registered as a public campaign', isset($registry['loyalty_quest']) && !empty($registry['loyalty_quest']['public_enabled']) && ($registry['loyalty_quest']['public_path'] ?? '') === '/loyalty-quest.php');
 $assert('Customer Refund remains internal-only', isset($registry['customer_refund']) && empty($registry['customer_refund']['public_enabled']) && !empty($registry['customer_refund']['internal_only']));
 
 foreach ($publicTypes as $type => $definition) {

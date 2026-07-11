@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/loyalty-quest-campaign-type.php';
+
 /**
  * Microgifter Campaign Type Registry v2.1
  *
@@ -10,7 +12,7 @@ declare(strict_types=1);
 
 function mg_campaign_type_registry(): array
 {
-    return [
+    $registry = [
         'newsletter_signup' => [
             'key' => 'newsletter_signup',
             'label' => 'Signup Reward',
@@ -507,6 +509,8 @@ function mg_campaign_type_registry(): array
             'rules_schema' => ['mode' => 'merchant_initiated', 'internal_only' => true],
         ],
     ];
+    $registry['loyalty_quest'] = mg_loyalty_quest_campaign_definition();
+    return $registry;
 }
 
 function mg_campaign_type_get(string $type): ?array

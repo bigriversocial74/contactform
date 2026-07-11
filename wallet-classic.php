@@ -1,4 +1,7 @@
 <?php
 declare(strict_types=1);
-define('MG_ACCOUNT_VIEW', 'wallet');
-require __DIR__ . '/account.php';
+
+require_once __DIR__ . '/includes/app.php';
+mg_require_auth();
+header('Location: /inbox.php', true, 302);
+exit;

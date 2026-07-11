@@ -1,0 +1,72 @@
+name: Wallet PPPM Inbox Authority Validation
+
+on:
+  pull_request:
+    paths:
+      - 'wallet.php'
+      - 'wallet-classic.php'
+      - 'wallet-reward.php'
+      - 'merchant-reward-redemptions.php'
+      - 'loyalty-quest.php'
+      - 'api/account/wallet-claim.php'
+      - 'api/account/_wallet_pppm_authority.php'
+      - 'api/account/reward-wallet*.php'
+      - 'api/merchant/reward-wallet-redemption.php'
+      - 'api/rewards/_zero_value_bridge.php'
+      - 'api/rewards/_wallet_pppm_bridge.php'
+      - 'api/rewards/_account_link_reconciliation.php'
+      - 'api/public/loyalty-quest/_participant.php'
+      - 'includes/header-templates/logged-in.php'
+      - 'includes/app-sidebar.php'
+      - 'assets/js/my-loyalty-quests.js'
+      - 'database/wallet_redemption_experience_v1.sql'
+      - 'scripts/validate_wallet_pppm_inbox_authority_v1.php'
+      - 'scripts/validate_stage12c_wallet_campaign_pages.php'
+      - '.github/workflows/wallet-pppm-inbox-authority-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Wallet PPPM Inbox Authority (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2','8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - name: PHP syntax
+        run: |
+          php -l api/rewards/_zero_value_bridge.php
+          php -l api/rewards/_wallet_pppm_bridge.php
+          php -l api/account/_wallet_pppm_authority.php
+          php -l api/account/wallet-claim.php
+          php -l api/account/reward-wallet.php
+          php -l api/account/reward-wallet-action.php
+          php -l api/account/reward-wallet-support.php
+          php -l api/merchant/reward-wallet-redemption.php
+          php -l api/public/loyalty-quest/_participant.php
+          php -l wallet.php
+          php -l wallet-classic.php
+          php -l wallet-reward.php
+          php -l merchant-reward-redemptions.php
+          php -l loyalty-quest.php
+          php -l includes/header-templates/logged-in.php
+          php -l includes/app-sidebar.php
+          php -l scripts/validate_wallet_pppm_inbox_authority_v1.php
+          php -l scripts/validate_stage12c_wallet_campaign_pages.php
+      - name: JavaScript syntax
+        run: node --check assets/js/my-loyalty-quests.js
+      - name: Wallet PPPM Inbox 10/10 contract
+        run: php scripts/validate_wallet_pppm_inbox_authority_v1.php
+      - name: Stage 12C wallet and campaign regression
+        run: php scripts/validate_stage12c_wallet_campaign_pages.php
+      - name: Participant quest regression
+        run: php scripts/validate_participant_quest_experience_v1.php
