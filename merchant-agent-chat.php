@@ -13,7 +13,6 @@ $page_styles = [
     '/assets/css/merchant-agent-chat-voice.css',
     '/assets/css/merchant-agent-chat-control-panel.css',
     '/assets/css/merchant-agent-memory-menu.css',
-    '/assets/css/merchant-agent-creative-presets.css',
     '/assets/css/merchant-agent-creative-draft-actions.css',
     '/assets/css/merchant-agent-chat-recipe-cards.css',
     '/assets/css/sponsored-campaign-card.css',
@@ -25,7 +24,6 @@ $page_scripts = [
     '/assets/js/merchant-agent-chat-speech-results.js',
     '/assets/js/merchant-agent-chat-control-panel.js',
     '/assets/js/merchant-agent-memory-menu.js',
-    '/assets/js/merchant-agent-creative-presets.js',
     '/assets/js/merchant-agent-creative-draft-actions.js',
     '/assets/js/merchant-agent-chat-scroll-latest.js',
     '/assets/js/merchant-agent-chat-json-format.js',
@@ -36,6 +34,47 @@ $page_scripts[] = '/assets/js/merchant-agent-chat-admin-mode.js';
 $user = mg_current_user();
 require __DIR__ . '/includes/header.php';
 ?>
+<style id="mg-agent-chat-canvas-layout-v2-2">
+.mg-agent-chat-layout-v2 .mg-agent-chat-main-stack{
+  grid-template-rows:minmax(0,1fr) auto auto!important;
+  position:relative!important;
+  overflow:hidden!important;
+}
+.mg-agent-chat-layout-v2 .mg-agent-chat-main{
+  grid-row:1!important;
+  min-height:0!important;
+  overflow:hidden!important;
+}
+.mg-agent-chat-layout-v2 .mg-agent-chat-feed{
+  min-height:0!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain!important;
+}
+.mg-agent-chat-layout-v2 .mg-agent-chat-main-stack>.mg-form-status{
+  grid-row:2!important;
+}
+.mg-agent-chat-layout-v2 .mg-agent-chat-composer-shell{
+  grid-row:3!important;
+  align-self:end!important;
+  position:sticky!important;
+  bottom:0!important;
+  margin-top:8px!important;
+}
+.mg-agent-chat-layout-v2 .mg-agent-chat-prompts{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  width:min(640px,100%)!important;
+  margin:18px auto 0!important;
+  gap:8px!important;
+}
+@media(max-width:640px){
+  .mg-agent-chat-layout-v2 .mg-agent-chat-prompts{
+    grid-template-columns:minmax(0,1fr)!important;
+    margin-top:14px!important;
+  }
+}
+</style>
 <section class="mg-app-shell mg-merchant-app mg-agent-chat-app mg-agent-chat-layout-v2" data-merchant-app data-merchant-view="agent_chat" data-sidebar-contract="mg-app-sidebar">
   <?php require __DIR__ . '/includes/agent-sidebar.php'; ?>
   <main class="mg-app-workspace mg-merchant-main">
