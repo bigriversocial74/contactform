@@ -1,0 +1,1 @@
+Scope: shared logged-out public theme, header and footer palette, Pricing, Sign In, Sign Up, Forgot Password, Reset Password, and Verify Email. No SQL required.
