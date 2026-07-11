@@ -33,7 +33,7 @@ try {
     $layout = $read('assets/css/pppm-ops-extra.css');
 
     $expect(
-        str_contains($page, "$merchantView='pppm';")
+        str_contains($page, '$merchantView=\'pppm\';')
         && str_contains($page, "require __DIR__.'/includes/merchant-workspace.php';"),
         'Merchant PPPM page continues to use the shared merchant workspace'
     );
@@ -47,8 +47,9 @@ try {
 
     $expect(
         !str_contains($view, 'Review Gift Lifecycle')
-        && !str_contains($view, 'mg-pppm-commandbar">\n    <nav') === false,
-        'Review Gift Lifecycle button is removed while the command bar remains'
+        && str_contains($view, '<div class="mg-pppm-commandbar">')
+        && str_contains($view, '<nav class="mg-pppm-tabs"'),
+        'Review Gift Lifecycle button is removed while the lifecycle tabs remain'
     );
 
     $expect(
