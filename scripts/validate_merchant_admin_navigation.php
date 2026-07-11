@@ -137,17 +137,11 @@ foreach (glob($root . '/merchant*.php') ?: [] as $path) {
         continue;
     }
 
-    $directMerchantVariant = !$usesAppSidebar
-        || str_contains($source, "\$appSidebarVariant = 'merchant'")
-        || str_contains($source, '\$appSidebarVariant=\'merchant\'')
-        || str_contains($source, '\$appSidebarVariant = "merchant"');
-
     $merchantSidebarPages[$page] = [
         'workspace' => $usesWorkspace,
         'agent_sidebar' => $usesAgentSidebar,
         'app_sidebar' => $usesAppSidebar,
-        'direct_app_sidebar_sets_merchant_variant' => $directMerchantVariant,
-        'covered_by_shared_navigation' => $usesWorkspace || $usesAgentSidebar || ($usesAppSidebar && $directMerchantVariant),
+        'covered_by_shared_navigation' => $usesWorkspace || $usesAgentSidebar || $usesAppSidebar,
     ];
 }
 
@@ -163,6 +157,7 @@ $agentSidebarUsesCentralNavigation = str_contains($agentSidebar, "require_once _
     && str_contains($agentSidebar, "str_starts_with(\$currentSidebarScript, 'merchant-')");
 $appSidebarEnforcesCentralNavigation = str_contains($appSidebar, "str_starts_with(\$currentSidebarScript, 'merchant-')")
     && str_contains($appSidebar, "require_once __DIR__ . '/merchant-navigation.php'")
+    && str_contains($appSidebar, "\$appSidebarVariant = 'merchant'")
     && str_contains($appSidebar, 'mg_merchant_navigation_sidebar($appSidebarActive)');
 
 $ok = $navigation !== ''
