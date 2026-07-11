@@ -12,6 +12,7 @@ $required=[
     'api/merchant/loyalty-quest-deliveries.php',
     'merchant-loyalty-quest-delivery.php',
     'includes/merchant-loyalty-quest-delivery-view.php',
+    'includes/merchant-navigation.php',
     'assets/css/loyalty-quest-delivery.css',
     'assets/js/loyalty-quest-delivery.js',
     'scripts/run_loyalty_quest_notifications.php',
@@ -40,7 +41,7 @@ $page=$read('merchant-loyalty-quest-delivery.php');
 $view=$read('includes/merchant-loyalty-quest-delivery-view.php');
 $js=$read('assets/js/loyalty-quest-delivery.js');
 $css=$read('assets/css/loyalty-quest-delivery.css');
-$nav=$read('includes/merchant-workspace.php');
+$nav=$read('includes/merchant-navigation.php');
 $router=$read('includes/merchant-view.php');
 $docs=$read('docs/deployment/loyalty_quest_notifications_v1.md');
 
@@ -64,7 +65,7 @@ $checks[]=['name'=>'worker concurrency and CLI','ok'=>str_contains($worker,"GET_
 $checks[]=['name'=>'admin worker control','ok'=>str_contains($workerApi,"mg_require_permission('admin.users.view')")&&str_contains($workerApi,'mg_require_csrf_for_write')&&str_contains($workerApi,'mg_lqn_worker_run')];
 $checks[]=['name'=>'merchant delivery history','ok'=>str_contains($history,'j.merchant_user_id=?')&&str_contains($history,"e.event_type LIKE 'loyalty_quest.%'")&&str_contains($history,'message_delivery_attempts')&&str_contains($history,"'dead_letter'")];
 $checks[]=['name'=>'safe merchant retries','ok'=>str_contains($history,'Only failed Loyalty Quest deliveries can be retried')&&str_contains($history,"status='queued'")&&str_contains($history,'mg_require_csrf_for_write')&&str_contains($history,'merchant.loyalty_quest_delivery_retried')];
-$checks[]=['name'=>'merchant workspace route','ok'=>str_contains($page,"\$merchantView='quest_delivery'")&&str_contains($nav,"'quest_delivery'")&&str_contains($router,'merchant-loyalty-quest-delivery-view.php')];
+$checks[]=['name'=>'merchant workspace route','ok'=>str_contains($page,"\$merchantView='quest_delivery'")&&str_contains($nav,"'quest_delivery' => 'campaigns'")&&str_contains($router,'merchant-loyalty-quest-delivery-view.php')];
 $checks[]=['name'=>'accessible responsive workspace','ok'=>str_contains($view,'aria-live="polite"')&&str_contains($view,'data-lqd-select-all')&&str_contains($js,'data-lqd-contact-check')&&str_contains($css,'@media(max-width:980px)')&&str_contains($css,':focus-visible')];
 $checks[]=['name'=>'migration schema evidence','ok'=>str_contains($migration,'CREATE TABLE IF NOT EXISTS message_delivery_attempts')&&str_contains($migration,'CREATE TABLE IF NOT EXISTS message_provider_callbacks')&&str_contains($migration,'CREATE TABLE IF NOT EXISTS message_suppression_rules')&&str_contains($migration,'merchant_user_id')&&str_contains($migration,'campaign_id')&&str_contains($migration,'source_public_id')];
 $checks[]=['name'=>'migration registered','ok'=>str_contains($manifest,"'loyalty_quest_notifications_transactional_delivery_v1.sql'")&&str_contains($migration,"'loyalty_quest_notifications_transactional_delivery_v1'")];

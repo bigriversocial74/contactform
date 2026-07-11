@@ -6,6 +6,8 @@ $mg_package_context = is_array($mg_package_context ?? null) ? $mg_package_contex
 $canMerchantNav = (bool) ($can_merchant_nav ?? !empty($mg_package_context['merchant_access']));
 $canCreateGift = (bool) ($can_create_microgift ?? ($canMerchantNav && mg_package_limit_allows_create($mg_package_context, 'max_microgifts', 0)));
 $agentSidebarActive = (string) ($agent_tab ?? basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''), '.php'));
+$currentSidebarScript = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+$isMerchantAdminSidebar = $canMerchantNav && str_starts_with($currentSidebarScript, 'merchant-');
 $appSidebarVariant = 'utility';
 $appSidebarLabel = 'Workspace';
 $appSidebarActive = $agentSidebarActive;
@@ -91,6 +93,14 @@ $appSidebarNav = [
     ],
 ];
 
+if ($isMerchantAdminSidebar) {
+    require_once __DIR__ . '/merchant-navigation.php';
+    $appSidebarVariant = 'merchant';
+    $appSidebarLabel = 'Merchant';
+    $appSidebarActive = mg_merchant_navigation_active_key($agentSidebarActive);
+    $appSidebarNav = mg_merchant_navigation_sidebar($agentSidebarActive);
+}
+
 $reducedInboxSidebarPages = [
     'inbox',
     'loyalty-cards',
@@ -101,7 +111,7 @@ $reducedInboxSidebarPages = [
     'merchant-agent-chat',
 ];
 
-if (in_array($agentSidebarActive, $reducedInboxSidebarPages, true)) {
+if (!$isMerchantAdminSidebar && in_array($agentSidebarActive, $reducedInboxSidebarPages, true)) {
     foreach (['feed-following', 'merchant_crm', 'ads-manager'] as $inboxHiddenNavKey) {
         if (isset($appSidebarNav[$inboxHiddenNavKey])) {
             $appSidebarNav[$inboxHiddenNavKey]['visible'] = false;

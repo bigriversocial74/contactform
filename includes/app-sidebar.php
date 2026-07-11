@@ -21,6 +21,19 @@ $appSidebarSearchDataAttr = trim((string) ($appSidebarSearchDataAttr ?? ''));
 $appSidebarSearchSelectHtml = (string) ($appSidebarSearchSelectHtml ?? '');
 $appSidebarTools = (string) ($appSidebarTools ?? '');
 $appSidebarCompact = (bool) ($appSidebarCompact ?? true);
+
+$currentSidebarScript = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+$useSharedMerchantNavigation = str_starts_with($currentSidebarScript, 'merchant-')
+    && ($useSharedMerchantNavigation ?? true) !== false;
+
+if ($useSharedMerchantNavigation) {
+    require_once __DIR__ . '/merchant-navigation.php';
+    $appSidebarVariant = 'merchant';
+    $appSidebarNav = mg_merchant_navigation_sidebar($appSidebarActive);
+    $appSidebarActive = mg_merchant_navigation_active_key($appSidebarActive);
+    $appSidebarLabel = 'Merchant';
+}
+
 $appSidebarAgentBadges = $appSidebarVariant === 'merchant';
 
 if (!$appSidebarNav) {

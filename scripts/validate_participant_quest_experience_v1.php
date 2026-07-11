@@ -8,7 +8,7 @@ $files = [
     'api/public/loyalty-quest/_participant.php','api/public/loyalty-quest/_verification.php','api/public/loyalty-quest/_reward.php',
     'api/public/loyalty-quest/detail.php','api/public/loyalty-quest/start.php','api/public/loyalty-quest/submit.php',
     'api/account/loyalty-quests.php','api/merchant/loyalty-quest-campaigns.php','api/merchant/loyalty-quest-reviews.php','api/merchant/loyalty-quest-signed-code.php',
-    'includes/loyalty-quest-campaign-type.php','includes/merchant-quest-reviews-view.php',
+    'includes/loyalty-quest-campaign-type.php','includes/merchant-quest-reviews-view.php','includes/merchant-navigation.php',
     'assets/js/loyalty-quest-participant.js','assets/js/my-loyalty-quests.js','assets/js/merchant-quest-reviews.js',
     'assets/css/loyalty-quest-participant.css','assets/css/my-loyalty-quests.css','assets/css/merchant-quest-reviews.css',
     'database/loyalty_quest_participant_experience_v1.sql','config/migrations.php',
@@ -40,7 +40,7 @@ $reviewCss = $read('assets/css/merchant-quest-reviews.css');
 $sql = $read('database/loyalty_quest_participant_experience_v1.sql');
 $migrations = $read('config/migrations.php');
 $accountNav = $read('includes/header-templates/logged-in.php');
-$merchantNav = $read('includes/merchant-workspace.php');
+$merchantNav = $read('includes/merchant-navigation.php');
 $merchantManager = $read('assets/js/merchant-loyalty-quests.js');
 
 $checks[] = ['name'=>'SQL participation evidence replay model','ok'=>str_contains($sql,'CREATE TABLE IF NOT EXISTS loyalty_quest_participations')&&str_contains($sql,'CREATE TABLE IF NOT EXISTS loyalty_quest_evidence')&&str_contains($sql,'CREATE TABLE IF NOT EXISTS loyalty_quest_code_uses')&&str_contains($sql,'uq_lq_code_nonce_replay')&&str_contains($sql,'uq_loyalty_quest_participant_campaign_user')];
@@ -60,7 +60,7 @@ $checks[] = ['name'=>'participant guided UX','ok'=>str_contains($page,'data-lqp-
 $checks[] = ['name'=>'participant progress portfolio','ok'=>str_contains($myPage,'data-my-loyalty-quests')&&str_contains($portfolioApi,'latest_review_note')&&str_contains($portfolioApi,'latest_evidence_status')&&str_contains($myJs,'Correct and resubmit')&&str_contains($myJs,'Merchant review')];
 $checks[] = ['name'=>'merchant-scoped evidence review','ok'=>substr_count($reviewApi,'merchant_user_id')>=12&&str_contains($reviewApi,"mg_merchant_require_permission(\$method === 'GET' ? 'merchant.campaigns.view' : 'merchant.campaigns.manage')")&&str_contains($reviewApi,'Add a reason so the participant knows what to correct.')&&str_contains($reviewApi,'mg_audit')];
 $checks[] = ['name'=>'merchant review workspace','ok'=>preg_match('/\$merchantView\s*=\s*[\'\"]quest_reviews[\'\"]\s*;/', $reviewPage)===1&&str_contains($reviewView,'data-quest-review-workspace')&&str_contains($reviewView,'aria-live="polite"')&&str_contains($reviewView,'<dialog')&&str_contains($reviewJs,'data-dialog-decision')&&preg_match('/@media\s*\(\s*max-width\s*:\s*680px\s*\)/',$reviewCss)===1];
-$checks[] = ['name'=>'integrated navigation','ok'=>str_contains($accountNav,'/my-quests.php')&&str_contains($accountNav,'/merchant-loyalty-quests.php')&&str_contains($accountNav,'/merchant-quest-reviews.php')&&str_contains($merchantNav,"'quest_reviews'")];
+$checks[] = ['name'=>'integrated navigation','ok'=>str_contains($accountNav,'/my-quests.php')&&str_contains($accountNav,'/merchant-loyalty-quests.php')&&str_contains($accountNav,'/merchant-quest-reviews.php')&&str_contains($merchantNav,"'quest_reviews' => 'campaigns'")&&str_contains($merchantNav,"'campaigns' => ['Campaigns'")];
 $checks[] = ['name'=>'safe historical detail state','ok'=>str_contains($detail,'availability')&&str_contains($detail,'can_start')&&str_contains($detail,'can_submit')&&str_contains($detail,'mg_lqp_campaign($pdo, $ref, false, false)')&&str_contains($participant,'$enforceAvailability = true')];
 $checks[] = ['name'=>'responsive accessible camera flow','ok'=>str_contains($page,'aria-modal="true"')&&str_contains($page,'aria-live="polite"')&&str_contains($participantJs,'scannerTrigger')&&str_contains($participantJs,"event.key==='Escape'")&&str_contains($participantCss,'@media(max-width:680px)')&&str_contains($participantCss,':focus-visible')];
 $checks[] = ['name'=>'audit and campaign events','ok'=>str_contains($start,"mg_audit('participant.loyalty_quest_joined'")&&str_contains($submit,'participant.loyalty_quest_evidence_submitted')&&str_contains($submit,'participant.loyalty_quest_evidence_verified')&&str_contains($reviewApi,'merchant.loyalty_quest_evidence_approved')&&str_contains($reviewApi,'merchant.loyalty_quest_evidence_rejected')];
