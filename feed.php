@@ -13,6 +13,8 @@ $use_inbox_sidebar = true;
 $suppress_footer = true;
 $page_styles = [
     '/assets/css/public-app-header.css',
+    '/assets/css/social-feed.css',
+    '/assets/css/social-feed-upload.css',
     '/assets/css/avatar-anchor-consent.css',
     '/assets/css/sponsored-campaign-card.css',
     '/assets/css/microgifter-stories.css',
