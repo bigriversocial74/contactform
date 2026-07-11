@@ -4,6 +4,9 @@ $root = dirname(__DIR__);
 $required = [
   'api/account/wallet-items.php',
   'api/account/wallet-claim.php',
+  'api/account/_wallet_pppm_authority.php',
+  'api/rewards/_zero_value_bridge.php',
+  'api/rewards/_wallet_pppm_bridge.php',
   'api/merchant/wallet-redeem.php',
   'api/merchant/campaign-contacts.php',
   'api/merchant/campaign-events.php',
@@ -11,12 +14,10 @@ $required = [
   'api/public/campaigns/detail.php',
   'campaign.php',
   'wallet.php',
-  'account.php',
-  'includes/account/wallet-view.php',
+  'inbox.php',
   'merchant-wallet-redemptions.php',
   'includes/merchant-wallet-redemptions-view.php',
   'assets/js/public-campaign.js',
-  'assets/js/stage12-wallet.js',
   'assets/js/stage12-redemptions.js',
   'assets/js/stage12-campaign-contacts.js',
   'assets/js/stage12-campaign-tools.js',
@@ -26,6 +27,9 @@ foreach ($required as $path) { $ok = $ok && is_file($root . '/' . $path); }
 $get = static function(string $path) use ($root): string { return is_file($root . '/' . $path) ? (string) file_get_contents($root . '/' . $path) : ''; };
 $walletItems = $get('api/account/wallet-items.php');
 $claim = $get('api/account/wallet-claim.php');
+$authority = $get('api/account/_wallet_pppm_authority.php');
+$bridgeEntry = $get('api/rewards/_zero_value_bridge.php');
+$bridge = $get('api/rewards/_wallet_pppm_bridge.php');
 $redeem = $get('api/merchant/wallet-redeem.php');
 $contacts = $get('api/merchant/campaign-contacts.php');
 $events = $get('api/merchant/campaign-events.php');
@@ -33,29 +37,23 @@ $tools = $get('api/merchant/campaign-public-tools.php');
 $detail = $get('api/public/campaigns/detail.php');
 $page = $get('campaign.php');
 $walletPage = $get('wallet.php');
-$accountPage = $get('account.php');
-$accountWalletView = $get('includes/account/wallet-view.php');
 $merchantCompletePage = $get('merchant-wallet-redemptions.php');
 $merchantCompleteView = $get('includes/merchant-wallet-redemptions-view.php');
 $publicJs = $get('assets/js/public-campaign.js');
-$walletJs = $get('assets/js/stage12-wallet.js');
 $completeJs = $get('assets/js/stage12-redemptions.js');
 $contactJs = $get('assets/js/stage12-campaign-contacts.js');
 $toolJs = $get('assets/js/stage12-campaign-tools.js');
-$claimStatusMarker = str_contains($claim, "status = 'claimed'") || str_contains($claim, "status='claimed'") || str_contains($claim, "status = \\'claimed\\'");
 $redeemStatusMarker = str_contains($redeem, "status = 'redeemed'") || str_contains($redeem, "status='redeemed'") || str_contains($redeem, "status = \\'redeemed\\'");
-$delegatedWalletRoute = str_contains($walletPage, 'MG_ACCOUNT_VIEW') && str_contains($walletPage, '/account.php');
-$standaloneRewardWalletRoute = str_contains($walletPage, 'data-reward-wallet')
-  && str_contains($walletPage, '/assets/js/reward-wallet-experience.js')
-  && str_contains($walletPage, '/wallet.php?classic=1');
 $checks = [
   'wallet_list_endpoint' => str_contains($walletItems, 'wallet_items') && str_contains($walletItems, 'campaign_contacts'),
-  'wallet_page_route' => $delegatedWalletRoute || $standaloneRewardWalletRoute,
-  'wallet_account_route' => str_contains($accountPage, "'wallet'") && str_contains($accountPage, 'includes/account/wallet-view.php'),
-  'wallet_view' => str_contains($accountWalletView, 'data-stage12-wallet') && str_contains($accountWalletView, 'data-wallet-list'),
-  'wallet_js_claims' => str_contains($walletJs, '/api/account/wallet-items.php') && str_contains($walletJs, '/api/account/wallet-claim.php'),
-  'claim_updates_status' => $claimStatusMarker && str_contains($claim, 'wallet_item.claimed'),
-  'claim_ownership' => str_contains($claim, 'contact_email') && str_contains($claim, 'source_id'),
+  'wallet_hidden_route' => str_contains($walletPage, "header('Location: /inbox.php'") && !str_contains($walletPage, 'data-reward-wallet'),
+  'wallet_claim_delegates_to_authority' => str_contains($claim, '_wallet_pppm_authority.php') && str_contains($claim, 'mg_wallet_claim_to_pppm'),
+  'wallet_authority_projects_not_claims' => str_contains($authority, 'mg_zero_reward_issue_from_wallet') && str_contains($authority, "'destination'=>'inbox'") && !str_contains($authority, 'mg_microgift_integrity_claim'),
+  'bridge_compatibility_entry' => str_contains($bridgeEntry, "_wallet_pppm_bridge.php"),
+  'bridge_creates_pppm' => str_contains($bridge, 'pppm_issuance_requests') && str_contains($bridge, 'INSERT INTO pppm_items') && str_contains($bridge, "'earned_reward'") && str_contains($bridge, 'mg_pppm_record_event'),
+  'bridge_creates_microgift' => str_contains($bridge, 'INSERT INTO microgift_instances') && str_contains($bridge, "'delivered'") && str_contains($bridge, 'pppm_item_id'),
+  'bridge_projects_inbox' => str_contains($bridge, 'mg_action_center_sent') && str_contains($bridge, "'destination'=>'inbox'") && str_contains($bridge, 'recipient_inbox_item_id'),
+  'claim_no_parallel_tokens' => !str_contains($claim, 'wallet_reward_claim_tokens') && !str_contains($authority, 'wallet_reward_claim_tokens'),
   'redeem_requires_merchant' => str_contains($redeem, 'merchant.campaigns.manage') && str_contains($redeem, 'mg_require_csrf_for_write'),
   'redeem_updates_status' => $redeemStatusMarker && str_contains($redeem, 'wallet_item.redeemed'),
   'merchant_complete_page' => str_contains($merchantCompletePage, 'includes/merchant-workspace.php') && str_contains($merchantCompletePage, '/assets/js/stage12-redemptions.js'),
