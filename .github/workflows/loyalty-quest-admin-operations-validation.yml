@@ -67,7 +67,19 @@ jobs:
           DB_NAME: microgifter_test
           DB_USER: root
           DB_PASS: root
-        run: php scripts/validate_loyalty_quest_admin_operations_behavior.php
+        run: |
+          set +e
+          php scripts/validate_loyalty_quest_admin_operations_behavior.php > loyalty-quest-admin-behavior-${{ matrix.php }}.json 2>&1
+          status=$?
+          cat loyalty-quest-admin-behavior-${{ matrix.php }}.json
+          exit $status
+      - name: Upload admin behavior failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: loyalty-quest-admin-behavior-php-${{ matrix.php }}
+          path: loyalty-quest-admin-behavior-${{ matrix.php }}.json
+          retention-days: 7
       - name: Loyalty Quest campaign regression
         run: php scripts/validate_loyalty_quest_campaign_type_v1.php
       - name: Participant quest regression
