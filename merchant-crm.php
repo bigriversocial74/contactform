@@ -38,7 +38,7 @@ $page_scripts = [
     '/assets/js/merchant-crm-reward-invite-operations.js',
     '/assets/js/merchant-crm-campaign-builder.js',
     '/assets/js/merchant-crm-performance-dashboard.js',
-    '/assets/js/merchant-crm-contact-stats.js',
+    '/assets/js/merchant-crm-contact-stats.js?v=2.0.0',
     '/assets/js/merchant-crm-retention-playbooks.js?v=2.0.0',
     '/assets/js/crm-media-segments.js?v=2.0.0',
     '/assets/js/merchant-crm-contact-link-polish.js?v=3.0.0',
