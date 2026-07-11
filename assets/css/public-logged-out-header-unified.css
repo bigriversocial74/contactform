@@ -35,19 +35,21 @@ html body[data-authenticated="false"] .mg-site-header.mg-market-universal-header
 html body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-phone-equation,
 html body[data-authenticated="false"] .mg-public-mobile-equation{display:none!important}
 
-/* Mobile menu must beat the older light-shell selectors loaded in the document head. */
-html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-backdrop{background:rgba(5,27,24,.58)!important;backdrop-filter:blur(5px)!important}
-html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-panel{border:1px solid rgba(255,255,255,.1)!important;background:linear-gradient(180deg,#0b2d2a,#071f1d)!important;color:#fff!important;box-shadow:-30px 0 80px rgba(5,27,24,.30)!important}
+/* Mobile menu uses the same white public-site treatment as the main logged-out shell. */
+html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-backdrop{background:rgba(15,23,42,.34)!important;backdrop-filter:blur(5px)!important}
+html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-panel{border:1px solid #dce7e2!important;background:#fff!important;color:#0b2d2a!important;box-shadow:-30px 0 80px rgba(11,45,42,.20)!important}
 html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-logo,
 html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-close,
 html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-phone,
-html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-socials a{color:#fff!important}
-html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-search input{border-color:rgba(255,255,255,.16)!important;background:rgba(255,255,255,.08)!important;color:#fff!important}
-html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-search input::placeholder{color:rgba(255,255,255,.58)!important}
+html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-socials a{color:#0b2d2a!important}
+html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-close,
+html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-socials a{border-color:#dce7e2!important;background:#f7fbf8!important}
+html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-search input{border-color:#dce7e2!important;background:#fff!important;color:#0b2d2a!important}
+html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-search input::placeholder{color:#78908b!important}
 html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-nav a,
-html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-auth a{border-color:rgba(255,255,255,.12)!important;background:rgba(255,255,255,.055)!important;color:#fff!important}
+html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-auth a{border-color:#e1ebe6!important;background:#f7fbf8!important;color:#183c37!important}
 html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-nav a:hover,
-html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-auth a:hover{border-color:rgba(114,212,63,.7)!important;background:rgba(114,212,63,.12)!important;color:#dfffd0!important}
+html body[data-authenticated="false"] .mg-public-mobile-menu .mg-public-mobile-auth a:hover{border-color:#72d43f!important;background:#effbe9!important;color:#326f1d!important}
 
 @media(max-width:1080px){
   html body[data-authenticated="false"] .mg-site-header.mg-market-universal-header[data-header-variant="logged-out"] .mg-header-phone-stack,
