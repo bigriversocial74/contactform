@@ -70,7 +70,19 @@ jobs:
       - name: Loyalty Quest Notifications 10/10 contract
         run: php scripts/validate_loyalty_quest_notifications_v1.php
       - name: Shared delivery regression
-        run: php scripts/validate_delivery_behavior.php
+        run: |
+          set +e
+          php scripts/validate_delivery_behavior.php > shared-delivery-${{ matrix.php }}.log 2>&1
+          status=$?
+          cat shared-delivery-${{ matrix.php }}.log
+          exit $status
+      - name: Upload shared delivery failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shared-delivery-failure-php-${{ matrix.php }}
+          path: shared-delivery-${{ matrix.php }}.log
+          retention-days: 7
       - name: Migration manifest regression
         run: php scripts/validate_migration_manifest.php
       - name: Loyalty Quest campaign regression
