@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'includes/campaign-types.php'
+      - 'includes/loyalty-quest-campaign-type.php'
       - 'includes/campaign-landing-foundation.php'
       - 'includes/public-campaign-page.php'
       - 'includes/campaign-media-landing.php'
@@ -20,6 +21,8 @@ on:
       - 'rsvp-event.php'
       - 'watch-reward.php'
       - 'listen-reward.php'
+      - 'loyalty-quest.php'
+      - 'assets/js/merchant-loyalty-quests.js'
       - 'api/merchant/campaigns.php'
       - 'api/merchant/campaigns-core.php'
       - 'api/public/campaigns/signup.php'
@@ -34,6 +37,7 @@ on:
       - 'api/public/campaigns/watch-progress-v2.php'
       - 'api/public/campaigns/_media_progress_v2.php'
       - 'api/public/campaigns/listen-progress.php'
+      - 'api/public/loyalty-quest/submit.php'
       - 'scripts/validate_campaign_public_matrix_v1.php'
       - '.github/workflows/campaign-public-matrix-validation.yml'
   workflow_dispatch:
@@ -43,7 +47,7 @@ permissions:
 
 jobs:
   validate:
-    name: Validate 13 public campaign types
+    name: Validate 14 public campaign types
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -59,6 +63,7 @@ jobs:
         run: |
           set -euo pipefail
           php -l includes/campaign-types.php
+          php -l includes/loyalty-quest-campaign-type.php
           php -l includes/campaign-landing-foundation.php
           php -l includes/public-campaign-page.php
           php -l includes/campaign-media-landing.php
@@ -75,6 +80,7 @@ jobs:
           php -l rsvp-event.php
           php -l watch-reward.php
           php -l listen-reward.php
+          php -l loyalty-quest.php
           php -l api/merchant/campaigns.php
           php -l api/merchant/campaigns-core.php
           php -l api/public/campaigns/signup.php
@@ -89,6 +95,7 @@ jobs:
           php -l api/public/campaigns/watch-progress-v2.php
           php -l api/public/campaigns/_media_progress_v2.php
           php -l api/public/campaigns/listen-progress.php
+          php -l api/public/loyalty-quest/submit.php
           php -l scripts/validate_campaign_public_matrix_v1.php
 
       - name: Validate campaign public matrix
