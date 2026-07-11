@@ -4,6 +4,17 @@ declare(strict_types=1);
 <section class="mg-agent-chat-page" data-merchant-agent-chat>
   <div class="mg-agent-chat-drawer-backdrop" data-agent-chat-drawer-close hidden></div>
 
+  <header class="mg-agent-chat-mobile-controls" aria-label="Merchant agent mobile controls">
+    <div>
+      <strong>Merchant Agent</strong>
+      <span data-agent-chat-summary-mobile>Overview · Last 90 days · Action plan</span>
+    </div>
+    <button type="button" data-agent-chat-drawer-open aria-controls="agent-chat-drawer" aria-expanded="false">
+      <span>Controls</span>
+      <b aria-hidden="true">☰</b>
+    </button>
+  </header>
+
   <section class="mg-agent-chat-layout" id="agent-chat">
     <section class="mg-agent-chat-main-stack">
       <section class="mg-app-panel mg-agent-chat-main" aria-label="Merchant agent conversation">
@@ -37,6 +48,7 @@ declare(strict_types=1);
 
     <aside class="mg-agent-chat-right" id="agent-chat-drawer" aria-label="Agent data and controls" data-agent-chat-drawer aria-hidden="false">
       <div class="mg-agent-drawer-head">
+        <strong>Agent controls</strong>
         <button type="button" aria-label="Close agent data panel" data-agent-chat-drawer-close>×</button>
       </div>
 
