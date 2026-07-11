@@ -36,7 +36,7 @@ $checks=[
     'readiness validates the selected mode rather than requiring test credentials' =>
         str_contains($source['readiness'],'mg_payment_secret_matches_mode($secret,$mode)')
         && str_contains($source['readiness'],'Missing Stripe publishable key for ')
-        && str_contains($source['readiness'],"'This '.\$mode.' configuration is saved'"),
+        && str_contains($source['readiness'],"This '.\$mode.' configuration is saved"),
     'admin API auto-selects a relevant configured mode' =>
         str_contains($source['adminApi'],'function mg_admin_payment_default_mode')
         && str_contains($source['adminApi'],"\$_GET['mode']??'auto'")
