@@ -148,7 +148,7 @@ function mg_zero_reward_pppm_item(PDO $pdo, array $source, array $event, string 
     $recipientUserId = (int)$input['recipient_user_id'];
     $title = trim((string)($input['title'] ?? 'Microgifter reward')) ?: 'Microgifter reward';
     $description = trim((string)($input['description'] ?? '')) ?: null;
-    $currency = strtoupper(trim((string)($input['currency'] ?? 'USD'));
+    $currency = strtoupper(trim((string)($input['currency'] ?? 'USD')));
     if (!preg_match('/^[A-Z]{3}$/', $currency)) $currency = 'USD';
     $valueCents = max(0, (int)($input['display_value_cents'] ?? 0));
     $lineReference = substr(trim((string)($input['source_line_reference'] ?? $walletPublicId)), 0, 190);
@@ -256,6 +256,7 @@ function mg_zero_reward_issue_from_wallet(PDO $pdo, array $input): array
         'merchant_user_id'=>$merchantUserId,
         'occurred_at'=>$instance['delivered_at'] ?? $instance['issued_at'] ?? date('Y-m-d H:i:s'),
     ]);
+    if (empty($projection['recipient_inbox_item_id'])) throw new RuntimeException('Reward was not projected into the recipient Inbox.');
 
     if (!empty($input['wallet_item_db_id'])) {
         $pdo->prepare('UPDATE wallet_items SET user_id=?,pppm_item_id=?,updated_at=NOW() WHERE id=? AND public_id=?')
