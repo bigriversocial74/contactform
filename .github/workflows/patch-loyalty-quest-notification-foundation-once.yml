@@ -1,0 +1,71 @@
+name: One-time Loyalty Quest Notification Foundation
+
+on:
+  push:
+    branches:
+      - feature/quest-notifications-transactional-delivery-v1-20260711
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/quest-notifications-transactional-delivery-v1-20260711
+          fetch-depth: 0
+      - name: Patch communications and migration manifest
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          comm=Path('api/communications/_communications.php')
+          text=comm.read_text()
+          old="""    $channels = mg_notification_enabled_channels($preference);
+    if ($channels === []) return;
+"""
+          new="""    $channels = mg_notification_enabled_channels($preference);
+    if (!empty($context['in_app_only'])) $channels = in_array('in_app', $channels, true) ? ['in_app'] : [];
+    if ($channels === []) return;
+"""
+          if "context['in_app_only']" not in text:
+              if old not in text: raise SystemExit('notification channel marker missing')
+              text=text.replace(old,new,1)
+          old2="unset($stored['event_key'],$stored['aggregate'],$stored['allow_self']);"
+          new2="unset($stored['event_key'],$stored['aggregate'],$stored['allow_self'],$stored['in_app_only']);"
+          if old2 in text:text=text.replace(old2,new2,1)
+          elif new2 not in text:raise SystemExit('notification context marker missing')
+          comm.write_text(text)
+
+          pref=Path('api/communications/preferences.php')
+          text=pref.read_text()
+          marker="""    'campaign' => ['label' => 'Campaigns', 'description' => 'Campaign milestones, eligibility, and completion updates.'],
+"""
+          addition=marker+"    'loyalty_quest' => ['label' => 'Loyalty Quests', 'description' => 'Quest starts, evidence review, rewards, expirations, and redemption receipts.'],\n"
+          if "'loyalty_quest'" not in text:
+              if marker not in text:raise SystemExit('preference definition marker missing')
+              text=text.replace(marker,addition,1)
+          pref.write_text(text)
+
+          manifest=Path('config/migrations.php')
+          text=manifest.read_text()
+          marker="        'stage_12_message_delivery_campaign_suppression.sql',\n"
+          addition=marker+"        'loyalty_quest_notifications_transactional_delivery_v1.sql',\n"
+          if 'loyalty_quest_notifications_transactional_delivery_v1.sql' not in text:
+              if marker not in text:raise SystemExit('migration marker missing')
+              text=text.replace(marker,addition,1)
+          manifest.write_text(text)
+
+          Path('.github/workflows/patch-loyalty-quest-notification-foundation-once.yml').unlink()
+          PY
+          php -l api/communications/_communications.php
+          php -l api/communications/preferences.php
+          php -l config/migrations.php
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add api/communications/_communications.php api/communications/preferences.php config/migrations.php .github/workflows/patch-loyalty-quest-notification-foundation-once.yml
+          git commit -m "Add Loyalty Quest notification preference and in-app-only projection"
+          git push origin HEAD:feature/quest-notifications-transactional-delivery-v1-20260711
