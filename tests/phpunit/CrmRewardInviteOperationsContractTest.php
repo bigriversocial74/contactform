@@ -58,10 +58,12 @@ final class CrmRewardInviteOperationsContractTest extends TestCase
 
     public function testMerchantCrmLoadsInviteOperationsPanel(): void
     {
+        $page = $this->read('merchant-crm.php');
         $view = $this->read('includes/merchant-crm-view.php');
         $js = $this->read('assets/js/merchant-crm-reward-invite-operations.js');
 
-        self::assertStringContainsString('/assets/js/merchant-crm-reward-invite-operations.js', $view);
+        self::assertStringContainsString('/assets/js/merchant-crm-reward-invite-operations.js', $page);
+        self::assertStringContainsString('data-crm-reward-invite-ops-host', $view);
         self::assertStringContainsString('/api/merchant/crm-reward-invites.php?limit=100', $js);
         self::assertStringContainsString('/api/merchant/crm-reward-invite-resend.php', $js);
         self::assertStringContainsString('/api/merchant/crm-reward-invite-revoke.php', $js);
