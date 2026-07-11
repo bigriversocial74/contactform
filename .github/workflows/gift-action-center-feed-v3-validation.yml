@@ -1,21 +1,21 @@
-name: Gift Action Center Feed v2 Validation
+name: Gift Action Center Feed v3 Validation
 
 on:
   pull_request:
     branches:
       - integration-from-repair-20260628
     paths:
-      - 'assets/css/gift-action-center-feed-v2.css'
-      - 'assets/js/gift-action-center-feed-v2.js'
+      - 'assets/css/gift-action-center-feed-v3.css'
+      - 'assets/js/gift-action-center-feed-v3.js'
       - 'assets/js/gift-envelope-presentation.js'
       - 'assets/js/gift-source-metadata.js'
-      - 'assets/js/gift-action-center.js'
+      - 'api/account/action-center.php'
       - 'includes/gift-action-center.php'
       - 'inbox.php'
       - 'sent.php'
       - 'claimed.php'
-      - 'scripts/validate_gift_action_center_feed_v2.php'
-      - '.github/workflows/gift-action-center-feed-v2-validation.yml'
+      - 'scripts/validate_gift_action_center_feed_v3.php'
+      - '.github/workflows/gift-action-center-feed-v3-validation.yml'
   workflow_dispatch:
 
 permissions:
@@ -41,18 +41,19 @@ jobs:
 
       - name: PHP syntax
         run: |
+          php -l api/account/action-center.php
           php -l includes/gift-action-center.php
           php -l inbox.php
           php -l sent.php
           php -l claimed.php
-          php -l scripts/validate_gift_action_center_feed_v2.php
+          php -l scripts/validate_gift_action_center_feed_v3.php
 
       - name: JavaScript syntax
         run: |
-          node --check assets/js/gift-action-center-feed-v2.js
+          node --check assets/js/gift-action-center-feed-v3.js
           node --check assets/js/gift-envelope-presentation.js
           node --check assets/js/gift-source-metadata.js
           node --check assets/js/gift-action-center.js
 
-      - name: Feed v2 contract
-        run: php scripts/validate_gift_action_center_feed_v2.php
+      - name: Feed v3 structural contract
+        run: php scripts/validate_gift_action_center_feed_v3.php

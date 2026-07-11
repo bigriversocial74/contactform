@@ -35,9 +35,8 @@
 
   function rowFallback(row, folder) {
     const title = row.querySelector('.mg-gift-row-main h3');
-    const message = row.querySelector('.mg-gift-row-main p');
+    const message = row.querySelector('.mg-gift-card-message, .mg-gift-row-main p');
     const image = row.querySelector('.mg-gift-thumb img');
-    const status = row.querySelector('.mg-gift-status');
     const business = row.querySelector('.mg-gift-business-name');
     return {
       action_item_id: row.dataset.giftId || '',
@@ -45,11 +44,12 @@
       template_name: title ? title.textContent.trim() : 'Microgift',
       message: message ? message.textContent.trim() : '',
       merchant_name: row.dataset.feedBusiness || (business ? business.textContent.trim() : '') || (image && image.alt ? image.alt.replace(/\s+profile$/i, '') : 'Microgifter'),
+      business_name: row.dataset.feedBusiness || (business ? business.textContent.trim() : ''),
       sender_name: row.dataset.feedSender || '',
       location_name: row.dataset.feedLocation || 'Participating location',
       activity_label: row.dataset.feedActivity || 'Recently',
       view_count: Number(row.dataset.feedViews || 0),
-      state: status ? status.textContent.trim() : folder,
+      state: folder,
       avatar_url: image ? image.getAttribute('src') || '' : '',
       source_system: row.dataset.giftSourceSystem || '',
       source_label: row.dataset.giftSourceLabel || '',
@@ -61,6 +61,7 @@
   function mergeRowMetadata(item, row) {
     const merged = Object.assign({}, item || {});
     if (!merged.merchant_name && row.dataset.feedBusiness) merged.merchant_name = row.dataset.feedBusiness;
+    if (!merged.business_name && row.dataset.feedBusiness) merged.business_name = row.dataset.feedBusiness;
     if (!merged.sender_name && row.dataset.feedSender) merged.sender_name = row.dataset.feedSender;
     if (!merged.location_name && row.dataset.feedLocation) merged.location_name = row.dataset.feedLocation;
     if (!merged.activity_label && row.dataset.feedActivity) merged.activity_label = row.dataset.feedActivity;
@@ -86,7 +87,7 @@
   function detailMarkup(item, row, folder) {
     const value = money(item);
     const views = Math.max(0, Number(item.view_count || item.views || item.open_count || 0));
-    const business = item.merchant_name || item.business_name || 'Microgifter';
+    const business = item.business_name || item.merchant_name || 'Microgifter';
     const sender = item.sender_name || business;
     const source = item.source_label || item.source_system || item.source_type || 'Microgifter';
     const sourceDetail = item.source_detail || '';
@@ -160,7 +161,7 @@
     const parts = overlayParts();
     if (!openDrawer(parts, 'Loaded gift details', '<div class="mg-load-loading">Loading gift details…</div>')) return;
 
-    const controller = window.MicrogifterGiftFeedV2;
+    const controller = window.MicrogifterGiftFeedV3;
     const folder = controller && controller.getFolder ? controller.getFolder() : (row.dataset.feedFolder || app.dataset.initialFolder || 'inbox');
     let item = controller && controller.getItem ? controller.getItem(row.dataset.giftId, folder) : null;
     if (!item && controller && controller.loadFolder) {
