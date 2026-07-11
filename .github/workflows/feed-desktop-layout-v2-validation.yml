@@ -1,0 +1,41 @@
+name: Feed Desktop Layout v2 Validation
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'feed.php'
+      - 'assets/css/feed-centered-layout.css'
+      - 'scripts/validate_feed_desktop_layout_v2.php'
+      - '.github/workflows/feed-desktop-layout-v2-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: PHP syntax
+        run: |
+          php -l feed.php
+          php -l scripts/validate_feed_desktop_layout_v2.php
+
+      - name: Feed desktop layout contract
+        run: php scripts/validate_feed_desktop_layout_v2.php
