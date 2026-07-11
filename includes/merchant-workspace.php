@@ -16,6 +16,7 @@ $merchantNav = [
     'reward_templates' => ['Reward Templates','Wallet-ready offers','/merchant-reward-templates.php','Commerce'],
     'campaigns' => ['Campaigns','Forms, contests, QR drops','/merchant-campaigns.php','Engage'],
     'loyalty_quests' => ['Loyalty Quests','Create, launch, and measure quests','/merchant-loyalty-quests.php','Engage'],
+    'quest_creative' => ['Quest Creative','Artwork, QR, downloads, and embeds','/merchant-loyalty-quest-creative.php','Engage'],
     'quest_reviews' => ['Quest Reviews','Approve participant evidence','/merchant-quest-reviews.php','Engage'],
     'campaign_embed_leads' => ['Embed Leads','Website embed contacts','/merchant-campaign-embed-leads.php','Engage'],
     'campaign_embed_analytics' => ['Embed Analytics','Website embed performance','/merchant-campaign-embed-analytics.php','Engage'],
