@@ -26,15 +26,19 @@ $checks = [
     'regift no longer hides or floats the shared header' => !str_contains($css, '.mg-send-exact-modal .mg-action-modal-header{position:absolute')
         && !str_contains($css, '.mg-send-exact-modal .mg-action-modal-header>div{position:absolute'),
     'regift receives visible canonical header copy' => str_contains($portal, "title.textContent = 'Regift Microgift'")
-        && str_contains($portal, "eyebrow.textContent = merchant"),
+        && str_contains($portal, 'eyebrow.textContent = eyebrowLabel'),
     'regift has consistent secondary and primary actions' => str_contains($portal, "cancel.textContent = 'Cancel'")
-        && str_contains($portal, "primary.textContent = 'Review regift'"),
+        && str_contains($portal, "const desiredLabel = 'Review regift';")
+        && str_contains($portal, 'primary.textContent = desiredLabel'),
+    'regift normalization cannot self-trigger indefinitely' => str_contains($portal, 'function queueActionModalNormalization(modal)')
+        && str_contains($portal, "primary.textContent.trim() === 'Review Regift'")
+        && !str_contains($portal, '/^Review Regift$/i'),
     'claim markup keeps close control after title group' => preg_match('/<header class="mg-claim-modal-header">.*?<div>.*?<\/div>\s*<button class="mg-claim-modal-close"/s', $claim) === 1,
     'desktop and mobile use the same modal shells' => str_contains($css, '@media (max-width: 760px)')
         && str_contains($css, 'body > .mg-action-modal,')
         && str_contains($css, '.mg-claim-modal,'),
-    'keyboard focus is trapped inside open dialogs' => str_contains($portal, "if (event.key !== 'Tab' || !modal) return;")
-        && str_contains($portal, 'trapFocus(event, claimModal || actionModal);'),
+    'keyboard focus is trapped inside open overlays' => str_contains($portal, "if (event.key !== 'Tab' || !modal) return;")
+        && str_contains($portal, 'trapFocus(event, claimModal || actionModal || drawer);'),
     'focus returns to the opening action' => str_contains($portal, 'restoreFocus(lastActionTrigger)')
         && str_contains($portal, 'restoreFocus(lastClaimTrigger)'),
     'modal scripts remain behavior authorities' => str_contains($send, 'buildExactSendModal')

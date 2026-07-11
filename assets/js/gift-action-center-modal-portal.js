@@ -1,8 +1,12 @@
 (() => {
   'use strict';
 
+  if (window.__mgGiftActionCenterModalPortalBooted) return;
+  window.__mgGiftActionCenterModalPortalBooted = true;
+
   let lastActionTrigger = null;
   let lastClaimTrigger = null;
+  let normalizationFrame = 0;
 
   const focusableSelector = [
     'a[href]',
@@ -68,8 +72,9 @@
     const eyebrow = modal.querySelector('[data-action-modal-eyebrow]');
     const merchant = form.querySelector('.mg-send-exact-product-copy p');
 
-    if (title) title.textContent = 'Regift Microgift';
-    if (eyebrow) eyebrow.textContent = merchant && merchant.textContent.trim() ? merchant.textContent.trim() : 'Microgifter';
+    if (title && title.textContent !== 'Regift Microgift') title.textContent = 'Regift Microgift';
+    const eyebrowLabel = merchant && merchant.textContent.trim() ? merchant.textContent.trim() : 'Microgifter';
+    if (eyebrow && eyebrow.textContent !== eyebrowLabel) eyebrow.textContent = eyebrowLabel;
 
     const actions = form.querySelector('.mg-send-exact-actions');
     if (actions && !actions.querySelector('[data-action-modal-close]')) {
@@ -82,8 +87,9 @@
     }
 
     const primary = actions && actions.querySelector('button[type="submit"]');
-    if (primary && /^Review Regift$/i.test(primary.textContent.trim())) {
-      primary.textContent = 'Review regift';
+    const desiredLabel = 'Review regift';
+    if (primary && primary.textContent.trim() === 'Review Regift') {
+      primary.textContent = desiredLabel;
     }
 
     return true;
@@ -97,7 +103,16 @@
       modal.classList.remove('mg-send-product-modal', 'mg-send-exact-modal');
       const form = modal.querySelector('[data-action-form]');
       if (form && form.dataset.actionForm) modal.dataset.modalAction = form.dataset.actionForm;
+      else modal.removeAttribute('data-modal-action');
     }
+  }
+
+  function queueActionModalNormalization(modal) {
+    if (!modal || normalizationFrame) return;
+    normalizationFrame = window.requestAnimationFrame(() => {
+      normalizationFrame = 0;
+      normalizeActionModal(modal);
+    });
   }
 
   function watchActionModal() {
@@ -106,7 +121,7 @@
       if (!body || body.dataset.modalUiObserved === 'true') return;
       body.dataset.modalUiObserved = 'true';
 
-      new MutationObserver(() => normalizeActionModal(modal)).observe(body, {
+      new MutationObserver(() => queueActionModalNormalization(modal)).observe(body, {
         childList: true,
         subtree: true
       });
@@ -127,7 +142,8 @@
 
   function releaseBodyLockWhenSafe() {
     if (!actionModalIsOpen() && !claimModalIsOpen() && !drawerIsOpen()) {
-      document.body.classList.remove('mg-modal-lock', 'mg-action-modal-open', 'mg-claim-modal-open');
+      document.body.classList.remove('mg-modal-lock', 'mg-action-modal-open');
+      document.body.classList.remove('mg-claim-modal-open');
     }
   }
 
@@ -137,6 +153,11 @@
   }
 
   function closeActionModal() {
+    if (normalizationFrame) {
+      window.cancelAnimationFrame(normalizationFrame);
+      normalizationFrame = 0;
+    }
+
     document.querySelectorAll('.mg-action-modal').forEach((modal) => {
       modal.classList.remove('is-open', 'mg-send-product-modal', 'mg-send-exact-modal');
       modal.removeAttribute('data-modal-action');
@@ -156,8 +177,10 @@
 
   function closeGiftDrawer() {
     document.querySelectorAll('.mg-gift-drawer').forEach((drawer) => {
-      drawer.classList.remove('is-open');
+      drawer.classList.remove('is-open', 'mg-load-envelope-drawer');
       drawer.setAttribute('aria-hidden', 'true');
+      const content = drawer.querySelector('[data-gift-drawer-content]');
+      if (content) content.scrollTop = 0;
     });
 
     document.querySelectorAll('.mg-gift-drawer-backdrop').forEach((backdrop) => {
@@ -210,7 +233,7 @@
 
       window.requestAnimationFrame(() => {
         const modal = actionModalIsOpen();
-        if (modal) normalizeActionModal(modal);
+        if (modal) queueActionModalNormalization(modal);
       });
     }
 
@@ -252,15 +275,19 @@
   document.addEventListener('keydown', (event) => {
     const claimModal = claimModalIsOpen();
     const actionModal = actionModalIsOpen();
+    const drawer = drawerIsOpen();
 
     if (event.key === 'Escape') {
       if (actionModal) {
         event.preventDefault();
         closeActionModal();
+      } else if (drawer) {
+        event.preventDefault();
+        closeGiftDrawer();
       }
       return;
     }
 
-    trapFocus(event, claimModal || actionModal);
+    trapFocus(event, claimModal || actionModal || drawer);
   });
 })();

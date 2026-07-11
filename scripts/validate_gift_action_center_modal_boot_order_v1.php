@@ -50,6 +50,26 @@ try {
     );
 
     mg_action_modal_expect(
+        str_contains($portal, 'function queueActionModalNormalization(modal)')
+        && str_contains($portal, 'window.requestAnimationFrame(() =>')
+        && str_contains($portal, "const desiredLabel = 'Review regift';")
+        && str_contains($portal, "primary.textContent.trim() === 'Review Regift'")
+        && !str_contains($portal, '/^Review Regift$/i'),
+        'Regift normalization is frame-queued and idempotent instead of creating a MutationObserver loop',
+        $failures,
+        $passes
+    );
+
+    mg_action_modal_expect(
+        str_contains($portal, 'if (window.__mgGiftActionCenterModalPortalBooted) return;')
+        && str_contains($portal, 'window.cancelAnimationFrame(normalizationFrame)')
+        && str_contains($portal, "drawer.classList.remove('is-open', 'mg-load-envelope-drawer')"),
+        'Overlay controller boots once and clears pending Regift and Load presentation state on close',
+        $failures,
+        $passes
+    );
+
+    mg_action_modal_expect(
         str_contains($portal, "document.querySelectorAll('.mg-action-modal')")
         && str_contains($portal, "document.querySelectorAll('.mg-gift-drawer')")
         && str_contains($portal, "event.target.closest('[data-action-modal-close]')")
@@ -117,7 +137,7 @@ try {
         && !str_contains($portal, 'Microgifter.post(')
         && !str_contains($portal, 'localStorage')
         && !str_contains($portal, 'sessionStorage'),
-        'Boot-order repair changes presentation timing without creating mutation authority',
+        'Boot-order and freeze repair changes presentation behavior without creating mutation authority',
         $failures,
         $passes
     );
