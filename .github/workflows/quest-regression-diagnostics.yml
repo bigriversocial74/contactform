@@ -1,0 +1,42 @@
+name: Quest Regression Diagnostics
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/quest-regression-diagnostics.yml'
+      - 'scripts/validate_*quest*.php'
+      - 'loyalty-quest.php'
+      - 'my-quests.php'
+      - 'api/public/loyalty-quest/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - name: Run validators with captured output
+        shell: bash
+        run: |
+          set +e
+          mkdir -p /tmp/quest-diagnostics
+          php scripts/validate_participant_quest_experience_v1.php > /tmp/quest-diagnostics/participant.json 2>&1
+          echo $? > /tmp/quest-diagnostics/participant.exit
+          php scripts/validate_public_loyalty_quest_marketplace_v1.php > /tmp/quest-diagnostics/public.json 2>&1
+          echo $? > /tmp/quest-diagnostics/public.exit
+          php scripts/validate_loyalty_quest_campaign_type_v1.php > /tmp/quest-diagnostics/campaign.json 2>&1
+          echo $? > /tmp/quest-diagnostics/campaign.exit
+          php scripts/validate_merchant_quest_management_v1.php > /tmp/quest-diagnostics/merchant.json 2>&1
+          echo $? > /tmp/quest-diagnostics/merchant.exit
+          exit 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: quest-regression-diagnostics
+          path: /tmp/quest-diagnostics
