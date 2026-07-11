@@ -49,7 +49,7 @@ final class StageFStripeContractTest extends TestCase
     {
         $endpoint=$this->source('api/payments/webhook.php');
         $service=$this->source('api/payments/_webhook.php');
-        self::assertStringContainsString("HTTP_STRIPE_SIGNATURE",$endpoint);
+        self::assertStringContainsString('HTTP_STRIPE_SIGNATURE',$endpoint);
         self::assertStringContainsString('mg_payment_verify_signature($provider,$payload,$signature,$pdo)',$endpoint);
         self::assertStringContainsString('mg_payment_process_webhook_event(',$endpoint);
         foreach([
@@ -75,25 +75,52 @@ final class StageFStripeContractTest extends TestCase
         self::assertStringContainsString('Reverse platform fee',$posting);
     }
 
-    public function testAdminAndMerchantHavePaymentReadinessInterfaces(): void
+    public function testAdminAndMerchantHaveSeparatedPaymentMethodInterfaces(): void
     {
         $admin=$this->source('admin-payments.php');
         $adminApi=$this->source('api/admin/payment-settings.php');
         $adminJs=$this->source('assets/js/admin-payments.js');
+        $merchantPage=$this->source('merchant-payments.php');
         $merchant=$this->source('includes/merchant-payments-view.php');
-        $cashApi=$this->source('api/merchant/payment-methods.php');
+        $methodsApi=$this->source('api/merchant/payment-methods.php');
         $merchantJs=$this->source('assets/js/merchant-payments.js');
         $connect=$this->source('assets/js/merchant-connect.js');
-        self::assertStringContainsString('Stripe settings &amp; readiness',$admin);
+
+        foreach([
+            'Payment Methods',
+            'Stripe Configuration',
+            'Readiness',
+            'data-admin-cash-payment-toggle',
+            'data-admin-stripe-payment-toggle',
+        ] as $needle){
+            self::assertStringContainsString($needle,$admin);
+        }
+
         self::assertStringContainsString("mg_require_permission('admin.settings.manage')",$adminApi);
         self::assertStringContainsString('Payment credential encryption is not configured',$adminApi);
-        self::assertStringContainsString('Stripe payment settings saved',$adminJs);
-        self::assertStringContainsString('Stripe Connect',$merchant);
-        self::assertStringContainsString('Pay with cash',$merchant);
-        self::assertStringContainsString('data-cash-payment-toggle',$merchant);
-        self::assertStringContainsString('payment_methods',$cashApi);
-        self::assertStringContainsString("'mode' => 'test'",$cashApi);
+        self::assertStringContainsString('/api/admin/payment-settings.php',$adminJs);
+        self::assertStringContainsString("saveSettings('method')",$adminJs);
+
+        foreach([
+            'data-payments-tab="methods"',
+            'Cash payments',
+            'Stripe payments',
+            'data-cash-payment-toggle',
+            'data-stripe-payment-toggle',
+            'data-financial-kpis',
+        ] as $needle){
+            self::assertStringContainsString($needle,$merchant);
+        }
+
+        self::assertStringNotContainsString('Checkout readiness center',$merchant);
+        self::assertStringNotContainsString('<aside',$merchant);
+        self::assertStringContainsString("'cash' => [",$methodsApi);
+        self::assertStringContainsString("'stripe' => [",$methodsApi);
+        self::assertStringContainsString("'mode' => 'pending_onboarding'",$methodsApi);
+        self::assertStringContainsString('stripe_enabled',$methodsApi);
         self::assertStringContainsString('/api/merchant/payment-methods.php',$merchantJs);
+        self::assertStringNotContainsString('/assets/js/merchant-connect.js',$merchantPage);
+
         self::assertStringContainsString('/api/merchant/payment-connect.php',$connect);
         self::assertStringContainsString('/api/merchant/payment-account.php',$connect);
         self::assertStringContainsString('/admin-payments.php',$this->source('includes/admin-sidebar.php'));

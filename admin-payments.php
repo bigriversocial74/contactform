@@ -16,24 +16,57 @@ require __DIR__.'/includes/header.php';
 
   <main class="mg-app-workspace mg-admin-workspace">
     <section class="mg-payment-admin-page">
-      <header class="mg-payment-hero">
-        <div class="mg-payment-hero-copy">
-          <span class="mg-eyebrow">Platform payment authority</span>
-          <h1>Stripe readiness center</h1>
-          <p>Configure test and live Stripe credentials, verify webhook readiness, and control the Microgifter platform-share policy from one clean console.</p>
-          <div class="mg-payment-hero-actions" aria-label="Payment setup shortcuts">
-            <a class="mg-btn mg-btn-soft" href="#stripe-config">Configure Stripe</a>
-            <a class="mg-btn mg-btn-ghost" href="#readiness-checks">View readiness</a>
-          </div>
-        </div>
-        <aside class="mg-payment-hero-card" aria-label="Current readiness state">
-          <span class="mg-payment-card-label">Current mode status</span>
-          <strong class="mg-status-badge" data-payment-readiness>Loading readiness</strong>
-          <p data-payment-save-state>Waiting for the payment settings API.</p>
-        </aside>
-      </header>
+      <nav class="mg-payment-admin-tabs" role="tablist" aria-label="Payment administration sections">
+        <button class="is-active" type="button" role="tab" aria-selected="true" data-admin-payment-tab="methods">Payment Methods</button>
+        <button type="button" role="tab" aria-selected="false" data-admin-payment-tab="stripe">Stripe Configuration</button>
+        <button type="button" role="tab" aria-selected="false" data-admin-payment-tab="readiness">Readiness</button>
+      </nav>
 
-      <section class="mg-payment-top-grid" aria-label="Payment setup controls">
+      <section class="mg-payment-admin-section is-active" data-admin-payment-page="methods">
+        <div class="mg-payment-method-admin-grid">
+          <article class="mg-payment-setup-card mg-payment-method-admin-card">
+            <div class="mg-payment-card-head">
+              <span class="mg-payment-method-mark">$</span>
+              <div>
+                <span class="mg-eyebrow">Platform method</span>
+                <h2>Cash payments</h2>
+                <p>Enable a manual cash option for checkout testing without creating a Stripe charge.</p>
+              </div>
+            </div>
+            <form data-admin-cash-payment-form>
+              <label class="mg-toggle-switch">
+                <input type="checkbox" name="cash_enabled" value="1" data-admin-cash-payment-toggle>
+                <span class="mg-toggle-control" aria-hidden="true"></span>
+                <span class="mg-toggle-copy"><strong>Enable cash</strong><small>Global test/manual method.</small></span>
+              </label>
+              <div class="mg-form-status" data-admin-cash-payment-status aria-live="polite"></div>
+              <button class="mg-btn mg-btn-soft" type="submit">Save cash option</button>
+            </form>
+          </article>
+
+          <article class="mg-payment-setup-card mg-payment-method-admin-card">
+            <div class="mg-payment-card-head">
+              <span class="mg-payment-method-mark is-stripe">S</span>
+              <div>
+                <span class="mg-eyebrow">Platform method</span>
+                <h2>Stripe payments</h2>
+                <p>Control whether the current Stripe mode is globally available. Merchant onboarding will be connected in the next integration PR.</p>
+              </div>
+            </div>
+            <div class="mg-payment-method-admin-form">
+              <label class="mg-toggle-switch">
+                <input type="checkbox" value="1" data-admin-stripe-payment-toggle>
+                <span class="mg-toggle-control" aria-hidden="true"></span>
+                <span class="mg-toggle-copy"><strong>Enable Stripe</strong><small>Current configured mode only.</small></span>
+              </label>
+              <div class="mg-form-status" data-admin-stripe-payment-status aria-live="polite"></div>
+              <button class="mg-btn mg-btn-soft" type="button" data-admin-stripe-payment-save>Save Stripe option</button>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="mg-payment-admin-section" data-admin-payment-page="stripe" hidden>
         <article class="mg-payment-setup-card mg-payment-credential-setup" data-payment-credential-setup>
           <div class="mg-payment-card-head">
             <span class="mg-payment-step">01</span>
@@ -64,28 +97,6 @@ require __DIR__.'/includes/header.php';
           </div>
         </article>
 
-        <article class="mg-payment-setup-card mg-payment-cash-panel">
-          <div class="mg-payment-card-head">
-            <span class="mg-payment-step">02</span>
-            <div>
-              <span class="mg-eyebrow">Test payment method</span>
-              <h2>Pay with cash</h2>
-              <p>Enable a manual cash option for checkout testing without creating a Stripe charge.</p>
-            </div>
-          </div>
-          <form data-admin-cash-payment-form>
-            <label class="mg-toggle-switch">
-              <input type="checkbox" name="cash_enabled" value="1" data-admin-cash-payment-toggle>
-              <span class="mg-toggle-control" aria-hidden="true"></span>
-              <span class="mg-toggle-copy"><strong>Cash payments</strong><small>Test/manual method only.</small></span>
-            </label>
-            <div class="mg-form-status" data-admin-cash-payment-status aria-live="polite"></div>
-            <button class="mg-btn mg-btn-soft" type="submit">Save cash option</button>
-          </form>
-        </article>
-      </section>
-
-      <div class="mg-payment-admin-grid">
         <section class="mg-app-panel mg-payment-config-card" id="stripe-config">
           <div class="mg-app-panel-head">
             <div>
@@ -96,6 +107,7 @@ require __DIR__.'/includes/header.php';
           </div>
           <div class="mg-app-panel-body">
             <form class="mg-merchant-form mg-payment-settings-form" data-payment-settings-form novalidate>
+              <input type="hidden" name="enabled" value="0">
               <div class="mg-payment-form-strip">
                 <label>Mode
                   <select name="mode" data-payment-mode>
@@ -103,11 +115,10 @@ require __DIR__.'/includes/header.php';
                     <option value="live">Live</option>
                   </select>
                 </label>
-                <label class="mg-toggle-switch mg-stripe-toggle">
-                  <input type="checkbox" name="enabled" value="1">
-                  <span class="mg-toggle-control" aria-hidden="true"></span>
-                  <span class="mg-toggle-copy"><strong>Enable Stripe</strong><small>Processes only when readiness passes.</small></span>
-                </label>
+                <div class="mg-payment-config-state">
+                  <span>Method availability</span>
+                  <strong data-payment-config-enabled>Loading</strong>
+                </div>
               </div>
 
               <label>Publishable key
@@ -142,22 +153,26 @@ require __DIR__.'/includes/header.php';
             </form>
           </div>
         </section>
+      </section>
 
-        <aside class="mg-app-panel mg-payment-readiness-card" id="readiness-checks">
+      <section class="mg-payment-admin-section" data-admin-payment-page="readiness" hidden>
+        <section class="mg-app-panel mg-payment-readiness-card" id="readiness-checks">
           <div class="mg-app-panel-head">
             <div>
               <span class="mg-eyebrow">Readiness checks</span>
               <h2>Launch requirements</h2>
               <p>Live payments remain blocked until every requirement passes.</p>
             </div>
+            <strong class="mg-status-badge" data-payment-readiness>Loading readiness</strong>
           </div>
           <div class="mg-app-panel-body">
+            <div class="mg-form-status" data-payment-save-state>Waiting for the payment settings API.</div>
             <div data-payment-checks><div class="mg-empty-state">Loading checks…</div></div>
             <div class="mg-payment-webhook"><span>Webhook endpoint</span><code data-payment-webhook-url></code></div>
             <div data-payment-connect-counts></div>
           </div>
-        </aside>
-      </div>
+        </section>
+      </section>
     </section>
   </main>
 </section>

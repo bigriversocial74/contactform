@@ -14,19 +14,27 @@ function mg_merchant_payment_methods_payload(PDO $pdo, int $workspaceId): array
     $state = json_decode((string)($row['state_json'] ?? ''), true);
     if (!is_array($state)) $state = [];
     $methods = is_array($state['payment_methods'] ?? null) ? $state['payment_methods'] : [];
+
     return [
         'payment_methods' => [
             'cash' => [
                 'enabled' => !empty($methods['cash']['enabled']),
-                'mode' => 'test',
-                'label' => 'Pay with cash',
-                'description' => 'Manual cash collection for local testing. No Stripe charge is created.',
+                'mode' => 'manual',
+                'label' => 'Cash payments',
+                'description' => 'Manual cash collection. No Stripe charge is created.',
+            ],
+            'stripe' => [
+                'enabled' => !empty($methods['stripe']['enabled']),
+                'mode' => 'pending_onboarding',
+                'label' => 'Stripe payments',
+                'description' => 'Merchant card-payment preference. Official Stripe onboarding is connected separately.',
             ],
         ],
     ];
 }
 
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
+    header('Cache-Control: private, no-store, max-age=0');
     mg_ok(mg_merchant_payment_methods_payload($pdo, (int)$workspace['id']));
 }
 
@@ -34,6 +42,7 @@ mg_require_method('POST');
 $input = mg_input();
 mg_require_csrf_for_write($input);
 $cashEnabled = !empty($input['cash_enabled']);
+$stripeEnabled = !empty($input['stripe_enabled']);
 
 try {
     $pdo->beginTransaction();
@@ -44,20 +53,40 @@ try {
         $pdo->prepare('INSERT INTO merchant_payment_readiness (workspace_id,created_at,updated_at) VALUES (?,NOW(),NOW())')->execute([(int)$workspace['id']]);
         $row = ['id' => (int)$pdo->lastInsertId(), 'state_json' => null];
     }
+
     $state = json_decode((string)($row['state_json'] ?? ''), true);
     if (!is_array($state)) $state = [];
     if (!isset($state['payment_methods']) || !is_array($state['payment_methods'])) $state['payment_methods'] = [];
-    $state['payment_methods']['cash'] = [
-        'enabled' => $cashEnabled,
-        'mode' => 'test',
+
+    $updatedAt = gmdate('c');
+    $methodAudit = [
         'updated_by_user_id' => (int)$user['id'],
-        'updated_at' => gmdate('c'),
+        'updated_at' => $updatedAt,
     ];
+    $state['payment_methods']['cash'] = $methodAudit + [
+        'enabled' => $cashEnabled,
+        'mode' => 'manual',
+    ];
+    $state['payment_methods']['stripe'] = $methodAudit + [
+        'enabled' => $stripeEnabled,
+        'mode' => 'pending_onboarding',
+    ];
+
     $pdo->prepare('UPDATE merchant_payment_readiness SET state_json=?,updated_at=NOW() WHERE id=?')
         ->execute([json_encode($state, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), (int)$row['id']]);
     $pdo->commit();
-    mg_audit('merchant.payment_methods_updated', 'merchant_payment_readiness', ['cash_enabled' => $cashEnabled], (int)$user['id']);
-    mg_ok(mg_merchant_payment_methods_payload($pdo, (int)$workspace['id']), $cashEnabled ? 'Cash payments enabled for testing.' : 'Cash payments disabled.');
+
+    mg_audit('merchant.payment_methods_updated', 'merchant_payment_readiness', [
+        'cash_enabled' => $cashEnabled,
+        'stripe_enabled' => $stripeEnabled,
+        'stripe_onboarding_connected' => false,
+    ], (int)$user['id']);
+
+    header('Cache-Control: private, no-store, max-age=0');
+    mg_ok(
+        mg_merchant_payment_methods_payload($pdo, (int)$workspace['id']),
+        'Payment methods saved.'
+    );
 } catch (Throwable $error) {
     if ($pdo->inTransaction()) $pdo->rollBack();
     mg_fail('Unable to save payment method settings.', 500);
