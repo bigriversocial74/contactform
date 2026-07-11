@@ -31,14 +31,15 @@ $matrix = [
     'rsvp_event_reward' => ['/rsvp-event.php','/api/public/campaigns/rsvp-event.php','specialized','rsvp_attendance'],
     'watch_video_reward' => ['/watch-reward.php','/api/public/campaigns/watch-progress-v2.php','media','video_watch_milestones'],
     'listen_music_reward' => ['/listen-reward.php','/api/public/campaigns/listen-progress.php','media','audio_listen_milestones'],
+    'loyalty_quest' => ['/loyalty-quest.php','/api/public/loyalty-quest/submit.php','quest','verified_loyalty_quest'],
 ];
 
 $registry = mg_campaign_type_registry();
 $public = array_filter($registry, static fn(array $definition): bool => !empty($definition['public_enabled']) && empty($definition['internal_only']));
 $internal = array_filter($registry, static fn(array $definition): bool => !empty($definition['internal_only']));
-$check(count($registry) === 14, 'Registry contains 14 campaign types', 'found ' . count($registry));
-$check(count($public) === 13, 'Registry contains 13 public campaign types', 'found ' . count($public));
-$check(array_keys($public) === array_keys($matrix), 'Public registry matches the 13-type matrix');
+$check(count($registry) === 15, 'Registry contains 15 campaign types', 'found ' . count($registry));
+$check(count($public) === 14, 'Registry contains 14 public campaign types', 'found ' . count($public));
+$check(array_keys($public) === array_keys($matrix), 'Public registry matches the 14-type matrix');
 $check(count($internal) === 1 && isset($internal['customer_refund']), 'Customer Refund is the only internal campaign type');
 
 $foundation = $read('includes/campaign-landing-foundation.php');
@@ -47,6 +48,7 @@ $media = $read('includes/campaign-media-landing.php');
 $builder = $read('api/merchant/campaigns-core.php');
 $specialized = $read('api/merchant/campaigns.php');
 $engage = $read('api/public/campaigns/engage.php');
+$questManager = $read('assets/js/merchant-loyalty-quests.js');
 
 $check(str_contains($foundation, 'function mg_campaign_landing_bootstrap')
     && str_contains($foundation, 'function mg_campaign_landing_state')
@@ -91,26 +93,33 @@ foreach ($matrix as $type => [$route, $submit, $family, $expectedMode]) {
     $endpoint = $read($submitPath);
     $check($page !== '', $type . ': landing page exists', $pagePath);
     $check($endpoint !== '', $type . ': submit endpoint exists', $submitPath);
-    $check(str_contains($page, $type), $type . ': landing page declares its campaign type');
+    $declaresType = $type === 'loyalty_quest'
+        ? str_contains($page, 'data-loyalty-quest-participant') && str_contains($page, 'data-campaign-ref')
+        : str_contains($page, $type);
+    $check($declaresType, $type . ': landing page declares its campaign type');
 
     $familyMatches = match ($family) {
         'shared' => str_contains($page, 'mg_campaign_landing_bootstrap') && str_contains($page, 'includes/public-campaign-page.php'),
         'specialized' => str_contains($page, 'mg_campaign_landing_bootstrap') && str_contains($page, 'mg_campaign_landing_state') && str_contains($page, 'mg_campaign_landing_render_bottom_cards'),
         'interactive' => str_contains($page, 'mg_campaign_landing_bootstrap') && str_contains($page, 'mg-rl-interactive') && str_contains($page, 'mg_campaign_landing_render_bottom_cards'),
         'media' => str_contains($page, 'includes/campaign-media-landing.php') && str_contains($page, 'mg_campaign_media_render_join') && str_contains($page, 'mg_campaign_media_render_cards'),
+        'quest' => str_contains($page, 'data-loyalty-quest-participant') && str_contains($page, 'data-lqp-start') && str_contains($page, 'data-lqp-proof-form'),
         default => false,
     };
     $check($familyMatches, $type . ': canonical ' . $family . ' landing family');
 
-    $previewSupported = $family === 'shared'
-        ? str_contains($shared, 'data-campaign-preview="merchant"') && str_contains($shared, 'data-merchant-campaign-preview')
-        : str_contains($page, 'previewMode') && str_contains($page, 'data-campaign-preview');
+    $previewSupported = match ($family) {
+        'shared' => str_contains($shared, 'data-campaign-preview="merchant"') && str_contains($shared, 'data-merchant-campaign-preview'),
+        'quest' => str_contains($questManager, 'Open public page') && str_contains($questManager, 'public_url'),
+        default => str_contains($page, 'previewMode') && str_contains($page, 'data-campaign-preview'),
+    };
     $check($previewSupported, $type . ': merchant preview supported');
 
     $imageSupported = match ($family) {
         'shared' => str_contains($shared, 'mg_campaign_landing_campaign_image'),
         'specialized' => str_contains($page, 'mg_campaign_landing_primary_image') || str_contains($page, 'mg_campaign_landing_campaign_image'),
         'interactive', 'media' => str_contains($page, 'mg_campaign_landing_campaign_image'),
+        'quest' => str_contains($page, 'data-lqp-image') && str_contains($page, 'loyalty-quest-placeholder.svg'),
         default => false,
     };
     $check($imageSupported, $type . ': campaign image priority supported');
@@ -127,6 +136,8 @@ foreach ($matrix as $type => [$route, $submit, $family, $expectedMode]) {
         $check(str_contains($engage, 'mg_campaign_type_public_enabled'), $type . ': generic endpoint validates registry access');
     } elseif ($type === 'watch_video_reward') {
         $check(str_contains($endpoint, "mg_media_reward_progress_v2('watch_video_reward'"), $type . ': v2 endpoint uses shared media engine');
+    } elseif ($type === 'loyalty_quest') {
+        $check(str_contains($endpoint, 'mg_require_api_user') && str_contains($endpoint, 'mg_require_csrf_for_write') && str_contains($endpoint, 'mg_lqv_resolve'), $type . ': participant endpoint enforces identity, CSRF, and verification authority');
     }
 
     $rows[] = [$type, $route, $submit, $family, $modeText($expectedMode)];
@@ -158,4 +169,4 @@ if ($failures) {
     exit(1);
 }
 
-echo 'Campaign Public Matrix v1 validation passed: ' . $checks . ' checks across 13 public campaign types and one internal-only type.' . PHP_EOL;
+echo 'Campaign Public Matrix v1 validation passed: ' . $checks . ' checks across 14 public campaign types and one internal-only type.' . PHP_EOL;
