@@ -1,0 +1,55 @@
+.mg-world-canvas[data-world-zoom-interaction="active"] .mg-world-node,
+.mg-world-canvas[data-world-zoom-motion="animating"] .mg-world-node{
+  transform:translate(-50%,-50%) scale(var(--mg-world-inverse-zoom,1))!important;
+  transition:none!important;
+  will-change:transform;
+}
+.mg-world-canvas[data-world-zoom-interaction="active"] .mg-world-node.is-world-collision-shifted:after,
+.mg-world-canvas[data-world-zoom-motion="animating"] .mg-world-node.is-world-collision-shifted:after{
+  opacity:0!important;
+  transition:none!important;
+}
+.mg-world-canvas[data-world-zoom-interaction="active"] .mg-world-target-drop,
+.mg-world-canvas[data-world-zoom-motion="animating"] .mg-world-target-drop{
+  transform:translate(-50%,-50%) scale(var(--mg-zone-scale,var(--mg-world-inverse-zoom,1)))!important;
+  transition:none!important;
+  will-change:transform;
+}
+.mg-world-canvas[data-world-zoom-interaction="active"] .mg-world-target-drop em,
+.mg-world-canvas[data-world-zoom-motion="animating"] .mg-world-target-drop em{
+  transform:translateX(-50%)!important;
+  transition:none!important;
+}
+.mg-world-canvas[data-world-zoom-interaction="active"] .mg-world-target-drop mark,
+.mg-world-canvas[data-world-zoom-motion="animating"] .mg-world-target-drop mark{
+  transform:none!important;
+  transition:none!important;
+}
+.mg-world-canvas[data-world-zoom-interaction="active"] .mg-world-density-layer,
+.mg-world-canvas[data-world-zoom-motion="animating"] .mg-world-density-layer{
+  opacity:.22!important;
+  transition:none!important;
+}
+.mg-world-canvas[data-world-zoom-interaction="active"] .mg-world-density-spot,
+.mg-world-canvas[data-world-zoom-motion="animating"] .mg-world-density-spot{
+  transition:none!important;
+}
+.mg-world-canvas[data-world-zoom-interaction="active"] .mg-world-node-head,
+.mg-world-canvas[data-world-zoom-interaction="active"] .mg-world-node-icon,
+.mg-world-canvas[data-world-zoom-interaction="active"] .mg-world-node-copy,
+.mg-world-canvas[data-world-zoom-interaction="active"] .mg-world-node-meta,
+.mg-world-canvas[data-world-zoom-interaction="active"] .mg-world-node-value,
+.mg-world-canvas[data-world-zoom-interaction="active"] .mg-world-node-status,
+.mg-world-canvas[data-world-zoom-interaction="active"] .mg-world-target-drop b,
+.mg-world-canvas[data-world-zoom-interaction="active"] .mg-world-target-drop small,
+.mg-world-canvas[data-world-zoom-interaction="active"] .mg-world-target-drop i{
+  transition:none!important;
+}
+@media(prefers-reduced-motion:reduce){
+  .mg-world-canvas .mg-world-node,
+  .mg-world-canvas .mg-world-target-drop,
+  .mg-world-canvas .mg-world-density-layer,
+  .mg-world-canvas .mg-world-density-spot{
+    transition:none!important;
+  }
+}
