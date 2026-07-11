@@ -4,7 +4,8 @@ declare(strict_types=1);
 require_once __DIR__ . '/_loyalty_quest_operations.php';
 
 $method=strtoupper((string)($_SERVER['REQUEST_METHOD']??'GET'));
-$admin=mg_require_permission('campaign.manage');
+$requiredPermission=$method==='GET'?'admin.operations_command.view':'admin.operations_command.manage';
+$admin=mg_require_permission($requiredPermission);
 $adminId=(int)$admin['id'];
 $pdo=mg_db();
 
