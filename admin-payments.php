@@ -50,14 +50,14 @@ require __DIR__.'/includes/header.php';
               <div>
                 <span class="mg-eyebrow">Platform method</span>
                 <h2>Stripe payments</h2>
-                <p>Control whether the current Stripe mode is globally available. Merchant onboarding will be connected in the next integration PR.</p>
+                <p>Control whether the selected Stripe mode is globally available. Test and Live credentials are stored separately.</p>
               </div>
             </div>
             <div class="mg-payment-method-admin-form">
               <label class="mg-toggle-switch">
                 <input type="checkbox" value="1" data-admin-stripe-payment-toggle>
                 <span class="mg-toggle-control" aria-hidden="true"></span>
-                <span class="mg-toggle-copy"><strong>Enable Stripe</strong><small>Current configured mode only.</small></span>
+                <span class="mg-toggle-copy"><strong>Enable Stripe</strong><small>Selected configuration mode only.</small></span>
               </label>
               <div class="mg-form-status" data-admin-stripe-payment-status aria-live="polite"></div>
               <button class="mg-btn mg-btn-soft" type="button" data-admin-stripe-payment-save>Save Stripe option</button>
@@ -73,18 +73,18 @@ require __DIR__.'/includes/header.php';
             <div>
               <span class="mg-eyebrow">Server credential setup</span>
               <h2>Encrypted Stripe secret storage</h2>
-              <p><code>MG_PAYMENT_CREDENTIAL_KEY</code> is the private Microgifter encryption key used to lock stored Stripe secret and webhook values before they go into the database.</p>
+              <p><code>MG_PAYMENT_CREDENTIAL_KEY</code> locks stored Stripe API and webhook secrets before they enter the database.</p>
             </div>
           </div>
           <div class="mg-payment-credential-layout">
             <div class="mg-payment-credential-copy">
               <ol>
+                <li>Select the Stripe mode you intend to configure.</li>
                 <li>Click <strong>Generate safe key</strong>.</li>
-                <li>Create <code>api/config.local.php</code> in File Manager.</li>
-                <li>Paste the generated config block into that file.</li>
-                <li>Refresh this page, then save your Stripe configuration.</li>
+                <li>Create or update <code>api/config.local.php</code> in File Manager.</li>
+                <li>Paste the generated block, refresh, and save your Stripe credentials.</li>
               </ol>
-              <p class="mg-payment-credential-warning">Keep this file private. <code>api/config.local.php</code> is already ignored by Git, so it should never be committed.</p>
+              <p class="mg-payment-credential-warning">A live-only setup does not require test credentials. Keep <code>api/config.local.php</code> private and never commit it.</p>
             </div>
             <div class="mg-payment-credential-card">
               <div class="mg-payment-credential-state" data-payment-credential-state>Checking encryption status…</div>
@@ -92,7 +92,7 @@ require __DIR__.'/includes/header.php';
                 <button class="mg-btn mg-btn-soft" type="button" data-payment-key-generate>Generate safe key</button>
                 <button class="mg-btn mg-btn-ghost" type="button" data-payment-key-copy disabled>Copy config block</button>
               </div>
-              <pre class="mg-payment-key-output" data-payment-key-output>// Click Generate safe key to create a File Manager config block.</pre>
+              <pre class="mg-payment-key-output" data-payment-key-output>// Select Test or Live, then generate the matching server config block.</pre>
             </div>
           </div>
         </article>
@@ -102,18 +102,19 @@ require __DIR__.'/includes/header.php';
             <div>
               <span class="mg-eyebrow">Stripe configuration</span>
               <h2>Keys, mode, and platform fee</h2>
-              <p>Secret fields are write-only. Saved encrypted values are shown as safe hints after reload.</p>
+              <p>Test and Live credentials are independent. Save only the mode you intend to use.</p>
             </div>
           </div>
           <div class="mg-app-panel-body">
             <form class="mg-merchant-form mg-payment-settings-form" data-payment-settings-form novalidate>
               <input type="hidden" name="enabled" value="0">
               <div class="mg-payment-form-strip">
-                <label>Mode
+                <label>Configuration mode
                   <select name="mode" data-payment-mode>
                     <option value="test">Test</option>
                     <option value="live">Live</option>
                   </select>
+                  <small data-payment-mode-help>Loading the most relevant saved Stripe mode…</small>
                 </label>
                 <div class="mg-payment-config-state">
                   <span>Method availability</span>
@@ -121,16 +122,18 @@ require __DIR__.'/includes/header.php';
                 </div>
               </div>
 
+              <div class="mg-form-status mg-payment-mode-warning" data-payment-mode-warning hidden aria-live="polite"></div>
+
               <label>Publishable key
-                <input name="publishable_key" autocomplete="off" placeholder="pk_test_… or pk_live_…">
-                <small>Must match the selected mode.</small>
+                <input name="publishable_key" autocomplete="off" placeholder="pk_live_… or pk_test_…">
+                <small>Must match the selected configuration mode. Test credentials are optional for a live-only setup.</small>
               </label>
 
               <?php require __DIR__.'/includes/admin-payment-credential-fields.php'; ?>
 
               <label>Connect client ID <span>(optional)</span>
                 <input name="connect_client_id" autocomplete="off" placeholder="ca_…">
-                <small>Leave blank if Connect onboarding is not active yet. This is not the webhook secret.</small>
+                <small>Leave blank until Connect onboarding is configured. This is not the webhook secret.</small>
               </label>
 
               <div class="mg-grid-2 mg-payment-fee-grid">
@@ -161,7 +164,7 @@ require __DIR__.'/includes/header.php';
             <div>
               <span class="mg-eyebrow">Readiness checks</span>
               <h2>Launch requirements</h2>
-              <p>Live payments remain blocked until every requirement passes.</p>
+              <p>Readiness applies to the selected Test or Live configuration. The other mode is optional.</p>
             </div>
             <strong class="mg-status-badge" data-payment-readiness>Loading readiness</strong>
           </div>
