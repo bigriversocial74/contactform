@@ -1,0 +1,53 @@
+name: CRM Customer Link and World Canvas Stability Validation
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'merchant-crm.php'
+      - 'assets/js/merchant-crm-contact-link-polish.js'
+      - 'world-canvas.php'
+      - 'api/world-canvas/activity.php'
+      - 'assets/js/world-canvas-square-map.js'
+      - 'assets/js/world-canvas-geo-zoom-v2.js'
+      - 'scripts/validate_crm_customer_link_world_canvas_stability.php'
+      - '.github/workflows/crm-customer-link-world-canvas-stability-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: PHP syntax
+        run: |
+          php -l merchant-crm.php
+          php -l world-canvas.php
+          php -l api/world-canvas/activity.php
+          php -l scripts/validate_crm_customer_link_world_canvas_stability.php
+
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/merchant-crm-contact-link-polish.js
+          node --check assets/js/world-canvas-square-map.js
+          node --check assets/js/world-canvas-geo-zoom-v2.js
+
+      - name: Customer link and map stability contract
+        run: php scripts/validate_crm_customer_link_world_canvas_stability.php
