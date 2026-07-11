@@ -34,21 +34,21 @@ try {
     $merchantWorkspace = $read('includes/merchant-workspace.php');
 
     $expect(
-        str_contains($inbox, "$agent_tab = 'inbox';")
+        str_contains($inbox, '$agent_tab = \'inbox\';')
         && str_contains($inbox, "require __DIR__ . '/includes/gift-action-center.php';"),
         'Inbox continues to use the shared agent sidebar through the gift action center'
     );
 
     $expect(
-        str_contains($agentSidebar, "if ($agentSidebarActive === 'inbox')")
+        str_contains($agentSidebar, 'if ($agentSidebarActive === \'inbox\')')
         && str_contains($agentSidebar, "['feed-following', 'merchant_crm', 'ads-manager']")
-        && str_contains($agentSidebar, "$appSidebarNav[$inboxHiddenNavKey]['visible'] = false"),
+        && str_contains($agentSidebar, '$appSidebarNav[$inboxHiddenNavKey][\'visible\'] = false'),
         'Inbox hides Following, Merchant CRM, and Campaign Ads from the visible sidebar'
     );
 
     $expect(
-        str_contains($agentSidebar, "$appSidebarNav['training-lab'] = ['visible' => false]")
-        && str_contains($appSidebar, "!isset($appSidebarNav['training-lab'])"),
+        str_contains($agentSidebar, '$appSidebarNav[\'training-lab\'] = [\'visible\' => false]')
+        && str_contains($appSidebar, '!isset($appSidebarNav[\'training-lab\'])'),
         'Inbox suppresses the automatically injected Training Lab navigation item'
     );
 
@@ -60,7 +60,7 @@ try {
     }
 
     $expect(
-        str_contains($merchantWorkspace, "if ($merchantView === 'merchant_crm')")
+        str_contains($merchantWorkspace, 'if ($merchantView === \'merchant_crm\')')
         && str_contains($merchantWorkspace, "['loyalty_quests', 'quest_creative', 'quest_reviews', 'quest_delivery', 'quest_analytics']")
         && str_contains($merchantWorkspace, 'unset($merchantNav[$questNavKey])'),
         'Merchant CRM removes every quest navigation key before rendering the sidebar'
