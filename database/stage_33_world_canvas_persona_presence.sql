@@ -4,7 +4,7 @@
 
 SET @mg_has_merchant_locations := (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='merchant_locations');
 SET @mg_has_presence_mode := (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='merchant_locations' AND COLUMN_NAME='world_presence_mode');
-SET @mg_sql := IF(@mg_has_merchant_locations=1 AND @mg_has_presence_mode=0,"ALTER TABLE merchant_locations ADD COLUMN world_presence_mode VARCHAR(32) NOT NULL DEFAULT 'allow_unattended' AFTER world_zone_radius_meters",'SELECT 1');
+SET @mg_sql := IF(@mg_has_merchant_locations=1 AND @mg_has_presence_mode=0,"ALTER TABLE merchant_locations ADD COLUMN world_presence_mode VARCHAR(32) NOT NULL DEFAULT 'allow_unattended'",'SELECT 1');
 PREPARE mg_stmt FROM @mg_sql; EXECUTE mg_stmt; DEALLOCATE PREPARE mg_stmt;
 
 SET @mg_has_presence_status := (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='merchant_locations' AND COLUMN_NAME='world_presence_status');
@@ -36,8 +36,9 @@ SET @mg_has_session_location := (SELECT COUNT(*) FROM information_schema.COLUMNS
 SET @mg_sql := IF(@mg_has_store_sessions=1 AND @mg_has_session_location=0,'ALTER TABLE mg_store_sessions ADD COLUMN merchant_location_id BIGINT UNSIGNED NULL AFTER merchant_user_id','SELECT 1');
 PREPARE mg_stmt FROM @mg_sql; EXECUTE mg_stmt; DEALLOCATE PREPARE mg_stmt;
 
+SET @mg_has_session_location_after := (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mg_store_sessions' AND COLUMN_NAME='merchant_location_id');
 SET @mg_has_session_location_index := (SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mg_store_sessions' AND INDEX_NAME='idx_mg_store_sessions_location_active');
-SET @mg_sql := IF(@mg_has_store_sessions=1 AND @mg_has_session_location_index=0,'CREATE INDEX idx_mg_store_sessions_location_active ON mg_store_sessions(merchant_location_id, active_key, status)','SELECT 1');
+SET @mg_sql := IF(@mg_has_store_sessions=1 AND @mg_has_session_location_after=1 AND @mg_has_session_location_index=0,'CREATE INDEX idx_mg_store_sessions_location_active ON mg_store_sessions(merchant_location_id, active_key, status)','SELECT 1');
 PREPARE mg_stmt FROM @mg_sql; EXECUTE mg_stmt; DEALLOCATE PREPARE mg_stmt;
 
 CREATE TABLE IF NOT EXISTS world_canvas_persona_state (
