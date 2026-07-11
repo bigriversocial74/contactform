@@ -5,6 +5,7 @@ $page_title = 'My Loyalty Quests | Microgifter';
 $page_section = 'account';
 $header_mode = 'account';
 $agent_tab = 'loyalty_quests';
+$use_inbox_sidebar = true;
 $page_styles = ['/assets/css/loyalty-quest-participant.css','/assets/css/my-loyalty-quests.css'];
 $page_scripts = ['/assets/js/my-loyalty-quests.js'];
 $page_meta = ['description'=>'Track your active, pending, and completed Microgifter Loyalty Quests.','robots'=>'noindex, nofollow'];
@@ -32,4 +33,4 @@ require __DIR__ . '/includes/header.php';
     </section>
   </main>
 </section>
-<?php require __DIR__ . '/includes/footer.php';
+<?php require __DIR__ . '/includes/footer.php'; ?>

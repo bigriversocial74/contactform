@@ -5,6 +5,7 @@ $page_title = 'My Subscription | Microgifter';
 $page_section = 'account';
 $header_mode = 'account';
 $agent_tab = 'subscriptions';
+$use_inbox_sidebar = true;
 $page_styles = [];
 $page_scripts = ['/assets/js/account.js','/assets/js/subscription-activation-status.js'];
 $user = mg_current_user();

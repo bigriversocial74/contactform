@@ -1,0 +1,67 @@
+name: Customer Inbox Sidebar Validation
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'includes/agent-sidebar.php'
+      - 'includes/account-sidebar.php'
+      - 'my-quests.php'
+      - 'account-subscriptions.php'
+      - 'notifications.php'
+      - 'feed.php'
+      - 'account.php'
+      - 'scripts/validate_customer_inbox_sidebar.php'
+      - 'scripts/validate_inbox_sidebar_crm_quest_nav_cleanup.php'
+      - 'tests/phpunit/CustomerInboxSidebarContractTest.php'
+      - '.github/workflows/customer-inbox-sidebar-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: PHP syntax
+        run: |
+          php -l includes/agent-sidebar.php
+          php -l includes/account-sidebar.php
+          php -l my-quests.php
+          php -l account-subscriptions.php
+          php -l notifications.php
+          php -l feed.php
+          php -l account.php
+          php -l scripts/validate_customer_inbox_sidebar.php
+          php -l scripts/validate_inbox_sidebar_crm_quest_nav_cleanup.php
+          php -l tests/phpunit/CustomerInboxSidebarContractTest.php
+
+      - name: Customer inbox sidebar contract
+        run: php scripts/validate_customer_inbox_sidebar.php
+
+      - name: Existing inbox and merchant navigation regression
+        run: php scripts/validate_inbox_sidebar_crm_quest_nav_cleanup.php
+
+      - name: PHPUnit contract when available
+        run: |
+          if [ -x vendor/bin/phpunit ]; then
+            vendor/bin/phpunit tests/phpunit/CustomerInboxSidebarContractTest.php
+          else
+            echo 'PHPUnit is not installed in this checkout; standalone contracts completed.'
+          fi

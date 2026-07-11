@@ -8,6 +8,7 @@ $canCreateGift = (bool) ($can_create_microgift ?? ($canMerchantNav && mg_package
 $agentSidebarActive = (string) ($agent_tab ?? basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''), '.php'));
 $currentSidebarScript = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
 $isMerchantAdminSidebar = $canMerchantNav && str_starts_with($currentSidebarScript, 'merchant-');
+$useInboxSidebar = (bool) ($use_inbox_sidebar ?? false);
 $appSidebarVariant = 'utility';
 $appSidebarLabel = 'Workspace';
 $appSidebarActive = $agentSidebarActive;
@@ -29,7 +30,9 @@ $appSidebarNav = [
         'detail' => 'Rewards, posts, and gift activity',
         'href' => '/feed.php',
         'visible' => true,
-        'active' => $agentSidebarActive === 'my-feed' || $agentSidebarActive === 'feed' || $agentSidebarActive === 'feed-discover',
+        'active' => $agentSidebarActive === 'my-feed'
+            || $agentSidebarActive === 'feed'
+            || str_starts_with($agentSidebarActive, 'feed-'),
     ],
     'feed-following' => [
         'label' => 'Following',
@@ -37,6 +40,13 @@ $appSidebarNav = [
         'href' => '/feed.php?view=following',
         'visible' => true,
         'active' => $agentSidebarActive === 'feed-following',
+    ],
+    'my-quests' => [
+        'label' => 'My Quests',
+        'detail' => 'Track loyalty quest progress',
+        'href' => '/my-quests.php',
+        'visible' => $user !== null,
+        'active' => $agentSidebarActive === 'my-quests' || $agentSidebarActive === 'loyalty_quests',
     ],
     'agent_chat' => [
         'section' => 'Agent',
@@ -101,9 +111,32 @@ if ($isMerchantAdminSidebar) {
     $appSidebarNav = mg_merchant_navigation_sidebar($agentSidebarActive);
 }
 
+$inboxSidebarScripts = [
+    'inbox.php',
+    'sent.php',
+    'claimed.php',
+    'my-quests.php',
+    'account-subscriptions.php',
+    'notifications.php',
+    'feed.php',
+    'account.php',
+];
+$useInboxSidebar = $useInboxSidebar || in_array($currentSidebarScript, $inboxSidebarScripts, true);
+
 $reducedInboxSidebarPages = [
     'inbox',
+    'sent',
+    'claimed',
     'loyalty-cards',
+    'my-quests',
+    'loyalty_quests',
+    'subscriptions',
+    'notifications',
+    'profile',
+    'feed',
+    'feed-discover',
+    'feed-following',
+    'feed-mine',
     'store-canvas',
     'merchant-canvas',
     'world-canvas',
@@ -111,7 +144,7 @@ $reducedInboxSidebarPages = [
     'merchant-agent-chat',
 ];
 
-if (!$isMerchantAdminSidebar && in_array($agentSidebarActive, $reducedInboxSidebarPages, true)) {
+if (!$isMerchantAdminSidebar && ($useInboxSidebar || in_array($agentSidebarActive, $reducedInboxSidebarPages, true))) {
     foreach (['feed-following', 'merchant_crm', 'ads-manager'] as $inboxHiddenNavKey) {
         if (isset($appSidebarNav[$inboxHiddenNavKey])) {
             $appSidebarNav[$inboxHiddenNavKey]['visible'] = false;
@@ -125,7 +158,7 @@ require __DIR__ . '/app-sidebar.php';
 /* Hidden compatibility markers keep legacy recovery-baseline contracts stable while
    the visible sidebar UI stays simplified and universal. */
 ?>
-<div class="mg-merchant-side-actions" hidden aria-hidden="true"><a href="/inbox.php">Inbox</a><a href="/sent.php">Sent</a><a href="/claimed.php">Claimed</a><a href="/feed.php">My Feed</a><a href="/feed.php?view=following">Following</a><a href="/messages.php">Messages</a><a href="/merchant-crm.php">Merchant CRM</a><a href="/merchant-ad-manager.php">Campaign Ads</a><a href="/merchant-locations.php">Locations</a><a href="/merchant-products.php">Products &amp; offers</a><a href="/merchant-pppm.php">Orders &amp; redemptions</a><a href="/merchant-settings.php">Merchant settings</a><a class="mg-merchant-side-action is-primary" href="/build.php">Create gift</a></div>
+<div class="mg-merchant-side-actions" hidden aria-hidden="true"><a href="/inbox.php">Inbox</a><a href="/sent.php">Sent</a><a href="/claimed.php">Claimed</a><a href="/my-quests.php">My Quests</a><a href="/feed.php">My Feed</a><a href="/feed.php?view=following">Following</a><a href="/messages.php">Messages</a><a href="/merchant-crm.php">Merchant CRM</a><a href="/merchant-ad-manager.php">Campaign Ads</a><a href="/merchant-locations.php">Locations</a><a href="/merchant-products.php">Products &amp; offers</a><a href="/merchant-pppm.php">Orders &amp; redemptions</a><a href="/merchant-settings.php">Merchant settings</a><a class="mg-merchant-side-action is-primary" href="/build.php">Create gift</a></div>
 <style>
 .mg-sidebar-mobile-scanner{display:none!important}
 .mg-scanner-confirm-card{display:grid!important;gap:8px!important;margin:10px 0!important;padding:12px!important;border:1px solid #dbeafe!important;border-radius:16px!important;background:#f8fbff!important}

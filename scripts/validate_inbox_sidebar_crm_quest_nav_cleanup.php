@@ -30,6 +30,7 @@ $expect = static function (bool $condition, string $label) use (&$failures, &$pa
 try {
     $inbox = $read('inbox.php');
     $agentSidebar = $read('includes/agent-sidebar.php');
+    $accountSidebar = $read('includes/account-sidebar.php');
     $appSidebar = $read('includes/app-sidebar.php');
     $merchantWorkspace = $read('includes/merchant-workspace.php');
     $merchantNavigation = $read('includes/merchant-navigation.php');
@@ -44,15 +45,23 @@ try {
     $expectedReducedPages = [
         'inbox',
         'loyalty-cards',
+        'my-quests',
+        'loyalty_quests',
+        'subscriptions',
+        'notifications',
+        'profile',
+        'feed-discover',
+        'feed-following',
+        'feed-mine',
         'world-canvas',
     ];
 
     $expect(
         str_contains($agentSidebar, '$reducedInboxSidebarPages = [')
-        && str_contains($agentSidebar, 'if (!$isMerchantAdminSidebar && in_array($agentSidebarActive, $reducedInboxSidebarPages, true))')
+        && str_contains($agentSidebar, 'if (!$isMerchantAdminSidebar && ($useInboxSidebar || in_array($agentSidebarActive, $reducedInboxSidebarPages, true)))')
         && str_contains($agentSidebar, "['feed-following', 'merchant_crm', 'ads-manager']")
         && str_contains($agentSidebar, '$appSidebarNav[$inboxHiddenNavKey][\'visible\'] = false'),
-        'Reduced customer sidebar filter does not override merchant admin pages'
+        'Reduced customer sidebar filter supports explicit page opt-in without overriding merchant admin pages'
     );
 
     foreach ($expectedReducedPages as $pageKey) {
@@ -66,6 +75,47 @@ try {
         str_contains($agentSidebar, '$appSidebarNav[\'training-lab\'] = [\'visible\' => false]')
         && str_contains($appSidebar, '!isset($appSidebarNav[\'training-lab\'])'),
         'Reduced customer sidebar pages suppress the automatically injected Training Lab item'
+    );
+
+    $expect(
+        str_contains($agentSidebar, "'my-quests' => [")
+        && str_contains($agentSidebar, "'label' => 'My Quests'")
+        && str_contains($agentSidebar, "'href' => '/my-quests.php'")
+        && str_contains($agentSidebar, "\$agentSidebarActive === 'loyalty_quests'")
+        && str_contains($accountSidebar, "'my-quests' => ['Gifts', 'My Quests'"),
+        'My Quests is available from both current and compatibility customer navigation'
+    );
+
+    $customerInboxPages = [
+        'my-quests.php' => '$use_inbox_sidebar = true;',
+        'account-subscriptions.php' => '$use_inbox_sidebar = true;',
+        'notifications.php' => '$use_inbox_sidebar = true;',
+        'feed.php' => '$use_inbox_sidebar = true;',
+        'account.php' => '$use_inbox_sidebar = basename(',
+    ];
+
+    foreach ($customerInboxPages as $path => $marker) {
+        $page = $read($path);
+        $expect(
+            str_contains($page, $marker)
+            && str_contains($page, "require __DIR__ . '/includes/agent-sidebar.php';"),
+            $path . ' mounts the shared inbox sidebar contract'
+        );
+    }
+
+    $expect(
+        str_contains($agentSidebar, '$inboxSidebarScripts = [')
+        && str_contains($agentSidebar, "'my-quests.php'")
+        && str_contains($agentSidebar, "'account-subscriptions.php'")
+        && str_contains($agentSidebar, "'notifications.php'")
+        && str_contains($agentSidebar, "'feed.php'")
+        && str_contains($agentSidebar, "'account.php'"),
+        'Customer page filenames have a centralized inbox-sidebar fallback'
+    );
+
+    $expect(
+        str_contains($agentSidebar, "str_starts_with(\$agentSidebarActive, 'feed-')"),
+        'All feed views keep My Feed active when Following is hidden by the inbox sidebar'
     );
 
     $reducedPages = [
