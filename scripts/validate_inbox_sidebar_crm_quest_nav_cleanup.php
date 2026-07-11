@@ -147,14 +147,30 @@ try {
         'merchant-quest-reviews-view.php',
         'merchant-loyalty-quest-delivery-view.php',
         'merchant-loyalty-quest-analytics-view.php',
-        'merchant-campaign-embed-leads-view.php',
-        'merchant-campaign-embed-analytics-view.php',
     ] as $viewMarker) {
         $expect(
             str_contains($merchantRouter, $viewMarker),
-            'Direct route remains available outside the sidebar: ' . $viewMarker
+            'Quest route remains available outside the sidebar: ' . $viewMarker
         );
     }
+
+    foreach ([
+        'merchant-campaign-embed-leads.php',
+        'merchant-campaign-embed-analytics.php',
+    ] as $embedPagePath) {
+        $embedPage = $read($embedPagePath);
+        $expect(
+            str_contains($embedPage, "require __DIR__ . '/includes/app-sidebar.php';")
+            && str_contains($embedPage, "\$appSidebarVariant = 'merchant'"),
+            'Standalone embed route is normalized by the universal merchant sidebar: ' . $embedPagePath
+        );
+    }
+
+    $expect(
+        str_contains($appSidebar, "str_starts_with(\$currentSidebarScript, 'merchant-')")
+        && str_contains($appSidebar, 'mg_merchant_navigation_sidebar($appSidebarActive)'),
+        'Universal app sidebar replaces standalone merchant menu arrays with the shared menu'
+    );
 } catch (Throwable $error) {
     $failures[] = $error->getMessage();
     echo 'FAIL: ' . $error->getMessage() . "\n";
