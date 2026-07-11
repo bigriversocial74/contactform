@@ -1,0 +1,37 @@
+name: Merchant PPPM Full Width Cleanup Validation
+
+on:
+  pull_request:
+    paths:
+      - 'merchant-pppm.php'
+      - 'includes/merchant-pppm-view.php'
+      - 'assets/css/merchant-pppm.css'
+      - 'assets/css/pppm-ops-extra.css'
+      - 'assets/js/merchant-pppm.js'
+      - 'scripts/validate_merchant_pppm_full_width_cleanup.php'
+      - '.github/workflows/merchant-pppm-full-width-cleanup-validation.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    strategy:
+      matrix:
+        php: ['8.2', '8.3']
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+      - name: PHP syntax
+        run: |
+          php -l merchant-pppm.php
+          php -l includes/merchant-pppm-view.php
+          php -l scripts/validate_merchant_pppm_full_width_cleanup.php
+      - name: JavaScript syntax
+        run: node --check assets/js/merchant-pppm.js
+      - name: Merchant PPPM full-width contract
+        run: php scripts/validate_merchant_pppm_full_width_cleanup.php
