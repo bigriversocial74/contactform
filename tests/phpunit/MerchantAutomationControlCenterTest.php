@@ -65,9 +65,13 @@ final class MerchantAutomationControlCenterTest extends TestCase
 
     public function testRetentionAndCustomerRecommendationsLinkToAutomationControls(): void
     {
+        $crmView = $this->source('includes/merchant-crm-view.php');
         $retention = $this->source('assets/js/merchant-crm-retention-playbooks.js');
         $customer = $this->source('assets/js/merchant-customer-retention-recommendations.js');
-        foreach (['/merchant-automation.php','Automation Controls','Manage guardrails','approval-gated'] as $needle) {
+        foreach (['/merchant-automation.php','Automation Controls','data-retention-automation-controls'] as $needle) {
+            self::assertStringContainsString($needle, $crmView);
+        }
+        foreach (['/merchant-automation.php','>Controls<','approval-gated'] as $needle) {
             self::assertStringContainsString($needle, $retention);
         }
         foreach (['/merchant-automation.php','Automation controls','data-cp-automation-controls'] as $needle) {
