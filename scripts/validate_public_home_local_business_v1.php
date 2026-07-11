@@ -57,6 +57,12 @@ try{
     );
 
     $expect(
+        str_contains($index,'<a class="mg-lb-button is-secondary" href="/signup.php">Create Free Account</a>')
+        && !str_contains($index,'<a class="mg-lb-button is-secondary" href="/learn-more.php">Contact Sales</a>'),
+        'Hero secondary action creates a free account instead of contacting sales'
+    );
+
+    $expect(
         str_contains($index,'mg-lb-benefit-rail')
         && str_contains($index,'Drive More Traffic')
         && str_contains($index,'Build Loyalty')
