@@ -18,6 +18,8 @@ $checks = [
     'creative presets module is removed from page assets' => !str_contains($page, 'merchant-agent-creative-presets.css')
         && !str_contains($page, 'merchant-agent-creative-presets.js')
         && !str_contains($page, 'data-agent-creative-presets'),
+    'page has a dedicated body scope' => str_contains($page, "$page_body_class = 'mg-merchant-agent-chat-page'")
+        && str_contains($page, 'mg-agent-chat-canvas-layout-v2-3'),
     'page uses canonical app shell class' => str_contains($page, 'mg-agent-chat-layout-v2')
         && !str_contains($page, 'mg-agent-chat-app-no-nav'),
     'normal application sidebar remains present' => str_contains($page, 'includes/agent-sidebar.php')
@@ -27,19 +29,34 @@ $checks = [
         && str_contains($view, 'mg-agent-chat-mobile-controls'),
     'drawer has explicit heading and close control' => str_contains($view, '<strong>Agent controls</strong>')
         && str_contains($view, 'data-agent-chat-drawer-close'),
-    'mobile header offset is normalized' => str_contains($css, '--mg-app-header:58px')
-        && str_contains($css, 'padding:0 8px 8px!important'),
+    'mobile header offset is applied exactly once' => str_contains($page, 'html body.mg-app-page.mg-merchant-agent-chat-page .mg-main')
+        && str_contains($page, 'padding-top:0!important')
+        && str_contains($page, 'html body.mg-app-page.mg-merchant-agent-chat-page .mg-app-shell.mg-agent-chat-layout-v2')
+        && str_contains($page, 'padding-top:var(--mg-mobile-topbar,72px)!important')
+        && str_contains($page, '--mg-mobile-shell-offset:var(--mg-mobile-topbar,72px)')
+        && !str_contains($page, '--mg-app-header:58px'),
+    'mobile document is locked to the viewport' => str_contains($page, 'height:100dvh!important')
+        && str_contains($page, 'min-height:100dvh!important')
+        && str_contains($page, 'body.mg-merchant-agent-chat-page')
+        && str_contains($page, 'overflow:hidden!important'),
+    'merchant workspace subtracts only the real topbar' => str_contains($page, 'height:calc(100dvh - var(--mg-mobile-topbar,72px))!important')
+        && str_contains($page, 'padding:0 8px max(8px,env(safe-area-inset-bottom))!important'),
     'conversation status and composer use explicit three-row contract' => str_contains($page, 'grid-template-rows:minmax(0,1fr) auto auto!important')
         && str_contains($page, 'grid-row:1!important')
         && str_contains($page, 'grid-row:2!important')
         && str_contains($page, 'grid-row:3!important'),
-    'composer remains pinned at the bottom' => str_contains($page, 'position:sticky!important')
+    'composer is a separated pinned footer row' => str_contains($page, 'position:sticky!important')
         && str_contains($page, 'bottom:0!important')
-        && str_contains($page, 'align-self:end!important'),
-    'conversation owns scrolling' => str_contains($page, '.mg-agent-chat-layout-v2 .mg-agent-chat-feed')
+        && str_contains($page, 'align-self:end!important')
+        && str_contains($page, 'z-index:80!important')
+        && str_contains($page, 'box-shadow:0 -14px 34px'),
+    'conversation is the only vertical scroll owner' => str_contains($page, '.mg-agent-chat-layout-v2 .mg-agent-chat-feed')
         && str_contains($page, 'overflow-y:auto!important')
-        && str_contains($page, 'min-height:0!important')
-        && str_contains($css, 'grid-template-rows:minmax(0,1fr)!important'),
+        && str_contains($page, '-webkit-overflow-scrolling:touch!important')
+        && str_contains($page, '.mg-agent-chat-layout-v2 .mg-agent-chat-page')
+        && str_contains($page, 'overflow:hidden!important'),
+    'empty status row does not create footer spacing' => str_contains($page, '.mg-agent-chat-main-stack>.mg-form-status:empty')
+        && str_contains($page, 'display:none!important'),
     'main canvas suggestions are restored' => str_contains($chatJs, 'function promptButtons()')
         && str_contains($chatJs, 'data-agent-chat-prompts')
         && str_contains($page, '.mg-agent-chat-layout-v2 .mg-agent-chat-prompts')
@@ -82,4 +99,4 @@ if ($failed !== []) {
     exit(1);
 }
 
-echo "Merchant agent chat layout v2.2 contract passed at 10.0/10.\n";
+echo "Merchant agent chat layout v2.3 contract passed at 10.0/10.\n";
