@@ -6,6 +6,7 @@ $files = [
     'page' => $root . '/merchant-orders.php',
     'view' => $root . '/includes/merchant-orders-view.php',
     'workspace' => $root . '/includes/merchant-workspace.php',
+    'navigation' => $root . '/includes/merchant-navigation.php',
     'router' => $root . '/includes/merchant-view.php',
     'foundation' => $root . '/api/merchant/_orders.php',
     'list' => $root . '/api/merchant/commerce-orders.php',
@@ -29,9 +30,10 @@ $checks = [
         str_contains($content['page'], '$merchantView = \'orders\'')
         && str_contains($content['page'], '/assets/js/merchant-orders.js')
         && str_contains($content['page'], '/assets/css/merchant-orders.css'),
-    'merchant navigation and view router expose Orders without replacing PPPM' =>
-        str_contains($content['workspace'], "'orders' => ['Orders'")
-        && str_contains($content['workspace'], "'pppm' => ['PPPM Items'")
+    'merchant navigation and view router expose Orders and Microgift Totals' =>
+        str_contains($content['navigation'], "'orders' => ['Orders'")
+        && str_contains($content['navigation'], "'pppm' => ['Microgift Totals'")
+        && str_contains($content['workspace'], "require_once __DIR__ . '/merchant-navigation.php'")
         && str_contains($content['router'], '$merchantView===\'orders\''),
     'list endpoint is permission and merchant scoped' =>
         str_contains($content['list'], "mg_merchant_require_permission('merchant.payments.view')")
