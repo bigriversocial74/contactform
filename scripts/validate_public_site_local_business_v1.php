@@ -34,9 +34,11 @@ $checks = [
     'mobile public menu has high-specificity dark treatment' => str_contains($headerCss, '.mg-public-mobile-menu .mg-public-mobile-panel')
         && str_contains($headerCss, 'linear-gradient(180deg,#0b2d2a,#071f1d)!important')
         && str_contains($headerCss, 'rgba(114,212,63,.12)!important'),
-    'footer uses high-specificity navy theme' => str_contains($footerCss, 'html body[data-authenticated="false"] .mg-site-footer.mg-universal-footer')
-        && str_contains($footerCss, 'linear-gradient(145deg,#0b2d2a')
-        && str_contains($footerCss, '#bdf49f'),
+    'footer uses high-specificity navy theme with white type' => str_contains($footerCss, 'html body[data-authenticated="false"] .mg-site-footer.mg-universal-footer')
+        && str_contains($footerCss, 'linear-gradient(135deg,#091a31 0%,#102d4c 100%)!important')
+        && str_contains($footerCss, '.mg-footer-column h2{margin:0 0 7px!important;color:#fff!important')
+        && str_contains($footerCss, 'a:not(.mg-footer-logo){color:#fff!important')
+        && str_contains($footerCss, '.mg-footer-bottom p{margin:0!important;color:#fff!important'),
     'footer content and links remain intact' => str_contains($footer, 'Rewards, tokenized local experiences, and agent-ready gifting tools for local commerce.')
         && str_contains($footer, '<h2>Platform</h2>')
         && str_contains($footer, '<h2>Developers</h2>')

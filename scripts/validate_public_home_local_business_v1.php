@@ -97,6 +97,21 @@ try{
     );
 
     $expect(
+        str_contains($css,'body[data-page-id="index"] .mg-unified-header .mg-public-demo,')
+        && str_contains($css,'body[data-page-id="index"] .mg-public-mobile-nav>a[href="/learn-more.php"]:last-child{display:none!important}'),
+        'Homepage removes the Book A Demo header action on desktop and mobile'
+    );
+
+    $expect(
+        str_contains($css,'.mg-lb-hero{position:relative;padding:0')
+        && str_contains($css,".mg-lb-hero-main{\n  position:relative;\n  z-index:2;\n  width:100%;")
+        && str_contains($css,'border-left:0;')
+        && str_contains($css,'border-right:0;')
+        && str_contains($css,'border-radius:0;'),
+        'Homepage hero is full width with no top or side spacing'
+    );
+
+    $expect(
         str_contains($css,'@media(max-width:980px)')
         && str_contains($css,'@media(max-width:720px)')
         && str_contains($css,'@media(max-width:420px)')
