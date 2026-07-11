@@ -91,7 +91,17 @@ $appSidebarNav = [
     ],
 ];
 
-if ($agentSidebarActive === 'inbox') {
+$reducedInboxSidebarPages = [
+    'inbox',
+    'loyalty-cards',
+    'store-canvas',
+    'merchant-canvas',
+    'world-canvas',
+    'agent_chat',
+    'merchant-agent-chat',
+];
+
+if (in_array($agentSidebarActive, $reducedInboxSidebarPages, true)) {
     foreach (['feed-following', 'merchant_crm', 'ads-manager'] as $inboxHiddenNavKey) {
         if (isset($appSidebarNav[$inboxHiddenNavKey])) {
             $appSidebarNav[$inboxHiddenNavKey]['visible'] = false;
