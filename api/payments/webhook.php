@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_webhook.php';
 require_once __DIR__ . '/_disputes.php';
+require_once __DIR__ . '/_connect_webhook.php';
 
 mg_require_method('POST');
 $provider=strtolower(trim((string)($_GET['provider']??'')));
@@ -25,6 +26,27 @@ if(!$valid){
         'event_type'=>$type,
     ]);
     mg_fail('Invalid webhook signature.',401);
+}
+
+$connectTypes=['account.updated','account.application.deauthorized'];
+if($provider==='stripe'&&in_array($type,$connectTypes,true)){
+    $pdo->beginTransaction();
+    try{
+        $result=mg_payment_connect_process_webhook($pdo,$event,$payload);
+        $pdo->commit();
+        mg_ok(['received'=>true]+$result,!empty($result['duplicate'])?'Stripe Connect webhook already processed.':'Stripe Connect webhook processed.');
+    }catch(MgPaymentWebhookException $error){
+        if($pdo->inTransaction())$pdo->rollBack();
+        mg_fail($error->getMessage(),$error->httpStatus);
+    }catch(Throwable $error){
+        if($pdo->inTransaction())$pdo->rollBack();
+        mg_security_log('error','payment.connect_webhook_failed','Signed Stripe Connect webhook processing failed.',[
+            'provider_event_id'=>$eventId,
+            'event_type'=>$type,
+            'exception_class'=>$error::class,
+        ]);
+        mg_fail('Unable to process Stripe Connect webhook.',500);
+    }
 }
 
 $disputeTypes=[
