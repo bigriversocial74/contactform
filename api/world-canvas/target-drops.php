@@ -25,6 +25,7 @@ try {
     }
 
     if ($method !== 'POST') mg_fail('Method not allowed.', 405);
+    if (!mg_user_has_merchant_access($user)) mg_fail('Merchant access is required.', 403);
 
     $input = mg_input();
     mg_require_csrf_for_write($input);
@@ -34,27 +35,27 @@ try {
     $action = strtolower(trim((string)($input['action'] ?? 'update')));
     if ($action === 'create') {
         $drop = mg_world_target_drop_create($pdo, $user, $input);
-        mg_ok(['drop' => $drop], 'Target Drop draft created.');
+        mg_ok(['drop' => $drop], 'Campaign Drop Zone draft created.');
     }
 
     if ($action === 'delete') {
         $drop = mg_world_target_drop_delete($pdo, $user, $input);
-        mg_ok(['drop' => $drop], 'Target Drop deleted.');
+        mg_ok(['drop' => $drop], 'Campaign Drop Zone deleted.');
     }
 
     if ($action === 'cancel') {
         $drop = mg_world_target_drop_set_status($pdo, $user, $input, 'cancelled');
-        mg_ok(['drop' => $drop], 'Target Drop cancelled.');
+        mg_ok(['drop' => $drop], 'Campaign Drop Zone cancelled.');
     }
 
     if ($action === 'pause') {
         $drop = mg_world_target_drop_set_status($pdo, $user, $input, 'paused');
-        mg_ok(['drop' => $drop], 'Target Drop paused.');
+        mg_ok(['drop' => $drop], 'Campaign Drop Zone paused.');
     }
 
     if ($action === 'complete') {
         $drop = mg_world_target_drop_set_status($pdo, $user, $input, 'completed');
-        mg_ok(['drop' => $drop], 'Target Drop completed.');
+        mg_ok(['drop' => $drop], 'Campaign Drop Zone completed.');
     }
 
     if ($action === 'publish' || $action === 'schedule') {
@@ -63,14 +64,14 @@ try {
         if (($drop['status'] ?? '') !== 'scheduled') {
             $run = mg_world_delivery_run_create($pdo, ['public_id' => $drop['id'], 'merchant_user_id' => (int)($user['id'] ?? 0)], 'live');
         }
-        mg_ok(['drop' => $drop, 'delivery_run' => $run], $drop['status'] === 'scheduled' ? 'Target Drop scheduled.' : 'Target Drop started.');
+        mg_ok(['drop' => $drop, 'delivery_run' => $run], $drop['status'] === 'scheduled' ? 'Campaign Drop Zone scheduled.' : 'Campaign Drop Zone started.');
     }
 
     $drop = mg_world_target_drop_update($pdo, $user, $input, false);
-    mg_ok(['drop' => $drop], 'Target Drop saved.');
+    mg_ok(['drop' => $drop], 'Campaign Drop Zone saved.');
 } catch (InvalidArgumentException|RuntimeException $error) {
     mg_fail($error->getMessage(), 400);
 } catch (Throwable $error) {
-    mg_security_log('error', 'world_canvas.target_drops_failed', 'Target Drops endpoint failed.', ['exception_class' => $error::class], (int)($user['id'] ?? 0));
-    mg_fail('Unable to save Target Drop.', 500);
+    mg_security_log('error', 'world_canvas.target_drops_failed', 'Campaign Drop Zones endpoint failed.', ['exception_class' => $error::class], (int)($user['id'] ?? 0));
+    mg_fail('Unable to save Campaign Drop Zone.', 500);
 }

@@ -10,6 +10,7 @@ window.Microgifter = window.Microgifter || {};
   var open = false;
   var pollTimer = null;
   var state = { active: false, merchant: null, session: null, thread: null, messages: [], can_reply: false, can_start_thread: false };
+  var lastAutomaticEndKey = '';
 
   function payload(response) { return response && response.data ? response.data : response; }
   function escapeHtml(value) {
@@ -41,6 +42,23 @@ window.Microgifter = window.Microgifter || {};
     if (!node) return;
     node.textContent = message || '';
     node.className = 'mg-store-chat-status' + (type ? ' is-' + type : '');
+  }
+  function emitSessionEnded(previous) {
+    if (!previous || !previous.active) return;
+    var session = previous.session || null;
+    var key = session && session.id ? String(session.id) : String(previous.merchant && previous.merchant.name || 'merchant');
+    if (key && key === lastAutomaticEndKey) return;
+    lastAutomaticEndKey = key;
+    try {
+      document.dispatchEvent(new CustomEvent('mg:store-session-ended', {
+        detail: {
+          session: session,
+          reason: 'expired',
+          merchant_name: previous.merchant && previous.merchant.name ? previous.merchant.name : 'Merchant Store',
+          world_transition: true
+        }
+      }));
+    } catch (error) {}
   }
 
   function ensureWidget() {
@@ -127,7 +145,9 @@ window.Microgifter = window.Microgifter || {};
 
   async function loadStatus(silent) {
     try {
+      var previous = state;
       var data = payload(await MG.get('/api/store/chat-widget.php')) || {};
+      if (previous.active && !data.active) emitSessionEnded(previous);
       state = data;
       if (!silent) setStatus('', '');
       render();

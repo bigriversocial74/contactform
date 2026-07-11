@@ -49,7 +49,9 @@ $scripts = array_values(array_unique(array_merge($core_scripts, $page_scripts)))
 $user = mg_current_user();
 if ($user) {
     $late_styles[] = '/assets/css/store-chat-widget.css';
+    $late_styles[] = '/assets/css/store-world-transition.css';
     $scripts[] = '/assets/js/store-chat-widget.js';
+    $scripts[] = '/assets/js/store-world-transition.js';
 }
 $user_permissions = is_array($user['permissions'] ?? null) ? $user['permissions'] : [];
 $user_roles = is_array($user['roles'] ?? null) ? $user['roles'] : [];

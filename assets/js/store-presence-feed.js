@@ -12,6 +12,7 @@ window.Microgifter = window.Microgifter || {};
   var activeSession = null;
   var modalPostId = '';
   var heartbeatTimer = null;
+  var lastAutomaticEndKey = '';
 
   function payload(response) { return response && response.data ? response.data : response; }
   function escapeHtml(value) {
@@ -21,13 +22,16 @@ window.Microgifter = window.Microgifter || {};
   }
   function apiGet(path) {
     if (MG.get) return MG.get(path);
-    return fetch(path, { credentials: 'same-origin', headers: { Accept: 'application/json' } }).then(function (r) { return r.json(); });
+    return fetch(path, { credentials: 'same-origin', headers: { Accept: 'application/json' } }).then(function (response) { return response.json(); });
   }
   function apiPost(path, body) {
     if (MG.post) return MG.post(path, body);
     return fetch(path, {
-      method: 'POST', credentials: 'same-origin', headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-Token': MG.getCsrfToken ? MG.getCsrfToken() : '' }, body: JSON.stringify(body || {})
-    }).then(function (r) { return r.json(); });
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-Token': MG.getCsrfToken ? MG.getCsrfToken() : '' },
+      body: JSON.stringify(body || {})
+    }).then(function (response) { return response.json(); });
   }
   function toast(message, type) {
     if (MG.toast) MG.toast(message, type || 'info');
@@ -35,8 +39,31 @@ window.Microgifter = window.Microgifter || {};
   function signIn() {
     window.location.href = '/signin.php?return=' + encodeURIComponent(window.location.pathname + window.location.search);
   }
+  function emit(name, detail) {
+    try { document.dispatchEvent(new CustomEvent(name, { detail: detail || {} })); } catch (error) {}
+  }
+  function sessionId(session) {
+    return session && session.id ? String(session.id) : '';
+  }
+  function merchantName(session) {
+    return session && session.merchant && session.merchant.name ? String(session.merchant.name) : 'Merchant Store';
+  }
+  function setActiveSession(next, source) {
+    var previous = activeSession;
+    activeSession = next || null;
+    if (!previous || activeSession || source === 'manual') return;
+    var key = sessionId(previous) || merchantName(previous);
+    if (key && key === lastAutomaticEndKey) return;
+    lastAutomaticEndKey = key;
+    emit('mg:store-session-ended', {
+      session: previous,
+      reason: source === 'heartbeat' ? 'timeout' : 'expired',
+      merchant_name: merchantName(previous),
+      world_transition: true
+    });
+  }
   function notifyStoreEntered() {
-    try { document.dispatchEvent(new CustomEvent('mg:store-entered', { detail: { session: activeSession } })); } catch (error) {}
+    emit('mg:store-entered', { session: activeSession });
   }
   function buttonClass(state) {
     if (state === 'inside_this') return 'mg-store-enter-btn is-active';
@@ -93,8 +120,7 @@ window.Microgifter = window.Microgifter || {};
   }
   function closeSwitchModal() {
     modalPostId = '';
-    var modal = ensureModal();
-    modal.hidden = true;
+    ensureModal().hidden = true;
   }
 
   function ensureHeaderActions(card) {
@@ -140,7 +166,7 @@ window.Microgifter = window.Microgifter || {};
     loadingPosts.add(postId);
     try {
       var data = payload(await apiGet('/api/store/session-status.php?post_id=' + encodeURIComponent(postId)));
-      if (data && data.active_session !== undefined) activeSession = data.active_session || null;
+      if (data && data.active_session !== undefined) setActiveSession(data.active_session, 'status');
       if (data && data.post_state) {
         postStates.set(postId, data.post_state);
         renderCard(card, data.post_state);
@@ -154,9 +180,7 @@ window.Microgifter = window.Microgifter || {};
   }
 
   function scanCards(root) {
-    Array.from(root.querySelectorAll('[data-post-id]')).forEach(function (card) {
-      loadPostState(card);
-    });
+    Array.from(root.querySelectorAll('[data-post-id]')).forEach(loadPostState);
   }
   function refreshAllCards() {
     postStates = new Map();
@@ -167,7 +191,7 @@ window.Microgifter = window.Microgifter || {};
   async function loadGlobalStatus() {
     try {
       var data = payload(await apiGet('/api/store/session-status.php'));
-      activeSession = data && data.active_session ? data.active_session : null;
+      setActiveSession(data && data.active_session ? data.active_session : null, 'status');
       renderPill();
     } catch (error) {}
   }
@@ -176,10 +200,10 @@ window.Microgifter = window.Microgifter || {};
     if (!activeSession) return;
     try {
       var data = payload(await apiPost('/api/store/heartbeat.php', {}));
-      activeSession = data && data.active_session ? data.active_session : null;
+      setActiveSession(data && data.active_session ? data.active_session : null, 'heartbeat');
       renderPill();
     } catch (error) {
-      activeSession = null;
+      setActiveSession(null, 'heartbeat');
       renderPill();
     }
   }
@@ -205,7 +229,16 @@ window.Microgifter = window.Microgifter || {};
         openSwitchModal(postId, data);
         return;
       }
-      activeSession = data && data.session ? data.session : activeSession;
+      var previous = data && data.switched_from ? data.switched_from : (forceSwitch ? activeSession : null);
+      setActiveSession(data && data.session ? data.session : activeSession, 'enter');
+      if (previous && activeSession && sessionId(previous) !== sessionId(activeSession)) {
+        emit('mg:store-switched', {
+          from: previous,
+          to: activeSession,
+          from_name: merchantName(previous),
+          to_name: merchantName(activeSession)
+        });
+      }
       toast('Your avatar entered the merchant store.', 'success');
       notifyStoreEntered();
       refreshAllCards();
@@ -222,7 +255,7 @@ window.Microgifter = window.Microgifter || {};
   async function exitStore() {
     try {
       await apiPost('/api/store/exit.php', {});
-      activeSession = null;
+      setActiveSession(null, 'manual');
       toast('Exited merchant store.', 'success');
       refreshAllCards();
     } catch (error) {

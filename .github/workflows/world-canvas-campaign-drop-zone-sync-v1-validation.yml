@@ -1,0 +1,117 @@
+name: World Canvas Campaign Drop Zone Sync v1 Validation
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'world-canvas.php'
+      - 'includes/footer.php'
+      - 'api/world-canvas/_target_drop_campaigns.php'
+      - 'api/world-canvas/_target_drops.php'
+      - 'api/world-canvas/target-drops.php'
+      - 'api/store/_canvas_runtime.php'
+      - 'api/store/_world_transition.php'
+      - 'api/store/avatar-anchor.php'
+      - 'api/store/chat-widget.php'
+      - 'api/store/exit.php'
+      - 'api/store/heartbeat.php'
+      - 'api/store/session-status.php'
+      - 'assets/css/world-canvas-progressive-zoom.css'
+      - 'assets/css/world-canvas-detail-orchestration.css'
+      - 'assets/css/world-canvas-icon-zoom-stability.css'
+      - 'assets/css/store-world-transition.css'
+      - 'assets/js/avatar-anchor-consent.js'
+      - 'assets/js/world-canvas-square-map.js'
+      - 'assets/js/world-canvas-geo-zoom.js'
+      - 'assets/js/world-canvas-dot-system.js'
+      - 'assets/js/world-canvas-detail-orchestration.js'
+      - 'assets/js/world-canvas-zone-scale.js'
+      - 'assets/js/world-canvas-icon-zoom-stability.js'
+      - 'assets/js/world-canvas-target-drops.js'
+      - 'assets/js/world-canvas-merchant-settings.js'
+      - 'assets/js/store-presence-feed.js'
+      - 'assets/js/store-chat-widget.js'
+      - 'assets/js/store-world-transition.js'
+      - 'scripts/validate_world_canvas_campaign_drop_zone_sync_v1.php'
+      - 'scripts/validate_world_canvas_progressive_zoom_v1.php'
+      - '.github/workflows/world-canvas-campaign-drop-zone-sync-v1-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: PHP syntax
+        run: |
+          php -l world-canvas.php
+          php -l includes/footer.php
+          php -l api/world-canvas/_target_drop_campaigns.php
+          php -l api/world-canvas/_target_drops.php
+          php -l api/world-canvas/target-drops.php
+          php -l api/store/_canvas_runtime.php
+          php -l api/store/_world_transition.php
+          php -l api/store/avatar-anchor.php
+          php -l api/store/chat-widget.php
+          php -l api/store/exit.php
+          php -l api/store/heartbeat.php
+          php -l api/store/session-status.php
+          php -l scripts/validate_world_canvas_campaign_drop_zone_sync_v1.php
+          php -l scripts/validate_world_canvas_progressive_zoom_v1.php
+
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/avatar-anchor-consent.js
+          node --check assets/js/world-canvas-square-map.js
+          node --check assets/js/world-canvas-geo-zoom.js
+          node --check assets/js/world-canvas-dot-system.js
+          node --check assets/js/world-canvas-detail-orchestration.js
+          node --check assets/js/world-canvas-zone-scale.js
+          node --check assets/js/world-canvas-icon-zoom-stability.js
+          node --check assets/js/world-canvas-target-drops.js
+          node --check assets/js/world-canvas-merchant-settings.js
+          node --check assets/js/store-presence-feed.js
+          node --check assets/js/store-chat-widget.js
+          node --check assets/js/store-world-transition.js
+
+      - name: Campaign Drop Zone authority contract
+        run: php scripts/validate_world_canvas_campaign_drop_zone_sync_v1.php
+
+      - name: Progressive zoom and Store transition contract
+        run: php scripts/validate_world_canvas_progressive_zoom_v1.php
+
+      - name: Stage 12 campaigns and rewards regression
+        run: php scripts/validate_stage12_campaigns_reward_templates.php
+
+      - name: Campaign public matrix regression
+        run: php scripts/validate_campaign_public_matrix_v1.php
+
+      - name: Store Canvas trigger engine regression
+        run: php scripts/validate_store_canvas_server_trigger_engine_v1.php
+
+      - name: Trigger event orchestration regression
+        run: php scripts/validate_trigger_event_ingestion_orchestration_v1.php
+
+      - name: Store Canvas movement continuity regression
+        run: php scripts/validate_store_canvas_movement_continuity_v1.php
+
+      - name: Merchant Canvas production containment regression
+        run: php scripts/validate_merchant_canvas_production_containment_v1.php

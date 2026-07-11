@@ -15,8 +15,8 @@ $page_title = 'World Canvas | Microgifter';
 $page_section = 'agent';
 $header_mode = 'agent';
 $agent_tab = 'world-canvas';
-$page_styles = ['/assets/css/world-canvas.css','/assets/css/world-canvas-attraction.css','/assets/css/world-canvas-identity.css','/assets/css/world-canvas-conversations.css','/assets/css/world-canvas-reward-drops.css','/assets/css/world-canvas-insights.css','/assets/css/world-canvas-opportunities.css','/assets/css/world-canvas-replay.css','/assets/css/world-canvas-square-map.css','/assets/css/world-canvas-dot-system.css','/assets/css/sponsored-campaign-card.css'];
-$page_scripts = ['/assets/js/world-canvas.js','/assets/js/world-canvas-overlays.js','/assets/js/world-canvas-identity.js','/assets/js/world-canvas-conversations.js','/assets/js/world-canvas-reward-drops.js','/assets/js/world-canvas-insights.js','/assets/js/world-canvas-opportunities.js','/assets/js/world-canvas-replay.js','/assets/js/world-canvas-square-map.js','/assets/js/world-canvas-dot-system.js','/assets/js/sponsored-campaign-card.js'];
+$page_styles = ['/assets/css/world-canvas.css','/assets/css/world-canvas-attraction.css','/assets/css/world-canvas-identity.css','/assets/css/world-canvas-conversations.css','/assets/css/world-canvas-insights.css','/assets/css/world-canvas-opportunities.css','/assets/css/world-canvas-replay.css','/assets/css/world-canvas-square-map.css','/assets/css/world-canvas-dot-system.css','/assets/css/sponsored-campaign-card.css'];
+$page_scripts = ['/assets/js/world-canvas.js','/assets/js/world-canvas-overlays.js','/assets/js/world-canvas-identity.js','/assets/js/world-canvas-conversations.js','/assets/js/world-canvas-insights.js','/assets/js/world-canvas-opportunities.js','/assets/js/world-canvas-replay.js','/assets/js/world-canvas-square-map.js','/assets/js/world-canvas-dot-system.js','/assets/js/sponsored-campaign-card.js'];
 $page_manifest = [
     'id' => 'world-canvas',
     'title' => $page_title,
@@ -44,7 +44,7 @@ require __DIR__ . '/includes/header.php';
           <article><span>Live Stores</span><strong data-world-stat="live_stores">0</strong></article>
           <article><span>Active Avatars</span><strong data-world-stat="active_customers">0</strong></article>
           <article><span>Geo Anchored</span><strong data-world-stat="geo_anchored_avatars">0</strong></article>
-          <article><span>Gifts Moving</span><strong data-world-stat="gifts_moving">0</strong></article>
+          <article><span>Campaigns Moving</span><strong data-world-stat="gifts_moving">0</strong></article>
           <article><span>Claims Today</span><strong data-world-stat="claims_today">0</strong></article>
           <article><span>Demand Pulse</span><strong data-world-stat="demand_pulse">0</strong></article>
         </div>
@@ -54,7 +54,7 @@ require __DIR__ . '/includes/header.php';
         <div class="mg-world-stage-head">
           <div>
             <span class="mg-world-live-pill" data-world-live-pill>Checking network</span>
-            <p data-world-state>Loading avatar coordinates, affinity tags, and live Microgifter activity.</p>
+            <p data-world-state>Loading avatar coordinates and live Microgifter activity.</p>
           </div>
           <nav class="mg-world-filters" data-world-filters aria-label="World Canvas filters">
             <button type="button" class="is-active" data-world-filter="all">All</button>
@@ -69,7 +69,7 @@ require __DIR__ . '/includes/header.php';
         <div class="mg-world-modebar" data-world-modebar aria-label="World Canvas modes">
           <button type="button" class="is-active" data-world-mode-button="live">Live World</button>
           <button type="button" data-world-mode-button="geo">Geo Anchors</button>
-          <button type="button" data-world-mode-button="movement">Gift Movement</button>
+          <button type="button" data-world-mode-button="movement">Campaign Movement</button>
         </div>
 
         <div class="mg-world-map" data-world-map>
@@ -78,10 +78,10 @@ require __DIR__ . '/includes/header.php';
           <div class="mg-world-grid-label is-south">Zoom in to reveal labels</div>
           <div class="mg-world-node-layer" data-world-nodes></div>
           <div class="mg-sponsored-map-layer mg-world-sponsored-layer" data-mg-ad-placement="world_canvas_sponsored_pin" data-mg-ad-limit="5" aria-label="Sponsored World Canvas pins"></div>
-          <div class="mg-sponsored-map-layer mg-world-sponsored-layer" data-mg-ad-placement="target_zone_sponsored_drop" data-mg-ad-limit="5" aria-label="Sponsored Target Zone drops"></div>
+          <div class="mg-sponsored-map-layer mg-world-sponsored-layer" data-mg-ad-placement="target_zone_sponsored_drop" data-mg-ad-limit="5" aria-label="Sponsored Campaign Drop Zones"></div>
           <div class="mg-world-empty-state" data-world-empty>
             <span>No world avatars yet</span>
-            <p>World Canvas will display user and merchant avatars as dots as stores, rewards, and claims become active.</p>
+            <p>World Canvas will display user and merchant avatars as stores, campaigns, rewards, and claims become active.</p>
           </div>
         </div>
       </section>
@@ -96,7 +96,7 @@ require __DIR__ . '/includes/header.php';
         <article class="mg-world-panel">
           <div class="mg-world-panel-head"><span class="mg-world-eyebrow">Merchant Opportunities</span><strong>Recommended next actions</strong></div>
           <div class="mg-world-opportunities" data-world-opportunities>
-            <p>Merchant opportunities appear as avatars, claims, reward drops, and conversations form.</p>
+            <p>Merchant opportunities appear as avatars, claims, campaigns, and conversations form.</p>
           </div>
         </article>
       </section>
