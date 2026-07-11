@@ -12,8 +12,8 @@ document.addEventListener('DOMContentLoaded', function () {
     var totals = contacts.reduce(function (acc, contact) {
       var stats = contact.crm_stats || {};
       if (Number(contact.crm_score || stats.score || 0) >= 75) acc.high += 1;
-      if (['reward_sent', 'invite_pending', 'email_delivered'].indexOf(String(contact.result_status || stats.result_status || '')) !== -1) acc.followup += 1;
-      acc.claimed += Number(contact.claimed_count || stats.claimed || 0) + Number(contact.redeemed_count || stats.redeemed || 0);
+      if (['reward_sent', 'invite_pending', 'email_delivered', 'media_engaged'].indexOf(String(contact.result_status || stats.result_status || '')) !== -1) acc.followup += 1;
+      acc.claimed += Number(contact.claimed_count || 0) + Number(contact.redeemed_count || 0);
       return acc;
     }, { high: 0, followup: 0, claimed: 0 });
     set('[data-crm-stat-high]', totals.high);
