@@ -31,13 +31,13 @@ try{
     $claimed=$read('claimed.php');
 
     $expect(
-        str_contains($include,'/assets/css/gift-action-center-feed-v3.css')
-        && str_contains($include,'/assets/js/gift-action-center-feed-v3.js')
+        str_contains($include,'/assets/css/gift-action-center-feed-v3.css?v=3.1.0')
+        && str_contains($include,'/assets/js/gift-action-center-feed-v3.js?v=3.1.0')
         && str_contains($include,'data-feed-version="3"')
         && !str_contains($include,'gift-action-center-feed-v2')
         && !is_file($root.'/assets/js/gift-action-center-feed-v2.js')
         && !is_file($root.'/assets/css/gift-action-center-feed-v2.css'),
-        'Shared include loads only the rebuilt feed v3 component'
+        'Shared include loads only cache-busted feed v3 assets'
     );
 
     $expect(
@@ -76,19 +76,30 @@ try{
     );
 
     $expect(
-        str_contains($css,'grid-template-columns:72px minmax(0,1fr) 112px')
-        && str_contains($css,'grid-template-columns:52px minmax(0,1fr) 78px')
-        && str_contains($css,'grid-column:3')
+        str_contains($css,'grid-template-columns:72px minmax(0,1fr) 112px!important')
+        && str_contains($css,'@media(max-width:1100px)')
+        && str_contains($css,'grid-template-columns:60px minmax(0,1fr) 88px!important')
+        && str_contains($css,'grid-template-columns:50px minmax(0,1fr) 74px!important')
+        && str_contains($css,'grid-column:3!important')
+        && str_contains($css,'grid-row:1!important')
         && !str_contains($css,'grid-column:1/-1'),
-        'Desktop and mobile both use image, content, and right-side action columns'
+        'Desktop, tablet, and mobile force image, content, and right-side action columns'
     );
 
     $expect(
-        str_contains($css,'.mg-gift-center-workspace{padding-left:0!important;padding-right:0!important}')
-        && str_contains($css,'.mg-gift-feed-column{padding:0}')
-        && str_contains($css,'.mg-gift-list{gap:8px;padding:8px 0 14px}')
-        && str_contains($css,'font-size:8px'),
-        'Mobile feed uses full width with smaller action labels'
+        str_contains($css,'[data-gift-center][data-feed-version="3"] .mg-gift-feed-column{padding:0 2px!important}')
+        && str_contains($css,'padding:9px 4px 9px 6px!important')
+        && str_contains($css,'width:74px!important')
+        && str_contains($css,'font-size:7.5px!important'),
+        'Mobile feed minimizes side gutters and compacts the right action stack'
+    );
+
+    $expect(
+        str_contains($css,'display:grid!important')
+        && str_contains($css,'flex:none!important')
+        && str_contains($css,'min-width:0!important')
+        && str_contains($css,'justify-content:stretch!important'),
+        'Feed v3 overrides the legacy responsive bottom-row action rules'
     );
 
     $expect(
