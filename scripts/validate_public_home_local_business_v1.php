@@ -23,7 +23,9 @@ try{
     $index=$read('index.php');
     $css=$read('assets/css/homepage-local-business-v1.css');
     $header=$read('includes/header-components/public-header.php');
-    $heroSvg=$read('assets/images/public-home-merchant-hero.svg');
+    $heroJpegPath=$root.'/assets/images/public-home-merchant-hero.jpg';
+    $heroJpeg=$read('assets/images/public-home-merchant-hero.jpg');
+    $heroDimensions=@getimagesize($heroJpegPath);
 
     $expect(
         str_contains($index,"'/assets/css/homepage-local-business-v1.css?v=1.0.0'")
@@ -33,13 +35,17 @@ try{
     );
 
     $expect(
-        str_contains($index,'/assets/images/public-home-merchant-hero.svg?v=1.0.0')
-        && !str_contains($index,'/assets/images/public-home-merchant-hero.jpg')
+        str_contains($index,'/assets/images/public-home-merchant-hero.jpg?v=2.0.0')
+        && !str_contains($index,'/assets/images/public-home-merchant-hero.svg')
         && str_contains($index,'Local coffee shop owner using Microgifter')
-        && str_starts_with(ltrim($heroSvg),'<svg')
-        && str_contains($heroSvg,'viewBox="0 0 1600 1100"')
-        && str_contains($heroSvg,'Local merchant using Microgifter in a neighborhood cafe'),
-        'Hero uses a valid committed merchant illustration with accessible text'
+        && strlen($heroJpeg)>20000
+        && str_starts_with($heroJpeg,"\xFF\xD8\xFF")
+        && str_ends_with($heroJpeg,"\xFF\xD9")
+        && is_array($heroDimensions)
+        && ($heroDimensions[0]??0)===640
+        && ($heroDimensions[1]??0)===427
+        && ($heroDimensions[2]??0)===IMAGETYPE_JPEG,
+        'Hero uses the committed raster cafe photograph with valid JPEG data and dimensions'
     );
 
     $expect(
