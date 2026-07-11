@@ -57,10 +57,10 @@ jobs:
           php -l api/store/enter.php
           php -l api/store/session-status.php
           php -l api/merchant-canvas/presence.php
-      - name: Lint runtime contracts
-        run: |
-          php -l tests/phpunit/WorldCanvasRuntimeV2ContractTest.php
-          php -l scripts/validate_world_canvas_runtime_v2.php
+      - name: Lint PHPUnit contract
+        run: php -l tests/phpunit/WorldCanvasRuntimeV2ContractTest.php
+      - name: Lint standalone contract
+        run: php -l scripts/validate_world_canvas_runtime_v2.php
       - name: JavaScript syntax
         run: |
           node --check assets/js/world-canvas-runtime-v2.js
