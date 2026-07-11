@@ -3,20 +3,17 @@ declare(strict_types=1);
 
 /*
  * Microgifter public homepage.
- * The universal header/footer owns the logged-out phone number and market ticker.
+ * The universal header/footer owns authentication and shared navigation.
  */
 
-$page_title = 'Microgifter | Social Gifting CRM for Local Commerce';
+$page_title = 'Microgifter | Social Gifting, Loyalty CRM & Local Commerce';
 $page_section = 'public';
 $header_mode = 'public';
 $page_styles = [
     '/assets/css/public-header-footer-fixes.css',
-    '/assets/css/homepage-drm.css',
-    '/assets/css/homepage-hero-search.css',
+    '/assets/css/homepage-local-business-v1.css?v=1.0.0',
 ];
-$page_scripts = [
-    '/assets/js/homepage-drm.js',
-];
+$page_scripts = [];
 $page_manifest = [
     'id' => 'index',
     'title' => $page_title,
@@ -27,9 +24,11 @@ $page_manifest = [
     'public_header' => [
         'presentation' => false,
         'links' => [
-            ['label' => 'Explore', 'href' => '/discover.php'],
-            ['label' => 'Merchant', 'href' => '/merchant.php'],
-            ['label' => 'Pricing', 'href' => '/pricing.php'],
+            ['label' => 'How It Works', 'href' => '/index.php#how-it-works'],
+            ['label' => 'Find Gifts', 'href' => '/discover.php'],
+            ['label' => 'Rewards', 'href' => '/index.php#rewards'],
+            ['label' => 'For Businesses', 'href' => '/index.php#businesses'],
+            ['label' => 'About', 'href' => '/about.php'],
             ['label' => 'Book A Demo', 'href' => '/learn-more.php'],
         ],
     ],
@@ -43,239 +42,220 @@ $page_manifest = [
 require __DIR__ . '/includes/header.php';
 ?>
 
-<div class="mg-home-page" id="top">
-  <div class="mg-progress" aria-hidden="true"><span class="mg-progress-bar" id="mgProgressBar"></span></div>
+<main class="mg-lb-home" id="top">
+  <section class="mg-lb-hero" aria-labelledby="mgLbHeroTitle">
+    <div class="mg-lb-hero-main">
+      <div class="mg-lb-hero-copy">
+        <span class="mg-lb-eyebrow">For local businesses</span>
+        <h1 id="mgLbHeroTitle">Drive Traffic.<br>Build Loyalty.<br><span>Reward Customers.</span></h1>
+        <p>Microgifter helps local businesses turn everyday customer interactions into social gifts, repeat visits, measurable rewards, and stronger owned relationships.</p>
 
-  <section class="mg-hero" aria-labelledby="mgHeroTitle">
-    <div class="mg-hero-grid">
-      <div class="mg-hero-copy" data-reveal="left">
-        <form class="mg-hero-search" data-hero-search action="/discover.php" method="get" role="search" autocomplete="off">
-          <label class="mg-hero-search-label" for="mgHeroSearch">Search the Microgifter network</label>
-          <div class="mg-hero-search-control">
-            <input id="mgHeroSearch" name="q" type="search" data-hero-search-input placeholder="Search merchants or users" aria-label="Search merchants or users">
-            <button type="submit">Search</button>
-          </div>
-          <div class="mg-hero-search-results" data-hero-search-results hidden></div>
-        </form>
-        <h1 class="mg-title" id="mgHeroTitle"><span class="mg-title-line">The social gifting CRM</span><span class="mg-title-line">for local commerce.</span></h1>
-        <p class="mg-note">Microgifter gives merchants the tools to pre-sell products, track claims, reward loyalty, and predict customer engagement. Promote your best products, offer better deals, and turn social gifting into measurable revenue. Create your free wallet and get started today!</p>
-        <div class="mg-actions">
-          <a class="mg-btn mg-btn-primary" href="/signup.php">Create Your Wallet <span aria-hidden="true">→</span></a>
-          <a class="mg-btn mg-btn-secondary" href="/learn-more.php">Create Merchant Account <span aria-hidden="true">→</span></a>
+        <ul class="mg-lb-checklist" aria-label="Local business benefits">
+          <li>Attract new customers in your community</li>
+          <li>Pre-sell products, gifts, and experiences</li>
+          <li>Reward loyalty, referrals, and repeat visits</li>
+          <li>Track claims, redemptions, and customer engagement</li>
+        </ul>
+
+        <div class="mg-lb-hero-actions">
+          <a class="mg-lb-button is-primary" href="/signup.php">Create Account</a>
+          <a class="mg-lb-button is-secondary" href="/learn-more.php">Contact Sales</a>
         </div>
       </div>
 
-      <div class="mg-hero-visual" data-reveal="right" aria-label="Microgifter product preview">
-        <img class="mg-desktop" src="/images/desktop_bg_main_v10.png" alt="Microgifter desktop product preview" decoding="async" fetchpriority="high">
-        <img class="mg-phone-img" src="/images/mobile_bg_main.png" alt="Microgifter mobile product preview" decoding="async" fetchpriority="high">
-      </div>
+      <figure class="mg-lb-hero-visual">
+        <img src="/assets/images/public-home-merchant-hero.jpg" alt="Local coffee shop owner using Microgifter to reward customers" width="760" height="530" fetchpriority="high" decoding="async">
+      </figure>
+    </div>
+
+    <div class="mg-lb-benefit-rail" aria-label="Microgifter business outcomes">
+      <article>
+        <span class="mg-lb-rail-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s7-5.1 7-12A7 7 0 1 0 5 9c0 6.9 7 12 7 12Z"/><circle cx="12" cy="9" r="2.4"/></svg></span>
+        <div><h2>Drive More Traffic</h2><p>Get discovered by nearby customers already looking for something worth sharing.</p></div>
+      </article>
+      <article>
+        <span class="mg-lb-rail-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg></span>
+        <div><h2>Build Loyalty</h2><p>Reward the customer actions that create lasting local relationships.</p></div>
+      </article>
+      <article>
+        <span class="mg-lb-rail-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/><path d="m4 8 6-4 6 6 6-5"/></svg></span>
+        <div><h2>Increase Revenue</h2><p>Turn gifts, campaigns, and repeat visits into measurable commerce.</p></div>
+      </article>
+      <article>
+        <span class="mg-lb-rail-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 10h18M5 10v9h14v-9M4 10l2-5h12l2 5"/><path d="M9 19v-5h6v5"/></svg></span>
+        <div><h2>Simple to Operate</h2><p>Run gifting, rewards, CRM, campaigns, and redemption from one platform.</p></div>
+      </article>
     </div>
   </section>
 
-  <section class="mg-section" id="merchants" aria-labelledby="merchantTitle">
-    <div class="mg-bg-mesh" aria-hidden="true"></div>
-    <div class="mg-container">
-      <div class="mg-section-head">
-        <span class="mg-story-kicker" data-reveal="left">Platform modules</span>
-        <h2 class="mg-section-title" id="merchantTitle" data-reveal="left" style="--delay:80ms">One operating layer for selling, rewarding, messaging, networking, and distribution.</h2>
-        <p class="mg-section-copy" data-reveal="left" style="--delay:160ms">Microgifter combines digital commerce, local advertising, customer CRM, workplace rewards, social discovery, and API distribution into one connected system for merchants, teams, and communities.</p>
+  <section class="mg-lb-section mg-lb-platform" id="businesses" aria-labelledby="mgLbPlatformTitle">
+    <div class="mg-lb-container">
+      <div class="mg-lb-section-head is-centered">
+        <span class="mg-lb-eyebrow">One connected growth platform</span>
+        <h2 id="mgLbPlatformTitle">Everything your business needs to turn attention into repeat customers.</h2>
+        <p>Replace scattered promotions, gift certificates, loyalty tools, messages, and redemption records with one campaign-based merchant CRM.</p>
       </div>
 
-      <div class="mg-feature-panels mg-growth-feature-grid">
-        <article class="mg-panel" data-reveal="scale">
-          <div class="mg-panel-head">
-            <div class="mg-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="7" r="3"/><circle cx="18" cy="17" r="3"/><path d="M9 11l6-3M9 13l6 3"/></svg></div>
-            <div><h3>Social Networking</h3><p>Give merchants and members a public profile, discovery presence, supporter graph, feed, and direct customer relationships that are not trapped inside a rented platform.</p></div>
-          </div>
-          <div class="mg-signal-list" aria-label="Social network signals">
-            <div class="mg-signal-row"><span>Profile</span><span>Discoverable</span></div>
-            <div class="mg-signal-row"><span>Feed</span><span>Offers + updates</span></div>
-            <div class="mg-signal-row"><span>Audience</span><span>Followers</span></div>
-            <div class="mg-signal-row"><span>Support</span><span>Direct action</span></div>
-          </div>
-          <div class="mg-panel-tags"><span>Profiles</span><span>Feed</span><span>Community</span></div>
+      <div class="mg-lb-feature-grid">
+        <article class="mg-lb-feature-card">
+          <span class="mg-lb-feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 12v8H4v-8M2 7h20v5H2zM12 7v13M12 7H7.5A2.5 2.5 0 1 1 10 4.5L12 7Zm0 0h4.5A2.5 2.5 0 1 0 14 4.5L12 7Z"/></svg></span>
+          <h3>Social Gifting</h3>
+          <p>Sell products and experiences that customers can purchase now and send later to friends, family, coworkers, and communities.</p>
+          <a href="/discover.php">Explore local gifts <span aria-hidden="true">→</span></a>
         </article>
 
-        <article class="mg-panel" data-reveal="scale" style="--delay:80ms">
-          <div class="mg-panel-head">
-            <div class="mg-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 14h3l10 4V6L7 10H4v4Z"/><path d="M7 14v4h2l1-3"/><path d="M19 9l2-2M20 12h3M19 15l2 2"/></svg></div>
-            <div><h3>Local Advertising</h3><p>Microgifter Advertising turns paid or promoted visibility into tracked campaigns, rewards, redemptions, customer actions, and measurable Pre Sale Revenue.</p></div>
-          </div>
-          <div class="mg-signal-list" aria-label="Local advertising signals">
-            <div class="mg-signal-row"><span>Boosts</span><span>Paid visibility</span></div>
-            <div class="mg-signal-row"><span>Campaigns</span><span>Tracked</span></div>
-            <div class="mg-signal-row"><span>Rewards</span><span>Customer action</span></div>
-            <div class="mg-signal-row"><span>PSR</span><span>Measured</span></div>
-          </div>
-          <div class="mg-panel-tags"><span>Sponsored</span><span>Rewards</span><span>PSR</span></div>
+        <article class="mg-lb-feature-card">
+          <span class="mg-lb-feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c.9-4 3-6 6-6s5.1 2 6 6M16 8h5M16 12h5M17 16h4"/></svg></span>
+          <h3>Merchant CRM</h3>
+          <p>Connect purchases, claims, visits, messages, referrals, and reward activity to usable customer records.</p>
+          <a href="/learn-more.php">See the CRM <span aria-hidden="true">→</span></a>
         </article>
 
-        <article class="mg-panel" data-reveal="scale" style="--delay:160ms">
-          <div class="mg-panel-head">
-            <div class="mg-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M8 14h5"/><path d="M16 14h2"/></svg></div>
-            <div><h3>Digital Commerce</h3><p>Issue digital certificates, claim codes, vouchers, rewards, and redeemable passes that move cleanly through inbox, sent, claimed, and redeemed states.</p></div>
-          </div>
-          <div class="mg-signal-list" aria-label="Digital commerce flow">
-            <div class="mg-signal-row"><span>Issued</span><span>Wallet ready</span></div>
-            <div class="mg-signal-row"><span>Sent</span><span>Recipient tracked</span></div>
-            <div class="mg-signal-row"><span>Claimed</span><span>Code protected</span></div>
-            <div class="mg-signal-row"><span>Redeemed</span><span>Merchant verified</span></div>
-          </div>
-          <div class="mg-panel-tags"><span>Voucher</span><span>Claim code</span><span>Redeem</span></div>
+        <article class="mg-lb-feature-card">
+          <span class="mg-lb-feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 14h3l10 4V6L7 10H4v4Z"/><path d="M7 14v4h3l1-3M19 8l2-2M20 12h3M19 16l2 2"/></svg></span>
+          <h3>Campaigns & Offers</h3>
+          <p>Launch offers, rewards, contests, referrals, QR campaigns, and local promotions with measurable outcomes.</p>
+          <a href="/learn-more.php">Build a campaign <span aria-hidden="true">→</span></a>
         </article>
 
-        <article class="mg-panel" data-reveal="scale" style="--delay:240ms">
-          <div class="mg-panel-head">
-            <div class="mg-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="9" cy="8" r="3"/><path d="M3 20c1-4 3-6 6-6s5 2 6 6"/><path d="M16 7h5M16 11h5M17 15h4"/></svg></div>
-            <div><h3>Customer CRM</h3><p>Turn customer actions into usable profiles: purchases, claims, redemptions, visits, messages, campaign sources, and follow-up opportunities.</p></div>
-          </div>
-          <div class="mg-value-score" aria-label="Customer CRM view">
-            <strong>360°</strong>
-            <span>Customer view connecting wallet activity, offers, messages, location behavior, support history, and campaign response.</span>
-          </div>
-          <div class="mg-panel-tags"><span>Profiles</span><span>Messaging</span><span>Follow-up</span></div>
+        <article class="mg-lb-feature-card">
+          <span class="mg-lb-feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v12H8l-4 3V5Z"/><path d="M8 9h8M8 13h5"/></svg></span>
+          <h3>Customer Messaging</h3>
+          <p>Follow up after a gift, reward, claim, or visit without separating customer communication from the transaction history.</p>
+          <a href="/learn-more.php">Connect conversations <span aria-hidden="true">→</span></a>
         </article>
 
-        <article class="mg-panel" data-reveal="scale" style="--delay:320ms">
-          <div class="mg-panel-head">
-            <div class="mg-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="8" width="18" height="11" rx="2"/><path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M12 12v3"/></svg></div>
-            <div><h3>Workplace Rewards</h3><p>Let companies, teams, and organizations distribute local rewards, employee gifts, recognition credits, and sponsored commerce into employee wallets.</p></div>
-          </div>
-          <div class="mg-mini-path" aria-label="Workplace reward path"><span>Employer</span><span>Team</span><span>Reward</span><span>Redeem</span></div>
-          <div class="mg-panel-tags"><span>Teams</span><span>Recognition</span><span>Bulk rewards</span></div>
+        <article class="mg-lb-feature-card">
+          <span class="mg-lb-feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4zM8 8h8v8H8z"/><path d="M2 8h2M2 16h2M20 8h2M20 16h2"/></svg></span>
+          <h3>Claim & Redemption</h3>
+          <p>Track every Microgift from purchase through inbox, sent, claimed, and merchant-verified redemption states.</p>
+          <a href="/learn-more.php">Follow the lifecycle <span aria-hidden="true">→</span></a>
         </article>
 
-        <article class="mg-panel" data-reveal="scale" style="--delay:400ms">
-          <div class="mg-panel-head">
-            <div class="mg-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5l-5 7 5 7M16 5l5 7-5 7M14 4l-4 16"/></svg></div>
-            <div><h3>Distribution API</h3><p>Connect Microgifter to partner apps, landing pages, QR campaigns, CRMs, agentic shopping flows, and merchant systems through a structured value API.</p></div>
-          </div>
-          <div class="mg-codebox" aria-label="Distribution API example"><span class="gold">POST</span> /v1/distribution/send<br>{<br>&nbsp;&nbsp;<span class="muted">"channel"</span>: <span class="green">"qr_campaign"</span>,<br>&nbsp;&nbsp;<span class="muted">"recipient"</span>: <span class="green">"wallet"</span>,<br>&nbsp;&nbsp;<span class="muted">"tracking"</span>: <span class="green">"crm_signal"</span><br>}</div>
-          <div class="mg-panel-tags"><span>API</span><span>Partners</span><span>Automation</span></div>
+        <article class="mg-lb-feature-card">
+          <span class="mg-lb-feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="8"/></svg></span>
+          <h3>Automated Commerce</h3>
+          <p>Use recurring programs, agent-assisted gifting, workplace rewards, and campaign automation to create ongoing demand.</p>
+          <a href="/learn-more.php">Automate growth <span aria-hidden="true">→</span></a>
         </article>
       </div>
     </div>
   </section>
 
-  <section class="mg-section" id="future-demand" aria-labelledby="agenticTitle">
-    <div class="mg-bg-mesh" aria-hidden="true"></div>
-    <div class="mg-container">
-      <div class="mg-story-grid">
-        <div class="mg-story-copy" data-reveal="left">
-          <span class="mg-story-kicker">Promotional CRM</span>
-          <h2 id="agenticTitle">The value is not only the transaction. It is the business intelligence created around it.</h2>
-          <p>Local businesses generate valuable signals every day, but most of that value disappears across social posts, paper coupons, disconnected payment systems, and untracked customer behavior. Microgifter captures those signals and turns them into a usable operating layer for growth.</p>
+  <section class="mg-lb-section mg-lb-workflow" id="how-it-works" aria-labelledby="mgLbWorkflowTitle">
+    <div class="mg-lb-container mg-lb-workflow-grid">
+      <div class="mg-lb-workflow-copy">
+        <span class="mg-lb-eyebrow is-light">How it works</span>
+        <h2 id="mgLbWorkflowTitle">A simple customer loop from campaign to claim.</h2>
+        <p>Create a valuable reason to act, deliver it through the channels your customers already use, and keep the resulting relationship inside one connected system.</p>
+
+        <ol class="mg-lb-steps">
+          <li><b>01</b><div><h3>Create the offer</h3><p>Choose a product, reward, gift, referral, contest, or customer action.</p></div></li>
+          <li><b>02</b><div><h3>Share it everywhere</h3><p>Publish through QR, social, email, landing pages, embeds, feeds, or direct delivery.</p></div></li>
+          <li><b>03</b><div><h3>Track the response</h3><p>Capture source, recipient, claim, redemption, visit, and follow-up activity.</p></div></li>
+          <li><b>04</b><div><h3>Improve the next campaign</h3><p>Use customer and demand signals to create more relevant offers and repeat revenue.</p></div></li>
+        </ol>
+      </div>
+
+      <div class="mg-lb-product-stage" aria-label="Microgifter platform preview">
+        <div class="mg-lb-screen-card">
+          <img src="/images/desktop_bg_main_v10.png" alt="Microgifter merchant dashboard" loading="lazy" decoding="async">
         </div>
-        <div>
-          <div class="mg-agentic-panel">
-            <article class="mg-agentic-card" data-reveal="up">
-              <h3>What business data value means</h3>
-              <p>Every offer should teach the business something: what customers value, which channel moved them, what they claimed, whether they redeemed, and what made them return.</p>
-              <p>Microgifter makes that trail operational, so businesses can stop guessing and start using their own data to build stronger customer relationships and more efficient revenue loops.</p>
-            </article>
-            <article class="mg-agentic-card" data-reveal="up" style="--delay:120ms">
-              <h3>The efficient value loop</h3>
-              <div class="mg-agent-flow" aria-label="Promotional CRM revenue flow">
-                <div class="mg-flow-item"><span>Create a local value action</span><span aria-hidden="true">→</span></div>
-                <div class="mg-flow-item"><span>Capture the customer signal</span><span aria-hidden="true">→</span></div>
-                <div class="mg-flow-item"><span>Connect actions to business intelligence</span><span aria-hidden="true">→</span></div>
-                <div class="mg-flow-item"><span>Use insight to improve the next offer</span><span aria-hidden="true">→</span></div>
-                <div class="mg-flow-item"><span>Earn more from owned relationships</span><span aria-hidden="true">✓</span></div>
-              </div>
-            </article>
-          </div>
-          <div class="mg-social-proof" data-reveal="up" style="--delay:220ms">
-            <div class="mg-proof-pill">Customer data</div>
-            <div class="mg-proof-pill">Offer signals</div>
-            <div class="mg-proof-pill">Redemption history</div>
-            <div class="mg-proof-pill">Demand patterns</div>
-            <div class="mg-proof-pill">Repeat revenue</div>
-          </div>
+        <div class="mg-lb-phone-card">
+          <img src="/images/mobile_bg_main.png" alt="Microgifter mobile experience" loading="lazy" decoding="async">
+        </div>
+        <div class="mg-lb-stage-note">
+          <strong>Campaign → Claim</strong>
+          <span>One connected customer record</span>
         </div>
       </div>
     </div>
   </section>
 
-  <section class="mg-section" id="how-it-works" aria-labelledby="howTitle">
-    <div class="mg-bg-mesh" aria-hidden="true"></div>
-    <div class="mg-container">
-      <div class="mg-story-grid">
-        <div class="mg-story-copy" data-reveal="left">
-          <span class="mg-story-kicker">Revenue loop</span>
-          <h2 id="howTitle">A simple loop for creating, capturing, and utilizing local value.</h2>
-          <p>The goal is to make local commerce smarter without making it complicated: create a valuable customer action, capture the signal it creates, connect it to a customer record, and use the result to make the next action more profitable.</p>
-        </div>
-        <div class="mg-story-list">
-          <article class="mg-story-step" data-reveal="up"><b>01</b><div><h3>Create value</h3><p>Build an offer, reward, gift certificate, contest entry, landing page, or pre-sale product with a clear customer benefit and a measurable business goal.</p></div></article>
-          <article class="mg-story-step" data-reveal="up" style="--delay:100ms"><b>02</b><div><h3>Capture the data</h3><p>Distribute through QR codes, feeds, newsletters, social posts, table tents, landing pages, partner apps, or the API while capturing where each action came from.</p></div></article>
-          <article class="mg-story-step" data-reveal="up" style="--delay:200ms"><b>03</b><div><h3>Discover what matters</h3><p>Connect claims, redemptions, purchases, visits, profiles, and campaign sources to discover what customers actually value and what drives them back.</p></div></article>
-          <article class="mg-story-step" data-reveal="up" style="--delay:300ms"><b>04</b><div><h3>Utilize the insight</h3><p>Use the data to improve targeting, personalize follow-up, forecast demand, increase repeat visits, and earn more from the relationships already created.</p></div></article>
-        </div>
+  <section class="mg-lb-section mg-lb-rewards" id="rewards" aria-labelledby="mgLbRewardsTitle">
+    <div class="mg-lb-container">
+      <div class="mg-lb-section-head">
+        <span class="mg-lb-eyebrow">Reward the actions that matter</span>
+        <h2 id="mgLbRewardsTitle">Turn ordinary customer moments into reasons to return.</h2>
+        <p>Build reward paths around purchases, referrals, visits, recognition, media engagement, contests, and community participation.</p>
       </div>
-    </div>
-  </section>
 
-  <section class="mg-section" id="merchant-examples" aria-labelledby="examplesTitle">
-    <div class="mg-bg-mesh" aria-hidden="true"></div>
-    <div class="mg-container">
-      <div class="mg-section-head">
-        <span class="mg-story-kicker" data-reveal="left">Merchant examples</span>
-        <h2 class="mg-section-title" id="examplesTitle" data-reveal="left">Every local action can become a data asset.</h2>
-        <p class="mg-section-copy" data-reveal="left" style="--delay:120ms">A coffee reward, lunch special, event pass, or trial class is more than a sale. It shows what customers value, when they act, how they support, and what brings them back.</p>
-      </div>
-      <div class="mg-examples-grid">
-        <article class="mg-example-card" data-reveal="up"><small>Coffee shop</small><h3>Coffee for Two</h3><p>Captures gift behavior, visit timing, redemption activity, and the first signal of a repeat customer.</p><div class="mg-example-meta"><div><span>Price</span><strong>$18</strong></div><div><span>Signal</span><strong>Visit intent</strong></div></div></article>
-        <article class="mg-example-card" data-reveal="up" style="--delay:90ms"><small>Restaurant</small><h3>Lunch Special</h3><p>Shows which offers move demand into slower windows and which customers respond to value-based timing.</p><div class="mg-example-meta"><div><span>Price</span><strong>$24</strong></div><div><span>Signal</span><strong>Demand shift</strong></div></div></article>
-        <article class="mg-example-card" data-reveal="up" style="--delay:180ms"><small>Venue</small><h3>Two Drink Reward</h3><p>Connects pre-event intent, in-person redemption, and post-event follow-up into one measurable loop.</p><div class="mg-example-meta"><div><span>Price</span><strong>$22</strong></div><div><span>Signal</span><strong>Event lift</strong></div></div></article>
-        <article class="mg-example-card" data-reveal="up" style="--delay:270ms"><small>Fitness</small><h3>Trial Class Pass</h3><p>Turns a first visit into a profile, a conversion path, and a clear follow-up opportunity.</p><div class="mg-example-meta"><div><span>Price</span><strong>$15</strong></div><div><span>Signal</span><strong>Lead value</strong></div></div></article>
-      </div>
-    </div>
-  </section>
-
-  <section class="mg-section" id="api-preview" aria-labelledby="apiPreviewTitle">
-    <div class="mg-bg-mesh" aria-hidden="true"></div>
-    <div class="mg-container">
-      <div class="mg-section-head">
-        <span class="mg-story-kicker" data-reveal="left">Distribution API</span>
-        <h2 class="mg-section-title" id="apiPreviewTitle" data-reveal="left">A data-value layer developers can wire into local commerce.</h2>
-        <p class="mg-section-copy" data-reveal="left" style="--delay:120ms">Use Microgifter to create reward actions, capture customer signals, verify redemption, and send structured value data back into CRMs, apps, loyalty workflows, dashboards, and AI-powered commerce systems.</p>
-      </div>
-      <div class="mg-api-story">
-        <pre class="mg-code-panel" data-reveal="up"><span class="gold">POST</span> /v1/distribution/send
-{
-  "merchant_id": <span class="green">"m_local_123"</span>,
-  "reward": <span class="green">"coffee_for_two"</span>,
-  "recipient": {
-    "type": <span class="green">"email"</span>,
-    "value": <span class="green">"customer@example.com"</span>
-  },
-  "metadata": {
-    "source": <span class="green">"promotional-crm"</span>
-  }
-}</pre>
-        <article class="mg-api-flow" data-reveal="up" style="--delay:120ms">
-          <h3>From support to intelligence</h3>
-          <div class="mg-api-flow-row"><span class="mg-api-flow-dot">01</span><p>A merchant or partner app creates a local value action: offer, reward, gift, contest, or pre-sale product.</p></div>
-          <div class="mg-api-flow-row"><span class="mg-api-flow-dot">02</span><p>Microgifter captures source, claim, customer, campaign, and redemption context as structured data.</p></div>
-          <div class="mg-api-flow-row"><span class="mg-api-flow-dot">03</span><p>The customer clicks, claims, shares, saves, buys, visits, or redeems.</p></div>
-          <div class="mg-api-flow-row"><span class="mg-api-flow-dot">04</span><p>The business uses that data to improve campaigns, increase customer value, and earn more from future demand.</p></div>
+      <div class="mg-lb-reward-layout">
+        <article class="mg-lb-reward-feature">
+          <div class="mg-lb-reward-copy">
+            <span>Campaign-based loyalty</span>
+            <h3>Reward behavior, not just transactions.</h3>
+            <p>Microgifter helps merchants recognize the full customer journey—from the first campaign click to the next visit.</p>
+            <ul>
+              <li>Purchase and visit rewards</li>
+              <li>Referral and social gifting incentives</li>
+              <li>Watch-and-listen engagement campaigns</li>
+              <li>Workplace and community recognition</li>
+            </ul>
+          </div>
+          <div class="mg-lb-reward-meter" aria-label="Connected customer journey">
+            <span style="--level:92%"><b>Discover</b></span>
+            <span style="--level:78%"><b>Engage</b></span>
+            <span style="--level:86%"><b>Claim</b></span>
+            <span style="--level:70%"><b>Return</b></span>
+          </div>
         </article>
+
+        <div class="mg-lb-reward-stack">
+          <article><span>01</span><div><h3>Bring customers in</h3><p>Use local offers, gifts, and rewards to create a clear reason to visit.</p></div></article>
+          <article><span>02</span><div><h3>Recognize loyalty</h3><p>Reward repeat behavior, referrals, recognition, and community support.</p></div></article>
+          <article><span>03</span><div><h3>Keep the relationship</h3><p>Use the connected CRM to follow up with the right customer at the right time.</p></div></article>
+        </div>
       </div>
     </div>
   </section>
 
-  <section class="mg-public-bottom-demo" aria-labelledby="mgPublicDemoTitle">
-    <div class="mg-public-bottom-demo-inner">
-      <span class="mg-public-bottom-demo-eyebrow">Book a demo</span>
-      <h2 id="mgPublicDemoTitle">See how Microgifter turns local support into usable business data.</h2>
-      <p>Walk through the full value loop: create the offer, capture the signal, verify the redemption, understand the customer, and use the insight to make the next action more valuable.</p>
-      <div class="mg-public-bottom-demo-actions">
-        <a class="mg-public-bottom-demo-primary" href="/learn-more.php">Book a Demo</a>
-        <a class="mg-public-bottom-demo-secondary" href="/pricing.php">View Pricing</a>
-        <a class="mg-public-bottom-demo-secondary" href="/developer-docs.php">Explore the API</a>
+  <section class="mg-lb-section mg-lb-use-cases" aria-labelledby="mgLbUseCasesTitle">
+    <div class="mg-lb-container">
+      <div class="mg-lb-section-head is-centered">
+        <span class="mg-lb-eyebrow">Built for everyday local commerce</span>
+        <h2 id="mgLbUseCasesTitle">One platform. Many ways to create local value.</h2>
+      </div>
+
+      <div class="mg-lb-use-grid">
+        <article><small>Restaurants & bars</small><h3>Fill slower hours and bring regulars back.</h3><p>Promote menu items, happy-hour offers, event nights, gift experiences, and repeat-visit rewards.</p></article>
+        <article><small>Retail & services</small><h3>Turn products and appointments into shareable gifts.</h3><p>Pre-sell local products, service credits, appointments, memberships, and customer referrals.</p></article>
+        <article><small>Fitness & wellness</small><h3>Move trial customers into lasting routines.</h3><p>Reward first visits, class streaks, referrals, memberships, and wellness milestones.</p></article>
+        <article><small>Events & hospitality</small><h3>Connect attendance, rewards, and follow-up.</h3><p>Issue passes, upgrades, contest prizes, drink rewards, guest experiences, and post-event offers.</p></article>
       </div>
     </div>
   </section>
-</div>
+
+  <section class="mg-lb-proof" aria-labelledby="mgLbProofTitle">
+    <div class="mg-lb-container">
+      <div class="mg-lb-proof-copy">
+        <span class="mg-lb-eyebrow is-light">A connected operating layer</span>
+        <h2 id="mgLbProofTitle">See the complete value of every customer action.</h2>
+        <p>Microgifter connects the offer, the recipient, the campaign source, the claim, the redemption, and the next opportunity—without forcing merchants to rebuild the customer story across disconnected tools.</p>
+        <a class="mg-lb-button is-light" href="/learn-more.php">See Microgifter in action</a>
+      </div>
+
+      <div class="mg-lb-proof-grid" aria-label="Microgifter platform capabilities">
+        <article><strong>4</strong><span>Tracked ownership states</span><small>Inbox, Sent, Claimed, Redeemed</small></article>
+        <article><strong>360°</strong><span>Customer activity view</span><small>Commerce, campaigns, messages, claims</small></article>
+        <article><strong>1</strong><span>Connected merchant CRM</span><small>Gifting, loyalty, rewards, automation</small></article>
+        <article><strong>24/7</strong><span>Commerce-ready programs</span><small>Recurring, scheduled, and agent-assisted</small></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="mg-lb-final" aria-labelledby="mgLbFinalTitle">
+    <div class="mg-lb-final-inner">
+      <span class="mg-lb-eyebrow">Grow local relationships</span>
+      <h2 id="mgLbFinalTitle">Give customers a reason to visit, share, claim, and come back.</h2>
+      <p>Start with one product, one campaign, or one reward. Microgifter connects the rest of the customer journey.</p>
+      <div class="mg-lb-final-actions">
+        <a class="mg-lb-button is-primary" href="/signup.php">Create Account</a>
+        <a class="mg-lb-button is-secondary" href="/learn-more.php">Book a Demo</a>
+        <a class="mg-lb-text-link" href="/discover.php">Explore local gifts <span aria-hidden="true">→</span></a>
+      </div>
+    </div>
+  </section>
+</main>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>
