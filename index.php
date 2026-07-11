@@ -59,7 +59,7 @@ require __DIR__ . '/includes/header.php';
 
         <div class="mg-lb-hero-actions">
           <a class="mg-lb-button is-primary" href="/signup.php">Create Account</a>
-          <a class="mg-lb-button is-secondary" href="/learn-more.php">Contact Sales</a>
+          <a class="mg-lb-button is-secondary" href="/signup.php">Create Free Account</a>
         </div>
       </div>
 

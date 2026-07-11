@@ -62,9 +62,9 @@ if (!$market_ticker_items && !$user) {
 }
 
 $show_market_ticker = false; // Temporarily hidden; ticker logic and markup stay in place.
-$show_demo_button = !$user;
+$show_demo_button = false; // The shared public header no longer renders the desktop demo CTA.
 ?>
-<?php if (!$user): ?><link rel="stylesheet" href="/assets/css/public-logged-out-header-unified.css"><?php endif; ?>
+<?php if (!$user): ?><link rel="stylesheet" href="/assets/css/public-logged-out-header-unified.css?v=2.1.0"><?php endif; ?>
 <header class="mg-site-header mg-unified-header mg-market-universal-header" data-mg-universal-header data-public-header data-header-theme="market-dark" data-header-variant="<?= $user ? 'logged-in' : 'logged-out' ?>">
   <div class="mg-header-inner nav-inner">
     <div class="mg-header-left">

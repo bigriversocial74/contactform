@@ -10,6 +10,7 @@ $pricing = $read('pricing.php');
 $pricingCss = $read('assets/css/pricing-local-business-v1.css');
 $themeCss = $read('assets/css/public-local-business-theme-v1.css');
 $headerCss = $read('assets/css/public-logged-out-header-unified.css');
+$publicHeader = $read('includes/header-components/public-header.php');
 $footerCss = $read('assets/css/universal-footer.css');
 $authCss = $read('assets/css/auth-page.css');
 $pageDefinitions = $read('includes/page.php');
@@ -31,9 +32,13 @@ $checks = [
     'header uses white navy green palette' => str_contains($headerCss, 'background:rgba(255,255,255,.96)!important')
         && str_contains($headerCss, 'background:#72d43f!important')
         && str_contains($headerCss, 'color:#0b2d2a!important'),
-    'mobile public menu has high-specificity dark treatment' => str_contains($headerCss, '.mg-public-mobile-menu .mg-public-mobile-panel')
-        && str_contains($headerCss, 'linear-gradient(180deg,#0b2d2a,#071f1d)!important')
-        && str_contains($headerCss, 'rgba(114,212,63,.12)!important'),
+    'desktop public header removes Book A Demo action' => str_contains($publicHeader, '$show_demo_button = false;')
+        && str_contains($publicHeader, '/assets/css/public-logged-out-header-unified.css?v=2.1.0'),
+    'mobile public menu uses high-specificity white treatment' => str_contains($headerCss, '.mg-public-mobile-menu .mg-public-mobile-panel')
+        && str_contains($headerCss, 'background:#fff!important')
+        && str_contains($headerCss, 'color:#0b2d2a!important')
+        && str_contains($headerCss, 'background:#f7fbf8!important')
+        && !str_contains($headerCss, 'linear-gradient(180deg,#0b2d2a,#071f1d)!important'),
     'footer uses high-specificity navy theme with white type' => str_contains($footerCss, 'html body[data-authenticated="false"] .mg-site-footer.mg-universal-footer')
         && str_contains($footerCss, 'linear-gradient(135deg,#091a31 0%,#102d4c 100%)!important')
         && str_contains($footerCss, '.mg-footer-column h2{margin:0 0 7px!important;color:#fff!important')
