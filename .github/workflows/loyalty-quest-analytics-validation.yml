@@ -1,0 +1,90 @@
+name: Loyalty Quest Analytics Validation
+
+on:
+  pull_request:
+    paths:
+      - 'merchant-loyalty-quest-analytics.php'
+      - 'includes/merchant-loyalty-quest-analytics-view.php'
+      - 'includes/loyalty-quest-analytics.php'
+      - 'includes/loyalty-quest-analytics-accuracy.php'
+      - 'api/merchant/loyalty-quest-analytics.php'
+      - 'api/merchant/loyalty-quest-analytics-export.php'
+      - 'assets/css/loyalty-quest-analytics.css'
+      - 'assets/js/loyalty-quest-analytics.js'
+      - 'includes/merchant-workspace.php'
+      - 'includes/merchant-view.php'
+      - 'scripts/validate_loyalty_quest_analytics_v1.php'
+      - 'scripts/validate_loyalty_quest_analytics_behavior.php'
+      - 'docs/architecture/loyalty_quest_analytics_reporting_v1.md'
+      - '.github/workflows/loyalty-quest-analytics-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Loyalty Quest Analytics (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2','8.3']
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: microgifter_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: pdo_mysql,mbstring,json
+          coverage: none
+      - name: PHP syntax
+        run: |
+          php -l merchant-loyalty-quest-analytics.php
+          php -l includes/merchant-loyalty-quest-analytics-view.php
+          php -l includes/loyalty-quest-analytics.php
+          php -l includes/loyalty-quest-analytics-accuracy.php
+          php -l api/merchant/loyalty-quest-analytics.php
+          php -l api/merchant/loyalty-quest-analytics-export.php
+          php -l includes/merchant-workspace.php
+          php -l includes/merchant-view.php
+          php -l scripts/validate_loyalty_quest_analytics_v1.php
+          php -l scripts/validate_loyalty_quest_analytics_behavior.php
+      - name: JavaScript syntax
+        run: node --check assets/js/loyalty-quest-analytics.js
+      - name: Loyalty Quest Analytics 10/10 contract
+        run: php scripts/validate_loyalty_quest_analytics_v1.php
+      - name: Loyalty Quest Analytics behavior
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_NAME: microgifter_test
+          DB_USER: root
+          DB_PASS: root
+        run: php scripts/validate_loyalty_quest_analytics_behavior.php
+      - name: Loyalty Quest campaign regression
+        run: php scripts/validate_loyalty_quest_campaign_type_v1.php
+      - name: Participant quest regression
+        run: php scripts/validate_participant_quest_experience_v1.php
+      - name: Merchant quest regression
+        run: php scripts/validate_merchant_quest_management_v1.php
+      - name: Public marketplace regression
+        run: php scripts/validate_public_loyalty_quest_marketplace_v1.php
+      - name: Notifications regression
+        run: php scripts/validate_loyalty_quest_notifications_v1.php
+      - name: Quest media regression
+        run: php scripts/validate_quest_media_promotional_assets_v1.php
+      - name: Migration manifest regression
+        run: php scripts/validate_migration_manifest.php
