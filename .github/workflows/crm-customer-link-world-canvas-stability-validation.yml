@@ -36,12 +36,17 @@ jobs:
           php-version: ${{ matrix.php }}
           coverage: none
 
-      - name: PHP syntax
-        run: |
-          php -l merchant-crm.php
-          php -l world-canvas.php
-          php -l api/world-canvas/activity.php
-          php -l scripts/validate_crm_customer_link_world_canvas_stability.php
+      - name: Lint Merchant CRM page
+        run: php -l merchant-crm.php
+
+      - name: Lint World Canvas page
+        run: php -l world-canvas.php
+
+      - name: Lint World Canvas activity API
+        run: php -l api/world-canvas/activity.php
+
+      - name: Lint validation contract
+        run: php -l scripts/validate_crm_customer_link_world_canvas_stability.php
 
       - name: JavaScript syntax
         run: |
