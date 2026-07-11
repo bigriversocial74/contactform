@@ -5,7 +5,9 @@ $root=dirname(__DIR__);
 $checks=[
     'world-canvas.php'=>['maplibre-gl@5.7.1','three@0.160.0','world-canvas-runtime-v2.js','data-world-persona-select'],
     'assets/js/world-canvas-runtime-v2.js'=>['new window.maplibregl.Map','new window.maplibregl.Marker','draggable:Boolean(d.owned)','new window.THREE.WebGLRenderer','/api/world-canvas/persona.php','/api/world-canvas/location-presence.php'],
+    'api/world-canvas/activity.php'=>["require_once __DIR__ . '/_shared_users_v2.php'",'mg_world_canvas_merge_shared_users_v2($pdo, $user, $payload)'],
     'api/world-canvas/_runtime_v2.php'=>["'merchant_location_source' => 'merchant_locations'","'user_location_source' => 'user_world_positions'","'random_geo_fallback' => false",'entity_key'],
+    'api/world-canvas/_shared_users_v2.php'=>['user_world_positions','shared_user_world_position',"'entity_key' => 'user:' . $userId",'current_user_position_is_world_share'],
     'api/store/_presence.php'=>['allow_unattended','temporarily_closed','mg_presence_watch','mg_presence_notify_return','store_presence','merchant_returned'],
     'api/store/enter.php'=>['mg_presence_entry_status','blocked_closed','entered_unattended','requires_confirmation','merchant_location_id','merchant_presence'],
     'merchant-canvas.php'=>['/assets/js/merchant-canvas-presence.js'],
