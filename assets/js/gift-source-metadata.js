@@ -7,12 +7,6 @@ document.addEventListener('DOMContentLoaded', function () {
   var sourceMap = Object.create(null);
   var loading = false;
 
-  function esc(value) {
-    return String(value == null ? '' : value).replace(/[&<>'"]/g, function (character) {
-      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[character];
-    });
-  }
-
   function parseMetadata(item) {
     try {
       if (typeof item.metadata_json === 'string' && item.metadata_json !== '') return JSON.parse(item.metadata_json) || {};
@@ -71,20 +65,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function decorateRows(refresh) {
     app.querySelectorAll('[data-gift-id]').forEach(function (row) {
-      if (refresh) {
-        row.querySelectorAll('[data-gift-source-meta]').forEach(function (node) { node.remove(); });
-      } else if (row.querySelector('[data-gift-source-meta]')) return;
+      row.querySelectorAll('[data-gift-source-meta]').forEach(function (node) { node.remove(); });
       var source = sourceMap[row.dataset.giftId];
-      if (!source || (!source.label && !source.system)) return;
-      var meta = row.querySelector('.mg-gift-row-meta');
-      if (!meta) return;
-      var label = source.label || fallbackLabel(source.system);
-      var detail = source.detail ? ' · ' + source.detail : '';
-      var span = document.createElement('span');
-      span.setAttribute('data-gift-source-meta', 'true');
-      span.title = source.reference ? 'Source reference: ' + source.reference : '';
-      span.innerHTML = 'Source: ' + esc(label + detail);
-      meta.prepend(span);
+      if (!source) {
+        if (refresh) {
+          delete row.dataset.giftSourceSystem;
+          delete row.dataset.giftSourceLabel;
+          delete row.dataset.giftSourceDetail;
+          delete row.dataset.giftSourceReference;
+          delete row.dataset.giftSourceReady;
+        }
+        return;
+      }
+      row.dataset.giftSourceSystem = source.system;
+      row.dataset.giftSourceLabel = source.label || fallbackLabel(source.system);
+      row.dataset.giftSourceDetail = source.detail;
+      row.dataset.giftSourceReference = source.reference;
+      row.dataset.giftSourceReady = 'true';
     });
   }
 
