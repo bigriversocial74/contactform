@@ -19,6 +19,7 @@ on:
       - 'assets/css/universal-footer.css'
       - 'assets/css/auth-page.css'
       - 'scripts/validate_public_site_local_business_v1.php'
+      - 'docs/public-site-local-business-theme-v1.md'
       - '.github/workflows/public-site-local-business-v1-validation.yml'
   workflow_dispatch:
 
