@@ -1,0 +1,60 @@
+name: Public Site Local Business v1 Validation
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'pricing.php'
+      - 'signin.php'
+      - 'signup.php'
+      - 'forgot-password.php'
+      - 'reset-password.php'
+      - 'verify-email.php'
+      - 'includes/page.php'
+      - 'includes/footer.php'
+      - 'assets/css/pricing-local-business-v1.css'
+      - 'assets/css/public-local-business-theme-v1.css'
+      - 'assets/css/public-logged-out-header-unified.css'
+      - 'assets/css/universal-footer.css'
+      - 'assets/css/auth-page.css'
+      - 'scripts/validate_public_site_local_business_v1.php'
+      - 'docs/public-site-local-business-theme-v1.md'
+      - '.github/workflows/public-site-local-business-v1-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: PHP syntax
+        run: |
+          php -l pricing.php
+          php -l signin.php
+          php -l signup.php
+          php -l forgot-password.php
+          php -l reset-password.php
+          php -l verify-email.php
+          php -l includes/page.php
+          php -l includes/footer.php
+          php -l scripts/validate_public_site_local_business_v1.php
+
+      - name: Public site local business contract
+        run: php scripts/validate_public_site_local_business_v1.php

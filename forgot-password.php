@@ -5,17 +5,18 @@ $page_section = 'core';
 $header_mode = 'public';
 require __DIR__ . '/includes/header.php';
 ?>
-<section class="mg-auth-shell">
+<section class="mg-auth-shell" aria-labelledby="forgot-title">
   <aside class="mg-auth-aside">
     <span class="mg-badge">Account recovery</span>
-    <h1>Reset your Microgifter password securely.</h1>
-    <p>Enter the email connected to your account. If the account exists, Microgifter will create a time-limited reset request.</p>
-    <div class="mg-auth-note"><strong>Security note</strong><span>For privacy, this page always shows a generic confirmation and never reveals whether an email is registered.</span></div>
+    <h1 id="forgot-title">Get back to your Microgifter workspace.</h1>
+    <p>Enter the email connected to your account. Microgifter will prepare a secure, time-limited reset request when the account is eligible.</p>
+    <div class="mg-auth-note"><strong>Privacy protected</strong><span>This page always returns a generic confirmation and never reveals whether an email address is registered.</span></div>
   </aside>
   <form class="mg-auth-card" method="post" action="/api/auth/password/forgot.php" data-auth-form="forgot-password" novalidate>
     <?= mg_csrf_field() ?>
+    <span class="mg-auth-kicker">Secure recovery</span>
     <h2>Forgot password</h2>
-    <p class="mg-form-intro">We will prepare a reset link when email delivery is configured.</p>
+    <p class="mg-form-intro">Enter your account email to prepare a password reset link.</p>
     <label>Email address<input type="email" name="email" autocomplete="email" inputmode="email" required></label>
     <div class="mg-form-status" data-auth-status aria-live="polite"></div>
     <button class="mg-btn mg-btn-primary" type="submit">Send reset link</button>

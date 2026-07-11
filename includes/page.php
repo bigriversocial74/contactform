@@ -40,6 +40,11 @@ function mg_page_definition(string $pageId): array
             'body_class'=>'mg-auth-page',
             'public_header'=>$authPublicHeader,
         ],
+        'verify-email' => [
+            'assets'=>$authAssets,
+            'body_class'=>'mg-auth-page',
+            'public_header'=>$authPublicHeader,
+        ],
         'public' => [
             'assets'=>['universal-header'],
             'header_controls'=>[$home,$learn],

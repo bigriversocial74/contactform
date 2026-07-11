@@ -1,0 +1,122 @@
+/* Microgifter public local-business theme v1.
+   Loaded through the logged-out public header so every public page shares one visual system. */
+:root{
+  --mg-public-navy:#0b2d2a;
+  --mg-public-navy-2:#123c37;
+  --mg-public-green:#72d43f;
+  --mg-public-green-dark:#4cae24;
+  --mg-public-ink:#102a27;
+  --mg-public-text:#425b57;
+  --mg-public-muted:#6d817d;
+  --mg-public-line:#dce7e2;
+  --mg-public-soft:#f2f7f3;
+  --mg-public-paper:#fbfdfb;
+  --mg-public-white:#fff;
+  --mg-public-shadow:0 24px 70px rgba(11,45,42,.10);
+}
+
+body[data-authenticated="false"]{
+  background:var(--mg-public-paper)!important;
+  color:var(--mg-public-ink)!important;
+  font-family:Inter,"Helvetica Neue",Arial,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;
+}
+body[data-authenticated="false"]::selection{background:rgba(114,212,63,.28);color:var(--mg-public-navy)}
+body[data-authenticated="false"]:not([data-page-id="index"]) .mg-main{
+  background:
+    radial-gradient(circle at 8% 4%,rgba(114,212,63,.10),transparent 26%),
+    linear-gradient(180deg,#fff 0%,#f7fbf8 58%,#fff 100%)!important;
+  color:var(--mg-public-ink)!important;
+}
+body[data-authenticated="false"] a{transition:color .18s ease,background .18s ease,border-color .18s ease,transform .18s ease,box-shadow .18s ease}
+body[data-authenticated="false"] :focus-visible{outline:3px solid rgba(114,212,63,.48)!important;outline-offset:3px!important}
+
+/* Shared public buttons and form controls. */
+body[data-authenticated="false"] .mg-btn,
+body[data-authenticated="false"] .mg-public-button,
+body[data-authenticated="false"] button[type="submit"]{
+  border-radius:10px!important;
+  font-weight:850!important;
+  letter-spacing:-.01em!important;
+}
+body[data-authenticated="false"] .mg-btn-primary,
+body[data-authenticated="false"] .mg-public-button-primary,
+body[data-authenticated="false"] button[type="submit"]{
+  border-color:var(--mg-public-green)!important;
+  background:var(--mg-public-green)!important;
+  color:var(--mg-public-navy)!important;
+  box-shadow:0 14px 30px rgba(76,174,36,.20)!important;
+}
+body[data-authenticated="false"] .mg-btn-primary:hover,
+body[data-authenticated="false"] .mg-public-button-primary:hover,
+body[data-authenticated="false"] button[type="submit"]:hover{
+  border-color:#82df50!important;
+  background:#82df50!important;
+  transform:translateY(-1px);
+  box-shadow:0 18px 38px rgba(76,174,36,.24)!important;
+}
+body[data-authenticated="false"] input,
+body[data-authenticated="false"] select,
+body[data-authenticated="false"] textarea{
+  border-color:var(--mg-public-line)!important;
+  background:#fff!important;
+  color:var(--mg-public-ink)!important;
+}
+body[data-authenticated="false"] input:focus,
+body[data-authenticated="false"] select:focus,
+body[data-authenticated="false"] textarea:focus{
+  border-color:var(--mg-public-green-dark)!important;
+  box-shadow:0 0 0 4px rgba(114,212,63,.14)!important;
+}
+
+/* Reusable public content surfaces without changing page-specific structure. */
+body[data-authenticated="false"] .mg-public-card,
+body[data-authenticated="false"] .mg-program-card,
+body[data-authenticated="false"] .mg-content-card{
+  border-color:var(--mg-public-line)!important;
+  background:#fff!important;
+  color:var(--mg-public-ink)!important;
+  box-shadow:0 18px 48px rgba(11,45,42,.08)!important;
+}
+body[data-authenticated="false"] .mg-badge,
+body[data-authenticated="false"] .mg-kicker,
+body[data-authenticated="false"] .mg-eyebrow{
+  color:var(--mg-public-green-dark);
+}
+body[data-authenticated="false"] .mg-alert-warning{
+  border:1px solid #f0d9a8!important;
+  background:#fff8e8!important;
+  color:#6a4b0c!important;
+}
+body[data-authenticated="false"] .mg-alert-success{
+  border:1px solid #bfe4ad!important;
+  background:#f2fbea!important;
+  color:#255b17!important;
+}
+
+/* Public mobile navigation follows the same white/navy/green system. */
+body[data-authenticated="false"] .mg-public-mobile-backdrop{background:rgba(5,27,24,.56)!important;backdrop-filter:blur(5px)}
+body[data-authenticated="false"] .mg-public-mobile-panel{
+  border-left:1px solid rgba(255,255,255,.1)!important;
+  background:linear-gradient(180deg,var(--mg-public-navy),#071f1d)!important;
+  color:#fff!important;
+  box-shadow:-30px 0 80px rgba(5,27,24,.28)!important;
+}
+body[data-authenticated="false"] .mg-public-mobile-logo,
+body[data-authenticated="false"] .mg-public-mobile-close,
+body[data-authenticated="false"] .mg-public-mobile-phone,
+body[data-authenticated="false"] .mg-public-mobile-nav a,
+body[data-authenticated="false"] .mg-public-mobile-auth a,
+body[data-authenticated="false"] .mg-public-mobile-socials a{color:#fff!important}
+body[data-authenticated="false"] .mg-public-mobile-nav a,
+body[data-authenticated="false"] .mg-public-mobile-auth a{
+  border-color:rgba(255,255,255,.12)!important;
+  background:rgba(255,255,255,.055)!important;
+}
+body[data-authenticated="false"] .mg-public-mobile-nav a:hover,
+body[data-authenticated="false"] .mg-public-mobile-auth a:hover{border-color:rgba(114,212,63,.7)!important;background:rgba(114,212,63,.12)!important;color:#dfffd0!important}
+body[data-authenticated="false"] .mg-public-mobile-search input{border-color:rgba(255,255,255,.15)!important;background:rgba(255,255,255,.08)!important;color:#fff!important}
+body[data-authenticated="false"] .mg-public-mobile-search input::placeholder{color:rgba(255,255,255,.62)}
+
+@media(max-width:760px){
+  body[data-authenticated="false"]:not([data-page-id="index"]) .mg-main{background:linear-gradient(180deg,#fff,#f7fbf8 72%,#fff)!important}
+}
