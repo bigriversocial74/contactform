@@ -33,7 +33,16 @@ function mg_lqa_accuracy_trend(PDO $pdo,array $scope): array
 function mg_lqa_accuracy_sources(PDO $pdo,array $scope): array
 {
     if($scope['ids']===[])return [];
-    $sql="SELECT COALESCE(NULLIF(JSON_UNQUOTE(JSON_EXTRACT(lqp.metadata_json,'$.joined_from')),''),NULLIF(cc.source,''),'unknown') source,COUNT(*) participants,SUM(lqp.status='completed') completed FROM loyalty_quest_participations lqp LEFT JOIN campaign_contacts cc ON cc.id=lqp.contact_id AND cc.merchant_user_id=lqp.merchant_user_id WHERE lqp.merchant_user_id=? AND lqp.campaign_id IN ({$scope['in']}) AND lqp.joined_at>={$scope['cutoff']} GROUP BY source ORDER BY participants DESC";
+    $sourceExpression="COALESCE(NULLIF(JSON_UNQUOTE(JSON_EXTRACT(lqp.metadata_json,'$.joined_from')),''),NULLIF(cc.source,''),'unknown')";
+    $sql="SELECT scoped.source,COUNT(*) participants,SUM(scoped.status='completed') completed
+          FROM (
+              SELECT {$sourceExpression} source,lqp.status
+              FROM loyalty_quest_participations lqp
+              LEFT JOIN campaign_contacts cc ON cc.id=lqp.contact_id AND cc.merchant_user_id=lqp.merchant_user_id
+              WHERE lqp.merchant_user_id=? AND lqp.campaign_id IN ({$scope['in']}) AND lqp.joined_at>={$scope['cutoff']}
+          ) scoped
+          GROUP BY scoped.source
+          ORDER BY participants DESC,scoped.source ASC";
     $stmt=$pdo->prepare($sql);$stmt->execute($scope['params']);$out=[];
     foreach($stmt->fetchAll(PDO::FETCH_ASSOC)?:[] as $row)$out[]=['source'=>(string)$row['source'],'participants'=>(int)$row['participants'],'completed'=>(int)$row['completed'],'completion_rate'=>mg_lqa_percent((int)$row['completed'],(int)$row['participants'])];
     return $out;
@@ -69,6 +78,6 @@ function mg_lqa_apply_accuracy(PDO $pdo,int $merchantId,array $report): array
     unset($campaign);
     $report['delivery']['success_rate']=mg_lqa_percent((int)($report['delivery']['delivered']??0),(int)($report['delivery']['delivered']??0)+(int)($report['delivery']['failed']??0));
     $report['privacy']['currency_values_combined']=false;
-    $report['accuracy']=['trend_uses_event_timestamps'=>true,'currency_grouped'=>true,'delivery_rate_excludes_pending'=>true,'source_fallback_uses_contact'=>true];
+    $report['accuracy']=['trend_uses_event_timestamps'=>true,'currency_grouped'=>true,'delivery_rate_excludes_pending'=>true,'source_fallback_uses_contact'=>true,'strict_group_by_safe'=>true];
     return $report;
 }
