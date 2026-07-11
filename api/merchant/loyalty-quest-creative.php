@@ -45,6 +45,14 @@ function mg_lqc_public_url(array $campaign): string
     return mg_lqc_base_url() . '/loyalty-quest.php?campaign=' . rawurlencode($ref);
 }
 
+function mg_lqc_public_cover_url(array $campaign, string $assetId): string
+{
+    $assetId = strtolower(trim($assetId));
+    if ($assetId === '') return '';
+    $ref = (string)($campaign['public_slug'] ?: $campaign['public_id']);
+    return mg_lqc_base_url() . '/api/public/loyalty-quest/media.php?campaign=' . rawurlencode($ref) . '&asset=' . rawurlencode($assetId);
+}
+
 function mg_lqc_https_url(string $url): string
 {
     $url = trim($url);
@@ -108,7 +116,7 @@ if ($method === 'GET') {
         $coverAssetId = (string)($creative['cover_asset_id'] ?? $rules['cover_image_asset_id'] ?? '');
         $coverUrl = (string)($creative['cover_url'] ?? $rules['cover_image_url'] ?? '');
         $asset = $coverAssetId !== '' ? mg_lqc_asset($pdo,$merchantId,$coverAssetId) : null;
-        if ($asset) $coverUrl = (string)$asset['url'];
+        if ($asset) $coverUrl = mg_lqc_public_cover_url($campaign,(string)$asset['public_id']);
         $publicUrl = mg_lqc_public_url($campaign);
         $embedId = 'microgifter-loyalty-quest-' . str_replace('-','',(string)$campaign['public_id']);
         $embedCode = '<div id="' . $embedId . '" data-microgifter-loyalty-quest="' . htmlspecialchars((string)($campaign['public_slug'] ?: $campaign['public_id']),ENT_QUOTES,'UTF-8') . '"></div>' . "\n" .
@@ -147,7 +155,7 @@ $pdo->beginTransaction();
 try {
     $campaign = mg_lqc_campaign($pdo,$merchantId,$campaignId,true);
     $asset = $coverAssetId !== '' ? mg_lqc_asset($pdo,$merchantId,$coverAssetId) : null;
-    $coverUrl = $asset ? (string)$asset['url'] : $externalUrl;
+    $coverUrl = $asset ? mg_lqc_public_cover_url($campaign,(string)$asset['public_id']) : $externalUrl;
     $rules = $campaign['rules'];
     $rules['cover_image_asset_id'] = $asset ? (string)$asset['public_id'] : '';
     $rules['cover_image_url'] = $coverUrl;
