@@ -1,0 +1,41 @@
+name: Merchant Campaigns Cleanup Validation
+
+on:
+  pull_request:
+    paths:
+      - 'merchant-campaigns.php'
+      - 'assets/js/merchant-campaigns-cleanup.js'
+      - 'assets/css/merchant-campaigns-cleanup.css'
+      - 'assets/js/campaign-embed-analytics-links.js'
+      - 'scripts/validate_merchant_campaigns_cleanup.php'
+      - '.github/workflows/merchant-campaigns-cleanup-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+      - name: PHP syntax
+        run: |
+          php -l merchant-campaigns.php
+          php -l scripts/validate_merchant_campaigns_cleanup.php
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/merchant-campaigns-cleanup.js
+          node --check assets/js/campaign-embed-analytics-links.js
+      - name: Merchant Campaigns cleanup contract
+        run: php scripts/validate_merchant_campaigns_cleanup.php
