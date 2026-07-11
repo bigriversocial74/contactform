@@ -17,13 +17,14 @@ $pdo = mg_db();
 $pdo->beginTransaction();
 try {
     $campaign = mg_lqp_campaign($pdo, $ref, true);
-    $audience = mg_lqp_audience_require($pdo, $campaign, $user, $input);
-    $contact = mg_lqp_contact($pdo, $campaign, $user);
     $existing = $pdo->prepare('SELECT * FROM loyalty_quest_participations WHERE campaign_id=? AND participant_user_id=? LIMIT 1 FOR UPDATE');
     $existing->execute([(int)$campaign['id'], (int)$user['id']]);
     $participation = $existing->fetch(PDO::FETCH_ASSOC);
     $created = false;
+
     if (!$participation) {
+        $audience = mg_lqp_audience_require($pdo, $campaign, $user, $input);
+        $contact = mg_lqp_contact($pdo, $campaign, $user);
         $publicId = mg_lqp_uuid();
         $required = mg_lqp_required_count($campaign);
         $metadata = [
@@ -39,13 +40,17 @@ try {
         $created = true;
         mg_lqp_event($pdo, $campaign, null, (int)$contact['id'], 'quest.joined', ['participation_id'=>$publicId,'action_type'=>$metadata['action_type'],'verification_type'=>$metadata['verification_type'],'audience'=>$audience]);
         mg_audit('participant.loyalty_quest_joined', 'loyalty_quest_participation', ['campaign_id'=>(string)$campaign['public_id'],'participation_id'=>$publicId], (int)$user['id']);
-    } elseif (in_array((string)$participation['status'], ['cancelled','rejected'], true)) {
-        $pdo->prepare("UPDATE loyalty_quest_participations SET status='in_progress',started_at=COALESCE(started_at,NOW()),cancelled_at=NULL,last_activity_at=NOW(),updated_at=NOW() WHERE id=? AND participant_user_id=?")
-            ->execute([(int)$participation['id'], (int)$user['id']]);
-        $existing->execute([(int)$campaign['id'], (int)$user['id']]);
-        $participation = $existing->fetch(PDO::FETCH_ASSOC);
-        mg_lqp_event($pdo, $campaign, null, (int)$contact['id'], 'quest.resumed', ['participation_id'=>(string)$participation['public_id']]);
+    } else {
+        $contact = mg_lqp_contact($pdo, $campaign, $user);
+        if (in_array((string)$participation['status'], ['cancelled','rejected'], true)) {
+            $pdo->prepare("UPDATE loyalty_quest_participations SET status='in_progress',started_at=COALESCE(started_at,NOW()),cancelled_at=NULL,last_activity_at=NOW(),updated_at=NOW() WHERE id=? AND participant_user_id=?")
+                ->execute([(int)$participation['id'], (int)$user['id']]);
+            $existing->execute([(int)$campaign['id'], (int)$user['id']]);
+            $participation = $existing->fetch(PDO::FETCH_ASSOC);
+            mg_lqp_event($pdo, $campaign, null, (int)$contact['id'], 'quest.resumed', ['participation_id'=>(string)$participation['public_id']]);
+        }
     }
+
     $pdo->commit();
     mg_ok([
         'participation'=>[
