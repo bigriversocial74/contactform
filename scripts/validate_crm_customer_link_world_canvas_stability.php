@@ -40,7 +40,7 @@ $assertContains($crmLink, "link.setAttribute('data-crm-customer-profile-link'", 
 $assertNotContains($crmLink, "link.setAttribute('data-crm-view-customer'", 'CRM contact names must not retain the timeline drawer trigger.');
 
 $assertContains($activity, '$hasViewerMerchantAnchor', 'World Canvas activity must detect viewer merchant anchors.');
-$assertContains($activity, "($node['type'] ?? '') === 'merchant' && !empty($node['owned'])", 'World Canvas activity must remove duplicate aggregate owned merchant nodes.');
+$assertContains($activity, '(($node[\'type\'] ?? \'\') === \'merchant\' && !empty($node[\'owned\']))', 'World Canvas activity must remove duplicate aggregate owned merchant nodes.');
 $assertContains($activity, 'mg_world_canvas_merge_viewer_nodes($payload, $viewerNodes)', 'World Canvas must merge stable viewer anchors after deduplication.');
 
 $assertContains($worldPage, 'world-canvas-square-map.js?v=2.0.0', 'World Canvas must cache-bump the square map loader.');
