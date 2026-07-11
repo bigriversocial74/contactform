@@ -1,0 +1,50 @@
+[data-merchant-crm-shell] [data-crm-tab-target="campaigns"],
+[data-merchant-crm-shell] [data-crm-tab-target="performance"],
+[data-merchant-crm-shell] [data-crm-tab-target="rewards"],
+[data-merchant-crm-shell] [data-crm-tab-target="segments"],
+[data-merchant-crm-shell] [data-crm-tab-target="media-segments"],
+[data-merchant-crm-shell] [data-crm-tab-target="media_segments"],
+[data-merchant-crm-shell] [data-crm-tab-target="drafts"],
+[data-merchant-crm-shell] [data-crm-tab-target="draft-review"],
+[data-merchant-crm-shell] [data-crm-tab-target="draft_review"],
+[data-merchant-crm-shell] [data-crm-tab-target="launch-audit"],
+[data-merchant-crm-shell] [data-crm-tab-target="launch_audit"] {
+  display: none !important;
+}
+
+[data-merchant-crm-shell] > [data-crm-tab-panel="campaigns"],
+[data-merchant-crm-shell] > [data-crm-tab-panel="performance"],
+[data-merchant-crm-shell] > [data-crm-tab-panel="rewards"],
+[data-merchant-crm-shell] > [data-crm-tab-panel="segments"],
+[data-merchant-crm-shell] > [data-crm-tab-panel="media-segments"],
+[data-merchant-crm-shell] > [data-crm-tab-panel="media_segments"],
+[data-merchant-crm-shell] > [data-crm-tab-panel="drafts"],
+[data-merchant-crm-shell] > [data-crm-tab-panel="draft-review"],
+[data-merchant-crm-shell] > [data-crm-tab-panel="draft_review"],
+[data-merchant-crm-shell] > [data-crm-tab-panel="launch-audit"],
+[data-merchant-crm-shell] > [data-crm-tab-panel="launch_audit"] {
+  display: none !important;
+}
+
+[data-crm-performance-section].mg-crm-overview-performance {
+  display: grid;
+  gap: 16px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #dbe4ef;
+}
+
+[data-crm-performance-section] .mg-crm-tab-title {
+  margin: 0;
+}
+
+[data-crm-performance-section] .mg-crm-performance-kpis {
+  margin-top: 0;
+}
+
+@media (max-width: 760px) {
+  [data-crm-performance-section].mg-crm-overview-performance {
+    margin-top: 16px;
+    padding-top: 16px;
+  }
+}

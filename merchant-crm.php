@@ -21,6 +21,7 @@ $page_styles = [
     '/assets/css/merchant-crm-contacts-clean.css',
     '/assets/css/merchant-crm-contact-link-polish.css?v=3.0.0',
     '/assets/css/merchant-crm-layout-stability.css?v=1.0.0',
+    '/assets/css/merchant-crm-overview-consolidation.css?v=1.0.0',
 ];
 
 $page_scripts = [
@@ -31,13 +32,14 @@ $page_scripts = [
     '/assets/js/merchant-crm-contact-action-modal.js',
     '/assets/js/merchant-crm-action-scheduler.js',
     '/assets/js/merchant-crm-contact-threads.js',
+    '/assets/js/merchant-crm-overview-consolidation.js?v=1.0.0',
     '/assets/js/merchant-crm-tabs.js?v=1.0.0',
     '/assets/js/merchant-crm-realtime-message.js',
     '/assets/js/merchant-crm-reward-picker.js',
     '/assets/js/merchant-crm-reward-invite-bridge.js',
     '/assets/js/merchant-crm-reward-invite-operations.js',
     '/assets/js/merchant-crm-campaign-builder.js',
-    '/assets/js/merchant-crm-performance-dashboard.js',
+    '/assets/js/merchant-crm-performance-dashboard.js?v=2.0.0',
     '/assets/js/merchant-crm-contact-stats.js?v=2.0.0',
     '/assets/js/merchant-crm-retention-playbooks.js?v=2.0.0',
     '/assets/js/crm-media-segments.js?v=2.0.0',

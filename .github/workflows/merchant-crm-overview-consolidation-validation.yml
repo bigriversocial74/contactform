@@ -1,0 +1,45 @@
+name: Merchant CRM Overview Consolidation Validation
+
+on:
+  pull_request:
+    paths:
+      - 'merchant-crm.php'
+      - 'assets/js/merchant-crm-overview-consolidation.js'
+      - 'assets/js/merchant-crm-performance-dashboard.js'
+      - 'assets/css/merchant-crm-overview-consolidation.css'
+      - 'scripts/validate_merchant_crm_overview_consolidation.php'
+      - '.github/workflows/merchant-crm-overview-consolidation-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    runs-on: ubuntu-latest
+    name: PHP ${{ matrix.php }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+
+      - name: PHP syntax
+        run: |
+          php -l merchant-crm.php
+          php -l scripts/validate_merchant_crm_overview_consolidation.php
+
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/merchant-crm-overview-consolidation.js
+          node --check assets/js/merchant-crm-performance-dashboard.js
+
+      - name: Merchant CRM overview contract
+        run: php scripts/validate_merchant_crm_overview_consolidation.php
