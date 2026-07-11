@@ -38,7 +38,7 @@ window.Microgifter = window.Microgifter || {};
   addCss('/assets/css/world-canvas-zoom-interaction-stability.css', 'data-world-zoom-interaction-stability-css');
   addCss('/assets/css/world-canvas-target-drop-intent.css', 'data-world-target-drop-intent-css');
   addScript('/assets/js/world-canvas-reference-map.js', 'data-world-reference-map-js');
-  addScript('/assets/js/world-canvas-geo-zoom.js', 'data-world-geo-zoom-js');
+  addScript('/assets/js/world-canvas-geo-zoom-v2.js?v=2.0.0', 'data-world-geo-zoom-js');
   addScript('/assets/js/world-canvas-merchant-settings.js', 'data-world-merchant-js');
   addScript('/assets/js/world-canvas-zoom-sync.js', 'data-world-zoom-sync-js');
   addScript('/assets/js/world-canvas-test-launch.js', 'data-world-test-launch-js');
