@@ -2,6 +2,8 @@
 -- Additive integrity schema. No raw IP address or device identifier is stored.
 -- Uses information_schema guards for MySQL 8 compatibility and safe repeat execution.
 
+START TRANSACTION;
+
 SET @mg_lqi_sql = IF(
   (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='loyalty_quest_evidence' AND COLUMN_NAME='evidence_fingerprint')=0,
   'ALTER TABLE loyalty_quest_evidence ADD COLUMN evidence_fingerprint CHAR(64) NULL AFTER reference_id',
@@ -83,6 +85,7 @@ CREATE TABLE IF NOT EXISTS loyalty_quest_integrity_attempts (
   KEY idx_lq_integrity_attempt_ip (ip_hash,action_type,created_at),
   KEY idx_lq_integrity_attempt_device (device_hash,action_type,created_at),
   KEY idx_lq_integrity_attempt_campaign (campaign_id,action_type,created_at),
+  KEY idx_lq_integrity_attempt_request (request_hash),
   CONSTRAINT fk_lq_integrity_attempt_campaign FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE,
   CONSTRAINT fk_lq_integrity_attempt_merchant FOREIGN KEY (merchant_user_id) REFERENCES users(id) ON DELETE CASCADE,
   CONSTRAINT fk_lq_integrity_attempt_user FOREIGN KEY (participant_user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -109,7 +112,7 @@ CREATE TABLE IF NOT EXISTS loyalty_quest_integrity_signals (
   updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uq_lq_integrity_signal_public_id (public_id),
-  UNIQUE KEY uq_lq_integrity_signal_dedupe (campaign_id,participant_user_id,signal_type,source_hash),
+  UNIQUE KEY uq_lq_integrity_signal_dedupe (campaign_id,participant_user_id,evidence_id,signal_type,source_hash),
   KEY idx_lq_integrity_signal_merchant (merchant_user_id,status,severity,created_at),
   KEY idx_lq_integrity_signal_participant (participant_user_id,status,created_at),
   KEY idx_lq_integrity_signal_evidence (evidence_id,status,created_at),
@@ -121,6 +124,8 @@ CREATE TABLE IF NOT EXISTS loyalty_quest_integrity_signals (
   CONSTRAINT fk_lq_integrity_signal_resolver FOREIGN KEY (resolved_by_user_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO schema_migrations (migration_name,checksum,applied_at)
-VALUES ('loyalty_quest_integrity_controls_v1',SHA2('loyalty_quest_integrity_controls_v1',256),NOW())
-ON DUPLICATE KEY UPDATE checksum=VALUES(checksum),applied_at=VALUES(applied_at);
+INSERT INTO schema_migrations (migration_key,description,checksum,applied_at)
+VALUES ('loyalty_quest_integrity_controls_v1','Loyalty Quest request throttling, evidence fingerprints, integrity scoring, review routing, and audited resolution.',NULL,NOW())
+ON DUPLICATE KEY UPDATE description=VALUES(description);
+
+COMMIT;
