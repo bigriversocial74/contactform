@@ -15,6 +15,7 @@ function mg_payment_connect_account_payload(?array $account,string $provider='st
             'account_hint'=>'',
             'account_type'=>'',
             'connection_method'=>'',
+            'oauth_scope'=>'',
             'status'=>'pending',
             'onboarding_status'=>'not_started',
             'charges_enabled'=>false,
@@ -29,11 +30,17 @@ function mg_payment_connect_account_payload(?array $account,string $provider='st
             'last_synced_at'=>null,
         ];
     }
+
     $requirements=[];
-    try{$decoded=json_decode((string)($account['requirements_due_json']??'[]'),true,512,JSON_THROW_ON_ERROR);if(is_array($decoded))$requirements=$decoded;}catch(Throwable){}
-    $accountId=(string)($account['provider_account_reference']??'');
+    try{
+        $decoded=json_decode((string)($account['requirements_due_json']??'[]'),true,512,JSON_THROW_ON_ERROR);
+        if(is_array($decoded))$requirements=$decoded;
+    }catch(Throwable){}
+
+    $accountId=trim((string)($account['provider_account_reference']??''));
     $connectionMethod=(string)($account['connection_method']??'express_account_link');
     $connected=$accountId!==''&&(string)($account['status']??'pending')!=='disabled';
+
     return [
         'provider_key'=>(string)$account['provider_key'],
         'mode'=>(string)$account['mode'],
@@ -71,8 +78,12 @@ function mg_payment_connect_update_readiness(PDO $pdo,int $merchantUserId,array 
         $pdo->prepare('INSERT INTO merchant_payment_readiness (workspace_id,created_at,updated_at) VALUES (?,NOW(),NOW())')->execute([$workspaceId]);
         $row=['id'=>(int)$pdo->lastInsertId(),'state_json'=>null];
     }
+
     $state=[];
-    try{$decoded=json_decode((string)($row['state_json']??''),true,512,JSON_THROW_ON_ERROR);if(is_array($decoded))$state=$decoded;}catch(Throwable){}
+    try{
+        $decoded=json_decode((string)($row['state_json']??''),true,512,JSON_THROW_ON_ERROR);
+        if(is_array($decoded))$state=$decoded;
+    }catch(Throwable){}
     if(!isset($state['payment_methods'])||!is_array($state['payment_methods']))$state['payment_methods']=[];
     $existing=is_array($state['payment_methods']['stripe']??null)?$state['payment_methods']['stripe']:[];
     $state['payment_methods']['stripe']=$existing+['enabled'=>false];
@@ -97,6 +108,7 @@ function mg_payment_connect_sync(PDO $pdo,int $merchantUserId,array $account): a
 {
     $reference=trim((string)($account['provider_account_reference']??''));
     if($reference==='')return mg_payment_connect_account_payload($account);
+
     $stripe=mg_stripe_retrieve_account($pdo,$reference);
     $charges=!empty($stripe['charges_enabled'])?1:0;
     $payouts=!empty($stripe['payouts_enabled'])?1:0;
@@ -105,15 +117,25 @@ function mg_payment_connect_sync(PDO $pdo,int $merchantUserId,array $account): a
     $status=$charges&&$payouts?'active':($details?'restricted':'pending');
     $onboarding=$charges&&$payouts?'complete':($details?'restricted':'pending');
     $capabilities=is_array($stripe['capabilities']??null)?$stripe['capabilities']:[];
-    $pdo->prepare('UPDATE payment_provider_accounts SET status=?,charges_enabled=?,payouts_enabled=?,details_submitted=?,onboarding_status=?,account_type=COALESCE(NULLIF(?,\'\'),account_type),capabilities_json=?,requirements_due_json=?,last_synced_at=NOW(),updated_at=NOW() WHERE id=? AND merchant_user_id=?')
-        ->execute([$status,$charges,$payouts,$details,$onboarding,(string)($stripe['type']??''),json_encode($capabilities,JSON_THROW_ON_ERROR),json_encode($due,JSON_THROW_ON_ERROR),(int)$account['id'],$merchantUserId]);
+
+    $pdo->prepare("UPDATE payment_provider_accounts
+        SET status=?,charges_enabled=?,payouts_enabled=?,details_submitted=?,onboarding_status=?,
+            account_type=COALESCE(NULLIF(?,''),account_type),capabilities_json=?,requirements_due_json=?,
+            last_synced_at=NOW(),updated_at=NOW()
+        WHERE id=? AND merchant_user_id=?")
+        ->execute([
+            $status,$charges,$payouts,$details,$onboarding,(string)($stripe['type']??''),
+            json_encode($capabilities,JSON_THROW_ON_ERROR),json_encode($due,JSON_THROW_ON_ERROR),
+            (int)$account['id'],$merchantUserId,
+        ]);
+
     $updated=mg_payment_provider_account($pdo,$merchantUserId,'stripe',mg_payment_mode(),false);
     $payload=mg_payment_connect_account_payload($updated);
     mg_payment_connect_update_readiness($pdo,$merchantUserId,$payload);
     return $payload;
 }
 
-/** Legacy Express Account Link flow retained for test and backwards compatibility. */
+/** Legacy Express Account Link flow retained for existing integrations and regression coverage. */
 function mg_payment_connect_start(PDO $pdo,int $merchantUserId): array
 {
     $config=mg_payment_platform_config($pdo,'stripe',mg_payment_mode());
@@ -127,12 +149,13 @@ function mg_payment_connect_start(PDO $pdo,int $merchantUserId): array
     if(!$account){
         $stripe=mg_stripe_create_connected_account($pdo,$merchant,'connect-account:'.mg_payment_mode().':'.$merchantUserId);
         $publicId=mg_public_uuid();
-        $pdo->prepare("INSERT INTO payment_provider_accounts (public_id,merchant_user_id,provider_key,provider_account_reference,mode,status,charges_enabled,payouts_enabled,details_submitted,onboarding_status,capabilities_json,requirements_due_json,last_synced_at,created_at,updated_at) VALUES (?,?, 'stripe',?,?, 'pending',0,0,0,'pending',?,?,NOW(),NOW(),NOW())")
+        $pdo->prepare("INSERT INTO payment_provider_accounts
+            (public_id,merchant_user_id,provider_key,provider_account_reference,mode,status,
+             charges_enabled,payouts_enabled,details_submitted,onboarding_status,capabilities_json,
+             requirements_due_json,last_synced_at,created_at,updated_at)
+            VALUES (?,?,'stripe',?,?,'pending',0,0,0,'pending',?,?,NOW(),NOW(),NOW())")
             ->execute([
-                $publicId,
-                $merchantUserId,
-                (string)$stripe['id'],
-                mg_payment_mode(),
+                $publicId,$merchantUserId,(string)$stripe['id'],mg_payment_mode(),
                 json_encode($stripe['capabilities']??[],JSON_THROW_ON_ERROR),
                 json_encode($stripe['requirements']['currently_due']??[],JSON_THROW_ON_ERROR),
             ]);
@@ -155,9 +178,11 @@ function mg_payment_connect_oauth_config(PDO $pdo,string $mode): array
 {
     $mode=$mode==='live'?'live':'test';
     $config=mg_payment_platform_config($pdo,'stripe',$mode);
+    $secret=trim((string)$config['secret_key']);
     if(empty($config['enabled']))throw new RuntimeException('Stripe is not enabled for '.$mode.' mode.');
-    if(trim((string)$config['secret_key'])==='')throw new RuntimeException('Stripe API credentials are not configured for '.$mode.' mode.');
-    if(!mg_payment_secret_matches_mode((string)$config['secret_key'],$mode))throw new RuntimeException('Stripe API credentials do not match '.$mode.' mode.');
+    if($secret==='')throw new RuntimeException('Stripe API credentials are not configured for '.$mode.' mode.');
+    if(!mg_payment_secret_matches_mode($secret,$mode))throw new RuntimeException('Stripe API credentials do not match '.$mode.' mode.');
+    if(mg_payment_secret_key_type($secret)!=='secret')throw new RuntimeException('Stripe Connect OAuth requires the platform standard sk_'.$mode.'_ secret key. A restricted rk_'.$mode.'_ key cannot complete OAuth.');
     if(!str_starts_with(trim((string)$config['connect_client_id']),'ca_'))throw new RuntimeException('Stripe Connect client ID is not configured for '.$mode.' mode.');
     return $config;
 }
@@ -172,7 +197,12 @@ function mg_payment_connect_oauth_start(PDO $pdo,int $merchantUserId,string $ret
     $mode=mg_payment_mode();
     $config=mg_payment_connect_oauth_config($pdo,$mode);
     $callback=mg_payment_absolute_url('/api/merchant/stripe-connect-callback.php');
-    $merchantStmt=$pdo->prepare('SELECT u.id,u.email,u.full_name,u.display_name,mw.display_name business_name,mw.website_url FROM users u LEFT JOIN merchant_workspaces mw ON mw.merchant_user_id=u.id WHERE u.id=? LIMIT 1');
+    $merchantStmt=$pdo->prepare(
+        'SELECT u.id,u.email,u.full_name,u.display_name,mw.display_name business_name,mw.website_url
+         FROM users u
+         LEFT JOIN merchant_workspaces mw ON mw.merchant_user_id=u.id
+         WHERE u.id=? LIMIT 1'
+    );
     $merchantStmt->execute([$merchantUserId]);
     $merchant=$merchantStmt->fetch(PDO::FETCH_ASSOC);
     if(!$merchant)throw new RuntimeException('Merchant account not found.');
@@ -180,8 +210,14 @@ function mg_payment_connect_oauth_start(PDO $pdo,int $merchantUserId,string $ret
     $state=mg_payment_connect_oauth_state_token();
     $stateHash=hash('sha256',$state);
     $expiresAt=date('Y-m-d H:i:s',time()+600);
-    $pdo->prepare('DELETE FROM payment_connect_oauth_states WHERE merchant_user_id=? AND (expires_at<NOW() OR consumed_at IS NOT NULL)')->execute([$merchantUserId]);
-    $pdo->prepare('INSERT INTO payment_connect_oauth_states (public_id,merchant_user_id,provider_key,mode,state_hash,redirect_uri,return_path,expires_at,created_at) VALUES (?,?,\'stripe\',?,?,?,?,?,NOW())')
+    $pdo->prepare("UPDATE payment_connect_oauth_states
+        SET consumed_at=COALESCE(consumed_at,NOW())
+        WHERE merchant_user_id=? AND provider_key='stripe' AND mode=? AND consumed_at IS NULL")
+        ->execute([$merchantUserId,$mode]);
+    $pdo->prepare('DELETE FROM payment_connect_oauth_states WHERE expires_at<DATE_SUB(NOW(),INTERVAL 1 DAY)')->execute();
+    $pdo->prepare("INSERT INTO payment_connect_oauth_states
+        (public_id,merchant_user_id,provider_key,mode,state_hash,redirect_uri,return_path,expires_at,created_at)
+        VALUES (?,?,'stripe',?,?,?,?,?,NOW())")
         ->execute([mg_public_uuid(),$merchantUserId,$mode,$stateHash,$callback,$returnPath,$expiresAt]);
 
     $params=[
@@ -209,7 +245,9 @@ function mg_payment_connect_oauth_start(PDO $pdo,int $merchantUserId,string $ret
 function mg_payment_connect_oauth_consume_state(PDO $pdo,int $merchantUserId,string $state): array
 {
     $hash=hash('sha256',trim($state));
-    $stmt=$pdo->prepare("SELECT * FROM payment_connect_oauth_states WHERE merchant_user_id=? AND provider_key='stripe' AND state_hash=? AND consumed_at IS NULL LIMIT 1 FOR UPDATE");
+    $stmt=$pdo->prepare("SELECT * FROM payment_connect_oauth_states
+        WHERE merchant_user_id=? AND provider_key='stripe' AND state_hash=? AND consumed_at IS NULL
+        LIMIT 1 FOR UPDATE");
     $stmt->execute([$merchantUserId,$hash]);
     $row=$stmt->fetch(PDO::FETCH_ASSOC);
     if(!$row)throw new InvalidArgumentException('Stripe connection state is invalid or has already been used.');
@@ -225,6 +263,13 @@ function mg_payment_connect_oauth_complete(PDO $pdo,int $merchantUserId,string $
     mg_payment_connect_oauth_config($pdo,$mode);
     $token=mg_stripe_connect_exchange_code($pdo,$code,$mode);
     $accountId=(string)$token['stripe_user_id'];
+
+    $duplicateStmt=$pdo->prepare("SELECT merchant_user_id FROM payment_provider_accounts
+        WHERE provider_key='stripe' AND mode=? AND provider_account_reference=? AND merchant_user_id<>?
+        LIMIT 1 FOR UPDATE");
+    $duplicateStmt->execute([$mode,$accountId,$merchantUserId]);
+    if($duplicateStmt->fetchColumn())throw new InvalidArgumentException('This Stripe account is already connected to another Microgifter merchant account.');
+
     $stripe=mg_stripe_retrieve_account($pdo,$accountId);
     $charges=!empty($stripe['charges_enabled'])?1:0;
     $payouts=!empty($stripe['payouts_enabled'])?1:0;
@@ -236,12 +281,30 @@ function mg_payment_connect_oauth_complete(PDO $pdo,int $merchantUserId,string $
 
     $existing=mg_payment_provider_account($pdo,$merchantUserId,'stripe',$mode,true);
     if($existing){
-        $pdo->prepare('UPDATE payment_provider_accounts SET provider_account_reference=?,connection_method=\'standard_oauth\',account_type=?,oauth_scope=?,status=?,charges_enabled=?,payouts_enabled=?,details_submitted=?,onboarding_status=?,capabilities_json=?,requirements_due_json=?,last_synced_at=NOW(),connected_at=NOW(),disconnected_at=NULL,updated_at=NOW() WHERE id=? AND merchant_user_id=?')
-            ->execute([$accountId,(string)($stripe['type']??'standard'),$scope,$status,$charges,$payouts,$details,$onboarding,json_encode($capabilities,JSON_THROW_ON_ERROR),json_encode($due,JSON_THROW_ON_ERROR),(int)$existing['id'],$merchantUserId]);
+        $pdo->prepare("UPDATE payment_provider_accounts
+            SET provider_account_reference=?,connection_method='standard_oauth',account_type=?,oauth_scope=?,
+                status=?,charges_enabled=?,payouts_enabled=?,details_submitted=?,onboarding_status=?,
+                capabilities_json=?,requirements_due_json=?,last_synced_at=NOW(),connected_at=NOW(),
+                disconnected_at=NULL,updated_at=NOW()
+            WHERE id=? AND merchant_user_id=?")
+            ->execute([
+                $accountId,(string)($stripe['type']??'standard'),$scope,$status,$charges,$payouts,$details,$onboarding,
+                json_encode($capabilities,JSON_THROW_ON_ERROR),json_encode($due,JSON_THROW_ON_ERROR),
+                (int)$existing['id'],$merchantUserId,
+            ]);
     }else{
-        $pdo->prepare("INSERT INTO payment_provider_accounts (public_id,merchant_user_id,provider_key,provider_account_reference,connection_method,account_type,oauth_scope,mode,status,charges_enabled,payouts_enabled,details_submitted,onboarding_status,capabilities_json,requirements_due_json,last_synced_at,connected_at,created_at,updated_at) VALUES (?,?, 'stripe',?,'standard_oauth',?,?,?, ?,?,?,?,?,?,?,NOW(),NOW(),NOW(),NOW())")
-            ->execute([mg_public_uuid(),$merchantUserId,$accountId,(string)($stripe['type']??'standard'),$scope,$mode,$status,$charges,$payouts,$details,$onboarding,json_encode($capabilities,JSON_THROW_ON_ERROR),json_encode($due,JSON_THROW_ON_ERROR)]);
+        $pdo->prepare("INSERT INTO payment_provider_accounts
+            (public_id,merchant_user_id,provider_key,provider_account_reference,connection_method,account_type,
+             oauth_scope,mode,status,charges_enabled,payouts_enabled,details_submitted,onboarding_status,
+             capabilities_json,requirements_due_json,last_synced_at,connected_at,created_at,updated_at)
+            VALUES (?,?,'stripe',?,'standard_oauth',?,?,?,?,?,?,?,?,?,?,NOW(),NOW(),NOW(),NOW())")
+            ->execute([
+                mg_public_uuid(),$merchantUserId,$accountId,(string)($stripe['type']??'standard'),$scope,$mode,$status,
+                $charges,$payouts,$details,$onboarding,json_encode($capabilities,JSON_THROW_ON_ERROR),
+                json_encode($due,JSON_THROW_ON_ERROR),
+            ]);
     }
+
     $updated=mg_payment_provider_account($pdo,$merchantUserId,'stripe',$mode,false);
     $payload=mg_payment_connect_account_payload($updated);
     mg_payment_connect_update_readiness($pdo,$merchantUserId,$payload);
@@ -255,9 +318,14 @@ function mg_payment_connect_oauth_disconnect(PDO $pdo,int $merchantUserId): arra
     $account=mg_payment_provider_account($pdo,$merchantUserId,'stripe',$mode,true);
     if(!$account||trim((string)($account['provider_account_reference']??''))==='')throw new InvalidArgumentException('No Stripe account is connected.');
     if((string)($account['connection_method']??'')!=='standard_oauth')throw new InvalidArgumentException('This Stripe account was not connected through OAuth and cannot be disconnected here.');
+
     mg_stripe_connect_deauthorize($pdo,(string)$config['connect_client_id'],(string)$account['provider_account_reference'],$mode);
-    $pdo->prepare("UPDATE payment_provider_accounts SET status='disabled',charges_enabled=0,payouts_enabled=0,onboarding_status='disabled',disconnected_at=NOW(),updated_at=NOW() WHERE id=? AND merchant_user_id=?")
+    $pdo->prepare("UPDATE payment_provider_accounts
+        SET status='disabled',charges_enabled=0,payouts_enabled=0,onboarding_status='disabled',
+            disconnected_at=NOW(),updated_at=NOW()
+        WHERE id=? AND merchant_user_id=?")
         ->execute([(int)$account['id'],$merchantUserId]);
+
     $updated=mg_payment_provider_account($pdo,$merchantUserId,'stripe',$mode,false);
     $payload=mg_payment_connect_account_payload($updated);
     mg_payment_connect_update_readiness($pdo,$merchantUserId,$payload);
