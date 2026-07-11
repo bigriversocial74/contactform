@@ -9,6 +9,8 @@ $paths=[
     'adminPage'=>$root.'/admin-payments.php',
     'adminFields'=>$root.'/includes/admin-payment-credential-fields.php',
     'adminJs'=>$root.'/assets/js/admin-payments.js',
+    'persistenceJs'=>$root.'/assets/js/admin-payments-persistence.js',
+    'persistenceCss'=>$root.'/assets/css/admin-payments-persistence.css',
 ];
 
 $source=[];
@@ -43,13 +45,25 @@ $checks=[
         && str_contains($source['adminApi'],"\$payload['selected_mode']=\$mode")
         && str_contains($source['adminApi'],"\$payload['configured_modes']=mg_admin_payment_configured_modes(\$pdo)"),
     'admin API clearly allows live-only credential storage' =>
-        str_contains($source['adminApi'],'Test credentials are not required for this ')
+        str_contains($source['adminApi'],'Test credentials are not required for a live-only setup.')
         && str_contains($source['adminApi'],'mode_storage_warning')
         && str_contains($source['adminApi'],'credentials appear to be stored in the'),
+    'admin API reads back and verifies the exact database record before success' =>
+        str_contains($source['adminApi'],'function mg_admin_payment_database_snapshot')
+        && str_contains($source['adminApi'],'function mg_admin_payment_verify_persistence')
+        && str_contains($source['adminApi'],"'persistence_verified'=>true")
+        && str_contains($source['adminApi'],'Stripe settings failed database verification')
+        && str_contains($source['adminApi'],'No unverified update was accepted.'),
+    'database snapshot distinguishes saved values from environment overrides' =>
+        str_contains($source['adminApi'],"\$payload['storage']=\$storage")
+        && str_contains($source['adminApi'],"\$payload['environment_override']")
+        && str_contains($source['adminApi'],'effective_publishable_key')
+        && str_contains($source['adminApi'],'effective_connect_client_id'),
     'admin UI explains that Test and Live are independent' =>
         str_contains($source['adminPage'],'A live-only setup does not require test credentials.')
         && str_contains($source['adminPage'],'data-payment-mode-help')
-        && str_contains($source['adminPage'],'data-payment-mode-warning'),
+        && str_contains($source['adminPage'],'data-payment-mode-warning')
+        && str_contains($source['adminPage'],'data-payment-persistence-state'),
     'browser initially requests automatic mode selection' =>
         str_contains($source['adminJs'],"requestedMode = 'auto'")
         && str_contains($source['adminJs'],'load(requestedMode)')
@@ -58,6 +72,16 @@ $checks=[
         str_contains($source['adminJs'],"value.indexOf('sk_' + selected + '_')")
         && str_contains($source['adminJs'],"value.indexOf('rk_' + selected + '_')")
         && str_contains($source['adminJs'],'Test credentials are not required when saving Live.'),
+    'persistence client removes stale mode storage and performs a server read-back' =>
+        str_contains($source['persistenceJs'],"localStorage.removeItem(legacyModeKey)")
+        && str_contains($source['persistenceJs'],"searchParams.set('mode', selectedMode())")
+        && str_contains($source['persistenceJs'],'compareStorage')
+        && str_contains($source['persistenceJs'],'Save verification failed after reload')
+        && str_contains($source['persistenceJs'],"Microgifter.get('/api/admin/payment-settings.php?mode='"),
+    'persistence client explains write-only secret fields' =>
+        str_contains($source['persistenceJs'],'Secret fields remain blank after reload by design')
+        && str_contains($source['persistenceJs'],'API key saved securely.')
+        && str_contains($source['persistenceCss'],'.mg-payment-persistence-state.is-success'),
     'generated server config follows the selected mode and sets app URL' =>
         str_contains($source['adminJs'],"putenv('MG_PAYMENT_MODE=")
         && str_contains($source['adminJs'],"putenv('MG_APP_URL=")
@@ -75,4 +99,4 @@ if($failed!==[]){
     exit(1);
 }
 
-echo "\nStripe live credential mode contract: 10/10.".PHP_EOL;
+echo "\nStripe live credential mode and persistence contract: 10/10.".PHP_EOL;
