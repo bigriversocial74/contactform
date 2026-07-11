@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . '/_participant.php';
+require_once __DIR__ . '/_integrity.php';
 require_once dirname(__DIR__, 2) . '/communications/_loyalty_quest_notifications.php';
 
 mg_require_method('POST');
@@ -15,9 +16,11 @@ if (($latitude === null) !== ($longitude === null) || ($latitude !== null && ($l
     mg_fail('Invalid enrollment location.', 422);
 }
 $pdo = mg_db();
+$integrityContext = mg_lqi_gate_request($pdo, (int)$user['id'], 'start', $ref);
 $pdo->beginTransaction();
 try {
     $campaign = mg_lqp_campaign($pdo, $ref, true);
+    mg_lqi_record_attempt($pdo, $campaign, (int)$user['id'], 'start', $integrityContext, 'allowed');
     $existing = $pdo->prepare('SELECT * FROM loyalty_quest_participations WHERE campaign_id=? AND participant_user_id=? LIMIT 1 FOR UPDATE');
     $existing->execute([(int)$campaign['id'], (int)$user['id']]);
     $participation = $existing->fetch(PDO::FETCH_ASSOC);
@@ -33,6 +36,7 @@ try {
             'verification_type'=>(string)($campaign['rules']['verification_type'] ?? ''),
             'joined_from'=>'public_quest_page',
             'audience'=>$audience,
+            'integrity_device_hash'=>$integrityContext['device_hash'],
         ];
         $pdo->prepare("INSERT INTO loyalty_quest_participations (public_id,campaign_id,merchant_user_id,participant_user_id,contact_id,status,progress_count,required_count,completion_percent,joined_at,started_at,last_activity_at,metadata_json,created_at,updated_at) VALUES (?,?,?,?,?,'in_progress',0,?,0,NOW(),NOW(),NOW(),?,NOW(),NOW())")
             ->execute([$publicId,(int)$campaign['id'],(int)$campaign['merchant_user_id'],(int)$user['id'],(int)$contact['id'],$required,json_encode($metadata,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE)]);
