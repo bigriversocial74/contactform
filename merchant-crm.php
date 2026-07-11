@@ -1,18 +1,47 @@
 <?php
 declare(strict_types=1);
+
 require_once __DIR__ . '/includes/app.php';
+
 $page_title = 'Merchant CRM | Microgifter';
 $page_section = 'merchant';
 $header_mode = 'account';
-$page_styles = ['/assets/css/merchant-workspace.css','/assets/css/merchant-crm.css','/assets/css/communications.css','/assets/css/merchant-crm-retention-playbooks.css','/assets/css/merchant-crm-contact-stats.css','/assets/css/merchant-crm-contact-threads.css','/assets/css/merchant-crm-action-center.css','/assets/css/merchant-crm-contacts-clean.css','/assets/css/merchant-crm-contact-link-polish.css'];
-$page_scripts = ['/assets/js/merchant-workspace.js','/assets/js/store-health-completion-events.js','/assets/js/merchant-crm-contact-action-modal.js','/assets/js/merchant-crm-action-scheduler.js','/assets/js/merchant-crm-contact-threads.js'];
 $merchantView = 'merchant_crm';
+
+$page_styles = [
+    '/assets/css/merchant-workspace.css',
+    '/assets/css/merchant-crm.css',
+    '/assets/css/communications.css',
+    '/assets/css/merchant-crm-command-center.css',
+    '/assets/css/merchant-crm-drawer-stack.css',
+    '/assets/css/merchant-crm-retention-playbooks.css',
+    '/assets/css/merchant-crm-contact-stats.css',
+    '/assets/css/merchant-crm-contact-threads.css',
+    '/assets/css/merchant-crm-action-center.css',
+    '/assets/css/merchant-crm-contacts-clean.css',
+    '/assets/css/merchant-crm-contact-link-polish.css',
+];
+
+$page_scripts = [
+    '/assets/js/merchant-workspace.js',
+    '/assets/js/store-health-completion-events.js',
+    '/assets/js/merchant-crm.js',
+    '/assets/js/merchant-crm-contact-action-modal.js',
+    '/assets/js/merchant-crm-action-scheduler.js',
+    '/assets/js/merchant-crm-contact-threads.js',
+    '/assets/js/merchant-crm-tabs.js?v=1.0.0',
+    '/assets/js/merchant-crm-realtime-message.js',
+    '/assets/js/merchant-crm-reward-picker.js',
+    '/assets/js/merchant-crm-reward-invite-bridge.js',
+    '/assets/js/merchant-crm-reward-invite-operations.js',
+    '/assets/js/merchant-crm-campaign-builder.js',
+    '/assets/js/merchant-crm-performance-dashboard.js',
+    '/assets/js/merchant-crm-contact-stats.js',
+    '/assets/js/merchant-crm-retention-playbooks.js?v=2.0.0',
+    '/assets/js/crm-media-segments.js?v=2.0.0',
+    '/assets/js/merchant-crm-contact-link-polish.js',
+];
+
 require __DIR__ . '/includes/header.php';
 require __DIR__ . '/includes/merchant-workspace.php';
-echo '<scr' . 'ipt src="/assets/js/merchant-crm.js" defer></scr' . 'ipt>';
-echo '<scr' . 'ipt src="/assets/js/merchant-crm-contact-stats.js" defer></scr' . 'ipt>';
-echo '<scr' . 'ipt src="/assets/js/merchant-crm-messages.js" defer></scr' . 'ipt>';
-echo '<scr' . 'ipt src="/assets/js/merchant-crm-retention-playbooks.js" defer></scr' . 'ipt>';
-echo '<scr' . 'ipt src="/assets/js/crm-media-segments.js" defer></scr' . 'ipt>';
-echo '<scr' . 'ipt src="/assets/js/merchant-crm-contact-link-polish.js" defer></scr' . 'ipt>';
-require __DIR__ . '/includes/footer.php'; ?>
+require __DIR__ . '/includes/footer.php';

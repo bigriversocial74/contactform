@@ -1,19 +1,143 @@
-document.addEventListener('DOMContentLoaded',function(){
-'use strict';
-var shell=document.querySelector('[data-merchant-crm-shell]');
-if(!shell||!window.Microgifter)return;
-var state={playbooks:[],recommendations:[],summary:{}};
-function qs(s,r){return(r||shell).querySelector(s)}
-function qsa(s,r){return Array.prototype.slice.call((r||shell).querySelectorAll(s))}
-function esc(v){return String(v==null?'':v).replace(/[&<>'"]/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'})[c]})}
-function toast(m){if(Microgifter.toast)Microgifter.toast(m);else alert(m)}
-function busy(b,on,t){if(!b)return;if(!b.dataset.originalText)b.dataset.originalText=b.textContent;b.disabled=!!on;b.textContent=on?(t||'Working…'):b.dataset.originalText}
-function install(){var nav=qs('.mg-crm-tabs');if(nav&&!qs('[data-crm-tab-target="retention"]',nav)){var btn=document.createElement('button');btn.type='button';btn.setAttribute('role','tab');btn.setAttribute('aria-selected','false');btn.setAttribute('data-crm-tab-target','retention');btn.textContent='Retention';nav.appendChild(btn)}if(!qs('[data-crm-tab-panel="retention"]')){var panel=document.createElement('section');panel.className='mg-crm-tab-panel';panel.setAttribute('data-crm-tab-panel','retention');panel.setAttribute('role','tabpanel');panel.hidden=true;panel.innerHTML='<div class="mg-crm-tab-title"><div><h2>Retention Playbooks</h2><p>Agent-ready deterministic rules that monitor customer activity and create merchant-reviewed retention actions.</p></div><div class="mg-crm-tab-actions"><a class="mg-btn mg-btn-soft" href="/merchant-agent-execution.php" data-retention-execution-center>Execution Center</a><a class="mg-btn mg-btn-soft" href="/merchant-agent-approvals.php" data-retention-review-queue>Review Queue</a><a class="mg-btn mg-btn-soft" href="/merchant-agent-monitor.php" data-retention-agent-monitor>Agent Monitor</a><a class="mg-btn mg-btn-soft" href="/merchant-automation.php" data-retention-automation-controls>Automation Controls</a><button class="mg-btn mg-btn-soft" type="button" data-retention-refresh>Refresh</button><button class="mg-btn mg-btn-soft" type="button" data-retention-run-all>Run task playbooks</button></div></div><div class="mg-retention-kpis" data-retention-summary><article><strong>—</strong><span>Recommendations</span></article></div><section class="mg-retention-grid"><article class="mg-app-panel mg-crm-card"><div class="mg-app-panel-head"><div><h3>Automation Levels</h3><p>Rules are deterministic now, so future agents can safely monitor, explain, and execute within merchant guardrails.</p></div><div class="mg-crm-tab-actions"><a class="mg-btn mg-btn-soft" href="/merchant-agent-execution.php">Execution center</a><a class="mg-btn mg-btn-soft" href="/merchant-agent-approvals.php">Review queue</a><a class="mg-btn mg-btn-soft" href="/merchant-agent-monitor.php">Monitor</a><a class="mg-btn mg-btn-soft" href="/merchant-automation.php">Manage guardrails</a></div></div><div class="mg-retention-playbooks" data-retention-playbooks><div class="mg-empty-state"><strong>Loading playbooks</strong></div></div></article><article class="mg-app-panel mg-crm-card"><div class="mg-app-panel-head"><div><h3>Recommended Next Actions</h3><p>Customers currently matching playbook triggers.</p></div></div><div class="mg-retention-recommendations" data-retention-recommendations><div class="mg-empty-state"><strong>Loading recommendations</strong></div></div></article></section>';var ledger=qs('[data-crm-tab-panel="ledger"]');if(ledger)ledger.parentNode.insertBefore(panel,ledger);else shell.appendChild(panel)}}
-function activate(tab){if(tab!=='retention')return;qsa('[data-crm-tab-target]').forEach(function(b){var on=b.getAttribute('data-crm-tab-target')==='retention';b.classList.toggle('is-active',on);b.setAttribute('aria-selected',on?'true':'false')});qsa('[data-crm-tab-panel]').forEach(function(p){p.hidden=p.getAttribute('data-crm-tab-panel')!=='retention'});shell.setAttribute('data-crm-active-tab','retention');if(history.replaceState)history.replaceState(null,'','#crm-retention');load()}
-function renderSummary(){var s=state.summary||{},box=qs('[data-retention-summary]');if(!box)return;box.innerHTML='<article><strong>'+Number(s.total||0)+'</strong><span>Recommendations</span></article><article><strong>'+Number(s.create_followup_task||0)+'</strong><span>Task-ready</span></article><article><strong>'+Number(s.suggest_reward_or_message||0)+'</strong><span>Win-back</span></article><article><strong>'+Number(s.suggest_reward_invite||0)+'</strong><span>Reward invites</span></article>'}
-function playbookCard(p){return'<article class="mg-retention-playbook-card"><div><strong>'+esc(p.title)+'</strong><p>'+esc(p.trigger)+'</p></div><span>'+esc(p.automation_level).replace(/_/g,' ')+'</span><small>Next: '+esc(p.recommended_next_action)+'</small><button type="button" data-retention-run-playbook="'+esc(p.key)+'">Run</button></article>'}
-function recCard(r){return'<article class="mg-retention-rec-card"><div><strong>'+esc(r.customer_name||'Customer')+'</strong><small>'+esc(r.playbook_title||'Playbook')+' · '+esc(r.campaign_title||'')+'</small><p>'+esc(r.reason||'Matched retention rule.')+'</p><em>Recommended next action: '+esc(r.recommended_next_action||'Create follow-up')+'</em><span>Triggered by playbook</span></div><div class="mg-retention-rec-actions"><a href="'+esc(r.customer_url||'#')+'">Profile</a><a href="'+esc(r.message_url||'#')+'">Message</a><a href="'+esc(r.reward_url||'#')+'">Reward</a><a href="/merchant-agent-execution.php">Execute</a><a href="/merchant-agent-approvals.php">Review</a><a href="/merchant-agent-monitor.php">Monitor</a><a href="/merchant-automation.php">Controls</a><button type="button" data-retention-run-rec="'+esc(r.id)+'" data-playbook-key="'+esc(r.playbook_key)+'">Create task</button></div></article>'}
-function render(){renderSummary();var pbox=qs('[data-retention-playbooks]'),rbox=qs('[data-retention-recommendations]');if(pbox)pbox.innerHTML=state.playbooks.length?state.playbooks.map(playbookCard).join(''):'<div class="mg-empty-state"><strong>No playbooks available</strong></div>';if(rbox)rbox.innerHTML=state.recommendations.length?state.recommendations.map(recCard).join(''):'<div class="mg-empty-state"><strong>No recommendations right now</strong><p>The rules are active; matching customers will appear here.</p></div>'}
-async function load(){try{var r=await Microgifter.get('/api/merchant/crm-playbooks.php?limit=40'),d=r.data||r;state.playbooks=d.playbooks||[];state.recommendations=d.recommendations||[];state.summary=d.summary||{};render()}catch(e){var box=qs('[data-retention-recommendations]');if(box)box.innerHTML='<div class="mg-empty-state"><strong>Unable to load retention playbooks</strong><p>'+esc(e.message||'Try again.')+'</p></div>'}}
-async function run(payload,btn){busy(btn,true,'Running…');try{var r=await Microgifter.post('/api/merchant/crm-playbook-runner.php',payload),d=r.data||r,s=d.summary||{};toast('Playbook run complete: '+Number(s.created||0)+' created, '+Number(s.duplicates||0)+' duplicates, '+Number(s.approval_required||0)+' approval-gated.');await load();document.dispatchEvent(new CustomEvent('mg:crm-retention:updated',{detail:d}))}catch(e){toast(e.message||'Unable to run playbook.')}finally{busy(btn,false)}}
-install();document.addEventListener('click',function(ev){var tab=ev.target.closest&&ev.target.closest('[data-crm-tab-target]');if(tab&&tab.getAttribute('data-crm-tab-target')==='retention'){ev.preventDefault();activate('retention');return}if(tab&&tab.getAttribute('data-crm-tab-target')!=='retention'){var rb=qs('[data-crm-tab-target="retention"]');if(rb){rb.classList.remove('is-active');rb.setAttribute('aria-selected','false')}}var refresh=ev.target.closest&&ev.target.closest('[data-retention-refresh]');if(refresh){load();return}var all=ev.target.closest&&ev.target.closest('[data-retention-run-all]');if(all){run({playbook_key:''},all);return}var pb=ev.target.closest&&ev.target.closest('[data-retention-run-playbook]');if(pb){run({playbook_key:pb.getAttribute('data-retention-run-playbook')||''},pb);return}var rec=ev.target.closest&&ev.target.closest('[data-retention-run-rec]');if(rec){run({playbook_key:rec.getAttribute('data-playbook-key')||'',recommendation_ids:[rec.getAttribute('data-retention-run-rec')||'']},rec);return}});var initial=(new URLSearchParams(location.search||'').get('tab')||(location.hash||'').replace(/^#crm-/,'')).trim();if(initial==='retention')setTimeout(function(){activate('retention')},50)});
+document.addEventListener('DOMContentLoaded', function () {
+  'use strict';
+
+  var shell = document.querySelector('[data-merchant-crm-shell]');
+  var panel = shell && shell.querySelector('[data-crm-tab-panel="retention"]');
+  if (!shell || !panel || !window.Microgifter) return;
+
+  var state = { playbooks: [], recommendations: [], summary: {} };
+  var loaded = false;
+
+  function qs(selector, root) {
+    return (root || panel).querySelector(selector);
+  }
+
+  function esc(value) {
+    return String(value == null ? '' : value).replace(/[&<>'"]/g, function (character) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[character];
+    });
+  }
+
+  function toast(message) {
+    if (Microgifter.toast) Microgifter.toast(message);
+    else window.alert(message);
+  }
+
+  function busy(button, on, label) {
+    if (!button) return;
+    if (!button.dataset.originalText) button.dataset.originalText = button.textContent;
+    button.disabled = !!on;
+    button.textContent = on ? (label || 'Working…') : button.dataset.originalText;
+  }
+
+  function renderSummary() {
+    var summary = state.summary || {};
+    var box = qs('[data-retention-summary]');
+    if (!box) return;
+    box.innerHTML = [
+      ['Recommendations', summary.total],
+      ['Task-ready', summary.create_followup_task],
+      ['Win-back', summary.suggest_reward_or_message],
+      ['Reward invites', summary.suggest_reward_invite]
+    ].map(function (item) {
+      return '<article><strong>' + Number(item[1] || 0) + '</strong><span>' + item[0] + '</span></article>';
+    }).join('');
+  }
+
+  function playbookCard(playbook) {
+    return '<article class="mg-retention-playbook-card"><div><strong>' + esc(playbook.title) + '</strong><p>' + esc(playbook.trigger) + '</p></div><span>' + esc(playbook.automation_level).replace(/_/g, ' ') + '</span><small>Next: ' + esc(playbook.recommended_next_action) + '</small><button type="button" data-retention-run-playbook="' + esc(playbook.key) + '">Run</button></article>';
+  }
+
+  function recommendationCard(recommendation) {
+    return '<article class="mg-retention-rec-card"><div><strong>' + esc(recommendation.customer_name || 'Customer') + '</strong><small>' + esc(recommendation.playbook_title || 'Playbook') + ' · ' + esc(recommendation.campaign_title || '') + '</small><p>' + esc(recommendation.reason || 'Matched retention rule.') + '</p><em>Recommended next action: ' + esc(recommendation.recommended_next_action || 'Create follow-up') + '</em><span>Triggered by playbook</span></div><div class="mg-retention-rec-actions"><a href="' + esc(recommendation.customer_url || '#') + '">Profile</a><a href="' + esc(recommendation.message_url || '#') + '">Message</a><a href="' + esc(recommendation.reward_url || '#') + '">Reward</a><a href="/merchant-agent-execution.php">Execute</a><a href="/merchant-agent-approvals.php">Review</a><a href="/merchant-agent-monitor.php">Monitor</a><a href="/merchant-automation.php">Controls</a><button type="button" data-retention-run-rec="' + esc(recommendation.id) + '" data-playbook-key="' + esc(recommendation.playbook_key) + '">Create task</button></div></article>';
+  }
+
+  function render() {
+    renderSummary();
+    var playbooks = qs('[data-retention-playbooks]');
+    var recommendations = qs('[data-retention-recommendations]');
+    if (playbooks) {
+      playbooks.innerHTML = state.playbooks.length
+        ? state.playbooks.map(playbookCard).join('')
+        : '<div class="mg-empty-state"><strong>No playbooks available</strong></div>';
+    }
+    if (recommendations) {
+      recommendations.innerHTML = state.recommendations.length
+        ? state.recommendations.map(recommendationCard).join('')
+        : '<div class="mg-empty-state"><strong>No recommendations right now</strong><p>The rules are active; matching customers will appear here.</p></div>';
+    }
+  }
+
+  async function load(force) {
+    if (loaded && !force) return;
+    try {
+      var response = await Microgifter.get('/api/merchant/crm-playbooks.php?limit=40');
+      var data = response.data || response;
+      state.playbooks = data.playbooks || [];
+      state.recommendations = data.recommendations || [];
+      state.summary = data.summary || {};
+      loaded = true;
+      render();
+    } catch (error) {
+      var box = qs('[data-retention-recommendations]');
+      if (box) box.innerHTML = '<div class="mg-empty-state"><strong>Unable to load retention playbooks</strong><p>' + esc(error.message || 'Try again.') + '</p></div>';
+    }
+  }
+
+  async function run(payload, button) {
+    busy(button, true, 'Running…');
+    try {
+      var response = await Microgifter.post('/api/merchant/crm-playbook-runner.php', payload);
+      var data = response.data || response;
+      var summary = data.summary || {};
+      toast('Playbook run complete: ' + Number(summary.created || 0) + ' created, ' + Number(summary.duplicates || 0) + ' duplicates, ' + Number(summary.approval_required || 0) + ' approval-gated.');
+      loaded = false;
+      await load(true);
+      document.dispatchEvent(new CustomEvent('mg:crm-retention:updated', { detail: data }));
+    } catch (error) {
+      toast(error.message || 'Unable to run playbook.');
+    } finally {
+      busy(button, false);
+    }
+  }
+
+  document.addEventListener('mg:crm-tab:changed', function (event) {
+    if (event.detail && event.detail.tab === 'retention') load(false);
+  });
+
+  document.addEventListener('click', function (event) {
+    var refresh = event.target.closest && event.target.closest('[data-retention-refresh]');
+    if (refresh) {
+      event.preventDefault();
+      loaded = false;
+      load(true);
+      return;
+    }
+
+    var runAll = event.target.closest && event.target.closest('[data-retention-run-all]');
+    if (runAll) {
+      event.preventDefault();
+      run({ playbook_key: '' }, runAll);
+      return;
+    }
+
+    var playbook = event.target.closest && event.target.closest('[data-retention-run-playbook]');
+    if (playbook) {
+      event.preventDefault();
+      run({ playbook_key: playbook.getAttribute('data-retention-run-playbook') || '' }, playbook);
+      return;
+    }
+
+    var recommendation = event.target.closest && event.target.closest('[data-retention-run-rec]');
+    if (recommendation) {
+      event.preventDefault();
+      run({
+        playbook_key: recommendation.getAttribute('data-playbook-key') || '',
+        recommendation_ids: [recommendation.getAttribute('data-retention-run-rec') || '']
+      }, recommendation);
+    }
+  });
+
+  var initial = (new URLSearchParams(location.search || '').get('tab') || (location.hash || '').replace(/^#crm-/, '')).trim();
+  if (initial === 'retention') load(false);
+});
