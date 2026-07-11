@@ -78,7 +78,7 @@ function mg_lqi_admin_summary(PDO $pdo): array
 
 function mg_lqi_admin_campaigns(PDO $pdo): array
 {
-    $stmt=$pdo->query("SELECT c.public_id,c.title,c.status,COUNT(s.id) open_signals,SUM(s.severity='critical') critical_signals,SUM(s.severity='high') high_signals FROM campaigns c LEFT JOIN loyalty_quest_integrity_signals s ON s.campaign_id=c.id AND s.merchant_user_id=c.merchant_user_id AND s.status='open' WHERE c.campaign_type='loyalty_quest' GROUP BY c.id ORDER BY open_signals DESC,c.updated_at DESC LIMIT 100");
+    $stmt=$pdo->query("SELECT c.public_id,c.title,c.status,COUNT(s.id) open_signals,COALESCE(SUM(s.severity='critical'),0) critical_signals,COALESCE(SUM(s.severity='high'),0) high_signals FROM campaigns c LEFT JOIN loyalty_quest_integrity_signals s ON s.campaign_id=c.id AND s.merchant_user_id=c.merchant_user_id AND s.status='open' WHERE c.campaign_type='loyalty_quest' GROUP BY c.id ORDER BY open_signals DESC,c.updated_at DESC LIMIT 100");
     return $stmt->fetchAll(PDO::FETCH_ASSOC)?:[];
 }
 
@@ -101,7 +101,7 @@ function mg_lqi_admin_resolve(PDO $pdo,int $adminId,string $signalRef,string $re
         }elseif($resolution==='cleared'){
             $remaining=$pdo->prepare("SELECT COUNT(*) FROM loyalty_quest_integrity_signals WHERE evidence_id=? AND id<>? AND status IN ('open','confirmed')");
             $remaining->execute([(int)$signal['evidence_id'],(int)$signal['id']]);
-            if((int)$remaining->fetchColumn()===0)$pdo->prepare("UPDATE loyalty_quest_evidence SET integrity_status=IF(status='submitted','review','resolved'),updated_at=NOW() WHERE id=?")->execute([(int)$signal['evidence_id']]);
+            if((int)$remaining->fetchColumn()===0)$pdo->prepare("UPDATE loyalty_quest_evidence SET integrity_status=IF(status='submitted','clear','resolved'),updated_at=NOW() WHERE id=?")->execute([(int)$signal['evidence_id']]);
         }
     }
     $eventId=mg_lqo_campaign_event($pdo,(int)$signal['merchant_user_id'],(int)$signal['campaign_id'],null,'quest.admin_integrity_'.$resolution,['operator_user_id'=>$adminId,'reason'=>$reason,'signal_id'=>$signalRef,'signal_type'=>(string)$signal['signal_type'],'severity'=>(string)$signal['severity'],'evidence_id'=>$signal['evidence_public_id']??null]);
