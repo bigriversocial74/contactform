@@ -1,21 +1,35 @@
 document.addEventListener('DOMContentLoaded', function () {
   'use strict';
 
+  function customerProfileUrl(row) {
+    var contactId = row && row.getAttribute('data-contact-id');
+    return contactId ? '/merchant-customer.php?campaign_contact_id=' + encodeURIComponent(contactId) : '#';
+  }
+
   function enhanceContactRows() {
     document.querySelectorAll('.mg-crm-contact-row').forEach(function (row) {
       var avatar = row.querySelector('.mg-crm-contact-avatar');
       if (avatar) avatar.remove();
 
+      var href = customerProfileUrl(row);
+      var actionLink = row.querySelector('[data-crm-view-customer]');
+      if (actionLink && href !== '#') {
+        actionLink.href = href;
+        actionLink.removeAttribute('data-crm-view-customer');
+        actionLink.setAttribute('data-crm-customer-profile-link', '');
+        actionLink.setAttribute('title', 'Open customer profile');
+        actionLink.setAttribute('aria-label', 'Open customer profile');
+      }
+
       var copy = row.querySelector('.mg-crm-contact-copy');
       var nameNode = copy && copy.querySelector(':scope > strong');
-      if (!copy || !nameNode || copy.querySelector(':scope > .mg-crm-contact-name-link')) return;
+      var existingLink = copy && copy.querySelector(':scope > .mg-crm-contact-name-link');
+      if (!copy || existingLink || !nameNode) return;
 
-      var actionLink = row.querySelector('[data-crm-view-customer]');
-      var href = actionLink && actionLink.getAttribute('href') ? actionLink.getAttribute('href') : '#';
       var link = document.createElement('a');
       link.className = 'mg-crm-contact-name-link';
       link.href = href;
-      link.setAttribute('data-crm-view-customer', '');
+      link.setAttribute('data-crm-customer-profile-link', '');
       link.textContent = nameNode.textContent || 'Unnamed';
       nameNode.replaceWith(link);
     });
