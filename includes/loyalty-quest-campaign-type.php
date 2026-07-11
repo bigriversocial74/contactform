@@ -92,17 +92,15 @@ function mg_loyalty_quest_allowed_visibility(): array
 
 function mg_loyalty_quest_code_hash(array $input, string $inputKey, array $existing, string $hashKey, string $legacyKey = ''): string
 {
-    if (array_key_exists($inputKey, $input)) {
-        $plain = strtoupper(trim((string)$input[$inputKey]));
-        return $plain === '' ? '' : hash('sha256', $plain);
-    }
-    $hash = strtolower(trim((string)($existing[$hashKey] ?? '')));
-    if (preg_match('/^[a-f0-9]{64}$/', $hash) === 1) return $hash;
-    if ($legacyKey !== '') {
+    $existingHash = strtolower(trim((string)($existing[$hashKey] ?? '')));
+    if (preg_match('/^[a-f0-9]{64}$/', $existingHash) !== 1) $existingHash = '';
+    if ($existingHash === '' && $legacyKey !== '') {
         $legacy = strtoupper(trim((string)($existing[$legacyKey] ?? '')));
-        if ($legacy !== '') return hash('sha256', $legacy);
+        if ($legacy !== '') $existingHash = hash('sha256', $legacy);
     }
-    return '';
+    if (!array_key_exists($inputKey, $input)) return $existingHash;
+    $plain = strtoupper(trim((string)$input[$inputKey]));
+    return $plain === '' ? $existingHash : hash('sha256', $plain);
 }
 
 function mg_loyalty_quest_normalize_rules(array $input, array $existing = []): array
