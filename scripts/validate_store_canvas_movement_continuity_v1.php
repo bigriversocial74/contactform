@@ -44,8 +44,24 @@ $check(
 $check(
     str_contains($runtime, "card.dataset.visualMovement = 'presentation-only'")
     && str_contains($runtime, "card.style.setProperty('transition', 'none')")
-    && str_contains($runtime, 'requestAnimationFrame'),
-    'Restored coordinates must avoid a visible origin transition and remain presentation-only.'
+    && str_contains($runtime, 'function applySavedPosition(card, saved)')
+    && str_contains($runtime, "delete card.dataset.movementContinuity"),
+    'Restored coordinates must remain presentation-only and suppress origin transitions until settled.'
+);
+
+$check(
+    substr_count($runtime, 'applySavedPosition(card, saved);') >= 3
+    && substr_count($runtime, 'window.requestAnimationFrame(function ()') >= 3
+    && str_contains($runtime, 'The visual-restoration runtime also reacts to the same live-poll DOM')
+    && str_contains($runtime, 'restorationTokens.get(sessionId) !== token'),
+    'Poll replacement coordinates must be reapplied after competing visual-restoration frames.'
+);
+
+$check(
+    str_contains($runtime, 'window.__mgMerchantCanvasMovementContinuityBooted')
+    && str_contains($runtime, 'restorationTokens.clear()')
+    && str_contains($runtime, 'observer.disconnect()'),
+    'Movement continuity must boot once and release transient restoration state on page exit.'
 );
 
 $check(
@@ -60,13 +76,16 @@ $check(
 $check(
     str_contains($manual, 'poll_after_ms || 7000')
     && str_contains($manual, "loadCanvas({ reason: 'poll' })")
-    && str_contains($visual, 'positionCustomers'),
-    'Validation must cover the live polling and visual positioning runtimes that caused the reset.'
+    && str_contains($manual, 'clear(layer)')
+    && str_contains($manual, "layer.insertAdjacentHTML('beforeend', state.customers.map(customerCard).join(''))")
+    && str_contains($visual, 'positionCustomers')
+    && str_contains($visual, 'state.customerObserver = new MutationObserver'),
+    'Validation must cover the seven-second DOM rebuild and competing visual positioning runtime.'
 );
 
 if ($failures !== []) {
-    fwrite(STDERR, "Store Canvas Movement Continuity v1 validation failed:\n- " . implode("\n- ", $failures) . "\n");
+    fwrite(STDERR, "Store Canvas Movement Continuity v2 validation failed:\n- " . implode("\n- ", $failures) . "\n");
     exit(1);
 }
 
-fwrite(STDOUT, "Store Canvas Movement Continuity v1 validation passed.\n");
+fwrite(STDOUT, "Store Canvas Movement Continuity v2 validation passed.\n");
