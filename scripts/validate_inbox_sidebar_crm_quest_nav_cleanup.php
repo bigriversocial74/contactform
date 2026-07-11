@@ -32,6 +32,8 @@ try {
     $agentSidebar = $read('includes/agent-sidebar.php');
     $appSidebar = $read('includes/app-sidebar.php');
     $merchantWorkspace = $read('includes/merchant-workspace.php');
+    $merchantNavigation = $read('includes/merchant-navigation.php');
+    $merchantRouter = $read('includes/merchant-view.php');
 
     $expect(
         str_contains($inbox, '$agent_tab = \'inbox\';')
@@ -42,49 +44,64 @@ try {
     $expectedReducedPages = [
         'inbox',
         'loyalty-cards',
-        'store-canvas',
-        'merchant-canvas',
         'world-canvas',
-        'agent_chat',
-        'merchant-agent-chat',
     ];
 
     $expect(
         str_contains($agentSidebar, '$reducedInboxSidebarPages = [')
-        && str_contains($agentSidebar, 'if (in_array($agentSidebarActive, $reducedInboxSidebarPages, true))')
+        && str_contains($agentSidebar, 'if (!$isMerchantAdminSidebar && in_array($agentSidebarActive, $reducedInboxSidebarPages, true))')
         && str_contains($agentSidebar, "['feed-following', 'merchant_crm', 'ads-manager']")
         && str_contains($agentSidebar, '$appSidebarNav[$inboxHiddenNavKey][\'visible\'] = false'),
-        'Reduced inbox sidebar filter hides Following, Merchant CRM, and Campaign Ads'
+        'Reduced customer sidebar filter does not override merchant admin pages'
     );
 
     foreach ($expectedReducedPages as $pageKey) {
         $expect(
             str_contains($agentSidebar, "'{$pageKey}'"),
-            'Reduced inbox sidebar page list contains ' . $pageKey
+            'Reduced customer sidebar page list contains ' . $pageKey
         );
     }
 
     $expect(
         str_contains($agentSidebar, '$appSidebarNav[\'training-lab\'] = [\'visible\' => false]')
         && str_contains($appSidebar, '!isset($appSidebarNav[\'training-lab\'])'),
-        'Reduced inbox sidebar pages suppress the automatically injected Training Lab item'
+        'Reduced customer sidebar pages suppress the automatically injected Training Lab item'
     );
 
-    $agentPages = [
+    $reducedPages = [
         'loyalty-cards.php' => "\$agent_tab = 'loyalty-cards';",
-        'merchant-canvas.php' => "\$agent_tab = 'store-canvas';",
         'world-canvas.php' => "\$agent_tab = 'world-canvas';",
-        'merchant-agent-chat.php' => "\$agent_tab = 'agent_chat';",
     ];
 
-    foreach ($agentPages as $path => $activeMarker) {
+    foreach ($reducedPages as $path => $activeMarker) {
         $page = $read($path);
         $expect(
             str_contains($page, $activeMarker)
             && str_contains($page, "require __DIR__ . '/includes/agent-sidebar.php';"),
-            $path . ' mounts the shared reduced inbox sidebar with the expected active key'
+            $path . ' mounts the shared reduced customer sidebar with the expected active key'
         );
     }
+
+    $merchantAdminPages = [
+        'merchant-canvas.php' => "\$agent_tab = 'store-canvas';",
+        'merchant-agent-chat.php' => "\$agent_tab = 'agent_chat';",
+    ];
+
+    foreach ($merchantAdminPages as $path => $activeMarker) {
+        $page = $read($path);
+        $expect(
+            str_contains($page, $activeMarker)
+            && str_contains($page, "require __DIR__ . '/includes/agent-sidebar.php';"),
+            $path . ' mounts the shared merchant admin sidebar bridge'
+        );
+    }
+
+    $expect(
+        str_contains($agentSidebar, "str_starts_with(\$currentSidebarScript, 'merchant-')")
+        && str_contains($agentSidebar, "require_once __DIR__ . '/merchant-navigation.php'")
+        && str_contains($agentSidebar, 'mg_merchant_navigation_sidebar($agentSidebarActive)'),
+        'Custom merchant pages use the same centralized merchant navigation'
+    );
 
     $globallyHiddenKeys = [
         'loyalty_quests',
@@ -97,31 +114,45 @@ try {
     ];
 
     $expect(
-        str_contains($merchantWorkspace, '$globallyHiddenMerchantNavKey')
-        && str_contains($merchantWorkspace, 'unset($merchantNav[$globallyHiddenMerchantNavKey])')
-        && !str_contains($merchantWorkspace, 'if ($merchantView === \'merchant_crm\')'),
-        'Quest and embed navigation is removed globally instead of only on Merchant CRM'
+        str_contains($merchantWorkspace, "require_once __DIR__ . '/merchant-navigation.php'")
+        && str_contains($merchantWorkspace, 'mg_merchant_navigation_sidebar($merchantView)'),
+        'Merchant workspace consumes the centralized merchant navigation source'
     );
 
     foreach ($globallyHiddenKeys as $key) {
         $expect(
-            str_contains($merchantWorkspace, "'{$key}'"),
-            'Global hidden navigation list contains ' . $key
+            !preg_match("/'" . preg_quote($key, '/') . "'\\s*=>\\s*\\[/", $merchantNavigation),
+            'Hidden quest/embed route is absent from visible merchant navigation: ' . $key
         );
     }
 
     foreach ([
-        "'loyalty_quests' => ['Loyalty Quests'",
-        "'quest_creative' => ['Quest Creative'",
-        "'quest_reviews' => ['Quest Reviews'",
-        "'quest_delivery' => ['Quest Delivery'",
-        "'quest_analytics' => ['Quest Analytics'",
-        "'campaign_embed_leads' => ['Embed Leads'",
-        "'campaign_embed_analytics' => ['Embed Analytics'",
-    ] as $routeMarker) {
+        "'loyalty_quests' => 'campaigns'",
+        "'quest_creative' => 'campaigns'",
+        "'quest_reviews' => 'campaigns'",
+        "'quest_delivery' => 'campaigns'",
+        "'quest_analytics' => 'campaigns'",
+        "'campaign_embed_leads' => 'campaigns'",
+        "'campaign_embed_analytics' => 'campaigns'",
+    ] as $aliasMarker) {
         $expect(
-            str_contains($merchantWorkspace, $routeMarker),
-            'Direct route remains registered while sidebar link is hidden: ' . $routeMarker
+            str_contains($merchantNavigation, $aliasMarker),
+            'Hidden route maps back to the visible Campaigns group: ' . $aliasMarker
+        );
+    }
+
+    foreach ([
+        'merchant-loyalty-quests-view.php',
+        'merchant-loyalty-quest-creative-view.php',
+        'merchant-quest-reviews-view.php',
+        'merchant-loyalty-quest-delivery-view.php',
+        'merchant-loyalty-quest-analytics-view.php',
+        'merchant-campaign-embed-leads-view.php',
+        'merchant-campaign-embed-analytics-view.php',
+    ] as $viewMarker) {
+        $expect(
+            str_contains($merchantRouter, $viewMarker),
+            'Direct route remains available outside the sidebar: ' . $viewMarker
         );
     }
 } catch (Throwable $error) {
