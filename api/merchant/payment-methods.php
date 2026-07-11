@@ -1,12 +1,14 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . '/_merchant.php';
+require_once dirname(__DIR__) . '/payments/_connect.php';
 
 $user = mg_require_api_user();
 $pdo = mg_db();
 $workspace = mg_merchant_ensure_workspace($pdo, $user);
+$merchantId = (int)$user['id'];
 
-function mg_merchant_payment_methods_payload(PDO $pdo, int $workspaceId): array
+function mg_merchant_payment_methods_payload(PDO $pdo, int $workspaceId, int $merchantUserId): array
 {
     $stmt = $pdo->prepare('SELECT state_json FROM merchant_payment_readiness WHERE workspace_id=? LIMIT 1');
     $stmt->execute([$workspaceId]);
@@ -14,6 +16,11 @@ function mg_merchant_payment_methods_payload(PDO $pdo, int $workspaceId): array
     $state = json_decode((string)($row['state_json'] ?? ''), true);
     if (!is_array($state)) $state = [];
     $methods = is_array($state['payment_methods'] ?? null) ? $state['payment_methods'] : [];
+
+    $stripeAccount = mg_payment_connect_status($pdo, $merchantUserId, false);
+    $stripeMode = !empty($stripeAccount['ready'])
+        ? 'ready'
+        : (!empty($stripeAccount['connected']) ? 'pending_onboarding' : 'not_connected');
 
     return [
         'payment_methods' => [
@@ -25,9 +32,16 @@ function mg_merchant_payment_methods_payload(PDO $pdo, int $workspaceId): array
             ],
             'stripe' => [
                 'enabled' => !empty($methods['stripe']['enabled']),
-                'mode' => 'pending_onboarding',
+                'mode' => $stripeMode,
+                'connected' => !empty($stripeAccount['connected']),
+                'ready' => !empty($stripeAccount['ready']),
+                'account_hint' => (string)($stripeAccount['account_hint'] ?? ''),
                 'label' => 'Stripe payments',
-                'description' => 'Merchant card-payment preference. Official Stripe onboarding is connected separately.',
+                'description' => !empty($stripeAccount['ready'])
+                    ? 'Stripe account connected and ready for card checkout.'
+                    : (!empty($stripeAccount['connected'])
+                        ? 'Stripe account connected with onboarding or verification still pending.'
+                        : 'Connect or create a Stripe account before card checkout can be used.'),
             ],
         ],
     ];
@@ -35,7 +49,7 @@ function mg_merchant_payment_methods_payload(PDO $pdo, int $workspaceId): array
 
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
     header('Cache-Control: private, no-store, max-age=0');
-    mg_ok(mg_merchant_payment_methods_payload($pdo, (int)$workspace['id']));
+    mg_ok(mg_merchant_payment_methods_payload($pdo, (int)$workspace['id'], $merchantId));
 }
 
 mg_require_method('POST');
@@ -58,9 +72,13 @@ try {
     if (!is_array($state)) $state = [];
     if (!isset($state['payment_methods']) || !is_array($state['payment_methods'])) $state['payment_methods'] = [];
 
+    $stripeAccount = mg_payment_connect_status($pdo, $merchantId, false);
+    $stripeMode = !empty($stripeAccount['ready'])
+        ? 'ready'
+        : (!empty($stripeAccount['connected']) ? 'pending_onboarding' : 'not_connected');
     $updatedAt = gmdate('c');
     $methodAudit = [
-        'updated_by_user_id' => (int)$user['id'],
+        'updated_by_user_id' => $merchantId,
         'updated_at' => $updatedAt,
     ];
     $state['payment_methods']['cash'] = $methodAudit + [
@@ -69,7 +87,8 @@ try {
     ];
     $state['payment_methods']['stripe'] = $methodAudit + [
         'enabled' => $stripeEnabled,
-        'mode' => 'pending_onboarding',
+        'mode' => $stripeMode,
+        'account_id' => (string)($stripeAccount['account_id'] ?? ''),
     ];
 
     $pdo->prepare('UPDATE merchant_payment_readiness SET state_json=?,updated_at=NOW() WHERE id=?')
@@ -79,12 +98,13 @@ try {
     mg_audit('merchant.payment_methods_updated', 'merchant_payment_readiness', [
         'cash_enabled' => $cashEnabled,
         'stripe_enabled' => $stripeEnabled,
-        'stripe_onboarding_connected' => false,
-    ], (int)$user['id']);
+        'stripe_onboarding_connected' => !empty($stripeAccount['connected']),
+        'stripe_ready' => !empty($stripeAccount['ready']),
+    ], $merchantId);
 
     header('Cache-Control: private, no-store, max-age=0');
     mg_ok(
-        mg_merchant_payment_methods_payload($pdo, (int)$workspace['id']),
+        mg_merchant_payment_methods_payload($pdo, (int)$workspace['id'], $merchantId),
         'Payment methods saved.'
     );
 } catch (Throwable $error) {
