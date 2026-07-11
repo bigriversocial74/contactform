@@ -23,6 +23,7 @@ try{
     $include=$read('includes/gift-action-center.php');
     $feed=$read('assets/js/gift-action-center-feed-v3.js');
     $css=$read('assets/css/gift-action-center-feed-v3.css');
+    $portal=$read('assets/js/gift-action-center-modal-portal.js');
     $load=$read('assets/js/gift-envelope-presentation.js');
     $source=$read('assets/js/gift-source-metadata.js');
     $api=$read('api/account/action-center.php');
@@ -31,13 +32,14 @@ try{
     $claimed=$read('claimed.php');
 
     $expect(
-        str_contains($include,'/assets/css/gift-action-center-feed-v3.css?v=3.1.0')
+        str_contains($include,'/assets/css/gift-action-center-feed-v3.css?v=3.2.0')
         && str_contains($include,'/assets/js/gift-action-center-feed-v3.js?v=3.1.0')
+        && str_contains($include,'/assets/js/gift-action-center-modal-portal.js?v=1.1.0')
         && str_contains($include,'data-feed-version="3"')
         && !str_contains($include,'gift-action-center-feed-v2')
         && !is_file($root.'/assets/js/gift-action-center-feed-v2.js')
         && !is_file($root.'/assets/css/gift-action-center-feed-v2.css'),
-        'Shared include loads only cache-busted feed v3 assets'
+        'Shared include loads cache-busted feed and modal assets'
     );
 
     $expect(
@@ -54,6 +56,24 @@ try{
         && str_contains($feed,'mg-gift-business-name')
         && str_contains($feed,"'<span>Sent from '"),
         'Source badges are removed and business/sender hierarchy is rendered directly'
+    );
+
+    $expect(
+        str_contains($css,'font-weight:500!important')
+        && str_contains($css,'.mg-gift-business-name')
+        && str_contains($css,'font-size:13px!important')
+        && str_contains($css,'font-size:11px!important')
+        && str_contains($css,'.mg-gift-card-message{display:none!important}'),
+        'Card title is regular weight, business name is larger, and description is removed from the feed'
+    );
+
+    $expect(
+        str_contains($portal,"const cancel = actions && actions.querySelector('.mg-send-exact-secondary,[data-action-modal-close]')")
+        && str_contains($portal,'if (cancel) cancel.remove();')
+        && str_contains($portal,"actions.dataset.singleAction = 'true'")
+        && !str_contains($portal,"cancel.textContent = 'Cancel'")
+        && str_contains($portal,"close.setAttribute('data-action-modal-close', '')"),
+        'Regift removes the footer Cancel control while retaining the canonical header close button'
     );
 
     $expect(
@@ -109,8 +129,9 @@ try{
         && str_contains($load,"detail('Sent From'")
         && str_contains($load,"detail('Source'")
         && str_contains($load,"detail('Source Detail'")
-        && str_contains($load,"detail('Source Reference'"),
-        'Load owns business, sender, and complete source metadata through the v3 controller'
+        && str_contains($load,"detail('Source Reference'")
+        && str_contains($load,'item.message'),
+        'Load retains business, sender, source, and gift-description details'
     );
 
     $expect(

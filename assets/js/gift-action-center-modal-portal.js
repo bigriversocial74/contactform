@@ -77,18 +77,16 @@
     if (eyebrow && eyebrow.textContent !== eyebrowLabel) eyebrow.textContent = eyebrowLabel;
 
     const actions = form.querySelector('.mg-send-exact-actions');
-    if (actions && !actions.querySelector('[data-action-modal-close]')) {
-      const cancel = document.createElement('button');
-      cancel.type = 'button';
-      cancel.className = 'mg-send-exact-secondary';
-      cancel.setAttribute('data-action-modal-close', '');
-      cancel.textContent = 'Cancel';
-      actions.insertBefore(cancel, actions.firstChild);
+    const cancel = actions && actions.querySelector('.mg-send-exact-secondary,[data-action-modal-close]');
+    if (cancel) cancel.remove();
+    if (actions) {
+      actions.dataset.singleAction = 'true';
+      actions.style.setProperty('grid-template-columns', '1fr', 'important');
     }
 
     const primary = actions && actions.querySelector('button[type="submit"]');
     const desiredLabel = 'Review regift';
-    if (primary && primary.textContent.trim() === 'Review Regift') {
+    if (primary && primary.textContent.trim() !== desiredLabel) {
       primary.textContent = desiredLabel;
     }
 
