@@ -3,6 +3,9 @@ window.Microgifter = window.Microgifter || {};
 (function (window, document) {
   'use strict';
 
+  if (window.__mgMerchantCanvasMovementContinuityBooted) return;
+  window.__mgMerchantCanvasMovementContinuityBooted = true;
+
   var root = document.querySelector('[data-merchant-canvas]');
   if (!root || typeof window.MutationObserver !== 'function') return;
 
@@ -10,6 +13,7 @@ window.Microgifter = window.Microgifter || {};
   if (!layer) return;
 
   var positions = new Map();
+  var restorationTokens = new Map();
   var maxPositionAgeMs = 30 * 60 * 1000;
   var maxTrackedSessions = 250;
 
@@ -23,8 +27,12 @@ window.Microgifter = window.Microgifter || {};
     return cards;
   }
 
+  function sessionIdFor(card) {
+    return card && card.dataset ? String(card.dataset.sessionId || '') : '';
+  }
+
   function captureCard(card, now) {
-    var sessionId = card && card.dataset ? String(card.dataset.sessionId || '') : '';
+    var sessionId = sessionIdFor(card);
     var left = card && card.style ? String(card.style.left || '') : '';
     var top = card && card.style ? String(card.style.top || '') : '';
     if (!sessionId || !left || !top) return;
@@ -43,22 +51,45 @@ window.Microgifter = window.Microgifter || {};
     });
   }
 
-  function restoreCard(card) {
-    var sessionId = card && card.dataset ? String(card.dataset.sessionId || '') : '';
-    var saved = sessionId ? positions.get(sessionId) : null;
-    if (!saved) return false;
-
+  function applySavedPosition(card, saved) {
+    if (!card || !card.isConnected || !saved) return false;
     card.style.setProperty('transition', 'none');
     card.style.left = saved.left;
     card.style.top = saved.top;
     card.dataset.visualMovement = 'presentation-only';
     card.dataset.movementContinuity = 'restored';
+    return true;
+  }
 
+  function restoreCard(card) {
+    var sessionId = sessionIdFor(card);
+    var saved = sessionId ? positions.get(sessionId) : null;
+    if (!saved) return false;
+
+    var token = Number(restorationTokens.get(sessionId) || 0) + 1;
+    restorationTokens.set(sessionId, token);
+    applySavedPosition(card, saved);
+
+    /*
+     * The visual-restoration runtime also reacts to the same live-poll DOM
+     * replacement and schedules a one-frame position pass. Reapply the saved
+     * coordinates after that pass has had a chance to run, then release the
+     * transition lock only after the replacement card is settled.
+     */
     window.requestAnimationFrame(function () {
+      if (restorationTokens.get(sessionId) !== token || !card.isConnected) return;
+      applySavedPosition(card, saved);
+
       window.requestAnimationFrame(function () {
-        if (!card.isConnected) return;
-        card.style.removeProperty('transition');
-        delete card.dataset.movementContinuity;
+        if (restorationTokens.get(sessionId) !== token || !card.isConnected) return;
+        applySavedPosition(card, saved);
+
+        window.requestAnimationFrame(function () {
+          if (restorationTokens.get(sessionId) !== token || !card.isConnected) return;
+          card.style.removeProperty('transition');
+          delete card.dataset.movementContinuity;
+          restorationTokens.delete(sessionId);
+        });
       });
     });
 
@@ -74,6 +105,7 @@ window.Microgifter = window.Microgifter || {};
         if (positions.size <= maxTrackedSessions) return;
         if (now - Number(entry[1].seenAt || 0) > maxPositionAgeMs || positions.size > maxTrackedSessions) {
           positions.delete(entry[0]);
+          restorationTokens.delete(entry[0]);
         }
       });
   }
@@ -113,6 +145,7 @@ window.Microgifter = window.Microgifter || {};
 
   window.addEventListener('pagehide', function () {
     snapshotConnectedCards();
+    restorationTokens.clear();
     observer.disconnect();
   }, { once: true });
 })(window, document);
