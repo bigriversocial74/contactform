@@ -13,7 +13,7 @@ final class MerchantCrmRealtimeMessageAppendTest extends TestCase
 
     public function testMerchantCrmLoadsRealtimeMessageScript(): void
     {
-        $source = file_get_contents($this->root() . '/includes/merchant-crm-view.php');
+        $source = file_get_contents($this->root() . '/merchant-crm.php');
         self::assertIsString($source);
         self::assertStringContainsString('/assets/js/merchant-crm-realtime-message.js', $source);
     }
