@@ -11,8 +11,9 @@ try{
     $status=mg_payment_connect_status($pdo,(int)$user['id'],false);
     $platform=mg_payment_config_public_status($pdo,'stripe',mg_payment_mode());
     $appUrl=trim((string)(getenv('MG_APP_URL')?:''));
+    $standardSecret=!empty($platform['secret_configured'])&&($platform['secret_key_type']??'')==='secret';
     $oauthReady=!empty($platform['enabled'])
-        && !empty($platform['secret_configured'])
+        && $standardSecret
         && !empty($platform['connect_client_configured'])
         && $appUrl!==''
         && (mg_payment_mode()==='test'||str_starts_with($appUrl,'https://'))
@@ -20,6 +21,7 @@ try{
     $blockers=[];
     if(empty($platform['enabled']))$blockers[]='Stripe is disabled for '.mg_payment_mode().' mode.';
     if(empty($platform['secret_configured']))$blockers[]='Stripe API key is missing.';
+    elseif(!$standardSecret)$blockers[]='Stripe OAuth requires the platform standard sk_'.mg_payment_mode().'_ secret key; an rk_ restricted key cannot complete OAuth.';
     if(empty($platform['connect_client_configured']))$blockers[]='Stripe Connect client ID is missing.';
     if($appUrl==='')$blockers[]='MG_APP_URL is missing.';
     elseif(mg_payment_mode()==='live'&&!str_starts_with($appUrl,'https://'))$blockers[]='Live Stripe Connect requires an HTTPS MG_APP_URL.';
@@ -33,6 +35,7 @@ try{
             'enabled'=>$platform['enabled'],
             'secret_configured'=>$platform['secret_configured'],
             'secret_key_type'=>$platform['secret_key_type'],
+            'standard_secret_configured'=>$standardSecret,
             'webhook_configured'=>$platform['webhook_configured'],
             'connect_client_configured'=>$platform['connect_client_configured'],
             'application_url_configured'=>$appUrl!=='',
