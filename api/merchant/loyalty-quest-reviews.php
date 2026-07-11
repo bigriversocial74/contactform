@@ -6,6 +6,16 @@ require_once dirname(__DIR__) . '/public/loyalty-quest/_integrity.php';
 require_once dirname(__DIR__) . '/public/loyalty-quest/_reward.php';
 require_once dirname(__DIR__) . '/communications/_loyalty_quest_notifications.php';
 
+function mg_lqmr_safe_integrity_context(array $context): array
+{
+    $allowed=['matched_evidence_id','distinct_participants','window_hours','window_minutes','elapsed_seconds','minimum_seconds','rejected_evidence','window_days','completed_quests','distance_km','speed_kph'];
+    $safe=[];
+    foreach($allowed as $key){
+        if(array_key_exists($key,$context)&&is_scalar($context[$key]))$safe[$key]=$context[$key];
+    }
+    return $safe;
+}
+
 $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 $user = mg_merchant_require_permission($method === 'GET' ? 'merchant.campaigns.view' : 'merchant.campaigns.manage');
 $merchantId = (int)$user['id'];
@@ -41,7 +51,7 @@ if ($method === 'GET') {
         INNER JOIN users u ON u.id=lqe.participant_user_id
         LEFT JOIN campaign_contacts cc ON cc.id=lqp.contact_id AND cc.merchant_user_id=lqe.merchant_user_id
         WHERE {$baseWhere}
-        ORDER BY CASE WHEN lqe.integrity_status='review' THEN 0 WHEN lqe.status='submitted' THEN 1 WHEN lqe.status='rejected' THEN 2 ELSE 3 END,lqe.integrity_score DESC,lqe.created_at ASC
+        ORDER BY CASE WHEN lqe.integrity_status='blocked' THEN 0 WHEN lqe.integrity_status='review' THEN 1 WHEN lqe.status='submitted' THEN 2 WHEN lqe.status='rejected' THEN 3 ELSE 4 END,lqe.integrity_score DESC,lqe.created_at ASC
         LIMIT 200";
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
@@ -60,20 +70,23 @@ if ($method === 'GET') {
                 'severity'=>(string)$signal['severity'],
                 'score'=>(int)$signal['score'],
                 'status'=>(string)$signal['status'],
-                'context'=>$context,
+                'context'=>mg_lqmr_safe_integrity_context($context),
                 'created_at'=>$signal['created_at']??null,
             ];
         }
     }
     $reviews = array_map(static function(array $row) use ($signalMap): array {
+        $integrityStatus=(string)$row['integrity_status'];
+        $integrityScore=(int)$row['integrity_score'];
         return [
             'id'=>(string)$row['public_id'],
             'evidence_type'=>(string)$row['evidence_type'],
             'status'=>(string)$row['status'],
             'integrity'=>[
-                'score'=>(int)$row['integrity_score'],
-                'status'=>(string)$row['integrity_status'],
-                'acknowledgment_required'=>(string)$row['integrity_status']==='review'&&(int)$row['integrity_score']>=50,
+                'score'=>$integrityScore,
+                'status'=>$integrityStatus,
+                'blocked'=>$integrityStatus==='blocked',
+                'acknowledgment_required'=>$integrityStatus==='review'&&$integrityScore>=50,
                 'signals'=>$signalMap[(int)$row['evidence_db_id']]??[],
             ],
             'location'=>[
@@ -110,15 +123,18 @@ if ($method === 'GET') {
 
     $totalsStmt = $pdo->prepare("SELECT lqe.status,COUNT(*) total FROM loyalty_quest_evidence lqe INNER JOIN campaigns c ON c.id=lqe.campaign_id AND c.merchant_user_id=lqe.merchant_user_id AND c.campaign_type='loyalty_quest' WHERE lqe.merchant_user_id=? GROUP BY lqe.status");
     $totalsStmt->execute([$merchantId]);
-    $totals = ['all'=>0,'submitted'=>0,'verified'=>0,'rejected'=>0,'integrity_review'=>0];
+    $totals = ['all'=>0,'submitted'=>0,'verified'=>0,'rejected'=>0,'integrity_review'=>0,'integrity_blocked'=>0];
     foreach ($totalsStmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
         $key = (string)$row['status'];
         $totals[$key] = (int)$row['total'];
         $totals['all'] += (int)$row['total'];
     }
-    $integrityStmt=$pdo->prepare("SELECT COUNT(*) FROM loyalty_quest_evidence lqe INNER JOIN campaigns c ON c.id=lqe.campaign_id AND c.merchant_user_id=lqe.merchant_user_id AND c.campaign_type='loyalty_quest' WHERE lqe.merchant_user_id=? AND lqe.integrity_status='review'");
+    $integrityStmt=$pdo->prepare("SELECT integrity_status,COUNT(*) total FROM loyalty_quest_evidence lqe INNER JOIN campaigns c ON c.id=lqe.campaign_id AND c.merchant_user_id=lqe.merchant_user_id AND c.campaign_type='loyalty_quest' WHERE lqe.merchant_user_id=? AND lqe.integrity_status IN ('review','blocked') GROUP BY integrity_status");
     $integrityStmt->execute([$merchantId]);
-    $totals['integrity_review']=(int)$integrityStmt->fetchColumn();
+    foreach($integrityStmt->fetchAll(PDO::FETCH_ASSOC)?:[] as $row){
+        if($row['integrity_status']==='review')$totals['integrity_review']=(int)$row['total'];
+        if($row['integrity_status']==='blocked')$totals['integrity_blocked']=(int)$row['total'];
+    }
     $campaignStmt = $pdo->prepare("SELECT public_id,title,status FROM campaigns WHERE merchant_user_id=? AND campaign_type='loyalty_quest' ORDER BY updated_at DESC,id DESC LIMIT 100");
     $campaignStmt->execute([$merchantId]);
     mg_ok(['reviews'=>$reviews,'totals'=>$totals,'campaigns'=>$campaignStmt->fetchAll(PDO::FETCH_ASSOC) ?: [],'schema_ready'=>true]);
@@ -145,8 +161,11 @@ try {
     $evidence = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$evidence) mg_fail('Quest evidence not found.', 404);
     if ((string)$evidence['status'] !== 'submitted') mg_fail('Quest evidence has already been reviewed.', 409);
+    $integrityBlocked=(string)$evidence['integrity_status']==='blocked';
     $requiresAcknowledgment=(string)$evidence['integrity_status']==='review'&&(int)$evidence['integrity_score']>=50;
+    if($decision==='approve'&&$integrityBlocked)mg_fail('This evidence is blocked by a confirmed integrity signal. An administrator must clear the signal before approval.',409);
     if($decision==='approve'&&$requiresAcknowledgment&&!$integrityAcknowledged)mg_fail('Acknowledge the integrity warning before approving this evidence.',409);
+    if($decision==='approve'&&$requiresAcknowledgment&&mb_strlen($note)<12)mg_fail('Add an integrity review note of at least 12 characters before approval.',422);
 
     $campaign = mg_lqp_campaign($pdo, (string)$evidence['campaign_public_id'], true, false);
     $userStmt = $pdo->prepare("SELECT * FROM users WHERE id=? AND status='active' LIMIT 1");
@@ -172,7 +191,7 @@ try {
             ->execute([(int)$participation['id'],$merchantId]);
         mg_lqp_event($pdo, $campaign, null, (int)$contact['id'], 'quest.evidence_rejected', ['participation_id'=>(string)$participation['public_id'],'evidence_id'=>$evidenceId,'review_note'=>$note,'integrity_score'=>(int)$evidence['integrity_score']]);
         mg_lqn_notify_participant($pdo, 'evidence_rejected', $campaign, (int)$participant['id'], ['participation_id'=>(string)$participation['public_id'],'evidence_id'=>$evidenceId,'source_public_id'=>$evidenceId,'review_note'=>$note]);
-        mg_audit('merchant.loyalty_quest_evidence_rejected', 'loyalty_quest_evidence', ['evidence_id'=>$evidenceId,'participation_id'=>(string)$participation['public_id'],'integrity_score'=>(int)$evidence['integrity_score'],'integrity_acknowledged'=>$requiresAcknowledgment], $merchantId);
+        mg_audit('merchant.loyalty_quest_evidence_rejected', 'loyalty_quest_evidence', ['evidence_id'=>$evidenceId,'participation_id'=>(string)$participation['public_id'],'integrity_score'=>(int)$evidence['integrity_score'],'integrity_status'=>(string)$evidence['integrity_status']], $merchantId);
         $pdo->commit();
         mg_ok(['evidence_id'=>$evidenceId,'status'=>'rejected','participation_status'=>'rejected'], 'Quest evidence rejected.');
     }
@@ -181,9 +200,8 @@ try {
     $pdo->prepare("UPDATE loyalty_quest_evidence SET status='verified',integrity_status=IF(integrity_status='review','resolved',integrity_status),reviewer_user_id=?,review_note=?,verified_at=NOW(),updated_at=NOW() WHERE id=? AND merchant_user_id=?")
         ->execute([$merchantId,$note!==''?$note:null,(int)$evidence['id'],$merchantId]);
     if($requiresAcknowledgment){
-        $resolutionNote=$note!==''?$note:'Merchant acknowledged integrity warning and approved the evidence.';
         $pdo->prepare("UPDATE loyalty_quest_integrity_signals SET status=IF(status='open','acknowledged',status),resolved_by_user_id=?,resolution_note=?,resolved_at=NOW(),updated_at=NOW() WHERE evidence_id=? AND merchant_user_id=? AND status='open'")
-            ->execute([$merchantId,mb_substr($resolutionNote,0,1000),(int)$evidence['id'],$merchantId]);
+            ->execute([$merchantId,mb_substr($note,0,1000),(int)$evidence['id'],$merchantId]);
     }
     $newProgress = min((int)$participation['required_count'], (int)$participation['progress_count'] + 1);
     $percent = (int)round(100 * $newProgress / max(1, (int)$participation['required_count']));
@@ -200,7 +218,7 @@ try {
         mg_lqp_event($pdo, $campaign, null, (int)$contact['id'], 'quest.evidence_approved', ['participation_id'=>(string)$participation['public_id'],'evidence_id'=>$evidenceId,'progress_count'=>$newProgress,'integrity_score'=>(int)$evidence['integrity_score']]);
         mg_lqn_notify_participant($pdo, 'evidence_approved', $campaign, (int)$participant['id'], ['participation_id'=>(string)$participation['public_id'],'evidence_id'=>$evidenceId,'source_public_id'=>$evidenceId,'review_note'=>$note,'progress_count'=>$newProgress,'required_count'=>(int)$participation['required_count']]);
     }
-    mg_audit('merchant.loyalty_quest_evidence_approved', 'loyalty_quest_evidence', ['evidence_id'=>$evidenceId,'participation_id'=>(string)$participation['public_id'],'participation_status'=>$participationStatus,'integrity_score'=>(int)$evidence['integrity_score'],'integrity_acknowledged'=>$requiresAcknowledgment], $merchantId);
+    mg_audit('merchant.loyalty_quest_evidence_approved', 'loyalty_quest_evidence', ['evidence_id'=>$evidenceId,'participation_id'=>(string)$participation['public_id'],'participation_status'=>$participationStatus,'integrity_score'=>(int)$evidence['integrity_score'],'integrity_acknowledged'=>$requiresAcknowledgment&&$integrityAcknowledged], $merchantId);
     $pdo->commit();
     mg_ok(['evidence_id'=>$evidenceId,'status'=>'verified','participation_status'=>$participationStatus,'progress_count'=>$newProgress,'completion_percent'=>$participationStatus==='completed'?100:$percent,'reward'=>$reward], 'Quest evidence approved.');
 } catch (Throwable $error) {
