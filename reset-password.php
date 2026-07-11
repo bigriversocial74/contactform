@@ -6,16 +6,17 @@ $header_mode = 'public';
 $token = trim((string) ($_GET['token'] ?? ''));
 require __DIR__ . '/includes/header.php';
 ?>
-<section class="mg-auth-shell">
+<section class="mg-auth-shell" aria-labelledby="reset-title">
   <aside class="mg-auth-aside">
     <span class="mg-badge">Secure reset</span>
-    <h1>Choose a new password.</h1>
-    <p>Use a unique password with at least 12 characters. After the reset succeeds, you will be sent back to sign in.</p>
-    <div class="mg-auth-note"><strong>Password rule</strong><span>Avoid reused passwords. Use a password manager when possible.</span></div>
+    <h1 id="reset-title">Set a new password and keep building.</h1>
+    <p>Choose a unique password with at least 12 characters. After the reset succeeds, you will return to Sign In and continue into your workspace.</p>
+    <div class="mg-auth-note"><strong>Password guidance</strong><span>Avoid reused passwords and use a password manager whenever possible.</span></div>
   </aside>
   <form class="mg-auth-card" method="post" action="/api/auth/password/reset.php" data-auth-form="reset-password" novalidate>
     <?= mg_csrf_field() ?>
     <input type="hidden" name="token" value="<?= mg_e($token) ?>">
+    <span class="mg-auth-kicker">Account security</span>
     <h2>Reset password</h2>
     <?php if ($token === ''): ?><div class="mg-alert mg-alert-warning">This reset page is missing a token. Request a new reset link before continuing.</div><?php endif; ?>
     <label>New password<input type="password" name="password" autocomplete="new-password" minlength="12" required></label>
