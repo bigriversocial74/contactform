@@ -17,7 +17,7 @@
         <div>
           <span class="mg-eyebrow">Payment Methods</span>
           <h2>Accepted payment options</h2>
-          <p>Choose which payment methods this merchant can present at checkout. Stripe onboarding and connected-account activation will be completed in the next payments integration phase.</p>
+          <p>Choose the payment methods this merchant can present at checkout, then connect Stripe through Stripe’s secure account authorization flow.</p>
         </div>
         <span class="mg-status-badge" data-financial-provider>Loading payment status</span>
       </div>
@@ -41,7 +41,7 @@
               <span class="mg-payment-method-icon is-stripe" aria-hidden="true">S</span>
               <span class="mg-payment-method-copy">
                 <strong>Stripe payments</strong>
-                <small>Enable card-payment availability for this merchant. Official Stripe onboarding and activation will be connected in the next PR.</small>
+                <small>Enable card-payment availability for this merchant. Checkout remains blocked until the connected Stripe account is ready.</small>
               </span>
               <span class="mg-toggle-switch">
                 <input type="checkbox" name="stripe_enabled" value="1" data-stripe-payment-toggle>
@@ -56,6 +56,46 @@
             <button class="mg-btn mg-btn-primary" type="submit" data-payment-methods-save>Save payment methods</button>
           </div>
         </form>
+
+        <section class="mg-stripe-connect-card" data-stripe-connect-card aria-labelledby="mg-stripe-connect-title">
+          <div class="mg-stripe-connect-brand" aria-hidden="true">S</div>
+          <div class="mg-stripe-connect-main">
+            <div class="mg-stripe-connect-heading">
+              <div>
+                <span class="mg-eyebrow">Official Stripe Connect</span>
+                <h3 id="mg-stripe-connect-title">Connect your Stripe account</h3>
+                <p>Stripe will let you sign in to an existing Stripe account or create a new account, then authorize Microgifter to process merchant payments.</p>
+              </div>
+              <span class="mg-status-badge is-missing" data-stripe-connect-status-badge>Not connected</span>
+            </div>
+
+            <div class="mg-stripe-connect-alert" data-stripe-connect-feedback hidden role="status" aria-live="polite"></div>
+            <div class="mg-stripe-connect-platform" data-stripe-connect-platform></div>
+
+            <div class="mg-stripe-connect-status-grid" aria-label="Stripe account readiness">
+              <article><span>Account</span><strong data-stripe-account-state>Not connected</strong></article>
+              <article><span>Details</span><strong data-stripe-details-state>Pending</strong></article>
+              <article><span>Payments</span><strong data-stripe-charges-state>Disabled</strong></article>
+              <article><span>Payouts</span><strong data-stripe-payouts-state>Disabled</strong></article>
+            </div>
+
+            <div class="mg-stripe-connect-requirements" data-stripe-connect-requirements hidden>
+              <strong>Stripe still needs</strong>
+              <ul data-stripe-requirements-list></ul>
+            </div>
+
+            <div class="mg-stripe-connect-meta" data-stripe-connect-meta hidden></div>
+            <div class="mg-form-status" data-stripe-connect-action-status aria-live="polite"></div>
+
+            <div class="mg-stripe-connect-actions">
+              <button class="mg-btn mg-btn-primary" type="button" data-stripe-connect-start>Connect or create Stripe account</button>
+              <button class="mg-btn mg-btn-soft" type="button" data-stripe-connect-sync hidden>Refresh Stripe status</button>
+              <a class="mg-btn mg-btn-soft" href="https://dashboard.stripe.com/" target="_blank" rel="noopener noreferrer" data-stripe-connect-dashboard hidden>Open Stripe Dashboard</a>
+              <button class="mg-btn mg-btn-ghost" type="button" data-stripe-connect-disconnect hidden>Disconnect</button>
+            </div>
+            <p class="mg-stripe-connect-note">Microgifter never receives or stores the merchant’s Stripe password. Stripe returns only the connected account ID and authorization result.</p>
+          </div>
+        </section>
       </div>
     </section>
   </section>

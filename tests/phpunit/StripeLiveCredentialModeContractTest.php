@@ -62,6 +62,24 @@ final class StripeLiveCredentialModeContractTest extends TestCase
         }
     }
 
+    public function testAdminApiVerifiesDatabasePersistenceBeforeReturningSuccess(): void
+    {
+        $source=$this->source('api/admin/payment-settings.php');
+
+        foreach([
+            'function mg_admin_payment_database_snapshot',
+            'function mg_admin_payment_verify_persistence',
+            'mg_admin_payment_verify_persistence($pdo,$input,$mode)',
+            'Stripe settings failed database verification',
+            "'persistence_verified'=>true",
+            "\$payload['storage']=\$storage",
+            "\$payload['environment_override']",
+            'No unverified update was accepted.',
+        ] as $needle){
+            self::assertStringContainsString($needle,$source);
+        }
+    }
+
     public function testAdminBrowserDefaultsToAutoAndDoesNotHardcodeTestRuntime(): void
     {
         $source=$this->source('assets/js/admin-payments.js');
@@ -75,13 +93,34 @@ final class StripeLiveCredentialModeContractTest extends TestCase
         self::assertStringContainsString('Test credentials are not required when saving Live.',$source);
     }
 
-    public function testAdminUiExplainsLiveOnlyConfiguration(): void
+    public function testPersistenceClientClearsStaleModeAndReadsBackSavedRecord(): void
+    {
+        $source=$this->source('assets/js/admin-payments-persistence.js');
+
+        foreach([
+            'localStorage.removeItem(legacyModeKey)',
+            "searchParams.set('mode', selectedMode())",
+            'compareStorage',
+            'verifyWhenSaveFinishes',
+            'Save verification failed after reload',
+            "Microgifter.get('/api/admin/payment-settings.php?mode='",
+            'Secret fields remain blank after reload by design',
+            'API key saved securely.',
+        ] as $needle){
+            self::assertStringContainsString($needle,$source);
+        }
+    }
+
+    public function testAdminUiExplainsLiveOnlyConfigurationAndPersistence(): void
     {
         $source=$this->source('admin-payments.php');
 
         self::assertStringContainsString('A live-only setup does not require test credentials.',$source);
         self::assertStringContainsString('data-payment-mode-help',$source);
         self::assertStringContainsString('data-payment-mode-warning',$source);
+        self::assertStringContainsString('data-payment-persistence-state',$source);
+        self::assertStringContainsString('/assets/js/admin-payments-persistence.js',$source);
+        self::assertStringContainsString('/assets/css/admin-payments-persistence.css',$source);
         self::assertStringContainsString('Test and Live credentials are independent.',$source);
         self::assertStringContainsString('Readiness applies to the selected Test or Live configuration.',$source);
     }

@@ -51,7 +51,7 @@ final class PaymentsUiCleanupContractTest extends TestCase
         self::assertStringNotContainsString('.mg-payments-hero',$css);
     }
 
-    public function testMerchantMethodPreferencesIncludeCashAndStripe(): void
+    public function testMerchantMethodPreferencesIncludeCashAndActualStripeState(): void
     {
         $api=file_get_contents($this->root.'/api/merchant/payment-methods.php');
         $js=file_get_contents($this->root.'/assets/js/merchant-payments.js');
@@ -65,8 +65,11 @@ final class PaymentsUiCleanupContractTest extends TestCase
             "'stripe' => [",
             '$cashEnabled',
             '$stripeEnabled',
-            "'mode' => 'pending_onboarding'",
-            "'stripe_onboarding_connected' => false",
+            'mg_payment_connect_status',
+            "? 'ready'",
+            "? 'pending_onboarding' : 'not_connected'",
+            "'stripe_onboarding_connected' => !empty(\$stripeAccount['connected'])",
+            "'stripe_ready' => !empty(\$stripeAccount['ready'])",
         ] as $needle){
             self::assertStringContainsString($needle,$api);
         }

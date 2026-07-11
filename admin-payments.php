@@ -6,8 +6,8 @@ $user = mg_require_admin_page_permission('admin.settings.manage');
 $page_title='Stripe Payment Settings | Microgifter';
 $page_section='account';
 $header_mode='account';
-$page_styles=['/assets/css/admin-shell.css','/assets/css/admin-payments.css'];
-$page_scripts=['/assets/js/admin-payments.js'];
+$page_styles=['/assets/css/admin-shell.css','/assets/css/admin-payments.css','/assets/css/admin-payments-persistence.css'];
+$page_scripts=['/assets/js/admin-payments.js','/assets/js/admin-payments-persistence.js'];
 $adminActive='payments';
 require __DIR__.'/includes/header.php';
 ?>
@@ -123,6 +123,7 @@ require __DIR__.'/includes/header.php';
               </div>
 
               <div class="mg-form-status mg-payment-mode-warning" data-payment-mode-warning hidden aria-live="polite"></div>
+              <div class="mg-payment-persistence-state" data-payment-persistence-state aria-live="polite">Checking saved database values…</div>
 
               <label>Publishable key
                 <input name="publishable_key" autocomplete="off" placeholder="pk_live_… or pk_test_…">

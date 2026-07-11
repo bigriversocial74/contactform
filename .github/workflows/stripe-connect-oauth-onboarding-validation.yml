@@ -1,0 +1,77 @@
+name: Stripe Connect OAuth Onboarding Validation
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'merchant-payments.php'
+      - 'includes/merchant-payments-view.php'
+      - 'assets/css/merchant-stripe-connect.css'
+      - 'assets/js/merchant-stripe-connect.js'
+      - 'api/merchant/payment-account.php'
+      - 'api/merchant/payment-connect.php'
+      - 'api/merchant/payment-methods.php'
+      - 'api/merchant/stripe-connect-callback.php'
+      - 'api/payments/_connect.php'
+      - 'api/payments/_connect_webhook.php'
+      - 'api/payments/_stripe_connect_oauth.php'
+      - 'api/payments/webhook.php'
+      - 'database/stage_v1g_stripe_connect_oauth.sql'
+      - 'docs/payments/stripe-connect-oauth-onboarding.md'
+      - 'scripts/validate_stripe_connect_oauth_onboarding.php'
+      - 'tests/phpunit/StripeConnectOAuthOnboardingContractTest.php'
+      - '.github/workflows/stripe-connect-oauth-onboarding-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: PHP syntax
+        run: |
+          php -l merchant-payments.php
+          php -l includes/merchant-payments-view.php
+          php -l api/merchant/payment-account.php
+          php -l api/merchant/payment-connect.php
+          php -l api/merchant/payment-methods.php
+          php -l api/merchant/stripe-connect-callback.php
+          php -l api/payments/_connect.php
+          php -l api/payments/_connect_webhook.php
+          php -l api/payments/_stripe_connect_oauth.php
+          php -l api/payments/webhook.php
+          php -l scripts/validate_stripe_connect_oauth_onboarding.php
+          php -l tests/phpunit/StripeConnectOAuthOnboardingContractTest.php
+
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/merchant-payments.js
+          node --check assets/js/merchant-stripe-connect.js
+
+      - name: Stripe Connect OAuth onboarding contract
+        run: php scripts/validate_stripe_connect_oauth_onboarding.php
+
+      - name: PHPUnit contract when available
+        run: |
+          if [ -x vendor/bin/phpunit ]; then
+            vendor/bin/phpunit tests/phpunit/StripeConnectOAuthOnboardingContractTest.php
+          else
+            echo 'PHPUnit is not installed in this checkout; standalone contract completed.'
+          fi

@@ -42,12 +42,14 @@ $checks=[
         && str_contains($content['merchantView'],'data-stripe-payment-toggle')
         && str_contains($content['merchantJs'],'cash_enabled')
         && str_contains($content['merchantJs'],'stripe_enabled'),
-    'merchant payment preferences persist without onboarding activation' =>
+    'merchant payment preferences persist and report actual Stripe onboarding state' =>
         str_contains($content['merchantApi'],"'cash' => [")
         && str_contains($content['merchantApi'],"'stripe' => [")
-        && str_contains($content['merchantApi'],"'mode' => 'pending_onboarding'")
-        && str_contains($content['merchantApi'],"'stripe_onboarding_connected' => false"),
-    'unfinished connect client is not loaded on merchant page' =>
+        && str_contains($content['merchantApi'],'mg_payment_connect_status')
+        && str_contains($content['merchantApi'],"? 'ready'")
+        && str_contains($content['merchantApi'],"? 'pending_onboarding' : 'not_connected'")
+        && str_contains($content['merchantApi'],"'stripe_onboarding_connected' => !empty(\$stripeAccount['connected'])"),
+    'legacy unfinished connect client is not loaded on merchant page' =>
         !str_contains($content['merchantPage'],'merchant-connect.js'),
     'admin page is split into three focused tabs' =>
         substr_count($content['adminPage'],'data-admin-payment-tab=')===3
