@@ -8,6 +8,8 @@ document.addEventListener('DOMContentLoaded', function () {
   if (!form) return;
 
   var mode = form.querySelector('[data-payment-mode]');
+  var modeHelp = root.querySelector('[data-payment-mode-help]');
+  var modeWarning = root.querySelector('[data-payment-mode-warning]');
   var status = root.querySelector('[data-payment-settings-status]');
   var badge = root.querySelector('[data-payment-readiness]');
   var checks = root.querySelector('[data-payment-checks]');
@@ -28,6 +30,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var saveLabel = root.querySelector('[data-payment-save-label]');
   var saveState = root.querySelector('[data-payment-save-state]');
   var allowedPages = ['methods', 'stripe', 'readiness'];
+  var storageKey = 'mgAdminStripeConfigurationMode';
 
   function esc(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, function (character) {
@@ -94,8 +97,12 @@ document.addEventListener('DOMContentLoaded', function () {
     if (form.elements.webhook_secret) form.elements.webhook_secret.value = '';
   }
 
-  function expectedPrefix() {
+  function selectedMode() {
     return mode && mode.value === 'live' ? 'live' : 'test';
+  }
+
+  function secretMatchesMode(value, selected) {
+    return value.indexOf('sk_' + selected + '_') === 0 || value.indexOf('rk_' + selected + '_') === 0;
   }
 
   function setSaving(isSaving, label) {
@@ -108,15 +115,15 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function validatePayload(payload) {
-    var prefix = expectedPrefix();
-    if (payload.publishable_key && payload.publishable_key.indexOf('pk_' + prefix + '_') !== 0) {
-      return 'This page is in ' + prefix + ' mode. Publishable key must start with pk_' + prefix + '_. Switch mode or paste the matching key.';
+    var selected = selectedMode();
+    if (payload.publishable_key && payload.publishable_key.indexOf('pk_' + selected + '_') !== 0) {
+      return 'The selected configuration is ' + selected + '. Publishable key must start with pk_' + selected + '_. Test credentials are not required when saving Live.';
     }
-    if (payload.secret_key && payload.secret_key.indexOf('sk_' + prefix + '_') !== 0) {
-      return 'This page is in ' + prefix + ' mode. Secret key must start with sk_' + prefix + '_. Switch mode or paste the matching key.';
+    if (payload.secret_key && !secretMatchesMode(payload.secret_key, selected)) {
+      return 'The selected configuration is ' + selected + '. Use an sk_' + selected + '_ secret key or an rk_' + selected + '_ restricted key. Test credentials are not required when saving Live.';
     }
     if (payload.webhook_secret && payload.webhook_secret.indexOf('whsec_') !== 0) {
-      return 'Webhook signing secret must start with whsec_.';
+      return 'Webhook signing secret must start with whsec_. Stripe webhook secrets are separate from API keys.';
     }
     if (payload.connect_client_id && payload.connect_client_id.indexOf('ca_') !== 0) {
       return 'Connect client ID must start with ca_. A whsec_ value belongs in Webhook signing secret, not Connect client ID.';
@@ -143,18 +150,28 @@ document.addEventListener('DOMContentLoaded', function () {
     var webhookInput = form.elements.webhook_secret;
     var secretHint = String(provider.secret_hint || '');
     var webhookHint = String(provider.webhook_hint || '');
+    var secretType = String(provider.secret_key_type || 'unknown');
     var secretNode = ensureHint(secretInput, 'data-payment-secret-key-hint');
     var webhookNode = ensureHint(webhookInput, 'data-payment-webhook-secret-hint');
+    var selected = selectedMode();
 
-    if (secretInput) secretInput.placeholder = secretHint ? 'Saved encrypted value: ' + secretHint + ' — paste a new matching value to replace' : 'sk_' + expectedPrefix() + '_…';
-    if (webhookInput) webhookInput.placeholder = webhookHint ? 'Saved encrypted value: ' + webhookHint + ' — paste a new value to replace' : 'whsec_…';
+    if (secretInput) {
+      secretInput.placeholder = secretHint
+        ? 'Saved encrypted value: ' + secretHint + ' — blank keeps it'
+        : 'sk_' + selected + '_… or rk_' + selected + '_…';
+    }
+    if (webhookInput) webhookInput.placeholder = webhookHint ? 'Saved encrypted value: ' + webhookHint + ' — blank keeps it' : 'whsec_…';
 
     if (secretNode) {
-      secretNode.textContent = secretHint ? 'Saved encrypted secret key: ' + secretHint + '. Blank keeps this value.' : 'No saved secret key for this mode.';
+      if (secretHint) {
+        secretNode.textContent = 'Saved encrypted ' + (secretType === 'restricted' ? 'restricted' : 'secret') + ' key: ' + secretHint + '. Blank keeps this value.';
+      } else {
+        secretNode.textContent = 'No saved API key for ' + selected + '. Test credentials are optional for a live-only setup.';
+      }
       secretNode.classList.toggle('is-missing', !secretHint);
     }
     if (webhookNode) {
-      webhookNode.textContent = webhookHint ? 'Saved encrypted webhook secret: ' + webhookHint + '. Blank keeps this value.' : 'No saved webhook signing secret for this mode.';
+      webhookNode.textContent = webhookHint ? 'Saved encrypted webhook secret: ' + webhookHint + '. Blank keeps this value.' : 'No saved webhook signing secret for ' + selected + '.';
       webhookNode.classList.toggle('is-missing', !webhookHint);
     }
   }
@@ -179,14 +196,46 @@ document.addEventListener('DOMContentLoaded', function () {
     return output;
   }
 
+  function renderModeContext(data, provider) {
+    var configured = data.configured_modes || {};
+    var current = provider.mode || selectedMode();
+    var other = current === 'live' ? 'test' : 'live';
+    var otherConfigured = !!(configured[other] && configured[other].configured);
+    var runtime = data.runtime_mode || 'test';
+
+    if (modeHelp) {
+      modeHelp.textContent = current === 'live'
+        ? 'Live-only setup is supported. Test credentials are optional. Server runtime: ' + runtime + '.'
+        : 'You are editing Test credentials. Switch to Live to save pk_live_, sk_live_, or rk_live_ values. Server runtime: ' + runtime + '.';
+    }
+
+    if (modeWarning) {
+      var warning = data.mode_storage_warning || '';
+      if (!warning && data.activation_notice) warning = data.activation_notice;
+      if (!warning && otherConfigured) warning = ucfirst(other) + ' credentials are also stored separately.';
+      setMessage(modeWarning, warning, data.mode_storage_warning ? 'error' : 'success');
+      modeWarning.hidden = warning === '';
+    }
+  }
+
+  function ucfirst(value) {
+    value = String(value || '');
+    return value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
+  }
+
   function fill(data) {
     data = data || {};
     var provider = data.provider || {};
     var enabled = !!provider.enabled;
 
+    if (mode && (provider.mode === 'live' || provider.mode === 'test')) {
+      mode.value = provider.mode;
+      try { window.localStorage.setItem(storageKey, provider.mode); } catch (error) {}
+    }
+
     if (form.elements.enabled) form.elements.enabled.value = enabled ? '1' : '0';
     if (stripeToggle) stripeToggle.checked = enabled;
-    if (configEnabled) configEnabled.textContent = enabled ? 'Enabled for ' + (provider.mode || expectedPrefix()) : 'Disabled for ' + (provider.mode || expectedPrefix());
+    if (configEnabled) configEnabled.textContent = enabled ? 'Enabled for ' + (provider.mode || selectedMode()) : 'Disabled for ' + (provider.mode || selectedMode());
 
     form.elements.publishable_key.value = provider.publishable_key || '';
     form.elements.connect_client_id.value = provider.connect_client_id || '';
@@ -194,6 +243,7 @@ document.addEventListener('DOMContentLoaded', function () {
     form.elements.fixed_fee_cents.value = Number(provider.fixed_fee_cents || 0);
     clearSecrets();
     setCredentialHints(provider);
+    renderModeContext(data, provider);
 
     if (badge) {
       badge.textContent = data.ready ? 'Ready for ' + provider.mode : 'Not ready for ' + provider.mode;
@@ -212,11 +262,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var connected = data.connected_accounts || {};
     if (accounts) {
-      accounts.innerHTML = '<strong>Connected accounts</strong><span>' + Number(connected.ready || 0) + ' ready of ' + Number(connected.total || 0) + ' total</span><small>Credential source: ' + esc(provider.credential_source || 'missing') + ' · secret ' + (provider.secret_configured ? (provider.secret_hint ? esc(provider.secret_hint) : 'configured') : 'missing') + ' · webhook ' + (provider.webhook_configured ? (provider.webhook_hint ? esc(provider.webhook_hint) : 'configured') : 'missing') + '</small>';
+      accounts.innerHTML = '<strong>Connected accounts</strong><span>' + Number(connected.ready || 0) + ' ready of ' + Number(connected.total || 0) + ' total</span><small>Configuration: ' + esc(provider.mode || selectedMode()) + ' · credential source: ' + esc(provider.credential_source || 'missing') + ' · secret ' + (provider.secret_configured ? (provider.secret_hint ? esc(provider.secret_hint) : 'configured') : 'missing') + ' · webhook ' + (provider.webhook_configured ? (provider.webhook_hint ? esc(provider.webhook_hint) : 'configured') : 'missing') + '</small>';
     }
 
     setCredentialState(data.checks && data.checks.credential_encryption);
-    setMessage(stripeStatus, enabled ? 'Stripe is enabled for the current mode.' : 'Stripe is disabled for the current mode.', 'success');
+    setMessage(stripeStatus, enabled ? 'Stripe is enabled for ' + (provider.mode || selectedMode()) + '.' : 'Stripe is disabled for ' + (provider.mode || selectedMode()) + '.', 'success');
   }
 
   function base64Key(bytes) {
@@ -225,19 +275,27 @@ document.addEventListener('DOMContentLoaded', function () {
     return btoa(binary);
   }
 
+  function phpSingleQuoted(value) {
+    return String(value || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  }
+
   function generatedConfigBlock(key) {
+    var selected = selectedMode();
+    var appUrl = window.location && window.location.origin ? window.location.origin : 'https://microgifter.com';
     return "<?php\n"
       + "// Local Microgifter server settings. This file is ignored by Git.\n"
       + "// Keep this file private and do not paste this key into chat, GitHub, or email.\n"
-      + "$mgPaymentCredentialKey = '" + key + "';\n"
+      + "$mgPaymentCredentialKey = '" + phpSingleQuoted(key) + "';\n"
       + "putenv('MG_PAYMENT_CREDENTIAL_KEY=' . $mgPaymentCredentialKey);\n"
       + "putenv('MG_PAYMENT_PROVIDER=stripe');\n"
-      + "putenv('MG_PAYMENT_MODE=test');\n\n"
+      + "putenv('MG_PAYMENT_MODE=" + selected + "');\n"
+      + "putenv('MG_APP_URL=" + phpSingleQuoted(appUrl) + "');\n\n"
       + "return [\n"
       + "    'payments' => [\n"
       + "        'credential_key' => $mgPaymentCredentialKey,\n"
       + "        'provider' => 'stripe',\n"
-      + "        'mode' => 'test',\n"
+      + "        'mode' => '" + selected + "',\n"
+      + "        'app_url' => '" + phpSingleQuoted(appUrl) + "',\n"
       + "    ],\n"
       + "];\n";
   }
@@ -301,21 +359,26 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  async function load() {
+  async function load(requestedMode) {
     if (!window.Microgifter) {
       msg('Payment client is not loaded. Refresh the page and try again.', 'error');
       if (saveButton) saveButton.disabled = true;
       return;
     }
 
-    msg('Loading payment settings…', 'loading');
+    requestedMode = requestedMode === 'live' || requestedMode === 'test' ? requestedMode : 'auto';
+    msg('Loading Stripe ' + (requestedMode === 'auto' ? 'configuration' : requestedMode + ' configuration') + '…', 'loading');
     setMessage(stripeStatus, 'Loading Stripe option…', 'loading');
     try {
-      var response = await Microgifter.get('/api/admin/payment-settings.php?mode=' + encodeURIComponent(mode.value));
+      var response = await Microgifter.get('/api/admin/payment-settings.php?mode=' + encodeURIComponent(requestedMode));
       var data = response.data || response;
       fill(data);
       var blockers = currentBlockers(data);
-      msg(blockers.length ? 'Payment settings loaded, but this mode still has key issues: ' + blockers.join(' ') : 'Payment settings loaded.', 'success');
+      if (blockers.length) {
+        msg(ucfirst(data.selected_mode || selectedMode()) + ' credentials need attention: ' + blockers.join(' '), 'error');
+      } else {
+        msg(ucfirst(data.selected_mode || selectedMode()) + ' Stripe credentials are saved. Test credentials are not required for this configuration.', 'success');
+      }
     } catch (error) {
       msg(error.message || 'Unable to load payment settings.', 'error');
       setMessage(stripeStatus, error.message || 'Unable to load Stripe option.', 'error');
@@ -336,6 +399,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     var payload = Object.fromEntries(new FormData(form).entries());
+    payload.mode = selectedMode();
     payload.enabled = stripeToggle ? stripeToggle.checked : String(form.elements.enabled.value || '0') === '1';
     payload.platform_fee_bps = Number(payload.platform_fee_bps || 0);
     payload.fixed_fee_cents = Number(payload.fixed_fee_cents || 0);
@@ -352,7 +416,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (stripeSave) stripeSave.disabled = true;
     if (stripeToggle) stripeToggle.disabled = true;
 
-    msg(origin === 'configuration' ? 'Saving Stripe configuration…' : 'Saving Stripe availability…', 'loading');
+    msg(origin === 'configuration' ? 'Saving ' + payload.mode + ' Stripe configuration…' : 'Saving Stripe availability…', 'loading');
     setMessage(stripeStatus, 'Saving Stripe option…', 'loading');
 
     try {
@@ -362,9 +426,9 @@ document.addEventListener('DOMContentLoaded', function () {
       if (data.save_warning) {
         msg(data.save_warning, 'error');
       } else {
-        msg(response.message || 'Stripe configuration saved successfully.', 'success');
+        msg(response.message || ucfirst(payload.mode) + ' Stripe configuration saved successfully.', 'success');
       }
-      setMessage(stripeStatus, payload.enabled ? 'Stripe is enabled for the current mode.' : 'Stripe is disabled for the current mode.', 'success');
+      setMessage(stripeStatus, payload.enabled ? 'Stripe is enabled for ' + payload.mode + '.' : 'Stripe is disabled for ' + payload.mode + '.', 'success');
     } catch (error) {
       msg(error.message || 'Unable to save payment settings.', 'error');
       setMessage(stripeStatus, error.message || 'Unable to save Stripe option.', 'error');
@@ -375,7 +439,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  if (mode) mode.addEventListener('change', load);
+  if (mode) mode.addEventListener('change', function () {
+    try { window.localStorage.setItem(storageKey, selectedMode()); } catch (error) {}
+    load(selectedMode());
+  });
   form.addEventListener('submit', function (event) {
     event.preventDefault();
     saveSettings('configuration');
@@ -397,7 +464,14 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  var requestedMode = new URLSearchParams(window.location.search).get('mode');
+  if (requestedMode !== 'live' && requestedMode !== 'test') {
+    try { requestedMode = window.localStorage.getItem(storageKey); } catch (error) { requestedMode = null; }
+  }
+  if (requestedMode !== 'live' && requestedMode !== 'test') requestedMode = 'auto';
+  if (mode && requestedMode !== 'auto') mode.value = requestedMode;
+
   activatePage(pageFromHash(), false);
-  load();
+  load(requestedMode);
   loadCash();
 });

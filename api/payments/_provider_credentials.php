@@ -54,6 +54,21 @@ function mg_payment_decrypt_secret(?string $encoded): string
     return $plaintext;
 }
 
+function mg_payment_secret_matches_mode(string $secret,string $mode): bool
+{
+    $secret=trim($secret);
+    $mode=$mode==='live'?'live':'test';
+    return str_starts_with($secret,'sk_'.$mode.'_')||str_starts_with($secret,'rk_'.$mode.'_');
+}
+
+function mg_payment_secret_key_type(string $secret): string
+{
+    $secret=trim($secret);
+    if(str_starts_with($secret,'rk_'))return 'restricted';
+    if(str_starts_with($secret,'sk_'))return 'secret';
+    return 'unknown';
+}
+
 function mg_payment_env_key(string $provider,string $field,string $mode): string
 {
     return 'MG_'.strtoupper(preg_replace('/[^A-Z0-9]+/i','_',$provider)).'_'.strtoupper($field).'_'.strtoupper($mode);
@@ -61,9 +76,24 @@ function mg_payment_env_key(string $provider,string $field,string $mode): string
 
 function mg_payment_env_value(string $provider,string $field,string $mode): string
 {
+    $mode=$mode==='live'?'live':'test';
+    $field=strtoupper($field);
     $modeSpecific=trim((string)(getenv(mg_payment_env_key($provider,$field,$mode)) ?: ''));
     if($modeSpecific!=='')return $modeSpecific;
-    return trim((string)(getenv('MG_'.strtoupper($provider).'_'.strtoupper($field)) ?: ''));
+
+    $generic=trim((string)(getenv('MG_'.strtoupper($provider).'_'.$field) ?: ''));
+    if($generic==='')return '';
+
+    if($field==='PUBLISHABLE_KEY'){
+        return str_starts_with($generic,'pk_'.$mode.'_')?$generic:'';
+    }
+    if($field==='SECRET_KEY'){
+        return mg_payment_secret_matches_mode($generic,$mode)?$generic:'';
+    }
+
+    // Webhook secrets and Connect client IDs do not encode test/live in their prefix.
+    // A generic value therefore belongs only to the explicitly selected runtime mode.
+    return mg_payment_mode()===$mode?$generic:'';
 }
 
 function mg_payment_platform_credential_row(PDO $pdo,string $provider,string $mode,bool $forUpdate=false): ?array
@@ -136,8 +166,8 @@ function mg_payment_save_platform_config(PDO $pdo,array $input,int $actorUserId)
         if($publishable!==''&&!str_starts_with($publishable,'pk_'.$prefix.'_')){
             throw new InvalidArgumentException('Stripe publishable key must start with pk_'.$prefix.'_ for '.$mode.' mode.');
         }
-        if($secret!==''&&!str_starts_with($secret,'sk_'.$prefix.'_')){
-            throw new InvalidArgumentException('Stripe secret key must start with sk_'.$prefix.'_ for '.$mode.' mode.');
+        if($secret!==''&&!mg_payment_secret_matches_mode($secret,$mode)){
+            throw new InvalidArgumentException('Stripe secret or restricted key must start with sk_'.$prefix.'_ or rk_'.$prefix.'_ for '.$mode.' mode.');
         }
         if($webhook!==''&&!str_starts_with($webhook,'whsec_')){
             throw new InvalidArgumentException('Stripe webhook signing secret must start with whsec_.');
@@ -159,7 +189,7 @@ function mg_payment_save_platform_config(PDO $pdo,array $input,int $actorUserId)
         $secretCipher=$existingSecretCipher;
         if($provider==='stripe'&&$secretCipher!==''){
             $existingSecret=mg_payment_decrypt_secret($secretCipher);
-            if($existingSecret!==''&&!str_starts_with($existingSecret,'sk_'.$prefix.'_')){
+            if($existingSecret!==''&&!mg_payment_secret_matches_mode($existingSecret,$mode)){
                 $secretCipher='';
             }
         }
@@ -191,6 +221,7 @@ function mg_payment_config_public_status(PDO $pdo,string $provider='stripe',?str
         'credential_source'=>$config['credential_source'],
         'publishable_configured'=>$publishable!=='',
         'secret_configured'=>$secret!=='',
+        'secret_key_type'=>mg_payment_secret_key_type($secret),
         'webhook_configured'=>$webhook!=='',
         'connect_client_configured'=>(string)$config['connect_client_id']!=='',
         'publishable_hint'=>$publishable!==''?substr($publishable,0,8).'…'.substr($publishable,-4):'',
