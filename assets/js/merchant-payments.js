@@ -1,1 +1,295 @@
-document.addEventListener('DOMContentLoaded',function(){'use strict';var root=document.querySelector('[data-merchant-app][data-merchant-view="payments"]');if(!root||!window.Microgifter)return;function esc(v){return String(v==null?'':v).replace(/[&<>'"]/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'})[c]})}function money(c,cur){return new Intl.NumberFormat(undefined,{style:'currency',currency:cur||'USD'}).format(Number(c||0)/100)}function rows(items,map,empty){return items&&items.length?items.map(map).join(''):'<div class="mg-empty-state">'+esc(empty)+'</div>'}function setStatus(n,m,t){if(!n)return;n.textContent=m||'';n.classList.toggle('is-error',t==='error');n.classList.toggle('is-success',t==='success')}var data=null;async function loadPaymentMethods(){var form=root.querySelector('[data-payment-methods-form]'),toggle=root.querySelector('[data-cash-payment-toggle]'),msg=root.querySelector('[data-payment-methods-status]');if(!form||!toggle)return;async function saveCash(btn){if(btn)btn.disabled=true;toggle.disabled=true;setStatus(msg,'Saving cash option…');try{var r=await Microgifter.post('/api/merchant/payment-methods.php',{cash_enabled:toggle.checked?1:0});var d=r.data||r;toggle.checked=!!(d.payment_methods&&d.payment_methods.cash&&d.payment_methods.cash.enabled);setStatus(msg,r.message||'Payment method settings saved.','success')}catch(err){setStatus(msg,err.message||'Unable to save cash option.','error')}finally{toggle.disabled=false;if(btn)btn.disabled=false}}try{var r=await Microgifter.get('/api/merchant/payment-methods.php'),d=r.data||r;toggle.checked=!!(d.payment_methods&&d.payment_methods.cash&&d.payment_methods.cash.enabled);setStatus(msg,toggle.checked?'Cash payments are enabled for local testing.':'Cash payments are disabled.','success')}catch(e){setStatus(msg,e.message||'Unable to load payment methods.','error')}toggle.addEventListener('change',function(){saveCash(null)});form.onsubmit=function(e){e.preventDefault();saveCash(form.querySelector('button[type="submit"]'))}}async function load(){var r=await Microgifter.get('/api/merchant/financial-dashboard.php'),d=r.data||r,s=d.summary||{};data=d;document.querySelector('[data-financial-provider]').textContent='Provider: '+(window.MG_PAYMENT_PROVIDER||'sandbox')+' / '+(window.MG_PAYMENT_MODE||'test');document.querySelector('[data-financial-kpis]').innerHTML=[['Orders',s.orders],['Gross',money(s.gross_cents,'USD')],['Paid',s.paid_orders],['Refunded',s.refunded_orders],['Disputed',s.disputed_orders]].map(function(x){return '<div class="mg-merchant-kpi"><span>'+x[0]+'</span><strong>'+esc(x[1]||0)+'</strong></div>'}).join('');renderOrders();document.querySelector('[data-financial-refunds]').innerHTML=rows(d.refunds,function(x){return '<div class="mg-financial-row"><div><strong>'+esc(x.public_id)+'</strong><p>'+esc(x.reason)+' · '+esc(x.created_at)+'</p></div><div class="mg-financial-amount"><strong>'+money(x.amount_cents,x.currency)+'</strong></div><span class="mg-financial-state is-'+esc(x.status)+'">'+esc(x.status)+'</span></div>'},'No refunds.');document.querySelector('[data-financial-payouts]').innerHTML=rows(d.payouts,function(x){return '<div class="mg-financial-row"><div><strong>'+esc(x.public_id)+'</strong><p>'+esc(x.provider_key)+' · arrival '+esc(x.arrival_date||'pending')+'</p></div><div class="mg-financial-amount"><strong>'+money(x.net_cents,x.currency)+'</strong><small>Gross '+money(x.gross_cents,x.currency)+' · fees '+money(x.fee_cents,x.currency)+'</small></div><span class="mg-financial-state is-'+esc(x.status)+'">'+esc(x.status)+'</span></div>'},'No payouts.');document.querySelector('[data-financial-disputes]').innerHTML=rows(d.disputes,function(x){return '<div class="mg-financial-row"><div><strong>'+esc(x.public_id)+'</strong><p>'+esc(x.reason||'Dispute')+' · due '+esc(x.response_due_at||'n/a')+'</p></div><div class="mg-financial-amount"><strong>'+money(x.amount_cents,x.currency)+'</strong></div><span class="mg-financial-state is-'+esc(x.status)+'">'+esc(x.status)+'</span></div>'},'No disputes.');document.querySelector('[data-financial-ledger]').innerHTML=rows(d.ledger,function(x){return '<div class="mg-financial-row"><div><strong>'+esc(x.account_code)+'</strong><p>'+esc(x.entry_type)+'</p></div><div class="mg-financial-amount"><strong>'+money(x.amount_cents,x.currency)+'</strong></div><span></span></div>'},'No ledger entries.');document.querySelector('[data-financial-reconciliation]').innerHTML=rows(d.reconciliation,function(x){return '<div class="mg-financial-row"><div><strong>'+esc(x.public_id)+'</strong><p>'+esc(x.period_start)+' → '+esc(x.period_end)+'</p></div><div class="mg-financial-amount"><strong>'+money(x.difference_cents,'USD')+'</strong><small>'+Number(x.exception_count||0)+' exceptions</small></div><span class="mg-financial-state is-'+esc(x.status)+'">'+esc(x.status)+'</span></div>'},'No reconciliation runs.')}function renderOrders(){var q=(document.querySelector('[data-financial-search]').value||'').toLowerCase(),st=document.querySelector('[data-financial-status]').value,items=(data&&data.orders||[]).filter(function(x){return(st==='all'||x.payment_status===st)&&x.public_id.toLowerCase().includes(q)});document.querySelector('[data-financial-orders]').innerHTML=rows(items,function(x){return '<div class="mg-financial-row"><div><strong>'+esc(x.public_id)+'</strong><p>'+Number(x.item_count||0)+' items · '+esc(x.created_at)+'</p><div class="mg-financial-meta"><span>'+esc(x.fulfillment_status)+'</span><span>'+money(x.refunded_cents,x.currency)+' refunded</span></div></div><div class="mg-financial-amount"><strong>'+money(x.total_cents,x.currency)+'</strong></div><span class="mg-financial-state is-'+esc(x.payment_status)+'">'+esc(x.payment_status)+'</span></div>'},'No orders match the filters.')}document.querySelectorAll('[data-financial-tab]').forEach(function(b){b.onclick=function(){document.querySelectorAll('[data-financial-tab]').forEach(function(x){x.classList.toggle('is-active',x===b)});document.querySelectorAll('[data-financial-panel]').forEach(function(p){p.hidden=p.dataset.financialPanel!==b.dataset.financialTab})}});document.querySelector('[data-financial-search]').oninput=renderOrders;document.querySelector('[data-financial-status]').onchange=renderOrders;var refund=document.querySelector('[data-refund-form]');refund.elements.idempotency_key.value=crypto.randomUUID();refund.onsubmit=async function(e){e.preventDefault();var msg=document.querySelector('[data-refund-status]'),p=Object.fromEntries(new FormData(refund).entries());p.amount_cents=Number(p.amount_cents);try{msg.textContent='Creating refund…';var r=await Microgifter.post('/api/merchant/refund.php',p);msg.textContent=r.message||'Refund created';refund.reset();refund.elements.idempotency_key.value=crypto.randomUUID();await load()}catch(err){msg.textContent=err.message}};var rec=document.querySelector('[data-reconciliation-form]'),today=new Date().toISOString().slice(0,10),past=new Date(Date.now()-30*86400000).toISOString().slice(0,10);rec.elements.from.value=past;rec.elements.to.value=today;rec.onsubmit=async function(e){e.preventDefault();var msg=document.querySelector('[data-reconciliation-status]');try{msg.textContent='Reconciling…';var r=await Microgifter.post('/api/merchant/reconciliation.php',Object.fromEntries(new FormData(rec).entries()));msg.textContent=r.message||'Completed';await load()}catch(err){msg.textContent=err.message}};loadPaymentMethods();load().catch(console.error)});
+document.addEventListener('DOMContentLoaded', function () {
+  'use strict';
+
+  var root = document.querySelector('[data-merchant-app][data-merchant-view="payments"]');
+  if (!root || !window.Microgifter) return;
+
+  var financialData = null;
+  var allowedPages = ['methods', 'orders', 'refunds', 'payouts', 'disputes', 'reconciliation'];
+
+  function one(selector) {
+    return root.querySelector(selector);
+  }
+
+  function all(selector) {
+    return Array.prototype.slice.call(root.querySelectorAll(selector));
+  }
+
+  function esc(value) {
+    return String(value == null ? '' : value).replace(/[&<>'"]/g, function (character) {
+      return ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        "'": '&#39;',
+        '"': '&quot;'
+      })[character];
+    });
+  }
+
+  function money(cents, currency) {
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: currency || 'USD'
+    }).format(Number(cents || 0) / 100);
+  }
+
+  function rows(items, renderer, emptyMessage) {
+    return items && items.length
+      ? items.map(renderer).join('')
+      : '<div class="mg-empty-state">' + esc(emptyMessage) + '</div>';
+  }
+
+  function setStatus(node, message, type) {
+    if (!node) return;
+    node.textContent = message || '';
+    node.classList.toggle('is-error', type === 'error');
+    node.classList.toggle('is-success', type === 'success');
+    node.classList.toggle('is-loading', type === 'loading');
+  }
+
+  function uniqueKey() {
+    if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+      return window.crypto.randomUUID();
+    }
+    return 'mg-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+  }
+
+  function pageFromHash() {
+    var name = String(window.location.hash || '').replace(/^#payments-/, '');
+    return allowedPages.indexOf(name) >= 0 ? name : 'methods';
+  }
+
+  function activatePage(name, updateHash) {
+    if (allowedPages.indexOf(name) < 0) name = 'methods';
+
+    all('[data-payments-tab]').forEach(function (button) {
+      var active = button.dataset.paymentsTab === name;
+      button.classList.toggle('is-active', active);
+      button.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+
+    all('[data-payments-page]').forEach(function (page) {
+      var active = page.dataset.paymentsPage === name;
+      page.hidden = !active;
+      page.classList.toggle('is-active', active);
+    });
+
+    if (updateHash) {
+      window.history.replaceState(null, '', '#payments-' + name);
+    }
+  }
+
+  all('[data-payments-tab]').forEach(function (button) {
+    button.addEventListener('click', function () {
+      activatePage(button.dataset.paymentsTab || 'methods', true);
+    });
+  });
+
+  window.addEventListener('hashchange', function () {
+    activatePage(pageFromHash(), false);
+  });
+
+  async function loadPaymentMethods() {
+    var form = one('[data-payment-methods-form]');
+    var cashToggle = one('[data-cash-payment-toggle]');
+    var stripeToggle = one('[data-stripe-payment-toggle]');
+    var status = one('[data-payment-methods-status]');
+    var save = one('[data-payment-methods-save]');
+    var providerBadge = one('[data-financial-provider]');
+
+    if (!form || !cashToggle || !stripeToggle) return;
+
+    function applyMethods(payload) {
+      var methods = payload && payload.payment_methods ? payload.payment_methods : {};
+      cashToggle.checked = !!(methods.cash && methods.cash.enabled);
+      stripeToggle.checked = !!(methods.stripe && methods.stripe.enabled);
+
+      if (providerBadge) {
+        if (stripeToggle.checked) {
+          providerBadge.textContent = 'Stripe enabled / onboarding pending';
+          providerBadge.classList.add('is-ready');
+          providerBadge.classList.remove('is-missing');
+        } else if (cashToggle.checked) {
+          providerBadge.textContent = 'Cash enabled';
+          providerBadge.classList.add('is-ready');
+          providerBadge.classList.remove('is-missing');
+        } else {
+          providerBadge.textContent = 'No payment method enabled';
+          providerBadge.classList.remove('is-ready');
+          providerBadge.classList.add('is-missing');
+        }
+      }
+    }
+
+    setStatus(status, 'Loading payment methods…', 'loading');
+    try {
+      var response = await Microgifter.get('/api/merchant/payment-methods.php');
+      applyMethods(response.data || response);
+      setStatus(status, 'Payment method preferences loaded.', 'success');
+    } catch (error) {
+      setStatus(status, error.message || 'Unable to load payment methods.', 'error');
+    }
+
+    form.addEventListener('submit', async function (event) {
+      event.preventDefault();
+      cashToggle.disabled = true;
+      stripeToggle.disabled = true;
+      if (save) save.disabled = true;
+      setStatus(status, 'Saving payment methods…', 'loading');
+
+      try {
+        var response = await Microgifter.post('/api/merchant/payment-methods.php', {
+          cash_enabled: cashToggle.checked ? 1 : 0,
+          stripe_enabled: stripeToggle.checked ? 1 : 0
+        });
+        applyMethods(response.data || response);
+        setStatus(status, response.message || 'Payment methods saved.', 'success');
+      } catch (error) {
+        setStatus(status, error.message || 'Unable to save payment methods.', 'error');
+      } finally {
+        cashToggle.disabled = false;
+        stripeToggle.disabled = false;
+        if (save) save.disabled = false;
+      }
+    });
+  }
+
+  function renderOrders() {
+    var mount = one('[data-financial-orders]');
+    var search = one('[data-financial-search]');
+    var status = one('[data-financial-status]');
+    if (!mount || !search || !status) return;
+
+    var query = String(search.value || '').toLowerCase();
+    var selectedStatus = status.value;
+    var items = (financialData && financialData.orders ? financialData.orders : []).filter(function (item) {
+      return (selectedStatus === 'all' || item.payment_status === selectedStatus)
+        && String(item.public_id || '').toLowerCase().indexOf(query) >= 0;
+    });
+
+    mount.innerHTML = rows(items, function (item) {
+      return '<div class="mg-financial-row">'
+        + '<div><strong>' + esc(item.public_id) + '</strong><p>' + Number(item.item_count || 0) + ' items · ' + esc(item.created_at) + '</p>'
+        + '<div class="mg-financial-meta"><span>' + esc(item.fulfillment_status) + '</span><span>' + money(item.refunded_cents, item.currency) + ' refunded</span></div></div>'
+        + '<div class="mg-financial-amount"><strong>' + money(item.total_cents, item.currency) + '</strong></div>'
+        + '<span class="mg-financial-state is-' + esc(item.payment_status) + '">' + esc(item.payment_status) + '</span></div>';
+    }, 'No orders match the filters.');
+  }
+
+  function renderFinancialData(data) {
+    var summary = data.summary || {};
+    var kpis = one('[data-financial-kpis]');
+
+    if (kpis) {
+      kpis.innerHTML = [
+        ['Orders', summary.orders],
+        ['Gross', money(summary.gross_cents, 'USD')],
+        ['Paid', summary.paid_orders],
+        ['Refunded', summary.refunded_orders],
+        ['Disputed', summary.disputed_orders]
+      ].map(function (item) {
+        return '<div class="mg-merchant-kpi"><span>' + esc(item[0]) + '</span><strong>' + esc(item[1] || 0) + '</strong></div>';
+      }).join('');
+    }
+
+    renderOrders();
+
+    var refunds = one('[data-financial-refunds]');
+    if (refunds) {
+      refunds.innerHTML = rows(data.refunds, function (item) {
+        return '<div class="mg-financial-row"><div><strong>' + esc(item.public_id) + '</strong><p>' + esc(item.reason) + ' · ' + esc(item.created_at) + '</p></div><div class="mg-financial-amount"><strong>' + money(item.amount_cents, item.currency) + '</strong></div><span class="mg-financial-state is-' + esc(item.status) + '">' + esc(item.status) + '</span></div>';
+      }, 'No refunds.');
+    }
+
+    var payouts = one('[data-financial-payouts]');
+    if (payouts) {
+      payouts.innerHTML = rows(data.payouts, function (item) {
+        return '<div class="mg-financial-row"><div><strong>' + esc(item.public_id) + '</strong><p>' + esc(item.provider_key) + ' · arrival ' + esc(item.arrival_date || 'pending') + '</p></div><div class="mg-financial-amount"><strong>' + money(item.net_cents, item.currency) + '</strong><small>Gross ' + money(item.gross_cents, item.currency) + ' · fees ' + money(item.fee_cents, item.currency) + '</small></div><span class="mg-financial-state is-' + esc(item.status) + '">' + esc(item.status) + '</span></div>';
+      }, 'No payouts.');
+    }
+
+    var disputes = one('[data-financial-disputes]');
+    if (disputes) {
+      disputes.innerHTML = rows(data.disputes, function (item) {
+        return '<div class="mg-financial-row"><div><strong>' + esc(item.public_id) + '</strong><p>' + esc(item.reason || 'Dispute') + ' · due ' + esc(item.response_due_at || 'n/a') + '</p></div><div class="mg-financial-amount"><strong>' + money(item.amount_cents, item.currency) + '</strong></div><span class="mg-financial-state is-' + esc(item.status) + '">' + esc(item.status) + '</span></div>';
+      }, 'No disputes.');
+    }
+
+    var ledger = one('[data-financial-ledger]');
+    if (ledger) {
+      ledger.innerHTML = rows(data.ledger, function (item) {
+        return '<div class="mg-financial-row"><div><strong>' + esc(item.account_code) + '</strong><p>' + esc(item.entry_type) + '</p></div><div class="mg-financial-amount"><strong>' + money(item.amount_cents, item.currency) + '</strong></div><span></span></div>';
+      }, 'No ledger entries.');
+    }
+
+    var reconciliation = one('[data-financial-reconciliation]');
+    if (reconciliation) {
+      reconciliation.innerHTML = rows(data.reconciliation, function (item) {
+        return '<div class="mg-financial-row"><div><strong>' + esc(item.public_id) + '</strong><p>' + esc(item.period_start) + ' → ' + esc(item.period_end) + '</p></div><div class="mg-financial-amount"><strong>' + money(item.difference_cents, 'USD') + '</strong><small>' + Number(item.exception_count || 0) + ' exceptions</small></div><span class="mg-financial-state is-' + esc(item.status) + '">' + esc(item.status) + '</span></div>';
+      }, 'No reconciliation runs.');
+    }
+  }
+
+  async function loadFinancialDashboard() {
+    var response = await Microgifter.get('/api/merchant/financial-dashboard.php');
+    financialData = response.data || response;
+    renderFinancialData(financialData);
+  }
+
+  var search = one('[data-financial-search]');
+  var paymentStatus = one('[data-financial-status]');
+  if (search) search.addEventListener('input', renderOrders);
+  if (paymentStatus) paymentStatus.addEventListener('change', renderOrders);
+
+  var refundForm = one('[data-refund-form]');
+  if (refundForm) {
+    refundForm.elements.idempotency_key.value = uniqueKey();
+    refundForm.addEventListener('submit', async function (event) {
+      event.preventDefault();
+      var status = one('[data-refund-status]');
+      var payload = Object.fromEntries(new FormData(refundForm).entries());
+      payload.amount_cents = Number(payload.amount_cents);
+      setStatus(status, 'Creating refund…', 'loading');
+
+      try {
+        var response = await Microgifter.post('/api/merchant/refund.php', payload);
+        setStatus(status, response.message || 'Refund created.', 'success');
+        refundForm.reset();
+        refundForm.elements.idempotency_key.value = uniqueKey();
+        await loadFinancialDashboard();
+      } catch (error) {
+        setStatus(status, error.message || 'Unable to create refund.', 'error');
+      }
+    });
+  }
+
+  var reconciliationForm = one('[data-reconciliation-form]');
+  if (reconciliationForm) {
+    var today = new Date().toISOString().slice(0, 10);
+    var past = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+    reconciliationForm.elements.from.value = past;
+    reconciliationForm.elements.to.value = today;
+    reconciliationForm.addEventListener('submit', async function (event) {
+      event.preventDefault();
+      var status = one('[data-reconciliation-status]');
+      setStatus(status, 'Reconciling…', 'loading');
+
+      try {
+        var response = await Microgifter.post('/api/merchant/reconciliation.php', Object.fromEntries(new FormData(reconciliationForm).entries()));
+        setStatus(status, response.message || 'Reconciliation completed.', 'success');
+        await loadFinancialDashboard();
+      } catch (error) {
+        setStatus(status, error.message || 'Unable to run reconciliation.', 'error');
+      }
+    });
+  }
+
+  activatePage(pageFromHash(), false);
+  loadPaymentMethods();
+  loadFinancialDashboard().catch(function (error) {
+    console.error(error);
+    var kpis = one('[data-financial-kpis]');
+    if (kpis) kpis.innerHTML = '<div class="mg-empty-state">Unable to load payment metrics.</div>';
+  });
+});
