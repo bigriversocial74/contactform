@@ -7,13 +7,42 @@ final class MgDeliveryException extends RuntimeException
     public function __construct(string $message, public readonly int $httpStatus=409){parent::__construct($message);}
 }
 
+function mg_delivery_schema_column_exists(PDO $pdo,string $table,string $column): bool
+{
+    $stmt=$pdo->prepare('SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name=? AND column_name=?');
+    $stmt->execute([$table,$column]);
+    return (int)$stmt->fetchColumn()>0;
+}
+function mg_delivery_schema_index_exists(PDO $pdo,string $table,string $index): bool
+{
+    $stmt=$pdo->prepare('SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema=DATABASE() AND table_name=? AND index_name=?');
+    $stmt->execute([$table,$index]);
+    return (int)$stmt->fetchColumn()>0;
+}
 function mg_delivery_install_schema(PDO $pdo): void
 {
+    static $ready=[];
+    $cacheKey=spl_object_id($pdo);
+    if(!empty($ready[$cacheKey]))return;
     $pdo->exec("CREATE TABLE IF NOT EXISTS message_events (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,public_id CHAR(36) NOT NULL,event_key VARCHAR(190) NOT NULL,event_fingerprint CHAR(64) NOT NULL,event_type VARCHAR(100) NOT NULL,category VARCHAR(60) NOT NULL DEFAULT 'transactional',payload_json JSON NULL,created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY(id),UNIQUE KEY uq_message_events_public_id(public_id),UNIQUE KEY uq_message_events_key(event_key)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
     $pdo->exec("CREATE TABLE IF NOT EXISTS message_delivery_jobs (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,public_id CHAR(36) NOT NULL,message_event_id BIGINT UNSIGNED NOT NULL,recipient_user_id BIGINT UNSIGNED NULL,merchant_user_id BIGINT UNSIGNED NULL,campaign_id BIGINT UNSIGNED NULL,source_public_id VARCHAR(190) NULL,channel ENUM('in_app','email','sms','webhook') NOT NULL,template_key VARCHAR(120) NOT NULL,status ENUM('queued','processing','retrying','delivered','failed','dead_letter','suppressed') NOT NULL DEFAULT 'queued',attempt_count INT NOT NULL DEFAULT 0,max_attempts INT NOT NULL DEFAULT 3,next_attempt_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,provider_message_id VARCHAR(190) NULL,last_error VARCHAR(500) NULL,recipient_snapshot_json JSON NULL,payload_snapshot_json JSON NULL,delivered_at DATETIME NULL,failed_at DATETIME NULL,created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,PRIMARY KEY(id),UNIQUE KEY uq_message_delivery_jobs_public_id(public_id),UNIQUE KEY uq_message_delivery_jobs_event_channel(message_event_id,channel,recipient_user_id),KEY idx_message_delivery_jobs_claim(status,next_attempt_at,id),KEY idx_message_delivery_jobs_merchant(merchant_user_id,status,next_attempt_at,id),KEY idx_message_delivery_jobs_campaign(campaign_id,status,created_at)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
     $pdo->exec("CREATE TABLE IF NOT EXISTS message_delivery_attempts (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,public_id CHAR(36) NOT NULL,job_id BIGINT UNSIGNED NOT NULL,attempt_no INT NOT NULL,provider_key VARCHAR(80) NOT NULL,status ENUM('success','transient_failure','permanent_failure') NOT NULL,error_code VARCHAR(100) NULL,error_message VARCHAR(500) NULL,provider_response_json JSON NULL,created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY(id),UNIQUE KEY uq_message_delivery_attempts_public_id(public_id),UNIQUE KEY uq_message_delivery_attempts_job_attempt(job_id,attempt_no),KEY idx_message_delivery_attempts_job(job_id,created_at)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
     $pdo->exec("CREATE TABLE IF NOT EXISTS message_provider_callbacks (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,public_id CHAR(36) NOT NULL,provider_key VARCHAR(80) NOT NULL,provider_event_id VARCHAR(190) NOT NULL,job_id BIGINT UNSIGNED NOT NULL,event_type VARCHAR(100) NOT NULL,payload_hash CHAR(64) NOT NULL,payload_json JSON NULL,status ENUM('processed','ignored') NOT NULL DEFAULT 'processed',received_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,processed_at DATETIME NULL,PRIMARY KEY(id),UNIQUE KEY uq_message_provider_callbacks_public_id(public_id),UNIQUE KEY uq_message_provider_callbacks_event(provider_key,provider_event_id),KEY idx_message_provider_callbacks_job(job_id,received_at)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
     $pdo->exec("CREATE TABLE IF NOT EXISTS message_suppression_rules (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,user_id BIGINT UNSIGNED NOT NULL,channel ENUM('in_app','email','sms','webhook') NOT NULL,category VARCHAR(60) NOT NULL,status ENUM('active','inactive') NOT NULL DEFAULT 'active',created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY(id),UNIQUE KEY uq_message_suppression(user_id,channel,category),KEY idx_message_suppression_active(user_id,channel,category,status)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    $columns=[
+        'merchant_user_id'=>'BIGINT UNSIGNED NULL AFTER recipient_user_id',
+        'campaign_id'=>'BIGINT UNSIGNED NULL AFTER merchant_user_id',
+        'source_public_id'=>'VARCHAR(190) NULL AFTER campaign_id',
+    ];
+    foreach($columns as $column=>$definition){
+        if(!mg_delivery_schema_column_exists($pdo,'message_delivery_jobs',$column))$pdo->exec('ALTER TABLE message_delivery_jobs ADD COLUMN '.$column.' '.$definition);
+    }
+    if(!mg_delivery_schema_index_exists($pdo,'message_delivery_jobs','idx_message_delivery_jobs_merchant'))$pdo->exec('ALTER TABLE message_delivery_jobs ADD KEY idx_message_delivery_jobs_merchant (merchant_user_id,status,next_attempt_at,id)');
+    if(!mg_delivery_schema_index_exists($pdo,'message_delivery_jobs','idx_message_delivery_jobs_campaign'))$pdo->exec('ALTER TABLE message_delivery_jobs ADD KEY idx_message_delivery_jobs_campaign (campaign_id,status,created_at)');
+    if(!mg_delivery_schema_index_exists($pdo,'message_delivery_attempts','idx_message_delivery_attempts_job'))$pdo->exec('ALTER TABLE message_delivery_attempts ADD KEY idx_message_delivery_attempts_job (job_id,created_at)');
+    if(!mg_delivery_schema_index_exists($pdo,'message_provider_callbacks','idx_message_provider_callbacks_job'))$pdo->exec('ALTER TABLE message_provider_callbacks ADD KEY idx_message_provider_callbacks_job (job_id,received_at)');
+    if(!mg_delivery_schema_index_exists($pdo,'message_suppression_rules','idx_message_suppression_active'))$pdo->exec('ALTER TABLE message_suppression_rules ADD KEY idx_message_suppression_active (user_id,channel,category,status)');
+    $ready[$cacheKey]=true;
 }
 function mg_delivery_ensure_schema(PDO $pdo): void
 {
