@@ -1,0 +1,60 @@
+name: Gift Action Center Modal Boot Order v1 Validation
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'inbox.php'
+      - 'sent.php'
+      - 'claimed.php'
+      - 'includes/gift-action-center.php'
+      - 'assets/js/gift-action-center.js'
+      - 'assets/js/gift-action-center-actions.js'
+      - 'assets/js/gift-action-center-modal-portal.js'
+      - 'assets/js/gift-action-center-send-modal.js'
+      - 'assets/js/gift-action-center-load-envelope.js'
+      - 'scripts/validate_gift_action_center_modal_boot_order_v1.php'
+      - '.github/workflows/gift-action-center-modal-boot-order-v1-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: PHP syntax
+        run: |
+          php -l inbox.php
+          php -l sent.php
+          php -l claimed.php
+          php -l includes/gift-action-center.php
+          php -l scripts/validate_gift_action_center_modal_boot_order_v1.php
+
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/gift-action-center.js
+          node --check assets/js/gift-action-center-actions.js
+          node --check assets/js/gift-action-center-modal-portal.js
+          node --check assets/js/gift-action-center-send-modal.js
+          node --check assets/js/gift-action-center-load-envelope.js
+
+      - name: Modal boot-order contract
+        run: php scripts/validate_gift_action_center_modal_boot_order_v1.php
