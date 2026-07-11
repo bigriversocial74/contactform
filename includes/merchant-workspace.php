@@ -18,6 +18,7 @@ $merchantNav = [
     'loyalty_quests' => ['Loyalty Quests','Create, launch, and measure quests','/merchant-loyalty-quests.php','Engage'],
     'quest_creative' => ['Quest Creative','Artwork, QR, downloads, and embeds','/merchant-loyalty-quest-creative.php','Engage'],
     'quest_reviews' => ['Quest Reviews','Approve participant evidence','/merchant-quest-reviews.php','Engage'],
+    'quest_delivery' => ['Quest Delivery','Invitations, delivery history, and retries','/merchant-loyalty-quest-delivery.php','Engage'],
     'campaign_embed_leads' => ['Embed Leads','Website embed contacts','/merchant-campaign-embed-leads.php','Engage'],
     'campaign_embed_analytics' => ['Embed Analytics','Website embed performance','/merchant-campaign-embed-analytics.php','Engage'],
     'merchant_crm' => ['Merchant CRM','Customers and campaign history','/merchant-crm.php','Engage'],

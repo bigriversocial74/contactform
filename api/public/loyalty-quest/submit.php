@@ -3,6 +3,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/_participant.php';
 require_once __DIR__ . '/_verification.php';
 require_once __DIR__ . '/_reward.php';
+require_once dirname(__DIR__, 2) . '/communications/_loyalty_quest_notifications.php';
 
 mg_require_method('POST');
 $user = mg_require_api_user();
@@ -58,6 +59,8 @@ try {
         $pdo->prepare("UPDATE loyalty_quest_participations SET status='pending_review',submitted_at=NOW(),last_activity_at=NOW(),updated_at=NOW() WHERE id=? AND participant_user_id=?")
             ->execute([(int)$participation['id'], (int)$user['id']]);
         mg_lqp_event($pdo, $campaign, null, (int)$contact['id'], 'quest.evidence_submitted', ['participation_id'=>(string)$participation['public_id'],'evidence_id'=>$evidenceId,'verification_type'=>(string)$evidence['verification_type']]);
+        mg_lqn_notify_participant($pdo, 'evidence_submitted', $campaign, (int)$user['id'], ['participation_id'=>(string)$participation['public_id'],'evidence_id'=>$evidenceId,'source_public_id'=>$evidenceId]);
+        mg_lqn_notify_merchant($pdo, 'merchant_review_required', $campaign, ['participation_id'=>(string)$participation['public_id'],'evidence_id'=>$evidenceId,'source_public_id'=>$evidenceId]);
         mg_audit('participant.loyalty_quest_evidence_submitted', 'loyalty_quest_evidence', ['campaign_id'=>(string)$campaign['public_id'],'participation_id'=>(string)$participation['public_id'],'evidence_id'=>$evidenceId], (int)$user['id']);
         $pdo->commit();
         mg_ok(['participation_id'=>(string)$participation['public_id'],'status'=>'pending_review','evidence_id'=>$evidenceId,'reward'=>null], 'Completion submitted for merchant review.', 202);
@@ -72,6 +75,7 @@ try {
     mg_lqp_event($pdo, $campaign, null, (int)$contact['id'], 'quest.evidence_verified', ['participation_id'=>(string)$participation['public_id'],'evidence_id'=>$evidenceId,'progress_count'=>$newProgress,'required_count'=>(int)$participation['required_count']]);
     mg_audit('participant.loyalty_quest_evidence_verified', 'loyalty_quest_evidence', ['campaign_id'=>(string)$campaign['public_id'],'participation_id'=>(string)$participation['public_id'],'evidence_id'=>$evidenceId], (int)$user['id']);
     if ($newProgress < (int)$participation['required_count']) {
+        mg_lqn_notify_participant($pdo, 'progress_verified', $campaign, (int)$user['id'], ['participation_id'=>(string)$participation['public_id'],'evidence_id'=>$evidenceId,'source_public_id'=>$evidenceId,'progress_count'=>$newProgress,'required_count'=>(int)$participation['required_count']]);
         $pdo->commit();
         mg_ok(['participation_id'=>(string)$participation['public_id'],'status'=>'in_progress','progress_count'=>$newProgress,'required_count'=>(int)$participation['required_count'],'completion_percent'=>$percent,'reward'=>null], 'Quest progress verified.');
     }

@@ -15,6 +15,7 @@ $definitions = [
     'delivery' => ['label'=>'Delivery','description'=>'Delivery status, failures, and fulfillment updates.'],
     'distribution' => ['label'=>'Distribution','description'=>'Distribution program and recipient-delivery activity.'],
     'campaign' => ['label'=>'Campaigns','description'=>'Campaign status and scheduled campaign activity.'],
+    'loyalty_quest' => ['label'=>'Loyalty Quests','description'=>'Quest invitations, progress, evidence review, reward delivery, expiration, and redemption updates.'],
     'merchant' => ['label'=>'Merchant operations','description'=>'Merchant account, location, and operational updates.'],
     'security' => ['label'=>'Security','description'=>'Account security, sign-in, and recovery notifications.'],
     'system' => ['label'=>'System','description'=>'Required service and platform notices.'],
