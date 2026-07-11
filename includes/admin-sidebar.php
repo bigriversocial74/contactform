@@ -26,6 +26,7 @@ $canSubscriptionRequests = mg_admin_permission_user_has($adminMatrixUser, 'subsc
 $canModeration = $canAdminPage('admin.moderation');
 $canNotifications = $canAdminPage('admin.notifications');
 $canOperationsCommand = $canAdminPage('admin.operations_command');
+$canLoyaltyQuestOperations = $canAdminPage('admin.loyalty_quests');
 $canPackageModeration = $canCommerce;
 $canStampOperations = $canCommerce;
 $canStampHealth = $canCommerce;
@@ -71,6 +72,12 @@ $adminNav = [
         'href' => '/admin/operations-command.php',
         'visible' => $canOperationsCommand,
         'badge' => 'ops_command',
+    ],
+    'loyalty-quests' => [
+        'label' => 'Loyalty Quests',
+        'detail' => 'Campaign control and recovery',
+        'href' => '/admin/loyalty-quests.php',
+        'visible' => $canLoyaltyQuestOperations,
     ],
     'ops-activity' => [
         'label' => 'Ops activity log',
