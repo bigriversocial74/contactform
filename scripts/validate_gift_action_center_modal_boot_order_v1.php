@@ -53,9 +53,20 @@ try {
         str_contains($portal, 'function queueActionModalNormalization(modal)')
         && str_contains($portal, 'window.requestAnimationFrame(() =>')
         && str_contains($portal, "const desiredLabel = 'Review regift';")
-        && str_contains($portal, "primary.textContent.trim() === 'Review Regift'")
+        && str_contains($portal, 'primary.textContent.trim() !== desiredLabel')
         && !str_contains($portal, '/^Review Regift$/i'),
         'Regift normalization is frame-queued and idempotent instead of creating a MutationObserver loop',
+        $failures,
+        $passes
+    );
+
+    mg_action_modal_expect(
+        str_contains($portal, "const cancel = actions && actions.querySelector('.mg-send-exact-secondary,[data-action-modal-close]')")
+        && str_contains($portal, 'if (cancel) cancel.remove();')
+        && str_contains($portal, "actions.dataset.singleAction = 'true'")
+        && !str_contains($portal, "cancel.textContent = 'Cancel'")
+        && str_contains($portal, "close.setAttribute('data-action-modal-close', '')"),
+        'Regift removes the footer Cancel control while retaining the canonical header close button',
         $failures,
         $passes
     );
@@ -137,7 +148,7 @@ try {
         && !str_contains($portal, 'Microgifter.post(')
         && !str_contains($portal, 'localStorage')
         && !str_contains($portal, 'sessionStorage'),
-        'Boot-order and freeze repair changes presentation behavior without creating mutation authority',
+        'Boot-order and Regift presentation changes create no mutation authority',
         $failures,
         $passes
     );
