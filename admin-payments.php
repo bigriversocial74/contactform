@@ -123,6 +123,7 @@ require __DIR__.'/includes/header.php';
               </div>
 
               <div class="mg-form-status mg-payment-mode-warning" data-payment-mode-warning hidden aria-live="polite"></div>
+              <div class="mg-payment-persistence-state" data-payment-persistence-state aria-live="polite">Checking saved database values…</div>
 
               <label>Publishable key
                 <input name="publishable_key" autocomplete="off" placeholder="pk_live_… or pk_test_…">
