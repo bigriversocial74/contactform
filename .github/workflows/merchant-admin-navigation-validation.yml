@@ -1,0 +1,41 @@
+name: Merchant Admin Navigation Validation
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'includes/merchant-workspace.php'
+      - 'merchant*.php'
+      - 'scripts/validate_merchant_admin_navigation.php'
+      - '.github/workflows/merchant-admin-navigation-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: PHP syntax
+        run: |
+          php -l includes/merchant-workspace.php
+          php -l scripts/validate_merchant_admin_navigation.php
+
+      - name: Shared merchant navigation contract
+        run: php scripts/validate_merchant_admin_navigation.php
