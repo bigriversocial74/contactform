@@ -6,7 +6,7 @@ require_once dirname(__DIR__) . '/public/loyalty-quest/_integrity.php';
 
 function mg_lqi_admin_safe_context(array $context): array
 {
-    $allowed=['distinct_participants','window_hours','window_minutes','elapsed_seconds','minimum_seconds','rejected_evidence','window_days','completed_quests','distance_km','speed_kph'];
+    $allowed=['matched_evidence_id','distinct_participants','window_hours','window_minutes','elapsed_seconds','minimum_seconds','rejected_evidence','window_days','completed_quests','distance_km','speed_kph'];
     $safe=[];
     foreach($allowed as $key){
         if(array_key_exists($key,$context)&&is_scalar($context[$key]))$safe[$key]=$context[$key];
@@ -92,19 +92,33 @@ function mg_lqi_admin_resolve(PDO $pdo,int $adminId,string $signalRef,string $re
                         WHERE s.public_id=? LIMIT 1 FOR UPDATE");
     $stmt->execute([$signalRef]);$signal=$stmt->fetch(PDO::FETCH_ASSOC);
     if(!$signal)throw new RuntimeException('Loyalty Quest integrity signal not found.');
-    if(in_array((string)$signal['status'],['cleared','confirmed'],true)&&$resolution!==(string)$signal['status'])throw new DomainException('This integrity signal has already been finally resolved.');
+    $current=(string)$signal['status'];
+    if($current==='cleared'&&$resolution!=='cleared')throw new DomainException('A cleared integrity signal cannot be reopened from this console.');
+    if($current==='confirmed'&&!in_array($resolution,['confirmed','cleared'],true))throw new DomainException('A confirmed integrity signal may only remain confirmed or be cleared after re-review.');
     $pdo->prepare('UPDATE loyalty_quest_integrity_signals SET status=?,resolved_by_user_id=?,resolution_note=?,resolved_at=NOW(),updated_at=NOW() WHERE id=?')
         ->execute([$resolution,$adminId,$reason,(int)$signal['id']]);
     if(!empty($signal['evidence_id'])){
         if($resolution==='confirmed'){
             $pdo->prepare("UPDATE loyalty_quest_evidence SET integrity_status='blocked',updated_at=NOW() WHERE id=? AND status='submitted'")->execute([(int)$signal['evidence_id']]);
         }elseif($resolution==='cleared'){
-            $remaining=$pdo->prepare("SELECT COUNT(*) FROM loyalty_quest_integrity_signals WHERE evidence_id=? AND id<>? AND status IN ('open','confirmed')");
+            $remaining=$pdo->prepare("SELECT COALESCE(SUM(status='confirmed'),0) confirmed_count,COALESCE(SUM(status='open'),0) open_count FROM loyalty_quest_integrity_signals WHERE evidence_id=? AND id<>?");
             $remaining->execute([(int)$signal['evidence_id'],(int)$signal['id']]);
-            if((int)$remaining->fetchColumn()===0)$pdo->prepare("UPDATE loyalty_quest_evidence SET integrity_status=IF(status='submitted','clear','resolved'),updated_at=NOW() WHERE id=?")->execute([(int)$signal['evidence_id']]);
+            $counts=$remaining->fetch(PDO::FETCH_ASSOC)?:['confirmed_count'=>0,'open_count'=>0];
+            if((int)$counts['confirmed_count']>0){
+                $next='blocked';
+            }elseif((int)$counts['open_count']>0){
+                $next='review';
+            }else{
+                $next=null;
+            }
+            if($next!==null){
+                $pdo->prepare('UPDATE loyalty_quest_evidence SET integrity_status=?,updated_at=NOW() WHERE id=?')->execute([$next,(int)$signal['evidence_id']]);
+            }else{
+                $pdo->prepare("UPDATE loyalty_quest_evidence SET integrity_status=IF(status='submitted','clear','resolved'),updated_at=NOW() WHERE id=?")->execute([(int)$signal['evidence_id']]);
+            }
         }
     }
-    $eventId=mg_lqo_campaign_event($pdo,(int)$signal['merchant_user_id'],(int)$signal['campaign_id'],null,'quest.admin_integrity_'.$resolution,['operator_user_id'=>$adminId,'reason'=>$reason,'signal_id'=>$signalRef,'signal_type'=>(string)$signal['signal_type'],'severity'=>(string)$signal['severity'],'evidence_id'=>$signal['evidence_public_id']??null]);
-    mg_audit('admin.loyalty_quest_integrity_'.$resolution,'loyalty_quest_integrity_signal',['signal_id'=>$signalRef,'campaign_id'=>(string)$signal['campaign_public_id'],'merchant_user_id'=>(int)$signal['merchant_user_id'],'participant_user_id'=>(int)$signal['participant_user_id'],'reason'=>$reason,'campaign_event_id'=>$eventId],$adminId);
-    return ['signal_id'=>$signalRef,'status'=>$resolution,'campaign_id'=>(string)$signal['campaign_public_id'],'evidence_id'=>$signal['evidence_public_id']??null,'event_id'=>$eventId];
+    $eventId=mg_lqo_campaign_event($pdo,(int)$signal['merchant_user_id'],(int)$signal['campaign_id'],null,'quest.admin_integrity_'.$resolution,['operator_user_id'=>$adminId,'reason'=>$reason,'signal_id'=>$signalRef,'signal_type'=>(string)$signal['signal_type'],'severity'=>(string)$signal['severity'],'old_status'=>$current,'new_status'=>$resolution,'evidence_id'=>$signal['evidence_public_id']??null]);
+    mg_audit('admin.loyalty_quest_integrity_'.$resolution,'loyalty_quest_integrity_signal',['signal_id'=>$signalRef,'campaign_id'=>(string)$signal['campaign_public_id'],'merchant_user_id'=>(int)$signal['merchant_user_id'],'participant_user_id'=>(int)$signal['participant_user_id'],'old_status'=>$current,'new_status'=>$resolution,'reason'=>$reason,'campaign_event_id'=>$eventId],$adminId);
+    return ['signal_id'=>$signalRef,'old_status'=>$current,'status'=>$resolution,'campaign_id'=>(string)$signal['campaign_public_id'],'evidence_id'=>$signal['evidence_public_id']??null,'event_id'=>$eventId];
 }
