@@ -68,10 +68,12 @@ $checks=[
         && str_contains($content['post_success'],'mg-create-post-success-toast')
         && str_contains($content['post_success'],'published|saved as a draft')
         && str_contains($content['post_modal'],'/assets/js/create-center-post-success.js'),
-    'inline navigation prevents the old page-link behavior for modal tools' =>
-        str_contains($content['controller'],"event.stopImmediatePropagation()")
-        && str_contains($content['controller'],"showView(inline.dataset.createInlineTarget)")
-        && str_contains($content['menu'],'data-create-inline-target="product"'),
+    'generated tool cards route merchant options into inline modal views' =>
+        str_contains($content['menu'],"'key' => 'product'")
+        && str_contains($content['menu'],"'key' => 'location'")
+        && str_contains($content['menu'],'data-create-inline-target="')
+        && str_contains($content['controller'],'event.stopImmediatePropagation()')
+        && str_contains($content['controller'],'showView(inline.dataset.createInlineTarget)'),
     'large responsive form controls remain usable on desktop and mobile' =>
         str_contains($content['create_css'],'min-height:54px')
         && str_contains($content['create_css'],'.mg-create-form-grid-4')
