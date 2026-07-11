@@ -5,6 +5,7 @@ $page_title = 'Merchant Agent Chat | Microgifter';
 $page_section = 'merchant';
 $header_mode = 'account';
 $agent_tab = 'agent_chat';
+$page_body_class = 'mg-merchant-agent-chat-page';
 $page_styles = [
     '/assets/css/merchant-workspace.css',
     '/assets/css/merchant-agent-chat.css',
@@ -34,10 +35,15 @@ $page_scripts[] = '/assets/js/merchant-agent-chat-admin-mode.js';
 $user = mg_current_user();
 require __DIR__ . '/includes/header.php';
 ?>
-<style id="mg-agent-chat-canvas-layout-v2-2">
+<style id="mg-agent-chat-canvas-layout-v2-3">
+body.mg-merchant-agent-chat-page{
+  overflow:hidden!important;
+}
 .mg-agent-chat-layout-v2 .mg-agent-chat-main-stack{
   grid-template-rows:minmax(0,1fr) auto auto!important;
   position:relative!important;
+  height:100%!important;
+  min-height:0!important;
   overflow:hidden!important;
 }
 .mg-agent-chat-layout-v2 .mg-agent-chat-main{
@@ -50,16 +56,25 @@ require __DIR__ . '/includes/header.php';
   overflow-x:hidden!important;
   overflow-y:auto!important;
   overscroll-behavior:contain!important;
+  -webkit-overflow-scrolling:touch!important;
 }
 .mg-agent-chat-layout-v2 .mg-agent-chat-main-stack>.mg-form-status{
   grid-row:2!important;
+}
+.mg-agent-chat-layout-v2 .mg-agent-chat-main-stack>.mg-form-status:empty{
+  display:none!important;
 }
 .mg-agent-chat-layout-v2 .mg-agent-chat-composer-shell{
   grid-row:3!important;
   align-self:end!important;
   position:sticky!important;
+  top:auto!important;
   bottom:0!important;
-  margin-top:8px!important;
+  z-index:60!important;
+  margin:8px 0 0!important;
+  flex:0 0 auto!important;
+  background:rgba(255,255,255,.99)!important;
+  box-shadow:0 -14px 34px rgba(15,23,42,.09),0 10px 28px rgba(15,23,42,.08)!important;
 }
 .mg-agent-chat-layout-v2 .mg-agent-chat-prompts{
   display:grid!important;
@@ -68,10 +83,93 @@ require __DIR__ . '/includes/header.php';
   margin:18px auto 0!important;
   gap:8px!important;
 }
+@media(max-width:980px){
+  html body.mg-app-page.mg-merchant-agent-chat-page{
+    --mg-app-header:var(--mg-mobile-topbar,72px);
+    --mg-mobile-shell-offset:var(--mg-mobile-topbar,72px);
+    height:100dvh!important;
+    min-height:100dvh!important;
+    overflow:hidden!important;
+  }
+  html body.mg-app-page.mg-merchant-agent-chat-page .mg-main{
+    box-sizing:border-box!important;
+    height:100dvh!important;
+    min-height:100dvh!important;
+    padding-top:0!important;
+    padding-left:0!important;
+    margin-top:0!important;
+    overflow:hidden!important;
+  }
+  html body.mg-app-page.mg-merchant-agent-chat-page .mg-app-shell.mg-agent-chat-layout-v2{
+    box-sizing:border-box!important;
+    height:100dvh!important;
+    min-height:100dvh!important;
+    padding-top:var(--mg-mobile-topbar,72px)!important;
+    padding-left:0!important;
+    margin-top:0!important;
+    overflow:hidden!important;
+  }
+  html body.mg-app-page.mg-merchant-agent-chat-page .mg-agent-chat-layout-v2 .mg-merchant-main{
+    box-sizing:border-box!important;
+    height:calc(100dvh - var(--mg-mobile-topbar,72px))!important;
+    min-height:0!important;
+    padding:0 8px max(8px,env(safe-area-inset-bottom))!important;
+    overflow:hidden!important;
+  }
+  .mg-agent-chat-layout-v2 .mg-agent-chat-page{
+    height:100%!important;
+    min-height:0!important;
+    grid-template-rows:auto minmax(0,1fr)!important;
+    gap:6px!important;
+    overflow:hidden!important;
+  }
+  .mg-agent-chat-layout-v2 .mg-agent-chat-mobile-controls{
+    position:relative!important;
+    top:auto!important;
+    z-index:70!important;
+    margin:0!important;
+    flex:0 0 auto!important;
+  }
+  .mg-agent-chat-layout-v2 .mg-agent-chat-layout{
+    height:100%!important;
+    min-height:0!important;
+    overflow:hidden!important;
+  }
+  .mg-agent-chat-layout-v2 .mg-agent-chat-main-stack{
+    height:100%!important;
+    min-height:0!important;
+    grid-template-rows:minmax(0,1fr) auto auto!important;
+    overflow:hidden!important;
+  }
+  .mg-agent-chat-layout-v2 .mg-agent-chat-main{
+    height:100%!important;
+    min-height:0!important;
+    overflow:hidden!important;
+  }
+  .mg-agent-chat-layout-v2 .mg-agent-chat-feed{
+    height:100%!important;
+    min-height:0!important;
+    overflow-y:auto!important;
+    padding-bottom:20px!important;
+  }
+  .mg-agent-chat-layout-v2 .mg-agent-chat-composer-shell{
+    position:sticky!important;
+    top:auto!important;
+    bottom:0!important;
+    z-index:80!important;
+    margin:7px 0 0!important;
+    flex:0 0 auto!important;
+  }
+}
 @media(max-width:640px){
   .mg-agent-chat-layout-v2 .mg-agent-chat-prompts{
     grid-template-columns:minmax(0,1fr)!important;
     margin-top:14px!important;
+  }
+}
+@media(max-width:430px){
+  html body.mg-app-page.mg-merchant-agent-chat-page .mg-agent-chat-layout-v2 .mg-merchant-main{
+    padding:0 5px max(5px,env(safe-area-inset-bottom))!important;
   }
 }
 </style>
