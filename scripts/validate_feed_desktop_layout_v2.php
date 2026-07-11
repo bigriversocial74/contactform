@@ -6,7 +6,7 @@ $feed = file_get_contents($root . '/feed.php') ?: '';
 $layout = file_get_contents($root . '/assets/css/feed-centered-layout.css') ?: '';
 
 $checks = [
-    'feed page keeps canonical layout stylesheet last' => str_contains($feed, "'/assets/css/feed-online-chat.css',\n    '/assets/css/feed-centered-layout.css?v=2.1.0',"),
+    'feed page keeps canonical layout stylesheet last' => str_contains($feed, "'/assets/css/feed-online-chat.css',\n    '/assets/css/feed-centered-layout.css?v=2.2.0',"),
     'feed page does not duplicate app-loaded base feed css' => !str_contains($feed, "'/assets/css/social-feed.css'")
         && !str_contains($feed, "'/assets/css/social-feed-upload.css'"),
     'feed page does not duplicate footer-loaded presence css' => !str_contains($feed, "'/assets/css/store-presence-feed.css'"),
@@ -32,8 +32,14 @@ $checks = [
         && str_contains($layout, 'display:none!important'),
     'legacy feed transform is neutralized' => str_contains($layout, 'transform:none!important')
         && !str_contains($layout, 'translateX(calc('),
-    'mobile feed remains full width with a 58px app header' => str_contains($layout, '@media(max-width:640px)')
-        && str_contains($layout, '--mg-app-header:58px')
+    'mobile feed applies the shared header offset exactly once' => str_contains($layout, '@media(max-width:980px)')
+        && str_contains($layout, 'html body.mg-app-page.mg-social-feed-page .mg-main')
+        && str_contains($layout, 'padding-top:0!important')
+        && str_contains($layout, 'html body.mg-app-page.mg-social-feed-page .mg-app-shell.mg-feed-app-shell')
+        && str_contains($layout, 'padding-top:var(--mg-mobile-shell-offset,var(--mg-mobile-topbar,72px))!important')
+        && str_contains($layout, '--mg-app-header:var(--mg-mobile-topbar,72px)')
+        && !str_contains($layout, '--mg-app-header:58px'),
+    'mobile feed remains full width' => str_contains($layout, '@media(max-width:640px)')
         && str_contains($layout, 'width:100%!important')
         && str_contains($layout, 'padding:0 0 28px!important'),
     'feed functionality and story surfaces remain present' => str_contains($feed, 'data-social-feed')
@@ -58,4 +64,4 @@ if ($failed !== []) {
     exit(1);
 }
 
-echo "Feed desktop layout v2.1 contract passed at 10.0/10.\n";
+echo "Feed desktop layout v2.2 contract passed at 10.0/10.\n";
