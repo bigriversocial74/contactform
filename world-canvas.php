@@ -16,7 +16,7 @@ $page_section = 'agent';
 $header_mode = 'agent';
 $agent_tab = 'world-canvas';
 $page_styles = ['/assets/css/world-canvas.css','/assets/css/world-canvas-attraction.css','/assets/css/world-canvas-identity.css','/assets/css/world-canvas-conversations.css','/assets/css/world-canvas-insights.css','/assets/css/world-canvas-opportunities.css','/assets/css/world-canvas-replay.css','/assets/css/world-canvas-square-map.css','/assets/css/world-canvas-dot-system.css','/assets/css/sponsored-campaign-card.css'];
-$page_scripts = ['/assets/js/world-canvas.js','/assets/js/world-canvas-overlays.js','/assets/js/world-canvas-identity.js','/assets/js/world-canvas-conversations.js','/assets/js/world-canvas-insights.js','/assets/js/world-canvas-opportunities.js','/assets/js/world-canvas-replay.js','/assets/js/world-canvas-square-map.js','/assets/js/world-canvas-dot-system.js','/assets/js/sponsored-campaign-card.js'];
+$page_scripts = ['/assets/js/world-canvas.js','/assets/js/world-canvas-overlays.js','/assets/js/world-canvas-identity.js','/assets/js/world-canvas-conversations.js','/assets/js/world-canvas-insights.js','/assets/js/world-canvas-opportunities.js','/assets/js/world-canvas-replay.js','/assets/js/world-canvas-square-map.js?v=2.0.0','/assets/js/world-canvas-dot-system.js','/assets/js/sponsored-campaign-card.js'];
 $page_manifest = [
     'id' => 'world-canvas',
     'title' => $page_title,
