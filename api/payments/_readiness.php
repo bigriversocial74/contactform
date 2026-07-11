@@ -50,22 +50,26 @@ function mg_payment_readiness(PDO $pdo,string $provider='stripe',?string $mode=n
     $secret=(string)$config['secret_key'];
     $webhookSecret=(string)$config['webhook_secret'];
     $publishablePrefix='pk_'.$prefix.'_';
-    $secretPrefix='sk_'.$prefix.'_';
+    $secretType=mg_payment_secret_key_type($secret);
     $publishableOk=str_starts_with($publishable,$publishablePrefix);
-    $secretOk=str_starts_with($secret,$secretPrefix)||mg_stripe_stub_enabled();
+    $secretOk=mg_payment_secret_matches_mode($secret,$mode)||mg_stripe_stub_enabled();
     $webhookOk=str_starts_with($webhookSecret,'whsec_')||mg_stripe_stub_enabled();
     $publishableDetail=!$status['publishable_configured']
-        ? 'Missing Stripe publishable key.'
+        ? 'Missing Stripe publishable key for '.$mode.' mode.'
         : ($publishableOk
             ? 'Configured with '.$publishablePrefix.' for '.$mode.' mode.'
             : 'Configured key does not match '.$mode.' mode. Expected prefix '.$publishablePrefix.'.');
     $secretDetail=!$status['secret_configured']&&!mg_stripe_stub_enabled()
-        ? 'Missing Stripe secret key.'
+        ? 'Missing Stripe secret or restricted key for '.$mode.' mode.'
         : ($secretOk
-            ? (mg_stripe_stub_enabled()?'Stripe stub mode is enabled.':'Configured with '.$secretPrefix.' for '.$mode.' mode.')
-            : 'Configured secret key does not match '.$mode.' mode. Expected prefix '.$secretPrefix.'.');
+            ? (mg_stripe_stub_enabled()
+                ? 'Stripe stub mode is enabled.'
+                : ($secretType==='restricted'
+                    ? 'Configured with an rk_'.$prefix.'_ restricted key for '.$mode.' mode. Ensure it has the required Stripe permissions.'
+                    : 'Configured with an sk_'.$prefix.'_ secret key for '.$mode.' mode.'))
+            : 'Configured key does not match '.$mode.' mode. Expected prefix sk_'.$prefix.'_ or rk_'.$prefix.'_.');
     $webhookDetail=!$status['webhook_configured']&&!mg_stripe_stub_enabled()
-        ? 'Missing Stripe webhook signing secret.'
+        ? 'Missing Stripe webhook signing secret for '.$mode.' mode.'
         : ($webhookOk
             ? (mg_stripe_stub_enabled()?'Stripe stub mode is enabled.':'Configured as a Stripe webhook signing secret.')
             : 'Configured webhook value does not look like a Stripe webhook signing secret. Expected prefix whsec_.');
@@ -83,7 +87,7 @@ function mg_payment_readiness(PDO $pdo,string $provider='stripe',?string $mode=n
         'runtime_mode'=>[
             'ok'=>mg_payment_mode()===$mode,
             'label'=>'Runtime mode',
-            'detail'=>mg_payment_mode()===$mode?'MG_PAYMENT_MODE selects '.$mode.'.':'Set MG_PAYMENT_MODE='.$mode.' before using this configuration.',
+            'detail'=>mg_payment_mode()===$mode?'MG_PAYMENT_MODE selects '.$mode.'.':'This '.$mode.' configuration is saved, but the server currently runs '.$runtimeProvider.' in '.mg_payment_mode().' mode. Set MG_PAYMENT_MODE='.$mode.' only when you are ready to activate it.',
         ],
         'publishable_key'=>[
             'ok'=>$publishableOk,
