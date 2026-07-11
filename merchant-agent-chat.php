@@ -17,7 +17,7 @@ $page_styles = [
     '/assets/css/merchant-agent-creative-draft-actions.css',
     '/assets/css/merchant-agent-chat-recipe-cards.css',
     '/assets/css/sponsored-campaign-card.css',
-    '/assets/css/merchant-agent-chat-layout-v2.css?v=2.0.0',
+    '/assets/css/merchant-agent-chat-layout-v2.css?v=2.1.0',
 ];
 $page_scripts = [
     '/assets/js/merchant-agent-chat.js',
