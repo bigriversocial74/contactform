@@ -3,6 +3,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/_merchant.php';
 require_once dirname(__DIR__) . '/public/loyalty-quest/_participant.php';
 require_once dirname(__DIR__) . '/public/loyalty-quest/_reward.php';
+require_once dirname(__DIR__) . '/communications/_loyalty_quest_notifications.php';
 
 $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 $user = mg_merchant_require_permission($method === 'GET' ? 'merchant.campaigns.view' : 'merchant.campaigns.manage');
@@ -134,6 +135,7 @@ try {
         $pdo->prepare("UPDATE loyalty_quest_participations SET status='rejected',reviewed_at=NOW(),last_activity_at=NOW(),updated_at=NOW() WHERE id=? AND merchant_user_id=?")
             ->execute([(int)$participation['id'],$merchantId]);
         mg_lqp_event($pdo, $campaign, null, (int)$contact['id'], 'quest.evidence_rejected', ['participation_id'=>(string)$participation['public_id'],'evidence_id'=>$evidenceId,'review_note'=>$note]);
+        mg_lqn_notify_participant($pdo, 'evidence_rejected', $campaign, (int)$participant['id'], ['participation_id'=>(string)$participation['public_id'],'evidence_id'=>$evidenceId,'source_public_id'=>$evidenceId,'review_note'=>$note]);
         mg_audit('merchant.loyalty_quest_evidence_rejected', 'loyalty_quest_evidence', ['evidence_id'=>$evidenceId,'participation_id'=>(string)$participation['public_id']], $merchantId);
         $pdo->commit();
         mg_ok(['evidence_id'=>$evidenceId,'status'=>'rejected','participation_status'=>'rejected'], 'Quest evidence rejected.');
@@ -155,6 +157,7 @@ try {
         $participationStatus = 'completed';
     } else {
         mg_lqp_event($pdo, $campaign, null, (int)$contact['id'], 'quest.evidence_approved', ['participation_id'=>(string)$participation['public_id'],'evidence_id'=>$evidenceId,'progress_count'=>$newProgress]);
+        mg_lqn_notify_participant($pdo, 'evidence_approved', $campaign, (int)$participant['id'], ['participation_id'=>(string)$participation['public_id'],'evidence_id'=>$evidenceId,'source_public_id'=>$evidenceId,'review_note'=>$note,'progress_count'=>$newProgress,'required_count'=>(int)$participation['required_count']]);
     }
     mg_audit('merchant.loyalty_quest_evidence_approved', 'loyalty_quest_evidence', ['evidence_id'=>$evidenceId,'participation_id'=>(string)$participation['public_id'],'participation_status'=>$participationStatus], $merchantId);
     $pdo->commit();
