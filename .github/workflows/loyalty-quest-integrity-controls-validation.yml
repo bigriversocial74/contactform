@@ -1,0 +1,120 @@
+name: Loyalty Quest Integrity Controls Validation
+
+on:
+  push:
+    branches:
+      - feature/loyalty-quest-abuse-fraud-controls-v1-20260711
+  pull_request:
+    paths:
+      - 'database/loyalty_quest_integrity_controls_v1.sql'
+      - 'config/migrations.php'
+      - 'api/public/loyalty-quest/_integrity.php'
+      - 'api/public/loyalty-quest/start.php'
+      - 'api/public/loyalty-quest/submit.php'
+      - 'api/merchant/loyalty-quest-reviews.php'
+      - 'includes/merchant-quest-reviews-view.php'
+      - 'assets/js/merchant-quest-reviews.js'
+      - 'assets/css/merchant-quest-reviews.css'
+      - 'admin/loyalty-quest-integrity.php'
+      - 'api/admin/_loyalty_quest_integrity.php'
+      - 'api/admin/loyalty-quest-integrity.php'
+      - 'assets/js/admin-loyalty-quest-integrity.js'
+      - 'assets/css/admin-loyalty-quest-integrity.css'
+      - 'includes/admin-permission-matrix.php'
+      - 'includes/admin-sidebar.php'
+      - 'docs/architecture/loyalty_quest_integrity_controls_v1.md'
+      - 'scripts/validate_loyalty_quest_integrity_controls_v1.php'
+      - 'scripts/validate_loyalty_quest_integrity_controls_behavior.php'
+      - '.github/workflows/loyalty-quest-integrity-controls-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Loyalty Quest Integrity (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2','8.3']
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: microgifter_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_NAME: microgifter_test
+      DB_USER: root
+      DB_PASS: root
+      MG_DB_HOST: 127.0.0.1
+      MG_DB_NAME: microgifter_test
+      MG_DB_USER: root
+      MG_DB_PASS: root
+      MG_APP_ENV: test
+      MG_LOYALTY_QUEST_INTEGRITY_PEPPER: ci-integrity-pepper-0123456789abcdef0123456789
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: pdo_mysql,mbstring,json
+          coverage: none
+      - name: PHP syntax
+        run: |
+          php -l api/public/loyalty-quest/_integrity.php
+          php -l api/public/loyalty-quest/start.php
+          php -l api/public/loyalty-quest/submit.php
+          php -l api/merchant/loyalty-quest-reviews.php
+          php -l includes/merchant-quest-reviews-view.php
+          php -l admin/loyalty-quest-integrity.php
+          php -l api/admin/_loyalty_quest_integrity.php
+          php -l api/admin/loyalty-quest-integrity.php
+          php -l includes/admin-permission-matrix.php
+          php -l includes/admin-sidebar.php
+          php -l config/migrations.php
+          php -l scripts/validate_loyalty_quest_integrity_controls_v1.php
+          php -l scripts/validate_loyalty_quest_integrity_controls_behavior.php
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/merchant-quest-reviews.js
+          node --check assets/js/admin-loyalty-quest-integrity.js
+      - name: Loyalty Quest Integrity 10/10 contract
+        run: php scripts/validate_loyalty_quest_integrity_controls_v1.php
+      - name: Loyalty Quest Integrity MySQL behavior
+        run: php scripts/validate_loyalty_quest_integrity_controls_behavior.php | tee /tmp/loyalty-quest-integrity-behavior.json
+      - name: Migration manifest
+        run: php scripts/validate_migration_manifest.php
+      - name: Loyalty Quest campaign regression
+        run: php scripts/validate_loyalty_quest_campaign_type_v1.php
+      - name: Participant quest regression
+        run: php scripts/validate_participant_quest_experience_v1.php
+      - name: Merchant quest regression
+        run: php scripts/validate_merchant_quest_management_v1.php
+      - name: Notifications regression
+        run: php scripts/validate_loyalty_quest_notifications_v1.php
+      - name: Analytics regression
+        run: php scripts/validate_loyalty_quest_analytics_v1.php
+      - name: Quest media regression
+        run: php scripts/validate_quest_media_promotional_assets_v1.php
+      - name: Admin operations regression
+        run: php scripts/validate_loyalty_quest_admin_operations_v1.php
+      - name: Upload behavior failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: loyalty-quest-integrity-behavior-php-${{ matrix.php }}
+          path: /tmp/loyalty-quest-integrity-behavior.json
+          if-no-files-found: ignore
+          retention-days: 7
