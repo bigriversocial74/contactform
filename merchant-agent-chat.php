@@ -10,11 +10,6 @@ $page_styles = [
     '/assets/css/merchant-agent-chat.css',
     '/assets/css/merchant-agent-chat-followup.css',
     '/assets/css/merchant-agent-chat-skills.css',
-    '/assets/css/merchant-agent-chat-mobile.css',
-    '/assets/css/merchant-agent-chat-cleanup.css',
-    '/assets/css/merchant-agent-chat-flat-layout.css',
-    '/assets/css/merchant-agent-chat-desktop.css',
-    '/assets/css/merchant-agent-chat-mobile-offset.css',
     '/assets/css/merchant-agent-chat-voice.css',
     '/assets/css/merchant-agent-chat-control-panel.css',
     '/assets/css/merchant-agent-memory-menu.css',
@@ -22,6 +17,7 @@ $page_styles = [
     '/assets/css/merchant-agent-creative-draft-actions.css',
     '/assets/css/merchant-agent-chat-recipe-cards.css',
     '/assets/css/sponsored-campaign-card.css',
+    '/assets/css/merchant-agent-chat-layout-v2.css?v=2.0.0',
 ];
 $page_scripts = [
     '/assets/js/merchant-agent-chat.js',
@@ -33,14 +29,14 @@ $page_scripts = [
     '/assets/js/merchant-agent-creative-draft-actions.js',
     '/assets/js/merchant-agent-chat-scroll-latest.js',
     '/assets/js/merchant-agent-chat-json-format.js',
-    '/assets/js/merchant-agent-chat-mobile.js',
+    '/assets/js/merchant-agent-chat-mobile.js?v=2.0.0',
     '/assets/js/sponsored-campaign-card.js',
 ];
 $page_scripts[] = '/assets/js/merchant-agent-chat-admin-mode.js';
 $user = mg_current_user();
 require __DIR__ . '/includes/header.php';
 ?>
-<section class="mg-app-shell mg-merchant-app mg-agent-chat-app mg-agent-chat-app-no-nav" data-merchant-app data-merchant-view="agent_chat" data-sidebar-contract="mg-app-sidebar">
+<section class="mg-app-shell mg-merchant-app mg-agent-chat-app mg-agent-chat-layout-v2" data-merchant-app data-merchant-view="agent_chat" data-sidebar-contract="mg-app-sidebar">
   <?php require __DIR__ . '/includes/agent-sidebar.php'; ?>
   <main class="mg-app-workspace mg-merchant-main">
     <?php if (!$user): ?>
