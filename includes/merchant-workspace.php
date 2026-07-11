@@ -41,10 +41,16 @@ $merchantNav = [
     'settings' => ['Settings','Business configuration','/merchant-settings.php','Manage'],
 ];
 
-if ($merchantView === 'merchant_crm') {
-    foreach (['loyalty_quests', 'quest_creative', 'quest_reviews', 'quest_delivery', 'quest_analytics'] as $questNavKey) {
-        unset($merchantNav[$questNavKey]);
-    }
+foreach ([
+    'loyalty_quests',
+    'quest_creative',
+    'quest_reviews',
+    'quest_delivery',
+    'quest_analytics',
+    'campaign_embed_leads',
+    'campaign_embed_analytics',
+] as $globallyHiddenMerchantNavKey) {
+    unset($merchantNav[$globallyHiddenMerchantNavKey]);
 }
 
 $appSidebarNav = [];

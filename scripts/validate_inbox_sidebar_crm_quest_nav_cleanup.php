@@ -43,28 +43,38 @@ try {
         str_contains($agentSidebar, 'if ($agentSidebarActive === \'inbox\')')
         && str_contains($agentSidebar, "['feed-following', 'merchant_crm', 'ads-manager']")
         && str_contains($agentSidebar, '$appSidebarNav[$inboxHiddenNavKey][\'visible\'] = false'),
-        'Inbox hides Following, Merchant CRM, and Campaign Ads from the visible sidebar'
+        'Inbox continues to hide Following, Merchant CRM, and Campaign Ads'
     );
 
     $expect(
         str_contains($agentSidebar, '$appSidebarNav[\'training-lab\'] = [\'visible\' => false]')
         && str_contains($appSidebar, '!isset($appSidebarNav[\'training-lab\'])'),
-        'Inbox suppresses the automatically injected Training Lab navigation item'
+        'Inbox continues to suppress the automatically injected Training Lab item'
     );
 
-    foreach (['Following', 'Merchant CRM', 'Campaign Ads'] as $label) {
-        $expect(
-            str_contains($agentSidebar, "'label' => '" . $label . "'"),
-            $label . ' remains available for non-inbox agent pages'
-        );
-    }
+    $globallyHiddenKeys = [
+        'loyalty_quests',
+        'quest_creative',
+        'quest_reviews',
+        'quest_delivery',
+        'quest_analytics',
+        'campaign_embed_leads',
+        'campaign_embed_analytics',
+    ];
 
     $expect(
-        str_contains($merchantWorkspace, 'if ($merchantView === \'merchant_crm\')')
-        && str_contains($merchantWorkspace, "['loyalty_quests', 'quest_creative', 'quest_reviews', 'quest_delivery', 'quest_analytics']")
-        && str_contains($merchantWorkspace, 'unset($merchantNav[$questNavKey])'),
-        'Merchant CRM removes every quest navigation key before rendering the sidebar'
+        str_contains($merchantWorkspace, '$globallyHiddenMerchantNavKey')
+        && str_contains($merchantWorkspace, 'unset($merchantNav[$globallyHiddenMerchantNavKey])')
+        && !str_contains($merchantWorkspace, 'if ($merchantView === \'merchant_crm\')'),
+        'Quest and embed navigation is removed globally instead of only on Merchant CRM'
     );
+
+    foreach ($globallyHiddenKeys as $key) {
+        $expect(
+            str_contains($merchantWorkspace, "'{$key}'"),
+            'Global hidden navigation list contains ' . $key
+        );
+    }
 
     foreach ([
         "'loyalty_quests' => ['Loyalty Quests'",
@@ -72,10 +82,12 @@ try {
         "'quest_reviews' => ['Quest Reviews'",
         "'quest_delivery' => ['Quest Delivery'",
         "'quest_analytics' => ['Quest Analytics'",
+        "'campaign_embed_leads' => ['Embed Leads'",
+        "'campaign_embed_analytics' => ['Embed Analytics'",
     ] as $routeMarker) {
         $expect(
             str_contains($merchantWorkspace, $routeMarker),
-            'Quest route remains registered outside Merchant CRM: ' . $routeMarker
+            'Direct route remains registered while sidebar link is hidden: ' . $routeMarker
         );
     }
 } catch (Throwable $error) {
@@ -84,11 +96,11 @@ try {
 }
 
 if ($failures !== []) {
-    fwrite(STDERR, sprintf("Inbox sidebar / Merchant CRM quest navigation validation failed: %d failure(s), %d pass(es).\n", count($failures), $passes));
+    fwrite(STDERR, sprintf("Inbox and global merchant sidebar validation failed: %d failure(s), %d pass(es).\n", count($failures), $passes));
     foreach ($failures as $failure) {
         fwrite(STDERR, " - {$failure}\n");
     }
     exit(1);
 }
 
-echo "Inbox sidebar / Merchant CRM quest navigation validation passed: {$passes} checks.\n";
+echo "Inbox and global merchant sidebar validation passed: {$passes} checks.\n";
