@@ -28,7 +28,7 @@ final class MerchantNotificationCenterTest extends TestCase
         $panel = $this->source('includes/merchant-notifications-view.php');
         self::assertStringContainsString("'notifications' => ['Notifications'", $navigation);
         self::assertStringContainsString('/merchant-notifications.php', $navigation);
-        self::assertStringContainsString("$merchantView==='notifications'", $view);
+        self::assertStringContainsString("merchantView==='notifications'", $view);
         self::assertStringContainsString('merchant-notifications-view.php', $view);
         foreach (['data-merchant-notification-feed','data-merchant-notification-tabs','data-filter="tips"','data-filter="messages"','data-filter="redemptions"'] as $needle) self::assertStringContainsString($needle, $panel);
     }
