@@ -5,13 +5,16 @@ document.addEventListener('DOMContentLoaded', function () {
   if (!root) return;
 
   var drawer = root.querySelector('[data-agent-chat-drawer]');
-  var open = root.querySelector('[data-agent-chat-drawer-open]');
+  var openButton = root.querySelector('[data-agent-chat-drawer-open]');
   var closeTriggers = root.querySelectorAll('[data-agent-chat-drawer-close]');
+  var closeButton = drawer ? drawer.querySelector('[data-agent-chat-drawer-close]') : null;
+  var backdrop = root.querySelector('.mg-agent-chat-drawer-backdrop');
   var summary = root.querySelector('[data-agent-chat-summary]');
   var mobileSummary = root.querySelector('[data-agent-chat-summary-mobile]');
+  var mobileQuery = window.matchMedia ? window.matchMedia('(max-width: 980px)') : null;
 
-  function isMobile() {
-    return window.matchMedia && window.matchMedia('(max-width: 760px)').matches;
+  function isCompactViewport() {
+    return !!(mobileQuery && mobileQuery.matches);
   }
 
   function syncSummary() {
@@ -19,53 +22,49 @@ document.addEventListener('DOMContentLoaded', function () {
     mobileSummary.textContent = summary.textContent || 'Overview · Last 90 days · Action plan';
   }
 
-  function setDrawer(isOpen) {
-    root.classList.toggle('is-drawer-open', !!isOpen);
-    document.body.classList.toggle('mg-agent-chat-drawer-open', !!isOpen);
-    if (open) open.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-    if (drawer) drawer.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
-    closeTriggers.forEach(function (trigger) {
-      if (trigger.classList && trigger.classList.contains('mg-agent-chat-drawer-backdrop')) {
-        trigger.hidden = !isOpen;
-      }
+  function setDrawer(isOpen, restoreFocus) {
+    var compact = isCompactViewport();
+    var shouldOpen = compact && !!isOpen;
+
+    root.classList.toggle('is-drawer-open', shouldOpen);
+    document.body.classList.toggle('mg-agent-chat-drawer-open', shouldOpen);
+
+    if (openButton) {
+      openButton.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+    }
+    if (drawer) {
+      drawer.setAttribute('aria-hidden', compact ? (shouldOpen ? 'false' : 'true') : 'false');
+    }
+    if (backdrop) {
+      backdrop.hidden = !shouldOpen;
+    }
+
+    if (shouldOpen && closeButton) {
+      window.requestAnimationFrame(function () {
+        closeButton.focus({ preventScroll: true });
+      });
+    } else if (restoreFocus && openButton) {
+      window.requestAnimationFrame(function () {
+        openButton.focus({ preventScroll: true });
+      });
+    }
+  }
+
+  if (openButton) {
+    openButton.addEventListener('click', function () {
+      setDrawer(true, false);
     });
   }
-
-  function isMenuTrigger(element) {
-    if (!element) return false;
-    var trigger = element.closest('button,a');
-    if (!trigger) return false;
-    if (trigger.matches('[data-agent-chat-drawer-open]')) return true;
-    if (trigger.matches('[data-app-sidebar-toggle],[data-sidebar-toggle],[data-mobile-menu-toggle],[data-menu-toggle],.mg-public-menu-toggle,.mg-app-menu-toggle,.mg-mobile-menu-toggle,.mg-hamburger,.mg-header-menu-toggle')) return true;
-    var label = (trigger.getAttribute('aria-label') || trigger.textContent || '').toLowerCase();
-    return label.indexOf('menu') !== -1 || label.indexOf('navigation') !== -1 || label.indexOf('sidebar') !== -1;
-  }
-
-  if (open) {
-    open.addEventListener('click', function (event) {
-      event.preventDefault();
-      setDrawer(true);
-    });
-  }
-
-  document.addEventListener('click', function (event) {
-    if (!isMobile()) return;
-    if (!isMenuTrigger(event.target)) return;
-    if (drawer && drawer.contains(event.target)) return;
-    event.preventDefault();
-    event.stopPropagation();
-    setDrawer(true);
-  }, true);
 
   closeTriggers.forEach(function (trigger) {
     trigger.addEventListener('click', function () {
-      setDrawer(false);
+      setDrawer(false, true);
     });
   });
 
   document.addEventListener('keydown', function (event) {
     if (event.key === 'Escape' && root.classList.contains('is-drawer-open')) {
-      setDrawer(false);
+      setDrawer(false, true);
     }
   });
 
@@ -76,9 +75,24 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   if (summary && 'MutationObserver' in window) {
-    new MutationObserver(syncSummary).observe(summary, { childList: true, characterData: true, subtree: true });
+    new MutationObserver(syncSummary).observe(summary, {
+      childList: true,
+      characterData: true,
+      subtree: true
+    });
+  }
+
+  if (mobileQuery) {
+    var handleViewportChange = function () {
+      setDrawer(false, false);
+    };
+    if (typeof mobileQuery.addEventListener === 'function') {
+      mobileQuery.addEventListener('change', handleViewportChange);
+    } else if (typeof mobileQuery.addListener === 'function') {
+      mobileQuery.addListener(handleViewportChange);
+    }
   }
 
   syncSummary();
-  setDrawer(false);
+  setDrawer(false, false);
 });
