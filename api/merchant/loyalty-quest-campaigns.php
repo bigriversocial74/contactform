@@ -85,6 +85,20 @@ function mg_lq_row(array $row): array
     ];
 }
 
+function mg_lq_status_transition_allowed(?string $previous, string $next): bool
+{
+    if ($previous === null) return in_array($next, ['draft','active'], true);
+    if ($previous === $next) return true;
+    $allowed = [
+        'draft' => ['active','archived'],
+        'active' => ['paused','ended'],
+        'paused' => ['active','ended','archived'],
+        'ended' => ['archived'],
+        'archived' => [],
+    ];
+    return in_array($next, $allowed[$previous] ?? [], true);
+}
+
 $user = mg_merchant_require_permission('merchant.campaigns.manage');
 $merchantId = (int)$user['id'];
 $pdo = mg_db();
@@ -102,20 +116,32 @@ if (!in_array($status, ['draft','active','paused','ended','archived'], true)) mg
 $startsAt = mg_lq_datetime($input['starts_at'] ?? '');
 $endsAt = mg_lq_datetime($input['ends_at'] ?? '');
 if ($startsAt && $endsAt && strtotime($startsAt) >= strtotime($endsAt)) mg_fail('Campaign end date must be after the start date.', 422);
+if ($status === 'active' && $endsAt !== null && strtotime($endsAt) <= time()) mg_fail('Active Loyalty Quests require a future end date.', 422);
 
 $existingRules = [];
+$existingStatus = null;
 if ($campaignId !== '') {
-    $stmt = $pdo->prepare("SELECT rules_json FROM campaigns WHERE public_id=? AND merchant_user_id=? AND campaign_type='loyalty_quest' LIMIT 1");
+    $stmt = $pdo->prepare("SELECT status,rules_json FROM campaigns WHERE public_id=? AND merchant_user_id=? AND campaign_type='loyalty_quest' LIMIT 1");
     $stmt->execute([$campaignId, $merchantId]);
-    $existingRules = json_decode((string)($stmt->fetchColumn() ?: ''), true);
+    $existingCampaign = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$existingCampaign) mg_fail('Loyalty Quest not found.', 404);
+    $existingStatus = (string)$existingCampaign['status'];
+    $existingRules = json_decode((string)($existingCampaign['rules_json'] ?? ''), true);
     if (!is_array($existingRules)) $existingRules = [];
 }
+if (!mg_lq_status_transition_allowed($existingStatus, $status)) mg_fail('This Loyalty Quest status transition is not allowed.', 409);
+
 $rules = mg_loyalty_quest_normalize_rules($input, $existingRules);
 $errors = mg_loyalty_quest_validate_rules($rules, $status);
 if ($errors) mg_fail(implode(' ', $errors), 422);
 
 $rewardTemplateId = mg_lq_reward_template($pdo, $merchantId, (string)($input['reward_template_id'] ?? ''), $status);
 if ($status === 'active' && $rewardTemplateId === null) mg_fail('Active Loyalty Quests require an attached reward template.', 422);
+if ($status === 'active') {
+    $usage = $pdo->prepare("SELECT COUNT(*) FROM campaigns WHERE merchant_user_id=? AND status='active' AND public_id<>?");
+    $usage->execute([$merchantId, $campaignId]);
+    mg_package_require_limit_available($pdo, $user, 'max_active_campaigns', (int)$usage->fetchColumn(), 'Active campaign limit reached.');
+}
 
 $quantityRaw = trim((string)($input['quantity_limit'] ?? ''));
 $quantityLimit = $quantityRaw === '' ? null : max(1, (int)$quantityRaw);
@@ -133,7 +159,7 @@ if (!is_string($rulesJson)) mg_fail('Unable to encode Loyalty Quest rules.', 500
 try {
     $pdo->beginTransaction();
     $isNew = $campaignId === '';
-    $previousStatus = null;
+    $previousStatus = $existingStatus;
     if ($isNew) {
         $campaignId = mg_merchant_uuid();
         $slug = mg_lq_unique_slug($pdo, $merchantId, $title);
@@ -143,12 +169,11 @@ try {
         $dbId = (int)$pdo->lastInsertId();
         $message = 'Loyalty Quest created.';
     } else {
-        $lookup = $pdo->prepare("SELECT id,status,qr_code_token FROM campaigns WHERE public_id=? AND merchant_user_id=? AND campaign_type='loyalty_quest' LIMIT 1");
+        $lookup = $pdo->prepare("SELECT id,qr_code_token FROM campaigns WHERE public_id=? AND merchant_user_id=? AND campaign_type='loyalty_quest' LIMIT 1 FOR UPDATE");
         $lookup->execute([$campaignId,$merchantId]);
         $existing = $lookup->fetch(PDO::FETCH_ASSOC);
         if (!$existing) mg_fail('Loyalty Quest not found.', 404);
         $dbId = (int)$existing['id'];
-        $previousStatus = (string)$existing['status'];
         $slug = mg_lq_unique_slug($pdo,$merchantId,$title,$campaignId);
         $qrToken = (string)($existing['qr_code_token'] ?? '') ?: bin2hex(random_bytes(16));
         $stmt = $pdo->prepare("UPDATE campaigns SET reward_template_id=?,title=?,description=?,form_headline=?,form_description=?,success_message=?,status=?,starts_at=?,ends_at=?,quantity_limit=?,per_user_limit=?,agent_discoverable=?,public_slug=?,qr_code_token=?,rules_json=?,updated_at=NOW() WHERE id=? AND public_id=? AND merchant_user_id=? AND campaign_type='loyalty_quest'");
@@ -166,8 +191,8 @@ try {
     if ($status === 'active' && ($isNew || $previousStatus !== 'active')) $notification = mg_public_campaign_notify_merchant_lifecycle($pdo,$row,'campaign.launched');
     elseif ($isNew) $notification = mg_public_campaign_notify_merchant_lifecycle($pdo,$row,'campaign.created');
 
-    mg_audit('merchant.loyalty_quest_saved','campaign',['campaign_id'=>$campaignId,'status'=>$status,'rules'=>$rules,'notification'=>$notification],$merchantId);
-    mg_ok(['campaign'=>mg_lq_row($row),'notification'=>$notification,'schema_ready'=>true],$message,201);
+    mg_audit('merchant.loyalty_quest_saved','campaign',['campaign_id'=>$campaignId,'status'=>$status,'previous_status'=>$previousStatus,'rules'=>$rules,'notification'=>$notification],$merchantId);
+    mg_ok(['campaign'=>mg_lq_row($row),'notification'=>$notification,'schema_ready'=>true],$message,$isNew ? 201 : 200);
 } catch (Throwable $error) {
     if ($pdo->inTransaction()) $pdo->rollBack();
     mg_security_log('error','merchant.loyalty_quest.save_failed','Unable to save Loyalty Quest.',['exception_class'=>$error::class,'message'=>$error->getMessage()],$merchantId);

@@ -74,6 +74,7 @@ $merchant_storefront_href = $account_storefront_url ?: '/merchant-storefront.php
             <a class="mg-account-action" href="/account-commerce.php"><span class="mg-account-index"><?= str_pad((string) $customerMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>My Orders</span></a>
             <a class="mg-account-action" href="/account-market.php"><span class="mg-account-index"><?= str_pad((string) $customerMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>My Demand</span></a>
             <a class="mg-account-action" href="/wallet.php"><span class="mg-account-index"><?= str_pad((string) $customerMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>My Wallet</span></a>
+            <a class="mg-account-action" href="/my-quests.php"><span class="mg-account-index"><?= str_pad((string) $customerMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>My Loyalty Quests</span></a>
             <?php if ($account_profile_url): ?><a class="mg-account-action" href="<?= mg_e($account_profile_url) ?>"><span class="mg-account-index"><?= str_pad((string) $customerMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>My Profile</span></a><?php endif; ?>
             <a class="mg-account-action" href="/account.php"><span class="mg-account-index"><?= str_pad((string) $customerMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Profile Settings</span></a>
             <a class="mg-account-action" href="/account-subscriptions.php"><span class="mg-account-index"><?= str_pad((string) $customerMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>My Subscriptions</span></a>
@@ -89,6 +90,8 @@ $merchant_storefront_href = $account_storefront_url ?: '/merchant-storefront.php
               <a class="mg-account-action" href="<?= mg_e($merchant_storefront_href) ?>"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>My Storefront</span></a>
               <a class="mg-account-action" href="/merchant-products.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Products</span></a>
               <a class="mg-account-action" href="/merchant-campaigns.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Campaigns</span></a>
+              <a class="mg-account-action" href="/merchant-loyalty-quests.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Loyalty Quests</span></a>
+              <a class="mg-account-action" href="/merchant-quest-reviews.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Quest Reviews</span></a>
               <a class="mg-account-action" href="/merchant-reward-templates.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Rewards</span></a>
               <a class="mg-account-action" href="/merchant-crm.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Merchant CRM</span></a>
               <a class="mg-account-action" href="/merchant-memory.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Merchant Memory</span></a>

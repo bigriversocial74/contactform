@@ -1,0 +1,71 @@
+name: Participant Quest Experience Validation
+
+on:
+  pull_request:
+    paths:
+      - 'loyalty-quest.php'
+      - 'my-quests.php'
+      - 'merchant-quest-reviews.php'
+      - 'api/public/loyalty-quest/**'
+      - 'api/account/loyalty-quests.php'
+      - 'api/merchant/loyalty-quest-campaigns.php'
+      - 'api/merchant/loyalty-quest-reviews.php'
+      - 'api/merchant/loyalty-quest-signed-code.php'
+      - 'includes/loyalty-quest-campaign-type.php'
+      - 'includes/merchant-quest-reviews-view.php'
+      - 'includes/merchant-workspace.php'
+      - 'includes/merchant-view.php'
+      - 'includes/header-templates/logged-in.php'
+      - 'assets/js/loyalty-quest-*.js'
+      - 'assets/js/my-loyalty-quests.js'
+      - 'assets/js/merchant-quest-reviews.js'
+      - 'assets/css/loyalty-quest-participant.css'
+      - 'assets/css/my-loyalty-quests.css'
+      - 'assets/css/merchant-quest-reviews.css'
+      - 'database/loyalty_quest_participant_experience_v1.sql'
+      - 'database/shared_microgifter_identity_v1.sql'
+      - 'config/migrations.php'
+      - 'scripts/validate_participant_quest_experience_v1.php'
+      - '.github/workflows/participant-quest-experience-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Participant Quest Experience v1 (PHP ${{ matrix.php }})
+    runs-on: macos-14
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2','8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - name: PHP syntax
+        run: |
+          php -l loyalty-quest.php
+          php -l my-quests.php
+          php -l merchant-quest-reviews.php
+          php -l api/public/loyalty-quest/_participant.php
+          php -l api/public/loyalty-quest/_verification.php
+          php -l api/public/loyalty-quest/_reward.php
+          php -l api/public/loyalty-quest/detail.php
+          php -l api/public/loyalty-quest/start.php
+          php -l api/public/loyalty-quest/submit.php
+          php -l api/account/loyalty-quests.php
+          php -l api/merchant/loyalty-quest-campaigns.php
+          php -l api/merchant/loyalty-quest-reviews.php
+          php -l api/merchant/loyalty-quest-signed-code.php
+          php -l includes/loyalty-quest-campaign-type.php
+          php -l includes/merchant-quest-reviews-view.php
+          php -l scripts/validate_participant_quest_experience_v1.php
+          php -l config/migrations.php
+      - name: Participant Quest Experience 10/10 contract
+        run: php scripts/validate_participant_quest_experience_v1.php
+      - name: Canonical migration coverage
+        run: php scripts/build_full_upgrade_sql.php /tmp/microgifter_full_upgrade.sql
