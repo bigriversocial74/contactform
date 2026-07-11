@@ -1,0 +1,34 @@
+.mg-world-drop-intent-control{position:absolute;z-index:36;left:18px;bottom:74px;pointer-events:auto}
+.mg-world-drop-intent-control button{display:grid;grid-template-columns:34px minmax(0,1fr);grid-template-rows:auto auto;column-gap:10px;align-items:center;min-width:220px;border:1px solid rgba(148,163,184,.36);border-radius:16px;background:rgba(255,255,255,.96);box-shadow:0 14px 34px rgba(15,23,42,.16);padding:10px 13px;color:#0f172a;text-align:left;cursor:pointer;backdrop-filter:blur(12px)}
+.mg-world-drop-intent-control button>span{grid-row:1/3;display:grid;place-items:center;width:34px;height:34px;border-radius:12px;background:#2563eb;color:#fff;font-size:22px;font-weight:900;line-height:1}
+.mg-world-drop-intent-control button>strong{font-size:12px;font-weight:950;line-height:1.2}
+.mg-world-drop-intent-control button>small{color:#64748b;font-size:10px;font-weight:800}
+.mg-world-drop-intent-control button.is-active{border-color:rgba(37,99,235,.55);box-shadow:0 0 0 4px rgba(37,99,235,.1),0 16px 38px rgba(15,23,42,.2)}
+.mg-world-drop-intent-control button.is-active>span{background:#0f172a}
+.mg-world-canvas[data-world-drop-placement="armed"] [data-world-map]{cursor:crosshair}
+.mg-world-drop-placement-preview{position:absolute;z-index:34;display:grid;place-items:center;width:84px;height:84px;border:2px dashed rgba(37,99,235,.72);border-radius:999px;background:rgba(37,99,235,.08);box-shadow:0 0 0 12px rgba(37,99,235,.06);transform:translate(-50%,-50%) scale(var(--mg-world-inverse-zoom,1));transform-origin:center;pointer-events:none;animation:mgWorldDropPlacementPulse 1.2s ease-in-out infinite}
+.mg-world-drop-placement-preview span{width:13px;height:13px;border-radius:999px;background:#2563eb;box-shadow:0 0 0 6px rgba(255,255,255,.9)}
+.mg-world-drop-placement-preview strong{position:absolute;left:50%;bottom:-31px;transform:translateX(-50%);border-radius:999px;background:#0f172a;color:#fff;padding:6px 10px;font-size:10px;font-weight:950;white-space:nowrap}
+.mg-world-drop-confirm{position:fixed;z-index:2147483600;inset:0;display:none;place-items:center;padding:20px}
+.mg-world-drop-confirm.is-open{display:grid}
+.mg-world-drop-confirm-backdrop{position:absolute;inset:0;background:rgba(15,23,42,.56);backdrop-filter:blur(5px)}
+.mg-world-drop-confirm section{position:relative;width:min(520px,100%);border:1px solid rgba(203,213,225,.72);border-radius:24px;background:#fff;box-shadow:0 32px 90px rgba(15,23,42,.34);padding:28px;color:#0f172a}
+.mg-world-drop-confirm-step{display:inline-flex;border-radius:999px;background:#dbeafe;color:#1d4ed8;padding:6px 10px;font-size:10px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}
+.mg-world-drop-confirm h2{margin:14px 44px 8px 0;font-size:26px;line-height:1.1}
+.mg-world-drop-confirm p{margin:0;color:#64748b;font-size:13px;line-height:1.6}
+.mg-world-drop-confirm dl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:20px 0}
+.mg-world-drop-confirm dl div{border:1px solid rgba(203,213,225,.76);border-radius:14px;background:#f8fafc;padding:12px}
+.mg-world-drop-confirm dt{color:#64748b;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.08em}
+.mg-world-drop-confirm dd{margin:5px 0 0;font-size:14px;font-weight:950}
+.mg-world-drop-confirm-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.mg-world-drop-confirm-actions button,.mg-world-drop-confirm-close{border:0;cursor:pointer;font-weight:950}
+.mg-world-drop-confirm-actions button{min-height:44px;border-radius:13px;padding:0 16px}
+.mg-world-drop-confirm-actions button:first-child{background:#f1f5f9;color:#334155}
+.mg-world-drop-confirm-actions button:last-child{background:#2563eb;color:#fff}
+.mg-world-drop-confirm-close{position:absolute;right:18px;top:18px;width:38px;height:38px;border-radius:12px;background:#f1f5f9;color:#0f172a;font-size:22px}
+body.is-world-drop-confirm-open{overflow:hidden}
+.mg-world-drop-intent-hint{position:absolute;z-index:38;left:50%;bottom:22px;transform:translate(-50%,14px);max-width:min(420px,calc(100% - 32px));border-radius:999px;background:#0f172a;color:#fff;padding:9px 14px;font-size:11px;font-weight:850;opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease}
+.mg-world-drop-intent-hint.is-visible{opacity:1;transform:translate(-50%,0)}
+@keyframes mgWorldDropPlacementPulse{0%,100%{box-shadow:0 0 0 10px rgba(37,99,235,.05)}50%{box-shadow:0 0 0 20px rgba(37,99,235,.01)}}
+@media(max-width:720px){.mg-world-drop-intent-control{left:10px;right:10px;bottom:62px}.mg-world-drop-intent-control button{width:100%;min-width:0}.mg-world-drop-confirm{padding:12px}.mg-world-drop-confirm section{border-radius:20px;padding:22px}.mg-world-drop-confirm dl{grid-template-columns:1fr}.mg-world-drop-confirm-actions{display:grid;grid-template-columns:1fr}.mg-world-drop-confirm-actions button{width:100%}}
+@media(prefers-reduced-motion:reduce){.mg-world-drop-placement-preview{animation:none}.mg-world-drop-intent-hint{transition:none}}
