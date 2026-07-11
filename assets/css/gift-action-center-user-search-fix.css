@@ -1,0 +1,26 @@
+.mg-user-search-profile-link{
+  min-width:0;
+  overflow:hidden;
+  color:#071225;
+  font-size:14px;
+  font-weight:950;
+  line-height:1.2;
+  text-decoration:none;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.mg-user-search-profile-link:hover,
+.mg-user-search-profile-link:focus{
+  color:#0b5cff;
+  text-decoration:underline;
+  text-underline-offset:3px;
+}
+.mg-user-search-profile-link:focus-visible{
+  outline:3px solid rgba(37,99,235,.16);
+  border-radius:5px;
+}
+.mg-user-search-action.is-following{
+  border-color:#9fc0ff;
+  background:#edf4ff;
+  color:#0b5cff;
+}
