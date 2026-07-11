@@ -8,6 +8,7 @@ on:
       - 'includes/merchant-navigation.php'
       - 'includes/merchant-workspace.php'
       - 'includes/agent-sidebar.php'
+      - 'includes/app-sidebar.php'
       - 'merchant*.php'
       - 'scripts/validate_merchant_admin_navigation.php'
       - '.github/workflows/merchant-admin-navigation-validation.yml'
@@ -39,6 +40,7 @@ jobs:
           php -l includes/merchant-navigation.php
           php -l includes/merchant-workspace.php
           php -l includes/agent-sidebar.php
+          php -l includes/app-sidebar.php
           php -l scripts/validate_merchant_admin_navigation.php
 
       - name: Shared merchant navigation contract
