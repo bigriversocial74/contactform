@@ -100,6 +100,7 @@ return [
         'stage_12_campaign_followups.sql',
         'stage_12_message_delivery_campaign_suppression.sql',
         'loyalty_quest_notifications_transactional_delivery_v1.sql',
+        'loyalty_quest_integrity_controls_v1.sql',
         'stage_12_crm_reward_invites.sql',
         'stage_12_crm_message_account_link_repair.sql',
         'crm_scheduled_bulk_actions_20260704.sql',
