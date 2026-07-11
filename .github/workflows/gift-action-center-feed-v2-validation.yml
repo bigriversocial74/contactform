@@ -8,6 +8,7 @@ on:
       - 'assets/css/gift-action-center-feed-v2.css'
       - 'assets/js/gift-action-center-feed-v2.js'
       - 'assets/js/gift-envelope-presentation.js'
+      - 'assets/js/gift-source-metadata.js'
       - 'assets/js/gift-action-center.js'
       - 'includes/gift-action-center.php'
       - 'inbox.php'
@@ -50,6 +51,7 @@ jobs:
         run: |
           node --check assets/js/gift-action-center-feed-v2.js
           node --check assets/js/gift-envelope-presentation.js
+          node --check assets/js/gift-source-metadata.js
           node --check assets/js/gift-action-center.js
 
       - name: Feed v2 contract
