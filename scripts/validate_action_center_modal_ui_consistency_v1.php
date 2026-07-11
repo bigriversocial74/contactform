@@ -27,11 +27,14 @@ $checks = [
         && !str_contains($css, '.mg-send-exact-modal .mg-action-modal-header>div{position:absolute'),
     'regift receives visible canonical header copy' => str_contains($portal, "title.textContent = 'Regift Microgift'")
         && str_contains($portal, 'eyebrow.textContent = eyebrowLabel'),
-    'regift has consistent secondary and primary actions' => str_contains($portal, "cancel.textContent = 'Cancel'")
+    'regift has one primary footer action and no footer Cancel control' => str_contains($portal, "const cancel = actions && actions.querySelector('.mg-send-exact-secondary,[data-action-modal-close]')")
+        && str_contains($portal, 'if (cancel) cancel.remove();')
+        && str_contains($portal, "actions.dataset.singleAction = 'true'")
         && str_contains($portal, "const desiredLabel = 'Review regift';")
-        && str_contains($portal, 'primary.textContent = desiredLabel'),
+        && str_contains($portal, 'primary.textContent = desiredLabel')
+        && !str_contains($portal, "cancel.textContent = 'Cancel'"),
     'regift normalization cannot self-trigger indefinitely' => str_contains($portal, 'function queueActionModalNormalization(modal)')
-        && str_contains($portal, "primary.textContent.trim() === 'Review Regift'")
+        && str_contains($portal, 'primary.textContent.trim() !== desiredLabel')
         && !str_contains($portal, '/^Review Regift$/i'),
     'claim markup keeps close control after title group' => preg_match('/<header class="mg-claim-modal-header">.*?<div>.*?<\/div>\s*<button class="mg-claim-modal-close"/s', $claim) === 1,
     'desktop and mobile use the same modal shells' => str_contains($css, '@media (max-width: 760px)')
