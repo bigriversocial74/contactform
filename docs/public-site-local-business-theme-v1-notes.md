@@ -1,1 +1,0 @@
-Public Site Local Business Theme v1 preserves public routes and business logic while aligning the logged-out experience to the new white, navy, and green design system. No SQL is required.
