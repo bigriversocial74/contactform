@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/includes/app.php';
-$accountType = strtolower(trim((string)($_GET['type'] ?? 'customer'));
+$accountType = strtolower(trim((string) ($_GET['type'] ?? 'customer')));
 if (!in_array($accountType, ['customer','merchant'], true)) $accountType = 'customer';
 $isMerchant = $accountType === 'merchant';
 $page_title = ($isMerchant ? 'Create merchant account' : 'Create account') . ' | Microgifter';
