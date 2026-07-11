@@ -12,7 +12,7 @@ Open:
 
 `/admin/loyalty-quests.php`
 
-The page requires the existing `campaign.manage` permission through the admin permission matrix.
+Read access uses the existing `admin.operations_command.view` permission. Campaign-control, review-reminder, and delivery-retry writes require `admin.operations_command.manage`. Super administrators retain access through the existing permission resolver.
 
 ## Allowed operations
 
@@ -28,9 +28,8 @@ Every write requires CSRF validation and an operator reason between 12 and 1000 
 
 ## Authority boundary
 
-This admin console does not:
+This admin console does not approve or reject participant evidence. It also does not:
 
-- approve or reject participant evidence
 - issue or cancel participant rewards
 - reveal participant proof notes or proof URLs
 - expose raw location coordinates
