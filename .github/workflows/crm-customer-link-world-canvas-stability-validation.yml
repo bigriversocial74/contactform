@@ -9,8 +9,8 @@ on:
       - 'assets/js/merchant-crm-contact-link-polish.js'
       - 'world-canvas.php'
       - 'api/world-canvas/activity.php'
-      - 'assets/js/world-canvas-square-map.js'
-      - 'assets/js/world-canvas-geo-zoom-v2.js'
+      - 'api/world-canvas/_runtime_v2.php'
+      - 'assets/js/world-canvas-runtime-v2.js'
       - 'scripts/validate_crm_customer_link_world_canvas_stability.php'
       - '.github/workflows/crm-customer-link-world-canvas-stability-validation.yml'
   workflow_dispatch:
@@ -43,7 +43,9 @@ jobs:
         run: php -l world-canvas.php
 
       - name: Lint World Canvas activity API
-        run: php -l api/world-canvas/activity.php
+        run: |
+          php -l api/world-canvas/activity.php
+          php -l api/world-canvas/_runtime_v2.php
 
       - name: Lint validation contract
         run: php -l scripts/validate_crm_customer_link_world_canvas_stability.php
@@ -51,8 +53,7 @@ jobs:
       - name: JavaScript syntax
         run: |
           node --check assets/js/merchant-crm-contact-link-polish.js
-          node --check assets/js/world-canvas-square-map.js
-          node --check assets/js/world-canvas-geo-zoom-v2.js
+          node --check assets/js/world-canvas-runtime-v2.js
 
       - name: Customer link and map stability contract
         run: php scripts/validate_crm_customer_link_world_canvas_stability.php
