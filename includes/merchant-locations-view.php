@@ -2,83 +2,37 @@
 declare(strict_types=1);
 ?>
 <section class="mg-locations-redemption" data-location-redemption-manager>
-  <div class="mg-locations-commandbar">
-    <div class="mg-locations-contract-label">Claim locations</div>
-    <nav class="mg-locations-tabs" aria-label="Location sections">
-      <a class="is-active" href="#locations-overview" data-location-tab="overview" data-location-default="true" aria-current="page">Overview</a>
-      <a href="#locations-list-panel" data-location-tab="overview">Active Locations</a>
-      <a href="#locations-list-panel" data-location-tab="overview">Claim Sites</a>
-      <a href="#location-editor-panel" data-location-tab="add-location">Add Location</a>
-      <a href="#locations-readiness" data-location-tab="overview">QR Codes</a>
-      <a href="#location-editor-panel" data-location-tab="add-location">Staff Instructions</a>
-      <a href="#location-editor-panel" data-location-tab="add-location">Redemption Rules</a>
-      <a href="#locations-list-panel" data-location-tab="overview">Archived</a>
-    </nav>
-    <a class="mg-btn mg-btn-primary" href="#location-editor-panel" data-location-new data-location-open-add>Add Location</a>
-  </div>
+  <section class="mg-locations-kpis" aria-label="Location network metrics">
+    <article><span>Active locations</span><strong data-location-kpi-active>—</strong><small>Claim-ready footprint</small></article>
+    <article><span>Claim-enabled</span><strong data-location-kpi-claim>—</strong><small>Protected code set</small></article>
+    <article><span>Primary site</span><strong data-location-kpi-primary>—</strong><small>Main redemption location</small></article>
+    <article><span>Archived</span><strong data-location-kpi-archived>—</strong><small>Inactive history</small></article>
+    <article><span>Staff ready</span><strong data-location-kpi-staff>—</strong><small>Contact and address present</small></article>
+  </section>
 
-  <div class="mg-location-tab-section is-active" id="locations-overview" data-location-section="overview">
-    <section class="mg-locations-kpis" aria-label="Location network metrics">
-      <article><span>Active locations</span><strong data-location-kpi-active>—</strong><small>Claim-ready footprint</small></article>
-      <article><span>Claim-enabled</span><strong data-location-kpi-claim>—</strong><small>Protected code set</small></article>
-      <article><span>Primary site</span><strong data-location-kpi-primary>—</strong><small>Main redemption location</small></article>
-      <article><span>Archived</span><strong data-location-kpi-archived>—</strong><small>Inactive history</small></article>
-      <article><span>Staff ready</span><strong data-location-kpi-staff>—</strong><small>Contact and address present</small></article>
-    </section>
-
-    <div class="mg-locations-layout" data-location-workspace>
-      <section class="mg-app-panel mg-locations-panel" id="locations-list-panel" aria-labelledby="mg-location-list-title">
-        <div class="mg-app-panel-head mg-locations-panel-head">
-          <div>
-            <span class="mg-eyebrow">Location Network</span>
-            <h2 id="mg-location-list-title">Redemption sites</h2>
-            <p>Review saved merchant locations, claim-code status, staff routing, address details, geo check-in readiness, and redemption readiness.</p>
-          </div>
-          <a class="mg-btn mg-btn-soft" href="#location-editor-panel" data-location-open-add>Add Location</a>
-        </div>
-        <div class="mg-app-panel-body">
-          <div class="mg-empty-state" data-location-empty>
-            <strong>No locations loaded yet</strong>
-            <p>Add a claim location to anchor voucher claims and check-in campaigns to the right merchant workspace.</p>
-          </div>
-          <div class="mg-location-list" data-location-list aria-live="polite"></div>
-        </div>
-      </section>
-
-      <aside class="mg-locations-side" id="locations-readiness">
-        <section class="mg-app-panel mg-locations-panel mg-locations-readiness-card">
-          <div class="mg-app-panel-head mg-locations-panel-head is-compact"><div><h2>Location Readiness</h2><p>Redemption and check-in issues to review before sending traffic to a location.</p></div></div>
-          <div class="mg-app-panel-body">
-            <div class="mg-locations-readiness-score"><span>Network signal</span><strong data-location-readiness-score>—</strong></div>
-            <div class="mg-locations-readiness-list">
-              <p><b></b><span data-location-ready-primary>Add at least one active claim location.</span></p>
-              <p><b></b><span data-location-ready-secondary>Each claim site needs an address and protected claim code.</span></p>
-              <p><b></b><span data-location-ready-tertiary>Use one primary location for default storefront and staff routing.</span></p>
-            </div>
-          </div>
-        </section>
-
-        <section class="mg-app-panel mg-locations-panel mg-locations-actions-card">
-          <div class="mg-app-panel-head mg-locations-panel-head is-compact"><div><h2>Quick actions</h2><p>Location operations.</p></div></div>
-          <div class="mg-app-panel-body">
-            <a href="#location-editor-panel" data-location-open-add>Add location</a>
-            <a href="/merchant-storefront.php">Storefront visibility</a>
-            <a href="/merchant-claims.php">Review claims</a>
-            <a href="/merchant-products.php">Product catalog</a>
-          </div>
-        </section>
-      </aside>
+  <section class="mg-app-panel mg-locations-panel" id="locations-list-panel" aria-labelledby="mg-location-list-title">
+    <div class="mg-app-panel-head mg-locations-panel-head">
+      <div>
+        <span class="mg-eyebrow">Location Network</span>
+        <h2 id="mg-location-list-title">Redemption sites</h2>
+        <p>Review saved merchant locations, claim-code status, staff routing, address details, geo check-in readiness, and redemption readiness.</p>
+      </div>
+      <a class="mg-btn mg-btn-soft" href="#location-editor-panel" data-location-new data-location-open-add>Add Location</a>
     </div>
-  </div>
+    <div class="mg-app-panel-body">
+      <div class="mg-location-list" data-location-list aria-live="polite">
+        <div class="mg-empty-state"><p>Loading registered locations…</p></div>
+      </div>
+    </div>
+  </section>
 
-  <section class="mg-app-panel mg-locations-panel mg-location-tab-section" id="location-editor-panel" data-location-section="add-location" aria-labelledby="mg-location-form-title" hidden>
+  <section class="mg-app-panel mg-locations-panel" id="location-editor-panel" aria-labelledby="mg-location-form-title">
     <div class="mg-app-panel-head mg-locations-panel-head">
       <div>
         <span class="mg-eyebrow">Claim Site Setup</span>
-        <h2 id="mg-location-form-title">Add Location</h2>
-        <p>Save a new redemption and check-in location with address, protected claim code, optional GPS coordinates, and primary routing.</p>
+        <h2 id="mg-location-form-title">Add or edit location</h2>
+        <p>Save a redemption and check-in location with address, protected claim code, optional GPS coordinates, and primary routing.</p>
       </div>
-      <a class="mg-btn mg-btn-soft" href="#locations-overview" data-location-tab="overview">Back to locations</a>
     </div>
     <div class="mg-app-panel-body">
       <form class="mg-merchant-form mg-locations-form" data-location-form autocomplete="off">

@@ -28,7 +28,6 @@ function mg_merchant_location_float_or_null(mixed $value): ?float
 
 function mg_merchant_unique_location_code(
     PDO $pdo,
-    int $workspaceId,
     int $merchantId,
     string $name,
     string $excludePublicId=''
@@ -38,10 +37,10 @@ function mg_merchant_unique_location_code(
     $suffix=1;
     $stmt=$pdo->prepare(
         'SELECT COUNT(*) FROM merchant_locations
-         WHERE workspace_id=? AND merchant_user_id=? AND location_code=? AND public_id<>?'
+         WHERE merchant_user_id=? AND location_code=? AND public_id<>?'
     );
     while(true){
-        $stmt->execute([$workspaceId,$merchantId,$candidate,$excludePublicId]);
+        $stmt->execute([$merchantId,$candidate,$excludePublicId]);
         if((int)$stmt->fetchColumn()===0)return $candidate;
         $suffix++;
         $candidate=substr($base,0,max(1,80-strlen((string)$suffix)-1)).'-'.$suffix;
@@ -156,10 +155,10 @@ if($method==='GET'){
                         ORDER BY mcc.id DESC LIMIT 1
                     ) AS claim_code_last4
              FROM merchant_locations ml
-             WHERE ml.workspace_id=? AND ml.merchant_user_id=?
+             WHERE ml.merchant_user_id=?
              ORDER BY ml.is_primary DESC,ml.name,ml.id"
         );
-        $stmt->execute([$workspaceId,$merchantId]);
+        $stmt->execute([$merchantId]);
         $rows=$stmt->fetchAll() ?: [];
         foreach($rows as &$row){
             $row['latitude']=$row['latitude']!==null&&$row['latitude']!==''?(float)$row['latitude']:null;
@@ -235,29 +234,29 @@ try{
     $existingMetadata=[];
     if($isCreate){
         $locationId=mg_merchant_uuid();
-        $locationCode=mg_merchant_unique_location_code($pdo,$workspaceId,$merchantId,$name);
+        $locationCode=mg_merchant_unique_location_code($pdo,$merchantId,$name);
     }else{
         $existing=$pdo->prepare(
             'SELECT id,location_code,metadata_json FROM merchant_locations
-             WHERE public_id=? AND workspace_id=? AND merchant_user_id=?
+             WHERE public_id=? AND merchant_user_id=?
              LIMIT 1 FOR UPDATE'
         );
-        $existing->execute([$locationId,$workspaceId,$merchantId]);
+        $existing->execute([$locationId,$merchantId]);
         $row=$existing->fetch();
         if(!$row)mg_fail('Location not found.',404);
         $locationDbId=(int)$row['id'];
         $locationCode=(string)$row['location_code'];
         $existingMetadata=mg_merchant_location_json($row['metadata_json']??null);
         if($locationCode===''){
-            $locationCode=mg_merchant_unique_location_code($pdo,$workspaceId,$merchantId,$name,$locationId);
+            $locationCode=mg_merchant_unique_location_code($pdo,$merchantId,$name,$locationId);
         }
     }
 
     if($primary){
         $pdo->prepare(
             'UPDATE merchant_locations SET is_primary=0,updated_at=NOW()
-             WHERE workspace_id=? AND merchant_user_id=?'
-        )->execute([$workspaceId,$merchantId]);
+             WHERE merchant_user_id=?'
+        )->execute([$merchantId]);
     }
 
     $metadata=$existingMetadata;
@@ -285,14 +284,14 @@ try{
     }else{
         $stmt=$pdo->prepare(
             'UPDATE merchant_locations
-             SET name=?,location_code=?,address_line1=?,address_line2=?,city=?,region=?,postal_code=?,
+             SET workspace_id=?,name=?,location_code=?,address_line1=?,address_line2=?,city=?,region=?,postal_code=?,
                  country_code=?,timezone=?,phone=?,status=?,is_primary=?,metadata_json=?,updated_at=NOW()
-             WHERE id=? AND public_id=? AND workspace_id=? AND merchant_user_id=?'
+             WHERE id=? AND public_id=? AND merchant_user_id=?'
         );
         $stmt->execute([
-            $name,$locationCode,$address1,$address2,$city,$region,$postalCode,
+            $workspaceId,$name,$locationCode,$address1,$address2,$city,$region,$postalCode,
             $countryCode,$timezone,$phone,$status,$primary,$metadataJson,
-            $locationDbId,$locationId,$workspaceId,$merchantId,
+            $locationDbId,$locationId,$merchantId,
         ]);
     }
 
