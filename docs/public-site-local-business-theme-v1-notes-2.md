@@ -1,0 +1,1 @@
+Manual QA should review desktop and mobile header, footer, Pricing, Sign In, Sign Up, Forgot Password, Reset Password, Verify Email, and representative public pages after deployment.
