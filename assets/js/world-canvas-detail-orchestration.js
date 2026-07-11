@@ -24,6 +24,12 @@ window.Microgifter = window.Microgifter || {};
     return root.dataset.worldZoomTier || 'world';
   }
 
+  function interactionActive() {
+    return root.dataset.worldZoomInteraction === 'active'
+      || root.dataset.worldZoomMotion === 'animating'
+      || map.classList.contains('is-dragging');
+  }
+
   function isVisibleRect(rect, bounds, margin) {
     margin = margin || 0;
     return rect.right >= bounds.left - margin && rect.left <= bounds.right + margin && rect.bottom >= bounds.top - margin && rect.top <= bounds.bottom + margin;
@@ -238,6 +244,7 @@ window.Microgifter = window.Microgifter || {};
 
   function run() {
     frame = 0;
+    if (interactionActive()) return;
     applyViewportBudget();
     applyCollisionLayout();
     renderDensity();
@@ -249,6 +256,7 @@ window.Microgifter = window.Microgifter || {};
   }
 
   document.addEventListener('mg:world-zoom-change', schedule);
+  document.addEventListener('mg:world-zoom-settled', schedule);
   document.addEventListener('mg:world-target-drop-saved', schedule);
   document.addEventListener('mg:world-merchant-settings-saved', schedule);
   window.addEventListener('resize', schedule);
