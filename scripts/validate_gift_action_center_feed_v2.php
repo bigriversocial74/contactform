@@ -62,13 +62,15 @@ try {
         str_contains($feed, "button.classList.remove('is-primary')")
         && str_contains($css, '.mg-gift-row-action.is-primary')
         && str_contains($css, 'background:#fff!important')
-        && !str_contains($css, '.mg-gift-row.mg-gift-row-v2 .mg-gift-row-action.is-primary{background:#'),
+        && !str_contains($css, 'background:#1261e8!important')
+        && !str_contains($css, 'background:#2563eb!important')
+        && !str_contains($css, 'background:#1d4ed8!important'),
         'All stacked row actions use the same neutral white treatment'
     );
 
     $expect(
         str_contains($feed, "folder === 'claimed'")
-        && str_contains($feed, 'data-gift-action=\"load\"')
+        && str_contains($feed, 'data-gift-action="load"')
         && str_contains($center, "data-gift-action=\"load\""),
         'Load remains available across the Action Center folders'
     );
