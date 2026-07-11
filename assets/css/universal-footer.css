@@ -1,13 +1,13 @@
 /* Universal Microgifter footer v2.
    Markup and footer data remain unchanged; this file owns the shared public presentation. */
-.mg-site-footer.mg-universal-footer{
+html body[data-authenticated="false"] .mg-site-footer.mg-universal-footer{
   position:relative!important;
   overflow:hidden!important;
   border-top:1px solid rgba(255,255,255,.08)!important;
   background:linear-gradient(145deg,#0b2d2a 0%,#0d3531 56%,#071f1d 100%)!important;
   color:#fff!important;
 }
-.mg-site-footer.mg-universal-footer:before{
+html body[data-authenticated="false"] .mg-site-footer.mg-universal-footer:before{
   content:"";
   position:absolute;
   inset:0;
@@ -16,10 +16,10 @@
     radial-gradient(circle at 8% 12%,rgba(114,212,63,.16),transparent 30%),
     radial-gradient(circle at 92% 28%,rgba(255,255,255,.07),transparent 26%),
     linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);
-  background-size:auto,auto,72px 72px,72px 72px;
-  mask-image:linear-gradient(180deg,#000,transparent 92%);
-  opacity:.92;
+    linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px)!important;
+  background-size:auto,auto,72px 72px,72px 72px!important;
+  mask-image:linear-gradient(180deg,#000,transparent 92%)!important;
+  opacity:.92!important;
 }
 .mg-universal-footer *{box-sizing:border-box}
 .mg-universal-footer .mg-footer-shell{
@@ -44,70 +44,22 @@
   letter-spacing:-.065em!important;
   line-height:1!important;
 }
-.mg-universal-footer .mg-footer-logo img{
-  width:165px!important;
-  max-width:100%!important;
-  height:auto!important;
-  display:block!important;
-  filter:brightness(0) invert(1)!important;
-}
+.mg-universal-footer .mg-footer-logo img{width:165px!important;max-width:100%!important;height:auto!important;display:block!important;filter:brightness(0) invert(1)!important}
 .mg-universal-footer .mg-footer-logo span{display:none!important}
-.mg-universal-footer .mg-footer-brand-panel p{
-  max-width:430px!important;
-  margin:0!important;
-  color:rgba(255,255,255,.72)!important;
-  font-size:15px!important;
-  line-height:1.7!important;
-  font-weight:580!important;
-}
+.mg-universal-footer .mg-footer-brand-panel p{max-width:430px!important;margin:0!important;color:rgba(255,255,255,.72)!important;font-size:15px!important;line-height:1.7!important;font-weight:580!important}
 .mg-universal-footer .mg-footer-market-strip{display:flex!important;flex-wrap:wrap!important;gap:8px!important;margin-top:6px!important}
-.mg-universal-footer .mg-footer-market-strip span{
-  min-height:34px!important;
-  display:inline-flex!important;
-  align-items:center!important;
-  gap:7px!important;
-  padding:0 11px!important;
-  border:1px solid rgba(255,255,255,.12)!important;
-  border-radius:999px!important;
-  background:rgba(255,255,255,.055)!important;
-  color:rgba(255,255,255,.76)!important;
-  font-size:12px!important;
-  font-weight:800!important;
-  box-shadow:none!important;
-}
+.mg-universal-footer .mg-footer-market-strip span{min-height:34px!important;display:inline-flex!important;align-items:center!important;gap:7px!important;padding:0 11px!important;border:1px solid rgba(255,255,255,.12)!important;border-radius:999px!important;background:rgba(255,255,255,.055)!important;color:rgba(255,255,255,.76)!important;font-size:12px!important;font-weight:800!important;box-shadow:none!important}
 .mg-universal-footer .mg-footer-market-strip strong{color:#bdf49f!important;font-size:11px!important;letter-spacing:.08em!important}
 .mg-universal-footer .mg-footer-link-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:clamp(20px,3vw,38px)!important}
 .mg-universal-footer .mg-footer-column{min-width:0!important;display:grid!important;align-content:start!important;gap:11px!important}
-.mg-universal-footer .mg-footer-column h2{
-  margin:0 0 7px!important;
-  color:#bdf49f!important;
-  font-size:10px!important;
-  font-weight:950!important;
-  letter-spacing:.16em!important;
-  text-transform:uppercase!important;
-}
-.mg-universal-footer .mg-footer-column a,
-.mg-universal-footer .mg-footer-bottom-links a,
-.mg-universal-footer a:not(.mg-footer-logo){
-  color:rgba(255,255,255,.72)!important;
-  text-decoration:none!important;
-  font-size:14px!important;
-  font-weight:680!important;
-  line-height:1.35!important;
-}
-.mg-universal-footer .mg-footer-column a:hover,
-.mg-universal-footer .mg-footer-bottom-links a:hover,
-.mg-universal-footer a:not(.mg-footer-logo):hover{color:#fff!important;text-decoration:none!important}
-.mg-universal-footer .mg-footer-bottom{
-  grid-column:1/-1!important;
-  display:flex!important;
-  align-items:center!important;
-  justify-content:space-between!important;
-  gap:16px!important;
-  padding-top:30px!important;
-  margin-top:10px!important;
-  border-top:1px solid rgba(255,255,255,.11)!important;
-}
+.mg-universal-footer .mg-footer-column h2{margin:0 0 7px!important;color:#bdf49f!important;font-size:10px!important;font-weight:950!important;letter-spacing:.16em!important;text-transform:uppercase!important}
+html body[data-authenticated="false"] .mg-universal-footer .mg-footer-column a,
+html body[data-authenticated="false"] .mg-universal-footer .mg-footer-bottom-links a,
+html body[data-authenticated="false"] .mg-universal-footer a:not(.mg-footer-logo){color:rgba(255,255,255,.72)!important;text-decoration:none!important;font-size:14px!important;font-weight:680!important;line-height:1.35!important}
+html body[data-authenticated="false"] .mg-universal-footer .mg-footer-column a:hover,
+html body[data-authenticated="false"] .mg-universal-footer .mg-footer-bottom-links a:hover,
+html body[data-authenticated="false"] .mg-universal-footer a:not(.mg-footer-logo):hover{color:#fff!important;text-decoration:none!important}
+.mg-universal-footer .mg-footer-bottom{grid-column:1/-1!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:16px!important;padding-top:30px!important;margin-top:10px!important;border-top:1px solid rgba(255,255,255,.11)!important}
 .mg-universal-footer .mg-footer-bottom p{margin:0!important;color:rgba(255,255,255,.48)!important;font-size:13px!important;font-weight:650!important}
 .mg-universal-footer .mg-footer-bottom-links{display:flex!important;flex-wrap:wrap!important;gap:15px!important;justify-content:flex-end!important}
 
@@ -121,6 +73,4 @@
   .mg-universal-footer .mg-footer-bottom{align-items:flex-start!important;flex-direction:column!important}
   .mg-universal-footer .mg-footer-bottom-links{justify-content:flex-start!important}
 }
-@media(max-width:420px){
-  .mg-universal-footer .mg-footer-link-grid{grid-template-columns:1fr!important}
-}
+@media(max-width:420px){.mg-universal-footer .mg-footer-link-grid{grid-template-columns:1fr!important}}
