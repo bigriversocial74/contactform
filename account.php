@@ -75,6 +75,7 @@ $canShareMarketAdmin = in_array('share_market.admin', $permissions, true) || $is
 $knownViews = ['profile', 'market', 'share_market', 'subscriptions', 'wallet', 'models', 'security', 'access', 'admin', 'share_market_admin', 'investment_tests', 'marketplace_index', 'profile_moderation'];
 if (!in_array($accountView, $knownViews, true)) $accountView = 'profile';
 $agent_tab = $accountView;
+$use_inbox_sidebar = basename((string) ($_SERVER['SCRIPT_NAME'] ?? '')) === 'account.php';
 require __DIR__ . '/includes/header.php';
 ?>
 <section class="mg-app-shell mg-account-app">
