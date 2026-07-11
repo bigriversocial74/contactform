@@ -10,7 +10,16 @@ $page_section = 'feed';
 $header_mode = 'agent';
 $agent_tab = 'feed-' . $feedView;
 $suppress_footer = true;
-$page_styles = ['/assets/css/public-app-header.css','/assets/css/social-feed.css','/assets/css/social-feed-upload.css','/assets/css/feed-centered-layout.css','/assets/css/store-presence-feed.css','/assets/css/avatar-anchor-consent.css','/assets/css/sponsored-campaign-card.css','/assets/css/microgifter-stories.css','/assets/css/microgifter-stories-profile-fix.css','/assets/css/microgifter-story-analytics.css','/assets/css/feed-online-chat.css'];
+$page_styles = [
+    '/assets/css/public-app-header.css',
+    '/assets/css/avatar-anchor-consent.css',
+    '/assets/css/sponsored-campaign-card.css',
+    '/assets/css/microgifter-stories.css',
+    '/assets/css/microgifter-stories-profile-fix.css',
+    '/assets/css/microgifter-story-analytics.css',
+    '/assets/css/feed-online-chat.css',
+    '/assets/css/feed-centered-layout.css?v=2.0.0',
+];
 $page_scripts = ['/assets/js/social-feed.js','/assets/js/social-feed-sidebar-tabs.js','/assets/js/social-feed-post-polish.js','/assets/js/social-feed-upload.js','/assets/js/store-presence-feed.js','/assets/js/avatar-anchor-consent.js','/assets/js/sponsored-campaign-card.js','/assets/js/microgifter-stories.js','/assets/js/feed-online-chat.js','/assets/js/feed-profile-chat-bridge.js'];
 $page_manifest = [
     'id' => 'feed',
