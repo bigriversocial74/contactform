@@ -54,7 +54,7 @@ $checks = [
         && str_contains($footer, '/pricing.php'),
     'pricing page uses published package authority' => str_contains($pricing, 'mg_public_pricing_packages()')
         && str_contains($pricing, 'mg_pricing_package_summary()')
-        && str_contains($pricing, "$plan['limits'][$key]"),
+        && str_contains($pricing, "\$plan['limits'][\$key]"),
     'pricing page uses external local business stylesheet' => str_contains($pricing, '/assets/css/pricing-local-business-v1.css?v=1.0.0')
         && !str_contains($pricing, '<style>'),
     'pricing hero matches local growth system' => str_contains($pricing, 'Start small.')
@@ -63,7 +63,7 @@ $checks = [
     'pricing includes plan cards and comparison table' => str_contains($pricing, 'mg-price-grid')
         && str_contains($pricing, 'mg-price-table')
         && str_contains($pricing, 'Compare plan capacity'),
-    'pricing keeps real signup and sales routes' => str_contains($pricing, "$plan['cta_href']")
+    'pricing keeps real signup and sales routes' => str_contains($pricing, "\$plan['cta_href']")
         && str_contains($pricing, '/signup.php?type=merchant')
         && str_contains($pricing, '/learn-more.php'),
     'pricing responsive styles cover desktop tablet and mobile' => str_contains($pricingCss, '@media(max-width:1120px)')
@@ -88,7 +88,7 @@ $checks = [
         && str_contains($forgot, 'mg_csrf_field()')
         && str_contains($reset, 'mg_csrf_field()'),
     'email verification receives auth assets and keeps endpoint' => str_contains($pageDefinitions, "'verify-email' => [")
-        && str_contains($pageDefinitions, "'assets'=>$authAssets")
+        && str_contains($pageDefinitions, "'assets'=>\$authAssets")
         && str_contains($verify, '/api/auth/email/verify.php'),
     'auth pages include accessible labels and live statuses' => str_contains($signin, 'aria-labelledby="signin-title"')
         && str_contains($signup, 'aria-labelledby="signup-title"')
