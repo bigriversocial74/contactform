@@ -31,6 +31,9 @@ $checks = [
     'header uses white navy green palette' => str_contains($headerCss, 'background:rgba(255,255,255,.96)!important')
         && str_contains($headerCss, 'background:#72d43f!important')
         && str_contains($headerCss, 'color:#0b2d2a!important'),
+    'mobile public menu has high-specificity dark treatment' => str_contains($headerCss, '.mg-public-mobile-menu .mg-public-mobile-panel')
+        && str_contains($headerCss, 'linear-gradient(180deg,#0b2d2a,#071f1d)!important')
+        && str_contains($headerCss, 'rgba(114,212,63,.12)!important'),
     'footer uses high-specificity navy theme' => str_contains($footerCss, 'html body[data-authenticated="false"] .mg-site-footer.mg-universal-footer')
         && str_contains($footerCss, 'linear-gradient(145deg,#0b2d2a')
         && str_contains($footerCss, '#bdf49f'),
@@ -44,7 +47,7 @@ $checks = [
         && str_contains($footer, '/pricing.php'),
     'pricing page uses published package authority' => str_contains($pricing, 'mg_public_pricing_packages()')
         && str_contains($pricing, 'mg_pricing_package_summary()')
-        && str_contains($pricing, "$plan['limits'][$key]"),
+        && str_contains($pricing, "\$plan['limits'][\$key]"),
     'pricing page uses external local business stylesheet' => str_contains($pricing, '/assets/css/pricing-local-business-v1.css?v=1.0.0')
         && !str_contains($pricing, '<style>'),
     'pricing hero matches local growth system' => str_contains($pricing, 'Start small.')
@@ -53,7 +56,7 @@ $checks = [
     'pricing includes plan cards and comparison table' => str_contains($pricing, 'mg-price-grid')
         && str_contains($pricing, 'mg-price-table')
         && str_contains($pricing, 'Compare plan capacity'),
-    'pricing keeps real signup and sales routes' => str_contains($pricing, "$plan['cta_href']")
+    'pricing keeps real signup and sales routes' => str_contains($pricing, "\$plan['cta_href']")
         && str_contains($pricing, '/signup.php?type=merchant')
         && str_contains($pricing, '/learn-more.php'),
     'pricing responsive styles cover desktop tablet and mobile' => str_contains($pricingCss, '@media(max-width:1120px)')
@@ -86,9 +89,6 @@ $checks = [
         && str_contains($reset, 'aria-labelledby="reset-title"')
         && str_contains($verify, 'aria-labelledby="verify-title"')
         && str_contains($signin, 'aria-live="polite"'),
-    'shared theme includes public mobile menu treatment' => str_contains($themeCss, '.mg-public-mobile-panel')
-        && str_contains($themeCss, '.mg-public-mobile-nav a')
-        && str_contains($themeCss, 'rgba(114,212,63,.12)'),
 ];
 
 $failed = [];
