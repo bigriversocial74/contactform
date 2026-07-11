@@ -25,7 +25,7 @@ require __DIR__ . '/includes/header.php';
         <div class="mg-lqp-tags"><span data-lqp-action></span><span data-lqp-verification></span><span data-lqp-location></span></div>
       </div>
       <aside class="mg-lqp-reward-card">
-        <span>Quest reward</span><h2 data-lqp-reward-title>Microgifter Reward</h2><strong data-lqp-reward-value></strong><p data-lqp-reward-description></p><small>Delivered to your Microgifter wallet after verified completion.</small>
+        <span>Quest reward</span><h2 data-lqp-reward-title>Microgifter Reward</h2><strong data-lqp-reward-value></strong><p data-lqp-reward-description></p><small>Delivered to your Microgifter Inbox after verified completion.</small>
       </aside>
     </section>
 
@@ -41,7 +41,7 @@ require __DIR__ . '/includes/header.php';
 
         <section class="mg-lqp-panel" data-lqp-action-panel>
           <div class="mg-lqp-panel-head"><div><span class="mg-lqp-kicker">Verification</span><h2 data-lqp-action-title>Start this quest</h2></div></div>
-          <div class="mg-lqp-auth-gate" data-lqp-auth-gate hidden><h3>Use your Microgifter account</h3><p>Sign in or create an account to track progress and receive the reward in your wallet.</p><div><a data-lqp-signin href="/signin.php">Sign in</a><a data-lqp-signup href="/signup.php">Create account</a></div></div>
+          <div class="mg-lqp-auth-gate" data-lqp-auth-gate hidden><h3>Use your Microgifter account</h3><p>Sign in or create an account to track progress and receive the reward in your Inbox.</p><div><a data-lqp-signin href="/signin.php">Sign in</a><a data-lqp-signup href="/signup.php">Create account</a></div></div>
           <form class="mg-lqp-start" data-lqp-start hidden>
             <p>Your progress stays connected to this Microgifter account.</p>
             <label data-lqp-invite-field hidden><span>Invite code</span><input name="invite_code" maxlength="64" autocomplete="one-time-code" placeholder="Enter your invitation code"></label>
@@ -64,7 +64,7 @@ require __DIR__ . '/includes/header.php';
 
       <aside class="mg-lqp-sidebar">
         <section class="mg-lqp-panel"><span class="mg-lqp-kicker">Quest details</span><dl><div><dt>Merchant</dt><dd data-lqp-detail-merchant></dd></div><div><dt>Audience</dt><dd data-lqp-audience></dd></div><div><dt>Ends</dt><dd data-lqp-end-date></dd></div><div><dt>Required actions</dt><dd data-lqp-required-count></dd></div><div><dt>Verification</dt><dd data-lqp-detail-verification></dd></div></dl></section>
-        <section class="mg-lqp-panel mg-lqp-wallet-result" data-lqp-wallet-result hidden><span class="mg-lqp-kicker">Reward earned</span><h2 data-lqp-wallet-title></h2><p>Your reward is now available in your Microgifter wallet.</p><a href="/wallet.php">Open wallet</a></section>
+        <section class="mg-lqp-panel mg-lqp-wallet-result" data-lqp-wallet-result hidden><span class="mg-lqp-kicker">Reward earned</span><h2 data-lqp-wallet-title></h2><p>Your reward has been added to your Microgifter Inbox.</p><a href="/inbox.php">Open Inbox</a></section>
         <section class="mg-lqp-panel"><h3>Need help?</h3><p>Ask the merchant for the correct quest code or contact Microgifter support when verification does not work.</p><a href="/contact.php">Get support</a></section>
       </aside>
     </section>
