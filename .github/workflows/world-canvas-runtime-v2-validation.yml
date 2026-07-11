@@ -38,19 +38,27 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           coverage: none
-      - name: PHP syntax
+      - name: Lint World Canvas pages
         run: |
           php -l world-canvas.php
           php -l merchant-canvas.php
+      - name: Lint World Canvas read model
+        run: |
           php -l api/world-canvas/_runtime_v2.php
           php -l api/world-canvas/_shared_users_v2.php
           php -l api/world-canvas/activity.php
+      - name: Lint World Canvas persona endpoints
+        run: |
           php -l api/world-canvas/persona.php
           php -l api/world-canvas/location-presence.php
+      - name: Lint merchant presence runtime
+        run: |
           php -l api/store/_presence.php
           php -l api/store/enter.php
           php -l api/store/session-status.php
           php -l api/merchant-canvas/presence.php
+      - name: Lint runtime contracts
+        run: |
           php -l tests/phpunit/WorldCanvasRuntimeV2ContractTest.php
           php -l scripts/validate_world_canvas_runtime_v2.php
       - name: JavaScript syntax
