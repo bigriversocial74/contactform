@@ -18,7 +18,7 @@ $checks = [
     'creative presets module is removed from page assets' => !str_contains($page, 'merchant-agent-creative-presets.css')
         && !str_contains($page, 'merchant-agent-creative-presets.js')
         && !str_contains($page, 'data-agent-creative-presets'),
-    'page has a dedicated body scope' => str_contains($page, "$page_body_class = 'mg-merchant-agent-chat-page'")
+    'page has a dedicated body scope' => str_contains($page, "\$page_body_class = 'mg-merchant-agent-chat-page'")
         && str_contains($page, 'mg-agent-chat-canvas-layout-v2-3'),
     'page uses canonical app shell class' => str_contains($page, 'mg-agent-chat-layout-v2')
         && !str_contains($page, 'mg-agent-chat-app-no-nav'),
