@@ -1,0 +1,97 @@
+name: Loyalty Quest Initial Install Package
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - '.github/workflows/loyalty-quest-initial-install-package.yml'
+      - 'config/migrations.php'
+      - 'includes/migrations.php'
+      - 'scripts/build_full_upgrade_sql.php'
+      - 'database/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: Build initial-install SQL and deploy ZIP
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql,mbstring,json
+          coverage: none
+
+      - name: Validate canonical migration manifest
+        run: php scripts/validate_migration_manifest.php
+
+      - name: Build complete initial-install package
+        shell: bash
+        run: |
+          set -euo pipefail
+          PACKAGE_NAME="microgifter-loyalty-quest-initial-install"
+          PACKAGE_DIR="build/${PACKAGE_NAME}"
+          rm -rf build
+          mkdir -p "${PACKAGE_DIR}"
+
+          rsync -a ./ "${PACKAGE_DIR}/" \
+            --exclude '.git/' \
+            --exclude 'build/' \
+            --exclude '.github/workflows/loyalty-quest-initial-install-package.yml'
+
+          php scripts/build_full_upgrade_sql.php \
+            "${PACKAGE_DIR}/database/microgifter_full_initial_install.sql"
+
+          cat > "${PACKAGE_DIR}/INITIAL-INSTALL.md" <<EOF
+          # Microgifter Loyalty Quest — Initial Installation
+
+          Source branch: integration-from-repair-20260628
+          Source commit: ${GITHUB_SHA}
+          Package generated: $(date -u +'%Y-%m-%dT%H:%M:%SZ')
+
+          ## Database
+
+          Import this file into a new, empty MySQL 8.0 database before opening the application:
+
+          database/microgifter_full_initial_install.sql
+
+          The SQL is generated from config/migrations.php in canonical dependency order and includes every ordered migration required by the current application, including Loyalty Quest campaigns, participant experience, notifications, integrity controls, rewards, delivery, audit, alerts, and PPPM ownership dependencies.
+
+          Manual-only recovery/bootstrap SQL files are intentionally not merged into the automatic initial-install file. They remain available in database/ for operator review.
+
+          ## Application
+
+          1. Upload the package contents to the intended web root.
+          2. Create the production database and database user.
+          3. Import database/microgifter_full_initial_install.sql.
+          4. Configure the application's environment/database credentials using the repository's existing configuration pattern.
+          5. Run the existing installation and environment checks before enabling public traffic.
+          EOF
+
+          (
+            cd "${PACKAGE_DIR}"
+            find . -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS.txt
+          )
+
+          (
+            cd build
+            zip -qr "${PACKAGE_NAME}.zip" "${PACKAGE_NAME}"
+          )
+
+      - name: Upload deploy package
+        uses: actions/upload-artifact@v4
+        with:
+          name: microgifter-loyalty-quest-initial-install
+          path: build/microgifter-loyalty-quest-initial-install.zip
+          if-no-files-found: error
+          retention-days: 30
