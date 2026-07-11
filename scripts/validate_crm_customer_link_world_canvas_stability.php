@@ -30,8 +30,9 @@ $crmPage = $read('merchant-crm.php');
 $crmLink = $read('assets/js/merchant-crm-contact-link-polish.js');
 $activity = $read('api/world-canvas/activity.php');
 $worldPage = $read('world-canvas.php');
-$squareLoader = $read('assets/js/world-canvas-square-map.js');
-$zoomV2 = $read('assets/js/world-canvas-geo-zoom-v2.js');
+$runtime = $read('assets/js/world-canvas-runtime-v2.js');
+$normalizer = $read('api/world-canvas/_runtime_v2.php');
+$sharedUsers = $read('api/world-canvas/_shared_users_v2.php');
 
 $assertContains($crmPage, 'merchant-crm-contact-link-polish.js?v=3.0.0', 'Merchant CRM must load the current customer profile link and contact-row controller.');
 $assertContains($crmLink, "'/merchant-customer.php?campaign_contact_id='", 'CRM contact names must target the dedicated merchant customer page.');
@@ -41,19 +42,33 @@ $assertNotContains($crmLink, "link.setAttribute('data-crm-view-customer'", 'CRM 
 
 $assertContains($activity, '$hasViewerMerchantAnchor', 'World Canvas activity must detect viewer merchant anchors.');
 $assertContains($activity, '(($node[\'type\'] ?? \'\') === \'merchant\' && !empty($node[\'owned\']))', 'World Canvas activity must remove duplicate aggregate owned merchant nodes.');
-$assertContains($activity, 'mg_world_canvas_merge_viewer_nodes($payload, $viewerNodes)', 'World Canvas must merge stable viewer anchors after deduplication.');
+$assertContains($activity, 'mg_world_canvas_merge_viewer_nodes($payload, $viewerNodes)', 'World Canvas must merge stable viewer anchors after initial deduplication.');
+$assertContains($activity, 'mg_world_canvas_runtime_v2($pdo, $user, $payload)', 'World Canvas must run the canonical v2 entity and geography normalizer.');
+$assertContains($activity, 'mg_world_canvas_merge_shared_users_v2($pdo, $user, $payload)', 'World Canvas must merge opt-in current user location shares.');
 
-$assertContains($worldPage, 'world-canvas-square-map.js?v=2.0.0', 'World Canvas must cache-bump the square map loader.');
-$assertContains($squareLoader, 'world-canvas-geo-zoom-v2.js?v=2.0.0', 'Square map loader must load the v2 zoom controller.');
-$assertNotContains($squareLoader, "addScript('/assets/js/world-canvas-geo-zoom.js'", 'Square map loader must not load the legacy zoom controller.');
+$assertContains($worldPage, 'maplibre-gl@5.7.1', 'World Canvas must load the pinned MapLibre geographic runtime.');
+$assertContains($worldPage, 'three@0.160.0', 'World Canvas must load the pinned Three.js gameplay layer.');
+$assertContains($worldPage, 'world-canvas-runtime-v2.js?v=2.1.0', 'World Canvas must load the current v2 runtime.');
+$assertNotContains($worldPage, 'world-canvas-square-map.js', 'World Canvas must not load the legacy square-map loader.');
+$assertNotContains($worldPage, 'world-canvas-geo-zoom-v2.js', 'World Canvas must not load the retired transform-based zoom controller.');
 
-$assertContains($zoomV2, "var node = target.closest && target.closest('[data-world-node]')", 'Zoom v2 must recognize map markers as valid drag origins.');
-$assertContains($zoomV2, 'if (node) return false;', 'Zoom v2 must allow pointer drag starts over map markers.');
-$assertContains($zoomV2, 'dragThreshold = 5', 'Zoom v2 must distinguish clicks from map drags.');
-$assertContains($zoomV2, 'state.suppressNodeClickUntil = Date.now() + 350', 'Zoom v2 must suppress marker activation after a real pan.');
-$assertContains($zoomV2, "event.target.closest('[data-world-node]')", 'Zoom v2 must scope post-drag click suppression to map markers.');
-$assertContains($zoomV2, "map.style.touchAction = 'none'", 'Zoom v2 must own touch panning behavior.');
-$assertContains($zoomV2, "qs('[data-world-node].is-merchant.is-owned.is-geo-locked'", 'Zoom v2 must prefer the stable owned merchant anchor as the current viewer.');
+$assertContains($runtime, 'new window.maplibregl.Map', 'Runtime v2 must let MapLibre own map camera and projection.');
+$assertContains($runtime, 'new window.maplibregl.Marker', 'Runtime v2 must render geographic markers through MapLibre.');
+$assertContains($runtime, 'draggable:Boolean(d.owned)', 'Owned Campaign Drops must use native map marker dragging.');
+$assertContains($runtime, "m.on('dragend'", 'Campaign Drop coordinates must save after native marker dragging.');
+$assertContains($runtime, 'new window.THREE.WebGLRenderer', 'Runtime v2 must initialize the Three.js gameplay-effects layer.');
+$assertContains($runtime, 'entity_key||n.id||n.detail_id', 'Runtime v2 must deduplicate map entities with stable keys.');
+$assertContains($runtime, "MG.post('/api/world-canvas/persona.php'", 'Runtime v2 must persist the selected user or merchant persona.');
+
+$assertContains($normalizer, "'merchant_location_source' => 'merchant_locations'", 'Merchant avatar geography must use registered merchant locations.');
+$assertContains($normalizer, "'user_location_source' => 'user_world_positions'", 'User avatar geography must use saved/shared user positions.');
+$assertContains($normalizer, "'random_geo_fallback' => false", 'Runtime v2 must not place unresolved identities at random coordinates.');
+$assertContains($normalizer, 'entered_registered_merchant_location', 'In-store users without shared coordinates must fall back to the entered registered location.');
+
+$assertContains($sharedUsers, 'user_world_positions', 'World Canvas must read active user location shares from the canonical user position table.');
+$assertContains($sharedUsers, "'entity_key' => 'user:' . $userId", 'Shared user avatars must deduplicate by stable user identity.');
+$assertContains($sharedUsers, 'shared_user_world_position', 'Shared user avatars must carry an explicit geographic placement reason.');
+$assertContains($sharedUsers, 'current_user_position_is_world_share', 'The runtime must declare the current-position sharing rule.');
 
 if ($errors !== []) {
     fwrite(STDERR, "CRM customer link / World Canvas stability validation failed:\n- " . implode("\n- ", $errors) . "\n");
