@@ -25,6 +25,9 @@ function mg_stripe_connect_oauth_request(PDO $pdo,string $endpoint,array $params
     $secret=trim((string)$config['secret_key']);
     if($secret==='')throw new MgStripeProviderException('Stripe API credentials are not configured for '.$mode.' mode.',503);
     if(!mg_payment_secret_matches_mode($secret,$mode))throw new MgStripeProviderException('The Stripe API key does not match '.$mode.' mode.',422);
+    if(mg_payment_secret_key_type($secret)!=='secret'){
+        throw new MgStripeProviderException('Stripe Connect OAuth requires the platform standard secret key (sk_'.$mode.'_…). A restricted rk_'.$mode.'_ key cannot complete OAuth authorization.',422);
+    }
     if(!function_exists('curl_init'))throw new MgStripeProviderException('PHP cURL is required for Stripe Connect.',500);
 
     $url='https://connect.stripe.com/oauth/'.$endpoint;
@@ -48,8 +51,10 @@ function mg_stripe_connect_oauth_request(PDO $pdo,string $endpoint,array $params
     if(!is_string($body))throw new MgStripeProviderException('Stripe Connect request failed: '.$error,502);
     try{$decoded=json_decode($body,true,512,JSON_THROW_ON_ERROR);}catch(Throwable){throw new MgStripeProviderException('Stripe Connect returned an invalid response.',502);}
     if($status<200||$status>=300){
-        $message=(string)($decoded['error_description']??$decoded['error']['message']??'Stripe Connect request failed.');
-        $code=(string)($decoded['error']??$decoded['error']['code']??'');
+        $errorValue=$decoded['error']??'';
+        $message=(string)($decoded['error_description']??(is_array($errorValue)?($errorValue['message']??''):''));
+        if($message==='')$message='Stripe Connect request failed.';
+        $code=is_string($errorValue)?$errorValue:(is_array($errorValue)?(string)($errorValue['code']??''):'');
         throw new MgStripeProviderException($message,$status>=400&&$status<500?422:502,$code!==''?$code:null);
     }
     return $decoded;
