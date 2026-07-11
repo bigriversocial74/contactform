@@ -8,8 +8,8 @@ $giftCenterDemoEnabled=mg_has_role('super_admin');
 <link rel="stylesheet" href="/assets/css/gift-action-center-modals.css">
 <link rel="stylesheet" href="/assets/css/gift-envelope-presentation.css">
 <link rel="stylesheet" href="/assets/css/gift-action-center-search.css">
-<link rel="stylesheet" href="/assets/css/gift-action-center-feed-v2.css">
-<section class="mg-app-shell mg-gift-center-page" data-gift-center data-initial-folder="<?= mg_e($giftCenterFolder) ?>" data-demo-enabled="<?= $giftCenterDemoEnabled?'true':'false' ?>">
+<link rel="stylesheet" href="/assets/css/gift-action-center-feed-v3.css">
+<section class="mg-app-shell mg-gift-center-page" data-gift-center data-feed-version="3" data-initial-folder="<?= mg_e($giftCenterFolder) ?>" data-demo-enabled="<?= $giftCenterDemoEnabled?'true':'false' ?>">
   <?php require __DIR__ . '/agent-sidebar.php'; ?>
 
   <div class="mg-app-workspace mg-gift-center-workspace">
@@ -58,5 +58,5 @@ $giftCenterDemoEnabled=mg_has_role('super_admin');
 <script src="/assets/js/gift-action-center-claim-restore.js" defer></script>
 <script src="/assets/js/gift-action-center-modal-portal.js" defer></script>
 <script src="/assets/js/gift-envelope-presentation.js" defer></script>
-<script src="/assets/js/gift-action-center-feed-v2.js" defer></script>
+<script src="/assets/js/gift-action-center-feed-v3.js" defer></script>
 <script src="/assets/js/gift-action-center-user-search.js" defer></script>
