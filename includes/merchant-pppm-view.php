@@ -1,5 +1,5 @@
 <?php declare(strict_types=1); ?>
-<link rel="stylesheet" href="/assets/css/pppm-ops-extra.css">
+<link rel="stylesheet" href="/assets/css/pppm-ops-extra.css?v=2.0.0">
 <section class="mg-pppm-ops" data-pppm-operations-center>
   <div class="mg-pppm-contract-label">Orders &amp; PPPM PPPM items</div>
 
@@ -12,19 +12,9 @@
       <a href="#pppm-items-panel">Expired</a>
       <a href="#pppm-items-panel">Refunded</a>
       <a href="#pppm-items-panel">Regifted</a>
-      <a href="#pppm-readiness">Exceptions</a>
+      <a href="#pppm-items-panel">Exceptions</a>
     </nav>
-    <a class="mg-btn mg-btn-primary" href="#pppm-items-panel">Review Gift Lifecycle</a>
   </div>
-
-  <section class="mg-pppm-hero">
-    <div>
-      <span class="mg-eyebrow">PPPM Lifecycle</span>
-      <h1>Gift operations center</h1>
-      <p>Track every order, issuance request, and individually stamped PPPM item from source through delivery, claim, redemption, expiration, refund, and exception review.</p>
-    </div>
-    <span class="mg-status-badge">Lifecycle active</span>
-  </section>
 
   <section class="mg-pppm-layout" id="pppm-overview">
     <section class="mg-app-panel mg-pppm-panel" id="pppm-items-panel">
@@ -49,29 +39,5 @@
         </section>
       </div>
     </section>
-
-    <aside class="mg-pppm-side" id="pppm-readiness">
-      <section class="mg-app-panel mg-pppm-panel mg-pppm-readiness-card">
-        <div class="mg-app-panel-head mg-pppm-panel-head is-compact"><div><h2>Lifecycle Readiness</h2><p>Operational checks for sent, claimed, expired, refunded, and exception states.</p></div></div>
-        <div class="mg-app-panel-body">
-          <div class="mg-pppm-readiness-score"><span>Gift signal</span><strong>Live</strong></div>
-          <div class="mg-pppm-readiness-list">
-            <p><b></b><span>Review expiring gifts before they become inactive or require support follow-up.</span></p>
-            <p><b></b><span>Claim failures, refunds, voids, and cancelled items should be reviewed as exceptions.</span></p>
-            <p><b></b><span>Lifecycle activity should reconcile to claims, payments, delivery attempts, and operational notes.</span></p>
-          </div>
-        </div>
-      </section>
-
-      <section class="mg-app-panel mg-pppm-panel mg-pppm-actions-card">
-        <div class="mg-app-panel-head mg-pppm-panel-head is-compact"><div><h2>Quick actions</h2><p>Gift operations.</p></div></div>
-        <div class="mg-app-panel-body">
-          <a href="/merchant-claims.php">Claims operations</a>
-          <a href="/merchant-payments.php">Payment reconciliation</a>
-          <a href="/merchant-locations.php">Redemption locations</a>
-          <a href="/merchant-products.php">Product catalog</a>
-        </div>
-      </section>
-    </aside>
   </section>
 </section>
