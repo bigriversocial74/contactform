@@ -6,6 +6,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_world.php';
 require_once __DIR__ . '/_viewer_nodes.php';
+require_once __DIR__ . '/_runtime_v2.php';
 
 mg_require_method('GET');
 $user = mg_require_api_user();
@@ -33,6 +34,7 @@ try {
     }
 
     $payload = mg_world_canvas_merge_viewer_nodes($payload, $viewerNodes);
+    $payload = mg_world_canvas_runtime_v2($pdo, $user, $payload);
     mg_ok($payload);
 } catch (RuntimeException $error) {
     mg_fail($error->getMessage(), 400);
