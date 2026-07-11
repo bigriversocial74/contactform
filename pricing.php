@@ -1,70 +1,263 @@
 <?php
 declare(strict_types=1);
+
 require_once __DIR__ . '/includes/app.php';
 require_once __DIR__ . '/includes/pricing-packages.php';
 
-$page_title = 'Pricing | Microgifter Promotional CRM';
+$page_title = 'Pricing | Microgifter for Local Business Growth';
 $page_section = 'pricing';
 $header_mode = 'public';
 $page_body_class = 'mg-pricing-page';
-$page_styles = ['/assets/css/public-header-footer-fixes.css'];
-$page_manifest = [
-  'id' => 'pricing',
-  'title' => $page_title,
-  'section' => $page_section,
-  'header_mode' => $header_mode,
-  'assets' => ['universal-header'],
-  'header_controls' => [],
-  'public_header' => ['presentation' => false, 'links' => [['label' => 'Book A Demo', 'href' => '/learn-more.php']]],
-  'onboarding' => ['enabled' => false, 'page' => 'pricing', 'sections' => []],
+$page_styles = [
+    '/assets/css/public-header-footer-fixes.css',
+    '/assets/css/pricing-local-business-v1.css?v=1.0.0',
 ];
+$page_manifest = [
+    'id' => 'pricing',
+    'title' => $page_title,
+    'section' => $page_section,
+    'header_mode' => $header_mode,
+    'assets' => ['universal-header'],
+    'header_controls' => [],
+    'public_header' => [
+        'presentation' => false,
+        'links' => [
+            ['label' => 'How It Works', 'href' => '/index.php#how-it-works'],
+            ['label' => 'For Businesses', 'href' => '/index.php#businesses'],
+            ['label' => 'Book A Demo', 'href' => '/learn-more.php'],
+        ],
+    ],
+    'onboarding' => ['enabled' => false, 'page' => 'pricing', 'sections' => []],
+];
+
 $plans = mg_public_pricing_packages();
 $summary = mg_pricing_package_summary();
+
+$comparisonRows = [
+    ['label' => 'Paid Microgifts', 'key' => 'max_microgifts'],
+    ['label' => 'Promotional Rewards', 'key' => 'max_rewards'],
+    ['label' => 'Active Campaigns', 'key' => 'max_active_campaigns'],
+    ['label' => 'CRM Contacts', 'key' => 'max_crm_contacts'],
+    ['label' => 'Monthly Stamps', 'key' => 'monthly_stamps_included'],
+    ['label' => 'Landing Pages', 'key' => 'max_landing_pages'],
+    ['label' => 'Business Locations', 'key' => 'max_locations'],
+    ['label' => 'Email Stamps', 'key' => 'email_stamps_enabled', 'boolean' => true],
+    ['label' => 'SMS Stamps', 'key' => 'sms_stamps_enabled', 'boolean' => true],
+];
+
+$formatLimit = static function (array $plan, array $row): string {
+    $key = (string) ($row['key'] ?? '');
+    $value = $plan['limits'][$key] ?? null;
+
+    if (!empty($row['boolean'])) {
+        return $value === true ? 'Included' : '—';
+    }
+
+    if ($value === null) {
+        return $key === 'max_locations' ? 'Unlimited' : 'Custom';
+    }
+
+    return is_numeric($value) ? number_format((int) $value) : (string) $value;
+};
+
 require __DIR__ . '/includes/header.php';
 ?>
-<style>
-:root{--pp-ink:#050505;--pp-text:#151515;--pp-muted:#5d5d5d;--pp-bg:#f4f4f1;--pp-card:rgba(255,255,255,.76);--pp-line:rgba(0,0,0,.09);--pp-max:1180px}
-.mg-pricing-page{background:var(--pp-bg)!important;color:var(--pp-text)}.mg-pricing-page .mg-main{background:var(--pp-bg);overflow:hidden}.pp-wrap,.pp-wrap *{box-sizing:border-box}.pp-wrap{position:relative;isolation:isolate;min-height:100vh;background:var(--pp-bg);font-family:Inter,"Helvetica Neue",Arial,sans-serif;color:var(--pp-text)}.pp-wrap:before{content:"";position:absolute;inset:0 0 auto;height:820px;z-index:0;background:url('/images/header_gradient_bg.png') center top/cover no-repeat;opacity:.92}.pp-wrap:after{content:"";position:absolute;inset:0 0 auto;height:900px;z-index:1;pointer-events:none;background:linear-gradient(90deg,rgba(245,245,242,.99),rgba(245,245,242,.9) 35%,rgba(245,245,242,.4) 65%,rgba(245,245,242,.1)),linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,.1) 58%,var(--pp-bg))}.pp-shell{position:relative;z-index:2;width:min(var(--pp-max),calc(100% - 48px));margin:auto;padding:118px 0 86px}.pp-hero{max-width:720px;padding-top:24px}.pp-kicker{display:inline-flex;min-height:26px;align-items:center;padding:0 12px;border:1px solid var(--pp-line);border-radius:999px;background:rgba(255,255,255,.68);font-size:11px;font-weight:850;letter-spacing:.16em;text-transform:uppercase}.pp-title{margin:28px 0 0;max-width:710px;color:var(--pp-ink);font-family:"Helvetica Neue",Inter,Arial,sans-serif;font-size:clamp(46px,5vw,76px);line-height:.93;letter-spacing:-.074em;font-weight:900;text-wrap:balance}.pp-lede{margin:28px 0 0;max-width:620px;color:#111;font-size:clamp(18px,1.7vw,24px);line-height:1.12;letter-spacing:-.045em;font-weight:610}.pp-sync{display:flex;gap:8px;flex-wrap:wrap;margin-top:24px}.pp-sync span{display:inline-flex;align-items:center;min-height:30px;padding:0 12px;border:1px solid rgba(0,0,0,.08);border-radius:999px;background:rgba(255,255,255,.6);font-size:11px;font-weight:850;color:#242424}.pp-toggle-row{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:34px}.pp-toggle{display:grid;grid-template-columns:1fr 1fr;width:min(394px,100%);min-height:54px;padding:5px;border:1px solid rgba(0,0,0,.07);border-radius:13px;background:rgba(255,255,255,.68);box-shadow:0 16px 42px rgba(0,0,0,.055)}.pp-toggle span{display:flex;flex-direction:column;justify-content:center;gap:2px;padding:0 21px;border-radius:9px;color:#111;font-size:13px;font-weight:850}.pp-toggle small{color:#5a5a5a;font-size:10px;font-weight:690}.pp-toggle .active{background:#050505;color:#fff;box-shadow:0 18px 38px rgba(0,0,0,.18)}.pp-toggle .active small{color:rgba(255,255,255,.72)}.pp-save{display:inline-flex;align-items:center;min-height:34px;padding:0 14px;border:1px solid rgba(0,0,0,.08);border-radius:999px;background:rgba(255,255,255,.58);font-size:11px;font-weight:750}.pp-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:72px}.pp-card{position:relative;display:flex;flex-direction:column;min-height:690px;padding:34px 30px 30px;border:1px solid rgba(0,0,0,.08);border-radius:18px;background:var(--pp-card);box-shadow:0 18px 60px rgba(0,0,0,.06);backdrop-filter:blur(14px)}.pp-card.featured{border-color:#060606;background:rgba(255,255,255,.88);box-shadow:0 26px 90px rgba(0,0,0,.14);transform:translateY(-26px)}.pp-badge{position:absolute;left:-1px;right:-1px;top:-38px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:16px 16px 0 0;background:#030303;color:#fff;font-size:11px;font-weight:900;letter-spacing:.32em;text-transform:uppercase}.pp-card h2{margin:0;color:#111;font-size:22px;line-height:1;font-weight:880;letter-spacing:-.04em}.pp-desc{min-height:58px;margin:18px 0 0;color:#242424;font-size:15px;line-height:1.35;font-weight:520;letter-spacing:-.035em}.pp-price{display:flex;align-items:flex-end;gap:5px;margin-top:42px;color:#050505}.pp-price strong{font-size:clamp(42px,3.4vw,58px);line-height:.86;letter-spacing:-.075em;font-weight:930}.pp-price span{margin-bottom:7px;font-size:13px;font-weight:800}.pp-action{display:flex;align-items:center;justify-content:center;gap:12px;min-height:45px;width:100%;margin-top:30px;border:1px solid rgba(0,0,0,.18);border-radius:8px;background:rgba(255,255,255,.42);color:#070707!important;text-decoration:none;font-size:13px;font-weight:900}.pp-card.featured .pp-action{background:#050505;color:#fff!important;box-shadow:0 16px 34px rgba(0,0,0,.16)}.pp-includes{margin:36px 0 0;padding-top:28px;border-top:1px solid rgba(0,0,0,.105)}.pp-includes b{display:block;margin-bottom:18px;font-size:11px;font-weight:900}.pp-features{display:grid;gap:14px;margin:0;padding:0;list-style:none}.pp-features li{position:relative;padding-left:24px;color:#181818;font-size:13px;line-height:1.27;font-weight:540;letter-spacing:-.025em}.pp-features li:before{content:"✓";position:absolute;left:0;top:-1px;display:grid;place-items:center;width:14px;height:14px;border-radius:50%;background:#111;color:#fff;font-size:9px;font-weight:900}.pp-features .muted{color:rgba(20,20,20,.34)}.pp-features .muted:before{background:rgba(0,0,0,.08);color:rgba(0,0,0,.34)}.pp-fit{margin:auto 0 0;padding-top:36px;color:#5c5c5c;font-size:12px;line-height:1.45;font-weight:560}.pp-strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;margin-top:34px;padding:24px 20px;border:1px solid rgba(0,0,0,.065);border-radius:12px;background:rgba(255,255,255,.72);box-shadow:0 20px 70px rgba(0,0,0,.045)}.pp-strip h2{grid-column:1/-1;margin:0;text-align:center;font-size:15px;font-weight:900;letter-spacing:-.035em}.pp-point{display:flex;align-items:center;gap:14px;min-height:74px;padding:14px 22px 0;border-right:1px solid rgba(0,0,0,.075)}.pp-point:last-child{border-right:0}.pp-icon{flex:0 0 auto;display:grid;place-items:center;width:38px;height:38px;border:1px solid rgba(0,0,0,.08);border-radius:50%;background:#f9f9f7;font-size:17px}.pp-point strong{display:block;font-size:12px;line-height:1.2;font-weight:850}.pp-point span:last-child{display:block;margin-top:3px;color:#5b5b5b;font-size:11px;line-height:1.28;font-weight:560}.pp-cta{display:grid;grid-template-columns:minmax(0,.92fr) minmax(420px,1.08fr);gap:34px;align-items:center;min-height:286px;margin-top:34px;padding:46px 44px;border-radius:12px;overflow:hidden;background:linear-gradient(135deg,#050505,#161616 58%,#050505);color:#fff;box-shadow:0 28px 90px rgba(0,0,0,.18)}.pp-cta h2{margin:0;max-width:390px;color:#fff;font-size:clamp(30px,3vw,45px);line-height:.98;letter-spacing:-.065em;font-weight:900}.pp-cta p{max-width:410px;margin:18px 0 0;color:rgba(255,255,255,.78);font-size:15px;line-height:1.38;font-weight:560}.pp-cta a{display:inline-flex;align-items:center;justify-content:center;gap:13px;min-height:46px;margin-top:30px;padding:0 22px;border-radius:8px;background:#fff;color:#060606!important;text-decoration:none;font-size:13px;font-weight:900}.pp-board{min-height:210px;padding:18px;border:1px solid rgba(255,255,255,.14);border-radius:18px;background:rgba(255,255,255,.08)}.pp-row{display:grid;grid-template-columns:54px 1fr 58px;gap:14px;align-items:center;margin-top:10px;min-height:46px;padding:8px 10px;border-radius:9px;background:rgba(255,255,255,.86);color:#252d3c;font-size:10px}.pp-row b{display:grid;place-items:center;width:44px;height:32px;border-radius:4px;background:#d6dbe2;color:#6c7891;font-size:20px}.pp-row strong{display:block;color:#172033;font-size:11px;font-weight:900}.pp-row span{display:block;margin-top:3px;color:#778296;font-size:9px;font-weight:620}.pp-row em{display:grid;place-items:center;min-height:24px;border-radius:4px;background:#e9eef9;color:#315fce;font-style:normal;font-size:9px;font-weight:950}.pp-faq{display:grid;grid-template-columns:minmax(0,1fr) minmax(360px,.82fr);gap:38px;align-items:start;margin-top:44px}.pp-faq h2{margin:0 0 18px;color:#080808;font-size:26px;line-height:1;font-weight:900;letter-spacing:-.055em}.pp-faq-list{display:grid;gap:8px}.pp-faq-item{display:flex;align-items:center;justify-content:space-between;gap:18px;min-height:45px;padding:0 18px;border:1px solid rgba(0,0,0,.075);border-radius:8px;background:rgba(255,255,255,.66);font-size:13px;font-weight:780}.pp-custom{min-height:248px;padding:34px;border:1px solid rgba(0,0,0,.09);border-radius:13px;background:rgba(255,255,255,.62);box-shadow:0 20px 70px rgba(0,0,0,.045)}.pp-custom small{display:block;color:#555;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}.pp-custom h3{margin:15px 0 0;max-width:340px;color:#090909;font-size:31px;line-height:.98;font-weight:930;letter-spacing:-.06em}.pp-custom p{max-width:390px;margin:16px 0 0;color:#444;font-size:14px;line-height:1.42;font-weight:560}.pp-custom a{display:inline-flex;align-items:center;justify-content:center;gap:12px;min-height:42px;margin-top:24px;padding:0 20px;border-radius:7px;background:#050505;color:#fff!important;text-decoration:none;font-size:12px;font-weight:900}@media(max-width:1120px){.pp-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.pp-card.featured{transform:none;margin-top:38px}.pp-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.pp-point{border-right:0;border-top:1px solid rgba(0,0,0,.065)}.pp-cta{grid-template-columns:1fr}}@media(max-width:760px){.pp-shell{width:min(100% - 28px,var(--pp-max));padding-top:102px}.pp-title{font-size:clamp(42px,15vw,60px)}.pp-lede{font-size:18px}.pp-grid{grid-template-columns:1fr;margin-top:44px}.pp-card{min-height:auto;padding:30px 24px}.pp-strip{grid-template-columns:1fr;padding:14px}.pp-point{padding:16px 8px}.pp-cta{padding:34px 24px}.pp-faq{grid-template-columns:1fr}.pp-custom{padding:28px 24px}}
-</style>
-<section class="pp-wrap" aria-labelledby="pricing-title">
-  <div class="pp-shell">
-    <div class="pp-hero">
-      <span class="pp-kicker">Pricing</span>
-      <h1 class="pp-title" id="pricing-title">Powder your growth with a promotional CRM</h1>
-      <p class="pp-lede">Microgifter's all-in-one platform helps creators, local businesses, and musicians engage fans, boost sales, and grow faster.</p>
-      <div class="pp-sync" aria-label="Pricing source status">
-        <span><?= (int)$summary['published'] ?> published packages</span>
-        <span>Admin synced source</span>
-        <span>Package moderation ready</span>
+
+<div class="mg-pricing-v1">
+  <section class="mg-price-hero" aria-labelledby="pricing-title">
+    <div class="mg-price-shell mg-price-hero-grid">
+      <div class="mg-price-hero-copy">
+        <span class="mg-price-kicker">Simple pricing for local growth</span>
+        <h1 id="pricing-title">Start small.<br>Grow with every <span>customer.</span></h1>
+        <p>Choose the Microgifter plan that fits your business today. Every plan connects social gifting, rewards, campaigns, customer relationships, and measurable local commerce in one platform.</p>
+        <div class="mg-price-hero-actions">
+          <a class="mg-price-button mg-price-button-primary" href="#plans">View Plans</a>
+          <a class="mg-price-button mg-price-button-secondary" href="/learn-more.php">Talk to Sales</a>
+        </div>
+        <div class="mg-price-trust" aria-label="Pricing assurances">
+          <span><b><?= (int) $summary['published'] ?></b> plans available</span>
+          <span><b>Monthly</b> subscriptions</span>
+          <span><b>Flexible</b> upgrade path</span>
+        </div>
       </div>
-      <div class="pp-toggle-row"><div class="pp-toggle" aria-hidden="true"><span class="active">Monthly<small>Pay as you go</small></span><span>Annual<small>Save up to 20%</small></span></div><span class="pp-save">Save 20%</span></div>
+
+      <aside class="mg-price-loop" aria-label="Microgifter connected growth loop">
+        <span class="mg-price-loop-label">Included platform foundation</span>
+        <h2>One connected customer growth loop.</h2>
+        <div class="mg-price-loop-steps">
+          <div><b>01</b><span><strong>Create value</strong><small>Gifts, rewards, offers, and campaigns</small></span></div>
+          <div><b>02</b><span><strong>Reach customers</strong><small>Feed, landing pages, QR, email, and SMS</small></span></div>
+          <div><b>03</b><span><strong>Track action</strong><small>Claims, redemptions, visits, and responses</small></span></div>
+          <div><b>04</b><span><strong>Grow relationships</strong><small>CRM insight, follow-up, and repeat visits</small></span></div>
+        </div>
+      </aside>
     </div>
+  </section>
 
-    <div class="pp-grid" aria-label="Pricing tiers">
-      <?php foreach ($plans as $plan): ?>
-        <article class="pp-card<?= !empty($plan['featured']) ? ' featured' : '' ?>" data-package-id="<?= mg_e($plan['id']) ?>">
-          <?php if (!empty($plan['featured'])): ?><div class="pp-badge">Most Popular</div><?php endif; ?>
-          <h2><?= mg_e($plan['name']) ?></h2>
-          <p class="pp-desc"><?= mg_e($plan['description']) ?></p>
-          <div class="pp-price"><strong><?= mg_e($plan['price_label']) ?></strong><span><?= mg_e($plan['billing_label']) ?></span></div>
-          <a class="pp-action" href="<?= mg_e($plan['cta_href']) ?>"><?= mg_e($plan['cta_label']) ?> <span>→</span></a>
-          <div class="pp-includes">
-            <b><?= mg_e($plan['included_label']) ?></b>
-            <ul class="pp-features">
-              <?php foreach (($plan['included_features'] ?? []) as $feature): ?><li><?= mg_e($feature) ?></li><?php endforeach; ?>
-              <?php foreach (($plan['excluded_features'] ?? []) as $feature): ?><li class="muted"><?= mg_e($feature) ?></li><?php endforeach; ?>
-            </ul>
-          </div>
-          <p class="pp-fit"><?= mg_e($plan['fit']) ?></p>
-        </article>
-      <?php endforeach; ?>
+  <section class="mg-price-plans" id="plans" aria-labelledby="plans-title">
+    <div class="mg-price-shell">
+      <div class="mg-price-section-heading">
+        <span class="mg-price-kicker">Plans built to grow with you</span>
+        <h2 id="plans-title">Choose the right operating level for your business.</h2>
+        <p>Start with the customer tools you need now, then add more campaigns, contacts, locations, and automation as demand grows.</p>
+      </div>
+
+      <div class="mg-price-grid" aria-label="Microgifter pricing plans">
+        <?php foreach ($plans as $plan): ?>
+          <article class="mg-price-card<?= !empty($plan['featured']) ? ' is-featured' : '' ?>" data-package-id="<?= mg_e((string) $plan['id']) ?>">
+            <?php if (!empty($plan['featured'])): ?><div class="mg-price-popular">Most Popular</div><?php endif; ?>
+
+            <header class="mg-price-card-head">
+              <span class="mg-price-plan-index"><?= str_pad((string) max(1, (int) (($plan['sort_order'] ?? 10) / 10)), 2, '0', STR_PAD_LEFT) ?></span>
+              <div>
+                <h3><?= mg_e((string) $plan['name']) ?></h3>
+                <p><?= mg_e((string) $plan['description']) ?></p>
+              </div>
+            </header>
+
+            <div class="mg-price-amount"><strong><?= mg_e((string) $plan['price_label']) ?></strong><span><?= mg_e((string) $plan['billing_label']) ?></span></div>
+            <a class="mg-price-plan-action" href="<?= mg_e((string) $plan['cta_href']) ?>"><?= mg_e((string) $plan['cta_label']) ?><span aria-hidden="true">→</span></a>
+
+            <div class="mg-price-fit">
+              <span>Best fit</span>
+              <p><?= mg_e((string) $plan['fit']) ?></p>
+            </div>
+
+            <div class="mg-price-includes">
+              <h4><?= mg_e((string) $plan['included_label']) ?></h4>
+              <ul>
+                <?php foreach (($plan['included_features'] ?? []) as $feature): ?>
+                  <li><span aria-hidden="true">✓</span><?= mg_e((string) $feature) ?></li>
+                <?php endforeach; ?>
+              </ul>
+            </div>
+
+            <?php if (!empty($plan['excluded_features'])): ?>
+              <div class="mg-price-upgrade">
+                <span>Available in higher plans</span>
+                <ul>
+                  <?php foreach (($plan['excluded_features'] ?? []) as $feature): ?><li><?= mg_e((string) $feature) ?></li><?php endforeach; ?>
+                </ul>
+              </div>
+            <?php endif; ?>
+          </article>
+        <?php endforeach; ?>
+      </div>
     </div>
+  </section>
 
-    <section class="pp-strip"><h2>All plans include:</h2><div class="pp-point"><span class="pp-icon">◇</span><div><strong>Secure and reliable infrastructure</strong><span>Built for real demand.</span></div></div><div class="pp-point"><span class="pp-icon">↗</span><div><strong>Real-time analytics and reporting</strong><span>Track offers and claims.</span></div></div><div class="pp-point"><span class="pp-icon">⌘</span><div><strong>Easy integrations and APIs</strong><span>Connect existing tools.</span></div></div><div class="pp-point"><span class="pp-icon">♧</span><div><strong>Dedicated support and resources</strong><span>Help for launch.</span></div></div><div class="pp-point"><span class="pp-icon">↻</span><div><strong>Continuous updates</strong><span>New features included.</span></div></div></section>
+  <section class="mg-price-foundation" aria-labelledby="foundation-title">
+    <div class="mg-price-shell">
+      <div class="mg-price-foundation-panel">
+        <div class="mg-price-foundation-copy">
+          <span class="mg-price-kicker mg-price-kicker-light">Included with every plan</span>
+          <h2 id="foundation-title">A professional foundation from day one.</h2>
+          <p>Every subscription includes the core infrastructure needed to create, distribute, track, and improve customer value.</p>
+        </div>
+        <div class="mg-price-foundation-grid">
+          <article><span>◎</span><div><h3>Secure infrastructure</h3><p>Built for real customer and campaign activity.</p></div></article>
+          <article><span>↗</span><div><h3>Live reporting</h3><p>Track campaigns, claims, and customer response.</p></div></article>
+          <article><span>⌘</span><div><h3>Connected tools</h3><p>Landing pages, APIs, QR, email, and SMS paths.</p></div></article>
+          <article><span>◇</span><div><h3>Product updates</h3><p>Ongoing platform improvements are included.</p></div></article>
+        </div>
+      </div>
+    </div>
+  </section>
 
-    <section class="pp-cta"><div><h2>Not sure which plan is right for you?</h2><p>Our team can help you find the perfect Promotional CRM, pre-sale commerce, and automated campaign solution for your goals.</p><a href="/learn-more.php">Talk to an Expert <span>→</span></a></div><div class="pp-board" aria-hidden="true"><div class="pp-row"><b>C</b><div><strong>Coffee for two</strong><span>Local coffee experience with a protected voucher underneath.</span></div><em>REGIFT</em></div><div class="pp-row"><b>D</b><div><strong>Dinner and a playlist</strong><span>A dinner voucher delivered with a music experience.</span></div><em>CLAIM</em></div><div class="pp-row"><b>D</b><div><strong>Desert spa afternoon</strong><span>A visual story layered over a spa voucher.</span></div><em>LOAD</em></div></div></section>
+  <section class="mg-price-compare" aria-labelledby="compare-title">
+    <div class="mg-price-shell">
+      <div class="mg-price-section-heading mg-price-section-heading-center">
+        <span class="mg-price-kicker">Compare plan capacity</span>
+        <h2 id="compare-title">See how each plan scales.</h2>
+        <p>Compare the published package limits that power customer engagement, campaign distribution, and local commerce operations.</p>
+      </div>
 
-    <section class="pp-faq"><div><h2>Frequently asked questions</h2><div class="pp-faq-list"><div class="pp-faq-item"><span>Can I upgrade or downgrade anytime?</span><b>+</b></div><div class="pp-faq-item"><span>Is there a contract or long-term commitment?</span><b>+</b></div><div class="pp-faq-item"><span>What payment methods do you accept?</span><b>+</b></div><div class="pp-faq-item"><span>Do you offer support for integration?</span><b>+</b></div></div></div><aside class="pp-custom"><small>Need something custom?</small><h3>Enterprise and platform solutions</h3><p>Talk to our team about custom plans, volume pricing, dedicated onboarding, and automated commerce workflows.</p><a href="/learn-more.php">Contact Sales <span>→</span></a></aside></section>
-  </div>
-</section>
+      <div class="mg-price-table-wrap" role="region" aria-label="Pricing plan comparison" tabindex="0">
+        <table class="mg-price-table">
+          <thead>
+            <tr>
+              <th scope="col">Capability</th>
+              <?php foreach ($plans as $plan): ?><th scope="col"<?= !empty($plan['featured']) ? ' class="is-featured"' : '' ?>><?= mg_e((string) $plan['name']) ?></th><?php endforeach; ?>
+            </tr>
+          </thead>
+          <tbody>
+            <?php foreach ($comparisonRows as $row): ?>
+              <tr>
+                <th scope="row"><?= mg_e((string) $row['label']) ?></th>
+                <?php foreach ($plans as $plan): ?>
+                  <?php $displayValue = $formatLimit($plan, $row); ?>
+                  <td<?= !empty($plan['featured']) ? ' class="is-featured"' : '' ?>><?php if ($displayValue === 'Included'): ?><span class="mg-price-included">✓ Included</span><?php else: ?><?= mg_e($displayValue) ?><?php endif; ?></td>
+                <?php endforeach; ?>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="mg-price-support" aria-labelledby="support-title">
+    <div class="mg-price-shell mg-price-support-grid">
+      <div class="mg-price-support-copy">
+        <span class="mg-price-kicker">Need help choosing?</span>
+        <h2 id="support-title">Match the plan to your growth goals.</h2>
+        <p>Tell us how many customers, campaigns, locations, or sponsored programs you want to manage. We will help you choose a practical starting point without overbuilding.</p>
+        <a class="mg-price-button mg-price-button-primary" href="/learn-more.php">Contact Sales</a>
+      </div>
+      <div class="mg-price-support-board" aria-label="Example Microgifter activity">
+        <div><span>C</span><p><strong>Coffee for two</strong><small>Customer gift and visit intent</small></p><b>REGIFT</b></div>
+        <div><span>D</span><p><strong>Dinner experience</strong><small>Protected local reward delivery</small></p><b>CLAIM</b></div>
+        <div><span>R</span><p><strong>Return visit reward</strong><small>Tracked loyalty follow-up</small></p><b>LOAD</b></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mg-price-faq" aria-labelledby="faq-title">
+    <div class="mg-price-shell mg-price-faq-grid">
+      <div class="mg-price-faq-intro">
+        <span class="mg-price-kicker">Pricing questions</span>
+        <h2 id="faq-title">Clear answers before you start.</h2>
+        <p>Plans use the same connected Microgifter platform. The main differences are capacity, locations, communication channels, design tools, and automation.</p>
+      </div>
+      <div class="mg-price-faq-list">
+        <details>
+          <summary>Can I upgrade as my business grows?</summary>
+          <p>Yes. Choose the plan that matches your current operating needs, then move to a higher-capacity plan when you need more campaigns, contacts, locations, or communication tools.</p>
+        </details>
+        <details>
+          <summary>What are monthly Stamps?</summary>
+          <p>Stamps represent the included monthly distribution capacity defined by each published plan. Available email and SMS channels vary by plan.</p>
+        </details>
+        <details>
+          <summary>Which plan supports multiple locations?</summary>
+          <p>Growth supports up to three locations, Pro supports up to ten, and Enterprise supports unlimited locations.</p>
+        </details>
+        <details>
+          <summary>Do I need a long-term contract?</summary>
+          <p>The published plans are presented as monthly subscriptions. Enterprise or custom programs may use a separate agreement based on implementation scope.</p>
+        </details>
+        <details>
+          <summary>Can your team help with a custom rollout?</summary>
+          <p>Yes. Contact Sales for volume pricing, multi-location programs, white-label design, platform integrations, and automated commerce workflows.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section class="mg-price-final" aria-labelledby="price-final-title">
+    <div class="mg-price-shell">
+      <div class="mg-price-final-panel">
+        <div>
+          <h2 id="price-final-title">Ready to build stronger local relationships?</h2>
+          <p>Create your account to start with Microgifter, or talk with our team about the right plan for your business, organization, or sponsored commerce program.</p>
+        </div>
+        <div class="mg-price-final-actions">
+          <a class="mg-price-button mg-price-button-primary" href="/signup.php?type=merchant">Create Merchant Account</a>
+          <a class="mg-price-button mg-price-button-secondary" href="/learn-more.php">Book A Demo</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
 <?php require __DIR__ . '/includes/footer.php'; ?>
