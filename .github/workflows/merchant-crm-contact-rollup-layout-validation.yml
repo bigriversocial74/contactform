@@ -6,6 +6,7 @@ on:
       - 'merchant-crm.php'
       - 'assets/js/merchant-crm-contact-rollup.js'
       - 'assets/js/merchant-crm-contact-link-polish.js'
+      - 'assets/js/merchant-crm-contact-stats.js'
       - 'assets/css/merchant-crm-layout-stability.css'
       - 'api/merchant/campaign-contacts.php'
       - 'includes/merchant-crm-view.php'
@@ -35,5 +36,6 @@ jobs:
         run: |
           node --check assets/js/merchant-crm-contact-rollup.js
           node --check assets/js/merchant-crm-contact-link-polish.js
+          node --check assets/js/merchant-crm-contact-stats.js
       - name: Merchant CRM contact rollup and layout contract
         run: php scripts/validate_merchant_crm_contact_rollup_layout.php
