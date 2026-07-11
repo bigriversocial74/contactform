@@ -33,7 +33,7 @@ $worldPage = $read('world-canvas.php');
 $squareLoader = $read('assets/js/world-canvas-square-map.js');
 $zoomV2 = $read('assets/js/world-canvas-geo-zoom-v2.js');
 
-$assertContains($crmPage, 'merchant-crm-contact-link-polish.js?v=2.0.0', 'Merchant CRM must cache-bump the customer profile link controller.');
+$assertContains($crmPage, 'merchant-crm-contact-link-polish.js?v=3.0.0', 'Merchant CRM must load the current customer profile link and contact-row controller.');
 $assertContains($crmLink, "'/merchant-customer.php?campaign_contact_id='", 'CRM contact names must target the dedicated merchant customer page.');
 $assertContains($crmLink, "actionLink.removeAttribute('data-crm-view-customer')", 'CRM profile links must remove the drawer interception trigger.');
 $assertContains($crmLink, "link.setAttribute('data-crm-customer-profile-link'", 'CRM contact names must be marked as direct customer profile links.');

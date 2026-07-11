@@ -19,12 +19,14 @@ $page_styles = [
     '/assets/css/merchant-crm-contact-threads.css',
     '/assets/css/merchant-crm-action-center.css',
     '/assets/css/merchant-crm-contacts-clean.css',
-    '/assets/css/merchant-crm-contact-link-polish.css',
+    '/assets/css/merchant-crm-contact-link-polish.css?v=3.0.0',
+    '/assets/css/merchant-crm-layout-stability.css?v=1.0.0',
 ];
 
 $page_scripts = [
     '/assets/js/merchant-workspace.js',
     '/assets/js/store-health-completion-events.js',
+    '/assets/js/merchant-crm-contact-rollup.js?v=1.0.0',
     '/assets/js/merchant-crm.js',
     '/assets/js/merchant-crm-contact-action-modal.js',
     '/assets/js/merchant-crm-action-scheduler.js',
@@ -36,10 +38,10 @@ $page_scripts = [
     '/assets/js/merchant-crm-reward-invite-operations.js',
     '/assets/js/merchant-crm-campaign-builder.js',
     '/assets/js/merchant-crm-performance-dashboard.js',
-    '/assets/js/merchant-crm-contact-stats.js',
+    '/assets/js/merchant-crm-contact-stats.js?v=2.0.0',
     '/assets/js/merchant-crm-retention-playbooks.js?v=2.0.0',
     '/assets/js/crm-media-segments.js?v=2.0.0',
-    '/assets/js/merchant-crm-contact-link-polish.js?v=2.0.0',
+    '/assets/js/merchant-crm-contact-link-polish.js?v=3.0.0',
 ];
 
 require __DIR__ . '/includes/header.php';
