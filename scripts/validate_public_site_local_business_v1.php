@@ -10,6 +10,7 @@ $pricing = $read('pricing.php');
 $pricingCss = $read('assets/css/pricing-local-business-v1.css');
 $themeCss = $read('assets/css/public-local-business-theme-v1.css');
 $headerCss = $read('assets/css/public-logged-out-header-unified.css');
+$header = $read('includes/header-components/public-header.php');
 $footerCss = $read('assets/css/universal-footer.css');
 $authCss = $read('assets/css/auth-page.css');
 $pageDefinitions = $read('includes/page.php');
@@ -26,14 +27,14 @@ $checks = [
         && str_contains($themeCss, '--mg-public-green:#72d43f'),
     'logged-out header imports shared public theme' => str_contains($headerCss, "@import url('/assets/css/public-local-business-theme-v1.css?v=1.0.0')"),
     'header containment beats legacy public shell' => str_contains($headerCss, 'html body[data-authenticated="false"] .mg-site-header.mg-market-universal-header')
-        && str_contains($headerCss, '.mg-public-demo{')
         && str_contains($headerCss, 'display:inline-flex!important'),
+    'shared public header omits demo actions' => !str_contains($header, 'class="mg-public-demo"')
+        && !str_contains($header, '$show_demo_button')
+        && !str_contains($header, '$public_demo_href'),
     'header uses white navy green palette' => str_contains($headerCss, 'background:rgba(255,255,255,.96)!important')
         && str_contains($headerCss, 'background:#72d43f!important')
         && str_contains($headerCss, 'color:#0b2d2a!important'),
-    'mobile public menu has high-specificity dark treatment' => str_contains($headerCss, '.mg-public-mobile-menu .mg-public-mobile-panel')
-        && str_contains($headerCss, 'linear-gradient(180deg,#0b2d2a,#071f1d)!important')
-        && str_contains($headerCss, 'rgba(114,212,63,.12)!important'),
+    'mobile public menu has high-specificity treatment' => str_contains($headerCss, '.mg-public-mobile-menu .mg-public-mobile-panel'),
     'footer uses high-specificity navy theme with white type' => str_contains($footerCss, 'html body[data-authenticated="false"] .mg-site-footer.mg-universal-footer')
         && str_contains($footerCss, 'linear-gradient(135deg,#091a31 0%,#102d4c 100%)!important')
         && str_contains($footerCss, '.mg-footer-column h2{margin:0 0 7px!important;color:#fff!important')
@@ -49,7 +50,7 @@ $checks = [
         && str_contains($footer, '/pricing.php'),
     'pricing page uses published package authority' => str_contains($pricing, 'mg_public_pricing_packages()')
         && str_contains($pricing, 'mg_pricing_package_summary()')
-        && str_contains($pricing, "\$plan['limits'][\$key]"),
+        && str_contains($pricing, "$plan['limits'][$key]"),
     'pricing page uses external local business stylesheet' => str_contains($pricing, '/assets/css/pricing-local-business-v1.css?v=1.0.0')
         && !str_contains($pricing, '<style>'),
     'pricing hero matches local growth system' => str_contains($pricing, 'Start small.')
@@ -58,7 +59,7 @@ $checks = [
     'pricing includes plan cards and comparison table' => str_contains($pricing, 'mg-price-grid')
         && str_contains($pricing, 'mg-price-table')
         && str_contains($pricing, 'Compare plan capacity'),
-    'pricing keeps real signup and sales routes' => str_contains($pricing, "\$plan['cta_href']")
+    'pricing keeps real signup and sales routes' => str_contains($pricing, "$plan['cta_href']")
         && str_contains($pricing, '/signup.php?type=merchant')
         && str_contains($pricing, '/learn-more.php'),
     'pricing responsive styles cover desktop tablet and mobile' => str_contains($pricingCss, '@media(max-width:1120px)')
@@ -68,9 +69,10 @@ $checks = [
         && !str_contains($pricing, 'Admin synced source')
         && !str_contains($pricing, 'Package moderation ready')
         && !str_contains($pricing, 'header_gradient_bg.png'),
-    'auth family uses one shared local business component' => str_contains($authCss, 'Public auth pages v2')
-        && str_contains($authCss, 'background:#72d43f!important')
-        && str_contains($authCss, 'color:#0b2d2a'),
+    'auth family uses one shared blue component' => str_contains($authCss, 'Public auth pages v3')
+        && str_contains($authCss, 'linear-gradient(180deg,#fff 0%,#f2f7fd 62%,#fff 100%)')
+        && str_contains($authCss, 'background:#102d4c!important')
+        && str_contains($authCss, 'color:#0b2540'),
     'signin keeps login authority and inbox redirect' => str_contains($signin, '/api/auth/login.php')
         && str_contains($signin, 'data-success-redirect="/inbox.php"')
         && str_contains($signin, 'mg_csrf_field()'),
@@ -83,7 +85,7 @@ $checks = [
         && str_contains($forgot, 'mg_csrf_field()')
         && str_contains($reset, 'mg_csrf_field()'),
     'email verification receives auth assets and keeps endpoint' => str_contains($pageDefinitions, "'verify-email' => [")
-        && str_contains($pageDefinitions, "'assets'=>\$authAssets")
+        && str_contains($pageDefinitions, "'assets'=>$authAssets")
         && str_contains($verify, '/api/auth/email/verify.php'),
     'auth pages include accessible labels and live statuses' => str_contains($signin, 'aria-labelledby="signin-title"')
         && str_contains($signup, 'aria-labelledby="signup-title"')
