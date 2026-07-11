@@ -4,7 +4,7 @@ require_once __DIR__.'/includes/app.php';
 $page_title='Stamp Ledger | Microgifter';
 $page_section='merchant';
 $header_mode='account';
-$page_styles=['/assets/css/merchant-workspace.css','/assets/css/stamp-ledger.css','/assets/css/merchant-stamps-ledger.css'];
+$page_styles=['/assets/css/merchant-workspace.css','/assets/css/stamp-ledger.css','/assets/css/merchant-stamps-ledger.css?v=20260711-ledger-cleanup'];
 $page_scripts=['/assets/js/merchant-workspace.js'];
 $merchantView='stamps';
 require __DIR__.'/includes/header.php';
