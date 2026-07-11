@@ -21,7 +21,7 @@ final class MobileAgentTabsTest extends TestCase
         self::assertStringNotContainsString('mg-header-product-create',$header);
         self::assertStringContainsString('data-create-menu-option="microgift"',$menu);
         self::assertStringContainsString('looksLikePlusControl',$script);
-        self::assertStringContainsString("href==='/build.php'",$script);
+        self::assertStringContainsString('href="/build.php" data-global-create',$header);
         self::assertStringContainsString("document.addEventListener('click'",$script);
     }
 
@@ -37,6 +37,8 @@ final class MobileAgentTabsTest extends TestCase
         self::assertStringNotContainsString('data-product-header-create',$header);
         self::assertStringNotContainsString('mg-header-product-create',$header);
         self::assertStringNotContainsString("createElement('button')",$script);
-        self::assertStringContainsString('new MutationObserver(discoverOriginalTriggers)',$script);
+        self::assertStringContainsString('explicitTriggerSelector',$script);
+        self::assertStringContainsString('closestTrigger',$script);
+        self::assertStringNotContainsString('new MutationObserver',$script);
     }
 }
