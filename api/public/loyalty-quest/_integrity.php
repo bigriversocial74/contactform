@@ -3,21 +3,24 @@ declare(strict_types=1);
 
 function mg_lqi_schema_ready(PDO $pdo): bool
 {
+    static $cache=[];
+    $key=spl_object_id($pdo);
+    if(array_key_exists($key,$cache))return $cache[$key];
     try {
         $required = [
-            'loyalty_quest_integrity_attempts' => ['participant_user_id','action_type','ip_hash','device_hash','created_at'],
-            'loyalty_quest_integrity_signals' => ['campaign_id','participant_user_id','signal_type','severity','score','status'],
+            'loyalty_quest_integrity_attempts' => ['participant_user_id','action_type','ip_hash','device_hash','request_hash','created_at'],
+            'loyalty_quest_integrity_signals' => ['campaign_id','participant_user_id','evidence_id','signal_type','severity','score','status'],
             'loyalty_quest_evidence' => ['evidence_fingerprint','ip_hash','device_hash','integrity_score','integrity_status'],
         ];
         foreach ($required as $table => $columns) {
             $stmt = $pdo->prepare('SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=?');
             $stmt->execute([$table]);
             $found = array_map('strval', $stmt->fetchAll(PDO::FETCH_COLUMN) ?: []);
-            foreach ($columns as $column) if (!in_array($column, $found, true)) return false;
+            foreach ($columns as $column) if (!in_array($column, $found, true)) return $cache[$key]=false;
         }
-        return true;
+        return $cache[$key]=true;
     } catch (Throwable) {
-        return false;
+        return $cache[$key]=false;
     }
 }
 
@@ -104,8 +107,10 @@ function mg_lqi_evidence_fingerprint(array $evidence): ?string
     $strong=[];
     $reference=mg_lqi_normalized_text((string)($evidence['reference_id']??''),190);
     $proofUrl=mg_lqi_normalized_text((string)($evidence['proof_url']??''),700);
+    $proofNote=mg_lqi_normalized_text((string)($evidence['proof_note']??''),1000);
     if ($reference!=='') $strong['reference_id']=$reference;
     if ($proofUrl!=='') $strong['proof_url']=$proofUrl;
+    if (mb_strlen($proofNote)>=16) $strong['proof_note']=$proofNote;
     if ($strong===[]) return null;
     ksort($strong);
     return mg_lqi_hash('evidence',json_encode($strong,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR));
