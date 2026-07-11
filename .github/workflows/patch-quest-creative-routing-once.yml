@@ -1,0 +1,51 @@
+name: One-time Quest Creative Routing
+
+on:
+  push:
+    branches:
+      - feature/quest-media-promotional-assets-v1-20260711-r2
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/quest-media-promotional-assets-v1-20260711-r2
+          fetch-depth: 0
+      - name: Patch merchant routing and remove workflow
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          nav = Path('includes/merchant-workspace.php')
+          text = nav.read_text()
+          source = "    'loyalty_quests' => ['Loyalty Quests','Create, launch, and measure quests','/merchant-loyalty-quests.php','Engage'],\n"
+          addition = source + "    'quest_creative' => ['Quest Creative','Artwork, QR, downloads, and embeds','/merchant-loyalty-quest-creative.php','Engage'],\n"
+          if "'quest_creative'" not in text:
+              if source not in text: raise SystemExit('merchant nav marker missing')
+              text = text.replace(source, addition, 1)
+          nav.write_text(text)
+
+          router = Path('includes/merchant-view.php')
+          text = router.read_text()
+          source = "<?php elseif($merchantView==='loyalty_quests'): require __DIR__.'/merchant-loyalty-quests-view.php'; ?><?php elseif($merchantView==='quest_reviews'):"
+          replacement = "<?php elseif($merchantView==='loyalty_quests'): require __DIR__.'/merchant-loyalty-quests-view.php'; ?><?php elseif($merchantView==='quest_creative'): require __DIR__.'/merchant-loyalty-quest-creative-view.php'; ?><?php elseif($merchantView==='quest_reviews'):"
+          if "merchant-loyalty-quest-creative-view.php" not in text:
+              if source not in text: raise SystemExit('merchant router marker missing')
+              text = text.replace(source, replacement, 1)
+          router.write_text(text)
+
+          Path('.github/workflows/patch-quest-creative-routing-once.yml').unlink()
+          PY
+          php -l includes/merchant-workspace.php
+          php -l includes/merchant-view.php
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add includes/merchant-workspace.php includes/merchant-view.php .github/workflows/patch-quest-creative-routing-once.yml
+          git commit -m "Wire Loyalty Quest Creative Studio into merchant workspace"
+          git push origin HEAD:feature/quest-media-promotional-assets-v1-20260711-r2
