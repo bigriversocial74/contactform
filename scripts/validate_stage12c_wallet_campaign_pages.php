@@ -44,9 +44,13 @@ $contactJs = $get('assets/js/stage12-campaign-contacts.js');
 $toolJs = $get('assets/js/stage12-campaign-tools.js');
 $claimStatusMarker = str_contains($claim, "status = 'claimed'") || str_contains($claim, "status='claimed'") || str_contains($claim, "status = \\'claimed\\'");
 $redeemStatusMarker = str_contains($redeem, "status = 'redeemed'") || str_contains($redeem, "status='redeemed'") || str_contains($redeem, "status = \\'redeemed\\'");
+$delegatedWalletRoute = str_contains($walletPage, 'MG_ACCOUNT_VIEW') && str_contains($walletPage, '/account.php');
+$standaloneRewardWalletRoute = str_contains($walletPage, 'data-reward-wallet')
+  && str_contains($walletPage, '/assets/js/reward-wallet-experience.js')
+  && str_contains($walletPage, '/wallet.php?classic=1');
 $checks = [
   'wallet_list_endpoint' => str_contains($walletItems, 'wallet_items') && str_contains($walletItems, 'campaign_contacts'),
-  'wallet_page_delegates' => str_contains($walletPage, "MG_ACCOUNT_VIEW") && str_contains($walletPage, '/account.php'),
+  'wallet_page_route' => $delegatedWalletRoute || $standaloneRewardWalletRoute,
   'wallet_account_route' => str_contains($accountPage, "'wallet'") && str_contains($accountPage, 'includes/account/wallet-view.php'),
   'wallet_view' => str_contains($accountWalletView, 'data-stage12-wallet') && str_contains($accountWalletView, 'data-wallet-list'),
   'wallet_js_claims' => str_contains($walletJs, '/api/account/wallet-items.php') && str_contains($walletJs, '/api/account/wallet-claim.php'),
