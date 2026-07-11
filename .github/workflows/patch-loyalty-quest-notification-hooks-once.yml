@@ -1,0 +1,137 @@
+name: One-time Loyalty Quest Notification Hooks
+
+on:
+  push:
+    branches:
+      - feature/quest-notifications-transactional-delivery-v1-20260711
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/quest-notifications-transactional-delivery-v1-20260711
+          fetch-depth: 0
+      - name: Patch lifecycle hooks and remove workflow
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def ensure_require(path, marker, require_line):
+              text=path.read_text()
+              if require_line not in text:
+                  if marker not in text: raise SystemExit(f'require marker missing: {path}')
+                  text=text.replace(marker,marker+require_line+'\n',1)
+              path.write_text(text)
+
+          start=Path('api/public/loyalty-quest/start.php')
+          ensure_require(start,"require_once __DIR__ . '/_participant.php';\n","require_once dirname(__DIR__, 2) . '/communications/_loyalty_quest_notifications.php';")
+          text=start.read_text()
+          marker="""        mg_lqp_event($pdo, $campaign, null, (int)$contact['id'], 'quest.joined', ['participation_id'=>$publicId,'action_type'=>$metadata['action_type'],'verification_type'=>$metadata['verification_type'],'audience'=>$audience]);
+        mg_audit('participant.loyalty_quest_joined', 'loyalty_quest_participation', ['campaign_id'=>(string)$campaign['public_id'],'participation_id'=>$publicId], (int)$user['id']);
+"""
+          addition="""        mg_lqp_event($pdo, $campaign, null, (int)$contact['id'], 'quest.joined', ['participation_id'=>$publicId,'action_type'=>$metadata['action_type'],'verification_type'=>$metadata['verification_type'],'audience'=>$audience]);
+        mg_lqn_notify_participant($pdo, 'participant_joined', $campaign, (int)$user['id'], ['participation_id'=>$publicId,'source_public_id'=>$publicId]);
+        mg_lqn_notify_merchant($pdo, 'merchant_participant_joined', $campaign, ['participation_id'=>$publicId,'source_public_id'=>$publicId]);
+        mg_audit('participant.loyalty_quest_joined', 'loyalty_quest_participation', ['campaign_id'=>(string)$campaign['public_id'],'participation_id'=>$publicId], (int)$user['id']);
+"""
+          if "'participant_joined'" not in text:
+              if marker not in text: raise SystemExit('start hook marker missing')
+              text=text.replace(marker,addition,1)
+          start.write_text(text)
+
+          submit=Path('api/public/loyalty-quest/submit.php')
+          ensure_require(submit,"require_once __DIR__ . '/_reward.php';\n","require_once dirname(__DIR__, 2) . '/communications/_loyalty_quest_notifications.php';")
+          text=submit.read_text()
+          pending="""        mg_lqp_event($pdo, $campaign, null, (int)$contact['id'], 'quest.evidence_submitted', ['participation_id'=>(string)$participation['public_id'],'evidence_id'=>$evidenceId,'evidence_type'=>$verification['evidence_type'],'ip_hash'=>$ipHash]);
+        mg_audit('participant.loyalty_quest_evidence_submitted', 'loyalty_quest_evidence', ['campaign_id'=>(string)$campaign['public_id'],'participation_id'=>(string)$participation['public_id'],'evidence_id'=>$evidenceId], (int)$user['id']);
+"""
+          pending_new="""        mg_lqp_event($pdo, $campaign, null, (int)$contact['id'], 'quest.evidence_submitted', ['participation_id'=>(string)$participation['public_id'],'evidence_id'=>$evidenceId,'evidence_type'=>$verification['evidence_type'],'ip_hash'=>$ipHash]);
+        mg_lqn_notify_participant($pdo, 'evidence_submitted', $campaign, (int)$user['id'], ['participation_id'=>(string)$participation['public_id'],'evidence_id'=>$evidenceId,'source_public_id'=>$evidenceId]);
+        mg_lqn_notify_merchant($pdo, 'merchant_review_required', $campaign, ['participation_id'=>(string)$participation['public_id'],'evidence_id'=>$evidenceId,'source_public_id'=>$evidenceId]);
+        mg_audit('participant.loyalty_quest_evidence_submitted', 'loyalty_quest_evidence', ['campaign_id'=>(string)$campaign['public_id'],'participation_id'=>(string)$participation['public_id'],'evidence_id'=>$evidenceId], (int)$user['id']);
+"""
+          if "'merchant_review_required'" not in text:
+              if pending not in text: raise SystemExit('submit pending marker missing')
+              text=text.replace(pending,pending_new,1)
+          progress="""        mg_lqp_event($pdo, $campaign, null, (int)$contact['id'], 'quest.progress_verified', ['participation_id'=>(string)$participation['public_id'],'evidence_id'=>$evidenceId,'progress_count'=>$newProgress,'required_count'=>$required]);
+"""
+          progress_new=progress+"        mg_lqn_notify_participant($pdo, 'progress_verified', $campaign, (int)$user['id'], ['participation_id'=>(string)$participation['public_id'],'evidence_id'=>$evidenceId,'source_public_id'=>$evidenceId,'progress_count'=>$newProgress,'required_count'=>$required]);\n"
+          if "mg_lqn_notify_participant($pdo, 'progress_verified'" not in text:
+              if progress not in text: raise SystemExit('submit progress marker missing')
+              text=text.replace(progress,progress_new,1)
+          submit.write_text(text)
+
+          participant=Path('api/public/loyalty-quest/_participant.php')
+          ensure_require(participant,"require_once dirname(__DIR__, 2) . '/rewards/_zero_value_bridge.php';\n","require_once dirname(__DIR__, 2) . '/communications/_loyalty_quest_notifications.php';")
+          text=participant.read_text()
+          marker="""    mg_lqp_event($pdo, $campaign, $walletDbId, (int)$contact['id'], 'wallet_item.issued', ['wallet_item_id'=>$walletPublicId,'source'=>'loyalty_quest']);
+    return ['wallet_item_id'=>$walletPublicId,'wallet_status'=>'issued','already_issued'=>false,'reward_title'=>(string)$campaign['reward_template_title'],'expires_at'=>$expiresAt,'pppm_bridge'=>$bridge];
+"""
+          replacement="""    mg_lqp_event($pdo, $campaign, $walletDbId, (int)$contact['id'], 'wallet_item.issued', ['wallet_item_id'=>$walletPublicId,'source'=>'loyalty_quest']);
+    mg_lqn_notify_participant($pdo, 'reward_delivered', $campaign, (int)$user['id'], ['participation_id'=>(string)$participation['public_id'],'wallet_item_id'=>$walletPublicId,'pppm_item_id'=>(string)($bridge['pppm_item_id']??''),'source_public_id'=>$walletPublicId,'reward_title'=>(string)$campaign['reward_template_title'],'expires_at'=>$expiresAt]);
+    return ['wallet_item_id'=>$walletPublicId,'wallet_status'=>'issued','already_issued'=>false,'reward_title'=>(string)$campaign['reward_template_title'],'expires_at'=>$expiresAt,'pppm_bridge'=>$bridge];
+"""
+          if "'reward_delivered'" not in text:
+              if marker not in text: raise SystemExit('reward hook marker missing')
+              text=text.replace(marker,replacement,1)
+          participant.write_text(text)
+
+          review=Path('api/merchant/loyalty-quest-reviews.php')
+          ensure_require(review,"require_once dirname(__DIR__) . '/public/loyalty-quest/_reward.php';\n","require_once dirname(__DIR__) . '/communications/_loyalty_quest_notifications.php';")
+          text=review.read_text()
+          reject="""        mg_lqp_event($pdo, $campaign, null, (int)$contact['id'], 'quest.evidence_rejected', ['participation_id'=>(string)$participation['public_id'],'evidence_id'=>$evidenceId,'review_note'=>$note]);
+        mg_audit('merchant.loyalty_quest_evidence_rejected', 'loyalty_quest_evidence', ['evidence_id'=>$evidenceId,'participation_id'=>(string)$participation['public_id']], $merchantId);
+"""
+          reject_new="""        mg_lqp_event($pdo, $campaign, null, (int)$contact['id'], 'quest.evidence_rejected', ['participation_id'=>(string)$participation['public_id'],'evidence_id'=>$evidenceId,'review_note'=>$note]);
+        mg_lqn_notify_participant($pdo, 'evidence_rejected', $campaign, (int)$participant['id'], ['participation_id'=>(string)$participation['public_id'],'evidence_id'=>$evidenceId,'source_public_id'=>$evidenceId,'review_note'=>$note]);
+        mg_audit('merchant.loyalty_quest_evidence_rejected', 'loyalty_quest_evidence', ['evidence_id'=>$evidenceId,'participation_id'=>(string)$participation['public_id']], $merchantId);
+"""
+          if "'evidence_rejected'" not in text:
+              if reject not in text: raise SystemExit('review rejection marker missing')
+              text=text.replace(reject,reject_new,1)
+          approved="""        mg_lqp_event($pdo, $campaign, null, (int)$contact['id'], 'quest.evidence_approved', ['participation_id'=>(string)$participation['public_id'],'evidence_id'=>$evidenceId,'progress_count'=>$newProgress]);
+"""
+          approved_new=approved+"        mg_lqn_notify_participant($pdo, 'evidence_approved', $campaign, (int)$participant['id'], ['participation_id'=>(string)$participation['public_id'],'evidence_id'=>$evidenceId,'source_public_id'=>$evidenceId,'review_note'=>$note,'progress_count'=>$newProgress,'required_count'=>(int)$participation['required_count']]);\n"
+          if "mg_lqn_notify_participant($pdo, 'evidence_approved'" not in text:
+              if approved not in text: raise SystemExit('review approval marker missing')
+              text=text.replace(approved,approved_new,1)
+          review.write_text(text)
+
+          redeem=Path('api/merchant/wallet-redeem.php')
+          ensure_require(redeem,"require_once dirname(__DIR__) . '/microgifts/_engine.php';\n","require_once dirname(__DIR__) . '/communications/_loyalty_quest_notifications.php';")
+          text=redeem.read_text()
+          marker="""    mg_audit('merchant.wallet_redeemed','pppm_item',['pppm_item_id'=>(string)$item['public_id'],'claim_id'=>(string)$claim['public_id'],'location_id'=>(string)$location['public_id']],$merchantId);
+    $pdo->commit();
+"""
+          replacement="""    mg_audit('merchant.wallet_redeemed','pppm_item',['pppm_item_id'=>(string)$item['public_id'],'claim_id'=>(string)$claim['public_id'],'location_id'=>(string)$location['public_id']],$merchantId);
+    $questStmt=$pdo->prepare("SELECT c.*,wi.user_id participant_user_id,wi.public_id wallet_item_public_id,rt.title reward_title FROM wallet_items wi INNER JOIN campaigns c ON c.id=wi.campaign_id AND c.campaign_type='loyalty_quest' LEFT JOIN reward_templates rt ON rt.id=wi.reward_template_id WHERE wi.pppm_item_id=? AND wi.merchant_user_id=? LIMIT 1");
+    $questStmt->execute([(int)$item['id'],$merchantId]);
+    if($questCampaign=$questStmt->fetch(PDO::FETCH_ASSOC)){
+        mg_lqn_notify_participant($pdo,'redemption_receipt',$questCampaign,(int)$questCampaign['participant_user_id'],['pppm_item_id'=>(string)$item['public_id'],'wallet_item_id'=>(string)$questCampaign['wallet_item_public_id'],'source_public_id'=>(string)$claim['public_id'],'reward_title'=>(string)($questCampaign['reward_title']??$item['title_snapshot'])]);
+        mg_lqn_notify_merchant($pdo,'merchant_redemption_receipt',$questCampaign,['pppm_item_id'=>(string)$item['public_id'],'wallet_item_id'=>(string)$questCampaign['wallet_item_public_id'],'source_public_id'=>(string)$claim['public_id'],'reward_title'=>(string)($questCampaign['reward_title']??$item['title_snapshot'])]);
+    }
+    $pdo->commit();
+"""
+          if "'merchant_redemption_receipt'" not in text:
+              if marker not in text: raise SystemExit('redemption hook marker missing')
+              text=text.replace(marker,replacement,1)
+          redeem.write_text(text)
+
+          Path('.github/workflows/patch-loyalty-quest-notification-hooks-once.yml').unlink()
+          PY
+          php -l api/public/loyalty-quest/start.php
+          php -l api/public/loyalty-quest/submit.php
+          php -l api/public/loyalty-quest/_participant.php
+          php -l api/merchant/loyalty-quest-reviews.php
+          php -l api/merchant/wallet-redeem.php
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add api/public/loyalty-quest/start.php api/public/loyalty-quest/submit.php api/public/loyalty-quest/_participant.php api/merchant/loyalty-quest-reviews.php api/merchant/wallet-redeem.php .github/workflows/patch-loyalty-quest-notification-hooks-once.yml
+          git commit -m "Wire Loyalty Quest lifecycle notification delivery"
+          git push origin HEAD:feature/quest-notifications-transactional-delivery-v1-20260711
