@@ -18,10 +18,12 @@
     return name ? 'name:' + name : 'contact:' + String(contact.id || '');
   }
 
+  function timestamp(value) {
+    return Date.parse(String(value || '').replace(' ', 'T')) || 0;
+  }
+
   function latestTimestamp(left, right) {
-    var leftTime = Date.parse(left || '') || 0;
-    var rightTime = Date.parse(right || '') || 0;
-    return rightTime > leftTime ? right : left;
+    return timestamp(right) > timestamp(left) ? right : left;
   }
 
   function resultPriority(value) {
@@ -56,7 +58,13 @@
       if (!group) {
         var latest = Object.assign({}, contact);
         latest.crm_stats = Object.assign({}, contact.crm_stats || {});
-        latest.media_context = Object.assign({}, contact.media_context || {});
+        latest.media_context = Object.assign({}, contact.media_context || {}, {
+          progress_percent: 0,
+          starts: 0,
+          progress_events: 0,
+          issued_events: 0,
+          pppm_handoff: false
+        });
         latest.campaign_ids = [];
         latest.campaign_count = 0;
         sumFields.forEach(function (field) { latest[field] = 0; });
@@ -75,7 +83,6 @@
       latestContact.email_verified = !!latestContact.email_verified || !!contact.email_verified;
       latestContact.no_recent_activity = !!latestContact.no_recent_activity && !!contact.no_recent_activity;
       latestContact.last_activity_at = latestTimestamp(latestContact.last_activity_at, contact.last_activity_at);
-      latestContact.created_at = latestTimestamp(latestContact.created_at, contact.created_at);
       latestContact.updated_at = latestTimestamp(latestContact.updated_at, contact.updated_at);
       latestContact.crm_score = Math.max(number(latestContact.crm_score), number(contact.crm_score));
 
@@ -91,9 +98,9 @@
         number(latestContact.media_context.progress_percent),
         number(media.progress_percent)
       );
-      latestContact.media_context.starts = number(latestContact.media_context.starts) + number(media.starts);
-      latestContact.media_context.progress_events = number(latestContact.media_context.progress_events) + number(media.progress_events);
-      latestContact.media_context.issued_events = number(latestContact.media_context.issued_events) + number(media.issued_events);
+      latestContact.media_context.starts += number(media.starts);
+      latestContact.media_context.progress_events += number(media.progress_events);
+      latestContact.media_context.issued_events += number(media.issued_events);
       latestContact.media_context.pppm_handoff = !!latestContact.media_context.pppm_handoff || !!media.pppm_handoff;
     });
 
