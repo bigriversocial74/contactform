@@ -1,11 +1,9 @@
 <?php
 /**
- * Microgifter World Canvas.
+ * Microgifter World Canvas Runtime v2.
  *
- * Network-level view of live Microgifter activity. The Merchant Store Canvas shows
- * one merchant's in-store sessions; this page shows the aggregate world layer with
- * anonymized avatar activity, public merchant nodes, campaign nodes, and claim/reward
- * movement signals.
+ * MapLibre owns geographic projection, zoom, panning and drag coordinates.
+ * Three.js is loaded by the runtime as the optional gameplay effects layer.
  */
 declare(strict_types=1);
 require_once __DIR__ . '/includes/app.php';
@@ -15,8 +13,14 @@ $page_title = 'World Canvas | Microgifter';
 $page_section = 'agent';
 $header_mode = 'agent';
 $agent_tab = 'world-canvas';
-$page_styles = ['/assets/css/world-canvas.css','/assets/css/world-canvas-attraction.css','/assets/css/world-canvas-identity.css','/assets/css/world-canvas-conversations.css','/assets/css/world-canvas-insights.css','/assets/css/world-canvas-opportunities.css','/assets/css/world-canvas-replay.css','/assets/css/world-canvas-square-map.css','/assets/css/world-canvas-dot-system.css','/assets/css/sponsored-campaign-card.css'];
-$page_scripts = ['/assets/js/world-canvas.js','/assets/js/world-canvas-overlays.js','/assets/js/world-canvas-identity.js','/assets/js/world-canvas-conversations.js','/assets/js/world-canvas-insights.js','/assets/js/world-canvas-opportunities.js','/assets/js/world-canvas-replay.js','/assets/js/world-canvas-square-map.js?v=2.0.0','/assets/js/world-canvas-dot-system.js','/assets/js/sponsored-campaign-card.js'];
+$page_styles = [
+    'https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css',
+    '/assets/css/world-canvas-runtime-v2.css?v=2.0.0',
+];
+$page_scripts = [
+    'https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js',
+    '/assets/js/world-canvas-runtime-v2.js?v=2.0.0',
+];
 $page_manifest = [
     'id' => 'world-canvas',
     'title' => $page_title,
@@ -24,99 +28,119 @@ $page_manifest = [
     'header_mode' => $header_mode,
     'styles' => $page_styles,
     'scripts' => $page_scripts,
-    'body_class' => 'mg-world-canvas-page',
+    'body_class' => 'mg-world-canvas-v2-page',
     'onboarding' => ['enabled' => false, 'page' => 'world-canvas', 'sections' => []],
 ];
 
 require __DIR__ . '/includes/header.php';
 ?>
-<section class="mg-app-shell mg-agent-app mg-world-canvas" data-world-canvas data-world-mode="live">
+<section class="mg-app-shell mg-agent-app mg-world-v2" data-world-canvas-v2 data-world-runtime="2">
   <?php require __DIR__ . '/includes/agent-sidebar.php'; ?>
 
-  <div class="mg-app-workspace mg-world-workspace">
-    <section class="mg-world-shell">
-      <header class="mg-world-topbar" aria-label="World Canvas live metrics">
-        <div class="mg-world-topbar-title">
-          <span class="mg-world-eyebrow">World Canvas</span>
-          <strong>Live avatar-to-avatar network map</strong>
-        </div>
-        <div class="mg-world-header-stats" aria-label="World Canvas summary">
-          <article><span>Live Stores</span><strong data-world-stat="live_stores">0</strong></article>
-          <article><span>Active Avatars</span><strong data-world-stat="active_customers">0</strong></article>
-          <article><span>Geo Anchored</span><strong data-world-stat="geo_anchored_avatars">0</strong></article>
-          <article><span>Campaigns Moving</span><strong data-world-stat="gifts_moving">0</strong></article>
-          <article><span>Claims Today</span><strong data-world-stat="claims_today">0</strong></article>
-          <article><span>Demand Pulse</span><strong data-world-stat="demand_pulse">0</strong></article>
-        </div>
-      </header>
+  <div class="mg-app-workspace mg-world-v2-workspace">
+    <header class="mg-world-v2-header">
+      <div>
+        <span class="mg-world-v2-eyebrow">World Canvas</span>
+        <h1>Live commerce world</h1>
+        <p>Explore as yourself or operate as a registered merchant location.</p>
+      </div>
+      <div class="mg-world-v2-status" data-world-runtime-status>
+        <i></i>
+        <span>Connecting to the world…</span>
+      </div>
+    </header>
 
-      <section class="mg-world-stage" aria-label="Microgifter world activity canvas">
-        <div class="mg-world-stage-head">
-          <div>
-            <span class="mg-world-live-pill" data-world-live-pill>Checking network</span>
-            <p data-world-state>Loading avatar coordinates and live Microgifter activity.</p>
-          </div>
-          <nav class="mg-world-filters" data-world-filters aria-label="World Canvas filters">
-            <button type="button" class="is-active" data-world-filter="all">All</button>
-            <button type="button" data-world-filter="avatar">Avatars</button>
-            <button type="button" data-world-filter="merchant">Merchants</button>
-            <button type="button" data-world-filter="reward">Rewards</button>
-            <button type="button" data-world-filter="claim">Claims</button>
-            <button type="button" data-world-refresh>Refresh</button>
-          </nav>
-        </div>
+    <section class="mg-world-v2-command" aria-label="World Canvas persona and map controls">
+      <div class="mg-world-v2-persona">
+        <label for="mg-world-persona">Active persona</label>
+        <select id="mg-world-persona" data-world-persona-select>
+          <option value="">Loading personas…</option>
+        </select>
+        <span data-world-persona-caption>Choose how you appear in the world.</span>
+      </div>
+      <div class="mg-world-v2-command-actions">
+        <button type="button" data-world-center-persona>Center persona</button>
+        <button type="button" data-world-share-location>Share user location</button>
+        <button type="button" class="is-primary" data-world-dashboard-open>World Dashboard</button>
+      </div>
+      <div class="mg-world-v2-command-metrics" aria-label="Active World Canvas metrics">
+        <article><span>Nearby</span><strong data-world-metric="nearby">0</strong></article>
+        <article><span>Merchants</span><strong data-world-metric="merchants">0</strong></article>
+        <article><span>Users</span><strong data-world-metric="users">0</strong></article>
+        <article><span>Live drops</span><strong data-world-metric="drops">0</strong></article>
+      </div>
+    </section>
 
-        <div class="mg-world-modebar" data-world-modebar aria-label="World Canvas modes">
-          <button type="button" class="is-active" data-world-mode-button="live">Live World</button>
-          <button type="button" data-world-mode-button="geo">Geo Anchors</button>
-          <button type="button" data-world-mode-button="movement">Campaign Movement</button>
-        </div>
+    <section class="mg-world-v2-stage" aria-label="Interactive World Canvas map">
+      <div class="mg-world-v2-map" data-world-maplibre></div>
+      <div class="mg-world-v2-map-topline">
+        <span data-world-map-tier>World view</span>
+        <span data-world-map-coordinates>Move the map to explore</span>
+      </div>
+      <div class="mg-world-v2-legend" aria-label="Map legend">
+        <span class="is-user"><i></i>User</span>
+        <span class="is-merchant"><i></i>Merchant</span>
+        <span class="is-campaign"><i></i>Campaign</span>
+        <span class="is-reward"><i></i>Reward</span>
+        <span class="is-claim"><i></i>Claim</span>
+      </div>
+      <div class="mg-world-v2-quest-card" data-world-quest-card>
+        <span>LOCAL QUEST</span>
+        <strong>Move into a merchant zone</strong>
+        <p>Select a persona, explore nearby activity, and open a marker to interact.</p>
+      </div>
+    </section>
 
-        <div class="mg-world-map" data-world-map>
-          <svg class="mg-world-flow-svg" data-world-flows viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
-          <div class="mg-world-grid-label is-north">User avatars · merchant avatars</div>
-          <div class="mg-world-grid-label is-south">Zoom in to reveal labels</div>
-          <div class="mg-world-node-layer" data-world-nodes></div>
-          <div class="mg-sponsored-map-layer mg-world-sponsored-layer" data-mg-ad-placement="world_canvas_sponsored_pin" data-mg-ad-limit="5" aria-label="Sponsored World Canvas pins"></div>
-          <div class="mg-sponsored-map-layer mg-world-sponsored-layer" data-mg-ad-placement="target_zone_sponsored_drop" data-mg-ad-limit="5" aria-label="Sponsored Campaign Drop Zones"></div>
-          <div class="mg-world-empty-state" data-world-empty>
-            <span>No world avatars yet</span>
-            <p>World Canvas will display user and merchant avatars as stores, campaigns, rewards, and claims become active.</p>
-          </div>
+    <section class="mg-world-v2-bottom-grid">
+      <article class="mg-world-v2-panel">
+        <div class="mg-world-v2-panel-head">
+          <div><span>Nearby world</span><strong>People and places in range</strong></div>
+          <button type="button" data-world-refresh>Refresh</button>
         </div>
-      </section>
-
-      <section class="mg-world-bottom-grid" aria-label="World Canvas activity details">
-        <article class="mg-world-panel">
-          <div class="mg-world-panel-head"><span class="mg-world-eyebrow">Activity</span><strong>Latest network signals</strong></div>
-          <div class="mg-world-event-list" data-world-events>
-            <p>Loading activity...</p>
-          </div>
-        </article>
-        <article class="mg-world-panel">
-          <div class="mg-world-panel-head"><span class="mg-world-eyebrow">Merchant Opportunities</span><strong>Recommended next actions</strong></div>
-          <div class="mg-world-opportunities" data-world-opportunities>
-            <p>Merchant opportunities appear as avatars, claims, campaigns, and conversations form.</p>
-          </div>
-        </article>
-      </section>
+        <div class="mg-world-v2-nearby" data-world-nearby-list>
+          <p>Loading nearby activity…</p>
+        </div>
+      </article>
+      <article class="mg-world-v2-panel">
+        <div class="mg-world-v2-panel-head">
+          <div><span>Network history</span><strong>Recent world signals</strong></div>
+        </div>
+        <div class="mg-world-v2-events" data-world-event-list>
+          <p>Loading activity…</p>
+        </div>
+      </article>
     </section>
   </div>
 
-  <aside class="mg-world-drawer" data-world-drawer aria-hidden="true">
-    <div class="mg-world-drawer-head">
+  <aside class="mg-world-v2-detail" data-world-detail-panel aria-hidden="true">
+    <div class="mg-world-v2-drawer-head">
       <div>
-        <span class="mg-world-eyebrow" data-world-drawer-type>World detail</span>
-        <h2 data-world-drawer-title>Select a dot</h2>
-        <p data-world-drawer-subtitle>Choose a user avatar, merchant avatar, reward, or claim signal from the square canvas.</p>
+        <span data-world-detail-type>World detail</span>
+        <strong data-world-detail-title>Select a marker</strong>
+        <small data-world-detail-subtitle>Open a user, merchant, campaign, reward, or claim.</small>
       </div>
-      <button type="button" data-world-drawer-close aria-label="Close World Canvas detail drawer">×</button>
+      <button type="button" data-world-detail-close aria-label="Close detail panel">×</button>
     </div>
-    <div class="mg-world-drawer-body" data-world-drawer-body>
-      <div class="mg-world-drawer-empty">
-        <strong>World Canvas detail</strong>
-        <p>Dot details open here without shrinking the canvas.</p>
+    <div class="mg-world-v2-drawer-body" data-world-detail-body></div>
+  </aside>
+
+  <aside class="mg-world-v2-dashboard" data-world-dashboard aria-hidden="true">
+    <div class="mg-world-v2-drawer-head">
+      <div>
+        <span>WORLD DASHBOARD</span>
+        <strong>My World</strong>
+        <small>Personas, registered merchant locations, and gameplay settings.</small>
       </div>
+      <button type="button" data-world-dashboard-close aria-label="Close World Dashboard">×</button>
+    </div>
+    <nav class="mg-world-v2-dashboard-tabs" aria-label="World Dashboard sections">
+      <button type="button" class="is-active" data-world-dashboard-tab="overview">Overview</button>
+      <button type="button" data-world-dashboard-tab="nearby">Nearby</button>
+      <button type="button" data-world-dashboard-tab="campaigns">Campaigns</button>
+      <button type="button" data-world-dashboard-tab="locations">Locations</button>
+    </nav>
+    <div class="mg-world-v2-dashboard-body" data-world-dashboard-body>
+      <p>Loading World Dashboard…</p>
     </div>
   </aside>
 </section>
