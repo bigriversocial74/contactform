@@ -43,6 +43,7 @@ jobs:
           php -l world-canvas.php
           php -l merchant-canvas.php
           php -l api/world-canvas/_runtime_v2.php
+          php -l api/world-canvas/_shared_users_v2.php
           php -l api/world-canvas/activity.php
           php -l api/world-canvas/persona.php
           php -l api/world-canvas/location-presence.php
