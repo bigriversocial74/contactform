@@ -1,0 +1,36 @@
+name: Inbox Sidebar and CRM Quest Navigation Validation
+
+on:
+  pull_request:
+    paths:
+      - 'inbox.php'
+      - 'includes/agent-sidebar.php'
+      - 'includes/app-sidebar.php'
+      - 'includes/merchant-workspace.php'
+      - 'scripts/validate_inbox_sidebar_crm_quest_nav_cleanup.php'
+      - '.github/workflows/inbox-sidebar-crm-quest-nav-cleanup-validation.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    strategy:
+      matrix:
+        php: ['8.2', '8.3']
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+      - name: PHP syntax
+        run: |
+          php -l inbox.php
+          php -l includes/agent-sidebar.php
+          php -l includes/app-sidebar.php
+          php -l includes/merchant-workspace.php
+          php -l scripts/validate_inbox_sidebar_crm_quest_nav_cleanup.php
+      - name: Inbox and Merchant CRM navigation contract
+        run: php scripts/validate_inbox_sidebar_crm_quest_nav_cleanup.php

@@ -91,6 +91,15 @@ $appSidebarNav = [
     ],
 ];
 
+if ($agentSidebarActive === 'inbox') {
+    foreach (['feed-following', 'merchant_crm', 'ads-manager'] as $inboxHiddenNavKey) {
+        if (isset($appSidebarNav[$inboxHiddenNavKey])) {
+            $appSidebarNav[$inboxHiddenNavKey]['visible'] = false;
+        }
+    }
+    $appSidebarNav['training-lab'] = ['visible' => false];
+}
+
 require __DIR__ . '/app-sidebar.php';
 
 /* Hidden compatibility markers keep legacy recovery-baseline contracts stable while

@@ -41,6 +41,12 @@ $merchantNav = [
     'settings' => ['Settings','Business configuration','/merchant-settings.php','Manage'],
 ];
 
+if ($merchantView === 'merchant_crm') {
+    foreach (['loyalty_quests', 'quest_creative', 'quest_reviews', 'quest_delivery', 'quest_analytics'] as $questNavKey) {
+        unset($merchantNav[$questNavKey]);
+    }
+}
+
 $appSidebarNav = [];
 if ($canMerchantAccess) {
     foreach ($merchantNav as $key => $item) {
