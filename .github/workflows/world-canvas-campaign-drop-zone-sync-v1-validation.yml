@@ -20,6 +20,8 @@ on:
       - 'assets/css/world-canvas-progressive-zoom.css'
       - 'assets/css/world-canvas-detail-orchestration.css'
       - 'assets/css/world-canvas-icon-zoom-stability.css'
+      - 'assets/css/world-canvas-zoom-interaction-stability.css'
+      - 'assets/css/world-canvas-target-drop-intent.css'
       - 'assets/css/store-world-transition.css'
       - 'assets/js/avatar-anchor-consent.js'
       - 'assets/js/world-canvas-square-map.js'
@@ -28,13 +30,16 @@ on:
       - 'assets/js/world-canvas-detail-orchestration.js'
       - 'assets/js/world-canvas-zone-scale.js'
       - 'assets/js/world-canvas-icon-zoom-stability.js'
+      - 'assets/js/world-canvas-zoom-interaction-stability.js'
       - 'assets/js/world-canvas-target-drops.js'
+      - 'assets/js/world-canvas-target-drop-intent.js'
       - 'assets/js/world-canvas-merchant-settings.js'
       - 'assets/js/store-presence-feed.js'
       - 'assets/js/store-chat-widget.js'
       - 'assets/js/store-world-transition.js'
       - 'scripts/validate_world_canvas_campaign_drop_zone_sync_v1.php'
       - 'scripts/validate_world_canvas_progressive_zoom_v1.php'
+      - 'scripts/validate_world_canvas_zoom_stability_drop_intent_v1.php'
       - '.github/workflows/world-canvas-campaign-drop-zone-sync-v1-validation.yml'
   workflow_dispatch:
 
@@ -76,6 +81,7 @@ jobs:
           php -l api/store/session-status.php
           php -l scripts/validate_world_canvas_campaign_drop_zone_sync_v1.php
           php -l scripts/validate_world_canvas_progressive_zoom_v1.php
+          php -l scripts/validate_world_canvas_zoom_stability_drop_intent_v1.php
 
       - name: JavaScript syntax
         run: |
@@ -86,7 +92,9 @@ jobs:
           node --check assets/js/world-canvas-detail-orchestration.js
           node --check assets/js/world-canvas-zone-scale.js
           node --check assets/js/world-canvas-icon-zoom-stability.js
+          node --check assets/js/world-canvas-zoom-interaction-stability.js
           node --check assets/js/world-canvas-target-drops.js
+          node --check assets/js/world-canvas-target-drop-intent.js
           node --check assets/js/world-canvas-merchant-settings.js
           node --check assets/js/store-presence-feed.js
           node --check assets/js/store-chat-widget.js
@@ -97,6 +105,9 @@ jobs:
 
       - name: Progressive zoom and Store transition contract
         run: php scripts/validate_world_canvas_progressive_zoom_v1.php
+
+      - name: Zoom stability and three-click drop intent contract
+        run: php scripts/validate_world_canvas_zoom_stability_drop_intent_v1.php
 
       - name: Stage 12 campaigns and rewards regression
         run: php scripts/validate_stage12_campaigns_reward_templates.php
