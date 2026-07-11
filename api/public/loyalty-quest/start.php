@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . '/_participant.php';
+require_once dirname(__DIR__, 2) . '/communications/_loyalty_quest_notifications.php';
 
 mg_require_method('POST');
 $user = mg_require_api_user();
@@ -39,6 +40,8 @@ try {
         $participation = $existing->fetch(PDO::FETCH_ASSOC);
         $created = true;
         mg_lqp_event($pdo, $campaign, null, (int)$contact['id'], 'quest.joined', ['participation_id'=>$publicId,'action_type'=>$metadata['action_type'],'verification_type'=>$metadata['verification_type'],'audience'=>$audience]);
+        mg_lqn_notify_participant($pdo, 'participant_joined', $campaign, (int)$user['id'], ['participation_id'=>$publicId,'source_public_id'=>$publicId]);
+        mg_lqn_notify_merchant($pdo, 'merchant_participant_joined', $campaign, ['participation_id'=>$publicId,'source_public_id'=>$publicId]);
         mg_audit('participant.loyalty_quest_joined', 'loyalty_quest_participation', ['campaign_id'=>(string)$campaign['public_id'],'participation_id'=>$publicId], (int)$user['id']);
     } else {
         $contact = mg_lqp_contact($pdo, $campaign, $user);
