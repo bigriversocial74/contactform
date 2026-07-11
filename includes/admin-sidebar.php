@@ -27,6 +27,7 @@ $canModeration = $canAdminPage('admin.moderation');
 $canNotifications = $canAdminPage('admin.notifications');
 $canOperationsCommand = $canAdminPage('admin.operations_command');
 $canLoyaltyQuestOperations = $canAdminPage('admin.loyalty_quests');
+$canLoyaltyQuestIntegrity = $canAdminPage('admin.loyalty_quest_integrity');
 $canPackageModeration = $canCommerce;
 $canStampOperations = $canCommerce;
 $canStampHealth = $canCommerce;
@@ -78,6 +79,12 @@ $adminNav = [
         'detail' => 'Campaign control and recovery',
         'href' => '/admin/loyalty-quests.php',
         'visible' => $canLoyaltyQuestOperations,
+    ],
+    'loyalty-quest-integrity' => [
+        'label' => 'Quest Integrity',
+        'detail' => 'Abuse and fraud signals',
+        'href' => '/admin/loyalty-quest-integrity.php',
+        'visible' => $canLoyaltyQuestIntegrity,
     ],
     'ops-activity' => [
         'label' => 'Ops activity log',
