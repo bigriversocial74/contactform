@@ -192,10 +192,14 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     removeLegacyMobileModalSheet();
-    portalGiftCenterOverlays();
     ensureActionModalCloseButtons();
     watchActionModal();
     document.querySelectorAll('.mg-action-modal').forEach(normalizeActionModal);
+
+    // Page-level Action Center controllers also initialize on DOMContentLoaded.
+    // Portal after that event finishes so they can capture stable modal/drawer
+    // references before the overlays are moved from the app shell to <body>.
+    window.setTimeout(portalGiftCenterOverlays, 0);
   });
 
   document.addEventListener('click', (event) => {
