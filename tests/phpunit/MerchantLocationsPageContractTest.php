@@ -74,24 +74,35 @@ final class MerchantLocationsPageContractTest extends TestCase
         self::assertStringNotContainsString('.mg-locations-layout',$source);
     }
 
-    public function testMerchantLocationReadScopeIncludesLegacyWorkspaceUnlinkedRows(): void
+    public function testMerchantLocationReadAndWriteScopeMatchesProductBuilderOwnership(): void
     {
         $source=file_get_contents($this->root.'/api/merchant/locations.php');
         self::assertIsString($source);
 
         foreach([
-            'WHERE ml.merchant_user_id=?',
-            '$stmt->execute([$merchantId])',
-            'WHERE public_id=? AND merchant_user_id=?',
-            'WHERE merchant_user_id=? AND location_code=? AND public_id<>?',
-            'SET workspace_id=?,name=?,location_code=?',
-            'WHERE id=? AND public_id=? AND merchant_user_id=?',
+            'LEFT JOIN merchant_workspaces scope_mw ON scope_mw.id=ml.workspace_id',
+            'WHERE (ml.merchant_user_id=? OR scope_mw.merchant_user_id=?)',
+            '$stmt->execute([$merchantId,$merchantId])',
+            'AND (ml.merchant_user_id=? OR scope_mw.merchant_user_id=?)',
+            '$existing->execute([$locationId,$merchantId,$merchantId])',
+            'SET workspace_id=?,merchant_user_id=?,name=?,location_code=?',
+            'WHERE merchant_user_id=? OR workspace_id=?',
         ] as $needle){
             self::assertStringContainsString($needle,$source);
         }
 
         self::assertStringNotContainsString('WHERE ml.workspace_id=? AND ml.merchant_user_id=?',$source);
         self::assertStringNotContainsString('WHERE public_id=? AND workspace_id=? AND merchant_user_id=?',$source);
+    }
+
+    public function testClaimCodeStatusUsesOwnedLocationInsteadOfStaleMerchantColumn(): void
+    {
+        $source=file_get_contents($this->root.'/api/merchant/locations.php');
+        self::assertIsString($source);
+
+        self::assertStringContainsString("WHERE mcc.location_id=ml.id",$source);
+        self::assertStringContainsString("WHERE location_id=? AND status='active'",$source);
+        self::assertStringNotContainsString('WHERE mcc.merchant_user_id=ml.merchant_user_id',$source);
     }
 
     public function testLocationEditorScrollControllerNoLongerImplementsTabNavigation(): void
