@@ -1,0 +1,33 @@
+<?php
+declare(strict_types=1);
+
+$root=dirname(__DIR__);
+$read=static fn(string $path):string=>is_file($root.'/'.$path)?(string)file_get_contents($root.'/'.$path):'';
+$files=[
+ 'merchant-loyalty-quest-analytics.php','includes/merchant-loyalty-quest-analytics-view.php','includes/loyalty-quest-analytics.php','includes/loyalty-quest-analytics-accuracy.php',
+ 'api/merchant/loyalty-quest-analytics.php','api/merchant/loyalty-quest-analytics-export.php','assets/css/loyalty-quest-analytics.css','assets/js/loyalty-quest-analytics.js',
+ 'scripts/validate_loyalty_quest_analytics_behavior.php','docs/architecture/loyalty_quest_analytics_reporting_v1.md','.github/workflows/loyalty-quest-analytics-validation.yml',
+];
+$checks=[];foreach($files as $file)$checks[]=['name'=>'file:'.$file,'ok'=>is_file($root.'/'.$file)];
+$page=$read('merchant-loyalty-quest-analytics.php');$view=$read('includes/merchant-loyalty-quest-analytics-view.php');$service=$read('includes/loyalty-quest-analytics.php');$accuracy=$read('includes/loyalty-quest-analytics-accuracy.php');$api=$read('api/merchant/loyalty-quest-analytics.php');$export=$read('api/merchant/loyalty-quest-analytics-export.php');$css=$read('assets/css/loyalty-quest-analytics.css');$js=$read('assets/js/loyalty-quest-analytics.js');$behavior=$read('scripts/validate_loyalty_quest_analytics_behavior.php');$nav=$read('includes/merchant-workspace.php');$router=$read('includes/merchant-view.php');$docs=$read('docs/architecture/loyalty_quest_analytics_reporting_v1.md');
+$checks[]=['name'=>'authenticated merchant report','ok'=>str_contains($api,"mg_merchant_require_permission('merchant.campaigns.view')")&&str_contains($api,'mg_merchant_ensure_workspace')&&str_contains($page,"$merchantView='quest_analytics'")];
+$checks[]=['name'=>'merchant ownership in every aggregate','ok'=>substr_count($service,'merchant_user_id=?')>=7&&substr_count($accuracy,'merchant_user_id=?')>=7&&str_contains($api,'$merchantId')];
+$checks[]=['name'=>'validated report filters','ok'=>str_contains($service,'[7,30,90,180,365]')&&str_contains($service,"preg_match('/^[a-f0-9-]{36}$/',$ref)")&&str_contains($api,'campaign_id')];
+$checks[]=['name'=>'canonical quest funnel','ok'=>str_contains($service,"'Contacts'")&&str_contains($service,"'Participants'")&&str_contains($service,"'Completed'")&&str_contains($service,"'Inbox delivered'")&&str_contains($service,"'Claimed'")&&str_contains($service,"'Redeemed'")];
+$checks[]=['name'=>'actual lifecycle timestamps','ok'=>str_contains($accuracy,'DATE(completed_at)')&&str_contains($accuracy,'DATE(verified_at)')&&str_contains($accuracy,'DATE(issued_at)')&&str_contains($accuracy,'DATE(claimed_at)')&&str_contains($accuracy,'DATE(redeemed_at)')];
+$checks[]=['name'=>'verification quality and privacy threshold','ok'=>str_contains($service,"evidence_type")&&str_contains($service,'$total>=5')&&str_contains($view,'Verification methods')];
+$checks[]=['name'=>'source attribution fallback','ok'=>str_contains($accuracy,"JSON_EXTRACT(lqp.metadata_json,'$.joined_from')")&&str_contains($accuracy,"NULLIF(cc.source,'')")];
+$checks[]=['name'=>'multi-currency integrity','ok'=>str_contains($accuracy,'GROUP BY currency_snapshot')&&str_contains($accuracy,"'mixed_currency'")&&str_contains($accuracy,"unset($report['summary']['issued_value_cents']")&&str_contains($js,'Multiple currencies')];
+$checks[]=['name'=>'delivery outcomes exclude pending','ok'=>str_contains($accuracy,"delivery_success_rate")&&str_contains($accuracy,"delivery_delivered")&&str_contains($accuracy,"delivery_failed")&&str_contains($js,'pending and suppressed jobs are excluded')];
+$checks[]=['name'=>'cycle time metrics','ok'=>str_contains($service,'avg_completion_minutes')&&str_contains($service,'avg_review_minutes')&&str_contains($service,'avg_redemption_minutes')&&str_contains($view,'Time to outcome')];
+$checks[]=['name'=>'privacy-safe export permission','ok'=>str_contains($export,"mg_require_permission('intelligence.exports.create')")&&str_contains($export,"'contains_personal_data'=>false")&&str_contains($export,"currency_values_combined")];
+$checks[]=['name'=>'CSV formula injection guard','ok'=>str_contains($export,"['=','+','-','@']")&&str_contains($export,'mg_lqa_export_cell')&&str_contains($export,'text/csv')];
+$checks[]=['name'=>'export excludes personal evidence','ok'=>!str_contains($export,'participant_user_id')&&!str_contains($export,'proof_url')&&!str_contains($export,'proof_note')&&!str_contains($export,'latitude')&&!str_contains($export,'longitude')&&!str_contains($export,'claim_code')];
+$checks[]=['name'=>'responsive accessible analytics UI','ok'=>str_contains($view,'aria-label="Loyalty Quest report filters"')&&str_contains($view,'aria-live="polite"')&&str_contains($view,'role="img"')&&str_contains($css,':focus-visible')&&str_contains($css,'@media(max-width:820px)')];
+$checks[]=['name'=>'merchant workspace integration','ok'=>str_contains($nav,"'quest_analytics'")&&str_contains($router,'merchant-loyalty-quest-analytics-view.php')&&str_contains($page,'loyalty-quest-analytics.js')];
+$checks[]=['name'=>'database behavior coverage','ok'=>str_contains($behavior,'merchant isolation')&&str_contains($behavior,'actual redemption date')&&str_contains($behavior,'currency separation')&&str_contains($behavior,'geolocation privacy threshold')&&str_contains($behavior,'delivery success excludes pending')&&str_contains($behavior,'no participant PII')];
+$checks[]=['name'=>'no parallel analytics datastore','ok'=>!is_file($root.'/database/loyalty_quest_analytics_reporting_v1.sql')&&!str_contains($service,'CREATE TABLE')&&!str_contains($accuracy,'CREATE TABLE')&&str_contains($docs,'No new SQL migration is required')];
+$checks[]=['name'=>'Inbox remains customer reward surface','ok'=>str_contains($view,'Microgifter Inbox')&&!str_contains($view,'Wallet')&&!str_contains($js,'Wallet')];
+$checks[]=['name'=>'deployment limits documented','ok'=>str_contains($docs,'Browser rendering')&&str_contains($docs,'production-volume query performance')&&str_contains($docs,'Currency handling')&&str_contains($docs,'Privacy contract')];
+$failed=array_values(array_filter($checks,static fn(array $check):bool=>!$check['ok']));$score=max(0,10-count($failed)*.4);
+echo json_encode(['ok'=>$failed===[],'score'=>number_format($score,1).'/10','checks'=>$checks,'failed'=>$failed],JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES).PHP_EOL;exit($failed===[]?0:1);
