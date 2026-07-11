@@ -31,6 +31,7 @@ try {
     $include = $read('includes/gift-action-center.php');
     $feed = $read('assets/js/gift-action-center-feed-v2.js');
     $load = $read('assets/js/gift-envelope-presentation.js');
+    $source = $read('assets/js/gift-source-metadata.js');
     $css = $read('assets/css/gift-action-center-feed-v2.css');
     $center = $read('assets/js/gift-action-center.js');
     $inbox = $read('inbox.php');
@@ -51,11 +52,28 @@ try {
     );
 
     $expect(
-        str_contains($feed, 'is-location')
+        str_contains($feed, 'function upsertBusinessName(row, item)')
+        && str_contains($feed, "business.className = 'mg-gift-business-name'")
+        && str_contains($feed, 'business.textContent = businessNameFor(item)'),
+        'Cards place the business name directly beneath the title row'
+    );
+
+    $expect(
+        str_contains($feed, 'is-sender')
+        && str_contains($feed, 'Sent from ')
         && str_contains($feed, 'is-time')
         && str_contains($feed, 'is-views')
-        && str_contains($feed, 'relativeTime(value)'),
-        'Compact feed keeps location, relative time, and views metadata'
+        && !str_contains($feed, 'is-location'),
+        'Compact card metadata shows sender, relative time, and views instead of participating location'
+    );
+
+    $expect(
+        str_contains($source, "row.querySelectorAll('[data-gift-source-meta]').forEach")
+        && str_contains($source, 'row.dataset.giftSourceLabel')
+        && str_contains($source, 'row.dataset.giftSourceDetail')
+        && str_contains($source, 'row.dataset.giftSourceReference')
+        && !str_contains($source, "span.innerHTML = 'Source: '"),
+        'Source metadata remains available for Load without rendering a Source line in feed cards'
     );
 
     $expect(
@@ -65,7 +83,7 @@ try {
         && !str_contains($css, 'background:#1261e8!important')
         && !str_contains($css, 'background:#2563eb!important')
         && !str_contains($css, 'background:#1d4ed8!important'),
-        'All stacked row actions use the same neutral white treatment'
+        'All row actions use the same neutral white treatment'
     );
 
     $expect(
@@ -83,37 +101,54 @@ try {
         'Canonical Load controller resolves portaled drawer elements from document scope'
     );
 
-    foreach (['Location', 'Activity', 'Views', 'From', 'To', 'Type', 'Status', 'Expires', 'Gift ID', 'Source'] as $field) {
+    foreach (['Business', 'Sent From', 'Sent To', 'Location', 'Activity', 'Views', 'Type', 'Status', 'Expires', 'Gift ID', 'Source', 'Source Detail', 'Source Reference'] as $field) {
         $expect(str_contains($load, "detail('{$field}'"), "Load drawer includes {$field} metadata");
     }
+
+    $expect(
+        str_contains($load, 'function mergeRowMetadata(item, row)')
+        && str_contains($load, 'row.dataset.giftSourceLabel')
+        && str_contains($load, 'row.dataset.giftSourceDetail')
+        && str_contains($load, 'row.dataset.giftSourceReference'),
+        'Load merges source metadata retained on the card without exposing it in the feed'
+    );
 
     $expect(
         str_contains($css, 'grid-template-columns:72px minmax(0,1fr) 118px')
         && str_contains($css, 'border-radius:18px')
         && str_contains($css, 'box-shadow:0 5px 16px'),
-        'Desktop feed uses compact avatar, content, and stacked-action cards'
+        'Desktop feed keeps the approved compact avatar, content, and stacked-action layout'
     );
 
     $expect(
         str_contains($css, '@media(max-width:760px)')
-        && str_contains($css, 'grid-template-columns:repeat(auto-fit,minmax(88px,1fr))')
-        && str_contains($css, '.mg-load-detail-grid{grid-template-columns:1fr}'),
-        'Mobile feed and Load metadata remain responsive'
+        && str_contains($css, '.mg-gift-center-workspace{padding:0!important}')
+        && str_contains($css, '.mg-gift-feed-column{padding:0}')
+        && str_contains($css, 'align-items:start')
+        && str_contains($css, 'grid-template-columns:repeat(auto-fit,minmax(0,1fr))')
+        && str_contains($css, 'font-size:9px')
+        && str_contains($css, 'min-height:32px'),
+        'Mobile feed uses full width, top-aligned imagery, and smaller equal-width buttons'
     );
 
     $expect(
         str_contains($inbox, "require __DIR__ . '/includes/gift-action-center.php'")
         && str_contains($sent, "require __DIR__ . '/includes/gift-action-center.php'")
-        && str_contains($claimed, "require __DIR__ . '/includes/gift-action-center.php'"),
-        'Inbox, Sent, and Claimed share the redesigned feed include'
+        && str_contains($claimed, "require __DIR__ . '/includes/gift-action-center.php'")
+        && str_contains($inbox, '/assets/js/gift-source-metadata.js')
+        && str_contains($sent, '/assets/js/gift-source-metadata.js')
+        && str_contains($claimed, '/assets/js/gift-source-metadata.js'),
+        'Inbox, Sent, and Claimed share the redesigned feed and source metadata controller'
     );
 
     $expect(
         !str_contains($feed, 'Microgifter.post(')
         && !str_contains($load, 'Microgifter.post(')
-        && !str_contains($feed, 'method: \'POST\'')
-        && !str_contains($load, 'method: \'POST\''),
-        'Feed redesign creates no mutation or transaction authority'
+        && !str_contains($source, 'Microgifter.post(')
+        && !str_contains($feed, "method: 'POST'")
+        && !str_contains($load, "method: 'POST'")
+        && !str_contains($source, "method: 'POST'"),
+        'Feed refinement creates no mutation or transaction authority'
     );
 } catch (Throwable $error) {
     $failures[] = $error->getMessage();
