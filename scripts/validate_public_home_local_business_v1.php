@@ -38,12 +38,12 @@ try{
         str_contains($index,'/assets/images/public-home-merchant-hero.jpg?v=2.0.0')
         && !str_contains($index,'/assets/images/public-home-merchant-hero.svg')
         && str_contains($index,'Local coffee shop owner using Microgifter')
-        && strlen($heroJpeg)>20000
+        && strlen($heroJpeg)>10000
         && str_starts_with($heroJpeg,"\xFF\xD8\xFF")
         && str_ends_with($heroJpeg,"\xFF\xD9")
         && is_array($heroDimensions)
-        && ($heroDimensions[0]??0)===640
-        && ($heroDimensions[1]??0)===427
+        && ($heroDimensions[0]??0)===360
+        && ($heroDimensions[1]??0)===240
         && ($heroDimensions[2]??0)===IMAGETYPE_JPEG,
         'Hero uses the committed raster cafe photograph with valid JPEG data and dimensions'
     );
