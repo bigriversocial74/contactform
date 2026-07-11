@@ -24,6 +24,14 @@ The legacy Express Account Link helper remains available for existing integratio
 
 A restricted `rk_` key can still be used by supported payment operations when properly permissioned, but Stripe OAuth token exchange requires the platform standard `sk_` secret key.
 
+## Admin credential persistence
+
+The admin payment settings API writes the selected Test or Live record, reads the exact `payment_platform_credentials` row back inside the same transaction, and verifies every submitted public field, fee, enabled state, and newly submitted decrypted secret before committing. An unverified write is rolled back rather than reported as successful.
+
+After saving, the browser performs another GET read-back and displays the database `updated_at` value plus saved credential hints. Stripe API keys and webhook secrets intentionally remain blank after reload because those inputs are write-only.
+
+The legacy browser mode value is cleared so saved Live credentials cannot appear missing because an old local-storage setting silently reopened Test. The selected mode is preserved in the page URL, and the API reports when server environment variables override database values.
+
 ## Merchant flow
 
 1. Merchant opens `/merchant-payments.php` and enables Stripe payments.
@@ -49,6 +57,8 @@ A restricted `rk_` key can still be used by supported payment operations when pr
 
 ## Staging QA
 
+- Save Live Stripe configuration, reload the page, and confirm the Live database timestamp and masked saved hints remain visible.
+- Verify the secret and webhook password inputs are blank after reload while their saved hints remain present.
 - Verify the Connect button is disabled with clear blockers when platform configuration is incomplete.
 - Verify Test and Live client IDs stay isolated by mode.
 - Connect an existing Stripe account.
