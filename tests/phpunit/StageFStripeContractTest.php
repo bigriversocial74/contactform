@@ -85,6 +85,7 @@ final class StageFStripeContractTest extends TestCase
         $methodsApi=$this->source('api/merchant/payment-methods.php');
         $merchantJs=$this->source('assets/js/merchant-payments.js');
         $connect=$this->source('assets/js/merchant-connect.js');
+        $oauthController=$this->source('assets/js/merchant-stripe-connect.js');
 
         foreach([
             'Payment Methods',
@@ -108,6 +109,7 @@ final class StageFStripeContractTest extends TestCase
             'data-cash-payment-toggle',
             'data-stripe-payment-toggle',
             'data-financial-kpis',
+            'Connect or create Stripe account',
         ] as $needle){
             self::assertStringContainsString($needle,$merchant);
         }
@@ -116,13 +118,17 @@ final class StageFStripeContractTest extends TestCase
         self::assertStringNotContainsString('<aside',$merchant);
         self::assertStringContainsString("'cash' => [",$methodsApi);
         self::assertStringContainsString("'stripe' => [",$methodsApi);
-        self::assertStringContainsString("'mode' => 'pending_onboarding'",$methodsApi);
+        self::assertStringContainsString('mg_payment_connect_status',$methodsApi);
+        self::assertStringContainsString("? 'pending_onboarding' : 'not_connected'",$methodsApi);
         self::assertStringContainsString('stripe_enabled',$methodsApi);
         self::assertStringContainsString('/api/merchant/payment-methods.php',$merchantJs);
         self::assertStringNotContainsString('/assets/js/merchant-connect.js',$merchantPage);
+        self::assertStringContainsString('/assets/js/merchant-stripe-connect.js',$merchantPage);
 
         self::assertStringContainsString('/api/merchant/payment-connect.php',$connect);
         self::assertStringContainsString('/api/merchant/payment-account.php',$connect);
+        self::assertStringContainsString('/api/merchant/payment-connect.php',$oauthController);
+        self::assertStringContainsString('/api/merchant/payment-account.php',$oauthController);
         self::assertStringContainsString('/admin-payments.php',$this->source('includes/admin-sidebar.php'));
     }
 
