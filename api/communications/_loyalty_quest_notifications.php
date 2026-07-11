@@ -159,7 +159,7 @@ function mg_lqn_create_in_app(PDO $pdo, int $recipientUserId, string $eventKey, 
     $stored = mg_delivery_redact($context);
     unset($stored['unsubscribe_url']);
     $contextJson = $stored !== [] ? json_encode($stored, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR) : null;
-    $stmt = $pdo->prepare("INSERT INTO notifications (public_id,user_id,actor_user_id,type,event_key,occurrence_count,title,body,action_url,gift_id,pppm_item_id,thread_id,context_json,created_at,updated_at) VALUES (?,?,NULL,'loyalty_quest',?,1,?,?,?,?,NULL,NULL,?,NOW(),NOW()) ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)");
+    $stmt = $pdo->prepare("INSERT INTO notifications (public_id,user_id,actor_user_id,type,event_key,occurrence_count,title,body,action_url,gift_id,pppm_item_id,thread_id,context_json,created_at,updated_at) VALUES (?,?,NULL,'loyalty_quest',?,1,?,?,?,NULL,?,NULL,?,NOW(),NOW()) ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)");
     $stmt->execute([
         $publicId,
         $recipientUserId,
@@ -259,12 +259,18 @@ function mg_lqn_invite_contact(PDO $pdo, array $campaign, array $contact, array 
                 'merchant_user_id'=>$merchantId,'campaign_id'=>$campaignId,'campaign_public_id'=>(string)($campaign['public_id'] ?? ''),'contact_public_id'=>$contactPublicId,'source_public_id'=>$sourcePublicId,'event_type'=>'quest_invitation',
             ]);
         }
-        if (empty($preference['email_enabled']) || (string)($preference['digest_mode'] ?? 'immediate') === 'off') return $result + ['email'=>['status'=>'skipped','reason'=>'preference_disabled']];
+        if (empty($preference['email_enabled']) || (string)($preference['digest_mode'] ?? 'immediate') === 'off') {
+            $result['email']=['status'=>'skipped','reason'=>'preference_disabled'];
+            return $result;
+        }
         $nextAttempt = mg_notification_delivery_time($preference,'email');
     } else {
         $nextAttempt = gmdate('Y-m-d H:i:s');
     }
-    if (!mg_notification_delivery_channel_available('email')) return $result + ['email'=>['status'=>'skipped','reason'=>'channel_disabled']];
+    if (!mg_notification_delivery_channel_available('email')) {
+        $result['email']=['status'=>'skipped','reason'=>'channel_disabled'];
+        return $result;
+    }
 
     $result['email'] = mg_delivery_enqueue($pdo,[
         'idempotency_key'=>$eventKey . ':email',
