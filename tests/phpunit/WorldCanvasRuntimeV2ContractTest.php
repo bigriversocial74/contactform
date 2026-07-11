@@ -33,7 +33,8 @@ final class WorldCanvasRuntimeV2ContractTest extends TestCase
         $canvas=file_get_contents(dirname(__DIR__,2).'/merchant-canvas.php');
         foreach([$presence,$entry,$status,$canvas] as $source)self::assertIsString($source);
         foreach(["['allow_unattended','temporarily_closed']",'mg_presence_watch','mg_presence_notify_return',"'store_presence'","'merchant_returned'"] as $needle)self::assertStringContainsString($needle,$presence);
-        foreach(['mg_presence_handle_entry','merchant_location_id','merchant_presence'] as $needle)self::assertStringContainsString($needle,$entry);
+        foreach(['mg_presence_entry_status','blocked_closed','entered_unattended','requires_confirmation','merchant_location_id','merchant_presence'] as $needle)self::assertStringContainsString($needle,$entry);
+        self::assertStringContainsString('if (!$requiresConfirmation && !empty($presence[\'merchant_away\'])',$entry);
         self::assertStringContainsString("'temporarily_closed'",$status);
         self::assertStringContainsString('/assets/js/merchant-canvas-presence.js',$canvas);
     }
