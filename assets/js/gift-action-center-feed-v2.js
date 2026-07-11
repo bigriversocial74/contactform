@@ -59,13 +59,14 @@
     const message = row.querySelector('.mg-gift-row-main p');
     const status = row.querySelector('.mg-gift-status');
     const image = row.querySelector('.mg-gift-thumb img');
+    const business = row.querySelector('.mg-gift-business-name');
     return {
       action_item_id: row.dataset.giftId || '',
       folder: activeFolder,
       template_name: title ? title.textContent.trim() : 'Microgift',
       message: message ? message.textContent.trim() : '',
-      merchant_name: image && image.alt ? image.alt.replace(/\s+profile$/i, '') : (original.merchant || original.from || 'Microgifter'),
-      sender_name: original.from || '',
+      merchant_name: row.dataset.feedBusiness || (business ? business.textContent.trim() : '') || (image && image.alt ? image.alt.replace(/\s+profile$/i, '') : (original.merchant || original.from || 'Microgifter')),
+      sender_name: row.dataset.feedSender || original.from || '',
       recipient_name: original.to || '',
       location_name: original.location || 'Participating location',
       product_type: original.type || 'Microgift',
@@ -73,9 +74,13 @@
       face_value_label: original.value || '',
       expires_at: original.expires || '',
       activity_label: original.received || original.sent || original.claimed || 'Recently',
-      view_count: 0,
+      view_count: Number(row.dataset.feedViews || 0),
       instance_id: original['gift id'] || '',
-      avatar_url: image ? image.getAttribute('src') || '' : ''
+      avatar_url: image ? image.getAttribute('src') || '' : '',
+      source_system: row.dataset.giftSourceSystem || '',
+      source_label: row.dataset.giftSourceLabel || '',
+      source_detail: row.dataset.giftSourceDetail || '',
+      source_reference: row.dataset.giftSourceReference || ''
     };
   }
 
@@ -84,6 +89,7 @@
     normalized.folder = normalized.folder || folder;
     normalized.template_name = normalized.template_name || normalized.title || 'Microgift';
     normalized.merchant_name = normalized.merchant_name || normalized.sender_name || 'Microgifter';
+    normalized.sender_name = normalized.sender_name || normalized.merchant_name || 'Microgifter';
     normalized.location_name = normalized.location_name || 'Participating location';
     normalized.product_type = normalized.product_type || normalized.source_detail || normalized.source_label || 'Microgift';
     normalized.view_count = Math.max(0, Number(normalized.view_count || normalized.views || normalized.open_count || 0));
@@ -129,7 +135,7 @@
 
   function icon(type) {
     const paths = {
-      location: '<path d="M12 21s6-5.1 6-11a6 6 0 1 0-12 0c0 5.9 6 11 6 11Z"/><circle cx="12" cy="10" r="2"/>',
+      sender: '<circle cx="12" cy="8" r="3"/><path d="M5.5 20c.8-4 3-6 6.5-6s5.7 2 6.5 6"/>',
       time: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
       views: '<path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/>'
     };
@@ -141,6 +147,27 @@
     if (type && !/^pppm gift$/i.test(type)) return type;
     const state = String(item.state || folder || 'Microgift').replace(/[_-]+/g, ' ').trim();
     return state || 'Microgift';
+  }
+
+  function businessNameFor(item) {
+    return String(item.merchant_name || item.business_name || item.sender_name || 'Microgifter').trim() || 'Microgifter';
+  }
+
+  function senderNameFor(item) {
+    return String(item.sender_name || item.merchant_name || 'Microgifter').trim() || 'Microgifter';
+  }
+
+  function upsertBusinessName(row, item) {
+    const main = row.querySelector('.mg-gift-row-main');
+    const top = main && main.querySelector('.mg-gift-row-top');
+    if (!main || !top) return;
+    let business = main.querySelector('.mg-gift-business-name');
+    if (!business) {
+      business = document.createElement('span');
+      business.className = 'mg-gift-business-name';
+      top.insertAdjacentElement('afterend', business);
+    }
+    business.textContent = businessNameFor(item);
   }
 
   function applyRow(row) {
@@ -156,11 +183,16 @@
     const actions = row.querySelector('.mg-gift-row-actions');
     if (!meta || !actions) return;
 
+    row.querySelectorAll('[data-gift-source-meta]').forEach((node) => node.remove());
+    upsertBusinessName(row, item);
+
     const timestamp = timestampFor(item, folder);
     const activity = timestamp ? relativeTime(timestamp) : (item.activity_label || 'Recently');
     const views = Math.max(0, Number(item.view_count || 0));
+    const sender = senderNameFor(item);
+    const business = businessNameFor(item);
     meta.innerHTML =
-      '<span class="mg-feed-meta-item is-location">' + icon('location') + '<span>' + esc(item.location_name || 'Participating location') + '</span></span>' +
+      '<span class="mg-feed-meta-item is-sender">' + icon('sender') + '<span>Sent from ' + esc(sender) + '</span></span>' +
       '<span class="mg-feed-meta-item is-time">' + icon('time') + '<span>' + esc(activity) + '</span></span>' +
       '<span class="mg-feed-meta-item is-views">' + icon('views') + '<span>' + esc(String(views)) + '</span></span>';
 
@@ -177,9 +209,15 @@
     row.classList.add('mg-gift-row-v2');
     row.dataset.feedV2 = 'true';
     row.dataset.feedFolder = folder;
+    row.dataset.feedBusiness = business;
+    row.dataset.feedSender = sender;
     row.dataset.feedLocation = item.location_name || '';
     row.dataset.feedViews = String(views);
     row.dataset.feedActivity = timestamp || item.activity_label || '';
+    if (!row.dataset.giftSourceSystem && item.source_system) row.dataset.giftSourceSystem = String(item.source_system);
+    if (!row.dataset.giftSourceLabel && item.source_label) row.dataset.giftSourceLabel = String(item.source_label);
+    if (!row.dataset.giftSourceDetail && item.source_detail) row.dataset.giftSourceDetail = String(item.source_detail);
+    if (!row.dataset.giftSourceReference && item.source_reference) row.dataset.giftSourceReference = String(item.source_reference);
   }
 
   function applyAll() {
