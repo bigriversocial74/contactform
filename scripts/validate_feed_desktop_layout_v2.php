@@ -6,7 +6,7 @@ $feed = file_get_contents($root . '/feed.php') ?: '';
 $layout = file_get_contents($root . '/assets/css/feed-centered-layout.css') ?: '';
 
 $checks = [
-    'feed page keeps canonical layout stylesheet last' => str_contains($feed, "'/assets/css/feed-online-chat.css',\n    '/assets/css/feed-centered-layout.css?v=2.0.0',"),
+    'feed page keeps canonical layout stylesheet last' => str_contains($feed, "'/assets/css/feed-online-chat.css',\n    '/assets/css/feed-centered-layout.css?v=2.1.0',"),
     'feed page does not duplicate app-loaded base feed css' => !str_contains($feed, "'/assets/css/social-feed.css'")
         && !str_contains($feed, "'/assets/css/social-feed-upload.css'"),
     'feed page does not duplicate footer-loaded presence css' => !str_contains($feed, "'/assets/css/store-presence-feed.css'"),
@@ -17,18 +17,23 @@ $checks = [
     'desktop feed uses symmetric three-column centering' => str_contains($layout, 'grid-template-columns:minmax(0,1fr) minmax(0,var(--mg-feed-width)) minmax(260px,1fr)!important')
         && str_contains($layout, 'grid-column:2!important')
         && str_contains($layout, 'justify-self:center!important'),
+    'desktop grid spans the full browser viewport around the fixed sidebar' => str_contains($layout, '@media(min-width:981px)')
+        && str_contains($layout, 'width:calc(100% + var(--mg-app-sidebar,280px))!important')
+        && str_contains($layout, 'margin-left:calc(-1 * var(--mg-app-sidebar,280px))!important'),
     'sponsored rail occupies right column without shifting feed' => str_contains($layout, 'grid-column:3!important')
         && str_contains($layout, 'max-width:var(--mg-feed-right-rail)!important')
         && str_contains($layout, 'justify-self:start!important'),
-    'tablet fallback centers one-column feed' => str_contains($layout, '@media(max-width:1320px)')
+    'tablet fallback centers the feed in the full viewport' => str_contains($layout, '@media(max-width:1320px)')
         && str_contains($layout, 'width:min(var(--mg-feed-width),calc(100% - 32px))!important')
+        && str_contains($layout, 'justify-self:center!important')
         && str_contains($layout, 'grid-template-columns:minmax(0,1fr)!important'),
     'empty story status no longer adds vertical space' => str_contains($layout, '.mg-feed-stories-header:has(.mg-stories-status:empty)')
         && str_contains($layout, '.mg-stories-status:empty')
         && str_contains($layout, 'display:none!important'),
     'legacy feed transform is neutralized' => str_contains($layout, 'transform:none!important')
         && !str_contains($layout, 'translateX(calc('),
-    'mobile feed remains full width' => str_contains($layout, '@media(max-width:640px)')
+    'mobile feed remains full width with a 58px app header' => str_contains($layout, '@media(max-width:640px)')
+        && str_contains($layout, '--mg-app-header:58px')
         && str_contains($layout, 'width:100%!important')
         && str_contains($layout, 'padding:0 0 28px!important'),
     'feed functionality and story surfaces remain present' => str_contains($feed, 'data-social-feed')
@@ -53,4 +58,4 @@ if ($failed !== []) {
     exit(1);
 }
 
-echo "Feed desktop layout v2 contract passed at 10.0/10.\n";
+echo "Feed desktop layout v2.1 contract passed at 10.0/10.\n";
