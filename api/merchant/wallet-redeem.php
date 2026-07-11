@@ -5,6 +5,7 @@ require_once __DIR__ . '/_merchant.php';
 require_once dirname(__DIR__) . '/rewards/_identity_gate.php';
 require_once dirname(__DIR__) . '/rewards/_wallet_lifecycle_automation.php';
 require_once dirname(__DIR__) . '/ads/_direct_attribution.php';
+require_once dirname(__DIR__) . '/communications/_loyalty_quest_notifications.php';
 
 function mg_wr_uuid(): string
 {
@@ -88,6 +89,22 @@ try {
     $walletAfter['metadata_json'] = $metadataJson;
     $automation = mg_wallet_lifecycle_automation($pdo, $item, 'wallet_item.redeemed', $claimantUserId, [], ['location_code' => $locationCode !== '' ? $locationCode : null]);
     mg_wr_event($pdo, $walletAfter, 'wallet_item.redeemed', ['location_code' => $locationCode !== '' ? $locationCode : null, 'lifecycle_automation' => $automation, 'ad_attribution' => $adAttribution ?: null]);
+
+    if (!empty($item['campaign_id'])) {
+        $questStmt = $pdo->prepare("SELECT c.*,rt.title reward_title FROM campaigns c LEFT JOIN reward_templates rt ON rt.id=c.reward_template_id WHERE c.id=? AND c.merchant_user_id=? AND c.campaign_type='loyalty_quest' LIMIT 1");
+        $questStmt->execute([(int)$item['campaign_id'],$merchantId]);
+        if ($questCampaign = $questStmt->fetch(PDO::FETCH_ASSOC)) {
+            $context = [
+                'wallet_item_id'=>$walletId,
+                'pppm_item_id'=>(string)($item['pppm_item_id'] ?? ''),
+                'source_public_id'=>$walletId . '-redeemed',
+                'reward_title'=>(string)($questCampaign['reward_title'] ?? $item['title_snapshot'] ?? 'Microgifter reward'),
+            ];
+            mg_lqn_notify_participant($pdo,'redemption_receipt',$questCampaign,$claimantUserId,$context);
+            mg_lqn_notify_merchant($pdo,'merchant_redemption_receipt',$questCampaign,$context);
+        }
+    }
+
     $pdo->commit();
     mg_ads_track_direct_wallet_event($pdo, 'redeem', $walletAfter, ['ad_attribution' => $adAttribution], ['id' => $claimantUserId], ['already_redeemed' => false, 'location_code' => $locationCode !== '' ? $locationCode : null]);
     mg_ok(['wallet_item_id' => $walletId, 'wallet_status' => 'redeemed', 'already_redeemed' => false, 'lifecycle_automation' => $automation], 'Wallet item redeemed.');
