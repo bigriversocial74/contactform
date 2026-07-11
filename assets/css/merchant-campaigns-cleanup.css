@@ -1,0 +1,117 @@
+/* Merchant Campaigns focused workspace */
+[data-campaign-command-center]{
+  width:100%;
+  max-width:none;
+  min-width:0;
+}
+[data-campaign-command-center] .mg-campaign-toolbar,
+[data-campaign-command-center] .mg-campaign-tab-panels,
+[data-campaign-command-center] .mg-campaign-tab-panel,
+[data-campaign-command-center] .mg-campaign-layout,
+[data-campaign-command-center] .mg-campaign-list-panel{
+  width:100%;
+  max-width:none;
+  min-width:0;
+}
+[data-campaign-command-center] .mg-campaign-layout{
+  grid-template-columns:minmax(0,1fr)!important;
+}
+[data-campaign-command-center] .mg-campaign-list-panel{
+  grid-column:1/-1;
+}
+[data-campaign-command-center] .mg-campaign-side,
+[data-campaign-command-center] .mg-app-panel:has([data-agent-action-list]),
+[data-campaign-command-center] .mg-app-panel:has([data-campaign-insights-list]),
+[data-campaign-command-center] .mg-app-panel:has([data-media-performance-list]),
+[data-campaign-command-center] [data-customer-refund-creator-prompt],
+[data-campaign-command-center] [data-campaign-embed-analytics-shortcut]{
+  display:none!important;
+}
+[data-campaign-command-center] .mg-campaign-tabs{
+  gap:22px;
+}
+[data-campaign-command-center] .mg-campaign-analytics-shell{
+  display:grid;
+  gap:16px;
+  min-width:0;
+}
+[data-campaign-command-center] .mg-campaign-analytics-shell[hidden]{
+  display:none!important;
+}
+[data-campaign-command-center] .mg-campaign-analytics-head{
+  display:flex;
+  justify-content:space-between;
+  gap:18px;
+  padding:22px 24px;
+  border:1px solid #dbe4ef;
+  border-radius:18px;
+  background:#fff;
+  box-shadow:0 10px 28px rgba(26,53,91,.045);
+}
+[data-campaign-command-center] .mg-campaign-analytics-head h2{
+  margin:4px 0 7px;
+  color:#071225;
+  font-size:22px;
+  letter-spacing:-.035em;
+}
+[data-campaign-command-center] .mg-campaign-analytics-head p{
+  margin:0;
+  max-width:760px;
+  color:#586b89;
+  font-size:13px;
+  line-height:1.55;
+}
+[data-campaign-command-center] .mg-campaign-analytics-tabs{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  overflow-x:auto;
+  padding:7px;
+  border:1px solid #dbe4ef;
+  border-radius:16px;
+  background:#fff;
+  box-shadow:0 10px 28px rgba(26,53,91,.04);
+}
+[data-campaign-command-center] .mg-campaign-analytics-tabs a{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:38px;
+  padding:0 14px;
+  border-radius:11px;
+  color:#475569;
+  text-decoration:none;
+  font-size:12px;
+  font-weight:900;
+  white-space:nowrap;
+}
+[data-campaign-command-center] .mg-campaign-analytics-tabs a:hover{
+  background:#f3f7fd;
+  color:#174fb8;
+}
+[data-campaign-command-center] .mg-campaign-analytics-tabs a.is-active,
+[data-campaign-command-center] .mg-campaign-analytics-tabs a[aria-current="page"]{
+  background:#eaf2ff;
+  color:#0b5cff;
+}
+[data-campaign-command-center] .mg-campaign-analytics-content{
+  display:grid;
+  gap:16px;
+  min-width:0;
+}
+[data-campaign-command-center] .mg-campaign-analytics-content > .mg-campaign-tab-panel{
+  width:100%;
+  min-width:0;
+}
+[data-campaign-command-center] .mg-campaign-analytics-content > .mg-campaign-tab-panel.is-active:not([hidden]){
+  display:grid;
+}
+@media(max-width:760px){
+  [data-campaign-command-center] .mg-campaign-analytics-head{
+    display:block;
+    padding:18px;
+  }
+  [data-campaign-command-center] .mg-campaign-analytics-tabs{
+    width:100%;
+  }
+}
