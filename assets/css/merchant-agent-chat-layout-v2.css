@@ -1,8 +1,10 @@
-/* Merchant Agent Chat layout v2.
-   Owns the viewport, conversation, composer, app sidebar, and agent-controls drawer layout.
-   Feature-specific chat, voice, skill, memory, and card styling remains in the existing component files. */
+/* Merchant Agent Chat layout v2.1.
+   This is the single layout owner for the app shell, conversation viewport,
+   sticky composer, and compact agent-controls drawer. Feature styling remains
+   in the existing chat, voice, skill, memory, and card component files. */
 
 .mg-agent-chat-layout-v2{
+  --mg-app-header:58px;
   --mg-agent-chat-gap:14px;
   --mg-agent-chat-rail:340px;
   min-height:100svh!important;
@@ -59,7 +61,7 @@
   display:grid!important;
   grid-template-rows:minmax(0,1fr) auto auto!important;
   gap:0!important;
-  overflow:visible!important;
+  overflow:hidden!important;
 }
 
 .mg-agent-chat-layout-v2 .mg-agent-chat-main{
@@ -69,7 +71,8 @@
   height:auto!important;
   margin:0!important;
   padding:0!important;
-  display:block!important;
+  display:grid!important;
+  grid-template-rows:minmax(0,1fr)!important;
   overflow:hidden!important;
   border:1px solid #d7e2ef!important;
   border-radius:22px!important;
@@ -90,6 +93,10 @@
   overscroll-behavior:contain!important;
   -webkit-overflow-scrolling:touch!important;
   background:radial-gradient(circle at 20% 0%,rgba(37,99,235,.08),transparent 32%),linear-gradient(180deg,#fff,#f8fbff 66%,#f8fafc)!important;
+}
+
+.mg-agent-chat-layout-v2 .mg-agent-chat-prompts{
+  display:none!important;
 }
 
 .mg-agent-chat-layout-v2 .mg-agent-chat-main-stack>.mg-form-status{
@@ -117,14 +124,16 @@
 }
 
 .mg-agent-chat-layout-v2 .mg-agent-chat-composer-shell{
-  position:relative!important;
-  inset:auto!important;
-  bottom:auto!important;
+  position:sticky!important;
+  top:auto!important;
+  right:auto!important;
+  bottom:0!important;
+  left:auto!important;
   z-index:40!important;
   box-sizing:border-box!important;
   width:100%!important;
   max-width:none!important;
-  margin:10px 0 0!important;
+  margin:8px 0 0!important;
   padding:10px!important;
   display:grid!important;
   grid-template-columns:42px minmax(0,1fr) 42px 42px!important;
@@ -219,10 +228,7 @@
   height:0!important;
 }
 
-.mg-agent-chat-layout-v2 .mg-agent-drawer-head{
-  display:none!important;
-}
-
+.mg-agent-chat-layout-v2 .mg-agent-drawer-head,
 .mg-agent-chat-layout-v2 .mg-agent-chat-drawer-backdrop{
   display:none!important;
 }
@@ -242,7 +248,7 @@ body.mg-agent-chat-drawer-open{
   .mg-agent-chat-layout-v2 .mg-merchant-main{
     height:calc(100dvh - var(--mg-app-header))!important;
     min-height:0!important;
-    padding:8px!important;
+    padding:0 8px 8px!important;
     overflow:hidden!important;
   }
 
@@ -251,7 +257,7 @@ body.mg-agent-chat-drawer-open{
     min-height:0!important;
     display:grid!important;
     grid-template-rows:auto minmax(0,1fr)!important;
-    gap:8px!important;
+    gap:6px!important;
   }
 
   .mg-agent-chat-mobile-controls{
@@ -264,7 +270,7 @@ body.mg-agent-chat-drawer-open{
     justify-content:space-between!important;
     gap:10px!important;
     border:1px solid #d7e2ef!important;
-    border-radius:15px!important;
+    border-radius:0 0 15px 15px!important;
     background:rgba(255,255,255,.98)!important;
     box-shadow:0 10px 26px rgba(15,23,42,.07)!important;
   }
@@ -328,12 +334,16 @@ body.mg-agent-chat-drawer-open{
     height:100%!important;
     min-height:0!important;
     grid-template-rows:minmax(0,1fr) auto auto!important;
+    overflow:hidden!important;
   }
 
   .mg-agent-chat-layout-v2 .mg-agent-chat-main{
     min-height:0!important;
     height:auto!important;
+    display:grid!important;
+    grid-template-rows:minmax(0,1fr)!important;
     border-radius:18px!important;
+    overflow:hidden!important;
   }
 
   .mg-agent-chat-layout-v2 .mg-agent-chat-feed{
@@ -341,6 +351,7 @@ body.mg-agent-chat-drawer-open{
     min-height:0!important;
     max-height:none!important;
     padding:14px 11px!important;
+    overflow-x:hidden!important;
     overflow-y:auto!important;
   }
 
@@ -351,12 +362,14 @@ body.mg-agent-chat-drawer-open{
   }
 
   .mg-agent-chat-layout-v2 .mg-agent-chat-composer-shell{
-    position:relative!important;
-    inset:auto!important;
-    bottom:auto!important;
+    position:sticky!important;
+    top:auto!important;
+    right:auto!important;
+    bottom:0!important;
+    left:auto!important;
     grid-template-columns:40px minmax(0,1fr) 40px 40px!important;
     gap:7px!important;
-    margin:8px 0 0!important;
+    margin:6px 0 0!important;
     padding:8px max(8px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))!important;
     border-radius:16px!important;
   }
@@ -384,7 +397,6 @@ body.mg-agent-chat-drawer-open{
   }
 
   .mg-agent-chat-layout-v2 .mg-agent-context-menu{
-    position:absolute!important;
     left:0!important;
     bottom:48px!important;
     width:min(260px,calc(100vw - 24px))!important;
@@ -479,11 +491,11 @@ body.mg-agent-chat-drawer-open{
 
 @media(max-width:430px){
   .mg-agent-chat-layout-v2 .mg-merchant-main{
-    padding:5px!important;
+    padding:0 5px 5px!important;
   }
 
   .mg-agent-chat-mobile-controls{
-    border-radius:13px!important;
+    border-radius:0 0 13px 13px!important;
   }
 
   .mg-agent-chat-mobile-controls [data-agent-chat-summary-mobile]{
