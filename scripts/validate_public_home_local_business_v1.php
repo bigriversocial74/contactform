@@ -23,6 +23,7 @@ try{
     $index=$read('index.php');
     $css=$read('assets/css/homepage-local-business-v1.css');
     $header=$read('includes/header-components/public-header.php');
+    $heroSvg=$read('assets/images/public-home-merchant-hero.svg');
 
     $expect(
         str_contains($index,"'/assets/css/homepage-local-business-v1.css?v=1.0.0'")
@@ -32,10 +33,13 @@ try{
     );
 
     $expect(
-        is_file($root.'/assets/images/public-home-merchant-hero.jpg')
-        && str_contains($index,'/assets/images/public-home-merchant-hero.jpg')
-        && str_contains($index,'Local coffee shop owner using Microgifter'),
-        'Hero uses the committed local-business merchant visual with accessible alt text'
+        str_contains($index,'/assets/images/public-home-merchant-hero.svg?v=1.0.0')
+        && !str_contains($index,'/assets/images/public-home-merchant-hero.jpg')
+        && str_contains($index,'Local coffee shop owner using Microgifter')
+        && str_starts_with(ltrim($heroSvg),'<svg')
+        && str_contains($heroSvg,'viewBox="0 0 1600 1100"')
+        && str_contains($heroSvg,'Local merchant using Microgifter in a neighborhood cafe'),
+        'Hero uses a valid committed merchant illustration with accessible text'
     );
 
     $expect(
