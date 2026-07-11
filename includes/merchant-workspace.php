@@ -19,6 +19,7 @@ $merchantNav = [
     'quest_creative' => ['Quest Creative','Artwork, QR, downloads, and embeds','/merchant-loyalty-quest-creative.php','Engage'],
     'quest_reviews' => ['Quest Reviews','Approve participant evidence','/merchant-quest-reviews.php','Engage'],
     'quest_delivery' => ['Quest Delivery','Invitations, delivery history, and retries','/merchant-loyalty-quest-delivery.php','Engage'],
+    'quest_analytics' => ['Quest Analytics','Funnels, conversion, speed, and exports','/merchant-loyalty-quest-analytics.php','Insights'],
     'campaign_embed_leads' => ['Embed Leads','Website embed contacts','/merchant-campaign-embed-leads.php','Engage'],
     'campaign_embed_analytics' => ['Embed Analytics','Website embed performance','/merchant-campaign-embed-analytics.php','Engage'],
     'merchant_crm' => ['Merchant CRM','Customers and campaign history','/merchant-crm.php','Engage'],
@@ -79,7 +80,7 @@ $appSidebarCompact = true;
           <div>
             <span class="mg-eyebrow">Package access</span>
             <h2>Merchant workspace is not active.</h2>
-            <p>Your free account includes the gift inbox, sent gifts, claimed gifts, wallet, feed, and social gifting. Upgrade to Starter, Growth, or Pro to unlock merchant campaigns, rewards, products, locations, and CRM tools.</p>
+            <p>Your free account includes the gift Inbox, sent gifts, claimed gifts, feed, and social gifting. Upgrade to Starter, Growth, or Pro to unlock merchant campaigns, rewards, products, locations, and CRM tools.</p>
           </div>
         </div>
         <div class="mg-app-panel-body">
