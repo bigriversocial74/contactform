@@ -26,20 +26,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  function installHeaderShortcut() {
-    if (root.querySelector('[data-campaign-embed-analytics-shortcut]')) return;
-    var target = root.querySelector('.mg-panel-head .mg-action-row') || root.querySelector('.mg-action-row') || root.querySelector('.mg-panel-head') || root.firstElementChild;
-    if (!target) return;
-    var link = document.createElement('a');
-    link.className = 'mg-btn mg-btn-soft';
-    link.href = analyticsUrl('');
-    link.setAttribute('data-campaign-embed-analytics-shortcut', '1');
-    link.textContent = 'Embed Analytics';
-    target.appendChild(link);
-  }
-
-  installHeaderShortcut();
   installRowButtons();
-  var observer = new MutationObserver(function () { installHeaderShortcut(); installRowButtons(); });
+  var observer = new MutationObserver(installRowButtons);
   observer.observe(root, { childList: true, subtree: true });
 });
