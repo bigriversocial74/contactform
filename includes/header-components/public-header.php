@@ -5,7 +5,6 @@ require_once dirname(__DIR__) . '/market/public-market-ticker.php';
 
 $public_header_config = is_array($page_manifest['public_header'] ?? null) ? $page_manifest['public_header'] : [];
 $public_nav_links = is_array($public_header_config['links'] ?? null) ? $public_header_config['links'] : [];
-$public_demo_href = '/learn-more.php';
 $public_phone_number = '(480) 269-7433';
 $public_phone_href = 'tel:14802697433';
 $public_brand_equation = '';
@@ -23,7 +22,6 @@ $filtered_links = [];
 foreach ($public_nav_links as $public_header_link) {
     $label = trim((string) ($public_header_link['label'] ?? ''));
     if (strcasecmp($label, 'Book A Demo') === 0 || strcasecmp($label, 'Book Demo') === 0) {
-        $public_demo_href = (string) ($public_header_link['href'] ?? $public_demo_href);
         continue;
     }
 
@@ -62,7 +60,6 @@ if (!$market_ticker_items && !$user) {
 }
 
 $show_market_ticker = false; // Temporarily hidden; ticker logic and markup stay in place.
-$show_demo_button = !$user;
 ?>
 <?php if (!$user): ?><link rel="stylesheet" href="/assets/css/public-logged-out-header-unified.css"><?php endif; ?>
 <header class="mg-site-header mg-unified-header mg-market-universal-header" data-mg-universal-header data-public-header data-header-theme="market-dark" data-header-variant="<?= $user ? 'logged-in' : 'logged-out' ?>">
@@ -113,7 +110,6 @@ $show_demo_button = !$user;
             <?php endforeach; ?>
           </nav>
         <?php endif; ?>
-        <?php if ($show_demo_button): ?><a class="mg-public-demo" href="<?= mg_e($public_demo_href) ?>">Book A Demo</a><?php endif; ?>
         <div class="mg-account-menu" data-mg-auth-menu>
           <button class="mg-account-trigger" type="button" data-mg-auth-trigger aria-expanded="false">
             <span class="mg-avatar">A</span>
@@ -203,7 +199,6 @@ $show_demo_button = !$user;
       <?php foreach ($public_nav_links as $public_header_link): ?>
         <a href="<?= mg_e((string) ($public_header_link['href'] ?? '#')) ?>"><?= mg_e((string) ($public_header_link['label'] ?? 'Learn More')) ?></a>
       <?php endforeach; ?>
-      <a href="<?= mg_e($public_demo_href) ?>">Book A Demo</a>
     </nav>
     <div class="mg-public-mobile-auth">
       <a href="/signin.php">Sign In</a>

@@ -21,7 +21,9 @@ final class PublicHeaderRoutesTest extends TestCase
         self::assertStringNotContainsString('/corporate-gifting.php',$source);
         self::assertStringContainsString('/retail.php',$source);
         self::assertStringContainsString('/locations.php',$source);
-        self::assertStringContainsString('Book A Demo',$source);
+        self::assertStringNotContainsString('class="mg-public-demo"',$source);
+        self::assertStringNotContainsString('$show_demo_button',$source);
+        self::assertStringNotContainsString('$public_demo_href',$source);
         self::assertStringContainsString('Search Microgifter',$source);
     }
 
