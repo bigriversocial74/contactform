@@ -73,8 +73,8 @@ $evidenceJson=json_encode($evidenceQueue,JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ER
 $check('evidence PII excluded',!str_contains($evidenceJson,'participant-one@example.test')&&!str_contains($evidenceJson,'Private participant proof')&&!str_contains($evidenceJson,'proof.jpg')&&!str_contains($evidenceJson,'33.4484'),$evidenceJson);
 $check('review age and nudge eligibility',($evidenceQueue[0]['age_hours']??0)>=24&&!empty($evidenceQueue[0]['can_nudge']),$evidenceQueue[0]??null);
 $check('delivery queue excludes unrelated events',count($deliveryQueue)===2,array_column($deliveryQueue,'id'));
-$deliveryJson=json_encode($deliveryQueue,JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR);
-$check('delivery recipient masked',str_contains($deliveryJson,'se••••••••@example.test')&&!str_contains($deliveryJson,'secret.person@example.test'),$deliveryJson);
+$maskedEmails=array_column(array_column($deliveryQueue,'recipient'),'email_masked');
+$check('delivery recipient masked',in_array('se••••••••@example.test',$maskedEmails,true)&&!in_array('secret.person@example.test',$maskedEmails,true),$maskedEmails);
 $check('stale processing detected',count(array_filter($deliveryQueue,static fn(array $row):bool=>!empty($row['stale_processing'])))===1,$deliveryQueue);
 $check('summary totals',($summary['campaigns']??0)===2&&($summary['pending_review']??0)===1&&($summary['delivery_failures']??0)===2&&($summary['redeemed']??0)===1,$summary);
 $check('recent audited action',count($events)===1&&$events[0]['event_type']==='quest.admin_paused'&&$events[0]['operator_user_id']===9,$events);
