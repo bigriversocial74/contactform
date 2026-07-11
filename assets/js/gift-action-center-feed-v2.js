@@ -109,8 +109,9 @@
           const json = await response.json();
           payload = json && json.data ? json.data : json;
         }
-        cache[folder].clear();
-        (payload && Array.isArray(payload.items) ? payload.items : []).forEach((item) => {
+        const items = payload && Array.isArray(payload.items) ? payload.items : [];
+        if (items.length || app.dataset.demoEnabled !== 'true') cache[folder].clear();
+        items.forEach((item) => {
           const normalized = normalizeItem(item, folder);
           if (normalized.action_item_id) cache[folder].set(String(normalized.action_item_id), normalized);
         });
@@ -145,7 +146,11 @@
   function applyRow(row) {
     if (!row || !row.dataset.giftId) return;
     const folder = activeFolder;
-    const item = cache[folder].get(String(row.dataset.giftId)) || fallbackItem(row);
+    let item = cache[folder].get(String(row.dataset.giftId));
+    if (!item) {
+      item = fallbackItem(row);
+      cache[folder].set(String(row.dataset.giftId), item);
+    }
     const meta = row.querySelector('.mg-gift-row-meta');
     const badge = row.querySelector('.mg-gift-status');
     const actions = row.querySelector('.mg-gift-row-actions');
