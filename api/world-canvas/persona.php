@@ -1,38 +1,26 @@
 <?php
 declare(strict_types=1);
+require_once dirname(__DIR__) . '/store/_canvas.php';
 require_once dirname(__DIR__) . '/store/_presence.php';
 require_once __DIR__ . '/_locations.php';
 
 $method=strtoupper($_SERVER['REQUEST_METHOD']??'GET');
-$user=$method==='GET'?mg_require_api_user():mg_require_api_user();
+$user=mg_require_api_user();
 $pdo=mg_db();$userId=(int)($user['id']??0);
 
 function mg_world_persona_profile(PDO $pdo,int $userId): array {
     $row=[];try{$s=$pdo->prepare('SELECT public_id,display_name,avatar_url,slug,profile_type FROM public_profiles WHERE user_id=? LIMIT 1');$s->execute([$userId]);$row=$s->fetch(PDO::FETCH_ASSOC)?:[];}catch(Throwable){}
     return $row;
 }
-function mg_world_persona_user_geo(PDO $pdo,int $userId): ?array {
-    if(function_exists('mg_world_location_current_user'))return mg_world_location_current_user($pdo,$userId);return null;
-}
+function mg_world_persona_user_geo(PDO $pdo,int $userId): ?array { return function_exists('mg_world_location_current_user')?mg_world_location_current_user($pdo,$userId):null; }
 function mg_world_persona_payload(PDO $pdo,array $user): array {
-    $userId=(int)($user['id']??0);$profile=mg_world_persona_profile($pdo,$userId);$personas=[];$locations=[];
-    $userGeo=mg_world_persona_user_geo($pdo,$userId);$personas[]=[
-        'key'=>'user:'.$userId,'kind'=>'user','label'=>'Explore as '.(trim((string)($profile['display_name']??''))?:'yourself'),'title'=>trim((string)($profile['display_name']??''))?:'Your user avatar',
-        'avatar_url'=>function_exists('mg_store_avatar_url')?mg_store_avatar_url($profile['avatar_url']??null):($profile['avatar_url']??null),
-        'latitude'=>$userGeo['latitude']??null,'longitude'=>$userGeo['longitude']??null,'geo'=>$userGeo,'location_source'=>'user_world_positions',
-    ];
+    $userId=(int)($user['id']??0);$profile=mg_world_persona_profile($pdo,$userId);$personas=[];$locations=[];$userGeo=mg_world_persona_user_geo($pdo,$userId);
+    $personas[]=['key'=>'user:'.$userId,'kind'=>'user','label'=>'Explore as '.(trim((string)($profile['display_name']??''))?:'yourself'),'title'=>trim((string)($profile['display_name']??''))?:'Your user avatar','avatar_url'=>function_exists('mg_store_avatar_url')?mg_store_avatar_url($profile['avatar_url']??null):($profile['avatar_url']??null),'latitude'=>$userGeo['latitude']??null,'longitude'=>$userGeo['longitude']??null,'geo'=>$userGeo,'location_source'=>'user_world_positions'];
     if(mg_presence_table($pdo,'merchant_locations')){
-        foreach(mg_presence_locations($pdo,$userId) as $row){$projected=mg_presence_project($row);$locations[]=$projected;$personas[]=[
-            'key'=>'merchant:'.(string)$row['public_id'],'kind'=>'merchant','label'=>'Operate as '.(trim((string)$row['name'])?:'Merchant location'),'title'=>trim((string)$row['name'])?:'Merchant location','location_name'=>trim((string)$row['name'])?:'Merchant location',
-            'location_id'=>(string)$row['public_id'],'database_location_id'=>(int)$row['id'],'latitude'=>$row['latitude']===null?null:(float)$row['latitude'],'longitude'=>$row['longitude']===null?null:(float)$row['longitude'],
-            'geo'=>['latitude'=>$row['latitude']===null?null:(float)$row['latitude'],'longitude'=>$row['longitude']===null?null:(float)$row['longitude'],'source'=>'merchant_locations'],
-            'location_source'=>'merchant_locations','presence_mode'=>$projected['presence_mode'],'presence_status'=>$projected['presence_status'],'entry_allowed'=>$projected['entry_allowed'],
-        ];}
+        foreach(mg_presence_locations($pdo,$userId) as $row){$projected=mg_presence_project($row);$locations[]=$projected;$personas[]=['key'=>'merchant:'.(string)$row['public_id'],'kind'=>'merchant','label'=>'Operate as '.(trim((string)$row['name'])?:'Merchant location'),'title'=>trim((string)$row['name'])?:'Merchant location','location_name'=>trim((string)$row['name'])?:'Merchant location','location_id'=>(string)$row['public_id'],'database_location_id'=>(int)$row['id'],'latitude'=>$row['latitude']===null?null:(float)$row['latitude'],'longitude'=>$row['longitude']===null?null:(float)$row['longitude'],'geo'=>['latitude'=>$row['latitude']===null?null:(float)$row['latitude'],'longitude'=>$row['longitude']===null?null:(float)$row['longitude'],'source'=>'merchant_locations'],'location_source'=>'merchant_locations','presence_mode'=>$projected['presence_mode'],'presence_status'=>$projected['presence_status'],'entry_allowed'=>$projected['entry_allowed']];}
     }
     $saved=mg_presence_persona_state($pdo,$userId);$active='user:'.$userId;
-    if($saved&&($saved['persona_kind']??'')==='merchant'&&!empty($saved['merchant_location_id'])){
-        foreach($locations as $location){if((int)$location['database_id']===(int)$saved['merchant_location_id']){$active='merchant:'.$location['id'];break;}}
-    }
+    if($saved&&($saved['persona_kind']??'')==='merchant'&&!empty($saved['merchant_location_id']))foreach($locations as $location)if((int)$location['database_id']===(int)$saved['merchant_location_id']){$active='merchant:'.$location['id'];break;}
     return ['schema_ready'=>mg_presence_ready($pdo),'personas'=>$personas,'locations'=>$locations,'active_persona_key'=>$active,'persona_state'=>$saved,'dual_persona'=>true];
 }
 
