@@ -64,7 +64,7 @@ require __DIR__ . '/includes/header.php';
       </div>
 
       <figure class="mg-lb-hero-visual">
-        <img src="/assets/images/public-home-merchant-hero.jpg" alt="Local coffee shop owner using Microgifter to reward customers" width="760" height="530" fetchpriority="high" decoding="async">
+        <img src="/assets/images/public-home-merchant-hero.svg?v=1.0.0" alt="Local coffee shop owner using Microgifter to reward customers" width="1600" height="1100" fetchpriority="high" decoding="async">
       </figure>
     </div>
 
