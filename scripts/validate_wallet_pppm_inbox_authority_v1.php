@@ -16,7 +16,6 @@ $files = [
     'wallet.php','wallet-classic.php','wallet-reward.php','merchant-reward-redemptions.php',
     'includes/header-templates/logged-in.php','includes/app-sidebar.php',
     'assets/js/my-loyalty-quests.js','loyalty-quest.php',
-    'database/wallet_redemption_experience_v1.sql',
     'scripts/validate_stage12c_wallet_campaign_pages.php',
     '.github/workflows/wallet-pppm-inbox-authority-validation.yml',
 ];
@@ -27,6 +26,7 @@ $removed = [
     'assets/js/merchant-wallet-redemptions.js',
     'assets/css/merchant-wallet-redemptions.css',
     'includes/account/merchant-wallet-redemptions-view.php',
+    'database/wallet_redemption_experience_v1.sql',
 ];
 $checks = [];
 foreach ($files as $file) $checks[] = ['name'=>'file:' . $file,'ok'=>is_file($root . '/' . $file)];
@@ -49,7 +49,6 @@ $header = $read('includes/header-templates/logged-in.php');
 $sidebar = $read('includes/app-sidebar.php');
 $myQuests = $read('assets/js/my-loyalty-quests.js');
 $questPage = $read('loyalty-quest.php');
-$migration = $read('database/wallet_redemption_experience_v1.sql');
 $reconcile = $read('api/rewards/_account_link_reconciliation.php');
 
 $checks[] = ['name'=>'thin compatibility bridge entry','ok'=>str_contains($entry,"_wallet_pppm_bridge.php")&&!str_contains($entry,'INSERT INTO gifts')];
@@ -71,7 +70,7 @@ $checks[] = ['name'=>'merchant compatibility route is canonical','ok'=>str_conta
 $checks[] = ['name'=>'wallet removed from navigation','ok'=>!str_contains($header,'>My Wallet<')&&!str_contains($sidebar,"'label' => 'Wallet'")&&str_contains($sidebar,"'href' => '/inbox.php'")];
 $checks[] = ['name'=>'quest UX points to Inbox','ok'=>str_contains($myQuests,'Open reward in Inbox')&&str_contains($myQuests,'/inbox.php')&&str_contains($questPage,'Delivered to your Microgifter Inbox')&&str_contains($questPage,'Open Inbox')];
 $checks[] = ['name'=>'quest reward uses shared bridge','ok'=>str_contains($questReward,'mg_zero_reward_issue_from_wallet')&&str_contains($questReward,"'pppm_bridge'=>\$bridge")];
-$checks[] = ['name'=>'obsolete migration is no-op','ok'=>str_contains($migration,'Do not import this file')&&!str_contains($migration,'CREATE TABLE')&&!str_contains($migration,'ALTER TABLE')];
+$checks[] = ['name'=>'obsolete standalone migration removed','ok'=>!is_file($root.'/database/wallet_redemption_experience_v1.sql')];
 $checks[] = ['name'=>'Microgift insert maps PPPM correctly','ok'=>str_contains($bridge,"recipient_reference,commerce_order_item_id,pppm_item_id,legacy_gift_id")&&str_contains($bridge,"?,?,?,?,?,?,NULL,?,NULL")];
 
 $failed = array_values(array_filter($checks, static fn(array $check): bool => !$check['ok']));
