@@ -1,9 +1,10 @@
 <?php
 declare(strict_types=1);
+require_once dirname(__DIR__) . '/store/_canvas.php';
 require_once dirname(__DIR__) . '/store/_presence.php';
 
 $method=strtoupper($_SERVER['REQUEST_METHOD']??'GET');
-$user=$method==='GET'?mg_require_api_user():mg_require_api_user();
+$user=mg_require_api_user();
 $pdo=mg_db();$merchantId=(int)($user['id']??0);
 
 try{
