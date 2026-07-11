@@ -1,5 +1,6 @@
 -- Loyalty Quest Notifications and Transactional Delivery v1
 -- Additive hardening for the shared message-delivery authority.
+-- Uses information_schema guards for MySQL 8 compatibility and safe repeat execution.
 
 START TRANSACTION;
 
@@ -53,10 +54,26 @@ CREATE TABLE IF NOT EXISTS message_suppression_rules (
   CONSTRAINT fk_message_suppression_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-ALTER TABLE message_delivery_jobs
-  ADD COLUMN IF NOT EXISTS merchant_user_id BIGINT UNSIGNED NULL AFTER recipient_user_id,
-  ADD COLUMN IF NOT EXISTS campaign_id BIGINT UNSIGNED NULL AFTER merchant_user_id,
-  ADD COLUMN IF NOT EXISTS source_public_id VARCHAR(190) NULL AFTER campaign_id;
+SET @mg_lqn_sql = IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='message_delivery_jobs' AND COLUMN_NAME='merchant_user_id')=0,
+  'ALTER TABLE message_delivery_jobs ADD COLUMN merchant_user_id BIGINT UNSIGNED NULL AFTER recipient_user_id',
+  'SELECT 1'
+);
+PREPARE mg_lqn_stmt FROM @mg_lqn_sql; EXECUTE mg_lqn_stmt; DEALLOCATE PREPARE mg_lqn_stmt;
+
+SET @mg_lqn_sql = IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='message_delivery_jobs' AND COLUMN_NAME='campaign_id')=0,
+  'ALTER TABLE message_delivery_jobs ADD COLUMN campaign_id BIGINT UNSIGNED NULL AFTER merchant_user_id',
+  'SELECT 1'
+);
+PREPARE mg_lqn_stmt FROM @mg_lqn_sql; EXECUTE mg_lqn_stmt; DEALLOCATE PREPARE mg_lqn_stmt;
+
+SET @mg_lqn_sql = IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='message_delivery_jobs' AND COLUMN_NAME='source_public_id')=0,
+  'ALTER TABLE message_delivery_jobs ADD COLUMN source_public_id VARCHAR(190) NULL AFTER campaign_id',
+  'SELECT 1'
+);
+PREPARE mg_lqn_stmt FROM @mg_lqn_sql; EXECUTE mg_lqn_stmt; DEALLOCATE PREPARE mg_lqn_stmt;
 
 SET @mg_lqn_has_merchant_idx = (
   SELECT COUNT(*) FROM information_schema.statistics
