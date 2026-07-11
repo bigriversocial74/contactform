@@ -32,6 +32,7 @@ $activity = $read('api/world-canvas/activity.php');
 $worldPage = $read('world-canvas.php');
 $runtime = $read('assets/js/world-canvas-runtime-v2.js');
 $normalizer = $read('api/world-canvas/_runtime_v2.php');
+$sharedUsers = $read('api/world-canvas/_shared_users_v2.php');
 
 $assertContains($crmPage, 'merchant-crm-contact-link-polish.js?v=3.0.0', 'Merchant CRM must load the current customer profile link and contact-row controller.');
 $assertContains($crmLink, "'/merchant-customer.php?campaign_contact_id='", 'CRM contact names must target the dedicated merchant customer page.');
@@ -43,6 +44,7 @@ $assertContains($activity, '$hasViewerMerchantAnchor', 'World Canvas activity mu
 $assertContains($activity, '(($node[\'type\'] ?? \'\') === \'merchant\' && !empty($node[\'owned\']))', 'World Canvas activity must remove duplicate aggregate owned merchant nodes.');
 $assertContains($activity, 'mg_world_canvas_merge_viewer_nodes($payload, $viewerNodes)', 'World Canvas must merge stable viewer anchors after initial deduplication.');
 $assertContains($activity, 'mg_world_canvas_runtime_v2($pdo, $user, $payload)', 'World Canvas must run the canonical v2 entity and geography normalizer.');
+$assertContains($activity, 'mg_world_canvas_merge_shared_users_v2($pdo, $user, $payload)', 'World Canvas must merge opt-in current user location shares.');
 
 $assertContains($worldPage, 'maplibre-gl@5.7.1', 'World Canvas must load the pinned MapLibre geographic runtime.');
 $assertContains($worldPage, 'three@0.160.0', 'World Canvas must load the pinned Three.js gameplay layer.');
@@ -62,6 +64,11 @@ $assertContains($normalizer, "'merchant_location_source' => 'merchant_locations'
 $assertContains($normalizer, "'user_location_source' => 'user_world_positions'", 'User avatar geography must use saved/shared user positions.');
 $assertContains($normalizer, "'random_geo_fallback' => false", 'Runtime v2 must not place unresolved identities at random coordinates.');
 $assertContains($normalizer, 'entered_registered_merchant_location', 'In-store users without shared coordinates must fall back to the entered registered location.');
+
+$assertContains($sharedUsers, 'user_world_positions', 'World Canvas must read active user location shares from the canonical user position table.');
+$assertContains($sharedUsers, "'entity_key' => 'user:' . $userId", 'Shared user avatars must deduplicate by stable user identity.');
+$assertContains($sharedUsers, 'shared_user_world_position', 'Shared user avatars must carry an explicit geographic placement reason.');
+$assertContains($sharedUsers, 'current_user_position_is_world_share', 'The runtime must declare the current-position sharing rule.');
 
 if ($errors !== []) {
     fwrite(STDERR, "CRM customer link / World Canvas stability validation failed:\n- " . implode("\n- ", $errors) . "\n");
