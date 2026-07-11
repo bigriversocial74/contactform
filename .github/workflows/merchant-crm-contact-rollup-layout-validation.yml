@@ -1,0 +1,39 @@
+name: Merchant CRM Contact Rollup Layout Validation
+
+on:
+  pull_request:
+    paths:
+      - 'merchant-crm.php'
+      - 'assets/js/merchant-crm-contact-rollup.js'
+      - 'assets/js/merchant-crm-contact-link-polish.js'
+      - 'assets/css/merchant-crm-layout-stability.css'
+      - 'api/merchant/campaign-contacts.php'
+      - 'includes/merchant-crm-view.php'
+      - 'scripts/validate_merchant_crm_contact_rollup_layout.php'
+      - '.github/workflows/merchant-crm-contact-rollup-layout-validation.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    strategy:
+      matrix:
+        php: ['8.2', '8.3']
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+      - name: PHP syntax
+        run: |
+          php -l merchant-crm.php
+          php -l scripts/validate_merchant_crm_contact_rollup_layout.php
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/merchant-crm-contact-rollup.js
+          node --check assets/js/merchant-crm-contact-link-polish.js
+      - name: Merchant CRM contact rollup and layout contract
+        run: php scripts/validate_merchant_crm_contact_rollup_layout.php
