@@ -1,0 +1,161 @@
+/* Merchant CRM width and contact-table owner.
+ * Keeps the CRM inside the workspace after the fixed merchant sidebar and
+ * limits horizontal scrolling to intentional compact controls only.
+ */
+.mg-merchant-main,
+.mg-crm-workspace,
+.mg-crm-command-shell,
+.mg-crm-toolbar,
+.mg-crm-tabs,
+.mg-crm-tab-panel,
+.mg-crm-tab-panel > *,
+.mg-crm-card,
+.mg-crm-card > *,
+.mg-crm-table-wrap{
+  min-width:0!important;
+  max-width:100%!important;
+  box-sizing:border-box!important;
+}
+
+.mg-merchant-main{
+  width:100%!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+}
+
+.mg-crm-workspace,
+.mg-crm-command-shell{
+  width:100%!important;
+}
+
+.mg-crm-toolbar{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto!important;
+  gap:16px!important;
+  overflow:hidden!important;
+}
+
+.mg-crm-tabs{
+  width:100%!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  overscroll-behavior-inline:contain;
+  scrollbar-width:thin;
+}
+
+.mg-crm-distribution-btn{
+  flex:0 0 auto!important;
+}
+
+.mg-crm-command-grid,
+.mg-crm-primary-grid,
+.mg-crm-builder-layout,
+.mg-crm-performance-grid,
+.mg-crm-insights-grid,
+.mg-crm-performance-kpis,
+.mg-crm-insights-kpis,
+.mg-crm-draft-kpis{
+  min-width:0!important;
+  max-width:100%!important;
+}
+
+.mg-crm-command-grid > *,
+.mg-crm-primary-grid > *,
+.mg-crm-builder-layout > *,
+.mg-crm-performance-grid > *,
+.mg-crm-insights-grid > *{
+  min-width:0!important;
+}
+
+.mg-crm-contacts-card > .mg-app-panel-body{
+  padding-top:34px!important;
+}
+
+.mg-crm-contact-stat-strip{
+  margin-top:0!important;
+}
+
+.mg-crm-table-wrap{
+  width:100%!important;
+  overflow-x:hidden!important;
+}
+
+.mg-crm-contacts-table{
+  width:100%!important;
+  min-width:0!important;
+  table-layout:fixed!important;
+}
+
+.mg-crm-contacts-table thead th:nth-child(4),
+.mg-crm-account-cell{
+  display:none!important;
+}
+
+.mg-crm-contact-account{
+  display:flex!important;
+  align-items:center!important;
+  gap:6px!important;
+  flex-wrap:wrap!important;
+  margin-top:7px!important;
+}
+
+.mg-crm-contact-account .mg-crm-badge{
+  margin:0!important;
+}
+
+.mg-crm-score-line,
+.mg-crm-contact-score{
+  display:none!important;
+}
+
+.mg-crm-latest-activity{
+  display:block!important;
+  margin-top:5px!important;
+  color:#7a8aa2!important;
+  font-size:9px!important;
+  font-weight:800!important;
+  line-height:1.35!important;
+}
+
+@media(min-width:1181px){
+  .mg-crm-contacts-table thead tr,
+  .mg-crm-contact-row{
+    grid-template-columns:38px minmax(205px,.88fr) minmax(230px,1.08fr) minmax(235px,1fr) 172px!important;
+    gap:14px!important;
+  }
+
+  .mg-crm-contact-row{
+    padding-left:16px!important;
+    padding-right:16px!important;
+  }
+
+  .mg-crm-contact-row .mg-crm-contact-cell{
+    padding-left:4px!important;
+  }
+
+  .mg-crm-engagement-stats{
+    grid-template-columns:repeat(4,minmax(38px,1fr))!important;
+    gap:8px!important;
+  }
+}
+
+@media(max-width:1180px){
+  .mg-crm-toolbar{
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+
+  .mg-crm-distribution-btn{
+    width:max-content!important;
+    max-width:100%!important;
+  }
+
+  .mg-crm-table-wrap{
+    overflow-x:visible!important;
+  }
+}
+
+@media(max-width:720px){
+  .mg-crm-contacts-card > .mg-app-panel-body{
+    padding-top:24px!important;
+  }
+}
