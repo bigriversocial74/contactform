@@ -98,7 +98,8 @@ final class StageFStripeContractTest extends TestCase
 
         self::assertStringContainsString("mg_require_permission('admin.settings.manage')",$adminApi);
         self::assertStringContainsString('Payment credential encryption is not configured',$adminApi);
-        self::assertStringContainsString('Stripe payment settings saved',$adminJs);
+        self::assertStringContainsString('/api/admin/payment-settings.php',$adminJs);
+        self::assertStringContainsString("saveSettings('method')",$adminJs);
 
         foreach([
             'data-payments-tab="methods"',
