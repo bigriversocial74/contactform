@@ -39,18 +39,52 @@ try {
         'Inbox continues to use the shared agent sidebar through the gift action center'
     );
 
+    $expectedReducedPages = [
+        'inbox',
+        'loyalty-cards',
+        'store-canvas',
+        'merchant-canvas',
+        'world-canvas',
+        'agent_chat',
+        'merchant-agent-chat',
+    ];
+
     $expect(
-        str_contains($agentSidebar, 'if ($agentSidebarActive === \'inbox\')')
+        str_contains($agentSidebar, '$reducedInboxSidebarPages = [')
+        && str_contains($agentSidebar, 'if (in_array($agentSidebarActive, $reducedInboxSidebarPages, true))')
         && str_contains($agentSidebar, "['feed-following', 'merchant_crm', 'ads-manager']")
         && str_contains($agentSidebar, '$appSidebarNav[$inboxHiddenNavKey][\'visible\'] = false'),
-        'Inbox continues to hide Following, Merchant CRM, and Campaign Ads'
+        'Reduced inbox sidebar filter hides Following, Merchant CRM, and Campaign Ads'
     );
+
+    foreach ($expectedReducedPages as $pageKey) {
+        $expect(
+            str_contains($agentSidebar, "'{$pageKey}'"),
+            'Reduced inbox sidebar page list contains ' . $pageKey
+        );
+    }
 
     $expect(
         str_contains($agentSidebar, '$appSidebarNav[\'training-lab\'] = [\'visible\' => false]')
         && str_contains($appSidebar, '!isset($appSidebarNav[\'training-lab\'])'),
-        'Inbox continues to suppress the automatically injected Training Lab item'
+        'Reduced inbox sidebar pages suppress the automatically injected Training Lab item'
     );
+
+    $agentPages = [
+        'loyalty-cards.php' => "\$agent_tab = 'loyalty-cards';",
+        'merchant-canvas.php' => "\$agent_tab = 'store-canvas';",
+        'world-canvas.php' => "\$agent_tab = 'world-canvas';",
+        'merchant-agent-chat.php' => "\$agent_tab = 'agent_chat';",
+    ];
+
+    foreach ($agentPages as $path => $activeMarker) {
+        $page = $read($path);
+        $expect(
+            str_contains($page, $activeMarker)
+            && str_contains($page, "require __DIR__ . '/includes/agent-sidebar.php';"),
+            $path . ' mounts the shared reduced inbox sidebar with the expected active key'
+        );
+    }
 
     $globallyHiddenKeys = [
         'loyalty_quests',
