@@ -23,37 +23,41 @@
 .mg-crm-contacts-only .mg-crm-table-wrap{
   width:100%;
   margin:0;
-  overflow-x:auto;
+  overflow-x:auto!important;
   overscroll-behavior-inline:contain;
 }
 
-.mg-crm-contacts-only .mg-crm-select-cell{
+/* Selection and account state are intentionally not separate desktop columns.
+   Account badges are rendered inside the Contact cell by the contact-link layer. */
+.mg-crm-contacts-only .mg-crm-select-cell,
+.mg-crm-contacts-only .mg-crm-account-cell,
+.mg-crm-contacts-only .mg-crm-contacts-table thead th:nth-child(4){
   display:none!important;
 }
 
 .mg-crm-contacts-only .mg-crm-contacts-table{
   width:100%;
-  min-width:1080px;
+  min-width:1040px!important;
+  table-layout:auto!important;
 }
 
-/* The source row still contains a hidden selection cell. Define the five
-   visible columns explicitly so Contact never falls into the old checkbox
-   column and Campaign/Account/Engagement/Actions cannot overlap. */
+/* Four visible columns: Contact, Campaign, Engagement, Actions. The previous
+   cleanup hid Select and Account but left their grid tracks in place, which
+   collapsed Contact into a checkbox-sized column and caused text overlap. */
 .mg-crm-contacts-only .mg-crm-contacts-table thead tr,
 .mg-crm-contacts-only .mg-crm-contact-row{
   display:grid!important;
   grid-template-columns:
-    minmax(230px,1.05fr)
-    minmax(245px,1.12fr)
-    minmax(145px,.68fr)
-    minmax(235px,.96fr)
-    minmax(180px,.74fr)!important;
-  gap:20px!important;
+    minmax(250px,1.08fr)
+    minmax(260px,1.12fr)
+    minmax(250px,.98fr)
+    minmax(190px,.72fr)!important;
+  gap:22px!important;
   align-items:center!important;
 }
 
 .mg-crm-contacts-only .mg-crm-contacts-table thead tr{
-  padding-inline:20px!important;
+  padding:0 20px 8px!important;
 }
 
 .mg-crm-contacts-only .mg-crm-contacts-table thead th,
@@ -70,7 +74,7 @@
   min-height:112px;
 }
 
-.mg-crm-contacts-only .mg-crm-contact-row td:not(.mg-crm-select-cell){
+.mg-crm-contacts-only .mg-crm-contact-row td:not(.mg-crm-select-cell):not(.mg-crm-account-cell){
   grid-column:auto!important;
 }
 
@@ -87,7 +91,6 @@
 
 .mg-crm-contacts-only .mg-crm-contact-copy,
 .mg-crm-contacts-only .mg-crm-campaign-cell,
-.mg-crm-contacts-only .mg-crm-account-cell,
 .mg-crm-contacts-only .mg-crm-engagement-cell,
 .mg-crm-contacts-only .mg-crm-actions-cell{
   min-width:0!important;
@@ -95,29 +98,30 @@
 
 .mg-crm-contacts-only .mg-crm-contact-copy strong,
 .mg-crm-contacts-only .mg-crm-campaign-cell strong{
+  display:block;
+  max-width:100%;
   overflow-wrap:anywhere;
 }
 
 .mg-crm-contacts-only .mg-crm-contact-copy small,
 .mg-crm-contacts-only .mg-crm-campaign-cell small{
+  display:block;
   max-width:100%;
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
 }
 
-.mg-crm-contacts-only .mg-crm-score-line,
+.mg-crm-contacts-only .mg-crm-contact-account,
 .mg-crm-contacts-only .mg-crm-campaign-rewards{
   clear:both;
-}
-
-.mg-crm-contacts-only .mg-crm-account-cell{
-  align-content:start;
-  align-items:flex-start!important;
+  position:static!important;
+  max-width:100%;
 }
 
 .mg-crm-contacts-only .mg-crm-engagement-stats{
   width:100%;
+  max-width:360px;
   grid-template-columns:repeat(4,minmax(46px,1fr))!important;
   gap:10px!important;
 }
@@ -135,17 +139,20 @@
 }
 
 .mg-crm-contacts-only .mg-crm-icon-btn{
-  flex:0 0 36px;
+  flex:0 0 36px!important;
+  width:36px!important;
+  min-width:36px!important;
+  max-width:36px!important;
+  overflow:hidden;
 }
 
-.mg-crm-contacts-only .mg-crm-contacts-table th:first-child,
-.mg-crm-contacts-only .mg-crm-contacts-table td:first-child{
-  border-left:0;
+.mg-crm-contacts-only .mg-crm-icon-btn span{
+  display:none!important;
 }
 
 @media(max-width:1180px){
   .mg-crm-contacts-only .mg-crm-contacts-table{
-    min-width:0;
+    min-width:0!important;
   }
 
   .mg-crm-contacts-only .mg-crm-contacts-table thead{
@@ -158,21 +165,17 @@
   }
 
   .mg-crm-contacts-only .mg-crm-contact-row .mg-crm-contact-cell,
-  .mg-crm-contacts-only .mg-crm-contact-row .mg-crm-account-cell{
+  .mg-crm-contacts-only .mg-crm-contact-row .mg-crm-engagement-cell{
     grid-column:1!important;
   }
 
   .mg-crm-contacts-only .mg-crm-contact-row .mg-crm-campaign-cell,
-  .mg-crm-contacts-only .mg-crm-contact-row .mg-crm-engagement-cell{
+  .mg-crm-contacts-only .mg-crm-contact-row .mg-crm-actions-cell{
     grid-column:2!important;
   }
 
-  .mg-crm-contacts-only .mg-crm-contact-row .mg-crm-actions-cell{
-    grid-column:1 / -1!important;
-  }
-
-  .mg-crm-contacts-only .mg-crm-engagement-stats{
-    max-width:360px;
+  .mg-crm-contacts-only .mg-crm-row-actions{
+    align-self:end;
   }
 }
 
@@ -188,7 +191,7 @@
     padding:16px!important;
   }
 
-  .mg-crm-contacts-only .mg-crm-contact-row td:not(.mg-crm-select-cell){
+  .mg-crm-contacts-only .mg-crm-contact-row td:not(.mg-crm-select-cell):not(.mg-crm-account-cell){
     grid-column:1!important;
   }
 
