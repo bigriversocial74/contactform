@@ -13,7 +13,7 @@ final class MerchantCrmDrawerStackingTest extends TestCase
 
     public function testMerchantCrmLoadsDrawerStackingStylesheet(): void
     {
-        $source = file_get_contents($this->root() . '/includes/merchant-crm-view.php');
+        $source = file_get_contents($this->root() . '/merchant-crm.php');
         self::assertIsString($source);
         self::assertStringContainsString('/assets/css/merchant-crm-drawer-stack.css', $source);
     }

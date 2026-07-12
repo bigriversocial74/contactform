@@ -11,15 +11,20 @@ final class SocialFeedMediaNotificationsContractTest extends TestCase
         $page=file_get_contents($root.'/feed.php');
         $composer=file_get_contents($root.'/includes/social-feed-composer.php');
         $client=file_get_contents($root.'/assets/js/social-feed-upload.js');
+        $css=file_get_contents($root.'/assets/css/social-feed-upload.css');
         $endpoint=file_get_contents($root.'/api/social/media-upload.php');
         self::assertIsString($page);
         self::assertIsString($composer);
         self::assertIsString($client);
+        self::assertIsString($css);
         self::assertIsString($endpoint);
+        self::assertStringNotContainsString('/assets/css/social-feed-upload.css',$page);
+        self::assertStringContainsString('/assets/js/social-feed-upload.js',$page);
         foreach([
-            '/assets/css/social-feed-upload.css',
-            '/assets/js/social-feed-upload.js',
-        ] as $needle) self::assertStringContainsString($needle,$page);
+            '.mg-feed-media-uploader',
+            '.mg-feed-upload-grid',
+            '.mg-feed-upload-card',
+        ] as $needle) self::assertStringContainsString($needle,$css);
         self::assertStringContainsString("require __DIR__ . '/includes/social-feed-composer.php'", $page);
         foreach([
             'data-feed-upload-input="image"',

@@ -55,7 +55,7 @@ final class StripeLiveCredentialModeContractTest extends TestCase
             "\$_GET['mode']??'auto'",
             "in_array(\$requested,['test','live'],true)",
             "\$payload['configured_modes']=mg_admin_payment_configured_modes(\$pdo)",
-            'Test credentials are not required for this ',
+            'Test credentials are not required for a live-only setup.',
             'mode_storage_warning',
         ] as $needle){
             self::assertStringContainsString($needle,$source);

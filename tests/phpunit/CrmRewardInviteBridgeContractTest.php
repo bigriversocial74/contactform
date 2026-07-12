@@ -65,10 +65,10 @@ final class CrmRewardInviteBridgeContractTest extends TestCase
 
     public function testCrmUiLoadsInviteBridgeAndPostsInviteEndpoint(): void
     {
-        $view = $this->read('includes/merchant-crm-view.php');
+        $page = $this->read('merchant-crm.php');
         $js = $this->read('assets/js/merchant-crm-reward-invite-bridge.js');
 
-        self::assertStringContainsString('/assets/js/merchant-crm-reward-invite-bridge.js', $view);
+        self::assertStringContainsString('/assets/js/merchant-crm-reward-invite-bridge.js', $page);
         self::assertStringContainsString('/api/merchant/crm-send-reward-invite.php', $js);
         self::assertStringContainsString('Invite reward', $js);
         self::assertStringContainsString('!c.has_account', $js);

@@ -2,20 +2,6 @@
 declare(strict_types=1);
 ?>
 <section class="mg-reward-library" data-reward-library-manager>
-  <div class="mg-reward-toolbar">
-    <nav class="mg-reward-tabs" aria-label="Reward library sections">
-      <a class="is-active" href="#reward-overview" data-reward-tab-link data-reward-tab="overview" aria-current="page">Overview</a>
-      <a href="#reward-active" data-reward-tab-link data-reward-tab="active">Active Rewards</a>
-      <a href="#reward-drafts" data-reward-tab-link data-reward-tab="drafts">Drafts</a>
-      <a href="#reward-gift-cards" data-reward-tab-link data-reward-tab="gift_cards">Gift Cards</a>
-      <a href="#reward-media-packs" data-reward-tab-link data-reward-tab="media_packs">Media Packs</a>
-      <a href="#reward-discounts" data-reward-tab-link data-reward-tab="discounts">Discounts</a>
-      <a href="#reward-experiences" data-reward-tab-link data-reward-tab="experiences">Experiences</a>
-      <a href="#reward-archived" data-reward-tab-link data-reward-tab="archived">Archived</a>
-    </nav>
-    <a class="mg-btn mg-btn-primary" href="#reward-create" data-reward-tab-link data-reward-tab="create">Create Reward</a>
-  </div>
-
   <div class="mg-reward-tab-panels">
     <section class="mg-reward-tab-panel is-active" id="reward-overview" data-reward-tab-panel="overview" aria-label="Reward overview">
       <section class="mg-reward-kpis" aria-label="Reward metrics">
@@ -35,39 +21,13 @@ declare(strict_types=1);
               <p>Reusable wallet-ready rewards for campaigns, QR pickups, distribution programs, media packs, and agent discovery.</p>
             </div>
             <div class="mg-heading-actions">
-              <a class="mg-btn mg-btn-soft" href="/merchant-campaigns.php">Campaigns</a>
-              <a class="mg-btn mg-btn-soft" href="/merchant-distribution.php">Distribution</a>
+              <a class="mg-btn mg-btn-primary" href="#reward-create" data-reward-tab-trigger="create">Create Reward</a>
             </div>
           </div>
           <div class="mg-app-panel-body">
             <div class="mg-product-list mg-reward-list" data-stage12-template-list data-reward-list-filter="all"></div>
           </div>
         </section>
-
-        <aside class="mg-reward-side">
-          <section class="mg-app-panel mg-reward-panel mg-reward-readiness">
-            <div class="mg-app-panel-head mg-reward-panel-head is-compact"><div><h2>Reward Readiness</h2><p>What needs attention before scaling campaigns.</p></div></div>
-            <div class="mg-app-panel-body">
-              <div class="mg-reward-readiness-score"><span>Library score</span><strong data-reward-readiness-score>—</strong></div>
-              <div class="mg-reward-readiness-list">
-                <p><b></b><span data-reward-ready-primary>Create at least one active reward for campaign distribution.</span></p>
-                <p><b></b><span data-reward-ready-secondary>Add redemption instructions so staff know exactly what to honor.</span></p>
-                <p><b></b><span data-reward-ready-tertiary>Use expiration and limits to control liability and inventory.</span></p>
-              </div>
-            </div>
-          </section>
-
-          <section class="mg-app-panel mg-reward-panel mg-reward-actions">
-            <div class="mg-app-panel-head mg-reward-panel-head is-compact"><div><h2>Quick actions</h2><p>Common reward assets.</p></div></div>
-            <div class="mg-app-panel-body">
-              <a href="#reward-create" data-reward-tab-trigger="create" data-reward-type-preset="discount">Create discount</a>
-              <a href="#reward-create" data-reward-tab-trigger="create" data-reward-type-preset="free_item">Create gift reward</a>
-              <a href="#reward-create" data-reward-tab-trigger="create" data-reward-type-preset="audio_pack">Create audio pack</a>
-              <a href="#reward-create" data-reward-tab-trigger="create" data-reward-type-preset="media_pack">Create media pack</a>
-              <a href="/merchant-campaigns.php">Attach to campaign</a>
-            </div>
-          </section>
-        </aside>
       </div>
     </section>
 
@@ -81,7 +41,10 @@ declare(strict_types=1);
 
     <section class="mg-reward-tab-panel" id="reward-create" data-reward-tab-panel="create" aria-label="Create new reward" hidden>
       <section class="mg-app-panel mg-reward-panel mg-reward-builder-panel" id="reward-builder">
-        <div class="mg-app-panel-head mg-reward-panel-head"><div><span class="mg-eyebrow">Builder</span><h2>Create new reward</h2><p>Build one wallet-ready reward template. Audio and media packs include a cover image plus files that load from the recipient inbox.</p></div></div>
+        <div class="mg-app-panel-head mg-reward-panel-head">
+          <div><span class="mg-eyebrow">Builder</span><h2>Create new reward</h2><p>Build one wallet-ready reward template. Audio and media packs include a cover image plus files that load from the recipient inbox.</p></div>
+          <div class="mg-heading-actions"><a class="mg-btn mg-btn-soft" href="#reward-overview" data-reward-tab-trigger="overview">Back to Rewards</a></div>
+        </div>
         <div class="mg-app-panel-body">
           <form class="mg-merchant-form mg-reward-builder-form" data-stage12-template-builder enctype="multipart/form-data">
             <input type="hidden" name="template_id" value="">

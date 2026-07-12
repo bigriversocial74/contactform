@@ -62,12 +62,16 @@ final class MerchantAgentActivityMonitorTest extends TestCase
     {
         $automationPage = $this->source('merchant-automation.php');
         $automationView = $this->source('includes/merchant-automation-view.php');
+        $crmView = $this->source('includes/merchant-crm-view.php');
         $retention = $this->source('assets/js/merchant-crm-retention-playbooks.js');
         $customer = $this->source('assets/js/merchant-customer-retention-recommendations.js');
         foreach (['/merchant-agent-monitor.php','Agent Monitor','agent_monitor'] as $needle) {
             self::assertStringContainsString($needle, $automationPage . $automationView);
         }
-        foreach (['/merchant-agent-monitor.php','data-retention-agent-monitor','Monitor'] as $needle) {
+        foreach (['/merchant-agent-monitor.php','data-retention-agent-monitor','Agent Monitor'] as $needle) {
+            self::assertStringContainsString($needle, $crmView);
+        }
+        foreach (['/merchant-agent-monitor.php','>Monitor<'] as $needle) {
             self::assertStringContainsString($needle, $retention);
         }
         foreach (['/merchant-agent-monitor.php','data-cp-agent-monitor','View agent explanation'] as $needle) {

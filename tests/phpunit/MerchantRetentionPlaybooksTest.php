@@ -39,12 +39,16 @@ final class MerchantRetentionPlaybooksTest extends TestCase
     public function testMerchantCrmLoadsRetentionTabAssets(): void
     {
         $page = $this->source('merchant-crm.php');
+        $view = $this->source('includes/merchant-crm-view.php');
         $js = $this->source('assets/js/merchant-crm-retention-playbooks.js');
         $css = $this->source('assets/css/merchant-crm-retention-playbooks.css');
         foreach (['merchant-crm-retention-playbooks.css','merchant-crm-retention-playbooks.js'] as $needle) {
             self::assertStringContainsString($needle, $page);
         }
-        foreach (["setAttribute('data-crm-tab-target','retention')",'Retention Playbooks','/api/merchant/crm-playbooks.php','/api/merchant/crm-playbook-runner.php','Triggered by playbook','Recommended Next Actions'] as $needle) {
+        foreach (['data-crm-tab-target="retention"','data-crm-tab-panel="retention"','Retention Playbooks','Recommended Next Actions'] as $needle) {
+            self::assertStringContainsString($needle, $view);
+        }
+        foreach (['/api/merchant/crm-playbooks.php','/api/merchant/crm-playbook-runner.php','Triggered by playbook','Recommended next action'] as $needle) {
             self::assertStringContainsString($needle, $js);
         }
         foreach (['.mg-retention-kpis','.mg-retention-grid','.mg-retention-playbook-card','.mg-retention-rec-card'] as $needle) {

@@ -2,8 +2,8 @@
 declare(strict_types=1);
 ?>
 <section class="mg-products-catalog" data-products-catalog-manager>
-  <div class="mg-products-commandbar">
-    <nav class="mg-products-tabs" aria-label="Product catalog filters" data-product-catalog-tabs>
+  <div hidden aria-hidden="true">
+    <nav data-product-catalog-tabs>
       <button class="is-active" type="button" data-product-catalog-tab="all" aria-pressed="true">Overview</button>
       <button type="button" data-product-catalog-tab="published" aria-pressed="false">Published</button>
       <button type="button" data-product-catalog-tab="draft" aria-pressed="false">Drafts</button>
@@ -11,11 +11,10 @@ declare(strict_types=1);
       <button type="button" data-product-catalog-tab="reward" aria-pressed="false">Rewards</button>
       <button type="button" data-product-catalog-tab="archived" aria-pressed="false">Archived</button>
     </nav>
-    <div class="mg-heading-actions">
-      <a class="mg-btn mg-btn-soft" href="/merchant-storefront.php">Storefront</a>
-      <a class="mg-btn mg-btn-soft" href="/merchant-media.php">Media</a>
-      <a class="mg-btn mg-btn-primary" href="/build.php">Create Product</a>
-    </div>
+    <span data-catalog-published-count>0</span>
+    <span data-catalog-draft-count>0</span>
+    <span data-catalog-review-count>0</span>
+    <span data-catalog-health-label>Loading</span>
   </div>
 
   <section class="mg-product-kpi-grid mg-products-kpi-row" id="products-overview" data-product-kpis aria-live="polite"></section>
@@ -98,26 +97,5 @@ declare(strict_types=1);
         </section>
       </div>
     </section>
-
-    <aside class="mg-products-side" id="products-readiness">
-      <section class="mg-app-panel mg-products-panel mg-products-readiness-card">
-        <div class="mg-app-panel-head mg-products-panel-head is-compact"><div><h2>Product Readiness</h2><p>Live catalog health from the current product records.</p></div></div>
-        <div class="mg-app-panel-body">
-          <div class="mg-products-readiness-score"><span>Catalog signal</span><strong data-catalog-health-label>Loading</strong></div>
-          <div class="mg-products-readiness-list">
-            <p><b></b><span><strong data-catalog-published-count>0</strong> published products are available for storefront placement.</span></p>
-            <p><b></b><span><strong data-catalog-draft-count>0</strong> drafts still require publication.</span></p>
-            <p><b></b><span><strong data-catalog-review-count>0</strong> products need a value, current version, or draft review.</span></p>
-          </div>
-        </div>
-      </section>
-
-      <section class="mg-app-panel mg-products-panel mg-products-actions-card">
-        <div class="mg-app-panel-head mg-products-panel-head is-compact"><div><h2>Quick actions</h2><p>Catalog operations.</p></div></div>
-        <div class="mg-app-panel-body">
-          <a href="/build.php">Create product</a><a href="/merchant-storefront.php">Manage storefront</a><a href="/merchant-reward-templates.php">Reward templates</a><a href="/merchant-media.php">Open media library</a>
-        </div>
-      </section>
-    </aside>
   </div>
 </section>

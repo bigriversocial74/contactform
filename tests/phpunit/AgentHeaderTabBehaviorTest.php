@@ -40,7 +40,10 @@ final class AgentHeaderTabBehaviorTest extends TestCase
         self::assertStringNotContainsString('mg-header-product-create',$header);
         self::assertStringNotContainsString("createElement('button')",$createMenu);
         self::assertStringContainsString('looksLikePlusControl',$createMenu);
-        self::assertStringContainsString("href==='/build.php'",$createMenu);
+        self::assertStringContainsString('explicitTriggerSelector',$createMenu);
+        self::assertStringContainsString('.mg-header-build-link',$createMenu);
+        self::assertStringContainsString('href="/build.php" data-global-create',$header);
+        self::assertStringContainsString("document.addEventListener('click'",$createMenu);
     }
 
     public function testDeleteControlLivesInsideActiveSavedAgentTab(): void
