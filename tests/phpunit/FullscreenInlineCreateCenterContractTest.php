@@ -24,9 +24,11 @@ final class FullscreenInlineCreateCenterContractTest extends TestCase
             self::assertStringContainsString("'key' => '".$type."'",$source);
         }
 
+        self::assertStringContainsString("'key' => 'post'",$source);
+        self::assertStringContainsString('id="mg-create-center-post" data-create-center-view="post"',$source);
+        self::assertStringContainsString('data-create-post-success',$source);
         self::assertStringContainsString('data-create-menu-close aria-label="Close create center">×</button>',$source);
-        self::assertStringContainsString('data-create-inline-target="',$source);
-        self::assertStringContainsString('mg_e($target)',$source);
+        self::assertStringContainsString('data-create-inline-target="<?= mg_e($target) ?>"',$source);
     }
 
     public function testInlineControllerUsesExistingProductionEndpoints(): void
@@ -61,34 +63,39 @@ final class FullscreenInlineCreateCenterContractTest extends TestCase
         self::assertStringContainsString("form.addEventListener('submit', saveStorefront, true)",$source);
     }
 
-    public function testCreateAndPostModalsUseFullscreenLayoutsAndTopRightCloseButtons(): void
+    public function testPostComposerLivesInsideCreateCenterAndSubmitsDirectly(): void
+    {
+        $menu=file_get_contents($this->root.'/includes/header-templates/create-menu.php');
+        $composer=file_get_contents($this->root.'/includes/social-feed-composer.php');
+        $runtime=file_get_contents($this->root.'/includes/header-components/post-composer-modal.php');
+        $controller=file_get_contents($this->root.'/assets/js/create-center-post-inline.js');
+        self::assertIsString($menu);
+        self::assertIsString($composer);
+        self::assertIsString($runtime);
+        self::assertIsString($controller);
+
+        self::assertStringContainsString('data-create-center-view="post"',$menu);
+        self::assertStringContainsString('mg-create-inline-post-composer',$composer);
+        self::assertStringNotContainsString('data-global-post-composer',$runtime);
+        self::assertStringContainsString('/assets/js/create-center-post-inline.js',$runtime);
+        self::assertStringContainsString("MG.post('/api/social/posts.php'",$controller);
+        self::assertStringContainsString('data-create-post-success',$controller);
+    }
+
+    public function testMobileCreateCenterHidesToolRailAndCancelButtons(): void
     {
         $createCss=file_get_contents($this->root.'/assets/css/create-center-inline.css');
-        $postCss=file_get_contents($this->root.'/assets/css/post-composer-modal.css');
-        $postModal=file_get_contents($this->root.'/includes/header-components/post-composer-modal.php');
+        $mobileCss=file_get_contents($this->root.'/assets/css/create-center-mobile-post-unified.css');
+        $menuJs=file_get_contents($this->root.'/assets/js/create-menu.js');
         self::assertIsString($createCss);
-        self::assertIsString($postCss);
-        self::assertIsString($postModal);
+        self::assertIsString($mobileCss);
+        self::assertIsString($menuJs);
 
         self::assertStringContainsString('width:100vw!important',$createCss);
         self::assertStringContainsString('height:100dvh!important',$createCss);
-        self::assertStringContainsString('width:100vw',$postCss);
-        self::assertStringContainsString('height:100dvh',$postCss);
-        self::assertStringContainsString('class="mg-post-composer-x"',$postModal);
-        self::assertStringContainsString('/assets/js/create-center-inline.js',$postModal);
-        self::assertStringContainsString('/assets/js/create-center-storefront-preserve.js',$postModal);
-    }
-
-    public function testPostComposerRetainsDirectSubmitAndVisibleSuccessFeedback(): void
-    {
-        $controller=file_get_contents($this->root.'/assets/js/global-post-composer.js');
-        $success=file_get_contents($this->root.'/assets/js/create-center-post-success.js');
-        self::assertIsString($controller);
-        self::assertIsString($success);
-
-        self::assertStringContainsString("MG.post('/api/social/posts.php'",$controller);
-        self::assertStringContainsString('Post published.',$controller);
-        self::assertStringContainsString('Post saved as a draft.',$controller);
-        self::assertStringContainsString('mg-create-post-success-toast',$success);
+        self::assertStringContainsString('@media(max-width:820px)',$mobileCss);
+        self::assertStringContainsString('.mg-create-center-rail',$mobileCss);
+        self::assertStringContainsString('.mg-create-inline-actions>.mg-create-secondary[data-create-center-home]',$mobileCss);
+        self::assertStringContainsString('input:not([disabled]),select:not([disabled]),textarea:not([disabled])',$menuJs);
     }
 }
