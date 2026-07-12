@@ -2,11 +2,18 @@
 declare(strict_types=1);
 
 $post_composer_id_suffix = preg_replace('/[^a-z0-9_-]+/i', '-', (string) ($post_composer_id_suffix ?? 'default'));
-$post_composer_title_id = 'mg-feed-composer-title-' . ($post_composer_id_suffix !== '' ? $post_composer_id_suffix : 'default');
+$post_composer_embedded = (bool) ($post_composer_embedded ?? false);
+$post_composer_title_id = $post_composer_embedded
+    ? 'mg-create-center-post-title'
+    : 'mg-feed-composer-title-' . ($post_composer_id_suffix !== '' ? $post_composer_id_suffix : 'default');
 $post_composer_hidden = (bool) ($post_composer_hidden ?? true);
-$post_composer_class = 'mg-feed-composer' . ($post_composer_hidden ? ' mg-hidden' : '');
+$post_composer_class = 'mg-feed-composer'
+    . ($post_composer_hidden ? ' mg-hidden' : '')
+    . ($post_composer_embedded ? ' mg-create-inline-post-composer' : '');
+$post_form_class = $post_composer_embedded ? 'mg-create-inline-form mg-create-inline-post-form' : '';
 ?>
 <section class="<?= mg_e($post_composer_class) ?>" data-post-composer aria-labelledby="<?= mg_e($post_composer_title_id) ?>">
+  <?php if (!$post_composer_embedded): ?>
   <div class="mg-feed-section-heading">
     <div>
       <span class="mg-kicker">Post composer</span>
@@ -15,8 +22,9 @@ $post_composer_class = 'mg-feed-composer' . ($post_composer_hidden ? ' mg-hidden
     </div>
     <button class="mg-btn mg-btn-ghost" type="button" data-composer-close>Close</button>
   </div>
+  <?php endif; ?>
 
-  <form data-post-form>
+  <form<?= $post_form_class !== '' ? ' class="' . mg_e($post_form_class) . '"' : '' ?> data-post-form>
     <input type="hidden" name="post_id">
 
     <div class="mg-feed-compose-copy">
@@ -124,10 +132,10 @@ $post_composer_class = 'mg-feed-composer' . ($post_composer_hidden ? ' mg-hidden
       </div>
     </details>
 
-    <div class="mg-feed-composer-footer">
+    <div class="mg-feed-composer-footer<?= $post_composer_embedded ? ' mg-create-inline-actions' : '' ?>">
       <div class="mg-feed-composer-actions">
-        <button class="mg-btn mg-btn-soft" type="button" data-post-save-draft>Save draft</button>
-        <button class="mg-btn mg-btn-primary" type="submit" data-post-publish>Publish post</button>
+        <button class="mg-btn mg-btn-soft<?= $post_composer_embedded ? ' mg-create-secondary' : '' ?>" type="button" data-post-save-draft>Save draft</button>
+        <button class="mg-btn mg-btn-primary<?= $post_composer_embedded ? ' mg-create-submit' : '' ?>" type="submit" data-post-publish>Publish post</button>
         <button class="mg-btn mg-btn-ghost mg-hidden" type="button" data-post-cancel-edit>Cancel edit</button>
       </div>
       <div class="mg-feed-action-status" data-composer-status role="status" aria-live="polite"></div>
