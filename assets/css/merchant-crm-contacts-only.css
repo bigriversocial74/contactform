@@ -1,0 +1,52 @@
+/* Merchant CRM: stats and contacts only. */
+.mg-crm-contacts-only{
+  width:100%;
+  display:block;
+  padding:0;
+}
+
+.mg-crm-contacts-only .mg-crm-contacts-card{
+  width:100%;
+  margin:0;
+}
+
+.mg-crm-contacts-only .mg-app-panel-body{
+  display:grid;
+  gap:24px;
+  padding:32px;
+}
+
+.mg-crm-contacts-only .mg-crm-contact-stat-strip{
+  margin:0;
+}
+
+.mg-crm-contacts-only .mg-crm-table-wrap{
+  width:100%;
+  margin:0;
+}
+
+.mg-crm-contacts-only .mg-crm-select-cell{
+  display:none!important;
+}
+
+.mg-crm-contacts-only .mg-crm-contacts-table{
+  width:100%;
+}
+
+.mg-crm-contacts-only .mg-crm-contacts-table th:first-child,
+.mg-crm-contacts-only .mg-crm-contacts-table td:first-child{
+  border-left:0;
+}
+
+@media(max-width:820px){
+  .mg-crm-contacts-only .mg-app-panel-body{
+    gap:18px;
+    padding:18px 14px;
+  }
+}
+
+@media(max-width:560px){
+  .mg-crm-contacts-only .mg-app-panel-body{
+    padding:14px 10px;
+  }
+}
