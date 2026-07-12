@@ -81,8 +81,8 @@ try {
 
     $expect(
         str_contains($view, 'data-merchant-crm-table')
-        && str_contains($core, "MG") === false
-        && str_contains($core, '/api/merchant/campaign-contacts.php'),
+        && str_contains($core, '/api/merchant/campaign-contacts.php')
+        && str_contains($core, 'function renderContacts()'),
         'Contact table remains connected to the existing campaign contacts API'
     );
 
