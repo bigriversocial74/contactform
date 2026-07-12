@@ -20,7 +20,7 @@ $page_styles = [
     '/assets/css/merchant-crm-contacts-clean.css',
     '/assets/css/merchant-crm-contact-link-polish.css?v=3.0.0',
     '/assets/css/merchant-crm-layout-stability.css?v=1.0.0',
-    '/assets/css/merchant-crm-contacts-only.css?v=1.0.0',
+    '/assets/css/merchant-crm-contacts-only.css?v=1.1.0',
 ];
 
 $page_scripts = [
