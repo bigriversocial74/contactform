@@ -23,6 +23,8 @@
 .mg-crm-contacts-only .mg-crm-table-wrap{
   width:100%;
   margin:0;
+  overflow-x:auto;
+  overscroll-behavior-inline:contain;
 }
 
 .mg-crm-contacts-only .mg-crm-select-cell{
@@ -31,6 +33,109 @@
 
 .mg-crm-contacts-only .mg-crm-contacts-table{
   width:100%;
+  min-width:1080px;
+}
+
+/* The source row still contains a hidden selection cell. Define the five
+   visible columns explicitly so Contact never falls into the old checkbox
+   column and Campaign/Account/Engagement/Actions cannot overlap. */
+.mg-crm-contacts-only .mg-crm-contacts-table thead tr,
+.mg-crm-contacts-only .mg-crm-contact-row{
+  display:grid!important;
+  grid-template-columns:
+    minmax(230px,1.05fr)
+    minmax(245px,1.12fr)
+    minmax(145px,.68fr)
+    minmax(235px,.96fr)
+    minmax(180px,.74fr)!important;
+  gap:20px!important;
+  align-items:center!important;
+}
+
+.mg-crm-contacts-only .mg-crm-contacts-table thead tr{
+  padding-inline:20px!important;
+}
+
+.mg-crm-contacts-only .mg-crm-contacts-table thead th,
+.mg-crm-contacts-only .mg-crm-contact-row td{
+  min-width:0!important;
+}
+
+.mg-crm-contacts-only .mg-crm-contacts-table thead th{
+  white-space:nowrap;
+}
+
+.mg-crm-contacts-only .mg-crm-contact-row{
+  padding:18px 20px!important;
+  min-height:112px;
+}
+
+.mg-crm-contacts-only .mg-crm-contact-row td:not(.mg-crm-select-cell){
+  grid-column:auto!important;
+}
+
+.mg-crm-contacts-only .mg-crm-contact-main{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  gap:0!important;
+  align-items:start!important;
+}
+
+.mg-crm-contacts-only .mg-crm-contact-cell{
+  padding-left:0!important;
+}
+
+.mg-crm-contacts-only .mg-crm-contact-copy,
+.mg-crm-contacts-only .mg-crm-campaign-cell,
+.mg-crm-contacts-only .mg-crm-account-cell,
+.mg-crm-contacts-only .mg-crm-engagement-cell,
+.mg-crm-contacts-only .mg-crm-actions-cell{
+  min-width:0!important;
+}
+
+.mg-crm-contacts-only .mg-crm-contact-copy strong,
+.mg-crm-contacts-only .mg-crm-campaign-cell strong{
+  overflow-wrap:anywhere;
+}
+
+.mg-crm-contacts-only .mg-crm-contact-copy small,
+.mg-crm-contacts-only .mg-crm-campaign-cell small{
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.mg-crm-contacts-only .mg-crm-score-line,
+.mg-crm-contacts-only .mg-crm-campaign-rewards{
+  clear:both;
+}
+
+.mg-crm-contacts-only .mg-crm-account-cell{
+  align-content:start;
+  align-items:flex-start!important;
+}
+
+.mg-crm-contacts-only .mg-crm-engagement-stats{
+  width:100%;
+  grid-template-columns:repeat(4,minmax(46px,1fr))!important;
+  gap:10px!important;
+}
+
+.mg-crm-contacts-only .mg-crm-actions-cell{
+  justify-content:flex-start!important;
+  overflow:visible;
+}
+
+.mg-crm-contacts-only .mg-crm-row-actions{
+  width:100%;
+  gap:8px!important;
+  justify-content:flex-start!important;
+  flex-wrap:nowrap!important;
+}
+
+.mg-crm-contacts-only .mg-crm-icon-btn{
+  flex:0 0 36px;
 }
 
 .mg-crm-contacts-only .mg-crm-contacts-table th:first-child,
@@ -38,15 +143,71 @@
   border-left:0;
 }
 
+@media(max-width:1180px){
+  .mg-crm-contacts-only .mg-crm-contacts-table{
+    min-width:0;
+  }
+
+  .mg-crm-contacts-only .mg-crm-contacts-table thead{
+    display:none;
+  }
+
+  .mg-crm-contacts-only .mg-crm-contact-row{
+    grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr)!important;
+    gap:16px 22px!important;
+  }
+
+  .mg-crm-contacts-only .mg-crm-contact-row .mg-crm-contact-cell,
+  .mg-crm-contacts-only .mg-crm-contact-row .mg-crm-account-cell{
+    grid-column:1!important;
+  }
+
+  .mg-crm-contacts-only .mg-crm-contact-row .mg-crm-campaign-cell,
+  .mg-crm-contacts-only .mg-crm-contact-row .mg-crm-engagement-cell{
+    grid-column:2!important;
+  }
+
+  .mg-crm-contacts-only .mg-crm-contact-row .mg-crm-actions-cell{
+    grid-column:1 / -1!important;
+  }
+
+  .mg-crm-contacts-only .mg-crm-engagement-stats{
+    max-width:360px;
+  }
+}
+
 @media(max-width:820px){
   .mg-crm-contacts-only .mg-app-panel-body{
     gap:18px;
     padding:18px 14px;
+  }
+
+  .mg-crm-contacts-only .mg-crm-contact-row{
+    grid-template-columns:minmax(0,1fr)!important;
+    gap:14px!important;
+    padding:16px!important;
+  }
+
+  .mg-crm-contacts-only .mg-crm-contact-row td:not(.mg-crm-select-cell){
+    grid-column:1!important;
+  }
+
+  .mg-crm-contacts-only .mg-crm-engagement-stats{
+    max-width:none;
+  }
+
+  .mg-crm-contacts-only .mg-crm-row-actions{
+    overflow-x:auto;
+    padding-bottom:2px;
   }
 }
 
 @media(max-width:560px){
   .mg-crm-contacts-only .mg-app-panel-body{
     padding:14px 10px;
+  }
+
+  .mg-crm-contacts-only .mg-crm-engagement-stats{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
   }
 }
