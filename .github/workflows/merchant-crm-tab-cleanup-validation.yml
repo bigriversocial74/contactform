@@ -7,9 +7,8 @@ on:
     paths:
       - 'merchant-crm.php'
       - 'includes/merchant-crm-view.php'
-      - 'assets/js/merchant-crm-tabs.js'
-      - 'assets/js/merchant-crm-retention-playbooks.js'
-      - 'assets/js/crm-media-segments.js'
+      - 'assets/css/merchant-crm-contacts-only.css'
+      - 'assets/js/merchant-crm.js'
       - 'scripts/validate_merchant_crm_tab_cleanup.php'
       - '.github/workflows/merchant-crm-tab-cleanup-validation.yml'
   workflow_dispatch:
@@ -42,10 +41,7 @@ jobs:
           php -l scripts/validate_merchant_crm_tab_cleanup.php
 
       - name: JavaScript syntax
-        run: |
-          node --check assets/js/merchant-crm-tabs.js
-          node --check assets/js/merchant-crm-retention-playbooks.js
-          node --check assets/js/crm-media-segments.js
+        run: node --check assets/js/merchant-crm.js
 
       - name: Merchant CRM tab cleanup contract
         run: php scripts/validate_merchant_crm_tab_cleanup.php

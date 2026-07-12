@@ -29,57 +29,75 @@ $expect = static function (bool $condition, string $label) use (&$failures, &$pa
 
 try {
     $page = $read('merchant-crm.php');
-    $controller = $read('assets/js/merchant-crm-overview-consolidation.js');
-    $performance = $read('assets/js/merchant-crm-performance-dashboard.js');
-    $styles = $read('assets/css/merchant-crm-overview-consolidation.css');
+    $view = $read('includes/merchant-crm-view.php');
+    $styles = $read('assets/css/merchant-crm-contacts-only.css');
+    $core = $read('assets/js/merchant-crm.js');
 
     $expect(
-        str_contains($page, 'merchant-crm-overview-consolidation.css?v=1.0.0')
-        && str_contains($page, 'merchant-crm-overview-consolidation.js?v=1.0.0')
-        && str_contains($page, 'merchant-crm-performance-dashboard.js?v=2.0.0'),
-        'Merchant CRM loads cache-bumped consolidation assets'
+        str_contains($page, 'merchant-crm-contacts-only.css?v=1.0.0')
+        && !str_contains($page, 'merchant-crm-overview-consolidation.css')
+        && !str_contains($page, 'merchant-crm-overview-consolidation.js')
+        && !str_contains($page, 'merchant-crm-performance-dashboard.js'),
+        'Contacts-only layout replaces the former Overview consolidation assets'
     );
 
     $expect(
-        strpos($page, 'merchant-crm-overview-consolidation.js?v=1.0.0')
-        < strpos($page, 'merchant-crm-tabs.js?v=1.0.0'),
-        'Overview consolidation runs before the shared tab controller captures panels'
-    );
-
-    foreach (['campaigns', 'performance', 'rewards', 'segments', 'drafts', 'draft_review', 'launch_audit'] as $target) {
-        $expect(
-            str_contains($controller, $target . ': true'),
-            'Consolidation removes the ' . $target . ' top-level workspace'
-        );
-    }
-
-    $expect(
-        str_contains($controller, "setAttribute('data-crm-performance-section', '')")
-        && str_contains($controller, 'movePerformanceIntoOverview')
-        && str_contains($controller, 'overview.appendChild(performance)'),
-        'Performance panel is converted into an Overview section'
+        str_contains($view, 'mg-crm-contacts-only')
+        && str_contains($view, 'data-merchant-crm-shell')
+        && str_contains($view, 'data-merchant-crm-app'),
+        'Merchant CRM renders one contacts-only workspace'
     );
 
     $expect(
-        str_contains($controller, 'MutationObserver')
-        && str_contains($controller, 'restoreOverviewWhenNeeded'),
-        'Late dynamic Draft Review and Launch Audit tabs are continuously filtered'
+        !str_contains($view, 'data-crm-tab-panel="overview"')
+        && !str_contains($view, 'data-crm-tab-target="overview"')
+        && !str_contains($view, 'Campaign Command Center')
+        && !str_contains($view, 'CRM Insight'),
+        'The former Overview workspace is removed rather than dynamically consolidated'
     );
 
     $expect(
-        str_contains($performance, 'ensureOverviewSection')
-        && str_contains($performance, 'data-crm-performance-section')
-        && str_contains($performance, "ev.detail.tab==='overview'")
-        && !str_contains($performance, "setAttribute('data-crm-tab-target','performance')"),
-        'Performance controller loads in Overview without recreating a Performance tab'
+        !str_contains($view, 'data-crm-performance-section')
+        && !str_contains($view, 'data-crm-performance-kpis')
+        && !str_contains($view, 'Campaign Performance'),
+        'Performance panels are not injected into the contacts-only page'
     );
 
     $expect(
-        str_contains($styles, '[data-crm-tab-target="campaigns"]')
-        && str_contains($styles, '[data-crm-tab-target="drafts"]')
-        && str_contains($styles, '[data-crm-tab-target="launch-audit"]')
-        && str_contains($styles, '[data-crm-performance-section].mg-crm-overview-performance'),
-        'Removed tabs are hidden before JavaScript and Overview performance is styled'
+        !str_contains($view, 'data-crm-campaign-builder')
+        && !str_contains($view, 'data-crm-media-segments-host')
+        && !str_contains($view, 'Retention Playbooks'),
+        'Campaign builder, media segments, and retention workspaces are removed'
+    );
+
+    $expect(
+        substr_count($view, '<article') === 5
+        && str_contains($view, 'data-crm-contact-stat-strip')
+        && str_contains($view, 'data-crm-stat-high')
+        && str_contains($view, 'data-crm-stat-followup')
+        && str_contains($view, 'data-crm-stat-claimed'),
+        'Five contact statistics remain visible'
+    );
+
+    $expect(
+        str_contains($view, 'data-merchant-crm-table')
+        && str_contains($core, '/api/merchant/campaign-contacts.php')
+        && str_contains($core, 'function renderContacts()'),
+        'Contact table remains connected to the existing campaign contacts API'
+    );
+
+    $expect(
+        str_contains($styles, '.mg-crm-contacts-only')
+        && str_contains($styles, '.mg-crm-select-cell')
+        && str_contains($styles, 'display:none!important'),
+        'Contacts-only styles preserve the full-width table and hide selection controls'
+    );
+
+    $expect(
+        str_contains($view, 'data-crm-drawer')
+        && str_contains($view, 'data-crm-message-modal')
+        && str_contains($view, 'data-crm-reward-modal'),
+        'Individual contact timeline, message, and reward operations remain available'
     );
 } catch (Throwable $error) {
     $failures[] = $error->getMessage();
@@ -87,11 +105,11 @@ try {
 }
 
 if ($failures !== []) {
-    fwrite(STDERR, sprintf("Merchant CRM overview consolidation validation failed: %d failure(s), %d pass(es).\n", count($failures), $passes));
+    fwrite(STDERR, sprintf("Merchant CRM contacts-only replacement validation failed: %d failure(s), %d pass(es).\n", count($failures), $passes));
     foreach ($failures as $failure) {
         fwrite(STDERR, " - {$failure}\n");
     }
     exit(1);
 }
 
-echo "Merchant CRM overview consolidation validation passed: {$passes} checks.\n";
+echo "Merchant CRM contacts-only replacement validation passed: {$passes} checks.\n";
