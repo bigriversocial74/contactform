@@ -2,11 +2,13 @@ name: Merchant CRM Overview Consolidation Validation
 
 on:
   pull_request:
+    branches:
+      - integration-from-repair-20260628
     paths:
       - 'merchant-crm.php'
-      - 'assets/js/merchant-crm-overview-consolidation.js'
-      - 'assets/js/merchant-crm-performance-dashboard.js'
-      - 'assets/css/merchant-crm-overview-consolidation.css'
+      - 'includes/merchant-crm-view.php'
+      - 'assets/css/merchant-crm-contacts-only.css'
+      - 'assets/js/merchant-crm.js'
       - 'scripts/validate_merchant_crm_overview_consolidation.php'
       - '.github/workflows/merchant-crm-overview-consolidation-validation.yml'
   workflow_dispatch:
@@ -34,12 +36,11 @@ jobs:
       - name: PHP syntax
         run: |
           php -l merchant-crm.php
+          php -l includes/merchant-crm-view.php
           php -l scripts/validate_merchant_crm_overview_consolidation.php
 
       - name: JavaScript syntax
-        run: |
-          node --check assets/js/merchant-crm-overview-consolidation.js
-          node --check assets/js/merchant-crm-performance-dashboard.js
+        run: node --check assets/js/merchant-crm.js
 
       - name: Merchant CRM overview contract
         run: php scripts/validate_merchant_crm_overview_consolidation.php
