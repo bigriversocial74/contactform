@@ -50,11 +50,33 @@ $checks = [
         str_contains($view, 'data-crm-drawer')
         && str_contains($view, 'data-crm-message-modal')
         && str_contains($view, 'data-crm-reward-modal'),
-    'contacts-only stylesheet is loaded' =>
-        str_contains($page, '/assets/css/merchant-crm-contacts-only.css?v=1.0.0')
-        && str_contains($css, '.mg-crm-contacts-only')
-        && str_contains($css, '.mg-crm-select-cell')
-        && str_contains($css, 'display:none!important'),
+    'contacts-only stylesheet is cache bumped and loaded last' =>
+        str_contains($page, '/assets/css/merchant-crm-contacts-only.css?v=1.1.0')
+        && strpos($page, 'merchant-crm-contacts-only.css?v=1.1.0') > strpos($page, 'merchant-crm-layout-stability.css?v=1.0.0'),
+    'desktop rows define four visible columns' =>
+        str_contains($css, 'Four visible columns: Contact, Campaign, Engagement, Actions')
+        && str_contains($css, 'minmax(250px,1.08fr)')
+        && str_contains($css, 'minmax(260px,1.12fr)')
+        && str_contains($css, 'minmax(250px,.98fr)')
+        && str_contains($css, 'minmax(190px,.72fr)'),
+    'hidden source cells cannot consume grid tracks' =>
+        str_contains($css, '.mg-crm-select-cell,')
+        && str_contains($css, '.mg-crm-account-cell,')
+        && str_contains($css, 'display:none!important')
+        && str_contains($css, 'td:not(.mg-crm-select-cell):not(.mg-crm-account-cell)'),
+    'contact and campaign copy cannot overlap' =>
+        str_contains($css, 'overflow-wrap:anywhere')
+        && str_contains($css, 'text-overflow:ellipsis')
+        && str_contains($css, 'grid-template-columns:minmax(0,1fr)!important'),
+    'action controls stay icon-only and bounded' =>
+        str_contains($css, '.mg-crm-icon-btn span')
+        && str_contains($css, 'display:none!important')
+        && str_contains($css, 'max-width:36px!important'),
+    'tablet and mobile rows reflow safely' =>
+        str_contains($css, '@media(max-width:1180px)')
+        && str_contains($css, 'grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr)!important')
+        && str_contains($css, '@media(max-width:820px)')
+        && str_contains($css, 'grid-template-columns:minmax(0,1fr)!important'),
     'non-contact module assets are not loaded' =>
         !str_contains($page, 'merchant-crm-tabs.js')
         && !str_contains($page, 'merchant-crm-overview-consolidation.js')

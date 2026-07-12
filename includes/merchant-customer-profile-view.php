@@ -7,13 +7,6 @@ declare(strict_types=1);
       <h1>Customer Profile Command Center</h1>
       <p>Manage rewards, messages, notes, follow-ups, redemptions, tips, and timeline activity from one merchant-owned customer workspace.</p>
     </div>
-    <div class="mg-cp-actions">
-      <button class="mg-btn mg-btn-primary" type="button" data-cp-send-reward data-cp-open-panel="reward">🎁 Send Reward</button>
-      <button class="mg-btn mg-btn-secondary" type="button" data-cp-message-customer data-cp-open-panel="message">💬 Message Customer</button>
-      <button class="mg-btn mg-btn-secondary" type="button" data-cp-note-trigger data-cp-open-panel="note">✎ Add Note</button>
-      <button class="mg-btn mg-btn-secondary" type="button" data-cp-open-panel="followup">⏱ Follow Up</button>
-      <a class="mg-btn mg-btn-secondary" href="/merchant-followups.php" data-cp-open-followup-queue>Task Queue</a>
-    </div>
   </header>
 
   <nav class="mg-cp-tabs" aria-label="Customer profile sections" role="tablist">

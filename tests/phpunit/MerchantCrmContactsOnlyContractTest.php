@@ -44,12 +44,17 @@ final class MerchantCrmContactsOnlyContractTest extends TestCase
         self::assertStringContainsString('data-crm-reward-modal', $view);
     }
 
-    public function testPageDoesNotLoadRemovedCrmModules(): void
+    public function testPageLoadsCacheBumpedLayoutAfterLegacyStyles(): void
     {
         $page = file_get_contents($this->root . '/merchant-crm.php');
         self::assertIsString($page);
 
-        self::assertStringContainsString('/assets/css/merchant-crm-contacts-only.css?v=1.0.0', $page);
+        self::assertStringContainsString('/assets/css/merchant-crm-contacts-only.css?v=1.1.0', $page);
+        self::assertGreaterThan(
+            strpos($page, 'merchant-crm-layout-stability.css?v=1.0.0'),
+            strpos($page, 'merchant-crm-contacts-only.css?v=1.1.0')
+        );
+
         foreach ([
             'merchant-crm-tabs.js',
             'merchant-crm-overview-consolidation.js',
@@ -62,13 +67,31 @@ final class MerchantCrmContactsOnlyContractTest extends TestCase
         }
     }
 
-    public function testContactsOnlyCssHidesLegacySelectionColumn(): void
+    public function testContactsOnlyCssDefinesFourVisibleDesktopColumns(): void
     {
         $css = file_get_contents($this->root . '/assets/css/merchant-crm-contacts-only.css');
         self::assertIsString($css);
 
-        self::assertStringContainsString('.mg-crm-contacts-only', $css);
-        self::assertStringContainsString('.mg-crm-select-cell', $css);
-        self::assertStringContainsString('display:none!important', $css);
+        self::assertStringContainsString('Four visible columns: Contact, Campaign, Engagement, Actions', $css);
+        self::assertStringContainsString('minmax(250px,1.08fr)', $css);
+        self::assertStringContainsString('minmax(260px,1.12fr)', $css);
+        self::assertStringContainsString('minmax(250px,.98fr)', $css);
+        self::assertStringContainsString('minmax(190px,.72fr)', $css);
+        self::assertStringContainsString('.mg-crm-select-cell,', $css);
+        self::assertStringContainsString('.mg-crm-account-cell,', $css);
+        self::assertStringContainsString('td:not(.mg-crm-select-cell):not(.mg-crm-account-cell)', $css);
+    }
+
+    public function testContactsOnlyCssPreventsTextAndActionOverflow(): void
+    {
+        $css = file_get_contents($this->root . '/assets/css/merchant-crm-contacts-only.css');
+        self::assertIsString($css);
+
+        self::assertStringContainsString('overflow-wrap:anywhere', $css);
+        self::assertStringContainsString('text-overflow:ellipsis', $css);
+        self::assertStringContainsString('.mg-crm-icon-btn span', $css);
+        self::assertStringContainsString('max-width:36px!important', $css);
+        self::assertStringContainsString('@media(max-width:820px)', $css);
+        self::assertStringContainsString('grid-template-columns:minmax(0,1fr)!important', $css);
     }
 }
