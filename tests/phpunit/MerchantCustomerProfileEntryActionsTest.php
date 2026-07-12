@@ -20,13 +20,19 @@ final class MerchantCustomerProfileEntryActionsTest extends TestCase
         }
     }
 
-    public function testCustomerProfileHeaderActionsExist(): void
+    public function testCustomerProfileHeaderActionsAreRemovedButPanelsRemain(): void
     {
         $view=$this->source('includes/merchant-customer-profile-view.php');
         $js=$this->source('assets/js/merchant-customer-profile.js');
-        foreach(['data-cp-send-reward','data-cp-message-customer','data-cp-note-trigger','data-cp-notes-card','data-cp-open-panel="reward"','data-cp-open-panel="message"','data-cp-open-panel="followup"'] as $needle) {
+
+        foreach(['mg-cp-actions','data-cp-send-reward','data-cp-message-customer','data-cp-note-trigger','data-cp-open-followup-queue'] as $removed) {
+            self::assertStringNotContainsString($removed,$view);
+        }
+
+        foreach(['data-cp-notes-card','data-cp-action-panel="reward"','data-cp-action-panel="message"','data-cp-action-panel="note"','data-cp-action-panel="followup"','data-cp-open-panel="reward"','data-cp-open-panel="message"','data-cp-open-panel="followup"'] as $needle) {
             self::assertStringContainsString($needle,$view);
         }
+
         foreach(['actionQuery','data-cp-open-panel','openPanel','scrollIntoView'] as $needle) {
             self::assertStringContainsString($needle,$js);
         }
