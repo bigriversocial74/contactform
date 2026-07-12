@@ -17,7 +17,7 @@ $checks = [
         && substr_count($page, 'merchant-crm.css') === 1
         && !str_contains($view, '<link rel="stylesheet"')
         && !str_contains($view, '<script src='),
-    'contacts-only stylesheet is loaded once' => str_contains($page, "'/assets/css/merchant-crm-contacts-only.css?v=1.0.0'")
+    'contacts-only stylesheet is loaded once' => str_contains($page, "'/assets/css/merchant-crm-contacts-only.css?v=1.1.0'")
         && substr_count($page, 'merchant-crm-contacts-only.css') === 1,
     'all top-level CRM tabs are removed' => $targets === []
         && $panels === []
