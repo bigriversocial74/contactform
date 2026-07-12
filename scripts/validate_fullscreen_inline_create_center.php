@@ -4,13 +4,14 @@ declare(strict_types=1);
 $root=dirname(__DIR__);
 $paths=[
     'menu'=>$root.'/includes/header-templates/create-menu.php',
-    'post_modal'=>$root.'/includes/header-components/post-composer-modal.php',
+    'runtime'=>$root.'/includes/header-components/post-composer-modal.php',
+    'composer'=>$root.'/includes/social-feed-composer.php',
     'controller'=>$root.'/assets/js/create-center-inline.js',
+    'post_controller'=>$root.'/assets/js/create-center-post-inline.js',
     'storefront_guard'=>$root.'/assets/js/create-center-storefront-preserve.js',
-    'post_success'=>$root.'/assets/js/create-center-post-success.js',
     'create_css'=>$root.'/assets/css/create-center-inline.css',
-    'post_css'=>$root.'/assets/css/post-composer-modal.css',
-    'post_controller'=>$root.'/assets/js/global-post-composer.js',
+    'mobile_post_css'=>$root.'/assets/css/create-center-mobile-post-unified.css',
+    'menu_controller'=>$root.'/assets/js/create-menu.js',
 ];
 
 $content=[];
@@ -30,14 +31,14 @@ $checks=[
     'create center keeps the upper-right X close control' =>
         str_contains($content['menu'],'data-create-menu-close aria-label="Close create center">×</button>')
         && str_contains($content['create_css'],'.mg-create-menu-close'),
-    'all five merchant tools use inline forms instead of page-only navigation' =>
+    'all five merchant tools retain direct inline forms' =>
         substr_count($content['menu'],'data-create-inline-form=')===5
         && str_contains($content['menu'],'data-create-inline-form="product"')
         && str_contains($content['menu'],'data-create-inline-form="campaign"')
         && str_contains($content['menu'],'data-create-inline-form="reward"')
         && str_contains($content['menu'],'data-create-inline-form="storefront"')
         && str_contains($content['menu'],'data-create-inline-form="location"'),
-    'each merchant inline form has a dedicated success confirmation' =>
+    'each merchant inline form retains a dedicated success confirmation' =>
         substr_count($content['menu'],'data-create-inline-success=')===5
         && substr_count($content['menu'],'data-create-success-message')===5
         && substr_count($content['menu'],'data-create-inline-reset=')===5,
@@ -53,32 +54,31 @@ $checks=[
         str_contains($content['storefront_guard'],'currentRevision.logo_asset_public_id')
         && str_contains($content['storefront_guard'],'currentRevision.cover_asset_public_id')
         && str_contains($content['storefront_guard'],"MG.post('/api/merchant/storefront.php'")
-        && str_contains($content['post_modal'],'/assets/js/create-center-storefront-preserve.js'),
+        && str_contains($content['runtime'],'/assets/js/create-center-storefront-preserve.js'),
     'location form submits directly to the protected merchant location endpoint' =>
         str_contains($content['controller'],"MG.post('/api/merchant/locations.php'")
         && str_contains($content['menu'],'name="claim_code"')
         && str_contains($content['menu'],'name="address_line1"'),
-    'post composer matches the full-screen create center and keeps an upper-right X' =>
-        str_contains($content['post_modal'],'class="mg-post-composer-x"')
-        && str_contains($content['post_css'],'width:100vw')
-        && str_contains($content['post_css'],'height:100dvh')
-        && str_contains($content['post_css'],'.mg-post-composer-x'),
-    'post submission remains direct and reports a persistent success confirmation' =>
+    'post composer is embedded as the sixth create-center view' =>
+        str_contains($content['menu'],'id="mg-create-center-post" data-create-center-view="post"')
+        && str_contains($content['menu'],'data-create-inline-target="<?= mg_e($target) ?>"')
+        && str_contains($content['composer'],'mg-create-inline-post-composer')
+        && !str_contains($content['runtime'],'data-global-post-composer'),
+    'post submission remains direct and reports an inline success confirmation' =>
         str_contains($content['post_controller'],"MG.post('/api/social/posts.php'")
-        && str_contains($content['post_success'],'mg-create-post-success-toast')
-        && str_contains($content['post_success'],'published|saved as a draft')
-        && str_contains($content['post_modal'],'/assets/js/create-center-post-success.js'),
-    'generated tool cards route merchant options into inline modal views' =>
-        str_contains($content['menu'],"'key' => 'product'")
-        && str_contains($content['menu'],"'key' => 'location'")
-        && str_contains($content['menu'],'data-create-inline-target="')
-        && str_contains($content['controller'],'event.stopImmediatePropagation()')
-        && str_contains($content['controller'],'showView(inline.dataset.createInlineTarget)'),
+        && str_contains($content['post_controller'],'data-create-post-success')
+        && str_contains($content['menu'],'data-create-post-success')
+        && str_contains($content['runtime'],'/assets/js/create-center-post-inline.js'),
+    'mobile removes the horizontal tool icon row and footer cancel actions' =>
+        str_contains($content['mobile_post_css'],'@media(max-width:820px)')
+        && str_contains($content['mobile_post_css'],'.mg-create-center-rail')
+        && str_contains($content['mobile_post_css'],'display:none!important')
+        && str_contains($content['mobile_post_css'],'.mg-create-inline-actions>.mg-create-secondary[data-create-center-home]'),
     'large responsive form controls remain usable on desktop and mobile' =>
         str_contains($content['create_css'],'min-height:54px')
         && str_contains($content['create_css'],'.mg-create-form-grid-4')
-        && str_contains($content['create_css'],'@media(max-width:820px)')
-        && str_contains($content['post_css'],'min-height:190px'),
+        && str_contains($content['mobile_post_css'],'.mg-create-center-post .mg-feed-upload-grid')
+        && str_contains($content['menu_controller'],'input:not([disabled]),select:not([disabled]),textarea:not([disabled])'),
 ];
 
 $failed=[];

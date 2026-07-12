@@ -7,13 +7,15 @@ on:
     paths:
       - 'includes/header-templates/create-menu.php'
       - 'includes/header-components/post-composer-modal.php'
+      - 'includes/social-feed-composer.php'
       - 'assets/css/create-center-inline.css'
-      - 'assets/css/post-composer-modal.css'
+      - 'assets/css/create-center-mobile-post-unified.css'
+      - 'assets/js/create-menu.js'
       - 'assets/js/create-center-inline.js'
       - 'assets/js/create-center-storefront-preserve.js'
-      - 'assets/js/create-center-post-success.js'
-      - 'assets/js/global-post-composer.js'
+      - 'assets/js/create-center-post-inline.js'
       - 'scripts/validate_fullscreen_inline_create_center.php'
+      - 'scripts/validate_create_menu_ui_v1.php'
       - 'tests/phpunit/FullscreenInlineCreateCenterContractTest.php'
       - '.github/workflows/fullscreen-inline-create-center-validation.yml'
   workflow_dispatch:
@@ -43,23 +45,28 @@ jobs:
         run: |
           php -l includes/header-templates/create-menu.php
           php -l includes/header-components/post-composer-modal.php
+          php -l includes/social-feed-composer.php
           php -l scripts/validate_fullscreen_inline_create_center.php
+          php -l scripts/validate_create_menu_ui_v1.php
           php -l tests/phpunit/FullscreenInlineCreateCenterContractTest.php
 
       - name: JavaScript syntax
         run: |
+          node --check assets/js/create-menu.js
           node --check assets/js/create-center-inline.js
           node --check assets/js/create-center-storefront-preserve.js
-          node --check assets/js/create-center-post-success.js
-          node --check assets/js/global-post-composer.js
+          node --check assets/js/create-center-post-inline.js
 
       - name: Fullscreen inline create center contract
         run: php scripts/validate_fullscreen_inline_create_center.php
+
+      - name: Create menu consistency contract
+        run: php scripts/validate_create_menu_ui_v1.php
 
       - name: PHPUnit contract when available
         run: |
           if [ -x vendor/bin/phpunit ]; then
             vendor/bin/phpunit tests/phpunit/FullscreenInlineCreateCenterContractTest.php
           else
-            echo 'PHPUnit is not installed in this checkout; standalone contract completed.'
+            echo 'PHPUnit is not installed in this checkout; standalone contracts completed.'
           fi
