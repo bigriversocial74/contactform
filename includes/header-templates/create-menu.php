@@ -41,7 +41,7 @@ if ($can_create_rewards) {
 if ($can_create_post) {
     $mgCreateTools[] = [
         'key' => 'post', 'option' => 'post', 'label' => 'Post', 'href' => '/feed.php',
-        'description' => 'Publish an update, image, video, or link to your public feed.',
+        'description' => 'Publish an update, image, video, audio, or link to your public feed.',
         'class' => 'is-post',
         'icon' => '<svg viewBox="0 0 24 24" focusable="false"><path d="M4 4h16v13H8l-4 3z"/><path d="M8 8h8M8 12h5"/></svg>',
     ];
@@ -64,14 +64,14 @@ if ($can_manage_locations) {
 }
 
 $renderCreateTool = static function (array $tool, string $variant = 'card'): void {
-    $isPost = $tool['key'] === 'post';
-    $target = $isPost ? '' : (string) $tool['key'];
+    $target = (string) $tool['key'];
     $classes = $variant === 'rail' ? 'mg-create-center-rail-link' : 'mg-create-center-card';
     ?>
     <a class="<?= mg_e($classes) ?>" href="<?= mg_e((string) $tool['href']) ?>"
        data-create-menu-option="<?= mg_e((string) $tool['option']) ?>"
        data-create-tool-key="<?= mg_e((string) $tool['key']) ?>"
-       <?= $target !== '' ? 'data-create-inline-target="' . mg_e($target) . '" aria-controls="mg-create-center-' . mg_e($target) . '"' : 'aria-controls="mg-post-composer-modal"' ?>>
+       data-create-inline-target="<?= mg_e($target) ?>"
+       aria-controls="mg-create-center-<?= mg_e($target) ?>">
       <span class="mg-create-menu-icon <?= mg_e((string) $tool['class']) ?>" aria-hidden="true"><?= $tool['icon'] ?></span>
       <span class="mg-create-menu-copy"><strong><?= mg_e((string) $tool['label']) ?></strong><?php if ($variant !== 'rail'): ?><small><?= mg_e((string) $tool['description']) ?></small><?php endif; ?></span>
       <?php if ($variant !== 'rail'): ?><span class="mg-create-menu-arrow" aria-hidden="true">→</span><?php endif; ?>
@@ -172,6 +172,20 @@ $renderCreateTool = static function (array $tool, string $variant = 'card'): voi
             <div class="mg-create-inline-status" data-create-inline-status="reward" role="status" aria-live="polite"></div>
             <div class="mg-create-inline-actions"><button class="mg-create-submit" type="submit">Save reward</button><button type="button" class="mg-create-secondary" data-create-center-home>Cancel</button></div>
           </form>
+        </section>
+        <?php endif; ?>
+
+        <?php if ($can_create_post): ?>
+        <section class="mg-create-center-view mg-create-center-post" id="mg-create-center-post" data-create-center-view="post" hidden>
+          <div class="mg-create-inline-head"><div><span class="mg-create-menu-eyebrow">Post</span><h3 id="mg-create-center-post-title">Create a post</h3><p>Publish an update with photos, video, audio, links, or connected Microgifter content.</p></div><a href="/feed.php?tab=mine">Open My Posts</a></div>
+          <div class="mg-create-inline-success" data-create-post-success hidden><strong>Post saved successfully.</strong><p data-create-post-success-message></p><div><a href="/feed.php?tab=mine">View My Posts</a><button type="button" data-create-post-reset>Create another</button></div></div>
+          <?php
+          $post_composer_id_suffix = 'create-center';
+          $post_composer_hidden = false;
+          $post_composer_embedded = true;
+          require dirname(__DIR__) . '/social-feed-composer.php';
+          unset($post_composer_id_suffix, $post_composer_hidden, $post_composer_embedded);
+          ?>
         </section>
         <?php endif; ?>
 
