@@ -34,7 +34,7 @@ try {
     $core = $read('assets/js/merchant-crm.js');
 
     $expect(
-        str_contains($page, 'merchant-crm-contacts-only.css?v=1.0.0')
+        str_contains($page, 'merchant-crm-contacts-only.css?v=1.1.0')
         && !str_contains($page, 'merchant-crm-overview-consolidation.css')
         && !str_contains($page, 'merchant-crm-overview-consolidation.js')
         && !str_contains($page, 'merchant-crm-performance-dashboard.js'),
