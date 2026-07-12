@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', function () {
   ].join(',');
 
   function focusable() {
-    return Array.from(modal.querySelectorAll('a[href],button:not([disabled]),[tabindex]:not([tabindex="-1"])')).filter(function (node) {
+    return Array.from(modal.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')).filter(function (node) {
       return !node.hidden && node.getAttribute('aria-hidden') !== 'true' && node.offsetParent !== null;
     });
   }
@@ -112,12 +112,12 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   modal.querySelectorAll('[data-create-menu-option]').forEach(function (node) {
-    node.addEventListener('click', function () {
-      var opensPostComposer = node.dataset.createMenuOption === 'post';
-      closeMenu(false);
-      if (opensPostComposer && lastFocused && typeof lastFocused.focus === 'function') {
-        lastFocused.focus({ preventScroll: true });
+    node.addEventListener('click', function (event) {
+      if (node.hasAttribute('data-create-inline-target')) {
+        event.preventDefault();
+        return;
       }
+      closeMenu(false);
     });
   });
 
