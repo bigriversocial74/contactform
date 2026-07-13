@@ -1,0 +1,59 @@
+[data-merchant-reviews-page]{--mr-border:#dce5f0;--mr-muted:#64748b;--mr-blue:#1455d9;--mr-soft:#f6f9fd;display:grid;gap:14px}
+[data-merchant-reviews-page] .rcs-hero{margin-bottom:2px;align-items:center}
+[data-merchant-reviews-page] .rcs-hero h1{font-size:30px;letter-spacing:-.035em}
+[data-merchant-reviews-page] .rcs-hero p{max-width:850px;font-size:13px;line-height:1.55}
+
+/* Compact KPI strip */
+[data-merchant-reviews-page] .rcs-stats{grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:0}
+[data-merchant-reviews-page] .rcs-stat{min-height:82px;padding:12px 14px;border-color:var(--mr-border);border-radius:14px;box-shadow:0 6px 18px rgba(15,23,42,.035)}
+[data-merchant-reviews-page] .rcs-stat strong{font-size:23px;line-height:1;font-weight:950;letter-spacing:-.04em;color:#0f172a}
+[data-merchant-reviews-page] .rcs-stat span{display:block;margin-top:7px;font-size:10px;font-weight:900;letter-spacing:.055em;text-transform:uppercase;color:var(--mr-muted)}
+
+/* One desktop filter row */
+[data-merchant-reviews-page] .rcs-review-toolbar{display:grid;grid-template-columns:minmax(320px,1fr) minmax(170px,.34fr) minmax(150px,.3fr) auto;gap:9px;align-items:center;margin:0;padding:10px;border-color:var(--mr-border);border-radius:14px;box-shadow:0 6px 18px rgba(15,23,42,.035)}
+[data-merchant-reviews-page] .rcs-review-toolbar input,
+[data-merchant-reviews-page] .rcs-review-toolbar select{width:100%;min-width:0;height:42px;margin:0;padding:0 12px;border-color:#d6e0ec;border-radius:10px;background:#fff;font-size:12px;color:#172033;outline:none}
+[data-merchant-reviews-page] .rcs-review-toolbar input:focus,
+[data-merchant-reviews-page] .rcs-review-toolbar select:focus{border-color:#8db3ed;box-shadow:0 0 0 3px rgba(20,85,217,.1)}
+[data-merchant-reviews-page] .rcs-review-toolbar .rcs-btn{height:42px;padding:0 15px;border-color:#cfdbea;border-radius:10px;white-space:nowrap;font-size:11px;font-weight:900}
+
+/* CRM-style review records */
+[data-merchant-reviews-page] .rcs-list{gap:9px}
+[data-merchant-reviews-page] .rcs-review{position:relative;padding:15px 16px 13px;border-color:var(--mr-border);border-radius:14px;box-shadow:0 7px 20px rgba(15,23,42,.04);overflow:hidden}
+[data-merchant-reviews-page] .rcs-review::before{content:"";position:absolute;inset:0 auto 0 0;width:3px;background:#d7e5fb}
+[data-merchant-reviews-page] .rcs-review:hover{border-color:#c4d5ea;box-shadow:0 10px 26px rgba(15,23,42,.065)}
+[data-merchant-reviews-page] .rcs-review-head{align-items:flex-start;gap:12px}
+[data-merchant-reviews-page] .rcs-review h3{margin:5px 0 0;font-size:15px;line-height:1.25;letter-spacing:-.015em;color:#111827}
+[data-merchant-reviews-page] .rcs-review>p{margin:10px 0 8px;font-size:12px;line-height:1.55;color:#334155}
+[data-merchant-reviews-page] .rcs-meta{gap:6px;font-size:10px;font-weight:750;color:var(--mr-muted)}
+[data-merchant-reviews-page] .rcs-meta span{display:inline-flex;align-items:center;min-height:23px;padding:0 8px;border:1px solid #e1e8f1;border-radius:999px;background:#f8fafc}
+[data-merchant-reviews-page] .rcs-stars{padding-top:1px;font-size:15px;white-space:nowrap}
+[data-merchant-reviews-page] .rcs-actions{gap:6px;margin:12px -16px -13px;padding:10px 16px;background:var(--mr-soft);border-top:1px solid #e8eef6}
+[data-merchant-reviews-page] .rcs-actions .rcs-btn{min-height:34px;padding:0 10px;border-color:#d4deea;border-radius:9px;font-size:10px;font-weight:900}
+[data-merchant-reviews-page] .rcs-actions .rcs-btn.is-primary{background:var(--mr-blue);border-color:var(--mr-blue)}
+[data-merchant-reviews-page] .rcs-reply{margin-top:10px;padding:10px 12px;border-left-width:3px;border-radius:9px;font-size:11px}
+[data-merchant-reviews-page] .rcs-reply p{margin:5px 0 0;font-size:11px;line-height:1.5}
+
+/* Short operational empty state */
+[data-merchant-reviews-page] .rcs-empty{min-height:88px;padding:18px 20px;border-style:dashed;border-color:#ccd9e8;border-radius:14px;background:#fbfdff;display:grid;place-content:center;text-align:center;color:var(--mr-muted)}
+[data-merchant-reviews-page] .rcs-empty[hidden]{display:none!important}
+[data-merchant-reviews-page] .rcs-empty strong{font-size:13px;color:#1e293b}
+[data-merchant-reviews-page] .rcs-empty p{margin:4px 0 0;font-size:11px}
+
+@media(max-width:1100px){
+ [data-merchant-reviews-page] .rcs-review-toolbar{grid-template-columns:minmax(260px,1fr) 160px 145px auto}
+}
+@media(max-width:860px){
+ [data-merchant-reviews-page] .rcs-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+ [data-merchant-reviews-page] .rcs-review-toolbar{grid-template-columns:1fr 1fr}
+ [data-merchant-reviews-page] .rcs-review-toolbar input{grid-column:1/-1}
+ [data-merchant-reviews-page] .rcs-review-toolbar .rcs-btn{width:100%}
+}
+@media(max-width:620px){
+ [data-merchant-reviews-page] .rcs-stats{grid-template-columns:1fr 1fr}
+ [data-merchant-reviews-page] .rcs-stat{min-height:74px}
+ [data-merchant-reviews-page] .rcs-review-toolbar{grid-template-columns:1fr}
+ [data-merchant-reviews-page] .rcs-review-toolbar input{grid-column:auto}
+ [data-merchant-reviews-page] .rcs-review-head{flex-direction:column}
+ [data-merchant-reviews-page] .rcs-actions{display:grid;grid-template-columns:1fr 1fr}
+}
