@@ -10,6 +10,30 @@ declare(strict_types=1);
         <article><span>Claims / Redeems</span><strong data-crm-stat-claimed>0</strong></article>
         <article data-crm-contact-message-total><span>Messages</span><strong>0</strong></article>
         <article data-crm-contact-active-message-total><span>Active Messages</span><strong>0</strong></article>
+        <article class="mg-crm-identity-stat"><span>Possible Duplicates</span><strong data-crm-duplicate-count>—</strong><button type="button" data-crm-duplicates-open>Review identities</button></article>
+      </section>
+
+      <section class="mg-crm-identity-panel" data-crm-duplicates-panel hidden aria-labelledby="crmDuplicateTitle">
+        <header class="mg-crm-identity-head">
+          <div>
+            <span class="mg-eyebrow">CRM Contact Identity v1</span>
+            <h2 id="crmDuplicateTitle">Review possible duplicate contacts</h2>
+            <p>Strong account and email matches are prioritized. Phone-only matches always require merchant review. Merges preserve aliases, campaign history, events, notes, and an audit record.</p>
+          </div>
+          <div class="mg-crm-identity-actions"><button class="mg-btn mg-btn-soft" type="button" data-crm-duplicates-refresh>Refresh analysis</button><button class="mg-btn mg-btn-soft" type="button" data-crm-duplicates-close>Close</button></div>
+        </header>
+        <div class="mg-crm-identity-summary" data-crm-duplicates-summary>
+          <article><span>Groups</span><strong>—</strong></article>
+          <article><span>Profiles</span><strong>—</strong></article>
+          <article><span>Safe to review</span><strong>—</strong></article>
+          <article><span>Previously merged</span><strong>—</strong></article>
+        </div>
+        <div class="mg-crm-identity-status" data-crm-duplicates-status>Loading identity analysis…</div>
+        <div class="mg-crm-identity-groups" data-crm-duplicates-groups></div>
+        <section class="mg-crm-identity-history" data-crm-duplicates-history hidden>
+          <div class="mg-crm-identity-section-title"><h3>Recent merges</h3><span>Non-destructive audit history</span></div>
+          <div data-crm-duplicates-history-list></div>
+        </section>
       </section>
 
       <div class="mg-crm-table-wrap" data-merchant-crm-table>
