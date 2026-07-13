@@ -11,8 +11,11 @@ $slugIsValid = $slug !== ''
 $page_title = 'Case Study | Microgifter';
 $page_section = 'case-studies';
 $header_mode = 'public';
-$page_styles = ['/assets/css/case-study.css?v=1.0.0'];
-$page_scripts = ['/assets/js/case-study.js?v=1.0.0'];
+$page_styles = ['/assets/css/case-study.css?v=1.0.1'];
+$page_scripts = [
+    '/assets/js/public-case-studies-nav.js?v=1.0.0',
+    '/assets/js/case-study.js?v=1.0.0',
+];
 $page_manifest = [
     'id' => 'case-study-detail',
     'title' => $page_title,
@@ -21,8 +24,17 @@ $page_manifest = [
     'assets' => ['universal-header'],
     'styles' => $page_styles,
     'scripts' => $page_scripts,
-    'body_class' => 'mg-case-study-page',
-    'public_header' => ['presentation' => false, 'search' => false],
+    'body_class' => 'mg-case-study-page mg-public-case-studies-page',
+    'public_header' => [
+        'presentation' => false,
+        'search' => false,
+        'links' => [
+            ['label' => 'Explore', 'href' => '/discover.php'],
+            ['label' => 'Case Studies', 'href' => '/featured-case-studies.php'],
+            ['label' => 'Blog', 'href' => '/blog.php'],
+            ['label' => 'Pricing', 'href' => '/pricing.php'],
+        ],
+    ],
     'onboarding' => ['enabled' => false, 'page' => 'case-study', 'sections' => []],
 ];
 
@@ -31,7 +43,7 @@ require __DIR__ . '/includes/header.php';
 <main class="mg-case-study" data-case-study data-profile-slug="<?= mg_e($slugIsValid ? $slug : '') ?>" aria-busy="true">
   <div class="mg-case-study__shell">
     <nav class="mg-case-study__crumbs" aria-label="Breadcrumb">
-      <a href="/case-studies.php">Case Studies</a><span aria-hidden="true">/</span><span data-cs-crumb>Merchant Story</span>
+      <a href="/featured-case-studies.php">Case Studies</a><span aria-hidden="true">/</span><span data-cs-crumb>Merchant Story</span>
     </nav>
 
     <section class="mg-cs-state" data-cs-loading>
