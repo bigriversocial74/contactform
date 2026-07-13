@@ -20,7 +20,7 @@ declare(strict_types=1);
             <article class="is-claims"><span>Claims / Redeems</span><strong data-crm-stat-claimed>0</strong></article>
             <article class="is-messages" data-crm-contact-message-total><span>Messages</span><strong>0</strong></article>
             <article class="is-active-messages" data-crm-contact-active-message-total><span>Active Messages</span><strong>0</strong></article>
-            <article class="mg-crm-mobile-duplicate-stat is-duplicates"><span>Possible Duplicates</span><strong><b data-crm-duplicate-count>—</b><small> identity groups</small></strong></article>
+            <div class="mg-crm-mobile-duplicate-stat is-duplicates" role="group" aria-label="Possible duplicate identities"><span>Possible Duplicates</span><strong><b data-crm-duplicate-count>—</b><small> identity groups</small></strong></div>
           </section>
 
           <div class="mg-crm-identity-launch">
