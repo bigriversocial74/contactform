@@ -1,5 +1,5 @@
 -- CRM Contact Identity & Duplicate Management v1
--- Adds non-destructive merge lineage and immutable audit records.
+-- Adds non-destructive merge lineage, identity aliases, and immutable audit records.
 
 SET @db := DATABASE();
 
@@ -32,6 +32,26 @@ SET @sql := IF(
   'ALTER TABLE merchant_crm_contacts ADD CONSTRAINT fk_merchant_crm_contacts_merged_into FOREIGN KEY (merged_into_contact_id) REFERENCES merchant_crm_contacts(id) ON DELETE SET NULL',
   'SELECT 1'
 ); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+
+CREATE TABLE IF NOT EXISTS merchant_crm_contact_aliases (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  merchant_user_id BIGINT UNSIGNED NOT NULL,
+  canonical_contact_id BIGINT UNSIGNED NOT NULL,
+  source_contact_id BIGINT UNSIGNED NULL,
+  alias_type ENUM('email','phone','user_id','public_id') NOT NULL,
+  alias_value VARCHAR(255) NOT NULL,
+  normalized_value VARCHAR(255) NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_merchant_crm_contact_aliases_public_id (public_id),
+  UNIQUE KEY uq_merchant_crm_contact_aliases_identity (merchant_user_id,alias_type,normalized_value),
+  KEY idx_merchant_crm_contact_aliases_canonical (canonical_contact_id,created_at),
+  KEY idx_merchant_crm_contact_aliases_source (source_contact_id,created_at),
+  CONSTRAINT fk_merchant_crm_contact_aliases_merchant FOREIGN KEY (merchant_user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_merchant_crm_contact_aliases_canonical FOREIGN KEY (canonical_contact_id) REFERENCES merchant_crm_contacts(id) ON DELETE CASCADE,
+  CONSTRAINT fk_merchant_crm_contact_aliases_source FOREIGN KEY (source_contact_id) REFERENCES merchant_crm_contacts(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS merchant_crm_contact_merges (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
