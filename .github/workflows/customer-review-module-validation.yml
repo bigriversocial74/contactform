@@ -12,6 +12,7 @@ on:
       - 'assets/js/public-profile-reviews.js'
       - 'assets/css/public-profile-reviews.css'
       - 'database/customer_review_campaign_v1.sql'
+      - 'config/migrations.php'
       - 'scripts/validate_customer_review_module.php'
       - '.github/workflows/customer-review-module-validation.yml'
   push:
@@ -27,6 +28,7 @@ on:
       - 'assets/js/public-profile-reviews.js'
       - 'assets/css/public-profile-reviews.css'
       - 'database/customer_review_campaign_v1.sql'
+      - 'config/migrations.php'
       - 'scripts/validate_customer_review_module.php'
       - '.github/workflows/customer-review-module-validation.yml'
 
