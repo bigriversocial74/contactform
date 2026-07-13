@@ -93,10 +93,10 @@ $checks = [
         && str_contains($profileApi, "pva.role='cover'")
         && str_contains($profileApi, "cover.status='ready'"),
     'post API exposes product metadata and image media fallback' =>
-        str_contains($profileApi, "'product' => $product")
+        str_contains($profileApi, "'product' => \$product")
         && str_contains($profileApi, "'source' => 'product_cover'")
         && str_contains($profileApi, "'type' => 'image'")
-        && str_contains($profileApi, "'url' => $product['cover_url']"),
+        && str_contains($profileApi, "'url' => \$product['cover_url']"),
     'desktop tablet and mobile layouts are defined' =>
         str_contains($css, '@media(max-width:1180px)')
         && str_contains($css, '@media(max-width:900px)')
