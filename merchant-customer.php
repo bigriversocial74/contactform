@@ -1,12 +1,39 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . '/includes/app.php';
+require_once __DIR__ . '/includes/merchant-crm-identity.php';
 $page_title='Customer Profile | Microgifter';
 $page_section='merchant';
 $header_mode='account';
 $page_styles=['/assets/css/merchant-workspace.css','/assets/css/merchant-customer-profile.css','/assets/css/merchant-customer-profile-navigation.css','/assets/css/merchant-followup-tasks.css','/assets/css/merchant-crm-retention-playbooks.css','/assets/css/merchant-customer-agent-timeline.css'];
 $page_scripts=['/assets/js/merchant-customer-profile.js','/assets/js/merchant-customer-timeline-milestones.js','/assets/js/merchant-customer-refund-send.js','/assets/js/merchant-customer-retention-recommendations.js','/assets/js/merchant-customer-agent-timeline.js','/assets/js/merchant-customer-profile-timeout.js'];
 $user=mg_current_user();
+
+if($user){
+ $crmRef=strtolower(trim((string)($_GET['contact_id']??$_GET['crm_contact_id']??$_GET['id']??'')));
+ if($crmRef!==''&&preg_match('/^[a-f0-9-]{36}$/',$crmRef)===1){
+  try{
+   $pdo=mg_db();
+   if(mg_crm_identity_column_exists($pdo,'merchant_crm_contacts','merged_into_contact_id')){
+    $stmt=$pdo->prepare('SELECT * FROM merchant_crm_contacts WHERE public_id=? AND merchant_user_id=? LIMIT 1');
+    $stmt->execute([$crmRef,(int)$user['id']]);
+    $row=$stmt->fetch(PDO::FETCH_ASSOC);
+    if($row){
+     $canonical=mg_crm_identity_resolve_contact($pdo,(int)$user['id'],$row,false);
+     $canonicalPublicId=(string)($canonical['public_id']??'');
+     if($canonicalPublicId!==''&&$canonicalPublicId!==$crmRef){
+      $query=$_GET;
+      unset($query['crm_contact_id'],$query['id']);
+      $query['contact_id']=$canonicalPublicId;
+      header('Location: /merchant-customer.php?'.http_build_query($query),true,302);
+      exit;
+     }
+    }
+   }
+  }catch(Throwable){}
+ }
+}
+
 $merchantNav=[
  'overview'=>['Overview','Workspace health','/merchant.php','Overview'],
  'notifications'=>['Notifications','Tips, voucher messages, alerts','/merchant-notifications.php','Overview'],
