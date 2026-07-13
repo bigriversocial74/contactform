@@ -4,9 +4,12 @@ require_once __DIR__ . '/includes/app.php';
 
 $page_title = 'Featured Case Studies | Microgifter';
 $page_section = 'case-studies';
-$header_mode = 'agent';
-$page_styles = ['/assets/css/featured-case-studies.css?v=1.0.0'];
-$page_scripts = ['/assets/js/featured-case-studies.js?v=1.0.0'];
+$header_mode = 'public';
+$page_styles = ['/assets/css/featured-case-studies.css?v=1.0.1'];
+$page_scripts = [
+    '/assets/js/public-case-studies-nav.js?v=1.0.0',
+    '/assets/js/featured-case-studies.js?v=1.0.0',
+];
 $page_manifest = [
     'id' => 'featured-case-studies',
     'title' => $page_title,
@@ -15,13 +18,22 @@ $page_manifest = [
     'assets' => ['universal-header'],
     'styles' => $page_styles,
     'scripts' => $page_scripts,
-    'body_class' => 'mg-featured-case-studies-page',
+    'body_class' => 'mg-featured-case-studies-page mg-public-case-studies-page',
+    'public_header' => [
+        'presentation' => false,
+        'search' => false,
+        'links' => [
+            ['label' => 'Explore', 'href' => '/discover.php'],
+            ['label' => 'Case Studies', 'href' => '/featured-case-studies.php'],
+            ['label' => 'Blog', 'href' => '/blog.php'],
+            ['label' => 'Pricing', 'href' => '/pricing.php'],
+        ],
+    ],
     'onboarding' => ['enabled' => false, 'page' => 'featured-case-studies', 'sections' => []],
 ];
 require __DIR__ . '/includes/header.php';
 ?>
-<main class="mg-app-shell mg-case-index-shell" data-case-study-index>
-  <aside class="mg-app-sidebar" hidden></aside>
+<main class="mg-case-index-shell" data-case-study-index>
   <section class="mg-case-index-main">
     <div class="mg-case-index-inner">
       <section class="mg-case-index-hero">
