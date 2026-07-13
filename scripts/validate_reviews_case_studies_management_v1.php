@@ -4,7 +4,7 @@ $root=dirname(__DIR__);
 $required=[
  'database/reviews_case_studies_management_v1.sql'=>['customer_review_replies','featured_case_studies','review_case_study_audit','featured_on_profile'],
  'admin/reviews.php'=>['data-admin-reviews-page','Case studies','Audit history'],
- 'merchant-reviews.php'=>["$merchantView = 'reviews'",'merchant-workspace.php'],
+ 'merchant-reviews.php'=>["\$merchantView = 'reviews'",'merchant-workspace.php'],
  'includes/merchant-reviews-view.php'=>['data-merchant-reviews-page','Public merchant reply','Message customer privately'],
  'api/admin/reviews.php'=>['moderate_review','save_case_study','admin.case_study.saved'],
  'api/merchant/reviews.php'=>['customer_review_reply','customer_review_message','merchant.review.private_message_sent'],
@@ -15,7 +15,7 @@ $required=[
  'assets/js/case-study-curation.js'=>['Featured Reviews','Merchant response'],
  'assets/js/featured-case-studies.js'=>['/api/public/case-studies/list.php'],
  'includes/merchant-navigation.php'=>["'reviews' => ['Customer Reviews'"],
- 'includes/merchant-view.php'=>["$merchantView==='reviews'"],
+ 'includes/merchant-view.php'=>["\$merchantView==='reviews'"],
  'config/migrations.php'=>['reviews_case_studies_management_v1.sql'],
 ];
 $errors=[];$checks=0;
