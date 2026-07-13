@@ -83,3 +83,13 @@ window.Microgifter = window.Microgifter || {};
     return response;
   };
 })(window, document);
+
+(function (document) {
+  'use strict';
+  if (document.querySelector('script[data-public-profile-reviews-loader]')) return;
+  var script = document.createElement('script');
+  script.src = '/assets/js/public-profile-reviews.js?v=1.0.0';
+  script.defer = true;
+  script.setAttribute('data-public-profile-reviews-loader', '1');
+  document.head.appendChild(script);
+})(document);
