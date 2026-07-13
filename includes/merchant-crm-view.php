@@ -12,6 +12,34 @@ declare(strict_types=1);
         <article data-crm-contact-active-message-total><span>Active Messages</span><strong>0</strong></article>
       </section>
 
+      <div class="mg-crm-identity-launch">
+        <div><span>Possible Duplicates</span><strong><b data-crm-duplicate-count>—</b> identity groups need review</strong></div>
+        <button type="button" data-crm-duplicates-open>Review identities</button>
+      </div>
+
+      <section class="mg-crm-identity-panel" data-crm-duplicates-panel hidden aria-labelledby="crmDuplicateTitle">
+        <header class="mg-crm-identity-head">
+          <div>
+            <span class="mg-eyebrow">CRM Contact Identity v1</span>
+            <h2 id="crmDuplicateTitle">Review possible duplicate contacts</h2>
+            <p>Strong account and email matches are prioritized. Phone-only matches always require merchant review. Merges preserve aliases, campaign history, events, notes, and an audit record.</p>
+          </div>
+          <div class="mg-crm-identity-actions"><button class="mg-btn mg-btn-soft" type="button" data-crm-duplicates-refresh>Refresh analysis</button><button class="mg-btn mg-btn-soft" type="button" data-crm-duplicates-close>Close</button></div>
+        </header>
+        <div class="mg-crm-identity-summary" data-crm-duplicates-summary>
+          <div><span>Groups</span><strong>—</strong></div>
+          <div><span>Profiles</span><strong>—</strong></div>
+          <div><span>Safe to review</span><strong>—</strong></div>
+          <div><span>Previously merged</span><strong>—</strong></div>
+        </div>
+        <div class="mg-crm-identity-status" data-crm-duplicates-status>Loading identity analysis…</div>
+        <div class="mg-crm-identity-groups" data-crm-duplicates-groups></div>
+        <section class="mg-crm-identity-history" data-crm-duplicates-history hidden>
+          <div class="mg-crm-identity-section-title"><h3>Recent merges</h3><span>Non-destructive audit history</span></div>
+          <div data-crm-duplicates-history-list></div>
+        </section>
+      </section>
+
       <div class="mg-crm-table-wrap" data-merchant-crm-table>
         <div class="mg-empty-state"><strong>Loading contacts</strong><p>Campaign signups, QR pickups, contest entries, and reward activity will appear here.</p></div>
       </div>

@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/merchant-crm-identity.php';
+
 function mg_merchant_crm_uuid(): string
 {
     $bytes = random_bytes(16);
@@ -58,21 +60,21 @@ function mg_merchant_crm_media_started_event(string $eventType): string
     return $eventType === 'listen_reward_progress' ? 'listen_reward_started' : 'watch_reward_started';
 }
 
-function mg_merchant_crm_contact(PDO $pdo, int $merchantId, ?int $userId, ?string $email): ?array
+function mg_merchant_crm_contact(PDO $pdo, int $merchantId, ?int $userId, ?string $email, ?string $phone = null): ?array
 {
     if ($userId) {
         $stmt = $pdo->prepare('SELECT * FROM merchant_crm_contacts WHERE merchant_user_id=? AND user_id=? LIMIT 1 FOR UPDATE');
         $stmt->execute([$merchantId, $userId]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        if ($row) return $row;
+        if ($row) return mg_crm_identity_resolve_contact($pdo, $merchantId, $row, true);
     }
     if ($email) {
         $stmt = $pdo->prepare('SELECT * FROM merchant_crm_contacts WHERE merchant_user_id=? AND primary_email=? LIMIT 1 FOR UPDATE');
         $stmt->execute([$merchantId, $email]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        if ($row) return $row;
+        if ($row) return mg_crm_identity_resolve_contact($pdo, $merchantId, $row, true);
     }
-    return null;
+    return mg_crm_identity_alias_contact($pdo, $merchantId, $userId, $email, $phone, true);
 }
 
 function mg_merchant_crm_record_event(PDO $pdo, array $input): array
@@ -101,7 +103,7 @@ function mg_merchant_crm_record_event(PDO $pdo, array $input): array
     $stage = mg_merchant_crm_stage($eventType, $sourceType, $campaignType);
 
     try {
-        $contact = mg_merchant_crm_contact($pdo, $merchantId, $userId, $email);
+        $contact = mg_merchant_crm_contact($pdo, $merchantId, $userId, $email, $phone);
         if ($contact) {
             $contactId = (int) $contact['id'];
             $contactPublicId = (string) $contact['public_id'];
