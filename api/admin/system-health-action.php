@@ -6,6 +6,7 @@ require_once __DIR__ . '/_system_health_security.php';
 require_once __DIR__ . '/_system_health_actions.php';
 require_once __DIR__ . '/_migration_plan.php';
 require_once __DIR__ . '/_critical_schema_plan.php';
+require_once __DIR__ . '/_migration_reconciliation.php';
 
 mg_require_method('POST');
 $user = mg_admin_system_health_require_user();
@@ -15,9 +16,18 @@ mg_require_csrf_for_write($input);
 mg_rate_limit('admin.system_health.action', 'user:' . (int)$user['id'], 12, 300);
 
 $action = strtolower(trim((string)($input['action'] ?? '')));
-if (!in_array($action, ['verify_storage', 'retry_notifications', 'clean_uploads', 'migration_plan', 'critical_schema_plan', 'admin_ops_sql_plan', 'test_pwa_notification'], true)) {
-    mg_fail('Invalid system health action.', 422);
-}
+$allowed = [
+    'verify_storage',
+    'retry_notifications',
+    'clean_uploads',
+    'migration_plan',
+    'migration_reconciliation_plan',
+    'migration_reconciliation_apply',
+    'critical_schema_plan',
+    'admin_ops_sql_plan',
+    'test_pwa_notification',
+];
+if (!in_array($action, $allowed, true)) mg_fail('Invalid system health action.', 422);
 mg_admin_system_health_require_sensitive_action($user, $input, $action);
 
 try {
@@ -27,20 +37,26 @@ try {
         'retry_notifications' => mg_admin_system_health_retry_notifications($pdo, 100),
         'clean_uploads' => mg_admin_system_health_cleanup_uploads($pdo, 24, 100),
         'migration_plan' => mg_admin_system_health_migration_plan_v2($pdo),
+        'migration_reconciliation_plan' => mg_admin_migration_reconciliation_plan($pdo, (int)$user['id'], true),
+        'migration_reconciliation_apply' => mg_admin_migration_reconciliation_apply($pdo, $input, (int)$user['id']),
         'critical_schema_plan' => mg_admin_system_health_critical_schema_plan($pdo),
         'admin_ops_sql_plan' => mg_admin_ops_installer_plan($pdo),
         'test_pwa_notification' => mg_admin_system_health_test_pwa_notification($pdo, $user),
     };
 
     $auditResult = $result;
-    if ($action === 'admin_ops_sql_plan') {
-        unset($auditResult['sql']);
-    }
+    if ($action === 'admin_ops_sql_plan') unset($auditResult['sql']);
     if ($action === 'migration_plan') {
         unset($auditResult['items']);
         $auditResult['physical_missing_files'] = array_slice($auditResult['physical_missing_files'] ?? [], 0, 25);
         $auditResult['unapplied_files'] = array_slice($auditResult['unapplied_files'] ?? [], 0, 25);
         $auditResult['checksum_mismatches'] = array_slice($auditResult['checksum_mismatches'] ?? [], 0, 25);
+    }
+    if ($action === 'migration_reconciliation_plan') {
+        unset($auditResult['items'], $auditResult['reconciliation_token'], $auditResult['repair_plan']['sql']);
+    }
+    if ($action === 'migration_reconciliation_apply') {
+        unset($auditResult['plan']['items'], $auditResult['plan']['reconciliation_token'], $auditResult['plan']['repair_plan']['sql']);
     }
     mg_audit(
         'admin.system_health.' . $action,
@@ -69,6 +85,8 @@ $message = match ($action) {
     'retry_notifications' => 'Eligible notification deliveries were queued for retry.',
     'clean_uploads' => 'Abandoned uploads cleanup completed.',
     'migration_plan' => 'Detailed migration recovery plan prepared.',
+    'migration_reconciliation_plan' => 'Migration reconciliation analysis prepared.',
+    'migration_reconciliation_apply' => 'Verified migration ledger entries reconciled.',
     'critical_schema_plan' => 'Critical schema Phase 2 plan prepared.',
     'admin_ops_sql_plan' => 'Admin ops SQL plan prepared.',
     'test_pwa_notification' => 'PWA test notification queued.',
