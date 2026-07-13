@@ -4,14 +4,18 @@ const profile = (overrides = {}) => ({
   id: '11111111-1111-4111-8111-111111111111',
   slug: 'phoenix-maker',
   display_name: 'Phoenix Maker',
+  business_name: 'Phoenix Maker Studio',
   headline: 'Local gifts made in Phoenix',
   avatar_url: null,
+  cover_url: null,
   location: 'Phoenix, AZ',
   profile_type: 'creator',
   visibility: 'public',
   url: '/profile.php?slug=phoenix-maker',
   audience: { followers: 14, supporters: 3 },
   published_products: 5,
+  published_campaigns: 3,
+  reviews: { average: 4.8, total: 27, available: true },
   has_published_storefront: true,
   result_kind: 'organic',
   ...overrides,
@@ -37,7 +41,7 @@ const payload = {
 };
 
 test.describe('profile discovery and search foundation', () => {
-  test('renders curated sections and organic results separately', async ({ page }) => {
+  test('renders content-first merchant cards without market statistics', async ({ page }) => {
     await page.route('**/api/public/discover.php?**', route => route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -46,12 +50,18 @@ test.describe('profile discovery and search foundation', () => {
 
     await page.goto('/discover.php');
     await expect(page.locator('[data-discovery-content]')).toBeVisible();
-    await expect(page.locator('[data-featured-grid] .mg-discovery-card')).toHaveCount(1);
-    await expect(page.locator('[data-storefront-grid] .mg-discovery-card')).toHaveCount(1);
-    await expect(page.locator('[data-recent-grid] .mg-discovery-card')).toHaveCount(1);
     await expect(page.locator('[data-results-grid] .mg-discovery-card')).toHaveCount(1);
+    await expect(page.locator('[data-results-grid]')).toContainText('Phoenix Maker Studio');
     await expect(page.locator('[data-results-grid]')).toContainText('Phoenix Maker');
-    await expect(page.locator('[data-results-grid]')).toContainText('14 followers');
+    await expect(page.locator('[data-results-grid]')).toContainText('Products');
+    await expect(page.locator('[data-results-grid]')).toContainText('Campaigns');
+    await expect(page.locator('[data-results-grid]')).toContainText('27 reviews');
+    await expect(page.locator('[data-results-grid] .mg-discovery-cover')).toHaveCount(1);
+    await expect(page.locator('[data-results-grid] .mg-discovery-avatar')).toHaveCount(1);
+    await expect(page.locator('[data-results-grid] .mg-discovery-market-panel')).toHaveCount(0);
+    await expect(page.locator('[data-results-grid] .mg-discovery-stat-grid')).toHaveCount(0);
+    await expect(page.locator('[data-results-grid]')).not.toContainText('Ticker Value');
+    await expect(page.locator('[data-results-grid]')).not.toContainText('Merchant Score');
     await expect(page.locator('[data-discovery-pagination]')).toBeVisible();
   });
 
@@ -75,7 +85,6 @@ test.describe('profile discovery and search foundation', () => {
 
     await page.goto('/discover.php');
     await page.locator('input[name="q"]').fill('coffee');
-    await page.locator('select[name="type"]').selectOption('merchant');
     await page.locator('input[name="location"]').fill('Phoenix');
     await page.locator('input[name="category"]').fill('gift');
     await page.locator('[data-discovery-form]').evaluate(form => form.requestSubmit());

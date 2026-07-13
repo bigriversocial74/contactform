@@ -1,0 +1,60 @@
+name: Explore Content Cards Validation
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'discover.php'
+      - 'assets/css/profile-discovery-content-cards.css'
+      - 'assets/js/profile-discovery.js'
+      - 'api/profiles/_discovery.php'
+      - 'scripts/validate_explore_content_cards.php'
+      - 'tests/phpunit/ProductionProfileDiscoverySearchFoundationTest.php'
+      - 'tests/browser/profile-discovery-search-foundation.spec.js'
+      - '.github/workflows/explore-content-cards-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: PHP syntax
+        run: |
+          php -l discover.php
+          php -l api/profiles/_discovery.php
+          php -l scripts/validate_explore_content_cards.php
+          php -l tests/phpunit/ProductionProfileDiscoverySearchFoundationTest.php
+
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/profile-discovery.js
+          node --check tests/browser/profile-discovery-search-foundation.spec.js
+
+      - name: Explore content-card contract
+        run: php scripts/validate_explore_content_cards.php
+
+      - name: PHPUnit contract when available
+        run: |
+          if [ -x vendor/bin/phpunit ]; then
+            vendor/bin/phpunit tests/phpunit/ProductionProfileDiscoverySearchFoundationTest.php
+          else
+            echo 'PHPUnit is not installed in this checkout; standalone contract completed.'
+          fi
