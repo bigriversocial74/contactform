@@ -1,0 +1,52 @@
+name: Merchant Orders Freeze Repair
+
+on:
+  pull_request:
+    paths:
+      - 'merchant-orders.php'
+      - 'includes/merchant-orders-view.php'
+      - 'api/merchant/_orders.php'
+      - 'api/merchant/commerce-orders.php'
+      - 'api/merchant/commerce-orders-summary.php'
+      - 'api/merchant/commerce-order.php'
+      - 'api/merchant/commerce-order-reconcile.php'
+      - 'assets/js/merchant-orders.js'
+      - 'database/merchant_orders_performance_hardening_v1.sql'
+      - 'config/migrations.php'
+      - 'scripts/validate_merchant_orders_freeze_repair.php'
+      - '.github/workflows/merchant-orders-freeze-repair-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: PHP syntax
+        run: |
+          php -l merchant-orders.php
+          php -l api/merchant/_orders.php
+          php -l api/merchant/commerce-orders.php
+          php -l api/merchant/commerce-orders-summary.php
+          php -l api/merchant/commerce-order.php
+          php -l api/merchant/commerce-order-reconcile.php
+          php -l config/migrations.php
+          php -l scripts/validate_merchant_orders_freeze_repair.php
+      - name: JavaScript syntax
+        run: node --check assets/js/merchant-orders.js
+      - name: Freeze repair contract
+        run: php scripts/validate_merchant_orders_freeze_repair.php
