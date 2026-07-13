@@ -1,0 +1,31 @@
+name: System Health Critical Schema Phase 2
+
+on:
+  pull_request:
+    paths:
+      - 'api/admin/_critical_schema_plan.php'
+      - 'api/admin/critical-schema-plan.php'
+      - 'api/admin/system-health-action.php'
+      - 'database/system_health_critical_schema_phase2.sql'
+      - 'scripts/validate_system_health_critical_schema_phase2.php'
+      - '.github/workflows/system-health-critical-schema-phase2-validation.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ['8.2','8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+      - name: PHP syntax
+        run: |
+          php -l api/admin/_critical_schema_plan.php
+          php -l api/admin/critical-schema-plan.php
+          php -l api/admin/system-health-action.php
+          php -l scripts/validate_system_health_critical_schema_phase2.php
+      - name: Contract validation
+        run: php scripts/validate_system_health_critical_schema_phase2.php
