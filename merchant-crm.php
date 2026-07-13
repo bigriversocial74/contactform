@@ -24,6 +24,7 @@ $page_styles = [
     '/assets/css/merchant-crm-identity-duplicates.css?v=1.0.0',
     '/assets/css/merchant-crm-mobile-dashboard.css?v=1.0.0',
     '/assets/css/merchant-crm-mobile-dashboard-contract.css?v=1.0.0',
+    '/assets/css/merchant-crm-mobile-card-regression-fix.css?v=1.0.0',
 ];
 
 $page_scripts = [
