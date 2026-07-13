@@ -1,0 +1,382 @@
+/* Mobile Customer Profile top-half cleanup.
+   Desktop remains owned by merchant-customer-profile.css. */
+.mg-cp-mobile-metrics,
+.mg-cp-mobile-metrics-body{
+  display:contents;
+}
+
+.mg-cp-mobile-metrics-toggle,
+.mg-cp-tab-icon{
+  display:none;
+}
+
+@media (max-width:720px){
+  /* The shared mobile shell offsets both the outer page and nested app shell.
+     Keep the fixed-header offset on the outer page only. */
+  html body.mg-app-page.mg-section-merchant .mg-main{
+    padding-top:var(--mg-mobile-topbar)!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-app-shell.mg-customer-profile-app{
+    padding-top:0!important;
+    margin-top:0!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-customer-profile-main{
+    padding:8px 8px 22px!important;
+    overflow:visible!important;
+  }
+
+  .mg-cp-page-back{
+    margin:0 0 7px!important;
+  }
+
+  .mg-cp-page-back a{
+    min-height:30px!important;
+    padding:0 10px!important;
+    border-radius:9px!important;
+    font-size:10px!important;
+  }
+
+  .mg-cp-header{
+    margin:0 0 8px!important;
+  }
+
+  .mg-cp-header h1{
+    font-size:21px!important;
+    line-height:1.08!important;
+    letter-spacing:-.035em!important;
+  }
+
+  .mg-cp-header p{
+    max-width:none!important;
+    margin:5px 0 0!important;
+    font-size:10.5px!important;
+    line-height:1.4!important;
+  }
+
+  /* Replace the text-heavy mobile tab rail with one compact icon row. */
+  .mg-cp-tabs{
+    display:grid!important;
+    grid-template-columns:repeat(8,minmax(0,1fr))!important;
+    align-items:center!important;
+    gap:4px!important;
+    min-height:52px!important;
+    margin:0!important;
+    padding:6px!important;
+    border-radius:14px!important;
+    overflow:visible!important;
+  }
+
+  .mg-cp-tabs button{
+    display:grid!important;
+    width:100%!important;
+    min-width:0!important;
+    height:40px!important;
+    place-items:center!important;
+    margin:0!important;
+    padding:0!important;
+    border:1px solid transparent!important;
+    border-radius:10px!important;
+    color:#65748c!important;
+  }
+
+  .mg-cp-tabs button::after{
+    display:none!important;
+  }
+
+  .mg-cp-tabs button.is-active{
+    border-color:#cfe0fb!important;
+    background:#edf5ff!important;
+    color:#0b5fe8!important;
+    box-shadow:0 5px 14px rgba(20,85,217,.08)!important;
+  }
+
+  .mg-cp-tab-icon{
+    display:grid!important;
+    width:20px;
+    height:20px;
+    place-items:center;
+  }
+
+  .mg-cp-tab-icon svg{
+    display:block;
+    width:19px;
+    height:19px;
+    fill:none;
+    stroke:currentColor;
+    stroke-width:1.9;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+  }
+
+  .mg-cp-tab-label{
+    display:none!important;
+  }
+
+  .mg-cp-action-panels{
+    margin:10px 0!important;
+  }
+
+  /* Customer metrics become an open-by-default accordion on mobile. */
+  .mg-cp-mobile-metrics{
+    display:block;
+    margin:10px 0 12px;
+    overflow:hidden;
+    border:1px solid #dbe6f4;
+    border-radius:16px;
+    background:#fff;
+    box-shadow:0 10px 26px rgba(23,43,77,.045);
+  }
+
+  .mg-cp-mobile-metrics-toggle{
+    display:flex!important;
+    width:100%;
+    min-height:52px;
+    align-items:center;
+    gap:10px;
+    border:0;
+    border-bottom:1px solid #e7eef7;
+    background:#fff;
+    color:#0b1730;
+    padding:9px 11px;
+    text-align:left;
+    cursor:pointer;
+  }
+
+  .mg-cp-mobile-metrics-toggle[aria-expanded="false"]{
+    border-bottom:0;
+  }
+
+  .mg-cp-mobile-metrics-toggle-icon{
+    display:grid;
+    flex:0 0 34px;
+    width:34px;
+    height:34px;
+    place-items:center;
+    border-radius:11px;
+    background:#edf5ff;
+    color:#145ee8;
+  }
+
+  .mg-cp-mobile-metrics-toggle-icon svg{
+    width:18px;
+    height:18px;
+    fill:none;
+    stroke:currentColor;
+    stroke-width:1.9;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+  }
+
+  .mg-cp-mobile-metrics-toggle-copy{
+    display:grid;
+    min-width:0;
+    gap:2px;
+  }
+
+  .mg-cp-mobile-metrics-toggle-copy strong{
+    color:#0b1730;
+    font-size:12px;
+    font-weight:950;
+    letter-spacing:-.01em;
+  }
+
+  .mg-cp-mobile-metrics-toggle-copy small{
+    overflow:hidden;
+    color:#6a7890;
+    font-size:8.5px;
+    font-weight:750;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+
+  .mg-cp-mobile-metrics-chevron{
+    width:10px;
+    height:10px;
+    margin-left:auto;
+    border-right:2px solid #1b355d;
+    border-bottom:2px solid #1b355d;
+    transform:rotate(45deg) translateY(-2px);
+    transition:transform .18s ease;
+  }
+
+  .mg-cp-mobile-metrics-toggle[aria-expanded="true"] .mg-cp-mobile-metrics-chevron{
+    transform:rotate(225deg) translate(-1px,-1px);
+  }
+
+  .mg-cp-mobile-metrics-body{
+    display:block;
+    padding:8px;
+  }
+
+  .mg-cp-mobile-metrics-body[hidden]{
+    display:none!important;
+  }
+
+  .mg-cp-kpis{
+    display:grid!important;
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    gap:6px!important;
+    margin:0!important;
+  }
+
+  .mg-cp-kpis article{
+    min-width:0!important;
+    min-height:91px!important;
+    padding:8px 7px 9px!important;
+    border-radius:12px!important;
+    box-shadow:none!important;
+  }
+
+  .mg-cp-kpi-icon{
+    width:25px!important;
+    height:25px!important;
+    border-radius:8px!important;
+    font-size:12px!important;
+  }
+
+  .mg-cp-kpis p{
+    display:-webkit-box;
+    min-height:22px;
+    margin:5px 0 4px!important;
+    overflow:hidden;
+    color:#3d4c64!important;
+    font-size:7.5px!important;
+    font-weight:900!important;
+    line-height:1.35!important;
+    -webkit-box-orient:vertical;
+    -webkit-line-clamp:2;
+  }
+
+  .mg-cp-kpis strong{
+    overflow:hidden;
+    font-size:17px!important;
+    line-height:1.05!important;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+
+  .mg-cp-kpis small{
+    overflow:hidden;
+    margin-top:4px!important;
+    color:#738198!important;
+    font-size:7px!important;
+    line-height:1.25!important;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+
+  /* Tighten the profile summary that follows the metrics. */
+  .mg-cp-profile-card{
+    position:static!important;
+    padding:12px!important;
+  }
+
+  .mg-cp-avatar{
+    width:80px!important;
+    height:80px!important;
+    margin-bottom:9px!important;
+  }
+
+  .mg-cp-avatar span{
+    width:54px!important;
+    height:54px!important;
+    margin-top:20px!important;
+    font-size:18px!important;
+  }
+
+  .mg-cp-profile-card h2{
+    margin-bottom:3px!important;
+    font-size:18px!important;
+  }
+
+  .mg-cp-muted{
+    margin:2px 0!important;
+    font-size:10px!important;
+  }
+
+  .mg-cp-pills{
+    margin:9px 0!important;
+  }
+
+  .mg-cp-mini-stats{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    margin:8px 0 10px!important;
+  }
+
+  .mg-cp-mini-stats div{
+    padding:8px 5px!important;
+    border-right:1px solid var(--mg-cp-line)!important;
+    border-bottom:1px solid var(--mg-cp-line)!important;
+  }
+
+  .mg-cp-mini-stats div:nth-child(2n){
+    border-right:0!important;
+  }
+
+  .mg-cp-mini-stats div:nth-child(n+3){
+    border-bottom:0!important;
+  }
+
+  .mg-cp-mini-stats small{
+    min-height:20px!important;
+    font-size:8px!important;
+  }
+
+  .mg-cp-mini-stats strong{
+    margin-top:3px!important;
+    font-size:17px!important;
+  }
+
+  .mg-cp-details{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:9px 8px!important;
+    margin-top:8px!important;
+  }
+
+  .mg-cp-details div{
+    grid-template-columns:22px minmax(0,1fr)!important;
+    gap:6px!important;
+  }
+
+  .mg-cp-details div::before{
+    width:18px!important;
+    height:18px!important;
+  }
+
+  .mg-cp-details dt{
+    font-size:8px!important;
+  }
+
+  .mg-cp-details dd{
+    overflow:hidden;
+    font-size:9px!important;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+}
+
+@media (max-width:350px){
+  .mg-cp-tabs{
+    gap:3px!important;
+    padding:5px!important;
+  }
+
+  .mg-cp-tabs button{
+    height:36px!important;
+  }
+
+  .mg-cp-tab-icon svg{
+    width:17px;
+    height:17px;
+  }
+
+  .mg-cp-kpis{
+    gap:5px!important;
+  }
+
+  .mg-cp-kpis article{
+    padding:7px 6px 8px!important;
+  }
+}
