@@ -15,6 +15,7 @@ $page_styles = ['/assets/css/case-study.css?v=1.0.1'];
 $page_scripts = [
     '/assets/js/public-case-studies-nav.js?v=1.0.0',
     '/assets/js/case-study.js?v=1.0.0',
+    '/assets/js/case-study-real-stats.js?v=1.0.0',
 ];
 $page_manifest = [
     'id' => 'case-study-detail',
