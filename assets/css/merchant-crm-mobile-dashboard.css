@@ -1,0 +1,501 @@
+/* Mobile Merchant CRM dashboard refinement. Desktop remains unchanged. */
+.mg-crm-mobile-overview,
+.mg-crm-mobile-overview-body{
+  display:contents;
+}
+
+.mg-crm-mobile-overview-toggle,
+.mg-crm-mobile-directory,
+.mg-crm-mobile-duplicate-stat{
+  display:none!important;
+}
+
+@media(max-width:720px){
+  .mg-crm-contacts-only .mg-crm-contacts-card{
+    border-radius:20px;
+  }
+
+  .mg-crm-contacts-only .mg-crm-contacts-card>.mg-app-panel-body{
+    gap:14px!important;
+    padding:12px 10px 20px!important;
+  }
+
+  .mg-crm-mobile-overview{
+    display:block;
+    overflow:hidden;
+    border:1px solid #dbe7f5;
+    border-radius:18px;
+    background:#fff;
+    box-shadow:0 14px 34px rgba(15,23,42,.045);
+  }
+
+  .mg-crm-mobile-overview-toggle{
+    display:flex!important;
+    width:100%;
+    min-height:76px;
+    align-items:center;
+    gap:12px;
+    border:0;
+    border-bottom:1px solid #e7eef7;
+    background:#fff;
+    color:#0b1830;
+    padding:14px 15px;
+    text-align:left;
+    cursor:pointer;
+  }
+
+  .mg-crm-mobile-overview-toggle[aria-expanded="false"]{
+    border-bottom:0;
+  }
+
+  .mg-crm-mobile-overview-icon{
+    display:grid;
+    flex:0 0 42px;
+    width:42px;
+    height:42px;
+    place-items:center;
+    border-radius:14px;
+    background:#eef5ff;
+    color:#1460ed;
+  }
+
+  .mg-crm-mobile-overview-icon svg,
+  .mg-crm-mobile-search-icon svg{
+    width:21px;
+    height:21px;
+    fill:none;
+    stroke:currentColor;
+    stroke-width:1.9;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+  }
+
+  .mg-crm-mobile-overview-copy{
+    display:grid;
+    min-width:0;
+    gap:4px;
+  }
+
+  .mg-crm-mobile-overview-copy strong{
+    color:#0c5fe9;
+    font-size:15px;
+    font-weight:1000;
+    letter-spacing:.02em;
+    text-transform:uppercase;
+  }
+
+  .mg-crm-mobile-overview-copy small{
+    color:#64748b;
+    font-size:11px;
+    font-weight:750;
+  }
+
+  .mg-crm-mobile-overview-chevron{
+    width:11px;
+    height:11px;
+    margin-left:auto;
+    border-right:2px solid #17345f;
+    border-bottom:2px solid #17345f;
+    transform:rotate(45deg) translateY(-3px);
+    transition:transform .18s ease;
+  }
+
+  .mg-crm-mobile-overview-toggle[aria-expanded="true"] .mg-crm-mobile-overview-chevron{
+    transform:rotate(225deg) translate(-2px,-1px);
+  }
+
+  .mg-crm-mobile-overview-body{
+    display:grid;
+    gap:12px;
+    padding:12px;
+  }
+
+  .mg-crm-mobile-overview-body[hidden]{
+    display:none!important;
+  }
+
+  .mg-crm-contact-stat-strip{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:10px!important;
+    margin:0!important;
+  }
+
+  .mg-crm-contact-stat-strip article,
+  .mg-crm-mobile-duplicate-stat{
+    display:grid!important;
+    grid-template-columns:38px minmax(0,1fr);
+    grid-template-rows:auto auto;
+    column-gap:10px;
+    align-items:center;
+    min-height:84px!important;
+    border-radius:15px!important;
+    padding:12px!important;
+    box-shadow:0 8px 22px rgba(30,64,175,.035)!important;
+  }
+
+  .mg-crm-contact-stat-strip article::before{
+    display:grid;
+    grid-column:1;
+    grid-row:1 / 3;
+    width:38px;
+    height:38px;
+    place-items:center;
+    border-radius:50%;
+    background:#edf4ff;
+    color:#145ee8;
+    font-size:18px;
+    font-weight:1000;
+  }
+
+  .mg-crm-contact-stat-strip article.is-high-intent::before{content:'◎'}
+  .mg-crm-contact-stat-strip article.is-followup::before{content:'↻';background:#fff4dd;color:#e58b00}
+  .mg-crm-contact-stat-strip article.is-claims::before{content:'◇';background:#e9fbef;color:#13a04d}
+  .mg-crm-contact-stat-strip article.is-messages::before{content:'✉';background:#f2ecff;color:#6647d9}
+  .mg-crm-contact-stat-strip article.is-active-messages::before{content:'➤';background:#edf4ff;color:#145ee8}
+  .mg-crm-contact-stat-strip article.is-duplicates::before{content:'♢';background:#fff0f3;color:#e53b64}
+
+  .mg-crm-contact-stat-strip article>span{
+    grid-column:2;
+    align-self:end;
+    margin:0 0 5px!important;
+    color:#60708b!important;
+    font-size:8px!important;
+    line-height:1.25;
+    letter-spacing:.07em!important;
+  }
+
+  .mg-crm-contact-stat-strip article>strong{
+    grid-column:2;
+    align-self:start;
+    font-size:22px!important;
+    line-height:1!important;
+  }
+
+  .mg-crm-mobile-duplicate-stat strong{
+    display:flex!important;
+    align-items:baseline;
+    gap:4px;
+  }
+
+  .mg-crm-mobile-duplicate-stat strong b{
+    font:inherit;
+  }
+
+  .mg-crm-mobile-duplicate-stat strong small{
+    color:#64748b;
+    font-size:8px;
+    font-weight:800;
+    line-height:1.2;
+  }
+
+  .mg-crm-identity-launch{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    align-items:center;
+    gap:10px;
+    margin:0!important;
+    border:1px solid #cfe0fb;
+    border-radius:15px;
+    background:#f7fbff;
+    padding:12px!important;
+  }
+
+  .mg-crm-identity-launch>div{
+    min-width:0;
+  }
+
+  .mg-crm-identity-launch span{
+    display:none;
+  }
+
+  .mg-crm-identity-launch strong{
+    color:#0d1b33;
+    font-size:11px;
+    line-height:1.35;
+  }
+
+  .mg-crm-identity-launch button{
+    min-height:36px;
+    border:1px solid #c9daf4;
+    border-radius:10px;
+    background:#fff;
+    color:#0c5fe9;
+    padding:0 12px;
+    font-size:10px;
+    font-weight:950;
+    white-space:nowrap;
+  }
+
+  .mg-crm-identity-panel{
+    margin:0!important;
+    border-radius:15px!important;
+    padding:13px!important;
+  }
+
+  .mg-crm-mobile-directory{
+    display:grid!important;
+    gap:10px;
+    padding:2px 2px 0;
+  }
+
+  .mg-crm-mobile-directory-head{
+    display:flex;
+    align-items:end;
+    justify-content:space-between;
+    gap:12px;
+  }
+
+  .mg-crm-mobile-directory-head span{
+    display:block;
+    margin-bottom:3px;
+    color:#75839a;
+    font-size:8px;
+    font-weight:950;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+  }
+
+  .mg-crm-mobile-directory-head h2{
+    margin:0;
+    color:#0b1830;
+    font-size:17px;
+    font-weight:1000;
+    letter-spacing:-.025em;
+  }
+
+  .mg-crm-mobile-directory-head button{
+    border:0;
+    background:transparent;
+    color:#0d5fe9;
+    padding:4px 0;
+    font-size:10px;
+    font-weight:950;
+  }
+
+  .mg-crm-mobile-search{
+    display:flex;
+    min-height:46px;
+    align-items:center;
+    gap:10px;
+    border:1px solid #d6e3f4;
+    border-radius:14px;
+    background:#fff;
+    padding:0 12px;
+    box-shadow:0 8px 24px rgba(15,23,42,.035);
+  }
+
+  .mg-crm-mobile-search-icon{
+    display:grid;
+    flex:0 0 22px;
+    place-items:center;
+    color:#6c7d97;
+  }
+
+  .mg-crm-mobile-search input{
+    width:100%;
+    min-width:0;
+    border:0;
+    outline:0;
+    background:transparent;
+    color:#0b1830;
+    font-size:13px;
+  }
+
+  .mg-crm-mobile-search input::placeholder{
+    color:#8795aa;
+  }
+
+  .mg-crm-mobile-search button{
+    display:grid;
+    flex:0 0 28px;
+    width:28px;
+    height:28px;
+    place-items:center;
+    border:0;
+    border-radius:9px;
+    background:#eef4fb;
+    color:#536681;
+    font-size:18px;
+  }
+
+  .mg-crm-mobile-search button[hidden]{
+    display:none!important;
+  }
+
+  .mg-crm-mobile-search-empty{
+    margin:0;
+    border:1px dashed #cbd9ea;
+    border-radius:12px;
+    background:#fff;
+    color:#64748b;
+    padding:12px;
+    text-align:center;
+    font-size:11px;
+    font-weight:800;
+  }
+
+  .mg-crm-contacts-only .mg-crm-table-wrap{
+    overflow:visible!important;
+  }
+
+  .mg-crm-contacts-only .mg-crm-contacts-table,
+  .mg-crm-contacts-only .mg-crm-contacts-table tbody{
+    display:block;
+    width:100%;
+  }
+
+  .mg-crm-contacts-only .mg-crm-contact-row{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) 118px!important;
+    grid-template-areas:
+      'contact engagement'
+      'campaign engagement'
+      'actions actions';
+    gap:8px 12px!important;
+    min-height:0!important;
+    margin:0 0 10px;
+    padding:14px!important;
+    border-radius:16px!important;
+  }
+
+  .mg-crm-contacts-only .mg-crm-contact-row[hidden]{
+    display:none!important;
+  }
+
+  .mg-crm-contacts-only .mg-crm-contact-row .mg-crm-contact-cell{
+    grid-area:contact!important;
+    grid-column:auto!important;
+    padding:0!important;
+  }
+
+  .mg-crm-contacts-only .mg-crm-contact-row .mg-crm-campaign-cell{
+    grid-area:campaign!important;
+    grid-column:auto!important;
+  }
+
+  .mg-crm-contacts-only .mg-crm-contact-row .mg-crm-engagement-cell{
+    grid-area:engagement!important;
+    grid-column:auto!important;
+    align-self:stretch;
+  }
+
+  .mg-crm-contacts-only .mg-crm-contact-row .mg-crm-actions-cell{
+    grid-area:actions!important;
+    grid-column:auto!important;
+  }
+
+  .mg-crm-contact-avatar{
+    display:none!important;
+  }
+
+  .mg-crm-contacts-only .mg-crm-contact-main{
+    grid-template-columns:minmax(0,1fr)!important;
+    gap:0!important;
+  }
+
+  .mg-crm-contact-name-link,
+  .mg-crm-contact-copy>strong{
+    font-size:13px!important;
+  }
+
+  .mg-crm-contact-copy>small{
+    margin-top:3px!important;
+    font-size:9px!important;
+  }
+
+  .mg-crm-contact-account{
+    display:flex;
+    gap:5px;
+    flex-wrap:wrap;
+    margin-top:7px;
+  }
+
+  .mg-crm-badge{
+    min-height:19px!important;
+    border-radius:8px!important;
+    padding:0 7px!important;
+    font-size:7px!important;
+  }
+
+  .mg-crm-campaign-cell strong{
+    font-size:10px!important;
+  }
+
+  .mg-crm-campaign-cell small{
+    margin-top:3px!important;
+    font-size:8px!important;
+  }
+
+  .mg-crm-campaign-rewards{
+    margin-top:6px!important;
+  }
+
+  .mg-crm-contacts-only .mg-crm-engagement-stats{
+    display:grid!important;
+    width:100%;
+    height:100%;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:5px!important;
+  }
+
+  .mg-crm-engagement-stats span{
+    min-height:45px;
+    align-content:center;
+    border-radius:10px;
+    background:#f8fafc;
+    padding:5px 3px;
+  }
+
+  .mg-crm-engagement-stats em{
+    font-size:7px!important;
+  }
+
+  .mg-crm-engagement-stats strong{
+    font-size:12px!important;
+  }
+
+  .mg-crm-contacts-only .mg-crm-row-actions{
+    justify-content:flex-end!important;
+    overflow:visible!important;
+    padding:0!important;
+  }
+
+  .mg-crm-contacts-only .mg-crm-icon-btn{
+    flex:0 0 32px!important;
+    width:32px!important;
+    min-width:32px!important;
+    max-width:32px!important;
+    height:32px!important;
+    border-radius:10px!important;
+  }
+
+  .mg-crm-icon-btn svg{
+    width:14px!important;
+    height:14px!important;
+  }
+}
+
+@media(max-width:360px){
+  .mg-crm-contact-stat-strip article,
+  .mg-crm-mobile-duplicate-stat{
+    grid-template-columns:30px minmax(0,1fr);
+    column-gap:7px;
+    min-height:78px!important;
+    padding:10px!important;
+  }
+
+  .mg-crm-contact-stat-strip article::before{
+    width:30px;
+    height:30px;
+    font-size:15px;
+  }
+
+  .mg-crm-contacts-only .mg-crm-contact-row{
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-areas:'contact' 'campaign' 'engagement' 'actions';
+  }
+
+  .mg-crm-contacts-only .mg-crm-engagement-stats{
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  }
+}
