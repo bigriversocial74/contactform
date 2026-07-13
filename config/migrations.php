@@ -115,6 +115,7 @@ return [
         'stage_18n_admin_user_notes.sql',
         'stage_18o_admin_queue_notes.sql',
         'stage_18p_admin_queue_notifications.sql',
+        'system_health_critical_schema_phase2.sql',
         'stage_18q_admin_notifications_center.sql',
         'stage_18r_admin_queue_sla_routing.sql',
         'stage_18s_admin_queue_playbooks.sql',
