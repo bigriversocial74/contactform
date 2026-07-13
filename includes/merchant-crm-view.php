@@ -13,7 +13,7 @@ declare(strict_types=1);
       </section>
 
       <div class="mg-crm-identity-launch">
-        <div><span>Contact identity health</span><strong><b data-crm-duplicate-count>—</b> possible duplicate groups</strong></div>
+        <div><span>Possible Duplicates</span><strong><b data-crm-duplicate-count>—</b> identity groups need review</strong></div>
         <button type="button" data-crm-duplicates-open>Review identities</button>
       </div>
 
