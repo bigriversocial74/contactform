@@ -107,6 +107,7 @@ return [
         'crm_scheduled_bulk_actions_20260704.sql',
         'merchant_crm_media_segments_v1.sql',
         'crm_contact_identity_duplicate_management_v1.sql',
+        'merchant_integrations_foundation_v1.sql',
         'stage_18j_content_moderation.sql',
         'stage_18k_admin_account_management.sql',
         'stage_18l_admin_commerce_operations.sql',
