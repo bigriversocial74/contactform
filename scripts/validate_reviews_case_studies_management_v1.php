@@ -13,7 +13,7 @@ $required=[
  'api/public/review-replies.php'=>['featured_on_profile','reply_body'],
  'api/public/case-studies/list.php'=>["f.status='published'",'display_order','hero_featured'],
  'api/public/case-studies/detail.php'=>['featured_in_case_study','customer_review_replies'],
- 'api/public/case-studies/stats.php'=>['published_products','active_campaigns','total_sales_cents','redemption_rate'],
+ 'api/public/case-studies/stats.php'=>['published_products','active_campaigns','total_sales','redemption_rate'],
  'assets/js/public-profile-review-replies.js'=>['Response from the merchant','Featured review'],
  'assets/js/case-study-curation.js'=>['Featured Reviews','Merchant response'],
  'assets/js/case-study-real-stats.js'=>['/api/public/case-studies/stats.php','data-cs-sales','data-cs-redemption'],
