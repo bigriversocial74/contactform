@@ -123,7 +123,6 @@ require __DIR__ . '/includes/header.php';
             <button class="mg-invest-btn is-gold mg-hidden mg-profile-follow-action" type="button" data-profile-follow>Follow</button>
             <button class="mg-invest-btn mg-profile-message-action" type="button" data-profile-message>Message</button>
             <button class="mg-invest-btn mg-profile-share-action" type="button" data-profile-share>Share</button>
-            <button class="mg-invest-btn mg-profile-save-action" type="button" data-profile-save>Save</button>
             <a class="mg-invest-btn mg-hidden mg-profile-edit-action" data-profile-edit href="/account.php">Edit</a>
             <div class="mg-public-link-list mg-hidden" data-profile-links-section><div data-profile-links></div></div>
           </div>
@@ -144,7 +143,6 @@ require __DIR__ . '/includes/header.php';
         <button type="button" data-invest-tab="stories">Stories</button>
         <button type="button" data-invest-tab="posts">Posts</button>
         <button type="button" data-invest-tab="campaigns">Campaigns</button>
-        <button type="button" data-invest-tab="analytics">Analytics</button>
       </nav>
 
       <div class="mg-invest-content-grid">
@@ -209,16 +207,6 @@ require __DIR__ . '/includes/header.php';
               <div class="mg-invest-section-head"><div><span class="mg-profile-section-kicker">Participate</span><h2>Campaigns</h2></div></div>
               <div class="mg-invest-campaign-list mg-profile-campaign-list-full" data-invest-campaigns-list-full></div>
               <div class="mg-invest-empty-state mg-hidden" data-invest-campaigns-empty-full>No campaigns are available yet.</div>
-            </article>
-          </section>
-
-          <section class="mg-invest-tab-panel" data-invest-panel="analytics" hidden>
-            <article class="mg-invest-card mg-profile-simple-panel">
-              <div class="mg-invest-section-head"><div><span class="mg-profile-section-kicker">Merchant privacy</span><h2>Analytics</h2></div></div>
-              <div class="mg-profile-private-analytics">
-                <strong>Public analytics are not displayed.</strong>
-                <p>Performance, customer, market, and operational data remain private to the merchant.</p>
-              </div>
             </article>
           </section>
 
