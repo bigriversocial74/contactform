@@ -29,8 +29,8 @@ $hasCanonicalIssuanceTruth = str_contains($content['foundation'], 'mg_order_issu
     || (
         str_contains($content['foundation'], 'mg_merchant_order_issuance_from_items')
         && str_contains($content['foundation'], "'query_shape' => 'bulk_detail_v2'")
-        && str_contains($content['foundation'], "'expected_units' => $expectedUnits")
-        && str_contains($content['foundation'], "'action_center_items' => $projectionItems")
+        && str_contains($content['foundation'], "'expected_units' => \$expectedUnits")
+        && str_contains($content['foundation'], "'action_center_items' => \$projectionItems")
     );
 
 $hasEscapeDialogControl = preg_match('/event\.key\s*={2,3}\s*[\'\"]Escape[\'\"]/', $content['js']) === 1;
