@@ -90,7 +90,7 @@ final class MgSquarespaceProvider implements MgMerchantIntegrationOAuthProvider
         if ($code === '') throw new InvalidArgumentException('Squarespace authorization code is required.');
         return $this->tokenRequest([
             'grant_type' => 'authorization_code',
-            'code' => rawurldecode($code),
+            'code' => $code,
             'redirect_uri' => $this->redirectUri(),
         ]);
     }
