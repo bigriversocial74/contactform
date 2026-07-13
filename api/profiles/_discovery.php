@@ -91,8 +91,18 @@ function mg_profile_discovery_base_sql(array $filters, ?int $viewerId, array &$p
     }
 
     $sql = "SELECT
-      pp.public_id,pp.slug,pp.display_name,pp.headline,pp.avatar_url,pp.location_label,
+      pp.public_id,pp.slug,pp.display_name,pp.headline,pp.avatar_url,pp.cover_url,pp.location_label,
       pp.profile_type,pp.visibility,pp.published_at,pp.updated_at,
+      COALESCE(
+        (SELECT NULLIF(ms.display_name,'') FROM merchant_storefronts ms
+          WHERE ms.merchant_user_id=pp.user_id AND ms.status='published' LIMIT 1),
+        pp.display_name
+      ) AS business_name,
+      (SELECT CONCAT('/api/catalog/asset-file.php?id=',ca.public_id)
+        FROM merchant_storefronts ms_cover
+        INNER JOIN catalog_assets ca ON ca.id=ms_cover.cover_asset_id AND ca.status='ready'
+        WHERE ms_cover.merchant_user_id=pp.user_id AND ms_cover.status='published'
+        LIMIT 1) AS storefront_cover_url,
       {$relevance} AS relevance_score,
       (SELECT COUNT(*) FROM social_follows sf WHERE sf.followed_user_id=pp.user_id AND sf.status='active') AS follower_count,
       (SELECT COUNT(DISTINCT s.subscriber_user_id) FROM subscriptions s
@@ -101,6 +111,8 @@ function mg_profile_discovery_base_sql(array $filters, ?int $viewerId, array &$p
       (SELECT COUNT(*) FROM catalog_products cp
         INNER JOIN catalog_product_versions cpv ON cpv.id=cp.current_version_id
         WHERE cp.merchant_user_id=pp.user_id AND cp.status='published' AND cpv.version_status='published') AS published_product_count,
+      (SELECT COUNT(*) FROM campaigns c
+        WHERE c.merchant_user_id=pp.user_id AND c.status='active') AS published_campaign_count,
       EXISTS(SELECT 1 FROM merchant_storefronts ms WHERE ms.merchant_user_id=pp.user_id AND ms.status='published') AS has_published_storefront,
       GREATEST(
         COALESCE(pp.updated_at,'1970-01-01 00:00:00'),
@@ -153,12 +165,17 @@ function mg_profile_discovery_base_sql(array $filters, ?int $viewerId, array &$p
 
 function mg_profile_discovery_item(array $row, string $resultKind = 'organic'): array
 {
+    $profileCover = mg_public_profile_safe_url($row['cover_url'] ?? null, true);
+    $storefrontCover = mg_public_profile_safe_url($row['storefront_cover_url'] ?? null, true);
+
     return [
         'id' => (string)$row['public_id'],
         'slug' => (string)$row['slug'],
         'display_name' => (string)$row['display_name'],
+        'business_name' => trim((string)($row['business_name'] ?? '')) !== '' ? (string)$row['business_name'] : (string)$row['display_name'],
         'headline' => $row['headline'] !== null ? (string)$row['headline'] : null,
         'avatar_url' => mg_public_profile_safe_url($row['avatar_url'] ?? null, true),
+        'cover_url' => $profileCover ?? $storefrontCover,
         'location' => $row['location_label'] !== null ? (string)$row['location_label'] : null,
         'profile_type' => (string)$row['profile_type'],
         'visibility' => (string)$row['visibility'],
@@ -168,6 +185,13 @@ function mg_profile_discovery_item(array $row, string $resultKind = 'organic'): 
         'url' => '/profile.php?slug=' . rawurlencode((string)$row['slug']),
         'audience' => ['followers' => (int)$row['follower_count'], 'supporters' => (int)$row['supporter_count']],
         'published_products' => (int)$row['published_product_count'],
+        'published_campaigns' => (int)$row['published_campaign_count'],
+        'reviews' => [
+            'average' => null,
+            'total' => 0,
+            'available' => false,
+            'status' => 'module_pending',
+        ],
         'has_published_storefront' => (bool)$row['has_published_storefront'],
         'result_kind' => $resultKind,
     ];

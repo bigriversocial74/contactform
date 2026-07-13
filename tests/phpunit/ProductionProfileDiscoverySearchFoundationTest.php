@@ -45,21 +45,24 @@ final class ProductionProfileDiscoverySearchFoundationTest extends TestCase
         }
     }
 
-    public function testDiscoveryPageLoadsDedicatedResponsiveAssetsAndStates(): void
+    public function testExplorePageLoadsContentFirstTemplateAssetsAndStates(): void
     {
         $page = $this->read('discover.php');
         foreach ([
-            '/assets/css/profile-discovery.css', '/assets/js/profile-discovery.js',
+            '/assets/css/profile-discovery.css',
+            '/assets/css/profile-discovery-content-cards.css?v=1.0.0',
+            '/assets/js/profile-discovery.js?v=2.0.0',
             'data-profile-discovery', 'data-discovery-form', 'data-discovery-loading',
             'data-discovery-empty', 'data-discovery-no-results', 'data-discovery-error',
             'data-discovery-retry', 'data-results-grid', 'data-discovery-pagination',
             'data-featured-grid', 'data-recent-grid', 'data-storefront-grid',
+            'Discover local businesses worth following.',
         ] as $needle) {
             self::assertStringContainsString($needle, $page);
         }
     }
 
-    public function testCanonicalQueryEnforcesVisibilityModerationBlocksAndBoundedCursor(): void
+    public function testCanonicalQueryEnforcesVisibilityAndProjectsContentCardFields(): void
     {
         $helper = $this->read('api/profiles/_discovery.php');
         foreach ([
@@ -68,6 +71,10 @@ final class ProductionProfileDiscoverySearchFoundationTest extends TestCase
             'mg_profile_discovery_cursor_decode', 'hash_equals(', 'relevance_score DESC',
             'featured_score DESC', 'recent_activity DESC', 'public_id ASC',
             "ESCAPE '!'", "str_replace(['!', '%', '_']", 'catalog_product_versions cpvc',
+            'pp.cover_url', 'AS business_name', 'AS storefront_cover_url',
+            'AS published_campaign_count', "c.status='active'",
+            "'business_name' =>", "'cover_url' =>", "'published_campaigns' =>",
+            "'reviews' =>", "'status' => 'module_pending'",
         ] as $needle) {
             self::assertStringContainsString($needle, $helper);
         }
@@ -90,7 +97,7 @@ final class ProductionProfileDiscoverySearchFoundationTest extends TestCase
         }
     }
 
-    public function testOrganicAndCuratedResultsAreExplicitlySeparated(): void
+    public function testOrganicAndCuratedResultsRemainExplicitlySeparated(): void
     {
         $helper = $this->read('api/profiles/_discovery.php');
         foreach ([
@@ -104,27 +111,37 @@ final class ProductionProfileDiscoverySearchFoundationTest extends TestCase
         }
     }
 
-    public function testClientUsesSafeDomProjectionAndCompleteLoadingStates(): void
+    public function testClientRendersOnlyContentFirstCardInformation(): void
     {
         $client = $this->read('assets/js/profile-discovery.js');
         foreach ([
             'textContent', 'createElement(', 'appendChild(', 'AbortController',
-            'credentials: \'same-origin\'', 'data.sections', 'next_cursor',
+            "credentials: 'same-origin'", 'next_cursor',
             'show(noResults', 'show(empty', 'show(error',
+            'mg-discovery-cover', 'mg-discovery-avatar', 'mg-discovery-business-name',
+            'mg-discovery-content-summary', 'published_products', 'published_campaigns',
+            'mg-discovery-review-metric', 'View profile →',
         ] as $needle) {
             self::assertStringContainsString($needle, $client);
         }
-        foreach (['.innerHTML =', 'insertAdjacentHTML(', 'document.write(', 'eval('] as $unsafe) {
-            self::assertStringNotContainsString($unsafe, $client);
+        foreach ([
+            '.innerHTML =', 'insertAdjacentHTML(', 'document.write(', 'eval(',
+            'Ticker Value', 'Merchant Score', 'marketPanel(', 'statGrid(', 'rankBadge(',
+        ] as $unsafeOrRemoved) {
+            self::assertStringNotContainsString($unsafeOrRemoved, $client);
         }
     }
 
-    public function testResponsiveStylesCoverDesktopTabletAndMobile(): void
+    public function testContentCardStylesCoverDesktopTabletAndMobile(): void
     {
-        $css = $this->read('assets/css/profile-discovery.css');
+        $css = $this->read('assets/css/profile-discovery-content-cards.css');
         foreach ([
-            '.mg-discovery-search', '.mg-discovery-card-grid', '.mg-discovery-card',
-            '@media(max-width:1080px)', '@media(max-width:680px)',
+            '.mg-discovery-cover', '.mg-discovery-avatar', '.mg-discovery-business-name',
+            '.mg-discovery-content-summary', '.mg-discovery-review-metric',
+            'grid-template-columns:repeat(2,minmax(0,1fr))!important',
+            '@media(max-width:1180px)', '@media(max-width:860px)',
+            '@media(max-width:620px)', '@media(max-width:420px)',
+            '.mg-discovery-market-panel', '.mg-discovery-stat-grid', 'display:none!important',
         ] as $needle) {
             self::assertStringContainsString($needle, $css);
         }
