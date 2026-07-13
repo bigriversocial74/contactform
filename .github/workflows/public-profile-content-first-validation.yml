@@ -6,6 +6,7 @@ on:
       - integration-from-repair-20260628
     paths:
       - 'profile.php'
+      - 'api/public/profile.php'
       - 'assets/css/public-profile-content-first.css'
       - 'assets/js/public-profile-investment.js'
       - 'scripts/validate_public_profile_content_first.php'
@@ -37,6 +38,7 @@ jobs:
       - name: PHP syntax
         run: |
           php -l profile.php
+          php -l api/public/profile.php
           php -l scripts/validate_public_profile_content_first.php
           php -l tests/phpunit/PublicProfileContentFirstContractTest.php
 
