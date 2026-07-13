@@ -1,0 +1,64 @@
+name: Reviews Case Studies Management v1
+
+on:
+  pull_request:
+    paths:
+      - 'admin/reviews.php'
+      - 'merchant-reviews.php'
+      - 'api/admin/reviews.php'
+      - 'api/merchant/reviews.php'
+      - 'api/public/review-replies.php'
+      - 'api/public/case-studies/**'
+      - 'includes/reviews-case-studies.php'
+      - 'includes/merchant-reviews-view.php'
+      - 'includes/merchant-view.php'
+      - 'includes/merchant-navigation.php'
+      - 'assets/js/admin-reviews-case-studies.js'
+      - 'assets/js/merchant-reviews.js'
+      - 'assets/js/public-profile-review-replies.js'
+      - 'assets/js/featured-case-studies.js'
+      - 'assets/js/case-study-curation.js'
+      - 'assets/css/reviews-case-studies-management.css'
+      - 'assets/css/public-review-replies.css'
+      - 'database/reviews_case_studies_management_v1.sql'
+      - 'config/migrations.php'
+      - 'scripts/validate_reviews_case_studies_management_v1.php'
+      - '.github/workflows/reviews-case-studies-management-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+      - name: PHP syntax
+        run: |
+          php -l admin/reviews.php
+          php -l merchant-reviews.php
+          php -l api/admin/reviews.php
+          php -l api/merchant/reviews.php
+          php -l api/public/review-replies.php
+          php -l api/public/case-studies/list.php
+          php -l api/public/case-studies/detail.php
+          php -l includes/reviews-case-studies.php
+          php -l includes/merchant-reviews-view.php
+          php -l includes/merchant-view.php
+          php -l includes/merchant-navigation.php
+          php -l config/migrations.php
+          php -l scripts/validate_reviews_case_studies_management_v1.php
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/admin-reviews-case-studies.js
+          node --check assets/js/merchant-reviews.js
+          node --check assets/js/public-profile-review-replies.js
+          node --check assets/js/featured-case-studies.js
+          node --check assets/js/case-study-curation.js
+          node --check assets/js/reviews-management-nav.js
+      - name: Contract validation
+        run: php scripts/validate_reviews_case_studies_management_v1.php
