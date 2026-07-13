@@ -19,16 +19,7 @@
     return node;
   }
   function payload(response){ return response && response.data ? response.data : response || {}; }
-  function normalizeText(value){
-    return String(value == null ? '' : value).replace(/No Market Signal/gi, 'No Signal');
-  }
-  function m(value, fallback){
-    var text = value && typeof value === 'object' && 'display' in value
-      ? String(value.display)
-      : (value == null ? String(fallback || '0') : String(value));
-    return normalizeText(text);
-  }
-  function has(value){ return !!(value && typeof value === 'object' && value.has_data); }
+  function normalizeText(value){ return String(value == null ? '' : value).replace(/No Market Signal/gi, 'No Signal'); }
   function hide(node, hidden){ if (node) node.classList.toggle('mg-hidden', !!hidden); }
   function href(value, fallback){
     try {
@@ -43,8 +34,7 @@
   function profileUrl(){ return slug ? '/profile.php?slug=' + encodeURIComponent(slug) : '/profile.php'; }
   function setField(key, value){
     qsa('[data-invest-field="' + key + '"]').forEach(function(node){
-      node.textContent = m(value, '0');
-      node.classList.toggle('mg-invest-no-data', value && typeof value === 'object' && !value.has_data);
+      node.textContent = normalizeText(value && typeof value === 'object' && 'display' in value ? value.display : value || '');
     });
   }
   function status(text, type){
@@ -60,24 +50,26 @@
   function authed(){ return !!(MG.isAuthenticated && MG.isAuthenticated()); }
 
   function emptyMarkup(icon, title, body){
-    return '<span class="mg-invest-empty-icon" aria-hidden="true">' + icon + '</span><strong>' + title + '</strong><small>' + body + '</small>';
+    var wrap = el('span', 'mg-invest-empty-icon', icon);
+    var strong = el('strong', '', title);
+    var small = el('small', '', body);
+    var fragment = document.createDocumentFragment();
+    fragment.append(wrap, strong, small);
+    return fragment;
   }
+
   function setEmpty(selector, icon, title, body){
     var node = qs(selector);
-    if (node) node.innerHTML = emptyMarkup(icon, title, body);
+    if (!node) return;
+    node.replaceChildren(emptyMarkup(icon, title, body));
   }
+
   function emptyStates(){
-    setEmpty('[data-invest-chart-empty]', '↗', 'No recent pricing data', 'Ticker value updates when market activity is available.');
-    setEmpty('[data-invest-demand-empty]', '〽', 'No signal yet', 'Merchant score will update after products, campaigns, followers, or redemption activity.');
     setEmpty('[data-profile-products-empty]', '🎁', 'No featured experiences', 'Published products and giftable offers will appear here.');
-    setEmpty('[data-invest-campaigns-empty]', '📣', 'No active campaigns', 'Create a campaign to start reaching new customers.');
-    setEmpty('[data-invest-campaigns-empty-full]', '📣', 'No campaigns yet', 'Live reward and CRM campaigns will appear here.');
+    setEmpty('[data-invest-campaigns-empty]', '✦', 'No active campaigns', 'Campaigns will appear here when this merchant launches one.');
+    setEmpty('[data-invest-campaigns-empty-full]', '✦', 'No campaigns yet', 'Live reward and participation campaigns will appear here.');
     setEmpty('[data-profile-posts-empty]', '✦', 'No posts yet', 'Updates from this profile will appear here.');
-    setEmpty('[data-invest-analytics-empty]', '◎', 'No analytics yet', 'Analytics will populate after products, campaigns, wallet, distribution, and profile activity.');
     setEmpty('[data-profile-plans-empty]', '★', 'No memberships yet', 'Support plans and membership options will appear here.');
-    setEmpty('[data-invest-portfolio-empty]', '◌', 'No portfolio activity', 'Ticker value and ownership activity will appear as the market develops.');
-    setEmpty('[data-invest-activity-empty]', '◷', 'No recent activity', 'Activity will appear here when there is movement.');
-    setEmpty('[data-invest-trending-empty]', '✧', 'No trending experiences', 'Trending experiences will appear here soon.');
   }
 
   function moveLinks(){
@@ -97,9 +89,21 @@
     qsa(':scope > *', source).forEach(function(card){ target.appendChild(card.cloneNode(true)); });
     if (!target.children.length) {
       var empty = el('div', 'mg-invest-empty-state');
-      empty.innerHTML = emptyMarkup('🎁', 'No featured experiences', 'Published products and giftable offers will appear here.');
+      empty.appendChild(emptyMarkup('🎁', 'No featured experiences', 'Published products and giftable offers will appear here.'));
       target.appendChild(empty);
     }
+  }
+
+  function campaignIcon(item){
+    var value = String((item && (item.campaign_type || item.type || item.title)) || '').toLowerCase();
+    if (value.includes('scratch') || value.includes('contest')) return '✦';
+    if (value.includes('video') || value.includes('watch')) return '▶';
+    if (value.includes('scan') || value.includes('qr')) return '⌗';
+    if (value.includes('listen') || value.includes('audio') || value.includes('music')) return '♫';
+    if (value.includes('stamp') || value.includes('check')) return '◎';
+    if (value.includes('newsletter') || value.includes('email') || value.includes('signup')) return '✉';
+    if (value.includes('referral')) return '↗';
+    return '•';
   }
 
   function campaigns(selector, emptySelector, items){
@@ -107,154 +111,45 @@
     var empty = qs(emptySelector);
     if (!box) return;
     box.replaceChildren();
+
     (Array.isArray(items) ? items : []).forEach(function(item){
-      var card = el('article', '');
-      var title = item.url ? el('a', 'mg-invest-campaign-title', item.title || 'Campaign') : el('b', '', item.title || 'Campaign');
+      var card = el('article', 'mg-profile-campaign-card');
+      var icon = el('span', 'mg-profile-campaign-icon', campaignIcon(item));
+      icon.setAttribute('aria-hidden', 'true');
+
+      var copy = el('div', 'mg-profile-campaign-copy');
+      var title = item.url
+        ? el('a', 'mg-profile-campaign-title', item.title || 'Campaign')
+        : el('strong', 'mg-profile-campaign-title', item.title || 'Campaign');
       if (item.url) title.href = href(item.url, '/campaign.php');
-      card.append(title, el('span', '', String(item.status || 'active').toUpperCase()), el('p', '', item.description || 'No campaign description provided.'));
-      if (item.progress !== null && item.progress !== undefined) {
-        var progress = document.createElement('progress');
-        progress.value = Math.max(0, Math.min(100, Number(item.progress) || 0));
-        progress.max = 100;
-        card.appendChild(progress);
+      copy.append(title, el('p', '', item.description || 'Open this campaign to learn more.'));
+
+      var chevron = item.url ? el('a', 'mg-profile-campaign-chevron', '›') : el('span', 'mg-profile-campaign-chevron', '›');
+      if (item.url) {
+        chevron.href = href(item.url, '/campaign.php');
+        chevron.setAttribute('aria-label', 'Open ' + String(item.title || 'campaign'));
+      } else {
+        chevron.setAttribute('aria-hidden', 'true');
       }
-      card.appendChild(el('small', 'mg-invest-campaign-meta', Number(item.issued_count || 0).toLocaleString() + ' issued' + (item.quantity_limit ? ' of ' + Number(item.quantity_limit).toLocaleString() : '')));
+
+      card.append(icon, copy, chevron);
       box.appendChild(card);
     });
+
     hide(empty, box.children.length > 0);
-  }
-
-  function analytics(data){
-    var grid = qs('[data-invest-analytics-grid]');
-    var empty = qs('[data-invest-analytics-empty]');
-    var formulas = qs('[data-invest-formula-list]');
-    if (grid) {
-      grid.replaceChildren();
-      ((data.analytics && data.analytics.items) || []).forEach(function(item){
-        var card = el('div', '');
-        card.classList.toggle('mg-invest-no-data', !item.has_data);
-        card.append(el('strong', '', normalizeText(item.value || '0')), el('span', '', normalizeText(item.label || 'Metric')));
-        if (item.detail) card.appendChild(el('small', '', normalizeText(item.detail)));
-        grid.appendChild(card);
-      });
-      hide(empty, grid.children.length > 0 && data.analytics && data.analytics.has_data);
-    }
-    if (formulas) {
-      formulas.replaceChildren();
-      ((data.analytics && data.analytics.formulas) || []).forEach(function(text){ formulas.appendChild(el('p', '', normalizeText(text))); });
-    }
-  }
-
-  function sidebar(data){
-    var portfolio = data.portfolio || {};
-    var portfolioValue = qs('[data-invest-portfolio-value]');
-    var portfolioSubtitle = qs('[data-invest-portfolio-subtitle]');
-    if (portfolioValue) portfolioValue.textContent = portfolio.has_data ? normalizeText(portfolio.value || '$0') : 'No data';
-    if (portfolioSubtitle) portfolioSubtitle.textContent = portfolio.has_data ? normalizeText(portfolio.subtitle || 'Real profile value') : 'Ticker value • No Signal';
-    hide(qs('[data-invest-portfolio-empty]'), !!portfolio.has_data);
-
-    var activity = qs('[data-invest-activity-list]');
-    var activityEmpty = qs('[data-invest-activity-empty]');
-    if (activity) {
-      activity.replaceChildren();
-      ((data.activity && data.activity.items) || []).forEach(function(item){
-        var row = el('p', '');
-        row.append(document.createTextNode(normalizeText(item.title || 'Reward')), el('b', '', normalizeText(String(item.value || '$0') + ' ' + String(item.status || ''))));
-        activity.appendChild(row);
-      });
-      hide(activityEmpty, activity.children.length > 0);
-    }
-
-    var trending = qs('[data-invest-trending-list]');
-    var trendingEmpty = qs('[data-invest-trending-empty]');
-    if (trending) {
-      trending.replaceChildren();
-      ((data.trending && data.trending.items) || []).forEach(function(item){
-        var li = el('li', '');
-        var title = item.url ? el('a', '', item.title || 'Experience') : document.createTextNode(item.title || 'Experience');
-        if (title.href) title.href = href(item.url, '/discover.php');
-        li.append(title, el('b', '', Number(item.score || 0).toLocaleString() + ' score'));
-        trending.appendChild(li);
-      });
-      hide(trendingEmpty, trending.children.length > 0);
-    }
-  }
-
-  function chartValue(point){
-    return Number(point.ticker_value_cents !== undefined ? point.ticker_value_cents : (point.value_cents !== undefined ? point.value_cents : 0));
-  }
-  function chart(data){
-    var svg = qs('[data-invest-market-chart]');
-    var line = qs('[data-invest-chart-line]');
-    var fill = qs('[data-invest-chart-fill]');
-    var labels = qs('[data-invest-chart-labels]');
-    var empty = qs('[data-invest-chart-empty]');
-    var series = data.series || {};
-    var points = Array.isArray(series.market_snapshots) && series.market_snapshots.length >= 2 ? series.market_snapshots : (Array.isArray(series.volume_30d) ? series.volume_30d : []);
-    if (!svg || !line || !fill) return;
-    if (points.length < 2) {
-      line.setAttribute('d', '');
-      fill.setAttribute('d', '');
-      if (labels) labels.replaceChildren();
-      hide(svg, true);
-      hide(empty, false);
-      return;
-    }
-    var max = Math.max.apply(null, points.map(chartValue));
-    if (max <= 0) {
-      hide(svg, true);
-      hide(empty, false);
-      return;
-    }
-    var width = 305, height = 120, left = 10, top = 18, bottom = 140;
-    var path = points.map(function(point, index){
-      var x = left + (index / (points.length - 1)) * width;
-      var y = top + (1 - (chartValue(point) / max)) * height;
-      return (index ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1);
-    }).join(' ');
-    line.setAttribute('d', path);
-    fill.setAttribute('d', path + ' L ' + (left + width).toFixed(1) + ' ' + bottom + ' L ' + left + ' ' + bottom + ' Z');
-    hide(svg, false);
-    hide(empty, true);
-    if (labels) {
-      labels.replaceChildren();
-      [points[0], points[Math.floor(points.length / 2)], points[points.length - 1]].forEach(function(point){ labels.appendChild(el('span', '', point.date || '')); });
-    }
-  }
-
-  function demand(data){
-    var metrics = data.metrics || {};
-    var ok = has(metrics.demand_score);
-    var score = Number(metrics.demand_score && metrics.demand_score.raw !== undefined ? metrics.demand_score.raw : 0);
-    var ring = qs('[data-invest-demand-ring]');
-    if (ring) {
-      var circumference = 282.743;
-      var filled = Math.max(0, Math.min(100, score)) / 100 * circumference;
-      ring.style.strokeDasharray = filled.toFixed(2) + ' ' + circumference.toFixed(2);
-    }
-    hide(qs('[data-invest-demand-meter]'), !ok);
-    hide(qs('[data-invest-demand-empty]'), ok);
-    Object.keys(data.factors || {}).forEach(function(key){
-      var node = qs('[data-invest-factor="' + key + '"]');
-      if (node) node.textContent = String(data.factors[key]);
-    });
   }
 
   function render(raw){
     var data = payload(raw);
     invest = data;
     emptyStates();
-    var metrics = data.metrics || {};
+
     var profile = data.profile || {};
-    setField('display_name', profile.display_name || 'Microgifter Merchant');
-    setField('tagline', profile.tagline || '');
-    Object.keys(metrics).forEach(function(key){ setField(key, metrics[key]); });
+    if (profile.display_name) setField('display_name', profile.display_name);
+    if (profile.tagline) setField('tagline', profile.tagline);
+
     campaigns('[data-invest-campaigns-list]', '[data-invest-campaigns-empty]', data.campaigns && data.campaigns.items);
     campaigns('[data-invest-campaigns-list-full]', '[data-invest-campaigns-empty-full]', data.campaigns && data.campaigns.items);
-    analytics(data);
-    sidebar(data);
-    chart(data);
-    demand(data);
     syncProducts();
     moveLinks();
     ownerTools(Boolean(base && base.profile && base.profile.availability && base.profile.availability.is_owner));
@@ -262,33 +157,30 @@
 
   function load(){
     if (!slug) return;
-    fetch('/api/public/profile-investment.php?slug=' + encodeURIComponent(slug) + (preview ? '&preview=1' : ''), {credentials:'same-origin', headers:{Accept:'application/json'}})
+    fetch('/api/public/profile-investment.php?slug=' + encodeURIComponent(slug) + (preview ? '&preview=1' : ''), {
+      credentials:'same-origin',
+      headers:{Accept:'application/json'}
+    })
       .then(function(response){ return response.ok ? response.json() : null; })
       .then(function(json){
-        if (!json) return;
-        var data = payload(json);
-        return fetch('/api/public/profile-market-series.php?slug=' + encodeURIComponent(slug) + '&days=30', {credentials:'same-origin', headers:{Accept:'application/json'}})
-          .then(function(response){ return response.ok ? response.json() : null; })
-          .then(function(seriesJson){
-            var seriesData = payload(seriesJson);
-            if (seriesData && seriesData.series && Array.isArray(seriesData.series.market_snapshots)) {
-              data.series = data.series || {};
-              data.series.market_snapshots = seriesData.series.market_snapshots;
-            }
-            render(data);
-          })
-          .catch(function(){ render(data); });
+        if (json) render(payload(json));
+        else render({profile:{}, campaigns:{items:[]}});
       })
-      .catch(function(){ render({metrics:{}, campaigns:{items:[]}, analytics:{items:[]}, activity:{items:[]}, trending:{items:[]}, series:{volume_30d:[]}}); });
+      .catch(function(){ render({profile:{}, campaigns:{items:[]}}); });
   }
 
   function tabs(){
     var tabs = qsa('[data-invest-tab]');
     var panels = qsa('[data-invest-panel]');
     if (!tabs.length) return;
+
     function show(name){
       if (name === 'products') syncProducts();
-      tabs.forEach(function(tab){ tab.classList.toggle('is-active', tab.getAttribute('data-invest-tab') === name); });
+      tabs.forEach(function(tab){
+        var active = tab.getAttribute('data-invest-tab') === name;
+        tab.classList.toggle('is-active', active);
+        tab.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
       panels.forEach(function(panel){
         var active = panel.getAttribute('data-invest-panel') === name;
         panel.hidden = !active;
@@ -296,7 +188,15 @@
         if (active) panel.classList.remove('mg-hidden');
       });
     }
-    tabs.forEach(function(tab){ tab.addEventListener('click', function(event){ event.preventDefault(); show(tab.getAttribute('data-invest-tab') || 'overview'); }); });
+
+    tabs.forEach(function(tab){
+      tab.setAttribute('role', 'tab');
+      tab.addEventListener('click', function(event){
+        event.preventDefault();
+        show(tab.getAttribute('data-invest-tab') || 'overview');
+      });
+    });
+
     show((qs('[data-invest-tab].is-active') || tabs[0]).getAttribute('data-invest-tab') || 'overview');
   }
 
@@ -306,7 +206,36 @@
     if (cover && !qs('[data-cover-adjust-tools]')) {
       var tools = el('div', 'mg-profile-owner-tools');
       tools.setAttribute('data-cover-adjust-tools', '1');
-      tools.innerHTML = '<button class="mg-profile-tool-btn" type="button" data-cover-adjust-toggle>Adjust cover</button><a href="/account.php">Replace cover</a><a href="/account.php">Delete cover</a><div class="mg-cover-adjust-panel" data-cover-adjust-panel><label><span>X position</span><input type="range" min="0" max="100" value="50" data-cover-position-x></label><label><span>Y position</span><input type="range" min="0" max="100" value="50" data-cover-position-y></label><div><button class="mg-profile-tool-btn" type="button" data-cover-adjust-reset>Reset</button><button class="mg-profile-tool-btn" type="button" data-cover-adjust-save>Save view</button></div></div>';
+
+      var toggle = el('button', 'mg-profile-tool-btn', 'Adjust cover');
+      toggle.type = 'button';
+      toggle.setAttribute('data-cover-adjust-toggle', '');
+
+      var replace = el('a', '', 'Replace cover');
+      replace.href = '/account.php';
+      var remove = el('a', '', 'Delete cover');
+      remove.href = '/account.php';
+
+      var panel = el('div', 'mg-cover-adjust-panel');
+      panel.setAttribute('data-cover-adjust-panel', '');
+      var xLabel = el('label', '');
+      xLabel.append(el('span', '', 'X position'));
+      var x = document.createElement('input');
+      x.type = 'range'; x.min = '0'; x.max = '100'; x.value = '50'; x.setAttribute('data-cover-position-x', '');
+      xLabel.append(x);
+      var yLabel = el('label', '');
+      yLabel.append(el('span', '', 'Y position'));
+      var y = document.createElement('input');
+      y.type = 'range'; y.min = '0'; y.max = '100'; y.value = '50'; y.setAttribute('data-cover-position-y', '');
+      yLabel.append(y);
+      var controls = el('div', '');
+      var reset = el('button', 'mg-profile-tool-btn', 'Reset');
+      reset.type = 'button'; reset.setAttribute('data-cover-adjust-reset', '');
+      var save = el('button', 'mg-profile-tool-btn', 'Save view');
+      save.type = 'button'; save.setAttribute('data-cover-adjust-save', '');
+      controls.append(reset, save);
+      panel.append(xLabel, yLabel, controls);
+      tools.append(toggle, replace, remove, panel);
       cover.appendChild(tools);
     }
     if (isOwner) coverControls();
@@ -321,7 +250,11 @@
     var x = qs('[data-cover-position-x]');
     var y = qs('[data-cover-position-y]');
     var background = qs('[data-profile-cover]');
-    function apply(){ if (background) background.style.backgroundPosition = String(x ? x.value : 50) + '% ' + String(y ? y.value : 50) + '%'; }
+
+    function apply(){
+      if (background) background.style.backgroundPosition = String(x ? x.value : 50) + '% ' + String(y ? y.value : 50) + '%';
+    }
+
     if (toggle && !toggle.dataset.bound) {
       toggle.dataset.bound = '1';
       toggle.addEventListener('click', function(){ panel.classList.toggle('is-open'); });
@@ -340,7 +273,12 @@
           method:'POST',
           credentials:'same-origin',
           headers:{'Content-Type':'application/json','Accept':'application/json'},
-          body:JSON.stringify({slug:slug, x:x ? Number(x.value) : 50, y:y ? Number(y.value) : 50, csrf_token:token ? token.content : ''})
+          body:JSON.stringify({
+            slug:slug,
+            x:x ? Number(x.value) : 50,
+            y:y ? Number(y.value) : 50,
+            csrf_token:token ? token.content : ''
+          })
         }).catch(function(){});
       });
     }
@@ -379,7 +317,11 @@
     if (!authed()) return void signin();
     if (MG.setBusy) MG.setBusy(button, true, 'Saving…');
     try {
-      var response = payload(await MG.post('/api/social/relationship.php', {action:'follow', profile_id:profileId, idempotency_key:uuid('profile-save')}));
+      var response = payload(await MG.post('/api/social/relationship.php', {
+        action:'follow',
+        profile_id:profileId,
+        idempotency_key:uuid('profile-save')
+      }));
       status(response && response.relationship && response.relationship.following ? 'Profile saved to your followed merchants.' : 'Profile saved.', 'success');
     } catch (error) {
       status(error && error.message ? error.message : 'Unable to save this profile.', 'error');
@@ -393,6 +335,7 @@
     base = event.detail || {};
     ownerTools(Boolean(base.profile && base.profile.availability && base.profile.availability.is_owner));
   });
+
   root.addEventListener('click', function(event){
     var deleteButton = event.target.closest('[data-profile-avatar-delete]');
     if (deleteButton) {
@@ -405,6 +348,7 @@
       setTimeout(function(){ location.href = '/account.php'; }, 450);
       return;
     }
+
     var shareButton = event.target.closest('[data-profile-share]');
     if (shareButton) { event.preventDefault(); share(); return; }
     var messageButton = event.target.closest('[data-profile-message]');
@@ -417,7 +361,7 @@
   moveLinks();
   tabs();
   var source = qs('[data-profile-products-grid]');
-  if (source && MutationObserver) new MutationObserver(syncProducts).observe(source, {childList:true, subtree:false});
+  if (source && window.MutationObserver) new MutationObserver(syncProducts).observe(source, {childList:true, subtree:false});
   coverControls();
   load();
 })();
