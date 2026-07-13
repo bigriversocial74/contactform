@@ -173,10 +173,11 @@ document.addEventListener('DOMContentLoaded',function(){
     var copy=el('div');
     copy.append(el('h2','','Migration Plan Results'),el('p','',result.ready?'The canonical migration manifest is satisfied.':'Read-only database and deployment comparison. Review before uploading or importing SQL.'));
     var actions=el('div','mg-migration-plan-actions');
+    var reconcileButton=el('button','is-primary','Analyze installed schema');reconcileButton.type='button';reconcileButton.dataset.healthAction='migration_reconciliation_plan';reconcileButton.dataset.healthActionEnabled='true';
     var copyButton=el('button','','Copy plan');copyButton.type='button';copyButton.addEventListener('click',function(){copyPlan(result);});
     var downloadButton=el('button','','Download full JSON');downloadButton.type='button';downloadButton.addEventListener('click',function(){downloadText('microgifter-migration-status-'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify(exportMigrationPayload(result),null,2),'application/json;charset=utf-8');});
     var clearButton=el('button','','Clear');clearButton.type='button';clearButton.addEventListener('click',function(){sessionStorage.removeItem(migrationStorageKey);panel.remove();});
-    actions.append(copyButton,downloadButton,clearButton);header.append(copy,actions);panel.appendChild(header);
+    actions.append(reconcileButton,copyButton,downloadButton,clearButton);header.append(copy,actions);panel.appendChild(header);
     var summary=result.summary||{};
     var metrics=el('div','mg-migration-plan-metrics');
     [['Manifest',result.manifest_count||0],['Applied',summary.applied||0],['Covered',summary.covered||0],['Unapplied',summary.unapplied||0],['Files missing',summary.physical_missing||0],['Checksum drift',summary.checksum_mismatches||0]].forEach(function(metric){var card=el('article');card.append(el('span','',metric[0]),el('strong','',Number(metric[1]).toLocaleString()));metrics.appendChild(card);});
