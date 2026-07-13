@@ -184,6 +184,7 @@ return [
         'listen_music_reward_v1_5.sql',
         'campaign_type_enum_foundation_20260709.sql',
         'customer_review_campaign_v1.sql',
+        'reviews_case_studies_management_v1.sql',
         'campaign_embed_settings_v2.sql',
         'campaign_embed_placement_tests_v4_7.sql',
         'customer_saved_campaign_cards_20260709.sql',
