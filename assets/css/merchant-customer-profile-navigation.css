@@ -1,0 +1,29 @@
+.mg-cp-page-back{
+  max-width:1540px;
+  margin:0 auto 10px;
+}
+.mg-cp-page-back a{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  min-height:36px;
+  padding:0 13px;
+  border:1px solid #d8e2ef;
+  border-radius:10px;
+  background:#fff;
+  color:#1455d9;
+  box-shadow:0 7px 20px rgba(23,43,77,.04);
+  font-size:12px;
+  font-weight:850;
+  text-decoration:none;
+}
+.mg-cp-page-back a:hover,
+.mg-cp-page-back a:focus-visible{
+  border-color:#a9c5ee;
+  background:#f7fbff;
+  outline:none;
+}
+@media(max-width:620px){
+  .mg-cp-page-back{margin-bottom:9px}
+  .mg-cp-page-back a{width:100%;justify-content:center}
+}
