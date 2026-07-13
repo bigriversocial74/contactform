@@ -67,7 +67,7 @@ $checks = [
         && str_contains($files['api'], "'disconnect'"),
     'callback verifies current merchant account through hashed state lookup' => str_contains($files['callback'], 'mg_integration_complete_oauth')
         && str_contains($files['service'], 'mg_integration_find_oauth_connection'),
-    'Connected Apps page is routed through merchant workspace' => str_contains($files['page'], "$merchantView = 'integrations'")
+    'Connected Apps page is routed through merchant workspace' => str_contains($files['page'], "\$merchantView = 'integrations'")
         && str_contains($files['router'], "\$merchantView==='integrations'"),
     'merchant navigation exposes Connected Apps' => str_contains($files['navigation'], "'integrations' => ['Connected Apps'"),
     'UI preserves consent and source-of-truth policy' => str_contains($files['view'], 'Consent stays explicit')
