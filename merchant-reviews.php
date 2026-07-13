@@ -8,6 +8,7 @@ $merchantView = 'reviews';
 $page_styles = [
     '/assets/css/merchant-workspace.css',
     '/assets/css/reviews-case-studies-management.css?v=1.0.0',
+    '/assets/css/merchant-reviews-cleanup.css?v=1.0.0',
 ];
 $page_scripts = [
     '/assets/js/merchant-workspace.js',
