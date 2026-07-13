@@ -17,6 +17,7 @@ $read = static function (string $path) use ($root): string {
 $page = $read('profile.php');
 $css = $read('assets/css/public-profile-content-first.css');
 $runtime = $read('assets/js/public-profile-investment.js');
+$profileApi = $read('api/public/profile.php');
 
 $checks = [
     'content-first stylesheet is loaded last and cache-bumped' =>
@@ -40,13 +41,13 @@ $checks = [
         && str_contains($page, 'mg-profile-merchant-badge')
         && str_contains($page, 'data-profile-biography')
         && str_contains($page, 'data-profile-meta'),
-    'profile keeps follow message share save and owner edit actions' =>
+    'profile keeps follow message share and owner edit actions without Save' =>
         str_contains($page, 'data-profile-follow')
         && str_contains($page, 'data-profile-message')
         && str_contains($page, 'data-profile-share')
-        && str_contains($page, 'data-profile-save')
-        && str_contains($page, 'data-profile-edit'),
-    'public data dashboards and charts are removed from markup' =>
+        && str_contains($page, 'data-profile-edit')
+        && !str_contains($page, 'data-profile-save'),
+    'public data dashboards charts and analytics panel are removed from markup' =>
         !str_contains($page, 'mg-invest-stat-board')
         && !str_contains($page, 'mg-invest-chart-row')
         && !str_contains($page, 'data-invest-market-chart')
@@ -54,24 +55,22 @@ $checks = [
         && !str_contains($page, 'mg-invest-sidebar')
         && !str_contains($page, 'Portfolio Snapshot')
         && !str_contains($page, 'Ticker Value')
-        && !str_contains($page, 'Merchant Score'),
-    'all six content tabs remain available' =>
-        substr_count($page, 'data-invest-tab=') === 6
+        && !str_contains($page, 'Merchant Score')
+        && !str_contains($page, 'Public analytics are not displayed.')
+        && !str_contains($page, 'data-invest-panel="analytics"'),
+    'five content tabs remain without Analytics' =>
+        substr_count($page, 'data-invest-tab=') === 5
         && str_contains($page, 'data-invest-tab="overview"')
         && str_contains($page, 'data-invest-tab="products"')
         && str_contains($page, 'data-invest-tab="stories"')
         && str_contains($page, 'data-invest-tab="posts"')
         && str_contains($page, 'data-invest-tab="campaigns"')
-        && str_contains($page, 'data-invest-tab="analytics"'),
+        && !str_contains($page, 'data-invest-tab="analytics"'),
     'overview focuses on products and campaigns' =>
         str_contains($page, 'Featured Experiences')
         && str_contains($page, 'data-profile-products-grid')
         && str_contains($page, 'Active Campaigns')
         && str_contains($page, 'data-invest-campaigns-list'),
-    'analytics tab is privacy copy rather than a data dashboard' =>
-        str_contains($page, 'Public analytics are not displayed.')
-        && !str_contains($page, 'data-invest-analytics-grid')
-        && !str_contains($page, 'data-invest-formula-list'),
     'legacy required profile data hooks remain safely hidden' =>
         str_contains($page, 'class="mg-profile-data-bridge"')
         && str_contains($page, 'data-profile-followers')
@@ -88,6 +87,16 @@ $checks = [
     'runtime no longer requests public market-series chart data' =>
         !str_contains($runtime, 'profile-market-series.php')
         && str_contains($runtime, '/api/public/profile-investment.php?slug='),
+    'post API resolves linked product cover assets' =>
+        str_contains($profileApi, 'mg_public_profile_attach_post_product_images')
+        && str_contains($profileApi, 'catalog_product_version_assets')
+        && str_contains($profileApi, "pva.role='cover'")
+        && str_contains($profileApi, "cover.status='ready'"),
+    'post API exposes product metadata and image media fallback' =>
+        str_contains($profileApi, "'product' => $product")
+        && str_contains($profileApi, "'source' => 'product_cover'")
+        && str_contains($profileApi, "'type' => 'image'")
+        && str_contains($profileApi, "'url' => $product['cover_url']"),
     'desktop tablet and mobile layouts are defined' =>
         str_contains($css, '@media(max-width:1180px)')
         && str_contains($css, '@media(max-width:900px)')
