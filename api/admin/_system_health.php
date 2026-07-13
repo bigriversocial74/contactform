@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/bootstrap.php';
 require_once dirname(__DIR__, 2) . '/includes/migrations.php';
 require_once __DIR__ . '/_system_health_metrics.php';
+require_once __DIR__ . '/_system_health_runtime_checks.php';
 
 function mg_admin_system_health_require_user(): array
 {
@@ -182,11 +183,30 @@ function mg_admin_system_health_read(PDO $pdo): array
 {
     $mediaMetrics = mg_admin_system_health_media_metrics($pdo);
     $notificationMetrics = mg_admin_system_health_notification_metrics($pdo);
+    $runtimeChecks = mg_admin_system_health_runtime_checks($pdo);
+    $runtimeService = mg_admin_system_health_runtime($pdo);
+    $loyaltyReady = !empty($runtimeChecks['groups']['loyalty_quests']['ready']);
+    $adsReady = !empty($runtimeChecks['groups']['campaign_ads_catalog']['ready']);
+
+    $runtimeService['details']['runtime_probe_count'] = (int)($runtimeChecks['counts']['checks'] ?? 0);
+    $runtimeService['details']['runtime_probe_failures'] = (int)($runtimeChecks['counts']['failed'] ?? 0);
+    $runtimeService['details']['loyalty_quests_ready'] = $loyaltyReady;
+    $runtimeService['details']['campaign_ads_catalog_ready'] = $adsReady;
+    if (!$loyaltyReady) {
+        $runtimeService['status'] = 'critical';
+        $runtimeService['summary'] = 'One or more Loyalty Quest runtime paths require attention.';
+    } elseif (!$adsReady && $runtimeService['status'] === 'healthy') {
+        $runtimeService['status'] = 'warning';
+        $runtimeService['summary'] = 'Application runtime is responding, but the Campaign Ads catalog picker requires attention.';
+    } elseif ($runtimeService['status'] === 'healthy') {
+        $runtimeService['summary'] = 'Application runtime, Loyalty Quest paths, and Campaign Ads catalog checks are responding.';
+    }
+
     $services = [
         'storage' => mg_admin_system_health_storage(),
         'notifications' => mg_admin_system_health_notifications($pdo),
         'migrations' => mg_admin_system_health_migrations($pdo),
-        'runtime' => mg_admin_system_health_runtime($pdo),
+        'runtime' => $runtimeService,
     ];
 
     if ($services['storage']['status'] === 'healthy' && $mediaMetrics['available'] && $mediaMetrics['missing_files'] > 0) {
@@ -199,6 +219,10 @@ function mg_admin_system_health_read(PDO $pdo): array
             $services['notifications']['summary'] = 'Notification delivery is available, but queued work requires attention.';
         }
     }
+
+    $warningFeed = mg_admin_system_health_warning_feed($pdo, $runtimeChecks['warning_state'] ?? []);
+    $services['runtime']['details']['active_warning_groups'] = (int)($warningFeed['summary']['active_groups'] ?? 0);
+    $services['runtime']['details']['resolved_warning_groups_hidden'] = (int)($warningFeed['summary']['resolved_groups'] ?? 0);
 
     $overall = mg_admin_system_health_overall($services);
     return [
@@ -213,7 +237,10 @@ function mg_admin_system_health_read(PDO $pdo): array
             'media' => $mediaMetrics,
             'notifications' => $notificationMetrics,
         ],
-        'warnings' => mg_admin_system_health_recent_warnings($pdo),
+        'runtime_checks' => $runtimeChecks,
+        'warnings' => $warningFeed['active'],
+        'resolved_warnings' => $warningFeed['resolved'],
+        'warning_summary' => $warningFeed['summary'],
         'actions' => [
             'verify_storage' => false,
             'retry_notifications' => false,
