@@ -32,7 +32,13 @@ if ($providerKey === '') mg_fail('Integration provider is required.', 422);
 
 try {
     if ($action === 'begin_oauth') {
+        $existing = mg_integration_connection_row($pdo, $merchantUserId, $providerKey, false);
+        $wasActive = is_array($existing) && (string)($existing['status'] ?? '') === 'active';
         $result = mg_integration_begin_oauth($pdo, $merchantUserId, $providerKey, (string)($input['external_account_hint'] ?? ''));
+        if ($wasActive) {
+            $pdo->prepare("UPDATE merchant_integration_connections SET status='active',updated_at=NOW() WHERE merchant_user_id=? AND provider_key=? ORDER BY id DESC LIMIT 1")
+                ->execute([$merchantUserId, $providerKey]);
+        }
         mg_audit('merchant.integration.oauth_started', 'merchant_integration', ['provider' => $providerKey], $merchantUserId);
         mg_ok($result, 'Authorization is ready.');
     }
