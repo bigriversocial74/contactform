@@ -100,10 +100,10 @@ function mg_admin_migration_reconciliation_apply(PDO $pdo, array $input, int $us
         return ['recorded_count' => 0, 'recorded_files' => [], 'plan' => mg_admin_migration_reconciliation_plan($pdo, $userId, true)];
     }
 
-    $lockName = 'microgifter_migration_reconciliation';
+    $lockName = 'microgifter_schema_migrations';
     $lock = $pdo->prepare('SELECT GET_LOCK(?, 15)');
     $lock->execute([$lockName]);
-    if ((int)$lock->fetchColumn() !== 1) mg_fail('Migration reconciliation is already running.', 409);
+    if ((int)$lock->fetchColumn() !== 1) mg_fail('A migration update is already running.', 409);
 
     $recordedFiles = [];
     try {
