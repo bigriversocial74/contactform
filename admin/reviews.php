@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/includes/app.php';
-$page_title='Reviews & Case Studies | Microgifter Admin';$page_section='account';$header_mode='account';$page_styles=['/assets/css/admin-dashboard.css','/assets/css/reviews-case-studies-management.css?v=1.0.0'];$page_scripts=['/assets/js/admin-reviews-case-studies.js?v=1.0.0'];
+$page_title='Reviews & Case Studies | Microgifter Admin';$page_section='account';$header_mode='account';$page_styles=['/assets/css/admin-dashboard.css','/assets/css/reviews-case-studies-management.css?v=1.0.0'];$page_scripts=['/assets/js/reviews-management-nav.js?v=1.0.0','/assets/js/admin-reviews-case-studies.js?v=1.0.0'];
 $user=mg_current_user();$roles=is_array($user['roles']??null)?$user['roles']:[];$permissions=is_array($user['permissions']??null)?$user['permissions']:[];$hasAdminAccess=$user&&(in_array('super_admin',$roles,true)||in_array('admin.profiles.moderation.view',$permissions,true)||in_array('admin.profiles.moderation.manage',$permissions,true)||in_array('admin.users.manage',$permissions,true));$adminActive='reviews';
 require dirname(__DIR__) . '/includes/header.php';
 ?>
