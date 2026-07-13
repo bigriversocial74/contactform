@@ -1,0 +1,39 @@
+name: Customer Profile Mobile Summary
+
+on:
+  pull_request:
+    paths:
+      - 'merchant-customer.php'
+      - 'assets/css/merchant-customer-profile-mobile-summary.css'
+      - 'assets/js/merchant-customer-profile-mobile-summary.js'
+      - 'scripts/validate_customer_profile_mobile_summary.php'
+      - '.github/workflows/customer-profile-mobile-summary-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: PHP syntax
+        run: |
+          php -l merchant-customer.php
+          php -l scripts/validate_customer_profile_mobile_summary.php
+      - name: JavaScript syntax
+        run: node --check assets/js/merchant-customer-profile-mobile-summary.js
+      - name: Contract validation
+        run: php scripts/validate_customer_profile_mobile_summary.php
