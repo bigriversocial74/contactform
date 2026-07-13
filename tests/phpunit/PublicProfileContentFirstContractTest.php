@@ -30,12 +30,13 @@ final class PublicProfileContentFirstContractTest extends TestCase
         self::assertStringContainsString('data-profile-name', $page);
         self::assertStringContainsString('mg-profile-merchant-badge', $page);
 
-        foreach (['data-profile-follow', 'data-profile-message', 'data-profile-share', 'data-profile-save', 'data-profile-edit'] as $action) {
+        foreach (['data-profile-follow', 'data-profile-message', 'data-profile-share', 'data-profile-edit'] as $action) {
             self::assertStringContainsString($action, $page);
         }
+        self::assertStringNotContainsString('data-profile-save', $page);
     }
 
-    public function testPublicDataDashboardAndChartMarkupIsRemoved(): void
+    public function testPublicDataDashboardChartAndAnalyticsMarkupIsRemoved(): void
     {
         $page = $this->read('profile.php');
 
@@ -50,17 +51,20 @@ final class PublicProfileContentFirstContractTest extends TestCase
             'Merchant Score',
             'data-invest-analytics-grid',
             'data-invest-formula-list',
+            'data-invest-tab="analytics"',
+            'data-invest-panel="analytics"',
+            'Public analytics are not displayed.',
         ] as $removed) {
             self::assertStringNotContainsString($removed, $page);
         }
     }
 
-    public function testContentTabsAndContentFirstOverviewRemain(): void
+    public function testFiveContentTabsAndContentFirstOverviewRemain(): void
     {
         $page = $this->read('profile.php');
 
-        self::assertSame(6, substr_count($page, 'data-invest-tab='));
-        foreach (['overview', 'products', 'stories', 'posts', 'campaigns', 'analytics'] as $tab) {
+        self::assertSame(5, substr_count($page, 'data-invest-tab='));
+        foreach (['overview', 'products', 'stories', 'posts', 'campaigns'] as $tab) {
             self::assertStringContainsString('data-invest-tab="' . $tab . '"', $page);
         }
 
@@ -68,7 +72,6 @@ final class PublicProfileContentFirstContractTest extends TestCase
         self::assertStringContainsString('data-profile-products-grid', $page);
         self::assertStringContainsString('Active Campaigns', $page);
         self::assertStringContainsString('data-invest-campaigns-list', $page);
-        self::assertStringContainsString('Public analytics are not displayed.', $page);
     }
 
     public function testContentFirstStyleShowsMoreCoverAndResponsiveCards(): void
@@ -96,6 +99,20 @@ final class PublicProfileContentFirstContractTest extends TestCase
         self::assertStringNotContainsString('profile-market-series.php', $runtime);
         self::assertStringNotContainsString("document.createElement('progress')", $runtime);
         self::assertStringNotContainsString('issued_count', $runtime);
+    }
+
+    public function testProfileApiFallsBackToLinkedProductCoverForPosts(): void
+    {
+        $api = $this->read('api/public/profile.php');
+
+        self::assertStringContainsString('mg_public_profile_attach_post_product_images', $api);
+        self::assertStringContainsString('catalog_product_version_assets', $api);
+        self::assertStringContainsString("pva.role='cover'", $api);
+        self::assertStringContainsString("cover.status='ready'", $api);
+        self::assertStringContainsString("'source' => 'product_cover'", $api);
+        self::assertStringContainsString("'type' => 'image'", $api);
+        self::assertStringContainsString("'url' => \$product['cover_url']", $api);
+        self::assertStringContainsString('mg_public_profile_attach_post_product_images($pdo, $data);', $api);
     }
 
     public function testCanonicalPublicProfileHooksRemainAvailable(): void
