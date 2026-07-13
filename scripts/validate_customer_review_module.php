@@ -24,6 +24,7 @@ $merchantApi = $read('api/merchant/customer-review-campaign.php');
 $profileApi = $read('api/public/profile-reviews.php');
 $submitApi = $read('api/public/campaigns/customer-review.php');
 $sql = $read('database/customer_review_campaign_v1.sql');
+$manifest = $read('config/migrations.php');
 
 $checks = [
     'merchant campaigns loads customer review builder' =>
@@ -65,6 +66,8 @@ $checks = [
         str_contains($sql, "'customer_review'")
         && str_contains($sql, 'CREATE TABLE IF NOT EXISTS customer_reviews')
         && str_contains($sql, 'idx_customer_reviews_campaign_reviewer_time'),
+    'migration is registered in canonical manifest' =>
+        str_contains($manifest, "'customer_review_campaign_v1.sql'"),
 ];
 
 $failed = [];
