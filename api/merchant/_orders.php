@@ -2,10 +2,10 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_merchant.php';
-require_once dirname(__DIR__) . '/commerce/_order_issuance_summary.php';
 
 const MG_MERCHANT_ORDERS_DEFAULT_LIMIT = 25;
 const MG_MERCHANT_ORDERS_MAX_LIMIT = 50;
+const MG_MERCHANT_ORDERS_MAX_PAGE = 1000;
 
 function mg_merchant_orders_text(mixed $value, int $maxLength): string
 {
@@ -47,7 +47,7 @@ function mg_merchant_orders_filters(array $input): array
     if (!in_array($payment, $allowedPayment, true)) mg_fail('Invalid payment status filter.', 422);
     if (!in_array($fulfillment, $allowedFulfillment, true)) mg_fail('Invalid fulfillment status filter.', 422);
 
-    $page = filter_var($input['page'] ?? 1, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 10000]]);
+    $page = filter_var($input['page'] ?? 1, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => MG_MERCHANT_ORDERS_MAX_PAGE]]);
     $limit = filter_var($input['limit'] ?? MG_MERCHANT_ORDERS_DEFAULT_LIMIT, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => MG_MERCHANT_ORDERS_MAX_LIMIT]]);
     if ($page === false) mg_fail('Invalid order page.', 422);
     if ($limit === false) mg_fail('Invalid order page size.', 422);
@@ -61,7 +61,13 @@ function mg_merchant_orders_filters(array $input): array
         'date_to' => mg_merchant_orders_date($input['date_to'] ?? null),
         'page' => (int) $page,
         'limit' => (int) $limit,
+        'include_summary' => filter_var($input['include_summary'] ?? false, FILTER_VALIDATE_BOOLEAN),
     ];
+}
+
+function mg_merchant_orders_placeholders(int $count): string
+{
+    return implode(',', array_fill(0, max(1, $count), '?'));
 }
 
 function mg_merchant_orders_summary(PDO $pdo, int $merchantUserId): array
@@ -96,22 +102,84 @@ SQL);
     ];
 }
 
+function mg_merchant_orders_aggregate(PDO $pdo, array $orders): array
+{
+    if ($orders === []) return [];
+
+    $orderIds = array_map(static fn(array $row): int => (int) $row['id'], $orders);
+    $placeholders = mg_merchant_orders_placeholders(count($orderIds));
+    $metrics = [];
+    foreach ($orderIds as $orderId) {
+        $metrics[$orderId] = [
+            'line_count' => 0,
+            'unit_count' => 0,
+            'refunded_cents' => 0,
+            'pppm_count' => 0,
+            'microgift_count' => 0,
+            'action_center_count' => 0,
+        ];
+    }
+
+    $items = $pdo->prepare("SELECT order_id,COUNT(*) line_count,COALESCE(SUM(quantity),0) unit_count FROM commerce_order_items WHERE order_id IN ($placeholders) GROUP BY order_id");
+    $items->execute($orderIds);
+    foreach ($items->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $orderId = (int) $row['order_id'];
+        $metrics[$orderId]['line_count'] = (int) $row['line_count'];
+        $metrics[$orderId]['unit_count'] = (int) $row['unit_count'];
+    }
+
+    $refunds = $pdo->prepare("SELECT order_id,COALESCE(SUM(amount_cents),0) refunded_cents FROM payment_refunds WHERE order_id IN ($placeholders) AND status='succeeded' GROUP BY order_id");
+    $refunds->execute($orderIds);
+    foreach ($refunds->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $metrics[(int) $row['order_id']]['refunded_cents'] = (int) $row['refunded_cents'];
+    }
+
+    $pppm = $pdo->prepare(<<<SQL
+SELECT oi.order_id,COUNT(DISTINCT pi.id) pppm_count
+FROM commerce_order_items oi
+INNER JOIN commerce_orders o ON o.id=oi.order_id
+INNER JOIN pppm_items pi ON pi.source_reference=o.public_id AND pi.source_line_reference=oi.public_id
+WHERE oi.order_id IN ($placeholders)
+GROUP BY oi.order_id
+SQL);
+    $pppm->execute($orderIds);
+    foreach ($pppm->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $metrics[(int) $row['order_id']]['pppm_count'] = (int) $row['pppm_count'];
+    }
+
+    $delivery = $pdo->prepare(<<<SQL
+SELECT
+    oi.order_id,
+    COUNT(DISTINCT mi.id) microgift_count,
+    COUNT(DISTINCT inbox.instance_id) action_center_count
+FROM commerce_order_items oi
+INNER JOIN commerce_orders o ON o.id=oi.order_id
+LEFT JOIN microgift_instances mi ON mi.commerce_order_item_id=oi.id
+LEFT JOIN microgift_inbox_items inbox ON inbox.instance_id=mi.id AND inbox.user_id=o.buyer_user_id
+WHERE oi.order_id IN ($placeholders)
+GROUP BY oi.order_id
+SQL);
+    $delivery->execute($orderIds);
+    foreach ($delivery->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $orderId = (int) $row['order_id'];
+        $metrics[$orderId]['microgift_count'] = (int) $row['microgift_count'];
+        $metrics[$orderId]['action_center_count'] = (int) $row['action_center_count'];
+    }
+
+    return $metrics;
+}
+
 function mg_merchant_orders_list(PDO $pdo, int $merchantUserId, array $input): array
 {
+    $startedAt = microtime(true);
     $filters = mg_merchant_orders_filters($input);
     $sql = <<<'SQL'
 SELECT
     o.id,o.public_id,o.currency,o.total_cents,o.payment_status,o.fulfillment_status,o.source_type,
     o.paid_at,o.cancelled_at,o.created_at,o.updated_at,
-    COALESCE(u.display_name,u.full_name,u.email,'Customer') customer_name,u.email customer_email,
-    (SELECT COUNT(*) FROM commerce_order_items oi WHERE oi.order_id=o.id) line_count,
-    (SELECT COALESCE(SUM(oi.quantity),0) FROM commerce_order_items oi WHERE oi.order_id=o.id) unit_count,
-    (SELECT COALESCE(SUM(r.amount_cents),0) FROM payment_refunds r WHERE r.order_id=o.id AND r.status='succeeded') refunded_cents,
-    (SELECT COUNT(*) FROM pppm_items pi INNER JOIN commerce_order_items oi ON oi.public_id=pi.source_line_reference WHERE pi.source_reference=o.public_id AND oi.order_id=o.id) pppm_count,
-    (SELECT COUNT(*) FROM microgift_instances mi INNER JOIN commerce_order_items oi ON oi.id=mi.commerce_order_item_id WHERE oi.order_id=o.id) microgift_count,
-    (SELECT COUNT(DISTINCT inbox.instance_id) FROM microgift_inbox_items inbox INNER JOIN microgift_instances mi ON mi.id=inbox.instance_id INNER JOIN commerce_order_items oi ON oi.id=mi.commerce_order_item_id WHERE oi.order_id=o.id AND inbox.user_id=o.buyer_user_id) action_center_count
+    COALESCE(u.display_name,u.full_name,u.email,'Customer') customer_name,u.email customer_email
 FROM commerce_orders o
-INNER JOIN users u ON u.id=o.buyer_user_id
+LEFT JOIN users u ON u.id=o.buyer_user_id
 WHERE o.merchant_user_id=?
 SQL;
     $params = [$merchantUserId];
@@ -150,9 +218,17 @@ SQL;
     $hasMore = count($rows) > $filters['limit'];
     if ($hasMore) array_pop($rows);
 
-    $items = array_map(static function (array $row): array {
-        $expected = (int) ($row['unit_count'] ?? 0);
-        $issued = min($expected, (int) ($row['pppm_count'] ?? 0), (int) ($row['microgift_count'] ?? 0), (int) ($row['action_center_count'] ?? 0));
+    $metrics = mg_merchant_orders_aggregate($pdo, $rows);
+    $items = array_map(static function (array $row) use ($metrics): array {
+        $orderId = (int) $row['id'];
+        $orderMetrics = $metrics[$orderId] ?? [];
+        $expected = (int) ($orderMetrics['unit_count'] ?? 0);
+        $issued = min(
+            $expected,
+            (int) ($orderMetrics['pppm_count'] ?? 0),
+            (int) ($orderMetrics['microgift_count'] ?? 0),
+            (int) ($orderMetrics['action_center_count'] ?? 0)
+        );
         $attention = in_array((string) $row['payment_status'], ['requires_action','failed','disputed'], true)
             || (string) $row['fulfillment_status'] === 'failed'
             || ((string) $row['payment_status'] === 'paid' && (string) $row['fulfillment_status'] !== 'issued')
@@ -164,8 +240,8 @@ SQL;
             'source_type' => (string) $row['source_type'],
             'currency' => (string) $row['currency'],
             'total_cents' => (int) $row['total_cents'],
-            'refunded_cents' => (int) $row['refunded_cents'],
-            'line_count' => (int) $row['line_count'],
+            'refunded_cents' => (int) ($orderMetrics['refunded_cents'] ?? 0),
+            'line_count' => (int) ($orderMetrics['line_count'] ?? 0),
             'unit_count' => $expected,
             'issued_units' => $issued,
             'customer' => [
@@ -183,21 +259,63 @@ SQL;
 
     return [
         'orders' => $items,
-        'summary' => mg_merchant_orders_summary($pdo, $merchantUserId),
+        'summary' => $filters['include_summary'] ? mg_merchant_orders_summary($pdo, $merchantUserId) : null,
         'page' => $filters['page'],
         'limit' => $filters['limit'],
         'has_more' => $hasMore,
         'next_page' => $hasMore ? $filters['page'] + 1 : null,
         'filters' => $filters,
+        'generated_at' => gmdate('c'),
+        'performance' => [
+            'elapsed_ms' => (int) round((microtime(true) - $startedAt) * 1000),
+            'order_count' => count($items),
+            'query_shape' => 'bulk_aggregate_v2',
+        ],
+    ];
+}
+
+function mg_merchant_order_issuance_from_items(array $items): array
+{
+    $expectedUnits = 0;
+    $pppmItems = 0;
+    $microgiftItems = 0;
+    $projectionItems = 0;
+    foreach ($items as $item) {
+        $expectedUnits += (int) ($item['quantity'] ?? 0);
+        $issuance = is_array($item['issuance'] ?? null) ? $item['issuance'] : [];
+        $pppmItems += (int) ($issuance['pppm_items'] ?? 0);
+        $microgiftItems += (int) ($issuance['microgifts'] ?? 0);
+        $projectionItems += (int) ($issuance['action_center_items'] ?? 0);
+    }
+    $complete = $expectedUnits > 0
+        && $pppmItems === $expectedUnits
+        && $microgiftItems === $expectedUnits
+        && $projectionItems === $expectedUnits;
+    $issuedUnits = min($expectedUnits, $pppmItems, $microgiftItems, $projectionItems);
+    return [
+        'expected_units' => $expectedUnits,
+        'pppm_items' => $pppmItems,
+        'microgifts' => $microgiftItems,
+        'inbox_items' => $projectionItems,
+        'action_center_items' => $projectionItems,
+        'issued_units' => $issuedUnits,
+        'missing' => [
+            'pppm' => max(0, $expectedUnits - $pppmItems),
+            'microgifts' => max(0, $expectedUnits - $microgiftItems),
+            'action_center' => max(0, $expectedUnits - $projectionItems),
+        ],
+        'complete' => $complete,
+        'state' => $complete ? 'complete' : ($issuedUnits > 0 ? 'partial' : 'pending'),
     ];
 }
 
 function mg_merchant_order_detail(PDO $pdo, int $merchantUserId, string $orderPublicId): array
 {
+    $startedAt = microtime(true);
     $orderStmt = $pdo->prepare(<<<'SQL'
 SELECT o.*,COALESCE(u.display_name,u.full_name,u.email,'Customer') customer_name,u.email customer_email
 FROM commerce_orders o
-INNER JOIN users u ON u.id=o.buyer_user_id
+LEFT JOIN users u ON u.id=o.buyer_user_id
 WHERE o.public_id=? AND o.merchant_user_id=?
 LIMIT 1
 SQL);
@@ -206,11 +324,8 @@ SQL);
     if (!$order) mg_fail('Order not found.', 404);
 
     $items = $pdo->prepare(<<<'SQL'
-SELECT oi.public_id item_id,oi.title_snapshot,oi.quantity,oi.unit_amount_cents,oi.discount_cents,oi.tax_cents,oi.line_total_cents,oi.currency,
-       cp.public_id product_id,cp.slug product_slug,cpv.public_id product_version_id,
-       (SELECT COUNT(*) FROM pppm_items pi WHERE pi.source_reference=? AND pi.source_line_reference=oi.public_id) pppm_count,
-       (SELECT COUNT(*) FROM microgift_instances mi WHERE mi.commerce_order_item_id=oi.id) microgift_count,
-       (SELECT COUNT(DISTINCT inbox.instance_id) FROM microgift_inbox_items inbox INNER JOIN microgift_instances mi ON mi.id=inbox.instance_id WHERE mi.commerce_order_item_id=oi.id AND inbox.user_id=?) action_center_count
+SELECT oi.id internal_id,oi.public_id item_id,oi.title_snapshot,oi.quantity,oi.unit_amount_cents,oi.discount_cents,oi.tax_cents,oi.line_total_cents,oi.currency,
+       cp.public_id product_id,cp.slug product_slug,cpv.public_id product_version_id
 FROM commerce_order_items oi
 INNER JOIN catalog_products cp ON cp.id=oi.product_id
 INNER JOIN catalog_product_versions cpv ON cpv.id=oi.product_version_id
@@ -218,9 +333,48 @@ WHERE oi.order_id=?
 ORDER BY oi.id
 LIMIT 100
 SQL);
-    $items->execute([(string) $order['public_id'], (int) $order['buyer_user_id'], (int) $order['id']]);
-    $itemRows = array_map(static function (array $row): array {
+    $items->execute([(int) $order['id']]);
+    $baseItemRows = $items->fetchAll(PDO::FETCH_ASSOC);
+    $itemMetrics = [];
+    foreach ($baseItemRows as $row) {
+        $itemMetrics[(int) $row['internal_id']] = ['pppm_items' => 0, 'microgifts' => 0, 'action_center_items' => 0];
+    }
+
+    if ($baseItemRows !== []) {
+        $internalIds = array_map(static fn(array $row): int => (int) $row['internal_id'], $baseItemRows);
+        $placeholders = mg_merchant_orders_placeholders(count($internalIds));
+
+        $pppm = $pdo->prepare(<<<SQL
+SELECT oi.id item_id,COUNT(DISTINCT pi.id) item_count
+FROM commerce_order_items oi
+INNER JOIN pppm_items pi ON pi.source_reference=? AND pi.source_line_reference=oi.public_id
+WHERE oi.id IN ($placeholders)
+GROUP BY oi.id
+SQL);
+        $pppm->execute(array_merge([(string) $order['public_id']], $internalIds));
+        foreach ($pppm->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $itemMetrics[(int) $row['item_id']]['pppm_items'] = (int) $row['item_count'];
+        }
+
+        $delivery = $pdo->prepare(<<<SQL
+SELECT oi.id item_id,COUNT(DISTINCT mi.id) microgift_count,COUNT(DISTINCT inbox.instance_id) action_center_count
+FROM commerce_order_items oi
+LEFT JOIN microgift_instances mi ON mi.commerce_order_item_id=oi.id
+LEFT JOIN microgift_inbox_items inbox ON inbox.instance_id=mi.id AND inbox.user_id=?
+WHERE oi.id IN ($placeholders)
+GROUP BY oi.id
+SQL);
+        $delivery->execute(array_merge([(int) $order['buyer_user_id']], $internalIds));
+        foreach ($delivery->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $itemId = (int) $row['item_id'];
+            $itemMetrics[$itemId]['microgifts'] = (int) $row['microgift_count'];
+            $itemMetrics[$itemId]['action_center_items'] = (int) $row['action_center_count'];
+        }
+    }
+
+    $itemRows = array_map(static function (array $row) use ($itemMetrics): array {
         $expected = (int) $row['quantity'];
+        $metrics = $itemMetrics[(int) $row['internal_id']] ?? [];
         return [
             'item_id' => (string) $row['item_id'],
             'title' => (string) $row['title_snapshot'],
@@ -235,12 +389,12 @@ SQL);
             'product_url' => '/product.php?id=' . rawurlencode((string) $row['product_id']) . '&p=' . rawurlencode((string) $row['product_slug']),
             'issuance' => [
                 'expected_units' => $expected,
-                'pppm_items' => (int) $row['pppm_count'],
-                'microgifts' => (int) $row['microgift_count'],
-                'action_center_items' => (int) $row['action_center_count'],
+                'pppm_items' => (int) ($metrics['pppm_items'] ?? 0),
+                'microgifts' => (int) ($metrics['microgifts'] ?? 0),
+                'action_center_items' => (int) ($metrics['action_center_items'] ?? 0),
             ],
         ];
-    }, $items->fetchAll(PDO::FETCH_ASSOC));
+    }, $baseItemRows);
 
     $intents = $pdo->prepare('SELECT public_id,provider_key,amount_cents,currency,status,capture_method,failure_code,failure_message,authorized_at,captured_at,created_at,updated_at FROM payment_intents WHERE order_id=? ORDER BY created_at DESC,id DESC LIMIT 20');
     $intents->execute([(int) $order['id']]);
@@ -254,10 +408,7 @@ SQL);
     $history->execute([(int) $order['id']]);
     $audits = $pdo->prepare('SELECT event_type,created_at FROM order_audit_events WHERE order_id=? ORDER BY created_at DESC,id DESC LIMIT 100');
     $audits->execute([(int) $order['id']]);
-    $microgiftStates = $pdo->prepare('SELECT mi.status,COUNT(*) item_count FROM microgift_instances mi INNER JOIN commerce_order_items oi ON oi.id=mi.commerce_order_item_id WHERE oi.order_id=? GROUP BY mi.status ORDER BY mi.status');
-    $microgiftStates->execute([(int) $order['id']]);
 
-    $issuance = mg_order_issuance_summary($pdo, $order, (int) $order['buyer_user_id']);
     return [
         'order' => [
             'order_id' => (string) $order['public_id'],
@@ -282,15 +433,19 @@ SQL);
             'can_reconcile' => (string) $order['payment_status'] === 'paid',
         ],
         'items' => $itemRows,
-        'issuance' => $issuance,
+        'issuance' => mg_merchant_order_issuance_from_items($itemRows),
         'payments' => [
             'intents' => $intents->fetchAll(PDO::FETCH_ASSOC),
             'transactions' => $transactions->fetchAll(PDO::FETCH_ASSOC),
             'refunds' => $refunds->fetchAll(PDO::FETCH_ASSOC),
             'disputes' => $disputes->fetchAll(PDO::FETCH_ASSOC),
         ],
-        'microgift_states' => $microgiftStates->fetchAll(PDO::FETCH_ASSOC),
         'history' => $history->fetchAll(PDO::FETCH_ASSOC),
         'audit_events' => $audits->fetchAll(PDO::FETCH_ASSOC),
+        'performance' => [
+            'elapsed_ms' => (int) round((microtime(true) - $startedAt) * 1000),
+            'item_count' => count($itemRows),
+            'query_shape' => 'bulk_detail_v2',
+        ],
     ];
 }
