@@ -1,0 +1,21 @@
+<?php
+declare(strict_types=1);
+require_once dirname(__DIR__) . '/includes/app.php';
+$page_title='Case Studies | Microgifter Admin';$page_section='account';$header_mode='account';
+$page_styles=['/assets/css/admin-dashboard.css','/assets/css/reviews-case-studies-management.css?v=1.1.0'];
+$page_scripts=['/assets/js/reviews-management-nav.js?v=1.1.0','/assets/js/admin-case-studies.js?v=1.0.0'];
+$user=mg_current_user();$roles=is_array($user['roles']??null)?$user['roles']:[];$permissions=is_array($user['permissions']??null)?$user['permissions']:[];
+$hasAdminAccess=$user&&(in_array('super_admin',$roles,true)||in_array('admin.profiles.moderation.view',$permissions,true)||in_array('admin.profiles.moderation.manage',$permissions,true)||in_array('admin.users.manage',$permissions,true));$adminActive='case-studies';
+require dirname(__DIR__) . '/includes/header.php';
+?>
+<section class="mg-app-shell mg-account-app"><?php require dirname(__DIR__) . '/includes/admin-sidebar.php'; ?>
+<main class="mg-app-workspace rcs-main" data-admin-case-studies-page><div class="rcs-wrap">
+<?php if(!$user): ?><section class="rcs-card rcs-empty"><h1>Admin access</h1><p>Sign in to manage case studies.</p><a class="rcs-btn is-primary" href="/signin.php">Sign in</a></section>
+<?php elseif(!$hasAdminAccess): ?><section class="rcs-card rcs-empty"><h1>Access unavailable</h1><p>This account does not have case-study management permission.</p></section>
+<?php else: ?>
+<header class="rcs-hero"><div><h1>Featured Case Studies</h1><p>Search merchant profiles, add any merchant as a featured case study, control publishing order, and edit the public success story.</p></div><a class="rcs-btn" href="/featured-case-studies.php" target="_blank" rel="noopener">View public directory</a></header>
+<section class="rcs-card"><div class="rcs-toolbar"><input type="search" placeholder="Search merchant name, profile, slug, location, or email" data-profile-search><button class="rcs-btn is-primary" data-profile-search-button>Search profiles</button></div><div class="rcs-list" data-profile-results></div><div class="rcs-empty" data-profile-empty hidden>No matching merchant profiles.</div></section>
+<section><div class="rcs-meta"><strong>Published and draft case studies</strong></div><div class="rcs-case-grid" data-case-study-list></div><div class="rcs-card rcs-empty" data-case-study-empty hidden>No featured case studies have been added yet.</div></section>
+<div class="rcs-modal" data-case-modal hidden><div class="rcs-modal-card"><header class="rcs-modal-head"><h2>Case study editor</h2><button type="button" data-modal-close>×</button></header><form class="rcs-form" data-case-form><input type="hidden" name="case_study_id"><input type="hidden" name="profile_id"><div class="rcs-form-grid"><label>Status<select name="status"><option value="draft">Draft</option><option value="published">Published</option><option value="hidden">Hidden</option><option value="archived">Archived</option></select></label><label>Display order<input type="number" name="display_order" value="100"></label></div><label><span><input type="checkbox" name="hero_featured" value="1"> Main hero case study</span></label><label>Title<input name="title" maxlength="220"></label><label>Subtitle<textarea name="subtitle" rows="2" maxlength="320"></textarea></label><label>Challenge<textarea name="challenge" rows="5"></textarea></label><label>Solution<textarea name="solution" rows="5"></textarea></label><label>Outcomes, one per line<textarea name="outcomes_text" rows="5"></textarea></label><label>Testimonial<textarea name="testimonial_text" rows="4"></textarea></label><div class="rcs-form-grid"><label>Testimonial name<input name="testimonial_name" maxlength="180"></label><label>Role<input name="testimonial_role" maxlength="180"></label></div><label>Internal notes<textarea name="internal_notes" rows="4"></textarea></label><button class="rcs-btn is-primary" type="submit">Save case study</button><div data-form-status></div></form></div></div>
+<?php endif; ?></div></main></section>
+<?php require dirname(__DIR__) . '/includes/footer.php'; ?>
