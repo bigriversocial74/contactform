@@ -183,6 +183,7 @@ return [
         'watch_video_reward_v1_4.sql',
         'listen_music_reward_v1_5.sql',
         'campaign_type_enum_foundation_20260709.sql',
+        'customer_review_campaign_v1.sql',
         'campaign_embed_settings_v2.sql',
         'campaign_embed_placement_tests_v4_7.sql',
         'customer_saved_campaign_cards_20260709.sql',
@@ -201,6 +202,6 @@ return [
         'stage_17_all_stamp_system.sql' => 'Manual consolidated Stamp system import.',
         'stage_19_design_studio_qr_library.sql' => 'Manual Stage 19 Design Studio import.',
         'stage_19_design_studio_campaign_links_import_fix.sql' => 'Manual Stage 19 recovery import.',
-        'world_canvas_remaining_22_26_consolidated.sql' => 'Manual consolidated World Canvas Stage 22-26 bundle for already-partial installs.',
+        'world_canvas_remaining_22_26_consolidated.sql' => 'Manual World Canvas Stage 22-26 bundle for already-partial installs.',
     ],
 ];
