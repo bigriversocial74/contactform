@@ -36,11 +36,14 @@ try {
     };
 
     $canManage = mg_admin_system_health_can_manage($user);
+    $migrationNeedsAttention = (($data['services']['migrations']['status'] ?? '') !== 'healthy');
     $data['actions'] = [
         'verify_storage' => $canManage,
         'retry_notifications' => $canManage,
         'clean_uploads' => $canManage,
-        'migration_plan' => $canManage && (($data['services']['migrations']['status'] ?? '') !== 'healthy'),
+        'migration_plan' => $canManage && $migrationNeedsAttention,
+        'migration_reconciliation_plan' => $canManage && $migrationNeedsAttention,
+        'critical_schema_plan' => $canManage,
         'admin_ops_sql_plan' => $canManage,
         'test_pwa_notification' => $canManage,
     ];
