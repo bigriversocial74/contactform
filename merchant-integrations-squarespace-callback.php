@@ -24,7 +24,9 @@ $state = trim((string)($_GET['state'] ?? ''));
 $code = trim((string)($_GET['code'] ?? ''));
 
 if ($error !== '') {
-    mg_integration_mark_error($pdo, $merchantUserId, 'squarespace', 'oauth_' . $error, 'Squarespace authorization was not completed.');
+    if ($error !== 'access_denied') {
+        mg_integration_mark_error($pdo, $merchantUserId, 'squarespace', 'oauth_' . $error, 'Squarespace authorization was not completed.');
+    }
     header('Location: /merchant-integrations.php?oauth=denied&provider=squarespace', true, 302);
     exit;
 }
