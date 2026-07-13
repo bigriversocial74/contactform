@@ -15,6 +15,7 @@ if (!function_exists('mg_merchant_navigation_items')) {
             'pppm' => ['Microgift Totals', 'Items and lifecycle', '/merchant-pppm.php', 'Commerce'],
 
             'merchant_crm' => ['Merchant CRM', 'Customers and campaign history', '/merchant-crm.php', 'Customers & Campaigns'],
+            'reviews' => ['Customer Reviews', 'Replies and customer follow-up', '/merchant-reviews.php', 'Customers & Campaigns'],
             'campaigns' => ['Campaigns', 'Forms, contests, QR drops', '/merchant-campaigns.php', 'Customers & Campaigns'],
             'campaign_ads' => ['Campaign Ads', 'Boost campaigns and local drops', '/merchant-ad-manager.php', 'Customers & Campaigns'],
             'distribution' => ['Distribution', 'Programs and inputs', '/merchant-distribution.php', 'Customers & Campaigns'],
@@ -61,6 +62,8 @@ if (!function_exists('mg_merchant_navigation_active_key')) {
             'merchant-pppm-item' => 'pppm',
             'merchant-pppm' => 'pppm',
             'merchant-crm' => 'merchant_crm',
+            'merchant-reviews' => 'reviews',
+            'customer-reviews' => 'reviews',
             'merchant-campaigns' => 'campaigns',
             'loyalty_quests' => 'campaigns',
             'merchant-loyalty-quests' => 'campaigns',
