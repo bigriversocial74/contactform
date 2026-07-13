@@ -1,0 +1,50 @@
+name: Customer Review Module Validation
+
+on:
+  pull_request:
+    paths:
+      - 'merchant-campaigns.php'
+      - 'api/merchant/customer-review-campaign.php'
+      - 'api/public/profile-reviews.php'
+      - 'api/public/campaigns/customer-review.php'
+      - 'assets/js/stage12-customer-review.js'
+      - 'assets/js/public-profile-runtime.js'
+      - 'assets/js/public-profile-reviews.js'
+      - 'assets/css/public-profile-reviews.css'
+      - 'database/customer_review_campaign_v1.sql'
+      - 'scripts/validate_customer_review_module.php'
+      - '.github/workflows/customer-review-module-validation.yml'
+  push:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'merchant-campaigns.php'
+      - 'api/merchant/customer-review-campaign.php'
+      - 'api/public/profile-reviews.php'
+      - 'api/public/campaigns/customer-review.php'
+      - 'assets/js/stage12-customer-review.js'
+      - 'assets/js/public-profile-runtime.js'
+      - 'assets/js/public-profile-reviews.js'
+      - 'assets/css/public-profile-reviews.css'
+      - 'database/customer_review_campaign_v1.sql'
+      - 'scripts/validate_customer_review_module.php'
+      - '.github/workflows/customer-review-module-validation.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: PHP syntax
+        run: |
+          php -l api/merchant/customer-review-campaign.php
+          php -l api/public/profile-reviews.php
+          php -l api/public/campaigns/customer-review.php
+          php -l scripts/validate_customer_review_module.php
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/stage12-customer-review.js
+          node --check assets/js/public-profile-runtime.js
+          node --check assets/js/public-profile-reviews.js
+      - name: Module contract
+        run: php scripts/validate_customer_review_module.php
