@@ -1,0 +1,35 @@
+name: Merchant Reviews Layout Cleanup
+
+on:
+  pull_request:
+    paths:
+      - 'merchant-reviews.php'
+      - 'includes/merchant-reviews-view.php'
+      - 'assets/css/merchant-reviews-cleanup.css'
+      - 'scripts/validate_merchant_reviews_layout_cleanup.php'
+      - '.github/workflows/merchant-reviews-layout-cleanup-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - name: PHP syntax
+        run: |
+          php -l merchant-reviews.php
+          php -l includes/merchant-reviews-view.php
+          php -l scripts/validate_merchant_reviews_layout_cleanup.php
+      - name: Layout contract
+        run: php scripts/validate_merchant_reviews_layout_cleanup.php
