@@ -1,0 +1,215 @@
+/* Mobile Merchant CRM regression repair.
+   Keeps desktop unchanged while correcting the shared-shell offset and contact-card overlap. */
+@media (max-width:720px){
+  /* app-mobile-unified offsets both .mg-main and the nested .mg-app-shell.
+     Merchant pages only need the outer offset; the nested shell must begin immediately. */
+  html body.mg-app-page.mg-section-merchant .mg-main{
+    padding-top:var(--mg-mobile-topbar)!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-app-shell.mg-merchant-app{
+    padding-top:0!important;
+    margin-top:0!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-merchant-main{
+    padding:10px 10px 20px!important;
+    overflow:visible!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-crm-workspace,
+  html body.mg-app-page.mg-section-merchant .mg-crm-contacts-only{
+    margin-top:0!important;
+    padding-top:0!important;
+  }
+
+  /* Rebuild each rendered table row as a compact mobile contact card. */
+  html body.mg-app-page.mg-section-merchant .mg-crm-contacts-only .mg-crm-contact-row{
+    display:block!important;
+    position:relative!important;
+    min-height:0!important;
+    margin:0 0 10px!important;
+    padding:14px!important;
+    border-radius:16px!important;
+    overflow:hidden!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-crm-contacts-only .mg-crm-contact-row td{
+    min-width:0!important;
+    grid-area:auto!important;
+    grid-column:auto!important;
+    grid-row:auto!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-crm-contacts-only .mg-crm-contact-row .mg-crm-contact-cell,
+  html body.mg-app-page.mg-section-merchant .mg-crm-contacts-only .mg-crm-contact-row .mg-crm-campaign-cell{
+    display:block!important;
+    position:static!important;
+    width:auto!important;
+    max-width:none!important;
+    margin-right:122px!important;
+    padding:0!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-crm-contacts-only .mg-crm-contact-row .mg-crm-campaign-cell{
+    margin-top:10px!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-crm-contact-main{
+    display:block!important;
+    width:100%!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-crm-contact-avatar{
+    display:none!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-crm-contact-copy,
+  html body.mg-app-page.mg-section-merchant .mg-crm-campaign-cell{
+    overflow:visible!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-crm-contact-name-link,
+  html body.mg-app-page.mg-section-merchant .mg-crm-contact-copy>strong{
+    display:block!important;
+    max-width:100%!important;
+    overflow:hidden!important;
+    color:#07152d!important;
+    font-size:13px!important;
+    line-height:1.2!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-crm-contact-copy>small,
+  html body.mg-app-page.mg-section-merchant .mg-crm-campaign-cell>small{
+    display:block!important;
+    max-width:100%!important;
+    overflow:hidden!important;
+    font-size:9px!important;
+    line-height:1.35!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-crm-campaign-cell>strong{
+    display:block!important;
+    max-width:100%!important;
+    overflow-wrap:anywhere!important;
+    font-size:11px!important;
+    line-height:1.3!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-crm-contact-account,
+  html body.mg-app-page.mg-section-merchant .mg-crm-campaign-rewards{
+    display:flex!important;
+    max-width:100%!important;
+    gap:5px!important;
+    flex-wrap:wrap!important;
+    margin-top:7px!important;
+  }
+
+  /* Four small engagement counters float in the upper-right corner. */
+  html body.mg-app-page.mg-section-merchant .mg-crm-contacts-only .mg-crm-contact-row .mg-crm-engagement-cell{
+    display:block!important;
+    position:absolute!important;
+    top:14px!important;
+    right:14px!important;
+    width:108px!important;
+    max-width:108px!important;
+    margin:0!important;
+    padding:0!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-crm-contacts-only .mg-crm-engagement-stats{
+    display:grid!important;
+    grid-template-columns:repeat(2,50px)!important;
+    gap:6px!important;
+    width:106px!important;
+    max-width:106px!important;
+    margin:0!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-crm-contacts-only .mg-crm-engagement-stats span{
+    display:grid!important;
+    min-width:0!important;
+    min-height:38px!important;
+    place-items:center!important;
+    gap:1px!important;
+    border:1px solid #e5ecf5!important;
+    border-radius:9px!important;
+    background:#f7f9fc!important;
+    padding:4px 2px!important;
+    box-shadow:none!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-crm-engagement-stats em{
+    color:#697b95!important;
+    font-size:7px!important;
+    line-height:1!important;
+    letter-spacing:0!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-crm-engagement-stats strong{
+    color:#07152d!important;
+    font-size:11px!important;
+    line-height:1!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-crm-engagement-stats span:nth-child(n+5){
+    display:none!important;
+  }
+
+  /* All four actions use one full-width footer row. */
+  html body.mg-app-page.mg-section-merchant .mg-crm-contacts-only .mg-crm-contact-row .mg-crm-actions-cell{
+    display:block!important;
+    position:static!important;
+    width:100%!important;
+    margin:12px 0 0!important;
+    padding:10px 0 0!important;
+    border-top:1px solid #edf2f7!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-crm-contacts-only .mg-crm-row-actions{
+    display:grid!important;
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;
+    width:100%!important;
+    gap:8px!important;
+    overflow:visible!important;
+    padding:0!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-crm-contacts-only .mg-crm-icon-btn{
+    display:grid!important;
+    width:100%!important;
+    min-width:0!important;
+    max-width:none!important;
+    height:38px!important;
+    min-height:38px!important;
+    place-items:center!important;
+    border-radius:10px!important;
+    overflow:hidden!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-crm-contacts-only .mg-crm-icon-btn span{
+    display:none!important;
+  }
+}
+
+@media (max-width:360px){
+  html body.mg-app-page.mg-section-merchant .mg-crm-contacts-only .mg-crm-contact-row .mg-crm-contact-cell,
+  html body.mg-app-page.mg-section-merchant .mg-crm-contacts-only .mg-crm-contact-row .mg-crm-campaign-cell{
+    margin-right:110px!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-crm-contacts-only .mg-crm-contact-row .mg-crm-engagement-cell{
+    right:12px!important;
+    width:98px!important;
+  }
+
+  html body.mg-app-page.mg-section-merchant .mg-crm-contacts-only .mg-crm-engagement-stats{
+    grid-template-columns:repeat(2,46px)!important;
+    width:98px!important;
+    max-width:98px!important;
+  }
+}
