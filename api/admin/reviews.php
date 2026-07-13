@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         ];
     }, $caseStmt->fetchAll(PDO::FETCH_ASSOC));
 
-    $auditStmt = $pdo->query("SELECT a.public_id,a.action,a.created_at,a.metadata_json,u.name actor_name,p.display_name merchant_name
+    $auditStmt = $pdo->query("SELECT a.public_id,a.action,a.created_at,a.metadata_json,COALESCE(NULLIF(u.display_name,''),u.full_name,u.email) actor_name,p.display_name merchant_name
                              FROM review_case_study_audit a LEFT JOIN users u ON u.id=a.actor_user_id
                              LEFT JOIN public_profiles p ON p.user_id=a.merchant_user_id
                              ORDER BY a.created_at DESC,a.id DESC LIMIT 100");
