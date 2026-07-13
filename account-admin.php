@@ -7,7 +7,7 @@ $page_title = 'Admin Dashboard | Microgifter';
 $page_section = 'account';
 $header_mode = 'account';
 $page_styles = ['/assets/css/admin-dashboard.css'];
-$page_scripts = ['/assets/js/account.js', '/assets/js/admin-dashboard.js'];
+$page_scripts = ['/assets/js/account.js', '/assets/js/admin-dashboard.js', '/assets/js/reviews-management-nav.js?v=1.0.0'];
 
 $user = mg_current_user();
 $roles = is_array($user['roles'] ?? null) ? $user['roles'] : [];
