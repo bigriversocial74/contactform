@@ -48,6 +48,16 @@ function mg_merchant_crm_best_stage(?string $current, string $incoming): string
     return mg_merchant_crm_stage_rank($current) > mg_merchant_crm_stage_rank($incoming) ? (string)$current : $incoming;
 }
 
+function mg_merchant_crm_is_media_progress_event(string $eventType): bool
+{
+    return in_array($eventType, ['watch_reward_progress', 'listen_reward_progress'], true);
+}
+
+function mg_merchant_crm_media_started_event(string $eventType): string
+{
+    return $eventType === 'listen_reward_progress' ? 'listen_reward_started' : 'watch_reward_started';
+}
+
 function mg_merchant_crm_contact(PDO $pdo, int $merchantId, ?int $userId, ?string $email): ?array
 {
     if ($userId) {
@@ -74,6 +84,7 @@ function mg_merchant_crm_record_event(PDO $pdo, array $input): array
     $campaignType = mg_merchant_crm_token($input['campaign_type'] ?? null, $sourceType === 'profile_follow' ? 'non_campaign' : 'unknown');
     if ($sourceType === 'profile_follow' && $campaignType === 'profile_follow') $campaignType = 'non_campaign';
     $eventType = mg_merchant_crm_token($input['event_type'] ?? 'crm_entry', 'crm_entry');
+    $isMediaProgress = mg_merchant_crm_is_media_progress_event($eventType);
     $campaignId = isset($input['campaign_id']) && (int) $input['campaign_id'] > 0 ? (int) $input['campaign_id'] : null;
     if ($campaignId === null && $campaignType === 'profile_follow') $campaignType = 'non_campaign';
     $userId = isset($input['user_id']) && (int) $input['user_id'] > 0 ? (int) $input['user_id'] : null;
@@ -104,16 +115,45 @@ function mg_merchant_crm_record_event(PDO $pdo, array $input): array
             $contactId = (int) $pdo->lastInsertId();
         }
 
-        $eventPublicId = mg_merchant_crm_uuid();
-        $pdo->prepare('INSERT INTO merchant_crm_contact_events (public_id,merchant_user_id,crm_contact_id,campaign_id,campaign_type,event_type,source_type,source_public_id,user_id,email,phone,name,value_cents,metadata_json,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())')
-            ->execute([$eventPublicId, $merchantId, $contactId, $campaignId, $campaignType, $eventType, $sourceType, $sourcePublicId, $userId, $email, $phone, $name, $valueCents, json_encode($metadata, JSON_UNESCAPED_SLASHES)]);
-
-        if ($campaignId) {
-            $pdo->prepare('INSERT INTO merchant_crm_contact_campaigns (public_id,merchant_user_id,crm_contact_id,campaign_id,campaign_type,first_event_at,last_event_at,event_count,metadata_json,created_at,updated_at) VALUES (?,?,?,?,?,NOW(),NOW(),1,?,NOW(),NOW()) ON DUPLICATE KEY UPDATE last_event_at=NOW(),event_count=event_count+1,metadata_json=VALUES(metadata_json),updated_at=NOW()')
-                ->execute([mg_merchant_crm_uuid(), $merchantId, $contactId, $campaignId, $campaignType, json_encode(['last_event_type'=>$eventType,'source_type'=>$sourceType], JSON_UNESCAPED_SLASHES)]);
+        $campaignLinkExists = false;
+        if ($campaignId !== null && $isMediaProgress) {
+            $linkStmt = $pdo->prepare('SELECT 1 FROM merchant_crm_contact_campaigns WHERE merchant_user_id=? AND crm_contact_id=? AND campaign_id=? LIMIT 1 FOR UPDATE');
+            $linkStmt->execute([$merchantId, $contactId, $campaignId]);
+            $campaignLinkExists = (bool) $linkStmt->fetchColumn();
         }
 
-        return ['schema_ready'=>true,'contact_id'=>$contactPublicId,'event_id'=>$eventPublicId,'campaign_type'=>$campaignType,'source_type'=>$sourceType,'lifecycle_stage'=>$stage];
+        $storedEventType = $isMediaProgress ? mg_merchant_crm_media_started_event($eventType) : $eventType;
+        $recordEvent = !$isMediaProgress || !$campaignLinkExists;
+        $eventPublicId = null;
+        if ($recordEvent) {
+            $eventPublicId = mg_merchant_crm_uuid();
+            $eventMetadata = $metadata;
+            $eventMetadata['event_type'] = $storedEventType;
+            if ($isMediaProgress) $eventMetadata['progress_heartbeat_compacted'] = true;
+            $pdo->prepare('INSERT INTO merchant_crm_contact_events (public_id,merchant_user_id,crm_contact_id,campaign_id,campaign_type,event_type,source_type,source_public_id,user_id,email,phone,name,value_cents,metadata_json,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())')
+                ->execute([$eventPublicId, $merchantId, $contactId, $campaignId, $campaignType, $storedEventType, $sourceType, $sourcePublicId, $userId, $email, $phone, $name, $valueCents, json_encode($eventMetadata, JSON_UNESCAPED_SLASHES)]);
+        }
+
+        if ($campaignId) {
+            $campaignMetadata = json_encode(['last_event_type'=>$storedEventType,'source_type'=>$sourceType], JSON_UNESCAPED_SLASHES);
+            if ($isMediaProgress && $campaignLinkExists) {
+                $pdo->prepare('UPDATE merchant_crm_contact_campaigns SET last_event_at=NOW(),metadata_json=?,updated_at=NOW() WHERE merchant_user_id=? AND crm_contact_id=? AND campaign_id=?')
+                    ->execute([$campaignMetadata, $merchantId, $contactId, $campaignId]);
+            } else {
+                $pdo->prepare('INSERT INTO merchant_crm_contact_campaigns (public_id,merchant_user_id,crm_contact_id,campaign_id,campaign_type,first_event_at,last_event_at,event_count,metadata_json,created_at,updated_at) VALUES (?,?,?,?,?,NOW(),NOW(),1,?,NOW(),NOW()) ON DUPLICATE KEY UPDATE last_event_at=NOW(),event_count=event_count+1,metadata_json=VALUES(metadata_json),updated_at=NOW()')
+                    ->execute([mg_merchant_crm_uuid(), $merchantId, $contactId, $campaignId, $campaignType, $campaignMetadata]);
+            }
+        }
+
+        return [
+            'schema_ready'=>true,
+            'contact_id'=>$contactPublicId,
+            'event_id'=>$eventPublicId,
+            'campaign_type'=>$campaignType,
+            'source_type'=>$sourceType,
+            'lifecycle_stage'=>$stage,
+            'progress_heartbeat_suppressed'=>$isMediaProgress && !$recordEvent,
+        ];
     } catch (Throwable $error) {
         mg_security_log('warning', 'merchant_crm.record_event_failed', 'Merchant CRM event could not be recorded.', ['exception_class'=>$error::class, 'message'=>$error->getMessage()], $merchantId);
         return ['schema_ready'=>false,'skipped'=>true,'campaign_type'=>$campaignType,'source_type'=>$sourceType];
