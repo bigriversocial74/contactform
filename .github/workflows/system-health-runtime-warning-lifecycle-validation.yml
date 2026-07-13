@@ -1,0 +1,37 @@
+name: System Health Runtime Warning Lifecycle
+
+on:
+  pull_request:
+    paths:
+      - 'api/admin/_system_health_runtime_checks.php'
+      - 'api/admin/_system_health_metrics.php'
+      - 'api/admin/_system_health.php'
+      - 'scripts/validate_system_health_runtime_warning_lifecycle.php'
+      - '.github/workflows/system-health-runtime-warning-lifecycle-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }} validation
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - name: Syntax check changed PHP
+        run: |
+          php -l api/admin/_system_health_runtime_checks.php
+          php -l api/admin/_system_health_metrics.php
+          php -l api/admin/_system_health.php
+          php -l scripts/validate_system_health_runtime_warning_lifecycle.php
+      - name: Run runtime warning lifecycle contract
+        run: php scripts/validate_system_health_runtime_warning_lifecycle.php

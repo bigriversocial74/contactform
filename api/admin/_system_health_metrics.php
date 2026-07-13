@@ -127,10 +127,98 @@ function mg_admin_system_health_notification_metrics(PDO $pdo): array
     }
 }
 
-function mg_admin_system_health_recent_warnings(PDO $pdo, int $limit = 12): array
+function mg_admin_system_health_warning_time(string $value): int
+{
+    $time = strtotime($value);
+    return $time === false ? 0 : $time;
+}
+
+function mg_admin_system_health_warning_resolution(array $item, array $warningState): array
+{
+    $type = (string)($item['title'] ?? '');
+    $created = mg_admin_system_health_warning_time((string)($item['created_at'] ?? ''));
+    $age = $created > 0 ? max(0, time() - $created) : 0;
+
+    if (isset($warningState[$type]) && is_array($warningState[$type])) {
+        $state = $warningState[$type];
+        if (empty($state['active'])) {
+            return [
+                'resolved' => true,
+                'reason' => (string)($state['summary'] ?? 'The current runtime check is healthy.'),
+                'check_key' => $state['check_key'] ?? null,
+            ];
+        }
+        return [
+            'resolved' => false,
+            'reason' => (string)($state['summary'] ?? 'The current runtime check still requires attention.'),
+            'check_key' => $state['check_key'] ?? null,
+        ];
+    }
+
+    if ($type === 'admin.system_health.sensitive_token_invalid') {
+        return [
+            'resolved' => $age > 900,
+            'reason' => $age > 900
+                ? 'Expired System Health confirmation attempts remain available in Security Logs but are outside the active warning window.'
+                : 'A protected System Health request recently used an invalid or expired confirmation token.',
+            'check_key' => 'system_health_sensitive_token',
+        ];
+    }
+
+    $shortWindowTypes = [
+        'admin.queue_reporting.failed',
+        'admin.queue_automation.failed',
+        'admin.risk_forecast.failed',
+        'admin.operations_command.failed',
+        'admin.ops_activity.failed',
+        'admin.system_sql_diagnostics.failed',
+    ];
+    if (in_array($type, $shortWindowTypes, true) && $age > 3600) {
+        return [
+            'resolved' => true,
+            'reason' => 'The request failure is older than the active one-hour operations window.',
+            'check_key' => 'request_failure_window',
+        ];
+    }
+
+    return ['resolved' => false, 'reason' => null, 'check_key' => null];
+}
+
+function mg_admin_system_health_warning_group(array &$groups, array $item): void
+{
+    $key = implode('|', [
+        (string)($item['source'] ?? ''),
+        (string)($item['title'] ?? ''),
+        (string)($item['message'] ?? ''),
+        !empty($item['resolved']) ? 'resolved' : 'active',
+    ]);
+    if (!isset($groups[$key])) {
+        $item['occurrence_count'] = 1;
+        $item['first_seen_at'] = $item['created_at'] ?? null;
+        $item['last_seen_at'] = $item['created_at'] ?? null;
+        $groups[$key] = $item;
+        return;
+    }
+
+    $groups[$key]['occurrence_count'] = (int)($groups[$key]['occurrence_count'] ?? 1) + 1;
+    $current = (string)($groups[$key]['last_seen_at'] ?? '');
+    $candidate = (string)($item['created_at'] ?? '');
+    if ($candidate > $current) {
+        $groups[$key]['last_seen_at'] = $candidate;
+        $groups[$key]['created_at'] = $candidate;
+    }
+    $first = (string)($groups[$key]['first_seen_at'] ?? '');
+    if ($first === '' || ($candidate !== '' && $candidate < $first)) {
+        $groups[$key]['first_seen_at'] = $candidate;
+    }
+}
+
+function mg_admin_system_health_warning_feed(PDO $pdo, array $warningState = [], int $limit = 12): array
 {
     $limit = max(1, min(30, $limit));
-    $items = [];
+    $rowsToRead = max(100, $limit * 10);
+    $raw = [];
+
     try {
         if (mg_admin_system_health_table_exists($pdo, 'security_logs')) {
             $rows = $pdo->query(
@@ -138,10 +226,10 @@ function mg_admin_system_health_recent_warnings(PDO $pdo, int $limit = 12): arra
                  FROM security_logs
                  WHERE severity IN ('warning','error','critical')
                  ORDER BY created_at DESC,id DESC
-                 LIMIT {$limit}"
+                 LIMIT {$rowsToRead}"
             )->fetchAll(PDO::FETCH_ASSOC);
             foreach ($rows as $row) {
-                $items[] = [
+                $raw[] = [
                     'source' => 'security',
                     'severity' => (string)$row['severity'],
                     'title' => (string)$row['event_type'],
@@ -150,16 +238,17 @@ function mg_admin_system_health_recent_warnings(PDO $pdo, int $limit = 12): arra
                 ];
             }
         }
+
         if (mg_admin_system_health_table_exists($pdo, 'operational_alerts')) {
             $rows = $pdo->query(
                 "SELECT severity,alert_type,title,body,created_at
                  FROM operational_alerts
                  WHERE status IN ('open','acknowledged') AND severity IN ('warning','high','critical')
                  ORDER BY created_at DESC,id DESC
-                 LIMIT {$limit}"
+                 LIMIT {$rowsToRead}"
             )->fetchAll(PDO::FETCH_ASSOC);
             foreach ($rows as $row) {
-                $items[] = [
+                $raw[] = [
                     'source' => 'operations',
                     'severity' => (string)$row['severity'],
                     'title' => (string)($row['title'] ?: $row['alert_type']),
@@ -172,6 +261,40 @@ function mg_admin_system_health_recent_warnings(PDO $pdo, int $limit = 12): arra
         error_log('[microgifter-admin-health] warning metrics: ' . $error::class . ': ' . $error->getMessage());
     }
 
-    usort($items, static fn(array $left, array $right): int => strcmp((string)$right['created_at'], (string)$left['created_at']));
-    return array_slice($items, 0, $limit);
+    usort($raw, static fn(array $left, array $right): int => strcmp((string)$right['created_at'], (string)$left['created_at']));
+    $activeGroups = [];
+    $resolvedGroups = [];
+    foreach ($raw as $item) {
+        $resolution = mg_admin_system_health_warning_resolution($item, $warningState);
+        $item['resolved'] = (bool)$resolution['resolved'];
+        $item['resolution_reason'] = $resolution['reason'];
+        $item['check_key'] = $resolution['check_key'];
+        if ($item['resolved']) mg_admin_system_health_warning_group($resolvedGroups, $item);
+        else mg_admin_system_health_warning_group($activeGroups, $item);
+    }
+
+    $active = array_values($activeGroups);
+    $resolved = array_values($resolvedGroups);
+    usort($active, static fn(array $left, array $right): int => strcmp((string)$right['created_at'], (string)$left['created_at']));
+    usort($resolved, static fn(array $left, array $right): int => strcmp((string)$right['created_at'], (string)$left['created_at']));
+
+    $activeOccurrences = array_sum(array_map(static fn(array $item): int => (int)($item['occurrence_count'] ?? 1), $active));
+    $resolvedOccurrences = array_sum(array_map(static fn(array $item): int => (int)($item['occurrence_count'] ?? 1), $resolved));
+
+    return [
+        'active' => array_slice($active, 0, $limit),
+        'resolved' => array_slice($resolved, 0, $limit),
+        'summary' => [
+            'active_groups' => count($active),
+            'active_occurrences' => $activeOccurrences,
+            'resolved_groups' => count($resolved),
+            'resolved_occurrences' => $resolvedOccurrences,
+            'raw_events_checked' => count($raw),
+        ],
+    ];
+}
+
+function mg_admin_system_health_recent_warnings(PDO $pdo, int $limit = 12): array
+{
+    return mg_admin_system_health_warning_feed($pdo, [], $limit)['active'];
 }
