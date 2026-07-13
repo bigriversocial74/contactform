@@ -1,0 +1,37 @@
+name: System Health Migration Reconciliation
+
+on:
+  pull_request:
+    paths:
+      - 'api/admin/_migration_reconciliation*.php'
+      - 'api/admin/system-health-action.php'
+      - 'api/admin/system-health.php'
+      - 'assets/js/admin-health-warning-filter.js'
+      - 'scripts/validate_system_health_migration_reconciliation.php'
+      - '.github/workflows/system-health-migration-reconciliation-validation.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+      - name: PHP syntax
+        run: |
+          php -l api/admin/_migration_reconciliation_meta.php
+          php -l api/admin/_migration_reconciliation_checks.php
+          php -l api/admin/_migration_reconciliation_analyze.php
+          php -l api/admin/_migration_reconciliation.php
+          php -l api/admin/system-health-action.php
+          php -l api/admin/system-health.php
+          php -l scripts/validate_system_health_migration_reconciliation.php
+      - name: JavaScript syntax
+        run: node --check assets/js/admin-health-warning-filter.js
+      - name: Reconciliation contract
+        run: php scripts/validate_system_health_migration_reconciliation.php
