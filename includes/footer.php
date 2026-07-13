@@ -35,6 +35,17 @@ if ((string) ($page_manifest['id'] ?? '') === 'home') {
 if ((string) ($page_manifest['id'] ?? '') === 'discover') {
     $page_scripts[] = '/assets/js/discover-state-results-link.js';
 }
+if ((string) ($page_manifest['id'] ?? '') === 'public-profile') {
+    $page_scripts[] = '/assets/js/public-profile-review-replies.js?v=1.0.0';
+    $late_styles[] = '/assets/css/public-review-replies.css?v=1.0.0';
+}
+if ((string) ($page_manifest['id'] ?? '') === 'featured-case-studies') {
+    $page_scripts[] = '/assets/js/featured-case-studies-curation.js?v=1.0.0';
+}
+if ((string) ($page_manifest['id'] ?? '') === 'case-study-detail') {
+    $page_scripts[] = '/assets/js/case-study-curation.js?v=1.0.0';
+    $late_styles[] = '/assets/css/public-review-replies.css?v=1.0.0';
+}
 if ((string) ($page_manifest['id'] ?? '') === 'merchant-canvas' && !empty($hasMerchantAccess)) {
     $page_scripts[] = '/assets/js/merchant-canvas-containment.js';
 }
@@ -75,6 +86,7 @@ $can_intelligence = $user && (in_array('intelligence.dashboard.view', $user_perm
       <div class="mg-footer-column">
         <h2>Platform</h2>
         <a href="/discover.php">Explore</a>
+        <a href="/featured-case-studies.php">Case Studies</a>
         <a href="/pricing.php">Pricing</a>
         <a href="/about-team.php">About Team</a>
         <a href="/investors.php">Investors</a>
