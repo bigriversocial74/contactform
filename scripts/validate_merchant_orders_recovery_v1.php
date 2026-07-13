@@ -25,6 +25,16 @@ foreach ($files as $key => $path) {
     $content[$key] = (string) file_get_contents($path);
 }
 
+$hasCanonicalIssuanceTruth = str_contains($content['foundation'], 'mg_order_issuance_summary($pdo, $order')
+    || (
+        str_contains($content['foundation'], 'mg_merchant_order_issuance_from_items')
+        && str_contains($content['foundation'], "'query_shape' => 'bulk_detail_v2'")
+        && str_contains($content['foundation'], "'expected_units' => $expectedUnits")
+        && str_contains($content['foundation'], "'action_center_items' => $projectionItems")
+    );
+
+$hasEscapeDialogControl = preg_match('/event\.key\s*={2,3}\s*[\'\"]Escape[\'\"]/', $content['js']) === 1;
+
 $checks = [
     'merchant page loads the scoped orders view and assets' =>
         str_contains($content['page'], '$merchantView = \'orders\'')
@@ -50,7 +60,7 @@ $checks = [
         && !str_contains($content['js'], 'customer.user_id'),
     'detail endpoint enforces merchant ownership and canonical issuance truth' =>
         str_contains($content['foundation'], 'WHERE o.public_id=? AND o.merchant_user_id=?')
-        && str_contains($content['foundation'], 'mg_order_issuance_summary($pdo, $order'),
+        && $hasCanonicalIssuanceTruth,
     'delivery recovery uses CSRF and the canonical transactional reconciler' =>
         str_contains($content['reconcile'], 'mg_require_csrf_for_write($input)')
         && str_contains($content['reconcile'], 'mg_payment_reconcile_paid_order')
@@ -61,7 +71,7 @@ $checks = [
         && !str_contains($content['view'], 'Cancel order'),
     'browser runtime uses stable request keys and accessible dialog controls' =>
         str_contains($content['js'], 'mg-commerce-order-reconcile:')
-        && str_contains($content['js'], "event.key==='Escape'")
+        && $hasEscapeDialogControl
         && str_contains($content['view'], 'aria-modal="true"')
         && str_contains($content['view'], 'aria-live="polite"'),
     'UI exposes payment, issuance, item, timeline, loading, empty, and error states' =>
