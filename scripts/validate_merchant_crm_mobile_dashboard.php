@@ -70,7 +70,7 @@ foreach ($checks as $label => $passed) {
 }
 
 if ($failures !== []) {
-    fwrite(STDERR, 'Merchant CRM mobile dashboard validation failed: ' . implode(', ', $failures) . PHP_EOL;
+    fwrite(STDERR, 'Merchant CRM mobile dashboard validation failed: ' . implode(', ', $failures) . PHP_EOL);
     exit(1);
 }
 
