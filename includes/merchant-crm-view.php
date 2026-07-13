@@ -10,8 +10,12 @@ declare(strict_types=1);
         <article><span>Claims / Redeems</span><strong data-crm-stat-claimed>0</strong></article>
         <article data-crm-contact-message-total><span>Messages</span><strong>0</strong></article>
         <article data-crm-contact-active-message-total><span>Active Messages</span><strong>0</strong></article>
-        <article class="mg-crm-identity-stat"><span>Possible Duplicates</span><strong data-crm-duplicate-count>—</strong><button type="button" data-crm-duplicates-open>Review identities</button></article>
       </section>
+
+      <div class="mg-crm-identity-launch">
+        <div><span>Contact identity health</span><strong><b data-crm-duplicate-count>—</b> possible duplicate groups</strong></div>
+        <button type="button" data-crm-duplicates-open>Review identities</button>
+      </div>
 
       <section class="mg-crm-identity-panel" data-crm-duplicates-panel hidden aria-labelledby="crmDuplicateTitle">
         <header class="mg-crm-identity-head">
@@ -23,10 +27,10 @@ declare(strict_types=1);
           <div class="mg-crm-identity-actions"><button class="mg-btn mg-btn-soft" type="button" data-crm-duplicates-refresh>Refresh analysis</button><button class="mg-btn mg-btn-soft" type="button" data-crm-duplicates-close>Close</button></div>
         </header>
         <div class="mg-crm-identity-summary" data-crm-duplicates-summary>
-          <article><span>Groups</span><strong>—</strong></article>
-          <article><span>Profiles</span><strong>—</strong></article>
-          <article><span>Safe to review</span><strong>—</strong></article>
-          <article><span>Previously merged</span><strong>—</strong></article>
+          <div><span>Groups</span><strong>—</strong></div>
+          <div><span>Profiles</span><strong>—</strong></div>
+          <div><span>Safe to review</span><strong>—</strong></div>
+          <div><span>Previously merged</span><strong>—</strong></div>
         </div>
         <div class="mg-crm-identity-status" data-crm-duplicates-status>Loading identity analysis…</div>
         <div class="mg-crm-identity-groups" data-crm-duplicates-groups></div>
