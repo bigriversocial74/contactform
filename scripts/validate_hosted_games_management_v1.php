@@ -26,9 +26,7 @@ function hg_has(string $path, string $needle, string $label): void
     global $checks, $failures;
     $checks++;
     $content = hg_file($path);
-    if ($content === '' || !str_contains($content, $needle)) {
-        $failures[] = "{$label}: {$path} is missing {$needle}";
-    }
+    if ($content === '' || !str_contains($content, $needle)) $failures[] = "{$label}: {$path} is missing {$needle}";
 }
 
 function hg_not_has(string $path, string $needle, string $label): void
@@ -36,27 +34,17 @@ function hg_not_has(string $path, string $needle, string $label): void
     global $checks, $failures;
     $checks++;
     $content = hg_file($path);
-    if ($content !== '' && str_contains($content, $needle)) {
-        $failures[] = "{$label}: {$path} must not contain {$needle}";
-    }
-}
-
-function hg_regex(string $path, string $pattern, string $label): void
-{
-    global $checks, $failures;
-    $checks++;
-    $content = hg_file($path);
-    if ($content === '' || preg_match($pattern, $content) !== 1) {
-        $failures[] = "{$label}: {$path} failed pattern {$pattern}";
-    }
+    if ($content !== '' && str_contains($content, $needle)) $failures[] = "{$label}: {$path} must not contain {$needle}";
 }
 
 $requiredFiles = [
     'database/hosted_games_management_v1.sql',
     'includes/hosted-games.php',
+    'includes/hosted-game-upload.php',
     'api/merchant/hosted-games.php',
     'api/merchant/hosted-game-upload.php',
     'api/admin/hosted-games.php',
+    'api/admin/hosted-game-upload.php',
     'api/hosted-games/runtime.php',
     'api/hosted-games/asset.php',
     'api/hosted-games/document.php',
@@ -82,14 +70,7 @@ foreach ($requiredFiles as $path) {
     if (!is_file($root . '/' . $path)) $failures[] = "Missing required file: {$path}";
 }
 
-foreach ([
-    'hosted_games',
-    'hosted_game_releases',
-    'hosted_game_secrets',
-    'hosted_game_database_connections',
-    'hosted_game_runs',
-    'hosted_game_events',
-] as $table) {
+foreach (['hosted_games','hosted_game_releases','hosted_game_secrets','hosted_game_database_connections','hosted_game_runs','hosted_game_events'] as $table) {
     hg_has('database/hosted_games_management_v1.sql', "CREATE TABLE IF NOT EXISTS {$table}", "Schema table {$table}");
 }
 hg_has('database/hosted_games_management_v1.sql', 'api_credential_ciphertext', 'Encrypted API credential column');
@@ -101,15 +82,19 @@ hg_has('database/hosted_games_management_v1.sql', 'template_public_id CHAR(36) N
 hg_has('database/hosted_games_management_v1.sql', 'uq_hosted_game_database_target', 'Isolated database uniqueness');
 hg_has('config/migrations.php', "'hosted_games_management_v1.sql'", 'Migration manifest');
 
-hg_has('api/merchant/hosted-game-upload.php', 'ZipArchive', 'ZIP processing');
-hg_has('api/merchant/hosted-game-upload.php', 'is_uploaded_file', 'Real upload validation');
-hg_has('api/merchant/hosted-game-upload.php', 'mg_hosted_game_zip_symlink', 'Symlink rejection');
-hg_has('api/merchant/hosted-game-upload.php', "if (\$part === '..')", 'Traversal rejection');
-hg_has('api/merchant/hosted-game-upload.php', 'MG_HOSTED_GAME_MAX_ZIP_BYTES', 'ZIP size cap');
-hg_has('api/merchant/hosted-game-upload.php', 'MG_HOSTED_GAME_MAX_EXTRACTED_BYTES', 'Extracted size cap');
-hg_has('api/merchant/hosted-game-upload.php', "'wasm'", 'WASM support');
-hg_has('api/merchant/hosted-game-upload.php', "'unityweb'", 'Unity WebGL support');
-hg_not_has('api/merchant/hosted-game-upload.php', "'php'", 'Executable PHP must not be allowlisted');
+hg_has('includes/hosted-game-upload.php', 'ZipArchive', 'Shared ZIP processing');
+hg_has('includes/hosted-game-upload.php', 'is_uploaded_file', 'Real upload validation');
+hg_has('includes/hosted-game-upload.php', 'mg_hosted_game_zip_symlink', 'Symlink rejection');
+hg_has('includes/hosted-game-upload.php', "if (\$part === '..')", 'Traversal rejection');
+hg_has('includes/hosted-game-upload.php', 'MG_HOSTED_GAME_MAX_ZIP_BYTES', 'ZIP size cap');
+hg_has('includes/hosted-game-upload.php', 'MG_HOSTED_GAME_MAX_EXTRACTED_BYTES', 'Extracted size cap');
+hg_has('includes/hosted-game-upload.php', "'wasm'", 'WASM support');
+hg_has('includes/hosted-game-upload.php', "'unityweb'", 'Unity WebGL support');
+hg_not_has('includes/hosted-game-upload.php', "'php'", 'Executable PHP must not be allowlisted');
+hg_has('api/merchant/hosted-game-upload.php', 'mg_hosted_game_process_upload', 'Merchant shared upload pipeline');
+hg_has('api/admin/hosted-game-upload.php', 'mg_hosted_game_process_upload', 'Admin shared upload pipeline');
+hg_has('api/admin/hosted-game-upload.php', "'admin.hosted_games.manage'", 'Admin upload permission');
+hg_has('api/admin/hosted-game-upload.php', 'mg_hosted_game_by_public_id', 'Admin upload game resolution');
 
 hg_has('hosted-game.php', 'sandbox="allow-scripts', 'Sandboxed game frame');
 hg_not_has('hosted-game.php', 'allow-same-origin', 'Uploaded game must have opaque origin');
@@ -138,17 +123,27 @@ hg_has('includes/hosted-games.php', "'distribution:rewards.status'", 'Reward sta
 hg_has('includes/hosted-games.php', '$webhookReady', 'Webhook readiness gate');
 hg_has('includes/hosted-games.php', '$databaseReady', 'Database readiness gate');
 
-hg_has('api/admin/hosted-games.php', "\$action === 'save_database'", 'Admin database save');
-hg_has('api/admin/hosted-games.php', "\$action === 'test_database'", 'Admin database test');
-hg_has('api/admin/hosted-games.php', "\$action === 'disable_database'", 'Admin database disable');
+foreach (['save_game','configure_integration','publish_game','pause_game','archive_game','save_database','test_database','disable_database'] as $action) {
+    hg_has('api/admin/hosted-games.php', "\$action === '{$action}'", "Admin action {$action}");
+}
+hg_has('api/admin/hosted-games.php', 'mg_admin_hosted_game_merchants', 'Admin merchant selector data');
+hg_has('api/admin/hosted-games.php', 'mg_admin_hosted_game_options', 'Admin merchant-scoped integration options');
+hg_has('api/admin/hosted-games.php', 'mg_hosted_game_ensure_runtime_integration', 'Admin automatic API integration');
+hg_has('api/admin/hosted-games.php', 'merchant_user_id=?', 'Admin merchant ownership validation');
 hg_has('api/admin/hosted-games.php', 'mg_hosted_game_encrypt_secret($username)', 'Username encryption');
 hg_has('api/admin/hosted-games.php', 'mg_hosted_game_encrypt_secret($password)', 'Password encryption');
 hg_not_has('api/admin/hosted-games.php', "'password'=>", 'Admin API must not return password');
+hg_has('admin/hosted-games.php', 'Merchant account', 'Admin merchant creation form');
+hg_has('admin/hosted-games.php', 'Upload game release', 'Admin release upload');
+hg_has('admin/hosted-games.php', 'Program, Campaign and reward', 'Admin integration form');
 hg_has('admin/hosted-games.php', 'Database username', 'Admin username form');
-hg_has('admin/hosted-games.php', 'Database password', 'Admin password form');
+hg_has('admin/hosted-games.php', 'Publish hosted game', 'Admin publication control');
+hg_has('assets/js/admin-hosted-games.js', '/api/admin/hosted-game-upload.php', 'Admin upload controller');
+hg_has('assets/js/admin-hosted-games.js', "post('configure_integration'", 'Admin integration controller');
+hg_has('assets/js/admin-hosted-games.js', "post('publish_game'", 'Admin publish controller');
 
 hg_has('api/merchant/hosted-games.php', "\$action === 'configure_integration'", 'Merchant integration setup');
-hg_has('api/merchant/hosted-games.php', 'mg_hosted_game_ensure_runtime_integration', 'Automatic game credential setup');
+hg_has('api/merchant/hosted-games.php', 'mg_hosted_game_ensure_runtime_integration', 'Merchant automatic game credential setup');
 hg_has('includes/merchant-hosted-games-view.php', 'Upload game release', 'Merchant ZIP workflow');
 hg_has('includes/merchant-hosted-games-view.php', 'Configure game integration', 'Merchant campaign/reward workflow');
 hg_not_has('includes/merchant-hosted-games-view.php', 'Game Rules', 'No generic game rules UI');
