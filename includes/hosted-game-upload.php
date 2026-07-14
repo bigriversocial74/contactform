@@ -126,9 +126,7 @@ function mg_hosted_game_process_upload(PDO $pdo, array $game, int $actorUserId, 
     if ($tmpName === '' || !is_uploaded_file($tmpName) || !is_file($tmpName)) throw new MgHostedGameException('Invalid uploaded game ZIP.');
     $actualSize = filesize($tmpName);
     $reportedSize = (int)($file['size'] ?? 0);
-    if ($actualSize === false || $actualSize < 1 || $actualSize > MG_HOSTED_GAME_MAX_ZIP_BYTES || ($reportedSize > 0 && $reportedSize !== (int)$actualSize)) {
-        throw new MgHostedGameException('The game ZIP is too large or invalid.');
-    }
+    if ($actualSize === false || $actualSize < 1 || $actualSize > MG_HOSTED_GAME_MAX_ZIP_BYTES || ($reportedSize > 0 && $reportedSize !== (int)$actualSize)) throw new MgHostedGameException('The game ZIP is too large or invalid.');
 
     $originalName = trim(basename((string)($file['name'] ?? 'game.zip')));
     if (strtolower(pathinfo($originalName, PATHINFO_EXTENSION)) !== 'zip') throw new MgHostedGameException('Hosted games must be uploaded as a ZIP file.');
@@ -142,6 +140,7 @@ function mg_hosted_game_process_upload(PDO $pdo, array $game, int $actorUserId, 
     if ($open !== true) throw new MgHostedGameException('The game ZIP could not be opened.');
 
     $destination = '';
+    $committed = false;
     try {
         $entries = [];
         $totalBytes = 0;
@@ -233,16 +232,21 @@ function mg_hosted_game_process_upload(PDO $pdo, array $game, int $actorUserId, 
         $pdo->prepare('UPDATE hosted_games SET current_release_public_id=?,entry_file=?,updated_by_user_id=?,updated_at=NOW() WHERE id=?')
             ->execute([$releasePublicId,$entryFile,$actorUserId,$gameId]);
         $pdo->commit();
+        $committed = true;
 
-        mg_audit($auditEvent,'hosted_game_release',[
-            'game_id'=>$gamePublicId,
-            'merchant_user_id'=>$merchantUserId,
-            'release_id'=>$releasePublicId,
-            'version'=>$version,
-            'file_count'=>count($normalizedEntries),
-            'extracted_bytes'=>$totalBytes,
-            'package_checksum'=>$checksum,
-        ],$actorUserId);
+        try {
+            mg_audit($auditEvent,'hosted_game_release',[
+                'game_id'=>$gamePublicId,
+                'merchant_user_id'=>$merchantUserId,
+                'release_id'=>$releasePublicId,
+                'version'=>$version,
+                'file_count'=>count($normalizedEntries),
+                'extracted_bytes'=>$totalBytes,
+                'package_checksum'=>$checksum,
+            ],$actorUserId);
+        } catch (Throwable) {
+            // Audit logging must not invalidate an already committed and activated release.
+        }
 
         return [
             'game_id'=>$gamePublicId,
@@ -258,7 +262,7 @@ function mg_hosted_game_process_upload(PDO $pdo, array $game, int $actorUserId, 
         ];
     } catch (Throwable $error) {
         if ($pdo->inTransaction()) $pdo->rollBack();
-        if ($destination !== '') mg_hosted_game_remove_tree($destination);
+        if (!$committed && $destination !== '') mg_hosted_game_remove_tree($destination);
         throw $error;
     } finally {
         $zip->close();
