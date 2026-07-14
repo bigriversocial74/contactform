@@ -4,6 +4,7 @@ var root=document.querySelector('[data-dev-api-redesign]');
 var form=document.querySelector('[data-dev-campaign-program-form]');
 var picker=document.querySelector('[data-program-campaign-picker]');
 if(!root||!form||!picker||!window.Microgifter)return;
+['sources','queue'].forEach(function(key){var selector='[data-distribution-'+key+']';if(root.querySelector(selector))return;var node=document.createElement('div');node.hidden=true;node.setAttribute('data-distribution-'+key,'');root.appendChild(node);});
 var availableCampaigns=[];
 var selectedCampaigns=new Set();
 var currentMetadata={};
