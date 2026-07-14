@@ -14,8 +14,7 @@ $header_mode = 'public';
 $page_styles = ['/assets/css/case-study.css?v=1.0.1'];
 $page_scripts = [
     '/assets/js/public-case-studies-nav.js?v=1.0.0',
-    '/assets/js/case-study.js?v=1.0.0',
-    '/assets/js/case-study-real-stats.js?v=1.0.0',
+    '/assets/js/case-study.js?v=1.1.0',
 ];
 $page_manifest = [
     'id' => 'case-study-detail',
@@ -78,7 +77,7 @@ require __DIR__ . '/includes/header.php';
           <aside class="mg-cs-review" aria-label="Featured review">
             <div class="mg-cs-review__label">Featured Review</div>
             <blockquote data-cs-review>“Microgifter gave us a simpler way to launch campaigns, reward customers, and see what is working.”</blockquote>
-            <div class="mg-cs-review__footer"><div><strong data-cs-review-name>Merchant Owner</strong><span data-cs-review-role>Microgifter customer</span></div><div class="mg-cs-stars" aria-label="5 out of 5 stars">★★★★★</div></div>
+            <div class="mg-cs-review__footer"><div><strong data-cs-review-name>Merchant Owner</strong><span data-cs-review-role>Microgifter customer</span></div><div class="mg-cs-stars" data-cs-review-stars aria-label="5 out of 5 stars">★★★★★</div></div>
           </aside>
         </div>
       </article>
@@ -88,7 +87,7 @@ require __DIR__ . '/includes/header.php';
         <div class="mg-cs-kpis">
           <article><span class="mg-cs-kpi-icon">▣</span><div><small>Total Products</small><strong data-cs-products>0</strong><em>Published products</em></div></article>
           <article><span class="mg-cs-kpi-icon">◉</span><div><small>Active Campaigns</small><strong data-cs-campaigns>0</strong><em>Current campaigns</em></div></article>
-          <article><span class="mg-cs-kpi-icon">$</span><div><small>Total Sales</small><strong data-cs-sales>$0</strong><em data-cs-sales-note>Reporting period</em></div></article>
+          <article><span class="mg-cs-kpi-icon">$</span><div><small>Total Sales</small><strong data-cs-sales>$0</strong><em data-cs-sales-note>Captured commerce orders</em></div></article>
           <article><span class="mg-cs-kpi-icon">↗</span><div><small>Redemption Rate</small><strong data-cs-redemption>0%</strong><em>Claims converted</em></div></article>
           <article><span class="mg-cs-kpi-icon">+</span><div><small>Customer Growth</small><strong data-cs-growth>0</strong><em>New customers</em></div></article>
         </div>
