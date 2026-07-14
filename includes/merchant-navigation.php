@@ -31,6 +31,7 @@ if (!function_exists('mg_merchant_navigation_items')) {
 
             'locations' => ['Locations', 'Stores and claim scope', '/merchant-locations.php', 'Business Settings'],
             'team' => ['Team', 'Roles and access', '/merchant-team.php', 'Business Settings'],
+            'integrations' => ['Connected Apps', 'CRM and web-store connections', '/merchant-integrations.php', 'Business Settings'],
             'developer_api' => ['Developer API', 'Apps and access', '/merchant-distribution.php?developer_api=1', 'Business Settings'],
             'settings' => ['Settings', 'Business configuration', '/merchant-settings.php', 'Business Settings'],
         ];
@@ -99,6 +100,7 @@ if (!function_exists('mg_merchant_navigation_active_key')) {
             'merchant-stamps' => 'stamps',
             'merchant-locations' => 'locations',
             'merchant-team' => 'team',
+            'merchant-integrations' => 'integrations',
             'merchant-developer-api' => 'developer_api',
             'merchant-settings' => 'settings',
         ];

@@ -1,0 +1,157 @@
+-- Merchant App Connect Foundation v1
+-- Provider-neutral connections, encrypted credentials, entity links, sync state, and webhook inbox.
+
+CREATE TABLE IF NOT EXISTS merchant_integration_connections (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  merchant_user_id BIGINT UNSIGNED NOT NULL,
+  provider_key VARCHAR(80) NOT NULL,
+  auth_type ENUM('oauth2','api_key') NOT NULL DEFAULT 'oauth2',
+  status ENUM('pending','active','reauthorization_required','disconnected','error') NOT NULL DEFAULT 'pending',
+  sync_direction ENUM('import_only','export_only','bidirectional') NOT NULL DEFAULT 'import_only',
+  external_account_id VARCHAR(190) NULL,
+  external_account_name VARCHAR(255) NULL,
+  external_account_url VARCHAR(500) NULL,
+  scopes_json JSON NULL,
+  settings_json JSON NULL,
+  last_sync_at DATETIME NULL,
+  last_error_at DATETIME NULL,
+  last_error_code VARCHAR(120) NULL,
+  last_error_message VARCHAR(1000) NULL,
+  connected_at DATETIME NULL,
+  disconnected_at DATETIME NULL,
+  created_by_user_id BIGINT UNSIGNED NOT NULL,
+  updated_by_user_id BIGINT UNSIGNED NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_merchant_integration_connections_public_id (public_id),
+  KEY idx_merchant_integration_connections_merchant (merchant_user_id,provider_key,status,updated_at),
+  KEY idx_merchant_integration_connections_external (provider_key,external_account_id),
+  CONSTRAINT fk_merchant_integration_connections_merchant FOREIGN KEY (merchant_user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_merchant_integration_connections_created_by FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_merchant_integration_connections_updated_by FOREIGN KEY (updated_by_user_id) REFERENCES users(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS merchant_integration_credentials (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  connection_id BIGINT UNSIGNED NOT NULL,
+  access_token_ciphertext LONGTEXT NULL,
+  refresh_token_ciphertext LONGTEXT NULL,
+  api_key_ciphertext LONGTEXT NULL,
+  webhook_secret_ciphertext LONGTEXT NULL,
+  token_type VARCHAR(40) NULL,
+  access_expires_at DATETIME NULL,
+  refresh_expires_at DATETIME NULL,
+  oauth_state_hash CHAR(64) NULL,
+  oauth_state_expires_at DATETIME NULL,
+  refresh_lock_token CHAR(64) NULL,
+  refresh_lock_expires_at DATETIME NULL,
+  metadata_json JSON NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_merchant_integration_credentials_connection (connection_id),
+  KEY idx_merchant_integration_credentials_oauth_state (oauth_state_hash,oauth_state_expires_at),
+  CONSTRAINT fk_merchant_integration_credentials_connection FOREIGN KEY (connection_id) REFERENCES merchant_integration_connections(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS merchant_integration_entity_links (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  connection_id BIGINT UNSIGNED NOT NULL,
+  entity_type VARCHAR(80) NOT NULL,
+  external_entity_id VARCHAR(255) NOT NULL,
+  local_entity_type VARCHAR(80) NOT NULL,
+  local_entity_id BIGINT UNSIGNED NULL,
+  external_version VARCHAR(190) NULL,
+  external_updated_at DATETIME NULL,
+  last_synced_at DATETIME NULL,
+  sync_hash CHAR(64) NULL,
+  status ENUM('linked','pending_review','deleted_external','conflict','error') NOT NULL DEFAULT 'linked',
+  metadata_json JSON NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_merchant_integration_entity_links_public_id (public_id),
+  UNIQUE KEY uq_merchant_integration_entity_links_external (connection_id,entity_type,external_entity_id),
+  KEY idx_merchant_integration_entity_links_local (connection_id,local_entity_type,local_entity_id),
+  KEY idx_merchant_integration_entity_links_status (connection_id,status,updated_at),
+  CONSTRAINT fk_merchant_integration_entity_links_connection FOREIGN KEY (connection_id) REFERENCES merchant_integration_connections(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS merchant_integration_sync_runs (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  connection_id BIGINT UNSIGNED NOT NULL,
+  resource_key VARCHAR(80) NOT NULL,
+  direction ENUM('import','export') NOT NULL DEFAULT 'import',
+  trigger_type ENUM('manual','scheduled','webhook','recovery') NOT NULL DEFAULT 'manual',
+  status ENUM('queued','running','completed','partial','failed','cancelled') NOT NULL DEFAULT 'queued',
+  cursor_value TEXT NULL,
+  processed_count INT UNSIGNED NOT NULL DEFAULT 0,
+  created_count INT UNSIGNED NOT NULL DEFAULT 0,
+  updated_count INT UNSIGNED NOT NULL DEFAULT 0,
+  deleted_count INT UNSIGNED NOT NULL DEFAULT 0,
+  skipped_count INT UNSIGNED NOT NULL DEFAULT 0,
+  failed_count INT UNSIGNED NOT NULL DEFAULT 0,
+  error_code VARCHAR(120) NULL,
+  error_message VARCHAR(1000) NULL,
+  started_at DATETIME NULL,
+  finished_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_merchant_integration_sync_runs_public_id (public_id),
+  KEY idx_merchant_integration_sync_runs_connection (connection_id,status,created_at),
+  CONSTRAINT fk_merchant_integration_sync_runs_connection FOREIGN KEY (connection_id) REFERENCES merchant_integration_connections(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS merchant_integration_sync_state (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  connection_id BIGINT UNSIGNED NOT NULL,
+  resource_key VARCHAR(80) NOT NULL,
+  cursor_value TEXT NULL,
+  high_water_mark VARCHAR(255) NULL,
+  last_success_at DATETIME NULL,
+  last_attempt_at DATETIME NULL,
+  last_error_code VARCHAR(120) NULL,
+  last_error_message VARCHAR(1000) NULL,
+  metadata_json JSON NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_merchant_integration_sync_state_resource (connection_id,resource_key),
+  CONSTRAINT fk_merchant_integration_sync_state_connection FOREIGN KEY (connection_id) REFERENCES merchant_integration_connections(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS merchant_integration_webhook_events (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  connection_id BIGINT UNSIGNED NULL,
+  provider_key VARCHAR(80) NOT NULL,
+  external_event_id VARCHAR(255) NULL,
+  dedupe_key CHAR(64) NOT NULL,
+  topic VARCHAR(120) NOT NULL,
+  status ENUM('received','processing','processed','ignored','failed') NOT NULL DEFAULT 'received',
+  signature_verified TINYINT(1) NOT NULL DEFAULT 0,
+  payload_sha256 CHAR(64) NOT NULL,
+  payload_json JSON NULL,
+  attempt_count INT UNSIGNED NOT NULL DEFAULT 0,
+  received_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  processed_at DATETIME NULL,
+  last_error_at DATETIME NULL,
+  last_error_message VARCHAR(1000) NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_merchant_integration_webhook_events_public_id (public_id),
+  UNIQUE KEY uq_merchant_integration_webhook_events_dedupe (provider_key,dedupe_key),
+  KEY idx_merchant_integration_webhook_events_queue (status,received_at),
+  KEY idx_merchant_integration_webhook_events_connection (connection_id,topic,received_at),
+  CONSTRAINT fk_merchant_integration_webhook_events_connection FOREIGN KEY (connection_id) REFERENCES merchant_integration_connections(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO schema_migrations (migration_key,description,checksum,applied_at)
+VALUES ('merchant_integrations_foundation_v1','Merchant App Connect provider-neutral integration foundation.',NULL,NOW())
+ON DUPLICATE KEY UPDATE description=VALUES(description);
