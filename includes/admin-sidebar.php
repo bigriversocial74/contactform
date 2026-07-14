@@ -28,6 +28,7 @@ $canNotifications = $canAdminPage('admin.notifications');
 $canOperationsCommand = $canAdminPage('admin.operations_command');
 $canLoyaltyQuestOperations = $canAdminPage('admin.loyalty_quests');
 $canLoyaltyQuestIntegrity = $canAdminPage('admin.loyalty_quest_integrity');
+$canHostedGames = $canAdminPage('admin.hosted_games');
 $canPackageModeration = $canCommerce;
 $canStampOperations = $canCommerce;
 $canStampHealth = $canCommerce;
@@ -85,6 +86,12 @@ $adminNav = [
         'detail' => 'Abuse and fraud signals',
         'href' => '/admin/loyalty-quest-integrity.php',
         'visible' => $canLoyaltyQuestIntegrity,
+    ],
+    'hosted-games' => [
+        'label' => 'Hosted Games',
+        'detail' => 'Game databases and readiness',
+        'href' => '/admin/hosted-games.php',
+        'visible' => $canHostedGames,
     ],
     'ops-activity' => [
         'label' => 'Ops activity log',
