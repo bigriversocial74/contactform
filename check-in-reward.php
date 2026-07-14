@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/app.php';
 require_once __DIR__ . '/includes/campaign-landing-foundation.php';
+require_once __DIR__ . '/includes/campaign-user-details.php';
 
 $page_title = 'Check-In Reward | Microgifter';
 $page_section = 'campaign';
@@ -44,9 +45,7 @@ function mg_check_in_render_join(array $context): void
         <input type="hidden" name="entry_location_permission" value="pending">
         <h3>Check in at this location</h3>
         <p><?= $locationRequired ? 'Capture your location, then submit within the merchant check-in radius.' : 'Location capture is optional for this campaign.' ?></p>
-        <label>Name<input name="name" placeholder="Your name" maxlength="180" value="<?= mg_e((string)$prefill['name']) ?>"></label>
-        <label>Email<input name="email" type="email" placeholder="you@example.com" required maxlength="255" value="<?= mg_e((string)$prefill['email']) ?>"></label>
-        <label>Phone <span>(optional)</span><input name="phone" placeholder="Optional" maxlength="60"></label>
+        <?php mg_campaign_render_user_details($prefill); ?>
         <div class="mg-specialized-action-row">
           <button class="mg-rl-btn mg-rl-btn-soft" type="button" data-check-in-geolocate><?= $locationRequired ? 'Use my location' : 'Add location (optional)' ?></button>
           <button class="mg-rl-btn mg-rl-btn-dark" type="<?= $preview ? 'button' : 'submit' ?>"<?= $preview ? ' disabled aria-disabled="true"' : '' ?>><?= mg_e($preview ? 'Preview only - activate to publish' : 'Check in and claim reward') ?></button>
