@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/app.php';
 require_once __DIR__ . '/includes/campaign-landing-foundation.php';
+require_once __DIR__ . '/includes/campaign-user-details.php';
 
 $page_title = 'Stamp Card Reward | Microgifter';
 $page_section = 'campaign';
@@ -55,9 +56,16 @@ $cashierRequired = array_key_exists('cashier_verification_required', $rules)
     : true;
 $rewardTitle = trim((string)($campaign['reward_template_title'] ?? '')) ?: 'Microgifter reward';
 $rewardValue = mg_campaign_landing_value($campaign);
+$redemptionInstructions = trim((string)($campaign['redemption_instructions'] ?? ''));
+$endsAt = trim((string)($campaign['ends_at'] ?? ''));
+$endsTimestamp = $endsAt !== '' ? strtotime($endsAt) : false;
+$endsLabel = $endsTimestamp !== false ? date('M j, Y', $endsTimestamp) : '';
 $columns = min(5, max(3, $requiredCount));
 $closed = !empty($campaignState['closed']);
 $pluralStampLabel = $requiredCount === 1 ? $stampLabel : $stampLabel . 's';
+$initialUpdate = $previewMode
+    ? 'Preview mode: customer submissions are disabled.'
+    : ($closed ? (string)($campaignState['message'] ?? 'This campaign is currently closed.') : 'Ready for the next stamp.');
 
 $renderStampJoin = static function (array $context): void {
     $campaign = $context['campaign'];
@@ -81,15 +89,11 @@ $renderStampJoin = static function (array $context): void {
         <input type="hidden" name="campaign_type" value="stamp_card_reward">
         <h3><?= $cashierRequired ? 'Verify this stamp' : 'Add this stamp' ?></h3>
         <p><?= $cashierRequired ? 'Ask the cashier to enter the claim code before the stamp is added.' : 'Submit this visit to update your loyalty progress.' ?></p>
-        <label>Name<input name="name" placeholder="Your name" maxlength="180" value="<?= mg_e((string)($prefill['name'] ?? '')) ?>"></label>
-        <label>Email<input name="email" type="email" placeholder="you@example.com" required maxlength="255" value="<?= mg_e((string)($prefill['email'] ?? '')) ?>"></label>
-        <label>Phone <span>(optional)</span><input name="phone" placeholder="Optional" maxlength="60"></label>
+        <?php mg_campaign_render_user_details($prefill); ?>
         <?php if ($cashierRequired): ?><label>Cashier claim code<input name="cashier_code" autocomplete="one-time-code" placeholder="Cashier enters code" maxlength="64" required></label><?php endif; ?>
         <button class="mg-rl-btn mg-rl-btn-dark" type="<?= $preview ? 'button' : 'submit' ?>" data-stamp-card-submit<?= $preview ? ' disabled aria-disabled="true"' : '' ?>><?= $preview ? 'Preview only - activate to publish' : ($cashierRequired ? 'Add verified stamp' : 'Add stamp') ?></button>
-        <div class="mg-public-campaign-status" data-campaign-status data-stamp-card-status><?= $preview ? 'Preview mode: customer submissions are disabled.' : '' ?></div>
         <p class="mg-public-campaign-privacy">Rewards unlock when verified progress reaches <?= mg_e((string)$requiredCount) ?>. Partial progress remains connected to this campaign.</p>
       </form>
-      <div class="mg-public-campaign-result" data-campaign-result></div>
     <?php endif;
 };
 ?>
@@ -126,14 +130,34 @@ $renderStampJoin = static function (array $context): void {
 
       <aside class="mg-rl-join mg-rl-join-mobile"><?php $renderStampJoin(['campaign' => $campaign, 'profile' => $profile, 'prefill' => $prefill, 'state' => $campaignState, 'preview' => $previewMode, 'closed' => $closed, 'cashier_required' => $cashierRequired, 'required_count' => $requiredCount]); ?></aside>
 
-      <?php mg_campaign_landing_render_bottom_cards([
-          'campaign' => $campaign,
-          'state' => $campaignState,
-          'reward_title' => $rewardTitle,
-          'reward_value' => $rewardValue,
-          'outcome_title' => $requiredCount . ' ' . $pluralStampLabel,
-          'outcome_copy' => 'Verified loyalty progress unlocks the attached reward when the card reaches its required count.',
-      ]); ?>
+      <div class="mg-rl-bottom mg-stamp-summary" data-campaign-foundation-cards>
+        <article class="mg-rl-card mg-stamp-summary-card">
+          <div class="mg-stamp-summary-grid">
+            <section class="mg-stamp-summary-section">
+              <span class="mg-rl-eyebrow">Item details</span>
+              <h3><?= mg_e($rewardTitle) ?></h3>
+              <p><?= mg_e($rewardValue) ?></p>
+              <?php if ($redemptionInstructions !== ''): ?><p><?= mg_e($redemptionInstructions) ?></p><?php endif; ?>
+              <?php if ($endsLabel !== ''): ?><span class="mg-rl-pill">Ends <?= mg_e($endsLabel) ?></span><?php endif; ?>
+            </section>
+            <section class="mg-stamp-summary-section">
+              <span class="mg-rl-eyebrow">Reward &amp; campaign rules</span>
+              <ul class="mg-rl-list">
+                <li><strong><?= mg_e((string)$requiredCount) ?> <?= mg_e($pluralStampLabel) ?></strong>Complete the required loyalty progress to unlock the attached reward.</li>
+                <li><strong><?= $cashierRequired ? 'Cashier verification' : 'Customer check-in' ?></strong><?= $cashierRequired ? 'A valid merchant claim code is required for each stamp.' : 'The customer can submit each eligible visit directly.' ?></li>
+                <li><strong>Inbox delivery</strong>Unlocked rewards are issued into the customer Microgifter Inbox.</li>
+                <li><strong>PPPM tracked</strong>Campaign source, ownership, claim, and redemption stay connected.</li>
+              </ul>
+            </section>
+          </div>
+          <div class="mg-stamp-summary-updates" data-stamp-results-updates>
+            <span class="mg-rl-eyebrow">Messages, results &amp; updates</span>
+            <h3 data-stamp-summary-state><?= mg_e((string)($campaignState['active_status'] ?? 'Active and ready')) ?></h3>
+            <div class="mg-public-campaign-status" data-campaign-status data-stamp-card-status><?= mg_e($initialUpdate) ?></div>
+            <div class="mg-public-campaign-result" data-campaign-result></div>
+          </div>
+        </article>
+      </div>
     </div>
 
     <aside class="mg-rl-join mg-rl-join-desktop"><?php $renderStampJoin(['campaign' => $campaign, 'profile' => $profile, 'prefill' => $prefill, 'state' => $campaignState, 'preview' => $previewMode, 'closed' => $closed, 'cashier_required' => $cashierRequired, 'required_count' => $requiredCount]); ?></aside>

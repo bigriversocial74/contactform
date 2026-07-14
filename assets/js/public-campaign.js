@@ -9,12 +9,18 @@ function invalidControl(form){
     return field && typeof field.checkValidity==='function' && !field.checkValidity();
   })||null;
 }
+function revealInvalidControl(invalid){
+  if(!invalid||typeof invalid.closest!=='function')return;
+  var details=invalid.closest('[data-campaign-user-details]');
+  if(details)details.open=true;
+}
 function setCampaignTab(form,name,validate){
   if(!form)return false;
   if(validate){
     var invalid=invalidControl(form);
     if(invalid){
       setCampaignTab(form,'info',false);
+      revealInvalidControl(invalid);
       window.requestAnimationFrame(function(){
         if(typeof invalid.reportValidity==='function')invalid.reportValidity();
         else if(typeof form.reportValidity==='function')form.reportValidity();
@@ -150,6 +156,7 @@ document.querySelectorAll('[data-campaign-form]').forEach(function(form){
     var invalid=invalidControl(form);
     if(invalid){
       setCampaignTab(form,'info',false);
+      revealInvalidControl(invalid);
       window.requestAnimationFrame(function(){
         if(typeof invalid.reportValidity==='function')invalid.reportValidity();
         else if(typeof form.reportValidity==='function')form.reportValidity();

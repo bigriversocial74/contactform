@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/app.php';
 require_once __DIR__ . '/includes/campaign-landing-foundation.php';
+require_once __DIR__ . '/includes/campaign-user-details.php';
 
 $page_title = 'Instant Win Reward | Microgifter';
 $page_section = 'campaign';
@@ -78,9 +79,7 @@ $renderInstantJoin = static function (array $context): void {
         <input type="hidden" name="entry_instant_win_mode" value="<?= mg_e($playMode) ?>">
         <h3>Submit your play</h3>
         <p>Complete the <?= mg_e(strtolower($modeLabel)) ?> interaction, then submit one result.</p>
-        <label>Name<input name="name" placeholder="Your name" maxlength="180" value="<?= mg_e((string)($prefill['name'] ?? '')) ?>"></label>
-        <label>Email<input name="email" type="email" placeholder="you@example.com" required maxlength="255" value="<?= mg_e((string)($prefill['email'] ?? '')) ?>"></label>
-        <label>Phone <span>(optional)</span><input name="phone" placeholder="Optional" maxlength="60"></label>
+        <?php mg_campaign_render_user_details($prefill); ?>
         <button class="mg-rl-btn mg-rl-btn-soft" type="button" data-instant-win-reveal><?= $playMode === 'spin_wheel' ? 'Spin wheel' : 'Reveal card' ?></button>
         <button class="mg-rl-btn mg-rl-btn-dark" type="<?= $preview ? 'button' : 'submit' ?>"<?= $preview ? ' disabled aria-disabled="true"' : '' ?>><?= $preview ? 'Preview only - activate to publish' : 'Submit instant-win play' ?></button>
         <div class="mg-public-campaign-status" data-campaign-status data-instant-win-status><?= $preview ? 'Preview mode: customer submissions are disabled.' : '' ?></div>

@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/campaign-landing-foundation.php';
+require_once __DIR__ . '/campaign-user-details.php';
 
 function mg_campaign_media_pick(array $source, array $keys): string
 {
@@ -111,9 +112,7 @@ function mg_campaign_media_render_join(array $context): void
         <input type="hidden" name="campaign_type" value="<?= mg_e((string)($campaign['campaign_type'] ?? '')) ?>">
         <h3>Join this campaign</h3>
         <p>Enter your details to begin <?= mg_e($verb) ?> and connect milestone rewards to your Microgifter Inbox.</p>
-        <label>Name<input name="name" placeholder="Full Name" maxlength="180" value="<?= mg_e((string)($prefill['name'] ?? '')) ?>"></label>
-        <label>Email<input name="email" type="email" required placeholder="Email Address" maxlength="255" value="<?= mg_e((string)($prefill['email'] ?? '')) ?>"></label>
-        <label>Phone <span>(optional)</span><input name="phone" maxlength="60" placeholder="Optional"></label>
+        <?php mg_campaign_render_user_details($prefill); ?>
         <button class="mg-rl-btn mg-rl-btn-dark" type="<?= $preview ? 'button' : 'submit' ?>"<?= $preview ? ' disabled aria-disabled="true"' : '' ?>><?= mg_e($preview ? 'Preview only - activate to publish' : $button) ?></button>
         <div class="mg-public-campaign-status" data-campaign-status><?= $preview ? 'Preview mode: media playback is available, but reward tracking is disabled.' : '' ?></div>
         <p class="mg-public-campaign-privacy">Progress and issued rewards remain connected to this campaign and your Microgifter Inbox.</p>

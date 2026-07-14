@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/campaign-landing-foundation.php';
+require_once __DIR__ . '/campaign-user-details.php';
 
 $mgCampaignExpectedType = $mgCampaignExpectedType ?? null;
 $mgCampaignPageLabel = $mgCampaignPageLabel ?? 'Microgifter campaign';
@@ -136,9 +137,7 @@ function mg_public_campaign_render_join_form(array $context): void
         <?php endif; ?>
         <h3><?= mg_e($typeLabel) ?></h3>
         <p><?= mg_e($outcomeTitle) ?> · delivered through Microgifter Inbox.</p>
-        <label>Name<input name="name" placeholder="Your name" maxlength="180" value="<?= mg_e((string)($prefill['name'] ?? '')) ?>"></label>
-        <label>Email<input name="email" type="email" placeholder="you@example.com" required maxlength="255" value="<?= mg_e((string)($prefill['email'] ?? '')) ?>"></label>
-        <label>Phone <span>(optional)</span><input name="phone" placeholder="Optional" maxlength="60"></label>
+        <?php mg_campaign_render_user_details($prefill); ?>
         <?php if ($campaignType === 'contest_giveaway'): ?>
           <label>Entry note <span>(optional)</span><textarea name="entry_note" placeholder="Optional note for this contest"></textarea></label>
         <?php elseif ($campaignType === 'referral_reward'): ?>

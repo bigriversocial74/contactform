@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/app.php';
 require_once __DIR__ . '/includes/campaign-landing-foundation.php';
+require_once __DIR__ . '/includes/campaign-user-details.php';
 
 $page_title = 'Survey Feedback Reward | Microgifter';
 $page_section = 'campaign';
@@ -42,9 +43,7 @@ function mg_survey_feedback_render_join(array $context): void
         <input type="hidden" name="campaign_type" value="survey_feedback_reward">
         <h3>Share your feedback</h3>
         <p>Your response is connected to this campaign and any eligible reward is delivered through Microgifter Inbox.</p>
-        <label>Name<input name="name" placeholder="Your name" maxlength="180" value="<?= mg_e((string)$prefill['name']) ?>"></label>
-        <label>Email<input name="email" type="email" placeholder="you@example.com" required maxlength="255" value="<?= mg_e((string)$prefill['email']) ?>"></label>
-        <label>Phone <span>(optional)</span><input name="phone" placeholder="Optional" maxlength="60"></label>
+        <?php mg_campaign_render_user_details($prefill); ?>
         <label><?= mg_e($prompt) ?><?= $feedbackRequired ? '' : ' ' ?><span><?= $feedbackRequired ? '' : '(optional)' ?></span><textarea name="entry_feedback" minlength="3" maxlength="1200" placeholder="Share a short note with the merchant."<?= $feedbackRequired ? ' required' : '' ?>></textarea></label>
         <label>Rating<?= $ratingRequired ? '' : ' ' ?><span><?= $ratingRequired ? '' : '(optional)' ?></span><select name="entry_rating"<?= $ratingRequired ? ' required' : '' ?>><option value="">Choose rating</option><option value="5">5 - Excellent</option><option value="4">4 - Good</option><option value="3">3 - Okay</option><option value="2">2 - Needs work</option><option value="1">1 - Poor</option></select></label>
         <button class="mg-rl-btn mg-rl-btn-dark" type="<?= $preview ? 'button' : 'submit' ?>"<?= $preview ? ' disabled aria-disabled="true"' : '' ?>><?= mg_e($preview ? 'Preview only - activate to publish' : 'Submit feedback and claim reward') ?></button>
