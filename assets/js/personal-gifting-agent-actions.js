@@ -79,7 +79,8 @@ document.addEventListener('DOMContentLoaded', function () {
     if (card.action === 'save_draft_plan') {
       setButtonBusy(button, true, 'Saving…');
       try {
-        var payload = Object.assign({}, card.review_payload || {}, currentContextPayload(), { action: 'create', source: 'agent', recommendation: card });
+        var payload = Object.assign({}, card.review_payload || {}, { action: 'create', source: 'agent', recommendation: card });
+        if (!payload.context_type || !payload.context_id) Object.assign(payload, currentContextPayload());
         await Microgifter.post('/api/user-agent/plans.php', payload);
         setStatus('Draft plan saved. Review it before taking action.', 'success');
         await loadDashboard(false);
@@ -92,10 +93,16 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
     if (card.action === 'create_reminder') {
-      openDialog('reminder', {
+      var reminderSeed = {
         title: card.review_payload && card.review_payload.title || card.title,
         notes: card.review_payload && card.review_payload.notes || card.body
-      });
+      };
+      var contextType = card.review_payload && card.review_payload.context_type || '';
+      var contextId = card.review_payload && card.review_payload.context_id || '';
+      if (contextType && contextId) {
+        await selectContext(contextType, contextId);
+      }
+      openDialog('reminder', reminderSeed);
       return;
     }
     if (card.action === 'open_list' && state.context.type === 'list') {
