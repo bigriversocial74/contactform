@@ -1,0 +1,154 @@
+/* Merchant CRM desktop KPI single source v7.
+   One card = label, value, status, sparkline. No icon/circle column. */
+@media (min-width: 981px) {
+  body .mg-crm-desktop-hero .mg-crm-desktop-kpis {
+    display: grid !important;
+    grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+    align-items: stretch !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-kpi {
+    display: grid !important;
+    grid-template-rows: minmax(30px, auto) 38px minmax(32px, auto) 30px !important;
+    align-content: start !important;
+    gap: 6px !important;
+    min-width: 0 !important;
+    min-height: 142px !important;
+    padding: 14px 14px 12px !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-kpi::before,
+  body .mg-crm-desktop-hero .mg-crm-kpi::after,
+  body .mg-crm-desktop-hero .mg-crm-kpi-top::before,
+  body .mg-crm-desktop-hero .mg-crm-kpi-top::after,
+  body .mg-crm-desktop-hero .mg-crm-kpi-copy::before,
+  body .mg-crm-desktop-hero .mg-crm-kpi-copy::after,
+  body .mg-crm-desktop-hero .mg-crm-kpi-icon,
+  body .mg-crm-desktop-hero .mg-crm-kpi-icon::before,
+  body .mg-crm-desktop-hero .mg-crm-kpi-icon::after {
+    content: none !important;
+    display: none !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-kpi-top,
+  body .mg-crm-desktop-hero .mg-crm-kpi-copy {
+    display: contents !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-kpi-label {
+    display: block !important;
+    grid-row: 1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 11px !important;
+    line-height: 1.15 !important;
+    font-weight: 800 !important;
+    letter-spacing: .04em !important;
+    text-transform: uppercase !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    text-align: left !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-kpi-value {
+    display: flex !important;
+    grid-row: 2 !important;
+    align-items: center !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 27px !important;
+    line-height: 1 !important;
+    font-weight: 800 !important;
+    text-align: left !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-kpi-meta {
+    display: flex !important;
+    grid-row: 3 !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    gap: 2px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1.15 !important;
+    white-space: normal !important;
+    overflow: visible !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-kpi-meta b,
+  body .mg-crm-desktop-hero .mg-crm-kpi-meta span {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-kpi-chart {
+    display: block !important;
+    grid-row: 4 !important;
+    align-self: end !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: 30px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-kpi-spark {
+    display: block !important;
+    width: 100% !important;
+    height: 30px !important;
+    max-width: 100% !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-trends,
+  body .mg-crm-desktop-hero .mg-crm-desktop-view-pipeline {
+    display: none !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-audience-grid {
+    grid-template-columns: 128px minmax(0, 1fr) !important;
+    gap: 20px !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-health-row {
+    grid-template-columns: 118px minmax(120px, 1fr) 42px !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-pipeline-stages {
+    width: 100% !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-pipeline-footer {
+    display: flex !important;
+    width: 100% !important;
+    margin: 12px 0 0 !important;
+    box-sizing: border-box !important;
+  }
+}
+
+@media (min-width: 981px) and (max-width: 1319px) {
+  body .mg-crm-desktop-hero .mg-crm-desktop-kpis {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
