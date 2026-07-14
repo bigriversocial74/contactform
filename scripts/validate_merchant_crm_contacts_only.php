@@ -10,19 +10,24 @@ $read = static function (string $path) use ($root): string {
 $view = $read('includes/merchant-crm-view.php');
 $page = $read('merchant-crm.php');
 $css = $read('assets/css/merchant-crm-contacts-only.css');
+$mobileStatStart = strpos($view, 'data-crm-contact-stat-strip');
+$mobileStatEnd = $mobileStatStart === false ? false : strpos($view, '</section>', $mobileStatStart);
+$mobileStatMarkup = $mobileStatStart !== false && $mobileStatEnd !== false
+    ? substr($view, $mobileStatStart, $mobileStatEnd - $mobileStatStart)
+    : '';
 
 $checks = [
     'contacts-only shell is present' =>
         str_contains($view, 'mg-crm-contacts-only')
         && str_contains($view, 'data-merchant-crm-shell')
         && str_contains($view, 'data-merchant-crm-app'),
-    'five contact statistics remain' =>
-        substr_count($view, '<article') === 5
-        && str_contains($view, 'data-crm-stat-high')
-        && str_contains($view, 'data-crm-stat-followup')
-        && str_contains($view, 'data-crm-stat-claimed')
-        && str_contains($view, 'data-crm-contact-message-total')
-        && str_contains($view, 'data-crm-contact-active-message-total'),
+    'five mobile contact statistics remain' =>
+        substr_count($mobileStatMarkup, '<article') === 5
+        && str_contains($mobileStatMarkup, 'data-crm-stat-high')
+        && str_contains($mobileStatMarkup, 'data-crm-stat-followup')
+        && str_contains($mobileStatMarkup, 'data-crm-stat-claimed')
+        && str_contains($mobileStatMarkup, 'data-crm-contact-message-total')
+        && str_contains($mobileStatMarkup, 'data-crm-contact-active-message-total'),
     'contact table remains active' =>
         str_contains($view, 'data-merchant-crm-table')
         && str_contains($view, 'Loading contacts'),
@@ -31,7 +36,7 @@ $checks = [
         && !str_contains($view, 'mg-crm-tabs')
         && !str_contains($view, 'data-crm-tab-target')
         && !str_contains($view, 'mg-crm-distribution-btn'),
-    'overview and secondary panels are removed' =>
+    'legacy tab panels remain removed' =>
         !str_contains($view, 'data-crm-tab-panel')
         && !str_contains($view, 'Campaign Command Center')
         && !str_contains($view, 'Campaign builder')
@@ -50,7 +55,7 @@ $checks = [
         str_contains($view, 'data-crm-drawer')
         && str_contains($view, 'data-crm-message-modal')
         && str_contains($view, 'data-crm-reward-modal'),
-    'contacts-only stylesheet is cache bumped and loaded last' =>
+    'contacts-only stylesheet remains loaded after layout stability' =>
         str_contains($page, '/assets/css/merchant-crm-contacts-only.css?v=1.1.0')
         && strpos($page, 'merchant-crm-contacts-only.css?v=1.1.0') > strpos($page, 'merchant-crm-layout-stability.css?v=1.0.0'),
     'desktop rows define four visible columns' =>
@@ -77,7 +82,7 @@ $checks = [
         && str_contains($css, 'grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr)!important')
         && str_contains($css, '@media(max-width:820px)')
         && str_contains($css, 'grid-template-columns:minmax(0,1fr)!important'),
-    'non-contact module assets are not loaded' =>
+    'non-contact legacy module assets are not loaded' =>
         !str_contains($page, 'merchant-crm-tabs.js')
         && !str_contains($page, 'merchant-crm-overview-consolidation.js')
         && !str_contains($page, 'merchant-crm-campaign-builder.js')
