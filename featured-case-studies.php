@@ -5,7 +5,10 @@ require_once __DIR__ . '/includes/app.php';
 $page_title = 'Featured Case Studies | Microgifter';
 $page_section = 'case-studies';
 $header_mode = 'public';
-$page_styles = ['/assets/css/featured-case-studies.css?v=1.0.1'];
+$page_styles = [
+    '/assets/css/featured-case-studies.css?v=1.0.1',
+    '/assets/css/featured-case-studies-hero-compact.css?v=1.0.0',
+];
 $page_scripts = [
     '/assets/js/public-case-studies-nav.js?v=1.0.0',
     '/assets/js/featured-case-studies.js?v=1.0.0',
