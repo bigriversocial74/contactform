@@ -30,12 +30,21 @@ $checks = [
     'desktop sidebar alignment measures the live stamp player' =>
         str_contains($js, ".mg-rl-stamp .mg-rl-player")
         && str_contains($js, ".mg-rl-stamp .mg-rl-join-desktop")
-        && str_contains($js, 'playerTop - wrapTop')
+        && str_contains($js, 'playerTop - wrapTop - visualCorrection')
         && str_contains($js, "sidebar.style.marginTop = offset + 'px'"),
+    'desktop sidebar uses a deliberate visual correction' =>
+        str_contains($js, 'var visualCorrection = 18;'),
     'desktop alignment responds to layout changes' =>
         str_contains($js, "matchMedia('(min-width: 1181px)')")
         && str_contains($js, 'ResizeObserver')
         && str_contains($js, "addEventListener('resize'"),
+    'stamp sidebar remains sticky after alignment' =>
+        str_contains($css, 'position: sticky !important')
+        && str_contains($css, 'top: 72px !important'),
+    'desktop sidebar removes redundant verification copy only' =>
+        str_contains($css, '.mg-rl-join-desktop .mg-rl-form > h3')
+        && str_contains($css, '.mg-rl-join-desktop .mg-rl-form > p:first-of-type')
+        && str_contains($css, 'display: none !important'),
     'stamp sidebar overrides legacy open-details bottom alignment' =>
         str_contains($css, 'body[data-page-id="stamp-card"] .mg-rl-wrap:has(')
         && str_contains($css, 'align-self: start !important')
