@@ -4,8 +4,36 @@
   const config = window.MicrogifterHostedGameConfig || {};
   const channel = 'microgifter-hosted-game';
   const pending = new Map();
+  const sessionWaiters = new Set();
   let sequence = 0;
   let cachedSession = null;
+  let handshakeTimer = 0;
+
+  function post(message) {
+    window.parent.postMessage({
+      channel,
+      direction: 'game-to-shell',
+      slug: String(config.slug || ''),
+      ...message
+    }, '*');
+  }
+
+  function announce() {
+    post({ type: 'child-ready' });
+  }
+
+  function startHandshake() {
+    announce();
+    if (cachedSession || handshakeTimer) return;
+    handshakeTimer = window.setInterval(() => {
+      if (cachedSession) {
+        window.clearInterval(handshakeTimer);
+        handshakeTimer = 0;
+        return;
+      }
+      announce();
+    }, 750);
+  }
 
   function request(action, payload = {}) {
     return new Promise((resolve, reject) => {
@@ -15,15 +43,39 @@
         reject(new Error('Microgifter game bridge request timed out.'));
       }, 30000);
       pending.set(requestId, { resolve, reject, timeout });
-      window.parent.postMessage({
-        channel,
-        direction: 'game-to-shell',
-        requestId,
-        action,
-        payload,
-        slug: String(config.slug || '')
-      }, '*');
+      post({ requestId, action, payload });
     });
+  }
+
+  function command(action, payload = {}) {
+    post({ action, payload, command: true });
+  }
+
+  function waitForSession() {
+    if (cachedSession) return Promise.resolve(cachedSession);
+    startHandshake();
+    return new Promise((resolve, reject) => {
+      const waiter = { resolve, reject, timeout: 0 };
+      waiter.timeout = window.setTimeout(() => {
+        sessionWaiters.delete(waiter);
+        reject(new Error('Microgifter session handshake timed out.'));
+      }, 30000);
+      sessionWaiters.add(waiter);
+    });
+  }
+
+  function receiveSession(payload) {
+    cachedSession = payload || null;
+    if (handshakeTimer) {
+      window.clearInterval(handshakeTimer);
+      handshakeTimer = 0;
+    }
+    sessionWaiters.forEach((waiter) => {
+      window.clearTimeout(waiter.timeout);
+      waiter.resolve(cachedSession);
+    });
+    sessionWaiters.clear();
+    window.dispatchEvent(new CustomEvent('microgifter:session', { detail: cachedSession }));
   }
 
   window.addEventListener('message', (event) => {
@@ -32,14 +84,14 @@
     if (!message || message.channel !== channel || message.direction !== 'shell-to-game') return;
 
     if (message.type === 'session') {
-      cachedSession = message.payload || null;
-      window.dispatchEvent(new CustomEvent('microgifter:session', { detail: cachedSession }));
+      receiveSession(message.payload);
       return;
     }
 
-    const item = pending.get(String(message.requestId || ''));
+    const requestId = String(message.requestId || '');
+    const item = pending.get(requestId);
     if (!item) return;
-    pending.delete(String(message.requestId));
+    pending.delete(requestId);
     window.clearTimeout(item.timeout);
     if (message.ok) item.resolve(message.payload);
     else item.reject(new Error(String(message.error || 'Microgifter game bridge request failed.')));
@@ -52,14 +104,9 @@
       slug: String(config.slug || ''),
       name: String(config.name || '')
     }),
-    ready: async () => {
-      const session = await request('session');
-      cachedSession = session;
-      return session;
-    },
+    ready: waitForSession,
     getPlayer: async () => {
-      const session = await request('session');
-      cachedSession = session;
+      const session = await waitForSession();
       return session.player || session;
     },
     getCachedSession: () => cachedSession,
@@ -83,8 +130,8 @@
     }),
     getLeaderboard: (limit = 20) => request('leaderboard', { limit }),
     track: (eventType, event = {}) => request('track', { event_type: String(eventType || ''), event }),
-    openInbox: () => request('open_inbox'),
-    signIn: () => request('sign_in')
+    openInbox: () => command('open_inbox'),
+    signIn: () => command('sign_in')
   });
 
   Object.defineProperty(window, 'MicrogifterGame', {
@@ -94,11 +141,6 @@
     value: api
   });
 
-  window.parent.postMessage({
-    channel,
-    direction: 'game-to-shell',
-    type: 'child-ready',
-    slug: String(config.slug || '')
-  }, '*');
+  startHandshake();
   window.dispatchEvent(new CustomEvent('microgifter:bridge-ready', { detail: api.game }));
 })();
