@@ -10,7 +10,6 @@ declare(strict_types=1);
     </div>
     <div class="mg-dev-hero-actions" aria-label="Developer API quick actions">
       <button class="mg-btn mg-btn-primary" type="button" data-dev-tab-trigger="distribution" data-dev-new-plan>+ Create Distribution Plan</button>
-      <button class="mg-btn mg-btn-primary" type="button" data-dev-tab-trigger="apps">+ Create Developer App</button>
       <button class="mg-btn mg-btn-primary" type="button" data-dev-tab-trigger="credentials">+ Create Credential</button>
       <a class="mg-btn mg-btn-soft" href="/developer-docs.php">Public docs</a>
       <a class="mg-btn mg-btn-soft" href="/developer-docs.php#quickstart">Sandbox guide</a>
