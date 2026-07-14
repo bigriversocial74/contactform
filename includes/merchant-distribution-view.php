@@ -1,10 +1,42 @@
-<?php declare(strict_types=1); ?>
+<?php
+declare(strict_types=1);
+$rdMerchantReadiness = [
+  'configured' => false,
+  'credential_found' => false,
+  'app_live' => false,
+  'key_live' => false,
+  'scopes_ready' => false,
+  'webhook_url_ready' => false,
+  'webhook_secret_ready' => false,
+  'program_id_ready' => false,
+  'template_id_ready' => false,
+  'schema_ready' => false,
+  'app_name' => null,
+];
+try {
+  require_once dirname(__DIR__) . '/games/reward-drop/includes/bootstrap.php';
+  $rdMerchantReadiness = array_merge($rdMerchantReadiness, rd_readiness(mg_db(), rd_config()));
+  $schemaStmt = mg_db()->query("SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME IN ('reward_drop_runs','reward_drop_webhook_receipts')");
+  $rdMerchantReadiness['schema_ready'] = (int)$schemaStmt->fetchColumn() === 2;
+} catch (Throwable $rdError) {
+  $rdMerchantReadiness['schema_ready'] = false;
+}
+$rdReady = $rdMerchantReadiness['configured']
+  && $rdMerchantReadiness['credential_found']
+  && $rdMerchantReadiness['app_live']
+  && $rdMerchantReadiness['key_live']
+  && $rdMerchantReadiness['scopes_ready']
+  && $rdMerchantReadiness['webhook_url_ready']
+  && $rdMerchantReadiness['webhook_secret_ready']
+  && $rdMerchantReadiness['schema_ready'];
+?>
 <section class="mg-distribution-command" data-distribution-reach-center>
   <div class="mg-distribution-topbar">
     <nav class="mg-distribution-tabs" aria-label="Distribution sections">
       <a class="is-active" href="#distribution-overview" data-distribution-tab="overview" data-distribution-default="true">Overview</a>
       <a href="#distribution-programs" data-distribution-tab="overview">Channels</a>
       <a href="#distribution-programs" data-distribution-tab="overview">Programs</a>
+      <a href="#distribution-game" data-distribution-tab="overview">Games</a>
       <a href="#distribution-signal" data-distribution-tab="overview">Partners</a>
       <a href="#distribution-signal" data-distribution-tab="overview">Events</a>
       <a href="#distribution-editor" data-distribution-tab="create">Create Distribution</a>
@@ -59,6 +91,36 @@
         </section>
       </aside>
     </div>
+
+    <section class="mg-app-panel mg-distribution-panel mg-game-integration <?= $rdReady ? 'is-ready' : 'needs-setup' ?>" id="distribution-game">
+      <div class="mg-game-integration-hero">
+        <div class="mg-game-integration-copy">
+          <span class="mg-eyebrow">Game Integration</span>
+          <h2>Reward Drop</h2>
+          <p>A first-party browser game that recognizes the current Microgifter session, issues one campaign reward through the live Public Distribution API, verifies lifecycle webhooks, and sends the earned item to the user Inbox.</p>
+          <div class="mg-game-integration-actions">
+            <a class="mg-btn mg-btn-primary" href="/games/reward-drop/" target="_blank" rel="noopener">Open Reward Drop</a>
+            <a class="mg-btn mg-btn-soft" href="/merchant-distribution.php?developer_api=1">Developer API setup</a>
+            <a class="mg-btn mg-btn-soft" href="#distribution-editor" data-distribution-open-create>Create gaming program</a>
+          </div>
+        </div>
+        <div class="mg-game-integration-state"><strong><?= $rdReady ? 'Ready to play' : 'Setup required' ?></strong><span><?= mg_e((string)($rdMerchantReadiness['app_name'] ?: 'Reward Drop developer app')) ?></span></div>
+      </div>
+      <div class="mg-game-readiness" aria-label="Reward Drop readiness">
+        <?php
+        $rdChecks = [
+          ['Game SQL', $rdMerchantReadiness['schema_ready'], 'reward_drop_game_v1.sql'],
+          ['Live app + key', $rdMerchantReadiness['app_live'] && $rdMerchantReadiness['key_live'], 'Developer app and credential'],
+          ['API scopes', $rdMerchantReadiness['scopes_ready'], 'Issue and reward status'],
+          ['Program + reward', $rdMerchantReadiness['program_id_ready'] && $rdMerchantReadiness['template_id_ready'], 'Active gaming distribution'],
+          ['Signed webhook', $rdMerchantReadiness['webhook_url_ready'] && $rdMerchantReadiness['webhook_secret_ready'], '/games/reward-drop/webhook.php'],
+        ];
+        foreach ($rdChecks as $rdCheck): ?>
+          <article class="<?= $rdCheck[1] ? 'is-ready' : 'needs-setup' ?>"><i></i><div><span><?= mg_e($rdCheck[0]) ?></span><strong><?= $rdCheck[1] ? 'Ready' : 'Required' ?></strong><small><?= mg_e($rdCheck[2]) ?></small></div></article>
+        <?php endforeach; ?>
+      </div>
+      <div class="mg-game-flow"><span>Existing Microgifter session</span><b>→</b><span>Secure game run</span><b>→</b><span>API reward issue</span><b>→</b><span>Signed webhook</span><b>→</b><span>User Inbox</span></div>
+    </section>
 
     <section class="mg-app-panel mg-distribution-panel" id="distribution-health">
       <div class="mg-app-panel-head mg-distribution-panel-head"><div><span class="mg-eyebrow">Operations</span><h2>Source and issuance health</h2><p>External input connections and the current PPPM issuance queue.</p></div></div>
