@@ -13,6 +13,7 @@ $page_styles = [
     '/assets/css/public-header-footer-fixes.css',
     '/assets/css/homepage-local-business-v1.css?v=1.0.0',
     '/assets/css/homepage-crm-integrations-v1.css?v=1.0.0',
+    '/assets/css/homepage-hero-position-v2.css?v=2.0.0',
 ];
 $page_scripts = [];
 $page_manifest = [
