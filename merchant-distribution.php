@@ -7,6 +7,9 @@ $page_title = $merchantView === 'developer_api' ? 'Developer API | Microgifter' 
 $page_section='merchant';
 $header_mode='account';
 $page_styles=['/assets/css/merchant-workspace.css','/assets/css/merchant-distribution.css'];
+if (!$isDeveloperApi) {
+    $page_styles[] = '/assets/css/merchant-distribution-game.css?v=1.0.0';
+}
 if ($isDeveloperApi) {
     $page_styles[] = '/assets/css/merchant-developer-api-redesign.css';
 }
