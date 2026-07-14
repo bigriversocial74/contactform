@@ -104,6 +104,7 @@ CREATE TABLE IF NOT EXISTS hosted_game_database_connections (
   PRIMARY KEY (id),
   UNIQUE KEY uq_hosted_game_database_public_id (public_id),
   UNIQUE KEY uq_hosted_game_database_game (game_id),
+  UNIQUE KEY uq_hosted_game_database_target (host,port,database_name),
   KEY idx_hosted_game_database_status (status,last_tested_at),
   CONSTRAINT fk_hosted_game_database_game FOREIGN KEY (game_id) REFERENCES hosted_games(id) ON DELETE CASCADE,
   CONSTRAINT fk_hosted_game_database_updater FOREIGN KEY (updated_by_user_id) REFERENCES users(id) ON DELETE RESTRICT
