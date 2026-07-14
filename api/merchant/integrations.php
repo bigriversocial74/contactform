@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_merchant.php';
 require_once dirname(__DIR__, 2) . '/includes/merchant-integrations.php';
+require_once dirname(__DIR__, 2) . '/includes/merchant-crm.php';
+require_once dirname(__DIR__, 2) . '/includes/integrations/squarespace-contacts.php';
 
 $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 $user = $method === 'POST'
@@ -19,6 +21,7 @@ if ($method === 'GET') {
         'credential_encryption_ready' => mg_integration_credential_master_key() !== null,
         'providers' => mg_integration_provider_catalog(),
         'connections' => mg_integration_connections($pdo, $merchantUserId),
+        'squarespace_contacts' => mg_squarespace_contacts_status($pdo, $merchantUserId),
     ]);
 }
 
@@ -47,6 +50,32 @@ try {
         mg_audit('merchant.integration.disconnected', 'merchant_integration', ['provider' => $providerKey], $merchantUserId);
         mg_ok(['connection' => $result], 'Integration disconnected.');
     }
+    if ($providerKey === 'squarespace' && $action === 'preview_contacts') {
+        $result = mg_squarespace_contact_preview(
+            $pdo,
+            $merchantUserId,
+            trim((string)($input['cursor'] ?? '')) ?: null,
+            max(1, min(100, (int)($input['page_size'] ?? 25)))
+        );
+        mg_ok($result, 'Squarespace contact preview loaded.');
+    }
+    if ($providerKey === 'squarespace' && $action === 'sync_contacts') {
+        mg_rate_limit('merchant.integrations.squarespace.sync', 'user:' . $merchantUserId, 6, 300);
+        $result = mg_squarespace_sync_contacts(
+            $pdo,
+            $merchantUserId,
+            !empty($input['reset']),
+            max(1, min(250, (int)($input['page_size'] ?? 100))),
+            max(1, min(10, (int)($input['max_pages'] ?? 5)))
+        );
+        mg_audit('merchant.integration.contacts_synced', 'merchant_integration', ['provider' => 'squarespace', 'counts' => $result['counts'] ?? []], $merchantUserId);
+        mg_ok($result, 'Squarespace contacts synchronized.');
+    }
+    if ($providerKey === 'squarespace' && $action === 'configure_contact_webhook') {
+        $result = mg_squarespace_setup_contact_webhook($pdo, $merchantUserId);
+        mg_audit('merchant.integration.webhook_configured', 'merchant_integration', ['provider' => 'squarespace', 'configured' => $result['configured'] ?? false], $merchantUserId);
+        mg_ok($result, !empty($result['configured']) ? 'Squarespace contact webhook configured.' : 'Squarespace webhook setup needs attention.');
+    }
     mg_fail('Unsupported integration action.', 422);
 } catch (InvalidArgumentException $error) {
     mg_fail($error->getMessage(), 422);
@@ -54,7 +83,9 @@ try {
     mg_security_log('error', 'merchant.integration.encryption_unavailable', 'Integration credential encryption is unavailable.', ['provider' => $providerKey], $merchantUserId);
     mg_fail($error->getMessage(), 503);
 } catch (Throwable $error) {
-    mg_integration_mark_error($pdo, $merchantUserId, $providerKey, $error::class, $error->getMessage());
+    if (!in_array($action, ['preview_contacts', 'sync_contacts', 'configure_contact_webhook'], true)) {
+        mg_integration_mark_error($pdo, $merchantUserId, $providerKey, $error::class, $error->getMessage());
+    }
     mg_security_log('warning', 'merchant.integration.action_failed', 'Merchant integration action failed.', ['provider' => $providerKey, 'action' => $action, 'exception_class' => $error::class], $merchantUserId);
     mg_fail($error->getMessage() !== '' ? $error->getMessage() : 'Unable to update the integration.', 500);
 }
