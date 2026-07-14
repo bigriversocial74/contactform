@@ -194,6 +194,7 @@ return [
         'delivery_operations_capacity_foundation_v1.sql',
         'merchant_orders_performance_hardening_v1.sql',
         'reward_drop_game_v1.sql',
+        'hosted_games_management_v1.sql',
     ],
     'coverage_markers' => [
         'stage_9e4_consolidated_stage1_to_stage9_upgrade' => 'stage_9d_microgift_operations.sql',
