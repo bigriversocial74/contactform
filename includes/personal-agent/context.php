@@ -97,6 +97,17 @@ function mg_personal_agent_resolve_context(PDO $pdo, int $userId, string $type, 
     throw new InvalidArgumentException('Unsupported personal agent context.');
 }
 
+function mg_personal_agent_ai_context(array $context): array
+{
+    $public = mg_personal_agent_public_context($context);
+    $details = is_array($public['details'] ?? null) ? $public['details'] : [];
+    foreach (['phone_masked','avatar_url','profile_url'] as $privateDisplayKey) {
+        unset($details[$privateDisplayKey]);
+    }
+    $public['details'] = $details;
+    return $public;
+}
+
 function mg_personal_agent_public_context(array $context): array
 {
     return [
@@ -106,4 +117,3 @@ function mg_personal_agent_public_context(array $context): array
         'details'=>is_array($context['details'] ?? null) ? $context['details'] : [],
     ];
 }
-
