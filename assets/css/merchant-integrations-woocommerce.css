@@ -1,0 +1,11 @@
+.mg-integration-provider-mark.is-woocommerce{background:#96588a;font-size:12px;letter-spacing:-.04em}
+.mg-woocommerce-card{border-color:#d9c3d5}.mg-woocommerce-card.is-active{border-color:#c7a8c1;box-shadow:0 14px 34px rgba(150,88,138,.1)}
+.mg-integration-key-form-wrap{flex:1 0 100%;width:100%}.mg-integration-key-form-wrap[hidden]{display:none}
+.mg-integration-key-form{display:grid;flex:1 0 100%;width:100%;box-sizing:border-box;gap:8px;border:1px solid #e0e7f0;border-radius:12px;background:#f8fafc;padding:11px}
+.mg-integration-key-form strong{font-size:10px}.mg-integration-key-form small{color:#6b788c;font-size:8px;line-height:1.45}
+.mg-integration-key-form input{width:100%;min-height:39px;box-sizing:border-box;border:1px solid #ced9e7;border-radius:9px;background:#fff;color:#172033;padding:0 10px;font:inherit;font-size:10px;outline:none}
+.mg-integration-key-form input:focus{border-color:#96588a;box-shadow:0 0 0 3px rgba(150,88,138,.1)}
+.mg-integration-key-form button{justify-self:start;min-height:40px;border:1px solid #96588a;border-radius:10px;background:#96588a;color:#fff;padding:0 14px;font-size:10px;font-weight:950;cursor:pointer}
+.mg-integration-key-form button:disabled{opacity:.55;cursor:not-allowed}.mg-integration-key-form.is-compact{margin-top:2px}
+.mg-woocommerce-sync-panel{border-color:#dfcede;background:#fcf9fc}.mg-woocommerce-sync-panel .mg-integration-sync-actions .is-primary{border-color:#96588a;background:#96588a}.mg-woocommerce-sync-panel .mg-integration-sync-actions .is-secondary{border-color:#d7bfd2;color:#7d4573}
+@media(max-width:720px){.mg-integration-key-form button{width:100%}}
