@@ -1,0 +1,7 @@
+{
+  "name": "Hosted Game Starter",
+  "version": "1.0.0",
+  "entry": "index.html",
+  "integrationVersion": "1",
+  "description": "Minimal Microgifter Hosted Games bridge example."
+}
