@@ -1,0 +1,25 @@
+name: Merchant CRM KPI Hard Reset v3
+
+on:
+  pull_request:
+    paths:
+      - 'merchant-crm.php'
+      - 'assets/css/merchant-crm-kpi-hard-reset.css'
+      - 'assets/js/merchant-crm-kpi-hard-reset.js'
+      - 'scripts/validate_merchant_crm_kpi_hard_reset_v3.php'
+      - '.github/workflows/merchant-crm-kpi-hard-reset-v3-validation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate PHP syntax
+        run: php -l merchant-crm.php
+      - name: Validate KPI hard reset contract
+        run: php scripts/validate_merchant_crm_kpi_hard_reset_v3.php
+      - name: Validate JavaScript syntax
+        run: node --check assets/js/merchant-crm-kpi-hard-reset.js
