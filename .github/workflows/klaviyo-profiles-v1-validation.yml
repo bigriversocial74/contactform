@@ -1,0 +1,64 @@
+name: Klaviyo Profiles v1 Validation
+
+on:
+  pull_request:
+    paths:
+      - 'includes/integrations/providers/klaviyo.php'
+      - 'includes/integrations/klaviyo-profiles.php'
+      - 'includes/integrations/klaviyo-profile-core.php'
+      - 'includes/integrations/klaviyo-profile-import.php'
+      - 'includes/integrations/klaviyo-profile-sync.php'
+      - 'merchant-integrations-klaviyo-callback.php'
+      - 'api/merchant/integrations.php'
+      - 'merchant-integrations.php'
+      - 'includes/merchant-integrations-view.php'
+      - 'assets/js/merchant-integrations-klaviyo.js'
+      - 'assets/css/merchant-integrations-klaviyo.css'
+      - 'scripts/validate_klaviyo_profiles_v1.php'
+      - '.github/workflows/klaviyo-profiles-v1-validation.yml'
+  push:
+    paths:
+      - 'includes/integrations/providers/klaviyo.php'
+      - 'includes/integrations/klaviyo-profiles.php'
+      - 'includes/integrations/klaviyo-profile-core.php'
+      - 'includes/integrations/klaviyo-profile-import.php'
+      - 'includes/integrations/klaviyo-profile-sync.php'
+      - 'merchant-integrations-klaviyo-callback.php'
+      - 'api/merchant/integrations.php'
+      - 'merchant-integrations.php'
+      - 'includes/merchant-integrations-view.php'
+      - 'assets/js/merchant-integrations-klaviyo.js'
+      - 'assets/css/merchant-integrations-klaviyo.css'
+      - 'scripts/validate_klaviyo_profiles_v1.php'
+      - '.github/workflows/klaviyo-profiles-v1-validation.yml'
+
+jobs:
+  validate:
+    strategy:
+      matrix:
+        php: ['8.2', '8.3']
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: PHP syntax
+        run: |
+          php -l includes/integrations/providers/klaviyo.php
+          php -l includes/integrations/klaviyo-profiles.php
+          php -l includes/integrations/klaviyo-profile-core.php
+          php -l includes/integrations/klaviyo-profile-import.php
+          php -l includes/integrations/klaviyo-profile-sync.php
+          php -l merchant-integrations-klaviyo-callback.php
+          php -l api/merchant/integrations.php
+          php -l merchant-integrations.php
+          php -l includes/merchant-integrations-view.php
+          php -l scripts/validate_klaviyo_profiles_v1.php
+      - name: JavaScript syntax
+        run: node --check assets/js/merchant-integrations-klaviyo.js
+      - name: Klaviyo Profiles contract
+        run: php scripts/validate_klaviyo_profiles_v1.php
