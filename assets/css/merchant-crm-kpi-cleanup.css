@@ -1,30 +1,101 @@
-/* Merchant CRM desktop KPI cleanup.
-   Removes the oversized decorative icon pills while preserving live values, status copy, and sparklines. */
+/* Merchant CRM desktop KPI layout repair.
+   Removes decorative icon pills and rebuilds each KPI as a stable vertical card. */
 @media (min-width: 981px) {
+  .mg-crm-desktop-kpis {
+    align-items: stretch;
+  }
+
+  .mg-crm-desktop-kpis .mg-crm-kpi {
+    display: grid;
+    grid-template-rows: auto auto minmax(24px, auto);
+    align-content: start;
+    min-height: 132px;
+    padding: 15px 14px 12px;
+    overflow: hidden;
+  }
+
   .mg-crm-desktop-kpis .mg-crm-kpi-icon {
     display: none !important;
   }
 
   .mg-crm-desktop-kpis .mg-crm-kpi-top {
-    align-items: flex-start;
-    gap: 0;
+    display: block;
+    min-width: 0;
   }
 
   .mg-crm-desktop-kpis .mg-crm-kpi-copy {
+    display: grid;
+    grid-template-rows: auto auto;
     width: 100%;
     min-width: 0;
   }
 
-  .mg-crm-desktop-kpis .mg-crm-kpi {
-    padding-top: 16px;
-  }
-
   .mg-crm-desktop-kpis .mg-crm-kpi-label {
+    display: block;
+    min-height: 24px;
+    overflow: visible;
+    color: #456184;
     font-size: 9px;
-    line-height: 1.3;
+    font-weight: 950;
+    letter-spacing: .045em;
+    line-height: 1.25;
+    text-overflow: clip;
+    text-transform: uppercase;
+    white-space: normal;
+    word-break: normal;
   }
 
   .mg-crm-desktop-kpis .mg-crm-kpi-value {
+    display: block;
     margin-top: 5px;
+    color: #0f172a;
+    font-size: 27px;
+    font-weight: 950;
+    letter-spacing: -.055em;
+    line-height: 1;
+  }
+
+  .mg-crm-desktop-kpis .mg-crm-kpi-meta {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    margin: 10px 0 8px;
+    overflow: hidden;
+    color: #72839c;
+    font-size: 9px;
+    font-weight: 800;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  .mg-crm-desktop-kpis .mg-crm-kpi-meta b {
+    flex: 0 0 auto;
+  }
+
+  .mg-crm-desktop-kpis .mg-crm-kpi-meta span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mg-crm-desktop-kpis .mg-crm-kpi-chart {
+    align-self: end;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .mg-crm-desktop-kpis .mg-crm-kpi-spark {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: 24px;
+    overflow: hidden;
+  }
+}
+
+@media (min-width: 981px) and (max-width: 1240px) {
+  .mg-crm-desktop-kpis .mg-crm-kpi {
+    min-height: 126px;
   }
 }
