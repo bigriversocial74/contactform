@@ -9,6 +9,7 @@ require_once dirname(__DIR__, 2) . '/includes/integrations/woocommerce-contacts.
 require_once dirname(__DIR__, 2) . '/includes/integrations/shopify-contacts.php';
 require_once dirname(__DIR__, 2) . '/includes/integrations/square-contacts.php';
 require_once dirname(__DIR__, 2) . '/includes/integrations/hubspot-contacts.php';
+require_once dirname(__DIR__, 2) . '/includes/integrations/mailchimp-contacts.php';
 
 $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 $user = $method === 'POST'
@@ -24,6 +25,7 @@ if ($method === 'GET') {
     $providers = mg_shopify_provider_catalog($providers);
     $providers = mg_square_provider_catalog($providers);
     $providers = mg_hubspot_provider_catalog($providers);
+    $providers = mg_mailchimp_provider_catalog($providers);
     mg_ok([
         'schema_ready' => mg_integration_schema_ready($pdo),
         'migration' => 'merchant_integrations_foundation_v1.sql',
@@ -35,6 +37,7 @@ if ($method === 'GET') {
         'shopify_contacts' => mg_shopify_contacts_status($pdo, $merchantUserId),
         'square_contacts' => mg_square_contacts_status($pdo, $merchantUserId),
         'hubspot_contacts' => mg_hubspot_contacts_status($pdo, $merchantUserId),
+        'mailchimp_contacts' => mg_mailchimp_contacts_status($pdo, $merchantUserId),
     ]);
 }
 
@@ -98,6 +101,31 @@ try {
         mg_ok($result, 'HubSpot authorization is ready.');
     }
 
+    if ($providerKey === 'mailchimp' && $action === 'begin_mailchimp_oauth') {
+        mg_rate_limit('merchant.integrations.mailchimp.oauth', 'user:' . $merchantUserId, 8, 300);
+        $existing = mg_integration_connection_row($pdo, $merchantUserId, 'mailchimp', false);
+        $wasActive = is_array($existing) && (string)($existing['status'] ?? '') === 'active';
+        $result = mg_mailchimp_begin_oauth($pdo, $merchantUserId);
+        if ($wasActive) {
+            $pdo->prepare("UPDATE merchant_integration_connections SET status='active',updated_at=NOW() WHERE merchant_user_id=? AND provider_key='mailchimp' ORDER BY id DESC LIMIT 1")
+                ->execute([$merchantUserId]);
+        }
+        mg_audit('merchant.integration.oauth_started', 'merchant_integration', ['provider' => 'mailchimp'], $merchantUserId);
+        mg_ok($result, 'Mailchimp authorization is ready.');
+    }
+
+    if ($providerKey === 'mailchimp' && $action === 'list_audiences') {
+        mg_rate_limit('merchant.integrations.mailchimp.audiences', 'user:' . $merchantUserId, 12, 300);
+        mg_ok(mg_mailchimp_audiences($pdo, $merchantUserId), 'Mailchimp audiences loaded.');
+    }
+
+    if ($providerKey === 'mailchimp' && $action === 'select_audience') {
+        mg_rate_limit('merchant.integrations.mailchimp.select_audience', 'user:' . $merchantUserId, 12, 300);
+        $result = mg_mailchimp_select_audience($pdo, $merchantUserId, (string)($input['audience_id'] ?? ''));
+        mg_audit('merchant.integration.audience_selected', 'merchant_integration', ['provider' => 'mailchimp', 'audience_id' => $result['selected_audience']['id'] ?? null], $merchantUserId);
+        mg_ok($result, 'Mailchimp audience selected.');
+    }
+
     if ($providerKey === 'woocommerce' && $action === 'connect_api_key') {
         mg_rate_limit('merchant.integrations.woocommerce.connect', 'user:' . $merchantUserId, 8, 300);
         $result = mg_woocommerce_connect(
@@ -138,6 +166,10 @@ try {
             $result = mg_hubspot_contact_preview($pdo, $merchantUserId, trim((string)($input['cursor'] ?? '')) ?: null, max(1, min(100, (int)($input['page_size'] ?? 25))));
             mg_ok($result, 'HubSpot contact preview loaded.');
         }
+        if ($providerKey === 'mailchimp') {
+            $result = mg_mailchimp_contact_preview($pdo, $merchantUserId, trim((string)($input['cursor'] ?? '')) ?: null, max(1, min(1000, (int)($input['page_size'] ?? 25))));
+            mg_ok($result, 'Mailchimp audience preview loaded.');
+        }
     }
 
     if ($action === 'sync_contacts') {
@@ -170,6 +202,12 @@ try {
             $result = mg_hubspot_sync_contacts($pdo, $merchantUserId, !empty($input['reset']), max(1, min(100, (int)($input['page_size'] ?? 100))), max(1, min(10, (int)($input['max_pages'] ?? 5))));
             mg_audit('merchant.integration.contacts_synced', 'merchant_integration', ['provider' => 'hubspot', 'counts' => $result['counts'] ?? []], $merchantUserId);
             mg_ok($result, 'HubSpot contacts synchronized.');
+        }
+        if ($providerKey === 'mailchimp') {
+            mg_rate_limit('merchant.integrations.mailchimp.sync', 'user:' . $merchantUserId, 6, 300);
+            $result = mg_mailchimp_sync_contacts($pdo, $merchantUserId, !empty($input['reset']), max(1, min(1000, (int)($input['page_size'] ?? 250))), max(1, min(10, (int)($input['max_pages'] ?? 5))));
+            mg_audit('merchant.integration.contacts_synced', 'merchant_integration', ['provider' => 'mailchimp', 'audience' => $result['audience'] ?? null, 'counts' => $result['counts'] ?? []], $merchantUserId);
+            mg_ok($result, 'Mailchimp audience synchronized.');
         }
     }
 
