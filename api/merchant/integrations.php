@@ -52,7 +52,13 @@ try {
 
     if ($providerKey === 'shopify' && $action === 'begin_shopify_oauth') {
         mg_rate_limit('merchant.integrations.shopify.oauth', 'user:' . $merchantUserId, 8, 300);
+        $existing = mg_integration_connection_row($pdo, $merchantUserId, 'shopify', false);
+        $wasActive = is_array($existing) && (string)($existing['status'] ?? '') === 'active';
         $result = mg_shopify_begin_oauth($pdo, $merchantUserId, (string)($input['shop_domain'] ?? ''));
+        if ($wasActive) {
+            $pdo->prepare("UPDATE merchant_integration_connections SET status='active',updated_at=NOW() WHERE merchant_user_id=? AND provider_key='shopify' ORDER BY id DESC LIMIT 1")
+                ->execute([$merchantUserId]);
+        }
         mg_audit('merchant.integration.oauth_started', 'merchant_integration', ['provider' => 'shopify', 'shop_domain' => $result['shop_domain'] ?? null], $merchantUserId);
         mg_ok($result, 'Shopify authorization is ready.');
     }
