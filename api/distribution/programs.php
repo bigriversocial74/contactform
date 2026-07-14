@@ -2,6 +2,42 @@
 declare(strict_types=1);
 require_once __DIR__ . '/_distribution.php';
 
+function mg_distribution_program_metadata(PDO $pdo, int $merchantUserId, mixed $value): mixed
+{
+    if (!is_array($value) || !array_key_exists('campaign_ids', $value)) return $value;
+
+    $campaignIds = $value['campaign_ids'];
+    if (!is_array($campaignIds)) mg_fail('Invalid campaign selection.', 422);
+
+    $campaignIds = array_values(array_unique(array_filter(array_map(
+        static fn(mixed $campaignId): string => strtolower(trim((string)$campaignId)),
+        $campaignIds
+    ), static fn(string $campaignId): bool => $campaignId !== '')));
+
+    if ($campaignIds === []) mg_fail('Select at least one merchant campaign.', 422);
+    foreach ($campaignIds as $campaignId) {
+        if (strlen($campaignId) !== 36 || preg_match('/^[a-f0-9-]{36}$/', $campaignId) !== 1) {
+            mg_fail('Invalid campaign selection.', 422);
+        }
+    }
+
+    $placeholders = implode(',', array_fill(0, count($campaignIds), '?'));
+    $params = $campaignIds;
+    $params[] = $merchantUserId;
+    $stmt = $pdo->prepare("SELECT public_id FROM campaigns WHERE public_id IN ($placeholders) AND merchant_user_id=? AND status<>'archived'");
+    $stmt->execute($params);
+    $available = array_map('strval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+    sort($available);
+    $expected = $campaignIds;
+    sort($expected);
+    if ($available !== $expected) mg_fail('One or more selected campaigns are unavailable.', 422);
+
+    $value['campaign_ids'] = $campaignIds;
+    $value['campaign_count'] = count($campaignIds);
+    $value['campaign_source'] = 'developer_api_program_builder';
+    return $value;
+}
+
 $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
 $user = mg_require_permission($method === 'GET' ? 'distribution.analytics.view' : 'distribution.programs.manage');
 $pdo = mg_db();
@@ -32,7 +68,8 @@ $budget = isset($input['budget_cents']) && $input['budget_cents'] !== '' ? max(0
 $maxItems = isset($input['max_items']) && $input['max_items'] !== '' ? max(1,(int)$input['max_items']) : null;
 $perRecipient = isset($input['per_recipient_limit']) && $input['per_recipient_limit'] !== '' ? max(1,(int)$input['per_recipient_limit']) : null;
 $rules = mg_distribution_json($input['rules'] ?? null);
-$metadata = mg_distribution_json($input['metadata'] ?? null);
+$metadataInput = mg_distribution_program_metadata($pdo, (int)$user['id'], $input['metadata'] ?? null);
+$metadata = mg_distribution_json($metadataInput);
 
 $pdo->beginTransaction();
 try {
@@ -47,7 +84,7 @@ try {
             ->execute([$name,$type,$status,$startsAt,$endsAt,$budget,$maxItems,$perRecipient,$rules,$metadata,(int)$program['id']]);
     }
     $pdo->commit();
-    mg_audit('distribution.program_saved','distribution_program',['program_id'=>$programId,'status'=>$status],(int)$user['id']);
+    mg_audit('distribution.program_saved','distribution_program',['program_id'=>$programId,'status'=>$status,'campaign_count'=>is_array($metadataInput) ? (int)($metadataInput['campaign_count'] ?? 0) : 0],(int)$user['id']);
     mg_ok(['program_id'=>$programId,'status'=>$status],'Distribution program saved.',201);
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) $pdo->rollBack();
