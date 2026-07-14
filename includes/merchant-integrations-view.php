@@ -36,7 +36,7 @@
 
   <div class="mg-integrations-section-title">
     <div><span class="mg-eyebrow">Provider catalog</span><h2>Connect your business systems</h2></div>
-    <p>Squarespace, WooCommerce, and Shopify use the same secure connection, identity-link, synchronization, review, and audit foundation. Square is next.</p>
+    <p>Squarespace, WooCommerce, Shopify, and Square use the same secure connection, identity-link, synchronization, review, and audit foundation.</p>
   </div>
 
   <section class="mg-integrations-grid" data-integrations-grid>
