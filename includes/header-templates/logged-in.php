@@ -81,13 +81,8 @@ $can_header_create = $show_header_create && $can_merchant_nav && ($can_create_mi
               <a class="mg-account-action" href="/merchant-notifications.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Merch Notifications</span></a>
               <a class="mg-account-action" href="/merchant-pppm.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Merchant Orders</span></a>
               <a class="mg-account-action" href="/merchant-stamps.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Merchant Stamps</span></a>
-              <a class="mg-account-action" href="/merchant-products.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Products</span></a>
-              <a class="mg-account-action" href="/merchant-campaigns.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Campaigns</span></a>
-              <a class="mg-account-action" href="/merchant-quest-reviews.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Quest Reviews</span></a>
-              <a class="mg-account-action" href="/merchant-reward-templates.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Rewards</span></a>
               <a class="mg-account-action" href="/merchant-crm.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Merchant CRM</span></a>
-              <a class="mg-account-action" href="/merchant-claims.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Claims</span></a>
-              <a class="mg-account-action" href="/merchant-locations.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Locations</span></a>
+              <a class="mg-account-action" href="/merchant-quest-reviews.php"><span class="mg-account-index"><?= str_pad((string) $merchantMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>Quest Reviews</span></a>
             <?php else: ?>
               <div class="mg-account-upgrade-panel">
                 <span class="mg-account-upgrade-kicker">Merchant access</span>
