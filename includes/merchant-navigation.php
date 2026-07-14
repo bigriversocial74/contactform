@@ -5,6 +5,9 @@ if (!function_exists('mg_merchant_navigation_items')) {
     function mg_merchant_navigation_items(): array
     {
         return [
+            // Primary merchant destination: always shown above the grouped accordions.
+            'overview' => ['Dashboard', 'Workspace health', '/merchant.php', ''],
+
             // Section 1: Products & Engagement
             'products' => ['Products', 'Catalog and builder', '/merchant-products.php', 'Products & Engagement'],
             'reward_templates' => ['Rewards', 'Wallet-ready offers', '/merchant-reward-templates.php', 'Products & Engagement'],
@@ -14,7 +17,6 @@ if (!function_exists('mg_merchant_navigation_items')) {
             'loyalty_quests' => ['Loyalty Quests', 'Challenges, proof, and rewards', '/merchant-loyalty-quests.php', 'Products & Engagement'],
 
             // Section 2: Insights & Records
-            'overview' => ['Overview', 'Workspace health', '/merchant.php', 'Insights & Records'],
             'notifications' => ['Notifications', 'Tips, voucher messages, alerts', '/merchant-notifications.php', 'Insights & Records'],
             'orders' => ['My Orders', 'Payments and delivery recovery', '/merchant-orders.php', 'Insights & Records'],
             'stamps' => ['My Stamps / Ledger', 'Sends and balance', '/merchant-stamps.php', 'Insights & Records'],
