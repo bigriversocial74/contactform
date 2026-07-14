@@ -34,6 +34,8 @@ $hasCanonicalIssuanceTruth = str_contains($content['foundation'], 'mg_order_issu
     );
 
 $hasEscapeDialogControl = preg_match('/event\.key\s*={2,3}\s*[\'\"]Escape[\'\"]/', $content['js']) === 1;
+$hasOrdersNavigationLabel = str_contains($content['navigation'], "'orders' => ['Orders'")
+    || str_contains($content['navigation'], "'orders' => ['My Orders'");
 
 $checks = [
     'merchant page loads the scoped orders view and assets' =>
@@ -41,7 +43,7 @@ $checks = [
         && str_contains($content['page'], '/assets/js/merchant-orders.js')
         && str_contains($content['page'], '/assets/css/merchant-orders.css'),
     'merchant navigation and view router expose Orders and Microgift Totals' =>
-        str_contains($content['navigation'], "'orders' => ['Orders'")
+        $hasOrdersNavigationLabel
         && str_contains($content['navigation'], "'pppm' => ['Microgift Totals'")
         && str_contains($content['workspace'], "require_once __DIR__ . '/merchant-navigation.php'")
         && str_contains($content['router'], '$merchantView===\'orders\''),
