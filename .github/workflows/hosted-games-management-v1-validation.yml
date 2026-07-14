@@ -6,6 +6,7 @@ on:
       - '.htaccess'
       - 'admin/hosted-games.php'
       - 'api/admin/hosted-games.php'
+      - 'api/admin/hosted-game-upload.php'
       - 'api/hosted-games/**'
       - 'api/merchant/hosted-games.php'
       - 'api/merchant/hosted-game-upload.php'
@@ -23,6 +24,7 @@ on:
       - 'includes/admin-permission-matrix.php'
       - 'includes/admin-sidebar.php'
       - 'includes/hosted-games.php'
+      - 'includes/hosted-game-upload.php'
       - 'includes/merchant-distribution-view.php'
       - 'includes/merchant-hosted-games-view.php'
       - 'includes/merchant-navigation.php'
@@ -55,6 +57,7 @@ jobs:
         run: |
           php -l admin/hosted-games.php
           php -l api/admin/hosted-games.php
+          php -l api/admin/hosted-game-upload.php
           php -l api/hosted-games/asset.php
           php -l api/hosted-games/document.php
           php -l api/hosted-games/runtime.php
@@ -66,6 +69,7 @@ jobs:
           php -l includes/admin-permission-matrix.php
           php -l includes/admin-sidebar.php
           php -l includes/hosted-games.php
+          php -l includes/hosted-game-upload.php
           php -l includes/merchant-distribution-view.php
           php -l includes/merchant-hosted-games-view.php
           php -l includes/merchant-navigation.php
