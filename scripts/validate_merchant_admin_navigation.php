@@ -13,16 +13,32 @@ $agentSidebar = is_file($agentSidebarPath) ? (string) file_get_contents($agentSi
 $appSidebar = is_file($appSidebarPath) ? (string) file_get_contents($appSidebarPath) : '';
 
 $requiredFragments = [
-    "'overview' => ['Overview', 'Workspace health', '/merchant.php', 'Dashboard']",
-    "'notifications' => ['Notifications', 'Tips, voucher messages, alerts', '/merchant-notifications.php', 'Dashboard']",
-    "'reward_templates' => ['Rewards', 'Wallet-ready offers', '/merchant-reward-templates.php', 'Commerce']",
-    "'pppm' => ['Microgift Totals', 'Items and lifecycle', '/merchant-pppm.php', 'Commerce']",
-    "'merchant_crm' => ['Merchant CRM', 'Customers and campaign history', '/merchant-crm.php', 'Customers & Campaigns']",
-    "'campaign_ads' => ['Campaign Ads', 'Boost campaigns and local drops', '/merchant-ad-manager.php', 'Customers & Campaigns']",
-    "'storefront' => ['Storefront', 'Public merchant page', '/merchant-storefront.php', 'Store Presence']",
-    "'store_canvas' => ['Store Canvas', 'Live avatars and customer activity', '/merchant-canvas.php', 'Store Presence']",
-    "'payments' => ['Payments', 'Checkout and reconciliation', '/merchant-payments.php', 'Finance']",
-    "'locations' => ['Locations', 'Stores and claim scope', '/merchant-locations.php', 'Business Settings']",
+    "'products' => ['Products', 'Catalog and builder', '/merchant-products.php', 'Products & Engagement']",
+    "'reward_templates' => ['Rewards', 'Wallet-ready offers', '/merchant-reward-templates.php', 'Products & Engagement']",
+    "'campaigns' => ['Campaigns', 'Forms, contests, QR drops', '/merchant-campaigns.php', 'Products & Engagement']",
+    "'claims' => ['Claims', 'Verification and redemption', '/merchant-claims.php', 'Products & Engagement']",
+    "'locations' => ['Locations', 'Stores and claim scope', '/merchant-locations.php', 'Products & Engagement']",
+    "'loyalty_quests' => ['Loyalty Quests', 'Challenges, proof, and rewards', '/merchant-loyalty-quests.php', 'Products & Engagement']",
+    "'overview' => ['Overview', 'Workspace health', '/merchant.php', 'Insights & Records']",
+    "'notifications' => ['Notifications', 'Tips, voucher messages, alerts', '/merchant-notifications.php', 'Insights & Records']",
+    "'orders' => ['My Orders', 'Payments and delivery recovery', '/merchant-orders.php', 'Insights & Records']",
+    "'stamps' => ['My Stamps / Ledger', 'Sends and balance', '/merchant-stamps.php', 'Insights & Records']",
+    "'reviews' => ['My Customer Reviews', 'Replies and customer follow-up', '/merchant-reviews.php', 'Insights & Records']",
+    "'merchant_crm' => ['Merchant CRM', 'Customers and campaign history', '/merchant-crm.php', 'Insights & Records']",
+    "'storefront' => ['Storefront', 'Public merchant page', '/merchant-storefront.php', 'Storefront & Distribution']",
+    "'merchant_pwa' => ['Branded Apps', 'Merchant PWA install screen', '/merchant-pwa.php', 'Storefront & Distribution']",
+    "'hosted_games' => ['Hosted Games', 'Upload games and connect rewards', '/merchant-games.php', 'Storefront & Distribution']",
+    "'distribution' => ['Distribution', 'Programs and inputs', '/merchant-distribution.php', 'Storefront & Distribution']",
+    "'developer_api' => ['Developer API', 'Apps and access', '/merchant-distribution.php?developer_api=1', 'Storefront & Distribution']",
+    "'store_canvas' => ['Store Canvas', 'Live avatars and customer activity', '/merchant-canvas.php', 'Storefront & Distribution']",
+    "'world_canvas' => ['World Canvas', 'Network activity and campaign movement', '/world-canvas.php', 'Storefront & Distribution']",
+    "'integrations' => ['Connected Apps', 'CRM and web-store connections', '/merchant-integrations.php', 'Storefront & Distribution']",
+    "'campaign_ads' => ['Advertising', 'Boost campaigns and local drops', '/merchant-ad-manager.php', 'Business Operations']",
+    "'payments' => ['Payments', 'Checkout and reconciliation', '/merchant-payments.php', 'Business Operations']",
+    "'media' => ['Media', 'Assets and processing', '/merchant-media.php', 'Business Operations']",
+    "'team' => ['Team', 'Roles and access', '/merchant-team.php', 'Business Operations']",
+    "'agent_chat' => ['Agent Chat', 'Merchant agent feed', '/merchant-agent-chat.php', 'Business Operations']",
+    "'settings' => ['Settings', 'Business configuration', '/merchant-settings.php', 'Business Operations']",
 ];
 
 $removedFragments = [
@@ -31,19 +47,23 @@ $removedFragments = [
     "'intelligence' => [",
     "['Reward Templates'",
     "['PPPM Items'",
+    "'Campaign Ads', 'Boost campaigns",
+    "'Branded App', 'Merchant PWA",
 ];
 
 $routeAliases = [
     "'onboarding' => 'overview'",
     "'intelligence' => 'overview'",
     "'campaign_stamps' => 'stamps'",
-    "'loyalty_quests' => 'campaigns'",
-    "'quest_creative' => 'campaigns'",
-    "'quest_reviews' => 'campaigns'",
-    "'quest_delivery' => 'campaigns'",
-    "'quest_analytics' => 'campaigns'",
+    "'loyalty_quests' => 'loyalty_quests'",
+    "'merchant-loyalty-quests' => 'loyalty_quests'",
+    "'quest_creative' => 'loyalty_quests'",
+    "'quest_reviews' => 'loyalty_quests'",
+    "'quest_delivery' => 'loyalty_quests'",
+    "'quest_analytics' => 'loyalty_quests'",
     "'campaign_embed_leads' => 'campaigns'",
     "'campaign_embed_analytics' => 'campaigns'",
+    "'world-canvas' => 'world_canvas'",
 ];
 
 $standardMerchantPages = [
@@ -97,7 +117,7 @@ foreach ($routeAliases as $fragment) {
     $aliasChecks[$fragment] = str_contains($navigation, $fragment);
 }
 
-$sectionOrder = ['Dashboard', 'Commerce', 'Customers & Campaigns', 'Store Presence', 'Finance', 'Business Settings'];
+$sectionOrder = ['Products & Engagement', 'Insights & Records', 'Storefront & Distribution', 'Business Operations'];
 $sectionPositions = [];
 $lastPosition = -1;
 $sectionsOrdered = true;
