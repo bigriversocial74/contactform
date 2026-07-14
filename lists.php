@@ -22,7 +22,7 @@ $page_scripts = ['/assets/js/user-lists.js'];
 
 require __DIR__ . '/includes/header.php';
 ?>
-<section class="mg-user-lists-shell" data-user-lists-page>
+<section class="mg-app-shell mg-user-lists-shell" data-user-lists-page>
   <?php require __DIR__ . '/includes/agent-sidebar.php'; ?>
   <div class="mg-user-lists-main">
     <header class="mg-user-lists-hero">
