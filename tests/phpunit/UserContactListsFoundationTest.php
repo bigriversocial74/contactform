@@ -36,6 +36,19 @@ final class UserContactListsFoundationTest extends TestCase
         self::assertStringContainsString('allow_list_membership', $service);
     }
 
+    public function testDiscoveryIsLimitedToFollowRelationshipsAndVisibleProfiles(): void
+    {
+        $search = file_get_contents($this->root . '/includes/user-contact-search.php');
+        $endpoint = file_get_contents($this->root . '/api/user-lists/search-contacts.php');
+        self::assertIsString($search);
+        self::assertIsString($endpoint);
+        self::assertStringContainsString('INNER JOIN social_follows sf_rel', $search);
+        self::assertStringContainsString("sf_rel.status='active'", $search);
+        self::assertStringContainsString("pp.status='active'", $search);
+        self::assertStringContainsString("pp.visibility IN ('public','unlisted')", $search);
+        self::assertStringContainsString('mg_user_contact_relationship_search', $endpoint);
+    }
+
     public function testPhoneStorageIsEncryptedAndStandardPayloadsAreMasked(): void
     {
         $service = file_get_contents($this->root . '/includes/user-contact-lists.php');
