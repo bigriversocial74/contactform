@@ -4,7 +4,8 @@ declare(strict_types=1);
 $mg_package_context = is_array($mg_package_context ?? null) ? $mg_package_context : mg_user_package_context(null, mg_current_user());
 $can_merchant_nav = (bool) ($can_merchant_nav ?? !empty($mg_package_context['merchant_access']));
 $can_create_microgift = (bool) ($can_create_microgift ?? ($can_merchant_nav && mg_package_limit_allows_create($mg_package_context, 'max_microgifts', 0)));
-$can_agent_workspace = $can_merchant_nav || mg_has_permission('agent.workspace.view') || mg_has_permission('agent.manage');
+$is_authenticated_user = mg_current_user() !== null;
+$can_agent_workspace = $is_authenticated_user || $can_merchant_nav || mg_has_permission('agent.workspace.view') || mg_has_permission('agent.manage');
 $workspace_agent_tabs = ['agent', 'inbox', 'sent', 'claimed'];
 /* Recovery baseline tab markers: ['agent','Agent','/agent.php'] ['inbox','Inbox','/inbox.php'] ['sent','Sent','/sent.php'] ['claimed','Claimed','/claimed.php'] */
 $is_agent_workspace_header = $header_mode === 'agent' && in_array((string) $agent_tab, $workspace_agent_tabs, true);
