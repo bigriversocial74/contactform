@@ -1,0 +1,64 @@
+name: Mailchimp Contacts v1 Validation
+
+on:
+  pull_request:
+    paths:
+      - 'includes/integrations/providers/mailchimp.php'
+      - 'includes/integrations/mailchimp-contacts.php'
+      - 'includes/integrations/mailchimp-contact-core.php'
+      - 'includes/integrations/mailchimp-contact-import.php'
+      - 'includes/integrations/mailchimp-contact-sync.php'
+      - 'merchant-integrations-mailchimp-callback.php'
+      - 'api/merchant/integrations.php'
+      - 'merchant-integrations.php'
+      - 'includes/merchant-integrations-view.php'
+      - 'assets/js/merchant-integrations-mailchimp.js'
+      - 'assets/css/merchant-integrations-mailchimp.css'
+      - 'scripts/validate_mailchimp_contacts_v1.php'
+      - '.github/workflows/mailchimp-contacts-v1-validation.yml'
+  push:
+    paths:
+      - 'includes/integrations/providers/mailchimp.php'
+      - 'includes/integrations/mailchimp-contacts.php'
+      - 'includes/integrations/mailchimp-contact-core.php'
+      - 'includes/integrations/mailchimp-contact-import.php'
+      - 'includes/integrations/mailchimp-contact-sync.php'
+      - 'merchant-integrations-mailchimp-callback.php'
+      - 'api/merchant/integrations.php'
+      - 'merchant-integrations.php'
+      - 'includes/merchant-integrations-view.php'
+      - 'assets/js/merchant-integrations-mailchimp.js'
+      - 'assets/css/merchant-integrations-mailchimp.css'
+      - 'scripts/validate_mailchimp_contacts_v1.php'
+      - '.github/workflows/mailchimp-contacts-v1-validation.yml'
+
+jobs:
+  validate:
+    strategy:
+      matrix:
+        php: ['8.2', '8.3']
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: PHP syntax
+        run: |
+          php -l includes/integrations/providers/mailchimp.php
+          php -l includes/integrations/mailchimp-contacts.php
+          php -l includes/integrations/mailchimp-contact-core.php
+          php -l includes/integrations/mailchimp-contact-import.php
+          php -l includes/integrations/mailchimp-contact-sync.php
+          php -l merchant-integrations-mailchimp-callback.php
+          php -l api/merchant/integrations.php
+          php -l merchant-integrations.php
+          php -l includes/merchant-integrations-view.php
+          php -l scripts/validate_mailchimp_contacts_v1.php
+      - name: JavaScript syntax
+        run: node --check assets/js/merchant-integrations-mailchimp.js
+      - name: Mailchimp Contacts contract
+        run: php scripts/validate_mailchimp_contacts_v1.php
