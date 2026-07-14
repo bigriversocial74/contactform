@@ -154,7 +154,6 @@ try {
     );
 
     $globallyHiddenKeys = [
-        'loyalty_quests',
         'quest_creative',
         'quest_reviews',
         'quest_delivery',
@@ -169,6 +168,13 @@ try {
         'Merchant workspace consumes the centralized merchant navigation source'
     );
 
+    $expect(
+        str_contains($merchantNavigation, "'loyalty_quests' => ['Loyalty Quests'")
+        && str_contains($merchantNavigation, "'/merchant-loyalty-quests.php'")
+        && str_contains($merchantNavigation, "'Products & Engagement'"),
+        'Loyalty Quests is a visible standalone merchant navigation destination'
+    );
+
     foreach ($globallyHiddenKeys as $key) {
         $expect(
             !preg_match("/'" . preg_quote($key, '/') . "'\\s*=>\\s*\\[/", $merchantNavigation),
@@ -177,17 +183,17 @@ try {
     }
 
     foreach ([
-        "'loyalty_quests' => 'campaigns'",
-        "'quest_creative' => 'campaigns'",
-        "'quest_reviews' => 'campaigns'",
-        "'quest_delivery' => 'campaigns'",
-        "'quest_analytics' => 'campaigns'",
+        "'loyalty_quests' => 'loyalty_quests'",
+        "'quest_creative' => 'loyalty_quests'",
+        "'quest_reviews' => 'loyalty_quests'",
+        "'quest_delivery' => 'loyalty_quests'",
+        "'quest_analytics' => 'loyalty_quests'",
         "'campaign_embed_leads' => 'campaigns'",
         "'campaign_embed_analytics' => 'campaigns'",
     ] as $aliasMarker) {
         $expect(
             str_contains($merchantNavigation, $aliasMarker),
-            'Hidden route maps back to the visible Campaigns group: ' . $aliasMarker
+            'Hidden route maps to its visible merchant navigation group: ' . $aliasMarker
         );
     }
 
@@ -218,8 +224,9 @@ try {
 
     $expect(
         str_contains($appSidebar, "str_starts_with(\$currentSidebarScript, 'merchant-')")
-        && str_contains($appSidebar, 'mg_merchant_navigation_sidebar($appSidebarActive)'),
-        'Universal app sidebar replaces standalone merchant menu arrays with the shared menu'
+        && str_contains($appSidebar, 'mg_merchant_navigation_sidebar($appSidebarActive)')
+        && str_contains($appSidebar, 'data-merchant-nav-accordions'),
+        'Universal app sidebar replaces standalone merchant menu arrays with the shared grouped menu'
     );
 } catch (Throwable $error) {
     $failures[] = $error->getMessage();
