@@ -86,6 +86,7 @@ $rdReady = $rdMerchantReadiness['configured']
             <a href="#distribution-editor" data-distribution-open-create>Add channel/program</a>
             <a href="/merchant-campaigns.php">Create QR drop</a>
             <a href="/merchant-campaigns.php">Connect campaign</a>
+            <a href="/merchant-games.php">Manage Hosted Games</a>
             <a href="/merchant-campaign-stamps.php">Review stamps</a>
           </div>
         </section>
@@ -95,18 +96,18 @@ $rdReady = $rdMerchantReadiness['configured']
     <section class="mg-app-panel mg-distribution-panel mg-game-integration <?= $rdReady ? 'is-ready' : 'needs-setup' ?>" id="distribution-game">
       <div class="mg-game-integration-hero">
         <div class="mg-game-integration-copy">
-          <span class="mg-eyebrow">Game Integration</span>
+          <span class="mg-eyebrow">Legacy example game</span>
           <h2>Reward Drop</h2>
-          <p>A first-party browser game that recognizes the current Microgifter session, issues one campaign reward through the live Public Distribution API, verifies lifecycle webhooks, and sends the earned item to the user Inbox.</p>
+          <p>The original first-party browser game remains available as a working reference. New merchant games should be uploaded and configured through Hosted Games, which automatically provisions the player bridge, live API credential, signed webhook, campaign reward, release URL, and isolated game database.</p>
           <div class="mg-game-integration-actions">
-            <a class="mg-btn mg-btn-primary" href="/games/reward-drop/" target="_blank" rel="noopener">Open Reward Drop</a>
-            <a class="mg-btn mg-btn-soft" href="/merchant-distribution.php?developer_api=1">Developer API setup</a>
+            <a class="mg-btn mg-btn-primary" href="/merchant-games.php">Open Hosted Games</a>
+            <a class="mg-btn mg-btn-soft" href="/games/reward-drop/" target="_blank" rel="noopener">Open legacy Reward Drop</a>
             <a class="mg-btn mg-btn-soft" href="#distribution-editor" data-distribution-open-create>Create gaming program</a>
           </div>
         </div>
-        <div class="mg-game-integration-state"><strong><?= $rdReady ? 'Ready to play' : 'Setup required' ?></strong><span><?= mg_e((string)($rdMerchantReadiness['app_name'] ?: 'Reward Drop developer app')) ?></span></div>
+        <div class="mg-game-integration-state"><strong><?= $rdReady ? 'Legacy game ready' : 'Legacy setup required' ?></strong><span><?= mg_e((string)($rdMerchantReadiness['app_name'] ?: 'Reward Drop developer app')) ?></span></div>
       </div>
-      <div class="mg-game-readiness" aria-label="Reward Drop readiness">
+      <div class="mg-game-readiness" aria-label="Legacy Reward Drop readiness">
         <?php
         $rdChecks = [
           ['Game SQL', $rdMerchantReadiness['schema_ready'], 'reward_drop_game_v1.sql'],
@@ -119,7 +120,7 @@ $rdReady = $rdMerchantReadiness['configured']
           <article class="<?= $rdCheck[1] ? 'is-ready' : 'needs-setup' ?>"><i></i><div><span><?= mg_e($rdCheck[0]) ?></span><strong><?= $rdCheck[1] ? 'Ready' : 'Required' ?></strong><small><?= mg_e($rdCheck[2]) ?></small></div></article>
         <?php endforeach; ?>
       </div>
-      <div class="mg-game-flow"><span>Existing Microgifter session</span><b>→</b><span>Secure game run</span><b>→</b><span>API reward issue</span><b>→</b><span>Signed webhook</span><b>→</b><span>User Inbox</span></div>
+      <div class="mg-game-flow"><span>Upload game ZIP</span><b>→</b><span>Connect campaign reward</span><b>→</b><span>Admin verifies game database</span><b>→</b><span>Publish game URL</span><b>→</b><span>User Inbox</span></div>
     </section>
 
     <section class="mg-app-panel mg-distribution-panel" id="distribution-health">

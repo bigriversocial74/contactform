@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Hosted Game Starter</title>
+  <link rel="stylesheet" href="game.css">
+</head>
+<body>
+  <main class="game">
+    <section class="game-card">
+      <span class="eyebrow">Microgifter Hosted Games</span>
+      <h1>Tap the gift<br>five times.</h1>
+      <p>This minimal game demonstrates player connection, run start, score submission, qualification, state, and Inbox delivery.</p>
+
+      <div class="scoreboard">
+        <div><span>Score</span><strong data-score>0</strong></div>
+        <div><span>Target</span><strong>5</strong></div>
+      </div>
+
+      <button class="gift" type="button" data-gift disabled aria-label="Tap gift">✦</button>
+      <button class="primary" type="button" data-start>Connect and start</button>
+      <p class="status" data-status>Loading Microgifter bridge…</p>
+      <a class="inbox" href="#" data-inbox hidden>Open Microgifter Inbox</a>
+    </section>
+  </main>
+  <script src="game.js"></script>
+</body>
+</html>
