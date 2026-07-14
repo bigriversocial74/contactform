@@ -9,7 +9,7 @@ declare(strict_types=1);
       <p>Create merchant developer apps, connect them to Distribution Programs, configure credentials, test sandbox rewards, monitor webhooks, and get the integration ready for public launch.</p>
     </div>
     <div class="mg-dev-hero-actions" aria-label="Developer API quick actions">
-      <button class="mg-btn mg-btn-primary" type="button" data-dev-tab-trigger="distribution" data-dev-new-plan>+ Create Distribution Plan</button>
+      <button class="mg-btn mg-btn-primary" type="button" data-dev-tab-trigger="builder" data-dev-new-plan>+ Create Distribution Plan</button>
       <button class="mg-btn mg-btn-primary" type="button" data-dev-tab-trigger="credentials">+ Create Credential</button>
       <a class="mg-btn mg-btn-soft" href="/developer-docs.php">Public docs</a>
       <a class="mg-btn mg-btn-soft" href="/developer-docs.php#quickstart">Sandbox guide</a>
@@ -21,6 +21,7 @@ declare(strict_types=1);
   <nav class="mg-dev-tabs" aria-label="Developer API sections">
     <button class="is-active" type="button" data-dev-tab="overview" aria-selected="true">Overview</button>
     <button type="button" data-dev-tab="distribution">Distribution Plan</button>
+    <button type="button" data-dev-tab="builder">Program Builder</button>
     <button type="button" data-dev-tab="apps">Developer Apps</button>
     <button type="button" data-dev-tab="credentials">Credentials</button>
     <button type="button" data-dev-tab="sandbox">Sandbox Testing</button>
@@ -54,13 +55,13 @@ declare(strict_types=1);
   <section class="mg-dev-tab-panel" data-dev-tab-panel="distribution" hidden>
     <section class="mg-app-panel mg-dev-panel mg-dev-distribution-plan">
       <div class="mg-app-panel-head">
-        <div><h2>Distribution Plan</h2><p>Create and manage the reward source that developer apps can issue from. This tab now keeps program setup, product attachment, limits, status, and source health inside the Developer API workflow.</p></div>
-        <button class="mg-btn mg-btn-primary" type="button" data-program-new>+ New Distribution Program</button>
+        <div><h2>Distribution Plan</h2><p>Create and manage the campaign-backed reward sources developer apps can issue from. Campaign selection, limits, status, and app assignment stay inside the Developer API workflow.</p></div>
+        <button class="mg-btn mg-btn-primary" type="button" data-program-new data-dev-program-builder-open>+ New Distribution Program</button>
       </div>
       <div class="mg-app-panel-body">
         <div class="mg-merchant-kpis mg-dev-distribution-kpis" data-distribution-kpis></div>
         <div class="mg-dev-plan-grid" style="margin-top:14px">
-          <article><span>01</span><strong>Select products</strong><p>Attach published products or reward templates before API reward issuance.</p></article>
+          <article><span>01</span><strong>Select campaigns</strong><p>Choose one or more merchant campaigns to make available through this developer-facing program.</p></article>
           <article><span>02</span><strong>Set limits</strong><p>Control max items, budget, per-recipient limits, dates, and active status.</p></article>
           <article><span>03</span><strong>Connect app</strong><p>Choose the program as the app default inside the Developer Apps tab.</p></article>
           <article><span>04</span><strong>Monitor issuance</strong><p>Review API requests, webhook delivery, quota buckets, and reward activity.</p></article>
@@ -68,37 +69,38 @@ declare(strict_types=1);
       </div>
     </section>
 
-    <div class="mg-distribution-layout mg-dev-distribution-workspace">
-      <section class="mg-app-panel mg-dev-panel mg-distribution-panel">
-        <div class="mg-app-panel-head mg-distribution-panel-head"><div><span class="mg-eyebrow">Programs</span><h2>Distribution programs</h2><p>Search, review, open, and edit reward issuance programs without leaving the Developer API page.</p></div></div>
-        <div class="mg-app-panel-body">
-          <div class="mg-distribution-toolbar"><input type="search" data-program-search placeholder="Search programs, channels, partners"><select data-program-status><option value="all">All statuses</option><option value="draft">Draft</option><option value="scheduled">Scheduled</option><option value="active">Active</option><option value="paused">Paused</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option><option value="archived">Archived</option></select></div>
-          <div class="mg-program-list" data-program-list></div>
-        </div>
-      </section>
+    <section class="mg-app-panel mg-dev-panel mg-distribution-panel mg-dev-program-results" aria-labelledby="developer-distribution-programs-title">
+      <div class="mg-app-panel-head mg-distribution-panel-head"><div><span class="mg-eyebrow">Programs</span><h2 id="developer-distribution-programs-title">Distribution programs</h2><p>Search, review, open, and edit campaign-backed reward issuance programs without leaving the Developer API page.</p></div></div>
+      <div class="mg-app-panel-body">
+        <div class="mg-distribution-toolbar"><input type="search" data-program-search placeholder="Search programs, channels, partners"><select data-program-status><option value="all">All statuses</option><option value="draft">Draft</option><option value="scheduled">Scheduled</option><option value="active">Active</option><option value="paused">Paused</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option><option value="archived">Archived</option></select></div>
+        <div class="mg-program-list" data-program-list></div>
+      </div>
+    </section>
+  </section>
 
-      <aside class="mg-app-panel mg-dev-panel mg-distribution-panel mg-dev-inline-editor" id="developer-distribution-editor">
-        <div class="mg-app-panel-head mg-distribution-panel-head"><div><span class="mg-eyebrow">Builder</span><h2>Program editor</h2><p>Create or update the program developers will use as their default reward source.</p></div></div>
-        <div class="mg-app-panel-body">
-          <form class="mg-merchant-form mg-distribution-form" data-program-form>
-            <input type="hidden" name="program_id">
-            <label>Name<input name="name" required maxlength="180" placeholder="Developer reward source"></label>
-            <div class="mg-grid-2"><label>Type<select name="program_type"><option value="merchant_grant">Merchant grant</option><option value="contest">Contest</option><option value="giveaway">Giveaway</option><option value="fundraiser">Fundraiser</option><option value="workplace_reward">Workplace reward</option><option value="gaming">Gaming</option><option value="external_api">External API</option><option value="batch">Batch</option><option value="purchase">Purchase</option><option value="other">Other</option></select></label><label>Status<select name="status"><option value="draft">Draft</option><option value="scheduled">Scheduled</option><option value="active">Active</option><option value="paused">Paused</option><option value="completed">Completed</option></select></label></div>
-            <div class="mg-program-product-field"><div class="mg-program-product-field-head"><span>Products included</span><small>Choose one or more published products this developer-facing program can issue.</small></div><div class="mg-program-product-picker" data-program-product-picker><p>Loading available products…</p></div></div>
-            <div class="mg-grid-2"><label>Starts at<input name="starts_at" type="datetime-local"></label><label>Ends at<input name="ends_at" type="datetime-local"></label></div>
-            <div class="mg-grid-2"><label>Budget, cents<input name="budget_cents" type="number" min="0"></label><label>Maximum items<input name="max_items" type="number" min="1"></label></div>
-            <label>Per-recipient limit<input name="per_recipient_limit" type="number" min="1"></label>
-            <div class="mg-form-status" data-program-status-message></div>
-            <button class="mg-btn mg-btn-primary" type="submit">Save distribution program</button>
-          </form>
-        </div>
-      </aside>
-    </div>
-
-    <div class="mg-dev-two-col" style="margin-top:16px">
-      <section class="mg-app-panel mg-dev-panel"><div class="mg-app-panel-head"><div><h2>Source and issuance health</h2><p>External input connections and the current PPPM issuance queue.</p></div></div><div class="mg-app-panel-body"><div class="mg-distribution-health"><div data-distribution-sources></div><div data-distribution-queue></div></div></div></section>
-      <section class="mg-app-panel mg-dev-panel"><div class="mg-app-panel-head"><div><h2>How this connects to apps</h2><p>Once saved, choose this program as the default source in the Developer Apps tab.</p></div></div><div class="mg-app-panel-body"><div class="mg-dev-action-list"><button type="button" data-dev-tab-trigger="apps"><strong>Attach to developer app</strong><span>Developer Apps</span></button><button type="button" data-dev-tab-trigger="sandbox"><strong>Run sandbox issue test</strong><span>Sandbox Testing</span></button><button type="button" data-dev-tab-trigger="analytics"><strong>Review API activity</strong><span>Analytics</span></button></div></div></section>
-    </div>
+  <section class="mg-dev-tab-panel" data-dev-tab-panel="builder" hidden>
+    <section class="mg-app-panel mg-dev-panel mg-distribution-panel mg-dev-program-builder" id="developer-program-builder">
+      <div class="mg-app-panel-head mg-distribution-panel-head">
+        <div><span class="mg-eyebrow">Program Builder</span><h2>Distribution program editor</h2><p>Create or update the campaign-backed program a developer app will use as its default reward source.</p></div>
+        <button class="mg-btn mg-btn-soft" type="button" data-dev-tab-trigger="distribution">Back to programs</button>
+      </div>
+      <div class="mg-app-panel-body">
+        <form class="mg-merchant-form mg-distribution-form mg-dev-program-form" data-program-form data-dev-campaign-program-form>
+          <input type="hidden" name="program_id">
+          <label>Name<input name="name" required maxlength="180" placeholder="Developer reward source"></label>
+          <div class="mg-grid-2"><label>Type<select name="program_type"><option value="merchant_grant">Merchant grant</option><option value="contest">Contest</option><option value="giveaway">Giveaway</option><option value="fundraiser">Fundraiser</option><option value="workplace_reward">Workplace reward</option><option value="gaming">Gaming</option><option value="external_api">External API</option><option value="batch">Batch</option><option value="purchase">Purchase</option><option value="other">Other</option></select></label><label>Status<select name="status"><option value="draft">Draft</option><option value="scheduled">Scheduled</option><option value="active">Active</option><option value="paused">Paused</option><option value="completed">Completed</option></select></label></div>
+          <div class="mg-dev-campaign-field">
+            <div class="mg-program-product-field-head"><span>Campaigns included</span><small>Choose one or more available merchant campaigns for this developer-facing distribution program.</small></div>
+            <div class="mg-dev-campaign-picker" data-program-campaign-picker><p>Loading available campaigns…</p></div>
+          </div>
+          <div class="mg-grid-2"><label>Starts at<input name="starts_at" type="datetime-local"></label><label>Ends at<input name="ends_at" type="datetime-local"></label></div>
+          <div class="mg-grid-2"><label>Budget, cents<input name="budget_cents" type="number" min="0"></label><label>Maximum items<input name="max_items" type="number" min="1"></label></div>
+          <label>Per-recipient limit<input name="per_recipient_limit" type="number" min="1"></label>
+          <div class="mg-form-status" data-program-status-message></div>
+          <div class="mg-dev-program-form-actions"><button class="mg-btn mg-btn-primary" type="submit">Save distribution program</button><button class="mg-btn mg-btn-soft" type="button" data-dev-program-reset>Clear form</button></div>
+        </form>
+      </div>
+    </section>
   </section>
 
   <section class="mg-dev-tab-panel" data-dev-tab-panel="apps" hidden>

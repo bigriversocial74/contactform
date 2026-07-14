@@ -9,6 +9,7 @@ $header_mode='account';
 $page_styles=['/assets/css/merchant-workspace.css','/assets/css/merchant-distribution.css'];
 if ($isDeveloperApi) {
     $page_styles[] = '/assets/css/merchant-developer-api-redesign.css';
+    $page_styles[] = '/assets/css/merchant-developer-api-campaign-builder.css';
 }
 $page_scripts=['/assets/js/merchant-workspace.js','/assets/js/merchant-distribution.js'];
 if (!$isDeveloperApi) {
@@ -16,6 +17,7 @@ if (!$isDeveloperApi) {
 }
 if ($isDeveloperApi) {
     $page_scripts[] = '/assets/js/merchant-developer-api-tabs.js';
+    $page_scripts[] = '/assets/js/merchant-developer-api-campaign-builder.js';
 }
 require __DIR__.'/includes/header.php';
 require __DIR__.'/includes/merchant-workspace.php';
