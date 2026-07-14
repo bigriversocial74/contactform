@@ -57,11 +57,11 @@ function mg_user_contact_relationship_search(PDO $pdo, int $ownerUserId, string 
              WHERE m.list_id=? AND m.owner_user_id=? AND m.contact_user_id=u.id
            ) already_in_list
          FROM users u
-         INNER JOIN social_follows relationship
+         INNER JOIN social_follows sf_rel
            ON (
-             relationship.follower_user_id=? AND relationship.followed_user_id=u.id
+             sf_rel.follower_user_id=? AND sf_rel.followed_user_id=u.id
            ) OR (
-             relationship.followed_user_id=? AND relationship.follower_user_id=u.id
+             sf_rel.followed_user_id=? AND sf_rel.follower_user_id=u.id
            )
          LEFT JOIN public_profiles pp
            ON pp.user_id=u.id
@@ -69,7 +69,7 @@ function mg_user_contact_relationship_search(PDO $pdo, int $ownerUserId, string 
           AND pp.visibility IN ('public','unlisted')
          WHERE u.id<>?
            AND u.status='active'
-           AND relationship.status='active'
+           AND sf_rel.status='active'
            AND (
              u.display_name LIKE ?
              OR u.full_name LIKE ?
