@@ -8,6 +8,7 @@
 .mg-admin-workspace>.mg-mc-shell,
 .mg-admin-workspace>.mg-ai-admin-page,
 .mg-admin-workspace>.mg-ops-queue-shell{width:min(1440px,calc(100% - 32px));margin:0 auto}
+.mg-admin-workspace>.mg-admin-content-page{box-sizing:border-box;width:min(1440px,calc(100% - 32px));margin:0 auto;padding:34px 0 60px}
 .mg-admin-side{display:flex;flex-direction:column;gap:14px}
 .mg-admin-side-brand{margin-bottom:0}
 .mg-admin-side-badge{display:inline-flex;align-items:center;justify-content:center;min-height:26px;padding:0 9px;border:1px solid #bfd2f4;border-radius:999px;background:#eef5ff;color:#1455d9;font-size:9px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}
@@ -60,10 +61,12 @@
   .mg-admin-workspace>.mg-mc-shell,
   .mg-admin-workspace>.mg-ai-admin-page,
   .mg-admin-workspace>.mg-ops-queue-shell{width:min(100% - 20px,1440px)}
+  .mg-admin-workspace>.mg-admin-content-page{width:min(100% - 20px,1440px);padding:26px 0 48px}
   .mg-ops-queue-grid{grid-template-columns:1fr}
   .mg-ops-queue-bar{grid-template-columns:1fr 1fr}
 }
 @media(max-width:640px){
+  .mg-admin-workspace>.mg-admin-content-page{width:calc(100% - 16px);padding:20px 0 36px}
   .mg-admin-side-actions{grid-template-columns:1fr}
   .mg-ai-admin-page .mg-ai-admin-head,.mg-ops-queue-head{display:block}
   .mg-ai-admin-page .mg-ai-admin-head .mg-btn{margin-top:14px}

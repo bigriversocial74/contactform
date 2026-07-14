@@ -9,7 +9,7 @@ $page_title='Loyalty Quest Integrity | Microgifter Admin';
 $page_section='account';
 $header_mode='account';
 $page_body_class='mg-admin-loyalty-quest-integrity-page';
-$page_styles=['/assets/css/admin-shell.css','/assets/css/admin-command-center.css','/assets/css/admin-loyalty-quest-integrity.css'];
+$page_styles=['/assets/css/admin-shell.css','/assets/css/admin-loyalty-quest-integrity.css'];
 $page_scripts=['/assets/js/admin-loyalty-quest-integrity.js'];
 $adminActive='loyalty-quest-integrity';
 require dirname(__DIR__) . '/includes/header.php';
@@ -17,7 +17,7 @@ require dirname(__DIR__) . '/includes/header.php';
 <section class="mg-app-shell mg-admin-app">
   <?php require dirname(__DIR__) . '/includes/admin-sidebar.php'; ?>
   <div class="mg-app-workspace mg-admin-workspace">
-    <main class="mg-admin-main" data-admin-loyalty-quest-integrity>
+    <main class="mg-admin-main mg-admin-content-page" data-admin-loyalty-quest-integrity>
       <section class="mg-admin-page-head mg-lqi-head">
         <div>
           <span class="mg-eyebrow">Trust and integrity</span>
