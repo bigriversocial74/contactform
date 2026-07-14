@@ -13,6 +13,7 @@ $page_styles = [
     '/assets/css/merchant-integrations-square.css?v=1.0.0',
     '/assets/css/merchant-integrations-hubspot.css?v=1.0.0',
     '/assets/css/merchant-integrations-mailchimp.css?v=1.0.0',
+    '/assets/css/merchant-integrations-klaviyo.css?v=1.0.0',
 ];
 $page_scripts = [
     '/assets/js/merchant-workspace.js',
@@ -22,6 +23,7 @@ $page_scripts = [
     '/assets/js/merchant-integrations-square.js?v=1.0.0',
     '/assets/js/merchant-integrations-hubspot.js?v=1.0.0',
     '/assets/js/merchant-integrations-mailchimp.js?v=1.0.0',
+    '/assets/js/merchant-integrations-klaviyo.js?v=1.0.0',
 ];
 $merchantView = 'integrations';
 require __DIR__ . '/includes/header.php';
