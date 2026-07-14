@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/app.php';
 require_once __DIR__ . '/includes/campaign-landing-foundation.php';
+require_once __DIR__ . '/includes/campaign-user-details.php';
 
 $page_title = 'RSVP Event Reward | Microgifter';
 $page_section = 'campaign';
@@ -39,9 +40,7 @@ function mg_rsvp_event_render_join(array $context): void
         <input type="hidden" name="campaign_type" value="rsvp_event_reward">
         <h3>Reserve your spot</h3>
         <p>Submit your RSVP now. Confirmed attendance unlocks the configured event reward.</p>
-        <label>Name<input name="name" placeholder="Your name" maxlength="180" value="<?= mg_e((string)$prefill['name']) ?>"></label>
-        <label>Email<input name="email" type="email" placeholder="you@example.com" required maxlength="255" value="<?= mg_e((string)$prefill['email']) ?>"></label>
-        <label>Phone <span>(optional)</span><input name="phone" placeholder="Optional" maxlength="60"></label>
+        <?php mg_campaign_render_user_details($prefill); ?>
         <?php if ($attendanceEnabled): ?>
           <label class="mg-specialized-check"><input type="checkbox" data-rsvp-attendance-toggle><span>I am at the event and have the attendance code</span></label>
           <div data-rsvp-attendance-panel hidden><label>Attendance code<input name="entry_attendance_code" maxlength="64" placeholder="Enter event code"></label></div>
