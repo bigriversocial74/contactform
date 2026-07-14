@@ -3,18 +3,50 @@ window.Microgifter = window.Microgifter || {};
 (function (window, document) {
   'use strict';
 
-  var MG = window.Microgifter;
-  var root;
+  var root = null;
   var slug = '';
 
-  function one(selector, scope) { return (scope || root || document).querySelector(selector); }
-  function all(selector, scope) { return Array.prototype.slice.call((scope || root || document).querySelectorAll(selector)); }
-  function text(selector, value) { var el = one(selector); if (el) el.textContent = value == null ? '' : String(value); }
-  function hidden(el, state) { if (el) el.classList.toggle('mg-hidden', Boolean(state)); }
-  function clear(el) { if (el) el.replaceChildren(); }
-  function num(value) { var n = Number(value || 0); return Number.isFinite(n) ? n : 0; }
-  function formatNumber(value) { return num(value).toLocaleString(); }
-  function formatMoney(value) { return '$' + num(value).toLocaleString(undefined, { maximumFractionDigits: 0 }); }
+  function one(selector, scope) {
+    return (scope || root || document).querySelector(selector);
+  }
+
+  function text(selector, value) {
+    var element = one(selector);
+    if (element) element.textContent = value == null ? '' : String(value);
+  }
+
+  function hidden(element, state) {
+    if (element) element.classList.toggle('mg-hidden', Boolean(state));
+  }
+
+  function clear(element) {
+    if (element) element.replaceChildren();
+  }
+
+  function num(value) {
+    var parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  function formatNumber(value) {
+    return num(value).toLocaleString();
+  }
+
+  function formatMoney(value) {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 0
+    }).format(num(value));
+  }
+
+  function firstValue(object, keys, fallback) {
+    for (var index = 0; index < keys.length; index += 1) {
+      var value = object && object[keys[index]];
+      if (value !== undefined && value !== null && value !== '') return value;
+    }
+    return fallback;
+  }
 
   function safeUrl(value) {
     var raw = String(value || '').trim();
@@ -25,22 +57,15 @@ window.Microgifter = window.Microgifter || {};
       if (url.username || url.password) return '';
       if (raw.charAt(0) === '/' && (raw.indexOf('//') === 0 || url.origin !== window.location.origin)) return '';
       return raw.charAt(0) === '/' ? url.pathname + url.search + url.hash : url.href;
-    } catch (error) { return ''; }
+    } catch (error) {
+      return '';
+    }
   }
 
-  function firstArray(data, keys) {
-    for (var i = 0; i < keys.length; i += 1) {
-      if (Array.isArray(data && data[keys[i]])) return data[keys[i]];
-    }
-    return [];
-  }
-
-  function firstValue(object, keys, fallback) {
-    for (var i = 0; i < keys.length; i += 1) {
-      var value = object && object[keys[i]];
-      if (value !== undefined && value !== null && value !== '') return value;
-    }
-    return fallback;
+  function normalizeSeries(value) {
+    var series = Array.isArray(value) ? value.slice(0, 7).map(num) : [];
+    while (series.length < 7) series.unshift(0);
+    return series;
   }
 
   function setState(state, error) {
@@ -48,230 +73,390 @@ window.Microgifter = window.Microgifter || {};
     hidden(one('[data-cs-error]'), state !== 'error');
     hidden(one('[data-cs-content]'), state !== 'content');
     root.setAttribute('aria-busy', state === 'loading' ? 'true' : 'false');
+
     if (state === 'error') {
       var notFound = error && Number(error.status) === 404;
       text('[data-cs-error-title]', notFound ? 'Case study not found.' : 'We could not load this case study.');
-      text('[data-cs-error-message]', notFound ? 'This merchant profile may be private, unavailable, or using a different address.' : 'Please check your connection and try again.');
+      text(
+        '[data-cs-error-message]',
+        notFound
+          ? 'This merchant profile may be private, unavailable, or using a different address.'
+          : 'The connected database report could not be loaded. Please try again.'
+      );
     }
   }
 
   function renderImage(target, fallback, url, alt) {
     var image = one(target);
     var fallbackNode = one(fallback);
-    var src = safeUrl(url);
+    var source = safeUrl(url);
+    if (!image || !fallbackNode) return;
+
     hidden(image, true);
     hidden(fallbackNode, false);
     image.removeAttribute('src');
-    if (!src) return;
+    if (!source) return;
+
     image.alt = alt;
-    image.onload = function () { hidden(image, false); hidden(fallbackNode, true); };
-    image.onerror = function () { image.removeAttribute('src'); hidden(image, true); hidden(fallbackNode, false); };
-    image.src = src;
+    image.onload = function () {
+      hidden(image, false);
+      hidden(fallbackNode, true);
+    };
+    image.onerror = function () {
+      image.removeAttribute('src');
+      hidden(image, true);
+      hidden(fallbackNode, false);
+    };
+    image.src = source;
   }
 
   function renderMeta(profile) {
     var container = one('[data-cs-meta]');
     clear(container);
-    [profile.location_label, profile.profile_type ? String(profile.profile_type).replace(/[_-]+/g, ' ') : '', profile.website_url ? 'Verified website' : 'Microgifter merchant'].filter(Boolean).forEach(function (item) {
+    if (!container) return;
+
+    [
+      profile.location_label,
+      profile.profile_type ? String(profile.profile_type).replace(/[_-]+/g, ' ') : '',
+      profile.website_url ? 'Verified website' : 'Microgifter merchant'
+    ].filter(Boolean).forEach(function (item) {
       var span = document.createElement('span');
       span.textContent = item;
       container.appendChild(span);
     });
   }
 
-  function normalizeAnalytics(data, products, campaigns) {
-    var source = data.case_study_analytics || data.analytics || {};
-    var salesSeries = firstArray(source, ['sales_series', 'sales', 'revenue_series']);
-    var claimsSeries = firstArray(source, ['claims_series', 'claims']);
-    var redemptionSeries = firstArray(source, ['redemptions_series', 'redemptions']);
-    var productValue = products.reduce(function (total, item) { return total + num(firstValue(item, ['sales_total', 'revenue', 'amount'], 0)); }, 0);
-    var seed = Math.max(1, products.length * 7 + campaigns.length * 11);
-    function fallback(multiplier) { return [6, 9, 7, 11, 8, 13, 15].map(function (v, i) { return (v * multiplier) + ((seed + i * 3) % 9); }); }
-    if (!salesSeries.length) salesSeries = fallback(Math.max(40, products.length * 18));
-    if (!claimsSeries.length) claimsSeries = fallback(Math.max(4, campaigns.length * 3));
-    if (!redemptionSeries.length) redemptionSeries = claimsSeries.map(function (v, i) { return Math.max(0, Math.round(v * (.42 + (i % 3) * .05))); });
-    var totalSales = num(firstValue(source, ['total_sales', 'gross_sales', 'revenue'], productValue || salesSeries.reduce(function (a, b) { return a + num(b); }, 0)));
-    var totalClaims = num(firstValue(source, ['total_claims', 'claims_total'], claimsSeries.reduce(function (a, b) { return a + num(b); }, 0)));
-    var totalRedemptions = num(firstValue(source, ['total_redemptions', 'redemptions_total'], redemptionSeries.reduce(function (a, b) { return a + num(b); }, 0)));
-    return {
-      totalSales: totalSales,
-      totalClaims: totalClaims,
-      totalRedemptions: totalRedemptions,
-      redemptionRate: num(firstValue(source, ['redemption_rate'], totalClaims ? (totalRedemptions / totalClaims) * 100 : 0)),
-      customerGrowth: num(firstValue(source, ['customer_growth', 'new_customers'], 0)),
-      salesSeries: salesSeries.map(num),
-      claimsSeries: claimsSeries.map(num),
-      redemptionSeries: redemptionSeries.map(num),
-      isFallback: !(data.case_study_analytics || data.analytics)
-    };
-  }
-
   function svgElement(name, attributes) {
-    var el = document.createElementNS('http://www.w3.org/2000/svg', name);
-    Object.keys(attributes || {}).forEach(function (key) { el.setAttribute(key, String(attributes[key])); });
-    return el;
+    var element = document.createElementNS('http://www.w3.org/2000/svg', name);
+    Object.keys(attributes || {}).forEach(function (key) {
+      element.setAttribute(key, String(attributes[key]));
+    });
+    return element;
   }
 
   function renderChart(container, primary, secondary, options) {
+    if (!container) return;
     clear(container);
-    var width = 560, height = 220, left = 28, right = 10, top = 12, bottom = 26;
-    var values = primary.concat(secondary || []);
-    var max = Math.max.apply(Math, values.concat([1]));
+
+    var width = 560;
+    var height = 220;
+    var left = 28;
+    var right = 10;
+    var top = 12;
+    var bottom = 26;
+    var primarySeries = normalizeSeries(primary);
+    var secondarySeries = secondary ? normalizeSeries(secondary) : [];
+    var barSeries = options && options.bars ? normalizeSeries(options.bars) : [];
+    var lineValues = primarySeries.concat(secondarySeries);
+    var lineMax = Math.max.apply(Math, lineValues.concat([1]));
+    var barMax = Math.max.apply(Math, barSeries.concat([1]));
     var svg = svgElement('svg', { viewBox: '0 0 ' + width + ' ' + height, role: 'img' });
-    for (var g = 0; g < 4; g += 1) {
-      var y = top + ((height - top - bottom) / 3) * g;
-      svg.appendChild(svgElement('line', { x1: left, y1: y, x2: width - right, y2: y, class: 'grid' }));
+
+    for (var gridIndex = 0; gridIndex < 4; gridIndex += 1) {
+      var gridY = top + ((height - top - bottom) / 3) * gridIndex;
+      svg.appendChild(svgElement('line', {
+        x1: left,
+        y1: gridY,
+        x2: width - right,
+        y2: gridY,
+        class: 'grid'
+      }));
     }
-    function point(index, value, count) {
-      return { x: left + ((width - left - right) / Math.max(1, count - 1)) * index, y: top + (height - top - bottom) * (1 - value / max) };
+
+    function point(index, value, count, maximum) {
+      return {
+        x: left + ((width - left - right) / Math.max(1, count - 1)) * index,
+        y: top + (height - top - bottom) * (1 - num(value) / Math.max(1, maximum))
+      };
     }
-    if (options && options.bars) {
-      primary.forEach(function (value, i) {
-        var p = point(i, value, primary.length);
-        svg.appendChild(svgElement('rect', { x: p.x - 10, y: p.y, width: 20, height: height - bottom - p.y, rx: 4, class: 'bar' }));
+
+    if (barSeries.length) {
+      barSeries.forEach(function (value, index) {
+        var barPoint = point(index, value, barSeries.length, barMax);
+        svg.appendChild(svgElement('rect', {
+          x: barPoint.x - 10,
+          y: barPoint.y,
+          width: 20,
+          height: Math.max(0, height - bottom - barPoint.y),
+          rx: 4,
+          class: 'bar'
+        }));
       });
     }
-    function line(valuesToDraw, className, dotClass) {
-      var points = valuesToDraw.map(function (v, i) { var p = point(i, v, valuesToDraw.length); return p.x + ',' + p.y; }).join(' ');
+
+    function drawLine(values, className, dotClass) {
+      if (!values.length) return;
+      var points = values.map(function (value, index) {
+        var linePoint = point(index, value, values.length, lineMax);
+        return linePoint.x + ',' + linePoint.y;
+      }).join(' ');
       svg.appendChild(svgElement('polyline', { points: points, class: className }));
-      valuesToDraw.forEach(function (v, i) { var p = point(i, v, valuesToDraw.length); svg.appendChild(svgElement('circle', { cx: p.x, cy: p.y, r: 4, class: dotClass })); });
+      values.forEach(function (value, index) {
+        var dotPoint = point(index, value, values.length, lineMax);
+        svg.appendChild(svgElement('circle', {
+          cx: dotPoint.x,
+          cy: dotPoint.y,
+          r: 4,
+          class: dotClass
+        }));
+      });
     }
-    line(primary, options && options.primaryClass ? options.primaryClass : 'line', options && options.primaryDot ? options.primaryDot : 'dot');
-    if (secondary && secondary.length) line(secondary, options && options.secondaryClass ? options.secondaryClass : 'line line-secondary', options && options.secondaryDot ? options.secondaryDot : 'dot dot-secondary');
-    ['1', '2', '3', '4', '5', '6', '7'].slice(0, primary.length).forEach(function (label, i) {
-      var p = point(i, 0, primary.length);
-      var t = svgElement('text', { x: p.x, y: height - 7, 'text-anchor': 'middle' });
-      t.textContent = label;
-      svg.appendChild(t);
+
+    drawLine(primarySeries, options && options.primaryClass ? options.primaryClass : 'line', options && options.primaryDot ? options.primaryDot : 'dot');
+    if (secondarySeries.length) {
+      drawLine(
+        secondarySeries,
+        options && options.secondaryClass ? options.secondaryClass : 'line line-secondary',
+        options && options.secondaryDot ? options.secondaryDot : 'dot dot-secondary'
+      );
+    }
+
+    ['1', '2', '3', '4', '5', '6', '7'].forEach(function (label, index) {
+      var labelPoint = point(index, 0, 7, 1);
+      var labelNode = svgElement('text', {
+        x: labelPoint.x,
+        y: height - 7,
+        'text-anchor': 'middle'
+      });
+      labelNode.textContent = label;
+      svg.appendChild(labelNode);
     });
+
     container.appendChild(svg);
   }
 
   function renderCampaigns(campaigns) {
     var list = one('[data-cs-campaign-list]');
     clear(list);
+    if (!list) return;
+
     campaigns.slice(0, 4).forEach(function (campaign) {
       var row = document.createElement('article');
       row.className = 'mg-cs-campaign';
+
       var thumb = document.createElement('div');
       thumb.className = 'mg-cs-campaign__thumb';
-      var image = safeUrl(firstValue(campaign, ['image_url', 'cover_url', 'media_url'], ''));
-      if (image) thumb.style.backgroundImage = 'url("' + image.replace(/["'\\\n\r]/g, '') + '")';
+
       var copy = document.createElement('div');
       var title = document.createElement('strong');
       var detail = document.createElement('span');
       title.textContent = firstValue(campaign, ['title', 'name'], 'Campaign');
-      detail.textContent = firstValue(campaign, ['description', 'campaign_type', 'status'], 'Customer campaign');
+
+      var issued = num(campaign.issued_count);
+      var campaignType = String(firstValue(campaign, ['campaign_type'], 'Customer campaign')).replace(/[_-]+/g, ' ');
+      detail.textContent = campaignType + (issued > 0 ? ' · ' + formatNumber(issued) + ' issued' : '');
       copy.append(title, detail);
+
       var status = document.createElement('b');
-      status.textContent = firstValue(campaign, ['status'], 'Active');
+      status.textContent = String(firstValue(campaign, ['status'], 'active')).replace(/[_-]+/g, ' ');
       row.append(thumb, copy, status);
       list.appendChild(row);
     });
+
     hidden(one('[data-cs-campaign-empty]'), campaigns.length > 0);
   }
 
   function renderProducts(products) {
     var grid = one('[data-cs-product-grid]');
     clear(grid);
+    if (!grid) return;
+
     products.slice(0, 4).forEach(function (product) {
       var card = document.createElement('article');
       card.className = 'mg-cs-product';
+
       var image = document.createElement('div');
       image.className = 'mg-cs-product__image';
-      var src = safeUrl(firstValue(product, ['image_url', 'primary_image_url', 'cover_url', 'photo_url'], ''));
-      if (src) image.style.backgroundImage = 'url("' + src.replace(/["'\\\n\r]/g, '') + '")';
+      var source = safeUrl(firstValue(product, ['cover_url', 'image_url', 'primary_image_url'], ''));
+      if (source) image.style.backgroundImage = 'url("' + source.replace(/["'\\\n\r]/g, '') + '")';
+
       var body = document.createElement('div');
       body.className = 'mg-cs-product__body';
       var name = document.createElement('strong');
       var detail = document.createElement('span');
       name.textContent = firstValue(product, ['title', 'name'], 'Featured product');
-      var price = firstValue(product, ['price_label', 'formatted_price'], '');
-      if (!price && firstValue(product, ['price', 'amount'], '') !== '') price = formatMoney(firstValue(product, ['price', 'amount'], 0));
-      detail.textContent = price || firstValue(product, ['description', 'product_type'], 'Available from this merchant');
+      detail.textContent = firstValue(product, ['price_label'], '') || formatMoney(firstValue(product, ['amount'], 0));
       body.append(name, detail);
       card.append(image, body);
       grid.appendChild(card);
     });
+
     hidden(one('[data-cs-product-empty]'), products.length > 0);
+  }
+
+  function renderReview(review, merchantName) {
+    var card = one('.mg-cs-review');
+    if (!review || !String(review.body || '').trim()) {
+      hidden(card, true);
+      return;
+    }
+
+    hidden(card, false);
+    text('[data-cs-review]', '“' + String(review.body).replace(/^[“"]|[”"]$/g, '') + '”');
+    text('[data-cs-review-name]', firstValue(review, ['reviewer_name', 'name'], 'Merchant customer'));
+    text('[data-cs-review-role]', firstValue(review, ['reviewer_role', 'role'], merchantName + ' customer'));
+
+    var rating = Math.max(1, Math.min(5, Math.round(num(review.rating) || 5)));
+    text('[data-cs-review-stars]', '★★★★★'.slice(0, rating) + '☆☆☆☆☆'.slice(0, 5 - rating));
+    var stars = one('[data-cs-review-stars]');
+    if (stars) stars.setAttribute('aria-label', rating + ' out of 5 stars');
+  }
+
+  function renderOutcomes(story, analytics, campaignCount) {
+    var list = one('[data-cs-outcomes]');
+    clear(list);
+    if (!list) return;
+
+    var outcomes = Array.isArray(story.outcomes) ? story.outcomes.filter(Boolean).slice(0, 5) : [];
+    if (!outcomes.length) {
+      outcomes = [
+        formatNumber(campaignCount) + ' active campaigns',
+        formatNumber(analytics.total_claims) + ' claims tracked',
+        formatNumber(analytics.total_redemptions) + ' rewards redeemed'
+      ];
+    }
+
+    outcomes.forEach(function (outcome) {
+      var item = document.createElement('li');
+      item.textContent = String(outcome);
+      list.appendChild(item);
+    });
   }
 
   function renderActivity(campaigns, analytics) {
     var list = one('[data-cs-activity-list]');
     clear(list);
+    if (!list) return;
+
     var items = [];
-    campaigns.slice(0, 2).forEach(function (campaign) { items.push({ icon: '◉', title: firstValue(campaign, ['title', 'name'], 'Campaign') + ' is active', meta: 'Campaign engagement', tag: 'Campaign' }); });
-    items.push({ icon: '✓', title: formatNumber(analytics.totalClaims) + ' campaign claims tracked', meta: 'Current reporting period', tag: 'Claims' });
-    items.push({ icon: '↗', title: formatNumber(analytics.totalRedemptions) + ' rewards redeemed', meta: 'Current reporting period', tag: 'Redemptions' });
-    if (!items.length) items.push({ icon: '•', title: 'Activity will appear as campaigns begin', meta: 'Connected merchant data', tag: 'Ready' });
+    campaigns.filter(function (campaign) {
+      return String(campaign.status || '').toLowerCase() === 'active';
+    }).slice(0, 2).forEach(function (campaign) {
+      items.push({
+        icon: '◉',
+        title: firstValue(campaign, ['title', 'name'], 'Campaign') + ' is active',
+        meta: formatNumber(campaign.issued_count) + ' issued',
+        tag: 'Campaign'
+      });
+    });
+
+    items.push({
+      icon: '✓',
+      title: formatNumber(analytics.total_claims) + ' campaign claims tracked',
+      meta: 'Database reporting period',
+      tag: 'Claims'
+    });
+    items.push({
+      icon: '↗',
+      title: formatNumber(analytics.total_redemptions) + ' rewards redeemed',
+      meta: 'Database reporting period',
+      tag: 'Redemptions'
+    });
+
     items.slice(0, 4).forEach(function (item) {
-      var row = document.createElement('div'); row.className = 'mg-cs-activity';
-      var icon = document.createElement('i'); icon.textContent = item.icon;
-      var copy = document.createElement('div'); var title = document.createElement('strong'); var meta = document.createElement('span');
-      title.textContent = item.title; meta.textContent = item.meta; copy.append(title, meta);
-      var tag = document.createElement('b'); tag.textContent = item.tag;
-      row.append(icon, copy, tag); list.appendChild(row);
+      var row = document.createElement('div');
+      row.className = 'mg-cs-activity';
+      var icon = document.createElement('i');
+      icon.textContent = item.icon;
+      var copy = document.createElement('div');
+      var title = document.createElement('strong');
+      var meta = document.createElement('span');
+      title.textContent = item.title;
+      meta.textContent = item.meta;
+      copy.append(title, meta);
+      var tag = document.createElement('b');
+      tag.textContent = item.tag;
+      row.append(icon, copy, tag);
+      list.appendChild(row);
     });
   }
 
   function render(data) {
     var profile = data.profile || {};
-    var counts = data.social_counts || data.counts || {};
-    var products = firstArray(data, ['products', 'featured_products', 'published_products']);
-    var campaigns = firstArray(data, ['campaigns', 'active_campaigns', 'featured_campaigns']);
-    var analytics = normalizeAnalytics(data, products, campaigns);
-    var name = firstValue(profile, ['business_name', 'display_name', 'name'], 'Microgifter Merchant');
-    var brief = firstValue(profile, ['biography', 'description', 'about'], 'This merchant uses Microgifter to connect product promotion, campaigns, customer rewards, and measurable engagement.');
-    var headline = firstValue(profile, ['headline', 'tagline'], 'Turning customer engagement into measurable local commerce.');
+    var counts = data.counts || {};
+    var products = Array.isArray(data.products) ? data.products : [];
+    var campaigns = Array.isArray(data.campaigns) ? data.campaigns : [];
+    var analytics = data.case_study_analytics || {};
+    var story = data.case_study || {};
+    var merchantName = firstValue(profile, ['display_name', 'business_name', 'name'], 'Microgifter Merchant');
+    var biography = firstValue(profile, ['biography', 'description', 'about'], '');
+    var headline = firstValue(profile, ['headline', 'tagline'], '');
+    var activeCampaignCount = num(counts.active_campaigns);
 
-    document.title = name + ' Case Study | Microgifter';
-    text('[data-cs-name]', name);
-    text('[data-cs-crumb]', name);
+    document.title = merchantName + ' Case Study | Microgifter';
+    text('[data-cs-name]', merchantName);
+    text('[data-cs-crumb]', merchantName);
     text('[data-cs-headline]', headline);
-    text('[data-cs-brief]', brief);
+    text('[data-cs-brief]', biography);
     renderMeta(profile);
 
     var cover = safeUrl(firstValue(profile, ['cover_url', 'cover_image_url', 'banner_url'], ''));
-    if (cover) one('[data-cs-cover]').style.backgroundImage = 'url("' + cover.replace(/["'\\\n\r]/g, '') + '")';
-    text('[data-cs-avatar-fallback]', String(name).charAt(0).toUpperCase());
-    renderImage('[data-cs-avatar]', '[data-cs-avatar-fallback]', firstValue(profile, ['avatar_url', 'profile_image_url', 'logo_url'], ''), name + ' profile image');
+    var coverNode = one('[data-cs-cover]');
+    if (coverNode) coverNode.style.backgroundImage = cover ? 'url("' + cover.replace(/["'\\\n\r]/g, '') + '")' : '';
 
-    var productCount = num(firstValue(counts, ['published_products', 'products'], products.length));
-    var campaignCount = num(firstValue(counts, ['active_campaigns', 'campaigns'], campaigns.length));
-    text('[data-cs-products]', formatNumber(productCount));
-    text('[data-cs-campaigns]', formatNumber(campaignCount));
-    text('[data-cs-sales]', formatMoney(analytics.totalSales));
-    text('[data-cs-chart-sales]', formatMoney(analytics.totalSales));
-    text('[data-cs-redemption]', analytics.redemptionRate.toFixed(1) + '%');
-    text('[data-cs-growth]', formatNumber(analytics.customerGrowth));
-    text('[data-cs-claims]', formatNumber(analytics.totalClaims));
-    text('[data-cs-redemptions]', formatNumber(analytics.totalRedemptions));
-    text('[data-cs-sales-note]', analytics.isFallback ? 'Analytics-ready estimate' : 'Connected reporting period');
+    text('[data-cs-avatar-fallback]', String(merchantName).charAt(0).toUpperCase());
+    renderImage(
+      '[data-cs-avatar]',
+      '[data-cs-avatar-fallback]',
+      firstValue(profile, ['avatar_url', 'profile_image_url', 'logo_url'], ''),
+      merchantName + ' profile image'
+    );
 
-    var review = data.featured_review || (Array.isArray(data.reviews) ? data.reviews[0] : null) || {};
-    text('[data-cs-review]', firstValue(review, ['quote', 'body', 'comment'], '“Microgifter gave us a simpler way to launch campaigns, reward customers, and see what is working.”'));
-    text('[data-cs-review-name]', firstValue(review, ['reviewer_name', 'name', 'author_name'], 'Merchant Owner'));
-    text('[data-cs-review-role]', firstValue(review, ['reviewer_role', 'role'], name + ' customer story'));
+    text('[data-cs-products]', formatNumber(counts.published_products));
+    text('[data-cs-campaigns]', formatNumber(activeCampaignCount));
+    text('[data-cs-sales]', formatMoney(analytics.total_sales));
+    text('[data-cs-chart-sales]', formatMoney(analytics.total_sales));
+    text('[data-cs-redemption]', num(analytics.redemption_rate).toFixed(1) + '%');
+    text('[data-cs-growth]', formatNumber(analytics.customer_growth));
+    text('[data-cs-claims]', formatNumber(analytics.total_claims));
+    text('[data-cs-redemptions]', formatNumber(analytics.total_redemptions));
+    text('[data-cs-sales-note]', 'Captured commerce orders · cash and online');
 
-    var story = data.case_study || {};
-    text('[data-cs-challenge]', firstValue(story, ['challenge'], 'The merchant needed a clearer way to promote products, increase repeat visits, and understand campaign performance.'));
-    text('[data-cs-solution]', firstValue(story, ['solution'], 'Microgifter connected product promotion, gifting, rewards, claims, and customer engagement in one campaign workflow.'));
-
+    renderReview(data.featured_review, merchantName);
+    text('[data-cs-challenge]', firstValue(story, ['challenge'], biography || 'No curated challenge has been published yet.'));
+    text('[data-cs-solution]', firstValue(story, ['solution'], headline || 'No curated solution has been published yet.'));
+    renderOutcomes(story, analytics, activeCampaignCount);
     renderCampaigns(campaigns);
     renderProducts(products);
     renderActivity(campaigns, analytics);
-    renderChart(one('[data-cs-sales-chart]'), analytics.salesSeries, [], { bars: true });
-    renderChart(one('[data-cs-activity-chart]'), analytics.claimsSeries, analytics.redemptionSeries, { primaryClass: 'line', secondaryClass: 'line line-secondary', primaryDot: 'dot', secondaryDot: 'dot dot-secondary' });
+    renderChart(one('[data-cs-sales-chart]'), analytics.sales_series, null, { bars: analytics.orders_series });
+    renderChart(one('[data-cs-activity-chart]'), analytics.claims_series, analytics.redemptions_series, {
+      primaryClass: 'line',
+      secondaryClass: 'line line-secondary',
+      primaryDot: 'dot',
+      secondaryDot: 'dot dot-secondary'
+    });
+
+    root.dataset.statsSource = 'database';
+    root.dataset.salesSource = String(analytics.sales_source || 'commerce_orders');
     setState('content');
   }
 
   async function load() {
-    if (!slug) { setState('error', { status: 404 }); return; }
+    if (!slug) {
+      setState('error', { status: 404 });
+      return;
+    }
+
     setState('loading');
     try {
-      var response = await MG.get('/api/public/profile.php?slug=' + encodeURIComponent(slug) + '&product_limit=8&post_limit=1&plan_limit=1');
-      render(response && response.data ? response.data : response);
-    } catch (error) { setState('error', error || {}); }
+      var response = await fetch('/api/public/case-studies/stats.php?slug=' + encodeURIComponent(slug), {
+        method: 'GET',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: { Accept: 'application/json' }
+      });
+      var payload = await response.json();
+      if (!response.ok || !payload || payload.ok !== true) {
+        var requestError = new Error(payload && payload.message ? payload.message : 'Unable to load case study.');
+        requestError.status = response.status;
+        throw requestError;
+      }
+      render(payload.data || {});
+    } catch (error) {
+      root.dataset.statsSource = 'unavailable';
+      setState('error', error || {});
+    }
   }
 
   function init() {
