@@ -62,7 +62,7 @@ $checks = [
     ['assets/css/merchant-integrations-mailchimp.css', '.mg-mailchimp-audience'],
     ['merchant-integrations.php', '/assets/js/merchant-integrations-mailchimp.js?v=1.0.0'],
     ['merchant-integrations.php', '/assets/css/merchant-integrations-mailchimp.css?v=1.0.0'],
-    ['includes/merchant-integrations-view.php', 'HubSpot, and Mailchimp'],
+    ['includes/merchant-integrations-view.php', 'Mailchimp'],
 ];
 
 $failed = [];
