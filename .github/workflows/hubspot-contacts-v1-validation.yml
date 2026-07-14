@@ -1,0 +1,52 @@
+name: HubSpot Contacts v1 Validation
+
+on:
+  pull_request:
+    paths:
+      - 'includes/integrations/providers/hubspot.php'
+      - 'includes/integrations/hubspot-contacts.php'
+      - 'merchant-integrations-hubspot-callback.php'
+      - 'api/merchant/integrations.php'
+      - 'merchant-integrations.php'
+      - 'assets/js/merchant-integrations-hubspot.js'
+      - 'assets/css/merchant-integrations-hubspot.css'
+      - 'scripts/validate_hubspot_contacts_v1.php'
+      - '.github/workflows/hubspot-contacts-v1-validation.yml'
+  push:
+    paths:
+      - 'includes/integrations/providers/hubspot.php'
+      - 'includes/integrations/hubspot-contacts.php'
+      - 'merchant-integrations-hubspot-callback.php'
+      - 'api/merchant/integrations.php'
+      - 'merchant-integrations.php'
+      - 'assets/js/merchant-integrations-hubspot.js'
+      - 'assets/css/merchant-integrations-hubspot.css'
+      - 'scripts/validate_hubspot_contacts_v1.php'
+      - '.github/workflows/hubspot-contacts-v1-validation.yml'
+
+jobs:
+  validate:
+    strategy:
+      matrix:
+        php: ['8.2', '8.3']
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: PHP syntax
+        run: |
+          php -l includes/integrations/providers/hubspot.php
+          php -l includes/integrations/hubspot-contacts.php
+          php -l merchant-integrations-hubspot-callback.php
+          php -l api/merchant/integrations.php
+          php -l merchant-integrations.php
+          php -l scripts/validate_hubspot_contacts_v1.php
+      - name: JavaScript syntax
+        run: node --check assets/js/merchant-integrations-hubspot.js
+      - name: HubSpot Contacts contract
+        run: php scripts/validate_hubspot_contacts_v1.php
