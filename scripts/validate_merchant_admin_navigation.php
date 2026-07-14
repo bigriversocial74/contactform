@@ -13,13 +13,13 @@ $agentSidebar = is_file($agentSidebarPath) ? (string) file_get_contents($agentSi
 $appSidebar = is_file($appSidebarPath) ? (string) file_get_contents($appSidebarPath) : '';
 
 $requiredFragments = [
+    "'overview' => ['Dashboard', 'Workspace health', '/merchant.php', '']",
     "'products' => ['Products', 'Catalog and builder', '/merchant-products.php', 'Products & Engagement']",
     "'reward_templates' => ['Rewards', 'Wallet-ready offers', '/merchant-reward-templates.php', 'Products & Engagement']",
     "'campaigns' => ['Campaigns', 'Forms, contests, QR drops', '/merchant-campaigns.php', 'Products & Engagement']",
     "'claims' => ['Claims', 'Verification and redemption', '/merchant-claims.php', 'Products & Engagement']",
     "'locations' => ['Locations', 'Stores and claim scope', '/merchant-locations.php', 'Products & Engagement']",
     "'loyalty_quests' => ['Loyalty Quests', 'Challenges, proof, and rewards', '/merchant-loyalty-quests.php', 'Products & Engagement']",
-    "'overview' => ['Overview', 'Workspace health', '/merchant.php', 'Insights & Records']",
     "'notifications' => ['Notifications', 'Tips, voucher messages, alerts', '/merchant-notifications.php', 'Insights & Records']",
     "'orders' => ['My Orders', 'Payments and delivery recovery', '/merchant-orders.php', 'Insights & Records']",
     "'stamps' => ['My Stamps / Ledger', 'Sends and balance', '/merchant-stamps.php', 'Insights & Records']",
@@ -178,7 +178,9 @@ $agentSidebarUsesCentralNavigation = str_contains($agentSidebar, "require_once _
 $appSidebarEnforcesCentralNavigation = str_contains($appSidebar, "str_starts_with(\$currentSidebarScript, 'merchant-')")
     && str_contains($appSidebar, "require_once __DIR__ . '/merchant-navigation.php'")
     && str_contains($appSidebar, "\$appSidebarVariant = 'merchant'")
-    && str_contains($appSidebar, 'mg_merchant_navigation_sidebar($appSidebarActive)');
+    && str_contains($appSidebar, 'mg_merchant_navigation_sidebar($appSidebarActive)')
+    && str_contains($appSidebar, 'data-merchant-nav-accordions')
+    && str_contains($appSidebar, '<details class="mg-side-nav-accordion"');
 
 $ok = $navigation !== ''
     && $workspace !== ''
