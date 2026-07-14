@@ -4,6 +4,8 @@ declare(strict_types=1);
 require_once __DIR__ . '/includes/app.php';
 require_once __DIR__ . '/includes/package-entitlements.php';
 require_once __DIR__ . '/includes/merchant-integrations.php';
+require_once __DIR__ . '/includes/merchant-crm.php';
+require_once __DIR__ . '/includes/integrations/squarespace-contacts.php';
 
 $user = mg_current_user();
 if (!$user) {
@@ -34,9 +36,16 @@ if ($error !== '') {
 try {
     if ($state === '' || $code === '') throw new RuntimeException('Squarespace did not return a valid authorization response.');
     $connection = mg_integration_complete_oauth($pdo, $merchantUserId, 'squarespace', $state, $code);
-    mg_audit('merchant.integration.connected', 'merchant_integration', ['provider' => 'squarespace', 'connection_id' => $connection['id'] ?? null], $merchantUserId);
-    mg_security_log('notice', 'merchant.integration.connected', 'Squarespace integration connected.', ['provider' => 'squarespace'], $merchantUserId);
-    header('Location: /merchant-integrations.php?oauth=connected&provider=squarespace', true, 302);
+    $webhook = mg_squarespace_setup_contact_webhook($pdo, $merchantUserId);
+    mg_audit('merchant.integration.connected', 'merchant_integration', [
+        'provider' => 'squarespace',
+        'connection_id' => $connection['id'] ?? null,
+        'contact_webhook_configured' => (bool)($webhook['configured'] ?? false),
+        'addresses_enabled' => false,
+    ], $merchantUserId);
+    mg_security_log('notice', 'merchant.integration.connected', 'Squarespace integration connected.', ['provider' => 'squarespace', 'contact_webhook_configured' => (bool)($webhook['configured'] ?? false)], $merchantUserId);
+    $result = !empty($webhook['configured']) ? 'connected' : 'connected_webhook_warning';
+    header('Location: /merchant-integrations.php?oauth=' . $result . '&provider=squarespace', true, 302);
     exit;
 } catch (Throwable $failure) {
     mg_integration_mark_error($pdo, $merchantUserId, 'squarespace', $failure::class, $failure->getMessage());
