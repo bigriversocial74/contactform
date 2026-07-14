@@ -64,6 +64,171 @@
   background: rgba(254, 242, 242, .9);
 }
 
+.mg-campaign-user-details {
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, .09);
+  border-radius: 15px;
+  background: rgba(248, 250, 252, .88);
+}
+
+.mg-campaign-user-details summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 58px;
+  padding: 11px 13px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.mg-campaign-user-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.mg-campaign-user-details summary:focus-visible {
+  outline: 3px solid rgba(18, 96, 255, .2);
+  outline-offset: -3px;
+}
+
+.mg-campaign-user-details-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.mg-campaign-user-details-copy strong {
+  color: #071129;
+  font-size: 12px;
+  font-weight: 820;
+  letter-spacing: -.01em;
+}
+
+.mg-campaign-user-details-copy small {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 640;
+  line-height: 1.35;
+}
+
+.mg-campaign-user-details-toggle {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, .08);
+}
+
+.mg-campaign-user-details-toggle::before,
+.mg-campaign-user-details-toggle::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 2px;
+  border-radius: 999px;
+  background: #334155;
+  transform: translate(-50%, -50%);
+  transition: transform .2s ease, opacity .2s ease;
+}
+
+.mg-campaign-user-details-toggle::after {
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+.mg-campaign-user-details[open] .mg-campaign-user-details-toggle::after {
+  opacity: 0;
+  transform: translate(-50%, -50%) rotate(0deg);
+}
+
+.mg-campaign-user-details[open] summary {
+  border-bottom: 1px solid rgba(15, 23, 42, .07);
+  background: rgba(255, 255, 255, .74);
+}
+
+.mg-campaign-user-details-fields {
+  display: grid;
+  gap: 12px;
+  padding: 13px;
+}
+
+.mg-campaign-user-details.is-authenticated:not([open]) {
+  background: rgba(239, 246, 255, .8);
+  border-color: rgba(18, 96, 255, .13);
+}
+
+.mg-rl-stamp .mg-stamp-summary {
+  grid-template-columns: 1fr;
+}
+
+.mg-rl-stamp .mg-stamp-summary-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.mg-rl-stamp .mg-stamp-summary-grid {
+  display: grid;
+  grid-template-columns: minmax(0, .82fr) minmax(0, 1.18fr);
+}
+
+.mg-rl-stamp .mg-stamp-summary-section {
+  min-width: 0;
+  padding: 18px;
+}
+
+.mg-rl-stamp .mg-stamp-summary-section + .mg-stamp-summary-section {
+  border-left: 1px solid rgba(15, 23, 42, .07);
+}
+
+.mg-rl-stamp .mg-stamp-summary-section h3,
+.mg-rl-stamp .mg-stamp-summary-updates h3 {
+  margin: 5px 0 0;
+}
+
+.mg-rl-stamp .mg-stamp-summary-section > p {
+  margin: 7px 0 0;
+  color: #344860;
+  font-size: 12px;
+  line-height: 1.45;
+  font-weight: 620;
+}
+
+.mg-rl-stamp .mg-stamp-summary-updates {
+  padding: 18px;
+  border-top: 1px solid rgba(15, 23, 42, .07);
+  background: rgba(248, 250, 252, .78);
+}
+
+.mg-rl-stamp .mg-stamp-summary-updates .mg-public-campaign-status {
+  margin-top: 8px;
+}
+
+.mg-rl-stamp .mg-stamp-summary-updates .mg-public-campaign-result.is-visible {
+  margin-top: 12px;
+}
+
+@media (min-width: 1181px) {
+  .mg-rl-page[data-public-campaign-page] .mg-rl-wrap {
+    min-height: calc(100svh - 84px);
+  }
+
+  .mg-rl-page[data-public-campaign-page] .mg-rl-wrap > .mg-rl-join-desktop {
+    align-self: start !important;
+    top: 98px !important;
+    bottom: auto !important;
+  }
+
+  .mg-rl-page[data-public-campaign-page] .mg-rl-wrap:has(> .mg-rl-join-desktop .mg-campaign-user-details[open]) > .mg-rl-join-desktop {
+    align-self: end !important;
+    top: auto !important;
+    bottom: 32px !important;
+  }
+}
+
 @media (max-width: 720px) {
   .mg-rl-campaign-foundation .mg-public-campaign-trust-row span,
   .mg-rl-watch .mg-public-campaign-trust-row span,
@@ -73,5 +238,18 @@
 
   .mg-rl-campaign-foundation .mg-rl-state-card .mg-rl-btn {
     width: 100%;
+  }
+
+  .mg-campaign-user-details summary {
+    min-height: 54px;
+  }
+
+  .mg-rl-stamp .mg-stamp-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mg-rl-stamp .mg-stamp-summary-section + .mg-stamp-summary-section {
+    border-top: 1px solid rgba(15, 23, 42, .07);
+    border-left: 0;
   }
 }
