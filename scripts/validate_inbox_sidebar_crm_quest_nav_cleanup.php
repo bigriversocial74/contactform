@@ -199,7 +199,7 @@ try {
     foreach ([
         'merchant-loyalty-quests-view.php',
         'merchant-loyalty-quest-creative-view.php',
-        'merchant-quest-reviews-view.php',
+        'merchant-loyalty-quest-reviews-view.php',
         'merchant-loyalty-quest-delivery-view.php',
         'merchant-loyalty-quest-analytics-view.php',
     ] as $viewMarker) {
