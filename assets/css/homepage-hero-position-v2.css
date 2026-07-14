@@ -1,0 +1,21 @@
+/* Homepage hero focal-point correction and homepage-only public nav cleanup. */
+body[data-page-id="index"] .mg-lb-hero-visual img{
+  object-position:68% center;
+}
+
+body[data-page-id="index"] .mg-unified-header .mg-public-nav a[href="/discover.php"],
+body[data-page-id="index"] .mg-public-mobile-nav a[href="/discover.php"]{
+  display:none!important;
+}
+
+@media (max-width:1180px){
+  body[data-page-id="index"] .mg-lb-hero-visual img{
+    object-position:62% center;
+  }
+}
+
+@media (max-width:760px){
+  body[data-page-id="index"] .mg-lb-hero-visual img{
+    object-position:58% center;
+  }
+}
