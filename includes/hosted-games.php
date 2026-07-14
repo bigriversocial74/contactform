@@ -64,7 +64,7 @@ function mg_hosted_game_slug(string $value): string
     $value = strtolower(trim($value));
     $value = preg_replace('/[^a-z0-9]+/', '-', $value) ?? '';
     $value = trim($value, '-');
-    if ($value === '' || strlen($value) > 140 || preg_match('/^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/', $value) !== 1) {
+    if ($value === '' || strlen($value) > 140 || preg_match('/^(?:[a-z0-9]|[a-z0-9][a-z0-9-]*[a-z0-9])$/', $value) !== 1) {
         throw new InvalidArgumentException('Enter a valid game URL slug using letters, numbers, and hyphens.');
     }
     return $value;
@@ -72,16 +72,26 @@ function mg_hosted_game_slug(string $value): string
 
 function mg_hosted_game_base_url(): string
 {
-    $host = preg_replace('/[^A-Za-z0-9.:-]/', '', (string)($_SERVER['HTTP_HOST'] ?? 'microgifter.com')) ?: 'microgifter.com';
-    $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || strtolower((string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
-    return ($https ? 'https://' : 'http://') . $host;
+    static $baseUrl = null;
+    if (is_string($baseUrl)) return $baseUrl;
+
+    foreach (['MG_HOSTED_GAMES_BASE_URL', 'MG_PUBLIC_BASE_URL', 'MG_APP_BASE_URL', 'APP_URL'] as $key) {
+        $candidate = rtrim(trim((string)(getenv($key) ?: '')), '/');
+        if ($candidate === '') continue;
+        $parts = parse_url($candidate);
+        if (is_array($parts) && in_array(strtolower((string)($parts['scheme'] ?? '')), ['https', 'http'], true) && !empty($parts['host'])) {
+            return $baseUrl = $candidate;
+        }
+    }
+
+    return $baseUrl = 'https://microgifter.com';
 }
 
 function mg_hosted_game_origin(): string
 {
     $parts = parse_url(mg_hosted_game_base_url());
     return is_array($parts) && !empty($parts['scheme']) && !empty($parts['host'])
-        ? $parts['scheme'] . '://' . $parts['host'] . (isset($parts['port']) ? ':' . (int)$parts['port'] : '')
+        ? strtolower((string)$parts['scheme']) . '://' . strtolower((string)$parts['host']) . (isset($parts['port']) ? ':' . (int)$parts['port'] : '')
         : 'https://microgifter.com';
 }
 
@@ -165,21 +175,27 @@ function mg_hosted_game_by_public_id(PDO $pdo, string $gamePublicId, bool $forUp
 
 function mg_hosted_game_by_slug(PDO $pdo, string $slug, bool $includeInactive = false): ?array
 {
-    $where = $includeInactive ? '' : " AND hg.status='active'";
+    $statusSql = $includeInactive ? '' : " AND hg.status='active'";
     $stmt = $pdo->prepare(
-        "SELECT hg.*,hgr.storage_key,hgr.package_checksum,hgr.manifest_json,hgr.file_count,hgr.extracted_bytes,hgr.version_number,
-                mda.status AS app_status,mda.environment AS app_environment,mak.status AS key_status,mak.environment AS key_environment,
-                dp.status AS program_status,c.status AS campaign_status,c.title AS campaign_title,
+        "SELECT hg.*,hgr.storage_key,hgr.package_checksum,hgr.manifest_json,hgr.file_count,hgr.extracted_bytes,hgr.version_number,hgr.status AS release_status,
+                mda.status AS app_status,mda.environment AS app_environment,mda.webhook_url,
+                mak.status AS key_status,mak.environment AS key_environment,mak.scopes_json AS key_scopes_json,
+                dp.public_id AS program_public_id,dp.name AS program_name,dp.status AS program_status,dp.starts_at AS program_starts_at,dp.ends_at AS program_ends_at,
+                c.public_id AS campaign_public_id,c.status AS campaign_status,c.title AS campaign_title,
+                cpt.public_id AS pppm_public_id,cpt.status AS template_status,
+                dpp.status AS program_product_status,
                 cpv.title AS reward_title,cpv.unit_value_cents AS reward_value_cents,cpv.currency AS reward_currency
          FROM hosted_games hg
          LEFT JOIN hosted_game_releases hgr ON hgr.public_id=hg.current_release_public_id AND hgr.game_id=hg.id
-         LEFT JOIN merchant_developer_apps mda ON mda.id=hg.developer_app_id
-         LEFT JOIN merchant_api_keys mak ON mak.id=hg.api_key_id
-         LEFT JOIN distribution_programs dp ON dp.id=hg.distribution_program_id
-         LEFT JOIN campaigns c ON c.id=hg.campaign_id
+         LEFT JOIN merchant_developer_apps mda ON mda.id=hg.developer_app_id AND mda.merchant_user_id=hg.merchant_user_id
+         LEFT JOIN merchant_api_keys mak ON mak.id=hg.api_key_id AND mak.app_id=hg.developer_app_id AND mak.merchant_user_id=hg.merchant_user_id
+         LEFT JOIN distribution_programs dp ON dp.id=hg.distribution_program_id AND dp.merchant_user_id=hg.merchant_user_id
+         LEFT JOIN campaigns c ON c.id=hg.campaign_id AND c.merchant_user_id=hg.merchant_user_id
          LEFT JOIN catalog_pppm_templates cpt ON cpt.id=hg.pppm_template_id
          LEFT JOIN catalog_product_versions cpv ON cpv.id=cpt.product_version_id
-         WHERE hg.slug=?{$where}
+         LEFT JOIN catalog_products cp ON cp.id=cpv.product_id AND cp.merchant_user_id=hg.merchant_user_id
+         LEFT JOIN distribution_program_products dpp ON dpp.program_id=hg.distribution_program_id AND dpp.pppm_template_id=hg.pppm_template_id
+         WHERE hg.slug=?{$statusSql}
          LIMIT 1"
     );
     $stmt->execute([$slug]);
@@ -201,9 +217,9 @@ function mg_hosted_game_secrets(PDO $pdo, int $gameId): array
 
 function mg_hosted_game_save_secrets(PDO $pdo, int $gameId, array $values): void
 {
-    $existing = $pdo->prepare('SELECT * FROM hosted_game_secrets WHERE game_id=? LIMIT 1 FOR UPDATE');
-    $existing->execute([$gameId]);
-    $row = $existing->fetch(PDO::FETCH_ASSOC) ?: [];
+    $stmt = $pdo->prepare('SELECT * FROM hosted_game_secrets WHERE game_id=? LIMIT 1 FOR UPDATE');
+    $stmt->execute([$gameId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
     $apiCipher = array_key_exists('api_credential', $values)
         ? mg_hosted_game_encrypt_secret((string)$values['api_credential'])
         : (string)($row['api_credential_ciphertext'] ?? '');
@@ -213,37 +229,50 @@ function mg_hosted_game_save_secrets(PDO $pdo, int $gameId, array $values): void
     $stateCipher = array_key_exists('state_secret', $values)
         ? mg_hosted_game_encrypt_secret((string)$values['state_secret'])
         : (string)($row['state_secret_ciphertext'] ?? '');
+
     if ($row) {
         $pdo->prepare('UPDATE hosted_game_secrets SET api_credential_ciphertext=?,webhook_secret_ciphertext=?,state_secret_ciphertext=?,rotated_at=NOW(),updated_at=NOW() WHERE game_id=?')
             ->execute([$apiCipher ?: null, $webhookCipher ?: null, $stateCipher ?: null, $gameId]);
-    } else {
-        $pdo->prepare('INSERT INTO hosted_game_secrets (game_id,api_credential_ciphertext,webhook_secret_ciphertext,state_secret_ciphertext,encryption_version,rotated_at,created_at,updated_at) VALUES (?,?,?,?,\'secretbox-v1\',NOW(),NOW(),NOW())')
-            ->execute([$gameId, $apiCipher ?: null, $webhookCipher ?: null, $stateCipher ?: null]);
+        return;
     }
+    $pdo->prepare("INSERT INTO hosted_game_secrets (game_id,api_credential_ciphertext,webhook_secret_ciphertext,state_secret_ciphertext,encryption_version,rotated_at,created_at,updated_at) VALUES (?,?,?,?,'secretbox-v1',NOW(),NOW(),NOW())")
+        ->execute([$gameId, $apiCipher ?: null, $webhookCipher ?: null, $stateCipher ?: null]);
 }
 
 function mg_hosted_game_credential_material(string $environment = 'live'): array
 {
     $environment = $environment === 'test' ? 'test' : 'live';
     $value = 'mg_' . $environment . '_' . bin2hex(random_bytes(24));
-    return [
-        'value' => $value,
-        'prefix' => substr($value, 0, 24),
-        'digest' => hash('sha256', $value),
-    ];
+    return ['value'=>$value,'prefix'=>substr($value,0,24),'digest'=>hash('sha256',$value)];
 }
 
 function mg_hosted_game_webhook_material(): array
 {
     $secret = bin2hex(random_bytes(32));
-    return ['secret' => $secret, 'hint' => substr($secret, 0, 8) . '…' . substr($secret, -6)];
+    return ['secret'=>$secret,'hint'=>substr($secret,0,8) . '…' . substr($secret,-6)];
+}
+
+function mg_hosted_game_create_source_connection(PDO $pdo, array $game, int $programDbId): int
+{
+    $sourcePublicId = mg_hosted_game_uuid();
+    $providerKey = 'hosted-game-' . substr(str_replace('-', '', (string)$game['public_id']), 0, 20);
+    $pdo->prepare("INSERT INTO distribution_source_connections (public_id,merchant_user_id,program_id,source_type,provider_key,display_name,status,secret_hash,configuration_json,created_at,updated_at) VALUES (?,?,?,'gaming',?,?,'active',?,?,NOW(),NOW())")
+        ->execute([
+            $sourcePublicId,
+            (int)$game['merchant_user_id'],
+            $programDbId,
+            $providerKey,
+            (string)$game['name'] . ' hosted game',
+            hash('sha256',$sourcePublicId . '|' . $providerKey),
+            mg_hosted_game_json_encode(['environment'=>'live','hosted_game_id'=>(string)$game['public_id']]),
+        ]);
+    return (int)$pdo->lastInsertId();
 }
 
 function mg_hosted_game_ensure_runtime_integration(PDO $pdo, array $game, int $actorUserId, int $programDbId): array
 {
-    if (!mg_hosted_game_encryption_ready()) {
-        throw new MgHostedGameException('Hosted game credential encryption is not configured.');
-    }
+    if (!mg_hosted_game_encryption_ready()) throw new MgHostedGameException('Hosted game credential encryption is not configured.');
+
     $merchantUserId = (int)$game['merchant_user_id'];
     $gameId = (int)$game['id'];
     $gamePublicId = (string)$game['public_id'];
@@ -251,50 +280,62 @@ function mg_hosted_game_ensure_runtime_integration(PDO $pdo, array $game, int $a
     $webhookUrl = mg_hosted_game_base_url() . '/api/hosted-games/webhook.php?game=' . rawurlencode($gamePublicId);
     $origin = mg_hosted_game_origin();
     $app = null;
+
     if (!empty($game['developer_app_id'])) {
         $stmt = $pdo->prepare('SELECT * FROM merchant_developer_apps WHERE id=? AND merchant_user_id=? LIMIT 1 FOR UPDATE');
-        $stmt->execute([(int)$game['developer_app_id'], $merchantUserId]);
+        $stmt->execute([(int)$game['developer_app_id'],$merchantUserId]);
         $app = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
     $newSecrets = [];
     if (!$app) {
-        $sourcePublicId = mg_hosted_game_uuid();
+        $sourceDbId = mg_hosted_game_create_source_connection($pdo,$game,$programDbId);
         $appPublicId = mg_hosted_game_uuid();
-        $providerKey = 'hosted-game-' . substr(str_replace('-', '', $gamePublicId), 0, 20);
         $webhook = mg_hosted_game_webhook_material();
         $metadata = [
-            'managed_by' => 'hosted-games-v1',
-            'hosted_game_id' => $gamePublicId,
-            'webhook_secret_hint' => $webhook['hint'],
-            'webhook_secret_rotated_at' => gmdate('c'),
-            'webhook_signature_version' => 'v1',
+            'managed_by'=>'hosted-games-v1',
+            'hosted_game_id'=>$gamePublicId,
+            'webhook_secret_hint'=>$webhook['hint'],
+            'webhook_secret_rotated_at'=>gmdate('c'),
+            'webhook_signature_version'=>'v1',
         ];
-        $pdo->prepare("INSERT INTO distribution_source_connections (public_id,merchant_user_id,program_id,source_type,provider_key,display_name,status,secret_hash,configuration_json,created_at,updated_at) VALUES (?,?,?,'gaming',?,?,'active',?,?,NOW(),NOW())")
-            ->execute([$sourcePublicId,$merchantUserId,$programDbId,$providerKey,(string)$game['name'] . ' hosted game',hash('sha256',$sourcePublicId . '|' . $providerKey),mg_hosted_game_json_encode(['environment'=>'live','hosted_game_id'=>$gamePublicId])]);
-        $sourceDbId = (int)$pdo->lastInsertId();
         $pdo->prepare("INSERT INTO merchant_developer_apps (public_id,merchant_user_id,distribution_source_connection_id,default_program_id,name,environment,status,allowed_origins_json,webhook_url,webhook_secret_hash,scopes_json,metadata_json,created_by_user_id,created_at,updated_at) VALUES (?,?,?,?,?,'live','active',?,?,?,?,?,?,NOW(),NOW())")
-            ->execute([$appPublicId,$merchantUserId,$sourceDbId,$programDbId,(string)$game['name'] . ' Hosted Game API',mg_hosted_game_json_encode([$origin]),$webhookUrl,$webhook['secret'],mg_hosted_game_json_encode($scopes),mg_hosted_game_json_encode($metadata),$actorUserId]);
+            ->execute([
+                $appPublicId,$merchantUserId,$sourceDbId,$programDbId,(string)$game['name'] . ' Hosted Game API',
+                mg_hosted_game_json_encode([$origin]),$webhookUrl,$webhook['secret'],mg_hosted_game_json_encode($scopes),mg_hosted_game_json_encode($metadata),$actorUserId,
+            ]);
         $appDbId = (int)$pdo->lastInsertId();
         $app = ['id'=>$appDbId,'public_id'=>$appPublicId,'distribution_source_connection_id'=>$sourceDbId,'webhook_secret_hash'=>$webhook['secret']];
         $newSecrets['webhook_secret'] = $webhook['secret'];
     } else {
         $appDbId = (int)$app['id'];
+        $sourceDbId = (int)($app['distribution_source_connection_id'] ?? 0);
+        if ($sourceDbId < 1) {
+            $sourceDbId = mg_hosted_game_create_source_connection($pdo,$game,$programDbId);
+            $app['distribution_source_connection_id'] = $sourceDbId;
+        } else {
+            $pdo->prepare("UPDATE distribution_source_connections SET program_id=?,source_type='gaming',display_name=?,status='active',configuration_json=?,updated_at=NOW() WHERE id=? AND merchant_user_id=?")
+                ->execute([$programDbId,(string)$game['name'] . ' hosted game',mg_hosted_game_json_encode(['environment'=>'live','hosted_game_id'=>$gamePublicId]),$sourceDbId,$merchantUserId]);
+        }
         $webhookSecret = trim((string)($app['webhook_secret_hash'] ?? ''));
         if ($webhookSecret === '') {
             $webhook = mg_hosted_game_webhook_material();
             $webhookSecret = $webhook['secret'];
-            $newSecrets['webhook_secret'] = $webhookSecret;
         }
         $metadata = mg_hosted_game_json_decode($app['metadata_json'] ?? null);
         $metadata['managed_by'] = 'hosted-games-v1';
         $metadata['hosted_game_id'] = $gamePublicId;
-        $pdo->prepare("UPDATE merchant_developer_apps SET default_program_id=?,name=?,environment='live',status='active',allowed_origins_json=?,webhook_url=?,webhook_secret_hash=?,scopes_json=?,metadata_json=?,updated_at=NOW() WHERE id=?")
-            ->execute([$programDbId,(string)$game['name'] . ' Hosted Game API',mg_hosted_game_json_encode([$origin]),$webhookUrl,$webhookSecret,mg_hosted_game_json_encode($scopes),mg_hosted_game_json_encode($metadata),$appDbId]);
-        if (!empty($app['distribution_source_connection_id'])) {
-            $pdo->prepare("UPDATE distribution_source_connections SET program_id=?,source_type='gaming',display_name=?,status='active',configuration_json=?,updated_at=NOW() WHERE id=? AND merchant_user_id=?")
-                ->execute([$programDbId,(string)$game['name'] . ' hosted game',mg_hosted_game_json_encode(['environment'=>'live','hosted_game_id'=>$gamePublicId]),(int)$app['distribution_source_connection_id'],$merchantUserId]);
-        }
+        $metadata['webhook_signature_version'] = 'v1';
+        $pdo->prepare("UPDATE merchant_developer_apps SET distribution_source_connection_id=?,default_program_id=?,name=?,environment='live',status='active',allowed_origins_json=?,webhook_url=?,webhook_secret_hash=?,scopes_json=?,metadata_json=?,updated_at=NOW() WHERE id=? AND merchant_user_id=?")
+            ->execute([$sourceDbId,$programDbId,(string)$game['name'] . ' Hosted Game API',mg_hosted_game_json_encode([$origin]),$webhookUrl,$webhookSecret,mg_hosted_game_json_encode($scopes),mg_hosted_game_json_encode($metadata),$appDbId,$merchantUserId]);
+        $app['webhook_secret_hash'] = $webhookSecret;
+    }
+
+    $stored = mg_hosted_game_secrets($pdo,$gameId);
+    if (trim((string)$stored['webhook_secret']) === '') {
+        $appSecret = trim((string)($app['webhook_secret_hash'] ?? ''));
+        if ($appSecret === '') throw new MgHostedGameException('Unable to prepare the hosted game webhook secret.');
+        $newSecrets['webhook_secret'] = $appSecret;
     }
 
     $apiKeyRow = null;
@@ -303,26 +344,21 @@ function mg_hosted_game_ensure_runtime_integration(PDO $pdo, array $game, int $a
         $stmt->execute([(int)$game['api_key_id'],$appDbId,$merchantUserId]);
         $apiKeyRow = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
-    $stored = mg_hosted_game_secrets($pdo, $gameId);
     $apiCredential = trim((string)$stored['api_credential']);
-    if (!$apiKeyRow || $apiCredential === '' || !hash_equals((string)($apiKeyRow['key_hash'] ?? ''), hash('sha256', $apiCredential))) {
+    if (!$apiKeyRow || $apiCredential === '' || !hash_equals((string)($apiKeyRow['key_hash'] ?? ''),hash('sha256',$apiCredential))) {
         if ($apiKeyRow) {
             $pdo->prepare("UPDATE merchant_api_keys SET status='revoked',revoked_at=NOW(),updated_at=NOW() WHERE id=?")->execute([(int)$apiKeyRow['id']]);
         }
         $material = mg_hosted_game_credential_material('live');
-        $credentialPublicId = mg_hosted_game_uuid();
         $pdo->prepare("INSERT INTO merchant_api_keys (public_id,app_id,merchant_user_id,name,environment,key_prefix,key_hash,scopes_json,status,created_by_user_id,created_at,updated_at) VALUES (?,?,?,?,'live',?,?,?,'active',?,NOW(),NOW())")
-            ->execute([$credentialPublicId,$appDbId,$merchantUserId,(string)$game['name'] . ' Hosted Game Server',$material['prefix'],$material['digest'],mg_hosted_game_json_encode($scopes),$actorUserId]);
+            ->execute([mg_hosted_game_uuid(),$appDbId,$merchantUserId,(string)$game['name'] . ' Hosted Game Server',$material['prefix'],$material['digest'],mg_hosted_game_json_encode($scopes),$actorUserId]);
         $apiKeyId = (int)$pdo->lastInsertId();
-        $apiCredential = $material['value'];
-        $newSecrets['api_credential'] = $apiCredential;
+        $newSecrets['api_credential'] = $material['value'];
     } else {
         $apiKeyId = (int)$apiKeyRow['id'];
     }
-    if (trim((string)$stored['state_secret']) === '') {
-        $newSecrets['state_secret'] = bin2hex(random_bytes(32));
-    }
-    if ($newSecrets !== []) mg_hosted_game_save_secrets($pdo, $gameId, $newSecrets);
+    if (trim((string)$stored['state_secret']) === '') $newSecrets['state_secret'] = bin2hex(random_bytes(32));
+    if ($newSecrets !== []) mg_hosted_game_save_secrets($pdo,$gameId,$newSecrets);
 
     $pdo->prepare("UPDATE hosted_games SET developer_app_id=?,api_key_id=?,integration_status='ready',updated_by_user_id=?,updated_at=NOW() WHERE id=?")
         ->execute([$appDbId,$apiKeyId,$actorUserId,$gameId]);
@@ -342,16 +378,9 @@ function mg_hosted_game_database_row(PDO $pdo, int $gameId, bool $forUpdate = fa
 function mg_hosted_game_database_public(?array $row): array
 {
     if (!$row) return [
-        'configured'=>false,
-        'status'=>'pending',
-        'host'=>null,
-        'port'=>3306,
-        'database_name'=>null,
-        'username_configured'=>false,
-        'password_configured'=>false,
-        'last_tested_at'=>null,
-        'last_connected_at'=>null,
-        'last_error_message'=>null,
+        'configured'=>false,'status'=>'pending','host'=>null,'port'=>3306,'database_name'=>null,
+        'username_configured'=>false,'password_configured'=>false,'last_tested_at'=>null,
+        'last_connected_at'=>null,'last_error_message'=>null,
     ];
     return [
         'configured'=>true,
@@ -369,7 +398,7 @@ function mg_hosted_game_database_public(?array $row): array
 
 function mg_hosted_game_database_config(PDO $pdo, int $gameId): array
 {
-    $row = mg_hosted_game_database_row($pdo, $gameId, false);
+    $row = mg_hosted_game_database_row($pdo,$gameId,false);
     if (!$row || (string)$row['status'] === 'disabled') throw new MgHostedGameException('This game database is not configured.');
     return [
         'row'=>$row,
@@ -384,19 +413,18 @@ function mg_hosted_game_database_config(PDO $pdo, int $gameId): array
 
 function mg_hosted_game_database_pdo(PDO $platformPdo, int $gameId): PDO
 {
-    $config = mg_hosted_game_database_config($platformPdo, $gameId);
-    $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=%s', $config['host'], $config['port'], $config['database_name'], $config['charset']);
-    $pdo = new PDO($dsn, $config['username'], $config['password'], [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES => false,
-        PDO::ATTR_TIMEOUT => 5,
+    $config = mg_hosted_game_database_config($platformPdo,$gameId);
+    $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=%s',$config['host'],$config['port'],$config['database_name'],$config['charset']);
+    $pdo = new PDO($dsn,$config['username'],$config['password'],[
+        PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC,
+        PDO::ATTR_EMULATE_PREPARES=>false,
+        PDO::ATTR_TIMEOUT=>5,
     ]);
     try {
-        $platformPdo->prepare('UPDATE hosted_game_database_connections SET last_connected_at=NOW(),last_error_message=NULL,updated_at=NOW() WHERE game_id=?')
-            ->execute([$gameId]);
+        $platformPdo->prepare('UPDATE hosted_game_database_connections SET last_connected_at=NOW(),last_error_message=NULL,updated_at=NOW() WHERE game_id=?')->execute([$gameId]);
     } catch (Throwable) {
-        // Runtime database health updates must not invalidate an otherwise successful connection.
+        // Runtime database health telemetry must not invalidate a successful game connection.
     }
     return $pdo;
 }
@@ -431,51 +459,84 @@ function mg_hosted_game_database_bootstrap(PDO $gamePdo): void
 function mg_hosted_game_test_database(PDO $platformPdo, int $gameId, bool $bootstrap = true): array
 {
     $started = microtime(true);
-    $gamePdo = mg_hosted_game_database_pdo($platformPdo, $gameId);
-    $value = $gamePdo->query('SELECT 1')->fetchColumn();
-    if ((int)$value !== 1) throw new MgHostedGameException('The game database did not return a valid test response.');
+    $gamePdo = mg_hosted_game_database_pdo($platformPdo,$gameId);
+    if ((int)$gamePdo->query('SELECT 1')->fetchColumn() !== 1) throw new MgHostedGameException('The game database did not return a valid test response.');
     if ($bootstrap) mg_hosted_game_database_bootstrap($gamePdo);
-    $version = (string)$gamePdo->query('SELECT VERSION()')->fetchColumn();
     return [
         'connected'=>true,
-        'server_version'=>$version,
+        'server_version'=>(string)$gamePdo->query('SELECT VERSION()')->fetchColumn(),
         'latency_ms'=>(int)round((microtime(true)-$started)*1000),
         'standard_tables_ready'=>$bootstrap,
     ];
+}
+
+function mg_hosted_game_readiness_context(PDO $pdo, array $game): array
+{
+    $stmt = $pdo->prepare(
+        "SELECT hgr.status AS release_status,
+                mda.status AS app_status,mda.environment AS app_environment,mda.webhook_url,
+                mak.status AS key_status,mak.environment AS key_environment,mak.scopes_json AS key_scopes_json,
+                dp.status AS program_status,dp.starts_at AS program_starts_at,dp.ends_at AS program_ends_at,
+                c.status AS campaign_status,cpt.status AS template_status,dpp.status AS program_product_status
+         FROM hosted_games hg
+         LEFT JOIN hosted_game_releases hgr ON hgr.public_id=hg.current_release_public_id AND hgr.game_id=hg.id
+         LEFT JOIN merchant_developer_apps mda ON mda.id=hg.developer_app_id AND mda.merchant_user_id=hg.merchant_user_id
+         LEFT JOIN merchant_api_keys mak ON mak.id=hg.api_key_id AND mak.app_id=hg.developer_app_id AND mak.merchant_user_id=hg.merchant_user_id
+         LEFT JOIN distribution_programs dp ON dp.id=hg.distribution_program_id AND dp.merchant_user_id=hg.merchant_user_id
+         LEFT JOIN campaigns c ON c.id=hg.campaign_id AND c.merchant_user_id=hg.merchant_user_id
+         LEFT JOIN catalog_pppm_templates cpt ON cpt.id=hg.pppm_template_id
+         LEFT JOIN catalog_product_versions cpv ON cpv.id=cpt.product_version_id
+         LEFT JOIN catalog_products cp ON cp.id=cpv.product_id AND cp.merchant_user_id=hg.merchant_user_id
+         LEFT JOIN distribution_program_products dpp ON dpp.program_id=hg.distribution_program_id AND dpp.pppm_template_id=hg.pppm_template_id
+         WHERE hg.id=? LIMIT 1"
+    );
+    $stmt->execute([(int)$game['id']]);
+    return $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
 }
 
 function mg_hosted_game_readiness(PDO $pdo, array $game): array
 {
     $gameId = (int)$game['id'];
     $secrets = ['api_credential'=>'','webhook_secret'=>'','state_secret'=>''];
-    try { $secrets = mg_hosted_game_secrets($pdo, $gameId); } catch (Throwable) {}
-    $db = mg_hosted_game_database_row($pdo, $gameId, false);
-    $releaseReady = trim((string)($game['current_release_public_id'] ?? '')) !== '';
+    try { $secrets = mg_hosted_game_secrets($pdo,$gameId); } catch (Throwable) {}
+    $db = mg_hosted_game_database_row($pdo,$gameId,false);
+    $context = mg_hosted_game_readiness_context($pdo,$game);
+    $scopes = mg_hosted_game_json_decode($context['key_scopes_json'] ?? null);
+    $requiredScopes = ['distribution:rewards.issue','distribution:rewards.status'];
+    $programOpen = (string)($context['program_status'] ?? '') === 'active'
+        && (empty($context['program_starts_at']) || strtotime((string)$context['program_starts_at']) <= time())
+        && (empty($context['program_ends_at']) || strtotime((string)$context['program_ends_at']) >= time());
+    $releaseReady = trim((string)($game['current_release_public_id'] ?? '')) !== '' && (string)($context['release_status'] ?? '') === 'active';
+    $appReady = (string)($context['app_status'] ?? '') === 'active' && (string)($context['app_environment'] ?? '') === 'live';
+    $keyReady = (string)($context['key_status'] ?? '') === 'active' && (string)($context['key_environment'] ?? '') === 'live' && count(array_diff($requiredScopes,$scopes)) === 0;
+    $webhookReady = trim((string)($context['webhook_url'] ?? '')) !== '' && trim((string)$secrets['webhook_secret']) !== '';
+    $rewardReady = (string)($context['template_status'] ?? '') === 'active' && (string)($context['program_product_status'] ?? '') === 'active';
+    $campaignReady = (string)($context['campaign_status'] ?? '') === 'active';
     $integrationReady = (string)($game['integration_status'] ?? '') === 'ready'
-        && !empty($game['developer_app_id'])
-        && !empty($game['api_key_id'])
-        && !empty($game['distribution_program_id'])
-        && !empty($game['campaign_id'])
-        && !empty($game['pppm_template_id'])
-        && trim($secrets['api_credential']) !== ''
-        && trim($secrets['state_secret']) !== '';
+        && $appReady && $keyReady && $webhookReady && $programOpen && $campaignReady && $rewardReady
+        && trim((string)$secrets['api_credential']) !== '' && trim((string)$secrets['state_secret']) !== '';
     $databaseReady = is_array($db) && (string)$db['status'] === 'ready';
+
     return [
         'schema_ready'=>mg_hosted_game_schema_ready($pdo),
         'release_ready'=>$releaseReady,
         'integration_ready'=>$integrationReady,
         'database_ready'=>$databaseReady,
         'publish_ready'=>$releaseReady && $integrationReady && $databaseReady,
-        'api_credential_ready'=>trim($secrets['api_credential']) !== '',
-        'state_secret_ready'=>trim($secrets['state_secret']) !== '',
-        'webhook_secret_ready'=>trim($secrets['webhook_secret']) !== '',
+        'app_ready'=>$appReady,
+        'api_key_ready'=>$keyReady && trim((string)$secrets['api_credential']) !== '',
+        'program_ready'=>$programOpen,
+        'campaign_ready'=>$campaignReady,
+        'reward_ready'=>$rewardReady,
+        'api_credential_ready'=>trim((string)$secrets['api_credential']) !== '',
+        'state_secret_ready'=>trim((string)$secrets['state_secret']) !== '',
+        'webhook_secret_ready'=>$webhookReady,
         'database'=>mg_hosted_game_database_public($db),
     ];
 }
 
 function mg_hosted_game_public_record(PDO $pdo, array $row): array
 {
-    $readiness = mg_hosted_game_readiness($pdo, $row);
     return [
         'id'=>(string)$row['public_id'],
         'name'=>(string)$row['name'],
@@ -501,7 +562,7 @@ function mg_hosted_game_public_record(PDO $pdo, array $row): array
         'published_at'=>$row['published_at'] ?? null,
         'created_at'=>$row['created_at'] ?? null,
         'updated_at'=>$row['updated_at'] ?? null,
-        'readiness'=>$readiness,
+        'readiness'=>mg_hosted_game_readiness($pdo,$row),
     ];
 }
 
@@ -511,7 +572,7 @@ function mg_hosted_game_log_event(PDO $pdo, int $gameId, ?int $runId, ?int $play
         $pdo->prepare('INSERT INTO hosted_game_events (public_id,game_id,run_id,player_user_id,event_type,event_json,created_at) VALUES (?,?,?,?,?,?,NOW())')
             ->execute([mg_hosted_game_uuid(),$gameId,$runId,$playerUserId,substr($eventType,0,100),$event === [] ? null : mg_hosted_game_json_encode($event)]);
     } catch (Throwable) {
-        // Game telemetry must not block gameplay.
+        // Game telemetry must never block gameplay.
     }
 }
 
@@ -527,15 +588,16 @@ function mg_hosted_game_connect_player(PDO $pdo, array $game, int $userId): arra
 {
     $appId = (int)($game['developer_app_id'] ?? 0);
     if ($appId < 1) throw new MgHostedGameException('Game integration is not ready.');
-    $existing = mg_hosted_game_active_link($pdo, $appId, $userId);
+    $existing = mg_hosted_game_active_link($pdo,$appId,$userId);
     if ($existing) return $existing;
+
     $publicId = mg_hosted_game_uuid();
     $externalUserId = 'hosted-game-user-' . $userId;
-    $externalHash = hash('sha256', strtolower($externalUserId));
+    $externalHash = hash('sha256',strtolower($externalUserId));
     $consent = ['source'=>'hosted-game','game_id'=>(string)$game['public_id'],'connected_at'=>gmdate('c')];
     $pdo->prepare("INSERT INTO developer_app_user_links (public_id,app_id,merchant_user_id,microgifter_user_id,external_user_id,external_user_hash,status,consent_json,metadata_json,linked_at,updated_at) VALUES (?,?,?,?,?,?,'active',?,?,NOW(),NOW()) ON DUPLICATE KEY UPDATE status='active',consent_json=VALUES(consent_json),metadata_json=VALUES(metadata_json),revoked_at=NULL,linked_at=NOW(),updated_at=NOW()")
         ->execute([$publicId,$appId,(int)$game['merchant_user_id'],$userId,$externalUserId,$externalHash,mg_hosted_game_json_encode($consent),mg_hosted_game_json_encode(['hosted_game_id'=>(string)$game['public_id']])]);
-    $linked = mg_hosted_game_active_link($pdo, $appId, $userId);
+    $linked = mg_hosted_game_active_link($pdo,$appId,$userId);
     if (!$linked) throw new MgHostedGameException('Unable to connect the player account.');
     return $linked;
 }
@@ -544,12 +606,12 @@ function mg_hosted_game_api_request(array $game, array $secrets, string $method,
 {
     $apiKey = trim((string)($secrets['api_credential'] ?? ''));
     if ($apiKey === '') throw new MgHostedGameException('Game API credential is unavailable.');
-    $url = rtrim(mg_hosted_game_base_url(), '/') . $path;
+    $url = mg_hosted_game_base_url() . '/' . ltrim($path,'/');
     $requestHeaders = array_merge([
         'Authorization: Bearer ' . $apiKey,
         'Accept: application/json',
         'User-Agent: Microgifter-Hosted-Game/1.0',
-    ], $headers);
+    ],$headers);
     $payload = null;
     if ($body !== null) {
         $payload = mg_hosted_game_json_encode($body);
@@ -558,7 +620,7 @@ function mg_hosted_game_api_request(array $game, array $secrets, string $method,
     if (!function_exists('curl_init')) throw new MgHostedGameException('The server-side cURL extension is required.');
     $ch = curl_init($url);
     if ($ch === false) throw new MgHostedGameException('Unable to initialize the game API request.');
-    curl_setopt_array($ch, [
+    curl_setopt_array($ch,[
         CURLOPT_RETURNTRANSFER=>true,
         CURLOPT_CUSTOMREQUEST=>strtoupper($method),
         CURLOPT_HTTPHEADER=>$requestHeaders,
@@ -566,13 +628,13 @@ function mg_hosted_game_api_request(array $game, array $secrets, string $method,
         CURLOPT_TIMEOUT=>18,
         CURLOPT_FOLLOWLOCATION=>false,
     ]);
-    if ($payload !== null) curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+    if ($payload !== null) curl_setopt($ch,CURLOPT_POSTFIELDS,$payload);
     $raw = curl_exec($ch);
-    $status = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    $status = (int)curl_getinfo($ch,CURLINFO_RESPONSE_CODE);
     $error = curl_error($ch);
     curl_close($ch);
     if ($raw === false) throw new MgHostedGameException($error !== '' ? $error : 'Hosted game API request failed.');
-    $decoded = json_decode((string)$raw, true);
+    $decoded = json_decode((string)$raw,true);
     $response = is_array($decoded) ? $decoded : ['message'=>(string)$raw];
     $data = is_array($response['data'] ?? null) ? $response['data'] : $response;
     if ($status < 200 || $status >= 300) {
