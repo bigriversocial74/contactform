@@ -129,7 +129,8 @@ $checks = [
     'Distribution page exposes the game workspace and live readiness checks' =>
         str_contains($files['distribution'], 'id="distribution-game"')
         && str_contains($files['distribution'], '/games/reward-drop/')
-        && str_contains($files['distribution'], 'Game Integration')
+        && (str_contains($files['distribution'], 'Game Integration') || str_contains($files['distribution'], 'Legacy example game'))
+        && str_contains($files['distribution'], '/merchant-games.php')
         && str_contains($files['distribution'], 'rd_readiness'),
     'Distribution page loads the scoped game panel stylesheet' =>
         str_contains($files['distribution_page'], '/assets/css/merchant-distribution-game.css?v=1.0.0')
