@@ -108,12 +108,15 @@ $checks['private data is excluded from agent context']=
     &&!str_contains($service,"'address_line_1'")
     &&!str_contains($service,"'email'")
     &&str_contains($service,"'phone_masked'")
+    &&str_contains($service,'unset($details[$privateDisplayKey])')
     &&str_contains($service,'Sensitive credentials and private contact details cannot be stored in Agent Memory.')
     &&str_contains($service,'Never expose or repeat full phone numbers');
 
 $checks['Claude reuse has safe fallback and approval boundary']=
     str_contains($service,'mg_anthropic_messages')
     &&str_contains($service,'mg_ai_enforce_rate_limits')
+    &&str_contains($service,"\$provider['id']=(int)\$model['provider_id']")
+    &&str_contains($service,'foreach ($rows as $row)')
     &&str_contains($service,'function mg_personal_agent_fallback')
     &&str_contains($service,'Nothing will be purchased or sent without your review.')
     &&str_contains($service,"'save_draft_plan'")
@@ -136,7 +139,8 @@ $checks['client supports all Phase 2 views and actions']=
     &&str_contains($js,"'/api/user-agent/dates.php'")
     &&str_contains($js,"'/api/user-agent/settings.php'")
     &&str_contains($js,'data-agent-card-index')
-    &&str_contains($js,'save_draft_plan');
+    &&str_contains($js,'save_draft_plan')
+    &&str_contains($js,'if (!payload.context_type || !payload.context_id)');
 
 $failed=[];
 foreach($checks as $name=>$passed){
