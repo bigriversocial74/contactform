@@ -1,0 +1,88 @@
+name: Personal Gifting Agent Phase 2 Validation
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'agent.php'
+      - 'includes/agent-workspace.php'
+      - 'includes/personal-agent-sidebar.php'
+      - 'includes/personal-gifting-agent.php'
+      - 'includes/personal-agent/**'
+      - 'api/user-agent/**'
+      - 'assets/css/personal-gifting-agent.css'
+      - 'assets/js/personal-gifting-agent.js'
+      - 'assets/js/personal-gifting-agent-render.js'
+      - 'assets/js/personal-gifting-agent-actions.js'
+      - 'assets/js/agent-workspace.js'
+      - 'database/20260714_personal_gifting_agent_phase2.sql'
+      - 'config/migrations.php'
+      - 'scripts/validate_personal_gifting_agent_phase2.php'
+      - 'tests/phpunit/PersonalGiftingAgentPhase2Test.php'
+      - '.github/workflows/personal-gifting-agent-phase2-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2','8.3']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          extensions: mbstring,pdo,pdo_mysql,openssl,curl,json
+
+      - name: PHP syntax
+        run: |
+          php -l agent.php
+          php -l includes/agent-workspace.php
+          php -l includes/personal-agent-sidebar.php
+          php -l includes/personal-gifting-agent.php
+          php -l includes/personal-agent/core.php
+          php -l includes/personal-agent/data.php
+          php -l includes/personal-agent/context.php
+          php -l includes/personal-agent/actions.php
+          php -l includes/personal-agent/chat.php
+          php -l includes/personal-agent/workspace-dashboard.php
+          php -l includes/personal-agent/workspace-dialogs.php
+          php -l api/user-agent/_bootstrap.php
+          php -l api/user-agent/dashboard.php
+          php -l api/user-agent/context.php
+          php -l api/user-agent/chat.php
+          php -l api/user-agent/plans.php
+          php -l api/user-agent/reminders.php
+          php -l api/user-agent/memory.php
+          php -l api/user-agent/dates.php
+          php -l api/user-agent/settings.php
+          php -l config/migrations.php
+          php -l scripts/validate_personal_gifting_agent_phase2.php
+          php -l tests/phpunit/PersonalGiftingAgentPhase2Test.php
+
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/agent-workspace.js
+          node --check assets/js/personal-gifting-agent.js
+          node --check assets/js/personal-gifting-agent-render.js
+          node --check assets/js/personal-gifting-agent-actions.js
+
+      - name: Phase 2 contract
+        run: php scripts/validate_personal_gifting_agent_phase2.php
+
+      - name: Canonical migration manifest
+        run: php scripts/validate_migration_manifest.php
+
+      - name: Phase 1 regression
+        run: php scripts/validate_user_contact_lists_phase1.php
