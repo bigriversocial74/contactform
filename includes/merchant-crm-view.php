@@ -11,9 +11,13 @@ declare(strict_types=1);
             <div><h1 id="merchantCrmDesktopTitle">Merchant CRM</h1><p>Manage your contacts, conversations, and customer relationships in one place.</p></div>
           </div>
           <div class="mg-crm-desktop-tools" aria-label="CRM tools">
-            <label class="mg-crm-desktop-tool"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg><span class="sr-only">Reporting window</span><select class="mg-crm-desktop-range" data-crm-desktop-range aria-label="Reporting window"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option></select></label>
-            <button class="mg-crm-desktop-tool" type="button" data-crm-desktop-filter><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6 7v5l-4 2v-7Z"/></svg>Filter</button>
-            <button class="mg-crm-desktop-tool" type="button" data-crm-desktop-export><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 13v6h14v-6"/></svg>Export</button>
+            <label class="mg-crm-desktop-window">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
+              <span>Reporting window</span>
+              <select class="mg-crm-desktop-range" data-crm-desktop-range aria-label="Reporting window"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option></select>
+            </label>
+            <button class="mg-crm-desktop-tool" type="button" data-crm-desktop-filter><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6 7v5l-4 2v-7Z"/></svg><span>Filter</span></button>
+            <button class="mg-crm-desktop-tool" type="button" data-crm-desktop-export><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 13v6h14v-6"/></svg><span>Export</span></button>
           </div>
         </header>
 
@@ -32,7 +36,7 @@ declare(strict_types=1);
             <article class="mg-crm-kpi is-<?= htmlspecialchars($kpi[0], ENT_QUOTES, 'UTF-8') ?>">
               <div class="mg-crm-kpi-top"><span class="mg-crm-kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="<?= htmlspecialchars($kpi[3], ENT_QUOTES, 'UTF-8') ?>"/></svg></span><div class="mg-crm-kpi-copy"><span class="mg-crm-kpi-label"><?= htmlspecialchars($kpi[1], ENT_QUOTES, 'UTF-8') ?></span><strong class="mg-crm-kpi-value" <?= $kpi[2] ?>>0</strong></div></div>
               <div class="mg-crm-kpi-meta"><b><?= $index === 2 || $index === 6 ? 'Current' : 'Live' ?></b><span>from CRM contacts</span></div>
-              <svg class="mg-crm-kpi-spark" viewBox="0 0 120 28" preserveAspectRatio="none" aria-hidden="true"><path class="fill" d="M0 25 0 19 12 20 22 15 32 21 43 11 54 16 65 8 77 18 88 12 100 15 112 6 120 12 120 25Z"/><path d="M0 19 12 20 22 15 32 21 43 11 54 16 65 8 77 18 88 12 100 15 112 6 120 12"/></svg>
+              <div class="mg-crm-kpi-chart"><svg class="mg-crm-kpi-spark" viewBox="0 0 120 28" preserveAspectRatio="none" aria-hidden="true"><path class="fill" d="M0 25 0 19 12 20 22 15 32 21 43 11 54 16 65 8 77 18 88 12 100 15 112 6 120 12 120 25Z"/><path d="M0 19 12 20 22 15 32 21 43 11 54 16 65 8 77 18 88 12 100 15 112 6 120 12"/></svg></div>
             </article>
           <?php endforeach; ?>
         </section>
@@ -67,11 +71,19 @@ declare(strict_types=1);
         </section>
       </section>
 
+      <section class="mg-crm-desktop-directory-toolbar" data-crm-desktop-directory aria-label="Search CRM contacts">
+        <label class="mg-crm-desktop-search">
+          <span aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.7-3.7"/></svg></span>
+          <input type="search" inputmode="search" autocomplete="off" placeholder="Search contacts, emails, campaigns, or status" aria-label="Search CRM contacts" data-crm-desktop-search>
+          <button type="button" aria-label="Clear CRM contact search" data-crm-desktop-search-reset hidden>×</button>
+        </label>
+        <div class="mg-crm-desktop-directory-meta"><span><b data-crm-desktop-visible-count>0</b> contacts shown</span><span><b data-crm-duplicate-count>—</b> possible duplicate groups</span><button type="button" data-crm-duplicates-open>Review identities</button></div>
+      </section>
+      <p class="mg-crm-desktop-search-empty" data-crm-desktop-search-empty hidden>No contacts match this search.</p>
+
       <section class="mg-crm-mobile-overview" data-crm-mobile-overview>
         <button class="mg-crm-mobile-overview-toggle" type="button" data-crm-mobile-overview-toggle aria-expanded="true" aria-controls="crmMobileOverviewBody">
-          <span class="mg-crm-mobile-overview-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          </span>
+          <span class="mg-crm-mobile-overview-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
           <span class="mg-crm-mobile-overview-copy"><strong>Merchant CRM</strong><small>Manage and engage with your customers</small></span>
           <span class="mg-crm-mobile-overview-chevron" aria-hidden="true"></span>
         </button>
@@ -93,45 +105,24 @@ declare(strict_types=1);
 
           <section class="mg-crm-identity-panel" data-crm-duplicates-panel hidden aria-labelledby="crmDuplicateTitle">
             <header class="mg-crm-identity-head">
-              <div>
-                <span class="mg-eyebrow">CRM Contact Identity v1</span>
-                <h2 id="crmDuplicateTitle">Review possible duplicate contacts</h2>
-                <p>Strong account and email matches are prioritized. Phone-only matches always require merchant review. Merges preserve aliases, campaign history, events, notes, and an audit record.</p>
-              </div>
+              <div><span class="mg-eyebrow">CRM Contact Identity v1</span><h2 id="crmDuplicateTitle">Review possible duplicate contacts</h2><p>Strong account and email matches are prioritized. Phone-only matches always require merchant review. Merges preserve aliases, campaign history, events, notes, and an audit record.</p></div>
               <div class="mg-crm-identity-actions"><button class="mg-btn mg-btn-soft" type="button" data-crm-duplicates-refresh>Refresh analysis</button><button class="mg-btn mg-btn-soft" type="button" data-crm-duplicates-close>Close</button></div>
             </header>
-            <div class="mg-crm-identity-summary" data-crm-duplicates-summary>
-              <div><span>Groups</span><strong>—</strong></div>
-              <div><span>Profiles</span><strong>—</strong></div>
-              <div><span>Safe to review</span><strong>—</strong></div>
-              <div><span>Previously merged</span><strong>—</strong></div>
-            </div>
+            <div class="mg-crm-identity-summary" data-crm-duplicates-summary><div><span>Groups</span><strong>—</strong></div><div><span>Profiles</span><strong>—</strong></div><div><span>Safe to review</span><strong>—</strong></div><div><span>Previously merged</span><strong>—</strong></div></div>
             <div class="mg-crm-identity-status" data-crm-duplicates-status>Loading identity analysis…</div>
             <div class="mg-crm-identity-groups" data-crm-duplicates-groups></div>
-            <section class="mg-crm-identity-history" data-crm-duplicates-history hidden>
-              <div class="mg-crm-identity-section-title"><h3>Recent merges</h3><span>Non-destructive audit history</span></div>
-              <div data-crm-duplicates-history-list></div>
-            </section>
+            <section class="mg-crm-identity-history" data-crm-duplicates-history hidden><div class="mg-crm-identity-section-title"><h3>Recent merges</h3><span>Non-destructive audit history</span></div><div data-crm-duplicates-history-list></div></section>
           </section>
         </div>
       </section>
 
       <section class="mg-crm-mobile-directory" aria-labelledby="crmMobileRecentContacts">
-        <header class="mg-crm-mobile-directory-head">
-          <div><span>Customer directory</span><h2 id="crmMobileRecentContacts">Recent Contacts</h2></div>
-          <button type="button" data-crm-mobile-search-clear>View all</button>
-        </header>
-        <label class="mg-crm-mobile-search">
-          <span class="mg-crm-mobile-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.7-3.7"/></svg></span>
-          <input type="search" inputmode="search" autocomplete="off" placeholder="Search contacts, emails, or campaigns" aria-label="Search recent contacts" data-crm-mobile-search>
-          <button type="button" aria-label="Clear contact search" data-crm-mobile-search-reset hidden>×</button>
-        </label>
+        <header class="mg-crm-mobile-directory-head"><div><span>Customer directory</span><h2 id="crmMobileRecentContacts">Recent Contacts</h2></div><button type="button" data-crm-mobile-search-clear>View all</button></header>
+        <label class="mg-crm-mobile-search"><span class="mg-crm-mobile-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.7-3.7"/></svg></span><input type="search" inputmode="search" autocomplete="off" placeholder="Search contacts, emails, or campaigns" aria-label="Search recent contacts" data-crm-mobile-search><button type="button" aria-label="Clear contact search" data-crm-mobile-search-reset hidden>×</button></label>
         <p class="mg-crm-mobile-search-empty" data-crm-mobile-search-empty hidden>No contacts match this search.</p>
       </section>
 
-      <div class="mg-crm-table-wrap" data-merchant-crm-table>
-        <div class="mg-empty-state"><strong>Loading contacts</strong><p>Campaign signups, QR pickups, contest entries, and reward activity will appear here.</p></div>
-      </div>
+      <div class="mg-crm-table-wrap" data-merchant-crm-table><div class="mg-empty-state"><strong>Loading contacts</strong><p>Campaign signups, QR pickups, contest entries, and reward activity will appear here.</p></div></div>
     </div>
   </section>
 </section>
