@@ -1,0 +1,46 @@
+name: Developer API Campaign Builder
+
+on:
+  pull_request:
+    paths:
+      - includes/merchant-developer-api-view.php
+      - merchant-distribution.php
+      - assets/js/merchant-developer-api-tabs.js
+      - assets/js/merchant-developer-api-campaign-builder.js
+      - assets/css/merchant-developer-api-campaign-builder.css
+      - scripts/validate_developer_api_campaign_program_builder_v1.php
+      - .github/workflows/developer-api-campaign-builder.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php:
+          - '8.2'
+          - '8.3'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: PHP syntax
+        run: |
+          php -l includes/merchant-developer-api-view.php
+          php -l merchant-distribution.php
+          php -l scripts/validate_developer_api_campaign_program_builder_v1.php
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/merchant-developer-api-tabs.js
+          node --check assets/js/merchant-developer-api-campaign-builder.js
+      - name: Campaign builder contract
+        run: php scripts/validate_developer_api_campaign_program_builder_v1.php
