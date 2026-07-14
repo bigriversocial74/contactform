@@ -10,6 +10,7 @@ require_once dirname(__DIR__, 2) . '/includes/integrations/shopify-contacts.php'
 require_once dirname(__DIR__, 2) . '/includes/integrations/square-contacts.php';
 require_once dirname(__DIR__, 2) . '/includes/integrations/hubspot-contacts.php';
 require_once dirname(__DIR__, 2) . '/includes/integrations/mailchimp-contacts.php';
+require_once dirname(__DIR__, 2) . '/includes/integrations/klaviyo-profiles.php';
 
 $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 $user = $method === 'POST'
@@ -26,6 +27,7 @@ if ($method === 'GET') {
     $providers = mg_square_provider_catalog($providers);
     $providers = mg_hubspot_provider_catalog($providers);
     $providers = mg_mailchimp_provider_catalog($providers);
+    $providers = mg_klaviyo_provider_catalog($providers);
     mg_ok([
         'schema_ready' => mg_integration_schema_ready($pdo),
         'migration' => 'merchant_integrations_foundation_v1.sql',
@@ -38,6 +40,7 @@ if ($method === 'GET') {
         'square_contacts' => mg_square_contacts_status($pdo, $merchantUserId),
         'hubspot_contacts' => mg_hubspot_contacts_status($pdo, $merchantUserId),
         'mailchimp_contacts' => mg_mailchimp_contacts_status($pdo, $merchantUserId),
+        'klaviyo_profiles' => mg_klaviyo_profiles_status($pdo, $merchantUserId),
     ]);
 }
 
@@ -114,6 +117,19 @@ try {
         mg_ok($result, 'Mailchimp authorization is ready.');
     }
 
+    if ($providerKey === 'klaviyo' && $action === 'begin_klaviyo_oauth') {
+        mg_rate_limit('merchant.integrations.klaviyo.oauth', 'user:' . $merchantUserId, 8, 300);
+        $existing = mg_integration_connection_row($pdo, $merchantUserId, 'klaviyo', false);
+        $wasActive = is_array($existing) && (string)($existing['status'] ?? '') === 'active';
+        $result = mg_klaviyo_begin_oauth($pdo, $merchantUserId);
+        if ($wasActive) {
+            $pdo->prepare("UPDATE merchant_integration_connections SET status='active',updated_at=NOW() WHERE merchant_user_id=? AND provider_key='klaviyo' ORDER BY id DESC LIMIT 1")
+                ->execute([$merchantUserId]);
+        }
+        mg_audit('merchant.integration.oauth_started', 'merchant_integration', ['provider' => 'klaviyo', 'pkce_method' => $result['pkce_method'] ?? null], $merchantUserId);
+        mg_ok($result, 'Klaviyo authorization is ready.');
+    }
+
     if ($providerKey === 'mailchimp' && $action === 'list_audiences') {
         mg_rate_limit('merchant.integrations.mailchimp.audiences', 'user:' . $merchantUserId, 12, 300);
         mg_ok(mg_mailchimp_audiences($pdo, $merchantUserId), 'Mailchimp audiences loaded.');
@@ -128,13 +144,7 @@ try {
 
     if ($providerKey === 'woocommerce' && $action === 'connect_api_key') {
         mg_rate_limit('merchant.integrations.woocommerce.connect', 'user:' . $merchantUserId, 8, 300);
-        $result = mg_woocommerce_connect(
-            $pdo,
-            $merchantUserId,
-            (string)($input['site_url'] ?? ''),
-            (string)($input['consumer_key'] ?? ''),
-            (string)($input['consumer_secret'] ?? '')
-        );
+        $result = mg_woocommerce_connect($pdo, $merchantUserId, (string)($input['site_url'] ?? ''), (string)($input['consumer_key'] ?? ''), (string)($input['consumer_secret'] ?? ''));
         mg_audit('merchant.integration.api_key_connected', 'merchant_integration', ['provider' => 'woocommerce'], $merchantUserId);
         mg_ok(['connection' => $result], 'WooCommerce connected.');
     }
@@ -147,29 +157,28 @@ try {
 
     if ($action === 'preview_contacts') {
         if ($providerKey === 'squarespace') {
-            $result = mg_squarespace_contact_preview($pdo, $merchantUserId, trim((string)($input['cursor'] ?? '')) ?: null, max(1, min(100, (int)($input['page_size'] ?? 25))));
-            mg_ok($result, 'Squarespace contact preview loaded.');
+            mg_ok(mg_squarespace_contact_preview($pdo, $merchantUserId, trim((string)($input['cursor'] ?? '')) ?: null, max(1, min(100, (int)($input['page_size'] ?? 25)))), 'Squarespace contact preview loaded.');
         }
         if ($providerKey === 'woocommerce') {
-            $result = mg_woocommerce_contact_preview($pdo, $merchantUserId, trim((string)($input['cursor'] ?? '')) ?: null, max(1, min(100, (int)($input['page_size'] ?? 25))));
-            mg_ok($result, 'WooCommerce customer preview loaded.');
+            mg_ok(mg_woocommerce_contact_preview($pdo, $merchantUserId, trim((string)($input['cursor'] ?? '')) ?: null, max(1, min(100, (int)($input['page_size'] ?? 25)))), 'WooCommerce customer preview loaded.');
         }
         if ($providerKey === 'shopify') {
-            $result = mg_shopify_contact_preview($pdo, $merchantUserId, trim((string)($input['cursor'] ?? '')) ?: null, max(1, min(250, (int)($input['page_size'] ?? 25))));
-            mg_ok($result, 'Shopify customer preview loaded.');
+            mg_ok(mg_shopify_contact_preview($pdo, $merchantUserId, trim((string)($input['cursor'] ?? '')) ?: null, max(1, min(250, (int)($input['page_size'] ?? 25)))), 'Shopify customer preview loaded.');
         }
         if ($providerKey === 'square') {
-            $result = mg_square_contact_preview($pdo, $merchantUserId, trim((string)($input['cursor'] ?? '')) ?: null, max(1, min(100, (int)($input['page_size'] ?? 25))));
-            mg_ok($result, 'Square customer preview loaded.');
+            mg_ok(mg_square_contact_preview($pdo, $merchantUserId, trim((string)($input['cursor'] ?? '')) ?: null, max(1, min(100, (int)($input['page_size'] ?? 25)))), 'Square customer preview loaded.');
         }
         if ($providerKey === 'hubspot') {
-            $result = mg_hubspot_contact_preview($pdo, $merchantUserId, trim((string)($input['cursor'] ?? '')) ?: null, max(1, min(100, (int)($input['page_size'] ?? 25))));
-            mg_ok($result, 'HubSpot contact preview loaded.');
+            mg_ok(mg_hubspot_contact_preview($pdo, $merchantUserId, trim((string)($input['cursor'] ?? '')) ?: null, max(1, min(100, (int)($input['page_size'] ?? 25)))), 'HubSpot contact preview loaded.');
         }
         if ($providerKey === 'mailchimp') {
-            $result = mg_mailchimp_contact_preview($pdo, $merchantUserId, trim((string)($input['cursor'] ?? '')) ?: null, max(1, min(1000, (int)($input['page_size'] ?? 25))));
-            mg_ok($result, 'Mailchimp audience preview loaded.');
+            mg_ok(mg_mailchimp_contact_preview($pdo, $merchantUserId, trim((string)($input['cursor'] ?? '')) ?: null, max(1, min(1000, (int)($input['page_size'] ?? 25)))), 'Mailchimp audience preview loaded.');
         }
+    }
+
+    if ($providerKey === 'klaviyo' && $action === 'preview_profiles') {
+        mg_rate_limit('merchant.integrations.klaviyo.preview', 'user:' . $merchantUserId, 12, 300);
+        mg_ok(mg_klaviyo_profile_preview($pdo, $merchantUserId, trim((string)($input['cursor'] ?? '')) ?: null, max(1, min(100, (int)($input['page_size'] ?? 25)))), 'Klaviyo profile preview loaded.');
     }
 
     if ($action === 'sync_contacts') {
@@ -211,6 +220,13 @@ try {
         }
     }
 
+    if ($providerKey === 'klaviyo' && $action === 'sync_profiles') {
+        mg_rate_limit('merchant.integrations.klaviyo.sync', 'user:' . $merchantUserId, 6, 300);
+        $result = mg_klaviyo_sync_profiles($pdo, $merchantUserId, !empty($input['reset']), max(1, min(100, (int)($input['page_size'] ?? 100))), max(1, min(10, (int)($input['max_pages'] ?? 5))));
+        mg_audit('merchant.integration.profiles_synced', 'merchant_integration', ['provider' => 'klaviyo', 'counts' => $result['counts'] ?? []], $merchantUserId);
+        mg_ok($result, 'Klaviyo profiles synchronized.');
+    }
+
     if ($providerKey === 'squarespace' && $action === 'configure_contact_webhook') {
         $result = mg_squarespace_setup_contact_webhook($pdo, $merchantUserId);
         mg_audit('merchant.integration.webhook_configured', 'merchant_integration', ['provider' => 'squarespace', 'configured' => $result['configured'] ?? false], $merchantUserId);
@@ -224,7 +240,7 @@ try {
     mg_security_log('error', 'merchant.integration.encryption_unavailable', 'Integration credential encryption is unavailable.', ['provider' => $providerKey], $merchantUserId);
     mg_fail($error->getMessage(), 503);
 } catch (Throwable $error) {
-    if (!in_array($action, ['preview_contacts', 'sync_contacts', 'configure_contact_webhook'], true)) {
+    if (!in_array($action, ['preview_contacts', 'sync_contacts', 'preview_profiles', 'sync_profiles', 'configure_contact_webhook'], true)) {
         mg_integration_mark_error($pdo, $merchantUserId, $providerKey, $error::class, $error->getMessage());
     }
     mg_security_log('warning', 'merchant.integration.action_failed', 'Merchant integration action failed.', ['provider' => $providerKey, 'action' => $action, 'exception_class' => $error::class], $merchantUserId);
