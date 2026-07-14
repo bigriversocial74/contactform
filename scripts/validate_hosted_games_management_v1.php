@@ -114,7 +114,7 @@ hg_not_has('api/merchant/hosted-game-upload.php', "'php'", 'Executable PHP must 
 hg_has('hosted-game.php', 'sandbox="allow-scripts', 'Sandboxed game frame');
 hg_not_has('hosted-game.php', 'allow-same-origin', 'Uploaded game must have opaque origin');
 hg_has('api/hosted-games/document.php', 'hosted-game-child-bridge.js', 'Child bridge injection');
-hg_has('assets/js/hosted-game-child-bridge.js', 'window.MicrogifterGame', 'Game SDK global');
+hg_has('assets/js/hosted-game-child-bridge.js', "Object.defineProperty(window, 'MicrogifterGame'", 'Immutable game SDK global');
 hg_has('assets/js/hosted-game-child-bridge.js', 'startHandshake', 'Durable child handshake');
 hg_has('assets/js/hosted-game-shell.js', "'state_save'", 'Approved state action');
 hg_has('assets/js/hosted-game-shell.js', "'score_submit'", 'Approved score action');
