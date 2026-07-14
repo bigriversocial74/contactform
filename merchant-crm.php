@@ -26,6 +26,7 @@ $page_styles = [
     '/assets/css/merchant-crm-mobile-dashboard.css?v=1.0.0',
     '/assets/css/merchant-crm-mobile-dashboard-contract.css?v=1.0.0',
     '/assets/css/merchant-crm-mobile-card-regression-fix.css?v=1.0.0',
+    '/assets/css/merchant-crm-desktop-layout-fix.css?v=1.0.0',
 ];
 
 $page_scripts = [
@@ -44,6 +45,7 @@ $page_scripts = [
     '/assets/js/merchant-crm-contact-link-polish.js?v=3.0.0',
     '/assets/js/merchant-crm-identity-duplicates.js?v=1.1.0',
     '/assets/js/merchant-crm-mobile-dashboard.js?v=1.0.0',
+    '/assets/js/merchant-crm-desktop-search.js?v=1.0.0',
 ];
 
 require __DIR__ . '/includes/header.php';
