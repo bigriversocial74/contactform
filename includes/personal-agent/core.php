@@ -144,12 +144,14 @@ function mg_personal_agent_update_settings(PDO $pdo, int $userId, array $input):
     $modelId = null;
     $modelPublicId = mg_personal_agent_text($input['preferred_model_id'] ?? '', 80);
     if ($modelPublicId !== '') {
-        $stmt = $pdo->prepare("SELECT m.id FROM ai_models m INNER JOIN ai_providers p ON p.id=m.provider_id
+        $stmt = $pdo->prepare("SELECT m.id,p.env_var_name FROM ai_models m INNER JOIN ai_providers p ON p.id=m.provider_id
             WHERE m.public_id=? AND m.enabled=1 AND p.enabled=1 AND p.provider_key='anthropic' LIMIT 1");
         $stmt->execute([$modelPublicId]);
-        $modelId = $stmt->fetchColumn();
-        if ($modelId === false) throw new InvalidArgumentException('Choose an available Claude model.');
-        $modelId = (int) $modelId;
+        $modelRow = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$modelRow || !mg_ai_env_configured((string) $modelRow['env_var_name'])) {
+            throw new InvalidArgumentException('Choose an available configured Claude model.');
+        }
+        $modelId = (int) $modelRow['id'];
     }
     $currency = mg_personal_agent_currency($input['default_currency'] ?? 'USD');
     $budgetMin = mg_personal_agent_decimal($input['default_budget_min'] ?? null);
@@ -173,4 +175,3 @@ function mg_personal_agent_update_settings(PDO $pdo, int $userId, array $input):
     mg_audit('user_agent.settings_updated', 'user_agent_settings', ['approval_mode'=>$approvalMode,'horizon_days'=>$horizon], $userId);
     return mg_personal_agent_settings($pdo, $userId);
 }
-
