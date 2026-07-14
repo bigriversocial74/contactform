@@ -29,7 +29,7 @@ $page_scripts = ['/assets/js/user-lists.js'];
 
 require __DIR__ . '/includes/header.php';
 ?>
-<section class="mg-user-lists-shell" data-user-list-page data-list-id="<?= mg_e($listPublicId) ?>">
+<section class="mg-app-shell mg-user-lists-shell" data-user-list-page data-list-id="<?= mg_e($listPublicId) ?>">
   <?php require __DIR__ . '/includes/agent-sidebar.php'; ?>
   <div class="mg-user-lists-main">
     <?php if ($loadError !== '' || !$list): ?>
