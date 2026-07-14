@@ -20,7 +20,6 @@ $read = static function (string $path) use ($root): string {
 $expect = static function (bool $condition, string $label) use (&$failures, &$passes): void {
     if ($condition) {
         $passes++;
-        echo "PASS: {$label}\n";
         return;
     }
     $failures[] = $label;
