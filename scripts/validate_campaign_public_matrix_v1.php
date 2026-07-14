@@ -98,10 +98,12 @@ foreach ($matrix as $type => [$route, $submit, $family, $expectedMode]) {
         : str_contains($page, $type);
     $check($declaresType, $type . ': landing page declares its campaign type');
 
+    $interactiveCards = str_contains($page, 'mg_campaign_landing_render_bottom_cards')
+        || (str_contains($page, 'data-campaign-foundation-cards') && str_contains($page, 'mg-stamp-summary-card'));
     $familyMatches = match ($family) {
         'shared' => str_contains($page, 'mg_campaign_landing_bootstrap') && str_contains($page, 'includes/public-campaign-page.php'),
         'specialized' => str_contains($page, 'mg_campaign_landing_bootstrap') && str_contains($page, 'mg_campaign_landing_state') && str_contains($page, 'mg_campaign_landing_render_bottom_cards'),
-        'interactive' => str_contains($page, 'mg_campaign_landing_bootstrap') && str_contains($page, 'mg-rl-interactive') && str_contains($page, 'mg_campaign_landing_render_bottom_cards'),
+        'interactive' => str_contains($page, 'mg_campaign_landing_bootstrap') && str_contains($page, 'mg-rl-interactive') && $interactiveCards,
         'media' => str_contains($page, 'includes/campaign-media-landing.php') && str_contains($page, 'mg_campaign_media_render_join') && str_contains($page, 'mg_campaign_media_render_cards'),
         'quest' => str_contains($page, 'data-loyalty-quest-participant') && str_contains($page, 'data-lqp-start') && str_contains($page, 'data-lqp-proof-form'),
         default => false,
@@ -159,7 +161,7 @@ $report .= "| Campaign type | Public route | Submit endpoint | Landing family | 
 foreach ($rows as [$type, $route, $submit, $family, $mode]) {
     $report .= "| `{$type}` | `{$route}` | `{$submit}` | {$family} | `{$mode}` | PASS |\n";
 }
-$report .= "\nInternal-only: `customer_refund` — no public route or customer submit endpoint.\n";
+$report .= "\nInternal-only: `customer_refund` — no public route or submit endpoint.\n";
 @file_put_contents($build . '/campaign-public-matrix-v1.md', $report);
 
 if ($failures) {
