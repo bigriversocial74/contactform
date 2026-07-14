@@ -10,12 +10,14 @@ $page_styles = [
     '/assets/css/merchant-integrations.css?v=1.0.0',
     '/assets/css/merchant-integrations-woocommerce.css?v=1.0.0',
     '/assets/css/merchant-integrations-shopify.css?v=1.0.0',
+    '/assets/css/merchant-integrations-square.css?v=1.0.0',
 ];
 $page_scripts = [
     '/assets/js/merchant-workspace.js',
     '/assets/js/merchant-integrations.js?v=1.0.0',
     '/assets/js/merchant-integrations-woocommerce.js?v=1.0.0',
     '/assets/js/merchant-integrations-shopify.js?v=1.0.0',
+    '/assets/js/merchant-integrations-square.js?v=1.0.0',
 ];
 $merchantView = 'integrations';
 require __DIR__ . '/includes/header.php';
