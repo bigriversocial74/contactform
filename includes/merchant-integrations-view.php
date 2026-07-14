@@ -30,7 +30,7 @@
     </article>
     <article>
       <span>03</span>
-      <div><strong>Addresses excluded</strong><p>Billing, shipping, and address-derived phone data remain outside the CRM contact integration.</p></div>
+      <div><strong>Addresses excluded</strong><p>Billing and shipping addresses are excluded, and address-derived phone numbers are not imported.</p></div>
     </article>
   </section>
 
