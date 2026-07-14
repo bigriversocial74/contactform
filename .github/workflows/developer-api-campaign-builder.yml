@@ -5,6 +5,7 @@ on:
     paths:
       - includes/merchant-developer-api-view.php
       - merchant-distribution.php
+      - api/distribution/programs.php
       - assets/js/merchant-developer-api-tabs.js
       - assets/js/merchant-developer-api-campaign-builder.js
       - assets/css/merchant-developer-api-campaign-builder.css
@@ -37,6 +38,7 @@ jobs:
         run: |
           php -l includes/merchant-developer-api-view.php
           php -l merchant-distribution.php
+          php -l api/distribution/programs.php
           php -l scripts/validate_developer_api_campaign_program_builder_v1.php
       - name: JavaScript syntax
         run: |
