@@ -51,7 +51,7 @@ final class AgentHeaderTabBehaviorTest extends TestCase
         self::assertStringContainsString('looksLikePlusControl',$createMenu);
         self::assertStringContainsString('explicitTriggerSelector',$createMenu);
         self::assertStringContainsString('.mg-header-build-link',$createMenu);
-        self::assertStringContainsString('href="/build.php" data-global-create',$header);
+        self::assertStringContainsString('href="/lists.php?action=create" data-global-create',$header);
         self::assertStringContainsString("document.addEventListener('click'",$createMenu);
     }
 
