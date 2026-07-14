@@ -20,6 +20,7 @@ $page_styles = [
 $page_scripts = [
     '/assets/js/agent-workspace.js',
     '/assets/js/personal-gifting-agent.js',
+    '/assets/js/personal-gifting-agent-render.js',
     '/assets/js/personal-gifting-agent-actions.js',
 ];
 
