@@ -10,6 +10,7 @@ on:
       - 'api/merchant/integrations.php'
       - 'merchant-integrations.php'
       - 'merchant-integrations-squarespace-callback.php'
+      - 'webhooks/squarespace-contacts.php'
       - 'includes/merchant-integrations-view.php'
       - 'includes/merchant-navigation.php'
       - 'includes/merchant-view.php'
@@ -42,13 +43,19 @@ jobs:
         run: |
           php -l includes/integrations/provider-interface.php
           php -l includes/integrations/providers/squarespace.php
+          php -l includes/integrations/squarespace-contacts.php
+          php -l includes/integrations/squarespace-contact-auth.php
+          php -l includes/integrations/squarespace-contact-import.php
+          php -l includes/integrations/squarespace-contact-sync.php
+          php -l includes/integrations/squarespace-contact-webhooks.php
           php -l includes/merchant-integrations.php
           php -l api/merchant/integrations.php
           php -l merchant-integrations.php
           php -l merchant-integrations-squarespace-callback.php
+          php -l webhooks/squarespace-contacts.php
           php -l includes/merchant-integrations-view.php
           php -l scripts/validate_merchant_integrations_foundation_v1.php
       - name: JavaScript syntax
         run: node --check assets/js/merchant-integrations.js
-      - name: Foundation contract
+      - name: Contacts import contract
         run: php scripts/validate_merchant_integrations_foundation_v1.php
