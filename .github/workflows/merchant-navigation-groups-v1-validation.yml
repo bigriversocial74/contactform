@@ -4,6 +4,9 @@ on:
   pull_request:
     paths:
       - 'includes/merchant-navigation.php'
+      - 'includes/app-sidebar.php'
+      - 'includes/header-templates/logged-in.php'
+      - 'assets/css/merchant-sidebar-accordion.css'
       - 'scripts/validate_merchant_navigation_groups_v1.php'
       - '.github/workflows/merchant-navigation-groups-v1-validation.yml'
   workflow_dispatch:
@@ -28,6 +31,8 @@ jobs:
       - name: PHP syntax
         run: |
           php -l includes/merchant-navigation.php
+          php -l includes/app-sidebar.php
+          php -l includes/header-templates/logged-in.php
           php -l scripts/validate_merchant_navigation_groups_v1.php
       - name: Merchant navigation grouping contract
         run: php scripts/validate_merchant_navigation_groups_v1.php
