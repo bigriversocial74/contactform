@@ -4,8 +4,11 @@ on:
   pull_request:
     paths:
       - 'admin/reviews.php'
+      - 'admin/case-studies.php'
       - 'merchant-reviews.php'
+      - 'case-study.php'
       - 'api/admin/reviews.php'
+      - 'api/admin/case-studies.php'
       - 'api/merchant/reviews.php'
       - 'api/public/review-replies.php'
       - 'api/public/case-studies/**'
@@ -18,6 +21,7 @@ on:
       - 'assets/js/public-profile-review-replies.js'
       - 'assets/js/featured-case-studies.js'
       - 'assets/js/case-study-curation.js'
+      - 'assets/js/case-study.js'
       - 'assets/css/reviews-case-studies-management.css'
       - 'assets/css/public-review-replies.css'
       - 'database/reviews_case_studies_management_v1.sql'
@@ -37,15 +41,22 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - name: PHP syntax
         run: |
           php -l admin/reviews.php
+          php -l admin/case-studies.php
           php -l merchant-reviews.php
+          php -l case-study.php
           php -l api/admin/reviews.php
+          php -l api/admin/case-studies.php
           php -l api/merchant/reviews.php
           php -l api/public/review-replies.php
           php -l api/public/case-studies/list.php
           php -l api/public/case-studies/detail.php
+          php -l api/public/case-studies/stats.php
           php -l includes/reviews-case-studies.php
           php -l includes/merchant-reviews-view.php
           php -l includes/merchant-view.php
@@ -59,6 +70,7 @@ jobs:
           node --check assets/js/public-profile-review-replies.js
           node --check assets/js/featured-case-studies.js
           node --check assets/js/case-study-curation.js
+          node --check assets/js/case-study.js
           node --check assets/js/reviews-management-nav.js
       - name: Contract validation
         run: php scripts/validate_reviews_case_studies_management_v1.php
