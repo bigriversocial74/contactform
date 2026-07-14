@@ -101,11 +101,34 @@ if ($appSidebarVariant === 'utility' && !isset($appSidebarNav['training-lab'])) 
 }
 
 $currentPath = '/' . ltrim((string) ($_SERVER['SCRIPT_NAME'] ?? ''), '/');
-$lastSection = null;
+$renderSidebarItem = static function (string $key, array $item) use ($appSidebarActive, $currentPath): void {
+    $href = (string) ($item['href'] ?? '#');
+    $isActive = (bool) ($item['active'] ?? false)
+        || $appSidebarActive === $key
+        || ($href !== '#' && $href === $currentPath);
+    $label = (string) ($item['label'] ?? $key);
+    $detail = (string) ($item['detail'] ?? '');
+    $isButton = (bool) ($item['button'] ?? false);
+    $dataTab = trim((string) ($item['data_tab'] ?? ''));
+    $badge = '';
+    if ($isButton) {
+        echo '<button class="' . ($isActive ? 'is-active' : '') . '" type="button"'
+            . ($dataTab !== '' ? ' data-crm-tab="' . mg_e($dataTab) . '"' : '')
+            . '><strong>' . mg_e($label) . '</strong>'
+            . ($detail !== '' ? '<span>' . mg_e($detail) . '</span>' : '')
+            . $badge . '</button>';
+        return;
+    }
+    echo '<a class="' . ($isActive ? 'is-active' : '') . '" href="' . mg_e($href) . '"><strong>'
+        . mg_e($label) . '</strong>'
+        . ($detail !== '' ? '<span>' . mg_e($detail) . '</span>' : '')
+        . $badge . '</a>';
+};
 ?>
 <?php if ($appSidebarAgentBadges): ?>
 <link rel="stylesheet" href="/assets/css/merchant-agent-notification-digest.css">
 <link rel="stylesheet" href="/assets/css/merchant-agent-memory.css">
+<link rel="stylesheet" href="/assets/css/merchant-sidebar-accordion.css?v=1.0.0">
 <script src="/assets/js/merchant-agent-notification-digest.js" defer></script>
 <script src="/assets/js/merchant-agent-memory.js" defer></script>
 <?php endif; ?>
@@ -135,32 +158,65 @@ $lastSection = null;
   <?= $appSidebarBeforeNav ?>
 
   <nav class="mg-app-side-nav mg-universal-side-nav" aria-label="<?= mg_e($appSidebarLabel !== '' ? $appSidebarLabel . ' navigation' : 'Workspace navigation') ?>">
-    <?php foreach ($appSidebarNav as $key => $item): ?>
+    <?php if ($appSidebarVariant === 'merchant'): ?>
       <?php
-        if (isset($item['visible']) && !$item['visible']) {
-            continue;
+        $merchantPrimaryItems = [];
+        $merchantSectionItems = [];
+        foreach ($appSidebarNav as $key => $item) {
+            if (isset($item['visible']) && !$item['visible']) {
+                continue;
+            }
+            $section = trim((string) ($item['section'] ?? ''));
+            if ($section === '') {
+                $merchantPrimaryItems[$key] = $item;
+                continue;
+            }
+            $merchantSectionItems[$section][$key] = $item;
         }
-        $section = trim((string) ($item['section'] ?? ''));
-        if ($section !== '' && $section !== $lastSection) {
-            echo '<span class="mg-side-nav-section">' . mg_e($section) . '</span>';
-            $lastSection = $section;
-        }
-        $href = (string) ($item['href'] ?? '#');
-        $isActive = (bool) ($item['active'] ?? false)
-            || $appSidebarActive === (string) $key
-            || ($href !== '#' && $href === $currentPath);
-        $label = (string) ($item['label'] ?? $key);
-        $detail = (string) ($item['detail'] ?? '');
-        $isButton = (bool) ($item['button'] ?? false);
-        $dataTab = trim((string) ($item['data_tab'] ?? ''));
-        $badge = '';
       ?>
-      <?php if ($isButton): ?>
-        <button class="<?= $isActive ? 'is-active' : '' ?>" type="button"<?= $dataTab !== '' ? ' data-crm-tab="' . mg_e($dataTab) . '"' : '' ?>><strong><?= mg_e($label) ?></strong><?php if ($detail !== ''): ?><span><?= mg_e($detail) ?></span><?php endif; ?><?= $badge ?></button>
-      <?php else: ?>
-        <a class="<?= $isActive ? 'is-active' : '' ?>" href="<?= mg_e($href) ?>"><strong><?= mg_e($label) ?></strong><?php if ($detail !== ''): ?><span><?= mg_e($detail) ?></span><?php endif; ?><?= $badge ?></a>
-      <?php endif; ?>
-    <?php endforeach; ?>
+      <div class="mg-merchant-nav-primary" data-merchant-nav-primary>
+        <?php foreach ($merchantPrimaryItems as $key => $item): ?>
+          <?php $renderSidebarItem((string) $key, $item); ?>
+        <?php endforeach; ?>
+      </div>
+      <div class="mg-merchant-nav-accordions" data-merchant-nav-accordions>
+        <?php foreach ($merchantSectionItems as $section => $items): ?>
+          <?php
+            $sectionHasActiveItem = false;
+            foreach ($items as $key => $item) {
+                $href = (string) ($item['href'] ?? '#');
+                if ((bool) ($item['active'] ?? false) || $appSidebarActive === (string) $key || ($href !== '#' && $href === $currentPath)) {
+                    $sectionHasActiveItem = true;
+                    break;
+                }
+            }
+          ?>
+          <details class="mg-side-nav-accordion" data-merchant-nav-section="<?= mg_e($section) ?>"<?= $sectionHasActiveItem ? ' open' : '' ?>>
+            <summary><strong><?= mg_e($section) ?></strong><i aria-hidden="true"></i></summary>
+            <div class="mg-side-nav-accordion-items">
+              <?php foreach ($items as $key => $item): ?>
+                <?php $renderSidebarItem((string) $key, $item); ?>
+              <?php endforeach; ?>
+            </div>
+          </details>
+        <?php endforeach; ?>
+      </div>
+    <?php else: ?>
+      <?php $lastSection = null; ?>
+      <?php foreach ($appSidebarNav as $key => $item): ?>
+        <?php
+          if (isset($item['visible']) && !$item['visible']) {
+              continue;
+          }
+          $section = trim((string) ($item['section'] ?? ''));
+          if ($section !== '' && $section !== $lastSection) {
+              echo '<span class="mg-side-nav-section">' . mg_e($section) . '</span>';
+              $lastSection = $section;
+          }
+          $renderSidebarItem((string) $key, $item);
+        ?>
+      <?php endforeach; ?>
+    <?php endif; ?>
   </nav>
 
   <?= $appSidebarAfterNav ?>
