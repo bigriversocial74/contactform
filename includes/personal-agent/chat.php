@@ -147,21 +147,24 @@ PROMPT;
 function mg_personal_agent_model(PDO $pdo, int $userId, string $requestedPublicId = ''): ?array
 {
     $settings=mg_personal_agent_settings($pdo,$userId);
-    $publicId=$requestedPublicId !== '' ? $requestedPublicId : (string)$settings['preferred_model_id'];
-    $where=$publicId !== '' ? ' AND m.public_id=?' : '';
-    $params=$publicId !== '' ? [$publicId] : [];
-    $stmt=$pdo->prepare("SELECT m.*,p.provider_key,p.display_name provider_name,p.env_var_name,p.enabled provider_enabled,
+    $preferred=$requestedPublicId !== '' ? $requestedPublicId : (string)$settings['preferred_model_id'];
+    $baseSql="SELECT m.*,p.provider_key,p.display_name provider_name,p.env_var_name,p.enabled provider_enabled,
         p.rate_limit_per_minute,p.rate_limit_per_hour,p.rate_limit_per_day,p.user_rate_limit_per_hour,p.user_rate_limit_per_day,
         p.agent_rate_limit_per_hour,p.agent_rate_limit_per_day
         FROM ai_models m INNER JOIN ai_providers p ON p.id=m.provider_id
         WHERE m.enabled=1 AND p.enabled=1 AND p.provider_key='anthropic'
-        AND LOWER(m.model_key) NOT LIKE '%opus%' AND LOWER(m.model_key) NOT LIKE '%fable%'{$where}
-        ORDER BY m.is_default DESC,m.sort_order,m.display_name LIMIT 1");
-    $stmt->execute($params);
-    $row=$stmt->fetch(PDO::FETCH_ASSOC);
-    if (!$row && $publicId !== '') return mg_personal_agent_model($pdo,$userId,'');
-    if (!is_array($row) || !mg_ai_env_configured((string)$row['env_var_name'])) return null;
-    return $row;
+        AND LOWER(m.model_key) NOT LIKE '%opus%' AND LOWER(m.model_key) NOT LIKE '%fable%'";
+    if ($preferred !== '') {
+        $stmt=$pdo->prepare($baseSql.' AND m.public_id=? LIMIT 1');
+        $stmt->execute([$preferred]);
+        $row=$stmt->fetch(PDO::FETCH_ASSOC);
+        if (is_array($row) && mg_ai_env_configured((string)$row['env_var_name'])) return $row;
+    }
+    $rows=$pdo->query($baseSql.' ORDER BY m.is_default DESC,m.sort_order,m.display_name')->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    foreach ($rows as $row) {
+        if (mg_ai_env_configured((string)$row['env_var_name'])) return $row;
+    }
+    return null;
 }
 
 function mg_personal_agent_fallback(string $message, array $context, array $dashboard): array
@@ -218,6 +221,7 @@ function mg_personal_agent_chat(PDO $pdo, int $userId, array $input): array
     $context=mg_personal_agent_resolve_context($pdo,$userId,(string)($input['context_type'] ?? 'none'),(string)($input['context_id'] ?? ''));
     $thread=mg_personal_agent_thread($pdo,$userId,mg_personal_agent_text($input['thread_id'] ?? '',80),$context);
     $publicContext=mg_personal_agent_public_context($context);
+    $aiContext=mg_personal_agent_ai_context($context);
     $userMessage=mg_personal_agent_store_message($pdo,$userId,$thread['internal_id'],'user',$message,[],$publicContext);
     $dashboard=mg_personal_agent_dashboard($pdo,$userId);
     $memory=array_slice($dashboard['memory'] ?? [],0,30);
@@ -227,14 +231,16 @@ function mg_personal_agent_chat(PDO $pdo, int $userId, array $input): array
     $modelKey='';
     if ($model) {
         try {
-            mg_ai_enforce_rate_limits($pdo,$model,$model,$userId,null);
+            $provider=$model;
+            $provider['id']=(int)$model['provider_id'];
+            mg_ai_enforce_rate_limits($pdo,$provider,$model,$userId,null);
             $messages=[];
             foreach ($history as $item) {
                 if (!in_array($item['role'],['user','assistant'],true)) continue;
                 $messages[]=['role'=>$item['role'],'content'=>mb_substr((string)$item['body'],0,4000)];
             }
             $contextPayload=[
-                'selected_context'=>$publicContext,
+                'selected_context'=>$aiContext,
                 'upcoming_dates'=>array_slice($dashboard['upcoming_dates'] ?? [],0,20),
                 'active_plans'=>array_slice(array_values(array_filter($dashboard['plans'] ?? [],static fn(array $plan): bool=>in_array($plan['status'],['draft','planned','ready'],true))),0,20),
                 'scheduled_reminders'=>array_slice($dashboard['reminders'] ?? [],0,20),
