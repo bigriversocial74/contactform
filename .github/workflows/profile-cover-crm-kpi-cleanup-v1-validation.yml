@@ -1,0 +1,35 @@
+name: Profile Cover CRM KPI Cleanup v1
+
+on:
+  pull_request:
+    paths:
+      - 'assets/css/public-profile-polish.css'
+      - 'assets/css/merchant-crm-kpi-cleanup.css'
+      - 'merchant-crm.php'
+      - 'scripts/validate_profile_cover_crm_kpi_cleanup_v1.php'
+      - '.github/workflows/profile-cover-crm-kpi-cleanup-v1-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Validate PHP syntax
+        run: |
+          php -l merchant-crm.php
+          php -l scripts/validate_profile_cover_crm_kpi_cleanup_v1.php
+
+      - name: Validate profile and CRM cleanup contract
+        run: php scripts/validate_profile_cover_crm_kpi_cleanup_v1.php
