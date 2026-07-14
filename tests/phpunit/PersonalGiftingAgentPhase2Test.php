@@ -70,6 +70,7 @@ final class PersonalGiftingAgentPhase2Test extends TestCase
         self::assertStringContainsString('mg_user_contact_list_eligibility_detail',$service);
         self::assertStringContainsString('owner_user_id=?',$service);
         self::assertStringContainsString("'phone_masked'",$service);
+        self::assertStringContainsString('unset($details[$privateDisplayKey])',$service);
         self::assertStringNotContainsString("'phone_ciphertext'",$service);
         self::assertStringNotContainsString("'address_line_1'",$service);
         self::assertStringContainsString('Nothing will be purchased or sent without your review.',$service);
@@ -98,6 +99,8 @@ final class PersonalGiftingAgentPhase2Test extends TestCase
         }
         self::assertStringContainsString('mg_anthropic_messages',$service);
         self::assertStringContainsString('mg_ai_enforce_rate_limits',$service);
+        self::assertStringContainsString("\$provider['id']=(int)\$model['provider_id']",$service);
+        self::assertStringContainsString('foreach ($rows as $row)',$service);
         self::assertStringContainsString('function mg_personal_agent_fallback',$service);
         self::assertStringContainsString("mg_security_log('warning','user_agent.ai_fallback'",$service);
     }
