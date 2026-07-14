@@ -32,7 +32,7 @@ require dirname(__DIR__) . '/includes/header.php';
 <section class="mg-app-shell mg-admin-app">
   <?php require dirname(__DIR__) . '/includes/admin-sidebar.php'; ?>
   <div class="mg-app-workspace mg-admin-workspace">
-    <section class="mg-admin-table-page">
+    <section class="mg-admin-table-page mg-admin-content-page">
       <header class="mg-admin-table-hero">
         <div>
           <a class="mg-admin-users-back" href="/account-admin.php">← Admin dashboard</a>
