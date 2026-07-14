@@ -70,6 +70,7 @@ document.addEventListener('DOMContentLoaded', function () {
       meta.append(link);
     }
     if (connection.connected_at) meta.append(el('small', '', 'Connected ' + new Date(connection.connected_at.replace(' ', 'T') + 'Z').toLocaleString()));
+    if (connection.last_sync_at) meta.append(el('small', '', 'Last contact sync ' + new Date(connection.last_sync_at.replace(' ', 'T') + 'Z').toLocaleString()));
     if (connection.last_error_message) meta.append(el('small', 'is-error', connection.last_error_message));
     card.appendChild(meta);
     return meta;
@@ -108,6 +109,116 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+  function previewTable(data) {
+    var wrap = el('div', 'mg-integration-preview');
+    var head = el('div', 'mg-integration-preview-head');
+    head.append(el('strong', '', 'Contact preview'), el('span', '', String(data.page_count || 0) + ' contacts · addresses excluded'));
+    wrap.appendChild(head);
+    var list = el('div', 'mg-integration-preview-list');
+    (data.items || []).slice(0, 25).forEach(function (item) {
+      var row = el('div', 'mg-integration-preview-row');
+      var identity = el('div');
+      identity.append(el('strong', '', item.name || item.email || 'Unnamed contact'), el('small', '', item.email || 'Invalid email'));
+      var consent = el('span', item.accepts_marketing ? 'is-consented' : 'is-not-consented', item.accepts_marketing ? 'Marketing yes' : 'Marketing no');
+      var action = el('span', 'is-action is-' + item.action, String(item.action || 'review').replace(/_/g, ' '));
+      row.append(identity, consent, action);
+      list.appendChild(row);
+    });
+    if (!(data.items || []).length) list.appendChild(el('p', 'mg-integration-preview-empty', 'No contacts were returned for this page.'));
+    wrap.appendChild(list);
+    return wrap;
+  }
+
+  async function previewContacts(provider, button, output) {
+    var original = button.textContent;
+    button.disabled = true;
+    button.textContent = 'Loading preview…';
+    output.textContent = '';
+    try {
+      var response = await MG.post('/api/merchant/integrations.php', { action: 'preview_contacts', provider: provider.key, page_size: 25 });
+      var data = response.data || response;
+      output.appendChild(previewTable(data));
+    } catch (error) {
+      output.appendChild(el('div', 'mg-integration-inline-error', error.message || 'Unable to preview Squarespace contacts.'));
+    } finally {
+      button.disabled = false;
+      button.textContent = original;
+    }
+  }
+
+  async function syncContacts(provider, button) {
+    var original = button.textContent;
+    button.disabled = true;
+    button.textContent = 'Importing…';
+    try {
+      var response = await MG.post('/api/merchant/integrations.php', { action: 'sync_contacts', provider: provider.key, page_size: 100, max_pages: 5 });
+      var data = response.data || response;
+      var counts = data.counts || {};
+      if (MG.toast) MG.toast('Squarespace sync completed: ' + String(counts.created || 0) + ' created, ' + String((counts.updated || 0) + (counts.linked || 0)) + ' updated or linked, ' + String(counts.review || 0) + ' need review.', data.status === 'partial' ? 'error' : 'success');
+      await load();
+    } catch (error) {
+      if (MG.toast) MG.toast(error.message || 'Unable to import Squarespace contacts.', 'error');
+    } finally {
+      button.disabled = false;
+      button.textContent = original;
+    }
+  }
+
+  async function configureWebhook(provider, button) {
+    var original = button.textContent;
+    button.disabled = true;
+    button.textContent = 'Configuring…';
+    try {
+      var response = await MG.post('/api/merchant/integrations.php', { action: 'configure_contact_webhook', provider: provider.key });
+      var data = response.data || response;
+      if (MG.toast) MG.toast(data.configured ? 'Squarespace contact webhook is active.' : (data.error || 'Webhook setup needs attention.'), data.configured ? 'success' : 'error');
+      await load();
+    } catch (error) {
+      if (MG.toast) MG.toast(error.message || 'Unable to configure the Squarespace webhook.', 'error');
+    } finally {
+      button.disabled = false;
+      button.textContent = original;
+    }
+  }
+
+  function squarespaceSyncPanel(provider, connection) {
+    var status = (state.data && state.data.squarespace_contacts) || {};
+    var panel = el('section', 'mg-integration-sync-panel');
+    var title = el('header', 'mg-integration-sync-head');
+    var copy = el('div');
+    copy.append(el('strong', '', 'Squarespace contacts'), el('small', '', 'Read-only import · consent preserved · no addresses'));
+    var webhook = status.webhook || {};
+    title.append(copy, el('span', webhook.configured ? 'is-live' : 'is-warning', webhook.configured ? 'Webhook live' : 'Webhook setup'));
+    panel.appendChild(title);
+
+    var counts = status.counts || {};
+    var stats = el('div', 'mg-integration-sync-stats');
+    [['Linked', counts.linked || 0], ['Review', (counts.pending_review || 0) + (counts.conflict || 0)], ['Deleted outside', counts.deleted_external || 0]].forEach(function (item) {
+      var stat = el('div');
+      stat.append(el('span', '', item[0]), el('strong', '', item[1]));
+      stats.appendChild(stat);
+    });
+    panel.appendChild(stats);
+
+    var controls = el('div', 'mg-integration-sync-actions');
+    var preview = el('button', 'is-secondary', 'Preview contacts');
+    preview.type = 'button';
+    var sync = el('button', 'is-primary', 'Import contacts');
+    sync.type = 'button';
+    var webhookButton = el('button', webhook.configured ? 'is-secondary' : 'is-warning', webhook.configured ? 'Rotate webhook secret' : 'Enable webhook');
+    webhookButton.type = 'button';
+    controls.append(preview, sync, webhookButton);
+    panel.appendChild(controls);
+    var output = el('div', 'mg-integration-preview-output');
+    panel.appendChild(output);
+    preview.addEventListener('click', function () { previewContacts(provider, preview, output); });
+    sync.addEventListener('click', function () { syncContacts(provider, sync); });
+    webhookButton.addEventListener('click', function () { configureWebhook(provider, webhookButton); });
+    if (webhook.error) output.appendChild(el('div', 'mg-integration-inline-error', webhook.error));
+    if (!connection || connection.status !== 'active') controls.querySelectorAll('button').forEach(function (button) { button.disabled = true; });
+    return panel;
+  }
+
   function providerCard(provider) {
     var connection = connectionFor(provider.key);
     var card = el('article', 'mg-integration-card ' + statusTone(connection, provider));
@@ -128,6 +239,7 @@ document.addEventListener('DOMContentLoaded', function () {
     list.forEach(function (item) { capabilities.appendChild(el('span', '', capabilityLabel(item))); });
     card.appendChild(capabilities);
     connectionMeta(card, connection);
+    if (provider.key === 'squarespace' && connection) card.appendChild(squarespaceSyncPanel(provider, connection));
 
     var footer = el('footer', 'mg-integration-actions');
     if (!provider.available) {
@@ -193,7 +305,8 @@ document.addEventListener('DOMContentLoaded', function () {
   var oauth = query.get('oauth');
   if (oauth && MG.toast) {
     var messages = {
-      connected: ['Squarespace connected successfully.', 'success'],
+      connected: ['Squarespace connected and contact webhooks enabled.', 'success'],
+      connected_webhook_warning: ['Squarespace connected. Contact webhook setup needs attention.', 'error'],
       denied: ['Squarespace authorization was cancelled.', 'error'],
       failed: ['Squarespace authorization could not be completed.', 'error'],
       signin_required: ['Sign in to finish connecting Squarespace.', 'error'],
