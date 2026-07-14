@@ -26,17 +26,17 @@
     </article>
     <article>
       <span>02</span>
-      <div><strong>Consent stays explicit</strong><p>Marketing consent is preserved with its provider source and timestamps. Imports never silently opt a customer into marketing.</p></div>
+      <div><strong>Consent stays explicit</strong><p>Marketing consent is preserved only when a provider supplies verifiable consent evidence. Imports never silently opt a customer into marketing.</p></div>
     </article>
     <article>
       <span>03</span>
-      <div><strong>Addresses excluded</strong><p>Squarespace shipping addresses and address-derived phone numbers are not imported into Microgifter.</p></div>
+      <div><strong>Addresses excluded</strong><p>Billing, shipping, and address-derived phone data remain outside the CRM contact integration.</p></div>
     </article>
   </section>
 
   <div class="mg-integrations-section-title">
     <div><span class="mg-eyebrow">Provider catalog</span><h2>Connect your business systems</h2></div>
-    <p>Squarespace is the first production adapter. Additional CRM and commerce providers use the same secure connection, sync, and webhook foundation.</p>
+    <p>Squarespace and WooCommerce use the same secure connection, identity-link, synchronization, review, and audit foundation. Shopify and Square are next.</p>
   </div>
 
   <section class="mg-integrations-grid" data-integrations-grid>
