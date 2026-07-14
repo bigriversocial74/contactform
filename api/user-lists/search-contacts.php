@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_bootstrap.php';
+require_once dirname(__DIR__, 2) . '/includes/user-contact-search.php';
 
 mg_require_method('GET');
 $user = mg_require_api_user();
@@ -15,5 +16,5 @@ mg_user_lists_api_run(static function () use ($user, $query, $listPublicId): arr
         $list = mg_user_contact_list_load($pdo, (int) $user['id'], $listPublicId);
         $listInternalId = (int) $list['id_internal'];
     }
-    return ['contacts' => mg_user_contact_search($pdo, (int) $user['id'], $query, $listInternalId)];
+    return ['contacts' => mg_user_contact_relationship_search($pdo, (int) $user['id'], $query, $listInternalId)];
 });
