@@ -1,0 +1,56 @@
+-- Reward Drop Game v1
+-- First-party Microgifter session game with replay-safe API reward issuance and webhook confirmation.
+
+CREATE TABLE IF NOT EXISTS reward_drop_runs (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  user_id BIGINT UNSIGNED NOT NULL,
+  developer_app_id BIGINT UNSIGNED NOT NULL,
+  linked_account_public_id CHAR(36) NOT NULL,
+  program_public_id CHAR(36) NOT NULL,
+  template_public_id CHAR(36) NOT NULL,
+  run_token_hash CHAR(64) NOT NULL,
+  external_event_id VARCHAR(180) NOT NULL,
+  target_score SMALLINT UNSIGNED NOT NULL DEFAULT 12,
+  score SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  status ENUM('started','qualified','issuing','queued','delivered','failed','expired') NOT NULL DEFAULT 'started',
+  reward_public_id CHAR(36) NULL,
+  api_status VARCHAR(80) NULL,
+  webhook_event_public_id CHAR(36) NULL,
+  webhook_delivery_public_id CHAR(36) NULL,
+  error_message VARCHAR(500) NULL,
+  started_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  completed_at DATETIME NULL,
+  rewarded_at DATETIME NULL,
+  webhook_received_at DATETIME NULL,
+  expires_at DATETIME NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_reward_drop_runs_public_id (public_id),
+  UNIQUE KEY uq_reward_drop_runs_token_hash (run_token_hash),
+  UNIQUE KEY uq_reward_drop_runs_external_event (external_event_id),
+  UNIQUE KEY uq_reward_drop_runs_reward (reward_public_id),
+  KEY idx_reward_drop_runs_user_status (user_id,status,created_at),
+  KEY idx_reward_drop_runs_app_status (developer_app_id,status,created_at),
+  KEY idx_reward_drop_runs_expiry (status,expires_at),
+  CONSTRAINT fk_reward_drop_runs_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_reward_drop_runs_app FOREIGN KEY (developer_app_id) REFERENCES merchant_developer_apps(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS reward_drop_webhook_receipts (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  event_public_id CHAR(36) NOT NULL,
+  delivery_public_id CHAR(36) NULL,
+  event_type VARCHAR(100) NOT NULL,
+  reward_public_id CHAR(36) NULL,
+  verified TINYINT(1) NOT NULL DEFAULT 1,
+  payload_checksum CHAR(64) NOT NULL,
+  received_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_reward_drop_webhook_event (event_public_id),
+  UNIQUE KEY uq_reward_drop_webhook_delivery (delivery_public_id),
+  KEY idx_reward_drop_webhook_reward (reward_public_id,received_at),
+  KEY idx_reward_drop_webhook_type (event_type,received_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
