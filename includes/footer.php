@@ -88,11 +88,11 @@ $can_intelligence = $user && (in_array('intelligence.dashboard.view', $user_perm
         <a href="/discover.php">Explore</a>
         <a href="/featured-case-studies.php">Case Studies</a>
         <a href="/pricing.php">Pricing</a>
-        <a href="/about-team.php">About Team</a>
+        <a href="https://microgifter.com/resume.html">About Team</a>
+        <a href="https://microgifter.com/one-page.html">Pitch</a>
         <a href="/investors.php">Investors</a>
         <a href="/developer-docs.php">Developer Docs</a>
         <a href="/learn-more.php">Book A Demo</a>
-        <a href="/campaign.php">Campaigns</a>
       </div>
       <div class="mg-footer-column">
         <h2>Developers</h2>
