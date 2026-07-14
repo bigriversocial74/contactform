@@ -1,0 +1,78 @@
+/* Stamp Card public layout repair.
+   Keeps desktop participation alignment, authenticated footer contrast, and mobile header behavior page-scoped. */
+
+body[data-page-id="stamp-card"] .mg-rl-wrap > .mg-rl-join-desktop {
+  align-self: start !important;
+  top: 98px !important;
+  bottom: auto !important;
+}
+
+body[data-page-id="stamp-card"] .mg-rl-wrap:has(> .mg-rl-join-desktop .mg-campaign-user-details[open]) > .mg-rl-join-desktop {
+  align-self: start !important;
+  top: 98px !important;
+  bottom: auto !important;
+}
+
+body[data-page-id="stamp-card"] .mg-site-footer.mg-universal-footer {
+  position: relative !important;
+  overflow: hidden !important;
+  border-top: 1px solid rgba(255, 255, 255, .1) !important;
+  background: linear-gradient(135deg, #091a31 0%, #102d4c 100%) !important;
+  color: #fff !important;
+}
+
+body[data-page-id="stamp-card"] .mg-site-footer.mg-universal-footer::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 8% 12%, rgba(73, 125, 176, .18), transparent 30%),
+    radial-gradient(circle at 92% 28%, rgba(255, 255, 255, .07), transparent 26%),
+    linear-gradient(rgba(255, 255, 255, .035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, .03) 1px, transparent 1px) !important;
+  background-size: auto, auto, 72px 72px, 72px 72px !important;
+  opacity: .92 !important;
+}
+
+body[data-page-id="stamp-card"] .mg-universal-footer .mg-footer-logo,
+body[data-page-id="stamp-card"] .mg-universal-footer .mg-footer-brand-panel p,
+body[data-page-id="stamp-card"] .mg-universal-footer .mg-footer-market-strip span,
+body[data-page-id="stamp-card"] .mg-universal-footer .mg-footer-market-strip strong,
+body[data-page-id="stamp-card"] .mg-universal-footer .mg-footer-column h2,
+body[data-page-id="stamp-card"] .mg-universal-footer .mg-footer-column a,
+body[data-page-id="stamp-card"] .mg-universal-footer .mg-footer-bottom p,
+body[data-page-id="stamp-card"] .mg-universal-footer .mg-footer-bottom-links a,
+body[data-page-id="stamp-card"] .mg-universal-footer a:not(.mg-footer-logo) {
+  color: #fff !important;
+}
+
+body[data-page-id="stamp-card"] .mg-universal-footer .mg-footer-logo img {
+  filter: brightness(0) invert(1) !important;
+}
+
+body[data-page-id="stamp-card"] .mg-universal-footer .mg-footer-column a:hover,
+body[data-page-id="stamp-card"] .mg-universal-footer .mg-footer-bottom-links a:hover {
+  color: #fff !important;
+  text-decoration: underline !important;
+  text-underline-offset: 3px !important;
+}
+
+body[data-page-id="stamp-card"] .mg-universal-footer .mg-footer-bottom {
+  border-top-color: rgba(255, 255, 255, .16) !important;
+}
+
+@media (max-width: 720px) {
+  body[data-page-id="stamp-card"] > .mg-site-header[data-public-header] {
+    display: none !important;
+  }
+
+  body[data-page-id="stamp-card"] > .mg-main {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  body[data-page-id="stamp-card"] .mg-rl-page {
+    min-height: 100svh;
+  }
+}

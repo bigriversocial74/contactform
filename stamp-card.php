@@ -13,8 +13,14 @@ $page_styles = [
     '/assets/css/campaign-landing-foundation.css',
     '/assets/css/public-campaign-experience-v1.css',
     '/assets/css/loyalty-cards.css',
+    '/assets/css/stamp-card-public-layout-fix.css?v=1.0.0',
 ];
-$page_scripts = ['/assets/js/public-campaign.js', '/assets/js/public-stamp-card.js', '/assets/js/loyalty-cards.js'];
+$page_scripts = [
+    '/assets/js/public-campaign.js',
+    '/assets/js/public-stamp-card.js',
+    '/assets/js/loyalty-cards.js',
+    '/assets/js/stamp-card-public-layout-fix.js?v=1.0.0',
+];
 
 $mgCampaignBootstrap = mg_campaign_landing_bootstrap('stamp_card_reward', $page_title);
 $campaign = is_array($mgCampaignBootstrap['campaign'] ?? null) ? $mgCampaignBootstrap['campaign'] : null;
