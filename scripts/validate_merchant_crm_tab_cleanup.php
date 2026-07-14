@@ -11,6 +11,11 @@ preg_match_all('/data-crm-tab-target="([^"]+)"/', $view, $targetMatches);
 preg_match_all('/data-crm-tab-panel="([^"]+)"/', $view, $panelMatches);
 $targets = array_values(array_unique($targetMatches[1] ?? []));
 $panels = array_values(array_unique($panelMatches[1] ?? []));
+$mobileStatStart = strpos($view, 'data-crm-contact-stat-strip');
+$mobileStatEnd = $mobileStatStart === false ? false : strpos($view, '</section>', $mobileStatStart);
+$mobileStatMarkup = $mobileStatStart !== false && $mobileStatEnd !== false
+    ? substr($view, $mobileStatStart, $mobileStatEnd - $mobileStatStart)
+    : '';
 
 $checks = [
     'merchant CRM uses one canonical asset manifest' => str_contains($page, "'/assets/css/merchant-crm.css'")
@@ -29,19 +34,19 @@ $checks = [
         && str_contains($view, 'data-merchant-crm-shell')
         && str_contains($view, 'data-merchant-crm-app')
         && str_contains($view, 'data-merchant-crm-table'),
-    'five contact statistics remain connected' => substr_count($view, '<article') === 5
-        && str_contains($view, 'data-crm-stat-high')
-        && str_contains($view, 'data-crm-stat-followup')
-        && str_contains($view, 'data-crm-stat-claimed')
-        && str_contains($view, 'data-crm-contact-message-total')
-        && str_contains($view, 'data-crm-contact-active-message-total'),
+    'five mobile contact statistics remain connected' => substr_count($mobileStatMarkup, '<article') === 5
+        && str_contains($mobileStatMarkup, 'data-crm-stat-high')
+        && str_contains($mobileStatMarkup, 'data-crm-stat-followup')
+        && str_contains($mobileStatMarkup, 'data-crm-stat-claimed')
+        && str_contains($mobileStatMarkup, 'data-crm-contact-message-total')
+        && str_contains($mobileStatMarkup, 'data-crm-contact-active-message-total'),
     'smart segment controls are removed' => !str_contains($view, 'data-crm-segments')
         && !str_contains($view, 'data-crm-segment='),
     'bulk selection and action controls are removed' => !str_contains($view, 'data-crm-bulk-bar')
         && !str_contains($view, 'data-crm-select-visible')
         && !str_contains($view, 'data-crm-bulk-action')
         && !str_contains($view, 'data-crm-bulk-modal'),
-    'campaign and analytics workspaces are removed' => !str_contains($view, 'data-crm-campaign-builder')
+    'legacy campaign and analytics workspaces are removed' => !str_contains($view, 'data-crm-campaign-builder')
         && !str_contains($view, 'data-crm-performance-kpis')
         && !str_contains($view, 'data-crm-media-segments-host')
         && !str_contains($view, 'Retention Playbooks'),

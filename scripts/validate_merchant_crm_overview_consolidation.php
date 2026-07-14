@@ -32,6 +32,11 @@ try {
     $view = $read('includes/merchant-crm-view.php');
     $styles = $read('assets/css/merchant-crm-contacts-only.css');
     $core = $read('assets/js/merchant-crm.js');
+    $mobileStatStart = strpos($view, 'data-crm-contact-stat-strip');
+    $mobileStatEnd = $mobileStatStart === false ? false : strpos($view, '</section>', $mobileStatStart);
+    $mobileStatMarkup = $mobileStatStart !== false && $mobileStatEnd !== false
+        ? substr($view, $mobileStatStart, $mobileStatEnd - $mobileStatStart)
+        : '';
 
     $expect(
         str_contains($page, 'merchant-crm-contacts-only.css?v=1.1.0')
@@ -53,14 +58,14 @@ try {
         && !str_contains($view, 'data-crm-tab-target="overview"')
         && !str_contains($view, 'Campaign Command Center')
         && !str_contains($view, 'CRM Insight'),
-        'The former Overview workspace is removed rather than dynamically consolidated'
+        'The former tabbed Overview workspace remains removed'
     );
 
     $expect(
         !str_contains($view, 'data-crm-performance-section')
         && !str_contains($view, 'data-crm-performance-kpis')
         && !str_contains($view, 'Campaign Performance'),
-        'Performance panels are not injected into the contacts-only page'
+        'Legacy performance workspace is not reintroduced'
     );
 
     $expect(
@@ -71,12 +76,12 @@ try {
     );
 
     $expect(
-        substr_count($view, '<article') === 5
-        && str_contains($view, 'data-crm-contact-stat-strip')
-        && str_contains($view, 'data-crm-stat-high')
-        && str_contains($view, 'data-crm-stat-followup')
-        && str_contains($view, 'data-crm-stat-claimed'),
-        'Five contact statistics remain visible'
+        substr_count($mobileStatMarkup, '<article') === 5
+        && str_contains($mobileStatMarkup, 'data-crm-contact-stat-strip')
+        && str_contains($mobileStatMarkup, 'data-crm-stat-high')
+        && str_contains($mobileStatMarkup, 'data-crm-stat-followup')
+        && str_contains($mobileStatMarkup, 'data-crm-stat-claimed'),
+        'Five mobile contact statistics remain visible'
     );
 
     $expect(
