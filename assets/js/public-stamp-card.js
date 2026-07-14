@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var requiredNode = page.querySelector('[data-stamp-required]');
     var remainingNode = page.querySelector('[data-stamp-remaining]');
     var progressCopy = page.querySelector('[data-stamp-progress-copy]');
-    var state = page.querySelector('[data-campaign-foundation-cards] article:last-child h3');
+    var state = page.querySelector('[data-stamp-summary-state]') || page.querySelector('[data-campaign-foundation-cards] article:last-child h3');
     var stage = page.querySelector('[data-stamp-stage]');
     var required = parseInt(stage && stage.getAttribute('data-required-count') || requiredNode && requiredNode.textContent || '5', 10) || 5;
 
