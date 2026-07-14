@@ -9,7 +9,7 @@ $page_title='Loyalty Quest Operations | Microgifter Admin';
 $page_section='account';
 $header_mode='account';
 $page_body_class='mg-admin-loyalty-quests-page';
-$page_styles=['/assets/css/admin-shell.css','/assets/css/admin-command-center.css','/assets/css/admin-loyalty-quests.css'];
+$page_styles=['/assets/css/admin-shell.css','/assets/css/admin-loyalty-quests.css'];
 $page_scripts=['/assets/js/admin-loyalty-quests.js'];
 $adminActive='loyalty-quests';
 require dirname(__DIR__) . '/includes/header.php';
@@ -17,7 +17,7 @@ require dirname(__DIR__) . '/includes/header.php';
 <section class="mg-app-shell mg-admin-app">
   <?php require dirname(__DIR__) . '/includes/admin-sidebar.php'; ?>
   <div class="mg-app-workspace mg-admin-workspace">
-    <main class="mg-admin-main" data-admin-loyalty-quests>
+    <main class="mg-admin-main mg-admin-content-page" data-admin-loyalty-quests>
       <section class="mg-admin-page-head mg-lqo-head">
         <div>
           <span class="mg-eyebrow">Campaign operations</span>
