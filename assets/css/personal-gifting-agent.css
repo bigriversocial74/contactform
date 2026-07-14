@@ -1,0 +1,205 @@
+.mg-personal-agent-app{
+  --pa-blue:#2563eb;
+  --pa-ink:#0f172a;
+  --pa-muted:#64748b;
+  --pa-line:#dbe5f1;
+  --pa-soft:#f6f9fd;
+  --pa-green:#166534;
+  --pa-amber:#92400e;
+}
+.mg-personal-agent-app .mg-agent-workspace{
+  height:calc(100svh - var(--mg-app-header));
+  min-height:0;
+  overflow:hidden;
+  padding:14px;
+  background:#f5f8fc;
+}
+.mg-personal-agent-access{margin:auto;width:min(760px,100%)}
+.mg-personal-agent-access .mg-app-panel-body{display:flex;gap:10px;flex-wrap:wrap}
+.mg-personal-agent-access code{padding:2px 6px;border-radius:7px;background:#eef2f7;font-size:.9em}
+.mg-personal-agent-hero{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:24px;
+  padding:18px 20px;
+  border:1px solid var(--pa-line);
+  border-radius:20px 20px 0 0;
+  background:#fff;
+}
+.mg-personal-agent-hero h1{margin:0;color:var(--pa-ink);font-size:26px;line-height:1.1;letter-spacing:-.04em}
+.mg-personal-agent-hero p{max-width:760px;margin:8px 0 0;color:var(--pa-muted);font-size:13px;line-height:1.55}
+.mg-personal-agent-hero-actions{display:flex;gap:8px;flex:0 0 auto}
+.mg-personal-agent-status{min-height:0;padding:0 16px;background:#fff;color:var(--pa-muted);font-size:12px;font-weight:750}
+.mg-personal-agent-status:not(:empty){padding-top:10px;padding-bottom:10px;border-left:1px solid var(--pa-line);border-right:1px solid var(--pa-line)}
+.mg-personal-agent-status.is-error{color:#b42318}
+.mg-personal-agent-status.is-success{color:var(--pa-green)}
+.mg-personal-agent-layout{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 340px;
+  min-height:0;
+  flex:1;
+  border:1px solid var(--pa-line);
+  border-top:0;
+  background:#fff;
+  overflow:hidden;
+}
+.mg-personal-agent-main{min-width:0;min-height:0;overflow:auto;padding:18px;background:#f8fbff}
+.mg-personal-agent-view[hidden]{display:none!important}
+.mg-personal-agent-section{
+  display:grid;
+  gap:14px;
+  margin-bottom:16px;
+  padding:18px;
+  border:1px solid var(--pa-line);
+  border-radius:18px;
+  background:#fff;
+  box-shadow:0 10px 24px rgba(15,23,42,.04);
+}
+.mg-personal-agent-section>header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.mg-personal-agent-section>header span{display:block;color:var(--pa-blue);font-size:10px;font-weight:950;letter-spacing:.09em;text-transform:uppercase}
+.mg-personal-agent-section>header h2{margin:4px 0 0;color:var(--pa-ink);font-size:20px;line-height:1.2;letter-spacing:-.03em}
+.mg-personal-agent-section>header a,.mg-link-button{
+  border:0;background:transparent;color:var(--pa-blue);font-size:12px;font-weight:900;text-decoration:none;cursor:pointer
+}
+.mg-personal-agent-section>header small{color:var(--pa-muted);font-size:11px;font-weight:800}
+.mg-personal-agent-summary{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:16px}
+.mg-personal-agent-stat{
+  min-width:0;padding:14px;border:1px solid var(--pa-line);border-radius:16px;background:#fff
+}
+.mg-personal-agent-stat span{display:block;color:var(--pa-muted);font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
+.mg-personal-agent-stat strong{display:block;margin-top:7px;color:var(--pa-ink);font-size:24px;line-height:1}
+.mg-personal-agent-stat small{display:block;margin-top:6px;color:var(--pa-muted);font-size:10px;line-height:1.35}
+.mg-personal-agent-upcoming,.mg-personal-agent-date-list,.mg-personal-agent-plan-list,.mg-personal-agent-reminder-list{
+  display:grid;gap:9px
+}
+.mg-personal-agent-date-row,.mg-personal-agent-plan-row,.mg-personal-agent-reminder-row{
+  display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;
+  padding:12px;border:1px solid var(--pa-line);border-radius:14px;background:var(--pa-soft)
+}
+.mg-personal-agent-date-badge{
+  display:grid;place-items:center;width:50px;min-height:48px;border-radius:13px;background:#e8f0ff;color:#174fb8;text-align:center
+}
+.mg-personal-agent-date-badge strong{font-size:17px;line-height:1}
+.mg-personal-agent-date-badge span{margin-top:3px;font-size:9px;font-weight:900;text-transform:uppercase}
+.mg-personal-agent-row-copy{min-width:0}
+.mg-personal-agent-row-copy strong{display:block;color:var(--pa-ink);font-size:13px}
+.mg-personal-agent-row-copy span,.mg-personal-agent-row-copy small{display:block;margin-top:3px;color:var(--pa-muted);font-size:11px;line-height:1.35}
+.mg-personal-agent-row-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap}
+.mg-personal-agent-row-actions button{
+  min-height:34px;padding:0 10px;border:1px solid #bfd2ee;border-radius:10px;background:#fff;color:#174fb8;font-size:10px;font-weight:900;cursor:pointer
+}
+.mg-personal-agent-opportunities{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.mg-personal-agent-opportunity{
+  display:grid;gap:10px;padding:15px;border:1px solid #cfe0f6;border-radius:16px;background:linear-gradient(180deg,#fff,#f7fbff)
+}
+.mg-personal-agent-opportunity header{display:flex;justify-content:space-between;gap:10px}
+.mg-personal-agent-opportunity h3{margin:0;color:var(--pa-ink);font-size:15px;line-height:1.25}
+.mg-personal-agent-opportunity header span{color:var(--pa-blue);font-size:10px;font-weight:900;white-space:nowrap}
+.mg-personal-agent-opportunity p{margin:0;color:var(--pa-muted);font-size:12px;line-height:1.5}
+.mg-personal-agent-opportunity footer{display:flex;gap:7px;flex-wrap:wrap}
+.mg-personal-agent-opportunity button{min-height:36px;padding:0 11px;border:1px solid #bfd2ee;border-radius:10px;background:#fff;color:#174fb8;font-size:11px;font-weight:900;cursor:pointer}
+.mg-personal-agent-prompts{display:flex;gap:7px;flex-wrap:wrap}
+.mg-personal-agent-prompts button{
+  padding:8px 10px;border:1px solid #cddbef;border-radius:999px;background:#f8fbff;color:#40536d;font-size:10px;font-weight:850;cursor:pointer
+}
+.mg-personal-agent-feed{display:grid;gap:10px;min-height:90px}
+.mg-personal-agent-message{max-width:86%;padding:12px 14px;border-radius:16px;background:#eef4fb;color:var(--pa-ink);font-size:12px;line-height:1.55}
+.mg-personal-agent-message.is-user{justify-self:end;background:#2563eb;color:#fff;border-bottom-right-radius:5px}
+.mg-personal-agent-message.is-assistant{justify-self:start;border-bottom-left-radius:5px}
+.mg-personal-agent-card-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.mg-personal-agent-chat-card{display:grid;gap:8px;padding:13px;border:1px solid var(--pa-line);border-radius:14px;background:#fff}
+.mg-personal-agent-chat-card strong{color:var(--pa-ink);font-size:13px}
+.mg-personal-agent-chat-card p,.mg-personal-agent-chat-card small{margin:0;color:var(--pa-muted);font-size:11px;line-height:1.45}
+.mg-personal-agent-chat-card button{justify-self:start;min-height:34px;padding:0 10px;border:0;border-radius:10px;background:#2563eb;color:#fff;font-size:10px;font-weight:900;cursor:pointer}
+.mg-personal-agent-contact-grid,.mg-personal-agent-memory-grid,.mg-personal-agent-list-grid{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px
+}
+.mg-personal-agent-contact,.mg-personal-agent-memory,.mg-personal-agent-list-card{
+  display:grid;gap:8px;min-width:0;padding:14px;border:1px solid var(--pa-line);border-radius:15px;background:#fff
+}
+.mg-personal-agent-contact header{display:flex;align-items:center;gap:10px}
+.mg-personal-agent-avatar{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:#e8f0ff;color:#174fb8;font-size:13px;font-weight:950;overflow:hidden}
+.mg-personal-agent-avatar img{width:100%;height:100%;object-fit:cover}
+.mg-personal-agent-contact h3,.mg-personal-agent-memory h3,.mg-personal-agent-list-card h3{margin:0;color:var(--pa-ink);font-size:14px;line-height:1.25}
+.mg-personal-agent-contact p,.mg-personal-agent-memory p,.mg-personal-agent-list-card p{margin:0;color:var(--pa-muted);font-size:11px;line-height:1.45}
+.mg-personal-agent-contact footer,.mg-personal-agent-memory footer,.mg-personal-agent-list-card footer{display:flex;gap:7px;flex-wrap:wrap;margin-top:auto}
+.mg-personal-agent-contact button,.mg-personal-agent-memory button,.mg-personal-agent-list-card button{
+  min-height:34px;padding:0 10px;border:1px solid #bfd2ee;border-radius:10px;background:#fff;color:#174fb8;font-size:10px;font-weight:900;cursor:pointer
+}
+.mg-personal-agent-pill{
+  display:inline-flex;align-items:center;min-height:24px;width:max-content;padding:0 8px;border-radius:999px;background:#edf3fb;color:#52657f;font-size:9px;font-weight:900;text-transform:uppercase
+}
+.mg-personal-agent-pill.is-ready{background:#dcfce7;color:#166534}
+.mg-personal-agent-pill.is-draft{background:#fef3c7;color:#92400e}
+.mg-personal-agent-context{
+  min-width:0;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto;border-left:1px solid var(--pa-line);background:#fff
+}
+.mg-personal-agent-context>header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:16px;border-bottom:1px solid var(--pa-line)}
+.mg-personal-agent-context>header span{display:block;color:var(--pa-blue);font-size:9px;font-weight:950;text-transform:uppercase;letter-spacing:.08em}
+.mg-personal-agent-context>header h2{margin:4px 0 0;color:var(--pa-ink);font-size:17px;line-height:1.25}
+.mg-personal-agent-context>header button{width:32px;height:32px;border:1px solid var(--pa-line);border-radius:10px;background:#fff;color:#64748b;font-size:18px;cursor:pointer}
+.mg-personal-agent-context-body{min-height:0;overflow:auto;padding:16px}
+.mg-personal-agent-context-body p{margin:0 0 10px;color:var(--pa-muted);font-size:12px;line-height:1.55}
+.mg-personal-agent-context-facts{display:grid;gap:8px}
+.mg-personal-agent-context-fact{padding:10px;border:1px solid var(--pa-line);border-radius:12px;background:var(--pa-soft)}
+.mg-personal-agent-context-fact span{display:block;color:var(--pa-muted);font-size:9px;font-weight:900;text-transform:uppercase}
+.mg-personal-agent-context-fact strong{display:block;margin-top:4px;color:var(--pa-ink);font-size:12px;line-height:1.4;word-break:break-word}
+.mg-personal-agent-context>footer{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:14px;border-top:1px solid var(--pa-line)}
+.mg-personal-agent-composer{
+  position:sticky;bottom:0;z-index:80;display:grid!important;grid-template-columns:auto minmax(0,1fr) auto!important;align-items:end!important;gap:8px!important;
+  padding:10px!important;border:1px solid var(--pa-line)!important;border-top:0!important;border-radius:0 0 20px 20px!important;background:rgba(255,255,255,.98)!important;
+  box-shadow:0 -10px 28px rgba(15,23,42,.08)!important
+}
+.mg-personal-agent-composer textarea{
+  width:100%;max-height:150px;min-height:44px;resize:none;border:1px solid #cbd9eb;border-radius:14px;padding:11px 13px;color:var(--pa-ink);font:inherit;font-size:13px;line-height:1.45;outline:0
+}
+.mg-personal-agent-composer textarea:focus{border-color:#93b4eb;box-shadow:0 0 0 3px rgba(37,99,235,.09)}
+.mg-personal-agent-context-chip{
+  max-width:180px;min-height:42px;padding:0 10px;border:1px solid #bfd2ee;border-radius:12px;background:#eff6ff;color:#174fb8;font-size:10px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer
+}
+.mg-personal-agent-boundary{margin:0;padding:11px 12px;border:1px solid #fde68a;border-radius:12px;background:#fffbeb;color:#92400e;font-size:11px;line-height:1.5}
+.mg-personal-agent-empty{padding:18px;border:1px dashed #c9d6e6;border-radius:14px;background:#fbfdff;color:var(--pa-muted);font-size:12px;text-align:center}
+.mg-personal-agent-settings-form,.mg-personal-agent-dialog-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.mg-personal-agent-settings-form label,.mg-personal-agent-dialog-form label{display:grid;gap:6px;color:#334155;font-size:11px;font-weight:900}
+.mg-personal-agent-settings-form input,.mg-personal-agent-settings-form select,.mg-personal-agent-dialog-form input,.mg-personal-agent-dialog-form select,.mg-personal-agent-dialog-form textarea{
+  width:100%;min-height:44px;border:1px solid #cbd9eb;border-radius:12px;background:#fff;padding:9px 11px;color:var(--pa-ink);font:inherit;font-size:12px;outline:0
+}
+.mg-personal-agent-dialog-form textarea{resize:vertical}
+.mg-personal-agent-settings-form input:focus,.mg-personal-agent-settings-form select:focus,.mg-personal-agent-dialog-form input:focus,.mg-personal-agent-dialog-form select:focus,.mg-personal-agent-dialog-form textarea:focus{
+  border-color:#93b4eb;box-shadow:0 0 0 3px rgba(37,99,235,.08)
+}
+.mg-personal-agent-settings-form .mg-personal-agent-check,.mg-personal-agent-dialog-form .mg-personal-agent-check{display:flex;align-items:center;gap:8px}
+.mg-personal-agent-check input{width:18px!important;min-height:18px!important;height:18px!important;padding:0!important}
+.mg-personal-agent-dialog-form .is-wide{grid-column:1/-1}
+.mg-personal-agent-dialog-form footer{display:flex;justify-content:flex-end;gap:8px}
+.mg-personal-agent-app .mg-agent-tool-dialog{width:min(720px,94vw)}
+.mg-personal-agent-app .mg-agent-tool-dialog form{padding:20px;max-height:70svh;overflow:auto}
+.mg-personal-agent-app .mg-agent-tool-modal[aria-hidden="false"]{display:flex!important}
+.mg-personal-agent-app .mg-agent-tool-modal[aria-hidden="true"]{display:none!important}
+@media(max-width:1280px){
+  .mg-personal-agent-summary{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .mg-personal-agent-contact-grid,.mg-personal-agent-memory-grid,.mg-personal-agent-list-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:1040px){
+  .mg-personal-agent-layout{grid-template-columns:minmax(0,1fr)}
+  .mg-personal-agent-context{display:none;border-left:0;border-top:1px solid var(--pa-line)}
+  .mg-personal-agent-context.is-mobile-open{position:fixed;inset:72px 8px 8px;z-index:160;display:grid;border:1px solid var(--pa-line);border-radius:18px;box-shadow:0 30px 80px rgba(15,23,42,.25)}
+}
+@media(max-width:760px){
+  .mg-personal-agent-app .mg-agent-workspace{height:calc(100dvh - var(--mg-mobile-topbar,72px));padding:6px}
+  .mg-personal-agent-hero{display:grid;padding:14px;border-radius:16px 16px 0 0}
+  .mg-personal-agent-hero h1{font-size:22px}
+  .mg-personal-agent-hero-actions{display:grid;grid-template-columns:1fr 1fr}
+  .mg-personal-agent-main{padding:10px}
+  .mg-personal-agent-section{padding:13px;border-radius:15px}
+  .mg-personal-agent-section>header{align-items:flex-start}
+  .mg-personal-agent-summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .mg-personal-agent-opportunities,.mg-personal-agent-card-grid,.mg-personal-agent-contact-grid,.mg-personal-agent-memory-grid,.mg-personal-agent-list-grid{grid-template-columns:1fr}
+  .mg-personal-agent-date-row,.mg-personal-agent-plan-row,.mg-personal-agent-reminder-row{grid-template-columns:auto minmax(0,1fr)}
+  .mg-personal-agent-row-actions{grid-column:1/-1;justify-content:flex-start}
+  .mg-personal-agent-settings-form,.mg-personal-agent-dialog-form{grid-template-columns:1fr}
+  .mg-personal-agent-dialog-form .is-wide{grid-column:auto}
+  .mg-personal-agent-composer{grid-template-columns:minmax(0,1fr) auto!important;border-radius:0 0 16px 16px!important}
+  .mg-personal-agent-context-chip{grid-column:1/-1;max-width:none}
+}
