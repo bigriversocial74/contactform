@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var player = document.querySelector('.mg-rl-stamp .mg-rl-player');
   var sidebar = document.querySelector('.mg-rl-stamp .mg-rl-join-desktop');
   var desktop = window.matchMedia('(min-width: 1181px)');
+  var visualCorrection = 18;
 
   if (!wrap || !player || !sidebar) return;
 
@@ -20,7 +21,7 @@ document.addEventListener('DOMContentLoaded', function () {
     sidebar.style.marginTop = '0px';
     var wrapTop = wrap.getBoundingClientRect().top;
     var playerTop = player.getBoundingClientRect().top;
-    var offset = Math.max(0, Math.round(playerTop - wrapTop));
+    var offset = Math.max(0, Math.round(playerTop - wrapTop - visualCorrection));
     sidebar.style.marginTop = offset + 'px';
   }
 

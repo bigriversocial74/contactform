@@ -2,15 +2,22 @@
    Keeps desktop participation alignment, authenticated footer contrast, and mobile header behavior page-scoped. */
 
 body[data-page-id="stamp-card"] .mg-rl-wrap > .mg-rl-join-desktop {
+  position: sticky !important;
   align-self: start !important;
-  top: 98px !important;
+  top: 72px !important;
   bottom: auto !important;
 }
 
 body[data-page-id="stamp-card"] .mg-rl-wrap:has(> .mg-rl-join-desktop .mg-campaign-user-details[open]) > .mg-rl-join-desktop {
+  position: sticky !important;
   align-self: start !important;
-  top: 98px !important;
+  top: 72px !important;
   bottom: auto !important;
+}
+
+body[data-page-id="stamp-card"] .mg-rl-join-desktop .mg-rl-form > h3,
+body[data-page-id="stamp-card"] .mg-rl-join-desktop .mg-rl-form > p:first-of-type {
+  display: none !important;
 }
 
 body[data-page-id="stamp-card"] .mg-site-footer.mg-universal-footer {
