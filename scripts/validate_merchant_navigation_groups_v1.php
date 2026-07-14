@@ -6,15 +6,18 @@ require_once $root . '/includes/merchant-navigation.php';
 
 $items = mg_merchant_navigation_items();
 $sidebar = mg_merchant_navigation_sidebar('merchant-loyalty-quests');
+$appSidebar = (string) file_get_contents($root . '/includes/app-sidebar.php');
+$accordionCss = (string) file_get_contents($root . '/assets/css/merchant-sidebar-accordion.css');
+$loggedInHeader = (string) file_get_contents($root . '/includes/header-templates/logged-in.php');
 
 $expectedOrder = [
+    'overview',
     'products',
     'reward_templates',
     'campaigns',
     'claims',
     'locations',
     'loyalty_quests',
-    'overview',
     'notifications',
     'orders',
     'stamps',
@@ -67,12 +70,38 @@ $legacyHrefs = [
 
 $expectedSections = [
     'Products & Engagement' => ['products', 'reward_templates', 'campaigns', 'claims', 'locations', 'loyalty_quests'],
-    'Insights & Records' => ['overview', 'notifications', 'orders', 'stamps', 'reviews', 'pppm', 'merchant_crm'],
+    'Insights & Records' => ['notifications', 'orders', 'stamps', 'reviews', 'pppm', 'merchant_crm'],
     'Storefront & Distribution' => ['storefront', 'merchant_pwa', 'hosted_games', 'distribution', 'developer_api', 'store_canvas', 'world_canvas', 'integrations'],
     'Business Operations' => ['campaign_ads', 'payments', 'media', 'team', 'agent_chat', 'settings'],
 ];
 
+$merchantPanelStart = strpos($loggedInHeader, 'mg-account-merchant-panel');
+$merchantPanelEnd = $merchantPanelStart === false ? false : strpos($loggedInHeader, '<?php else: ?>', $merchantPanelStart);
+$merchantPanel = ($merchantPanelStart !== false && $merchantPanelEnd !== false)
+    ? substr($loggedInHeader, $merchantPanelStart, $merchantPanelEnd - $merchantPanelStart)
+    : '';
+
+$removedDropdownHrefs = [
+    '/merchant-products.php',
+    '/merchant-campaigns.php',
+    '/merchant-claims.php',
+    '/merchant-reward-templates.php',
+    '/merchant-locations.php',
+];
+$keptDropdownHrefs = [
+    '/merchant.php',
+    '/merchant-notifications.php',
+    '/merchant-pppm.php',
+    '/merchant-stamps.php',
+    '/merchant-crm.php',
+    '/merchant-quest-reviews.php',
+];
+
 $checks = [];
+$checks[] = ['name' => 'dashboard first in navigation', 'ok' => array_key_first($items) === 'overview'
+    && ($items['overview'][0] ?? '') === 'Dashboard'
+    && ($items['overview'][2] ?? '') === '/merchant.php'
+    && ($items['overview'][3] ?? null) === ''];
 $checks[] = ['name' => 'exact grouped navigation order', 'ok' => array_keys($items) === $expectedOrder];
 $checks[] = ['name' => 'all prior merchant links preserved', 'ok' => array_reduce(array_keys($legacyHrefs), static function (bool $ok, string $key) use ($items, $legacyHrefs): bool {
     return $ok && isset($items[$key]) && ($items[$key][2] ?? '') === $legacyHrefs[$key];
@@ -96,11 +125,26 @@ foreach ($expectedSections as $section => $keys) {
 }
 
 $hrefs = array_map(static fn(array $item): string => (string) ($item[2] ?? ''), $items);
+$groupedSections = array_values(array_unique(array_filter(array_map(static fn(array $item): string => (string) ($item[3] ?? ''), $items))));
 $checks[] = ['name' => 'all navigation entries have destinations', 'ok' => !in_array('', $hrefs, true) && !in_array('#', $hrefs, true)];
 $checks[] = ['name' => 'sidebar mirrors item order', 'ok' => array_keys($sidebar) === $expectedOrder];
 $checks[] = ['name' => 'loyalty quest active state', 'ok' => !empty($sidebar['loyalty_quests']['active']) && mg_merchant_navigation_active_key('merchant-quest-reviews') === 'loyalty_quests'];
 $checks[] = ['name' => 'world canvas active alias', 'ok' => mg_merchant_navigation_active_key('world-canvas') === 'world_canvas'];
-$checks[] = ['name' => 'four section model only', 'ok' => array_values(array_unique(array_map(static fn(array $item): string => (string) ($item[3] ?? ''), $items))) === array_keys($expectedSections)];
+$checks[] = ['name' => 'four grouped sections plus primary dashboard', 'ok' => $groupedSections === array_keys($expectedSections)];
+$checks[] = ['name' => 'native accessible accordion rendering', 'ok' => str_contains($appSidebar, '<details class="mg-side-nav-accordion"')
+    && str_contains($appSidebar, '<summary><strong>')
+    && str_contains($appSidebar, 'data-merchant-nav-accordions')
+    && str_contains($appSidebar, '$sectionHasActiveItem')
+    && str_contains($appSidebar, 'merchant-sidebar-accordion.css?v=1.0.0')];
+$checks[] = ['name' => 'accordion visual separation', 'ok' => str_contains($accordionCss, '.mg-side-nav-accordion')
+    && str_contains($accordionCss, 'padding:0 0 7px')
+    && str_contains($accordionCss, 'border-bottom:1px solid #edf2f7')
+    && str_contains($accordionCss, 'prefers-reduced-motion')];
+$checks[] = ['name' => 'merchant dropdown panel found', 'ok' => $merchantPanel !== ''];
+$checks[] = ['name' => 'merchant dropdown removes requested shortcuts', 'ok' => array_reduce($removedDropdownHrefs, static fn(bool $ok, string $href): bool => $ok && !str_contains($merchantPanel, 'href="' . $href . '"'), true)];
+$checks[] = ['name' => 'merchant dropdown keeps operational shortcuts', 'ok' => array_reduce($keptDropdownHrefs, static fn(bool $ok, string $href): bool => $ok && str_contains($merchantPanel, 'href="' . $href . '"'), true)];
+$checks[] = ['name' => 'quest reviews is final merchant dropdown item', 'ok' => strrpos($merchantPanel, '/merchant-quest-reviews.php') > strrpos($merchantPanel, '/merchant-crm.php')
+    && substr_count($merchantPanel, 'class="mg-account-action"') === count($keptDropdownHrefs)];
 
 $failed = array_values(array_filter($checks, static fn(array $check): bool => !$check['ok']));
 $score = max(0, 10 - count($failed) * 0.5);
