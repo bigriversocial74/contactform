@@ -1,0 +1,46 @@
+name: WooCommerce Contacts v1 Validation
+
+on:
+  pull_request:
+    paths:
+      - 'includes/integrations/providers/woocommerce.php'
+      - 'includes/integrations/woocommerce-contacts.php'
+      - 'api/merchant/integrations.php'
+      - 'merchant-integrations.php'
+      - 'includes/merchant-integrations-view.php'
+      - 'assets/js/merchant-integrations-woocommerce.js'
+      - 'assets/css/merchant-integrations-woocommerce.css'
+      - 'scripts/validate_woocommerce_contacts_v1.php'
+      - '.github/workflows/woocommerce-contacts-v1-validation.yml'
+  push:
+    paths:
+      - 'includes/integrations/providers/woocommerce.php'
+      - 'includes/integrations/woocommerce-contacts.php'
+      - 'api/merchant/integrations.php'
+      - 'merchant-integrations.php'
+      - 'includes/merchant-integrations-view.php'
+      - 'assets/js/merchant-integrations-woocommerce.js'
+      - 'assets/css/merchant-integrations-woocommerce.css'
+      - 'scripts/validate_woocommerce_contacts_v1.php'
+      - '.github/workflows/woocommerce-contacts-v1-validation.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+      - name: PHP syntax
+        run: |
+          php -l includes/integrations/providers/woocommerce.php
+          php -l includes/integrations/woocommerce-contacts.php
+          php -l api/merchant/integrations.php
+          php -l merchant-integrations.php
+          php -l includes/merchant-integrations-view.php
+          php -l scripts/validate_woocommerce_contacts_v1.php
+      - name: JavaScript syntax
+        run: node --check assets/js/merchant-integrations-woocommerce.js
+      - name: WooCommerce Contacts contract
+        run: php scripts/validate_woocommerce_contacts_v1.php
