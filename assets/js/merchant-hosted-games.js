@@ -12,6 +12,8 @@
   const identityForm = root.querySelector('[data-hgm-identity-form]');
   const integrationForm = root.querySelector('[data-hgm-integration-form]');
   const fileInput = root.querySelector('[data-hgm-file]');
+  const fileTitle = root.querySelector('[data-hgm-file-title]');
+  const fileDetail = root.querySelector('[data-hgm-file-detail]');
   const uploadButton = root.querySelector('[data-hgm-upload]');
   const publishButton = root.querySelector('[data-hgm-publish]');
   const searchInput = root.querySelector('[data-hgm-search]');
@@ -55,6 +57,7 @@
     const rows = [
       ['Game ZIP release', Boolean(readiness.release_ready)],
       ['Campaign + reward API', Boolean(readiness.integration_ready)],
+      ['Signed webhook', Boolean(readiness.webhook_secret_ready)],
       ['Isolated game database', Boolean(readiness.database_ready)],
     ];
     return rows.map(([label, ready]) => `<div class="hgm-ready-row"><span>${escapeHtml(label)}</span><strong class="${ready ? 'is-ready' : ''}">${ready ? 'Ready' : 'Required'}</strong></div>`).join('');
@@ -152,12 +155,10 @@
     integrationForm.elements.game_id.value = game?.id || '';
     state.slugTouched = Boolean(game);
     populateOptions(game);
-    const fileTitle = root.querySelector('[data-hgm-file-title]');
-    const fileDetail = root.querySelector('[data-hgm-file-detail]');
     if (fileTitle) fileTitle.textContent = game?.release_version ? `Upload release ${Number(game.release_version) + 1}` : 'Select a game ZIP';
     if (fileDetail) fileDetail.textContent = game?.release_version ? `Current release ${game.release_version} · ${formatNumber(game.file_count)} files · ${formatBytes(game.extracted_bytes)}` : 'HTML, CSS, JavaScript, images, audio, video, WebGL, WASM, and game assets · maximum 100 MB ZIP';
     if (fileInput) fileInput.value = '';
-    if (uploadButton) uploadButton.disabled = !game;
+    if (uploadButton) uploadButton.disabled = true;
     const progress = root.querySelector('[data-hgm-progress]');
     if (progress) progress.style.width = '0%';
     const summary = root.querySelector('[data-hgm-release-summary]');
@@ -215,7 +216,6 @@
     setStatus('[data-hgm-identity-status]', 'Saving game…');
     try {
       const result = await post('save_game', Object.fromEntries(form.entries()));
-      setStatus('[data-hgm-identity-status]', 'Game identity saved.', 'success');
       await load(result.game.id);
     } catch (error) {
       setStatus('[data-hgm-identity-status]', error.message, 'error');
@@ -240,7 +240,6 @@
     setStatus('[data-hgm-integration-status]', 'Creating secure game API integration…');
     try {
       const result = await post('configure_integration', Object.fromEntries(form.entries()));
-      setStatus('[data-hgm-integration-status]', 'Campaign and reward integration ready.', 'success');
       await load(result.game.id);
     } catch (error) {
       setStatus('[data-hgm-integration-status]', error.message, 'error');
@@ -249,8 +248,6 @@
 
   fileInput?.addEventListener('change', () => {
     state.selectedFile = fileInput.files?.[0] || null;
-    const fileTitle = root.querySelector('[data-hgm-file-title]');
-    const fileDetail = root.querySelector('[data-hgm-file-detail]');
     if (state.selectedFile) {
       if (fileTitle) fileTitle.textContent = state.selectedFile.name;
       if (fileDetail) fileDetail.textContent = `${formatBytes(state.selectedFile.size)} · ready to upload`;
@@ -276,9 +273,10 @@
 
   uploadButton?.addEventListener('click', () => {
     if (!state.current || !state.selectedFile) return setStatus('[data-hgm-upload-status]', 'Select a ZIP file first.', 'error');
+    const currentGameId = state.current.id;
     const form = new FormData();
     form.set('csrf_token', csrf);
-    form.set('game_id', state.current.id);
+    form.set('game_id', currentGameId);
     form.set('game_zip', state.selectedFile, state.selectedFile.name);
     const xhr = new XMLHttpRequest();
     xhr.open('POST', '/api/merchant/hosted-game-upload.php');
@@ -292,12 +290,19 @@
       const response = xhr.response || {};
       if (xhr.status < 200 || xhr.status >= 300 || response.ok === false) {
         setStatus('[data-hgm-upload-status]', response.message || 'Game ZIP upload failed.', 'error');
+        uploadButton.disabled = false;
         return;
       }
-      setStatus('[data-hgm-upload-status]', 'Game release uploaded and activated.', 'success');
-      await load(state.current.id);
+      await load(currentGameId);
     });
-    xhr.addEventListener('error', () => setStatus('[data-hgm-upload-status]', 'Game ZIP upload failed.', 'error'));
+    xhr.addEventListener('error', () => {
+      setStatus('[data-hgm-upload-status]', 'Game ZIP upload failed.', 'error');
+      uploadButton.disabled = false;
+    });
+    xhr.addEventListener('abort', () => {
+      setStatus('[data-hgm-upload-status]', 'Game ZIP upload was cancelled.', 'error');
+      uploadButton.disabled = false;
+    });
     setStatus('[data-hgm-upload-status]', 'Uploading and validating game package…');
     uploadButton.disabled = true;
     xhr.send(form);
@@ -308,7 +313,6 @@
     setStatus('[data-hgm-publish-status]', 'Publishing game…');
     try {
       const result = await post('publish', { game_id: state.current.id });
-      setStatus('[data-hgm-publish-status]', 'Game published.', 'success');
       await load(result.game.id);
     } catch (error) {
       setStatus('[data-hgm-publish-status]', error.message, 'error');
