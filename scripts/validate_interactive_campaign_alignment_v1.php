@@ -30,12 +30,15 @@ foreach ([
 ] as $path => [$source, $type]) {
     $bootstrapPosition = strpos($source, "mg_campaign_landing_bootstrap('" . $type . "'");
     $headerPosition = strpos($source, "require __DIR__ . '/includes/header.php'");
+    $usesStandardCards = $path === 'stamp-card.php'
+        ? str_contains($source, 'data-campaign-foundation-cards') && str_contains($source, 'mg-stamp-summary-card')
+        : str_contains($source, 'mg_campaign_landing_render_bottom_cards');
     $assert($path . ' exists', $source !== '');
     $assert($path . ' uses canonical campaign bootstrap', $bootstrapPosition !== false);
     $assert($path . ' loads campaign metadata before the header', $bootstrapPosition !== false && $headerPosition !== false && $bootstrapPosition < $headerPosition);
     $assert($path . ' uses canonical campaign state', str_contains($source, 'mg_campaign_landing_state'));
     $assert($path . ' uses canonical merchant profile component', str_contains($source, 'mg_campaign_landing_render_profile'));
-    $assert($path . ' uses standardized foundation cards', str_contains($source, 'mg_campaign_landing_render_bottom_cards'));
+    $assert($path . ' uses standardized foundation cards', $usesStandardCards);
     $assert($path . ' exposes campaign state on the page', str_contains($source, 'data-campaign-state'));
     $assert($path . ' supports merchant preview', str_contains($source, 'data-merchant-campaign-preview'));
     $assert($path . ' uses campaign artwork priority', str_contains($source, 'mg_campaign_landing_campaign_image'));
@@ -71,6 +74,11 @@ $assert('Stamp Card preserves verified progress runtime',
 $assert('Stamp Card standardizes card sections',
     !str_contains($stamp, '<span class="mg-rl-eyebrow">Verification</span>')
     && !str_contains($stamp, '<span class="mg-rl-eyebrow">CRM Rule</span>'));
+$assert('Stamp Card consolidates details, rules, and updates into one card',
+    substr_count($stamp, 'class="mg-rl-card mg-stamp-summary-card"') === 1
+    && str_contains($stamp, 'Item details')
+    && str_contains($stamp, 'Reward &amp; campaign rules')
+    && str_contains($stamp, 'Messages, results &amp; updates'));
 
 $assert('Merchant campaign controller persists canonical interactive modes',
     str_contains($campaignCore, "['scratch_card', 'spin_wheel']")
