@@ -30,15 +30,16 @@ function mg_admin_hosted_games_rows(PDO $pdo, ?string $gamePublicId = null): arr
         $params[] = $gamePublicId;
     }
     $stmt = $pdo->prepare(
-        "SELECT hg.*,u.email AS merchant_email,COALESCE(NULLIF(u.display_name,''),NULLIF(u.full_name,''),u.email) AS merchant_name,
+        "SELECT hg.*,u.email AS merchant_email,COALESCE(NULLIF(mw.display_name,''),NULLIF(u.display_name,''),NULLIF(u.full_name,''),u.email) AS merchant_name,
                 hgr.version_number,hgr.file_count,hgr.extracted_bytes,hgr.package_checksum,
-                dp.public_id AS program_public_id,dp.name AS program_name,
-                c.public_id AS campaign_public_id,c.title AS campaign_title,
-                cpt.public_id AS pppm_public_id,cpv.title AS reward_title,
+                dp.public_id AS program_public_id,dp.name AS program_name,dp.status AS program_status,
+                c.public_id AS campaign_public_id,c.title AS campaign_title,c.status AS campaign_status,
+                cpt.public_id AS pppm_public_id,cpv.title AS reward_title,cpv.unit_value_cents AS reward_value_cents,cpv.currency AS reward_currency,
                 COALESCE(metrics.plays,0) AS plays,COALESCE(metrics.rewards_delivered,0) AS rewards_delivered,
                 COALESCE(metrics.failures,0) AS failures,metrics.last_activity_at
          FROM hosted_games hg
          INNER JOIN users u ON u.id=hg.merchant_user_id
+         LEFT JOIN merchant_workspaces mw ON mw.merchant_user_id=hg.merchant_user_id
          LEFT JOIN hosted_game_releases hgr ON hgr.public_id=hg.current_release_public_id AND hgr.game_id=hg.id
          LEFT JOIN distribution_programs dp ON dp.id=hg.distribution_program_id
          LEFT JOIN campaigns c ON c.id=hg.campaign_id
@@ -62,6 +63,9 @@ function mg_admin_hosted_game_payload(PDO $pdo, array $row): array
         'id'=>(string)$row['public_id'],
         'name'=>(string)$row['name'],
         'slug'=>(string)$row['slug'],
+        'description'=>(string)($row['description'] ?? ''),
+        'cover_url'=>(string)($row['cover_url'] ?? ''),
+        'entry_file'=>(string)($row['entry_file'] ?? 'index.html'),
         'status'=>(string)$row['status'],
         'integration_status'=>(string)$row['integration_status'],
         'database_status'=>(string)$row['database_status'],
@@ -78,9 +82,14 @@ function mg_admin_hosted_game_payload(PDO $pdo, array $row): array
             'extracted_bytes'=>(int)($row['extracted_bytes'] ?? 0),
             'checksum'=>$row['package_checksum'] ?? null,
         ] : null,
-        'program'=>!empty($row['program_public_id']) ? ['id'=>(string)$row['program_public_id'],'name'=>(string)$row['program_name']] : null,
-        'campaign'=>!empty($row['campaign_public_id']) ? ['id'=>(string)$row['campaign_public_id'],'title'=>(string)$row['campaign_title']] : null,
-        'reward'=>!empty($row['pppm_public_id']) ? ['id'=>(string)$row['pppm_public_id'],'title'=>(string)$row['reward_title']] : null,
+        'program'=>!empty($row['program_public_id']) ? ['id'=>(string)$row['program_public_id'],'name'=>(string)$row['program_name'],'status'=>(string)($row['program_status'] ?? '')] : null,
+        'campaign'=>!empty($row['campaign_public_id']) ? ['id'=>(string)$row['campaign_public_id'],'title'=>(string)$row['campaign_title'],'status'=>(string)($row['campaign_status'] ?? '')] : null,
+        'reward'=>!empty($row['pppm_public_id']) ? [
+            'id'=>(string)$row['pppm_public_id'],
+            'title'=>(string)$row['reward_title'],
+            'unit_value_cents'=>(int)($row['reward_value_cents'] ?? 0),
+            'currency'=>(string)($row['reward_currency'] ?? 'USD'),
+        ] : null,
         'database'=>$database,
         'readiness'=>mg_hosted_game_readiness($pdo, $row),
         'analytics'=>[
@@ -94,6 +103,59 @@ function mg_admin_hosted_game_payload(PDO $pdo, array $row): array
     ];
 }
 
+function mg_admin_hosted_game_merchants(PDO $pdo): array
+{
+    $stmt = $pdo->query("SELECT mw.merchant_user_id AS user_id,COALESCE(NULLIF(mw.display_name,''),NULLIF(u.display_name,''),NULLIF(u.full_name,''),u.email) AS name,u.email,mw.status
+                        FROM merchant_workspaces mw INNER JOIN users u ON u.id=mw.merchant_user_id
+                        ORDER BY name ASC,u.email ASC");
+    return array_map(static fn(array $row): array => [
+        'user_id'=>(int)$row['user_id'],
+        'name'=>(string)$row['name'],
+        'email'=>(string)$row['email'],
+        'status'=>(string)$row['status'],
+    ], $stmt->fetchAll(PDO::FETCH_ASSOC) ?: []);
+}
+
+function mg_admin_hosted_game_merchant_exists(PDO $pdo, int $merchantUserId): bool
+{
+    if ($merchantUserId < 1) return false;
+    $stmt = $pdo->prepare('SELECT 1 FROM merchant_workspaces WHERE merchant_user_id=? LIMIT 1');
+    $stmt->execute([$merchantUserId]);
+    return (bool)$stmt->fetchColumn();
+}
+
+function mg_admin_hosted_game_options(PDO $pdo, int $merchantUserId): array
+{
+    if (!mg_admin_hosted_game_merchant_exists($pdo, $merchantUserId)) return ['programs'=>[],'campaigns'=>[],'rewards'=>[]];
+
+    $programs = $pdo->prepare("SELECT public_id,name,program_type,status,starts_at,ends_at,budget_cents,max_items,per_recipient_limit FROM distribution_programs WHERE merchant_user_id=? AND status<>'archived' ORDER BY FIELD(status,'active','scheduled','draft','paused','completed','cancelled'),updated_at DESC,id DESC");
+    $programs->execute([$merchantUserId]);
+
+    $campaigns = $pdo->prepare("SELECT c.public_id,c.title,c.campaign_type,c.status,c.starts_at,c.ends_at,c.reward_template_id,rt.public_id AS reward_template_public_id,rt.title AS reward_template_title FROM campaigns c LEFT JOIN reward_templates rt ON rt.id=c.reward_template_id WHERE c.merchant_user_id=? AND c.status<>'archived' ORDER BY FIELD(c.status,'active','draft','paused','ended'),c.updated_at DESC,c.id DESC");
+    $campaigns->execute([$merchantUserId]);
+
+    $rewards = $pdo->prepare(
+        "SELECT dp.public_id AS program_id,dp.name AS program_name,dp.status AS program_status,
+                cpt.public_id AS template_id,cpt.status AS template_status,dpp.status AS program_product_status,
+                dpp.quantity_limit,dpp.quantity_issued,cp.public_id AS product_id,cp.slug AS product_slug,
+                cpv.title,cpv.description,cpv.unit_value_cents,cpv.currency
+         FROM distribution_program_products dpp
+         INNER JOIN distribution_programs dp ON dp.id=dpp.program_id
+         INNER JOIN catalog_pppm_templates cpt ON cpt.id=dpp.pppm_template_id
+         INNER JOIN catalog_product_versions cpv ON cpv.id=cpt.product_version_id
+         INNER JOIN catalog_products cp ON cp.id=cpv.product_id
+         WHERE dp.merchant_user_id=? AND cp.merchant_user_id=? AND cpt.status='active' AND dpp.status='active'
+         ORDER BY dp.updated_at DESC,cpv.title ASC"
+    );
+    $rewards->execute([$merchantUserId,$merchantUserId]);
+
+    return [
+        'programs'=>$programs->fetchAll(PDO::FETCH_ASSOC) ?: [],
+        'campaigns'=>$campaigns->fetchAll(PDO::FETCH_ASSOC) ?: [],
+        'rewards'=>$rewards->fetchAll(PDO::FETCH_ASSOC) ?: [],
+    ];
+}
+
 function mg_admin_hosted_game_response(PDO $pdo, string $gamePublicId, string $message): never
 {
     $rows = mg_admin_hosted_games_rows($pdo, $gamePublicId);
@@ -103,6 +165,7 @@ function mg_admin_hosted_game_response(PDO $pdo, string $gamePublicId, string $m
 
 if ($method === 'GET') {
     $q = trim((string)($_GET['q'] ?? ''));
+    $merchantUserId = max(0, (int)($_GET['merchant_user_id'] ?? 0));
     $rows = mg_admin_hosted_games_rows($pdo);
     if ($q !== '') {
         $needle = mb_strtolower($q);
@@ -118,6 +181,9 @@ if ($method === 'GET') {
         'schema_ready'=>true,
         'migration'=>'hosted_games_management_v1.sql',
         'credential_encryption_ready'=>mg_hosted_game_encryption_ready(),
+        'can_manage'=>$GLOBALS['canManage'],
+        'merchants'=>mg_admin_hosted_game_merchants($pdo),
+        'options'=>$merchantUserId > 0 ? mg_admin_hosted_game_options($pdo, $merchantUserId) : ['programs'=>[],'campaigns'=>[],'rewards'=>[]],
         'games'=>array_map(static fn(array $row): array => mg_admin_hosted_game_payload($pdo, $row), $rows),
     ]);
 }
@@ -125,14 +191,121 @@ if ($method === 'GET') {
 mg_require_method('POST');
 $input = mg_input();
 mg_require_csrf_for_write($input);
-if (function_exists('mg_rate_limit')) mg_rate_limit('admin.hosted_games.write', 'user:' . $actorId, 30, 300);
+if (function_exists('mg_rate_limit')) mg_rate_limit('admin.hosted_games.write', 'user:' . $actorId, 50, 300);
 $action = strtolower(trim((string)($input['action'] ?? '')));
 $gamePublicId = trim((string)($input['game_id'] ?? ''));
-if ($gamePublicId === '') mg_fail('Hosted game is required.', 422);
 
 try {
+    if ($action === 'save_game') {
+        $name = trim((string)($input['name'] ?? ''));
+        $slug = mg_hosted_game_slug((string)($input['slug'] ?? $name));
+        $description = trim((string)($input['description'] ?? ''));
+        $coverUrl = trim((string)($input['cover_url'] ?? ''));
+        if ($name === '' || mb_strlen($name) > 180) mg_fail('Enter a valid game name.', 422);
+        if (mb_strlen($description) > 5000) mg_fail('Game description is too long.', 422);
+        if ($coverUrl !== '' && (!filter_var($coverUrl, FILTER_VALIDATE_URL) || mb_strlen($coverUrl) > 500)) mg_fail('Enter a valid cover image URL.', 422);
+
+        $pdo->beginTransaction();
+        if ($gamePublicId === '') {
+            $merchantUserId = max(0, (int)($input['merchant_user_id'] ?? 0));
+            if (!mg_admin_hosted_game_merchant_exists($pdo, $merchantUserId)) mg_fail('Select a valid merchant account.', 422);
+            $gamePublicId = mg_hosted_game_uuid();
+            $pdo->prepare("INSERT INTO hosted_games (public_id,merchant_user_id,name,slug,description,cover_url,status,integration_status,database_status,created_by_user_id,updated_by_user_id,created_at,updated_at) VALUES (?,?,?,?,?,?,'draft','pending','pending',?,?,NOW(),NOW())")
+                ->execute([$gamePublicId,$merchantUserId,$name,$slug,$description ?: null,$coverUrl ?: null,$actorId,$actorId]);
+        } else {
+            $game = mg_hosted_game_by_public_id($pdo, $gamePublicId, true);
+            if (!$game) mg_fail('Hosted game not found.', 404);
+            if ((string)$game['status'] === 'archived') mg_fail('Archived games cannot be edited.', 409);
+            $merchantUserId = (int)$game['merchant_user_id'];
+            $pdo->prepare('UPDATE hosted_games SET name=?,slug=?,description=?,cover_url=?,updated_by_user_id=?,updated_at=NOW() WHERE id=?')
+                ->execute([$name,$slug,$description ?: null,$coverUrl ?: null,$actorId,(int)$game['id']]);
+            if (!empty($game['developer_app_id'])) {
+                $pdo->prepare('UPDATE merchant_developer_apps SET name=?,updated_at=NOW() WHERE id=? AND merchant_user_id=?')
+                    ->execute([$name . ' Hosted Game API',(int)$game['developer_app_id'],$merchantUserId]);
+            }
+        }
+        $pdo->commit();
+        mg_audit('admin.hosted_game.saved','hosted_game',['game_id'=>$gamePublicId,'merchant_user_id'=>$merchantUserId,'slug'=>$slug],$actorId);
+        mg_admin_hosted_game_response($pdo,$gamePublicId,'Hosted game saved by Microgifter Admin.');
+    }
+
+    if ($gamePublicId === '') mg_fail('Hosted game is required.', 422);
     $game = mg_hosted_game_by_public_id($pdo, $gamePublicId, false);
     if (!$game) mg_fail('Hosted game not found.', 404);
+    $merchantUserId = (int)$game['merchant_user_id'];
+
+    if ($action === 'configure_integration') {
+        $programPublicId = trim((string)($input['program_id'] ?? ''));
+        $campaignPublicId = trim((string)($input['campaign_id'] ?? ''));
+        $templatePublicId = trim((string)($input['reward_template_id'] ?? ''));
+        if ($programPublicId === '' || $campaignPublicId === '' || $templatePublicId === '') mg_fail('Program, campaign, and reward are required.', 422);
+
+        $pdo->beginTransaction();
+        $game = mg_hosted_game_by_public_id($pdo, $gamePublicId, true);
+        if (!$game) mg_fail('Hosted game not found.', 404);
+        if ((string)$game['status'] === 'archived') mg_fail('Archived games cannot be configured.', 409);
+        $programStmt = $pdo->prepare("SELECT * FROM distribution_programs WHERE public_id=? AND merchant_user_id=? AND status NOT IN ('cancelled','archived') LIMIT 1 FOR UPDATE");
+        $programStmt->execute([$programPublicId,$merchantUserId]);
+        $program = $programStmt->fetch(PDO::FETCH_ASSOC);
+        if (!$program) mg_fail('Distribution Program not found or unavailable for this merchant.', 404);
+        $campaignStmt = $pdo->prepare("SELECT * FROM campaigns WHERE public_id=? AND merchant_user_id=? AND status<>'archived' LIMIT 1 FOR UPDATE");
+        $campaignStmt->execute([$campaignPublicId,$merchantUserId]);
+        $campaign = $campaignStmt->fetch(PDO::FETCH_ASSOC);
+        if (!$campaign) mg_fail('Campaign not found or unavailable for this merchant.', 404);
+        $rewardStmt = $pdo->prepare("SELECT cpt.id,cpt.public_id,cpv.title FROM distribution_program_products dpp INNER JOIN catalog_pppm_templates cpt ON cpt.id=dpp.pppm_template_id INNER JOIN catalog_product_versions cpv ON cpv.id=cpt.product_version_id INNER JOIN catalog_products cp ON cp.id=cpv.product_id WHERE dpp.program_id=? AND cpt.public_id=? AND dpp.status='active' AND cpt.status='active' AND cp.merchant_user_id=? LIMIT 1 FOR UPDATE");
+        $rewardStmt->execute([(int)$program['id'],$templatePublicId,$merchantUserId]);
+        $reward = $rewardStmt->fetch(PDO::FETCH_ASSOC);
+        if (!$reward) mg_fail('The selected reward is not actively attached to this merchant Distribution Program.', 409);
+        mg_hosted_game_ensure_runtime_integration($pdo, $game, $actorId, (int)$program['id']);
+        $pdo->prepare("UPDATE hosted_games SET distribution_program_id=?,campaign_id=?,pppm_template_id=?,integration_status='ready',updated_by_user_id=?,updated_at=NOW() WHERE id=?")
+            ->execute([(int)$program['id'],(int)$campaign['id'],(int)$reward['id'],$actorId,(int)$game['id']]);
+        $pdo->commit();
+        mg_audit('admin.hosted_game.integration_configured','hosted_game',['game_id'=>$gamePublicId,'merchant_user_id'=>$merchantUserId,'program_id'=>$programPublicId,'campaign_id'=>$campaignPublicId,'reward_template_id'=>$templatePublicId],$actorId);
+        mg_admin_hosted_game_response($pdo,$gamePublicId,'Game Program, Campaign, reward, and API integration configured by Microgifter Admin.');
+    }
+
+    if ($action === 'publish_game') {
+        $pdo->beginTransaction();
+        $lockedGame = mg_hosted_game_by_public_id($pdo, $gamePublicId, true);
+        if (!$lockedGame) mg_fail('Hosted game not found.', 404);
+        $readiness = mg_hosted_game_readiness($pdo, $lockedGame);
+        if (!$readiness['publish_ready']) mg_fail('Upload a release, configure the Program/Campaign/reward integration, and verify the isolated database before publishing.', 409);
+        $pdo->prepare("UPDATE hosted_games SET status='active',published_at=COALESCE(published_at,NOW()),archived_at=NULL,updated_by_user_id=?,updated_at=NOW() WHERE id=?")
+            ->execute([$actorId,(int)$lockedGame['id']]);
+        if (!empty($lockedGame['developer_app_id'])) {
+            $pdo->prepare("UPDATE merchant_developer_apps SET status='active',updated_at=NOW() WHERE id=? AND merchant_user_id=?")
+                ->execute([(int)$lockedGame['developer_app_id'],$merchantUserId]);
+        }
+        $pdo->commit();
+        mg_audit('admin.hosted_game.published','hosted_game',['game_id'=>$gamePublicId,'merchant_user_id'=>$merchantUserId],$actorId);
+        mg_admin_hosted_game_response($pdo,$gamePublicId,'Hosted game published by Microgifter Admin.');
+    }
+
+    if ($action === 'pause_game') {
+        $pdo->prepare("UPDATE hosted_games SET status='paused',updated_by_user_id=?,updated_at=NOW() WHERE id=?")
+            ->execute([$actorId,(int)$game['id']]);
+        if (!empty($game['developer_app_id'])) {
+            $pdo->prepare("UPDATE merchant_developer_apps SET status='paused',updated_at=NOW() WHERE id=? AND merchant_user_id=?")
+                ->execute([(int)$game['developer_app_id'],$merchantUserId]);
+        }
+        mg_audit('admin.hosted_game.paused','hosted_game',['game_id'=>$gamePublicId,'merchant_user_id'=>$merchantUserId],$actorId);
+        mg_admin_hosted_game_response($pdo,$gamePublicId,'Hosted game paused by Microgifter Admin.');
+    }
+
+    if ($action === 'archive_game') {
+        $pdo->beginTransaction();
+        $lockedGame = mg_hosted_game_by_public_id($pdo, $gamePublicId, true);
+        if (!$lockedGame) mg_fail('Hosted game not found.', 404);
+        $pdo->prepare("UPDATE hosted_games SET status='archived',archived_at=NOW(),updated_by_user_id=?,updated_at=NOW() WHERE id=?")
+            ->execute([$actorId,(int)$lockedGame['id']]);
+        if (!empty($lockedGame['developer_app_id'])) {
+            $pdo->prepare("UPDATE merchant_developer_apps SET status='paused',updated_at=NOW() WHERE id=? AND merchant_user_id=?")
+                ->execute([(int)$lockedGame['developer_app_id'],$merchantUserId]);
+        }
+        $pdo->commit();
+        mg_audit('admin.hosted_game.archived','hosted_game',['game_id'=>$gamePublicId,'merchant_user_id'=>$merchantUserId],$actorId);
+        mg_admin_hosted_game_response($pdo,$gamePublicId,'Hosted game archived by Microgifter Admin.');
+    }
 
     if ($action === 'save_database') {
         if (!mg_hosted_game_encryption_ready()) mg_fail('Hosted game credential encryption is not configured.', 503);
@@ -220,13 +393,6 @@ try {
         $pdo->commit();
         mg_audit('admin.hosted_game.database_disabled','hosted_game',['game_id'=>$gamePublicId],$actorId);
         mg_admin_hosted_game_response($pdo,$gamePublicId,'Game database access disabled.');
-    }
-
-    if ($action === 'pause_game') {
-        $pdo->prepare("UPDATE hosted_games SET status='paused',updated_by_user_id=?,updated_at=NOW() WHERE id=?")
-            ->execute([$actorId,(int)$game['id']]);
-        mg_audit('admin.hosted_game.paused','hosted_game',['game_id'=>$gamePublicId],$actorId);
-        mg_admin_hosted_game_response($pdo,$gamePublicId,'Hosted game paused by platform administration.');
     }
 } catch (InvalidArgumentException|MgHostedGameException $error) {
     if ($pdo->inTransaction()) $pdo->rollBack();
