@@ -80,4 +80,14 @@ jobs:
           node --check assets/js/merchant-hosted-games.js
           node --check examples/hosted-game-starter/game.js
       - name: Hosted Games contract validation
-        run: php scripts/validate_hosted_games_management_v1.php
+        shell: bash
+        run: |
+          set -o pipefail
+          php scripts/validate_hosted_games_management_v1.php 2>&1 | tee hosted-games-validation-${{ matrix.php }}.log
+      - name: Upload validation diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hosted-games-validation-${{ matrix.php }}
+          path: hosted-games-validation-${{ matrix.php }}.log
+          if-no-files-found: warn
