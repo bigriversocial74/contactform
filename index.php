@@ -12,6 +12,7 @@ $header_mode = 'public';
 $page_styles = [
     '/assets/css/public-header-footer-fixes.css',
     '/assets/css/homepage-local-business-v1.css?v=1.0.0',
+    '/assets/css/homepage-crm-integrations-v1.css?v=1.0.0',
 ];
 $page_scripts = [];
 $page_manifest = [
@@ -141,6 +142,8 @@ require __DIR__ . '/includes/header.php';
       </div>
     </div>
   </section>
+
+  <?php require __DIR__ . '/includes/landing/homepage-crm-integrations.php'; ?>
 
   <section class="mg-lb-section mg-lb-workflow" id="how-it-works" aria-labelledby="mgLbWorkflowTitle">
     <div class="mg-lb-container mg-lb-workflow-grid">
