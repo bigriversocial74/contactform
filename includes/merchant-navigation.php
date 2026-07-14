@@ -19,6 +19,7 @@ if (!function_exists('mg_merchant_navigation_items')) {
             'campaigns' => ['Campaigns', 'Forms, contests, QR drops', '/merchant-campaigns.php', 'Customers & Campaigns'],
             'campaign_ads' => ['Campaign Ads', 'Boost campaigns and local drops', '/merchant-ad-manager.php', 'Customers & Campaigns'],
             'distribution' => ['Distribution', 'Programs and inputs', '/merchant-distribution.php', 'Customers & Campaigns'],
+            'hosted_games' => ['Hosted Games', 'Upload games and connect rewards', '/merchant-games.php', 'Customers & Campaigns'],
             'agent_chat' => ['Agent Chat', 'Merchant agent feed', '/merchant-agent-chat.php', 'Customers & Campaigns'],
 
             'storefront' => ['Storefront', 'Public merchant page', '/merchant-storefront.php', 'Store Presence'],
@@ -88,6 +89,9 @@ if (!function_exists('mg_merchant_navigation_active_key')) {
             'merchant-distribution' => 'distribution',
             'distribution_program' => 'distribution',
             'merchant-distribution-program' => 'distribution',
+            'merchant-games' => 'hosted_games',
+            'merchant-hosted-games' => 'hosted_games',
+            'hosted-games' => 'hosted_games',
             'merchant-agent-chat' => 'agent_chat',
             'merchant-storefront' => 'storefront',
             'storefront_preview' => 'storefront',
