@@ -8,6 +8,7 @@ require_once dirname(__DIR__, 2) . '/includes/integrations/squarespace-contacts.
 require_once dirname(__DIR__, 2) . '/includes/integrations/woocommerce-contacts.php';
 require_once dirname(__DIR__, 2) . '/includes/integrations/shopify-contacts.php';
 require_once dirname(__DIR__, 2) . '/includes/integrations/square-contacts.php';
+require_once dirname(__DIR__, 2) . '/includes/integrations/hubspot-contacts.php';
 
 $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 $user = $method === 'POST'
@@ -22,6 +23,7 @@ if ($method === 'GET') {
     $providers = mg_woocommerce_provider_catalog($providers);
     $providers = mg_shopify_provider_catalog($providers);
     $providers = mg_square_provider_catalog($providers);
+    $providers = mg_hubspot_provider_catalog($providers);
     mg_ok([
         'schema_ready' => mg_integration_schema_ready($pdo),
         'migration' => 'merchant_integrations_foundation_v1.sql',
@@ -32,6 +34,7 @@ if ($method === 'GET') {
         'woocommerce_contacts' => mg_woocommerce_contacts_status($pdo, $merchantUserId),
         'shopify_contacts' => mg_shopify_contacts_status($pdo, $merchantUserId),
         'square_contacts' => mg_square_contacts_status($pdo, $merchantUserId),
+        'hubspot_contacts' => mg_hubspot_contacts_status($pdo, $merchantUserId),
     ]);
 }
 
@@ -82,6 +85,19 @@ try {
         mg_ok($result, 'Square authorization is ready.');
     }
 
+    if ($providerKey === 'hubspot' && $action === 'begin_hubspot_oauth') {
+        mg_rate_limit('merchant.integrations.hubspot.oauth', 'user:' . $merchantUserId, 8, 300);
+        $existing = mg_integration_connection_row($pdo, $merchantUserId, 'hubspot', false);
+        $wasActive = is_array($existing) && (string)($existing['status'] ?? '') === 'active';
+        $result = mg_hubspot_begin_oauth($pdo, $merchantUserId);
+        if ($wasActive) {
+            $pdo->prepare("UPDATE merchant_integration_connections SET status='active',updated_at=NOW() WHERE merchant_user_id=? AND provider_key='hubspot' ORDER BY id DESC LIMIT 1")
+                ->execute([$merchantUserId]);
+        }
+        mg_audit('merchant.integration.oauth_started', 'merchant_integration', ['provider' => 'hubspot'], $merchantUserId);
+        mg_ok($result, 'HubSpot authorization is ready.');
+    }
+
     if ($providerKey === 'woocommerce' && $action === 'connect_api_key') {
         mg_rate_limit('merchant.integrations.woocommerce.connect', 'user:' . $merchantUserId, 8, 300);
         $result = mg_woocommerce_connect(
@@ -103,91 +119,57 @@ try {
 
     if ($action === 'preview_contacts') {
         if ($providerKey === 'squarespace') {
-            $result = mg_squarespace_contact_preview(
-                $pdo,
-                $merchantUserId,
-                trim((string)($input['cursor'] ?? '')) ?: null,
-                max(1, min(100, (int)($input['page_size'] ?? 25)))
-            );
+            $result = mg_squarespace_contact_preview($pdo, $merchantUserId, trim((string)($input['cursor'] ?? '')) ?: null, max(1, min(100, (int)($input['page_size'] ?? 25))));
             mg_ok($result, 'Squarespace contact preview loaded.');
         }
         if ($providerKey === 'woocommerce') {
-            $result = mg_woocommerce_contact_preview(
-                $pdo,
-                $merchantUserId,
-                trim((string)($input['cursor'] ?? '')) ?: null,
-                max(1, min(100, (int)($input['page_size'] ?? 25)))
-            );
+            $result = mg_woocommerce_contact_preview($pdo, $merchantUserId, trim((string)($input['cursor'] ?? '')) ?: null, max(1, min(100, (int)($input['page_size'] ?? 25))));
             mg_ok($result, 'WooCommerce customer preview loaded.');
         }
         if ($providerKey === 'shopify') {
-            $result = mg_shopify_contact_preview(
-                $pdo,
-                $merchantUserId,
-                trim((string)($input['cursor'] ?? '')) ?: null,
-                max(1, min(250, (int)($input['page_size'] ?? 25)))
-            );
+            $result = mg_shopify_contact_preview($pdo, $merchantUserId, trim((string)($input['cursor'] ?? '')) ?: null, max(1, min(250, (int)($input['page_size'] ?? 25))));
             mg_ok($result, 'Shopify customer preview loaded.');
         }
         if ($providerKey === 'square') {
-            $result = mg_square_contact_preview(
-                $pdo,
-                $merchantUserId,
-                trim((string)($input['cursor'] ?? '')) ?: null,
-                max(1, min(100, (int)($input['page_size'] ?? 25)))
-            );
+            $result = mg_square_contact_preview($pdo, $merchantUserId, trim((string)($input['cursor'] ?? '')) ?: null, max(1, min(100, (int)($input['page_size'] ?? 25))));
             mg_ok($result, 'Square customer preview loaded.');
+        }
+        if ($providerKey === 'hubspot') {
+            $result = mg_hubspot_contact_preview($pdo, $merchantUserId, trim((string)($input['cursor'] ?? '')) ?: null, max(1, min(100, (int)($input['page_size'] ?? 25))));
+            mg_ok($result, 'HubSpot contact preview loaded.');
         }
     }
 
     if ($action === 'sync_contacts') {
         if ($providerKey === 'squarespace') {
             mg_rate_limit('merchant.integrations.squarespace.sync', 'user:' . $merchantUserId, 6, 300);
-            $result = mg_squarespace_sync_contacts(
-                $pdo,
-                $merchantUserId,
-                !empty($input['reset']),
-                max(1, min(250, (int)($input['page_size'] ?? 100))),
-                max(1, min(10, (int)($input['max_pages'] ?? 5)))
-            );
+            $result = mg_squarespace_sync_contacts($pdo, $merchantUserId, !empty($input['reset']), max(1, min(250, (int)($input['page_size'] ?? 100))), max(1, min(10, (int)($input['max_pages'] ?? 5))));
             mg_audit('merchant.integration.contacts_synced', 'merchant_integration', ['provider' => 'squarespace', 'counts' => $result['counts'] ?? []], $merchantUserId);
             mg_ok($result, 'Squarespace contacts synchronized.');
         }
         if ($providerKey === 'woocommerce') {
             mg_rate_limit('merchant.integrations.woocommerce.sync', 'user:' . $merchantUserId, 6, 300);
-            $result = mg_woocommerce_sync_contacts(
-                $pdo,
-                $merchantUserId,
-                !empty($input['reset']),
-                max(1, min(100, (int)($input['page_size'] ?? 100))),
-                max(1, min(10, (int)($input['max_pages'] ?? 5)))
-            );
+            $result = mg_woocommerce_sync_contacts($pdo, $merchantUserId, !empty($input['reset']), max(1, min(100, (int)($input['page_size'] ?? 100))), max(1, min(10, (int)($input['max_pages'] ?? 5))));
             mg_audit('merchant.integration.contacts_synced', 'merchant_integration', ['provider' => 'woocommerce', 'counts' => $result['counts'] ?? []], $merchantUserId);
             mg_ok($result, 'WooCommerce customers synchronized.');
         }
         if ($providerKey === 'shopify') {
             mg_rate_limit('merchant.integrations.shopify.sync', 'user:' . $merchantUserId, 6, 300);
-            $result = mg_shopify_sync_contacts(
-                $pdo,
-                $merchantUserId,
-                !empty($input['reset']),
-                max(1, min(250, (int)($input['page_size'] ?? 100))),
-                max(1, min(10, (int)($input['max_pages'] ?? 5)))
-            );
+            $result = mg_shopify_sync_contacts($pdo, $merchantUserId, !empty($input['reset']), max(1, min(250, (int)($input['page_size'] ?? 100))), max(1, min(10, (int)($input['max_pages'] ?? 5))));
             mg_audit('merchant.integration.contacts_synced', 'merchant_integration', ['provider' => 'shopify', 'counts' => $result['counts'] ?? []], $merchantUserId);
             mg_ok($result, 'Shopify customers synchronized.');
         }
         if ($providerKey === 'square') {
             mg_rate_limit('merchant.integrations.square.sync', 'user:' . $merchantUserId, 6, 300);
-            $result = mg_square_sync_contacts(
-                $pdo,
-                $merchantUserId,
-                !empty($input['reset']),
-                max(1, min(100, (int)($input['page_size'] ?? 100))),
-                max(1, min(10, (int)($input['max_pages'] ?? 5)))
-            );
+            $result = mg_square_sync_contacts($pdo, $merchantUserId, !empty($input['reset']), max(1, min(100, (int)($input['page_size'] ?? 100))), max(1, min(10, (int)($input['max_pages'] ?? 5))));
             mg_audit('merchant.integration.contacts_synced', 'merchant_integration', ['provider' => 'square', 'counts' => $result['counts'] ?? []], $merchantUserId);
             mg_ok($result, 'Square customers synchronized.');
+        }
+        if ($providerKey === 'hubspot') {
+            mg_rate_limit('merchant.integrations.hubspot.sync', 'user:' . $merchantUserId, 6, 300);
+            $result = mg_hubspot_sync_contacts($pdo, $merchantUserId, !empty($input['reset']), max(1, min(100, (int)($input['page_size'] ?? 100))), max(1, min(10, (int)($input['max_pages'] ?? 5))));
+            mg_audit('merchant.integration.contacts_synced', 'merchant_integration', ['provider' => 'hubspot', 'counts' => $result['counts'] ?? []], $merchantUserId);
+            mg_ok($result, 'HubSpot contacts synchronized.');
         }
     }
 
