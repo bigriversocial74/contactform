@@ -35,7 +35,7 @@ $required = [
         'Captured commerce orders · cash and online',
     ],
     'assets/js/featured-case-studies.js' => ['/api/public/case-studies/list.php'],
-    'includes/merchant-navigation.php' => ["'reviews' => ['Customer Reviews'"],
+    'includes/merchant-navigation.php' => ["'reviews' => ['My Customer Reviews'"],
     'includes/merchant-view.php' => ["\$merchantView==='reviews'"],
     'config/migrations.php' => ['reviews_case_studies_management_v1.sql'],
 ];
