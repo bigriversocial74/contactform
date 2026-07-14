@@ -132,7 +132,7 @@ function mg_personal_agent_save_memory(PDO $pdo, int $userId, array $input): arr
     if (!in_array($category,$allowed,true)) $category='preference';
     $key=mg_personal_agent_text($input['memory_key'] ?? '',160);
     if ($key==='') $key=mg_personal_agent_memory_key($title);
-    if (preg_match('/(password|token|claim.?code|phone|email|street.?address|card.?number|ssn)/i',$key.' '.$title)===1) {
+    if (preg_match('/(password|token|claim.?code|phone|email|street.?address|card.?number|ssn)/i',$key.' '.$title.' '.$value)===1) {
         throw new InvalidArgumentException('Sensitive credentials and private contact details cannot be stored in Agent Memory.');
     }
     $publicId=mg_public_uuid();
@@ -157,4 +157,3 @@ function mg_personal_agent_archive_memory(PDO $pdo, int $userId, string $publicI
     foreach (mg_personal_agent_memory($pdo,$userId,true) as $memory) if ($memory['id']===$publicId) return $memory;
     throw new RuntimeException('Agent Memory item not found.');
 }
-
