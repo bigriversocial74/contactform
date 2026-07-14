@@ -26,12 +26,17 @@ $identityPanel = strpos($files['view'], 'data-crm-duplicates-panel');
 $overviewEnd = strpos($files['view'], 'mg-crm-mobile-directory');
 $searchPosition = strpos($files['view'], 'data-crm-mobile-search');
 $tablePosition = strpos($files['view'], 'data-merchant-crm-table');
+$mobileStatStart = strpos($files['view'], 'data-crm-contact-stat-strip');
+$mobileStatEnd = $mobileStatStart === false ? false : strpos($files['view'], '</section>', $mobileStatStart);
+$mobileStatMarkup = $mobileStatStart !== false && $mobileStatEnd !== false
+    ? substr($files['view'], $mobileStatStart, $mobileStatEnd - $mobileStatStart)
+    : '';
 
 $checks = [
     'mobile dashboard styles are loaded last' => str_contains($files['page'], 'merchant-crm-mobile-dashboard.css?v=1.0.0')
         && str_contains($files['page'], 'merchant-crm-mobile-dashboard-contract.css?v=1.0.0'),
     'mobile dashboard runtime is loaded after identity runtime' => strpos($files['page'], 'merchant-crm-identity-duplicates.js?v=1.1.0') < strpos($files['page'], 'merchant-crm-mobile-dashboard.js?v=1.0.0'),
-    'desktop contract retains exactly five stat articles' => substr_count($files['view'], '<article') === 5,
+    'mobile contract retains exactly five stat articles' => substr_count($mobileStatMarkup, '<article') === 5,
     'possible duplicates uses a mobile-only semantic tile' => str_contains($files['view'], 'mg-crm-mobile-duplicate-stat')
         && str_contains($files['view'], 'role="group"'),
     'Merchant CRM accordion is present and open by default' => str_contains($files['view'], 'data-crm-mobile-overview-toggle')
