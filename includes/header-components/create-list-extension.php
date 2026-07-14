@@ -32,3 +32,4 @@ if (!mg_is_authenticated()) {
     </form>
   </section>
 </template>
+<script src="/assets/js/create-list-extension.js" defer></script>
