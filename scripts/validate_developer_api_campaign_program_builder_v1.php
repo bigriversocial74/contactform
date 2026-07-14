@@ -8,6 +8,7 @@ $files = [
     'builder' => $root . '/assets/js/merchant-developer-api-campaign-builder.js',
     'styles' => $root . '/assets/css/merchant-developer-api-campaign-builder.css',
     'page' => $root . '/merchant-distribution.php',
+    'programs_api' => $root . '/api/distribution/programs.php',
 ];
 
 foreach ($files as $label => $path) {
@@ -22,6 +23,7 @@ $tabs = file_get_contents($files['tabs']) ?: '';
 $builder = file_get_contents($files['builder']) ?: '';
 $styles = file_get_contents($files['styles']) ?: '';
 $page = file_get_contents($files['page']) ?: '';
+$programsApi = file_get_contents($files['programs_api']) ?: '';
 
 $checks = [
     'Program Builder navigation tab exists' => str_contains($view, 'data-dev-tab="builder"'),
@@ -40,13 +42,17 @@ $checks = [
     'Builder intercepts shared product submit handler' => str_contains($builder, 'stopImmediatePropagation') && str_contains($builder, '},true);'),
     'Builder requires at least one campaign' => str_contains($builder, 'Select at least one merchant campaign'),
     'Builder restores campaign selections while editing' => str_contains($builder, 'currentMetadata.campaign_ids'),
-    'Removed dashboard panels retain hidden runtime contracts' => str_contains($builder, "['sources','queue']") && str_contains($builder, "node.hidden=true"),
+    'Removed dashboard panels retain hidden runtime contracts' => str_contains($builder, "['sources','queue']") && str_contains($builder, 'node.hidden=true'),
     'Tabs route new and edit actions into builder' => str_contains($tabs, "activate('builder',true)") && str_contains($tabs, 'mg:developer-program-edit'),
     'Legacy product loading is absent from tab controller' => !str_contains($tabs, 'loadProgramProducts') && !str_contains($tabs, 'renderProductPicker'),
     'Campaign builder stylesheet is loaded' => str_contains($page, '/assets/css/merchant-developer-api-campaign-builder.css'),
     'Campaign builder script is loaded' => str_contains($page, '/assets/js/merchant-developer-api-campaign-builder.js'),
     'Campaign picker has responsive styling' => str_contains($styles, '.mg-dev-campaign-picker') && str_contains($styles, '@media(max-width:680px)'),
     'Results layout is explicitly full width' => str_contains($styles, '.mg-dev-program-results{width:100%'),
+    'Programs API validates campaign metadata server-side' => str_contains($programsApi, 'function mg_distribution_program_metadata') && str_contains($programsApi, "FROM campaigns WHERE public_id IN"),
+    'Programs API scopes campaigns to merchant ownership' => str_contains($programsApi, 'merchant_user_id=?') && str_contains($programsApi, "status<>'archived'"),
+    'Programs API rejects unavailable campaign IDs' => str_contains($programsApi, 'One or more selected campaigns are unavailable.'),
+    'Programs API records campaign count in audit context' => str_contains($programsApi, "'campaign_count'=>"),
 ];
 
 $failed = [];
