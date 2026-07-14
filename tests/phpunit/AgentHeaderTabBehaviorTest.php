@@ -23,6 +23,15 @@ final class AgentHeaderTabBehaviorTest extends TestCase
         self::assertStringContainsString('data-create-menu-option="microgift"',$createMenu);
     }
 
+    public function testAuthenticatedCustomersCanSeeAgentTabWithoutMerchantAccess(): void
+    {
+        $header=file_get_contents(dirname(__DIR__,2).'/includes/header-components/app-header.php');
+        self::assertIsString($header);
+        self::assertStringContainsString('$is_authenticated_user = mg_current_user() !== null;',$header);
+        self::assertStringContainsString('$can_agent_workspace = $is_authenticated_user || $can_merchant_nav',$header);
+        self::assertStringContainsString("['agent','Agent','/agent.php',$can_agent_workspace]",$header);
+    }
+
     public function testAddAgentTabAndDuplicateCreateControlsAreRemoved(): void
     {
         $root=dirname(__DIR__,2);
@@ -42,7 +51,7 @@ final class AgentHeaderTabBehaviorTest extends TestCase
         self::assertStringContainsString('looksLikePlusControl',$createMenu);
         self::assertStringContainsString('explicitTriggerSelector',$createMenu);
         self::assertStringContainsString('.mg-header-build-link',$createMenu);
-        self::assertStringContainsString('href="/build.php" data-global-create',$header);
+        self::assertStringContainsString('href="/lists.php?action=create" data-global-create',$header);
         self::assertStringContainsString("document.addEventListener('click'",$createMenu);
     }
 

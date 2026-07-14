@@ -13,11 +13,18 @@ $can_merchant_nav = $can_merchant_nav ?? !empty($mg_package_context['merchant_ac
 $can_create_microgift = (bool) ($can_create_microgift ?? ($can_merchant_nav && mg_package_limit_allows_create($mg_package_context, 'max_microgifts', 0)));
 $can_create_campaigns = (bool) ($can_create_campaigns ?? ($can_merchant_nav && mg_package_limit_allows_create($mg_package_context, 'max_active_campaigns', 0)));
 $can_create_rewards = (bool) ($can_create_rewards ?? ($can_merchant_nav && mg_package_limit_allows_create($mg_package_context, 'max_rewards', 0)));
-$can_header_create = $show_header_create && $can_merchant_nav && ($can_create_microgift || $can_create_campaigns || $can_create_rewards || in_array('super_admin', $user_roles, true));
+$can_create_post = (bool) ($can_create_post ?? mg_is_authenticated());
+$can_create_list = (bool) ($can_create_list ?? mg_is_authenticated());
+$can_header_create = $show_header_create && (
+    $can_create_list
+    || $can_create_post
+    || ($can_merchant_nav && ($can_create_microgift || $can_create_campaigns || $can_create_rewards))
+    || in_array('super_admin', $user_roles, true)
+);
 ?>
 <div class="mg-header-actions" data-header-template="logged-in">
   <?php if ($can_header_create): ?>
-    <a class="mg-header-create" href="/build.php" data-header-create data-global-create aria-label="Create" aria-haspopup="dialog" aria-controls="mg-create-menu" aria-expanded="false">+</a>
+    <a class="mg-header-create" href="/lists.php?action=create" data-header-create data-global-create aria-label="Create" aria-haspopup="dialog" aria-controls="mg-create-menu" aria-expanded="false">+</a>
   <?php endif; ?>
 
   <?php if ($show_header_signals): ?>
@@ -66,6 +73,7 @@ $can_header_create = $show_header_create && $can_merchant_nav && ($can_create_mi
           <div class="mg-account-tab-panel mg-account-customer-panel" role="tabpanel" aria-label="Customer links">
             <?php $customerMenuIndex = 1; ?>
             <a class="mg-account-action" href="/inbox.php"><span class="mg-account-index"><?= str_pad((string) $customerMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>IN/OUT Box</span></a>
+            <a class="mg-account-action" href="/lists.php"><span class="mg-account-index"><?= str_pad((string) $customerMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>My Lists</span></a>
             <a class="mg-account-action" href="/feed.php"><span class="mg-account-index"><?= str_pad((string) $customerMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>My Feed</span></a>
             <a class="mg-account-action" href="/notifications.php"><span class="mg-account-index"><?= str_pad((string) $customerMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>My Notifications</span></a>
             <a class="mg-account-action" href="/account-commerce.php"><span class="mg-account-index"><?= str_pad((string) $customerMenuIndex++, 2, '0', STR_PAD_LEFT) ?></span><span>My Orders</span></a>

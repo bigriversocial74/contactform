@@ -73,6 +73,7 @@ return [
         'stage_13b_subscription_package_changes.sql',
         'stage_14_posts_feed_social.sql',
         'stage_14b_social_content.sql',
+        '20260714_user_contact_lists_phase1.sql',
         'stage_15_psr_demand_intelligence.sql',
         'stage_15c_prepaid_demand_commitments.sql',
         'stage_16_agent_execution_orchestration.sql',
