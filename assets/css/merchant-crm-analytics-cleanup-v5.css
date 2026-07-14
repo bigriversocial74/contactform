@@ -1,0 +1,69 @@
+/* Merchant CRM desktop analytics cleanup v5. Loaded last to remove legacy decoration and reclaim space. */
+@media (min-width: 981px) {
+  body .mg-crm-desktop-hero .mg-crm-kpi::before,
+  body .mg-crm-desktop-hero .mg-crm-kpi::after,
+  body .mg-crm-desktop-hero .mg-crm-kpi-top::before,
+  body .mg-crm-desktop-hero .mg-crm-kpi-top::after,
+  body .mg-crm-desktop-hero .mg-crm-kpi-copy::before,
+  body .mg-crm-desktop-hero .mg-crm-kpi-copy::after,
+  body .mg-crm-desktop-hero .mg-crm-kpi-icon,
+  body .mg-crm-desktop-hero .mg-crm-kpi-icon::before,
+  body .mg-crm-desktop-hero .mg-crm-kpi-icon::after {
+    content: none !important;
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-kpi,
+  body .mg-crm-desktop-hero .mg-crm-kpi-top,
+  body .mg-crm-desktop-hero .mg-crm-kpi-copy {
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+    background-image: none !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-kpi {
+    padding: 14px 16px 12px !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-kpi-top,
+  body .mg-crm-desktop-hero .mg-crm-kpi-copy {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-audience-grid {
+    grid-template-columns: 128px minmax(0, 1fr) !important;
+    gap: 20px !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-trends {
+    display: none !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-health-row {
+    grid-template-columns: 118px minmax(120px, 1fr) 42px !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-desktop-view-pipeline {
+    display: none !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-pipeline-stages {
+    width: 100% !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-pipeline-footer {
+    display: flex !important;
+    width: 100% !important;
+    margin: 12px 0 0 !important;
+    box-sizing: border-box !important;
+  }
+}
