@@ -4,7 +4,7 @@
     <div>
       <span class="mg-eyebrow">Third-party app connect</span>
       <h1>Connected Apps</h1>
-      <p>Connect the CRM and web-store systems you already use. Microgifter keeps rewards, claims, campaign engagement, and identity history while importing approved external customer and commerce data.</p>
+      <p>Connect the CRM, audience, and web-store systems you already use. Microgifter keeps rewards, claims, campaign engagement, and identity history while importing approved external customer and commerce data.</p>
     </div>
     <div class="mg-integrations-hero-badge" aria-label="App Connect contacts version 1">
       <strong>App Connect</strong>
@@ -26,7 +26,7 @@
     </article>
     <article>
       <span>02</span>
-      <div><strong>Consent stays explicit</strong><p>Marketing consent is preserved only when a provider supplies verifiable consent evidence. Imports never silently opt a customer into marketing.</p></div>
+      <div><strong>Consent stays explicit</strong><p>Marketing status is preserved only when a provider supplies verifiable evidence. Imports never silently opt a customer into marketing.</p></div>
     </article>
     <article>
       <span>03</span>
@@ -36,7 +36,7 @@
 
   <div class="mg-integrations-section-title">
     <div><span class="mg-eyebrow">Provider catalog</span><h2>Connect your business systems</h2></div>
-    <p>Squarespace, WooCommerce, Shopify, Square, and HubSpot use the same secure connection, identity-link, synchronization, review, and audit foundation.</p>
+    <p>Squarespace, WooCommerce, Shopify, Square, HubSpot, and Mailchimp use the same secure connection, identity-link, synchronization, review, and audit foundation.</p>
   </div>
 
   <section class="mg-integrations-grid" data-integrations-grid>
@@ -46,9 +46,9 @@
   <section class="mg-integrations-ownership">
     <header><span class="mg-eyebrow">Source-of-truth policy</span><h2>What each system owns</h2></header>
     <div class="mg-integrations-ownership-grid">
-      <article><strong>External provider</strong><p>Website contacts, orders, products, inventory, and provider-side marketing preference history. Addresses remain outside this integration.</p></article>
+      <article><strong>External provider</strong><p>Website contacts, audience membership, orders, products, inventory, and provider-side marketing preference history. Addresses remain outside this integration.</p></article>
       <article><strong>Microgifter</strong><p>Social gifts, campaign participation, rewards, wallet items, claims, redemptions, follow-ups, messages, and engagement intelligence.</p></article>
-      <article><strong>Shared identity layer</strong><p>Provider record links, duplicate review, synchronization history, conflicts, external deletion markers, and webhook evidence.</p></article>
+      <article><strong>Shared identity layer</strong><p>Provider record links, duplicate review, synchronization history, conflicts, external deletion markers, and consent evidence.</p></article>
     </div>
   </section>
 </section>
