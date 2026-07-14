@@ -1,0 +1,55 @@
+name: Square Contacts v1 Validation
+
+on:
+  pull_request:
+    paths:
+      - 'includes/integrations/providers/square.php'
+      - 'includes/integrations/square-contacts.php'
+      - 'merchant-integrations-square-callback.php'
+      - 'api/merchant/integrations.php'
+      - 'merchant-integrations.php'
+      - 'includes/merchant-integrations-view.php'
+      - 'assets/js/merchant-integrations-square.js'
+      - 'assets/css/merchant-integrations-square.css'
+      - 'scripts/validate_square_contacts_v1.php'
+      - '.github/workflows/square-contacts-v1-validation.yml'
+  push:
+    paths:
+      - 'includes/integrations/providers/square.php'
+      - 'includes/integrations/square-contacts.php'
+      - 'merchant-integrations-square-callback.php'
+      - 'api/merchant/integrations.php'
+      - 'merchant-integrations.php'
+      - 'includes/merchant-integrations-view.php'
+      - 'assets/js/merchant-integrations-square.js'
+      - 'assets/css/merchant-integrations-square.css'
+      - 'scripts/validate_square_contacts_v1.php'
+      - '.github/workflows/square-contacts-v1-validation.yml'
+
+jobs:
+  validate:
+    strategy:
+      matrix:
+        php-version: ['8.2', '8.3']
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: PHP syntax
+        run: |
+          php -l includes/integrations/providers/square.php
+          php -l includes/integrations/square-contacts.php
+          php -l merchant-integrations-square-callback.php
+          php -l api/merchant/integrations.php
+          php -l merchant-integrations.php
+          php -l includes/merchant-integrations-view.php
+          php -l scripts/validate_square_contacts_v1.php
+      - name: JavaScript syntax
+        run: node --check assets/js/merchant-integrations-square.js
+      - name: Square Contacts contract
+        run: php scripts/validate_square_contacts_v1.php

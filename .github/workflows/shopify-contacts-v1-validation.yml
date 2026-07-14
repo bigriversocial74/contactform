@@ -1,0 +1,55 @@
+name: Shopify Contacts v1 Validation
+
+on:
+  pull_request:
+    paths:
+      - 'includes/integrations/providers/shopify.php'
+      - 'includes/integrations/shopify-contacts.php'
+      - 'merchant-integrations-shopify-callback.php'
+      - 'api/merchant/integrations.php'
+      - 'merchant-integrations.php'
+      - 'includes/merchant-integrations-view.php'
+      - 'assets/js/merchant-integrations-shopify.js'
+      - 'assets/css/merchant-integrations-shopify.css'
+      - 'scripts/validate_shopify_contacts_v1.php'
+      - '.github/workflows/shopify-contacts-v1-validation.yml'
+  push:
+    paths:
+      - 'includes/integrations/providers/shopify.php'
+      - 'includes/integrations/shopify-contacts.php'
+      - 'merchant-integrations-shopify-callback.php'
+      - 'api/merchant/integrations.php'
+      - 'merchant-integrations.php'
+      - 'includes/merchant-integrations-view.php'
+      - 'assets/js/merchant-integrations-shopify.js'
+      - 'assets/css/merchant-integrations-shopify.css'
+      - 'scripts/validate_shopify_contacts_v1.php'
+      - '.github/workflows/shopify-contacts-v1-validation.yml'
+
+jobs:
+  validate:
+    strategy:
+      matrix:
+        php-version: ['8.2', '8.3']
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: PHP syntax
+        run: |
+          php -l includes/integrations/providers/shopify.php
+          php -l includes/integrations/shopify-contacts.php
+          php -l merchant-integrations-shopify-callback.php
+          php -l api/merchant/integrations.php
+          php -l merchant-integrations.php
+          php -l includes/merchant-integrations-view.php
+          php -l scripts/validate_shopify_contacts_v1.php
+      - name: JavaScript syntax
+        run: node --check assets/js/merchant-integrations-shopify.js
+      - name: Shopify Contacts contract
+        run: php scripts/validate_shopify_contacts_v1.php
