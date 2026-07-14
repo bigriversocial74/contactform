@@ -1,0 +1,35 @@
+/* Final desktop KPI no-icon layer.
+   Loaded after the hard reset so the metric content uses the full card width. */
+@media (min-width: 981px) {
+  body .mg-crm-desktop-hero .mg-crm-desktop-kpis .mg-crm-kpi-icon {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-desktop-kpis .mg-crm-kpi-top,
+  body .mg-crm-desktop-hero .mg-crm-desktop-kpis .mg-crm-kpi-copy {
+    display: contents !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-desktop-kpis .mg-crm-kpi {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-desktop-kpis .mg-crm-kpi-label,
+  body .mg-crm-desktop-hero .mg-crm-desktop-kpis .mg-crm-kpi-value,
+  body .mg-crm-desktop-hero .mg-crm-desktop-kpis .mg-crm-kpi-meta,
+  body .mg-crm-desktop-hero .mg-crm-desktop-kpis .mg-crm-kpi-chart {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
