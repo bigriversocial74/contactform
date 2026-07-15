@@ -93,8 +93,8 @@ require dirname(__DIR__) . '/includes/header.php';
                   <p>Select the game owner’s Distribution Program. Microgifter automatically applies its connected campaign and active reward inventory, then provisions or updates the dedicated Developer App, live API credential, reward scopes, and signed webhook.</p>
                   <form class="hgm-form" data-hgm-admin-integration-form>
                     <input type="hidden" name="game_id">
-                    <input type="hidden" name="campaign_id">
-                    <input type="hidden" name="reward_template_id">
+                    <select name="campaign_id" aria-hidden="true" tabindex="-1" style="display:none!important"><option value=""></option></select>
+                    <select name="reward_template_id" aria-hidden="true" tabindex="-1" style="display:none!important"><option value=""></option></select>
                     <label>Distribution Program<select name="program_id" required data-hgm-admin-program><option value="">Select a Program</option></select></label>
                     <div class="hgm-card-actions"><button class="hgm-btn is-primary" type="submit">Configure game integration</button></div>
                     <div class="hgm-form-status" data-hgm-admin-integration-status></div>
