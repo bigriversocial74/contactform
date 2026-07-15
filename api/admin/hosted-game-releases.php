@@ -24,7 +24,12 @@ try{
     if($action==='compare')mg_ok(mg_hosted_game_release_compare($pdo,$game,trim((string)($input['left_release_id']??'')),trim((string)($input['right_release_id']??''))));
     if($releaseId==='')mg_fail('Hosted game release is required.',422);
     if($action==='update_notes'){$release=mg_hosted_game_release_update_notes($pdo,$game,$releaseId,(string)($input['release_notes']??''),$actorId);mg_ok(['release'=>mg_hosted_game_release_payload($release,$gamePublicId)],'Release notes saved.');}
-    if($action==='health_check'){$health=mg_hosted_game_release_health_check($pdo,$game,$releaseId,$actorId);mg_ok(['health'=>$health],'Release health check completed.');}
+    if($action==='health_check'){
+        $health=mg_hosted_game_release_health_check($pdo,$game,$releaseId,$actorId);
+        $pdo->prepare("UPDATE hosted_game_releases SET status=CASE WHEN ?='failed' AND status<>'active' THEN 'failed' WHEN ?<>'failed' AND status='failed' THEN 'testing' ELSE status END,updated_at=NOW() WHERE game_id=? AND public_id=?")
+            ->execute([(string)$health['status'],(string)$health['status'],(int)$game['id'],$releaseId]);
+        mg_ok(['health'=>$health],'Release health check completed.');
+    }
     if($action==='activate'||$action==='rollback'){$release=mg_hosted_game_release_activate($pdo,$game,$releaseId,$actorId,$action==='rollback');mg_ok(['release'=>mg_hosted_game_release_payload($release,$gamePublicId)],$action==='rollback'?'Release rolled back and activated.':'Release activated.');}
     if($action==='archive'){$release=mg_hosted_game_release_archive($pdo,$game,$releaseId,$actorId);mg_ok(['release'=>mg_hosted_game_release_payload($release,$gamePublicId)],'Release archived.');}
     if($action==='create_preview'){$access=mg_hosted_game_preview_access($pdo,$user,$gamePublicId,$releaseId);$session=mg_hosted_game_preview_session($pdo,$access,true);mg_ok(['session_id'=>(string)$session['public_id'],'preview_url'=>'/hosted-game-preview.php?game='.rawurlencode($gamePublicId).'&release='.rawurlencode($releaseId)],'Protected preview session ready.');}
