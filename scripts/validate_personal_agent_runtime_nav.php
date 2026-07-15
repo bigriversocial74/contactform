@@ -75,8 +75,8 @@ $checks = [
     'composer sends directly and receives an assistant response' => !str_contains($agentDashboard, 'Start a new conversation')
         && !str_contains($agentDashboard, 'data-personal-agent-new-thread')
         && !str_contains($chatJs, 'New personal gifting conversation started.')
-        && str_contains($chatActionsJs, "api('POST', '/api/user-agent/chat.php'")
-        && str_contains($chatActionsJs, 'renderMessage(data.assistant_message)')
+        && str_contains($chatActionsJs, "Microgifter.post('/api/user-agent/chat.php'")
+        && str_contains($chatActionsJs, 'appendMessage(data.assistant_message)')
         && str_contains($chatApi, 'mg_personal_agent_chat_v2')
         && str_contains($knowledge, "'assistant_message' => \$assistant"),
     'composer is detached with wide input and compact send' => str_contains($agentWorkspace, 'mg-personal-agent-composer-row')
