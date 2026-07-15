@@ -27,9 +27,13 @@ function mg_identity_register(PDO $pdo,array $input,?callable $failureHook=null)
     $email=mg_identity_normalize_email((string)($input['email']??''));
     $fullName=trim((string)($input['full_name']??''));
     $password=(string)($input['password']??'');
+    $passwordConfirmation=(string)($input['password_confirmation']??'');
     if(!filter_var($email,FILTER_VALIDATE_EMAIL))throw new MgIdentityException('Enter a valid email address.',422);
     if($fullName==='')throw new MgIdentityException('Full name is required.',422);
     mg_identity_validate_password($password);
+    if ($passwordConfirmation === '' || !hash_equals($password, $passwordConfirmation)) {
+        throw new MgIdentityException('Passwords do not match.', 422);
+    }
     if (hash_equals(strtolower($password), strtolower($email))) throw new MgIdentityException('Choose a password that is different from your email.', 422);
 
     $owns=!$pdo->inTransaction();
