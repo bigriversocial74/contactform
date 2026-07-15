@@ -6,7 +6,7 @@ declare(strict_types=1);
     <div>
       <span class="hgm-eyebrow">Developer API · Hosted games</span>
       <h1>Upload a game.<br>Connect a distribution.</h1>
-      <p>Host simple HTML games, WebGL builds, audio games, or complex browser experiences. Microgifter supplies the secure player login, isolated game database, Distribution Program connection, reward issuance, Inbox delivery, and release management.</p>
+      <p>Host simple HTML games, WebGL builds, audio games, or complex browser experiences. Microgifter supplies the secure player login, isolated game database, Distribution Program connection, managed API credential, signed webhook, reward issuance, Inbox delivery, and release management.</p>
     </div>
     <button class="hgm-btn is-primary" type="button" data-hgm-create>+ Create hosted game</button>
   </section>
@@ -15,7 +15,7 @@ declare(strict_types=1);
 
   <section class="hgm-stats" aria-label="Hosted game totals">
     <article class="hgm-stat"><span>Total games</span><strong data-hgm-stat="total">0</strong></article>
-    <article class="hgm-stat"><span>Published</span><strong data-hgm-stat="active">0</strong></article>
+    <article class="hgm-stat"><span>Enabled</span><strong data-hgm-stat="active">0</strong></article>
     <article class="hgm-stat"><span>Total plays</span><strong data-hgm-stat="plays">0</strong></article>
     <article class="hgm-stat"><span>Rewards delivered</span><strong data-hgm-stat="delivered">0</strong></article>
     <article class="hgm-stat"><span>Needs setup</span><strong data-hgm-stat="pending">0</strong></article>
@@ -77,7 +77,7 @@ declare(strict_types=1);
 
         <section class="hgm-section" data-hgm-integration-section>
           <h3>Distribution integration</h3>
-          <p>Select the Distribution Program only. Microgifter automatically applies its connected campaign and active reward inventory, then creates the encrypted live Developer App credential and signed webhook.</p>
+          <p>Select the Distribution Program only. Microgifter applies its connected campaign and active reward inventory, then creates and encrypts the live Developer App credential, webhook secret, and state secret automatically. No per-game environment values are required.</p>
           <form class="hgm-form" data-hgm-integration-form>
             <input type="hidden" name="game_id">
             <select name="campaign_id" aria-hidden="true" tabindex="-1" style="display:none!important"><option value=""></option></select>
@@ -89,8 +89,8 @@ declare(strict_types=1);
         </section>
 
         <section class="hgm-section">
-          <h3>Readiness and publishing</h3>
-          <p>The game can publish after the ZIP, Distribution Program integration, and the main-admin isolated database connection are all ready.</p>
+          <h3>Managed runtime</h3>
+          <p>After the ZIP, Distribution Program integration, and isolated database are ready, use the Game enabled switch. Disabling pauses gameplay and reward issuance without deleting the release or rotating credentials.</p>
           <div class="hgm-ready-list" data-hgm-modal-readiness></div>
           <div class="hgm-card-actions">
             <button class="hgm-btn is-success" type="button" data-hgm-publish disabled>Publish game</button>
