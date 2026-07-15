@@ -5,6 +5,9 @@ on:
     branches:
       - integration-from-repair-20260628
     paths:
+      - 'agent.php'
+      - 'includes/agent-workspace.php'
+      - 'includes/agent-sidebar.php'
       - 'includes/header-components/app-header.php'
       - 'includes/gift-action-center.php'
       - 'includes/gift-center-sidebar.php'
@@ -12,6 +15,8 @@ on:
       - 'includes/user-contact-search.php'
       - 'includes/personal-agent/**'
       - 'assets/css/user-lists.css'
+      - 'assets/css/personal-agent-chat-canvas.css'
+      - 'assets/js/personal-agent-chat-canvas.js'
       - 'scripts/validate_personal_agent_runtime_nav.php'
       - '.github/workflows/personal-agent-runtime-nav-validation.yml'
   workflow_dispatch:
@@ -38,6 +43,9 @@ jobs:
           extensions: mbstring, pdo, pdo_mysql, openssl
       - name: PHP syntax
         run: |
+          php -l agent.php
+          php -l includes/agent-workspace.php
+          php -l includes/agent-sidebar.php
           php -l includes/header-components/app-header.php
           php -l includes/gift-action-center.php
           php -l includes/gift-center-sidebar.php
@@ -52,6 +60,8 @@ jobs:
           php -l includes/personal-agent/workflows-data-groups.php
           php -l includes/personal-agent/workflows-data-bundles.php
           php -l scripts/validate_personal_agent_runtime_nav.php
+      - name: JavaScript syntax
+        run: node --check assets/js/personal-agent-chat-canvas.js
       - name: Runtime and navigation contract
         run: php scripts/validate_personal_agent_runtime_nav.php
       - name: Phase 3 regression
