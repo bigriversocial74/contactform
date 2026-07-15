@@ -21,6 +21,7 @@ if (($page_body_class ?? '') === 'mg-admin-moderation-page') {
 if (($page_body_class ?? '') === 'mg-admin-users-page') {
     $page_scripts[] = '/assets/js/admin-user-detail-drawer.js';
     $page_scripts[] = '/assets/js/admin-user-management.js';
+    $page_scripts[] = '/assets/js/admin-subscription-grants.js?v=1.0.0';
     $late_styles[] = '/assets/css/admin-user-detail-drawer.css';
     $late_styles[] = '/assets/css/admin-user-management.css';
 }
