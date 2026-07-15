@@ -89,20 +89,37 @@ function mg_hosted_game_standard_finalize_release(PDO $pdo, array $game, array $
 
     $manifest['entry'] = (string)($result['release']['entry_file'] ?? $manifest['entry'] ?? 'index.html');
     $manifestJson = mg_hosted_game_json_encode($manifest, MG_HOSTED_GAME_STANDARD_MAX_MANIFEST_BYTES);
+    $validation = [
+        'valid'=>true,
+        'schema'=>(string)$manifest['schema'],
+        'standard_version'=>(string)($manifest['standard']['version'] ?? '1.0.0'),
+        'compliance'=>(string)($manifest['standard']['compliance'] ?? 'legacy'),
+        'manifest_version'=>(string)$manifest['version'],
+        'entry'=>(string)$manifest['entry'],
+        'capabilities'=>$manifest['capabilities'],
+        'events'=>$manifest['events'],
+        'validated_by'=>$actorUserId,
+        'validated_at'=>gmdate('c'),
+    ];
+    $validationStatus=(string)$manifest['standard']['compliance']==='standard'?'passed':'warning';
     $update = $pdo->prepare(
-        "UPDATE hosted_game_releases SET manifest_json=?,updated_at=NOW()
-         WHERE public_id=? AND game_id=? AND status='active'"
+        "UPDATE hosted_game_releases
+         SET manifest_json=?,manifest_schema=?,manifest_version=?,sdk_version=?,validation_status=?,validation_json=?,validated_at=NOW(),updated_at=NOW()
+         WHERE public_id=? AND game_id=? AND status IN ('draft','testing')"
     );
-    $update->execute([$manifestJson, $releaseId, (int)$game['id']]);
+    $update->execute([
+        $manifestJson,(string)$manifest['schema'],(string)$manifest['version'],MG_HOSTED_GAME_STANDARD_SDK_VERSION,
+        $validationStatus,mg_hosted_game_json_encode($validation,65536),$releaseId,(int)$game['id']
+    ]);
 
     $verify = $pdo->prepare(
-        "SELECT manifest_json FROM hosted_game_releases
-         WHERE public_id=? AND game_id=? AND status='active' LIMIT 1"
+        "SELECT manifest_json,validation_status FROM hosted_game_releases
+         WHERE public_id=? AND game_id=? AND status IN ('draft','testing') LIMIT 1"
     );
     $verify->execute([$releaseId, (int)$game['id']]);
-    $savedManifest = $verify->fetchColumn();
-    if (!is_string($savedManifest) || mg_hosted_game_json_decode($savedManifest) !== $manifest) {
-        throw new MgHostedGameException('The active release manifest could not be saved.');
+    $saved=$verify->fetch(PDO::FETCH_ASSOC);
+    if (!$saved || mg_hosted_game_json_decode($saved['manifest_json'] ?? null) !== $manifest) {
+        throw new MgHostedGameException('The draft release manifest could not be saved.');
     }
 
     try {
@@ -111,14 +128,16 @@ function mg_hosted_game_standard_finalize_release(PDO $pdo, array $game, array $
             'release_id' => $releaseId,
             'schema' => MG_HOSTED_GAME_STANDARD_SCHEMA,
             'compliance' => (string)$manifest['standard']['compliance'],
+            'validation_status'=>$validationStatus,
             'capabilities' => $manifest['capabilities'],
             'events' => $manifest['events'],
         ], $actorUserId);
     } catch (Throwable) {
-        // Audit logging does not invalidate a successfully committed release.
+        // Audit logging does not invalidate a successfully committed draft release.
     }
 
     $result['release']['manifest'] = $manifest;
     $result['release']['standard'] = $manifest['standard'];
+    $result['release']['validation']=['status'=>$validationStatus,'result'=>$validation];
     return $result;
 }
