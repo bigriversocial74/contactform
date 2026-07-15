@@ -12,6 +12,7 @@ $page_styles = [
 $page_scripts = [
     '/assets/js/merchant-workspace.js',
     '/assets/js/merchant-hosted-games.js?v=1.0.0',
+    '/assets/js/merchant-hosted-games-program-only.js?v=1.0.0',
 ];
 $merchantView = 'hosted_games';
 require __DIR__ . '/includes/header.php';

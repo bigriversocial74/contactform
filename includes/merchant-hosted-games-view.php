@@ -5,8 +5,8 @@ declare(strict_types=1);
   <section class="hgm-hero">
     <div>
       <span class="hgm-eyebrow">Developer API · Hosted games</span>
-      <h1>Upload a game.<br>Connect a reward.</h1>
-      <p>Host simple HTML games, WebGL builds, audio games, or complex browser experiences. Microgifter supplies the secure player login, isolated game database, campaign connection, reward issuance, Inbox delivery, and release management.</p>
+      <h1>Upload a game.<br>Connect a distribution.</h1>
+      <p>Host simple HTML games, WebGL builds, audio games, or complex browser experiences. Microgifter supplies the secure player login, isolated game database, Distribution Program connection, reward issuance, Inbox delivery, and release management.</p>
     </div>
     <button class="hgm-btn is-primary" type="button" data-hgm-create>+ Create hosted game</button>
   </section>
@@ -29,7 +29,7 @@ declare(strict_types=1);
   <section class="hgm-grid" data-hgm-grid></section>
   <section class="hgm-empty" data-hgm-empty hidden>
     <h3>No hosted games yet</h3>
-    <p>Create the game record, upload the ZIP, connect the campaign and reward, then ask Microgifter Admin to verify the isolated game database.</p>
+    <p>Create the game record, upload the ZIP, connect its Distribution Program, then ask Microgifter Admin to verify the isolated game database.</p>
   </section>
 
   <div class="hgm-modal" data-hgm-modal hidden>
@@ -42,7 +42,7 @@ declare(strict_types=1);
         <div class="hgm-step-tabs" aria-hidden="true">
           <div class="hgm-step-tab is-active" data-hgm-step-indicator="identity">1. Game identity</div>
           <div class="hgm-step-tab" data-hgm-step-indicator="release">2. Upload ZIP</div>
-          <div class="hgm-step-tab" data-hgm-step-indicator="integration">3. Reward integration</div>
+          <div class="hgm-step-tab" data-hgm-step-indicator="integration">3. Distribution</div>
         </div>
 
         <section class="hgm-section">
@@ -76,15 +76,13 @@ declare(strict_types=1);
         </section>
 
         <section class="hgm-section" data-hgm-integration-section>
-          <h3>Campaign and reward integration</h3>
-          <p>Select the merchant Distribution Program, campaign, and active PPPM reward. Microgifter creates and encrypts a dedicated live Developer App credential and webhook automatically.</p>
+          <h3>Distribution integration</h3>
+          <p>Select the Distribution Program only. Microgifter automatically applies its connected campaign and active reward inventory, then creates the encrypted live Developer App credential and signed webhook.</p>
           <form class="hgm-form" data-hgm-integration-form>
             <input type="hidden" name="game_id">
+            <select name="campaign_id" aria-hidden="true" tabindex="-1" style="display:none!important"><option value=""></option></select>
+            <select name="reward_template_id" aria-hidden="true" tabindex="-1" style="display:none!important"><option value=""></option></select>
             <label>Distribution Program<select name="program_id" required><option value="">Select a program</option></select></label>
-            <div class="hgm-form-grid">
-              <label>Campaign<select name="campaign_id" required><option value="">Select a campaign</option></select></label>
-              <label>Program reward<select name="reward_template_id" required><option value="">Select a program first</option></select></label>
-            </div>
             <div><button class="hgm-btn is-primary" type="submit">Configure game integration</button></div>
             <div class="hgm-form-status" data-hgm-integration-status></div>
           </form>
@@ -92,7 +90,7 @@ declare(strict_types=1);
 
         <section class="hgm-section">
           <h3>Readiness and publishing</h3>
-          <p>The game can publish after the ZIP, campaign/reward integration, and the main-admin isolated database connection are all ready.</p>
+          <p>The game can publish after the ZIP, Distribution Program integration, and the main-admin isolated database connection are all ready.</p>
           <div class="hgm-ready-list" data-hgm-modal-readiness></div>
           <div class="hgm-card-actions">
             <button class="hgm-btn is-success" type="button" data-hgm-publish disabled>Publish game</button>
