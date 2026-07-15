@@ -226,7 +226,7 @@ function mg_user_contact_list_members(PDO $pdo, int $ownerUserId, int $listId): 
     $stmt = $pdo->prepare("SELECT m.public_id membership_id,m.contact_user_id,m.user_contact_id,m.relationship_type,m.relationship_label,m.private_notes,m.added_at,
         COALESCE(c.display_name,pp.display_name,u.display_name,u.full_name,'Contact') display_name,
         COALESCE(c.nickname,'') nickname,c.birthdate,c.phone_last4,c.city,c.state_region,c.interests,c.gift_preferences,c.budget_min,c.budget_max,
-        pp.avatar_url,pp.slug profile_slug,u.public_id linked_user_public_id
+        pp.avatar_url,pp.slug profile_slug,pp.public_id linked_user_public_id
         FROM user_contact_list_members m
         LEFT JOIN user_contacts c ON c.id=m.user_contact_id AND c.owner_user_id=m.owner_user_id
         LEFT JOIN users u ON u.id=m.contact_user_id
@@ -286,11 +286,11 @@ function mg_user_contact_search(PDO $pdo, int $ownerUserId, string $query, ?int 
         ];
     }
 
-    $users = $pdo->prepare("SELECT u.id,u.public_id,COALESCE(pp.display_name,u.display_name,u.full_name,'Microgifter user') display_name,
+    $users = $pdo->prepare("SELECT u.id,pp.public_id,COALESCE(pp.display_name,u.display_name,u.full_name,'Microgifter user') display_name,
         pp.avatar_url,pp.slug,
         EXISTS(SELECT 1 FROM user_contact_list_members m WHERE m.list_id=? AND m.contact_user_id=u.id) already_in_list
         FROM users u
-        LEFT JOIN public_profiles pp ON pp.user_id=u.id AND pp.status NOT IN ('hidden','suspended')
+        INNER JOIN public_profiles pp ON pp.user_id=u.id AND pp.status NOT IN ('hidden','suspended')
         WHERE u.id<>? AND u.status='active' AND (u.display_name LIKE ? OR u.full_name LIKE ? OR pp.display_name LIKE ? OR pp.slug LIKE ?)
         ORDER BY display_name LIMIT 20");
     $users->execute([$listId ?? 0, $ownerUserId, $like, $like, $like, $like]);
@@ -313,7 +313,7 @@ function mg_user_contact_search(PDO $pdo, int $ownerUserId, string $query, ?int 
 
 function mg_user_contact_find_linked_user(PDO $pdo, string $publicId): int
 {
-    $stmt = $pdo->prepare('SELECT id FROM users WHERE public_id=? AND status=\'active\' LIMIT 1');
+    $stmt = $pdo->prepare("SELECT u.id FROM users u INNER JOIN public_profiles pp ON pp.user_id=u.id WHERE pp.public_id=? AND u.status='active' LIMIT 1");
     $stmt->execute([$publicId]);
     $id = (int) ($stmt->fetchColumn() ?: 0);
     if ($id < 1) {
@@ -419,4 +419,30 @@ function mg_user_contact_create(PDO $pdo, int $ownerUserId, array $input): array
     ]);
     mg_audit('user_contact.created', 'user_contact', ['contact_id' => $publicId, 'has_phone' => $phone['ciphertext'] !== null], $ownerUserId);
     return ['id' => $publicId, 'display_name' => $displayName, 'phone_masked' => mg_contact_phone_mask($phone['last4'])];
+}
+
+function mg_user_contact_remove_member(PDO $pdo, int $ownerUserId, string $membershipPublicId): void
+{
+    $stmt = $pdo->prepare('DELETE FROM user_contact_list_members WHERE owner_user_id=? AND public_id=?');
+    $stmt->execute([$ownerUserId, $membershipPublicId]);
+    if ($stmt->rowCount() < 1) {
+        throw new RuntimeException('List membership not found.');
+    }
+    mg_audit('user_contact_list.member_removed', 'user_contact_list_member', ['membership_id' => $membershipPublicId], $ownerUserId);
+}
+
+function mg_user_contact_list_update(PDO $pdo, int $ownerUserId, string $publicId, array $input): array
+{
+    $list = mg_user_contact_list_load($pdo, $ownerUserId, $publicId);
+    $name = mg_contact_text($input['name'] ?? $list['name'], 160);
+    if ($name === '') {
+        throw new InvalidArgumentException('List name is required.');
+    }
+    $description = mg_contact_nullable_text($input['description'] ?? $list['description'], 1000);
+    $iconKey = mg_contact_text($input['icon_key'] ?? $list['icon_key'], 64) ?: 'people';
+    $isArchived = array_key_exists('is_archived', $input) ? (!empty($input['is_archived']) ? 1 : 0) : ((bool) $list['is_archived'] ? 1 : 0);
+    $stmt = $pdo->prepare('UPDATE user_contact_lists SET name=?,description=?,icon_key=?,is_archived=?,updated_at=NOW() WHERE owner_user_id=? AND public_id=?');
+    $stmt->execute([$name,$description,$iconKey,$isArchived,$ownerUserId,$publicId]);
+    mg_audit('user_contact_list.updated', 'user_contact_list', ['list_id' => $publicId, 'is_archived' => (bool) $isArchived], $ownerUserId);
+    return mg_user_contact_list_load($pdo, $ownerUserId, $publicId);
 }
