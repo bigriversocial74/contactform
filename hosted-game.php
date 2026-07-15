@@ -54,6 +54,7 @@ header("Content-Security-Policy: default-src 'self' data: blob:; script-src 'sel
     </div>
   </header>
   <main class="hg-shell-stage">
+    <?php /* Legacy Hosted Games contract remains sandbox="allow-scripts ..."; Standard v1 adds only declared permissions and never allow-same-origin. */ ?>
     <iframe
       id="hosted-game-frame"
       class="hg-shell-frame"
