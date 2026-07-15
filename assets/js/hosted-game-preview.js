@@ -217,11 +217,15 @@
     });
   });
 
-  document.querySelector('[data-preview-reload]')?.addEventListener('click', () => {
+  function reloadFrame() {
     childReady = false;
     const current = new URL(iframe.src, window.location.origin);
     current.searchParams.set('_reload', String(Date.now()));
     iframe.src = current.toString();
+  }
+
+  document.querySelector('[data-preview-reload]')?.addEventListener('click', () => {
+    reloadFrame();
     setStatus('Reloading release preview…');
   });
 
@@ -243,7 +247,7 @@
       records.length = 0;
       lastSequence = 0;
       render();
-      iframe.contentWindow?.location.reload();
+      reloadFrame();
       setStatus('Preview test data reset.', 'success');
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Unable to reset preview data.', 'error');
