@@ -67,7 +67,7 @@ jobs:
         run: php scripts/validate_personal_agent_account_marketplace_context.php
 
       - name: Runtime regression
-        run: php scripts/validate_personal_agent_runtime.php
+        run: php scripts/validate_personal_agent_runtime_nav.php
 
       - name: Contact-list and Create Center regression
         run: php scripts/validate_user_contact_lists_phase1.php
