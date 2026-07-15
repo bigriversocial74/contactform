@@ -35,12 +35,12 @@ function mg_personal_agent_resolve_context(PDO $pdo, int $userId, string $type, 
         ];
     }
     if ($type === 'linked_user') {
-        $stmt = $pdo->prepare("SELECT u.id,u.public_id,COALESCE(pp.display_name,u.display_name,u.full_name,'Contact') display_name,pp.avatar_url,pp.slug,
+        $stmt = $pdo->prepare("SELECT u.id,pp.public_id,COALESCE(pp.display_name,u.display_name,u.full_name,'Contact') display_name,pp.avatar_url,pp.slug,
             MAX(m.relationship_type) relationship_type,MAX(m.relationship_label) relationship_label,GROUP_CONCAT(DISTINCT l.name ORDER BY l.name SEPARATOR ', ') list_names
             FROM user_contact_list_members m INNER JOIN users u ON u.id=m.contact_user_id AND u.status='active'
-            LEFT JOIN public_profiles pp ON pp.user_id=u.id AND pp.status='active'
+            INNER JOIN public_profiles pp ON pp.user_id=u.id
             INNER JOIN user_contact_lists l ON l.id=m.list_id AND l.owner_user_id=m.owner_user_id
-            WHERE m.owner_user_id=? AND u.public_id=? GROUP BY u.id LIMIT 1");
+            WHERE m.owner_user_id=? AND pp.public_id=? GROUP BY u.id,pp.public_id,pp.display_name,pp.avatar_url,pp.slug LIMIT 1");
         $stmt->execute([$userId,$publicId]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$row) throw new RuntimeException('Linked contact not found.');
