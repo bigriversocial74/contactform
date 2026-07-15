@@ -8,7 +8,6 @@
   const giftButton = document.querySelector('[data-gift]');
   const inboxLink = document.querySelector('[data-inbox]');
   let score = 0;
-  let run = null;
   let finished = false;
 
   function status(message) {
@@ -31,7 +30,7 @@
       status(`Ready, ${session.player.display_name || 'player'}.`);
       startButton.textContent = 'Start game';
     } catch (error) {
-      status(error.message);
+      status(error instanceof Error ? error.message : 'Unable to initialize the game.');
       startButton.disabled = true;
     }
   }
@@ -48,36 +47,30 @@
         await MicrogifterGame.connectPlayer();
         session = await MicrogifterGame.ready();
       }
-      const response = await MicrogifterGame.startRun({ mode: 'starter', target });
-      run = response.run;
+      await MicrogifterGame.startRun({ mode: 'starter', target });
       score = 0;
       finished = false;
       scoreNode.textContent = '0';
       giftButton.disabled = false;
       status('Tap the gift five times.');
-      await MicrogifterGame.track('game.started', { mode: 'starter' });
     } catch (error) {
-      status(error.message);
+      status(error instanceof Error ? error.message : 'Unable to start the game.');
       startButton.disabled = false;
     }
   }
 
   async function finish() {
-    if (!run || finished) return;
+    if (finished) return;
     finished = true;
     giftButton.disabled = true;
     status('Submitting your qualified run…');
     try {
       await MicrogifterGame.submitScore({
-        runId: run.run_id,
-        runToken: run.run_token,
         score,
         metadata: { mode: 'starter' }
       });
-      const response = await MicrogifterGame.completeRun({
-        runId: run.run_id,
-        runToken: run.run_token,
-        qualified: true,
+      await MicrogifterGame.qualify({ target, achieved: score });
+      const response = await MicrogifterGame.complete({
         score,
         result: { target, mode: 'starter' }
       });
@@ -86,15 +79,17 @@
       startButton.textContent = 'Play again';
       startButton.disabled = false;
     } catch (error) {
-      status(error.message);
+      status(error instanceof Error ? error.message : 'Unable to complete the game.');
+      await MicrogifterGame.reportError(error, { phase: 'complete' }).catch(() => {});
       startButton.disabled = false;
     }
   }
 
   giftButton.addEventListener('click', () => {
-    if (!run || finished) return;
+    if (finished || !MicrogifterGame.getActiveRun()) return;
     score += 1;
     scoreNode.textContent = String(score);
+    void MicrogifterGame.updateScore(score, { target }).catch(() => {});
     if (score >= target) void finish();
   });
 
@@ -102,6 +97,12 @@
   inboxLink.addEventListener('click', (event) => {
     event.preventDefault();
     MicrogifterGame.openInbox();
+  });
+
+  window.addEventListener('pagehide', () => {
+    if (!finished && MicrogifterGame.getActiveRun()) {
+      void MicrogifterGame.abandonRun({ reason: 'page_hidden', result: { score } }).catch(() => {});
+    }
   });
 
   window.addEventListener('microgifter:bridge-ready', () => void initialize(), { once: true });
