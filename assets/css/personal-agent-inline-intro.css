@@ -1,0 +1,56 @@
+/* Flatten the Personal Agent opening response into the chat stream. */
+body.mg-personal-gifting-agent-page .mg-personal-agent-view,
+body.mg-personal-gifting-agent-page .mg-personal-agent-chat-view{
+  width:100%!important;
+  max-width:none!important;
+  margin:0!important;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-chat-stream{
+  width:100%!important;
+  max-width:none!important;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-message.is-intro{
+  width:100%!important;
+  max-width:none!important;
+  padding:4px 0 8px!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-message.is-intro>p{
+  max-width:none!important;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-intro-stats{
+  width:100%!important;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-prompts{
+  width:100%!important;
+  max-width:none!important;
+  padding-left:0!important;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-message.is-thread-start{
+  justify-self:stretch!important;
+  width:100%!important;
+  max-width:none!important;
+  padding:2px 0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  color:#334155!important;
+  box-shadow:none!important;
+  font-size:13px!important;
+  font-weight:750!important;
+}
+
+@media(max-width:760px){
+  body.mg-personal-gifting-agent-page .mg-personal-agent-message.is-intro{
+    padding:2px 0 8px!important;
+  }
+}
