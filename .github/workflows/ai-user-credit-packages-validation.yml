@@ -1,0 +1,94 @@
+name: AI User Credit Packages Validation
+
+on:
+  pull_request:
+    paths:
+      - 'database/20260715_ai_user_credit_packages.sql'
+      - 'includes/pricing-packages.php'
+      - 'includes/ai/user-credit-service.php'
+      - 'includes/ai/anthropic-client.php'
+      - 'api/admin/ai-user-limits.php'
+      - 'admin/users.php'
+      - 'assets/js/admin-ai-user-limits.js'
+      - 'assets/css/admin-ai-user-access.css'
+      - 'includes/personal-gifting-agent.php'
+      - 'includes/personal-agent/credit-response.php'
+      - 'api/user-agent/chat.php'
+      - 'api/user-agent/ai-credits.php'
+      - 'api/user-agent/_bootstrap.php'
+      - 'agent.php'
+      - 'includes/agent-workspace.php'
+      - 'assets/js/personal-agent-ai-credits.js'
+      - 'assets/css/personal-agent-ai-credits.css'
+      - 'scripts/validate_ai_user_credit_packages.php'
+      - '.github/workflows/ai-user-credit-packages-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, pdo, json
+          coverage: none
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: PHP syntax
+        run: |
+          php -l includes/ai/user-credit-service.php
+          php -l includes/ai/anthropic-client.php
+          php -l api/admin/ai-user-limits.php
+          php -l admin/users.php
+          php -l includes/personal-gifting-agent.php
+          php -l includes/personal-agent/credit-response.php
+          php -l api/user-agent/chat.php
+          php -l api/user-agent/ai-credits.php
+          php -l api/user-agent/_bootstrap.php
+          php -l agent.php
+          php -l includes/agent-workspace.php
+          php -l includes/pricing-packages.php
+          php -l scripts/validate_ai_user_credit_packages.php
+
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/admin-ai-user-limits.js
+          node --check assets/js/personal-agent-ai-credits.js
+
+      - name: AI credit package contract
+        run: php scripts/validate_ai_user_credit_packages.php
+
+      - name: Personal Agent runtime regression
+        run: php scripts/validate_personal_agent_runtime_nav.php
+
+      - name: Personal Agent account context regression
+        run: php scripts/validate_personal_agent_account_marketplace_context.php
+
+      - name: Personal Agent gift-card regression
+        run: php scripts/validate_personal_agent_account_gift_cards.php
+
+      - name: Personal Agent marketplace-card regression
+        run: php scripts/validate_personal_agent_marketplace_result_cards.php
+
+      - name: Personal Gifting Agent Phase 2 regression
+        run: php scripts/validate_personal_gifting_agent_phase2.php
+
+      - name: Personal Gifting Workflows Phase 3 regression
+        run: php scripts/validate_personal_gifting_workflows_phase3.php
