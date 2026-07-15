@@ -9,6 +9,19 @@
   let busy = false;
 
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' }[char]));
+  const canEnableRuntime = (game) => {
+    const readiness = game?.readiness || {};
+    return game?.integration_status === 'ready'
+      && Boolean(readiness.release_ready)
+      && Boolean(readiness.database_ready)
+      && Boolean(readiness.api_key_ready)
+      && Boolean(readiness.program_ready)
+      && Boolean(readiness.campaign_ready)
+      && Boolean(readiness.reward_ready)
+      && Boolean(readiness.api_credential_ready)
+      && Boolean(readiness.webhook_secret_ready)
+      && Boolean(readiness.state_secret_ready);
+  };
 
   async function request(url, options = {}) {
     const response = await fetch(url, { credentials: 'same-origin', ...options });
@@ -20,8 +33,7 @@
 
   function switchMarkup(game, compact = false) {
     const enabled = game?.status === 'active';
-    const readiness = game?.readiness || {};
-    const canEnable = Boolean(readiness.publish_ready);
+    const canEnable = canEnableRuntime(game);
     const disabled = game?.status === 'archived' || (!enabled && !canEnable);
     const detail = game?.status === 'archived'
       ? 'Archived'
