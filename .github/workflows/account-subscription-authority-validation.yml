@@ -1,0 +1,59 @@
+name: Account Subscription Authority Validation
+
+on:
+  pull_request:
+    paths:
+      - 'signup.php'
+      - 'account-subscriptions.php'
+      - 'includes/package-entitlements.php'
+      - 'includes/merchant-provisioning.php'
+      - 'includes/account/subscription-authority.php'
+      - 'includes/footer.php'
+      - 'api/auth/register.php'
+      - 'api/merchant/_merchant.php'
+      - 'api/admin/subscription-grants.php'
+      - 'api/admin/_subscription_grants.php'
+      - 'api/subscriptions/**'
+      - 'assets/js/subscription-activation-status.js'
+      - 'assets/js/admin-subscription-grants.js'
+      - 'database/stage_18ai_account_subscription_authority.sql'
+      - 'config/migrations.php'
+      - 'scripts/validate_account_subscription_authority_v1.php'
+      - '.github/workflows/account-subscription-authority-validation.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - name: Syntax checks
+        run: |
+          php -l signup.php
+          php -l account-subscriptions.php
+          php -l includes/package-entitlements.php
+          php -l includes/merchant-provisioning.php
+          php -l includes/account/subscription-authority.php
+          php -l api/auth/register.php
+          php -l api/merchant/_merchant.php
+          php -l api/admin/subscription-grants.php
+          php -l api/admin/_subscription_grants.php
+          php -l api/subscriptions/_package_billing.php
+          php -l api/subscriptions/_package_webhook.php
+          php -l api/subscriptions/_stripe_webhook.php
+          php -l api/subscriptions/stripe-events.php
+      - name: JavaScript syntax checks
+        run: |
+          node --check assets/js/subscription-activation-status.js
+          node --check assets/js/admin-subscription-grants.js
+      - name: Authority contract
+        run: php scripts/validate_account_subscription_authority_v1.php
