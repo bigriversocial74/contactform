@@ -1,0 +1,51 @@
+{
+  "schema": "microgifter.hosted-game/v1",
+  "name": "Reward Drop SDK Demo",
+  "version": "2.0.0",
+  "entry": "index.html",
+  "description": "Collect gift drops, qualify through the Hosted Game SDK, and test reward delivery safely.",
+  "category": "arcade",
+  "orientation": "any",
+  "viewport": {
+    "min_width": 320,
+    "min_height": 480
+  },
+  "session": {
+    "max_duration_seconds": 180
+  },
+  "capabilities": [
+    "player",
+    "runs",
+    "events",
+    "state",
+    "scores",
+    "leaderboard",
+    "inbox"
+  ],
+  "events": [
+    "game_loaded",
+    "run_started",
+    "level_started",
+    "score_updated",
+    "level_completed",
+    "player_qualified",
+    "run_completed",
+    "run_abandoned",
+    "runtime_error"
+  ],
+  "scoring": {
+    "mode": "points",
+    "sort": "high",
+    "integer": true
+  },
+  "qualification": {
+    "mode": "game_reported"
+  },
+  "network": {
+    "connect": []
+  },
+  "assets": {
+    "cover": "assets/cover.svg",
+    "icon": "assets/icon.svg"
+  }
+}
