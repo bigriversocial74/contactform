@@ -1,0 +1,57 @@
+name: Personal Agent Account Marketplace Context Validation
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'agent.php'
+      - 'api/user-agent/chat.php'
+      - 'includes/personal-gifting-agent.php'
+      - 'includes/personal-agent/knowledge.php'
+      - 'includes/personal-agent/workspace-dashboard.php'
+      - 'assets/js/personal-agent-chat-canvas.js'
+      - 'scripts/validate_personal_agent_account_marketplace_context.php'
+      - '.github/workflows/personal-agent-account-marketplace-context-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, openssl, pdo_mysql
+          coverage: none
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Lint agent page
+        run: php -l agent.php
+      - name: Lint agent chat endpoint
+        run: php -l api/user-agent/chat.php
+      - name: Lint personal agent loader
+        run: php -l includes/personal-gifting-agent.php
+      - name: Lint permission-safe knowledge
+        run: php -l includes/personal-agent/knowledge.php
+      - name: Lint agent dashboard
+        run: php -l includes/personal-agent/workspace-dashboard.php
+      - name: Lint validation contract
+        run: php -l scripts/validate_personal_agent_account_marketplace_context.php
+      - name: JavaScript syntax
+        run: node --check assets/js/personal-agent-chat-canvas.js
+      - name: Permission-safe context contract
+        run: php scripts/validate_personal_agent_account_marketplace_context.php

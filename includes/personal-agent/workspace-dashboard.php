@@ -11,19 +11,18 @@
       <article class="mg-personal-agent-message is-assistant is-intro">
         <span class="mg-personal-agent-message-label">Personal Gifting Agent</span>
         <strong class="mg-personal-agent-intro-greeting">Good morning, <?= mg_e($displayName) ?>.</strong>
-        <p>Here is your personal gifting brief. I can help organize thoughtful next steps, but I will never purchase or send anything without your approval.</p>
+        <p>Ask about your contacts, lists, purchases, gifts, important dates, or public Microgifter merchants and products. I will respect account and merchant permissions, and I will never purchase or send anything without your approval.</p>
         <div class="mg-personal-agent-summary mg-personal-agent-intro-stats" data-personal-agent-summary aria-label="Personal gifting summary"></div>
       </article>
 
       <div class="mg-personal-agent-prompts" aria-label="Suggested prompts">
         <button type="button" data-agent-prompt="Who should I plan a gift for next?">Who should I plan for next?</button>
+        <button type="button" data-agent-prompt="Show me my recent purchases and suggest a related local gift.">Review purchases</button>
         <button type="button" data-agent-prompt="Prepare a scheduled birthday gift draft within my saved budget.">Prepare a schedule</button>
-        <button type="button" data-agent-prompt="Create a recurring recognition plan for the selected contact or list.">Recurring recognition</button>
-        <button type="button" data-agent-prompt="Build a local gift bundle using the selected context.">Build a gift bundle</button>
+        <button type="button" data-agent-prompt="Find public Microgifter merchants and products that fit my saved contact preferences.">Explore marketplace</button>
       </div>
 
       <div class="mg-personal-agent-feed" data-personal-agent-feed aria-live="polite"></div>
-      <button type="button" class="mg-personal-agent-new-thread mg-link-button" data-personal-agent-new-thread>Start a new conversation</button>
     </div>
   </section>
 

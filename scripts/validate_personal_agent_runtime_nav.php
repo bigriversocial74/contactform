@@ -32,6 +32,9 @@ $agentDashboard = $read('includes/personal-agent/workspace-dashboard.php');
 $chatCss = $read('assets/css/personal-agent-chat-canvas.css');
 $inlineCss = $read('assets/css/personal-agent-inline-intro.css');
 $chatJs = $read('assets/js/personal-agent-chat-canvas.js');
+$chatActionsJs = $read('assets/js/personal-gifting-agent-actions.js');
+$chatApi = $read('api/user-agent/chat.php');
+$knowledge = $read('includes/personal-agent/knowledge.php');
 $listPage = $read('lists.php');
 $listCreateJs = $read('assets/js/user-lists-create.js');
 $createListExtension = $read('assets/js/create-list-extension.js');
@@ -69,10 +72,13 @@ $checks = [
         && str_contains($inlineCss, 'background:transparent!important')
         && str_contains($inlineCss, 'border:0!important')
         && str_contains($inlineCss, 'box-shadow:none!important'),
-    'new conversation status renders in chat stream' => str_contains($chatJs, 'is-thread-start')
-        && str_contains($chatJs, 'New personal gifting conversation started.')
-        && str_contains($chatJs, 'app.setStatus(\'\')')
-        && str_contains($chatJs, 'stopImmediatePropagation'),
+    'composer sends directly and receives an assistant response' => !str_contains($agentDashboard, 'Start a new conversation')
+        && !str_contains($agentDashboard, 'data-personal-agent-new-thread')
+        && !str_contains($chatJs, 'New personal gifting conversation started.')
+        && str_contains($chatActionsJs, "Microgifter.post('/api/user-agent/chat.php'")
+        && str_contains($chatActionsJs, 'appendMessage(data.assistant_message)')
+        && str_contains($chatApi, 'mg_personal_agent_chat_v2')
+        && str_contains($knowledge, "'assistant_message' => \$assistant"),
     'composer is detached with wide input and compact send' => str_contains($agentWorkspace, 'mg-personal-agent-composer-row')
         && str_contains($chatCss, 'grid-template-columns:minmax(0,1fr) 90px')
         && str_contains($chatCss, 'width:90px!important')
