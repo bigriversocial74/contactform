@@ -17,6 +17,7 @@ $page_scripts = [
     '/assets/js/admin-hosted-games-program-only.js?v=1.0.0',
     '/assets/js/admin-hosted-games-runtime-toggle.js?v=1.0.0',
     '/assets/js/hosted-games-cover-upload.js?v=1.0.0',
+    '/assets/js/hosted-games-analytics-links.js?v=1.0.0',
 ];
 $user = mg_current_user();
 $hasAdminAccess = is_array($user) && (
