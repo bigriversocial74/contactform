@@ -1,0 +1,101 @@
+name: Hosted Games Release and QA v1
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'database/hosted_games_release_qa_foundation_v1.sql'
+      - 'config/migrations.php'
+      - 'includes/hosted-game-upload.php'
+      - 'includes/hosted-game-standard-upload.php'
+      - 'includes/hosted-game-releases.php'
+      - 'includes/hosted-game-preview.php'
+      - 'includes/hosted-game-releases-view.php'
+      - 'merchant-game-releases.php'
+      - 'admin/hosted-game-releases.php'
+      - 'hosted-game-preview.php'
+      - 'api/merchant/hosted-game-upload.php'
+      - 'api/admin/hosted-game-upload.php'
+      - 'api/merchant/hosted-game-releases.php'
+      - 'api/admin/hosted-game-releases.php'
+      - 'api/merchant/hosted-game-release-download.php'
+      - 'api/admin/hosted-game-release-download.php'
+      - 'api/hosted-games/preview-*.php'
+      - 'assets/js/hosted-game-preview.js'
+      - 'assets/js/hosted-game-releases.js'
+      - 'assets/js/hosted-games-release-links.js'
+      - 'assets/js/hosted-games-analytics-links.js'
+      - 'assets/css/hosted-game-preview.css'
+      - 'assets/css/hosted-game-releases.css'
+      - 'merchant-games.php'
+      - 'admin/hosted-games.php'
+      - '.htaccess'
+      - 'scripts/validate_hosted_games_release_qa_foundation_v1.php'
+      - 'docs/hosted-games-release-qa-v1.md'
+      - '.github/workflows/hosted-games-release-qa-foundation-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }} release QA
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          extensions: mbstring, pdo, pdo_mysql, openssl, zip
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: PHP syntax
+        run: |
+          php -l includes/hosted-game-upload.php
+          php -l includes/hosted-game-standard-upload.php
+          php -l includes/hosted-game-releases.php
+          php -l includes/hosted-game-preview.php
+          php -l includes/hosted-game-releases-view.php
+          php -l merchant-game-releases.php
+          php -l admin/hosted-game-releases.php
+          php -l hosted-game-preview.php
+          php -l api/merchant/hosted-game-upload.php
+          php -l api/admin/hosted-game-upload.php
+          php -l api/merchant/hosted-game-releases.php
+          php -l api/admin/hosted-game-releases.php
+          php -l api/merchant/hosted-game-release-download.php
+          php -l api/admin/hosted-game-release-download.php
+          php -l api/hosted-games/preview-document.php
+          php -l api/hosted-games/preview-asset.php
+          php -l api/hosted-games/preview-runtime.php
+          php -l api/hosted-games/preview-events.php
+          php -l api/hosted-games/preview-reset.php
+          php -l scripts/validate_hosted_games_release_qa_foundation_v1.php
+          php -l config/migrations.php
+
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/hosted-game-preview.js
+          node --check assets/js/hosted-game-releases.js
+          node --check assets/js/hosted-games-release-links.js
+          node --check assets/js/hosted-games-analytics-links.js
+
+      - name: Release and QA contract
+        run: php scripts/validate_hosted_games_release_qa_foundation_v1.php
+
+      - name: Canonical migration manifest
+        run: php scripts/validate_migration_manifest.php
