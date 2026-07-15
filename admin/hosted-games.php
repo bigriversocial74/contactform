@@ -6,8 +6,8 @@ require_once dirname(__DIR__) . '/includes/admin-permission-matrix.php';
 $page_title = 'Hosted Games | Microgifter Admin';
 $page_section = 'account';
 $header_mode = 'account';
-$page_styles = ['/assets/css/admin-dashboard.css','/assets/css/hosted-games-management.css?v=1.1.0'];
-$page_scripts = ['/assets/js/admin-hosted-games.js?v=1.1.0','/assets/js/admin-hosted-games-program-only.js?v=1.0.0'];
+$page_styles = ['/assets/css/admin-dashboard.css','/assets/css/hosted-games-management.css?v=1.1.0','/assets/css/hosted-games-runtime-toggle.css?v=1.0.0'];
+$page_scripts = ['/assets/js/admin-hosted-games.js?v=1.1.0','/assets/js/admin-hosted-games-program-only.js?v=1.0.0','/assets/js/admin-hosted-games-runtime-toggle.js?v=1.0.0'];
 $user = mg_current_user();
 $hasAdminAccess = is_array($user) && (
     mg_admin_permission_user_has($user,'admin.hosted_games.view')
@@ -34,7 +34,7 @@ require dirname(__DIR__) . '/includes/header.php';
           <div>
             <span class="hgm-eyebrow">Platform administration</span>
             <h1>Hosted Games<br>operations center</h1>
-            <p>Create and manage merchant games, upload releases, connect Distribution Programs, assign isolated databases, and control publication from one administrative workspace.</p>
+            <p>Create and manage merchant games, upload releases, connect Distribution Programs, assign isolated databases, and control each game runtime from one administrative workspace.</p>
           </div>
           <?php if ($canManageHostedGames): ?><button class="hgm-btn is-primary" type="button" data-hgm-admin-create>Create hosted game</button><?php endif; ?>
         </section>
@@ -45,7 +45,7 @@ require dirname(__DIR__) . '/includes/header.php';
           <article class="hgm-stat"><span>Publish ready</span><strong data-hgm-admin-stat="publish_ready">0</strong></article>
           <article class="hgm-stat"><span>Database ready</span><strong data-hgm-admin-stat="ready">0</strong></article>
           <article class="hgm-stat"><span>Setup required</span><strong data-hgm-admin-stat="pending">0</strong></article>
-          <article class="hgm-stat"><span>Published</span><strong data-hgm-admin-stat="active">0</strong></article>
+          <article class="hgm-stat"><span>Enabled</span><strong data-hgm-admin-stat="active">0</strong></article>
         </section>
 
         <div class="hgm-toolbar"><h2>Hosted game inventory</h2><input type="search" placeholder="Search game, merchant, program, campaign, or reward" data-hgm-admin-search></div>
@@ -90,7 +90,7 @@ require dirname(__DIR__) . '/includes/header.php';
 
                 <section class="hgm-section">
                   <h3>3. Distribution integration</h3>
-                  <p>Select the game owner’s Distribution Program. The Program, Campaign and reward relationship is resolved automatically from the program, then Microgifter provisions or updates the dedicated Developer App, live API credential, reward scopes, and signed webhook.</p>
+                  <p>Select the game owner’s Distribution Program. The Program, Campaign and reward relationship is resolved automatically, then Microgifter creates and encrypts the dedicated API credential, webhook secret, and state secret. No per-game environment values are required.</p>
                   <form class="hgm-form" data-hgm-admin-integration-form>
                     <input type="hidden" name="game_id">
                     <select name="campaign_id" aria-hidden="true" tabindex="-1" style="display:none!important"><option value=""></option></select>
@@ -129,7 +129,8 @@ require dirname(__DIR__) . '/includes/header.php';
                 </section>
 
                 <section class="hgm-section">
-                  <h3>5. Readiness and publication</h3>
+                  <h3>5. Managed runtime and publication</h3>
+                  <p>Use the Game enabled switch after all readiness checks pass. Disabling pauses gameplay and reward issuance while preserving the release, Distribution Program, encrypted API credential, and webhook configuration.</p>
                   <div class="hgm-db-summary" data-hgm-admin-summary></div>
                   <div class="hgm-ready-list" data-hgm-admin-readiness></div>
                   <div class="hgm-card-actions">

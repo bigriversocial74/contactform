@@ -1,0 +1,53 @@
+name: Hosted Games Managed Runtime Toggle
+
+on:
+  pull_request:
+    paths:
+      - 'includes/hosted-game-runtime-toggle.php'
+      - 'api/admin/hosted-game-runtime.php'
+      - 'api/merchant/hosted-game-runtime.php'
+      - 'assets/js/admin-hosted-games-runtime-toggle.js'
+      - 'assets/js/merchant-hosted-games-runtime-toggle.js'
+      - 'assets/css/hosted-games-runtime-toggle.css'
+      - 'admin/hosted-games.php'
+      - 'merchant-games.php'
+      - 'includes/merchant-hosted-games-view.php'
+      - 'scripts/validate_hosted_games_managed_runtime_toggle.php'
+      - '.github/workflows/hosted-games-managed-runtime-toggle.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }} managed runtime
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: PHP syntax
+        run: |
+          php -l includes/hosted-game-runtime-toggle.php
+          php -l api/admin/hosted-game-runtime.php
+          php -l api/merchant/hosted-game-runtime.php
+          php -l admin/hosted-games.php
+          php -l merchant-games.php
+          php -l includes/merchant-hosted-games-view.php
+          php -l scripts/validate_hosted_games_managed_runtime_toggle.php
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/admin-hosted-games-runtime-toggle.js
+          node --check assets/js/merchant-hosted-games-runtime-toggle.js
+      - name: Managed runtime contract
+        run: php scripts/validate_hosted_games_managed_runtime_toggle.php
