@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+<defs>
+  <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#17172a"/><stop offset=".55" stop-color="#4f3bb6"/><stop offset="1" stop-color="#0f9f78"/></linearGradient>
+</defs>
+<rect width="1600" height="900" rx="64" fill="url(#g)"/>
+<circle cx="160" cy="100" r="360" fill="#8877ff" opacity=".35"/>
+<circle cx="1450" cy="820" r="380" fill="#1ce0aa" opacity=".3"/>
+<g fill="#fff">
+  <text x="120" y="235" font-family="Arial,sans-serif" font-size="36" font-weight="700" letter-spacing="8">HOSTED GAME SDK DEMO</text>
+  <text x="115" y="420" font-family="Arial,sans-serif" font-size="126" font-weight="800">Reward Drop</text>
+  <text x="120" y="510" font-family="Arial,sans-serif" font-size="44" opacity=".82">Play → Qualify → Reward</text>
+</g>
+<g transform="translate(1220 330)">
+  <rect x="-150" y="-150" width="300" height="300" rx="86" fill="#fff" opacity=".94"/>
+  <text x="0" y="48" text-anchor="middle" font-family="Arial,sans-serif" font-size="170" fill="#6153dc">✦</text>
+</g>
+</svg>
