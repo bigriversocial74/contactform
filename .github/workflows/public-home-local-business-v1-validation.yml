@@ -6,6 +6,7 @@ on:
       - integration-from-repair-20260628
     paths:
       - 'index.php'
+      - 'merchant-landing.php'
       - 'assets/css/homepage-local-business-v1.css'
       - 'assets/images/public-home-merchant-hero.jpg'
       - 'includes/header-components/public-header.php'
@@ -38,7 +39,8 @@ jobs:
       - name: PHP syntax
         run: |
           php -l index.php
+          php -l merchant-landing.php
           php -l scripts/validate_public_home_local_business_v1.php
 
-      - name: Public homepage design contract
+      - name: Public merchant landing design contract
         run: php scripts/validate_public_home_local_business_v1.php
