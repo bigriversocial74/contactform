@@ -10,14 +10,16 @@ $user = mg_current_user();
   </div>
 
   <?php if ($user): ?>
-    <div class="mg-personal-chat-sidebar-head">
-      <div><span>Personal Agent</span><strong>Your chats</strong></div>
-      <button type="button" data-personal-agent-new-chat aria-label="Start a new chat" title="New chat">+</button>
-    </div>
+    <nav class="mg-personal-chat-actions" aria-label="Personal Agent actions">
+      <button class="mg-personal-chat-action" type="button" data-personal-agent-new-chat>
+        <span aria-hidden="true">+</span><strong>New chat</strong>
+      </button>
+      <a class="mg-personal-chat-action" href="/design-studio.php">
+        <span aria-hidden="true">✦</span><strong>Design</strong>
+      </a>
+    </nav>
 
-    <button class="mg-personal-chat-new" type="button" data-personal-agent-new-chat>
-      <span aria-hidden="true">+</span><strong>New chat</strong>
-    </button>
+    <div class="mg-personal-chat-divider" role="separator" aria-hidden="true"></div>
 
     <div class="mg-personal-chat-history" data-personal-agent-thread-groups aria-live="polite">
       <div class="mg-personal-chat-loading">Loading chats…</div>

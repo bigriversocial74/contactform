@@ -19,7 +19,7 @@ $page_styles = [
     '/assets/css/personal-gifting-workflows.css',
     '/assets/css/personal-agent-chat-canvas.css?v=1.0.0',
     '/assets/css/personal-agent-inline-intro.css?v=1.0.0',
-    '/assets/css/personal-agent-chat-history.css?v=1.0.0',
+    '/assets/css/personal-agent-chat-history.css?v=1.1.0',
     '/assets/css/personal-agent-marketplace-cards.css?v=1.0.0',
 ];
 $page_scripts = [

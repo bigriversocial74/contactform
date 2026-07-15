@@ -95,7 +95,10 @@ foreach($menuLabels as $label)$menuCoverage=$menuCoverage&&str_contains($dialogs
 $checks['chat history sidebar and composer menu']=$menuCoverage
     &&str_contains($workspace,'data-open-agent-dialog="menu"')
     &&str_contains($sidebar,'data-personal-agent-thread-groups')
-    &&substr_count($sidebar,'data-personal-agent-new-chat')>=2
+    &&substr_count($sidebar,'data-personal-agent-new-chat')===1
+    &&str_contains($sidebar,'href="/design-studio.php"')
+    &&str_contains($sidebar,'mg-personal-chat-divider')
+    &&!str_contains($sidebar,'mg-personal-chat-sidebar-head')
     &&str_contains($sidebar,'data-personal-agent-delete-thread')===false
     &&str_contains($historyJs,'data-personal-agent-delete-thread')
     &&str_contains($historyJs,"'/api/user-agent/threads.php'")

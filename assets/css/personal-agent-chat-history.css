@@ -1,27 +1,28 @@
 body.mg-personal-gifting-agent-page .mg-personal-chat-sidebar{overflow:hidden;background:#fff}
 body.mg-personal-gifting-agent-page .mg-personal-chat-sidebar .mg-app-sidebar-brand{margin-bottom:14px}
-body.mg-personal-gifting-agent-page .mg-personal-chat-sidebar-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:4px 2px 10px}
-body.mg-personal-gifting-agent-page .mg-personal-chat-sidebar-head span{display:block;color:#64748b;font-size:9px;font-weight:900;letter-spacing:.09em;text-transform:uppercase}
-body.mg-personal-gifting-agent-page .mg-personal-chat-sidebar-head strong{display:block;margin-top:3px;color:#0f172a;font-size:18px;letter-spacing:-.035em}
-body.mg-personal-gifting-agent-page .mg-personal-chat-sidebar-head button{width:34px;height:34px;border:1px solid #c8d8eb;border-radius:11px;background:#fff;color:#1757d7;font-size:23px;line-height:1;cursor:pointer}
-body.mg-personal-gifting-agent-page .mg-personal-chat-sidebar-head button:hover{border-color:#9bb9e7;background:#eff6ff}
-body.mg-personal-gifting-agent-page .mg-personal-chat-new{width:100%;min-height:44px;display:flex;align-items:center;justify-content:center;gap:8px;margin:0 0 14px;padding:0 14px;border:1px solid #bdd2f3;border-radius:13px;background:#eff6ff;color:#174fb8;font-size:12px;cursor:pointer}
-body.mg-personal-gifting-agent-page .mg-personal-chat-new span{font-size:20px;font-weight:500;line-height:1}
-body.mg-personal-gifting-agent-page .mg-personal-chat-new strong{font-size:12px}
-body.mg-personal-gifting-agent-page .mg-personal-chat-new:hover{background:#dfeeff;border-color:#94b5e9}
+body.mg-personal-gifting-agent-page .mg-personal-chat-actions{display:grid;gap:2px;margin:0}
+body.mg-personal-gifting-agent-page .mg-personal-chat-action{width:100%;min-height:34px;display:flex;align-items:center;gap:8px;padding:6px 4px;border:0;border-radius:0;background:transparent;color:#122039;font:inherit;text-align:left;text-decoration:none;cursor:pointer}
+body.mg-personal-gifting-agent-page .mg-personal-chat-action span{width:18px;flex:0 0 18px;color:#64748b;font-size:16px;font-weight:500;line-height:1;text-align:center}
+body.mg-personal-gifting-agent-page .mg-personal-chat-action strong{font-size:12px;font-weight:800;line-height:1.3}
+body.mg-personal-gifting-agent-page .mg-personal-chat-action:hover,body.mg-personal-gifting-agent-page .mg-personal-chat-action:focus-visible{background:transparent;color:#1757d7}
+body.mg-personal-gifting-agent-page .mg-personal-chat-action:hover span,body.mg-personal-gifting-agent-page .mg-personal-chat-action:focus-visible span{color:#1757d7}
+body.mg-personal-gifting-agent-page .mg-personal-chat-action:focus-visible{outline:2px solid #9fc0f5;outline-offset:2px}
+body.mg-personal-gifting-agent-page .mg-personal-chat-divider{height:1px;margin:8px 0 12px;background:#e2eaf3}
 body.mg-personal-gifting-agent-page .mg-personal-chat-history{min-height:0;flex:1;overflow-y:auto;overflow-x:hidden;padding-right:3px;scrollbar-gutter:stable}
-body.mg-personal-gifting-agent-page .mg-personal-chat-loading,body.mg-personal-gifting-agent-page .mg-personal-chat-empty{padding:16px 10px;border:1px dashed #cad8e8;border-radius:13px;background:#f8fbff;color:#64748b;font-size:11px;line-height:1.45;text-align:center}
-body.mg-personal-gifting-agent-page .mg-personal-chat-group{display:grid;gap:6px;margin:0 0 14px}
-body.mg-personal-gifting-agent-page .mg-personal-chat-group>h3{margin:0;padding:0 7px;color:#7a8aa2;font-size:9px;font-weight:950;letter-spacing:.09em;text-transform:uppercase}
-body.mg-personal-gifting-agent-page .mg-personal-chat-row{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 30px;align-items:center;gap:3px;min-height:54px;padding:5px;border:1px solid transparent;border-radius:13px;background:transparent}
-body.mg-personal-gifting-agent-page .mg-personal-chat-row:hover{border-color:#d9e5f3;background:#f8fbff}
-body.mg-personal-gifting-agent-page .mg-personal-chat-row.is-active{border-color:#bdd2f3;background:#eff6ff;box-shadow:inset 3px 0 0 #2563eb}
-body.mg-personal-gifting-agent-page .mg-personal-chat-open{min-width:0;display:grid;gap:3px;padding:7px 6px;color:#122039;text-decoration:none}
+body.mg-personal-gifting-agent-page .mg-personal-chat-loading,body.mg-personal-gifting-agent-page .mg-personal-chat-empty{padding:12px 4px;color:#64748b;font-size:11px;line-height:1.45;text-align:left}
+body.mg-personal-gifting-agent-page .mg-personal-chat-group{display:grid;gap:2px;margin:0 0 14px}
+body.mg-personal-gifting-agent-page .mg-personal-chat-group>h3{margin:0 0 4px;padding:0 4px;color:#7a8aa2;font-size:9px;font-weight:950;letter-spacing:.09em;text-transform:uppercase}
+body.mg-personal-gifting-agent-page .mg-personal-chat-row{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 24px;align-items:center;gap:2px;min-height:42px;padding:0;border:0;border-radius:0;background:transparent}
+body.mg-personal-gifting-agent-page .mg-personal-chat-row:hover{background:transparent}
+body.mg-personal-gifting-agent-page .mg-personal-chat-row.is-active{border:0;background:transparent;box-shadow:none}
+body.mg-personal-gifting-agent-page .mg-personal-chat-open{min-width:0;display:grid;gap:2px;padding:6px 4px;color:#122039;text-decoration:none}
+body.mg-personal-gifting-agent-page .mg-personal-chat-open:hover{color:#1757d7}
+body.mg-personal-gifting-agent-page .mg-personal-chat-row.is-active .mg-personal-chat-open{color:#1757d7}
 body.mg-personal-gifting-agent-page .mg-personal-chat-open strong{display:block;overflow:hidden;color:inherit;font-size:11px;line-height:1.3;text-overflow:ellipsis;white-space:nowrap}
 body.mg-personal-gifting-agent-page .mg-personal-chat-open span{display:block;overflow:hidden;color:#6b7c95;font-size:9px;line-height:1.3;text-overflow:ellipsis;white-space:nowrap}
-body.mg-personal-gifting-agent-page .mg-personal-chat-delete{width:28px;height:28px;display:grid;place-items:center;border:0;border-radius:9px;background:transparent;color:#8795aa;font-size:16px;cursor:pointer;opacity:0}
+body.mg-personal-gifting-agent-page .mg-personal-chat-delete{width:24px;height:24px;display:grid;place-items:center;border:0;border-radius:0;background:transparent;color:#8795aa;font-size:15px;cursor:pointer;opacity:0}
 body.mg-personal-gifting-agent-page .mg-personal-chat-row:hover .mg-personal-chat-delete,body.mg-personal-gifting-agent-page .mg-personal-chat-row.is-active .mg-personal-chat-delete,body.mg-personal-gifting-agent-page .mg-personal-chat-delete:focus-visible{opacity:1}
-body.mg-personal-gifting-agent-page .mg-personal-chat-delete:hover{background:#fff0f0;color:#b42318}
+body.mg-personal-gifting-agent-page .mg-personal-chat-delete:hover{background:transparent;color:#b42318}
 body.mg-personal-gifting-agent-page .mg-personal-chat-sidebar-footer{display:grid;gap:3px;margin-top:10px;padding:12px 8px 2px;border-top:1px solid #e2eaf3;color:#60718a}
 body.mg-personal-gifting-agent-page .mg-personal-chat-sidebar-footer span{font-size:9px;font-weight:900;letter-spacing:.06em;text-transform:uppercase}
 body.mg-personal-gifting-agent-page .mg-personal-chat-sidebar-footer small{font-size:9px;line-height:1.4}
