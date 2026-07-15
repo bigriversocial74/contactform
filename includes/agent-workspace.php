@@ -7,13 +7,19 @@ $user = mg_current_user();
 $displayName = $user ? mg_user_display_name() : 'Guest';
 $activeView = (string) ($agent_personal_view ?? 'home');
 $schemaReady = false;
+$phase3SchemaReady = false;
 if ($user) {
     try {
-        $schemaReady = mg_personal_agent_table_exists(mg_db(), 'user_agent_settings')
-            && mg_personal_agent_table_exists(mg_db(), 'user_gifting_plans')
-            && mg_personal_agent_table_exists(mg_db(), 'user_agent_messages');
+        $pdo=mg_db();
+        $schemaReady = mg_personal_agent_table_exists($pdo, 'user_agent_settings')
+            && mg_personal_agent_table_exists($pdo, 'user_gifting_plans')
+            && mg_personal_agent_table_exists($pdo, 'user_agent_messages');
+        $phase3SchemaReady = $schemaReady && mg_personal_agent_table_exists($pdo, 'user_gifting_schedules')
+            && mg_personal_agent_table_exists($pdo, 'user_recipient_data_requests')
+            && mg_personal_agent_table_exists($pdo, 'user_gift_bundles');
     } catch (Throwable) {
         $schemaReady = false;
+        $phase3SchemaReady = false;
     }
 }
 ?>
@@ -21,44 +27,31 @@ if ($user) {
          data-agent-control-center
          data-personal-gifting-agent
          data-active-view="<?= mg_e($activeView) ?>"
-         data-schema-ready="<?= $schemaReady ? 'true' : 'false' ?>">
+         data-schema-ready="<?= $schemaReady ? 'true' : 'false' ?>"
+         data-phase3-schema-ready="<?= $phase3SchemaReady ? 'true' : 'false' ?>">
   <?php require __DIR__ . '/personal-agent-sidebar.php'; ?>
 
   <div class="mg-app-workspace mg-agent-workspace">
     <?php if (!$user): ?>
       <section class="mg-app-panel mg-personal-agent-access">
-        <div class="mg-app-panel-head">
-          <div>
-            <span class="mg-agent-toolbar-eyebrow">Personal Gifting Agent</span>
-            <h1>Sign in to plan gifts around the people who matter.</h1>
-            <p>Your lists, dates, draft plans, reminders, and Agent Memory stay connected to your account.</p>
-          </div>
-        </div>
-        <div class="mg-app-panel-body">
-          <a class="mg-btn mg-btn-primary" href="/signin.php">Sign in</a>
-          <a class="mg-btn mg-btn-ghost" href="/signup.php">Create account</a>
-        </div>
+        <div class="mg-app-panel-head"><div><span class="mg-agent-toolbar-eyebrow">Personal Gifting Agent</span><h1>Sign in to plan gifts around the people who matter.</h1><p>Your lists, dates, draft plans, reminders, and Agent Memory stay connected to your account.</p></div></div>
+        <div class="mg-app-panel-body"><a class="mg-btn mg-btn-primary" href="/signin.php">Sign in</a><a class="mg-btn mg-btn-ghost" href="/signup.php">Create account</a></div>
       </section>
     <?php elseif (!$schemaReady): ?>
       <section class="mg-app-panel mg-personal-agent-access">
-        <div class="mg-app-panel-head">
-          <div>
-            <span class="mg-agent-toolbar-eyebrow">Database setup required</span>
-            <h1>Personal Gifting Agent Phase 2 is ready for migration.</h1>
-            <p>Import <code>database/20260714_personal_gifting_agent_phase2.sql</code> after the Phase 1 contact-list migration.</p>
-          </div>
-        </div>
+        <div class="mg-app-panel-head"><div><span class="mg-agent-toolbar-eyebrow">Database setup required</span><h1>Personal Gifting Agent Phase 2 is ready for migration.</h1><p>Import <code>database/20260714_personal_gifting_agent_phase2.sql</code> after the Phase 1 contact-list migration.</p></div></div>
       </section>
     <?php else: ?>
       <?php require __DIR__ . '/personal-agent/workspace-dashboard.php'; ?>
 
       <form class="mg-app-composer mg-personal-agent-composer" data-agent-composer data-personal-agent-composer>
         <button class="mg-personal-agent-context-chip" type="button" data-personal-agent-context-chip hidden></button>
-        <textarea rows="1" maxlength="2000" placeholder="Ask the Personal Gifting Agent about a contact, list, date, or gift plan…" aria-label="Message the Personal Gifting Agent"></textarea>
+        <textarea rows="1" maxlength="2000" placeholder="Ask the Personal Gifting Agent about a contact, list, date, gift plan, schedule, group gift, or bundle…" aria-label="Message the Personal Gifting Agent"></textarea>
         <button class="mg-btn mg-btn-primary" type="submit">Send</button>
       </form>
 
       <?php require __DIR__ . '/personal-agent/workspace-dialogs.php'; ?>
+      <?php require __DIR__ . '/personal-agent/workspace-workflow-dialogs.php'; ?>
     <?php endif; ?>
   </div>
 </section>
