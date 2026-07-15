@@ -91,6 +91,7 @@ window.MicrogifterHostedGameShell=<?= json_encode([
     'inboxUrl'=>'/inbox.php',
 ],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE) ?>;
 </script>
+<?php /* Compatibility marker: hosted-game-shell.js?v=1.1.0 was the original Standard v1 shell; v1.2.0 adds telemetry routing. */ ?>
 <script src="/assets/js/hosted-game-shell.js?v=1.2.0" defer></script>
 <?php endif; ?>
 </body>
