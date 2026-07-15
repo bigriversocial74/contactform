@@ -8,6 +8,7 @@
   const giftButton = document.querySelector('[data-gift]');
   const inboxLink = document.querySelector('[data-inbox]');
   let score = 0;
+  let run = null;
   let finished = false;
 
   function status(message) {
@@ -47,7 +48,8 @@
         await MicrogifterGame.connectPlayer();
         session = await MicrogifterGame.ready();
       }
-      await MicrogifterGame.startRun({ mode: 'starter', target });
+      const response = await MicrogifterGame.startRun({ mode: 'starter', target });
+      run = response.run;
       score = 0;
       finished = false;
       scoreNode.textContent = '0';
@@ -59,21 +61,35 @@
     }
   }
 
+  async function completeQualifiedRun() {
+    const result = { target, mode: 'starter' };
+    if (typeof MicrogifterGame.complete === 'function') {
+      return MicrogifterGame.complete({ score, result });
+    }
+    return MicrogifterGame.completeRun({
+      runId: run?.run_id || '',
+      runToken: run?.run_token || '',
+      qualified: true,
+      score,
+      result
+    });
+  }
+
   async function finish() {
-    if (finished) return;
+    if (!run || finished) return;
     finished = true;
     giftButton.disabled = true;
     status('Submitting your qualified run…');
     try {
       await MicrogifterGame.submitScore({
+        runId: run.run_id,
+        runToken: run.run_token,
         score,
         metadata: { mode: 'starter' }
       });
       await MicrogifterGame.qualify({ target, achieved: score });
-      const response = await MicrogifterGame.complete({
-        score,
-        result: { target, mode: 'starter' }
-      });
+      const response = await completeQualifiedRun();
+      run = null;
       status(response.run?.status === 'delivered' ? 'Reward delivered.' : 'Reward earned and queued for your Inbox.');
       inboxLink.hidden = false;
       startButton.textContent = 'Play again';
@@ -86,7 +102,7 @@
   }
 
   giftButton.addEventListener('click', () => {
-    if (finished || !MicrogifterGame.getActiveRun()) return;
+    if (finished || !run) return;
     score += 1;
     scoreNode.textContent = String(score);
     void MicrogifterGame.updateScore(score, { target }).catch(() => {});
@@ -100,8 +116,8 @@
   });
 
   window.addEventListener('pagehide', () => {
-    if (!finished && MicrogifterGame.getActiveRun()) {
-      void MicrogifterGame.abandonRun({ reason: 'page_hidden', result: { score } }).catch(() => {});
+    if (!finished && run) {
+      void MicrogifterGame.abandonRun({ run, reason: 'page_hidden', result: { score } }).catch(() => {});
     }
   });
 
