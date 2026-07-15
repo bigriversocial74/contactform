@@ -4,11 +4,10 @@ declare(strict_types=1);
 $user = mg_current_user();
 $mg_package_context = is_array($mg_package_context ?? null) ? $mg_package_context : mg_user_package_context(null, $user);
 $canMerchantNav = (bool) ($can_merchant_nav ?? !empty($mg_package_context['merchant_access']));
-$canCreateGift = (bool) ($can_create_microgift ?? ($canMerchantNav && mg_package_limit_allows_create($mg_package_context, 'max_microgifts', 0)));
 $agentSidebarActive = (string) ($agent_tab ?? basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''), '.php'));
 $currentSidebarScript = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
 $isMerchantAdminSidebar = $canMerchantNav && str_starts_with($currentSidebarScript, 'merchant-');
-$useInboxSidebar = (bool) ($use_inbox_sidebar ?? false);
+
 $appSidebarVariant = 'utility';
 $appSidebarLabel = 'Workspace';
 $appSidebarActive = $agentSidebarActive;
@@ -23,9 +22,17 @@ $appSidebarAfterNav = $canMerchantNav ? <<<'HTML'
 </div>
 HTML : '';
 $appSidebarFooter = '';
+
 $appSidebarNav = [
-    'my-feed' => [
+    'inbox' => [
         'section' => 'Customer',
+        'label' => 'Inbox',
+        'detail' => 'Received Microgifts',
+        'href' => '/inbox.php',
+        'visible' => true,
+        'active' => $agentSidebarActive === 'inbox',
+    ],
+    'my-feed' => [
         'label' => 'My Feed',
         'detail' => 'Rewards, posts, and gift activity',
         'href' => '/feed.php',
@@ -34,72 +41,33 @@ $appSidebarNav = [
             || $agentSidebarActive === 'feed'
             || str_starts_with($agentSidebarActive, 'feed-'),
     ],
-    'feed-following' => [
-        'label' => 'Following',
-        'detail' => 'Posts from profiles you follow',
-        'href' => '/feed.php?view=following',
+    'loyalty-cards' => [
+        'label' => 'My Loyalty Cards',
+        'detail' => 'Saved loyalty cards and progress',
+        'href' => '/loyalty-cards.php',
         'visible' => true,
-        'active' => $agentSidebarActive === 'feed-following',
+        'active' => $agentSidebarActive === 'loyalty-cards',
     ],
-    'my-quests' => [
-        'label' => 'My Quests',
-        'detail' => 'Track loyalty quest progress',
-        'href' => '/my-quests.php',
-        'visible' => $user !== null,
-        'active' => $agentSidebarActive === 'my-quests' || $agentSidebarActive === 'loyalty_quests',
-    ],
-    'agent_chat' => [
-        'section' => 'Agent',
-        'label' => 'Agent Chat',
-        'detail' => 'Ask the merchant agent',
-        'href' => '/merchant-agent-chat.php',
-        'visible' => $canMerchantNav,
-        'active' => $agentSidebarActive === 'agent_chat' || $agentSidebarActive === 'merchant-agent-chat',
-    ],
-    'merchant_crm' => [
-        'section' => 'Merchant',
-        'label' => 'Merchant CRM',
-        'detail' => 'Customers and campaign history',
-        'href' => '/merchant-crm.php',
-        'visible' => $canMerchantNav,
-        'active' => $agentSidebarActive === 'merchant_crm' || $agentSidebarActive === 'merchant-crm',
-    ],
-    'ads-manager' => [
-        'label' => 'Campaign Ads',
-        'detail' => 'Boost campaigns and local drops',
-        'href' => '/merchant-ad-manager.php',
-        'visible' => $canMerchantNav,
-        'active' => $agentSidebarActive === 'ads-manager' || $agentSidebarActive === 'merchant-ad-manager' || $agentSidebarActive === 'merchant-ad-create' || $agentSidebarActive === 'merchant-ad-performance',
-    ],
-    'messages' => [
-        'section' => 'Account',
-        'label' => 'Messages',
-        'detail' => 'Gift conversations',
-        'href' => '/messages.php',
+    'lists' => [
+        'label' => 'My Lists',
+        'detail' => 'Contacts and gifting groups',
+        'href' => '/lists.php',
         'visible' => true,
-        'active' => $agentSidebarActive === 'messages',
+        'active' => $agentSidebarActive === 'lists',
     ],
-    'store-canvas' => [
-        'section' => 'Merchant',
-        'label' => 'Store Canvas',
-        'detail' => 'Live avatars and CRM',
-        'href' => '/merchant-canvas.php',
-        'visible' => $canMerchantNav,
-        'active' => $agentSidebarActive === 'store-canvas' || $agentSidebarActive === 'merchant-canvas',
-    ],
-    'world-canvas' => [
-        'label' => 'World Canvas',
-        'detail' => 'Avatar map and microgift movement',
-        'href' => '/world-canvas.php',
+    'design-studio' => [
+        'label' => 'Design Studio',
+        'detail' => 'Merchant QR print templates',
+        'href' => '/design-studio.php',
         'visible' => true,
-        'active' => $agentSidebarActive === 'world-canvas',
+        'active' => $agentSidebarActive === 'design-studio' || $agentSidebarActive === 'design',
     ],
-    'build' => [
-        'label' => 'Create Gift',
-        'detail' => 'Open the builder',
-        'href' => '/build.php',
-        'visible' => $canCreateGift,
-        'active' => $agentSidebarActive === 'build',
+    'new-chat' => [
+        'label' => 'New Chat',
+        'detail' => 'Start a Personal Agent conversation',
+        'href' => '/agent.php',
+        'visible' => true,
+        'active' => $agentSidebarActive === 'agent',
     ],
 ];
 
@@ -109,48 +77,6 @@ if ($isMerchantAdminSidebar) {
     $appSidebarLabel = 'Merchant';
     $appSidebarActive = mg_merchant_navigation_active_key($agentSidebarActive);
     $appSidebarNav = mg_merchant_navigation_sidebar($agentSidebarActive);
-}
-
-$inboxSidebarScripts = [
-    'inbox.php',
-    'sent.php',
-    'claimed.php',
-    'my-quests.php',
-    'account-subscriptions.php',
-    'notifications.php',
-    'feed.php',
-    'account.php',
-];
-$useInboxSidebar = $useInboxSidebar || in_array($currentSidebarScript, $inboxSidebarScripts, true);
-
-$reducedInboxSidebarPages = [
-    'inbox',
-    'sent',
-    'claimed',
-    'loyalty-cards',
-    'my-quests',
-    'loyalty_quests',
-    'subscriptions',
-    'notifications',
-    'profile',
-    'feed',
-    'feed-discover',
-    'feed-following',
-    'feed-mine',
-    'store-canvas',
-    'merchant-canvas',
-    'world-canvas',
-    'agent_chat',
-    'merchant-agent-chat',
-];
-
-if (!$isMerchantAdminSidebar && ($useInboxSidebar || in_array($agentSidebarActive, $reducedInboxSidebarPages, true))) {
-    foreach (['feed-following', 'merchant_crm', 'ads-manager'] as $inboxHiddenNavKey) {
-        if (isset($appSidebarNav[$inboxHiddenNavKey])) {
-            $appSidebarNav[$inboxHiddenNavKey]['visible'] = false;
-        }
-    }
-    $appSidebarNav['training-lab'] = ['visible' => false];
 }
 
 require __DIR__ . '/app-sidebar.php';
