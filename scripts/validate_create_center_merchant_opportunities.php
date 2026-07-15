@@ -37,7 +37,7 @@ try {
     );
     $expect(
         str_contains($viewportJs, 'document.body.appendChild(modal)')
-        && str_contains($viewportJs, "data-create-center-viewport-root"),
+        && str_contains($viewportJs, 'data-create-center-viewport-root'),
         'Create Center is portaled to the body viewport root'
     );
     $expect(
@@ -53,7 +53,7 @@ try {
         'Personal Agent routes through the merchant opportunity layer'
     );
     $expect(
-        str_contains($opportunities, "mg_personal_agent_account_gift_items($pdo, $userId, 'inbox', 24)")
+        str_contains($opportunities, "mg_personal_agent_account_gift_items(\$pdo, \$userId, 'inbox', 24)")
         && str_contains($opportunities, 'merchant_user_id')
         && str_contains($opportunities, 'sender_id'),
         'Opportunity sourcing is limited to merchants represented in the current Inbox'
@@ -83,7 +83,7 @@ try {
         'Inbox results ask a follow-up and a contextual yes resolves merchant opportunities'
     );
     $expect(
-        str_contains($opportunities, "UPDATE user_agent_messages SET body=?,cards_json=? WHERE owner_user_id=?")
+        str_contains($opportunities, 'UPDATE user_agent_messages SET body=?,cards_json=? WHERE owner_user_id=?')
         && str_contains($opportunities, "role='assistant'"),
         'Opportunity results persist only to the owner-scoped assistant message'
     );
