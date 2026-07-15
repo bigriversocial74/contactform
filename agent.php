@@ -3,7 +3,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/includes/app.php';
 
 $allowedPersonalViews = ['home','contacts','birthdays','calendar','plans','scheduled','recurring','reminders','group','requests','bundles','claims','memory','settings'];
-$agent_personal_view = strtolower(trim((string) ($_GET['view'] ?? 'home')));
+$agent_personal_view = strtolower(trim((string) ($_GET['view'] ?? 'home'));
 if (!in_array($agent_personal_view, $allowedPersonalViews, true)) {
     $agent_personal_view = 'home';
 }
@@ -26,7 +26,7 @@ $page_scripts = [
     '/assets/js/personal-gifting-agent-render.js',
     '/assets/js/personal-gifting-agent-actions.js',
     '/assets/js/personal-gifting-workflows.js',
-    '/assets/js/personal-agent-chat-canvas.js?v=1.1.0',
+    '/assets/js/personal-agent-chat-canvas.js?v=1.2.0',
 ];
 
 require __DIR__ . '/includes/header.php';
