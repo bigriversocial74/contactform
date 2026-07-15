@@ -26,6 +26,7 @@ $expect = static function (bool $condition, string $label) use (&$failures, &$pa
 try {
     $loader = $read('includes/personal-gifting-agent.php');
     $knowledge = $read('includes/personal-agent/knowledge.php');
+    $marketplaceCards = $read('includes/personal-agent/marketplace-result-cards.php');
     $endpoint = $read('api/user-agent/chat.php');
     $threads = $read('includes/personal-agent/threads.php');
     $dashboard = $read('includes/personal-agent/workspace-dashboard.php');
@@ -33,12 +34,16 @@ try {
     $agentPage = $read('agent.php');
 
     $expect(
-        str_contains($loader, "require_once __DIR__ . '/personal-agent/knowledge.php';"),
-        'Personal agent loads the permission-safe knowledge layer'
+        str_contains($loader, "require_once __DIR__ . '/personal-agent/knowledge.php';")
+        && str_contains($loader, "require_once __DIR__ . '/personal-agent/marketplace-result-cards.php';"),
+        'Personal agent loads permission-safe knowledge and marketplace cards'
     );
     $expect(
         (str_contains($endpoint, 'mg_personal_agent_chat_v2(')
             || (str_contains($endpoint, 'mg_personal_agent_chat_with_thread_title(')
+                && str_contains($threads, 'mg_personal_agent_chat_v2($pdo, $userId, $input)'))
+            || (str_contains($endpoint, 'mg_personal_agent_chat_with_marketplace_cards(')
+                && str_contains($marketplaceCards, 'mg_personal_agent_chat_with_thread_title($pdo,$userId,$input)')
                 && str_contains($threads, 'mg_personal_agent_chat_v2($pdo, $userId, $input)')))
         && !str_contains($endpoint, 'mg_personal_agent_chat(mg_db()'),
         'Chat endpoint uses the expanded permission-safe runtime'
@@ -70,7 +75,7 @@ try {
     );
     foreach (['code_last4', 'phone_ciphertext', 'phone_hash', 'address_line_1', 'address_line_2', 'source_reference', 'payment_method_id'] as $blockedMarker) {
         $expect(
-            !str_contains($knowledge, $blockedMarker),
+            !str_contains($knowledge, $blockedMarker) && !str_contains($marketplaceCards, $blockedMarker),
             'Knowledge projection excludes sensitive field: ' . $blockedMarker
         );
     }
