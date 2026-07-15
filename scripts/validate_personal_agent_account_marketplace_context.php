@@ -27,6 +27,7 @@ try {
     $loader = $read('includes/personal-gifting-agent.php');
     $knowledge = $read('includes/personal-agent/knowledge.php');
     $endpoint = $read('api/user-agent/chat.php');
+    $threads = $read('includes/personal-agent/threads.php');
     $dashboard = $read('includes/personal-agent/workspace-dashboard.php');
     $canvas = $read('assets/js/personal-agent-chat-canvas.js');
     $agentPage = $read('agent.php');
@@ -36,7 +37,9 @@ try {
         'Personal agent loads the permission-safe knowledge layer'
     );
     $expect(
-        str_contains($endpoint, 'mg_personal_agent_chat_v2(')
+        (str_contains($endpoint, 'mg_personal_agent_chat_v2(')
+            || (str_contains($endpoint, 'mg_personal_agent_chat_with_thread_title(')
+                && str_contains($threads, 'mg_personal_agent_chat_v2($pdo, $userId, $input)')))
         && !str_contains($endpoint, 'mg_personal_agent_chat(mg_db()'),
         'Chat endpoint uses the expanded permission-safe runtime'
     );

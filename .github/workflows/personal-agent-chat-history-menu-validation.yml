@@ -1,0 +1,75 @@
+name: Personal Agent Chat History Menu Validation
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'agent.php'
+      - 'includes/agent-workspace.php'
+      - 'includes/personal-agent-sidebar.php'
+      - 'includes/personal-gifting-agent.php'
+      - 'includes/personal-agent/chat.php'
+      - 'includes/personal-agent/threads.php'
+      - 'includes/personal-agent/workspace-dialogs.php'
+      - 'api/user-agent/chat.php'
+      - 'api/user-agent/threads.php'
+      - 'assets/css/personal-agent-chat-history.css'
+      - 'assets/js/personal-agent-chat-history.js'
+      - 'scripts/validate_personal_agent_chat_history_menu.php'
+      - 'scripts/validate_personal_gifting_agent_phase2.php'
+      - 'scripts/validate_personal_gifting_workflows_phase3.php'
+      - '.github/workflows/personal-agent-chat-history-menu-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2','8.3']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          extensions: mbstring,pdo,pdo_mysql,openssl,curl,json
+
+      - name: PHP syntax
+        run: |
+          php -l agent.php
+          php -l includes/agent-workspace.php
+          php -l includes/personal-agent-sidebar.php
+          php -l includes/personal-gifting-agent.php
+          php -l includes/personal-agent/chat.php
+          php -l includes/personal-agent/threads.php
+          php -l includes/personal-agent/workspace-dialogs.php
+          php -l api/user-agent/chat.php
+          php -l api/user-agent/threads.php
+          php -l scripts/validate_personal_agent_chat_history_menu.php
+          php -l scripts/validate_personal_gifting_agent_phase2.php
+          php -l scripts/validate_personal_gifting_workflows_phase3.php
+
+      - name: JavaScript syntax
+        run: node --check assets/js/personal-agent-chat-history.js
+
+      - name: Chat history and menu contract
+        run: php scripts/validate_personal_agent_chat_history_menu.php
+
+      - name: Phase 2 regression
+        run: php scripts/validate_personal_gifting_agent_phase2.php
+
+      - name: Phase 3 regression
+        run: php scripts/validate_personal_gifting_workflows_phase3.php
+
+      - name: Runtime and navigation regression
+        run: php scripts/validate_personal_agent_runtime_nav.php

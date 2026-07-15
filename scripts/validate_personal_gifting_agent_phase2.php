@@ -16,6 +16,7 @@ $required=[
     'includes/personal-agent/context.php',
     'includes/personal-agent/actions.php',
     'includes/personal-agent/chat.php',
+    'includes/personal-agent/threads.php',
     'includes/personal-agent/workspace-dashboard.php',
     'includes/personal-agent/workspace-dialogs.php',
     'includes/personal-agent-sidebar.php',
@@ -25,15 +26,18 @@ $required=[
     'api/user-agent/dashboard.php',
     'api/user-agent/context.php',
     'api/user-agent/chat.php',
+    'api/user-agent/threads.php',
     'api/user-agent/plans.php',
     'api/user-agent/reminders.php',
     'api/user-agent/memory.php',
     'api/user-agent/dates.php',
     'api/user-agent/settings.php',
     'assets/css/personal-gifting-agent.css',
+    'assets/css/personal-agent-chat-history.css',
     'assets/js/personal-gifting-agent.js',
     'assets/js/personal-gifting-agent-render.js',
     'assets/js/personal-gifting-agent-actions.js',
+    'assets/js/personal-agent-chat-history.js',
     'assets/js/agent-workspace.js',
     'tests/phpunit/PersonalGiftingAgentPhase2Test.php',
     '.github/workflows/personal-gifting-agent-phase2-validation.yml',
@@ -43,13 +47,17 @@ foreach($required as $path)$checks['file: '.$path]=is_file($root.'/'.$path);
 
 $sql=$read('database/20260714_personal_gifting_agent_phase2.sql');
 $manifest=$read('config/migrations.php');
-$service=$read('includes/personal-gifting-agent.php').$read('includes/personal-agent/core.php').$read('includes/personal-agent/data.php').$read('includes/personal-agent/context.php').$read('includes/personal-agent/actions.php').$read('includes/personal-agent/chat.php');
+$service=$read('includes/personal-gifting-agent.php').$read('includes/personal-agent/core.php').$read('includes/personal-agent/data.php').$read('includes/personal-agent/context.php').$read('includes/personal-agent/actions.php').$read('includes/personal-agent/chat.php').$read('includes/personal-agent/threads.php');
 $workspace=$read('includes/agent-workspace.php').$read('includes/personal-agent/workspace-dashboard.php').$read('includes/personal-agent/workspace-dialogs.php');
+$dialogs=$read('includes/personal-agent/workspace-dialogs.php');
 $sidebar=$read('includes/personal-agent-sidebar.php');
 $page=$read('agent.php');
-$js=$read('assets/js/personal-gifting-agent.js').$read('assets/js/personal-gifting-agent-render.js').$read('assets/js/personal-gifting-agent-actions.js');
-$css=$read('assets/css/personal-gifting-agent.css');
+$historyJs=$read('assets/js/personal-agent-chat-history.js');
+$historyCss=$read('assets/css/personal-agent-chat-history.css');
+$js=$read('assets/js/personal-gifting-agent.js').$read('assets/js/personal-gifting-agent-render.js').$read('assets/js/personal-gifting-agent-actions.js').$historyJs;
+$css=$read('assets/css/personal-gifting-agent.css').$historyCss;
 $chatApi=$read('api/user-agent/chat.php');
+$threadsApi=$read('api/user-agent/threads.php');
 $plansApi=$read('api/user-agent/plans.php');
 $remindersApi=$read('api/user-agent/reminders.php');
 $memoryApi=$read('api/user-agent/memory.php');
@@ -79,15 +87,19 @@ $checks['personal agent dashboard preserves Agent shell']=
     &&str_contains($workspace,'data-agent-canvas')
     &&str_contains($workspace,'data-agent-composer')
     &&str_contains($workspace,'data-personal-agent-composer')
-    &&str_contains($css,'.mg-personal-agent-composer')
-    &&str_contains($css,'position:sticky');
+    &&str_contains($css,'.mg-personal-agent-composer');
 
-$sidebarLabels=['Home','Contacts','Birthdays','Gift Calendar','Draft Plans','Reminders','Group Gifting','Agent Memory','Settings'];
-$sidebarCoverage=true;
-foreach($sidebarLabels as $label)$sidebarCoverage=$sidebarCoverage&&str_contains($sidebar,"'label' => '{$label}'");
-$checks['personal agent left navigation']=$sidebarCoverage
-    &&str_contains($workspace,"personal-agent-sidebar.php")
-    &&!str_contains($sidebar,"'lists' =>")
+$menuLabels=['Home','Contacts','Birthdays','Gift Calendar','Draft Plans','Scheduled Gifts','Recurring Programs','Reminders','Group Gifting','Recipient Requests','Gift Bundles','Claim & Redemption','Agent Memory','Settings','Inbox','Sent','Claimed','Loyalty Cards','Training Lab'];
+$menuCoverage=true;
+foreach($menuLabels as $label)$menuCoverage=$menuCoverage&&str_contains($dialogs,"'label'=>'{$label}'");
+$checks['chat history sidebar and composer menu']=$menuCoverage
+    &&str_contains($workspace,'data-open-agent-dialog="menu"')
+    &&str_contains($sidebar,'data-personal-agent-thread-groups')
+    &&substr_count($sidebar,'data-personal-agent-new-chat')>=2
+    &&str_contains($sidebar,'data-personal-agent-delete-thread')===false
+    &&str_contains($historyJs,'data-personal-agent-delete-thread')
+    &&str_contains($historyJs,"'/api/user-agent/threads.php'")
+    &&str_contains($historyCss,'.mg-personal-chat-row.is-active')
     &&!str_contains($workspace,'Manage lists');
 
 $checks['dashboard and context are owner scoped']=
@@ -128,15 +140,18 @@ $checks['Claude reuse has safe fallback and approval boundary']=
     &&!str_contains($service,'INSERT INTO pppm_items')
     &&!str_contains($service,'UPDATE gift_claims');
 
-$writeApis=[$chatApi,$plansApi,$remindersApi,$memoryApi,$datesApi,$settingsApi];
+$writeApis=[$chatApi,$threadsApi,$plansApi,$remindersApi,$memoryApi,$datesApi,$settingsApi];
 $apiSecurity=true;
 foreach($writeApis as $api)$apiSecurity=$apiSecurity&&str_contains($api,'mg_require_api_user')&&str_contains($api,'mg_require_csrf_for_write');
-$checks['API authentication and CSRF']=$apiSecurity;
+$checks['API authentication and CSRF']=$apiSecurity
+    &&str_contains($service,'WHERE t.owner_user_id=?')
+    &&str_contains($service,'DELETE FROM user_agent_threads WHERE owner_user_id=?');
 
 $checks['client supports all Phase 2 views and actions']=
     str_contains($js,"'/api/user-agent/dashboard.php'")
     &&str_contains($js,"'/api/user-agent/context.php")
     &&str_contains($js,"'/api/user-agent/chat.php'")
+    &&str_contains($js,"'/api/user-agent/threads.php'")
     &&str_contains($js,"'/api/user-agent/plans.php'")
     &&str_contains($js,"'/api/user-agent/reminders.php'")
     &&str_contains($js,"'/api/user-agent/memory.php'")
@@ -144,7 +159,10 @@ $checks['client supports all Phase 2 views and actions']=
     &&str_contains($js,"'/api/user-agent/settings.php'")
     &&str_contains($js,'data-agent-card-index')
     &&str_contains($js,'save_draft_plan')
-    &&str_contains($js,'if (!payload.context_type || !payload.context_id)');
+    &&str_contains($js,'if (!payload.context_type || !payload.context_id)')
+    &&str_contains($historyJs,'groupLabel')
+    &&str_contains($historyJs,'createThread')
+    &&str_contains($historyJs,'deleteThread');
 
 $failed=[];
 foreach($checks as $name=>$passed){

@@ -12,9 +12,11 @@ on:
       - 'includes/personal-agent/**'
       - 'api/user-agent/**'
       - 'assets/css/personal-gifting-agent.css'
+      - 'assets/css/personal-agent-chat-history.css'
       - 'assets/js/personal-gifting-agent.js'
       - 'assets/js/personal-gifting-agent-render.js'
       - 'assets/js/personal-gifting-agent-actions.js'
+      - 'assets/js/personal-agent-chat-history.js'
       - 'assets/js/agent-workspace.js'
       - 'database/20260714_personal_gifting_agent_phase2.sql'
       - 'config/migrations.php'
@@ -56,12 +58,14 @@ jobs:
           php -l includes/personal-agent/context.php
           php -l includes/personal-agent/actions.php
           php -l includes/personal-agent/chat.php
+          php -l includes/personal-agent/threads.php
           php -l includes/personal-agent/workspace-dashboard.php
           php -l includes/personal-agent/workspace-dialogs.php
           php -l api/user-agent/_bootstrap.php
           php -l api/user-agent/dashboard.php
           php -l api/user-agent/context.php
           php -l api/user-agent/chat.php
+          php -l api/user-agent/threads.php
           php -l api/user-agent/plans.php
           php -l api/user-agent/reminders.php
           php -l api/user-agent/memory.php
@@ -77,6 +81,7 @@ jobs:
           node --check assets/js/personal-gifting-agent.js
           node --check assets/js/personal-gifting-agent-render.js
           node --check assets/js/personal-gifting-agent-actions.js
+          node --check assets/js/personal-agent-chat-history.js
 
       - name: Phase 2 contract
         run: php scripts/validate_personal_gifting_agent_phase2.php
