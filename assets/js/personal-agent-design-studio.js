@@ -7,7 +7,6 @@
   const canvas = app.querySelector('[data-design-canvas]');
   const qrTarget = app.querySelector('[data-design-qr]');
   const formatLabel = app.querySelector('[data-design-format-label]');
-  const destinationInput = app.querySelector('[data-design-field="destination"]');
   const buttons = Array.from(app.querySelectorAll('[data-design-format]'));
   const downloadButtons = Array.from(app.querySelectorAll('[data-design-download]'));
 
@@ -48,8 +47,8 @@
     await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js', () => typeof window.html2canvas === 'function');
   };
 
-  const safeDestination = () => {
-    const raw = (destinationInput?.value || app.dataset.defaultDestination || '/profile.php').trim();
+  const profileDestination = () => {
+    const raw = (app.dataset.defaultDestination || '/profile.php').trim();
     try { return new URL(raw, window.location.origin).href; }
     catch (_) { return new URL('/profile.php', window.location.origin).href; }
   };
@@ -59,7 +58,7 @@
     await ensureLibraries();
     qrTarget.innerHTML = '';
     new window.QRCode(qrTarget, {
-      text: safeDestination(),
+      text: profileDestination(),
       width: 220,
       height: 220,
       colorDark: '#10213b',
@@ -67,25 +66,6 @@
       correctLevel: window.QRCode.CorrectLevel.H,
     });
   };
-
-  const syncPreview = (field) => {
-    const source = app.querySelector(`[data-design-field="${field}"]`);
-    const value = source?.value?.trim() || '';
-    app.querySelectorAll(`[data-design-preview="${field}"]`).forEach((node) => {
-      if (field === 'headline') {
-        const parts = value.split(/\s+(?=Support local\.?$)/i);
-        node.innerHTML = parts.length > 1
-          ? `${parts[0]}<br><em>${parts.slice(1).join(' ')}</em>`
-          : value.replace(/Support local\.?/i, '<em>$&</em>');
-      } else {
-        node.textContent = value;
-      }
-    });
-  };
-
-  ['merchant', 'headline', 'support'].forEach((field) => {
-    app.querySelector(`[data-design-field="${field}"]`)?.addEventListener('input', () => syncPreview(field));
-  });
 
   buttons.forEach((button) => {
     button.addEventListener('click', () => {
@@ -96,11 +76,6 @@
       if (formatLabel) formatLabel.textContent = format === 'tent' ? 'Table Tent' : '5 × 5 Poster Card';
     });
   });
-
-  app.querySelector('[data-design-generate-qr]')?.addEventListener('click', () => {
-    renderQr().catch(() => window.alert('The QR code could not be generated. Please check your connection and try again.'));
-  });
-  destinationInput?.addEventListener('change', () => renderQr().catch(() => {}));
 
   const downloadJpg = async () => {
     if (!canvas) return;
