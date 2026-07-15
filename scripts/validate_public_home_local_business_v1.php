@@ -20,7 +20,7 @@ $expect=static function(bool $condition,string $label)use(&$failures,&$passes):v
 };
 
 try{
-    $index=$read('index.php');
+    $index=$read('merchant-landing.php');
     $css=$read('assets/css/homepage-local-business-v1.css');
     $header=$read('includes/header-components/public-header.php');
     $heroJpegPath=$root.'/assets/images/public-home-merchant-hero.jpg';
@@ -31,7 +31,7 @@ try{
         str_contains($index,"'/assets/css/homepage-local-business-v1.css?v=1.0.0'")
         && !str_contains($index,"'/assets/css/homepage-drm.css'")
         && !str_contains($index,"'/assets/css/homepage-hero-search.css'"),
-        'Homepage replaces the legacy black and gold DRM presentation'
+        'Merchant landing replaces the legacy black and gold DRM presentation'
     );
 
     $expect(
@@ -73,7 +73,7 @@ try{
         'mg-lb-proof',
         'mg-lb-final',
     ] as $needle){
-        $expect(str_contains($index,$needle),'Homepage includes section contract: '.$needle);
+        $expect(str_contains($index,$needle),'Merchant landing includes section contract: '.$needle);
     }
 
     $expect(
@@ -96,7 +96,7 @@ try{
         str_contains($index,'href="/signup.php"')
         && str_contains($index,'href="/learn-more.php"')
         && str_contains($index,'href="/discover.php"'),
-        'Homepage conversion paths connect account creation, sales, and discovery'
+        'Merchant landing conversion paths connect account creation, sales, and discovery'
     );
 
     $expect(
@@ -109,7 +109,7 @@ try{
     $expect(
         str_contains($css,'body[data-page-id="index"] .mg-unified-header .mg-public-demo,')
         && str_contains($css,'body[data-page-id="index"] .mg-public-mobile-nav>a[href="/learn-more.php"]:last-child{display:none!important}'),
-        'Homepage removes the Book A Demo header action on desktop and mobile'
+        'Merchant landing removes the Book A Demo header action on desktop and mobile'
     );
 
     $expect(
@@ -118,7 +118,7 @@ try{
         && str_contains($css,'border-left:0;')
         && str_contains($css,'border-right:0;')
         && str_contains($css,'border-radius:0;'),
-        'Homepage hero is full width with no top or side spacing'
+        'Merchant landing hero is full width with no top or side spacing'
     );
 
     $expect(
@@ -127,14 +127,14 @@ try{
         && str_contains($css,'@media(max-width:420px)')
         && str_contains($css,'.mg-lb-feature-grid{grid-template-columns:1fr}')
         && str_contains($css,'.mg-lb-benefit-rail{width:calc(100% - 24px);grid-template-columns:1fr'),
-        'Homepage has dedicated tablet, mobile, and narrow-phone layouts'
+        'Merchant landing has dedicated tablet, mobile, and narrow-phone layouts'
     );
 
     $expect(
         str_contains($css,'@media(prefers-reduced-motion:reduce)')
         && str_contains($index,'aria-labelledby=')
         && str_contains($index,'aria-label='),
-        'Homepage preserves reduced-motion and semantic accessibility support'
+        'Merchant landing preserves reduced-motion and semantic accessibility support'
     );
 
     $expect(
@@ -149,7 +149,7 @@ try{
         && !str_contains($index,'fetch(')
         && !str_contains($index,'INSERT INTO')
         && !str_contains($index,'UPDATE '),
-        'Public homepage adds no transaction or database mutation authority'
+        'Public merchant landing adds no transaction or database mutation authority'
     );
 }catch(Throwable $error){
     $failures[]=$error->getMessage();
@@ -157,9 +157,9 @@ try{
 }
 
 if($failures!==[]){
-    fwrite(STDERR,sprintf("Public homepage local-business validation failed: %d failure(s), %d pass(es).\n",count($failures),$passes));
+    fwrite(STDERR,sprintf("Public merchant landing local-business validation failed: %d failure(s), %d pass(es).\n",count($failures),$passes));
     foreach($failures as $failure)fwrite(STDERR," - {$failure}\n");
     exit(1);
 }
 
-echo "Public homepage local-business validation passed: {$passes} checks.\n";
+echo "Public merchant landing local-business validation passed: {$passes} checks.\n";
