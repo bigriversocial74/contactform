@@ -9,8 +9,11 @@ on:
       - 'api/user-agent/chat.php'
       - 'includes/personal-gifting-agent.php'
       - 'includes/personal-agent/knowledge.php'
+      - 'includes/personal-agent/marketplace-result-cards.php'
       - 'includes/personal-agent/workspace-dashboard.php'
       - 'assets/js/personal-agent-chat-canvas.js'
+      - 'assets/js/personal-agent-marketplace-cards.js'
+      - 'assets/css/personal-agent-marketplace-cards.css'
       - 'scripts/validate_personal_agent_account_marketplace_context.php'
       - '.github/workflows/personal-agent-account-marketplace-context-validation.yml'
   workflow_dispatch:
@@ -46,12 +49,16 @@ jobs:
       - name: Lint personal agent loader
         run: php -l includes/personal-gifting-agent.php
       - name: Lint permission-safe knowledge
-        run: php -l includes/personal-agent/knowledge.php
+        run: |
+          php -l includes/personal-agent/knowledge.php
+          php -l includes/personal-agent/marketplace-result-cards.php
       - name: Lint agent dashboard
         run: php -l includes/personal-agent/workspace-dashboard.php
       - name: Lint validation contract
         run: php -l scripts/validate_personal_agent_account_marketplace_context.php
       - name: JavaScript syntax
-        run: node --check assets/js/personal-agent-chat-canvas.js
+        run: |
+          node --check assets/js/personal-agent-chat-canvas.js
+          node --check assets/js/personal-agent-marketplace-cards.js
       - name: Permission-safe context contract
         run: php scripts/validate_personal_agent_account_marketplace_context.php
