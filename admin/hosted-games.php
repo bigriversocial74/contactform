@@ -6,8 +6,18 @@ require_once dirname(__DIR__) . '/includes/admin-permission-matrix.php';
 $page_title = 'Hosted Games | Microgifter Admin';
 $page_section = 'account';
 $header_mode = 'account';
-$page_styles = ['/assets/css/admin-dashboard.css','/assets/css/hosted-games-management.css?v=1.1.0','/assets/css/hosted-games-runtime-toggle.css?v=1.0.0'];
-$page_scripts = ['/assets/js/admin-hosted-games.js?v=1.1.0','/assets/js/admin-hosted-games-program-only.js?v=1.0.0','/assets/js/admin-hosted-games-runtime-toggle.js?v=1.0.0'];
+$page_styles = [
+    '/assets/css/admin-dashboard.css',
+    '/assets/css/hosted-games-management.css?v=1.1.0',
+    '/assets/css/hosted-games-runtime-toggle.css?v=1.0.0',
+    '/assets/css/hosted-games-cover-upload.css?v=1.0.0',
+];
+$page_scripts = [
+    '/assets/js/admin-hosted-games.js?v=1.1.0',
+    '/assets/js/admin-hosted-games-program-only.js?v=1.0.0',
+    '/assets/js/admin-hosted-games-runtime-toggle.js?v=1.0.0',
+    '/assets/js/hosted-games-cover-upload.js?v=1.0.0',
+];
 $user = mg_current_user();
 $hasAdminAccess = is_array($user) && (
     mg_admin_permission_user_has($user,'admin.hosted_games.view')
@@ -59,7 +69,7 @@ require dirname(__DIR__) . '/includes/header.php';
             <div class="hgm-modal-body">
               <section class="hgm-section">
                 <h3>1. Merchant and game identity</h3>
-                <p>Create the hosted-game record for a merchant or update its public identity and unique URL.</p>
+                <p>Create the hosted-game record for a merchant or update its public identity, cover image, and unique URL.</p>
                 <form class="hgm-form" data-hgm-admin-game-form>
                   <input type="hidden" name="game_id">
                   <label>Merchant account<select name="merchant_user_id" required data-hgm-admin-merchant><option value="">Select merchant</option></select></label>
@@ -68,7 +78,23 @@ require dirname(__DIR__) . '/includes/header.php';
                     <label>Public URL slug<input name="slug" maxlength="140" required placeholder="summer-reward-challenge"></label>
                   </div>
                   <label>Description<textarea name="description" rows="3" maxlength="5000" placeholder="Describe the game experience."></textarea></label>
-                  <label>Cover image URL<input name="cover_url" type="url" maxlength="500" placeholder="https://..."></label>
+                  <label>Cover image URL <span class="hgm-help">Optional external-image fallback</span><input name="cover_url" type="url" maxlength="500" placeholder="https://..."></label>
+                  <div class="hgm-cover-uploader" data-hgm-cover-uploader>
+                    <div class="hgm-cover-preview" data-hgm-cover-preview>
+                      <img alt="Hosted game cover preview" hidden>
+                      <span>16:9 game cover preview<br>Recommended: 1600 × 900</span>
+                    </div>
+                    <div class="hgm-cover-controls">
+                      <label class="hgm-cover-file">
+                        <strong>Upload cover image</strong>
+                        <small>JPEG, PNG, or WebP · minimum 640 × 360 · maximum 10 MB</small>
+                        <input type="file" accept="image/jpeg,image/png,image/webp" data-hgm-cover-file>
+                      </label>
+                      <div class="hgm-cover-progress" aria-hidden="true"><span data-hgm-cover-progress></span></div>
+                      <div class="hgm-cover-actions"><button class="hgm-btn is-soft" type="button" data-hgm-cover-upload disabled>Upload selected image</button></div>
+                      <div class="hgm-cover-status" data-hgm-cover-status></div>
+                    </div>
+                  </div>
                   <div class="hgm-card-actions"><button class="hgm-btn is-primary" type="submit">Save game identity</button></div>
                   <div class="hgm-form-status" data-hgm-admin-game-status></div>
                 </form>
