@@ -29,7 +29,31 @@ require __DIR__ . '/includes/header.php';
     <label>Full name<input type="text" name="full_name" autocomplete="name" required></label>
     <?php if($isMerchant): ?><label>Business name<input type="text" name="business_name" autocomplete="organization" required maxlength="180"></label><?php endif; ?>
     <label>Email<input type="email" name="email" autocomplete="email" required></label>
-    <label>Password<input type="password" name="password" autocomplete="new-password" minlength="12" required></label>
+
+    <div class="mg-auth-field">
+      <label for="signup-password">Password</label>
+      <div class="mg-password-field">
+        <input id="signup-password" type="password" name="password" autocomplete="new-password" minlength="12" maxlength="4096" aria-describedby="signup-password-help" required>
+        <button class="mg-password-toggle" type="button" data-password-toggle data-password-target="signup-password" aria-label="Show password" aria-pressed="false" title="Show password">
+          <svg class="mg-password-icon mg-password-icon-show" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.75"/></svg>
+          <svg class="mg-password-icon mg-password-icon-hide" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3l18 18M10.6 6.15A10.9 10.9 0 0 1 12 6c6 0 9.5 6 9.5 6a15 15 0 0 1-2.1 2.7M6.2 6.2C3.85 7.75 2.5 12 2.5 12s3.5 6 9.5 6c1.5 0 2.85-.38 4.05-.95M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
+        </button>
+      </div>
+      <small class="mg-field-hint" id="signup-password-help">Use at least 12 characters.</small>
+    </div>
+
+    <div class="mg-auth-field">
+      <label for="signup-password-confirmation">Confirm password</label>
+      <div class="mg-password-field">
+        <input id="signup-password-confirmation" type="password" name="password_confirmation" autocomplete="new-password" minlength="12" maxlength="4096" aria-describedby="signup-password-confirmation-help" required>
+        <button class="mg-password-toggle" type="button" data-password-toggle data-password-target="signup-password-confirmation" aria-label="Show confirmed password" aria-pressed="false" title="Show confirmed password">
+          <svg class="mg-password-icon mg-password-icon-show" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.75"/></svg>
+          <svg class="mg-password-icon mg-password-icon-hide" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3l18 18M10.6 6.15A10.9 10.9 0 0 1 12 6c6 0 9.5 6 9.5 6a15 15 0 0 1-2.1 2.7M6.2 6.2C3.85 7.75 2.5 12 2.5 12s3.5 6 9.5 6c1.5 0 2.85-.38 4.05-.95M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
+        </button>
+      </div>
+      <small class="mg-field-hint" id="signup-password-confirmation-help">Enter the same password again.</small>
+    </div>
+
     <button class="mg-btn mg-btn-primary" type="submit"><?= $isMerchant ? 'Create merchant workspace' : 'Create account' ?></button>
     <div class="mg-auth-switch-row">
       <p>Already have an account? <a href="/signin.php?return=<?= rawurlencode($isMerchant ? '/merchant-onboarding.php' : '/inbox.php') ?>">Sign in</a></p>
