@@ -1,0 +1,42 @@
+/* Gift Action Center progressive desktop feed. */
+.mg-gift-feed-pagination{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:72px;
+  padding:18px 16px 26px;
+  border-top:1px solid #e2e8f0;
+  background:#f6f8fb;
+  text-align:center;
+}
+.mg-gift-feed-pagination[hidden],
+.mg-gift-feed-pagination > [hidden],
+.mg-gift-list > [hidden]{display:none!important}
+.mg-gift-load-more{
+  min-width:184px;
+  min-height:42px;
+  border:1px solid #cbd8e8;
+  border-radius:999px;
+  background:#fff;
+  color:#1259cf;
+  font-size:12px;
+  font-weight:900;
+  cursor:pointer;
+}
+.mg-gift-load-more:hover{border-color:#9ab5db;background:#f7faff}
+.mg-gift-load-more:focus-visible{outline:3px solid rgba(37,99,235,.16);outline-offset:3px}
+.mg-gift-feed-end{margin:0;color:#718096;font-size:12px;font-weight:800}
+
+@media(min-width:761px){
+  [data-gift-center] .mg-gift-feed-column{overflow:visible!important}
+  [data-gift-center] .mg-gift-list{
+    min-height:0!important;
+    max-height:none!important;
+    overflow:visible!important;
+  }
+}
+
+@media(max-width:760px){
+  .mg-gift-feed-pagination{min-height:64px;padding:14px 10px 20px}
+  .mg-gift-load-more{width:min(100%,280px);min-height:44px}
+}
