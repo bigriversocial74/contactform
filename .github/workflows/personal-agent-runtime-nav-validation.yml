@@ -1,0 +1,62 @@
+name: Personal Agent Runtime and Navigation Validation
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'includes/header-components/app-header.php'
+      - 'includes/gift-action-center.php'
+      - 'includes/gift-center-sidebar.php'
+      - 'includes/user-contact-lists.php'
+      - 'includes/user-contact-search.php'
+      - 'includes/personal-agent/**'
+      - 'assets/css/user-lists.css'
+      - 'scripts/validate_personal_agent_runtime_nav.php'
+      - '.github/workflows/personal-agent-runtime-nav-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          extensions: mbstring, pdo, pdo_mysql, openssl
+      - name: PHP syntax
+        run: |
+          php -l includes/header-components/app-header.php
+          php -l includes/gift-action-center.php
+          php -l includes/gift-center-sidebar.php
+          php -l includes/user-contact-lists.php
+          php -l includes/user-contact-search.php
+          php -l includes/personal-agent-sidebar.php
+          php -l includes/personal-agent/workspace-dashboard.php
+          php -l includes/personal-agent/data.php
+          php -l includes/personal-agent/context.php
+          php -l includes/personal-agent/workflows-core.php
+          php -l includes/personal-agent/workflows-data-plans.php
+          php -l includes/personal-agent/workflows-data-groups.php
+          php -l includes/personal-agent/workflows-data-bundles.php
+          php -l scripts/validate_personal_agent_runtime_nav.php
+      - name: Runtime and navigation contract
+        run: php scripts/validate_personal_agent_runtime_nav.php
+      - name: Phase 3 regression
+        run: php scripts/validate_personal_gifting_workflows_phase3.php
+      - name: Phase 2 regression
+        run: php scripts/validate_personal_gifting_agent_phase2.php
+      - name: Phase 1 regression
+        run: php scripts/validate_user_contact_lists_phase1.php
