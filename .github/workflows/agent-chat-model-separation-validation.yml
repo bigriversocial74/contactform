@@ -1,0 +1,57 @@
+name: Agent Chat Model Separation Validation
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'includes/personal-agent/core.php'
+      - 'includes/personal-agent/chat.php'
+      - 'includes/ai/merchant-agent-planner.php'
+      - 'includes/ai/merchant-agent-chat.php'
+      - 'database/stage_19d_customer_haiku_merchant_sonnet_defaults.sql'
+      - 'config/migrations.php'
+      - 'scripts/validate_agent_chat_model_separation.php'
+      - '.github/workflows/agent-chat-model-separation-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, openssl, pdo_mysql
+          coverage: none
+      - name: PHP syntax
+        run: |
+          php -l includes/personal-agent/core.php
+          php -l includes/personal-agent/chat.php
+          php -l includes/ai/merchant-agent-planner.php
+          php -l includes/ai/merchant-agent-chat.php
+          php -l config/migrations.php
+          php -l scripts/validate_agent_chat_model_separation.php
+      - name: Customer and merchant model separation contract
+        run: php scripts/validate_agent_chat_model_separation.php
+      - name: Canonical migration manifest
+        run: php scripts/validate_migration_manifest.php
+      - name: Personal Agent Phase 2 regression
+        run: php scripts/validate_personal_gifting_agent_phase2.php
+      - name: Personal Agent account and marketplace regression
+        run: php scripts/validate_personal_agent_account_marketplace_context.php
+      - name: Personal Agent marketplace card regression
+        run: php scripts/validate_personal_agent_marketplace_result_cards.php
+      - name: Personal Agent runtime regression
+        run: php scripts/validate_personal_agent_runtime_nav.php

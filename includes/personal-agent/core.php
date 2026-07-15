@@ -89,6 +89,31 @@ function mg_personal_agent_require_schema(PDO $pdo): void
     }
 }
 
+function mg_personal_agent_default_model_keys(): array
+{
+    return ['claude-haiku-4-5-20251001', 'claude-haiku-4-5'];
+}
+
+function mg_personal_agent_retired_model_keys(): array
+{
+    return ['claude-3-5-haiku-latest', 'claude-3-5-haiku-20241022'];
+}
+
+function mg_personal_agent_is_default_model(string $modelKey): bool
+{
+    return in_array($modelKey, mg_personal_agent_default_model_keys(), true);
+}
+
+function mg_personal_agent_model_order_sql(): string
+{
+    return "CASE
+        WHEN m.model_key='claude-haiku-4-5-20251001' THEN 0
+        WHEN m.model_key='claude-haiku-4-5' THEN 1
+        WHEN LOWER(m.model_key) LIKE '%haiku%' THEN 2
+        ELSE 3
+    END";
+}
+
 function mg_personal_agent_settings(PDO $pdo, int $userId): array
 {
     mg_personal_agent_require_schema($pdo);
@@ -117,13 +142,15 @@ function mg_personal_agent_settings(PDO $pdo, int $userId): array
 
 function mg_personal_agent_available_models(PDO $pdo): array
 {
+    $orderSql = mg_personal_agent_model_order_sql();
     $rows = $pdo->query("SELECT m.public_id,m.model_key,m.display_name,m.is_default,p.display_name provider_name,p.env_var_name
         FROM ai_models m
         INNER JOIN ai_providers p ON p.id=m.provider_id
         WHERE m.enabled=1 AND p.enabled=1 AND p.provider_key='anthropic'
           AND LOWER(m.model_key) NOT LIKE '%opus%'
           AND LOWER(m.model_key) NOT LIKE '%fable%'
-        ORDER BY m.is_default DESC,m.sort_order,m.display_name")->fetchAll(PDO::FETCH_ASSOC) ?: [];
+          AND m.model_key NOT IN ('claude-3-5-haiku-latest','claude-3-5-haiku-20241022')
+        ORDER BY {$orderSql},m.is_default DESC,m.sort_order,m.display_name")->fetchAll(PDO::FETCH_ASSOC) ?: [];
     $out = [];
     foreach ($rows as $row) {
         if (!mg_ai_env_configured((string) $row['env_var_name'])) continue;
@@ -132,7 +159,7 @@ function mg_personal_agent_available_models(PDO $pdo): array
             'model_key' => (string) $row['model_key'],
             'name' => (string) $row['display_name'],
             'provider' => (string) $row['provider_name'],
-            'is_default' => (bool) $row['is_default'],
+            'is_default' => mg_personal_agent_is_default_model((string) $row['model_key']),
         ];
     }
     return $out;
@@ -144,8 +171,9 @@ function mg_personal_agent_update_settings(PDO $pdo, int $userId, array $input):
     $modelId = null;
     $modelPublicId = mg_personal_agent_text($input['preferred_model_id'] ?? '', 80);
     if ($modelPublicId !== '') {
-        $stmt = $pdo->prepare("SELECT m.id,p.env_var_name FROM ai_models m INNER JOIN ai_providers p ON p.id=m.provider_id
-            WHERE m.public_id=? AND m.enabled=1 AND p.enabled=1 AND p.provider_key='anthropic' LIMIT 1");
+        $stmt = $pdo->prepare("SELECT m.id,m.model_key,p.env_var_name FROM ai_models m INNER JOIN ai_providers p ON p.id=m.provider_id
+            WHERE m.public_id=? AND m.enabled=1 AND p.enabled=1 AND p.provider_key='anthropic'
+              AND m.model_key NOT IN ('claude-3-5-haiku-latest','claude-3-5-haiku-20241022') LIMIT 1");
         $stmt->execute([$modelPublicId]);
         $modelRow = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$modelRow || !mg_ai_env_configured((string) $modelRow['env_var_name'])) {

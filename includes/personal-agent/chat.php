@@ -153,14 +153,16 @@ function mg_personal_agent_model(PDO $pdo, int $userId, string $requestedPublicI
         p.agent_rate_limit_per_hour,p.agent_rate_limit_per_day
         FROM ai_models m INNER JOIN ai_providers p ON p.id=m.provider_id
         WHERE m.enabled=1 AND p.enabled=1 AND p.provider_key='anthropic'
-        AND LOWER(m.model_key) NOT LIKE '%opus%' AND LOWER(m.model_key) NOT LIKE '%fable%'";
+        AND LOWER(m.model_key) NOT LIKE '%opus%' AND LOWER(m.model_key) NOT LIKE '%fable%'
+        AND m.model_key NOT IN ('claude-3-5-haiku-latest','claude-3-5-haiku-20241022')";
     if ($preferred !== '') {
         $stmt=$pdo->prepare($baseSql.' AND m.public_id=? LIMIT 1');
         $stmt->execute([$preferred]);
         $row=$stmt->fetch(PDO::FETCH_ASSOC);
         if (is_array($row) && mg_ai_env_configured((string)$row['env_var_name'])) return $row;
     }
-    $rows=$pdo->query($baseSql.' ORDER BY m.is_default DESC,m.sort_order,m.display_name')->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    $orderSql=mg_personal_agent_model_order_sql();
+    $rows=$pdo->query($baseSql.' ORDER BY '.$orderSql.',m.is_default DESC,m.sort_order,m.display_name')->fetchAll(PDO::FETCH_ASSOC) ?: [];
     foreach ($rows as $row) {
         if (mg_ai_env_configured((string)$row['env_var_name'])) return $row;
     }
