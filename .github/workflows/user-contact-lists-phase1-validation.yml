@@ -20,6 +20,7 @@ on:
       - 'assets/js/user-lists.js'
       - 'assets/js/create-list-extension.js'
       - 'assets/css/user-lists.css'
+      - 'assets/css/create-center-layout.css'
       - 'database/20260714_user_contact_lists_phase1.sql'
       - 'config/migrations.php'
       - 'scripts/validate_user_contact_lists_phase1.php'

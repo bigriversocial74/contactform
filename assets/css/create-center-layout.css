@@ -1,0 +1,406 @@
+/* Create Center layout contract.
+   The modal owns one fixed dialog, one scrollable content pane, and exactly one
+   visible tool view at a time. This stylesheet loads after create-menu.css. */
+
+.mg-create-menu .mg-create-menu-dialog{
+  width:min(1320px,calc(100vw - 48px))!important;
+  height:min(840px,calc(100dvh - 48px))!important;
+  max-height:calc(100dvh - 48px)!important;
+}
+
+.mg-create-menu .mg-create-center-layout{
+  min-width:0;
+  min-height:0;
+  display:grid;
+  grid-template-columns:220px minmax(0,1fr);
+  overflow:hidden;
+  background:#f3f7fd;
+}
+
+.mg-create-menu .mg-create-center-rail{
+  min-width:0;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  overflow-x:hidden;
+  overflow-y:auto;
+  padding:18px 14px 22px;
+  border-right:1px solid #dce5f0;
+  background:#fff;
+  scrollbar-width:thin;
+}
+
+.mg-create-menu .mg-create-center-home,
+.mg-create-menu .mg-create-center-rail-link{
+  width:100%;
+  min-height:52px;
+  display:grid;
+  grid-template-columns:42px minmax(0,1fr);
+  align-items:center;
+  gap:10px;
+  margin:0;
+  padding:7px 9px;
+  border:1px solid transparent;
+  border-radius:14px;
+  background:transparent;
+  color:#111827;
+  text-align:left;
+  text-decoration:none;
+  font-size:13px;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.mg-create-menu .mg-create-center-home>span{
+  width:42px;
+  height:42px;
+  display:grid;
+  place-items:center;
+  border:1px solid #dce5f0;
+  border-radius:13px;
+  background:#f1f6fc;
+  color:#315da8;
+}
+
+.mg-create-menu .mg-create-center-rail-link .mg-create-menu-icon{
+  width:42px;
+  height:42px;
+  border-radius:13px;
+}
+
+.mg-create-menu .mg-create-center-rail-link .mg-create-menu-icon svg{
+  width:21px;
+  height:21px;
+}
+
+.mg-create-menu .mg-create-center-rail-link .mg-create-menu-copy{
+  display:block;
+}
+
+.mg-create-menu .mg-create-center-rail-link .mg-create-menu-copy strong{
+  font-size:13px;
+  line-height:1.2;
+}
+
+.mg-create-menu .mg-create-center-home:hover,
+.mg-create-menu .mg-create-center-rail-link:hover,
+.mg-create-menu .mg-create-center-home.is-active,
+.mg-create-menu .mg-create-center-rail-link.is-active{
+  border-color:#bfd0e5;
+  background:#edf4ff;
+  color:#174ea6;
+}
+
+.mg-create-menu .mg-create-center-rail-nav{
+  display:grid;
+  gap:6px;
+}
+
+.mg-create-menu .mg-create-center-content{
+  min-width:0;
+  min-height:0;
+  height:100%;
+  overflow-x:hidden;
+  overflow-y:auto;
+  padding:24px 26px 32px;
+  background:#f3f7fd;
+  scrollbar-width:thin;
+  scrollbar-color:#c4d2e3 transparent;
+}
+
+.mg-create-menu .mg-create-center-content::-webkit-scrollbar{
+  width:9px;
+}
+
+.mg-create-menu .mg-create-center-content::-webkit-scrollbar-thumb{
+  border:2px solid transparent;
+  border-radius:999px;
+  background:#c4d2e3;
+  background-clip:padding-box;
+}
+
+.mg-create-menu .mg-create-center-view{
+  width:100%;
+  min-width:0;
+  margin:0;
+}
+
+.mg-create-menu .mg-create-center-view[hidden],
+.mg-create-menu .mg-create-inline-form[hidden],
+.mg-create-menu .mg-create-inline-success[hidden],
+.mg-user-lists-state[hidden]{
+  display:none!important;
+}
+
+.mg-create-menu .mg-create-center-view.is-active{
+  display:block;
+}
+
+.mg-create-menu .mg-create-center-welcome{
+  margin:0 0 18px;
+  padding:20px 22px;
+  border:1px solid #dce5f0;
+  border-radius:20px;
+  background:linear-gradient(135deg,#fff,#f8fbff);
+  box-shadow:0 12px 30px rgba(15,23,42,.045);
+}
+
+.mg-create-menu .mg-create-center-welcome h3{
+  margin:5px 0 7px;
+  color:#0b1220;
+  font-size:clamp(24px,3vw,34px);
+  line-height:1.04;
+  letter-spacing:-.045em;
+}
+
+.mg-create-menu .mg-create-center-welcome p{
+  max-width:720px;
+  margin:0;
+  color:#667085;
+  font-size:14px;
+  line-height:1.5;
+}
+
+.mg-create-menu .mg-create-center-content .mg-create-menu-grid{
+  min-height:0;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+  padding:0;
+  overflow:visible;
+  background:transparent;
+}
+
+.mg-create-menu .mg-create-center-content .mg-create-menu-grid>a{
+  min-height:104px;
+}
+
+.mg-create-menu .mg-create-inline-head{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:20px;
+  margin:0 0 18px;
+}
+
+.mg-create-menu .mg-create-inline-head>div{
+  min-width:0;
+}
+
+.mg-create-menu .mg-create-inline-head h3{
+  margin:5px 0 6px;
+  color:#0b1220;
+  font-size:clamp(30px,4vw,46px);
+  line-height:1;
+  letter-spacing:-.055em;
+}
+
+.mg-create-menu .mg-create-inline-head p{
+  max-width:760px;
+  margin:0;
+  color:#667085;
+  font-size:14px;
+  line-height:1.5;
+}
+
+.mg-create-menu .mg-create-inline-head>a{
+  flex:0 0 auto;
+  min-height:42px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:0 15px;
+  border:1px solid #cbd8e7;
+  border-radius:13px;
+  background:#fff;
+  color:#315da8;
+  font-size:12px;
+  font-weight:900;
+  text-decoration:none;
+}
+
+.mg-create-menu .mg-create-inline-form,
+.mg-create-menu .mg-create-inline-success{
+  width:100%;
+  min-width:0;
+  display:grid;
+  gap:16px;
+  margin:0;
+  padding:22px;
+  border:1px solid #dce5f0;
+  border-radius:22px;
+  background:#fff;
+  box-shadow:0 15px 38px rgba(15,23,42,.055);
+}
+
+.mg-create-menu .mg-create-inline-form label,
+.mg-create-menu .mg-create-products-fieldset{
+  min-width:0;
+}
+
+.mg-create-menu .mg-create-form-grid{
+  min-width:0;
+  display:grid;
+  gap:14px;
+}
+
+.mg-create-menu .mg-create-form-grid-2{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+}
+
+.mg-create-menu .mg-create-form-grid-3{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+}
+
+.mg-create-menu .mg-create-form-grid-4{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+}
+
+.mg-create-menu .mg-create-inline-form input,
+.mg-create-menu .mg-create-inline-form select,
+.mg-create-menu .mg-create-inline-form textarea{
+  min-width:0;
+  max-width:100%;
+  background:#fff;
+}
+
+.mg-create-menu .mg-create-inline-form textarea{
+  resize:vertical;
+}
+
+.mg-create-menu .mg-create-inline-actions{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:10px;
+  padding-top:4px;
+}
+
+.mg-create-menu .mg-create-submit,
+.mg-create-menu .mg-create-secondary,
+.mg-create-menu .mg-create-inline-success button,
+.mg-create-menu .mg-create-inline-success a{
+  min-height:44px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:0 18px;
+  border-radius:13px;
+  font-size:13px;
+  font-weight:900;
+  text-decoration:none;
+}
+
+.mg-create-menu .mg-create-submit{
+  border:1px solid #1d4ed8;
+  background:#2563eb;
+  color:#fff;
+  box-shadow:0 10px 22px rgba(37,99,235,.2);
+}
+
+.mg-create-menu .mg-create-secondary,
+.mg-create-menu .mg-create-inline-success button,
+.mg-create-menu .mg-create-inline-success a{
+  border:1px solid #cbd8e7;
+  background:#fff;
+  color:#334155;
+}
+
+.mg-create-menu .mg-create-inline-status{
+  min-height:0;
+  color:#b42318;
+  font-size:12px;
+  font-weight:800;
+}
+
+@media(max-width:980px){
+  .mg-create-menu .mg-create-menu-dialog{
+    width:min(920px,calc(100vw - 28px))!important;
+    height:calc(100dvh - 28px)!important;
+    max-height:calc(100dvh - 28px)!important;
+  }
+
+  .mg-create-menu .mg-create-center-layout{
+    grid-template-columns:176px minmax(0,1fr);
+  }
+
+  .mg-create-menu .mg-create-center-content{
+    padding:20px;
+  }
+
+  .mg-create-menu .mg-create-center-content .mg-create-menu-grid,
+  .mg-create-menu .mg-create-form-grid-3,
+  .mg-create-menu .mg-create-form-grid-4{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+
+@media(max-width:720px){
+  .mg-create-menu .mg-create-menu-dialog{
+    width:100vw!important;
+    height:100dvh!important;
+    max-height:100dvh!important;
+  }
+
+  .mg-create-menu .mg-create-center-layout{
+    grid-template-columns:1fr;
+    grid-template-rows:auto minmax(0,1fr);
+  }
+
+  .mg-create-menu .mg-create-center-rail{
+    display:block;
+    overflow-x:auto;
+    overflow-y:hidden;
+    padding:9px 10px;
+    border-right:0;
+    border-bottom:1px solid #dce5f0;
+    white-space:nowrap;
+  }
+
+  .mg-create-menu .mg-create-center-home,
+  .mg-create-menu .mg-create-center-rail-link{
+    width:auto;
+    min-height:42px;
+    display:inline-flex;
+    grid-template-columns:none;
+    gap:7px;
+    margin-right:6px;
+    padding:5px 9px;
+    vertical-align:top;
+  }
+
+  .mg-create-menu .mg-create-center-home>span,
+  .mg-create-menu .mg-create-center-rail-link .mg-create-menu-icon{
+    width:32px;
+    height:32px;
+    border-radius:10px;
+  }
+
+  .mg-create-menu .mg-create-center-rail-nav{
+    display:inline-flex;
+    gap:0;
+  }
+
+  .mg-create-menu .mg-create-center-content{
+    padding:16px 13px calc(24px + env(safe-area-inset-bottom));
+  }
+
+  .mg-create-menu .mg-create-center-content .mg-create-menu-grid,
+  .mg-create-menu .mg-create-form-grid-2,
+  .mg-create-menu .mg-create-form-grid-3,
+  .mg-create-menu .mg-create-form-grid-4{
+    grid-template-columns:1fr;
+  }
+
+  .mg-create-menu .mg-create-inline-head{
+    align-items:flex-start;
+    flex-direction:column;
+    gap:12px;
+  }
+
+  .mg-create-menu .mg-create-inline-form,
+  .mg-create-menu .mg-create-inline-success{
+    padding:16px;
+    border-radius:18px;
+  }
+}

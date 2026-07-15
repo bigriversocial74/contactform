@@ -24,6 +24,7 @@ $requiredFiles = [
     'lists.php',
     'list.php',
     'assets/css/user-lists.css',
+    'assets/css/create-center-layout.css',
     'assets/js/user-lists.js',
     'assets/js/create-list-extension.js',
     'tests/phpunit/UserContactListsFoundationTest.php',
@@ -47,11 +48,15 @@ $searchApi = $read('api/user-lists/search-contacts.php');
 $appHeader = $read('includes/header-components/app-header.php');
 $loggedInHeader = $read('includes/header-templates/logged-in.php');
 $createExtension = $read('includes/header-components/create-list-extension.php');
+$createExtensionJs = $read('assets/js/create-list-extension.js');
+$createLayoutCss = $read('assets/css/create-center-layout.css');
 $agentPage = $read('agent.php');
 $agentWorkspace = $read('includes/agent-workspace.php');
 $agentCss = $read('assets/css/agent-workspace-layout.css');
 $listsPage = $read('lists.php');
 $listPage = $read('list.php');
+$listCss = $read('assets/css/user-lists.css');
+$listJs = $read('assets/js/user-lists.js');
 
 $tables = [
     'user_contact_preferences',
@@ -112,6 +117,17 @@ $checks['customer Create Center remains permission separated'] = str_contains($l
     && str_contains($loggedInHeader, '$can_merchant_nav && ($can_create_microgift || $can_create_campaigns || $can_create_rewards)')
     && str_contains($createExtension, 'data-create-menu-option="contact_list"')
     && str_contains($createExtension, 'data-create-inline-form="list"');
+$checks['Create Center List view is contained and mutually exclusive'] = str_contains($createLayoutCss, '.mg-create-center-layout')
+    && str_contains($createLayoutCss, 'grid-template-columns:220px minmax(0,1fr)')
+    && str_contains($createLayoutCss, '.mg-create-center-content')
+    && str_contains($createLayoutCss, '.mg-create-center-view[hidden]')
+    && str_contains($createLayoutCss, 'display:none!important')
+    && str_contains($createExtensionJs, "modal.querySelector('[data-create-center-view=\"list\"]')")
+    && str_contains($createExtensionJs, "view.hidden = !active")
+    && str_contains($createExtensionJs, "event.target.closest('[data-create-inline-target=\"list\"]')");
+$checks['List empty search state respects hidden'] = str_contains($createLayoutCss, '.mg-user-lists-state[hidden]')
+    && str_contains($listCss, '.mg-user-lists-state')
+    && str_contains($listJs, 'empty.hidden = visible !== 0');
 $checks['Agent tab restored for authenticated customers'] = str_contains($appHeader, '$is_authenticated_user = mg_current_user() !== null;')
     && str_contains($appHeader, "['agent','Agent','/agent.php',\$can_agent_workspace]")
     && str_contains($appHeader, "['inbox','Inbox','/inbox.php',true]")
