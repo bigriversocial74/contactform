@@ -108,15 +108,15 @@ function mg_personal_agent_contacts(PDO $pdo, int $userId, int $limit = 250): ar
         ];
     }
 
-    $linked = $pdo->prepare("SELECT u.public_id,COALESCE(pp.display_name,u.display_name,u.full_name,'Contact') display_name,pp.avatar_url,pp.slug,
+    $linked = $pdo->prepare("SELECT pp.public_id,COALESCE(pp.display_name,u.display_name,u.full_name,'Contact') display_name,pp.avatar_url,pp.slug,
         MAX(m.relationship_type) relationship_type,MAX(m.relationship_label) relationship_label,
         GROUP_CONCAT(DISTINCT l.name ORDER BY l.name SEPARATOR ', ') list_names
         FROM user_contact_list_members m
         INNER JOIN users u ON u.id=m.contact_user_id AND u.status='active'
-        LEFT JOIN public_profiles pp ON pp.user_id=u.id AND pp.status='active'
+        INNER JOIN public_profiles pp ON pp.user_id=u.id
         INNER JOIN user_contact_lists l ON l.id=m.list_id AND l.owner_user_id=m.owner_user_id AND l.is_archived=0
         WHERE m.owner_user_id=? AND m.contact_user_id IS NOT NULL
-        GROUP BY u.id ORDER BY display_name LIMIT " . max(1, min(500, $limit)));
+        GROUP BY u.id,pp.public_id,pp.display_name,pp.avatar_url,pp.slug ORDER BY display_name LIMIT " . max(1, min(500, $limit)));
     $linked->execute([$userId]);
     foreach ($linked->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $contacts[] = [
@@ -152,7 +152,7 @@ function mg_personal_agent_plans(PDO $pdo, int $userId, string $status = 'all', 
     $stmt = $pdo->prepare("SELECT p.id internal_id,p.public_id,p.title,p.occasion_type,p.occasion_label,p.target_date,p.budget_min,p.budget_max,p.currency,p.status,
         p.notes,p.recommendation_json,p.source,p.approval_required,p.created_at,p.updated_at,
         l.public_id list_public_id,l.name list_name,c.public_id contact_public_id,c.display_name contact_name,
-        u.public_id linked_user_public_id,COALESCE(pp.display_name,u.display_name,u.full_name) linked_user_name
+        pp.public_id linked_user_public_id,COALESCE(pp.display_name,u.display_name,u.full_name) linked_user_name
         FROM user_gifting_plans p
         LEFT JOIN user_contact_lists l ON l.id=p.list_id AND l.owner_user_id=p.owner_user_id
         LEFT JOIN user_contacts c ON c.id=p.user_contact_id AND c.owner_user_id=p.owner_user_id
@@ -200,7 +200,7 @@ function mg_personal_agent_reminders(PDO $pdo, int $userId, string $status = 'sc
     if ($status !== 'all') $params[] = $status;
     $stmt = $pdo->prepare("SELECT r.public_id,r.reminder_type,r.title,r.remind_at,r.status,r.notes,r.created_at,r.updated_at,
         p.public_id plan_public_id,p.title plan_title,l.public_id list_public_id,l.name list_name,
-        c.public_id contact_public_id,c.display_name contact_name,u.public_id linked_user_public_id,
+        c.public_id contact_public_id,c.display_name contact_name,pp.public_id linked_user_public_id,
         COALESCE(pp.display_name,u.display_name,u.full_name) linked_user_name
         FROM user_gifting_reminders r
         LEFT JOIN user_gifting_plans p ON p.id=r.plan_id AND p.owner_user_id=r.owner_user_id
@@ -312,4 +312,3 @@ function mg_personal_agent_dashboard(PDO $pdo, int $userId): array
         'memory'=>$memory,
     ];
 }
-
