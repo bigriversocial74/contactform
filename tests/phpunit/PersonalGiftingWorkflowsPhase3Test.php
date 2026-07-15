@@ -20,8 +20,9 @@ final class PersonalGiftingWorkflowsPhase3Test extends TestCase
     }
     public function testRecipientConsentSupportsSelectiveRevocation():void
     {
-        $service=$this->read('includes/personal-agent/workflows-requests.php');
-        self::assertStringContainsString('allow_profile_import_requests',$service);self::assertStringContainsString('user_contact_profile_permissions',$service);self::assertStringContainsString('user_contact_profile_import_fields',$service);self::assertStringContainsString('hash_equals',$service);self::assertStringContainsString('mg_personal_workflows_value_hash',$service);
+        $request=$this->read('includes/personal-agent/workflows-requests.php');
+        $revoke=$this->read('includes/personal-agent/workflows-request-revocation.php');
+        self::assertStringContainsString('allow_profile_import_requests',$request);self::assertStringContainsString('user_contact_profile_permissions',$request);self::assertStringContainsString('user_contact_profile_import_fields',$request);self::assertStringContainsString('mg_personal_workflows_revoke_data_request_safe',$revoke);self::assertStringContainsString('permission_scope',$revoke);self::assertStringContainsString('hash_equals',$revoke);self::assertStringContainsString("'birth_year_visible' => 0",$revoke);self::assertStringContainsString("'unrelated_scopes_preserved' => true",$revoke);
     }
     public function testBundlesAndLifecycleNeverExecuteCommerce():void
     {
