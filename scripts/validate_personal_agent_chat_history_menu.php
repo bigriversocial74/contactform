@@ -58,9 +58,9 @@ try {
     $expect(str_contains($service, 'mg_personal_agent_thread_title_from_message') && str_contains($service, "'[private detail]'") && str_contains($service, "'••••'"), 'Automatic chat labels redact common private details');
     $expect(str_contains($chatApi, 'mg_personal_agent_chat_with_thread_title'), 'First user message assigns the chat title');
     $expect(str_contains($js, "return 'Today'") && str_contains($js, "return 'Yesterday'") && str_contains($js, "return 'Previous 7 days'"), 'Chats are grouped and labeled by date');
-    $expect(str_contains($js, 'new URLSearchParams(window.location.search).get(\'thread\')') && str_contains($js, 'loadThread(selected.id'), 'Active chat is restored from the URL or latest history');
+    $expect(str_contains($js, "new URLSearchParams(window.location.search).get('thread')") && str_contains($js, 'loadThread(selected.id'), 'Active chat is restored from the URL or latest history');
     $expect(str_contains($js, "Microgifter.post('/api/user-agent/threads.php', { action: 'create' }") && str_contains($js, "action: 'delete'"), 'Client creates and deletes chats through the thread API');
-    $expect(str_contains($js, 'Delete \"') && str_contains($js, 'and all of its messages?'), 'Chat deletion requires explicit user confirmation');
+    $expect(str_contains($js, "window.confirm('Delete \"'") && str_contains($js, "'\" and all of its messages?')"), 'Chat deletion requires explicit user confirmation');
     $expect(str_contains($page, '/assets/css/personal-agent-chat-history.css?v=1.0.0') && str_contains($page, '/assets/js/personal-agent-chat-history.js?v=1.0.0'), 'Chat history assets are loaded with cache versions');
 } catch (Throwable $error) {
     $failures[] = $error->getMessage();
