@@ -6,7 +6,7 @@ Hosted Games lets a merchant upload a browser game ZIP, attach one Distribution 
 https://microgifter.com/games/your-game-slug/
 ```
 
-Microgifter manages the Developer App, encrypted API credential, signed webhook, campaign, reward inventory, player connection, run authorization, isolated database, and Inbox delivery. Game JavaScript never receives those credentials.
+Microgifter manages the Developer App, encrypted API credential, signed webhook, campaign, reward inventory, player connection, run authorization, isolated MySQL database, and Inbox delivery. Game JavaScript never receives those credentials.
 
 ## Recommended ZIP structure
 
@@ -90,7 +90,7 @@ Packages without `game.json` remain supported in legacy compatibility mode.
 
 Hosted Games accepts static browser assets including HTML, CSS, JavaScript, JSON, images, audio, video, fonts, WebGL, WASM, Unity WebGL data, compressed assets, 3D models, captions, and PDFs.
 
-Executable server files, dependency manifests, hidden files, symbolic links, parent-directory paths, duplicate paths, and unsafe compressed packages are rejected. Merchant-uploaded PHP is never executed.
+Executable server files, dependency manifests, hidden files, symbolic links, parent-directory paths, duplicate paths, and unsafe compressed packages are rejected. Merchant-uploaded PHP is not executed inside Microgifter.
 
 ## Standard SDK example
 
@@ -115,7 +115,7 @@ const result = await MicrogifterGame.complete({
 });
 ```
 
-The older explicit `completeRun({runId, runToken, ...})` API remains supported.
+The older explicit `MicrogifterGame.completeRun({runId, runToken, ...})` API remains supported for existing uploaded games and custom integrations.
 
 ## Browser isolation
 
@@ -137,7 +137,7 @@ Standard v1 generates iframe permissions from declared capabilities and blocks a
 4. Upload the game ZIP.
 5. Select the Distribution Program.
 6. Microgifter resolves the campaign and active reward inventory and provisions encrypted credentials.
-7. Microgifter Admin assigns and tests the isolated database.
+7. Microgifter Admin assigns and tests the isolated MySQL database.
 8. Turn **Game enabled** on after readiness is complete.
 
 ## Package limits
