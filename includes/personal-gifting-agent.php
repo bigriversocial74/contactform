@@ -9,5 +9,6 @@ require_once __DIR__ . '/personal-agent/data.php';
 require_once __DIR__ . '/personal-agent/context.php';
 require_once __DIR__ . '/personal-agent/actions.php';
 require_once __DIR__ . '/personal-agent/chat.php';
+require_once __DIR__ . '/personal-agent/threads.php';
 require_once __DIR__ . '/personal-agent/knowledge.php';
 require_once __DIR__ . '/personal-agent/workflows.php';
