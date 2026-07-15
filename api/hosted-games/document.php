@@ -3,9 +3,11 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/bootstrap.php';
 require_once dirname(__DIR__, 2) . '/includes/hosted-games.php';
+require_once dirname(__DIR__, 2) . '/includes/hosted-game-standard-v1.php';
 
 $slug = trim((string)($_GET['slug'] ?? ''));
-if ($slug === '') {
+$bridgeToken = trim((string)($_GET['bridge'] ?? ''));
+if ($slug === '' || !mg_hosted_game_standard_valid_bridge_token($bridgeToken)) {
     http_response_code(404);
     exit('Hosted game not found.');
 }
@@ -17,6 +19,7 @@ if (!$game || empty($game['storage_key'])) {
 }
 try {
     $releaseRoot = mg_hosted_game_storage_path((string)$game['storage_key']);
+    $manifest = mg_hosted_game_standard_manifest_from_game($game);
 } catch (Throwable) {
     http_response_code(404);
     exit('Hosted game release not found.');
@@ -48,12 +51,14 @@ $config = json_encode([
     'gameId'=>(string)$game['public_id'],
     'slug'=>(string)$game['slug'],
     'name'=>(string)$game['name'],
-    'bridgeVersion'=>'1.0.0',
+    'bridgeVersion'=>'1.1.0',
+    'bridgeToken'=>$bridgeToken,
+    'manifest'=>mg_hosted_game_standard_public_manifest($manifest),
 ],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);
 if (!is_string($config)) $config = '{}';
 $inject = '<base href="/games/' . rawurlencode((string)$game['slug']) . '/">'
     . '<script>window.MicrogifterHostedGameConfig=' . $config . ';</script>'
-    . '<script src="/assets/js/hosted-game-child-bridge.js?v=1.0.0"></script>';
+    . '<script src="/assets/js/hosted-game-child-bridge.js?v=1.1.0"></script>';
 if (preg_match('/<head\b[^>]*>/i',$html) === 1) {
     $html = preg_replace('/<head\b([^>]*)>/i','<head$1>' . $inject,$html,1) ?? ($inject . $html);
 } else {
@@ -64,5 +69,7 @@ header('Content-Type: text/html; charset=utf-8');
 header('Cache-Control: no-store, private');
 header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: no-referrer');
-header("Content-Security-Policy: default-src * data: blob:; script-src * 'unsafe-inline' 'unsafe-eval' blob:; style-src * 'unsafe-inline'; img-src * data: blob:; media-src * data: blob:; font-src * data:; connect-src * data: blob:; worker-src * blob:; child-src * blob:; frame-ancestors 'self'; object-src 'none'; base-uri 'self'");
+header('Cross-Origin-Resource-Policy: same-origin');
+header('Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), hid=()');
+header('Content-Security-Policy: ' . mg_hosted_game_standard_csp($manifest));
 echo $html;

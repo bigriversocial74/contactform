@@ -31,7 +31,7 @@
       status(`Ready, ${session.player.display_name || 'player'}.`);
       startButton.textContent = 'Start game';
     } catch (error) {
-      status(error.message);
+      status(error instanceof Error ? error.message : 'Unable to initialize the game.');
       startButton.disabled = true;
     }
   }
@@ -55,11 +55,24 @@
       scoreNode.textContent = '0';
       giftButton.disabled = false;
       status('Tap the gift five times.');
-      await MicrogifterGame.track('game.started', { mode: 'starter' });
     } catch (error) {
-      status(error.message);
+      status(error instanceof Error ? error.message : 'Unable to start the game.');
       startButton.disabled = false;
     }
+  }
+
+  async function completeQualifiedRun() {
+    const result = { target, mode: 'starter' };
+    if (typeof MicrogifterGame.complete === 'function') {
+      return MicrogifterGame.complete({ score, result });
+    }
+    return MicrogifterGame.completeRun({
+      runId: run?.run_id || '',
+      runToken: run?.run_token || '',
+      qualified: true,
+      score,
+      result
+    });
   }
 
   async function finish() {
@@ -74,27 +87,25 @@
         score,
         metadata: { mode: 'starter' }
       });
-      const response = await MicrogifterGame.completeRun({
-        runId: run.run_id,
-        runToken: run.run_token,
-        qualified: true,
-        score,
-        result: { target, mode: 'starter' }
-      });
+      await MicrogifterGame.qualify({ target, achieved: score });
+      const response = await completeQualifiedRun();
+      run = null;
       status(response.run?.status === 'delivered' ? 'Reward delivered.' : 'Reward earned and queued for your Inbox.');
       inboxLink.hidden = false;
       startButton.textContent = 'Play again';
       startButton.disabled = false;
     } catch (error) {
-      status(error.message);
+      status(error instanceof Error ? error.message : 'Unable to complete the game.');
+      await MicrogifterGame.reportError(error, { phase: 'complete' }).catch(() => {});
       startButton.disabled = false;
     }
   }
 
   giftButton.addEventListener('click', () => {
-    if (!run || finished) return;
+    if (finished || !run) return;
     score += 1;
     scoreNode.textContent = String(score);
+    void MicrogifterGame.updateScore(score, { target }).catch(() => {});
     if (score >= target) void finish();
   });
 
@@ -102,6 +113,12 @@
   inboxLink.addEventListener('click', (event) => {
     event.preventDefault();
     MicrogifterGame.openInbox();
+  });
+
+  window.addEventListener('pagehide', () => {
+    if (!finished && run) {
+      void MicrogifterGame.abandonRun({ run, reason: 'page_hidden', result: { score } }).catch(() => {});
+    }
   });
 
   window.addEventListener('microgifter:bridge-ready', () => void initialize(), { once: true });

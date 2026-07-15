@@ -1,80 +1,98 @@
 # Microgifter Hosted Games package guide
 
-Hosted Games lets a merchant upload a complete browser game ZIP, connect it to a Microgifter Distribution Program, campaign, and reward, and publish it at a clean URL:
+Hosted Games lets a merchant upload a browser game ZIP, attach one Distribution Program, and publish the game at:
 
 ```text
 https://microgifter.com/games/your-game-slug/
 ```
 
-Each game has:
+Microgifter manages the Developer App, encrypted API credential, signed webhook, campaign, reward inventory, player connection, run authorization, isolated MySQL database, and Inbox delivery. Game JavaScript never receives those credentials.
 
-- its own merchant-owned game record and release history;
-- a dedicated live Developer App and encrypted API credential;
-- a signed per-game webhook;
-- a selected Distribution Program, campaign, and PPPM reward;
-- an isolated MySQL database configured by Microgifter Admin;
-- protected Microgifter login, player connection, Inbox reward delivery, state, score, leaderboard, and event APIs.
-
-## ZIP structure
-
-The simplest package is:
+## Recommended ZIP structure
 
 ```text
 index.html
+game.json
 game.js
 game.css
 assets/
-  image.png
+  cover.webp
+  icon.png
   sound.mp3
 ```
 
-A package can optionally include `game.json`:
+The package may contain one wrapper directory. Hosted Games removes it automatically when every package file is inside that directory.
+
+## Standard v1 manifest
+
+New games should use the Hosted Game Standard v1 schema:
 
 ```json
 {
-  "name": "Pizza Catcher",
+  "schema": "microgifter.hosted-game/v1",
+  "name": "Hosted Game Starter",
   "version": "1.0.0",
   "entry": "index.html",
-  "integrationVersion": "1",
-  "description": "Catch pizza slices and qualify for a merchant reward."
+  "category": "casual",
+  "orientation": "any",
+  "viewport": {
+    "min_width": 320,
+    "min_height": 480
+  },
+  "session": {
+    "max_duration_seconds": 180
+  },
+  "capabilities": [
+    "player",
+    "runs",
+    "events",
+    "state",
+    "scores",
+    "leaderboard",
+    "inbox",
+    "fullscreen",
+    "audio"
+  ],
+  "events": [
+    "game_loaded",
+    "run_started",
+    "level_started",
+    "score_updated",
+    "level_completed",
+    "player_qualified",
+    "run_completed",
+    "run_abandoned",
+    "runtime_error"
+  ],
+  "scoring": {
+    "mode": "points",
+    "sort": "high",
+    "integer": true
+  },
+  "qualification": {
+    "mode": "game_reported"
+  },
+  "network": {
+    "connect": []
+  },
+  "assets": {
+    "cover": "assets/cover.webp",
+    "icon": "assets/icon.png"
+  }
 }
 ```
 
-The ZIP may contain one wrapper directory. Hosted Games removes that wrapper automatically when every file is inside it.
+Complete manifest, SDK, event, capability, and security documentation is in `docs/hosted-game-standard-v1.md`.
 
-## Supported game files
+Packages without `game.json` remain supported in legacy compatibility mode.
 
-Hosted Games accepts static browser assets including:
+## Supported package files
 
-- HTML, CSS, JavaScript, JSON, source maps, text, XML, and CSV;
-- JPG, PNG, GIF, WebP, SVG, ICO, and AVIF;
-- MP3, M4A, AAC, WAV, OGG, and FLAC;
-- MP4, WebM, MOV, and OGV;
-- WOFF/WOFF2, TTF, OTF, and EOT fonts;
-- WASM, WebGL data, Unity WebGL assets, binary bundles, Brotli, and gzip assets;
-- GLB, glTF, OBJ, MTL, FBX, DAE, and 3DS models;
-- VTT, SRT, LRC, and PDF files.
+Hosted Games accepts static browser assets including HTML, CSS, JavaScript, JSON, images, audio, video, fonts, WebGL, WASM, Unity WebGL data, compressed assets, 3D models, captions, and PDFs.
 
-Executable server files, dependency manifests, hidden files, symbolic links, parent-directory paths, duplicate paths, and unsafe compressed packages are rejected. Merchant-uploaded PHP is not executed inside Microgifter. This prevents a game package from reading Microgifter cookies, server credentials, other merchants’ data, or the host filesystem.
+Executable server files, dependency manifests, hidden files, symbolic links, parent-directory paths, duplicate paths, and unsafe compressed packages are rejected. Merchant-uploaded PHP is not executed inside Microgifter.
 
-Game-specific server features are implemented as reviewed Microgifter endpoints that connect to that game’s isolated database. The standard bridge already provides player state, scores, leaderboards, event tracking, runs, and reward issuance.
-
-## Browser isolation
-
-The uploaded game runs inside a sandboxed iframe with an opaque origin. The game cannot directly access:
-
-- Microgifter session cookies;
-- CSRF tokens;
-- API credentials or webhook secrets;
-- the game database username or password;
-- merchant/admin pages;
-- another hosted game’s private files or database.
-
-The parent Microgifter shell exposes only the approved `window.MicrogifterGame` bridge.
-
-## JavaScript bridge
-
-Wait for the bridge before starting gameplay:
+## Standard SDK example
 
 ```js
 const session = await MicrogifterGame.ready();
@@ -86,140 +104,41 @@ if (!session.player.signed_in) {
 if (!session.player.connected) {
   await MicrogifterGame.connectPlayer();
 }
-```
 
-### Start a run
+await MicrogifterGame.startRun({ mode: "classic" });
+await MicrogifterGame.updateScore(10, { level: 1 });
+await MicrogifterGame.qualify({ target: 10 });
 
-```js
-const response = await MicrogifterGame.startRun({
-  mode: "classic",
-  clientVersion: "1.0.0"
-});
-
-const run = response.run;
-```
-
-Keep `run.run_id` and `run.run_token` in memory for the current play session. Do not put them in a public leaderboard or analytics payload.
-
-### Complete without a reward
-
-```js
-await MicrogifterGame.completeRun({
-  runId: run.run_id,
-  runToken: run.run_token,
-  qualified: false,
-  score: 420,
-  result: {
-    reason: "target_not_reached",
-    level: 3
-  }
+const result = await MicrogifterGame.complete({
+  score: 10,
+  result: { level: 1 }
 });
 ```
 
-### Complete and request the configured reward
+The older explicit `MicrogifterGame.completeRun({runId, runToken, ...})` API remains supported for existing uploaded games and custom integrations.
 
-```js
-const result = await MicrogifterGame.completeRun({
-  runId: run.run_id,
-  runToken: run.run_token,
-  qualified: true,
-  score: 1250,
-  result: {
-    level: 8,
-    elapsedSeconds: 94
-  }
-});
+## Browser isolation
 
-console.log(result.run.reward_id, result.run.status);
-```
+The uploaded game runs inside a sandboxed iframe with an opaque origin. The game cannot directly access:
 
-Microgifter snapshots the selected program, campaign, and PPPM reward when the run begins. A merchant configuration change cannot alter an in-progress player’s reward.
+- Microgifter cookies or CSRF tokens;
+- API credentials or webhook secrets;
+- game database credentials;
+- merchant or administrator pages;
+- another game’s files or database.
 
-Reward issuance is protected by the player’s Microgifter session, CSRF validation, game ownership, one-time run token, run expiration, API scopes, Distribution Program capacity, per-recipient limits, idempotency, and signed webhook confirmation. High-value games should add a reviewed game-specific server validation endpoint rather than trusting client-only qualification logic.
+Standard v1 generates iframe permissions from declared capabilities and blocks arbitrary network requests unless an HTTPS origin is declared in `network.connect`.
 
-### Check reward status
+## Publishing flow
 
-```js
-const status = await MicrogifterGame.getRun(run.run_id);
-console.log(status.run.status);
-```
-
-### Save player state
-
-```js
-await MicrogifterGame.saveState("career", {
-  level: 4,
-  inventory: ["key", "map"],
-  checkpoint: "desert-gate"
-});
-
-const saved = await MicrogifterGame.loadState("career");
-console.log(saved.state);
-```
-
-State is stored in the isolated database assigned to this game.
-
-### Submit a score
-
-```js
-await MicrogifterGame.submitScore({
-  runId: run.run_id,
-  runToken: run.run_token,
-  score: 1250,
-  metadata: {
-    mode: "classic"
-  }
-});
-```
-
-### Load the leaderboard
-
-```js
-const result = await MicrogifterGame.getLeaderboard(20);
-console.table(result.leaderboard);
-```
-
-Public leaderboard entries use anonymous player labels generated by Microgifter.
-
-### Track a game event
-
-```js
-await MicrogifterGame.track("level.completed", {
-  level: 4,
-  elapsedSeconds: 31
-});
-```
-
-Event names must use lowercase letters, numbers, dots, colons, underscores, or hyphens.
-
-### Open the Inbox
-
-```js
-MicrogifterGame.openInbox();
-```
-
-## Merchant publishing flow
-
-1. Open **Merchant → Hosted Games**.
+1. Open Merchant or Admin Hosted Games.
 2. Create the game identity and URL slug.
-3. Upload the game ZIP.
-4. Select the Distribution Program, campaign, and active PPPM reward.
-5. Microgifter creates the dedicated live app, credential, scopes, and signed webhook.
-6. Microgifter Admin assigns and tests the game’s isolated database.
-7. Publish the game.
-
-## Main-admin database flow
-
-1. Open **Admin → Hosted Games**.
-2. Choose the merchant game.
-3. Enter a dedicated MySQL host, port, database name, username, and password.
-4. Save and test.
-5. Microgifter encrypts the username and password and initializes:
-   - `microgifter_game_player_state`
-   - `microgifter_game_scores`
-6. The merchant can publish when all readiness checks pass.
-
-The database password is never returned to the browser after saving and is never added to the game ZIP, JavaScript, `.htaccess`, or GitHub.
+3. Upload the game cover image or retain an external cover URL.
+4. Upload the game ZIP.
+5. Select the Distribution Program.
+6. Microgifter resolves the campaign and active reward inventory and provisions encrypted credentials.
+7. Microgifter Admin assigns and tests the isolated MySQL database.
+8. Turn **Game enabled** on after readiness is complete.
 
 ## Package limits
 
@@ -229,7 +148,7 @@ The database password is never returned to the browser after saving and is never
 - Maximum single extracted file: 150 MB
 - Maximum `game.json`: 64 KB
 - Maximum HTML entry: 20 MB
-- Maximum standard state payload: 64 KB
-- Maximum score metadata: 32 KB
+- Maximum state payload: 64 KB
+- Maximum event or score metadata: 32 KB
 
-Larger game packages or custom server runtimes should be reviewed as a separate deployment profile.
+Larger packages and custom server verification must use a separately reviewed deployment profile.

@@ -6,6 +6,7 @@
   if (!iframe) return;
 
   const channel = 'microgifter-hosted-game';
+  const bridgeToken = String(config.bridgeToken || '');
   const overlay = document.querySelector('[data-hg-shell-overlay]');
   const overlayTitle = document.querySelector('[data-hg-shell-title]');
   const overlayText = document.querySelector('[data-hg-shell-text]');
@@ -13,7 +14,7 @@
   const statusNode = document.querySelector('[data-hg-shell-status]');
   const fullscreenButton = document.querySelector('[data-hg-fullscreen]');
   const allowedActions = new Set([
-    'session', 'connect', 'start', 'complete', 'status',
+    'session', 'connect', 'start', 'complete', 'status', 'abandon', 'event',
     'state_load', 'state_save', 'score_submit', 'leaderboard', 'track'
   ]);
   let session = null;
@@ -43,7 +44,13 @@
 
   function sendToGame(message) {
     if (!iframe.contentWindow) return;
-    iframe.contentWindow.postMessage({ channel, direction: 'shell-to-game', ...message }, '*');
+    iframe.contentWindow.postMessage({
+      channel,
+      direction: 'shell-to-game',
+      bridgeToken,
+      sdkVersion: String(config.sdkVersion || '1.1.0'),
+      ...message
+    }, '*');
   }
 
   function sendSession() {
@@ -79,6 +86,7 @@
         action,
         slug: String(config.slug || ''),
         csrf_token: String(config.csrfToken || ''),
+        sdk_version: String(config.sdkVersion || '1.1.0'),
         ...payload
       })
     });
@@ -97,8 +105,9 @@
       await loadSession();
       setStatus('Player connected', 'success');
     } catch (error) {
-      showOverlay('Connection failed', error.message, 'Try again', connectPlayer);
-      setStatus(error.message, 'error');
+      const message = error instanceof Error ? error.message : 'Connection failed.';
+      showOverlay('Connection failed', message, 'Try again', connectPlayer);
+      setStatus(message, 'error');
     }
   }
 
@@ -125,6 +134,18 @@
     setStatus(`Ready · ${session.player.display_name || 'Player'}`, 'success');
   }
 
+  function validMessage(message) {
+    if (!message || typeof message !== 'object') return false;
+    if (message.channel !== channel || message.direction !== 'game-to-shell') return false;
+    if (String(message.bridgeToken || '') !== bridgeToken) return false;
+    if (String(message.slug || config.slug || '') !== String(config.slug || '')) return false;
+    try {
+      return JSON.stringify(message).length <= 131072;
+    } catch {
+      return false;
+    }
+  }
+
   async function handleRequest(message) {
     const requestId = String(message.requestId || '');
     const action = String(message.action || '');
@@ -141,6 +162,7 @@
         if (!session) await loadSession();
         if (!session?.player?.signed_in) throw new Error('Sign in to Microgifter before using this game feature.');
         if (!session?.player?.connected && action !== 'connect') await connectPlayer();
+        if (!session?.player?.connected && action !== 'connect') throw new Error('Connect this game to your Microgifter Inbox before continuing.');
         result = await runtime(action, payload);
         if (action === 'connect') await loadSession();
       }
@@ -155,10 +177,16 @@
   window.addEventListener('message', (event) => {
     if (event.source !== iframe.contentWindow) return;
     const message = event.data;
-    if (!message || message.channel !== channel || message.direction !== 'game-to-shell') return;
-    if (String(message.slug || config.slug || '') !== String(config.slug || '')) return;
+    if (!validMessage(message)) return;
     if (message.type === 'child-ready') {
       childReady = true;
+      sendToGame({
+        type: 'shell-ready',
+        payload: {
+          sdkVersion: String(config.sdkVersion || '1.1.0'),
+          manifest: config.manifest || null
+        }
+      });
       sendSession();
       return;
     }
@@ -178,14 +206,19 @@
       try {
         if (document.fullscreenElement) await document.exitFullscreen();
         else await document.documentElement.requestFullscreen();
-      } catch (error) {
+      } catch {
         setStatus('Fullscreen is unavailable in this browser.', 'warning');
       }
     });
   }
 
+  window.addEventListener('pagehide', () => {
+    sendToGame({ type: 'shell-closing' });
+  });
+
   loadSession().catch((error) => {
-    showOverlay('Game unavailable', error.message, 'Reload', () => window.location.reload());
-    setStatus(error.message, 'error');
+    const message = error instanceof Error ? error.message : 'Game unavailable.';
+    showOverlay('Game unavailable', message, 'Reload', () => window.location.reload());
+    setStatus(message, 'error');
   });
 })();
