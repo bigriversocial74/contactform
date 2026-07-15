@@ -9,6 +9,7 @@ on:
       - 'api/user-agent/chat.php'
       - 'includes/personal-gifting-agent.php'
       - 'includes/personal-agent/marketplace-result-cards.php'
+      - 'includes/personal-agent/marketplace-response.php'
       - 'assets/js/personal-agent-marketplace-cards.js'
       - 'assets/css/personal-agent-marketplace-cards.css'
       - 'scripts/validate_personal_agent_marketplace_result_cards.php'
@@ -47,6 +48,7 @@ jobs:
           php -l api/user-agent/chat.php
           php -l includes/personal-gifting-agent.php
           php -l includes/personal-agent/marketplace-result-cards.php
+          php -l includes/personal-agent/marketplace-response.php
           php -l scripts/validate_personal_agent_marketplace_result_cards.php
           php -l scripts/validate_personal_agent_account_marketplace_context.php
           php -l scripts/validate_personal_agent_runtime_nav.php
