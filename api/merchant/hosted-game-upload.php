@@ -11,7 +11,7 @@ mg_require_csrf_for_write($_POST);
 $pdo = mg_db();
 $workspace = mg_merchant_ensure_workspace($pdo, $user);
 $merchantUserId = (int)$workspace['merchant_user_id'];
-if (!mg_hosted_game_schema_ready($pdo)) mg_fail('Hosted Games setup is incomplete. Import database/hosted_games_management_v1.sql.', 503);
+if (!mg_hosted_game_release_schema_ready($pdo)) mg_fail('Hosted Games Release and QA setup is incomplete. Import database/hosted_games_release_qa_foundation_v1.sql.', 503);
 if (function_exists('mg_rate_limit')) mg_rate_limit('merchant.hosted_game.upload', 'user:' . $merchantUserId, 8, 600);
 
 $gamePublicId = trim((string)($_POST['game_id'] ?? ''));
@@ -21,9 +21,9 @@ try {
     $game = mg_hosted_game_for_merchant($pdo, $merchantUserId, $gamePublicId, false);
     if (!isset($_FILES['game_zip']) || !is_array($_FILES['game_zip'])) throw new MgHostedGameException('Select a game ZIP to upload.');
     $standardManifest = mg_hosted_game_standard_preflight_upload($_FILES['game_zip'], $game);
-    $result = mg_hosted_game_process_upload($pdo, $game, $merchantUserId, 'merchant.hosted_game.release_uploaded');
+    $result = mg_hosted_game_process_upload($pdo, $game, $merchantUserId, 'merchant.hosted_game.release_uploaded', (string)($_POST['release_notes'] ?? ''));
     $result = mg_hosted_game_standard_finalize_release($pdo, $game, $result, $standardManifest, $merchantUserId);
-    mg_ok($result, 'Game ZIP uploaded, standardized, and activated.', 201);
+    mg_ok($result, 'Game ZIP uploaded and validated as a draft release. Test and activate it from Release history.', 201);
 } catch (InvalidArgumentException|MgHostedGameException $error) {
     mg_fail($error->getMessage(), 422);
 } catch (Throwable $error) {
