@@ -11,7 +11,6 @@ on:
       - 'includes/ai/merchant-agent-chat.php'
       - 'database/stage_19d_customer_haiku_merchant_sonnet_defaults.sql'
       - 'config/migrations.php'
-      - 'config/migrations-base.php'
       - 'scripts/validate_agent_chat_model_separation.php'
       - '.github/workflows/agent-chat-model-separation-validation.yml'
   workflow_dispatch:
@@ -43,7 +42,6 @@ jobs:
           php -l includes/ai/merchant-agent-planner.php
           php -l includes/ai/merchant-agent-chat.php
           php -l config/migrations.php
-          php -l config/migrations-base.php
           php -l scripts/validate_agent_chat_model_separation.php
       - name: Customer and merchant model separation contract
         run: php scripts/validate_agent_chat_model_separation.php
