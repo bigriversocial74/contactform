@@ -5,7 +5,7 @@ function mg_personal_workflows_bundles(PDO $pdo, int $userId): array
 {
     mg_personal_workflows_require_schema($pdo);
     $stmt = $pdo->prepare("SELECT b.*,p.public_id plan_public_id,p.title plan_title,l.public_id list_public_id,l.name list_name,
-        c.public_id contact_public_id,c.display_name contact_name,u.public_id linked_public_id,COALESCE(pp.display_name,u.display_name,u.full_name) linked_name
+        c.public_id contact_public_id,c.display_name contact_name,pp.public_id linked_public_id,COALESCE(pp.display_name,u.display_name,u.full_name) linked_name
         FROM user_gift_bundles b
         LEFT JOIN user_gifting_plans p ON p.id=b.plan_id AND p.owner_user_id=b.owner_user_id
         LEFT JOIN user_contact_lists l ON l.id=b.list_id AND l.owner_user_id=b.owner_user_id
