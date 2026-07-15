@@ -10,6 +10,7 @@ $giftCenterDemoEnabled=mg_has_role('super_admin');
 <link rel="stylesheet" href="/assets/css/gift-action-center-search.css">
 <link rel="stylesheet" href="/assets/css/gift-action-center-user-search-fix.css?v=1.0.0">
 <link rel="stylesheet" href="/assets/css/gift-action-center-feed-v3.css?v=3.2.0">
+<link rel="stylesheet" href="/assets/css/gift-action-center-pagination.css?v=1.0.0">
 <section class="mg-app-shell mg-gift-center-page" data-gift-center data-feed-version="3" data-initial-folder="<?= mg_e($giftCenterFolder) ?>" data-demo-enabled="<?= $giftCenterDemoEnabled?'true':'false' ?>">
   <?php require __DIR__ . '/gift-center-sidebar.php'; ?>
 
@@ -33,6 +34,10 @@ $giftCenterDemoEnabled=mg_has_role('super_admin');
       <?php endif; ?>
       <div class="mg-gift-feed-column">
         <div class="mg-gift-list" data-gift-list></div>
+        <div class="mg-gift-feed-pagination" data-gift-feed-pagination aria-live="polite" hidden>
+          <button class="mg-gift-load-more" type="button" data-gift-load-more hidden>Load more gifts</button>
+          <p class="mg-gift-feed-end" data-gift-feed-end hidden>No more gifts to show.</p>
+        </div>
       </div>
     </section>
   </div>
@@ -60,5 +65,6 @@ $giftCenterDemoEnabled=mg_has_role('super_admin');
 <script src="/assets/js/gift-action-center-modal-portal.js?v=1.1.0" defer></script>
 <script src="/assets/js/gift-envelope-presentation.js" defer></script>
 <script src="/assets/js/gift-action-center-feed-v3.js?v=3.1.0" defer></script>
+<script src="/assets/js/gift-action-center-pagination.js?v=1.0.0" defer></script>
 <script src="/assets/js/gift-action-center-user-search.js" defer></script>
 <script src="/assets/js/gift-action-center-user-search-fix.js?v=1.0.0" defer></script>
