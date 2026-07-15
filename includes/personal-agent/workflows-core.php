@@ -77,7 +77,7 @@ function mg_personal_workflows_user_label(PDO $pdo, int $userId): string
 
 function mg_personal_workflows_find_user_by_public_id(PDO $pdo, string $publicId): int
 {
-    $stmt = $pdo->prepare("SELECT id FROM users WHERE public_id=? AND status='active' LIMIT 1");
+    $stmt = $pdo->prepare("SELECT u.id FROM users u INNER JOIN public_profiles pp ON pp.user_id=u.id WHERE pp.public_id=? AND u.status='active' LIMIT 1");
     $stmt->execute([mg_personal_agent_text($publicId,80)]);
     $id = (int)($stmt->fetchColumn() ?: 0);
     if ($id < 1) throw new RuntimeException('User not found.');
