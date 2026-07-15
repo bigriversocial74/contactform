@@ -11,6 +11,6 @@ mg_user_agent_api_run(static function()use($user,$input):array{
     if($action==='create') return ['request'=>mg_personal_workflows_create_data_request(mg_db(),(int)$user['id'],$input)];
     if($action==='approve' || $action==='decline') return ['request'=>mg_personal_workflows_respond_data_request(mg_db(),(int)$user['id'],$id,$action,$input)];
     if($action==='cancel') return ['request'=>mg_personal_workflows_cancel_data_request(mg_db(),(int)$user['id'],$id)];
-    if($action==='revoke') return ['request'=>mg_personal_workflows_revoke_data_request(mg_db(),(int)$user['id'],$id)];
+    if($action==='revoke') return ['request'=>mg_personal_workflows_revoke_data_request_safe(mg_db(),(int)$user['id'],$id)];
     throw new InvalidArgumentException('Invalid recipient-data request action.');
 });
