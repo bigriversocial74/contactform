@@ -1,0 +1,82 @@
+name: Hosted Games Analytics and Diagnostics v1
+
+on:
+  pull_request:
+    paths:
+      - 'database/hosted_games_analytics_diagnostics_v1.sql'
+      - 'config/migrations.php'
+      - 'includes/hosted-game-observability.php'
+      - 'includes/hosted-game-analytics-report.php'
+      - 'includes/hosted-game-diagnostics-export.php'
+      - 'includes/hosted-game-analytics-view.php'
+      - 'api/hosted-games/telemetry.php'
+      - 'api/hosted-games/webhook.php'
+      - 'api/merchant/hosted-game-analytics.php'
+      - 'api/admin/hosted-game-analytics.php'
+      - 'api/merchant/hosted-game-diagnostics-export.php'
+      - 'api/admin/hosted-game-diagnostics-export.php'
+      - 'merchant-game-analytics.php'
+      - 'admin/hosted-game-analytics.php'
+      - 'merchant-games.php'
+      - 'admin/hosted-games.php'
+      - 'hosted-game.php'
+      - 'assets/css/hosted-game-analytics.css'
+      - 'assets/js/hosted-game-analytics.js'
+      - 'assets/js/hosted-games-analytics-links.js'
+      - 'assets/js/hosted-game-child-bridge.js'
+      - 'assets/js/hosted-game-shell.js'
+      - 'docs/hosted-game-analytics-diagnostics-v1.md'
+      - 'scripts/validate_hosted_games_analytics_diagnostics_v1.php'
+      - '.github/workflows/hosted-games-analytics-diagnostics-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }} analytics diagnostics
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          extensions: mbstring, pdo, pdo_mysql, openssl, zip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: PHP syntax
+        run: |
+          php -l includes/hosted-game-observability.php
+          php -l includes/hosted-game-analytics-report.php
+          php -l includes/hosted-game-diagnostics-export.php
+          php -l includes/hosted-game-analytics-view.php
+          php -l api/hosted-games/telemetry.php
+          php -l api/hosted-games/webhook.php
+          php -l api/merchant/hosted-game-analytics.php
+          php -l api/admin/hosted-game-analytics.php
+          php -l api/merchant/hosted-game-diagnostics-export.php
+          php -l api/admin/hosted-game-diagnostics-export.php
+          php -l merchant-game-analytics.php
+          php -l admin/hosted-game-analytics.php
+          php -l merchant-games.php
+          php -l admin/hosted-games.php
+          php -l hosted-game.php
+          php -l scripts/validate_hosted_games_analytics_diagnostics_v1.php
+          php -l config/migrations.php
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/hosted-game-analytics.js
+          node --check assets/js/hosted-games-analytics-links.js
+          node --check assets/js/hosted-game-child-bridge.js
+          node --check assets/js/hosted-game-shell.js
+      - name: Analytics diagnostics contract
+        run: php scripts/validate_hosted_games_analytics_diagnostics_v1.php
+      - name: Canonical migration manifest
+        run: php scripts/validate_migration_manifest.php

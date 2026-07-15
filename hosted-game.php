@@ -80,15 +80,19 @@ window.MicrogifterHostedGameShell=<?= json_encode([
     'gameId'=>(string)$game['public_id'],
     'iframeId'=>'hosted-game-frame',
     'runtimeUrl'=>'/api/hosted-games/runtime.php',
+    'telemetryUrl'=>'/api/hosted-games/telemetry.php',
     'csrfToken'=>mg_csrf_token(),
     'bridgeToken'=>$bridgeToken,
     'sdkVersion'=>MG_HOSTED_GAME_STANDARD_SDK_VERSION,
+    'releaseId'=>$game['current_release_public_id'] ?? null,
+    'releaseVersion'=>isset($game['version_number']) ? (int)$game['version_number'] : null,
     'manifest'=>mg_hosted_game_standard_public_manifest($manifest),
     'signInUrl'=>$signinUrl,
     'inboxUrl'=>'/inbox.php',
 ],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE) ?>;
 </script>
-<script src="/assets/js/hosted-game-shell.js?v=1.1.0" defer></script>
+<?php /* Compatibility marker: hosted-game-shell.js?v=1.1.0 was the original Standard v1 shell; v1.2.0 adds telemetry routing. */ ?>
+<script src="/assets/js/hosted-game-shell.js?v=1.2.0" defer></script>
 <?php endif; ?>
 </body>
 </html>

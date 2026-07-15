@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/bootstrap.php';
-require_once dirname(__DIR__, 2) . '/includes/hosted-games.php';
+require_once dirname(__DIR__, 2) . '/includes/hosted-game-observability.php';
 
 function mg_hosted_game_webhook_header(string $name): string
 {
@@ -43,8 +43,15 @@ if ($eventPublicId === '' || $eventType === '' || preg_match('/^[a-f0-9-]{36}$/i
 
 $pdo->beginTransaction();
 try {
+    $release = mg_hosted_game_observability_release($pdo,$game);
+    $eventJson = [
+        'delivery_id'=>$deliveryId ?: null,
+        'payload_checksum'=>hash('sha256',$body),
+        'release'=>['public_id'=>$release['public_id'],'version'=>$release['version']],
+        'data'=>$data,
+    ];
     $insert = $pdo->prepare('INSERT IGNORE INTO hosted_game_events (public_id,game_id,run_id,player_user_id,event_type,event_json,created_at) VALUES (?,?,NULL,NULL,?,?,NOW())');
-    $insert->execute([$eventPublicId,(int)$game['id'],mb_substr($eventType,0,100),mg_hosted_game_json_encode(['delivery_id'=>$deliveryId ?: null,'payload_checksum'=>hash('sha256',$body),'data'=>$data],65536)]);
+    $insert->execute([$eventPublicId,(int)$game['id'],mb_substr($eventType,0,100),mg_hosted_game_json_encode($eventJson,65536)]);
     if ($insert->rowCount() === 0) {
         $pdo->commit();
         http_response_code(204);
@@ -80,11 +87,29 @@ try {
             $pdo->prepare($sql)->execute([$status,$eventType,$error !== null ? mb_substr($error,0,500) : null,(int)$run['id']]);
             $pdo->prepare('UPDATE hosted_game_events SET run_id=?,player_user_id=? WHERE public_id=?')
                 ->execute([(int)$run['id'],(int)$run['player_user_id'],$eventPublicId]);
+            if ($status === 'failed') {
+                mg_hosted_game_observability_diagnostic($pdo,$game,(int)$run['id'],(int)$run['player_user_id'],[
+                    'category'=>'reward_failed',
+                    'severity'=>'error',
+                    'title'=>'Reward delivery failure',
+                    'message'=>$error ?: 'The hosted game reward could not be delivered.',
+                    'context'=>['event_type'=>$eventType,'reward_id'=>$rewardId,'delivery_id'=>$deliveryId ?: null],
+                ]);
+            }
         }
     }
     $pdo->commit();
 } catch (Throwable $error) {
     if ($pdo->inTransaction()) $pdo->rollBack();
+    try {
+        mg_hosted_game_observability_diagnostic($pdo,$game,null,null,[
+            'category'=>'webhook_failed',
+            'severity'=>'error',
+            'title'=>'Hosted game webhook processing failed',
+            'message'=>mb_substr($error->getMessage(),0,500),
+            'context'=>['event_type'=>$eventType,'delivery_id'=>$deliveryId ?: null],
+        ]);
+    } catch (Throwable) {}
     mg_security_log('error','hosted.game.webhook_failed','Hosted game webhook processing failed.',['game_id'=>$gamePublicId,'event_type'=>$eventType,'message'=>$error->getMessage()],null);
     mg_fail('Unable to process hosted game webhook.',500);
 }
