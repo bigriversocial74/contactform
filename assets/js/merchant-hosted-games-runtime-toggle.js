@@ -55,8 +55,10 @@
       const actions = card.querySelector('.hgm-card-actions');
       const game = gameButton ? games.get(String(gameButton.dataset.gameId || '')) : null;
       if (!actions || !game) return;
-      actions.querySelector('[data-hgm-runtime-control]')?.remove();
       actions.querySelectorAll('[data-hgm-action="publish"],[data-hgm-action="pause"]').forEach((node) => { node.hidden = true; });
+      const existing = actions.querySelector('[data-hgm-runtime-control]');
+      if (existing?.dataset.hgmRuntimeControl === String(game.id || '')) return;
+      existing?.remove();
       actions.insertAdjacentHTML('afterbegin', switchMarkup(game, true));
     });
   }
@@ -70,8 +72,11 @@
 
     const readiness = root.querySelector('[data-hgm-modal-readiness]');
     if (readiness) {
-      readiness.parentElement?.querySelector('[data-hgm-runtime-modal]')?.remove();
-      readiness.insertAdjacentHTML('afterend', `<div data-hgm-runtime-modal>${managedMarkup(game)}${switchMarkup(game)}</div>`);
+      const existing = readiness.parentElement?.querySelector('[data-hgm-runtime-modal]');
+      if (existing?.dataset.hgmRuntimeModal !== gameId) {
+        existing?.remove();
+        readiness.insertAdjacentHTML('afterend', `<div data-hgm-runtime-modal="${escapeHtml(gameId)}">${managedMarkup(game)}${switchMarkup(game)}</div>`);
+      }
     }
     const publish = root.querySelector('[data-hgm-publish]');
     if (publish) publish.hidden = true;
