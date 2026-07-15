@@ -30,7 +30,11 @@ $agentWorkspace = $read('includes/agent-workspace.php');
 $agentSidebar = $read('includes/personal-agent-sidebar.php');
 $agentDashboard = $read('includes/personal-agent/workspace-dashboard.php');
 $chatCss = $read('assets/css/personal-agent-chat-canvas.css');
+$inlineCss = $read('assets/css/personal-agent-inline-intro.css');
 $chatJs = $read('assets/js/personal-agent-chat-canvas.js');
+$listPage = $read('lists.php');
+$listCreateJs = $read('assets/js/user-lists-create.js');
+$createListExtension = $read('assets/js/create-list-extension.js');
 $listCss = $read('assets/css/user-lists.css');
 
 $checks = [
@@ -59,12 +63,29 @@ $checks = [
         && str_contains($agentDashboard, 'mg-personal-agent-message is-assistant is-intro')
         && str_contains($chatJs, 'Good afternoon')
         && str_contains($chatJs, 'Good evening'),
+    'intro response is inline transparent and full width' => str_contains($agentPage, 'personal-agent-inline-intro.css')
+        && str_contains($inlineCss, '.mg-personal-agent-message.is-intro')
+        && str_contains($inlineCss, 'width:100%!important')
+        && str_contains($inlineCss, 'background:transparent!important')
+        && str_contains($inlineCss, 'border:0!important')
+        && str_contains($inlineCss, 'box-shadow:none!important'),
+    'new conversation status renders in chat stream' => str_contains($chatJs, 'is-thread-start')
+        && str_contains($chatJs, 'New personal gifting conversation started.')
+        && str_contains($chatJs, 'app.setStatus(\'\')')
+        && str_contains($chatJs, 'stopImmediatePropagation'),
     'composer is detached with wide input and compact send' => str_contains($agentWorkspace, 'mg-personal-agent-composer-row')
         && str_contains($chatCss, 'grid-template-columns:minmax(0,1fr) 90px')
         && str_contains($chatCss, 'width:90px!important')
         && str_contains($chatCss, 'bottom:16px!important'),
     'chat canvas assets loaded' => str_contains($agentPage, 'personal-agent-chat-canvas.css')
-        && str_contains($agentPage, 'personal-agent-chat-canvas.js'),
+        && str_contains($agentPage, 'personal-agent-chat-canvas.js')
+        && str_contains($agentPage, 'personal-agent-inline-intro.css'),
+    'My Lists create buttons are wired' => substr_count($listPage, 'data-user-list-open-create') >= 2
+        && str_contains($listPage, 'user-lists-create.js')
+        && str_contains($listCreateJs, '[data-user-list-open-create]')
+        && str_contains($listCreateJs, '[data-create-center-view]')
+        && str_contains($listCreateJs, 'mg-create-menu-open')
+        && str_contains($createListExtension, '/api/user-lists/create.php'),
     'My Lists uses full app content width' => str_contains($listCss, '.mg-user-lists-main')
         && str_contains($listCss, 'max-width:1600px')
         && !str_contains($listCss, 'grid-template-columns:var(--mg-app-sidebar')
