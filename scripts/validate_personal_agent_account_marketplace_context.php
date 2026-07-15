@@ -49,9 +49,9 @@ try {
     $expect(
         str_contains($knowledge, 'WHERE c.owner_user_id=?')
         && str_contains($knowledge, 'WHERE o.buyer_user_id=?')
-        && str_contains($knowledge, "mg_account_items($pdo, $userId")
-        && str_contains($knowledge, "mg_account_gifts($pdo, $userId")
-        && str_contains($knowledge, "mg_account_claims($pdo, $userId"),
+        && str_contains($knowledge, 'mg_account_items($pdo, $userId')
+        && str_contains($knowledge, 'mg_account_gifts($pdo, $userId')
+        && str_contains($knowledge, 'mg_account_claims($pdo, $userId'),
         'Account knowledge is constrained to the signed-in user'
     );
     $expect(
@@ -100,7 +100,7 @@ try {
     );
     $expect(
         str_contains($knowledge, 'mg_personal_agent_store_message')
-        && str_contains($knowledge, "'assistant_message' => $assistant")
+        && str_contains($knowledge, "'assistant_message' => \$assistant")
         && str_contains($knowledge, 'mg_personal_agent_fallback_v2'),
         'Every successful chat request stores and returns an assistant response'
     );
