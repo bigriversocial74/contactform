@@ -2,139 +2,32 @@
 declare(strict_types=1);
 
 $user = mg_current_user();
-$active = (string) ($agent_personal_view ?? 'home');
-$appSidebarVariant = 'utility';
-$appSidebarLabel = 'Personal Agent';
-$appSidebarActive = $active;
-$appSidebarCompact = true;
-$appSidebarBeforeNav = '';
-$appSidebarAfterNav = '';
-$appSidebarFooter = '';
+?>
+<aside class="mg-app-sidebar mg-universal-sidebar mg-utility-sidebar is-text-sidebar mg-personal-chat-sidebar" data-app-sidebar data-sidebar-variant="utility" data-personal-agent-chat-sidebar>
+  <div class="mg-app-sidebar-brand mg-universal-sidebar-brand">
+    <a class="mg-brand mg-sidebar-logo" href="/index.php" aria-label="Microgifter home"><img src="/images/logo_main_drk.png" alt="Microgifter"><span class="mg-sidebar-logo-text">Microgifter</span></a>
+    <span class="mg-universal-sidebar-label">Agent</span>
+  </div>
 
-$appSidebarNav = [
-    'home' => [
-        'section' => 'Personal Gifting Agent',
-        'label' => 'Home',
-        'detail' => 'Upcoming brief and suggestions',
-        'href' => '/agent.php',
-        'visible' => true,
-        'active' => $active === 'home',
-    ],
-    'contacts' => [
-        'label' => 'Contacts',
-        'detail' => 'Relationship and gifting context',
-        'href' => '/agent.php?view=contacts',
-        'visible' => true,
-        'active' => $active === 'contacts',
-    ],
-    'birthdays' => [
-        'label' => 'Birthdays',
-        'detail' => 'Upcoming birthday planning',
-        'href' => '/agent.php?view=birthdays',
-        'visible' => true,
-        'active' => $active === 'birthdays',
-    ],
-    'calendar' => [
-        'label' => 'Gift Calendar',
-        'detail' => 'Important dates and occasions',
-        'href' => '/agent.php?view=calendar',
-        'visible' => true,
-        'active' => $active === 'calendar',
-    ],
-    'plans' => [
-        'section' => 'Planning',
-        'label' => 'Draft Plans',
-        'detail' => 'Approval-first gifting plans',
-        'href' => '/agent.php?view=plans',
-        'visible' => true,
-        'active' => $active === 'plans',
-    ],
-    'scheduled' => [
-        'label' => 'Scheduled Gifts',
-        'detail' => 'Prepare-only review checkpoints',
-        'href' => '/agent.php?view=scheduled',
-        'visible' => true,
-        'active' => $active === 'scheduled',
-    ],
-    'recurring' => [
-        'label' => 'Recurring Programs',
-        'detail' => 'Generate reviewable draft plans',
-        'href' => '/agent.php?view=recurring',
-        'visible' => true,
-        'active' => $active === 'recurring',
-    ],
-    'reminders' => [
-        'label' => 'Reminders',
-        'detail' => 'Due dates and plan follow-ups',
-        'href' => '/agent.php?view=reminders',
-        'visible' => true,
-        'active' => $active === 'reminders',
-    ],
-    'group' => [
-        'label' => 'Group Gifting',
-        'detail' => 'Pledge-only shared gifting',
-        'href' => '/agent.php?view=group',
-        'visible' => true,
-        'active' => $active === 'group',
-    ],
-    'requests' => [
-        'label' => 'Recipient Requests',
-        'detail' => 'Preferences and address consent',
-        'href' => '/agent.php?view=requests',
-        'visible' => true,
-        'active' => $active === 'requests',
-    ],
-    'bundles' => [
-        'label' => 'Gift Bundles',
-        'detail' => 'Draft product and experience sets',
-        'href' => '/agent.php?view=bundles',
-        'visible' => true,
-        'active' => $active === 'bundles',
-    ],
-    'claims' => [
-        'label' => 'Claim & Redemption',
-        'detail' => 'In-app lifecycle reminders',
-        'href' => '/agent.php?view=claims',
-        'visible' => true,
-        'active' => $active === 'claims',
-    ],
-    'memory' => [
-        'section' => 'Agent',
-        'label' => 'Agent Memory',
-        'detail' => 'Reusable preferences and rules',
-        'href' => '/agent.php?view=memory',
-        'visible' => true,
-        'active' => $active === 'memory',
-    ],
-    'settings' => [
-        'label' => 'Settings',
-        'detail' => 'Model, budget, and suggestion defaults',
-        'href' => '/agent.php?view=settings',
-        'visible' => true,
-        'active' => $active === 'settings',
-    ],
-    'inbox' => [
-        'section' => 'Account',
-        'label' => 'Inbox',
-        'detail' => 'Received Microgifts',
-        'href' => '/inbox.php',
-        'visible' => true,
-        'active' => false,
-    ],
-    'sent' => [
-        'label' => 'Sent',
-        'detail' => 'Outbound gifts',
-        'href' => '/sent.php',
-        'visible' => true,
-        'active' => false,
-    ],
-    'claimed' => [
-        'label' => 'Claimed',
-        'detail' => 'Claimed gifts and rewards',
-        'href' => '/claimed.php',
-        'visible' => true,
-        'active' => false,
-    ],
-];
+  <?php if ($user): ?>
+    <div class="mg-personal-chat-sidebar-head">
+      <div><span>Personal Agent</span><strong>Your chats</strong></div>
+      <button type="button" data-personal-agent-new-chat aria-label="Start a new chat" title="New chat">+</button>
+    </div>
 
-require __DIR__ . '/app-sidebar.php';
+    <button class="mg-personal-chat-new" type="button" data-personal-agent-new-chat>
+      <span aria-hidden="true">+</span><strong>New chat</strong>
+    </button>
+
+    <div class="mg-personal-chat-history" data-personal-agent-thread-groups aria-live="polite">
+      <div class="mg-personal-chat-loading">Loading chats…</div>
+    </div>
+
+    <footer class="mg-personal-chat-sidebar-footer">
+      <span>Private to your account</span>
+      <small>Chat titles and dates are generated from your conversation history.</small>
+    </footer>
+  <?php else: ?>
+    <div class="mg-personal-chat-empty-sidebar"><strong>Personal Agent</strong><p>Sign in to create and manage private chats.</p></div>
+  <?php endif; ?>
+</aside>
