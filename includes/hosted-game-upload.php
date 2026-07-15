@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/hosted-games.php';
+require_once __DIR__ . '/hosted-game-releases.php';
 
 if (!defined('MG_HOSTED_GAME_MAX_ZIP_BYTES')) define('MG_HOSTED_GAME_MAX_ZIP_BYTES', 104857600);
 if (!defined('MG_HOSTED_GAME_MAX_FILES')) define('MG_HOSTED_GAME_MAX_FILES', 5000);
@@ -106,9 +107,9 @@ function mg_hosted_game_strip_wrapper(string $path, string $wrapper): string
     return str_starts_with($path, $wrapper) ? substr($path, strlen($wrapper)) : $path;
 }
 
-function mg_hosted_game_process_upload(PDO $pdo, array $game, int $actorUserId, string $auditEvent): array
+function mg_hosted_game_process_upload(PDO $pdo, array $game, int $actorUserId, string $auditEvent, string $releaseNotes = ''): array
 {
-    if (!mg_hosted_game_schema_ready($pdo)) throw new MgHostedGameException('Hosted Games setup is incomplete. Import database/hosted_games_management_v1.sql.');
+    if (!mg_hosted_game_release_schema_ready($pdo)) throw new MgHostedGameException('Hosted Games Release and QA setup is incomplete. Import database/hosted_games_release_qa_foundation_v1.sql.');
     if (!class_exists('ZipArchive')) throw new MgHostedGameException('The PHP Zip extension is required before game packages can be uploaded.');
 
     $gamePublicId = trim((string)($game['public_id'] ?? ''));
@@ -116,6 +117,8 @@ function mg_hosted_game_process_upload(PDO $pdo, array $game, int $actorUserId, 
     $merchantUserId = (int)($game['merchant_user_id'] ?? 0);
     if ($gamePublicId === '' || $gameId < 1 || $merchantUserId < 1) throw new MgHostedGameException('Hosted game ownership is invalid.');
     if ((string)($game['status'] ?? '') === 'archived') throw new MgHostedGameException('Archived games cannot receive new releases.');
+    $releaseNotes = trim($releaseNotes);
+    if (mb_strlen($releaseNotes) > 10000) throw new MgHostedGameException('Release notes may not exceed 10,000 characters.');
 
     if (!isset($_FILES['game_zip']) || !is_array($_FILES['game_zip'])) throw new MgHostedGameException('Select a game ZIP to upload.');
     $file = $_FILES['game_zip'];
@@ -140,6 +143,7 @@ function mg_hosted_game_process_upload(PDO $pdo, array $game, int $actorUserId, 
     if ($open !== true) throw new MgHostedGameException('The game ZIP could not be opened.');
 
     $destination = '';
+    $packagePath = '';
     $committed = false;
     try {
         $entries = [];
@@ -222,15 +226,22 @@ function mg_hosted_game_process_upload(PDO $pdo, array $game, int $actorUserId, 
         if ($entryPath === false || $destinationReal === false || !str_starts_with($entryPath, $destinationReal . DIRECTORY_SEPARATOR)) throw new MgHostedGameException('The game entry file could not be verified.');
 
         $storageKey = mg_hosted_game_storage_key($merchantUserId, $gamePublicId, $version);
+        $packageStorageKey = 'hosted-games/' . $merchantUserId . '/' . $gamePublicId . '/packages/' . $version . '/' . $releasePublicId . '.zip';
+        $packageDirectory = mg_hosted_game_storage_root() . DIRECTORY_SEPARATOR . $merchantUserId . DIRECTORY_SEPARATOR . $gamePublicId . DIRECTORY_SEPARATOR . 'packages' . DIRECTORY_SEPARATOR . $version;
+        if (!is_dir($packageDirectory) && !mkdir($packageDirectory,0700,true) && !is_dir($packageDirectory)) throw new MgHostedGameException('Unable to prepare private package storage.');
+        $packagePath = $packageDirectory . DIRECTORY_SEPARATOR . $releasePublicId . '.zip';
+        if (!copy($tmpName,$packagePath)) throw new MgHostedGameException('Unable to preserve the original uploaded ZIP.');
+        @chmod($packagePath,0600);
+        if (hash_file('sha256',$packagePath)!==$checksum) throw new MgHostedGameException('The preserved game ZIP failed checksum validation.');
+
         $pdo->beginTransaction();
         $lockedGame = mg_hosted_game_by_public_id($pdo, $gamePublicId, true);
         if (!$lockedGame || (int)$lockedGame['merchant_user_id'] !== $merchantUserId) throw new MgHostedGameException('Hosted game ownership changed during upload.');
         if ((string)$lockedGame['status'] === 'archived') throw new MgHostedGameException('Archived games cannot receive new releases.');
-        $pdo->prepare("UPDATE hosted_game_releases SET status='previous',updated_at=NOW() WHERE game_id=? AND status='active'")->execute([$gameId]);
-        $pdo->prepare("INSERT INTO hosted_game_releases (public_id,game_id,version_number,original_filename,storage_key,package_checksum,manifest_json,file_count,extracted_bytes,status,uploaded_by_user_id,activated_at,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,'active',?,NOW(),NOW(),NOW())")
-            ->execute([$releasePublicId,$gameId,$version,mb_substr($originalName,0,255),$storageKey,$checksum,$manifest === [] ? null : mg_hosted_game_json_encode($manifest),count($normalizedEntries),$totalBytes,$actorUserId]);
-        $pdo->prepare('UPDATE hosted_games SET current_release_public_id=?,entry_file=?,updated_by_user_id=?,updated_at=NOW() WHERE id=?')
-            ->execute([$releasePublicId,$entryFile,$actorUserId,$gameId]);
+        $pdo->prepare("INSERT INTO hosted_game_releases
+            (public_id,game_id,version_number,original_filename,release_notes,storage_key,package_zip_storage_key,package_zip_bytes,package_checksum,entry_file,manifest_json,file_count,extracted_bytes,status,validation_status,health_status,uploaded_by_user_id,created_at,updated_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,'draft','pending','not_run',?,NOW(),NOW())")
+            ->execute([$releasePublicId,$gameId,$version,mb_substr($originalName,0,255),$releaseNotes!==''?$releaseNotes:null,$storageKey,$packageStorageKey,(int)$actualSize,$checksum,$entryFile,$manifest===[]?null:mg_hosted_game_json_encode($manifest),count($normalizedEntries),$totalBytes,$actorUserId]);
         $pdo->commit();
         $committed = true;
 
@@ -240,12 +251,14 @@ function mg_hosted_game_process_upload(PDO $pdo, array $game, int $actorUserId, 
                 'merchant_user_id'=>$merchantUserId,
                 'release_id'=>$releasePublicId,
                 'version'=>$version,
+                'status'=>'draft',
                 'file_count'=>count($normalizedEntries),
                 'extracted_bytes'=>$totalBytes,
+                'package_zip_bytes'=>(int)$actualSize,
                 'package_checksum'=>$checksum,
             ],$actorUserId);
         } catch (Throwable) {
-            // Audit logging must not invalidate an already committed and activated release.
+            // Audit logging must not invalidate a committed draft release.
         }
 
         return [
@@ -253,9 +266,11 @@ function mg_hosted_game_process_upload(PDO $pdo, array $game, int $actorUserId, 
             'release'=>[
                 'id'=>$releasePublicId,
                 'version'=>$version,
+                'status'=>'draft',
                 'entry_file'=>$entryFile,
                 'file_count'=>count($normalizedEntries),
                 'extracted_bytes'=>$totalBytes,
+                'package_zip_bytes'=>(int)$actualSize,
                 'package_checksum'=>$checksum,
                 'manifest'=>$manifest,
             ],
@@ -263,6 +278,7 @@ function mg_hosted_game_process_upload(PDO $pdo, array $game, int $actorUserId, 
     } catch (Throwable $error) {
         if ($pdo->inTransaction()) $pdo->rollBack();
         if (!$committed && $destination !== '') mg_hosted_game_remove_tree($destination);
+        if (!$committed && $packagePath !== '' && is_file($packagePath)) @unlink($packagePath);
         throw $error;
     } finally {
         $zip->close();

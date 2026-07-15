@@ -9,13 +9,14 @@ require_once dirname(__DIR__, 2) . '/includes/hosted-game-standard-v1.php';
 mg_require_method('POST');
 $user = mg_require_api_user();
 $actorId = (int)$user['id'];
-$canManage = mg_admin_permission_user_has($user, 'admin.hosted_games.manage')
+$canManage = mg_admin_permission_user_has($user, 'admin.hosted_games.releases.manage')
+    || mg_admin_permission_user_has($user, 'admin.hosted_games.manage')
     || mg_admin_permission_user_has($user, 'admin.settings.manage');
-if (!$canManage) mg_fail('Hosted Games management permission is required.', 403);
+if (!$canManage) mg_fail('Hosted Games release management permission is required.', 403);
 mg_require_csrf_for_write($_POST);
 
 $pdo = mg_db();
-if (!mg_hosted_game_schema_ready($pdo)) mg_fail('Hosted Games setup is incomplete. Import database/hosted_games_management_v1.sql.', 503);
+if (!mg_hosted_game_release_schema_ready($pdo)) mg_fail('Hosted Games Release and QA setup is incomplete. Import database/hosted_games_release_qa_foundation_v1.sql.', 503);
 if (function_exists('mg_rate_limit')) mg_rate_limit('admin.hosted_game.upload', 'user:' . $actorId, 12, 600);
 
 $gamePublicId = trim((string)($_POST['game_id'] ?? ''));
@@ -26,9 +27,9 @@ try {
     if (!$game) mg_fail('Hosted game not found.', 404);
     if (!isset($_FILES['game_zip']) || !is_array($_FILES['game_zip'])) throw new MgHostedGameException('Select a game ZIP to upload.');
     $standardManifest = mg_hosted_game_standard_preflight_upload($_FILES['game_zip'], $game);
-    $result = mg_hosted_game_process_upload($pdo, $game, $actorId, 'admin.hosted_game.release_uploaded');
+    $result = mg_hosted_game_process_upload($pdo, $game, $actorId, 'admin.hosted_game.release_uploaded', (string)($_POST['release_notes'] ?? ''));
     $result = mg_hosted_game_standard_finalize_release($pdo, $game, $result, $standardManifest, $actorId);
-    mg_ok($result, 'Game ZIP uploaded, standardized, and activated by Microgifter Admin.', 201);
+    mg_ok($result, 'Game ZIP uploaded and validated as a draft release. Test and activate it from Release history.', 201);
 } catch (InvalidArgumentException|MgHostedGameException $error) {
     mg_fail($error->getMessage(), 422);
 } catch (Throwable $error) {
