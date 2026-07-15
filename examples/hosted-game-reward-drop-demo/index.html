@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f4f7fb">
+  <title>Reward Drop SDK Demo</title>
+  <link rel="stylesheet" href="game.css">
+</head>
+<body>
+  <main class="rd-app" data-reward-drop>
+    <header class="rd-topbar">
+      <div class="rd-brand">
+        <span class="rd-brand-mark" aria-hidden="true">✦</span>
+        <div><strong>Reward Drop</strong><small>Hosted Game SDK Demo</small></div>
+      </div>
+      <div class="rd-runtime">
+        <span data-mode-badge>Connecting</span>
+        <small>SDK <b data-sdk-version>—</b></small>
+      </div>
+    </header>
+
+    <section class="rd-hero">
+      <div>
+        <span class="rd-eyebrow">Play → Qualify → Reward</span>
+        <h1>Catch the gifts.<br>Test the full reward flow.</h1>
+        <p>Collect eight gift drops before the timer expires. Preview mode simulates delivery and never consumes live reward inventory.</p>
+      </div>
+      <div class="rd-flow" aria-label="Game reward flow">
+        <span>Play</span><i>→</i><span>SDK</span><i>→</i><span>Reward</span>
+      </div>
+    </section>
+
+    <section class="rd-grid">
+      <article class="rd-game-card">
+        <div class="rd-scorebar">
+          <div><span>Score</span><strong data-score>0</strong></div>
+          <div><span>Target</span><strong data-target>8</strong></div>
+          <div><span>Time</span><strong data-time>20s</strong></div>
+        </div>
+        <div class="rd-arena" data-arena aria-label="Reward Drop play area">
+          <div class="rd-arena-grid" aria-hidden="true"></div>
+          <div class="rd-overlay" data-overlay>
+            <span class="rd-large-mark" aria-hidden="true">✦</span>
+            <h2 data-overlay-title>Connecting to Microgifter</h2>
+            <p data-overlay-copy>The Hosted Game SDK is preparing your protected player session.</p>
+            <button class="rd-primary" type="button" data-start disabled>Preparing…</button>
+          </div>
+        </div>
+        <div class="rd-status" data-status aria-live="polite">Loading game runtime…</div>
+        <div class="rd-actions" data-result-actions hidden>
+          <button class="rd-primary" type="button" data-inbox>Open Inbox</button>
+          <button class="rd-secondary" type="button" data-replay>Play again</button>
+        </div>
+      </article>
+
+      <aside class="rd-sidebar">
+        <section class="rd-panel">
+          <span class="rd-eyebrow">Runtime context</span>
+          <h2>Connected by the SDK</h2>
+          <dl class="rd-context">
+            <div><dt>Player</dt><dd data-player>Loading…</dd></div>
+            <div><dt>Program</dt><dd data-program>Loading…</dd></div>
+            <div><dt>Reward</dt><dd data-reward>Loading…</dd></div>
+            <div><dt>Delivery</dt><dd data-delivery>Waiting</dd></div>
+          </dl>
+        </section>
+        <section class="rd-panel">
+          <span class="rd-eyebrow">Saved progress</span>
+          <div class="rd-stats">
+            <div><span>Plays</span><strong data-plays>0</strong></div>
+            <div><span>Best</span><strong data-best>0</strong></div>
+          </div>
+        </section>
+        <section class="rd-panel">
+          <span class="rd-eyebrow">Test leaderboard</span>
+          <ol class="rd-leaderboard" data-leaderboard>
+            <li><span>No completed runs yet.</span></li>
+          </ol>
+        </section>
+      </aside>
+    </section>
+  </main>
+  <script src="game.js" defer></script>
+</body>
+</html>
