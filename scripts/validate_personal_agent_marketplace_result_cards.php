@@ -92,28 +92,32 @@ try {
     }
     $expect(
         str_contains($renderer, "['marketplace_merchant', 'marketplace_product', 'marketplace_campaign']")
-        && str_contains($renderer, 'new URL(String(value || \'\'), window.location.origin)')
+        && str_contains($renderer, "new URL(text(value), window.location.origin)")
         && str_contains($renderer, 'url.origin !== window.location.origin'),
         'Client renderer recognizes card types and restricts navigation to same-origin links'
     );
     $expect(
-        str_contains($renderer, 'mg-agent-marketplace-media')
+        str_contains($renderer, 'inferredPublishedProduct')
+        && str_contains($renderer, '/api/public/product-discovery.php?q=')
+        && str_contains($renderer, "url_label: available ? 'Purchase' : 'View product'")
+        && str_contains($renderer, 'mg-agent-marketplace-media')
         && str_contains($renderer, 'mg-agent-marketplace-meta')
-        && str_contains($renderer, 'mg-agent-marketplace-actions')
-        && str_contains($renderer, 'View details'),
-        'Client renders imagery, details, metadata, and linked actions'
+        && str_contains($renderer, 'mg-agent-marketplace-actions'),
+        'Client hydrates conversational product results and renders image, metadata, and purchase actions'
     );
     $expect(
-        str_contains($styles, 'grid-template-columns:repeat(3,minmax(0,1fr))')
+        str_contains($styles, 'grid-template-columns:repeat(4,minmax(0,1fr))')
+        && str_contains($styles, '@media(max-width:820px)')
+        && substr_count($styles, 'grid-template-columns:repeat(2,minmax(0,1fr))') >= 2
         && str_contains($styles, '.mg-agent-marketplace-card')
         && str_contains($styles, '.mg-agent-marketplace-action.is-primary')
-        && str_contains($styles, '@media(max-width:700px)'),
-        'Marketplace cards use a responsive card grid'
+        && !str_contains($styles, '-webkit-line-clamp'),
+        'Marketplace cards use four desktop columns, two mobile columns, and full descriptions'
     );
     $expect(
-        str_contains($page, '/assets/css/personal-agent-marketplace-cards.css?v=1.0.0')
-        && str_contains($page, '/assets/js/personal-agent-marketplace-cards.js?v=1.0.0'),
-        'Agent page loads versioned marketplace card assets'
+        str_contains($page, '/assets/css/personal-agent-marketplace-cards.css?v=1.1.0')
+        && str_contains($page, '/assets/js/personal-agent-marketplace-cards.js?v=1.1.0'),
+        'Agent page loads the current versioned marketplace card assets'
     );
 } catch (Throwable $error) {
     $failures[] = $error->getMessage();
