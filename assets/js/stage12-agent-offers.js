@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded',function(){
   var list=root.querySelector('[data-offer-list]');
   var detail=root.querySelector('[data-offer-detail]');
   var status=root.querySelector('[data-offer-status]');
+  var initialParams=new URLSearchParams(window.location.search||'');
+  var initialOffer=String(initialParams.get('offer')||initialParams.get('offer_id')||'').trim();
   function safe(v){return String(v==null?'':v).replace(/[&<>'"]/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'})[c];});}
   function note(message){if(status){status.textContent=message||'';}}
   function value(o){if(o.value_type==='percent'){return String(o.value_percent||0)+'%';}return (o.currency||'USD')+' '+(Number(o.value_amount_cents||0)/100).toFixed(2);}
@@ -23,7 +25,7 @@ document.addEventListener('DOMContentLoaded',function(){
     });});
     detail.querySelectorAll('[data-save-offer]').forEach(function(button){button.addEventListener('click',async function(){await feedback(button.getAttribute('data-save-offer'),'save');note('Saved signal for recommendations.');});});
   }
-  async function loadDetail(id){await feedback(id,'details');var r=await Microgifter.get('/api/public/offers/detail.php?offer_id='+encodeURIComponent(id));var o=(r.data||r).offer;if(o){renderDetail(o);}}
+  async function loadDetail(id){await feedback(id,'details');var r=await Microgifter.get('/api/public/offers/detail.php?offer_id='+encodeURIComponent(id));var o=(r.data||r).offer;if(o){renderDetail(o);detail.scrollIntoView({behavior:'smooth',block:'start'});}}
   async function search(){
     var data=Object.fromEntries(new FormData(form).entries());
     var q=new URLSearchParams();
@@ -36,6 +38,8 @@ document.addEventListener('DOMContentLoaded',function(){
     list.querySelectorAll('[data-offer-detail-id]').forEach(function(button){button.addEventListener('click',function(){loadDetail(button.getAttribute('data-offer-detail-id')).catch(function(error){note(error.message||'Unable to load offer.');});});});
     list.querySelectorAll('[data-offer-dismiss]').forEach(function(button){button.addEventListener('click',async function(){await feedback(button.getAttribute('data-offer-dismiss'),'dismiss');button.closest('.mg-product-card').remove();note('Offer dismissed for this session.');});});
   }
+  if(form&&form.elements.q&&initialParams.get('q'))form.elements.q.value=initialParams.get('q');
+  if(form&&form.elements.reward_type&&initialParams.get('reward_type'))form.elements.reward_type.value=initialParams.get('reward_type');
   form&&form.addEventListener('submit',function(event){event.preventDefault();search().catch(function(error){note(error.message||'Unable to search offers.');});});
-  search().catch(function(error){note(error.message||'Unable to load offers.');});
+  search().then(function(){if(initialOffer){return loadDetail(initialOffer);}}).catch(function(error){note(error.message||'Unable to load offers.');});
 });
