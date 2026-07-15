@@ -18,7 +18,10 @@ $page_section = 'agent';
 $header_mode = 'account';
 $agent_tab = 'lists';
 $page_styles = ['/assets/css/user-lists.css'];
-$page_scripts = ['/assets/js/user-lists.js'];
+$page_scripts = [
+    '/assets/js/user-lists.js',
+    '/assets/js/user-lists-create.js?v=1.0.0',
+];
 
 require __DIR__ . '/includes/header.php';
 ?>
@@ -31,7 +34,7 @@ require __DIR__ . '/includes/header.php';
         <h1>My Lists</h1>
         <p>Organize family, friends, coworkers, birthdays, holidays, and private contacts into reusable gifting groups.</p>
       </div>
-      <button class="mg-btn mg-btn-primary" type="button" data-user-list-open-create data-global-create aria-haspopup="dialog" aria-controls="mg-create-menu">Create list</button>
+      <button class="mg-btn mg-btn-primary" type="button" data-user-list-open-create aria-haspopup="dialog" aria-controls="mg-create-menu" aria-expanded="false">Create list</button>
     </header>
 
     <div class="mg-user-lists-toolbar">
@@ -42,7 +45,7 @@ require __DIR__ . '/includes/header.php';
     <?php if ($loadError !== ''): ?>
       <section class="mg-user-lists-state is-warning"><strong>Database setup required</strong><p><?= mg_e($loadError) ?></p><code>database/20260714_user_contact_lists_phase1.sql</code></section>
     <?php elseif ($lists === []): ?>
-      <section class="mg-user-lists-state"><strong>No lists yet</strong><p>Create a list for people, occasions, or recurring gifting plans.</p><button type="button" class="mg-btn mg-btn-primary" data-user-list-open-create data-global-create>Create your first list</button></section>
+      <section class="mg-user-lists-state"><strong>No lists yet</strong><p>Create a list for people, occasions, or recurring gifting plans.</p><button type="button" class="mg-btn mg-btn-primary" data-user-list-open-create aria-haspopup="dialog" aria-controls="mg-create-menu" aria-expanded="false">Create your first list</button></section>
     <?php else: ?>
       <div class="mg-user-list-grid" data-user-list-grid>
         <?php foreach ($lists as $list): ?>
