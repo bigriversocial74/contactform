@@ -28,6 +28,8 @@ try {
     $dialogs = $read('includes/personal-agent/workspace-dialogs.php');
     $loader = $read('includes/personal-gifting-agent.php');
     $service = $read('includes/personal-agent/threads.php');
+    $marketplaceCards = $read('includes/personal-agent/marketplace-result-cards.php');
+    $marketplaceResponse = $read('includes/personal-agent/marketplace-response.php');
     $api = $read('api/user-agent/threads.php');
     $chatApi = $read('api/user-agent/chat.php');
     $js = $read('assets/js/personal-agent-chat-history.js');
@@ -56,7 +58,12 @@ try {
     $expect(str_contains($api, 'mg_require_api_user') && str_contains($api, 'mg_require_csrf_for_write') && str_contains($api, "'delete' => mg_personal_agent_delete_thread"), 'Thread writes require authentication and CSRF');
 
     $expect(str_contains($service, 'mg_personal_agent_thread_title_from_message') && str_contains($service, "'[private detail]'") && str_contains($service, "'••••'"), 'Automatic chat labels redact common private details');
-    $expect(str_contains($chatApi, 'mg_personal_agent_chat_with_thread_title'), 'First user message assigns the chat title');
+    $threadTitleChain = str_contains($chatApi, 'mg_personal_agent_chat_with_thread_title')
+        || (str_contains($chatApi, 'mg_personal_agent_chat_with_marketplace_cards') && str_contains($marketplaceCards, 'mg_personal_agent_chat_with_thread_title($pdo,$userId,$input)'))
+        || (str_contains($chatApi, 'mg_personal_agent_chat_with_marketplace_response')
+            && str_contains($marketplaceResponse, 'mg_personal_agent_chat_with_marketplace_cards($pdo,$userId,$input)')
+            && str_contains($marketplaceCards, 'mg_personal_agent_chat_with_thread_title($pdo,$userId,$input)'));
+    $expect($threadTitleChain, 'First user message assigns the chat title');
     $expect(str_contains($js, "return 'Today'") && str_contains($js, "return 'Yesterday'") && str_contains($js, "return 'Previous 7 days'"), 'Chats are grouped and labeled by date');
     $expect(str_contains($js, "new URLSearchParams(window.location.search).get('thread')") && str_contains($js, 'loadThread(selected.id'), 'Active chat is restored from the URL or latest history');
     $expect(str_contains($js, "Microgifter.post('/api/user-agent/threads.php', { action: 'create' }") && str_contains($js, "action: 'delete'"), 'Client creates and deletes chats through the thread API');
