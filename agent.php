@@ -23,6 +23,7 @@ $page_styles = [
     '/assets/css/personal-agent-marketplace-cards.css?v=1.1.0',
     '/assets/css/gift-action-center-modals.css?v=1.0.0',
     '/assets/css/personal-agent-gift-results.css?v=1.0.0',
+    '/assets/css/personal-agent-design-studio.css?v=1.1.0',
 ];
 $page_scripts = [
     '/assets/js/agent-workspace.js',
@@ -34,6 +35,7 @@ $page_scripts = [
     '/assets/js/personal-agent-chat-history.js?v=1.0.0',
     '/assets/js/personal-agent-marketplace-cards.js?v=1.1.0',
     '/assets/js/personal-agent-gift-results.js?v=1.0.0',
+    '/assets/js/personal-agent-design-studio.js?v=1.1.0',
 ];
 
 require __DIR__ . '/includes/header.php';
