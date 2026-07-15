@@ -49,7 +49,7 @@ function mg_user_contact_relationship_search(PDO $pdo, int $ownerUserId, string 
     }
 
     $users = $pdo->prepare(
-        "SELECT DISTINCT u.id,u.public_id,
+        "SELECT DISTINCT u.id,pp.public_id,
            COALESCE(pp.display_name,u.display_name,u.full_name,'Microgifter user') display_name,
            pp.avatar_url,pp.slug,
            EXISTS(
@@ -63,7 +63,7 @@ function mg_user_contact_relationship_search(PDO $pdo, int $ownerUserId, string 
            ) OR (
              sf_rel.followed_user_id=? AND sf_rel.follower_user_id=u.id
            )
-         LEFT JOIN public_profiles pp
+         INNER JOIN public_profiles pp
            ON pp.user_id=u.id
           AND pp.status='active'
           AND pp.visibility IN ('public','unlisted')

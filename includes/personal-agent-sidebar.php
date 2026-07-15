@@ -20,13 +20,6 @@ $appSidebarNav = [
         'visible' => true,
         'active' => $active === 'home',
     ],
-    'lists' => [
-        'label' => 'Lists',
-        'detail' => 'Family, friends, teams, and groups',
-        'href' => '/lists.php',
-        'visible' => true,
-        'active' => false,
-    ],
     'contacts' => [
         'label' => 'Contacts',
         'detail' => 'Relationship and gifting context',

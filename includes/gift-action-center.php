@@ -11,7 +11,7 @@ $giftCenterDemoEnabled=mg_has_role('super_admin');
 <link rel="stylesheet" href="/assets/css/gift-action-center-user-search-fix.css?v=1.0.0">
 <link rel="stylesheet" href="/assets/css/gift-action-center-feed-v3.css?v=3.2.0">
 <section class="mg-app-shell mg-gift-center-page" data-gift-center data-feed-version="3" data-initial-folder="<?= mg_e($giftCenterFolder) ?>" data-demo-enabled="<?= $giftCenterDemoEnabled?'true':'false' ?>">
-  <?php require __DIR__ . '/agent-sidebar.php'; ?>
+  <?php require __DIR__ . '/gift-center-sidebar.php'; ?>
 
   <div class="mg-app-workspace mg-gift-center-workspace">
     <section class="mg-gift-center-main" aria-label="<?= mg_e($giftCenterTitle) ?> gifts">

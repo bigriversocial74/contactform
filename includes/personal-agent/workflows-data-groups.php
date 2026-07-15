@@ -5,7 +5,7 @@ function mg_personal_workflows_group_gifts(PDO $pdo, int $userId): array
 {
     mg_personal_workflows_require_schema($pdo);
     $stmt = $pdo->prepare("SELECT g.*,p.public_id plan_public_id,p.title plan_title,l.public_id list_public_id,l.name list_name,
-        c.public_id contact_public_id,c.display_name contact_name,u.public_id recipient_public_id,
+        c.public_id contact_public_id,c.display_name contact_name,pp.public_id recipient_public_id,
         COALESCE(pp.display_name,u.display_name,u.full_name) recipient_name,
         (SELECT COUNT(*) FROM user_group_gift_participants gp WHERE gp.group_gift_id=g.id AND gp.status IN ('invited','joined')) participant_count,
         (SELECT COUNT(*) FROM user_group_gift_participants gp WHERE gp.group_gift_id=g.id AND gp.status='joined') joined_count
@@ -81,7 +81,7 @@ function mg_personal_workflows_group_gifts(PDO $pdo, int $userId): array
 function mg_personal_workflows_requests(PDO $pdo, int $userId): array
 {
     mg_personal_workflows_require_schema($pdo);
-    $stmt = $pdo->prepare("SELECT r.*,COALESCE(pp.display_name,u.display_name,u.full_name,'Microgifter user') subject_name,u.public_id subject_public_id
+    $stmt = $pdo->prepare("SELECT r.*,COALESCE(pp.display_name,u.display_name,u.full_name,'Microgifter user') subject_name,pp.public_id subject_public_id
         FROM user_recipient_data_requests r INNER JOIN users u ON u.id=r.subject_user_id
         LEFT JOIN public_profiles pp ON pp.user_id=u.id WHERE r.requester_user_id=? ORDER BY r.created_at DESC");
     $stmt->execute([$userId]);
@@ -100,7 +100,7 @@ function mg_personal_workflows_requests(PDO $pdo, int $userId): array
         'created_at'=>$row['created_at'],
     ], $stmt->fetchAll(PDO::FETCH_ASSOC));
 
-    $incomingStmt = $pdo->prepare("SELECT r.*,COALESCE(pp.display_name,u.display_name,u.full_name,'Microgifter user') requester_name,u.public_id requester_public_id
+    $incomingStmt = $pdo->prepare("SELECT r.*,COALESCE(pp.display_name,u.display_name,u.full_name,'Microgifter user') requester_name,pp.public_id requester_public_id
         FROM user_recipient_data_requests r INNER JOIN users u ON u.id=r.requester_user_id
         LEFT JOIN public_profiles pp ON pp.user_id=u.id WHERE r.subject_user_id=? ORDER BY FIELD(r.status,'pending','approved','partially_approved','declined','revoked','cancelled','expired'),r.created_at DESC");
     $incomingStmt->execute([$userId]);

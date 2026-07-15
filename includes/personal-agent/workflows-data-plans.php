@@ -47,7 +47,7 @@ function mg_personal_workflows_recurring_programs(PDO $pdo, int $userId, string 
     $params = [$userId];
     if ($status !== 'all') $params[] = $status;
     $stmt = $pdo->prepare("SELECT rp.*,l.public_id list_public_id,l.name list_name,c.public_id contact_public_id,c.display_name contact_name,
-        u.public_id linked_public_id,COALESCE(pp.display_name,u.display_name,u.full_name) linked_name
+        pp.public_id linked_public_id,COALESCE(pp.display_name,u.display_name,u.full_name) linked_name
         FROM user_recurring_gift_programs rp
         LEFT JOIN user_contact_lists l ON l.id=rp.list_id AND l.owner_user_id=rp.owner_user_id
         LEFT JOIN user_contacts c ON c.id=rp.user_contact_id AND c.owner_user_id=rp.owner_user_id

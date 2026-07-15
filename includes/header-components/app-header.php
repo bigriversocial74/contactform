@@ -49,6 +49,24 @@ $show_header_cart = true;
     <?php require dirname(__DIR__) . '/header-templates/logged-in.php'; ?>
   </div>
 </header>
+<style>
+/* The Agent tab is a first-class workspace destination and must match Inbox/Sent/Claimed. */
+html body.mg-app-page.mg-section-agent .mg-header-agent-tabs [data-system-tab="agent"],
+html body.mg-app-page.mg-section-agent .mg-header-agent-tabs .mg-agent-tab-item[data-system-tab="agent"]{
+  display:inline-flex!important;
+  visibility:visible!important;
+  width:auto!important;
+  min-width:0!important;
+  max-width:none!important;
+  overflow:visible!important;
+  flex:0 0 auto!important;
+}
+@media(max-width:980px){
+  html body.mg-app-page.mg-section-agent .mg-header-agent-tabs .mg-agent-tab-item[data-system-tab="agent"]>a{
+    min-width:72px!important;
+  }
+}
+</style>
 
 <?php
 /* Stage 12 create-menu validation markers: data-create-menu-option="campaign" data-create-menu-option="agent_offer" data-create-menu-option="add_reward" /merchant-campaigns.php /merchant-reward-templates.php */
