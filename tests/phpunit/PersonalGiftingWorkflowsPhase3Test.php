@@ -31,6 +31,6 @@ final class PersonalGiftingWorkflowsPhase3Test extends TestCase
     public function testWorkflowApisAreProtectedAndUiPreservesComposer():void
     {
         foreach(['schedules.php','recurring-programs.php','list-plan-members.php','group-gifts.php','recipient-requests.php','bundles.php','lifecycle-reminders.php'] as $file){$api=$this->read('api/user-agent/'.$file);self::assertStringContainsString('mg_require_permission',$api);self::assertStringContainsString('mg_require_csrf_for_write',$api);}
-        $workspace=$this->read('includes/agent-workspace.php');$sidebar=$this->read('includes/personal-agent-sidebar.php');self::assertStringContainsString('data-agent-composer',$workspace);self::assertStringContainsString('data-phase3-schema-ready',$workspace);self::assertStringContainsString("'label'=>'Scheduled Gifts'",$sidebar);self::assertStringContainsString("'label'=>'Claim & Redemption'",$sidebar);
+        $workspace=$this->read('includes/agent-workspace.php');$sidebar=$this->read('includes/personal-agent-sidebar.php');self::assertStringContainsString('data-agent-composer',$workspace);self::assertStringContainsString('data-phase3-schema-ready',$workspace);self::assertStringContainsString("'label' => 'Scheduled Gifts'",$sidebar);self::assertStringContainsString("'label' => 'Claim & Redemption'",$sidebar);
     }
 }
