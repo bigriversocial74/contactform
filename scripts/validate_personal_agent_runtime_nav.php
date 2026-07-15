@@ -77,7 +77,7 @@ $checks = [
         && !str_contains($chatJs, 'New personal gifting conversation started.')
         && str_contains($chatActionsJs, "Microgifter.post('/api/user-agent/chat.php'")
         && str_contains($chatActionsJs, 'appendMessage(data.assistant_message)')
-        && str_contains($chatApi, 'mg_personal_agent_chat_v2')
+        && (str_contains($chatApi, 'mg_personal_agent_chat_v2') || str_contains($chatApi, 'mg_personal_agent_chat_with_thread_title'))
         && str_contains($knowledge, "'assistant_message' => \$assistant"),
     'composer is detached with wide input and compact send' => str_contains($agentWorkspace, 'mg-personal-agent-composer-row')
         && str_contains($chatCss, 'grid-template-columns:minmax(0,1fr) 90px')
