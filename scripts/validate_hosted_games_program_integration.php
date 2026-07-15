@@ -54,9 +54,9 @@ validation_contains($resolver, 'count($campaignIds) !== 1', 'Hosted-game program
 validation_contains($resolver, 'count($rewards) !== 1', 'Hosted-game programs must reject ambiguous reward inventory.');
 
 foreach ([$merchantEndpoint, $adminEndpoint] as $endpoint) {
-    validation_contains($endpoint, "($input['program_id']", 'The integration endpoint must accept the Distribution Program ID.');
-    validation_excludes($endpoint, "($input['campaign_id']", 'The integration endpoint must not trust a browser campaign ID.');
-    validation_excludes($endpoint, "($input['reward_template_id']", 'The integration endpoint must not trust a browser reward ID.');
+    validation_contains($endpoint, '($input[\'program_id\']', 'The integration endpoint must accept the Distribution Program ID.');
+    validation_excludes($endpoint, '($input[\'campaign_id\']', 'The integration endpoint must not trust a browser campaign ID.');
+    validation_excludes($endpoint, '($input[\'reward_template_id\']', 'The integration endpoint must not trust a browser reward ID.');
     validation_contains($endpoint, 'mg_hosted_game_resolve_program_integration', 'The integration endpoint must resolve program relationships server-side.');
 }
 
