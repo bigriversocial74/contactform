@@ -12,11 +12,26 @@
     'player_qualified', 'run_completed', 'run_abandoned', 'runtime_error'
   ]);
   const capabilities = new Set(Array.isArray(manifest.capabilities) ? manifest.capabilities.map(String) : []);
+  const bridgeStartedAt = performance.now();
+  const sessionId = (() => {
+    try {
+      const existing = sessionStorage.getItem('microgifterHostedGameSession');
+      if (existing) return existing;
+      const value = `hgs_${Date.now()}_${crypto.getRandomValues(new Uint32Array(2)).join('_')}`;
+      sessionStorage.setItem('microgifterHostedGameSession', value);
+      return value;
+    } catch {
+      return `hgs_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    }
+  })();
   let sequence = 0;
   let cachedSession = null;
   let handshakeTimer = 0;
   let loadedEventSent = false;
+  let telemetryLoadedSent = false;
+  let manifestWarningSent = false;
   let activeRun = null;
+  let activeRunStartedAt = 0;
   let currentScore = null;
   let qualified = false;
   let qualificationResult = {};
@@ -56,7 +71,28 @@
     }
   }
 
-  function request(action, payload = {}) {
+  function clientContext() {
+    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection || {};
+    const orientation = window.innerWidth > window.innerHeight ? 'landscape' : 'portrait';
+    return {
+      session_id: sessionId,
+      viewport_width: Math.max(0, Math.round(window.innerWidth || 0)),
+      viewport_height: Math.max(0, Math.round(window.innerHeight || 0)),
+      pixel_ratio: Number(window.devicePixelRatio || 1),
+      orientation,
+      platform: String(navigator.userAgentData?.platform || navigator.platform || '').slice(0, 80),
+      locale: String(navigator.language || '').slice(0, 30),
+      timezone_offset: new Date().getTimezoneOffset(),
+      connection: {
+        effective_type: String(connection.effectiveType || '').slice(0, 20),
+        save_data: Boolean(connection.saveData)
+      },
+      sdk_version: '1.1.0',
+      game_version: String(manifest.version || '')
+    };
+  }
+
+  function request(action, payload = {}, observe = true) {
     return new Promise((resolve, reject) => {
       let encoded = '';
       try {
@@ -70,17 +106,42 @@
         return;
       }
       const requestId = `hg_${Date.now()}_${++sequence}_${Math.random().toString(36).slice(2, 10)}`;
+      const startedAt = performance.now();
       const timeout = window.setTimeout(() => {
         pending.delete(requestId);
-        reject(new Error('Microgifter game bridge request timed out.'));
+        const error = new Error('Microgifter game bridge request timed out.');
+        if (observe && action !== 'telemetry') {
+          void sendTelemetry('sdk_request_failed', {
+            action,
+            message: error.message,
+            duration_ms: Math.round(performance.now() - startedAt),
+            timeout: true
+          }).catch(() => {});
+        }
+        reject(error);
       }, 30000);
-      pending.set(requestId, { resolve, reject, timeout });
+      pending.set(requestId, { resolve, reject, timeout, action, startedAt, observe });
       post({ requestId, action, payload });
     });
   }
 
   function command(action, payload = {}) {
     post({ action, payload, command: true });
+  }
+
+  function sendTelemetry(eventType, event = {}, run = activeRun) {
+    const payload = {
+      event_type: String(eventType || ''),
+      event: event && typeof event === 'object' ? event : {},
+      client: clientContext(),
+      sdk_version: '1.1.0',
+      game_version: String(manifest.version || '')
+    };
+    if (run?.run_id && run?.run_token) {
+      payload.run_id = String(run.run_id);
+      payload.run_token = String(run.run_token);
+    }
+    return request('telemetry', payload, false);
   }
 
   function waitForSession() {
@@ -123,6 +184,25 @@
     });
     sessionWaiters.clear();
     window.dispatchEvent(new CustomEvent('microgifter:session', { detail: cachedSession }));
+
+    if (!telemetryLoadedSent) {
+      telemetryLoadedSent = true;
+      const startupMs = Math.max(0, Math.round(performance.now() - bridgeStartedAt));
+      void sendTelemetry('game_loaded', {
+        startup_ms: startupMs,
+        signed_in: Boolean(cachedSession?.player?.signed_in),
+        connected: Boolean(cachedSession?.player?.connected)
+      }, null).catch(() => { telemetryLoadedSent = false; });
+      void sendTelemetry('game_startup', { duration_ms: startupMs }, null).catch(() => {});
+    }
+    if (!manifestWarningSent && String(manifest.standard?.compliance || 'legacy') !== 'standard') {
+      manifestWarningSent = true;
+      void sendTelemetry('manifest_warning', {
+        severity: 'warning',
+        title: 'Legacy hosted game manifest',
+        message: 'This release is running in legacy compatibility mode rather than Hosted Game Standard v1.'
+      }, null).catch(() => { manifestWarningSent = false; });
+    }
     if (!loadedEventSent && cachedSession?.player?.signed_in && cachedSession?.player?.connected && capabilities.has('events')) {
       loadedEventSent = true;
       void emitStandardEvent('game_loaded', {
@@ -166,17 +246,40 @@
     if (!item) return;
     pending.delete(requestId);
     window.clearTimeout(item.timeout);
-    if (message.ok) item.resolve(message.payload);
-    else item.reject(new Error(String(message.error || 'Microgifter game bridge request failed.')));
+    const durationMs = Math.max(0, Math.round(performance.now() - item.startedAt));
+    if (item.observe && item.action !== 'telemetry' && durationMs >= 1500) {
+      void sendTelemetry('sdk_request_slow', {
+        action: item.action,
+        duration_ms: durationMs,
+        message: `SDK action ${item.action} took ${durationMs} ms.`
+      }).catch(() => {});
+    }
+    if (message.ok) {
+      item.resolve(message.payload);
+    } else {
+      const error = new Error(String(message.error || 'Microgifter game bridge request failed.'));
+      if (item.observe && item.action !== 'telemetry') {
+        void sendTelemetry('sdk_request_failed', {
+          action: item.action,
+          duration_ms: durationMs,
+          message: error.message
+        }).catch(() => {});
+      }
+      item.reject(error);
+    }
   });
 
   async function startRun(metadata = {}) {
     requireCapability('runs');
     const result = await request('start', { metadata: metadata && typeof metadata === 'object' ? metadata : {} });
     activeRun = result?.run || null;
+    activeRunStartedAt = performance.now();
     currentScore = null;
     qualified = false;
     qualificationResult = {};
+    if (activeRun) {
+      void sendTelemetry('run_started', { metadata }, activeRun).catch(() => {});
+    }
     return result;
   }
 
@@ -198,6 +301,7 @@
     qualified = true;
     qualificationResult = result && typeof result === 'object' ? result : {};
     if (capabilities.has('events')) await emitStandardEvent('player_qualified', qualificationResult, activeRun);
+    if (activeRun) void sendTelemetry('player_qualified', qualificationResult, activeRun).catch(() => {});
     window.dispatchEvent(new CustomEvent('microgifter:qualified', { detail: qualificationResult }));
     return { qualified: true };
   }
@@ -219,7 +323,15 @@
       score: score ?? null,
       result
     });
+    const durationMs = activeRunStartedAt > 0 ? Math.round(performance.now() - activeRunStartedAt) : null;
+    void sendTelemetry('run_completed', {
+      qualified: Boolean(isQualified),
+      score: score ?? null,
+      duration_ms: durationMs,
+      reward_issued: Boolean(response?.reward_issued)
+    }, run).catch(() => {});
     activeRun = null;
+    activeRunStartedAt = 0;
     qualified = false;
     qualificationResult = {};
     return response;
@@ -235,10 +347,29 @@
       reason: String(options.reason || 'player_exit').slice(0, 120),
       result: options.result && typeof options.result === 'object' ? options.result : {}
     });
+    const durationMs = activeRunStartedAt > 0 ? Math.round(performance.now() - activeRunStartedAt) : null;
+    void sendTelemetry('run_abandoned', {
+      reason: String(options.reason || 'player_exit').slice(0, 120),
+      duration_ms: durationMs
+    }, run).catch(() => {});
     activeRun = null;
+    activeRunStartedAt = 0;
     qualified = false;
     qualificationResult = {};
     return response;
+  }
+
+  async function reportError(error, context = {}) {
+    const event = {
+      message: error instanceof Error ? error.message : String(error || 'Unknown runtime error'),
+      name: error instanceof Error ? error.name : 'Error',
+      stack: error instanceof Error ? String(error.stack || '').slice(0, 8000) : '',
+      context: context && typeof context === 'object' ? context : {}
+    };
+    const tasks = [sendTelemetry('runtime_error', event, activeRun)];
+    if (capabilities.has('events')) tasks.push(emitStandardEvent('runtime_error', event, activeRun));
+    await Promise.allSettled(tasks);
+    return { reported: true };
   }
 
   const api = Object.freeze({
@@ -279,18 +410,26 @@
     qualify,
     complete,
     abandonRun,
-    reportError: (error, context = {}) => emitStandardEvent('runtime_error', {
-      message: error instanceof Error ? error.message : String(error || 'Unknown runtime error'),
-      name: error instanceof Error ? error.name : 'Error',
-      context: context && typeof context === 'object' ? context : {}
-    }, activeRun),
-    completeRun: (options = {}) => request('complete', {
-      run_id: options.runId || options.run_id || '',
-      run_token: options.runToken || options.run_token || '',
-      qualified: Boolean(options.qualified),
-      score: options.score ?? null,
-      result: options.result && typeof options.result === 'object' ? options.result : {}
-    }),
+    reportError,
+    completeRun: async (options = {}) => {
+      const run = {
+        run_id: options.runId || options.run_id || '',
+        run_token: options.runToken || options.run_token || ''
+      };
+      const response = await request('complete', {
+        run_id: run.run_id,
+        run_token: run.run_token,
+        qualified: Boolean(options.qualified),
+        score: options.score ?? null,
+        result: options.result && typeof options.result === 'object' ? options.result : {}
+      });
+      void sendTelemetry('run_completed', {
+        qualified: Boolean(options.qualified),
+        score: options.score ?? null,
+        legacy_api: true
+      }, run).catch(() => {});
+      return response;
+    },
     getRun: (runId) => request('status', { run_id: String(runId || '') }),
     loadState: (key = 'default') => {
       requireCapability('state');
@@ -317,10 +456,7 @@
       requireCapability('events');
       return request('track', { event_type: String(eventType || ''), event });
     },
-    openInbox: () => {
-      requireCapability('inbox');
-      command('open_inbox');
-    },
+    openInbox: () => command('open_inbox'),
     signIn: () => command('sign_in')
   });
 
@@ -329,6 +465,31 @@
     enumerable: true,
     writable: false,
     value: api
+  });
+
+  window.addEventListener('error', (event) => {
+    const target = event.target;
+    if (target && target !== window && (target.src || target.href)) {
+      void sendTelemetry('asset_load_failed', {
+        message: 'A game asset failed to load.',
+        tag: String(target.tagName || '').toLowerCase(),
+        asset_url: String(target.src || target.href || '').slice(0, 1000)
+      }).catch(() => {});
+      return;
+    }
+    if (event.error || event.message) {
+      void reportError(event.error || new Error(String(event.message || 'Runtime error')), {
+        source: String(event.filename || '').slice(0, 1000),
+        line: Number(event.lineno || 0),
+        column: Number(event.colno || 0),
+        automatic: true
+      });
+    }
+  }, true);
+
+  window.addEventListener('unhandledrejection', (event) => {
+    const reason = event.reason instanceof Error ? event.reason : new Error(String(event.reason || 'Unhandled promise rejection'));
+    void reportError(reason, { automatic: true, source: 'unhandledrejection' });
   });
 
   startHandshake();
