@@ -25,6 +25,11 @@ DirectoryIndex index.php
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule ^games/([A-Za-z0-9-]+)/(.*)$ api/hosted-games/asset.php?slug=$1&path=$2 [L,QSA]
 
+  # Protected release-preview assets. The endpoint re-checks the signed-in test-session owner.
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^hosted-game-preview-assets/([A-Fa-f0-9-]{36})/(.*)$ api/hosted-games/preview-asset.php?session=$1&path=$2 [L,QSA]
+
   # Clean public profile route aliases.
   RewriteRule ^p/([A-Za-z0-9-]+)/?$ profile.php?slug=$1 [L,QSA]
   RewriteRule ^@([A-Za-z0-9-]+)/?$ profile.php?slug=$1 [L,QSA]
@@ -33,8 +38,8 @@ DirectoryIndex index.php
   # Reserved system paths and real files/directories are excluded.
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteCond %{REQUEST_URI} !^/(api|assets|docs|database|tests|includes|scripts|games)(/|$) [NC]
-  RewriteCond %{REQUEST_URI} !^/(index|account|agent|build|builder|signin|signup|logout|profile|m|hosted-game)(\.php)?/?$ [NC]
+  RewriteCond %{REQUEST_URI} !^/(api|assets|docs|database|tests|includes|scripts|games|hosted-game-preview-assets)(/|$) [NC]
+  RewriteCond %{REQUEST_URI} !^/(index|account|agent|build|builder|signin|signup|logout|profile|m|hosted-game|hosted-game-preview)(\.php)?/?$ [NC]
   RewriteRule ^([A-Za-z0-9-]+)/?$ profile.php?slug=$1 [L,QSA]
 
   # Prototype HTML files are no longer active runtime pages.
