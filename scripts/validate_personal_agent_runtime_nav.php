@@ -25,8 +25,12 @@ foreach ($identityPaths as $path) {
 
 $header = $read('includes/header-components/app-header.php');
 $giftCenter = $read('includes/gift-action-center.php') . $read('includes/gift-center-sidebar.php');
+$agentPage = $read('agent.php');
+$agentWorkspace = $read('includes/agent-workspace.php');
 $agentSidebar = $read('includes/personal-agent-sidebar.php');
 $agentDashboard = $read('includes/personal-agent/workspace-dashboard.php');
+$chatCss = $read('assets/css/personal-agent-chat-canvas.css');
+$chatJs = $read('assets/js/personal-agent-chat-canvas.js');
 $listCss = $read('assets/css/user-lists.css');
 
 $checks = [
@@ -38,11 +42,29 @@ $checks = [
         && str_contains($header, 'data-system-tab="agent"')
         && str_contains($header, 'display:inline-flex!important'),
     'My Lists added to gift center sidebar' => str_contains($giftCenter, 'gift-center-sidebar.php')
-        && str_contains($giftCenter, 'My Lists')
-        && str_contains($giftCenter, '/lists.php'),
+        && str_contains($giftCenter, 'mg-gift-center-my-lists')
+        && str_contains($giftCenter, '/lists.php')
+        && str_contains($giftCenter, '$use_inbox_sidebar = true'),
     'list management removed from Agent chat navigation' => !str_contains($agentSidebar, "'lists' =>")
         && !str_contains($agentDashboard, 'Manage lists')
         && !str_contains($agentDashboard, 'href="/lists.php"'),
+    'detached full width chat canvas' => str_contains($agentDashboard, 'data-agent-canvas')
+        && !str_contains($agentDashboard, 'mg-personal-agent-hero')
+        && !str_contains($agentDashboard, 'mg-personal-agent-context')
+        && str_contains($chatCss, 'position:absolute!important')
+        && str_contains($chatCss, 'overflow-y:auto!important')
+        && str_contains($chatCss, 'padding:24px 28px 142px!important'),
+    'intro greeting carries user stats' => str_contains($agentDashboard, 'Good morning,')
+        && str_contains($agentDashboard, 'data-personal-agent-summary')
+        && str_contains($agentDashboard, 'mg-personal-agent-message is-assistant is-intro')
+        && str_contains($chatJs, 'Good afternoon')
+        && str_contains($chatJs, 'Good evening'),
+    'composer is detached with wide input and compact send' => str_contains($agentWorkspace, 'mg-personal-agent-composer-row')
+        && str_contains($chatCss, 'grid-template-columns:minmax(0,1fr) 90px')
+        && str_contains($chatCss, 'width:90px!important')
+        && str_contains($chatCss, 'bottom:16px!important'),
+    'chat canvas assets loaded' => str_contains($agentPage, 'personal-agent-chat-canvas.css')
+        && str_contains($agentPage, 'personal-agent-chat-canvas.js'),
     'My Lists uses full app content width' => str_contains($listCss, '.mg-user-lists-main')
         && str_contains($listCss, 'max-width:1600px')
         && !str_contains($listCss, 'grid-template-columns:var(--mg-app-sidebar')
