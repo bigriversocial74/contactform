@@ -8,6 +8,7 @@ return [
     'ordered_files' => [
         'stage_1_identity.sql',
         'stage_1_repair_03M.sql',
+        'auth_session_identity_hardening_v1.sql',
         'stage_1_security_hardening_03N.sql',
         'stage_1_security_hardening_03N_3.sql',
         'stage_1_high_volume_foundation_03O.sql',
