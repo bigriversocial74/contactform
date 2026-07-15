@@ -9,6 +9,8 @@ function mg_user_agent_api_run(callable $callback): never
     try {
         $result=$callback();
         mg_ok(is_array($result)?$result:[]);
+    } catch (MgAiCreditException $e) {
+        mg_fail($e->getMessage(),$e->httpStatus(),$e->details());
     } catch (InvalidArgumentException $e) {
         mg_fail($e->getMessage(),422);
     } catch (RuntimeException $e) {
