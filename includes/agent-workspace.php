@@ -10,7 +10,7 @@ $schemaReady = false;
 $phase3SchemaReady = false;
 if ($user) {
     try {
-        $pdo=mg_db();
+        $pdo = mg_db();
         $schemaReady = mg_personal_agent_table_exists($pdo, 'user_agent_settings')
             && mg_personal_agent_table_exists($pdo, 'user_gifting_plans')
             && mg_personal_agent_table_exists($pdo, 'user_agent_messages');
@@ -27,6 +27,7 @@ if ($user) {
          data-agent-control-center
          data-personal-gifting-agent
          data-active-view="<?= mg_e($activeView) ?>"
+         data-display-name="<?= mg_e($displayName) ?>"
          data-schema-ready="<?= $schemaReady ? 'true' : 'false' ?>"
          data-phase3-schema-ready="<?= $phase3SchemaReady ? 'true' : 'false' ?>">
   <?php require __DIR__ . '/personal-agent-sidebar.php'; ?>
@@ -45,9 +46,11 @@ if ($user) {
       <?php require __DIR__ . '/personal-agent/workspace-dashboard.php'; ?>
 
       <form class="mg-app-composer mg-personal-agent-composer" data-agent-composer data-personal-agent-composer>
-        <button class="mg-personal-agent-context-chip" type="button" data-personal-agent-context-chip hidden></button>
-        <textarea rows="1" maxlength="2000" placeholder="Ask the Personal Gifting Agent about a contact, list, date, gift plan, schedule, group gift, or bundle…" aria-label="Message the Personal Gifting Agent"></textarea>
-        <button class="mg-btn mg-btn-primary" type="submit">Send</button>
+        <button class="mg-personal-agent-context-chip" type="button" data-personal-agent-context-chip hidden aria-label="Clear selected gifting context"></button>
+        <div class="mg-personal-agent-composer-row">
+          <textarea rows="1" maxlength="2000" placeholder="Ask the Personal Gifting Agent about a contact, date, gift plan, schedule, group gift, or bundle…" aria-label="Message the Personal Gifting Agent"></textarea>
+          <button class="mg-btn mg-btn-primary" type="submit">Send</button>
+        </div>
       </form>
 
       <?php require __DIR__ . '/personal-agent/workspace-dialogs.php'; ?>
