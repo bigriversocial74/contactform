@@ -48,13 +48,13 @@ try {
     );
     $expect(
         str_contains($service, "'type' => 'account_gift'")
-        && str_contains($service, "'action_item_id' => $actionItemId")
-        && str_contains($service, "'can_send' => $canSend")
+        && str_contains($service, "'action_item_id' => \$actionItemId")
+        && str_contains($service, "'can_send' => \$canSend")
         && str_contains($service, "'send_label' => 'Send'"),
         'Server emits complete account gift cards with send eligibility'
     );
     $expect(
-        str_contains($service, "if ($folder !== 'inbox') return false;")
+        str_contains($service, "if (\$folder !== 'inbox') return false;")
         && str_contains($service, 'These results are view-only because only currently owned Inbox gifts can be transferred.'),
         'Only Inbox gifts are presented as transferable'
     );
@@ -62,7 +62,7 @@ try {
         $expect(!str_contains(mb_strtolower($service), $blocked), 'Gift result payload excludes sensitive marker: ' . $blocked);
     }
     $expect(
-        str_contains($service, "UPDATE user_agent_messages SET body=?,cards_json=? WHERE owner_user_id=?")
+        str_contains($service, 'UPDATE user_agent_messages SET body=?,cards_json=? WHERE owner_user_id=?')
         && str_contains($service, "role='assistant'"),
         'Account gift cards and grounded copy persist owner-scoped with chat history'
     );
@@ -74,7 +74,7 @@ try {
         'Client renders complete image, detail, metadata, and action cards'
     );
     $expect(
-        str_contains($renderer, "data-agent-gift-send")
+        str_contains($renderer, 'data-agent-gift-send')
         && str_contains($renderer, '/api/account/action-center.php?folder=inbox&limit=100')
         && str_contains($renderer, '/api/account/action-center-send.php')
         && str_contains($renderer, 'Yes, Send Gift'),
@@ -88,7 +88,7 @@ try {
         'Send modal requires an explicit recipient selection and idempotent confirmation'
     );
     $expect(
-        str_contains($sendEndpoint, "if ((string)$instance['folder'] !== 'inbox')")
+        str_contains($sendEndpoint, "if ((string)\$instance['folder'] !== 'inbox')")
         && str_contains($sendEndpoint, 'mg_pppm_transfer_owner_canonical')
         && str_contains($sendEndpoint, 'mg_create_notification'),
         'Canonical send endpoint enforces Inbox ownership, PPPM transfer, and recipient notification'
