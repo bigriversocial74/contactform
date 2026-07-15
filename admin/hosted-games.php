@@ -7,7 +7,7 @@ $page_title = 'Hosted Games | Microgifter Admin';
 $page_section = 'account';
 $header_mode = 'account';
 $page_styles = ['/assets/css/admin-dashboard.css','/assets/css/hosted-games-management.css?v=1.1.0'];
-$page_scripts = ['/assets/js/admin-hosted-games.js?v=1.1.0'];
+$page_scripts = ['/assets/js/admin-hosted-games.js?v=1.1.0','/assets/js/admin-hosted-games-program-only.js?v=1.0.0'];
 $user = mg_current_user();
 $hasAdminAccess = is_array($user) && (
     mg_admin_permission_user_has($user,'admin.hosted_games.view')
@@ -34,7 +34,7 @@ require dirname(__DIR__) . '/includes/header.php';
           <div>
             <span class="hgm-eyebrow">Platform administration</span>
             <h1>Hosted Games<br>operations center</h1>
-            <p>Create and manage merchant games, upload releases, connect Programs, Campaigns and rewards, assign isolated databases, and control publication from one administrative workspace.</p>
+            <p>Create and manage merchant games, upload releases, connect Distribution Programs, assign isolated databases, and control publication from one administrative workspace.</p>
           </div>
           <?php if ($canManageHostedGames): ?><button class="hgm-btn is-primary" type="button" data-hgm-admin-create>Create hosted game</button><?php endif; ?>
         </section>
@@ -89,13 +89,13 @@ require dirname(__DIR__) . '/includes/header.php';
                 </section>
 
                 <section class="hgm-section">
-                  <h3>3. Program, Campaign and reward</h3>
-                  <p>Select from the game owner’s merchant resources. Microgifter automatically provisions or updates the dedicated Developer App, live API credential, reward scopes and signed webhook.</p>
+                  <h3>3. Distribution integration</h3>
+                  <p>Select the game owner’s Distribution Program. Microgifter automatically applies its connected campaign and active reward inventory, then provisions or updates the dedicated Developer App, live API credential, reward scopes, and signed webhook.</p>
                   <form class="hgm-form" data-hgm-admin-integration-form>
                     <input type="hidden" name="game_id">
+                    <input type="hidden" name="campaign_id">
+                    <input type="hidden" name="reward_template_id">
                     <label>Distribution Program<select name="program_id" required data-hgm-admin-program><option value="">Select a Program</option></select></label>
-                    <label>Campaign<select name="campaign_id" required data-hgm-admin-campaign><option value="">Select a Campaign</option></select></label>
-                    <label>Program reward<select name="reward_template_id" required data-hgm-admin-reward><option value="">Select a Program first</option></select></label>
                     <div class="hgm-card-actions"><button class="hgm-btn is-primary" type="submit">Configure game integration</button></div>
                     <div class="hgm-form-status" data-hgm-admin-integration-status></div>
                   </form>
