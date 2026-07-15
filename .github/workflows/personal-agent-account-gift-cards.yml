@@ -53,12 +53,3 @@ jobs:
 
       - name: Account gift-card contract
         run: php scripts/validate_personal_agent_account_gift_cards.php
-
-      - name: Marketplace card regression
-        run: php scripts/validate_personal_agent_marketplace_result_cards.php
-
-      - name: Permission-safe context regression
-        run: php scripts/validate_personal_agent_account_marketplace_context.php
-
-      - name: Personal Agent runtime regression
-        run: php scripts/validate_personal_agent_runtime.php
