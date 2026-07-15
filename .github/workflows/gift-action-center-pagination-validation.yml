@@ -1,0 +1,36 @@
+name: Gift Action Center Pagination Validation
+
+on:
+  pull_request:
+    paths:
+      - 'includes/gift-action-center.php'
+      - 'assets/css/gift-action-center-pagination.css'
+      - 'assets/js/gift-action-center-pagination.js'
+      - 'scripts/validate_gift_action_center_pagination.php'
+      - '.github/workflows/gift-action-center-pagination-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    strategy:
+      matrix:
+        php-version: ['8.2', '8.3']
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: PHP syntax
+        run: php -l includes/gift-action-center.php && php -l scripts/validate_gift_action_center_pagination.php
+      - name: JavaScript syntax
+        run: node --check assets/js/gift-action-center-pagination.js
+      - name: Pagination contract
+        run: php scripts/validate_gift_action_center_pagination.php
