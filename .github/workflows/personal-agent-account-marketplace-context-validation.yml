@@ -10,6 +10,7 @@ on:
       - 'includes/personal-gifting-agent.php'
       - 'includes/personal-agent/knowledge.php'
       - 'includes/personal-agent/marketplace-result-cards.php'
+      - 'includes/personal-agent/marketplace-response.php'
       - 'includes/personal-agent/workspace-dashboard.php'
       - 'assets/js/personal-agent-chat-canvas.js'
       - 'assets/js/personal-agent-marketplace-cards.js'
@@ -52,6 +53,7 @@ jobs:
         run: |
           php -l includes/personal-agent/knowledge.php
           php -l includes/personal-agent/marketplace-result-cards.php
+          php -l includes/personal-agent/marketplace-response.php
       - name: Lint agent dashboard
         run: php -l includes/personal-agent/workspace-dashboard.php
       - name: Lint validation contract
