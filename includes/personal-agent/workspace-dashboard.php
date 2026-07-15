@@ -26,6 +26,8 @@
     </div>
   </section>
 
+  <?php require __DIR__ . '/workspace-design.php'; ?>
+
   <section class="mg-personal-agent-view" data-personal-agent-view="contacts"<?= $activeView === 'contacts' ? '' : ' hidden' ?>><section class="mg-personal-agent-section"><header><div><span>Contact intelligence</span><h2>Your private and mutually connected contacts</h2></div></header><div class="mg-personal-agent-contact-grid" data-personal-agent-contacts></div></section></section>
   <section class="mg-personal-agent-view" data-personal-agent-view="birthdays"<?= $activeView === 'birthdays' ? '' : ' hidden' ?>><section class="mg-personal-agent-section"><header><div><span>Birthdays</span><h2>Upcoming birthdays</h2></div><small>Private contacts and permission-safe imports only</small></header><div class="mg-personal-agent-date-list" data-personal-agent-birthdays></div></section></section>
   <section class="mg-personal-agent-view" data-personal-agent-view="calendar"<?= $activeView === 'calendar' ? '' : ' hidden' ?>><section class="mg-personal-agent-section"><header><div><span>Gift calendar</span><h2>Important dates and recurring moments</h2></div><button type="button" class="mg-btn mg-btn-soft" data-open-agent-dialog="date">Add date</button></header><div class="mg-personal-agent-date-list" data-personal-agent-calendar></div></section></section>
