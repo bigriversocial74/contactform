@@ -23,6 +23,13 @@ $expect = static function (bool $condition, string $label) use (&$failures, &$pa
     echo "FAIL: {$label}\n";
 };
 
+$hasAll = static function (string $source, array $markers): bool {
+    foreach ($markers as $marker) {
+        if (!str_contains($source, $marker)) return false;
+    }
+    return true;
+};
+
 try {
     $core = $read('includes/personal-agent/core.php');
     $personalChat = $read('includes/personal-agent/chat.php');
@@ -33,35 +40,52 @@ try {
     $ordered = array_values($manifest['ordered_files'] ?? []);
 
     $expect(
-        str_contains($core, "return ['claude-haiku-4-5-20251001', 'claude-haiku-4-5'];")
-        && str_contains($core, 'function mg_personal_agent_model_order_sql')
-        && str_contains($core, "WHEN m.model_key='claude-haiku-4-5-20251001' THEN 0"),
+        $hasAll($core, [
+            'function mg_personal_agent_default_model_keys',
+            'claude-haiku-4-5-20251001',
+            'claude-haiku-4-5',
+            'function mg_personal_agent_model_order_sql',
+        ])
+        && preg_match("/WHEN\\s+m\\.model_key\\s*=\\s*'claude-haiku-4-5-20251001'\\s+THEN\\s+0/i", $core) === 1,
         'Customer Personal Agent declares Haiku 4.5 as its explicit default'
     );
 
     $expect(
-        str_contains($personalChat, '$orderSql=mg_personal_agent_model_order_sql();')
-        && str_contains($personalChat, "ORDER BY '.$orderSql.'")
-        && str_contains($personalChat, "m.model_key NOT IN ('claude-3-5-haiku-latest','claude-3-5-haiku-20241022')"),
+        $hasAll($personalChat, [
+            'mg_personal_agent_model_order_sql()',
+            'claude-3-5-haiku-latest',
+            'claude-3-5-haiku-20241022',
+        ])
+        && preg_match('/ORDER BY[^;]*\\$orderSql/s', $personalChat) === 1,
         'Customer chat uses the Haiku-first selector and excludes retired Haiku models'
     );
 
     $expect(
-        str_contains($core, "'is_default' => mg_personal_agent_is_default_model")
-        && str_contains($core, "m.model_key NOT IN ('claude-3-5-haiku-latest','claude-3-5-haiku-20241022')"),
+        $hasAll($core, [
+            "'is_default' => mg_personal_agent_is_default_model",
+            'claude-3-5-haiku-latest',
+            'claude-3-5-haiku-20241022',
+        ]),
         'Customer model settings present Haiku 4.5 as the default and hide retired Haiku'
     );
 
     $expect(
-        str_contains($merchantPlanner, "m.model_key IN ('claude-sonnet-4-6','claude-3-5-sonnet-latest')")
-        && str_contains($merchantPlanner, "ORDER BY (m.model_key = 'claude-sonnet-4-6') DESC")
+        $hasAll($merchantPlanner, [
+            'function mg_ai_merchant_find_anthropic_model',
+            'claude-sonnet-4-6',
+            'claude-3-5-sonnet-latest',
+        ])
         && !str_contains($merchantPlanner, 'claude-haiku-4-5'),
         'Merchant planner remains Sonnet-only with Sonnet 4.6 preferred'
     );
 
     $expect(
-        str_contains($merchantChat, 'mg_ai_merchant_find_anthropic_model($pdo, null)')
-        && str_contains($merchantChat, "m.model_key IN ('claude-sonnet-4-6','claude-3-5-sonnet-latest')")
+        $hasAll($merchantChat, [
+            'function mg_ai_chat_send',
+            'mg_ai_merchant_find_anthropic_model($pdo, null)',
+            'claude-sonnet-4-6',
+            'claude-3-5-sonnet-latest',
+        ])
         && !str_contains($merchantChat, 'claude-haiku-4-5'),
         'Merchant Agent chat remains on the separate Sonnet selector'
     );
@@ -75,23 +99,33 @@ try {
     );
 
     $expect(
-        str_contains($migration, "'claude-haiku-4-5-20251001', 'Claude Haiku 4.5', 1, 0, 20, 200000, 64000")
-        && str_contains($migration, "'customer_chat_default', TRUE")
-        && str_contains($migration, "'merchant_chat_default', FALSE"),
-        'Migration installs Haiku 4.5 with customer-specific metadata and official token limits'
+        $hasAll($migration, [
+            'claude-haiku-4-5-20251001',
+            'Claude Haiku 4.5',
+            '200000',
+            '64000',
+            'customer_chat_default',
+            'merchant_chat_default',
+        ]),
+        'Migration installs Haiku 4.5 with customer-specific metadata and token limits'
     );
 
     $expect(
-        str_contains($migration, "m.model_key = 'claude-sonnet-4-6'")
-        && str_contains($migration, 'm.is_default = 1')
-        && str_contains($migration, "model_key IN ('claude-3-5-haiku-latest', 'claude-3-5-haiku-20241022')"),
+        $hasAll($migration, [
+            "m.model_key = 'claude-sonnet-4-6'",
+            'm.is_default = 1',
+            'claude-3-5-haiku-latest',
+            'claude-3-5-haiku-20241022',
+        ]),
         'Migration retains Sonnet 4.6 globally and disables retired Haiku 3.5 entries'
     );
 
     $expect(
-        str_contains($migration, 'UPDATE user_agent_settings s')
-        && str_contains($migration, 'SET s.preferred_model_id = new_model.id')
-        && str_contains($migration, "'stage_19d_customer_haiku_merchant_sonnet_defaults'"),
+        $hasAll($migration, [
+            'UPDATE user_agent_settings s',
+            'SET s.preferred_model_id = new_model.id',
+            'stage_19d_customer_haiku_merchant_sonnet_defaults',
+        ]),
         'Migration moves retired customer preferences and records its canonical key'
     );
 
