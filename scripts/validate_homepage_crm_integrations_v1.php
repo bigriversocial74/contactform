@@ -6,7 +6,7 @@ $errors = [];
 $checks = 0;
 
 $required = [
-    'index.php' => [
+    'merchant-landing.php' => [
         '/assets/css/homepage-crm-integrations-v1.css?v=1.0.0',
         "require __DIR__ . '/includes/landing/homepage-crm-integrations.php'",
     ],
@@ -70,15 +70,15 @@ if (is_file($sectionPath)) {
     }
 }
 
-$indexPath = $root . '/index.php';
-if (is_file($indexPath)) {
-    $index = (string) file_get_contents($indexPath);
-    $integrationPosition = strpos($index, 'homepage-crm-integrations.php');
-    $platformPosition = strpos($index, 'mg-lb-platform');
-    $workflowPosition = strpos($index, 'mg-lb-workflow');
+$merchantPath = $root . '/merchant-landing.php';
+if (is_file($merchantPath)) {
+    $merchant = (string) file_get_contents($merchantPath);
+    $integrationPosition = strpos($merchant, 'homepage-crm-integrations.php');
+    $platformPosition = strpos($merchant, 'mg-lb-platform');
+    $workflowPosition = strpos($merchant, 'mg-lb-workflow');
     $checks++;
     if ($integrationPosition === false || $platformPosition === false || $workflowPosition === false || !($platformPosition < $integrationPosition && $integrationPosition < $workflowPosition)) {
-        $errors[] = 'CRM integrations section must render between the platform and workflow sections.';
+        $errors[] = 'CRM integrations section must render between the merchant platform and workflow sections.';
     }
 }
 
