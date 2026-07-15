@@ -32,6 +32,8 @@ try{
     }
     if($action==='health_check'){
         $health=mg_hosted_game_release_health_check($pdo,$game,$releaseId,$merchantUserId);
+        $pdo->prepare("UPDATE hosted_game_releases SET status=CASE WHEN ?='failed' AND status<>'active' THEN 'failed' WHEN ?<>'failed' AND status='failed' THEN 'testing' ELSE status END,updated_at=NOW() WHERE game_id=? AND public_id=?")
+            ->execute([(string)$health['status'],(string)$health['status'],(int)$game['id'],$releaseId]);
         mg_ok(['health'=>$health],'Release health check completed.');
     }
     if($action==='activate'||$action==='rollback'){
