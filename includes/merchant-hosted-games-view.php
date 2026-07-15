@@ -80,8 +80,8 @@ declare(strict_types=1);
           <p>Select the Distribution Program only. Microgifter automatically applies its connected campaign and active reward inventory, then creates the encrypted live Developer App credential and signed webhook.</p>
           <form class="hgm-form" data-hgm-integration-form>
             <input type="hidden" name="game_id">
-            <input type="hidden" name="campaign_id">
-            <input type="hidden" name="reward_template_id">
+            <select name="campaign_id" aria-hidden="true" tabindex="-1" style="display:none!important"><option value=""></option></select>
+            <select name="reward_template_id" aria-hidden="true" tabindex="-1" style="display:none!important"><option value=""></option></select>
             <label>Distribution Program<select name="program_id" required><option value="">Select a program</option></select></label>
             <div><button class="hgm-btn is-primary" type="submit">Configure game integration</button></div>
             <div class="hgm-form-status" data-hgm-integration-status></div>
