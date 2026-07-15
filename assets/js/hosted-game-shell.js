@@ -14,7 +14,7 @@
   const statusNode = document.querySelector('[data-hg-shell-status]');
   const fullscreenButton = document.querySelector('[data-hg-fullscreen]');
   const allowedActions = new Set([
-    'session', 'connect', 'start', 'complete', 'status', 'abandon', 'event',
+    'session', 'connect', 'start', 'complete', 'status', 'abandon', 'event', 'telemetry',
     'state_load', 'state_save', 'score_submit', 'leaderboard', 'track'
   ]);
   let session = null;
@@ -93,6 +93,26 @@
     return parseResponse(response);
   }
 
+  async function telemetry(payload = {}) {
+    const eventType = String(payload.event_type || '').trim();
+    if (!eventType) throw new Error('Hosted game telemetry event type is required.');
+    const response = await fetch(String(config.telemetryUrl || '/api/hosted-games/telemetry.php'), {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        slug: String(config.slug || ''),
+        csrf_token: String(config.csrfToken || ''),
+        release_id: config.releaseId || null,
+        release_version: config.releaseVersion || null,
+        sdk_version: String(payload.sdk_version || config.sdkVersion || '1.1.0'),
+        game_version: String(payload.game_version || config.manifest?.version || ''),
+        ...payload
+      })
+    });
+    return parseResponse(response);
+  }
+
   async function connectPlayer() {
     if (!session?.player?.signed_in) {
       window.location.assign(String(config.signInUrl || '/signin.php'));
@@ -156,7 +176,9 @@
     }
     try {
       let result;
-      if (action === 'session') {
+      if (action === 'telemetry') {
+        result = await telemetry(payload);
+      } else if (action === 'session') {
         result = await loadSession();
       } else {
         if (!session) await loadSession();
@@ -170,7 +192,7 @@
     } catch (error) {
       const messageText = error instanceof Error ? error.message : 'Hosted game request failed.';
       sendToGame({ requestId, ok: false, error: messageText });
-      setStatus(messageText, 'error');
+      if (action !== 'telemetry') setStatus(messageText, 'error');
     }
   }
 
@@ -184,6 +206,8 @@
         type: 'shell-ready',
         payload: {
           sdkVersion: String(config.sdkVersion || '1.1.0'),
+          releaseId: config.releaseId || null,
+          releaseVersion: config.releaseVersion || null,
           manifest: config.manifest || null
         }
       });
