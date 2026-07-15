@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 $user = mg_current_user();
+$active = (string) ($agent_personal_view ?? 'home');
 ?>
 <aside class="mg-app-sidebar mg-universal-sidebar mg-utility-sidebar is-text-sidebar mg-personal-chat-sidebar" data-app-sidebar data-sidebar-variant="utility" data-personal-agent-chat-sidebar>
   <div class="mg-app-sidebar-brand mg-universal-sidebar-brand">
@@ -14,7 +15,7 @@ $user = mg_current_user();
       <button class="mg-personal-chat-action" type="button" data-personal-agent-new-chat>
         <span aria-hidden="true">+</span><strong>New chat</strong>
       </button>
-      <a class="mg-personal-chat-action" href="/design-studio.php">
+      <a class="mg-personal-chat-action<?= $active === 'design' ? ' is-active' : '' ?>" href="/agent.php?view=design"<?= $active === 'design' ? ' aria-current="page"' : '' ?>>
         <span aria-hidden="true">✦</span><strong>Design</strong>
       </a>
     </nav>
