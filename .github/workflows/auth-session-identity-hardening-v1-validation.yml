@@ -18,6 +18,8 @@ on:
       - 'api/me/sessions.php'
       - 'api/me/mfa/**'
       - 'assets/js/auth.js'
+      - 'assets/css/auth-password-fields.css'
+      - 'signup.php'
       - 'database/auth_session_identity_hardening_v1.sql'
       - 'mfa-challenge.php'
       - 'verify-email.php'
@@ -72,6 +74,7 @@ jobs:
           php -l api/me/mfa/setup.php
           php -l api/me/mfa/confirm.php
           php -l api/me/mfa/disable.php
+          php -l signup.php
           php -l mfa-challenge.php
           php -l verify-email.php
           php -l scripts/validate_auth_session_identity_hardening_v1.php
