@@ -1,0 +1,73 @@
+name: Create Center and Merchant Opportunities Validation
+
+on:
+  pull_request:
+    paths:
+      - 'api/user-agent/chat.php'
+      - 'includes/personal-gifting-agent.php'
+      - 'includes/personal-agent/merchant-opportunities.php'
+      - 'includes/header-components/create-list-extension.php'
+      - 'assets/css/create-center-viewport-fix.css'
+      - 'assets/js/create-center-viewport-fix.js'
+      - 'assets/js/stage12-agent-offers.js'
+      - 'scripts/validate_create_center_merchant_opportunities.php'
+      - '.github/workflows/create-center-merchant-opportunities-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, pdo, json
+          coverage: none
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: PHP syntax
+        run: |
+          php -l api/user-agent/chat.php
+          php -l includes/personal-gifting-agent.php
+          php -l includes/personal-agent/merchant-opportunities.php
+          php -l includes/header-components/create-list-extension.php
+          php -l scripts/validate_create_center_merchant_opportunities.php
+
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/create-center-viewport-fix.js
+          node --check assets/js/stage12-agent-offers.js
+
+      - name: Create Center and opportunity contract
+        run: php scripts/validate_create_center_merchant_opportunities.php
+
+      - name: Account gift-card regression
+        run: php scripts/validate_personal_agent_account_gift_cards.php
+
+      - name: Marketplace card regression
+        run: php scripts/validate_personal_agent_marketplace_result_cards.php
+
+      - name: Permission-safe context regression
+        run: php scripts/validate_personal_agent_account_marketplace_context.php
+
+      - name: Runtime regression
+        run: php scripts/validate_personal_agent_runtime.php
+
+      - name: Contact-list and Create Center regression
+        run: php scripts/validate_user_contact_lists_phase1.php
