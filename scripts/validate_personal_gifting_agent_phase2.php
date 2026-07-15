@@ -82,10 +82,13 @@ $checks['personal agent dashboard preserves Agent shell']=
     &&str_contains($css,'.mg-personal-agent-composer')
     &&str_contains($css,'position:sticky');
 
-$sidebarLabels=['Home','Lists','Contacts','Birthdays','Gift Calendar','Draft Plans','Reminders','Group Gifting','Agent Memory','Settings'];
+$sidebarLabels=['Home','Contacts','Birthdays','Gift Calendar','Draft Plans','Reminders','Group Gifting','Agent Memory','Settings'];
 $sidebarCoverage=true;
 foreach($sidebarLabels as $label)$sidebarCoverage=$sidebarCoverage&&str_contains($sidebar,"'label' => '{$label}'");
-$checks['personal agent left navigation']=$sidebarCoverage&&str_contains($workspace,"personal-agent-sidebar.php");
+$checks['personal agent left navigation']=$sidebarCoverage
+    &&str_contains($workspace,"personal-agent-sidebar.php")
+    &&!str_contains($sidebar,"'lists' =>")
+    &&!str_contains($workspace,'Manage lists');
 
 $checks['dashboard and context are owner scoped']=
     substr_count($service,'owner_user_id=?')>=15
@@ -115,7 +118,7 @@ $checks['private data is excluded from agent context']=
 $checks['Claude reuse has safe fallback and approval boundary']=
     str_contains($service,'mg_anthropic_messages')
     &&str_contains($service,'mg_ai_enforce_rate_limits')
-    &&str_contains($service,"\$provider['id']=(int)\$model['provider_id']")
+    &&str_contains($service,"$provider['id']=(int)$model['provider_id']")
     &&str_contains($service,'foreach ($rows as $row)')
     &&str_contains($service,'function mg_personal_agent_fallback')
     &&str_contains($service,'Nothing will be purchased or sent without your review.')
