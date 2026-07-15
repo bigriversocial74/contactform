@@ -1,0 +1,256 @@
+/* Personal Agent chat-first layout.
+   The canvas and composer are separate layers: the canvas owns scrolling while
+   the composer floats above it at the bottom of the workspace. */
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-app .mg-agent-workspace{
+  position:relative!important;
+  display:block!important;
+  height:calc(100svh - var(--mg-app-header))!important;
+  min-height:0!important;
+  overflow:hidden!important;
+  padding:0!important;
+  background:#f5f8fc!important;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-main{
+  position:absolute!important;
+  inset:0!important;
+  min-width:0!important;
+  min-height:0!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain;
+  padding:24px 28px 142px!important;
+  background:#f5f8fc!important;
+  scrollbar-gutter:stable;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-status{
+  width:min(1120px,100%);
+  margin:0 auto;
+  padding:0!important;
+  background:transparent!important;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-status:not(:empty){
+  margin-bottom:12px;
+  padding:10px 14px!important;
+  border:1px solid #dbe5f1!important;
+  border-radius:14px;
+  background:#fff!important;
+}
+
+body.mg-personal-gifting-agent-page .mg-workflow-migration-note{
+  width:min(1120px,100%);
+  margin:0 auto 14px;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-view{
+  width:min(1280px,100%);
+  margin:0 auto;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-chat-view{
+  width:min(1040px,100%);
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-chat-stream{
+  display:grid;
+  align-content:start;
+  gap:14px;
+  min-height:100%;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-message.is-intro{
+  width:min(920px,100%);
+  max-width:none!important;
+  display:grid;
+  gap:10px;
+  padding:22px 24px!important;
+  border:1px solid #dbe5f1;
+  border-radius:22px 22px 22px 8px!important;
+  background:#fff!important;
+  box-shadow:0 16px 38px rgba(15,23,42,.06);
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-message-label{
+  color:#2563eb;
+  font-size:10px;
+  font-weight:950;
+  letter-spacing:.09em;
+  text-transform:uppercase;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-intro-greeting{
+  color:#0f172a;
+  font-size:clamp(24px,3vw,34px);
+  line-height:1.05;
+  letter-spacing:-.045em;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-message.is-intro>p{
+  max-width:760px;
+  margin:0;
+  color:#64748b;
+  font-size:13px;
+  line-height:1.6;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-intro-stats{
+  display:grid!important;
+  grid-template-columns:repeat(6,minmax(0,1fr))!important;
+  gap:8px!important;
+  margin:8px 0 0!important;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-intro-stats .mg-personal-agent-stat{
+  min-width:0;
+  padding:11px 12px;
+  border:1px solid #e1e9f3;
+  border-radius:13px;
+  background:#f8fbff;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-intro-stats .mg-personal-agent-stat span{
+  font-size:9px;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-intro-stats .mg-personal-agent-stat strong{
+  margin-top:5px;
+  font-size:20px;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-intro-stats .mg-personal-agent-stat small{
+  display:none;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-prompts{
+  width:min(920px,100%);
+  padding-left:4px;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-feed{
+  width:100%;
+  display:grid;
+  align-content:start;
+  gap:12px;
+  min-height:0!important;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-feed .mg-personal-agent-message{
+  max-width:min(760px,86%);
+  font-size:13px;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-card-grid{
+  width:min(900px,100%);
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-new-thread{
+  justify-self:start;
+  margin:2px 0 18px 4px;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-composer{
+  position:absolute!important;
+  left:28px!important;
+  right:28px!important;
+  bottom:16px!important;
+  z-index:120!important;
+  display:block!important;
+  width:auto!important;
+  padding:10px!important;
+  border:1px solid #d4dfec!important;
+  border-radius:20px!important;
+  background:rgba(255,255,255,.97)!important;
+  box-shadow:0 20px 55px rgba(15,23,42,.18)!important;
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-composer-row{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 90px;
+  align-items:end;
+  gap:8px;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-composer textarea{
+  width:100%!important;
+  min-width:0!important;
+  min-height:48px!important;
+  max-height:150px!important;
+  margin:0!important;
+  padding:13px 15px!important;
+  border-radius:14px!important;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-composer-row>.mg-btn{
+  width:90px!important;
+  min-width:90px!important;
+  min-height:48px!important;
+  padding:0 12px!important;
+  border-radius:14px!important;
+  font-size:12px!important;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-context-chip{
+  width:max-content;
+  max-width:min(420px,100%);
+  min-height:30px!important;
+  margin:0 0 7px 2px;
+  padding:0 10px!important;
+  border-radius:999px!important;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-section{
+  margin-bottom:16px;
+}
+
+@media(max-width:1280px){
+  body.mg-personal-gifting-agent-page .mg-personal-agent-intro-stats{
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  }
+}
+
+@media(max-width:760px){
+  body.mg-personal-gifting-agent-page .mg-personal-agent-app .mg-agent-workspace{
+    height:calc(100dvh - var(--mg-mobile-topbar,72px))!important;
+  }
+
+  body.mg-personal-gifting-agent-page .mg-personal-agent-main{
+    padding:14px 12px 124px!important;
+  }
+
+  body.mg-personal-gifting-agent-page .mg-personal-agent-message.is-intro{
+    padding:18px!important;
+    border-radius:18px 18px 18px 7px!important;
+  }
+
+  body.mg-personal-gifting-agent-page .mg-personal-agent-intro-stats{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+
+  body.mg-personal-gifting-agent-page .mg-personal-agent-feed .mg-personal-agent-message{
+    max-width:92%;
+  }
+
+  body.mg-personal-gifting-agent-page .mg-personal-agent-composer{
+    left:10px!important;
+    right:10px!important;
+    bottom:8px!important;
+    padding:8px!important;
+    border-radius:17px!important;
+  }
+
+  body.mg-personal-gifting-agent-page .mg-personal-agent-composer-row{
+    grid-template-columns:minmax(0,1fr) 72px;
+    gap:6px;
+  }
+
+  body.mg-personal-gifting-agent-page .mg-personal-agent-composer-row>.mg-btn{
+    width:72px!important;
+    min-width:72px!important;
+    padding:0 8px!important;
+  }
+}
