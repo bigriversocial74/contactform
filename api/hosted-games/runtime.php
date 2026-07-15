@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/bootstrap.php';
 require_once dirname(__DIR__, 2) . '/includes/hosted-games.php';
+require_once dirname(__DIR__, 2) . '/includes/hosted-game-standard-v1.php';
 
 $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 $input = $method === 'POST' ? mg_input() : $_GET;
@@ -14,13 +15,14 @@ if (!mg_hosted_game_schema_ready($pdo)) mg_fail('Hosted Games setup is incomplet
 $game = mg_hosted_game_by_slug($pdo, $slug, false);
 if (!$game) mg_fail('Hosted game not found or unavailable.', 404);
 $readiness = mg_hosted_game_readiness($pdo, $game);
+$manifest = mg_hosted_game_standard_manifest_from_game($game);
 $user = mg_current_user();
 $userId = is_array($user) ? (int)($user['id'] ?? 0) : 0;
 $link = $userId > 0 && !empty($game['developer_app_id'])
     ? mg_hosted_game_active_link($pdo, (int)$game['developer_app_id'], $userId)
     : null;
 
-function mg_hosted_game_runtime_session(array $game, array $readiness, ?array $user, ?array $link): array
+function mg_hosted_game_runtime_session(array $game, array $readiness, array $manifest, ?array $user, ?array $link): array
 {
     return [
         'game'=>[
@@ -30,6 +32,17 @@ function mg_hosted_game_runtime_session(array $game, array $readiness, ?array $u
             'status'=>(string)$game['status'],
             'database_ready'=>(bool)$readiness['database_ready'],
             'integration_ready'=>(bool)$readiness['integration_ready'],
+            'standard'=>mg_hosted_game_standard_public_manifest($manifest),
+        ],
+        'program'=>[
+            'id'=>$game['program_public_id'] ?? null,
+            'name'=>$game['program_name'] ?? null,
+            'campaign_id'=>$game['campaign_public_id'] ?? null,
+            'campaign_title'=>$game['campaign_title'] ?? null,
+        ],
+        'reward'=>[
+            'template_id'=>$game['pppm_public_id'] ?? null,
+            'title'=>$game['reward_title'] ?? null,
         ],
         'player'=>[
             'signed_in'=>is_array($user),
@@ -37,12 +50,19 @@ function mg_hosted_game_runtime_session(array $game, array $readiness, ?array $u
             'display_name'=>is_array($user) ? (string)($user['display_name'] ?? $user['full_name'] ?? 'Microgifter player') : null,
             'inbox_url'=>'/inbox.php',
         ],
+        'runtime'=>[
+            'sdk_version'=>MG_HOSTED_GAME_STANDARD_SDK_VERSION,
+            'standard_version'=>'1.0.0',
+            'max_duration_seconds'=>(int)$manifest['session']['max_duration_seconds'],
+            'scoring'=>$manifest['scoring'],
+            'qualification'=>$manifest['qualification'],
+        ],
         'ready'=>(bool)$readiness['publish_ready'],
     ];
 }
 
 if ($method === 'GET') {
-    mg_ok(mg_hosted_game_runtime_session($game, $readiness, is_array($user) ? $user : null, $link));
+    mg_ok(mg_hosted_game_runtime_session($game, $readiness, $manifest, is_array($user) ? $user : null, $link));
 }
 
 mg_require_method('POST');
@@ -72,40 +92,65 @@ function mg_hosted_game_runtime_player_key(int $userId): string
     return 'microgifter-user-' . $userId;
 }
 
+function mg_hosted_game_runtime_require_capability(array $manifest, string $capability): void
+{
+    if (!mg_hosted_game_standard_has_capability($manifest, $capability)) {
+        mg_fail('This hosted game release does not enable the ' . $capability . ' capability.', 403);
+    }
+}
+
+function mg_hosted_game_runtime_authorized_run(PDO $pdo, array $game, int $userId, array $input, bool $forUpdate = false): array
+{
+    $runPublicId = trim((string)($input['run_id'] ?? ''));
+    $runToken = trim((string)($input['run_token'] ?? ''));
+    if ($runPublicId === '' || $runToken === '') mg_fail('Valid game run authorization is required.', 422);
+    $run = mg_hosted_game_runtime_run($pdo, (int)$game['id'], $userId, $runPublicId, $forUpdate);
+    if (!$run || !mg_hosted_game_runtime_token($run, $runToken)) mg_fail('Valid game run authorization is required.', 403);
+    return $run;
+}
+
 try {
     if ($action === 'session') {
         $link = mg_hosted_game_active_link($pdo, (int)$game['developer_app_id'], $userId);
-        mg_ok(mg_hosted_game_runtime_session($game, $readiness, $user, $link));
+        mg_ok(mg_hosted_game_runtime_session($game, $readiness, $manifest, $user, $link));
     }
 
     if ($action === 'connect') {
+        mg_hosted_game_runtime_require_capability($manifest, 'player');
         $link = mg_hosted_game_connect_player($pdo, $game, $userId);
         mg_hosted_game_log_event($pdo,(int)$game['id'],null,$userId,'player.connected',['linked_account_id'=>(string)$link['public_id']]);
         mg_ok(['connected'=>true,'linked_account_id'=>(string)$link['public_id'],'player'=>['display_name'=>(string)($user['display_name'] ?? $user['full_name'] ?? 'Microgifter player')]],'Player connected.');
     }
 
     if ($action === 'start') {
+        mg_hosted_game_runtime_require_capability($manifest, 'runs');
         $link = mg_hosted_game_connect_player($pdo, $game, $userId);
         $configStmt = $pdo->prepare("SELECT dp.public_id AS program_public_id,c.public_id AS campaign_public_id,cpt.public_id AS template_public_id FROM hosted_games hg INNER JOIN distribution_programs dp ON dp.id=hg.distribution_program_id INNER JOIN campaigns c ON c.id=hg.campaign_id INNER JOIN catalog_pppm_templates cpt ON cpt.id=hg.pppm_template_id WHERE hg.id=? AND hg.status='active' LIMIT 1");
         $configStmt->execute([(int)$game['id']]);
         $snapshot = $configStmt->fetch(PDO::FETCH_ASSOC);
         if (!$snapshot) mg_fail('Game reward configuration is unavailable.', 503);
-        $pdo->prepare("UPDATE hosted_game_runs SET status='expired',updated_at=NOW() WHERE game_id=? AND player_user_id=? AND status='started' AND expires_at<NOW()")
+        $pdo->prepare("UPDATE hosted_game_runs SET status='expired',error_message='Superseded by a new game run.',updated_at=NOW() WHERE game_id=? AND player_user_id=? AND status='started'")
             ->execute([(int)$game['id'],$userId]);
         $runPublicId = mg_hosted_game_uuid();
         $runToken = rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
         $eventId = 'hosted-game.' . str_replace('-', '', $runPublicId);
-        $expiresAt = gmdate('Y-m-d H:i:s', time() + 86400);
+        $duration = max(30, min(86400, (int)$manifest['session']['max_duration_seconds']));
+        $expiresAt = gmdate('Y-m-d H:i:s', time() + $duration);
         $metadata = is_array($input['metadata'] ?? null) ? $input['metadata'] : [];
-        $metadataJson = $metadata === [] ? null : mg_hosted_game_json_encode($metadata, 65536);
+        $metadata['hosted_game_standard'] = '1.0.0';
+        $metadata['game_version'] = (string)$manifest['version'];
+        $metadata['sdk_version'] = mb_substr(trim((string)($input['sdk_version'] ?? MG_HOSTED_GAME_STANDARD_SDK_VERSION)), 0, 40);
+        $metadataJson = mg_hosted_game_json_encode($metadata, 65536);
         $pdo->prepare("INSERT INTO hosted_game_runs (public_id,game_id,player_user_id,developer_app_id,linked_account_public_id,program_public_id,campaign_public_id,template_public_id,run_token_hash,external_event_id,status,result_json,started_at,expires_at,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,'started',?,NOW(),?,NOW(),NOW())")
             ->execute([$runPublicId,(int)$game['id'],$userId,(int)$game['developer_app_id'],(string)$link['public_id'],(string)$snapshot['program_public_id'],(string)$snapshot['campaign_public_id'],(string)$snapshot['template_public_id'],hash('sha256',$runToken),$eventId,$metadataJson,$expiresAt]);
         $runId = (int)$pdo->lastInsertId();
         mg_hosted_game_log_event($pdo,(int)$game['id'],$runId,$userId,'run.started',['external_event_id'=>$eventId]);
-        mg_ok(['run'=>['run_id'=>$runPublicId,'run_token'=>$runToken,'status'=>'started','expires_at'=>gmdate('c',strtotime($expiresAt))]],'Game run started.',201);
+        mg_hosted_game_log_event($pdo,(int)$game['id'],$runId,$userId,'standard.run_started',['duration_seconds'=>$duration,'game_version'=>(string)$manifest['version']]);
+        mg_ok(['run'=>['run_id'=>$runPublicId,'run_token'=>$runToken,'status'=>'started','expires_at'=>gmdate('c',strtotime($expiresAt)),'max_duration_seconds'=>$duration]],'Game run started.',201);
     }
 
     if ($action === 'complete') {
+        mg_hosted_game_runtime_require_capability($manifest, 'runs');
         $runPublicId = trim((string)($input['run_id'] ?? ''));
         $runToken = trim((string)($input['run_token'] ?? ''));
         $qualified = !empty($input['qualified']);
@@ -113,6 +158,10 @@ try {
         $score = $scoreInput === null || $scoreInput === '' ? null : filter_var($scoreInput, FILTER_VALIDATE_INT);
         $result = is_array($input['result'] ?? null) ? $input['result'] : [];
         if ($runPublicId === '' || $runToken === '' || ($scoreInput !== null && $scoreInput !== '' && $score === false)) mg_fail('The game result is incomplete.',422);
+        $qualificationMode = (string)$manifest['qualification']['mode'];
+        if ($qualified && $qualificationMode === 'none') mg_fail('This game manifest does not enable reward qualification.',409);
+        if ($qualified && $qualificationMode === 'server_review') mg_fail('This game requires a reviewed server-side qualification endpoint before reward issuance.',409);
+        $result['hosted_game_standard'] = '1.0.0';
         $resultJson = mg_hosted_game_json_encode($result,65536);
         $pdo->beginTransaction();
         $run = mg_hosted_game_runtime_run($pdo,(int)$game['id'],$userId,$runPublicId,true);
@@ -126,6 +175,7 @@ try {
         if (strtotime((string)$run['expires_at']) < time()) {
             $pdo->prepare("UPDATE hosted_game_runs SET status='expired',error_message='Game run expired before completion.',updated_at=NOW() WHERE id=?")->execute([(int)$run['id']]);
             $pdo->commit();
+            mg_hosted_game_log_event($pdo,(int)$game['id'],(int)$run['id'],$userId,'standard.run_abandoned',['reason'=>'expired']);
             mg_fail('This game run expired. Start a new run.',409);
         }
         if (!$qualified) {
@@ -134,6 +184,7 @@ try {
             $pdo->commit();
             $updated = mg_hosted_game_runtime_run($pdo,(int)$game['id'],$userId,$runPublicId,false);
             mg_hosted_game_log_event($pdo,(int)$game['id'],(int)$run['id'],$userId,'run.completed',['qualified'=>false,'score'=>$score]);
+            mg_hosted_game_log_event($pdo,(int)$game['id'],(int)$run['id'],$userId,'standard.run_completed',['qualified'=>false,'score'=>$score]);
             mg_ok(['qualified'=>false,'reward_issued'=>false,'run'=>mg_hosted_game_run_payload($updated ?: $run)],'Game run completed.');
         }
         $pdo->prepare("UPDATE hosted_game_runs SET status='issuing',score=?,result_json=?,completed_at=NOW(),error_message=NULL,updated_at=NOW() WHERE id=?")
@@ -150,8 +201,10 @@ try {
                 'reward'=>['template_id'=>(string)$run['template_public_id'],'quantity'=>1],
                 'metadata'=>[
                     'source'=>'hosted-game',
+                    'hosted_game_standard'=>'1.0.0',
                     'hosted_game_id'=>(string)$game['public_id'],
                     'hosted_game_slug'=>(string)$game['slug'],
+                    'game_version'=>(string)$manifest['version'],
                     'game_run_id'=>(string)$run['public_id'],
                     'campaign_id'=>(string)$run['campaign_public_id'],
                     'score'=>$score,
@@ -168,6 +221,7 @@ try {
             $pdo->prepare("UPDATE hosted_game_runs SET reward_public_id=?,api_status=?,status='queued',error_message=NULL,updated_at=NOW() WHERE id=?")
                 ->execute([$rewardId,$apiStatus,(int)$run['id']]);
             $updated = mg_hosted_game_runtime_run($pdo,(int)$game['id'],$userId,$runPublicId,false);
+            mg_hosted_game_log_event($pdo,(int)$game['id'],(int)$run['id'],$userId,'standard.run_completed',['qualified'=>true,'score'=>$score,'reward_id'=>$rewardId]);
             mg_hosted_game_log_event($pdo,(int)$game['id'],(int)$run['id'],$userId,'reward.queued',['reward_id'=>$rewardId,'api_status'=>$apiStatus]);
             mg_ok(['qualified'=>true,'reward_issued'=>true,'run'=>mg_hosted_game_run_payload($updated ?: $run)],'Reward earned and queued for delivery.',202);
         } catch (Throwable $issueError) {
@@ -179,7 +233,51 @@ try {
         }
     }
 
+    if ($action === 'abandon') {
+        mg_hosted_game_runtime_require_capability($manifest, 'runs');
+        $reason = strtolower(trim((string)($input['reason'] ?? 'player_exit')));
+        if (preg_match('/^[a-z0-9_.:-]{2,120}$/', $reason) !== 1) $reason = 'player_exit';
+        $result = is_array($input['result'] ?? null) ? $input['result'] : [];
+        $result['abandoned'] = true;
+        $result['reason'] = $reason;
+        $resultJson = mg_hosted_game_json_encode($result, 32768);
+        $pdo->beginTransaction();
+        $run = mg_hosted_game_runtime_authorized_run($pdo, $game, $userId, $input, true);
+        if ((string)$run['status'] !== 'started') {
+            $pdo->commit();
+            mg_ok(['abandoned'=>false,'run'=>mg_hosted_game_run_payload($run)],'Game run was already closed.');
+        }
+        $pdo->prepare("UPDATE hosted_game_runs SET status='completed',result_json=?,completed_at=NOW(),error_message=NULL,updated_at=NOW() WHERE id=?")
+            ->execute([$resultJson,(int)$run['id']]);
+        $pdo->commit();
+        $updated = mg_hosted_game_runtime_run($pdo,(int)$game['id'],$userId,(string)$run['public_id'],false);
+        mg_hosted_game_log_event($pdo,(int)$game['id'],(int)$run['id'],$userId,'standard.run_abandoned',['reason'=>$reason]);
+        mg_ok(['abandoned'=>true,'run'=>mg_hosted_game_run_payload($updated ?: $run)],'Game run abandoned.');
+    }
+
+    if ($action === 'event') {
+        mg_hosted_game_runtime_require_capability($manifest, 'events');
+        [$eventType, $event] = mg_hosted_game_standard_event((string)($input['event_type'] ?? ''), $input['event'] ?? []);
+        if ((string)$manifest['standard']['compliance'] === 'standard' && !in_array($eventType, $manifest['events'], true)) {
+            mg_fail('This event is not declared by the active game manifest.', 403);
+        }
+        $runId = null;
+        if (!empty($input['run_id']) || !empty($input['run_token'])) {
+            $run = mg_hosted_game_runtime_authorized_run($pdo, $game, $userId, $input, false);
+            $runId = (int)$run['id'];
+        }
+        if ($eventType === 'score_updated') {
+            $eventScore = $event['score'] ?? null;
+            if (!is_int($eventScore) && filter_var($eventScore, FILTER_VALIDATE_INT) === false) mg_fail('score_updated requires an integer score.',422);
+            $event['score'] = (int)$eventScore;
+        }
+        $event['standard_version'] = '1.0.0';
+        mg_hosted_game_log_event($pdo,(int)$game['id'],$runId,$userId,'standard.' . $eventType,$event);
+        mg_ok(['recorded'=>true,'event_type'=>$eventType]);
+    }
+
     if ($action === 'status') {
+        mg_hosted_game_runtime_require_capability($manifest, 'runs');
         $runPublicId = trim((string)($input['run_id'] ?? ''));
         $run = mg_hosted_game_runtime_run($pdo,(int)$game['id'],$userId,$runPublicId,false);
         if (!$run) mg_fail('Game run not found.',404);
@@ -187,6 +285,7 @@ try {
     }
 
     if ($action === 'state_load') {
+        mg_hosted_game_runtime_require_capability($manifest, 'state');
         $key = trim((string)($input['key'] ?? 'default'));
         if (preg_match('/^[A-Za-z0-9_.:-]{1,120}$/',$key) !== 1) mg_fail('Invalid game state key.',422);
         $gamePdo = mg_hosted_game_database_pdo($pdo,(int)$game['id']);
@@ -197,6 +296,7 @@ try {
     }
 
     if ($action === 'state_save') {
+        mg_hosted_game_runtime_require_capability($manifest, 'state');
         $key = trim((string)($input['key'] ?? 'default'));
         if (preg_match('/^[A-Za-z0-9_.:-]{1,120}$/',$key) !== 1) mg_fail('Invalid game state key.',422);
         if (!array_key_exists('state',$input)) mg_fail('Game state is required.',422);
@@ -209,34 +309,37 @@ try {
     }
 
     if ($action === 'score_submit') {
-        $runPublicId = trim((string)($input['run_id'] ?? ''));
-        $runToken = trim((string)($input['run_token'] ?? ''));
+        mg_hosted_game_runtime_require_capability($manifest, 'scores');
         $score = filter_var($input['score'] ?? null,FILTER_VALIDATE_INT);
         $metadata = is_array($input['metadata'] ?? null) ? $input['metadata'] : [];
-        if ($runPublicId === '' || $runToken === '' || $score === false) mg_fail('Run and integer score are required.',422);
-        $run = mg_hosted_game_runtime_run($pdo,(int)$game['id'],$userId,$runPublicId,false);
-        if (!$run || !mg_hosted_game_runtime_token($run,$runToken)) mg_fail('Valid game run authorization is required.',403);
+        if ($score === false) mg_fail('An integer score is required.',422);
+        $run = mg_hosted_game_runtime_authorized_run($pdo, $game, $userId, $input, false);
         $gamePdo = mg_hosted_game_database_pdo($pdo,(int)$game['id']);
         $scorePublicId = mg_hosted_game_uuid();
+        $metadata['game_version'] = (string)$manifest['version'];
         $gamePdo->prepare('INSERT INTO microgifter_game_scores (public_id,player_key,score,metadata_json,created_at) VALUES (?,?,?,?,NOW())')
-            ->execute([$scorePublicId,mg_hosted_game_runtime_player_key($userId),(int)$score,$metadata === [] ? null : mg_hosted_game_json_encode($metadata,32768)]);
+            ->execute([$scorePublicId,mg_hosted_game_runtime_player_key($userId),(int)$score,mg_hosted_game_json_encode($metadata,32768)]);
         mg_hosted_game_log_event($pdo,(int)$game['id'],(int)$run['id'],$userId,'score.submitted',['score'=>(int)$score]);
         mg_ok(['score_id'=>$scorePublicId,'score'=>(int)$score],'Score submitted.',201);
     }
 
     if ($action === 'leaderboard') {
+        mg_hosted_game_runtime_require_capability($manifest, 'leaderboard');
         $limit = max(1,min(100,(int)($input['limit'] ?? 20)));
         $gamePdo = mg_hosted_game_database_pdo($pdo,(int)$game['id']);
-        $stmt = $gamePdo->query('SELECT player_key,MAX(score) AS score,MAX(created_at) AS achieved_at FROM microgifter_game_scores GROUP BY player_key ORDER BY score DESC,achieved_at ASC LIMIT ' . $limit);
+        $sort = (string)$manifest['scoring']['sort'] === 'low' ? 'ASC' : 'DESC';
+        $aggregate = $sort === 'ASC' ? 'MIN' : 'MAX';
+        $stmt = $gamePdo->query('SELECT player_key,' . $aggregate . '(score) AS score,MAX(created_at) AS achieved_at FROM microgifter_game_scores GROUP BY player_key ORDER BY score ' . $sort . ',achieved_at ASC LIMIT ' . $limit);
         $rank = 0;
         $rows = array_map(static function(array $row) use (&$rank): array {
             $rank++;
             return ['rank'=>$rank,'player'=>'Player ' . strtoupper(substr(hash('sha256',(string)$row['player_key']),0,6)),'score'=>(int)$row['score'],'achieved_at'=>$row['achieved_at']];
         },$stmt->fetchAll(PDO::FETCH_ASSOC) ?: []);
-        mg_ok(['leaderboard'=>$rows]);
+        mg_ok(['leaderboard'=>$rows,'sort'=>strtolower($sort)]);
     }
 
     if ($action === 'track') {
+        mg_hosted_game_runtime_require_capability($manifest, 'events');
         $eventType = strtolower(trim((string)($input['event_type'] ?? 'game.event')));
         $event = is_array($input['event'] ?? null) ? $input['event'] : [];
         if (preg_match('/^[a-z0-9_.:-]{2,100}$/',$eventType) !== 1) mg_fail('Invalid game event type.',422);

@@ -1,7 +1,50 @@
 {
+  "schema": "microgifter.hosted-game/v1",
   "name": "Hosted Game Starter",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "entry": "index.html",
-  "integrationVersion": "1",
-  "description": "Minimal Microgifter Hosted Games bridge example."
+  "description": "Minimal Microgifter Hosted Game Standard v1 example.",
+  "category": "casual",
+  "orientation": "any",
+  "viewport": {
+    "min_width": 320,
+    "min_height": 480
+  },
+  "session": {
+    "max_duration_seconds": 180
+  },
+  "capabilities": [
+    "player",
+    "runs",
+    "events",
+    "state",
+    "scores",
+    "leaderboard",
+    "inbox",
+    "fullscreen"
+  ],
+  "events": [
+    "game_loaded",
+    "run_started",
+    "score_updated",
+    "player_qualified",
+    "run_completed",
+    "run_abandoned",
+    "runtime_error"
+  ],
+  "scoring": {
+    "mode": "points",
+    "sort": "high",
+    "integer": true
+  },
+  "qualification": {
+    "mode": "game_reported"
+  },
+  "network": {
+    "connect": []
+  },
+  "assets": {
+    "cover": null,
+    "icon": null
+  }
 }

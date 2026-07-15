@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_merchant.php';
 require_once dirname(__DIR__, 2) . '/includes/hosted-game-upload.php';
+require_once dirname(__DIR__, 2) . '/includes/hosted-game-standard-v1.php';
 
 mg_require_method('POST');
 $user = mg_merchant_require_permission('merchant.hosted_games.manage');
@@ -18,8 +19,11 @@ if ($gamePublicId === '') mg_fail('Save the hosted game record before uploading 
 
 try {
     $game = mg_hosted_game_for_merchant($pdo, $merchantUserId, $gamePublicId, false);
+    if (!isset($_FILES['game_zip']) || !is_array($_FILES['game_zip'])) throw new MgHostedGameException('Select a game ZIP to upload.');
+    $standardManifest = mg_hosted_game_standard_preflight_upload($_FILES['game_zip'], $game);
     $result = mg_hosted_game_process_upload($pdo, $game, $merchantUserId, 'merchant.hosted_game.release_uploaded');
-    mg_ok($result, 'Game ZIP uploaded and activated.', 201);
+    $result = mg_hosted_game_standard_finalize_release($pdo, $game, $result, $standardManifest, $merchantUserId);
+    mg_ok($result, 'Game ZIP uploaded, standardized, and activated.', 201);
 } catch (InvalidArgumentException|MgHostedGameException $error) {
     mg_fail($error->getMessage(), 422);
 } catch (Throwable $error) {
