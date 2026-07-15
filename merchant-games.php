@@ -8,11 +8,13 @@ $header_mode = 'account';
 $page_styles = [
     '/assets/css/merchant-workspace.css',
     '/assets/css/hosted-games-management.css?v=1.0.0',
+    '/assets/css/hosted-games-runtime-toggle.css?v=1.0.0',
 ];
 $page_scripts = [
     '/assets/js/merchant-workspace.js',
     '/assets/js/merchant-hosted-games.js?v=1.0.0',
     '/assets/js/merchant-hosted-games-program-only.js?v=1.0.0',
+    '/assets/js/merchant-hosted-games-runtime-toggle.js?v=1.0.0',
 ];
 $merchantView = 'hosted_games';
 require __DIR__ . '/includes/header.php';
