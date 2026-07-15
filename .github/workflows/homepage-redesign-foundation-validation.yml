@@ -1,4 +1,4 @@
-name: Public Home Local Business v1 Validation
+name: Homepage Redesign Foundation Validation
 
 on:
   pull_request:
@@ -7,11 +7,8 @@ on:
     paths:
       - 'index.php'
       - 'merchant-landing.php'
-      - 'assets/css/homepage-local-business-v1.css'
-      - 'assets/images/public-home-merchant-hero.jpg'
-      - 'includes/header-components/public-header.php'
-      - 'scripts/validate_public_home_local_business_v1.php'
-      - '.github/workflows/public-home-local-business-v1-validation.yml'
+      - 'scripts/validate_homepage_redesign_foundation.php'
+      - '.github/workflows/homepage-redesign-foundation-validation.yml'
   workflow_dispatch:
 
 permissions:
@@ -25,7 +22,6 @@ jobs:
       fail-fast: false
       matrix:
         php: ['8.2', '8.3']
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -40,7 +36,7 @@ jobs:
         run: |
           php -l index.php
           php -l merchant-landing.php
-          php -l scripts/validate_public_home_local_business_v1.php
+          php -l scripts/validate_homepage_redesign_foundation.php
 
-      - name: Public merchant landing design contract
-        run: php scripts/validate_public_home_local_business_v1.php
+      - name: Homepage foundation contract
+        run: php scripts/validate_homepage_redesign_foundation.php

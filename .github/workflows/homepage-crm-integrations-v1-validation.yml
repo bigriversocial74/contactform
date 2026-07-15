@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'index.php'
+      - 'merchant-landing.php'
       - 'includes/landing/homepage-crm-integrations.php'
       - 'assets/css/homepage-crm-integrations-v1.css'
       - 'scripts/validate_homepage_crm_integrations_v1.php'
@@ -29,6 +30,7 @@ jobs:
       - name: PHP syntax
         run: |
           php -l index.php
+          php -l merchant-landing.php
           php -l includes/landing/homepage-crm-integrations.php
           php -l scripts/validate_homepage_crm_integrations_v1.php
       - name: Homepage CRM integrations contract
