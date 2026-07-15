@@ -4,10 +4,10 @@ window.Microgifter = window.Microgifter || {};
   'use strict';
 
   function resolveRedirect(form, data) {
+    if (data && data.data && data.data.redirect) return data.data.redirect;
     var explicit = form.getAttribute('data-success-redirect');
     if (explicit) return explicit;
     if (form.dataset.authForm === 'signin' || form.dataset.authForm === 'signup') return '/inbox.php';
-    if (data && data.data && data.data.redirect) return data.data.redirect;
     return '';
   }
 
@@ -31,7 +31,11 @@ window.Microgifter = window.Microgifter || {};
           }, 250);
         }
       } catch (error) {
+        var errorRedirect = error && error.data && error.data.redirect;
         Microgifter.setStatus(status, error.message || 'Unable to complete request.', 'error');
+        if (errorRedirect) {
+          window.setTimeout(function () { window.location.href = errorRedirect; }, 500);
+        }
       } finally {
         Microgifter.setBusy(submit, false);
       }

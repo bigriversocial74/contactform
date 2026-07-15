@@ -104,6 +104,8 @@ if (preg_match('#^(.*)/(public_html|www|htdocs)(?:/|$)#', $normalizedApplication
     }
 }
 
+$sessionDays = mg_env_int('MG_SESSION_DAYS', 30);
+
 $config = [
     'db' => [
         'host' => (string) mg_env('MG_DB_HOST', 'localhost'),
@@ -127,6 +129,12 @@ $config = [
         'public_endpoint' => (string) mg_env('MG_MEDIA_PUBLIC_ENDPOINT', '/api/public/media.php'),
         'require_persistent' => mg_env_bool('MG_REQUIRE_PERSISTENT_MEDIA_STORAGE', $appEnv === 'production'),
         'legacy_root' => $applicationRoot,
+    ],
+    'mail' => [
+        'enabled' => mg_env_bool('MG_MAIL_ENABLED', false),
+        'provider' => strtolower((string) mg_env('MG_MAIL_PROVIDER', 'log')),
+        'from_email' => (string) mg_env('MG_MAIL_FROM_EMAIL', 'no-reply@microgifter.com'),
+        'from_name' => (string) mg_env('MG_MAIL_FROM_NAME', 'Microgifter'),
     ],
     'ai' => [
         'anthropic_api_key' => (string) mg_env('MG_ANTHROPIC_API_KEY', ''),
@@ -153,7 +161,18 @@ $config = [
     ],
     'security' => [
         'session_name' => (string) mg_env('MG_SESSION_NAME', 'mg_session'),
-        'session_days' => mg_env_int('MG_SESSION_DAYS', 30),
+        'session_days' => $sessionDays,
+        'session_absolute_minutes' => mg_env_int('MG_SESSION_ABSOLUTE_MINUTES', max(1440, $sessionDays * 1440)),
+        'session_idle_minutes' => mg_env_int('MG_SESSION_IDLE_MINUTES', 720),
+        'session_admin_absolute_minutes' => mg_env_int('MG_SESSION_ADMIN_ABSOLUTE_MINUTES', 480),
+        'session_admin_idle_minutes' => mg_env_int('MG_SESSION_ADMIN_IDLE_MINUTES', 30),
+        'session_rotation_minutes' => mg_env_int('MG_SESSION_ROTATION_MINUTES', 15),
+        'session_cookie_samesite' => (string) mg_env('MG_SESSION_COOKIE_SAMESITE', 'Lax'),
+        'step_up_max_age_seconds' => mg_env_int('MG_STEP_UP_MAX_AGE_SECONDS', 600),
+        'mfa_challenge_seconds' => mg_env_int('MG_MFA_CHALLENGE_SECONDS', 300),
+        'mfa_enforce_enrolled' => mg_env_bool('MG_MFA_ENFORCE_ENROLLED', true),
+        'mfa_encryption_key' => (string) mg_env('MG_MFA_ENCRYPTION_KEY', ''),
+        'email_verification_required' => mg_env_bool('MG_EMAIL_VERIFICATION_REQUIRED', true),
         'reset_token_minutes' => mg_env_int('MG_RESET_TOKEN_MINUTES', 60),
         'verify_token_minutes' => mg_env_int('MG_VERIFY_TOKEN_MINUTES', 1440),
         'claim_code_pepper' => (string) mg_env('MG_CLAIM_CODE_PEPPER', ''),
@@ -177,6 +196,9 @@ if (is_file($localConfigFile)) {
     }
     if (isset($mgPaymentCredentialKey) && is_scalar($mgPaymentCredentialKey)) {
         $localScalarSecrets['payment_credential_key'] = trim((string) $mgPaymentCredentialKey);
+    }
+    if (isset($mgMfaEncryptionKey) && is_scalar($mgMfaEncryptionKey)) {
+        $localScalarSecrets['mfa_encryption_key'] = trim((string) $mgMfaEncryptionKey);
     }
     if (is_array($localConfig)) {
         $config = mg_array_deep_merge($config, $localConfig);
@@ -202,9 +224,7 @@ if ($localAnthropicVariable !== '' && !in_array($localAnthropicVariable, $anthro
 }
 mg_apply_local_secret_env('MG_ANTHROPIC_API_KEY', $anthropicKey, $anthropicPlaceholders);
 
-$paymentPlaceholders = [
-    'PASTE_GENERATED_PAYMENT_CREDENTIAL_KEY_HERE',
-];
+$paymentPlaceholders = ['PASTE_GENERATED_PAYMENT_CREDENTIAL_KEY_HERE'];
 $paymentCredentialKey = mg_local_secret_value($config, [
     ['payments', 'credential_key'],
     ['security', 'payment_credential_key'],
@@ -214,5 +234,11 @@ if ($localPaymentVariable !== '' && !in_array($localPaymentVariable, $paymentPla
     $paymentCredentialKey = $localPaymentVariable;
 }
 mg_apply_local_secret_env('MG_PAYMENT_CREDENTIAL_KEY', $paymentCredentialKey, $paymentPlaceholders);
+
+$localMfaKey = $localScalarSecrets['mfa_encryption_key'] ?? '';
+if ($localMfaKey !== '') {
+    $config['security']['mfa_encryption_key'] = $localMfaKey;
+    mg_apply_local_secret_env('MG_MFA_ENCRYPTION_KEY', $localMfaKey);
+}
 
 return $config;

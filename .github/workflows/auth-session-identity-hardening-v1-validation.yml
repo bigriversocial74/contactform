@@ -1,0 +1,81 @@
+name: Auth Session Identity Hardening v1 Validation
+
+on:
+  pull_request:
+    paths:
+      - 'includes/app-core.php'
+      - 'includes/auth.php'
+      - 'includes/csrf.php'
+      - 'includes/permissions.php'
+      - 'includes/identity-security.php'
+      - 'includes/session-security.php'
+      - 'includes/mfa.php'
+      - 'includes/mail.php'
+      - 'api/bootstrap.php'
+      - 'api/config.php'
+      - 'api/config.local.example.php'
+      - 'api/auth/**'
+      - 'api/me/sessions.php'
+      - 'api/me/mfa/**'
+      - 'assets/js/auth.js'
+      - 'database/auth_session_identity_hardening_v1.sql'
+      - 'mfa-challenge.php'
+      - 'verify-email.php'
+      - 'scripts/validate_auth_session_identity_hardening_v1.php'
+      - '.github/workflows/auth-session-identity-hardening-v1-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    strategy:
+      matrix:
+        php-version: ['8.2', '8.3']
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: mbstring, openssl, pdo_mysql
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: PHP syntax
+        run: |
+          php -l includes/app-core.php
+          php -l includes/auth.php
+          php -l includes/csrf.php
+          php -l includes/permissions.php
+          php -l includes/identity-security.php
+          php -l includes/session-security.php
+          php -l includes/mfa.php
+          php -l includes/mail.php
+          php -l api/bootstrap.php
+          php -l api/config.php
+          php -l api/config.local.example.php
+          php -l api/auth/_identity_core.php
+          php -l api/auth/register.php
+          php -l api/auth/login.php
+          php -l api/auth/logout.php
+          php -l api/auth/reauth.php
+          php -l api/auth/mfa/verify.php
+          php -l api/auth/password/forgot.php
+          php -l api/auth/password/reset.php
+          php -l api/auth/email/verify.php
+          php -l api/auth/email/resend.php
+          php -l api/me/sessions.php
+          php -l api/me/mfa/status.php
+          php -l api/me/mfa/setup.php
+          php -l api/me/mfa/confirm.php
+          php -l api/me/mfa/disable.php
+          php -l mfa-challenge.php
+          php -l verify-email.php
+          php -l scripts/validate_auth_session_identity_hardening_v1.php
+      - name: JavaScript syntax
+        run: node --check assets/js/auth.js
+      - name: Hardening contract
+        run: php scripts/validate_auth_session_identity_hardening_v1.php

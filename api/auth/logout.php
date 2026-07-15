@@ -8,19 +8,18 @@ mg_require_method('POST');
 $input = mg_input();
 mg_require_csrf_for_write($input);
 
-$user = mg_current_user();
+$user = mg_authenticated_user();
 $userId = is_array($user) && !empty($user['id']) ? (int) $user['id'] : null;
 
 if ($userId) {
-    mg_revoke_current_session($userId);
+    try {
+        mg_hardened_revoke_current_session(mg_db(), $userId);
+    } catch (Throwable $e) {
+        mg_security_log('error', 'session.logout_revoke_failed', 'Logout could not mark the DB session revoked.', ['exception_class' => $e::class], $userId);
+    }
     mg_audit('auth.logout', 'user', ['email' => $user['email'] ?? null], $userId);
     mg_event('user.logged_out', ['email' => $user['email'] ?? null], $userId);
 }
 
-$_SESSION = [];
-mg_expire_session_cookie();
-if (session_status() === PHP_SESSION_ACTIVE) {
-    session_destroy();
-}
-
+mg_clear_session_identity(true);
 mg_ok(['redirect' => '/index.php'], 'Signed out.');

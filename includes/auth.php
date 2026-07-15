@@ -1,9 +1,9 @@
 <?php
 /**
  * Auth state helpers for server-rendered pages.
- * Stage 1 uses session-backed identity. API endpoints remain responsible for DB-backed auth.
+ * Raw session state is never treated as sufficient authorization; protected pages
+ * use the canonical DB-backed identity/session validator when it is available.
  */
-
 declare(strict_types=1);
 
 function mg_current_user(): ?array
@@ -15,14 +15,22 @@ function mg_current_user(): ?array
     return isset($_SESSION['mg_user']) && is_array($_SESSION['mg_user']) ? $_SESSION['mg_user'] : null;
 }
 
+function mg_authenticated_user(bool $forceRefresh = false): ?array
+{
+    if (function_exists('mg_refresh_session_user')) {
+        return mg_refresh_session_user($forceRefresh);
+    }
+    return mg_current_user();
+}
+
 function mg_is_authenticated(): bool
 {
-    return mg_current_user() !== null;
+    return mg_authenticated_user() !== null;
 }
 
 function mg_user_display_name(): string
 {
-    $user = mg_current_user();
+    $user = mg_authenticated_user();
     return $user['display_name'] ?? $user['full_name'] ?? $user['email'] ?? 'Guest';
 }
 
@@ -43,8 +51,15 @@ function mg_safe_return_path(?string $path = null): string
 
 function mg_require_auth(string $redirect = '/signin.php', ?string $returnPath = null): array
 {
-    $user = mg_current_user();
+    $user = mg_authenticated_user();
     if ($user !== null) {
+        if (function_exists('mg_email_verification_gate_enabled')
+            && mg_email_verification_gate_enabled()
+            && empty($user['email_verified_at'])) {
+            header('Cache-Control: no-store, private');
+            header('Location: /verify-email.php?pending=1', true, 302);
+            exit;
+        }
         return $user;
     }
 
