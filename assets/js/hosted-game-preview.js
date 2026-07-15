@@ -9,7 +9,7 @@
   const channel = 'microgifter-hosted-game';
   const bridgeToken = String(config.bridgeToken || '');
   const allowedActions = new Set([
-    'session', 'connect', 'start', 'complete', 'status', 'abandon', 'event',
+    'session', 'connect', 'start', 'complete', 'status', 'abandon', 'event', 'telemetry',
     'state_load', 'state_save', 'score_submit', 'leaderboard', 'track'
   ]);
   const statusNode = document.querySelector('[data-preview-status]');
@@ -94,7 +94,26 @@
       return;
     }
     try {
-      const result = action === 'session' ? await loadSession() : await runtime(action, payload);
+      let result;
+      if (action === 'session') {
+        result = await loadSession();
+      } else if (action === 'telemetry') {
+        const telemetryType = String(payload.event_type || 'telemetry_event').toLowerCase().replace(/[^a-z0-9_.:-]/g, '_').slice(0, 120);
+        result = await runtime('event', {
+          event_type: telemetryType,
+          event: {
+            ...(payload.event && typeof payload.event === 'object' ? payload.event : {}),
+            client: payload.client && typeof payload.client === 'object' ? payload.client : {},
+            sdk_version: payload.sdk_version || null,
+            game_version: payload.game_version || null,
+            telemetry: true
+          },
+          run_id: payload.run_id || '',
+          run_token: payload.run_token || ''
+        });
+      } else {
+        result = await runtime(action, payload);
+      }
       sendToGame({ requestId, ok: true, payload: result });
     } catch (error) {
       const text = error instanceof Error ? error.message : 'Preview request failed.';
