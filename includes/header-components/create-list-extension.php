@@ -6,6 +6,7 @@ if (!mg_is_authenticated()) {
 }
 ?>
 <link rel="stylesheet" href="/assets/css/create-center-layout.css?v=1.0.0">
+<link rel="stylesheet" href="/assets/css/create-center-viewport-fix.css?v=1.0.0">
 <template id="mg-create-list-rail-template">
   <a class="mg-create-center-rail-link" href="/lists.php?action=create" data-create-menu-option="contact_list" data-create-tool-key="list" data-create-inline-target="list" aria-controls="mg-create-center-list">
     <span class="mg-create-menu-icon is-list" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1.5"/><circle cx="4" cy="12" r="1.5"/><circle cx="4" cy="18" r="1.5"/></svg></span>
@@ -33,4 +34,5 @@ if (!mg_is_authenticated()) {
     </form>
   </section>
 </template>
+<script src="/assets/js/create-center-viewport-fix.js?v=1.0.0" defer></script>
 <script src="/assets/js/create-list-extension.js?v=1.1.0" defer></script>
