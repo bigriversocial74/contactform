@@ -1,8 +1,23 @@
 <?php
 require_once __DIR__ . '/includes/app.php';
-$accountType = strtolower(trim((string) ($_GET['type'] ?? 'customer')));
-if (!in_array($accountType, ['customer','merchant'], true)) $accountType = 'customer';
+require_once __DIR__ . '/includes/pricing-packages.php';
+
+$availablePlans = [];
+foreach (mg_public_pricing_packages() as $package) {
+    $id = strtolower(trim((string) ($package['id'] ?? '')));
+    if ($id !== '') $availablePlans[$id] = $package;
+}
+
+$selectedPlan = strtolower(trim((string) ($_GET['plan'] ?? '')));
+if (!isset($availablePlans[$selectedPlan])) $selectedPlan = '';
+
+$accountType = strtolower(trim((string) ($_GET['type'] ?? ($selectedPlan !== '' ? 'merchant' : 'customer'))));
+if (!in_array($accountType, ['customer', 'merchant'], true)) $accountType = 'customer';
+if ($selectedPlan !== '') $accountType = 'merchant';
+if ($accountType === 'merchant' && $selectedPlan === '') $selectedPlan = 'starter';
+
 $isMerchant = $accountType === 'merchant';
+$selectedPlanName = $selectedPlan !== '' ? (string) ($availablePlans[$selectedPlan]['name'] ?? ucfirst($selectedPlan)) : '';
 $page_title = ($isMerchant ? 'Create merchant account' : 'Create account') . ' | Microgifter';
 $page_section = 'core';
 $header_mode = 'public';
@@ -11,21 +26,22 @@ require __DIR__ . '/includes/header.php';
 ?>
 <section class="mg-auth-shell" aria-labelledby="signup-title">
   <aside class="mg-auth-aside">
-    <span class="mg-badge"><?= $isMerchant ? 'Merchant growth workspace' : 'Start free' ?></span>
-    <h1 id="signup-title"><?= $isMerchant ? 'Build the account behind stronger customer relationships.' : 'Create your wallet for local gifts, rewards, and experiences.' ?></h1>
-    <p><?= $isMerchant ? 'Set up your business, connect customer activity, launch rewards, and turn social gifting into measurable local growth.' : 'Keep local gifts, rewards, claims, and saved experiences connected to one secure Microgifter account.' ?></p>
+    <span class="mg-badge"><?= $isMerchant ? 'Merchant account setup' : 'Start free' ?></span>
+    <h1 id="signup-title"><?= $isMerchant ? 'Create your account, then activate the right merchant package.' : 'Create your wallet for local gifts, rewards, and experiences.' ?></h1>
+    <p><?= $isMerchant ? 'Every account begins with the Free Wallet. After email verification, continue to secure checkout for ' . mg_e($selectedPlanName) . ' and unlock merchant tools only after confirmed activation.' : 'Keep local gifts, rewards, claims, and saved experiences connected to one secure Microgifter account.' ?></p>
     <div class="mg-auth-value-grid" aria-label="Microgifter account benefits">
-      <span><strong><?= $isMerchant ? 'Business' : 'Wallet' ?></strong><small><?= $isMerchant ? 'Create your merchant identity and primary location.' : 'Keep gifts and local rewards organized in one place.' ?></small></span>
-      <span><strong><?= $isMerchant ? 'Customers' : 'Discover' ?></strong><small><?= $isMerchant ? 'Connect claims, visits, campaigns, and follow-up.' : 'Explore offers and local experiences worth sharing.' ?></small></span>
-      <span><strong><?= $isMerchant ? 'Growth' : 'Share' ?></strong><small><?= $isMerchant ? 'Launch campaigns, rewards, and measurable commerce.' : 'Send, claim, save, and regift local value.' ?></small></span>
+      <span><strong><?= $isMerchant ? 'Account' : 'Wallet' ?></strong><small><?= $isMerchant ? 'Create one secure identity before activating merchant access.' : 'Keep gifts and local rewards organized in one place.' ?></small></span>
+      <span><strong><?= $isMerchant ? 'Package' : 'Discover' ?></strong><small><?= $isMerchant ? mg_e($selectedPlanName) . ' is selected for the next checkout step.' : 'Explore offers and local experiences worth sharing.' ?></small></span>
+      <span><strong><?= $isMerchant ? 'Activation' : 'Share' ?></strong><small><?= $isMerchant ? 'Merchant permissions and workspace capacity activate after verified payment or an admin grant.' : 'Send, claim, save, and regift local value.' ?></small></span>
     </div>
   </aside>
-  <form class="mg-auth-card" method="post" action="/api/auth/register.php" data-auth-form="signup" data-success-redirect="<?= $isMerchant ? '/merchant-onboarding.php' : '/inbox.php' ?>">
+  <form class="mg-auth-card" method="post" action="/api/auth/register.php" data-auth-form="signup" data-success-redirect="<?= $isMerchant ? '/account-subscriptions.php' : '/inbox.php' ?>">
     <?= mg_csrf_field() ?>
     <input type="hidden" name="account_type" value="<?= mg_e($accountType) ?>">
-    <span class="mg-auth-kicker"><?= $isMerchant ? 'New merchant' : 'New account' ?></span>
-    <h2><?= $isMerchant ? 'Create merchant account' : 'Create account' ?></h2>
-    <p class="mg-auth-card-intro"><?= $isMerchant ? 'Start with your business identity and continue into the guided merchant setup.' : 'Create a free account now. Merchant tools can be added later from your workspace.' ?></p>
+    <input type="hidden" name="selected_plan" value="<?= mg_e($selectedPlan) ?>">
+    <span class="mg-auth-kicker"><?= $isMerchant ? 'New merchant account' : 'New account' ?></span>
+    <h2><?= $isMerchant ? 'Create account for ' . mg_e($selectedPlanName) : 'Create account' ?></h2>
+    <p class="mg-auth-card-intro"><?= $isMerchant ? 'Your account is created as a Free Wallet first. Merchant access is granted only after checkout completes or an administrator applies a complimentary subscription.' : 'Create a free account now. Merchant packages can be added later from your subscription workspace.' ?></p>
     <div class="mg-form-status" data-auth-status role="status" aria-live="polite"></div>
     <label>Full name<input type="text" name="full_name" autocomplete="name" required></label>
     <?php if($isMerchant): ?><label>Business name<input type="text" name="business_name" autocomplete="organization" required maxlength="180"></label><?php endif; ?>
@@ -55,9 +71,9 @@ require __DIR__ . '/includes/header.php';
       <small class="mg-field-hint" id="signup-password-confirmation-help">Enter the same password again.</small>
     </div>
 
-    <button class="mg-btn mg-btn-primary" type="submit"><?= $isMerchant ? 'Create merchant workspace' : 'Create account' ?></button>
+    <button class="mg-btn mg-btn-primary" type="submit"><?= $isMerchant ? 'Create account and continue' : 'Create account' ?></button>
     <div class="mg-auth-switch-row">
-      <p>Already have an account? <a href="/signin.php?return=<?= rawurlencode($isMerchant ? '/merchant-onboarding.php' : '/inbox.php') ?>">Sign in</a></p>
+      <p>Already have an account? <a href="/signin.php?return=<?= rawurlencode($isMerchant ? '/account-subscriptions.php?plan=' . $selectedPlan . '&source=signup' : '/inbox.php') ?>">Sign in</a></p>
       <p><a href="/signup.php?type=<?= $isMerchant ? 'customer' : 'merchant' ?>"><?= $isMerchant ? 'Create a customer account instead' : 'Create a merchant account' ?></a></p>
     </div>
   </form>
