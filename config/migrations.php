@@ -139,6 +139,7 @@ return [
         'stage_19b_ai_permission_guard.sql',
         'stage_19c_claude_sonnet_merchant_agent_planner.sql',
         '20260714_personal_gifting_agent_phase2.sql',
+        '20260714_personal_gifting_workflows_phase3.sql',
         'stage_19_merchant_market_snapshots.sql',
         'stage_20_agent_store_canvas.sql',
         'stage_20b_store_canvas_trigger_zones.sql',

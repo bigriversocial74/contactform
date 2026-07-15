@@ -1,0 +1,62 @@
+name: Personal Gifting Workflows Phase 3 Validation
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'agent.php'
+      - 'api/user-agent/**'
+      - 'includes/personal-gifting-agent.php'
+      - 'includes/personal-agent/**'
+      - 'assets/js/personal-gifting-workflows.js'
+      - 'assets/css/personal-gifting-workflows.css'
+      - 'database/20260714_personal_gifting_workflows_phase3.sql'
+      - 'config/migrations.php'
+      - 'scripts/validate_personal_gifting_workflows_phase3.php'
+      - 'tests/phpunit/PersonalGiftingWorkflowsPhase3Test.php'
+      - '.github/workflows/personal-gifting-workflows-phase3-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          extensions: mbstring, pdo, pdo_mysql, openssl
+      - name: PHP syntax
+        run: |
+          php -l agent.php
+          php -l includes/personal-gifting-agent.php
+          php -l includes/agent-workspace.php
+          find includes/personal-agent -maxdepth 1 -name 'workflows*.php' -print0 | xargs -0 -n1 php -l
+          php -l includes/personal-agent/workspace-workflows.php
+          php -l includes/personal-agent/workspace-workflow-dialogs.php
+          find api/user-agent -maxdepth 1 \( -name 'workflows.php' -o -name 'schedules.php' -o -name 'recurring-programs.php' -o -name 'list-plan-members.php' -o -name 'group-gifts.php' -o -name 'recipient-requests.php' -o -name 'bundles.php' -o -name 'lifecycle-reminders.php' \) -print0 | xargs -0 -n1 php -l
+          php -l scripts/validate_personal_gifting_workflows_phase3.php
+          php -l tests/phpunit/PersonalGiftingWorkflowsPhase3Test.php
+          php -l config/migrations.php
+      - name: JavaScript syntax
+        run: node --check assets/js/personal-gifting-workflows.js
+      - name: Phase 3 contract
+        run: php scripts/validate_personal_gifting_workflows_phase3.php
+      - name: Canonical migration manifest
+        run: php scripts/validate_migration_manifest.php
+      - name: Phase 2 regression
+        run: php scripts/validate_personal_gifting_agent_phase2.php
+      - name: Phase 1 regression
+        run: php scripts/validate_user_contact_lists_phase1.php
