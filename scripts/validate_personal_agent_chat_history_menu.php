@@ -46,9 +46,24 @@ try {
     foreach ($labels as $label) $menuCoverage = $menuCoverage && str_contains($dialogs, "'label'=>'{$label}'");
     $expect($menuCoverage, 'Former sidebar destinations are all available in the menu modal');
 
-    $expect(str_contains($sidebar, 'data-personal-agent-thread-groups') && substr_count($sidebar, 'data-personal-agent-new-chat') >= 2, 'Sidebar is dedicated to chat history and new chat');
+    $expect(
+        str_contains($sidebar, 'data-personal-agent-thread-groups')
+        && substr_count($sidebar, 'data-personal-agent-new-chat') === 1
+        && str_contains($sidebar, 'class="mg-personal-chat-actions"')
+        && str_contains($sidebar, 'href="/design-studio.php"')
+        && str_contains($sidebar, 'class="mg-personal-chat-divider"')
+        && !str_contains($sidebar, 'mg-personal-chat-sidebar-head'),
+        'Sidebar removes the duplicate heading and exposes New chat and Design actions'
+    );
     $expect(!str_contains($sidebar, '$appSidebarNav') && !str_contains($sidebar, "'label' => 'Home'"), 'Old menu navigation is removed from the sidebar');
-    $expect(str_contains($css, '.mg-personal-chat-row.is-active') && str_contains($css, '.mg-personal-chat-delete'), 'Active and delete chat controls are styled');
+    $expect(
+        str_contains($css, '.mg-personal-chat-action{')
+        && str_contains($css, 'border:0;border-radius:0;background:transparent')
+        && str_contains($css, '.mg-personal-chat-divider{')
+        && str_contains($css, '.mg-personal-chat-row.is-active{border:0;background:transparent;box-shadow:none}')
+        && str_contains($css, '.mg-personal-chat-delete'),
+        'Sidebar actions and chat history render as simple flat text rows'
+    );
     $expect(str_contains($css, 'grid-template-columns:48px minmax(0,1fr) 90px'), 'Composer reserves internal columns for plus, input, and send');
 
     $expect(str_contains($loader, "require_once __DIR__ . '/personal-agent/threads.php';"), 'Thread service is loaded by the Personal Agent runtime');
@@ -68,7 +83,7 @@ try {
     $expect(str_contains($js, "new URLSearchParams(window.location.search).get('thread')") && str_contains($js, 'loadThread(selected.id'), 'Active chat is restored from the URL or latest history');
     $expect(str_contains($js, "Microgifter.post('/api/user-agent/threads.php', { action: 'create' }") && str_contains($js, "action: 'delete'"), 'Client creates and deletes chats through the thread API');
     $expect(str_contains($js, "window.confirm('Delete \"'") && str_contains($js, "'\" and all of its messages?')"), 'Chat deletion requires explicit user confirmation');
-    $expect(str_contains($page, '/assets/css/personal-agent-chat-history.css?v=1.0.0') && str_contains($page, '/assets/js/personal-agent-chat-history.js?v=1.0.0'), 'Chat history assets are loaded with cache versions');
+    $expect(str_contains($page, '/assets/css/personal-agent-chat-history.css?v=1.1.0') && str_contains($page, '/assets/js/personal-agent-chat-history.js?v=1.0.0'), 'Chat history assets are loaded with cache versions');
 } catch (Throwable $error) {
     $failures[] = $error->getMessage();
     echo 'FAIL: ' . $error->getMessage() . "\n";
