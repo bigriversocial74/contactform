@@ -26,26 +26,4 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     });
   }
-
-  root.addEventListener('click', function (event) {
-    var button = event.target.closest('[data-personal-agent-new-thread]');
-    if (!button) return;
-
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    app.state.threadId = '';
-
-    if (app.ui.feed) {
-      app.ui.feed.innerHTML = '';
-      var message = document.createElement('div');
-      message.className = 'mg-personal-agent-message is-assistant is-thread-start';
-      message.textContent = 'New personal gifting conversation started.';
-      app.ui.feed.appendChild(message);
-    }
-
-    if (typeof app.setStatus === 'function') app.setStatus('');
-
-    var input = app.ui.composer && app.ui.composer.querySelector('textarea,input');
-    if (input) input.focus();
-  }, true);
 });
