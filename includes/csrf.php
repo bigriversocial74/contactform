@@ -2,7 +2,6 @@
 /**
  * CSRF helpers for first-party forms and AJAX requests.
  */
-
 declare(strict_types=1);
 
 function mg_csrf_token(): string
@@ -15,6 +14,15 @@ function mg_csrf_token(): string
         $_SESSION['mg_csrf_token'] = bin2hex(random_bytes(32));
     }
 
+    return $_SESSION['mg_csrf_token'];
+}
+
+function mg_rotate_csrf_token(): string
+{
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        session_start();
+    }
+    $_SESSION['mg_csrf_token'] = bin2hex(random_bytes(32));
     return $_SESSION['mg_csrf_token'];
 }
 

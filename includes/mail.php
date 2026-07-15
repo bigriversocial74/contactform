@@ -2,9 +2,8 @@
 /**
  * Microgifter mail helpers.
  *
- * Stage 1 rule: email generation is first-party and provider-agnostic.
- * HostGator can use PHP mail or log-only mode. SMTP/transactional providers can
- * be added later without changing auth/business endpoints.
+ * Authentication emails are first-party and provider-agnostic. Production must
+ * configure MG_BASE_URL and a real mail provider; log mode is development-only.
  */
 declare(strict_types=1);
 
@@ -39,17 +38,31 @@ function mg_app_base_url(): string
 {
     $baseUrl = rtrim((string) mg_config_value('app', 'base_url', ''), '/');
     if ($baseUrl !== '') {
+        if (!preg_match('#^https?://[a-z0-9.-]+(?::\d+)?(?:/.*)?$#i', $baseUrl)) {
+            throw new RuntimeException('Configured application base URL is invalid.');
+        }
         return $baseUrl;
     }
 
-    $https = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
-    $host = (string) ($_SERVER['HTTP_HOST'] ?? 'localhost');
+    $environment = strtolower((string) mg_config_value('app', 'env', 'production'));
+    if ($environment === 'production') {
+        throw new RuntimeException('MG_BASE_URL is required in production.');
+    }
+
+    $https = function_exists('mg_is_https_request') ? mg_is_https_request() : (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+    $host = strtolower(trim((string) ($_SERVER['HTTP_HOST'] ?? 'localhost')));
+    if (!preg_match('/^(?:localhost|[a-z0-9.-]+)(?::\d+)?$/', $host)) $host = 'localhost';
     return ($https ? 'https://' : 'http://') . $host;
 }
 
 function mg_mail_escape(string $value): string
 {
     return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
+
+function mg_mail_header_value(string $value): string
+{
+    return trim(preg_replace('/[\r\n]+/', ' ', $value) ?? '');
 }
 
 function mg_email_layout(string $title, string $bodyHtml, string $previewText = ''): string
@@ -99,7 +112,7 @@ function mg_email_template(string $template, array $data = []): array
         $url = (string) ($data['url'] ?? ($baseUrl . '/reset-password.php'));
         $body = '<p style="margin:0 0 16px;color:#334155;font-size:16px;line-height:1.6;">Hi ' . mg_mail_escape($name) . ', use the secure link below to reset your Microgifter password.</p>'
             . mg_email_button($url, 'Reset password')
-            . '<p style="margin:0;color:#64748b;font-size:13px;line-height:1.6;">If you did not request this reset, no action is needed.</p>';
+            . '<p style="margin:0;color:#64748b;font-size:13px;line-height:1.6;">This link expires soon. If you did not request this reset, no action is needed.</p>';
         return [
             'subject' => 'Reset your Microgifter password',
             'html' => mg_email_layout('Reset your password', $body, 'Reset your Microgifter password.'),
@@ -137,6 +150,7 @@ function mg_send_email(string $toEmail, string $subject, string $html, ?string $
 
     $provider = mg_mail_provider();
     $enabled = mg_mail_enabled();
+    $environment = strtolower((string) mg_config_value('app', 'env', 'production'));
     $logPayload = [
         'provider' => $provider,
         'enabled' => $enabled,
@@ -146,24 +160,32 @@ function mg_send_email(string $toEmail, string $subject, string $html, ?string $
 
     if (!$enabled || $provider === 'log') {
         error_log('[microgifter-mail] ' . json_encode($logPayload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+        if ($environment === 'production') {
+            mg_security_log('critical', 'mail.production_not_configured', 'Production mail delivery is not configured.', $logPayload);
+            return false;
+        }
         return true;
     }
 
     if ($provider === 'mail') {
+        $fromEmail = mg_mail_header_value(mg_mail_from_email());
+        $fromName = mg_mail_header_value(mg_mail_from_name());
+        if (!filter_var($fromEmail, FILTER_VALIDATE_EMAIL)) {
+            mg_security_log('critical', 'mail.invalid_from_address', 'Configured mail sender is invalid.', ['from' => $fromEmail]);
+            return false;
+        }
         $headers = [
             'MIME-Version: 1.0',
             'Content-type: text/html; charset=UTF-8',
-            'From: ' . mg_mail_from_name() . ' <' . mg_mail_from_email() . '>',
+            'From: ' . $fromName . ' <' . $fromEmail . '>',
         ];
-        $sent = mail($toEmail, $subject, $html, implode("\r\n", $headers));
-        if (!$sent) {
-            mg_security_log('error', 'mail.send_failed', 'PHP mail() failed.', $logPayload);
-        }
+        $sent = mail($toEmail, mg_mail_header_value($subject), $html, implode("\r\n", $headers));
+        if (!$sent) mg_security_log('error', 'mail.send_failed', 'PHP mail() failed.', $logPayload);
         return $sent;
     }
 
-    // SMTP/API providers are intentionally adapter points for later production hardening.
     error_log('[microgifter-mail-adapter-missing] ' . json_encode($logPayload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+    mg_security_log('critical', 'mail.adapter_missing', 'Configured mail provider has no adapter.', $logPayload);
     return false;
 }
 
@@ -176,33 +198,48 @@ function mg_send_template_email(string $toEmail, string $template, array $data =
 function mg_create_email_verification_token(int $userId): ?string
 {
     try {
-        if (!function_exists('mg_db')) {
-            require_once dirname(__DIR__) . '/api/db.php';
-        }
+        if (!function_exists('mg_db')) require_once dirname(__DIR__) . '/api/db.php';
         $token = bin2hex(random_bytes(32));
         $hash = hash('sha256', $token);
-        $minutes = (int) mg_config_value('security', 'verify_token_minutes', 1440);
+        $minutes = max(10, (int) mg_config_value('security', 'verify_token_minutes', 1440));
         $expiresAt = date('Y-m-d H:i:s', time() + ($minutes * 60));
         $pdo = mg_db();
+        $pdo->prepare('UPDATE email_verification_tokens SET used_at=COALESCE(used_at,NOW()) WHERE user_id=? AND used_at IS NULL')->execute([$userId]);
         $stmt = $pdo->prepare('INSERT INTO email_verification_tokens (user_id, token_hash, expires_at, created_at) VALUES (?, ?, ?, NOW())');
         $stmt->execute([$userId, $hash, $expiresAt]);
         return $token;
     } catch (Throwable $e) {
-        mg_security_log('error', 'mail.verification_token_failed', 'Could not create email verification token.', ['exception' => $e->getMessage()], $userId);
+        mg_security_log('error', 'mail.verification_token_failed', 'Could not create email verification token.', ['exception_class' => $e::class], $userId);
         return null;
     }
 }
 
-function mg_queue_verification_email(int $userId, string $email, string $name = ''): void
+function mg_queue_verification_email(int $userId, string $email, string $name = ''): bool
 {
     $token = mg_create_email_verification_token($userId);
-    if (!$token) {
-        return;
+    if (!$token) return false;
+    try {
+        $url = mg_app_base_url() . '/verify-email.php?token=' . urlencode($token);
+        return mg_send_template_email($email, 'email_verification', [
+            'name' => $name !== '' ? $name : $email,
+            'url' => $url,
+        ], ['user_id' => $userId]);
+    } catch (Throwable $e) {
+        mg_security_log('critical', 'mail.verification_delivery_failed', 'Verification email could not be delivered.', ['exception_class' => $e::class], $userId);
+        return false;
     }
+}
 
-    $url = mg_app_base_url() . '/verify-email.php?token=' . urlencode($token);
-    mg_send_template_email($email, 'email_verification', [
-        'name' => $name !== '' ? $name : $email,
-        'url' => $url,
-    ], ['user_id' => $userId]);
+function mg_send_password_reset_email(int $userId, string $email, string $name, string $token): bool
+{
+    try {
+        $url = mg_app_base_url() . '/reset-password.php?token=' . urlencode($token);
+        return mg_send_template_email($email, 'password_reset', [
+            'name' => $name !== '' ? $name : $email,
+            'url' => $url,
+        ], ['user_id' => $userId]);
+    } catch (Throwable $e) {
+        mg_security_log('critical', 'mail.password_reset_delivery_failed', 'Password reset email could not be delivered.', ['exception_class' => $e::class], $userId);
+        return false;
+    }
 }
