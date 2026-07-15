@@ -48,7 +48,8 @@ if ($user) {
       <form class="mg-app-composer mg-personal-agent-composer" data-agent-composer data-personal-agent-composer>
         <button class="mg-personal-agent-context-chip" type="button" data-personal-agent-context-chip hidden aria-label="Clear selected gifting context"></button>
         <div class="mg-personal-agent-composer-row">
-          <textarea rows="1" maxlength="2000" placeholder="Ask the Personal Gifting Agent about a contact, date, gift plan, schedule, group gift, or bundle…" aria-label="Message the Personal Gifting Agent"></textarea>
+          <button class="mg-personal-agent-menu-trigger" type="button" data-open-agent-dialog="menu" aria-label="Open Personal Agent menu" title="Open Agent menu">+</button>
+          <textarea rows="1" maxlength="2000" placeholder="Ask about a contact, purchase, merchant, gift plan, schedule, group gift, or bundle…" aria-label="Message the Personal Gifting Agent"></textarea>
           <button class="mg-btn mg-btn-primary" type="submit">Send</button>
         </div>
       </form>
