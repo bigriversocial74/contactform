@@ -5,6 +5,7 @@ if (!mg_is_authenticated()) {
     return;
 }
 ?>
+<link rel="stylesheet" href="/assets/css/create-center-layout.css?v=1.0.0">
 <template id="mg-create-list-rail-template">
   <a class="mg-create-center-rail-link" href="/lists.php?action=create" data-create-menu-option="contact_list" data-create-tool-key="list" data-create-inline-target="list" aria-controls="mg-create-center-list">
     <span class="mg-create-menu-icon is-list" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1.5"/><circle cx="4" cy="12" r="1.5"/><circle cx="4" cy="18" r="1.5"/></svg></span>
@@ -19,7 +20,7 @@ if (!mg_is_authenticated()) {
   </a>
 </template>
 <template id="mg-create-list-view-template">
-  <section class="mg-create-center-view" id="mg-create-center-list" data-create-center-view="list" hidden>
+  <section class="mg-create-center-view" id="mg-create-center-list" data-create-center-view="list" hidden aria-hidden="true">
     <div class="mg-create-inline-head"><div><span class="mg-create-menu-eyebrow">Personal contacts</span><h3>Create a list</h3><p>Organize people and occasions for reminders, recommendations, and gifting plans.</p></div><a href="/lists.php">Open My Lists</a></div>
     <div class="mg-create-inline-success" data-create-inline-success="list" hidden><strong>List created successfully.</strong><p data-create-success-message></p><div><a href="/lists.php" data-create-success-link>Open list</a><button type="button" data-create-inline-reset="list">Create another</button></div></div>
     <form class="mg-create-inline-form" data-create-inline-form="list">
@@ -32,4 +33,4 @@ if (!mg_is_authenticated()) {
     </form>
   </section>
 </template>
-<script src="/assets/js/create-list-extension.js" defer></script>
+<script src="/assets/js/create-list-extension.js?v=1.1.0" defer></script>
