@@ -25,6 +25,7 @@ try {
     $page = $read('agent.php');
     $loader = $read('includes/personal-gifting-agent.php');
     $service = $read('includes/personal-agent/marketplace-result-cards.php');
+    $response = $read('includes/personal-agent/marketplace-response.php');
     $endpoint = $read('api/user-agent/chat.php');
     $renderer = $read('assets/js/personal-agent-marketplace-cards.js');
     $styles = $read('assets/css/personal-agent-marketplace-cards.css');
@@ -32,8 +33,16 @@ try {
 
     $expect(
         str_contains($loader, "require_once __DIR__ . '/personal-agent/marketplace-result-cards.php';")
-        && str_contains($endpoint, 'mg_personal_agent_chat_with_marketplace_cards'),
-        'Chat endpoint loads the marketplace result-card wrapper'
+        && str_contains($loader, "require_once __DIR__ . '/personal-agent/marketplace-response.php';")
+        && str_contains($endpoint, 'mg_personal_agent_chat_with_marketplace_response'),
+        'Chat endpoint loads marketplace cards and grounded response wrappers'
+    );
+    $expect(
+        str_contains($response, 'mg_personal_agent_chat_with_marketplace_cards($pdo,$userId,$input)')
+        && str_contains($response, "don't have access")
+        && str_contains($response, 'mg_personal_agent_marketplace_grounded_reply')
+        && str_contains($response, "UPDATE user_agent_messages SET body=? WHERE owner_user_id=?"),
+        'Contradictory no-catalog copy is replaced and persisted when cards exist'
     );
     $expect(
         str_contains($service, "return 'merchant';")
