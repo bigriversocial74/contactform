@@ -136,6 +136,7 @@ return [
         'stage_18ae_scanner_operations_control.sql',
         'stage_18af_redemption_finance_disputes.sql',
         'stage_18ag_subscription_billing_value_reconciliation.sql',
+        'stage_18ai_account_subscription_authority.sql',
         'stage_19_ai_provider_models.sql',
         'stage_19b_ai_permission_guard.sql',
         'stage_19c_claude_sonnet_merchant_agent_planner.sql',
