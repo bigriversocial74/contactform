@@ -6,7 +6,7 @@ declare(strict_types=1);
     <div>
       <span class="hgm-eyebrow">Developer API · Hosted games</span>
       <h1>Upload a game.<br>Connect a distribution.</h1>
-      <p>Host simple HTML games, WebGL builds, audio games, or complex browser experiences. Microgifter supplies the secure player login, isolated game database, Distribution Program connection, managed API credential, signed webhook, reward issuance, Inbox delivery, and release management.</p>
+      <p>Host simple HTML games, WebGL builds, audio games, or complex browser experiences. Microgifter supplies the secure player login, isolated game database, Distribution Program connection, managed API credential, signed webhook, reward issuance, Inbox delivery, cover-image hosting, and release management.</p>
     </div>
     <button class="hgm-btn is-primary" type="button" data-hgm-create>+ Create hosted game</button>
   </section>
@@ -29,7 +29,7 @@ declare(strict_types=1);
   <section class="hgm-grid" data-hgm-grid></section>
   <section class="hgm-empty" data-hgm-empty hidden>
     <h3>No hosted games yet</h3>
-    <p>Create the game record, upload the ZIP, connect its Distribution Program, then ask Microgifter Admin to verify the isolated game database.</p>
+    <p>Create the game record, upload its cover and ZIP, connect its Distribution Program, then ask Microgifter Admin to verify the isolated game database.</p>
   </section>
 
   <div class="hgm-modal" data-hgm-modal hidden>
@@ -46,8 +46,8 @@ declare(strict_types=1);
         </div>
 
         <section class="hgm-section">
-          <h3>Game identity</h3>
-          <p>Create the permanent game record and public URL. Gameplay rules, scoring, levels, and qualification remain inside the uploaded game.</p>
+          <h3>Game identity and cover</h3>
+          <p>Create the permanent game record, public URL, and standardized cover image. Gameplay rules, scoring, levels, and qualification remain inside the uploaded game.</p>
           <form class="hgm-form" data-hgm-identity-form>
             <input type="hidden" name="game_id">
             <div class="hgm-form-grid">
@@ -55,7 +55,23 @@ declare(strict_types=1);
               <label>Public URL slug<input name="slug" maxlength="140" required placeholder="pizza-catcher"><span class="hgm-help">Published at /games/your-slug/</span></label>
             </div>
             <label>Description<textarea name="description" maxlength="5000" placeholder="Describe the game experience and reward opportunity."></textarea></label>
-            <label>Cover image URL<input name="cover_url" type="url" maxlength="500" placeholder="https://..."></label>
+            <label>Cover image URL <span class="hgm-help">Optional external-image fallback</span><input name="cover_url" type="url" maxlength="500" placeholder="https://..."></label>
+            <div class="hgm-cover-uploader" data-hgm-cover-uploader>
+              <div class="hgm-cover-preview" data-hgm-cover-preview>
+                <img alt="Hosted game cover preview" hidden>
+                <span>16:9 game cover preview<br>Recommended: 1600 × 900</span>
+              </div>
+              <div class="hgm-cover-controls">
+                <label class="hgm-cover-file">
+                  <strong>Upload cover image</strong>
+                  <small>JPEG, PNG, or WebP · minimum 640 × 360 · maximum 10 MB</small>
+                  <input type="file" accept="image/jpeg,image/png,image/webp" data-hgm-cover-file>
+                </label>
+                <div class="hgm-cover-progress" aria-hidden="true"><span data-hgm-cover-progress></span></div>
+                <div class="hgm-cover-actions"><button class="hgm-btn is-soft" type="button" data-hgm-cover-upload disabled>Upload selected image</button></div>
+                <div class="hgm-cover-status" data-hgm-cover-status></div>
+              </div>
+            </div>
             <div><button class="hgm-btn is-primary" type="submit">Save game identity</button></div>
             <div class="hgm-form-status" data-hgm-identity-status></div>
           </form>
