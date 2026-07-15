@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/bootstrap.php';
 require_once dirname(__DIR__, 2) . '/includes/admin-permission-matrix.php';
 require_once dirname(__DIR__, 2) . '/includes/hosted-game-upload.php';
+require_once dirname(__DIR__, 2) . '/includes/hosted-game-standard-v1.php';
 
 mg_require_method('POST');
 $user = mg_require_api_user();
@@ -23,8 +24,11 @@ if ($gamePublicId === '') mg_fail('Save the hosted game record before uploading 
 try {
     $game = mg_hosted_game_by_public_id($pdo, $gamePublicId, false);
     if (!$game) mg_fail('Hosted game not found.', 404);
+    if (!isset($_FILES['game_zip']) || !is_array($_FILES['game_zip'])) throw new MgHostedGameException('Select a game ZIP to upload.');
+    $standardManifest = mg_hosted_game_standard_preflight_upload($_FILES['game_zip'], $game);
     $result = mg_hosted_game_process_upload($pdo, $game, $actorId, 'admin.hosted_game.release_uploaded');
-    mg_ok($result, 'Game ZIP uploaded and activated by Microgifter Admin.', 201);
+    $result = mg_hosted_game_standard_finalize_release($pdo, $game, $result, $standardManifest, $actorId);
+    mg_ok($result, 'Game ZIP uploaded, standardized, and activated by Microgifter Admin.', 201);
 } catch (InvalidArgumentException|MgHostedGameException $error) {
     mg_fail($error->getMessage(), 422);
 } catch (Throwable $error) {
