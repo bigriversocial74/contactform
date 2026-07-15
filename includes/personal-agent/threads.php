@@ -88,6 +88,16 @@ function mg_personal_agent_autotitle_thread(PDO $pdo, int $userId, string $threa
     return mg_personal_agent_thread_detail($pdo, $userId, $threadPublicId)['thread'];
 }
 
+function mg_personal_agent_chat_with_thread_title(PDO $pdo, int $userId, array $input): array
+{
+    $result = mg_personal_agent_chat_v2($pdo, $userId, $input);
+    $threadId = (string) ($result['thread']['id'] ?? '');
+    if ($threadId !== '') {
+        $result['thread'] = mg_personal_agent_autotitle_thread($pdo, $userId, $threadId, (string) ($input['message'] ?? ''));
+    }
+    return $result;
+}
+
 function mg_personal_agent_delete_thread(PDO $pdo, int $userId, string $threadPublicId): array
 {
     mg_personal_agent_require_schema($pdo);
