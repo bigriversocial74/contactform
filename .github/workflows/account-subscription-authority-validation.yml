@@ -36,21 +36,32 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           coverage: none
-      - name: Syntax checks
-        run: |
-          php -l signup.php
-          php -l account-subscriptions.php
-          php -l includes/package-entitlements.php
-          php -l includes/merchant-provisioning.php
-          php -l includes/account/subscription-authority.php
-          php -l api/auth/register.php
-          php -l api/merchant/_merchant.php
-          php -l api/admin/subscription-grants.php
-          php -l api/admin/_subscription_grants.php
-          php -l api/subscriptions/_package_billing.php
-          php -l api/subscriptions/_package_webhook.php
-          php -l api/subscriptions/_stripe_webhook.php
-          php -l api/subscriptions/stripe-events.php
+      - name: Syntax signup.php
+        run: php -l signup.php
+      - name: Syntax account-subscriptions.php
+        run: php -l account-subscriptions.php
+      - name: Syntax package-entitlements.php
+        run: php -l includes/package-entitlements.php
+      - name: Syntax merchant-provisioning.php
+        run: php -l includes/merchant-provisioning.php
+      - name: Syntax subscription-authority.php
+        run: php -l includes/account/subscription-authority.php
+      - name: Syntax auth register
+        run: php -l api/auth/register.php
+      - name: Syntax merchant guard
+        run: php -l api/merchant/_merchant.php
+      - name: Syntax admin grants endpoint
+        run: php -l api/admin/subscription-grants.php
+      - name: Syntax admin grants service
+        run: php -l api/admin/_subscription_grants.php
+      - name: Syntax package billing
+        run: php -l api/subscriptions/_package_billing.php
+      - name: Syntax package webhook
+        run: php -l api/subscriptions/_package_webhook.php
+      - name: Syntax Stripe webhook dispatcher
+        run: php -l api/subscriptions/_stripe_webhook.php
+      - name: Syntax Stripe webhook endpoint
+        run: php -l api/subscriptions/stripe-events.php
       - name: JavaScript syntax checks
         run: |
           node --check assets/js/subscription-activation-status.js
