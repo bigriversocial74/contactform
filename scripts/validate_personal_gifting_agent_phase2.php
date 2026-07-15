@@ -115,10 +115,11 @@ $checks['private data is excluded from agent context']=
     &&str_contains($service,'Sensitive credentials and private contact details cannot be stored in Agent Memory.')
     &&str_contains($service,'Never expose or repeat full phone numbers');
 
+$providerMarker='$provider[\'id\']=(int)$model[\'provider_id\']';
 $checks['Claude reuse has safe fallback and approval boundary']=
     str_contains($service,'mg_anthropic_messages')
     &&str_contains($service,'mg_ai_enforce_rate_limits')
-    &&str_contains($service,"$provider['id']=(int)$model['provider_id']")
+    &&str_contains($service,$providerMarker)
     &&str_contains($service,'foreach ($rows as $row)')
     &&str_contains($service,'function mg_personal_agent_fallback')
     &&str_contains($service,'Nothing will be purchased or sent without your review.')
