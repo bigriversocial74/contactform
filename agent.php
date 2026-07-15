@@ -17,6 +17,7 @@ $page_styles = [
     '/assets/css/agent-workspace-layout.css',
     '/assets/css/personal-gifting-agent.css',
     '/assets/css/personal-gifting-workflows.css',
+    '/assets/css/personal-agent-chat-canvas.css?v=1.0.0',
 ];
 $page_scripts = [
     '/assets/js/agent-workspace.js',
@@ -24,6 +25,7 @@ $page_scripts = [
     '/assets/js/personal-gifting-agent-render.js',
     '/assets/js/personal-gifting-agent-actions.js',
     '/assets/js/personal-gifting-workflows.js',
+    '/assets/js/personal-agent-chat-canvas.js?v=1.0.0',
 ];
 
 require __DIR__ . '/includes/header.php';
