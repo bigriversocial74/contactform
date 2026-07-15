@@ -6,6 +6,20 @@ Reward Drop is a first-party browser game hosted at:
 
 It reuses the existing Microgifter session. Players do not create a separate game account or password.
 
+## Hosted Game SDK demo
+
+This folder remains the standalone first-party PHP/Public Distribution API implementation.
+
+The uploadable Hosted Game Standard v1 concept is maintained separately at:
+
+`examples/hosted-game-reward-drop-demo/`
+
+After deployment, signed-in users can download the uploadable ZIP from:
+
+`/api/hosted-games/demo-package.php`
+
+The uploadable SDK demo does not use `database/reward_drop_game_v1.sql`; it uses the Hosted Games management, analytics, release/QA, and isolated-game-database foundation.
+
 ## End-to-end flow
 
 1. Reward Drop recognizes the signed-in Microgifter session.

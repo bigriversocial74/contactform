@@ -8,7 +8,10 @@ declare(strict_types=1);
       <h1>Upload a game.<br>Connect a distribution.</h1>
       <p>Host simple HTML games, WebGL builds, audio games, or complex browser experiences. Microgifter supplies the secure player login, isolated game database, Distribution Program connection, managed API credential, signed webhook, reward issuance, Inbox delivery, cover-image hosting, and release management.</p>
     </div>
-    <button class="hgm-btn is-primary" type="button" data-hgm-create>+ Create hosted game</button>
+    <div class="hgm-card-actions">
+      <a class="hgm-btn is-soft" href="/api/hosted-games/demo-package.php">Download demo game ZIP</a>
+      <button class="hgm-btn is-primary" type="button" data-hgm-create>+ Create hosted game</button>
+    </div>
   </section>
 
   <div class="hgm-notice" data-hgm-notice hidden></div>
@@ -79,14 +82,14 @@ declare(strict_types=1);
 
         <section class="hgm-section" data-hgm-release-section>
           <h3>Game ZIP and releases</h3>
-          <p>Upload a complete game package containing <strong>index.html</strong>, or include a small <strong>game.json</strong> file that declares another HTML entry point. New uploads become the current release automatically.</p>
+          <p>Upload a complete game package containing <strong>index.html</strong>, or include a Standard v1 <strong>game.json</strong> manifest. New uploads become validated drafts; open Releases to preview, health-check, compare, and activate them.</p>
           <label class="hgm-drop" data-hgm-drop>
             <input type="file" name="game_zip" accept=".zip,application/zip" data-hgm-file>
             <strong data-hgm-file-title>Select a game ZIP</strong>
             <span data-hgm-file-detail>HTML, CSS, JavaScript, images, audio, video, WebGL, WASM, and game assets · maximum 100 MB ZIP</span>
           </label>
           <div class="hgm-progress" aria-hidden="true"><i data-hgm-progress></i></div>
-          <div class="hgm-card-actions"><button class="hgm-btn is-primary" type="button" data-hgm-upload disabled>Upload game release</button></div>
+          <div class="hgm-card-actions"><button class="hgm-btn is-primary" type="button" data-hgm-upload disabled>Upload draft release</button></div>
           <div class="hgm-form-status" data-hgm-upload-status></div>
           <div class="hgm-code" data-hgm-release-summary hidden></div>
         </section>
@@ -106,7 +109,7 @@ declare(strict_types=1);
 
         <section class="hgm-section">
           <h3>Managed runtime</h3>
-          <p>After the ZIP, Distribution Program integration, and isolated database are ready, use the Game enabled switch. Disabling pauses gameplay and reward issuance without deleting the release or rotating credentials.</p>
+          <p>After a release is activated, the Distribution Program integration is ready, and the isolated database is verified, use the Game enabled switch. Disabling pauses gameplay and reward issuance without deleting the release or rotating credentials.</p>
           <div class="hgm-ready-list" data-hgm-modal-readiness></div>
           <div class="hgm-card-actions">
             <button class="hgm-btn is-success" type="button" data-hgm-publish disabled>Publish game</button>

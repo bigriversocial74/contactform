@@ -134,7 +134,7 @@ hg_has('api/admin/hosted-games.php', 'mg_hosted_game_encrypt_secret($username)',
 hg_has('api/admin/hosted-games.php', 'mg_hosted_game_encrypt_secret($password)', 'Password encryption');
 hg_not_has('api/admin/hosted-games.php', "'password'=>", 'Admin API must not return password');
 hg_has('admin/hosted-games.php', 'Merchant account', 'Admin merchant creation form');
-hg_has('admin/hosted-games.php', 'Upload game release', 'Admin release upload');
+hg_has('admin/hosted-games.php', 'Upload draft release', 'Admin draft release upload');
 hg_has('admin/hosted-games.php', 'Program, Campaign and reward', 'Admin integration form');
 hg_has('admin/hosted-games.php', 'Database username', 'Admin username form');
 hg_has('admin/hosted-games.php', 'Publish hosted game', 'Admin publication control');
@@ -144,7 +144,7 @@ hg_has('assets/js/admin-hosted-games.js', "post('publish_game'", 'Admin publish 
 
 hg_has('api/merchant/hosted-games.php', "\$action === 'configure_integration'", 'Merchant integration setup');
 hg_has('api/merchant/hosted-games.php', 'mg_hosted_game_ensure_runtime_integration', 'Merchant automatic game credential setup');
-hg_has('includes/merchant-hosted-games-view.php', 'Upload game release', 'Merchant ZIP workflow');
+hg_has('includes/merchant-hosted-games-view.php', 'Upload draft release', 'Merchant draft ZIP workflow');
 hg_has('includes/merchant-hosted-games-view.php', 'Configure game integration', 'Merchant campaign/reward workflow');
 hg_not_has('includes/merchant-hosted-games-view.php', 'Game Rules', 'No generic game rules UI');
 hg_has('includes/merchant-navigation.php', "'hosted_games'", 'Merchant navigation');

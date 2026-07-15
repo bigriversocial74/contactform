@@ -1,0 +1,84 @@
+name: Hosted Reward Drop SDK Demo v1
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'examples/hosted-game-reward-drop-demo/**'
+      - 'api/hosted-games/demo-package.php'
+      - 'includes/merchant-hosted-games-view.php'
+      - 'admin/hosted-games.php'
+      - 'games/reward-drop/README.md'
+      - 'docs/hosted-reward-drop-sdk-demo-v1.md'
+      - 'scripts/build_hosted_reward_drop_demo_v1.php'
+      - 'scripts/validate_hosted_reward_drop_demo_v1.php'
+      - '.github/workflows/hosted-reward-drop-sdk-demo-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }} demo validation
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          extensions: mbstring, zip
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: PHP syntax
+        run: |
+          php -l api/hosted-games/demo-package.php
+          php -l scripts/build_hosted_reward_drop_demo_v1.php
+          php -l scripts/validate_hosted_reward_drop_demo_v1.php
+
+      - name: JavaScript syntax
+        run: node --check examples/hosted-game-reward-drop-demo/game.js
+
+      - name: Source contract
+        run: php scripts/validate_hosted_reward_drop_demo_v1.php
+
+  package:
+    name: Build uploadable ZIP
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          extensions: zip
+
+      - name: Build package
+        run: php scripts/build_hosted_reward_drop_demo_v1.php /tmp/reward-drop-sdk-demo-v2.0.0.zip
+
+      - name: Validate generated package
+        run: php scripts/validate_hosted_reward_drop_demo_v1.php /tmp/reward-drop-sdk-demo-v2.0.0.zip
+
+      - name: Upload game ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: reward-drop-sdk-demo-v2.0.0
+          path: /tmp/reward-drop-sdk-demo-v2.0.0.zip
+          if-no-files-found: error
+          retention-days: 30

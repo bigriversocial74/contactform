@@ -47,7 +47,10 @@ require dirname(__DIR__) . '/includes/header.php';
             <h1>Hosted Games<br>operations center</h1>
             <p>Create and manage merchant games, upload releases, connect Distribution Programs, assign isolated databases, and control each game runtime from one administrative workspace.</p>
           </div>
-          <?php if ($canManageHostedGames): ?><button class="hgm-btn is-primary" type="button" data-hgm-admin-create>Create hosted game</button><?php endif; ?>
+          <div class="hgm-card-actions">
+            <a class="hgm-btn is-soft" href="/api/hosted-games/demo-package.php">Download demo game ZIP</a>
+            <?php if ($canManageHostedGames): ?><button class="hgm-btn is-primary" type="button" data-hgm-admin-create>Create hosted game</button><?php endif; ?>
+          </div>
         </section>
 
         <div class="hgm-notice" data-hgm-admin-notice hidden></div>
@@ -103,15 +106,15 @@ require dirname(__DIR__) . '/includes/header.php';
 
               <div data-hgm-admin-existing hidden>
                 <section class="hgm-section">
-                  <h3>2. Upload game release</h3>
-                  <p>Upload the complete browser-game ZIP. The same traversal, executable, symlink, compression and size protections used by the merchant uploader apply here.</p>
+                  <h3>2. Upload draft release</h3>
+                  <p>Upload a complete Standard v1 browser-game ZIP. The package is validated, preserved, and stored as a draft without replacing the active release. Use Releases to preview, health-check, compare, and activate it.</p>
                   <div class="hgm-upload-zone" data-hgm-admin-drop>
                     <input type="file" accept=".zip,application/zip" data-hgm-admin-file>
                     <strong data-hgm-admin-file-title>Select a game ZIP</strong>
                     <span data-hgm-admin-file-detail>HTML, JavaScript, media, WebGL, WASM and Unity assets · maximum 100 MB ZIP</span>
                   </div>
                   <div class="hgm-progress"><span data-hgm-admin-progress></span></div>
-                  <div class="hgm-card-actions"><button class="hgm-btn is-primary" type="button" data-hgm-admin-upload disabled>Upload new release</button></div>
+                  <div class="hgm-card-actions"><button class="hgm-btn is-primary" type="button" data-hgm-admin-upload disabled>Upload draft release</button></div>
                   <div class="hgm-form-status" data-hgm-admin-upload-status></div>
                 </section>
 
@@ -157,7 +160,7 @@ require dirname(__DIR__) . '/includes/header.php';
 
                 <section class="hgm-section">
                   <h3>5. Managed runtime and publication</h3>
-                  <p>Use the Game enabled switch after all readiness checks pass. Disabling pauses gameplay and reward issuance while preserving the release, Distribution Program, encrypted API credential, and webhook configuration.</p>
+                  <p>Activate a tested release, then use the Game enabled switch after all readiness checks pass. Disabling pauses gameplay and reward issuance while preserving releases, the Distribution Program, encrypted API credential, and webhook configuration.</p>
                   <div class="hgm-db-summary" data-hgm-admin-summary></div>
                   <div class="hgm-ready-list" data-hgm-admin-readiness></div>
                   <div class="hgm-card-actions">
