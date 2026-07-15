@@ -52,7 +52,7 @@ try {
     );
     $expect(
         str_contains($header, 'if (!$user) {')
-        && str_contains($header, "$public_nav_links = ["),
+        && str_contains($header, '$public_nav_links = ['),
         'Navigation override remains limited to logged-out users'
     );
 } catch (Throwable $error) {
