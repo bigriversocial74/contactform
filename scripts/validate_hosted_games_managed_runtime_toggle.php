@@ -76,7 +76,7 @@ $mustContain('assets/js/admin-hosted-games-runtime-toggle.js', [
     'role="switch"',
     'aria-checked',
     '/api/admin/hosted-game-runtime.php',
-    'No manual environment values',
+    'Raw credentials are never displayed',
     'api_credential_ready',
     'webhook_secret_ready',
 ]);
