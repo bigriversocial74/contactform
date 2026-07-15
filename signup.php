@@ -6,6 +6,7 @@ $isMerchant = $accountType === 'merchant';
 $page_title = ($isMerchant ? 'Create merchant account' : 'Create account') . ' | Microgifter';
 $page_section = 'core';
 $header_mode = 'public';
+$page_styles = ['/assets/css/auth-password-fields.css'];
 require __DIR__ . '/includes/header.php';
 ?>
 <section class="mg-auth-shell" aria-labelledby="signup-title">
