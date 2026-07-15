@@ -11,8 +11,63 @@ window.Microgifter = window.Microgifter || {};
     return '';
   }
 
+  function validatePasswordConfirmation(form) {
+    var password = form.elements.password;
+    var confirmation = form.elements.password_confirmation;
+    if (!password || !confirmation) return true;
+
+    var matches = confirmation.value === '' || password.value === confirmation.value;
+    confirmation.setCustomValidity(matches ? '' : 'Passwords do not match.');
+    return matches;
+  }
+
+  function bindPasswordConfirmation(form) {
+    var password = form.elements.password;
+    var confirmation = form.elements.password_confirmation;
+    if (!password || !confirmation) return;
+
+    function validate() {
+      validatePasswordConfirmation(form);
+    }
+
+    password.addEventListener('input', validate);
+    confirmation.addEventListener('input', validate);
+  }
+
+  function bindPasswordToggles(root) {
+    root.querySelectorAll('[data-password-toggle]').forEach(function (button) {
+      if (button.dataset.passwordToggleBound === 'true') return;
+      button.dataset.passwordToggleBound = 'true';
+
+      button.addEventListener('click', function () {
+        var inputId = button.getAttribute('data-password-target');
+        var input = inputId ? document.getElementById(inputId) : null;
+        if (!input) return;
+
+        var showing = input.type === 'text';
+        input.type = showing ? 'password' : 'text';
+        button.setAttribute('aria-pressed', showing ? 'false' : 'true');
+
+        var fieldName = input.name === 'password_confirmation' ? 'confirmed password' : 'password';
+        var label = showing ? 'Show ' + fieldName : 'Hide ' + fieldName;
+        button.setAttribute('aria-label', label);
+        button.setAttribute('title', label);
+        input.focus({ preventScroll: true });
+      });
+    });
+  }
+
   function enhanceForm(form) {
+    bindPasswordConfirmation(form);
+
     form.addEventListener('submit', async function (event) {
+      if (!validatePasswordConfirmation(form)) {
+        event.preventDefault();
+        var confirmation = form.elements.password_confirmation;
+        if (confirmation) confirmation.focus();
+        form.reportValidity();
+        return;
+      }
       if (!window.fetch || !Microgifter.submitForm) return;
       event.preventDefault();
 
@@ -63,6 +118,7 @@ window.Microgifter = window.Microgifter || {};
 
   document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('[data-auth-form]').forEach(enhanceForm);
+    bindPasswordToggles(document);
     bindLogout();
   });
 })();
