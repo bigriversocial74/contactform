@@ -17,6 +17,7 @@ $page_styles = [
     '/assets/css/agent-workspace-layout.css',
     '/assets/css/personal-gifting-agent.css',
     '/assets/css/personal-gifting-workflows.css',
+    '/assets/css/personal-agent-chat-canvas.css?v=1.0.0',
 ];
 $page_scripts = [
     '/assets/js/agent-workspace.js',
