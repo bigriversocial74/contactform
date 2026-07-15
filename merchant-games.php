@@ -18,6 +18,7 @@ $page_scripts = [
     '/assets/js/merchant-hosted-games-runtime-toggle.js?v=1.0.0',
     '/assets/js/hosted-games-cover-upload.js?v=1.0.0',
     '/assets/js/hosted-games-analytics-links.js?v=1.0.0',
+    '/assets/js/hosted-games-release-links.js?v=1.0.0',
 ];
 $merchantView = 'hosted_games';
 require __DIR__ . '/includes/header.php';
