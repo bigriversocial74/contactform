@@ -12,11 +12,15 @@ $paths=[
     'claim_detail'=>$root.'/api/merchant/claim-detail.php',
     'claim_exception'=>$root.'/api/merchant/claim-exception.php',
     'overview'=>$root.'/api/merchant/overview.php',
+    'intelligence'=>$root.'/api/merchant/intelligence-dashboard.php',
+    'demand'=>$root.'/api/merchant/demand-dashboard.php',
+    'prepaid'=>$root.'/api/merchant/prepaid-demand.php',
     'package_limits'=>$root.'/api/account/package-limits.php',
     'world'=>$root.'/api/world-canvas/_locations.php',
     'scanner_page'=>$root.'/merchant-scanner-settings.php',
     'scanner_settings'=>$root.'/api/merchant/scanner-settings.php',
     'scanner_devices'=>$root.'/api/merchant/scanner-devices.php',
+    'scanner_claim'=>$root.'/api/merchant/scanner-claim.php',
     'redeem_locations'=>$root.'/api/account/action-center-redeem-locations.php',
     'builder'=>$root.'/api/catalog/_publish_distribution.php',
     'agent_context'=>$root.'/includes/ai/merchant-context-builder.php',
@@ -40,6 +44,11 @@ $checks=[
         && str_contains($source['scope'],'$workspaceAlias}.id IS NULL')
         && str_contains($source['scope'],'$locationAlias}.merchant_user_id=?')
         && !str_contains($source['scope'],'merchant_user_id=? OR'),
+    'merchant workspace resolution normalizes legacy ownership once for downstream consumers' =>
+        str_contains($source['scope'],'function mg_merchant_location_normalize_scope')
+        && str_contains($source['scope'],'SET ml.workspace_id=?,ml.merchant_user_id=?,ml.updated_at=NOW()')
+        && str_contains($source['merchant_core'],'function mg_merchant_prepare_workspace_locations')
+        && substr_count($source['merchant_core'],'mg_merchant_prepare_workspace_locations(')>=3,
     'merchant APIs load the shared location scope' =>
         str_contains($source['merchant_core'],"includes/merchant-location-scope.php"),
     'locations API reads workspace rows and orphan legacy rows with one scope' =>
@@ -72,6 +81,15 @@ $checks=[
     'dashboard and account package usage report the same location count' =>
         str_contains($source['overview'],'mg_merchant_location_count($pdo,$workspaceId,$ownerMerchantId)')
         && str_contains($source['package_limits'],'mg_merchant_location_count($pdo,$workspaceId,$ownerMerchantId)'),
+    'Merchant Intelligence location analytics use canonical workspace scope' =>
+        str_contains($source['intelligence'],'$ownerMerchantId')
+        && str_contains($source['intelligence'],"mg_merchant_location_scope_join('ml','location_scope_mw')")
+        && str_contains($source['intelligence'],"mg_merchant_location_scope_condition('ml','location_scope_mw')"),
+    'Demand dashboards resolve selected and listed locations through canonical scope' =>
+        str_contains($source['demand'],'mg_merchant_location_find_by_public_id(')
+        && str_contains($source['demand'],'$ownerMerchantId')
+        && str_contains($source['prepaid'],'mg_merchant_location_find_by_public_id(')
+        && str_contains($source['prepaid'],"mg_merchant_location_scope_condition('ml','location_scope_mw')"),
     'World Canvas uses the canonical scope for rows lookup and default location' =>
         substr_count($source['world'],"mg_merchant_location_scope_condition('ml','location_scope_mw')")>=3
         && str_contains($source['world'],'mg_world_location_workspace_scope'),
@@ -80,14 +98,18 @@ $checks=[
         && str_contains($source['scanner_settings'],'$ownerMerchantId')
         && str_contains($source['scanner_devices'],'$actorUserId')
         && str_contains($source['scanner_devices'],'$ownerMerchantId'),
+    'scanner redemption resolves the workspace before strict legacy location checks' =>
+        strpos($source['scanner_claim'],'mg_claim_workspace($pdo, $user)')!==false
+        && strpos($source['scanner_claim'],'mg_claim_workspace($pdo, $user)')<strpos($source['scanner_claim'],'ml.workspace_id=? AND ml.merchant_user_id=?'),
     'customer redemption locations use the same canonical merchant scope' =>
         str_contains($source['redeem_locations'],"mg_merchant_location_scope_join('ml','location_scope_mw')")
         && str_contains($source['redeem_locations'],"mg_merchant_location_scope_condition('ml','location_scope_mw')"),
-    'Product Builder continues resolving active workspace locations' =>
+    'Product Builder continues resolving active workspace-owned locations' =>
         str_contains($source['builder'],'INNER JOIN merchant_workspaces mw ON mw.id=ml.workspace_id')
         && str_contains($source['builder'],"WHERE mw.merchant_user_id=? AND ml.status='active'"),
-    'Merchant Agent context continues reading the canonical workspace location set' =>
-        str_contains($source['agent_context'],'FROM merchant_locations WHERE workspace_id = ?'),
+    'Merchant Agent context reads the normalized workspace location set' =>
+        str_contains($source['agent_context'],'FROM merchant_locations WHERE workspace_id = ?')
+        && str_contains($source['merchant_core'],'mg_merchant_location_normalize_scope('),
     'merchant location UI consumes the canonical endpoint' =>
         str_contains($source['client'],"Microgifter.get('/api/merchant/locations.php')"),
     'PHPUnit protects app-wide ownership parity' =>
@@ -106,4 +128,4 @@ if($failed!==[]){
     exit(1);
 }
 
-echo "\nMerchant location app-wide parity v2 contract: 15/15.".PHP_EOL;
+echo "\nMerchant location app-wide parity v2 contract: 20/20.".PHP_EOL;
