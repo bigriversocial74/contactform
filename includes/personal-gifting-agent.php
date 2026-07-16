@@ -17,5 +17,6 @@ require_once __DIR__ . '/personal-agent/marketplace-result-cards.php';
 require_once __DIR__ . '/personal-agent/marketplace-response.php';
 require_once __DIR__ . '/personal-agent/gift-result-cards.php';
 require_once __DIR__ . '/personal-agent/merchant-opportunities.php';
+require_once __DIR__ . '/personal-agent/opportunity-response.php';
 require_once __DIR__ . '/personal-agent/credit-response.php';
 require_once __DIR__ . '/personal-agent/workflows.php';
