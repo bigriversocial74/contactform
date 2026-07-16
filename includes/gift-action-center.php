@@ -11,6 +11,7 @@ $giftCenterDemoEnabled=mg_has_role('super_admin');
 <link rel="stylesheet" href="/assets/css/gift-action-center-user-search-fix.css?v=1.0.0">
 <link rel="stylesheet" href="/assets/css/gift-action-center-feed-v3.css?v=3.2.0">
 <link rel="stylesheet" href="/assets/css/gift-action-center-pagination.css?v=1.0.0">
+<link rel="stylesheet" href="/assets/css/personal-agent-chat-history.css?v=1.2.0">
 <section class="mg-app-shell mg-gift-center-page" data-gift-center data-feed-version="3" data-initial-folder="<?= mg_e($giftCenterFolder) ?>" data-demo-enabled="<?= $giftCenterDemoEnabled?'true':'false' ?>">
   <?php require __DIR__ . '/gift-center-sidebar.php'; ?>
 
@@ -60,6 +61,7 @@ $giftCenterDemoEnabled=mg_has_role('super_admin');
     <div class="mg-action-modal-body" data-action-modal-body></div>
   </section>
 </section>
+<script src="/assets/js/personal-agent-chat-history.js?v=1.1.0" defer></script>
 <script src="/assets/js/gift-action-center-actions.js" defer></script>
 <script src="/assets/js/gift-action-center-claim-restore.js" defer></script>
 <script src="/assets/js/gift-action-center-modal-portal.js?v=1.1.0" defer></script>
