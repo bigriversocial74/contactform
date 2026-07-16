@@ -5,6 +5,7 @@
 .mg-sub-billing-actions .mg-btn{min-height:38px}
 .mg-sub-billing-actions .mg-btn.is-danger{border-color:rgba(255,255,255,.35);background:rgba(255,255,255,.1);color:#fff}
 .mg-sub-billing-actions .mg-btn.is-light{border-color:rgba(255,255,255,.36);background:#fff;color:#173f9f}
+.mg-sub-billing-actions .mg-btn.is-confirming{border-color:#f9c74f;background:#fff7d6;color:#7a4a00;box-shadow:0 0 0 3px rgba(249,199,79,.18)}
 .mg-sub-billing-note{display:grid;gap:3px;margin-top:14px;padding:11px 13px;border:1px solid rgba(255,255,255,.2);border-radius:12px;background:rgba(255,255,255,.08);color:#fff}
 .mg-sub-billing-note strong{font-size:12px}.mg-sub-billing-note span{font-size:11px;line-height:1.45;color:rgba(255,255,255,.76)}
 .mg-sub-plan-card[data-subscription-select]{cursor:pointer}.mg-sub-plan-card[data-subscription-select]:focus-within{outline:3px solid rgba(49,89,255,.16);outline-offset:3px}
