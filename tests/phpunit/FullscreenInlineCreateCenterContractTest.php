@@ -82,6 +82,40 @@ final class FullscreenInlineCreateCenterContractTest extends TestCase
         self::assertStringContainsString('data-create-post-success',$controller);
     }
 
+    public function testHomeCardsRemoveIntroAndSeparateCreateFromManage(): void
+    {
+        $css=file_get_contents($this->root.'/assets/css/create-center-manage-actions.css');
+        $controller=file_get_contents($this->root.'/assets/js/create-center-manage-actions.js');
+        $extension=file_get_contents($this->root.'/includes/header-components/create-list-extension.php');
+        self::assertIsString($css);
+        self::assertIsString($controller);
+        self::assertIsString($extension);
+
+        self::assertStringContainsString('.mg-create-center-welcome{display:none!important}',$css);
+        self::assertStringContainsString('.mg-create-center-card-open',$css);
+        self::assertStringContainsString('.mg-create-center-manage',$css);
+        self::assertStringContainsString('intro.remove()',$controller);
+        self::assertStringContainsString("document.createElement('article')",$controller);
+        self::assertStringContainsString("document.createElement('button')",$controller);
+        self::assertStringContainsString("document.createElement('a')",$controller);
+        self::assertStringContainsString('card.replaceWith(shell)',$controller);
+
+        foreach([
+            "product: '/merchant-products.php'",
+            "campaign: '/merchant-campaigns.php'",
+            "reward: '/merchant-reward-templates.php'",
+            "post: '/feed.php?view=mine'",
+            "storefront: '/merchant-storefront.php'",
+            "location: '/merchant-locations.php'",
+            "list: '/lists.php'",
+        ] as $route){
+            self::assertStringContainsString($route,$controller);
+        }
+
+        self::assertStringContainsString('/assets/css/create-center-manage-actions.css?v=1.0.0',$extension);
+        self::assertStringContainsString('/assets/js/create-center-manage-actions.js?v=1.0.0',$extension);
+    }
+
     public function testMobileCreateCenterHidesToolRailAndCancelButtons(): void
     {
         $createCss=file_get_contents($this->root.'/assets/css/create-center-inline.css');
