@@ -8,9 +8,11 @@ $paths=[
     'composer'=>$root.'/includes/social-feed-composer.php',
     'controller'=>$root.'/assets/js/create-center-inline.js',
     'post_controller'=>$root.'/assets/js/create-center-post-inline.js',
+    'post_trigger_fix'=>$root.'/assets/js/create-center-post-trigger-fix.js',
     'storefront_guard'=>$root.'/assets/js/create-center-storefront-preserve.js',
     'create_css'=>$root.'/assets/css/create-center-inline.css',
     'mobile_post_css'=>$root.'/assets/css/create-center-mobile-post-unified.css',
+    'professional_post_css'=>$root.'/assets/css/create-center-post-professional.css',
     'menu_controller'=>$root.'/assets/js/create-menu.js',
     'manage_css'=>$root.'/assets/css/create-center-manage-actions.css',
     'manage_js'=>$root.'/assets/js/create-center-manage-actions.js',
@@ -71,7 +73,26 @@ $checks=[
         str_contains($content['post_controller'],"MG.post('/api/social/posts.php'")
         && str_contains($content['post_controller'],'data-create-post-success')
         && str_contains($content['menu'],'data-create-post-success')
-        && str_contains($content['runtime'],'/assets/js/create-center-post-inline.js'),
+        && str_contains($content['runtime'],'/assets/js/create-center-post-inline.js?v=1.1.0'),
+    'post option has resilient delegated routing after managed cards are rebuilt' =>
+        str_contains($content['post_trigger_fix'],'[data-create-inline-target="post"],[data-create-menu-option="post"]')
+        && str_contains($content['post_trigger_fix'],"view.dataset.createCenterView === 'post'")
+        && str_contains($content['post_trigger_fix'],"modal.dataset.createPostActive = 'true'")
+        && str_contains($content['post_trigger_fix'],'microgifter:openPostComposer')
+        && str_contains($content['post_trigger_fix'],'new MutationObserver')
+        && str_contains($content['runtime'],'/assets/js/create-center-post-trigger-fix.js?v=1.0.0'),
+    'post workspace uses a professional responsive editor and media layout' =>
+        str_contains($content['professional_post_css'],'.mg-create-center-post .mg-create-inline-post-form')
+        && str_contains($content['professional_post_css'],'grid-template-areas:')
+        && str_contains($content['professional_post_css'],'"copy media"')
+        && str_contains($content['professional_post_css'],'position:sticky')
+        && str_contains($content['professional_post_css'],'@media(max-width:1180px)')
+        && str_contains($content['runtime'],'/assets/css/create-center-post-professional.css?v=1.0.0'),
+    'create center post assets are cache busted for deployment' =>
+        str_contains($content['runtime'],'/assets/css/create-center-inline.css?v=1.1.0')
+        && str_contains($content['runtime'],'/assets/css/create-center-mobile-post-unified.css?v=1.1.0')
+        && str_contains($content['runtime'],'/assets/js/create-center-inline.js?v=1.1.0')
+        && str_contains($content['runtime'],'/assets/js/create-center-post-inline.js?v=1.1.0'),
     'mobile removes the horizontal tool icon row and footer cancel actions' =>
         str_contains($content['mobile_post_css'],'@media(max-width:820px)')
         && str_contains($content['mobile_post_css'],'.mg-create-center-rail')
