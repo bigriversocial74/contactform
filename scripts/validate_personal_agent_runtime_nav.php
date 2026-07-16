@@ -9,16 +9,24 @@ $read = static fn(string $path): string => is_file($root . '/' . $path)
 $header = $read('includes/header-components/app-header.php');
 $giftSidebar = $read('includes/gift-center-sidebar.php');
 $personalSidebar = $read('includes/personal-agent-sidebar.php');
+$quickCatalog = $read('includes/agent-quick-actions.php');
 $agentPage = $read('agent.php');
+$merchantPage = $read('merchant-agent-chat.php');
+$subscriptionsPage = $read('account-subscriptions.php');
 $workspace = $read('includes/agent-workspace.php');
 $dashboard = $read('includes/personal-agent/workspace-dashboard.php');
 $chatCss = $read('assets/css/personal-agent-chat-canvas.css');
 $fullCanvasCss = $read('assets/css/personal-agent-full-canvas.css');
+$historyCss = $read('assets/css/personal-agent-chat-history.css');
 $chatJs = $read('assets/js/personal-agent-chat-canvas.js');
+$toolsJs = $read('assets/js/agent-sidebar-tools.js');
 $chatActions = $read('assets/js/personal-gifting-agent-actions.js');
 $listPage = $read('lists.php');
 $listJs = $read('assets/js/user-lists-create.js');
 $listCss = $read('assets/css/user-lists.css');
+
+$footerPosition = strpos($personalSidebar, 'class="mg-personal-chat-sidebar-footer"');
+$modePosition = strpos($personalSidebar, 'class="mg-agent-footer-mode-switch"');
 
 $checks = [
     'Agent top tab is present' => str_contains($header, "['agent','Agent','/agent.php'")
@@ -28,11 +36,31 @@ $checks = [
         && !str_contains($giftSidebar, 'mg-gift-center-my-lists'),
     'customer navigation has one My Lists entry' => substr_count($personalSidebar, '<strong>My Lists</strong>') === 1
         && str_contains($personalSidebar, 'href="/lists.php"'),
-    'customer navigation includes chat history and compact Agent switch' => str_contains($personalSidebar, 'data-personal-agent-thread-groups')
+    'customer navigation includes chat history and footer Agent tools' => str_contains($personalSidebar, 'data-personal-agent-thread-groups')
         && str_contains($personalSidebar, 'data-personal-agent-new-chat')
-        && str_contains($personalSidebar, 'mg-agent-sidebar-switch')
+        && $footerPosition !== false
+        && $modePosition !== false
+        && $footerPosition < $modePosition
+        && str_contains($personalSidebar, 'data-agent-footer-mode-switch')
+        && str_contains($personalSidebar, 'data-agent-suggestions-open')
+        && str_contains($personalSidebar, 'data-agent-tools-tab="suggestions"')
+        && str_contains($personalSidebar, 'data-agent-tools-tab="keywords"')
         && !str_contains($personalSidebar, 'class="mg-agent-mode-switch"')
         && !str_contains($personalSidebar, 'mg-agent-mode-options'),
+    'quick keyword catalog includes current Personal and Merchant commands' => str_contains($quickCatalog, 'function mg_agent_quick_action_catalog')
+        && str_contains($quickCatalog, "'keyword'=>'/snapshot'")
+        && str_contains($quickCatalog, "'keyword'=>'memory'")
+        && str_contains($quickCatalog, "'keyword'=>'/m'")
+        && str_contains($toolsJs, 'data-agent-keyword-prompt')
+        && str_contains($historyCss, '.mg-agent-sidebar-tools-modal'),
+    'free signed-in users are routed to subscriptions from both Agent destinations' => str_contains($agentPage, "header('Location: /account-subscriptions.php?agent=personal')")
+        && str_contains($merchantPage, "header('Location: /account-subscriptions.php?agent=merchant')")
+        && str_contains($personalSidebar, '/account-subscriptions.php?agent=personal')
+        && str_contains($personalSidebar, '/account-subscriptions.php?agent=merchant'),
+    'subscription checkout page uses the universal Inbox sidebar' => str_contains($subscriptionsPage, "\$agent_sidebar_mode='subscriptions'")
+        && str_contains($subscriptionsPage, "require __DIR__ . '/includes/personal-agent-sidebar.php'")
+        && !str_contains($subscriptionsPage, "require __DIR__ . '/includes/agent-sidebar.php'")
+        && str_contains($subscriptionsPage, '/assets/css/personal-agent-chat-history.css?v=1.4.0'),
     'Training Lab is not in the customer sidebar' => !str_contains($personalSidebar, 'Training Lab')
         && !str_contains($personalSidebar, '/training-lab.php'),
     'chat canvas remains full width and owns its section' => str_contains($dashboard, 'data-agent-canvas')
@@ -50,8 +78,9 @@ $checks = [
         && str_contains($chatJs, 'Good evening'),
     'Agent assets are loaded with current cache versions' => str_contains($agentPage, 'personal-agent-chat-canvas.css')
         && str_contains($agentPage, 'personal-agent-full-canvas.css?v=1.0.0')
-        && str_contains($agentPage, 'personal-agent-chat-history.css?v=1.3.0')
-        && str_contains($agentPage, 'personal-agent-chat-history.js?v=1.1.0'),
+        && str_contains($agentPage, 'personal-agent-chat-history.css?v=1.4.0')
+        && str_contains($agentPage, 'personal-agent-chat-history.js?v=1.1.0')
+        && str_contains($personalSidebar, 'agent-sidebar-tools.js?v=1.0.0'),
     'My Lists creation remains wired' => substr_count($listPage, 'data-user-list-open-create') >= 2
         && str_contains($listJs, '[data-user-list-open-create]')
         && str_contains($listCss, '.mg-user-lists-main'),
