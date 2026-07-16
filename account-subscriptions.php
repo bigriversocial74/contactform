@@ -9,11 +9,15 @@ $page_section='account';
 $header_mode='account';
 $agent_tab='subscriptions';
 $use_inbox_sidebar=true;
-$page_styles=['/assets/css/subscription-billing-v2.css?v=1.0.0'];
+$page_styles=[
+    '/assets/css/subscription-billing-v2.css?v=1.0.0',
+    '/assets/css/subscription-checkout-completion-v1.css?v=1.0.0',
+];
 $page_scripts=[
     '/assets/js/account.js',
     '/assets/js/subscription-activation-status.js?v=2.0.0',
     '/assets/js/subscription-billing-v2.js?v=1.0.0',
+    '/assets/js/subscription-checkout-completion-v1.js?v=1.0.0',
 ];
 $user=mg_current_user();
 require __DIR__ . '/includes/header.php';
