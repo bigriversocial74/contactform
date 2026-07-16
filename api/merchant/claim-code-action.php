@@ -12,22 +12,25 @@ mg_require_csrf_for_write($input);
 
 $action=trim((string)($input['action']??''));
 $publicId=mg_claim_code_public_id((string)($input['claim_code_id']??$input['id']??''));
-$merchantId=(int)$user['id'];
+$actorUserId=(int)$user['id'];
 $pdo=mg_db();
 $workspace=mg_claim_workspace($pdo,$user);
-$workspaceId=(int)$workspace['id'];
+$scope=mg_merchant_location_scope_context($workspace);
+$workspaceId=(int)$scope['workspace_id'];
+$ownerMerchantId=(int)$scope['owner_merchant_id'];
 
 $stmt=$pdo->prepare(
     'SELECT mcc.*,ml.public_id location_public_id
      FROM merchant_claim_codes mcc
      INNER JOIN merchant_locations ml ON ml.id=mcc.location_id
-     WHERE mcc.public_id=? AND mcc.merchant_user_id=? AND ml.workspace_id=? AND ml.merchant_user_id=?
+     '.mg_merchant_location_scope_join('ml','location_scope_mw').'
+     WHERE mcc.public_id=? AND '.mg_merchant_location_scope_condition('ml','location_scope_mw').'
      LIMIT 1 FOR UPDATE'
 );
 
 $pdo->beginTransaction();
 try{
-    $stmt->execute([$publicId,$merchantId,$workspaceId,$merchantId]);
+    $stmt->execute([$publicId,$workspaceId,$ownerMerchantId]);
     $current=$stmt->fetch();
     if(!$current)mg_fail('Claim code not found.',404);
 
@@ -42,14 +45,14 @@ try{
         $status=trim((string)($input['status']??''));
         if(!in_array($status,['active','inactive','revoked'],true))mg_fail('Invalid claim-code status.',422);
 
-        $pdo->prepare('UPDATE merchant_claim_codes SET status=?,updated_at=NOW() WHERE id=?')
-            ->execute([$status,(int)$current['id']]);
+        $pdo->prepare('UPDATE merchant_claim_codes SET merchant_user_id=?,status=?,updated_at=NOW() WHERE id=?')
+            ->execute([$ownerMerchantId,$status,(int)$current['id']]);
         $event=$status==='active'?'activated':($status==='inactive'?'deactivated':'revoked');
         $metadata['status']=$status;
     }elseif($action==='limit'){
         $limit=mg_claim_code_usage_limit_or_null($input['usage_limit']??null);
-        $pdo->prepare('UPDATE merchant_claim_codes SET usage_limit=?,updated_at=NOW() WHERE id=?')
-            ->execute([$limit,(int)$current['id']]);
+        $pdo->prepare('UPDATE merchant_claim_codes SET merchant_user_id=?,usage_limit=?,updated_at=NOW() WHERE id=?')
+            ->execute([$ownerMerchantId,$limit,(int)$current['id']]);
         $event='limit_changed';
         $metadata['usage_limit']=$limit;
     }elseif($action==='rotate'){
@@ -63,7 +66,9 @@ try{
         $replacementHash=mg_claim_code_hash($replacementCode,$pepper);
         $resultLast4=mg_claim_code_last4($replacementCode);
 
-        mg_claim_code_assert_no_active_duplicate($pdo,$merchantId,$replacementHash,(int)$current['id']);
+        mg_claim_code_assert_no_active_duplicate(
+            $pdo,$workspaceId,$ownerMerchantId,$replacementHash,(int)$current['id']
+        );
 
         $resultPublicId=mg_merchant_uuid();
         $pdo->prepare(
@@ -72,12 +77,12 @@ try{
               valid_from,valid_until,usage_limit,usage_count,created_by_user_id,created_at,updated_at)
              VALUES (?,?,?,?,?,?,'active',NOW(),?,?,0,?,NOW(),NOW())"
         )->execute([
-            $resultPublicId,$merchantId,(int)$current['location_id'],$label,$replacementHash,$resultLast4,
-            $validUntil,$usageLimit,$merchantId,
+            $resultPublicId,$ownerMerchantId,(int)$current['location_id'],$label,$replacementHash,$resultLast4,
+            $validUntil,$usageLimit,$actorUserId,
         ]);
         $resultClaimCodeDbId=(int)$pdo->lastInsertId();
-        $pdo->prepare("UPDATE merchant_claim_codes SET status='revoked',updated_at=NOW() WHERE id=?")
-            ->execute([(int)$current['id']]);
+        $pdo->prepare("UPDATE merchant_claim_codes SET merchant_user_id=?,status='revoked',updated_at=NOW() WHERE id=?")
+            ->execute([$ownerMerchantId,(int)$current['id']]);
 
         $event='rotated';
         $previousClaimCodeId=(int)$current['id'];
@@ -86,8 +91,11 @@ try{
         mg_fail('Invalid claim-code action.',422);
     }
 
+    mg_merchant_location_normalize_ownership(
+        $pdo,(int)$current['location_id'],$workspaceId,$ownerMerchantId
+    );
     mg_claim_code_event(
-        $pdo,$merchantId,$resultClaimCodeDbId,(int)$current['location_id'],$event,$previousClaimCodeId,$metadata,$merchantId
+        $pdo,$ownerMerchantId,$resultClaimCodeDbId,(int)$current['location_id'],$event,$previousClaimCodeId,$metadata,$actorUserId
     );
     $pdo->commit();
 
@@ -95,7 +103,8 @@ try{
         'claim_code_id'=>$resultPublicId,
         'location_id'=>(string)$current['location_public_id'],
         'event'=>$event,
-    ],$merchantId);
+        'owner_merchant_id'=>$ownerMerchantId,
+    ],$actorUserId);
     mg_ok([
         'claim_code_id'=>$resultPublicId,
         'event'=>$event,
@@ -105,6 +114,6 @@ try{
     if($pdo->inTransaction())$pdo->rollBack();
     mg_security_log('error','merchant.claim_code_action_failed','Claim-code action failed.',[
         'exception_type'=>$error::class,
-    ],$merchantId);
+    ],$actorUserId);
     mg_fail('Unable to update claim code.',500);
 }
