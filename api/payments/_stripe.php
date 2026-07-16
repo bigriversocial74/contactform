@@ -236,7 +236,7 @@ function mg_stripe_checkout_session(PDO $pdo,array $order,array $items,array $ac
     $params=[
         'mode'=>'payment','success_url'=>$success,'cancel_url'=>$cancel,'client_reference_id'=>(string)$order['public_id'],'expires_at'=>time()+1800,
         'metadata'=>['order_id'=>(string)$order['public_id'],'payment_intent_id'=>(string)$internal['payment_intent_id'],'checkout_session_id'=>(string)$internal['checkout_session_id'],'merchant_user_id'=>(string)$order['merchant_user_id'],'order_total_cents'=>(string)$order['total_cents'],'currency'=>strtolower((string)$order['currency'])],
-        'payment_intent_data'=>['metadata'=>['order_id'=>(string)$order['public_id'],'payment_intent_id'=>(string)$internal['payment_intent_id'],'checkout_session_id'=>(string)$internal['checkout_session_id']],'application_fee_amount'=>(int)$order['platform_fee_cents'],'transfer_data'=>['destination'=>(string)$account['provider_account_reference']],
+        'payment_intent_data'=>['metadata'=>['order_id'=>(string)$order['public_id'],'payment_intent_id'=>(string)$internal['payment_intent_id'],'checkout_session_id'=>(string)$internal['checkout_session_id']],'application_fee_amount'=>(int)$order['platform_fee_cents'],'transfer_data'=>['destination'=>(string)$account['provider_account_reference']]],
         'line_items'=>[],
     ];
     foreach(array_values($items) as $index=>$item){$params['line_items'][$index]=['quantity'=>(int)$item['quantity'],'price_data'=>['currency'=>strtolower((string)$item['currency']),'unit_amount'=>(int)$item['unit_amount_cents'],'product_data'=>['name'=>mb_substr((string)$item['title_snapshot'],0,240)]]];}
