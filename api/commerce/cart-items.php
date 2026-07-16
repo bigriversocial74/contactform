@@ -1,11 +1,14 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . '/_foundation.php';
+require_once dirname(__DIR__,2) . '/includes/personal-agent/core.php';
+require_once dirname(__DIR__,2) . '/includes/personal-agent/opportunity-attribution.php';
 mg_require_method('POST');
 $user=mg_require_api_user();
 $input=mg_input();mg_require_csrf_for_write($input);
 $versionId=trim((string)($input['product_version_id']??''));
 $quantity=max(1,min(100,(int)($input['quantity']??1)));
+$agentToken=mg_personal_agent_text($input['agent_attribution_token']??'',64);
 if($versionId==='')mg_fail('Product version is required.',422);
 $pdo=mg_db();$pdo->beginTransaction();
 try{
@@ -18,7 +21,22 @@ try{
     $merchantCheck=$pdo->prepare('SELECT COUNT(*) FROM cart_items WHERE cart_id=? AND merchant_user_id<>?');$merchantCheck->execute([(int)$cart['id'],(int)$item['merchant_user_id']]);if((int)$merchantCheck->fetchColumn()>0)mg_fail('Cart currently supports one merchant.',409);
     if($row){$newQuantity=min(100,(int)$row['quantity']+$quantity);$pdo->prepare('UPDATE cart_items SET quantity=?,line_total_cents=unit_amount_cents*?,updated_at=NOW() WHERE id=?')->execute([$newQuantity,$newQuantity,(int)$row['id']]);}
     else{$pdo->prepare('INSERT INTO cart_items (public_id,cart_id,product_id,product_version_id,merchant_user_id,title_snapshot,unit_amount_cents,currency,quantity,line_total_cents,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,NOW(),NOW())')->execute([mg_public_uuid(),(int)$cart['id'],(int)$item['product_db_id'],(int)$item['version_db_id'],(int)$item['merchant_user_id'],$item['title'],(int)$item['unit_value_cents'],$item['currency'],$quantity,(int)$item['unit_value_cents']*$quantity]);}
-    mg_cart_recalculate($pdo,(int)$cart['id']);$pdo->commit();
-    mg_audit('commerce.cart_item_added','cart',['cart_id'=>$cart['public_id'],'product_version_id'=>$versionId,'quantity'=>$quantity],(int)$user['id']);
+    mg_cart_recalculate($pdo,(int)$cart['id']);
+    if($agentToken!==''&&mg_personal_agent_opportunity_schema_ready($pdo)){
+        $opportunity=mg_personal_agent_opportunity_find($pdo,(int)$user['id'],'',$agentToken,true);
+        if(empty($opportunity['merchant_user_id'])){
+            $pdo->prepare('UPDATE personal_agent_opportunities SET merchant_user_id=?,updated_at=NOW() WHERE id=?')->execute([(int)$item['merchant_user_id'],(int)$opportunity['id']]);
+            $opportunity['merchant_user_id']=(int)$item['merchant_user_id'];
+        }
+        mg_personal_agent_opportunity_event($pdo,$opportunity,'cart_added',[
+            'action_type'=>(string)($input['agent_action']??'buy_self'),
+            'product_version_public_id'=>$versionId,
+            'quantity'=>$quantity,
+            'cart_public_id'=>(string)$cart['public_id'],
+            'product_public_id'=>(string)$item['product_id'],
+        ],'cart-added:'.$agentToken.':'.$versionId.':'.(string)$cart['public_id']);
+    }
+    $pdo->commit();
+    mg_audit('commerce.cart_item_added','cart',['cart_id'=>$cart['public_id'],'product_version_id'=>$versionId,'quantity'=>$quantity,'agent_attributed'=>$agentToken!==''],(int)$user['id']);
     $fresh=mg_cart_active($pdo,(int)$user['id']);mg_ok(mg_cart_payload($pdo,$fresh),'Cart updated.',201);
 }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();mg_security_log('error','commerce.cart_item_failed','Cart item update failed.',['exception_type'=>get_class($e)],(int)$user['id']);mg_fail('Unable to update cart.',500);}

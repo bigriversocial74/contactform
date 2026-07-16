@@ -6,7 +6,7 @@ declare(strict_types=1);
     <div>
       <span class="mg-eyebrow">Agent commerce attribution</span>
       <h1>Agent ROI Attribution</h1>
-      <p>Connect agent workflow activity to claims, redemptions, influenced revenue, message-to-claim performance, follow-up conversion, and PSR impact estimates.</p>
+      <p>Connect agent workflow activity and Personal Agent recommendations to clicks, saves, checkout activity, claims, redemptions, influenced revenue, and purchases.</p>
     </div>
     <div class="mg-agent-roi-actions">
       <a class="mg-btn mg-btn-secondary" href="/merchant-agent-forecast.php">ROI Forecasting</a>
@@ -25,6 +25,19 @@ declare(strict_types=1);
     <article><strong data-roi-followup-rate>—</strong><span>Follow-up to claim</span></article>
     <article><strong data-roi-psr>—</strong><span>PSR impact estimate</span></article>
   </section>
+
+  <article class="mg-app-panel mg-agent-roi-panel">
+    <div class="mg-app-panel-head"><div><h2>Personal Agent Opportunity Funnel</h2><p>Customer-facing recommendations from the Personal Agent through saved opportunities, checkout, purchases, and campaign participation.</p></div></div>
+    <section class="mg-agent-roi-kpis" aria-label="Personal Agent opportunity attribution">
+      <article><strong data-personal-roi-recommendations>—</strong><span>Recommendations</span></article>
+      <article><strong data-personal-roi-clicks>—</strong><span>Action clicks</span></article>
+      <article><strong data-personal-roi-saves>—</strong><span>Saved</span></article>
+      <article><strong data-personal-roi-checkouts>—</strong><span>Checkouts</span></article>
+      <article><strong data-personal-roi-purchases>—</strong><span>Purchases</span></article>
+      <article><strong data-personal-roi-rate>—</strong><span>Purchase conversion</span></article>
+    </section>
+    <div class="mg-agent-roi-funnel" data-personal-agent-roi-funnel><div class="mg-empty-state"><strong>Loading Personal Agent attribution…</strong></div></div>
+  </article>
 
   <section class="mg-agent-roi-grid">
     <article class="mg-app-panel mg-agent-roi-panel">

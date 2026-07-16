@@ -8,7 +8,7 @@ $agent_tab = 'orders';
 $can_merchant_nav = true;
 $can_create_microgift = true;
 $page_styles = ['/assets/css/agent-workspace-layout.css','/assets/css/checkout.css','/assets/css/account-commerce.css','/assets/css/account-commerce-fixes.css'];
-$page_scripts = ['/assets/js/order-success.js'];
+$page_scripts = ['/assets/js/order-success.js','/assets/js/personal-agent-attribution-runtime.js?v=1.0.0'];
 $order_id = trim((string)($_GET['order'] ?? ''));
 require __DIR__ . '/includes/header.php';
 ?>
