@@ -22,9 +22,9 @@ $register=$read('api/auth/register.php');
 $provisioning=$read('includes/merchant-provisioning.php');
 $billing=$read('api/subscriptions/_package_billing.php');
 
-$checks[]=['name'=>'authenticated merchant shell','ok'=>str_contains($page,"$merchantView='onboarding'")&&str_contains($page,'includes/merchant-workspace.php')&&str_contains($page,'merchant-onboarding.js')];
+$checks[]=['name'=>'authenticated merchant shell','ok'=>str_contains($page,"\$merchantView='onboarding'")&&str_contains($page,'includes/merchant-workspace.php')&&str_contains($page,'merchant-onboarding.js')];
 $checks[]=['name'=>'guided merchant UX','ok'=>str_contains($view,'Launch your first Loyalty Quest')&&str_contains($view,'data-onboarding-checklist')&&str_contains($js,'Continue:')];
-$checks[]=['name'=>'merchant signup preserves package intent','ok'=>str_contains($signup,"['customer','merchant']")&&str_contains($signup,'business_name')&&str_contains($signup,'name="selected_plan"')&&str_contains($register,'mg_pending_subscription_plan')];
+$checks[]=['name'=>'merchant signup preserves package intent','ok'=>str_contains($signup,"['customer', 'merchant']")&&str_contains($signup,'business_name')&&str_contains($signup,'name="selected_plan"')&&str_contains($register,'mg_pending_subscription_plan')];
 $checks[]=['name'=>'registration begins as Free Wallet','ok'=>str_contains($register,'Every registration starts as the same Free Wallet identity')&&!str_contains($register,"WHERE slug='merchant'")&&!str_contains($register,'INSERT INTO merchant_workspaces')];
 $checks[]=['name'=>'merchant role and workspace activate from package authority','ok'=>str_contains($billing,'mg_platform_account_subscription_grant_merchant_role')&&str_contains($billing,'mg_subscription_provision_merchant_workspace')&&str_contains($provisioning,'merchant_workspaces')&&str_contains($provisioning,'merchant_team_members')];
 $checks[]=['name'=>'onboarding steps remain canonically provisioned','ok'=>str_contains($provisioning,'business_profile')&&str_contains($provisioning,'first_location')&&str_contains($provisioning,'payment_readiness')&&str_contains($provisioning,'beta_readiness')];
