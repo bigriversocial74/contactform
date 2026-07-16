@@ -10,8 +10,7 @@ $page_body_class = 'mg-integrated-merchant-agent-page';
 $page_styles = [
     '/assets/css/agent-workspace-layout.css',
     '/assets/css/personal-gifting-agent.css',
-    '/assets/css/personal-agent-chat-history.css?v=1.2.0',
-    '/assets/css/agent-mode-switch.css?v=1.0.0',
+    '/assets/css/personal-agent-chat-history.css?v=1.3.0',
     '/assets/css/merchant-agent-chat.css',
     '/assets/css/merchant-agent-chat-followup.css',
     '/assets/css/merchant-agent-chat-skills.css',
