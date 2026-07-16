@@ -1,0 +1,103 @@
+body.mg-integrated-merchant-agent-page .mg-agent-chat-message.is-snapshot-thinking .mg-agent-chat-bubble{
+  width:min(720px,92%);
+  border-color:#bfdbfe;
+  background:linear-gradient(135deg,#fff,#f7fbff);
+}
+
+body.mg-integrated-merchant-agent-page .mg-agent-snapshot-thinking{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  min-height:58px;
+}
+
+body.mg-integrated-merchant-agent-page .mg-agent-snapshot-thinking>span:last-child{
+  display:grid;
+  gap:4px;
+}
+
+body.mg-integrated-merchant-agent-page .mg-agent-snapshot-thinking strong{
+  color:#0f172a;
+  font-size:13px;
+  font-weight:950;
+}
+
+body.mg-integrated-merchant-agent-page .mg-agent-snapshot-thinking small{
+  max-width:560px;
+  color:#64748b;
+  font-size:11px;
+  font-weight:760;
+  line-height:1.45;
+}
+
+body.mg-integrated-merchant-agent-page .mg-agent-snapshot-thinking-dots{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  width:44px;
+  height:44px;
+  flex:0 0 44px;
+  border:1px solid #bfdbfe;
+  border-radius:15px;
+  background:#eff6ff;
+}
+
+body.mg-integrated-merchant-agent-page .mg-agent-snapshot-thinking-dots i{
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:#2563eb;
+  animation:mgMerchantSnapshotPulse 1s ease-in-out infinite;
+}
+
+body.mg-integrated-merchant-agent-page .mg-agent-snapshot-thinking-dots i:nth-child(2){animation-delay:.14s}
+body.mg-integrated-merchant-agent-page .mg-agent-snapshot-thinking-dots i:nth-child(3){animation-delay:.28s}
+
+body.mg-integrated-merchant-agent-page .mg-agent-chat-message .mg-agent-metric-block:first-child{
+  border-color:#bfdbfe;
+  background:linear-gradient(180deg,#fff,#f8fbff);
+}
+
+body.mg-integrated-merchant-agent-page .mg-agent-chat-message .mg-agent-warning-block{
+  border-color:#fed7aa;
+  background:#fff7ed;
+}
+
+body.mg-integrated-merchant-agent-page .mg-agent-chat-message .mg-agent-warning-block .mg-agent-block-head strong{
+  color:#9a3412;
+}
+
+body.mg-integrated-merchant-agent-page .mg-agent-chat-message .mg-agent-insight-block{
+  border-color:#bbf7d0;
+  background:#f0fdf4;
+}
+
+body.mg-integrated-merchant-agent-page .mg-agent-chat-message .mg-agent-insight-block .mg-agent-block-head strong{
+  color:#166534;
+}
+
+@keyframes mgMerchantSnapshotPulse{
+  0%,100%{transform:translateY(0);opacity:.35}
+  50%{transform:translateY(-4px);opacity:1}
+}
+
+@media(prefers-reduced-motion:reduce){
+  body.mg-integrated-merchant-agent-page .mg-agent-snapshot-thinking-dots i{
+    animation:none;
+    opacity:.75;
+  }
+}
+
+@media(max-width:760px){
+  body.mg-integrated-merchant-agent-page .mg-agent-snapshot-thinking{
+    align-items:flex-start;
+    gap:10px;
+  }
+  body.mg-integrated-merchant-agent-page .mg-agent-snapshot-thinking-dots{
+    width:38px;
+    height:38px;
+    flex-basis:38px;
+    border-radius:12px;
+  }
+}
