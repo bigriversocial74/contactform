@@ -1,14 +1,31 @@
 document.addEventListener('DOMContentLoaded', function () {
   'use strict';
 
+  var handoffKey = 'mgMerchantAgentHandoffV1';
   var root = document.querySelector('[data-merchant-agent-chat]');
   if (!root) return;
 
   var params = new URLSearchParams(window.location.search);
   var source = String(params.get('source') || '').trim();
-  var prompt = String(params.get('prompt') || '').trim();
   if (source !== 'personal-agent') return;
 
+  function readHandoff() {
+    try {
+      var raw = window.sessionStorage.getItem(handoffKey);
+      window.sessionStorage.removeItem(handoffKey);
+      if (!raw) return { prompt: '' };
+      var value = JSON.parse(raw);
+      if (!value || value.source !== 'personal-agent') return { prompt: '' };
+      var createdAt = Number(value.created_at || 0);
+      if (!createdAt || Date.now() - createdAt > 300000) return { prompt: '' };
+      return { prompt: String(value.prompt || '').trim() };
+    } catch (error) {
+      return { prompt: '' };
+    }
+  }
+
+  var handoff = readHandoff();
+  var prompt = handoff.prompt;
   var form = root.querySelector('[data-agent-chat-form]');
   var textarea = form && form.querySelector('[data-agent-chat-textarea],textarea[name="message"]');
   if (!form || !textarea) return;
@@ -29,7 +46,6 @@ document.addEventListener('DOMContentLoaded', function () {
     else textarea.focus({ preventScroll: true });
 
     var clean = new URL(window.location.href);
-    clean.searchParams.delete('prompt');
     clean.searchParams.delete('source');
     window.history.replaceState({}, '', clean.pathname + clean.search + clean.hash);
   }, 350);
