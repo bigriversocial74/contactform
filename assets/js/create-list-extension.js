@@ -59,6 +59,7 @@ document.addEventListener('DOMContentLoaded', function () {
         ? 'Organize people for birthdays, recurring gifts, group plans, and agent recommendations.'
         : 'Choose a tool, complete the form, and submit without leaving the current page.';
     }
+    modal.dataset.createCenterCurrentView = key;
     if (content) content.scrollTop = 0;
 
     if (focusField !== false && selected) {
@@ -69,27 +70,31 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+  window.MicrogifterCreateCenterList = {
+    show: function (focusField) {
+      showView('list', focusField !== false);
+    }
+  };
+
   function openList(event) {
     if (event) {
       event.preventDefault();
-      event.stopPropagation();
+      event.stopImmediatePropagation();
     }
+    modal.dataset.createCenterRequestedView = 'list';
     showView('list', true);
+    window.requestAnimationFrame(function () {
+      showView('list', true);
+      delete modal.dataset.createCenterRequestedView;
+    });
   }
 
-  modal.addEventListener('click', function (event) {
-    var option = event.target.closest('[data-create-inline-target="list"]');
-    if (option && modal.contains(option)) {
-      openList(event);
-      return;
-    }
-
-    var home = event.target.closest('[data-create-center-home]');
-    if (home && modal.contains(home)) {
-      event.preventDefault();
-      showView('home', true);
-    }
-  });
+  document.addEventListener('click', function (event) {
+    var target = event.target;
+    var option = target && target.closest ? target.closest('[data-create-inline-target="list"]') : null;
+    if (!option || !modal.contains(option)) return;
+    openList(event);
+  }, true);
 
   if (form) {
     form.addEventListener('submit', async function (event) {
@@ -132,5 +137,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  showView('home', false);
+  if (modal.dataset.createCenterRequestedView === 'list') {
+    window.requestAnimationFrame(function () { showView('list', true); });
+  }
 });
