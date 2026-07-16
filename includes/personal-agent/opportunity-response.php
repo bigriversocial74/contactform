@@ -45,6 +45,7 @@ function mg_personal_agent_opportunity_actions(array $card, array $opportunity):
     } else {
         $actions[] = ['key'=>'view_merchant','label'=>'View merchant','url'=>mg_personal_agent_opportunity_url($primary,$token,'view_merchant'),'primary'=>true];
     }
+    $actions[] = ['key'=>'remind','label'=>'Remind me','url'=>''];
     $actions[] = ['key'=>'save','label'=>'Save','url'=>''];
     if ($secondary !== '' && $kind !== 'merchant') {
         $actions[] = ['key'=>'view_merchant','label'=>'View merchant','url'=>mg_personal_agent_opportunity_url($secondary,$token,'view_merchant')];
@@ -88,9 +89,13 @@ function mg_personal_agent_chat_with_opportunity_attribution(PDO $pdo, int $user
                 'destination_url'=>$destination,
                 'source_context'=>[
                     'card_type'=>$type,
+                    'result_kind'=>$entityType,
                     'eyebrow'=>$card['eyebrow'] ?? null,
                     'price'=>$card['price'] ?? null,
                     'merchant_name'=>$card['merchant_name'] ?? null,
+                    'purchase_available'=>$card['purchase_available'] ?? null,
+                    'product_version_id'=>$card['product_version_id'] ?? null,
+                    'ends_at'=>$card['ends_at'] ?? null,
                     'prompt'=>mg_personal_agent_text($input['message'] ?? '',500),
                 ],
             ]);
