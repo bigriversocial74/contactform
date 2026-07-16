@@ -1,34 +1,35 @@
-body.mg-personal-gifting-agent-page .mg-personal-chat-sidebar{overflow:hidden;background:#fff}
-body.mg-personal-gifting-agent-page .mg-personal-chat-sidebar .mg-app-sidebar-brand{margin-bottom:14px}
-body.mg-personal-gifting-agent-page .mg-personal-chat-actions{display:grid;gap:2px;margin:0}
-body.mg-personal-gifting-agent-page .mg-personal-chat-action{width:100%;min-height:34px;display:flex;align-items:center;gap:8px;padding:6px 4px;border:0;border-radius:0;background:transparent;color:#122039;font:inherit;text-align:left;text-decoration:none;cursor:pointer}
-body.mg-personal-gifting-agent-page .mg-personal-chat-action span{width:18px;flex:0 0 18px;color:#64748b;font-size:16px;font-weight:500;line-height:1;text-align:center}
-body.mg-personal-gifting-agent-page .mg-personal-chat-action strong{font-size:12px;font-weight:800;line-height:1.3}
-body.mg-personal-gifting-agent-page .mg-personal-chat-action:hover,body.mg-personal-gifting-agent-page .mg-personal-chat-action:focus-visible{background:transparent;color:#1757d7}
-body.mg-personal-gifting-agent-page .mg-personal-chat-action:hover span,body.mg-personal-gifting-agent-page .mg-personal-chat-action:focus-visible span{color:#1757d7}
-body.mg-personal-gifting-agent-page .mg-personal-chat-action:focus-visible{outline:2px solid #9fc0f5;outline-offset:2px}
-body.mg-personal-gifting-agent-page .mg-personal-chat-divider{height:1px;margin:8px 0 12px;background:#e2eaf3}
-body.mg-personal-gifting-agent-page .mg-personal-chat-history{min-height:0;flex:1;overflow-y:auto;overflow-x:hidden;padding-right:3px;scrollbar-gutter:stable}
-body.mg-personal-gifting-agent-page .mg-personal-chat-loading,body.mg-personal-gifting-agent-page .mg-personal-chat-empty{padding:12px 4px;color:#64748b;font-size:11px;line-height:1.45;text-align:left}
-body.mg-personal-gifting-agent-page .mg-personal-chat-group{display:grid;gap:2px;margin:0 0 14px}
-body.mg-personal-gifting-agent-page .mg-personal-chat-group>h3{margin:0 0 4px;padding:0 4px;color:#7a8aa2;font-size:9px;font-weight:950;letter-spacing:.09em;text-transform:uppercase}
-body.mg-personal-gifting-agent-page .mg-personal-chat-row{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 24px;align-items:center;gap:2px;min-height:42px;padding:0;border:0;border-radius:0;background:transparent}
-body.mg-personal-gifting-agent-page .mg-personal-chat-row:hover{background:transparent}
-body.mg-personal-gifting-agent-page .mg-personal-chat-row.is-active{border:0;background:transparent;box-shadow:none}
-body.mg-personal-gifting-agent-page .mg-personal-chat-open{min-width:0;display:grid;gap:2px;padding:6px 4px;color:#122039;text-decoration:none}
-body.mg-personal-gifting-agent-page .mg-personal-chat-open:hover{color:#1757d7}
-body.mg-personal-gifting-agent-page .mg-personal-chat-row.is-active .mg-personal-chat-open{color:#1757d7}
-body.mg-personal-gifting-agent-page .mg-personal-chat-open strong{display:block;overflow:hidden;color:inherit;font-size:11px;line-height:1.3;text-overflow:ellipsis;white-space:nowrap}
-body.mg-personal-gifting-agent-page .mg-personal-chat-open span{display:block;overflow:hidden;color:#6b7c95;font-size:9px;line-height:1.3;text-overflow:ellipsis;white-space:nowrap}
-body.mg-personal-gifting-agent-page .mg-personal-chat-delete{width:24px;height:24px;display:grid;place-items:center;border:0;border-radius:0;background:transparent;color:#8795aa;font-size:15px;cursor:pointer;opacity:0}
-body.mg-personal-gifting-agent-page .mg-personal-chat-row:hover .mg-personal-chat-delete,body.mg-personal-gifting-agent-page .mg-personal-chat-row.is-active .mg-personal-chat-delete,body.mg-personal-gifting-agent-page .mg-personal-chat-delete:focus-visible{opacity:1}
-body.mg-personal-gifting-agent-page .mg-personal-chat-delete:hover{background:transparent;color:#b42318}
-body.mg-personal-gifting-agent-page .mg-personal-chat-sidebar-footer{display:grid;gap:3px;margin-top:10px;padding:12px 8px 2px;border-top:1px solid #e2eaf3;color:#60718a}
-body.mg-personal-gifting-agent-page .mg-personal-chat-sidebar-footer span{font-size:9px;font-weight:900;letter-spacing:.06em;text-transform:uppercase}
-body.mg-personal-gifting-agent-page .mg-personal-chat-sidebar-footer small{font-size:9px;line-height:1.4}
-body.mg-personal-gifting-agent-page .mg-personal-chat-empty-sidebar{display:grid;gap:7px;padding:14px;border:1px solid #dbe5f1;border-radius:14px;background:#f8fbff}
-body.mg-personal-gifting-agent-page .mg-personal-chat-empty-sidebar strong{color:#0f172a;font-size:14px}
-body.mg-personal-gifting-agent-page .mg-personal-chat-empty-sidebar p{margin:0;color:#64748b;font-size:11px;line-height:1.5}
+.mg-personal-chat-sidebar{display:flex;flex-direction:column;overflow:hidden;background:#fff}
+.mg-personal-chat-sidebar .mg-app-sidebar-brand{margin-bottom:14px}
+.mg-personal-chat-actions{display:grid;gap:2px;margin:0}
+.mg-personal-chat-action{width:100%;min-height:34px;display:flex;align-items:center;gap:8px;padding:6px 4px;border:0;border-radius:0;background:transparent;color:#122039;font:inherit;text-align:left;text-decoration:none;cursor:pointer}
+.mg-personal-chat-action span{width:18px;flex:0 0 18px;color:#64748b;font-size:16px;font-weight:500;line-height:1;text-align:center}
+.mg-personal-chat-action strong{font-size:12px;font-weight:800;line-height:1.3}
+.mg-personal-chat-action:hover,.mg-personal-chat-action:focus-visible,.mg-personal-chat-action.is-active{background:transparent;color:#1757d7}
+.mg-personal-chat-action:hover span,.mg-personal-chat-action:focus-visible span,.mg-personal-chat-action.is-active span{color:#1757d7}
+.mg-personal-chat-action.is-active{box-shadow:inset 2px 0 0 #2563eb}
+.mg-personal-chat-action:focus-visible{outline:2px solid #9fc0f5;outline-offset:2px}
+.mg-personal-chat-divider{height:1px;margin:8px 0 12px;background:#e2eaf3}
+.mg-personal-chat-history{min-height:0;flex:1;overflow-y:auto;overflow-x:hidden;padding-right:3px;scrollbar-gutter:stable}
+.mg-personal-chat-loading,.mg-personal-chat-empty{padding:12px 4px;color:#64748b;font-size:11px;line-height:1.45;text-align:left}
+.mg-personal-chat-group{display:grid;gap:2px;margin:0 0 14px}
+.mg-personal-chat-group>h3{margin:0 0 4px;padding:0 4px;color:#7a8aa2;font-size:9px;font-weight:950;letter-spacing:.09em;text-transform:uppercase}
+.mg-personal-chat-row{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 24px;align-items:center;gap:2px;min-height:42px;padding:0;border:0;border-radius:0;background:transparent}
+.mg-personal-chat-row:hover{background:transparent}
+.mg-personal-chat-row.is-active{border:0;background:transparent;box-shadow:none}
+.mg-personal-chat-open{min-width:0;display:grid;gap:2px;padding:6px 4px;color:#122039;text-decoration:none}
+.mg-personal-chat-open:hover{color:#1757d7}
+.mg-personal-chat-row.is-active .mg-personal-chat-open{color:#1757d7}
+.mg-personal-chat-open strong{display:block;overflow:hidden;color:inherit;font-size:11px;line-height:1.3;text-overflow:ellipsis;white-space:nowrap}
+.mg-personal-chat-open span{display:block;overflow:hidden;color:#6b7c95;font-size:9px;line-height:1.3;text-overflow:ellipsis;white-space:nowrap}
+.mg-personal-chat-delete{width:24px;height:24px;display:grid;place-items:center;border:0;border-radius:0;background:transparent;color:#8795aa;font-size:15px;cursor:pointer;opacity:0}
+.mg-personal-chat-row:hover .mg-personal-chat-delete,.mg-personal-chat-row.is-active .mg-personal-chat-delete,.mg-personal-chat-delete:focus-visible{opacity:1}
+.mg-personal-chat-delete:hover{background:transparent;color:#b42318}
+.mg-personal-chat-sidebar-footer{display:grid;gap:3px;margin-top:10px;padding:12px 8px 2px;border-top:1px solid #e2eaf3;color:#60718a}
+.mg-personal-chat-sidebar-footer span{font-size:9px;font-weight:900;letter-spacing:.06em;text-transform:uppercase}
+.mg-personal-chat-sidebar-footer small{font-size:9px;line-height:1.4}
+.mg-personal-chat-empty-sidebar{display:grid;gap:7px;padding:14px;border:1px solid #dbe5f1;border-radius:14px;background:#f8fbff}
+.mg-personal-chat-empty-sidebar strong{color:#0f172a;font-size:14px}
+.mg-personal-chat-empty-sidebar p{margin:0;color:#64748b;font-size:11px;line-height:1.5}
 body.mg-personal-gifting-agent-page .mg-personal-agent-composer-row{grid-template-columns:48px minmax(0,1fr) 90px!important}
 body.mg-personal-gifting-agent-page .mg-personal-agent-menu-trigger{width:48px;height:48px;display:grid;place-items:center;padding:0;border:1px solid #cbd9eb;border-radius:14px;background:#f8fbff;color:#174fb8;font-size:26px;font-weight:500;line-height:1;cursor:pointer}
 body.mg-personal-gifting-agent-page .mg-personal-agent-menu-trigger:hover{border-color:#9bb9e7;background:#eaf3ff}
@@ -45,4 +46,4 @@ body.mg-personal-gifting-agent-page .mg-personal-agent-menu-icon{width:42px;heig
 body.mg-personal-gifting-agent-page .mg-personal-agent-menu-item strong{display:block;overflow:hidden;color:#0f172a;font-size:12px;line-height:1.3;text-overflow:ellipsis;white-space:nowrap}
 body.mg-personal-gifting-agent-page .mg-personal-agent-menu-item small{display:block;margin-top:3px;color:#687b95;font-size:9px;line-height:1.35}
 @media(max-width:820px){body.mg-personal-gifting-agent-page .mg-personal-agent-menu-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:760px){body.mg-personal-gifting-agent-page .mg-personal-agent-composer-row{grid-template-columns:44px minmax(0,1fr) 72px!important}body.mg-personal-gifting-agent-page .mg-personal-agent-menu-trigger{width:44px;height:48px;border-radius:13px}body.mg-personal-gifting-agent-page .mg-personal-agent-menu-body{padding:14px}body.mg-personal-gifting-agent-page .mg-personal-agent-menu-grid{grid-template-columns:1fr}body.mg-personal-gifting-agent-page .mg-personal-chat-delete{opacity:1}}
+@media(max-width:760px){.mg-personal-chat-delete{opacity:1}body.mg-personal-gifting-agent-page .mg-personal-agent-composer-row{grid-template-columns:44px minmax(0,1fr) 72px!important}body.mg-personal-gifting-agent-page .mg-personal-agent-menu-trigger{width:44px;height:48px;border-radius:13px}body.mg-personal-gifting-agent-page .mg-personal-agent-menu-body{padding:14px}body.mg-personal-gifting-agent-page .mg-personal-agent-menu-grid{grid-template-columns:1fr}}
