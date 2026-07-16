@@ -1,18 +1,31 @@
 document.addEventListener('DOMContentLoaded', function () {
   'use strict';
 
+  var handoffKey = 'mgMerchantAgentHandoffV1';
+
   function merchantCommand(value) {
     var match = String(value || '').trim().match(/^\/(?:m|merchant)(?:\s+([\s\S]*))?$/i);
     if (!match) return null;
     return String(match[1] || '').trim();
   }
 
+  function storeHandoff(prompt) {
+    try {
+      window.sessionStorage.setItem(handoffKey, JSON.stringify({
+        prompt: String(prompt || '').trim(),
+        source: 'personal-agent',
+        created_at: Date.now()
+      }));
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
   function routeToMerchant(root, prompt) {
     if (!root || root.getAttribute('data-merchant-agent-access') !== 'true') return false;
-    var url = new URL('/merchant-agent-chat.php', window.location.origin);
-    url.searchParams.set('source', 'personal-agent');
-    if (prompt) url.searchParams.set('prompt', prompt);
-    window.location.href = url.pathname + url.search;
+    storeHandoff(prompt);
+    window.location.href = '/merchant-agent-chat.php?source=personal-agent';
     return true;
   }
 
