@@ -34,6 +34,7 @@ try {
     $authority = $read('includes/account/subscription-authority.php');
     $page = $read('account-subscriptions.php');
     $js = $read('assets/js/subscription-billing-v2.js');
+    $activationJs = $read('assets/js/subscription-activation-status.js');
     $css = $read('assets/css/subscription-billing-v2.css');
 
     foreach ([
@@ -60,14 +61,16 @@ try {
         && str_contains($lifecycle, "'/v1/subscription_schedules'")
         && str_contains($lifecycle, "'from_subscription' => \$subscriptionId")
         && str_contains($lifecycle, "'end_behavior' => 'release'")
-        && str_contains($lifecycle, "'proration_behavior' => 'none'"),
-        'Lifecycle creates reusable products and prices, opens the portal, and schedules next-period changes'
+        && str_contains($lifecycle, "'proration_behavior' => 'none'")
+        && str_contains($lifecycle, '$targetPhaseEnd')
+        && str_contains($lifecycle, "'start_date'=>\$periodEndTimestamp,'end_date'=>\$targetPhaseEnd"),
+        'Lifecycle creates reusable products and prices, opens the portal, and schedules explicit next-period phases'
     );
 
     $expect(
         !str_contains($lifecycle, "'subscription-scheduled-change:'")
-        && !preg_match("#/v1/subscriptions/.+proration_behavior#s", $lifecycle),
-        'Scheduled downgrades do not directly replace the active Stripe subscription price'
+        && !str_contains($lifecycle, "'duration'=>"),
+        'Scheduled downgrades do not directly replace the active Stripe subscription price or depend on version-specific phase duration'
     );
 
     $expect(
@@ -156,6 +159,14 @@ try {
         && str_contains($js, 'Confirm Period-End Cancellation')
         && !str_contains($js, 'window.confirm('),
         'Billing UI uses a review modal and inline confirmation without browser dialogs'
+    );
+
+    $expect(
+        str_contains($activationJs, 'billing_cycle')
+        && str_contains($activationJs, 'Package change scheduled')
+        && str_contains($activationJs, 'Cancellation scheduled')
+        && str_contains($activationJs, "params.get('billing')"),
+        'Activation status UI reports billing portal returns, scheduled changes, and cancellations'
     );
 
     $expect(
