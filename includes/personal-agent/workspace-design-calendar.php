@@ -3,9 +3,9 @@
   <div class="mg-design-calendar" data-design-content-calendar data-calendar-days="30">
     <header class="mg-design-calendar-hero">
       <div>
-        <span class="mg-agent-design-step">Manual publishing planner</span>
+        <span class="mg-agent-design-step">Merchant advertising planner</span>
         <h2>30-day content calendar</h2>
-        <p>Plan product content across a real calendar, open the matching creative, and download the correct post format for manual publishing on other sites.</p>
+        <p>Balance products, formats, layouts, campaign themes, posting copy, and publishing status across a real 30-day schedule.</p>
       </div>
       <div class="mg-design-calendar-view-toggle" role="group" aria-label="Calendar display">
         <button type="button" class="is-active" data-calendar-view="grid" aria-pressed="true">Grid</button>
@@ -16,75 +16,103 @@
     <section class="mg-design-calendar-builder" aria-labelledby="calendar-builder-heading">
       <div class="mg-design-calendar-builder-copy">
         <span class="mg-agent-design-step">Schedule builder</span>
-        <h3 id="calendar-builder-heading">Choose products for the next 30 days</h3>
-        <p>Products and formats rotate through the schedule. Every date remains editable after the plan is created.</p>
+        <h3 id="calendar-builder-heading">Build the next 30 days</h3>
+        <p>Choose your cadence, preferred days and time, products, formats, layouts, and campaign themes. Regeneration replaces schedule rows only—saved creative assets stay intact.</p>
       </div>
 
       <form class="mg-design-calendar-form" data-calendar-generator>
         <div class="mg-design-calendar-products">
           <div class="mg-design-calendar-control-head">
-            <label class="mg-design-calendar-check-all">
-              <input type="checkbox" data-calendar-select-all>
-              <span>Select all products</span>
-            </label>
+            <label class="mg-design-calendar-check-all"><input type="checkbox" data-calendar-select-all><span>Select all products</span></label>
             <span data-calendar-product-count>Loading products…</span>
           </div>
           <div class="mg-design-calendar-product-list" data-calendar-product-list aria-live="polite"></div>
         </div>
 
-        <div class="mg-design-calendar-settings">
-          <label>
-            <span>Start date</span>
-            <input type="date" name="start_date" data-calendar-start-date required>
-          </label>
+        <div class="mg-design-calendar-settings mg-design-calendar-settings-v2">
+          <div class="mg-calendar-field-grid">
+            <label><span>Start date</span><input type="date" name="start_date" data-calendar-start-date required></label>
+            <label><span>Posting frequency</span>
+              <select name="frequency" data-calendar-frequency>
+                <option value="daily">Daily</option><option value="weekdays">Weekdays</option><option value="three_per_week">Three times per week</option>
+                <option value="twice_per_week">Twice per week</option><option value="weekly">Weekly</option><option value="custom">Custom selected weekdays</option>
+              </select>
+            </label>
+            <label><span>Preferred posting time</span><input type="time" name="preferred_time" value="10:00" data-calendar-preferred-time></label>
+          </div>
 
-          <fieldset>
-            <legend>Post formats to rotate</legend>
-            <label><input type="checkbox" name="formats[]" value="square" checked><span>Post · 1:1</span></label>
-            <label><input type="checkbox" name="formats[]" value="portrait" checked><span>Portrait · 4:5</span></label>
-            <label><input type="checkbox" name="formats[]" value="story" checked><span>Reel / Story · 9:16</span></label>
+          <fieldset class="mg-calendar-weekday-fieldset">
+            <legend>Preferred posting days</legend>
+            <div class="mg-calendar-weekday-grid">
+              <?php foreach ([[1,'Mon'],[2,'Tue'],[3,'Wed'],[4,'Thu'],[5,'Fri'],[6,'Sat'],[7,'Sun']] as $day): ?>
+                <label><input type="checkbox" name="preferred_weekdays[]" value="<?= $day[0] ?>" data-calendar-weekday><span><?= $day[1] ?></span></label>
+              <?php endforeach; ?>
+            </div>
           </fieldset>
 
+          <div class="mg-calendar-option-columns">
+            <fieldset><legend>Formats</legend>
+              <label><input type="checkbox" name="formats[]" value="square" checked><span>Post · 1:1</span></label>
+              <label><input type="checkbox" name="formats[]" value="portrait" checked><span>Portrait · 4:5</span></label>
+              <label><input type="checkbox" name="formats[]" value="story" checked><span>Story / Reel · 9:16</span></label>
+            </fieldset>
+            <fieldset><legend>Layouts</legend>
+              <label><input type="checkbox" name="layouts[]" value="spotlight" checked><span>Spotlight</span></label>
+              <label><input type="checkbox" name="layouts[]" value="split" checked><span>Split Feature</span></label>
+              <label><input type="checkbox" name="layouts[]" value="bold" checked><span>Bold Offer</span></label>
+            </fieldset>
+            <fieldset><legend>Campaign themes</legend>
+              <label><input type="checkbox" name="themes[]" value="product_spotlight" checked><span>Product Spotlight</span></label>
+              <label><input type="checkbox" name="themes[]" value="gift_idea" checked><span>Gift Idea</span></label>
+              <label><input type="checkbox" name="themes[]" value="reward_promotion" checked><span>Reward Promotion</span></label>
+              <label><input type="checkbox" name="themes[]" value="merchant_story"><span>Merchant Story</span></label>
+              <label><input type="checkbox" name="themes[]" value="customer_review"><span>Customer Review</span></label>
+              <label><input type="checkbox" name="themes[]" value="local_support"><span>Local Support</span></label>
+            </fieldset>
+          </div>
+
           <button class="mg-btn mg-btn-primary" type="submit" data-calendar-generate>Build 30-day plan</button>
-          <small>This creates a planning calendar only. Nothing is automatically published to outside networks.</small>
+          <small>Nothing is automatically published to outside networks. Generated artwork is not saved unless you explicitly choose Save Creative Asset.</small>
         </div>
       </form>
     </section>
 
     <section class="mg-design-calendar-board">
       <header class="mg-design-calendar-toolbar">
-        <div>
-          <span class="mg-agent-design-step">Scheduled content</span>
-          <h3 data-calendar-range-label>Next 30 days</h3>
-        </div>
-
-        <div class="mg-design-calendar-range-actions">
-          <button type="button" data-calendar-range="-30" aria-label="Previous 30 days">←</button>
-          <button type="button" data-calendar-today>Today</button>
-          <button type="button" data-calendar-range="30" aria-label="Next 30 days">→</button>
-        </div>
+        <div><span class="mg-agent-design-step">Scheduled content</span><h3 data-calendar-range-label>Next 30 days</h3></div>
+        <div class="mg-design-calendar-range-actions"><button type="button" data-calendar-range="-30" aria-label="Previous 30 days">←</button><button type="button" data-calendar-today>Today</button><button type="button" data-calendar-range="30" aria-label="Next 30 days">→</button></div>
       </header>
 
       <div class="mg-design-calendar-summary" aria-label="Schedule summary">
-        <article><strong data-calendar-count="total">0</strong><span>Scheduled</span></article>
-        <article><strong data-calendar-count="planned">0</strong><span>Planned</span></article>
-        <article><strong data-calendar-count="downloaded">0</strong><span>Downloaded</span></article>
-        <article><strong data-calendar-count="posted">0</strong><span>Posted</span></article>
+        <article><strong data-calendar-count="total">0</strong><span>Scheduled</span></article><article><strong data-calendar-count="planned">0</strong><span>Planned</span></article>
+        <article><strong data-calendar-count="downloaded">0</strong><span>Downloaded</span></article><article><strong data-calendar-count="posted">0</strong><span>Posted</span></article>
       </div>
 
-      <div class="mg-design-calendar-setup" data-calendar-setup hidden>
-        <strong>Calendar database setup required</strong>
-        <p>Import <code>database/20260716_design_studio_content_calendar.sql</code>, then refresh this page.</p>
-      </div>
+      <section class="mg-calendar-filter-panel" aria-label="Calendar filters">
+        <div class="mg-calendar-filter-grid">
+          <label><span>Product</span><select data-calendar-filter="product"><option value="">All products</option></select></label>
+          <label><span>Format</span><select data-calendar-filter="format"><option value="">All formats</option><option value="square">Square</option><option value="portrait">Portrait</option><option value="story">Story / Reel</option></select></label>
+          <label><span>Layout</span><select data-calendar-filter="layout"><option value="">All layouts</option><option value="spotlight">Spotlight</option><option value="split">Split Feature</option><option value="bold">Bold Offer</option></select></label>
+          <label><span>Status</span><select data-calendar-filter="status"><option value="">All statuses</option><option value="planned">Planned</option><option value="downloaded">Downloaded</option><option value="posted">Posted</option><option value="skipped">Skipped</option></select></label>
+          <label><span>Date from</span><input type="date" data-calendar-filter="date_from"></label><label><span>Date to</span><input type="date" data-calendar-filter="date_to"></label>
+        </div>
+        <div class="mg-calendar-filter-actions"><div data-calendar-active-filters aria-live="polite">No active filters</div><button type="button" class="mg-btn mg-btn-soft" data-calendar-clear-filters>Clear filters</button></div>
+      </section>
 
-      <div class="mg-design-calendar-empty" data-calendar-empty hidden>
-        <strong>No content is scheduled in this 30-day range.</strong>
-        <p>Select merchant products above and build a plan, or move to another date range.</p>
-      </div>
+      <section class="mg-calendar-bulk-panel" data-calendar-bulk-panel aria-label="Bulk schedule actions">
+        <label><input type="checkbox" data-calendar-select-visible><span>Select visible</span></label><strong><span data-calendar-selected-count>0</span> selected</strong>
+        <select data-calendar-bulk-format><option value="">Change format…</option><option value="square">Square</option><option value="portrait">Portrait</option><option value="story">Story / Reel</option></select>
+        <select data-calendar-bulk-layout><option value="">Change layout…</option><option value="spotlight">Spotlight</option><option value="split">Split Feature</option><option value="bold">Bold Offer</option></select>
+        <select data-calendar-bulk-status><option value="">Change status…</option><option value="planned">Planned</option><option value="downloaded">Downloaded</option><option value="posted">Posted</option><option value="skipped">Skipped</option></select>
+        <button type="button" class="mg-btn mg-btn-soft" data-calendar-bulk-apply>Apply</button><button type="button" class="mg-btn mg-btn-danger" data-calendar-bulk-remove>Remove selected</button>
+      </section>
 
+      <div class="mg-design-calendar-setup" data-calendar-setup hidden><strong>Advertising workflow database setup required</strong><p>Import <code>database/20260716_design_studio_advertising_workflow_v2.sql</code>, then refresh this page.</p></div>
+      <div class="mg-design-calendar-empty" data-calendar-empty hidden><strong>No content is scheduled in this 30-day range.</strong><p>Select merchant products above and build a plan, or move to another date range.</p></div>
+      <div class="mg-design-calendar-loading" data-calendar-loading hidden>Loading scheduled content…</div>
+      <div class="mg-design-calendar-error" data-calendar-error hidden></div>
       <div class="mg-design-calendar-grid-view" data-calendar-grid></div>
       <div class="mg-design-calendar-stack-view" data-calendar-stack hidden></div>
-
       <div class="mg-design-calendar-status" data-calendar-status role="status" aria-live="polite"></div>
     </section>
   </div>
