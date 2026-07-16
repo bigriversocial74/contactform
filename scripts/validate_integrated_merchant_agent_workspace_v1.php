@@ -39,6 +39,12 @@ $checks = [
         && str_contains($content['personal_handoff'], 'data-personal-agent-composer')
         && str_contains($content['personal_handoff'], '/(?:m|merchant)')
         && !str_contains($content['personal_handoff'], 'data-merchant-agent-chat'),
+    'merchant handoff prompt uses short-lived session state instead of URL data' =>
+        str_contains($content['personal_handoff'], 'sessionStorage.setItem')
+        && str_contains($content['merchant_receiver'], 'sessionStorage.getItem')
+        && str_contains($content['merchant_receiver'], 'sessionStorage.removeItem')
+        && !str_contains($content['personal_handoff'], "searchParams.set('prompt'")
+        && !str_contains($content['merchant_receiver'], "params.get('prompt')"),
     'Merchant Agent receives transferred prompts without implementing slash commands' =>
         str_contains($content['merchant_receiver'], 'data-merchant-agent-chat')
         && str_contains($content['merchant_receiver'], "source !== 'personal-agent'")
