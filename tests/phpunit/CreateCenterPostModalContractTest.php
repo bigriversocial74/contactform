@@ -1,0 +1,47 @@
+<?php
+declare(strict_types=1);
+
+use PHPUnit\Framework\TestCase;
+
+final class CreateCenterPostModalContractTest extends TestCase
+{
+    private string $root;
+
+    protected function setUp(): void
+    {
+        $this->root=dirname(__DIR__,2);
+    }
+
+    public function testPostTriggerSurvivesManagedCardReplacement(): void
+    {
+        $source=file_get_contents($this->root.'/assets/js/create-center-post-trigger-fix.js');
+        self::assertIsString($source);
+        self::assertStringContainsString('[data-create-inline-target="post"],[data-create-menu-option="post"]',$source);
+        self::assertStringContainsString("view.dataset.createCenterView === 'post'",$source);
+        self::assertStringContainsString("modal.dataset.createPostActive = 'true'",$source);
+        self::assertStringContainsString('microgifter:openPostComposer',$source);
+        self::assertStringContainsString('new MutationObserver',$source);
+    }
+
+    public function testPostWorkspaceUsesProfessionalResponsiveLayout(): void
+    {
+        $source=file_get_contents($this->root.'/assets/css/create-center-post-professional.css');
+        self::assertIsString($source);
+        self::assertStringContainsString('.mg-create-center-post .mg-create-inline-post-form',$source);
+        self::assertStringContainsString('grid-template-areas:',$source);
+        self::assertStringContainsString('"copy media"',$source);
+        self::assertStringContainsString('position:sticky',$source);
+        self::assertStringContainsString('@media(max-width:1180px)',$source);
+        self::assertStringContainsString('@media(max-width:820px)',$source);
+    }
+
+    public function testPostRuntimeLoadsCacheBustedFixAndLayoutAssets(): void
+    {
+        $source=file_get_contents($this->root.'/includes/header-components/post-composer-modal.php');
+        self::assertIsString($source);
+        self::assertStringContainsString('/assets/css/create-center-inline.css?v=1.1.0',$source);
+        self::assertStringContainsString('/assets/css/create-center-post-professional.css?v=1.0.0',$source);
+        self::assertStringContainsString('/assets/js/create-center-post-inline.js?v=1.1.0',$source);
+        self::assertStringContainsString('/assets/js/create-center-post-trigger-fix.js?v=1.0.0',$source);
+    }
+}
