@@ -32,14 +32,12 @@ $requireMarkers('database/stage_18al_personal_agent_followup_recovery_v1.sql',[
     'conversion timestamp'=>'converted_at',
     'migration registration'=>'stage_18al_personal_agent_followup_recovery_v1',
 ]);
-$requireMarkers('config/migrations.php',[
-    'canonical migration'=>'stage_18al_personal_agent_followup_recovery_v1.sql',
-]);
+$requireMarkers('config/migrations.php',['canonical migration'=>'stage_18al_personal_agent_followup_recovery_v1.sql']);
 $requireMarkers('includes/personal-agent/opportunity-recovery.php',[
     'schema guard'=>'mg_personal_agent_recovery_schema_ready',
     'customer preferences'=>'mg_personal_agent_recovery_update_preferences',
     'event automation'=>'mg_personal_agent_recovery_on_event',
-    'saved follow-up'=>'cart_abandoned',
+    'cart follow-up'=>'cart_abandoned',
     'checkout follow-up'=>'checkout_abandoned',
     'campaign expiry'=>'campaign_expiring',
     'unavailable alternative'=>'unavailable_alternative',
@@ -69,8 +67,8 @@ $requireMarkers('includes/personal-agent/credit-response.php',[
 $requireMarkers('api/user-agent/opportunity-recovery.php',[
     'account auth'=>'mg_require_api_user',
     'write CSRF'=>'mg_require_csrf_for_write',
-    'preference action'=>"$action === 'preferences'",
-    'schedule action'=>"$action === 'schedule'",
+    'preference action'=>'$action === \'preferences\'',
+    'schedule action'=>'$action === \'schedule\'',
     'snooze action'=>"'snooze','dismiss','mute','resume'",
 ]);
 $requireMarkers('api/communications/personal-agent-recovery-worker.php',[
@@ -97,9 +95,7 @@ $requireMarkers('assets/js/saved-opportunities.js',[
     'remind button'=>'data-saved-opportunity-remind',
     'recovery endpoint'=>'/api/user-agent/opportunity-recovery.php',
 ]);
-$requireMarkers('api/merchant/personal-agent-attribution.php',[
-    'aggregate recovery'=>'mg_personal_agent_recovery_merchant_analytics',
-]);
+$requireMarkers('api/merchant/personal-agent-attribution.php',['aggregate recovery'=>'mg_personal_agent_recovery_merchant_analytics']);
 $requireMarkers('includes/merchant-agent-roi-view.php',[
     'recovery reporting'=>'Saved Opportunity Recovery',
     'privacy statement'=>'do not receive private Agent messages',
