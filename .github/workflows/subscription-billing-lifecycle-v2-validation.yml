@@ -11,6 +11,7 @@ on:
       - 'api/subscriptions/**'
       - 'assets/css/subscription-billing-v2.css'
       - 'assets/js/subscription-billing-v2.js'
+      - 'assets/js/subscription-activation-status.js'
       - 'database/stage_18aj_subscription_billing_lifecycle_v2.sql'
       - 'scripts/validate_subscription_billing_lifecycle_v2.php'
       - '.github/workflows/subscription-billing-lifecycle-v2-validation.yml'
@@ -60,7 +61,9 @@ jobs:
           php -l scripts/validate_subscription_billing_lifecycle_v2.php
 
       - name: JavaScript syntax
-        run: node --check assets/js/subscription-billing-v2.js
+        run: |
+          node --check assets/js/subscription-billing-v2.js
+          node --check assets/js/subscription-activation-status.js
 
       - name: Subscription billing lifecycle contract
         run: php scripts/validate_subscription_billing_lifecycle_v2.php
