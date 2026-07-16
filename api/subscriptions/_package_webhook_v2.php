@@ -54,7 +54,7 @@ function mg_subscription_package_webhook_v2_period(array $object): array
 
 function mg_subscription_package_webhook_v2_status(string $type, array $object, string $fromStatus): string
 {
-    $providerStatus = strtolower(trim((string)($object['status'] ?? ''));
+    $providerStatus = strtolower(trim((string)($object['status'] ?? '')));
     if ($type === 'customer.subscription.deleted') return 'canceled';
     if ($type === 'customer.subscription.paused') return 'paused';
     if ($type === 'customer.subscription.resumed') return 'active';
@@ -200,7 +200,7 @@ function mg_subscription_package_webhook_v2_apply_lifecycle(PDO $pdo, string $pr
     }
 
     $providerChangeApplied = $applyScheduled || $packageId !== $originalPackageId || $billingCycle !== $originalBillingCycle;
-    $providerStatus = strtolower(trim((string)($object['status'] ?? ''));
+    $providerStatus = strtolower(trim((string)($object['status'] ?? '')));
     $invoiceId = str_starts_with($type, 'invoice.') ? trim((string)($object['id'] ?? '')) : null;
     $invoiceStatus = str_starts_with($type, 'invoice.') ? trim((string)($object['status'] ?? '')) : null;
     $invoiceUrl = str_starts_with($type, 'invoice.') ? trim((string)($object['hosted_invoice_url'] ?? '')) : null;
