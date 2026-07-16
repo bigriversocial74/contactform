@@ -41,7 +41,7 @@ final class IntegratedMerchantAgentWorkspaceV1Test extends TestCase
         self::assertStringNotContainsString("params.get('prompt')", $receiver);
     }
 
-    public function testSidebarUsesOneCompactAgentSwitchInsteadOfModeCards(): void
+    public function testSidebarAgentSwitchLivesInFooterWithSuggestions(): void
     {
         $sidebar = file_get_contents($this->root . '/includes/personal-agent-sidebar.php');
         $css = file_get_contents($this->root . '/assets/css/personal-agent-chat-history.css');
@@ -50,10 +50,62 @@ final class IntegratedMerchantAgentWorkspaceV1Test extends TestCase
         self::assertIsString($css);
         self::assertStringNotContainsString('class="mg-agent-mode-switch"', $sidebar);
         self::assertStringNotContainsString('mg-agent-mode-options', $sidebar);
-        self::assertStringContainsString('mg-agent-sidebar-switch', $sidebar);
+        $footer = strpos($sidebar, 'class="mg-personal-chat-sidebar-footer"');
+        $switch = strpos($sidebar, 'class="mg-agent-footer-mode-switch"');
+        self::assertNotFalse($footer);
+        self::assertNotFalse($switch);
+        self::assertLessThan($switch, $footer);
+        self::assertStringContainsString('data-agent-footer-mode-switch', $sidebar);
         self::assertStringContainsString('data-agent-mode-link="personal"', $sidebar);
         self::assertStringContainsString('data-agent-mode-link="merchant"', $sidebar);
-        self::assertStringContainsString('.mg-agent-sidebar-switch', $css);
+        self::assertStringContainsString('data-agent-suggestions-open', $sidebar);
+        self::assertStringContainsString('data-agent-tools-tab="suggestions"', $sidebar);
+        self::assertStringContainsString('data-agent-tools-tab="keywords"', $sidebar);
+        self::assertStringNotContainsString('Scoped to your merchant workspace', $sidebar);
+        self::assertStringContainsString('.mg-agent-footer-mode-switch', $css);
+        self::assertStringContainsString('.mg-agent-sidebar-tools-modal', $css);
+    }
+
+    public function testQuickActionCatalogContainsCurrentCommandsAndOneClickRuntime(): void
+    {
+        $catalog = file_get_contents($this->root . '/includes/agent-quick-actions.php');
+        $runtime = file_get_contents($this->root . '/assets/js/agent-sidebar-tools.js');
+
+        self::assertIsString($catalog);
+        self::assertIsString($runtime);
+        self::assertStringContainsString('function mg_agent_quick_action_catalog', $catalog);
+        foreach (["'keyword'=>'/snapshot'", "'keyword'=>'memory'", "'keyword'=>'contact count'", "'keyword'=>'saved opportunities'", "'keyword'=>'/m'", "'keyword'=>'review queue'"] as $marker) {
+            self::assertStringContainsString($marker, $catalog);
+        }
+        self::assertStringContainsString("event.target.closest('[data-agent-suggestion-prompt]')", $runtime);
+        self::assertStringContainsString("event.target.closest('[data-agent-keyword-prompt]')", $runtime);
+        self::assertStringContainsString('form.requestSubmit()', $runtime);
+        self::assertStringContainsString('sessionStorage.setItem', $runtime);
+        self::assertStringContainsString('data-agent-tools-entitled', $runtime);
+        self::assertStringContainsString('subscriptionsUrl', $runtime);
+    }
+
+    public function testFreeUsersAreRedirectedAndSubscriptionsUseUniversalSidebar(): void
+    {
+        $personalPage = file_get_contents($this->root . '/agent.php');
+        $merchantPage = file_get_contents($this->root . '/merchant-agent-chat.php');
+        $subscriptionsPage = file_get_contents($this->root . '/account-subscriptions.php');
+        $sidebar = file_get_contents($this->root . '/includes/personal-agent-sidebar.php');
+
+        self::assertIsString($personalPage);
+        self::assertIsString($merchantPage);
+        self::assertIsString($subscriptionsPage);
+        self::assertIsString($sidebar);
+        self::assertStringContainsString("!empty(\$agentPackageContext['is_paid'])", $personalPage);
+        self::assertStringContainsString("!empty(\$agentPackageContext['merchant_access'])", $personalPage);
+        self::assertStringContainsString("header('Location: /account-subscriptions.php?agent=personal')", $personalPage);
+        self::assertStringContainsString("header('Location: /account-subscriptions.php?agent=merchant')", $merchantPage);
+        self::assertStringContainsString('/account-subscriptions.php?agent=personal', $sidebar);
+        self::assertStringContainsString('/account-subscriptions.php?agent=merchant', $sidebar);
+        self::assertStringContainsString("\$agent_sidebar_mode='subscriptions'", $subscriptionsPage);
+        self::assertStringContainsString("require __DIR__ . '/includes/personal-agent-sidebar.php'", $subscriptionsPage);
+        self::assertStringNotContainsString("require __DIR__ . '/includes/agent-sidebar.php'", $subscriptionsPage);
+        self::assertStringContainsString('/assets/css/personal-agent-chat-history.css?v=1.4.0', $subscriptionsPage);
     }
 
     public function testPersonalAgentConversationOwnsFullCanvas(): void
@@ -66,6 +118,7 @@ final class IntegratedMerchantAgentWorkspaceV1Test extends TestCase
         self::assertIsString($view);
         self::assertIsString($css);
         self::assertStringContainsString('/assets/css/personal-agent-full-canvas.css?v=1.0.0', $page);
+        self::assertStringContainsString('/assets/css/personal-agent-chat-history.css?v=1.4.0', $page);
         self::assertStringContainsString('mg-personal-agent-chat-view mg-personal-agent-chat-stream', $view);
         self::assertStringNotContainsString('<div class="mg-personal-agent-chat-stream">', $view);
         self::assertStringContainsString('width:100%!important', $css);

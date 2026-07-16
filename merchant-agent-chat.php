@@ -2,6 +2,14 @@
 declare(strict_types=1);
 require_once __DIR__ . '/includes/app.php';
 
+$user = mg_current_user();
+$mg_package_context = $user ? mg_user_package_context(null, $user) : [];
+$hasMerchantAccess = $user && !empty($mg_package_context['merchant_access']);
+if ($user && !$hasMerchantAccess) {
+    header('Location: /account-subscriptions.php?agent=merchant');
+    exit;
+}
+
 $page_title = 'Merchant Agent | Microgifter';
 $page_section = 'agent';
 $header_mode = 'agent';
@@ -10,7 +18,7 @@ $page_body_class = 'mg-integrated-merchant-agent-page';
 $page_styles = [
     '/assets/css/agent-workspace-layout.css',
     '/assets/css/personal-gifting-agent.css',
-    '/assets/css/personal-agent-chat-history.css?v=1.3.0',
+    '/assets/css/personal-agent-chat-history.css?v=1.4.0',
     '/assets/css/merchant-agent-chat.css',
     '/assets/css/merchant-agent-chat-followup.css',
     '/assets/css/merchant-agent-chat-skills.css',
@@ -41,9 +49,6 @@ $page_scripts = [
     '/assets/js/merchant-agent-chat-admin-mode.js',
 ];
 
-$user = mg_current_user();
-$mg_package_context = $user ? mg_user_package_context(null, $user) : [];
-$hasMerchantAccess = $user && !empty($mg_package_context['merchant_access']);
 $hasMerchantPlanPermission = $user && (
     (function_exists('mg_has_permission') && mg_has_permission('merchant.ai.plan'))
     || (function_exists('mg_workspace_role_allows_permission') && mg_workspace_role_allows_permission($mg_package_context, 'merchant.ai.plan'))
@@ -66,12 +71,7 @@ require __DIR__ . '/includes/header.php';
     <?php if (!$user): ?>
       <section class="mg-app-panel mg-personal-agent-access mg-merchant-agent-access">
         <div class="mg-app-panel-head"><div><span class="mg-agent-toolbar-eyebrow">Merchant Agent</span><h1>Sign in to work with merchant campaigns, CRM, products, and analytics.</h1><p>Merchant conversations are stored separately from Personal Agent chats and remain scoped to your authorized business workspace.</p></div></div>
-        <div class="mg-app-panel-body"><a class="mg-btn mg-btn-primary" href="/signin.php?return=%2Fmerchant-agent-chat.php">Sign in</a><a class="mg-btn mg-btn-ghost" href="/agent.php">Open Personal Agent</a></div>
-      </section>
-    <?php elseif (!$hasMerchantAccess): ?>
-      <section class="mg-app-panel mg-personal-agent-access mg-merchant-agent-access">
-        <div class="mg-app-panel-head"><div><span class="mg-agent-toolbar-eyebrow">Merchant access required</span><h1>Merchant Agent is available to merchant accounts and assigned merchant team members.</h1><p>Your Personal Agent remains available. Add a merchant package or join an authorized merchant workspace to use business data and merchant tools.</p></div></div>
-        <div class="mg-app-panel-body"><a class="mg-btn mg-btn-primary" href="/account-subscriptions.php">Review merchant packages</a><a class="mg-btn mg-btn-ghost" href="/agent.php">Return to Personal Agent</a></div>
+        <div class="mg-app-panel-body"><a class="mg-btn mg-btn-primary" href="/signin.php?return=%2Fmerchant-agent-chat.php">Sign in</a><a class="mg-btn mg-btn-ghost" href="/account-subscriptions.php">Review packages</a></div>
       </section>
     <?php elseif (!$merchantAgentAllowed): ?>
       <section class="mg-app-panel mg-personal-agent-access mg-merchant-agent-access">

@@ -2,6 +2,16 @@
 declare(strict_types=1);
 require_once __DIR__ . '/includes/app.php';
 
+$user = mg_current_user();
+if ($user) {
+    $agentPackageContext = mg_user_package_context(null, $user);
+    $hasPersonalAgentAccess = !empty($agentPackageContext['is_paid']) || !empty($agentPackageContext['merchant_access']);
+    if (!$hasPersonalAgentAccess) {
+        header('Location: /account-subscriptions.php?agent=personal');
+        exit;
+    }
+}
+
 $allowedPersonalViews = ['home','design','contacts','birthdays','calendar','plans','scheduled','recurring','reminders','group','requests','bundles','claims','memory','settings'];
 $agent_personal_view = strtolower(trim((string) ($_GET['view'] ?? 'home')));
 if (!in_array($agent_personal_view, $allowedPersonalViews, true)) {
@@ -20,7 +30,7 @@ $page_styles = [
     '/assets/css/personal-agent-chat-canvas.css?v=1.0.0',
     '/assets/css/personal-agent-full-canvas.css?v=1.0.0',
     '/assets/css/personal-agent-inline-intro.css?v=1.0.0',
-    '/assets/css/personal-agent-chat-history.css?v=1.3.0',
+    '/assets/css/personal-agent-chat-history.css?v=1.4.0',
     '/assets/css/agent-mode-switch.css?v=1.0.0',
     '/assets/css/personal-agent-marketplace-cards.css?v=1.1.0',
     '/assets/css/personal-agent-opportunity-actions.css?v=1.0.0',

@@ -6,12 +6,15 @@ on:
       - integration-from-repair-20260628
     paths:
       - 'agent.php'
+      - 'merchant-agent-chat.php'
       - 'includes/agent-sidebar.php'
       - 'includes/personal-agent-sidebar.php'
+      - 'includes/agent-quick-actions.php'
       - 'includes/gift-center-sidebar.php'
       - 'includes/gift-action-center.php'
       - 'includes/account-sidebar.php'
       - 'assets/css/personal-agent-chat-history.css'
+      - 'assets/js/agent-sidebar-tools.js'
       - 'assets/js/personal-agent-chat-history.js'
       - 'assets/js/personal-agent-design-studio.js'
       - 'my-quests.php'
@@ -51,8 +54,10 @@ jobs:
       - name: PHP syntax
         run: |
           php -l agent.php
+          php -l merchant-agent-chat.php
           php -l includes/agent-sidebar.php
           php -l includes/personal-agent-sidebar.php
+          php -l includes/agent-quick-actions.php
           php -l includes/gift-center-sidebar.php
           php -l includes/gift-action-center.php
           php -l includes/account-sidebar.php
@@ -69,6 +74,7 @@ jobs:
 
       - name: JavaScript syntax
         run: |
+          node --check assets/js/agent-sidebar-tools.js
           node --check assets/js/personal-agent-chat-history.js
           node --check assets/js/personal-agent-design-studio.js
 

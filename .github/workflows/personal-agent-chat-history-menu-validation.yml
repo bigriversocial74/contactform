@@ -6,8 +6,10 @@ on:
       - integration-from-repair-20260628
     paths:
       - 'agent.php'
+      - 'account-subscriptions.php'
       - 'includes/agent-workspace.php'
       - 'includes/personal-agent-sidebar.php'
+      - 'includes/agent-quick-actions.php'
       - 'includes/personal-gifting-agent.php'
       - 'includes/personal-agent/chat.php'
       - 'includes/personal-agent/threads.php'
@@ -15,6 +17,7 @@ on:
       - 'api/user-agent/chat.php'
       - 'api/user-agent/threads.php'
       - 'assets/css/personal-agent-chat-history.css'
+      - 'assets/js/agent-sidebar-tools.js'
       - 'assets/js/personal-agent-chat-history.js'
       - 'scripts/validate_personal_agent_chat_history_menu.php'
       - 'scripts/validate_personal_gifting_agent_phase2.php'
@@ -47,8 +50,10 @@ jobs:
       - name: PHP syntax
         run: |
           php -l agent.php
+          php -l account-subscriptions.php
           php -l includes/agent-workspace.php
           php -l includes/personal-agent-sidebar.php
+          php -l includes/agent-quick-actions.php
           php -l includes/personal-gifting-agent.php
           php -l includes/personal-agent/chat.php
           php -l includes/personal-agent/threads.php
@@ -60,7 +65,9 @@ jobs:
           php -l scripts/validate_personal_gifting_workflows_phase3.php
 
       - name: JavaScript syntax
-        run: node --check assets/js/personal-agent-chat-history.js
+        run: |
+          node --check assets/js/agent-sidebar-tools.js
+          node --check assets/js/personal-agent-chat-history.js
 
       - name: Chat history and menu contract
         run: php scripts/validate_personal_agent_chat_history_menu.php
