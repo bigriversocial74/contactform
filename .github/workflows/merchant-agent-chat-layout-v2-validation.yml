@@ -7,8 +7,12 @@ on:
     paths:
       - 'merchant-agent-chat.php'
       - 'includes/merchant-agent-chat-view.php'
-      - 'assets/css/merchant-agent-chat-layout-v2.css'
+      - 'includes/personal-agent-sidebar.php'
+      - 'assets/css/agent-mode-switch.css'
+      - 'assets/css/merchant-agent-integrated-workspace.css'
+      - 'assets/css/merchant-agent-integrated-compat.css'
       - 'assets/js/merchant-agent-chat-mobile.js'
+      - 'assets/js/merchant-agent-sidebar-history.js'
       - 'scripts/validate_merchant_agent_chat_layout_v2.php'
       - '.github/workflows/merchant-agent-chat-layout-v2-validation.yml'
   workflow_dispatch:
@@ -38,10 +42,13 @@ jobs:
         run: |
           php -l merchant-agent-chat.php
           php -l includes/merchant-agent-chat-view.php
+          php -l includes/personal-agent-sidebar.php
           php -l scripts/validate_merchant_agent_chat_layout_v2.php
 
       - name: JavaScript syntax
-        run: node --check assets/js/merchant-agent-chat-mobile.js
+        run: |
+          node --check assets/js/merchant-agent-chat-mobile.js
+          node --check assets/js/merchant-agent-sidebar-history.js
 
       - name: Merchant agent chat layout contract
         run: php scripts/validate_merchant_agent_chat_layout_v2.php
