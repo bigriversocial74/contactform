@@ -282,6 +282,12 @@ function mg_subscription_billing_v2_schedule_change(PDO $pdo, array $user, array
     if ($periodEndTimestamp < 1 || $periodEndTimestamp <= $phaseStart) {
         throw new MgSubscriptionBillingV2Exception('Current Stripe billing period is unavailable.', 409);
     }
+    $targetPhaseEnd = $cycle === 'year'
+        ? strtotime('+1 year', $periodEndTimestamp)
+        : strtotime('+1 month', $periodEndTimestamp);
+    if ($targetPhaseEnd === false || $targetPhaseEnd <= $periodEndTimestamp) {
+        throw new MgSubscriptionBillingV2Exception('Target Stripe billing period could not be calculated.', 409);
+    }
     $effectiveAt = gmdate('Y-m-d H:i:s', $periodEndTimestamp);
 
     mg_stripe_api_request($pdo, 'POST', '/v1/subscription_schedules/' . rawurlencode($scheduleId), [
@@ -298,9 +304,8 @@ function mg_subscription_billing_v2_schedule_change(PDO $pdo, array $user, array
                 'items'=>[['price'=>$currentPriceId,'quantity'=>$quantity]],
             ],
             [
-                'proration_behavior'=>'none',
+                'start_date'=>$periodEndTimestamp,'end_date'=>$targetPhaseEnd,'proration_behavior'=>'none',
                 'items'=>[['price'=>$priceId,'quantity'=>1]],
-                'duration'=>['interval'=>$cycle,'interval_count'=>1],
                 'metadata'=>[
                     'source_type'=>'subscription_package_change','package_change_request_id'=>(string)$request['request_id'],
                     'package_id'=>(string)$request['requested_package_id'],'billing_cycle'=>$cycle,'user_id'=>(string)$userId,
