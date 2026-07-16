@@ -36,7 +36,9 @@ foreach($paths as $key=>$path){
 $checks=[
     'canonical scope makes a valid workspace authoritative' =>
         str_contains($source['scope'],'A valid workspace relationship is authoritative')
-        && str_contains($source['scope'],"({$workspaceAlias}.id=? OR ({$workspaceAlias}.id IS NULL AND {$locationAlias}.merchant_user_id=?))")
+        && str_contains($source['scope'],'$workspaceAlias}.id=?')
+        && str_contains($source['scope'],'$workspaceAlias}.id IS NULL')
+        && str_contains($source['scope'],'$locationAlias}.merchant_user_id=?')
         && !str_contains($source['scope'],'merchant_user_id=? OR'),
     'merchant APIs load the shared location scope' =>
         str_contains($source['merchant_core'],"includes/merchant-location-scope.php"),
