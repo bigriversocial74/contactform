@@ -6,8 +6,9 @@ require_once __DIR__ . '/_package_billing.php';
 function mg_subscription_history_label(string $eventType, array $payload, ?string $toStatus): string
 {
     $providerType = strtolower(trim((string)($payload['event_type'] ?? '')));
-    if ($providerType === 'invoice.paid') return 'Payment received';
-    if (in_array($providerType, ['invoice.payment_failed', 'invoice.payment_action_required'], true)) return 'Payment needs attention';
+    if ($eventType === 'platform_subscription.payment_received' || $providerType === 'invoice.paid') return 'Payment received';
+    if ($eventType === 'platform_subscription.payment_attention_required' || in_array($providerType, ['invoice.payment_failed', 'invoice.payment_action_required'], true)) return 'Payment needs attention';
+    if ($eventType === 'platform_subscription.checkout_completed') return 'Checkout completed';
     if ($providerType === 'customer.subscription.deleted') return 'Subscription canceled';
     if ($providerType === 'customer.subscription.resumed') return 'Subscription reactivated';
     if ($eventType === 'platform_subscription.checkout_return_confirmed') return 'Checkout confirmed';
@@ -22,10 +23,10 @@ function mg_subscription_history_label(string $eventType, array $payload, ?strin
 function mg_subscription_history_tone(string $eventType, array $payload, ?string $toStatus): string
 {
     $providerType = strtolower(trim((string)($payload['event_type'] ?? '')));
-    if (in_array($providerType, ['invoice.payment_failed', 'invoice.payment_action_required'], true)) return 'warning';
+    if ($eventType === 'platform_subscription.payment_attention_required' || in_array($providerType, ['invoice.payment_failed', 'invoice.payment_action_required'], true)) return 'warning';
     if (in_array((string)$toStatus, ['past_due', 'paused', 'incomplete'], true)) return 'warning';
     if (in_array((string)$toStatus, ['canceled', 'expired'], true)) return 'muted';
-    if ($providerType === 'invoice.paid' || in_array($eventType, ['platform_subscription.activated', 'platform_subscription.checkout_return_confirmed'], true)) return 'success';
+    if ($eventType === 'platform_subscription.payment_received' || $providerType === 'invoice.paid' || in_array($eventType, ['platform_subscription.activated', 'platform_subscription.checkout_return_confirmed', 'platform_subscription.checkout_completed'], true)) return 'success';
     return 'info';
 }
 
