@@ -47,6 +47,25 @@ final class AgentWorkspaceLayoutTest extends TestCase
         self::assertStringContainsString('background:#2563eb',$css);
     }
 
+    public function testAllWorkspacePagesShareCountBadgeStyling(): void
+    {
+        $root=dirname(__DIR__,2);
+        $css=file_get_contents($root.'/assets/css/agent-header-tabs-shared.css');
+        self::assertIsString($css);
+        self::assertStringContainsString('.mg-agent-tab-badge{',$css);
+        self::assertStringContainsString('min-width:20px',$css);
+        self::assertStringContainsString('height:20px',$css);
+        self::assertStringContainsString('margin-left:7px',$css);
+        self::assertStringContainsString('.mg-agent-tab-badge.has-unread{',$css);
+        self::assertStringContainsString('a.is-active .mg-agent-tab-badge{',$css);
+
+        foreach (['agent.php','inbox.php','sent.php','claimed.php'] as $pagePath) {
+            $page=file_get_contents($root.'/'.$pagePath);
+            self::assertIsString($page);
+            self::assertStringContainsString('/assets/css/agent-header-tabs-shared.css?v=1.0.0',$page,$pagePath);
+        }
+    }
+
     public function testAgentPageLoadsDedicatedLayoutStyles(): void
     {
         $page=file_get_contents(dirname(__DIR__,2).'/agent.php');

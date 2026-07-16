@@ -27,6 +27,7 @@ $page_styles = [
     '/assets/css/personal-agent-gift-results.css?v=1.0.0',
     '/assets/css/personal-agent-design-studio.css?v=1.1.0',
     '/assets/css/personal-agent-ai-credits.css?v=1.0.0',
+    '/assets/css/agent-header-tabs-shared.css?v=1.0.0',
 ];
 $page_scripts = [
     '/assets/js/agent-workspace.js',
