@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/intelligence/_intelligence.php';
 require_once dirname(__DIR__, 2) . '/includes/package-entitlements.php';
 require_once dirname(__DIR__, 2) . '/includes/merchant-provisioning.php';
+require_once dirname(__DIR__, 2) . '/includes/merchant-location-scope.php';
 
 $mgDesignStudioEndpoint=basename((string)($_SERVER['SCRIPT_NAME']??''));
 if(in_array($mgDesignStudioEndpoint,['brand-kit.php','design-export.php','design-studio-assets.php','qr-library.php'],true)){
