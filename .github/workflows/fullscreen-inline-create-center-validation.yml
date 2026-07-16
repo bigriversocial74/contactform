@@ -7,13 +7,16 @@ on:
     paths:
       - 'includes/header-templates/create-menu.php'
       - 'includes/header-components/post-composer-modal.php'
+      - 'includes/header-components/create-list-extension.php'
       - 'includes/social-feed-composer.php'
       - 'assets/css/create-center-inline.css'
       - 'assets/css/create-center-mobile-post-unified.css'
+      - 'assets/css/create-center-manage-actions.css'
       - 'assets/js/create-menu.js'
       - 'assets/js/create-center-inline.js'
       - 'assets/js/create-center-storefront-preserve.js'
       - 'assets/js/create-center-post-inline.js'
+      - 'assets/js/create-center-manage-actions.js'
       - 'scripts/validate_fullscreen_inline_create_center.php'
       - 'scripts/validate_create_menu_ui_v1.php'
       - 'tests/phpunit/FullscreenInlineCreateCenterContractTest.php'
@@ -45,6 +48,7 @@ jobs:
         run: |
           php -l includes/header-templates/create-menu.php
           php -l includes/header-components/post-composer-modal.php
+          php -l includes/header-components/create-list-extension.php
           php -l includes/social-feed-composer.php
           php -l scripts/validate_fullscreen_inline_create_center.php
           php -l scripts/validate_create_menu_ui_v1.php
@@ -56,6 +60,7 @@ jobs:
           node --check assets/js/create-center-inline.js
           node --check assets/js/create-center-storefront-preserve.js
           node --check assets/js/create-center-post-inline.js
+          node --check assets/js/create-center-manage-actions.js
 
       - name: Fullscreen inline create center contract
         run: php scripts/validate_fullscreen_inline_create_center.php
