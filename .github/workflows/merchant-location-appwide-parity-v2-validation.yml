@@ -1,0 +1,91 @@
+name: Merchant Location App-Wide Parity v2 Validation
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'includes/merchant-location-scope.php'
+      - 'api/merchant/_merchant.php'
+      - 'api/merchant/locations.php'
+      - 'api/merchant/_claims.php'
+      - 'api/merchant/claim-codes.php'
+      - 'api/merchant/claim-code-action.php'
+      - 'api/merchant/claim-detail.php'
+      - 'api/merchant/claim-exception.php'
+      - 'api/merchant/overview.php'
+      - 'api/merchant/scanner-settings.php'
+      - 'api/merchant/scanner-devices.php'
+      - 'api/account/package-limits.php'
+      - 'api/account/action-center-redeem-locations.php'
+      - 'api/world-canvas/_locations.php'
+      - 'merchant-scanner-settings.php'
+      - 'api/catalog/_publish_distribution.php'
+      - 'includes/ai/merchant-context-builder.php'
+      - 'assets/js/merchant-workspace.js'
+      - 'scripts/validate_merchant_location_appwide_parity_v2.php'
+      - 'scripts/validate_merchant_locations_display_layout.php'
+      - 'tests/phpunit/MerchantLocationsPageContractTest.php'
+      - 'tests/phpunit/MerchantClaimCodeConfigurationTest.php'
+      - '.github/workflows/merchant-location-appwide-parity-v2-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          extensions: mbstring,pdo,pdo_mysql,openssl,json
+
+      - name: PHP syntax
+        run: |
+          php -l includes/merchant-location-scope.php
+          php -l api/merchant/_merchant.php
+          php -l api/merchant/locations.php
+          php -l api/merchant/_claims.php
+          php -l api/merchant/claim-codes.php
+          php -l api/merchant/claim-code-action.php
+          php -l api/merchant/claim-detail.php
+          php -l api/merchant/claim-exception.php
+          php -l api/merchant/overview.php
+          php -l api/merchant/scanner-settings.php
+          php -l api/merchant/scanner-devices.php
+          php -l api/account/package-limits.php
+          php -l api/account/action-center-redeem-locations.php
+          php -l api/world-canvas/_locations.php
+          php -l merchant-scanner-settings.php
+          php -l scripts/validate_merchant_location_appwide_parity_v2.php
+          php -l scripts/validate_merchant_locations_display_layout.php
+          php -l tests/phpunit/MerchantLocationsPageContractTest.php
+          php -l tests/phpunit/MerchantClaimCodeConfigurationTest.php
+
+      - name: App-wide location ownership contract
+        run: php scripts/validate_merchant_location_appwide_parity_v2.php
+
+      - name: Existing locations layout regression
+        run: php scripts/validate_merchant_locations_display_layout.php
+
+      - name: PHPUnit contracts when available
+        run: |
+          if [ -x vendor/bin/phpunit ]; then
+            vendor/bin/phpunit \
+              tests/phpunit/MerchantLocationsPageContractTest.php \
+              tests/phpunit/MerchantClaimCodeConfigurationTest.php
+          else
+            echo 'PHPUnit is not installed in this checkout; standalone contracts completed.'
+          fi
