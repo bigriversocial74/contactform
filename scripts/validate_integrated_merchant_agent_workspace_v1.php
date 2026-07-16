@@ -4,9 +4,11 @@ declare(strict_types=1);
 $root = dirname(__DIR__);
 $paths = [
     'personal_page' => $root . '/agent.php',
+    'subscriptions_page' => $root . '/account-subscriptions.php',
     'personal_workspace' => $root . '/includes/agent-workspace.php',
     'personal_dashboard' => $root . '/includes/personal-agent/workspace-dashboard.php',
     'shared_sidebar' => $root . '/includes/personal-agent-sidebar.php',
+    'quick_catalog' => $root . '/includes/agent-quick-actions.php',
     'merchant_page' => $root . '/merchant-agent-chat.php',
     'merchant_view' => $root . '/includes/merchant-agent-chat-view.php',
     'merchant_api' => $root . '/api/ai/merchant-agent-chat.php',
@@ -16,6 +18,7 @@ $paths = [
     'merchant_history' => $root . '/assets/js/merchant-agent-sidebar-history.js',
     'merchant_drawer' => $root . '/assets/js/merchant-agent-chat-mobile.js',
     'merchant_chat' => $root . '/assets/js/merchant-agent-chat.js',
+    'sidebar_tools_js' => $root . '/assets/js/agent-sidebar-tools.js',
     'history_css' => $root . '/assets/css/personal-agent-chat-history.css',
     'personal_canvas_css' => $root . '/assets/css/personal-agent-full-canvas.css',
     'workspace_css' => $root . '/assets/css/merchant-agent-integrated-workspace.css',
@@ -32,25 +35,75 @@ foreach ($paths as $key => $path) {
     $content[$key] = (string) file_get_contents($path);
 }
 
+$footerPosition = strpos($content['shared_sidebar'], 'class="mg-personal-chat-sidebar-footer"');
+$modeSwitchPosition = strpos($content['shared_sidebar'], 'class="mg-agent-footer-mode-switch"');
+$merchantRedirectPosition = strpos($content['merchant_page'], "header('Location: /account-subscriptions.php?agent=merchant')");
+$merchantHeaderPosition = strpos($content['merchant_page'], "require __DIR__ . '/includes/header.php'");
+
 $checks = [
-    'Personal Agent loads full-canvas, compact-sidebar, compatibility, and merchant handoff assets' =>
+    'Personal Agent loads full-canvas, footer tools, compatibility, and merchant handoff assets' =>
         str_contains($content['personal_page'], '/assets/css/personal-agent-full-canvas.css?v=1.0.0')
-        && str_contains($content['personal_page'], '/assets/css/personal-agent-chat-history.css?v=1.3.0')
+        && str_contains($content['personal_page'], '/assets/css/personal-agent-chat-history.css?v=1.4.0')
         && str_contains($content['personal_page'], '/assets/css/agent-mode-switch.css?v=1.0.0')
-        && str_contains($content['personal_page'], '/assets/js/agent-merchant-handoff.js?v=1.0.0'),
+        && str_contains($content['personal_page'], '/assets/js/agent-merchant-handoff.js?v=1.0.0')
+        && str_contains($content['shared_sidebar'], '/assets/js/agent-sidebar-tools.js?v=1.0.0'),
     'Personal chat section owns the canvas without a nested chat-stream container' =>
         str_contains($content['personal_dashboard'], 'mg-personal-agent-chat-view mg-personal-agent-chat-stream')
         && !str_contains($content['personal_dashboard'], '<div class="mg-personal-agent-chat-stream">')
         && str_contains($content['personal_canvas_css'], '.mg-personal-agent-chat-view')
         && str_contains($content['personal_canvas_css'], 'width:100%!important')
         && str_contains($content['personal_canvas_css'], 'background:transparent!important'),
-    'large Agent mode cards are removed and replaced by one compact switch row' =>
+    'Agent toggle is removed from the top and rendered inside the sidebar footer' =>
         !str_contains($content['shared_sidebar'], 'class="mg-agent-mode-switch"')
         && !str_contains($content['shared_sidebar'], 'mg-agent-mode-options')
-        && str_contains($content['shared_sidebar'], 'mg-agent-sidebar-switch')
+        && $footerPosition !== false
+        && $modeSwitchPosition !== false
+        && $footerPosition < $modeSwitchPosition
+        && str_contains($content['shared_sidebar'], 'data-agent-footer-mode-switch')
         && str_contains($content['shared_sidebar'], 'data-agent-mode-link="personal"')
         && str_contains($content['shared_sidebar'], 'data-agent-mode-link="merchant"')
-        && str_contains($content['history_css'], '.mg-agent-sidebar-switch'),
+        && str_contains($content['history_css'], '.mg-agent-footer-mode-switch'),
+    'sidebar footer replaces informational copy with Suggestions and two tabbed sections' =>
+        !str_contains($content['shared_sidebar'], 'Scoped to your merchant workspace')
+        && !str_contains($content['shared_sidebar'], 'Merchant requests use permission-checked business data and approval-first actions.')
+        && str_contains($content['shared_sidebar'], 'data-agent-suggestions-open')
+        && str_contains($content['shared_sidebar'], 'data-agent-tools-tab="suggestions"')
+        && str_contains($content['shared_sidebar'], 'data-agent-tools-tab="keywords"')
+        && str_contains($content['shared_sidebar'], 'data-agent-suggestion-prompt')
+        && str_contains($content['shared_sidebar'], 'data-agent-keyword-prompt'),
+    'expandable quick-action catalog contains current Personal and Merchant commands' =>
+        str_contains($content['quick_catalog'], 'function mg_agent_quick_action_catalog')
+        && str_contains($content['quick_catalog'], "'keyword'=>'/snapshot'")
+        && str_contains($content['quick_catalog'], "'keyword'=>'memory'")
+        && str_contains($content['quick_catalog'], "'keyword'=>'contact count'")
+        && str_contains($content['quick_catalog'], "'keyword'=>'saved opportunities'")
+        && str_contains($content['quick_catalog'], "'keyword'=>'/m'")
+        && str_contains($content['quick_catalog'], "'keyword'=>'review queue'"),
+    'suggestions run in one click while keywords remain editable before sending' =>
+        str_contains($content['sidebar_tools_js'], "event.target.closest('[data-agent-suggestion-prompt]')")
+        && str_contains($content['sidebar_tools_js'], "event.target.closest('[data-agent-keyword-prompt]')")
+        && str_contains($content['sidebar_tools_js'], 'suggestion.getAttribute')
+        && str_contains($content['sidebar_tools_js'], "true,\n        true")
+        && str_contains($content['sidebar_tools_js'], "false,\n        true")
+        && str_contains($content['sidebar_tools_js'], 'form.requestSubmit()')
+        && str_contains($content['sidebar_tools_js'], 'sessionStorage.setItem'),
+    'free signed-in accounts are redirected from both Agent destinations to subscriptions' =>
+        str_contains($content['personal_page'], "!empty(\$agentPackageContext['is_paid'])")
+        && str_contains($content['personal_page'], "!empty(\$agentPackageContext['merchant_access'])")
+        && str_contains($content['personal_page'], "header('Location: /account-subscriptions.php?agent=personal')")
+        && $merchantRedirectPosition !== false
+        && $merchantHeaderPosition !== false
+        && $merchantRedirectPosition < $merchantHeaderPosition
+        && str_contains($content['shared_sidebar'], '/account-subscriptions.php?agent=personal')
+        && str_contains($content['shared_sidebar'], '/account-subscriptions.php?agent=merchant')
+        && str_contains($content['sidebar_tools_js'], 'data-agent-tools-entitled')
+        && str_contains($content['sidebar_tools_js'], 'subscriptionsUrl'),
+    'subscription page uses the universal Inbox and Agent sidebar' =>
+        str_contains($content['subscriptions_page'], "\$agent_sidebar_mode='subscriptions'")
+        && str_contains($content['subscriptions_page'], "require __DIR__ . '/includes/personal-agent-sidebar.php'")
+        && !str_contains($content['subscriptions_page'], "require __DIR__ . '/includes/agent-sidebar.php'")
+        && str_contains($content['subscriptions_page'], '/assets/css/personal-agent-chat-history.css?v=1.4.0')
+        && str_contains($content['subscriptions_page'], '/assets/js/personal-agent-chat-history.js?v=1.1.0'),
     'Personal Agent exposes merchant access for slash handoff' =>
         str_contains($content['personal_workspace'], 'data-merchant-agent-access=')
         && str_contains($content['personal_workspace'], 'type /m followed by a merchant request'),
@@ -120,10 +173,10 @@ $checks = [
         && str_contains($content['merchant_chat'], 'mg-agent-snapshot-thinking')
         && str_contains($content['merchant_chat'], 'Promise.all([request, delay(650)])')
         && str_contains($content['snapshot_css'], '@keyframes mgMerchantSnapshotPulse'),
-    'Merchant Agent loads cache-busted snapshot assets' =>
+    'Merchant Agent loads cache-busted snapshot and footer assets' =>
         str_contains($content['merchant_page'], '/assets/css/merchant-agent-snapshot.css?v=1.0.0')
         && str_contains($content['merchant_page'], '/assets/js/merchant-agent-chat.js?v=2.3.0')
-        && str_contains($content['merchant_page'], '/assets/css/personal-agent-chat-history.css?v=1.3.0'),
+        && str_contains($content['merchant_page'], '/assets/css/personal-agent-chat-history.css?v=1.4.0'),
     'merchant requests remain protected by the existing permission and CSRF boundary' =>
         str_contains($content['merchant_api'], 'mg_require_csrf_for_write($input)')
         && str_contains($content['merchant_api'], 'mg_merchant_require_permission($permission)')
@@ -131,8 +184,8 @@ $checks = [
     'Personal and Merchant Agent data boundaries remain visibly separate' =>
         str_contains($content['merchant_view'], 'Business data only')
         && str_contains($content['merchant_view'], 'Approval-first actions')
-        && str_contains($content['shared_sidebar'], 'Scoped to your merchant workspace')
-        && str_contains($content['shared_sidebar'], 'Private to your account'),
+        && str_contains($content['quick_catalog'], "'title' => 'Personal Agent'")
+        && str_contains($content['quick_catalog'], "'title' => 'Merchant Agent'"),
 ];
 
 $failed = [];
