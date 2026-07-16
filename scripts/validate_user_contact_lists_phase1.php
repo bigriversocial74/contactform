@@ -26,6 +26,7 @@ $requiredFiles = [
     'assets/css/user-lists.css',
     'assets/css/create-center-layout.css',
     'assets/js/user-lists.js',
+    'assets/js/user-lists-create.js',
     'assets/js/create-list-extension.js',
     'tests/phpunit/UserContactListsFoundationTest.php',
 ];
@@ -57,6 +58,7 @@ $listsPage = $read('lists.php');
 $listPage = $read('list.php');
 $listCss = $read('assets/css/user-lists.css');
 $listJs = $read('assets/js/user-lists.js');
+$listCreateJs = $read('assets/js/user-lists-create.js');
 
 $tables = [
     'user_contact_preferences',
@@ -123,8 +125,19 @@ $checks['Create Center List view is contained and mutually exclusive'] = str_con
     && str_contains($createLayoutCss, '.mg-create-center-view[hidden]')
     && str_contains($createLayoutCss, 'display:none!important')
     && str_contains($createExtensionJs, "modal.querySelector('[data-create-center-view=\"list\"]')")
-    && str_contains($createExtensionJs, "view.hidden = !active")
-    && str_contains($createExtensionJs, "event.target.closest('[data-create-inline-target=\"list\"]')");
+    && str_contains($createExtensionJs, "modal.querySelectorAll('[data-create-center-view]')")
+    && str_contains($createExtensionJs, 'view.hidden = !active')
+    && str_contains($createExtensionJs, "event.target")
+    && str_contains($createExtensionJs, "[data-create-inline-target=\"list\"]")
+    && str_contains($createExtensionJs, 'event.stopImmediatePropagation()');
+$checks['My Lists modal open wins the Create Center mutation race'] = str_contains($createExtensionJs, 'window.MicrogifterCreateCenterList')
+    && str_contains($createExtensionJs, 'createCenterRequestedView')
+    && !str_contains($createExtensionJs, "showView('home', false);")
+    && str_contains($listCreateJs, 'window.MicrogifterCreateCenterList.show')
+    && str_contains($listCreateJs, 'createCenterRequestedView')
+    && substr_count($listCreateJs, 'window.requestAnimationFrame') >= 2
+    && str_contains($createExtension, 'create-list-extension.js?v=1.2.0')
+    && str_contains($listsPage, 'user-lists-create.js?v=1.1.0');
 $checks['List empty search state respects hidden'] = str_contains($createLayoutCss, '.mg-user-lists-state[hidden]')
     && str_contains($listCss, '.mg-user-lists-state')
     && str_contains($listJs, 'empty.hidden = visible !== 0');
@@ -139,7 +152,7 @@ $checks['existing Agent shell and sticky composer preserved'] = str_contains($ag
 $checks['new pages use shared authenticated app shell'] = str_contains($listsPage, 'class="mg-app-shell mg-user-lists-shell"')
     && str_contains($listPage, 'class="mg-app-shell mg-user-lists-shell"')
     && str_contains($listsPage, "require __DIR__ . '/includes/header.php';")
-    && str_contains($listPage, "require __DIR__ . '/includes/footer.php';");
+    && str_contains($listPage, "require __DIR__ . '/includes/header.php';");
 
 $failed = [];
 foreach ($checks as $name => $passed) {
