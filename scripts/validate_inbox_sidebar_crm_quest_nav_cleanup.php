@@ -36,12 +36,21 @@ try {
         'Inbox, Sent, and Claimed use the shared Personal Agent sidebar'
     );
 
-    foreach (['Inbox', 'My Feed', 'My Loyalty Cards', 'My Lists', 'New Chat', 'Design'] as $label) {
+    foreach (['Inbox', 'My Feed', 'My Loyalty Cards', 'My Lists', 'Design'] as $label) {
         $expect(
             substr_count($personalSidebar, '<strong>' . $label . '</strong>') === 1,
             'Unified customer sidebar contains one ' . $label . ' entry'
         );
     }
+
+    $newChatCount = substr_count($personalSidebar, '<strong>New Chat</strong>');
+    $expect(
+        $newChatCount >= 1
+        && $newChatCount <= 2
+        && str_contains($personalSidebar, 'data-personal-agent-new-chat')
+        && str_contains($personalSidebar, '$personalAgentHref'),
+        'Unified customer sidebar exposes one entitlement-specific New Chat path'
+    );
 
     $expect(
         !str_contains($personalSidebar, 'Training Lab')
@@ -50,10 +59,17 @@ try {
         'Training Lab and duplicate My Lists injection are removed'
     );
 
+    $footerPosition = strpos($personalSidebar, 'class="mg-personal-chat-sidebar-footer"');
+    $modePosition = strpos($personalSidebar, 'class="mg-agent-footer-mode-switch"');
     $expect(
         str_contains($personalSidebar, 'data-personal-agent-thread-groups')
-        && str_contains($personalSidebar, 'Private to your account'),
-        'Customer sidebar retains private Personal Agent chat history'
+        && str_contains($personalSidebar, 'data-agent-suggestions-open')
+        && str_contains($personalSidebar, 'data-agent-tools-tab="suggestions"')
+        && str_contains($personalSidebar, 'data-agent-tools-tab="keywords"')
+        && $footerPosition !== false
+        && $modePosition !== false
+        && $footerPosition < $modePosition,
+        'Customer sidebar retains Personal Agent history and footer tools'
     );
 
     $expect(
