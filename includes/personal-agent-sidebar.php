@@ -33,26 +33,19 @@ $sidebarLinkClass = static function (string $key) use ($activeSidebarKey): strin
   </div>
 
   <?php if ($user): ?>
-    <section class="mg-agent-mode-switch" aria-label="Agent mode">
-      <div class="mg-agent-mode-switch-head">
-        <span>Agent mode</span>
-        <small>Separate conversations and data boundaries</small>
-      </div>
-      <div class="mg-agent-mode-options">
-        <a class="mg-agent-mode-option<?= !$isMerchantAgentMode ? ' is-active' : '' ?>" href="/agent.php"<?= !$isMerchantAgentMode ? ' aria-current="page"' : '' ?>>
-          <span class="mg-agent-mode-icon" aria-hidden="true">P</span>
-          <span class="mg-agent-mode-copy"><strong>Personal Agent</strong><small>Contacts, gifting, saves, and planning</small></span>
-        </a>
-        <a class="mg-agent-mode-option<?= $isMerchantAgentMode ? ' is-active' : '' ?><?= !$hasMerchantAgentAccess ? ' is-locked' : '' ?>"
-           href="<?= $hasMerchantAgentAccess ? '/merchant-agent-chat.php' : '/account-subscriptions.php' ?>"<?= $isMerchantAgentMode ? ' aria-current="page"' : '' ?>>
-          <span class="mg-agent-mode-icon" aria-hidden="true">M</span>
-          <span class="mg-agent-mode-copy"><strong>Merchant Agent</strong><small><?= $hasMerchantAgentAccess ? 'Campaigns, CRM, products, and analytics' : 'Merchant access required' ?></small></span>
-          <?php if (!$isMerchantAgentMode): ?><kbd>/m</kbd><?php endif; ?>
-        </a>
-      </div>
-    </section>
-
     <nav class="mg-personal-chat-actions" aria-label="Customer and Agent navigation">
+      <?php if ($isMerchantAgentMode): ?>
+        <a class="mg-personal-chat-action mg-agent-sidebar-switch" href="/agent.php" data-agent-mode-link="personal">
+          <span aria-hidden="true">P</span><strong>Personal Agent</strong><small>Switch</small>
+        </a>
+      <?php else: ?>
+        <a class="mg-personal-chat-action mg-agent-sidebar-switch<?= !$hasMerchantAgentAccess ? ' is-locked' : '' ?>"
+           href="<?= $hasMerchantAgentAccess ? '/merchant-agent-chat.php' : '/account-subscriptions.php' ?>"
+           data-agent-mode-link="merchant">
+          <span aria-hidden="true">M</span><strong>Merchant Agent</strong><small><?= $hasMerchantAgentAccess ? '/m' : 'Access' ?></small>
+        </a>
+      <?php endif; ?>
+
       <a class="<?= mg_e($sidebarLinkClass('inbox')) ?>" href="/inbox.php">
         <span aria-hidden="true">▣</span><strong>Inbox</strong>
       </a>
