@@ -18,6 +18,7 @@ on:
       - 'includes/agent-workspace.php'
       - 'assets/js/agent-workspace.js'
       - 'assets/js/user-lists.js'
+      - 'assets/js/user-lists-create.js'
       - 'assets/js/create-list-extension.js'
       - 'assets/css/user-lists.css'
       - 'assets/css/create-center-layout.css'
@@ -77,6 +78,7 @@ jobs:
         run: |
           node --check assets/js/agent-workspace.js
           node --check assets/js/user-lists.js
+          node --check assets/js/user-lists-create.js
           node --check assets/js/create-list-extension.js
 
       - name: User Contact Lists Phase 1 contract
