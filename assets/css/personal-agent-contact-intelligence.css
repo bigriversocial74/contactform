@@ -1,0 +1,16 @@
+.mg-personal-agent-chat-card[data-agent-card-type="contact_action_review"]{border-color:#bfd4f3;background:linear-gradient(180deg,#fff,#f7faff);box-shadow:0 16px 38px rgba(15,23,42,.08)}
+.mg-personal-agent-chat-card.is-action-review>strong{color:#071225;font-size:17px}
+.mg-agent-action-review-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:14px 0 4px;padding:0}
+.mg-agent-action-review-fields>div{min-width:0;padding:11px 12px;border:1px solid #dbe6f4;border-radius:12px;background:#fff}
+.mg-agent-action-review-fields dt{margin:0 0 4px;color:#64748b;font-size:9px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}
+.mg-agent-action-review-fields dd{margin:0;color:#14223a;font-size:12px;font-weight:850;line-height:1.35;overflow-wrap:anywhere}
+.mg-agent-action-review-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.65fr);gap:9px;margin-top:14px}
+.mg-agent-action-review-actions button{min-height:42px!important;width:100%;margin:0!important;border:1px solid #c9d8eb!important;border-radius:12px!important;background:#fff!important;color:#14223a!important;font-size:12px!important;font-weight:950!important;cursor:pointer}
+.mg-agent-action-review-actions button.is-primary{border-color:#111827!important;background:#111827!important;color:#fff!important}
+.mg-agent-action-review-actions button:disabled{opacity:.6;cursor:wait}
+.mg-agent-action-result{grid-column:1/-1;display:block;padding:12px 14px;border:1px solid #bbf7d0;border-radius:12px;background:#f0fdf4;color:#166534;font-size:12px;font-weight:750;line-height:1.45}
+.mg-personal-agent-chat-card.is-action-cancelled .mg-agent-action-result{border-color:#dbe3ef;background:#f8fafc;color:#52627a}
+.mg-personal-agent-chat-card[data-agent-card-type="relationship_signal"]{border-color:#d8e5f5;background:linear-gradient(180deg,#fff,#f8fbff)}
+.mg-personal-agent-chat-card[data-agent-card-type="relationship_signal"]>strong::before{content:"Signal";display:inline-flex;align-items:center;min-height:20px;margin-right:8px;padding:0 7px;border-radius:999px;background:#e8f1ff;color:#1455d9;font-size:8px;font-weight:950;letter-spacing:.08em;text-transform:uppercase;vertical-align:2px}
+.mg-personal-agent-chat-card[data-agent-card-type="contact_result"],.mg-personal-agent-chat-card[data-agent-card-type="occasion_result"],.mg-personal-agent-chat-card[data-agent-card-type="gift_history"]{border-color:#dbe6f4;background:#fff}
+@media(max-width:640px){.mg-agent-action-review-fields{grid-template-columns:1fr}.mg-agent-action-review-actions{grid-template-columns:1fr 1fr}.mg-agent-action-review-actions button{min-height:46px!important}}

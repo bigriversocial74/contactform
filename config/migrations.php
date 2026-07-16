@@ -140,6 +140,7 @@ return [
         'stage_18aj_subscription_billing_lifecycle_v2.sql',
         'stage_18ak_personal_agent_opportunity_attribution_v1.sql',
         'stage_18al_personal_agent_followup_recovery_v1.sql',
+        'stage_18am_personal_agent_contact_intelligence_v1.sql',
         'stage_19_ai_provider_models.sql',
         'stage_19b_ai_permission_guard.sql',
         'stage_19c_claude_sonnet_merchant_agent_planner.sql',
