@@ -61,9 +61,7 @@ function mg_personal_agent_recovery_card(array $opportunity, string $mode = 'con
 function mg_personal_agent_recovery_intent_items(PDO $pdo, int $userId, string $intent, int $limit = 6): array
 {
     $limit = max(1,min(10,$limit));
-    if ($intent === 'saved') {
-        return mg_personal_agent_opportunity_list($pdo,$userId,'saved',$limit);
-    }
+    if ($intent === 'saved') return mg_personal_agent_opportunity_list($pdo,$userId,'saved',$limit);
     if ($intent === 'resume') {
         $context = mg_personal_agent_recovery_context($pdo,$userId);
         return array_slice($context['unfinished_opportunities'] ?? [],0,$limit);
@@ -90,15 +88,37 @@ function mg_personal_agent_recovery_persist_response(PDO $pdo, int $userId, arra
     }
 }
 
+function mg_personal_agent_recovery_start_response(PDO $pdo, int $userId, array $input, string $intent): array
+{
+    mg_personal_agent_require_schema($pdo);
+    $message = mg_personal_agent_text($input['message'] ?? '',2000);
+    if ($message === '') throw new InvalidArgumentException('Enter a message for the Personal Gifting Agent.');
+    $context = mg_personal_agent_resolve_context($pdo,$userId,(string)($input['context_type'] ?? 'none'),(string)($input['context_id'] ?? ''));
+    $thread = mg_personal_agent_thread($pdo,$userId,mg_personal_agent_text($input['thread_id'] ?? '',80),$context);
+    $publicContext = mg_personal_agent_public_context($context);
+    $userMessage = mg_personal_agent_store_message($pdo,$userId,(int)$thread['internal_id'],'user',$message,[],$publicContext);
+    $assistant = mg_personal_agent_store_message($pdo,$userId,(int)$thread['internal_id'],'assistant','Reviewing your saved opportunity activity…',[],array_merge($publicContext,['recovery_intent'=>$intent]));
+    mg_audit('user_agent.recovery_command','user_agent_thread',['thread_id'=>$thread['id'],'intent'=>$intent],$userId);
+    return [
+        'thread'=>['id'=>$thread['id'],'title'=>$thread['title']],
+        'user_message'=>$userMessage,
+        'assistant_message'=>$assistant,
+        'context'=>$publicContext,
+        'used_ai'=>false,
+        'model_key'=>'deterministic_recovery',
+    ];
+}
+
 function mg_personal_agent_chat_with_recovery_response(PDO $pdo, int $userId, array $input): array
 {
     $message = mg_personal_agent_text($input['message'] ?? '',2000);
     $intent = mg_personal_agent_recovery_intent($message);
-    if ($intent !== '') $input['_skip_ai'] = true;
-    $result = mg_personal_agent_chat_with_opportunity_attribution($pdo,$userId,$input);
-    if ($intent === '' || !mg_personal_agent_recovery_schema_ready($pdo)) return $result;
-
+    if ($intent === '' || !mg_personal_agent_recovery_schema_ready($pdo)) {
+        return mg_personal_agent_chat_with_opportunity_attribution($pdo,$userId,$input);
+    }
+    $result = mg_personal_agent_recovery_start_response($pdo,$userId,$input,$intent);
     $threadId = (string)($result['thread']['id'] ?? '');
+
     if ($intent === 'remind') {
         $opportunity = mg_personal_agent_recovery_latest_opportunity($pdo,$userId,$threadId,'recent');
         if ($opportunity === []) $opportunity = mg_personal_agent_recovery_latest_opportunity($pdo,$userId,'','saved');
