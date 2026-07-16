@@ -25,6 +25,10 @@ SET stripe_monthly_price_id_test = COALESCE(NULLIF(stripe_monthly_price_id_test,
 WHERE id > 0;
 
 SET @t := 'platform_account_subscriptions';
+SET @c := 'provider_schedule_id';
+SET @s := IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=@t AND COLUMN_NAME=@c)=0,
+  'ALTER TABLE platform_account_subscriptions ADD COLUMN provider_schedule_id VARCHAR(190) NULL AFTER provider_subscription_id', 'SELECT 1');
+PREPARE stmt FROM @s; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 SET @c := 'scheduled_package_id';
 SET @s := IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=@t AND COLUMN_NAME=@c)=0,
   'ALTER TABLE platform_account_subscriptions ADD COLUMN scheduled_package_id VARCHAR(80) NULL AFTER cancel_at_period_end', 'SELECT 1');
@@ -71,5 +75,5 @@ SET @s := IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA
 PREPARE stmt FROM @s; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 INSERT INTO schema_migrations (migration_key,description,checksum,applied_at)
-VALUES ('stage_18aj_subscription_billing_lifecycle_v2','Monthly/yearly Stripe prices, billing portal, scheduled package changes, canonical invoice state, and subscription lifecycle v2.',NULL,NOW())
+VALUES ('stage_18aj_subscription_billing_lifecycle_v2','Monthly/yearly Stripe prices, billing portal, subscription schedules, canonical invoice state, and subscription lifecycle v2.',NULL,NOW())
 ON DUPLICATE KEY UPDATE description=VALUES(description);
