@@ -47,6 +47,11 @@ if ($user) {
 
       <form class="mg-app-composer mg-personal-agent-composer" data-agent-composer data-personal-agent-composer>
         <button class="mg-personal-agent-context-chip" type="button" data-personal-agent-context-chip hidden aria-label="Clear selected gifting context"></button>
+        <div class="mg-personal-agent-credit-bar" aria-live="polite">
+          <span class="mg-personal-agent-credit-chip" data-personal-agent-credit-chip><strong>Loading AI credits…</strong></span>
+          <span class="mg-personal-agent-credit-detail" data-personal-agent-credit-detail></span>
+          <a class="mg-personal-agent-credit-manage" href="/account-subscriptions.php">Manage package</a>
+        </div>
         <div class="mg-personal-agent-composer-row">
           <button class="mg-personal-agent-menu-trigger" type="button" data-open-agent-dialog="menu" aria-label="Open Personal Agent menu" title="Open Agent menu">+</button>
           <textarea rows="1" maxlength="2000" placeholder="Ask about a contact, purchase, merchant, gift plan, schedule, group gift, or bundle…" aria-label="Message the Personal Gifting Agent"></textarea>

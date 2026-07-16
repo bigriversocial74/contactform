@@ -7,7 +7,9 @@ require_once dirname(__DIR__) . '/includes/admin-auth.php';
 $user = mg_require_admin_page_permission('admin.users.view');
 $canViewUsers = true;
 $canCreateUsers = mg_admin_page_user_has_permission($user, 'admin.users.manage');
-$canManageAiLimits = mg_admin_page_user_has_permission($user, 'admin.settings.manage');
+$canManageAiLimits = mg_admin_page_user_has_permission($user, 'admin.settings.manage')
+    || mg_admin_page_user_has_permission($user, 'admin.commerce.manage')
+    || mg_admin_page_user_has_permission($user, 'subscriptions.admin');
 $page_title = 'User Center | Microgifter';
 $page_section = 'account';
 $header_mode = 'account';
@@ -17,13 +19,14 @@ $page_styles = [
     '/assets/css/admin-users.css',
     '/assets/css/admin-user-detail-drawer.css?v=20260702-user-actions',
     '/assets/css/admin-user-management.css?v=20260702-user-actions',
+    '/assets/css/admin-ai-user-access.css?v=1.0.0',
 ];
 $page_scripts = [
     '/assets/js/admin-users.js',
     '/assets/js/admin-user-detail-drawer.js?v=20260702-user-actions',
     '/assets/js/admin-user-ops-detail.js',
     '/assets/js/admin-user-management.js?v=20260702-user-actions',
-    '/assets/js/admin-ai-user-limits.js',
+    '/assets/js/admin-ai-user-limits.js?v=2.0.0',
     '/assets/js/admin-create-user.js',
 ];
 $adminActive = 'users';
@@ -39,7 +42,7 @@ require dirname(__DIR__) . '/includes/header.php';
           <a class="mg-admin-users-back" href="/account-admin.php">← Admin dashboard</a>
           <span class="mg-eyebrow">Identity operations</span>
           <h1>User center</h1>
-          <p>Search platform identities, create admin-managed users, and manage account, role, verification, model, and session state from one protected workspace.</p>
+          <p>Search platform identities, create admin-managed users, and manage account, role, verification, model, session, package, and AI credit state from one protected workspace.</p>
         </div>
         <?php if ($canViewUsers): ?>
           <div class="mg-admin-users-hero-actions">

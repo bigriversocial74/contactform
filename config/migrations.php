@@ -142,6 +142,7 @@ return [
         '20260714_personal_gifting_agent_phase2.sql',
         'stage_19d_customer_haiku_merchant_sonnet_defaults.sql',
         '20260714_personal_gifting_workflows_phase3.sql',
+        '20260715_ai_user_credit_packages.sql',
         'stage_19_merchant_market_snapshots.sql',
         'stage_20_agent_store_canvas.sql',
         'stage_20b_store_canvas_trigger_zones.sql',
