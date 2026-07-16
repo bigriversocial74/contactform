@@ -2,6 +2,7 @@
   const app = document.querySelector('[data-agent-design-studio]');
   if (!app) return;
 
+  const agentRoot = document.querySelector('[data-personal-gifting-agent]');
   const designLink = document.querySelector('.mg-personal-chat-action[href="/design-studio.php"]');
   const views = Array.from(document.querySelectorAll('[data-personal-agent-view]'));
   const canvas = app.querySelector('[data-design-canvas]');
@@ -101,9 +102,13 @@
       button.textContent = 'Preparing JPG…';
       try { await downloadJpg(); }
       catch (_) { window.alert('The JPG export could not be completed. Please try again.'); }
-      finally { button.disabled = false; button.textContent = original; }
+      finally {
+        button.disabled = false;
+        button.textContent = original;
+      }
     });
   });
 
+  if (agentRoot?.dataset.activeView === 'design') showDesign();
   renderQr().catch(() => {});
 })();
