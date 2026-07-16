@@ -19,6 +19,12 @@ function mg_subscription_billing_v2_cycle(mixed $value): string
     return mg_platform_package_interval_unit((string)$value);
 }
 
+function mg_subscription_billing_v2_reference(mixed $value): string
+{
+    if (is_array($value)) return trim((string)($value['id'] ?? ''));
+    return trim((string)$value);
+}
+
 function mg_subscription_billing_v2_request(PDO $pdo, array $user, string $requestedPlanId, string $billingCycle = 'month', string $note = ''): array
 {
     mg_platform_package_sync_defaults($pdo);
@@ -112,6 +118,32 @@ function mg_subscription_billing_v2_subscription_item(array $subscription): arra
     return $items[0];
 }
 
+function mg_subscription_billing_v2_store_product_id(PDO $pdo, string $packageId, string $productId): void
+{
+    $mode = function_exists('mg_payment_mode') ? mg_payment_mode() : 'test';
+    $field = $mode === 'live' ? 'stripe_product_id_live' : 'stripe_product_id_test';
+    $pdo->prepare('UPDATE platform_subscription_packages SET `' . $field . '`=?,updated_at=NOW() WHERE package_id=?')
+        ->execute([$productId, mg_platform_package_slug($packageId)]);
+}
+
+function mg_subscription_billing_v2_product_id(PDO $pdo, array $package): string
+{
+    $productId = mg_platform_package_stripe_product_id($package);
+    if ($productId !== '') return $productId;
+
+    $packageId = mg_platform_package_slug((string)($package['package_id'] ?? ''));
+    if ($packageId === '') throw new MgSubscriptionBillingV2Exception('Package identity is unavailable.', 422);
+    $created = mg_stripe_api_request($pdo, 'POST', '/v1/products', [
+        'name' => 'Microgifter ' . (string)($package['name'] ?? ucfirst($packageId)),
+        'active' => true,
+        'metadata' => ['package_id'=>$packageId,'source'=>'microgifter_billing_v2'],
+    ], 'subscription-product:' . $packageId . ':' . (function_exists('mg_payment_mode') ? mg_payment_mode() : 'test'));
+    $productId = trim((string)($created['id'] ?? ''));
+    if ($productId === '') throw new MgSubscriptionBillingV2Exception('Stripe did not return a Product ID.', 502);
+    mg_subscription_billing_v2_store_product_id($pdo, $packageId, $productId);
+    return $productId;
+}
+
 function mg_subscription_billing_v2_store_price_id(PDO $pdo, string $packageId, string $billingCycle, string $priceId): void
 {
     $mode = function_exists('mg_payment_mode') ? mg_payment_mode() : 'test';
@@ -129,11 +161,7 @@ function mg_subscription_billing_v2_price_id(PDO $pdo, array $package, string $b
     $priceId = mg_platform_package_stripe_price_id($package, $billingCycle);
     if ($priceId !== '') return $priceId;
 
-    $productId = mg_platform_package_stripe_product_id($package);
-    if ($productId === '') {
-        throw new MgSubscriptionBillingV2Exception('Stripe product and cycle-specific Price IDs must be configured for package changes.', 503);
-    }
-
+    $productId = mg_subscription_billing_v2_product_id($pdo, $package);
     $amount = mg_platform_package_amount_cents($package, $billingCycle);
     if ($amount < 1) throw new MgSubscriptionBillingV2Exception('Selected package does not have a billable amount.', 422);
 
@@ -152,6 +180,15 @@ function mg_subscription_billing_v2_price_id(PDO $pdo, array $package, string $b
     return $priceId;
 }
 
+function mg_subscription_billing_v2_release_schedule(PDO $pdo, array $snapshot): void
+{
+    $scheduleId = trim((string)($snapshot['provider_schedule_id'] ?? ''));
+    if ($scheduleId === '') return;
+    mg_stripe_api_request($pdo, 'POST', '/v1/subscription_schedules/' . rawurlencode($scheduleId) . '/release', [], 'subscription-schedule-release:' . $scheduleId);
+    $pdo->prepare('UPDATE platform_account_subscriptions SET provider_schedule_id=NULL,scheduled_package_id=NULL,scheduled_billing_cycle=NULL,scheduled_effective_at=NULL,updated_at=NOW() WHERE id=?')
+        ->execute([(int)$snapshot['id']]);
+}
+
 function mg_subscription_billing_v2_portal_session(PDO $pdo, array $user, ?string $targetPackageId = null, string $billingCycle = 'month'): array
 {
     $userId = (int)($user['id'] ?? 0);
@@ -166,6 +203,8 @@ function mg_subscription_billing_v2_portal_session(PDO $pdo, array $user, ?strin
         'customer' => $customerId,
         'return_url' => mg_payment_absolute_url('/account-subscriptions.php?billing=returned'),
     ];
+    $portalConfiguration = trim((string)(getenv('MG_STRIPE_BILLING_PORTAL_CONFIGURATION') ?: ''));
+    if ($portalConfiguration !== '') $params['configuration'] = $portalConfiguration;
 
     $targetPackageId = $targetPackageId !== null ? mg_platform_package_slug($targetPackageId) : '';
     if ($targetPackageId !== '') {
@@ -196,10 +235,9 @@ function mg_subscription_billing_v2_portal_session(PDO $pdo, array $user, ?strin
         $session = mg_stripe_api_request($pdo, 'POST', '/v1/billing_portal/sessions', $params, null);
     } catch (Throwable $error) {
         if ($targetPackageId === '') throw $error;
-        $session = mg_stripe_api_request($pdo, 'POST', '/v1/billing_portal/sessions', [
-            'customer' => $customerId,
-            'return_url' => mg_payment_absolute_url('/account-subscriptions.php?billing=returned'),
-        ], null);
+        $fallback = ['customer'=>$customerId,'return_url'=>mg_payment_absolute_url('/account-subscriptions.php?billing=returned')];
+        if ($portalConfiguration !== '') $fallback['configuration'] = $portalConfiguration;
+        $session = mg_stripe_api_request($pdo, 'POST', '/v1/billing_portal/sessions', $fallback, null);
     }
 
     $url = trim((string)($session['url'] ?? ''));
@@ -218,47 +256,73 @@ function mg_subscription_billing_v2_schedule_change(PDO $pdo, array $user, array
     $subscriptionId = trim((string)($snapshot['provider_subscription_id'] ?? ''));
     $subscription = mg_subscription_billing_v2_stripe_subscription($pdo, $subscriptionId);
     $item = mg_subscription_billing_v2_subscription_item($subscription);
+    $currentPriceId = mg_subscription_billing_v2_reference($item['price'] ?? '');
+    if ($currentPriceId === '') throw new MgSubscriptionBillingV2Exception('Current Stripe Price is unavailable.', 409);
+    $quantity = max(1, (int)($item['quantity'] ?? 1));
+
     $package = mg_platform_package_get($pdo, (string)$request['requested_package_id']);
     if (!$package) throw new MgSubscriptionBillingV2Exception('Selected package is unavailable.', 422);
     $cycle = mg_subscription_billing_v2_cycle((string)($request['billing_cycle'] ?? 'month'));
     $priceId = mg_subscription_billing_v2_price_id($pdo, $package, $cycle);
-    $periodEndTimestamp = (int)($subscription['current_period_end'] ?? 0);
-    if ($periodEndTimestamp < 1) {
-        $periodEndTimestamp = strtotime((string)($snapshot['current_period_end'] ?? '')) ?: 0;
+
+    $scheduleId = mg_subscription_billing_v2_reference($subscription['schedule'] ?? $snapshot['provider_schedule_id'] ?? '');
+    if ($scheduleId === '') {
+        $createdSchedule = mg_stripe_api_request($pdo, 'POST', '/v1/subscription_schedules', [
+            'from_subscription' => $subscriptionId,
+        ], 'subscription-schedule-create:' . $subscriptionId);
+        $scheduleId = trim((string)($createdSchedule['id'] ?? ''));
     }
-    if ($periodEndTimestamp < 1) throw new MgSubscriptionBillingV2Exception('Current Stripe billing period is unavailable.', 409);
+    if ($scheduleId === '') throw new MgSubscriptionBillingV2Exception('Stripe did not return a Subscription Schedule ID.', 502);
+
+    $schedule = mg_stripe_api_request($pdo, 'GET', '/v1/subscription_schedules/' . rawurlencode($scheduleId));
+    $phaseStart = (int)($schedule['current_phase']['start'] ?? $subscription['current_period_start'] ?? 0);
+    $periodEndTimestamp = (int)($schedule['current_phase']['end'] ?? $subscription['current_period_end'] ?? 0);
+    if ($periodEndTimestamp < 1) $periodEndTimestamp = strtotime((string)($snapshot['current_period_end'] ?? '')) ?: 0;
+    if ($phaseStart < 1) $phaseStart = strtotime((string)($snapshot['current_period_start'] ?? '')) ?: time();
+    if ($periodEndTimestamp < 1 || $periodEndTimestamp <= $phaseStart) {
+        throw new MgSubscriptionBillingV2Exception('Current Stripe billing period is unavailable.', 409);
+    }
     $effectiveAt = gmdate('Y-m-d H:i:s', $periodEndTimestamp);
 
-    mg_stripe_api_request($pdo, 'POST', '/v1/subscriptions/' . rawurlencode($subscriptionId), [
-        'items' => [[
-            'id' => (string)($item['id'] ?? ''),
-            'price' => $priceId,
-            'quantity' => 1,
-        ]],
+    mg_stripe_api_request($pdo, 'POST', '/v1/subscription_schedules/' . rawurlencode($scheduleId), [
+        'end_behavior' => 'release',
         'proration_behavior' => 'none',
-        'cancel_at_period_end' => false,
         'metadata' => [
-            'source_type' => 'subscription_package_change',
-            'package_change_request_id' => (string)$request['request_id'],
-            'scheduled_package_id' => (string)$request['requested_package_id'],
-            'scheduled_billing_cycle' => $cycle,
-            'scheduled_effective_at' => gmdate('c', $periodEndTimestamp),
-            'user_id' => (string)$userId,
+            'source_type'=>'subscription_package_change','package_change_request_id'=>(string)$request['request_id'],
+            'scheduled_package_id'=>(string)$request['requested_package_id'],'scheduled_billing_cycle'=>$cycle,
+            'scheduled_effective_at'=>gmdate('c',$periodEndTimestamp),'user_id'=>(string)$userId,
         ],
-    ], 'subscription-scheduled-change:' . (string)$request['request_id']);
+        'phases' => [
+            [
+                'start_date'=>$phaseStart,'end_date'=>$periodEndTimestamp,'proration_behavior'=>'none',
+                'items'=>[['price'=>$currentPriceId,'quantity'=>$quantity]],
+            ],
+            [
+                'proration_behavior'=>'none',
+                'items'=>[['price'=>$priceId,'quantity'=>1]],
+                'duration'=>['interval'=>$cycle,'interval_count'=>1],
+                'metadata'=>[
+                    'source_type'=>'subscription_package_change','package_change_request_id'=>(string)$request['request_id'],
+                    'package_id'=>(string)$request['requested_package_id'],'billing_cycle'=>$cycle,'user_id'=>(string)$userId,
+                ],
+            ],
+        ],
+    ], 'subscription-schedule-update:' . (string)$request['request_id']);
 
     $pdo->beginTransaction();
     try {
         $pdo->prepare("UPDATE platform_account_subscriptions
-          SET scheduled_package_id=?,scheduled_billing_cycle=?,scheduled_effective_at=?,cancel_at_period_end=0,
-              package_change_request_public_id=?,updated_at=NOW()
-          WHERE user_id=?")
-            ->execute([(string)$request['requested_package_id'],$cycle,$effectiveAt,(string)$request['request_id'],$userId]);
+          SET provider_schedule_id=?,scheduled_package_id=?,scheduled_billing_cycle=?,scheduled_effective_at=?,cancel_at_period_end=0,
+              package_change_request_public_id=?,updated_at=NOW() WHERE user_id=?")
+            ->execute([$scheduleId,(string)$request['requested_package_id'],$cycle,$effectiveAt,(string)$request['request_id'],$userId]);
 
         $stmt = $pdo->prepare('SELECT metadata_json FROM subscription_package_change_requests WHERE public_id=? AND user_id=? LIMIT 1 FOR UPDATE');
         $stmt->execute([(string)$request['request_id'],$userId]);
         $meta = mg_platform_package_json($stmt->fetchColumn());
-        $meta['scheduled_provider_change'] = ['provider'=>'stripe','effective_at'=>$effectiveAt,'provider_price_id'=>$priceId,'created_at'=>gmdate('c')];
+        $meta['scheduled_provider_change'] = [
+            'provider'=>'stripe','provider_schedule_id'=>$scheduleId,'effective_at'=>$effectiveAt,
+            'provider_price_id'=>$priceId,'created_at'=>gmdate('c'),
+        ];
         $pdo->prepare("UPDATE subscription_package_change_requests SET status='approved',checkout_url=NULL,admin_note='Scheduled for the next billing period.',metadata_json=?,updated_at=NOW() WHERE public_id=? AND user_id=?")
             ->execute([json_encode($meta,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR),(string)$request['request_id'],$userId]);
         $pdo->commit();
@@ -269,18 +333,36 @@ function mg_subscription_billing_v2_schedule_change(PDO $pdo, array $user, array
 
     $row = mg_subscription_package_change_latest($pdo, $userId, false);
     mg_platform_account_subscription_event($pdo,(int)$snapshot['id'],'platform_subscription.change_scheduled',(string)$snapshot['status'],(string)$snapshot['status'],$userId,[
-        'provider_key'=>'stripe','request_id'=>(string)$request['request_id'],'scheduled_package_id'=>(string)$request['requested_package_id'],'scheduled_billing_cycle'=>$cycle,'scheduled_effective_at'=>$effectiveAt,
+        'provider_key'=>'stripe','provider_schedule_id'=>$scheduleId,'request_id'=>(string)$request['request_id'],
+        'scheduled_package_id'=>(string)$request['requested_package_id'],'scheduled_billing_cycle'=>$cycle,'scheduled_effective_at'=>$effectiveAt,
     ]);
-    mg_audit('subscription.change_scheduled','platform_account_subscription',['request_id'=>(string)$request['request_id'],'scheduled_package_id'=>(string)$request['requested_package_id'],'scheduled_billing_cycle'=>$cycle,'scheduled_effective_at'=>$effectiveAt],$userId);
+    mg_audit('subscription.change_scheduled','platform_account_subscription',[
+        'request_id'=>(string)$request['request_id'],'provider_schedule_id'=>$scheduleId,
+        'scheduled_package_id'=>(string)$request['requested_package_id'],'scheduled_billing_cycle'=>$cycle,'scheduled_effective_at'=>$effectiveAt,
+    ],$userId);
 
     return $row ? mg_subscription_package_change_public($row) + ['scheduled_effective_at'=>$effectiveAt] : $request + ['scheduled_effective_at'=>$effectiveAt];
 }
 
 function mg_subscription_billing_v2_attach_portal(PDO $pdo, array $user, array $request): array
 {
+    $userId = (int)$user['id'];
+    $snapshot = mg_platform_account_subscription_snapshot($pdo, $userId, false);
+    if ($snapshot && trim((string)($snapshot['provider_schedule_id'] ?? '')) !== '') {
+        mg_subscription_billing_v2_release_schedule($pdo, $snapshot);
+    }
     $portal = mg_subscription_billing_v2_portal_session($pdo, $user, (string)$request['requested_package_id'], (string)($request['billing_cycle'] ?? 'month'));
-    $pdo->prepare("UPDATE subscription_package_change_requests SET status='pending_payment',checkout_url=?,updated_at=NOW() WHERE public_id=? AND user_id=?")
-        ->execute([$portal['url'],(string)$request['request_id'],(int)$user['id']]);
-    $row = mg_subscription_package_change_latest($pdo,(int)$user['id'],false);
+    $pdo->beginTransaction();
+    try {
+        $pdo->prepare("UPDATE subscription_package_change_requests SET status='pending_payment',checkout_url=?,updated_at=NOW() WHERE public_id=? AND user_id=?")
+            ->execute([$portal['url'],(string)$request['request_id'],$userId]);
+        $pdo->prepare("UPDATE platform_account_subscriptions SET package_change_request_public_id=?,scheduled_package_id=NULL,scheduled_billing_cycle=NULL,scheduled_effective_at=NULL,updated_at=NOW() WHERE user_id=?")
+            ->execute([(string)$request['request_id'],$userId]);
+        $pdo->commit();
+    } catch (Throwable $error) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        throw $error;
+    }
+    $row = mg_subscription_package_change_latest($pdo,$userId,false);
     return $row ? mg_subscription_package_change_public($row) : $request + ['checkout_url'=>$portal['url']];
 }
