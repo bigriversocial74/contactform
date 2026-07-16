@@ -14,8 +14,12 @@ on:
       - 'api/merchant/claim-detail.php'
       - 'api/merchant/claim-exception.php'
       - 'api/merchant/overview.php'
+      - 'api/merchant/intelligence-dashboard.php'
+      - 'api/merchant/demand-dashboard.php'
+      - 'api/merchant/prepaid-demand.php'
       - 'api/merchant/scanner-settings.php'
       - 'api/merchant/scanner-devices.php'
+      - 'api/merchant/scanner-claim.php'
       - 'api/account/package-limits.php'
       - 'api/account/action-center-redeem-locations.php'
       - 'api/world-canvas/_locations.php'
@@ -63,8 +67,12 @@ jobs:
           php -l api/merchant/claim-detail.php
           php -l api/merchant/claim-exception.php
           php -l api/merchant/overview.php
+          php -l api/merchant/intelligence-dashboard.php
+          php -l api/merchant/demand-dashboard.php
+          php -l api/merchant/prepaid-demand.php
           php -l api/merchant/scanner-settings.php
           php -l api/merchant/scanner-devices.php
+          php -l api/merchant/scanner-claim.php
           php -l api/account/package-limits.php
           php -l api/account/action-center-redeem-locations.php
           php -l api/world-canvas/_locations.php
