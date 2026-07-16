@@ -23,18 +23,12 @@ try {
   <header class="mg-agent-design-header">
     <div>
       <span>Merchant Design Studio</span>
-      <h1 data-design-page-title>Choose what you want to design.</h1>
+      <h1 id="design-object-heading" data-design-page-title>Choose what you want to design.</h1>
       <p data-design-page-description>Select a print object first. Template choices open after you choose the format.</p>
     </div>
   </header>
 
   <section class="mg-agent-design-object-picker" data-design-object-picker aria-labelledby="design-object-heading">
-    <div class="mg-agent-design-object-intro">
-      <span class="mg-agent-design-step">Step 1</span>
-      <h2 id="design-object-heading">Choose a design object</h2>
-      <p>Start with the physical format. Your merchant profile and QR destination will be applied after you select a template.</p>
-    </div>
-
     <div class="mg-agent-design-object-grid">
       <button type="button" class="mg-agent-design-object-card" data-design-object="poster">
         <span class="mg-agent-design-object-visual is-poster" aria-hidden="true">
