@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   var root = app.root;
   var feed = app.ui && app.ui.feed;
+  var summary = app.ui && app.ui.summary;
   var esc = app.esc;
   var dataOf = app.dataOf;
   var setStatus = app.setStatus;
@@ -69,6 +70,21 @@ document.addEventListener('DOMContentLoaded', function () {
     feed.querySelectorAll('.mg-personal-agent-card-grid').forEach(enhanceGrid);
   }
 
+  function enhanceSummary() {
+    if (!summary || !app.state || !app.state.dashboard) return;
+    var count = Number(app.state.dashboard.summary && app.state.dashboard.summary.signals || 0);
+    var card = summary.querySelector('[data-agent-signal-count]');
+    if (!card) {
+      card = document.createElement('article');
+      card.className = 'mg-personal-agent-stat';
+      card.dataset.agentSignalCount = 'true';
+      card.innerHTML = '<span>Signals</span><strong>0</strong><small>Relationship and occasion cues</small>';
+      summary.appendChild(card);
+    }
+    var value = card.querySelector('strong');
+    if (value) value.textContent = String(count);
+  }
+
   async function executeDraft(button) {
     var draftId = String(button.dataset.agentActionDraft || '');
     var decision = String(button.dataset.decision || 'confirm');
@@ -103,6 +119,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }
       setStatus(receipt.summary || 'Account change completed.', 'success');
       if (typeof loadDashboard === 'function') await loadDashboard(false);
+      enhanceSummary();
     } catch (error) {
       buttons.forEach(function (node) { node.disabled = false; });
       button.textContent = original;
@@ -129,5 +146,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }, true);
 
   if (feed && window.MutationObserver) new MutationObserver(enhanceAll).observe(feed, { childList: true, subtree: true });
+  if (summary && window.MutationObserver) new MutationObserver(enhanceSummary).observe(summary, { childList: true, subtree: true });
   enhanceAll();
+  window.setTimeout(enhanceSummary, 100);
 });
