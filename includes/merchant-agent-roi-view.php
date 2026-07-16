@@ -6,7 +6,7 @@ declare(strict_types=1);
     <div>
       <span class="mg-eyebrow">Agent commerce attribution</span>
       <h1>Agent ROI Attribution</h1>
-      <p>Connect agent workflow activity and Personal Agent recommendations to clicks, saves, checkout activity, claims, redemptions, influenced revenue, and purchases.</p>
+      <p>Connect agent workflow activity and Personal Agent recommendations to clicks, saves, checkout activity, recovery follow-ups, claims, redemptions, and purchases.</p>
     </div>
     <div class="mg-agent-roi-actions">
       <a class="mg-btn mg-btn-secondary" href="/merchant-agent-forecast.php">ROI Forecasting</a>
@@ -27,7 +27,7 @@ declare(strict_types=1);
   </section>
 
   <article class="mg-app-panel mg-agent-roi-panel">
-    <div class="mg-app-panel-head"><div><h2>Personal Agent Opportunity Funnel</h2><p>Customer-facing recommendations from the Personal Agent through saved opportunities, checkout, purchases, and campaign participation.</p></div></div>
+    <div class="mg-app-panel-head"><div><h2>Personal Agent Opportunity Funnel</h2><p>Customer-facing recommendations through saved opportunities, checkout, purchases, and campaign participation.</p></div></div>
     <section class="mg-agent-roi-kpis" aria-label="Personal Agent opportunity attribution">
       <article><strong data-personal-roi-recommendations>—</strong><span>Recommendations</span></article>
       <article><strong data-personal-roi-clicks>—</strong><span>Action clicks</span></article>
@@ -37,6 +37,19 @@ declare(strict_types=1);
       <article><strong data-personal-roi-rate>—</strong><span>Purchase conversion</span></article>
     </section>
     <div class="mg-agent-roi-funnel" data-personal-agent-roi-funnel><div class="mg-empty-state"><strong>Loading Personal Agent attribution…</strong></div></div>
+  </article>
+
+  <article class="mg-app-panel mg-agent-roi-panel">
+    <div class="mg-app-panel-head"><div><h2>Saved Opportunity Recovery</h2><p>Aggregate outcomes only. Merchants do not receive private Agent messages, reminder text, or customer conversation history.</p></div></div>
+    <section class="mg-agent-roi-kpis" aria-label="Personal Agent recovery summary">
+      <article><strong data-recovery-abandoned>—</strong><span>Abandoned opportunities</span></article>
+      <article><strong data-recovery-delivered>—</strong><span>Follow-ups delivered</span></article>
+      <article><strong data-recovery-purchases>—</strong><span>Recovered purchases</span></article>
+      <article><strong data-recovery-revenue>—</strong><span>Recovered revenue</span></article>
+      <article><strong data-recovery-campaigns>—</strong><span>Campaign entries recovered</span></article>
+      <article><strong data-recovery-time>—</strong><span>Avg. hours to conversion</span></article>
+    </section>
+    <div class="mg-agent-roi-funnel" data-personal-agent-recovery-funnel><div class="mg-empty-state"><strong>Loading recovery attribution…</strong></div></div>
   </article>
 
   <section class="mg-agent-roi-grid">
