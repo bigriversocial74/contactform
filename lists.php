@@ -20,7 +20,7 @@ $agent_tab = 'lists';
 $page_styles = ['/assets/css/user-lists.css','/assets/css/personal-agent-opportunity-actions.css?v=1.0.0','/assets/css/personal-agent-recovery.css?v=1.0.0'];
 $page_scripts = [
     '/assets/js/user-lists.js',
-    '/assets/js/user-lists-create.js?v=1.0.0',
+    '/assets/js/user-lists-create.js?v=1.1.0',
     '/assets/js/saved-opportunities.js?v=1.1.0',
     '/assets/js/personal-agent-attribution-runtime.js?v=1.0.0',
 ];
