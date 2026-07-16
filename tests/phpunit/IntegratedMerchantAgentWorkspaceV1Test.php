@@ -27,6 +27,20 @@ final class IntegratedMerchantAgentWorkspaceV1Test extends TestCase
         self::assertStringNotContainsString('/(?:m|merchant)', $receiver);
     }
 
+    public function testMerchantHandoffKeepsPromptOutOfTheUrl(): void
+    {
+        $personal = file_get_contents($this->root . '/assets/js/agent-merchant-handoff.js');
+        $receiver = file_get_contents($this->root . '/assets/js/merchant-agent-handoff-receiver.js');
+
+        self::assertIsString($personal);
+        self::assertIsString($receiver);
+        self::assertStringContainsString('sessionStorage.setItem', $personal);
+        self::assertStringContainsString('sessionStorage.getItem', $receiver);
+        self::assertStringContainsString('sessionStorage.removeItem', $receiver);
+        self::assertStringNotContainsString("searchParams.set('prompt'", $personal);
+        self::assertStringNotContainsString("params.get('prompt')", $receiver);
+    }
+
     public function testMerchantAgentUsesSharedInboxSidebarAndAgentShell(): void
     {
         $page = file_get_contents($this->root . '/merchant-agent-chat.php');
