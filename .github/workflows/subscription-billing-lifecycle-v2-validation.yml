@@ -1,0 +1,74 @@
+name: Subscription Billing Lifecycle v2 Validation
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'account-subscriptions.php'
+      - 'includes/account/subscription-authority.php'
+      - 'api/payments/_stripe.php'
+      - 'api/subscriptions/**'
+      - 'assets/css/subscription-billing-v2.css'
+      - 'assets/js/subscription-billing-v2.js'
+      - 'database/stage_18aj_subscription_billing_lifecycle_v2.sql'
+      - 'scripts/validate_subscription_billing_lifecycle_v2.php'
+      - '.github/workflows/subscription-billing-lifecycle-v2-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: PHP syntax
+        run: |
+          php -l account-subscriptions.php
+          php -l includes/account/subscription-authority.php
+          php -l api/payments/_stripe.php
+          php -l api/subscriptions/_package_billing.php
+          php -l api/subscriptions/_billing_lifecycle_v2.php
+          php -l api/subscriptions/_checkout_handoff.php
+          php -l api/subscriptions/_package_webhook_v2.php
+          php -l api/subscriptions/_stripe_webhook.php
+          php -l api/subscriptions/request-upgrade.php
+          php -l api/subscriptions/billing-portal.php
+          php -l api/subscriptions/billing-state.php
+          php -l api/subscriptions/manage.php
+          php -l api/subscriptions/package-change-status.php
+          php -l scripts/validate_subscription_billing_lifecycle_v2.php
+
+      - name: JavaScript syntax
+        run: node --check assets/js/subscription-billing-v2.js
+
+      - name: Subscription billing lifecycle contract
+        run: php scripts/validate_subscription_billing_lifecycle_v2.php
+
+      - name: Existing production subscription behavior
+        run: |
+          if [ -x vendor/bin/phpunit ]; then
+            vendor/bin/phpunit tests/phpunit/ProductionSubscriptionBehaviorTest.php tests/phpunit/ProductionSubscriptionRecoveryBehaviorTest.php
+          else
+            echo 'PHPUnit is not installed in this checkout; standalone billing lifecycle contract completed.'
+          fi
