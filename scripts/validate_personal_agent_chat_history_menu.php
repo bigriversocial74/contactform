@@ -7,17 +7,23 @@ $read = static fn(string $path): string => is_file($root . '/' . $path)
     : '';
 
 $page = $read('agent.php');
+$subscriptionsPage = $read('account-subscriptions.php');
 $workspace = $read('includes/agent-workspace.php');
 $dashboard = $read('includes/personal-agent/workspace-dashboard.php');
 $sidebar = $read('includes/personal-agent-sidebar.php');
+$quickCatalog = $read('includes/agent-quick-actions.php');
 $giftSidebar = $read('includes/gift-center-sidebar.php');
 $dialogs = $read('includes/personal-agent/workspace-dialogs.php');
 $service = $read('includes/personal-agent/threads.php');
 $api = $read('api/user-agent/threads.php');
 $js = $read('assets/js/personal-agent-chat-history.js');
+$toolsJs = $read('assets/js/agent-sidebar-tools.js');
 $css = $read('assets/css/personal-agent-chat-history.css');
 $canvasCss = $read('assets/css/personal-agent-full-canvas.css');
 $schema = $read('database/20260714_personal_gifting_agent_phase2.sql');
+
+$footerPosition = strpos($sidebar, 'class="mg-personal-chat-sidebar-footer"');
+$modePosition = strpos($sidebar, 'class="mg-agent-footer-mode-switch"');
 
 $checks = [
     'composer menu trigger remains left of input' => strpos($workspace, 'data-open-agent-dialog="menu"') !== false
@@ -30,11 +36,28 @@ $checks = [
         && substr_count($sidebar, '<strong>My Lists</strong>') === 1
         && substr_count($sidebar, '<strong>New Chat</strong>') === 1
         && substr_count($sidebar, '<strong>Design</strong>') === 1,
-    'large mode cards are replaced by one compact Agent switch' => !str_contains($sidebar, 'class="mg-agent-mode-switch"')
+    'Agent switch is inside the footer rather than above Inbox' => !str_contains($sidebar, 'class="mg-agent-mode-switch"')
         && !str_contains($sidebar, 'mg-agent-mode-options')
-        && str_contains($sidebar, 'mg-agent-sidebar-switch')
+        && $footerPosition !== false
+        && $modePosition !== false
+        && $footerPosition < $modePosition
+        && str_contains($sidebar, 'data-agent-footer-mode-switch')
+        && str_contains($sidebar, 'data-agent-mode-link="personal"')
         && str_contains($sidebar, 'data-agent-mode-link="merchant"')
-        && str_contains($css, '.mg-agent-sidebar-switch'),
+        && str_contains($css, '.mg-agent-footer-mode-switch'),
+    'sidebar footer exposes Suggestions and Quick keywords tabs' => str_contains($sidebar, 'data-agent-suggestions-open')
+        && str_contains($sidebar, 'data-agent-tools-tab="suggestions"')
+        && str_contains($sidebar, 'data-agent-tools-tab="keywords"')
+        && str_contains($sidebar, 'data-agent-suggestion-prompt')
+        && str_contains($sidebar, 'data-agent-keyword-prompt')
+        && str_contains($toolsJs, 'form.requestSubmit()')
+        && str_contains($toolsJs, 'sessionStorage.setItem')
+        && str_contains($css, '.mg-agent-sidebar-tools-modal'),
+    'quick-action catalog is centralized and expandable' => str_contains($quickCatalog, 'function mg_agent_quick_action_catalog')
+        && str_contains($quickCatalog, "'keyword'=>'/snapshot'")
+        && str_contains($quickCatalog, "'keyword'=>'memory'")
+        && str_contains($quickCatalog, "'keyword'=>'/m'")
+        && str_contains($quickCatalog, "'keyword'=>'saved opportunities'"),
     'gift folders consume the unified sidebar' => str_contains($giftSidebar, "require __DIR__ . '/personal-agent-sidebar.php'"),
     'chat groups and actions remain available' => str_contains($sidebar, 'data-personal-agent-thread-groups')
         && str_contains($sidebar, 'data-personal-agent-new-chat')
@@ -50,6 +73,11 @@ $checks = [
         && !str_contains($dashboard, '<div class="mg-personal-agent-chat-stream">')
         && str_contains($canvasCss, 'width:100%!important')
         && str_contains($canvasCss, 'background:transparent!important'),
+    'free users are routed to subscriptions and the subscriptions page uses this sidebar' => str_contains($page, "header('Location: /account-subscriptions.php?agent=personal')")
+        && str_contains($sidebar, '/account-subscriptions.php?agent=personal')
+        && str_contains($sidebar, '/account-subscriptions.php?agent=merchant')
+        && str_contains($subscriptionsPage, "require __DIR__ . '/includes/personal-agent-sidebar.php'")
+        && !str_contains($subscriptionsPage, "require __DIR__ . '/includes/agent-sidebar.php'"),
     'thread services remain available' => str_contains($service, 'function mg_personal_agent_threads')
         && str_contains($service, 'function mg_personal_agent_thread_detail')
         && str_contains($service, 'function mg_personal_agent_create_thread')
@@ -63,9 +91,10 @@ $checks = [
     'shared sidebar can create and open threads' => str_contains($js, "Microgifter.post('/api/user-agent/threads.php', { action: 'create' }")
         && str_contains($js, "window.location.href = '/agent.php?thread='")
         && str_contains($js, "action: 'delete'"),
-    'current cache versions are loaded' => str_contains($page, '/assets/css/personal-agent-chat-history.css?v=1.3.0')
+    'current cache versions are loaded' => str_contains($page, '/assets/css/personal-agent-chat-history.css?v=1.4.0')
         && str_contains($page, '/assets/css/personal-agent-full-canvas.css?v=1.0.0')
-        && str_contains($page, '/assets/js/personal-agent-chat-history.js?v=1.1.0'),
+        && str_contains($page, '/assets/js/personal-agent-chat-history.js?v=1.1.0')
+        && str_contains($subscriptionsPage, '/assets/css/personal-agent-chat-history.css?v=1.4.0'),
 ];
 
 $failed = [];
