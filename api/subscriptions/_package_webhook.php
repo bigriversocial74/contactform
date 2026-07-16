@@ -88,7 +88,7 @@ function mg_subscription_package_webhook_complete(PDO $pdo, string $provider, st
     }
 
     $sessionId = trim((string) ($session['id'] ?? ''));
-    $paymentStatus = strtolower(trim((string) ($session['payment_status'] ?? ''));
+    $paymentStatus = strtolower(trim((string) ($session['payment_status'] ?? '')));
     if ($paymentStatus !== '' && !in_array($paymentStatus, ['paid', 'no_payment_required'], true)) {
         return [
             'processed' => false,
@@ -252,7 +252,7 @@ function mg_subscription_package_webhook_sync_lifecycle(
 
     $fromStatus = (string) $row['status'];
     $toStatus = $fromStatus;
-    $providerStatus = strtolower(trim((string) ($object['status'] ?? ''));
+    $providerStatus = strtolower(trim((string) ($object['status'] ?? '')));
 
     if ($type === 'customer.subscription.deleted') {
         $toStatus = 'canceled';
