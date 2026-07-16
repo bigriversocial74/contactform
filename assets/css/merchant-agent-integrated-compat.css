@@ -1,0 +1,10 @@
+body.mg-integrated-merchant-agent-page .mg-agent-chat-empty{min-height:auto!important;align-items:start!important;justify-content:start!important;text-align:left!important}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-empty .mg-agent-chat-prompts{width:min(920px,100%)!important;margin-top:2px!important}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-prompts button{display:inline-flex!important;grid-template-columns:none!important;align-items:center!important;justify-content:center!important;width:auto!important;min-height:38px!important;padding:0 13px!important;text-align:center!important;box-shadow:none!important;transform:none!important}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-prompts button:before,body.mg-integrated-merchant-agent-page .mg-agent-chat-prompts button:after{display:none!important;content:none!important}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-message{margin:0!important}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-feed{background:transparent!important}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-right{top:0!important;min-width:0!important}
+body.mg-integrated-merchant-agent-page .mg-agent-context-card{overflow:visible!important;box-shadow:none!important}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-sidebar-ad.is-empty{display:none!important}
+body.mg-integrated-merchant-agent-page .mg-agent-native-thread-select{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip:rect(0 0 0 0)!important;white-space:nowrap!important}
