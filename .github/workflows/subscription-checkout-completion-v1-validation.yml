@@ -20,6 +20,22 @@ permissions:
   contents: read
 
 jobs:
+  diagnose-checkout-syntax:
+    name: Checkout syntax diagnostic
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - name: Fetch and lint checkout confirmation
+        run: |
+          curl -fsSL \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/contents/api/subscriptions/confirm-checkout.php?ref=${HEAD_SHA}" \
+            | jq -r '.content' | tr -d '\n' | base64 -d > /tmp/confirm-checkout.php
+          php -l /tmp/confirm-checkout.php
+
   validate:
     strategy:
       fail-fast: false
