@@ -103,6 +103,9 @@ function mg_subscription_checkout_completion_invoice(array $session, array $subs
 
 function mg_subscription_checkout_completion_hydrate(PDO $pdo, int $userId, array $session, array $metadata): array
 {
+    $before = mg_platform_account_subscription_snapshot($pdo, $userId, true);
+    if (!$before) throw new MgSubscriptionCheckoutException('The activated subscription could not be loaded.', 500);
+
     $subscription = is_array($session['subscription'] ?? null) ? $session['subscription'] : [];
     $subscriptionId = mg_subscription_checkout_completion_reference($session['subscription'] ?? '');
     $customerId = mg_subscription_checkout_completion_reference($session['customer'] ?? ($subscription['customer'] ?? ''));
@@ -110,7 +113,7 @@ function mg_subscription_checkout_completion_hydrate(PDO $pdo, int $userId, arra
     $invoice = mg_subscription_checkout_completion_invoice($session, $subscription);
     $invoiceId = mg_subscription_checkout_completion_reference($invoice['id'] ?? '');
     $paymentIntentId = mg_subscription_checkout_completion_reference($invoice['payment_intent'] ?? ($session['payment_intent'] ?? ''));
-    $providerStatus = strtolower(trim((string)($subscription['status'] ?? 'active')));
+    $providerStatus = strtolower(trim((string)($subscription['status'] ?? 'active'));
     $status = match ($providerStatus) {
         'trialing' => 'trialing',
         'past_due', 'unpaid' => 'past_due',
@@ -160,30 +163,35 @@ function mg_subscription_checkout_completion_hydrate(PDO $pdo, int $userId, arra
     $snapshot = mg_platform_account_subscription_snapshot($pdo, $userId, true);
     if (!$snapshot) throw new MgSubscriptionCheckoutException('The activated subscription could not be loaded.', 500);
 
-    mg_platform_account_subscription_event(
-        $pdo,
-        (int)$snapshot['id'],
-        'platform_subscription.checkout_return_confirmed',
-        (string)$snapshot['status'],
-        (string)$snapshot['status'],
-        $userId,
-        [
-            'provider_key' => 'stripe',
-            'provider_event_id' => 'checkout-return:' . (string)($session['id'] ?? ''),
-            'provider_session_reference' => (string)($session['id'] ?? ''),
-            'provider_subscription_id' => $subscriptionId,
-            'provider_customer_id' => $customerId,
-            'provider_price_id' => $priceId,
-            'invoice_id' => $invoiceId,
-            'invoice_status' => (string)($invoice['status'] ?? ''),
-            'invoice_url' => (string)($invoice['hosted_invoice_url'] ?? ''),
-            'invoice_pdf' => (string)($invoice['invoice_pdf'] ?? ''),
-            'payment_intent_id' => $paymentIntentId,
-            'amount_cents' => (int)($session['amount_total'] ?? 0),
-            'currency' => strtoupper((string)($session['currency'] ?? 'USD')),
-            'confirmation_source' => 'authenticated_checkout_return',
-        ]
-    );
+    $providerEventId = 'checkout-return:' . (string)($session['id'] ?? '');
+    $historyStmt = $pdo->prepare('SELECT id FROM platform_subscription_events WHERE account_subscription_id=? AND event_type=? AND provider_key=? AND provider_event_id=? LIMIT 1');
+    $historyStmt->execute([(int)$snapshot['id'], 'platform_subscription.checkout_return_confirmed', 'stripe', $providerEventId]);
+    if (!$historyStmt->fetchColumn()) {
+        mg_platform_account_subscription_event(
+            $pdo,
+            (int)$snapshot['id'],
+            'platform_subscription.checkout_return_confirmed',
+            (string)$before['status'],
+            (string)$snapshot['status'],
+            $userId,
+            [
+                'provider_key' => 'stripe',
+                'provider_event_id' => $providerEventId,
+                'provider_session_reference' => (string)($session['id'] ?? ''),
+                'provider_subscription_id' => $subscriptionId,
+                'provider_customer_id' => $customerId,
+                'provider_price_id' => $priceId,
+                'invoice_id' => $invoiceId,
+                'invoice_status' => (string)($invoice['status'] ?? ''),
+                'invoice_url' => (string)($invoice['hosted_invoice_url'] ?? ''),
+                'invoice_pdf' => (string)($invoice['invoice_pdf'] ?? ''),
+                'payment_intent_id' => $paymentIntentId,
+                'amount_cents' => (int)($session['amount_total'] ?? 0),
+                'currency' => strtoupper((string)($session['currency'] ?? 'USD')),
+                'confirmation_source' => 'authenticated_checkout_return',
+            ]
+        );
+    }
 
     return $snapshot;
 }
@@ -194,6 +202,7 @@ $input = mg_input();
 mg_require_csrf_for_write($input);
 $requestId = trim((string)($input['request_id'] ?? $input['request'] ?? ''));
 $sessionId = trim((string)($input['stripe_session_id'] ?? $input['session_id'] ?? ''));
+$pdo = null;
 
 try {
     if ($requestId === '' || $sessionId === '') throw new InvalidArgumentException('Checkout request and Stripe session are required.');
@@ -217,7 +226,7 @@ try {
     if (!hash_equals($requestId, trim((string)($sessionMetadata['package_change_request_id'] ?? '')))) throw new MgSubscriptionCheckoutException('Checkout request metadata does not match.', 409);
     if ((int)($sessionMetadata['user_id'] ?? 0) !== $userId) throw new MgSubscriptionCheckoutException('Checkout session does not belong to this account.', 403);
 
-    $sessionStatus = strtolower(trim((string)($session['status'] ?? 'complete')));
+    $sessionStatus = strtolower(trim((string)($session['status'] ?? 'complete'));
     $paymentStatus = strtolower(trim((string)($session['payment_status'] ?? '')));
     if ($sessionStatus !== '' && $sessionStatus !== 'complete') {
         mg_ok(['confirmed' => false, 'pending' => true, 'session_status' => $sessionStatus], 'Stripe Checkout has not completed yet.');
@@ -227,7 +236,7 @@ try {
     }
 
     $pdo->beginTransaction();
-    $lockedRequest = mg_subscription_checkout_request_row($pdo, $requestId, $userId, true);
+    mg_subscription_checkout_request_row($pdo, $requestId, $userId, true);
     $result = mg_subscription_package_webhook_complete(
         $pdo,
         'stripe',
@@ -268,7 +277,7 @@ try {
 } catch (InvalidArgumentException $error) {
     mg_fail($error->getMessage(), 422);
 } catch (MgSubscriptionCheckoutException|MgSubscriptionPackageWebhookException $error) {
-    if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) $pdo->rollBack();
+    if ($pdo instanceof PDO && $pdo->inTransaction()) $pdo->rollBack();
     mg_security_log('warning', 'subscription.checkout_return_rejected', 'Checkout return confirmation was rejected.', [
         'request_id' => $requestId,
         'stripe_session_id' => $sessionId,
@@ -276,7 +285,7 @@ try {
     ], (int)($user['id'] ?? 0));
     mg_fail($error->getMessage(), $error->httpStatus);
 } catch (Throwable $error) {
-    if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) $pdo->rollBack();
+    if ($pdo instanceof PDO && $pdo->inTransaction()) $pdo->rollBack();
     mg_security_log('error', 'subscription.checkout_return_failed', 'Checkout return confirmation failed.', [
         'request_id' => $requestId,
         'stripe_session_id' => $sessionId,
