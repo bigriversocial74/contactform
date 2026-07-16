@@ -47,7 +47,7 @@ $sidebarLinkClass = static function (string $key) use ($activeSidebarKey): strin
            href="<?= $hasMerchantAgentAccess ? '/merchant-agent-chat.php' : '/account-subscriptions.php' ?>"<?= $isMerchantAgentMode ? ' aria-current="page"' : '' ?>>
           <span class="mg-agent-mode-icon" aria-hidden="true">M</span>
           <span class="mg-agent-mode-copy"><strong>Merchant Agent</strong><small><?= $hasMerchantAgentAccess ? 'Campaigns, CRM, products, and analytics' : 'Merchant access required' ?></small></span>
-          <kbd>/m</kbd>
+          <?php if (!$isMerchantAgentMode): ?><kbd>/m</kbd><?php endif; ?>
         </a>
       </div>
     </section>
