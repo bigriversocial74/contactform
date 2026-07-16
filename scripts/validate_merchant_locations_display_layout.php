@@ -5,7 +5,9 @@ $root=dirname(__DIR__);
 $files=[
     'page'=>$root.'/merchant-locations.php',
     'view'=>$root.'/includes/merchant-locations-view.php',
+    'scope'=>$root.'/includes/merchant-location-scope.php',
     'api'=>$root.'/api/merchant/locations.php',
+    'builder'=>$root.'/api/catalog/_publish_distribution.php',
     'css'=>$root.'/assets/css/merchant-locations-redemption.css',
     'js'=>$root.'/assets/js/merchant-locations-tabs.js',
     'navigation'=>$root.'/includes/merchant-navigation.php',
@@ -22,8 +24,8 @@ foreach($files as $key=>$path){
 
 $checks=[
     'merchant locations route keeps shared merchant workspace' =>
-        str_contains($content['page'],"\$merchantView='locations'")
-        && str_contains($content['page'],"includes/merchant-workspace.php")
+        str_contains($content['page'],"$merchantView='locations'")
+        && str_contains($content['page'],'includes/merchant-workspace.php')
         && str_contains($content['page'],'merchant-locations-redemption.css'),
     'all five location metrics remain in one horizontal row' =>
         substr_count($content['view'],'data-location-kpi-')===5
@@ -44,19 +46,24 @@ $checks=[
         && str_contains($content['view'],'data-location-list')
         && str_contains($content['view'],'data-location-form')
         && str_contains($content['view'],'data-location-open-add'),
-    'merchant-owned locations load even when legacy workspace_id is null' =>
-        str_contains($content['api'],'WHERE ml.merchant_user_id=?')
-        && str_contains($content['api'],'$stmt->execute([$merchantId])')
-        && !str_contains($content['api'],'WHERE ml.workspace_id=? AND ml.merchant_user_id=?'),
-    'legacy location edits repair the workspace link without weakening ownership' =>
-        str_contains($content['api'],'SET workspace_id=?,name=?,location_code=?')
-        && str_contains($content['api'],'WHERE id=? AND public_id=? AND merchant_user_id=?')
-        && !str_contains($content['api'],'WHERE id=? AND public_id=? AND workspace_id=? AND merchant_user_id=?'),
-    'location codes and primary state remain merchant scoped' =>
-        str_contains($content['api'],'WHERE merchant_user_id=? AND location_code=? AND public_id<>?')
-        && str_contains($content['api'],'UPDATE merchant_locations SET is_primary=0,updated_at=NOW()')
-        && str_contains($content['api'],'WHERE merchant_user_id=?')
-        && str_contains($content['api'],"SELECT COUNT(*) FROM merchant_locations WHERE merchant_user_id=? AND status<>'archived'"),
+    'merchant locations use workspace authority with orphan-row fallback' =>
+        str_contains($content['scope'],'A valid workspace relationship is authoritative')
+        && str_contains($content['scope'],'$workspaceAlias}.id IS NULL')
+        && str_contains($content['scope'],'$locationAlias}.merchant_user_id=?')
+        && str_contains($content['api'],"mg_merchant_location_scope_condition('ml','location_scope_mw')")
+        && !str_contains($content['api'],'WHERE ml.merchant_user_id=?'),
+    'legacy location edits normalize workspace and merchant ownership' =>
+        str_contains($content['api'],'SET workspace_id=?,merchant_user_id=?,name=?,location_code=?')
+        && str_contains($content['api'],"'ownership_normalized'=>true")
+        && str_contains($content['api'],'$ownerMerchantId'),
+    'location codes package counts and primary state share one scope' =>
+        str_contains($content['api'],'mg_merchant_unique_location_code(')
+        && str_contains($content['api'],'mg_merchant_location_count($pdo,$workspaceId,$ownerMerchantId)')
+        && str_contains($content['api'],'UPDATE merchant_locations ml')
+        && str_contains($content['api'],"mg_merchant_location_scope_condition('ml','location_scope_mw')"),
+    'Product Builder remains aligned with active workspace-owned locations' =>
+        str_contains($content['builder'],'INNER JOIN merchant_workspaces mw ON mw.id=ml.workspace_id')
+        && str_contains($content['builder'],"WHERE mw.merchant_user_id=? AND ml.status='active'"),
     'add and edit interactions scroll to the always-visible editor' =>
         str_contains($content['js'],"closest('[data-location-open-add]')")
         && str_contains($content['js'],"closest('[data-location]')")
