@@ -6,6 +6,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
   var pendingKey = 'microgifter.agent.quickPrompt.v1';
   var currentMode = String(modal.getAttribute('data-agent-tools-mode') || 'personal');
+  var entitled = modal.getAttribute('data-agent-tools-entitled') === 'true';
+  var subscriptionsUrl = String(modal.getAttribute('data-agent-subscriptions-url') || '/account-subscriptions.php');
   var dialog = modal.querySelector('.mg-agent-sidebar-tools-dialog');
   var openers = Array.prototype.slice.call(document.querySelectorAll('[data-agent-suggestions-open]'));
   var closers = Array.prototype.slice.call(modal.querySelectorAll('[data-agent-suggestions-close]'));
@@ -54,6 +56,12 @@ document.addEventListener('DOMContentLoaded', function () {
   function applyPrompt(mode, prompt, submit, allowRoute) {
     prompt = String(prompt || '');
     if (!prompt.trim()) return false;
+
+    if (!entitled) {
+      closeModal();
+      window.location.assign(subscriptionsUrl);
+      return false;
+    }
 
     var composer = composerFor(mode);
     if (!composer || !composer.form || !composer.input) {
@@ -188,6 +196,7 @@ document.addEventListener('DOMContentLoaded', function () {
   selectTab('suggestions', false);
 
   window.setTimeout(function () {
+    if (!entitled) return;
     var pending = null;
     try {
       pending = JSON.parse(sessionStorage.getItem(pendingKey) || 'null');
