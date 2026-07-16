@@ -45,7 +45,7 @@ $page_scripts = [
     '/assets/js/personal-agent-gift-results.js?v=1.0.0',
     '/assets/js/personal-agent-design-studio.js?v=1.2.0',
     '/assets/js/personal-agent-ai-credits.js?v=1.0.0',
-    '/assets/js/personal-agent-contact-intelligence.js?v=1.0.0',
+    '/assets/js/personal-agent-contact-intelligence.js?v=1.0.1',
 ];
 
 require __DIR__ . '/includes/header.php';

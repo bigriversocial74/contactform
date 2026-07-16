@@ -82,7 +82,8 @@ document.addEventListener('DOMContentLoaded', function () {
       summary.appendChild(card);
     }
     var value = card.querySelector('strong');
-    if (value) value.textContent = String(count);
+    var nextValue = String(count);
+    if (value && value.textContent !== nextValue) value.textContent = nextValue;
   }
 
   async function executeDraft(button) {
@@ -146,7 +147,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }, true);
 
   if (feed && window.MutationObserver) new MutationObserver(enhanceAll).observe(feed, { childList: true, subtree: true });
-  if (summary && window.MutationObserver) new MutationObserver(enhanceSummary).observe(summary, { childList: true, subtree: true });
+  if (summary && window.MutationObserver) new MutationObserver(enhanceSummary).observe(summary, { childList: true });
   enhanceAll();
   window.setTimeout(enhanceSummary, 100);
 });
