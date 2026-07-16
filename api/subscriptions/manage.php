@@ -31,6 +31,15 @@ try {
     $fromStatus = (string)$subscription['status'];
     $pdo->commit();
 
+    if (in_array($action, ['cancel_at_period_end','cancel'], true) && trim((string)($subscription['provider_schedule_id'] ?? '')) !== '') {
+        mg_subscription_billing_v2_release_schedule($pdo, $subscription);
+        $changeRequestId = trim((string)($subscription['package_change_request_public_id'] ?? ''));
+        if ($changeRequestId !== '') {
+            $pdo->prepare("UPDATE subscription_package_change_requests SET status='canceled',checkout_url=NULL,admin_note='Scheduled package change removed when subscription cancellation was requested.',updated_at=NOW() WHERE public_id=? AND user_id=? AND status='approved'")
+                ->execute([$changeRequestId,(int)$user['id']]);
+        }
+    }
+
     if ($action === 'cancel_at_period_end') {
         if (in_array($fromStatus, ['canceled','expired'], true)) throw new MgSubscriptionBillingV2Exception('Subscription is already closed.', 409);
         mg_stripe_api_request($pdo, 'POST', '/v1/subscriptions/' . rawurlencode($providerSubscriptionId), [
