@@ -37,14 +37,23 @@ jobs:
           php-version: ${{ matrix.php }}
           coverage: none
 
-      - name: PHP syntax
-        run: |
-          php -l account-subscriptions.php
-          php -l api/subscriptions/confirm-checkout.php
-          php -l api/subscriptions/history.php
-          php -l api/subscriptions/_stripe_webhook.php
-          php -l scripts/validate_subscription_checkout_completion_v1.php
-          php -l tests/phpunit/SubscriptionCheckoutCompletionV1ContractTest.php
+      - name: Syntax — account page
+        run: php -l account-subscriptions.php
+
+      - name: Syntax — checkout confirmation
+        run: php -l api/subscriptions/confirm-checkout.php
+
+      - name: Syntax — billing history
+        run: php -l api/subscriptions/history.php
+
+      - name: Syntax — Stripe subscription webhook
+        run: php -l api/subscriptions/_stripe_webhook.php
+
+      - name: Syntax — validator
+        run: php -l scripts/validate_subscription_checkout_completion_v1.php
+
+      - name: Syntax — PHPUnit contract
+        run: php -l tests/phpunit/SubscriptionCheckoutCompletionV1ContractTest.php
 
       - name: JavaScript syntax
         run: node --check assets/js/subscription-checkout-completion-v1.js
