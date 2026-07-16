@@ -24,13 +24,13 @@ final class MerchantLocationsPageContractTest extends TestCase
         $source=$this->source('merchant-locations.php');
 
         foreach([
-            "$page_title='Merchant Locations | Microgifter'",
-            "$page_section='merchant'",
-            "$header_mode='account'",
+            "\$page_title='Merchant Locations | Microgifter'",
+            "\$page_section='merchant'",
+            "\$header_mode='account'",
             "'/assets/css/merchant-locations-redemption.css'",
             "'/assets/js/merchant-workspace.js'",
             "'/assets/js/merchant-locations-tabs.js'",
-            "$merchantView='locations'",
+            "\$merchantView='locations'",
             "require __DIR__.'/includes/merchant-workspace.php'",
         ] as $needle){
             self::assertStringContainsString($needle,$source);
