@@ -18,6 +18,8 @@ on:
       - 'account-subscriptions.php'
       - 'notifications.php'
       - 'feed.php'
+      - 'loyalty-cards.php'
+      - 'lists.php'
       - 'account.php'
       - 'scripts/validate_customer_inbox_sidebar.php'
       - 'scripts/validate_inbox_sidebar_crm_quest_nav_cleanup.php'
@@ -58,6 +60,8 @@ jobs:
           php -l account-subscriptions.php
           php -l notifications.php
           php -l feed.php
+          php -l loyalty-cards.php
+          php -l lists.php
           php -l account.php
           php -l scripts/validate_customer_inbox_sidebar.php
           php -l scripts/validate_inbox_sidebar_crm_quest_nav_cleanup.php
