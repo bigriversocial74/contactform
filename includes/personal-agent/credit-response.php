@@ -22,8 +22,13 @@ function mg_personal_agent_chat_with_credit_response(PDO $pdo, int $userId, arra
     $message = mg_personal_agent_text($input['message'] ?? '', 2000);
     $recoveryIntent = function_exists('mg_personal_agent_recovery_intent') ? mg_personal_agent_recovery_intent($message) : '';
     $contactIntent = function_exists('mg_personal_agent_contact_intent') ? mg_personal_agent_contact_intent($message) : ['key'=>''];
-    $deterministicRecovery = $recoveryIntent !== '' && function_exists('mg_personal_agent_recovery_schema_ready') && mg_personal_agent_recovery_schema_ready($pdo);
-    $deterministicContact = !empty($contactIntent['key']) && function_exists('mg_personal_agent_contact_intelligence_schema_ready') && mg_personal_agent_contact_intelligence_schema_ready($pdo);
+    $deterministicRecovery = $recoveryIntent !== ''
+        && function_exists('mg_personal_agent_recovery_schema_ready')
+        && mg_personal_agent_recovery_schema_ready($pdo);
+    $deterministicContact = !empty($contactIntent['key'])
+        && function_exists('mg_personal_agent_chat_with_contact_intelligence')
+        && function_exists('mg_personal_agent_contact_intelligence_schema_ready')
+        && mg_personal_agent_contact_intelligence_schema_ready($pdo);
     $model = null;
     $creditBefore = mg_ai_credit_snapshot($pdo,$userId,'anthropic');
     if (!$deterministicRecovery && !$deterministicContact && $message !== '' && !mg_personal_agent_message_has_secret_request($message)) {
