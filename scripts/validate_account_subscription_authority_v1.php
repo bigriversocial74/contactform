@@ -28,7 +28,7 @@ $assertContains('api/admin/_subscription_grants.php',['platform_complimentary_su
 $assertContains('api/subscriptions/_package_billing.php',['mg_subscription_provision_merchant_workspace','mg_platform_account_subscription_grant_merchant_role']);
 $assertContains('api/subscriptions/_package_webhook.php',['platform_account_subscriptions','customer.subscription.updated','invoice.payment_failed','platform_subscription.provider_lifecycle']);
 $assertContains('api/subscriptions/_stripe_webhook.php',['mg_subscription_package_webhook_try_process','platform_account_subscription_id']);
-$assertContains('includes/account/subscription-authority.php',['Free Wallet','No renewal','No charge',"'promotions_used' => 0"]);
+$assertContains('includes/account/subscription-authority.php',['Free Wallet','No renewal','No charge',"'promotions_used'=>0"]);
 $assertContains('assets/js/subscription-activation-status.js',['Continue to secure checkout','Your Free Wallet is active','Complimentary']);
 $assertContains('includes/footer.php',['/assets/js/admin-subscription-grants.js?v=1.0.0']);
 $assertContains('config/migrations.php',['stage_18ai_account_subscription_authority.sql']);
