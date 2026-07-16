@@ -55,20 +55,43 @@ function mg_subscription_view_load_platform_subscription(?PDO $pdo,int $userId,a
     $isFree=empty($context['merchant_access'])||$packageId==='free';
     $isComplimentary=!empty($context['is_complimentary']);
     if($isFree){
-        return ['package_id'=>'free','status'=>'Active','billing_cycle'=>'No billing','renews_on'=>'No renewal','next_charge_label'=>'No charge','source'=>'free_wallet','merchant_access'=>false,'is_complimentary'=>false];
+        return [
+            'subscription_id'=>null,'package_id'=>'free','status'=>'Active','billing_cycle'=>'No billing','billing_cycle_key'=>'free',
+            'renews_on'=>'No renewal','current_period_end'=>null,'next_charge_label'=>'No charge','source'=>'free_wallet',
+            'merchant_access'=>false,'is_complimentary'=>false,'provider_key'=>null,'portal_available'=>false,
+            'cancel_at_period_end'=>false,'scheduled_package_id'=>null,'scheduled_billing_cycle'=>null,'scheduled_effective_at'=>null,
+            'latest_invoice_url'=>null,'latest_invoice_pdf'=>null,'latest_invoice_status'=>null,
+        ];
     }
     $periodEnd=trim((string)($subscription['current_period_end']??''));
-    $billingCycle=(string)($context['billing_cycle']??'month');
+    $billingCycle=(string)($context['billing_cycle']??$subscription['billing_cycle']??'month');
+    $cycleKey=in_array(strtolower($billingCycle),['year','yearly'],true)?'year':'month';
+    $cancelPending=!empty($subscription['cancel_at_period_end'])||(string)($context['status']??'')==='cancel_pending';
     $renews=$periodEnd!==''&&strtotime($periodEnd)!==false?date('M j, Y',strtotime($periodEnd)):($isComplimentary?'No expiration':'Pending provider sync');
+    $status=$isComplimentary?'Complimentary':ucwords(str_replace('_',' ',(string)($context['status']??'active')));
+    if($cancelPending&&!$isComplimentary)$status='Cancel Pending';
+    $providerKey=trim((string)($subscription['provider_key']??''));
     return [
+        'subscription_id'=>$subscription['public_id']??null,
         'package_id'=>$packageId,
-        'status'=>$isComplimentary?'Complimentary':ucwords(str_replace('_',' ',(string)($context['status']??'active'))),
-        'billing_cycle'=>$isComplimentary?'Admin grant':($billingCycle==='year'?'Yearly':'Monthly'),
+        'status'=>$status,
+        'billing_cycle'=>$isComplimentary?'Admin grant':($cycleKey==='year'?'Yearly':'Monthly'),
+        'billing_cycle_key'=>$isComplimentary?'complimentary':$cycleKey,
         'renews_on'=>$renews,
-        'next_charge_label'=>$isComplimentary?'No charge':'$'.number_format(((int)($context['amount_cents']??0))/100,2),
+        'current_period_end'=>$periodEnd!==''?$periodEnd:null,
+        'next_charge_label'=>$isComplimentary?'No charge':'$'.number_format(((int)($context['amount_cents']??$subscription['amount_cents']??0))/100,2),
         'source'=>(string)($context['entitlement_source']??'platform_account_subscriptions'),
         'merchant_access'=>true,
         'is_complimentary'=>$isComplimentary,
+        'provider_key'=>$providerKey!==''?$providerKey:null,
+        'portal_available'=>$providerKey==='stripe'&&trim((string)($subscription['provider_customer_id']??''))!=='',
+        'cancel_at_period_end'=>$cancelPending,
+        'scheduled_package_id'=>$subscription['scheduled_package_id']??null,
+        'scheduled_billing_cycle'=>$subscription['scheduled_billing_cycle']??null,
+        'scheduled_effective_at'=>$subscription['scheduled_effective_at']??null,
+        'latest_invoice_url'=>$subscription['provider_latest_invoice_url']??null,
+        'latest_invoice_pdf'=>$subscription['provider_latest_invoice_pdf']??null,
+        'latest_invoice_status'=>$subscription['provider_latest_invoice_status']??null,
     ];
 }
 }
