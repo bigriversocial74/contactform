@@ -10,10 +10,13 @@ try{
     $pdo=mg_db();
     $request=mg_subscription_package_change_latest($pdo,(int)$user['id'],false);
     $context=mg_user_package_context($pdo,$user);
+    $subscription=is_array($context['subscription']??null)?$context['subscription']:[];
     $publicRequest=$request?mg_subscription_package_change_public($request):null;
     $state=!empty($context['merchant_access'])?'active_access':'free_access';
-    if(empty($context['merchant_access'])&&$publicRequest&&($publicRequest['status']??'')==='pending_payment')$state='payment_pending';
-    if(empty($context['merchant_access'])&&$publicRequest&&($publicRequest['status']??'')==='pending_admin_review')$state='review_pending';
+    if($publicRequest&&($publicRequest['status']??'')==='pending_payment')$state='payment_pending';
+    if($publicRequest&&($publicRequest['status']??'')==='pending_admin_review')$state='review_pending';
+    if($publicRequest&&($publicRequest['status']??'')==='approved')$state='change_scheduled';
+    if(!empty($subscription['cancel_at_period_end']))$state='cancel_pending';
     mg_ok([
         'request'=>$publicRequest,
         'package'=>[
@@ -25,7 +28,17 @@ try{
             'is_complimentary'=>!empty($context['is_complimentary']),
             'entitlement_source'=>(string)($context['entitlement_source']??'free_wallet'),
             'workspace_role'=>$context['workspace_role']??null,
-            'current_period_end'=>$context['subscription']['current_period_end']??null,
+            'billing_cycle'=>(string)($subscription['billing_cycle']??$context['billing_cycle']??'month'),
+            'current_period_start'=>$subscription['current_period_start']??null,
+            'current_period_end'=>$subscription['current_period_end']??null,
+            'next_billing_at'=>$subscription['next_billing_at']??null,
+            'cancel_at_period_end'=>!empty($subscription['cancel_at_period_end']),
+            'scheduled_package_id'=>$subscription['scheduled_package_id']??null,
+            'scheduled_billing_cycle'=>$subscription['scheduled_billing_cycle']??null,
+            'scheduled_effective_at'=>$subscription['scheduled_effective_at']??null,
+            'portal_available'=>(string)($subscription['provider_key']??'')==='stripe'&&trim((string)($subscription['provider_customer_id']??''))!=='',
+            'latest_invoice_status'=>$subscription['provider_latest_invoice_status']??null,
+            'latest_invoice_url'=>$subscription['provider_latest_invoice_url']??null,
         ],
         'activation'=>[
             'state'=>$state,
