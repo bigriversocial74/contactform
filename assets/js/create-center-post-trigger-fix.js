@@ -73,6 +73,7 @@ window.Microgifter = window.Microgifter || {};
     modal.hidden = false;
     modal.setAttribute('aria-hidden', 'false');
     document.body.classList.add('mg-create-menu-open');
+    document.body.classList.remove('mg-post-composer-open');
     setExpanded(true);
     activatePostView(true);
     queuePostView(false);
@@ -90,6 +91,7 @@ window.Microgifter = window.Microgifter || {};
     var postOption = target.closest('[data-create-inline-target="post"],[data-create-menu-option="post"]');
     if (postOption && modal.contains(postOption)) {
       event.preventDefault();
+      event.stopImmediatePropagation();
       openPostView();
       return;
     }
