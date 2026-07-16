@@ -6,6 +6,22 @@ $mg_package_context = is_array($mg_package_context ?? null) ? $mg_package_contex
 $canMerchantNav = (bool) ($can_merchant_nav ?? !empty($mg_package_context['merchant_access']));
 $agentSidebarActive = (string) ($agent_tab ?? basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''), '.php'));
 $currentSidebarScript = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+
+$useUnifiedCustomerSidebar = $user !== null && in_array($currentSidebarScript, [
+    'feed.php',
+    'loyalty-cards.php',
+    'lists.php',
+], true);
+
+if ($useUnifiedCustomerSidebar) {
+    ?>
+    <link rel="stylesheet" href="/assets/css/personal-agent-chat-history.css?v=1.2.0">
+    <?php require __DIR__ . '/personal-agent-sidebar.php'; ?>
+    <script src="/assets/js/personal-agent-chat-history.js?v=1.1.0" defer></script>
+    <?php
+    return;
+}
+
 $isMerchantAdminSidebar = $canMerchantNav && str_starts_with($currentSidebarScript, 'merchant-');
 
 $appSidebarVariant = 'utility';
