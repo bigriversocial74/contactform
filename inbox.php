@@ -15,6 +15,7 @@ $page_styles = [
     '/assets/css/gift-action-center-reward-images.css',
     '/assets/css/gift-product-media.css',
     '/assets/css/sponsored-campaign-card.css',
+    '/assets/css/agent-header-tabs-shared.css?v=1.0.0',
 ];
 
 $page_scripts = [
