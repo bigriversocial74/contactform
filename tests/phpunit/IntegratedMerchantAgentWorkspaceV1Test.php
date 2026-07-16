@@ -34,8 +34,8 @@ final class IntegratedMerchantAgentWorkspaceV1Test extends TestCase
 
         self::assertIsString($page);
         self::assertIsString($sidebar);
-        self::assertStringContainsString("$page_section = 'agent'", $page);
-        self::assertStringContainsString("$header_mode = 'agent'", $page);
+        self::assertStringContainsString("\$page_section = 'agent'", $page);
+        self::assertStringContainsString("\$header_mode = 'agent'", $page);
         self::assertStringContainsString("require __DIR__ . '/includes/personal-agent-sidebar.php'", $page);
         self::assertStringNotContainsString("require __DIR__ . '/includes/agent-sidebar.php'", $page);
         self::assertStringContainsString('data-agent-sidebar-mode=', $sidebar);
@@ -55,7 +55,7 @@ final class IntegratedMerchantAgentWorkspaceV1Test extends TestCase
         self::assertStringContainsString("mg_has_permission('merchant.ai.plan')", $page);
         self::assertStringContainsString("mg_has_permission('merchant.ai.review')", $page);
         self::assertStringContainsString("mg_merchant_require_permission('merchant.ai.review')", $api);
-        self::assertStringContainsString("mg_merchant_require_permission($action === 'send_message' ? 'merchant.ai.plan' : 'merchant.ai.review')", $api);
+        self::assertStringContainsString("mg_merchant_require_permission(\$action === 'send_message' ? 'merchant.ai.plan' : 'merchant.ai.review')", $api);
         self::assertStringContainsString('Business data only', $view);
         self::assertStringContainsString('Approval-first actions', $view);
     }
