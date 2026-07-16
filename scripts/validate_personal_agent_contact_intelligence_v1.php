@@ -106,8 +106,11 @@ $checks['chat UI has review, cancel, receipt, and live refresh controls'] = str_
     && str_contains($css,'.mg-agent-action-review-fields')
     && str_contains($css,'.mg-agent-action-review-actions')
     && str_contains($css,'.mg-agent-action-result');
+$checks['signals summary observer cannot trigger itself indefinitely'] = str_contains($ui,'value.textContent !== nextValue')
+    && str_contains($ui,'observe(summary, { childList: true })')
+    && !str_contains($ui,'observe(summary, { childList: true, subtree: true })');
 $checks['existing Agent chat layout is preserved with minimal additions'] = str_contains($agent,"personal-agent-contact-intelligence.css?v=1.0.0")
-    && str_contains($agent,"personal-agent-contact-intelligence.js?v=1.0.0")
+    && str_contains($agent,"personal-agent-contact-intelligence.js?v=1.0.1")
     && str_contains($workspace,'data-personal-agent-feed')
     && str_contains($workspace,'data-personal-agent-composer') === false
     && str_contains($workspace,'How many contacts do I have?')
