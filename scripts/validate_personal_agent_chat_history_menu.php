@@ -8,6 +8,7 @@ $read = static fn(string $path): string => is_file($root . '/' . $path)
 
 $page = $read('agent.php');
 $workspace = $read('includes/agent-workspace.php');
+$dashboard = $read('includes/personal-agent/workspace-dashboard.php');
 $sidebar = $read('includes/personal-agent-sidebar.php');
 $giftSidebar = $read('includes/gift-center-sidebar.php');
 $dialogs = $read('includes/personal-agent/workspace-dialogs.php');
@@ -15,6 +16,7 @@ $service = $read('includes/personal-agent/threads.php');
 $api = $read('api/user-agent/threads.php');
 $js = $read('assets/js/personal-agent-chat-history.js');
 $css = $read('assets/css/personal-agent-chat-history.css');
+$canvasCss = $read('assets/css/personal-agent-full-canvas.css');
 $schema = $read('database/20260714_personal_gifting_agent_phase2.sql');
 
 $checks = [
@@ -28,6 +30,11 @@ $checks = [
         && substr_count($sidebar, '<strong>My Lists</strong>') === 1
         && substr_count($sidebar, '<strong>New Chat</strong>') === 1
         && substr_count($sidebar, '<strong>Design</strong>') === 1,
+    'large mode cards are replaced by one compact Agent switch' => !str_contains($sidebar, 'class="mg-agent-mode-switch"')
+        && !str_contains($sidebar, 'mg-agent-mode-options')
+        && str_contains($sidebar, 'mg-agent-sidebar-switch')
+        && str_contains($sidebar, 'data-agent-mode-link="merchant"')
+        && str_contains($css, '.mg-agent-sidebar-switch'),
     'gift folders consume the unified sidebar' => str_contains($giftSidebar, "require __DIR__ . '/personal-agent-sidebar.php'"),
     'chat groups and actions remain available' => str_contains($sidebar, 'data-personal-agent-thread-groups')
         && str_contains($sidebar, 'data-personal-agent-new-chat')
@@ -39,6 +46,10 @@ $checks = [
         && str_contains($css, 'border:0;border-radius:0;background:transparent')
         && str_contains($css, '.mg-personal-chat-row.is-active{border:0;background:transparent;box-shadow:none}')
         && str_contains($css, '.mg-personal-chat-delete'),
+    'Personal chat owns the full canvas without a nested stream card' => str_contains($dashboard, 'mg-personal-agent-chat-view mg-personal-agent-chat-stream')
+        && !str_contains($dashboard, '<div class="mg-personal-agent-chat-stream">')
+        && str_contains($canvasCss, 'width:100%!important')
+        && str_contains($canvasCss, 'background:transparent!important'),
     'thread services remain available' => str_contains($service, 'function mg_personal_agent_threads')
         && str_contains($service, 'function mg_personal_agent_thread_detail')
         && str_contains($service, 'function mg_personal_agent_create_thread')
@@ -52,7 +63,8 @@ $checks = [
     'shared sidebar can create and open threads' => str_contains($js, "Microgifter.post('/api/user-agent/threads.php', { action: 'create' }")
         && str_contains($js, "window.location.href = '/agent.php?thread='")
         && str_contains($js, "action: 'delete'"),
-    'current cache versions are loaded' => str_contains($page, '/assets/css/personal-agent-chat-history.css?v=1.2.0')
+    'current cache versions are loaded' => str_contains($page, '/assets/css/personal-agent-chat-history.css?v=1.3.0')
+        && str_contains($page, '/assets/css/personal-agent-full-canvas.css?v=1.0.0')
         && str_contains($page, '/assets/js/personal-agent-chat-history.js?v=1.1.0'),
 ];
 
