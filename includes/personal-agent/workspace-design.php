@@ -28,6 +28,7 @@ try {
     <nav class="mg-agent-design-mode-tabs" aria-label="Design type" role="tablist">
       <button type="button" class="is-active" role="tab" aria-selected="true" data-design-mode="print">Print</button>
       <button type="button" role="tab" aria-selected="false" data-design-mode="social">Social Media</button>
+      <button type="button" role="tab" aria-selected="false" data-calendar-mode-button>Calendar</button>
     </nav>
   </header>
 
@@ -237,4 +238,6 @@ try {
       </div>
     </div>
   </section>
+
+  <?php require __DIR__ . '/workspace-design-calendar.php'; ?>
 </section>
