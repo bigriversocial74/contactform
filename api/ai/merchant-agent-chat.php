@@ -5,6 +5,7 @@ require_once __DIR__ . '/_ai.php';
 require_once dirname(__DIR__) . '/merchant/_merchant.php';
 require_once dirname(__DIR__, 2) . '/includes/merchant-automation-controls.php';
 require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-chat-memory.php';
+require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-snapshot.php';
 require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-admin-limits.php';
 
 function mg_agent_chat_admin_operator(array $user): bool
@@ -35,13 +36,22 @@ if ($method === 'POST') {
     $action = strtolower(trim((string)($input['action'] ?? 'send_message')));
     $localActions = ['save_agent_profile','save_memory_profile','create_thread','save_thread','archive_thread','clear_thread','rename_thread','load_thread'];
 
-    if (!in_array($action, array_merge(['send_message'], $localActions), true)) {
+    if (!in_array($action, array_merge(['send_message','snapshot'], $localActions), true)) {
         mg_fail('Unknown merchant agent chat action.', 422);
     }
 
-    $user = mg_merchant_require_permission($action === 'send_message' ? 'merchant.ai.plan' : 'merchant.ai.review');
+    $permission = $action === 'send_message' ? 'merchant.ai.plan' : 'merchant.ai.review';
+    if ($action === 'send_message' && mg_merchant_snapshot_is_keyword($input['message'] ?? '')) {
+        $permission = 'merchant.ai.review';
+    }
+    $user = mg_merchant_require_permission($permission);
     mg_merchant_ensure_workspace($pdo, $user);
     $merchantId = (int)$user['id'];
+
+    if ($action === 'snapshot' || ($action === 'send_message' && mg_merchant_snapshot_is_keyword($input['message'] ?? ''))) {
+        $input['message'] = trim((string)($input['message'] ?? 'snapshot')) ?: 'snapshot';
+        mg_ok(mg_merchant_snapshot_chat_response($pdo, $user, $input), 'Current merchant database snapshot generated.', 201);
+    }
 
     if ($action === 'save_agent_profile') {
         $profile = mg_agent_save_profile($pdo, $merchantId, $input);
@@ -72,9 +82,9 @@ if ($method === 'POST') {
         mg_ok(['state' => mg_ai_chat_public_state($pdo, $merchantId)], 'Agent thread updated.');
     }
 
-    $approvalMode = strtolower(trim((string)($input['approval_mode'] ?? 'advisory')));
-    $outputType = strtolower(trim((string)($input['output_type'] ?? 'action_plan')));
-    $agentMode = strtolower(trim((string)($input['mode'] ?? 'advisor')));
+    $approvalMode = strtolower(trim((string)($input['approval_mode'] ?? 'advisory'));
+    $outputType = strtolower(trim((string)($input['output_type'] ?? 'action_plan'));
+    $agentMode = strtolower(trim((string)($input['mode'] ?? 'advisor'));
     $adminOperator = $approvalMode === 'admin_operator';
 
     if ($adminOperator) {
