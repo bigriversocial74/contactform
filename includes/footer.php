@@ -64,6 +64,7 @@ if ($user) {
     $late_styles[] = '/assets/css/store-world-transition.css';
     $scripts[] = '/assets/js/store-chat-widget.js';
     $scripts[] = '/assets/js/store-world-transition.js';
+    $scripts[] = '/assets/js/personal-agent-attribution-runtime.js?v=1.0.0';
 }
 $user_permissions = is_array($user['permissions'] ?? null) ? $user['permissions'] : [];
 $user_roles = is_array($user['roles'] ?? null) ? $user['roles'] : [];
