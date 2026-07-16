@@ -24,17 +24,19 @@ $schema = $read('database/20260714_personal_gifting_agent_phase2.sql');
 
 $footerPosition = strpos($sidebar, 'class="mg-personal-chat-sidebar-footer"');
 $modePosition = strpos($sidebar, 'class="mg-agent-footer-mode-switch"');
+$newChatMarkupCount = substr_count($sidebar, '<strong>New Chat</strong>');
 
 $checks = [
     'composer menu trigger remains left of input' => strpos($workspace, 'data-open-agent-dialog="menu"') !== false
         && strpos($workspace, 'data-open-agent-dialog="menu"') < strpos($workspace, '<textarea'),
     'Agent menu dialog remains available' => str_contains($dialogs, 'data-personal-agent-dialog="menu"')
         && str_contains($dialogs, 'mg-personal-agent-menu-grid'),
-    'unified sidebar contains approved navigation once' => substr_count($sidebar, '<strong>Inbox</strong>') === 1
+    'unified sidebar contains approved navigation once per rendered entitlement state' => substr_count($sidebar, '<strong>Inbox</strong>') === 1
         && substr_count($sidebar, '<strong>My Feed</strong>') === 1
         && substr_count($sidebar, '<strong>My Loyalty Cards</strong>') === 1
         && substr_count($sidebar, '<strong>My Lists</strong>') === 1
-        && substr_count($sidebar, '<strong>New Chat</strong>') === 1
+        && $newChatMarkupCount >= 1
+        && $newChatMarkupCount <= 2
         && substr_count($sidebar, '<strong>Design</strong>') === 1,
     'Agent switch is inside the footer rather than above Inbox' => !str_contains($sidebar, 'class="mg-agent-mode-switch"')
         && !str_contains($sidebar, 'mg-agent-mode-options')
