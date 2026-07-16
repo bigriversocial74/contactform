@@ -57,6 +57,31 @@ function mg_merchant_location_scope_context(array $workspace): array
     ];
 }
 
+function mg_merchant_location_normalize_scope(
+    PDO $pdo,
+    int $workspaceId,
+    int $ownerMerchantId
+): int {
+    if ($workspaceId <= 0 || $ownerMerchantId <= 0) return 0;
+    try {
+        $stmt = $pdo->prepare(
+            'UPDATE merchant_locations ml
+             LEFT JOIN merchant_workspaces location_scope_mw ON location_scope_mw.id=ml.workspace_id
+             SET ml.workspace_id=?,ml.merchant_user_id=?,ml.updated_at=NOW()
+             WHERE (location_scope_mw.id=? OR (location_scope_mw.id IS NULL AND ml.merchant_user_id=?))
+               AND (ml.workspace_id IS NULL OR ml.workspace_id<>? OR ml.merchant_user_id IS NULL OR ml.merchant_user_id<>?)'
+        );
+        $stmt->execute([
+            $workspaceId,$ownerMerchantId,
+            $workspaceId,$ownerMerchantId,
+            $workspaceId,$ownerMerchantId,
+        ]);
+        return max(0,$stmt->rowCount());
+    } catch (Throwable) {
+        return 0;
+    }
+}
+
 function mg_merchant_location_count(
     PDO $pdo,
     int $workspaceId,
