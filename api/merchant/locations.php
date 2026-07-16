@@ -28,7 +28,8 @@ function mg_merchant_location_float_or_null(mixed $value): ?float
 
 function mg_merchant_unique_location_code(
     PDO $pdo,
-    int $merchantId,
+    int $workspaceId,
+    int $ownerMerchantId,
     string $name,
     string $excludePublicId=''
 ): string {
@@ -36,11 +37,15 @@ function mg_merchant_unique_location_code(
     $candidate=$base;
     $suffix=1;
     $stmt=$pdo->prepare(
-        'SELECT COUNT(*) FROM merchant_locations
-         WHERE merchant_user_id=? AND location_code=? AND public_id<>?'
+        'SELECT COUNT(*)
+         FROM merchant_locations ml '
+         .mg_merchant_location_scope_join('ml','location_scope_mw').'
+         WHERE '.mg_merchant_location_scope_condition('ml','location_scope_mw').'
+           AND ml.location_code=?
+           AND ml.public_id<>?'
     );
     while(true){
-        $stmt->execute([$merchantId,$candidate,$excludePublicId]);
+        $stmt->execute([$workspaceId,$ownerMerchantId,$candidate,$excludePublicId]);
         if((int)$stmt->fetchColumn()===0)return $candidate;
         $suffix++;
         $candidate=substr($base,0,max(1,80-strlen((string)$suffix)-1)).'-'.$suffix;
@@ -49,19 +54,26 @@ function mg_merchant_unique_location_code(
 
 function mg_merchant_location_record_claim_code(
     PDO $pdo,
-    int $merchantId,
+    int $workspaceId,
+    int $ownerMerchantId,
+    int $actorUserId,
     int $locationDbId,
     string $locationName,
     string $claimCode,
     string $pepper
 ): array {
+    $ownedLocation=mg_merchant_location_find_by_id(
+        $pdo,$workspaceId,$ownerMerchantId,$locationDbId,true
+    );
+    if(!$ownedLocation)mg_fail('Merchant location not found.',404);
+
     $hash=hash_hmac('sha256',$claimCode,$pepper);
     $active=$pdo->prepare(
         "SELECT * FROM merchant_claim_codes
-         WHERE merchant_user_id=? AND location_id=? AND status='active'
+         WHERE location_id=? AND status='active'
          ORDER BY id DESC FOR UPDATE"
     );
-    $active->execute([$merchantId,$locationDbId]);
+    $active->execute([$locationDbId]);
     $current=$active->fetchAll();
 
     foreach($current as $code){
@@ -75,11 +87,17 @@ function mg_merchant_location_record_claim_code(
     }
 
     $duplicate=$pdo->prepare(
-        "SELECT 1 FROM merchant_claim_codes
-         WHERE merchant_user_id=? AND code_hash=? AND status='active' AND location_id<>?
+        "SELECT 1
+         FROM merchant_claim_codes mcc
+         INNER JOIN merchant_locations ml ON ml.id=mcc.location_id
+         ".mg_merchant_location_scope_join('ml','location_scope_mw')."
+         WHERE ".mg_merchant_location_scope_condition('ml','location_scope_mw')."
+           AND mcc.code_hash=?
+           AND mcc.status='active'
+           AND mcc.location_id<>?
          LIMIT 1"
     );
-    $duplicate->execute([$merchantId,$hash,$locationDbId]);
+    $duplicate->execute([$workspaceId,$ownerMerchantId,$hash,$locationDbId]);
     if($duplicate->fetchColumn())mg_fail('Location claim code already exists.',409);
 
     $previousId=$current!==[]?(int)$current[0]['id']:null;
@@ -87,8 +105,8 @@ function mg_merchant_location_record_claim_code(
         $pdo->prepare(
             "UPDATE merchant_claim_codes
              SET status='revoked',updated_at=NOW()
-             WHERE merchant_user_id=? AND location_id=? AND status='active'"
-        )->execute([$merchantId,$locationDbId]);
+             WHERE location_id=? AND status='active'"
+        )->execute([$locationDbId]);
     }
 
     $publicId=mg_merchant_uuid();
@@ -99,7 +117,7 @@ function mg_merchant_location_record_claim_code(
           valid_from,valid_until,usage_limit,usage_count,created_by_user_id,created_at,updated_at)
          VALUES (?,?,?,?,?,?,'active',NULL,NULL,NULL,0,?,NOW(),NOW())"
     )->execute([
-        $publicId,$merchantId,$locationDbId,$locationName.' claim code',$hash,$last4,$merchantId,
+        $publicId,$ownerMerchantId,$locationDbId,$locationName.' claim code',$hash,$last4,$actorUserId,
     ]);
     $claimCodeDbId=(int)$pdo->lastInsertId();
 
@@ -109,10 +127,10 @@ function mg_merchant_location_record_claim_code(
           metadata_json,actor_user_id,created_at)
          VALUES (?,?,?,?,?,?,?,?,NOW())"
     )->execute([
-        mg_merchant_uuid(),$merchantId,$claimCodeDbId,$locationDbId,
+        mg_merchant_uuid(),$ownerMerchantId,$claimCodeDbId,$locationDbId,
         $previousId===null?'created':'rotated',$previousId,
         json_encode(['code_last4'=>$last4],JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR),
-        $merchantId,
+        $actorUserId,
     ]);
 
     return [
@@ -124,24 +142,25 @@ function mg_merchant_location_record_claim_code(
 
 $method=strtoupper($_SERVER['REQUEST_METHOD']??'GET');
 $user=$method==='GET'?mg_require_api_user():mg_require_permission('merchant.locations.manage');
-$merchantId=(int)$user['id'];
+$actorUserId=(int)$user['id'];
 $pdo=mg_db();
 $workspace=mg_merchant_ensure_workspace($pdo,$user);
-$workspaceId=(int)$workspace['id'];
+$scope=mg_merchant_location_scope_context($workspace);
+$workspaceId=(int)$scope['workspace_id'];
+$ownerMerchantId=(int)$scope['owner_merchant_id'];
 
 if($method==='GET'){
     try{
         $stmt=$pdo->prepare(
             "SELECT ml.public_id,ml.name,ml.location_code,ml.address_line1,ml.address_line2,ml.city,ml.region,
                     ml.postal_code,ml.country_code,ml.timezone,ml.phone,ml.status,ml.is_primary,
-                    ml.metadata_json,ml.created_at,ml.updated_at,
+                    ml.metadata_json,ml.created_at,ml.updated_at,ml.workspace_id,ml.merchant_user_id,
                     JSON_UNQUOTE(JSON_EXTRACT(ml.metadata_json,'$.latitude')) AS latitude,
                     JSON_UNQUOTE(JSON_EXTRACT(ml.metadata_json,'$.longitude')) AS longitude,
                     JSON_UNQUOTE(JSON_EXTRACT(ml.metadata_json,'$.check_in_radius_meters')) AS check_in_radius_meters,
                     EXISTS(
                         SELECT 1 FROM merchant_claim_codes mcc
-                        WHERE mcc.merchant_user_id=ml.merchant_user_id
-                          AND mcc.location_id=ml.id
+                        WHERE mcc.location_id=ml.id
                           AND mcc.status='active'
                           AND (mcc.valid_from IS NULL OR mcc.valid_from<=NOW())
                           AND (mcc.valid_until IS NULL OR mcc.valid_until>=NOW())
@@ -149,29 +168,32 @@ if($method==='GET'){
                     ) AS has_active_claim_code,
                     (
                         SELECT mcc.code_last4 FROM merchant_claim_codes mcc
-                        WHERE mcc.merchant_user_id=ml.merchant_user_id
-                          AND mcc.location_id=ml.id
+                        WHERE mcc.location_id=ml.id
                           AND mcc.status='active'
                         ORDER BY mcc.id DESC LIMIT 1
                     ) AS claim_code_last4
              FROM merchant_locations ml
-             WHERE ml.merchant_user_id=?
+             ".mg_merchant_location_scope_join('ml','location_scope_mw')."
+             WHERE ".mg_merchant_location_scope_condition('ml','location_scope_mw')."
              ORDER BY ml.is_primary DESC,ml.name,ml.id"
         );
-        $stmt->execute([$merchantId]);
+        $stmt->execute([$workspaceId,$ownerMerchantId]);
         $rows=$stmt->fetchAll() ?: [];
         foreach($rows as &$row){
             $row['latitude']=$row['latitude']!==null&&$row['latitude']!==''?(float)$row['latitude']:null;
             $row['longitude']=$row['longitude']!==null&&$row['longitude']!==''?(float)$row['longitude']:null;
             $row['check_in_radius_meters']=$row['check_in_radius_meters']!==null&&$row['check_in_radius_meters']!==''?(int)$row['check_in_radius_meters']:150;
             $row['geo_enabled']=$row['latitude']!==null&&$row['longitude']!==null;
+            $row['ownership_normalized']=(int)$row['workspace_id']===$workspaceId
+                && (int)$row['merchant_user_id']===$ownerMerchantId;
+            unset($row['workspace_id'],$row['merchant_user_id']);
         }
         unset($row);
         mg_ok(['locations'=>$rows,'schema_ready'=>true]);
     }catch(Throwable $error){
         mg_security_log('warning','merchant.locations.schema_unavailable','Merchant location schema is unavailable.',[
             'exception_class'=>$error::class,
-        ],$merchantId);
+        ],$actorUserId);
         mg_ok(['locations'=>[],'schema_ready'=>false],'Merchant locations unavailable until the locations schema is installed.');
     }
 }
@@ -220,9 +242,11 @@ if(
 }
 
 if($isCreate){
-    $locationUsage=$pdo->prepare("SELECT COUNT(*) FROM merchant_locations WHERE merchant_user_id=? AND status<>'archived'");
-    $locationUsage->execute([$merchantId]);
-    mg_package_require_limit_available($pdo,$user,'max_locations',(int)$locationUsage->fetchColumn(),'Location limit reached.');
+    mg_package_require_limit_available(
+        $pdo,$user,'max_locations',
+        mg_merchant_location_count($pdo,$workspaceId,$ownerMerchantId),
+        'Location limit reached.'
+    );
 }
 
 $pepper=$claimCode!==''?mg_claim_code_pepper():'';
@@ -234,29 +258,30 @@ try{
     $existingMetadata=[];
     if($isCreate){
         $locationId=mg_merchant_uuid();
-        $locationCode=mg_merchant_unique_location_code($pdo,$merchantId,$name);
+        $locationCode=mg_merchant_unique_location_code($pdo,$workspaceId,$ownerMerchantId,$name);
     }else{
-        $existing=$pdo->prepare(
-            'SELECT id,location_code,metadata_json FROM merchant_locations
-             WHERE public_id=? AND merchant_user_id=?
-             LIMIT 1 FOR UPDATE'
+        $row=mg_merchant_location_find_by_public_id(
+            $pdo,$workspaceId,$ownerMerchantId,$locationId,true
         );
-        $existing->execute([$locationId,$merchantId]);
-        $row=$existing->fetch();
         if(!$row)mg_fail('Location not found.',404);
         $locationDbId=(int)$row['id'];
         $locationCode=(string)$row['location_code'];
         $existingMetadata=mg_merchant_location_json($row['metadata_json']??null);
         if($locationCode===''){
-            $locationCode=mg_merchant_unique_location_code($pdo,$merchantId,$name,$locationId);
+            $locationCode=mg_merchant_unique_location_code(
+                $pdo,$workspaceId,$ownerMerchantId,$name,$locationId
+            );
         }
     }
 
     if($primary){
-        $pdo->prepare(
-            'UPDATE merchant_locations SET is_primary=0,updated_at=NOW()
-             WHERE merchant_user_id=?'
-        )->execute([$merchantId]);
+        $primaryStmt=$pdo->prepare(
+            'UPDATE merchant_locations ml '
+            .mg_merchant_location_scope_join('ml','location_scope_mw').'
+             SET ml.is_primary=0,ml.updated_at=NOW()
+             WHERE '.mg_merchant_location_scope_condition('ml','location_scope_mw')
+        );
+        $primaryStmt->execute([$workspaceId,$ownerMerchantId]);
     }
 
     $metadata=$existingMetadata;
@@ -277,35 +302,35 @@ try{
               city,region,postal_code,country_code,timezone,phone,status,is_primary,metadata_json,created_at,updated_at)
              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())'
         )->execute([
-            $locationId,$workspaceId,$merchantId,$name,$locationCode,$address1,$address2,
+            $locationId,$workspaceId,$ownerMerchantId,$name,$locationCode,$address1,$address2,
             $city,$region,$postalCode,$countryCode,$timezone,$phone,$status,$primary,$metadataJson,
         ]);
         $locationDbId=(int)$pdo->lastInsertId();
     }else{
         $stmt=$pdo->prepare(
             'UPDATE merchant_locations
-             SET workspace_id=?,name=?,location_code=?,address_line1=?,address_line2=?,city=?,region=?,postal_code=?,
+             SET workspace_id=?,merchant_user_id=?,name=?,location_code=?,address_line1=?,address_line2=?,city=?,region=?,postal_code=?,
                  country_code=?,timezone=?,phone=?,status=?,is_primary=?,metadata_json=?,updated_at=NOW()
-             WHERE id=? AND public_id=? AND merchant_user_id=?'
+             WHERE id=? AND public_id=?'
         );
         $stmt->execute([
-            $workspaceId,$name,$locationCode,$address1,$address2,$city,$region,$postalCode,
+            $workspaceId,$ownerMerchantId,$name,$locationCode,$address1,$address2,$city,$region,$postalCode,
             $countryCode,$timezone,$phone,$status,$primary,$metadataJson,
-            $locationDbId,$locationId,$merchantId,
+            $locationDbId,$locationId,
         ]);
     }
 
     $claimResult=null;
     if($claimCode!==''){
         $claimResult=mg_merchant_location_record_claim_code(
-            $pdo,$merchantId,$locationDbId,$name,$claimCode,$pepper
+            $pdo,$workspaceId,$ownerMerchantId,$actorUserId,$locationDbId,$name,$claimCode,$pepper
         );
     }
 
     $pdo->prepare(
         "UPDATE merchant_onboarding_steps SET status='completed',completed_at=NOW(),completed_by_user_id=?,updated_at=NOW()
          WHERE workspace_id=? AND step_key='first_location'"
-    )->execute([$merchantId,$workspaceId]);
+    )->execute([$actorUserId,$workspaceId]);
     $pdo->prepare(
         "UPDATE merchant_onboarding_steps SET status='available',updated_at=NOW()
          WHERE workspace_id=? AND step_key='claim_configuration' AND status='locked'"
@@ -318,7 +343,10 @@ try{
         'claim_code_changed'=>$claimResult!==null,
         'claim_code_last4'=>$claimResult['code_last4']??null,
         'geo_enabled'=>$latitude!==null&&$longitude!==null,
-    ],$merchantId);
+        'workspace_id'=>$workspaceId,
+        'owner_merchant_id'=>$ownerMerchantId,
+        'ownership_normalized'=>true,
+    ],$actorUserId);
     mg_ok([
         'location_id'=>$locationId,
         'location_code'=>$locationCode,
@@ -328,6 +356,7 @@ try{
         'latitude'=>$latitude,
         'longitude'=>$longitude,
         'check_in_radius_meters'=>$latitude!==null?$radius:null,
+        'ownership_normalized'=>true,
         'schema_ready'=>true,
         'onboarding_percent'=>$percent,
     ],'Location saved.',201);
@@ -335,6 +364,6 @@ try{
     if($pdo->inTransaction())$pdo->rollBack();
     mg_security_log('error','merchant.locations.save_failed','Unable to save merchant location.',[
         'exception_class'=>$error::class,
-    ],$merchantId);
+    ],$actorUserId);
     mg_fail('Unable to save location.',500);
 }
