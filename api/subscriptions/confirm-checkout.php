@@ -113,7 +113,7 @@ function mg_subscription_checkout_completion_hydrate(PDO $pdo, int $userId, arra
     $invoice = mg_subscription_checkout_completion_invoice($session, $subscription);
     $invoiceId = mg_subscription_checkout_completion_reference($invoice['id'] ?? '');
     $paymentIntentId = mg_subscription_checkout_completion_reference($invoice['payment_intent'] ?? ($session['payment_intent'] ?? ''));
-    $providerStatus = strtolower(trim((string)($subscription['status'] ?? 'active'));
+    $providerStatus = strtolower(trim((string)($subscription['status'] ?? 'active')));
     $status = match ($providerStatus) {
         'trialing' => 'trialing',
         'past_due', 'unpaid' => 'past_due',
@@ -226,7 +226,7 @@ try {
     if (!hash_equals($requestId, trim((string)($sessionMetadata['package_change_request_id'] ?? '')))) throw new MgSubscriptionCheckoutException('Checkout request metadata does not match.', 409);
     if ((int)($sessionMetadata['user_id'] ?? 0) !== $userId) throw new MgSubscriptionCheckoutException('Checkout session does not belong to this account.', 403);
 
-    $sessionStatus = strtolower(trim((string)($session['status'] ?? 'complete'));
+    $sessionStatus = strtolower(trim((string)($session['status'] ?? 'complete')));
     $paymentStatus = strtolower(trim((string)($session['payment_status'] ?? '')));
     if ($sessionStatus !== '' && $sessionStatus !== 'complete') {
         mg_ok(['confirmed' => false, 'pending' => true, 'session_status' => $sessionStatus], 'Stripe Checkout has not completed yet.');
