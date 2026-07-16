@@ -5,8 +5,15 @@ on:
     branches:
       - integration-from-repair-20260628
     paths:
+      - 'agent.php'
       - 'includes/agent-sidebar.php'
+      - 'includes/personal-agent-sidebar.php'
+      - 'includes/gift-center-sidebar.php'
+      - 'includes/gift-action-center.php'
       - 'includes/account-sidebar.php'
+      - 'assets/css/personal-agent-chat-history.css'
+      - 'assets/js/personal-agent-chat-history.js'
+      - 'assets/js/personal-agent-design-studio.js'
       - 'my-quests.php'
       - 'account-subscriptions.php'
       - 'notifications.php'
@@ -41,7 +48,11 @@ jobs:
 
       - name: PHP syntax
         run: |
+          php -l agent.php
           php -l includes/agent-sidebar.php
+          php -l includes/personal-agent-sidebar.php
+          php -l includes/gift-center-sidebar.php
+          php -l includes/gift-action-center.php
           php -l includes/account-sidebar.php
           php -l my-quests.php
           php -l account-subscriptions.php
@@ -51,6 +62,11 @@ jobs:
           php -l scripts/validate_customer_inbox_sidebar.php
           php -l scripts/validate_inbox_sidebar_crm_quest_nav_cleanup.php
           php -l tests/phpunit/CustomerInboxSidebarContractTest.php
+
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/personal-agent-chat-history.js
+          node --check assets/js/personal-agent-design-studio.js
 
       - name: Customer inbox sidebar contract
         run: php scripts/validate_customer_inbox_sidebar.php

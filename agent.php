@@ -2,7 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/includes/app.php';
 
-$allowedPersonalViews = ['home','contacts','birthdays','calendar','plans','scheduled','recurring','reminders','group','requests','bundles','claims','memory','settings'];
+$allowedPersonalViews = ['home','design','contacts','birthdays','calendar','plans','scheduled','recurring','reminders','group','requests','bundles','claims','memory','settings'];
 $agent_personal_view = strtolower(trim((string) ($_GET['view'] ?? 'home')));
 if (!in_array($agent_personal_view, $allowedPersonalViews, true)) {
     $agent_personal_view = 'home';
@@ -19,7 +19,7 @@ $page_styles = [
     '/assets/css/personal-gifting-workflows.css',
     '/assets/css/personal-agent-chat-canvas.css?v=1.0.0',
     '/assets/css/personal-agent-inline-intro.css?v=1.0.0',
-    '/assets/css/personal-agent-chat-history.css?v=1.1.0',
+    '/assets/css/personal-agent-chat-history.css?v=1.2.0',
     '/assets/css/personal-agent-marketplace-cards.css?v=1.1.0',
     '/assets/css/gift-action-center-modals.css?v=1.0.0',
     '/assets/css/personal-agent-gift-results.css?v=1.0.0',
@@ -33,10 +33,10 @@ $page_scripts = [
     '/assets/js/personal-gifting-agent-actions.js',
     '/assets/js/personal-gifting-workflows.js',
     '/assets/js/personal-agent-chat-canvas.js?v=1.2.0',
-    '/assets/js/personal-agent-chat-history.js?v=1.0.0',
+    '/assets/js/personal-agent-chat-history.js?v=1.1.0',
     '/assets/js/personal-agent-marketplace-cards.js?v=1.1.0',
     '/assets/js/personal-agent-gift-results.js?v=1.0.0',
-    '/assets/js/personal-agent-design-studio.js?v=1.1.0',
+    '/assets/js/personal-agent-design-studio.js?v=1.2.0',
     '/assets/js/personal-agent-ai-credits.js?v=1.0.0',
 ];
 

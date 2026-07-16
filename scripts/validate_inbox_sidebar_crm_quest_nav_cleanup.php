@@ -21,6 +21,8 @@ $expect = static function (bool $condition, string $label) use (&$failures, &$pa
 
 try {
     $inbox = $read('inbox.php');
+    $personalSidebar = $read('includes/personal-agent-sidebar.php');
+    $giftSidebar = $read('includes/gift-center-sidebar.php');
     $agentSidebar = $read('includes/agent-sidebar.php');
     $appSidebar = $read('includes/app-sidebar.php');
     $merchantWorkspace = $read('includes/merchant-workspace.php');
@@ -29,38 +31,29 @@ try {
 
     $expect(
         str_contains($inbox, '$agent_tab = \'inbox\';')
-        && str_contains($inbox, "require __DIR__ . '/includes/gift-action-center.php';"),
-        'Inbox continues to use the shared agent sidebar through the gift action center'
+        && str_contains($inbox, "require __DIR__ . '/includes/gift-action-center.php';")
+        && str_contains($giftSidebar, "require __DIR__ . '/personal-agent-sidebar.php'"),
+        'Inbox, Sent, and Claimed use the shared Personal Agent sidebar'
     );
 
-    foreach ([
-        "'label' => 'Inbox'",
-        "'label' => 'My Feed'",
-        "'label' => 'My Loyalty Cards'",
-        "'label' => 'My Lists'",
-        "'label' => 'Design Studio'",
-        "'label' => 'New Chat'",
-    ] as $marker) {
-        $expect(str_contains($agentSidebar, $marker), 'Simplified customer sidebar contains ' . $marker);
-    }
-
-    foreach ([
-        "'my-quests' => [",
-        "'agent_chat' => [",
-        "'messages' => [",
-        "'store-canvas' => [",
-        "'world-canvas' => [",
-        "'build' => [",
-        "'feed-following' => [",
-        "'merchant_crm' => [",
-        "'ads-manager' => [",
-    ] as $removedMarker) {
-        $expect(!str_contains($agentSidebar, $removedMarker), 'Removed customer navigation key is absent: ' . $removedMarker);
+    foreach (['Inbox', 'My Feed', 'My Loyalty Cards', 'My Lists', 'New Chat', 'Design'] as $label) {
+        $expect(
+            substr_count($personalSidebar, '<strong>' . $label . '</strong>') === 1,
+            'Unified customer sidebar contains one ' . $label . ' entry'
+        );
     }
 
     $expect(
-        str_contains($agentSidebar, "str_starts_with(\$agentSidebarActive, 'feed-')"),
-        'All feed views keep My Feed active'
+        !str_contains($personalSidebar, 'Training Lab')
+        && !str_contains($personalSidebar, '/training-lab.php')
+        && !str_contains($giftSidebar, '$myListsItem'),
+        'Training Lab and duplicate My Lists injection are removed'
+    );
+
+    $expect(
+        str_contains($personalSidebar, 'data-personal-agent-thread-groups')
+        && str_contains($personalSidebar, 'Private to your account'),
+        'Customer sidebar retains private Personal Agent chat history'
     );
 
     $expect(
@@ -83,14 +76,7 @@ try {
         'Loyalty Quests remains available in merchant navigation'
     );
 
-    foreach ([
-        'quest_creative',
-        'quest_reviews',
-        'quest_delivery',
-        'quest_analytics',
-        'campaign_embed_leads',
-        'campaign_embed_analytics',
-    ] as $key) {
+    foreach (['quest_creative','quest_reviews','quest_delivery','quest_analytics','campaign_embed_leads','campaign_embed_analytics'] as $key) {
         $expect(
             !preg_match("/'" . preg_quote($key, '/') . "'\\s*=>\\s*\\[/", $merchantNavigation),
             'Hidden quest/embed route is absent from visible merchant navigation: ' . $key

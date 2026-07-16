@@ -135,7 +135,7 @@ try {
         && str_contains($workspace, 'data-personal-agent-credit-chip')
         && str_contains($agent, '/assets/js/personal-agent-ai-credits.js?v=1.0.0')
         && str_contains($agent, '/assets/css/personal-agent-ai-credits.css?v=1.0.0')
-        && str_contains($agent, '/assets/js/personal-agent-design-studio.js?v=1.1.0'),
+        && str_contains($agent, '/assets/js/personal-agent-design-studio.js?v=1.2.0'),
         'Personal Agent keeps Design Studio and loads its live package and token balance assets'
     );
     $expect(

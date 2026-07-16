@@ -1,18 +1,23 @@
 document.addEventListener('DOMContentLoaded', function () {
   'use strict';
 
-  var app = window.MicrogifterPersonalAgent;
-  if (!app || !app.root || !window.Microgifter) return;
+  var app = window.MicrogifterPersonalAgent || null;
+  var agentRoot = app && app.root ? app.root : null;
+  var groupsHost = document.querySelector('[data-personal-agent-thread-groups]');
+  if (!groupsHost || !window.Microgifter) return;
 
-  var root = app.root;
-  var state = app.state;
-  var ui = app.ui;
-  var esc = app.esc;
-  var dataOf = app.dataOf;
-  var setStatus = app.setStatus;
-  var groupsHost = root.querySelector('[data-personal-agent-thread-groups]');
-  if (!groupsHost) return;
-
+  var root = agentRoot || groupsHost.closest('[data-personal-agent-chat-sidebar]') || document;
+  var state = agentRoot ? app.state : { threads: [], threadId: '' };
+  var ui = agentRoot ? app.ui : {};
+  var esc = agentRoot ? app.esc : function (value) {
+    return String(value == null ? '' : value).replace(/[&<>'"]/g, function (char) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char];
+    });
+  };
+  var dataOf = agentRoot ? app.dataOf : function (response) {
+    return response && response.data ? response.data : (response || {});
+  };
+  var setStatus = agentRoot ? app.setStatus : function () {};
   var renderingHistory = false;
   var refreshTimer = 0;
 
@@ -72,7 +77,7 @@ document.addEventListener('DOMContentLoaded', function () {
       return '<section class="mg-personal-chat-group"><h3>' + esc(group.label) + '</h3>'
         + group.items.map(function (entry) {
           var thread = entry.thread;
-          var active = thread.id === state.threadId;
+          var active = agentRoot && thread.id === state.threadId;
           var meta = dateLabel(entry.date) + ' · ' + Number(thread.message_count || 0) + (Number(thread.message_count || 0) === 1 ? ' message' : ' messages');
           return '<article class="mg-personal-chat-row' + (active ? ' is-active' : '') + '" data-personal-agent-thread-row="' + esc(thread.id) + '">'
             + '<a class="mg-personal-chat-open" href="/agent.php?thread=' + encodeURIComponent(thread.id) + '" data-personal-agent-open-thread="' + esc(thread.id) + '">'
@@ -110,7 +115,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function syncUrl(threadId) {
-    if (!window.history || !window.history.replaceState) return;
+    if (!agentRoot || !window.history || !window.history.replaceState) return;
     var url = new URL(window.location.href);
     if (threadId) url.searchParams.set('thread', threadId);
     else url.searchParams.delete('thread');
@@ -120,6 +125,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
   async function loadThread(threadId, announce) {
     if (!threadId) return;
+    if (!agentRoot) {
+      window.location.href = '/agent.php?thread=' + encodeURIComponent(threadId);
+      return;
+    }
     var response = await Microgifter.get('/api/user-agent/threads.php?thread_id=' + encodeURIComponent(threadId));
     var data = dataOf(response);
     var thread = data.thread || {};
@@ -148,7 +157,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var data = dataOf(response);
     var threads = data.threads || [];
     renderThreads(threads);
-    if (!selectInitial) return threads;
+    if (!agentRoot || !selectInitial) return threads;
 
     var requested = new URLSearchParams(window.location.search).get('thread') || '';
     var selected = threads.find(function (thread) { return thread.id === requested; }) || threads[0];
@@ -165,13 +174,19 @@ document.addEventListener('DOMContentLoaded', function () {
     var data = dataOf(response);
     var thread = data.thread || {};
     if (!thread.id) throw new Error('Unable to create a new chat.');
+
+    if (!agentRoot) {
+      window.location.href = '/agent.php?thread=' + encodeURIComponent(thread.id);
+      return;
+    }
+
     state.threadId = thread.id;
     clearFeed();
     if (typeof app.showContext === 'function') app.showContext({ type: 'none', id: '', name: '', details: {} });
     syncUrl(thread.id);
     await fetchThreads(false);
     renderThreads(state.threads || []);
-    if (root.getAttribute('data-active-view') !== 'home') {
+    if (agentRoot.getAttribute('data-active-view') !== 'home') {
       window.location.href = '/agent.php?thread=' + encodeURIComponent(thread.id);
       return;
     }
@@ -185,7 +200,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var title = thread && thread.title ? thread.title : 'this chat';
     if (!window.confirm('Delete "' + title + '" and all of its messages?')) return;
     await Microgifter.post('/api/user-agent/threads.php', { action: 'delete', thread_id: threadId });
-    var wasActive = state.threadId === threadId;
+    var wasActive = agentRoot && state.threadId === threadId;
     if (wasActive) {
       state.threadId = '';
       clearFeed();
@@ -196,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (threads.length) await loadThread(threads[0].id, false);
       else await createThread(false);
     }
-    setStatus('Chat deleted.', 'success');
+    if (agentRoot) setStatus('Chat deleted.', 'success');
   }
 
   function scheduleRefresh() {
@@ -210,13 +225,15 @@ document.addEventListener('DOMContentLoaded', function () {
     var newChat = event.target.closest('[data-personal-agent-new-chat]');
     if (newChat) {
       event.preventDefault();
-      createThread(true).catch(function (error) { setStatus(error.message || 'Unable to create a new chat.', 'error'); });
+      createThread(true).catch(function (error) {
+        setStatus(error.message || 'Unable to create a new chat.', 'error');
+      });
       return;
     }
 
     var open = event.target.closest('[data-personal-agent-open-thread]');
     if (open) {
-      if (root.getAttribute('data-active-view') !== 'home') return;
+      if (!agentRoot || agentRoot.getAttribute('data-active-view') !== 'home') return;
       event.preventDefault();
       loadThread(open.getAttribute('data-personal-agent-open-thread'), true)
         .catch(function (error) { setStatus(error.message || 'Unable to load this chat.', 'error'); });
@@ -232,7 +249,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  if (ui.feed && window.MutationObserver) {
+  if (agentRoot && ui.feed && window.MutationObserver) {
     new MutationObserver(function (mutations) {
       if (renderingHistory) return;
       var changed = mutations.some(function (mutation) { return mutation.addedNodes && mutation.addedNodes.length; });
@@ -240,7 +257,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }).observe(ui.feed, { childList: true });
   }
 
-  fetchThreads(true).catch(function (error) {
+  var shouldSelectInitialThread = !!agentRoot && agentRoot.getAttribute('data-active-view') === 'home';
+  fetchThreads(shouldSelectInitialThread).catch(function (error) {
     groupsHost.innerHTML = '<div class="mg-personal-chat-empty">' + esc(error.message || 'Unable to load chats.') + '</div>';
     setStatus(error.message || 'Unable to load chats.', 'error');
   });

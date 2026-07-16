@@ -19,55 +19,56 @@ final class CustomerInboxSidebarContractTest extends TestCase
         return $source;
     }
 
-    public function testSharedCustomerSidebarContainsOnlyTheRequestedPrimaryDestinations(): void
+    public function testSharedCustomerSidebarContainsOnlyOneOfEachRequestedDestination(): void
     {
-        $source = $this->source('includes/agent-sidebar.php');
+        $source = $this->source('includes/personal-agent-sidebar.php');
+
+        foreach (['Inbox', 'My Feed', 'My Loyalty Cards', 'My Lists', 'New Chat', 'Design'] as $label) {
+            self::assertSame(1, substr_count($source, '<strong>' . $label . '</strong>'), $label);
+        }
+    }
+
+    public function testRequestedDestinationsUseTheCorrectRoutesAndActions(): void
+    {
+        $source = $this->source('includes/personal-agent-sidebar.php');
 
         foreach ([
-            "'label' => 'Inbox'",
-            "'label' => 'My Feed'",
-            "'label' => 'My Loyalty Cards'",
-            "'label' => 'My Lists'",
-            "'label' => 'Design Studio'",
-            "'label' => 'New Chat'",
+            'href="/inbox.php"',
+            'href="/feed.php"',
+            'href="/loyalty-cards.php"',
+            'href="/lists.php"',
+            'data-personal-agent-new-chat',
+            'href="/design-studio.php"',
         ] as $needle) {
             self::assertStringContainsString($needle, $source);
         }
     }
 
-    public function testRemovedCustomerDestinationsAreNotInTheVisibleNavigationArray(): void
+    public function testGiftFoldersConsumeTheUnifiedSidebarWithoutInjectingMyLists(): void
     {
-        $source = $this->source('includes/agent-sidebar.php');
+        $source = $this->source('includes/gift-center-sidebar.php');
 
-        foreach ([
-            "'my-quests' => [",
-            "'agent_chat' => [",
-            "'messages' => [",
-            "'store-canvas' => [",
-            "'world-canvas' => [",
-            "'build' => [",
-            "'feed-following' => [",
-            "'merchant_crm' => [",
-            "'ads-manager' => [",
-        ] as $needle) {
-            self::assertStringNotContainsString($needle, $source);
-        }
+        self::assertStringContainsString("require __DIR__ . '/personal-agent-sidebar.php'", $source);
+        self::assertStringNotContainsString('$myListsItem', $source);
+        self::assertStringNotContainsString('mg-gift-center-my-lists', $source);
     }
 
-    public function testRequestedDestinationsUseTheCorrectRoutes(): void
+    public function testTrainingLabIsRemovedAndChatHistoryRemains(): void
     {
-        $source = $this->source('includes/agent-sidebar.php');
+        $source = $this->source('includes/personal-agent-sidebar.php');
 
-        foreach ([
-            "'href' => '/inbox.php'",
-            "'href' => '/feed.php'",
-            "'href' => '/loyalty-cards.php'",
-            "'href' => '/lists.php'",
-            "'href' => '/design-studio.php'",
-            "'href' => '/agent.php'",
-        ] as $needle) {
-            self::assertStringContainsString($needle, $source);
-        }
+        self::assertStringNotContainsString('Training Lab', $source);
+        self::assertStringNotContainsString('/training-lab.php', $source);
+        self::assertStringContainsString('data-personal-agent-thread-groups', $source);
+        self::assertStringContainsString('Private to your account', $source);
+    }
+
+    public function testSharedHistoryAssetsLoadInGiftFolders(): void
+    {
+        $source = $this->source('includes/gift-action-center.php');
+
+        self::assertStringContainsString('/assets/css/personal-agent-chat-history.css?v=1.2.0', $source);
+        self::assertStringContainsString('/assets/js/personal-agent-chat-history.js?v=1.1.0', $source);
     }
 
     public function testMerchantAdminNavigationRemainsIndependent(): void
@@ -77,14 +78,5 @@ final class CustomerInboxSidebarContractTest extends TestCase
         self::assertStringContainsString("str_starts_with(\$currentSidebarScript, 'merchant-')", $source);
         self::assertStringContainsString("require_once __DIR__ . '/merchant-navigation.php'", $source);
         self::assertStringContainsString('mg_merchant_navigation_sidebar($agentSidebarActive)', $source);
-    }
-
-    public function testEveryFeedViewHighlightsTheMainFeedLink(): void
-    {
-        $sidebar = $this->source('includes/agent-sidebar.php');
-        $feed = $this->source('feed.php');
-
-        self::assertStringContainsString("str_starts_with(\$agentSidebarActive, 'feed-')", $sidebar);
-        self::assertStringContainsString("\$agent_tab = 'feed-' . \$feedView", $feed);
     }
 }
