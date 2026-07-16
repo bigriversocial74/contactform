@@ -35,4 +35,4 @@ if (!mg_is_authenticated()) {
   </section>
 </template>
 <script src="/assets/js/create-center-viewport-fix.js?v=1.0.0" defer></script>
-<script src="/assets/js/create-list-extension.js?v=1.1.0" defer></script>
+<script src="/assets/js/create-list-extension.js?v=1.2.0" defer></script>
