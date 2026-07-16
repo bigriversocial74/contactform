@@ -30,6 +30,8 @@ try {
     $checkout = $read('api/commerce/cart-checkout.php');
     $agentPage = $read('agent.php');
     $listsPage = $read('lists.php');
+    $savesPage = $read('saves.php');
+    $sidebar = $read('includes/personal-agent-sidebar.php');
     $successPage = $read('checkout-success.php');
     $footer = $read('includes/footer.php');
     $actionsJs = $read('assets/js/personal-agent-opportunity-actions.js');
@@ -39,6 +41,7 @@ try {
     $merchantJs = $read('assets/js/merchant-agent-roi.js');
     $merchantView = $read('includes/merchant-agent-roi-view.php');
     $css = $read('assets/css/personal-agent-opportunity-actions.css');
+    $savesCss = $read('assets/css/personal-agent-my-saves.css');
 
     foreach (['personal_agent_opportunities','personal_agent_opportunity_events','attribution_token','merchant_user_id','order_public_id','stage_18ak_personal_agent_opportunity_attribution_v1'] as $marker) {
         $expect(str_contains($migration,$marker),'Migration contains ' . $marker);
@@ -51,7 +54,19 @@ try {
         || (str_contains($credit,'mg_personal_agent_chat_with_recovery_response') && str_contains($recoveryResponse,'mg_personal_agent_chat_with_opportunity_attribution'));
     $expect(str_contains($bootstrap,"opportunity-attribution.php") && str_contains($bootstrap,"opportunity-response.php") && $runtimeCallsAttribution,'Personal Agent runtime loads attribution decorator directly or through recovery wrapper');
     $expect(str_contains($actionsApi,"mg_require_csrf_for_write") && str_contains($actionsApi,"purchase_completed") && str_contains($actionsApi,"campaign_join_completed"),'Opportunity action endpoint is protected and records conversions');
-    $expect(str_contains($listApi,'mg_personal_agent_opportunity_list') && str_contains($listsPage,'Saved Opportunities') && str_contains($savedJs,'/api/user-agent/opportunities.php'),'My Lists renders saved opportunities');
+    $expect(
+        str_contains($listApi,'mg_personal_agent_opportunity_list')
+        && str_contains($listsPage,'href="/saves.php"')
+        && !str_contains($listsPage,'data-saved-opportunities')
+        && str_contains($savesPage,'data-saved-opportunities')
+        && str_contains($savesPage,'data-saved-opportunity-filter="product"')
+        && str_contains($savedJs,'/api/user-agent/opportunities.php')
+        && str_contains($savedJs,"action:'unsave'")
+        && str_contains($savedJs,'>Unsave</button>'),
+        'My Saves separates saved recommendations from contact lists and supports unsave'
+    );
+    $expect(str_contains($sidebar,"'saves.php' => 'saves'") && str_contains($sidebar,'href="/saves.php"') && str_contains($sidebar,'My Saves'),'Customer sidebar exposes a dedicated My Saves tab');
+    $expect(str_contains($savesCss,'.mg-user-lists-hero-actions') && str_contains($savesCss,'.mg-saves-filter-tabs') && str_contains($savesCss,'button.is-danger'),'My Saves controls and unsave action are responsive and clearly styled');
     $expect(str_contains($cartItems,'cart_added') && str_contains($checkout,'checkout_started') && str_contains($commerceJs,'agent_attribution_token'),'Cart and checkout carry Personal Agent attribution');
     $expect(str_contains($successPage,'personal-agent-attribution-runtime.js') && str_contains($runtimeJs,'purchase_completed') && str_contains($runtimeJs,'campaign_join_completed'),'Global runtime records purchase and campaign outcomes');
     $expect(str_contains($footer,'personal-agent-attribution-runtime.js?v=1.0.0'),'Signed-in pages load the attribution runtime');
