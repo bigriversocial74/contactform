@@ -257,7 +257,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }).observe(ui.feed, { childList: true });
   }
 
-  fetchThreads(!!agentRoot).catch(function (error) {
+  var shouldSelectInitialThread = !!agentRoot && agentRoot.getAttribute('data-active-view') === 'home';
+  fetchThreads(shouldSelectInitialThread).catch(function (error) {
     groupsHost.innerHTML = '<div class="mg-personal-chat-empty">' + esc(error.message || 'Unable to load chats.') + '</div>';
     setStatus(error.message || 'Unable to load chats.', 'error');
   });
