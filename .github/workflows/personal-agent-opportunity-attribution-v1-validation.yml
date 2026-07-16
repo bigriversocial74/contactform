@@ -5,8 +5,10 @@ on:
     paths:
       - 'agent.php'
       - 'lists.php'
+      - 'saves.php'
       - 'checkout-success.php'
       - 'includes/footer.php'
+      - 'includes/personal-agent-sidebar.php'
       - 'includes/personal-gifting-agent.php'
       - 'includes/personal-agent/**'
       - 'includes/merchant-agent-roi-view.php'
@@ -15,6 +17,7 @@ on:
       - 'api/commerce/cart-items.php'
       - 'api/commerce/cart-checkout.php'
       - 'assets/css/personal-agent-opportunity-actions.css'
+      - 'assets/css/personal-agent-my-saves.css'
       - 'assets/js/personal-agent-opportunity-actions.js'
       - 'assets/js/personal-agent-attribution-runtime.js'
       - 'assets/js/saved-opportunities.js'
@@ -45,7 +48,7 @@ jobs:
           node-version: '22'
       - name: PHP syntax
         run: |
-          for file in agent.php lists.php checkout-success.php includes/footer.php includes/personal-gifting-agent.php includes/personal-agent/opportunity-attribution.php includes/personal-agent/opportunity-response.php includes/personal-agent/credit-response.php includes/merchant-agent-roi-view.php api/user-agent/opportunities.php api/user-agent/opportunity-action.php api/merchant/personal-agent-attribution.php api/commerce/cart-items.php api/commerce/cart-checkout.php scripts/validate_personal_agent_opportunity_attribution_v1.php; do php -l "$file"; done
+          for file in agent.php lists.php saves.php checkout-success.php includes/footer.php includes/personal-agent-sidebar.php includes/personal-gifting-agent.php includes/personal-agent/opportunity-attribution.php includes/personal-agent/opportunity-response.php includes/personal-agent/credit-response.php includes/merchant-agent-roi-view.php api/user-agent/opportunities.php api/user-agent/opportunity-action.php api/merchant/personal-agent-attribution.php api/commerce/cart-items.php api/commerce/cart-checkout.php scripts/validate_personal_agent_opportunity_attribution_v1.php; do php -l "$file"; done
       - name: JavaScript syntax
         run: |
           for file in assets/js/personal-agent-opportunity-actions.js assets/js/personal-agent-attribution-runtime.js assets/js/saved-opportunities.js assets/js/customer-commerce.js assets/js/merchant-agent-roi.js; do node --check "$file"; done

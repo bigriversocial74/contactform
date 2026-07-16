@@ -8,6 +8,7 @@ $activeSidebarKey = match ($currentSidebarScript) {
     'feed.php' => 'feed',
     'loyalty-cards.php' => 'loyalty-cards',
     'lists.php' => 'lists',
+    'saves.php' => 'saves',
     'agent.php' => ((string) ($agent_personal_view ?? 'home')) === 'design' ? 'design' : 'new-chat',
     'design-studio.php' => 'design',
     default => '',
@@ -35,6 +36,9 @@ $sidebarLinkClass = static function (string $key) use ($activeSidebarKey): strin
       </a>
       <a class="<?= mg_e($sidebarLinkClass('lists')) ?>" href="/lists.php">
         <span aria-hidden="true">☷</span><strong>My Lists</strong>
+      </a>
+      <a class="<?= mg_e($sidebarLinkClass('saves')) ?>" href="/saves.php">
+        <span aria-hidden="true">☆</span><strong>My Saves</strong>
       </a>
       <button class="<?= mg_e($sidebarLinkClass('new-chat')) ?>" type="button" data-personal-agent-new-chat>
         <span aria-hidden="true">+</span><strong>New Chat</strong>

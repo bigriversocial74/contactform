@@ -12,6 +12,9 @@ $paths=[
     'create_css'=>$root.'/assets/css/create-center-inline.css',
     'mobile_post_css'=>$root.'/assets/css/create-center-mobile-post-unified.css',
     'menu_controller'=>$root.'/assets/js/create-menu.js',
+    'manage_css'=>$root.'/assets/css/create-center-manage-actions.css',
+    'manage_js'=>$root.'/assets/js/create-center-manage-actions.js',
+    'list_extension'=>$root.'/includes/header-components/create-list-extension.php',
 ];
 
 $content=[];
@@ -79,6 +82,21 @@ $checks=[
         && str_contains($content['create_css'],'.mg-create-form-grid-4')
         && str_contains($content['mobile_post_css'],'.mg-create-center-post .mg-feed-upload-grid')
         && str_contains($content['menu_controller'],'input:not([disabled]),select:not([disabled]),textarea:not([disabled])'),
+    'home cards remove the duplicate intro and expose separate manage destinations' =>
+        str_contains($content['manage_css'],'.mg-create-center-welcome{display:none!important}')
+        && str_contains($content['manage_js'],'intro.remove()')
+        && str_contains($content['manage_js'],"product: '/merchant-products.php'")
+        && str_contains($content['manage_js'],"campaign: '/merchant-campaigns.php'")
+        && str_contains($content['manage_js'],"reward: '/merchant-reward-templates.php'")
+        && str_contains($content['manage_js'],"post: '/feed.php?view=mine'")
+        && str_contains($content['manage_js'],"storefront: '/merchant-storefront.php'")
+        && str_contains($content['manage_js'],"location: '/merchant-locations.php'")
+        && str_contains($content['manage_js'],"list: '/lists.php'")
+        && str_contains($content['manage_js'],"document.createElement('article')")
+        && str_contains($content['manage_js'],"document.createElement('button')")
+        && str_contains($content['manage_js'],"document.createElement('a')")
+        && str_contains($content['manage_js'],'card.replaceWith(shell)')
+        && str_contains($content['list_extension'],'create-center-manage-actions.js?v=1.0.0'),
 ];
 
 $failed=[];
@@ -92,4 +110,5 @@ if($failed!==[]){
     exit(1);
 }
 
-echo "\nFullscreen inline create center contract: 12/12.\n";
+$total=count($checks);
+echo "\nFullscreen inline create center contract: {$total}/{$total}.\n";

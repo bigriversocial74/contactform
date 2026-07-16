@@ -17,13 +17,8 @@ $page_title = 'My Lists | Microgifter';
 $page_section = 'agent';
 $header_mode = 'account';
 $agent_tab = 'lists';
-$page_styles = ['/assets/css/user-lists.css','/assets/css/personal-agent-opportunity-actions.css?v=1.0.0','/assets/css/personal-agent-recovery.css?v=1.0.0'];
-$page_scripts = [
-    '/assets/js/user-lists.js',
-    '/assets/js/user-lists-create.js?v=1.1.0',
-    '/assets/js/saved-opportunities.js?v=1.1.0',
-    '/assets/js/personal-agent-attribution-runtime.js?v=1.0.0',
-];
+$page_styles = ['/assets/css/user-lists.css','/assets/css/personal-agent-my-saves.css?v=1.0.0'];
+$page_scripts = ['/assets/js/user-lists.js','/assets/js/user-lists-create.js?v=1.1.0'];
 
 require __DIR__ . '/includes/header.php';
 ?>
@@ -36,22 +31,11 @@ require __DIR__ . '/includes/header.php';
         <h1>My Lists</h1>
         <p>Organize family, friends, coworkers, birthdays, holidays, and private contacts into reusable gifting groups.</p>
       </div>
-      <button class="mg-btn mg-btn-primary" type="button" data-user-list-open-create aria-haspopup="dialog" aria-controls="mg-create-menu" aria-expanded="false">Create list</button>
-    </header>
-
-    <section class="mg-saved-opportunities" data-saved-opportunities aria-labelledby="saved-opportunities-title">
-      <header>
-        <div>
-          <span class="mg-user-lists-kicker">Agent opportunities</span>
-          <h2 id="saved-opportunities-title">Saved Opportunities</h2>
-          <p>Products, campaigns, merchants, experiences, and rewards saved from Personal Agent recommendations.</p>
-        </div>
-        <span data-saved-opportunity-status aria-live="polite"></span>
-      </header>
-      <div class="mg-saved-opportunity-grid" data-saved-opportunity-grid>
-        <div class="mg-saved-opportunities-empty">Loading saved opportunities…</div>
+      <div class="mg-user-lists-hero-actions">
+        <a class="mg-btn mg-user-lists-secondary-action" href="/saves.php">My Saves</a>
+        <button class="mg-btn mg-btn-primary" type="button" data-user-list-open-create aria-haspopup="dialog" aria-controls="mg-create-menu" aria-expanded="false">Create list</button>
       </div>
-    </section>
+    </header>
 
     <div class="mg-user-lists-toolbar">
       <label class="mg-user-lists-search"><span>Search lists</span><input type="search" placeholder="Family, birthdays, coworkers…" data-user-list-filter></label>
