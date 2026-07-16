@@ -82,7 +82,7 @@
       var cycleButton = event.target.closest('[data-sub-v2-cycle]');
       if (cycleButton) {
         state.cycle = cycleButton.getAttribute('data-sub-v2-cycle') === 'year' ? 'year' : 'month';
-        renderModal();
+        renderModal(true);
       }
       var confirmButton = event.target.closest('[data-sub-v2-confirm]');
       if (confirmButton) submitSelected(confirmButton);
@@ -108,7 +108,7 @@
     state.selectedPackageId = packageId;
     var subscription = currentSubscription();
     state.cycle = subscription && subscription.billing_cycle === 'year' ? 'year' : 'month';
-    renderModal();
+    renderModal(true);
     ensureModal().hidden = false;
     document.body.classList.add('mg-sub-v2-lock');
   }
@@ -120,7 +120,7 @@
     setModalStatus('', '');
   }
 
-  function renderModal() {
+  function renderModal(clearStatus) {
     var modal = ensureModal();
     var packageData = packageById(state.selectedPackageId);
     if (!packageData) return;
@@ -165,12 +165,13 @@
     var confirm = modal.querySelector('[data-sub-v2-confirm]');
     confirm.disabled = isCurrent;
     confirm.textContent = isCurrent ? 'Current package' : (existingStripe && isDowngrade ? 'Schedule change' : 'Continue to Stripe');
-    setModalStatus('', '');
+    if (clearStatus !== false) setModalStatus('', '');
   }
 
   async function submitSelected(button) {
     if (!state.selectedPackageId || button.disabled) return;
     var original = button.textContent;
+    var finished = false;
     button.disabled = true;
     button.textContent = 'Preparing…';
     setModalStatus('Creating a secure billing session…', '');
@@ -187,20 +188,20 @@
         window.location.href = request.checkout_url;
         return;
       }
+      await loadState();
       if (request.status === 'approved' && request.scheduled_effective_at) {
         setModalStatus('Change scheduled for ' + dateLabel(request.scheduled_effective_at) + '.', 'success');
-        await loadState();
-        window.setTimeout(closeModal, 900);
-        return;
+      } else {
+        setModalStatus(response.message || 'Package request submitted.', 'success');
       }
-      setModalStatus(response.message || 'Package request submitted.', 'success');
-      await loadState();
+      finished = true;
+      window.setTimeout(closeModal, 1300);
     } catch (error) {
       setModalStatus(error.message || 'Unable to start subscription billing.', 'error');
     } finally {
       button.disabled = false;
       button.textContent = original;
-      renderModal();
+      if (!finished) renderModal(false);
     }
   }
 
@@ -220,13 +221,34 @@
     }
   }
 
+  function resetManageConfirmation(button) {
+    if (!button) return;
+    window.clearTimeout(Number(button.dataset.confirmTimer || 0));
+    button.removeAttribute('data-confirm-ready');
+    button.classList.remove('is-confirming');
+    button.textContent = button.dataset.defaultLabel || button.textContent;
+    delete button.dataset.confirmTimer;
+  }
+
   async function manageAction(action, button) {
     var subscription = currentSubscription();
     if (!subscription || !subscription.subscription_id) return;
-    var label = action === 'reactivate' ? 'Keep subscription active?' : 'Cancel at the end of the current paid period?';
-    if (!window.confirm(label)) return;
-    var original = button.textContent;
+
+    if (button.getAttribute('data-confirm-ready') !== action) {
+      button.dataset.defaultLabel = button.textContent;
+      button.setAttribute('data-confirm-ready', action);
+      button.classList.add('is-confirming');
+      button.textContent = action === 'reactivate' ? 'Confirm Keep Subscription' : 'Confirm Period-End Cancellation';
+      button.dataset.confirmTimer = String(window.setTimeout(function () {
+        resetManageConfirmation(button);
+      }, 7000));
+      return;
+    }
+
+    window.clearTimeout(Number(button.dataset.confirmTimer || 0));
+    var original = button.dataset.defaultLabel || button.textContent;
     button.disabled = true;
+    button.classList.remove('is-confirming');
     button.textContent = 'Updating…';
     try {
       await MG.post('/api/subscriptions/manage.php', { subscription_id: subscription.subscription_id, action: action });
@@ -237,6 +259,8 @@
     } finally {
       button.disabled = false;
       button.textContent = original;
+      button.removeAttribute('data-confirm-ready');
+      delete button.dataset.confirmTimer;
     }
   }
 
