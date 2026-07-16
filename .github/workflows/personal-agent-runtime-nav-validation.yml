@@ -6,18 +6,24 @@ on:
       - integration-from-repair-20260628
     paths:
       - 'agent.php'
+      - 'merchant-agent-chat.php'
+      - 'account-subscriptions.php'
       - 'lists.php'
       - 'includes/agent-workspace.php'
       - 'includes/agent-sidebar.php'
+      - 'includes/agent-quick-actions.php'
       - 'includes/header-components/app-header.php'
       - 'includes/gift-action-center.php'
       - 'includes/gift-center-sidebar.php'
+      - 'includes/personal-agent-sidebar.php'
       - 'includes/user-contact-lists.php'
       - 'includes/user-contact-search.php'
       - 'includes/personal-agent/**'
       - 'assets/css/user-lists.css'
       - 'assets/css/personal-agent-chat-canvas.css'
+      - 'assets/css/personal-agent-chat-history.css'
       - 'assets/css/personal-agent-inline-intro.css'
+      - 'assets/js/agent-sidebar-tools.js'
       - 'assets/js/personal-agent-chat-canvas.js'
       - 'assets/js/user-lists-create.js'
       - 'scripts/validate_personal_agent_runtime_nav.php'
@@ -47,9 +53,12 @@ jobs:
       - name: PHP syntax
         run: |
           php -l agent.php
+          php -l merchant-agent-chat.php
+          php -l account-subscriptions.php
           php -l lists.php
           php -l includes/agent-workspace.php
           php -l includes/agent-sidebar.php
+          php -l includes/agent-quick-actions.php
           php -l includes/header-components/app-header.php
           php -l includes/gift-action-center.php
           php -l includes/gift-center-sidebar.php
@@ -66,6 +75,7 @@ jobs:
           php -l scripts/validate_personal_agent_runtime_nav.php
       - name: JavaScript syntax
         run: |
+          node --check assets/js/agent-sidebar-tools.js
           node --check assets/js/personal-agent-chat-canvas.js
           node --check assets/js/user-lists-create.js
       - name: Runtime and navigation contract
