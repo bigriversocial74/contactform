@@ -1,0 +1,69 @@
+/* Personal Agent full-canvas conversation layout.
+   The home conversation is the canvas; it is not placed inside a secondary card. */
+body.mg-personal-gifting-agent-page .mg-personal-agent-chat-view{
+  width:100%!important;
+  max-width:none!important;
+  min-height:100%!important;
+  margin:0!important;
+  padding:0!important;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-chat-stream{
+  display:grid!important;
+  align-content:start!important;
+  gap:16px!important;
+  width:100%!important;
+  min-height:100%!important;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-message.is-intro{
+  width:100%!important;
+  max-width:none!important;
+  margin:0!important;
+  padding:4px 0 14px!important;
+  border:0!important;
+  border-bottom:1px solid #dbe5f1!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-message.is-intro>p{
+  max-width:980px!important;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-intro-stats{
+  width:100%!important;
+  margin-top:12px!important;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-prompts{
+  width:100%!important;
+  max-width:none!important;
+  padding-left:0!important;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-feed{
+  width:100%!important;
+  max-width:none!important;
+  min-height:240px!important;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-feed .mg-personal-agent-message{
+  max-width:min(860px,88%)!important;
+}
+
+body.mg-personal-gifting-agent-page .mg-personal-agent-card-grid{
+  width:min(1040px,100%)!important;
+}
+
+@media(max-width:760px){
+  body.mg-personal-gifting-agent-page .mg-personal-agent-message.is-intro{
+    padding:2px 0 12px!important;
+    border-radius:0!important;
+  }
+
+  body.mg-personal-gifting-agent-page .mg-personal-agent-feed .mg-personal-agent-message{
+    max-width:94%!important;
+  }
+}
