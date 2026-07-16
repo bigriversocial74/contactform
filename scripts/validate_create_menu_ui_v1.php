@@ -6,10 +6,13 @@ $read = static fn(string $path): string => is_file($root . '/' . $path) ? (file_
 $baseCss = $read('assets/css/create-menu.css');
 $centerCss = $read('assets/css/create-center-inline.css');
 $mobilePostCss = $read('assets/css/create-center-mobile-post-unified.css');
+$manageCss = $read('assets/css/create-center-manage-actions.css');
 $js = $read('assets/js/create-menu.js');
 $centerJs = $read('assets/js/create-center-inline.js');
 $postJs = $read('assets/js/create-center-post-inline.js');
+$manageJs = $read('assets/js/create-center-manage-actions.js');
 $template = $read('includes/header-templates/create-menu.php');
+$listExtension = $read('includes/header-components/create-list-extension.php');
 $postRuntime = $read('includes/header-components/post-composer-modal.php');
 $composer = $read('includes/social-feed-composer.php');
 $header = $read('includes/header.php');
@@ -20,12 +23,14 @@ $sections = [
         is_file($root . '/assets/css/create-menu.css'),
         is_file($root . '/assets/css/create-center-inline.css'),
         is_file($root . '/assets/css/create-center-mobile-post-unified.css'),
+        is_file($root . '/assets/css/create-center-manage-actions.css'),
         !is_file($root . '/assets/css/create-menu-fullscreen.css'),
         !is_file($root . '/assets/css/create-menu-desktop-force.css'),
         !str_contains($layoutFixes, 'create-menu-fullscreen.css'),
         substr_count($header, '/assets/css/create-menu.css') >= 1,
         str_contains($postRuntime, '/assets/css/create-center-inline.css'),
         str_contains($postRuntime, '/assets/css/create-center-mobile-post-unified.css'),
+        str_contains($listExtension, '/assets/css/create-center-manage-actions.css?v=1.0.0'),
     ],
     'Full-screen professional workspace' => [
         str_contains($centerCss, 'width:100vw!important'),
@@ -108,6 +113,24 @@ $sections = [
         str_contains($postJs, "MG.post('/api/social/posts.php'"),
         str_contains($template, 'data-create-post-success'),
         str_contains($centerJs, 'showSuccess('),
+    ],
+    'Home cards remove the duplicate intro and separate create from manage' => [
+        str_contains($manageCss, '.mg-create-center-welcome{display:none!important}'),
+        str_contains($manageCss, '.mg-create-center-card-open'),
+        str_contains($manageCss, '.mg-create-center-manage'),
+        str_contains($manageJs, 'intro.remove()'),
+        str_contains($manageJs, "document.createElement('article')"),
+        str_contains($manageJs, "document.createElement('button')"),
+        str_contains($manageJs, "document.createElement('a')"),
+        str_contains($manageJs, 'card.replaceWith(shell)'),
+        str_contains($manageJs, "product: '/merchant-products.php'"),
+        str_contains($manageJs, "campaign: '/merchant-campaigns.php'"),
+        str_contains($manageJs, "reward: '/merchant-reward-templates.php'"),
+        str_contains($manageJs, "post: '/feed.php?view=mine'"),
+        str_contains($manageJs, "storefront: '/merchant-storefront.php'"),
+        str_contains($manageJs, "location: '/merchant-locations.php'"),
+        str_contains($manageJs, "list: '/lists.php'"),
+        str_contains($listExtension, '/assets/js/create-center-manage-actions.js?v=1.0.0'),
     ],
 ];
 
