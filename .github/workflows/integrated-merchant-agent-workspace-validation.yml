@@ -8,16 +8,21 @@ on:
       - 'agent.php'
       - 'merchant-agent-chat.php'
       - 'includes/agent-workspace.php'
+      - 'includes/personal-agent/workspace-dashboard.php'
       - 'includes/personal-agent-sidebar.php'
       - 'includes/merchant-agent-chat-view.php'
+      - 'includes/ai/merchant-agent-snapshot.php'
       - 'api/ai/merchant-agent-chat.php'
-      - 'assets/css/agent-mode-switch.css'
+      - 'assets/css/personal-agent-chat-history.css'
+      - 'assets/css/personal-agent-full-canvas.css'
       - 'assets/css/merchant-agent-integrated-workspace.css'
       - 'assets/css/merchant-agent-integrated-compat.css'
+      - 'assets/css/merchant-agent-snapshot.css'
       - 'assets/js/agent-merchant-handoff.js'
       - 'assets/js/merchant-agent-handoff-receiver.js'
       - 'assets/js/merchant-agent-sidebar-history.js'
       - 'assets/js/merchant-agent-chat-mobile.js'
+      - 'assets/js/merchant-agent-chat.js'
       - 'scripts/validate_integrated_merchant_agent_workspace_v1.php'
       - 'tests/phpunit/IntegratedMerchantAgentWorkspaceV1Test.php'
       - '.github/workflows/integrated-merchant-agent-workspace-validation.yml'
@@ -49,8 +54,11 @@ jobs:
           php -l agent.php
           php -l merchant-agent-chat.php
           php -l includes/agent-workspace.php
+          php -l includes/personal-agent/workspace-dashboard.php
           php -l includes/personal-agent-sidebar.php
           php -l includes/merchant-agent-chat-view.php
+          php -l includes/ai/merchant-agent-snapshot.php
+          php -l api/ai/merchant-agent-chat.php
           php -l scripts/validate_integrated_merchant_agent_workspace_v1.php
           php -l tests/phpunit/IntegratedMerchantAgentWorkspaceV1Test.php
 
@@ -62,7 +70,7 @@ jobs:
           node --check assets/js/merchant-agent-chat-mobile.js
           node --check assets/js/merchant-agent-chat.js
 
-      - name: Integrated Merchant Agent contract
+      - name: Integrated Agent contract
         run: php scripts/validate_integrated_merchant_agent_workspace_v1.php
 
       - name: PHPUnit contract when available

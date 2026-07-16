@@ -10,8 +10,7 @@ $page_body_class = 'mg-integrated-merchant-agent-page';
 $page_styles = [
     '/assets/css/agent-workspace-layout.css',
     '/assets/css/personal-gifting-agent.css',
-    '/assets/css/personal-agent-chat-history.css?v=1.2.0',
-    '/assets/css/agent-mode-switch.css?v=1.0.0',
+    '/assets/css/personal-agent-chat-history.css?v=1.3.0',
     '/assets/css/merchant-agent-chat.css',
     '/assets/css/merchant-agent-chat-followup.css',
     '/assets/css/merchant-agent-chat-skills.css',
@@ -23,10 +22,11 @@ $page_styles = [
     '/assets/css/sponsored-campaign-card.css',
     '/assets/css/merchant-agent-integrated-workspace.css?v=1.0.0',
     '/assets/css/merchant-agent-integrated-compat.css?v=1.0.0',
+    '/assets/css/merchant-agent-snapshot.css?v=1.0.0',
     '/assets/css/agent-header-tabs-shared.css?v=1.0.0',
 ];
 $page_scripts = [
-    '/assets/js/merchant-agent-chat.js?v=2.2.0',
+    '/assets/js/merchant-agent-chat.js?v=2.3.0',
     '/assets/js/merchant-agent-chat-voice.js',
     '/assets/js/merchant-agent-chat-speech-results.js',
     '/assets/js/merchant-agent-chat-control-panel.js?v=1.1.0',

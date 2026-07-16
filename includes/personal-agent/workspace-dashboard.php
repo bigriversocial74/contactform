@@ -6,26 +6,24 @@
     <div class="mg-workflow-migration-note"><strong>Phase 3 workflow migration required.</strong><span>Import <code>database/20260714_personal_gifting_workflows_phase3.sql</code> to activate schedules, recurring programs, group pledges, recipient requests, bundles, and lifecycle reminders.</span></div>
   <?php endif; ?>
 
-  <section class="mg-personal-agent-view mg-personal-agent-chat-view" data-personal-agent-view="home"<?= $activeView === 'home' ? '' : ' hidden' ?>>
-    <div class="mg-personal-agent-chat-stream">
-      <article class="mg-personal-agent-message is-assistant is-intro">
-        <span class="mg-personal-agent-message-label">Personal Gifting Agent</span>
-        <strong class="mg-personal-agent-intro-greeting">Good morning, <?= mg_e($displayName) ?>.</strong>
-        <p>Ask about your contacts, lists, purchases, gifts, important dates, or public Microgifter merchants and products. I can prepare contact and planning changes for your review, but I will never save, purchase, or send anything without your confirmation.</p>
-        <div class="mg-personal-agent-summary mg-personal-agent-intro-stats" data-personal-agent-summary aria-label="Personal gifting summary"></div>
-      </article>
+  <section class="mg-personal-agent-view mg-personal-agent-chat-view mg-personal-agent-chat-stream" data-personal-agent-view="home"<?= $activeView === 'home' ? '' : ' hidden' ?>>
+    <article class="mg-personal-agent-message is-assistant is-intro">
+      <span class="mg-personal-agent-message-label">Personal Gifting Agent</span>
+      <strong class="mg-personal-agent-intro-greeting">Good morning, <?= mg_e($displayName) ?>.</strong>
+      <p>Ask about your contacts, lists, purchases, gifts, important dates, or public Microgifter merchants and products. I can prepare contact and planning changes for your review, but I will never save, purchase, or send anything without your confirmation.</p>
+      <div class="mg-personal-agent-summary mg-personal-agent-intro-stats" data-personal-agent-summary aria-label="Personal gifting summary"></div>
+    </article>
 
-      <div class="mg-personal-agent-prompts" aria-label="Suggested prompts">
-        <button type="button" data-agent-prompt="How many contacts do I have?">Count my contacts</button>
-        <button type="button" data-agent-prompt="Who has a birthday next month?">Upcoming birthdays</button>
-        <button type="button" data-agent-prompt="Which contacts are missing birthdays?">Missing birthdays</button>
-        <button type="button" data-agent-prompt="Who should I plan a gift for next?">Relationship signals</button>
-        <button type="button" data-agent-prompt="Show me my saved opportunities.">Saved opportunities</button>
-        <button type="button" data-agent-prompt="Find public Microgifter merchants and products that fit my saved contact preferences.">Explore marketplace</button>
-      </div>
-
-      <div class="mg-personal-agent-feed" data-personal-agent-feed aria-live="polite"></div>
+    <div class="mg-personal-agent-prompts" aria-label="Suggested prompts">
+      <button type="button" data-agent-prompt="How many contacts do I have?">Count my contacts</button>
+      <button type="button" data-agent-prompt="Who has a birthday next month?">Upcoming birthdays</button>
+      <button type="button" data-agent-prompt="Which contacts are missing birthdays?">Missing birthdays</button>
+      <button type="button" data-agent-prompt="Who should I plan a gift for next?">Relationship signals</button>
+      <button type="button" data-agent-prompt="Show me my saved opportunities.">Saved opportunities</button>
+      <button type="button" data-agent-prompt="Find public Microgifter merchants and products that fit my saved contact preferences.">Explore marketplace</button>
     </div>
+
+    <div class="mg-personal-agent-feed" data-personal-agent-feed aria-live="polite"></div>
   </section>
 
   <section class="mg-personal-agent-view" data-personal-agent-view="contacts"<?= $activeView === 'contacts' ? '' : ' hidden' ?>><section class="mg-personal-agent-section"><header><div><span>Contact intelligence</span><h2>Your private and mutually connected contacts</h2></div></header><div class="mg-personal-agent-contact-grid" data-personal-agent-contacts></div></section></section>

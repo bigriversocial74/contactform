@@ -13,6 +13,7 @@ $agentPage = $read('agent.php');
 $workspace = $read('includes/agent-workspace.php');
 $dashboard = $read('includes/personal-agent/workspace-dashboard.php');
 $chatCss = $read('assets/css/personal-agent-chat-canvas.css');
+$fullCanvasCss = $read('assets/css/personal-agent-full-canvas.css');
 $chatJs = $read('assets/js/personal-agent-chat-canvas.js');
 $chatActions = $read('assets/js/personal-gifting-agent-actions.js');
 $listPage = $read('lists.php');
@@ -27,19 +28,29 @@ $checks = [
         && !str_contains($giftSidebar, 'mg-gift-center-my-lists'),
     'customer navigation has one My Lists entry' => substr_count($personalSidebar, '<strong>My Lists</strong>') === 1
         && str_contains($personalSidebar, 'href="/lists.php"'),
-    'customer navigation includes chat history' => str_contains($personalSidebar, 'data-personal-agent-thread-groups')
-        && str_contains($personalSidebar, 'data-personal-agent-new-chat'),
+    'customer navigation includes chat history and compact Agent switch' => str_contains($personalSidebar, 'data-personal-agent-thread-groups')
+        && str_contains($personalSidebar, 'data-personal-agent-new-chat')
+        && str_contains($personalSidebar, 'mg-agent-sidebar-switch')
+        && !str_contains($personalSidebar, 'class="mg-agent-mode-switch"')
+        && !str_contains($personalSidebar, 'mg-agent-mode-options'),
     'Training Lab is not in the customer sidebar' => !str_contains($personalSidebar, 'Training Lab')
         && !str_contains($personalSidebar, '/training-lab.php'),
-    'chat canvas remains full width' => str_contains($dashboard, 'data-agent-canvas')
+    'chat canvas remains full width and owns its section' => str_contains($dashboard, 'data-agent-canvas')
+        && str_contains($dashboard, 'mg-personal-agent-chat-view mg-personal-agent-chat-stream')
+        && !str_contains($dashboard, '<div class="mg-personal-agent-chat-stream">')
         && str_contains($chatCss, 'position:absolute!important')
-        && str_contains($chatCss, 'overflow-y:auto!important'),
+        && str_contains($chatCss, 'overflow-y:auto!important')
+        && str_contains($fullCanvasCss, '.mg-personal-agent-chat-view')
+        && str_contains($fullCanvasCss, 'width:100%!important')
+        && str_contains($fullCanvasCss, 'background:transparent!important')
+        && str_contains($fullCanvasCss, 'box-shadow:none!important'),
     'composer sends through the Agent API' => str_contains($workspace, 'mg-personal-agent-composer-row')
         && str_contains($chatActions, "Microgifter.post('/api/user-agent/chat.php'")
         && str_contains($chatJs, 'Good afternoon')
         && str_contains($chatJs, 'Good evening'),
-    'Agent assets are loaded' => str_contains($agentPage, 'personal-agent-chat-canvas.css')
-        && str_contains($agentPage, 'personal-agent-chat-history.css?v=1.2.0')
+    'Agent assets are loaded with current cache versions' => str_contains($agentPage, 'personal-agent-chat-canvas.css')
+        && str_contains($agentPage, 'personal-agent-full-canvas.css?v=1.0.0')
+        && str_contains($agentPage, 'personal-agent-chat-history.css?v=1.3.0')
         && str_contains($agentPage, 'personal-agent-chat-history.js?v=1.1.0'),
     'My Lists creation remains wired' => substr_count($listPage, 'data-user-list-open-create') >= 2
         && str_contains($listJs, '[data-user-list-open-create]')
