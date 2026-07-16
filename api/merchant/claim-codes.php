@@ -3,20 +3,22 @@ declare(strict_types=1);
 require_once __DIR__ . '/_claims.php';
 
 // Security regression contract: hash_hmac('sha256', $code, $pepper) is centralized in mg_claim_code_hash().
-// Ownership regression contract: merchant_user_id = ? plus workspace_id=? must scope every query.
+// Ownership regression contract: the owned merchant location is authoritative; stale claim-code owner metadata is normalized on write.
 // Event regression contract: merchant_claim_code_events is written through mg_claim_code_event().
 
 $method=strtoupper($_SERVER['REQUEST_METHOD']??'GET');
 $user=mg_require_permission('merchant.claim_codes.manage');
-$merchantId=(int)$user['id'];
+$actorUserId=(int)$user['id'];
 $pdo=mg_db();
 $workspace=mg_claim_workspace($pdo,$user);
-$workspaceId=(int)$workspace['id'];
+$scope=mg_merchant_location_scope_context($workspace);
+$workspaceId=(int)$scope['workspace_id'];
+$ownerMerchantId=(int)$scope['owner_merchant_id'];
 
 if($method==='GET'){
     $locationId=trim((string)($_GET['location_id']??''));
-    $params=[$merchantId,$workspaceId,$merchantId];
-    $where='mcc.merchant_user_id=? AND ml.workspace_id=? AND ml.merchant_user_id=?';
+    $params=[$workspaceId,$ownerMerchantId];
+    $where=mg_merchant_location_scope_condition('ml','location_scope_mw');
     if($locationId!==''){
         $locationId=mg_claim_code_public_id($locationId,'Invalid merchant location.');
         $where.=' AND ml.public_id=?';
@@ -29,6 +31,7 @@ if($method==='GET'){
                 mcc.created_at,mcc.updated_at
          FROM merchant_claim_codes mcc
          INNER JOIN merchant_locations ml ON ml.id=mcc.location_id
+         '.mg_merchant_location_scope_join('ml','location_scope_mw').'
          WHERE '.$where.'
          ORDER BY ml.name,mcc.status,mcc.label,mcc.id'
     );
@@ -60,7 +63,7 @@ if($method==='POST'){
         $location=mg_claim_location($pdo,$user,$locationPublicId,true);
         if((string)$location['status']!=='active')mg_fail('Merchant location is not active.',409);
 
-        mg_claim_code_assert_no_active_duplicate($pdo,$merchantId,$codeHash);
+        mg_claim_code_assert_no_active_duplicate($pdo,$workspaceId,$ownerMerchantId,$codeHash);
 
         $pdo->prepare(
             "INSERT INTO merchant_claim_codes
@@ -68,22 +71,25 @@ if($method==='POST'){
               valid_from,valid_until,usage_limit,usage_count,created_by_user_id,created_at,updated_at)
              VALUES (?,?,?,?,?,?,'active',?,?,?,0,?,NOW(),NOW())"
         )->execute([
-            $publicId,$merchantId,(int)$location['id'],$label,$codeHash,$last4,
-            $validFrom,$validUntil,$usageLimit,$merchantId,
+            $publicId,$ownerMerchantId,(int)$location['id'],$label,$codeHash,$last4,
+            $validFrom,$validUntil,$usageLimit,$actorUserId,
         ]);
         $claimCodeDbId=(int)$pdo->lastInsertId();
 
-        mg_claim_code_event($pdo,$merchantId,$claimCodeDbId,(int)$location['id'],'created',null,[
+        mg_claim_code_event($pdo,$ownerMerchantId,$claimCodeDbId,(int)$location['id'],'created',null,[
             'code_last4'=>$last4,
             'location_id'=>$locationPublicId,
-        ],$merchantId);
+        ],$actorUserId);
 
+        mg_merchant_location_normalize_ownership(
+            $pdo,(int)$location['id'],$workspaceId,$ownerMerchantId
+        );
         $pdo->commit();
     }catch(Throwable $error){
         if($pdo->inTransaction())$pdo->rollBack();
         mg_security_log('error','merchant.claim_code_create_failed','Claim-code creation failed.',[
             'exception_type'=>$error::class,
-        ],$merchantId);
+        ],$actorUserId);
         mg_fail('Unable to create merchant claim code.',500);
     }
 
@@ -91,7 +97,8 @@ if($method==='POST'){
         'claim_code_id'=>$publicId,
         'location_id'=>$locationPublicId,
         'code_last4'=>$last4,
-    ],$merchantId);
+        'owner_merchant_id'=>$ownerMerchantId,
+    ],$actorUserId);
     mg_ok([
         'claim_code_id'=>$publicId,
         'location_id'=>$locationPublicId,
@@ -115,32 +122,36 @@ if($method==='PATCH'){
             'SELECT mcc.*,ml.public_id location_public_id
              FROM merchant_claim_codes mcc
              INNER JOIN merchant_locations ml ON ml.id=mcc.location_id
-             WHERE mcc.public_id=? AND mcc.merchant_user_id=? AND ml.workspace_id=? AND ml.merchant_user_id=?
+             '.mg_merchant_location_scope_join('ml','location_scope_mw').'
+             WHERE mcc.public_id=? AND '.mg_merchant_location_scope_condition('ml','location_scope_mw').'
              LIMIT 1 FOR UPDATE'
         );
-        $stmt->execute([$publicId,$merchantId,$workspaceId,$merchantId]);
+        $stmt->execute([$publicId,$workspaceId,$ownerMerchantId]);
         $current=$stmt->fetch();
         if(!$current)mg_fail('Merchant claim code not found.',404);
 
-        $pdo->prepare('UPDATE merchant_claim_codes SET status=?,updated_at=NOW() WHERE id=?')
-            ->execute([$status,(int)$current['id']]);
-        mg_claim_code_event($pdo,$merchantId,(int)$current['id'],(int)$current['location_id'],$eventType,null,[
+        $pdo->prepare('UPDATE merchant_claim_codes SET merchant_user_id=?,status=?,updated_at=NOW() WHERE id=?')
+            ->execute([$ownerMerchantId,$status,(int)$current['id']]);
+        mg_merchant_location_normalize_ownership(
+            $pdo,(int)$current['location_id'],$workspaceId,$ownerMerchantId
+        );
+        mg_claim_code_event($pdo,$ownerMerchantId,(int)$current['id'],(int)$current['location_id'],$eventType,null,[
             'code_last4'=>(string)$current['code_last4'],
             'status'=>$status,
-        ],$merchantId);
+        ],$actorUserId);
         $pdo->commit();
     }catch(Throwable $error){
         if($pdo->inTransaction())$pdo->rollBack();
         mg_security_log('error','merchant.claim_code_status_failed','Claim-code status update failed.',[
             'exception_type'=>$error::class,
-        ],$merchantId);
+        ],$actorUserId);
         mg_fail('Unable to update merchant claim code.',500);
     }
 
     mg_audit('merchant.claim_code_status_updated','merchant_claim_code',[
         'claim_code_id'=>$publicId,
         'status'=>$status,
-    ],$merchantId);
+    ],$actorUserId);
     mg_ok(['claim_code_id'=>$publicId,'status'=>$status],'Merchant claim code updated.');
 }
 
