@@ -20,9 +20,11 @@ function mg_personal_agent_credit_update_usage_event(PDO $pdo, int $userId, int 
 function mg_personal_agent_chat_with_credit_response(PDO $pdo, int $userId, array $input): array
 {
     $message = mg_personal_agent_text($input['message'] ?? '', 2000);
+    $recoveryIntent = function_exists('mg_personal_agent_recovery_intent') ? mg_personal_agent_recovery_intent($message) : '';
+    $deterministicRecovery = $recoveryIntent !== '' && function_exists('mg_personal_agent_recovery_schema_ready') && mg_personal_agent_recovery_schema_ready($pdo);
     $model = null;
     $creditBefore = mg_ai_credit_snapshot($pdo,$userId,'anthropic');
-    if ($message !== '' && !mg_personal_agent_message_has_secret_request($message)) {
+    if (!$deterministicRecovery && $message !== '' && !mg_personal_agent_message_has_secret_request($message)) {
         $model = mg_personal_agent_model($pdo,$userId,mg_personal_agent_text($input['model_id'] ?? '',80));
         if ($model) {
             $reserve = max(700,min(2200,(int)($model['max_output_tokens'] ?? 1600)));
@@ -31,7 +33,7 @@ function mg_personal_agent_chat_with_credit_response(PDO $pdo, int $userId, arra
     }
 
     unset($GLOBALS['mg_last_anthropic_response']);
-    $result = mg_personal_agent_chat_with_opportunity_attribution($pdo,$userId,$input);
+    $result = mg_personal_agent_chat_with_recovery_response($pdo,$userId,$input);
     $creditAfter = $creditBefore;
     $tokensUsed = ['input'=>0,'output'=>0,'total'=>0];
 

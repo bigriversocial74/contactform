@@ -10,7 +10,12 @@ $pdo = mg_db();
 mg_merchant_ensure_workspace($pdo,$user);
 
 try {
-    mg_ok(mg_personal_agent_opportunity_merchant_analytics($pdo,(int)$user['id'],(int)($_GET['days'] ?? 90)));
+    $days = max(1,min(365,(int)($_GET['days'] ?? 90)));
+    $attribution = mg_personal_agent_opportunity_merchant_analytics($pdo,(int)$user['id'],$days);
+    $attribution['recovery'] = mg_personal_agent_recovery_schema_ready($pdo)
+        ? mg_personal_agent_recovery_merchant_analytics($pdo,(int)$user['id'],$days)
+        : ['summary'=>[],'by_trigger'=>[],'days'=>$days,'available'=>false];
+    mg_ok($attribution);
 } catch (RuntimeException $error) {
     mg_fail($error->getMessage(),503);
 } catch (Throwable $error) {

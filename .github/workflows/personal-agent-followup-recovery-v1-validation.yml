@@ -1,0 +1,70 @@
+name: Personal Agent Follow-Up Recovery v1 Validation
+
+on:
+  pull_request:
+    paths:
+      - 'agent.php'
+      - 'lists.php'
+      - 'api/user-agent/opportunity-recovery.php'
+      - 'api/communications/personal-agent-recovery-worker.php'
+      - 'api/merchant/personal-agent-attribution.php'
+      - 'includes/personal-agent/**'
+      - 'includes/personal-gifting-agent.php'
+      - 'includes/merchant-agent-roi-view.php'
+      - 'assets/js/personal-agent-opportunity-actions.js'
+      - 'assets/js/personal-agent-recovery.js'
+      - 'assets/js/saved-opportunities.js'
+      - 'assets/js/merchant-agent-roi.js'
+      - 'assets/css/personal-agent-recovery.css'
+      - 'database/stage_18al_personal_agent_followup_recovery_v1.sql'
+      - 'config/migrations.php'
+      - 'scripts/process_personal_agent_opportunity_recovery.php'
+      - 'scripts/validate_personal_agent_followup_recovery_v1.php'
+      - '.github/workflows/personal-agent-followup-recovery-v1-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2','8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: PHP syntax
+        run: |
+          php -l agent.php
+          php -l lists.php
+          php -l api/user-agent/opportunity-recovery.php
+          php -l api/communications/personal-agent-recovery-worker.php
+          php -l api/merchant/personal-agent-attribution.php
+          php -l includes/personal-agent/opportunity-attribution.php
+          php -l includes/personal-agent/opportunity-recovery.php
+          php -l includes/personal-agent/opportunity-response.php
+          php -l includes/personal-agent/recovery-response.php
+          php -l includes/personal-agent/credit-response.php
+          php -l includes/personal-agent/workspace-dashboard.php
+          php -l includes/personal-gifting-agent.php
+          php -l includes/merchant-agent-roi-view.php
+          php -l scripts/process_personal_agent_opportunity_recovery.php
+          php -l scripts/validate_personal_agent_followup_recovery_v1.php
+          php -l config/migrations.php
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/personal-agent-opportunity-actions.js
+          node --check assets/js/personal-agent-recovery.js
+          node --check assets/js/saved-opportunities.js
+          node --check assets/js/merchant-agent-roi.js
+      - name: Recovery contract
+        run: php scripts/validate_personal_agent_followup_recovery_v1.php

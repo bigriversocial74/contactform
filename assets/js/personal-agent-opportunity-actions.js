@@ -31,6 +31,15 @@ document.addEventListener('DOMContentLoaded', function () {
       idempotency_key: action + ':' + text(card.opportunity_id) + ':' + Date.now()
     }, extra || {}));
   }
+  function scheduleReminder(card, hours) {
+    return window.Microgifter.post('/api/user-agent/opportunity-recovery.php', {
+      action:'schedule',
+      opportunity_id:text(card.opportunity_id),
+      attribution_token:text(card.attribution_token),
+      delay_hours:Number(hours || 24),
+      page_path:window.location.pathname + window.location.search
+    });
+  }
   function safeInternal(url) {
     try {
       var parsed = new URL(text(url), window.location.origin);
@@ -53,7 +62,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function actionButton(action, card) {
     var button = document.createElement('button');
     button.type = 'button';
-    button.className = 'mg-agent-opportunity-button' + (action.primary ? ' is-primary' : '') + (action.key === 'hide' ? ' is-muted' : '');
+    button.className = 'mg-agent-opportunity-button' + (action.primary ? ' is-primary' : '') + (action.key === 'hide' ? ' is-muted' : '') + (action.key === 'remind' ? ' is-reminder' : '');
     button.textContent = action.label || action.key;
     button.setAttribute('data-opportunity-action', action.key);
     button.setAttribute('data-opportunity-url', safeInternal(action.url || ''));
@@ -114,7 +123,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var article = button.closest('[data-opportunity-id]');
     var grid = button.closest('.mg-personal-agent-card-grid');
     var cards = grid && Array.isArray(grid._agentCards) ? grid._agentCards : [];
-    var index = article ? Array.prototype.indexOf.call(grid.children, article) : -1;
+    var index = article && grid ? Array.prototype.indexOf.call(grid.children, article) : -1;
     var card = index >= 0 ? cards[index] : null;
     if (!card) return;
     event.preventDefault();
@@ -122,7 +131,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var action = button.getAttribute('data-opportunity-action');
     var destination = safeInternal(button.getAttribute('data-opportunity-url'));
     button.disabled = true;
-    status(article, action === 'save' ? 'Saving…' : 'Recording action…', '');
+    status(article, action === 'save' ? 'Saving…' : (action === 'remind' ? 'Scheduling reminder…' : 'Recording action…'), '');
 
     if (action === 'save') {
       post(card, card.opportunity_state === 'saved' ? 'unsave' : 'save').then(function (response) {
@@ -133,6 +142,16 @@ document.addEventListener('DOMContentLoaded', function () {
         status(article, card.opportunity_state === 'saved' ? 'Saved to My Lists.' : 'Removed from saved opportunities.', 'success');
       }).catch(function (error) {
         status(article, error.message || 'Unable to update this opportunity.', 'error');
+      }).finally(function () { button.disabled = false; });
+      return;
+    }
+    if (action === 'remind') {
+      scheduleReminder(card,24).then(function () {
+        button.textContent = 'Reminder set';
+        button.classList.add('is-saved');
+        status(article,'Reminder scheduled for about 24 hours from now. Manage it under Reminders.','success');
+      }).catch(function (error) {
+        status(article,error.message || 'Unable to schedule this reminder.','error');
       }).finally(function () { button.disabled = false; });
       return;
     }

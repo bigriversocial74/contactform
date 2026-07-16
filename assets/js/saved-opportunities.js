@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', function () {
   if (!root || !window.Microgifter) return;
   var grid = root.querySelector('[data-saved-opportunity-grid]');
   var status = root.querySelector('[data-saved-opportunity-status]');
+  var selectedId = new URLSearchParams(window.location.search).get('opportunity') || '';
 
   function esc(value) {
     return String(value == null ? '' : value).replace(/[&<>'"]/g, function (character) {
@@ -36,15 +37,21 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
     grid.innerHTML = items.map(function (item) {
-      return '<article class="mg-saved-opportunity-card" data-saved-opportunity-card="' + esc(item.id) + '">'
+      var selected = item.id === selectedId;
+      return '<article class="mg-saved-opportunity-card' + (selected ? ' is-recovery-target' : '') + '" data-saved-opportunity-card="' + esc(item.id) + '">'
         + '<div><small>' + esc(item.entity_type) + '</small><h3>' + esc(item.title) + '</h3><small>Saved ' + esc(item.updated_at || item.created_at || '') + '</small></div>'
         + '<div class="mg-saved-opportunity-actions"><a href="' + esc(destination(item)) + '" data-saved-opportunity-open="' + esc(item.id) + '">Open</a>'
+        + '<button type="button" data-saved-opportunity-remind="' + esc(item.id) + '" data-token="' + esc(item.attribution_token) + '">Remind me</button>'
         + '<button type="button" data-saved-opportunity-remove="' + esc(item.id) + '">Remove</button></div></article>';
     }).join('');
     items.forEach(function (item) {
       var link = grid.querySelector('[data-saved-opportunity-open="' + CSS.escape(item.id) + '"]');
       if (link) link.addEventListener('click', function () { remember(item); });
     });
+    if (selectedId) {
+      var selected = grid.querySelector('[data-saved-opportunity-card="' + CSS.escape(selectedId) + '"]');
+      if (selected) selected.scrollIntoView({ behavior:'smooth', block:'center' });
+    }
   }
   function load() {
     if (status) status.textContent = 'Loading saved opportunities…';
@@ -58,6 +65,25 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
   root.addEventListener('click', function (event) {
+    var remind = event.target.closest('[data-saved-opportunity-remind]');
+    if (remind) {
+      remind.disabled = true;
+      if (status) status.textContent = 'Scheduling reminder…';
+      window.Microgifter.post('/api/user-agent/opportunity-recovery.php', {
+        action:'schedule',
+        opportunity_id:remind.getAttribute('data-saved-opportunity-remind'),
+        attribution_token:remind.getAttribute('data-token'),
+        delay_hours:24,
+        page_path:window.location.pathname + window.location.search
+      }).then(function () {
+        remind.textContent = 'Reminder set';
+        if (status) status.textContent = 'Reminder scheduled for about 24 hours from now.';
+      }).catch(function (error) {
+        remind.disabled = false;
+        if (status) status.textContent = error.message || 'Unable to schedule reminder.';
+      });
+      return;
+    }
     var button = event.target.closest('[data-saved-opportunity-remove]');
     if (!button) return;
     button.disabled = true;

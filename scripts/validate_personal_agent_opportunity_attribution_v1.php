@@ -22,6 +22,7 @@ try {
     $response = $read('includes/personal-agent/opportunity-response.php');
     $bootstrap = $read('includes/personal-gifting-agent.php');
     $credit = $read('includes/personal-agent/credit-response.php');
+    $recoveryResponse = is_file($root . '/includes/personal-agent/recovery-response.php') ? $read('includes/personal-agent/recovery-response.php') : '';
     $actionsApi = $read('api/user-agent/opportunity-action.php');
     $listApi = $read('api/user-agent/opportunities.php');
     $merchantApi = $read('api/merchant/personal-agent-attribution.php');
@@ -46,13 +47,15 @@ try {
         $expect(str_contains($service,$marker),'Opportunity service contains ' . $marker);
     }
     $expect(str_contains($response,'mg_personal_agent_chat_with_opportunity_attribution') && str_contains($response,'recommendation_created') && str_contains($response,"'buy_self'") && str_contains($response,"'send_gift'") && str_contains($response,"'join_campaign'"),'Marketplace responses create attributed action cards');
-    $expect(str_contains($bootstrap,"opportunity-attribution.php") && str_contains($bootstrap,"opportunity-response.php") && str_contains($credit,'mg_personal_agent_chat_with_opportunity_attribution'),'Personal Agent runtime loads attribution decorator');
+    $runtimeCallsAttribution = str_contains($credit,'mg_personal_agent_chat_with_opportunity_attribution')
+        || (str_contains($credit,'mg_personal_agent_chat_with_recovery_response') && str_contains($recoveryResponse,'mg_personal_agent_chat_with_opportunity_attribution'));
+    $expect(str_contains($bootstrap,"opportunity-attribution.php") && str_contains($bootstrap,"opportunity-response.php") && $runtimeCallsAttribution,'Personal Agent runtime loads attribution decorator directly or through recovery wrapper');
     $expect(str_contains($actionsApi,"mg_require_csrf_for_write") && str_contains($actionsApi,"purchase_completed") && str_contains($actionsApi,"campaign_join_completed"),'Opportunity action endpoint is protected and records conversions');
     $expect(str_contains($listApi,'mg_personal_agent_opportunity_list') && str_contains($listsPage,'Saved Opportunities') && str_contains($savedJs,'/api/user-agent/opportunities.php'),'My Lists renders saved opportunities');
     $expect(str_contains($cartItems,'cart_added') && str_contains($checkout,'checkout_started') && str_contains($commerceJs,'agent_attribution_token'),'Cart and checkout carry Personal Agent attribution');
     $expect(str_contains($successPage,'personal-agent-attribution-runtime.js') && str_contains($runtimeJs,'purchase_completed') && str_contains($runtimeJs,'campaign_join_completed'),'Global runtime records purchase and campaign outcomes');
     $expect(str_contains($footer,'personal-agent-attribution-runtime.js?v=1.0.0'),'Signed-in pages load the attribution runtime');
-    $expect(str_contains($agentPage,'personal-agent-opportunity-actions.js?v=1.0.0') && str_contains($agentPage,'personal-agent-opportunity-actions.css?v=1.0.0'),'Agent page loads opportunity action UI');
+    $expect(preg_match("/personal-agent-opportunity-actions\\.js\\?v=1\\.[0-9]+\\.0/",$agentPage) === 1 && str_contains($agentPage,'personal-agent-opportunity-actions.css?v=1.0.0'),'Agent page loads versioned opportunity action UI');
     foreach (['Buy for myself','Send as a gift','Join campaign','Save','Hide'] as $label) {
         $expect(str_contains($response,$label),'Opportunity cards include ' . $label);
     }
