@@ -129,9 +129,11 @@ function mg_personal_agent_opportunity_event(PDO $pdo, array $opportunity, strin
     $eventType = strtolower(mg_personal_agent_text($eventType, 80));
     $allowed = [
         'recommendation_created','recommendation_viewed','action_clicked','saved','unsaved','hidden','restored',
-        'cart_added','checkout_started','purchase_completed','gift_started','campaign_join_started','campaign_join_completed','merchant_viewed','followup_requested'
+        'cart_added','checkout_started','purchase_completed','gift_started','campaign_join_started','campaign_join_completed','merchant_viewed','followup_requested',
+        'followup_scheduled','followup_delivered','followup_snoozed','followup_dismissed','followup_muted','recovery_converted'
     ];
     if (!in_array($eventType, $allowed, true)) throw new InvalidArgumentException('Unsupported opportunity event.');
+    $hookMetadata = $metadata;
     $action = mg_personal_agent_nullable_text($metadata['action_type'] ?? null, 50);
     $orderId = mg_personal_agent_nullable_text($metadata['order_public_id'] ?? null, 190);
     $campaignId = mg_personal_agent_nullable_text($metadata['campaign_public_id'] ?? null, 190);
@@ -155,9 +157,14 @@ function mg_personal_agent_opportunity_event(PDO $pdo, array $opportunity, strin
         }
         throw $error;
     }
-    $pdo->prepare('UPDATE personal_agent_opportunities SET last_action_at=NOW(),state=CASE WHEN ?=\'purchase_completed\' THEN \'completed\' ELSE state END,completed_at=CASE WHEN ?=\'purchase_completed\' THEN NOW() ELSE completed_at END,updated_at=NOW() WHERE id=?')
-        ->execute([$eventType,$eventType,(int)$opportunity['id']]);
-    return ['id'=>$publicId,'event_type'=>$eventType,'action_type'=>$action,'created_at'=>gmdate('Y-m-d H:i:s')];
+    $completed = in_array($eventType,['purchase_completed','campaign_join_completed'],true);
+    $pdo->prepare("UPDATE personal_agent_opportunities SET last_action_at=NOW(),state=IF(?,'completed',state),completed_at=IF(?,NOW(),completed_at),updated_at=NOW() WHERE id=?")
+        ->execute([$completed ? 1 : 0,$completed ? 1 : 0,(int)$opportunity['id']]);
+    $event = ['id'=>$publicId,'event_type'=>$eventType,'action_type'=>$action,'created_at'=>gmdate('Y-m-d H:i:s')];
+    if (function_exists('mg_personal_agent_recovery_on_event')) {
+        mg_personal_agent_recovery_on_event($pdo,$opportunity,$eventType,$event,$hookMetadata);
+    }
+    return $event;
 }
 
 function mg_personal_agent_opportunity_change_state(PDO $pdo, int $userId, string $publicId, string $state): array
