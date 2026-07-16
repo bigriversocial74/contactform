@@ -26,7 +26,7 @@ $assertContains('api/merchant/_merchant.php',['$hasPlatformPermission','$hasWork
 $assertContains('api/admin/subscription-grants.php',["mg_require_permission('admin.subscriptions.manage')","action === 'grant'","action === 'revoke'"]);
 $assertContains('api/admin/_subscription_grants.php',['platform_complimentary_subscription_grants',"provider_key='admin_grant'",'role_assignments_preserved','mg_subscription_provision_merchant_workspace']);
 $assertContains('api/subscriptions/_package_billing.php',['mg_subscription_provision_merchant_workspace','mg_platform_account_subscription_grant_merchant_role']);
-$assertContains('api/subscriptions/_package_webhook.php',['platform_account_subscriptions','mg_subscription_package_webhook_activate']);
+$assertContains('api/subscriptions/_package_webhook.php',['platform_account_subscriptions','mg_subscription_package_webhook_complete']);
 $assertContains('api/subscriptions/_package_webhook_v2.php',['customer.subscription.updated','invoice.payment_failed','platform_subscription.provider_lifecycle_v2','mg_subscription_package_webhook_v2_try_process']);
 $assertContains('api/subscriptions/_stripe_webhook.php',['mg_subscription_package_webhook_v2_try_process','platform_account_subscription_id']);
 $assertContains('includes/account/subscription-authority.php',['Free Wallet','No renewal','No charge',"'promotions_used'=>0"]);
