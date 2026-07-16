@@ -33,11 +33,11 @@ foreach ($paths as $key => $path) {
 }
 
 $checks = [
-    'Personal Agent loads full-canvas, compact-sidebar, and merchant handoff assets' =>
+    'Personal Agent loads full-canvas, compact-sidebar, compatibility, and merchant handoff assets' =>
         str_contains($content['personal_page'], '/assets/css/personal-agent-full-canvas.css?v=1.0.0')
         && str_contains($content['personal_page'], '/assets/css/personal-agent-chat-history.css?v=1.3.0')
-        && str_contains($content['personal_page'], '/assets/js/agent-merchant-handoff.js?v=1.0.0')
-        && !str_contains($content['personal_page'], '/assets/css/agent-mode-switch.css'),
+        && str_contains($content['personal_page'], '/assets/css/agent-mode-switch.css?v=1.0.0')
+        && str_contains($content['personal_page'], '/assets/js/agent-merchant-handoff.js?v=1.0.0'),
     'Personal chat section owns the canvas without a nested chat-stream container' =>
         str_contains($content['personal_dashboard'], 'mg-personal-agent-chat-view mg-personal-agent-chat-stream')
         && !str_contains($content['personal_dashboard'], '<div class="mg-personal-agent-chat-stream">')
