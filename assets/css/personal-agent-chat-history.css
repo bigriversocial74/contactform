@@ -1,5 +1,5 @@
 .mg-personal-chat-sidebar{display:flex;flex-direction:column;overflow:hidden;background:#fff}
-.mg-personal-chat-sidebar .mg-app-sidebar-brand{margin-bottom:14px}
+.mg-personal-chat-sidebar .mg-app-sidebar-brand{margin-bottom:10px}
 .mg-personal-chat-actions{display:grid;gap:2px;margin:0}
 .mg-personal-chat-action{width:100%;min-height:34px;display:flex;align-items:center;gap:8px;padding:6px 4px;border:0;border-radius:0;background:transparent;color:#122039;font:inherit;text-align:left;text-decoration:none;cursor:pointer}
 .mg-personal-chat-action span{width:18px;flex:0 0 18px;color:#64748b;font-size:16px;font-weight:500;line-height:1;text-align:center}
@@ -8,6 +8,11 @@
 .mg-personal-chat-action:hover span,.mg-personal-chat-action:focus-visible span,.mg-personal-chat-action.is-active span{color:#1757d7}
 .mg-personal-chat-action.is-active{box-shadow:inset 2px 0 0 #2563eb}
 .mg-personal-chat-action:focus-visible{outline:2px solid #9fc0f5;outline-offset:2px}
+.mg-agent-sidebar-switch{min-height:38px;margin:0 0 8px;padding:7px 5px 9px;border-bottom:1px solid #e2eaf3;color:#174fb8}
+.mg-agent-sidebar-switch span{display:grid;place-items:center;width:22px;height:22px;flex-basis:22px;border-radius:7px;background:#eaf2ff;color:#1757d7;font-size:10px;font-weight:950}
+.mg-agent-sidebar-switch small{margin-left:auto;padding:2px 6px;border:1px solid #d6e2f1;border-radius:999px;background:#fff;color:#64748b;font-size:8px;font-weight:950;line-height:1.3;text-transform:uppercase}
+.mg-agent-sidebar-switch.is-locked{color:#64748b}
+.mg-agent-sidebar-switch.is-locked span{background:#f1f5f9;color:#64748b}
 .mg-personal-chat-divider{height:1px;margin:8px 0 12px;background:#e2eaf3}
 .mg-personal-chat-history{min-height:0;flex:1;overflow-y:auto;overflow-x:hidden;padding-right:3px;scrollbar-gutter:stable}
 .mg-personal-chat-loading,.mg-personal-chat-empty{padding:12px 4px;color:#64748b;font-size:11px;line-height:1.45;text-align:left}
