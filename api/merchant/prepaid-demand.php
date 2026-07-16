@@ -3,12 +3,17 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/demand/_prepaid.php';
 require_once dirname(__DIR__) . '/demand/_snapshot.php';
+require_once dirname(__DIR__, 2) . '/includes/merchant-location-scope.php';
 
 mg_require_method('GET');
 $user=mg_require_permission('demand.dashboard.view');
-$merchantId=(int)$user['id'];
+$actorUserId=(int)$user['id'];
 $pdo=mg_db();
-mg_rate_limit('demand.prepaid_dashboard.read','user:'.$merchantId,120,60);
+$workspace=mg_merchant_ensure_workspace($pdo,$user);
+$scope=mg_merchant_location_scope_context($workspace);
+$workspaceId=(int)$scope['workspace_id'];
+$merchantId=(int)$scope['owner_merchant_id'];
+mg_rate_limit('demand.prepaid_dashboard.read','user:'.$actorUserId,120,60);
 
 $horizon=max(1,min((int)($_GET['horizon_days']??30),365));
 $locationRef=trim((string)($_GET['location_id']??''));
@@ -18,9 +23,9 @@ $cohort=max(5,min((int)($_GET['minimum_cohort_size']??5),100));
 
 $locationId=null;$productId=null;
 if($locationRef!==''){
-    $stmt=$pdo->prepare("SELECT ml.id FROM merchant_locations ml INNER JOIN merchant_workspaces mw ON mw.id=ml.workspace_id WHERE ml.public_id=? AND mw.merchant_user_id=? AND ml.status='active' LIMIT 1");
-    $stmt->execute([$locationRef,$merchantId]);$locationId=(int)($stmt->fetchColumn()?:0);
-    if($locationId<1)mg_fail('Location not found.',404);
+    $location=mg_merchant_location_find_by_public_id($pdo,$workspaceId,$merchantId,$locationRef);
+    if(!$location||(string)($location['status']??'')!=='active')mg_fail('Location not found.',404);
+    $locationId=(int)$location['id'];
 }
 if($productRef!==''){
     $stmt=$pdo->prepare("SELECT id FROM catalog_products WHERE public_id=? AND merchant_user_id=? AND status IN ('draft','published') LIMIT 1");
@@ -34,7 +39,7 @@ try{
     $pdo->commit();
 }catch(Throwable $error){
     if($pdo->inTransaction())$pdo->rollBack();
-    mg_security_log('error','demand.prepaid_reconcile_failed','Merchant prepaid demand reconciliation failed.',['exception_class'=>$error::class],$merchantId);
+    mg_security_log('error','demand.prepaid_reconcile_failed','Merchant prepaid demand reconciliation failed.',['exception_class'=>$error::class],$actorUserId);
     mg_fail('Unable to reconcile prepaid demand.',500);
 }
 
@@ -96,11 +101,17 @@ if(!$scopeSuppressed){
     $signals=array_map(static function(array $row):array{return['id'=>(string)$row['public_id'],'key'=>(string)$row['signal_key'],'level'=>(string)$row['signal_level'],'status'=>(string)$row['status'],'summary'=>(string)$row['summary'],'confidence'=>(float)$row['confidence_score'],'observed_value'=>$row['observed_value']!==null?(float)$row['observed_value']:null,'baseline_value'=>$row['baseline_value']!==null?(float)$row['baseline_value']:null,'recommendation'=>mg_prepaid_demand_json($row['recommendation_json']??null),'source'=>'derived_demand_snapshot','recommendation_only'=>true,'triggered_at'=>(string)$row['triggered_at'],'expires_at'=>$row['expires_at']!==null?(string)$row['expires_at']:null,'orchestration'=>$row['orchestration_id']!==null?['id'=>(string)$row['orchestration_id'],'status'=>(string)$row['orchestration_status'],'requires_approval'=>(string)$row['orchestration_status']==='awaiting_approval','updated_at'=>(string)$row['orchestration_updated_at']]:null];},$stmt->fetchAll(PDO::FETCH_ASSOC));
 }
 
-$locationOptions=$pdo->prepare("SELECT ml.public_id,ml.name FROM merchant_locations ml INNER JOIN merchant_workspaces mw ON mw.id=ml.workspace_id WHERE mw.merchant_user_id=? AND ml.status='active' ORDER BY ml.name LIMIT 200");$locationOptions->execute([$merchantId]);
+$locationOptions=$pdo->prepare(
+    "SELECT ml.public_id,ml.name FROM merchant_locations ml "
+    .mg_merchant_location_scope_join('ml','location_scope_mw')."
+     WHERE ".mg_merchant_location_scope_condition('ml','location_scope_mw')."
+       AND ml.status='active' ORDER BY ml.name LIMIT 200"
+);
+$locationOptions->execute([$workspaceId,$merchantId]);
 $productOptions=$pdo->prepare("SELECT cp.public_id,COALESCE(cpv.title,cp.slug) title FROM catalog_products cp LEFT JOIN catalog_product_versions cpv ON cpv.id=cp.current_version_id WHERE cp.merchant_user_id=? AND cp.status IN ('draft','published') ORDER BY title LIMIT 200");$productOptions->execute([$merchantId]);
 
 $visibleTotal=static fn(string $key):?int=>$scopeSuppressed?null:(int)($total[$key]??0);
-mg_event('demand.prepaid_dashboard_read',['horizon_days'=>$horizon,'scope_suppressed'=>$scopeSuppressed,'reconciled'=>$reconciled['processed'],'minimum_cohort_size'=>$cohort],$merchantId);
+mg_event('demand.prepaid_dashboard_read',['horizon_days'=>$horizon,'scope_suppressed'=>$scopeSuppressed,'reconciled'=>$reconciled['processed'],'minimum_cohort_size'=>$cohort,'owner_merchant_id'=>$merchantId],$actorUserId);
 header('Cache-Control: private, no-store, max-age=0');
 mg_ok([
  'window'=>['start'=>$start->format('Y-m-d'),'end'=>$end->format('Y-m-d'),'horizon_days'=>$horizon],
