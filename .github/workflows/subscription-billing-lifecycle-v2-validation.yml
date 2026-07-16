@@ -14,6 +14,7 @@ on:
       - 'assets/js/subscription-activation-status.js'
       - 'database/stage_18aj_subscription_billing_lifecycle_v2.sql'
       - 'scripts/validate_subscription_billing_lifecycle_v2.php'
+      - 'scripts/validate_account_subscription_authority_v1.php'
       - '.github/workflows/subscription-billing-lifecycle-v2-validation.yml'
   workflow_dispatch:
 
@@ -43,22 +44,36 @@ jobs:
         with:
           node-version: '22'
 
-      - name: PHP syntax
-        run: |
-          php -l account-subscriptions.php
-          php -l includes/account/subscription-authority.php
-          php -l api/payments/_stripe.php
-          php -l api/subscriptions/_package_billing.php
-          php -l api/subscriptions/_billing_lifecycle_v2.php
-          php -l api/subscriptions/_checkout_handoff.php
-          php -l api/subscriptions/_package_webhook_v2.php
-          php -l api/subscriptions/_stripe_webhook.php
-          php -l api/subscriptions/request-upgrade.php
-          php -l api/subscriptions/billing-portal.php
-          php -l api/subscriptions/billing-state.php
-          php -l api/subscriptions/manage.php
-          php -l api/subscriptions/package-change-status.php
-          php -l scripts/validate_subscription_billing_lifecycle_v2.php
+      - name: Syntax account subscription page
+        run: php -l account-subscriptions.php
+      - name: Syntax subscription authority
+        run: php -l includes/account/subscription-authority.php
+      - name: Syntax Stripe provider
+        run: php -l api/payments/_stripe.php
+      - name: Syntax package billing
+        run: php -l api/subscriptions/_package_billing.php
+      - name: Syntax billing lifecycle service
+        run: php -l api/subscriptions/_billing_lifecycle_v2.php
+      - name: Syntax checkout handoff
+        run: php -l api/subscriptions/_checkout_handoff.php
+      - name: Syntax lifecycle webhook
+        run: php -l api/subscriptions/_package_webhook_v2.php
+      - name: Syntax Stripe webhook dispatcher
+        run: php -l api/subscriptions/_stripe_webhook.php
+      - name: Syntax upgrade request
+        run: php -l api/subscriptions/request-upgrade.php
+      - name: Syntax billing portal
+        run: php -l api/subscriptions/billing-portal.php
+      - name: Syntax billing state
+        run: php -l api/subscriptions/billing-state.php
+      - name: Syntax subscription management
+        run: php -l api/subscriptions/manage.php
+      - name: Syntax package status
+        run: php -l api/subscriptions/package-change-status.php
+      - name: Syntax billing validation contract
+        run: php -l scripts/validate_subscription_billing_lifecycle_v2.php
+      - name: Syntax authority validation contract
+        run: php -l scripts/validate_account_subscription_authority_v1.php
 
       - name: JavaScript syntax
         run: |
@@ -68,10 +83,13 @@ jobs:
       - name: Subscription billing lifecycle contract
         run: php scripts/validate_subscription_billing_lifecycle_v2.php
 
+      - name: Existing account subscription authority contract
+        run: php scripts/validate_account_subscription_authority_v1.php
+
       - name: Existing production subscription behavior
         run: |
           if [ -x vendor/bin/phpunit ]; then
             vendor/bin/phpunit tests/phpunit/ProductionSubscriptionBehaviorTest.php tests/phpunit/ProductionSubscriptionRecoveryBehaviorTest.php
           else
-            echo 'PHPUnit is not installed in this checkout; standalone billing lifecycle contract completed.'
+            echo 'PHPUnit is not installed in this checkout; standalone billing lifecycle contracts completed.'
           fi
