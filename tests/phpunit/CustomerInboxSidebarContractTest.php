@@ -53,6 +53,20 @@ final class CustomerInboxSidebarContractTest extends TestCase
         self::assertStringNotContainsString('mg-gift-center-my-lists', $source);
     }
 
+    public function testFeedLoyaltyCardsAndListsUseTheInboxSidebarForSignedInUsers(): void
+    {
+        $source = $this->source('includes/agent-sidebar.php');
+
+        foreach (['feed.php', 'loyalty-cards.php', 'lists.php'] as $script) {
+            self::assertStringContainsString("'{$script}'", $source);
+        }
+
+        self::assertStringContainsString('$user !== null', $source);
+        self::assertStringContainsString("require __DIR__ . '/personal-agent-sidebar.php'", $source);
+        self::assertStringContainsString('/assets/css/personal-agent-chat-history.css?v=1.2.0', $source);
+        self::assertStringContainsString('/assets/js/personal-agent-chat-history.js?v=1.1.0', $source);
+    }
+
     public function testTrainingLabIsRemovedAndChatHistoryRemains(): void
     {
         $source = $this->source('includes/personal-agent-sidebar.php');
