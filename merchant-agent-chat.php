@@ -59,8 +59,7 @@ require __DIR__ . '/includes/header.php';
 ?>
 <section class="mg-app-shell mg-agent-app mg-personal-agent-app mg-merchant-agent-integrated-app"
          data-agent-control-center
-         data-merchant-agent-chat
-         data-merchant-agent-access="<?= $merchantAgentAllowed ? 'true' : 'false' ?>">
+         data-merchant-agent-access="<?= $merchantAgentAllowed ? 'true' : 'false' ?>"<?= $merchantAgentAllowed ? ' data-merchant-agent-chat' : '' ?>>
   <?php require __DIR__ . '/includes/personal-agent-sidebar.php'; ?>
 
   <div class="mg-app-workspace mg-agent-workspace">
