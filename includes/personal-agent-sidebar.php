@@ -1,12 +1,15 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/agent-quick-actions.php';
+
 $user = mg_current_user();
 $currentSidebarScript = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
 $agentSidebarMode = (string) ($agent_sidebar_mode ?? ($currentSidebarScript === 'merchant-agent-chat.php' ? 'merchant' : 'personal'));
 $isMerchantAgentMode = $agentSidebarMode === 'merchant';
 $packageContext = $user ? mg_user_package_context(null, $user) : [];
 $hasMerchantAgentAccess = $user && !empty($packageContext['merchant_access']);
+$quickActions = mg_agent_quick_actions($isMerchantAgentMode ? 'merchant' : 'personal');
 $activeSidebarKey = match ($currentSidebarScript) {
     'inbox.php' => 'inbox',
     'feed.php' => 'feed',
@@ -34,18 +37,6 @@ $sidebarLinkClass = static function (string $key) use ($activeSidebarKey): strin
 
   <?php if ($user): ?>
     <nav class="mg-personal-chat-actions" aria-label="Customer and Agent navigation">
-      <?php if ($isMerchantAgentMode): ?>
-        <a class="mg-personal-chat-action mg-agent-sidebar-switch" href="/agent.php" data-agent-mode-link="personal">
-          <span aria-hidden="true">P</span><strong>Personal Agent</strong><small>Switch</small>
-        </a>
-      <?php else: ?>
-        <a class="mg-personal-chat-action mg-agent-sidebar-switch<?= !$hasMerchantAgentAccess ? ' is-locked' : '' ?>"
-           href="<?= $hasMerchantAgentAccess ? '/merchant-agent-chat.php' : '/account-subscriptions.php' ?>"
-           data-agent-mode-link="merchant">
-          <span aria-hidden="true">M</span><strong>Merchant Agent</strong><small><?= $hasMerchantAgentAccess ? '/m' : 'Access' ?></small>
-        </a>
-      <?php endif; ?>
-
       <a class="<?= mg_e($sidebarLinkClass('inbox')) ?>" href="/inbox.php">
         <span aria-hidden="true">▣</span><strong>Inbox</strong>
       </a>
@@ -92,16 +83,88 @@ $sidebarLinkClass = static function (string $key) use ($activeSidebarKey): strin
       </div>
     <?php endif; ?>
 
-    <footer class="mg-personal-chat-sidebar-footer">
-      <?php if ($isMerchantAgentMode): ?>
-        <span>Scoped to your merchant workspace</span>
-        <small>Merchant requests use permission-checked business data and approval-first actions.</small>
-      <?php else: ?>
-        <span>Private to your account</span>
-        <small>Chat titles and dates are generated from your personal conversation history.</small>
-      <?php endif; ?>
+    <footer class="mg-personal-chat-sidebar-footer" data-agent-sidebar-footer-tools>
+      <button class="mg-agent-footer-suggestions" type="button" data-agent-suggestions-open aria-haspopup="dialog" aria-controls="agent-sidebar-tools-modal">
+        <span aria-hidden="true">✦</span>
+        <strong>Suggestions</strong>
+        <small>Ideas + keywords</small>
+      </button>
+
+      <nav class="mg-agent-footer-mode-switch" aria-label="Agent mode" data-agent-footer-mode-switch>
+        <a class="mg-agent-footer-mode<?= !$isMerchantAgentMode ? ' is-active' : '' ?>" href="/agent.php" data-agent-mode-link="personal"<?= !$isMerchantAgentMode ? ' aria-current="page"' : '' ?>>
+          <span aria-hidden="true">P</span><strong>Personal</strong>
+        </a>
+        <a class="mg-agent-footer-mode<?= $isMerchantAgentMode ? ' is-active' : '' ?><?= !$hasMerchantAgentAccess ? ' is-locked' : '' ?>"
+           href="<?= $hasMerchantAgentAccess ? '/merchant-agent-chat.php' : '/account-subscriptions.php' ?>"
+           data-agent-mode-link="merchant"<?= $isMerchantAgentMode ? ' aria-current="page"' : '' ?>>
+          <span aria-hidden="true">M</span><strong>Merchant</strong>
+        </a>
+      </nav>
     </footer>
   <?php else: ?>
     <div class="mg-personal-chat-empty-sidebar"><strong><?= $isMerchantAgentMode ? 'Merchant Agent' : 'Personal Agent' ?></strong><p>Sign in to create and manage private chats.</p></div>
   <?php endif; ?>
 </aside>
+
+<?php if ($user): ?>
+  <div class="mg-agent-sidebar-tools-modal"
+       id="agent-sidebar-tools-modal"
+       data-agent-sidebar-tools-modal
+       data-agent-tools-mode="<?= $isMerchantAgentMode ? 'merchant' : 'personal' ?>"
+       aria-hidden="true"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="agent-sidebar-tools-title">
+    <div class="mg-agent-sidebar-tools-backdrop" data-agent-suggestions-close></div>
+    <section class="mg-agent-sidebar-tools-dialog" role="document">
+      <header class="mg-agent-sidebar-tools-head">
+        <div>
+          <span><?= mg_e((string) $quickActions['title']) ?></span>
+          <h2 id="agent-sidebar-tools-title">Agent shortcuts</h2>
+          <p><?= mg_e((string) $quickActions['description']) ?></p>
+        </div>
+        <button type="button" data-agent-suggestions-close aria-label="Close Agent shortcuts">×</button>
+      </header>
+
+      <div class="mg-agent-sidebar-tools-tabs" role="tablist" aria-label="Agent shortcuts sections">
+        <button type="button" role="tab" id="agent-suggestions-tab" aria-selected="true" aria-controls="agent-suggestions-panel" data-agent-tools-tab="suggestions">Suggestions</button>
+        <button type="button" role="tab" id="agent-keywords-tab" aria-selected="false" aria-controls="agent-keywords-panel" data-agent-tools-tab="keywords">Quick keywords</button>
+      </div>
+
+      <div class="mg-agent-sidebar-tools-body">
+        <section id="agent-suggestions-panel" role="tabpanel" aria-labelledby="agent-suggestions-tab" data-agent-tools-panel="suggestions">
+          <div class="mg-agent-suggestion-grid">
+            <?php foreach ((array) $quickActions['suggestions'] as $suggestion): ?>
+              <button class="mg-agent-suggestion-card" type="button"
+                      data-agent-suggestion-prompt="<?= mg_e((string) $suggestion['prompt']) ?>"
+                      data-agent-target-mode="<?= $isMerchantAgentMode ? 'merchant' : 'personal' ?>">
+                <span class="mg-agent-suggestion-icon" aria-hidden="true"><?= mg_e((string) $suggestion['icon']) ?></span>
+                <span><strong><?= mg_e((string) $suggestion['label']) ?></strong><small><?= mg_e((string) $suggestion['detail']) ?></small></span>
+                <span class="mg-agent-suggestion-run" aria-hidden="true">→</span>
+              </button>
+            <?php endforeach; ?>
+          </div>
+        </section>
+
+        <section id="agent-keywords-panel" role="tabpanel" aria-labelledby="agent-keywords-tab" data-agent-tools-panel="keywords" hidden>
+          <p class="mg-agent-keywords-intro">Select a keyword to place its current command or example in the chat box. Review or customize it before sending.</p>
+          <div class="mg-agent-keyword-groups">
+            <?php foreach ((array) $quickActions['keyword_groups'] as $group): ?>
+              <section class="mg-agent-keyword-group">
+                <h3><?= mg_e((string) $group['label']) ?></h3>
+                <div class="mg-agent-keyword-list">
+                  <?php foreach ((array) $group['items'] as $item): ?>
+                    <button type="button" data-agent-keyword-prompt="<?= mg_e((string) $item['prompt']) ?>" data-agent-target-mode="<?= $isMerchantAgentMode ? 'merchant' : 'personal' ?>">
+                      <strong><?= mg_e((string) $item['keyword']) ?></strong><small><?= mg_e((string) $item['detail']) ?></small>
+                    </button>
+                  <?php endforeach; ?>
+                </div>
+              </section>
+            <?php endforeach; ?>
+          </div>
+        </section>
+      </div>
+    </section>
+  </div>
+  <script src="/assets/js/agent-sidebar-tools.js?v=1.0.0" defer></script>
+<?php endif; ?>
