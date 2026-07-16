@@ -73,7 +73,7 @@ function mg_agent_quick_action_catalog(): array
                 ['icon'=>'◎','label'=>'CRM follow-ups','detail'=>'Find customer follow-up and engagement opportunities.','prompt'=>'Use recent CRM activity as context and find customer follow-up opportunities.'],
                 ['icon'=>'◈','label'=>'Campaign review','detail'=>'Review current campaigns and prepare improvements.','prompt'=>'Review my active campaigns and prepare an approval-first improvement plan.'],
                 ['icon'=>'◇','label'=>'Product opportunities','detail'=>'Review products, availability, purchases, and demand signals.','prompt'=>'Review my products, purchases, and availability for current opportunities.'],
-                ['icon'=>'◫','label'=>'Add merchant memory','detail'=>'Open the existing Merchant Memory workflow.','prompt'=>'MEMORY'],
+                ['icon'=>'◫','label'=>'Review merchant memory','detail'=>'Identify missing brand, customer, offer, goal, or local-market context.','prompt'=>'Review my merchant memory and identify missing brand, customer, offer, goal, or local-market context.'],
                 ['icon'=>'✦','label'=>'Create action plan','detail'=>'Prepare a review-ready plan from current merchant context.','prompt'=>'Create a review-ready action plan from the current merchant context.'],
             ],
             'keyword_groups' => [
@@ -94,12 +94,12 @@ function mg_agent_quick_action_catalog(): array
                     'label' => 'Merchant Memory',
                     'items' => [
                         ['keyword'=>'memory','detail'=>'Open the Merchant Memory menu','prompt'=>'MEMORY'],
-                        ['keyword'=>'brand voice','detail'=>'Store brand voice guidance','prompt'=>'MEMORY\nBrand voice: '],
-                        ['keyword'=>'campaign style','detail'=>'Store campaign preferences','prompt'=>'MEMORY\nCampaign style: '],
-                        ['keyword'=>'customer tone','detail'=>'Store customer communication tone','prompt'=>'MEMORY\nCustomer tone: '],
-                        ['keyword'=>'default offer type','detail'=>'Store preferred offer structure','prompt'=>'MEMORY\nDefault offer type: '],
-                        ['keyword'=>'business goals','detail'=>'Store current business goals','prompt'=>'MEMORY\nBusiness goals: '],
-                        ['keyword'=>'local market notes','detail'=>'Store local market context','prompt'=>'MEMORY\nLocal market notes: '],
+                        ['keyword'=>'brand voice','detail'=>'Store brand voice guidance','prompt'=>"MEMORY\nBrand voice: "],
+                        ['keyword'=>'campaign style','detail'=>'Store campaign preferences','prompt'=>"MEMORY\nCampaign style: "],
+                        ['keyword'=>'customer tone','detail'=>'Store customer communication tone','prompt'=>"MEMORY\nCustomer tone: "],
+                        ['keyword'=>'default offer type','detail'=>'Store preferred offer structure','prompt'=>"MEMORY\nDefault offer type: "],
+                        ['keyword'=>'business goals','detail'=>'Store current business goals','prompt'=>"MEMORY\nBusiness goals: "],
+                        ['keyword'=>'local market notes','detail'=>'Store local market context','prompt'=>"MEMORY\nLocal market notes: "],
                     ],
                 ],
                 [
