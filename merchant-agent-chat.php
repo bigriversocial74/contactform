@@ -22,6 +22,7 @@ $page_styles = [
     '/assets/css/merchant-agent-chat-recipe-cards.css',
     '/assets/css/sponsored-campaign-card.css',
     '/assets/css/merchant-agent-integrated-workspace.css?v=1.0.0',
+    '/assets/css/merchant-agent-integrated-compat.css?v=1.0.0',
     '/assets/css/agent-header-tabs-shared.css?v=1.0.0',
 ];
 $page_scripts = [
