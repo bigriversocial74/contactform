@@ -46,6 +46,15 @@ function mg_stripe_api_request(PDO $pdo,string $method,string $path,array $param
                 'customer'=>'cus_test_stub_'.$seed,
             ];
         }
+        if($path==='/v1/products'){
+            return [
+                'id'=>'prod_test_stub_'.$seed,
+                'object'=>'product',
+                'name'=>(string)($params['name']??'Microgifter Package'),
+                'active'=>(bool)($params['active']??true),
+                'metadata'=>$params['metadata']??[],
+            ];
+        }
         if($path==='/v1/prices'){
             return [
                 'id'=>'price_test_stub_'.$seed,
@@ -66,6 +75,42 @@ function mg_stripe_api_request(PDO $pdo,string $method,string $path,array $param
                 'return_url'=>(string)($params['return_url']??''),
             ];
         }
+        if($path==='/v1/subscription_schedules'){
+            $start=time();$end=strtotime('+1 month',$start);
+            return [
+                'id'=>'sub_sched_test_stub_'.$seed,
+                'object'=>'subscription_schedule',
+                'status'=>'active',
+                'subscription'=>(string)($params['from_subscription']??'sub_test_stub_subscription'),
+                'current_phase'=>['start'=>$start,'end'=>$end],
+                'end_behavior'=>'release',
+                'phases'=>[[
+                    'start_date'=>$start,'end_date'=>$end,
+                    'items'=>[['price'=>'price_test_stub_monthly','quantity'=>1]],
+                ]],
+                'metadata'=>$params['metadata']??[],
+            ];
+        }
+        if(str_starts_with($path,'/v1/subscription_schedules/')){
+            $suffix=substr($path,strlen('/v1/subscription_schedules/'));
+            $release=str_ends_with($suffix,'/release');
+            $id=rawurldecode($release?substr($suffix,0,-strlen('/release')):$suffix);
+            $start=time();$end=strtotime('+1 month',$start);
+            return [
+                'id'=>$id,
+                'object'=>'subscription_schedule',
+                'status'=>$release?'released':'active',
+                'subscription'=>'sub_test_stub_subscription',
+                'released_subscription'=>$release?'sub_test_stub_subscription':null,
+                'current_phase'=>$release?null:['start'=>$start,'end'=>$end],
+                'end_behavior'=>(string)($params['end_behavior']??'release'),
+                'phases'=>$params['phases']??[[
+                    'start_date'=>$start,'end_date'=>$end,
+                    'items'=>[['price'=>'price_test_stub_monthly','quantity'=>1]],
+                ]],
+                'metadata'=>$params['metadata']??[],
+            ];
+        }
         if(str_starts_with($path,'/v1/subscriptions/')){
             $id=rawurldecode(substr($path,strlen('/v1/subscriptions/')));
             $interval='month';
@@ -75,8 +120,9 @@ function mg_stripe_api_request(PDO $pdo,string $method,string $path,array $param
             return [
                 'id'=>$id,
                 'object'=>'subscription',
-                'status'=>'active',
+                'status'=>strtoupper($method)==='DELETE'?'canceled':'active',
                 'customer'=>'cus_test_stub_customer',
+                'schedule'=>null,
                 'cancel_at_period_end'=>!empty($params['cancel_at_period_end']),
                 'current_period_start'=>time(),
                 'current_period_end'=>$interval==='year'?strtotime('+1 year'):strtotime('+1 month'),
