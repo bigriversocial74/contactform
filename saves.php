@@ -11,10 +11,12 @@ $header_mode = 'account';
 $agent_tab = 'saves';
 $page_styles = [
     '/assets/css/user-lists.css',
+    '/assets/css/personal-agent-chat-history.css?v=1.2.0',
     '/assets/css/personal-agent-opportunity-actions.css?v=1.0.0',
     '/assets/css/personal-agent-my-saves.css?v=1.0.0',
 ];
 $page_scripts = [
+    '/assets/js/personal-agent-chat-history.js?v=1.1.0',
     '/assets/js/saved-opportunities.js?v=1.2.0',
     '/assets/js/personal-agent-attribution-runtime.js?v=1.0.0',
 ];
@@ -22,7 +24,7 @@ $page_scripts = [
 require __DIR__ . '/includes/header.php';
 ?>
 <section class="mg-app-shell mg-user-lists-shell mg-user-saves-shell" data-user-saves-page>
-  <?php require __DIR__ . '/includes/agent-sidebar.php'; ?>
+  <?php require __DIR__ . '/includes/personal-agent-sidebar.php'; ?>
   <div class="mg-user-lists-main">
     <header class="mg-user-lists-hero">
       <div>
