@@ -19,8 +19,20 @@ final class CreateCenterPostModalContractTest extends TestCase
         self::assertStringContainsString('[data-create-inline-target="post"],[data-create-menu-option="post"]',$source);
         self::assertStringContainsString("view.dataset.createCenterView === 'post'",$source);
         self::assertStringContainsString("modal.dataset.createPostActive = 'true'",$source);
+        self::assertStringContainsString('event.stopImmediatePropagation()',$source);
         self::assertStringContainsString('microgifter:openPostComposer',$source);
         self::assertStringContainsString('new MutationObserver',$source);
+    }
+
+    public function testLegacyVisibleFallbackPrefersEmbeddedComposer(): void
+    {
+        $source=file_get_contents($this->root.'/assets/js/create-post-modal-visible-fallback.js');
+        self::assertIsString($source);
+        self::assertStringContainsString('function embeddedPostNodes()',$source);
+        self::assertStringContainsString('function openEmbeddedPost()',$source);
+        self::assertStringContainsString('if (openEmbeddedPost()) return true;',$source);
+        self::assertStringContainsString('event.stopImmediatePropagation()',$source);
+        self::assertStringContainsString('return forceLegacyComposerVisible();',$source);
     }
 
     public function testPostWorkspaceUsesProfessionalResponsiveLayout(): void
@@ -42,6 +54,6 @@ final class CreateCenterPostModalContractTest extends TestCase
         self::assertStringContainsString('/assets/css/create-center-inline.css?v=1.1.0',$source);
         self::assertStringContainsString('/assets/css/create-center-post-professional.css?v=1.0.0',$source);
         self::assertStringContainsString('/assets/js/create-center-post-inline.js?v=1.1.0',$source);
-        self::assertStringContainsString('/assets/js/create-center-post-trigger-fix.js?v=1.0.0',$source);
+        self::assertStringContainsString('/assets/js/create-center-post-trigger-fix.js?v=1.1.0',$source);
     }
 }
