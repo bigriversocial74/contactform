@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/_merchant.php';
 require_once dirname(__DIR__) . '/demand/_snapshot.php';
 require_once dirname(__DIR__, 2) . '/includes/merchant-location-scope.php';
 
