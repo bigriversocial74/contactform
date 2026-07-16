@@ -6,6 +6,8 @@ require_once __DIR__ . '/personal-gifting-agent.php';
 $user = mg_current_user();
 $displayName = $user ? mg_user_display_name() : 'Guest';
 $activeView = (string) ($agent_personal_view ?? 'home');
+$packageContext = $user ? mg_user_package_context(null, $user) : [];
+$merchantAgentAccess = $user && !empty($packageContext['merchant_access']);
 $schemaReady = false;
 $phase3SchemaReady = false;
 if ($user) {
@@ -28,6 +30,7 @@ if ($user) {
          data-personal-gifting-agent
          data-active-view="<?= mg_e($activeView) ?>"
          data-display-name="<?= mg_e($displayName) ?>"
+         data-merchant-agent-access="<?= $merchantAgentAccess ? 'true' : 'false' ?>"
          data-schema-ready="<?= $schemaReady ? 'true' : 'false' ?>"
          data-phase3-schema-ready="<?= $phase3SchemaReady ? 'true' : 'false' ?>">
   <?php require __DIR__ . '/personal-agent-sidebar.php'; ?>
@@ -54,7 +57,7 @@ if ($user) {
         </div>
         <div class="mg-personal-agent-composer-row">
           <button class="mg-personal-agent-menu-trigger" type="button" data-open-agent-dialog="menu" aria-label="Open Personal Agent menu" title="Open Agent menu">+</button>
-          <textarea rows="1" maxlength="2000" placeholder="Ask about a contact, purchase, merchant, gift plan, schedule, group gift, or bundle…" aria-label="Message the Personal Gifting Agent"></textarea>
+          <textarea rows="1" maxlength="2000" placeholder="Ask about contacts, gifts, saves, or type /m followed by a merchant request…" aria-label="Message the Personal Gifting Agent"></textarea>
           <button class="mg-btn mg-btn-primary" type="submit">Send</button>
         </div>
       </form>
