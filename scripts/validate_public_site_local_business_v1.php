@@ -76,9 +76,10 @@ $checks = [
     'signin keeps login authority and inbox redirect' => str_contains($signin, '/api/auth/login.php')
         && str_contains($signin, 'data-success-redirect="/inbox.php"')
         && str_contains($signin, 'mg_csrf_field()'),
-    'signup keeps customer and merchant authority' => str_contains($signup, '/api/auth/register.php')
-        && str_contains($signup, "['customer','merchant']")
-        && str_contains($signup, '/merchant-onboarding.php')
+    'signup keeps customer and package-selection authority' => str_contains($signup, '/api/auth/register.php')
+        && str_contains($signup, "['customer', 'merchant']")
+        && str_contains($signup, 'name="selected_plan"')
+        && str_contains($signup, '/account-subscriptions.php')
         && str_contains($signup, 'mg_csrf_field()'),
     'password recovery endpoints remain unchanged' => str_contains($forgot, '/api/auth/password/forgot.php')
         && str_contains($reset, '/api/auth/password/reset.php')
@@ -98,17 +99,13 @@ $checks = [
 $failed = [];
 foreach ($checks as $name => $passed) {
     echo ($passed ? '[PASS] ' : '[FAIL] ') . $name . PHP_EOL;
-    if (!$passed) {
-        $failed[] = $name;
-    }
+    if (!$passed) $failed[] = $name;
 }
 
 $score = round((count($checks) - count($failed)) / count($checks) * 10, 1);
 echo 'Public site local business theme score: ' . number_format($score, 1) . '/10' . PHP_EOL;
-
 if ($failed !== []) {
     fwrite(STDERR, 'Public site local business validation failed: ' . implode(', ', $failed) . PHP_EOL);
     exit(1);
 }
-
 echo "Public site local business theme contract passed at 10.0/10.\n";

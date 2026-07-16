@@ -1,0 +1,70 @@
+name: Account Subscription Authority Validation
+
+on:
+  pull_request:
+    paths:
+      - 'signup.php'
+      - 'account-subscriptions.php'
+      - 'includes/package-entitlements.php'
+      - 'includes/merchant-provisioning.php'
+      - 'includes/account/subscription-authority.php'
+      - 'includes/footer.php'
+      - 'api/auth/register.php'
+      - 'api/merchant/_merchant.php'
+      - 'api/admin/subscription-grants.php'
+      - 'api/admin/_subscription_grants.php'
+      - 'api/subscriptions/**'
+      - 'assets/js/subscription-activation-status.js'
+      - 'assets/js/admin-subscription-grants.js'
+      - 'database/stage_18ai_account_subscription_authority.sql'
+      - 'config/migrations.php'
+      - 'scripts/validate_account_subscription_authority_v1.php'
+      - '.github/workflows/account-subscription-authority-validation.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - name: Syntax signup.php
+        run: php -l signup.php
+      - name: Syntax account-subscriptions.php
+        run: php -l account-subscriptions.php
+      - name: Syntax package-entitlements.php
+        run: php -l includes/package-entitlements.php
+      - name: Syntax merchant-provisioning.php
+        run: php -l includes/merchant-provisioning.php
+      - name: Syntax subscription-authority.php
+        run: php -l includes/account/subscription-authority.php
+      - name: Syntax auth register
+        run: php -l api/auth/register.php
+      - name: Syntax merchant guard
+        run: php -l api/merchant/_merchant.php
+      - name: Syntax admin grants endpoint
+        run: php -l api/admin/subscription-grants.php
+      - name: Syntax admin grants service
+        run: php -l api/admin/_subscription_grants.php
+      - name: Syntax package billing
+        run: php -l api/subscriptions/_package_billing.php
+      - name: Syntax package webhook
+        run: php -l api/subscriptions/_package_webhook.php
+      - name: Syntax Stripe webhook dispatcher
+        run: php -l api/subscriptions/_stripe_webhook.php
+      - name: Syntax Stripe webhook endpoint
+        run: php -l api/subscriptions/stripe-events.php
+      - name: JavaScript syntax checks
+        run: |
+          node --check assets/js/subscription-activation-status.js
+          node --check assets/js/admin-subscription-grants.js
+      - name: Authority contract
+        run: php scripts/validate_account_subscription_authority_v1.php
