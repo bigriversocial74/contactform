@@ -31,7 +31,7 @@ function mg_personal_agent_chat_with_credit_response(PDO $pdo, int $userId, arra
     }
 
     unset($GLOBALS['mg_last_anthropic_response']);
-    $result = mg_personal_agent_chat_with_opportunity_attribution($pdo,$userId,$input);
+    $result = mg_personal_agent_chat_with_recovery_response($pdo,$userId,$input);
     $creditAfter = $creditBefore;
     $tokensUsed = ['input'=>0,'output'=>0,'total'=>0];
 
