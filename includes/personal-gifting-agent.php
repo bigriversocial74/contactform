@@ -19,8 +19,16 @@ require_once __DIR__ . '/personal-agent/marketplace-response.php';
 require_once __DIR__ . '/personal-agent/gift-result-cards.php';
 require_once __DIR__ . '/personal-agent/merchant-opportunities.php';
 require_once __DIR__ . '/personal-agent/opportunity-response.php';
-require_once __DIR__ . '/personal-agent/contact-intelligence.php';
-require_once __DIR__ . '/personal-agent/contact-intelligence-dashboard.php';
+
+$contactIntelligenceFile = __DIR__ . '/personal-agent/contact-intelligence.php';
+$contactIntelligenceDashboardFile = __DIR__ . '/personal-agent/contact-intelligence-dashboard.php';
+if (is_file($contactIntelligenceFile)) {
+    require_once $contactIntelligenceFile;
+}
+if (is_file($contactIntelligenceDashboardFile)) {
+    require_once $contactIntelligenceDashboardFile;
+}
+
 require_once __DIR__ . '/personal-agent/recovery-response.php';
 require_once __DIR__ . '/personal-agent/credit-response.php';
 require_once __DIR__ . '/personal-agent/workflows.php';
