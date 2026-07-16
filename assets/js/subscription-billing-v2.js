@@ -6,7 +6,7 @@
   var panel = document.querySelector('.mg-subscription-redesign');
   if (!root || !panel || !MG.get || !MG.post) return;
 
-  var state = { data: null, cycle: 'month', selectedPackageId: '', modal: null };
+  var state = { data: null, cycle: 'month', cycleInitialized: false, selectedPackageId: '', modal: null };
 
   function esc(value) {
     return String(value == null ? '' : value).replace(/[&<>'"]/g, function (character) {
@@ -106,8 +106,6 @@
       return;
     }
     state.selectedPackageId = packageId;
-    var subscription = currentSubscription();
-    state.cycle = subscription && subscription.billing_cycle === 'year' ? 'year' : 'month';
     renderModal(true);
     ensureModal().hidden = false;
     document.body.classList.add('mg-sub-v2-lock');
@@ -357,8 +355,6 @@
 
   function renderState() {
     panel.setAttribute('data-billing-v2-ready', 'true');
-    var subscription = currentSubscription();
-    state.cycle = subscription && subscription.billing_cycle === 'year' ? 'year' : state.cycle;
     renderCycleToggle();
     renderCards();
     renderLifecycle();
@@ -369,6 +365,11 @@
   async function loadState() {
     var response = await MG.get('/api/subscriptions/billing-state.php');
     state.data = response.data || response;
+    if (!state.cycleInitialized) {
+      var subscription = currentSubscription();
+      state.cycle = subscription && subscription.billing_cycle === 'year' ? 'year' : 'month';
+      state.cycleInitialized = true;
+    }
     renderState();
     return state.data;
   }
