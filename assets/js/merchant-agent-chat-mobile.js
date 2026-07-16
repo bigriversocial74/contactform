@@ -11,11 +11,6 @@ document.addEventListener('DOMContentLoaded', function () {
   var backdrop = root.querySelector('.mg-agent-chat-drawer-backdrop');
   var summary = root.querySelector('[data-agent-chat-summary]');
   var mobileSummary = root.querySelector('[data-agent-chat-summary-mobile]');
-  var mobileQuery = window.matchMedia ? window.matchMedia('(max-width: 980px)') : null;
-
-  function isCompactViewport() {
-    return !!(mobileQuery && mobileQuery.matches);
-  }
 
   function syncSummary() {
     if (!summary || !mobileSummary) return;
@@ -23,21 +18,14 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function setDrawer(isOpen, restoreFocus) {
-    var compact = isCompactViewport();
-    var shouldOpen = compact && !!isOpen;
+    var shouldOpen = !!isOpen;
 
     root.classList.toggle('is-drawer-open', shouldOpen);
     document.body.classList.toggle('mg-agent-chat-drawer-open', shouldOpen);
 
-    if (openButton) {
-      openButton.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
-    }
-    if (drawer) {
-      drawer.setAttribute('aria-hidden', compact ? (shouldOpen ? 'false' : 'true') : 'false');
-    }
-    if (backdrop) {
-      backdrop.hidden = !shouldOpen;
-    }
+    if (openButton) openButton.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+    if (drawer) drawer.setAttribute('aria-hidden', shouldOpen ? 'false' : 'true');
+    if (backdrop) backdrop.hidden = !shouldOpen;
 
     if (shouldOpen && closeButton) {
       window.requestAnimationFrame(function () {
@@ -63,9 +51,7 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   document.addEventListener('keydown', function (event) {
-    if (event.key === 'Escape' && root.classList.contains('is-drawer-open')) {
-      setDrawer(false, true);
-    }
+    if (event.key === 'Escape' && root.classList.contains('is-drawer-open')) setDrawer(false, true);
   });
 
   root.querySelectorAll('[data-agent-chat-scope],[data-agent-chat-days],[data-agent-chat-output],[data-agent-chat-approval],[data-agent-skill]').forEach(function (element) {
@@ -80,17 +66,6 @@ document.addEventListener('DOMContentLoaded', function () {
       characterData: true,
       subtree: true
     });
-  }
-
-  if (mobileQuery) {
-    var handleViewportChange = function () {
-      setDrawer(false, false);
-    };
-    if (typeof mobileQuery.addEventListener === 'function') {
-      mobileQuery.addEventListener('change', handleViewportChange);
-    } else if (typeof mobileQuery.addListener === 'function') {
-      mobileQuery.addListener(handleViewportChange);
-    }
   }
 
   syncSummary();

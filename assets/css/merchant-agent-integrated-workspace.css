@@ -1,0 +1,85 @@
+body.mg-integrated-merchant-agent-page{overflow:hidden!important;background:#f5f8fc!important}
+body.mg-integrated-merchant-agent-page .mg-merchant-agent-integrated-app .mg-agent-workspace{position:relative!important;display:block!important;height:calc(100svh - var(--mg-app-header))!important;min-height:0!important;overflow:hidden!important;padding:0!important;background:#f5f8fc!important}
+body.mg-integrated-merchant-agent-page .mg-merchant-agent-main{position:absolute!important;inset:0!important;min-width:0!important;min-height:0!important;overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior:contain;padding:24px 28px 146px!important;background:#f5f8fc!important;scrollbar-gutter:stable}
+body.mg-integrated-merchant-agent-page .mg-merchant-agent-chat-view{width:min(1040px,100%);margin:0 auto}
+body.mg-integrated-merchant-agent-page .mg-merchant-agent-chat-stream{display:grid;align-content:start;gap:14px;min-height:100%}
+body.mg-integrated-merchant-agent-page .mg-merchant-agent-intro{width:min(920px,100%);max-width:none!important;display:grid;gap:12px;padding:22px 24px!important;border:1px solid #dbe5f1;border-radius:22px 22px 22px 8px!important;background:#fff!important;box-shadow:0 16px 38px rgba(15,23,42,.06)}
+body.mg-integrated-merchant-agent-page .mg-merchant-agent-intro-top{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}
+body.mg-integrated-merchant-agent-page .mg-merchant-agent-intro-copy{min-width:0}
+body.mg-integrated-merchant-agent-page .mg-merchant-agent-kicker{display:flex;align-items:center;gap:8px;color:#2563eb;font-size:10px;font-weight:950;letter-spacing:.09em;text-transform:uppercase}
+body.mg-integrated-merchant-agent-page .mg-merchant-agent-kicker:before{content:"";width:7px;height:7px;border-radius:999px;background:#16a36a;box-shadow:0 0 0 5px rgba(22,163,106,.12)}
+body.mg-integrated-merchant-agent-page .mg-merchant-agent-intro h1{margin:9px 0 0;color:#0f172a;font-size:clamp(24px,3vw,34px);line-height:1.05;letter-spacing:-.045em}
+body.mg-integrated-merchant-agent-page .mg-merchant-agent-intro p{max-width:760px;margin:0;color:#64748b;font-size:13px;line-height:1.6}
+body.mg-integrated-merchant-agent-page .mg-merchant-agent-intro-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+body.mg-integrated-merchant-agent-page .mg-merchant-agent-mode-link,body.mg-integrated-merchant-agent-page .mg-merchant-agent-controls-button{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:0 14px;border:1px solid #d3dfed;border-radius:12px;background:#fff;color:#334155;font-size:11px;font-weight:950;text-decoration:none;cursor:pointer}
+body.mg-integrated-merchant-agent-page .mg-merchant-agent-controls-button{border-color:#2563eb;background:#2563eb;color:#fff}
+body.mg-integrated-merchant-agent-page .mg-merchant-agent-boundary{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-top:12px;border-top:1px solid #e5ecf4;color:#6b7c93;font-size:10px;font-weight:800}
+body.mg-integrated-merchant-agent-page .mg-merchant-agent-boundary span{display:inline-flex;align-items:center;min-height:26px;padding:0 9px;border:1px solid #dbe5f1;border-radius:999px;background:#f8fbff;color:#4f6380}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-feed{width:100%;display:grid;align-content:start;gap:12px;min-height:0!important;padding:0!important;background:transparent!important;overflow:visible!important}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-empty{width:min(920px,100%);display:grid;gap:10px;padding:20px 22px;border:1px solid #dbe5f1;border-radius:20px;background:#fff;box-shadow:0 12px 30px rgba(15,23,42,.04)}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-empty-icon{width:38px;height:38px;display:grid;place-items:center;border-radius:13px;background:#eaf2ff;color:#2563eb;font-size:18px;font-weight:950}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-empty strong{color:#0f172a;font-size:18px;font-weight:950}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-empty p,body.mg-integrated-merchant-agent-page .mg-agent-chat-empty small{margin:0;color:#64748b;font-size:12px;line-height:1.5}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-prompts{width:min(920px,100%)!important;display:flex!important;flex-wrap:wrap!important;gap:8px!important;margin:2px 0 0!important}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-prompts button{min-height:38px;padding:0 13px;border:1px solid #d6e1ef;border-radius:999px;background:#fff;color:#3c506d;font-size:11px;font-weight:850;cursor:pointer}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-prompts button:hover{border-color:#9db9e7;background:#eef5ff;color:#174fb8}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-message{display:flex;width:100%}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-message.is-user{justify-content:flex-end}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-message.is-agent{justify-content:flex-start}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-bubble{max-width:min(780px,86%);padding:14px 16px;border:1px solid #dbe5f1;border-radius:18px 18px 18px 7px;background:#fff;color:#334155;box-shadow:0 10px 26px rgba(15,23,42,.04)}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-message.is-user .mg-agent-chat-bubble{border-color:#2563eb;border-radius:18px 18px 7px 18px;background:#2563eb;color:#fff}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-message.is-pending .mg-agent-chat-bubble{opacity:.72}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-message.is-error .mg-agent-chat-bubble{border-color:#fecaca;background:#fff7f7}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:7px;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;color:#728197}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-message.is-user .mg-agent-chat-meta{color:rgba(255,255,255,.75)}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-bubble>p{margin:0;white-space:pre-wrap;font-size:13px;line-height:1.62}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-blocks,body.mg-integrated-merchant-agent-page .mg-agent-chat-cards{margin-top:12px}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-card,body.mg-integrated-merchant-agent-page .mg-agent-block{border-color:#dce6f2!important;border-radius:16px!important;background:#f8fbff!important}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-status-wrap{width:min(1040px,100%);margin:0 auto}
+body.mg-integrated-merchant-agent-page .mg-form-status[data-agent-chat-status]{margin:0!important;padding:0!important;background:transparent!important}
+body.mg-integrated-merchant-agent-page .mg-form-status[data-agent-chat-status]:not(:empty){margin-bottom:12px!important;padding:10px 14px!important;border:1px solid #dbe5f1!important;border-radius:14px;background:#fff!important}
+body.mg-integrated-merchant-agent-page .mg-merchant-agent-composer{position:absolute!important;left:28px!important;right:28px!important;bottom:16px!important;z-index:120!important;display:block!important;width:auto!important;padding:10px!important;border:1px solid #d4dfec!important;border-radius:20px!important;background:rgba(255,255,255,.97)!important;box-shadow:0 20px 55px rgba(15,23,42,.18)!important;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+body.mg-integrated-merchant-agent-page .mg-merchant-agent-composer-context{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 2px 7px;color:#687991;font-size:10px;font-weight:850}
+body.mg-integrated-merchant-agent-page .mg-merchant-agent-composer-context span{display:inline-flex;align-items:center;gap:7px}
+body.mg-integrated-merchant-agent-page .mg-merchant-agent-composer-context kbd{padding:3px 6px;border:1px solid #cfdbea;border-bottom-width:2px;border-radius:7px;background:#fff;color:#2563eb;font-family:inherit;font-size:9px;font-weight:950}
+body.mg-integrated-merchant-agent-page .mg-merchant-agent-composer-row{display:grid;grid-template-columns:44px minmax(0,1fr) 54px 54px;align-items:end;gap:8px}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-tool,body.mg-integrated-merchant-agent-page .mg-agent-chat-voice,body.mg-integrated-merchant-agent-page .mg-agent-chat-send{width:100%;height:48px;min-height:48px;border-radius:14px;font-size:13px;font-weight:950}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-tool{border:1px solid #d3dfed;background:#fff;color:#2563eb;font-size:22px}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-voice{border:1px solid #d3dfed;background:#f8fbff;color:#425776}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-send{border:1px solid #2563eb;background:#2563eb;color:#fff;font-size:19px}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-send:disabled{border-color:#d4deeb;background:#e9eef5;color:#94a3b8}
+body.mg-integrated-merchant-agent-page .mg-merchant-agent-composer textarea{width:100%!important;min-width:0!important;min-height:48px!important;max-height:150px!important;margin:0!important;padding:13px 15px!important;border:1px solid #ccd9e8!important;border-radius:14px!important;background:#fff!important;color:#0f172a!important;resize:none!important;outline:0!important}
+body.mg-integrated-merchant-agent-page .mg-merchant-agent-composer textarea:focus{border-color:#8eafe2!important;box-shadow:0 0 0 3px rgba(37,99,235,.08)!important}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-tool-wrap{position:relative}
+body.mg-integrated-merchant-agent-page .mg-agent-context-menu{position:absolute;left:0;bottom:58px;z-index:150;width:min(330px,calc(100vw - 48px));display:grid;gap:5px;padding:8px;border:1px solid #d6e1ef;border-radius:16px;background:#fff;box-shadow:0 22px 55px rgba(15,23,42,.18)}
+body.mg-integrated-merchant-agent-page .mg-agent-context-menu[hidden]{display:none!important}
+body.mg-integrated-merchant-agent-page .mg-agent-context-menu button{padding:10px 11px;border:0;border-radius:10px;background:transparent;color:#334155;font-size:11px;font-weight:800;text-align:left;cursor:pointer}
+body.mg-integrated-merchant-agent-page .mg-agent-context-menu button:hover{background:#eef5ff;color:#174fb8}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-drawer-backdrop{position:fixed;inset:0;z-index:20010;background:rgba(15,23,42,.48);backdrop-filter:blur(8px)}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-drawer-backdrop[hidden]{display:none!important}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-right{position:fixed;top:0;right:0;bottom:0;z-index:20020;width:min(430px,94vw);display:block!important;padding:0;border-left:1px solid #d8e3f0;background:#fff;box-shadow:-26px 0 70px rgba(15,23,42,.2);overflow-y:auto;transform:translateX(105%);transition:transform .22s ease}
+body.mg-integrated-merchant-agent-page .mg-merchant-agent-integrated-app.is-drawer-open .mg-agent-chat-right{transform:translateX(0)}
+body.mg-integrated-merchant-agent-page .mg-agent-drawer-head{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:18px 20px;border-bottom:1px solid #dce6f2;background:rgba(255,255,255,.97);backdrop-filter:blur(12px)}
+body.mg-integrated-merchant-agent-page .mg-agent-drawer-head strong{color:#0f172a;font-size:16px;font-weight:950}
+body.mg-integrated-merchant-agent-page .mg-agent-drawer-head button{width:42px;height:42px;border:1px solid #d5e0ed;border-radius:13px;background:#fff;color:#0f172a;font-size:22px;cursor:pointer}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-sidebar-ad,body.mg-integrated-merchant-agent-page .mg-agent-context-card{margin:16px 18px}
+body.mg-integrated-merchant-agent-page .mg-agent-compact-rail{display:grid!important;gap:16px!important;padding:18px!important;border:1px solid #dce6f2!important;border-radius:18px!important;background:#f8fbff!important}
+body.mg-integrated-merchant-agent-page .mg-agent-control-head{display:grid;gap:4px}
+body.mg-integrated-merchant-agent-page .mg-agent-control-head span{color:#2563eb;font-size:9px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}
+body.mg-integrated-merchant-agent-page .mg-agent-control-head strong{color:#0f172a;font-size:16px;font-weight:950}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-fields,body.mg-integrated-merchant-agent-page .mg-agent-context-min{display:grid!important;gap:10px!important}
+body.mg-integrated-merchant-agent-page .mg-agent-context-min{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-fields label,body.mg-integrated-merchant-agent-page .mg-agent-context-min label{display:grid;gap:6px;color:#425776;font-size:10px;font-weight:950}
+body.mg-integrated-merchant-agent-page .mg-agent-chat-fields input,body.mg-integrated-merchant-agent-page .mg-agent-chat-fields select,body.mg-integrated-merchant-agent-page .mg-agent-context-min select{width:100%;min-height:44px;border:1px solid #ccd9e8;border-radius:12px;background:#fff;padding:0 11px;color:#0f172a;font-size:11px;font-weight:800}
+body.mg-integrated-merchant-agent-page .mg-agent-thread-actions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important}
+body.mg-integrated-merchant-agent-page .mg-agent-thread-actions .mg-btn{min-height:40px!important}
+body.mg-integrated-merchant-agent-page .mg-agent-skill-picker{display:grid;gap:8px;padding:12px;border:1px solid #dce6f2;border-radius:14px;background:#fff}
+body.mg-integrated-merchant-agent-page .mg-agent-skill-picker label,body.mg-integrated-merchant-agent-page .mg-agent-speech-toggle{display:flex!important;align-items:center!important;gap:8px!important;color:#334155!important;font-size:11px!important;font-weight:850!important}
+body.mg-integrated-merchant-agent-page .mg-agent-context-summary{padding:10px 11px;border:1px solid #dce6f2;border-radius:12px;background:#fff;color:#53647f;font-size:10px;font-weight:800;line-height:1.45}
+body.mg-integrated-merchant-agent-page .mg-agent-data-pills{display:flex;gap:6px;flex-wrap:wrap}
+body.mg-integrated-merchant-agent-page .mg-agent-data-pills span{display:inline-flex;align-items:center;min-height:26px;padding:0 9px;border:1px solid #d6e1ef;border-radius:999px;background:#fff;color:#53647f;font-size:9px;font-weight:900}
+body.mg-integrated-merchant-agent-page .mg-merchant-agent-access{width:min(920px,calc(100% - 48px));margin:32px auto}
+body.mg-integrated-merchant-agent-page .mg-merchant-agent-access .mg-app-panel-body{display:flex;gap:10px;flex-wrap:wrap}
+body.mg-agent-chat-drawer-open{overflow:hidden!important}
+@media(max-width:760px){body.mg-integrated-merchant-agent-page .mg-merchant-agent-integrated-app .mg-agent-workspace{height:calc(100dvh - var(--mg-mobile-topbar,72px))!important}body.mg-integrated-merchant-agent-page .mg-merchant-agent-main{padding:14px 12px 128px!important}body.mg-integrated-merchant-agent-page .mg-merchant-agent-intro{padding:18px!important;border-radius:18px 18px 18px 7px!important}body.mg-integrated-merchant-agent-page .mg-merchant-agent-intro-top{display:grid}body.mg-integrated-merchant-agent-page .mg-merchant-agent-intro-actions{justify-content:flex-start}body.mg-integrated-merchant-agent-page .mg-agent-chat-bubble{max-width:92%}body.mg-integrated-merchant-agent-page .mg-merchant-agent-composer{left:10px!important;right:10px!important;bottom:8px!important;padding:8px!important;border-radius:17px!important}body.mg-integrated-merchant-agent-page .mg-merchant-agent-composer-row{grid-template-columns:42px minmax(0,1fr) 46px 46px;gap:6px}body.mg-integrated-merchant-agent-page .mg-agent-chat-tool,body.mg-integrated-merchant-agent-page .mg-agent-chat-voice,body.mg-integrated-merchant-agent-page .mg-agent-chat-send{height:46px;min-height:46px;border-radius:12px}body.mg-integrated-merchant-agent-page .mg-agent-context-min{grid-template-columns:1fr!important}}
+@media(max-width:480px){body.mg-integrated-merchant-agent-page .mg-merchant-agent-composer-context span:last-child{display:none}body.mg-integrated-merchant-agent-page .mg-merchant-agent-composer-row{grid-template-columns:40px minmax(0,1fr) 42px}body.mg-integrated-merchant-agent-page .mg-agent-chat-voice{display:none}body.mg-integrated-merchant-agent-page .mg-merchant-agent-intro-actions{display:grid;grid-template-columns:1fr 1fr;width:100%}body.mg-integrated-merchant-agent-page .mg-merchant-agent-mode-link,body.mg-integrated-merchant-agent-page .mg-merchant-agent-controls-button{width:100%}}
