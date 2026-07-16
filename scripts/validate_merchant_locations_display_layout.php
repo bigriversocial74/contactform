@@ -24,7 +24,7 @@ foreach($files as $key=>$path){
 
 $checks=[
     'merchant locations route keeps shared merchant workspace' =>
-        str_contains($content['page'],"$merchantView='locations'")
+        str_contains($content['page'],"\$merchantView='locations'")
         && str_contains($content['page'],'includes/merchant-workspace.php')
         && str_contains($content['page'],'merchant-locations-redemption.css'),
     'all five location metrics remain in one horizontal row' =>
