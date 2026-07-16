@@ -63,8 +63,13 @@ $checks = [
     'strict session revocation' => $has('includes/session-security.php', 'mg_hardened_revoke_user_sessions'),
     'password timing equalization' => $has('api/auth/_identity_core.php', 'mg_identity_dummy_password_hash'),
     'password hash upgrade' => $has('api/auth/_identity_core.php', 'password_needs_rehash'),
-    'server password confirmation' => $has('api/auth/_identity_core.php', "password_confirmation") && $has('api/auth/_identity_core.php', 'hash_equals($password, $passwordConfirmation)'),
-    'atomic registration transaction' => $has('api/auth/register.php', '$pdo->beginTransaction()') && $has('api/auth/register.php', 'merchant_team_members'),
+    'server password confirmation' => $has('api/auth/_identity_core.php', 'password_confirmation') && $has('api/auth/_identity_core.php', 'hash_equals($password, $passwordConfirmation)'),
+    'atomic Free Wallet registration transaction' => $has('api/auth/register.php', '$pdo->beginTransaction()')
+        && $has('api/auth/register.php', 'mg_identity_register($pdo,$input)')
+        && $has('api/auth/register.php', 'mg_load_user_auth')
+        && $has('api/auth/register.php', 'mg_set_session_user')
+        && $has('api/auth/register.php', "'initial_entitlement'=>'free_wallet'")
+        && !$has('api/auth/register.php', 'INSERT INTO merchant_workspaces'),
     'recovery email delivery' => $has('api/auth/password/forgot.php', 'mg_send_password_reset_email'),
     'atomic password reset and revocation' => $has('api/auth/password/reset.php', 'FOR UPDATE') && $has('api/auth/password/reset.php', 'mg_hardened_revoke_user_sessions'),
     'email verification token lock' => $has('api/auth/email/verify.php', 'FOR UPDATE'),
