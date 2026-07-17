@@ -102,7 +102,9 @@ function qa_throwable_catch_blocks(string $content): array
             if ($text === '}') $braceDepth--;
             if ($braceDepth > 0) $body .= $text;
         }
-        if ($variable === '' || preg_match('/(?:^|[|&\s\\])Throwable(?:[|&\s]|$)/i', $signature) !== 1) continue;
+        $typeSignature = trim(str_replace($variable, '', $signature));
+        $typeNames = preg_split('/[|&\s]+/', str_replace('\\', '', $typeSignature), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        if (!in_array('Throwable', $typeNames, true)) continue;
         $blocks[] = ['variable'=>$variable, 'body'=>$body];
     }
     return $blocks;
