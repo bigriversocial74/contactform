@@ -28,7 +28,7 @@ $page_styles = [
     '/assets/css/design-studio-loaded-template-v1.css?v=1.0.0',
 ];
 $page_scripts = [
-    '/assets/js/personal-agent-chat-history.js?v=1.1.0',
+    '/assets/js/personal-agent-chat-history.js?v=1.2.0',
     '/assets/js/personal-agent-design-studio.js?v=1.5.0',
     '/assets/js/personal-agent-design-studio-social.js?v=1.0.0',
     '/assets/js/design-studio-template-variants.js?v=1.0.1',
