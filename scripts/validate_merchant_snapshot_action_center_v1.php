@@ -21,7 +21,7 @@ $checks=[
     'authorized Merchant Agent page loads action center assets' =>
         str_contains($content['page'],'merchant-agent-snapshot-action-center.css?v=1.0.0')
         && str_contains($content['page'],'merchant-agent-snapshot-action-center.js?v=1.0.0')
-        && str_contains($content['page'],"$merchantAgentAllowed ? ' data-merchant-agent-chat' : ''"),
+        && str_contains($content['page'],"\$merchantAgentAllowed ? ' data-merchant-agent-chat' : ''"),
     'snapshot remains database only and excludes private customer details' =>
         str_contains($content['snapshot'],"'database_only' => true")
         && str_contains($content['snapshot'],"'external_ai_called' => false")
