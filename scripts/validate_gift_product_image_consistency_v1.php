@@ -33,8 +33,9 @@ $runtimePosition = strpos($include, 'gift-action-center-runtime-v4.js');
 
 $checks = [
     'Resolver scopes action records to the signed-in owner' => str_contains($resolver, 'WHERE ac.user_id=? AND ac.public_id IN'),
-    'Resolver follows the Microgift instance product link' => str_contains($resolver, 'INNER JOIN microgift_instances i ON i.id=ac.instance_id') && str_contains($resolver, 'LEFT JOIN catalog_products cp ON cp.id=i.product_id'),
-    'Resolver selects the exact product-version cover role' => str_contains($resolver, "pva.product_version_id=i.product_version_id") && str_contains($resolver, "pva.role='cover'") && str_contains($resolver, "cover.status='ready'"),
+    'Resolver follows the Microgift instance and purchased commerce order line' => str_contains($resolver, 'INNER JOIN microgift_instances i ON i.id=ac.instance_id') && str_contains($resolver, 'LEFT JOIN commerce_order_items coi ON coi.id=i.commerce_order_item_id'),
+    'Resolver prefers the purchased order-line product version with instance fallback' => str_contains($resolver, 'cpv.id=COALESCE(coi.product_version_id,i.product_version_id)') && str_contains($resolver, 'cp.id=COALESCE(coi.product_id,cpv.product_id,i.product_id)'),
+    'Resolver selects the exact resolved product-version cover role' => str_contains($resolver, 'pva.product_version_id=cpv.id') && str_contains($resolver, "pva.role='cover'") && str_contains($resolver, "cover.status='ready'"),
     'Resolver distinguishes exact and current version bases' => str_contains($resolver, "'exact_instance_version'") && str_contains($resolver, "'current_catalog_fallback'"),
     'Resolver does not expose an unpublished product URL' => str_contains($resolver, "'product_url' => \$isPublic") && str_contains($resolver, "'product_is_public' => \$isPublic"),
     'Contract keeps the gift snapshot separate from linked product data' => str_contains($contract, "'snapshot' => [") && str_contains($contract, "'linked_resource' => \$linkedResource"),
