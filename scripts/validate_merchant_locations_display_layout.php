@@ -69,8 +69,8 @@ $checks=[
         && str_contains($content['js'],"closest('[data-location]')")
         && str_contains($content['js'],'scrollIntoView')
         && !str_contains($content['js'],'activatePanel'),
-    'shared merchant menu keeps Locations under Business Settings' =>
-        str_contains($content['navigation'],"'locations' => ['Locations', 'Stores and claim scope', '/merchant-locations.php', 'Business Settings']"),
+    'shared merchant menu keeps Locations under Products & Engagement' =>
+        str_contains($content['navigation'],"'locations' => ['Locations', 'Stores and claim scope', '/merchant-locations.php', 'Products & Engagement']"),
 ];
 
 $failed=[];
