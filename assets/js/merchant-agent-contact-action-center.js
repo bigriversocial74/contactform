@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function payload(response) { return response && response.data ? response.data : response; }
   function esc(value) { return String(value == null ? '' : value).replace(/[&<>"']/g, function (char) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]; }); }
-  function human(value) { return String(value || '').replace(/_/g, ' ').replace(/\b\w/g, function (char) { return char.toUpperCase(); }); }
+  function human(value) { return String(value || '').replace(/[_.-]+/g, ' ').replace(/\b\w/g, function (char) { return char.toUpperCase(); }); }
   function compactDate(value) { var stamp = Date.parse(value || ''); return stamp ? new Date(stamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'No date'; }
   function money(cents) { return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(Number(cents || 0) / 100); }
   function threadId() { var select = document.querySelector('[data-agent-thread-select]'); return select && select.value ? select.value : ''; }
@@ -61,9 +61,9 @@ document.addEventListener('DOMContentLoaded', function () {
   function activityHtml(items) {
     items = Array.isArray(items) ? items : [];
     if (!items.length) return '<span class="is-empty">No recent CRM events are available for this contact.</span>';
-    return items.slice(0, 6).map(function (item) {
-      var title = human(item.event_type || item.type || 'CRM activity');
-      var detail = [human(item.campaign_type || ''), human(item.source_type || '')].filter(Boolean).join(' · ');
+    return items.slice(0, 8).map(function (item) {
+      var title = item.title || human(item.event_type || item.type || 'CRM activity');
+      var detail = item.body || [human(item.campaign_type || ''), human(item.source_type || '')].filter(Boolean).join(' · ');
       if (item.value_cents != null) detail += (detail ? ' · ' : '') + money(item.value_cents);
       return '<article><strong>' + esc(title) + '</strong><span>' + esc(detail || 'Merchant CRM activity') + '</span><small>' + esc(compactDate(item.created_at || item.at)) + '</small></article>';
     }).join('');
@@ -176,11 +176,7 @@ document.addEventListener('DOMContentLoaded', function () {
     setStatus('Selecting ' + (contact.name || contact.mention || 'CRM contact') + '…', '');
     try {
       var response = await Microgifter.post('/api/ai/merchant-agent-chat.php', {
-        action: 'select_contact',
-        contact_id: contact.id,
-        contact_mention: contact.mention || '',
-        thread_id: threadId(),
-        days: days()
+        action: 'select_contact', contact_id: contact.id, contact_mention: contact.mention || '', thread_id: threadId(), days: days()
       });
       applyResponse(response);
       setExpanded(true);
@@ -244,10 +240,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var button = event.target.closest('[data-contact-center-action]');
     if (button) runAction(button, button.getAttribute('data-contact-center-action') || '');
   });
-
-  document.addEventListener('mg:merchant-agent:select-contact', function (event) {
-    selectContact(event.detail && event.detail.contact);
-  });
+  document.addEventListener('mg:merchant-agent:select-contact', function (event) { selectContact(event.detail && event.detail.contact); });
 
   window.MicrogifterMerchantContactActionCenter = Object.freeze({
     select: selectContact,
