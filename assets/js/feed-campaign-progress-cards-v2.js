@@ -166,8 +166,6 @@
     if (!postsOk && !campaignsOk && errorNode) {
       errorNode.classList.remove('mg-hidden');
       if (errorMessage) errorMessage.textContent = 'Social posts and campaign opportunities are temporarily unavailable. Please try again.';
-    } else if (errorNode) {
-      errorNode.classList.add('mg-hidden');
     }
   }
 
