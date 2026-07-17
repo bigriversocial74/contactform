@@ -11,6 +11,7 @@ $header_mode = 'public';
 $page_styles = [
     '/assets/css/watch-listen-standalone-page.css',
     '/assets/css/campaign-landing-specialized.css',
+    '/assets/css/public-campaign-compact-layout-v2.css?v=1.0.0',
 ];
 $page_scripts = ['/assets/js/public-campaign.js'];
 
@@ -84,7 +85,7 @@ $joinContext['preview'] = $previewMode;
 $joinContext['rating_required'] = $ratingRequired;
 $joinContext['feedback_required'] = $feedbackRequired;
 ?>
-<section class="mg-rl-page mg-rl-campaign-foundation mg-rl-specialized mg-rl-specialized-survey<?= $previewMode ? ' is-merchant-preview' : '' ?>" data-public-campaign-page data-campaign-state="<?= mg_e((string)$state['code']) ?>">
+<section class="mg-rl-page mg-rl-campaign-foundation mg-rl-specialized mg-rl-specialized-survey mg-rl-compact-campaign<?= $previewMode ? ' is-merchant-preview' : '' ?>" data-public-campaign-page data-campaign-state="<?= mg_e((string)$state['code']) ?>">
   <div class="mg-rl-bg"<?= $backgroundImage ? ' style="background-image:url(' . mg_e($backgroundImage) . ')"' : '' ?>></div>
   <div class="mg-rl-wrap">
     <div class="mg-rl-left">
