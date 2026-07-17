@@ -27,11 +27,11 @@ final class GiftActionCenterConsolidatedLayoutTest extends TestCase
         self::assertStringNotContainsString('gift-action-center-pagination.js',$shared);
     }
 
-    public function testGiftActionCenterUsesAgentSidebarAndNoInnerFolderTabs(): void
+    public function testGiftActionCenterUsesSharedSidebarAndNoInnerFolderTabs(): void
     {
         $source=file_get_contents(dirname(__DIR__,2).'/includes/gift-action-center.php');
         self::assertIsString($source);
-        self::assertStringContainsString('agent-sidebar.php',$source);
+        self::assertStringContainsString('gift-center-sidebar.php',$source);
         self::assertStringContainsString('mg-gift-feed-column',$source);
         self::assertStringContainsString('data-gift-drawer',$source);
         self::assertStringNotContainsString('account-sidebar.php',$source);
