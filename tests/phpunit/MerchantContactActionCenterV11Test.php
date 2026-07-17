@@ -37,8 +37,8 @@ final class MerchantContactActionCenterV11Test extends TestCase
         self::assertStringContainsString("'send_directly'=>false", $service);
         self::assertStringContainsString("'create_directly'=>false", $service);
         self::assertStringContainsString('mg_ai_chat_bridge_to_review', $service);
-        self::assertStringContainsString("mg_agent_autonomy_require_for_merchant($pdo, $actorId, 'review_queue'", $api);
-        self::assertStringContainsString("mg_agent_autonomy_require_for_merchant($pdo, $actorId, 'messages'", $api);
+        self::assertStringContainsString('mg_agent_autonomy_require_for_merchant($pdo, $actorId, \'review_queue\'', $api);
+        self::assertStringContainsString('mg_agent_autonomy_require_for_merchant($pdo, $actorId, \'messages\'', $api);
         self::assertStringNotContainsString('/api/merchant/crm-message.php', $runtime);
         self::assertStringNotContainsString('/api/merchant/crm-followup.php', $runtime);
     }
