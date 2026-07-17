@@ -11,6 +11,7 @@ $header_mode = 'public';
 $page_styles = [
     '/assets/css/watch-listen-standalone-page.css',
     '/assets/css/campaign-landing-specialized.css',
+    '/assets/css/public-campaign-compact-layout-v2.css?v=1.0.0',
 ];
 $page_scripts = ['/assets/js/public-campaign.js', '/assets/js/public-check-in-reward.js'];
 
@@ -72,8 +73,6 @@ if (!$campaign || empty($state['available'])) {
 $rules = mg_campaign_landing_rules($campaign);
 $profile = mg_campaign_landing_profile($campaign);
 $prefill = mg_campaign_landing_prefill();
-$headline = trim((string)($campaign['form_headline'] ?? '')) ?: (trim((string)($campaign['title'] ?? '')) ?: 'Check in and get a reward');
-$description = trim((string)($campaign['form_description'] ?? '')) ?: (trim((string)($campaign['description'] ?? '')) ?: 'Use your browser location to verify you are near a registered merchant location.');
 $radius = max(25, min(5000, (int)($rules['radius_meters'] ?? 150)));
 $locationRequired = !array_key_exists('location_required', $rules) || !empty($rules['location_required']);
 $rewardTitle = trim((string)($campaign['reward_template_title'] ?? '')) ?: 'Microgifter reward';
@@ -91,22 +90,19 @@ $joinContext = [
     'radius' => $radius,
 ];
 ?>
-<section class="mg-rl-page mg-rl-campaign-foundation mg-rl-specialized mg-rl-specialized-checkin<?= $previewMode ? ' is-merchant-preview' : '' ?>" data-public-campaign-page data-campaign-state="<?= mg_e((string)$state['code']) ?>">
+<section class="mg-rl-page mg-rl-campaign-foundation mg-rl-specialized mg-rl-specialized-checkin mg-rl-compact-campaign<?= $previewMode ? ' is-merchant-preview' : '' ?>" data-public-campaign-page data-campaign-state="<?= mg_e((string)$state['code']) ?>">
   <div class="mg-rl-bg"<?= $backgroundImage ? ' style="background-image:url(' . mg_e($backgroundImage) . ')"' : '' ?>></div>
   <div class="mg-rl-wrap">
     <div class="mg-rl-left">
-      <?php if ($previewMode): ?><article class="mg-rl-card mg-specialized-preview"><span class="mg-rl-eyebrow">Merchant preview</span><h3><?= mg_e((string)$state['status_label']) ?></h3><p>Customer check-ins are disabled until this campaign is active.</p></article><?php endif; ?>
-      <header class="mg-rl-hero">
-        <h1><?= mg_e($headline) ?></h1>
-        <p><?= mg_e($description) ?></p>
-        <div class="mg-public-campaign-trust-row"><span>Browser location match</span><span><?= mg_e((string)$radius) ?>m campaign radius</span><span>Reward sent to Inbox</span></div>
-      </header>
       <section class="mg-rl-player mg-specialized-canvas" aria-label="Check-in reward details">
         <div class="mg-specialized-layout">
           <div class="mg-specialized-media"><?php if ($primaryImage): ?><img src="<?= mg_e($primaryImage) ?>" alt="<?= mg_e($rewardTitle) ?> campaign image"><?php else: ?><div class="mg-specialized-placeholder"><span>Location</span><strong>Check-In Reward</strong></div><?php endif; ?></div>
           <div class="mg-specialized-copy"><span class="mg-rl-eyebrow">Location verification</span><h2><?= mg_e((string)$radius) ?> meter campaign radius</h2><p><?= mg_e($rewardDescription) ?></p><div class="mg-specialized-metrics"><span><strong><?= $locationRequired ? 'Required' : 'Optional' ?></strong>Browser location</span><span><strong>Nearest match</strong>Merchant location</span><span><strong><?= mg_e($rewardValue) ?></strong><?= mg_e($rewardTitle) ?></span></div></div>
         </div>
       </section>
+
+      <?php if ($previewMode): ?><article class="mg-rl-card mg-specialized-preview"><span class="mg-rl-eyebrow">Merchant preview</span><h3><?= mg_e((string)$state['status_label']) ?></h3><p>Customer check-ins are disabled until this campaign is active.</p></article><?php endif; ?>
+
       <aside class="mg-rl-join mg-rl-join-mobile"><?php mg_check_in_render_join($joinContext); ?></aside>
       <?php mg_campaign_landing_render_bottom_cards([
           'campaign' => $campaign,
