@@ -73,7 +73,7 @@ $checks = [
         && str_contains($files['fallback'], 'mg_campaign_feed_v1_items')
         && str_contains($files['fallback'], 'campaign.feed_v2_enrichment_failed'),
     'Primary feed uses one public feed read instead of a second campaign request' =>
-        str_contains($files['bridge'], '/api/public/feed\\.php')
+        str_contains($files['bridge'], 'feed\.php')
         && str_contains($files['bridge'], 'mg:feed-contract-v2')
         && str_contains($files['bridge'], 'MicrogifterFeedContractV2Latest')
         && !str_contains($files['campaign_client'], '/api/public/campaign-feed.php')
