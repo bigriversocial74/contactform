@@ -2,7 +2,6 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
-$onlyIndex = max(0, (int)($argv[1] ?? 0));
 $files = [
     'page' => 'merchant-crm.php',
     'view' => 'includes/merchant-crm-view.php',
@@ -27,7 +26,7 @@ foreach ($files as $key => $relative) {
 $checks = [
     'CRM page preserves the current workspace and authoritative KPI layout' =>
         str_contains($content['page'], "'/assets/css/merchant-crm-kpi-authoritative-v1.css?v=1.0.0'")
-        && str_contains($content['view'], 'data-crm-desktop-kpis')
+        && str_contains($content['view'], 'class="mg-crm-desktop-kpis"')
         && str_contains($content['view'], 'data-merchant-crm-table'),
     'CRM page loads one canonical data bridge and one directory runtime' =>
         str_contains($content['page'], '/assets/js/merchant-crm-directory-data.js?v=1.0.0')
@@ -123,22 +122,13 @@ $checks = [
 ];
 
 $failed = [];
-$currentIndex = 0;
-$executed = 0;
 foreach ($checks as $label => $passed) {
-    $currentIndex++;
-    if ($onlyIndex > 0 && $onlyIndex !== $currentIndex) continue;
-    $executed++;
-    echo ($passed ? '[PASS] ' : '[FAIL] ') . $currentIndex . ': ' . $label . PHP_EOL;
+    echo ($passed ? '[PASS] ' : '[FAIL] ') . $label . PHP_EOL;
     if (!$passed) $failed[] = $label;
-}
-if ($onlyIndex > count($checks)) {
-    fwrite(STDERR, 'Unknown audit check index.' . PHP_EOL);
-    exit(2);
 }
 if ($failed !== []) {
     fwrite(STDERR, "Merchant CRM current-state audit contract failed: " . implode('; ', $failed) . PHP_EOL);
     exit(1);
 }
 
-echo 'Merchant CRM current-state audit contract passed (' . $executed . ' checks).' . PHP_EOL;
+echo 'Merchant CRM current-state audit contract passed (' . count($checks) . ' checks).' . PHP_EOL;
