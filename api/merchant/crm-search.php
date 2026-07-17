@@ -21,12 +21,14 @@ mg_rate_limit('merchant.agent.crm_search', 'user:' . $actorId, 180, 60);
 try {
     $result = mg_merchant_crm_search($pdo, $merchantId, $query, $limit, $offset);
     if (function_exists('mg_audit')) {
-        mg_audit('merchant.agent_crm_search.read', $actorId, [
-            'merchant_user_id'=>$merchantId,
-            'query_length'=>mb_strlen($query),
-            'result_count'=>count($result['contacts'] ?? []),
-            'total'=>(int)($result['total'] ?? 0),
-        ]);
+        try {
+            mg_audit('merchant.agent_crm_search.read', 'merchant_crm', [
+                'merchant_user_id'=>$merchantId,
+                'query_length'=>mb_strlen($query),
+                'result_count'=>count($result['contacts'] ?? []),
+                'total'=>(int)($result['total'] ?? 0),
+            ], $actorId);
+        } catch (Throwable) {}
     }
     mg_ok($result);
 } catch (Throwable $error) {
