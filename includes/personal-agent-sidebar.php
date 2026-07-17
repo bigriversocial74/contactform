@@ -182,5 +182,5 @@ $sidebarLinkClass = static function (string $key) use ($activeSidebarKey): strin
       </div>
     </section>
   </div>
-  <script src="/assets/js/agent-sidebar-tools.js?v=1.1.0" defer></script>
+  <script src="/assets/js/agent-sidebar-tools.js?v=1.0.0&nav=1" defer></script>
 <?php endif; ?>
