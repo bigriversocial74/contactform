@@ -207,7 +207,7 @@ document.addEventListener('DOMContentLoaded', function () {
       article.classList.add('theme-' + theme);
       article.setAttribute('aria-label', 'Open scheduled post settings');
       var openButton = article.querySelector('[data-calendar-open]');
-      if (openButton) openButton.textContent = 'Preview';
+      if (openButton && openButton.textContent !== 'Preview') openButton.textContent = 'Preview';
     });
   }
 
@@ -295,6 +295,6 @@ document.addEventListener('DOMContentLoaded', function () {
   });
   document.addEventListener('keydown', function (event) { if (event.key === 'Escape' && !modal.hidden) closeModal(); });
 
-  new MutationObserver(decorateCards).observe(root, { childList: true, subtree: true });
+  new MutationObserver(function () { decorateCards(); }).observe(root, { childList: true, subtree: true });
   decorateCards();
 });
