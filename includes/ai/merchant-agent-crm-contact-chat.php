@@ -228,6 +228,6 @@ function mg_merchant_agent_crm_contact_chat_response(PDO $pdo, array $user, arra
         if ($pdo->inTransaction()) $pdo->rollBack();
         mg_ai_merchant_record_usage_event($pdo, (int)$provider['id'], (int)$model['id'], $actorId, null, 'failed', [], ['source'=>'merchant_agent_crm_contact_chat','error'=>$error->getMessage(),'crm_contact_count'=>count($selectedIds),'thread_id'=>$threadId]);
         mg_security_log('error', 'merchant.agent_crm_contact_chat.failed', 'Contact-aware Merchant Agent chat failed.', ['exception_class'=>$error::class,'crm_contact_count'=>count($selectedIds)], $actorId);
-        mg_fail('Unable to run contact-aware Merchant Agent chat: ' . $error->getMessage(), 500);
+        mg_fail('Unable to run contact-aware Merchant Agent chat.', 500);
     }
 }

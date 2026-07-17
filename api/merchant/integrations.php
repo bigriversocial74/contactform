@@ -244,5 +244,5 @@ try {
         mg_integration_mark_error($pdo, $merchantUserId, $providerKey, $error::class, $error->getMessage());
     }
     mg_security_log('warning', 'merchant.integration.action_failed', 'Merchant integration action failed.', ['provider' => $providerKey, 'action' => $action, 'exception_class' => $error::class], $merchantUserId);
-    mg_fail($error->getMessage() !== '' ? $error->getMessage() : 'Unable to update the integration.', 500);
+    mg_fail('Unable to update the integration.', 500);
 }

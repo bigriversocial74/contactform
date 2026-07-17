@@ -222,6 +222,6 @@ function mg_contact_workspace_review_item(PDO $pdo, array $user, array $input): 
             'exception_class'=>$error::class,
             'item_id'=>$itemPublicId,
         ], $actorId);
-        mg_fail('Unable to approve Contact Action Center draft: ' . $error->getMessage(), 500);
+        mg_fail('Unable to approve Contact Action Center draft.', 500);
     }
 }

@@ -114,7 +114,7 @@ if ($action === 'save_webhook') {
         mg_ok($data, $secret !== null ? 'Webhook saved. Copy the signing secret now; it will not be shown again.' : 'Webhook saved.');
     } catch (Throwable $e) {
         if ($pdo->inTransaction()) $pdo->rollBack();
-        mg_fail($e->getMessage() ?: 'Unable to save webhook.', 500);
+        mg_fail_unexpected($e, 'merchant.developer_webhook_save_failed', 'Unable to save webhook.', 500);
     }
 }
 

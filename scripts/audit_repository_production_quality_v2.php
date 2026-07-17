@@ -91,7 +91,6 @@ function qa_throwable_catch_blocks(string $content): array
                 if (is_array($token) && $token[0] === T_VARIABLE) $variable = $text;
             }
         }
-        if ($variable === '' || preg_match('/(?:^|[|&\s\\])Throwable(?:[|&\s]|$)/i', $signature) !== 1) continue;
         while (++$i < $count && $tokens[$i] !== '{') {}
         if ($i >= $count) continue;
         $braceDepth = 1;
@@ -103,6 +102,7 @@ function qa_throwable_catch_blocks(string $content): array
             if ($text === '}') $braceDepth--;
             if ($braceDepth > 0) $body .= $text;
         }
+        if ($variable === '' || preg_match('/(?:^|[|&\s\\])Throwable(?:[|&\s]|$)/i', $signature) !== 1) continue;
         $blocks[] = ['variable'=>$variable, 'body'=>$body];
     }
     return $blocks;
