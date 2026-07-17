@@ -2,49 +2,130 @@
 -- Import after database/stage_1_identity.sql and database/stage_1_repair_03M.sql.
 -- Adds auth-version invalidation, idle/absolute session expiry, session rotation metadata,
 -- and encrypted TOTP/recovery-code storage. No existing passwords or sessions are deleted.
+--
+-- This migration intentionally avoids DELIMITER and stored-procedure directives so it can
+-- run through the canonical PDO migration runner as well as the MySQL command-line client.
 
-DROP PROCEDURE IF EXISTS mg_auth_hardening_add_column;
-DROP PROCEDURE IF EXISTS mg_auth_hardening_add_index;
-DELIMITER $$
-CREATE PROCEDURE mg_auth_hardening_add_column(IN p_table VARCHAR(64), IN p_column VARCHAR(64), IN p_definition TEXT)
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.COLUMNS
-    WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=p_table AND COLUMN_NAME=p_column
-  ) THEN
-    SET @sql=CONCAT('ALTER TABLE `',p_table,'` ADD COLUMN `',p_column,'` ',p_definition);
-    PREPARE stmt FROM @sql;
-    EXECUTE stmt;
-    DEALLOCATE PREPARE stmt;
-  END IF;
-END$$
-CREATE PROCEDURE mg_auth_hardening_add_index(IN p_table VARCHAR(64), IN p_index VARCHAR(64), IN p_definition TEXT)
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.STATISTICS
-    WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=p_table AND INDEX_NAME=p_index
-  ) THEN
-    SET @sql=CONCAT('ALTER TABLE `',p_table,'` ADD ',p_definition);
-    PREPARE stmt FROM @sql;
-    EXECUTE stmt;
-    DEALLOCATE PREPARE stmt;
-  END IF;
-END$$
-DELIMITER ;
+SET @has_users_auth_version := (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='users' AND COLUMN_NAME='auth_version'
+);
+SET @sql := IF(
+  @has_users_auth_version=0,
+  'ALTER TABLE `users` ADD COLUMN `auth_version` INT UNSIGNED NOT NULL DEFAULT 1 AFTER `email_verified_at`',
+  'SELECT 1'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
-CALL mg_auth_hardening_add_column('users','auth_version','INT UNSIGNED NOT NULL DEFAULT 1 AFTER `email_verified_at`');
-CALL mg_auth_hardening_add_column('users','password_changed_at','DATETIME NULL AFTER `auth_version`');
-CALL mg_auth_hardening_add_column('users','last_login_at','DATETIME NULL AFTER `password_changed_at`');
+SET @has_users_password_changed_at := (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='users' AND COLUMN_NAME='password_changed_at'
+);
+SET @sql := IF(
+  @has_users_password_changed_at=0,
+  'ALTER TABLE `users` ADD COLUMN `password_changed_at` DATETIME NULL AFTER `auth_version`',
+  'SELECT 1'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
-CALL mg_auth_hardening_add_column('user_sessions','auth_version','INT UNSIGNED NOT NULL DEFAULT 1 AFTER `session_hash`');
-CALL mg_auth_hardening_add_column('user_sessions','authentication_method','ENUM(''password'',''mfa'',''recovery'') NOT NULL DEFAULT ''password'' AFTER `auth_version`');
-CALL mg_auth_hardening_add_column('user_sessions','idle_expires_at','DATETIME NULL AFTER `last_seen_at`');
-CALL mg_auth_hardening_add_column('user_sessions','absolute_expires_at','DATETIME NULL AFTER `idle_expires_at`');
-CALL mg_auth_hardening_add_column('user_sessions','last_rotated_at','DATETIME NULL AFTER `absolute_expires_at`');
+SET @has_users_last_login_at := (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='users' AND COLUMN_NAME='last_login_at'
+);
+SET @sql := IF(
+  @has_users_last_login_at=0,
+  'ALTER TABLE `users` ADD COLUMN `last_login_at` DATETIME NULL AFTER `password_changed_at`',
+  'SELECT 1'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
-CALL mg_auth_hardening_add_index('user_sessions','idx_user_sessions_active_auth','KEY `idx_user_sessions_active_auth` (`user_id`,`auth_version`,`revoked_at`)');
-CALL mg_auth_hardening_add_index('user_sessions','idx_user_sessions_idle','KEY `idx_user_sessions_idle` (`idle_expires_at`)');
-CALL mg_auth_hardening_add_index('user_sessions','idx_user_sessions_absolute','KEY `idx_user_sessions_absolute` (`absolute_expires_at`)');
+SET @has_sessions_auth_version := (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='user_sessions' AND COLUMN_NAME='auth_version'
+);
+SET @sql := IF(
+  @has_sessions_auth_version=0,
+  'ALTER TABLE `user_sessions` ADD COLUMN `auth_version` INT UNSIGNED NOT NULL DEFAULT 1 AFTER `session_hash`',
+  'SELECT 1'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @has_sessions_authentication_method := (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='user_sessions' AND COLUMN_NAME='authentication_method'
+);
+SET @sql := IF(
+  @has_sessions_authentication_method=0,
+  'ALTER TABLE `user_sessions` ADD COLUMN `authentication_method` ENUM(''password'',''mfa'',''recovery'') NOT NULL DEFAULT ''password'' AFTER `auth_version`',
+  'SELECT 1'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @has_sessions_idle_expires_at := (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='user_sessions' AND COLUMN_NAME='idle_expires_at'
+);
+SET @sql := IF(
+  @has_sessions_idle_expires_at=0,
+  'ALTER TABLE `user_sessions` ADD COLUMN `idle_expires_at` DATETIME NULL AFTER `last_seen_at`',
+  'SELECT 1'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @has_sessions_absolute_expires_at := (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='user_sessions' AND COLUMN_NAME='absolute_expires_at'
+);
+SET @sql := IF(
+  @has_sessions_absolute_expires_at=0,
+  'ALTER TABLE `user_sessions` ADD COLUMN `absolute_expires_at` DATETIME NULL AFTER `idle_expires_at`',
+  'SELECT 1'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @has_sessions_last_rotated_at := (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='user_sessions' AND COLUMN_NAME='last_rotated_at'
+);
+SET @sql := IF(
+  @has_sessions_last_rotated_at=0,
+  'ALTER TABLE `user_sessions` ADD COLUMN `last_rotated_at` DATETIME NULL AFTER `absolute_expires_at`',
+  'SELECT 1'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @has_sessions_active_auth_index := (
+  SELECT COUNT(*) FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='user_sessions' AND INDEX_NAME='idx_user_sessions_active_auth'
+);
+SET @sql := IF(
+  @has_sessions_active_auth_index=0,
+  'ALTER TABLE `user_sessions` ADD KEY `idx_user_sessions_active_auth` (`user_id`,`auth_version`,`revoked_at`)',
+  'SELECT 1'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @has_sessions_idle_index := (
+  SELECT COUNT(*) FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='user_sessions' AND INDEX_NAME='idx_user_sessions_idle'
+);
+SET @sql := IF(
+  @has_sessions_idle_index=0,
+  'ALTER TABLE `user_sessions` ADD KEY `idx_user_sessions_idle` (`idle_expires_at`)',
+  'SELECT 1'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @has_sessions_absolute_index := (
+  SELECT COUNT(*) FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='user_sessions' AND INDEX_NAME='idx_user_sessions_absolute'
+);
+SET @sql := IF(
+  @has_sessions_absolute_index=0,
+  'ALTER TABLE `user_sessions` ADD KEY `idx_user_sessions_absolute` (`absolute_expires_at`)',
+  'SELECT 1'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 UPDATE users SET auth_version=1 WHERE auth_version IS NULL OR auth_version<1;
 -- Existing active accounts predate the mandatory verification gate; preserve access during rollout.
@@ -87,6 +168,3 @@ CREATE TABLE IF NOT EXISTS user_mfa_recovery_codes (
   CONSTRAINT fk_user_mfa_recovery_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   CONSTRAINT fk_user_mfa_recovery_method FOREIGN KEY (method_id) REFERENCES user_mfa_methods(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-DROP PROCEDURE IF EXISTS mg_auth_hardening_add_column;
-DROP PROCEDURE IF EXISTS mg_auth_hardening_add_index;
