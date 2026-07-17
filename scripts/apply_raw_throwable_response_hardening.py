@@ -10,7 +10,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 def replace_regex(path: str, pattern: str, replacement: str, expected: int = 1) -> None:
     target = ROOT / path
     source = target.read_text(encoding="utf-8")
-    updated, count = re.subn(pattern, replacement, source, flags=re.MULTILINE | re.DOTALL)
+    updated, count = re.subn(pattern, lambda _match: replacement, source, flags=re.MULTILINE | re.DOTALL)
     if count != expected:
         raise RuntimeError(f"{path}: expected {expected} replacement(s), found {count} for {pattern}")
     target.write_text(updated, encoding="utf-8")
