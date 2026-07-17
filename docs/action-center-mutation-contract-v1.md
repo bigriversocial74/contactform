@@ -4,7 +4,7 @@
 
 Action Center Contract v2 standardizes how Inbox, Sent, Claimed, wallet rewards, and PPPM-linked gifts are read. Mutation Contract v1 standardizes what happens after a customer or merchant action without combining unrelated business operations into one endpoint.
 
-Regift, claim, Follow Up, message, tip, read/unread, archive/restore, voucher preparation, manual voucher redemption, and merchant scanner redemption keep their existing specialized authority. The shared mutation layer owns identity, current-state reconciliation, Contract v2 projection, counts, and browser refresh behavior.
+Regift, claim, Follow Up, message, tip, read/unread, archive/restore, voucher preparation, manual voucher redemption, and merchant scanner redemption keep their existing specialized authority. These transaction services remain separate. The shared mutation layer owns identity, current-state reconciliation, Contract v2 projection, counts, and browser refresh behavior.
 
 ## Standard flow
 
