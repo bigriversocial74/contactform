@@ -5,6 +5,7 @@
   var list = root && root.querySelector('[data-campaign-feed-list]');
   if (!root || !list) return;
 
+  var emptyNode = root.querySelector('[data-feed-empty], [data-newsfeed-empty]');
   var requestController = null;
   var currentMode = root.hasAttribute('data-newsfeed')
     ? 'following'
@@ -34,7 +35,13 @@
     if (Number.isNaN(parsed.getTime())) return '';
     return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(parsed);
   }
-  function setHidden(hidden) { list.classList.toggle('mg-hidden', Boolean(hidden)); }
+  function syncEmptyState() {
+    if (emptyNode && list.children.length > 0) emptyNode.classList.add('mg-hidden');
+  }
+  function setHidden(hidden) {
+    list.classList.toggle('mg-hidden', Boolean(hidden));
+    syncEmptyState();
+  }
   function textNode(tag, className, text) {
     var node = document.createElement(tag);
     if (className) node.className = className;
@@ -188,6 +195,9 @@
     var mode = new URLSearchParams(window.location.search).get('view') || 'discover';
     load(mode);
   });
+  if (emptyNode && 'MutationObserver' in window) {
+    new MutationObserver(syncEmptyState).observe(emptyNode, { attributes: true, attributeFilter: ['class'] });
+  }
 
   load(currentMode);
 })(window, document);
