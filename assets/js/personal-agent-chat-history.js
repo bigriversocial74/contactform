@@ -37,17 +37,6 @@ document.addEventListener('DOMContentLoaded', function () {
     return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
   }
 
-  function groupLabel(date) {
-    var now = new Date();
-    var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    var target = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    var days = Math.round((today.getTime() - target.getTime()) / 86400000);
-    if (days === 0) return 'Today';
-    if (days === 1) return 'Yesterday';
-    if (days > 1 && days < 7) return 'Previous 7 days';
-    return date.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
-  }
-
   function dateLabel(date) {
     var now = new Date();
     if (dayKey(date) === dayKey(now)) return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
@@ -61,30 +50,15 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
-    var grouped = [];
-    state.threads.forEach(function (thread) {
+    groupsHost.innerHTML = state.threads.map(function (thread) {
       var date = parseDate(timestamp(thread));
-      var label = groupLabel(date);
-      var group = grouped.find(function (item) { return item.label === label; });
-      if (!group) {
-        group = { label: label, items: [] };
-        grouped.push(group);
-      }
-      group.items.push({ thread: thread, date: date });
-    });
-
-    groupsHost.innerHTML = grouped.map(function (group) {
-      return '<section class="mg-personal-chat-group"><h3>' + esc(group.label) + '</h3>'
-        + group.items.map(function (entry) {
-          var thread = entry.thread;
-          var active = agentRoot && thread.id === state.threadId;
-          var meta = dateLabel(entry.date) + ' · ' + Number(thread.message_count || 0) + (Number(thread.message_count || 0) === 1 ? ' message' : ' messages');
-          return '<article class="mg-personal-chat-row' + (active ? ' is-active' : '') + '" data-personal-agent-thread-row="' + esc(thread.id) + '">'
-            + '<a class="mg-personal-chat-open" href="/agent.php?thread=' + encodeURIComponent(thread.id) + '" data-personal-agent-open-thread="' + esc(thread.id) + '">'
-            + '<strong>' + esc(thread.title || 'New chat') + '</strong><span>' + esc(meta) + '</span></a>'
-            + '<button class="mg-personal-chat-delete" type="button" data-personal-agent-delete-thread="' + esc(thread.id) + '" aria-label="Delete ' + esc(thread.title || 'chat') + '" title="Delete chat">×</button>'
-            + '</article>';
-        }).join('') + '</section>';
+      var active = agentRoot && thread.id === state.threadId;
+      var meta = dateLabel(date) + ' · ' + Number(thread.message_count || 0) + (Number(thread.message_count || 0) === 1 ? ' message' : ' messages');
+      return '<article class="mg-personal-chat-row' + (active ? ' is-active' : '') + '" data-personal-agent-thread-row="' + esc(thread.id) + '">'
+        + '<a class="mg-personal-chat-open" href="/agent.php?thread=' + encodeURIComponent(thread.id) + '" data-personal-agent-open-thread="' + esc(thread.id) + '">'
+        + '<strong>' + esc(thread.title || 'New chat') + '</strong><span>' + esc(meta) + '</span></a>'
+        + '<button class="mg-personal-chat-delete" type="button" data-personal-agent-delete-thread="' + esc(thread.id) + '" aria-label="Delete ' + esc(thread.title || 'chat') + '" title="Delete chat">×</button>'
+        + '</article>';
     }).join('');
   }
 
