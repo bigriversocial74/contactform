@@ -13,9 +13,9 @@ function mg_merchant_contact_action_center_json(mixed $value): array
     return is_array($decoded) ? $decoded : [];
 }
 
-function mg_merchant_contact_action_center_uuid(string $value): string
+function mg_merchant_contact_action_center_uuid(mixed $value): string
 {
-    $value = strtolower(trim($value));
+    $value = strtolower(trim((string)$value));
     return preg_match('/^[a-f0-9-]{36}$/', $value) === 1 ? $value : '';
 }
 
@@ -29,17 +29,17 @@ function mg_merchant_contact_action_center_latest_selection(PDO $pdo, int $actor
 {
     if ($actorId < 1 || $threadId === '') return [];
     try {
-        $stmt = $pdo->prepare("SELECT event_type,event_context_json,created_at FROM campaign_events WHERE merchant_user_id=? AND event_type IN ('merchant.agent_chat.contact_selected','merchant.agent_chat.contact_cleared') AND event_context_json LIKE ? ORDER BY id DESC LIMIT 1");
-        $stmt->execute([$actorId, '%\"thread_public_id\":\"' . str_replace(['%','_'], ['\\%','\\_'], $threadId) . '\"%']);
+        $stmt = $pdo->prepare("SELECT event_type,event_context_json,created_at FROM campaign_events WHERE merchant_user_id=? AND event_type IN ('merchant.agent_chat.contact_selected','merchant.agent_chat.contact_cleared') AND JSON_VALID(event_context_json)=1 AND JSON_UNQUOTE(JSON_EXTRACT(event_context_json,'$.thread_public_id'))=? ORDER BY id DESC LIMIT 1");
+        $stmt->execute([$actorId, $threadId]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!is_array($row) || (string)$row['event_type'] === 'merchant.agent_chat.contact_cleared') return [];
         $context = mg_merchant_contact_action_center_json($row['event_context_json'] ?? null);
         $contactId = mg_merchant_contact_action_center_uuid($context['crm_contact_id'] ?? '');
         if ($contactId === '') return [];
         return [
-            'contact_id' => $contactId,
-            'mention' => mg_ai_chat_clean($context['crm_contact_mention'] ?? '', 90),
-            'selected_at' => $row['created_at'] ?? null,
+            'contact_id'=>$contactId,
+            'mention'=>mg_ai_chat_clean($context['crm_contact_mention'] ?? '', 90),
+            'selected_at'=>$row['created_at'] ?? null,
         ];
     } catch (Throwable) {
         return [];
@@ -50,14 +50,18 @@ function mg_merchant_contact_action_center_record_selection(PDO $pdo, int $actor
 {
     if ($actorId < 1 || $threadId === '') return;
     $selected = is_array($contact) && mg_merchant_contact_action_center_uuid($contact['id'] ?? '') !== '';
+    $current = mg_merchant_contact_action_center_latest_selection($pdo, $actorId, $threadId);
+    if ($selected && (string)($current['contact_id'] ?? '') === (string)$contact['id']) return;
+    if (!$selected && $current === []) return;
+
     $context = [
-        'source' => 'merchant_contact_action_center',
-        'contract_version' => MG_MERCHANT_CONTACT_ACTION_CENTER_VERSION,
-        'thread_public_id' => $threadId,
-        'crm_contact_id' => $selected ? (string)$contact['id'] : '',
-        'crm_contact_mention' => $selected ? (string)($contact['mention'] ?? '') : '',
-        'crm_contact_name' => $selected ? mg_ai_chat_clean($contact['name'] ?? 'CRM contact', 180) : '',
-        'guardrail_applied' => 'Selection stores public CRM identity only. Customer actions remain approval-first.',
+        'source'=>'merchant_contact_action_center',
+        'contract_version'=>MG_MERCHANT_CONTACT_ACTION_CENTER_VERSION,
+        'thread_public_id'=>$threadId,
+        'crm_contact_id'=>$selected ? (string)$contact['id'] : '',
+        'crm_contact_mention'=>$selected ? (string)($contact['mention'] ?? '') : '',
+        'crm_contact_name'=>$selected ? mg_ai_chat_clean($contact['name'] ?? 'CRM contact', 180) : '',
+        'guardrail_applied'=>'Selection stores public CRM identity only. Customer actions remain approval-first.',
     ];
     $pdo->prepare('INSERT INTO campaign_events (public_id,merchant_user_id,campaign_id,contact_id,event_type,event_context_json,created_at) VALUES (?,?,?,?,?,?,NOW())')
         ->execute([
@@ -69,10 +73,12 @@ function mg_merchant_contact_action_center_record_selection(PDO $pdo, int $actor
             json_encode($context, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
         ]);
     if (function_exists('mg_audit')) {
-        mg_audit($selected ? 'merchant.agent.contact_selected' : 'merchant.agent.contact_cleared', $actorId, [
-            'thread_id' => $threadId,
-            'crm_contact_id' => $selected ? (string)$contact['id'] : '',
-        ]);
+        mg_audit(
+            $selected ? 'merchant.agent.contact_selected' : 'merchant.agent.contact_cleared',
+            'merchant_crm_contact',
+            ['thread_id'=>$threadId,'crm_contact_id'=>$selected ? (string)$contact['id'] : ''],
+            $actorId
+        );
     }
 }
 
@@ -90,8 +96,7 @@ function mg_merchant_contact_action_center_find_contact(PDO $pdo, int $merchantO
 
     $mention = strtolower(trim((string)($input['selected_contact_mention'] ?? $input['contact_mention'] ?? '')));
     $mention = ltrim($mention, '@');
-    if ($mention !== '') return mg_merchant_agent_crm_exact_contact($pdo, $merchantOwnerId, $mention);
-    return null;
+    return $mention !== '' ? mg_merchant_agent_crm_exact_contact($pdo, $merchantOwnerId, $mention) : null;
 }
 
 function mg_merchant_contact_action_center_campaign_contact_ids(PDO $pdo, int $merchantOwnerId, string $crmContactId): array
@@ -132,6 +137,7 @@ function mg_merchant_contact_action_center_notes(PDO $pdo, int $merchantOwnerId,
         if ($databaseId < 1) return ['count'=>0,'items'=>[]];
         $countStmt = $pdo->prepare('SELECT COUNT(*) FROM merchant_crm_notes WHERE merchant_user_id=? AND crm_contact_id=?');
         $countStmt->execute([$merchantOwnerId, $databaseId]);
+        $count = (int)$countStmt->fetchColumn();
         $stmt = $pdo->prepare('SELECT public_id,note,created_at,updated_at FROM merchant_crm_notes WHERE merchant_user_id=? AND crm_contact_id=? ORDER BY created_at DESC,id DESC LIMIT 4');
         $stmt->execute([$merchantOwnerId, $databaseId]);
         $items = array_map(static fn(array $row): array => [
@@ -140,7 +146,7 @@ function mg_merchant_contact_action_center_notes(PDO $pdo, int $merchantOwnerId,
             'created_at'=>$row['created_at'] ?? null,
             'updated_at'=>$row['updated_at'] ?? null,
         ], $stmt->fetchAll(PDO::FETCH_ASSOC));
-        return ['count'=>(int)$countStmt->fetchColumn(),'items'=>$items];
+        return ['count'=>$count,'items'=>$items];
     } catch (Throwable) {
         return ['count'=>0,'items'=>[]];
     }
@@ -150,18 +156,15 @@ function mg_merchant_contact_action_center_messages(PDO $pdo, int $merchantOwner
 {
     if ($campaignContactPublicIds === [] || !mg_merchant_crm_search_table_exists($pdo, 'message_threads') || !mg_merchant_crm_search_table_exists($pdo, 'messages')) return ['count'=>0,'items'=>[]];
     try {
-        $items = [];
-        $count = 0;
+        $itemsById = [];
         foreach (array_slice($campaignContactPublicIds, 0, 10) as $contactId) {
             $pattern = 'crm:' . $contactId . ':%';
-            $countStmt = $pdo->prepare('SELECT COUNT(*) FROM message_threads mt INNER JOIN messages m ON m.thread_id=mt.id WHERE mt.created_by_user_id=? AND mt.conversation_key LIKE ?');
-            $countStmt->execute([$merchantOwnerId, $pattern]);
-            $count += (int)$countStmt->fetchColumn();
-            $stmt = $pdo->prepare('SELECT m.public_id,m.body,m.sender_user_id,m.created_at,mt.public_id thread_public_id FROM message_threads mt INNER JOIN messages m ON m.thread_id=mt.id WHERE mt.created_by_user_id=? AND mt.conversation_key LIKE ? ORDER BY m.created_at DESC,m.id DESC LIMIT 4');
+            $stmt = $pdo->prepare('SELECT m.public_id,m.body,m.sender_user_id,m.created_at,mt.public_id thread_public_id FROM message_threads mt INNER JOIN messages m ON m.thread_id=mt.id WHERE mt.created_by_user_id=? AND mt.conversation_key LIKE ? ORDER BY m.created_at DESC,m.id DESC LIMIT 20');
             $stmt->execute([$merchantOwnerId, $pattern]);
             foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-                $items[] = [
-                    'id'=>(string)$row['public_id'],
+                $id = (string)$row['public_id'];
+                $itemsById[$id] = [
+                    'id'=>$id,
                     'preview'=>mg_ai_chat_clean($row['body'] ?? '', 240),
                     'direction'=>(int)$row['sender_user_id'] === $merchantOwnerId ? 'outbound' : 'inbound',
                     'created_at'=>$row['created_at'] ?? null,
@@ -169,8 +172,9 @@ function mg_merchant_contact_action_center_messages(PDO $pdo, int $merchantOwner
                 ];
             }
         }
+        $items = array_values($itemsById);
         usort($items, static fn(array $left, array $right): int => (strtotime((string)($right['created_at'] ?? '')) ?: 0) <=> (strtotime((string)($left['created_at'] ?? '')) ?: 0));
-        return ['count'=>$count,'items'=>array_slice($items, 0, 4)];
+        return ['count'=>count($items),'items'=>array_slice($items, 0, 4)];
     } catch (Throwable) {
         return ['count'=>0,'items'=>[]];
     }
@@ -183,10 +187,11 @@ function mg_merchant_contact_action_center_followups(PDO $pdo, int $merchantOwne
         $sql = "SELECT public_id,event_context_json,created_at FROM campaign_events WHERE merchant_user_id=? AND event_type='crm.followup.created' AND contact_id IN (" . implode(',', array_fill(0, count($campaignContactDatabaseIds), '?')) . ') ORDER BY id DESC LIMIT 50';
         $stmt = $pdo->prepare($sql);
         $stmt->execute(array_merge([$merchantOwnerId], $campaignContactDatabaseIds));
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $items = [];
         $open = 0;
         $overdue = 0;
-        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        foreach ($rows as $row) {
             $context = mg_merchant_contact_action_center_json($row['event_context_json'] ?? null);
             $status = strtolower((string)($context['status'] ?? 'open'));
             $completed = $status === 'completed' || !empty($context['completed_at']);
@@ -198,17 +203,69 @@ function mg_merchant_contact_action_center_followups(PDO $pdo, int $merchantOwne
                 $items[] = [
                     'id'=>(string)$row['public_id'],
                     'note'=>mg_ai_chat_clean($context['note'] ?? 'CRM follow-up', 260),
-                    'status'=>$completed ? 'completed' : ($isOverdue ? 'overdue' : $status),
+                    'status'=>$completed ? 'completed' : ($isOverdue ? 'overdue' : ($status !== '' ? $status : 'open')),
                     'due_at'=>$dueAt !== '' ? $dueAt : null,
                     'created_at'=>$row['created_at'] ?? null,
                     'action_url'=>'/merchant-followups.php?followup=' . rawurlencode((string)$row['public_id']),
                 ];
             }
         }
-        return ['count'=>count($items) > 0 ? count($stmt->fetchAll(PDO::FETCH_ASSOC)) : count($items),'open'=>$open,'overdue'=>$overdue,'items'=>$items];
+        return ['count'=>count($rows),'open'=>$open,'overdue'=>$overdue,'items'=>$items];
     } catch (Throwable) {
         return ['count'=>0,'open'=>0,'overdue'=>0,'items'=>[]];
     }
+}
+
+function mg_merchant_contact_action_center_activity(array $events, array $messages, array $notes, array $followups): array
+{
+    $activity = [];
+    foreach ($events as $event) {
+        if (!is_array($event)) continue;
+        $activity[] = [
+            'id'=>'event:' . hash('sha256', json_encode($event, JSON_UNESCAPED_SLASHES)),
+            'type'=>(string)($event['event_type'] ?? 'crm_activity'),
+            'title'=>ucwords(str_replace(['_','.','-'], ' ', (string)($event['event_type'] ?? 'CRM activity'))),
+            'body'=>trim(ucwords(str_replace('_', ' ', (string)($event['campaign_type'] ?? ''))) . ' · ' . ucwords(str_replace('_', ' ', (string)($event['source_type'] ?? ''))), ' ·'),
+            'value_cents'=>$event['value_cents'] ?? null,
+            'created_at'=>$event['created_at'] ?? null,
+            'action_url'=>'',
+        ];
+    }
+    foreach ($messages as $message) {
+        if (!is_array($message)) continue;
+        $activity[] = [
+            'id'=>'message:' . (string)($message['id'] ?? ''),
+            'type'=>'message',
+            'title'=>(string)($message['direction'] ?? '') === 'outbound' ? 'Merchant message' : 'Customer message',
+            'body'=>(string)($message['preview'] ?? ''),
+            'created_at'=>$message['created_at'] ?? null,
+            'action_url'=>(string)($message['thread_url'] ?? ''),
+        ];
+    }
+    foreach ($notes as $note) {
+        if (!is_array($note)) continue;
+        $activity[] = [
+            'id'=>'note:' . (string)($note['id'] ?? ''),
+            'type'=>'note',
+            'title'=>'CRM note',
+            'body'=>(string)($note['note'] ?? ''),
+            'created_at'=>$note['created_at'] ?? null,
+            'action_url'=>'',
+        ];
+    }
+    foreach ($followups as $task) {
+        if (!is_array($task)) continue;
+        $activity[] = [
+            'id'=>'followup:' . (string)($task['id'] ?? ''),
+            'type'=>'followup',
+            'title'=>'Follow-up task',
+            'body'=>trim((string)($task['note'] ?? '') . ' · ' . (string)($task['status'] ?? ''), ' ·'),
+            'created_at'=>$task['created_at'] ?? null,
+            'action_url'=>(string)($task['action_url'] ?? ''),
+        ];
+    }
+    usort($activity, static fn(array $left, array $right): int => (strtotime((string)($right['created_at'] ?? '')) ?: 0) <=> (strtotime((string)($left['created_at'] ?? '')) ?: 0));
+    return array_slice($activity, 0, 8);
 }
 
 function mg_merchant_contact_action_center_public(PDO $pdo, int $merchantOwnerId, array $contact, int $days = 90): array
@@ -222,6 +279,7 @@ function mg_merchant_contact_action_center_public(PDO $pdo, int $merchantOwnerId
     $followups = mg_merchant_contact_action_center_followups($pdo, $merchantOwnerId, $campaignContacts['database']);
     $events = is_array($details['recent_events'] ?? null) ? $details['recent_events'] : [];
     $campaigns = is_array($details['campaign_history'] ?? null) ? $details['campaign_history'] : [];
+    $recentActivity = mg_merchant_contact_action_center_activity($events, $messages['items'], $notes['items'], $followups['items']);
 
     return [
         'contract_version'=>MG_MERCHANT_CONTACT_ACTION_CENTER_VERSION,
@@ -246,14 +304,14 @@ function mg_merchant_contact_action_center_public(PDO $pdo, int $merchantOwnerId
             'rewards_claimed'=>(int)$details['total_rewards_claimed'],
             'rewards_redeemed'=>(int)$details['total_rewards_redeemed'],
             'campaigns'=>count($campaigns),
-            'recent_events'=>count($events),
+            'recent_events'=>count($recentActivity),
             'messages'=>(int)$messages['count'],
             'notes'=>(int)$notes['count'],
             'followups'=>(int)$followups['count'],
             'open_followups'=>(int)$followups['open'],
             'overdue_followups'=>(int)$followups['overdue'],
         ],
-        'recent_activity'=>array_slice($events, 0, 6),
+        'recent_activity'=>$recentActivity,
         'campaign_history'=>array_slice($campaigns, 0, 6),
         'recent_messages'=>$messages['items'],
         'recent_notes'=>$notes['items'],
@@ -304,11 +362,11 @@ function mg_merchant_contact_action_center_prompt(string $action, string $mentio
 {
     $mention = trim($mention) !== '' ? trim($mention) : 'the selected contact';
     return match ($action) {
-        'summarize_activity' => ['message'=>$mention . ' summarize recent activity, purchases, campaign engagement, rewards, claims, redemptions, messages, notes, and follow-up tasks. Highlight the next best action.','output_type'=>'action_plan','approval_mode'=>'advisory'],
-        'draft_followup' => ['message'=>$mention . ' draft a personalized follow-up message based on recent activity and the next best action. Prepare it for review and do not send it.','output_type'=>'message_draft','approval_mode'=>'review_queue'],
-        'recommend_reward' => ['message'=>$mention . ' recommend the most appropriate reward based on purchases, claims, redemptions, campaign history, and engagement. Prepare a review-ready recommendation and do not issue anything.','output_type'=>'admin_recommendation','approval_mode'=>'review_queue'],
-        'draft_campaign_invite' => ['message'=>$mention . ' draft a personalized campaign invitation based on campaign history and engagement. Prepare it for review and do not send it.','output_type'=>'message_draft','approval_mode'=>'review_queue'],
-        'create_followup_task' => ['message'=>$mention . ' create a review-ready CRM follow-up task with a clear objective, due-date recommendation, and reason based on recent activity.','output_type'=>'admin_recommendation','approval_mode'=>'review_queue'],
-        default => mg_fail('Unsupported contact action.', 422),
+        'summarize_activity'=>['message'=>$mention . ' summarize recent activity, purchases, campaign engagement, rewards, claims, redemptions, messages, notes, and follow-up tasks. Highlight the next best action.','output_type'=>'action_plan','approval_mode'=>'advisory'],
+        'draft_followup'=>['message'=>$mention . ' draft a personalized follow-up message based on recent activity and the next best action. Prepare it for review and do not send it.','output_type'=>'message_draft','approval_mode'=>'review_queue'],
+        'recommend_reward'=>['message'=>$mention . ' recommend the most appropriate reward based on purchases, claims, redemptions, campaign history, and engagement. Prepare a review-ready recommendation and do not issue anything.','output_type'=>'admin_recommendation','approval_mode'=>'review_queue'],
+        'draft_campaign_invite'=>['message'=>$mention . ' draft a personalized campaign invitation based on campaign history and engagement. Prepare it for review and do not send it.','output_type'=>'message_draft','approval_mode'=>'review_queue'],
+        'create_followup_task'=>['message'=>$mention . ' create a review-ready CRM follow-up task with a clear objective, due-date recommendation, and reason based on recent activity.','output_type'=>'admin_recommendation','approval_mode'=>'review_queue'],
+        default=>mg_fail('Unsupported contact action.', 422),
     };
 }
