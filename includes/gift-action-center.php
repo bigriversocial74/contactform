@@ -11,8 +11,9 @@ $giftCenterDemoEnabled=mg_has_role('super_admin');
 <link rel="stylesheet" href="/assets/css/gift-action-center-user-search-fix.css?v=1.0.0">
 <link rel="stylesheet" href="/assets/css/gift-action-center-feed-v3.css?v=3.2.0">
 <link rel="stylesheet" href="/assets/css/gift-action-center-pagination.css?v=1.0.0">
+<link rel="stylesheet" href="/assets/css/gift-action-center-runtime-v4.css?v=4.0.0">
 <link rel="stylesheet" href="/assets/css/personal-agent-chat-history.css?v=1.2.0">
-<section class="mg-app-shell mg-gift-center-page" data-gift-center data-feed-version="3" data-initial-folder="<?= mg_e($giftCenterFolder) ?>" data-demo-enabled="<?= $giftCenterDemoEnabled?'true':'false' ?>">
+<section class="mg-app-shell mg-gift-center-page" data-gift-center data-feed-version="4" data-contract-version="2" data-initial-folder="<?= mg_e($giftCenterFolder) ?>" data-demo-enabled="<?= $giftCenterDemoEnabled?'true':'false' ?>">
   <?php require __DIR__ . '/gift-center-sidebar.php'; ?>
 
   <div class="mg-app-workspace mg-gift-center-workspace">
@@ -36,7 +37,7 @@ $giftCenterDemoEnabled=mg_has_role('super_admin');
       <div class="mg-gift-feed-column">
         <div class="mg-gift-list" data-gift-list></div>
         <div class="mg-gift-feed-pagination" data-gift-feed-pagination aria-live="polite" hidden>
-          <button class="mg-gift-load-more" type="button" data-gift-load-more hidden>Load more gifts</button>
+          <button class="mg-gift-load-more" type="button" data-gift-load-more hidden>Load 15 more gifts</button>
           <p class="mg-gift-feed-end" data-gift-feed-end hidden>No more gifts to show.</p>
         </div>
       </div>
@@ -62,12 +63,10 @@ $giftCenterDemoEnabled=mg_has_role('super_admin');
   </section>
 </section>
 <script src="/assets/js/action-center-contract-v2.js?v=2.0.0" defer></script>
-<script src="/assets/js/personal-agent-chat-history.js?v=1.2.0" defer></script>
+<script src="/assets/js/gift-action-center-runtime-v4.js?v=4.0.0" defer></script>
 <script src="/assets/js/gift-action-center-actions.js" defer></script>
 <script src="/assets/js/gift-action-center-claim-restore.js" defer></script>
 <script src="/assets/js/gift-action-center-modal-portal.js?v=1.1.0" defer></script>
 <script src="/assets/js/gift-envelope-presentation.js" defer></script>
-<script src="/assets/js/gift-action-center-feed-v3.js?v=3.1.0" defer></script>
-<script src="/assets/js/gift-action-center-pagination.js?v=1.0.0" defer></script>
-<script src="/assets/js/gift-action-center-user-search.js" defer></script>
-<script src="/assets/js/gift-action-center-user-search-fix.js?v=1.0.0" defer></script>
+<script src="/assets/js/personal-agent-chat-history.js?v=1.2.0" defer></script>
+<script src="/assets/js/gift-action-center-user-search-v2.js?v=2.0.0" defer></script>

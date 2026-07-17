@@ -5,7 +5,7 @@ use PHPUnit\Framework\TestCase;
 
 final class GiftActionCenterConsolidatedLayoutTest extends TestCase
 {
-    public function testInboxSentClaimedUseAgentShellVariant(): void
+    public function testInboxSentClaimedUseOneSharedRuntime(): void
     {
         $root=dirname(__DIR__,2);
         foreach(['inbox.php'=>'inbox','sent.php'=>'sent','claimed.php'=>'claimed'] as $file=>$tab){
@@ -16,71 +16,50 @@ final class GiftActionCenterConsolidatedLayoutTest extends TestCase
             self::assertStringContainsString("\$header_mode='agent'",$compact);
             self::assertStringContainsString("\$agent_tab='{$tab}'",$compact);
             self::assertStringContainsString('/assets/css/agent-workspace-layout.css',$source);
-            self::assertStringContainsString('/assets/css/gift-action-center.css',$source);
-            self::assertStringContainsString('/assets/js/gift-action-center.js',$source);
+            self::assertStringContainsString('includes/gift-action-center.php',$source);
+            self::assertStringNotContainsString('/assets/js/gift-action-center.js',$source);
             self::assertStringNotContainsString('account-sidebar.js',$source);
         }
+        $shared=file_get_contents($root.'/includes/gift-action-center.php');
+        self::assertIsString($shared);
+        self::assertStringContainsString('gift-action-center-runtime-v4.js?v=4.0.0',$shared);
+        self::assertStringContainsString('gift-action-center-user-search-v2.js?v=2.0.0',$shared);
+        self::assertStringNotContainsString('gift-action-center-feed-v3.js',$shared);
+        self::assertStringNotContainsString('gift-action-center-pagination.js',$shared);
+        self::assertStringNotContainsString('gift-action-center-user-search-fix.js',$shared);
     }
 
-    public function testGiftActionCenterUsesAgentSidebarAndNoInnerFolderTabs(): void
+    public function testGiftActionCenterUsesSharedSidebarAndNoInnerFolderTabs(): void
     {
         $source=file_get_contents(dirname(__DIR__,2).'/includes/gift-action-center.php');
         self::assertIsString($source);
-        self::assertStringContainsString('agent-sidebar.php',$source);
+        self::assertStringContainsString('gift-center-sidebar.php',$source);
         self::assertStringContainsString('mg-gift-feed-column',$source);
         self::assertStringContainsString('data-gift-drawer',$source);
         self::assertStringNotContainsString('account-sidebar.php',$source);
         self::assertStringNotContainsString('mg-gift-folder-tabs',$source);
-        self::assertStringNotContainsString('data-gift-folder="inbox"',$source);
-        self::assertStringNotContainsString('mg-gift-center-header',$source);
-        self::assertStringNotContainsString('mg-gift-center-header-actions',$source);
     }
 
-    public function testMessagesAndCreateGiftLiveInMerchantSidebar(): void
+    public function testFolderActionsUseServerCapabilitiesFromContractV2(): void
     {
-        $sidebar=file_get_contents(dirname(__DIR__,2).'/includes/agent-sidebar.php');
-        self::assertIsString($sidebar);
-        self::assertStringContainsString('mg-merchant-side-actions',$sidebar);
-        self::assertStringContainsString('href="/messages.php"',$sidebar);
-        self::assertStringContainsString('href="/build.php"',$sidebar);
-        self::assertStringContainsString('Create gift',$sidebar);
-    }
-
-    public function testHeaderTabsExposeGiftBadgesAsOnlyFolderNavigation(): void
-    {
-        $header=file_get_contents(dirname(__DIR__,2).'/includes/header-components/app-header.php');
-        self::assertIsString($header);
-        self::assertStringContainsString("['inbox','Inbox','/inbox.php']",$header);
-        self::assertStringContainsString("['sent','Sent','/sent.php']",$header);
-        self::assertStringContainsString("['claimed','Claimed','/claimed.php']",$header);
-        self::assertStringContainsString('mg-agent-tab-badge',$header);
-        self::assertStringContainsString('data-gift-nav-count="<?= $tab[0] ?>"',$header);
-        self::assertStringContainsString('data-gift-nav-unread="<?= $tab[0] ?>"',$header);
-    }
-
-    public function testFolderSpecificRowActionsAndTimestampMetadataAreRenderedByJavascript(): void
-    {
-        $script=file_get_contents(dirname(__DIR__,2).'/assets/js/gift-action-center.js');
+        $script=file_get_contents(dirname(__DIR__,2).'/assets/js/gift-action-center-runtime-v4.js');
         self::assertIsString($script);
-        self::assertMatchesRegularExpression('/function\s+rowActions\s*\([^)]*\)/',$script);
         foreach(['send','follow-up','claim','load','message','tip'] as $action){
-            self::assertStringContainsString('data-gift-action="'.$action.'"',$script);
+            self::assertStringContainsString("'{$action}'",$script);
         }
+        self::assertStringContainsString('const capability=(c,n)=>bool(parts(c).capabilities[n])',$script);
+        self::assertStringContainsString('capability_reasons',$script);
         self::assertStringNotContainsString('data-gift-action="resend"',$script);
-        self::assertMatchesRegularExpression('/function\s+metadata\s*\(item\)/',$script);
-        foreach(['From: ','Sent: ','Last Follow Up: ','Claimed: ','Type: ','Value: ','Status: '] as $label){
-            self::assertStringContainsString($label,$script);
-        }
+        self::assertStringNotContainsString('metadata_json',$script);
     }
 
-    public function testLoadOpensPppmDrawerWithCouponAndPosts(): void
+    public function testLoadComposesContractMediaBeforeProtectedVoucher(): void
     {
-        $script=file_get_contents(dirname(__DIR__,2).'/assets/js/gift-action-center.js');
+        $script=file_get_contents(dirname(__DIR__,2).'/assets/js/gift-action-center-runtime-v4.js');
         self::assertIsString($script);
-        self::assertMatchesRegularExpression('/function\s+openContent\s*\(item\)/',$script);
-        self::assertStringContainsString('couponCard(item)',$script);
-        self::assertStringContainsString('mg-pppm-post-stack',$script);
-        self::assertStringContainsString('mg-pppm-post',$script);
-        self::assertStringContainsString('Protected voucher',$script);
+        self::assertStringContainsString('function openDrawer(c)',$script);
+        self::assertStringContainsString('p.media.posts',$script);
+        self::assertStringContainsString('posts.map((post,i)=>mediaPostMarkup',$script);
+        self::assertStringContainsString(".join('')+'</div>'+voucherMarkup(c)",$script);
     }
 }

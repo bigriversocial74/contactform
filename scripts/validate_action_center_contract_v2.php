@@ -11,6 +11,7 @@ $paths = [
     'detail' => 'api/account/action-center-detail.php',
     'media' => 'api/account/action-center-product-media.php',
     'adapter' => 'assets/js/action-center-contract-v2.js',
+    'runtime_v4' => 'assets/js/gift-action-center-runtime-v4.js',
     'feed' => 'assets/js/gift-action-center-feed-v3.js',
     'media_view' => 'assets/js/gift-product-media-view.js',
     'include' => 'includes/gift-action-center.php',
@@ -24,6 +25,9 @@ foreach ($paths as $key => $relative) {
     if (!is_file($path)) throw new RuntimeException("Missing {$key} file: {$relative}");
     $source[$key] = (string) file_get_contents($path);
 }
+
+$adapterPosition = strpos($source['include'], 'action-center-contract-v2.js');
+$runtimePosition = strpos($source['include'], 'gift-action-center-runtime-v4.js');
 
 $checks = [
     'Contract declares version 2' => str_contains($source['contract'], 'MG_ACTION_CENTER_CONTRACT_VERSION = 2'),
@@ -48,10 +52,12 @@ $checks = [
     'Media endpoint batches catalog version assets' => str_contains($source['media'], 'catalog_product_version_assets') && str_contains($source['media'], 'WHERE cpv.public_id IN'),
     'Browser adapter is the single Contract v2 view adapter' => str_contains($source['adapter'], 'const VERSION = 2') && str_contains($source['adapter'], 'function view(item)') && str_contains($source['adapter'], 'function mediaView(item)'),
     'Browser adapter does not parse raw metadata' => !str_contains($source['adapter'], 'JSON.parse') && !str_contains($source['adapter'], 'metadata_json'),
-    'Browser adapter translates list responses before legacy UI code' => str_contains($source['adapter'], 'normalizeResponse') && str_contains($source['adapter'], '__actionCenterContractV2Wrapped'),
-    'Action Center loads the adapter before supporting scripts' => strpos($source['include'], 'action-center-contract-v2.js') !== false && strpos($source['include'], 'action-center-contract-v2.js') < strpos($source['include'], 'gift-action-center-feed-v3.js'),
-    'Feed consumes the adapter for direct fetch responses' => str_contains($source['feed'], 'window.MicrogifterActionCenterContract') && str_contains($source['feed'], 'adapter.view(item)'),
-    'Feed renders server-authoritative capability gates' => str_contains($source['feed'], '!item.can_send') && str_contains($source['feed'], '!item.can_claim') && str_contains($source['feed'], '!item.can_message') && str_contains($source['feed'], '!item.can_tip'),
+    'Browser adapter translates list responses before compatibility UI code' => str_contains($source['adapter'], 'normalizeResponse') && str_contains($source['adapter'], '__actionCenterContractV2Wrapped'),
+    'Action Center loads the adapter before Runtime v4 and retires Feed v3' => $adapterPosition !== false && $runtimePosition !== false && $adapterPosition < $runtimePosition && !str_contains($source['include'], 'gift-action-center-feed-v3.js'),
+    'Runtime v4 consumes the nested Contract v2 adapter' => str_contains($source['runtime_v4'], 'window.MicrogifterActionCenterContract') && str_contains($source['runtime_v4'], 'function parts(c)') && str_contains($source['runtime_v4'], 'p.presentation.image_url||p.merchant.avatar_url'),
+    'Runtime v4 renders server-authoritative capability gates' => str_contains($source['runtime_v4'], 'capability(c,cap)') && str_contains($source['runtime_v4'], "actionButton(c,'send','Regift','send'") && str_contains($source['runtime_v4'], "actionButton(c,'claim','Claim','claim'") && str_contains($source['runtime_v4'], "actionButton(c,'tip','Tip','tip'"),
+    'Legacy Feed v3 remains Contract v2 compatible when referenced by older routes' => str_contains($source['feed'], 'window.MicrogifterActionCenterContract') && str_contains($source['feed'], 'adapter.view(item)'),
+    'Legacy Feed v3 capability gates remain server-authoritative' => str_contains($source['feed'], '!item.can_send') && str_contains($source['feed'], '!item.can_claim') && str_contains($source['feed'], '!item.can_message') && str_contains($source['feed'], '!item.can_tip'),
     'Media view consumes the nested media adapter' => str_contains($source['media_view'], 'adapter.mediaView') && str_contains($source['media_view'], 'data.items[id]'),
     'Personal Agent uses the same server formatter and PHP view adapter' => str_contains($source['agent'], "_action_center_contract.php") && str_contains($source['agent'], 'mg_action_center_contract_items(') && str_contains($source['agent'], 'mg_action_center_contract_view'),
     'Read endpoints do not create lifecycle mutations' => !str_contains($source['list'], 'INSERT INTO') && !str_contains($source['list'], 'UPDATE microgift_instances') && !str_contains($source['detail'], 'INSERT INTO') && !str_contains($source['media'], 'UPDATE microgift_instances'),

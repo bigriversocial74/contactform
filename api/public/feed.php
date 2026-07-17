@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/social/_publishing.php';
-require_once __DIR__ . '/_feed_resilient_v1.php';
+require_once __DIR__ . '/_feed_contract_v2.php';
 
 mg_require_method('GET');
 $pdo = mg_db();
@@ -16,7 +16,7 @@ $identifier = $viewerId !== null ? 'user:' . $viewerId : 'ip:' . (mg_client_ip()
 mg_rate_limit('social.feed.read', $identifier, $viewerId !== null ? 240 : 120, 60);
 
 try {
-    $feed = mg_public_feed_resilient_v1($pdo, $mode, $viewerId, $cursor, (int)$limit);
+    $contract = mg_public_feed_contract_v2($pdo, $mode, $viewerId, $cursor, (int)$limit);
 } catch (InvalidArgumentException $error) {
     mg_security_log('warning', 'social.feed_invalid', 'Invalid social feed request.', [
         'mode' => $mode,
@@ -27,7 +27,7 @@ try {
 } catch (RuntimeException $error) {
     mg_fail($error->getMessage(), $mode === 'following' && $viewerId === null ? 401 : 404);
 } catch (Throwable $error) {
-    mg_security_log('error', 'social.feed_failed', 'Social feed read failed.', [
+    mg_security_log('error', 'social.feed_contract_failed', 'Feed Contract v2 initialization failed.', [
         'mode' => $mode,
         'exception_class' => $error::class,
         'authenticated' => $viewerId !== null,
@@ -35,9 +35,17 @@ try {
     mg_fail('Unable to load the feed.', 500);
 }
 
+$feed = is_array($contract['feed'] ?? null) ? $contract['feed'] : [];
+$campaigns = is_array($contract['campaigns'] ?? null) ? $contract['campaigns'] : [];
+$sources = is_array($contract['sources'] ?? null) ? $contract['sources'] : [];
+
 mg_event('social.feed_read', [
+    'contract_version' => (int)($contract['contract_version'] ?? 2),
     'mode' => $mode,
     'result_count' => count($feed['items'] ?? []),
+    'campaign_count' => count($campaigns['items'] ?? []),
+    'posts_source_ok' => !empty($sources['posts']['ok']),
+    'campaigns_source_ok' => !empty($sources['campaigns']['ok']),
     'authenticated' => $viewerId !== null,
 ], $viewerId);
 
@@ -51,4 +59,16 @@ header('Vary: Cookie, Authorization');
 header('X-Robots-Tag: noindex, follow');
 http_response_code(200);
 header('Content-Type: application/json; charset=utf-8');
-echo json_encode(['ok'=>true,'message'=>'OK','data'=>['feed'=>$feed,'viewer'=>['authenticated'=>$viewerId!==null]]], JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR);
+echo json_encode([
+    'ok' => true,
+    'message' => 'OK',
+    'data' => [
+        'contract_version' => (int)($contract['contract_version'] ?? 2),
+        'mode' => $mode,
+        'feed' => $feed,
+        'campaigns' => $campaigns,
+        'sources' => $sources,
+        'warnings' => array_values((array)($contract['warnings'] ?? [])),
+        'viewer' => ['authenticated' => $viewerId !== null],
+    ],
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
