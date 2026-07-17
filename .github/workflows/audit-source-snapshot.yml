@@ -9,8 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pull-requests: write
+  contents: write
 
 jobs:
   snapshot:
@@ -21,6 +20,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: audit/repository-production-hardening-20260717
+          fetch-depth: 0
 
       - name: Package tracked source
         run: git archive --format=zip --output=/tmp/contactform-audit-source.zip HEAD
@@ -32,8 +32,11 @@ jobs:
           path: /tmp/contactform-audit-source.zip
           if-no-files-found: error
 
-      - name: Publish snapshot run id
-        if: github.event_name == 'pull_request'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh pr comment "${{ github.event.pull_request.number }}" --body "<!-- audit-source-snapshot --> Source snapshot workflow run: ${{ github.run_id }}"
+      - name: Record snapshot run id
+        run: |
+          printf '%s\n' "${{ github.run_id }}" > .audit-source-run-id
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .audit-source-run-id
+          git commit -m 'Record temporary audit source snapshot run'
+          git push origin HEAD:audit/repository-production-hardening-20260717
