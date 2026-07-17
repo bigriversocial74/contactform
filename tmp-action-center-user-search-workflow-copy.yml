@@ -1,0 +1,41 @@
+name: Inbox User Search Follow and Profile Links Validation
+
+on:
+  pull_request:
+    paths:
+      - 'includes/gift-action-center.php'
+      - 'assets/js/gift-action-center-user-search-v2.js'
+      - 'assets/css/gift-action-center-user-search-fix.css'
+      - 'user-profile.php'
+      - 'scripts/validate_inbox_user_search_follow_profile_links.php'
+      - '.github/workflows/inbox-user-search-follow-profile-links-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    name: PHP matrix
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.3
+          coverage: none
+      - name: PHP syntax
+        run: |
+          php -l includes/gift-action-center.php
+          php -l user-profile.php
+          php -l scripts/validate_inbox_user_search_follow_profile_links.php
+      - name: JavaScript syntax
+        run: node --check assets/js/gift-action-center-user-search-v2.js
+      - name: Inbox user search contract
+        run: php scripts/validate_inbox_user_search_follow_profile_links.php
