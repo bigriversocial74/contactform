@@ -7,6 +7,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: recovery-baseline-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -65,8 +69,13 @@ jobs:
           coverage: none
           tools: composer:v2
 
-      - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install locked dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: Validate migration manifest
         run: php scripts/validate_migration_manifest.php
@@ -116,6 +125,16 @@ jobs:
           path: build/product_pppm_golden_path_audit.json
           if-no-files-found: error
 
+      - name: Upload repository production audit artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: repository-production-audit
+          path: |
+            build/repository-production-audit.json
+            build/repository-production-audit.md
+          if-no-files-found: ignore
+
       - name: Upload diagnostic logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
@@ -125,4 +144,5 @@ jobs:
             /tmp/microgifter-migrations.log
             /tmp/microgifter-server.log
             /tmp/recovery-baseline.log
+            /tmp/microgifter-php-lint.log
           if-no-files-found: ignore
