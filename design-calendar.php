@@ -26,6 +26,7 @@ $page_styles = [
     '/assets/css/design-calendar-standalone.css?v=2.0.0',
     '/assets/css/design-calendar-row-layout-v1.css?v=1.0.0',
     '/assets/css/design-calendar-modal-side-view-v2.css?v=2.0.0',
+    '/assets/css/design-calendar-usability-v3.css?v=3.0.0',
     '/assets/css/design-studio-runtime-fix.css?v=1.0.0',
 ];
 $page_scripts = $hasMerchantAccess ? [
@@ -34,6 +35,8 @@ $page_scripts = $hasMerchantAccess ? [
     '/assets/js/design-calendar-row-layout-v1.js?v=1.0.0',
     '/assets/js/design-calendar-product-cards-v2.js?v=2.0.0',
     '/assets/js/design-calendar-side-view-v2.js?v=2.0.0',
+    '/assets/js/design-calendar-product-tools-v3.js?v=3.0.0',
+    '/assets/js/design-calendar-view-preferences-v3.js?v=3.0.0',
     '/assets/js/design-calendar-modal.js?v=2.0.0',
     '/assets/js/design-studio-creative-save.js?v=2.0.0',
 ] : ['/assets/js/personal-agent-chat-history.js?v=1.2.0'];
