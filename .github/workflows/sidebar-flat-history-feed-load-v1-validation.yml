@@ -1,0 +1,67 @@
+name: Sidebar Flat History and My Feed Validation
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'agent.php'
+      - 'feed.php'
+      - 'merchant-agent-chat.php'
+      - 'includes/agent-sidebar.php'
+      - 'includes/personal-agent-sidebar.php'
+      - 'assets/js/personal-agent-chat-history.js'
+      - 'assets/js/merchant-agent-sidebar-history.js'
+      - 'assets/js/social-feed-sidebar-tabs.js'
+      - '.github/workflows/sidebar-flat-history-feed-load-v1-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: PHP syntax
+        run: |
+          php -l agent.php
+          php -l feed.php
+          php -l merchant-agent-chat.php
+          php -l includes/agent-sidebar.php
+          php -l includes/personal-agent-sidebar.php
+
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/personal-agent-chat-history.js
+          node --check assets/js/merchant-agent-sidebar-history.js
+          node --check assets/js/social-feed-sidebar-tabs.js
+
+      - name: Flat sidebar and My Feed contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -E "groupLabel|Previous 7 days|mg-personal-chat-group" assets/js/personal-agent-chat-history.js assets/js/merchant-agent-sidebar-history.js
+          ! grep -E "return 'Today'|return 'Yesterday'" assets/js/personal-agent-chat-history.js assets/js/merchant-agent-sidebar-history.js
+          grep -F "state.threads.map" assets/js/personal-agent-chat-history.js
+          grep -F "host.innerHTML = threads.map" assets/js/merchant-agent-sidebar-history.js
+          grep -F 'href="/feed.php?view=mine"' includes/personal-agent-sidebar.php
+          grep -F "feedIsSettled" assets/js/social-feed-sidebar-tabs.js
+          grep -F "MutationObserver" assets/js/social-feed-sidebar-tabs.js
+          grep -F '/assets/js/social-feed-sidebar-tabs.js?v=1.1.0' feed.php
+          grep -F '/assets/js/personal-agent-chat-history.js?v=1.2.0' agent.php includes/agent-sidebar.php
+          grep -F '/assets/js/merchant-agent-sidebar-history.js?v=2.1.0' merchant-agent-chat.php
