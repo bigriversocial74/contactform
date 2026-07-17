@@ -8,6 +8,8 @@ $read = static fn(string $path): string => is_file($root . '/' . $path)
 
 $designPage = $read('design-studio.php');
 $calendarPage = $read('design-calendar.php');
+$standaloneHeader = $read('includes/standalone-creative-header.php');
+$standaloneFooter = $read('includes/standalone-creative-footer.php');
 $sidebar = $read('includes/personal-agent-sidebar.php');
 $designView = $read('includes/personal-agent/workspace-design.php');
 $calendarView = $read('includes/personal-agent/workspace-design-calendar.php');
@@ -37,11 +39,33 @@ $checks = [
         && str_contains($sidebar, 'href="/design-studio.php"')
         && str_contains($sidebar, 'href="/design-calendar.php"')
         && str_contains($sidebar, '<strong>Calendar</strong>'),
-    'Top app header and sidebar chat footer are removed only on standalone pages' =>
-        str_contains($standaloneCss, 'body.mg-design-studio-standalone-page .mg-app-header')
-        && str_contains($standaloneCss, 'body.mg-design-calendar-standalone-page .mg-app-header')
-        && str_contains($standaloneCss, '.mg-personal-chat-sidebar-footer')
-        && str_contains($standaloneCss, 'display:none!important'),
+    'Standalone pages do not render the shared app header or site footer' =>
+        str_contains($designPage, "require __DIR__ . '/includes/standalone-creative-header.php'")
+        && str_contains($calendarPage, "require __DIR__ . '/includes/standalone-creative-header.php'")
+        && str_contains($designPage, "require __DIR__ . '/includes/standalone-creative-footer.php'")
+        && str_contains($calendarPage, "require __DIR__ . '/includes/standalone-creative-footer.php'")
+        && !str_contains($designPage, "require __DIR__ . '/includes/header.php'")
+        && !str_contains($calendarPage, "require __DIR__ . '/includes/header.php'")
+        && !str_contains($standaloneHeader, 'header-components/app-header.php')
+        && !str_contains($standaloneFooter, 'mg-site-footer'),
+    'Standalone runtime loads only essential shared scripts plus page scripts' =>
+        str_contains($standaloneFooter, '/assets/js/microgifter.js')
+        && str_contains($standaloneFooter, '/assets/js/api-client.js')
+        && str_contains($standaloneFooter, '/assets/js/universal-header.js')
+        && !str_contains($standaloneFooter, 'store-chat-widget.js')
+        && !str_contains($standaloneFooter, 'public-market-ticker.js'),
+    'Sidebar footer and sidebar tools are server-side suppressed on both pages' =>
+        str_contains($designPage, '$suppress_agent_sidebar_footer = true')
+        && str_contains($calendarPage, '$suppress_agent_sidebar_footer = true')
+        && str_contains($designPage, '$suppress_agent_sidebar_tools = true')
+        && str_contains($calendarPage, '$suppress_agent_sidebar_tools = true')
+        && str_contains($sidebar, 'if (!$suppressAgentSidebarFooter)')
+        && str_contains($sidebar, 'if ($user && !$suppressAgentSidebarTools)'),
+    'Standalone pages load the complete sidebar stylesheet' =>
+        str_contains($designPage, '/assets/css/personal-agent-chat-history.css?v=1.4.0')
+        && str_contains($calendarPage, '/assets/css/personal-agent-chat-history.css?v=1.4.0')
+        && str_contains($standaloneHeader, '/assets/css/app-shell.css')
+        && str_contains($standaloneHeader, '/assets/css/compact-sidebars.css'),
     'Standalone pages use the remaining full canvas beside the sidebar' =>
         str_contains($standaloneCss, '.mg-standalone-creative-workspace')
         && str_contains($standaloneCss, 'min-height:100svh')
@@ -87,6 +111,9 @@ $checks = [
         && str_contains($calendarModalJs, 'name="caption_standard"')
         && str_contains($calendarModalJs, 'data-modal-platform-copy')
         && str_contains($calendarModalJs, "action: 'update'"),
+    'Calendar card decorator cannot trigger its own mutation loop' =>
+        str_contains($calendarModalJs, "openButton.textContent !== 'Preview'")
+        && !str_contains($calendarModalJs, 'if (openButton) openButton.textContent = \'Preview\''),
     'Scheduled posts hand off to the standalone social Design Studio' =>
         str_contains($calendarModalJs, "'/design-studio.php?mode=social'")
         && str_contains($scheduleContextJs, "params.get('mode') !== 'social'")
@@ -102,7 +129,7 @@ foreach ($checks as $label => $passed) {
 }
 
 if ($failed !== []) {
-    fwrite(STDERR, "Standalone Design and Calendar validation failed: " . implode('; ', $failed) . PHP_EOL);
+    fwrite(STDERR, 'Standalone Design and Calendar validation failed: ' . implode('; ', $failed) . PHP_EOL);
     exit(1);
 }
 
