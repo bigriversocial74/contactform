@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', function () {
   if (!input || !toolbar) return;
 
   function normalize(value) {
-    return String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    return String(value || '').toLowerCase().replace(/^@+/, '').replace(/\s+/g, ' ').trim();
   }
 
   function rows() {
@@ -70,5 +70,8 @@ document.addEventListener('DOMContentLoaded', function () {
     new MutationObserver(function () { applySearch(); }).observe(table, { childList: true, subtree: true });
   }
 
+  var params = new URLSearchParams(window.location.search || '');
+  var initialQuery = normalize(params.get('search') || params.get('q') || '');
+  if (initialQuery) input.value = initialQuery;
   applySearch();
 });
