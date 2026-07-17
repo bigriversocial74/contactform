@@ -23,7 +23,7 @@ final class MerchantContactActionCenterV1Test extends TestCase
         self::assertStringContainsString('JSON_VALID(event_context_json)=1', $service);
         self::assertStringContainsString("JSON_UNQUOTE(JSON_EXTRACT(event_context_json,'$.thread_public_id'))=?", $service);
         self::assertStringContainsString('merchant_user_id=?', $service);
-        self::assertStringContainsString("$action === 'clear_thread'", $api);
+        self::assertStringContainsString('$action === \'clear_thread\'', $api);
         self::assertStringContainsString('mg_merchant_contact_action_center_record_selection($pdo, $actorId, $targetThreadId, null)', $api);
         self::assertStringContainsString('merchant.agent_chat.contact_selected', $delete);
         self::assertStringContainsString('merchant.agent_chat.contact_cleared', $delete);
@@ -38,10 +38,10 @@ final class MerchantContactActionCenterV1Test extends TestCase
         self::assertStringContainsString("'send_directly'=>false", $service);
         self::assertStringContainsString("'issue_reward_directly'=>false", $service);
         self::assertStringContainsString('selected_contact_action_center', $chat);
-        self::assertStringContainsString("unset($contact['id'])", $chat);
-        self::assertStringContainsString("unset($item['id'], $item['action_url'], $item['thread_url'], $item['campaign_id'])", $chat);
-        self::assertStringContainsString("$payload['approval_required'] = true", $chat);
-        self::assertStringContainsString("if ($approvalMode === 'review_queue') mg_ai_chat_auto_bridge_cards", $chat);
+        self::assertStringContainsString('unset($contact[\'id\'])', $chat);
+        self::assertStringContainsString('unset($item[\'id\'], $item[\'action_url\'], $item[\'thread_url\'], $item[\'campaign_id\'])', $chat);
+        self::assertStringContainsString('$payload[\'approval_required\'] = true', $chat);
+        self::assertStringContainsString('if ($approvalMode === \'review_queue\') mg_ai_chat_auto_bridge_cards', $chat);
         self::assertStringContainsString('form.requestSubmit()', $runtime);
     }
 
