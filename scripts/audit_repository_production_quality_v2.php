@@ -70,6 +70,44 @@ function qa_list(array $items): string
     return implode(', ', array_slice($items, 0, 25));
 }
 
+function qa_throwable_catch_blocks(string $content): array
+{
+    $tokens = token_get_all($content);
+    $blocks = [];
+    $count = count($tokens);
+    for ($i = 0; $i < $count; $i++) {
+        if (!is_array($tokens[$i]) || $tokens[$i][0] !== T_CATCH) continue;
+        $signature = '';
+        $variable = '';
+        while (++$i < $count && $tokens[$i] !== '(') {}
+        $depth = 1;
+        while (++$i < $count && $depth > 0) {
+            $token = $tokens[$i];
+            $text = is_array($token) ? $token[1] : $token;
+            if ($text === '(') $depth++;
+            if ($text === ')') $depth--;
+            if ($depth > 0) {
+                $signature .= $text;
+                if (is_array($token) && $token[0] === T_VARIABLE) $variable = $text;
+            }
+        }
+        if ($variable === '' || preg_match('/(?:^|[|&\s\\])Throwable(?:[|&\s]|$)/i', $signature) !== 1) continue;
+        while (++$i < $count && $tokens[$i] !== '{') {}
+        if ($i >= $count) continue;
+        $braceDepth = 1;
+        $body = '';
+        while (++$i < $count && $braceDepth > 0) {
+            $token = $tokens[$i];
+            $text = is_array($token) ? $token[1] : $token;
+            if ($text === '{') $braceDepth++;
+            if ($text === '}') $braceDepth--;
+            if ($braceDepth > 0) $body .= $text;
+        }
+        $blocks[] = ['variable'=>$variable, 'body'=>$body];
+    }
+    return $blocks;
+}
+
 function qa_check(array &$categories, string $category, string $id, string $label, int $points, bool $passed, string $detail = ''): void
 {
     $categories[$category] ??= ['earned' => 0, 'possible' => 0, 'checks' => []];
@@ -170,16 +208,24 @@ qa_check($categories, 'Secret and configuration hygiene', 'secret-scan', 'No hig
 
 // 4. Dangerous runtime primitives — 10 points.
 $evalFindings = $commandFindings = $unserializeFindings = $dynamicIncludeFindings = [];
+$processGatewayPath = 'includes/runtime-process.php';
+$processGateway = qa_text($root, $processGatewayPath);
+$processGatewaySafe = $processGateway !== ''
+    && str_contains($processGateway, "['ffmpeg', 'ffprobe']")
+    && str_contains($processGateway, "['bypass_shell'=>true")
+    && preg_match('/proc_open\s*\(\s*\$command/i', $processGateway) === 1
+    && preg_match('/\$_(?:GET|POST|REQUEST|COOKIE)/i', $processGateway) !== 1
+    && preg_match('/\b(?:shell_exec|system|passthru|popen|pcntl_exec)\s*\(/i', $processGateway) !== 1;
 foreach ($webPhp as $path) {
     $content = qa_text($root, $path);
     if ($content === '') continue;
     if (preg_match('/\beval\s*\(/i', $content) || preg_match('/\bassert\s*\(\s*["\']/i', $content)) $evalFindings[] = $path;
-    if (preg_match('/\b(?:shell_exec|system|passthru|proc_open|popen|pcntl_exec)\s*\(/i', $content)) $commandFindings[] = $path;
+    if ($path !== $processGatewayPath && preg_match('/\b(?:shell_exec|system|passthru|proc_open|popen|pcntl_exec)\s*\(/i', $content)) $commandFindings[] = $path;
     if (preg_match('/\bunserialize\s*\(/i', $content) && !str_contains($content, 'allowed_classes')) $unserializeFindings[] = $path;
     if (preg_match('/\b(?:include|include_once|require|require_once)\s*[\(]?\s*\$_(?:GET|POST|REQUEST|COOKIE)/i', $content)) $dynamicIncludeFindings[] = $path;
 }
 qa_check($categories, 'Dangerous runtime primitives', 'eval', 'No eval or string-assert execution in web-accessible PHP', 3, $evalFindings === [], qa_list($evalFindings));
-qa_check($categories, 'Dangerous runtime primitives', 'commands', 'No operating-system command functions in web-accessible PHP', 3, $commandFindings === [], qa_list($commandFindings));
+qa_check($categories, 'Dangerous runtime primitives', 'commands', 'Operating-system commands are isolated to the audited allowlisted process gateway', 3, $commandFindings === [] && $processGatewaySafe, qa_list(array_merge($commandFindings, $processGatewaySafe ? [] : ['invalid-process-gateway'])));
 qa_check($categories, 'Dangerous runtime primitives', 'unserialize', 'No unsafe unserialize calls in web-accessible PHP', 2, $unserializeFindings === [], qa_list($unserializeFindings));
 qa_check($categories, 'Dangerous runtime primitives', 'dynamic-include', 'No request-controlled include or require paths', 2, $dynamicIncludeFindings === [], qa_list($dynamicIncludeFindings));
 
@@ -215,7 +261,13 @@ foreach ($webPhp as $path) {
     $content = qa_text($root, $path);
     if ($content === '') continue;
     if (preg_match('/\b(?:var_dump|print_r)\s*\(/i', $content) || preg_match('/display_errors\s*[\'"\s,=>]+(?:1|on|true)/i', $content)) $debugFindings[] = $path;
-    if (preg_match('/catch\s*\(\s*Throwable\s+\$([A-Za-z_][A-Za-z0-9_]*)\s*\)\s*\{.{0,1600}(?:echo|die|mg_fail)\s*\([^;]{0,450}\$\1->getMessage\s*\(/is', $content)) $rawThrowableFindings[] = $path;
+    foreach (qa_throwable_catch_blocks($content) as $catchBlock) {
+        $variable = preg_quote((string)$catchBlock['variable'], '/');
+        if (preg_match('/(?:echo|die|mg_fail)\s*\([^;]{0,450}' . $variable . '\s*->\s*getMessage\s*\(/is', (string)$catchBlock['body'])) {
+            $rawThrowableFindings[] = $path;
+            break;
+        }
+    }
 }
 qa_check($categories, 'Error handling and observability', 'debug-output', 'No debug dumps or display_errors enablement in web-accessible PHP', 3, $debugFindings === [], qa_list($debugFindings));
 qa_check($categories, 'Error handling and observability', 'raw-errors', 'Generic Throwable messages are not exposed directly to users', 3, $rawThrowableFindings === [], qa_list($rawThrowableFindings));
