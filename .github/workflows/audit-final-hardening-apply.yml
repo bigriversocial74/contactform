@@ -28,14 +28,25 @@ jobs:
 
       - name: Validate transformed PHP and JavaScript
         run: |
-          php -l includes/runtime-process.php
-          php -l includes/admin-screen-recording-stage3.php
-          php -l api/stories/upload.php
-          php -l api/admin/screen-recordings/diagnostics.php
-          php -l scripts/audit_repository_production_quality_v2.php
-          php -l tests/phpunit/SecurityFoundationTest.php
-          node --check assets/js/dave-share-market-review-feedback.js
-          vendor/bin/phpunit --configuration phpunit.xml.dist --filter SecurityFoundationTest
+          set -o pipefail
+          {
+            php -l includes/runtime-process.php
+            php -l includes/admin-screen-recording-stage3.php
+            php -l api/stories/upload.php
+            php -l api/admin/screen-recordings/diagnostics.php
+            php -l scripts/audit_repository_production_quality_v2.php
+            php -l tests/phpunit/SecurityFoundationTest.php
+            node --check assets/js/dave-share-market-review-feedback.js
+            vendor/bin/phpunit --configuration phpunit.xml.dist --filter SecurityFoundationTest
+          } 2>&1 | tee /tmp/final-hardening-validation.log
+
+      - name: Upload validation diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: final-hardening-validation
+          path: /tmp/final-hardening-validation.log
+          if-no-files-found: error
 
       - name: Commit final hardening
         run: |
