@@ -57,7 +57,7 @@ $page_scripts = [
     '/assets/js/personal-agent-opportunity-actions.js?v=1.1.0',
     '/assets/js/personal-agent-attribution-runtime.js?v=1.0.0',
     '/assets/js/personal-agent-recovery.js?v=1.0.0',
-    '/assets/js/personal-agent-gift-results.js?v=1.0.1',
+    '/assets/js/personal-agent-gift-results.js?v=1.0.0&image=1.1.0',
     '/assets/js/personal-agent-design-studio.js?v=1.3.0',
     '/assets/js/personal-agent-design-studio-social.js?v=1.0.0',
     '/assets/js/personal-agent-design-studio-calendar.js?v=1.0.0',
