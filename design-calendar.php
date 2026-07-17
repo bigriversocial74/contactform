@@ -46,16 +46,7 @@ require __DIR__ . '/includes/standalone-creative-header.php';
   <?php require __DIR__ . '/includes/personal-agent-sidebar.php'; ?>
 
   <div class="mg-app-workspace mg-standalone-creative-workspace">
-    <header class="mg-standalone-creative-bar">
-      <button class="mg-standalone-sidebar-toggle" type="button" data-mobile-sidebar-toggle aria-label="Open workspace sidebar" aria-expanded="false"><span></span><span></span><span></span></button>
-      <div class="mg-standalone-creative-title"><span>Merchant creative workspace</span><strong>Content Calendar</strong></div>
-      <nav aria-label="Creative workspace pages">
-        <a href="/design-studio.php">Design</a>
-        <a class="is-active" href="/design-calendar.php" aria-current="page">Calendar</a>
-      </nav>
-      <a class="mg-standalone-creative-exit" href="/inbox.php">Exit workspace</a>
-    </header>
-
+    <button class="mg-standalone-sidebar-toggle" type="button" data-mobile-sidebar-toggle aria-label="Open workspace sidebar" aria-expanded="false"><span></span><span></span><span></span></button>
     <div class="mg-standalone-creative-canvas">
       <?php if (!$hasMerchantAccess): ?>
         <section class="mg-standalone-access-card">
