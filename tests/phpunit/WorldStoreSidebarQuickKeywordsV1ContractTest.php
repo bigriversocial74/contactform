@@ -37,11 +37,11 @@ final class WorldStoreSidebarQuickKeywordsV1ContractTest extends TestCase
 
         self::assertStringContainsString('includes/personal-agent-sidebar.php', $world);
         self::assertStringContainsString('personal-agent-chat-history.js', $world);
-        self::assertStringContainsString("$agent_sidebar_mode = 'personal'", $world);
+        self::assertStringContainsString('$agent_sidebar_mode = \'personal\';', $world);
 
         self::assertStringContainsString('includes/personal-agent-sidebar.php', $store);
         self::assertStringContainsString('merchant-agent-sidebar-history-standalone.js', $store);
-        self::assertStringContainsString("$agent_sidebar_mode = 'merchant'", $store);
+        self::assertStringContainsString('$agent_sidebar_mode = \'merchant\';', $store);
         self::assertStringContainsString('/api/ai/merchant-agent-chat.php', $standalone);
         self::assertStringContainsString('/merchant-agent-chat.php?thread=', $standalone);
         self::assertStringContainsString("params.get('thread')", $deepLinks);
