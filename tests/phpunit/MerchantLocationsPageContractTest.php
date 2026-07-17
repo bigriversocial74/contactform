@@ -152,6 +152,6 @@ final class MerchantLocationsPageContractTest extends TestCase
     public function testCentralMerchantNavigationStillLinksToLocationsPage(): void
     {
         $source=$this->source('includes/merchant-navigation.php');
-        self::assertStringContainsString("'locations' => ['Locations', 'Stores and claim scope', '/merchant-locations.php', 'Business Settings']",$source);
+        self::assertStringContainsString("'locations' => ['Locations', 'Stores and claim scope', '/merchant-locations.php', 'Products & Engagement']",$source);
     }
 }
