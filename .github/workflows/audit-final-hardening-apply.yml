@@ -1,0 +1,50 @@
+name: Audit Final Hardening Apply
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - scripts/apply_production_audit_final_hardening.py
+      - .github/workflows/audit-final-hardening-apply.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.head_ref == 'audit/repository-production-hardening-20260717' || github.ref_name == 'audit/repository-production-hardening-20260717'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: audit/repository-production-hardening-20260717
+          fetch-depth: 0
+
+      - name: Apply final hardening transformations
+        run: python3 scripts/apply_production_audit_final_hardening.py
+
+      - name: Validate transformed PHP and JavaScript
+        run: |
+          php -l includes/runtime-process.php
+          php -l includes/admin-screen-recording-stage3.php
+          php -l api/stories/upload.php
+          php -l api/admin/screen-recordings/diagnostics.php
+          php -l scripts/audit_repository_production_quality_v2.php
+          php -l tests/phpunit/SecurityFoundationTest.php
+          node --check assets/js/dave-share-market-review-feedback.js
+          vendor/bin/phpunit --configuration phpunit.xml.dist --filter SecurityFoundationTest
+
+      - name: Commit final hardening
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add includes/runtime-process.php includes/admin-screen-recording-stage3.php api/stories/upload.php api/admin/screen-recordings/diagnostics.php scripts/audit_repository_production_quality_v2.php tests/phpunit/SecurityFoundationTest.php assets/js/dave-share-market-review-feedback.js
+          if git diff --cached --quiet; then
+            echo 'No final hardening changes were required.'
+            exit 0
+          fi
+          git commit -m 'Complete repository audit hardening pass'
+          git push origin HEAD:audit/repository-production-hardening-20260717
