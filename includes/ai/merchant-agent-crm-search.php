@@ -27,20 +27,6 @@ function mg_merchant_agent_crm_search_response(PDO $pdo, array $user, array $inp
             ? 'No Merchant CRM contacts matched @' . $query . '.'
             : 'Found ' . number_format($total) . ' Merchant CRM contact' . ($total === 1 ? '' : 's') . ' matching @' . $query . '.');
 
-    $block = [
-        'type'=>'crm_contacts',
-        'title'=>'CRM contact results',
-        'body'=>$reply,
-        'query'=>$query,
-        'total'=>$total,
-        'contacts'=>$result['contacts'] ?? [],
-        'has_more'=>!empty($result['has_more']),
-        'next_offset'=>$result['next_offset'] ?? null,
-        'limit'=>(int)($result['limit'] ?? 100),
-        'search_url'=>'/api/merchant/crm-search.php?q=' . rawurlencode($query),
-        'crm_url'=>'/merchant-crm.php?search=' . rawurlencode($query),
-        'schema_ready'=>$schemaReady,
-    ];
     $meta = [
         'scope'=>'crm',
         'mode'=>'lookup',
@@ -56,7 +42,7 @@ function mg_merchant_agent_crm_search_response(PDO $pdo, array $user, array $inp
     try {
         $pdo->beginTransaction();
         $userMessageId = mg_ai_chat_record_message($pdo, $actorId, 'user', $rawMessage, [], $meta);
-        $assistantMessageId = mg_ai_chat_record_message($pdo, $actorId, 'assistant', $reply, [], $meta + ['blocks'=>[$block]]);
+        $assistantMessageId = mg_ai_chat_record_message($pdo, $actorId, 'assistant', $reply, [], $meta);
         $pdo->commit();
         if (function_exists('mg_audit')) {
             mg_audit('merchant.agent_crm_search.chat', $actorId, [
@@ -73,9 +59,13 @@ function mg_merchant_agent_crm_search_response(PDO $pdo, array $user, array $inp
                 'context_profile'=>'crm_lookup','thread_public_id'=>$threadId,'created_at'=>date('c'),
             ],
             'assistant_message'=>[
-                'id'=>$assistantMessageId,'role'=>'assistant','body'=>$reply,'cards'=>[],'blocks'=>mg_agent_chat_normalize_blocks([$block]),
+                'id'=>$assistantMessageId,'role'=>'assistant','body'=>$reply,'cards'=>[],'blocks'=>[],
                 'scope'=>'crm','mode'=>'lookup','output_type'=>'crm_results','approval_mode'=>'advisory',
                 'context_profile'=>'crm_lookup','thread_public_id'=>$threadId,'created_at'=>date('c'),
+            ],
+            'crm_search'=>$result + [
+                'search_url'=>'/api/merchant/crm-search.php?q=' . rawurlencode($query),
+                'crm_url'=>'/merchant-crm.php?search=' . rawurlencode($query),
             ],
             'state'=>mg_ai_chat_public_state($pdo, $actorId),
         ];
