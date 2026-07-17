@@ -1,84 +1,84 @@
 /* Compact public campaign layout v2.
    Opens with the campaign interaction/canvas, keeps three supporting cards, and top-aligns the participation column. */
 
-.mg-rl-page.mg-rl-compact-campaign .mg-rl-wrap {
+.mg-rl-page:is(.mg-rl-compact-campaign, .mg-rl-simple-campaign) .mg-rl-wrap {
   align-items: start;
   padding-top: 28px;
 }
 
-.mg-rl-page.mg-rl-compact-campaign .mg-rl-left {
+.mg-rl-page:is(.mg-rl-compact-campaign, .mg-rl-simple-campaign) .mg-rl-left {
   display: grid;
   min-width: 0;
   align-content: start;
   gap: 18px;
 }
 
-.mg-rl-page.mg-rl-compact-campaign .mg-rl-hero {
+.mg-rl-page:is(.mg-rl-compact-campaign, .mg-rl-simple-campaign) .mg-rl-hero {
   display: none !important;
 }
 
-.mg-rl-page.mg-rl-compact-campaign .mg-rl-player,
-.mg-rl-page.mg-rl-compact-campaign .mg-specialized-canvas {
+.mg-rl-page:is(.mg-rl-compact-campaign, .mg-rl-simple-campaign) .mg-rl-player,
+.mg-rl-page:is(.mg-rl-compact-campaign, .mg-rl-simple-campaign) .mg-specialized-canvas {
   order: 1;
 }
 
-.mg-rl-page.mg-rl-compact-campaign .mg-rl-preview-banner,
-.mg-rl-page.mg-rl-compact-campaign .mg-specialized-preview {
+.mg-rl-page:is(.mg-rl-compact-campaign, .mg-rl-simple-campaign) .mg-rl-preview-banner,
+.mg-rl-page:is(.mg-rl-compact-campaign, .mg-rl-simple-campaign) .mg-specialized-preview {
   order: 2;
 }
 
-.mg-rl-page.mg-rl-compact-campaign .mg-rl-join-mobile {
+.mg-rl-page:is(.mg-rl-compact-campaign, .mg-rl-simple-campaign) .mg-rl-join-mobile {
   order: 3;
 }
 
-.mg-rl-page.mg-rl-compact-campaign .mg-rl-bottom {
+.mg-rl-page:is(.mg-rl-compact-campaign, .mg-rl-simple-campaign) .mg-rl-bottom {
   order: 4;
 }
 
-.mg-rl-page.mg-rl-compact-campaign .mg-rl-player,
-.mg-rl-page.mg-rl-compact-campaign .mg-rl-bottom,
-.mg-rl-page.mg-rl-compact-campaign .mg-rl-preview-banner,
-.mg-rl-page.mg-rl-compact-campaign .mg-specialized-preview,
-.mg-rl-page.mg-rl-compact-campaign .mg-specialized-canvas {
+.mg-rl-page:is(.mg-rl-compact-campaign, .mg-rl-simple-campaign) .mg-rl-player,
+.mg-rl-page:is(.mg-rl-compact-campaign, .mg-rl-simple-campaign) .mg-rl-bottom,
+.mg-rl-page:is(.mg-rl-compact-campaign, .mg-rl-simple-campaign) .mg-rl-preview-banner,
+.mg-rl-page:is(.mg-rl-compact-campaign, .mg-rl-simple-campaign) .mg-specialized-preview,
+.mg-rl-page:is(.mg-rl-compact-campaign, .mg-rl-simple-campaign) .mg-specialized-canvas {
   margin-top: 0;
   margin-bottom: 0;
 }
 
-.mg-rl-page.mg-rl-compact-campaign .mg-rl-wrap > .mg-rl-left,
-.mg-rl-page.mg-rl-compact-campaign .mg-rl-wrap > .mg-rl-join-desktop {
+.mg-rl-page:is(.mg-rl-compact-campaign, .mg-rl-simple-campaign) .mg-rl-wrap > .mg-rl-left,
+.mg-rl-page:is(.mg-rl-compact-campaign, .mg-rl-simple-campaign) .mg-rl-wrap > .mg-rl-join-desktop {
   align-self: start;
 }
 
-.mg-rl-page.mg-rl-compact-campaign .mg-rl-join-desktop {
+.mg-rl-page:is(.mg-rl-compact-campaign, .mg-rl-simple-campaign) .mg-rl-join-desktop {
   top: 72px;
 }
 
-.mg-rl-page.mg-rl-compact-campaign .mg-rl-preview-banner,
-.mg-rl-page.mg-rl-compact-campaign .mg-specialized-preview {
+.mg-rl-page:is(.mg-rl-compact-campaign, .mg-rl-simple-campaign) .mg-rl-preview-banner,
+.mg-rl-page:is(.mg-rl-compact-campaign, .mg-rl-simple-campaign) .mg-specialized-preview {
   padding: 14px 16px;
   border-radius: 16px;
 }
 
-.mg-rl-page.mg-rl-compact-campaign .mg-rl-preview-banner h3,
-.mg-rl-page.mg-rl-compact-campaign .mg-specialized-preview h3 {
+.mg-rl-page:is(.mg-rl-compact-campaign, .mg-rl-simple-campaign) .mg-rl-preview-banner h3,
+.mg-rl-page:is(.mg-rl-compact-campaign, .mg-rl-simple-campaign) .mg-specialized-preview h3 {
   margin-top: 5px;
 }
 
-.mg-rl-page.mg-rl-compact-campaign .mg-rl-preview-banner p,
-.mg-rl-page.mg-rl-compact-campaign .mg-specialized-preview p {
+.mg-rl-page:is(.mg-rl-compact-campaign, .mg-rl-simple-campaign) .mg-rl-preview-banner p,
+.mg-rl-page:is(.mg-rl-compact-campaign, .mg-rl-simple-campaign) .mg-specialized-preview p {
   margin: 6px 0 0;
 }
 
-.mg-rl-page.mg-rl-compact-campaign .mg-rl-bottom {
+.mg-rl-page:is(.mg-rl-compact-campaign, .mg-rl-simple-campaign) .mg-rl-bottom {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
 }
 
-.mg-rl-page.mg-rl-compact-campaign .mg-rl-bottom > .mg-rl-card {
+.mg-rl-page:is(.mg-rl-compact-campaign, .mg-rl-simple-campaign) .mg-rl-bottom > .mg-rl-card {
   height: 100%;
 }
 
-.mg-rl-page.mg-rl-compact-campaign .mg-rl-bottom .mg-rl-card p {
+.mg-rl-page:is(.mg-rl-compact-campaign, .mg-rl-simple-campaign) .mg-rl-bottom .mg-rl-card p {
   margin: 8px 0 0;
   color: #344860;
   font-size: 12px;
@@ -136,33 +136,33 @@
 }
 
 @media (max-width: 1180px) {
-  .mg-rl-page.mg-rl-compact-campaign .mg-rl-wrap {
+  .mg-rl-page:is(.mg-rl-compact-campaign, .mg-rl-simple-campaign) .mg-rl-wrap {
     padding-top: 24px;
   }
 
-  .mg-rl-page.mg-rl-compact-campaign .mg-rl-bottom {
+  .mg-rl-page:is(.mg-rl-compact-campaign, .mg-rl-simple-campaign) .mg-rl-bottom {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .mg-rl-page.mg-rl-compact-campaign .mg-rl-bottom > .mg-rl-card:first-child {
+  .mg-rl-page:is(.mg-rl-compact-campaign, .mg-rl-simple-campaign) .mg-rl-bottom > .mg-rl-card:first-child {
     grid-column: 1 / -1;
   }
 }
 
 @media (max-width: 720px) {
-  .mg-rl-page.mg-rl-compact-campaign .mg-rl-wrap {
+  .mg-rl-page:is(.mg-rl-compact-campaign, .mg-rl-simple-campaign) .mg-rl-wrap {
     padding-top: 12px;
   }
 
-  .mg-rl-page.mg-rl-compact-campaign .mg-rl-left {
+  .mg-rl-page:is(.mg-rl-compact-campaign, .mg-rl-simple-campaign) .mg-rl-left {
     gap: 14px;
   }
 
-  .mg-rl-page.mg-rl-compact-campaign .mg-rl-bottom {
+  .mg-rl-page:is(.mg-rl-compact-campaign, .mg-rl-simple-campaign) .mg-rl-bottom {
     grid-template-columns: 1fr;
   }
 
-  .mg-rl-page.mg-rl-compact-campaign .mg-rl-bottom > .mg-rl-card:first-child {
+  .mg-rl-page:is(.mg-rl-compact-campaign, .mg-rl-simple-campaign) .mg-rl-bottom > .mg-rl-card:first-child {
     grid-column: auto;
   }
 }
