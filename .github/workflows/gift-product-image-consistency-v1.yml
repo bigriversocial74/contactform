@@ -18,36 +18,19 @@ jobs:
         with:
           php-version: '8.2'
           coverage: none
-      - name: Capture resolver PHP syntax
-        id: resolver_lint
-        continue-on-error: true
-        run: php -l api/account/_action_center_product_media.php > resolver-lint-php82.txt 2>&1
-      - name: Upload resolver lint PHP 8.2
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: resolver-lint-php82
-          path: resolver-lint-php82.txt
-      - name: Fail resolver PHP syntax
-        if: steps.resolver_lint.outcome == 'failure'
-        run: cat resolver-lint-php82.txt && exit 1
-      - name: Validator PHP syntax
-        run: php -l scripts/validate_gift_product_image_consistency_v1.php
-      - name: Related PHP syntax
-        run: |
+      - run: |
+          php -l api/account/_action_center_product_media.php
           php -l api/account/action-center.php
           php -l includes/personal-agent/gift-result-cards.php
+          php -l scripts/validate_gift_product_image_consistency_v1.php
           php -l tests/phpunit/GiftProductImageConsistencyV1Test.php
           php -l inbox.php
           php -l sent.php
           php -l claimed.php
           php -l agent.php
-      - name: Legacy image runtime syntax
-        run: node --check assets/js/gift-action-center-reward-images.js
-      - name: Product image contract
-        run: php scripts/validate_gift_product_image_consistency_v1.php
-      - name: Product image PHPUnit
-        run: if [ -x vendor/bin/phpunit ]; then vendor/bin/phpunit tests/phpunit/GiftProductImageConsistencyV1Test.php; fi
+          node --check assets/js/gift-action-center-reward-images.js
+          php scripts/validate_gift_product_image_consistency_v1.php
+          if [ -x vendor/bin/phpunit ]; then vendor/bin/phpunit tests/phpunit/GiftProductImageConsistencyV1Test.php; fi
 
   php83:
     runs-on: ubuntu-latest
@@ -57,33 +40,16 @@ jobs:
         with:
           php-version: '8.3'
           coverage: none
-      - name: Capture resolver PHP syntax
-        id: resolver_lint
-        continue-on-error: true
-        run: php -l api/account/_action_center_product_media.php > resolver-lint-php83.txt 2>&1
-      - name: Upload resolver lint PHP 8.3
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: resolver-lint-php83
-          path: resolver-lint-php83.txt
-      - name: Fail resolver PHP syntax
-        if: steps.resolver_lint.outcome == 'failure'
-        run: cat resolver-lint-php83.txt && exit 1
-      - name: Validator PHP syntax
-        run: php -l scripts/validate_gift_product_image_consistency_v1.php
-      - name: Related PHP syntax
-        run: |
+      - run: |
+          php -l api/account/_action_center_product_media.php
           php -l api/account/action-center.php
           php -l includes/personal-agent/gift-result-cards.php
+          php -l scripts/validate_gift_product_image_consistency_v1.php
           php -l tests/phpunit/GiftProductImageConsistencyV1Test.php
           php -l inbox.php
           php -l sent.php
           php -l claimed.php
           php -l agent.php
-      - name: Legacy image runtime syntax
-        run: node --check assets/js/gift-action-center-reward-images.js
-      - name: Product image contract
-        run: php scripts/validate_gift_product_image_consistency_v1.php
-      - name: Product image PHPUnit
-        run: if [ -x vendor/bin/phpunit ]; then vendor/bin/phpunit tests/phpunit/GiftProductImageConsistencyV1Test.php; fi
+          node --check assets/js/gift-action-center-reward-images.js
+          php scripts/validate_gift_product_image_consistency_v1.php
+          if [ -x vendor/bin/phpunit ]; then vendor/bin/phpunit tests/phpunit/GiftProductImageConsistencyV1Test.php; fi
