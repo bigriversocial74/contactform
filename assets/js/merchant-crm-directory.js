@@ -88,6 +88,8 @@ document.addEventListener('DOMContentLoaded', function () {
         contact.id, contact.crm_contact_id
       ].join(' '));
       addIdentityLine(row, contact);
+      var viewLink = row.querySelector('[data-crm-view-customer]');
+      if (viewLink && contact.customer_profile_url) viewLink.setAttribute('href', String(contact.customer_profile_url));
     });
   }
 
@@ -123,9 +125,10 @@ document.addEventListener('DOMContentLoaded', function () {
   function apply() {
     var list = rows();
     var matched = list.filter(function (row) { return matches(row, state.query); });
+    var matchedSet = new Set(matched);
     var shown = 0;
     list.forEach(function (row) {
-      var match = matched.indexOf(row) !== -1;
+      var match = matchedSet.has(row);
       var withinPage = match && shown < state.visibleLimit;
       row.hidden = !withinPage;
       row.classList.toggle('is-search-hidden', !match);
