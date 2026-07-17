@@ -44,7 +44,8 @@ function mg_action_center_product_media_row(array $row, string $versionBasis): a
     $versionId = trim((string) ($row['product_version_public_id'] ?? ''));
     $slug = trim((string) ($row['product_slug'] ?? ''));
     $assetId = trim((string) ($row['product_cover_asset_public_id'] ?? ''));
-    $status = strtolower(trim((string) ($row['product_status'] ?? ''));
+    $statusRaw = (string) ($row['product_status'] ?? '');
+    $status = strtolower(trim($statusRaw));
     $isPublic = $status === 'published';
 
     return [
