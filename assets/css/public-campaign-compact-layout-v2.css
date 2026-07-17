@@ -18,6 +18,24 @@
 }
 
 .mg-rl-page.mg-rl-compact-campaign .mg-rl-player,
+.mg-rl-page.mg-rl-compact-campaign .mg-specialized-canvas {
+  order: 1;
+}
+
+.mg-rl-page.mg-rl-compact-campaign .mg-rl-preview-banner,
+.mg-rl-page.mg-rl-compact-campaign .mg-specialized-preview {
+  order: 2;
+}
+
+.mg-rl-page.mg-rl-compact-campaign .mg-rl-join-mobile {
+  order: 3;
+}
+
+.mg-rl-page.mg-rl-compact-campaign .mg-rl-bottom {
+  order: 4;
+}
+
+.mg-rl-page.mg-rl-compact-campaign .mg-rl-player,
 .mg-rl-page.mg-rl-compact-campaign .mg-rl-bottom,
 .mg-rl-page.mg-rl-compact-campaign .mg-rl-preview-banner,
 .mg-rl-page.mg-rl-compact-campaign .mg-specialized-preview,
