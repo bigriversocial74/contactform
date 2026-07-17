@@ -28,16 +28,26 @@ jobs:
           php -l merchant-agent-chat.php
           php -l includes/merchant-agent-chat-view.php
           php -l api/ai/merchant-agent-chat.php
+          php -l api/merchant/agent-approval-action.php
           php -l includes/ai/merchant-agent-contact-action-center.php
           php -l includes/ai/merchant-agent-contact-workspace-v1-1.php
+          php -l includes/ai/merchant-contact-workspace-review-actions.php
           php -l scripts/validate_merchant_contact_action_center_v1_1.php
+          php -l scripts/validate_merchant_contact_workspace_review_actions.php
           php -l tests/phpunit/MerchantContactActionCenterV11Test.php
+          php -l tests/phpunit/MerchantContactWorkspaceReviewActionsTest.php
       - name: JavaScript syntax
         run: node --check assets/js/merchant-agent-contact-workspace-v1-1.js
       - name: Contact Action Center v1.1 contract
-        run: php scripts/validate_merchant_contact_action_center_v1_1.php
+        run: |
+          php scripts/validate_merchant_contact_action_center_v1_1.php
+          php scripts/validate_merchant_contact_workspace_review_actions.php
       - name: PHPUnit when available
-        run: if [ -x vendor/bin/phpunit ]; then vendor/bin/phpunit tests/phpunit/MerchantContactActionCenterV11Test.php; fi
+        run: |
+          if [ -x vendor/bin/phpunit ]; then
+            vendor/bin/phpunit tests/phpunit/MerchantContactActionCenterV11Test.php
+            vendor/bin/phpunit tests/phpunit/MerchantContactWorkspaceReviewActionsTest.php
+          fi
 
   php83:
     name: PHP 8.3
@@ -56,13 +66,23 @@ jobs:
           php -l merchant-agent-chat.php
           php -l includes/merchant-agent-chat-view.php
           php -l api/ai/merchant-agent-chat.php
+          php -l api/merchant/agent-approval-action.php
           php -l includes/ai/merchant-agent-contact-action-center.php
           php -l includes/ai/merchant-agent-contact-workspace-v1-1.php
+          php -l includes/ai/merchant-contact-workspace-review-actions.php
           php -l scripts/validate_merchant_contact_action_center_v1_1.php
+          php -l scripts/validate_merchant_contact_workspace_review_actions.php
           php -l tests/phpunit/MerchantContactActionCenterV11Test.php
+          php -l tests/phpunit/MerchantContactWorkspaceReviewActionsTest.php
       - name: JavaScript syntax
         run: node --check assets/js/merchant-agent-contact-workspace-v1-1.js
       - name: Contact Action Center v1.1 contract
-        run: php scripts/validate_merchant_contact_action_center_v1_1.php
+        run: |
+          php scripts/validate_merchant_contact_action_center_v1_1.php
+          php scripts/validate_merchant_contact_workspace_review_actions.php
       - name: PHPUnit when available
-        run: if [ -x vendor/bin/phpunit ]; then vendor/bin/phpunit tests/phpunit/MerchantContactActionCenterV11Test.php; fi
+        run: |
+          if [ -x vendor/bin/phpunit ]; then
+            vendor/bin/phpunit tests/phpunit/MerchantContactActionCenterV11Test.php
+            vendor/bin/phpunit tests/phpunit/MerchantContactWorkspaceReviewActionsTest.php
+          fi
