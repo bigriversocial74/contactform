@@ -66,12 +66,12 @@ final class SecurityFoundationTest extends TestCase
         $source = file_get_contents(dirname(__DIR__, 2) . '/api/auth/login.php');
 
         self::assertIsString($source);
-        self::assertMatchesRegularExpression(
-            "/mg_safe_return_path\s*\(\s*\(string\)\s*\(\s*\$input\['return'\]\s*\?\?\s*'\/inbox\.php'\s*\)\s*\)/",
+        self::assertStringContainsString(
+            "\$returnPath=mg_safe_return_path((string)(\$input['return']??'/inbox.php'));",
             $source
         );
-        self::assertMatchesRegularExpression("/'redirect'\s*=>\s*\$returnPath/", $source);
-        self::assertDoesNotMatchRegularExpression("/'redirect'\s*=>\s*'\/account\.php'/", $source);
+        self::assertStringContainsString("'redirect'=>\$returnPath", $source);
+        self::assertStringNotContainsString("'redirect'=>'/account.php'", $source);
     }
 
     public function testMigrationRunnerUsesExistingMigrationKeySchema(): void
