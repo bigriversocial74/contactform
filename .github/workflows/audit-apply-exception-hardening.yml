@@ -1,18 +1,20 @@
 name: Audit Apply Exception Hardening
 
 on:
-  push:
+  pull_request:
     branches:
-      - audit/repository-production-hardening-20260717
+      - integration-from-repair-20260628
     paths:
       - scripts/apply_repository_audit_exception_hardening.py
       - .github/workflows/audit-apply-exception-hardening.yml
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
   apply:
+    if: github.head_ref == 'audit/repository-production-hardening-20260717' || github.ref_name == 'audit/repository-production-hardening-20260717'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
