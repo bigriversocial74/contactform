@@ -10,6 +10,7 @@ $header_mode = 'public';
 $page_styles = [
     '/assets/css/watch-listen-standalone-page.css',
     '/assets/css/campaign-media-alignment-v1.css',
+    '/assets/css/watch-listen-stamp-compact-layout-v1.css?v=1.0.0',
 ];
 $page_scripts = ['/assets/js/public-listen-music-reward.js'];
 
@@ -55,9 +56,6 @@ if (!$hasAudio) {
 
 $profile = mg_campaign_landing_profile($campaign);
 $prefill = mg_campaign_landing_prefill();
-$headline = trim((string)($campaign['form_headline'] ?? '')) ?: 'Listen to unlock rewards';
-$description = trim((string)($campaign['form_description'] ?? ''))
-    ?: 'Enter your info, listen to the track, and unlock rewards based on verified listening progress.';
 $trackTitle = trim((string)($rules['track_title'] ?? '')) ?: (trim((string)($campaign['title'] ?? '')) ?: 'Listen reward');
 $artistName = trim((string)($rules['artist_name'] ?? '')) ?: (string)$profile['name'];
 $rewardTitle = trim((string)($campaign['reward_template_title'] ?? '')) ?: 'Campaign reward';
@@ -102,7 +100,7 @@ $cardContext = [
 $waveBars = str_repeat('<i></i>', 96);
 ?>
 <section
-  class="mg-rl-page mg-rl-campaign-foundation mg-rl-media mg-rl-listen<?= $previewMode ? ' is-merchant-preview' : '' ?>"
+  class="mg-rl-page mg-rl-campaign-foundation mg-rl-media mg-rl-listen mg-rl-compact-campaign<?= $previewMode ? ' is-merchant-preview' : '' ?>"
   data-public-campaign-page
   <?= (!$previewMode && empty($state['closed'])) ? 'data-listen-music-reward' : 'data-listen-music-preview' ?>
   data-campaign-id="<?= mg_e((string)$campaign['public_id']) ?>"
@@ -125,19 +123,6 @@ $waveBars = str_repeat('<i></i>', 96);
           <p>Audio playback is available for review. Customer participation and reward tracking remain disabled until this campaign is active.</p>
         </article>
       <?php endif; ?>
-      <header class="mg-rl-hero">
-        <?php if ($headline === 'Listen to unlock rewards'): ?>
-          <h1><span>Listen to</span><span class="mg-rl-blue">unlock rewards</span></h1>
-        <?php else: ?>
-          <h1><?= mg_e($headline) ?></h1>
-        <?php endif; ?>
-        <p><?= mg_e($description) ?></p>
-        <div class="mg-public-campaign-trust-row">
-          <span><?= mg_e($provider === 'uploaded' ? 'Uploaded audio' : 'Spotify track') ?></span>
-          <span><?= mg_e((string)$requiredPercent) ?>% completion target</span>
-          <span><?= mg_e((string)$state['active_status']) ?></span>
-        </div>
-      </header>
 
       <?php if ($hasAudio): ?>
         <section class="mg-rl-player mg-rl-media-player" data-listen-audio-shell aria-label="<?= mg_e($trackTitle) ?> audio reward player">

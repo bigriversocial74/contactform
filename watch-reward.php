@@ -10,6 +10,7 @@ $header_mode = 'public';
 $page_styles = [
     '/assets/css/watch-listen-standalone-page.css',
     '/assets/css/campaign-media-alignment-v1.css',
+    '/assets/css/watch-listen-stamp-compact-layout-v1.css?v=1.0.0',
 ];
 $page_scripts = ['/assets/js/public-watch-video-reward.js'];
 
@@ -54,9 +55,6 @@ if (!$hasVideo) {
 
 $profile = mg_campaign_landing_profile($campaign);
 $prefill = mg_campaign_landing_prefill();
-$headline = trim((string)($campaign['form_headline'] ?? '')) ?: 'Watch to unlock rewards';
-$description = trim((string)($campaign['form_description'] ?? ''))
-    ?: 'Enter your info, watch the video, and unlock rewards based on verified watch progress.';
 $videoTitle = trim((string)($campaign['title'] ?? '')) ?: 'Video reward';
 $rewardTitle = trim((string)($campaign['reward_template_title'] ?? '')) ?: 'Campaign reward';
 $rewardDescription = trim((string)($campaign['reward_template_description'] ?? ''))
@@ -99,7 +97,7 @@ $cardContext = [
 ];
 ?>
 <section
-  class="mg-rl-page mg-rl-campaign-foundation mg-rl-media mg-rl-watch<?= $previewMode ? ' is-merchant-preview' : '' ?>"
+  class="mg-rl-page mg-rl-campaign-foundation mg-rl-media mg-rl-watch mg-rl-compact-campaign<?= $previewMode ? ' is-merchant-preview' : '' ?>"
   data-public-campaign-page
   <?= (!$previewMode && empty($state['closed'])) ? 'data-watch-video-reward' : 'data-watch-video-preview' ?>
   data-campaign-id="<?= mg_e((string)$campaign['public_id']) ?>"
@@ -122,19 +120,6 @@ $cardContext = [
           <p>Video playback is available for review. Customer participation and reward tracking remain disabled until this campaign is active.</p>
         </article>
       <?php endif; ?>
-      <header class="mg-rl-hero">
-        <?php if ($headline === 'Watch to unlock rewards'): ?>
-          <h1><span>Watch to</span><span class="mg-rl-blue">unlock rewards</span></h1>
-        <?php else: ?>
-          <h1><?= mg_e($headline) ?></h1>
-        <?php endif; ?>
-        <p><?= mg_e($description) ?></p>
-        <div class="mg-public-campaign-trust-row">
-          <span><?= mg_e($provider === 'uploaded' ? 'Uploaded video' : 'YouTube video') ?></span>
-          <span><?= mg_e((string)$requiredPercent) ?>% completion target</span>
-          <span><?= mg_e((string)$state['active_status']) ?></span>
-        </div>
-      </header>
 
       <?php if ($hasVideo): ?>
         <section class="mg-rl-player mg-rl-media-player" data-watch-video-shell aria-label="<?= mg_e($videoTitle) ?> video reward player">

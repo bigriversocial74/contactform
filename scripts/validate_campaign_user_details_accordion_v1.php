@@ -81,23 +81,23 @@ cua_has('assets/css/campaign-landing-foundation.css', '.mg-campaign-user-details
 cua_has('assets/css/campaign-landing-foundation.css', ':has(> .mg-rl-join-desktop .mg-campaign-user-details[open])', 'Open-details bottom alignment');
 cua_has('assets/css/campaign-landing-foundation.css', 'align-self: end !important', 'Bottom alignment rule');
 cua_has('assets/css/campaign-landing-foundation.css', 'align-self: start !important', 'Closed-details top alignment rule');
-cua_has('assets/css/campaign-landing-foundation.css', '.mg-stamp-summary-card', 'Single Stamp summary card styling');
-cua_has('assets/css/campaign-landing-foundation.css', '.mg-stamp-summary-updates', 'Stamp results and updates styling');
+cua_has('assets/css/watch-listen-stamp-compact-layout-v1.css', '.mg-stamp-summary-card', 'Compact Stamp summary card styling');
+cua_has('assets/css/watch-listen-stamp-compact-layout-v1.css', '.mg-stamp-status-card', 'Compact Stamp results and updates styling');
 
 cua_has('assets/js/public-campaign.js', 'function revealInvalidControl', 'Invalid-control reveal helper');
 cua_has('assets/js/public-campaign.js', "invalid.closest('[data-campaign-user-details]')", 'Invalid contact accordion lookup');
 cua_count('assets/js/public-campaign.js', 'revealInvalidControl(invalid);', 2, 'Both validation paths reveal collapsed details');
 
-cua_not_has('stamp-card.php', 'mg_campaign_landing_render_bottom_cards([', 'Stamp no longer uses three generic cards');
-cua_has('stamp-card.php', 'class="mg-rl-bottom mg-stamp-summary"', 'Stamp single full-width summary');
-cua_count('stamp-card.php', 'class="mg-rl-card mg-stamp-summary-card"', 1, 'Exactly one Stamp summary card');
-cua_has('stamp-card.php', 'Item details', 'Stamp item details section');
-cua_has('stamp-card.php', 'Reward &amp; campaign rules', 'Stamp campaign rules section');
-cua_has('stamp-card.php', 'Messages, results &amp; updates', 'Stamp combined results section');
+cua_not_has('stamp-card.php', 'mg_campaign_landing_render_bottom_cards([', 'Stamp does not use generic campaign cards');
+cua_has('stamp-card.php', 'class="mg-rl-bottom mg-stamp-summary mg-stamp-summary-cards"', 'Stamp uses dedicated three-card summary row');
+cua_count('stamp-card.php', '<article class="mg-rl-card mg-stamp-summary-card', 3, 'Exactly three Stamp summary cards');
+cua_has('stamp-card.php', 'Item details', 'Stamp item details card');
+cua_has('stamp-card.php', 'Reward &amp; campaign rules', 'Stamp campaign rules card');
+cua_has('stamp-card.php', 'Active status &amp; updates', 'Stamp results card');
 cua_count('stamp-card.php', 'data-campaign-result', 1, 'One centralized Stamp campaign result');
 cua_count('stamp-card.php', 'data-stamp-card-status', 1, 'One centralized Stamp status');
 cua_has('stamp-card.php', 'data-stamp-summary-state', 'Stamp live summary state');
-cua_has('assets/js/public-stamp-card.js', "page.querySelector('[data-stamp-summary-state]')", 'Stamp runtime targets combined summary');
+cua_has('assets/js/public-stamp-card.js', "page.querySelector('[data-stamp-summary-state]')", 'Stamp runtime targets status card');
 
 if ($failures !== []) {
     fwrite(STDERR, "Campaign User Details Accordion v1 validation failed:\n- " . implode("\n- ", array_values(array_unique($failures))) . "\n");
