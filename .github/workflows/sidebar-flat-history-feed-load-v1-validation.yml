@@ -11,6 +11,8 @@ on:
       - 'feed.php'
       - 'merchant-agent-chat.php'
       - 'saves.php'
+      - 'api/public/feed.php'
+      - 'api/public/_feed_resilient_v1.php'
       - 'includes/agent-sidebar.php'
       - 'includes/gift-action-center.php'
       - 'includes/personal-agent-sidebar.php'
@@ -49,6 +51,8 @@ jobs:
           php -l feed.php
           php -l merchant-agent-chat.php
           php -l saves.php
+          php -l api/public/feed.php
+          php -l api/public/_feed_resilient_v1.php
           php -l includes/agent-sidebar.php
           php -l includes/gift-action-center.php
           php -l includes/personal-agent-sidebar.php
@@ -67,9 +71,11 @@ jobs:
           ! grep -E "return 'Today'|return 'Yesterday'" assets/js/personal-agent-chat-history.js assets/js/merchant-agent-sidebar-history.js
           grep -F "state.threads.map" assets/js/personal-agent-chat-history.js
           grep -F "host.innerHTML = threads.map" assets/js/merchant-agent-sidebar-history.js
-          grep -F 'href="/feed.php?view=mine"' includes/personal-agent-sidebar.php
+          grep -F 'href="/feed.php"' includes/personal-agent-sidebar.php
           grep -F "feedIsSettled" assets/js/social-feed-sidebar-tabs.js
           grep -F "MutationObserver" assets/js/social-feed-sidebar-tabs.js
+          grep -F "mg_public_feed_resilient_v1" api/public/feed.php api/public/_feed_resilient_v1.php
+          grep -F "social.feed_post_skipped" api/public/_feed_resilient_v1.php
           grep -F '/assets/js/social-feed-sidebar-tabs.js?v=1.1.0' feed.php
           grep -F '/assets/js/personal-agent-chat-history.js?v=1.2.0' agent.php design-calendar.php design-studio.php saves.php includes/agent-sidebar.php includes/gift-action-center.php
           grep -F '/assets/js/merchant-agent-sidebar-history.js?v=2.1.0' merchant-agent-chat.php
