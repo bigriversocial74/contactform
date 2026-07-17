@@ -48,7 +48,8 @@ document.addEventListener('DOMContentLoaded', function () {
     throw new Error(text(reasons[capability]) || 'This action is no longer available.');
   }
   function currency(item) {
-    return text(object(object(item).gift).snapshot && object(object(item).gift).snapshot.currency) || 'USD';
+    var snapshot = object(object(object(item).gift).snapshot);
+    return text(snapshot.currency) || 'USD';
   }
 
   function payload(type,item,data){
@@ -101,23 +102,24 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     });
   }
-  async function applyEnvelope(envelope) {
+  async function applyEnvelope(envelope, options) {
     envelope = object(envelope);
+    options = object(options);
     if (Number(envelope.mutation_contract_version || 0) !== 1) throw new Error('Unsupported Action Center mutation response.');
     setCounts(envelope.counts);
     var api = runtime();
-    if (api && typeof api.refresh === 'function') await api.refresh();
+    if (options.refresh !== false && api && typeof api.refresh === 'function') await api.refresh();
     app.dispatchEvent(new CustomEvent('mg:action-center:mutation-applied', { bubbles: true, detail: envelope }));
     return envelope;
   }
-  async function synchronize(type, originalId, preferredId, duplicate) {
+  async function synchronize(type, originalId, preferredId, duplicate, options) {
     var response = await Microgifter.post('/api/account/action-center-mutation-state.php', {
       action: type,
       action_item_id: originalId,
       preferred_action_item_id: preferredId || '',
       duplicate: duplicate ? 1 : 0
     });
-    return applyEnvelope(responseData(response));
+    return applyEnvelope(responseData(response), options);
   }
 
   async function execute(type, item, data) {
@@ -149,7 +151,7 @@ document.addEventListener('DOMContentLoaded', function () {
     raw = object(raw);
     originalId = text(originalId || raw.action_item_id || raw.gift_id);
     if (!originalId) return null;
-    return synchronize(type, originalId, preferredActionItemId(type, originalId, object(raw.response || raw)), !!raw.duplicate);
+    return synchronize(type, originalId, preferredActionItemId(type, originalId, object(raw.response || raw)), !!raw.duplicate, { refresh: false });
   }
 
   function enhanceSendAutocomplete() {
@@ -235,11 +237,9 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   document.addEventListener('mg:action-center:voucher-claimed', function (event) {
-    event.stopImmediatePropagation();
     finalizeExternal('voucher-redeem', event.detail && event.detail.action_item_id, event.detail || {}).catch(function () {});
   }, true);
   document.addEventListener('mg:action-center:regift-sent', function (event) {
-    event.stopImmediatePropagation();
     var detail = event.detail || {};
     finalizeExternal('send', detail.gift_id, detail.response || {}).catch(function () {});
   }, true);
