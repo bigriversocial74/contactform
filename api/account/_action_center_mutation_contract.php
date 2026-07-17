@@ -43,6 +43,14 @@ function mg_action_center_mutation_view_limit(mixed $value): int
     return mg_action_center_limit($value, 15);
 }
 
+function mg_action_center_mutation_lock_item(PDO $pdo, int $userId, string $actionItemId): ?array
+{
+    $stmt = $pdo->prepare('SELECT public_id,folder,read_at,archived_at FROM microgift_inbox_items WHERE user_id=? AND public_id=? LIMIT 1 FOR UPDATE');
+    $stmt->execute([$userId, $actionItemId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $row ?: null;
+}
+
 function mg_action_center_mutation_counts(PDO $pdo, array $user): array
 {
     $userId = (int)($user['id'] ?? 0);
