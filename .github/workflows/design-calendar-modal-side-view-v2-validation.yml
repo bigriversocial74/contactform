@@ -1,0 +1,43 @@
+name: Design Calendar Modal and Side View v2 Validation
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  php82:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+      - run: |
+          php -l design-calendar.php
+          php -l includes/personal-agent/workspace-design-calendar.php
+          php -l scripts/validate_design_calendar_modal_side_view_v2.php
+          node --check assets/js/design-calendar-product-cards-v2.js
+          node --check assets/js/design-calendar-side-view-v2.js
+          php scripts/validate_design_calendar_modal_side_view_v2.php
+
+  php83:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - run: |
+          php -l design-calendar.php
+          php -l includes/personal-agent/workspace-design-calendar.php
+          php -l scripts/validate_design_calendar_modal_side_view_v2.php
+          node --check assets/js/design-calendar-product-cards-v2.js
+          node --check assets/js/design-calendar-side-view-v2.js
+          php scripts/validate_design_calendar_modal_side_view_v2.php
