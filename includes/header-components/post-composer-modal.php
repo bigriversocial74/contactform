@@ -7,4 +7,4 @@ declare(strict_types=1);
 <script src="/assets/js/create-center-inline.js?v=1.1.0" defer></script>
 <script src="/assets/js/create-center-storefront-preserve.js?v=1.1.0" defer></script>
 <script src="/assets/js/create-center-post-inline.js?v=1.1.0" defer></script>
-<script src="/assets/js/create-center-post-trigger-fix.js?v=1.0.0" defer></script>
+<script src="/assets/js/create-center-post-trigger-fix.js?v=1.2.0" defer></script>

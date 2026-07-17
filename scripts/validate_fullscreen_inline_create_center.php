@@ -5,10 +5,12 @@ $root=dirname(__DIR__);
 $paths=[
     'menu'=>$root.'/includes/header-templates/create-menu.php',
     'runtime'=>$root.'/includes/header-components/post-composer-modal.php',
+    'footer'=>$root.'/includes/footer.php',
     'composer'=>$root.'/includes/social-feed-composer.php',
     'controller'=>$root.'/assets/js/create-center-inline.js',
     'post_controller'=>$root.'/assets/js/create-center-post-inline.js',
     'post_trigger_fix'=>$root.'/assets/js/create-center-post-trigger-fix.js',
+    'post_fallback'=>$root.'/assets/js/create-post-modal-visible-fallback.js',
     'storefront_guard'=>$root.'/assets/js/create-center-storefront-preserve.js',
     'create_css'=>$root.'/assets/css/create-center-inline.css',
     'mobile_post_css'=>$root.'/assets/css/create-center-mobile-post-unified.css',
@@ -74,13 +76,23 @@ $checks=[
         && str_contains($content['post_controller'],'data-create-post-success')
         && str_contains($content['menu'],'data-create-post-success')
         && str_contains($content['runtime'],'/assets/js/create-center-post-inline.js?v=1.1.0'),
-    'post option has resilient delegated routing after managed cards are rebuilt' =>
+    'embedded Post trigger owns the click before obsolete listeners can close Create Center' =>
         str_contains($content['post_trigger_fix'],'[data-create-inline-target="post"],[data-create-menu-option="post"]')
         && str_contains($content['post_trigger_fix'],"view.dataset.createCenterView === 'post'")
         && str_contains($content['post_trigger_fix'],"modal.dataset.createPostActive = 'true'")
-        && str_contains($content['post_trigger_fix'],'microgifter:openPostComposer')
+        && str_contains($content['post_trigger_fix'],'event.stopImmediatePropagation()')
+        && str_contains($content['post_trigger_fix'],"document.body.classList.remove('mg-post-composer-open')")
+        && str_contains($content['post_trigger_fix'],'MG.openCreateCenterPost = openPostView')
         && str_contains($content['post_trigger_fix'],'new MutationObserver')
-        && str_contains($content['runtime'],'/assets/js/create-center-post-trigger-fix.js?v=1.0.0'),
+        && str_contains($content['runtime'],'/assets/js/create-center-post-trigger-fix.js?v=1.2.0'),
+    'legacy compatibility router prefers the embedded Post workspace' =>
+        str_contains($content['post_fallback'],'function embeddedPostNodes()')
+        && str_contains($content['post_fallback'],'function openEmbeddedPost()')
+        && str_contains($content['post_fallback'],'window.Microgifter.openCreateCenterPost')
+        && str_contains($content['post_fallback'],'if (openEmbeddedPost()) return true;')
+        && str_contains($content['post_fallback'],'event.stopImmediatePropagation()')
+        && str_contains($content['post_fallback'],'return forceLegacyComposerVisible();')
+        && str_contains($content['footer'],'/assets/js/create-post-modal-visible-fallback.js?v=1.1.0'),
     'post workspace uses a professional responsive editor and media layout' =>
         str_contains($content['professional_post_css'],'.mg-create-center-post .mg-create-inline-post-form')
         && str_contains($content['professional_post_css'],'grid-template-areas:')
@@ -92,7 +104,9 @@ $checks=[
         str_contains($content['runtime'],'/assets/css/create-center-inline.css?v=1.1.0')
         && str_contains($content['runtime'],'/assets/css/create-center-mobile-post-unified.css?v=1.1.0')
         && str_contains($content['runtime'],'/assets/js/create-center-inline.js?v=1.1.0')
-        && str_contains($content['runtime'],'/assets/js/create-center-post-inline.js?v=1.1.0'),
+        && str_contains($content['runtime'],'/assets/js/create-center-post-inline.js?v=1.1.0')
+        && str_contains($content['runtime'],'/assets/js/create-center-post-trigger-fix.js?v=1.2.0')
+        && str_contains($content['footer'],'/assets/js/create-post-modal-visible-fallback.js?v=1.1.0'),
     'mobile removes the horizontal tool icon row and footer cancel actions' =>
         str_contains($content['mobile_post_css'],'@media(max-width:820px)')
         && str_contains($content['mobile_post_css'],'.mg-create-center-rail')
