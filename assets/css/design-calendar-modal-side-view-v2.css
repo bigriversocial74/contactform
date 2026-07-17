@@ -1,0 +1,482 @@
+/* Design Calendar modal product cards, toggle controls, and side-by-side ad view. */
+.mg-design-calendar-standalone-page .mg-calendar-plan-dialog .mg-design-calendar-form{
+  grid-template-columns:1fr!important;
+  align-content:start;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-plan-dialog .mg-design-calendar-products,
+.mg-design-calendar-standalone-page .mg-calendar-plan-dialog .mg-design-calendar-settings{
+  width:100%;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-plan-dialog .mg-design-calendar-products{
+  padding:14px;
+  border:1px solid #d8e3ee;
+  border-radius:15px;
+  background:#fff;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-plan-dialog .mg-design-calendar-control-head{
+  margin-bottom:12px;
+  padding:0 2px;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-plan-dialog .mg-design-calendar-product-list{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:9px;
+  max-height:350px;
+  overflow:auto;
+  padding:1px 4px 1px 1px;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-plan-dialog .mg-design-calendar-product-option{
+  display:block!important;
+  min-width:0;
+  padding:0;
+  border:0;
+  border-radius:13px;
+  background:transparent;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-product-card{
+  display:grid;
+  grid-template-columns:78px minmax(0,1fr) auto;
+  align-items:center;
+  gap:13px;
+  width:100%;
+  min-height:92px;
+  padding:9px 11px 9px 9px;
+  border:1px solid #d9e4ef;
+  border-radius:13px;
+  background:#f9fbfd;
+  box-shadow:0 4px 13px rgba(16,33,59,.035);
+  cursor:pointer;
+  transition:border-color .16s ease,background .16s ease,box-shadow .16s ease,transform .16s ease;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-product-card:hover,
+.mg-design-calendar-standalone-page .mg-calendar-product-card:focus-within{
+  border-color:#9eb8e8;
+  background:#fff;
+  box-shadow:0 9px 22px rgba(16,33,59,.09);
+  transform:translateY(-1px);
+}
+
+.mg-design-calendar-standalone-page .mg-design-calendar-product-option.is-selected .mg-calendar-product-card{
+  border-color:#6d9bea;
+  background:#f1f6ff;
+  box-shadow:0 0 0 2px rgba(42,108,240,.09),0 8px 20px rgba(16,33,59,.07);
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-product-card-image{
+  display:grid;
+  width:78px;
+  height:72px;
+  place-items:center;
+  overflow:hidden;
+  border:1px solid #d9e3ed;
+  border-radius:10px;
+  background:linear-gradient(145deg,#e5edf5,#f8fafc);
+  color:#74849a;
+  font-size:15px;
+  font-weight:950;
+  letter-spacing:.05em;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-product-card-image img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-product-card-copy{
+  display:grid;
+  min-width:0;
+  gap:3px;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-product-card-source{
+  color:#1c7c45;
+  font-size:8px;
+  font-weight:950;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-product-card-copy strong{
+  overflow:hidden;
+  color:#10213b;
+  font-size:14px;
+  font-weight:900;
+  line-height:1.25;
+  letter-spacing:-.02em;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-product-card-copy small{
+  display:-webkit-box;
+  overflow:hidden;
+  max-width:780px;
+  color:#68798f;
+  font-size:10px;
+  line-height:1.4;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-product-card-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
+  margin-top:3px;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-product-card-meta span{
+  padding:3px 6px;
+  border-radius:999px;
+  background:#edf3f8;
+  color:#53657d;
+  font-size:8px;
+  font-weight:900;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-product-card-state{
+  display:grid;
+  justify-items:end;
+  gap:8px;
+  min-width:88px;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-product-card-state em{
+  color:#1f7a42;
+  font-size:8px;
+  font-style:normal;
+  font-weight:950;
+  letter-spacing:.07em;
+  text-transform:uppercase;
+}
+
+/* All planner checkboxes retain native semantics but display as switches. */
+.mg-design-calendar-standalone-page .mg-calendar-plan-dialog input[type="checkbox"]{
+  position:relative;
+  width:38px;
+  height:22px;
+  flex:0 0 38px;
+  margin:0;
+  padding:0;
+  appearance:none;
+  -webkit-appearance:none;
+  border:1px solid #bdcbd9;
+  border-radius:999px;
+  background:#dbe4ed;
+  box-shadow:inset 0 1px 2px rgba(16,33,59,.08);
+  cursor:pointer;
+  transition:border-color .16s ease,background .16s ease,box-shadow .16s ease;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-plan-dialog input[type="checkbox"]::after{
+  content:"";
+  position:absolute;
+  top:2px;
+  left:2px;
+  width:16px;
+  height:16px;
+  border-radius:50%;
+  background:#fff;
+  box-shadow:0 2px 5px rgba(16,33,59,.25);
+  transition:transform .16s ease;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-plan-dialog input[type="checkbox"]:checked{
+  border-color:#2563eb;
+  background:#2563eb;
+  box-shadow:0 0 0 3px rgba(37,99,235,.1);
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-plan-dialog input[type="checkbox"]:checked::after{
+  transform:translateX(16px);
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-plan-dialog input[type="checkbox"]:focus-visible{
+  outline:3px solid rgba(37,99,235,.24);
+  outline-offset:2px;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-plan-dialog input[type="checkbox"]:disabled{
+  opacity:.55;
+  cursor:not-allowed;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-weekday-grid label,
+.mg-design-calendar-standalone-page .mg-calendar-option-columns fieldset label{
+  justify-content:space-between;
+}
+
+/* Side-by-side display. CSS Grid stretches every visual row to its tallest ad; JS locks measured row heights after images resolve. */
+.mg-design-calendar-side-view[hidden]{
+  display:none!important;
+}
+
+.mg-design-calendar-side-view{
+  min-width:0;
+}
+
+.mg-calendar-side-board{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
+  align-items:stretch;
+  gap:16px;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-side-card{
+  --calendar-accent:#2a6cf0;
+  display:flex!important;
+  min-width:0;
+  height:100%;
+  margin:0;
+  padding:11px!important;
+  flex-direction:column;
+  gap:10px;
+  border:1px solid #d7e2ed!important;
+  border-left:3px solid var(--calendar-accent)!important;
+  border-radius:15px!important;
+  background:#fff!important;
+  box-shadow:0 9px 24px rgba(16,33,59,.075);
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-side-card:hover,
+.mg-design-calendar-standalone-page .mg-calendar-side-card:focus-visible{
+  transform:translateY(-2px);
+  box-shadow:0 15px 32px rgba(16,33,59,.13);
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-side-card .mg-design-calendar-event-head{
+  display:flex!important;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  min-height:21px;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-side-card .mg-calendar-theme-badge{
+  max-width:70%;
+  padding:4px 7px;
+  font-size:8px!important;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-side-card .mg-calendar-status-badge{
+  font-size:8px!important;
+}
+
+.mg-calendar-side-ad-unit{
+  position:relative;
+  display:flex;
+  min-height:0;
+  overflow:hidden;
+  flex-direction:column;
+  border-radius:13px;
+  background:#101b2c;
+  color:#fff;
+  isolation:isolate;
+  box-shadow:0 8px 22px rgba(7,18,37,.2);
+}
+
+.mg-calendar-side-ad-unit.is-square{aspect-ratio:1/1}
+.mg-calendar-side-ad-unit.is-portrait{aspect-ratio:4/5}
+.mg-calendar-side-ad-unit.is-story{aspect-ratio:9/16}
+
+.mg-calendar-side-ad-image,
+.mg-calendar-side-ad-image-placeholder,
+.mg-calendar-side-ad-shade{
+  position:absolute;
+  inset:0;
+}
+
+.mg-calendar-side-ad-image{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  z-index:-3;
+}
+
+.mg-calendar-side-ad-image-placeholder{
+  display:grid;
+  place-items:center;
+  z-index:-3;
+  background:linear-gradient(145deg,#263950,#0d1727);
+  color:rgba(255,255,255,.72);
+  font-size:34px;
+  font-weight:950;
+}
+
+.mg-calendar-side-ad-shade{
+  z-index:-2;
+  background:linear-gradient(180deg,rgba(7,18,37,.08) 18%,rgba(7,18,37,.84) 76%,rgba(7,18,37,.96));
+}
+
+.mg-calendar-side-ad-brand{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:11px;
+  font-size:9px;
+  font-weight:900;
+}
+
+.mg-calendar-side-ad-brand span:first-child{
+  display:grid;
+  width:25px;
+  height:25px;
+  flex:0 0 25px;
+  place-items:center;
+  border:1px solid rgba(255,255,255,.5);
+  border-radius:50%;
+  background:rgba(255,255,255,.16);
+  backdrop-filter:blur(7px);
+}
+
+.mg-calendar-side-ad-copy{
+  display:grid;
+  gap:6px;
+  margin-top:auto;
+  padding:15px 13px 12px;
+}
+
+.mg-calendar-side-ad-copy>span{
+  color:#a9f0c4;
+  font-size:8px;
+  font-weight:950;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+}
+
+.mg-calendar-side-ad-copy h3{
+  margin:0;
+  color:#fff;
+  font-size:clamp(18px,2vw,28px);
+  font-weight:950;
+  line-height:1.04;
+  letter-spacing:-.035em;
+}
+
+.mg-calendar-side-ad-copy p{
+  display:-webkit-box;
+  overflow:hidden;
+  margin:0;
+  color:rgba(255,255,255,.82);
+  font-size:10px;
+  line-height:1.4;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:3;
+}
+
+.mg-calendar-side-ad-copy strong{
+  font-size:12px;
+}
+
+.mg-calendar-side-ad-footer{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:10px 12px;
+  border-top:1px solid rgba(255,255,255,.16);
+  background:rgba(7,18,37,.58);
+  font-size:9px;
+  font-weight:900;
+  backdrop-filter:blur(8px);
+}
+
+.mg-calendar-side-card-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
+}
+
+.mg-calendar-side-card-meta span{
+  padding:4px 7px;
+  border-radius:999px;
+  background:#eef3f8;
+  color:#53657d;
+  font-size:8px;
+  font-weight:900;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-side-card .mg-design-calendar-event-actions{
+  display:flex!important;
+  justify-content:flex-end;
+  margin-top:auto!important;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-side-card .mg-design-calendar-event-actions button{
+  min-height:32px;
+  padding:7px 11px;
+  font-size:9px;
+}
+
+.mg-calendar-side-empty,
+.mg-calendar-side-loading{
+  display:grid;
+  min-height:220px;
+  place-items:center;
+  padding:28px;
+  border:1px dashed #bdcad8;
+  border-radius:15px;
+  background:#f8fafc;
+  color:#68798f;
+  text-align:center;
+}
+
+@media(max-width:760px){
+  .mg-design-calendar-standalone-page .mg-calendar-product-card{
+    grid-template-columns:64px minmax(0,1fr) auto;
+    gap:10px;
+  }
+
+  .mg-design-calendar-standalone-page .mg-calendar-product-card-image{
+    width:64px;
+    height:62px;
+  }
+
+  .mg-design-calendar-standalone-page .mg-calendar-product-card-state{
+    min-width:48px;
+  }
+
+  .mg-design-calendar-standalone-page .mg-calendar-product-card-state em{
+    display:none;
+  }
+
+  .mg-calendar-side-board{
+    grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+    gap:12px;
+  }
+}
+
+@media(max-width:520px){
+  .mg-design-calendar-standalone-page .mg-calendar-product-card{
+    grid-template-columns:58px minmax(0,1fr);
+  }
+
+  .mg-design-calendar-standalone-page .mg-calendar-product-card-image{
+    width:58px;
+    height:58px;
+  }
+
+  .mg-design-calendar-standalone-page .mg-calendar-product-card-state{
+    grid-column:1/-1;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    width:100%;
+  }
+
+  .mg-design-calendar-standalone-page .mg-calendar-product-card-state em{
+    display:block;
+  }
+
+  .mg-calendar-side-board{
+    grid-template-columns:1fr;
+  }
+}
