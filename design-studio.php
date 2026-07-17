@@ -24,6 +24,7 @@ $page_styles = [
     '/assets/css/personal-agent-design-studio-calendar.css?v=1.1.0',
     '/assets/css/design-studio-advertising-workflow-v2.css?v=2.0.0',
     '/assets/css/design-studio-standalone.css?v=1.1.0',
+    '/assets/css/design-studio-runtime-fix.css?v=1.0.0',
 ];
 $page_scripts = [
     '/assets/js/personal-agent-chat-history.js?v=1.1.0',
