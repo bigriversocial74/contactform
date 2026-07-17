@@ -25,14 +25,15 @@ $page_styles = [
     '/assets/css/design-studio-advertising-workflow-v2.css?v=2.0.0',
     '/assets/css/design-studio-standalone.css?v=1.1.0',
     '/assets/css/design-studio-runtime-fix.css?v=1.0.0',
+    '/assets/css/design-studio-loaded-template-v1.css?v=1.0.0',
 ];
 $page_scripts = [
     '/assets/js/personal-agent-chat-history.js?v=1.1.0',
-    '/assets/js/personal-agent-design-studio.js?v=1.4.0',
+    '/assets/js/personal-agent-design-studio.js?v=1.5.0',
     '/assets/js/personal-agent-design-studio-social.js?v=1.0.0',
     '/assets/js/design-studio-template-variants.js?v=1.0.1',
     '/assets/js/design-studio-schedule-context.js?v=1.0.1',
-    '/assets/js/design-studio-creative-save.js?v=2.0.0',
+    '/assets/js/design-studio-creative-save.js?v=2.1.0',
 ];
 $page_manifest = [
     'id' => 'design-studio',
