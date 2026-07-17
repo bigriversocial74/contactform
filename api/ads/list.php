@@ -20,6 +20,5 @@ try {
     $campaigns = mg_ads_list_campaigns($pdo, $admin ? null : (int)$user['id'], $admin, $status, (int)($_GET['limit'] ?? 50));
     mg_ok(['schema_ready' => true, 'campaigns' => $campaigns], 'Ad campaigns loaded.');
 } catch (Throwable $error) {
-    mg_security_log('error', 'ads.list_failed', 'Campaign Ads Manager list failed.', ['exception_class' => $error::class, 'message' => $error->getMessage()], (int)$user['id']);
-    mg_fail($error->getMessage(), 422);
+    mg_fail_unexpected($error, 'ads.list_failed', 'Unable to load ad campaigns.', 500);
 }

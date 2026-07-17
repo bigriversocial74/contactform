@@ -233,7 +233,12 @@ function mg_ads_diag_load(PDO $pdo): array
                 $renderOk = true;
                 $renderMessage = count($renderItems) > 0 ? 'Render API should return ads.' : 'Render API returned no ads.';
             } catch (Throwable $error) {
-                $renderMessage = $error->getMessage();
+                mg_security_log('error', 'ads.admin_diagnostics_render_failed', 'Ad placement render diagnostic failed.', [
+                    'placement_key' => $key,
+                    'exception_class' => $error::class,
+                    'exception_message' => mb_substr($error->getMessage(), 0, 1000),
+                ], (int)($user['id'] ?? 0));
+                $renderMessage = 'Placement render test failed. Review the server security log for details.';
             }
         } else {
             $renderMessage = 'Placement is disabled.';
@@ -332,6 +337,5 @@ function mg_ads_diag_load(PDO $pdo): array
 try {
     mg_ok(mg_ads_diag_load($pdo), 'Campaign Ads diagnostics loaded.');
 } catch (Throwable $error) {
-    mg_security_log('error', 'ads.admin_diagnostics_failed', 'Campaign Ads diagnostics failed.', ['exception_class' => $error::class, 'message' => $error->getMessage()], (int)($user['id'] ?? 0));
-    mg_fail($error->getMessage(), 422);
+    mg_fail_unexpected($error, 'ads.admin_diagnostics_failed', 'Unable to load Campaign Ads diagnostics.', 500);
 }

@@ -136,6 +136,5 @@ try {
         mg_ok(mg_ads_admin_load_payload($pdo), 'Placement assignment archived.');
     }
 } catch (Throwable $error) {
-    mg_security_log('error', 'ads.admin_placement_control_failed', 'Admin ad placement control failed.', ['exception_class' => $error::class, 'message' => $error->getMessage()], (int)($user['id'] ?? 0));
-    mg_fail($error->getMessage(), 422);
+    mg_fail_unexpected($error, 'ads.admin_placement_control_failed', 'Unable to update ad placement controls.', 500);
 }

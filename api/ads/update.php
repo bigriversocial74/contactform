@@ -19,6 +19,5 @@ try {
     $campaign = mg_ads_upsert_campaign($pdo, (int)$user['id'], $input, $publicId);
     mg_ok(['schema_ready' => true, 'campaign' => $campaign], 'Draft ad campaign updated.');
 } catch (Throwable $error) {
-    mg_security_log('error', 'ads.update_failed', 'Campaign Ads Manager update failed.', ['exception_class' => $error::class, 'message' => $error->getMessage()], (int)$user['id']);
-    mg_fail($error->getMessage(), 422);
+    mg_fail_unexpected($error, 'ads.update_failed', 'Unable to update the ad campaign.', 500);
 }

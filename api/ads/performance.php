@@ -74,4 +74,6 @@ function mg_ads_perf_payload(PDO $pdo, bool $admin, int $merchantId, string $pub
 }
 
 try { $schema=mg_ads_schema_status($pdo); if(!$schema['ready']){mg_ok(['schema_ready'=>false,'tables'=>$schema['tables'],'performance'=>null],'Campaign Ads Manager migration is required.');} $publicId=mg_ads_text($_GET['ad_campaign_id']??$_GET['public_id']??'',80,''); $performance=mg_ads_perf_payload($pdo,$admin,(int)$user['id'],$publicId); mg_ok(['schema_ready'=>true,'performance'=>$performance],'Ad performance loaded.'); }
-catch(Throwable $error){mg_security_log('error','ads.performance_failed','Campaign Ads Manager performance failed.',['exception_class'=>$error::class,'message'=>$error->getMessage()],(int)$user['id']);mg_fail($error->getMessage(),422);} 
+catch (Throwable $error) {
+    mg_fail_unexpected($error, 'ads.performance_failed', 'Unable to load ad performance.', 500);
+}

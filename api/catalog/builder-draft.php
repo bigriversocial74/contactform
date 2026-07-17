@@ -318,11 +318,5 @@ try {
         'visibility'=>$payload['visibility'],
     ],'Product published to your store, feed, and merchant locations.');
 } catch (Throwable $e) {
-    if ($pdo->inTransaction()) $pdo->rollBack();
-    if ($e instanceof InvalidArgumentException) mg_fail($e->getMessage(),422);
-    if ($e instanceof RuntimeException) throw $e;
-    mg_security_log('error','catalog.builder_action_failed','Builder action failed.',[
-        'action'=>$action,'exception_type'=>get_class($e),
-    ],(int)$user['id']);
-    mg_fail('Unable to save the builder draft.',500);
+    mg_fail_unexpected($e, 'catalog.builder_draft_failed', 'Unable to save the product draft.', 500);
 }

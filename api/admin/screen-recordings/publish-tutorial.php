@@ -18,9 +18,17 @@ if ($recordingId < 1) mg_fail('Recording id is required.', 422);
 
 try {
     $tutorial = mg_screen_recording_stage3_publish_tutorial($pdo, $recordingId, $user, $input);
+} catch (RuntimeException $error) {
+    mg_fail($error->getMessage(), 422);
 } catch (Throwable $error) {
-    mg_security_log('warning', 'admin.screen_recordings.publish_tutorial_failed', 'Unable to publish tutorial.', ['recording_id' => $recordingId, 'message' => $error->getMessage()], (int)$user['id']);
-    mg_fail($error instanceof RuntimeException ? $error->getMessage() : 'Unable to publish tutorial. Export the recording first and try again.', 422);
+    mg_fail_unexpected(
+        $error,
+        'admin.screen_recordings.publish_tutorial_failed',
+        'Unable to publish tutorial. Export the recording first and try again.',
+        500,
+        ['recording_id' => $recordingId],
+        (int)$user['id']
+    );
 }
 
 mg_ok(['tutorial' => $tutorial], 'Tutorial saved.');
