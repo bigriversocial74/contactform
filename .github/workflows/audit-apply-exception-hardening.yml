@@ -1,0 +1,43 @@
+name: Audit Apply Exception Hardening
+
+on:
+  push:
+    branches:
+      - audit/repository-production-hardening-20260717
+    paths:
+      - scripts/apply_repository_audit_exception_hardening.py
+      - .github/workflows/audit-apply-exception-hardening.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: audit/repository-production-hardening-20260717
+          fetch-depth: 0
+
+      - name: Apply exact exception-boundary transformations
+        run: python3 scripts/apply_repository_audit_exception_hardening.py
+
+      - name: Validate changed PHP files
+        run: |
+          git diff --name-only -- '*.php' | while IFS= read -r file; do
+            [ -n "$file" ] && php -l "$file"
+          done
+
+      - name: Commit hardened endpoints
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add api/admin api/ads api/auth api/catalog api/commerce api/me
+          if git diff --cached --quiet; then
+            echo 'No endpoint changes were required.'
+            exit 0
+          fi
+          git commit -m 'Harden unexpected API exception responses'
+          git push origin HEAD:audit/repository-production-hardening-20260717
