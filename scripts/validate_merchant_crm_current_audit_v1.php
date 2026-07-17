@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
+$onlyIndex = max(0, (int)($argv[1] ?? 0));
 $files = [
     'page' => 'merchant-crm.php',
     'view' => 'includes/merchant-crm-view.php',
@@ -122,13 +123,22 @@ $checks = [
 ];
 
 $failed = [];
+$currentIndex = 0;
+$executed = 0;
 foreach ($checks as $label => $passed) {
-    echo ($passed ? '[PASS] ' : '[FAIL] ') . $label . PHP_EOL;
+    $currentIndex++;
+    if ($onlyIndex > 0 && $onlyIndex !== $currentIndex) continue;
+    $executed++;
+    echo ($passed ? '[PASS] ' : '[FAIL] ') . $currentIndex . ': ' . $label . PHP_EOL;
     if (!$passed) $failed[] = $label;
+}
+if ($onlyIndex > count($checks)) {
+    fwrite(STDERR, 'Unknown audit check index.' . PHP_EOL);
+    exit(2);
 }
 if ($failed !== []) {
     fwrite(STDERR, "Merchant CRM current-state audit contract failed: " . implode('; ', $failed) . PHP_EOL);
     exit(1);
 }
 
-echo 'Merchant CRM current-state audit contract passed (' . count($checks) . ' checks).' . PHP_EOL;
+echo 'Merchant CRM current-state audit contract passed (' . $executed . ' checks).' . PHP_EOL;
