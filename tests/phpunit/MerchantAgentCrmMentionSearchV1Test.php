@@ -37,17 +37,20 @@ final class MerchantAgentCrmMentionSearchV1Test extends TestCase
         self::assertStringContainsString("'crm_search'=>\$result", $helper);
     }
 
-    public function testAutocompleteAndAllResultPaginationAreWiredBeforeMainChat(): void
+    public function testAutocompleteAndAllResultPaginationAreWiredBeforeContactCenterAndMainChat(): void
     {
         $page = file_get_contents($this->root . '/merchant-agent-chat.php');
         $script = file_get_contents($this->root . '/assets/js/merchant-agent-crm-mention-search.js');
         self::assertIsString($page);
         self::assertIsString($script);
-        $mention = strpos($page, '/assets/js/merchant-agent-crm-mention-search.js?v=1.0.0');
-        $chat = strpos($page, '/assets/js/merchant-agent-chat.js?v=2.3.0');
+        $mention = strpos($page, '/assets/js/merchant-agent-crm-mention-search.js?v=1.1.0');
+        $contactCenter = strpos($page, '/assets/js/merchant-agent-contact-action-center.js?v=1.0.0');
+        $chat = strpos($page, '/assets/js/merchant-agent-chat.js?v=2.4.0');
         self::assertNotFalse($mention);
+        self::assertNotFalse($contactCenter);
         self::assertNotFalse($chat);
-        self::assertLessThan($chat, $mention);
+        self::assertLessThan($contactCenter, $mention);
+        self::assertLessThan($chat, $contactCenter);
         self::assertStringContainsString("form.addEventListener('submit'", $script);
         self::assertStringContainsString('event.stopImmediatePropagation()', $script);
         self::assertStringContainsString('while (result.has_more && safety < 100)', $script);
