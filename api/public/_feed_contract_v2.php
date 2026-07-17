@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_feed_resilient_v1.php';
-require_once __DIR__ . '/_campaign_feed_v2.php';
+require_once __DIR__ . '/_campaign_feed_v2_progress.php';
 
 const MG_PUBLIC_FEED_CONTRACT_VERSION = 2;
 
@@ -53,7 +53,7 @@ function mg_public_feed_contract_v2(PDO $pdo, string $mode, ?int $viewerId, ?str
     }
 
     try {
-        $campaigns['items'] = mg_campaign_feed_v2_items($pdo, $mode, $viewerId, $campaigns['limit']);
+        $campaigns['items'] = mg_campaign_feed_v2_items_with_progress($pdo, $mode, $viewerId, $campaigns['limit']);
         $sources['campaigns']['item_count'] = count($campaigns['items']);
     } catch (Throwable $error) {
         $sources['campaigns']['ok'] = false;
