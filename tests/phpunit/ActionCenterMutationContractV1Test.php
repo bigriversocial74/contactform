@@ -36,7 +36,7 @@ final class ActionCenterMutationContractV1Test extends TestCase
     {
         foreach(['read','unread','archive','restore'] as $action){
             $source=$this->read('api/account/action-center-'.$action.'.php');
-            self::assertStringContainsString("'_action_center_mutation_contract.php'",$source);
+            self::assertStringContainsString('/_action_center_mutation_contract.php',$source);
             self::assertStringContainsString('mg_require_csrf_for_write($input)',$source);
             self::assertStringContainsString("mg_action_center_mutation_ok(\$pdo, \$user, '{$action}'",$source);
         }
