@@ -19,32 +19,32 @@ $read = static function (string $relative) use ($root, &$failures): string {
 };
 
 $page = $read('merchant-crm.php');
-$css = $read('assets/css/merchant-crm-kpi-hard-reset.css');
-$js = $read('assets/js/merchant-crm-kpi-hard-reset.js');
+$css = $read('assets/css/merchant-crm-kpi-authoritative-v1.css');
 
 $checks = [
-    'page loads unique KPI hard reset stylesheet last' =>
-        str_contains($page, '/assets/css/merchant-crm-kpi-hard-reset.css?v=3.0.0'),
-    'page loads KPI icon removal runtime' =>
-        str_contains($page, '/assets/js/merchant-crm-kpi-hard-reset.js?v=3.0.0'),
-    'desktop KPI cards use four fixed internal rows' =>
-        str_contains($css, 'grid-template-rows: 30px 38px 20px 28px !important'),
-    'desktop KPI cards have explicit contained height' =>
-        str_contains($css, 'height: 144px !important')
+    'page loads the authoritative KPI stylesheet' =>
+        str_contains($page, '/assets/css/merchant-crm-kpi-authoritative-v1.css?v=1.0.0'),
+    'obsolete KPI hard reset runtime is no longer loaded' =>
+        !str_contains($page, '/assets/js/merchant-crm-kpi-hard-reset.js')
+        && !str_contains($page, '/assets/css/merchant-crm-kpi-hard-reset.css'),
+    'desktop KPI cards use four contained internal rows' =>
+        str_contains($css, 'grid-template-rows: minmax(28px, auto) 40px minmax(30px, auto) 30px !important'),
+    'desktop KPI cards have an explicit stable height' =>
+        str_contains($css, 'height: 154px !important')
         && str_contains($css, 'overflow: hidden !important'),
-    'KPI values, metadata, and charts use separate rows' =>
+    'KPI values metadata and charts use separate rows' =>
         str_contains($css, 'grid-row: 2 !important')
         && str_contains($css, 'grid-row: 3 !important')
         && str_contains($css, 'grid-row: 4 !important'),
-    'sparklines are width-contained' =>
+    'sparklines remain width-contained' =>
         str_contains($css, 'max-width: 100% !important')
-        && str_contains($css, 'height: 28px !important'),
-    'legacy decorative KPI icons are hidden and removed' =>
+        && str_contains($css, 'height: 30px !important'),
+    'legacy decorative KPI icons are hidden without DOM mutation' =>
         str_contains($css, '.mg-crm-kpi-icon')
-        && str_contains($css, 'display: none !important')
-        && str_contains($js, "icon.remove();"),
-    'mobile CRM remains outside hard reset scope' =>
-        str_contains($css, '@media (min-width: 981px)'),
+        && str_contains($css, 'display: none !important'),
+    'mobile CRM remains outside authoritative KPI scope' =>
+        str_contains($css, '@media (min-width: 981px)')
+        && !str_contains($css, '@media (max-width: 980px)'),
 ];
 
 foreach ($checks as $label => $passed) {
@@ -55,8 +55,8 @@ foreach ($checks as $label => $passed) {
 }
 
 if ($failures !== []) {
-    fwrite(STDERR, "Merchant CRM KPI hard reset validation failed:\n- " . implode("\n- ", array_unique($failures)) . PHP_EOL);
+    fwrite(STDERR, "Merchant CRM KPI compatibility validation failed:\n- " . implode("\n- ", array_unique($failures)) . PHP_EOL);
     exit(1);
 }
 
-echo 'Merchant CRM KPI hard reset v3 contract passed.' . PHP_EOL;
+echo 'Merchant CRM KPI compatibility contract passed.' . PHP_EOL;
