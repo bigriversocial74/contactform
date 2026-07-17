@@ -93,7 +93,7 @@ if ($method === 'POST') {
 
     $approvalMode = strtolower(trim((string)($input['approval_mode'] ?? 'advisory')));
     $outputType = strtolower(trim((string)($input['output_type'] ?? 'action_plan')));
-    $agentMode = strtolower(trim((string)($input['mode'] ?? 'advisor'));
+    $agentMode = strtolower(trim((string)($input['mode'] ?? 'advisor')));
     $adminOperator = $approvalMode === 'admin_operator';
 
     if ($adminOperator) {
