@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var timelineLink = center.querySelector('[data-contact-center-timeline]');
   var boundaryNode = center.querySelector('[data-contact-center-boundary]');
   var statusNode = document.querySelector('[data-agent-chat-status]');
+  var textarea = form.querySelector('[data-agent-chat-textarea],textarea[name="message"]');
   var current = null;
   var busy = false;
 
@@ -130,7 +131,43 @@ document.addEventListener('DOMContentLoaded', function () {
     var state = data.state || data;
     if (state && state.contact_action_center) render(state.contact_action_center);
     else if (data.contact_action_center) render(data.contact_action_center);
-    document.dispatchEvent(new CustomEvent('mg:merchant-agent:apply-state', { detail: { state: state } }));
+  }
+
+  function installTransportBridge() {
+    if (Microgifter.get && !Microgifter.get.__mgContactActionCenter) {
+      var originalGet = Microgifter.get;
+      var wrappedGet = function () {
+        var args = arguments;
+        var url = String(args[0] || '');
+        return Promise.resolve(originalGet.apply(this, args)).then(function (response) {
+          if (url.indexOf('/api/ai/merchant-agent-chat.php') !== -1) applyResponse(response);
+          return response;
+        });
+      };
+      wrappedGet.__mgContactActionCenter = true;
+      wrappedGet.__mgContactActionCenterOriginal = originalGet;
+      Microgifter.get = wrappedGet;
+    }
+
+    if (Microgifter.post && !Microgifter.post.__mgContactActionCenter) {
+      var originalPost = Microgifter.post;
+      var wrappedPost = function (url, data) {
+        var request = data && typeof data === 'object' ? Object.assign({}, data) : data;
+        if (String(url || '').indexOf('/api/ai/merchant-agent-chat.php') !== -1 && request && current && current.contact) {
+          if (request.action === 'send_message' || request.action === 'contact_action') {
+            request.selected_contact_id = request.selected_contact_id || current.contact.id;
+            request.selected_contact_mention = request.selected_contact_mention || current.contact.mention || '';
+          }
+        }
+        return Promise.resolve(originalPost.call(this, url, request)).then(function (response) {
+          if (String(url || '').indexOf('/api/ai/merchant-agent-chat.php') !== -1 && (!request || request.action !== 'crm_search')) applyResponse(response);
+          return response;
+        });
+      };
+      wrappedPost.__mgContactActionCenter = true;
+      wrappedPost.__mgContactActionCenterOriginal = originalPost;
+      Microgifter.post = wrappedPost;
+    }
   }
 
   async function selectContact(contact) {
@@ -171,40 +208,41 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  async function runAction(button, action) {
-    if (busy || !current || !current.contact || !action) return;
-    busy = true;
+  function runAction(button, action) {
+    if (busy || !current || !current.contact || !action || !textarea) return;
+    var mention = current.contact.mention || 'The selected contact';
+    var prompts = {
+      summarize_activity: { message: mention + ' summarize recent activity and explain the next best action.', output: 'action_plan', approval: 'advisory' },
+      draft_followup: { message: mention + ' draft a personalized follow-up message for review. Do not send it.', output: 'message_draft', approval: 'review_queue' },
+      recommend_reward: { message: mention + ' recommend the most appropriate reward and prepare it for review. Do not issue it.', output: 'admin_recommendation', approval: 'review_queue' },
+      draft_campaign_invite: { message: mention + ' draft a personalized campaign invitation for review. Do not send it.', output: 'message_draft', approval: 'review_queue' },
+      create_followup_task: { message: mention + ' create a review-ready CRM follow-up task with an objective, reason, and due-date recommendation.', output: 'admin_recommendation', approval: 'review_queue' }
+    };
+    var prompt = prompts[action];
+    if (!prompt) return;
+    var output = document.querySelector('[data-agent-chat-output]');
+    var approval = document.querySelector('[data-agent-chat-approval]');
+    var scope = document.querySelector('[data-agent-chat-scope]');
+    if (output) output.value = prompt.output;
+    if (approval) approval.value = prompt.approval;
+    if (scope) scope.value = 'crm';
+    textarea.value = prompt.message;
+    textarea.dispatchEvent(new Event('input', { bubbles: true }));
     if (button) button.classList.add('is-loading');
-    setStatus('Preparing a review-ready contact action…', '');
-    try {
-      var response = await Microgifter.post('/api/ai/merchant-agent-chat.php', {
-        action: 'contact_action',
-        contact_action: action,
-        selected_contact_id: current.contact.id,
-        selected_contact_mention: current.contact.mention || '',
-        thread_id: threadId(),
-        days: days()
-      });
-      applyResponse(response);
-      setStatus(action === 'summarize_activity' ? 'Contact activity summarized.' : 'Review-ready contact action created.', 'success');
-    } catch (error) {
-      setStatus(String(error && error.message || 'Unable to create this contact action.'), 'error');
-    } finally {
-      busy = false;
+    window.setTimeout(function () {
+      if (typeof form.requestSubmit === 'function') form.requestSubmit();
+      else form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
       if (button) button.classList.remove('is-loading');
-    }
+    }, 20);
   }
+
+  installTransportBridge();
 
   if (toggle) toggle.addEventListener('click', function () { setExpanded(toggle.getAttribute('aria-expanded') !== 'true'); });
   if (clearButton) clearButton.addEventListener('click', clearContact);
   if (actionsNode) actionsNode.addEventListener('click', function (event) {
     var button = event.target.closest('[data-contact-center-action]');
     if (button) runAction(button, button.getAttribute('data-contact-center-action') || '');
-  });
-
-  document.addEventListener('mg:merchant-agent:state', function (event) {
-    var state = event.detail && event.detail.state;
-    if (state) render(state.contact_action_center || null);
   });
 
   document.addEventListener('mg:merchant-agent:select-contact', function (event) {
@@ -214,6 +252,7 @@ document.addEventListener('DOMContentLoaded', function () {
   window.MicrogifterMerchantContactActionCenter = Object.freeze({
     select: selectContact,
     clear: clearContact,
+    render: render,
     getSelectedContact: function () { return current && current.contact ? Object.assign({}, current.contact) : null; }
   });
 });
