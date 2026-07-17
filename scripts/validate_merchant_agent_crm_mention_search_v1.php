@@ -9,7 +9,7 @@ $paths = [
     'agent_api' => $root . '/api/ai/merchant-agent-chat.php',
     'page' => $root . '/merchant-agent-chat.php',
     'mention_js' => $root . '/assets/js/merchant-agent-crm-mention-search.js',
-    'crm_search_js' => $root . '/assets/js/merchant-crm-desktop-search.js',
+    'crm_search_js' => $root . '/assets/js/merchant-crm-directory.js',
     'css' => $root . '/assets/css/merchant-agent-crm-mention-search.css',
 ];
 $content = [];
