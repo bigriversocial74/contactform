@@ -25,49 +25,52 @@ $expect = static function (bool $condition, string $label) use (&$failures, &$pa
 
 try {
     $view = $read('includes/gift-action-center.php');
-    $controller = $read('assets/js/gift-action-center-user-search-fix.js');
+    $controller = $read('assets/js/gift-action-center-user-search-v2.js');
     $styles = $read('assets/css/gift-action-center-user-search-fix.css');
     $redirect = $read('user-profile.php');
 
     $expect(
-        str_contains($view, 'gift-action-center-user-search-fix.css?v=1.0.0')
-        && str_contains($view, 'gift-action-center-user-search-fix.js?v=1.0.0'),
-        'Gift center loads cache-bumped user search correction assets'
+        str_contains($view, 'gift-action-center-user-search-v2.js?v=2.0.0')
+        && !str_contains($view, 'gift-action-center-user-search-fix.js')
+        && !str_contains($view, 'gift-action-center-user-search.js"'),
+        'Gift center loads one cache-bumped user search runtime'
     );
 
     $expect(
-        str_contains($controller, "data-user-search-profile-link")
+        str_contains($controller, 'dataUserSearchProfileLink') === false
+        && str_contains($controller, "dataset.userSearchProfileLink")
         && str_contains($controller, "'/profile.php?slug='")
         && str_contains($controller, "'/user-profile.php?user='"),
-        'Search result names are upgraded to canonical profile links'
+        'Search result names link to canonical profile routes'
     );
 
     $expect(
-        str_contains($controller, "event.stopImmediatePropagation()")
-        && str_contains($controller, "window.location.href = profileLink.href"),
-        'Profile links bypass the legacy row-selection click handler'
+        str_contains($controller, "button.setAttribute('aria-pressed'")
+        && str_contains($controller, "button.classList.toggle('is-following'")
+        && str_contains($controller, "data.relationship && data.relationship.following"),
+        'Follow buttons reconcile visible and accessible state from the relationship response'
     );
 
     $expect(
-        str_contains($controller, 'followingFromResponse(response, requestedFollowing)')
-        && str_contains($controller, "button.dataset.following = following ? 'true' : 'false'")
-        && str_contains($controller, "button.setAttribute('aria-pressed'"),
-        'Follow buttons reconcile visible and accessible state after the relationship request'
+        str_contains($controller, "Microgifter.post('/api/social/relationship.php'")
+        && str_contains($controller, "window.setTimeout(searchUsers, 120)"),
+        'Follow changes use the canonical relationship endpoint and refresh search data'
     );
 
     $expect(
-        str_contains($controller, "searchInput.dispatchEvent(new Event('input', { bubbles: true }))"),
-        'Successful follow changes refresh search data from the server'
+        str_contains($controller, "window.location.href = '/feed.php?chat='")
+        && str_contains($controller, 'MicrogifterActionCenterUserSearch'),
+        'User search exposes one message route and one runtime API'
     );
 
     $expect(
         str_contains($styles, '.mg-user-search-profile-link')
         && str_contains($styles, '.mg-user-search-action.is-following'),
-        'Profile links and Following state have explicit visual styling'
+        'Profile links and Following state retain explicit visual styling'
     );
 
     $expect(
-        str_contains($redirect, "SELECT pp.slug")
+        str_contains($redirect, 'SELECT pp.slug')
         && str_contains($redirect, "pp.visibility IN ('public','unlisted')")
         && str_contains($redirect, "'/profile.php?slug='"),
         'User reference redirect resolves only active visible profiles to the canonical profile page'
