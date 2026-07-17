@@ -1,0 +1,69 @@
+name: Feed Contract v2 Validation
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'feed.php'
+      - 'api/public/feed.php'
+      - 'api/public/_feed_contract_v2.php'
+      - 'api/public/_feed_resilient_v1.php'
+      - 'api/public/_campaign_feed_v1.php'
+      - 'api/public/_campaign_feed_v2.php'
+      - 'api/public/_campaign_feed_v2_progress.php'
+      - 'api/public/_campaign_feed_v2_resilient.php'
+      - 'api/account/_action_center_contract.php'
+      - 'api/account/_action_center_wallet.php'
+      - 'assets/js/feed-contract-v2-bridge.js'
+      - 'assets/js/feed-campaign-progress-cards-v2.js'
+      - 'assets/js/social-feed.js'
+      - 'assets/css/feed-contract-v2.css'
+      - 'scripts/validate_feed_contract_v2.php'
+      - 'scripts/validate_campaign_feed_progress_cards_v1.php'
+      - '.github/workflows/feed-contract-v2-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: PHP syntax
+        run: |
+          php -l feed.php
+          php -l api/public/feed.php
+          php -l api/public/_feed_contract_v2.php
+          php -l api/public/_feed_resilient_v1.php
+          php -l api/public/_campaign_feed_v1.php
+          php -l api/public/_campaign_feed_v2.php
+          php -l api/public/_campaign_feed_v2_progress.php
+          php -l api/public/_campaign_feed_v2_resilient.php
+          php -l api/account/_action_center_contract.php
+          php -l api/account/_action_center_wallet.php
+          php -l scripts/validate_feed_contract_v2.php
+          php -l scripts/validate_campaign_feed_progress_cards_v1.php
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/feed-contract-v2-bridge.js
+          node --check assets/js/feed-campaign-progress-cards-v2.js
+          node --check assets/js/social-feed.js
+      - name: Feed Contract v2
+        run: php scripts/validate_feed_contract_v2.php
+      - name: Campaign feed compatibility
+        run: php scripts/validate_campaign_feed_progress_cards_v1.php
