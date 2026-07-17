@@ -5,12 +5,14 @@ require_once __DIR__ . '/_merchant.php';
 require_once dirname(__DIR__, 2) . '/includes/merchant-agent-approvals.php';
 require_once dirname(__DIR__, 2) . '/includes/ai/merchant-plan-actions.php';
 require_once dirname(__DIR__, 2) . '/includes/ai/merchant-recipe-draft-actions.php';
+require_once dirname(__DIR__, 2) . '/includes/ai/merchant-contact-workspace-review-actions.php';
 
 mg_require_method('POST');
 $user = mg_require_permission('merchant.campaigns.manage');
 $merchantId = (int)$user['id'];
 $pdo = mg_db();
-mg_merchant_ensure_workspace($pdo, $user);
+$workspace = mg_merchant_ensure_workspace($pdo, $user);
+$merchantOwnerId = max(1, (int)($workspace['merchant_user_id'] ?? $merchantId));
 $input = mg_input();
 mg_require_csrf_for_write($input);
 $approvalId = trim((string)($input['approval_id'] ?? ''));
@@ -23,11 +25,20 @@ try {
     if ((string)($item['source_type'] ?? '') === 'ai_plan') {
         $aiItem = is_array($item['_ai_plan_item'] ?? null) ? $item['_ai_plan_item'] : mg_ai_plan_item_owned($pdo, $merchantId, (string)$item['source_id'], false);
         $payload = mg_ai_plan_json($aiItem['suggested_payload_json'] ?? null);
-        if ($action === 'approve' && mg_recipe_draft_is_payload($payload)) {
+        if (($action === 'approve' || $action === 'create_task') && mg_recipe_draft_is_payload($payload)) {
             $result = mg_recipe_draft_review_item($pdo, $user, $aiItem, [
                 'note' => trim((string)($input['note'] ?? '')),
             ]);
             mg_ok(['result' => ['status' => $result['status'] ?? 'executed', 'ai_plan_result' => $result], 'item' => array_diff_key($item, ['_ai_plan_item' => true])], 'Recipe draft approval executed.');
+        }
+        if (($action === 'approve' || $action === 'create_task') && mg_contact_workspace_review_is_payload($payload)) {
+            $result = mg_contact_workspace_review_item($pdo, $user, [
+                'item_id'=>(string)$item['source_id'],
+                'approval_id'=>$approvalId,
+                'note'=>trim((string)($input['note'] ?? '')),
+                '_merchant_owner_id'=>$merchantOwnerId,
+            ]);
+            mg_ok(['result'=>['status'=>$result['status'] ?? 'executed','ai_plan_result'=>$result], 'item'=>array_diff_key($item, ['_ai_plan_item'=>true])], 'Contact Action Center approval created the reviewed draft or follow-up.');
         }
         $decision = match ($action) {
             'reject' => 'reject',
