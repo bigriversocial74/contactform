@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   var MG = window.Microgifter || {};
   var endpoint = '/api/merchant/design-content-calendar.php';
+  var merchantName = String(root.getAttribute('data-merchant-name') || 'Your Business');
   var activeArticle = null;
   var activeItem = null;
 
@@ -21,6 +22,14 @@ document.addEventListener('DOMContentLoaded', function () {
     map[themeKeys[label]] = label;
     return map;
   }, {});
+  var themeKickers = {
+    product_spotlight: 'Featured local favorite',
+    gift_idea: 'A better local gift',
+    reward_promotion: 'Reward your next visit',
+    merchant_story: 'Made and shared locally',
+    customer_review: 'A customer favorite',
+    local_support: 'Make local the easy choice'
+  };
   var formatLabels = { square: 'Post · 1:1', portrait: 'Portrait · 4:5', story: 'Story / Reel · 9:16' };
   var layoutLabels = { spotlight: 'Spotlight', split: 'Split Feature', bold: 'Bold Offer' };
   var statusLabels = { planned: 'Planned', downloaded: 'Downloaded', posted: 'Posted', skipped: 'Skipped' };
@@ -41,13 +50,45 @@ document.addEventListener('DOMContentLoaded', function () {
     var response = await fetch(url, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
     var json = await response.json().catch(function () { return {}; });
     var data = payload(json);
-    if (!response.ok || json.ok === false || json.success === false) throw new Error(json.message || data.message || 'Request failed.');
+    if (!response.ok || json.ok === false || json.success === false) {
+      throw new Error(json.message || data.message || 'Request failed.');
+    }
     return data;
   }
 
   async function post(body) {
     if (typeof MG.post === 'function') return payload(await MG.post(endpoint, body));
-    throw new Error('Secure calendar updates are unavailable on this page.');
+    var response = await fetch(endpoint, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    var json = await response.json().catch(function () { return {}; });
+    var data = payload(json);
+    if (!response.ok || json.ok === false || json.success === false) {
+      throw new Error(json.message || data.message || 'Request failed.');
+    }
+    return data;
+  }
+
+  function formatPrice(item) {
+    var cents = Number(item && item.unit_value_cents);
+    if (!Number.isFinite(cents) || cents <= 0) return '';
+    var currency = String(item.currency || 'USD').toUpperCase();
+    try {
+      return new Intl.NumberFormat(undefined, { style: 'currency', currency: currency }).format(cents / 100);
+    } catch (_) {
+      return '$' + (cents / 100).toFixed(2);
+    }
+  }
+
+  function nextDate(value) {
+    var parts = String(value || '').split('-').map(Number);
+    var date = new Date(parts[0], (parts[1] || 1) - 1, parts[2] || 1);
+    date.setDate(date.getDate() + 1);
+    var local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 10);
   }
 
   var modal = document.createElement('div');
@@ -56,12 +97,20 @@ document.addEventListener('DOMContentLoaded', function () {
   modal.setAttribute('data-calendar-entry-modal', '');
   modal.innerHTML = '<div class="mg-calendar-entry-backdrop" data-calendar-modal-close></div>'
     + '<section class="mg-calendar-entry-dialog" role="dialog" aria-modal="true" aria-labelledby="calendar-entry-title">'
-    + '<header class="mg-calendar-entry-head"><div><span data-calendar-modal-theme>Scheduled post</span><h2 id="calendar-entry-title" data-calendar-modal-title>Post preview</h2></div><button type="button" data-calendar-modal-close aria-label="Close post preview">×</button></header>'
+    + '<header class="mg-calendar-entry-head"><div><span data-calendar-modal-theme>Scheduled ad</span><h2 id="calendar-entry-title" data-calendar-modal-title>Edit scheduled ad</h2></div><button type="button" data-calendar-modal-close aria-label="Close scheduled ad">×</button></header>'
     + '<div class="mg-calendar-entry-body">'
     + '<aside class="mg-calendar-entry-preview">'
-    + '<div class="mg-calendar-entry-image"><img data-calendar-modal-image alt=""><div data-calendar-modal-image-empty>Microgifter</div></div>'
-    + '<div class="mg-calendar-entry-preview-copy"><span data-calendar-modal-preview-kicker>Scheduled content</span><h3 data-calendar-modal-preview-title></h3><p data-calendar-modal-preview-caption></p><div class="mg-calendar-entry-preview-meta"><span data-calendar-modal-preview-format></span><span data-calendar-modal-preview-layout></span><span data-calendar-modal-preview-status></span></div></div>'
-    + '<footer><strong data-calendar-modal-preview-cta></strong><a data-calendar-modal-preview-link target="_blank" rel="noopener">View product</a></footer>'
+    + '<div class="mg-calendar-ad-stage">'
+    + '<article class="mg-agent-social-canvas is-square layout-spotlight" data-calendar-modal-ad-template>'
+    + '<div class="mg-agent-social-photo"><img data-calendar-ad-image alt=""><div class="mg-agent-social-photo-placeholder" data-calendar-ad-image-empty><img src="/images/logo_main_drk.png" alt=""></div></div>'
+    + '<div class="mg-agent-social-shade"></div>'
+    + '<header class="mg-agent-social-brand"><span class="mg-agent-social-avatar"><span data-calendar-ad-initial>M</span></span><span><strong data-calendar-ad-merchant></strong><small>Available on Microgifter</small></span></header>'
+    + '<div class="mg-agent-social-copy"><span class="mg-agent-social-kicker" data-calendar-ad-kicker></span><h2 data-calendar-ad-title></h2><p data-calendar-ad-description></p><strong class="mg-agent-social-price" data-calendar-ad-price></strong></div>'
+    + '<footer class="mg-agent-social-footer"><span data-calendar-ad-cta></span><img src="/images/logo_main_drk.png" alt="Microgifter"></footer>'
+    + '</article>'
+    + '</div>'
+    + '<div class="mg-calendar-entry-preview-meta"><span data-calendar-modal-preview-format></span><span data-calendar-modal-preview-layout></span><span data-calendar-modal-preview-status></span></div>'
+    + '<p class="mg-calendar-entry-preview-note">This is the selected ad template using this product, format, layout, theme, and call to action.</p>'
     + '</aside>'
     + '<form class="mg-calendar-entry-settings" data-calendar-modal-form>'
     + '<div class="mg-calendar-entry-setting-grid">'
@@ -92,6 +141,7 @@ document.addEventListener('DOMContentLoaded', function () {
   form.id = 'calendar-entry-settings-form';
   var modalStatus = modal.querySelector('[data-calendar-modal-status]');
   var saveButton = modal.querySelector('[data-calendar-modal-save]');
+  var adTemplate = modal.querySelector('[data-calendar-modal-ad-template]');
 
   function platformMarkup(item) {
     var copy = item.platform_copy || {};
@@ -112,26 +162,35 @@ document.addEventListener('DOMContentLoaded', function () {
   function updatePreviewFromForm() {
     if (!activeItem) return;
     var title = String(activeItem.title || activeItem.slug || 'Scheduled product');
+    var description = String(activeItem.description || '').replace(/<[^>]*>/g, '').trim();
     var theme = String(form.elements.campaign_theme.value || 'product_spotlight');
     var format = String(form.elements.post_format.value || 'square');
     var layout = String(form.elements.layout_key.value || 'spotlight');
     var status = String(form.elements.status.value || 'planned');
-    modal.querySelector('[data-calendar-modal-theme]').textContent = themeLabels[theme] || 'Scheduled post';
-    modal.querySelector('[data-calendar-modal-preview-kicker]').textContent = themeLabels[theme] || 'Scheduled post';
-    modal.querySelector('[data-calendar-modal-preview-title]').textContent = title;
-    modal.querySelector('[data-calendar-modal-preview-caption]').textContent = form.elements.caption_standard.value || form.elements.caption_short.value || 'Add posting copy in the settings panel.';
+
+    ['is-square', 'is-portrait', 'is-story', 'layout-spotlight', 'layout-split', 'layout-bold'].forEach(function (className) {
+      adTemplate.classList.remove(className);
+    });
+    adTemplate.classList.add('is-' + (formatLabels[format] ? format : 'square'));
+    adTemplate.classList.add('layout-' + (layoutLabels[layout] ? layout : 'spotlight'));
+
+    modal.querySelector('[data-calendar-modal-theme]').textContent = themeLabels[theme] || 'Scheduled ad';
+    modal.querySelector('[data-calendar-modal-title]').textContent = title;
+    modal.querySelector('[data-calendar-ad-merchant]').textContent = merchantName;
+    modal.querySelector('[data-calendar-ad-initial]').textContent = merchantName.charAt(0).toUpperCase() || 'M';
+    modal.querySelector('[data-calendar-ad-kicker]').textContent = themeKickers[theme] || themeLabels[theme] || 'Local advertising';
+    modal.querySelector('[data-calendar-ad-title]').textContent = title;
+    modal.querySelector('[data-calendar-ad-description]').textContent = description || form.elements.caption_short.value || 'Discover this local product, service, or experience on Microgifter.';
+    modal.querySelector('[data-calendar-ad-price]').textContent = formatPrice(activeItem);
+    modal.querySelector('[data-calendar-ad-cta]').textContent = form.elements.call_to_action.value || 'Discover local';
     modal.querySelector('[data-calendar-modal-preview-format]').textContent = formatLabels[format] || format;
     modal.querySelector('[data-calendar-modal-preview-layout]').textContent = layoutLabels[layout] || layout;
     modal.querySelector('[data-calendar-modal-preview-status]').textContent = statusLabels[status] || status;
-    modal.querySelector('[data-calendar-modal-preview-cta]').textContent = form.elements.call_to_action.value || 'Discover local';
-    var link = modal.querySelector('[data-calendar-modal-preview-link]');
-    link.href = form.elements.product_link.value || '#';
   }
 
   function fillModal(item) {
     activeItem = item;
     var title = String(item.title || item.slug || 'Scheduled product');
-    modal.querySelector('[data-calendar-modal-title]').textContent = title;
     setField('scheduled_date', item.scheduled_date || '');
     setField('scheduled_time', String(item.scheduled_time || '').slice(0, 5));
     setField('timezone', item.timezone || 'UTC');
@@ -148,8 +207,8 @@ document.addEventListener('DOMContentLoaded', function () {
     setField('call_to_action', item.call_to_action || '');
     modal.querySelector('[data-calendar-modal-platforms]').innerHTML = platformMarkup(item);
 
-    var image = modal.querySelector('[data-calendar-modal-image]');
-    var empty = modal.querySelector('[data-calendar-modal-image-empty]');
+    var image = modal.querySelector('[data-calendar-ad-image]');
+    var empty = modal.querySelector('[data-calendar-ad-image-empty]');
     if (item.image_url) {
       image.hidden = false;
       image.src = item.image_url;
@@ -165,12 +224,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
   async function fetchItem(article) {
     var id = String(article.getAttribute('data-calendar-event') || '');
-    var dateField = article.querySelector('[data-calendar-field="scheduled_date"]');
-    var date = String(dateField ? dateField.value : '').trim();
-    if (!id || !date) throw new Error('The scheduled post could not be identified.');
+    var date = String(article.getAttribute('data-calendar-date') || '').trim();
+    if (!id || !date) throw new Error('The scheduled ad could not be identified.');
     var data = await request(endpoint + '?from=' + encodeURIComponent(date) + '&to=' + encodeURIComponent(date));
     var item = Array.isArray(data.items) ? data.items.find(function (row) { return String(row.public_id) === id; }) : null;
-    if (!item) throw new Error('The scheduled post could not be loaded.');
+    if (!item) throw new Error('The scheduled ad could not be loaded.');
     return item;
   }
 
@@ -178,7 +236,7 @@ document.addEventListener('DOMContentLoaded', function () {
     activeArticle = article;
     modal.hidden = false;
     document.body.classList.add('mg-calendar-modal-open');
-    modalStatus.textContent = 'Loading post settings…';
+    modalStatus.textContent = 'Loading ad template and settings…';
     saveButton.disabled = true;
     try {
       fillModal(await fetchItem(article));
@@ -186,7 +244,7 @@ document.addEventListener('DOMContentLoaded', function () {
       saveButton.disabled = false;
       modal.querySelector('[data-calendar-modal-close]').focus();
     } catch (error) {
-      modalStatus.textContent = error.message || 'Unable to load the scheduled post.';
+      modalStatus.textContent = error.message || 'Unable to load the scheduled ad.';
     }
   }
 
@@ -201,25 +259,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function decorateCards() {
     root.querySelectorAll('[data-calendar-event]').forEach(function (article) {
-      var label = article.querySelector('.mg-design-calendar-event-head > span');
+      var label = article.querySelector('.mg-calendar-theme-badge');
       var theme = themeKeys[String(label ? label.textContent : '').trim()] || 'product_spotlight';
       Object.keys(themeLabels).forEach(function (key) { article.classList.remove('theme-' + key); });
       article.classList.add('theme-' + theme);
-      article.setAttribute('aria-label', 'Open scheduled post settings');
       var openButton = article.querySelector('[data-calendar-open]');
-      if (openButton && openButton.textContent !== 'Preview') openButton.textContent = 'Preview';
+      if (openButton && openButton.textContent !== 'Edit') openButton.textContent = 'Edit';
     });
   }
 
   root.addEventListener('click', function (event) {
     var article = event.target.closest('[data-calendar-event]');
     if (!article) return;
-    if (event.target.closest('[data-calendar-select-item],[data-calendar-duplicate],[data-calendar-remove]')) return;
+    if (event.target.closest('[data-calendar-select-item]')) return;
     if (event.target.closest('input,select,textarea,details,summary')) return;
-    if (event.target.closest('[data-calendar-open]')) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-    }
+    event.preventDefault();
+    event.stopImmediatePropagation();
     openModal(article);
   }, true);
 
@@ -230,7 +285,9 @@ document.addEventListener('DOMContentLoaded', function () {
     openModal(article);
   });
 
-  modal.querySelectorAll('[data-calendar-modal-close]').forEach(function (button) { button.addEventListener('click', closeModal); });
+  modal.querySelectorAll('[data-calendar-modal-close]').forEach(function (button) {
+    button.addEventListener('click', closeModal);
+  });
   form.addEventListener('input', updatePreviewFromForm);
   form.addEventListener('change', updatePreviewFromForm);
 
@@ -263,13 +320,13 @@ document.addEventListener('DOMContentLoaded', function () {
       platform_copy: platformCopy
     };
     saveButton.disabled = true;
-    modalStatus.textContent = 'Saving all post settings…';
+    modalStatus.textContent = 'Saving ad settings…';
     try {
       await post(changes);
-      modalStatus.textContent = 'Post settings saved. Refreshing calendar…';
-      window.setTimeout(function () { window.location.reload(); }, 350);
+      modalStatus.textContent = 'Ad settings saved. Refreshing calendar…';
+      window.setTimeout(function () { window.location.reload(); }, 300);
     } catch (error) {
-      modalStatus.textContent = error.message || 'Unable to save post settings.';
+      modalStatus.textContent = error.message || 'Unable to save ad settings.';
       saveButton.disabled = false;
     }
   });
@@ -283,17 +340,42 @@ document.addEventListener('DOMContentLoaded', function () {
       + '&schedule=' + encodeURIComponent(activeItem.public_id || '');
     window.location.assign(url);
   });
-  modal.querySelector('[data-calendar-modal-duplicate]').addEventListener('click', function () {
-    var button = activeArticle && activeArticle.querySelector('[data-calendar-duplicate]');
-    closeModal();
-    if (button) button.click();
+
+  modal.querySelector('[data-calendar-modal-duplicate]').addEventListener('click', async function () {
+    if (!activeItem) return;
+    var button = this;
+    button.disabled = true;
+    modalStatus.textContent = 'Duplicating scheduled ad…';
+    try {
+      await post({ action: 'duplicate', schedule_id: activeItem.public_id, scheduled_date: nextDate(activeItem.scheduled_date) });
+      modalStatus.textContent = 'Ad duplicated. Refreshing calendar…';
+      window.setTimeout(function () { window.location.reload(); }, 300);
+    } catch (error) {
+      modalStatus.textContent = error.message || 'Unable to duplicate the scheduled ad.';
+      button.disabled = false;
+    }
   });
-  modal.querySelector('[data-calendar-modal-remove]').addEventListener('click', function () {
-    var button = activeArticle && activeArticle.querySelector('[data-calendar-remove]');
-    closeModal();
-    if (button) button.click();
+
+  modal.querySelector('[data-calendar-modal-remove]').addEventListener('click', async function () {
+    if (!activeItem) return;
+    var title = String(activeItem.title || activeItem.slug || 'this scheduled ad');
+    if (!window.confirm('Remove the scheduled ad for ' + title + '? Saved creative assets will remain available.')) return;
+    var button = this;
+    button.disabled = true;
+    modalStatus.textContent = 'Removing scheduled ad…';
+    try {
+      await post({ action: 'delete', schedule_id: activeItem.public_id });
+      modalStatus.textContent = 'Ad removed. Refreshing calendar…';
+      window.setTimeout(function () { window.location.reload(); }, 300);
+    } catch (error) {
+      modalStatus.textContent = error.message || 'Unable to remove the scheduled ad.';
+      button.disabled = false;
+    }
   });
-  document.addEventListener('keydown', function (event) { if (event.key === 'Escape' && !modal.hidden) closeModal(); });
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape' && !modal.hidden) closeModal();
+  });
 
   new MutationObserver(function () { decorateCards(); }).observe(root, { childList: true, subtree: true });
   decorateCards();
