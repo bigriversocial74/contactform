@@ -20,7 +20,7 @@ $merchantRoleLabel = $merchantRole !== '' ? ucwords(str_replace('_', ' ', $merch
             <button class="mg-merchant-agent-controls-button" type="button" data-agent-chat-drawer-open aria-controls="agent-chat-drawer" aria-expanded="false">Agent controls</button>
           </div>
         </div>
-        <p>Ask about products, campaigns, rewards, CRM activity, claims, locations, or performance. Type a partial <strong>@username</strong> to find CRM contacts, then use the exact contact in prompts such as “@username show recent activity,” “@username draft a follow-up,” or “@username recommend a reward.” Merchant Agent prepares actions for review instead of executing them automatically.</p>
+        <p>Ask about products, campaigns, rewards, CRM activity, claims, locations, or performance. Type a partial <strong>@username</strong> to find CRM contacts. Selecting a contact opens a persistent Contact Action Center for that Merchant Agent chat, so follow-up prompts can continue without repeating the username. Every message, reward, campaign, and task remains approval-first.</p>
         <div class="mg-merchant-agent-boundary" aria-label="Merchant Agent data boundary">
           <span><?= mg_e($merchantPackageName) ?></span>
           <span><?= mg_e($merchantRoleLabel) ?></span>
@@ -50,6 +50,46 @@ $merchantRoleLabel = $merchantRole !== '' ? ucwords(str_replace('_', ' ', $merch
     <span><kbd>M</kbd> Merchant mode · <span data-agent-chat-summary-mobile>Overview · Last 90 days · Action plan</span></span>
     <span>Use Personal Agent for private contacts, gifting, and personal planning</span>
   </div>
+
+  <section class="mg-merchant-contact-center" data-merchant-contact-action-center hidden aria-label="Selected CRM contact action center">
+    <div class="mg-merchant-contact-center-bar">
+      <button class="mg-merchant-contact-center-toggle" type="button" data-contact-center-toggle aria-expanded="false">
+        <span class="mg-merchant-contact-center-avatar" data-contact-center-avatar aria-hidden="true">C</span>
+        <span class="mg-merchant-contact-center-identity">
+          <small>Selected CRM contact</small>
+          <strong data-contact-center-name>Contact</strong>
+          <span data-contact-center-meta></span>
+        </span>
+        <span class="mg-merchant-contact-center-score" data-contact-center-score></span>
+        <span class="mg-merchant-contact-center-chevron" aria-hidden="true"></span>
+      </button>
+      <button class="mg-merchant-contact-center-clear" type="button" data-contact-center-clear aria-label="Clear selected CRM contact">×</button>
+    </div>
+
+    <div class="mg-merchant-contact-center-body" data-contact-center-body hidden>
+      <div class="mg-merchant-contact-center-metrics" data-contact-center-metrics></div>
+      <div class="mg-merchant-contact-center-actions" data-contact-center-actions aria-label="Contact actions"></div>
+      <div class="mg-merchant-contact-center-grid">
+        <article>
+          <div class="mg-merchant-contact-center-section-head"><strong>Recent activity</strong><span data-contact-center-activity-count></span></div>
+          <div class="mg-merchant-contact-center-list" data-contact-center-activity></div>
+        </article>
+        <article>
+          <div class="mg-merchant-contact-center-section-head"><strong>Campaigns and follow-ups</strong><span data-contact-center-followup-count></span></div>
+          <div class="mg-merchant-contact-center-list" data-contact-center-followups></div>
+        </article>
+      </div>
+      <div class="mg-merchant-contact-center-links">
+        <a href="/merchant-crm.php" data-contact-center-profile>Open customer profile</a>
+        <a href="/merchant-crm.php" data-contact-center-timeline>Open full timeline</a>
+        <a href="/merchant-agent-approvals.php">Agent Review queue</a>
+      </div>
+      <p class="mg-merchant-contact-center-boundary" data-contact-center-boundary></p>
+    </div>
+    <input type="hidden" data-contact-center-id name="selected_contact_id" value="">
+    <input type="hidden" data-contact-center-mention name="selected_contact_mention" value="">
+  </section>
+
   <div class="mg-merchant-agent-composer-row">
     <div class="mg-agent-chat-tool-wrap">
       <button class="mg-agent-chat-tool" type="button" aria-label="Add merchant context" aria-expanded="false" data-agent-context-toggle>+</button>

@@ -173,9 +173,10 @@ $checks = [
         && str_contains($content['merchant_chat'], 'mg-agent-snapshot-thinking')
         && str_contains($content['merchant_chat'], 'Promise.all([request, delay(650)])')
         && str_contains($content['snapshot_css'], '@keyframes mgMerchantSnapshotPulse'),
-    'Merchant Agent loads cache-busted snapshot and footer assets' =>
+    'Merchant Agent loads current contact-aware chat, snapshot, and footer assets' =>
         str_contains($content['merchant_page'], '/assets/css/merchant-agent-snapshot.css?v=1.0.0')
-        && str_contains($content['merchant_page'], '/assets/js/merchant-agent-chat.js?v=2.3.0')
+        && str_contains($content['merchant_page'], '/assets/js/merchant-agent-chat.js?v=2.4.0')
+        && str_contains($content['merchant_page'], '/assets/js/merchant-agent-contact-action-center.js?v=1.0.0')
         && str_contains($content['merchant_page'], '/assets/css/personal-agent-chat-history.css?v=1.4.0'),
     'merchant requests remain protected by the existing permission and CSRF boundary' =>
         str_contains($content['merchant_api'], 'mg_require_csrf_for_write($input)')

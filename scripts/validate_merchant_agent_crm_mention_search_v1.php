@@ -23,8 +23,9 @@ foreach ($paths as $key => $path) {
 
 $crmRoutePosition = strpos($content['agent_api'], "if (\$action === 'crm_search')");
 $aiLimitPosition = strpos($content['agent_api'], 'mg_agent_admin_limit_enforce_default');
-$pageMentionPosition = strpos($content['page'], '/assets/js/merchant-agent-crm-mention-search.js?v=1.0.0');
-$pageChatPosition = strpos($content['page'], '/assets/js/merchant-agent-chat.js?v=2.3.0');
+$pageMentionPosition = strpos($content['page'], '/assets/js/merchant-agent-crm-mention-search.js?v=1.1.0');
+$pageContactCenterPosition = strpos($content['page'], '/assets/js/merchant-agent-contact-action-center.js?v=1.0.0');
+$pageChatPosition = strpos($content['page'], '/assets/js/merchant-agent-chat.js?v=2.4.0');
 
 $checks = [
     'search uses the canonical merchant CRM contact store' =>
@@ -77,8 +78,10 @@ $checks = [
         && str_contains($content['mention_js'], 'event.stopImmediatePropagation()')
         && str_contains($content['mention_js'], "action: 'crm_search'")
         && $pageMentionPosition !== false
+        && $pageContactCenterPosition !== false
         && $pageChatPosition !== false
-        && $pageMentionPosition < $pageChatPosition,
+        && $pageMentionPosition < $pageContactCenterPosition
+        && $pageContactCenterPosition < $pageChatPosition,
     'all matching results are loaded through bounded server pagination' =>
         str_contains($content['search_helper'], 'min(100, $limit)')
         && str_contains($content['search_helper'], "'has_more'=>")
@@ -109,9 +112,10 @@ $checks = [
         && str_contains($content['css'], '.mg-agent-crm-table')
         && str_contains($content['css'], '@media(max-width:820px)')
         && str_contains($content['css'], '@media(max-width:520px)'),
-    'feature loads as cache-busted scoped assets without a schema migration' =>
+    'feature loads as current cache-busted scoped assets without a schema migration' =>
         str_contains($content['page'], '/assets/css/merchant-agent-crm-mention-search.css?v=1.0.0')
-        && str_contains($content['page'], '/assets/js/merchant-agent-crm-mention-search.js?v=1.0.0')
+        && str_contains($content['page'], '/assets/js/merchant-agent-crm-mention-search.js?v=1.1.0')
+        && str_contains($content['page'], '/assets/js/merchant-agent-chat.js?v=2.4.0')
         && !str_contains($content['search_helper'], 'CREATE TABLE')
         && !str_contains($content['agent_helper'], 'ALTER TABLE'),
 ];

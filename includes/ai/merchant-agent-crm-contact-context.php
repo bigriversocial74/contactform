@@ -127,11 +127,42 @@ function mg_merchant_agent_crm_contact_details(PDO $pdo, int $merchantId, array 
     ];
 }
 
-function mg_merchant_agent_crm_contact_context(PDO $pdo, int $merchantId, string $message, int $days = 90): array
+function mg_merchant_agent_crm_explicit_contact_ids(array $explicit): array
+{
+    $ids = [];
+    $candidates = array_merge(
+        [(string)($explicit['selected_contact_id'] ?? ''), (string)($explicit['contact_id'] ?? '')],
+        is_array($explicit['crm_contact_ids'] ?? null) ? $explicit['crm_contact_ids'] : []
+    );
+    foreach ($candidates as $candidate) {
+        $candidate = strtolower(trim((string)$candidate));
+        if (preg_match('/^[a-f0-9-]{36}$/', $candidate) === 1 && !in_array($candidate, $ids, true)) $ids[] = $candidate;
+        if (count($ids) >= 8) break;
+    }
+    return $ids;
+}
+
+function mg_merchant_agent_crm_contact_context(PDO $pdo, int $merchantId, string $message, int $days = 90, array $explicit = []): array
 {
     $handles = mg_merchant_agent_crm_mentions($message);
     $contacts = [];
     $unresolved = [];
+    $seen = [];
+
+    $explicitIds = mg_merchant_agent_crm_explicit_contact_ids($explicit);
+    foreach (mg_merchant_crm_search_contacts_by_ids($pdo, $merchantId, $explicitIds) as $contact) {
+        $details = mg_merchant_agent_crm_contact_details($pdo, $merchantId, $contact, $days);
+        $id = (string)($details['id'] ?? '');
+        if ($details !== [] && $id !== '' && !isset($seen[$id])) {
+            $contacts[] = $details;
+            $seen[$id] = true;
+        }
+    }
+
+    $explicitMention = strtolower(trim((string)($explicit['selected_contact_mention'] ?? $explicit['contact_mention'] ?? '')));
+    $explicitMention = ltrim($explicitMention, '@');
+    if ($explicitMention !== '' && !in_array($explicitMention, $handles, true)) array_unshift($handles, $explicitMention);
+
     foreach ($handles as $handle) {
         $contact = mg_merchant_agent_crm_exact_contact($pdo, $merchantId, $handle);
         if (!$contact) {
@@ -139,14 +170,21 @@ function mg_merchant_agent_crm_contact_context(PDO $pdo, int $merchantId, string
             continue;
         }
         $details = mg_merchant_agent_crm_contact_details($pdo, $merchantId, $contact, $days);
-        if ($details === []) $unresolved[] = '@' . $handle;
-        else $contacts[] = $details;
+        $id = (string)($details['id'] ?? '');
+        if ($details === []) {
+            $unresolved[] = '@' . $handle;
+        } elseif ($id !== '' && !isset($seen[$id])) {
+            $contacts[] = $details;
+            $seen[$id] = true;
+        }
     }
+
     return [
         'selected_contacts'=>$contacts,
-        'unresolved_mentions'=>$unresolved,
+        'unresolved_mentions'=>array_values(array_unique($unresolved)),
         'selected_count'=>count($contacts),
         'mention_count'=>count($handles),
-        'boundary'=>'Only exact CRM contacts explicitly mentioned in this merchant prompt are included. Data is scoped to the authorized merchant workspace.',
+        'explicit_contact_count'=>count($explicitIds),
+        'boundary'=>'Only the exact CRM contact selected for this Merchant Agent thread or explicitly mentioned in the current prompt is included. Data is scoped to the authorized merchant workspace.',
     ];
 }
