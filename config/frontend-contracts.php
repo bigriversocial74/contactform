@@ -93,7 +93,7 @@ return [
             'required_tokens' => [
                 '/api/account/action-center-recipient-search.php?q=',
                 '/api/social/relationship.php',
-                'dataUserSearchProfileLink',
+                'dataset.userSearchProfileLink',
                 'MicrogifterActionCenterUserSearch',
                 "button.setAttribute('aria-pressed'",
             ],
