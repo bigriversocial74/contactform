@@ -59,6 +59,31 @@ function mg_require_csrf_for_write(array $input): void
     }
 }
 
+if (!function_exists('mg_fail_unexpected')) {
+    /**
+     * Log an unexpected internal exception and return a stable public API error.
+     *
+     * Expected validation/domain exceptions should be caught before this helper
+     * when their messages are intentionally safe for the caller.
+     */
+    function mg_fail_unexpected(
+        Throwable $error,
+        string $eventType,
+        string $publicMessage = 'Unable to complete the request.',
+        int $status = 500,
+        array $context = [],
+        ?int $userId = null
+    ): never {
+        $status = max(500, min(599, $status));
+        $safeEventType = trim($eventType) !== '' ? mb_substr(trim($eventType), 0, 120) : 'api.unexpected_failure';
+        mg_security_log('error', $safeEventType, $publicMessage, $context + [
+            'exception_class' => $error::class,
+            'exception_message' => mb_substr($error->getMessage(), 0, 1000),
+        ], $userId);
+        mg_fail($publicMessage, $status);
+    }
+}
+
 function mg_assign_default_role(int $userId, string $roleSlug = 'customer'): void
 {
     $pdo = mg_db();
