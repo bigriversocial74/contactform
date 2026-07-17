@@ -175,8 +175,6 @@ document.addEventListener('DOMContentLoaded', function () {
         '<button class="mg-btn mg-btn-primary" type="button" data-action-modal-close>Done</button>' +
         '</div>';
       document.dispatchEvent(new CustomEvent('mg:action-center:regift-sent', { detail: { gift_id: giftId, recipient: rec, sent_at: sentAt, response: data } }));
-      var refresh = app.querySelector('[data-gift-refresh]');
-      if (refresh) window.setTimeout(function () { refresh.click(); }, 350);
     } catch (error) {
       status(form, error && error.message ? error.message : 'Unable to regift this Microgift.', 'error');
       reset(form);
