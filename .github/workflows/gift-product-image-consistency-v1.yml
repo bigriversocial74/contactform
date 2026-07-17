@@ -1,0 +1,55 @@
+name: Gift Product Image Consistency
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  php82:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+      - run: |
+          php -l api/account/_action_center_product_media.php
+          php -l api/account/action-center.php
+          php -l includes/personal-agent/gift-result-cards.php
+          php -l scripts/validate_gift_product_image_consistency_v1.php
+          php -l tests/phpunit/GiftProductImageConsistencyV1Test.php
+          php -l inbox.php
+          php -l sent.php
+          php -l claimed.php
+          php -l agent.php
+          node --check assets/js/gift-action-center-reward-images.js
+          php scripts/validate_gift_product_image_consistency_v1.php
+          if [ -x vendor/bin/phpunit ]; then vendor/bin/phpunit tests/phpunit/GiftProductImageConsistencyV1Test.php; fi
+
+  php83:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - run: |
+          php -l api/account/_action_center_product_media.php
+          php -l api/account/action-center.php
+          php -l includes/personal-agent/gift-result-cards.php
+          php -l scripts/validate_gift_product_image_consistency_v1.php
+          php -l tests/phpunit/GiftProductImageConsistencyV1Test.php
+          php -l inbox.php
+          php -l sent.php
+          php -l claimed.php
+          php -l agent.php
+          node --check assets/js/gift-action-center-reward-images.js
+          php scripts/validate_gift_product_image_consistency_v1.php
+          if [ -x vendor/bin/phpunit ]; then vendor/bin/phpunit tests/phpunit/GiftProductImageConsistencyV1Test.php; fi
