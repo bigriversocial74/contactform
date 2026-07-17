@@ -27,7 +27,7 @@ function mg_merchant_agent_delete_thread(PDO $pdo, int $merchantId, string $thre
         if (mg_agent_table_exists($pdo, 'merchant_agent_insight_snapshots')) {
             $pdo->prepare('DELETE FROM merchant_agent_insight_snapshots WHERE merchant_user_id=? AND thread_public_id=?')->execute([$merchantId, $threadPublicId]);
         }
-        $pdo->prepare("DELETE FROM campaign_events WHERE merchant_user_id=? AND event_type IN ('merchant.agent_chat.user','merchant.agent_chat.assistant') AND JSON_UNQUOTE(JSON_EXTRACT(event_context_json,'$.thread_public_id'))=?")->execute([$merchantId, $threadPublicId]);
+        $pdo->prepare("DELETE FROM campaign_events WHERE merchant_user_id=? AND event_type IN ('merchant.agent_chat.user','merchant.agent_chat.assistant') AND JSON_VALID(event_context_json)=1 AND JSON_UNQUOTE(JSON_EXTRACT(event_context_json,'$.thread_public_id'))=?")->execute([$merchantId, $threadPublicId]);
         $pdo->prepare('DELETE FROM merchant_agent_threads WHERE merchant_user_id=? AND public_id=? LIMIT 1')->execute([$merchantId, $threadPublicId]);
         if ($wasActive) mg_agent_create_thread($pdo, $merchantId, ['title'=>'Current chat'], true);
         $pdo->commit();
