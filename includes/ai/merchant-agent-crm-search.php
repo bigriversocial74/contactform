@@ -45,12 +45,14 @@ function mg_merchant_agent_crm_search_response(PDO $pdo, array $user, array $inp
         $assistantMessageId = mg_ai_chat_record_message($pdo, $actorId, 'assistant', $reply, [], $meta);
         $pdo->commit();
         if (function_exists('mg_audit')) {
-            mg_audit('merchant.agent_crm_search.chat', $actorId, [
-                'merchant_user_id'=>$merchantId,
-                'query_length'=>mb_strlen($query),
-                'result_total'=>$total,
-                'thread_id'=>$threadId,
-            ]);
+            try {
+                mg_audit('merchant.agent_crm_search.chat', 'merchant_crm', [
+                    'merchant_user_id'=>$merchantId,
+                    'query_length'=>mb_strlen($query),
+                    'result_total'=>$total,
+                    'thread_id'=>$threadId,
+                ], $actorId);
+            } catch (Throwable) {}
         }
         return [
             'user_message'=>[
