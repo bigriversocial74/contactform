@@ -1,0 +1,53 @@
+name: CRM Lookup Checks
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  php82:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+      - run: |
+          php -l merchant-agent-chat.php
+          php -l api/ai/merchant-agent-chat.php
+          php -l api/merchant/crm-search.php
+          php -l includes/merchant-crm-search.php
+          php -l includes/ai/merchant-agent-crm-search.php
+          php -l scripts/validate_merchant_agent_crm_mention_search_v1.php
+          php -l tests/phpunit/MerchantAgentCrmMentionSearchV1Test.php
+          node --check assets/js/merchant-agent-crm-mention-search.js
+          node --check assets/js/merchant-crm-desktop-search.js
+          php scripts/validate_merchant_agent_crm_mention_search_v1.php
+          if [ -x vendor/bin/phpunit ]; then vendor/bin/phpunit tests/phpunit/MerchantAgentCrmMentionSearchV1Test.php; fi
+
+  php83:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - run: |
+          php -l merchant-agent-chat.php
+          php -l api/ai/merchant-agent-chat.php
+          php -l api/merchant/crm-search.php
+          php -l includes/merchant-crm-search.php
+          php -l includes/ai/merchant-agent-crm-search.php
+          php -l scripts/validate_merchant_agent_crm_mention_search_v1.php
+          php -l tests/phpunit/MerchantAgentCrmMentionSearchV1Test.php
+          node --check assets/js/merchant-agent-crm-mention-search.js
+          node --check assets/js/merchant-crm-desktop-search.js
+          php scripts/validate_merchant_agent_crm_mention_search_v1.php
+          if [ -x vendor/bin/phpunit ]; then vendor/bin/phpunit tests/phpunit/MerchantAgentCrmMentionSearchV1Test.php; fi
