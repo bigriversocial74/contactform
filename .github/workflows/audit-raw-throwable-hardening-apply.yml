@@ -1,0 +1,67 @@
+name: Audit Raw Throwable Hardening Apply
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - scripts/apply_raw_throwable_response_hardening.py
+      - .github/workflows/audit-raw-throwable-hardening-apply.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.head_ref == 'audit/repository-production-hardening-20260717' || github.ref_name == 'audit/repository-production-hardening-20260717'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: audit/repository-production-hardening-20260717
+          fetch-depth: 0
+
+      - name: Install locked dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Apply exact response hardening
+        run: |
+          set -o pipefail
+          python3 scripts/apply_raw_throwable_response_hardening.py 2>&1 | tee /tmp/raw-throwable-hardening.log
+
+      - name: Validate changed files and exact diagnostics
+        run: |
+          set -o pipefail
+          {
+            git diff --name-only -- '*.php' | while IFS= read -r file; do
+              [ -n "$file" ] && php -l "$file"
+            done
+            php scripts/diagnose_raw_throwable_responses.php
+            php -r '$report=json_decode((string)file_get_contents("build/raw-throwable-diagnostics.json"),true,512,JSON_THROW_ON_ERROR); if((int)($report["matched_findings"]??-1)!==0){fwrite(STDERR,"Raw Throwable findings remain.\n"); exit(1);} echo "No raw Throwable responses remain.\n";'
+            vendor/bin/phpunit --configuration phpunit.xml.dist --filter SecurityFoundationTest
+          } 2>&1 | tee /tmp/raw-throwable-validation.log
+
+      - name: Upload hardening diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: raw-throwable-hardening-diagnostics
+          path: |
+            /tmp/raw-throwable-hardening.log
+            /tmp/raw-throwable-validation.log
+            build/raw-throwable-diagnostics.json
+          if-no-files-found: warn
+
+      - name: Commit hardened responses
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add api/merchant api/messages api/stamps includes/ai scripts/audit_repository_production_quality_v2.php
+          if git diff --cached --quiet; then
+            echo 'No response-hardening changes were required.'
+            exit 0
+          fi
+          git commit -m 'Harden remaining raw exception responses'
+          git push origin HEAD:audit/repository-production-hardening-20260717
