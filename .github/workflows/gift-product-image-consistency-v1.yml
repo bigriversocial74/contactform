@@ -18,12 +18,14 @@ jobs:
         with:
           php-version: '8.2'
           coverage: none
-      - name: PHP syntax
+      - name: Resolver PHP syntax
+        run: php -l api/account/_action_center_product_media.php
+      - name: Validator PHP syntax
+        run: php -l scripts/validate_gift_product_image_consistency_v1.php
+      - name: Related PHP syntax
         run: |
-          php -l api/account/_action_center_product_media.php
           php -l api/account/action-center.php
           php -l includes/personal-agent/gift-result-cards.php
-          php -l scripts/validate_gift_product_image_consistency_v1.php
           php -l tests/phpunit/GiftProductImageConsistencyV1Test.php
           php -l inbox.php
           php -l sent.php
@@ -44,12 +46,14 @@ jobs:
         with:
           php-version: '8.3'
           coverage: none
-      - name: PHP syntax
+      - name: Resolver PHP syntax
+        run: php -l api/account/_action_center_product_media.php
+      - name: Validator PHP syntax
+        run: php -l scripts/validate_gift_product_image_consistency_v1.php
+      - name: Related PHP syntax
         run: |
-          php -l api/account/_action_center_product_media.php
           php -l api/account/action-center.php
           php -l includes/personal-agent/gift-result-cards.php
-          php -l scripts/validate_gift_product_image_consistency_v1.php
           php -l tests/phpunit/GiftProductImageConsistencyV1Test.php
           php -l inbox.php
           php -l sent.php
