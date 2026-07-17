@@ -1,0 +1,44 @@
+name: Watch Listen Stamp Compact Layout v1 Validation
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'watch-reward.php'
+      - 'listen-reward.php'
+      - 'stamp-card.php'
+      - 'assets/css/watch-listen-stamp-compact-layout-v1.css'
+      - 'scripts/validate_watch_listen_stamp_compact_layout_v1.php'
+      - '.github/workflows/watch-listen-stamp-compact-layout-v1-validation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: PHP syntax
+        run: |
+          php -l watch-reward.php
+          php -l listen-reward.php
+          php -l stamp-card.php
+          php -l scripts/validate_watch_listen_stamp_compact_layout_v1.php
+
+      - name: Compact layout contract
+        run: php scripts/validate_watch_listen_stamp_compact_layout_v1.php
