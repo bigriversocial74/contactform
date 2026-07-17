@@ -1,0 +1,61 @@
+name: Merchant Snapshot Action Center v1 Validation
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'merchant-agent-chat.php'
+      - 'includes/ai/merchant-agent-snapshot.php'
+      - 'assets/js/merchant-agent-snapshot-action-center.js'
+      - 'assets/css/merchant-agent-snapshot-action-center.css'
+      - 'scripts/validate_merchant_snapshot_action_center_v1.php'
+      - 'tests/phpunit/MerchantSnapshotActionCenterV1Test.php'
+      - '.github/workflows/merchant-snapshot-action-center-v1-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          extensions: mbstring,pdo,pdo_mysql,openssl,json
+
+      - name: PHP syntax
+        run: |
+          php -l merchant-agent-chat.php
+          php -l includes/ai/merchant-agent-snapshot.php
+          php -l scripts/validate_merchant_snapshot_action_center_v1.php
+          php -l tests/phpunit/MerchantSnapshotActionCenterV1Test.php
+
+      - name: JavaScript syntax
+        run: node --check assets/js/merchant-agent-snapshot-action-center.js
+
+      - name: Snapshot Action Center contract
+        run: php scripts/validate_merchant_snapshot_action_center_v1.php
+
+      - name: Integrated Merchant Agent regression
+        run: php scripts/validate_integrated_merchant_agent_workspace_v1.php
+
+      - name: PHPUnit contract when available
+        run: |
+          if [ -x vendor/bin/phpunit ]; then
+            vendor/bin/phpunit tests/phpunit/MerchantSnapshotActionCenterV1Test.php tests/phpunit/IntegratedMerchantAgentWorkspaceV1Test.php
+          else
+            echo 'PHPUnit is not installed in this checkout; standalone contracts completed.'
+          fi
