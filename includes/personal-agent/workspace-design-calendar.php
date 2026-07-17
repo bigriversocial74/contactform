@@ -94,6 +94,7 @@ $calendarMerchantName = trim((string) ($displayName ?? '')) ?: 'Your Business';
         <div class="mg-design-calendar-view-toggle" role="group" aria-label="Calendar display">
           <button type="button" class="is-active" data-calendar-view="grid" aria-pressed="true">Grid</button>
           <button type="button" data-calendar-view="stack" aria-pressed="false">Stacked</button>
+          <button type="button" data-calendar-view="side" aria-pressed="false">Side by side</button>
         </div>
 
         <div class="mg-design-calendar-toolbar-actions">
@@ -156,6 +157,7 @@ $calendarMerchantName = trim((string) ($displayName ?? '')) ?: 'Your Business';
       <div class="mg-design-calendar-error" data-calendar-error hidden></div>
       <div class="mg-design-calendar-grid-view" data-calendar-grid></div>
       <div class="mg-design-calendar-stack-view" data-calendar-stack hidden></div>
+      <div class="mg-design-calendar-side-view" data-calendar-side hidden></div>
       <div class="mg-design-calendar-status" data-calendar-status role="status" aria-live="polite"></div>
     </section>
   </div>
