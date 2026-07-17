@@ -49,7 +49,7 @@ $page_scripts = [
     '/assets/js/merchant-agent-chat-scroll-latest.js',
     '/assets/js/merchant-agent-chat-json-format.js',
     '/assets/js/merchant-agent-chat-mobile.js?v=2.1.0',
-    '/assets/js/merchant-agent-sidebar-history.js?v=2.0.0',
+    '/assets/js/merchant-agent-sidebar-history.js?v=2.1.0',
     '/assets/js/merchant-agent-chat-deep-links.js?v=1.0.0',
     '/assets/js/merchant-agent-handoff-receiver.js?v=1.0.0',
     '/assets/js/sponsored-campaign-card.js',
