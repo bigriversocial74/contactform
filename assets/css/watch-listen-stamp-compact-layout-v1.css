@@ -1,0 +1,152 @@
+/* Watch, Listen, and Stamp public campaign cleanup.
+   Keeps the media/campaign canvas, three supporting cards, and join column aligned at the top. */
+
+.mg-rl-page.mg-rl-compact-campaign .mg-rl-wrap {
+  align-items: start;
+  padding-top: 28px;
+}
+
+.mg-rl-page.mg-rl-compact-campaign .mg-rl-left {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 18px;
+}
+
+.mg-rl-page.mg-rl-compact-campaign .mg-rl-hero {
+  display: none !important;
+}
+
+.mg-rl-page.mg-rl-compact-campaign .mg-rl-player,
+.mg-rl-page.mg-rl-compact-campaign .mg-rl-bottom,
+.mg-rl-page.mg-rl-compact-campaign .mg-rl-media-preview,
+.mg-rl-page.mg-rl-compact-campaign .mg-rl-media-missing {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.mg-rl-page.mg-rl-compact-campaign .mg-rl-wrap > .mg-rl-left,
+.mg-rl-page.mg-rl-compact-campaign .mg-rl-wrap > .mg-rl-join-desktop {
+  align-self: start;
+}
+
+.mg-rl-page.mg-rl-compact-campaign .mg-rl-join-desktop {
+  top: 72px;
+}
+
+.mg-rl-page.mg-rl-compact-campaign .mg-rl-bottom {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.mg-rl-page.mg-rl-compact-campaign .mg-rl-bottom > .mg-rl-card {
+  height: 100%;
+}
+
+.mg-rl-page.mg-rl-compact-campaign .mg-stamp-summary-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.mg-rl-page.mg-rl-compact-campaign .mg-stamp-summary-card h3 {
+  margin-top: 8px;
+}
+
+.mg-rl-page.mg-rl-compact-campaign .mg-stamp-summary-card p {
+  margin: 8px 0 0;
+  color: #344860;
+  font-size: 12px;
+  line-height: 1.45;
+  font-weight: 620;
+}
+
+.mg-rl-page.mg-rl-compact-campaign .mg-stamp-summary-card .mg-rl-list {
+  margin-top: 10px;
+}
+
+.mg-rl-page.mg-rl-compact-campaign .mg-stamp-status-card .mg-public-campaign-status,
+.mg-rl-page.mg-rl-compact-campaign .mg-stamp-status-card .mg-public-campaign-result {
+  margin-top: 10px;
+}
+
+/* These pages use one consistent blue footer with white copy and links. */
+.mg-site-footer.mg-universal-footer {
+  position: relative !important;
+  overflow: hidden !important;
+  border-top: 1px solid rgba(255, 255, 255, .12) !important;
+  background: linear-gradient(135deg, #071c33 0%, #0d3459 100%) !important;
+  color: #fff !important;
+}
+
+.mg-site-footer.mg-universal-footer::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 8% 12%, rgba(88, 149, 208, .2), transparent 32%),
+    radial-gradient(circle at 92% 26%, rgba(255, 255, 255, .08), transparent 28%),
+    linear-gradient(rgba(255, 255, 255, .035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, .03) 1px, transparent 1px) !important;
+  background-size: auto, auto, 72px 72px, 72px 72px !important;
+}
+
+.mg-universal-footer .mg-footer-logo,
+.mg-universal-footer .mg-footer-brand-panel p,
+.mg-universal-footer .mg-footer-market-strip span,
+.mg-universal-footer .mg-footer-market-strip strong,
+.mg-universal-footer .mg-footer-column h2,
+.mg-universal-footer .mg-footer-column a,
+.mg-universal-footer .mg-footer-bottom p,
+.mg-universal-footer .mg-footer-bottom-links a,
+.mg-universal-footer a:not(.mg-footer-logo) {
+  color: #fff !important;
+}
+
+.mg-universal-footer .mg-footer-logo img {
+  filter: brightness(0) invert(1) !important;
+}
+
+.mg-universal-footer .mg-footer-column a:hover,
+.mg-universal-footer .mg-footer-bottom-links a:hover {
+  color: #fff !important;
+  text-decoration: underline !important;
+  text-underline-offset: 3px !important;
+}
+
+.mg-universal-footer .mg-footer-bottom {
+  border-top-color: rgba(255, 255, 255, .18) !important;
+}
+
+@media (max-width: 1180px) {
+  .mg-rl-page.mg-rl-compact-campaign .mg-rl-wrap {
+    padding-top: 24px;
+  }
+
+  .mg-rl-page.mg-rl-compact-campaign .mg-rl-bottom {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mg-rl-page.mg-rl-compact-campaign .mg-rl-bottom > .mg-rl-card:first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 720px) {
+  .mg-rl-page.mg-rl-compact-campaign .mg-rl-wrap {
+    padding-top: 12px;
+  }
+
+  .mg-rl-page.mg-rl-compact-campaign .mg-rl-left {
+    gap: 14px;
+  }
+
+  .mg-rl-page.mg-rl-compact-campaign .mg-rl-bottom {
+    grid-template-columns: 1fr;
+  }
+
+  .mg-rl-page.mg-rl-compact-campaign .mg-rl-bottom > .mg-rl-card:first-child {
+    grid-column: auto;
+  }
+}
