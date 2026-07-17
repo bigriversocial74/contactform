@@ -26,10 +26,7 @@ TARGETS = {
     "api/me/mfa/confirm.php": ("identity.mfa_confirm_failed", "Unable to confirm multi-factor authentication."),
 }
 
-FINAL_CATCH = re.compile(
-    r"(?P<prefix>\}\s*)catch\s*\(\s*Throwable\s+\$(?P<var>[A-Za-z_][A-Za-z0-9_]*)\s*\)\s*\{(?P<body>.*)\}\s*$",
-    re.DOTALL,
-)
+CATCH_START = re.compile(r"catch\s*\(\s*Throwable\s+\$(?P<var>[A-Za-z_][A-Za-z0-9_]*)\s*\)\s*\{")
 
 
 def replace_exact(path: pathlib.Path, old: str, new: str, label: str) -> None:
@@ -39,20 +36,81 @@ def replace_exact(path: pathlib.Path, old: str, new: str, label: str) -> None:
     path.write_text(source.replace(old, new, 1), encoding="utf-8")
 
 
+def matching_brace(source: str, opening: int) -> int:
+    depth = 0
+    quote: str | None = None
+    escaped = False
+    line_comment = False
+    block_comment = False
+    i = opening
+    while i < len(source):
+        char = source[i]
+        nxt = source[i + 1] if i + 1 < len(source) else ""
+        if line_comment:
+            if char == "\n":
+                line_comment = False
+            i += 1
+            continue
+        if block_comment:
+            if char == "*" and nxt == "/":
+                block_comment = False
+                i += 2
+                continue
+            i += 1
+            continue
+        if quote is not None:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == quote:
+                quote = None
+            i += 1
+            continue
+        if char == "/" and nxt == "/":
+            line_comment = True
+            i += 2
+            continue
+        if char == "/" and nxt == "*":
+            block_comment = True
+            i += 2
+            continue
+        if char == "#":
+            line_comment = True
+            i += 1
+            continue
+        if char in ("'", '"'):
+            quote = char
+            i += 1
+            continue
+        if char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0:
+                return i
+        i += 1
+    raise RuntimeError("Unbalanced catch block")
+
+
 def harden_final_catch(path: pathlib.Path, event: str, public_message: str) -> None:
     source = path.read_text(encoding="utf-8")
-    match = FINAL_CATCH.search(source)
-    if not match:
-        raise RuntimeError(f"No final Throwable catch found in {path.relative_to(ROOT)}")
-    variable = match.group("var")
-    body = match.group("body")
+    matches = list(CATCH_START.finditer(source))
+    if not matches:
+        raise RuntimeError(f"No Throwable catch found in {path.relative_to(ROOT)}")
+    match = matches[-1]
+    opening = source.find("{", match.start(), match.end())
+    closing = matching_brace(source, opening)
+    if source[closing + 1 :].strip() != "":
+        raise RuntimeError(f"Last Throwable catch is not terminal in {path.relative_to(ROOT)}")
+    body = source[opening + 1 : closing]
     if "getMessage" not in body or "mg_fail" not in body:
         raise RuntimeError(f"Expected raw exception response not found in {path.relative_to(ROOT)}")
+    variable = match.group("var")
     replacement = (
-        match.group("prefix")
-        + f"catch (Throwable ${variable}) {{\n"
-        + f"    mg_fail_unexpected(${variable}, '{event}', '{public_message}', 500);\n"
-        + "}\n"
+        f"catch (Throwable ${variable}) {{\n"
+        f"    mg_fail_unexpected(${variable}, '{event}', '{public_message}', 500);\n"
+        "}\n"
     )
     path.write_text(source[: match.start()] + replacement, encoding="utf-8")
 
@@ -60,7 +118,6 @@ def harden_final_catch(path: pathlib.Path, event: str, public_message: str) -> N
 for relative, (event, message) in TARGETS.items():
     harden_final_catch(ROOT / relative, event, message)
 
-# Preserve known conflict/domain messages for the financial reversal authority.
 replace_exact(
     ROOT / "api/admin/ledger-reversal.php",
     "catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();mg_fail($e->getMessage(),409);}",
@@ -68,7 +125,6 @@ replace_exact(
     "ledger reversal catch",
 )
 
-# Preserve intentionally safe RuntimeException validation messages for tutorial publishing.
 replace_exact(
     ROOT / "api/admin/screen-recordings/publish-tutorial.php",
     """} catch (Throwable $error) {
@@ -92,7 +148,6 @@ replace_exact(
     "tutorial publishing catch",
 )
 
-# Catalog upload continues after its catch, so replace that block directly.
 replace_exact(
     ROOT / "api/catalog/upload.php",
     """} catch (Throwable $e) {
@@ -130,7 +185,6 @@ replace_exact(
     "catalog upload catch",
 )
 
-# Do not surface renderer exception text inside the admin diagnostics payload.
 replace_exact(
     ROOT / "api/ads/admin-diagnostics.php",
     """            } catch (Throwable $error) {
