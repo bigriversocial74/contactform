@@ -63,12 +63,15 @@ if ($method === 'POST') {
 
     $thread = mg_agent_thread_by_id($pdo, $actorId, mg_ai_chat_clean($input['thread_id'] ?? '', 80));
     $threadId = (string)($thread['id'] ?? '');
+    $hasExplicitMention = $action === 'send_message' && mg_merchant_agent_crm_has_mentions($input['message'] ?? '');
     $selectedContact = mg_merchant_contact_action_center_find_contact($pdo, $merchantOwnerId, $actorId, $threadId, $input);
-    if ($selectedContact) {
+    if ($selectedContact && !$hasExplicitMention) {
         $input['selected_contact_id'] = (string)($selectedContact['id'] ?? '');
         $input['selected_contact_mention'] = (string)($selectedContact['mention'] ?? '');
+    } elseif ($hasExplicitMention) {
+        unset($input['selected_contact_id'], $input['selected_contact_mention'], $input['contact_id'], $input['contact_mention']);
     }
-    $contactAware = $action === 'send_message' && (mg_merchant_agent_crm_has_mentions($input['message'] ?? '') || $selectedContact !== null);
+    $contactAware = $action === 'send_message' && ($hasExplicitMention || $selectedContact !== null);
     if ($contactAware || in_array($action, ['crm_search','contact_action','select_contact','clear_contact'], true)) mg_merchant_require_permission('merchant.campaigns.view');
 
     if ($action === 'crm_search') {
@@ -83,6 +86,8 @@ if ($method === 'POST') {
             $threadId = (string)($thread['id'] ?? '');
         }
         mg_merchant_contact_action_center_record_selection($pdo, $actorId, $threadId, $selectedContact);
+        $input['selected_contact_id'] = (string)$selectedContact['id'];
+        $input['selected_contact_mention'] = (string)($selectedContact['mention'] ?? '');
         $state = mg_agent_chat_contact_state($pdo, $merchantOwnerId, $actorId, mg_ai_chat_public_state($pdo, $actorId), $input);
         mg_ok(['state'=>$state,'contact_action_center'=>$state['contact_action_center'] ?? null], 'CRM contact selected.');
     }
@@ -93,6 +98,7 @@ if ($method === 'POST') {
             $threadId = (string)($thread['id'] ?? '');
         }
         mg_merchant_contact_action_center_record_selection($pdo, $actorId, $threadId, null);
+        unset($input['selected_contact_id'], $input['selected_contact_mention'], $input['contact_id'], $input['contact_mention']);
         $state = mg_agent_chat_contact_state($pdo, $merchantOwnerId, $actorId, mg_ai_chat_public_state($pdo, $actorId));
         mg_ok(['state'=>$state,'contact_action_center'=>$state['contact_action_center'] ?? null], 'Selected CRM contact cleared.');
     }
@@ -140,9 +146,7 @@ if ($method === 'POST') {
         } else {
             $map = ['save_thread'=>'save','archive_thread'=>'archive','clear_thread'=>'clear','rename_thread'=>'rename'];
             mg_agent_thread_action($pdo, $actorId, $targetThreadId, $map[$action], $input);
-            if ($action === 'clear_thread' && $targetThreadId !== '') {
-                mg_merchant_contact_action_center_record_selection($pdo, $actorId, $targetThreadId, null);
-            }
+            if ($action === 'clear_thread' && $targetThreadId !== '') mg_merchant_contact_action_center_record_selection($pdo, $actorId, $targetThreadId, null);
         }
         $state = mg_agent_chat_contact_state($pdo, $merchantOwnerId, $actorId, mg_ai_chat_public_state($pdo, $actorId));
         mg_ok(['state'=>$state], 'Agent thread updated.');
