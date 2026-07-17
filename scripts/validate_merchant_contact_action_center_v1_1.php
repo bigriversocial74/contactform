@@ -95,12 +95,12 @@ $checks = [
     'review drafts require plan review CRM and autonomy boundaries' =>
         str_contains($content['api'], "'contact_review_draft' => 'merchant.ai.plan'")
         && str_contains($content['api'], "mg_merchant_require_permission('merchant.ai.review')")
-        && str_contains($content['api'], "mg_agent_autonomy_require_for_merchant($pdo, $actorId, 'review_queue'")
-        && str_contains($content['api'], "mg_agent_autonomy_require_for_merchant($pdo, $actorId, 'messages'")
+        && str_contains($content['api'], 'mg_agent_autonomy_require_for_merchant($pdo, $actorId, \'review_queue\'')
+        && str_contains($content['api'], 'mg_agent_autonomy_require_for_merchant($pdo, $actorId, \'messages\'')
         && str_contains($content['api'], 'mg_agent_admin_limit_enforce_default'),
     'all workspace writes remain behind CSRF validation' =>
         str_contains($content['api'], 'mg_require_csrf_for_write($input)')
-        && strpos($content['api'], 'mg_require_csrf_for_write($input)') < strpos($content['api'], "if ($action === 'contact_note')"),
+        && strpos($content['api'], 'mg_require_csrf_for_write($input)') < strpos($content['api'], 'if ($action === \'contact_note\')'),
     'workspace presents timeline notes follow-up draft and review tabs' =>
         str_contains($content['view'], 'data-contact-workspace-tab="timeline"')
         && str_contains($content['view'], 'data-contact-workspace-tab="notes"')
