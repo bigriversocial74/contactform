@@ -6,9 +6,13 @@ on:
       - integration-from-repair-20260628
     paths:
       - 'agent.php'
+      - 'design-calendar.php'
+      - 'design-studio.php'
       - 'feed.php'
       - 'merchant-agent-chat.php'
+      - 'saves.php'
       - 'includes/agent-sidebar.php'
+      - 'includes/gift-action-center.php'
       - 'includes/personal-agent-sidebar.php'
       - 'assets/js/personal-agent-chat-history.js'
       - 'assets/js/merchant-agent-sidebar-history.js'
@@ -40,9 +44,13 @@ jobs:
       - name: PHP syntax
         run: |
           php -l agent.php
+          php -l design-calendar.php
+          php -l design-studio.php
           php -l feed.php
           php -l merchant-agent-chat.php
+          php -l saves.php
           php -l includes/agent-sidebar.php
+          php -l includes/gift-action-center.php
           php -l includes/personal-agent-sidebar.php
 
       - name: JavaScript syntax
@@ -63,5 +71,5 @@ jobs:
           grep -F "feedIsSettled" assets/js/social-feed-sidebar-tabs.js
           grep -F "MutationObserver" assets/js/social-feed-sidebar-tabs.js
           grep -F '/assets/js/social-feed-sidebar-tabs.js?v=1.1.0' feed.php
-          grep -F '/assets/js/personal-agent-chat-history.js?v=1.2.0' agent.php includes/agent-sidebar.php
+          grep -F '/assets/js/personal-agent-chat-history.js?v=1.2.0' agent.php design-calendar.php design-studio.php saves.php includes/agent-sidebar.php includes/gift-action-center.php
           grep -F '/assets/js/merchant-agent-sidebar-history.js?v=2.1.0' merchant-agent-chat.php
