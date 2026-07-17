@@ -61,7 +61,8 @@ function mg_personal_agent_account_gift_money(int $cents, string $currency): str
 
 function mg_personal_agent_account_gift_can_send(array $item, string $folder): bool
 {
-    return $folder === 'inbox' && !empty($item['can_send']);
+    if ($folder !== 'inbox') return false;
+    return !empty($item['can_send']);
 }
 
 function mg_personal_agent_account_gift_items(PDO $pdo, int $userId, string $folder, int $limit = 12): array
