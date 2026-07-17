@@ -1,0 +1,9 @@
+.mg-action-center-contract-v2.is-unread{box-shadow:inset 3px 0 0 #2563eb}
+.mg-action-center-contract-v2 .mg-feed-meta-item.is-source{min-width:0}
+.mg-action-center-contract-v2 .mg-feed-meta-item.is-source span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mg-gift-empty-list.is-error{border-color:#fecaca;background:#fff7f7;color:#991b1b}
+.mg-gift-drawer-content .mg-pppm-post-media img,
+.mg-gift-drawer-content .mg-pppm-post-media video{display:block;width:100%;max-height:460px;object-fit:contain;border-radius:14px}
+.mg-gift-drawer-content .mg-pppm-post-media audio{display:block;width:100%}
+.mg-gift-drawer-content .mg-pppm-post-media a{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:.65rem .9rem;border-radius:10px;background:#0f172a;color:#fff;text-decoration:none}
+@media(max-width:760px){.mg-action-center-contract-v2 .mg-feed-meta-item.is-source{display:none}}
