@@ -14,10 +14,13 @@ on:
       - 'includes/personal-agent/workspace-design-calendar.php'
       - 'assets/css/design-studio-standalone.css'
       - 'assets/css/design-studio-runtime-fix.css'
+      - 'assets/css/design-studio-loaded-template-v1.css'
       - 'assets/css/design-calendar-standalone.css'
+      - 'assets/js/personal-agent-design-studio.js'
+      - 'assets/js/design-studio-creative-save.js'
+      - 'assets/js/personal-agent-design-studio-calendar.js'
       - 'assets/js/design-studio-template-variants.js'
       - 'assets/js/design-studio-schedule-context.js'
-      - 'assets/js/personal-agent-design-studio-calendar.js'
       - 'assets/js/design-calendar-modal.js'
       - 'scripts/validate_design_calendar_standalone_v1.php'
       - '.github/workflows/design-calendar-standalone-v1-validation.yml'
@@ -57,9 +60,11 @@ jobs:
 
       - name: JavaScript syntax
         run: |
+          node --check assets/js/personal-agent-design-studio.js
+          node --check assets/js/design-studio-creative-save.js
+          node --check assets/js/personal-agent-design-studio-calendar.js
           node --check assets/js/design-studio-template-variants.js
           node --check assets/js/design-studio-schedule-context.js
-          node --check assets/js/personal-agent-design-studio-calendar.js
           node --check assets/js/design-calendar-modal.js
 
       - name: Standalone page contract

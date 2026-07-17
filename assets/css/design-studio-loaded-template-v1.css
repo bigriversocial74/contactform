@@ -1,0 +1,151 @@
+/* Design Studio loaded-template workflow */
+.mg-design-studio-standalone-page .mg-agent-design-modebar{
+  display:flex;
+  width:100%;
+  max-width:none;
+  min-height:58px;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  margin:0 0 18px;
+  padding:0 0 12px;
+}
+.mg-agent-design-profile-link{
+  display:grid;
+  min-width:0;
+  gap:3px;
+  color:#10213b;
+  text-decoration:none;
+}
+.mg-agent-design-profile-link span{
+  color:#1c7c45;
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+.mg-agent-design-profile-link strong{
+  max-width:min(520px,42vw);
+  overflow:hidden;
+  color:#53657d;
+  font-size:12px;
+  font-weight:800;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.mg-agent-design-profile-link:hover strong,
+.mg-agent-design-profile-link:focus-visible strong{color:#1f5bd7}
+.mg-agent-design-modebar-controls{
+  display:flex;
+  min-width:0;
+  align-items:center;
+  justify-content:flex-end;
+  gap:10px;
+  margin-left:auto;
+}
+.mg-agent-design-header-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+}
+.mg-agent-design-header-actions[hidden]{display:none!important}
+.mg-agent-design-header-actions .mg-btn{
+  min-height:38px;
+  padding:8px 13px;
+  border-radius:10px;
+  white-space:nowrap;
+  font-size:11px;
+}
+.mg-agent-design-header-actions [data-design-status]{
+  max-width:210px;
+  overflow:hidden;
+  color:#68778d;
+  font-size:10px;
+  font-weight:750;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.mg-design-studio-standalone-page .mg-agent-design-workspace{display:block;min-width:0}
+.mg-agent-design-template-browser[hidden],
+.mg-agent-design-loaded-section[hidden]{display:none!important}
+.mg-agent-design-template-browser{display:grid;gap:12px}
+.mg-agent-design-template-browser-head{
+  display:flex;
+  min-height:42px;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+}
+.mg-agent-design-template-browser-head>div{text-align:right}
+.mg-agent-design-template-browser-head strong{
+  display:block;
+  margin-top:3px;
+  color:#10213b;
+  font-size:13px;
+}
+.mg-design-studio-standalone-page .mg-agent-design-template-panel{
+  padding:16px;
+  border:1px solid #dce5ef;
+  border-radius:16px;
+  background:#fff;
+  box-shadow:0 8px 24px rgba(16,33,59,.045);
+}
+.mg-design-studio-standalone-page .mg-agent-design-template-panel h2{margin:0 0 12px}
+.mg-agent-design-loaded-section{display:grid;gap:10px;min-width:0}
+.mg-agent-design-loaded-toolbar{
+  display:flex;
+  min-height:44px;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding:0 4px;
+}
+.mg-agent-design-loaded-toolbar span,
+.mg-agent-design-loaded-toolbar strong{display:block}
+.mg-agent-design-loaded-toolbar span{
+  color:#6a788c;
+  font-size:9px;
+  font-weight:850;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+}
+.mg-agent-design-loaded-toolbar strong{
+  margin-top:3px;
+  color:#10213b;
+  font-size:14px;
+}
+.mg-agent-design-close-template{
+  min-height:36px;
+  padding:7px 13px;
+  border:1px solid #d2dde9;
+  border-radius:10px;
+  background:#fff;
+  color:#40546e;
+  font:inherit;
+  font-size:11px;
+  font-weight:900;
+  cursor:pointer;
+}
+.mg-agent-design-close-template:hover,
+.mg-agent-design-close-template:focus-visible{border-color:#9eb8e8;color:#1f5bd7}
+.mg-design-studio-standalone-page .mg-agent-design-loaded-section .mg-agent-design-stage{
+  min-height:calc(100svh - 170px);
+}
+@media(max-width:1120px){
+  .mg-agent-design-modebar-controls{align-items:flex-end;flex-direction:column-reverse}
+  .mg-agent-design-header-actions [data-design-status]{display:none}
+}
+@media(max-width:760px){
+  .mg-design-studio-standalone-page .mg-agent-design-modebar{align-items:stretch;flex-direction:column}
+  .mg-agent-design-profile-link strong{max-width:100%}
+  .mg-agent-design-modebar-controls{width:100%;align-items:stretch;flex-direction:column}
+  .mg-agent-design-mode-tabs{width:100%}
+  .mg-agent-design-mode-tabs button{flex:1;min-width:0}
+  .mg-agent-design-header-actions{display:grid;grid-template-columns:1fr 1fr;width:100%}
+  .mg-agent-design-header-actions .mg-btn{width:100%}
+  .mg-agent-design-template-browser-head{align-items:flex-start;flex-direction:column}
+  .mg-agent-design-template-browser-head>div{text-align:left}
+  .mg-agent-design-loaded-toolbar{align-items:flex-start}
+  .mg-design-studio-standalone-page .mg-agent-design-loaded-section .mg-agent-design-stage{min-height:520px}
+}

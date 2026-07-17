@@ -13,7 +13,6 @@
     button.type='button';button.className='mg-btn mg-btn-soft';button.setAttribute(attribute,'true');button.textContent='Save Creative Asset';
     container.insertBefore(button,container.firstChild);
   }
-  addButton(app.querySelector('.mg-agent-design-actions'),'data-design-save-asset');
   addButton(app.querySelector('.mg-agent-social-actions'),'data-social-save-asset');
 
   const payload=(response)=>response&&response.data?response.data:response;
