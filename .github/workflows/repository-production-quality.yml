@@ -2,6 +2,9 @@ name: Repository Production Quality
 
 on:
   pull_request:
+  push:
+    branches:
+      - audit/repository-production-hardening-20260717
   workflow_dispatch:
 
 permissions:
