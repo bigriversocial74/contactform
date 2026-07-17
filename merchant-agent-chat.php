@@ -34,6 +34,7 @@ $page_styles = [
     '/assets/css/merchant-agent-snapshot.css?v=1.0.0',
     '/assets/css/merchant-agent-snapshot-action-center.css?v=1.0.0',
     '/assets/css/merchant-agent-crm-mention-search.css?v=1.0.0',
+    '/assets/css/merchant-agent-personal-canvas-parity-v1.css?v=1.0.0',
     '/assets/css/agent-header-tabs-shared.css?v=1.0.0',
 ];
 $page_scripts = [
@@ -48,7 +49,7 @@ $page_scripts = [
     '/assets/js/merchant-agent-chat-scroll-latest.js',
     '/assets/js/merchant-agent-chat-json-format.js',
     '/assets/js/merchant-agent-chat-mobile.js?v=2.1.0',
-    '/assets/js/merchant-agent-sidebar-history.js?v=1.0.0',
+    '/assets/js/merchant-agent-sidebar-history.js?v=2.0.0',
     '/assets/js/merchant-agent-chat-deep-links.js?v=1.0.0',
     '/assets/js/merchant-agent-handoff-receiver.js?v=1.0.0',
     '/assets/js/sponsored-campaign-card.js',

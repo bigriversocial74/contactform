@@ -6,21 +6,21 @@ $merchantPackageName = trim((string) ($mg_package_context['package_name'] ?? 'Me
 $merchantRole = trim((string) ($mg_package_context['workspace_role'] ?? ''));
 $merchantRoleLabel = $merchantRole !== '' ? ucwords(str_replace('_', ' ', $merchantRole)) : 'Merchant account';
 ?>
-<main class="mg-merchant-agent-main" data-agent-canvas>
-  <div class="mg-merchant-agent-chat-view">
-    <div class="mg-merchant-agent-chat-stream">
-      <article class="mg-merchant-agent-intro">
+<main class="mg-personal-agent-main mg-merchant-agent-main" data-agent-canvas>
+  <section class="mg-personal-agent-view mg-personal-agent-chat-view mg-merchant-agent-chat-view">
+    <div class="mg-personal-agent-chat-stream mg-merchant-agent-chat-stream">
+      <article class="mg-personal-agent-message is-assistant is-intro mg-merchant-agent-intro">
         <div class="mg-merchant-agent-intro-top">
           <div class="mg-merchant-agent-intro-copy">
-            <span class="mg-merchant-agent-kicker">Merchant Agent</span>
-            <h1>Good morning, <?= mg_e($displayName) ?>.</h1>
+            <span class="mg-personal-agent-message-label mg-merchant-agent-kicker">Merchant Agent</span>
+            <h1 class="mg-personal-agent-intro-greeting">Good morning, <?= mg_e($displayName) ?>.</h1>
           </div>
           <div class="mg-merchant-agent-intro-actions">
             <a class="mg-merchant-agent-mode-link" href="/agent.php">Personal Agent</a>
             <button class="mg-merchant-agent-controls-button" type="button" data-agent-chat-drawer-open aria-controls="agent-chat-drawer" aria-expanded="false">Agent controls</button>
           </div>
         </div>
-        <p>Ask about your products, campaigns, rewards, CRM activity, claims, locations, or performance. Merchant Agent uses only permission-approved business data and prepares actions for review instead of executing them automatically.</p>
+        <p>Ask about products, campaigns, rewards, CRM activity, claims, locations, or performance. Type a partial <strong>@username</strong> to find CRM contacts, then use the exact contact in prompts such as “@username show recent activity,” “@username draft a follow-up,” or “@username recommend a reward.” Merchant Agent prepares actions for review instead of executing them automatically.</p>
         <div class="mg-merchant-agent-boundary" aria-label="Merchant Agent data boundary">
           <span><?= mg_e($merchantPackageName) ?></span>
           <span><?= mg_e($merchantRoleLabel) ?></span>
@@ -34,11 +34,11 @@ $merchantRoleLabel = $merchantRole !== '' ? ucwords(str_replace('_', ' ', $merch
         <div class="mg-agent-chat-empty">
           <div class="mg-agent-chat-empty-icon" aria-hidden="true">✦</div>
           <strong>Loading Merchant Agent…</strong>
-          <p>Your merchant conversations, analysis, charts, campaign drafts, and review-ready actions will appear here.</p>
+          <p>Your merchant conversations, CRM contact context, analysis, charts, campaign drafts, and review-ready actions will appear here.</p>
         </div>
       </div>
     </div>
-  </div>
+  </section>
 
   <div class="mg-agent-chat-status-wrap">
     <p class="mg-form-status" data-agent-chat-status role="status" aria-live="polite"></p>
@@ -48,7 +48,7 @@ $merchantRoleLabel = $merchantRole !== '' ? ucwords(str_replace('_', ' ', $merch
 <form class="mg-merchant-agent-composer" data-agent-chat-form>
   <div class="mg-merchant-agent-composer-context">
     <span><kbd>M</kbd> Merchant mode · <span data-agent-chat-summary-mobile>Overview · Last 90 days · Action plan</span></span>
-    <span>Use Personal Agent for contacts, gifting, and private planning</span>
+    <span>Use Personal Agent for private contacts, gifting, and personal planning</span>
   </div>
   <div class="mg-merchant-agent-composer-row">
     <div class="mg-agent-chat-tool-wrap">
@@ -57,11 +57,14 @@ $merchantRoleLabel = $merchantRole !== '' ? ucwords(str_replace('_', ' ', $merch
         <button type="button" data-agent-context-insert="Use the Analysis + Charts skill to review my products, claims, redemptions, and opportunities.">Analysis + Charts</button>
         <button type="button" data-agent-context-insert="Use the Social Campaign Advisor skill to create social media campaign advice based on my merchant data.">Social Campaign</button>
         <button type="button" data-agent-context-insert="Use recent CRM activity as context and find customer follow-up opportunities.">CRM context</button>
+        <button type="button" data-agent-context-insert="@username show recent activity and explain the next best follow-up.">Contact activity</button>
+        <button type="button" data-agent-context-insert="@username draft a personalized follow-up message for review.">Contact follow-up draft</button>
+        <button type="button" data-agent-context-insert="@username recommend the most appropriate reward based on purchase, claim, redemption, campaign, and engagement history.">Contact reward advice</button>
         <button type="button" data-agent-context-insert="Use rewards and claims as context and flag any issues or opportunities.">Rewards and claims</button>
         <button type="button" data-agent-context-insert="Create a review-ready action plan from the current merchant context.">Current merchant context</button>
       </div>
     </div>
-    <textarea data-agent-chat-textarea name="message" rows="1" maxlength="2000" placeholder="Ask about campaigns, CRM, products, rewards, claims, or merchant performance…" aria-label="Message the Merchant Agent" required></textarea>
+    <textarea data-agent-chat-textarea name="message" rows="1" maxlength="2000" placeholder="Ask about campaigns, CRM, or type @username for contact-aware help…" aria-label="Message the Merchant Agent" required></textarea>
     <button class="mg-agent-chat-voice" type="button" aria-label="Start voice input" title="Speak to Merchant Agent" data-agent-chat-voice aria-pressed="false">Mic</button>
     <button class="mg-agent-chat-send" type="submit" data-agent-chat-send aria-label="Send message" disabled>↑</button>
   </div>
