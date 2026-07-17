@@ -65,6 +65,11 @@
   margin-top: 10px;
 }
 
+.mg-rl-page.mg-rl-compact-campaign .mg-stamp-item-card .mg-stamp-card-save-toggle {
+  align-self: flex-start;
+  margin-top: auto;
+}
+
 .mg-rl-page.mg-rl-compact-campaign .mg-stamp-status-card .mg-public-campaign-status,
 .mg-rl-page.mg-rl-compact-campaign .mg-stamp-status-card .mg-public-campaign-result {
   margin-top: 10px;
