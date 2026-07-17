@@ -58,10 +58,10 @@ $checks = [
     'one authoritative KPI stylesheet is loaded once' =>
         substr_count($content['page'], 'merchant-crm-kpi-authoritative-v1.css?v=1.0.0') === 1,
     'all legacy KPI repair styles and scripts are unloaded' => $legacyRemoved,
-    'core CRM analytics search and mobile runtimes remain loaded' =>
+    'core CRM analytics unified directory and mobile runtimes remain loaded' =>
         str_contains($content['page'], 'merchant-crm-desktop-analytics.js?v=1.0.0')
-        && str_contains($content['page'], 'merchant-crm-desktop-search.js?v=1.0.0')
-        && str_contains($content['page'], 'merchant-crm-mobile-dashboard.js?v=1.0.0'),
+        && str_contains($content['page'], 'merchant-crm-directory.js?v=1.0.0')
+        && str_contains($content['page'], 'merchant-crm-mobile-dashboard.js?v=1.1.0'),
     'all seven live KPI bindings remain in the CRM view' => $allKpisPresent,
     'reporting window filter and export controls remain available' =>
         str_contains($content['view'], 'data-crm-desktop-range')
@@ -95,9 +95,7 @@ $checks = [
 $failed = [];
 foreach ($checks as $name => $passed) {
     echo ($passed ? '[PASS] ' : '[FAIL] ') . $name . PHP_EOL;
-    if (!$passed) {
-        $failed[] = $name;
-    }
+    if (!$passed) $failed[] = $name;
 }
 
 if ($failed !== []) {

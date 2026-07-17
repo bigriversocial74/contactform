@@ -8,6 +8,7 @@ on:
       - 'assets/css/merchant-crm-mobile-dashboard.css'
       - 'assets/css/merchant-crm-mobile-dashboard-contract.css'
       - 'assets/js/merchant-crm-mobile-dashboard.js'
+      - 'assets/js/merchant-crm-directory.js'
       - 'assets/js/merchant-crm-identity-duplicates.js'
       - 'scripts/validate_merchant_crm_mobile_dashboard.php'
       - '.github/workflows/merchant-crm-mobile-dashboard-validation.yml'
@@ -40,6 +41,7 @@ jobs:
       - name: JavaScript syntax
         run: |
           node --check assets/js/merchant-crm-mobile-dashboard.js
+          node --check assets/js/merchant-crm-directory.js
           node --check assets/js/merchant-crm-identity-duplicates.js
       - name: Contract validation
         run: php scripts/validate_merchant_crm_mobile_dashboard.php

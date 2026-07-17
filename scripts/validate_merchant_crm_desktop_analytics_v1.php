@@ -4,13 +4,9 @@ declare(strict_types=1);
 $root = dirname(__DIR__);
 $read = static function (string $relative) use ($root): string {
     $path = $root . '/' . $relative;
-    if (!is_file($path)) {
-        throw new RuntimeException('Missing required file: ' . $relative);
-    }
+    if (!is_file($path)) throw new RuntimeException('Missing required file: ' . $relative);
     $content = file_get_contents($path);
-    if (!is_string($content) || trim($content) === '') {
-        throw new RuntimeException('Empty required file: ' . $relative);
-    }
+    if (!is_string($content) || trim($content) === '') throw new RuntimeException('Empty required file: ' . $relative);
     return $content;
 };
 
@@ -20,18 +16,18 @@ try {
     $css = $read('assets/css/merchant-crm-desktop-analytics.css');
     $layoutCss = $read('assets/css/merchant-crm-desktop-layout-fix.css');
     $js = $read('assets/js/merchant-crm-desktop-analytics.js');
-    $searchJs = $read('assets/js/merchant-crm-desktop-search.js');
+    $searchJs = $read('assets/js/merchant-crm-directory.js');
 } catch (Throwable $error) {
     fwrite(STDERR, $error->getMessage() . PHP_EOL);
     exit(1);
 }
 
 $checks = [
-    'desktop analytics and layout assets load from Merchant CRM' =>
+    'desktop analytics layout and unified search assets load from Merchant CRM' =>
         str_contains($page, 'merchant-crm-desktop-analytics.css')
         && str_contains($page, 'merchant-crm-desktop-analytics.js')
         && str_contains($page, 'merchant-crm-desktop-layout-fix.css')
-        && str_contains($page, 'merchant-crm-desktop-search.js'),
+        && str_contains($page, 'merchant-crm-directory.js?v=1.0.0'),
     'desktop hero contains KPI and insight surfaces' =>
         str_contains($view, 'data-crm-desktop-hero')
         && str_contains($view, 'mg-crm-desktop-kpis')
@@ -48,11 +44,12 @@ $checks = [
         && str_contains($layoutCss, '.mg-crm-kpi-chart')
         && str_contains($layoutCss, 'overflow:hidden')
         && str_contains($layoutCss, '.mg-crm-kpi-spark'),
-    'desktop search replaces the legacy desktop stat row' =>
+    'unified directory search replaces the legacy desktop stat row' =>
         str_contains($view, 'data-crm-desktop-directory')
         && str_contains($view, 'data-crm-desktop-search')
         && str_contains($searchJs, "querySelectorAll('.mg-crm-contact-row')")
         && str_contains($searchJs, 'mg:crm-contacts:rendered')
+        && str_contains($searchJs, '[desktopInput, mobileInput]')
         && str_contains($layoutCss, '.mg-crm-contact-stat-strip')
         && str_contains($layoutCss, 'display:none!important'),
     'analytics consume canonical CRM contacts and export current rows' =>
@@ -76,9 +73,7 @@ $checks = [
 $failed = [];
 foreach ($checks as $name => $passed) {
     echo ($passed ? '[PASS] ' : '[FAIL] ') . $name . PHP_EOL;
-    if (!$passed) {
-        $failed[] = $name;
-    }
+    if (!$passed) $failed[] = $name;
 }
 
 if ($failed !== []) {

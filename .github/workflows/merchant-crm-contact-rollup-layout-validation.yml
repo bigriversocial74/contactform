@@ -4,7 +4,8 @@ on:
   pull_request:
     paths:
       - 'merchant-crm.php'
-      - 'assets/js/merchant-crm-contact-rollup.js'
+      - 'assets/js/merchant-crm-directory-data.js'
+      - 'includes/merchant-crm-directory.php'
       - 'assets/js/merchant-crm-contact-link-polish.js'
       - 'assets/js/merchant-crm-contact-stats.js'
       - 'assets/css/merchant-crm-layout-stability.css'
@@ -31,10 +32,11 @@ jobs:
       - name: PHP syntax
         run: |
           php -l merchant-crm.php
+          php -l includes/merchant-crm-directory.php
           php -l scripts/validate_merchant_crm_contact_rollup_layout.php
       - name: JavaScript syntax
         run: |
-          node --check assets/js/merchant-crm-contact-rollup.js
+          node --check assets/js/merchant-crm-directory-data.js
           node --check assets/js/merchant-crm-contact-link-polish.js
           node --check assets/js/merchant-crm-contact-stats.js
       - name: Merchant CRM contact rollup and layout contract

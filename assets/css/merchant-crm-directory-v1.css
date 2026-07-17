@@ -1,0 +1,13 @@
+[data-merchant-crm-app] .mg-crm-directory-identity{display:flex;flex-wrap:wrap;align-items:center;gap:3px;margin-top:3px;color:#5f6b7a;font-size:11px;font-weight:650;line-height:1.25;text-transform:capitalize}
+[data-merchant-crm-app] .mg-crm-directory-identity span{color:#a1aab7;font-weight:500}
+[data-merchant-crm-app] .mg-crm-directory-pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0 0;padding:12px 14px;border:1px solid #e3e7ee;border-radius:12px;background:#fff;color:#667085;font-size:12px}
+[data-merchant-crm-app] .mg-crm-directory-pagination[hidden]{display:none!important}
+[data-merchant-crm-app] .mg-crm-directory-pagination button{appearance:none;border:1px solid #cfd6e2;border-radius:9px;background:#f8fafc;color:#172033;padding:8px 12px;font:700 12px/1 inherit;cursor:pointer}
+[data-merchant-crm-app] .mg-crm-directory-pagination button:hover{background:#eef3f8;border-color:#bfc9d8}
+[data-merchant-crm-app] .mg-crm-directory-pagination button:focus-visible{outline:3px solid rgba(37,99,235,.2);outline-offset:2px}
+[data-merchant-crm-app] .mg-crm-contact-row.is-directory-page-hidden{display:none!important}
+@media(max-width:720px){
+  [data-merchant-crm-app] .mg-crm-directory-identity{font-size:10px;margin-top:2px}
+  [data-merchant-crm-app] .mg-crm-directory-pagination{margin:9px 2px 0;padding:10px;align-items:stretch;flex-direction:column}
+  [data-merchant-crm-app] .mg-crm-directory-pagination button{width:100%}
+}

@@ -7,48 +7,42 @@ $passes = 0;
 
 $read = static function (string $path) use ($root): string {
     $full = $root . '/' . ltrim($path, '/');
-    if (!is_file($full)) {
-        throw new RuntimeException('Missing required file: ' . $path);
-    }
+    if (!is_file($full)) throw new RuntimeException('Missing required file: ' . $path);
     $content = file_get_contents($full);
-    if (!is_string($content)) {
-        throw new RuntimeException('Unable to read required file: ' . $path);
-    }
+    if (!is_string($content)) throw new RuntimeException('Unable to read required file: ' . $path);
     return $content;
 };
 
 $expect = static function (bool $condition, string $label) use (&$failures, &$passes): void {
-    if ($condition) {
-        $passes++;
-        echo "PASS: {$label}\n";
-        return;
-    }
+    if ($condition) { $passes++; echo "PASS: {$label}\n"; return; }
     $failures[] = $label;
     echo "FAIL: {$label}\n";
 };
 
 try {
     $page = $read('merchant-crm.php');
-    $rollup = $read('assets/js/merchant-crm-contact-rollup.js');
+    $rollup = $read('assets/js/merchant-crm-directory-data.js');
+    $directory = $read('includes/merchant-crm-directory.php');
     $polish = $read('assets/js/merchant-crm-contact-link-polish.js');
     $layout = $read('assets/css/merchant-crm-layout-stability.css');
     $contactsCss = $read('assets/css/merchant-crm-contacts-clean.css');
     $api = $read('api/merchant/campaign-contacts.php');
     $view = $read('includes/merchant-crm-view.php');
 
-    $rollupPosition = strpos($page, '/assets/js/merchant-crm-contact-rollup.js?v=1.0.0');
+    $rollupPosition = strpos($page, '/assets/js/merchant-crm-directory-data.js?v=1.0.0');
     $corePosition = strpos($page, '/assets/js/merchant-crm.js');
     $expect(
         $rollupPosition !== false && $corePosition !== false && $rollupPosition < $corePosition,
-        'Customer rollup adapter loads before the Merchant CRM controller'
+        'Canonical customer directory bridge loads before the Merchant CRM controller'
     );
 
     $expect(
         str_contains($rollup, "return 'email:' + email")
         && str_contains($rollup, 'var groups = new Map()')
         && str_contains($rollup, 'campaign_count')
-        && str_contains($rollup, "contact_rollup: 'merchant_customer'"),
-        'CRM contacts collapse to one merchant customer row using normalized identity'
+        && str_contains($rollup, "contact_rollup: 'canonical_merchant_customer'")
+        && str_contains($directory, 'MG_MERCHANT_CRM_DIRECTORY_CONTRACT_VERSION = 1'),
+        'CRM contacts collapse to one canonical merchant customer row using normalized identity'
     );
 
     $expect(
@@ -63,8 +57,9 @@ try {
 
     $expect(
         str_contains($api, 'WHERE cc.merchant_user_id=?')
-        && str_contains($api, 'LEFT JOIN wallet_items wi ON wi.contact_id=cc.id'),
-        'Source contact and wallet activity remains scoped to the authenticated merchant'
+        && str_contains($api, 'LEFT JOIN wallet_items wi ON wi.contact_id=cc.id')
+        && str_contains($directory, "'mc.merchant_user_id=?'"),
+        'Campaign activity and canonical CRM identity remain scoped to the authenticated merchant'
     );
 
     $expect(
@@ -103,14 +98,8 @@ try {
 }
 
 if ($failures !== []) {
-    fwrite(STDERR, sprintf(
-        "Merchant CRM contact rollup and layout validation failed: %d failure(s), %d pass(es).\n",
-        count($failures),
-        $passes
-    ));
-    foreach ($failures as $failure) {
-        fwrite(STDERR, " - {$failure}\n");
-    }
+    fwrite(STDERR, sprintf("Merchant CRM contact rollup and layout validation failed: %d failure(s), %d pass(es).\n", count($failures), $passes));
+    foreach ($failures as $failure) fwrite(STDERR, " - {$failure}\n");
     exit(1);
 }
 
