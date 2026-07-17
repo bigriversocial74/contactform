@@ -8,7 +8,8 @@ $files = [
     'endpoint' => $root . '/api/account/action-center.php',
     'agent_cards' => $root . '/includes/personal-agent/gift-result-cards.php',
     'adapter' => $root . '/assets/js/action-center-contract-v2.js',
-    'browser' => $root . '/assets/js/gift-action-center-reward-images.js',
+    'runtime_v4' => $root . '/assets/js/gift-action-center-runtime-v4.js',
+    'include' => $root . '/includes/gift-action-center.php',
     'inbox' => $root . '/inbox.php',
     'sent' => $root . '/sent.php',
     'claimed' => $root . '/claimed.php',
@@ -25,7 +26,10 @@ $contract = $read('contract');
 $endpoint = $read('endpoint');
 $agentCards = $read('agent_cards');
 $adapter = $read('adapter');
-$browser = $read('browser');
+$runtimeV4 = $read('runtime_v4');
+$include = $read('include');
+$adapterPosition = strpos($include, 'action-center-contract-v2.js');
+$runtimePosition = strpos($include, 'gift-action-center-runtime-v4.js');
 
 $checks = [
     'Resolver scopes action records to the signed-in owner' => str_contains($resolver, 'WHERE ac.user_id=? AND ac.public_id IN'),
@@ -39,10 +43,12 @@ $checks = [
     'Action Center maps all results through the shared contract' => str_contains($endpoint, "require_once __DIR__ . '/_action_center_contract.php';") && str_contains($endpoint, 'mg_action_center_contract_items('),
     'Personal Agent consumes the same server contract' => str_contains($agentCards, "require_once dirname(__DIR__, 2) . '/api/account/_action_center_contract.php';") && str_contains($agentCards, 'mg_action_center_contract_view'),
     'Browser adapter maps presentation image to the existing card view' => str_contains($adapter, 'product_image_url: text(presentation.image_url)') && str_contains($adapter, 'image_source: text(presentation.image_source'),
-    'Legacy image renderer receives the adapter product image first' => strpos($browser, 'item.product_image_url') !== false && strpos($browser, 'item.product_image_url') < strpos($browser, 'item.reward_image_url'),
-    'Inbox cache-busts the updated image runtime' => str_contains($read('inbox'), 'gift-action-center-reward-images.js?v=1.1.0'),
-    'Sent cache-busts the updated image runtime' => str_contains($read('sent'), 'gift-action-center-reward-images.js?v=1.1.0'),
-    'Claimed cache-busts the updated image runtime' => str_contains($read('claimed'), 'gift-action-center-reward-images.js?v=1.1.0'),
+    'Runtime v4 renders the Contract presentation image before merchant fallback' => str_contains($runtimeV4, 'p.presentation.image_url||p.merchant.avatar_url') && str_contains($runtimeV4, 'const image=safeUrl('),
+    'Shared Action Center loads Contract v2 before Runtime v4' => $adapterPosition !== false && $runtimePosition !== false && $adapterPosition < $runtimePosition,
+    'Shared Action Center retires the legacy reward-image runtime' => !str_contains($include, 'gift-action-center-reward-images.js'),
+    'Inbox delegates image rendering to the shared Runtime v4 include' => str_contains($read('inbox'), "require __DIR__ . '/includes/gift-action-center.php';") && str_contains($include, 'gift-action-center-runtime-v4.js?v=4.0.0'),
+    'Sent delegates image rendering to the shared Runtime v4 include' => str_contains($read('sent'), "require __DIR__ . '/includes/gift-action-center.php';") && str_contains($include, 'gift-action-center-runtime-v4.js?v=4.0.0'),
+    'Claimed delegates image rendering to the shared Runtime v4 include' => str_contains($read('claimed'), "require __DIR__ . '/includes/gift-action-center.php';") && str_contains($include, 'gift-action-center-runtime-v4.js?v=4.0.0'),
     'Personal Agent cache-busts gift result cards while preserving the established marker' => str_contains($read('agent'), 'personal-agent-gift-results.js?v=1.0.0&image=1.1.0'),
 ];
 
