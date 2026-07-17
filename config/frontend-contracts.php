@@ -50,6 +50,7 @@ return [
                 'data-action-modal',
                 'gift-center-sidebar.php',
                 'gift-action-center-runtime-v4.js?v=4.0.0',
+                'gift-action-center-user-search-v2.js?v=2.0.0',
             ],
             'forbidden_tokens' => [
                 'account-sidebar.php',
@@ -57,6 +58,7 @@ return [
                 'gift-action-center-feed-v3.js',
                 'gift-action-center-pagination.js',
                 'gift-action-center-user-search-fix.js',
+                'gift-action-center-user-search.js"',
             ],
         ],
         'action_center_script' => [
@@ -84,8 +86,19 @@ return [
                 'This creates a new resend timestamp',
                 'new MutationObserver',
             ],
-            'ordered_tokens' => [
-                ['mg-pppm-post-stack','Protected voucher'],
+            'ordered_tokens' => [],
+        ],
+        'action_center_user_search' => [
+            'path' => 'assets/js/gift-action-center-user-search-v2.js',
+            'required_tokens' => [
+                '/api/account/action-center-recipient-search.php?q=',
+                '/api/social/relationship.php',
+                'dataUserSearchProfileLink',
+                'MicrogifterActionCenterUserSearch',
+                "button.setAttribute('aria-pressed'",
+            ],
+            'forbidden_tokens' => [
+                'stopImmediatePropagation',
             ],
         ],
     ],
