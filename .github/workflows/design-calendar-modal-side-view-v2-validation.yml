@@ -24,6 +24,8 @@ jobs:
           php -l scripts/validate_design_calendar_modal_side_view_v2.php
           node --check assets/js/design-calendar-product-cards-v2.js
           node --check assets/js/design-calendar-side-view-v2.js
+          node --check assets/js/design-calendar-product-tools-v3.js
+          node --check assets/js/design-calendar-view-preferences-v3.js
           php scripts/validate_design_calendar_modal_side_view_v2.php
 
   php83:
@@ -40,4 +42,6 @@ jobs:
           php -l scripts/validate_design_calendar_modal_side_view_v2.php
           node --check assets/js/design-calendar-product-cards-v2.js
           node --check assets/js/design-calendar-side-view-v2.js
+          node --check assets/js/design-calendar-product-tools-v3.js
+          node --check assets/js/design-calendar-view-preferences-v3.js
           php scripts/validate_design_calendar_modal_side_view_v2.php
