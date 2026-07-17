@@ -8,13 +8,9 @@ $passes = 0;
 function mg_action_modal_read(string $root, string $path): string
 {
     $full = $root . '/' . ltrim($path, '/');
-    if (!is_file($full)) {
-        throw new RuntimeException("Missing required file: {$path}");
-    }
+    if (!is_file($full)) throw new RuntimeException("Missing required file: {$path}");
     $content = file_get_contents($full);
-    if (!is_string($content)) {
-        throw new RuntimeException("Unable to read required file: {$path}");
-    }
+    if (!is_string($content)) throw new RuntimeException("Unable to read required file: {$path}");
     return $content;
 }
 
@@ -104,7 +100,7 @@ try {
     mg_action_modal_expect(
         str_contains($runtime, "if(action==='load'){event.preventDefault();openDrawer(c);return;}")
         && str_contains($runtime, "if(action==='claim')")
-        && str_contains($runtime, "mg:gift-claim:open")
+        && str_contains($runtime, 'mg:gift-claim:open')
         && str_contains($runtime, "if(['send','follow-up','message','tip'].includes(action))openModal(action,c);"),
         'Runtime v4 routes Load, Claim, Regift, Follow Up, Message, and Tip through current overlays',
         $failures,
@@ -112,23 +108,26 @@ try {
     );
 
     mg_action_modal_expect(
-        str_contains($actions, "['send', 'follow-up', 'claim', 'message', 'tip'].includes(type)")
+        str_contains($actions, "var ACTIVE = ['send','follow-up','claim','message','tip']")
+        && str_contains($actions, 'if (!ACTIVE.includes(type))')
         && str_contains($actions, "app.addEventListener('mg:gift-action:submit'")
+        && str_contains($actions, '/api/account/action-center-mutation-state.php')
         && str_contains($send, "action.dataset.giftAction !== 'send'")
         && str_contains($send, 'window.requestAnimationFrame(function () { buildExactSendModal(row); });'),
-        'Mutation and exact-recipient Regift controllers remain connected to Runtime v4 actions',
+        'Mutation v1 and exact-recipient Regift controllers remain connected to Runtime v4 actions',
         $failures,
         $passes
     );
 
     mg_action_modal_expect(
         str_contains($include, '/assets/js/gift-action-center-runtime-v4.js?v=4.0.0')
+        && str_contains($include, '/assets/js/gift-action-center-actions.js?v=2.0.0')
         && str_contains($include, '/assets/js/gift-action-center-modal-portal.js?v=1.1.0')
         && str_contains($include, 'data-action-modal')
         && str_contains($include, 'data-gift-drawer')
         && !str_contains($include, 'gift-action-center-feed-v3.js')
         && !str_contains($include, 'gift-action-center-load-envelope.js'),
-        'Shared include loads Runtime v4 with the portaled modal and drawer markup only',
+        'Shared include loads Runtime v4, Mutation v1, and portaled modal/drawer markup only',
         $failures,
         $passes
     );
@@ -162,9 +161,7 @@ try {
 
 if ($failures !== []) {
     fwrite(STDERR, sprintf("Gift Action Center modal boot-order validation failed: %d failure(s), %d pass(es).\n", count($failures), $passes));
-    foreach ($failures as $failure) {
-        fwrite(STDERR, " - {$failure}\n");
-    }
+    foreach ($failures as $failure) fwrite(STDERR, " - {$failure}\n");
     exit(1);
 }
 
