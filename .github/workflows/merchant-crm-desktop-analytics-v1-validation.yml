@@ -8,7 +8,7 @@ on:
       - 'assets/css/merchant-crm-desktop-analytics.css'
       - 'assets/css/merchant-crm-desktop-layout-fix.css'
       - 'assets/js/merchant-crm-desktop-analytics.js'
-      - 'assets/js/merchant-crm-desktop-search.js'
+      - 'assets/js/merchant-crm-directory.js'
       - 'scripts/validate_merchant_crm_desktop_analytics_v1.php'
       - '.github/workflows/merchant-crm-desktop-analytics-v1-validation.yml'
   workflow_dispatch:
@@ -27,22 +27,18 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v4
-
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-
       - name: PHP syntax
         run: |
           php -l merchant-crm.php
           php -l includes/merchant-crm-view.php
           php -l scripts/validate_merchant_crm_desktop_analytics_v1.php
-
       - name: JavaScript syntax
         run: |
           node --check assets/js/merchant-crm-desktop-analytics.js
-          node --check assets/js/merchant-crm-desktop-search.js
-
+          node --check assets/js/merchant-crm-directory.js
       - name: Desktop analytics contract
         run: php scripts/validate_merchant_crm_desktop_analytics_v1.php
