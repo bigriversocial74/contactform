@@ -4,6 +4,7 @@ declare(strict_types=1);
 $root=dirname(__DIR__);
 $read=static fn(string $path): string => is_file($root.'/'.$path)?(string)file_get_contents($root.'/'.$path):'';
 $runtime=$read('assets/js/gift-action-center-runtime-v4.js');
+$runtimeCss=$read('assets/css/gift-action-center-runtime-v4.css');
 $userSearch=$read('assets/js/gift-action-center-user-search-v2.js');
 $include=$read('includes/gift-action-center.php');
 $config=$read('config/frontend-contracts.php');
@@ -17,6 +18,9 @@ $checks=[
     'Shared markup declares Contract v2 and runtime v4' =>
         str_contains($include,'data-feed-version="4"')
         && str_contains($include,'data-contract-version="2"'),
+    'Runtime v4 rows override the retired Feed v3 hidden guard' =>
+        str_contains($include,'gift-action-center-runtime-v4.css?v=4.0.1')
+        && str_contains($runtimeCss,'[data-gift-center][data-feed-version="4"] .mg-gift-list>.mg-gift-row{visibility:visible!important}'),
     'Routes do not load retired list helpers' =>
         array_reduce($pages,static fn(bool $ok,string $page): bool => $ok
             && !str_contains($page,'/assets/js/gift-action-center.js')

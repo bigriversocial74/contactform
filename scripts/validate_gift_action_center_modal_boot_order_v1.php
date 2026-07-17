@@ -31,10 +31,9 @@ function mg_action_modal_expect(bool $condition, string $label, array &$failures
 
 try {
     $portal = mg_action_modal_read($root, 'assets/js/gift-action-center-modal-portal.js');
-    $center = mg_action_modal_read($root, 'assets/js/gift-action-center.js');
+    $runtime = mg_action_modal_read($root, 'assets/js/gift-action-center-runtime-v4.js');
     $actions = mg_action_modal_read($root, 'assets/js/gift-action-center-actions.js');
     $send = mg_action_modal_read($root, 'assets/js/gift-action-center-send-modal.js');
-    $load = mg_action_modal_read($root, 'assets/js/gift-action-center-load-envelope.js');
     $include = mg_action_modal_read($root, 'includes/gift-action-center.php');
     $inbox = mg_action_modal_read($root, 'inbox.php');
     $sent = mg_action_modal_read($root, 'sent.php');
@@ -91,23 +90,23 @@ try {
     );
 
     mg_action_modal_expect(
-        str_contains($center, "data-gift-action=\"send\"")
-        && str_contains($center, "data-gift-action=\"claim\"")
-        && str_contains($center, "data-gift-action=\"load\"")
-        && str_contains($center, "data-gift-action=\"message\"")
-        && str_contains($center, "data-gift-action=\"tip\"")
-        && str_contains($center, "data-gift-action=\"follow-up\""),
-        'Inbox, Sent, and Claimed action buttons remain rendered by the shared controller',
+        str_contains($runtime, "actionButton(c,'send','Regift'")
+        && str_contains($runtime, "actionButton(c,'claim','Claim'")
+        && str_contains($runtime, "actionButton(c,'load','Load'")
+        && str_contains($runtime, "actionButton(c,'follow-up','Follow Up'")
+        && str_contains($runtime, "actionButton(c,'message','Message'")
+        && str_contains($runtime, "actionButton(c,'tip','Tip'"),
+        'Runtime v4 renders Inbox, Sent, and Claimed action buttons',
         $failures,
         $passes
     );
 
     mg_action_modal_expect(
-        str_contains($center, 'function openModal(action, item)')
-        && str_contains($center, 'function openContent(item)')
-        && str_contains($center, "if (type === 'load') openContent(item)")
-        && str_contains($center, 'else openModal(type, item)'),
-        'Shared click routing opens either the action modal or Load drawer',
+        str_contains($runtime, "if(action==='load'){event.preventDefault();openDrawer(c);return;}")
+        && str_contains($runtime, "if(action==='claim')")
+        && str_contains($runtime, "mg:gift-claim:open")
+        && str_contains($runtime, "if(['send','follow-up','message','tip'].includes(action))openModal(action,c);"),
+        'Runtime v4 routes Load, Claim, Regift, Follow Up, Message, and Tip through current overlays',
         $failures,
         $passes
     );
@@ -116,29 +115,33 @@ try {
         str_contains($actions, "['send', 'follow-up', 'claim', 'message', 'tip'].includes(type)")
         && str_contains($actions, "app.addEventListener('mg:gift-action:submit'")
         && str_contains($send, "action.dataset.giftAction !== 'send'")
-        && str_contains($load, "[data-gift-action=\"load\"]"),
-        'Regift, Follow Up, Message, Tip, Claim, and Load controllers remain connected',
+        && str_contains($send, 'window.requestAnimationFrame(function () { buildExactSendModal(row); });'),
+        'Mutation and exact-recipient Regift controllers remain connected to Runtime v4 actions',
         $failures,
         $passes
     );
 
     mg_action_modal_expect(
-        str_contains($include, '/assets/js/gift-action-center-modal-portal.js')
+        str_contains($include, '/assets/js/gift-action-center-runtime-v4.js?v=4.0.0')
+        && str_contains($include, '/assets/js/gift-action-center-modal-portal.js?v=1.1.0')
         && str_contains($include, 'data-action-modal')
-        && str_contains($include, 'data-gift-drawer'),
-        'Shared Action Center include provides the portaled modal and drawer markup',
+        && str_contains($include, 'data-gift-drawer')
+        && !str_contains($include, 'gift-action-center-feed-v3.js')
+        && !str_contains($include, 'gift-action-center-load-envelope.js'),
+        'Shared include loads Runtime v4 with the portaled modal and drawer markup only',
         $failures,
         $passes
     );
 
     mg_action_modal_expect(
-        str_contains($inbox, '/assets/js/gift-action-center.js')
-        && str_contains($inbox, '/assets/js/gift-action-center-load-envelope.js')
+        str_contains($inbox, "require __DIR__ . '/includes/gift-action-center.php';")
+        && str_contains($sent, "require __DIR__ . '/includes/gift-action-center.php';")
+        && str_contains($claimed, "require __DIR__ . '/includes/gift-action-center.php';")
         && str_contains($inbox, '/assets/js/gift-action-center-send-modal.js')
-        && str_contains($sent, '/assets/js/gift-action-center.js')
-        && str_contains($sent, '/assets/js/gift-action-center-load-envelope.js')
-        && str_contains($claimed, '/assets/js/gift-action-center.js'),
-        'Inbox, Sent, and Claimed load the controllers required by their visible actions',
+        && str_contains($inbox, '/assets/js/gift-action-center-claim-modal.js')
+        && !str_contains($sent, '/assets/js/gift-action-center.js')
+        && !str_contains($claimed, '/assets/js/gift-action-center.js'),
+        'Inbox, Sent, and Claimed share Runtime v4 while Inbox keeps specialized Regift and Claim controllers',
         $failures,
         $passes
     );
