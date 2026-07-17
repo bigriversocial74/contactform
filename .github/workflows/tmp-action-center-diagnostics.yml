@@ -20,33 +20,41 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Lint Action Center core
-        run: php -l api/account/_action_center.php
-      - name: Lint Action Center wallet
-        run: php -l api/account/_action_center_wallet.php
-      - name: Lint product media helper
-        run: php -l api/account/_action_center_product_media.php
-      - name: Lint contract helper
-        run: php -l api/account/_action_center_contract.php
-      - name: Lint list endpoint
-        run: php -l api/account/action-center.php
-      - name: Lint detail endpoint
-        run: php -l api/account/action-center-detail.php
-      - name: Lint product media endpoint
-        run: php -l api/account/action-center-product-media.php
-      - name: Lint Personal Agent gift cards
-        run: php -l includes/personal-agent/gift-result-cards.php
-      - name: JavaScript contract adapter syntax
-        run: node --check assets/js/action-center-contract-v2.js
-      - name: JavaScript feed syntax
-        run: node --check assets/js/gift-action-center-feed-v3.js
-      - name: JavaScript media view syntax
-        run: node --check assets/js/gift-product-media-view.js
-      - name: JavaScript reward image syntax
-        run: node --check assets/js/gift-action-center-reward-images.js
-      - name: Action Center Contract v2 validator
-        run: php scripts/validate_action_center_contract_v2.php
-      - name: Gift Product Image validator
-        run: php scripts/validate_gift_product_image_consistency_v1.php
-      - name: PHPUnit contracts when available
-        run: if [ -x vendor/bin/phpunit ]; then vendor/bin/phpunit tests/phpunit/ActionCenterContractV2Test.php tests/phpunit/GiftProductImageConsistencyV1Test.php; fi
+      - name: Syntax checks
+        run: |
+          php -l api/account/_action_center.php
+          php -l api/account/_action_center_wallet.php
+          php -l api/account/_action_center_product_media.php
+          php -l api/account/_action_center_contract.php
+          php -l api/account/action-center.php
+          php -l api/account/action-center-detail.php
+          php -l api/account/action-center-product-media.php
+          php -l includes/personal-agent/gift-result-cards.php
+          node --check assets/js/action-center-contract-v2.js
+          node --check assets/js/gift-action-center-feed-v3.js
+          node --check assets/js/gift-product-media-view.js
+          node --check assets/js/gift-action-center-reward-images.js
+      - name: Capture validator output
+        id: validators
+        shell: bash
+        run: |
+          set +e
+          php scripts/validate_action_center_contract_v2.php > action-center-contract.log 2>&1
+          action_status=$?
+          php scripts/validate_gift_product_image_consistency_v1.php > gift-product-image.log 2>&1
+          image_status=$?
+          echo "action_status=${action_status}" >> "$GITHUB_OUTPUT"
+          echo "image_status=${image_status}" >> "$GITHUB_OUTPUT"
+          set -e
+      - name: Upload validator reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: action-center-validator-reports
+          path: |
+            action-center-contract.log
+            gift-product-image.log
+          retention-days: 3
+      - name: Fail on validator errors
+        if: steps.validators.outputs.action_status != '0' || steps.validators.outputs.image_status != '0'
+        run: exit 1
