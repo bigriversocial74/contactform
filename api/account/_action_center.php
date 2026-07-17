@@ -5,18 +5,18 @@ require_once dirname(__DIR__) . '/bootstrap.php';
 
 function mg_action_center_folder(string $folder): string
 {
-    return in_array($folder,['inbox','sent','claimed'],true) ? $folder : 'inbox';
+    return in_array($folder, ['inbox', 'sent', 'claimed'], true) ? $folder : 'inbox';
 }
 
-function mg_action_center_limit(mixed $value,int $default=50): int
+function mg_action_center_limit(mixed $value, int $default = 50): int
 {
-    $limit=is_numeric($value)?(int)$value:$default;
-    return max(1,min($limit,100));
+    $limit = is_numeric($value) ? (int) $value : $default;
+    return max(1, min($limit, 100));
 }
 
 function mg_action_center_search(mixed $value): string
 {
-    return mb_substr(trim((string)$value),0,120);
+    return mb_substr(trim((string) $value), 0, 120);
 }
 
 function mg_action_center_source_label(string $sourceSystem, string $fallback = ''): string
@@ -30,21 +30,24 @@ function mg_action_center_source_label(string $sourceSystem, string $fallback = 
         'action_center', 'in_out_box' => 'IN/OUT Box',
         'distribution_api' => 'Distribution API',
         'merchant_canvas' => 'Merchant Canvas',
+        'commerce', 'checkout', 'customer_purchase' => 'Commerce',
         default => $fallback !== '' ? $fallback : ($sourceSystem !== '' ? ucwords(str_replace(['_', '-'], ' ', $sourceSystem)) : 'Microgifter'),
     };
 }
 
 function mg_action_center_source_fields(array $metadata): array
 {
-    $sourceSystem = trim((string)($metadata['source_system'] ?? $metadata['sourceSystem'] ?? $metadata['system'] ?? ''));
-    $sourceType = trim((string)($metadata['source_type'] ?? $metadata['sourceType'] ?? ''));
-    $sourceReference = trim((string)($metadata['source_reference'] ?? $metadata['sourceReference'] ?? $metadata['wallet_item_id'] ?? ''));
-    $sourceLabel = trim((string)($metadata['source_label'] ?? $metadata['sourceLabel'] ?? ''));
-    $sourceDetail = trim((string)($metadata['source_detail'] ?? $metadata['sourceDetail'] ?? $metadata['campaign_title'] ?? $metadata['campaign_type'] ?? ''));
+    $sourceSystem = trim((string) ($metadata['source_system'] ?? $metadata['sourceSystem'] ?? $metadata['system'] ?? ''));
+    $sourceType = trim((string) ($metadata['source_type'] ?? $metadata['sourceType'] ?? ''));
+    $sourceReference = trim((string) ($metadata['source_reference'] ?? $metadata['sourceReference'] ?? $metadata['wallet_item_id'] ?? ''));
+    $sourceLabel = trim((string) ($metadata['source_label'] ?? $metadata['sourceLabel'] ?? ''));
+    $sourceDetail = trim((string) ($metadata['source_detail'] ?? $metadata['sourceDetail'] ?? $metadata['campaign_title'] ?? $metadata['campaign_type'] ?? ''));
 
     if ($sourceSystem === '') {
-        if (in_array($sourceType, ['campaign_reward','wallet_item','newsletter_signup','contest_giveaway','qr_reward_drop','referral_reward','birthday_vip','agent_offer'], true)) {
+        if (in_array($sourceType, ['campaign_reward', 'wallet_item', 'newsletter_signup', 'contest_giveaway', 'qr_reward_drop', 'referral_reward', 'birthday_vip', 'agent_offer'], true)) {
             $sourceSystem = 'campaigns';
+        } elseif (in_array($sourceType, ['customer_purchase', 'commerce_order', 'checkout'], true)) {
+            $sourceSystem = 'commerce';
         } elseif ($sourceType !== '') {
             $sourceSystem = $sourceType;
         } else {
@@ -61,33 +64,37 @@ function mg_action_center_source_fields(array $metadata): array
     ];
 }
 
-function mg_action_center_encode_cursor(string $updatedAt,int $id): string
+function mg_action_center_encode_cursor(string $updatedAt, int $id): string
 {
-    return rtrim(strtr(base64_encode(json_encode(['updated_at'=>$updatedAt,'id'=>$id],JSON_THROW_ON_ERROR)),'+/','-_'),'=');
+    return rtrim(strtr(base64_encode(json_encode(['updated_at' => $updatedAt, 'id' => $id], JSON_THROW_ON_ERROR)), '+/', '-_'), '=');
 }
 
 function mg_action_center_decode_cursor(?string $cursor): ?array
 {
-    $cursor=trim((string)$cursor);
-    if($cursor==='')return null;
-    $padding=str_repeat('=',(4-strlen($cursor)%4)%4);
-    $decoded=base64_decode(strtr($cursor,'-_','+/').$padding,true);
-    if(!is_string($decoded))throw new InvalidArgumentException('Invalid Action Center cursor.');
-    try{$data=json_decode($decoded,true,512,JSON_THROW_ON_ERROR);}catch(Throwable){throw new InvalidArgumentException('Invalid Action Center cursor.');}
-    if(!is_array($data)||!isset($data['updated_at'],$data['id'])||!is_string($data['updated_at'])||!is_numeric($data['id'])){
+    $cursor = trim((string) $cursor);
+    if ($cursor === '') return null;
+    $padding = str_repeat('=', (4 - strlen($cursor) % 4) % 4);
+    $decoded = base64_decode(strtr($cursor, '-_', '+/') . $padding, true);
+    if (!is_string($decoded)) throw new InvalidArgumentException('Invalid Action Center cursor.');
+    try {
+        $data = json_decode($decoded, true, 512, JSON_THROW_ON_ERROR);
+    } catch (Throwable) {
         throw new InvalidArgumentException('Invalid Action Center cursor.');
     }
-    return ['updated_at'=>$data['updated_at'],'id'=>(int)$data['id']];
+    if (!is_array($data) || !isset($data['updated_at'], $data['id']) || !is_string($data['updated_at']) || !is_numeric($data['id'])) {
+        throw new InvalidArgumentException('Invalid Action Center cursor.');
+    }
+    return ['updated_at' => $data['updated_at'], 'id' => (int) $data['id']];
 }
 
-function mg_action_center_counts(PDO $pdo,int $userId): array
+function mg_action_center_counts(PDO $pdo, int $userId): array
 {
-    $stmt=$pdo->prepare("SELECT folder,COUNT(*) total,SUM(read_at IS NULL) unread FROM microgift_inbox_items WHERE user_id=? AND archived_at IS NULL GROUP BY folder");
+    $stmt = $pdo->prepare("SELECT folder,COUNT(*) total,SUM(read_at IS NULL) unread FROM microgift_inbox_items WHERE user_id=? AND archived_at IS NULL GROUP BY folder");
     $stmt->execute([$userId]);
-    $counts=['inbox'=>['total'=>0,'unread'=>0],'sent'=>['total'=>0,'unread'=>0],'claimed'=>['total'=>0,'unread'=>0]];
-    foreach($stmt->fetchAll(PDO::FETCH_ASSOC) as $row){
-        $folder=(string)$row['folder'];
-        if(isset($counts[$folder]))$counts[$folder]=['total'=>(int)$row['total'],'unread'=>(int)$row['unread']];
+    $counts = ['inbox' => ['total' => 0, 'unread' => 0], 'sent' => ['total' => 0, 'unread' => 0], 'claimed' => ['total' => 0, 'unread' => 0]];
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $folder = (string) $row['folder'];
+        if (isset($counts[$folder])) $counts[$folder] = ['total' => (int) $row['total'], 'unread' => (int) $row['unread']];
     }
     return $counts;
 }
@@ -99,9 +106,12 @@ function mg_action_center_select_sql(): string
                    delivery.first_sent_at delivery_first_sent_at,delivery.last_resent_at,
                    COALESCE(delivery.resend_count,0) resend_count,delivery.last_delivery_event_at,
                    follow_up.last_follow_up_at,COALESCE(follow_up.follow_up_count,0) follow_up_count,
-                   i.public_id instance_id,i.status instance_status,i.face_value_cents,i.currency,i.expires_at,i.metadata_json instance_metadata_json,
+                   i.public_id instance_id,i.status instance_status,i.title_snapshot,i.description_snapshot,
+                   i.face_value_cents,i.currency,i.expires_at,i.metadata_json instance_metadata_json,
+                   i.source_type instance_source_type,i.source_reference instance_source_reference,
+                   i.recipient_policy,i.issued_at,
                    CAST(i.owner_user_id AS CHAR) owner_user_id,CAST(i.issuer_user_id AS CHAR) merchant_user_id,
-                   t.public_id template_id,t.name template_name,
+                   t.public_id template_id,t.name template_name,t.gift_type,
                    CAST(sender.id AS CHAR) sender_id,COALESCE(sender.display_name,sender.full_name) sender_name,
                    CAST(recipient.id AS CHAR) recipient_id,COALESCE(recipient.display_name,recipient.full_name) recipient_name,
                    COALESCE(ms.display_name,merchant.display_name,merchant.full_name) merchant_name,
@@ -140,102 +150,143 @@ function mg_action_center_select_sql(): string
 
 function mg_action_center_public_item(array $row): array
 {
-    $metadata=[];
-    $rawMetadata=(string)($row['instance_metadata_json']??'');
-    if($rawMetadata!==''){
-        try{$decoded=json_decode($rawMetadata,true,512,JSON_THROW_ON_ERROR);if(is_array($decoded))$metadata=$decoded;}catch(Throwable){}
+    $metadata = [];
+    $rawMetadata = (string) ($row['instance_metadata_json'] ?? '');
+    if ($rawMetadata !== '') {
+        try {
+            $decoded = json_decode($rawMetadata, true, 512, JSON_THROW_ON_ERROR);
+            if (is_array($decoded)) $metadata = $decoded;
+        } catch (Throwable) {
+        }
+    }
+
+    if (empty($metadata['source_type']) && !empty($row['instance_source_type'])) {
+        $metadata['source_type'] = (string) $row['instance_source_type'];
+    }
+    if (empty($metadata['source_reference']) && !empty($row['instance_source_reference'])) {
+        $metadata['source_reference'] = (string) $row['instance_source_reference'];
     }
     $source = mg_action_center_source_fields($metadata);
-    if(!empty($row['delivery_first_sent_at']))$row['sent_at']=$row['delivery_first_sent_at'];
-    $row['resend_count']=(int)($row['resend_count']??0);
-    $row['follow_up_count']=(int)($row['follow_up_count']??0);
-    $logoId=(string)($row['merchant_logo_asset_id']??'');
-    $row['merchant_avatar_url']=$logoId!==''?('/api/public/media.php?asset='.rawurlencode($logoId)):'';
-    $row['merchant_name']=(string)($row['merchant_name']??'');
-    $row['can_follow_up']=(string)($row['folder']??'')==='sent'
-        && (string)($row['recipient_id']??'')!==''
-        && (string)($row['recipient_id']??'')===(string)($row['owner_user_id']??'')
-        && in_array((string)($row['instance_status']??''),['issued','delivered'],true)
+
+    if (!empty($row['delivery_first_sent_at'])) $row['sent_at'] = $row['delivery_first_sent_at'];
+    $row['resend_count'] = (int) ($row['resend_count'] ?? 0);
+    $row['follow_up_count'] = (int) ($row['follow_up_count'] ?? 0);
+    $logoId = (string) ($row['merchant_logo_asset_id'] ?? '');
+    $row['merchant_avatar_url'] = $logoId !== '' ? ('/api/public/media.php?asset=' . rawurlencode($logoId)) : '';
+    $row['merchant_name'] = (string) ($row['merchant_name'] ?? '');
+    $row['message'] = (string) ($row['description_snapshot'] ?? '');
+    $row['received_at'] = $row['first_received_at'] ?? $row['issued_at'] ?? null;
+    $row['created_at'] = $row['issued_at'] ?? null;
+    $row['can_follow_up'] = (string) ($row['folder'] ?? '') === 'sent'
+        && (string) ($row['recipient_id'] ?? '') !== ''
+        && (string) ($row['recipient_id'] ?? '') === (string) ($row['owner_user_id'] ?? '')
+        && in_array((string) ($row['instance_status'] ?? ''), ['issued', 'delivered'], true)
         && empty($row['claimed_at'])
         && empty($row['redeemed_at']);
-    unset($row['action_item_internal_id'],$row['instance_metadata_json'],$row['delivery_first_sent_at'],$row['merchant_logo_asset_id']);
-    $row['sandbox_mode']=(string)($metadata['sandbox_mode']??'');
-    $row['demo_scenario']=(string)($metadata['demo_scenario']??'');
-    $row['is_demo_preview']=false;
-    $row['is_system_demo']=($row['sandbox_mode']==='admin_demo');
+    $row['can_send'] = (string) ($row['folder'] ?? '') === 'inbox'
+        && in_array((string) ($row['instance_status'] ?? ''), ['issued', 'delivered'], true);
+    $row['can_claim'] = (string) ($row['folder'] ?? '') === 'inbox'
+        && in_array((string) ($row['instance_status'] ?? ''), ['issued', 'delivered', 'claim_pending'], true);
+    $row['can_message'] = (string) ($row['folder'] ?? '') === 'claimed'
+        && (string) ($row['sender_id'] ?? '') !== ''
+        && (string) ($row['sender_id'] ?? '') !== (string) ($row['owner_user_id'] ?? '');
+    $row['_metadata'] = $metadata;
+
+    unset(
+        $row['action_item_internal_id'],
+        $row['instance_metadata_json'],
+        $row['delivery_first_sent_at'],
+        $row['merchant_logo_asset_id'],
+        $row['instance_source_type'],
+        $row['instance_source_reference']
+    );
+
+    $row['sandbox_mode'] = (string) ($metadata['sandbox_mode'] ?? '');
+    $row['demo_scenario'] = (string) ($metadata['demo_scenario'] ?? '');
+    $row['is_demo_preview'] = false;
+    $row['is_system_demo'] = ($row['sandbox_mode'] === 'admin_demo');
     return $row + $source;
 }
 
-function mg_action_center_page(PDO $pdo,int $userId,string $folder,int $limit=50,string $search='',?array $cursor=null): array
+function mg_action_center_page(PDO $pdo, int $userId, string $folder, int $limit = 50, string $search = '', ?array $cursor = null): array
 {
-    $folder=mg_action_center_folder($folder);
-    $limit=mg_action_center_limit($limit);
-    $search=mg_action_center_search($search);
-    $where=['ac.user_id=?','ac.folder=?','ac.archived_at IS NULL'];
-    $params=[$userId,$folder];
-    if($search!==''){
-        $where[]="(t.name LIKE ? OR i.public_id LIKE ? OR COALESCE(sender.display_name,sender.full_name,'') LIKE ? OR COALESCE(recipient.display_name,recipient.full_name,'') LIKE ? OR COALESCE(l.name,'') LIKE ? OR ac.state LIKE ? OR COALESCE(ms.display_name,merchant.display_name,merchant.full_name,'') LIKE ?)";
-        $needle='%'.$search.'%';
-        array_push($params,$needle,$needle,$needle,$needle,$needle,$needle,$needle);
+    $folder = mg_action_center_folder($folder);
+    $limit = mg_action_center_limit($limit);
+    $search = mg_action_center_search($search);
+    $where = ['ac.user_id=?', 'ac.folder=?', 'ac.archived_at IS NULL'];
+    $params = [$userId, $folder];
+
+    if ($search !== '') {
+        $where[] = "(t.name LIKE ? OR i.title_snapshot LIKE ? OR COALESCE(i.description_snapshot,'') LIKE ? OR i.public_id LIKE ? OR COALESCE(sender.display_name,sender.full_name,'') LIKE ? OR COALESCE(recipient.display_name,recipient.full_name,'') LIKE ? OR COALESCE(l.name,'') LIKE ? OR ac.state LIKE ? OR COALESCE(ms.display_name,merchant.display_name,merchant.full_name,'') LIKE ? OR i.source_type LIKE ? OR EXISTS (
+            SELECT 1
+            FROM catalog_products cp_search
+            LEFT JOIN catalog_product_versions cpv_search ON cpv_search.id=i.product_version_id
+            WHERE cp_search.id=i.product_id AND (cp_search.slug LIKE ? OR COALESCE(cpv_search.title,'') LIKE ?)
+        ))";
+        $needle = '%' . $search . '%';
+        array_push($params, $needle, $needle, $needle, $needle, $needle, $needle, $needle, $needle, $needle, $needle, $needle, $needle);
     }
-    if($cursor!==null){
-        $where[]='(ac.updated_at < ? OR (ac.updated_at = ? AND ac.id < ?))';
-        array_push($params,$cursor['updated_at'],$cursor['updated_at'],$cursor['id']);
+
+    if ($cursor !== null) {
+        $where[] = '(ac.updated_at < ? OR (ac.updated_at = ? AND ac.id < ?))';
+        array_push($params, $cursor['updated_at'], $cursor['updated_at'], $cursor['id']);
     }
-    $fetchLimit=$limit+1;
-    $sql=mg_action_center_select_sql().' WHERE '.implode(' AND ',$where)." ORDER BY ac.updated_at DESC,ac.id DESC LIMIT {$fetchLimit}";
-    $stmt=$pdo->prepare($sql);
+
+    $fetchLimit = $limit + 1;
+    $sql = mg_action_center_select_sql() . ' WHERE ' . implode(' AND ', $where) . " ORDER BY ac.updated_at DESC,ac.id DESC LIMIT {$fetchLimit}";
+    $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
-    $rows=$stmt->fetchAll(PDO::FETCH_ASSOC);
-    $hasMore=count($rows)>$limit;
-    if($hasMore)array_pop($rows);
-    $nextCursor=null;
-    if($hasMore&&$rows!==[]){
-        $last=$rows[array_key_last($rows)];
-        $nextCursor=mg_action_center_encode_cursor((string)$last['updated_at'],(int)$last['action_item_internal_id']);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $hasMore = count($rows) > $limit;
+    if ($hasMore) array_pop($rows);
+    $nextCursor = null;
+    if ($hasMore && $rows !== []) {
+        $last = $rows[array_key_last($rows)];
+        $nextCursor = mg_action_center_encode_cursor((string) $last['updated_at'], (int) $last['action_item_internal_id']);
     }
+
     return [
-        'items'=>array_map('mg_action_center_public_item',$rows),
-        'page'=>['limit'=>$limit,'has_more'=>$hasMore,'next_cursor'=>$nextCursor],
+        'items' => array_map('mg_action_center_public_item', $rows),
+        'page' => ['limit' => $limit, 'has_more' => $hasMore, 'next_cursor' => $nextCursor],
     ];
 }
 
-function mg_action_center_items(PDO $pdo,int $userId,string $folder,int $limit=50): array
+function mg_action_center_items(PDO $pdo, int $userId, string $folder, int $limit = 50): array
 {
-    return mg_action_center_page($pdo,$userId,$folder,$limit)['items'];
+    return mg_action_center_page($pdo, $userId, $folder, $limit)['items'];
 }
 
-function mg_action_center_detail(PDO $pdo,int $userId,string $publicId): ?array
+function mg_action_center_detail(PDO $pdo, int $userId, string $publicId): ?array
 {
-    $publicId=trim($publicId);
-    if($publicId==='')return null;
-    $sql=mg_action_center_select_sql().' WHERE ac.user_id=? AND ac.public_id=? AND ac.archived_at IS NULL LIMIT 1';
-    $stmt=$pdo->prepare($sql);
-    $stmt->execute([$userId,$publicId]);
-    $row=$stmt->fetch(PDO::FETCH_ASSOC);
-    return $row?mg_action_center_public_item($row):null;
+    $publicId = trim($publicId);
+    if ($publicId === '') return null;
+    $sql = mg_action_center_select_sql() . ' WHERE ac.user_id=? AND ac.public_id=? AND ac.archived_at IS NULL LIMIT 1';
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$userId, $publicId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $row ? mg_action_center_public_item($row) : null;
 }
 
-function mg_action_center_mark_read(PDO $pdo,int $userId,string $publicId): void
+function mg_action_center_mark_read(PDO $pdo, int $userId, string $publicId): void
 {
-    $stmt=$pdo->prepare('UPDATE microgift_inbox_items SET read_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE user_id=? AND public_id=? AND read_at IS NULL');
-    $stmt->execute([$userId,trim($publicId)]);
+    $stmt = $pdo->prepare('UPDATE microgift_inbox_items SET read_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE user_id=? AND public_id=? AND read_at IS NULL');
+    $stmt->execute([$userId, trim($publicId)]);
 }
 
-function mg_action_center_mark_unread(PDO $pdo,int $userId,string $publicId): void
+function mg_action_center_mark_unread(PDO $pdo, int $userId, string $publicId): void
 {
-    $stmt=$pdo->prepare('UPDATE microgift_inbox_items SET read_at=NULL,updated_at=CURRENT_TIMESTAMP WHERE user_id=? AND public_id=? AND read_at IS NOT NULL');
-    $stmt->execute([$userId,trim($publicId)]);
+    $stmt = $pdo->prepare('UPDATE microgift_inbox_items SET read_at=NULL,updated_at=CURRENT_TIMESTAMP WHERE user_id=? AND public_id=? AND read_at IS NOT NULL');
+    $stmt->execute([$userId, trim($publicId)]);
 }
 
-function mg_action_center_archive(PDO $pdo,int $userId,string $publicId): void
+function mg_action_center_archive(PDO $pdo, int $userId, string $publicId): void
 {
-    $stmt=$pdo->prepare('UPDATE microgift_inbox_items SET archived_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE user_id=? AND public_id=? AND archived_at IS NULL');
-    $stmt->execute([$userId,trim($publicId)]);
+    $stmt = $pdo->prepare('UPDATE microgift_inbox_items SET archived_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE user_id=? AND public_id=? AND archived_at IS NULL');
+    $stmt->execute([$userId, trim($publicId)]);
 }
 
-function mg_action_center_restore(PDO $pdo,int $userId,string $publicId): void
+function mg_action_center_restore(PDO $pdo, int $userId, string $publicId): void
 {
-    $stmt=$pdo->prepare('UPDATE microgift_inbox_items SET archived_at=NULL,updated_at=CURRENT_TIMESTAMP WHERE user_id=? AND public_id=? AND archived_at IS NOT NULL');
-    $stmt->execute([$userId,trim($publicId)]);
+    $stmt = $pdo->prepare('UPDATE microgift_inbox_items SET archived_at=NULL,updated_at=CURRENT_TIMESTAMP WHERE user_id=? AND public_id=? AND archived_at IS NOT NULL');
+    $stmt->execute([$userId, trim($publicId)]);
 }

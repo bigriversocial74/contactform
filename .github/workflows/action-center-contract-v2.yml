@@ -1,0 +1,73 @@
+name: Action Center Contract v2
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  php82:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: |
+          php -l api/account/_action_center.php
+          php -l api/account/_action_center_wallet.php
+          php -l api/account/_action_center_product_media.php
+          php -l api/account/_action_center_contract.php
+          php -l api/account/action-center.php
+          php -l api/account/action-center-detail.php
+          php -l api/account/action-center-product-media.php
+          php -l includes/personal-agent/gift-result-cards.php
+          php -l scripts/validate_action_center_contract_v2.php
+          php -l scripts/validate_gift_product_image_consistency_v1.php
+          php -l tests/phpunit/ActionCenterContractV2Test.php
+          node --check assets/js/action-center-contract-v2.js
+          node --check assets/js/gift-action-center-feed-v3.js
+          node --check assets/js/gift-product-media-view.js
+          node --check assets/js/gift-action-center-reward-images.js
+          php scripts/validate_action_center_contract_v2.php
+          php scripts/validate_gift_product_image_consistency_v1.php
+          if [ -x vendor/bin/phpunit ]; then vendor/bin/phpunit tests/phpunit/ActionCenterContractV2Test.php tests/phpunit/GiftProductImageConsistencyV1Test.php; fi
+
+  php83:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: |
+          php -l api/account/_action_center.php
+          php -l api/account/_action_center_wallet.php
+          php -l api/account/_action_center_product_media.php
+          php -l api/account/_action_center_contract.php
+          php -l api/account/action-center.php
+          php -l api/account/action-center-detail.php
+          php -l api/account/action-center-product-media.php
+          php -l includes/personal-agent/gift-result-cards.php
+          php -l scripts/validate_action_center_contract_v2.php
+          php -l scripts/validate_gift_product_image_consistency_v1.php
+          php -l tests/phpunit/ActionCenterContractV2Test.php
+          node --check assets/js/action-center-contract-v2.js
+          node --check assets/js/gift-action-center-feed-v3.js
+          node --check assets/js/gift-product-media-view.js
+          node --check assets/js/gift-action-center-reward-images.js
+          php scripts/validate_action_center_contract_v2.php
+          php scripts/validate_gift_product_image_consistency_v1.php
+          if [ -x vendor/bin/phpunit ]; then vendor/bin/phpunit tests/phpunit/ActionCenterContractV2Test.php tests/phpunit/GiftProductImageConsistencyV1Test.php; fi
