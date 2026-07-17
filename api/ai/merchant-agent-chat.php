@@ -5,6 +5,7 @@ require_once __DIR__ . '/_ai.php';
 require_once dirname(__DIR__) . '/merchant/_merchant.php';
 require_once dirname(__DIR__, 2) . '/includes/merchant-automation-controls.php';
 require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-chat-memory.php';
+require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-crm-search.php';
 require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-snapshot.php';
 require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-admin-limits.php';
 
@@ -34,9 +35,10 @@ if ($method === 'POST') {
     $input = mg_input();
     mg_require_csrf_for_write($input);
     $action = strtolower(trim((string)($input['action'] ?? 'send_message')));
+    if ($action === 'send_message' && mg_merchant_agent_crm_search_is_query($input['message'] ?? '')) $action = 'crm_search';
     $localActions = ['save_agent_profile','save_memory_profile','create_thread','save_thread','archive_thread','clear_thread','rename_thread','load_thread'];
 
-    if (!in_array($action, array_merge(['send_message','snapshot'], $localActions), true)) {
+    if (!in_array($action, array_merge(['send_message','snapshot','crm_search'], $localActions), true)) {
         mg_fail('Unknown merchant agent chat action.', 422);
     }
 
@@ -45,8 +47,15 @@ if ($method === 'POST') {
         $permission = 'merchant.ai.review';
     }
     $user = mg_merchant_require_permission($permission);
-    mg_merchant_ensure_workspace($pdo, $user);
+    $workspace = mg_merchant_ensure_workspace($pdo, $user);
     $merchantId = (int)$user['id'];
+    $input['_merchant_owner_id'] = (int)($workspace['merchant_user_id'] ?? $merchantId);
+
+    if ($action === 'crm_search') {
+        mg_merchant_require_permission('merchant.campaigns.view');
+        mg_rate_limit('merchant.agent.crm_search.chat', 'user:' . $merchantId, 90, 60);
+        mg_ok(mg_merchant_agent_crm_search_response($pdo, $user, $input), 'Merchant CRM search completed.', 201);
+    }
 
     if ($action === 'snapshot' || ($action === 'send_message' && mg_merchant_snapshot_is_keyword($input['message'] ?? ''))) {
         $input['message'] = trim((string)($input['message'] ?? 'snapshot')) ?: 'snapshot';
