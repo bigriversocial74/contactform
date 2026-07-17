@@ -29,7 +29,7 @@ final class MerchantContactWorkspaceReviewActionsTest extends TestCase
     public function testFollowupApprovalCreatesCanonicalTaskAndCrmEvent(): void
     {
         $adapter = (string)file_get_contents($this->root . '/includes/ai/merchant-contact-workspace-review-actions.php');
-        $followups = (string)file_get_contents($this->root . '/api/merchant/followup-tasks.php');
+        $followups = (string)file_get_contents($this->root . '/api/merchant/crm-followup-tasks.php');
 
         self::assertStringContainsString("'crm.followup.created'", $adapter);
         self::assertStringContainsString('\'note\'=>$note', $adapter);
