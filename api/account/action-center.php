@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_action_center.php';
 require_once __DIR__ . '/_action_center_wallet.php';
+require_once __DIR__ . '/_action_center_product_media.php';
 
 function mg_action_center_counts_plus_wallet(PDO $pdo,int $userId,string $email): array
 {
@@ -82,6 +83,7 @@ try{
 $pdo=mg_db();
 $page=mg_action_center_page_plus_wallet($pdo,$userId,$userEmail,$folder,$limit,$search,$cursor);
 $page['items']=mg_action_center_apply_business_names($pdo,is_array($page['items']??null)?$page['items']:[]);
+$page['items']=mg_action_center_attach_product_media($pdo,$userId,$page['items']);
 
 mg_ok([
     'folder'=>$folder,
