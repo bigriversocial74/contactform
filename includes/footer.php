@@ -51,7 +51,7 @@ if ((string) ($page_manifest['id'] ?? '') === 'merchant-canvas' && !empty($hasMe
     $page_scripts[] = '/assets/js/merchant-canvas-containment.js';
 }
 $core_scripts = [
-    '/assets/js/microgifter.js','/assets/js/universal-header.js','/assets/js/header-signals.js','/assets/js/create-menu.js','/assets/js/builder-publish-errors.js','/assets/js/api-client.js','/assets/js/global-post-composer.js','/assets/js/create-post-modal-visible-fallback.js','/assets/js/agent-folder-counts.js',
+    '/assets/js/microgifter.js','/assets/js/universal-header.js','/assets/js/header-signals.js','/assets/js/create-menu.js','/assets/js/builder-publish-errors.js','/assets/js/api-client.js','/assets/js/global-post-composer.js','/assets/js/create-post-modal-visible-fallback.js?v=1.1.0','/assets/js/agent-folder-counts.js',
     '/assets/js/agent-global-search.js','/assets/js/customer-commerce.js','/assets/js/cart.js','/assets/js/auth.js',
     '/assets/js/auth-state.js','/assets/js/onboarding.js','/assets/js/agent-tabs.js','/assets/js/agent-controls.js',
     '/assets/js/agent-toolbar-state.js','/assets/js/agent-sidebar.js','/assets/js/agent-items.js','/assets/js/media-delivery.js',
