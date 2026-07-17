@@ -107,7 +107,9 @@
   }
 
   function normalizeItem(item, folder) {
-    const normalized = Object.assign({}, item || {});
+    const adapter = window.MicrogifterActionCenterContract;
+    const source = adapter && typeof adapter.view === 'function' ? adapter.view(item) : item;
+    const normalized = Object.assign({}, source || {});
     normalized.folder = normalized.folder || folder;
     normalized.template_name = normalized.template_name || normalized.title || 'Microgift';
     normalized.business_name = businessNameFor(normalized);
@@ -115,9 +117,13 @@
     normalized.sender_name = senderNameFor(normalized);
     normalized.message = normalized.message || normalized.description || 'Gift ready to open';
     normalized.view_count = Math.max(0, Number(normalized.view_count || normalized.views || normalized.open_count || 0));
-    normalized.avatar_url = safeUrl(normalized.merchant_avatar_url || normalized.avatar_url || normalized.reward_image_url || normalized.image_url || '');
+    normalized.avatar_url = safeUrl(normalized.product_image_url || normalized.avatar_url || normalized.merchant_avatar_url || normalized.reward_image_url || normalized.image_url || '');
+    normalized.can_send = boolValue(normalized.can_send, false);
+    normalized.can_claim = boolValue(normalized.can_claim, false);
+    normalized.can_load = boolValue(normalized.can_load, true);
     normalized.can_follow_up = boolValue(normalized.can_follow_up, false);
-    normalized.can_tip = boolValue(normalized.can_tip, true);
+    normalized.can_message = boolValue(normalized.can_message, false);
+    normalized.can_tip = boolValue(normalized.can_tip, false);
     return normalized;
   }
 
@@ -198,20 +204,29 @@
       (disabled ? ' disabled' : '') + (title ? ' title="' + esc(title) + '"' : '') + '>' + esc(label) + '</button>';
   }
 
+  function unavailableReason(item, capability, fallback) {
+    const reasons = item && item.capability_reasons && typeof item.capability_reasons === 'object' ? item.capability_reasons : {};
+    return firstText(reasons[capability], fallback);
+  }
+
   function actionsMarkup(item, folder) {
     if (folder === 'inbox') {
-      return actionButton('send', 'Regift') + actionButton('claim', 'Claim') + actionButton('load', 'Load');
+      return actionButton('send', 'Regift', !item.can_send, unavailableReason(item, 'send', 'This gift cannot be transferred.')) +
+        actionButton('claim', 'Claim', !item.can_claim, unavailableReason(item, 'claim', 'This gift cannot be claimed.')) +
+        actionButton('load', 'Load', !item.can_load, unavailableReason(item, 'load', 'Gift content is unavailable.'));
     }
     if (folder === 'sent') {
-      return actionButton('follow-up', 'Follow Up', !item.can_follow_up, !item.can_follow_up ? 'Only the most recent sender can follow up' : '') +
-        actionButton('load', 'Load');
+      return actionButton('follow-up', 'Follow Up', !item.can_follow_up, unavailableReason(item, 'follow_up', 'Only the most recent sender can follow up.')) +
+        actionButton('load', 'Load', !item.can_load, unavailableReason(item, 'load', 'Gift content is unavailable.'));
     }
-    return actionButton('message', 'Message') + actionButton('tip', 'Tip', !item.can_tip, !item.can_tip ? 'Tip is unavailable for this gift' : '') + actionButton('load', 'Load');
+    return actionButton('message', 'Message', !item.can_message, unavailableReason(item, 'message', 'Messaging is unavailable for this gift.')) +
+      actionButton('tip', 'Tip', !item.can_tip, unavailableReason(item, 'tip', 'Tip is unavailable for this gift.')) +
+      actionButton('load', 'Load', !item.can_load, unavailableReason(item, 'load', 'Gift content is unavailable.'));
   }
 
   function thumbMarkup(item, row) {
     const existingImage = row.querySelector('.mg-gift-thumb img');
-    const imageUrl = safeUrl((existingImage && existingImage.getAttribute('src')) || item.avatar_url || item.merchant_avatar_url || '');
+    const imageUrl = safeUrl(item.product_image_url || (existingImage && existingImage.getAttribute('src')) || item.avatar_url || item.merchant_avatar_url || '');
     if (imageUrl) return '<img src="' + esc(imageUrl) + '" alt="" loading="lazy">';
     return '<span>' + esc(String(item.template_name || item.business_name || 'M').charAt(0).toUpperCase()) + '</span>';
   }
