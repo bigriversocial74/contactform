@@ -27,7 +27,7 @@ $checks = [
     'workspace owner is resolved separately from the authenticated actor' =>
         str_contains($content['endpoint'], '$workspace = mg_merchant_ensure_workspace')
         && str_contains($content['endpoint'], '$merchantOwnerId')
-        && str_contains($content['endpoint'], "'_merchant_owner_id'=>$merchantOwnerId"),
+        && str_contains($content['endpoint'], '\'_merchant_owner_id\'=>$merchantOwnerId'),
     'Contact Action Center payloads route before the generic plan executor' =>
         $contactAdapterPosition !== false
         && $genericAdapterPosition !== false
@@ -47,20 +47,20 @@ $checks = [
         && str_contains($content['adapter'], 'LOWER(cc.email)=?'),
     'approved follow-up creates the canonical event shape' =>
         str_contains($content['adapter'], "'crm.followup.created'")
-        && str_contains($content['adapter'], "'note'=>$note")
-        && str_contains($content['adapter'], "'due_at'=>$dueAt")
+        && str_contains($content['adapter'], '\'note\'=>$note')
+        && str_contains($content['adapter'], '\'due_at\'=>$dueAt')
         && str_contains($content['adapter'], "'status'=>'open'")
-        && str_contains($content['adapter'], "'task_type'=>$taskType")
-        && str_contains($content['adapter'], "'priority'=>$priority"),
+        && str_contains($content['adapter'], '\'task_type\'=>$taskType')
+        && str_contains($content['adapter'], '\'priority\'=>$priority'),
     'canonical follow-up remains compatible with the existing task loader' =>
         str_contains($content['followups'], "ce.event_type='crm.followup.created'")
         && str_contains($content['followups'], "JSON_EXTRACT(ce.event_context_json,'$.due_at')")
         && str_contains($content['adapter'], 'contact_id,event_type,event_context_json'),
     'approved message creates the existing Agent Messages event shape' =>
         str_contains($content['adapter'], "'crm.agent.message.draft.created'")
-        && str_contains($content['adapter'], "'message_draft_id'=>$messageDraftId")
-        && str_contains($content['adapter'], "'draft_body'=>$body")
-        && str_contains($content['adapter'], "'message_body'=>$body")
+        && str_contains($content['adapter'], '\'message_draft_id\'=>$messageDraftId')
+        && str_contains($content['adapter'], '\'draft_body\'=>$body')
+        && str_contains($content['adapter'], '\'message_body\'=>$body')
         && str_contains($content['adapter'], "'send_directly'=>false"),
     'canonical message remains compatible with the Agent Messages outbox' =>
         str_contains($content['messages'], "'crm.agent.message.draft.created'")
@@ -80,8 +80,8 @@ $checks = [
         && !str_contains($content['adapter'], 'send_customer_message(')
         && !str_contains($content['adapter'], '/api/merchant/crm-message.php'),
     'approval events and audits retain actor and owner boundaries' =>
-        str_contains($content['adapter'], "'merchant_owner_id'=>$merchantOwnerId")
-        && str_contains($content['adapter'], "'decided_by_user_id'=>$actorId")
+        str_contains($content['adapter'], '\'merchant_owner_id\'=>$merchantOwnerId')
+        && str_contains($content['adapter'], '\'decided_by_user_id\'=>$actorId')
         && str_contains($content['adapter'], "mg_audit('merchant.contact_workspace_review_approved'"),
     'reject and defer continue through the established plan review path' =>
         str_contains($content['endpoint'], "'reject' => 'reject'")
