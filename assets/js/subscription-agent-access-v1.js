@@ -92,7 +92,7 @@
       title = item.label + ' remains locked';
       copy = 'No subscription change was made. Choose an eligible package when you are ready to continue.';
       icon = '↺';
-      actions = '<button class="is-primary" type="button" data-agent-choose-starter>Resume with Starter</button><a href="' + esc(item.target) + '">Return to ' + esc(item.label) + '</a>';
+      actions = '<button class="is-primary" type="button" data-agent-choose-starter>Resume with Starter</button><a href="/inbox.php">Return to Inbox</a>';
     }
 
     var banner = document.createElement('section');
