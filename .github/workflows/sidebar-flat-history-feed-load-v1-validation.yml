@@ -13,12 +13,14 @@ on:
       - 'saves.php'
       - 'api/public/feed.php'
       - 'api/public/_feed_resilient_v1.php'
+      - 'api/public/_feed_contract_v2.php'
       - 'includes/agent-sidebar.php'
       - 'includes/gift-action-center.php'
       - 'includes/personal-agent-sidebar.php'
       - 'assets/js/personal-agent-chat-history.js'
       - 'assets/js/merchant-agent-sidebar-history.js'
       - 'assets/js/social-feed-sidebar-tabs.js'
+      - 'assets/js/feed-contract-v2-bridge.js'
       - '.github/workflows/sidebar-flat-history-feed-load-v1-validation.yml'
   workflow_dispatch:
 
@@ -53,6 +55,7 @@ jobs:
           php -l saves.php
           php -l api/public/feed.php
           php -l api/public/_feed_resilient_v1.php
+          php -l api/public/_feed_contract_v2.php
           php -l includes/agent-sidebar.php
           php -l includes/gift-action-center.php
           php -l includes/personal-agent-sidebar.php
@@ -62,6 +65,7 @@ jobs:
           node --check assets/js/personal-agent-chat-history.js
           node --check assets/js/merchant-agent-sidebar-history.js
           node --check assets/js/social-feed-sidebar-tabs.js
+          node --check assets/js/feed-contract-v2-bridge.js
 
       - name: Flat sidebar and My Feed contract
         shell: bash
@@ -74,8 +78,10 @@ jobs:
           grep -F 'href="/feed.php"' includes/personal-agent-sidebar.php
           grep -F "feedIsSettled" assets/js/social-feed-sidebar-tabs.js
           grep -F "MutationObserver" assets/js/social-feed-sidebar-tabs.js
-          grep -F "mg_public_feed_resilient_v1" api/public/feed.php api/public/_feed_resilient_v1.php
+          grep -F "mg_public_feed_resilient_v1" api/public/_feed_contract_v2.php api/public/_feed_resilient_v1.php
           grep -F "social.feed_post_skipped" api/public/_feed_resilient_v1.php
-          grep -F '/assets/js/social-feed-sidebar-tabs.js?v=1.1.0' feed.php
+          grep -F "mg_public_feed_contract_v2" api/public/feed.php api/public/_feed_contract_v2.php
+          grep -F '/assets/js/social-feed-sidebar-tabs.js?v=1.2.0' feed.php
+          grep -F '/assets/js/feed-contract-v2-bridge.js?v=2.0.0' feed.php
           grep -F '/assets/js/personal-agent-chat-history.js?v=1.2.0' agent.php design-calendar.php design-studio.php saves.php includes/agent-sidebar.php includes/gift-action-center.php
           grep -F '/assets/js/merchant-agent-sidebar-history.js?v=2.1.0' merchant-agent-chat.php
