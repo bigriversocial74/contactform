@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/social/_publishing.php';
+require_once __DIR__ . '/_feed_resilient_v1.php';
 
 mg_require_method('GET');
 $pdo = mg_db();
@@ -15,7 +16,7 @@ $identifier = $viewerId !== null ? 'user:' . $viewerId : 'ip:' . (mg_client_ip()
 mg_rate_limit('social.feed.read', $identifier, $viewerId !== null ? 240 : 120, 60);
 
 try {
-    $feed = mg_publishing_feed($pdo, $mode, $viewerId, $cursor, (int)$limit);
+    $feed = mg_public_feed_resilient_v1($pdo, $mode, $viewerId, $cursor, (int)$limit);
 } catch (InvalidArgumentException $error) {
     mg_security_log('warning', 'social.feed_invalid', 'Invalid social feed request.', [
         'mode' => $mode,
