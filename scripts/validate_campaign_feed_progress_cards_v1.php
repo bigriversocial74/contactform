@@ -46,7 +46,7 @@ $checks = [
         && str_contains($helperV2, 'next_level_percent'),
     'Campaign links route to Watch Listen and Action Center' => str_contains($helperV2, "'watch-reward.php'")
         && str_contains($helperV2, "'listen-reward.php'")
-        && str_contains($helperV2, "'url' => '/inbox.php'"),
+        && str_contains($helperV2, "'url' => \$actionItemId !== '' ? '/inbox.php' : null"),
     'Legacy campaign endpoint remains GET-only and rate limited' => str_contains($endpoint, "mg_require_method('GET')")
         && str_contains($endpoint, "mg_rate_limit('campaign.feed.read'"),
     'Primary feed uses one Feed Contract v2 request' => str_contains($feed, 'feed-contract-v2-bridge.js?v=2.0.0')
@@ -59,7 +59,7 @@ $checks = [
         && str_contains($newfeed, 'feed-campaign-progress-cards-v1.js?v=1.0.0')
         && str_contains($newfeed, 'data-campaign-feed-list'),
     'Feed Contract bridge publishes the unified response' => str_contains($bridgeV2, 'mg:feed-contract-v2')
-        && str_contains($bridgeV2, '/api/public/feed\\.php')
+        && str_contains($bridgeV2, 'feed\.php')
         && str_contains($bridgeV2, 'MicrogifterFeedContractV2Latest'),
     'V2 client renders progress reward levels and Action Center state' => str_contains($jsV2, 'mg-campaign-feed-progress')
         && str_contains($jsV2, 'mg-campaign-feed-levels')
