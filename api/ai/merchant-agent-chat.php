@@ -125,20 +125,24 @@ if ($method === 'POST') {
     }
 
     if (in_array($action, ['save_thread','archive_thread','clear_thread','rename_thread','load_thread','delete_thread'], true)) {
-        $threadId = mg_ai_chat_clean($input['thread_id'] ?? '', 80);
+        $requestedThreadId = mg_ai_chat_clean($input['thread_id'] ?? '', 80);
+        $targetThread = mg_agent_thread_by_id($pdo, $actorId, $requestedThreadId);
+        $targetThreadId = (string)($targetThread['id'] ?? '');
         if ($action === 'delete_thread') {
-            $response = mg_merchant_agent_delete_thread($pdo, $actorId, $threadId);
+            $response = mg_merchant_agent_delete_thread($pdo, $actorId, $targetThreadId);
             if (is_array($response['state'] ?? null)) $response['state'] = mg_agent_chat_contact_state($pdo, $merchantOwnerId, $actorId, $response['state']);
             mg_ok($response, 'Merchant Agent chat deleted.');
         }
         if ($action === 'load_thread') {
-            $thread = mg_agent_thread_by_id($pdo, $actorId, $threadId);
-            if (!empty($thread['id']) && mg_agent_table_exists($pdo, 'merchant_agent_threads')) {
-                $pdo->prepare("UPDATE merchant_agent_threads SET status='active',archived_at=NULL,updated_at=NOW() WHERE merchant_user_id=? AND public_id=?")->execute([$actorId, $thread['id']]);
+            if ($targetThreadId !== '' && mg_agent_table_exists($pdo, 'merchant_agent_threads')) {
+                $pdo->prepare("UPDATE merchant_agent_threads SET status='active',archived_at=NULL,updated_at=NOW() WHERE merchant_user_id=? AND public_id=?")->execute([$actorId, $targetThreadId]);
             }
         } else {
             $map = ['save_thread'=>'save','archive_thread'=>'archive','clear_thread'=>'clear','rename_thread'=>'rename'];
-            mg_agent_thread_action($pdo, $actorId, $threadId, $map[$action], $input);
+            mg_agent_thread_action($pdo, $actorId, $targetThreadId, $map[$action], $input);
+            if ($action === 'clear_thread' && $targetThreadId !== '') {
+                mg_merchant_contact_action_center_record_selection($pdo, $actorId, $targetThreadId, null);
+            }
         }
         $state = mg_agent_chat_contact_state($pdo, $merchantOwnerId, $actorId, mg_ai_chat_public_state($pdo, $actorId));
         mg_ok(['state'=>$state], 'Agent thread updated.');
