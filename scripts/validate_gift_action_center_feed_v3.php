@@ -27,6 +27,8 @@ try{
     $load=$read('assets/js/gift-envelope-presentation.js');
     $source=$read('assets/js/gift-source-metadata.js');
     $api=$read('api/account/action-center.php');
+    $contract=$read('api/account/_action_center_contract.php');
+    $adapter=$read('assets/js/action-center-contract-v2.js');
     $inbox=$read('inbox.php');
     $sent=$read('sent.php');
     $claimed=$read('claimed.php');
@@ -77,14 +79,15 @@ try{
     );
 
     $expect(
-        str_contains($feed,"actionButton('send', 'Regift')")
-        && str_contains($feed,"actionButton('claim', 'Claim')")
-        && str_contains($feed,"actionButton('follow-up', 'Follow Up'")
-        && str_contains($feed,"actionButton('message', 'Message')")
-        && str_contains($feed,"actionButton('tip', 'Tip'")
-        && substr_count($feed,"actionButton('load', 'Load')")>=3
+        str_contains($feed,"actionButton('send', 'Regift', !item.can_send")
+        && str_contains($feed,"actionButton('claim', 'Claim', !item.can_claim")
+        && str_contains($feed,"actionButton('follow-up', 'Follow Up', !item.can_follow_up")
+        && str_contains($feed,"actionButton('message', 'Message', !item.can_message")
+        && str_contains($feed,"actionButton('tip', 'Tip', !item.can_tip")
+        && substr_count($feed,"actionButton('load', 'Load', !item.can_load")>=3
+        && str_contains($feed,'capability_reasons')
         && !str_contains($feed,'is-primary'),
-        'Inbox, Sent, and Claimed actions use one neutral rebuilt action stack'
+        'Inbox, Sent, and Claimed actions use one neutral server-capability-gated action stack'
     );
 
     $expect(
@@ -142,11 +145,15 @@ try{
     );
 
     $expect(
-        str_contains($api,'mg_action_center_apply_business_names')
-        && str_contains($api,'FROM merchant_storefronts')
-        && str_contains($api,"\$item['business_name']=\$business")
-        && str_contains($api,"\$item['merchant_name']=\$business"),
-        'Action Center API resolves storefront business names before rendering'
+        str_contains($api,"require_once __DIR__ . '/_action_center_contract.php';")
+        && str_contains($api,'mg_action_center_contract_items(')
+        && str_contains($contract,'mg_action_center_contract_business_names')
+        && str_contains($contract,'FROM merchant_storefronts')
+        && str_contains($contract,"\$item['business_name'] = \$business")
+        && str_contains($contract,"\$item['merchant_name'] = \$item['business_name']")
+        && str_contains($adapter,'merchant_name: text(merchant.name')
+        && str_contains($adapter,'business_name: text(merchant.name'),
+        'Shared Contract v2 resolves storefront business names before feed rendering'
     );
 
     $expect(
