@@ -1,0 +1,175 @@
+/* Calendar card cleanup: image-first grid cards and wider stacked rows. */
+.mg-design-calendar-standalone-page .mg-calendar-select-item{
+  display:none!important;
+}
+
+.mg-design-calendar-standalone-page .mg-design-calendar-grid-view .mg-calendar-event-title{
+  display:none!important;
+}
+
+.mg-design-calendar-standalone-page .mg-design-calendar-grid-view .mg-design-calendar-event-head{
+  grid-template-columns:minmax(0,1fr) auto!important;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-stack-day{
+  gap:12px;
+  padding:14px;
+  border-color:#d7e2ed;
+  box-shadow:0 8px 22px rgba(16,33,59,.045);
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-stack-day>header{
+  min-height:34px;
+  padding:0 2px 2px;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-stack-day>header strong{
+  color:#10213b;
+  font-size:15px;
+  line-height:1.2;
+  letter-spacing:-.02em;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-stack-day>header span{
+  color:#718096;
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-stack-day .mg-design-calendar-event{
+  display:grid!important;
+  grid-template-columns:clamp(170px,20vw,230px) minmax(280px,1fr) 86px!important;
+  grid-template-rows:auto auto auto;
+  grid-template-areas:
+    "image head actions"
+    "image title actions"
+    "image meta actions";
+  align-items:start!important;
+  column-gap:20px;
+  row-gap:8px;
+  min-height:142px;
+  margin:0;
+  padding:14px 15px!important;
+  border-radius:13px!important;
+  box-shadow:0 7px 20px rgba(16,33,59,.065);
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-stack-day .mg-design-calendar-event:hover,
+.mg-design-calendar-standalone-page .mg-calendar-stack-day .mg-design-calendar-event:focus-visible{
+  transform:translateY(-2px);
+  box-shadow:0 13px 28px rgba(16,33,59,.12);
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-stack-day .mg-design-calendar-event-head{
+  grid-area:head!important;
+  display:flex!important;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  min-width:0;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-stack-day .mg-calendar-theme-badge{
+  max-width:min(100%,260px);
+  padding:4px 8px;
+  font-size:8px!important;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-stack-day .mg-calendar-status-badge{
+  flex:0 0 auto;
+  font-size:8px!important;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-stack-day .mg-calendar-event-image{
+  grid-area:image!important;
+  width:100%;
+  height:114px!important;
+  border-radius:10px!important;
+  box-shadow:0 4px 12px rgba(16,33,59,.08);
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-stack-day .mg-calendar-event-title{
+  grid-area:title;
+  display:block;
+  min-width:0;
+  max-width:none;
+  margin:0;
+  color:#10213b;
+  font-size:18px;
+  font-weight:900;
+  line-height:1.2;
+  letter-spacing:-.025em;
+  overflow-wrap:anywhere;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-stack-day .mg-calendar-event-meta{
+  grid-area:meta!important;
+  align-self:end;
+  gap:6px;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-stack-day .mg-calendar-event-meta span{
+  padding:4px 7px!important;
+  font-size:8px!important;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-stack-day .mg-design-calendar-event-actions{
+  grid-area:actions!important;
+  align-self:stretch;
+  display:flex!important;
+  align-items:center;
+  justify-content:flex-end;
+}
+
+.mg-design-calendar-standalone-page .mg-calendar-stack-day .mg-design-calendar-event-actions button{
+  min-width:70px;
+  min-height:34px;
+  padding:7px 11px;
+  border-radius:9px;
+  font-size:9px;
+}
+
+@media (max-width:760px){
+  .mg-design-calendar-standalone-page .mg-calendar-stack-day .mg-design-calendar-event{
+    grid-template-columns:128px minmax(0,1fr)!important;
+    grid-template-rows:auto auto auto auto;
+    grid-template-areas:
+      "image head"
+      "image title"
+      "image meta"
+      "actions actions";
+    column-gap:14px;
+    min-height:0;
+  }
+
+  .mg-design-calendar-standalone-page .mg-calendar-stack-day .mg-calendar-event-image{
+    height:104px!important;
+  }
+
+  .mg-design-calendar-standalone-page .mg-calendar-stack-day .mg-design-calendar-event-actions{
+    justify-content:flex-end;
+    padding-top:2px;
+  }
+}
+
+@media (max-width:520px){
+  .mg-design-calendar-standalone-page .mg-calendar-stack-day .mg-design-calendar-event{
+    grid-template-columns:1fr!important;
+    grid-template-areas:
+      "head"
+      "title"
+      "image"
+      "meta"
+      "actions";
+  }
+
+  .mg-design-calendar-standalone-page .mg-calendar-stack-day .mg-calendar-event-image{
+    height:170px!important;
+  }
+
+  .mg-design-calendar-standalone-page .mg-calendar-stack-day .mg-calendar-event-title{
+    font-size:16px;
+  }
+}
