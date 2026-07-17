@@ -47,7 +47,7 @@ $sidebarLinkClass = static function (string $key) use ($activeSidebarKey): strin
   <?php if ($user): ?>
     <nav class="mg-personal-chat-actions" aria-label="Customer and Agent navigation">
       <a class="<?= mg_e($sidebarLinkClass('inbox')) ?>" href="/inbox.php"><span aria-hidden="true">▣</span><strong>Inbox</strong></a>
-      <a class="<?= mg_e($sidebarLinkClass('feed')) ?>" href="/feed.php"><span aria-hidden="true">◈</span><strong>My Feed</strong></a>
+      <a class="<?= mg_e($sidebarLinkClass('feed')) ?>" href="/feed.php?view=mine"><span aria-hidden="true">◈</span><strong>My Feed</strong></a>
       <a class="<?= mg_e($sidebarLinkClass('loyalty-cards')) ?>" href="/loyalty-cards.php"><span aria-hidden="true">◇</span><strong>My Loyalty Cards</strong></a>
       <a class="<?= mg_e($sidebarLinkClass('lists')) ?>" href="/lists.php"><span aria-hidden="true">☷</span><strong>My Lists</strong></a>
       <a class="<?= mg_e($sidebarLinkClass('saves')) ?>" href="/saves.php"><span aria-hidden="true">☆</span><strong>My Saves</strong></a>
