@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
 
 jobs:
   snapshot:
@@ -30,3 +31,9 @@ jobs:
           name: contactform-audit-source
           path: /tmp/contactform-audit-source.zip
           if-no-files-found: error
+
+      - name: Publish snapshot run id
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr comment "${{ github.event.pull_request.number }}" --body "<!-- audit-source-snapshot --> Source snapshot workflow run: ${{ github.run_id }}"
