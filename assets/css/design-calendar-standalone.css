@@ -21,6 +21,7 @@
 .mg-calendar-event-image{height:74px;aspect-ratio:auto!important;margin:7px 0!important;border-radius:8px!important}
 .mg-calendar-event-meta span:first-child{background:#edf4ff;color:#285ba7}.mg-calendar-event-meta span:nth-child(2){background:#f2f4f7;color:#53657d}
 .mg-calendar-event-controls,.mg-calendar-copy-editor{display:none!important}
+.mg-calendar-select-item{pointer-events:none}.mg-calendar-select-item input{pointer-events:auto}
 .mg-design-calendar-event-actions{margin-top:7px!important}
 .mg-design-calendar-event-actions button{background:#fff!important}
 .mg-design-calendar-event-actions [data-calendar-open]{border-color:color-mix(in srgb,var(--calendar-accent) 35%,#d5e0eb)!important;color:var(--calendar-accent)!important}
