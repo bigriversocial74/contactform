@@ -7,6 +7,8 @@ on:
     paths:
       - 'design-studio.php'
       - 'design-calendar.php'
+      - 'includes/standalone-creative-header.php'
+      - 'includes/standalone-creative-footer.php'
       - 'includes/personal-agent-sidebar.php'
       - 'includes/personal-agent/workspace-design.php'
       - 'includes/personal-agent/workspace-design-calendar.php'
@@ -44,6 +46,8 @@ jobs:
         run: |
           php -l design-studio.php
           php -l design-calendar.php
+          php -l includes/standalone-creative-header.php
+          php -l includes/standalone-creative-footer.php
           php -l includes/personal-agent-sidebar.php
           php -l includes/personal-agent/workspace-design.php
           php -l includes/personal-agent/workspace-design-calendar.php
