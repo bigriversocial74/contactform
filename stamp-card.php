@@ -132,6 +132,7 @@ $renderStampJoin = static function (array $context): void {
           <p><?= mg_e($rewardValue) ?></p>
           <?php if ($redemptionInstructions !== ''): ?><p><?= mg_e($redemptionInstructions) ?></p><?php endif; ?>
           <?php if ($endsLabel !== ''): ?><span class="mg-rl-pill">Ends <?= mg_e($endsLabel) ?></span><?php endif; ?>
+          <?php if (!$previewMode && !$closed): ?><button class="mg-loyalty-save-toggle mg-stamp-card-save-toggle" type="button" data-loyalty-save-toggle data-campaign-id="<?= mg_e((string)$campaign['public_id']) ?>" data-saved="false" aria-pressed="false"><span data-loyalty-save-icon aria-hidden="true">☆</span><strong data-loyalty-save-label>Save Card</strong></button><?php endif; ?>
         </article>
 
         <article class="mg-rl-card mg-stamp-summary-card mg-stamp-rules-card">
