@@ -17,6 +17,7 @@ on:
       - 'assets/css/design-calendar-standalone.css'
       - 'assets/js/design-studio-template-variants.js'
       - 'assets/js/design-studio-schedule-context.js'
+      - 'assets/js/personal-agent-design-studio-calendar.js'
       - 'assets/js/design-calendar-modal.js'
       - 'scripts/validate_design_calendar_standalone_v1.php'
       - '.github/workflows/design-calendar-standalone-v1-validation.yml'
@@ -58,6 +59,7 @@ jobs:
         run: |
           node --check assets/js/design-studio-template-variants.js
           node --check assets/js/design-studio-schedule-context.js
+          node --check assets/js/personal-agent-design-studio-calendar.js
           node --check assets/js/design-calendar-modal.js
 
       - name: Standalone page contract
