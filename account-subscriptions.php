@@ -14,6 +14,7 @@ $page_styles=[
     '/assets/css/personal-agent-chat-history.css?v=1.4.0',
     '/assets/css/subscription-billing-v2.css?v=1.0.0',
     '/assets/css/subscription-checkout-completion-v1.css?v=1.0.0',
+    '/assets/css/subscription-agent-access-v1.css?v=1.0.0',
 ];
 $page_scripts=[
     '/assets/js/account.js',
@@ -21,6 +22,7 @@ $page_scripts=[
     '/assets/js/subscription-activation-status.js?v=2.0.0',
     '/assets/js/subscription-billing-v2.js?v=1.0.0',
     '/assets/js/subscription-checkout-completion-v1.js?v=1.0.0',
+    '/assets/js/subscription-agent-access-v1.js?v=1.0.0',
 ];
 $user=mg_current_user();
 require __DIR__ . '/includes/header.php';
