@@ -79,7 +79,7 @@ $checks = [
     'Agent assets are loaded with current cache versions' => str_contains($agentPage, 'personal-agent-chat-canvas.css')
         && str_contains($agentPage, 'personal-agent-full-canvas.css?v=1.0.0')
         && str_contains($agentPage, 'personal-agent-chat-history.css?v=1.4.0')
-        && str_contains($agentPage, 'personal-agent-chat-history.js?v=1.1.0')
+        && str_contains($agentPage, 'personal-agent-chat-history.js?v=1.2.0')
         && str_contains($personalSidebar, 'agent-sidebar-tools.js?v=1.0.0'),
     'My Lists creation remains wired' => substr_count($listPage, 'data-user-list-open-create') >= 2
         && str_contains($listJs, '[data-user-list-open-create]')
