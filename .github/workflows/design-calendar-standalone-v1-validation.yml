@@ -13,6 +13,7 @@ on:
       - 'includes/personal-agent/workspace-design.php'
       - 'includes/personal-agent/workspace-design-calendar.php'
       - 'assets/css/design-studio-standalone.css'
+      - 'assets/css/design-studio-runtime-fix.css'
       - 'assets/css/design-calendar-standalone.css'
       - 'assets/js/design-studio-template-variants.js'
       - 'assets/js/design-studio-schedule-context.js'
