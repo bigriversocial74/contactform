@@ -41,6 +41,7 @@ $page_styles = [
 $page_scripts = [
     '/assets/js/merchant-agent-crm-mention-search.js?v=1.1.0',
     '/assets/js/merchant-agent-contact-action-center.js?v=1.0.0',
+    '/assets/js/merchant-agent-contact-action-center-select-bridge.js?v=1.0.0',
     '/assets/js/merchant-agent-chat.js?v=2.4.0',
     '/assets/js/merchant-agent-snapshot-action-center.js?v=1.0.0',
     '/assets/js/merchant-agent-chat-voice.js',
