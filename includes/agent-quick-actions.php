@@ -60,6 +60,13 @@ function mg_agent_quick_action_catalog(): array
                         ['keyword'=>'/m','detail'=>'Route a request to Merchant Agent','prompt'=>'/m snapshot'],
                     ],
                 ],
+                [
+                    'label' => 'Canvas navigation',
+                    'items' => [
+                        ['keyword'=>'world','detail'=>'Open World Canvas','href'=>'/world-canvas.php'],
+                        ['keyword'=>'store','detail'=>'Open Merchant Store Canvas','href'=>'/merchant-canvas.php'],
+                    ],
+                ],
             ],
         ],
         'merchant' => [
@@ -124,6 +131,13 @@ function mg_agent_quick_action_catalog(): array
                         ['keyword'=>'campaign idea','detail'=>'New campaign concept','prompt'=>'Create a campaign idea using my current merchant data.'],
                         ['keyword'=>'social campaign','detail'=>'Social Campaign Advisor','prompt'=>'Use the Social Campaign Advisor skill to create social media campaign advice based on my merchant data.'],
                         ['keyword'=>'review queue','detail'=>'Prepare an action for review','prompt'=>'Prepare this as a review-queue recommendation without executing it.'],
+                    ],
+                ],
+                [
+                    'label' => 'Canvas navigation',
+                    'items' => [
+                        ['keyword'=>'world','detail'=>'Open World Canvas','href'=>'/world-canvas.php'],
+                        ['keyword'=>'store','detail'=>'Open Merchant Store Canvas','href'=>'/merchant-canvas.php'],
                     ],
                 ],
             ],
