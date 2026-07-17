@@ -10,6 +10,7 @@ $page_styles = [
     '/assets/css/watch-listen-standalone-page.css',
     '/assets/css/campaign-landing-foundation.css',
     '/assets/css/public-campaign-rl-landing-v1.css',
+    '/assets/css/public-campaign-compact-layout-v2.css?v=1.0.0',
 ];
 $page_scripts = ['/assets/js/public-campaign.js'];
 $mgCampaignExpectedType = 'referral_reward';
