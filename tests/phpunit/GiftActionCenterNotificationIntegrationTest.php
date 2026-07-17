@@ -13,11 +13,12 @@ final class GiftActionCenterNotificationIntegrationTest extends TestCase
             self::assertIsString($source);
             self::assertStringContainsString('includes/gift-action-center.php',$source);
             self::assertStringNotContainsString('/assets/js/gift-action-center.js',$source);
-            self::assertMatchesRegularExpression('/\$agent_tab\s*=\s*[\'"]'.preg_quote($folder,'/').'[\'"]/',$source);
+            self::assertMatchesRegularExpression('/\$agent_tab\s*=\s*[\'\"]'.preg_quote($folder,'/').'[\'\"]/',$source);
         }
         $workspace=file_get_contents($root.'/includes/gift-action-center.php');
         self::assertIsString($workspace);
         self::assertStringContainsString('gift-action-center-runtime-v4.js?v=4.0.0',$workspace);
+        self::assertStringContainsString('gift-action-center-user-search-v2.js?v=2.0.0',$workspace);
     }
 
     public function testGiftActionCenterGatesDemoContentToSuperAdmin(): void
@@ -44,7 +45,7 @@ final class GiftActionCenterNotificationIntegrationTest extends TestCase
         self::assertStringNotContainsString('data-gift-action="resend"',$runtime);
     }
 
-    public function testLoadDrawerRendersContentBeforeProtectedVoucher(): void
+    public function testLoadDrawerComposesContentBeforeProtectedVoucher(): void
     {
         $root=dirname(__DIR__,2);
         $workspace=file_get_contents($root.'/includes/gift-action-center.php');
@@ -56,11 +57,8 @@ final class GiftActionCenterNotificationIntegrationTest extends TestCase
         self::assertStringNotContainsString('mg-gift-folder-tabs',$workspace);
         self::assertStringContainsString('mg-agent-tab-badge',$header);
         self::assertStringContainsString('data-gift-drawer',$workspace);
-        $contentStackPosition=strpos($runtime,'mg-pppm-post-stack');
-        $voucherPosition=strpos($runtime,'Protected voucher');
-        self::assertNotFalse($contentStackPosition);
-        self::assertNotFalse($voucherPosition);
-        self::assertTrue($contentStackPosition<$voucherPosition);
+        self::assertStringContainsString('posts.map((post,i)=>mediaPostMarkup',$runtime);
+        self::assertStringContainsString(".join('')+'</div>'+voucherMarkup(c)",$runtime);
         self::assertStringContainsString('/api/account/action-center.php',$runtime);
     }
 
