@@ -61,7 +61,16 @@ jobs:
           node --check assets/js/gift-action-center-claim-modal.js
           node --check assets/js/gift-action-center-runtime-v4.js
       - name: Mutation contract
-        run: php scripts/validate_action_center_mutation_contract_v1.php
+        run: |
+          set -o pipefail
+          php scripts/validate_action_center_mutation_contract_v1.php 2>&1 | tee mutation-contract-${{ matrix.php }}.txt
+      - name: Upload mutation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-contract-${{ matrix.php }}
+          path: mutation-contract-${{ matrix.php }}.txt
+          retention-days: 3
       - name: Focused PHPUnit contracts
         run: |
           if [ -x vendor/bin/phpunit ]; then
