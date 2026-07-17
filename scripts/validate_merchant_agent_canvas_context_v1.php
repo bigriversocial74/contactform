@@ -23,7 +23,7 @@ $checks = [
     'final canvas asset loads after integrated workspace styles' =>
         str_contains($content['page'], 'merchant-agent-personal-canvas-parity-v1.css?v=1.0.0')
         && strpos($content['page'], 'merchant-agent-personal-canvas-parity-v1.css') > strpos($content['page'], 'merchant-agent-integrated-workspace.css'),
-    'current sidebar runtime is cache-busted' => str_contains($content['page'], 'merchant-agent-sidebar-history.js?v=2.0.0'),
+    'current sidebar runtime is cache-busted' => str_contains($content['page'], 'merchant-agent-sidebar-history.js?v=2.1.0'),
     'merchant markup shares personal conversation classes' =>
         str_contains($content['view'], 'mg-personal-agent-main mg-merchant-agent-main')
         && str_contains($content['view'], 'mg-personal-agent-chat-view mg-merchant-agent-chat-view')
@@ -37,14 +37,16 @@ $checks = [
         && str_contains($content['css'], 'background:transparent!important')
         && str_contains($content['css'], '.mg-agent-chat-empty')
         && str_contains($content['css'], 'border-radius:0!important'),
-    'sidebar uses grouped personal chat row classes' =>
-        str_contains($content['sidebar'], 'mg-personal-chat-group')
+    'sidebar uses one flat personal chat row list' =>
+        str_contains($content['sidebar'], 'host.innerHTML = threads.map')
         && str_contains($content['sidebar'], 'mg-personal-chat-row')
-        && str_contains($content['sidebar'], 'mg-personal-chat-delete'),
-    'sidebar groups current chats by date range' =>
-        str_contains($content['sidebar'], "return 'Today'")
-        && str_contains($content['sidebar'], "return 'Yesterday'")
-        && str_contains($content['sidebar'], "return 'Previous 7 days'"),
+        && str_contains($content['sidebar'], 'mg-personal-chat-delete')
+        && !str_contains($content['sidebar'], 'mg-personal-chat-group'),
+    'sidebar date range grouping is removed' =>
+        !str_contains($content['sidebar'], 'groupLabel')
+        && !str_contains($content['sidebar'], "return 'Today'")
+        && !str_contains($content['sidebar'], "return 'Yesterday'")
+        && !str_contains($content['sidebar'], "return 'Previous 7 days'"),
     'sidebar provides a confirmed thread removal action' =>
         str_contains($content['sidebar'], "action: 'delete_thread'")
         && str_contains($content['sidebar'], 'window.confirm')
