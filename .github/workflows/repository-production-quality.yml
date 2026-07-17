@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
 
 concurrency:
   group: repository-production-quality-${{ github.event.pull_request.number || github.ref }}-${{ matrix.php-version }}
@@ -44,7 +45,20 @@ jobs:
         run: composer install --no-interaction --prefer-dist
 
       - name: Run 100-point production quality gate
+        id: production-audit
+        continue-on-error: true
         run: php scripts/audit_repository_production_quality.php --gate
+
+      - name: Publish PHP 8.3 audit report to pull request
+        if: always() && github.event_name == 'pull_request' && matrix.php-version == '8.3'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo '<!-- repository-production-quality-audit -->'
+            cat build/repository-production-audit.md
+          } > /tmp/repository-production-audit-comment.md
+          gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/repository-production-audit-comment.md
 
       - name: Upload audit report
         if: always()
@@ -55,3 +69,7 @@ jobs:
             build/repository-production-audit.json
             build/repository-production-audit.md
           if-no-files-found: error
+
+      - name: Enforce 10 out of 10 score
+        if: steps.production-audit.outcome == 'failure'
+        run: exit 1
