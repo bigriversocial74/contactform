@@ -12,6 +12,7 @@ $page_styles = [
     '/assets/css/watch-listen-standalone-page.css',
     '/assets/css/campaign-landing-foundation.css',
     '/assets/css/public-campaign-experience-v1.css',
+    '/assets/css/public-campaign-compact-layout-v2.css?v=1.0.0',
 ];
 $page_scripts = ['/assets/js/public-campaign.js', '/assets/js/public-instant-win.js'];
 
@@ -47,12 +48,9 @@ $backgroundUrl = mg_campaign_landing_background_image($campaign);
 $campaignImageUrl = mg_campaign_landing_campaign_image($campaign);
 $interactionImageUrl = $campaignImageUrl ?? mg_campaign_landing_reward_cover($campaign);
 $headline = trim((string)($campaign['form_headline'] ?? '')) ?: (string)$campaign['title'];
-$description = trim((string)($campaign['form_description'] ?? ''))
-    ?: (trim((string)($campaign['description'] ?? '')) ?: 'Scratch the card or spin the wheel and reveal your instant win result.');
 $rewardTitle = trim((string)($campaign['reward_template_title'] ?? '')) ?: 'Microgifter reward';
 $rewardValue = mg_campaign_landing_value($campaign);
 $modeLabel = $playMode === 'spin_wheel' ? 'Spin Wheel' : 'Scratch Card';
-$oddsPercent = max(0, min(100, (int)($rules['odds_percent'] ?? $rules['instant_win_odds_percent'] ?? 100)));
 $closed = !empty($campaignState['closed']);
 
 $renderInstantJoin = static function (array $context): void {
@@ -89,19 +87,10 @@ $renderInstantJoin = static function (array $context): void {
     <?php endif;
 };
 ?>
-<section class="mg-rl-page mg-rl-campaign-foundation mg-rl-interactive mg-rl-instant<?= $previewMode ? ' is-merchant-preview' : '' ?><?= $closed ? ' is-campaign-closed' : '' ?>" data-public-campaign-page data-instant-win-experience data-campaign-state="<?= mg_e((string)$campaignState['code']) ?>" data-campaign-mode="<?= mg_e($playMode) ?>"<?= $previewMode ? ' data-merchant-campaign-preview' : '' ?>>
+<section class="mg-rl-page mg-rl-campaign-foundation mg-rl-interactive mg-rl-instant mg-rl-compact-campaign<?= $previewMode ? ' is-merchant-preview' : '' ?><?= $closed ? ' is-campaign-closed' : '' ?>" data-public-campaign-page data-instant-win-experience data-campaign-state="<?= mg_e((string)$campaignState['code']) ?>" data-campaign-mode="<?= mg_e($playMode) ?>"<?= $previewMode ? ' data-merchant-campaign-preview' : '' ?>>
   <div class="mg-rl-bg"<?= $backgroundUrl ? ' style="background-image:url(' . mg_e($backgroundUrl) . ')"' : '' ?>></div>
   <div class="mg-rl-wrap">
     <div class="mg-rl-left">
-      <?php if ($previewMode): ?>
-        <article class="mg-rl-card mg-rl-preview-banner"><span class="mg-rl-eyebrow">Merchant preview</span><h3><?= mg_e((string)$campaignState['status_label']) ?></h3><p>Customer submissions are disabled until this campaign is active.</p><a class="mg-rl-btn mg-rl-btn-soft" href="/merchant-campaigns.php">Open campaign manager</a></article>
-      <?php endif; ?>
-      <header class="mg-rl-hero">
-        <h1><?= mg_e($headline) ?></h1>
-        <p><?= mg_e($description) ?></p>
-        <div class="mg-public-campaign-trust-row"><span><?= mg_e($modeLabel) ?></span><span><?= mg_e((string)$oddsPercent) ?>% configured odds</span><span>Winner reward to Inbox</span></div>
-      </header>
-
       <section class="mg-rl-player" aria-label="Instant win interaction canvas">
         <div class="mg-instant-stage<?= $playMode === 'spin_wheel' && $interactionImageUrl ? ' has-campaign-art' : '' ?>" data-instant-stage data-mode="<?= mg_e($playMode) ?>">
           <?php if ($playMode === 'spin_wheel' && $interactionImageUrl): ?>
@@ -117,6 +106,10 @@ $renderInstantJoin = static function (array $context): void {
           </button>
         </div>
       </section>
+
+      <?php if ($previewMode): ?>
+        <article class="mg-rl-card mg-rl-preview-banner"><span class="mg-rl-eyebrow">Merchant preview</span><h3><?= mg_e((string)$campaignState['status_label']) ?></h3><p>Customer submissions are disabled until this campaign is active.</p><a class="mg-rl-btn mg-rl-btn-soft" href="/merchant-campaigns.php">Open campaign manager</a></article>
+      <?php endif; ?>
 
       <aside class="mg-rl-join mg-rl-join-mobile"><?php $renderInstantJoin(['campaign' => $campaign, 'profile' => $profile, 'prefill' => $prefill, 'state' => $campaignState, 'preview' => $previewMode, 'closed' => $closed, 'play_mode' => $playMode, 'mode_label' => $modeLabel]); ?></aside>
 
