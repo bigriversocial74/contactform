@@ -8,6 +8,7 @@ $paths = [
     'css' => 'assets/css/merchant-crm-mobile-dashboard.css',
     'contract_css' => 'assets/css/merchant-crm-mobile-dashboard-contract.css',
     'js' => 'assets/js/merchant-crm-mobile-dashboard.js',
+    'directory_js' => 'assets/js/merchant-crm-directory.js',
     'identity_js' => 'assets/js/merchant-crm-identity-duplicates.js',
 ];
 
@@ -35,7 +36,8 @@ $mobileStatMarkup = $mobileStatStart !== false && $mobileStatEnd !== false
 $checks = [
     'mobile dashboard styles are loaded last' => str_contains($files['page'], 'merchant-crm-mobile-dashboard.css?v=1.0.0')
         && str_contains($files['page'], 'merchant-crm-mobile-dashboard-contract.css?v=1.0.0'),
-    'mobile dashboard runtime is loaded after identity runtime' => strpos($files['page'], 'merchant-crm-identity-duplicates.js?v=1.1.0') < strpos($files['page'], 'merchant-crm-mobile-dashboard.js?v=1.0.0'),
+    'mobile dashboard and unified directory runtimes load after identity runtime' => strpos($files['page'], 'merchant-crm-identity-duplicates.js?v=1.1.0') < strpos($files['page'], 'merchant-crm-mobile-dashboard.js?v=1.1.0')
+        && strpos($files['page'], 'merchant-crm-mobile-dashboard.js?v=1.1.0') < strpos($files['page'], 'merchant-crm-directory.js?v=1.0.0'),
     'mobile contract retains exactly five stat articles' => substr_count($mobileStatMarkup, '<article') === 5,
     'possible duplicates uses a mobile-only semantic tile' => str_contains($files['view'], 'mg-crm-mobile-duplicate-stat')
         && str_contains($files['view'], 'role="group"'),
@@ -60,10 +62,12 @@ $checks = [
         && str_contains($files['contract_css'], '.mg-crm-mobile-duplicate-stat>strong'),
     'accordion runtime controls hidden state and aria state' => str_contains($files['js'], 'function setAccordion(open)')
         && str_contains($files['js'], "setAttribute('aria-expanded'"),
-    'contact search filters rendered CRM rows' => str_contains($files['js'], "querySelectorAll('.mg-crm-contact-row')")
-        && str_contains($files['js'], 'searchableText(row).indexOf(query)'),
-    'search survives asynchronous CRM rerenders' => str_contains($files['js'], 'mg:crm-contacts:rendered')
-        && str_contains($files['js'], 'MutationObserver'),
+    'unified directory runtime filters rendered CRM rows for mobile and desktop' => str_contains($files['directory_js'], "querySelectorAll('.mg-crm-contact-row')")
+        && str_contains($files['directory_js'], 'searchableText(row)')
+        && str_contains($files['directory_js'], '[desktopInput, mobileInput]'),
+    'search survives asynchronous CRM rerenders without a DOM-wide observer' => str_contains($files['directory_js'], 'mg:crm-contacts:rendered')
+        && !str_contains($files['directory_js'], 'MutationObserver')
+        && !str_contains($files['js'], 'MutationObserver'),
     'all duplicate count displays remain synchronized' => str_contains($files['identity_js'], "qsa('[data-crm-duplicate-count]')")
         && str_contains($files['identity_js'], 'setDuplicateCounts'),
 ];
