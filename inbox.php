@@ -19,17 +19,11 @@ $page_styles = [
 ];
 
 $page_scripts = [
-    '/assets/js/gift-action-center-reward-images.js?v=1.1.0',
-    '/assets/js/gift-action-center.js',
-    '/assets/js/gift-product-media-view.js',
-    '/assets/js/gift-action-center-load-envelope.js',
     '/assets/js/sponsored-campaign-card.js',
     '/assets/js/gift-action-center-claim-modal.js',
-    '/assets/js/gift-action-center-claim-click.js',
     '/assets/js/gift-action-center-send-modal.js',
     '/assets/js/gift-action-center-regift-submit.js',
     '/assets/js/gift-action-center-message-lock.js',
-    '/assets/js/gift-source-metadata.js',
 ];
 
 require __DIR__ . '/includes/header.php';
