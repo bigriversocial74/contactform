@@ -26,14 +26,26 @@ try {
          data-default-destination="<?= mg_e($designDestination) ?>"
          data-merchant-name="<?= mg_e($designMerchantName) ?>">
   <header class="mg-agent-design-modebar">
-    <span class="mg-agent-design-eyebrow">Merchant Design Studio</span>
-    <nav class="mg-agent-design-mode-tabs" aria-label="Design type" role="tablist">
-      <button type="button" class="is-active" role="tab" aria-selected="true" data-design-mode="print">Print</button>
-      <button type="button" role="tab" aria-selected="false" data-design-mode="social">Social Media</button>
-      <?php if ($includeDesignCalendar): ?>
-        <button type="button" role="tab" aria-selected="false" data-calendar-mode-button>Calendar</button>
-      <?php endif; ?>
-    </nav>
+    <a class="mg-agent-design-profile-link" href="<?= mg_e($designDestination) ?>" title="Open merchant profile">
+      <span>Merchant profile</span>
+      <strong><?= mg_e($designDestination) ?></strong>
+    </a>
+
+    <div class="mg-agent-design-modebar-controls">
+      <nav class="mg-agent-design-mode-tabs" aria-label="Design type" role="tablist">
+        <button type="button" class="is-active" role="tab" aria-selected="true" data-design-mode="print">Print</button>
+        <button type="button" role="tab" aria-selected="false" data-design-mode="social">Social Media</button>
+        <?php if ($includeDesignCalendar): ?>
+          <button type="button" role="tab" aria-selected="false" data-calendar-mode-button>Calendar</button>
+        <?php endif; ?>
+      </nav>
+
+      <div class="mg-agent-design-header-actions" data-design-header-actions hidden>
+        <span data-design-status role="status" aria-live="polite"></span>
+        <button type="button" class="mg-btn mg-btn-soft" data-design-save-asset>Save Creative Asset</button>
+        <button type="button" class="mg-btn mg-btn-primary" data-design-download>Download JPG</button>
+      </div>
+    </div>
   </header>
 
   <section class="mg-agent-design-mode-panel" data-design-mode-panel="print">
@@ -76,17 +88,16 @@ try {
     </section>
 
     <div class="mg-agent-design-workspace" data-design-workspace hidden>
-      <aside class="mg-agent-design-rail" aria-label="Print template and export controls">
-        <button type="button" class="mg-agent-design-back" data-design-back><span aria-hidden="true">←</span> All print formats</button>
-
-        <section class="mg-agent-design-object-summary">
-          <span class="mg-agent-design-step">Selected format</span>
-          <strong data-design-object-label>5 × 5 Poster Card</strong>
-          <small data-design-object-detail>Square counter or window display</small>
-        </section>
+      <section class="mg-agent-design-template-browser" data-design-template-browser>
+        <header class="mg-agent-design-template-browser-head">
+          <button type="button" class="mg-agent-design-back" data-design-back><span aria-hidden="true">←</span> All print formats</button>
+          <div>
+            <span class="mg-agent-design-step">Templates</span>
+            <strong data-design-format-label>5 × 5 Poster Card</strong>
+          </div>
+        </header>
 
         <section class="mg-agent-design-template-panel">
-          <span class="mg-agent-design-step">Template</span>
           <h2>Choose a layout</h2>
           <div class="mg-agent-template-picker">
             <button type="button" data-design-template="support-local" data-template-formats="poster,tent">
@@ -107,35 +118,18 @@ try {
             </button>
           </div>
         </section>
+      </section>
 
-        <section class="mg-agent-design-profile-card">
-          <span class="mg-agent-design-step">Profile QR</span>
-          <strong><?= mg_e($designMerchantName) ?></strong>
-          <code title="<?= mg_e($designDestination) ?>"><?= mg_e($designDestination) ?></code>
-        </section>
-
-        <div class="mg-agent-design-actions">
-          <button type="button" class="mg-btn mg-btn-primary" data-design-download disabled>Download JPG</button>
-          <span data-design-status role="status" aria-live="polite">Choose a template to enable download.</span>
-        </div>
-      </aside>
-
-      <div class="mg-agent-design-preview-column">
-        <div class="mg-agent-design-preview-toolbar">
+      <section class="mg-agent-design-loaded-section" data-design-loaded-section hidden>
+        <header class="mg-agent-design-loaded-toolbar">
           <div>
-            <span>Print workspace</span>
-            <strong data-design-format-label>5 × 5 Poster Card</strong>
+            <span data-design-format-label>5 × 5 Poster Card</span>
+            <strong data-design-template-label>Support Local</strong>
           </div>
-          <small data-design-template-label>No template selected</small>
-        </div>
+          <button type="button" class="mg-agent-design-close-template" data-design-close-template aria-label="Close loaded template">Close</button>
+        </header>
 
         <div class="mg-agent-design-stage">
-          <div class="mg-agent-design-empty" data-design-empty>
-            <span class="mg-agent-design-empty-icon" aria-hidden="true">+</span>
-            <strong data-design-empty-title>Choose a template</strong>
-            <p data-design-empty-copy>Select a template from the side rail to place it on your poster card.</p>
-          </div>
-
           <article class="mg-agent-print-design is-poster template-support-local" data-design-canvas data-design-template-canvas hidden>
             <div class="mg-agent-print-face mg-agent-print-front">
               <header class="mg-agent-print-brand">
@@ -158,7 +152,7 @@ try {
             </div>
           </article>
         </div>
-      </div>
+      </section>
     </div>
   </section>
 
