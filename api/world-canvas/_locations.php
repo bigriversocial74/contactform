@@ -9,6 +9,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_world.php';
+require_once dirname(__DIR__, 2) . '/includes/merchant-location-scope.php';
 
 function mg_world_locations_ready(PDO $pdo): bool
 {
@@ -148,6 +149,21 @@ function mg_world_location_backfill_merchant_geo(PDO $pdo, array $row): array
     return $row;
 }
 
+function mg_world_location_workspace_scope(PDO $pdo, int $merchantUserId): ?array
+{
+    if ($merchantUserId <= 0 || !mg_world_canvas_table($pdo, 'merchant_workspaces')) return null;
+    $rows = mg_world_canvas_rows(
+        $pdo,
+        "SELECT id,merchant_user_id FROM merchant_workspaces WHERE merchant_user_id=? AND status<>'archived' ORDER BY id ASC LIMIT 1",
+        [$merchantUserId]
+    );
+    if (!$rows) return null;
+    return [
+        'workspace_id' => (int)$rows[0]['id'],
+        'owner_merchant_id' => (int)$rows[0]['merchant_user_id'],
+    ];
+}
+
 function mg_world_location_merchant_rows(PDO $pdo, int $merchantUserId, bool $onlyGeo = true): array
 {
     if ($merchantUserId <= 0 || !mg_world_location_columns_ready($pdo)) return [];
@@ -155,10 +171,20 @@ function mg_world_location_merchant_rows(PDO $pdo, int $merchantUserId, bool $on
     $geoSource = mg_world_location_select_expr($pdo, 'geo_source', 'NULL');
     $zoneRadius = mg_world_location_select_expr($pdo, 'world_zone_radius_meters', '250');
     $select = "ml.id, ml.public_id, {$merchantUserId} AS merchant_user_id, ml.name, ml.location_code, ml.address_line1, ml.address_line2, ml.city, ml.region, ml.postal_code, ml.country_code, ml.timezone, ml.phone, ml.status, ml.is_primary, ml.latitude, ml.longitude, {$geoAccuracy}, {$geoSource}, {$zoneRadius}, ml.updated_at";
-    if (mg_world_canvas_column($pdo, 'merchant_locations', 'merchant_user_id')) {
+    $scope = mg_world_location_workspace_scope($pdo, $merchantUserId);
+    if ($scope !== null) {
+        $rows = mg_world_canvas_rows(
+            $pdo,
+            "SELECT {$select} FROM merchant_locations ml "
+                . mg_merchant_location_scope_join('ml','location_scope_mw')
+                . " WHERE " . mg_merchant_location_scope_condition('ml','location_scope_mw')
+                . " AND ml.status='active' ORDER BY ml.is_primary DESC, ml.name ASC, ml.id ASC",
+            [(int)$scope['workspace_id'],(int)$scope['owner_merchant_id']]
+        );
+    } elseif (mg_world_canvas_column($pdo, 'merchant_locations', 'merchant_user_id')) {
         $rows = mg_world_canvas_rows($pdo, "SELECT {$select} FROM merchant_locations ml WHERE ml.merchant_user_id=? AND ml.status='active' ORDER BY ml.is_primary DESC, ml.name ASC, ml.id ASC", [$merchantUserId]);
     } else {
-        $rows = mg_world_canvas_rows($pdo, "SELECT {$select} FROM merchant_locations ml JOIN merchant_workspaces mw ON mw.id=ml.workspace_id WHERE mw.merchant_user_id=? AND ml.status='active' ORDER BY ml.is_primary DESC, ml.name ASC, ml.id ASC", [$merchantUserId]);
+        $rows = [];
     }
     $rows = array_map(static fn(array $row): array => mg_world_location_backfill_merchant_geo($pdo, $row), $rows);
     if ($onlyGeo) {
@@ -196,20 +222,35 @@ function mg_world_location_save_user(PDO $pdo, int $userId, array $geo, string $
 
 function mg_world_location_find_merchant_location(PDO $pdo, int $merchantUserId, string $locationPublicId): ?array
 {
-    if (mg_world_canvas_column($pdo, 'merchant_locations', 'merchant_user_id')) {
-        $rows = mg_world_canvas_rows($pdo, 'SELECT id, public_id, name FROM merchant_locations WHERE public_id=? AND merchant_user_id=? LIMIT 1', [$locationPublicId, $merchantUserId]);
+    $scope = mg_world_location_workspace_scope($pdo, $merchantUserId);
+    if ($scope !== null) {
+        $sql = 'SELECT ml.id,ml.public_id,ml.name FROM merchant_locations ml '
+            . mg_merchant_location_scope_join('ml','location_scope_mw')
+            . ' WHERE ml.public_id=? AND '
+            . mg_merchant_location_scope_condition('ml','location_scope_mw')
+            . ' LIMIT 1';
+        $rows = mg_world_canvas_rows($pdo, $sql, [$locationPublicId,(int)$scope['workspace_id'],(int)$scope['owner_merchant_id']]);
+    } elseif (mg_world_canvas_column($pdo, 'merchant_locations', 'merchant_user_id')) {
+        $rows = mg_world_canvas_rows($pdo, 'SELECT id,public_id,name FROM merchant_locations WHERE public_id=? AND merchant_user_id=? LIMIT 1', [$locationPublicId, $merchantUserId]);
     } else {
-        $rows = mg_world_canvas_rows($pdo, 'SELECT ml.id, ml.public_id, ml.name FROM merchant_locations ml JOIN merchant_workspaces mw ON mw.id=ml.workspace_id WHERE ml.public_id=? AND mw.merchant_user_id=? LIMIT 1', [$locationPublicId, $merchantUserId]);
+        $rows = [];
     }
     return $rows[0] ?? null;
 }
 
 function mg_world_location_default_merchant_location(PDO $pdo, int $merchantUserId): ?array
 {
-    if (mg_world_canvas_column($pdo, 'merchant_locations', 'merchant_user_id')) {
-        $rows = mg_world_canvas_rows($pdo, "SELECT id, public_id, name FROM merchant_locations WHERE merchant_user_id=? AND status='active' ORDER BY is_primary DESC, updated_at DESC, id DESC LIMIT 1", [$merchantUserId]);
+    $scope = mg_world_location_workspace_scope($pdo, $merchantUserId);
+    if ($scope !== null) {
+        $sql = "SELECT ml.id,ml.public_id,ml.name FROM merchant_locations ml "
+            . mg_merchant_location_scope_join('ml','location_scope_mw')
+            . " WHERE " . mg_merchant_location_scope_condition('ml','location_scope_mw')
+            . " AND ml.status='active' ORDER BY ml.is_primary DESC,ml.updated_at DESC,ml.id DESC LIMIT 1";
+        $rows = mg_world_canvas_rows($pdo, $sql, [(int)$scope['workspace_id'],(int)$scope['owner_merchant_id']]);
+    } elseif (mg_world_canvas_column($pdo, 'merchant_locations', 'merchant_user_id')) {
+        $rows = mg_world_canvas_rows($pdo, "SELECT id,public_id,name FROM merchant_locations WHERE merchant_user_id=? AND status='active' ORDER BY is_primary DESC,updated_at DESC,id DESC LIMIT 1", [$merchantUserId]);
     } else {
-        $rows = mg_world_canvas_rows($pdo, "SELECT ml.id, ml.public_id, ml.name FROM merchant_locations ml JOIN merchant_workspaces mw ON mw.id=ml.workspace_id WHERE mw.merchant_user_id=? AND ml.status='active' ORDER BY ml.is_primary DESC, ml.updated_at DESC, ml.id DESC LIMIT 1", [$merchantUserId]);
+        $rows = [];
     }
     return $rows[0] ?? null;
 }

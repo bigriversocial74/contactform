@@ -3,12 +3,28 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/bootstrap.php';
 require_once dirname(__DIR__, 2) . '/includes/package-entitlements.php';
+require_once dirname(__DIR__, 2) . '/includes/merchant-location-scope.php';
 
 mg_require_method('GET');
 $user = mg_require_api_user();
 $pdo = mg_db();
 $userId = (int) ($user['id'] ?? 0);
 $context = mg_user_package_context($pdo, $user);
+$ownerMerchantId = (int)($context['entitlement_user_id'] ?? $userId);
+$workspaceId = (int)($context['workspace_id'] ?? 0);
+if ($workspaceId <= 0 && $ownerMerchantId > 0 && !empty($context['merchant_access'])) {
+    try {
+        $workspaceStmt = $pdo->prepare('SELECT id,merchant_user_id FROM merchant_workspaces WHERE merchant_user_id=? LIMIT 1');
+        $workspaceStmt->execute([$ownerMerchantId]);
+        $workspace = $workspaceStmt->fetch(PDO::FETCH_ASSOC);
+        if (is_array($workspace)) {
+            $workspaceId = (int)($workspace['id'] ?? 0);
+            $ownerMerchantId = (int)($workspace['merchant_user_id'] ?? $ownerMerchantId);
+        }
+    } catch (Throwable) {
+        $workspaceId = 0;
+    }
+}
 
 function mg_account_package_count(PDO $pdo, string $sql, array $params): int
 {
@@ -21,15 +37,24 @@ function mg_account_package_count(PDO $pdo, string $sql, array $params): int
     }
 }
 
+$locationUsage = 0;
+if ($workspaceId > 0 && $ownerMerchantId > 0) {
+    try {
+        $locationUsage = mg_merchant_location_count($pdo,$workspaceId,$ownerMerchantId);
+    } catch (Throwable) {
+        $locationUsage = 0;
+    }
+}
+
 $usage = [
-    'max_microgifts' => mg_account_package_count($pdo, "SELECT COUNT(*) FROM catalog_products WHERE merchant_user_id=? AND status<>'archived'", [$userId]),
-    'max_rewards' => mg_account_package_count($pdo, "SELECT COUNT(*) FROM reward_templates WHERE merchant_user_id=? AND status<>'archived'", [$userId]),
-    'max_active_campaigns' => mg_account_package_count($pdo, "SELECT COUNT(*) FROM campaigns WHERE merchant_user_id=? AND status='active'", [$userId]),
-    'max_crm_contacts' => mg_account_package_count($pdo, "SELECT COUNT(DISTINCT email) FROM campaign_contacts WHERE merchant_user_id=? AND email<>''", [$userId]),
-    'monthly_stamps_included' => mg_account_package_count($pdo, "SELECT COUNT(*) FROM wallet_items WHERE merchant_user_id=? AND status<>'cancelled' AND issued_at>=?", [$userId, gmdate('Y-m-01 00:00:00')]),
-    'max_landing_pages' => mg_account_package_count($pdo, "SELECT COUNT(*) FROM merchant_storefronts WHERE merchant_user_id=? AND status<>'archived'", [$userId]),
-    'max_locations' => mg_account_package_count($pdo, "SELECT COUNT(*) FROM merchant_locations WHERE merchant_user_id=? AND status<>'archived'", [$userId]),
-    'max_team_seats' => mg_account_package_count($pdo, "SELECT COUNT(*) FROM merchant_team_members mtm INNER JOIN merchant_workspaces mw ON mw.id=mtm.workspace_id WHERE mw.merchant_user_id=? AND mtm.status<>'removed'", [$userId]),
+    'max_microgifts' => mg_account_package_count($pdo, "SELECT COUNT(*) FROM catalog_products WHERE merchant_user_id=? AND status<>'archived'", [$ownerMerchantId]),
+    'max_rewards' => mg_account_package_count($pdo, "SELECT COUNT(*) FROM reward_templates WHERE merchant_user_id=? AND status<>'archived'", [$ownerMerchantId]),
+    'max_active_campaigns' => mg_account_package_count($pdo, "SELECT COUNT(*) FROM campaigns WHERE merchant_user_id=? AND status='active'", [$ownerMerchantId]),
+    'max_crm_contacts' => mg_account_package_count($pdo, "SELECT COUNT(DISTINCT email) FROM campaign_contacts WHERE merchant_user_id=? AND email<>''", [$ownerMerchantId]),
+    'monthly_stamps_included' => mg_account_package_count($pdo, "SELECT COUNT(*) FROM wallet_items WHERE merchant_user_id=? AND status<>'cancelled' AND issued_at>=?", [$ownerMerchantId, gmdate('Y-m-01 00:00:00')]),
+    'max_landing_pages' => mg_account_package_count($pdo, "SELECT COUNT(*) FROM merchant_storefronts WHERE merchant_user_id=? AND status<>'archived'", [$ownerMerchantId]),
+    'max_locations' => $locationUsage,
+    'max_team_seats' => mg_account_package_count($pdo, "SELECT COUNT(*) FROM merchant_team_members mtm INNER JOIN merchant_workspaces mw ON mw.id=mtm.workspace_id WHERE mw.merchant_user_id=? AND mtm.status<>'removed'", [$ownerMerchantId]),
 ];
 
 $labels = [

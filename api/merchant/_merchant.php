@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/intelligence/_intelligence.php';
 require_once dirname(__DIR__, 2) . '/includes/package-entitlements.php';
 require_once dirname(__DIR__, 2) . '/includes/merchant-provisioning.php';
+require_once dirname(__DIR__, 2) . '/includes/merchant-location-scope.php';
 
 $mgDesignStudioEndpoint=basename((string)($_SERVER['SCRIPT_NAME']??''));
 if(in_array($mgDesignStudioEndpoint,['brand-kit.php','design-export.php','design-studio-assets.php','qr-library.php'],true)){
@@ -46,6 +47,17 @@ function mg_merchant_require_permission(string $permission): array
     mg_fail('Merchant permission is not enabled for this account or workspace role.',403);
 }
 
+function mg_merchant_prepare_workspace_locations(PDO $pdo,array $workspace): array
+{
+    $scope=mg_merchant_location_scope_context($workspace);
+    mg_merchant_location_normalize_scope(
+        $pdo,
+        (int)$scope['workspace_id'],
+        (int)$scope['owner_merchant_id']
+    );
+    return $workspace;
+}
+
 function mg_merchant_workspace(PDO $pdo,int $userId,bool $forUpdate=false): array
 {
     $user=function_exists('mg_load_user_auth')?mg_load_user_auth($userId):['id'=>$userId];
@@ -60,7 +72,7 @@ function mg_merchant_workspace(PDO $pdo,int $userId,bool $forUpdate=false): arra
     }
     $workspace=$stmt->fetch(PDO::FETCH_ASSOC);
     if(!$workspace)mg_fail('Merchant workspace has not been created.',404);
-    return $workspace;
+    return mg_merchant_prepare_workspace_locations($pdo,$workspace);
 }
 
 function mg_merchant_ensure_workspace(PDO $pdo,array $user): array
@@ -70,13 +82,14 @@ function mg_merchant_ensure_workspace(PDO $pdo,array $user): array
         $stmt=$pdo->prepare('SELECT * FROM merchant_workspaces WHERE id=? LIMIT 1');
         $stmt->execute([(int)$context['workspace_id']]);
         $workspace=$stmt->fetch(PDO::FETCH_ASSOC);
-        if($workspace)return $workspace;
+        if($workspace)return mg_merchant_prepare_workspace_locations($pdo,$workspace);
         mg_fail('Assigned merchant workspace is unavailable.',404);
     }
     $ownerUserId=(int)($context['entitlement_user_id']??$user['id']??0);
     if($ownerUserId!==(int)($user['id']??0))mg_fail('Assigned merchant workspace is unavailable.',404);
     try{
-        return mg_subscription_provision_merchant_workspace($pdo,$ownerUserId,trim((string)($user['display_name']??$user['full_name']??'Merchant workspace')),'merchant_access');
+        $workspace=mg_subscription_provision_merchant_workspace($pdo,$ownerUserId,trim((string)($user['display_name']??$user['full_name']??'Merchant workspace')),'merchant_access');
+        return mg_merchant_prepare_workspace_locations($pdo,$workspace);
     }catch(Throwable $error){
         mg_security_log('error','merchant.workspace_provision_failed','Unable to initialize merchant workspace.',['exception_class'=>$error::class],$ownerUserId);
         mg_fail('Unable to initialize merchant workspace.',500);

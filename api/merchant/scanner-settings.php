@@ -7,11 +7,13 @@ require_once __DIR__ . '/_scanner_operations.php';
 $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 $user = mg_require_permission('merchant.gifts.redeem');
 $pdo = mg_db();
-$merchantUserId = (int)$user['id'];
 $workspace = mg_claim_workspace($pdo, $user);
+$scope = mg_merchant_location_scope_context($workspace);
+$workspaceId = (int)$scope['workspace_id'];
+$ownerMerchantId = (int)$scope['owner_merchant_id'];
 
 if ($method === 'GET') {
-    $settings = mg_scanner_ops_settings($pdo, $merchantUserId, (int)$workspace['id'], 0);
+    $settings = mg_scanner_ops_settings($pdo, $ownerMerchantId, $workspaceId, 0);
     mg_ok(['settings' => $settings], 'Scanner settings loaded.');
 }
 
@@ -27,11 +29,11 @@ $values = [
     'high_risk_threshold' => max(10, min(100, (int)($input['high_risk_threshold'] ?? 65))),
 ];
 $stmt = $pdo->prepare('SELECT id FROM merchant_scanner_settings WHERE merchant_user_id=? AND workspace_id=? AND location_id IS NULL LIMIT 1');
-$stmt->execute([$merchantUserId, (int)$workspace['id']]);
+$stmt->execute([$ownerMerchantId, $workspaceId]);
 $id = (int)($stmt->fetchColumn() ?: 0);
 if ($id > 0) {
-    $pdo->prepare('UPDATE merchant_scanner_settings SET require_confirmation=?,lock_scanner_to_location=?,allow_manual_entry=?,max_failed_scans_per_hour=?,require_manager_review_high_risk=?,high_risk_threshold=?,updated_at=NOW() WHERE id=?')->execute([$values['require_confirmation'],$values['lock_scanner_to_location'],$values['allow_manual_entry'],$values['max_failed_scans_per_hour'],$values['require_manager_review_high_risk'],$values['high_risk_threshold'],$id]);
+    $pdo->prepare('UPDATE merchant_scanner_settings SET merchant_user_id=?,workspace_id=?,require_confirmation=?,lock_scanner_to_location=?,allow_manual_entry=?,max_failed_scans_per_hour=?,require_manager_review_high_risk=?,high_risk_threshold=?,updated_at=NOW() WHERE id=?')->execute([$ownerMerchantId,$workspaceId,$values['require_confirmation'],$values['lock_scanner_to_location'],$values['allow_manual_entry'],$values['max_failed_scans_per_hour'],$values['require_manager_review_high_risk'],$values['high_risk_threshold'],$id]);
 } else {
-    $pdo->prepare('INSERT INTO merchant_scanner_settings (public_id,merchant_user_id,workspace_id,require_confirmation,lock_scanner_to_location,allow_manual_entry,max_failed_scans_per_hour,require_manager_review_high_risk,high_risk_threshold,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,NOW(),NOW())')->execute([mg_public_uuid(),$merchantUserId,(int)$workspace['id'],$values['require_confirmation'],$values['lock_scanner_to_location'],$values['allow_manual_entry'],$values['max_failed_scans_per_hour'],$values['require_manager_review_high_risk'],$values['high_risk_threshold']]);
+    $pdo->prepare('INSERT INTO merchant_scanner_settings (public_id,merchant_user_id,workspace_id,require_confirmation,lock_scanner_to_location,allow_manual_entry,max_failed_scans_per_hour,require_manager_review_high_risk,high_risk_threshold,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,NOW(),NOW())')->execute([mg_public_uuid(),$ownerMerchantId,$workspaceId,$values['require_confirmation'],$values['lock_scanner_to_location'],$values['allow_manual_entry'],$values['max_failed_scans_per_hour'],$values['require_manager_review_high_risk'],$values['high_risk_threshold']]);
 }
 mg_ok(['settings' => $values], 'Scanner settings saved.');

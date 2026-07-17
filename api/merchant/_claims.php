@@ -10,10 +10,14 @@ function mg_claim_workspace(PDO $pdo, array $user): array
 function mg_claim_location(PDO $pdo, array $user, string $publicId, bool $forUpdate=false): array
 {
     $workspace=mg_claim_workspace($pdo,$user);
-    $sql='SELECT ml.* FROM merchant_locations ml WHERE ml.public_id=? AND ml.workspace_id=? AND ml.merchant_user_id=? LIMIT 1'.($forUpdate?' FOR UPDATE':'');
-    $stmt=$pdo->prepare($sql);
-    $stmt->execute([$publicId,(int)$workspace['id'],(int)$user['id']]);
-    $row=$stmt->fetch();
+    $scope=mg_merchant_location_scope_context($workspace);
+    $row=mg_merchant_location_find_by_public_id(
+        $pdo,
+        (int)$scope['workspace_id'],
+        (int)$scope['owner_merchant_id'],
+        $publicId,
+        $forUpdate
+    );
     if(!$row)mg_fail('Merchant location not found.',404);
     return $row;
 }
@@ -78,14 +82,25 @@ function mg_claim_code_usage_limit_or_null(mixed $value): ?int
     return $limit;
 }
 
-function mg_claim_code_assert_no_active_duplicate(PDO $pdo, int $merchantId, string $codeHash, int $excludeClaimCodeId=0): void
-{
+function mg_claim_code_assert_no_active_duplicate(
+    PDO $pdo,
+    int $workspaceId,
+    int $ownerMerchantId,
+    string $codeHash,
+    int $excludeClaimCodeId=0
+): void {
     $stmt=$pdo->prepare(
-        "SELECT 1 FROM merchant_claim_codes
-         WHERE merchant_user_id=? AND code_hash=? AND status='active' AND id<>?
+        "SELECT 1
+         FROM merchant_claim_codes mcc
+         INNER JOIN merchant_locations ml ON ml.id=mcc.location_id
+         ".mg_merchant_location_scope_join('ml','location_scope_mw')."
+         WHERE ".mg_merchant_location_scope_condition('ml','location_scope_mw')."
+           AND mcc.code_hash=?
+           AND mcc.status='active'
+           AND mcc.id<>?
          LIMIT 1 FOR UPDATE"
     );
-    $stmt->execute([$merchantId,$codeHash,$excludeClaimCodeId]);
+    $stmt->execute([$workspaceId,$ownerMerchantId,$codeHash,$excludeClaimCodeId]);
     if($stmt->fetchColumn())mg_fail('Location claim code already exists.',409);
 }
 
