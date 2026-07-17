@@ -27,7 +27,9 @@ jobs:
         run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: Apply final hardening transformations
-        run: python3 scripts/apply_production_audit_final_hardening.py
+        run: |
+          set -o pipefail
+          python3 scripts/apply_production_audit_final_hardening.py 2>&1 | tee /tmp/final-hardening-transform.log
 
       - name: Validate transformed PHP and JavaScript
         run: |
@@ -47,9 +49,11 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: final-hardening-validation
-          path: /tmp/final-hardening-validation.log
-          if-no-files-found: error
+          name: final-hardening-diagnostics
+          path: |
+            /tmp/final-hardening-transform.log
+            /tmp/final-hardening-validation.log
+          if-no-files-found: warn
 
       - name: Commit final hardening
         run: |
