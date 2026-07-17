@@ -1,5 +1,8 @@
-<?php declare(strict_types=1); ?>
-<section class="mg-agent-design-mode-panel" data-design-mode-panel="calendar" hidden>
+<?php
+declare(strict_types=1);
+$isStandaloneCalendar = !empty($designCalendarStandalone);
+?>
+<section class="mg-agent-design-mode-panel" data-design-mode-panel="calendar"<?= $isStandaloneCalendar ? '' : ' hidden' ?>>
   <div class="mg-design-calendar" data-design-content-calendar data-calendar-days="30">
     <header class="mg-design-calendar-hero">
       <div>

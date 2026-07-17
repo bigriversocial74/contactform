@@ -25,6 +25,7 @@ $activeSidebarKey = match ($currentSidebarScript) {
     'merchant-agent-chat.php' => 'merchant-agent',
     'agent.php' => ((string) ($agent_personal_view ?? 'home')) === 'design' ? 'design' : 'new-chat',
     'design-studio.php' => 'design',
+    'design-calendar.php' => 'calendar',
     default => '',
 };
 
@@ -73,6 +74,9 @@ $sidebarLinkClass = static function (string $key) use ($activeSidebarKey): strin
       <?php endif; ?>
       <a class="<?= mg_e($sidebarLinkClass('design')) ?>" href="/design-studio.php">
         <span aria-hidden="true">✦</span><strong>Design</strong>
+      </a>
+      <a class="<?= mg_e($sidebarLinkClass('calendar')) ?>" href="/design-calendar.php">
+        <span aria-hidden="true">▦</span><strong>Calendar</strong>
       </a>
     </nav>
 

@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 $designMerchantName = $displayName !== '' ? $displayName : 'Your Business';
 $designDestination = '/profile.php';
+$isStandaloneDesign = !empty($designStudioStandalone);
+$includeDesignCalendar = !isset($designStudioIncludeCalendar) || (bool) $designStudioIncludeCalendar;
 try {
     $designUserId = (int) (($user['id'] ?? 0));
     if ($designUserId > 0 && isset($pdo)) {
@@ -19,7 +21,7 @@ try {
 ?>
 <section class="mg-personal-agent-view mg-agent-design-view"
          data-personal-agent-view="design"
-         hidden
+         <?= $isStandaloneDesign ? '' : 'hidden' ?>
          data-agent-design-studio
          data-default-destination="<?= mg_e($designDestination) ?>"
          data-merchant-name="<?= mg_e($designMerchantName) ?>">
@@ -28,7 +30,9 @@ try {
     <nav class="mg-agent-design-mode-tabs" aria-label="Design type" role="tablist">
       <button type="button" class="is-active" role="tab" aria-selected="true" data-design-mode="print">Print</button>
       <button type="button" role="tab" aria-selected="false" data-design-mode="social">Social Media</button>
-      <button type="button" role="tab" aria-selected="false" data-calendar-mode-button>Calendar</button>
+      <?php if ($includeDesignCalendar): ?>
+        <button type="button" role="tab" aria-selected="false" data-calendar-mode-button>Calendar</button>
+      <?php endif; ?>
     </nav>
   </header>
 
@@ -86,12 +90,20 @@ try {
           <h2>Choose a layout</h2>
           <div class="mg-agent-template-picker">
             <button type="button" data-design-template="support-local" data-template-formats="poster,tent">
-              <span class="mg-agent-template-thumbnail" aria-hidden="true">
-                <span>Reward yourself.</span>
-                <em>Support local.</em>
-                <i></i>
-              </span>
-              <span><strong>Support Local</strong><small>Logo mark + profile QR</small></span>
+              <span class="mg-agent-template-thumbnail is-support-local" aria-hidden="true"><span>Reward yourself.</span><em>Support local.</em><i></i></span>
+              <span><strong>Support Local</strong><small>Profile QR + local rewards</small></span>
+            </button>
+            <button type="button" data-design-template="gift-better" data-template-formats="poster,tent">
+              <span class="mg-agent-template-thumbnail is-gift-better" aria-hidden="true"><span>Give local.</span><em>Gift better.</em><i></i></span>
+              <span><strong>Gift Better</strong><small>Local gifting callout</small></span>
+            </button>
+            <button type="button" data-design-template="reward-visit" data-template-formats="poster,tent">
+              <span class="mg-agent-template-thumbnail is-reward-visit" aria-hidden="true"><span>Scan. Save.</span><em>Come back.</em><i></i></span>
+              <span><strong>Reward the Visit</strong><small>Return-visit reward prompt</small></span>
+            </button>
+            <button type="button" data-design-template="local-favorite" data-template-formats="poster,tent">
+              <span class="mg-agent-template-thumbnail is-local-favorite" aria-hidden="true"><span>Your next</span><em>local favorite.</em><i></i></span>
+              <span><strong>Local Favorite</strong><small>Discovery-first profile QR</small></span>
             </button>
           </div>
         </section>
@@ -124,24 +136,24 @@ try {
             <p data-design-empty-copy>Select a template from the side rail to place it on your poster card.</p>
           </div>
 
-          <article class="mg-agent-print-design is-poster" data-design-canvas hidden>
+          <article class="mg-agent-print-design is-poster template-support-local" data-design-canvas data-design-template-canvas hidden>
             <div class="mg-agent-print-face mg-agent-print-front">
               <header class="mg-agent-print-brand">
                 <img src="/images/logo_main_drk.png" alt="Microgifter">
               </header>
               <div class="mg-agent-print-copy">
-                <h2>Reward yourself.<br><em>Support local.</em></h2>
-                <p>Scan to earn rewards and discover local gifts.</p>
+                <h2 data-design-template-headline>Reward yourself.<br><em>Support local.</em></h2>
+                <p data-design-template-copy>Scan to earn rewards and discover local gifts.</p>
               </div>
               <footer class="mg-agent-print-qr-band">
                 <div class="mg-agent-print-qr" data-design-qr aria-label="Merchant profile QR code"></div>
-                <div><strong><?= mg_e($designMerchantName) ?></strong><span>Scan to visit our Microgifter profile.</span></div>
+                <div><strong><?= mg_e($designMerchantName) ?></strong><span data-design-template-qr-copy>Scan to visit our Microgifter profile.</span></div>
               </footer>
             </div>
 
             <div class="mg-agent-print-face mg-agent-print-back" aria-hidden="true">
               <span class="mg-agent-quote-mark">“</span>
-              <blockquote>Discover local gifts, rewards, and experiences from <?= mg_e($designMerchantName) ?>.</blockquote>
+              <blockquote data-design-template-back-copy>Discover local gifts, rewards, and experiences from <?= mg_e($designMerchantName) ?>.</blockquote>
               <div class="mg-agent-quote-byline"><strong><?= mg_e($designMerchantName) ?></strong><span>Powered by Microgifter</span></div>
             </div>
           </article>
@@ -239,5 +251,7 @@ try {
     </div>
   </section>
 
-  <?php require __DIR__ . '/workspace-design-calendar.php'; ?>
+  <?php if ($includeDesignCalendar): ?>
+    <?php require __DIR__ . '/workspace-design-calendar.php'; ?>
+  <?php endif; ?>
 </section>
