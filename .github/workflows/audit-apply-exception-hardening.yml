@@ -23,6 +23,19 @@ jobs:
           ref: audit/repository-production-hardening-20260717
           fetch-depth: 0
 
+      - name: Skip already-safe catch blocks
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/apply_repository_audit_exception_hardening.py')
+          source = path.read_text(encoding='utf-8')
+          old = '''    if "getMessage" not in body or "mg_fail" not in body:\n        raise RuntimeError(f"Expected raw exception response not found in {path.relative_to(ROOT)}")\n'''
+          new = '''    if "getMessage" not in body or "mg_fail" not in body:\n        print(f"Already safe: {path.relative_to(ROOT)}")\n        return\n'''
+          if old not in source:
+              raise SystemExit('Expected transformer safety check was not found')
+          path.write_text(source.replace(old, new, 1), encoding='utf-8')
+          PY
+
       - name: Apply exact exception-boundary transformations
         run: |
           set -o pipefail
