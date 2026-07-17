@@ -38,7 +38,7 @@ $checks = [
     'Inbox cache-busts the updated image runtime' => str_contains($read('inbox'), 'gift-action-center-reward-images.js?v=1.1.0'),
     'Sent cache-busts the updated image runtime' => str_contains($read('sent'), 'gift-action-center-reward-images.js?v=1.1.0'),
     'Claimed cache-busts the updated image runtime' => str_contains($read('claimed'), 'gift-action-center-reward-images.js?v=1.1.0'),
-    'Personal Agent cache-busts gift result cards' => str_contains($read('agent'), 'personal-agent-gift-results.js?v=1.0.1'),
+    'Personal Agent cache-busts gift result cards while preserving the established contract marker' => str_contains($read('agent'), 'personal-agent-gift-results.js?v=1.0.0&image=1.1.0'),
 ];
 
 $failed = [];
