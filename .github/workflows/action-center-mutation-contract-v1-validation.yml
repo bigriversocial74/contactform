@@ -15,6 +15,8 @@ on:
       - 'includes/gift-action-center.php'
       - 'docs/action-center-mutation-contract-v1.md'
       - 'scripts/validate_action_center_mutation_contract_v1.php'
+      - 'tests/phpunit/ActionCenterFrontendSubmitContractTest.php'
+      - 'tests/phpunit/ActionCenterMutationContractV1Test.php'
       - '.github/workflows/action-center-mutation-contract-v1-validation.yml'
   workflow_dispatch:
 
@@ -48,6 +50,8 @@ jobs:
           php -l api/account/action-center-restore.php
           php -l includes/gift-action-center.php
           php -l scripts/validate_action_center_mutation_contract_v1.php
+          php -l tests/phpunit/ActionCenterFrontendSubmitContractTest.php
+          php -l tests/phpunit/ActionCenterMutationContractV1Test.php
       - name: JavaScript syntax
         run: |
           node --check assets/js/gift-action-center-actions.js
@@ -61,6 +65,7 @@ jobs:
           if [ -x vendor/bin/phpunit ]; then
             vendor/bin/phpunit \
               tests/phpunit/ActionCenterFrontendSubmitContractTest.php \
+              tests/phpunit/ActionCenterMutationContractV1Test.php \
               tests/phpunit/Stage11CActionCenterStateMutationsTest.php \
               tests/phpunit/Stage11EActionCenterActionWiringTest.php \
               tests/phpunit/Stage12UniversalTipsTest.php \
