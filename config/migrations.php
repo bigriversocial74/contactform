@@ -75,6 +75,7 @@ return [
         'stage_14_posts_feed_social.sql',
         'stage_14b_social_content.sql',
         '20260716_design_studio_content_calendar.sql',
+        '20260716_design_studio_advertising_workflow_v2.sql',
         '20260714_user_contact_lists_phase1.sql',
         'stage_15_psr_demand_intelligence.sql',
         'stage_15c_prepaid_demand_commitments.sql',
