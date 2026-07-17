@@ -8,38 +8,39 @@ $pdo = mg_db();
 $displayName = trim((string) mg_user_display_name()) ?: 'Your Business';
 $hasMerchantAccess = mg_user_has_merchant_access($user, $pdo);
 $agent_sidebar_mode = 'personal';
+$suppress_agent_sidebar_footer = true;
+$suppress_agent_sidebar_tools = true;
 $designCalendarStandalone = true;
 
 $page_title = 'Design Calendar | Microgifter';
 $page_section = 'agent';
-$header_mode = 'agent';
-$agent_tab = 'calendar';
 $page_body_class = 'mg-design-calendar-standalone-page';
 $page_styles = [
+    '/assets/css/personal-agent-chat-history.css?v=1.4.0',
+    '/assets/css/personal-agent-sidebar-cleanup.css?v=1.0.0',
     '/assets/css/personal-agent-design-studio.css?v=1.2.0',
     '/assets/css/personal-agent-design-studio-calendar.css?v=1.1.0',
     '/assets/css/design-studio-advertising-workflow-v2.css?v=2.0.0',
-    '/assets/css/design-studio-standalone.css?v=1.0.0',
-    '/assets/css/design-calendar-standalone.css?v=1.0.0',
+    '/assets/css/design-studio-standalone.css?v=1.1.0',
+    '/assets/css/design-calendar-standalone.css?v=1.1.0',
 ];
 $page_scripts = $hasMerchantAccess ? [
     '/assets/js/personal-agent-chat-history.js?v=1.1.0',
     '/assets/js/personal-agent-design-studio-calendar.js?v=2.0.0',
-    '/assets/js/design-calendar-modal.js?v=1.0.0',
+    '/assets/js/design-calendar-modal.js?v=1.1.0',
     '/assets/js/design-studio-creative-save.js?v=2.0.0',
 ] : ['/assets/js/personal-agent-chat-history.js?v=1.1.0'];
 $page_manifest = [
     'id' => 'design-calendar',
     'title' => $page_title,
     'section' => $page_section,
-    'header_mode' => $header_mode,
     'styles' => $page_styles,
     'scripts' => $page_scripts,
     'body_class' => $page_body_class,
     'onboarding' => ['enabled' => false, 'page' => 'design-calendar', 'sections' => []],
 ];
 
-require __DIR__ . '/includes/header.php';
+require __DIR__ . '/includes/standalone-creative-header.php';
 ?>
 <section class="mg-app-shell mg-standalone-creative-shell" data-standalone-creative-shell>
   <?php require __DIR__ . '/includes/personal-agent-sidebar.php'; ?>
@@ -69,4 +70,4 @@ require __DIR__ . '/includes/header.php';
     </div>
   </div>
 </section>
-<?php require __DIR__ . '/includes/footer.php'; ?>
+<?php require __DIR__ . '/includes/standalone-creative-footer.php'; ?>
