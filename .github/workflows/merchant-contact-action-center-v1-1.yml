@@ -41,7 +41,17 @@ jobs:
       - name: Follow-Up Workspace contract
         run: php scripts/validate_merchant_contact_action_center_v1_1.php
       - name: Canonical approval adapter contract
-        run: php scripts/validate_merchant_contact_workspace_review_actions.php
+        run: |
+          set -o pipefail
+          php scripts/validate_merchant_contact_workspace_review_actions.php 2>&1 | tee canonical-adapter-contract.txt
+      - name: Upload canonical adapter report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: canonical-adapter-contract-php82
+          path: canonical-adapter-contract.txt
+          if-no-files-found: error
+          retention-days: 3
       - name: PHPUnit when available
         run: |
           if [ -x vendor/bin/phpunit ]; then
