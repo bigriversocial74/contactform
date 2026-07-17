@@ -19,7 +19,7 @@ $page_styles = [
 ];
 
 $page_scripts = [
-    '/assets/js/gift-action-center-reward-images.js',
+    '/assets/js/gift-action-center-reward-images.js?v=1.1.0',
     '/assets/js/gift-action-center.js',
     '/assets/js/gift-product-media-view.js',
     '/assets/js/gift-action-center-load-envelope.js',

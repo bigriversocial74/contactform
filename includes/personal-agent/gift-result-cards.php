@@ -1,8 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require_once dirname(__DIR__, 2) . '/api/account/_action_center.php';
-require_once dirname(__DIR__, 2) . '/api/account/_action_center_wallet.php';
+require_once dirname(__DIR__, 2) . '/api/account/_action_center_contract.php';
 
 function mg_personal_agent_account_gift_folder(string $message): string
 {
@@ -40,47 +39,17 @@ function mg_personal_agent_account_gift_email(PDO $pdo, int $userId): string
 
 function mg_personal_agent_account_gift_safe_url(mixed $value): string
 {
-    $value = trim((string) $value);
-    if ($value === '' || preg_match('/[\x00-\x1F\x7F]/', $value) === 1) return '';
-    if (str_starts_with($value, '/') && !str_starts_with($value, '//')) return mb_substr($value, 0, 700);
-    if (preg_match('#^https?://#i', $value) === 1) return mb_substr($value, 0, 700);
-    return '';
+    return mg_action_center_contract_safe_url($value);
 }
 
 function mg_personal_agent_account_gift_image(array $item): string
 {
-    foreach (['reward_image_url', 'image_url', 'thumbnail_url', 'cover_image_url', 'merchant_avatar_url'] as $key) {
-        $url = mg_personal_agent_account_gift_safe_url($item[$key] ?? '');
-        if ($url !== '') return $url;
-    }
-
-    $metadata = [];
-    $raw = $item['metadata_json'] ?? null;
-    if (is_array($raw)) {
-        $metadata = $raw;
-    } elseif (is_string($raw) && trim($raw) !== '') {
-        try {
-            $decoded = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
-            if (is_array($decoded)) $metadata = $decoded;
-        } catch (Throwable) {
-            $metadata = [];
-        }
-    }
-
-    $reward = is_array($metadata['reward_template_metadata'] ?? null) ? $metadata['reward_template_metadata'] : [];
-    $pack = is_array($reward['media_pack'] ?? null) ? $reward['media_pack'] : (is_array($metadata['media_pack'] ?? null) ? $metadata['media_pack'] : []);
-    foreach (['reward_image_url', 'image_url', 'thumbnail_url', 'cover_image_url'] as $key) {
-        $url = mg_personal_agent_account_gift_safe_url($metadata[$key] ?? $reward[$key] ?? $pack[$key] ?? '');
-        if ($url !== '') return $url;
-    }
-
-    foreach ((array) ($metadata['posts'] ?? []) as $post) {
-        if (!is_array($post)) continue;
-        $url = mg_personal_agent_account_gift_safe_url($post['url'] ?? '');
-        if ($url !== '' && in_array((string) ($post['type'] ?? $post['media_type'] ?? ''), ['cover', 'image'], true)) return $url;
-    }
-
-    return '';
+    return mg_personal_agent_account_gift_safe_url(
+        $item['product_image_url']
+        ?? $item['image_url']
+        ?? $item['merchant_avatar_url']
+        ?? ''
+    );
 }
 
 function mg_personal_agent_account_gift_money(int $cents, string $currency): string
@@ -92,11 +61,7 @@ function mg_personal_agent_account_gift_money(int $cents, string $currency): str
 
 function mg_personal_agent_account_gift_can_send(array $item, string $folder): bool
 {
-    if ($folder !== 'inbox') return false;
-    $state = strtolower(trim((string) ($item['state'] ?? $item['instance_status'] ?? '')));
-    if (in_array($state, ['expired', 'redeemed', 'cancelled'], true)) return false;
-    if (!empty($item['redeemed_at'])) return false;
-    return true;
+    return $folder === 'inbox' && !empty($item['can_send']);
 }
 
 function mg_personal_agent_account_gift_items(PDO $pdo, int $userId, string $folder, int $limit = 12): array
@@ -137,7 +102,8 @@ function mg_personal_agent_account_gift_items(PDO $pdo, int $userId, string $fol
         return $b <=> $a;
     });
 
-    return array_slice($items, 0, $limit);
+    $contracts = mg_action_center_contract_items($pdo, $userId, array_slice($items, 0, $limit));
+    return array_values(array_map('mg_action_center_contract_view', $contracts));
 }
 
 function mg_personal_agent_account_gift_cards(PDO $pdo, int $userId, string $folder, int $limit = 12): array
@@ -187,6 +153,11 @@ function mg_personal_agent_account_gift_cards(PDO $pdo, int $userId, string $fol
             'url_label' => 'Open gift',
             'meta' => array_slice($meta, 0, 5),
             'risk_level' => $canSend ? 'medium' : 'low',
+            'product_id' => (string) ($item['product_id'] ?? ''),
+            'product_version_id' => (string) ($item['product_version_id'] ?? ''),
+            'product_url' => (string) ($item['product_url'] ?? ''),
+            'image_source' => (string) ($item['image_source'] ?? ''),
+            'contract_version' => MG_ACTION_CENTER_CONTRACT_VERSION,
         ];
     }
 

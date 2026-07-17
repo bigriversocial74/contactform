@@ -38,12 +38,17 @@
         .filter(Boolean);
     }
 
+    function contractMedia(item) {
+      const adapter = window.MicrogifterActionCenterContract;
+      return adapter && typeof adapter.mediaView === 'function' ? adapter.mediaView(item) : item;
+    }
+
     function normalize(item) {
       item = item && typeof item === 'object' ? item : {};
       const assets = Array.isArray(item.media_assets) ? item.media_assets.slice() : [];
       const cover = cleanUrl(item.cover_url || item.product_image_url || item.image_url || item.thumbnail_url);
       if (cover && !assets.some((asset) => cleanUrl(asset && asset.url) === cover)) {
-        assets.unshift({ role: 'cover', asset_type: 'image', title: 'Product image', url: cover });
+        assets.unshift({ role: 'cover', asset_type: 'image', title: 'Gift cover', url: cover, source: 'presentation' });
       }
       const usableAssets = assets
         .map((asset) => {
@@ -57,6 +62,7 @@
             asset_type: kind,
             mime_type: String(asset.mime_type || asset.mime || ''),
             title: String(asset.title || asset.name || (kind.charAt(0).toUpperCase() + kind.slice(1))),
+            source: String(asset.source || 'gift'),
             url
           };
         })
@@ -115,7 +121,7 @@
         .then((response) => response.json())
         .then((payload) => {
           const data = payload.data || payload;
-          Object.keys(data.items || {}).forEach((id) => { cache[id] = normalize(data.items[id] || {}); });
+          Object.keys(data.items || {}).forEach((id) => { cache[id] = normalize(contractMedia(data.items[id] || {})); });
           missing.forEach((id) => { if (!cache[id]) cache[id] = normalize({}); });
           apply();
         })
