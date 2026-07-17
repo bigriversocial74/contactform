@@ -8,6 +8,9 @@ $paths = [
     'css' => 'assets/css/design-calendar-modal-side-view-v2.css',
     'products' => 'assets/js/design-calendar-product-cards-v2.js',
     'side' => 'assets/js/design-calendar-side-view-v2.js',
+    'usability_css' => 'assets/css/design-calendar-usability-v3.css',
+    'product_tools' => 'assets/js/design-calendar-product-tools-v3.js',
+    'view_preferences' => 'assets/js/design-calendar-view-preferences-v3.js',
 ];
 
 $content = [];
@@ -24,6 +27,10 @@ $checks = [
         str_contains($content['page'], 'design-calendar-modal-side-view-v2.css?v=2.0.0')
         && str_contains($content['page'], 'design-calendar-product-cards-v2.js?v=2.0.0')
         && str_contains($content['page'], 'design-calendar-side-view-v2.js?v=2.0.0'),
+    'calendar loads the additive usability v3 assets' =>
+        str_contains($content['page'], 'design-calendar-usability-v3.css?v=3.0.0')
+        && str_contains($content['page'], 'design-calendar-product-tools-v3.js?v=3.0.0')
+        && str_contains($content['page'], 'design-calendar-view-preferences-v3.js?v=3.0.0'),
     'side by side is the third calendar display' =>
         str_contains($content['workspace'], 'data-calendar-view="grid"')
         && str_contains($content['workspace'], 'data-calendar-view="stack"')
@@ -43,6 +50,23 @@ $checks = [
         && str_contains($content['css'], 'appearance:none')
         && str_contains($content['css'], ':checked::after')
         && str_contains($content['css'], 'transform:translateX(16px)'),
+    'product search and status filters are available' =>
+        str_contains($content['product_tools'], 'data-calendar-product-search')
+        && str_contains($content['product_tools'], 'data-calendar-product-status')
+        && str_contains($content['product_tools'], "option value=\"published\"")
+        && str_contains($content['product_tools'], "option value=\"draft\"")
+        && str_contains($content['product_tools'], 'rowText(row).includes(search)'),
+    'selected-only review and published selection tools are available' =>
+        str_contains($content['product_tools'], 'data-calendar-product-selected-only')
+        && str_contains($content['product_tools'], 'data-calendar-review-selection')
+        && str_contains($content['product_tools'], 'data-calendar-select-published')
+        && str_contains($content['product_tools'], 'data-calendar-clear-product-selection'),
+    'sticky summary counts products formats layouts and themes' =>
+        str_contains($content['product_tools'], 'data-calendar-selection-summary')
+        && str_contains($content['product_tools'], "selectedCount('formats')")
+        && str_contains($content['product_tools'], "selectedCount('layouts')")
+        && str_contains($content['product_tools'], "selectedCount('themes')")
+        && str_contains($content['usability_css'], 'position:sticky'),
     'side view renders every filtered scheduled ad as an editable template' =>
         str_contains($content['side'], 'data-calendar-side')
         && str_contains($content['side'], 'data-calendar-event=')
@@ -58,13 +82,25 @@ $checks = [
         && str_contains($content['side'], 'Math.max(...cardsInRow.map')
         && str_contains($content['side'], "card.style.minHeight = tallest + 'px'")
         && str_contains($content['side'], 'ResizeObserver'),
+    'side density includes compact standard and large layouts' =>
+        str_contains($content['view_preferences'], 'data-calendar-density="compact"')
+        && str_contains($content['view_preferences'], 'data-calendar-density="standard"')
+        && str_contains($content['view_preferences'], 'data-calendar-density="large"')
+        && str_contains($content['usability_css'], 'minmax(205px,1fr)')
+        && str_contains($content['usability_css'], 'minmax(340px,1fr)'),
+    'calendar view and side density persist locally' =>
+        str_contains($content['view_preferences'], 'microgifter.designCalendar.view')
+        && str_contains($content['view_preferences'], 'microgifter.designCalendar.sideDensity')
+        && str_contains($content['view_preferences'], 'localStorage.setItem')
+        && str_contains($content['view_preferences'], 'button?.click()'),
     'calendar generation and edit endpoints remain unchanged' =>
-        str_contains($content['side'], "/api/merchant/design-content-calendar.php")
+        str_contains($content['side'], '/api/merchant/design-content-calendar.php')
         && str_contains($content['workspace'], 'data-calendar-generator')
         && str_contains($content['workspace'], 'data-calendar-plan-open'),
     'feature does not introduce SQL or configuration behavior' =>
         !str_contains($content['products'], 'CREATE TABLE')
         && !str_contains($content['side'], 'ALTER TABLE')
+        && !str_contains($content['product_tools'], 'CREATE TABLE')
         && !str_contains($content['workspace'], 'config.php'),
 ];
 
