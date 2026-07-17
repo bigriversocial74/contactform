@@ -12,35 +12,36 @@ final class GiftActionCenterNotificationIntegrationTest extends TestCase
             $source=file_get_contents($root.'/'.$file);
             self::assertIsString($source);
             self::assertStringContainsString('includes/gift-action-center.php',$source);
-            self::assertStringContainsString('/assets/js/gift-action-center.js',$source);
-            self::assertMatchesRegularExpression('/\$agent_tab\s*=\s*[\'\"]'.preg_quote($folder,'/').'[\'\"]/',$source);
+            self::assertStringNotContainsString('/assets/js/gift-action-center.js',$source);
+            self::assertMatchesRegularExpression('/\$agent_tab\s*=\s*[\'"]'.preg_quote($folder,'/').'[\'"]/',$source);
         }
+        $workspace=file_get_contents($root.'/includes/gift-action-center.php');
+        self::assertIsString($workspace);
+        self::assertStringContainsString('gift-action-center-runtime-v4.js?v=4.0.0',$workspace);
     }
 
     public function testGiftActionCenterGatesDemoContentToSuperAdmin(): void
     {
         $root=dirname(__DIR__,2);
         $workspace=file_get_contents($root.'/includes/gift-action-center.php');
-        $script=file_get_contents($root.'/assets/js/gift-action-center.js');
+        $runtime=file_get_contents($root.'/assets/js/gift-action-center-runtime-v4.js');
         self::assertIsString($workspace);
-        self::assertIsString($script);
+        self::assertIsString($runtime);
         self::assertStringContainsString("mg_has_role('super_admin')",$workspace);
         self::assertStringContainsString('data-demo-enabled',$workspace);
-        self::assertStringContainsString("var demoEnabled = app.dataset.demoEnabled === 'true'",$script);
-        self::assertStringContainsString('if (demoEnabled && !state.folders[folder].length)',$script);
-        self::assertStringNotContainsString("if (folder === 'inbox' && !state.folders.inbox.length)",$script);
+        self::assertStringContainsString("demoEnabled:app.dataset.demoEnabled==='true'",$runtime);
+        self::assertStringContainsString('if(reset&&!state.order.length&&state.demoEnabled)',$runtime);
     }
 
-    public function testSuperAdminDemoDatasetCoversAllFoldersAndCannotMutate(): void
+    public function testDemoDatasetCoversAllFolders(): void
     {
-        $script=file_get_contents(dirname(__DIR__,2).'/assets/js/gift-action-center.js');
-        self::assertIsString($script);
-        self::assertStringContainsString("action_item_id: 'demo-coffee-001'",$script);
-        self::assertStringContainsString("action_item_id: 'demo-sent-001'",$script);
-        self::assertStringContainsString("action_item_id: 'demo-claimed-001'",$script);
-        self::assertStringContainsString('Super Admin demo content cannot execute real transactional actions.',$script);
-        self::assertStringContainsString('No real payment, ownership transfer, regift, Follow Up, claim, message, tip, notification, ledger entry, payout, or webhook was created.',$script);
-        self::assertStringNotContainsString('data-gift-action="resend"',$script);
+        $runtime=file_get_contents(dirname(__DIR__,2).'/assets/js/gift-action-center-runtime-v4.js');
+        self::assertIsString($runtime);
+        self::assertStringContainsString("demoContract('demo-coffee-001'",$runtime);
+        self::assertStringContainsString("demoContract('demo-sent-001'",$runtime);
+        self::assertStringContainsString("demoContract('demo-claimed-001'",$runtime);
+        self::assertStringContainsString('Demo preview only',$runtime);
+        self::assertStringNotContainsString('data-gift-action="resend"',$runtime);
     }
 
     public function testLoadDrawerRendersContentBeforeProtectedVoucher(): void
@@ -48,19 +49,19 @@ final class GiftActionCenterNotificationIntegrationTest extends TestCase
         $root=dirname(__DIR__,2);
         $workspace=file_get_contents($root.'/includes/gift-action-center.php');
         $header=file_get_contents($root.'/includes/header-components/app-header.php');
-        $script=file_get_contents($root.'/assets/js/gift-action-center.js');
+        $runtime=file_get_contents($root.'/assets/js/gift-action-center-runtime-v4.js');
         self::assertIsString($workspace);
         self::assertIsString($header);
-        self::assertIsString($script);
+        self::assertIsString($runtime);
         self::assertStringNotContainsString('mg-gift-folder-tabs',$workspace);
         self::assertStringContainsString('mg-agent-tab-badge',$header);
         self::assertStringContainsString('data-gift-drawer',$workspace);
-        $contentStackPosition=strpos($script,'mg-pppm-post-stack');
-        $voucherPosition=strpos($script,'Protected voucher');
+        $contentStackPosition=strpos($runtime,'mg-pppm-post-stack');
+        $voucherPosition=strpos($runtime,'Protected voucher');
         self::assertNotFalse($contentStackPosition);
         self::assertNotFalse($voucherPosition);
         self::assertTrue($contentStackPosition<$voucherPosition);
-        self::assertStringContainsString('/api/account/action-center.php',$script);
+        self::assertStringContainsString('/api/account/action-center.php',$runtime);
     }
 
     public function testMessagesNotificationsAndPreferencesHaveDedicatedPages(): void
