@@ -32,8 +32,8 @@ final class MerchantContactWorkspaceReviewActionsTest extends TestCase
         $followups = (string)file_get_contents($this->root . '/api/merchant/followup-tasks.php');
 
         self::assertStringContainsString("'crm.followup.created'", $adapter);
-        self::assertStringContainsString("'note'=>$note", $adapter);
-        self::assertStringContainsString("'due_at'=>$dueAt", $adapter);
+        self::assertStringContainsString('\'note\'=>$note', $adapter);
+        self::assertStringContainsString('\'due_at\'=>$dueAt', $adapter);
         self::assertStringContainsString("'status'=>'open'", $adapter);
         self::assertStringContainsString('mg_merchant_crm_record_event', $adapter);
         self::assertStringContainsString("ce.event_type='crm.followup.created'", $followups);
@@ -45,8 +45,8 @@ final class MerchantContactWorkspaceReviewActionsTest extends TestCase
         $messages = (string)file_get_contents($this->root . '/includes/merchant-agent-messages.php');
 
         self::assertStringContainsString("'crm.agent.message.draft.created'", $adapter);
-        self::assertStringContainsString("'message_draft_id'=>$messageDraftId", $adapter);
-        self::assertStringContainsString("'draft_body'=>$body", $adapter);
+        self::assertStringContainsString('\'message_draft_id\'=>$messageDraftId', $adapter);
+        self::assertStringContainsString('\'draft_body\'=>$body', $adapter);
         self::assertStringContainsString("'send_directly'=>false", $adapter);
         self::assertStringContainsString('Sending still requires the Agent Messages send action', $adapter);
         self::assertStringNotContainsString('send_customer_message(', $adapter);
