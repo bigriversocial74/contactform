@@ -163,6 +163,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var keyword = event.target.closest('[data-agent-keyword-prompt]');
     if (keyword) {
+      var href = String(keyword.getAttribute('data-agent-keyword-href') || '').trim();
+      if (href) {
+        closeModal();
+        window.location.assign(href);
+        return;
+      }
       applyPrompt(
         keyword.getAttribute('data-agent-target-mode') || currentMode,
         keyword.getAttribute('data-agent-keyword-prompt') || '',

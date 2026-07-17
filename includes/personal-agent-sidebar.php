@@ -78,11 +78,6 @@ $sidebarLinkClass = static function (string $key) use ($activeSidebarKey): strin
 
     <div class="mg-personal-chat-divider" role="separator" aria-hidden="true"></div>
 
-    <div class="mg-personal-chat-history-label">
-      <span><?= $isMerchantAgentMode ? 'Merchant chats' : 'Personal chats' ?></span>
-      <span><?= $isMerchantAgentMode ? 'Business data only' : ($hasPersonalAgentAccess ? 'Private' : 'Package required') ?></span>
-    </div>
-
     <?php if ($isMerchantAgentMode && $hasMerchantAgentAccess): ?>
       <div class="mg-personal-chat-history" data-merchant-agent-thread-groups aria-live="polite">
         <div class="mg-personal-chat-loading">Loading merchant chats…</div>
@@ -165,14 +160,17 @@ $sidebarLinkClass = static function (string $key) use ($activeSidebarKey): strin
         </section>
 
         <section id="agent-keywords-panel" role="tabpanel" aria-labelledby="agent-keywords-tab" data-agent-tools-panel="keywords" hidden>
-          <p class="mg-agent-keywords-intro">Select a keyword to place its current command or example in the chat box. Review or customize it before sending.</p>
+          <p class="mg-agent-keywords-intro">Select a keyword to place its current command or example in the chat box. Navigation keywords open their page directly.</p>
           <div class="mg-agent-keyword-groups">
             <?php foreach ((array) $quickActions['keyword_groups'] as $group): ?>
               <section class="mg-agent-keyword-group">
                 <h3><?= mg_e((string) $group['label']) ?></h3>
                 <div class="mg-agent-keyword-list">
                   <?php foreach ((array) $group['items'] as $item): ?>
-                    <button type="button" data-agent-keyword-prompt="<?= mg_e((string) $item['prompt']) ?>" data-agent-target-mode="<?= mg_e($quickActionMode) ?>">
+                    <button type="button"
+                            data-agent-keyword-prompt="<?= mg_e((string) ($item['prompt'] ?? '')) ?>"
+                            <?php if (!empty($item['href'])): ?>data-agent-keyword-href="<?= mg_e((string) $item['href']) ?>"<?php endif; ?>
+                            data-agent-target-mode="<?= mg_e($quickActionMode) ?>">
                       <strong><?= mg_e((string) $item['keyword']) ?></strong><small><?= mg_e((string) $item['detail']) ?></small>
                     </button>
                   <?php endforeach; ?>
@@ -184,5 +182,5 @@ $sidebarLinkClass = static function (string $key) use ($activeSidebarKey): strin
       </div>
     </section>
   </div>
-  <script src="/assets/js/agent-sidebar-tools.js?v=1.0.0" defer></script>
+  <script src="/assets/js/agent-sidebar-tools.js?v=1.0.0&nav=1" defer></script>
 <?php endif; ?>

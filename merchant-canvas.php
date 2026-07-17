@@ -9,7 +9,11 @@ $page_title = 'Merchant Store Canvas | Microgifter';
 $page_section = 'agent';
 $header_mode = 'agent';
 $agent_tab = 'store-canvas';
+$agent_sidebar_mode = 'merchant';
 $page_styles = [
+    '/assets/css/agent-workspace-layout.css',
+    '/assets/css/personal-agent-chat-history.css?v=1.4.0',
+    '/assets/css/personal-agent-sidebar-cleanup.css?v=1.0.0',
     '/assets/css/merchant-canvas.css',
     '/assets/css/merchant-canvas-rewards.css',
     '/assets/css/merchant-canvas-phase2.css',
@@ -31,6 +35,7 @@ $page_styles = [
     '/assets/css/merchant-canvas-behavior-memory.css',
 ];
 $page_scripts = $hasMerchantAccess ? [
+    '/assets/js/merchant-agent-sidebar-history-standalone.js?v=1.0.0',
     '/assets/js/merchant-canvas-manual-operations.js',
     '/assets/js/merchant-canvas-movement-continuity.js',
     '/assets/js/merchant-canvas-customer-analytics.js',
@@ -84,7 +89,7 @@ if ($merchantNameParts !== []) {
 require __DIR__ . '/includes/header.php';
 ?>
 <section class="mg-app-shell mg-agent-app mg-store-canvas mg-store-canvas-restored" data-merchant-canvas>
-  <?php require __DIR__ . '/includes/agent-sidebar.php'; ?>
+  <?php require __DIR__ . '/includes/personal-agent-sidebar.php'; ?>
   <div class="mg-app-workspace mg-canvas-workspace">
     <?php if (!$hasMerchantAccess): ?>
       <article class="mg-canvas-empty-card">
