@@ -11,37 +11,45 @@ function mg_campaign_feed_v2_contact_progress(PDO $pdo, array $campaignPublicIds
     ), static fn(string $value): bool => preg_match('/^[a-f0-9-]{36}$/', $value) === 1)));
     if ($campaignPublicIds === [] || $viewerId < 1) return [];
 
-    $email = mg_campaign_feed_v2_viewer_email($pdo, $viewerId);
-    $placeholders = implode(',', array_fill(0, count($campaignPublicIds), '?'));
-    $params = $campaignPublicIds;
-    $params[] = $viewerId;
-    $identity = 'cc.user_id=?';
-    if ($email !== '') {
-        $identity .= ' OR LOWER(cc.email)=?';
-        $params[] = $email;
-    }
-
-    $stmt = $pdo->prepare("SELECT c.public_id,cc.metadata_json,cc.updated_at
-        FROM campaigns c
-        INNER JOIN campaign_contacts cc ON cc.campaign_id=c.id
-        WHERE c.public_id IN ({$placeholders}) AND ({$identity})
-        ORDER BY cc.updated_at ASC,cc.id ASC");
-    $stmt->execute($params);
-
-    $progress = [];
-    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-        $campaignId = strtolower(trim((string)($row['public_id'] ?? '')));
-        if ($campaignId === '') continue;
-        $metadata = mg_campaign_feed_v1_json($row['metadata_json'] ?? null);
-        $percent = max(0, min(100, (float)($metadata['max_progress_percent'] ?? $metadata['progress_percent'] ?? 0)));
-        if (!isset($progress[$campaignId]) || $percent >= (float)$progress[$campaignId]['percent']) {
-            $progress[$campaignId] = [
-                'percent' => $percent,
-                'updated_at' => (string)($row['updated_at'] ?? ''),
-            ];
+    try {
+        $email = mg_campaign_feed_v2_viewer_email($pdo, $viewerId);
+        $placeholders = implode(',', array_fill(0, count($campaignPublicIds), '?'));
+        $params = $campaignPublicIds;
+        $params[] = $viewerId;
+        $identity = 'cc.user_id=?';
+        if ($email !== '') {
+            $identity .= ' OR LOWER(cc.email)=?';
+            $params[] = $email;
         }
+
+        $stmt = $pdo->prepare("SELECT c.public_id,cc.metadata_json,cc.updated_at
+            FROM campaigns c
+            INNER JOIN campaign_contacts cc ON cc.campaign_id=c.id
+            WHERE c.public_id IN ({$placeholders}) AND ({$identity})
+            ORDER BY cc.updated_at ASC,cc.id ASC");
+        $stmt->execute($params);
+
+        $progress = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $campaignId = strtolower(trim((string)($row['public_id'] ?? '')));
+            if ($campaignId === '') continue;
+            $metadata = mg_campaign_feed_v1_json($row['metadata_json'] ?? null);
+            $percent = max(0, min(100, (float)($metadata['max_progress_percent'] ?? $metadata['progress_percent'] ?? 0)));
+            if (!isset($progress[$campaignId]) || $percent >= (float)$progress[$campaignId]['percent']) {
+                $progress[$campaignId] = [
+                    'percent' => $percent,
+                    'updated_at' => (string)($row['updated_at'] ?? ''),
+                ];
+            }
+        }
+        return $progress;
+    } catch (Throwable $error) {
+        mg_security_log('warning', 'campaign.feed_progress_unavailable', 'Campaign playback progress enrichment was unavailable.', [
+            'campaign_count' => count($campaignPublicIds),
+            'exception_class' => $error::class,
+        ], $viewerId);
+        return [];
     }
-    return $progress;
 }
 
 function mg_campaign_feed_v2_items_with_progress(PDO $pdo, string $mode, ?int $viewerId, int $limit = MG_CAMPAIGN_FEED_V2_MAX): array
