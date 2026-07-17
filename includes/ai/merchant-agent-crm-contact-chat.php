@@ -7,7 +7,7 @@ require_once __DIR__ . '/merchant-agent-contact-action-center.php';
 
 function mg_merchant_agent_crm_contact_system_prompt(): string
 {
-    return mg_ai_chat_memory_system_prompt() . "\n\nExplicit CRM contact rules:\n- selected_crm_contacts contains only the exact contact selected for this Merchant Agent thread or explicitly referenced by an exact @username in the current prompt.\n- You may use customer-level fields only from selected_crm_contacts and only to answer the current merchant request.\n- Never infer or invent a contact when a mention appears in unresolved_crm_mentions. Ask the merchant to choose a valid autocomplete result.\n- Do not expose email addresses, phone numbers, internal IDs, or unrelated customer records in the response.\n- For recent activity, summarize the selected contact's real event and campaign history in chronological merchant-facing language.\n- For follow-up copy, create a draft only. Never claim a message was sent.\n- For reward advice, recommend an appropriate next step from real reward, purchase, claim, redemption, campaign, and engagement history. Never issue a reward.\n- For campaign invitations and follow-up tasks, prepare review-ready drafts only.\n- Keep every action approval-first and use existing CRM, message, reward, campaign, follow-up, or review links only.\n";
+    return mg_ai_chat_memory_system_prompt() . "\n\nExplicit CRM contact rules:\n- selected_crm_contacts contains only the exact contact selected for this Merchant Agent thread or explicitly referenced by an exact @username in the current prompt.\n- An exact @username in the current prompt replaces the previously selected thread contact for this response and future follow-ups.\n- You may use customer-level fields only from selected_crm_contacts and only to answer the current merchant request.\n- Never infer or invent a contact when a mention appears in unresolved_crm_mentions. Ask the merchant to choose a valid autocomplete result.\n- Do not expose email addresses, phone numbers, internal IDs, or unrelated customer records in the response.\n- For recent activity, summarize the selected contact's real event and campaign history in chronological merchant-facing language.\n- For follow-up copy, create a draft only. Never claim a message was sent.\n- For reward advice, recommend an appropriate next step from real reward, purchase, claim, redemption, campaign, and engagement history. Never issue a reward.\n- For campaign invitations and follow-up tasks, prepare review-ready drafts only.\n- Keep every action approval-first and use existing CRM, message, reward, campaign, follow-up, or review links only.\n";
 }
 
 function mg_merchant_agent_crm_unresolved_response(PDO $pdo, int $actorId, string $message, array $context, string $threadId): array
@@ -77,11 +77,17 @@ function mg_merchant_agent_crm_contact_chat_response(PDO $pdo, array $user, arra
     $thread = mg_agent_thread_by_id($pdo, $actorId, mg_ai_chat_clean($input['thread_id'] ?? '', 80));
     $threadId = (string)($thread['id'] ?? '');
 
-    $selectedContact = mg_merchant_contact_action_center_find_contact($pdo, $merchantOwnerId, $actorId, $threadId, $input);
-    if ($selectedContact) {
-        $input['selected_contact_id'] = (string)($selectedContact['id'] ?? '');
-        $input['selected_contact_mention'] = (string)($selectedContact['mention'] ?? '');
+    $hasExplicitMention = mg_merchant_agent_crm_has_mentions($message);
+    if (!$hasExplicitMention) {
+        $selectedContact = mg_merchant_contact_action_center_find_contact($pdo, $merchantOwnerId, $actorId, $threadId, $input);
+        if ($selectedContact) {
+            $input['selected_contact_id'] = (string)($selectedContact['id'] ?? '');
+            $input['selected_contact_mention'] = (string)($selectedContact['mention'] ?? '');
+        }
+    } else {
+        unset($input['selected_contact_id'], $input['selected_contact_mention'], $input['contact_id'], $input['contact_mention']);
     }
+
     $crmContext = mg_merchant_agent_crm_contact_context($pdo, $merchantOwnerId, $message, $days, $input);
     if (($crmContext['selected_count'] ?? 0) <= 0) {
         $response = mg_merchant_agent_crm_unresolved_response($pdo, $actorId, $message, $crmContext, $threadId);
@@ -91,6 +97,8 @@ function mg_merchant_agent_crm_contact_chat_response(PDO $pdo, array $user, arra
 
     $primaryContact = $crmContext['selected_contacts'][0];
     if ($threadId !== '') mg_merchant_contact_action_center_record_selection($pdo, $actorId, $threadId, $primaryContact);
+    $input['selected_contact_id'] = (string)($primaryContact['id'] ?? '');
+    $input['selected_contact_mention'] = (string)($primaryContact['mention'] ?? '');
 
     $contextProfile = mg_ai_chat_context_profile($message, $scope, $outputType);
     $deepContext = $contextProfile === 'data_analysis';
@@ -180,10 +188,16 @@ function mg_merchant_agent_crm_contact_chat_response(PDO $pdo, array $user, arra
         if ($approvalMode === 'review_queue') mg_ai_chat_auto_bridge_cards($pdo, $user, $assistantId, $cards);
 
         $state = mg_merchant_contact_action_center_attach_state($pdo, $merchantOwnerId, $actorId, mg_ai_chat_public_state($pdo, $actorId), $input);
+        $state = array_merge($state, [
+            'memory'=>mg_agent_memory_summary($pdo, $actorId),
+            'memory_sources'=>mg_agent_memory_sources($pdo, $actorId, 20),
+            'feed_posts'=>$feedPosts,
+            'policy'=>$policy,
+        ]);
         return [
             'user_message'=>['id'=>$userId,'role'=>'user','body'=>$message,'cards'=>[],'blocks'=>[],'scope'=>$scope,'mode'=>$mode,'output_type'=>$outputType,'approval_mode'=>$approvalMode,'context_profile'=>$contextProfile,'thread_public_id'=>$threadId,'crm_contact_mentions'=>$selectedMentions,'created_at'=>date('c')],
             'assistant_message'=>['id'=>$assistantId,'role'=>'assistant','body'=>$reply,'cards'=>mg_ai_chat_recent_messages($pdo, $actorId, 1, $threadId)[0]['cards'] ?? $cards,'blocks'=>$blocks,'scope'=>$scope,'mode'=>$mode,'output_type'=>$outputType,'approval_mode'=>$approvalMode,'context_profile'=>$contextProfile,'thread_public_id'=>$threadId,'model'=>(string)$model['model_key'],'model_routing'=>$modelRoute,'crm_contact_mentions'=>$selectedMentions,'created_at'=>date('c')],
-            'state'=>$state + ['memory'=>mg_agent_memory_summary($pdo, $actorId),'memory_sources'=>mg_agent_memory_sources($pdo, $actorId, 20),'feed_posts'=>$feedPosts,'policy'=>$policy],
+            'state'=>$state,
             'crm_contact_context'=>['selected_count'=>count($selectedIds),'selected_mentions'=>$selectedMentions,'unresolved_mentions'=>$crmContext['unresolved_mentions']],
             'contact_action_center'=>$state['contact_action_center'] ?? null,
         ];
