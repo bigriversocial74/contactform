@@ -1,0 +1,162 @@
+/* Merchant CRM desktop KPI authoritative layout v1.
+   One stable source for the seven desktop KPI cards. Mobile CRM remains unchanged. */
+@media (min-width: 981px) {
+  body .mg-crm-desktop-hero .mg-crm-desktop-kpis {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-bottom: 16px !important;
+    overflow: visible !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-kpi {
+    position: relative !important;
+    display: grid !important;
+    grid-template-rows: minmax(28px, auto) 40px minmax(30px, auto) 30px !important;
+    align-content: start !important;
+    gap: 5px !important;
+    min-width: 0 !important;
+    min-height: 154px !important;
+    height: 154px !important;
+    padding: 14px 15px 12px !important;
+    overflow: hidden !important;
+    border: 1px solid #dce8f7 !important;
+    border-radius: 17px !important;
+    background: linear-gradient(180deg, #fff 0%, #fbfdff 100%) !important;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, .035) !important;
+    box-sizing: border-box !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-kpi::before,
+  body .mg-crm-desktop-hero .mg-crm-kpi::after,
+  body .mg-crm-desktop-hero .mg-crm-kpi-top::before,
+  body .mg-crm-desktop-hero .mg-crm-kpi-top::after,
+  body .mg-crm-desktop-hero .mg-crm-kpi-copy::before,
+  body .mg-crm-desktop-hero .mg-crm-kpi-copy::after,
+  body .mg-crm-desktop-hero .mg-crm-kpi-icon,
+  body .mg-crm-desktop-hero .mg-crm-kpi-icon::before,
+  body .mg-crm-desktop-hero .mg-crm-kpi-icon::after {
+    content: none !important;
+    display: none !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-kpi-top,
+  body .mg-crm-desktop-hero .mg-crm-kpi-copy {
+    display: contents !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-kpi-label {
+    display: block !important;
+    grid-row: 1 !important;
+    align-self: start !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    color: #456184 !important;
+    font-size: 10px !important;
+    font-weight: 950 !important;
+    letter-spacing: .045em !important;
+    line-height: 1.25 !important;
+    text-align: left !important;
+    text-overflow: clip !important;
+    text-transform: uppercase !important;
+    white-space: normal !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-kpi-value {
+    display: flex !important;
+    grid-row: 2 !important;
+    align-items: center !important;
+    align-self: stretch !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    color: #0f172a !important;
+    font-size: clamp(25px, 2vw, 30px) !important;
+    font-weight: 950 !important;
+    letter-spacing: -.055em !important;
+    line-height: 1 !important;
+    text-align: left !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-kpi-meta {
+    display: flex !important;
+    grid-row: 3 !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    gap: 2px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    color: #72839c !important;
+    font-size: 9px !important;
+    font-weight: 800 !important;
+    line-height: 1.15 !important;
+    white-space: normal !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-kpi-meta b,
+  body .mg-crm-desktop-hero .mg-crm-kpi-meta span {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: normal !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-kpi-chart {
+    position: relative !important;
+    display: block !important;
+    grid-row: 4 !important;
+    align-self: end !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: 30px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    border-radius: 6px !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-kpi-spark {
+    position: absolute !important;
+    inset: 0 !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 30px !important;
+    overflow: hidden !important;
+  }
+
+  /* Preserve current analytics and pipeline controls that older cleanup layers removed. */
+  body .mg-crm-desktop-hero .mg-crm-trends {
+    display: grid !important;
+  }
+
+  body .mg-crm-desktop-hero .mg-crm-desktop-view-pipeline {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+}
+
+@media (min-width: 1450px) {
+  body .mg-crm-desktop-hero .mg-crm-desktop-kpis {
+    grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+  }
+}
