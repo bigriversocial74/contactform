@@ -7,34 +7,29 @@
   const views = Array.from(document.querySelectorAll('[data-personal-agent-view]'));
   const objectPicker = app.querySelector('[data-design-object-picker]');
   const workspace = app.querySelector('[data-design-workspace]');
+  const templateBrowser = app.querySelector('[data-design-template-browser]');
+  const loadedSection = app.querySelector('[data-design-loaded-section]');
+  const headerActions = app.querySelector('[data-design-header-actions]');
   const objectButtons = Array.from(app.querySelectorAll('[data-design-object]'));
   const templateButtons = Array.from(app.querySelectorAll('[data-design-template]'));
   const backButton = app.querySelector('[data-design-back]');
+  const closeTemplateButton = app.querySelector('[data-design-close-template]');
   const canvas = app.querySelector('[data-design-canvas]');
   const qrTarget = app.querySelector('[data-design-qr]');
-  const emptyState = app.querySelector('[data-design-empty]');
   const pageTitle = app.querySelector('[data-design-page-title]');
   const pageDescription = app.querySelector('[data-design-page-description]');
-  const formatLabel = app.querySelector('[data-design-format-label]');
-  const objectLabel = app.querySelector('[data-design-object-label]');
-  const objectDetail = app.querySelector('[data-design-object-detail]');
+  const formatLabels = Array.from(app.querySelectorAll('[data-design-format-label]'));
   const templateLabel = app.querySelector('[data-design-template-label]');
-  const emptyTitle = app.querySelector('[data-design-empty-title]');
-  const emptyCopy = app.querySelector('[data-design-empty-copy]');
   const status = app.querySelector('[data-design-status]');
   const downloadButton = app.querySelector('[data-design-download]');
 
   const formats = {
     poster: {
       label: '5 × 5 Poster Card',
-      detail: 'Square counter or window display',
-      empty: 'Select a template from the compact side rail to place it on your poster card.',
       filename: '5x5-poster',
     },
     tent: {
       label: 'Table Tent',
-      detail: 'Folded two-sided countertop display',
-      empty: 'Select a template from the compact side rail to place it on your table tent.',
       filename: 'table-tent',
     },
   };
@@ -43,7 +38,7 @@
   let currentTemplate = null;
 
   const setStatus = (message) => {
-    if (status) status.textContent = message;
+    if (status) status.textContent = message || '';
   };
 
   const setPageCopy = (title, description) => {
@@ -58,19 +53,23 @@
     app.scrollIntoView({ block: 'start' });
   };
 
-  const resetTemplate = () => {
+  const showHeaderActions = (show) => {
+    if (headerActions) headerActions.hidden = !show;
+  };
+
+  const resetTemplate = (showBrowser = false) => {
     currentTemplate = null;
     templateButtons.forEach((button) => button.classList.remove('is-active'));
     if (canvas) canvas.hidden = true;
-    if (emptyState) emptyState.hidden = false;
-    if (templateLabel) templateLabel.textContent = 'No template selected';
-    if (downloadButton) downloadButton.disabled = true;
-    setStatus('Choose a template to enable download.');
+    if (loadedSection) loadedSection.hidden = true;
+    if (templateBrowser) templateBrowser.hidden = !showBrowser;
+    showHeaderActions(false);
+    setStatus('');
   };
 
   function showObjectPicker() {
     currentFormat = null;
-    resetTemplate();
+    resetTemplate(false);
     if (objectPicker) objectPicker.hidden = false;
     if (workspace) workspace.hidden = true;
     setPageCopy(
@@ -80,17 +79,12 @@
   }
 
   const setFormat = (format) => {
-    const config = formats[format] || formats.poster;
     currentFormat = formats[format] ? format : 'poster';
+    const config = formats[currentFormat];
 
     canvas?.classList.toggle('is-poster', currentFormat === 'poster');
     canvas?.classList.toggle('is-tent', currentFormat === 'tent');
-
-    if (formatLabel) formatLabel.textContent = config.label;
-    if (objectLabel) objectLabel.textContent = config.label;
-    if (objectDetail) objectDetail.textContent = config.detail;
-    if (emptyTitle) emptyTitle.textContent = `Choose a template for your ${config.label}`;
-    if (emptyCopy) emptyCopy.textContent = config.empty;
+    formatLabels.forEach((node) => { node.textContent = config.label; });
 
     templateButtons.forEach((button) => {
       const allowed = String(button.dataset.templateFormats || '')
@@ -103,13 +97,13 @@
 
   const showWorkspace = (format) => {
     setFormat(format);
-    resetTemplate();
+    resetTemplate(true);
     if (objectPicker) objectPicker.hidden = true;
     if (workspace) workspace.hidden = false;
     const config = formats[currentFormat] || formats.poster;
     setPageCopy(
       `Choose a template for your ${config.label}.`,
-      'Select a template, review it in the larger workspace, then download the finished JPG.'
+      'Select a template to open the finished design workspace.'
     );
     workspace?.scrollIntoView({ block: 'start' });
   };
@@ -130,6 +124,10 @@
   });
 
   backButton?.addEventListener('click', showObjectPicker);
+  closeTemplateButton?.addEventListener('click', () => {
+    resetTemplate(true);
+    templateBrowser?.scrollIntoView({ block: 'start' });
+  });
 
   const loadScript = (src, test) => new Promise((resolve, reject) => {
     if (test()) return resolve();
@@ -175,17 +173,25 @@
   const selectTemplate = async (button) => {
     currentTemplate = button.dataset.designTemplate || 'support-local';
     templateButtons.forEach((item) => item.classList.toggle('is-active', item === button));
-    if (canvas) canvas.hidden = false;
-    if (emptyState) emptyState.hidden = true;
     if (templateLabel) templateLabel.textContent = button.querySelector('strong')?.textContent || 'Template selected';
-    if (downloadButton) downloadButton.disabled = false;
-    setStatus('Ready to download.');
+    if (templateBrowser) templateBrowser.hidden = true;
+    if (loadedSection) loadedSection.hidden = false;
+    if (canvas) canvas.hidden = false;
+    showHeaderActions(true);
+    setStatus('Ready to save or download.');
+    loadedSection?.scrollIntoView({ block: 'start' });
     try { await renderQr(); }
-    catch (_) { setStatus('Template loaded. QR preview will retry during download.'); }
+    catch (_) { setStatus('Template loaded. QR preview will retry during export.'); }
   };
 
   templateButtons.forEach((button) => {
     button.addEventListener('click', () => selectTemplate(button));
+  });
+
+  app.querySelectorAll('[data-design-mode]').forEach((button) => {
+    button.addEventListener('click', () => {
+      showHeaderActions(button.dataset.designMode === 'print' && Boolean(currentTemplate));
+    });
   });
 
   const downloadJpg = async () => {
