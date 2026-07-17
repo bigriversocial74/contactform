@@ -23,8 +23,10 @@ final class GiftActionCenterConsolidatedLayoutTest extends TestCase
         $shared=file_get_contents($root.'/includes/gift-action-center.php');
         self::assertIsString($shared);
         self::assertStringContainsString('gift-action-center-runtime-v4.js?v=4.0.0',$shared);
+        self::assertStringContainsString('gift-action-center-user-search-v2.js?v=2.0.0',$shared);
         self::assertStringNotContainsString('gift-action-center-feed-v3.js',$shared);
         self::assertStringNotContainsString('gift-action-center-pagination.js',$shared);
+        self::assertStringNotContainsString('gift-action-center-user-search-fix.js',$shared);
     }
 
     public function testGiftActionCenterUsesSharedSidebarAndNoInnerFolderTabs(): void
@@ -51,16 +53,13 @@ final class GiftActionCenterConsolidatedLayoutTest extends TestCase
         self::assertStringNotContainsString('metadata_json',$script);
     }
 
-    public function testLoadUsesContractMediaBeforeProtectedVoucher(): void
+    public function testLoadComposesContractMediaBeforeProtectedVoucher(): void
     {
         $script=file_get_contents(dirname(__DIR__,2).'/assets/js/gift-action-center-runtime-v4.js');
         self::assertIsString($script);
         self::assertStringContainsString('function openDrawer(c)',$script);
-        $content=strpos($script,'mg-pppm-post-stack');
-        $voucher=strpos($script,'Protected voucher');
-        self::assertNotFalse($content);
-        self::assertNotFalse($voucher);
-        self::assertTrue($content<$voucher);
         self::assertStringContainsString('p.media.posts',$script);
+        self::assertStringContainsString('posts.map((post,i)=>mediaPostMarkup',$script);
+        self::assertStringContainsString(".join('')+'</div>'+voucherMarkup(c)",$script);
     }
 }
