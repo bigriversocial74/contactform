@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/api/account/_action_center.php';
 require_once dirname(__DIR__, 2) . '/api/account/_action_center_wallet.php';
+require_once dirname(__DIR__, 2) . '/api/account/_action_center_product_media.php';
 
 function mg_personal_agent_account_gift_folder(string $message): string
 {
@@ -49,7 +50,18 @@ function mg_personal_agent_account_gift_safe_url(mixed $value): string
 
 function mg_personal_agent_account_gift_image(array $item): string
 {
-    foreach (['reward_image_url', 'image_url', 'thumbnail_url', 'cover_image_url', 'merchant_avatar_url'] as $key) {
+    foreach ([
+        'product_image_url',
+        'catalog_product_image_url',
+        'product_cover_url',
+        'custom_gift_image_url',
+        'gift_image_url',
+        'reward_image_url',
+        'image_url',
+        'thumbnail_url',
+        'cover_image_url',
+        'merchant_avatar_url',
+    ] as $key) {
         $url = mg_personal_agent_account_gift_safe_url($item[$key] ?? '');
         if ($url !== '') return $url;
     }
@@ -69,7 +81,7 @@ function mg_personal_agent_account_gift_image(array $item): string
 
     $reward = is_array($metadata['reward_template_metadata'] ?? null) ? $metadata['reward_template_metadata'] : [];
     $pack = is_array($reward['media_pack'] ?? null) ? $reward['media_pack'] : (is_array($metadata['media_pack'] ?? null) ? $metadata['media_pack'] : []);
-    foreach (['reward_image_url', 'image_url', 'thumbnail_url', 'cover_image_url'] as $key) {
+    foreach (['custom_gift_image_url', 'gift_image_url', 'reward_image_url', 'image_url', 'thumbnail_url', 'cover_image_url'] as $key) {
         $url = mg_personal_agent_account_gift_safe_url($metadata[$key] ?? $reward[$key] ?? $pack[$key] ?? '');
         if ($url !== '') return $url;
     }
@@ -137,7 +149,8 @@ function mg_personal_agent_account_gift_items(PDO $pdo, int $userId, string $fol
         return $b <=> $a;
     });
 
-    return array_slice($items, 0, $limit);
+    $items = array_slice($items, 0, $limit);
+    return mg_action_center_attach_product_media($pdo, $userId, $items);
 }
 
 function mg_personal_agent_account_gift_cards(PDO $pdo, int $userId, string $folder, int $limit = 12): array
@@ -187,6 +200,10 @@ function mg_personal_agent_account_gift_cards(PDO $pdo, int $userId, string $fol
             'url_label' => 'Open gift',
             'meta' => array_slice($meta, 0, 5),
             'risk_level' => $canSend ? 'medium' : 'low',
+            'product_id' => (string) ($item['product_id'] ?? ''),
+            'product_version_id' => (string) ($item['product_version_id'] ?? ''),
+            'product_url' => (string) ($item['product_url'] ?? ''),
+            'image_source' => (string) ($item['image_source'] ?? ''),
         ];
     }
 
