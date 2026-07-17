@@ -1,0 +1,82 @@
+name: Merchant CRM Current Audit v1
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'merchant-crm.php'
+      - 'api/merchant/merchant-crm.php'
+      - 'includes/merchant-crm-directory.php'
+      - 'includes/merchant-crm-view.php'
+      - 'assets/js/merchant-crm.js'
+      - 'assets/js/merchant-crm-directory-data.js'
+      - 'assets/js/merchant-crm-directory.js'
+      - 'assets/js/merchant-crm-mobile-dashboard.js'
+      - 'assets/css/merchant-crm-directory-v1.css'
+      - 'scripts/validate_merchant_crm_current_audit_v1.php'
+      - 'tests/phpunit/MerchantCrmCurrentAuditV1Test.php'
+      - '.github/workflows/merchant-crm-current-audit-v1-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  php82:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: PHP syntax
+        run: |
+          php -l merchant-crm.php
+          php -l api/merchant/merchant-crm.php
+          php -l includes/merchant-crm-directory.php
+          php -l scripts/validate_merchant_crm_current_audit_v1.php
+          php -l tests/phpunit/MerchantCrmCurrentAuditV1Test.php
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/merchant-crm.js
+          node --check assets/js/merchant-crm-directory-data.js
+          node --check assets/js/merchant-crm-directory.js
+          node --check assets/js/merchant-crm-mobile-dashboard.js
+      - name: Current-state audit contract
+        run: php scripts/validate_merchant_crm_current_audit_v1.php
+      - name: PHPUnit when available
+        run: if [ -x vendor/bin/phpunit ]; then vendor/bin/phpunit tests/phpunit/MerchantCrmCurrentAuditV1Test.php; fi
+
+  php83:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: PHP syntax
+        run: |
+          php -l merchant-crm.php
+          php -l api/merchant/merchant-crm.php
+          php -l includes/merchant-crm-directory.php
+          php -l scripts/validate_merchant_crm_current_audit_v1.php
+          php -l tests/phpunit/MerchantCrmCurrentAuditV1Test.php
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/merchant-crm.js
+          node --check assets/js/merchant-crm-directory-data.js
+          node --check assets/js/merchant-crm-directory.js
+          node --check assets/js/merchant-crm-mobile-dashboard.js
+      - name: Current-state audit contract
+        run: php scripts/validate_merchant_crm_current_audit_v1.php
+      - name: PHPUnit when available
+        run: if [ -x vendor/bin/phpunit ]; then vendor/bin/phpunit tests/phpunit/MerchantCrmCurrentAuditV1Test.php; fi
