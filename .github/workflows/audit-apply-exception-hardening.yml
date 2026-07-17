@@ -24,7 +24,17 @@ jobs:
           fetch-depth: 0
 
       - name: Apply exact exception-boundary transformations
-        run: python3 scripts/apply_repository_audit_exception_hardening.py
+        run: |
+          set -o pipefail
+          python3 scripts/apply_repository_audit_exception_hardening.py 2>&1 | tee /tmp/exception-hardening.log
+
+      - name: Upload transformer diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: exception-hardening-diagnostics
+          path: /tmp/exception-hardening.log
+          if-no-files-found: error
 
       - name: Validate changed PHP files
         run: |
