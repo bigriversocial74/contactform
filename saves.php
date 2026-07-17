@@ -19,7 +19,7 @@ $page_styles = [
     '/assets/css/design-studio-advertising-workflow-v2.css?v=2.0.0',
 ];
 $page_scripts = [
-    '/assets/js/personal-agent-chat-history.js?v=1.1.0',
+    '/assets/js/personal-agent-chat-history.js?v=1.2.0',
     '/assets/js/saved-opportunities.js?v=1.2.0',
     '/assets/js/personal-agent-attribution-runtime.js?v=1.0.0',
 ];

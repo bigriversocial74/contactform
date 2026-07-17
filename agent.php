@@ -51,7 +51,7 @@ $page_scripts = [
     '/assets/js/personal-gifting-agent-actions.js',
     '/assets/js/personal-gifting-workflows.js',
     '/assets/js/personal-agent-chat-canvas.js?v=1.2.0',
-    '/assets/js/personal-agent-chat-history.js?v=1.1.0',
+    '/assets/js/personal-agent-chat-history.js?v=1.2.0',
     '/assets/js/agent-merchant-handoff.js?v=1.0.0',
     '/assets/js/personal-agent-marketplace-cards.js?v=1.1.0',
     '/assets/js/personal-agent-opportunity-actions.js?v=1.1.0',

@@ -163,7 +163,8 @@ $checks['client supports all Phase 2 views and actions']=
     &&str_contains($js,'data-agent-card-index')
     &&str_contains($js,'save_draft_plan')
     &&str_contains($js,'if (!payload.context_type || !payload.context_id)')
-    &&str_contains($historyJs,'groupLabel')
+    &&str_contains($historyJs,'groupsHost.innerHTML = state.threads.map')
+    &&!str_contains($historyJs,'groupLabel')
     &&str_contains($historyJs,'createThread')
     &&str_contains($historyJs,'deleteThread');
 

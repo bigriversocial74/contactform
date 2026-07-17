@@ -32,17 +32,6 @@ document.addEventListener('DOMContentLoaded', function () {
     return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
   }
 
-  function groupLabel(date) {
-    var now = new Date();
-    var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    var target = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    var days = Math.round((today.getTime() - target.getTime()) / 86400000);
-    if (days === 0) return 'Today';
-    if (days === 1) return 'Yesterday';
-    if (days > 1 && days < 7) return 'Previous 7 days';
-    return date.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
-  }
-
   function dateLabel(date) {
     if (dayKey(date) === dayKey(new Date())) return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
     return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
@@ -62,26 +51,15 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
-    var grouped = [];
-    threads.forEach(function (thread) {
+    host.innerHTML = threads.map(function (thread) {
       var date = parseDate(timestamp(thread));
-      var label = groupLabel(date);
-      var group = grouped.find(function (item) { return item.label === label; });
-      if (!group) { group = { label: label, items: [] }; grouped.push(group); }
-      group.items.push({ thread: thread, date: date });
-    });
-
-    host.innerHTML = grouped.map(function (group) {
-      return '<section class="mg-personal-chat-group"><h3>' + esc(group.label) + '</h3>' + group.items.map(function (entry) {
-        var thread = entry.thread;
-        var id = String(thread.id || '');
-        var title = String(thread.title || 'Current chat');
-        var meta = dateLabel(entry.date) + ' · ' + humanStatus(thread.status);
-        return '<article class="mg-personal-chat-row' + (id === state.activeId ? ' is-active' : '') + '" data-merchant-agent-thread-row="' + esc(id) + '">' +
-          '<button class="mg-personal-chat-open" type="button" data-merchant-agent-open-thread="' + esc(id) + '"><strong>' + esc(title) + '</strong><span>' + esc(meta) + '</span></button>' +
-          '<button class="mg-personal-chat-delete" type="button" data-merchant-agent-delete-thread="' + esc(id) + '" aria-label="Delete ' + esc(title) + '" title="Delete chat">×</button>' +
-          '</article>';
-      }).join('') + '</section>';
+      var id = String(thread.id || '');
+      var title = String(thread.title || 'Current chat');
+      var meta = dateLabel(date) + ' · ' + humanStatus(thread.status);
+      return '<article class="mg-personal-chat-row' + (id === state.activeId ? ' is-active' : '') + '" data-merchant-agent-thread-row="' + esc(id) + '">' +
+        '<button class="mg-personal-chat-open" type="button" data-merchant-agent-open-thread="' + esc(id) + '"><strong>' + esc(title) + '</strong><span>' + esc(meta) + '</span></button>' +
+        '<button class="mg-personal-chat-delete" type="button" data-merchant-agent-delete-thread="' + esc(id) + '" aria-label="Delete ' + esc(title) + '" title="Delete chat">×</button>' +
+        '</article>';
     }).join('');
   }
 

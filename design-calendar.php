@@ -28,12 +28,12 @@ $page_styles = [
     '/assets/css/design-studio-runtime-fix.css?v=1.0.0',
 ];
 $page_scripts = $hasMerchantAccess ? [
-    '/assets/js/personal-agent-chat-history.js?v=1.1.0',
+    '/assets/js/personal-agent-chat-history.js?v=1.2.0',
     '/assets/js/personal-agent-design-studio-calendar.js?v=3.0.0',
     '/assets/js/design-calendar-row-layout-v1.js?v=1.0.0',
     '/assets/js/design-calendar-modal.js?v=2.0.0',
     '/assets/js/design-studio-creative-save.js?v=2.0.0',
-] : ['/assets/js/personal-agent-chat-history.js?v=1.1.0'];
+] : ['/assets/js/personal-agent-chat-history.js?v=1.2.0'];
 $page_manifest = [
     'id' => 'design-calendar',
     'title' => $page_title,

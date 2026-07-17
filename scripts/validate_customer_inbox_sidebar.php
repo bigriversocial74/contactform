@@ -84,7 +84,7 @@ $checks['feed loyalty cards and lists route through the unified sidebar'] =
     && str_contains($agentSidebar, "'lists.php'")
     && str_contains($agentSidebar, "require __DIR__ . '/personal-agent-sidebar.php'")
     && str_contains($agentSidebar, '/assets/css/personal-agent-chat-history.css?v=1.2.0')
-    && str_contains($agentSidebar, '/assets/js/personal-agent-chat-history.js?v=1.1.0');
+    && str_contains($agentSidebar, '/assets/js/personal-agent-chat-history.js?v=1.2.0');
 $checks['public feed fallback remains available'] = str_contains($agentSidebar, '$user !== null')
     && str_contains($agentSidebar, '$useUnifiedCustomerSidebar');
 $checks['merchant admin navigation remains isolated'] =

@@ -22,7 +22,7 @@ $page_styles = [
     '/assets/css/feed-centered-layout.css?v=2.2.0',
     '/assets/css/feed-campaign-progress-cards-v1.css?v=1.0.0',
 ];
-$page_scripts = ['/assets/js/social-feed.js','/assets/js/social-feed-sidebar-tabs.js','/assets/js/social-feed-post-polish.js','/assets/js/social-feed-upload.js','/assets/js/store-presence-feed.js','/assets/js/avatar-anchor-consent.js','/assets/js/sponsored-campaign-card.js','/assets/js/microgifter-stories.js','/assets/js/feed-online-chat.js','/assets/js/feed-profile-chat-bridge.js','/assets/js/feed-campaign-progress-cards-v1.js?v=1.0.0'];
+$page_scripts = ['/assets/js/social-feed.js','/assets/js/social-feed-sidebar-tabs.js?v=1.1.0','/assets/js/social-feed-post-polish.js','/assets/js/social-feed-upload.js','/assets/js/store-presence-feed.js','/assets/js/avatar-anchor-consent.js','/assets/js/sponsored-campaign-card.js','/assets/js/microgifter-stories.js','/assets/js/feed-online-chat.js','/assets/js/feed-profile-chat-bridge.js','/assets/js/feed-campaign-progress-cards-v1.js?v=1.0.0'];
 $page_manifest = [
     'id' => 'feed',
     'title' => $page_title,
