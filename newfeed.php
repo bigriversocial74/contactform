@@ -5,8 +5,8 @@ require_once __DIR__ . '/includes/app.php';
 $page_title = 'My Feed | Microgifter';
 $page_section = 'feed';
 $header_mode = 'public';
-$page_styles = ['/assets/css/social-feed.css','/assets/css/newsfeed.css'];
-$page_scripts = ['/assets/js/newsfeed.js'];
+$page_styles = ['/assets/css/social-feed.css','/assets/css/newsfeed.css','/assets/css/feed-campaign-progress-cards-v1.css?v=1.0.0'];
+$page_scripts = ['/assets/js/newsfeed.js','/assets/js/feed-campaign-progress-cards-v1.js?v=1.0.0'];
 $page_manifest = [
     'id' => 'newfeed',
     'title' => $page_title,
@@ -42,6 +42,7 @@ require __DIR__ . '/includes/header.php';
       <section class="mg-feed-loading" data-newsfeed-loading aria-busy="true">
         <?php for ($i=0; $i<3; $i++): ?><article class="mg-feed-card is-skeleton" aria-hidden="true"></article><?php endfor; ?>
       </section>
+      <section class="mg-feed-campaign-list mg-hidden" data-campaign-feed-list aria-label="Watch and listen reward campaigns"></section>
       <section class="mg-feed-message mg-hidden" data-newsfeed-empty>
         <h2>No following posts yet.</h2>
         <p>Follow merchant, creator, or customer profiles to build your personal feed.</p>

@@ -20,8 +20,9 @@ $page_styles = [
     '/assets/css/microgifter-story-analytics.css',
     '/assets/css/feed-online-chat.css',
     '/assets/css/feed-centered-layout.css?v=2.2.0',
+    '/assets/css/feed-campaign-progress-cards-v1.css?v=1.0.0',
 ];
-$page_scripts = ['/assets/js/social-feed.js','/assets/js/social-feed-sidebar-tabs.js','/assets/js/social-feed-post-polish.js','/assets/js/social-feed-upload.js','/assets/js/store-presence-feed.js','/assets/js/avatar-anchor-consent.js','/assets/js/sponsored-campaign-card.js','/assets/js/microgifter-stories.js','/assets/js/feed-online-chat.js','/assets/js/feed-profile-chat-bridge.js'];
+$page_scripts = ['/assets/js/social-feed.js','/assets/js/social-feed-sidebar-tabs.js','/assets/js/social-feed-post-polish.js','/assets/js/social-feed-upload.js','/assets/js/store-presence-feed.js','/assets/js/avatar-anchor-consent.js','/assets/js/sponsored-campaign-card.js','/assets/js/microgifter-stories.js','/assets/js/feed-online-chat.js','/assets/js/feed-profile-chat-bridge.js','/assets/js/feed-campaign-progress-cards-v1.js?v=1.0.0'];
 $page_manifest = [
     'id' => 'feed',
     'title' => $page_title,
@@ -88,6 +89,7 @@ require __DIR__ . '/includes/header.php';
           <section class="mg-feed-loading" data-feed-loading aria-busy="true">
             <?php for ($i=0; $i<3; $i++): ?><article class="mg-feed-card is-skeleton" aria-hidden="true"></article><?php endfor; ?>
           </section>
+          <section class="mg-feed-campaign-list mg-hidden" data-campaign-feed-list aria-label="Watch and listen reward campaigns"></section>
           <section class="mg-feed-message mg-hidden" data-feed-signin>
             <h2>Sign in to use this feed.</h2>
             <p>Following, publishing, saving, commenting, and owner post management require an account.</p>
