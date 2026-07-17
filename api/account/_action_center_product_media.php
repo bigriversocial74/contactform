@@ -44,7 +44,8 @@ function mg_action_center_product_media_row(array $row, string $versionBasis): a
     $versionId = trim((string) ($row['product_version_public_id'] ?? ''));
     $slug = trim((string) ($row['product_slug'] ?? ''));
     $assetId = trim((string) ($row['product_cover_asset_public_id'] ?? ''));
-    $status = strtolower(trim((string) ($row['product_status'] ?? '')));
+    $statusRaw = (string) ($row['product_status'] ?? '');
+    $status = strtolower(trim($statusRaw));
     $isPublic = $status === 'published';
 
     return [
@@ -91,12 +92,13 @@ function mg_action_center_attach_product_media(PDO $pdo, int $userId, array $ite
                            cover.public_id product_cover_asset_public_id
                     FROM microgift_inbox_items ac
                     INNER JOIN microgift_instances i ON i.id=ac.instance_id
-                    LEFT JOIN catalog_products cp ON cp.id=i.product_id
-                    LEFT JOIN catalog_product_versions cpv ON cpv.id=i.product_version_id AND cpv.product_id=cp.id
+                    LEFT JOIN commerce_order_items coi ON coi.id=i.commerce_order_item_id
+                    LEFT JOIN catalog_product_versions cpv ON cpv.id=COALESCE(coi.product_version_id,i.product_version_id)
+                    LEFT JOIN catalog_products cp ON cp.id=COALESCE(coi.product_id,cpv.product_id,i.product_id)
                     LEFT JOIN catalog_assets cover ON cover.id=(
                         SELECT pva.asset_id
                         FROM catalog_product_version_assets pva
-                        WHERE pva.product_version_id=i.product_version_id AND pva.role='cover'
+                        WHERE pva.product_version_id=cpv.id AND pva.role='cover'
                         ORDER BY pva.sort_order ASC,pva.id ASC
                         LIMIT 1
                     ) AND cover.status='ready'
