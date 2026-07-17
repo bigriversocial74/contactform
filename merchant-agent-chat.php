@@ -35,6 +35,7 @@ $page_styles = [
     '/assets/css/merchant-agent-snapshot-action-center.css?v=1.0.0',
     '/assets/css/merchant-agent-crm-mention-search.css?v=1.0.0',
     '/assets/css/merchant-agent-contact-action-center.css?v=1.0.0',
+    '/assets/css/merchant-agent-contact-workspace-v1-1.css?v=1.1.0',
     '/assets/css/merchant-agent-personal-canvas-parity-v1.css?v=1.0.0',
     '/assets/css/agent-header-tabs-shared.css?v=1.0.0',
 ];
@@ -42,6 +43,7 @@ $page_scripts = [
     '/assets/js/merchant-agent-crm-mention-search.js?v=1.1.0',
     '/assets/js/merchant-agent-contact-action-center.js?v=1.0.0',
     '/assets/js/merchant-agent-contact-action-center-select-bridge.js?v=1.0.0',
+    '/assets/js/merchant-agent-contact-workspace-v1-1.js?v=1.1.0',
     '/assets/js/merchant-agent-chat.js?v=2.4.0',
     '/assets/js/merchant-agent-snapshot-action-center.js?v=1.0.0',
     '/assets/js/merchant-agent-chat-voice.js',

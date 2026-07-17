@@ -8,6 +8,7 @@ require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-chat-memory.php'
 require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-crm-search.php';
 require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-crm-contact-context.php';
 require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-contact-action-center.php';
+require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-contact-workspace-v1-1.php';
 require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-crm-contact-chat.php';
 require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-thread-delete.php';
 require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-snapshot.php';
@@ -22,7 +23,8 @@ function mg_agent_chat_admin_operator(array $user): bool
 
 function mg_agent_chat_contact_state(PDO $pdo, int $merchantOwnerId, int $actorId, array $state, array $input = []): array
 {
-    return mg_merchant_contact_action_center_attach_state($pdo, $merchantOwnerId, $actorId, $state, $input);
+    $state = mg_merchant_contact_action_center_attach_state($pdo, $merchantOwnerId, $actorId, $state, $input);
+    return mg_merchant_contact_workspace_attach_state($pdo, $merchantOwnerId, $actorId, $state);
 }
 
 $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
@@ -47,13 +49,17 @@ if ($method === 'POST') {
     mg_require_csrf_for_write($input);
     $action = strtolower(trim((string)($input['action'] ?? 'send_message')));
     if ($action === 'send_message' && mg_merchant_agent_crm_search_is_query($input['message'] ?? '')) $action = 'crm_search';
-    $localActions = ['save_agent_profile','save_memory_profile','create_thread','save_thread','archive_thread','clear_thread','rename_thread','load_thread','delete_thread','select_contact','clear_contact'];
+    $localActions = ['save_agent_profile','save_memory_profile','create_thread','save_thread','archive_thread','clear_thread','rename_thread','load_thread','delete_thread','select_contact','clear_contact','contact_note','contact_review_draft'];
 
     if (!in_array($action, array_merge(['send_message','snapshot','crm_search','contact_action'], $localActions), true)) {
         mg_fail('Unknown merchant agent chat action.', 422);
     }
 
-    $permission = in_array($action, ['send_message','contact_action'], true) ? 'merchant.ai.plan' : 'merchant.ai.review';
+    $permission = match ($action) {
+        'contact_note' => 'merchant.campaigns.manage',
+        'send_message', 'contact_action', 'contact_review_draft' => 'merchant.ai.plan',
+        default => 'merchant.ai.review',
+    };
     if ($action === 'send_message' && mg_merchant_snapshot_is_keyword($input['message'] ?? '')) $permission = 'merchant.ai.review';
     $user = mg_merchant_require_permission($permission);
     $workspace = mg_merchant_ensure_workspace($pdo, $user);
@@ -72,7 +78,9 @@ if ($method === 'POST') {
         unset($input['selected_contact_id'], $input['selected_contact_mention'], $input['contact_id'], $input['contact_mention']);
     }
     $contactAware = $action === 'send_message' && ($hasExplicitMention || $selectedContact !== null);
-    if ($contactAware || in_array($action, ['crm_search','contact_action','select_contact','clear_contact'], true)) mg_merchant_require_permission('merchant.campaigns.view');
+    if ($contactAware || in_array($action, ['crm_search','contact_action','select_contact','clear_contact','contact_note','contact_review_draft'], true)) {
+        mg_merchant_require_permission('merchant.campaigns.view');
+    }
 
     if ($action === 'crm_search') {
         mg_rate_limit('merchant.agent.crm_search.chat', 'user:' . $actorId, 90, 60);
@@ -101,6 +109,26 @@ if ($method === 'POST') {
         unset($input['selected_contact_id'], $input['selected_contact_mention'], $input['contact_id'], $input['contact_mention']);
         $state = mg_agent_chat_contact_state($pdo, $merchantOwnerId, $actorId, mg_ai_chat_public_state($pdo, $actorId));
         mg_ok(['state'=>$state,'contact_action_center'=>$state['contact_action_center'] ?? null], 'Selected CRM contact cleared.');
+    }
+
+    if ($action === 'contact_note') {
+        if (!$selectedContact) mg_fail('Select a CRM contact before adding a note.', 422);
+        $note = mg_merchant_contact_workspace_add_note($pdo, $merchantOwnerId, $actorId, $selectedContact, $input);
+        $state = mg_agent_chat_contact_state($pdo, $merchantOwnerId, $actorId, mg_ai_chat_public_state($pdo, $actorId), $input);
+        mg_ok(['note'=>$note,'state'=>$state,'contact_action_center'=>$state['contact_action_center'] ?? null], 'CRM note added.', 201);
+    }
+
+    if ($action === 'contact_review_draft') {
+        if (!$selectedContact) mg_fail('Select a CRM contact before preparing a review item.', 422);
+        mg_merchant_require_permission('merchant.ai.review');
+        mg_agent_autonomy_require_for_merchant($pdo, $actorId, 'review_queue', 'Contact Action Center review item creation');
+        if (strtolower(trim((string)($input['draft_kind'] ?? ''))) === 'message') {
+            mg_agent_autonomy_require_for_merchant($pdo, $actorId, 'messages', 'Contact Action Center message draft creation');
+        }
+        mg_agent_admin_limit_enforce_default($pdo, $actorId);
+        $draft = mg_merchant_contact_workspace_create_review_draft($pdo, $user, $merchantOwnerId, $actorId, $threadId, $selectedContact, $input);
+        $state = mg_agent_chat_contact_state($pdo, $merchantOwnerId, $actorId, mg_ai_chat_public_state($pdo, $actorId), $input);
+        mg_ok(['draft'=>$draft,'state'=>$state,'contact_action_center'=>$state['contact_action_center'] ?? null], !empty($draft['duplicate']) ? 'This draft is already in Agent Review.' : 'Contact draft added to Agent Review.', 201);
     }
 
     if ($action === 'snapshot' || ($action === 'send_message' && mg_merchant_snapshot_is_keyword($input['message'] ?? ''))) {
