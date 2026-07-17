@@ -61,7 +61,7 @@ $giftCenterDemoEnabled=mg_has_role('super_admin');
     <div class="mg-action-modal-body" data-action-modal-body></div>
   </section>
 </section>
-<script src="/assets/js/personal-agent-chat-history.js?v=1.1.0" defer></script>
+<script src="/assets/js/personal-agent-chat-history.js?v=1.2.0" defer></script>
 <script src="/assets/js/gift-action-center-actions.js" defer></script>
 <script src="/assets/js/gift-action-center-claim-restore.js" defer></script>
 <script src="/assets/js/gift-action-center-modal-portal.js?v=1.1.0" defer></script>
