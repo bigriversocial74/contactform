@@ -6,11 +6,12 @@ require_once dirname(__DIR__) . '/merchant-crm-search.php';
 function mg_merchant_agent_crm_mentions(mixed $value): array
 {
     $message = trim((string)$value);
-    if ($message === '' || preg_match_all('/(?:^|\s)@([a-z0-9][a-z0-9._-]{0,79})\b/i', $message, $matches) !== 1 && empty($matches[1])) {
-        return [];
-    }
+    if ($message === '') return [];
+    $count = preg_match_all('/(?:^|\s)@([a-z0-9][a-z0-9._-]{0,79})\b/i', $message, $matches);
+    if (!$count || empty($matches[1])) return [];
+
     $handles = [];
-    foreach (($matches[1] ?? []) as $handle) {
+    foreach ($matches[1] as $handle) {
         $handle = strtolower(trim((string)$handle));
         if ($handle !== '' && !in_array($handle, $handles, true)) $handles[] = $handle;
         if (count($handles) >= 8) break;
@@ -43,10 +44,11 @@ function mg_merchant_agent_crm_contact_details(PDO $pdo, int $merchantId, array 
     if (!is_array($row)) return [];
 
     $contactId = (int)$row['id'];
+    $windowDays = max(7, min(365, $days));
     $events = [];
     if (mg_merchant_crm_search_table_exists($pdo, 'merchant_crm_contact_events')) {
-        $eventStmt = $pdo->prepare('SELECT event_type,campaign_type,source_type,value_cents,created_at FROM merchant_crm_contact_events WHERE merchant_user_id=? AND crm_contact_id=? AND created_at>=DATE_SUB(NOW(),INTERVAL ? DAY) ORDER BY id DESC LIMIT 12');
-        $eventStmt->execute([$merchantId, $contactId, max(7, min(365, $days))]);
+        $eventStmt = $pdo->prepare("SELECT event_type,campaign_type,source_type,value_cents,created_at FROM merchant_crm_contact_events WHERE merchant_user_id=? AND crm_contact_id=? AND created_at>=DATE_SUB(NOW(),INTERVAL {$windowDays} DAY) ORDER BY id DESC LIMIT 12");
+        $eventStmt->execute([$merchantId, $contactId]);
         $events = array_map(static fn(array $event): array => [
             'event_type'=>(string)$event['event_type'],
             'campaign_type'=>(string)$event['campaign_type'],
@@ -72,6 +74,7 @@ function mg_merchant_agent_crm_contact_details(PDO $pdo, int $merchantId, array 
 
     $tags = json_decode((string)($row['tags_json'] ?? '[]'), true);
     if (!is_array($tags)) $tags = [];
+    $campaignTitle = trim((string)($contact['campaign_title'] ?? ''));
 
     return [
         'id'=>$publicId,
@@ -79,7 +82,7 @@ function mg_merchant_agent_crm_contact_details(PDO $pdo, int $merchantId, array 
         'name'=>(string)($contact['name'] ?? 'CRM contact'),
         'lifecycle_stage'=>(string)$row['lifecycle_stage'],
         'crm_status'=>(string)$row['crm_status'],
-        'campaign'=>(string)($contact['campaign_title'] ?: $row['last_campaign_type']),
+        'campaign'=>$campaignTitle !== '' ? $campaignTitle : (string)$row['last_campaign_type'],
         'source'=>(string)$row['last_source_type'],
         'first_seen_at'=>$row['first_seen_at'] ?? null,
         'last_seen_at'=>$row['last_seen_at'] ?? null,
