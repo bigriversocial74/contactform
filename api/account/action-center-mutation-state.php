@@ -15,6 +15,8 @@ try {
     if ($preferredActionItemId !== '') {
         $preferredActionItemId = mg_action_center_mutation_public_id($preferredActionItemId, 'Replacement Action Center item');
     }
+    $viewFolder = mg_action_center_mutation_view_folder($input['folder'] ?? null);
+    $viewLimit = mg_action_center_mutation_view_limit($input['view_limit'] ?? 15);
 
     $result = [
         'status' => 'synchronized',
@@ -28,7 +30,10 @@ try {
         $actionItemId,
         $preferredActionItemId !== '' ? $preferredActionItemId : null,
         $result,
-        'Action Center synchronized.'
+        'Action Center synchronized.',
+        200,
+        $viewFolder,
+        $viewLimit
     );
 } catch (InvalidArgumentException $error) {
     mg_fail($error->getMessage(), 422);
