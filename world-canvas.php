@@ -15,8 +15,35 @@ $page_title = 'World Canvas | Microgifter';
 $page_section = 'agent';
 $header_mode = 'agent';
 $agent_tab = 'world-canvas';
-$page_styles = ['/assets/css/world-canvas.css','/assets/css/world-canvas-attraction.css','/assets/css/world-canvas-identity.css','/assets/css/world-canvas-conversations.css','/assets/css/world-canvas-insights.css','/assets/css/world-canvas-opportunities.css','/assets/css/world-canvas-replay.css','/assets/css/world-canvas-square-map.css','/assets/css/world-canvas-dot-system.css','/assets/css/sponsored-campaign-card.css'];
-$page_scripts = ['/assets/js/world-canvas.js','/assets/js/world-canvas-overlays.js','/assets/js/world-canvas-identity.js','/assets/js/world-canvas-conversations.js','/assets/js/world-canvas-insights.js','/assets/js/world-canvas-opportunities.js','/assets/js/world-canvas-replay.js','/assets/js/world-canvas-square-map.js?v=2.0.0','/assets/js/world-canvas-dot-system.js','/assets/js/sponsored-campaign-card.js'];
+$agent_sidebar_mode = 'personal';
+$page_styles = [
+    '/assets/css/agent-workspace-layout.css',
+    '/assets/css/personal-agent-chat-history.css?v=1.4.0',
+    '/assets/css/personal-agent-sidebar-cleanup.css?v=1.0.0',
+    '/assets/css/world-canvas.css',
+    '/assets/css/world-canvas-attraction.css',
+    '/assets/css/world-canvas-identity.css',
+    '/assets/css/world-canvas-conversations.css',
+    '/assets/css/world-canvas-insights.css',
+    '/assets/css/world-canvas-opportunities.css',
+    '/assets/css/world-canvas-replay.css',
+    '/assets/css/world-canvas-square-map.css',
+    '/assets/css/world-canvas-dot-system.css',
+    '/assets/css/sponsored-campaign-card.css',
+];
+$page_scripts = [
+    '/assets/js/personal-agent-chat-history.js?v=1.1.0',
+    '/assets/js/world-canvas.js',
+    '/assets/js/world-canvas-overlays.js',
+    '/assets/js/world-canvas-identity.js',
+    '/assets/js/world-canvas-conversations.js',
+    '/assets/js/world-canvas-insights.js',
+    '/assets/js/world-canvas-opportunities.js',
+    '/assets/js/world-canvas-replay.js',
+    '/assets/js/world-canvas-square-map.js?v=2.0.0',
+    '/assets/js/world-canvas-dot-system.js',
+    '/assets/js/sponsored-campaign-card.js',
+];
 $page_manifest = [
     'id' => 'world-canvas',
     'title' => $page_title,
@@ -31,7 +58,7 @@ $page_manifest = [
 require __DIR__ . '/includes/header.php';
 ?>
 <section class="mg-app-shell mg-agent-app mg-world-canvas" data-world-canvas data-world-mode="live">
-  <?php require __DIR__ . '/includes/agent-sidebar.php'; ?>
+  <?php require __DIR__ . '/includes/personal-agent-sidebar.php'; ?>
 
   <div class="mg-app-workspace mg-world-workspace">
     <section class="mg-world-shell">
