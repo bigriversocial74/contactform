@@ -26,9 +26,28 @@ function mg_merchant_agent_crm_has_mentions(mixed $value): bool
 
 function mg_merchant_agent_crm_exact_contact(PDO $pdo, int $merchantId, string $handle): ?array
 {
+    $handle = strtolower(trim($handle));
+    $publicId = '';
+
+    if (preg_match('/^crm-([a-z0-9]{10})$/', $handle, $match) === 1) {
+        $stmt = $pdo->prepare("SELECT public_id FROM merchant_crm_contacts WHERE merchant_user_id=? AND LOWER(REPLACE(public_id,'-','')) LIKE ? ORDER BY id ASC LIMIT 2");
+        $stmt->execute([$merchantId, $match[1] . '%']);
+        $ids = array_values(array_filter(array_map('strval', $stmt->fetchAll(PDO::FETCH_COLUMN))));
+        if (count($ids) === 1) $publicId = $ids[0];
+    } elseif (mg_merchant_crm_search_table_exists($pdo, 'public_profiles')) {
+        $stmt = $pdo->prepare('SELECT mc.public_id FROM merchant_crm_contacts mc INNER JOIN public_profiles pp ON pp.user_id=mc.user_id WHERE mc.merchant_user_id=? AND LOWER(pp.slug)=? LIMIT 1');
+        $stmt->execute([$merchantId, $handle]);
+        $publicId = (string)($stmt->fetchColumn() ?: '');
+    }
+
+    if ($publicId !== '') {
+        $contacts = mg_merchant_crm_search_contacts_by_ids($pdo, $merchantId, [$publicId]);
+        if (!empty($contacts[0])) return $contacts[0];
+    }
+
     $result = mg_merchant_crm_search($pdo, $merchantId, $handle, 100, 0);
     foreach (($result['contacts'] ?? []) as $contact) {
-        if (strtolower((string)($contact['username'] ?? '')) === strtolower($handle)) return $contact;
+        if (strtolower((string)($contact['username'] ?? '')) === $handle) return $contact;
     }
     return null;
 }
