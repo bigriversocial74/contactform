@@ -48,7 +48,7 @@ return [
                 'data-gift-drawer',
                 'data-gift-drawer-content',
                 'data-action-modal',
-                'agent-sidebar.php',
+                'gift-center-sidebar.php',
                 'gift-action-center-runtime-v4.js?v=4.0.0',
             ],
             'forbidden_tokens' => [
