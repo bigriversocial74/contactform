@@ -3,15 +3,17 @@ declare(strict_types=1);
 
 function mg_action_center_product_media_metadata(array $item): array
 {
-    $raw = $item['metadata_json'] ?? $item['instance_metadata_json'] ?? null;
-    if (is_array($raw)) return $raw;
-    if (!is_string($raw) || trim($raw) === '') return [];
-    try {
-        $decoded = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
-        return is_array($decoded) ? $decoded : [];
-    } catch (Throwable) {
-        return [];
+    foreach (['_metadata', 'metadata_json', 'instance_metadata_json', 'metadata'] as $key) {
+        $raw = $item[$key] ?? null;
+        if (is_array($raw)) return $raw;
+        if (!is_string($raw) || trim($raw) === '') continue;
+        try {
+            $decoded = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
+            if (is_array($decoded)) return $decoded;
+        } catch (Throwable) {
+        }
     }
+    return [];
 }
 
 function mg_action_center_product_media_public_id(array $item): string
@@ -36,23 +38,31 @@ function mg_action_center_product_media_public_id(array $item): string
     return '';
 }
 
-function mg_action_center_product_media_row(array $row): array
+function mg_action_center_product_media_row(array $row, string $versionBasis): array
 {
     $productId = trim((string) ($row['product_public_id'] ?? ''));
     $versionId = trim((string) ($row['product_version_public_id'] ?? ''));
     $slug = trim((string) ($row['product_slug'] ?? ''));
     $assetId = trim((string) ($row['product_cover_asset_public_id'] ?? ''));
+    $status = strtolower(trim((string) ($row['product_status'] ?? '')));
+    $isPublic = $status === 'published';
 
     return [
         'product_id' => $productId,
         'product_version_id' => $versionId,
         'product_slug' => $slug,
-        'product_type' => trim((string) ($row['catalog_product_type'] ?? '')),
+        'catalog_product_type' => trim((string) ($row['catalog_product_type'] ?? '')),
+        'product_title' => trim((string) ($row['product_title'] ?? '')),
+        'product_status' => $status,
+        'product_is_public' => $isPublic,
+        'product_version_basis' => $versionBasis,
         'product_image_url' => $assetId !== '' ? '/api/public/media.php?asset=' . rawurlencode($assetId) : '',
-        'product_url' => $productId !== '' && $slug !== ''
+        'product_url' => $isPublic && $productId !== '' && $slug !== ''
             ? '/product.php?id=' . rawurlencode($productId) . '&p=' . rawurlencode($slug)
-            : ($slug !== '' ? '/product.php?p=' . rawurlencode($slug) : ''),
-        'image_source' => $assetId !== '' ? 'catalog_product_cover' : '',
+            : ($isPublic && $slug !== '' ? '/product.php?p=' . rawurlencode($slug) : ''),
+        'image_source' => $assetId !== ''
+            ? ($versionBasis === 'exact_instance_version' ? 'catalog_product_version_cover' : 'catalog_product_current_cover')
+            : '',
     ];
 }
 
@@ -76,17 +86,18 @@ function mg_action_center_attach_product_media(PDO $pdo, int $userId, array $ite
             $ids = array_keys($actionIds);
             $placeholders = implode(',', array_fill(0, count($ids), '?'));
             $sql = "SELECT ac.public_id action_item_id,
-                           cp.public_id product_public_id,cp.slug product_slug,cp.product_type catalog_product_type,
-                           cpv.public_id product_version_public_id,cover.public_id product_cover_asset_public_id
+                           cp.public_id product_public_id,cp.slug product_slug,cp.product_type catalog_product_type,cp.status product_status,
+                           cpv.public_id product_version_public_id,cpv.title product_title,cpv.version_status product_version_status,
+                           cover.public_id product_cover_asset_public_id
                     FROM microgift_inbox_items ac
                     INNER JOIN microgift_instances i ON i.id=ac.instance_id
                     LEFT JOIN catalog_products cp ON cp.id=i.product_id
-                    LEFT JOIN catalog_product_versions cpv ON cpv.id=i.product_version_id
+                    LEFT JOIN catalog_product_versions cpv ON cpv.id=i.product_version_id AND cpv.product_id=cp.id
                     LEFT JOIN catalog_assets cover ON cover.id=(
                         SELECT pva.asset_id
                         FROM catalog_product_version_assets pva
                         WHERE pva.product_version_id=i.product_version_id AND pva.role='cover'
-                        ORDER BY pva.id ASC
+                        ORDER BY pva.sort_order ASC,pva.id ASC
                         LIMIT 1
                     ) AND cover.status='ready'
                     WHERE ac.user_id=? AND ac.public_id IN ({$placeholders})";
@@ -94,11 +105,11 @@ function mg_action_center_attach_product_media(PDO $pdo, int $userId, array $ite
             $stmt->execute(array_merge([$userId], $ids));
             foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
                 $actionId = trim((string) ($row['action_item_id'] ?? ''));
-                if ($actionId !== '') $byActionId[$actionId] = mg_action_center_product_media_row($row);
+                if ($actionId !== '') $byActionId[$actionId] = mg_action_center_product_media_row($row, 'exact_instance_version');
             }
         } catch (Throwable $error) {
             if (function_exists('mg_security_log')) {
-                mg_security_log('warning', 'account.gift_product_media_partial', 'Linked product media was partially unavailable for Action Center gifts.', ['exception_type' => $error::class], $userId);
+                mg_security_log('warning', 'account.gift_product_media_partial', 'Linked product data was partially unavailable.', ['exception_type' => $error::class], $userId);
             }
         }
     }
@@ -108,15 +119,16 @@ function mg_action_center_attach_product_media(PDO $pdo, int $userId, array $ite
         try {
             $ids = array_keys($metadataProductIds);
             $placeholders = implode(',', array_fill(0, count($ids), '?'));
-            $sql = "SELECT cp.public_id product_public_id,cp.slug product_slug,cp.product_type catalog_product_type,
-                           cpv.public_id product_version_public_id,cover.public_id product_cover_asset_public_id
+            $sql = "SELECT cp.public_id product_public_id,cp.slug product_slug,cp.product_type catalog_product_type,cp.status product_status,
+                           cpv.public_id product_version_public_id,cpv.title product_title,cpv.version_status product_version_status,
+                           cover.public_id product_cover_asset_public_id
                     FROM catalog_products cp
-                    LEFT JOIN catalog_product_versions cpv ON cpv.id=cp.current_version_id
+                    LEFT JOIN catalog_product_versions cpv ON cpv.id=cp.current_version_id AND cpv.product_id=cp.id
                     LEFT JOIN catalog_assets cover ON cover.id=(
                         SELECT pva.asset_id
                         FROM catalog_product_version_assets pva
                         WHERE pva.product_version_id=cp.current_version_id AND pva.role='cover'
-                        ORDER BY pva.id ASC
+                        ORDER BY pva.sort_order ASC,pva.id ASC
                         LIMIT 1
                     ) AND cover.status='ready'
                     WHERE cp.public_id IN ({$placeholders}) AND cp.status='published'";
@@ -124,11 +136,11 @@ function mg_action_center_attach_product_media(PDO $pdo, int $userId, array $ite
             $stmt->execute($ids);
             foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
                 $productId = trim((string) ($row['product_public_id'] ?? ''));
-                if ($productId !== '') $byProductId[$productId] = mg_action_center_product_media_row($row);
+                if ($productId !== '') $byProductId[$productId] = mg_action_center_product_media_row($row, 'current_catalog_fallback');
             }
         } catch (Throwable $error) {
             if (function_exists('mg_security_log')) {
-                mg_security_log('warning', 'account.gift_product_metadata_media_partial', 'Metadata-linked product media was partially unavailable for gifts.', ['exception_type' => $error::class], $userId);
+                mg_security_log('warning', 'account.gift_product_metadata_media_partial', 'Catalog fallback data was partially unavailable.', ['exception_type' => $error::class], $userId);
             }
         }
     }
