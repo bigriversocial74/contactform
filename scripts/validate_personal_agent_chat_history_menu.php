@@ -61,7 +61,7 @@ $checks = [
         && str_contains($quickCatalog, "'keyword'=>'/m'")
         && str_contains($quickCatalog, "'keyword'=>'saved opportunities'"),
     'gift folders consume the unified sidebar' => str_contains($giftSidebar, "require __DIR__ . '/personal-agent-sidebar.php'"),
-    'chat groups and actions remain available' => str_contains($sidebar, 'data-personal-agent-thread-groups')
+    'chat list and actions remain available' => str_contains($sidebar, 'data-personal-agent-thread-groups')
         && str_contains($sidebar, 'data-personal-agent-new-chat')
         && str_contains($sidebar, 'href="/design-studio.php"')
         && str_contains($sidebar, 'mg-personal-chat-divider'),
@@ -87,15 +87,17 @@ $checks = [
     'thread API retains authenticated writes' => str_contains($api, 'mg_require_api_user')
         && str_contains($api, 'mg_require_csrf_for_write'),
     'message rows cascade with threads' => str_contains($schema, 'ON DELETE CASCADE'),
-    'chat history groups by date' => str_contains($js, "return 'Today'")
-        && str_contains($js, "return 'Yesterday'")
-        && str_contains($js, "return 'Previous 7 days'"),
+    'chat history uses one flat chronological list' => str_contains($js, 'groupsHost.innerHTML = state.threads.map')
+        && !str_contains($js, 'groupLabel')
+        && !str_contains($js, "return 'Today'")
+        && !str_contains($js, "return 'Yesterday'")
+        && !str_contains($js, "return 'Previous 7 days'"),
     'shared sidebar can create and open threads' => str_contains($js, "Microgifter.post('/api/user-agent/threads.php', { action: 'create' }")
         && str_contains($js, "window.location.href = '/agent.php?thread='")
         && str_contains($js, "action: 'delete'"),
     'current cache versions are loaded' => str_contains($page, '/assets/css/personal-agent-chat-history.css?v=1.4.0')
         && str_contains($page, '/assets/css/personal-agent-full-canvas.css?v=1.0.0')
-        && str_contains($page, '/assets/js/personal-agent-chat-history.js?v=1.1.0')
+        && str_contains($page, '/assets/js/personal-agent-chat-history.js?v=1.2.0')
         && str_contains($subscriptionsPage, '/assets/css/personal-agent-chat-history.css?v=1.4.0'),
 ];
 
