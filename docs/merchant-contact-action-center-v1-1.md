@@ -4,6 +4,10 @@
 
 Contact Action Center v1.1 turns the selected-contact summary from v1 into a daily CRM working surface while preserving merchant ownership, review-first execution, and the existing Agent Review queue.
 
+## Integration dependency
+
+PR #1172 — Merchant Contact Action Center v1 — is merged into `integration-from-repair-20260628`. This v1.1 follow-up workspace now targets the integration branch directly and is validated against the merged Contact Action Center foundation.
+
 ## Included workspace sections
 
 ### Filtered timeline
