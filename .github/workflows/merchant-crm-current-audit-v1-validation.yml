@@ -27,6 +27,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Audit contract preflight
+        run: php scripts/validate_merchant_crm_current_audit_v1.php
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
@@ -47,8 +49,6 @@ jobs:
           node --check assets/js/merchant-crm-directory-data.js
           node --check assets/js/merchant-crm-directory.js
           node --check assets/js/merchant-crm-mobile-dashboard.js
-      - name: Current-state audit contract
-        run: php scripts/validate_merchant_crm_current_audit_v1.php
       - name: PHPUnit when available
         run: if [ -x vendor/bin/phpunit ]; then vendor/bin/phpunit tests/phpunit/MerchantCrmCurrentAuditV1Test.php; fi
 
@@ -56,6 +56,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Audit contract preflight
+        run: php scripts/validate_merchant_crm_current_audit_v1.php
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
@@ -76,7 +78,5 @@ jobs:
           node --check assets/js/merchant-crm-directory-data.js
           node --check assets/js/merchant-crm-directory.js
           node --check assets/js/merchant-crm-mobile-dashboard.js
-      - name: Current-state audit contract
-        run: php scripts/validate_merchant_crm_current_audit_v1.php
       - name: PHPUnit when available
         run: if [ -x vendor/bin/phpunit ]; then vendor/bin/phpunit tests/phpunit/MerchantCrmCurrentAuditV1Test.php; fi
