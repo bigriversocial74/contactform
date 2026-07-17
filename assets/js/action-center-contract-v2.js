@@ -160,7 +160,36 @@
     return copy;
   }
 
-  window.MicrogifterActionCenterContract = Object.freeze({
+  function normalizeResponse(response, path) {
+    const wrapped = object(response);
+    const hasDataEnvelope = wrapped.data && typeof wrapped.data === 'object';
+    const payload = hasDataEnvelope ? wrapped.data : wrapped;
+    let normalized = payload;
+
+    if (/\/api\/account\/action-center\.php(?:\?|$)/.test(String(path || ''))) {
+      normalized = normalizePayload(payload);
+    }
+
+    if (!hasDataEnvelope) return normalized;
+    return Object.assign({}, wrapped, { data: normalized });
+  }
+
+  function installGetAdapter() {
+    const client = window.Microgifter;
+    if (!client || typeof client.get !== 'function') return false;
+    if (client.__actionCenterContractV2Wrapped) return true;
+
+    const originalGet = client.get;
+    client.__actionCenterContractV2Wrapped = true;
+    client.get = function (path) {
+      const result = originalGet.apply(this, arguments);
+      if (!/\/api\/account\/action-center\.php(?:\?|$)/.test(String(path || ''))) return result;
+      return Promise.resolve(result).then((response) => normalizeResponse(response, path));
+    };
+    return true;
+  }
+
+  const api = Object.freeze({
     version: VERSION,
     isContract,
     capability,
@@ -170,8 +199,22 @@
     },
     mediaView,
     normalizePayload,
+    normalizeResponse,
+    install: installGetAdapter,
     image(item) {
       return text(view(item).product_image_url);
     }
   });
+
+  window.MicrogifterActionCenterContract = api;
+
+  let attempts = 0;
+  function installSoon() {
+    if (installGetAdapter()) return;
+    attempts += 1;
+    if (attempts < 40) window.setTimeout(installSoon, 25);
+  }
+
+  installSoon();
+  document.addEventListener('DOMContentLoaded', installSoon, { once: true });
 })();
