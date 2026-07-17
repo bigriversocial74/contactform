@@ -7,10 +7,13 @@ on:
     paths:
       - 'design-studio.php'
       - 'design-calendar.php'
+      - 'includes/standalone-creative-header.php'
+      - 'includes/standalone-creative-footer.php'
       - 'includes/personal-agent-sidebar.php'
       - 'includes/personal-agent/workspace-design.php'
       - 'includes/personal-agent/workspace-design-calendar.php'
       - 'assets/css/design-studio-standalone.css'
+      - 'assets/css/design-studio-runtime-fix.css'
       - 'assets/css/design-calendar-standalone.css'
       - 'assets/js/design-studio-template-variants.js'
       - 'assets/js/design-studio-schedule-context.js'
@@ -44,6 +47,8 @@ jobs:
         run: |
           php -l design-studio.php
           php -l design-calendar.php
+          php -l includes/standalone-creative-header.php
+          php -l includes/standalone-creative-footer.php
           php -l includes/personal-agent-sidebar.php
           php -l includes/personal-agent/workspace-design.php
           php -l includes/personal-agent/workspace-design-calendar.php
