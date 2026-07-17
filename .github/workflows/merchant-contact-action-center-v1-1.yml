@@ -1,0 +1,68 @@
+name: Merchant Contact Action Center v1.1
+
+on:
+  pull_request:
+    branches:
+      - feature/merchant-contact-action-center-v1-20260717
+      - integration-from-repair-20260628
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  php82:
+    name: PHP 8.2
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: PHP syntax
+        run: |
+          php -l merchant-agent-chat.php
+          php -l includes/merchant-agent-chat-view.php
+          php -l api/ai/merchant-agent-chat.php
+          php -l includes/ai/merchant-agent-contact-action-center.php
+          php -l includes/ai/merchant-agent-contact-workspace-v1-1.php
+          php -l scripts/validate_merchant_contact_action_center_v1_1.php
+          php -l tests/phpunit/MerchantContactActionCenterV11Test.php
+      - name: JavaScript syntax
+        run: node --check assets/js/merchant-agent-contact-workspace-v1-1.js
+      - name: Contact Action Center v1.1 contract
+        run: php scripts/validate_merchant_contact_action_center_v1_1.php
+      - name: PHPUnit when available
+        run: if [ -x vendor/bin/phpunit ]; then vendor/bin/phpunit tests/phpunit/MerchantContactActionCenterV11Test.php; fi
+
+  php83:
+    name: PHP 8.3
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: PHP syntax
+        run: |
+          php -l merchant-agent-chat.php
+          php -l includes/merchant-agent-chat-view.php
+          php -l api/ai/merchant-agent-chat.php
+          php -l includes/ai/merchant-agent-contact-action-center.php
+          php -l includes/ai/merchant-agent-contact-workspace-v1-1.php
+          php -l scripts/validate_merchant_contact_action_center_v1_1.php
+          php -l tests/phpunit/MerchantContactActionCenterV11Test.php
+      - name: JavaScript syntax
+        run: node --check assets/js/merchant-agent-contact-workspace-v1-1.js
+      - name: Contact Action Center v1.1 contract
+        run: php scripts/validate_merchant_contact_action_center_v1_1.php
+      - name: PHPUnit when available
+        run: if [ -x vendor/bin/phpunit ]; then vendor/bin/phpunit tests/phpunit/MerchantContactActionCenterV11Test.php; fi
