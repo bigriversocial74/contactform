@@ -62,25 +62,82 @@ function mg_merchant_crm_directory_identity_maps(PDO $pdo, int $merchantId, arra
 function mg_merchant_crm_directory_search_index(array $contact): string
 {
     $values = [
-        $contact['crm_username'] ?? '',
-        $contact['crm_mention'] ?? '',
-        $contact['name'] ?? '',
+        $contact['crm_username'] ?? $contact['username'] ?? '',
+        $contact['crm_mention'] ?? $contact['mention'] ?? '',
+        $contact['name'] ?? $contact['display_name'] ?? '',
         $contact['email'] ?? '',
         $contact['phone'] ?? '',
         $contact['campaign_title'] ?? '',
         $contact['campaign_type'] ?? '',
-        $contact['source'] ?? '',
-        $contact['lifecycle_stage'] ?? '',
-        $contact['crm_status'] ?? '',
+        $contact['source'] ?? $contact['source_type'] ?? '',
+        $contact['lifecycle_stage'] ?? $contact['stage'] ?? '',
+        $contact['crm_status'] ?? $contact['status'] ?? '',
         $contact['result_status'] ?? '',
         $contact['next_best_action'] ?? '',
         $contact['campaign_contact_id'] ?? '',
-        $contact['crm_contact_id'] ?? '',
+        $contact['crm_contact_id'] ?? $contact['id'] ?? '',
     ];
     $values = array_values(array_unique(array_filter(array_map(static function (mixed $value): string {
         return mb_strtolower(trim((string)$value));
     }, $values), static fn(string $value): bool => $value !== '')));
     return implode(' ', $values);
+}
+
+function mg_merchant_crm_directory_contact(array $contact): array
+{
+    $contact['directory_contract_version'] = MG_MERCHANT_CRM_DIRECTORY_CONTRACT_VERSION;
+    $contact['crm_contact_id'] = (string)($contact['id'] ?? '');
+    $contact['crm_username'] = (string)($contact['username'] ?? '');
+    $contact['crm_mention'] = (string)($contact['mention'] ?? '');
+    $contact['lifecycle_stage'] = (string)($contact['stage'] ?? 'lead');
+    $contact['crm_status'] = (string)($contact['status'] ?? 'active');
+    $contact['crm_score'] = (int)($contact['score'] ?? 0);
+    $contact['crm_score_label'] = (string)($contact['score_label'] ?? '');
+    $contact['search_index'] = mg_merchant_crm_directory_search_index($contact);
+    return $contact;
+}
+
+function mg_merchant_crm_directory_list(PDO $pdo, int $merchantId, string $query = '', int $limit = 250, int $offset = 0): array
+{
+    $query = mg_merchant_crm_search_query($query);
+    $limit = max(1, min(250, $limit));
+    $offset = max(0, min(10000, $offset));
+    if (!mg_merchant_crm_search_table_exists($pdo, 'merchant_crm_contacts')) {
+        return ['schema_ready'=>false,'contract_version'=>MG_MERCHANT_CRM_DIRECTORY_CONTRACT_VERSION,'query'=>$query,'contacts'=>[],'total'=>0,'limit'=>$limit,'offset'=>$offset,'has_more'=>false,'next_offset'=>null];
+    }
+
+    if ($query !== '') {
+        $result = mg_merchant_crm_search($pdo, $merchantId, $query, min(100, $limit), $offset);
+        $result['contract_version'] = MG_MERCHANT_CRM_DIRECTORY_CONTRACT_VERSION;
+        $result['contacts'] = array_map('mg_merchant_crm_directory_contact', (array)($result['contacts'] ?? []));
+        return $result;
+    }
+
+    $parts = mg_merchant_crm_search_select_parts($pdo);
+    $where = 'mc.merchant_user_id=?';
+    if (mg_merchant_crm_search_column_exists($pdo, 'merchant_crm_contacts', 'merged_into_contact_id')) $where .= ' AND mc.merged_into_contact_id IS NULL';
+
+    $countStmt = $pdo->prepare('SELECT COUNT(*) FROM merchant_crm_contacts mc WHERE ' . $where);
+    $countStmt->execute([$merchantId]);
+    $total = (int)$countStmt->fetchColumn();
+
+    $sql = 'SELECT ' . $parts['select'] . ' FROM merchant_crm_contacts mc' . $parts['joins'] . ' WHERE ' . $where
+        . ' ORDER BY COALESCE(mc.last_engaged_at,mc.last_seen_at) DESC,mc.id DESC LIMIT ' . $limit . ' OFFSET ' . $offset;
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$merchantId]);
+    $contacts = array_map('mg_merchant_crm_search_row', $stmt->fetchAll(PDO::FETCH_ASSOC));
+    $contacts = array_map('mg_merchant_crm_directory_contact', $contacts);
+    return [
+        'schema_ready'=>true,
+        'contract_version'=>MG_MERCHANT_CRM_DIRECTORY_CONTRACT_VERSION,
+        'query'=>'',
+        'contacts'=>$contacts,
+        'total'=>$total,
+        'limit'=>$limit,
+        'offset'=>$offset,
+        'has_more'=>($offset + count($contacts)) < $total,
+        'next_offset'=>($offset + count($contacts)) < $total ? $offset + count($contacts) : null,
+    ];
 }
 
 function mg_merchant_crm_directory_attach(PDO $pdo, int $merchantId, array $campaignRows, array $contacts): array
