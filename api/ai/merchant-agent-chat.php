@@ -6,6 +6,9 @@ require_once dirname(__DIR__) . '/merchant/_merchant.php';
 require_once dirname(__DIR__, 2) . '/includes/merchant-automation-controls.php';
 require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-chat-memory.php';
 require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-crm-search.php';
+require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-crm-contact-context.php';
+require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-crm-contact-chat.php';
+require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-thread-delete.php';
 require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-snapshot.php';
 require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-admin-limits.php';
 
@@ -36,7 +39,7 @@ if ($method === 'POST') {
     mg_require_csrf_for_write($input);
     $action = strtolower(trim((string)($input['action'] ?? 'send_message')));
     if ($action === 'send_message' && mg_merchant_agent_crm_search_is_query($input['message'] ?? '')) $action = 'crm_search';
-    $localActions = ['save_agent_profile','save_memory_profile','create_thread','save_thread','archive_thread','clear_thread','rename_thread','load_thread'];
+    $localActions = ['save_agent_profile','save_memory_profile','create_thread','save_thread','archive_thread','clear_thread','rename_thread','load_thread','delete_thread'];
 
     if (!in_array($action, array_merge(['send_message','snapshot','crm_search'], $localActions), true)) {
         mg_fail('Unknown merchant agent chat action.', 422);
@@ -50,6 +53,9 @@ if ($method === 'POST') {
     $workspace = mg_merchant_ensure_workspace($pdo, $user);
     $merchantId = (int)$user['id'];
     $input['_merchant_owner_id'] = (int)($workspace['merchant_user_id'] ?? $merchantId);
+    $contactAware = $action === 'send_message' && mg_merchant_agent_crm_has_mentions($input['message'] ?? '');
+
+    if ($contactAware) mg_merchant_require_permission('merchant.campaigns.view');
 
     if ($action === 'crm_search') {
         mg_merchant_require_permission('merchant.campaigns.view');
@@ -77,8 +83,11 @@ if ($method === 'POST') {
         mg_ok(['active_thread' => $thread, 'state' => mg_ai_chat_public_state($pdo, $merchantId)], 'New agent chat created.');
     }
 
-    if (in_array($action, ['save_thread','archive_thread','clear_thread','rename_thread','load_thread'], true)) {
+    if (in_array($action, ['save_thread','archive_thread','clear_thread','rename_thread','load_thread','delete_thread'], true)) {
         $threadId = mg_ai_chat_clean($input['thread_id'] ?? '', 80);
+        if ($action === 'delete_thread') {
+            mg_ok(mg_merchant_agent_delete_thread($pdo, $merchantId, $threadId), 'Merchant Agent chat deleted.');
+        }
         if ($action === 'load_thread') {
             $thread = mg_agent_thread_by_id($pdo, $merchantId, $threadId);
             if (!empty($thread['id']) && mg_agent_table_exists($pdo, 'merchant_agent_threads')) {
@@ -118,7 +127,10 @@ if ($method === 'POST') {
         mg_agent_autonomy_require_for_merchant($pdo, $merchantId, 'review_queue', 'plan preparation');
     }
     mg_agent_admin_limit_enforce_default($pdo, $merchantId);
-    mg_ok(mg_ai_chat_send_with_memory($pdo, $user, $input), $adminOperator ? 'Admin operator agent plan created.' : 'Merchant agent reply created.', 201);
+    $response = $contactAware
+        ? mg_merchant_agent_crm_contact_chat_response($pdo, $user, $input)
+        : mg_ai_chat_send_with_memory($pdo, $user, $input);
+    mg_ok($response, $adminOperator ? 'Admin operator agent plan created.' : ($contactAware ? 'Contact-aware Merchant Agent reply created.' : 'Merchant agent reply created.'), 201);
 }
 
 mg_fail('Method not allowed.', 405);
