@@ -74,11 +74,11 @@ $assert('Stamp Card preserves verified progress runtime',
 $assert('Stamp Card standardizes card sections',
     !str_contains($stamp, '<span class="mg-rl-eyebrow">Verification</span>')
     && !str_contains($stamp, '<span class="mg-rl-eyebrow">CRM Rule</span>'));
-$assert('Stamp Card consolidates details, rules, and updates into one card',
-    substr_count($stamp, 'class="mg-rl-card mg-stamp-summary-card"') === 1
+$assert('Stamp Card separates details, rules, and updates into three cards',
+    substr_count($stamp, '<article class="mg-rl-card mg-stamp-summary-card') === 3
     && str_contains($stamp, 'Item details')
     && str_contains($stamp, 'Reward &amp; campaign rules')
-    && str_contains($stamp, 'Messages, results &amp; updates'));
+    && str_contains($stamp, 'Active status &amp; updates'));
 
 $assert('Merchant campaign controller persists canonical interactive modes',
     str_contains($campaignCore, "['scratch_card', 'spin_wheel']")
