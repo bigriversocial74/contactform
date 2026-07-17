@@ -20,7 +20,7 @@ $merchantRoleLabel = $merchantRole !== '' ? ucwords(str_replace('_', ' ', $merch
             <button class="mg-merchant-agent-controls-button" type="button" data-agent-chat-drawer-open aria-controls="agent-chat-drawer" aria-expanded="false">Agent controls</button>
           </div>
         </div>
-        <p>Ask about products, campaigns, rewards, CRM activity, claims, locations, or performance. Type a partial <strong>@username</strong> to find CRM contacts. Selecting a contact opens a persistent Contact Action Center for that Merchant Agent chat, so follow-up prompts can continue without repeating the username. Every message, reward, campaign, and task remains approval-first.</p>
+        <p>Ask about products, campaigns, rewards, CRM activity, claims, locations, or performance. Type a partial <strong>@username</strong> to find CRM contacts. Selecting a contact opens a persistent Contact Action Center with notes, timeline filters, editable drafts, follow-up planning, and review status. Every message, reward, campaign, and task remains approval-first.</p>
         <div class="mg-merchant-agent-boundary" aria-label="Merchant Agent data boundary">
           <span><?= mg_e($merchantPackageName) ?></span>
           <span><?= mg_e($merchantRoleLabel) ?></span>
@@ -79,6 +79,104 @@ $merchantRoleLabel = $merchantRole !== '' ? ucwords(str_replace('_', ' ', $merch
           <div class="mg-merchant-contact-center-list" data-contact-center-followups></div>
         </article>
       </div>
+
+      <section class="mg-contact-workspace-v11" data-contact-workspace hidden aria-label="Contact follow-up workspace">
+        <div class="mg-contact-workspace-tabs" role="tablist" aria-label="Contact workspace sections">
+          <button type="button" role="tab" data-contact-workspace-tab="timeline" aria-selected="true">Timeline</button>
+          <button type="button" role="tab" data-contact-workspace-tab="notes" aria-selected="false">Notes</button>
+          <button type="button" role="tab" data-contact-workspace-tab="followup" aria-selected="false">Follow-up</button>
+          <button type="button" role="tab" data-contact-workspace-tab="draft" aria-selected="false">Draft</button>
+          <button type="button" role="tab" data-contact-workspace-tab="review" aria-selected="false">Review</button>
+        </div>
+
+        <div class="mg-contact-workspace-panel" data-contact-workspace-panel="timeline" role="tabpanel">
+          <div class="mg-contact-timeline-filters" data-contact-timeline-filters aria-label="Timeline filters">
+            <button type="button" data-contact-timeline-filter="all" aria-pressed="true">All activity</button>
+            <button type="button" data-contact-timeline-filter="purchases" aria-pressed="false">Purchases</button>
+            <button type="button" data-contact-timeline-filter="rewards" aria-pressed="false">Rewards</button>
+            <button type="button" data-contact-timeline-filter="messages" aria-pressed="false">Messages</button>
+            <button type="button" data-contact-timeline-filter="campaigns" aria-pressed="false">Campaigns</button>
+            <button type="button" data-contact-timeline-filter="tasks_notes" aria-pressed="false">Tasks &amp; notes</button>
+          </div>
+          <div class="mg-contact-workspace-list" data-contact-workspace-timeline></div>
+        </div>
+
+        <div class="mg-contact-workspace-panel" data-contact-workspace-panel="notes" role="tabpanel" hidden>
+          <div class="mg-contact-workspace-fields">
+            <label>Internal CRM note
+              <textarea rows="3" maxlength="4000" data-contact-note-input placeholder="Add a private note for this merchant workspace…"></textarea>
+            </label>
+            <div class="mg-contact-workspace-submit-row">
+              <small>Notes save immediately and are visible only inside the merchant CRM.</small>
+              <button type="button" data-contact-note-save>Add note</button>
+            </div>
+          </div>
+          <div class="mg-contact-workspace-list" data-contact-note-list></div>
+        </div>
+
+        <div class="mg-contact-workspace-panel" data-contact-workspace-panel="followup" role="tabpanel" hidden>
+          <div class="mg-contact-workspace-fields mg-contact-followup-fields">
+            <label>Task type
+              <select data-contact-followup-type>
+                <option value="customer_service">Customer service</option>
+                <option value="call">Call</option>
+                <option value="email">Email</option>
+                <option value="reward_reminder">Reward reminder</option>
+                <option value="campaign_invite">Campaign invite</option>
+              </select>
+            </label>
+            <label>Priority
+              <select data-contact-followup-priority>
+                <option value="low">Low</option>
+                <option value="medium" selected>Medium</option>
+                <option value="high">High</option>
+              </select>
+            </label>
+            <label>Due date
+              <input type="date" data-contact-followup-due>
+            </label>
+            <label class="is-wide">Objective
+              <textarea rows="3" maxlength="1000" data-contact-followup-note placeholder="Describe the follow-up objective and expected outcome…"></textarea>
+            </label>
+            <div class="mg-contact-workspace-submit-row is-wide">
+              <small>The task is prepared for Agent Review. It is not created automatically.</small>
+              <button type="button" data-contact-followup-review>Send task to review</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="mg-contact-workspace-panel" data-contact-workspace-panel="draft" role="tabpanel" hidden>
+          <div class="mg-contact-draft-channels" data-contact-draft-channels aria-label="Draft channel">
+            <button type="button" data-contact-draft-channel="email" aria-pressed="false">Email</button>
+            <button type="button" data-contact-draft-channel="sms" aria-pressed="false">SMS</button>
+            <button type="button" data-contact-draft-channel="crm_message" aria-pressed="true">CRM Message</button>
+            <button type="button" data-contact-draft-channel="social_dm" aria-pressed="false">Social DM</button>
+          </div>
+          <div class="mg-contact-workspace-fields">
+            <label>Subject or internal label
+              <input type="text" maxlength="180" data-contact-draft-subject placeholder="Follow-up regarding your recent activity">
+            </label>
+            <label>Editable message draft
+              <textarea rows="5" maxlength="4000" data-contact-draft-body placeholder="Write or paste the message you want reviewed…"></textarea>
+            </label>
+            <div class="mg-contact-workspace-submit-row">
+              <small>The draft remains editable and cannot be sent from this panel.</small>
+              <button type="button" data-contact-draft-review>Send draft to review</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="mg-contact-workspace-panel" data-contact-workspace-panel="review" role="tabpanel" hidden>
+          <div class="mg-contact-review-head">
+            <div><strong>Agent Review status</strong><span data-contact-review-summary></span></div>
+            <a href="/merchant-agent-approvals.php">Open full review queue</a>
+          </div>
+          <div class="mg-contact-workspace-list" data-contact-review-list></div>
+        </div>
+
+        <p class="mg-contact-workspace-status" data-contact-workspace-status role="status" aria-live="polite"></p>
+      </section>
+
       <div class="mg-merchant-contact-center-links">
         <a href="/merchant-crm.php" data-contact-center-profile>Open customer profile</a>
         <a href="/merchant-crm.php" data-contact-center-timeline>Open full timeline</a>
