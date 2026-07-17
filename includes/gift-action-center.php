@@ -12,6 +12,7 @@ $giftCenterDemoEnabled=mg_has_role('super_admin');
 <link rel="stylesheet" href="/assets/css/gift-action-center-feed-v3.css?v=3.2.0">
 <link rel="stylesheet" href="/assets/css/gift-action-center-pagination.css?v=1.0.0">
 <link rel="stylesheet" href="/assets/css/gift-action-center-runtime-v4.css?v=4.0.1">
+<link rel="stylesheet" href="/assets/css/gift-action-center-voucher-drawer-v1.css?v=1.0.0">
 <link rel="stylesheet" href="/assets/css/personal-agent-chat-history.css?v=1.2.0">
 <section class="mg-app-shell mg-gift-center-page" data-gift-center data-feed-version="4" data-contract-version="2" data-initial-folder="<?= mg_e($giftCenterFolder) ?>" data-demo-enabled="<?= $giftCenterDemoEnabled?'true':'false' ?>">
   <?php require __DIR__ . '/gift-center-sidebar.php'; ?>
@@ -45,10 +46,10 @@ $giftCenterDemoEnabled=mg_has_role('super_admin');
   </div>
 
   <div class="mg-gift-drawer-backdrop" data-gift-drawer-backdrop hidden></div>
-  <aside class="mg-gift-drawer" data-gift-drawer aria-hidden="true" aria-label="Loaded PPPM content">
+  <aside class="mg-gift-drawer" data-gift-drawer aria-hidden="true" aria-label="Voucher details">
     <header class="mg-gift-drawer-header">
-      <div><span class="mg-account-eyebrow">Loaded PPPM content</span><strong data-gift-drawer-title>Gift content</strong></div>
-      <button class="mg-gift-drawer-close" type="button" data-gift-drawer-close aria-label="Close loaded content">×</button>
+      <div><span class="mg-account-eyebrow">Voucher details</span><strong data-gift-drawer-title>Gift content</strong></div>
+      <button class="mg-gift-drawer-close" type="button" data-gift-drawer-close aria-label="Close voucher details">×</button>
     </header>
     <div class="mg-gift-drawer-content" data-gift-drawer-content></div>
   </aside>
@@ -64,6 +65,7 @@ $giftCenterDemoEnabled=mg_has_role('super_admin');
 </section>
 <script src="/assets/js/action-center-contract-v2.js?v=2.0.0" defer></script>
 <script src="/assets/js/gift-action-center-runtime-v4.js?v=4.0.0" defer></script>
+<script src="/assets/js/gift-action-center-voucher-drawer-v1.js?v=1.0.0" defer></script>
 <script src="/assets/js/gift-action-center-actions.js" defer></script>
 <script src="/assets/js/gift-action-center-claim-restore.js" defer></script>
 <script src="/assets/js/gift-action-center-modal-portal.js?v=1.1.0" defer></script>
