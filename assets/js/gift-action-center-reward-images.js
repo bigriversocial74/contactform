@@ -41,6 +41,10 @@
     source = source && typeof source === 'object' ? source : {};
     var pack = source.media_pack || source.mediaPack || {};
     return firstImage(
+      source.custom_gift_image_url,
+      source.customGiftImageUrl,
+      source.gift_image_url,
+      source.giftImageUrl,
       source.reward_image_url,
       source.rewardImageUrl,
       source.image_url,
@@ -49,6 +53,8 @@
       source.thumbnailUrl,
       source.cover_image_url,
       source.coverImageUrl,
+      pack.custom_gift_image_url,
+      pack.customGiftImageUrl,
       pack.reward_image_url,
       pack.rewardImageUrl,
       pack.cover_image_url,
@@ -58,7 +64,7 @@
     );
   }
 
-  function rewardImageFor(item) {
+  function displayImageFor(item) {
     item = item && typeof item === 'object' ? item : {};
     var metadata = parseJson(item.metadata_json || item.instance_metadata_json || item.metadata || {});
     var rewardMetadata = metadata.reward_template_metadata || metadata.rewardTemplateMetadata || metadata.reward || metadata.template || {};
@@ -68,6 +74,16 @@
     }) || {};
 
     return firstImage(
+      item.product_image_url,
+      item.productImageUrl,
+      item.catalog_product_image_url,
+      item.catalogProductImageUrl,
+      item.product_cover_url,
+      item.productCoverUrl,
+      item.custom_gift_image_url,
+      item.customGiftImageUrl,
+      item.gift_image_url,
+      item.giftImageUrl,
       item.reward_image_url,
       item.rewardImageUrl,
       item.image_url,
@@ -78,7 +94,9 @@
       item.coverImageUrl,
       nestedImage(metadata),
       nestedImage(rewardMetadata),
-      coverPost.url
+      coverPost.url,
+      item.merchant_avatar_url,
+      item.merchantAvatarUrl
     );
   }
 
@@ -88,7 +106,7 @@
     items.forEach(function (item) {
       var id = String(item && item.action_item_id || '').trim();
       if (!id) return;
-      var url = rewardImageFor(item);
+      var url = displayImageFor(item);
       if (url) imageByActionId[id] = url;
     });
   }
@@ -104,7 +122,7 @@
       if (thumb.getAttribute('data-reward-image-url') === url) return;
       thumb.classList.add('has-image');
       thumb.setAttribute('data-reward-image-url', url);
-      thumb.innerHTML = '<img src="' + esc(url) + '" alt="' + esc((row.querySelector('h3') || {}).textContent || 'Reward image') + '" loading="lazy">';
+      thumb.innerHTML = '<img src="' + esc(url) + '" alt="' + esc((row.querySelector('h3') || {}).textContent || 'Gift image') + '" loading="lazy">';
     });
 
     scope.querySelectorAll('[data-gift-search-result]').forEach(function (button) {
