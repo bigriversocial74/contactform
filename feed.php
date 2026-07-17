@@ -21,8 +21,22 @@ $page_styles = [
     '/assets/css/feed-online-chat.css',
     '/assets/css/feed-centered-layout.css?v=2.2.0',
     '/assets/css/feed-campaign-progress-cards-v1.css?v=1.0.0',
+    '/assets/css/feed-contract-v2.css?v=2.0.0',
 ];
-$page_scripts = ['/assets/js/social-feed.js','/assets/js/social-feed-sidebar-tabs.js?v=1.1.0','/assets/js/social-feed-post-polish.js','/assets/js/social-feed-upload.js','/assets/js/store-presence-feed.js','/assets/js/avatar-anchor-consent.js','/assets/js/sponsored-campaign-card.js','/assets/js/microgifter-stories.js','/assets/js/feed-online-chat.js','/assets/js/feed-profile-chat-bridge.js','/assets/js/feed-campaign-progress-cards-v1.js?v=1.0.0'];
+$page_scripts = [
+    '/assets/js/feed-contract-v2-bridge.js?v=2.0.0',
+    '/assets/js/social-feed.js?v=2.0.0',
+    '/assets/js/social-feed-sidebar-tabs.js?v=1.2.0',
+    '/assets/js/social-feed-post-polish.js?v=2.0.0',
+    '/assets/js/social-feed-upload.js?v=2.0.0',
+    '/assets/js/store-presence-feed.js?v=2.0.0',
+    '/assets/js/avatar-anchor-consent.js',
+    '/assets/js/sponsored-campaign-card.js',
+    '/assets/js/microgifter-stories.js',
+    '/assets/js/feed-online-chat.js',
+    '/assets/js/feed-profile-chat-bridge.js',
+    '/assets/js/feed-campaign-progress-cards-v2.js?v=2.0.0',
+];
 $page_manifest = [
     'id' => 'feed',
     'title' => $page_title,
@@ -42,7 +56,7 @@ $page_manifest = [
 ];
 require __DIR__ . '/includes/header.php';
 ?>
-<section class="mg-app-shell mg-feed-app-shell" data-social-feed data-initial-feed-view="<?= mg_e($feedView) ?>">
+<section class="mg-app-shell mg-feed-app-shell" data-social-feed data-feed-contract-version="2" data-initial-feed-view="<?= mg_e($feedView) ?>">
   <?php require __DIR__ . '/includes/agent-sidebar.php'; ?>
 
   <div class="mg-app-workspace mg-feed-workspace">
@@ -86,6 +100,7 @@ require __DIR__ . '/includes/header.php';
           </div>
 
           <div class="mg-feed-status" data-feed-status role="status" aria-live="polite"></div>
+          <div class="mg-feed-source-warning mg-hidden" data-feed-source-warning role="status" aria-live="polite"></div>
           <section class="mg-feed-loading" data-feed-loading aria-busy="true">
             <?php for ($i=0; $i<3; $i++): ?><article class="mg-feed-card is-skeleton" aria-hidden="true"></article><?php endfor; ?>
           </section>
