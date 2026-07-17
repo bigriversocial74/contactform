@@ -17,7 +17,7 @@ if ($useUnifiedCustomerSidebar) {
     ?>
     <link rel="stylesheet" href="/assets/css/personal-agent-chat-history.css?v=1.2.0">
     <?php require __DIR__ . '/personal-agent-sidebar.php'; ?>
-    <script src="/assets/js/personal-agent-chat-history.js?v=1.1.0" defer></script>
+    <script src="/assets/js/personal-agent-chat-history.js?v=1.2.0" defer></script>
     <?php
     return;
 }
