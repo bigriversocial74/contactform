@@ -1,6 +1,7 @@
 .mg-action-center-contract-v2.is-unread{box-shadow:inset 3px 0 0 #2563eb}
 .mg-action-center-contract-v2 .mg-feed-meta-item.is-source{min-width:0}
 .mg-action-center-contract-v2 .mg-feed-meta-item.is-source span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-gift-center][data-feed-version="4"] .mg-gift-list>.mg-gift-row{visibility:visible!important}
 .mg-gift-empty-list.is-error{border-color:#fecaca;background:#fff7f7;color:#991b1b}
 .mg-gift-drawer-content .mg-pppm-post-media img,
 .mg-gift-drawer-content .mg-pppm-post-media video{display:block;width:100%;max-height:460px;object-fit:contain;border-radius:14px}
