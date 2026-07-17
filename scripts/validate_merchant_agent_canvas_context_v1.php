@@ -30,8 +30,8 @@ $checks = [
         && str_contains($content['view'], 'is-assistant is-intro mg-merchant-agent-intro'),
     'contact-aware examples are visible in the composer help' =>
         str_contains($content['view'], '@username show recent activity')
-        && str_contains($content['view'], '@username draft a follow-up')
-        && str_contains($content['view'], '@username recommend a reward'),
+        && (str_contains($content['view'], '@username draft a follow-up') || str_contains($content['view'], '@username draft a personalized follow-up'))
+        && (str_contains($content['view'], '@username recommend a reward') || str_contains($content['view'], '@username recommend the most appropriate reward')),
     'opening and empty states are transparent canvas content' =>
         str_contains($content['css'], '.mg-merchant-agent-intro')
         && str_contains($content['css'], 'background:transparent!important')
@@ -54,9 +54,10 @@ $checks = [
     'thread action is scoped by merchant and thread reference' =>
         str_contains($content['threads'], 'WHERE merchant_user_id=? AND public_id=? LIMIT 1')
         && str_contains($content['threads'], 'thread_public_id'),
-    'thread action handles messages snapshots and active replacement' =>
+    'thread action handles messages snapshots contact selection and active replacement' =>
         str_contains($content['threads'], 'merchant_agent_insight_snapshots')
         && str_contains($content['threads'], 'merchant.agent_chat.user')
+        && str_contains($content['threads'], 'merchant.agent_chat.contact_selected')
         && str_contains($content['threads'], 'mg_agent_create_thread'),
     'standalone lookup and contact-aware prompts use separate routes' =>
         str_contains($content['api'], 'mg_merchant_agent_crm_search_is_query')
@@ -70,9 +71,10 @@ $checks = [
         && str_contains($content['context'], "LOWER(REPLACE(public_id,'-',''))")
         && str_contains($content['context'], 'INNER JOIN public_profiles pp')
         && str_contains($content['context'], 'LOWER(pp.slug)=?'),
-    'contact data stays scoped to exact handles and workspace owner' =>
+    'contact data stays scoped to selected or exact-mentioned contacts and workspace owner' =>
         str_contains($content['context'], 'merchant_user_id=?')
-        && str_contains($content['context'], 'Only exact CRM contacts explicitly mentioned')
+        && str_contains($content['context'], 'selected for this Merchant Agent thread')
+        && str_contains($content['context'], 'explicitly mentioned in the current prompt')
         && str_contains($content['api'], "['_merchant_owner_id']"),
     'context includes activity campaigns purchases and rewards' =>
         str_contains($content['context'], 'merchant_crm_contact_events')
