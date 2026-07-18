@@ -99,9 +99,9 @@ $checks = [
         && str_contains($view, 'data-agent-chat-scope'),
     'owner-gated runtime mounting remains explicit without page-level AI permission blocking' =>
         str_contains($page, 'mg_merchant_agent_owner_context')
-        && str_contains($page, '\$merchantAgentAllowed = \$hasMerchantAccess && \$isMerchantOwner')
-        && !str_contains($page, '\$hasMerchantPlanPermission')
-        && !str_contains($page, '\$hasMerchantReviewPermission')
+        && str_contains($page, "\$merchantAgentAllowed = \$hasMerchantAccess && \$isMerchantOwner")
+        && !str_contains($page, '$hasMerchantPlanPermission')
+        && !str_contains($page, '$hasMerchantReviewPermission')
         && str_contains($page, "\$merchantAgentAllowed ? ' data-merchant-agent-chat' : ''"),
 ];
 
