@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function isSystematic(text) {
     text = String(text || '').trim().replace(/\s+/g, ' ');
     return /^(?:\/?snapshot|current snapshot|merchant snapshot)(?:\s+(?:7|14|30|60|90|180|365)(?:\s+days?)?)?$/i.test(text)
-      || /^(?:\/?ai report)(?:\s+(?:7|14|30|60|90|180|365)(?:\s+days?)?)?$/i.test(text)
+      || /^(?:\/?ai report)(?:\s+(?:details|alerts|recent))?(?:\s+(?:7|14|30|60|90|180|365)(?:\s+days?)?)?$/i.test(text)
       || /^@[a-z0-9][a-z0-9._-]{0,119}$/i.test(text);
   }
 
