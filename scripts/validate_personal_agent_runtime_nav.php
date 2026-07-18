@@ -13,6 +13,7 @@ $quickCatalog = $read('includes/agent-quick-actions.php');
 $agentPage = $read('agent.php');
 $merchantPage = $read('merchant-agent-chat.php');
 $subscriptionsPage = $read('account-subscriptions.php');
+$creditResponse = $read('includes/personal-agent/credit-response.php');
 $workspace = $read('includes/agent-workspace.php');
 $dashboard = $read('includes/personal-agent/workspace-dashboard.php');
 $chatCss = $read('assets/css/personal-agent-chat-canvas.css');
@@ -53,7 +54,9 @@ $checks = [
         && str_contains($quickCatalog, "'keyword'=>'/m'")
         && str_contains($toolsJs, 'data-agent-keyword-prompt')
         && str_contains($historyCss, '.mg-agent-sidebar-tools-modal'),
-    'free signed-in users are routed to subscriptions from both Agent destinations' => str_contains($agentPage, "header('Location: /account-subscriptions.php?agent=personal')")
+    'free users can open Personal Agent systematic flows while Merchant Agent stays package-gated' => !str_contains($agentPage, "header('Location: /account-subscriptions.php?agent=personal')")
+        && str_contains($agentPage, "\$header_mode = 'agent'")
+        && str_contains($creditResponse, 'ai_subscription_required')
         && str_contains($merchantPage, "header('Location: /account-subscriptions.php?agent=merchant')")
         && str_contains($personalSidebar, '/account-subscriptions.php?agent=personal')
         && str_contains($personalSidebar, '/account-subscriptions.php?agent=merchant'),
