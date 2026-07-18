@@ -10,7 +10,7 @@ $header_mode = 'public';
 $page_body_class = 'mg-pricing-page';
 $page_styles = [
     '/assets/css/public-header-footer-fixes.css',
-    '/assets/css/pricing-local-business-v1.css?v=1.0.0',
+    '/assets/css/pricing-local-business-v1.css?v=1.1.0',
 ];
 $page_manifest = [
     'id' => 'pricing',
@@ -39,6 +39,7 @@ $comparisonRows = [
     ['label' => 'Active Campaigns', 'key' => 'max_active_campaigns'],
     ['label' => 'CRM Contacts', 'key' => 'max_crm_contacts'],
     ['label' => 'Monthly Stamps', 'key' => 'monthly_stamps_included'],
+    ['label' => 'Monthly AI Tokens', 'key' => 'ai_tokens_monthly_included'],
     ['label' => 'Landing Pages', 'key' => 'max_landing_pages'],
     ['label' => 'Business Locations', 'key' => 'max_locations'],
     ['label' => 'Email Stamps', 'key' => 'email_stamps_enabled', 'boolean' => true],
@@ -64,42 +65,18 @@ require __DIR__ . '/includes/header.php';
 ?>
 
 <div class="mg-pricing-v1">
-  <section class="mg-price-hero" aria-labelledby="pricing-title">
-    <div class="mg-price-shell mg-price-hero-grid">
-      <div class="mg-price-hero-copy">
-        <span class="mg-price-kicker">Simple pricing for local growth</span>
-        <h1 id="pricing-title">Start small.<br>Grow with every <span>customer.</span></h1>
-        <p>Choose the Microgifter plan that fits your business today. Every plan connects social gifting, rewards, campaigns, customer relationships, and measurable local commerce in one platform.</p>
-        <div class="mg-price-hero-actions">
-          <a class="mg-price-button mg-price-button-primary" href="#plans">View Plans</a>
-          <a class="mg-price-button mg-price-button-secondary" href="/learn-more.php">Talk to Sales</a>
-        </div>
-        <div class="mg-price-trust" aria-label="Pricing assurances">
-          <span><b><?= (int) $summary['published'] ?></b> plans available</span>
-          <span><b>Monthly</b> subscriptions</span>
-          <span><b>Flexible</b> upgrade path</span>
-        </div>
-      </div>
-
-      <aside class="mg-price-loop" aria-label="Microgifter connected growth loop">
-        <span class="mg-price-loop-label">Included platform foundation</span>
-        <h2>One connected customer growth loop.</h2>
-        <div class="mg-price-loop-steps">
-          <div><b>01</b><span><strong>Create value</strong><small>Gifts, rewards, offers, and campaigns</small></span></div>
-          <div><b>02</b><span><strong>Reach customers</strong><small>Feed, landing pages, QR, email, and SMS</small></span></div>
-          <div><b>03</b><span><strong>Track action</strong><small>Claims, redemptions, visits, and responses</small></span></div>
-          <div><b>04</b><span><strong>Grow relationships</strong><small>CRM insight, follow-up, and repeat visits</small></span></div>
-        </div>
-      </aside>
-    </div>
-  </section>
-
   <section class="mg-price-plans" id="plans" aria-labelledby="plans-title">
     <div class="mg-price-shell">
-      <div class="mg-price-section-heading">
-        <span class="mg-price-kicker">Plans built to grow with you</span>
-        <h2 id="plans-title">Choose the right operating level for your business.</h2>
-        <p>Start with the customer tools you need now, then add more campaigns, contacts, locations, and automation as demand grows.</p>
+      <div class="mg-price-section-heading mg-price-section-heading-center">
+        <span class="mg-price-kicker">Simple pricing for local growth</span>
+        <h1 id="plans-title">Choose the right operating level for your business.</h1>
+        <p>Start with the customer tools you need now, then add more campaigns, contacts, locations, AI capacity, and automation as demand grows.</p>
+      </div>
+
+      <div class="mg-price-trust" aria-label="Pricing assurances">
+        <span><b><?= (int) $summary['published'] ?></b> plans available</span>
+        <span><b>Monthly</b> subscriptions</span>
+        <span><b>Flexible</b> upgrade path</span>
       </div>
 
       <div class="mg-price-grid" aria-label="Microgifter pricing plans">
@@ -110,7 +87,7 @@ require __DIR__ . '/includes/header.php';
             <header class="mg-price-card-head">
               <span class="mg-price-plan-index"><?= str_pad((string) max(1, (int) (($plan['sort_order'] ?? 10) / 10)), 2, '0', STR_PAD_LEFT) ?></span>
               <div>
-                <h3><?= mg_e((string) $plan['name']) ?></h3>
+                <h2><?= mg_e((string) $plan['name']) ?></h2>
                 <p><?= mg_e((string) $plan['description']) ?></p>
               </div>
             </header>
@@ -124,7 +101,7 @@ require __DIR__ . '/includes/header.php';
             </div>
 
             <div class="mg-price-includes">
-              <h4><?= mg_e((string) $plan['included_label']) ?></h4>
+              <h3><?= mg_e((string) $plan['included_label']) ?></h3>
               <ul>
                 <?php foreach (($plan['included_features'] ?? []) as $feature): ?>
                   <li><span aria-hidden="true">✓</span><?= mg_e((string) $feature) ?></li>
@@ -169,7 +146,7 @@ require __DIR__ . '/includes/header.php';
       <div class="mg-price-section-heading mg-price-section-heading-center">
         <span class="mg-price-kicker">Compare plan capacity</span>
         <h2 id="compare-title">See how each plan scales.</h2>
-        <p>Compare the published package limits that power customer engagement, campaign distribution, and local commerce operations.</p>
+        <p>Compare the published package limits that power customer engagement, AI assistance, campaign distribution, and local commerce operations.</p>
       </div>
 
       <div class="mg-price-table-wrap" role="region" aria-label="Pricing plan comparison" tabindex="0">
@@ -217,29 +194,14 @@ require __DIR__ . '/includes/header.php';
       <div class="mg-price-faq-intro">
         <span class="mg-price-kicker">Pricing questions</span>
         <h2 id="faq-title">Clear answers before you start.</h2>
-        <p>Plans use the same connected Microgifter platform. The main differences are capacity, locations, communication channels, design tools, and automation.</p>
+        <p>Plans use the same connected Microgifter platform. The main differences are capacity, AI allowance, locations, communication channels, design tools, and automation.</p>
       </div>
       <div class="mg-price-faq-list">
-        <details>
-          <summary>Can I upgrade as my business grows?</summary>
-          <p>Yes. Choose the plan that matches your current operating needs, then move to a higher-capacity plan when you need more campaigns, contacts, locations, or communication tools.</p>
-        </details>
-        <details>
-          <summary>What are monthly Stamps?</summary>
-          <p>Stamps represent the included monthly distribution capacity defined by each published plan. Available email and SMS channels vary by plan.</p>
-        </details>
-        <details>
-          <summary>Which plan supports multiple locations?</summary>
-          <p>Growth supports up to three locations, Pro supports up to ten, and Enterprise supports unlimited locations.</p>
-        </details>
-        <details>
-          <summary>Do I need a long-term contract?</summary>
-          <p>The published plans are presented as monthly subscriptions. Enterprise or custom programs may use a separate agreement based on implementation scope.</p>
-        </details>
-        <details>
-          <summary>Can your team help with a custom rollout?</summary>
-          <p>Yes. Contact Sales for volume pricing, multi-location programs, white-label design, platform integrations, and automated commerce workflows.</p>
-        </details>
+        <details><summary>Can I upgrade as my business grows?</summary><p>Yes. Choose the plan that matches your current operating needs, then move to a higher-capacity plan when you need more campaigns, contacts, locations, communication tools, or AI capacity.</p></details>
+        <details><summary>What are monthly Stamps?</summary><p>Stamps represent the included monthly distribution capacity defined by each published plan. Available email and SMS channels vary by plan.</p></details>
+        <details><summary>Which plan supports multiple locations?</summary><p>Growth supports up to three locations, Pro supports up to ten, and Enterprise supports unlimited locations.</p></details>
+        <details><summary>Do I need a long-term contract?</summary><p>The published plans are presented as monthly subscriptions. Enterprise or custom programs may use a separate agreement based on implementation scope.</p></details>
+        <details><summary>Can your team help with a custom rollout?</summary><p>Yes. Contact Sales for volume pricing, multi-location programs, white-label design, platform integrations, and automated commerce workflows.</p></details>
       </div>
     </div>
   </section>
