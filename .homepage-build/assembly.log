@@ -3,7 +3,7 @@
 + cat .homepage-build/index.php.gz.b64.00 .homepage-build/index.php.gz.b64.01 .homepage-build/index.php.gz.b64.02
 + base64 --decode
 + gzip --decompress
-+ cat .homepage-build/styles.css.gz.b64.00 .homepage-build/styles.css.gz.b64.01 .homepage-build/styles.css.gz.b64.02
++ cat .homepage-build/styles.css.gz.b64.00 .homepage-build/styles.css.gz.b64.01 .homepage-build/styles.css.gz.b64.02 .homepage-build/styles.css.gz.b64.03
 + base64 --decode
 + gzip --decompress
 
