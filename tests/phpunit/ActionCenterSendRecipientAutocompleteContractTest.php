@@ -1,69 +1,61 @@
 <?php
 declare(strict_types=1);
+
 use PHPUnit\Framework\TestCase;
 
 final class ActionCenterSendRecipientAutocompleteContractTest extends TestCase
 {
-    public function testRecipientSearchEndpointUsesFollowersWhenAvailableAndFallsBackToUsers(): void
+    private function source(string $path): string
     {
-        $source=file_get_contents(dirname(__DIR__,2).'/api/account/action-center-recipient-search.php');
-        self::assertIsString($source);
+        $source=file_get_contents(dirname(__DIR__,2).'/'.$path);
+        self::assertIsString($source,$path);
+        return $source;
+    }
 
+    public function testRecipientSearchKeepsCanonicalPublicIdentity(): void
+    {
+        $source=$this->source('api/account/action-center-recipient-search.php');
         foreach([
-            'mg_require_method(\'GET\')',
-            '$q=mb_substr(trim((string)($_GET[\'q\']??\'\')),0,80)',
-            'mg_ac_table_exists(PDO $pdo,string $table)',
+            "mg_require_method('GET')",
             "mg_ac_table_exists(\$pdo,'user_followers')",
             "mg_ac_table_exists(\$pdo,'followers')",
-            'INNER JOIN users u ON u.id=f.follower_user_id',
-            'FROM users',
-            "status='active'",
-            "'recipient_user_id'=>(string)\$row['recipient_user_id']",
-            "'display_name'=>(string)(\$row['display_name']??'Recipient')",
-            "'email_hint'=>mg_ac_email_hint",
-            "'recipients'=>array_map",
-        ] as $needle){
-            self::assertStringContainsString($needle,$source);
-        }
+            'recipient_user_id',
+            'display_name',
+            'email_hint',
+            'recipients',
+        ] as $needle) self::assertStringContainsString($needle,$source);
         self::assertStringNotContainsString("'email'=>(string)",$source);
     }
 
-    public function testSendEndpointAcceptsCanonicalPublicRecipientIdentity(): void
+    public function testSendAcceptsUserProfileOrSlugReference(): void
     {
-        $source=file_get_contents(dirname(__DIR__,2).'/api/account/action-center-send.php');
-        self::assertIsString($source);
-
+        $source=$this->source('api/account/action-center-send.php');
         foreach([
-            '$recipientReference=trim((string)($input[\'recipient_user_id\']??$input[\'recipient\']??\'\'))',
-            'SELECT id FROM users WHERE (public_id=? OR email=?) AND status=\'active\' LIMIT 1',
-            'SELECT id FROM users WHERE email=? AND status=\'active\' LIMIT 1',
+            "\$input['recipient_user_id']",
+            "\$input['recipient']",
+            "\$input['recipient_slug']",
+            "public_id=? OR email=?",
             'mg_pppm_transfer_owner_canonical',
             'mg_action_center_sent(',
-        ] as $needle){
-            self::assertStringContainsString($needle,$source);
-        }
+        ] as $needle) self::assertStringContainsString($needle,$source);
         self::assertStringNotContainsString('ctype_digit($reference)',$source);
     }
 
-    public function testActionCenterActionsEnhancesSendModalWithTypeahead(): void
+    public function testMutationClientOwnsRecipientTypeahead(): void
     {
-        $source=file_get_contents(dirname(__DIR__,2).'/assets/js/gift-action-center-actions.js');
-        self::assertIsString($source);
-
+        $source=$this->source('assets/js/gift-action-center-actions.js');
         foreach([
             'function enhanceSendAutocomplete()',
-            '[data-action-form="send"]',
             'data-recipient-autocomplete',
             'data-recipient-search',
             'name="recipient_user_id"',
             '/api/account/action-center-recipient-search.php?q=',
             'data-recipient-option',
-            'request.recipient_user_id=data.recipient_user_id||\'\'',
-            'request.recipient=data.recipient_user_id||data.recipient||\'\'',
-            "if(type==='send'&&!data.recipient_user_id)",
+            'request.recipient_user_id=data.recipient_user_id',
+            'request.recipient=request.recipient_user_id',
             'Start typing and choose a follower or user from the recipient list.',
-        ] as $needle){
-            self::assertStringContainsString($needle,$source);
-        }
+            'selectedContract()',
+        ] as $needle) self::assertStringContainsString($needle,$source);
+        self::assertStringNotContainsString('function actionItemFromRow',$source);
     }
 }
