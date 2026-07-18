@@ -8,7 +8,7 @@ foreach (mg_public_pricing_packages() as $package) {
     if ($id !== '') $availablePlans[$id] = $package;
 }
 
-$selectedPlan = strtolower(trim((string) ($_GET['plan'] ?? ''));
+$selectedPlan = strtolower(trim((string) ($_GET['plan'] ?? '')));
 if (!isset($availablePlans[$selectedPlan])) $selectedPlan = '';
 
 $accountType = strtolower(trim((string) ($_GET['type'] ?? ($selectedPlan !== '' ? 'merchant' : 'customer'))));
