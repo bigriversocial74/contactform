@@ -7,6 +7,7 @@ on:
     paths:
       - index.php
       - assets/css/homepage-parallax-exact-v2.css
+      - assets/css/universal-footer.css
       - assets/js/homepage-parallax-exact-v2.js
       - assets/images/foreground.png
       - assets/images/mountains.png
@@ -35,3 +36,5 @@ jobs:
           grep -q '/assets/images/orb.png' index.php
           grep -q '/assets/css/homepage-parallax-exact-v2.css' index.php
           grep -q '/assets/js/homepage-parallax-exact-v2.js' index.php
+          grep -q 'body.mg-homepage-exact-v2' assets/css/universal-footer.css
+          grep -q 'overflow-x:clip!important' assets/css/universal-footer.css
