@@ -89,12 +89,13 @@ $checks = [
         && str_contains($content['api'], "'contact_review_draft'")
         && str_contains($content['api'], 'mg_merchant_contact_workspace_add_note')
         && str_contains($content['api'], 'mg_merchant_contact_workspace_create_review_draft'),
-    'note action requires merchant CRM management permission' =>
-        str_contains($content['api'], "'contact_note' => 'merchant.campaigns.manage'")
-        && str_contains($content['api'], "mg_merchant_require_permission('merchant.campaigns.view')"),
-    'review drafts require plan review CRM and autonomy boundaries' =>
-        str_contains($content['api'], "'contact_review_draft' => 'merchant.ai.plan'")
-        && str_contains($content['api'], "mg_merchant_require_permission('merchant.ai.review')")
+    'note action requires merchant CRM view and management permissions' =>
+        str_contains($content['api'], "mg_merchant_agent_require_owner_permission(\$user, 'merchant.campaigns.view')")
+        && str_contains($content['api'], "if (\$action === 'contact_note') mg_merchant_agent_require_owner_permission(\$user, 'merchant.campaigns.manage')"),
+    'deterministic review drafts require review CRM and autonomy boundaries without AI-plan credits' =>
+        str_contains($content['api'], "if (\$action === 'contact_review_draft')")
+        && str_contains($content['api'], "mg_merchant_agent_require_owner_permission(\$user, 'merchant.ai.review')")
+        && !str_contains($content['api'], "'contact_review_draft' => 'merchant.ai.plan'")
         && str_contains($content['api'], 'mg_agent_autonomy_require_for_merchant($pdo, $actorId, \'review_queue\'')
         && str_contains($content['api'], 'mg_agent_autonomy_require_for_merchant($pdo, $actorId, \'messages\'')
         && str_contains($content['api'], 'mg_agent_admin_limit_enforce_default'),
