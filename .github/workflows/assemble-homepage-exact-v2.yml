@@ -1,55 +1,47 @@
-name: Assemble Exact Homepage Integration
+name: Inspect Homepage Package Payload
 
 on:
   push:
     branches:
       - fix/homepage-exact-zip-index-integration-v3-20260718
     paths:
-      - '.homepage-build/**'
       - '.github/workflows/assemble-homepage-exact-v2.yml'
 
 permissions:
   contents: write
 
 jobs:
-  assemble:
+  inspect:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: fix/homepage-exact-zip-index-integration-v3-20260718
           fetch-depth: 0
-      - name: Wait for complete payload
-        id: payload
-        run: |
-          if [ -f .homepage-build/.ready ]; then
-            echo 'ready=true' >> "$GITHUB_OUTPUT"
-          else
-            echo 'ready=false' >> "$GITHUB_OUTPUT"
-          fi
-      - name: Assemble integration files
-        if: steps.payload.outputs.ready == 'true'
+      - name: Decode and inspect staged image payloads
         run: |
           set -euo pipefail
-          mkdir -p assets/css assets/js assets/images/homepage-parallax-exact-v2
-          cat .homepage-build/index.php.gz.b64.* | base64 --decode | gzip --decompress > index.php
-          cat .homepage-build/styles.css.gz.b64.* | base64 --decode | gzip --decompress > assets/css/homepage-parallax-exact-v2.css
-          cat .homepage-build/app.js.gz.b64.* | base64 --decode | gzip --decompress > assets/js/homepage-parallax-exact-v2.js
-          cat .homepage-build/foreground.webp.b64.* | base64 --decode > assets/images/homepage-parallax-exact-v2/foreground.webp
-          cat .homepage-build/mountains.webp.b64.* | base64 --decode > assets/images/homepage-parallax-exact-v2/mountains.webp
-          cat .homepage-build/orb.webp.b64.* | base64 --decode > assets/images/homepage-parallax-exact-v2/orb.webp
-          php -l index.php
-          node --check assets/js/homepage-parallax-exact-v2.js
-          test "$(sha256sum assets/images/homepage-parallax-exact-v2/foreground.webp | cut -d' ' -f1)" = "6d9647789200b6834ca2dd9980e376e4d9b83588b4b3b7c44af49fa4f8c968e6"
-          test "$(sha256sum assets/images/homepage-parallax-exact-v2/mountains.webp | cut -d' ' -f1)" = "53f824ce3541ca4ce661940ce7ae8de1873c1fe761594334b6eb69d5399b16b1"
-          test "$(sha256sum assets/images/homepage-parallax-exact-v2/orb.webp | cut -d' ' -f1)" = "5b396a75df4f4f28a6ef4978b273752e6fbd9673ecee46fd8a07bb58df77567f"
-      - name: Commit assembled files
-        if: steps.payload.outputs.ready == 'true'
+          mkdir -p /tmp/homepage-payload
+          cat .homepage-build/foreground.webp.b64.* | base64 --decode > /tmp/homepage-payload/foreground.bin
+          cat .homepage-build/mountains.webp.b64.* | base64 --decode > /tmp/homepage-payload/mountains.bin
+          cat .homepage-build/orb.webp.b64.* | base64 --decode > /tmp/homepage-payload/orb.bin
+          {
+            file /tmp/homepage-payload/*.bin
+            sha256sum /tmp/homepage-payload/*.bin
+            wc -c /tmp/homepage-payload/*.bin
+            python3 - <<'PY'
+          from pathlib import Path
+          for path in sorted(Path('/tmp/homepage-payload').glob('*.bin')):
+              data = path.read_bytes()
+              kind = 'PNG' if data.startswith(b'\x89PNG\r\n\x1a\n') else ('WEBP' if data[:4] == b'RIFF' and data[8:12] == b'WEBP' else 'UNKNOWN')
+              print(f'{path.name}: magic={kind}')
+          PY
+          } > .homepage-build/diagnostic.txt
+      - name: Commit diagnostic only
         run: |
-          rm -rf .homepage-build
           rm -f .github/workflows/assemble-homepage-exact-v2.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
-          git commit -m 'Integrate exact homepage package into index.php'
+          git commit -m 'Inspect staged homepage image payloads'
           git push origin HEAD:fix/homepage-exact-zip-index-integration-v3-20260718
