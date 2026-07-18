@@ -6,6 +6,7 @@ on:
       - integration-from-repair-20260628
     paths:
       - scripts/apply_recovery_contract_finalization.py
+      - scripts/apply_recovery_contract_finalization_v2.py
       - .github/workflows/audit-recovery-contract-finalization.yml
   workflow_dispatch:
 
@@ -37,7 +38,9 @@ jobs:
         run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: Apply final recovery repairs
-        run: python3 scripts/apply_recovery_contract_finalization.py
+        run: |
+          python3 scripts/apply_recovery_contract_finalization.py
+          python3 scripts/apply_recovery_contract_finalization_v2.py
 
       - name: Validate changed PHP syntax
         shell: bash
