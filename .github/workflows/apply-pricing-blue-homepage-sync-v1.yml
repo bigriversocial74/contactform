@@ -1,0 +1,169 @@
+name: Apply pricing blue homepage sync v1
+
+on:
+  push:
+    branches:
+      - fix/pricing-blue-homepage-sync-v1-20260718
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/pricing-blue-homepage-sync-v1-20260718
+          fetch-depth: 0
+
+      - name: Apply scoped pricing updates
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+
+          pricing_path = Path('pricing.php')
+          pricing = pricing_path.read_text(encoding='utf-8')
+          hero_pattern = re.compile(
+              r'\n  <section class="mg-price-hero"[\s\S]*?</section>\n\n(?=  <section class="mg-price-plans")'
+          )
+          pricing, hero_count = hero_pattern.subn('\n', pricing, count=1)
+          if hero_count != 1:
+              raise SystemExit(f'Expected to remove one pricing hero, removed {hero_count}.')
+          pricing = pricing.replace(
+              "'/assets/css/pricing-local-business-v1.css?v=1.0.0'",
+              "'/assets/css/pricing-local-business-v1.css?v=1.1.0'",
+          )
+          pricing_path.write_text(pricing, encoding='utf-8')
+
+          index_path = Path('index.php')
+          index = index_path.read_text(encoding='utf-8')
+          package_include = "require_once __DIR__ . '/includes/pricing-packages.php';"
+          if package_include not in index:
+              index = index.replace(
+                  "declare(strict_types=1);\n",
+                  "declare(strict_types=1);\n\n" + package_include + "\n",
+                  1,
+              )
+          plans_assignment = '$homepagePlans = mg_public_pricing_packages();'
+          if plans_assignment not in index:
+              index = index.replace(
+                  "header('Cache-Control: public, max-age=300, stale-while-revalidate=600');",
+                  plans_assignment + "\n\nheader('Cache-Control: public, max-age=300, stale-while-revalidate=600');",
+                  1,
+              )
+
+          live_grid = '''          <div class="pricing-grid" aria-label="Microgifter pricing packages">
+            <?php foreach ($homepagePlans as $plan): ?>
+              <article class="pricing-card<?= !empty($plan['featured']) ? ' pricing-card--featured' : '' ?>" data-package-id="<?= mg_e((string) $plan['id']) ?>">
+                <p class="pricing-card__label"><?= mg_e((string) $plan['name']) ?></p>
+                <h3><?= mg_e((string) $plan['price_label']) ?><span><?= mg_e((string) $plan['billing_label']) ?></span></h3>
+                <p><?= mg_e((string) $plan['description']) ?></p>
+                <ul>
+                  <?php foreach (array_slice((array) ($plan['included_features'] ?? []), 0, 3) as $feature): ?>
+                    <li><?= mg_e((string) $feature) ?></li>
+                  <?php endforeach; ?>
+                </ul>
+                <a href="<?= mg_e((string) $plan['cta_href']) ?>"><?= mg_e((string) $plan['cta_label']) ?> <span>→</span></a>
+              </article>
+            <?php endforeach; ?>
+          </div>
+        </section>
+
+      </div>'''
+          grid_pattern = re.compile(
+              r'          <div class="pricing-grid">[\s\S]*?          </div>\n        </section>\n\n      </div>'
+          )
+          index, grid_count = grid_pattern.subn(live_grid, index, count=1)
+          if grid_count != 1:
+              raise SystemExit(f'Expected to replace one homepage pricing grid, replaced {grid_count}.')
+          index_path.write_text(index, encoding='utf-8')
+
+          css_path = Path('assets/css/pricing-local-business-v1.css')
+          css = css_path.read_text(encoding='utf-8')
+          css = css.replace(
+              '/* Microgifter public pricing page v1: white, navy, and green local-business system. */',
+              '/* Microgifter public pricing page v1.1: white and footer-blue local-business system. */',
+          )
+          css = css.replace('--price-green-dark', '--price-blue-dark')
+          css = css.replace('--price-green', '--price-blue')
+
+          replacements = {
+              '#0b2d2a': '#091a31', '#123c37': '#102d4c', '#72d43f': '#102d4c', '#4cae24': '#091a31',
+              '#47605b': '#52657a', '#dce7e2': '#d9e2ec', '#f2f7f3': '#f3f6fa', '#c7f8ad': '#dce9f7',
+              '#a9ef85': '#6f9bc6', '#f4f9f5': '#f5f7fa', '#c5f7ac': '#dce9f7', '#82df50': '#173f68',
+              '#cfe0d8': '#c8d5e3', '#f6fbf3': '#f5f8fb', '#071f1d': '#071425', '#f8fbf9': '#f7f9fc',
+              '#f0faeb': '#edf3f8', '#eaf8e2': '#e8f0f8', '#3c8e20': '#1f5b8f', '#405c57': '#42566c',
+              '#516b66': '#53677d', '#617772': '#607286', '#879994': '#8391a0', '#8a9a96': '#8996a4',
+              '#e5eee9': '#e3e9f0', '#294843': '#304963', '#f3fbeF': '#edf3f8', '#506963': '#51657b',
+              '#e8f1ed': '#e8eef5', '#6b817c': '#64788d', '#7c8f8b': '#77899b', '#edf8e7': '#e8f0f8',
+              '#3f8d23': '#1f5b8f', '#edf8e8': '#e8eef5', '#55706a': '#566b81',
+              'rgba(114,212,63,.18)': 'rgba(16,45,76,.14)',
+              'rgba(114,212,63,.14)': 'rgba(73,125,176,.16)',
+              'rgba(169,239,133,.13)': 'rgba(73,125,176,.18)',
+              'rgba(76,174,36,.20)': 'rgba(16,45,76,.24)',
+              'rgba(76,174,36,.22)': 'rgba(16,45,76,.24)',
+              'rgba(76,174,36,.18)': 'rgba(16,45,76,.22)',
+              'rgba(11,45,42,.22)': 'rgba(9,26,49,.22)',
+              'rgba(11,45,42,.18)': 'rgba(9,26,49,.18)',
+              'rgba(11,45,42,.14)': 'rgba(9,26,49,.14)',
+              'rgba(11,45,42,.10)': 'rgba(9,26,49,.10)',
+              'rgba(11,45,42,.09)': 'rgba(9,26,49,.09)',
+              'rgba(11,45,42,.08)': 'rgba(9,26,49,.08)',
+              'rgba(11,45,42,.075)': 'rgba(9,26,49,.075)',
+              'rgba(11,45,42,.045)': 'rgba(9,26,49,.045)',
+              'rgba(11,45,42,.032)': 'rgba(9,26,49,.032)',
+              'rgba(11,45,42,.028)': 'rgba(9,26,49,.028)',
+          }
+          for old, new in replacements.items():
+              css = css.replace(old, new)
+
+          css += '''
+
+/* Footer-blue action system: every pricing CTA uses blue with white text. */
+.mg-pricing-v1 .mg-price-button,
+.mg-pricing-v1 .mg-price-plan-action,
+.mg-pricing-v1 .mg-price-card.is-featured .mg-price-plan-action{
+  background:#102d4c!important;
+  border-color:#102d4c!important;
+  color:#fff!important;
+  box-shadow:0 14px 30px rgba(9,26,49,.18)!important;
+}
+.mg-pricing-v1 .mg-price-button:hover,
+.mg-pricing-v1 .mg-price-plan-action:hover,
+.mg-pricing-v1 .mg-price-card.is-featured .mg-price-plan-action:hover{
+  background:#091a31!important;
+  border-color:#091a31!important;
+  color:#fff!important;
+}
+'''
+          css_path.write_text(css, encoding='utf-8')
+
+          workflow = Path('.github/workflows/apply-pricing-blue-homepage-sync-v1.yml')
+          workflow.unlink()
+          PY
+
+      - name: Validate pricing integration
+        run: |
+          php -l pricing.php
+          php -l index.php
+          grep -q "mg_public_pricing_packages" index.php
+          grep -q "data-package-id" index.php
+          ! grep -q 'mg-price-hero' pricing.php
+          ! grep -q '\$25<span' index.php
+          ! grep -q '\$149<span' index.php
+          ! grep -q 'pricing-card__label">Professional' index.php
+          ! grep -Eqi '#72d43f|#4cae24|#c7f8ad|#a9ef85|#c5f7ac|#82df50|#eaf8e2|#3c8e20|#edf8e7|#3f8d23|#edf8e8|rgba\(114,212,63|rgba\(76,174,36|price-green' assets/css/pricing-local-business-v1.css
+          grep -q 'background:#102d4c!important' assets/css/pricing-local-business-v1.css
+          grep -q 'color:#fff!important' assets/css/pricing-local-business-v1.css
+          git diff --check
+
+      - name: Commit scoped changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pricing.php index.php assets/css/pricing-local-business-v1.css .github/workflows/apply-pricing-blue-homepage-sync-v1.yml
+          git commit -m "Sync homepage pricing and replace green pricing theme"
+          git push origin HEAD:fix/pricing-blue-homepage-sync-v1-20260718
