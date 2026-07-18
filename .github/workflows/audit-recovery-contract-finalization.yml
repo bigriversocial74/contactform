@@ -1,128 +1,13 @@
-name: Audit Recovery Contract Finalization
+name: Recovery Contract Finalization Archive
 
 on:
-  pull_request:
-    branches:
-      - integration-from-repair-20260628
-    paths:
-      - scripts/apply_recovery_contract_finalization.py
-      - scripts/apply_recovery_contract_finalization_v2.py
-      - .github/workflows/audit-recovery-contract-finalization.yml
   workflow_dispatch:
 
 permissions:
-  contents: write
-
-concurrency:
-  group: audit-recovery-contract-finalization
-  cancel-in-progress: true
+  contents: read
 
 jobs:
-  finalize:
-    if: github.head_ref == 'audit/repository-production-hardening-20260717' || github.ref_name == 'audit/repository-production-hardening-20260717'
+  archived:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
     steps:
-      - name: Check out latest audit branch
-        uses: actions/checkout@v4
-        with:
-          ref: audit/repository-production-hardening-20260717
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Record authoritative run id
-        shell: bash
-        run: |
-          set -euo pipefail
-          printf '%s\n' "${{ github.run_id }}" > .audit-recovery-finalization-run-id
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add .audit-recovery-finalization-run-id
-          git commit -m 'Record temporary recovery finalization run'
-          for attempt in 1 2 3 4; do
-            git pull --rebase origin audit/repository-production-hardening-20260717
-            if git push origin HEAD:audit/repository-production-hardening-20260717; then
-              break
-            fi
-            if [ "$attempt" -eq 4 ]; then
-              exit 1
-            fi
-            sleep 2
-          done
-
-      - name: Set up PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-          coverage: none
-          extensions: curl, mbstring, pdo_mysql, openssl
-          tools: composer:v2
-
-      - name: Install locked dependencies
-        run: composer install --no-interaction --prefer-dist --no-progress
-
-      - name: Apply final recovery repairs
-        run: |
-          python3 scripts/apply_recovery_contract_finalization.py
-          python3 scripts/apply_recovery_contract_finalization_v2.py
-
-      - name: Validate changed PHP syntax
-        shell: bash
-        run: |
-          set -euo pipefail
-          mapfile -t files < <(git diff --name-only --diff-filter=ACM | grep -E '\.php$' || true)
-          for file in "${files[@]}"; do
-            php -l "$file"
-          done
-
-      - name: Run affected static contracts
-        shell: bash
-        run: |
-          set -o pipefail
-          vendor/bin/phpunit \
-            tests/phpunit/AdminPlatformPackageBillingContractTest.php \
-            tests/phpunit/AgentHeaderTabBehaviorTest.php \
-            tests/phpunit/CustomerInboxSidebarContractTest.php \
-            tests/phpunit/DesignStudioAdvertisingWorkflowV2ContractTest.php \
-            tests/phpunit/DesignStudioContentCalendarContractTest.php \
-            tests/phpunit/MerchantCrmCommandCenterContractTest.php \
-            tests/phpunit/MobileAgentTabsTest.php \
-            tests/phpunit/ProductionAgentStrategyControlCenterSection1Test.php \
-            tests/phpunit/Stage13BInitialSubscriptionFundingTest.php \
-            tests/phpunit/Stage13SubscriptionsMonetizationTest.php \
-            tests/phpunit/Stage5GClaimOperationsTest.php \
-            tests/phpunit/SubscriptionCheckoutHandoffContractTest.php \
-            tests/phpunit/SubscriptionStripeWebhookActivationContractTest.php \
-            2>&1 | tee /tmp/final-recovery-static-contracts.log
-
-      - name: Upload static contract output
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: final-recovery-static-contracts
-          path: /tmp/final-recovery-static-contracts.log
-          if-no-files-found: warn
-
-      - name: Validate patch formatting
-        run: git diff --check
-
-      - name: Commit only after validation passes
-        shell: bash
-        run: |
-          set -euo pipefail
-          if git diff --quiet; then
-            echo 'No final recovery changes were required.'
-            exit 0
-          fi
-          git add tests/phpunit
-          git commit -m 'Finalize recovery contracts and authenticated fixtures'
-          for attempt in 1 2 3 4; do
-            git pull --rebase origin audit/repository-production-hardening-20260717
-            if git push origin HEAD:audit/repository-production-hardening-20260717; then
-              break
-            fi
-            if [ "$attempt" -eq 4 ]; then
-              exit 1
-            fi
-            sleep 2
-          done
+      - run: echo 'The temporary recovery finalization pass is complete.'
