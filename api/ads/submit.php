@@ -19,6 +19,5 @@ try {
     $campaign = mg_ads_submit_campaign($pdo, (int)$user['id'], $publicId);
     mg_ok(['schema_ready' => true, 'campaign' => $campaign], 'Ad campaign submitted for review.');
 } catch (Throwable $error) {
-    mg_security_log('error', 'ads.submit_failed', 'Campaign Ads Manager submit failed.', ['exception_class' => $error::class, 'message' => $error->getMessage()], (int)$user['id']);
-    mg_fail($error->getMessage(), 422);
+    mg_fail_unexpected($error, 'ads.submit_failed', 'Unable to submit the ad campaign.', 500);
 }

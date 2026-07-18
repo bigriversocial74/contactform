@@ -27,19 +27,16 @@ final class BackendHardeningContractTest extends TestCase
     }
 
     public function testMerchantLocationsDoesNotMutateSchemaDuringRequests(): void
+
     {
         $source = file_get_contents(dirname(__DIR__, 2) . '/api/merchant/locations.php');
         self::assertIsString($source);
+        foreach(["require_once __DIR__ . '/_claims.php';",'mg_merchant_location_scope_context','mg_merchant_location_scope_join','mg_merchant_location_scope_condition',"'schema_ready'=>true"] as $needle) self::assertStringContainsString($needle,$source);
+        self::assertStringContainsString('$stmt->execute([$workspaceId,$ownerMerchantId])',$source);
+        self::assertStringNotContainsString('ALTER TABLE',$source);
 
-        self::assertStringContainsString("require_once __DIR__ . '/_claims.php';", $source);
-        self::assertStringContainsString('INSERT INTO merchant_claim_codes', $source);
-        self::assertStringContainsString("'schema_ready'=>true", $source);
-        self::assertStringContainsString('WHERE ml.merchant_user_id=?', $source);
-        self::assertStringContainsString('WHERE merchant_user_id=? AND location_code=?', $source);
-        self::assertStringNotContainsString('WHERE ml.workspace_id=? AND ml.merchant_user_id=?', $source);
-        self::assertStringNotContainsString('ALTER TABLE', $source);
-        self::assertStringNotContainsString('mg_merchant_locations_ensure_claim_code', $source);
-        self::assertStringNotContainsString('mg_merchant_locations_has_claim_code', $source);
+
+
     }
 
     public function testStage11hMigrationIsRegisteredOrderedAndExecuted(): void

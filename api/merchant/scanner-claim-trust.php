@@ -204,5 +204,5 @@ try {
     if ($pdo->inTransaction()) $pdo->rollBack();
     try { mg_scanner_trust_event($pdo, 'scanner_exception', 70, $identifier !== '' ? $identifier : null, $merchantUserId, is_array($location) ? $location : null, is_array($voucherToken) ? $voucherToken : null, null, $rawScan, ['exception_class' => $error::class, 'message' => $error->getMessage()]); } catch (Throwable) {}
     mg_security_log('error', 'merchant.scanner_claim_trust_failed', 'Scanner trust claim failed.', ['identifier' => $identifier, 'exception_class' => $error::class], $merchantUserId);
-    mg_fail($error instanceof RuntimeException ? $error->getMessage() : 'Unable to process scanner claim right now.', 500);
+    mg_fail('Unable to process scanner claim right now.', 500);
 }

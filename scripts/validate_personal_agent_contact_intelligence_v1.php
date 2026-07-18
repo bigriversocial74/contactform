@@ -45,8 +45,9 @@ $checks['schema has action drafts, receipts, and signals'] = str_contains($sql,'
     && str_contains($sql,'CREATE TABLE IF NOT EXISTS user_agent_relationship_signals')
     && str_contains($sql,"'stage_18am_personal_agent_contact_intelligence_v1'");
 $checks['migration is canonical and ordered'] = str_contains($manifest,"'stage_18am_personal_agent_contact_intelligence_v1.sql'")
-    && strpos($manifest,"'stage_18al_personal_agent_followup_recovery_v1.sql'") < strpos($manifest,"'stage_18am_personal_agent_contact_intelligence_v1.sql'")
-    && strpos($manifest,"'stage_18am_personal_agent_contact_intelligence_v1.sql'") < strpos($manifest,"'stage_19_ai_provider_models.sql'");
+    && strpos($manifest,"'stage_18al_personal_agent_followup_recovery_v1.sql'") < strpos($manifest,"'stage_19_ai_provider_models.sql'")
+    && strpos($manifest,"'stage_19_ai_provider_models.sql'") < strpos($manifest,"'20260714_personal_gifting_agent_phase2.sql'")
+    && strpos($manifest,"'20260714_personal_gifting_agent_phase2.sql'") < strpos($manifest,"'stage_18am_personal_agent_contact_intelligence_v1.sql'");
 $checks['permission is package compatible and action scoped'] = str_contains($sql,"'agent.personal.contact_actions'")
     && str_contains($service,"mg_has_permission('agent.personal.contact_actions')")
     && str_contains($service,"mg_has_permission('agent.personal.use')");

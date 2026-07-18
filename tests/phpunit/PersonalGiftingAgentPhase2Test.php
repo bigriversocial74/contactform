@@ -51,12 +51,15 @@ final class PersonalGiftingAgentPhase2Test extends TestCase
     }
 
     public function testPersonalAgentNavigationIncludesRequiredCustomerDestinations(): void
+
     {
         $sidebar=file_get_contents($this->root.'/includes/personal-agent-sidebar.php');
         self::assertIsString($sidebar);
-        foreach(['Home','Lists','Contacts','Birthdays','Gift Calendar','Draft Plans','Reminders','Group Gifting','Agent Memory','Settings'] as $label){
-            self::assertStringContainsString("'label' => '{$label}'",$sidebar);
-        }
+        foreach(['Inbox','My Feed','My Loyalty Cards','My Lists','My Saves','New Chat','Design','Calendar'] as $label) self::assertStringContainsString('<strong>'.$label.'</strong>',$sidebar);
+        foreach(['/inbox.php','/feed.php','/loyalty-cards.php','/lists.php','/saves.php','/design-studio.php','/design-calendar.php'] as $route) self::assertStringContainsString($route,$sidebar);
+
+
+
     }
 
     public function testContextAndRecommendationsRemainPrivateAndApprovalFirst(): void

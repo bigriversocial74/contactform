@@ -91,10 +91,14 @@ final class UserContactListsFoundationTest extends TestCase
     }
 
     public function testAgentTabIsAvailableToAuthenticatedCustomers(): void
+
     {
         $header = file_get_contents($this->root . '/includes/header-components/app-header.php');
         self::assertIsString($header);
         self::assertStringContainsString('$is_authenticated_user = mg_current_user() !== null;', $header);
-        self::assertStringContainsString("['agent','Agent','/agent.php',$can_agent_workspace]", $header);
+        self::assertStringContainsString("['agent','Agent','/agent.php',\$can_agent_workspace]", $header);
+
+
+
     }
 }

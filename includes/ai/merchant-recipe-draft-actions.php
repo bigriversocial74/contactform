@@ -188,6 +188,6 @@ function mg_recipe_draft_review_item(PDO $pdo, array $user, array $item, array $
     } catch (Throwable $error) {
         if ($pdo->inTransaction()) $pdo->rollBack();
         mg_security_log('error', 'merchant.recipe_draft_review_failed', 'Recipe draft review failed.', ['exception_class' => $error::class, 'item_id' => (string)$item['public_id']], $merchantId);
-        mg_fail('Unable to execute recipe draft: ' . $error->getMessage(), 500);
+        mg_fail('Unable to execute recipe draft.', 500);
     }
 }

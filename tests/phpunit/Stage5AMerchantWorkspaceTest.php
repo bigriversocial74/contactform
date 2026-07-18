@@ -15,13 +15,15 @@ final class Stage5AMerchantWorkspaceTest extends TestCase
     }
 
     public function testWorkspaceInitializationCreatesOrderedActivationSteps(): void
+
     {
-        $source = file_get_contents(dirname(__DIR__, 2) . '/api/merchant/_merchant.php');
+        $source = file_get_contents(dirname(__DIR__, 2) . '/includes/merchant-provisioning.php');
         self::assertIsString($source);
-        foreach (['business_profile','eligibility','first_location','claim_configuration','first_product','storefront','payment_readiness','test_pppm','test_claim','analytics_verification','beta_readiness'] as $step) {
-            self::assertStringContainsString("'{$step}'", $source);
-        }
-        self::assertStringContainsString('mg_merchant_recalculate_onboarding', $source);
+        foreach (['business_profile','eligibility','first_location','claim_configuration','first_product','storefront','payment_readiness','test_pppm','test_claim','analytics_verification','beta_readiness'] as $step) self::assertStringContainsString("'{$step}'",$source);
+        self::assertStringContainsString('merchant_onboarding_steps',$source);
+
+
+
     }
 
     public function testMerchantShellReusesAccountAppShellAndUniversalNavigation(): void

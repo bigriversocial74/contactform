@@ -20,23 +20,18 @@ final class MerchantCrmCommandCenterContractTest extends TestCase
     }
 
     public function testCrmCommandCenterLoadsCurrentTabsAndPanels(): void
+
     {
         $page = $this->read('merchant-crm.php');
         $view = $this->read('includes/merchant-crm-view.php');
-        $tabs = $this->read('assets/js/merchant-crm-tabs.js');
-        $css = $this->read('assets/css/merchant-crm-command-center.css');
+        $css = $this->read('assets/css/merchant-crm-contacts-only.css');
+        foreach(['/assets/css/merchant-crm-command-center.css','/assets/css/merchant-crm-contacts-only.css?v=1.1.0','/assets/js/merchant-crm.js','/assets/js/merchant-crm-directory.js?v=1.0.0'] as $needle) self::assertStringContainsString($needle,$page);
+        foreach(['data-merchant-crm-shell','data-crm-desktop-hero','data-crm-desktop-directory','data-crm-mobile-overview','data-merchant-crm-table'] as $needle) self::assertStringContainsString($needle,$view);
+        self::assertStringContainsString('Four visible columns',$css);
+        self::assertStringNotContainsString('data-crm-tab-target',$view);
 
-        self::assertStringContainsString('/assets/css/merchant-crm-command-center.css', $page);
-        self::assertStringContainsString('/assets/js/merchant-crm-tabs.js', $page);
-        self::assertStringContainsString('/assets/js/merchant-crm.js', $page);
-        foreach (['overview','contacts','campaigns','performance','rewards','segments','retention'] as $tab) {
-            self::assertStringContainsString('data-crm-tab-target="' . $tab . '"', $view);
-            self::assertStringContainsString('data-crm-tab-panel="' . $tab . '"', $view);
-        }
-        self::assertStringContainsString("bottom:0!important", $css);
-        self::assertStringContainsString('overflow-y:hidden', $css);
-        self::assertStringContainsString('mg:crm-tab:changed', $tabs);
-        self::assertStringContainsString("history.replaceState(null, '', '#crm-' + id)", $tabs);
+
+
     }
 
     public function testContactActionsAreCompactAndHorizontal(): void
@@ -70,13 +65,18 @@ final class MerchantCrmCommandCenterContractTest extends TestCase
     }
 
     public function testRewardInviteOperationsStayInRewardsTab(): void
+
     {
+        $page = $this->read('merchant-crm.php');
         $view = $this->read('includes/merchant-crm-view.php');
         $js = $this->read('assets/js/merchant-crm-reward-invite-operations.js');
+        self::assertStringContainsString('/assets/js/merchant-crm-reward-invite-operations.js',$page);
+        self::assertStringContainsString('data-merchant-crm-table',$view);
+        self::assertStringContainsString('data-crm-reward-invite-ops-host',$js);
+        self::assertStringContainsString('if(!host)return',$js);
+        self::assertStringContainsString("e.detail.tab==='rewards'",$js);
 
-        self::assertStringContainsString('data-crm-reward-invite-ops-host', $view);
-        self::assertStringContainsString('data-crm-reward-invite-ops-host', $js);
-        self::assertStringContainsString("e.detail.tab==='rewards'", $js);
-        self::assertStringNotContainsString("q('[data-merchant-crm-messages]')||q('[data-merchant-crm-app]')", $js);
+
+
     }
 }

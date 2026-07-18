@@ -104,7 +104,7 @@ final class Stage1SecurityEndpointTest extends TestCase
         $csrf = mg_test_csrf('/account.php', $this->cookieFile);
 
         [$status, $body] = $this->request('DELETE', '/api/me/sessions.php', [
-            'scope' => 'all_except_current',
+            'mode' => 'all_except_current',
             'csrf_token' => $csrf,
         ], ['X-CSRF-Token: ' . $csrf]);
 

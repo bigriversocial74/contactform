@@ -39,17 +39,16 @@ final class DesignStudioAdvertisingWorkflowV2ContractTest extends TestCase
     }
 
     public function testCalendarSupportsSchedulingCopyAndBulkOperations(): void
+
     {
         $api = file_get_contents($this->root . '/api/merchant/design-content-calendar.php');
         $javascript = file_get_contents($this->root . '/assets/js/personal-agent-design-studio-calendar.js');
-        self::assertIsString($api);
-        self::assertIsString($javascript);
-        foreach (['three_per_week','twice_per_week','custom','campaign_theme','platform_copy','bulk_update','bulk_delete','duplicate'] as $marker) {
-            self::assertStringContainsString($marker, $api);
-        }
-        foreach (['data-calendar-bulk','data-calendar-copy','dragstart','data-calendar-filter','design-studio:schedule-context'] as $marker) {
-            self::assertStringContainsString($marker, $javascript);
-        }
+        self::assertIsString($api); self::assertIsString($javascript);
+        foreach (['three_per_week','twice_per_week','custom','campaign_theme','platform_copy','bulk_update','bulk_delete','duplicate'] as $marker) self::assertStringContainsString($marker,$api);
+        foreach (['data-calendar-bulk','data-calendar-bulk-apply','dragstart','data-calendar-filter','schedule_ids: [...selected]'] as $marker) self::assertStringContainsString($marker,$javascript);
+
+
+
     }
 
     public function testAdvertisingTabIsMerchantEntitlementGated(): void

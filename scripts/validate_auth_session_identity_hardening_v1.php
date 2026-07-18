@@ -87,7 +87,9 @@ $checks = [
     'client password confirmation' => $has('assets/js/auth.js', 'validatePasswordConfirmation') && $has('assets/js/auth.js', 'setCustomValidity'),
     'client password visibility control' => $has('assets/js/auth.js', 'bindPasswordToggles') && $has('assets/js/auth.js', "input.type = showing ? 'password' : 'text'"),
     'server response controls redirect' => strpos($contents['assets/js/auth.js'], 'data.data.redirect') < strpos($contents['assets/js/auth.js'], 'data-success-redirect'),
-    'migration has auth version' => $has('database/auth_session_identity_hardening_v1.sql', "'users','auth_version'"),
+    'migration has auth version' => $has('database/auth_session_identity_hardening_v1.sql', "TABLE_NAME='users'")
+    && $has('database/auth_session_identity_hardening_v1.sql', "COLUMN_NAME='auth_version'")
+    && $has('database/auth_session_identity_hardening_v1.sql', 'ALTER TABLE `users` ADD COLUMN `auth_version`'),
     'migration has session expiry columns' => $has('database/auth_session_identity_hardening_v1.sql', "'idle_expires_at'") && $has('database/auth_session_identity_hardening_v1.sql', "'absolute_expires_at'"),
     'migration has MFA tables' => $has('database/auth_session_identity_hardening_v1.sql', 'CREATE TABLE IF NOT EXISTS user_mfa_methods') && $has('database/auth_session_identity_hardening_v1.sql', 'CREATE TABLE IF NOT EXISTS user_mfa_recovery_codes'),
     'migration preserves legacy users' => $has('database/auth_session_identity_hardening_v1.sql', 'Existing active accounts predate'),

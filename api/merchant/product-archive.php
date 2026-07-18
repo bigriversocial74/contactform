@@ -172,5 +172,5 @@ try {
         'product_id'=>$productPublicId,
         'exception_type'=>$error::class,
     ], $userId);
-    mg_fail($error instanceof RuntimeException ? $error->getMessage() : 'Unable to archive the product.', $error instanceof RuntimeException ? 409 : 500);
+    mg_fail('Unable to archive the product.', 500);
 }

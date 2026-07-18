@@ -185,17 +185,19 @@ try {
     ]);
 } catch (Throwable $e) {
     mg_catalog_upload_cleanup($destination ?? null);
-    mg_security_log('error','catalog.asset_upload_failed','Catalog asset upload failed.',[
-        'role'=>$role,
-        'mime'=>$mime,
-        'asset_type'=>$assetType ?? null,
-        'byte_size'=>$size ?? null,
-        'exception_type'=>get_class($e),
-    ],(int)$user['id']);
-    if ($e instanceof RuntimeException) {
-        mg_fail($e->getMessage(),500);
-    }
-    mg_fail('Unable to register the uploaded media.',500);
+    mg_fail_unexpected(
+        $e,
+        'catalog.asset_upload_failed',
+        'Unable to register the uploaded media.',
+        500,
+        [
+            'role'=>$role,
+            'mime'=>$mime,
+            'asset_type'=>$assetType ?? null,
+            'byte_size'=>$size ?? null,
+        ],
+        (int)$user['id']
+    );
 }
 
 mg_audit('catalog.asset_uploaded','catalog_asset',[

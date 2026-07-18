@@ -69,13 +69,17 @@ final class Stage10FArchitectureDeploymentActionCenterTest extends TestCase
     }
 
     public function testActionCenterApiIsUserScoped(): void
+
     {
         $api=$this->read('api/account/action-center.php');
         $service=$this->read('api/account/_action_center.php');
         self::assertStringContainsString('mg_require_api_user()',$api);
-        self::assertStringContainsString("'ac.user_id=?'",$service);
-        self::assertStringContainsString("'ac.folder=?'",$service);
-        self::assertStringContainsString("['inbox','sent','claimed']",$service);
+        self::assertStringContainsString("['ac.user_id=?', 'ac.folder=?', 'ac.archived_at IS NULL']",$service);
+        self::assertStringContainsString("['inbox', 'sent', 'claimed']",$service);
+        self::assertStringContainsString('$params = [$userId, $folder]',$service);
+
+
+
     }
 
     public function testFullUpgradeBuilderRequiresStages10BThrough10F(): void

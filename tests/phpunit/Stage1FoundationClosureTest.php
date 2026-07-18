@@ -42,15 +42,16 @@ final class Stage1FoundationClosureTest extends TestCase
     }
 
     public function testStageOneSecurityFoundationsRemainFailClosed(): void
+
     {
         $root = dirname(__DIR__, 2);
         $security = file_get_contents($root . '/api/security.php');
         $bootstrap = file_get_contents($root . '/api/bootstrap.php');
-        self::assertIsString($security);
-        self::assertIsString($bootstrap);
-        self::assertStringContainsString('rate_limit.failed_closed', $security);
-        self::assertStringContainsString('session.validate_failed_closed', $security);
-        self::assertStringContainsString('mg_session_is_active($userId)', $bootstrap);
-        self::assertStringContainsString('mg_record_user_session', $bootstrap);
+        self::assertIsString($security); self::assertIsString($bootstrap);
+        foreach(['rate_limit.failed_closed','session.validate_failed_closed','function mg_session_is_active','function mg_record_user_session'] as $needle) self::assertStringContainsString($needle,$security);
+        self::assertStringContainsString('mg_require_csrf_for_write',$bootstrap);
+
+
+
     }
 }

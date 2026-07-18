@@ -1,10 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BASE_REF="${1:-origin/main}"
+BASE_REF="${1:-origin/integration-from-repair-20260628}"
 
 if ! git rev-parse --verify "$BASE_REF" >/dev/null 2>&1; then
-  BASE_REF="main"
+  if git rev-parse --verify integration-from-repair-20260628 >/dev/null 2>&1; then
+    BASE_REF="integration-from-repair-20260628"
+  elif git rev-parse --verify origin/main >/dev/null 2>&1; then
+    BASE_REF="origin/main"
+  else
+    BASE_REF="main"
+  fi
 fi
 
 mapfile -t changed_files < <(git diff --name-only --diff-filter=ACMRT "$BASE_REF"...HEAD)
@@ -18,8 +24,11 @@ echo "Preflight base: $BASE_REF"
 printf ' - %s\n' "${changed_files[@]}"
 
 composer validate --strict
+composer audit --locked --no-interaction
 
 php_files=()
+js_files=()
+shell_files=()
 frontend_changed=false
 action_center_changed=false
 migration_changed=false
@@ -44,6 +53,15 @@ for file in "${changed_files[@]}"; do
     *.php)
       php_files+=("$file")
       ;;
+    *.js)
+      case "$file" in
+        */vendor/*|*/node_modules/*|*/third-party/*|*/dist/*|*.min.js) ;;
+        *) js_files+=("$file") ;;
+      esac
+      ;;
+    *.sh)
+      shell_files+=("$file")
+      ;;
   esac
 
   case "$file" in
@@ -59,7 +77,7 @@ for file in "${changed_files[@]}"; do
   esac
 
   case "$file" in
-    api/account/action-center*.php|api/account/_action_center.php|assets/js/gift-action-center.js|includes/gift-action-center.php)
+    api/account/action-center*.php|api/account/_action_center*.php|assets/js/gift-action-center*.js|assets/css/gift-action-center*.css|includes/gift-action-center.php)
       action_center_changed=true
       ;;
   esac
@@ -75,6 +93,20 @@ if [ "${#php_files[@]}" -gt 0 ]; then
   echo "Running PHP syntax checks on changed files..."
   for file in "${php_files[@]}"; do
     php -l "$file"
+  done
+fi
+
+if [ "${#js_files[@]}" -gt 0 ]; then
+  echo "Running JavaScript syntax checks on changed files..."
+  for file in "${js_files[@]}"; do
+    node --check "$file"
+  done
+fi
+
+if [ "${#shell_files[@]}" -gt 0 ]; then
+  echo "Running shell syntax checks on changed files..."
+  for file in "${shell_files[@]}"; do
+    bash -n "$file"
   done
 fi
 
@@ -107,5 +139,8 @@ if [ "${#test_map[@]}" -gt 0 ]; then
   printf ' - %s\n' "${test_files[@]}"
   vendor/bin/phpunit --configuration phpunit.xml.dist "${test_files[@]}"
 fi
+
+echo "Running repository production quality gate..."
+php scripts/audit_repository_production_quality.php --gate
 
 echo "Preflight passed."

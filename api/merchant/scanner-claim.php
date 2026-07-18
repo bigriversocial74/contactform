@@ -380,5 +380,5 @@ try {
 } catch (Throwable $error) {
     if ($pdo->inTransaction()) $pdo->rollBack();
     mg_security_log('error', 'merchant.scanner_claim_failed', 'Scanner claim failed.', ['identifier' => $identifier, 'location_id' => $locationPublicId, 'exception_class' => $error::class], $merchantUserId);
-    mg_fail($error instanceof RuntimeException ? $error->getMessage() : 'Unable to process scanner claim right now.', 500);
+    mg_fail('Unable to process scanner claim right now.', 500);
 }

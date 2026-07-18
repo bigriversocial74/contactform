@@ -21,6 +21,5 @@ try {
     $event = mg_ads_track_event($pdo, $input, is_array($user) ? $user : null);
     mg_ok(['schema_ready' => true] + $event, 'Ad event tracked.');
 } catch (Throwable $error) {
-    mg_security_log('warning', 'ads.track_failed', 'Campaign Ads Manager tracking failed.', ['exception_class' => $error::class, 'message' => $error->getMessage()], is_array($user) && isset($user['id']) ? (int)$user['id'] : null);
-    mg_fail($error->getMessage(), 422);
+    mg_fail_unexpected($error, 'ads.track_failed', 'Unable to record the ad event.', 500);
 }

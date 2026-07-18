@@ -104,6 +104,5 @@ try {
         'message' => 'Demo advertising-on-Microgifter ads created and approved.',
     ], 'Demo ads created.');
 } catch (Throwable $error) {
-    mg_security_log('error', 'ads.create_demo_failed', 'Campaign Ads Manager demo seed failed.', ['exception_class' => $error::class, 'message' => $error->getMessage()], (int)($user['id'] ?? 0));
-    mg_fail($error->getMessage(), 422);
+    mg_fail_unexpected($error, 'ads.create_demo_failed', 'Unable to create demo ads.', 500);
 }

@@ -117,5 +117,5 @@ try {
 } catch (Throwable $error) {
     if ($pdo->inTransaction()) $pdo->rollBack();
     mg_security_log('error','stamps.test_runner_failed','Stamp test runner failed.', ['action'=>$action,'exception_class'=>$error::class,'message'=>$error->getMessage()], (int)$user['id']);
-    mg_fail($error->getMessage() ?: 'Stamp test runner failed.', 500);
+    mg_fail('Stamp test runner failed.', 500);
 }

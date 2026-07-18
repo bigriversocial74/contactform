@@ -21,6 +21,5 @@ try {
     $campaign = mg_ads_review_campaign($pdo, (int)$user['id'], $publicId, $action, $notes);
     mg_ok(['schema_ready' => true, 'campaign' => $campaign], 'Ad campaign review updated.');
 } catch (Throwable $error) {
-    mg_security_log('error', 'ads.review_failed', 'Campaign Ads Manager review failed.', ['exception_class' => $error::class, 'message' => $error->getMessage()], (int)$user['id']);
-    mg_fail($error->getMessage(), 422);
+    mg_fail_unexpected($error, 'ads.review_failed', 'Unable to review the ad campaign.', 500);
 }

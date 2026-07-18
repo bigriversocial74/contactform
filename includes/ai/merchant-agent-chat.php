@@ -385,7 +385,7 @@ function mg_ai_chat_bridge_to_review(PDO $pdo, array $user, array $input): array
         return ['plan_id'=>$planPublicId,'item_id'=>$itemPublicId,'card'=>$cards[$cardIndex],'state'=>mg_ai_chat_public_state($pdo,$merchantId)];
     } catch (Throwable $error) {
         if ($pdo->inTransaction()) $pdo->rollBack();
-        mg_fail('Unable to send agent card to review: ' . $error->getMessage(), 500);
+        mg_fail('Unable to send agent card to review.', 500);
     }
 }
 
@@ -453,6 +453,6 @@ function mg_ai_chat_send(PDO $pdo, array $user, array $input): array
         if ($pdo->inTransaction()) $pdo->rollBack();
         mg_ai_merchant_record_usage_event($pdo, (int)$provider['id'], (int)$model['id'], $merchantId, null, 'failed', [], ['source'=>'merchant_agent_chat','scope'=>$scope,'error'=>$error->getMessage()]);
         mg_security_log('error', 'merchant.agent_chat.failed', 'Merchant agent chat failed.', ['exception_class'=>$error::class,'scope'=>$scope], $merchantId);
-        mg_fail('Unable to run merchant agent chat: ' . $error->getMessage(), 500);
+        mg_fail('Unable to run merchant agent chat.', 500);
     }
 }

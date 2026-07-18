@@ -5,6 +5,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/admin-screen-recordings.php';
+require_once __DIR__ . '/runtime-process.php';
 
 function mg_screen_recording_stage3_tables(): array
 {
@@ -304,21 +305,7 @@ function mg_screen_recording_stage3_create_export_job(PDO $pdo, int $recordingId
 
 function mg_screen_recording_stage3_ffmpeg_path(): ?string
 {
-    if (!function_exists('exec') || !function_exists('escapeshellarg')) return null;
-    $candidates = [];
-    if (function_exists('shell_exec')) {
-        $detected = trim((string)@shell_exec('command -v ffmpeg 2>/dev/null'));
-        if ($detected !== '') $candidates[] = $detected;
-    }
-    $candidates[] = 'ffmpeg';
-    foreach ($candidates as $candidate) {
-        $cmd = escapeshellarg($candidate) . ' -version';
-        $out = [];
-        $code = 1;
-        @exec($cmd . ' 2>&1', $out, $code);
-        if ($code === 0) return $candidate;
-    }
-    return null;
+    return mg_runtime_process_resolve('ffmpeg');
 }
 
 function mg_screen_recording_stage3_ffmpeg_color(string $value, string $fallback = '0xffffff'): string
@@ -409,49 +396,59 @@ function mg_screen_recording_stage3_process_export_job(PDO $pdo, int $jobId, arr
 
     $pdo->prepare("UPDATE admin_screen_recording_export_jobs SET status = 'processing', error_message = NULL, started_at = NOW(), updated_at = NOW(), output_path = ?, log_path = ? WHERE id = ? LIMIT 1")->execute([$outputRelative, $logRelative, $jobId]);
 
-    $parts = [escapeshellarg($ffmpeg), '-y'];
-    if ($trimStart > 0) $parts[] = '-ss ' . escapeshellarg((string)$trimStart);
-    $parts[] = '-i ' . escapeshellarg($inputPath);
-    if ($audioPath) $parts[] = '-i ' . escapeshellarg($audioPath);
-    if ($trimDuration !== null) $parts[] = '-t ' . escapeshellarg((string)$trimDuration);
+    $arguments = ['-y'];
+    if ($trimStart > 0) {
+        $arguments[] = '-ss';
+        $arguments[] = (string)$trimStart;
+    }
+    $arguments[] = '-i';
+    $arguments[] = $inputPath;
+    if ($audioPath) {
+        $arguments[] = '-i';
+        $arguments[] = $audioPath;
+    }
+    if ($trimDuration !== null) {
+        $arguments[] = '-t';
+        $arguments[] = (string)$trimDuration;
+    }
 
     $filterParts = ['[0:v]' . $videoFilter . '[vout]'];
-    $mapParts = ['-map [vout]'];
+    $mapArguments = ['-map', '[vout]'];
     $includeAudio = (bool)$job['include_audio'];
     $muteOriginal = (bool)$job['mute_original_audio'];
     if ($includeAudio && $audioPath && $muteOriginal) {
         $voiceVolume = max(0, (float)$job['voiceover_volume']);
         $filterParts[] = '[1:a]volume=' . number_format($voiceVolume, 2, '.', '') . '[aout]';
-        $mapParts[] = '-map [aout]';
+        array_push($mapArguments, '-map', '[aout]');
     } elseif ($includeAudio && $audioPath) {
         $origVolume = max(0, (float)$job['original_audio_volume']);
         $voiceVolume = max(0, (float)$job['voiceover_volume']);
         $filterParts[] = '[0:a]volume=' . number_format($origVolume, 2, '.', '') . '[a0];[1:a]volume=' . number_format($voiceVolume, 2, '.', '') . '[a1];[a0][a1]amix=inputs=2:duration=first:dropout_transition=0[aout]';
-        $mapParts[] = '-map [aout]';
+        array_push($mapArguments, '-map', '[aout]');
     } elseif ($includeAudio && !$muteOriginal) {
-        $mapParts[] = '-map 0:a?';
+        array_push($mapArguments, '-map', '0:a?');
     } else {
-        $mapParts[] = '-an';
+        $mapArguments[] = '-an';
     }
 
-    $parts[] = '-filter_complex ' . escapeshellarg(implode(';', $filterParts));
-    $parts[] = implode(' ', $mapParts);
+    $arguments[] = '-filter_complex';
+    $arguments[] = implode(';', $filterParts);
+    foreach ($mapArguments as $argument) $arguments[] = $argument;
     if ($format === 'mp4') {
-        $parts[] = '-c:v libx264 -preset veryfast -crf 23 -pix_fmt yuv420p -movflags +faststart';
-        if ($includeAudio) $parts[] = '-c:a aac -b:a 128k';
+        array_push($arguments, '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23', '-pix_fmt', 'yuv420p', '-movflags', '+faststart');
+        if ($includeAudio) array_push($arguments, '-c:a', 'aac', '-b:a', '128k');
     } else {
-        $parts[] = '-c:v libvpx-vp9 -b:v 2M';
-        if ($includeAudio) $parts[] = '-c:a libopus -b:a 96k';
+        array_push($arguments, '-c:v', 'libvpx-vp9', '-b:v', '2M');
+        if ($includeAudio) array_push($arguments, '-c:a', 'libopus', '-b:a', '96k');
     }
-    $parts[] = escapeshellarg($outputPath);
-    $command = implode(' ', $parts);
-    $commandHash = hash('sha256', $command);
+    $arguments[] = $outputPath;
+    $commandHash = hash('sha256', json_encode(['binary'=>$ffmpeg, 'arguments'=>$arguments], JSON_THROW_ON_ERROR));
     $pdo->prepare('UPDATE admin_screen_recording_export_jobs SET ffmpeg_command_hash = ?, updated_at = NOW() WHERE id = ? LIMIT 1')->execute([$commandHash, $jobId]);
 
-    $output = [];
-    $code = 1;
-    @exec($command . ' 2>&1', $output, $code);
-    @file_put_contents($logPath, implode("\n", $output), LOCK_EX);
+    $result = mg_runtime_process_run('ffmpeg', $arguments, 3600, 8 * 1024 * 1024);
+    $output = trim((string)$result['stdout'] . ((string)$result['stderr'] !== '' ? "\n" . (string)$result['stderr'] : ''));
+    $code = (int)$result['code'];
+    @file_put_contents($logPath, $output, LOCK_EX);
     @chmod($logPath, 0640);
 
     if ($code !== 0 || !is_file($outputPath) || filesize($outputPath) === 0) {

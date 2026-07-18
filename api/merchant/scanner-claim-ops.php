@@ -27,7 +27,7 @@ try {
 } catch (Throwable $error) {
     if ($pdo->inTransaction()) $pdo->rollBack();
     mg_security_log('error', 'merchant.scanner_claim_ops_failed', 'Scanner operations preflight failed.', ['exception_class' => $error::class], $merchantUserId);
-    mg_fail($error instanceof RuntimeException ? $error->getMessage() : 'Unable to prepare scanner operations.', 500);
+    mg_fail('Unable to prepare scanner operations.', 500);
 }
 
 require __DIR__ . '/scanner-claim-trust.php';

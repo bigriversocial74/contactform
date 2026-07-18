@@ -18,6 +18,5 @@ try {
     $stmt = $pdo->query('SELECT placement_key,placement_name,surface,description,is_active,max_ads FROM ad_placements ORDER BY FIELD(placement_key,\'feed_sponsored_card\',\'sidebar_sponsored_card\',\'world_canvas_sponsored_pin\',\'target_zone_sponsored_drop\'),placement_key ASC');
     mg_ok(['schema_ready' => true, 'placements' => $stmt->fetchAll(PDO::FETCH_ASSOC)], 'Placements loaded.');
 } catch (Throwable $error) {
-    mg_security_log('error', 'ads.placements_failed', 'Campaign Ads Manager placements failed.', ['exception_class' => $error::class, 'message' => $error->getMessage()], (int)$user['id']);
-    mg_fail($error->getMessage(), 422);
+    mg_fail_unexpected($error, 'ads.placements_failed', 'Unable to load ad placements.', 500);
 }

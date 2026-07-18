@@ -128,6 +128,6 @@ function mg_ai_chat_save_creative_draft(PDO $pdo, array $user, array $input): ar
         return ['draft' => $draftRecord, 'state' => mg_ai_chat_public_state($pdo, $merchantId)];
     } catch (Throwable $error) {
         if ($pdo->inTransaction()) $pdo->rollBack();
-        mg_fail('Unable to save creative draft: ' . $error->getMessage(), 500);
+        mg_fail('Unable to save creative draft.', 500);
     }
 }

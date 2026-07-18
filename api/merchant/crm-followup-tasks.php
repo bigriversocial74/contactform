@@ -230,7 +230,6 @@ try {
     mg_ok(['task' => mg_ft_task_from_row($row)], 'Follow-up task updated.');
 } catch (Throwable $error) {
     if ($pdo->inTransaction()) $pdo->rollBack();
-    if ($error instanceof RuntimeException) mg_fail($error->getMessage(), 422);
     mg_security_log('error', 'merchant.crm_followup_task.failed', 'Unable to update CRM follow-up task.', ['exception_class' => $error::class], $merchantId);
     mg_fail('Unable to update follow-up task.', 500);
 }

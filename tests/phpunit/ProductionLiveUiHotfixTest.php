@@ -43,7 +43,7 @@ final class ProductionLiveUiHotfixTest extends TestCase
         $appHeader = $this->readFile('includes/header-components/app-header.php');
         $createTemplate = $this->readFile('includes/header-templates/create-menu.php');
         self::assertStringContainsString('data-global-create', $appHeader);
-        self::assertStringContainsString('data-create-menu-option="post"', $createTemplate);
+        self::assertStringContainsString("'option' => 'post'", $createTemplate);
         self::assertStringContainsString('/merchant-locations.php', $createTemplate);
     }
 
