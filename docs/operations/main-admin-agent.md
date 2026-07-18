@@ -76,7 +76,7 @@ A later monitor scan automatically resolves a finding when its underlying condit
 
 ## Action boundary
 
-The Main Admin Agent is read-only by default. It can prepare review requests for a limited allowlist of operational actions, but it does not execute them.
+The Main Admin Agent is read-only by default. It can prepare review-gated requests for a limited allowlist of operational actions, but it does not execute them.
 
 Financial, destructive, security-sensitive, customer-facing, or provider-facing changes require an explicit administrator review path and a separate controlled execution adapter.
 
