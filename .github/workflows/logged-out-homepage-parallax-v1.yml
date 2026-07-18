@@ -1,0 +1,40 @@
+name: Logged-out Homepage Parallax v1
+
+on:
+  pull_request:
+    paths:
+      - 'index.php'
+      - 'assets/css/homepage-parallax-agent-v1.css'
+      - 'assets/js/homepage-parallax-agent-v1.js'
+      - 'scripts/validate_homepage_parallax_agent_v1.php'
+      - '.github/workflows/logged-out-homepage-parallax-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.2', '8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: PHP syntax
+        run: |
+          php -l index.php
+          php -l scripts/validate_homepage_parallax_agent_v1.php
+      - name: JavaScript syntax
+        run: node --check assets/js/homepage-parallax-agent-v1.js
+      - name: Homepage structure and behavior contract
+        run: php scripts/validate_homepage_parallax_agent_v1.php
