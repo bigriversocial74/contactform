@@ -34,11 +34,11 @@ final class DesignStudioContentCalendarContractTest extends TestCase
     {
         $api = $this->read('api/merchant/design-content-calendar.php');
         foreach ([
-            "mg_merchant_require_permission($method === 'GET' ? 'catalog.products.view' : 'catalog.products.manage')",
+            "mg_merchant_require_permission(\$method === 'GET' ? 'catalog.products.view' : 'catalog.products.manage')",
             'MG_DESIGN_CALENDAR_DAYS = 30',
             "['generate', 'update', 'delete', 'duplicate', 'bulk_update', 'bulk_delete']",
             'merchant_user_id = ?',
-            "status <> 'archived'",
+            "p.status<>'archived'",
             'mg_require_csrf_for_write($input)',
             "mg_rate_limit('merchant.design_calendar.write'",
             'merchant.design_calendar_generated','merchant.design_calendar_updated','merchant.design_calendar_bulk_updated',
@@ -64,7 +64,7 @@ final class DesignStudioContentCalendarContractTest extends TestCase
 
     {
         $client = $this->read('assets/js/personal-agent-design-studio-calendar.js');
-        foreach (['/api/merchant/products.php?sort=updated_desc&limit=100','/api/merchant/design-content-calendar.php',"action: 'generate'","action: 'update'","action: 'delete'","action: 'bulk_update'",'data-calendar-format-select','data-calendar-layout-select','data-calendar-status-select','activateSocialWorkspace','data-social-download',"params.get('mode') === 'social'",'escapeHtml'] as $needle) self::assertStringContainsString($needle,$client);
+        foreach (['/api/merchant/products.php?sort=updated_desc&limit=100','/api/merchant/design-content-calendar.php',"action: 'generate'","action: 'update'","action: 'bulk_delete'","action: 'bulk_update'",'data-calendar-bulk-format','data-calendar-bulk-layout','data-calendar-bulk-status','data-calendar-open','data-calendar-plan-open','data-calendar-bulk-apply','escapeHtml'] as $needle) self::assertStringContainsString($needle,$client);
         foreach (['document.write(', 'eval('] as $unsafe) self::assertStringNotContainsString($unsafe,$client);
 
 

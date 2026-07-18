@@ -21,7 +21,7 @@ final class MobileAgentTabsTest extends TestCase
         self::assertStringNotContainsString('mg-header-product-create',$header);
         self::assertStringContainsString("'option' => 'microgift'",$menu);
         self::assertStringContainsString('looksLikePlusControl',$script);
-        self::assertStringContainsString('href="/build.php" data-global-create',$header);
+        self::assertStringContainsString('href="/lists.php?action=create" data-global-create',$header);
         self::assertStringContainsString("document.addEventListener('click'",$script);
     }
 

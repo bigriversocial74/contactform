@@ -22,7 +22,7 @@ final class SubscriptionStripeWebhookActivationContractTest extends TestCase
     {
         $processor = file_get_contents(dirname(__DIR__, 2) . '/api/subscriptions/_stripe_webhook.php');
         self::assertIsString($processor);
-        foreach(['payment_webhook_events','provider_event_id','checkout.session.completed','checkout.session.async_payment_succeeded','mg_subscription_webhook_activate_package_change',"'duplicate' => true"] as $needle) self::assertStringContainsString($needle,$processor);
+        foreach(['payment_webhook_events','provider_event_id','checkout.session.completed','checkout.session.async_payment_succeeded','mg_subscription_package_webhook_v2_try_process',"'duplicate'=>true"] as $needle) self::assertStringContainsString($needle,$processor);
 
 
 

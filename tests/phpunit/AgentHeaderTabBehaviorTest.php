@@ -11,7 +11,7 @@ final class AgentHeaderTabBehaviorTest extends TestCase
         $header=file_get_contents($root.'/includes/header-components/app-header.php');
         $createMenu=file_get_contents($root.'/includes/header-templates/create-menu.php');
         self::assertIsString($header); self::assertIsString($createMenu);
-        foreach(["['agent','Agent','/agent.php',$can_agent_workspace]","['inbox','Inbox','/inbox.php',true]","['sent','Sent','/sent.php',true]","['claimed','Claimed','/claimed.php',true]"] as $needle) self::assertStringContainsString($needle,$header);
+        foreach(["['agent','Agent','/agent.php'," . '$can_agent_workspace' . "]","['inbox','Inbox','/inbox.php',true]","['sent','Sent','/sent.php',true]","['claimed','Claimed','/claimed.php',true]"] as $needle) self::assertStringContainsString($needle,$header);
         self::assertStringContainsString("'option' => 'microgift'",$createMenu);
         self::assertStringNotContainsString('data-agent-tab-add',$header);
 

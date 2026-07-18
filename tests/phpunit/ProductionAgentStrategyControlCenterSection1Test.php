@@ -81,7 +81,7 @@ final class ProductionAgentStrategyControlCenterSection1Test extends TestCase
         $css=$this->read('assets/css/agent-strategies.css');
         self::assertStringContainsString('/assets/css/personal-gifting-agent.css',$page);
         self::assertStringNotContainsString('/assets/css/agent-strategies.css',$page);
-        foreach(['.mg-strategy-list','.mg-strategy-editor','@media(max-width:980px)','@media(max-width:640px)'] as $needle) self::assertStringContainsString($needle,$css);
+        foreach(['.mg-strategy-list','.mg-strategy-editor','@media (max-width: 980px)','@media (max-width: 640px)'] as $needle) self::assertStringContainsString($needle,$css);
 
 
 

@@ -79,6 +79,39 @@ if (!function_exists('mg_test_csrf')) {
     }
 }
 
+if (!function_exists('mg_test_verify_registered_user')) {
+    function mg_test_verify_registered_user(string $email): void
+    {
+        $host = trim((string) getenv('MG_DB_HOST'));
+        $name = trim((string) getenv('MG_DB_NAME'));
+        $user = trim((string) getenv('MG_DB_USER'));
+        $pass = (string) getenv('MG_DB_PASS');
+        $port = max(1, (int) (getenv('MG_DB_PORT') ?: 3306));
+        $charset = trim((string) (getenv('MG_DB_CHARSET') ?: 'utf8mb4'));
+        if ($host === '' || $name === '' || $user === '') {
+            throw new RuntimeException('Test database environment is unavailable for email verification.');
+        }
+
+        $pdo = new PDO(
+            "mysql:host={$host};port={$port};dbname={$name};charset={$charset}",
+            $user,
+            $pass,
+            [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES => false,
+            ]
+        );
+        $stmt = $pdo->prepare('UPDATE users SET email_verified_at=COALESCE(email_verified_at,NOW()),updated_at=NOW() WHERE email=?');
+        $stmt->execute([$email]);
+        $check = $pdo->prepare('SELECT email_verified_at FROM users WHERE email=? LIMIT 1');
+        $check->execute([$email]);
+        if (!$check->fetchColumn()) {
+            throw new RuntimeException('Unable to verify the registered test user.');
+        }
+    }
+}
+
 if (!function_exists('mg_test_register_user')) {
     function mg_test_register_user(string $cookieFile): array
     {
@@ -97,6 +130,8 @@ if (!function_exists('mg_test_register_user')) {
         if ($status < 200 || $status >= 300) {
             throw new RuntimeException('Unable to register test user. Status ' . $status . ': ' . json_encode($body));
         }
+
+        mg_test_verify_registered_user($email);
 
         return ['email' => $email, 'password' => $password, 'body' => $body];
     }

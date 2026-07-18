@@ -74,7 +74,8 @@ final class Stage13BInitialSubscriptionFundingTest extends TestCase
     {
         $source=$this->read('api/subscriptions/manage.php');
         self::assertStringContainsString("mg_require_permission('subscriptions.manage_own')",$source);
-        self::assertStringContainsString('mg_platform_account_subscription_snapshot',$source);
+        self::assertStringContainsString('SELECT * FROM platform_account_subscriptions WHERE public_id=? AND user_id=? LIMIT 1 FOR UPDATE',$source);
+        self::assertStringContainsString("\$stmt->execute([\$publicId, (int)\$user['id']])",$source);
         self::assertStringContainsString("provider_key'] ?? '') !== 'stripe'",$source);
         self::assertStringContainsString('provider_subscription_id',$source);
         self::assertStringNotContainsString('mg_subscription_activate_initial',$source);

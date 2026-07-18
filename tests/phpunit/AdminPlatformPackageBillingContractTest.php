@@ -52,7 +52,7 @@ final class AdminPlatformPackageBillingContractTest extends TestCase
             "require_once __DIR__ . '/_billing_lifecycle_v2.php'",
             'mg_subscription_billing_v2_price_id',
             "'line_items' => [['quantity' => 1",
-            "'price' => \\$priceId",
+            "'price' => \$priceId",
             'provider_price_id',
         ] as $needle) self::assertStringContainsString($needle, $source);
         self::assertStringNotContainsString('price_data', $source);

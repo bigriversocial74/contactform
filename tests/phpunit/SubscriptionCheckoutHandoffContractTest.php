@@ -22,7 +22,7 @@ final class SubscriptionCheckoutHandoffContractTest extends TestCase
     {
         $helper = file_get_contents(dirname(__DIR__, 2) . '/api/subscriptions/_checkout_handoff.php');
         self::assertIsString($helper);
-        foreach(["'mode' => 'subscription'","'/v1/checkout/sessions'","'source_type' => 'subscription_package_change'","'subscription_data' => ['metadata' => $metadata]",'mg_subscription_billing_v2_price_id',"'line_items' => [['quantity' => 1, 'price' => $priceId]]",'provider_price_id',"'package_change_request_id'"] as $needle) self::assertStringContainsString($needle,$helper);
+        foreach(["'mode' => 'subscription'","'/v1/checkout/sessions'","'source_type' => 'subscription_package_change'","'subscription_data' => ['metadata' => \$metadata]",'mg_subscription_billing_v2_price_id',"'line_items' => [['quantity' => 1, 'price' => \$priceId]]",'provider_price_id',"'package_change_request_id'"] as $needle) self::assertStringContainsString($needle,$helper);
         self::assertStringNotContainsString("'price_data'",$helper);
 
 

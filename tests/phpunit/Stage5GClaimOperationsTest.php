@@ -60,7 +60,7 @@ final class Stage5GClaimOperationsTest extends TestCase
         $source=file_get_contents(dirname(__DIR__,2).'/api/merchant/claim-codes.php');
         self::assertIsString($helper); self::assertIsString($source);
         foreach(["mg_require_permission('merchant.claim_codes.manage')",'mg_require_csrf_for_write($input)','mg_claim_code_require','mg_claim_code_hash','mg_claim_code_assert_no_active_duplicate','mg_merchant_location_scope_join','mg_merchant_location_scope_condition','merchant_claim_code_events','code_last4'] as $needle) self::assertStringContainsString($needle,$source.$helper);
-        foreach(['mg_claim_code_normalize',"hash_hmac('sha256',$claimCode,$pepper)",'mg_claim_code_event'] as $needle) self::assertStringContainsString($needle,$helper);
+        foreach(['mg_claim_code_normalize',"hash_hmac('sha256',\$claimCode,\$pepper)",'mg_claim_code_event'] as $needle) self::assertStringContainsString($needle,$helper);
         self::assertStringNotContainsString("'code'=>",self::compactSource($source));
         self::assertStringNotContainsString('code_hash AS',self::compactSource($source));
 

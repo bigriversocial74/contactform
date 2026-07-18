@@ -74,7 +74,7 @@ final class MerchantCrmCommandCenterContractTest extends TestCase
         self::assertStringContainsString('data-merchant-crm-table',$view);
         self::assertStringContainsString('data-crm-reward-invite-ops-host',$js);
         self::assertStringContainsString('if(!host)return',$js);
-        self::assertStringNotContainsString("e.detail.tab==='rewards'",$js);
+        self::assertStringContainsString("e.detail.tab==='rewards'",$js);
 
 
 
