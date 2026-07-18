@@ -205,8 +205,8 @@ function mg_merchant_ai_report_build(PDO $pdo, array $user, array $packageContex
             'body'=>"Current signed-in merchant owner account. Database report for the last {$days} days; no external AI request was used.",
             'metrics'=>[
                 ['label'=>'AI status','value'=>(string)($aiStatus['label'] ?? 'Unavailable')],
-                ['label'=>'Available tokens','value'=>mg_merchant_ai_report_token_value($credits['available_tokens'] ?? 0)],
-                ['label'=>'Package remaining','value'=>mg_merchant_ai_report_token_value($credits['package_tokens_remaining'] ?? 0)],
+                ['label'=>'Available tokens','value'=>mg_merchant_ai_report_token_value(array_key_exists('available_tokens', $credits) ? $credits['available_tokens'] : 0)],
+                ['label'=>'Package remaining','value'=>mg_merchant_ai_report_token_value(array_key_exists('package_tokens_remaining', $credits) ? $credits['package_tokens_remaining'] : 0)],
                 ['label'=>'Manual credits','value'=>number_format((int)($credits['manual_tokens_remaining'] ?? 0))],
                 ['label'=>'Current-period usage','value'=>number_format((int)($credits['usage']['month'] ?? 0))],
                 ['label'=>'Package','value'=>(string)($credits['package']['name'] ?? 'Unknown')],
