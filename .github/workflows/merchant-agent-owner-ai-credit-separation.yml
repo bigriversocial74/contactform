@@ -1,0 +1,81 @@
+name: Merchant Agent Owner AI Credit Separation
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - 'merchant-agent-chat.php'
+      - 'api/ai/merchant-agent-chat.php'
+      - 'api/ai/merchant-agent-plan.php'
+      - 'api/ai/merchant-agent-command.php'
+      - 'api/ai/merchant-agent-chat-review.php'
+      - 'api/ai/merchant-agent-memory-sources.php'
+      - 'includes/ai/anthropic-client.php'
+      - 'includes/ai/merchant-agent-credit-response.php'
+      - 'assets/js/merchant-agent-ai-status.js'
+      - 'assets/css/merchant-agent-ai-status.css'
+      - 'tests/phpunit/MerchantAgentOwnerAiCreditSeparationContractTest.php'
+      - 'scripts/validate_merchant_agent_chat_layout_v2.php'
+      - 'scripts/validate_integrated_merchant_agent_workspace_v1.php'
+      - 'scripts/validate_merchant_agent_canvas_context_v1.php'
+      - 'scripts/validate_merchant_contact_action_center_v1.php'
+      - 'scripts/validate_merchant_contact_action_center_v1_1.php'
+      - '.github/workflows/merchant-agent-owner-ai-credit-separation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, pdo, json, curl
+          coverage: none
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: PHP syntax
+        run: |
+          php -l merchant-agent-chat.php
+          php -l api/ai/merchant-agent-chat.php
+          php -l api/ai/merchant-agent-plan.php
+          php -l api/ai/merchant-agent-command.php
+          php -l api/ai/merchant-agent-chat-review.php
+          php -l api/ai/merchant-agent-memory-sources.php
+          php -l includes/ai/anthropic-client.php
+          php -l includes/ai/merchant-agent-credit-response.php
+          php -l tests/phpunit/MerchantAgentOwnerAiCreditSeparationContractTest.php
+
+      - name: JavaScript syntax
+        run: node --check assets/js/merchant-agent-ai-status.js
+
+      - name: Merchant Agent owner credit PHPUnit contract
+        run: vendor/bin/phpunit tests/phpunit/MerchantAgentOwnerAiCreditSeparationContractTest.php
+
+      - name: Merchant Agent regression contracts
+        run: |
+          php scripts/validate_merchant_agent_chat_layout_v2.php
+          php scripts/validate_integrated_merchant_agent_workspace_v1.php
+          php scripts/validate_merchant_agent_canvas_context_v1.php
+          php scripts/validate_merchant_contact_action_center_v1.php
+          php scripts/validate_merchant_contact_action_center_v1_1.php

@@ -129,11 +129,12 @@ $checks = [
         && str_contains($content['merchant_page'], "\$agent_tab = 'agent'")
         && str_contains($content['merchant_page'], "require __DIR__ . '/includes/personal-agent-sidebar.php'")
         && !str_contains($content['merchant_page'], "require __DIR__ . '/includes/agent-sidebar.php'"),
-    'Merchant Agent page gates access with merchant entitlements and AI permissions' =>
-        str_contains($content['merchant_page'], "mg_has_permission('merchant.ai.plan')")
-        && str_contains($content['merchant_page'], "mg_has_permission('merchant.ai.review')")
-        && str_contains($content['merchant_page'], "mg_workspace_role_allows_permission(\$mg_package_context, 'merchant.ai.plan')")
-        && str_contains($content['merchant_page'], "mg_workspace_role_allows_permission(\$mg_package_context, 'merchant.ai.review')")
+    'Merchant Agent page gates access with merchant entitlements and direct owner scope while AI status remains separate' =>
+        $merchantRedirectPosition !== false
+        && str_contains($content['merchant_page'], 'mg_merchant_agent_owner_context')
+        && str_contains($content['merchant_page'], "\$merchantAgentAllowed = \$hasMerchantAccess && \$isMerchantOwner")
+        && !str_contains($content['merchant_page'], '$hasMerchantPlanPermission')
+        && !str_contains($content['merchant_page'], '$hasMerchantReviewPermission')
         && str_contains($content['merchant_page'], 'data-merchant-agent-access='),
     'Merchant Agent matches the Personal Agent chat-first canvas' =>
         str_contains($content['merchant_view'], 'mg-merchant-agent-main')
@@ -177,9 +178,10 @@ $checks = [
         && str_contains($content['merchant_page'], '/assets/js/merchant-agent-chat.js?v=2.4.0')
         && str_contains($content['merchant_page'], '/assets/js/merchant-agent-contact-action-center.js?v=1.0.0')
         && str_contains($content['merchant_page'], '/assets/css/personal-agent-chat-history.css?v=1.4.0'),
-    'merchant requests remain protected by the existing permission and CSRF boundary' =>
+    'merchant requests remain protected by owner, data-permission, CSRF, and workspace boundaries' =>
         str_contains($content['merchant_api'], 'mg_require_csrf_for_write($input)')
-        && str_contains($content['merchant_api'], 'mg_merchant_require_permission($permission)')
+        && str_contains($content['merchant_api'], 'mg_merchant_agent_require_owner_access($pdo)')
+        && str_contains($content['merchant_api'], 'mg_merchant_agent_require_owner_permission($user,')
         && str_contains($content['merchant_api'], 'mg_merchant_ensure_workspace($pdo, $user)'),
     'Personal and Merchant Agent data boundaries remain visibly separate' =>
         str_contains($content['merchant_view'], 'Business data only')

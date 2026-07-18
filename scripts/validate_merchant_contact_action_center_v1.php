@@ -30,6 +30,7 @@ try {
     $page = $read('merchant-agent-chat.php');
     $view = $read('includes/merchant-agent-chat-view.php');
     $api = $read('api/ai/merchant-agent-chat.php');
+    $credit = $read('includes/ai/merchant-agent-credit-response.php');
     $service = $read('includes/ai/merchant-agent-contact-action-center.php');
     $context = $read('includes/ai/merchant-agent-crm-contact-context.php');
     $chat = $read('includes/ai/merchant-agent-crm-contact-chat.php');
@@ -120,10 +121,12 @@ try {
             && str_contains($api, "'clear_contact'")
             && str_contains($api, "'contact_action'")
             && str_contains($api, 'mg_merchant_contact_action_center_prompt'),
-        'Contact reads and actions retain campaign and AI permission boundaries' =>
-            str_contains($api, "mg_merchant_require_permission('merchant.campaigns.view')")
-            && str_contains($api, "'merchant.ai.plan'")
-            && str_contains($api, "'merchant.ai.review'"),
+        'Contact reads and generated actions retain campaign review and AI-plan boundaries' =>
+            str_contains($api, "mg_merchant_agent_require_owner_permission(\$user, 'merchant.campaigns.view')")
+            && str_contains($api, "mg_merchant_agent_require_owner_permission(\$user, 'merchant.ai.review')")
+            && str_contains($api, 'mg_merchant_agent_ai_begin_call')
+            && str_contains($credit, "mg_merchant_agent_user_has_permission(\$user, 'merchant.ai.plan')")
+            && str_contains($credit, 'mg_ai_credit_preflight('),
         'Exact current-prompt mention replaces persisted selected contact' =>
             str_contains($api, '$hasExplicitMention')
             && str_contains($api, 'unset($input[\'selected_contact_id\']')
