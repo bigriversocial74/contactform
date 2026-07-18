@@ -10,7 +10,7 @@ mg_require_method('POST');
 $input=mg_input();
 mg_require_csrf_for_write($input);
 $email=mg_identity_normalize_email((string)($input['email']??''));
-$accountType=strtolower(trim((string)($input['account_type']??'customer'));
+$accountType=strtolower(trim((string)($input['account_type']??'customer')));
 if(!in_array($accountType,['customer','merchant'],true))mg_fail('Invalid account type.',422);
 
 $availablePlans=[];
