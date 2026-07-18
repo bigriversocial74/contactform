@@ -6,14 +6,26 @@ on:
       - integration-from-repair-20260628
     paths:
       - 'merchant-agent-chat.php'
+      - 'admin/operations-command.php'
+      - 'admin/ai-credit-incidents.php'
       - 'api/ai/merchant-agent*.php'
+      - 'api/admin/ai-credit-incidents.php'
+      - 'includes/admin-permission-matrix.php'
       - 'includes/ai/anthropic-client.php'
       - 'includes/ai/merchant-agent-*.php'
+      - 'includes/ai/ai-credit-reconciliation.php'
+      - 'database/20260718_ai_credit_reconciliation_incidents.sql'
+      - 'config/migrations.php'
+      - 'scripts/run_ai_credit_reconciliation.php'
       - 'assets/js/merchant-agent-ai-status.js'
+      - 'assets/js/admin-ai-credit-incidents.js'
       - 'assets/css/merchant-agent-ai-status.css'
+      - 'assets/css/admin-ai-credit-incidents.css'
       - 'tests/phpunit/MerchantAgentOwnerAiCreditSeparationContractTest.php'
       - 'tests/phpunit/MerchantAgentAiEndpointAuditContractTest.php'
       - 'tests/phpunit/MerchantAgentAiReportContractTest.php'
+      - 'tests/phpunit/AiCreditReconciliationIncidentQueueContractTest.php'
+      - 'docs/operations/ai-credit-reconciliation.md'
       - 'scripts/validate_merchant_agent_chat_layout_v2.php'
       - 'scripts/validate_integrated_merchant_agent_workspace_v1.php'
       - 'scripts/validate_merchant_agent_canvas_context_v1.php'
@@ -55,31 +67,46 @@ jobs:
       - name: PHP syntax
         run: |
           php -l merchant-agent-chat.php
+          php -l admin/operations-command.php
+          php -l admin/ai-credit-incidents.php
           php -l api/ai/merchant-agent-chat.php
           php -l api/ai/merchant-agent-plan.php
           php -l api/ai/merchant-agent-command.php
           php -l api/ai/merchant-agent-chat-review.php
           php -l api/ai/merchant-agent-memory-sources.php
+          php -l api/admin/ai-credit-incidents.php
+          php -l config/migrations.php
+          php -l includes/admin-permission-matrix.php
           php -l includes/ai/anthropic-client.php
           php -l includes/ai/merchant-agent-credit-response.php
           php -l includes/ai/merchant-agent-ai-report.php
+          php -l includes/ai/merchant-agent-ai-incident-alerts.php
+          php -l includes/ai/ai-credit-reconciliation.php
           php -l includes/ai/merchant-agent-chat.php
           php -l includes/ai/merchant-agent-chat-memory.php
           php -l includes/ai/merchant-agent-crm-contact-chat.php
           php -l includes/ai/merchant-agent-command.php
           php -l includes/ai/merchant-agent-planner.php
+          php -l scripts/run_ai_credit_reconciliation.php
           php -l tests/phpunit/MerchantAgentOwnerAiCreditSeparationContractTest.php
           php -l tests/phpunit/MerchantAgentAiEndpointAuditContractTest.php
           php -l tests/phpunit/MerchantAgentAiReportContractTest.php
+          php -l tests/phpunit/AiCreditReconciliationIncidentQueueContractTest.php
 
       - name: JavaScript syntax
-        run: node --check assets/js/merchant-agent-ai-status.js
+        run: |
+          node --check assets/js/merchant-agent-ai-status.js
+          node --check assets/js/admin-ai-credit-incidents.js
 
       - name: Merchant Agent owner credit PHPUnit contracts
         run: |
           vendor/bin/phpunit tests/phpunit/MerchantAgentOwnerAiCreditSeparationContractTest.php
           vendor/bin/phpunit tests/phpunit/MerchantAgentAiEndpointAuditContractTest.php
           vendor/bin/phpunit tests/phpunit/MerchantAgentAiReportContractTest.php
+          vendor/bin/phpunit tests/phpunit/AiCreditReconciliationIncidentQueueContractTest.php
+
+      - name: Migration manifest
+        run: php scripts/validate_migration_manifest.php
 
       - name: Merchant Agent regression contracts
         run: |
