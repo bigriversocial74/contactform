@@ -35,7 +35,10 @@ jobs:
 
           cat .homepage-build/foreground.webp.b64.* | base64 --decode > assets/images/homepage-parallax-exact-v2/foreground.webp
           cat .homepage-build/mountains.webp.b64.* | base64 --decode > assets/images/homepage-parallax-exact-v2/mountains.webp
-          cat .homepage-build/orb.webp.b64.* | base64 --decode --ignore-garbage > assets/images/homepage-parallax-exact-v2/orb.webp
+          : > assets/images/homepage-parallax-exact-v2/orb.webp
+          for part in .homepage-build/orb.webp.b64.*; do
+            base64 --decode "$part" >> assets/images/homepage-parallax-exact-v2/orb.webp
+          done
 
           sed -i 's/foreground\.png/foreground.webp/g; s/mountains\.png/mountains.webp/g; s/orb\.png/orb.webp/g' index.php assets/css/homepage-parallax-exact-v2.css
 
