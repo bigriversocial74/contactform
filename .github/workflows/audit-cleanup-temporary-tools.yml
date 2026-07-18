@@ -1,0 +1,89 @@
+name: Audit Temporary Tool Cleanup
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - .github/workflows/audit-cleanup-temporary-tools.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: audit-temporary-tool-cleanup
+  cancel-in-progress: true
+
+jobs:
+  cleanup:
+    if: github.head_ref == 'audit/repository-production-hardening-20260717' || github.ref_name == 'audit/repository-production-hardening-20260717'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out latest audit branch
+        uses: actions/checkout@v4
+        with:
+          ref: audit/repository-production-hardening-20260717
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          extensions: curl, mbstring, pdo_mysql, openssl
+          tools: composer:v2
+
+      - name: Install locked dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Remove temporary audit tooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          temporary_files=(
+            .audit-full-recovery-run-id
+            .audit-recovery-finalization-run-id
+            .audit-source-run-id
+            .github/workflows/audit-full-recovery.yml
+            .github/workflows/audit-recovery-contract-finalization.yml
+            .github/workflows/audit-recovery-contract-modernization.yml
+            .github/workflows/audit-source-snapshot.yml
+            scripts/apply_recovery_contract_finalization.py
+            scripts/apply_recovery_contract_finalization_v2.py
+            scripts/apply_recovery_contract_modernization.py
+            .github/workflows/audit-cleanup-temporary-tools.yml
+          )
+          for file in "${temporary_files[@]}"; do
+            if [ -e "$file" ]; then
+              git rm -f "$file"
+            fi
+          done
+
+      - name: Validate permanent repository gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          composer audit-repository-quality
+          php scripts/validate_migration_manifest.php
+          git diff --cached --check
+
+      - name: Commit cleaned audit branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Remove temporary audit tooling'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin audit/repository-production-hardening-20260717
+            if git push origin HEAD:audit/repository-production-hardening-20260717; then
+              break
+            fi
+            if [ "$attempt" -eq 4 ]; then
+              exit 1
+            fi
+            sleep 2
+          done
