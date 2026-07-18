@@ -49,7 +49,7 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add .homepage-build/assembly.log
+          git add -f .homepage-build/assembly.log
           git commit -m 'Record homepage assembly failure'
           git push origin HEAD:fix/homepage-exact-zip-index-integration-v3-20260718
           exit 1
