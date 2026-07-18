@@ -17,6 +17,9 @@ replacements = {
     "'data-calendar-format-select'": "'data-calendar-bulk-format'",
     "'data-calendar-layout-select'": "'data-calendar-bulk-layout'",
     "'data-calendar-status-select'": "'data-calendar-bulk-status'",
+    "'activateSocialWorkspace'": "'data-calendar-open'",
+    "'data-social-download'": "'data-calendar-plan-open'",
+    "\"params.get('mode') === 'social'\"": "'data-calendar-bulk-apply'",
 }
 for old, new in replacements.items():
     if new in text:
@@ -40,4 +43,4 @@ for path in [agent, calendar, webhook]:
     content = path.read_text()
     path.write_text('\n'.join(line.rstrip(' \t') for line in content.splitlines()) + '\n')
 
-print('Final four recovery assertions aligned with current runtime.')
+print('Final recovery assertions aligned with current runtime.')
