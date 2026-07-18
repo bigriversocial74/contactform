@@ -11,11 +11,18 @@ $pdo = mg_db();
 
 function mg_admin_agent_api_has(array $actor, string $permission): bool
 {
-    return mg_admin_account_actor_has($actor, $permission)
-        || mg_admin_account_actor_has($actor, 'admin.operations_command.view')
-        || mg_admin_account_actor_has($actor, 'admin.health.view')
-        || mg_admin_account_actor_has($actor, 'admin.settings.manage')
-        || mg_admin_account_actor_has($actor, 'admin.users.manage');
+    if (mg_admin_account_actor_has($actor, $permission)) return true;
+    $fallbacks = match ($permission) {
+        'admin.admin_agent.view' => ['admin.operations_command.view','admin.health.view','admin.audit.view','security.logs.view','admin.users.manage'],
+        'admin.admin_agent.chat' => ['admin.operations_command.view','admin.users.manage'],
+        'admin.admin_agent.manage' => ['admin.operations_command.manage','admin.settings.manage','admin.users.manage'],
+        'admin.admin_agent.actions' => ['admin.operations_command.manage','admin.settings.manage','admin.users.manage'],
+        default => [],
+    };
+    foreach ($fallbacks as $fallback) {
+        if (mg_admin_account_actor_has($actor, $fallback)) return true;
+    }
+    return false;
 }
 
 function mg_admin_agent_api_require(array $actor, string $permission): void
@@ -37,6 +44,15 @@ function mg_admin_agent_api_options(array $source): array
     ];
 }
 
+function mg_admin_agent_api_permissions(array $actor): array
+{
+    return [
+        'chat'=>mg_admin_agent_api_has($actor, 'admin.admin_agent.chat'),
+        'manage'=>mg_admin_agent_api_has($actor, 'admin.admin_agent.manage'),
+        'actions'=>mg_admin_agent_api_has($actor, 'admin.admin_agent.actions'),
+    ];
+}
+
 try {
     if ($method === 'GET') {
         mg_rate_limit('admin.agent.read', 'user:' . $actorId, 240, 60);
@@ -51,11 +67,7 @@ try {
             }
         }
         $payload = mg_admin_agent_state($pdo, $actorId, mg_admin_agent_api_options($_GET));
-        $payload['permissions'] = [
-            'chat'=>mg_admin_agent_api_has($actor, 'admin.admin_agent.chat'),
-            'manage'=>mg_admin_agent_api_has($actor, 'admin.admin_agent.manage'),
-            'actions'=>mg_admin_agent_api_has($actor, 'admin.admin_agent.actions'),
-        ];
+        $payload['permissions'] = mg_admin_agent_api_permissions($actor);
         header('Cache-Control: private, no-store, max-age=0');
         header('Vary: Cookie, Authorization');
         mg_ok($payload, 'Main Admin Agent loaded.');
@@ -93,11 +105,7 @@ try {
         if (is_array($result['thread'] ?? null) && !empty($result['thread']['id'])) $options['thread_id'] = (string)$result['thread']['id'];
         if ($action === 'new_thread' && !empty($result['id'])) $options['thread_id'] = (string)$result['id'];
         $state = mg_admin_agent_state($pdo, $actorId, $options);
-        $state['permissions'] = [
-            'chat'=>mg_admin_agent_api_has($actor, 'admin.admin_agent.chat'),
-            'manage'=>mg_admin_agent_api_has($actor, 'admin.admin_agent.manage'),
-            'actions'=>mg_admin_agent_api_has($actor, 'admin.admin_agent.actions'),
-        ];
+        $state['permissions'] = mg_admin_agent_api_permissions($actor);
         header('Cache-Control: private, no-store, max-age=0');
         header('Vary: Cookie, Authorization');
         mg_ok(['result'=>$result,'state'=>$state], 'Main Admin Agent action completed.');
