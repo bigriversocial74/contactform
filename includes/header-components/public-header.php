@@ -36,8 +36,6 @@ $public_nav_links = $filtered_links;
 
 if (!$user) {
     $public_nav_links = [
-        ['label' => 'For Businesses', 'href' => '/merchant-landing.php'],
-        ['label' => 'Case Studies', 'href' => '/featured-case-studies.php'],
         ['label' => 'Blog', 'href' => '/blog.php'],
         ['label' => 'Pricing', 'href' => '/pricing.php'],
     ];
