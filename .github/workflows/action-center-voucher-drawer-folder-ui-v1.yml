@@ -2,6 +2,13 @@ name: Action Center Voucher Drawer and Folder UI v1
 
 on:
   pull_request:
+    paths:
+      - 'api/account/action-center-voucher-detail.php'
+      - 'assets/css/gift-action-center-voucher-drawer-v1.css'
+      - 'assets/js/gift-action-center-voucher-drawer-v1.js'
+      - 'includes/gift-action-center.php'
+      - 'scripts/validate_action_center_voucher_drawer_folder_ui_v1.php'
+      - '.github/workflows/action-center-voucher-drawer-folder-ui-v1.yml'
   workflow_dispatch:
 
 permissions:
@@ -22,7 +29,7 @@ jobs:
           coverage: none
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       - name: PHP syntax
         run: |
           php -l api/account/action-center-voucher-detail.php
