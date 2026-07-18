@@ -14,31 +14,12 @@ permissions:
   contents: write
 
 jobs:
-  record-run:
-    if: github.head_ref == 'audit/repository-production-hardening-20260717' || github.ref_name == 'audit/repository-production-hardening-20260717'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: audit/repository-production-hardening-20260717
-          fetch-depth: 0
-      - name: Record finalization run id
-        run: |
-          printf '%s\n' "${{ github.run_id }}" > .audit-recovery-finalization-run-id
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add .audit-recovery-finalization-run-id
-          git commit -m 'Record temporary recovery finalization run'
-          git push origin HEAD:audit/repository-production-hardening-20260717
-
   finalize:
-    needs: record-run
     if: github.head_ref == 'audit/repository-production-hardening-20260717' || github.ref_name == 'audit/repository-production-hardening-20260717'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - name: Check out audit branch
+      - name: Check out latest audit branch
         uses: actions/checkout@v4
         with:
           ref: audit/repository-production-hardening-20260717
@@ -113,4 +94,5 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add tests/phpunit
           git commit -m 'Finalize recovery contracts and authenticated fixtures'
+          git pull --rebase origin audit/repository-production-hardening-20260717
           git push origin HEAD:audit/repository-production-hardening-20260717
