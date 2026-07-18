@@ -1,7 +1,10 @@
 + test -f .homepage-build/.ready
 + mkdir -p assets/css assets/js assets/images/homepage-parallax-exact-v2
-+ cat .homepage-build/index.php.gz.b64.00 .homepage-build/index.php.gz.b64.01
++ cat .homepage-build/index.php.gz.b64.00 .homepage-build/index.php.gz.b64.01 .homepage-build/index.php.gz.b64.02
++ base64 --decode
++ gzip --decompress
++ cat .homepage-build/styles.css.gz.b64.00
 + base64 --decode
 + gzip --decompress
 
-gzip: stdin: unexpected end of file
+gzip: stdin: invalid compressed data--crc error
