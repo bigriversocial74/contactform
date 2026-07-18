@@ -35,6 +35,36 @@ jobs:
       - name: Apply guarded contract modernization
         run: python3 scripts/apply_recovery_contract_modernization.py
 
+      - name: Update migration validator contracts
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          auth = Path('scripts/validate_auth_session_identity_hardening_v1.php')
+          text = auth.read_text()
+          old = "    'migration has auth version' => $has('database/auth_session_identity_hardening_v1.sql', \"'users','auth_version'\"),"
+          new = """    'migration has auth version' => $has('database/auth_session_identity_hardening_v1.sql', \"TABLE_NAME='users'\")
+              && $has('database/auth_session_identity_hardening_v1.sql', \"COLUMN_NAME='auth_version'\")
+              && $has('database/auth_session_identity_hardening_v1.sql', 'ALTER TABLE `users` ADD COLUMN `auth_version`'),"""
+          if old not in text:
+              raise SystemExit('Auth migration validator source contract was not found.')
+          auth.write_text(text.replace(old, new, 1))
+
+          personal = Path('scripts/validate_personal_agent_contact_intelligence_v1.php')
+          text = personal.read_text()
+          old = """$checks['migration is canonical and ordered'] = str_contains($manifest,\"'stage_18am_personal_agent_contact_intelligence_v1.sql'\")
+              && strpos($manifest,\"'stage_18al_personal_agent_followup_recovery_v1.sql'\") < strpos($manifest,\"'stage_18am_personal_agent_contact_intelligence_v1.sql'\")
+              && strpos($manifest,\"'stage_18am_personal_agent_contact_intelligence_v1.sql'\") < strpos($manifest,\"'stage_19_ai_provider_models.sql'\");"""
+          new = """$checks['migration is canonical and ordered'] = str_contains($manifest,\"'stage_18am_personal_agent_contact_intelligence_v1.sql'\")
+              && strpos($manifest,\"'stage_18al_personal_agent_followup_recovery_v1.sql'\") < strpos($manifest,\"'stage_19_ai_provider_models.sql'\")
+              && strpos($manifest,\"'stage_19_ai_provider_models.sql'\") < strpos($manifest,\"'20260714_personal_gifting_agent_phase2.sql'\")
+              && strpos($manifest,\"'20260714_personal_gifting_agent_phase2.sql'\") < strpos($manifest,\"'stage_18am_personal_agent_contact_intelligence_v1.sql'\");"""
+          if old not in text:
+              raise SystemExit('Personal Agent migration order validator source contract was not found.')
+          personal.write_text(text.replace(old, new, 1))
+          PY
+
       - name: Validate changed PHP syntax
         shell: bash
         run: |
@@ -89,6 +119,6 @@ jobs:
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add tests/phpunit scripts/validate_auth_session_identity_hardening_v1.php scripts/validate_personal_agent_contact_intelligence_v1.php
+          git add tests/phpunit scripts/validate_identity_behavior.php scripts/validate_auth_session_identity_hardening_v1.php scripts/validate_personal_agent_contact_intelligence_v1.php
           git commit -m 'Modernize recovery contracts for current runtime'
           git push origin HEAD:audit/repository-production-hardening-20260717
