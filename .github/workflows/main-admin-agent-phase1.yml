@@ -69,7 +69,37 @@ jobs:
       - name: JavaScript syntax
         run: node --check assets/js/admin-agent.js
 
-      - name: Main Admin Agent contracts
+      - name: Contract — unified schema
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase1ContractTest.php --filter testMigrationCreatesUnifiedMonitoringAndChatSchema
+
+      - name: Contract — monitor registry
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase1ContractTest.php --filter testMonitorRegistryCoversExistingAdminFoundations
+
+      - name: Contract — event and finding lifecycle
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase1ContractTest.php --filter testRuntimeNormalizesEventsAndDeduplicatesFindings
+
+      - name: Contract — database-only reports
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase1ContractTest.php --filter testReportsAreDatabaseOnlyAndUseNoExternalModel
+
+      - name: Contract — chat workspace
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase1ContractTest.php --filter testAdminChatPageMatchesCurrentAgentWorkspacePattern
+
+      - name: Contract — live updates
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase1ContractTest.php --filter testLiveUpdatesUseSseWithBoundedPollingFallback
+
+      - name: Contract — API security
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase1ContractTest.php --filter testApiIsPermissionGatedRateLimitedAndCsrfProtected
+
+      - name: Contract — review-only actions
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase1ContractTest.php --filter testActionsAreReviewOnlyAndIdempotent
+
+      - name: Contract — scheduled operation
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase1ContractTest.php --filter testScheduledRunnerAndOperationsDocumentationExist
+
+      - name: Contract — platform integration
+        run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase1ContractTest.php --filter testMigrationPermissionAndCommandCenterIntegrationAreRegistered
+
+      - name: Main Admin Agent full contract
         run: vendor/bin/phpunit tests/phpunit/MainAdminAgentPhase1ContractTest.php
 
       - name: Migration manifest
