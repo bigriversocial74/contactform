@@ -13,6 +13,7 @@ on:
       - 'assets/css/merchant-agent-ai-status.css'
       - 'tests/phpunit/MerchantAgentOwnerAiCreditSeparationContractTest.php'
       - 'tests/phpunit/MerchantAgentAiEndpointAuditContractTest.php'
+      - 'tests/phpunit/MerchantAgentAiReportContractTest.php'
       - 'scripts/validate_merchant_agent_chat_layout_v2.php'
       - 'scripts/validate_integrated_merchant_agent_workspace_v1.php'
       - 'scripts/validate_merchant_agent_canvas_context_v1.php'
@@ -61,6 +62,7 @@ jobs:
           php -l api/ai/merchant-agent-memory-sources.php
           php -l includes/ai/anthropic-client.php
           php -l includes/ai/merchant-agent-credit-response.php
+          php -l includes/ai/merchant-agent-ai-report.php
           php -l includes/ai/merchant-agent-chat.php
           php -l includes/ai/merchant-agent-chat-memory.php
           php -l includes/ai/merchant-agent-crm-contact-chat.php
@@ -68,6 +70,7 @@ jobs:
           php -l includes/ai/merchant-agent-planner.php
           php -l tests/phpunit/MerchantAgentOwnerAiCreditSeparationContractTest.php
           php -l tests/phpunit/MerchantAgentAiEndpointAuditContractTest.php
+          php -l tests/phpunit/MerchantAgentAiReportContractTest.php
 
       - name: JavaScript syntax
         run: node --check assets/js/merchant-agent-ai-status.js
@@ -76,6 +79,7 @@ jobs:
         run: |
           vendor/bin/phpunit tests/phpunit/MerchantAgentOwnerAiCreditSeparationContractTest.php
           vendor/bin/phpunit tests/phpunit/MerchantAgentAiEndpointAuditContractTest.php
+          vendor/bin/phpunit tests/phpunit/MerchantAgentAiReportContractTest.php
 
       - name: Merchant Agent regression contracts
         run: |

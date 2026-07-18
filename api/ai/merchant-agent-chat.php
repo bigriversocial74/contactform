@@ -13,6 +13,7 @@ require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-contact-workspac
 require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-crm-contact-chat.php';
 require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-thread-delete.php';
 require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-snapshot.php';
+require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-ai-report.php';
 require_once dirname(__DIR__, 2) . '/includes/ai/merchant-agent-admin-limits.php';
 
 function mg_agent_chat_admin_operator(array $user): bool
@@ -65,10 +66,11 @@ if ($method === 'POST') {
     $input = mg_input();
     mg_require_csrf_for_write($input);
     $action = strtolower(trim((string)($input['action'] ?? 'send_message')));
+    if ($action === 'send_message' && mg_merchant_ai_report_is_keyword($input['message'] ?? '')) $action = 'ai_report';
     if ($action === 'send_message' && mg_merchant_agent_crm_search_is_query($input['message'] ?? '')) $action = 'crm_search';
     $localActions = ['save_agent_profile','save_memory_profile','create_thread','save_thread','archive_thread','clear_thread','rename_thread','load_thread','delete_thread','select_contact','clear_contact','contact_note','contact_review_draft'];
 
-    if (!in_array($action, array_merge(['send_message','snapshot','crm_search','contact_action'], $localActions), true)) {
+    if (!in_array($action, array_merge(['send_message','snapshot','ai_report','crm_search','contact_action'], $localActions), true)) {
         mg_fail('Unknown merchant agent chat action.', 422);
     }
 
@@ -88,6 +90,14 @@ if ($method === 'POST') {
         mg_merchant_agent_require_owner_permission($user, 'merchant.campaigns.view');
     }
     if ($action === 'contact_note') mg_merchant_agent_require_owner_permission($user, 'merchant.campaigns.manage');
+
+    if ($action === 'ai_report') {
+        mg_rate_limit('merchant.agent.ai_report.chat', 'user:' . $actorId, 30, 60);
+        $input['message'] = trim((string)($input['message'] ?? 'AI Report')) ?: 'AI Report';
+        $response = mg_merchant_ai_report_chat_response($pdo, $user, $packageContext, $input);
+        if (is_array($response['state'] ?? null)) $response['state'] = mg_agent_chat_contact_state($pdo, $merchantOwnerId, $actorId, $response['state'], $input);
+        mg_ok(mg_agent_chat_access_response($pdo, $user, $packageContext, $response), 'AI credit report generated.', 201);
+    }
 
     if ($action === 'crm_search') {
         mg_rate_limit('merchant.agent.crm_search.chat', 'user:' . $actorId, 90, 60);
