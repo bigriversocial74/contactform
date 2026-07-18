@@ -74,3 +74,19 @@ html body[data-authenticated="false"] .mg-universal-footer a:not(.mg-footer-logo
   .mg-universal-footer .mg-footer-bottom-links{justify-content:flex-start!important}
 }
 @media(max-width:420px){.mg-universal-footer .mg-footer-link-grid{grid-template-columns:1fr!important}}
+
+/* The shared layout uses overflow-x:hidden globally. That creates a scrolling
+   ancestor and disables position:sticky on the animation-led homepage. Clip
+   horizontal overflow without creating a scroll container on this route. */
+html:has(body.mg-homepage-exact-v2),
+body.mg-homepage-exact-v2{
+  overflow-x:clip!important;
+  overflow-y:visible!important;
+}
+body.mg-homepage-exact-v2 .mg-main,
+body.mg-homepage-exact-v2 .homepage-exact-v2{
+  overflow:visible!important;
+  contain:none!important;
+  transform:none!important;
+  perspective:none!important;
+}
