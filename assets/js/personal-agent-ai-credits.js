@@ -6,7 +6,6 @@ document.addEventListener('DOMContentLoaded', function () {
   var chip = composer && composer.querySelector('[data-personal-agent-credit-chip]');
   var detail = composer && composer.querySelector('[data-personal-agent-credit-detail]');
   var submit = composer && composer.querySelector('button[type="submit"]');
-  var status = root && root.querySelector('[data-personal-agent-status]');
   var feed = root && root.querySelector('[data-personal-agent-feed]');
   if (!root || !composer || !chip || !window.Microgifter) return;
 
@@ -30,16 +29,35 @@ document.addEventListener('DOMContentLoaded', function () {
     current = credit || {};
     chip.classList.remove('is-low', 'is-blocked');
     composer.dataset.aiCreditBlocked = 'false';
+    composer.dataset.systematicAccess = 'true';
     if (submit) submit.disabled = false;
 
-    if (!credit || credit.schema_ready === false) {
+    if (!credit) {
+      chip.querySelector('strong').textContent = 'Agent access · Systematic mode';
+      chip.classList.add('is-low');
+      chip.title = 'Systematic agent flows remain available.';
+      if (detail) detail.textContent = 'AI credit status unavailable';
+      return;
+    }
+
+    var packageName = credit.package && credit.package.name ? credit.package.name : 'Free Wallet';
+
+    if (!credit.can_use) {
+      chip.classList.add('is-blocked');
+      composer.dataset.aiCreditBlocked = 'true';
+      chip.querySelector('strong').textContent = packageName + ' · Systematic mode';
+      chip.title = 'AI API access is unavailable: ' + reason(credit.block_reason) + '. Systematic agent flows remain available.';
+      if (detail) detail.textContent = 'AI tools require an active package or available token allowance';
+      return;
+    }
+
+    if (credit.schema_ready === false) {
       chip.querySelector('strong').textContent = 'AI credits · Legacy access';
-      chip.title = credit && credit.message ? credit.message : 'AI credit migration pending.';
+      chip.title = credit.message || 'AI credit migration pending.';
       if (detail) detail.textContent = '';
       return;
     }
 
-    var packageName = credit.package && credit.package.name ? credit.package.name : 'Free';
     var available = credit.available_tokens;
     var balance = available == null ? 'Unlimited' : number(available) + ' tokens';
     chip.querySelector('strong').textContent = packageName + ' · ' + balance;
@@ -48,17 +66,10 @@ document.addEventListener('DOMContentLoaded', function () {
     var dayLimit = credit.limits && credit.limits.day;
     if (detail) detail.textContent = dayLimit == null ? number(dayUsed) + ' used today' : number(dayUsed) + ' / ' + number(dayLimit) + ' today';
 
-    if (!credit.can_use) {
-      chip.classList.add('is-blocked');
-      composer.dataset.aiCreditBlocked = 'true';
-      if (submit) submit.disabled = true;
-      chip.title = 'AI unavailable: ' + reason(credit.block_reason) + '.';
-    } else {
-      var allocated = Number(credit.package_tokens_allocated || 0) + Number(credit.manual_tokens_remaining || 0);
-      if (available != null && (Number(available) < 2500 || (allocated > 0 && Number(available) / allocated <= 0.1))) chip.classList.add('is-low');
-      chip.title = 'Package balance: ' + (credit.package_tokens_remaining == null ? 'Unlimited' : number(credit.package_tokens_remaining))
-        + '. Bonus balance: ' + number(credit.manual_tokens_remaining || 0) + '.';
-    }
+    var allocated = Number(credit.package_tokens_allocated || 0) + Number(credit.manual_tokens_remaining || 0);
+    if (available != null && (Number(available) < 2500 || (allocated > 0 && Number(available) / allocated <= 0.1))) chip.classList.add('is-low');
+    chip.title = 'Package balance: ' + (credit.package_tokens_remaining == null ? 'Unlimited' : number(credit.package_tokens_remaining))
+      + '. Bonus balance: ' + number(credit.manual_tokens_remaining || 0) + '.';
   }
 
   async function refresh() {
@@ -69,9 +80,11 @@ document.addEventListener('DOMContentLoaded', function () {
       var data = payloadOf(response);
       render(data.credits || data);
     } catch (error) {
-      chip.querySelector('strong').textContent = 'AI credits unavailable';
+      chip.querySelector('strong').textContent = 'Agent access · Systematic mode';
       chip.classList.add('is-low');
-      chip.title = error.message || 'Unable to load AI credits.';
+      chip.title = error.message || 'Unable to load AI credits. Systematic agent flows remain available.';
+      if (detail) detail.textContent = 'AI credit status unavailable';
+      if (submit) submit.disabled = false;
     } finally {
       loading = false;
     }
@@ -82,18 +95,9 @@ document.addEventListener('DOMContentLoaded', function () {
     timer = window.setTimeout(refresh, 450);
   }
 
-  composer.addEventListener('submit', function (event) {
-    if (current && current.schema_ready !== false && !current.can_use) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      if (status) {
-        status.textContent = 'AI access is unavailable because of your current token balance or allowance. Review your subscription package.';
-        status.classList.add('is-error');
-      }
-      return;
-    }
+  composer.addEventListener('submit', function () {
     window.setTimeout(queueRefresh, 1200);
-  }, true);
+  });
 
   if (feed && window.MutationObserver) {
     new MutationObserver(function (mutations) {

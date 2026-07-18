@@ -1,6 +1,36 @@
 <?php
 declare(strict_types=1);
 
+function mg_personal_agent_ai_package_eligible(array $context): bool
+{
+    $status = strtolower(trim((string) ($context['status'] ?? 'free')));
+    if (!empty($context['is_complimentary']) || $status === 'admin') return true;
+    if (empty($context['is_paid'])) return false;
+    return !in_array($status, ['free','expired','past_due','paused','canceled','incomplete','pending_admin_review'], true);
+}
+
+function mg_personal_agent_ai_credit_apply_package_gate(array $snapshot, array $context): array
+{
+    if (mg_personal_agent_ai_package_eligible($context)) return $snapshot;
+
+    $snapshot['enabled'] = false;
+    $snapshot['can_use'] = false;
+    $snapshot['unmetered'] = false;
+    $snapshot['block_reason'] = 'subscription_required';
+    $snapshot['package'] = [
+        'id' => (string) ($context['package_id'] ?? 'free'),
+        'name' => (string) ($context['package_name'] ?? 'Free Wallet'),
+        'status' => (string) ($context['status'] ?? 'free'),
+        'monthly_tokens' => 0,
+        'unlimited' => false,
+    ];
+    $snapshot['available_tokens'] = 0;
+    $snapshot['package_tokens_allocated'] = 0;
+    $snapshot['package_tokens_remaining'] = 0;
+    $snapshot['message'] = 'Systematic agent flows are available. AI API access requires an active paid or complimentary package.';
+    return $snapshot;
+}
+
 function mg_personal_agent_credit_update_usage_event(PDO $pdo, int $userId, int $providerId, int $modelId, int $inputTokens, int $outputTokens, string $responseId): void
 {
     try {
@@ -29,9 +59,21 @@ function mg_personal_agent_chat_with_credit_response(PDO $pdo, int $userId, arra
         && function_exists('mg_personal_agent_chat_with_contact_intelligence')
         && function_exists('mg_personal_agent_contact_intelligence_schema_ready')
         && mg_personal_agent_contact_intelligence_schema_ready($pdo);
+    $packageContext = mg_ai_credit_package_context($pdo, $userId);
+    $aiPackageEligible = mg_personal_agent_ai_package_eligible($packageContext);
     $model = null;
-    $creditBefore = mg_ai_credit_snapshot($pdo,$userId,'anthropic');
+    $creditBefore = mg_personal_agent_ai_credit_apply_package_gate(
+        mg_ai_credit_snapshot($pdo,$userId,'anthropic'),
+        $packageContext
+    );
     if (!$deterministicRecovery && !$deterministicContact && $message !== '' && !mg_personal_agent_message_has_secret_request($message)) {
+        if (!$aiPackageEligible) {
+            throw new MgAiCreditException(
+                'AI access requires an active paid or complimentary package. Systematic agent flows remain available.',
+                402,
+                ['scope'=>'ai_subscription_required','ai_credits'=>$creditBefore]
+            );
+        }
         $model = mg_personal_agent_model($pdo,$userId,mg_personal_agent_text($input['model_id'] ?? '',80));
         if ($model) {
             $reserve = max(700,min(2200,(int)($model['max_output_tokens'] ?? 1600)));
@@ -71,7 +113,7 @@ function mg_personal_agent_chat_with_credit_response(PDO $pdo, int $userId, arra
         $creditAfter = mg_ai_credit_snapshot($pdo,$userId,'anthropic');
     }
 
-    $result['ai_credits'] = $creditAfter;
+    $result['ai_credits'] = mg_personal_agent_ai_credit_apply_package_gate($creditAfter, $packageContext);
     $result['ai_tokens_used'] = $tokensUsed;
     return $result;
 }

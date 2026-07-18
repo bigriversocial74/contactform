@@ -16,7 +16,7 @@ require __DIR__ . '/includes/header.php';
       <span><strong>Campaigns</strong><small>Continue creating measurable local value.</small></span>
     </div>
   </aside>
-  <form class="mg-auth-card" method="post" action="/api/auth/login.php" data-auth-form="signin" data-success-redirect="/inbox.php">
+  <form class="mg-auth-card" method="post" action="/api/auth/login.php" data-auth-form="signin" data-success-redirect="/agent.php">
     <?= mg_csrf_field() ?>
     <span class="mg-auth-kicker">Account access</span>
     <h2>Sign in</h2>

@@ -56,7 +56,7 @@ try{
     }elseif($selectedPlan!==''){
         $postVerifyRedirect='/account-subscriptions.php?plan='.rawurlencode($selectedPlan).'&source=signup';
     }else{
-        $postVerifyRedirect='/inbox.php';
+        $postVerifyRedirect='/agent.php';
     }
 
     $_SESSION['mg_pending_subscription_plan']=$selectedPlan!==''?$selectedPlan:null;

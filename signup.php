@@ -35,7 +35,7 @@ require __DIR__ . '/includes/header.php';
       <span><strong><?= $isMerchant ? 'Activation' : 'Share' ?></strong><small><?= $isMerchant ? 'Merchant permissions and workspace capacity activate after verified payment or an admin grant.' : 'Send, claim, save, and regift local value.' ?></small></span>
     </div>
   </aside>
-  <form class="mg-auth-card" method="post" action="/api/auth/register.php" data-auth-form="signup" data-success-redirect="<?= $isMerchant ? '/account-subscriptions.php' : '/inbox.php' ?>">
+  <form class="mg-auth-card" method="post" action="/api/auth/register.php" data-auth-form="signup" data-success-redirect="<?= $isMerchant ? '/account-subscriptions.php' : '/agent.php' ?>">
     <?= mg_csrf_field() ?>
     <input type="hidden" name="account_type" value="<?= mg_e($accountType) ?>">
     <input type="hidden" name="selected_plan" value="<?= mg_e($selectedPlan) ?>">
@@ -73,7 +73,7 @@ require __DIR__ . '/includes/header.php';
 
     <button class="mg-btn mg-btn-primary" type="submit"><?= $isMerchant ? 'Create account and continue' : 'Create account' ?></button>
     <div class="mg-auth-switch-row">
-      <p>Already have an account? <a href="/signin.php?return=<?= rawurlencode($isMerchant ? '/account-subscriptions.php?plan=' . $selectedPlan . '&source=signup' : '/inbox.php') ?>">Sign in</a></p>
+      <p>Already have an account? <a href="/signin.php?return=<?= rawurlencode($isMerchant ? '/account-subscriptions.php?plan=' . $selectedPlan . '&source=signup' : '/agent.php') ?>">Sign in</a></p>
       <p><a href="/signup.php?type=<?= $isMerchant ? 'customer' : 'merchant' ?>"><?= $isMerchant ? 'Create a customer account instead' : 'Create a merchant account' ?></a></p>
     </div>
   </form>

@@ -73,8 +73,8 @@ $checks = [
         && str_contains($authCss, 'linear-gradient(180deg,#fff 0%,#f2f7fd 62%,#fff 100%)')
         && str_contains($authCss, 'background:#102d4c!important')
         && str_contains($authCss, 'color:#0b2540'),
-    'signin keeps login authority and inbox redirect' => str_contains($signin, '/api/auth/login.php')
-        && str_contains($signin, 'data-success-redirect="/inbox.php"')
+    'signin keeps login authority and Agent redirect' => str_contains($signin, '/api/auth/login.php')
+        && str_contains($signin, 'data-success-redirect="/agent.php"')
         && str_contains($signin, 'mg_csrf_field()'),
     'signup keeps customer and package-selection authority' => str_contains($signup, '/api/auth/register.php')
         && str_contains($signup, "['customer', 'merchant']")

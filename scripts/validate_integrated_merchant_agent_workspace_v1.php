@@ -87,10 +87,9 @@ $checks = [
         && str_contains($content['sidebar_tools_js'], "false,\n        true")
         && str_contains($content['sidebar_tools_js'], 'form.requestSubmit()')
         && str_contains($content['sidebar_tools_js'], 'sessionStorage.setItem'),
-    'free signed-in accounts are redirected from both Agent destinations to subscriptions' =>
-        str_contains($content['personal_page'], "!empty(\$agentPackageContext['is_paid'])")
-        && str_contains($content['personal_page'], "!empty(\$agentPackageContext['merchant_access'])")
-        && str_contains($content['personal_page'], "header('Location: /account-subscriptions.php?agent=personal')")
+    'free accounts can open Personal Agent systematic flows while Merchant Agent remains entitlement-gated' =>
+        !str_contains($content['personal_page'], "header('Location: /account-subscriptions.php?agent=personal')")
+        && str_contains($content['personal_page'], "\$header_mode = 'agent'")
         && $merchantRedirectPosition !== false
         && $merchantHeaderPosition !== false
         && $merchantRedirectPosition < $merchantHeaderPosition

@@ -6,6 +6,7 @@ $files=[
     'subscriptions'=>$root.'/account-subscriptions.php',
     'personal'=>$root.'/agent.php',
     'merchant'=>$root.'/merchant-agent-chat.php',
+    'credit'=>$root.'/includes/personal-agent/credit-response.php',
     'js'=>$root.'/assets/js/subscription-agent-access-v1.js',
     'css'=>$root.'/assets/css/subscription-agent-access-v1.css',
 ];
@@ -19,8 +20,11 @@ foreach($files as $key=>$path){
 }
 
 $checks=[
-    'Personal Agent sends unpaid users to subscriptions with intent' =>
-        str_contains($content['personal'],"/account-subscriptions.php?agent=personal"),
+    'Personal Agent allows systematic access and gates paid AI separately' =>
+        !str_contains($content['personal'],"/account-subscriptions.php?agent=personal")
+        && str_contains($content['personal'],"\$header_mode = 'agent'")
+        && str_contains($content['credit'],'ai_subscription_required')
+        && str_contains($content['credit'],'Systematic agent flows remain available.'),
     'Merchant Agent sends non-merchants to subscriptions with intent' =>
         str_contains($content['merchant'],"/account-subscriptions.php?agent=merchant"),
     'subscription page loads the access intent assets after billing runtime' =>

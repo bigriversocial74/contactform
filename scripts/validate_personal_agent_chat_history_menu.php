@@ -75,7 +75,8 @@ $checks = [
         && !str_contains($dashboard, '<div class="mg-personal-agent-chat-stream">')
         && str_contains($canvasCss, 'width:100%!important')
         && str_contains($canvasCss, 'background:transparent!important'),
-    'free users are routed to subscriptions and the subscriptions page uses this sidebar' => str_contains($page, "header('Location: /account-subscriptions.php?agent=personal')")
+    'free users can open systematic Agent flows while subscriptions retain upgrade links' => !str_contains($page, "header('Location: /account-subscriptions.php?agent=personal')")
+        && str_contains($page, "\$header_mode = 'agent'")
         && str_contains($sidebar, '/account-subscriptions.php?agent=personal')
         && str_contains($sidebar, '/account-subscriptions.php?agent=merchant')
         && str_contains($subscriptionsPage, "require __DIR__ . '/includes/personal-agent-sidebar.php'")
