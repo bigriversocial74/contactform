@@ -1,0 +1,2 @@
+# Run hourly from the deployed application root.
+0 * * * * cd /path/to/contactform && php scripts/run_ai_credit_reconciliation.php --days=30 --provider=anthropic --trigger=scheduled >> storage/logs/ai-credit-reconciliation.log 2>&1
