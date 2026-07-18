@@ -1,0 +1,55 @@
+name: Assemble Exact Homepage Integration
+
+on:
+  push:
+    branches:
+      - fix/homepage-exact-zip-index-integration-v3-20260718
+    paths:
+      - '.homepage-build/**'
+      - '.github/workflows/assemble-homepage-exact-v2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/homepage-exact-zip-index-integration-v3-20260718
+          fetch-depth: 0
+      - name: Wait for complete payload
+        id: payload
+        run: |
+          if [ -f .homepage-build/.ready ]; then
+            echo 'ready=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'ready=false' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Assemble integration files
+        if: steps.payload.outputs.ready == 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p assets/css assets/js assets/images/homepage-parallax-exact-v2
+          cat .homepage-build/index.php.gz.b64.* | base64 --decode | gzip --decompress > index.php
+          cat .homepage-build/styles.css.gz.b64.* | base64 --decode | gzip --decompress > assets/css/homepage-parallax-exact-v2.css
+          cat .homepage-build/app.js.gz.b64.* | base64 --decode | gzip --decompress > assets/js/homepage-parallax-exact-v2.js
+          cat .homepage-build/foreground.webp.b64.* | base64 --decode > assets/images/homepage-parallax-exact-v2/foreground.webp
+          cat .homepage-build/mountains.webp.b64.* | base64 --decode > assets/images/homepage-parallax-exact-v2/mountains.webp
+          cat .homepage-build/orb.webp.b64.* | base64 --decode > assets/images/homepage-parallax-exact-v2/orb.webp
+          php -l index.php
+          node --check assets/js/homepage-parallax-exact-v2.js
+          test "$(sha256sum assets/images/homepage-parallax-exact-v2/foreground.webp | cut -d' ' -f1)" = "4ea741a743119de02c4ecb1513bd25694965afcb4c4ac74983390037e95a9c53"
+          test "$(sha256sum assets/images/homepage-parallax-exact-v2/mountains.webp | cut -d' ' -f1)" = "37376bb009dd9049be4ba593c7213f13617babd94b0676134b116811a8888b7d"
+          test "$(sha256sum assets/images/homepage-parallax-exact-v2/orb.webp | cut -d' ' -f1)" = "9667fbc48739193cf1854ec970225cf19a492569c4a6791a00264d84c61d3028"
+      - name: Commit assembled files
+        if: steps.payload.outputs.ready == 'true'
+        run: |
+          rm -rf .homepage-build
+          rm -f .github/workflows/assemble-homepage-exact-v2.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Integrate exact homepage package into index.php'
+          git push origin HEAD:fix/homepage-exact-zip-index-integration-v3-20260718
