@@ -1,231 +1,545 @@
 <?php
 declare(strict_types=1);
 
-$page_title = 'Microgifter | Customer Relationship Agent for Social Gifting';
-$page_section = 'public';
-$header_mode = 'public';
-$page_body_class = 'mg-parallax-home';
-$page_styles = [
-    '/assets/css/public-header-footer-fixes.css',
-    '/assets/css/homepage-parallax-agent-v1.css?v=1.0.0',
-];
-$page_scripts = [
-    '/assets/js/homepage-parallax-agent-v1.js?v=1.0.0',
-];
-$page_meta = [
-    'description' => 'Create a personal social gifting and customer service agent that connects gifting, loyalty, service, follow-up, and post-purchase commerce.',
-    'canonical' => 'https://microgifter.com/index.php',
-    'og_title' => 'Microgifter — Customer Relationship Agent',
-    'og_description' => 'One intelligent relationship system for social gifting, customer service, loyalty, and post-purchase commerce.',
-];
-$page_manifest = [
-    'id' => 'index',
-    'title' => $page_title,
-    'section' => $page_section,
-    'header_mode' => $header_mode,
-    'assets' => ['universal-header'],
-    'header_controls' => [],
-    'public_header' => [
-        'presentation' => false,
-        'links' => [
-            ['label' => 'How It Works', 'href' => '/index.php#relationship-system'],
-            ['label' => 'Solutions', 'href' => '/index.php#agent-in-action'],
-            ['label' => 'Features', 'href' => '/index.php#pppm-presentation'],
-            ['label' => 'For Businesses', 'href' => '/merchant-landing.php'],
-            ['label' => 'Book A Demo', 'href' => '/learn-more.php'],
-        ],
-    ],
-    'onboarding' => [
-        'enabled' => false,
-        'page' => 'home',
-        'sections' => [],
-    ],
-];
+require_once __DIR__ . '/includes/app.php';
 
-require __DIR__ . '/includes/header.php';
+if (mg_current_user()) {
+    header('Cache-Control: no-store, private');
+    header('Location: /inbox.php', true, 302);
+    exit;
+}
+
+header('Cache-Control: public, max-age=300, stale-while-revalidate=600');
 ?>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Microgifter personal social gifting and customer service agent.">
+  <title>Microgifter — Customer Relationship Agent</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="preload" as="image" href="/assets/images/mountains.png?v=2.0.0">
+  <link rel="preload" as="image" href="/assets/images/foreground.png?v=2.0.0">
+  <link rel="preload" as="image" href="/assets/images/orb.png?v=2.0.0">
+  <link rel="stylesheet" href="/assets/css/homepage-parallax-exact-v2.css?v=2.0.0">
+</head>
+<body>
+  <main>
+    <section class="hero-scroll" id="hero" aria-label="Microgifter introduction">
+      <div class="hero-sticky">
+        <header class="os-bar">
+          <a class="brand" href="#hero" aria-label="Microgifter home">microgifter</a>
+          <nav class="desktop-nav" aria-label="Primary navigation">
+            <a href="#relationship-system">How it works</a>
+            <a href="#relationship-system">Solutions</a>
+            <a href="#relationship-system">For merchants</a>
+            <a class="nav-cta" href="#relationship-system">Get started <span>→</span></a>
+          </nav>
+          <div class="window-controls" aria-hidden="true"><span>−</span><span>□</span><span>×</span></div>
+        </header>
 
-<main class="mg-ph-main" id="top" aria-label="Microgifter customer relationship agent homepage">
-  <section class="mg-ph-hero-scroll" id="hero" aria-label="Microgifter introduction">
-    <div class="mg-ph-hero-sticky">
-      <div class="mg-ph-scene" data-ph-scene>
-        <div class="mg-ph-sky" aria-hidden="true"></div>
-        <div class="mg-ph-mountains mg-ph-mountains-back" aria-hidden="true"></div>
-        <div class="mg-ph-mountains mg-ph-mountains-front" aria-hidden="true"></div>
-        <div class="mg-ph-foreground" aria-hidden="true"></div>
-        <div class="mg-ph-orb" data-ph-orb aria-hidden="true"><span></span></div>
+        <div class="scene" id="scene">
+          <img class="layer layer-mountains" id="mountains" src="/assets/images/mountains.png?v=2.0.0" alt="" decoding="async" fetchpriority="high">
+          <img class="layer layer-foreground" id="foreground" src="/assets/images/foreground.png?v=2.0.0" alt="" decoding="async" fetchpriority="high">
+          <img class="orb" id="orb" src="/assets/images/orb.png?v=2.0.0" alt="Glowing intelligent agent sphere" decoding="async" fetchpriority="high">
 
-        <div class="mg-ph-hero-copy mg-ph-copy-one" data-ph-copy-one>
-          <p class="mg-ph-eyebrow">Personal agent · active</p>
-          <h1>Create your personal social gifting and customer service agent.</h1>
-          <p class="mg-ph-intro">One intelligent relationship system that understands, engages, gifts, and grows with every customer interaction.</p>
-          <a class="mg-ph-button" href="#relationship-system">Enter the system <span aria-hidden="true">→</span></a>
-        </div>
-
-        <div class="mg-ph-hero-copy mg-ph-copy-two" data-ph-copy-two aria-hidden="true">
-          <p class="mg-ph-eyebrow">Relationship intelligence · connected</p>
-          <h2>One agent that remembers the relationship.</h2>
-          <p class="mg-ph-intro">Microgifter carries customer context forward—across conversations, service moments, gifting, rewards, and every next action.</p>
-          <a class="mg-ph-button" href="#relationship-system">See how it works <span aria-hidden="true">↓</span></a>
-        </div>
-
-        <section class="mg-ph-growth" data-ph-growth aria-hidden="true" aria-labelledby="mgPhGrowthTitle">
-          <div class="mg-ph-growth-copy">
-            <p class="mg-ph-eyebrow">Relationship growth · live</p>
-            <h2 id="mgPhGrowthTitle">See every relationship create measurable momentum.</h2>
-            <p class="mg-ph-intro">Five signals move together as your agent learns, responds, gifts, retains, and converts.</p>
+          <div class="hero-copy copy-one" id="heroCopy">
+            <p class="eyebrow">Personal agent · active</p>
+            <h1>Create your personal social gifting and customer service agent.</h1>
+            <p class="intro">One intelligent relationship system that understands, engages, gifts, and grows with every customer interaction.</p>
+            <a class="primary-button" href="#relationship-system">Enter the system <span>→</span></a>
           </div>
-          <div class="mg-ph-chart" role="img" aria-label="Animated sales growth chart showing five rising relationship signals">
-            <div class="mg-ph-chart-head"><span>Sales growth</span><strong>+38.4%</strong></div>
-            <svg viewBox="0 0 900 420" preserveAspectRatio="none" aria-hidden="true">
-              <defs><linearGradient id="mgPhChartFade" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f1b99d" stop-opacity=".2"/><stop offset="100%" stop-color="#f1b99d" stop-opacity="0"/></linearGradient></defs>
-              <g class="mg-ph-grid"><line x1="40" y1="80" x2="860" y2="80"/><line x1="40" y1="155" x2="860" y2="155"/><line x1="40" y1="230" x2="860" y2="230"/><line x1="40" y1="305" x2="860" y2="305"/><line x1="40" y1="380" x2="860" y2="380"/></g>
-              <path class="mg-ph-chart-area" d="M40 350 C120 334 145 320 205 301 S315 270 360 250 S455 224 510 190 S620 160 680 118 S790 88 860 52 L860 380 L40 380 Z"/>
-              <path class="mg-ph-line mg-ph-line-1" pathLength="1" d="M40 350 C120 334 145 320 205 301 S315 270 360 250 S455 224 510 190 S620 160 680 118 S790 88 860 52"/>
-              <path class="mg-ph-line mg-ph-line-2" pathLength="1" d="M40 366 C115 350 160 345 215 312 S325 302 380 259 S475 238 530 210 S635 190 700 145 S805 121 860 87"/>
-              <path class="mg-ph-line mg-ph-line-3" pathLength="1" d="M40 335 C105 327 155 285 220 291 S320 255 385 240 S485 199 545 205 S655 148 715 132 S805 93 860 76"/>
-              <path class="mg-ph-line mg-ph-line-4" pathLength="1" d="M40 375 C115 360 175 335 230 342 S340 302 400 290 S505 254 565 221 S670 215 735 160 S820 140 860 118"/>
-              <path class="mg-ph-line mg-ph-line-5" pathLength="1" d="M40 355 C105 340 170 326 225 306 S335 282 395 246 S500 226 560 181 S675 166 735 111 S820 92 860 64"/>
-            </svg>
-            <div class="mg-ph-chart-legend" aria-hidden="true"><span>Sales</span><span>Retention</span><span>Gifting</span><span>Engagement</span><span>Referrals</span></div>
+
+          <div class="hero-copy copy-two" id="secondCopy" aria-hidden="true">
+            <p class="eyebrow">Relationship intelligence · connected</p>
+            <h2>One agent that remembers the relationship.</h2>
+            <p class="intro">Microgifter carries customer context forward—across conversations, service moments, gifting, rewards, and every next action.</p>
+            <a class="primary-button" href="#relationship-system">See how it works <span>↓</span></a>
+          </div>
+
+          <section class="growth-stage" id="growthStage" aria-hidden="true">
+            <div class="growth-copy">
+              <p class="eyebrow">Relationship growth · live</p>
+              <h2>See every relationship create measurable momentum.</h2>
+              <p class="intro">Five signals move together as your agent learns, responds, gifts, retains, and converts.</p>
+            </div>
+            <div class="growth-chart" role="img" aria-label="Animated sales growth chart showing five rising relationship signals">
+              <div class="chart-header">
+                <span>Sales growth</span>
+                <strong>+38.4%</strong>
+              </div>
+              <svg viewBox="0 0 900 420" preserveAspectRatio="none" aria-hidden="true">
+                <defs>
+                  <linearGradient id="chartFade" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#f1b99d" stop-opacity=".18"/>
+                    <stop offset="100%" stop-color="#f1b99d" stop-opacity="0"/>
+                  </linearGradient>
+                </defs>
+                <g class="chart-grid">
+                  <line x1="40" y1="80" x2="860" y2="80"/>
+                  <line x1="40" y1="155" x2="860" y2="155"/>
+                  <line x1="40" y1="230" x2="860" y2="230"/>
+                  <line x1="40" y1="305" x2="860" y2="305"/>
+                  <line x1="40" y1="380" x2="860" y2="380"/>
+                </g>
+                <path class="chart-area" d="M40 350 C120 334 145 320 205 301 S315 270 360 250 S455 224 510 190 S620 160 680 118 S790 88 860 52 L860 380 L40 380 Z"/>
+                <path class="tracking-line line-1" pathLength="1" d="M40 350 C120 334 145 320 205 301 S315 270 360 250 S455 224 510 190 S620 160 680 118 S790 88 860 52"/>
+                <path class="tracking-line line-2" pathLength="1" d="M40 366 C115 350 160 345 215 312 S325 302 380 259 S475 238 530 210 S635 190 700 145 S805 121 860 87"/>
+                <path class="tracking-line line-3" pathLength="1" d="M40 335 C105 327 155 285 220 291 S320 255 385 240 S485 199 545 205 S655 148 715 132 S805 93 860 76"/>
+                <path class="tracking-line line-4" pathLength="1" d="M40 375 C115 360 175 335 230 342 S340 302 400 290 S505 254 565 221 S670 215 735 160 S820 140 860 118"/>
+                <path class="tracking-line line-5" pathLength="1" d="M40 355 C105 340 170 326 225 306 S335 282 395 246 S500 226 560 181 S675 166 735 111 S820 92 860 64"/>
+              </svg>
+              <div class="chart-legend" aria-hidden="true">
+                <span>Sales</span><span>Retention</span><span>Gifting</span><span>Engagement</span><span>Referrals</span>
+              </div>
+            </div>
+          </section>
+
+          <div class="phase-indicator" aria-hidden="true">
+            <span class="phase-dot is-active"></span>
+            <span class="phase-dot"></span>
+            <span class="phase-dot"></span>
+          </div>
+          <div class="scroll-note" aria-hidden="true"><span></span> Scroll to activate</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="story story-scroll" id="relationship-system">
+      <div class="story-sticky">
+        <div class="story-ambient" aria-hidden="true"></div>
+        <div class="story-inner">
+          <div class="story-copy">
+            <p class="eyebrow">The relationship system</p>
+            <h2>Turn every interaction into a lasting relationship.</h2>
+            <p class="story-lede">Microgifter follows the customer journey across conversations, service, gifting, and loyalty—then helps your business take the next thoughtful action.</p>
+          </div>
+          <div class="steps" aria-label="Relationship system stages">
+            <article><span>01</span><h3>Understand</h3><p>Learn preferences, intent, context, and the history behind every relationship.</p></article>
+            <article><span>02</span><h3>Engage</h3><p>Begin relevant conversations at the right moment and through the right channel.</p></article>
+            <article><span>03</span><h3>Gift</h3><p>Create personal gifting moments that feel human, useful, and memorable.</p></article>
+            <article><span>04</span><h3>Grow</h3><p>Strengthen loyalty and convert better relationships into recurring value.</p></article>
+          </div>
+          <div class="story-progress" aria-hidden="true"><span></span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="agent-section agent-scroll" id="agent-in-action" aria-labelledby="agent-section-title">
+      <div class="agent-pin">
+        <div class="agent-section__ambient" aria-hidden="true"></div>
+        <div class="agent-section__inner">
+        <div class="agent-section__intro reveal-on-scroll">
+          <p class="eyebrow">The agent in action</p>
+          <h2 id="agent-section-title">One relationship. A thousand thoughtful next steps.</h2>
+          <p>Microgifter listens across the customer journey, carries context forward, and turns each signal into a useful action—without making the relationship feel automated.</p>
+          <a class="primary-button" href="#agent-workflow">Explore the workflow <span>↓</span></a>
+        </div>
+
+        <div class="agent-console reveal-on-scroll" id="agent-workflow">
+          <div class="agent-console__bar">
+            <div>
+              <span class="agent-status-dot"></span>
+              <span>Relationship agent online</span>
+            </div>
+            <span>Customer memory · live</span>
+          </div>
+
+          <div class="agent-console__customer">
+            <div class="customer-avatar" aria-hidden="true">AM</div>
+            <div>
+              <p>Active relationship</p>
+              <h3>Alex Morgan</h3>
+              <span>12 interactions · 3 gifts · loyalty member</span>
+            </div>
+            <div class="relationship-score">
+              <strong>86</strong>
+              <span>relationship score</span>
+            </div>
+          </div>
+
+          <div class="agent-console__stream" aria-label="Customer relationship workflow">
+            <article class="signal-card">
+              <span class="signal-card__number">01</span>
+              <div>
+                <p>Signal recognized</p>
+                <h4>Birthday mentioned in conversation</h4>
+                <span>Intent, timing, and relationship context captured.</span>
+              </div>
+            </article>
+            <div class="workflow-connector" aria-hidden="true"><span></span></div>
+            <article class="signal-card">
+              <span class="signal-card__number">02</span>
+              <div>
+                <p>Agent decides</p>
+                <h4>Recommend a personal local gift</h4>
+                <span>Matched to preference, budget, and merchant availability.</span>
+              </div>
+            </article>
+            <div class="workflow-connector" aria-hidden="true"><span></span></div>
+            <article class="signal-card signal-card--active">
+              <span class="signal-card__number">03</span>
+              <div>
+                <p>Thoughtful action</p>
+                <h4>Send, follow up, and remember</h4>
+                <span>The relationship history updates for the next moment.</span>
+              </div>
+            </article>
+          </div>
+
+          <div class="agent-console__footer">
+            <span>Next best action</span>
+            <strong>Send a birthday gift recommendation tomorrow at 9:00 AM.</strong>
+            <button type="button">Approve <span>→</span></button>
+          </div>
+        </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mountain-zoom-section" id="mountain-zoom" aria-labelledby="mountain-zoom-title">
+      <div class="mountain-zoom-pin">
+        <img class="mountain-zoom-bg" src="/assets/images/mountains.png?v=2.0.0" alt="" decoding="async">
+        <img class="mountain-zoom-fg" src="/assets/images/foreground.png?v=2.0.0" alt="" decoding="async">
+        <div class="mountain-zoom-copy">
+          <p class="eyebrow">Built to keep growing</p>
+          <h2 id="mountain-zoom-title">Relationships become the landscape of your business.</h2>
+          <p>As the agent learns from every interaction, customer context compounds into stronger service, smarter gifting, and measurable long-term growth.</p>
+        </div>
+        <div class="how-presentation" id="how-it-works-presentation" aria-labelledby="how-title">
+          <div class="how-presentation__intro">
+            <p class="eyebrow">How it works</p>
+            <h2 id="how-title">One continuous relationship loop.</h2>
+            <p>Microgifter turns scattered customer moments into a simple, intelligent sequence that keeps learning as the relationship grows.</p>
+          </div>
+          <div class="how-presentation__flow" aria-label="How Microgifter works">
+            <article class="how-step">
+              <span class="how-step__number">01</span>
+              <div class="how-step__icon" aria-hidden="true">◎</div>
+              <h3>Listen</h3>
+              <p>Capture signals from conversations, purchases, service requests, and gifting activity.</p>
+            </article>
+            <div class="how-connector" aria-hidden="true"><span></span></div>
+            <article class="how-step">
+              <span class="how-step__number">02</span>
+              <div class="how-step__icon" aria-hidden="true">◇</div>
+              <h3>Understand</h3>
+              <p>Build customer memory around intent, timing, preference, and relationship context.</p>
+            </article>
+            <div class="how-connector" aria-hidden="true"><span></span></div>
+            <article class="how-step">
+              <span class="how-step__number">03</span>
+              <div class="how-step__icon" aria-hidden="true">→</div>
+              <h3>Act</h3>
+              <p>Recommend the next best message, gift, follow-up, reward, or service action.</p>
+            </article>
+            <div class="how-connector" aria-hidden="true"><span></span></div>
+            <article class="how-step">
+              <span class="how-step__number">04</span>
+              <div class="how-step__icon" aria-hidden="true">↗</div>
+              <h3>Grow</h3>
+              <p>Measure the response, strengthen loyalty, and improve every future interaction.</p>
+            </article>
+          </div>
+        </div>
+        <div class="mountain-zoom-progress" aria-hidden="true"><span></span></div>
+      </div>
+    </section>
+
+
+    <section class="pppm-presentation" id="pppm-presentation" aria-labelledby="pppm-title">
+      <div class="pppm-shell">
+        <header class="pppm-intro">
+          <p class="eyebrow">Platform features</p>
+          <h2 id="pppm-title">Everything works inside one connected relationship system.</h2>
+          <p>Social gifting, CRM, campaigns, messaging, claims, and automation all connect to the same customer record—so every action becomes more useful over time.</p>
+        </header>
+
+        <div class="pppm-timeline" aria-label="Microgifter platform features timeline">
+          <div class="pppm-spine" aria-hidden="true"><span></span></div>
+
+          <article class="pppm-event" data-device="desktop">
+            <div class="pppm-event__sticky">
+              <div class="pppm-visual" aria-hidden="true">
+                <div class="device-desktop device-desktop--feature">
+                  <div class="device-desktop__screen screen-gifting">
+                    <div class="desktop-toolbar"><span></span><span></span><span></span><b>Social gifting</b></div>
+                    <div class="feature-shell">
+                      <aside class="feature-sidebar"><i></i><i></i><i></i><i></i><i></i></aside>
+                      <main class="feature-main">
+                        <div class="feature-header">
+                          <div><small>Send now, enjoy later</small><h4>Gifts and experiences</h4></div>
+                          <button class="desktop-pill">Create gift</button>
+                        </div>
+                        <div class="gift-grid">
+                          <article class="gift-card"><strong>Coffee for two</strong><span>$18 · Send later</span></article>
+                          <article class="gift-card"><strong>Massage voucher</strong><span>$90 · Schedule delivery</span></article>
+                          <article class="gift-card"><strong>Dinner credit</strong><span>$65 · Add a note</span></article>
+                        </div>
+                        <div class="feature-banner"><b>Group gifting</b><span>Friends, family, coworkers, and community programs in one flow.</span></div>
+                      </main>
+                    </div>
+                  </div>
+                  <div class="device-desktop__stand"></div>
+                </div>
+              </div>
+              <div class="pppm-marker"><span>01</span></div>
+              <div class="pppm-card">
+                <p>Social Gifting</p><h3>Sell now. Send later.</h3>
+                <span>Sell products and experiences that customers can purchase now and send later to friends, family, coworkers, and communities.</span>
+                <a class="pppm-link" href="#hero">Explore local gifts <span>→</span></a>
+              </div>
+            </div>
+          </article>
+
+          <article class="pppm-event" data-device="desktop">
+            <div class="pppm-event__sticky">
+              <div class="pppm-visual" aria-hidden="true">
+                <div class="device-desktop device-desktop--feature">
+                  <div class="device-desktop__screen screen-crm-feature">
+                    <div class="desktop-toolbar"><span></span><span></span><span></span><b>Merchant CRM</b></div>
+                    <div class="feature-shell crm-shell">
+                      <aside class="feature-sidebar"><i></i><i></i><i></i><i></i><i></i></aside>
+                      <main class="feature-main crm-main">
+                        <div class="crm-top">
+                          <div class="crm-profile"><em>AJ</em><div><strong>Alex Johnson</strong><span>6 visits · 3 claims · loyalty active</span></div></div>
+                          <div class="crm-score"><b>92</b><span>relationship score</span></div>
+                        </div>
+                        <div class="crm-grid">
+                          <div class="crm-panel"><small>Purchases</small><strong>18</strong></div>
+                          <div class="crm-panel"><small>Messages</small><strong>34</strong></div>
+                          <div class="crm-panel"><small>Referrals</small><strong>7</strong></div>
+                          <div class="crm-panel"><small>Reward events</small><strong>12</strong></div>
+                        </div>
+                        <div class="crm-timeline"><span></span><span></span><span></span><span></span></div>
+                      </main>
+                    </div>
+                  </div>
+                  <div class="device-desktop__stand"></div>
+                </div>
+              </div>
+              <div class="pppm-marker"><span>02</span></div>
+              <div class="pppm-card">
+                <p>Merchant CRM</p><h3>Every action becomes customer memory.</h3>
+                <span>Connect purchases, claims, visits, messages, referrals, and reward activity to usable customer records.</span>
+                <a class="pppm-link" href="#hero">See the CRM <span>→</span></a>
+              </div>
+            </div>
+          </article>
+
+          <article class="pppm-event" data-device="desktop">
+            <div class="pppm-event__sticky">
+              <div class="pppm-visual" aria-hidden="true">
+                <div class="device-desktop device-desktop--feature">
+                  <div class="device-desktop__screen screen-campaigns-feature">
+                    <div class="desktop-toolbar"><span></span><span></span><span></span><b>Campaigns &amp; offers</b></div>
+                    <div class="feature-shell campaign-shell">
+                      <aside class="feature-sidebar"><i></i><i></i><i></i><i></i><i></i></aside>
+                      <main class="feature-main campaign-main">
+                        <div class="campaign-metrics">
+                          <div><small>Active campaigns</small><strong>12</strong></div>
+                          <div><small>QR claims</small><strong>1,842</strong></div>
+                          <div><small>Conversions</small><strong>42.3%</strong></div>
+                        </div>
+                        <div class="campaign-chart"><span></span><span></span><span></span><span></span></div>
+                        <div class="campaign-list">
+                          <article><b>Spring gifting rewards</b><span>Offers · Referrals · QR</span></article>
+                          <article><b>Weekend comeback contest</b><span>Leaderboard · Prizes</span></article>
+                          <article><b>Office lunch appreciation</b><span>Workplace rewards</span></article>
+                        </div>
+                      </main>
+                    </div>
+                  </div>
+                  <div class="device-desktop__stand"></div>
+                </div>
+              </div>
+              <div class="pppm-marker"><span>03</span></div>
+              <div class="pppm-card">
+                <p>Campaigns &amp; Offers</p><h3>Launch measurable local growth.</h3>
+                <span>Launch offers, rewards, contests, referrals, QR campaigns, and local promotions with measurable outcomes.</span>
+                <a class="pppm-link" href="#hero">Build a campaign <span>→</span></a>
+              </div>
+            </div>
+          </article>
+
+          <article class="pppm-event" data-device="desktop">
+            <div class="pppm-event__sticky">
+              <div class="pppm-visual" aria-hidden="true">
+                <div class="device-desktop device-desktop--feature">
+                  <div class="device-desktop__screen screen-messaging-feature">
+                    <div class="desktop-toolbar"><span></span><span></span><span></span><b>Customer messaging</b></div>
+                    <div class="feature-shell messaging-shell">
+                      <aside class="feature-sidebar"><i></i><i></i><i></i><i></i><i></i></aside>
+                      <main class="feature-main messaging-main">
+                        <div class="message-thread">
+                          <div class="bubble bubble--left">Your gift was claimed yesterday—want to follow up?</div>
+                          <div class="bubble bubble--right">Yes, send a thank-you and invite them back.</div>
+                          <div class="bubble bubble--left">Draft ready with visit history and reward status attached.</div>
+                        </div>
+                        <div class="message-actions"><span>Gift history</span><span>Reward status</span><span>Claim record</span><button class="desktop-pill">Send follow-up</button></div>
+                      </main>
+                    </div>
+                  </div>
+                  <div class="device-desktop__stand"></div>
+                </div>
+              </div>
+              <div class="pppm-marker"><span>04</span></div>
+              <div class="pppm-card">
+                <p>Customer Messaging</p><h3>Keep communication tied to the relationship.</h3>
+                <span>Follow up after a gift, reward, claim, or visit without separating customer communication from the transaction history.</span>
+                <a class="pppm-link" href="#hero">Connect conversations <span>→</span></a>
+              </div>
+            </div>
+          </article>
+
+          <article class="pppm-event" data-device="desktop">
+            <div class="pppm-event__sticky">
+              <div class="pppm-visual" aria-hidden="true">
+                <div class="device-desktop device-desktop--feature">
+                  <div class="device-desktop__screen screen-redemption-feature">
+                    <div class="desktop-toolbar"><span></span><span></span><span></span><b>Claim &amp; redemption</b></div>
+                    <div class="feature-shell redemption-shell">
+                      <aside class="feature-sidebar"><i></i><i></i><i></i><i></i><i></i></aside>
+                      <main class="feature-main redemption-main">
+                        <div class="claim-stage-row"><span class="active">Inbox</span><span class="active">Sent</span><span class="active">Claimed</span><span>Redeemed</span></div>
+                        <div class="claim-table">
+                          <div class="claim-head"><b>Gift</b><b>Status</b><b>Merchant</b><b>Verification</b></div>
+                          <div class="claim-row"><span>MG-2041</span><span>Claimed</span><span>North Side Spa</span><span>QR verified</span></div>
+                          <div class="claim-row"><span>MG-1988</span><span>Sent</span><span>Riverfront Café</span><span>Pending</span></div>
+                          <div class="claim-row"><span>MG-1915</span><span>Redeemed</span><span>Studio Nine</span><span>Confirmed</span></div>
+                        </div>
+                      </main>
+                    </div>
+                  </div>
+                  <div class="device-desktop__stand"></div>
+                </div>
+              </div>
+              <div class="pppm-marker"><span>05</span></div>
+              <div class="pppm-card">
+                <p>Claim &amp; Redemption</p><h3>Follow every Microgift through its lifecycle.</h3>
+                <span>Track every Microgift from purchase through inbox, sent, claimed, and merchant-verified redemption states.</span>
+                <a class="pppm-link" href="#hero">Follow the lifecycle <span>→</span></a>
+              </div>
+            </div>
+          </article>
+
+          <article class="pppm-event" data-device="desktop">
+            <div class="pppm-event__sticky">
+              <div class="pppm-visual" aria-hidden="true">
+                <div class="device-desktop device-desktop--feature">
+                  <div class="device-desktop__screen screen-automation-feature">
+                    <div class="desktop-toolbar"><span></span><span></span><span></span><b>Automated commerce</b></div>
+                    <div class="feature-shell automation-shell">
+                      <aside class="feature-sidebar"><i></i><i></i><i></i><i></i><i></i></aside>
+                      <main class="feature-main automation-main">
+                        <div class="automation-stats">
+                          <div><small>Recurring programs</small><strong>24</strong></div>
+                          <div><small>Agent assists</small><strong>1,206</strong></div>
+                          <div><small>Repeat revenue</small><strong>31%</strong></div>
+                        </div>
+                        <div class="automation-flow"><span>Trigger</span><i></i><span>Recommend</span><i></i><span>Send</span><i></i><span>Measure</span></div>
+                        <div class="automation-cards"><article>Workplace rewards</article><article>Recurring gifting</article><article>Campaign automation</article></div>
+                      </main>
+                    </div>
+                  </div>
+                  <div class="device-desktop__stand"></div>
+                </div>
+              </div>
+              <div class="pppm-marker"><span>06</span></div>
+              <div class="pppm-card">
+                <p>Automated Commerce</p><h3>Create ongoing demand automatically.</h3>
+                <span>Use recurring programs, agent-assisted gifting, workplace rewards, and campaign automation to create ongoing demand.</span>
+                <a class="pppm-link" href="#hero">Automate demand <span>→</span></a>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta" id="get-started" aria-labelledby="final-cta-title">
+      <div class="final-cta__stage">
+        <div class="final-cta__landscape" aria-hidden="true">
+          <img class="final-cta__mountains" src="/assets/images/mountains.png?v=2.0.0" alt="">
+          <img class="final-cta__foreground" src="/assets/images/foreground.png?v=2.0.0" alt="">
+        </div>
+        <img class="final-cta__orb" src="/assets/images/orb.png?v=2.0.0" alt="" aria-hidden="true">
+        <div class="final-cta__inner">
+          <p class="eyebrow">Your relationship system starts here</p>
+          <h2 id="final-cta-title">Build stronger customer relationships with one intelligent agent.</h2>
+          <p>Connect gifting, service, follow-up, loyalty, and post-purchase activity in one continuous customer relationship system.</p>
+          <div class="final-cta__meta" aria-label="Microgifter platform benefits">
+            <span>Social gifting</span>
+            <span>Customer service</span>
+            <span>Loyalty automation</span>
+            <span>Post-purchase management</span>
+          </div>
+        </div>
+
+        <section class="pricing-reveal" aria-labelledby="pricing-title">
+          <div class="pricing-reveal__intro">
+            <p class="eyebrow">Simple plans for relationship growth</p>
+            <h2 id="pricing-title">Choose the system that fits your business.</h2>
+            <p>Start with the essentials, then add automation and intelligence as your customer relationships grow.</p>
+          </div>
+          <div class="pricing-grid">
+            <article class="pricing-card">
+              <p class="pricing-card__label">Starter</p>
+              <h3>$25<span>/month</span></h3>
+              <p>For independent businesses ready to organize gifting, customer activity, and follow-up.</p>
+              <ul><li>Customer relationship profiles</li><li>Social gifting tools</li><li>Basic loyalty automation</li></ul>
+              <a href="/signup.php">Create Account <span>→</span></a>
+            </article>
+            <article class="pricing-card pricing-card--featured">
+              <p class="pricing-card__label">Growth</p>
+              <h3>$79<span>/month</span></h3>
+              <p>For growing merchants that want an active customer relationship agent.</p>
+              <ul><li>Everything in Starter</li><li>Agentic recommendations</li><li>Campaign and lifecycle automation</li></ul>
+              <a href="/signup.php">Start Growing <span>→</span></a>
+            </article>
+            <article class="pricing-card">
+              <p class="pricing-card__label">Professional</p>
+              <h3>$149<span>/month</span></h3>
+              <p>For established teams coordinating campaigns, service, loyalty, and post-purchase activity.</p>
+              <ul><li>Advanced agent workflows</li><li>Team permissions and reporting</li><li>Expanded lifecycle automation</li></ul>
+              <a href="/signup.php">Choose Professional <span>→</span></a>
+            </article>
+            <article class="pricing-card">
+              <p class="pricing-card__label">Enterprise</p>
+              <h3>Custom</h3>
+              <p>For organizations managing teams, locations, group gifting, and customer programs.</p>
+              <ul><li>Multi-location management</li><li>Enterprise gifting programs</li><li>Custom integrations and support</li></ul>
+              <a href="/learn-more.php">Book Demo <span>↗</span></a>
+            </article>
           </div>
         </section>
 
-        <div class="mg-ph-phase" aria-hidden="true"><span class="is-active"></span><span></span><span></span></div>
-        <div class="mg-ph-scroll-note" aria-hidden="true"><span></span> Scroll to activate</div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <section class="mg-ph-story" id="relationship-system" aria-labelledby="mgPhStoryTitle">
-    <div class="mg-ph-ambient" aria-hidden="true"></div>
-    <div class="mg-ph-container">
-      <div class="mg-ph-section-copy mg-ph-reveal">
-        <p class="mg-ph-eyebrow">The relationship system</p>
-        <h2 id="mgPhStoryTitle">Turn every interaction into a lasting relationship.</h2>
-        <p>Microgifter follows the customer journey across conversations, service, gifting, and loyalty—then helps your business take the next thoughtful action.</p>
-      </div>
-      <div class="mg-ph-steps" aria-label="Relationship system stages">
-        <article class="mg-ph-reveal"><span>01</span><h3>Understand</h3><p>Learn preferences, intent, context, and the history behind every relationship.</p></article>
-        <article class="mg-ph-reveal"><span>02</span><h3>Engage</h3><p>Begin relevant conversations at the right moment and through the right channel.</p></article>
-        <article class="mg-ph-reveal"><span>03</span><h3>Gift</h3><p>Create personal gifting moments that feel human, useful, and memorable.</p></article>
-        <article class="mg-ph-reveal"><span>04</span><h3>Grow</h3><p>Strengthen loyalty and convert better relationships into recurring value.</p></article>
-      </div>
-    </div>
-  </section>
-
-  <section class="mg-ph-agent" id="agent-in-action" aria-labelledby="mgPhAgentTitle">
-    <div class="mg-ph-container mg-ph-agent-grid">
-      <div class="mg-ph-section-copy mg-ph-reveal">
-        <p class="mg-ph-eyebrow">The agent in action</p>
-        <h2 id="mgPhAgentTitle">One relationship. A thousand thoughtful next steps.</h2>
-        <p>Microgifter listens across the customer journey, carries context forward, and turns each signal into a useful action—without making the relationship feel automated.</p>
-        <a class="mg-ph-button" href="#agent-workflow">Explore the workflow <span aria-hidden="true">↓</span></a>
-      </div>
-
-      <div class="mg-ph-console mg-ph-reveal" id="agent-workflow">
-        <div class="mg-ph-console-bar"><span><i></i> Relationship agent online</span><span>Customer memory · live</span></div>
-        <div class="mg-ph-customer">
-          <div class="mg-ph-avatar" aria-hidden="true">AM</div>
-          <div><p>Active relationship</p><h3>Alex Morgan</h3><span>12 interactions · 3 gifts · loyalty member</span></div>
-          <div class="mg-ph-score"><strong>86</strong><span>relationship score</span></div>
+    <footer class="site-footer">
+      <div class="site-footer__inner">
+        <div class="site-footer__brand">
+          <a href="#hero">microgifter</a>
+          <p>The customer relationship agent for social gifting, service, loyalty, and post-purchase commerce.</p>
         </div>
-        <div class="mg-ph-stream" aria-label="Customer relationship workflow">
-          <article><span>01</span><div><p>Signal recognized</p><h4>Birthday mentioned in conversation</h4><small>Intent, timing, and relationship context captured.</small></div></article>
-          <i aria-hidden="true"></i>
-          <article><span>02</span><div><p>Agent decides</p><h4>Recommend a personal local gift</h4><small>Matched to preference, budget, and merchant availability.</small></div></article>
-          <i aria-hidden="true"></i>
-          <article class="is-active"><span>03</span><div><p>Next action ready</p><h4>Schedule gift and thoughtful follow-up</h4><small>The relationship continues after purchase and delivery.</small></div></article>
+        <div class="site-footer__links">
+          <a href="#relationship-system">How it works</a>
+          <a href="#agent-in-action">Solutions</a>
+          <a href="#pppm-presentation">Features</a>
+          <a href="/learn-more.php">Book Demo</a>
         </div>
-        <div class="mg-ph-console-foot"><span>Context retained across service, gifting, loyalty, and redemption.</span><strong>Agent confidence 94%</strong></div>
-      </div>
-    </div>
-  </section>
-
-  <section class="mg-ph-how" id="mountain-zoom" aria-labelledby="mgPhHowTitle">
-    <div class="mg-ph-how-landscape" aria-hidden="true"><div></div><div></div><div></div></div>
-    <div class="mg-ph-container">
-      <div class="mg-ph-section-copy mg-ph-reveal">
-        <p class="mg-ph-eyebrow">How Microgifter works</p>
-        <h2 id="mgPhHowTitle">Relationship context moves forward instead of starting over.</h2>
-        <p>Customer signals become connected actions across one continuous relationship system.</p>
-      </div>
-      <div class="mg-ph-how-grid">
-        <article class="mg-ph-reveal"><span>01</span><h3>Connect</h3><p>Bring together customer identity, merchant activity, gifting, rewards, and conversations.</p></article>
-        <article class="mg-ph-reveal"><span>02</span><h3>Remember</h3><p>Carry preferences, timing, ownership, and transaction history into every next interaction.</p></article>
-        <article class="mg-ph-reveal"><span>03</span><h3>Act</h3><p>Recommend the next useful gift, message, reward, campaign, or service response.</p></article>
-        <article class="mg-ph-reveal"><span>04</span><h3>Measure</h3><p>Track claims, redemption, retention, referrals, and relationship growth.</p></article>
-      </div>
-    </div>
-  </section>
-
-  <section class="mg-ph-pppm" id="pppm-presentation" aria-labelledby="mgPhPppmTitle">
-    <div class="mg-ph-container">
-      <header class="mg-ph-section-copy mg-ph-reveal">
-        <p class="mg-ph-eyebrow">Post-purchase product management</p>
-        <h2 id="mgPhPppmTitle">One continuous lifecycle from discovery through redemption.</h2>
-        <p>Microgifter keeps products, gifts, customers, conversations, and merchant actions connected after checkout.</p>
-      </header>
-
-      <div class="mg-ph-timeline">
-        <article class="mg-ph-feature mg-ph-reveal">
-          <div class="mg-ph-device"><div class="mg-ph-phone"><span></span><div class="mg-ph-device-head">Local gifting</div><div class="mg-ph-product-card"><i></i><b>Birthday experience</b><small>Local · ready to send</small></div><button type="button" tabindex="-1">Send gift</button></div></div>
-          <div class="mg-ph-feature-copy"><span>01</span><p>Social gifting</p><h3>Make local the easy gift choice.</h3><small>Help customers discover, purchase, send, and support local products, services, experiences, and creative work.</small><a href="/discover.php">Explore local gifts →</a></div>
-        </article>
-
-        <article class="mg-ph-feature is-reverse mg-ph-reveal">
-          <div class="mg-ph-device"><div class="mg-ph-desktop"><div class="mg-ph-device-head">Merchant CRM</div><div class="mg-ph-metric-row"><i></i><i></i><i></i></div><div class="mg-ph-data-list"><span></span><span></span><span></span><span></span></div></div></div>
-          <div class="mg-ph-feature-copy"><span>02</span><p>Merchant CRM</p><h3>Every action becomes customer memory.</h3><small>Connect purchases, claims, visits, messages, referrals, and reward activity to usable customer records.</small><a href="/learn-more.php">See the CRM →</a></div>
-        </article>
-
-        <article class="mg-ph-feature mg-ph-reveal">
-          <div class="mg-ph-device"><div class="mg-ph-desktop"><div class="mg-ph-device-head">Campaigns & offers</div><div class="mg-ph-bars"><i></i><i></i><i></i><i></i><i></i></div><div class="mg-ph-campaign-list"><span></span><span></span><span></span></div></div></div>
-          <div class="mg-ph-feature-copy"><span>03</span><p>Campaigns & offers</p><h3>Launch measurable local growth.</h3><small>Launch offers, rewards, contests, referrals, QR campaigns, and local promotions with measurable outcomes.</small><a href="/learn-more.php">Build a campaign →</a></div>
-        </article>
-
-        <article class="mg-ph-feature is-reverse mg-ph-reveal">
-          <div class="mg-ph-device"><div class="mg-ph-desktop"><div class="mg-ph-device-head">Customer messaging</div><div class="mg-ph-chat"><span>Gift claimed—follow up?</span><span>Send a thank-you.</span><span>Draft ready with history attached.</span></div></div></div>
-          <div class="mg-ph-feature-copy"><span>04</span><p>Customer messaging</p><h3>Keep communication tied to the relationship.</h3><small>Follow up after a gift, reward, claim, or visit without separating communication from transaction history.</small><a href="/learn-more.php">Connect conversations →</a></div>
-        </article>
-
-        <article class="mg-ph-feature mg-ph-reveal">
-          <div class="mg-ph-device"><div class="mg-ph-desktop"><div class="mg-ph-device-head">Claim & redemption</div><div class="mg-ph-status-row"><span>Inbox</span><span>Sent</span><span>Claimed</span><span>Redeemed</span></div><div class="mg-ph-data-list"><span></span><span></span><span></span></div></div></div>
-          <div class="mg-ph-feature-copy"><span>05</span><p>Claim & redemption</p><h3>Follow every Microgift through its lifecycle.</h3><small>Track every Microgift from purchase through Inbox, Sent, Claimed, and merchant-verified redemption states.</small><a href="/learn-more.php">Follow the lifecycle →</a></div>
-        </article>
-
-        <article class="mg-ph-feature is-reverse mg-ph-reveal">
-          <div class="mg-ph-device"><div class="mg-ph-desktop"><div class="mg-ph-device-head">Automated commerce</div><div class="mg-ph-flow"><span>Trigger</span><i></i><span>Recommend</span><i></i><span>Send</span><i></i><span>Measure</span></div><div class="mg-ph-metric-row"><i></i><i></i><i></i></div></div></div>
-          <div class="mg-ph-feature-copy"><span>06</span><p>Automated commerce</p><h3>Create ongoing demand automatically.</h3><small>Use recurring programs, agent-assisted gifting, workplace rewards, and campaign automation to create ongoing demand.</small><a href="/learn-more.php">Automate demand →</a></div>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <section class="mg-ph-final" id="get-started" aria-labelledby="mgPhFinalTitle">
-    <div class="mg-ph-final-landscape" aria-hidden="true"></div>
-    <div class="mg-ph-orb mg-ph-final-orb" aria-hidden="true"><span></span></div>
-    <div class="mg-ph-container">
-      <div class="mg-ph-final-copy mg-ph-reveal">
-        <p class="mg-ph-eyebrow">Your relationship system starts here</p>
-        <h2 id="mgPhFinalTitle">Build stronger customer relationships with one intelligent agent.</h2>
-        <p>Connect gifting, service, follow-up, loyalty, and post-purchase activity in one continuous customer relationship system.</p>
-        <div class="mg-ph-tags"><span>Social gifting</span><span>Customer service</span><span>Loyalty automation</span><span>Post-purchase management</span></div>
-      </div>
-
-      <section class="mg-ph-pricing" aria-labelledby="mgPhPricingTitle">
-        <div class="mg-ph-section-copy mg-ph-reveal">
-          <p class="mg-ph-eyebrow">Simple plans for relationship growth</p>
-          <h2 id="mgPhPricingTitle">Choose the system that fits your business.</h2>
-          <p>Start with the essentials, then add automation and intelligence as your customer relationships grow.</p>
+        <div class="site-footer__bottom">
+          <span>© 2026 Microgifter. All rights reserved.</span>
+          <span>Customer relationships, structured for growth.</span>
         </div>
-        <div class="mg-ph-pricing-grid">
-          <article class="mg-ph-reveal"><p>Starter</p><h3>$25<span>/month</span></h3><small>For independent businesses organizing gifting, customer activity, and follow-up.</small><ul><li>Customer relationship profiles</li><li>Social gifting tools</li><li>Basic loyalty automation</li></ul><a href="/signup.php">Create Account →</a></article>
-          <article class="is-featured mg-ph-reveal"><p>Growth</p><h3>$79<span>/month</span></h3><small>For growing merchants that want an active customer relationship agent.</small><ul><li>Everything in Starter</li><li>Agentic recommendations</li><li>Campaign automation</li></ul><a href="/signup.php">Start Growing →</a></article>
-          <article class="mg-ph-reveal"><p>Professional</p><h3>$149<span>/month</span></h3><small>For teams coordinating campaigns, service, loyalty, and post-purchase activity.</small><ul><li>Advanced workflows</li><li>Team permissions</li><li>Lifecycle reporting</li></ul><a href="/signup.php">Choose Professional →</a></article>
-          <article class="mg-ph-reveal"><p>Enterprise</p><h3>Custom</h3><small>For organizations managing locations, group gifting, and customer programs.</small><ul><li>Multi-location management</li><li>Enterprise gifting</li><li>Custom integrations</li></ul><a href="/learn-more.php">Book Demo ↗</a></article>
-        </div>
-      </section>
-    </div>
-  </section>
+      </div>
+    </footer>
 
-<?php require __DIR__ . '/includes/footer.php'; ?>
+  </main>
+  <script src="/assets/js/homepage-parallax-exact-v2.js?v=2.0.0"></script>
+</body>
+</html>

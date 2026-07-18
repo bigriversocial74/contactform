@@ -1,0 +1,37 @@
+name: Homepage exact v2 checks
+
+on:
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
+    paths:
+      - index.php
+      - assets/css/homepage-parallax-exact-v2.css
+      - assets/js/homepage-parallax-exact-v2.js
+      - assets/images/foreground.png
+      - assets/images/mountains.png
+      - assets/images/orb.png
+      - .github/workflows/homepage-exact-v2-checks.yml
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate homepage files
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -l index.php
+          node --check assets/js/homepage-parallax-exact-v2.js
+          test -s assets/images/foreground.png
+          test -s assets/images/mountains.png
+          test -s assets/images/orb.png
+          grep -q '/assets/images/foreground.png' index.php
+          grep -q '/assets/images/mountains.png' index.php
+          grep -q '/assets/images/orb.png' index.php
+          grep -q '/assets/css/homepage-parallax-exact-v2.css' index.php
+          grep -q '/assets/js/homepage-parallax-exact-v2.js' index.php
