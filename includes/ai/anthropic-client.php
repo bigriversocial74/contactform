@@ -27,6 +27,9 @@ function mg_anthropic_timeout_seconds(): int
 function mg_anthropic_messages(array $payload): array
 {
     unset($GLOBALS['mg_last_anthropic_response']);
+    if (function_exists('mg_merchant_agent_ai_before_anthropic_call')) {
+        mg_merchant_agent_ai_before_anthropic_call($payload);
+    }
     $json = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     if (!is_string($json)) {
         throw new RuntimeException('Unable to encode Anthropic request.');
@@ -69,6 +72,9 @@ function mg_anthropic_messages(array $payload): array
     }
 
     $GLOBALS['mg_last_anthropic_response'] = $decoded;
+    if (function_exists('mg_merchant_agent_ai_after_anthropic_call')) {
+        mg_merchant_agent_ai_after_anthropic_call($payload, $decoded);
+    }
     return $decoded;
 }
 
