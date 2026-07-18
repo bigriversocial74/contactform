@@ -8,6 +8,7 @@ $paths = [
     'css'=>'assets/css/merchant-agent-personal-canvas-parity-v1.css',
     'sidebar'=>'assets/js/merchant-agent-sidebar-history.js',
     'api'=>'api/ai/merchant-agent-chat.php',
+    'credit'=>'includes/ai/merchant-agent-credit-response.php',
     'context'=>'includes/ai/merchant-agent-crm-contact-context.php',
     'chat'=>'includes/ai/merchant-agent-crm-contact-chat.php',
     'threads'=>'includes/ai/merchant-agent-thread-delete.php',
@@ -63,9 +64,12 @@ $checks = [
         str_contains($content['api'], 'mg_merchant_agent_crm_search_is_query')
         && str_contains($content['api'], '$contactAware')
         && str_contains($content['api'], 'mg_merchant_agent_crm_contact_chat_response'),
-    'contact-aware route enforces AI and CRM permissions' =>
-        str_contains($content['api'], "'merchant.ai.plan'")
-        && str_contains($content['api'], "mg_merchant_require_permission('merchant.campaigns.view')"),
+    'contact-aware generation keeps CRM permission and owner AI-credit boundaries' =>
+        str_contains($content['api'], "mg_merchant_agent_require_owner_permission(\$user, 'merchant.campaigns.view')")
+        && str_contains($content['api'], 'mg_merchant_agent_ai_begin_call')
+        && str_contains($content['credit'], "mg_merchant_agent_user_has_permission(\$user, 'merchant.ai.plan')")
+        && str_contains($content['credit'], 'mg_ai_credit_preflight(')
+        && str_contains($content['credit'], 'mg_ai_credit_consume('),
     'exact handles support profiles and generated CRM names' =>
         str_contains($content['context'], '^crm-([a-z0-9]{10})$')
         && str_contains($content['context'], "LOWER(REPLACE(public_id,'-',''))")
