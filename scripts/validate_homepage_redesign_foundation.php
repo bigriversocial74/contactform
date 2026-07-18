@@ -16,7 +16,7 @@ $merchant = (string) file_get_contents($merchantPath);
 $checks = [
     'index shared header' => str_contains($index, "require __DIR__ . '/includes/header.php'"),
     'index shared footer' => str_contains($index, "require __DIR__ . '/includes/footer.php'"),
-    'index page manifest' => str_contains($index, "'id' => 'index'") && str_contains($index, "'header_mode' => $header_mode"),
+    'index page manifest' => str_contains($index, "'id' => 'index'") && str_contains($index, "'header_mode' => \$header_mode"),
     'index exact homepage shell' => str_contains($index, 'class="homepage-exact-v2"') && str_contains($index, 'class="hero-scroll"') && str_contains($index, 'class="scene" id="scene"'),
     'index exact stylesheet' => str_contains($index, '/assets/css/homepage-parallax-exact-v2.css'),
     'index exact javascript' => str_contains($index, '/assets/js/homepage-parallax-exact-v2.js'),
