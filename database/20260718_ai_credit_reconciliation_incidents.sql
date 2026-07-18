@@ -1,6 +1,37 @@
 -- Automated AI Credit Reconciliation and Incident Queue
--- Adds scheduled reconciliation runs, idempotent accounting incidents, action history,
--- and dedicated admin permissions for review, resolution, dismissal, and controlled debit retry.
+-- Adds durable provider-response evidence, scheduled reconciliation runs, idempotent
+-- accounting incidents, action history, and controlled debit retry permissions.
+
+CREATE TABLE IF NOT EXISTS ai_credit_provider_responses (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id CHAR(36) NOT NULL,
+  response_reference VARCHAR(190) NOT NULL,
+  user_id BIGINT UNSIGNED NOT NULL,
+  provider_key VARCHAR(80) NOT NULL DEFAULT 'anthropic',
+  provider_id BIGINT UNSIGNED NULL,
+  model_id BIGINT UNSIGNED NULL,
+  source_type VARCHAR(80) NOT NULL,
+  input_tokens BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  output_tokens BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  total_tokens BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  accounting_status ENUM('pending','accounted','failed') NOT NULL DEFAULT 'pending',
+  ledger_entry_id BIGINT UNSIGNED NULL,
+  metadata_json JSON NULL,
+  completed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  accounted_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_ai_credit_provider_responses_public (public_id),
+  UNIQUE KEY uq_ai_credit_provider_responses_reference (user_id,provider_key,response_reference),
+  KEY idx_ai_credit_provider_responses_status (accounting_status,completed_at),
+  KEY idx_ai_credit_provider_responses_user (user_id,provider_key,completed_at),
+  KEY idx_ai_credit_provider_responses_source (source_type,completed_at),
+  CONSTRAINT fk_ai_credit_provider_responses_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_ai_credit_provider_responses_provider FOREIGN KEY (provider_id) REFERENCES ai_providers(id) ON DELETE SET NULL,
+  CONSTRAINT fk_ai_credit_provider_responses_model FOREIGN KEY (model_id) REFERENCES ai_models(id) ON DELETE SET NULL,
+  CONSTRAINT fk_ai_credit_provider_responses_ledger FOREIGN KEY (ledger_entry_id) REFERENCES ai_credit_ledger(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS ai_credit_reconciliation_runs (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -40,6 +71,7 @@ CREATE TABLE IF NOT EXISTS ai_credit_reconciliation_incidents (
   status ENUM('open','under_review','resolved','dismissed') NOT NULL DEFAULT 'open',
   source_type VARCHAR(80) NULL,
   source_reference VARCHAR(190) NULL,
+  provider_response_id BIGINT UNSIGNED NULL,
   provider_usage_event_id BIGINT UNSIGNED NULL,
   ledger_entry_id BIGINT UNSIGNED NULL,
   model_id BIGINT UNSIGNED NULL,
@@ -69,6 +101,7 @@ CREATE TABLE IF NOT EXISTS ai_credit_reconciliation_incidents (
   KEY idx_ai_credit_reconciliation_incidents_reference (provider_key,source_reference),
   KEY idx_ai_credit_reconciliation_incidents_assignment (assigned_admin_user_id,status),
   CONSTRAINT fk_ai_credit_reconciliation_incidents_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_ai_credit_reconciliation_incidents_response FOREIGN KEY (provider_response_id) REFERENCES ai_credit_provider_responses(id) ON DELETE SET NULL,
   CONSTRAINT fk_ai_credit_reconciliation_incidents_usage FOREIGN KEY (provider_usage_event_id) REFERENCES ai_usage_events(id) ON DELETE SET NULL,
   CONSTRAINT fk_ai_credit_reconciliation_incidents_ledger FOREIGN KEY (ledger_entry_id) REFERENCES ai_credit_ledger(id) ON DELETE SET NULL,
   CONSTRAINT fk_ai_credit_reconciliation_incidents_model FOREIGN KEY (model_id) REFERENCES ai_models(id) ON DELETE SET NULL,
@@ -106,5 +139,5 @@ JOIN permissions p ON p.slug IN ('admin.ai_credit_incidents.view','admin.ai_cred
 WHERE r.slug IN ('admin','super_admin');
 
 INSERT INTO schema_migrations (migration_key,description,checksum,applied_at)
-VALUES ('20260718_ai_credit_reconciliation_incidents','Automated AI credit reconciliation runs, idempotent accounting incident queue, action history, and controlled debit retry permissions.',NULL,NOW())
+VALUES ('20260718_ai_credit_reconciliation_incidents','Durable provider response evidence, automated AI credit reconciliation runs, idempotent accounting incident queue, action history, and controlled debit retry permissions.',NULL,NOW())
 ON DUPLICATE KEY UPDATE description=VALUES(description);
