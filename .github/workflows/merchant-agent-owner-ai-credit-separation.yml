@@ -6,16 +6,13 @@ on:
       - integration-from-repair-20260628
     paths:
       - 'merchant-agent-chat.php'
-      - 'api/ai/merchant-agent-chat.php'
-      - 'api/ai/merchant-agent-plan.php'
-      - 'api/ai/merchant-agent-command.php'
-      - 'api/ai/merchant-agent-chat-review.php'
-      - 'api/ai/merchant-agent-memory-sources.php'
+      - 'api/ai/merchant-agent*.php'
       - 'includes/ai/anthropic-client.php'
-      - 'includes/ai/merchant-agent-credit-response.php'
+      - 'includes/ai/merchant-agent-*.php'
       - 'assets/js/merchant-agent-ai-status.js'
       - 'assets/css/merchant-agent-ai-status.css'
       - 'tests/phpunit/MerchantAgentOwnerAiCreditSeparationContractTest.php'
+      - 'tests/phpunit/MerchantAgentAiEndpointAuditContractTest.php'
       - 'scripts/validate_merchant_agent_chat_layout_v2.php'
       - 'scripts/validate_integrated_merchant_agent_workspace_v1.php'
       - 'scripts/validate_merchant_agent_canvas_context_v1.php'
@@ -64,13 +61,21 @@ jobs:
           php -l api/ai/merchant-agent-memory-sources.php
           php -l includes/ai/anthropic-client.php
           php -l includes/ai/merchant-agent-credit-response.php
+          php -l includes/ai/merchant-agent-chat.php
+          php -l includes/ai/merchant-agent-chat-memory.php
+          php -l includes/ai/merchant-agent-crm-contact-chat.php
+          php -l includes/ai/merchant-agent-command.php
+          php -l includes/ai/merchant-agent-planner.php
           php -l tests/phpunit/MerchantAgentOwnerAiCreditSeparationContractTest.php
+          php -l tests/phpunit/MerchantAgentAiEndpointAuditContractTest.php
 
       - name: JavaScript syntax
         run: node --check assets/js/merchant-agent-ai-status.js
 
-      - name: Merchant Agent owner credit PHPUnit contract
-        run: vendor/bin/phpunit tests/phpunit/MerchantAgentOwnerAiCreditSeparationContractTest.php
+      - name: Merchant Agent owner credit PHPUnit contracts
+        run: |
+          vendor/bin/phpunit tests/phpunit/MerchantAgentOwnerAiCreditSeparationContractTest.php
+          vendor/bin/phpunit tests/phpunit/MerchantAgentAiEndpointAuditContractTest.php
 
       - name: Merchant Agent regression contracts
         run: |
