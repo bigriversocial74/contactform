@@ -70,6 +70,11 @@ $user_permissions = is_array($user['permissions'] ?? null) ? $user['permissions'
 $user_roles = is_array($user['roles'] ?? null) ? $user['roles'] : [];
 $can_sales_crm = $user && (in_array('sales.leads.view_own', $user_permissions, true) || in_array('sales.leads.view_all', $user_permissions, true) || in_array('super_admin', $user_roles, true));
 $can_intelligence = $user && (in_array('intelligence.dashboard.view', $user_permissions, true) || in_array('demand.dashboard.view', $user_permissions, true) || in_array('super_admin', $user_roles, true));
+$homepage_pricing_plans = [];
+if ((string) ($page_manifest['id'] ?? '') === 'index') {
+    require_once __DIR__ . '/pricing-packages.php';
+    $homepage_pricing_plans = mg_public_pricing_packages();
+}
 ?>
 </main>
 <footer class="mg-site-footer mg-universal-footer" data-mg-universal-footer>
@@ -171,9 +176,31 @@ $can_intelligence = $user && (in_array('intelligence.dashboard.view', $user_perm
 })();
 </script>
 <?php if ((string) ($page_manifest['id'] ?? '') === 'index'): ?>
+<template id="mg-homepage-live-pricing">
+  <?php foreach ($homepage_pricing_plans as $plan): ?>
+    <article class="pricing-card<?= !empty($plan['featured']) ? ' pricing-card--featured' : '' ?>" data-package-id="<?= mg_e((string) $plan['id']) ?>">
+      <p class="pricing-card__label"><?= mg_e((string) $plan['name']) ?></p>
+      <h3><?= mg_e((string) $plan['price_label']) ?><span><?= mg_e((string) $plan['billing_label']) ?></span></h3>
+      <p><?= mg_e((string) $plan['description']) ?></p>
+      <ul>
+        <?php foreach (array_slice((array) ($plan['included_features'] ?? []), 0, 3) as $feature): ?>
+          <li><?= mg_e((string) $feature) ?></li>
+        <?php endforeach; ?>
+      </ul>
+      <a href="<?= mg_e((string) $plan['cta_href']) ?>"><?= mg_e((string) $plan['cta_label']) ?> <span>→</span></a>
+    </article>
+  <?php endforeach; ?>
+</template>
 <script>
 (() => {
   'use strict';
+
+  const pricingGrid = document.querySelector('.pricing-reveal .pricing-grid');
+  const pricingTemplate = document.getElementById('mg-homepage-live-pricing');
+  if (pricingGrid && pricingTemplate) {
+    pricingGrid.replaceChildren(pricingTemplate.content.cloneNode(true));
+    pricingGrid.dataset.livePricing = 'true';
+  }
 
   const headline = document.querySelector('.hero-copy.copy-one h1');
   if (headline) headline.textContent = 'The Future of Gifting Has Arrived.';
