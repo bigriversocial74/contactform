@@ -1,0 +1,16 @@
+name: Audit Full Recovery Verification
+
+on:
+  pull_request:
+    branches:
+      - audit/repository-production-hardening-20260717
+    paths:
+      - .github/workflows/audit-full-recovery-verification.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  recovery:
+    uses: ./.github/workflows/recovery-baseline.yml
