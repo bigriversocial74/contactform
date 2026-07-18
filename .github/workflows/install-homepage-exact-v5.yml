@@ -1,0 +1,66 @@
+name: Install exact uploaded homepage v5
+
+on:
+  push:
+    branches:
+      - fix/homepage-exact-demo-files-v5-20260718
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  install-homepage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build homepage files from staged text payloads
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p assets/css assets/js
+          base64 -d .homepage-install/index.php.gz.b64 | gzip -d > index.php
+          base64 -d .homepage-install/styles.css.gz.b64 | gzip -d > assets/css/homepage-parallax-exact-v2.css
+          base64 -d .homepage-install/app.js.gz.b64 | gzip -d > assets/js/homepage-parallax-exact-v2.js
+
+      - name: Verify exact files and uploaded images
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -l index.php
+          node --check assets/js/homepage-parallax-exact-v2.js
+          test -s assets/images/foreground.png
+          test -s assets/images/mountains.png
+          test -s assets/images/orb.png
+          echo 'b5801a50fee5cea7d5d5fc1b02934af1d46971fcc50fdbc6a95a0d2240c0c4da  index.php' | sha256sum -c -
+          echo 'ad831ec3744bb0379b0292f2f77b7a9902a83a8085c188aa7f667715fbf87d5b  assets/css/homepage-parallax-exact-v2.css' | sha256sum -c -
+          echo '86af65d48d34899f31e2966a2dafca03c410e0efbddcbd691747894930b6b134  assets/js/homepage-parallax-exact-v2.js' | sha256sum -c -
+          echo '00de74ba663b66daceb1d5a8aa7c5faff80a6a466d2f56df27b3cbec7dde3aec  assets/images/foreground.png' | sha256sum -c -
+          echo '062572f48207e71c59132d64a535791f6d81f6713a55a0546285230a2035b09f  assets/images/mountains.png' | sha256sum -c -
+          echo '519781f51eb6718ed4e6adfc8be594537d5078b7f467c7875279c1089f274457  assets/images/orb.png' | sha256sum -c -
+          grep -q '/assets/images/foreground.png' index.php
+          grep -q '/assets/images/mountains.png' index.php
+          grep -q '/assets/images/orb.png' index.php
+
+      - name: Remove temporary and superseded homepage files
+        shell: bash
+        run: |
+          rm -rf .homepage-install
+          rm -f assets/css/homepage-parallax-agent-v1.css
+          rm -f assets/js/homepage-parallax-agent-v1.js
+          rm -f scripts/validate_homepage_parallax_agent_v1.php
+          rm -f .github/workflows/logged-out-homepage-parallax-v1.yml
+
+      - name: Commit completed homepage
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Build exact homepage from uploaded demo'
+          git push origin HEAD:fix/homepage-exact-demo-files-v5-20260718
