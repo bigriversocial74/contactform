@@ -32,7 +32,7 @@ $checks = [
     'Homepage includes relationship, agent, PPPM, and CTA chapters' => str_contains($source['index'], 'id="relationship-system"') && str_contains($source['index'], 'id="agent-in-action"') && str_contains($source['index'], 'id="pppm-presentation"') && str_contains($source['index'], 'id="get-started"'),
     'Hero contains three explicit scroll phases' => str_contains($source['index'], 'data-ph-copy-one') && str_contains($source['index'], 'data-ph-copy-two') && str_contains($source['index'], 'data-ph-growth'),
     'Growth chart exposes five relationship signals' => substr_count($source['index'], 'mg-ph-line mg-ph-line-') === 5 && str_contains($source['index'], 'Sales growth'),
-    'PPPM presentation contains six lifecycle features' => substr_count($source['index'], 'class="mg-ph-feature') === 6,
+    'PPPM presentation contains six lifecycle feature articles' => substr_count($source['index'], '<article class="mg-ph-feature') === 6,
     'Homepage CTA routes use existing Microgifter destinations' => str_contains($source['index'], 'href="/signup.php"') && str_contains($source['index'], 'href="/learn-more.php"') && str_contains($source['index'], 'href="/discover.php"'),
     'CSS is scoped to the homepage shell' => str_contains($source['css'], '.mg-ph-main') && str_contains($source['css'], 'body.mg-parallax-home') && !preg_match('/(^|\})\s*(body|html|a|h1|h2)\s*\{/m', $source['css']),
     'CSS protects shared header and footer layering' => str_contains($source['css'], 'body.mg-parallax-home .mg-site-header') && str_contains($source['css'], 'body.mg-parallax-home .mg-site-footer'),
