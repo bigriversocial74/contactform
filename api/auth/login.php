@@ -8,7 +8,7 @@ $input=mg_input();
 mg_require_csrf_for_write($input);
 $email=mg_identity_normalize_email((string)($input['email']??''));
 $password=(string)($input['password']??'');
-$returnPath=mg_safe_return_path((string)($input['return']??'/inbox.php'));
+$returnPath=mg_safe_return_path((string)($input['return']??'/agent.php'));
 $ip=mg_client_ip()?:'unknown';
 mg_rate_limit('auth.login.ip',$ip,(int)mg_config_value('security','rate_limit_login_max',8),(int)mg_config_value('security','rate_limit_login_window',900));
 if($email!=='')mg_rate_limit('auth.login.email',$email,(int)mg_config_value('security','rate_limit_login_max',8),(int)mg_config_value('security','rate_limit_login_window',900));
