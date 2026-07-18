@@ -44,7 +44,7 @@ final class MerchantQrScannerMobileAuditContractTest extends TestCase
         $js = file_get_contents($this->root . '/assets/js/merchant-scanner-cleanup.js');
         self::assertStringContainsString('data-scanner-mobile-primary', $js);
         self::assertStringContainsString('Scan QR Code', $js);
-        self::assertStringContainsString('mg-sidebar-scanner-button', $js);
+        self::assertStringContainsString('ensureMobileShortcut', $js);
     }
 
     public function testPermissionAndCameraFailuresAreActionable(): void
