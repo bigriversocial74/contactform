@@ -1,4 +1,4 @@
-:root {
+.homepage-exact-v2 {
   --ink: #20242b;
   --muted: #68707b;
   --line: rgba(71, 81, 95, .13);
@@ -6,21 +6,29 @@
   --warm: #ffd6c3;
   --progress: 0;
 }
-* { box-sizing: border-box; }
+.homepage-exact-v2, .homepage-exact-v2 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body {
-  margin: 0;
+.homepage-exact-v2 {
   color: var(--ink);
   background: #edf0f4;
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
 }
-a { color: inherit; text-decoration: none; }
+body.mg-homepage-exact-v2 .mg-main {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  background: #edf0f4 !important;
+  color: #20242b !important;
+  overflow: visible;
+}
+.homepage-exact-v2 a { color: inherit; text-decoration: none; }
 .hero-scroll { height: 520vh; }
 .hero-sticky {
   position: sticky;
-  top: 0;
-  height: 100vh;
+  top: 72px;
+  height: calc(100vh - 72px);
   overflow: hidden;
   background: #f4f6f8;
 }
@@ -36,11 +44,11 @@ a { color: inherit; text-decoration: none; }
   background: rgba(255,255,255,.58);
   backdrop-filter: blur(18px);
 }
-.brand { font-size: 1.15rem; font-weight: 500; letter-spacing: -.04em; }
+.homepage-exact-v2 .brand { font-size: 1.15rem; font-weight: 500; letter-spacing: -.04em; }
 .desktop-nav { margin-left: auto; display: flex; align-items: center; gap: 2rem; font-size: .75rem; }
 .nav-cta { padding: .72rem 1.15rem; border: 1px solid var(--line); border-radius: 999px; }
 .window-controls { display: flex; gap: 1.35rem; margin-left: 2rem; font-size: .9rem; color: #59616b; }
-.scene { position: absolute; inset: 72px 0 0; overflow: hidden; isolation: isolate; background: linear-gradient(180deg, #f2f4f7 0%, #f8f9fb 52%, #eef1f4 100%); }
+.scene { position: absolute; inset: 0; overflow: hidden; isolation: isolate; background: linear-gradient(180deg, #f2f4f7 0%, #f8f9fb 52%, #eef1f4 100%); }
 .layer { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; will-change: transform; }
 .layer-mountains {
   z-index: 1;
@@ -112,8 +120,8 @@ a { color: inherit; text-decoration: none; }
 }
 .phase-dot.is-active { background: #2f343c; transform: scale(1.35); }
 .eyebrow { margin: 0 0 1.25rem; text-transform: uppercase; letter-spacing: .2em; font-size: .68rem; font-weight: 500; color: #666f79; }
-h1, h2 { margin: 0; font-weight: 300; letter-spacing: -.055em; line-height: .99; }
-h1 { font-size: clamp(3rem, 5.2vw, 6.2rem); }
+.homepage-exact-v2 h1, .homepage-exact-v2 h2 { margin: 0; font-weight: 300; letter-spacing: -.055em; line-height: .99; }
+.homepage-exact-v2 h1 { font-size: clamp(3rem, 5.2vw, 6.2rem); }
 .intro { max-width: 500px; margin: 1.7rem 0 2rem; color: var(--muted); font-size: clamp(.95rem, 1.2vw, 1.15rem); line-height: 1.65; }
 .primary-button { display: inline-flex; gap: 1rem; align-items: center; padding: .95rem 1.35rem; border: 1px solid rgba(52,58,66,.22); border-radius: 999px; background: rgba(255,255,255,.35); backdrop-filter: blur(12px); font-size: .78rem; text-transform: uppercase; letter-spacing: .1em; }
 .scroll-note { position: absolute; z-index: 8; left: 50%; bottom: 2rem; transform: translateX(-50%); display: flex; gap: .7rem; align-items: center; font-size: .65rem; letter-spacing: .14em; text-transform: uppercase; color: #707883; }
@@ -133,7 +141,7 @@ h1 { font-size: clamp(3rem, 5.2vw, 6.2rem); }
   .hero-sticky { padding: 0; }
   .desktop-nav { display: none; }
   .os-bar { height: 62px; padding: 0 20px; }
-  .scene { inset: 62px 0 0; }
+  .scene { inset: 0; }
   .window-controls { margin-left: auto; }
   .hero-copy { left: 7vw; top: 32%; width: 86vw; }
   .copy-two { left: 7vw; right: auto; top: 34%; }
@@ -151,6 +159,28 @@ h1 { font-size: clamp(3rem, 5.2vw, 6.2rem); }
   .steps article { border-right: 0; }
   .hero-scroll { height: 440vh; }
 }
+
+body.mg-homepage-exact-v2 #hero,
+body.mg-homepage-exact-v2 #relationship-system,
+body.mg-homepage-exact-v2 #agent-in-action,
+body.mg-homepage-exact-v2 #pppm-presentation,
+body.mg-homepage-exact-v2 #get-started {
+  scroll-margin-top: 84px;
+}
+@media (max-width: 760px) {
+  .hero-sticky {
+    top: 64px;
+    height: calc(100vh - 64px);
+  }
+  body.mg-homepage-exact-v2 #hero,
+  body.mg-homepage-exact-v2 #relationship-system,
+  body.mg-homepage-exact-v2 #agent-in-action,
+  body.mg-homepage-exact-v2 #pppm-presentation,
+  body.mg-homepage-exact-v2 #get-started {
+    scroll-margin-top: 74px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .hero-scroll { height: 100vh; }
