@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - fix/pricing-blue-homepage-sync-v1-20260718
+  pull_request:
+    branches:
+      - integration-from-repair-20260628
 
 permissions:
   contents: write
