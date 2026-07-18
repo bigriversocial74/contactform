@@ -1,0 +1,132 @@
+name: Homepage header adjustment installer
+
+on:
+  push:
+    branches:
+      - fix/homepage-header-links-hero-visibility-v1-20260718
+    paths:
+      - .github/workflows/homepage-header-adjustment-installer.yml
+
+permissions:
+  contents: write
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/homepage-header-links-hero-visibility-v1-20260718
+          fetch-depth: 0
+      - name: Apply homepage header and hero copy changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python <<'PY'
+          from pathlib import Path
+
+          index_path = Path('index.php')
+          index = index_path.read_text()
+          old_title = 'Create your personal social gifting and customer service agent.'
+          new_title = 'The Future of Gifting Has Arrived.'
+          if old_title in index:
+              index = index.replace(old_title, new_title, 1)
+          if new_title not in index:
+              raise SystemExit('Homepage hero title replacement failed.')
+          index_path.write_text(index)
+
+          css_path = Path('assets/css/universal-footer.css')
+          css = css_path.read_text()
+          css_marker = '/* Homepage header visibility through the hero section. */'
+          css_block = r'''
+
+          /* Homepage header visibility through the hero section. */
+          body.mg-homepage-exact-v2 .mg-public-nav a[href="/merchant-landing.php"],
+          body.mg-homepage-exact-v2 .mg-public-nav a[href="/featured-case-studies.php"],
+          body.mg-homepage-exact-v2 .mg-public-mobile-nav a[href="/merchant-landing.php"],
+          body.mg-homepage-exact-v2 .mg-public-mobile-nav a[href="/featured-case-studies.php"]{
+            display:none!important;
+          }
+          body.mg-homepage-exact-v2 .mg-site-header[data-header-variant="logged-out"] .mg-public-nav a,
+          body.mg-homepage-exact-v2 .mg-public-mobile-nav a{
+            font-weight:500!important;
+          }
+          body.mg-homepage-exact-v2 .mg-site-header[data-header-variant="logged-out"]{
+            transition:transform .28s ease,opacity .22s ease,visibility 0s linear 0s!important;
+            will-change:transform,opacity;
+          }
+          body.mg-homepage-exact-v2 .mg-site-header[data-header-variant="logged-out"].mg-home-header-past-hero{
+            transform:translateY(calc(-100% - 12px))!important;
+            opacity:0!important;
+            visibility:hidden!important;
+            pointer-events:none!important;
+            transition:transform .28s ease,opacity .22s ease,visibility 0s linear .28s!important;
+          }
+          @media(prefers-reduced-motion:reduce){
+            body.mg-homepage-exact-v2 .mg-site-header[data-header-variant="logged-out"]{transition:none!important}
+          }
+          '''
+          if css_marker not in css:
+              css = css.rstrip() + css_block + '\n'
+          css_path.write_text(css)
+
+          js_path = Path('assets/js/homepage-parallax-exact-v2.js')
+          js = js_path.read_text()
+          js_marker = '// Homepage header remains visible until the hero is fully offscreen.'
+          js_block = r'''
+
+          // Homepage header remains visible until the hero is fully offscreen.
+          (() => {
+            'use strict';
+
+            const header = document.querySelector('[data-mg-universal-header][data-header-variant="logged-out"]');
+            const hero = document.getElementById('hero');
+            if (!header || !hero) return;
+
+            const removedLinks = new Set(['/merchant-landing.php', '/featured-case-studies.php']);
+            document.querySelectorAll('.mg-public-nav a, .mg-public-mobile-nav a').forEach((link) => {
+              const href = link.getAttribute('href');
+              if (href && removedLinks.has(href)) link.remove();
+            });
+
+            let frame = 0;
+            const update = () => {
+              frame = 0;
+              header.classList.toggle('mg-home-header-past-hero', hero.getBoundingClientRect().bottom <= 0);
+            };
+            const requestUpdate = () => {
+              if (!frame) frame = window.requestAnimationFrame(update);
+            };
+
+            window.addEventListener('scroll', requestUpdate, { passive: true });
+            window.addEventListener('resize', requestUpdate, { passive: true });
+            update();
+          })();
+          '''
+          if js_marker not in js:
+              js = js.rstrip() + js_block + '\n'
+          js_path.write_text(js)
+
+          workflow_path = Path('.github/workflows/homepage-exact-v2-checks.yml')
+          workflow = workflow_path.read_text()
+          checks_marker = "          grep -q 'The Future of Gifting Has Arrived.' index.php"
+          checks = """          grep -q 'The Future of Gifting Has Arrived.' index.php
+          grep -q 'mg-home-header-past-hero' assets/css/universal-footer.css
+          grep -q 'hero.getBoundingClientRect().bottom <= 0' assets/js/homepage-parallax-exact-v2.js
+          grep -q '/merchant-landing.php' assets/css/universal-footer.css
+          grep -q '/featured-case-studies.php' assets/css/universal-footer.css
+"""
+          if checks_marker not in workflow:
+              workflow = workflow.rstrip() + '\n' + checks
+          workflow_path.write_text(workflow)
+          PY
+          php -l index.php
+          node --check assets/js/homepage-parallax-exact-v2.js
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.php assets/css/universal-footer.css assets/js/homepage-parallax-exact-v2.js .github/workflows/homepage-exact-v2-checks.yml
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "Update homepage header behavior and hero headline"
+          git push origin HEAD:fix/homepage-header-links-hero-visibility-v1-20260718
