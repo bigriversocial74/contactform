@@ -11,7 +11,7 @@ $header_mode = 'account';
 $page_body_class = 'mg-admin-ai-credit-incidents-page';
 $page_styles = ['/assets/css/admin-shell.css','/assets/css/admin-ai-credit-incidents.css'];
 $page_scripts = ['/assets/js/admin-ai-credit-incidents.js'];
-$adminActive = 'ai-credit-incidents';
+$adminActive = 'operations-command';
 $csrfToken = mg_csrf_token();
 
 require dirname(__DIR__) . '/includes/header.php';
@@ -22,7 +22,7 @@ require dirname(__DIR__) . '/includes/header.php';
     <main class="mg-ai-credit-incidents" data-ai-credit-incidents data-csrf-token="<?= mg_e($csrfToken) ?>">
       <header class="mg-ai-credit-hero">
         <div>
-          <a href="/account-admin.php">← Admin dashboard</a>
+          <a href="/admin/operations-command.php">← Operations command center</a>
           <span class="mg-ai-credit-eyebrow">Accounting controls</span>
           <h1>AI credit reconciliation</h1>
           <p>Automated provider-to-ledger verification, owner-scoped incident evidence, controlled debit recovery, and complete resolution history.</p>
