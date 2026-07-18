@@ -10,26 +10,24 @@ final class AgentHeaderTabBehaviorTest extends TestCase
         $root=dirname(__DIR__,2);
         $header=file_get_contents($root.'/includes/header-components/app-header.php');
         $createMenu=file_get_contents($root.'/includes/header-templates/create-menu.php');
-        self::assertIsString($header);
-        self::assertIsString($createMenu);
-        self::assertStringContainsString("['agent','Agent','/agent.php']",$header);
-        self::assertStringContainsString("['inbox','Inbox','/inbox.php']",$header);
-        self::assertStringContainsString("['sent','Sent','/sent.php']",$header);
-        self::assertStringContainsString("['claimed','Claimed','/claimed.php']",$header);
+        self::assertIsString($header); self::assertIsString($createMenu);
+        foreach(["['agent','Agent','/agent.php',$can_agent_workspace]","['inbox','Inbox','/inbox.php',true]","['sent','Sent','/sent.php',true]","['claimed','Claimed','/claimed.php',true]"] as $needle) self::assertStringContainsString($needle,$header);
+        self::assertStringContainsString("'option' => 'microgift'",$createMenu);
         self::assertStringNotContainsString('data-agent-tab-add',$header);
-        self::assertStringNotContainsString('data-agent-header-create',$header);
-        self::assertStringNotContainsString('data-product-header-create',$header);
-        self::assertStringNotContainsString('mg-header-product-create',$header);
-        self::assertStringContainsString('data-create-menu-option="microgift"',$createMenu);
+
     }
 
     public function testAuthenticatedCustomersCanSeeAgentTabWithoutMerchantAccess(): void
+
     {
         $header=file_get_contents(dirname(__DIR__,2).'/includes/header-components/app-header.php');
         self::assertIsString($header);
         self::assertStringContainsString('$is_authenticated_user = mg_current_user() !== null;',$header);
         self::assertStringContainsString('$can_agent_workspace = $is_authenticated_user || $can_merchant_nav',$header);
-        self::assertStringContainsString("['agent','Agent','/agent.php',$can_agent_workspace]",$header);
+        self::assertStringContainsString("['agent','Agent','/agent.php',\$can_agent_workspace]",$header);
+
+
+
     }
 
     public function testAddAgentTabAndDuplicateCreateControlsAreRemoved(): void

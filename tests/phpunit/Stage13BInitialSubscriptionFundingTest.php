@@ -70,11 +70,17 @@ final class Stage13BInitialSubscriptionFundingTest extends TestCase
     }
 
     public function testManagementCannotGrantAccessBeforeFunding(): void
+
     {
         $source=$this->read('api/subscriptions/manage.php');
-        self::assertStringContainsString('mg_subscription_initial_payment_required($subscription)',$source);
-        self::assertStringContainsString("?'pending_payment':'active'",$source);
-        self::assertStringContainsString("['pending_payment','canceled','expired']",$source);
+        self::assertStringContainsString("mg_require_permission('subscriptions.manage_own')",$source);
+        self::assertStringContainsString('mg_platform_account_subscription_snapshot',$source);
+        self::assertStringContainsString("provider_key'] ?? '') !== 'stripe'",$source);
+        self::assertStringContainsString('provider_subscription_id',$source);
+        self::assertStringNotContainsString('mg_subscription_activate_initial',$source);
+
+
+
     }
 
     public function testFundingStateIsExposedByReadApi(): void

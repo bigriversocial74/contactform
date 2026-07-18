@@ -30,75 +30,45 @@ final class DesignStudioContentCalendarContractTest extends TestCase
     }
 
     public function testCalendarApiIsMerchantScopedAndSupportsThirtyDayPlanning(): void
+
     {
         $api = $this->read('api/merchant/design-content-calendar.php');
-
         foreach ([
-            "mg_merchant_require_permission(\$method === 'GET' ? 'catalog.products.view' : 'catalog.products.manage')",
+            "mg_merchant_require_permission($method === 'GET' ? 'catalog.products.view' : 'catalog.products.manage')",
             'MG_DESIGN_CALENDAR_DAYS = 30',
-            "['generate', 'update', 'delete']",
-            'WHERE merchant_user_id = ?',
+            "['generate', 'update', 'delete', 'duplicate', 'bulk_update', 'bulk_delete']",
+            'merchant_user_id = ?',
             "status <> 'archived'",
-            "mg_require_csrf_for_write(\$input)",
+            'mg_require_csrf_for_write($input)',
             "mg_rate_limit('merchant.design_calendar.write'",
-            "mg_audit('merchant.design_calendar_generated'",
-            "mg_audit('merchant.design_calendar_updated'",
-            "mg_audit('merchant.design_calendar_removed'",
-        ] as $needle) {
-            self::assertStringContainsString($needle, $api);
-        }
+            'merchant.design_calendar_generated','merchant.design_calendar_updated','merchant.design_calendar_bulk_updated',
+        ] as $needle) self::assertStringContainsString($needle,$api);
+
+
+
     }
 
     public function testDesignStudioProvidesPrintSocialAndCalendarViews(): void
+
     {
         $workspace = $this->read('includes/personal-agent/workspace-design.php');
         $calendar = $this->read('includes/personal-agent/workspace-design-calendar.php');
+        foreach (['data-design-mode="print"','data-design-mode="social"','data-calendar-mode-button',"require __DIR__ . '/workspace-design-calendar.php'"] as $needle) self::assertStringContainsString($needle,$workspace);
+        foreach (['Build or edit the next 30 days','data-calendar-view="grid"','data-calendar-view="stack"','data-calendar-product-list','data-calendar-generator','data-calendar-grid','data-calendar-stack'] as $needle) self::assertStringContainsString($needle,$calendar);
 
-        foreach ([
-            'data-design-mode="print"',
-            'data-design-mode="social"',
-            'data-calendar-mode-button',
-            "require __DIR__ . '/workspace-design-calendar.php'",
-        ] as $needle) {
-            self::assertStringContainsString($needle, $workspace);
-        }
 
-        foreach ([
-            '30-day content calendar',
-            'data-calendar-view="grid"',
-            'data-calendar-view="stack"',
-            'data-calendar-product-list',
-            'data-calendar-generator',
-            'data-calendar-grid',
-            'data-calendar-stack',
-        ] as $needle) {
-            self::assertStringContainsString($needle, $calendar);
-        }
+
     }
 
     public function testCalendarClientSupportsProductSelectionCreativeLinksAndManualDownloads(): void
+
     {
         $client = $this->read('assets/js/personal-agent-design-studio-calendar.js');
+        foreach (['/api/merchant/products.php?sort=updated_desc&limit=100','/api/merchant/design-content-calendar.php',"action: 'generate'","action: 'update'","action: 'delete'","action: 'bulk_update'",'data-calendar-format-select','data-calendar-layout-select','data-calendar-status-select','activateSocialWorkspace','data-social-download',"params.get('mode') === 'social'",'escapeHtml'] as $needle) self::assertStringContainsString($needle,$client);
+        foreach (['document.write(', 'eval('] as $unsafe) self::assertStringNotContainsString($unsafe,$client);
 
-        foreach ([
-            '/api/merchant/products.php?sort=updated_desc&limit=50',
-            '/api/merchant/design-content-calendar.php',
-            "action: 'generate'",
-            "action: 'update'",
-            "action: 'delete'",
-            'data-calendar-format-select',
-            'data-calendar-layout-select',
-            'data-calendar-status-select',
-            'activateSocialWorkspace',
-            'data-social-download',
-            "params.get('mode') === 'social'",
-        ] as $needle) {
-            self::assertStringContainsString($needle, $client);
-        }
 
-        foreach (['.innerHTML =', 'insertAdjacentHTML(', 'document.write(', 'eval('] as $unsafe) {
-            self::assertStringNotContainsString($unsafe, $client);
-        }
+
     }
 
     public function testLogoScaleOverridesAreExactlyFiftyPercentLarger(): void

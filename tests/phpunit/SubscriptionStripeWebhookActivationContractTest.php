@@ -18,16 +18,14 @@ final class SubscriptionStripeWebhookActivationContractTest extends TestCase
     }
 
     public function testStripeWebhookProcessorIsIdempotentAndOnlyHandlesSubscriptionPackageChanges(): void
-    {
-        $root = dirname(__DIR__, 2);
-        $processor = file_get_contents($root . '/api/subscriptions/_stripe_webhook.php');
 
+    {
+        $processor = file_get_contents(dirname(__DIR__, 2) . '/api/subscriptions/_stripe_webhook.php');
         self::assertIsString($processor);
-        self::assertStringContainsString('payment_webhook_events', $processor);
-        self::assertStringContainsString('provider_event_id', $processor);
-        self::assertStringContainsString("['checkout.session.completed', 'checkout.session.async_payment_succeeded']", $processor);
-        self::assertStringContainsString('mg_subscription_webhook_activate_package_change', $processor);
-        self::assertStringContainsString("'duplicate' => true", $processor);
+        foreach(['payment_webhook_events','provider_event_id','checkout.session.completed','checkout.session.async_payment_succeeded','mg_subscription_webhook_activate_package_change',"'duplicate' => true"] as $needle) self::assertStringContainsString($needle,$processor);
+
+
+
     }
 
     public function testActivationHelperCompletesPackageRequestAndUpdatesSubscriptionMetadata(): void

@@ -10,15 +10,18 @@ final class MerchantCrmBulkCampaignActionsContractTest extends TestCase
     private function read(string $path): string { $source = file_get_contents($this->root . '/' . $path); self::assertIsString($source, $path); return $source; }
 
     public function testBulkCampaignSelectionUiContract(): void
+
     {
         $view = $this->read('includes/merchant-crm-view.php');
+        $page = $this->read('merchant-crm.php');
         $js = $this->read('assets/js/merchant-crm.js');
-        $css = $this->read('assets/css/merchant-crm-command-center.css');
-        foreach (['data-crm-segments','data-crm-select-visible','data-crm-selected-count','data-crm-bulk-action="message"','data-crm-bulk-action="reward"','data-crm-bulk-action="followup"','data-crm-bulk-action="export"'] as $marker) self::assertStringContainsString($marker, $view);
-        foreach (['accounts','no_accounts','verified','reward_issued','reward_claimed','invite_pending','no_recent_activity'] as $segment) self::assertStringContainsString('data-crm-segment="' . $segment . '"', $view);
-        foreach (['data-crm-contact-check','selectedContacts()','visibleContacts()','contactMatchesSegment','/api/merchant/crm-bulk-message.php','/api/merchant/crm-bulk-reward.php','/api/merchant/crm-followup.php','function exportSelected()','microgifter-crm-selected-contacts.csv'] as $marker) self::assertStringContainsString($marker, $js);
-        self::assertStringContainsString('position:sticky', $css);
-        self::assertStringContainsString('mg-crm-selected-pill', $css);
+        foreach (['data-merchant-crm-shell','data-crm-desktop-directory','data-crm-mobile-overview','data-merchant-crm-table'] as $marker) self::assertStringContainsString($marker,$view);
+        self::assertStringContainsString('/assets/js/merchant-crm.js',$page);
+        self::assertStringContainsString('data-crm-contact-check',$js);
+        foreach (['data-crm-segments','data-crm-bulk-bar','data-crm-bulk-modal'] as $removed) self::assertStringNotContainsString($removed,$view);
+
+
+
     }
 
     public function testBulkCampaignEndpointContracts(): void

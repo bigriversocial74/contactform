@@ -57,20 +57,18 @@ final class CrmRewardInviteOperationsContractTest extends TestCase
     }
 
     public function testMerchantCrmLoadsInviteOperationsPanel(): void
+
     {
         $page = $this->read('merchant-crm.php');
         $view = $this->read('includes/merchant-crm-view.php');
         $js = $this->read('assets/js/merchant-crm-reward-invite-operations.js');
-
         self::assertStringContainsString('/assets/js/merchant-crm-reward-invite-operations.js', $page);
-        self::assertStringContainsString('data-crm-reward-invite-ops-host', $view);
-        self::assertStringContainsString('/api/merchant/crm-reward-invites.php?limit=100', $js);
-        self::assertStringContainsString('/api/merchant/crm-reward-invite-resend.php', $js);
-        self::assertStringContainsString('/api/merchant/crm-reward-invite-revoke.php', $js);
-        self::assertStringContainsString('Reward Invite Operations', $js);
-        self::assertStringContainsString('data-invite-resend', $js);
-        self::assertStringContainsString('data-invite-revoke', $js);
-        self::assertStringContainsString('data-invite-copy', $js);
+        self::assertStringContainsString('data-merchant-crm-table', $view);
+        self::assertStringContainsString("if(!host)return", $js);
+        foreach(['/api/merchant/crm-reward-invites.php?limit=100','/api/merchant/crm-reward-invite-resend.php','/api/merchant/crm-reward-invite-revoke.php','data-invite-resend','data-invite-revoke','data-invite-copy'] as $needle) self::assertStringContainsString($needle,$js);
+
+
+
     }
 
     public function testTimelineCardsArePolishedForInviteEvents(): void

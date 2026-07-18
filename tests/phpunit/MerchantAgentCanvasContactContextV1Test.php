@@ -28,14 +28,16 @@ final class MerchantAgentCanvasContactContextV1Test extends TestCase
     }
 
     public function testMerchantSidebarUsesGroupedRowsWithRemovalControl(): void
+
     {
         $script = file_get_contents($this->root . '/assets/js/merchant-agent-sidebar-history.js');
         self::assertIsString($script);
-        foreach (['mg-personal-chat-group','mg-personal-chat-row','mg-personal-chat-open','mg-personal-chat-delete','data-merchant-agent-delete-thread'] as $marker) {
-            self::assertStringContainsString($marker, $script);
-        }
-        self::assertStringContainsString("action: 'delete_thread'", $script);
-        self::assertStringContainsString('window.confirm', $script);
+        foreach (['data-merchant-agent-thread-groups','mg-personal-chat-row','mg-personal-chat-open','mg-personal-chat-delete','data-merchant-agent-delete-thread'] as $marker) self::assertStringContainsString($marker,$script);
+        self::assertStringContainsString("action: 'delete_thread'",$script);
+        self::assertStringContainsString('window.confirm',$script);
+
+
+
     }
 
     public function testThreadRemovalIsMerchantScoped(): void

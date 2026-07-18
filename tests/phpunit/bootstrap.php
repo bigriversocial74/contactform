@@ -90,6 +90,7 @@ if (!function_exists('mg_test_register_user')) {
             'full_name' => 'Stage One Test User',
             'email' => $email,
             'password' => $password,
+            'password_confirmation' => $password,
             'csrf_token' => $csrf,
         ], $cookieFile, ['X-CSRF-Token: ' . $csrf]);
 

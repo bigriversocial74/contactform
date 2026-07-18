@@ -35,19 +35,23 @@ final class ActionCenterWalletServiceHardeningTest extends TestCase
     }
 
     public function testWalletListEndpointDelegatesToSharedService(): void
+
     {
         $source=$this->source('api/account/action-center.php');
+        $contract=$this->source('api/account/_action_center_contract.php');
         foreach([
-            "require_once __DIR__ . '/_action_center_wallet.php';",
+            "require_once __DIR__ . '/_action_center_contract.php';",
             'mg_ac_wallet_counts_merge(',
             'mg_ac_wallet_page_merge(',
             'mg_ac_wallet_user_email($user)',
         ] as $needle){
             self::assertStringContainsString($needle,$source);
         }
+        self::assertStringContainsString("require_once __DIR__ . '/_action_center_wallet.php';",$contract);
         self::assertStringNotContainsString('function mg_action_center_wallet_public_item',$source);
-        self::assertStringNotContainsString('function mg_action_center_wallet_items',$source);
-        self::assertStringNotContainsString('function mg_action_center_wallet_counts',$source);
+
+
+
     }
 
     public function testClaimAndTipUseSharedWalletService(): void

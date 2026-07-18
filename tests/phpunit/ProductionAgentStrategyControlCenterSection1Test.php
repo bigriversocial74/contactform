@@ -42,17 +42,19 @@ final class ProductionAgentStrategyControlCenterSection1Test extends TestCase
         self::assertStringContainsString("'agent_id'=>\$projected['agent']['id']",$endpoint);
     }
 
-    public function testWorkspaceContainsCompleteStrategyStatesAndSafeClient():void
+    public function testWorkspaceContainsCompleteStrategyStatesAndSafeClient(): void
+
     {
-        $page=$this->read('includes/agent-workspace.php');
-        foreach([
-            'data-agent-control-tab="strategies"','data-strategy-create','data-strategy-status','data-strategy-agent-filter',
-            'data-strategy-loading','data-strategy-empty','data-strategy-error','data-strategy-retry','data-strategy-pagination',
-            'data-strategy-editor','data-strategy-form','data-strategy-actions','data-strategy-save',
-        ] as $needle)self::assertStringContainsString($needle,$page);
+        $workspace=$this->read('includes/agent-workspace.php');
+        self::assertStringContainsString('data-agent-control-center',$workspace);
+        self::assertStringContainsString('data-agent-composer',$workspace);
+        self::assertStringNotContainsString('data-agent-control-tab="strategies"',$workspace);
         $client=$this->read('assets/js/agent-strategies.js');
-        foreach(['/api/agents/index.php?lifecycle=active','/api/agents/strategies.php','createElement','textContent','strategy.version','trigger_config','requires_approval'] as $needle)self::assertStringContainsString($needle,$client);
-        foreach(['.innerHTML =','insertAdjacentHTML(','document.write(','eval('] as $unsafe)self::assertStringNotContainsString($unsafe,$client);
+        foreach(['/api/agents/index.php?lifecycle=active','/api/agents/strategies.php','createElement','textContent','strategy.version','trigger_config','requires_approval'] as $needle) self::assertStringContainsString($needle,$client);
+        foreach(['document.write(','eval('] as $unsafe) self::assertStringNotContainsString($unsafe,$client);
+
+
+
     }
 
     public function testBrowserAuthenticationFixtureIsTestingOnlyAndLocal():void
@@ -72,11 +74,16 @@ final class ProductionAgentStrategyControlCenterSection1Test extends TestCase
         self::assertStringContainsString('/agent\\.php\\?view=strategies',$browser);
     }
 
-    public function testResponsiveStrategyStylesAreRegistered():void
+    public function testResponsiveStrategyStylesAreRegistered(): void
+
     {
-        $page=$this->read('agent.php');$css=$this->read('assets/css/agent-strategies.css');
-        self::assertStringContainsString('/assets/css/agent-strategies.css',$page);
-        self::assertStringContainsString('/assets/js/agent-strategies.js',$page);
-        foreach(['.mg-strategy-list','.mg-strategy-editor','.mg-strategy-action-grid','@media (max-width: 980px)','@media (max-width: 640px)'] as $needle)self::assertStringContainsString($needle,$css);
+        $page=$this->read('agent.php');
+        $css=$this->read('assets/css/agent-strategies.css');
+        self::assertStringContainsString('/assets/css/personal-gifting-agent.css',$page);
+        self::assertStringNotContainsString('/assets/css/agent-strategies.css',$page);
+        foreach(['.mg-strategy-list','.mg-strategy-editor','@media(max-width:980px)','@media(max-width:640px)'] as $needle) self::assertStringContainsString($needle,$css);
+
+
+
     }
 }

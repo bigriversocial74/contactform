@@ -8,14 +8,9 @@ final class SelfServePackageFlowContractTest extends TestCase
     public function testUpgradeRequestUsesHandoffHelper(): void
     {
         $source = file_get_contents(dirname(__DIR__, 2) . '/api/subscriptions/request-upgrade.php');
-
         self::assertIsString($source);
-        self::assertStringContainsString('_checkout_handoff.php', $source);
-        self::assertStringContainsString('mg_subscription_package_change_request($pdo, $user, $plan, $note)', $source);
-        self::assertStringContainsString('mg_subscription_checkout_try_start($pdo, $user, $request)', $source);
-        self::assertStringContainsString('checkout_started', $source);
-        self::assertStringContainsString('checkout_attempted', $source);
-        self::assertStringContainsString('checkout_error', $source);
+        foreach(['mg_subscription_billing_v2_request($pdo, $user, $plan, $billingCycle, $note)','mg_subscription_checkout_try_start($pdo, $user, $request)','mg_subscription_billing_v2_schedule_change','mg_subscription_billing_v2_attach_portal'] as $needle) self::assertStringContainsString($needle,$source);
+
     }
 
     public function testEnterprisePathRemainsReviewOnly(): void

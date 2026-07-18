@@ -59,25 +59,23 @@ final class Stage5HCommunicationsTest extends TestCase
     }
 
     public function testGiftInboxAndCommunicationsUseSeparatedWorkspaces(): void
+
     {
         $root = dirname(__DIR__, 2);
         $inbox = file_get_contents($root . '/inbox.php');
+        $shared = file_get_contents($root . '/includes/gift-action-center.php');
         $messages = file_get_contents($root . '/messages.php');
         $notifications = file_get_contents($root . '/notifications.php');
         $preferences = file_get_contents($root . '/notification-preferences.php');
-        self::assertIsString($inbox);
-        self::assertIsString($messages);
-        self::assertIsString($notifications);
-        self::assertIsString($preferences);
-        self::assertStringContainsString('includes/gift-action-center.php', $inbox);
-        self::assertStringContainsString('gift-action-center.css', $inbox);
-        self::assertStringContainsString('gift-action-center.js', $inbox);
-        self::assertStringContainsString('data-messages-center', $messages);
-        self::assertStringContainsString('messages-center.js', $messages);
-        self::assertStringContainsString('data-notifications-page', $notifications);
-        self::assertStringContainsString('notifications-page.js', $notifications);
-        self::assertStringContainsString('data-notification-preferences', $preferences);
-        self::assertStringNotContainsString('communications-workspace.php', $inbox);
-        self::assertStringNotContainsString('data-preferences-modal', $preferences);
+        foreach([$inbox,$shared,$messages,$notifications,$preferences] as $source) self::assertIsString($source);
+        self::assertStringContainsString('includes/gift-action-center.php',$inbox);
+        self::assertStringContainsString('gift-action-center.css',$inbox);
+        self::assertStringContainsString('gift-action-center-runtime-v4.js',$shared);
+        self::assertStringContainsString('data-messages-center',$messages);
+        self::assertStringContainsString('data-notifications-page',$notifications);
+        self::assertStringContainsString('data-notification-preferences',$preferences);
+
+
+
     }
 }

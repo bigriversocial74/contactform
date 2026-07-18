@@ -10,10 +10,11 @@ final class ActionCenterLayoutCorrectionTest extends TestCase
         $root=dirname(__DIR__,2);
         $workspace=file_get_contents($root.'/includes/gift-action-center.php');
         self::assertIsString($workspace);
-        self::assertStringContainsString('agent-sidebar.php',$workspace);
+        self::assertStringContainsString('gift-center-sidebar.php',$workspace);
         self::assertStringNotContainsString('account-sidebar.php',$workspace);
         self::assertStringContainsString('mg-app-shell mg-gift-center-page',$workspace);
         self::assertStringContainsString('mg-app-workspace mg-gift-center-workspace',$workspace);
+
     }
 
     public function testGiftCenterUsesFeedAndPppmDrawerWithoutDuplicateFolderTabs(): void
@@ -28,17 +29,25 @@ final class ActionCenterLayoutCorrectionTest extends TestCase
     }
 
     public function testAllGiftRoutesLoadAgentShellAssets(): void
+
     {
         $root=dirname(__DIR__,2);
+        $shared=file_get_contents($root.'/includes/gift-action-center.php');
+        self::assertIsString($shared);
+        self::assertStringContainsString('gift-action-center-runtime-v4.js',$shared);
         foreach(['inbox.php','sent.php','claimed.php'] as $file){
             $source=file_get_contents($root.'/'.$file);
             self::assertIsString($source);
             self::assertStringContainsString('agent-workspace-layout.css',$source);
             self::assertStringContainsString('gift-action-center.css',$source);
-            self::assertStringContainsString('gift-action-center.js',$source);
-            self::assertMatchesRegularExpression('/\$header_mode\s*=\s*[\'\"]agent[\'\"]/',$source);
+            self::assertStringContainsString('includes/gift-action-center.php',$source);
+            self::assertStringContainsString('$header_mode',$source);
+            self::assertStringContainsString('agent',$source);
             self::assertStringNotContainsString('account-sidebar.js',$source);
         }
+
+
+
     }
 
     public function testLoadDrawerIsTheDedicatedSelectedContentSurface(): void

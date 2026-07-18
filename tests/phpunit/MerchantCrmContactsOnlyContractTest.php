@@ -13,25 +13,16 @@ final class MerchantCrmContactsOnlyContractTest extends TestCase
     }
 
     public function testViewContainsOnlyContactStatsAndContactRuntime(): void
+
     {
         $view = file_get_contents($this->root . '/includes/merchant-crm-view.php');
         self::assertIsString($view);
+        foreach(['mg-crm-contacts-only','data-crm-desktop-hero','data-crm-desktop-directory','data-crm-mobile-overview','data-crm-contact-stat-strip','data-merchant-crm-table'] as $needle) self::assertStringContainsString($needle,$view);
+        self::assertSame(8,substr_count($view,'<article'));
+        foreach(['mg-crm-toolbar','data-crm-tab-target','data-crm-tab-panel','data-crm-segments','data-crm-bulk-bar','data-crm-bulk-modal'] as $removed) self::assertStringNotContainsString($removed,$view);
 
-        self::assertStringContainsString('mg-crm-contacts-only', $view);
-        self::assertStringContainsString('data-crm-contact-stat-strip', $view);
-        self::assertStringContainsString('data-merchant-crm-table', $view);
-        self::assertSame(5, substr_count($view, '<article'));
 
-        foreach ([
-            'mg-crm-toolbar',
-            'data-crm-tab-target',
-            'data-crm-tab-panel',
-            'data-crm-segments',
-            'data-crm-bulk-bar',
-            'data-crm-bulk-modal',
-        ] as $removed) {
-            self::assertStringNotContainsString($removed, $view);
-        }
+
     }
 
     public function testIndividualContactActionsRemainAvailable(): void
