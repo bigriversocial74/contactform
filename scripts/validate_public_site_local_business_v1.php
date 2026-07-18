@@ -51,17 +51,29 @@ $checks = [
     'pricing page uses published package authority' => str_contains($pricing, 'mg_public_pricing_packages()')
         && str_contains($pricing, 'mg_pricing_package_summary()')
         && str_contains($pricing, '$plan[\'limits\'][$key]'),
-    'pricing page uses external local business stylesheet' => str_contains($pricing, '/assets/css/pricing-local-business-v1.css?v=1.0.0')
+    'pricing page uses external footer-blue stylesheet' => str_contains($pricing, '/assets/css/pricing-local-business-v1.css?v=1.1.0')
         && !str_contains($pricing, '<style>'),
-    'pricing hero matches local growth system' => str_contains($pricing, 'Start small.')
-        && str_contains($pricing, 'Grow with every')
-        && str_contains($pricing, 'One connected customer growth loop.'),
+    'pricing opens directly on published plans without hero' => !str_contains($pricing, 'mg-price-hero')
+        && !str_contains($pricing, 'Start small.')
+        && str_contains($pricing, '<section class="mg-price-plans"')
+        && str_contains($pricing, 'Choose the right operating level for your business.'),
+    'pricing uses footer blue actions with white type' => str_contains($pricingCss, '--price-navy:#091a31')
+        && str_contains($pricingCss, '--price-blue:#102d4c')
+        && str_contains($pricingCss, 'background:var(--price-blue)')
+        && str_contains($pricingCss, 'color:#fff!important')
+        && !str_contains($pricingCss, '#72d43f')
+        && !str_contains($pricingCss, '#4cae24'),
     'pricing includes plan cards and comparison table' => str_contains($pricing, 'mg-price-grid')
         && str_contains($pricing, 'mg-price-table')
         && str_contains($pricing, 'Compare plan capacity'),
     'pricing keeps real signup and sales routes' => str_contains($pricing, '$plan[\'cta_href\']')
         && str_contains($pricing, '/signup.php?type=merchant')
         && str_contains($pricing, '/learn-more.php'),
+    'homepage pricing hydrates from published package authority' => str_contains($footer, '$homepage_pricing_plans = mg_public_pricing_packages()')
+        && str_contains($footer, 'id="mg-homepage-live-pricing"')
+        && str_contains($footer, 'pricingGrid.replaceChildren')
+        && str_contains($footer, '$plan[\'price_label\']')
+        && str_contains($footer, '$plan[\'cta_href\']'),
     'pricing responsive styles cover desktop tablet and mobile' => str_contains($pricingCss, '@media(max-width:1120px)')
         && str_contains($pricingCss, '@media(max-width:760px)')
         && str_contains($pricingCss, '@media(max-width:430px)'),
