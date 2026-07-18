@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_user_management.php';
-require_once dirname(__DIR__, 2) . '/includes/admin-agent.php';
+require_once dirname(__DIR__, 2) . '/includes/admin-agent-runtime.php';
 
 $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 $actor = mg_require_api_user();
@@ -63,10 +63,10 @@ try {
             $completedAt = (string)($lastScan['completed_at'] ?? '');
             $stale = $lastScan === null || $completedAt === '' || strtotime($completedAt . ' UTC') < time() - 300;
             if ($stale && (string)($_GET['skip_scan'] ?? '') !== '1') {
-                mg_admin_agent_scan($pdo, ['trigger_source'=>'workspace_load','initiated_by_user_id'=>$actorId]);
+                mg_admin_agent_scan_runtime($pdo, ['trigger_source'=>'workspace_load','initiated_by_user_id'=>$actorId]);
             }
         }
-        $payload = mg_admin_agent_state($pdo, $actorId, mg_admin_agent_api_options($_GET));
+        $payload = mg_admin_agent_state_runtime($pdo, $actorId, mg_admin_agent_api_options($_GET));
         $payload['permissions'] = mg_admin_agent_api_permissions($actor);
         header('Cache-Control: private, no-store, max-age=0');
         header('Vary: Cookie, Authorization');
@@ -85,16 +85,16 @@ try {
         $result = null;
         if ($action === 'send_message') {
             mg_admin_agent_api_require($actor, 'admin.admin_agent.chat');
-            $result = mg_admin_agent_send($pdo, $actorId, $input);
+            $result = mg_admin_agent_send_runtime($pdo, $actorId, $input);
         } elseif ($action === 'run_scan') {
             mg_admin_agent_api_require($actor, 'admin.admin_agent.manage');
-            $result = mg_admin_agent_scan($pdo, ['trigger_source'=>'manual','initiated_by_user_id'=>$actorId]);
+            $result = mg_admin_agent_scan_runtime($pdo, ['trigger_source'=>'manual','initiated_by_user_id'=>$actorId]);
         } elseif ($action === 'new_thread') {
             mg_admin_agent_api_require($actor, 'admin.admin_agent.chat');
             $result = mg_admin_agent_new_thread($pdo, $actorId);
         } elseif ($action === 'finding_action') {
             mg_admin_agent_api_require($actor, 'admin.admin_agent.manage');
-            $result = mg_admin_agent_apply_finding_action($pdo, $actorId, $input);
+            $result = mg_admin_agent_apply_finding_action_runtime($pdo, $actorId, $input);
         } elseif ($action === 'request_action') {
             mg_admin_agent_api_require($actor, 'admin.admin_agent.actions');
             $result = mg_admin_agent_request_action($pdo, $actorId, $input);
@@ -104,7 +104,7 @@ try {
         $options = mg_admin_agent_api_options($input);
         if (is_array($result['thread'] ?? null) && !empty($result['thread']['id'])) $options['thread_id'] = (string)$result['thread']['id'];
         if ($action === 'new_thread' && !empty($result['id'])) $options['thread_id'] = (string)$result['id'];
-        $state = mg_admin_agent_state($pdo, $actorId, $options);
+        $state = mg_admin_agent_state_runtime($pdo, $actorId, $options);
         $state['permissions'] = mg_admin_agent_api_permissions($actor);
         header('Cache-Control: private, no-store, max-age=0');
         header('Vary: Cookie, Authorization');
