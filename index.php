@@ -1,46 +1,46 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/includes/app.php';
-
-if (mg_current_user()) {
-    header('Cache-Control: no-store, private');
-    header('Location: /inbox.php', true, 302);
-    exit;
-}
+$page_title = 'Microgifter — Customer Relationship Agent';
+$page_section = 'public';
+$header_mode = 'public';
+$page_body_class = 'mg-homepage-exact-v2';
+$page_styles = [
+    '/assets/css/public-header-footer-fixes.css',
+    '/assets/css/public-dark-shell.css',
+    '/assets/css/public-header-cleanup.css',
+    '/assets/css/homepage-parallax-exact-v2.css?v=2.1.0',
+];
+$page_scripts = [
+    '/assets/js/homepage-parallax-exact-v2.js?v=2.0.0',
+];
+$page_meta = [
+    'description' => 'Microgifter personal social gifting and customer service agent.',
+    'canonical' => 'https://microgifter.com/index.php',
+    'og_title' => 'Microgifter — Customer Relationship Agent',
+    'og_description' => 'One intelligent relationship system for social gifting, customer service, loyalty, and post-purchase commerce.',
+];
+$page_manifest = [
+    'id' => 'index',
+    'title' => $page_title,
+    'section' => $page_section,
+    'header_mode' => $header_mode,
+    'body_class' => $page_body_class,
+    'styles' => $page_styles,
+    'scripts' => $page_scripts,
+    'onboarding' => [
+        'enabled' => false,
+        'page' => 'home',
+        'sections' => [],
+    ],
+];
 
 header('Cache-Control: public, max-age=300, stale-while-revalidate=600');
+require __DIR__ . '/includes/header.php';
 ?>
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Microgifter personal social gifting and customer service agent.">
-  <title>Microgifter — Customer Relationship Agent</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="preload" as="image" href="/assets/images/mountains.png?v=2.0.0">
-  <link rel="preload" as="image" href="/assets/images/foreground.png?v=2.0.0">
-  <link rel="preload" as="image" href="/assets/images/orb.png?v=2.0.0">
-  <link rel="stylesheet" href="/assets/css/homepage-parallax-exact-v2.css?v=2.0.0">
-</head>
-<body>
-  <main>
+<div class="homepage-exact-v2" data-homepage-exact-v2>
     <section class="hero-scroll" id="hero" aria-label="Microgifter introduction">
       <div class="hero-sticky">
-        <header class="os-bar">
-          <a class="brand" href="#hero" aria-label="Microgifter home">microgifter</a>
-          <nav class="desktop-nav" aria-label="Primary navigation">
-            <a href="#relationship-system">How it works</a>
-            <a href="#relationship-system">Solutions</a>
-            <a href="#relationship-system">For merchants</a>
-            <a class="nav-cta" href="#relationship-system">Get started <span>→</span></a>
-          </nav>
-          <div class="window-controls" aria-hidden="true"><span>−</span><span>□</span><span>×</span></div>
-        </header>
-
         <div class="scene" id="scene">
           <img class="layer layer-mountains" id="mountains" src="/assets/images/mountains.png?v=2.0.0" alt="" decoding="async" fetchpriority="high">
           <img class="layer layer-foreground" id="foreground" src="/assets/images/foreground.png?v=2.0.0" alt="" decoding="async" fetchpriority="high">
@@ -519,27 +519,5 @@ header('Cache-Control: public, max-age=300, stale-while-revalidate=600');
 
       </div>
     </section>
-
-    <footer class="site-footer">
-      <div class="site-footer__inner">
-        <div class="site-footer__brand">
-          <a href="#hero">microgifter</a>
-          <p>The customer relationship agent for social gifting, service, loyalty, and post-purchase commerce.</p>
-        </div>
-        <div class="site-footer__links">
-          <a href="#relationship-system">How it works</a>
-          <a href="#agent-in-action">Solutions</a>
-          <a href="#pppm-presentation">Features</a>
-          <a href="/learn-more.php">Book Demo</a>
-        </div>
-        <div class="site-footer__bottom">
-          <span>© 2026 Microgifter. All rights reserved.</span>
-          <span>Customer relationships, structured for growth.</span>
-        </div>
-      </div>
-    </footer>
-
-  </main>
-  <script src="/assets/js/homepage-parallax-exact-v2.js?v=2.0.0"></script>
-</body>
-</html>
+</div>
+<?php require __DIR__ . '/includes/footer.php'; ?>
