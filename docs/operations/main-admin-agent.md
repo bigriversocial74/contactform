@@ -12,16 +12,16 @@ The Main Admin Agent is a protected, database-first system observer for Microgif
 
 ## Scheduled monitor
 
-Run the monitor every five minutes from the deployed application root:
+Run the hardened monitor every five minutes from the deployed application root:
 
 ```cron
-*/5 * * * * cd /path/to/contactform && php scripts/run_admin_agent_monitor.php --trigger=scheduled >> storage/logs/main-admin-agent.log 2>&1
+*/5 * * * * cd /path/to/contactform && php scripts/run_admin_agent_monitor_runtime.php --trigger=scheduled >> storage/logs/main-admin-agent.log 2>&1
 ```
 
 Manual verification:
 
 ```bash
-php scripts/run_admin_agent_monitor.php --trigger=manual
+php scripts/run_admin_agent_monitor_runtime.php --trigger=manual
 ```
 
 A successful run returns JSON containing the health score, monitor count, normalized event count, created or updated findings, and automatically resolved findings.
@@ -52,7 +52,7 @@ The admin chat supports database-only commands including:
 - `Migration report`
 - `Recent activity`
 
-These reports do not contact an external model and consume no AI credits.
+No AI credits are consumed. These reports do not contact an external model.
 
 ## Live updates
 
