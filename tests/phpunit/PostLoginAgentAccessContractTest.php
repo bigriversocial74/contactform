@@ -16,9 +16,9 @@ final class PostLoginAgentAccessContractTest extends TestCase
 
         self::assertStringContainsString("return '/agent.php'", $authJs);
         self::assertStringContainsString('data-success-redirect="/agent.php"', $signin);
-        self::assertStringContainsString("$input['return']??'/agent.php'", $login);
-        self::assertStringContainsString("$isMerchant ? '/account-subscriptions.php' : '/agent.php'", $signup);
-        self::assertStringContainsString("$postVerifyRedirect='/agent.php'", $register);
+        self::assertStringContainsString("\$input['return']??'/agent.php'", $login);
+        self::assertStringContainsString("\$isMerchant ? '/account-subscriptions.php' : '/agent.php'", $signup);
+        self::assertStringContainsString("\$postVerifyRedirect='/agent.php'", $register);
     }
 
     public function testFreeAccountsCanOpenSystematicAgentWorkspace(): void
@@ -26,7 +26,7 @@ final class PostLoginAgentAccessContractTest extends TestCase
         $root = dirname(__DIR__, 2);
         $agent = (string) file_get_contents($root . '/agent.php');
 
-        self::assertStringContainsString("$header_mode = 'agent'", $agent);
+        self::assertStringContainsString("\$header_mode = 'agent'", $agent);
         self::assertStringContainsString("require __DIR__ . '/includes/header.php'", $agent);
         self::assertStringNotContainsString('account-subscriptions.php?agent=personal', $agent);
         self::assertStringNotContainsString('$hasPersonalAgentAccess', $agent);
@@ -45,7 +45,7 @@ final class PostLoginAgentAccessContractTest extends TestCase
         self::assertStringContainsString('Systematic agent flows remain available.', $creditResponse);
         self::assertStringContainsString('mg_personal_agent_ai_credit_apply_package_gate', $creditEndpoint);
         self::assertStringContainsString("'systematic_access'=>true", $creditEndpoint);
-        self::assertStringContainsString("'ai_api_access'=>!empty($credits['can_use'])", $creditEndpoint);
+        self::assertStringContainsString("'ai_api_access'=>!empty(\$credits['can_use'])", $creditEndpoint);
         self::assertStringContainsString('Systematic mode', $creditUi);
         self::assertStringNotContainsString('submit.disabled = true', $creditUi);
         self::assertStringNotContainsString('event.stopImmediatePropagation()', $creditUi);
