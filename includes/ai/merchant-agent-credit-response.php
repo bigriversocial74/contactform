@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/user-credit-service.php';
+require_once __DIR__ . '/ai-credit-reconciliation.php';
 
 function mg_merchant_agent_ai_ineligible_statuses(): array
 {
@@ -220,6 +221,14 @@ function mg_merchant_agent_ai_after_anthropic_call(array $payload, array $respon
     $modelKey = trim((string)($payload['model'] ?? ''));
     $tokens = ['input'=>$inputTokens,'output'=>$outputTokens,'total'=>$inputTokens+$outputTokens];
     $accountingError = false;
+    $callMetadata = is_array($call['metadata'] ?? null) ? $call['metadata'] : [];
+    try {
+        mg_ai_reconciliation_capture_provider_response($pdo, $userId, 'anthropic', $modelKey, (string)$call['source_type'], $response, $callMetadata);
+    } catch (Throwable $captureError) {
+        if (function_exists('mg_security_log')) {
+            mg_security_log('warning', 'merchant_agent.ai_provider_evidence_capture_failed', 'Merchant Agent provider response evidence could not be recorded.', ['exception_class'=>$captureError::class,'response_id'=>$responseId,'source_type'=>(string)$call['source_type']], $userId);
+        }
+    }
     try {
         $stmt = $pdo->prepare("SELECT m.id,m.provider_id,p.provider_key FROM ai_models m INNER JOIN ai_providers p ON p.id=m.provider_id WHERE m.model_key=? AND p.provider_key='anthropic' LIMIT 1");
         $stmt->execute([$modelKey]);
@@ -235,10 +244,14 @@ function mg_merchant_agent_ai_after_anthropic_call(array $payload, array $respon
             $outputTokens,
             (string)$call['source_type'],
             $responseId,
-            (is_array($call['metadata'] ?? null) ? $call['metadata'] : []) + ['model_key'=>$modelKey,'anthropic_response_id'=>$responseId,'merchant_agent_owner_only'=>true]
+            $callMetadata + ['model_key'=>$modelKey,'anthropic_response_id'=>$responseId,'merchant_agent_owner_only'=>true]
         );
+        mg_ai_reconciliation_mark_provider_accounting($pdo, $userId, 'anthropic', $responseId, true, ['accounting_hook'=>'merchant_agent_after_anthropic_call']);
     } catch (Throwable $error) {
         $accountingError = true;
+        try {
+            mg_ai_reconciliation_mark_provider_accounting($pdo, $userId, 'anthropic', $responseId, false, ['accounting_error_class'=>$error::class]);
+        } catch (Throwable) {}
         if (function_exists('mg_security_log')) {
             mg_security_log('error', 'merchant_agent.ai_credit_debit_failed', 'Merchant Agent completed but its token debit could not be recorded.', ['exception_type'=>$error::class,'response_id'=>$responseId,'source_type'=>(string)$call['source_type']], $userId);
         }
