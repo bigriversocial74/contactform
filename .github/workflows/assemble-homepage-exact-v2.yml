@@ -40,9 +40,9 @@ jobs:
           cat .homepage-build/orb.webp.b64.* | base64 --decode > assets/images/homepage-parallax-exact-v2/orb.webp
           php -l index.php
           node --check assets/js/homepage-parallax-exact-v2.js
-          test "$(sha256sum assets/images/homepage-parallax-exact-v2/foreground.webp | cut -d' ' -f1)" = "4ea741a743119de02c4ecb1513bd25694965afcb4c4ac74983390037e95a9c53"
-          test "$(sha256sum assets/images/homepage-parallax-exact-v2/mountains.webp | cut -d' ' -f1)" = "37376bb009dd9049be4ba593c7213f13617babd94b0676134b116811a8888b7d"
-          test "$(sha256sum assets/images/homepage-parallax-exact-v2/orb.webp | cut -d' ' -f1)" = "9667fbc48739193cf1854ec970225cf19a492569c4a6791a00264d84c61d3028"
+          test "$(sha256sum assets/images/homepage-parallax-exact-v2/foreground.webp | cut -d' ' -f1)" = "6d9647789200b6834ca2dd9980e376e4d9b83588b4b3b7c44af49fa4f8c968e6"
+          test "$(sha256sum assets/images/homepage-parallax-exact-v2/mountains.webp | cut -d' ' -f1)" = "53f824ce3541ca4ce661940ce7ae8de1873c1fe761594334b6eb69d5399b16b1"
+          test "$(sha256sum assets/images/homepage-parallax-exact-v2/orb.webp | cut -d' ' -f1)" = "5b396a75df4f4f28a6ef4978b273752e6fbd9673ecee46fd8a07bb58df77567f"
       - name: Commit assembled files
         if: steps.payload.outputs.ready == 'true'
         run: |
