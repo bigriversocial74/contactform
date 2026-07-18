@@ -35,13 +35,14 @@ jobs:
 
           cat .homepage-build/foreground.webp.b64.* | base64 --decode > assets/images/homepage-parallax-exact-v2/foreground.webp
           cat .homepage-build/mountains.webp.b64.* | base64 --decode > assets/images/homepage-parallax-exact-v2/mountains.webp
-          cat .homepage-build/orb.webp.b64.* | base64 --decode > assets/images/homepage-parallax-exact-v2/orb.webp
+          cat .homepage-build/orb.webp.b64.* | base64 --decode --ignore-garbage > assets/images/homepage-parallax-exact-v2/orb.webp
 
           sed -i 's/foreground\.png/foreground.webp/g; s/mountains\.png/mountains.webp/g; s/orb\.png/orb.webp/g' index.php assets/css/homepage-parallax-exact-v2.css
 
           php -l index.php
           node --check assets/js/homepage-parallax-exact-v2.js
-          file assets/images/homepage-parallax-exact-v2/*.webp
+          file assets/images/homepage-parallax-exact-v2/*.webp | tee /tmp/homepage-file-types.txt
+          test "$(grep -c 'Web/P image' /tmp/homepage-file-types.txt)" -eq 3
           wc -c index.php assets/css/homepage-parallax-exact-v2.css assets/js/homepage-parallax-exact-v2.js assets/images/homepage-parallax-exact-v2/*.webp
 
       - name: Commit diagnostic
