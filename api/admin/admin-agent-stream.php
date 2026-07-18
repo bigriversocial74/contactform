@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_user_management.php';
-require_once dirname(__DIR__, 2) . '/includes/admin-agent.php';
+require_once dirname(__DIR__, 2) . '/includes/admin-agent-runtime.php';
 
 $actor = mg_require_api_user();
 $actorId = (int)$actor['id'];
@@ -10,7 +10,8 @@ $pdo = mg_db();
 $allowed = mg_admin_account_actor_has($actor, 'admin.admin_agent.view')
     || mg_admin_account_actor_has($actor, 'admin.operations_command.view')
     || mg_admin_account_actor_has($actor, 'admin.health.view')
-    || mg_admin_account_actor_has($actor, 'admin.settings.manage')
+    || mg_admin_account_actor_has($actor, 'admin.audit.view')
+    || mg_admin_account_actor_has($actor, 'security.logs.view')
     || mg_admin_account_actor_has($actor, 'admin.users.manage');
 if (!$allowed) {
     mg_security_log('warning', 'admin_agent.stream_denied', 'Main Admin Agent stream permission denied.', [], $actorId);
@@ -56,7 +57,7 @@ mg_admin_agent_sse('snapshot', [
 
 for ($iteration = 0; $iteration < 8; $iteration++) {
     if (connection_aborted()) break;
-    $events = mg_admin_agent_events($pdo, $after, 100, $domain);
+    $events = mg_admin_agent_events_runtime($pdo, $after, 100, $domain);
     if ($events !== []) {
         $after = (int)end($events)['cursor'];
         mg_admin_agent_sse('events', ['events'=>$events,'cursor'=>$after,'generated_at'=>gmdate('Y-m-d H:i:s')], $after);
